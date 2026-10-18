@@ -7,9 +7,11 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 export interface AppConfig {
   teachingUrl: string;
+  teachingUsername: string;
+  teachingPassword: string;
   lmsUrl: string;
-  mindxUsername: string;
-  mindxPassword: string;
+  lmsUsername: string;
+  lmsPassword: string;
   geminiApiKey: string;
   geminiModel: string;
   headlessMode: boolean;
@@ -18,9 +20,17 @@ export interface AppConfig {
 
 export const config: AppConfig = {
   teachingUrl: process.env.TEACHING_URL || "https://teaching.mindx.edu.vn",
+  teachingUsername:
+    process.env.TEACHING_USERNAME || process.env.MINDX_USERNAME || "",
+  teachingPassword:
+    process.env.TEACHING_PASSWORD || process.env.MINDX_PASSWORD || "",
+
   lmsUrl: process.env.LMS_URL || "https://lms.mindx.edu.vn",
-  mindxUsername: process.env.MINDX_USERNAME || "",
-  mindxPassword: process.env.MINDX_PASSWORD || "",
+  lmsUsername:
+    process.env.LMS_USERNAME || process.env.MINDX_USERNAME || "",
+  lmsPassword:
+    process.env.LMS_PASSWORD || process.env.MINDX_PASSWORD || "",
+
   geminiApiKey: process.env.GEMINI_API_KEY || "",
   geminiModel: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
   headlessMode: process.env.HEADLESS_MODE === "true",
@@ -30,16 +40,25 @@ export const config: AppConfig = {
     .filter(Boolean),
 };
 
+function maskUsername(u: string): string {
+  if (!u) return "";
+  if (u.includes("@")) {
+    return u.replace(/^(.{2})(.*)(@.*)$/, "$1***$3");
+  }
+  return u.length > 3 ? `${u.slice(0, 2)}***${u.slice(-1)}` : "***";
+}
+
 /**
  * Returns safe environment settings for client display (never leaks passwords or API keys)
  */
 export function getSafePublicConfig() {
   return {
     teachingUrl: config.teachingUrl,
+    teachingUsernameMasked: maskUsername(config.teachingUsername),
     lmsUrl: config.lmsUrl,
-    usernameMasked: config.mindxUsername
-      ? config.mindxUsername.replace(/^(.{2})(.*)(@.*)$/, "$1***$3")
-      : "",
+    lmsUsernameMasked: maskUsername(config.lmsUsername),
+    hasTeachingAuth: Boolean(config.teachingUsername && config.teachingPassword),
+    hasLmsAuth: Boolean(config.lmsUsername && config.lmsPassword),
     hasGeminiKey: Boolean(config.geminiApiKey),
     geminiModel: config.geminiModel,
     headlessMode: config.headlessMode,

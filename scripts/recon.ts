@@ -65,8 +65,8 @@ async function runBrowserRecon() {
   }
 
   console.log(`📁 Persistent Auth Profile: ${AUTH_DIR}`);
-  console.log(`🔗 LMS URL: ${config.lmsUrl}`);
-  console.log(`🔗 Teaching URL: ${config.teachingUrl}`);
+  console.log(`🔗 Tab 1 (Teaching): ${config.teachingUrl}`);
+  console.log(`🔗 Tab 2 (LMS):      ${config.lmsUrl}`);
   console.log("Đang khởi động trình duyệt Chromium có giao diện...");
 
   const context: BrowserContext = await chromium.launchPersistentContext(AUTH_DIR, {
@@ -78,10 +78,8 @@ async function runBrowserRecon() {
     ],
   });
 
-  const page: Page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
-
-  // Intercept and log API network requests to identify backend routes
-  page.on("request", (req) => {
+  // Intercept and log API network requests across ALL pages/tabs
+  context.on("request", (req) => {
     const url = req.url();
     if (
       url.includes("/api/") ||
@@ -92,11 +90,11 @@ async function runBrowserRecon() {
       url.includes("submission") ||
       url.includes("student")
     ) {
-      console.log(`📡 [Network Request] ${req.method()} ${url.slice(0, 120)}`);
+      console.log(`📡 [Network Request] ${req.method()} ${url.slice(0, 130)}`);
     }
   });
 
-  page.on("response", async (res) => {
+  context.on("response", async (res) => {
     const url = res.url();
     const status = res.status();
     if (
@@ -108,28 +106,44 @@ async function runBrowserRecon() {
       url.includes("submission") ||
       url.includes("student")
     ) {
-      console.log(`📥 [Network Response] ${status} ${url.slice(0, 120)}`);
+      console.log(`📥 [Network Response] ${status} ${url.slice(0, 130)}`);
     }
   });
 
-  console.log("\n👉 Điều hướng tới trang Teaching MindX...");
+  // Tab 1: Teaching
+  const teachingPage: Page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
+  console.log("\n👉 Tab 1: Đang mở trang Teaching MindX...");
   try {
-    await page.goto(config.teachingUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await teachingPage.goto(config.teachingUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
   } catch (err) {
-    console.log(`⚠️ Không thể mở ${config.teachingUrl} (Vui lòng kiểm tra kết nối mạng hoặc URL). Thử mở LMS...`);
+    console.log(`⚠️ Tab 1: Không thể tải ${config.teachingUrl} (Kiểm tra lại đường dẫn mạng).`);
+  }
+
+  // Tab 2: LMS
+  console.log("👉 Tab 2: Đang mở trang MindX LMS...");
+  const lmsPage: Page = await context.newPage();
+  try {
+    await lmsPage.goto(config.lmsUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+  } catch (err) {
+    console.log(`⚠️ Tab 2: Không thể tải ${config.lmsUrl} (Kiểm tra lại đường dẫn mạng).`);
   }
 
   console.log("\n==================================================");
   console.log("📋 HƯỚNG DẪN DÀNH CHO GIÁO VIÊN TRONG PHIÊN KHẢO SÁT:");
-  console.log("1. Nếu trang hiển thị Form Đăng nhập, hãy đăng nhập bằng tài khoản MindX của bạn.");
-  console.log("   (Phiên đăng nhập sẽ được lưu vĩnh viễn vào ./playwright-auth)");
-  console.log("2. Mở một lớp học đang chạy để kiểm tra:");
-  console.log("   - Bảng danh sách học viên (Tab Học viên, nút Active)");
-  console.log("   - Tab Lịch học / Điểm danh / Nhận xét buổi học");
-  console.log("   - Tab Chấm bài (Xem modal chấm bài và nút download bài tập)");
+  console.log("1. Trình duyệt đã mở sẵn 2 Tab:");
+  console.log("   - Tab 1: Hệ thống Teaching (Lịch dạy)");
+  console.log("   - Tab 2: Hệ thống MindX LMS (Quản lý lớp, Học viên, Chấm bài & SPCK)");
+  console.log("2. Đăng nhập tài khoản:");
+  console.log("   - Nếu dùng chung 1 tài khoản MindX: Đăng nhập cả 2 tab bằng cùng tài khoản đó.");
+  console.log("   - Nếu Teaching và LMS có tài khoản/mật khẩu riêng: Đăng nhập tương ứng vào từng tab.");
+  console.log("   👉 Phiên đăng nhập của CẢ 2 TRANG sẽ được lưu vĩnh viễn vào ./playwright-auth!");
+  console.log("3. Trên tab LMS, mở thử 1 lớp học thật để kiểm tra:");
+  console.log("   - Tab Học viên (xem nút trạng thái Active màu xanh)");
+  console.log("   - Tab Lịch học / Điểm danh");
+  console.log("   - Tab Chấm bài (mở thử Modal xem file nộp và nút download)");
   console.log("   - Tab Sản phẩm cuối khóa (SPCK)");
-  console.log("3. Các API nghiệp vụ sẽ tự động được log ra terminal này.");
-  console.log("4. Khi khảo sát xong, quay lại đây và nhấn phím [Enter] để đóng trình duyệt.");
+  console.log("4. Các request API nghiệp vụ sẽ tự động được ghi nhận tại terminal này.");
+  console.log("5. Khi hoàn tất, quay lại cửa sổ Terminal này và nhấn phím [Enter] để đóng trình duyệt.");
   console.log("==================================================\n");
 
   // Keep script alive until teacher presses Enter
@@ -140,7 +154,7 @@ async function runBrowserRecon() {
     });
   });
 
-  console.log("Đang đóng trình duyệt và lưu phiên đăng nhập...");
+  console.log("Đang đóng trình duyệt và lưu phiên đăng nhập của cả 2 trang...");
   await context.close();
   console.log("✅ Đã lưu profile thành công vào ./playwright-auth!");
 }

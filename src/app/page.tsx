@@ -75,9 +75,12 @@ export default function DashboardPage() {
         </div>
 
         <div className="p-4 rounded-lg bg-slate-900 border border-slate-800">
-          <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Tài khoản & Trình duyệt</div>
-          <div className="mt-2 text-lg font-bold text-white truncate">
-            {publicConfig.usernameMasked || "Chưa cấu hình .env.local"}
+          <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Tài khoản Teaching & LMS</div>
+          <div className="mt-2 text-sm font-semibold text-white truncate">
+            Teaching: {publicConfig.teachingUsernameMasked || "Chưa cấu hình"}
+          </div>
+          <div className="text-sm font-semibold text-white truncate">
+            LMS: {publicConfig.lmsUsernameMasked || "Chưa cấu hình"}
           </div>
           <div className="mt-1 text-xs text-slate-500">
             {publicConfig.headlessMode ? "Headless Mode" : "Hiển thị giao diện Chrome"}
