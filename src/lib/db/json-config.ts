@@ -18,7 +18,12 @@ function readJsonFile<T>(fileName: string, fallback: T): T {
   }
   try {
     const raw = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(raw) as T;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(fallback) && !Array.isArray(parsed)) {
+      console.warn(`[json-config] Expected array in ${fileName}, got ${typeof parsed}. Using fallback.`);
+      return fallback;
+    }
+    return parsed as T;
   } catch (err) {
     console.error(`[json-config] Error reading ${fileName}:`, err);
     return fallback;
@@ -154,15 +159,16 @@ export function renderZaloBroadcast(
   placeholders: Record<string, string>
 ): string {
   const templates = getZaloTemplates();
-  const selected = templates.find((t) => t.id === templateId) || templates[0];
+  const selected = templates.find((t) => t.id === templateId);
   if (!selected) {
-    return "";
+    throw new Error(`[Zalo Template Error] Không tìm thấy mẫu Zalo với ID: '${templateId}'`);
   }
 
   let text = selected.template;
   for (const [key, val] of Object.entries(placeholders)) {
     const reg = new RegExp(`\\{\\{${key}\\}\\}`, "g");
-    text = text.replace(reg, val ?? "");
+    // Functional replacer prevents regex special character corruption (e.g. $&, $')
+    text = text.replace(reg, () => val ?? "");
   }
   return text;
 }

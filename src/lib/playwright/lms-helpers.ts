@@ -18,11 +18,31 @@ export class LmsHelpers {
       await page.waitForTimeout(1000);
     }
 
-    // 2. Click the matching class row
-    const rowLocator = page.locator(SELECTORS.classes.rowByClassCode(classCode)).first();
-    await rowLocator.waitFor({ state: "visible", timeout: 15000 });
+    // 2. Click the exact matching class row (strictly prevents partial match e.g. PTA1 vs PTA13)
+    const targetCode = classCode.trim();
+    const rows = page.locator("table tbody tr, .class-card");
+    const count = await rows.count().catch(() => 0);
+    let matchedRow: Locator | null = null;
+
+    for (let i = 0; i < count; i++) {
+      const row = rows.nth(i);
+      const text = await row.innerText().catch(() => "");
+      const tokens = text.split(/[\s,()]+/).map((t) => t.trim().toUpperCase());
+      if (tokens.includes(targetCode.toUpperCase())) {
+        matchedRow = row;
+        break;
+      }
+    }
+
+    if (!matchedRow) {
+      // Fallback with regex boundary filter
+      const regexPattern = new RegExp(`(^|[^a-zA-Z0-9_-])${targetCode}([^a-zA-Z0-9_-]|$)`, "i");
+      matchedRow = page.locator("table tbody tr, .class-card").filter({ hasText: regexPattern }).first();
+    }
+
+    await matchedRow.waitFor({ state: "visible", timeout: 15000 });
     await interceptor.dismissForbiddenToast();
-    await rowLocator.click();
+    await matchedRow.click();
 
     // 3. Wait for the Drawer to appear
     const drawer = page.locator(SELECTORS.classes.drawer).first();

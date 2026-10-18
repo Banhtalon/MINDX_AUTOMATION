@@ -14,6 +14,15 @@ export function calculateSha256(content: string | Buffer): string {
 }
 
 /**
+ * Compares current content against previously saved contentHash.
+ * Returns true if matching (no drift), false if content was edited after approval.
+ */
+export function verifyContentIntegrity(content: string, expectedHash?: string | null): boolean {
+  if (!expectedHash) return false;
+  return calculateSha256(content) === expectedHash;
+}
+
+/**
  * Returns the SQLite Database instance, initializing tables if needed.
  */
 export function getDb(): Database.Database {
@@ -366,6 +375,18 @@ export interface HomeworkSubmissionRecord {
 export const homeworkSubmissionRepo = {
   upsert(record: HomeworkSubmissionRecord) {
     const db = getDb();
+
+    // Strict ID integrity check: prevent reassigning submissionId to a different student
+    const existing = db
+      .prepare(`SELECT studentId, classId, sessionId FROM homework_submissions WHERE submissionId = ?`)
+      .get(record.submissionId) as { studentId: string; classId: string; sessionId: string } | undefined;
+
+    if (existing && existing.studentId !== record.studentId) {
+      throw new Error(
+        `[Integrity Violation] Không thể đổi chủ sở hữu submissionId '${record.submissionId}' (thuộc học viên '${existing.studentId}') sang học viên khác ('${record.studentId}').`
+      );
+    }
+
     const stmt = db.prepare(`
       INSERT INTO homework_submissions (
         classId, sessionId, studentId, submissionId, originalFileName,

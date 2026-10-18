@@ -7,6 +7,7 @@ export class BrowserManager {
   private static instance: BrowserManager | null = null;
   private context: BrowserContext | null = null;
   private activePage: Page | null = null;
+  private initPromise: Promise<BrowserContext> | null = null;
   private readonly profileDir: string;
   private readonly downloadDir: string;
 
@@ -31,40 +32,58 @@ export class BrowserManager {
 
   /**
    * Initializes or returns the existing persistent browser context.
-   * Auto-recovers if the context was closed manually.
+   * Uses Promise Locking (Mutex) to completely prevent race conditions
+   * when concurrent calls occur.
    */
   public async getContext(): Promise<BrowserContext> {
+    // If context is already healthy, return it
     if (this.context) {
-      // Check if context is still alive
       try {
         const pages = this.context.pages();
-        if (pages.length > 0) {
+        if (pages.length > 0 && !pages[0].isClosed()) {
           return this.context;
         }
+        // If context is alive but has 0 pages, create a page rather than killing the context
+        const newPage = await this.context.newPage();
+        this.activePage = newPage;
+        return this.context;
       } catch {
         this.context = null;
         this.activePage = null;
       }
     }
 
-    // Launch a fresh persistent context
-    this.context = await chromium.launchPersistentContext(this.profileDir, {
-      headless: config.headlessMode,
-      viewport: { width: 1400, height: 900 },
-      downloadsPath: this.downloadDir,
-      acceptDownloads: true,
-      args: [
-        "--disable-blink-features=AutomationControlled",
-        "--start-maximized",
-      ],
-    });
+    // If an initialization is already in flight, reuse the same promise
+    if (this.initPromise) {
+      return this.initPromise;
+    }
 
-    this.context.on("close", () => {
-      this.context = null;
-      this.activePage = null;
-    });
+    this.initPromise = (async () => {
+      try {
+        const ctx = await chromium.launchPersistentContext(this.profileDir, {
+          headless: config.headlessMode,
+          viewport: { width: 1400, height: 900 },
+          downloadsPath: this.downloadDir,
+          acceptDownloads: true,
+          args: [
+            "--disable-blink-features=AutomationControlled",
+            "--start-maximized",
+          ],
+        });
 
-    return this.context;
+        ctx.on("close", () => {
+          this.context = null;
+          this.activePage = null;
+        });
+
+        this.context = ctx;
+        return ctx;
+      } finally {
+        this.initPromise = null;
+      }
+    })();
+
+    return this.initPromise;
   }
 
   /**
@@ -99,6 +118,7 @@ export class BrowserManager {
       } finally {
         this.context = null;
         this.activePage = null;
+        this.initPromise = null;
       }
     }
   }

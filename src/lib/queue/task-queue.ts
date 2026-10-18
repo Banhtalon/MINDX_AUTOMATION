@@ -22,6 +22,10 @@ export interface TaskDefinition<T = unknown> {
   execute: () => Promise<T>;
 }
 
+interface InternalQueuedTask extends TaskDefinition {
+  reject: (err: Error) => void;
+}
+
 export interface QueuedTaskItem {
   id: string;
   jobType: TaskJobType;
@@ -46,7 +50,7 @@ export interface QueueStatus {
 
 export class SequentialTaskQueue {
   private static instance: SequentialTaskQueue | null = null;
-  private queue: TaskDefinition[] = [];
+  private queue: InternalQueuedTask[] = [];
   private taskHistory: QueuedTaskItem[] = [];
   private isProcessing = false;
   private isStopped = false;
@@ -72,6 +76,15 @@ export class SequentialTaskQueue {
    */
   public enqueue<T>(task: TaskDefinition<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
+      if (this.isStopped) {
+        reject(
+          new Error(
+            "QUEUE_STOPPED: Hàng đợi đang ở trạng thái Dừng khẩn cấp. Vui lòng nhấn 'Tiếp tục chạy' trước khi thêm tác vụ mới."
+          )
+        );
+        return;
+      }
+
       const historyItem: QueuedTaskItem = {
         id: task.id,
         jobType: task.jobType,
@@ -96,8 +109,9 @@ export class SequentialTaskQueue {
         message: `Đã xếp hàng tác vụ: ${task.description}`,
       });
 
-      const wrappedTask: TaskDefinition = {
+      const wrappedTask: InternalQueuedTask = {
         ...task,
+        reject,
         execute: async () => {
           try {
             historyItem.status = "RUNNING";
@@ -170,24 +184,36 @@ export class SequentialTaskQueue {
   }
 
   /**
-   * Emergency stop: halts processing of remaining tasks immediately.
+   * Emergency stop: halts processing immediately, drains pending queue,
+   * and rejects all pending promises without leaving hanging promises.
    */
   public stopQueue(): void {
     this.isStopped = true;
-    this.log({
-      jobId: "SYSTEM",
-      jobType: "CUSTOM",
-      level: "WARN",
-      message: "🚨 Đã kích hoạt lệnh DỪNG KHẨN CẤP (Stop Bot). Các tác vụ kế tiếp bị tạm ngắt.",
-    });
+    const cancelError = new Error(
+      "TASK_CANCELLED: Hàng đợi đã bị tạm dừng bởi giáo viên (Stop Bot)."
+    );
 
-    // Mark pending items as cancelled
-    for (const item of this.queue) {
+    const pendingTasks = [...this.queue];
+    this.queue = [];
+
+    for (const item of pendingTasks) {
       const hist = this.taskHistory.find((h) => h.id === item.id);
       if (hist && hist.status === "PENDING") {
         hist.status = "CANCELLED";
       }
+      try {
+        item.reject(cancelError);
+      } catch {
+        // Ignore already rejected
+      }
     }
+
+    this.log({
+      jobId: "SYSTEM",
+      jobType: "CUSTOM",
+      level: "WARN",
+      message: `🚨 Đã kích hoạt lệnh DỪNG KHẨN CẤP (Stop Bot). Đã hủy ${pendingTasks.length} tác vụ đang chờ.`,
+    });
 
     this.emitStatus();
   }
@@ -210,16 +236,24 @@ export class SequentialTaskQueue {
   }
 
   /**
-   * Clears all pending tasks in the queue.
+   * Clears all pending tasks in the queue and rejects their promises.
    */
   public clearQueue(): void {
-    for (const item of this.queue) {
+    const cancelError = new Error("TASK_CANCELLED: Hàng đợi đã bị xóa bởi người dùng.");
+    const pendingTasks = [...this.queue];
+    this.queue = [];
+
+    for (const item of pendingTasks) {
       const hist = this.taskHistory.find((h) => h.id === item.id);
       if (hist && hist.status === "PENDING") {
         hist.status = "CANCELLED";
       }
+      try {
+        item.reject(cancelError);
+      } catch {
+        // Ignore
+      }
     }
-    this.queue = [];
     this.emitStatus();
   }
 

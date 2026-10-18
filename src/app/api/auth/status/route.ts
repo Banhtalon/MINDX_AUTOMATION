@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import { taskQueue } from "@/lib/queue/task-queue";
 import { authService } from "@/lib/playwright/auth";
 import { getSafePublicConfig } from "@/lib/config";
+import { validateLocalRequest } from "@/lib/security/local-guard";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const securityCheck = validateLocalRequest(req);
+  if (securityCheck) return securityCheck;
+
   try {
     const config = getSafePublicConfig();
 

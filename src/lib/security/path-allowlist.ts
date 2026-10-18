@@ -1,12 +1,21 @@
+import fs from "node:fs";
 import path from "node:path";
 import { config } from "../config";
 
 /**
  * Normalizes a file/folder path for consistent comparison across platforms.
+ * Resolves symlinks and junctions (realpath) when the path exists.
  * On Windows, paths are case-insensitive.
  */
 function normalizePath(p: string): string {
-  const resolved = path.resolve(p);
+  let resolved = path.resolve(p);
+  if (fs.existsSync(resolved)) {
+    try {
+      resolved = fs.realpathSync(resolved);
+    } catch {
+      // Keep standard path.resolve
+    }
+  }
   return process.platform === "win32" ? resolved.toLowerCase() : resolved;
 }
 
@@ -22,7 +31,7 @@ export function getAllowedDirectories(): string[] {
 
 /**
  * Verifies if the target file or directory path is located inside one of the allowlisted paths.
- * Defends strictly against directory traversal attacks (e.g. ../../etc/passwd or C:\Windows).
+ * Defends strictly against directory traversal and symlink escape attacks.
  *
  * @param targetPath Absolute or relative path to check
  * @returns boolean true if path is allowed, false otherwise

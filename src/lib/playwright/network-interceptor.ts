@@ -14,30 +14,36 @@ export class NetworkInterceptor {
   }
 
   /**
-   * Automatically attempts to close any red .Forbidden or non-blocking notification toast
-   * in the bottom right corner so it doesn't obstruct clicks on action buttons.
+   * Automatically closes all red .Forbidden or obstructing notification toasts
+   * in the bottom right corner, ensuring they don't block button clicks.
+   * Verifies that toasts are actually dismissed from DOM.
    */
-  public async dismissForbiddenToast(): Promise<boolean> {
+  public async dismissForbiddenToast(): Promise<number> {
+    let dismissedCount = 0;
     try {
-      const toast = this.page.locator(SELECTORS.common.toastForbidden).first();
-      const isVisible = await toast.isVisible().catch(() => false);
+      const toasts = this.page.locator(SELECTORS.common.toastForbidden);
+      const count = await toasts.count().catch(() => 0);
 
-      if (isVisible) {
-        const closeBtn = toast.locator(SELECTORS.common.toastCloseButton).first();
-        if (await closeBtn.isVisible().catch(() => false)) {
-          await closeBtn.click({ timeout: 1000 }).catch(() => {});
-          return true;
+      for (let i = 0; i < count; i++) {
+        const toast = toasts.nth(i);
+        if (await toast.isVisible().catch(() => false)) {
+          const closeBtn = toast.locator(SELECTORS.common.toastCloseButton).first();
+          if (await closeBtn.isVisible().catch(() => false)) {
+            await closeBtn.click({ timeout: 1500 }).catch(() => {});
+            await toast.waitFor({ state: "hidden", timeout: 2000 }).catch(() => {});
+            dismissedCount++;
+          }
         }
       }
     } catch {
-      // Non-critical, ignore
+      // Non-critical background cleanup
     }
-    return false;
+    return dismissedCount;
   }
 
   /**
-   * Waits for a specific business API response and verifies HTTP status 200/201.
-   * Throws a descriptive error if the API returns 401, 403, or 500.
+   * Waits for a specific business API response and strictly verifies HTTP status 200/201.
+   * Throws a descriptive error if the API returns 401, 403, 500, or any non-2xx status.
    */
   public async waitForApiResponse(
     urlPattern: string | RegExp,
@@ -58,9 +64,10 @@ export class NetworkInterceptor {
     const status = response.status();
     const url = response.url();
 
-    if (status >= 400) {
+    // Strictly enforce 200 or 201 for business operations
+    if (status !== 200 && status !== 201) {
       throw new Error(
-        `[Network API Error] Business API '${url.slice(0, 100)}' failed with HTTP ${status}`
+        `[Network API Error] Business API '${url.slice(0, 100)}' failed with HTTP status ${status} (Expected 200/201)`
       );
     }
 
@@ -68,7 +75,7 @@ export class NetworkInterceptor {
   }
 
   /**
-   * Helper to ensure clean button clicking by clearing any obstructing toasts beforehand.
+   * Helper to ensure clean, unobscured button clicking by clearing any toasts beforehand.
    */
   public async clickSafe(selector: string, timeoutMs = 8000): Promise<void> {
     await this.dismissForbiddenToast();

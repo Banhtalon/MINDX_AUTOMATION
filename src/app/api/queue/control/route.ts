@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { taskQueue } from "@/lib/queue/task-queue";
+import { validateLocalRequest } from "@/lib/security/local-guard";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const securityCheck = validateLocalRequest(req);
+  if (securityCheck) return securityCheck;
+
   const status = taskQueue.getStatus();
   return NextResponse.json({
     success: true,
@@ -10,6 +14,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const securityCheck = validateLocalRequest(req);
+  if (securityCheck) return securityCheck;
+
   try {
     const body = await req.json().catch(() => ({}));
     const action = body.action as "stop" | "resume" | "clear";

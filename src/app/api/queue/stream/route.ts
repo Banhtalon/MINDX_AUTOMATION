@@ -1,9 +1,13 @@
 import { taskQueue } from "@/lib/queue/task-queue";
 import type { JobLogRecord } from "@/lib/db/sqlite";
+import { validateLocalRequest } from "@/lib/security/local-guard";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const securityCheck = validateLocalRequest(req);
+  if (securityCheck) return securityCheck;
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

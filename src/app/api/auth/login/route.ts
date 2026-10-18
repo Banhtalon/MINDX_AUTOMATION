@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { taskQueue } from "@/lib/queue/task-queue";
 import { authService } from "@/lib/playwright/auth";
+import { validateLocalRequest } from "@/lib/security/local-guard";
 
 export async function POST(req: Request) {
+  const securityCheck = validateLocalRequest(req);
+  if (securityCheck) return securityCheck;
+
   try {
     const body = await req.json().catch(() => ({}));
     const system = (body.system || "LMS").toUpperCase() as "TEACHING" | "LMS";
