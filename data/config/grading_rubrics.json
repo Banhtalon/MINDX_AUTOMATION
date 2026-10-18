@@ -1,0 +1,133 @@
+[
+  {
+    "rubricId": "PTA_SESSION_02",
+    "courseCode": "PTA",
+    "sessionNumber": 2,
+    "assignmentTitle": "Bài thực hành: Tính diện tích hình tròn và tính tuổi",
+    "assignmentPrompt": "Yêu cầu: 1. Nhập vào bán kính r từ bàn phím, tính và in diện tích hình tròn (S = 3.14 * r * r). 2. Nhập năm sinh của người dùng, tính tuổi hiện tại và in ra màn hình kèm thông điệp rõ ràng.",
+    "maxTotalScore": 100,
+    "criteria": [
+      {
+        "criterionId": "CRIT_01",
+        "name": "Nhập xuất dữ liệu (Input/Output)",
+        "maxPoints": 25,
+        "description": "Sử dụng đúng hàm input() để lấy dữ liệu từ bàn phím và in kết quả bằng print().",
+        "expectedSnippetOrConcept": "input(), print()"
+      },
+      {
+        "criterionId": "CRIT_02",
+        "name": "Ép kiểu dữ liệu (Type Casting)",
+        "maxPoints": 25,
+        "description": "Ép kiểu dữ liệu nhập vào sang float() hoặc int() trước khi thực hiện phép tính số học.",
+        "expectedSnippetOrConcept": "int(input(...)) hoặc float(input(...))"
+      },
+      {
+        "criterionId": "CRIT_03",
+        "name": "Tính toán logic & Độ chính xác",
+        "maxPoints": 30,
+        "description": "Công thức tính diện tích hình tròn chính xác (3.14 * r ** 2 hoặc math.pi * r * r) và công thức tính tuổi đúng.",
+        "expectedSnippetOrConcept": "3.14 * r * r hoặc math.pi"
+      },
+      {
+        "criterionId": "CRIT_04",
+        "name": "Quy chuẩn mã nguồn (Clean Code & Comments)",
+        "maxPoints": 20,
+        "description": "Đặt tên biến có nghĩa, code thụt lề rõ ràng, có ghi chú giải thích thuật toán.",
+        "expectedSnippetOrConcept": "Tên biến tiếng Anh/tiếng Việt rõ nghĩa, comment #"
+      }
+    ]
+  },
+  {
+    "rubricId": "PTA_SESSION_03",
+    "courseCode": "PTA",
+    "sessionNumber": 3,
+    "assignmentTitle": "Bài tập: Xếp loại học sinh & Kiểm tra năm nhuận",
+    "assignmentPrompt": "Yêu cầu: Nhập điểm số học sinh (0-10), dùng if/elif/else để xếp loại: Giỏi (>= 8.0), Khá (6.5 - 7.9), Trung bình (5.0 - 6.4), Yếu (< 5.0). Kiểm tra năm nhuận (chia hết cho 400 hoặc chia hết cho 4 nhưng không chia hết cho 100).",
+    "maxTotalScore": 100,
+    "criteria": [
+      {
+        "criterionId": "CRIT_01",
+        "name": "Cấu trúc rẽ nhánh If/Elif/Else",
+        "maxPoints": 35,
+        "description": "Sử dụng đúng cú pháp if, elif và else, thụt lề chuẩn xác.",
+        "expectedSnippetOrConcept": "if ... elif ... else:"
+      },
+      {
+        "criterionId": "CRIT_02",
+        "name": "Toán tử so sánh & Logic",
+        "maxPoints": 35,
+        "description": "Sử dụng đúng toán tử >=, <=, and, or, % để kiểm tra điều kiện điểm và năm nhuận.",
+        "expectedSnippetOrConcept": "and, or, % 4 == 0"
+      },
+      {
+        "criterionId": "CRIT_03",
+        "name": "Xử lý biên & Trải nghiệm người dùng",
+        "maxPoints": 30,
+        "description": "Kiểm tra điểm ngoài khoảng 0-10, thông báo kết quả thân thiện và rõ ràng.",
+        "expectedSnippetOrConcept": "Kiểm tra điểm hợp lệ, f-string"
+      }
+    ]
+  },
+  {
+    "rubricId": "JSB_SESSION_03",
+    "courseCode": "JSB",
+    "sessionNumber": 3,
+    "assignmentTitle": "Bài tập: Xây dựng Thanh điều hướng Navbar và Lưới sản phẩm với Flexbox",
+    "assignmentPrompt": "Yêu cầu: Thiết kế giao diện Navbar ngang có logo bên trái, menu ở giữa và nút Login bên phải bằng Flexbox. Bên dưới là danh sách 4 thẻ sản phẩm căn đều hai bên.",
+    "maxTotalScore": 100,
+    "criteria": [
+      {
+        "criterionId": "CRIT_01",
+        "name": "Bố cục Flexbox Navbar",
+        "maxPoints": 35,
+        "description": "Sử dụng display: flex, justify-content: space-between và align-items: center cho Navbar.",
+        "expectedSnippetOrConcept": "display: flex, justify-content: space-between"
+      },
+      {
+        "criterionId": "CRIT_02",
+        "name": "Lưới thẻ sản phẩm & Flex-wrap",
+        "maxPoints": 35,
+        "description": "Sử dụng flex-wrap: wrap hoặc gap để bố trí đều các thẻ sản phẩm.",
+        "expectedSnippetOrConcept": "flex-wrap, gap"
+      },
+      {
+        "criterionId": "CRIT_03",
+        "name": "Màu sắc, Box Shadow & Thẩm mỹ UI",
+        "maxPoints": 30,
+        "description": "Màu sắc hài hòa, có hiệu ứng hover nút bấm và bóng đổ nhẹ cho thẻ.",
+        "expectedSnippetOrConcept": "box-shadow, :hover"
+      }
+    ]
+  },
+  {
+    "rubricId": "SB_SESSION_03",
+    "courseCode": "SB",
+    "sessionNumber": 3,
+    "assignmentTitle": "Bài tập: Game Mèo Bắt Chuột với Cảm biến Bàn phím",
+    "assignmentPrompt": "Yêu cầu trong Scratch: Nhân vật Mèo di chuyển bằng 4 phím mũi tên. Nhân vật Chuột xuất hiện ngẫu nhiên. Khi Mèo chạm Chuột (touching), phát âm thanh Meow và Chuột biến mất sang vị trí mới.",
+    "maxTotalScore": 100,
+    "criteria": [
+      {
+        "criterionId": "CRIT_01",
+        "name": "Điều khiển 4 phím mũi tên",
+        "maxPoints": 40,
+        "description": "Khối lệnh sự kiện hoặc cảm biến phím điều khiển Mèo đi lên, xuống, trái, phải chính xác.",
+        "expectedSnippetOrConcept": "key pressed, change x by, change y by"
+      },
+      {
+        "criterionId": "CRIT_02",
+        "name": "Khối lệnh Cảm biến va chạm (Touching)",
+        "maxPoints": 35,
+        "description": "Sử dụng khối lệnh if touching [Mouse] then để phát hiện Mèo bắt được Chuột.",
+        "expectedSnippetOrConcept": "touching, if-then"
+      },
+      {
+        "criterionId": "CRIT_03",
+        "name": "Âm thanh & Vị trí ngẫu nhiên",
+        "maxPoints": 25,
+        "description": "Phát âm thanh và đưa Chuột tới vị trí ngẫu nhiên (go to random position).",
+        "expectedSnippetOrConcept": "play sound, pick random, go to"
+      }
+    ]
+  }
+]

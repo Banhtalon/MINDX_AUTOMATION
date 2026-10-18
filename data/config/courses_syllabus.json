@@ -1,0 +1,327 @@
+[
+  {
+    "courseCode": "PTA",
+    "courseName": "Python Starter - Khám phá lập trình Python",
+    "description": "Khóa học nền tảng lập trình Python dành cho học sinh cấp 2-3.",
+    "sessions": [
+      {
+        "sessionNumber": 1,
+        "topic": "Làm quen với Python & Cài đặt môi trường",
+        "keyKnowledge": ["Cài đặt Python & VS Code", "Lệnh print()", "Comment trong code", "Kiểu dữ liệu cơ bản (str, int, float)"],
+        "homeworkBrief": "In ra màn hình thông tin cá nhân và một bài thơ ngắn."
+      },
+      {
+        "sessionNumber": 2,
+        "topic": "Biến số, Kiểu dữ liệu & Nhập xuất dữ liệu (Input/Output)",
+        "keyKnowledge": ["Biến số và quy tắc đặt tên", "Hàm input()", "Ép kiểu dữ liệu int(), float(), str()", "Toán tử số học cơ bản (+, -, *, /, //, %)"],
+        "homeworkBrief": "Viết chương trình tính diện tích hình tròn và tính tuổi của người dùng."
+      },
+      {
+        "sessionNumber": 3,
+        "topic": "Cấu trúc điều kiện If - Elif - Else",
+        "keyKnowledge": ["Toán tử so sánh (==, !=, >, <, >=, <=)", "Toán tử logic (and, or, not)", "Cú pháp rẽ nhánh if/elif/else", "Thụt lề (indentation)"],
+        "homeworkBrief": "Viết chương trình xếp loại học sinh theo điểm số và kiểm tra năm nhuận."
+      },
+      {
+        "sessionNumber": 4,
+        "topic": "Vòng lặp For & Hàm range()",
+        "keyKnowledge": ["Cú pháp vòng lặp for", "Hàm range(start, stop, step)", "Vòng lặp lồng nhau", "Ứng dụng duyệt số và vẽ hình sao"],
+        "homeworkBrief": "In bảng cửu chương và tính tổng các số chẵn từ 1 đến N."
+      },
+      {
+        "sessionNumber": 5,
+        "topic": "Vòng lặp While & Lệnh Break / Continue",
+        "keyKnowledge": ["Cú pháp while", "Điều kiện dừng lặp và vòng lặp vô tận", "Lệnh break và continue", "Trò chơi đoán số bí mật"],
+        "homeworkBrief": "Viết game Đoán số ngẫu nhiên với số lần đoán giới hạn."
+      },
+      {
+        "sessionNumber": 6,
+        "topic": "Cấu trúc dữ liệu Danh sách (List)",
+        "keyKnowledge": ["Khái niệm List và Indexing", "Các phương thức: append, insert, pop, remove", "Duyệt List bằng vòng lặp", "Hàm len, max, min, sum"],
+        "homeworkBrief": "Xây dựng ứng dụng Quản lý danh sách mua sắm (Shopping List)."
+      },
+      {
+        "sessionNumber": 7,
+        "topic": "Cấu trúc dữ liệu Từ điển (Dictionary)",
+        "keyKnowledge": ["Khái niệm Key - Value", "Truy xuất và thêm/sửa/xóa phần tử", "Phương thức: keys(), values(), items()", "List các Dictionary"],
+        "homeworkBrief": "Tạo danh bạ điện thoại đơn giản cho phép tìm kiếm và thêm số mới."
+      },
+      {
+        "sessionNumber": 8,
+        "topic": "Hàm trong Python (Functions)",
+        "keyKnowledge": ["Từ khóa def và tên hàm", "Tham số (parameters) và đối số (arguments)", "Từ khóa return và phạm vi biến (scope)"],
+        "homeworkBrief": "Viết bộ hàm tính toán hình học (chu vi, diện tích hình chữ nhật, tam giác)."
+      },
+      {
+        "sessionNumber": 9,
+        "topic": "Thao tác với Chuỗi ký tự (String Methods)",
+        "keyKnowledge": ["Cắt chuỗi (Slicing)", "Các phương thức upper, lower, split, join, replace", "Định dạng f-string nâng cao"],
+        "homeworkBrief": "Viết chương trình đếm từ, chuẩn hóa họ tên và kiểm tra chuỗi đối xứng (Palindrome)."
+      },
+      {
+        "sessionNumber": 10,
+        "topic": "Thư viện chuẩn: Math, Random & Time",
+        "keyKnowledge": ["Từ khóa import", "Thư viện math (sqrt, pow, ceil, floor)", "Thư viện random (randint, choice, shuffle)", "Đồng hồ bấm giờ đơn giản"],
+        "homeworkBrief": "Xây dựng trò chơi Kéo - Búa - Bao thi đấu với máy tính."
+      },
+      {
+        "sessionNumber": 11,
+        "topic": "Đọc và Ghi file văn bản (File I/O)",
+        "keyKnowledge": ["Cú pháp with open()", "Chế độ mở file ('r', 'w', 'a')", "Đọc từng dòng readlines()", "Ghi log dữ liệu"],
+        "homeworkBrief": "Lưu lịch sử kết quả game Đoán số vào file text."
+      },
+      {
+        "sessionNumber": 12,
+        "topic": "Xử lý Ngoại lệ (Try - Except)",
+        "keyKnowledge": ["Khái niệm Exception và Error", "Cú pháp try - except - finally", "Bắt các lỗi phổ biến: ValueError, ZeroDivisionError, FileNotFoundError"],
+        "homeworkBrief": "Cải tiến ứng dụng máy tính cầm tay, chống lỗi chia cho 0 và nhập chữ thay vì số."
+      },
+      {
+        "sessionNumber": 13,
+        "topic": "Lập kế hoạch & Xây dựng Sản phẩm Cuối khóa (SPCK)",
+        "keyKnowledge": ["Phân tích yêu cầu dự án", "Thiết kế luồng hoạt động", "Ghép nối các module hàm, list, dict và file I/O"],
+        "homeworkBrief": "Hoàn thiện mã nguồn dự án SPCK và chuẩn bị slide thuyết trình."
+      },
+      {
+        "sessionNumber": 14,
+        "topic": "Thuyết trình & Báo cáo Sản phẩm Cuối khóa (SPCK Demo Day)",
+        "keyKnowledge": ["Kỹ năng thuyết trình sản phẩm", "Demo chạy trực tiếp tính năng", "Trả lời phản biện của giáo viên và phụ huynh"],
+        "homeworkBrief": "Đóng gói toàn bộ mã nguồn, ảnh chụp màn hình, slide và video demo dự án."
+      }
+    ]
+  },
+  {
+    "courseCode": "PTB",
+    "courseName": "Python Intermediate - Lập trình Giao diện & Ứng dụng",
+    "description": "Lập trình hướng đối tượng (OOP), phát triển Desktop App với PyQt6 và Pygame.",
+    "sessions": [
+      {
+        "sessionNumber": 1,
+        "topic": "Lập trình Hướng đối tượng OOP: Class & Object",
+        "keyKnowledge": ["Class, Object, Constructor __init__", "Thuộc tính và Phương thức", "Từ khóa self"],
+        "homeworkBrief": "Xây dựng class Student và class Classroom để quản lý học sinh."
+      },
+      {
+        "sessionNumber": 2,
+        "topic": "OOP: Kế thừa (Inheritance) & Đa hình (Polymorphism)",
+        "keyKnowledge": ["Lớp cha, Lớp con, super()", "Ghi đè phương thức (Override)", "Đóng gói (Encapsulation)"],
+        "homeworkBrief": "Tạo hệ thống quản lý động vật trong sở thú bằng kế thừa."
+      },
+      {
+        "sessionNumber": 3,
+        "topic": "Giới thiệu PyQt6 & Thiết kế UI với Qt Designer",
+        "keyKnowledge": ["Cài đặt PyQt6 và pyqt6-tools", "Qt Designer: QLabel, QPushButton, QLineEdit", "Chuyển file .ui sang .py"],
+        "homeworkBrief": "Thiết kế giao diện Đăng nhập đẹp mắt và kết nối nút bấm."
+      },
+      {
+        "sessionNumber": 4,
+        "topic": "PyQt6: Tín hiệu & Khe cắm (Signals and Slots)",
+        "keyKnowledge": ["Kết nối sự kiện clicked.connect()", "Xử lý sự kiện textChanged", "Hiển thị thông báo QMessageBox"],
+        "homeworkBrief": "Tạo ứng dụng Máy tính bỏ túi với giao diện PyQt6 hoàn chỉnh."
+      },
+      {
+        "sessionNumber": 5,
+        "topic": "PyQt6: Bảng dữ liệu QTableWidget & Style QSS",
+        "keyKnowledge": ["QTableWidget hiển thị danh sách", "Tùy biến giao diện bằng file .qss (CSS cho Qt)", "Bộ chọn màu và icon"],
+        "homeworkBrief": "Xây dựng phần mềm Quản lý chi tiêu gia đình có bảng hiển thị và đổi màu giao diện."
+      },
+      {
+        "sessionNumber": 6,
+        "topic": "Giới thiệu Pygame: Khởi tạo Cửa sổ & Vòng lặp Game",
+        "keyKnowledge": ["pygame.init(), pygame.display.set_mode()", "Game Loop và FPS Clock", "Bắt sự kiện bàn phím/chuột"],
+        "homeworkBrief": "Tạo màn hình game, vẽ hình chữ nhật di chuyển bằng 4 phím mũi tên."
+      },
+      {
+        "sessionNumber": 7,
+        "topic": "Pygame: Tải Sprite, Animation & Xử lý va chạm",
+        "keyKnowledge": ["pygame.image.load(), convert_alpha()", "pygame.Rect và hàm colliderect()", "Âm thanh hiệu ứng pygame.mixer"],
+        "homeworkBrief": "Tạo game Hứng táo rơi từ trên trời xuống có đếm điểm và âm thanh."
+      },
+      {
+        "sessionNumber": 8,
+        "topic": "Hoàn thiện Dự án Game / Desktop App SPCK",
+        "keyKnowledge": ["Tổ chức code theo module", "Màn hình Game Over, Restart", "Đóng gói ứng dụng thành file .exe"],
+        "homeworkBrief": "Hoàn thiện toàn bộ tính năng SPCK và đóng gói file chạy demo."
+      }
+    ]
+  },
+  {
+    "courseCode": "JSB",
+    "courseName": "Web Development Basic - HTML, CSS & JavaScript",
+    "description": "Khóa học nhập môn lập trình Web Frontend hiện đại.",
+    "sessions": [
+      {
+        "sessionNumber": 1,
+        "topic": "Cấu trúc HTML5 & Các thẻ ngữ nghĩa",
+        "keyKnowledge": ["Thẻ tiêu đề h1-h6, p, img, a", "Danh sách ul, ol, li", "Thẻ ngữ nghĩa header, nav, main, footer"],
+        "homeworkBrief": "Tạo trang web giới thiệu bản thân đơn giản bằng HTML5."
+      },
+      {
+        "sessionNumber": 2,
+        "topic": "CSS3 Styling: Màu sắc, Font chữ & Box Model",
+        "keyKnowledge": ["Bộ chọn CSS (Tag, Class, ID)", "Box Model (Margin, Border, Padding, Content)", "Màu nền, gradient và Google Fonts"],
+        "homeworkBrief": "Trang trí trang web giới thiệu bản thân với bố cục đẹp mắt."
+      },
+      {
+        "sessionNumber": 3,
+        "topic": "CSS Flexbox: Bố cục Layout hiện đại",
+        "keyKnowledge": ["display: flex, flex-direction", "justify-content, align-items, flex-wrap", "Responsive cơ bản với Media Queries"],
+        "homeworkBrief": "Tạo thanh điều hướng Navbar và lưới hiển thị danh mục sản phẩm."
+      },
+      {
+        "sessionNumber": 4,
+        "topic": "JavaScript Cơ bản: Biến, Hàm & Sự kiện DOM",
+        "keyKnowledge": ["let, const, kiểu dữ liệu", "Hàm function và Arrow Function", "addEventListener('click')"],
+        "homeworkBrief": "Tạo nút chuyển đổi chế độ Sáng / Tối (Dark Mode Toggle)."
+      },
+      {
+        "sessionNumber": 5,
+        "topic": "DOM Manipulation: Tương tác động trên trang Web",
+        "keyKnowledge": ["document.querySelector, getElementById", "Thay đổi innerHTML, textContent, style", "Tạo và xóa phần tử createElement, appendChild"],
+        "homeworkBrief": "Xây dựng ứng dụng Danh sách việc cần làm (To-Do List) có tính năng thêm/xóa."
+      },
+      {
+        "sessionNumber": 6,
+        "topic": "Fetch API & Tương tác dữ liệu JSON",
+        "keyKnowledge": ["Bất đồng bộ async/await", "Hàm fetch() gọi dữ liệu từ Public API", "Render danh sách động"],
+        "homeworkBrief": "Tạo ứng dụng Xem thông tin thời tiết hoặc Xem danh ngôn ngẫu nhiên."
+      },
+      {
+        "sessionNumber": 7,
+        "topic": "Hoàn thiện Website Sản phẩm Cuối khóa",
+        "keyKnowledge": ["Tối ưu Responsive trên điện thoại", "Hiệu ứng chuyển động CSS Animation", "Deploy trang web lên Vercel / GitHub Pages"],
+        "homeworkBrief": "Deploy sản phẩm SPCK lên Internet và chuẩn bị bài thuyết trình."
+      }
+    ]
+  },
+  {
+    "courseCode": "SB",
+    "courseName": "Scratch Basic - Lập trình Khối Kéo Thả Sáng Tạo",
+    "description": "Làm quen với tư duy lập trình sáng tạo qua Scratch dành cho lứa tuổi tiểu học.",
+    "sessions": [
+      {
+        "sessionNumber": 1,
+        "topic": "Làm quen với Giao diện Scratch & Sân khấu",
+        "keyKnowledge": ["Khu vực nhân vật (Sprites) & Phông nền (Backdrops)", "Khối lệnh Chuyển động (Motion)", "Khối lệnh Hiển thị (Looks)"],
+        "homeworkBrief": "Lập trình nhân vật Mèo Scratch di chuyển và nói lời chào."
+      },
+      {
+        "sessionNumber": 2,
+        "topic": "Sự kiện & Vòng lặp cơ bản",
+        "keyKnowledge": ["Khi bấm vào lá cờ xanh", "Vòng lặp liên tục (forever) và lặp lại N lần", "Âm thanh và hiệu ứng đồ họa"],
+        "homeworkBrief": "Tạo hoạt cảnh ban nhạc động vật chơi nhạc cụ."
+      },
+      {
+        "sessionNumber": 3,
+        "topic": "Cảm biến & Điều khiển bàn phím",
+        "keyKnowledge": ["Khi phím ... được bấm", "Khối lệnh Cảm biến (Sensing: touching, distance)", "Khối lệnh Nếu ... thì (If then)"],
+        "homeworkBrief": "Lập trình game Mèo bắt chuột điều khiển bằng 4 phím mũi tên."
+      },
+      {
+        "sessionNumber": 4,
+        "topic": "Biến số & Hệ thống Điểm số",
+        "keyKnowledge": ["Tạo biến số (Variables)", "Tăng/giảm điểm khi va chạm", "Bộ đếm thời gian (Timer)"],
+        "homeworkBrief": "Thêm thanh máu (HP) và điểm số cho game Mèo bắt chuột."
+      },
+      {
+        "sessionNumber": 5,
+        "topic": "Thông điệp (Broadcast) & Chuyển màn chơi",
+        "keyKnowledge": ["Phát thông điệp và Khi nhận thông điệp", "Đổi phông nền khi chiến thắng/thua cuộc", "Tạo bản sao (Clones)"],
+        "homeworkBrief": "Tạo game Hứng đồ vật với nhiều vật thể rơi ngẫu nhiên dùng Clones."
+      },
+      {
+        "sessionNumber": 6,
+        "topic": "Hoàn thiện Dự án Game Scratch SPCK",
+        "keyKnowledge": ["Thêm màn hình Start, Hướng dẫn chơi, Game Over", "Thêm âm thanh nền và hiệu ứng chiến thắng"],
+        "homeworkBrief": "Đóng gói file .sb3 của dự án game và chuẩn bị thuyết trình."
+      }
+    ]
+  },
+  {
+    "courseCode": "GB",
+    "courseName": "GameMaker Studio - Lập trình Game 2D Đột Phá",
+    "description": "Lập trình Game 2D chuyên nghiệp với GameMaker và ngôn ngữ GML.",
+    "sessions": [
+      {
+        "sessionNumber": 1,
+        "topic": "Làm quen GameMaker: Sprites, Objects & Rooms",
+        "keyKnowledge": ["Tạo Sprite và đặt tâm Origin", "Tạo Object và đặt vào Room", "Sự kiện Create và Step"],
+        "homeworkBrief": "Tạo nhân vật di chuyển cơ bản trên màn hình."
+      },
+      {
+        "sessionNumber": 2,
+        "topic": "Ngôn ngữ GML: Biến số, Vận tốc & Bàn phím",
+        "keyKnowledge": ["keyboard_check, keyboard_check_pressed", "x += hspeed, y += vspeed", "Khái niệm friction và gravity"],
+        "homeworkBrief": "Xây dựng cơ chế nhảy (Jump) và trọng lực cho nhân vật Platformer."
+      },
+      {
+        "sessionNumber": 3,
+        "topic": "Xử lý Va chạm với Tường & Đối thủ",
+        "keyKnowledge": ["place_meeting(x, y, obj_wall)", "Kiểm tra va chạm từng pixel", "Sự kiện Collision"],
+        "homeworkBrief": "Hoàn thiện cơ chế di chuyển mượt mà không bị lún tường."
+      },
+      {
+        "sessionNumber": 4,
+        "topic": "Hệ thống Máu, Bắn đạn & Âm thanh",
+        "keyKnowledge": ["instance_create_layer bắn đạn", "Trừ máu đối thủ và hủy instance_destroy", "audio_play_sound"],
+        "homeworkBrief": "Tạo game Bắn phi thuyền không gian với nhiều loại quái vật."
+      },
+      {
+        "sessionNumber": 5,
+        "topic": "Giao diện UI, Camera View & SPCK",
+        "keyKnowledge": ["Sự kiện Draw GUI để vẽ máu và điểm", "Thiết lập Camera theo chân nhân vật", "Chuyển Room màn tiếp theo"],
+        "homeworkBrief": "Hoàn thiện toàn bộ màn chơi game và xuất file .yyz demo."
+      }
+    ]
+  },
+  {
+    "courseCode": "ROB",
+    "courseName": "Robotics & IoT - Lập trình Phần cứng Thông minh",
+    "description": "Lập trình vi điều khiển, cảm biến và mạch điện tử thông minh.",
+    "sessions": [
+      {
+        "sessionNumber": 1,
+        "topic": "Làm quen với Mạch vi điều khiển & Đèn LED",
+        "keyKnowledge": ["Cấu trúc chân GPIO", "Lệnh digitalWrite, pinMode", "Hàm delay"],
+        "homeworkBrief": "Lập trình hiệu ứng đèn giao thông và đèn nhấp nháy theo nhịp."
+      },
+      {
+        "sessionNumber": 2,
+        "topic": "Cảm biến Khoảng cách Siêu âm & Còi Buzzer",
+        "keyKnowledge": ["Nguyên lý cảm biến siêu âm (Trigger / Echo)", "Đo khoảng cách vật cản", "Phát âm thanh cảnh báo"],
+        "homeworkBrief": "Xây dựng hệ thống Cảnh báo lùi xe thông minh."
+      },
+      {
+        "sessionNumber": 3,
+        "topic": "Động cơ Servo & Xe tự hành tránh vật cản",
+        "keyKnowledge": ["Điều khiển góc quay Servo", "Động cơ DC và mạch cầu H L298N", "Thuật toán tránh vật cản"],
+        "homeworkBrief": "Lập trình robot xe tự hành vượt mê cung."
+      }
+    ]
+  },
+  {
+    "courseCode": "CSI",
+    "courseName": "Computer Science Intensive - Cấu trúc Dữ liệu & Giải thuật",
+    "description": "Nâng cao tư duy thuật toán, luyện thi và nền tảng khoa học máy tính.",
+    "sessions": [
+      {
+        "sessionNumber": 1,
+        "topic": "Độ phức tạp thuật toán (Big-O Notation)",
+        "keyKnowledge": ["Đánh giá thời gian O(1), O(N), O(N^2), O(log N)", "Tối ưu hóa không gian bộ nhớ"],
+        "homeworkBrief": "Phân tích và tối ưu hóa 3 thuật toán tìm kiếm phổ biến."
+      },
+      {
+        "sessionNumber": 2,
+        "topic": "Thuật toán Đệ quy & Quay lui (Backtracking)",
+        "keyKnowledge": ["Điều kiện dừng (Base case)", "Cây đệ quy", "Bài toán N quân hậu và Sinh hoán vị"],
+        "homeworkBrief": "Giải bài toán Tháp Hà Nội và giải mê cung bằng đệ quy."
+      },
+      {
+        "sessionNumber": 3,
+        "topic": "Quy hoạch động (Dynamic Programming)",
+        "keyKnowledge": ["Ghi nhớ trạng thái (Memoization)", "Bảng quy hoạch động (Tabulation)", "Dãy Fibonacci, Bài toán Cái túi (Knapsack)"],
+        "homeworkBrief": "Giải bài toán Cái túi 0/1 và bài toán Dãy con tăng dài nhất (LIS)."
+      }
+    ]
+  }
+]

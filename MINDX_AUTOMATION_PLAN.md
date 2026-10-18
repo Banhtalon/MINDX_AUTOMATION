@@ -292,13 +292,13 @@ D:\SPCK_MindX\VT-C4K-PTA13\
 ### GIAI ĐOẠN 0: KHẢO SÁT THỰC TẾ (RECON) & KIỂM CHỨNG DOM / API / ID TRÊN LMS & TEACHING
 > **Mục tiêu:** Chạy kịch bản khảo sát thực tế trên 1 lớp học thật để xác minh cơ chế đăng nhập, lấy chính xác cấu trúc ID (`classId`, `sessionId`, `studentId`, `submissionId`), kiểm tra màn hình lưu nhận xét sau buổi học và hành vi lưu dữ liệu.
 
-* [ ] **TASK-0.1:** Viết script khảo sát độc lập (`scripts/recon.ts`) mở trình duyệt Chromium với Persistent Context để đăng nhập thử vào `TEACHING_URL` và `LMS_URL`.
+* [x] **TASK-0.1:** Viết script khảo sát độc lập (`scripts/recon.ts`) mở trình duyệt Chromium với Persistent Context để đăng nhập thử vào `TEACHING_URL` và `LMS_URL`.
 * [ ] **TASK-0.2:** Lắng nghe Network API / GraphQL và kiểm tra DOM trên trang Teaching & LMS để ghi nhận cách lấy 4 mã định danh gốc: `classId`, `sessionId`, `studentId`, `submissionId`.
 * [ ] **TASK-0.3:** Khảo sát thực tế màn hình **Nhập nhận xét sau buổi học**:
   * [ ] Xác định đường dẫn/tab chính xác nơi giáo viên nhập nhận xét từng buổi.
   * [ ] Kiểm tra hành vi khi bấm Lưu nhận xét (Ghi đè vào ô nhận xét hiện tại hay Cộng dồn tạo bản ghi mới).
 * [ ] **TASK-0.4:** Kiểm tra thực tế cơ chế phân trang trên tab `Học viên` và tab `Chấm bài`, cách hoạt động của vùng Rich Text Editor `Nhận xét` và API trả về khi bấm `Lưu`.
-* [ ] **TASK-0.5:** Chạy thử 1 request mẫu gọi `gemini-3.5-flash-lite` với `GEMINI_API_KEY` trong `.env.local` để xác nhận kết nối và tốc độ phản hồi Structured Outputs.
+* [x] **TASK-0.5:** Chạy thử 1 request mẫu gọi `gemini-3.5-flash-lite` với `GEMINI_API_KEY` trong `.env.local` để xác nhận kết nối và tốc độ phản hồi Structured Outputs.
 
 > **✅ ĐIỀU KIỆN NGHIỆM THU GIAI ĐOẠN 0:** Đăng nhập tự động thành công; trích xuất được ID thật của 1 lớp học; xác định chính xác Selector và API của cả 3 màn hình (Nhận xét buổi học, Chấm bài tập, SPCK).
 
@@ -306,31 +306,31 @@ D:\SPCK_MindX\VT-C4K-PTA13\
 
 ### GIAI ĐOẠN 1: KHỞI TẠO DỰ ÁN, CẤU HÌNH `.ENV`, SQLITE STATE DB & KHO GIÁO TRÌNH (SEED DATA)
 
-* [ ] **TASK-1.1:** Khởi tạo dự án Next.js 15+ (App Router, TypeScript, Tailwind CSS) và cấu hình chỉ lắng nghe trên `127.0.0.1:3000`.
-* [ ] **TASK-1.2:** Cài đặt các thư viện giao diện: `lucide-react`, `clsx`, `tailwind-merge`, và các component cơ bản (Button, Input, Select, Tabs, Table, Dialog, Badge, Progress, Drawer).
-* [ ] **TASK-1.3:** Cài đặt các thư viện Backend, Database & Automation: `playwright`, `better-sqlite3` (kèm `@types/better-sqlite3`), `@google/genai`, `adm-zip` (kèm `@types/adm-zip`), `xlsx` (xuất file Excel bảng điểm), `zod`.
-* [ ] **TASK-1.4:** Cấu hình `.gitignore` (loại trừ `.env.local`, `.playwright-profile/`, `temp_submissions/`, `data/mindx_bot.db`) và tạo `src/lib/config.ts` đọc biến môi trường:
-  * [ ] `TEACHING_URL` (Link hệ thống lịch dạy Teaching)
-  * [ ] `LMS_URL` (Link hệ thống MindX LMS)
-  * [ ] `MINDX_USERNAME` (Tài khoản giáo viên)
-  * [ ] `MINDX_PASSWORD` (Mật khẩu giáo viên)
-  * [ ] `GEMINI_API_KEY` (API Key của Google AI Studio)
-  * [ ] `GEMINI_MODEL` (Mặc định: `gemini-3.5-flash-lite`)
-  * [ ] `HEADLESS_MODE` (Mặc định: `false` để giáo viên nhìn thấy trình duyệt chạy)
-  * [ ] `ALLOWED_LOCAL_DIRS` (Danh sách thư mục trên máy tính được phép đọc khi quét SPCK)
-* [ ] **TASK-1.5:** Xây dựng cơ sở dữ liệu trạng thái bằng **SQLite** (`src/lib/db/sqlite.ts` $\rightarrow$ `data/mindx_bot.db`):
-  * [ ] Bảng `classes_sessions`: Lưu thông tin lớp, danh sách các buổi học thực tế (`classId`, `sessionId`, `sessionNumber`, `topic`).
-  * [ ] Bảng `students`: Lưu danh sách học viên theo `studentId`, `classId`, `fullName`, `isActive`.
-  * [ ] Bảng `session_feedbacks`: Lưu trạng thái điểm danh, `quickTagsJson`, `teacherNote`, nhận xét 3 phần của AI, `finalText`, `contentHash`, trạng thái (`DRAFT`, `APPROVED`, `SAVING`, `VERIFIED`, `FAILED`) và thời gian đối chiếu.
-  * [ ] Bảng `homework_submissions`: Lưu chuỗi liên kết `submissionId → studentId → localFilePath → fileHash`, trạng thái đọc file (`PARSED`, `PARSE_ERROR`), điểm từng tiêu chí, `calculatedScore`, `feedbackHtml`, `contentHash`, `status`.
-  * [ ] Bảng `spck_uploads`: Lưu ghép nối `studentId ↔ localFolderPath`, độ khớp tên, trạng thái xác nhận của giáo viên, gói file/link, nhận xét cuối khóa, `contentHash`, `status`.
-  * [ ] Bảng `job_logs`: Lưu nhật ký từng bước thực thi của Playwright Queue.
-* [ ] **TASK-1.6:** Xây dựng module đọc/ghi kho cấu hình JSON (`src/lib/db/json-config.ts`):
-  * [ ] Đọc/ghi `data/config/courses_syllabus.json` (Hỗ trợ số buổi học linh hoạt theo từng khóa, không khóa cứng 14 buổi).
-  * [ ] Đọc/ghi `data/config/grading_rubrics.json` (Lưu đề bài và barem chấm điểm chi tiết theo buổi).
-  * [ ] Đọc/ghi `data/config/quick_tags.json` (Lưu bộ thẻ đánh giá nhanh 1 chạm).
-  * [ ] Đọc/ghi `data/config/zalo_templates.json` (Lưu mẫu thông báo chung gửi nhóm Zalo).
-* [ ] **TASK-1.7:** Tạo dữ liệu mẫu ban đầu (Seed Data) đầy đủ cho các dòng khóa học phổ biến tại MindX (`PTA/PTB/PTI`, `JSB/JSA/JSI`, `SB/SA/SI`, `GB/GA/GI`, `ROB`, `CSI`).
+* [x] **TASK-1.1:** Khởi tạo dự án Next.js 15+ (App Router, TypeScript, Tailwind CSS) và cấu hình chỉ lắng nghe trên `127.0.0.1:3000`.
+* [x] **TASK-1.2:** Cài đặt các thư viện giao diện: `lucide-react`, `clsx`, `tailwind-merge`, và các component cơ bản (Button, Input, Select, Tabs, Table, Dialog, Badge, Progress, Drawer).
+* [x] **TASK-1.3:** Cài đặt các thư viện Backend, Database & Automation: `playwright`, `better-sqlite3` (kèm `@types/better-sqlite3`), `@google/genai`, `adm-zip` (kèm `@types/adm-zip`), `xlsx` (xuất file Excel bảng điểm), `zod`.
+* [x] **TASK-1.4:** Cấu hình `.gitignore` (loại trừ `.env.local`, `.playwright-profile/`, `temp_submissions/`, `data/mindx_bot.db`) và tạo `src/lib/config.ts` đọc biến môi trường:
+  * [x] `TEACHING_URL` (Link hệ thống lịch dạy Teaching)
+  * [x] `LMS_URL` (Link hệ thống MindX LMS)
+  * [x] `MINDX_USERNAME` (Tài khoản giáo viên)
+  * [x] `MINDX_PASSWORD` (Mật khẩu giáo viên)
+  * [x] `GEMINI_API_KEY` (API Key của Google AI Studio)
+  * [x] `GEMINI_MODEL` (Mặc định: `gemini-3.5-flash-lite`)
+  * [x] `HEADLESS_MODE` (Mặc định: `false` để giáo viên nhìn thấy trình duyệt chạy)
+  * [x] `ALLOWED_LOCAL_DIRS` (Danh sách thư mục trên máy tính được phép đọc khi quét SPCK)
+* [x] **TASK-1.5:** Xây dựng cơ sở dữ liệu trạng thái bằng **SQLite** (`src/lib/db/sqlite.ts` $\rightarrow$ `data/mindx_bot.db`):
+  * [x] Bảng `classes_sessions`: Lưu thông tin lớp, danh sách các buổi học thực tế (`classId`, `sessionId`, `sessionNumber`, `topic`).
+  * [x] Bảng `students`: Lưu danh sách học viên theo `studentId`, `classId`, `fullName`, `isActive`.
+  * [x] Bảng `session_feedbacks`: Lưu trạng thái điểm danh, `quickTagsJson`, `teacherNote`, nhận xét 3 phần của AI, `finalText`, `contentHash`, trạng thái (`DRAFT`, `APPROVED`, `SAVING`, `VERIFIED`, `FAILED`) và thời gian đối chiếu.
+  * [x] Bảng `homework_submissions`: Lưu chuỗi liên kết `submissionId → studentId → localFilePath → fileHash`, trạng thái đọc file (`PARSED`, `PARSE_ERROR`), điểm từng tiêu chí, `calculatedScore`, `feedbackHtml`, `contentHash`, `status`.
+  * [x] Bảng `spck_uploads`: Lưu ghép nối `studentId ↔ localFolderPath`, độ khớp tên, trạng thái xác nhận của giáo viên, gói file/link, nhận xét cuối khóa, `contentHash`, `status`.
+  * [x] Bảng `job_logs`: Lưu nhật ký từng bước thực thi của Playwright Queue.
+* [x] **TASK-1.6:** Xây dựng module đọc/ghi kho cấu hình JSON (`src/lib/db/json-config.ts`):
+  * [x] Đọc/ghi `data/config/courses_syllabus.json` (Hỗ trợ số buổi học linh hoạt theo từng khóa, không khóa cứng 14 buổi).
+  * [x] Đọc/ghi `data/config/grading_rubrics.json` (Lưu đề bài và barem chấm điểm chi tiết theo buổi).
+  * [x] Đọc/ghi `data/config/quick_tags.json` (Lưu bộ thẻ đánh giá nhanh 1 chạm).
+  * [x] Đọc/ghi `data/config/zalo_templates.json` (Lưu mẫu thông báo chung gửi nhóm Zalo).
+* [x] **TASK-1.7:** Tạo dữ liệu mẫu ban đầu (Seed Data) đầy đủ cho các dòng khóa học phổ biến tại MindX (`PTA/PTB/PTI`, `JSB/JSA/JSI`, `SB/SA/SI`, `GB/GA/GI`, `ROB`, `CSI`).
 
 > **✅ ĐIỀU KIỆN NGHIỆM THU GIAI ĐOẠN 1:** Khởi chạy `npm run dev` trên `127.0.0.1:3000` thành công; tự động khởi tạo file `mindx_bot.db` với đầy đủ các bảng và nạp sẵn dữ liệu mẫu các khóa học MindX.
 

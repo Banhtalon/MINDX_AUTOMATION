@@ -9,6 +9,9 @@ package-lock.json.bak
 /playwright-report
 /test-results
 /blob-report
+/.playwright-profile/
+/playwright-auth/
+/temp_submissions/
 
 # Next.js build output
 /.next/

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "standard_session_broadcast",
+    "name": "Mẫu Tổng Kết Buổi Học Tiêu Chuẩn",
+    "template": "📢 THÔNG BÁO TỔNG KẾT BUỔI HỌC - LỚP {{className}}\n\nKính gửi Quý Phụ huynh và các con học sinh,\nThầy/Cô gửi thông tin tóm tắt buổi học số {{sessionNumber}} ngày hôm nay:\n\n📖 1. NỘI DUNG BÀI HỌC:\n- Chủ đề: {{sessionTopic}}\n- Kiến thức trọng tâm:\n{{keyKnowledge}}\n\n🌟 2. TỔNG QUAN TINH THẦN HỌC TẬP CỦA LỚP:\n{{generalFeedback}}\n\n📝 3. BÀI TẬP VỀ NHÀ (BTVN):\n{{homeworkSummary}}\n⏰ Hạn nộp BTVN: Trước buổi học kế tiếp 24h trên hệ thống LMS MindX.\n\nNhận xét chi tiết của từng con đã được Thầy/Cô cập nhật đầy đủ trên hệ thống LMS. Phụ huynh vui lòng đăng nhập LMS để theo dõi sự tiến bộ của con nhé!\n\nNếu cần hỗ trợ thêm về bài học, các con và ba mẹ hãy nhắn tin trực tiếp trong nhóm lớp. Thầy/Cô chúc các con hoàn thành tốt bài tập về nhà! ❤️"
+  },
+  {
+    "id": "checkpoint_broadcast",
+    "name": "Mẫu Tổng Kết Buổi Chấm Bài / Checkpoint Giữa Khóa",
+    "template": "🎯 THÔNG BÁO TỔNG KẾT BUỔI CHECKPOINT - LỚP {{className}}\n\nKính gửi Quý Phụ huynh,\nHôm nay lớp đã hoàn thành buổi Checkpoint số {{sessionNumber}}:\n- Chủ đề: {{sessionTopic}}\n\n📊 KẾT QUẢ VÀ ĐÁNH GIÁ CHUNG:\n{{generalFeedback}}\n\nĐiểm số và nhận xét chi tiết từng bài làm đã được cập nhật trực tiếp trên hệ thống LMS. Ba mẹ có thể mở mục Chấm bài để xem sản phẩm của con.\n\nThầy/Cô cảm ơn Quý Phụ huynh đã luôn đồng hành cùng các con!"
+  },
+  {
+    "id": "spck_demo_day_broadcast",
+    "name": "Mẫu Báo Cáo Ngày Hội Demo Day (SPCK Cuối Khóa)",
+    "template": "🎉 CHÚC MỪNG LỚP {{className}} HOÀN THÀNH XUẤT SẮC KHÓA HỌC!\n\nKính gửi Quý Phụ huynh,\nHôm nay các con đã tự tin thuyết trình và bảo vệ thành công Sản Phẩm Cuối Khóa (SPCK) trong ngày Demo Day!\n\n🌟 TỔNG KẾT NGÀY HỘI BẢO VỆ DỰ ÁN:\n{{generalFeedback}}\n\nToàn bộ hình ảnh sản phẩm, slide thuyết trình, video demo và nhận xét tổng kết cuối khóa của Thầy/Cô đã được tải lên đầy đủ trên hệ thống LMS MindX.\n\nCảm ơn Quý Phụ huynh và các con học sinh vì một hành trình học tập tuyệt vời cùng MindX! 🚀"
+  }
+]

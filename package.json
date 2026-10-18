@@ -1,0 +1,54 @@
+{
+  "name": "mindx-automation",
+  "version": "1.0.0",
+  "description": "Hệ thống trợ lý tự động hóa toàn diện dành cho Giáo viên tại MindX — Giảm tải 90% các tác vụ thủ công sau mỗi buổi học và cuối khóa học.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev -H 127.0.0.1 -p 3000",
+    "build": "next build",
+    "start": "next start -H 127.0.0.1 -p 3000",
+    "recon": "tsx scripts/recon.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Banhtalon/MINDX_AUTOMATION.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Banhtalon/MINDX_AUTOMATION/issues"
+  },
+  "homepage": "https://github.com/Banhtalon/MINDX_AUTOMATION#readme",
+  "dependencies": {
+    "@google/genai": "^2.30.0",
+    "@google/generative-ai": "^0.24.1",
+    "adm-zip": "^0.6.1",
+    "better-sqlite3": "^13.0.3",
+    "clsx": "^2.1.1",
+    "dotenv": "^18.0.8",
+    "lucide-react": "^1.59.0",
+    "next": "^16.4.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwind-merge": "^3.7.0",
+    "xlsx": "^0.18.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/adm-zip": "^0.5.8",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "^10.6.1",
+    "playwright": "^1.64.1",
+    "postcss": "^8.5.30",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
