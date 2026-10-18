@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LiveLogDrawer } from "@/components/live-log-drawer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi">
-      <body className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      <body className="min-h-screen bg-slate-950 text-slate-100 flex flex-col pb-12">
         {/* Top Navbar */}
         <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -63,12 +64,15 @@ export default function RootLayout({
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 mb-6">
           {children}
         </main>
 
+        {/* Live Status & Automation Log Drawer */}
+        <LiveLogDrawer />
+
         {/* Footer */}
-        <footer className="border-t border-slate-800 py-3 text-center text-xs text-slate-500">
+        <footer className="border-t border-slate-800 py-3 text-center text-xs text-slate-500 mb-8">
           MindX Automation Bot • Local-Only Application • SQLite & Playwright Engine
         </footer>
       </body>

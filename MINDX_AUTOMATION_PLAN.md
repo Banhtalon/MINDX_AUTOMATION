@@ -338,26 +338,26 @@ D:\SPCK_MindX\VT-C4K-PTA13\
 
 ### GIAI ĐOẠN 2: XÂY DỰNG LÕI PLAYWRIGHT ENGINE, HÀNG ĐỢI ĐƠN LUỒNG & TỰ ĐỘNG ĐĂNG NHẬP
 
-* [ ] **TASK-2.1:** Xây dựng `BrowserManager` Singleton (`src/lib/playwright/browser-manager.ts`):
-  * [ ] Khởi tạo `chromium.launchPersistentContext('./.playwright-profile')` giữ nguyên phiên đăng nhập giữa các lần chạy.
-  * [ ] Cấu hình thư mục tải file mặc định về `./temp_submissions`.
-  * [ ] Cơ chế tự động khôi phục khi trình duyệt bị đóng thủ công.
-* [ ] **TASK-2.2:** Xây dựng Hàng đợi Tác vụ Đơn luồng `TaskQueue` (`src/lib/queue/task-queue.ts`):
-  * [ ] Đảm bảo tại mỗi thời điểm chỉ có 1 tác vụ điều khiển trang Playwright, tránh xung đột chuyển trang.
-  * [ ] Hỗ trợ phát sự kiện tiến trình thời gian thực (SSE) ra thanh Live Automation Log và hỗ trợ lệnh **Dừng khẩn cấp (`stopQueue()`)** để ngắt các tác vụ kế tiếp.
-* [ ] **TASK-2.3:** Tập trung toàn bộ Selectors vào `src/lib/playwright/selectors.ts` (đã kiểm chứng từ Giai đoạn 0):
-  * [ ] Selectors trang Đăng nhập Teaching & LMS.
-  * [ ] Selectors trang `Lớp học` (Ô tìm kiếm lớp, bảng danh sách lớp, Drawer chi tiết lớp).
-  * [ ] Selectors các Tab trong Drawer (`Lịch học`, `Bài tập về nhà`, `Chấm bài`, `Học viên`) và màn hình Nhận xét buổi học.
-  * [ ] Selectors Modal Chấm bài (Link file nộp, nút Download, Radio chấm điểm/làm lại, Input Điểm số, Rich Text Nhận xét, nút Lưu/Thoát).
-  * [ ] Selectors Form Sản phẩm cuối khóa (Nút Thêm SPCK, Tiêu đề, Youtube URL + nút Thêm, Thay ảnh Thumbnail, Dropzone Ảnh, Dropzone Tài liệu, Link liên quan + nút Thêm, Bình luận GV, nút Lưu).
-* [ ] **TASK-2.4:** Xây dựng hàm `ensureAuthenticated()` (`src/lib/playwright/auth.ts`):
-  * [ ] Kiểm tra trạng thái đăng nhập hiện tại trên LMS và Teaching.
-  * [ ] Nếu chưa đăng nhập hoặc hết hạn token, tự động lấy `MINDX_USERNAME` và `MINDX_PASSWORD` từ `.env.local` để điền và submit form đăng nhập.
-* [ ] **TASK-2.5:** Xây dựng các hàm tiện ích xử lý UI & Network đặc thù của MindX LMS (`src/lib/playwright/lms-helpers.ts`):
-  * [ ] Hàm kiểm tra HTTP Status của đúng API nghiệp vụ đang gọi (bắt lỗi `401/403/500` chính xác) và chỉ đóng các Toast thông báo phụ ở góc dưới phải khi chúng che khuất vùng thao tác.
-  * [ ] Hàm duyệt qua toàn bộ các trang phân trang (`Số dòng mỗi trang: 100` + nút chuyển trang `>`) và đối chiếu tổng số bản ghi thực tế.
-  * [ ] Hàm mở Drawer của một lớp cụ thể theo `classId` / mã lớp (VD: `VT-C4K-PTA13`).
+* [x] **TASK-2.1:** Xây dựng `BrowserManager` Singleton (`src/lib/playwright/browser-manager.ts`):
+  * [x] Khởi tạo `chromium.launchPersistentContext('./playwright-auth')` giữ nguyên phiên đăng nhập giữa các lần chạy.
+  * [x] Cấu hình thư mục tải file mặc định về `./temp_submissions`.
+  * [x] Cơ chế tự động khôi phục khi trình duyệt bị đóng thủ công.
+* [x] **TASK-2.2:** Xây dựng Hàng đợi Tác vụ Đơn luồng `TaskQueue` (`src/lib/queue/task-queue.ts`):
+  * [x] Đảm bảo tại mỗi thời điểm chỉ có 1 tác vụ điều khiển trang Playwright, tránh xung đột chuyển trang.
+  * [x] Hỗ trợ phát sự kiện tiến trình thời gian thực (SSE) ra thanh Live Automation Log và hỗ trợ lệnh **Dừng khẩn cấp (`stopQueue()`)** để ngắt các tác vụ kế tiếp.
+* [x] **TASK-2.3:** Tập trung toàn bộ Selectors vào `src/lib/playwright/selectors.ts` (đã kiểm chứng từ Giai đoạn 0):
+  * [x] Selectors trang Đăng nhập Teaching & LMS.
+  * [x] Selectors trang `Lớp học` (Ô tìm kiếm lớp, bảng danh sách lớp, Drawer chi tiết lớp).
+  * [x] Selectors các Tab trong Drawer (`Lịch học`, `Bài tập về nhà`, `Chấm bài`, `Học viên`) và màn hình Nhận xét buổi học.
+  * [x] Selectors Modal Chấm bài (Link file nộp, nút Download, Radio chấm điểm/làm lại, Input Điểm số, Rich Text Nhận xét, nút Lưu/Thoát).
+  * [x] Selectors Form Sản phẩm cuối khóa (Nút Thêm SPCK, Tiêu đề, Youtube URL + nút Thêm, Thay ảnh Thumbnail, Dropzone Ảnh, Dropzone Tài liệu, Link liên quan + nút Thêm, Bình luận GV, nút Lưu).
+* [x] **TASK-2.4:** Xây dựng hàm `ensureAuthenticated()` (`src/lib/playwright/auth.ts`):
+  * [x] Kiểm tra trạng thái đăng nhập hiện tại trên LMS và Teaching.
+  * [x] Nếu chưa đăng nhập hoặc hết hạn token, tự động lấy `TEACHING_USERNAME` / `TEACHING_PASSWORD` và `LMS_USERNAME` / `LMS_PASSWORD` để điền và submit form đăng nhập.
+* [x] **TASK-2.5:** Xây dựng các hàm tiện ích xử lý UI & Network đặc thù của MindX LMS (`src/lib/playwright/lms-helpers.ts`):
+  * [x] Hàm kiểm tra HTTP Status của đúng API nghiệp vụ đang gọi (bắt lỗi `401/403/500` chính xác) và chỉ đóng các Toast thông báo phụ ở góc dưới phải khi chúng che khuất vùng thao tác.
+  * [x] Hàm duyệt qua toàn bộ các trang phân trang (`Số dòng mỗi trang: 100` + nút chuyển trang `>`) và đối chiếu tổng số bản ghi thực tế.
+  * [x] Hàm mở Drawer của một lớp cụ thể theo `classId` / mã lớp (VD: `VT-C4K-PTA13`).
 
 > **✅ ĐIỀU KIỆN NGHIỆM THU GIAI ĐOẠN 2:** Hàng đợi Playwright chạy tuần tự mượt mà; tự động đăng nhập và mở đúng Drawer của lớp học chỉ định mà không bị lỗi che khuất nút bấm.
 
