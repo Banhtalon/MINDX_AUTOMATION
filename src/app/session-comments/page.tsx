@@ -688,7 +688,14 @@ Cảm ơn quý Phụ huynh đã luôn đồng hành cùng các con!`;
 
                       {/* Name & Attendance */}
                       <td className="px-4 py-4">
-                        <div className="font-semibold text-white">{student.fullName}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-white">{student.fullName}</span>
+                          {!student.isActive && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                              Nghỉ/Bảo lưu
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs font-mono text-slate-400 mt-0.5">
                           {student.studentId}
                         </div>

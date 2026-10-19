@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     const sessionId = url.searchParams.get("sessionId");
 
     const allSessions = classId ? classSessionRepo.findByClass(classId) : [];
-    const allStudents = classId ? studentRepo.findByClass(classId) : [];
+    const allStudents = classId ? studentRepo.findByClass(classId, false) : [];
     const feedbacks = classId && sessionId ? sessionFeedbackRepo.findBySession(classId, sessionId) : [];
 
     const quickCategories = getQuickTags();
