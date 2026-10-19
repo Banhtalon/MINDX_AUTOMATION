@@ -20,34 +20,24 @@ export class LmsHelpers {
 
     // 2. Click the exact matching class row (strictly prevents partial match e.g. PTA1 vs PTA13)
     const targetCode = classCode.trim();
-    const rows = page.locator("table tbody tr, .class-card");
-    const count = await rows.count().catch(() => 0);
-    let matchedRow: Locator | null = null;
-
-    for (let i = 0; i < count; i++) {
-      const row = rows.nth(i);
-      const text = await row.innerText().catch(() => "");
-      const tokens = text.split(/[\s,()]+/).map((t) => t.trim().toUpperCase());
-      if (tokens.includes(targetCode.toUpperCase())) {
-        matchedRow = row;
-        break;
-      }
-    }
-
-    if (!matchedRow) {
-      // Fallback with regex boundary filter
-      const regexPattern = new RegExp(`(^|[^a-zA-Z0-9_-])${targetCode}([^a-zA-Z0-9_-]|$)`, "i");
-      matchedRow = page.locator("table tbody tr, .class-card").filter({ hasText: regexPattern }).first();
-    }
+    const regexPattern = new RegExp(`(^|[^a-zA-Z0-9_-])${targetCode}([^a-zA-Z0-9_-]|$)`, "i");
+    const matchedRow = page.locator("table tbody tr, .class-card").filter({ hasText: regexPattern }).first();
 
     await matchedRow.waitFor({ state: "visible", timeout: 15000 });
     await interceptor.dismissForbiddenToast();
     await matchedRow.click();
 
-    // 3. Wait for the Drawer to appear
+    // 3. Wait for the Drawer to appear and Read-after-Write verify it belongs to the target class
     const drawer = page.locator(SELECTORS.classes.drawer).first();
     await drawer.waitFor({ state: "visible", timeout: 15000 });
     await page.waitForTimeout(500);
+
+    const drawerText = await drawer.innerText().catch(() => "");
+    if (!regexPattern.test(drawerText) && !drawerText.toUpperCase().includes(targetCode.toUpperCase())) {
+      throw new Error(
+        `[LmsHelpers Error] Đã mở Drawer nhưng nội dung Drawer không khớp mã lớp '${targetCode}'. Thao tác bị hủy để tránh nhầm lớp!`
+      );
+    }
   }
 
   /**

@@ -36,28 +36,43 @@ export class BrowserManager {
    * when concurrent calls occur.
    */
   public async getContext(): Promise<BrowserContext> {
-    // If context is already healthy, return it
+    // If an initialization or tab restoration is already in flight, reuse the same promise
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    // If context is already healthy with open pages, return it immediately
     if (this.context) {
       try {
-        const pages = this.context.pages();
-        if (pages.length > 0 && !pages[0].isClosed()) {
+        const pages = this.context.pages().filter((p) => !p.isClosed());
+        if (pages.length > 0) {
+          this.activePage = pages[0];
           return this.context;
         }
-        // If context is alive but has 0 pages, create a page rather than killing the context
-        const newPage = await this.context.newPage();
-        this.activePage = newPage;
-        return this.context;
+
+        // Context is alive but has 0 open pages: lock tab recovery under initPromise
+        this.initPromise = (async () => {
+          try {
+            const pagesAfterLock = this.context?.pages().filter((p) => !p.isClosed()) || [];
+            if (pagesAfterLock.length > 0) {
+              this.activePage = pagesAfterLock[0];
+              return this.context!;
+            }
+            const newPage = await this.context!.newPage();
+            this.activePage = newPage;
+            return this.context!;
+          } finally {
+            this.initPromise = null;
+          }
+        })();
+        return this.initPromise;
       } catch {
         this.context = null;
         this.activePage = null;
       }
     }
 
-    // If an initialization is already in flight, reuse the same promise
-    if (this.initPromise) {
-      return this.initPromise;
-    }
-
+    // Launch a fresh persistent context
     this.initPromise = (async () => {
       try {
         const ctx = await chromium.launchPersistentContext(this.profileDir, {

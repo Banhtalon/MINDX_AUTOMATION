@@ -8,15 +8,29 @@ import { config } from "../config";
  * On Windows, paths are case-insensitive.
  */
 function normalizePath(p: string): string {
-  let resolved = path.resolve(p);
-  if (fs.existsSync(resolved)) {
+  let current = path.resolve(p);
+  const remainingParts: string[] = [];
+
+  // Traverse up to find the closest existing ancestor directory to resolve any symlinks/junctions
+  while (!fs.existsSync(current)) {
+    const parent = path.dirname(current);
+    if (parent === current) {
+      break;
+    }
+    remainingParts.unshift(path.basename(current));
+    current = parent;
+  }
+
+  if (fs.existsSync(current)) {
     try {
-      resolved = fs.realpathSync(resolved);
+      const realParent = fs.realpathSync(current);
+      current = remainingParts.length > 0 ? path.join(realParent, ...remainingParts) : realParent;
     } catch {
-      // Keep standard path.resolve
+      // Keep resolved path if realpath fails
     }
   }
-  return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+
+  return process.platform === "win32" ? current.toLowerCase() : current;
 }
 
 /**

@@ -281,6 +281,33 @@ export interface SessionFeedbackRecord {
 export const sessionFeedbackRepo = {
   upsert(record: SessionFeedbackRecord) {
     const db = getDb();
+
+    // Check for content modification on previously APPROVED / VERIFIED records
+    const existing = db
+      .prepare(
+        `SELECT status, contentHash, finalText FROM session_feedbacks WHERE classId = ? AND sessionId = ? AND studentId = ?`
+      )
+      .get(record.classId, record.sessionId, record.studentId) as
+      | { status: string; contentHash: string; finalText: string }
+      | undefined;
+
+    let targetStatus = record.status || "DRAFT";
+    let targetHash = record.contentHash ?? "";
+
+    if (existing) {
+      const textChanged = (record.finalText ?? "") !== existing.finalText;
+      if (textChanged) {
+        const newHash = calculateSha256(record.finalText ?? "");
+        // If text was modified after approval, demote back to DRAFT unless explicitly re-approved with new hash
+        if (targetStatus === "APPROVED" || targetStatus === "VERIFIED") {
+          if (record.contentHash !== newHash) {
+            targetStatus = "DRAFT";
+            targetHash = newHash;
+          }
+        }
+      }
+    }
+
     const stmt = db.prepare(`
       INSERT INTO session_feedbacks (
         classId, sessionId, studentId, attendanceStatus,
@@ -317,8 +344,8 @@ export const sessionFeedbackRepo = {
       improvements: record.improvements ?? "",
       actionPlan: record.actionPlan ?? "",
       finalText: record.finalText ?? "",
-      contentHash: record.contentHash ?? "",
-      status: record.status || "DRAFT",
+      contentHash: targetHash,
+      status: targetStatus,
       verifiedAt: record.verifiedAt ?? null,
       errorMessage: record.errorMessage ?? null,
     });
@@ -376,15 +403,46 @@ export const homeworkSubmissionRepo = {
   upsert(record: HomeworkSubmissionRecord) {
     const db = getDb();
 
-    // Strict ID integrity check: prevent reassigning submissionId to a different student
+    // Strict ID integrity check: prevent reassigning submissionId to a different student, class, or session
     const existing = db
-      .prepare(`SELECT studentId, classId, sessionId FROM homework_submissions WHERE submissionId = ?`)
-      .get(record.submissionId) as { studentId: string; classId: string; sessionId: string } | undefined;
+      .prepare(
+        `SELECT studentId, classId, sessionId, status, contentHash, feedbackHtml FROM homework_submissions WHERE submissionId = ?`
+      )
+      .get(record.submissionId) as
+      | {
+          studentId: string;
+          classId: string;
+          sessionId: string;
+          status: string;
+          contentHash: string;
+          feedbackHtml: string;
+        }
+      | undefined;
 
-    if (existing && existing.studentId !== record.studentId) {
-      throw new Error(
-        `[Integrity Violation] Không thể đổi chủ sở hữu submissionId '${record.submissionId}' (thuộc học viên '${existing.studentId}') sang học viên khác ('${record.studentId}').`
-      );
+    if (existing) {
+      if (
+        existing.studentId !== record.studentId ||
+        existing.classId !== record.classId ||
+        existing.sessionId !== record.sessionId
+      ) {
+        throw new Error(
+          `[Integrity Violation] Không thể thay đổi liên kết submissionId '${record.submissionId}' (thuộc student='${existing.studentId}', class='${existing.classId}', session='${existing.sessionId}') sang (student='${record.studentId}', class='${record.classId}', session='${record.sessionId}').`
+        );
+      }
+    }
+
+    let targetStatus = record.status || "PENDING";
+    let targetHash = record.contentHash ?? "";
+
+    if (existing && (existing.status === "APPROVED" || existing.status === "VERIFIED")) {
+      const feedbackChanged = (record.feedbackHtml ?? "") !== (existing.feedbackHtml ?? "");
+      if (feedbackChanged) {
+        const newHash = calculateSha256(record.feedbackHtml ?? "");
+        if (record.contentHash !== newHash) {
+          targetStatus = "WAITING_APPROVAL";
+          targetHash = newHash;
+        }
+      }
     }
 
     const stmt = db.prepare(`
@@ -401,9 +459,6 @@ export const homeworkSubmissionRepo = {
         @decision, @feedbackHtml, @contentHash, @status, @verifiedAt, @errorMessage, datetime('now', 'localtime')
       )
       ON CONFLICT(submissionId) DO UPDATE SET
-        classId = excluded.classId,
-        sessionId = excluded.sessionId,
-        studentId = excluded.studentId,
         originalFileName = excluded.originalFileName,
         localFilePath = excluded.localFilePath,
         fileHash = excluded.fileHash,
@@ -435,8 +490,8 @@ export const homeworkSubmissionRepo = {
       teacherOverrideScore: record.teacherOverrideScore ?? null,
       decision: record.decision || "GRADE",
       feedbackHtml: record.feedbackHtml ?? "",
-      contentHash: record.contentHash ?? "",
-      status: record.status || "PENDING",
+      contentHash: targetHash,
+      status: targetStatus,
       verifiedAt: record.verifiedAt ?? null,
       errorMessage: record.errorMessage ?? null,
     });

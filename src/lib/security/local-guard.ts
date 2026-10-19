@@ -22,13 +22,32 @@ export function isLocalRequest(req: Request): boolean {
     return false;
   }
 
-  // 3. Check Origin header (if present on POST/PUT requests)
+  // 3. Check Sec-Fetch-Site (if present, forbid cross-site requests)
+  const secFetchSite = req.headers.get("sec-fetch-site")?.toLowerCase();
+  if (secFetchSite && secFetchSite === "cross-site") {
+    return false;
+  }
+
+  // 4. Check Origin header (for state-changing or fetch requests)
   const origin = req.headers.get("origin")?.toLowerCase();
   if (origin) {
     try {
       const originUrl = new URL(origin);
+      // Origin hostname must be local
       if (!ALLOWED_HOSTS.includes(originUrl.hostname)) {
         return false;
+      }
+
+      // Origin host (hostname + port) must strictly match Host header
+      // or match designated allowed local dev ports
+      if (originUrl.host !== hostHeader) {
+        const allowedExactOrigins = [
+          "http://127.0.0.1:3000",
+          "http://localhost:3000",
+        ];
+        if (!allowedExactOrigins.includes(originUrl.origin.toLowerCase())) {
+          return false;
+        }
       }
     } catch {
       return false;
