@@ -8,6 +8,7 @@ import {
   classSessionRepo,
   studentRepo,
   jobLogRepo,
+  getDb,
   type ClassSessionRecord,
   type StudentRecord,
 } from "../db/sqlite";
@@ -125,6 +126,16 @@ export class ClassSyncer {
       const students = await this.scrapeStudents(page, classId);
 
       // 6. Save all scraped records to SQLite with strict ID locking
+      // Remove stale/mock student records for this class that no longer exist in the LMS roster
+      const currentStudentIds = new Set(students.map((s) => s.studentId));
+      const existingInDb = studentRepo.findByClass(classId);
+      for (const ex of existingInDb) {
+        if (!currentStudentIds.has(ex.studentId)) {
+          getDb().prepare("DELETE FROM students WHERE classId = ? AND studentId = ?").run(classId, ex.studentId);
+          getDb().prepare("DELETE FROM session_feedbacks WHERE classId = ? AND studentId = ?").run(classId, ex.studentId);
+        }
+      }
+
       for (const s of sessions) {
         classSessionRepo.upsert(s);
       }
