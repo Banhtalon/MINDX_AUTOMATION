@@ -366,26 +366,26 @@ D:\SPCK_MindX\VT-C4K-PTA13\
 ### GIAI ĐOẠN 3: LUỒNG 1 (NHẬN XÉT BUỔI HỌC & ZALO) — ĐỒNG BỘ LỊCH, QUICK TAGS, AI 3 PHẦN & ĐỐI CHIẾU LMS
 > **Mục tiêu:** Hoàn thiện khép kín luồng dọc đầu tiên: Đọc lớp/học viên/điểm danh theo ID $\rightarrow$ Chọn Quick Tags & Ghi chú $\rightarrow$ AI soạn nhận xét 3 phần (không bịa) $\rightarrow$ Lưu nháp SQLite $\rightarrow$ Duyệt $\rightarrow$ Ghi LMS $\rightarrow$ Đọc lại đối chiếu & Copy Zalo.
 
-* [ ] **TASK-3.1:** Viết kịch bản Playwright cào danh sách lớp, buổi học và điểm danh (`src/lib/playwright/sync-class.ts`):
-  * [ ] Lấy danh sách các lớp đang `Running` kèm `classId`.
-  * [ ] Lấy danh sách các buổi học thực tế của lớp kèm `sessionId` và trạng thái điểm danh.
-  * [ ] Quét Tab `Học viên` qua tất cả các trang để lấy danh sách học viên kèm `studentId`, trạng thái `Active` (Switch màu xanh) và kết hợp với điểm danh để xác định học viên đủ điều kiện nhận xét (`Active + Có mặt`).
-* [ ] **TASK-3.2:** Thiết lập Gemini Client (`src/lib/gemini/client.ts`) & Module sinh nhận xét 3 phần (`src/lib/gemini/comment-generator.ts`):
-  * [ ] Ẩn danh tên học viên thành mã `STUDENT_01`, `STUDENT_02` trước khi gửi lên Gemini API và ánh xạ lại tên thật theo `studentId` khi nhận kết quả.
-  * [ ] Đầu vào: Nội dung bài học hôm đó + Danh sách `Quick Tags` giáo viên đã tích + Ghi chú riêng của giáo viên.
-  * [ ] **Quy tắc chống bịa đặt:** Nếu học viên chưa được chọn Quick Tag nào và ô ghi chú trống, giữ trạng thái `Chưa đủ thông tin` (không gọi AI tự bịa).
-  * [ ] Đầu ra ép kiểu JSON chuẩn gồm 3 phần: `strengths` (Điểm mạnh), `improvements` (Điều cần cải thiện), `actionPlan` (Hướng rèn luyện) và `formattedFullComment`.
-* [ ] **TASK-3.3:** Xây dựng bộ tạo Thông báo chung cho cả lớp (Zalo Broadcast Generator):
-  * [ ] Tự động điền Tên lớp, Buổi học, Tóm tắt kiến thức đã học, Dặn dò bài tập về nhà vào mẫu Zalo chuẩn.
-* [ ] **TASK-3.4:** Viết kịch bản Playwright điền nhận xét lên LMS & Đối chiếu sau lưu (`src/lib/playwright/save-comments.ts`):
-  * [ ] Điền nhận xét đã duyệt (`APPROVED`) vào đúng học viên theo `studentId` và `sessionId` (hỗ trợ lưu thử 1 học viên trước hoặc lưu hàng loạt cả lớp).
-  * [ ] **Read-after-Write Verification:** Chờ API lưu trả về thành công, đọc ngược lại nội dung nhận xét trên LMS để so sánh với `finalText`. Nếu khớp 100% mới cập nhật trạng thái SQLite thành `VERIFIED`; nếu sửa nội dung sau khi duyệt thì tự động đưa về `WAITING_APPROVAL`.
-* [ ] **TASK-3.5:** Xây dựng Giao diện Màn hình 1 (`/session-comments`) — **Nhận xét Buổi học & Zalo**:
-  * [ ] Bộ chọn Lớp học & Buổi học + nút "Đồng bộ từ LMS".
-  * [ ] Dropdown chọn nhanh Nội dung bài học từ Syllabus (cho phép chỉnh sửa linh hoạt).
-  * [ ] Bảng danh sách học viên đi học: Cột bấm nhanh **Quick Tags** + Cột ghi chú nhanh (tự động lưu nháp tức thì vào SQLite) $\rightarrow$ Nút "AI Soạn Nhận Xét Hàng Loạt" $\rightarrow$ 3 cột kết quả (Điểm mạnh, Cần cải thiện, Hướng rèn luyện) cho phép sửa trực tiếp.
-  * [ ] Khung xem trước Thông báo Zalo + Nút "Copy Thông báo Zalo" & "Copy Nhận xét từng học viên".
-  * [ ] Nút "Duyệt & Lưu thử 1 học viên" và "Duyệt & Tự động Lưu cả lớp vào LMS" kèm trạng thái đối chiếu (`VERIFIED`).
+* [x] **TASK-3.1:** Viết kịch bản Playwright cào danh sách lớp, buổi học và điểm danh (`src/lib/playwright/sync-class.ts`):
+  * [x] Lấy danh sách các lớp đang `Running` kèm `classId`.
+  * [x] Lấy danh sách các buổi học thực tế của lớp kèm `sessionId` và trạng thái điểm danh.
+  * [x] Quét Tab `Học viên` qua tất cả các trang để lấy danh sách học viên kèm `studentId`, trạng thái `Active` (Switch màu xanh) và kết hợp với điểm danh để xác định học viên đủ điều kiện nhận xét (`Active + Có mặt`).
+* [x] **TASK-3.2:** Thiết lập Gemini Client (`src/lib/gemini/client.ts`) & Module sinh nhận xét 3 phần (`src/lib/gemini/comment-generator.ts`):
+  * [x] Ẩn danh tên học viên thành mã `STUDENT_01`, `STUDENT_02` trước khi gửi lên Gemini API và ánh xạ lại tên thật theo `studentId` khi nhận kết quả.
+  * [x] Đầu vào: Nội dung bài học hôm đó + Danh sách `Quick Tags` giáo viên đã tích + Ghi chú riêng của giáo viên.
+  * [x] **Quy tắc chống bịa đặt:** Nếu học viên chưa được chọn Quick Tag nào và ô ghi chú trống, giữ trạng thái `Chưa đủ thông tin` (không gọi AI tự bịa).
+  * [x] Đầu ra ép kiểu JSON chuẩn gồm 3 phần: `strengths` (Điểm mạnh), `improvements` (Điều cần cải thiện), `actionPlan` (Hướng rèn luyện) và `formattedFullComment`.
+* [x] **TASK-3.3:** Xây dựng bộ tạo Thông báo chung cho cả lớp (Zalo Broadcast Generator):
+  * [x] Tự động điền Tên lớp, Buổi học, Tóm tắt kiến thức đã học, Dặn dò bài tập về nhà vào mẫu Zalo chuẩn.
+* [x] **TASK-3.4:** Viết kịch bản Playwright điền nhận xét lên LMS & Đối chiếu sau lưu (`src/lib/playwright/save-comments.ts`):
+  * [x] Điền nhận xét đã duyệt (`APPROVED`) vào đúng học viên theo `studentId` và `sessionId` (hỗ trợ lưu thử 1 học viên trước hoặc lưu hàng loạt cả lớp).
+  * [x] **Read-after-Write Verification:** Chờ API lưu trả về thành công, đọc ngược lại nội dung nhận xét trên LMS để so sánh với `finalText`. Nếu khớp 100% mới cập nhật trạng thái SQLite thành `VERIFIED`; nếu sửa nội dung sau khi duyệt thì tự động đưa về `WAITING_APPROVAL`.
+* [x] **TASK-3.5:** Xây dựng Giao diện Màn hình 1 (`/session-comments`) — **Nhận xét Buổi học & Zalo**:
+  * [x] Bộ chọn Lớp học & Buổi học + nút "Đồng bộ từ LMS".
+  * [x] Dropdown chọn nhanh Nội dung bài học từ Syllabus (cho phép chỉnh sửa linh hoạt).
+  * [x] Bảng danh sách học viên đi học: Cột bấm nhanh **Quick Tags** + Cột ghi chú nhanh (tự động lưu nháp tức thì vào SQLite) $\rightarrow$ Nút "AI Soạn Nhận Xét Hàng Loạt" $\rightarrow$ 3 cột kết quả (Điểm mạnh, Cần cải thiện, Hướng rèn luyện) cho phép sửa trực tiếp.
+  * [x] Khung xem trước Thông báo Zalo + Nút "Copy Thông báo Zalo" & "Copy Nhận xét từng học viên".
+  * [x] Nút "Duyệt & Lưu thử 1 học viên" và "Duyệt & Tự động Lưu cả lớp vào LMS" kèm trạng thái đối chiếu (`VERIFIED`).
 
 > **✅ ĐIỀU KIỆN NGHIỆM THU GIAI ĐOẠN 3:**
 > 1. AI không tự bịa thông tin nếu giáo viên chưa chọn Quick Tags/ghi chú.

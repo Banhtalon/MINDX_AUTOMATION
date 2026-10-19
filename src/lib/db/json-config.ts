@@ -69,6 +69,17 @@ export function getSyllabusByCourse(courseCode: string): CourseSyllabus | undefi
   return all.find((c) => c.courseCode.toUpperCase() === courseCode.toUpperCase());
 }
 
+export function findLessonInSyllabus(
+  classCode: string,
+  sessionNumber: number
+): CourseSession | undefined {
+  const allCourses = getCoursesSyllabus();
+  const upperCode = classCode.toUpperCase();
+  const matched = allCourses.find((c) => upperCode.includes(c.courseCode.toUpperCase()));
+  if (!matched) return undefined;
+  return matched.sessions.find((s) => s.sessionNumber === sessionNumber);
+}
+
 // ==========================================
 // 2. GRADING RUBRICS
 // ==========================================

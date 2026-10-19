@@ -258,6 +258,11 @@ export const studentRepo = {
       : `SELECT * FROM students WHERE classId = ? ORDER BY fullName ASC`;
     return db.prepare(query).all(classId) as StudentRecord[];
   },
+
+  findOne(studentId: string): StudentRecord | undefined {
+    const db = getDb();
+    return db.prepare(`SELECT * FROM students WHERE studentId = ?`).get(studentId) as StudentRecord | undefined;
+  },
 };
 
 export interface SessionFeedbackRecord {
@@ -265,7 +270,7 @@ export interface SessionFeedbackRecord {
   classId: string;
   sessionId: string;
   studentId: string;
-  attendanceStatus: "PRESENT" | "ABSENT" | "EXCUSED";
+  attendanceStatus?: "PRESENT" | "ABSENT" | "EXCUSED" | "LATE";
   quickTagsJson?: string;
   teacherNote?: string;
   strengths?: string;
@@ -363,6 +368,24 @@ export const sessionFeedbackRepo = {
     return db
       .prepare(`SELECT * FROM session_feedbacks WHERE classId = ? AND sessionId = ? AND studentId = ?`)
       .get(classId, sessionId, studentId) as SessionFeedbackRecord | undefined;
+  },
+
+  updateStatus(
+    classId: string,
+    sessionId: string,
+    studentId: string,
+    status: SessionFeedbackRecord["status"],
+    verifiedAt?: string | null,
+    errorMessage?: string | null
+  ) {
+    const db = getDb();
+    return db
+      .prepare(`
+        UPDATE session_feedbacks
+        SET status = ?, verifiedAt = ?, errorMessage = ?, updatedAt = datetime('now', 'localtime')
+        WHERE classId = ? AND sessionId = ? AND studentId = ?
+      `)
+      .run(status, verifiedAt ?? null, errorMessage ?? null, classId, sessionId, studentId);
   },
 
   markVerified(classId: string, sessionId: string, studentId: string) {
