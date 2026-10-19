@@ -7,38 +7,38 @@ export const SELECTORS = {
   // 1. Authentications
   auth: {
     teaching: {
-      emailInput: 'input[name="email"], input[type="email"], input[placeholder*="email" i]',
+      emailInput: 'input[name="email"], input[type="email"], input[placeholder*="email" i], input[placeholder*="tài khoản" i]',
       passwordInput: 'input[name="password"], input[type="password"]',
-      submitButton: 'button[type="submit"], button:has-text("Đăng nhập"), button:has-text("Login")',
-      loggedInIndicator: '.user-avatar, .user-profile, button:has-text("Đăng xuất"), a[href*="logout"]',
+      submitButton: 'button:has-text("Đăng nhập"), button:has-text("Login"), button:has-text("Sign in"), button[type="submit"]:has-text("Đăng nhập"), form button[type="submit"]',
+      loggedInIndicator: '.user-avatar, .user-profile, button:has-text("Đăng xuất"), a[href*="logout"], nav, aside',
     },
     lms: {
-      usernameInput: 'input[name="username"], input[name="email"], input[placeholder*="tài khoản" i], input[placeholder*="email" i]',
+      usernameInput: 'input[name="username"], input[name="email"], input[type="email"], input[placeholder*="tài khoản" i], input[placeholder*="email" i], input[placeholder*="tên đăng nhập" i], input[placeholder*="username" i], input[id*="username" i], input[id*="email" i], input:not([type="password"]):not([type="hidden"]):not([type="checkbox"])',
       passwordInput: 'input[name="password"], input[type="password"]',
-      submitButton: 'button[type="submit"], button:has-text("Đăng nhập"), button:has-text("Login")',
-      loggedInIndicator: '.avatar, .header-user, .user-name, [data-testid="user-profile"], button:has-text("Đăng xuất")',
+      submitButton: 'button:has-text("Đăng nhập"), button:has-text("Login"), button:has-text("Sign in"), button[type="submit"]:has-text("Đăng nhập"), form button[type="submit"]',
+      loggedInIndicator: '.avatar, .header-user, .user-name, [data-testid="user-profile"], button:has-text("Đăng xuất"), a[href*="logout"], .ant-layout-sider, .ant-menu, a[href*="class"]',
     },
   },
 
   // 2. Class List & Navigation
   classes: {
-    searchInput: 'input[placeholder*="Tìm kiếm" i], input[placeholder*="mã lớp" i]',
+    searchInput: 'input[placeholder*="Search" i], input[placeholder*="Tìm kiếm" i], input[placeholder*="class" i], input[placeholder*="mã lớp" i]',
     tableRow: 'table tbody tr, .class-card, [data-testid="class-row"]',
     rowByClassCode: (code: string) => `tr:has-text("${code}"), .class-card:has-text("${code}")`,
-    drawer: '.ant-drawer, .slide-over, [role="dialog"], .drawer-content',
-    drawerTitle: '.ant-drawer-title, .drawer-header, h2, h3',
-    closeDrawerButton: '.ant-drawer-close, button[aria-label="Close"], button:has-text("✕")',
+    drawer: 'div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight, .MuiDrawer-modal:not([data-testid="sidebar"]), .ant-drawer, .slide-over, [role="dialog"], .drawer-content',
+    drawerTitle: '.MuiTypography-root, .ant-drawer-title, .drawer-header, h2, h3, h4',
+    closeDrawerButton: '.MuiDrawer-paperAnchorRight button[aria-label*="close" i], button[aria-label="Close"], button:has-text("✕"), .ant-drawer-close',
   },
 
   // 3. Tabs in Drawer
   tabs: {
-    general: 'button[role="tab"]:has-text("Thông tin chung"), .tab-item:has-text("Thông tin chung")',
-    schedule: 'button[role="tab"]:has-text("Lịch học"), .tab-item:has-text("Lịch học")',
-    homework: 'button[role="tab"]:has-text("Bài tập về nhà"), .tab-item:has-text("Bài tập về nhà")',
-    grading: 'button[role="tab"]:has-text("Chấm bài"), .tab-item:has-text("Chấm bài")',
-    students: 'button[role="tab"]:has-text("Học viên"), .tab-item:has-text("Học viên")',
-    spck: 'button[role="tab"]:has-text("Sản phẩm cuối khóa"), button[role="tab"]:has-text("SPCK"), .tab-item:has-text("SPCK")',
-    nextTabArrow: '.ant-tabs-nav-more, button[aria-label="next-tab"], .tab-scroll-right',
+    general: '[role="tab"]:has-text("Thông tin chung"), [role="tab"]:has-text("Information"), [role="tab"]:has-text("General"), button:has-text("Thông tin chung"), button:has-text("Information")',
+    schedule: '[role="tab"]:has-text("Lịch học"), [role="tab"]:has-text("Schedule"), [role="tab"]:has-text("Class Sessions"), [role="tab"]:has-text("Sessions"), button:has-text("Lịch học"), button:has-text("Schedule")',
+    homework: '[role="tab"]:has-text("Bài tập về nhà"), [role="tab"]:has-text("Homework"), button:has-text("Bài tập về nhà"), button:has-text("Homework")',
+    grading: '[role="tab"]:has-text("Chấm bài"), [role="tab"]:has-text("Grading"), button:has-text("Chấm bài"), button:has-text("Grading")',
+    students: '[role="tab"]:has-text("Học viên"), [role="tab"]:has-text("Students"), [role="tab"]:has-text("Student"), button:has-text("Học viên"), button:has-text("Students")',
+    spck: '[role="tab"]:has-text("Sản phẩm cuối khóa"), [role="tab"]:has-text("SPCK"), [role="tab"]:has-text("Final Project"), button:has-text("Sản phẩm cuối khóa"), button:has-text("SPCK")',
+    nextTabArrow: '.ant-tabs-nav-more, button[aria-label="next-tab"], button[aria-label="Next"], .tab-scroll-right, .MuiTabs-scrollButtons',
   },
 
   // 4. Students Tab & Pagination

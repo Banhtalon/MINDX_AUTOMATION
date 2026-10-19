@@ -56,9 +56,22 @@ export class ClassSyncer {
           jobId,
           jobType: "SYNC_CLASS",
           level: "INFO",
-          message: `Điều hướng tới danh sách lớp học: ${config.lmsUrl}...`,
+          message: `Điều hướng tới danh sách lớp học LMS...`,
         });
-        await page.goto(config.lmsUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+        const classMenu = page
+          .locator('a[href*="class"], .ant-menu-item:has-text("Lớp học"), a:has-text("Lớp học"), span:has-text("Lớp học"), [aria-label*="Lớp học"]')
+          .first();
+        if (await classMenu.isVisible().catch(() => false)) {
+          await classMenu.click();
+          await page.waitForTimeout(2000);
+        }
+        if (!page.url().includes("/class") && !page.url().includes("/classes")) {
+          await page.goto(`${config.lmsUrl.replace(/\/+$/, "")}/admin/classes`, {
+            waitUntil: "domcontentloaded",
+            timeout: 30000,
+          }).catch(() => {});
+          await page.waitForTimeout(1500);
+        }
       }
 
       await interceptor.dismissForbiddenToast();
@@ -73,15 +86,12 @@ export class ClassSyncer {
       await LmsHelpers.openClassDrawer(page, classCode);
 
       // Extract classId from URL or page context
-      const drawer = page.locator(SELECTORS.classes.drawer).first();
-      await drawer.waitFor({ state: "visible", timeout: 15000 });
-
-      // Look for classId in URL or attributes
       let classId = classCode;
       const urlMatches = page.url().match(/class(?:es)?\/([a-zA-Z0-9_-]+)/);
       if (urlMatches && urlMatches[1]) {
         classId = urlMatches[1];
       } else {
+        const drawer = page.locator(SELECTORS.classes.drawer).first();
         const idAttr = await drawer.getAttribute("data-class-id").catch(() => null);
         if (idAttr) classId = idAttr;
       }
@@ -173,7 +183,11 @@ export class ClassSyncer {
     classCode: string
   ): Promise<ClassSessionRecord[]> {
     const sessions: ClassSessionRecord[] = [];
-    const rows = page.locator("table tbody tr, .session-item, .schedule-row");
+    const drawer = page.locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight').first();
+    const isDrawerOpen = await drawer.isVisible().catch(() => false);
+    const context = isDrawerOpen ? drawer : page;
+
+    const rows = context.locator("table tbody tr, .session-item, .schedule-row");
     const count = await rows.count().catch(() => 0);
 
     if (count === 0) {
@@ -234,11 +248,15 @@ export class ClassSyncer {
     const studentsMap = new Map<string, StudentRecord>();
     const interceptor = createNetworkInterceptor(page);
 
+    const drawer = page.locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight').first();
+    const isDrawerOpen = await drawer.isVisible().catch(() => false);
+    const context = isDrawerOpen ? drawer : page;
+
     // Try setting page size to 100 if size changer exists
-    const sizeChanger = page.locator(SELECTORS.students.pageSizeSelect).first();
+    const sizeChanger = context.locator(SELECTORS.students.pageSizeSelect).first();
     if (await sizeChanger.isVisible().catch(() => false)) {
       await sizeChanger.click().catch(() => {});
-      const option100 = page.locator(".ant-select-item-option:has-text('100'), option[value='100']").first();
+      const option100 = page.locator(".ant-select-item-option:has-text('100'), .MuiMenuItem-root:has-text('100'), option[value='100']").first();
       if (await option100.isVisible().catch(() => false)) {
         await option100.click().catch(() => {});
         await page.waitForTimeout(1000);
@@ -251,7 +269,7 @@ export class ClassSyncer {
 
     while (hasNextPage && pageNum <= maxPages) {
       await interceptor.dismissForbiddenToast();
-      const rows = page.locator("table tbody tr");
+      const rows = context.locator("table tbody tr");
       const count = await rows.count().catch(() => 0);
 
       for (let i = 0; i < count; i++) {
@@ -270,12 +288,14 @@ export class ClassSyncer {
           (await row.getAttribute("data-id").catch(() => null));
 
         if (!studentId) {
-          // Check link href (e.g. /students/12345)
+          // Check link href (e.g. /students/12345) without hanging 30s if absent
           const link = row.locator("a[href*='student']").first();
-          const href = await link.getAttribute("href").catch(() => null);
-          const match = href?.match(/student[s]?\/([a-zA-Z0-9_-]+)/);
-          if (match && match[1]) {
-            studentId = match[1];
+          if ((await link.count().catch(() => 0)) > 0) {
+            const href = await link.getAttribute("href", { timeout: 800 }).catch(() => null);
+            const match = href?.match(/student[s]?\/([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+              studentId = match[1];
+            }
           }
         }
 
@@ -286,13 +306,13 @@ export class ClassSyncer {
 
         // Check if student is active (switch is green/checked or no disabled indicator)
         const switchChecked = await row
-          .locator(".ant-switch-checked, [role='switch'][aria-checked='true']")
+          .locator(".Mui-checked, .ant-switch-checked, [role='switch'][aria-checked='true'], input[type='checkbox']:checked")
           .first()
           .isVisible()
           .catch(() => false);
 
         const switchExists = await row
-          .locator(".ant-switch, [role='switch']")
+          .locator(".MuiSwitch-root, .ant-switch, [role='switch'], input[type='checkbox']")
           .first()
           .isVisible()
           .catch(() => false);
@@ -310,10 +330,21 @@ export class ClassSyncer {
       }
 
       // Check for next pagination button
-      const nextBtn = page.locator(".ant-pagination-next:not(.ant-pagination-disabled)").first();
-      if ((await nextBtn.isVisible().catch(() => false)) && (await nextBtn.isEnabled().catch(() => false))) {
-        await nextBtn.click().catch(() => {});
-        await page.waitForTimeout(1000);
+      const nextBtn = context
+        .locator(
+          'button[aria-label*="next page" i], button[aria-label*="next" i], .MuiTablePagination-actions button:last-child, .ant-pagination-next:not(.ant-pagination-disabled)'
+        )
+        .first();
+
+      const hasNext = (await nextBtn.count().catch(() => 0)) > 0;
+      const isVisible = hasNext && (await nextBtn.isVisible().catch(() => false));
+      const isEnabled = hasNext && (await nextBtn.isEnabled().catch(() => false));
+      const isAriaDisabled = hasNext && ((await nextBtn.getAttribute("aria-disabled", { timeout: 400 }).catch(() => null)) === "true");
+      const isMuiDisabled = hasNext && ((await nextBtn.getAttribute("class", { timeout: 400 }).catch(() => "")) || "").includes("Mui-disabled");
+
+      if (isVisible && isEnabled && !isAriaDisabled && !isMuiDisabled) {
+        await nextBtn.click({ force: true }).catch(() => {});
+        await page.waitForTimeout(800);
         pageNum++;
       } else {
         hasNextPage = false;

@@ -18,24 +18,47 @@ export class LmsHelpers {
       );
     }
 
-    // 2. Ensure we are on the class list page (click "Lớp học" menu if needed)
-    const hasTableOrCard = await page
-      .locator("table, .class-card, [data-testid='class-row'], input[placeholder*='Tìm kiếm' i]")
-      .first()
-      .isVisible()
-      .catch(() => false);
+    // 2. Check if the target class drawer is ALREADY open
+    const targetCode = classCode.trim();
+    const regexPattern = new RegExp(`(^|[^a-zA-Z0-9_-])${targetCode}([^a-zA-Z0-9_-]|$)`, "i");
 
-    if (!hasTableOrCard) {
+    const existingDrawer = page
+      .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
+      .first();
+    if (await existingDrawer.isVisible().catch(() => false)) {
+      const existingText = await existingDrawer.innerText().catch(() => "");
+      if (regexPattern.test(existingText) || existingText.toUpperCase().includes(targetCode.toUpperCase())) {
+        return; // Already open and matches target class
+      }
+      // Close mismatched drawer
+      await page.keyboard.press("Escape").catch(() => {});
+      const closeBtn = page.locator(SELECTORS.classes.closeDrawerButton).first();
+      if (await closeBtn.isVisible().catch(() => false)) {
+        await closeBtn.click().catch(() => {});
+      }
+      await page.waitForTimeout(600);
+    }
+
+    // 3. Ensure we are on the class list page (click "Lớp học" menu or navigate)
+    const currentUrl = page.url();
+    if (!currentUrl.includes("/class") && !currentUrl.includes("/classes")) {
       const classMenu = page
-        .locator('a:has-text("Lớp học"), .ant-menu-item:has-text("Lớp học"), [aria-label*="Lớp học"], a[href*="class"]')
+        .locator('a[href*="class"], .ant-menu-item:has-text("Lớp học"), a:has-text("Lớp học"), span:has-text("Lớp học"), [aria-label*="Lớp học"]')
         .first();
       if (await classMenu.isVisible().catch(() => false)) {
         await classMenu.click();
         await page.waitForTimeout(2000);
       }
+      if (!page.url().includes("/class") && !page.url().includes("/classes")) {
+        await page.goto("https://lms.mindx.edu.vn/admin/classes", {
+          waitUntil: "domcontentloaded",
+          timeout: 25000,
+        }).catch(() => {});
+        await page.waitForTimeout(1500);
+      }
     }
 
-    // 3. If search input exists, filter by class code
+    // 4. If search input exists, filter by class code
     const searchInput = page.locator(SELECTORS.classes.searchInput).first();
     if (await searchInput.isVisible().catch(() => false)) {
       await searchInput.click().catch(() => {});
@@ -48,9 +71,7 @@ export class LmsHelpers {
       await page.waitForTimeout(1500);
     }
 
-    // 4. Click the matching class row
-    const targetCode = classCode.trim();
-    const regexPattern = new RegExp(`(^|[^a-zA-Z0-9_-])${targetCode}([^a-zA-Z0-9_-]|$)`, "i");
+    // 5. Click the matching class row
     let matchedRow = page.locator("table tbody tr, .class-card, .class-item").filter({ hasText: regexPattern }).first();
 
     const isVisibleDirect = await matchedRow.waitFor({ state: "visible", timeout: 8000 }).then(() => true).catch(() => false);
@@ -66,7 +87,6 @@ export class LmsHelpers {
       // Try substring match as fallback
       matchedRow = page.locator("table tbody tr, .class-card, .class-item").filter({ hasText: new RegExp(targetCode, "i") }).first();
       await matchedRow.waitFor({ state: "visible", timeout: 10000 }).catch(async (err) => {
-        // Take diagnostic screenshot before throwing
         await page.screenshot({ path: "data/debug_class_not_found.png" }).catch(() => {});
         throw new Error(
           `[LmsHelpers Error] Không tìm thấy lớp '${targetCode}' trên danh sách lớp LMS. Vui lòng kiểm tra lại mã lớp hoặc bộ lọc 'Đang học' trên LMS. (Ảnh chẩn đoán lưu tại data/debug_class_not_found.png)`
@@ -75,17 +95,59 @@ export class LmsHelpers {
     }
 
     await interceptor.dismissForbiddenToast();
-    await matchedRow.click();
 
-    // 5. Wait for the Drawer to appear and Read-after-Write verify it belongs to the target class
-    const drawer = page.locator(SELECTORS.classes.drawer).first();
-    await drawer.waitFor({ state: "visible", timeout: 15000 });
-    await page.waitForTimeout(500);
+    // Click specifically on the class name link, button, or 2nd column (Name column)
+    const nameCellOrLink = matchedRow
+      .locator('a, button, [role="button"], span, td:nth-child(2)')
+      .filter({ hasText: regexPattern })
+      .first();
 
-    const drawerText = await drawer.innerText().catch(() => "");
-    if (!regexPattern.test(drawerText) && !drawerText.toUpperCase().includes(targetCode.toUpperCase())) {
+    if (await nameCellOrLink.isVisible().catch(() => false)) {
+      await nameCellOrLink.click({ force: true }).catch(async () => {
+        await matchedRow.locator("td:nth-child(2)").first().click({ force: true });
+      });
+    } else {
+      const secondCell = matchedRow.locator("td:nth-child(2)").first();
+      if (await secondCell.isVisible().catch(() => false)) {
+        await secondCell.click({ force: true });
+      } else {
+        await matchedRow.click({ force: true });
+      }
+    }
+
+    // 6. Wait for the Drawer or Tabs to appear and Read-after-Write verify it belongs to the target class
+    const drawerOrTabLocator = page
+      .locator(
+        `${SELECTORS.classes.drawer}, [role="tab"]:has-text("Schedule"), [role="tab"]:has-text("Lịch học"), [role="tab"]:has-text("Class Sessions"), [role="tab"]:has-text("Information"), [role="tab"]:has-text("Thông tin chung")`
+      )
+      .first();
+
+    try {
+      await drawerOrTabLocator.waitFor({ state: "visible", timeout: 15000 });
+    } catch (err) {
+      await page.screenshot({ path: "data/debug_drawer_timeout.png" }).catch(() => {});
       throw new Error(
-        `[LmsHelpers Error] Đã mở Drawer nhưng nội dung Drawer không khớp mã lớp '${targetCode}'. Thao tác bị hủy để tránh nhầm lớp!`
+        `[LmsHelpers Error] Timeout khi chờ Drawer chi tiết lớp '${targetCode}' xuất hiện sau khi click dòng lớp học. (Ảnh chụp màn hình: data/debug_drawer_timeout.png): ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+    await page.waitForTimeout(600);
+
+    let drawer = page.locator(SELECTORS.classes.drawer).first();
+    const isDrawerVisible = await drawer.isVisible().catch(() => false);
+    const contextContainer = isDrawerVisible ? drawer : page.locator("body");
+
+    await page.screenshot({ path: "data/debug_drawer_content.png" }).catch(() => {});
+    const drawerText = await contextContainer.innerText().catch(() => "");
+
+    // Also check page URL and full page text as fallback
+    const pageUrl = page.url();
+    const fullBodyText = await page.locator("body").innerText().catch(() => "");
+    const matchesDrawer = regexPattern.test(drawerText) || drawerText.toUpperCase().includes(targetCode.toUpperCase());
+    const matchesPage = pageUrl.toUpperCase().includes(targetCode.toUpperCase()) || fullBodyText.toUpperCase().includes(targetCode.toUpperCase());
+
+    if (!matchesDrawer && !matchesPage) {
+      throw new Error(
+        `[LmsHelpers Error] Đã mở Drawer nhưng nội dung không khớp mã lớp '${targetCode}'. (Ảnh: data/debug_drawer_content.png).`
       );
     }
   }
@@ -100,20 +162,30 @@ export class LmsHelpers {
     const interceptor = createNetworkInterceptor(page);
     await interceptor.dismissForbiddenToast();
 
-    const tab = page.locator(tabSelector).first();
-    const isVisible = await tab.isVisible().catch(() => false);
+    // Try finding tab inside the drawer first
+    const drawer = page.locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight').first();
+    const isDrawerOpen = await drawer.isVisible().catch(() => false);
+    const context = isDrawerOpen ? drawer : page;
+
+    let tab = context.locator(tabSelector).first();
+    let isVisible = await tab.isVisible().catch(() => false);
+
+    if (!isVisible) {
+      tab = page.locator(tabSelector).first();
+      isVisible = await tab.isVisible().catch(() => false);
+    }
 
     if (!isVisible) {
       // If tab is overflowed, click the next arrow button
-      const nextArrow = page.locator(SELECTORS.tabs.nextTabArrow).first();
+      const nextArrow = context.locator(SELECTORS.tabs.nextTabArrow).first();
       if (await nextArrow.isVisible().catch(() => false)) {
-        await nextArrow.click();
+        await nextArrow.click({ force: true }).catch(() => {});
         await page.waitForTimeout(300);
       }
     }
 
     await tab.waitFor({ state: "visible", timeout: 10000 });
-    await tab.click();
+    await tab.click({ force: true });
     await page.waitForTimeout(800);
   }
 

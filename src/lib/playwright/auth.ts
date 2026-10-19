@@ -22,7 +22,8 @@ export class AuthService {
 
     try {
       const currentUrl = page.url();
-      if (!currentUrl.startsWith(targetUrl)) {
+      const targetHost = new URL(targetUrl).hostname;
+      if (!currentUrl.includes(targetHost)) {
         await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
         await page.waitForTimeout(1500);
       }
@@ -33,24 +34,28 @@ export class AuthService {
         activeUrl.includes("/signin") ||
         activeUrl.includes("/auth");
 
-      // 1. If password input or login button is visible on DOM, user is definitely NOT logged in
+      // 1. Password input is the definitive sign of an unauthenticated login form
       const pwdSelector =
         system === "TEACHING"
           ? SELECTORS.auth.teaching.passwordInput
           : SELECTORS.auth.lms.passwordInput;
       const hasPasswordInput = await page.locator(pwdSelector).first().isVisible().catch(() => false);
 
-      const loginBtnSelector =
-        system === "TEACHING"
-          ? SELECTORS.auth.teaching.submitButton
-          : SELECTORS.auth.lms.submitButton;
-      const hasLoginBtn = await page.locator(loginBtnSelector).first().isVisible().catch(() => false);
-
-      if (hasPasswordInput || hasLoginBtn || isLoginUrl) {
+      // If password input is visible or explicitly at /login, definitely logged out
+      if (hasPasswordInput || (isLoginUrl && !activeUrl.includes("/dashboard") && !activeUrl.includes("/admin"))) {
         return { system, isAuthenticated: false, currentUrl: activeUrl, username };
       }
 
-      // 2. Check DOM indicators
+      // 2. Known authenticated application routes
+      const hasAppRoute =
+        activeUrl.includes("/dashboard") ||
+        activeUrl.includes("/admin") ||
+        activeUrl.includes("/classes") ||
+        activeUrl.includes("/class") ||
+        activeUrl.includes("/schedule") ||
+        activeUrl.includes("/teacher");
+
+      // 3. Check DOM indicators
       const indicatorSelector =
         system === "TEACHING"
           ? SELECTORS.auth.teaching.loggedInIndicator
@@ -59,14 +64,14 @@ export class AuthService {
       const indicator = page.locator(indicatorSelector).first();
       const hasIndicator = await indicator.isVisible().catch(() => false);
 
-      // 3. Check for application content that only appears when logged in
+      // 4. Check for application content (sidebar, table, nav, avatar)
       const hasAppContent = await page
-        .locator('table, nav, aside, .ant-layout-sider, a[href*="class"], .class-card, .avatar, [data-testid="user-profile"]')
+        .locator('table, nav, aside, .ant-layout-sider, .ant-menu, a[href*="class"], .class-card, .avatar, [data-testid="user-profile"], button:has-text("Đăng xuất")')
         .first()
         .isVisible()
         .catch(() => false);
 
-      const isAuthenticated = (hasIndicator || hasAppContent) && !hasPasswordInput;
+      const isAuthenticated = (hasAppRoute || hasIndicator || hasAppContent) && !hasPasswordInput;
 
       return {
         system,
@@ -155,9 +160,10 @@ export class AuthService {
         message: `Đã gửi form đăng nhập ${system} nhưng chưa phát hiện phiên thành công. Vui lòng kiểm tra lại tài khoản.`,
       };
     } catch (err) {
+      await page.screenshot({ path: `data/debug_auth_${system}_failed.png` }).catch(() => {});
       return {
         success: false,
-        message: `Lỗi đăng nhập ${system}: ${err instanceof Error ? err.message : String(err)}`,
+        message: `Lỗi đăng nhập ${system} (URL: ${page.url()}): ${err instanceof Error ? err.message : String(err)}`,
       };
     }
   }
