@@ -45,7 +45,8 @@ interface StudentItem {
 interface QuickTagItem {
   id: string;
   label: string;
-  type: string;
+  sentiment?: "positive" | "constructive" | "neutral";
+  hint?: string;
 }
 
 interface SyllabusSession {
@@ -720,11 +721,11 @@ Cảm ơn quý Phụ huynh đã luôn đồng hành cùng các con!`;
                       {/* Quick Tags */}
                       <td className="px-4 py-4">
                         <div className="flex flex-wrap gap-1.5">
-                          {quickTags.map((tag) => {
+                          {quickTags.map((tag, tagIdx) => {
                             const isSelected = student.quickTags?.includes(tag.label);
                             return (
                               <button
-                                key={tag.id}
+                                key={tag.id || `tag-${tagIdx}`}
                                 onClick={() => toggleQuickTag(student.studentId, tag.label)}
                                 className={`px-2 py-1 rounded text-xs transition border ${
                                   isSelected

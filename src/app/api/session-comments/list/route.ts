@@ -16,7 +16,8 @@ export async function GET(req: Request) {
     const allStudents = classId ? studentRepo.findByClass(classId) : [];
     const feedbacks = classId && sessionId ? sessionFeedbackRepo.findBySession(classId, sessionId) : [];
 
-    const quickTags = getQuickTags();
+    const quickCategories = getQuickTags();
+    const quickTags = quickCategories.flatMap((c) => c.tags || []);
     const syllabusList = getCoursesSyllabus();
     const zaloTemplates = getZaloTemplates();
 

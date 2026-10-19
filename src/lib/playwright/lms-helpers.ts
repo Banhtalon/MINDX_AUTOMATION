@@ -10,24 +10,74 @@ export class LmsHelpers {
     const interceptor = createNetworkInterceptor(page);
     await interceptor.dismissForbiddenToast();
 
-    // 1. If search input exists, filter by class code first
-    const searchInput = page.locator(SELECTORS.classes.searchInput).first();
-    if (await searchInput.isVisible().catch(() => false)) {
-      await searchInput.fill(classCode);
-      await page.keyboard.press("Enter");
-      await page.waitForTimeout(1000);
+    // 1. Check if page is stuck at Login screen
+    const isPwdVisible = await page.locator('input[type="password"]').first().isVisible().catch(() => false);
+    if (isPwdVisible) {
+      throw new Error(
+        "[LMS Error] Trình duyệt đang ở màn hình Đăng nhập LMS. Phiên đăng nhập chưa hoàn tất hoặc tài khoản chưa hợp lệ. Vui lòng đăng nhập trên trình duyệt một lần để lưu phiên."
+      );
     }
 
-    // 2. Click the exact matching class row (strictly prevents partial match e.g. PTA1 vs PTA13)
+    // 2. Ensure we are on the class list page (click "Lớp học" menu if needed)
+    const hasTableOrCard = await page
+      .locator("table, .class-card, [data-testid='class-row'], input[placeholder*='Tìm kiếm' i]")
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    if (!hasTableOrCard) {
+      const classMenu = page
+        .locator('a:has-text("Lớp học"), .ant-menu-item:has-text("Lớp học"), [aria-label*="Lớp học"], a[href*="class"]')
+        .first();
+      if (await classMenu.isVisible().catch(() => false)) {
+        await classMenu.click();
+        await page.waitForTimeout(2000);
+      }
+    }
+
+    // 3. If search input exists, filter by class code
+    const searchInput = page.locator(SELECTORS.classes.searchInput).first();
+    if (await searchInput.isVisible().catch(() => false)) {
+      await searchInput.click().catch(() => {});
+      await searchInput.fill(classCode);
+      await page.keyboard.press("Enter");
+      const searchBtn = page.locator(".ant-input-search-button, button:has(.anticon-search)").first();
+      if (await searchBtn.isVisible().catch(() => false)) {
+        await searchBtn.click().catch(() => {});
+      }
+      await page.waitForTimeout(1500);
+    }
+
+    // 4. Click the matching class row
     const targetCode = classCode.trim();
     const regexPattern = new RegExp(`(^|[^a-zA-Z0-9_-])${targetCode}([^a-zA-Z0-9_-]|$)`, "i");
-    const matchedRow = page.locator("table tbody tr, .class-card").filter({ hasText: regexPattern }).first();
+    let matchedRow = page.locator("table tbody tr, .class-card, .class-item").filter({ hasText: regexPattern }).first();
 
-    await matchedRow.waitFor({ state: "visible", timeout: 15000 });
+    const isVisibleDirect = await matchedRow.waitFor({ state: "visible", timeout: 8000 }).then(() => true).catch(() => false);
+
+    if (!isVisibleDirect) {
+      // Fallback: check tab "Đang học" or "Tất cả" if present
+      const runningTab = page.locator('button:has-text("Đang học"), [role="tab"]:has-text("Đang học"), a:has-text("Đang học")').first();
+      if (await runningTab.isVisible().catch(() => false)) {
+        await runningTab.click().catch(() => {});
+        await page.waitForTimeout(1500);
+      }
+
+      // Try substring match as fallback
+      matchedRow = page.locator("table tbody tr, .class-card, .class-item").filter({ hasText: new RegExp(targetCode, "i") }).first();
+      await matchedRow.waitFor({ state: "visible", timeout: 10000 }).catch(async (err) => {
+        // Take diagnostic screenshot before throwing
+        await page.screenshot({ path: "data/debug_class_not_found.png" }).catch(() => {});
+        throw new Error(
+          `[LmsHelpers Error] Không tìm thấy lớp '${targetCode}' trên danh sách lớp LMS. Vui lòng kiểm tra lại mã lớp hoặc bộ lọc 'Đang học' trên LMS. (Ảnh chẩn đoán lưu tại data/debug_class_not_found.png)`
+        );
+      });
+    }
+
     await interceptor.dismissForbiddenToast();
     await matchedRow.click();
 
-    // 3. Wait for the Drawer to appear and Read-after-Write verify it belongs to the target class
+    // 5. Wait for the Drawer to appear and Read-after-Write verify it belongs to the target class
     const drawer = page.locator(SELECTORS.classes.drawer).first();
     await drawer.waitFor({ state: "visible", timeout: 15000 });
     await page.waitForTimeout(500);

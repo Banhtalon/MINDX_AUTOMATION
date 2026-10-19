@@ -21,30 +21,57 @@ export class AuthService {
     const username = system === "TEACHING" ? config.teachingUsername : config.lmsUsername;
 
     try {
-      await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
-      await page.waitForTimeout(1500);
-
       const currentUrl = page.url();
-      const isLoginUrl = currentUrl.includes("/login") || currentUrl.includes("/signin") || currentUrl.includes("/auth");
-
-      if (isLoginUrl) {
-        return { system, isAuthenticated: false, currentUrl, username };
+      if (!currentUrl.startsWith(targetUrl)) {
+        await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
+        await page.waitForTimeout(1500);
       }
 
-      // Check DOM indicators
-      const selector = system === "TEACHING"
-        ? SELECTORS.auth.teaching.loggedInIndicator
-        : SELECTORS.auth.lms.loggedInIndicator;
+      const activeUrl = page.url();
+      const isLoginUrl =
+        activeUrl.includes("/login") ||
+        activeUrl.includes("/signin") ||
+        activeUrl.includes("/auth");
 
-      const indicator = page.locator(selector).first();
+      // 1. If password input or login button is visible on DOM, user is definitely NOT logged in
+      const pwdSelector =
+        system === "TEACHING"
+          ? SELECTORS.auth.teaching.passwordInput
+          : SELECTORS.auth.lms.passwordInput;
+      const hasPasswordInput = await page.locator(pwdSelector).first().isVisible().catch(() => false);
+
+      const loginBtnSelector =
+        system === "TEACHING"
+          ? SELECTORS.auth.teaching.submitButton
+          : SELECTORS.auth.lms.submitButton;
+      const hasLoginBtn = await page.locator(loginBtnSelector).first().isVisible().catch(() => false);
+
+      if (hasPasswordInput || hasLoginBtn || isLoginUrl) {
+        return { system, isAuthenticated: false, currentUrl: activeUrl, username };
+      }
+
+      // 2. Check DOM indicators
+      const indicatorSelector =
+        system === "TEACHING"
+          ? SELECTORS.auth.teaching.loggedInIndicator
+          : SELECTORS.auth.lms.loggedInIndicator;
+
+      const indicator = page.locator(indicatorSelector).first();
       const hasIndicator = await indicator.isVisible().catch(() => false);
 
-      const isAuthenticated = hasIndicator || (!isLoginUrl && currentUrl.startsWith(targetUrl));
+      // 3. Check for application content that only appears when logged in
+      const hasAppContent = await page
+        .locator('table, nav, aside, .ant-layout-sider, a[href*="class"], .class-card, .avatar, [data-testid="user-profile"]')
+        .first()
+        .isVisible()
+        .catch(() => false);
+
+      const isAuthenticated = (hasIndicator || hasAppContent) && !hasPasswordInput;
 
       return {
         system,
         isAuthenticated,
-        currentUrl,
+        currentUrl: activeUrl,
         username,
       };
     } catch (err) {
