@@ -1,0 +1,71 @@
+[
+  {
+    "id": "R28-01-pdf-length-direct-fraction",
+    "file": "fixtures/R28-01-pdf-length-direct-fraction.pdf",
+    "sha256": "00afdb7cdde6d9549e772307c1577f84fc2a374e353d4af77a3c1ec9804c71b3",
+    "size": 440,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED"
+  },
+  {
+    "id": "R28-01-pdf-length-direct-real-integral",
+    "file": "fixtures/R28-01-pdf-length-direct-real-integral.pdf",
+    "sha256": "05648f25ef5d37542939e8ceb10a3f7cc8bde0b14d1301c27b6782eb0e956f6b",
+    "size": 440,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED"
+  },
+  {
+    "id": "R28-01-pdf-length-direct-junk",
+    "file": "fixtures/R28-01-pdf-length-direct-junk.pdf",
+    "sha256": "b75ece9fb44ec43717fce7c1f91fe8785fd0d3bc7ba2d95647cfe05955cfff8a",
+    "size": 442,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED"
+  },
+  {
+    "id": "R28-01-pdf-count-1_5",
+    "file": "fixtures/R28-01-pdf-count-1_5.pdf",
+    "sha256": "5b1f60699977eae671fcbde42cabda292133b98584bf5a2009259f6ec7202684",
+    "size": 359,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED"
+  },
+  {
+    "id": "R28-01-pdf-count-1_0",
+    "file": "fixtures/R28-01-pdf-count-1_0.pdf",
+    "sha256": "d6fd3b754cb29e3ab40ea925e37c9814e973df26660087e199739955ad5e8e27",
+    "size": 359,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED"
+  },
+  {
+    "id": "R28-01-pdf-count-1_foo",
+    "file": "fixtures/R28-01-pdf-count-1_foo.pdf",
+    "sha256": "d16dcff4ffc92cc82577eb22dac5c981e9e6bae3f1c6264393b6fa45300b2cb7",
+    "size": 361,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED"
+  },
+  {
+    "id": "R28-09-block-two-lines",
+    "file": "fixtures/R28-09-block-two-lines.json",
+    "sha256": "0f37288b5f6c85526610ae41d2c6381ad718b5ffe18e8a12e865cd9a0e9f90eb",
+    "expectedVerified": 1,
+    "observedVerified": 0
+  },
+  {
+    "id": "R28-09-block-two-lines-crlf",
+    "file": "fixtures/R28-09-block-two-lines-crlf.json",
+    "sha256": "3a0bc64487621a42471799bc67cb3297652bd9d8d49c18fe2d2cd5d5929428fe",
+    "expectedVerified": 1,
+    "observedVerified": 0
+  },
+  {
+    "id": "R28-09-block-tabs",
+    "file": "fixtures/R28-09-block-tabs.json",
+    "sha256": "a6811f8ba734c44064d7f686fb12a4fd60eeb4baef1d8db8413a4c2053bf9b90",
+    "expectedVerified": 1,
+    "observedVerified": 0
+  }
+]

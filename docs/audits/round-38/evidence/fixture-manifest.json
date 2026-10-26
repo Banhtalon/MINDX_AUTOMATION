@@ -1,0 +1,137 @@
+[
+  {
+    "path": "data\\r38-fixtures-AsJ4Oq\\bad-docx\\broken.docx",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-AsJ4Oq\\bad-pptx\\broken.pptx",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-AsJ4Oq\\bad-sb3\\broken.sb3",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-AsJ4Oq\\bad-yyz\\broken.yyz",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-AsJ4Oq\\bad-zip\\broken.zip",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-AsJ4Oq\\student-1\\main.py",
+    "sha256": "A51A6C4BFF2BB1BF421D697D996D2FCE4CA3E735DCAFF6B3DB2157A5F6B010F7",
+    "size": 11
+  },
+  {
+    "path": "data\\r38-fixtures-AsJ4Oq\\student-1\\payload.exe",
+    "sha256": "EEBE0D6509FF3BB2A8C91D574E7138C3F0999E7446508223328F6EC3F37416E3",
+    "size": 29
+  },
+  {
+    "path": "data\\r38-fixtures-AsJ4Oq\\student-1\\second.py",
+    "sha256": "FC92339E2C864D8FC1782834EDE5E96BEB34E096745CDB559C3A8BB67FBFAE7C",
+    "size": 8
+  },
+  {
+    "path": "data\\r38-fixtures-AsJ4Oq\\student-2\\main.py",
+    "sha256": "D456D69B8421116B6EB8F8191412A8867D0D8DA5D6F1037F5007EE6C6067838D",
+    "size": 19
+  },
+  {
+    "path": "data\\r38-fixtures-fYNTwq\\bad-docx\\broken.docx",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-fYNTwq\\bad-pptx\\broken.pptx",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-fYNTwq\\bad-sb3\\broken.sb3",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-fYNTwq\\bad-yyz\\broken.yyz",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-fYNTwq\\bad-zip\\broken.zip",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-fYNTwq\\student-1\\main.py",
+    "sha256": "A51A6C4BFF2BB1BF421D697D996D2FCE4CA3E735DCAFF6B3DB2157A5F6B010F7",
+    "size": 11
+  },
+  {
+    "path": "data\\r38-fixtures-fYNTwq\\student-1\\payload.exe",
+    "sha256": "EEBE0D6509FF3BB2A8C91D574E7138C3F0999E7446508223328F6EC3F37416E3",
+    "size": 29
+  },
+  {
+    "path": "data\\r38-fixtures-fYNTwq\\student-1\\second.py",
+    "sha256": "FC92339E2C864D8FC1782834EDE5E96BEB34E096745CDB559C3A8BB67FBFAE7C",
+    "size": 8
+  },
+  {
+    "path": "data\\r38-fixtures-fYNTwq\\student-2\\main.py",
+    "sha256": "D456D69B8421116B6EB8F8191412A8867D0D8DA5D6F1037F5007EE6C6067838D",
+    "size": 19
+  },
+  {
+    "path": "data\\r38-fixtures-TySDB8\\bad-docx\\broken.docx",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-TySDB8\\bad-pptx\\broken.pptx",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-TySDB8\\bad-sb3\\broken.sb3",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-TySDB8\\bad-yyz\\broken.yyz",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-TySDB8\\bad-zip\\broken.zip",
+    "sha256": "03E05C591B0C0F4DA14EFAF24C7A11FADF61B761721C665793076F2FAF85EDC9",
+    "size": 35
+  },
+  {
+    "path": "data\\r38-fixtures-TySDB8\\student-1\\main.py",
+    "sha256": "A51A6C4BFF2BB1BF421D697D996D2FCE4CA3E735DCAFF6B3DB2157A5F6B010F7",
+    "size": 11
+  },
+  {
+    "path": "data\\r38-fixtures-TySDB8\\student-1\\payload.exe",
+    "sha256": "EEBE0D6509FF3BB2A8C91D574E7138C3F0999E7446508223328F6EC3F37416E3",
+    "size": 29
+  },
+  {
+    "path": "data\\r38-fixtures-TySDB8\\student-1\\second.py",
+    "sha256": "FC92339E2C864D8FC1782834EDE5E96BEB34E096745CDB559C3A8BB67FBFAE7C",
+    "size": 8
+  },
+  {
+    "path": "data\\r38-fixtures-TySDB8\\student-2\\main.py",
+    "sha256": "D456D69B8421116B6EB8F8191412A8867D0D8DA5D6F1037F5007EE6C6067838D",
+    "size": 19
+  }
+]

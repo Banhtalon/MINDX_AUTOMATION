@@ -1,0 +1,15 @@
+{
+  "beforeCount": 1738,
+  "afterCount": 1738,
+  "unchanged": true,
+  "historicalRounds": "12..36",
+  "historicalFileCount": 1657,
+  "historicalUnchanged": true,
+  "nextEnvSha256": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+  "changed": [],
+  "added": [],
+  "deleted": [],
+  "planPriorBytesPreserved": true,
+  "planBeforeSha256": "0D68914A200C4251E681DAF8537CD9C71CE7371C7D44226F2A9F129C528487A3",
+  "planAfterSha256": "B38040137804DFBC3CB7F64D53C17A733A6C0510DEF1527554E9D4DC7BF6C1B4"
+}

@@ -1,0 +1,9 @@
+{
+  "round": 30,
+  "origin": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\src\\lib\\file-parsers\\media-reader.ts",
+  "sha256": "3d677823077a3c7eb36f7261f45970ca7b7903e9797b1568ce602f86109760ac",
+  "manifestSha256": "3d677823077a3c7eb36f7261f45970ca7b7903e9797b1568ce602f86109760ac",
+  "hashVerified": true,
+  "artifact": "baseline/media-reader.r30.ts",
+  "capturedAt": "2026-10-20T23:37:44.318047+00:00"
+}

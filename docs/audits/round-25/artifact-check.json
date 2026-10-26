@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-10-20T13:21:04.199247+00:00",
+  "allCommandCwdsAreSnapshot": true,
+  "inheritedR24ChecksIdentical": 230,
+  "sourceHashesMatchOriginalAndSnapshot": 10,
+  "snapshotSourceDifferences": [
+    "next-env.d.ts"
+  ],
+  "mainHarnessSha256": "024c7c47e0e29d43315913cb2899ef3aa7f92032250fac1f56aec90e079065ab",
+  "mediaOracleAgreement": 25,
+  "commandReceipts": 18,
+  "distinctGates": 17,
+  "latestGatePassed": 12,
+  "latestGateFailed": 5,
+  "allLogAndResultHashesMatch": true
+}

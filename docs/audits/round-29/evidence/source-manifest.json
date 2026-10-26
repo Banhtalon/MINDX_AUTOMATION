@@ -1,0 +1,301 @@
+{
+  "files": {
+    ".gitignore": {
+      "size": 902,
+      "sha256": "cb3ebe39851ec940d13893114161ae736622f828dd53006f86d8736cdebeb2aa"
+    },
+    "AGENTS.md": {
+      "size": 2876,
+      "sha256": "1065350ac14f5faaf453b3cab2a7bcf0a469414c1d311649b12952a8a373d2d1"
+    },
+    "data/config/courses_syllabus.json": {
+      "size": 35879,
+      "sha256": "49900d52dca76c7ba6615bf3f412c33d5889c348f58e04bb8a02714e795af59a"
+    },
+    "data/config/grading_rubrics.json": {
+      "size": 7883,
+      "sha256": "6597eb1a8cbf260a69b8b1e5f6a44ee362032cbeca30abe60524636351ebce9b"
+    },
+    "data/config/quick_tags.json": {
+      "size": 3982,
+      "sha256": "ef17b36812222fed83d8bd4fb150805242f0b76305894dfaad4ec56054b36200"
+    },
+    "data/config/zalo_templates.json": {
+      "size": 2420,
+      "sha256": "2ce990f86379d93d971e20ef23cc7796903370e5ea55a90b71ffae934be46609"
+    },
+    "GEMINI.md": {
+      "size": 2195,
+      "sha256": "d9248916dea2a6d70e9ad26fd81098afa66d5928b6943b94491a44091498f42c"
+    },
+    "MINDX_AUTOMATION_PLAN.md": {
+      "size": 66444,
+      "sha256": "c7afc07d68732d16d929009402049f5dd0d16e004735d3a6b574fe1e930ba9cb"
+    },
+    "next-env.d.ts": {
+      "size": 303,
+      "sha256": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000"
+    },
+    "next.config.ts": {
+      "size": 151,
+      "sha256": "f2f04da154b8bbbf207a2c7617bce5a35c8cb92e3227c15a9dd2764ba108ac49"
+    },
+    "package-lock.json": {
+      "size": 115297,
+      "sha256": "b0def36b403f0106ed80e9e361c499612ff9c3daab1c4d45199d9cda93007366"
+    },
+    "package.json": {
+      "size": 1605,
+      "sha256": "1472c4e48d2ce7486cfb9c7debe373a96fcf0f72043661cda77f9e901b7415f9"
+    },
+    "postcss.config.mjs": {
+      "size": 94,
+      "sha256": "dfac7ac2d86d326a0e5adb024e7943c181393ed17a5fcb8f0315b24c7da6ddde"
+    },
+    "README.md": {
+      "size": 2192,
+      "sha256": "9236da77b33b12a5149d51bece8663cc03b2a97e042168879f42410f881cb956"
+    },
+    "scripts/recon.ts": {
+      "size": 7359,
+      "sha256": "50a9cfffd20e1d043112852433070ea78fb084b919d85ad537f96f67b33ee5e2"
+    },
+    "scripts/test-patches-round2.ts": {
+      "size": 7259,
+      "sha256": "2e1b15a66ee4fe900f8f5580a19e40cca4fde9dc27cfaf59bb87c7c268275ba5"
+    },
+    "scripts/test-phase3.ts": {
+      "size": 8171,
+      "sha256": "436dfb7bb8ae90f09344146e1b3596c06221c993b5fa3b2ad4b1533051b894d1"
+    },
+    "scripts/test-phase4-codex-repros.ts": {
+      "size": 177196,
+      "sha256": "58db0934899bf35da525f3498c169d2de6f74a4fb61d8ea1c6e3b456267372f5"
+    },
+    "scripts/test-phase5.ts": {
+      "size": 21715,
+      "sha256": "a9ecc128fd60da1634447a7053fc61ced63d5104bb47477e8c228c6e8c5461bd"
+    },
+    "src/app/api/auth/login/route.ts": {
+      "size": 1292,
+      "sha256": "6a1fbf964c9f8393459173317d5784d4cc6c07c34a7d0a1a822e144c5afe487a"
+    },
+    "src/app/api/auth/status/route.ts": {
+      "size": 1604,
+      "sha256": "df3438881441ede00e32b3dda49ec1a11c704ed6a0d7fcd6103a069033e5156a"
+    },
+    "src/app/api/homework-grader/approve/route.ts": {
+      "size": 17032,
+      "sha256": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283"
+    },
+    "src/app/api/homework-grader/download-and-grade/route.ts": {
+      "size": 6596,
+      "sha256": "12c52a3b53eb3db4de810eeb2e22e2d87ea2f09920341d9120c59a5d86db448b"
+    },
+    "src/app/api/homework-grader/export/route.ts": {
+      "size": 5342,
+      "sha256": "4b57dba8f7b78a601de7ba1cd7dcdbb8ea78e48709e5c1791335d7bbbc2fe80a"
+    },
+    "src/app/api/homework-grader/save-lms/route.ts": {
+      "size": 1983,
+      "sha256": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791"
+    },
+    "src/app/api/homework-grader/scores/route.ts": {
+      "size": 2339,
+      "sha256": "adf189bafc396c2dec67b4f769def8ec1822be143029e959eda7d55c93a93dfa"
+    },
+    "src/app/api/homework-grader/submissions/route.ts": {
+      "size": 13410,
+      "sha256": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc"
+    },
+    "src/app/api/queue/control/route.ts": {
+      "size": 1851,
+      "sha256": "ba10880adeeb8e5de6807313f13ad01731ed28edebecf859d9687e362c8c2e70"
+    },
+    "src/app/api/queue/stream/route.ts": {
+      "size": 2282,
+      "sha256": "fa33c36a430831964d81fc0a2e51c70e1c7dfa91bf0b1fd3327661619e0961c2"
+    },
+    "src/app/api/session-comments/approve/route.ts": {
+      "size": 6740,
+      "sha256": "f5bd8e5abc2ec11ce92f1a0279232f83a94222cfa39012f7389f754947253caa"
+    },
+    "src/app/api/session-comments/generate-ai/route.ts": {
+      "size": 3088,
+      "sha256": "325f6b1d9248f8907bd2bd4f2971d1155bcff6522ae05790d0572dc7c2e9cfd6"
+    },
+    "src/app/api/session-comments/list/route.ts": {
+      "size": 1591,
+      "sha256": "f3e3657417934d7ef877baf582e041d86892ee4d5d81575f25831a598e97c77d"
+    },
+    "src/app/api/session-comments/save-draft/route.ts": {
+      "size": 11352,
+      "sha256": "055e0633fb74a56187c9c0c901bee7a901eaee8376d1ee208afe34310b875948"
+    },
+    "src/app/api/session-comments/save-lms/route.ts": {
+      "size": 1447,
+      "sha256": "c0c13bda18cff153709b4bc238fd7c3922d5bda8b7fa94d1af6ab59106c0905c"
+    },
+    "src/app/api/session-comments/sync/route.ts": {
+      "size": 1188,
+      "sha256": "89567e459fe7ba88ead3cccdd5b4db40aeed0ef67e869705d33b1234166fcf32"
+    },
+    "src/app/final-project/page.tsx": {
+      "size": 800,
+      "sha256": "75bf591ab72f3502c7a187a8302fdfa5e5c2fb25e6c64b8ace0ffec06a7c19e8"
+    },
+    "src/app/globals.css": {
+      "size": 289,
+      "sha256": "39dfece0f5bb4745efdfc93653e01124d72ac7f286ca0e7887653169743826b8"
+    },
+    "src/app/homework-grader/page.tsx": {
+      "size": 33651,
+      "sha256": "0bd7b41be9c0ad2af36384e2b1921bf6440dc57499015d0cfa8e931c61523f6d"
+    },
+    "src/app/layout.tsx": {
+      "size": 3108,
+      "sha256": "0e331573cb47afa19f14e607e32079ca080443dcc81bf3b5f1519dd9be196eac"
+    },
+    "src/app/page.tsx": {
+      "size": 9079,
+      "sha256": "b2ab1d00a895bd171eea4ed207d82fd5ce5c55c9ed67ba9b0e2369293bf2e76d"
+    },
+    "src/app/session-comments/page.tsx": {
+      "size": 78837,
+      "sha256": "f1e3eddda28ef9af5835e660f73750ca5852a7476df02481f3b2992e74a577c3"
+    },
+    "src/app/syllabus-config/page.tsx": {
+      "size": 5974,
+      "sha256": "427663d38323433d187570853742af30b641550c11a5cea6606b71d498ebc721"
+    },
+    "src/components/homework-auto-grader-tab.tsx": {
+      "size": 56492,
+      "sha256": "019bbcc3016fafd5453a6a137dc9d0e1ad6ff94c859fd8b2678e1b1e4f01f3ab"
+    },
+    "src/components/live-log-drawer.tsx": {
+      "size": 6360,
+      "sha256": "73dcb92235ddd5e92c6a85933913e82fc58e07a1ff333c84cf88110438d71cd3"
+    },
+    "src/lib/config.ts": {
+      "size": 2206,
+      "sha256": "4ac1332ab0becaaf212e5ac03944b077074572eb43375f7ce8f9b34d6ed3b309"
+    },
+    "src/lib/db/json-config.ts": {
+      "size": 5783,
+      "sha256": "989c335b68721fc62a49e4eb6b74ce08c462c8584eceadc78866520888caca32"
+    },
+    "src/lib/db/sqlite.ts": {
+      "size": 47875,
+      "sha256": "147e883ffb1eb9798cc5c6d87f2f8b0dbc83f9748c34cfef829badd19da640ab"
+    },
+    "src/lib/file-parsers/archive-reader.ts": {
+      "size": 13717,
+      "sha256": "9363446a1ad08fb9f34a270127d648a90b33e1695c02a016349127901e3e63a2"
+    },
+    "src/lib/file-parsers/code-reader.ts": {
+      "size": 11840,
+      "sha256": "9d04a75f4baf99c0f8110f6716b2695fa7322eeca5ccdd01f0dbb36b7a08133c"
+    },
+    "src/lib/file-parsers/game-reader.ts": {
+      "size": 22572,
+      "sha256": "796a07b3d8714920a14c3f016cbf72dcf1e666aa98579cfd4030f1ba8e4fa218"
+    },
+    "src/lib/file-parsers/index.ts": {
+      "size": 10360,
+      "sha256": "5ecd30c44bbe46325f8e467a4573f11015cc875d19a823c8a44291932152bc38"
+    },
+    "src/lib/file-parsers/media-reader.ts": {
+      "size": 63430,
+      "sha256": "c019389c427ca6c0ce0607309850100f1d46020a0c942727e585aa6fbddb9a1a"
+    },
+    "src/lib/gemini/client.ts": {
+      "size": 1216,
+      "sha256": "87382033af0fdd3d2858d8dc495e43a7acb1079172d2c11011a1ea53d0c37851"
+    },
+    "src/lib/gemini/comment-generator.ts": {
+      "size": 24459,
+      "sha256": "a424c188f5a47e979395300235d69531c1eea9af0c90356db6fc0acf5e06e771"
+    },
+    "src/lib/gemini/homework-grader.ts": {
+      "size": 26518,
+      "sha256": "b2bd3a4efeb8706ddfce190fecaef5d30aab76420bc8e0f9b34c1ab785483c57"
+    },
+    "src/lib/gemini/score-auditor.ts": {
+      "size": 7187,
+      "sha256": "79378d1d142d033b6f89807e959f59c04b5a840161a28d6f908849c5236401da"
+    },
+    "src/lib/playwright/auth.ts": {
+      "size": 6878,
+      "sha256": "2708e5b91ccf96ed193f46af69937ea0ad29593d5a6b999e5dc1b5902b740209"
+    },
+    "src/lib/playwright/browser-manager.ts": {
+      "size": 4385,
+      "sha256": "110053838d68f5e8e12a4bb75a205e4cfe7d5f0297729624742e7d4c7812b343"
+    },
+    "src/lib/playwright/download-submissions.ts": {
+      "size": 24227,
+      "sha256": "f56327ef033fbd0a0a1bf6a1b520f7a4b0ded26a30809a43cab981d1f0bfe958"
+    },
+    "src/lib/playwright/grade-worker.ts": {
+      "size": 60949,
+      "sha256": "f5db4a78fcdd2b2022a6c663444e0f6c24acfc6600da884cd5b62a75fef33d73"
+    },
+    "src/lib/playwright/lms-helpers.ts": {
+      "size": 10900,
+      "sha256": "c140ac729d4bddaf88b33256bca6d3987a3838f0977d014545f422f2c59556f3"
+    },
+    "src/lib/playwright/network-interceptor.ts": {
+      "size": 6258,
+      "sha256": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad"
+    },
+    "src/lib/playwright/save-comments.ts": {
+      "size": 36001,
+      "sha256": "58ffc415148a6d2ab2106b40e71d7287bfd502afa96ab7ed1b102da993e26983"
+    },
+    "src/lib/playwright/scrape-scores.ts": {
+      "size": 40595,
+      "sha256": "9f9cfda275d73f855b8a491cace2276f44e9fa210eacc8e385fee5640c2a2d10"
+    },
+    "src/lib/playwright/selectors.ts": {
+      "size": 8586,
+      "sha256": "720f48cdea9d7038564aba5ad97a2913525f02a2fc2d9bfb50bf10e5bc291a0e"
+    },
+    "src/lib/playwright/sync-class.ts": {
+      "size": 16988,
+      "sha256": "d4904d83dd46f6036efa32788065b301fe704097ee52e2b00c3548c1adc2d563"
+    },
+    "src/lib/queue/task-queue.ts": {
+      "size": 8222,
+      "sha256": "a284d7f7099045bc1e3ddd6491a9afce79409fe6fff00b9a7d4988495fa82578"
+    },
+    "src/lib/security/local-guard.ts": {
+      "size": 2144,
+      "sha256": "205f8ec95b183b33cbf65add0fca169f4a4882a43236ad1a9e69f5d926baf470"
+    },
+    "src/lib/security/path-allowlist.ts": {
+      "size": 2749,
+      "sha256": "a3466414a7c626b2c75d95c93b4a66e2b32d3d2be78cfa8dec79d3d145e1af0b"
+    },
+    "src/lib/utils.ts": {
+      "size": 239,
+      "sha256": "ec94d82b9920dd7bde4a8d48a878d1a72c336a12101d411779877ab337eeb466"
+    },
+    "src/lib/zalo/broadcast-generator.ts": {
+      "size": 5710,
+      "sha256": "178ab13591a6fbbb52ccf46d717248447c1f93d9bd7d9da96ef7c60caf6799ec"
+    },
+    "start-bot.bat": {
+      "size": 762,
+      "sha256": "81a2c3ace1cd38a0da63e9ec84d62094eba23af60c18f46a3c323517baeea361"
+    },
+    "start-bot.command": {
+      "size": 775,
+      "sha256": "8a05c2937cb07561479b688fef43ce687f3df9c44323ccc5715728d1b0c8432c"
+    },
+    "tsconfig.json": {
+      "size": 703,
+      "sha256": "f70b288c3af6635001481b32d8f9d12df250fd446d0943b6ed31294cdafd9428"
+    }
+  },
+  "aggregateSha256": "b2eb2d0eee51744fb6cad2af95e86d976a9b1133b8e8afb2d679a1e3525269fa"
+}

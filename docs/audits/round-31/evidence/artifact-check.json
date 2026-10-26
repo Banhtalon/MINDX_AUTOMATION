@@ -1,0 +1,21 @@
+{
+  "checkedAt": "2026-10-20T23:46:05.007039+00:00",
+  "requiredFiles": [
+    "REPORT.vi.md",
+    "FIX_PROMPT.vi.md",
+    "REGRESSION_MATRIX.md",
+    "audit-runner.py",
+    "verify-independent.mjs",
+    "native-media-repro.mjs",
+    "native-worker-repro.mjs",
+    "pdf-name-repro.mjs",
+    "graphql_worker_oracle.py",
+    "pdf_dict_oracle.py"
+  ],
+  "allPresent": true,
+  "localMarkdownLinksChecked": 124,
+  "brokenLinks": [],
+  "verdictAndCountsReconciled": true,
+  "workspacePreserved": true,
+  "scope": "Document/evidence integrity checks only; no new product test or execution."
+}

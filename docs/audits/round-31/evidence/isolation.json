@@ -1,0 +1,18 @@
+{
+  "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-20261020T233526Z-mindx-round25-compat\\snapshot",
+  "sourceMismatch": [],
+  "excludedAbsent": [
+    ".env",
+    ".env.local",
+    ".git",
+    "playwright-auth",
+    "data/mindx_bot.db",
+    "temp_submissions"
+  ],
+  "dependenciesCopied": true,
+  "dependencyJunctionUsed": false,
+  "generatedTypesCopied": true,
+  "secretEnvironmentInherited": false,
+  "noRealCredentialsOrDb": true,
+  "networkPolicy": "Node TCP/DNS/fetch blocked; local named pipes allowed. Not OS firewall."
+}

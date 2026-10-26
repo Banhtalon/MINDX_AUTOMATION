@@ -1,0 +1,49 @@
+{
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "version": "6.10.2",
+  "method": "pypdf strict standalone dictionary, strict complete PDF page resolution, and independent raw-byte dictionary reader; NameObject slash is a legal empty Name per PDF 32000-1 7.3.5.",
+  "results": [
+    {
+      "id": "R30-01-pdf-nested-empty-name",
+      "pass": true,
+      "pypdfNameType": "NameObject",
+      "pypdfNameValue": "/",
+      "independentNameBytesHex": "",
+      "pages": 1,
+      "r29Success": true,
+      "currentStatus": "PARSE_ERROR"
+    },
+    {
+      "id": "R30-01-pdf-array-empty-name",
+      "pass": true,
+      "pypdfNameType": "NameObject",
+      "pypdfNameValue": "/",
+      "independentNameBytesHex": "",
+      "pages": 1,
+      "r29Success": true,
+      "currentStatus": "PARSE_ERROR"
+    },
+    {
+      "id": "R30-01-pdf-nested-name-control",
+      "pass": true,
+      "pypdfNameType": "NameObject",
+      "pypdfNameValue": "/Nonempty",
+      "independentNameBytesHex": "4e6f6e656d707479",
+      "pages": 1,
+      "r29Success": true,
+      "currentStatus": "PARSED"
+    },
+    {
+      "id": "R30-01-pdf-array-name-control",
+      "pass": true,
+      "pypdfNameType": "NameObject",
+      "pypdfNameValue": "/Nonempty",
+      "independentNameBytesHex": "4e6f6e656d707479",
+      "pages": 1,
+      "r29Success": true,
+      "currentStatus": "PARSED"
+    }
+  ]
+}

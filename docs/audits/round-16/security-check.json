@@ -1,0 +1,37 @@
+{
+  "checkedAt": "2026-10-20T05:04:31.285Z",
+  "runtime": "v24.21.0",
+  "versions": {
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "typescript": "7.0.2",
+    "playwright": "1.64.1",
+    "better-sqlite3": "13.0.3"
+  },
+  "clientSecretIdentifierScan": {
+    "exitCode": 1,
+    "matchedFiles": [],
+    "error": ""
+  },
+  "courseCodes": [
+    "PTA",
+    "PTB",
+    "JSB",
+    "SB",
+    "GB",
+    "ROB",
+    "CSI",
+    "PTI",
+    "JSA",
+    "JSI",
+    "SA",
+    "SI",
+    "GA",
+    "GI"
+  ],
+  "courseCount": 14,
+  "launcherBindings": {
+    "dev": "next dev -H 127.0.0.1 -p 3000",
+    "start": "next start -H 127.0.0.1 -p 3000"
+  }
+}

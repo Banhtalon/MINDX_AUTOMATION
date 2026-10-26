@@ -1,0 +1,33 @@
+// Read-only final QA of preservation, evidence, and report consistency.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+const root=process.cwd(), out=path.join(root,'docs/audits/round-19');
+const read=name=>JSON.parse(fs.readFileSync(path.join(out,name),'utf8'));
+const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const state=read('source-state.json'), final=read('final-state.json'), result=read('independent-results.json');
+for(const[file,expected]of Object.entries(state.protectedFiles))assert.equal(hash(path.join(root,file)),expected,'Protected byte mismatch: '+file);
+for(const[file,expected]of Object.entries(state.files))if(file!=='MINDX_AUTOMATION_PLAN.md')assert.equal(hash(path.join(root,file)),expected,'Source changed: '+file);
+for(const entry of read('evidence-manifest.json').files)assert.equal(hash(path.join(out,entry.file)),entry.sha256,'Evidence mismatch: '+entry.file);
+for(const entry of read('commands.json'))assert.equal(hash(path.join(out,entry.log)),entry.logSha256,'Log mismatch: '+entry.log);
+assert.equal(final.requiredCommands.length,9);
+assert.equal(final.requiredCommands.filter(c=>c.exitCode===0).length,8);
+assert.equal(final.requiredCommands.find(c=>c.command.includes('round-19/')).exitCode,1);
+assert.equal(result.total,94);assert.equal(result.passed,74);assert.equal(result.failed,20);
+assert(result.results.filter(r=>!r.pass).every(r=>r.id.startsWith('R19-')),'Positive control failed');
+const issues=read('issue-status.json').findings;
+assert.equal(issues.length,14);assert.equal(issues.filter(f=>f.priority==='P1').length,10);
+assert(result.results.filter(r=>!r.pass).every(r=>issues.some(f=>f.cases.includes(r.id))),'Unmapped failure');
+assert(read('review-scope.json').primary.every(f=>f.matchesBaseline));
+for(const f of issues)for(const loc of f.locations){const[file,range]=loc.split(':');assert(Number(range.split('-').at(-1))<=fs.readFileSync(path.join(root,file),'utf8').split('\n').length,'Invalid location: '+loc);}
+const plan=fs.readFileSync(path.join(root,'MINDX_AUTOMATION_PLAN.md'),'utf8');
+assert.equal(plan.match(/\* \[x\] \*\*AUDIT-R19:/g)?.length,1);
+assert(plan.includes('**NO-GO Giai đoạn 5**'));
+const before=fs.readFileSync(path.join(out,'plan.before.md'),'utf8');
+assert(plan.replace(/^\* \[x\] \*\*AUDIT-R19:.*\r?\n\r?\n/m,'')===before,'Plan changed outside R19 note');
+const report=fs.readFileSync(path.join(out,'REPORT.vi.md'),'utf8');
+assert(report.includes('**Kết luận: NO-GO cho Giai đoạn 5.**'));
+for(const f of issues)assert(report.includes('### '+f.id+' — '+f.priority));
+assert(report.includes('194/194')&&report.includes('74/94')&&report.includes('186/186'));
+console.log(JSON.stringify({pass:true,protectedFiles:Object.keys(state.protectedFiles).length,requiredCommands:9,regressionPassed:186,newCases:94,passed:74,failed:20,issueGroups:14,verdict:'NO-GO',planOnlyR19Added:true,evidenceHashesVerified:true}));

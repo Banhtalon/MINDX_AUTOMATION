@@ -1,0 +1,450 @@
+[
+  {
+    "name": "happy",
+    "summary": {
+      "classId": "AUDIT_R38_SYNTHETIC",
+      "totalRequested": 1,
+      "verifiedCount": 1,
+      "failedCount": 0,
+      "demotedCount": 0,
+      "results": [
+        {
+          "studentId": "R38_S1",
+          "fullName": "Đặng Minh An",
+          "status": "VERIFIED",
+          "reusedExistingItem01": false,
+          "clickedAddSpckButton": true,
+          "youtubeAddedCount": 1,
+          "relatedLinksAddedCount": 0,
+          "screenshotsUploadedCount": 0,
+          "attachmentsUploadedCount": 0
+        }
+      ]
+    },
+    "saves": 1,
+    "saveStudentIds": [
+      "R38_S1",
+      "R38_S1"
+    ],
+    "serverRows": {
+      "R38_S1": {
+        "title": "SPCK reviewed",
+        "comment": "Nhận xét giáo viên đã duyệt."
+      }
+    },
+    "serverFileSha256": null,
+    "unrelatedUploadResponses": 0,
+    "dom": {
+      "cards": 1,
+      "uploadChanges": 0,
+      "ytClicks": 1,
+      "pendingFiles": 0
+    },
+    "requests": [
+      {
+        "url": "https://r38.invalid/graphql",
+        "method": "POST",
+        "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+      },
+      {
+        "url": "https://r38.invalid/graphql",
+        "method": "POST",
+        "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+      }
+    ],
+    "dbRows": [
+      {
+        "studentId": "R38_S1",
+        "status": "VERIFIED"
+      }
+    ],
+    "stopFlag": false,
+    "retry": {
+      "classId": "AUDIT_R38_SYNTHETIC",
+      "totalRequested": 1,
+      "verifiedCount": 1,
+      "failedCount": 0,
+      "demotedCount": 0,
+      "results": [
+        {
+          "studentId": "R38_S1",
+          "fullName": "Đặng Minh An",
+          "status": "VERIFIED",
+          "reusedExistingItem01": true,
+          "clickedAddSpckButton": false,
+          "youtubeAddedCount": 0,
+          "relatedLinksAddedCount": 0,
+          "screenshotsUploadedCount": 0,
+          "attachmentsUploadedCount": 0
+        }
+      ]
+    },
+    "cardsAfterRetry": 1
+  },
+  {
+    "name": "optimistic-links",
+    "summary": {
+      "classId": "AUDIT_R38_SYNTHETIC",
+      "totalRequested": 1,
+      "verifiedCount": 0,
+      "failedCount": 1,
+      "demotedCount": 0,
+      "results": [
+        {
+          "studentId": "R38_S1",
+          "fullName": "Đặng Minh An",
+          "status": "FAILED",
+          "reusedExistingItem01": true,
+          "clickedAddSpckButton": false,
+          "youtubeAddedCount": 1,
+          "relatedLinksAddedCount": 0,
+          "screenshotsUploadedCount": 0,
+          "attachmentsUploadedCount": 0,
+          "errorMessage": "[Read-after-Write] Chỉ có giá trị trên ô input/danh sách cục bộ vừa điền, thiếu bằng chứng dữ liệu đã được lưu bền vững (persisted) trên LMS."
+        }
+      ]
+    },
+    "saves": 1,
+    "saveStudentIds": [
+      "R38_S1"
+    ],
+    "serverRows": {},
+    "serverFileSha256": null,
+    "unrelatedUploadResponses": 0,
+    "dom": {
+      "cards": 1,
+      "uploadChanges": 0,
+      "ytClicks": 1,
+      "pendingFiles": 0
+    },
+    "requests": [
+      {
+        "url": "https://r38.invalid/graphql",
+        "method": "POST",
+        "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+      }
+    ],
+    "dbRows": [
+      {
+        "studentId": "R38_S1",
+        "status": "FAILED"
+      }
+    ],
+    "stopFlag": false
+  },
+  {
+    "name": "wrong-request-owner",
+    "summary": {
+      "classId": "AUDIT_R38_SYNTHETIC",
+      "totalRequested": 1,
+      "verifiedCount": 0,
+      "failedCount": 1,
+      "demotedCount": 0,
+      "results": [
+        {
+          "studentId": "R38_S1",
+          "fullName": "Đặng Minh An",
+          "status": "FAILED",
+          "reusedExistingItem01": true,
+          "clickedAddSpckButton": false,
+          "youtubeAddedCount": 1,
+          "relatedLinksAddedCount": 0,
+          "screenshotsUploadedCount": 0,
+          "attachmentsUploadedCount": 0,
+          "errorMessage": "Request Lưu SPCK gửi sai studentId: expected='R38_S1', actual='OTHER_STUDENT'."
+        }
+      ]
+    },
+    "saves": 1,
+    "saveStudentIds": [
+      "OTHER_STUDENT"
+    ],
+    "serverRows": {
+      "OTHER_STUDENT": {
+        "title": "SPCK reviewed",
+        "comment": "Nhận xét giáo viên đã duyệt."
+      }
+    },
+    "serverFileSha256": null,
+    "unrelatedUploadResponses": 0,
+    "dom": {
+      "cards": 1,
+      "uploadChanges": 0,
+      "ytClicks": 1,
+      "pendingFiles": 0
+    },
+    "requests": [
+      {
+        "url": "https://r38.invalid/graphql",
+        "method": "POST",
+        "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"OTHER_CLASS\",\"studentId\":\"OTHER_STUDENT\"}}"
+      }
+    ],
+    "dbRows": [
+      {
+        "studentId": "R38_S1",
+        "status": "FAILED"
+      }
+    ],
+    "stopFlag": false
+  },
+  {
+    "name": "pending-files",
+    "summary": {
+      "classId": "AUDIT_R38_SYNTHETIC",
+      "totalRequested": 1,
+      "verifiedCount": 0,
+      "failedCount": 1,
+      "demotedCount": 0,
+      "results": [
+        {
+          "studentId": "R38_S1",
+          "fullName": "Đặng Minh An",
+          "status": "FAILED",
+          "reusedExistingItem01": true,
+          "clickedAddSpckButton": false,
+          "youtubeAddedCount": 0,
+          "relatedLinksAddedCount": 0,
+          "screenshotsUploadedCount": 0,
+          "attachmentsUploadedCount": 2,
+          "errorMessage": "[Upload Verification] Còn 2 file đang chờ hoàn tất tải lên server (pendingFiles), từ chối bấm Lưu sớm."
+        }
+      ]
+    },
+    "saves": 0,
+    "saveStudentIds": [],
+    "serverRows": {},
+    "serverFileSha256": null,
+    "unrelatedUploadResponses": 1,
+    "dom": {
+      "cards": 1,
+      "uploadChanges": 1,
+      "ytClicks": 0,
+      "pendingFiles": 2
+    },
+    "requests": [
+      {
+        "url": "https://r38.invalid/files/telemetry",
+        "method": "POST",
+        "body": null
+      }
+    ],
+    "dbRows": [
+      {
+        "studentId": "R38_S1",
+        "status": "FAILED"
+      }
+    ],
+    "stopFlag": false
+  },
+  {
+    "name": "same-filename-old-bytes",
+    "summary": {
+      "classId": "AUDIT_R38_SYNTHETIC",
+      "totalRequested": 1,
+      "verifiedCount": 0,
+      "failedCount": 1,
+      "demotedCount": 0,
+      "results": [
+        {
+          "studentId": "R38_S1",
+          "fullName": "Đặng Minh An",
+          "status": "FAILED",
+          "reusedExistingItem01": true,
+          "clickedAddSpckButton": false,
+          "youtubeAddedCount": 0,
+          "relatedLinksAddedCount": 0,
+          "screenshotsUploadedCount": 0,
+          "attachmentsUploadedCount": 0,
+          "errorMessage": "[Read-after-Write] Phát hiện file trùng tên có sẵn trên LMS nhưng thiếu chứng thực phiên bản byte/SHA-256 khớp với bản đã duyệt."
+        }
+      ]
+    },
+    "saves": 1,
+    "saveStudentIds": [
+      "R38_S1"
+    ],
+    "serverRows": {
+      "R38_S1": {
+        "title": "SPCK reviewed",
+        "comment": "Nhận xét giáo viên đã duyệt."
+      }
+    },
+    "serverFileSha256": "4a9611cc669019616f210f4b4800aa2ab5457d05b7ddff2a64770a6a2d12d1c3",
+    "unrelatedUploadResponses": 0,
+    "dom": {
+      "cards": 1,
+      "uploadChanges": 0,
+      "ytClicks": 0,
+      "pendingFiles": 0
+    },
+    "requests": [
+      {
+        "url": "https://r38.invalid/graphql",
+        "method": "POST",
+        "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+      }
+    ],
+    "dbRows": [
+      {
+        "studentId": "R38_S1",
+        "status": "FAILED"
+      }
+    ],
+    "stopFlag": false,
+    "approvedFileSha256": "a51a6c4bff2bb1bf421d697d996d2fce4ca3e735dcaff6b3db2157a5f6b010f7"
+  },
+  {
+    "name": "stop-during-class",
+    "summary": {
+      "classId": "AUDIT_R38_SYNTHETIC",
+      "totalRequested": 2,
+      "verifiedCount": 1,
+      "failedCount": 0,
+      "demotedCount": 0,
+      "results": [
+        {
+          "studentId": "R38_S1",
+          "fullName": "Đặng Minh An",
+          "status": "VERIFIED",
+          "reusedExistingItem01": true,
+          "clickedAddSpckButton": false,
+          "youtubeAddedCount": 0,
+          "relatedLinksAddedCount": 0,
+          "screenshotsUploadedCount": 0,
+          "attachmentsUploadedCount": 0
+        }
+      ]
+    },
+    "saves": 1,
+    "saveStudentIds": [
+      "R38_S1"
+    ],
+    "serverRows": {
+      "R38_S1": {
+        "title": "SPCK reviewed",
+        "comment": "Nhận xét giáo viên đã duyệt."
+      }
+    },
+    "serverFileSha256": null,
+    "unrelatedUploadResponses": 0,
+    "dom": {
+      "cards": 2,
+      "uploadChanges": 0,
+      "ytClicks": 0,
+      "pendingFiles": 0
+    },
+    "requests": [
+      {
+        "url": "https://r38.invalid/graphql",
+        "method": "POST",
+        "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+      }
+    ],
+    "dbRows": [
+      {
+        "studentId": "R38_S1",
+        "status": "VERIFIED"
+      },
+      {
+        "studentId": "R38_S2",
+        "status": "APPROVED"
+      }
+    ],
+    "stopFlag": true
+  },
+  {
+    "name": "drift-before-save",
+    "summary": {
+      "classId": "AUDIT_R38_SYNTHETIC",
+      "totalRequested": 1,
+      "verifiedCount": 0,
+      "failedCount": 0,
+      "demotedCount": 1,
+      "results": [
+        {
+          "studentId": "R38_S1",
+          "fullName": "Đặng Minh An",
+          "status": "WAITING_APPROVAL",
+          "reusedExistingItem01": true,
+          "clickedAddSpckButton": false,
+          "youtubeAddedCount": 0,
+          "relatedLinksAddedCount": 0,
+          "screenshotsUploadedCount": 0,
+          "attachmentsUploadedCount": 0,
+          "errorMessage": "Đã hủy Lưu do dữ liệu SPCK thay đổi trước khi bấm Lưu."
+        }
+      ]
+    },
+    "saves": 0,
+    "saveStudentIds": [],
+    "serverRows": {},
+    "serverFileSha256": null,
+    "unrelatedUploadResponses": 0,
+    "dom": {
+      "cards": 1,
+      "uploadChanges": 0,
+      "ytClicks": 0,
+      "pendingFiles": 0
+    },
+    "requests": [],
+    "dbRows": [
+      {
+        "studentId": "R38_S1",
+        "status": "WAITING_APPROVAL"
+      }
+    ],
+    "stopFlag": false
+  },
+  {
+    "name": "http500",
+    "summary": {
+      "classId": "AUDIT_R38_SYNTHETIC",
+      "totalRequested": 1,
+      "verifiedCount": 0,
+      "failedCount": 1,
+      "demotedCount": 0,
+      "results": [
+        {
+          "studentId": "R38_S1",
+          "fullName": "Đặng Minh An",
+          "status": "FAILED",
+          "reusedExistingItem01": true,
+          "clickedAddSpckButton": false,
+          "youtubeAddedCount": 0,
+          "relatedLinksAddedCount": 0,
+          "screenshotsUploadedCount": 0,
+          "attachmentsUploadedCount": 0,
+          "errorMessage": "API Lưu SPCK trả về HTTP 500 (yêu cầu 200/201)."
+        }
+      ]
+    },
+    "saves": 1,
+    "saveStudentIds": [
+      "R38_S1"
+    ],
+    "serverRows": {},
+    "serverFileSha256": null,
+    "unrelatedUploadResponses": 0,
+    "dom": {
+      "cards": 1,
+      "uploadChanges": 0,
+      "ytClicks": 0,
+      "pendingFiles": 0
+    },
+    "requests": [
+      {
+        "url": "https://r38.invalid/graphql",
+        "method": "POST",
+        "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+      }
+    ],
+    "dbRows": [
+      {
+        "studentId": "R38_S1",
+        "status": "FAILED"
+      }
+    ],
+    "stopFlag": false
+  }
+]

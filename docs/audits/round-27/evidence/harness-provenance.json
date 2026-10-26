@@ -1,0 +1,15 @@
+{
+  "base": "../round-26/verify-independent.mjs",
+  "baseSha256": "8416a1de6e76b5d0780347f59eec97f45d423095a0087485e524b5453827c6b4",
+  "inheritedChecks": 510,
+  "inheritedAssertionsChanged": false,
+  "newFragmentSha256": "2d9ac64f23c9d77b95b9dc3255dd69190698983ce3a5c2f364b1bf95cc8391ec",
+  "harnessSha256": "5f33e46826c8da4918dd478d5d3d38c61b1446e4ef30fa737276238bc8665439",
+  "envelopeChanges": [
+    "round/output directory",
+    "TEMP prefix",
+    "case import locations",
+    "summary round/inherited count"
+  ],
+  "method": "Inherited VM bodies; independent corroboration imports actual product modules through tsx."
+}

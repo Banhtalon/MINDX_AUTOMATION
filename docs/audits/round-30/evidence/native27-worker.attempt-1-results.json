@@ -1,0 +1,905 @@
+{
+  "round": 27,
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+  "fixtureWorkspace": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round27-native-worker-NTW4QT",
+  "checkedAt": "2026-10-20T20:59:01.409Z",
+  "method": "Actual product modules imported through tsx, no source/type/import stripping. Real SQLite in snapshot; deterministic browser/API doubles by replacing collaborator methods at runtime. No actual browser or LMS.",
+  "harnessSha256": "b434796a6e451bdd2f7f0134b32111cd15c88de2ec725ce80889c22801eb1a80",
+  "total": 32,
+  "passed": 32,
+  "failed": 0,
+  "results": [
+    {
+      "id": "R27-09-control-bound",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-literal-unpaired-open",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R27_NATIVE_PTA\",sessionId:\"R27_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED { FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-bound-unpaired-open",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED { FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-literal-unpaired-close",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R27_NATIVE_PTA\",sessionId:\"R27_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED } FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-bound-unpaired-close",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED } FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-literal-hash-newline",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R27_NATIVE_PTA\",sessionId:\"R27_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED #\\nFEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-bound-hash-newline",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED #\nFEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-literal-nested-parenthesis",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R27_NATIVE_PTA\",sessionId:\"R27_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED ) ( FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-bound-nested-parenthesis",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED ) ( FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-literal-escaped-quote",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R27_NATIVE_PTA\",sessionId:\"R27_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED \\\" FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-bound-escaped-quote",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED \" FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-literal-sentinel-text",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R27_NATIVE_PTA\",sessionId:\"R27_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"__GQL_STR_0__\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-bound-sentinel-text",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "__GQL_STR_0__"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-literal-exponent-score",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R27_NATIVE_PTA\",sessionId:\"R27_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:8e1,feedback:\"APPROVED FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-literal-block-string",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R27_NATIVE_PTA\",sessionId:\"R27_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"APPROVED FEEDBACK\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-literal-block-string-braces",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R27_NATIVE_PTA\",sessionId:\"R27_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"APPROVED { FEEDBACK\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-nested-selection",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id submission { id } } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "submission": {
+              "id": "SUB1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-deep-nested-selection",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id submission { student { id } } } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "submission": {
+              "student": {
+                "id": "S1"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-comment-bound",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { # fake saveHomeworkGrade(input:$wrong)\n saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-multi-operation-selected",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "query ReadHomework { ignored:previewHomework { id } } mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-selected-query",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "query SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R27-09-wrong-bound-variable",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "OTHER",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          },
+          "unused": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R27-09-no-referenced-variable",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "unused": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R27-09-unreferenced-conflict",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          },
+          "unused": {
+            "submissionId": "OTHER",
+            "score": 1
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R27-09-quoted-decoy-deleteAttachment-1",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:deleteAttachment(note:\"mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R27-09-quoted-decoy-deleteAttachment-3",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:deleteAttachment(note:\"\"\"mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }\"\"\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R27-09-block-quote-decoy-deleteAttachment",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:deleteAttachment(note:\"\"\"a \" mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } } \" b\"\"\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R27-09-quoted-decoy-previewHomework-1",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:previewHomework(note:\"mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R27-09-quoted-decoy-previewHomework-3",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:previewHomework(note:\"\"\"mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }\"\"\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R27-09-block-quote-decoy-previewHomework",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:previewHomework(note:\"\"\"a \" mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } } \" b\"\"\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R27-09-placeholder-enum-decoy",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(note:\"APPROVED FEEDBACK\",classId:\"R27_NATIVE_PTA\",sessionId:\"R27_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:__GQL_STR_0__) { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R27-09-wrong-response-alias",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R27_NATIVE_PTA",
+            "sessionId": "R27_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saveHomeworkGrade": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về alias không khớp ('saveHomeworkGrade' !== 'saved')."
+    }
+  ]
+}

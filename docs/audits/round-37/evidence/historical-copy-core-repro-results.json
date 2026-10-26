@@ -1,0 +1,43 @@
+{
+  "results": [
+    {
+      "id": "R35-SB3-NESTED-ARGS",
+      "expected": "Both parse successfully and extracted code distinguishes 1+2 from 100+200",
+      "successA": true,
+      "successB": true,
+      "sameText": true,
+      "textA": "=== SCRATCH 3.0 PROJECT (.SB3): project.sb3 ===\nTổng số nhân vật (Sprites): 1 (Sprite1)\nTổng số khối lệnh (Blocks): 3\nBiến số (Variables): Không có\nSự kiện (Events): Sprite1:event_whenflagclicked\nDanh sách Opcode đã dùng (3): event_whenflagclicked, motion_movesteps, operator_add\n\n--- STAGE (Sân khấu) ---\n  Trang phục (Costumes): 1 | Âm thanh (Sounds): 0\n  Số khối lệnh (Blocks): 0\n  (Không có kịch bản khối lệnh nào trong Stage)\n\n--- SPRITE (Nhân vật): Sprite1 ---\n  Vị trí: (x=0, y=0), size=100%, direction=90, visible=true\n  Trang phục (Costumes): 1 | Âm thanh (Sounds): 0\n  Số khối lệnh (Blocks): 3\n  Cấu trúc kịch bản (Scripts):\n    [event_whenflagclicked]\n    [motion_movesteps] (STEPS=(operator_add))",
+      "textB": "=== SCRATCH 3.0 PROJECT (.SB3): project.sb3 ===\nTổng số nhân vật (Sprites): 1 (Sprite1)\nTổng số khối lệnh (Blocks): 3\nBiến số (Variables): Không có\nSự kiện (Events): Sprite1:event_whenflagclicked\nDanh sách Opcode đã dùng (3): event_whenflagclicked, motion_movesteps, operator_add\n\n--- STAGE (Sân khấu) ---\n  Trang phục (Costumes): 1 | Âm thanh (Sounds): 0\n  Số khối lệnh (Blocks): 0\n  (Không có kịch bản khối lệnh nào trong Stage)\n\n--- SPRITE (Nhân vật): Sprite1 ---\n  Vị trí: (x=0, y=0), size=100%, direction=90, visible=true\n  Trang phục (Costumes): 1 | Âm thanh (Sounds): 0\n  Số khối lệnh (Blocks): 3\n  Cấu trúc kịch bản (Scripts):\n    [event_whenflagclicked]\n    [motion_movesteps] (STEPS=(operator_add))",
+      "pass": false
+    },
+    {
+      "id": "R35-YYZ-PARTIAL-CORRUPTION",
+      "expected": "Corrupted required GML returns failure for manual inspection",
+      "success": true,
+      "text": "=== GAMEMAKER PROJECT (.YYZ): project.yyz ===\nTổng số Sprites (0): Không có\nTổng số Objects (1): obj_player\nTổng số Rooms (0): Không có\nTổng số file code .GML: 1\n\n--- CẤU TRÚC OBJECTS & EVENTS ---\n  • Object 'obj_player' (Sprite: Không gắn Sprite, Visible: true, Solid: false) | Events (2): obj_player:Create_0, obj_player:Step_0\n\n--- MÃ NGUỒN CHI TIẾT (.GML) ---\n\n--- [GML SCRIPT: objects/obj_player/Create_0.gml] ---\nshow_debug_message(1);",
+      "errorReason": null,
+      "pass": false
+    },
+    {
+      "id": "R35-NEW-SUBMISSION-HIDDEN-BY-CACHE",
+      "expected": "Downloading current lesson refreshes LMS so newly submitted homework is discovered",
+      "cachedSubmission": null,
+      "freshSubmission": "NEW_SUB",
+      "scrapeCalls": 0,
+      "download": {
+        "success": true,
+        "classId": "AUDIT_PTA_CLASS",
+        "classCode": "AUDIT_PTA_CLASS",
+        "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+        "lessonId": "L1",
+        "totalCandidates": 0,
+        "downloadedCount": 0,
+        "parsedCount": 0,
+        "parseErrorCount": 0,
+        "failedCount": 0,
+        "items": []
+      },
+      "pass": false
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "checked": 85,
+  "mismatch": [],
+  "esbuildSha256": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef",
+  "originalEsbuildSha256": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef",
+  "excludedAbsent": [
+    {
+      "path": ".env",
+      "absent": true
+    },
+    {
+      "path": ".env.local",
+      "absent": true
+    },
+    {
+      "path": ".git",
+      "absent": true
+    },
+    {
+      "path": "playwright-auth",
+      "absent": true
+    },
+    {
+      "path": "data/mindx_bot.db",
+      "absent": true
+    }
+  ]
+}

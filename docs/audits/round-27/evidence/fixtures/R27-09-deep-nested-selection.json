@@ -1,0 +1,36 @@
+{
+  "id": "R27-09-deep-nested-selection",
+  "pass": false,
+  "expectedVerified": 1,
+  "verified": 0,
+  "status": "FAILED",
+  "writes": 1,
+  "request": {
+    "operationName": "SaveHomeworkGrade",
+    "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id submission { student { id } } } }",
+    "variables": {
+      "input": {
+        "classId": "R27_NATIVE_PTA",
+        "sessionId": "R27_NATIVE_PTA_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "score": 80,
+        "decision": "GRADE",
+        "feedback": "APPROVED FEEDBACK"
+      }
+    }
+  },
+  "response": {
+    "data": {
+      "saved": {
+        "id": "SUB1",
+        "submission": {
+          "student": {
+            "id": "S1"
+          }
+        }
+      }
+    }
+  },
+  "error": "Synthetic API did not match"
+}

@@ -1,0 +1,12 @@
+{
+  "totalBefore": 563,
+  "totalAfter": 563,
+  "changed": [],
+  "added": [],
+  "missing": [],
+  "protectedCount": 487,
+  "sourceFiles": 74,
+  "nextEnvSha256": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
+  "allPreserved": true,
+  "checkedAt": "2026-10-20T13:20:15.263846+00:00"
+}

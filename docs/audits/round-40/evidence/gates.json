@@ -1,0 +1,22 @@
+﻿[
+    {
+        "exitCode":  0,
+        "command":  "node --import tsx scripts/test-phase7.ts",
+        "name":  "phase7"
+    },
+    {
+        "exitCode":  0,
+        "command":  "node --import tsx scripts/test-phase6.ts",
+        "name":  "phase6"
+    },
+    {
+        "exitCode":  0,
+        "command":  "node --import tsx scripts/test-phase5.ts",
+        "name":  "phase5"
+    },
+    {
+        "exitCode":  0,
+        "command":  "tsc --noEmit --incremental false",
+        "name":  "tsc"
+    }
+]

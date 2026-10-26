@@ -1,0 +1,23 @@
+{
+  "id": "R26-09-literal-brace-open",
+  "pass": false,
+  "expectedVerified": 1,
+  "verified": 0,
+  "status": "FAILED",
+  "writes": 1,
+  "request": {
+    "operationName": "SaveHomeworkGrade",
+    "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R26_NATIVE_PTA\",sessionId:\"R26_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED { FEEDBACK\") { id } }",
+    "variables": {}
+  },
+  "response": {
+    "data": {
+      "saved": {
+        "id": "SUB1",
+        "score": 80,
+        "feedback": "APPROVED { FEEDBACK"
+      }
+    }
+  },
+  "error": "Synthetic API did not match"
+}

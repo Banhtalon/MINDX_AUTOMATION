@@ -1,0 +1,35 @@
+{
+  "expectedPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+  "existsAfter": false,
+  "removedLinksOnly": [
+    {
+      "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\node_modules",
+      "target": "F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules"
+    },
+    {
+      "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\data\\r38-fixtures-AsJ4Oq\\outside-junction",
+      "target": "C:\\Users\\QQ\\AppData\\Local\\Temp"
+    },
+    {
+      "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\data\\r38-fixtures-fYNTwq\\outside-junction",
+      "target": "C:\\Users\\QQ\\AppData\\Local\\Temp"
+    },
+    {
+      "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\data\\r38-fixtures-TySDB8\\outside-junction",
+      "target": "C:\\Users\\QQ\\AppData\\Local\\Temp"
+    },
+    {
+      "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-32\\evidence\\fixtures\\run-qg3DqL\\inside-link",
+      "target": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-32\\evidence\\fixtures\\run-qg3DqL\\student"
+    },
+    {
+      "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-32\\evidence\\fixtures\\run-qg3DqL\\outside-link",
+      "target": "C:\\Users\\QQ\\AppData\\Local\\Temp\\r32-out-Ku9xci"
+    }
+  ],
+  "removedExternalEmptyFixtures": [
+    "C:\\Users\\QQ\\AppData\\Local\\Temp\\r32-out-Ku9xci"
+  ],
+  "workspaceNodeModulesExists": true,
+  "environmentFilesFound": []
+}

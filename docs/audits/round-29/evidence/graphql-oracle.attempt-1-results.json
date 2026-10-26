@@ -1,0 +1,1479 @@
+{
+  "total": 88,
+  "passed": 88,
+  "failed": 0,
+  "method": "Independent character scanner and recursive fixture parser for 64 inherited cases; imperative specification steps and explicit literals for 24 R29 block-string cases. No actual schema validation.",
+  "results": [
+    {
+      "id": "R27-09-control-bound",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-literal-unpaired-open",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "score": 80,
+        "decision": "GRADE",
+        "feedback": "APPROVED { FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R27-09-bound-unpaired-open",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED { FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-literal-unpaired-close",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "score": 80,
+        "decision": "GRADE",
+        "feedback": "APPROVED } FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R27-09-bound-unpaired-close",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED } FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-literal-hash-newline",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "score": 80,
+        "decision": "GRADE",
+        "feedback": "APPROVED #\nFEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R27-09-bound-hash-newline",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED #\nFEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-literal-nested-parenthesis",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "score": 80,
+        "decision": "GRADE",
+        "feedback": "APPROVED ) ( FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R27-09-bound-nested-parenthesis",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED ) ( FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-literal-escaped-quote",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "score": 80,
+        "decision": "GRADE",
+        "feedback": "APPROVED \" FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R27-09-bound-escaped-quote",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED \" FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-literal-sentinel-text",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "score": 80,
+        "decision": "GRADE",
+        "feedback": "__GQL_STR_0__"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R27-09-bound-sentinel-text",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "__GQL_STR_0__"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-literal-exponent-score",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R27-09-literal-block-string",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R27-09-literal-block-string-braces",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED { FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R27-09-nested-selection",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-deep-nested-selection",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-comment-bound",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-multi-operation-selected",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-selected-query",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "query",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-wrong-bound-variable",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "OTHER",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-no-referenced-variable",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {},
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-unreferenced-conflict",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-quoted-decoy-deleteAttachment-1",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "deleteAttachment",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "note": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }"
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-quoted-decoy-deleteAttachment-3",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "deleteAttachment",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "note": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }"
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-block-quote-decoy-deleteAttachment",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "deleteAttachment",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "note": "a \" mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } } \" b"
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-quoted-decoy-previewHomework-1",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "previewHomework",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "note": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }"
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-quoted-decoy-previewHomework-3",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "previewHomework",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "note": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }"
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-block-quote-decoy-previewHomework",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "previewHomework",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "note": "a \" mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } } \" b"
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R27-09-placeholder-enum-decoy",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "note": "APPROVED FEEDBACK",
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "__GQL_STR_0__"
+      },
+      "feedbackValueKind": "ENUM"
+    },
+    {
+      "id": "R27-09-wrong-response-alias",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R28-09-number-8E1",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-number-8e_1",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-number-80_0",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-number-0_8e2",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-number-800e_1",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-block-two-lines",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED\nFEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-block-two-lines-crlf",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED\nFEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-block-uneven-indent",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED\n  FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-block-tabs",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED\nFEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-block-escaped-triple",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED \"\"\" FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-ordinary-unicode",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-ordinary-escaped-tab",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED\tFEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-ordinary-escaped-newline",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED\nFEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-selection-depth-3",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R28-09-selection-depth-8",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R28-09-selection-depth-24",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R28-09-comment-crlf",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [
+        "input"
+      ],
+      "resolvedArguments": {
+        "input": {
+          "classId": "R27_ORACLE",
+          "sessionId": "R27_ORACLE_SESS_01",
+          "submissionId": "SUB1",
+          "studentId": "S1",
+          "score": 80,
+          "decision": "GRADE",
+          "feedback": "APPROVED FEEDBACK"
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R28-09-nested-object",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "input": {
+          "envelope": {
+            "classId": "R27_ORACLE",
+            "sessionId": "R27_ORACLE_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "decision": "GRADE",
+            "score": 80,
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R28-09-nested-wrong-submission",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "input": {
+          "envelope": {
+            "classId": "R27_ORACLE",
+            "sessionId": "R27_ORACLE_SESS_01",
+            "submissionId": "OTHER",
+            "studentId": "S1",
+            "decision": "GRADE",
+            "score": 80,
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R28-09-array-business-decoy",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "input": [
+          {
+            "classId": "R27_ORACLE",
+            "sessionId": "R27_ORACLE_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "decision": "GRADE",
+            "score": 80,
+            "feedback": "APPROVED FEEDBACK"
+          }
+        ]
+      },
+      "feedbackValueKind": null
+    },
+    {
+      "id": "R28-09-duplicate-score",
+      "pass": true,
+      "fixtureSyntaxRejected": true,
+      "error": "The expression evaluated to a falsy value:\n\n  assert(!(k in fields))\n"
+    },
+    {
+      "id": "R28-09-nested-duplicate-feedback",
+      "pass": true,
+      "fixtureSyntaxRejected": true,
+      "error": "The expression evaluated to a falsy value:\n\n  assert(!(k in fields))\n"
+    },
+    {
+      "id": "R28-09-feedback-kind-__GQL_STR_1__",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "__GQL_STR_1__"
+      },
+      "feedbackValueKind": "ENUM"
+    },
+    {
+      "id": "R28-09-feedback-kind-APPROVED_FEEDBACK",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED_FEEDBACK"
+      },
+      "feedbackValueKind": "ENUM"
+    },
+    {
+      "id": "R28-09-feedback-kind-null",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "null"
+      },
+      "feedbackValueKind": "ENUM"
+    },
+    {
+      "id": "R28-09-feedback-kind-false",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "false"
+      },
+      "feedbackValueKind": "ENUM"
+    },
+    {
+      "id": "R28-09-submission-kind-80",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": 80,
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-submission-kind-null",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "null",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-submission-kind-__SUB1__",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": [
+          "SUB1"
+        ],
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-submission-kind-_id__SUB1__",
+      "pass": true,
+      "expectedVerified": 0,
+      "independentVerified": 0,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": {
+          "id": "SUB1"
+        },
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-opaque-feedback-ordinary",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED } # FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R28-09-opaque-feedback-block",
+      "pass": true,
+      "expectedVerified": 1,
+      "independentVerified": 1,
+      "operationType": "mutation",
+      "rootField": "saveHomeworkGrade",
+      "alias": "saved",
+      "actualArgumentVariables": [],
+      "resolvedArguments": {
+        "classId": "R27_ORACLE",
+        "sessionId": "R27_ORACLE_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "decision": "GRADE",
+        "score": 80,
+        "feedback": "APPROVED } # FEEDBACK"
+      },
+      "feedbackValueKind": "STRING"
+    },
+    {
+      "id": "R29-09-first-line-excluded",
+      "pass": true,
+      "independentValue": "APPROVED\nFEEDBACK",
+      "expectedVerified": 1,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-first-line-excluded-wrong-feedback",
+      "pass": true,
+      "independentValue": "APPROVED\nFEEDBACK",
+      "expectedVerified": 0,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-first-line-indent-retained",
+      "pass": true,
+      "independentValue": "  APPROVED\nFEEDBACK",
+      "expectedVerified": 1,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-first-line-indent-retained-wrong-feedback",
+      "pass": true,
+      "independentValue": "  APPROVED\nFEEDBACK",
+      "expectedVerified": 0,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-blank-edges",
+      "pass": true,
+      "independentValue": "APPROVED\nFEEDBACK",
+      "expectedVerified": 1,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-blank-edges-wrong-feedback",
+      "pass": true,
+      "independentValue": "APPROVED\nFEEDBACK",
+      "expectedVerified": 0,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-internal-blank",
+      "pass": true,
+      "independentValue": "APPROVED\n\nFEEDBACK",
+      "expectedVerified": 1,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-internal-blank-wrong-feedback",
+      "pass": true,
+      "independentValue": "APPROVED\n\nFEEDBACK",
+      "expectedVerified": 0,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-mixed-eols",
+      "pass": true,
+      "independentValue": "APPROVED\nFEEDBACK",
+      "expectedVerified": 1,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-mixed-eols-wrong-feedback",
+      "pass": true,
+      "independentValue": "APPROVED\nFEEDBACK",
+      "expectedVerified": 0,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-tab-space-indent",
+      "pass": true,
+      "independentValue": "APPROVED\nFEEDBACK",
+      "expectedVerified": 1,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-tab-space-indent-wrong-feedback",
+      "pass": true,
+      "independentValue": "APPROVED\nFEEDBACK",
+      "expectedVerified": 0,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-unequal-indent",
+      "pass": true,
+      "independentValue": "APPROVED\n  FEEDBACK",
+      "expectedVerified": 1,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-unequal-indent-wrong-feedback",
+      "pass": true,
+      "independentValue": "APPROVED\n  FEEDBACK",
+      "expectedVerified": 0,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-zero-common-indent",
+      "pass": true,
+      "independentValue": "APPROVED\n    FEEDBACK",
+      "expectedVerified": 1,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-zero-common-indent-wrong-feedback",
+      "pass": true,
+      "independentValue": "APPROVED\n    FEEDBACK",
+      "expectedVerified": 0,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-escape-triple",
+      "pass": true,
+      "independentValue": "APPROVED \"\"\"\nFEEDBACK",
+      "expectedVerified": 1,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-escape-triple-wrong-feedback",
+      "pass": true,
+      "independentValue": "APPROVED \"\"\"\nFEEDBACK",
+      "expectedVerified": 0,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-single-quote-opaque",
+      "pass": true,
+      "independentValue": "APPROVED \" FEEDBACK\nEND",
+      "expectedVerified": 1,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-single-quote-opaque-wrong-feedback",
+      "pass": true,
+      "independentValue": "APPROVED \" FEEDBACK\nEND",
+      "expectedVerified": 0,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-literal-backslash",
+      "pass": true,
+      "independentValue": "APPROVED\\n\nFEEDBACK",
+      "expectedVerified": 1,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-literal-backslash-wrong-feedback",
+      "pass": true,
+      "independentValue": "APPROVED\\n\nFEEDBACK",
+      "expectedVerified": 0,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-brace-comment-opaque",
+      "pass": true,
+      "independentValue": "APPROVED } #\nFEEDBACK",
+      "expectedVerified": 1,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    },
+    {
+      "id": "R29-09-brace-comment-opaque-wrong-feedback",
+      "pass": true,
+      "independentValue": "APPROVED } #\nFEEDBACK",
+      "expectedVerified": 0,
+      "method": "Spec steps with character iteration and explicit expected literal"
+    }
+  ]
+}

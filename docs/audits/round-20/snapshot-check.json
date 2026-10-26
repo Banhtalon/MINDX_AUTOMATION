@@ -1,0 +1,35 @@
+{
+  "checkedAt": "2026-10-20T10:45:15.102Z",
+  "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round20-HNBfDA\\snapshot",
+  "mismatches": [],
+  "excluded": [
+    {
+      "path": ".env",
+      "absent": true
+    },
+    {
+      "path": ".env.local",
+      "absent": true
+    },
+    {
+      "path": ".env.production",
+      "absent": true
+    },
+    {
+      "path": "playwright-auth",
+      "absent": true
+    },
+    {
+      "path": ".playwright-profile",
+      "absent": true
+    },
+    {
+      "path": "temp_submissions",
+      "absent": true
+    },
+    {
+      "path": "data/mindx_bot.db",
+      "absent": true
+    }
+  ]
+}

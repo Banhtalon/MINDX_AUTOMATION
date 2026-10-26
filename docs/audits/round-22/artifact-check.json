@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-10-20T12:00:21.697162+00:00",
+  "commandsOnlyInSnapshot": true,
+  "logHashesMatch": true,
+  "finalSuiteMatchesExecutedBytes": true,
+  "resultsMatchFinalRun": true,
+  "sourceHashesMatchCapturedState": true,
+  "uniqueR22Ids": true,
+  "protectedUnchanged": true,
+  "sourceUnchanged": true,
+  "reportLinksChecked": 38,
+  "reportLinksAllExist": true,
+  "allFinalFailuresHaveConcreteObservation": true,
+  "reportSha256": "d65ab47767e96460df6806cfedff6664eb1f1230be843b16e394a3758c76f14b"
+}

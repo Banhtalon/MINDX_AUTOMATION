@@ -1,0 +1,10 @@
+{
+  "base": "../round-29/verify-independent.mjs",
+  "baseSha256": "385f7722513d757355cd82c2bdd3da3757b78790f0ef077fdc289fbcaee9e9fe",
+  "inheritedChecks": 815,
+  "inheritedAssertionsChanged": false,
+  "r30NewChecks": 4,
+  "newFragmentSha256": "d6c72028906dae868a803f79a07f91b6e78c8967cf33ffe0429f9eb7a7697e85",
+  "harnessSha256": "67b4b79a01b4bbcd395c3131aec444a382e86166ba639187806ded3d41a01d24",
+  "method": "Original 815 R29 assertions retained verbatim; append four PDF empty-Name checks, corroborated by native import, pypdf and hash-verified R29 baseline."
+}

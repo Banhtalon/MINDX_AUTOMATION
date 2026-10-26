@@ -1,0 +1,198 @@
+{
+  "generatedAt": "2026-10-20T10:22:39.046Z",
+  "excludes": [
+    "evidence-manifest.json (self)"
+  ],
+  "files": [
+    {
+      "file": "build.log",
+      "sha256": "0f2a3ef802f71f1c11638bf314a993e40e21b6947117a24ac7719694aa972f2e",
+      "bytes": 2753
+    },
+    {
+      "file": "commands.json",
+      "sha256": "ff07046535159e1eef884edb3a061605486a100c039749b80b7eeddb9eb1062e",
+      "bytes": 4713
+    },
+    {
+      "file": "final-state.json",
+      "sha256": "8935d3320c25b0bc0e503eb490482f07fec810c1ae87acb165a69266b1c3eb76",
+      "bytes": 4508
+    },
+    {
+      "file": "finalize.mjs",
+      "sha256": "74e6add1a28570e12d978826e134c1a305845cf7d66ff61b3c558ea8149b4c23",
+      "bytes": 39649
+    },
+    {
+      "file": "FIX_PROMPT.vi.md",
+      "sha256": "45c63654baa54640b08564393853ce5baab0e7e73a4e65410223d833aa563045",
+      "bytes": 1656
+    },
+    {
+      "file": "git-status.after.txt",
+      "sha256": "2816e7dd917b19dc8bf6640c7c65d7dc40957afefb5fbaed47b42676a92fa331",
+      "bytes": 1399
+    },
+    {
+      "file": "git-status.before.txt",
+      "sha256": "2816e7dd917b19dc8bf6640c7c65d7dc40957afefb5fbaed47b42676a92fa331",
+      "bytes": 1399
+    },
+    {
+      "file": "independent-results.json",
+      "sha256": "f320cffc82f93d7c7b98baaff6c64d16fef501dac416952609436bbaabed29a9",
+      "bytes": 30026
+    },
+    {
+      "file": "isolation.json",
+      "sha256": "8da055fca2f87f4bcf8346a4b7f1b09029e7a2cb8bcce7949c17792c9358ac57",
+      "bytes": 779
+    },
+    {
+      "file": "issue-status.json",
+      "sha256": "0995a24eb861b19914c9e1d0975b90cdd878d08e7826a088d4be8d686383c820",
+      "bytes": 39527
+    },
+    {
+      "file": "network-guard.cjs",
+      "sha256": "74bbc5b23854cee6d28222b76b576a54bd99cab88da4dad4781b2535d5fb6dc4",
+      "bytes": 528
+    },
+    {
+      "file": "phase4.log",
+      "sha256": "33be19616a15ba11b386a8c7c5602b0e70c081a78794bbf4697a99a0aa7513af",
+      "bytes": 2091
+    },
+    {
+      "file": "phase5.log",
+      "sha256": "735a579077534d64731d9948630a5d5533f5276e80cf92b2e09b7ffbe11c706b",
+      "bytes": 1049
+    },
+    {
+      "file": "plan.before.md",
+      "sha256": "4727b295f803aed39df3b37391726de67521ea316c2d7784052339ea5fd5783b",
+      "bytes": 60521
+    },
+    {
+      "file": "preservation-check.json",
+      "sha256": "1aae8ceebfef9e788c594acd97922cc85b6f0d36f25f965fff3881470776b8c0",
+      "bytes": 256
+    },
+    {
+      "file": "REPORT.vi.md",
+      "sha256": "0fc44a02a1cc84df04386c1ff693d9420a004400068bc20c69a817b0aba4588e",
+      "bytes": 35652
+    },
+    {
+      "file": "review-scope.json",
+      "sha256": "c4048531521d50d8b4981a9bc2b74ce04bf0bfc78c34c9689f459d6c02d95dd8",
+      "bytes": 3625
+    },
+    {
+      "file": "round12-independent-results.json",
+      "sha256": "eb1448820bfb92970114486ef16b0aa9101fe20e8db961b31e8bccc407f3cc87",
+      "bytes": 4570
+    },
+    {
+      "file": "round12-independent.log",
+      "sha256": "ec9d37094fba4f298d4defc3ed09077b82b4c764d85acecf861f5b8536b006b4",
+      "bytes": 2906
+    },
+    {
+      "file": "round13-independent-results.json",
+      "sha256": "24664323562559b7ede25719952f880afb2bec9c0123a8c5a5719fd5a8cab711",
+      "bytes": 18765
+    },
+    {
+      "file": "round13-independent.log",
+      "sha256": "de38068e21e4dc913c359e4329b3027b4beec85d6611efc70560dd390db077ed",
+      "bytes": 6642
+    },
+    {
+      "file": "round16-independent-results.json",
+      "sha256": "25cfb0746782062b5f468ce6c8c3842a4feb15296e6033a52c208c66f98bc167",
+      "bytes": 6200
+    },
+    {
+      "file": "round16-independent.log",
+      "sha256": "60db64d3557b23435e6bb5266ffec9776c1311674a3a1b283f964beb4182b84f",
+      "bytes": 2615
+    },
+    {
+      "file": "round17-independent-results.json",
+      "sha256": "3326b75882a589e1a9b2c38c6eba6ed78e4f7110794f3e014c672f895f88ea0b",
+      "bytes": 14295
+    },
+    {
+      "file": "round17-independent.log",
+      "sha256": "b839c14d0bacb04e0d95a813648f9d5aec2a539a9ff2db86d55561b340916ed0",
+      "bytes": 6529
+    },
+    {
+      "file": "round19-independent.attempt-2-results.json",
+      "sha256": "ba4be0fa161f230b668a3c5403a03a104c0dbfb81ca0d9548d9daa8a9ece0f69",
+      "bytes": 25363
+    },
+    {
+      "file": "round19-independent.attempt-2.log",
+      "sha256": "d104210bd97ba23bb5de8d12dd9d7926434e688083b4637cf18cc391d8d314f6",
+      "bytes": 3862
+    },
+    {
+      "file": "round19-independent.attempt-3-results.json",
+      "sha256": "67c1bbf8a184e53b0f66a38831f426673b43e39a78a0141003f850f0c415a7a0",
+      "bytes": 28213
+    },
+    {
+      "file": "round19-independent.attempt-3.log",
+      "sha256": "94a7a6bfc86d0bdb4d300b1719e97f99bc2e28a848706a0221d651d23a436208",
+      "bytes": 4342
+    },
+    {
+      "file": "round19-independent.attempt-4-results.json",
+      "sha256": "f320cffc82f93d7c7b98baaff6c64d16fef501dac416952609436bbaabed29a9",
+      "bytes": 30026
+    },
+    {
+      "file": "round19-independent.attempt-4.log",
+      "sha256": "43422c7aa30aef044338a1a997151105dcc5a72caf571fdf4a0d60ccbff1d0ed",
+      "bytes": 4652
+    },
+    {
+      "file": "round19-independent.log",
+      "sha256": "d9fe96b831d5d70fa1c4fe25f16b3c25b1ecd6f9acce484e428322c767ed672c",
+      "bytes": 936
+    },
+    {
+      "file": "run-checks.mjs",
+      "sha256": "87e8d38e35b68ae96da1de818bcbfe310ab386b477731d698c7727a2f8d23bf1",
+      "bytes": 7415
+    },
+    {
+      "file": "snapshot-check.json",
+      "sha256": "d65e77726e846c1ab41cf98a9d4a8cfda9b66682d6ac1c426d03e88c23dd4320",
+      "bytes": 318
+    },
+    {
+      "file": "source-state.json",
+      "sha256": "3b6aa7e2e8c30854349785758c1046447e3cb13812b35e1ba0fd3df6823f8077",
+      "bytes": 30772
+    },
+    {
+      "file": "typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "file": "verify-artifacts.mjs",
+      "sha256": "f3c822ad3a7c065794edc0fb1663870821f70fa9cbfcf34dcf05fad3155ba1a9",
+      "bytes": 3021
+    },
+    {
+      "file": "verify-independent.mjs",
+      "sha256": "765121dd5d54617c3d9564f0b8cc5646e7b2cf6c701738758741577bb211816a",
+      "bytes": 37305
+    }
+  ]
+}

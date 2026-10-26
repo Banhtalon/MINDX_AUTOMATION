@@ -1,0 +1,24 @@
+[
+  {
+    "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "sourceFileCount": 74,
+    "changedFiles": [
+      "next-env.d.ts"
+    ],
+    "productFilesMatchManifest": true
+  },
+  {
+    "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round30-history-20261020T205749Z-mindx-round20-compat-mindx-round21-compat\\snapshot",
+    "sourceFileCount": 74,
+    "changedFiles": [],
+    "productFilesMatchManifest": true
+  },
+  {
+    "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round30-native25-20261020T205749Z-mindx-round25-compat\\snapshot",
+    "sourceFileCount": 74,
+    "changedFiles": [
+      "next-env.d.ts"
+    ],
+    "productFilesMatchManifest": true
+  }
+]

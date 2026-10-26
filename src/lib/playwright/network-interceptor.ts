@@ -61,6 +61,8 @@ export class NetworkInterceptor {
     options?: {
       method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
       timeoutMs?: number;
+      operationName?: string | RegExp;
+      requestPredicate?: (postData: string) => boolean;
     } | number
   ): Promise<Response> {
     const opts = typeof options === "number" ? { timeoutMs: options } : options;
@@ -69,11 +71,64 @@ export class NetworkInterceptor {
 
     const isMatch = (res: Response) => {
       const url = res.url();
-      const urlMatches =
-        typeof urlPattern === "string" ? url.includes(urlPattern) : urlPattern.test(url);
+      let urlMatches = false;
+      if (typeof urlPattern === "string") {
+        try {
+          const parsedUrl = new URL(url);
+          const host = parsedUrl.hostname.toLowerCase();
+          const pat = urlPattern.toLowerCase();
+          if (!pat.includes("/") && !pat.includes(":")) {
+            if (pat.includes(".")) {
+              urlMatches = host === pat || host.endsWith("." + pat);
+            } else {
+              urlMatches = host === pat || host.split(".").includes(pat);
+            }
+          } else {
+            urlMatches = url.includes(urlPattern);
+          }
+        } catch {
+          urlMatches = url.includes(urlPattern);
+        }
+      } else {
+        urlMatches = urlPattern.test(url);
+      }
       if (!urlMatches) return false;
       if (targetMethod && res.request().method().toUpperCase() !== targetMethod) {
         return false;
+      }
+      if (opts && typeof opts === "object") {
+        const reqObj: any = res.request();
+        const postData = typeof reqObj.postData === "function" ? reqObj.postData() || "" : "";
+        let parsedBody: any = null;
+        if (postData) {
+          try {
+            parsedBody = JSON.parse(postData);
+          } catch {
+            parsedBody = null;
+          }
+        } else if (typeof reqObj.postDataJSON === "function") {
+          try {
+            parsedBody = reqObj.postDataJSON();
+          } catch {
+            parsedBody = null;
+          }
+        }
+
+        if (opts.operationName) {
+          const actualOpName =
+            parsedBody && typeof parsedBody.operationName === "string"
+              ? parsedBody.operationName.trim()
+              : "";
+          if (!actualOpName) return false;
+          const opMatches =
+            typeof opts.operationName === "string"
+              ? actualOpName === opts.operationName
+              : opts.operationName.test(actualOpName);
+          if (!opMatches) return false;
+        }
+        if (opts.requestPredicate && !opts.requestPredicate(postData)) {
+          return false;
+        }
       }
       return true;
     };
@@ -89,6 +144,17 @@ export class NetworkInterceptor {
       throw new Error(
         `[Network API Error] Business API ${method} '${url.slice(0, 100)}' failed with HTTP status ${status} (Expected 200/201)`
       );
+    }
+
+    // Also inspect GraphQL body for top-level errors array even when HTTP status is 200
+    if (typeof (response as any).json === "function") {
+      const bodyJson = await response.json().catch(() => null);
+      if (bodyJson && Array.isArray(bodyJson.errors) && bodyJson.errors.length > 0) {
+        const firstErrMsg = bodyJson.errors[0]?.message || JSON.stringify(bodyJson.errors[0]);
+        throw new Error(
+          `[GraphQL API Error] Business API ${method} '${url.slice(0, 100)}' returned GraphQL errors: ${firstErrMsg}`
+        );
+      }
     }
 
     return response;

@@ -1,0 +1,32 @@
+{
+  "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+  "environmentKeys": [
+    "APPDATA",
+    "CI",
+    "COMSPEC",
+    "LOCALAPPDATA",
+    "NEXT_TELEMETRY_DISABLED",
+    "NODE_OPTIONS",
+    "NO_COLOR",
+    "NUMBER_OF_PROCESSORS",
+    "OS",
+    "PATH",
+    "PATHEXT",
+    "PROCESSOR_ARCHITECTURE",
+    "PROGRAMDATA",
+    "PROGRAMFILES",
+    "PROGRAMFILES(X86)",
+    "SYSTEMROOT",
+    "TEMP",
+    "TMP",
+    "USERPROFILE",
+    "WINDIR",
+    "npm_config_audit",
+    "npm_config_fund",
+    "npm_config_offline"
+  ],
+  "secretsInherited": false,
+  "credentialsCopied": false,
+  "outboundNodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot\\docs\\audits\\round-19\\network-guard.cjs",
+  "limitations": "Node socket guard only; not an OS firewall. No real browser, LMS or Gemini calls."
+}

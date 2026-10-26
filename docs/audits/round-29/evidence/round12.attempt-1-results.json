@@ -1,0 +1,179 @@
+{
+  "generatedAt": "2026-10-20T20:39:55.881Z",
+  "passed": 43,
+  "failed": 0,
+  "results": [
+    {
+      "name": "R1 #1/#2/#3/#5; R2-01/A01; R3-01: HTTP + exact full readback + edit drift",
+      "pass": true
+    },
+    {
+      "name": "R1 #6: editor treats markup as literal text",
+      "pass": true
+    },
+    {
+      "name": "R2-02/A09; R3-02; R4-02; R5-03: mutation target predicate",
+      "pass": true
+    },
+    {
+      "name": "R2-02/A09: actual network filter rejects unrelated requests and GraphQL errors",
+      "pass": true
+    },
+    {
+      "name": "R2-03/A02: full name cannot prefix-match a longer student name",
+      "pass": true
+    },
+    {
+      "name": "R1 #3/#7/#8/#11; R2-05/A03/A05; R3-03: GraphQL identity and score separation",
+      "pass": true
+    },
+    {
+      "name": "R1 #8; R2-10/A12/A14: four score states and Quiz-only",
+      "pass": true
+    },
+    {
+      "name": "R2-07/A12; R4-06: DOM pagination duplicate and 50-page limit",
+      "pass": true
+    },
+    {
+      "name": "R1 #4/#12; R2-04/A11: roster multi-page IDs stable across order",
+      "pass": true
+    },
+    {
+      "name": "R2-06/A04/A06; R3-04; R4-04: invalid score cache rejected without overwrite",
+      "pass": true
+    },
+    {
+      "name": "R2-09/A07; R3-05/R3-06; R6-01: real routes enforce membership, attendance, patch preservation",
+      "pass": true
+    },
+    {
+      "name": "R1 #13; R2-09/A08/R2-11/A13; R3-05/R3-07; R4-05: AI guards and redaction",
+      "pass": true
+    },
+    {
+      "name": "R1 #9/#11: exported spreadsheet formulas and TSV delimiters neutralized",
+      "pass": true
+    },
+    {
+      "name": "R1 #12/#14: course-specific Zalo, guarded config file reads",
+      "pass": true
+    },
+    {
+      "name": "R1 #10; R2-08/A10; R4-03; R5-04: failed scrape clears both loading flags",
+      "pass": true
+    },
+    {
+      "name": "R4-01; R5-01: stale class and session lists cannot cross scope",
+      "pass": true
+    },
+    {
+      "name": "R5-02: slow approve cannot approve a newer edit",
+      "pass": true
+    },
+    {
+      "name": "R3-06: FAILED AI response preserves existing draft on UI and next save",
+      "pass": true
+    },
+    {
+      "name": "R9-01B: failed save from old class cannot roll back new class row",
+      "pass": true
+    },
+    {
+      "name": "R8-01: mixed bulk success and 400 must report error and reconcile",
+      "pass": true
+    },
+    {
+      "name": "R8-01: mixed bulk success and 500 must report error and reconcile",
+      "pass": true
+    },
+    {
+      "name": "R8-01: mixed bulk success and network must report error and reconcile",
+      "pass": true
+    },
+    {
+      "name": "R8-01: mixed bulk success and inactive must report error and reconcile",
+      "pass": true
+    },
+    {
+      "name": "R7-01: all 9 approved-state/edit combinations persist DRAFT",
+      "pass": true
+    },
+    {
+      "name": "R8-01/R9-01/R10-01: stale http failure preserves pending newer edit",
+      "pass": true
+    },
+    {
+      "name": "R8-01/R9-01/R10-01: stale network failure preserves pending newer edit",
+      "pass": true
+    },
+    {
+      "name": "R11-01: control / S2 note",
+      "pass": true
+    },
+    {
+      "name": "R11-01: control / S2 tag",
+      "pass": true
+    },
+    {
+      "name": "R11-01: control / S2 text",
+      "pass": true
+    },
+    {
+      "name": "R11-01: control / S2 attendance",
+      "pass": true
+    },
+    {
+      "name": "R11-01: first-success / S2 note",
+      "pass": true
+    },
+    {
+      "name": "R11-01: first-success / S2 tag",
+      "pass": true
+    },
+    {
+      "name": "R11-01: first-success / S2 text",
+      "pass": true
+    },
+    {
+      "name": "R11-01: first-success / S2 attendance",
+      "pass": true
+    },
+    {
+      "name": "R11-01: first-http-error / S2 note",
+      "pass": true
+    },
+    {
+      "name": "R11-01: first-http-error / S2 tag",
+      "pass": true
+    },
+    {
+      "name": "R11-01: first-http-error / S2 text",
+      "pass": true
+    },
+    {
+      "name": "R11-01: first-http-error / S2 attendance",
+      "pass": true
+    },
+    {
+      "name": "R11-01: first-network-error / S2 note",
+      "pass": true
+    },
+    {
+      "name": "R11-01: first-network-error / S2 tag",
+      "pass": true
+    },
+    {
+      "name": "R11-01: first-network-error / S2 text",
+      "pass": true
+    },
+    {
+      "name": "R11-01: first-network-error / S2 attendance",
+      "pass": true
+    },
+    {
+      "name": "R12-01: earlier successful note request cannot overwrite newer successful note",
+      "pass": true
+    }
+  ]
+}

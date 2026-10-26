@@ -1,0 +1,8 @@
+{
+  "reviewScope": "TASK-5.1..5.5, connected security/queue/DB/AI guards; one local teacher, sequential browser automation; out-of-order draft/AI/UI responses considered.",
+  "changedSource": "src/lib/file-parsers/media-reader.ts",
+  "currentSha256": "2c42b5d4d3a6a3f0f09c9b86bc44f01fcbcb70fb22ee50a15c941b1bf640e3f0",
+  "baselineSha256": "3d677823077a3c7eb36f7261f45970ca7b7903e9797b1568ce602f86109760ac",
+  "patchAssessment": "Raw parser consumes slash then returns NAME even for empty body; raw dictionary keys may be empty, duplicates still rejected. Scalar tokenizer retains slash and allows empty Name keys/values; missing value and stray delimiter checks remain. Only this product file changed from the R30 manifest.",
+  "constraints": "No plan/checklist changes, no actual credentials/database/submissions/browser/LMS/Gemini; source-only decision."
+}

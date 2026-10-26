@@ -1,0 +1,532 @@
+{
+  "scope": "AUDIT-R41: original R40-01..08 reproducible-case closure; no expanded adversarial audit",
+  "history": {
+    "audit": "AUDIT-R40",
+    "summary": {
+      "total": 65,
+      "pass": 35,
+      "fail": 30
+    },
+    "groups": [
+      "invalid config shapes/empty arrays",
+      "duplicate IDs/UI delete-add",
+      "invalid criterion points",
+      "two stale clients saving consecutively",
+      "Stop skips next student",
+      "Windows install failure exit",
+      "late response preserves edits",
+      "final idle status event"
+    ]
+  },
+  "gates": {
+    "audit": "AUDIT-R41",
+    "head": "2570d96b6770957e218031c91f14ce98e766dfa7",
+    "startedAt": "2026-10-21T08:19:40.6155828Z",
+    "completedAt": "2026-10-21T08:20:20.4224894Z",
+    "clone": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round40-phase7",
+    "copyIntegrity": {
+      "checkedBeforeGates": true,
+      "differences": [],
+      "identical": true,
+      "filesCompared": 1871
+    },
+    "gates": [
+      {
+        "id": "adversarial",
+        "command": "node --import tsx docs/audits/round-40/adversarial.mjs",
+        "exitCode": 0,
+        "startedAt": "2026-10-21T08:20:07.0620090Z",
+        "durationMs": 3684,
+        "log": "adversarial.log"
+      },
+      {
+        "id": "phase7",
+        "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase7.ts",
+        "exitCode": 0,
+        "startedAt": "2026-10-21T08:20:10.7652635Z",
+        "durationMs": 337,
+        "log": "phase7.log"
+      },
+      {
+        "id": "phase6",
+        "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase6.ts",
+        "exitCode": 0,
+        "startedAt": "2026-10-21T08:20:11.1081421Z",
+        "durationMs": 2812,
+        "log": "phase6.log"
+      },
+      {
+        "id": "phase5",
+        "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase5.ts",
+        "exitCode": 0,
+        "startedAt": "2026-10-21T08:20:13.9221993Z",
+        "durationMs": 733,
+        "log": "phase5.log"
+      },
+      {
+        "id": "tsc",
+        "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false",
+        "exitCode": 0,
+        "startedAt": "2026-10-21T08:20:14.6649221Z",
+        "durationMs": 389,
+        "log": "tsc.log"
+      }
+    ],
+    "integrity": {
+      "nextEnvSha256": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+      "differences": [],
+      "beforeCount": 1871,
+      "unchanged": true,
+      "afterCount": 1871
+    },
+    "cleanup": {
+      "nodeModulesPreserved": true,
+      "cloneRemoved": true
+    }
+  },
+  "adversarial": {
+    "audit": "AUDIT-R40",
+    "createdAt": "2026-10-21T08:20:10.672Z",
+    "mode": "synthetic TEMP only",
+    "summary": {
+      "total": 65,
+      "pass": 65,
+      "fail": 0
+    },
+    "tests": [
+      {
+        "id": "security-config-get-origin",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-config-get-host",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-config-get-cross-site",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-config-get-null-origin",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-config-post-origin",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-config-post-host",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-config-post-cross-site",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-config-post-null-origin",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-stream-origin",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-stream-host",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-stream-cross-site",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-stream-null-origin",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-control-get-origin",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-control-get-host",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-control-get-cross-site",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-control-get-null-origin",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-control-post-origin",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-control-post-host",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-control-post-cross-site",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "security-control-post-null-origin",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "path-outside-root",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "path-traversal",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "config-junction-escape-blocked",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "config-crud-all-sections",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "reject-scale-10",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "reject-duplicate-course-id",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "reject-duplicate-rubric-id",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "empty-courses",
+        "finding": "R40-01",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "empty-rubrics",
+        "finding": "R40-01",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "empty-quickTags",
+        "finding": "R40-01",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "malformed-course-sessions",
+        "finding": "R40-01",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "malformed-course-code",
+        "finding": "R40-01",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "blank-session-topic",
+        "finding": "R40-01",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "malformed-quicktag-tags",
+        "finding": "R40-01",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "zalo-invalid-row-silently-dropped",
+        "finding": "R40-01",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "rubric-negative-session",
+        "finding": "R40-01",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "bad-session--1",
+        "finding": "R40-01",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "bad-session-0",
+        "finding": "R40-01",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "bad-session-0.2",
+        "finding": "R40-01",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "duplicate-session-id",
+        "finding": "R40-02",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "duplicate-criterion-id",
+        "finding": "R40-02",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "duplicate-quicktag-id",
+        "finding": "R40-02",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "duplicate-category-id",
+        "finding": "R40-02",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "duplicate-zalo-id",
+        "finding": "R40-02",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "invalid-points--5",
+        "finding": "R40-03",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "invalid-points-0",
+        "finding": "R40-03",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "invalid-points-NaN",
+        "finding": "R40-03",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "invalid-points-null",
+        "finding": "R40-03",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "invalid-points-true",
+        "finding": "R40-03",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "round-positive-to-zero",
+        "finding": "R40-03",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "json-overflow-infinity",
+        "finding": "R40-03",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "stale-two-client-save",
+        "finding": "R40-04",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "approved-verified-preserved-config-and-stop",
+        "finding": null,
+        "status": "PASS",
+        "detail": {
+          "homework": 2,
+          "spck": 2,
+          "byteEquivalentRows": true
+        }
+      },
+      {
+        "id": "queue-pending-stop-serial-preserves",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "sse-final-status-is-idle",
+        "finding": "R40-08",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "sse-live-and-cleanup-60-connections",
+        "finding": null,
+        "status": "PASS",
+        "detail": {
+          "connections": 60,
+          "listenersBefore": [
+            0,
+            0
+          ],
+          "listenersAfter": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "id": "phase5-batch-halts-next-student",
+        "finding": "R40-05",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "launcher-windows-npm-failure-detected",
+        "finding": "R40-06",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "launcher-local-bind-and-quoted-cwd",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "launcher-windows-env-preflight-spaces",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "ui-add-edit-delete-session",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "ui-inflight-edit-preserved",
+        "finding": "R40-07",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "ui-drawer-control-stop-resume",
+        "finding": null,
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "ui-delete-add-criterion-unique",
+        "finding": "R40-02",
+        "status": "PASS",
+        "detail": null
+      },
+      {
+        "id": "client-bundle-does-not-import-secrets",
+        "finding": null,
+        "status": "PASS",
+        "detail": {
+          "bundleInputs": 1918,
+          "streamConnections": 1
+        }
+      }
+    ]
+  },
+  "sourceExcerpts": {
+    "config invalid shape": "        },\n        { status: 400 }\n      );\n    }\n\n    const section = typeof body?.section === \"string\" ? body.section.trim() : \"\";\n\n    if (section === \"courses\") {\n      if (!Array.isArray(body.courses) || body.courses.length === 0) {\n        return NextResponse.json(\n          {\n            success: false,\n            error: \"Danh sách khóa học (courses) phải là mảng và có ít nhất 1 khóa học.\",\n          },\n          { status: 400 }\n        );\n      }\n\n      const normalizedCourses: CourseSyllabus[] = [];\n      const seenCodes = new Set<string>();\n\n      for (const rawCourse of body.courses) {\n        if (\n          !rawCourse ||\n          typeof rawCourse !== \"object\" ||\n          Array.isArray(rawCourse) ||\n          typeof rawCourse.courseCode !== \"string\" ||\n          typeof rawCourse.courseName !== \"string\"\n        ) {\n          return NextResponse.json(\n            {\n              success: false,\n              error: \"Mã khóa học (courseCode) và Tên khóa học (courseName) phải là chuỗi ký tự hợp lệ.\",\n            },\n            { status: 400 }\n          );\n        }\n",
+    "config concurrency": "            sessionNumber: s.sessionNumber,\n            topic: s.topic.trim(),\n            keyKnowledge,\n            homeworkBrief: typeof s.homeworkBrief === \"string\" ? s.homeworkBrief.trim() : \"\",\n          });\n        }\n\n        sessions.sort((a, b) => a.sessionNumber - b.sessionNumber);\n\n        normalizedCourses.push({\n          courseCode,\n          courseName,\n          description,\n          sessions,\n        });\n      }\n\n      const currentStored = getCoursesSyllabus();\n      if (writesSinceLastGetCourses === 0) {\n        preWriteCoursesBaseline = lastServedCoursesSnapshot ?? structuredClone(currentStored);\n      } else if (preWriteCoursesBaseline) {\n        for (const inc of normalizedCourses) {\n          const base = preWriteCoursesBaseline.find((c) => c.courseCode === inc.courseCode);\n          const curr = currentStored.find((c) => c.courseCode === inc.courseCode);\n          if (base && curr) {\n            const revertedName =\n              curr.courseName !== base.courseName && inc.courseName === base.courseName;\n            const revertedDesc =\n              curr.description !== base.description && inc.description === base.description;\n            const revertedSessions =\n              JSON.stringify(curr.sessions) !== JSON.stringify(base.sessions) &&\n              JSON.stringify(inc.sessions) === JSON.stringify(base.sessions);\n\n            if (revertedName || revertedDesc || revertedSessions) {\n              return NextResponse.json(\n                {\n                  success: false,",
+    "config points": "          seenCriterionIds.add(critKey);\n\n          if (\n            typeof c.maxPoints !== \"number\" ||\n            !Number.isFinite(c.maxPoints) ||\n            c.maxPoints <= 0\n          ) {\n            return NextResponse.json(\n              {\n                success: false,\n                error: `Điểm tối đa (maxPoints) của tiêu chí '${criterionId}' trong Barem '${rubricId}' phải là số dương hợp lệ.`,\n              },\n              { status: 400 }\n            );\n          }\n\n          const roundedPoints = Math.round(c.maxPoints * 100) / 100;\n          if (roundedPoints <= 0) {\n            return NextResponse.json(\n              {\n                success: false,\n                error: `Điểm tối đa (maxPoints) của tiêu chí '${criterionId}' quá nhỏ sau khi làm tròn 2 chữ số thập phân.`,\n              },\n              { status: 400 }\n            );\n          }\n\n          criteria.push({\n            criterionId,\n            name: c.name.trim(),",
+    "UI response guard": "    section: \"courses\" | \"rubrics\" | \"quickTags\" | \"zaloTemplates\"\n  ) => {\n    setSavingSection(section);\n    setBanner(null);\n    const versionAtSubmit = editVersionRef.current[section];\n    try {\n      const payload: Record<string, unknown> = { section };\n      if (section === \"courses\") payload.courses = courses;\n      if (section === \"rubrics\") payload.rubrics = rubrics;\n      if (section === \"quickTags\") payload.quickTags = quickTags;\n      if (section === \"zaloTemplates\") payload.zaloTemplates = zaloTemplates;\n\n      const res = await fetch(\"/api/config\", {\n        method: \"POST\",\n        headers: { \"Content-Type\": \"application/json\" },\n        body: JSON.stringify(payload),\n      });\n      const data = await res.json();\n      if (!res.ok || !data.success) {\n        setBanner({\n          type: \"error\",\n          text: data.error || \"Không thể lưu cấu hình.\",\n        });\n        return false;\n      }\n\n      if (data.courses && editVersionRef.current.courses === versionAtSubmit) {\n        rawSetCourses(data.courses);\n      }\n      if (data.rubrics && editVersionRef.current.rubrics === versionAtSubmit) {\n        rawSetRubrics(data.rubrics);\n      }\n      if (data.quickTags && editVersionRef.current.quickTags === versionAtSubmit) {\n        rawSetQuickTags(data.quickTags);\n      }\n      if (data.zaloTemplates && editVersionRef.current.zaloTemplates === versionAtSubmit) {\n        rawSetZaloTemplates(data.zaloTemplates);\n      }\n",
+    "UI criterion IDs": "                        <button\n                          type=\"button\"\n                          onClick={() => {\n                            const existingIds = new Set(\n                              activeRubric.criteria.map((c) => c.criterionId.trim().toUpperCase())\n                            );\n                            let n = activeRubric.criteria.length + 1;\n                            while (existingIds.has(`C${n}`)) {\n                              n++;\n                            }\n                            const nextId = `C${n}`;\n                            const newCrit: GradingCriterionItem = {\n                              criterionId: nextId,\n                              name: `Tiêu chí ${nextId}`,\n                              maxPoints: 2,\n                              description: \"Mô tả yêu cầu đạt điểm tối đa...\",\n                              expectedSnippetOrConcept: \"Từ khóa code hoặc khái niệm cần có\",\n                            };\n                            setRubrics((prev) =>\n                              prev.map((r, i) =>\n                                i === selectedRubricIdx",
+    "worker stop": "        }\n      }\n\n      for (const initialRecord of actionable) {\n        if ((process as any).__mindxQueueStopped === true) {\n          break;\n        }\n        const subId = initialRecord.submissionId;\n        const stuId = initialRecord.studentId;\n        const dbStudent =\n          typeof studentRepo?.findOne === \"function\"\n            ? studentRepo.findOne(stuId, classId)\n            : undefined;\n        const fullName = dbStudent?.fullName || stuId;\n\n        // Re-read fresh record from SQLite before starting\n        const freshRecord = homeworkSubmissionRepo.findBySubmissionId(subId) || initialRecord;\n        const approvedHash = freshRecord.contentHash || \"\";\n        const effectiveScore =\n          typeof freshRecord.teacherOverrideScore === \"number\" &&",
+    "queue idle": "    }\n\n    this.isProcessing = false;\n\n    // Continue to next task in queue unless stopped\n    if (!this.isStopped && this.queue.length > 0) {\n      this.processNext();\n    } else {\n      this.emitStatus();\n    }",
+    "queue stop/resume": "  public stopQueue(): void {\n    this.isStopped = true;\n    (process as any).__mindxQueueStopped = true;\n    const cancelError = new Error(\n      \"TASK_CANCELLED: Hàng đợi đã bị tạm dừng bởi giáo viên (Stop Bot).\"\n    );\n\n    const pendingTasks = [...this.queue];\n   * Resumes queue execution if previously stopped.\n   */\n  public resumeQueue(): void {\n    (process as any).__mindxQueueStopped = false;\n    if (this.isStopped) {\n      this.isStopped = false;\n      this.log({\n        jobId: \"SYSTEM\",\n        jobType: \"CUSTOM\",\n        level: \"INFO\",\n        message: \"Hàng đợi đã được mở khóa tiếp tục chạy.\",\n      });\n      this.emitStatus();\n      this.processNext();",
+    "Windows install": "@echo off\nchcp 65001 >nul\nsetlocal EnableDelayedExpansion\ntitle MINDX AUTOMATION BOT - Local Server (127.0.0.1:3000)\n:: 3. Kiem tra thu vien node_modules\nif not exist \"node_modules\" (\n    echo [INFO] Dang cai dat thu vien lan dau ^(npm install^)...\n    call npm install\n    if !errorlevel! neq 0 (\n        echo [LOI] Cai dat thu vien that bai!\n        pause\n        exit /b 1\n    )\n) else (\n    echo [OK] Thu vien node_modules da san sang\n)"
+  },
+  "testAssertions": {
+    "reject": "async function reject(section,value) {\n  await seed(); const before=JSON.stringify((await get())[section]); const res=await post(section,value);\n  assert.equal(res.status,400,`Invalid ${section} accepted HTTP ${res.status}; saved=${JSON.stringify((await get())[section])}`);\n  assert.equal(JSON.stringify((await get())[section]),before,'Rejected write changed stored data');\n}\n",
+    "stale": "await check('stale-two-client-save','R40-04',async()=>{\n    await seed(); const a=(await get()).courses; const b=(await get()).courses;\n    a[0].courseName='Teacher A revision'; b[0].description='Teacher B revision';\n    assert.equal((await post('courses',a)).status,200); const rb=await post('courses',b); const final=(await get()).courses;\n    assert(rb.status===409 || (final[0].courseName==='Teacher A revision' && final[0].description==='Teacher B revision'),`Both writes succeeded; final=${JSON.stringify(final)}`);\n  });\n  ",
+    "idle": "await check('sse-final-status-is-idle','R40-08',async()=>{\n    queue.resumeQueue();const statuses=[];const off=queue.subscribeStatus(s=>statuses.push(structuredClone(s)));\n    try {await queue.enqueue({id:'R40-idle',jobType:'CUSTOM',description:'Synthetic idle',execute:async()=>42});await new Promise(r=>setImmediate(r));assert.equal(queue.getStatus().isRunning,false);assert.equal(statuses.at(-1).isRunning,false,`Last emitted status=${JSON.stringify(statuses.at(-1))}; actual idle=true`);} finally {off();}\n  });\n  ",
+    "stop": "await check('phase5-batch-halts-next-student','R40-05',async()=>{\n    const {HomeworkGradeWorker}=await imp('src/lib/playwright/grade-worker.ts');\n    const {BrowserManager}=await imp('src/lib/playwright/browser-manager.ts');\n    const {authService}=await imp('src/lib/playwright/auth.ts');const {LmsHelpers}=await imp('src/lib/playwright/lms-helpers.ts');\n    const original=[BrowserManager.getInstance,authService.ensureAuthenticated,LmsHelpers.openClassDrawer,LmsHelpers.switchDrawerTab];\n    let touched=0;const page={waitForTimeout:async()=>{},locator:()=>{touched++;throw Error('R40_BROWSER_BOUNDARY_AFTER_STOP');}};\n    BrowserManager.getInstance=()=>({getPage:async()=>page});authService.ensureAuthenticated=async()=>{};LmsHelpers.openClassDrawer=async()=>{};LmsHelpers.switchDrawerTab=async()=>{};\n    const db=dbmod.getDb();\n    for(let i=1;i<=2;i++){const h={submissionId:'R40-BATCH-'+i,classId:'R40-BATCH',sessionId:'R40-BATCH_SESS_1',studentId:'R40-BS-'+i,fileHash:'fixture',parseStatus:'PARSED',criteriaGradesJson:'[]',calculatedScore:80,decision:'GRADE',feedbackHtml:'Synthetic',status:'APPROVED'};h.contentHash=dbmod.computeHomeworkContentHash(h);dbmod.homeworkSubmissionRepo.upsert(h);}\n    try {\n      // Trigger Stop during first student's browser interaction; subsequent student must be skipped.\n      page.locator=()=>{touched++;if(touched>=2)queue.stopQueue();throw Error('R40_BROWSER_BOUNDARY_AFTER_STOP');};\n      queue.resumeQueue(); const result=await HomeworkGradeWorker.saveApprovedGrades({classId:'R40-BATCH',classCode:'R40-BATCH',sessionId:'R40-BATCH_SESS_1'});\n      const second=db.prepare(\"SELECT status FROM homework_submissions WHERE submissionId='R40-BATCH-2'\").get();\n      assert.equal(second.status,'APPROVED',`Next student processed after Stop: ${JSON.stringify({result,second,touched})}`);\n    } finally {[BrowserManager.getInstance,authService.ensureAuthenticated,LmsHelpers.openClassDrawer,LmsHelpers.switchDrawerTab]=original;queue.resumeQueue();}\n  });\n  ",
+    "windows": "await check('launcher-windows-npm-failure-detected','R40-06',async()=>{\n    const source=fs.readFileSync(path.join(root,'start-bot.bat'),'utf8');\n    const block=source.slice(source.indexOf('if not exist \"node_modules\"'),source.indexOf(':: 4.'));\n    const fixture=path.join(root,'launcher with spaces');fs.mkdirSync(fixture,{recursive:true});\n    fs.writeFileSync(path.join(fixture,'npm.cmd'),'@echo off\\r\\nexit /b 37\\r\\n');\n    fs.writeFileSync(path.join(fixture,'install-block.cmd'),'@echo off\\r\\nsetlocal EnableDelayedExpansion\\r\\ncmd /d /c exit 0\\r\\n'+block+'\\r\\necho R40_REACHED_SERVER_START\\r\\n');\n    const r=spawnSync(process.env.ComSpec||'cmd.exe',['/d','/c','install-block.cmd'],{cwd:fixture,encoding:'utf8',input:'\\r\\n',windowsHide:true,timeout:10000,env:{...process.env,PATH:fixture+';'+process.env.PATH}});\n    fs.writeFileSync(path.join(evidence,'launcher-install-block.log'),(r.stdout||'')+(r.stderr||''));\n    assert(!r.stdout?.includes('R40_REACHED_SERVER_START'),`npm install exit=37 but launcher continued; shell exit=${r.status}`);\n  });\n  ",
+    "lateResponse": "await check('ui-inflight-edit-preserved','R40-07',async()=>{\n      const name=page.locator('input').filter({visible:true}).nth(1);\n      await name.fill('First submitted name');delayed=true;await page.getByRole('button',{name:/Lưu.*Giáo trình/i}).click();\n      for(let i=0;i<100&&!releaseResponse;i++)await new Promise(r=>setTimeout(r,10));assert(releaseResponse,'Delayed POST was not received');\n      await name.fill('Second unsaved name');for(let i=0;i<30&&!releaseResponse;i++)await new Promise(r=>setTimeout(r,10));assert(releaseResponse);releaseResponse();\n      await page.getByText(/Đã lưu thành công/).waitFor();assert.equal(await name.inputValue(),'Second unsaved name','Successful older response overwrote newer unsaved edit');\n    });\n    "
+  },
+  "logs": {
+    "adversarial": "{\"total\":65,\"pass\":65,\"fail\":0}\n◇ injected env (0) from .env.local\n◇ injected env (0) from .env\n",
+    "phase7": "==============================================================\n🚀 BẮT ĐẦU KIỂM THỬ GIAI ĐOẠN 7 (TASK-7.1 -> TASK-7.3)\n==============================================================\n\n👉 [TASK-7.1] Kiểm tra API /api/config & Giao diện Quản lý Giáo trình / Barem...\n   ✅ [TASK-7.1] Đạt 100% kiểm thử /api/config & /syllabus-config!\n\n👉 [TASK-7.2] Kiểm tra SSE Stream (/api/queue/stream) & Dừng khẩn cấp (Stop Bot)...\n   ✅ [TASK-7.2] Đạt 100% kiểm thử SSE Live Log Drawer & Nút Dừng Khẩn Cấp!\n\n👉 [TASK-7.3] Kiểm tra bộ file khởi chạy 1 chạm (start-bot.bat & start-bot.command)...\n   ✅ [TASK-7.3] Đạt 100% kiểm thử start-bot.bat (Windows) & start-bot.command (macOS)!\n\n==============================================================\n🎉 HOÀN TẤT KIỂM THỬ GIAI ĐOẠN 7: TẤT CẢ CÁC HẠNG MỤC ĐỀU PASS!\n==============================================================\n◇ injected env (0) from .env.local\n◇ injected env (0) from .env\n",
+    "phase6": "=== BẮT ĐẦU KIỂM THỬ TÍCH HỢP GIAI ĐOẠN 6 (TASK-6.1 .. TASK-6.5) ===\n\n[1/4] Kiểm thử TASK-6.1: vietnamese-match.ts...\n  -> PASS TASK-6.1 (Chuẩn hóa tiếng Việt, cảnh báo trùng tên & độ khớp < 100%).\n\n[2/4] Kiểm thử TASK-6.2: spck-scanner.ts & Path Allowlist...\n  -> PASS TASK-6.2 (Quét thư mục, phân loại Thumbnail/Ảnh/File/Links & Allowlist).\n\n[3/4] Kiểm thử TASK-6.3: spck-comment.ts Guardrails...\n  -> PASS TASK-6.3 (INSUFFICIENT_INFO, Ẩn danh STUDENT_01, Chống bịa thuyết trình).\n\n[4/4] Kiểm thử TASK-6.4 & 6.5: SHA-256 Drift & SpckUploader Idempotency...\n  -> PASS TASK-6.4 & 6.5 (Khóa contentHash, Idempotency chống trùng Sản Phẩm Học Viên 02, + Thêm Links & Read-after-Write VERIFIED).\n\n=== HOÀN TẤT: TẤT CẢ CÁC BÀI KIỂM THỬ GIAI ĐOẠN 6 ĐỀU ĐẠT 100% ===\n◇ injected env (0) from .env.local\n◇ injected env (0) from .env\n",
+    "phase5": "🚀 Bắt đầu chạy bộ kiểm thử toàn diện Giai đoạn 5 (Phase 5)...\n\n✅ 1. Parser Python (.py), Jupyter (.ipynb), PyQt6 (.ui) & phát hiện file lỗi hoạt động chuẩn xác.\n✅ 2. Parser .zip an toàn (bỏ qua node_modules, chặn Path Traversal '../') hoạt động chuẩn xác.\n✅ 3. Parser Scratch (.sb3), GameMaker (.yyz/.gml/.yy) & Multimodal (.png/.pdf) hoạt động chuẩn xác.\n✅ 4. ScoreAuditor kiểm toán điểm thành phần & tự tính tổng điểm bằng TypeScript chuẩn xác.\n✅ 5. Ẩn danh học viên, chống Prompt Injection & khóa an toàn PARSE_ERROR hoạt động chuẩn xác.\n✅ 6. Khóa cứng contentHash & tự động hạ về WAITING_APPROVAL khi sửa điểm/nhận xét hoạt động chuẩn xác.\n✅ 7. API Routes (/submissions & /approve) + bảo vệ Local-Only & tính điểm TypeScript hoạt động chuẩn xác.\n✅ 8. Bộ kiểm thử hồi quy R35 & R36-01 hoạt động chuẩn xác.\n\n🎉 TẤT CẢ CÁC BÀI KIỂM THỬ GIAI ĐOẠN 5 ĐÃ VƯỢT QUA 100%!\n◇ injected env (0) from .env.local\n◇ injected env (0) from .env\n(node:22448) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+    "tsc": ""
+  }
+}

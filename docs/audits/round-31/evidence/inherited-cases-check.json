@@ -1,0 +1,9 @@
+{
+  "round30CaseCount": 819,
+  "round31CaseCount": 819,
+  "sameOrderedIdsCriteriaAndPassResults": true,
+  "nativeMediaSameIdsExpectationsAndStatus": true,
+  "nativeWorkerSameIdsExpectedAndVerified": true,
+  "additionalBoundaryChecks": 28,
+  "nativeAndOracleCountsNotAddedToMain819": true
+}

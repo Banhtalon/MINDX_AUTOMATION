@@ -1,0 +1,129 @@
+{
+  "syntheticOnly": true,
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "results": [
+    {
+      "id": "R35-01-config-reject10-accept100",
+      "pass": true,
+      "observation": {
+        "badHttp": 400,
+        "goodHttp": 200,
+        "writes": 1
+      }
+    },
+    {
+      "id": "R35-01-auditor-reject10-accept80",
+      "pass": true,
+      "observation": {
+        "badValid": false,
+        "goodValid": true,
+        "score": 80
+      }
+    },
+    {
+      "id": "R35-01-approve-reject10-approve80",
+      "pass": true,
+      "observation": [
+        {
+          "n": 10,
+          "http": 400,
+          "writes": 0,
+          "status": "WAITING_APPROVAL",
+          "score": 8
+        },
+        {
+          "n": 100,
+          "http": 200,
+          "writes": 1,
+          "status": "APPROVED",
+          "score": 80
+        }
+      ]
+    },
+    {
+      "id": "R35-01-grader-reject10-before-ai",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "writes": 0
+      }
+    },
+    {
+      "id": "R35-01-route-reject10-before-ai",
+      "pass": true,
+      "observation": {
+        "http": 400,
+        "calls": 0
+      }
+    },
+    {
+      "id": "R35-04-stop-before-write-real-single-grader",
+      "pass": true,
+      "observation": {
+        "calls": 1,
+        "writes": 0,
+        "staleIgnored": true,
+        "error": "TASK_CANCELLED: Đã dừng chấm AI theo lệnh Dừng khẩn cấp (Stop Bot) trước khi ghi kết quả."
+      }
+    },
+    {
+      "id": "R35-02-refresh-preserve-then-confirm-draft",
+      "pass": true,
+      "observation": {
+        "retainedBeforeConfirmation": true,
+        "clearedAfterConfirmation": true
+      }
+    },
+    {
+      "id": "R36-UI-new-file-clears-unsaved-marker",
+      "pass": true,
+      "observation": {
+        "fileHash": "file-v2",
+        "feedback": "OLD SAVED FEEDBACK",
+        "unsaved": {},
+        "approveResult": true,
+        "approvalCalls": 1,
+        "banner": {
+          "type": "success",
+          "text": "Đã duyệt & khóa SHA-256 contentHash cho bài nộp của Synthetic."
+        },
+        "afterSecondRefresh": {
+          "unsaved": {},
+          "approveResult": true,
+          "approvalCalls": 2
+        }
+      }
+    },
+    {
+      "id": "R35-06-cycle-and-depth-terminate",
+      "pass": true,
+      "observation": [
+        {
+          "mode": "cycle",
+          "chars": 731
+        },
+        {
+          "mode": "deep",
+          "chars": 1087
+        }
+      ]
+    },
+    {
+      "id": "R35-07-valid-and-corrupt-yy",
+      "pass": true,
+      "observation": [
+        {
+          "bad": false,
+          "success": true
+        },
+        {
+          "bad": true,
+          "success": false,
+          "error": "File tài nguyên GameMaker 'objects/player/player.yy' trong gói 'fixture.yyz' bị lỗi cấu trúc JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+        }
+      ]
+    }
+  ]
+}

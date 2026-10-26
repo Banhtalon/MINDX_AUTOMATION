@@ -1,0 +1,36 @@
+{
+  "mainTotal": 510,
+  "mainPassed": 499,
+  "mainFailed": 11,
+  "inheritedR25AssertionsIdentical": true,
+  "inheritedCount": 344,
+  "newCount": 166,
+  "newPassed": 155,
+  "newFailed": 11,
+  "nativeMediaTotal": 94,
+  "nativeMediaPassed": 87,
+  "nativeWorkerTotal": 54,
+  "nativeWorkerPassed": 50,
+  "nativeFailedIdsExactlyMatchMain": true,
+  "executedHarnessFilesMatchDelivery": [
+    "verify-independent.mjs",
+    "media-cases.mjs",
+    "worker-cases.mjs",
+    "native-media-repro.mjs",
+    "native-worker-repro.mjs",
+    "graphql-oracle.mjs",
+    "pdf-oracle.py",
+    "network-guard.cjs"
+  ],
+  "sourceHashesMatchOriginalAndSnapshot": true,
+  "snapshotSourceDifferencesAfterBuild": [
+    "next-env.d.ts"
+  ],
+  "originalNextEnvSha256": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
+  "snapshotNextEnvSha256": "1b59d4c6b83807db275d43f3cf2cc8e9323f465fab764eea091cc5becd5bad37",
+  "sourceFileCount": 74,
+  "srcScriptsCount": 57,
+  "requiredCommandsPass": true,
+  "allAuditChecksPass": false,
+  "checkedAt": "2026-10-20T14:39:31.927740+00:00"
+}

@@ -1,0 +1,77 @@
+  // R26: independent media oracle, direct graph fixtures, and GraphQL string/type boundaries.
+  for(const c of await createR26MediaCases())await check(c.id,'R26 media must match independent decoding or explicit direct PDF graph',async()=>{
+    let decoderError='';if(c.decode)try{await sharp(c.buf).raw().toBuffer();}catch(e){decoderError=e.message;}
+    const p=parse(c.buf,c.id+'.'+c.ext),o={expected:c.expected,parseStatus:p.parseStatus,inlineParts:p.inlineDataParts.length,decoderError,fixtureBase64:c.buf.toString('base64')};
+    expect(!c.decode||(c.expected==='PARSED'?!decoderError:!!decoderError),o,'Invalid independent decoder expectation');
+    expect(p.parseStatus===c.expected&&p.inlineDataParts.length===(c.expected==='PARSED'?1:0),o,'Media status differs from independent expectation');
+    if(c.expected==='PARSED')assert.equal(p.inlineDataParts[0].inlineData.data,c.buf.toString('base64'));return o;
+  });
+  for(const c of createR26WorkerCases(cid,sid))await check(c.id,'Strict request/response binding with valid GraphQL strings and independent scalar checks',async()=>{
+    const r=await strictWorker({apiBody:c.request,responseBody:c.response,seed:{feedbackHtml:c.feedback},readbackFeedback:c.feedback}),o={request:c.request,response:c.response,expected:c.expected,verified:r.verified,writes:r.writes,status:r.status,error:r.error};
+    expect(r.verified===c.expected,o,'Worker verification differs from selected contract');return o;
+  });
+  await check('R26-02-missing-evidence-and-fractional-total','Reject missing evidence, retain independently calculated decimal score',()=>{
+    const good=auditor.auditCriterionGrades(grades(79.37),rubric),bad=auditor.auditCriterionGrades(grades().map(g=>({...g,evidenceSnippet:''})),rubric);
+    assert.equal(good.valid,true);assert.equal(good.calculatedScore,79.37);assert.equal(bad.valid,false);return {total:good.calculatedScore,emptyEvidenceRejected:!bad.valid};
+  });
+  await check('R26-03-decision-tamper-before-save','Approval cannot survive a changed decision before clicking Save',async()=>{
+    const r=await strictWorker({beforeClick:b=>b.homeworkSubmissionRepo.upsert({...b.row(),decision:'REDO'})});expect(r.verified===0&&r.writes===0,r,'Unapproved decision reached Save');return {verified:r.verified,writes:r.writes};
+  });
+  await check('R26-04-outdated-ai-file-version','An AI response for a file version changed while awaiting AI must not overwrite it',async()=>{
+    const b=backend();try{b.seed({fileHash:'old-version'});const hold=defer(),entered=defer();let calls=0;const g=loadGrader(b,async()=>{calls++;entered.resolve();await hold.promise;return aiResponse();});
+      const pending=g.HomeworkAiGrader.gradeSingleSubmission(candidate(),rubric);await entered.promise;b.homeworkSubmissionRepo.upsert({...b.row(),fileHash:'new-version'});const before=JSON.stringify(b.row());hold.resolve();const r=await pending;
+      expect(r.staleIgnored===true&&JSON.stringify(b.row())===before,{r,calls},'Old AI response overwrote the new file version');return {staleIgnored:r.staleIgnored,calls,unchanged:true};
+    }finally{b.db.close();}
+  });
+  await check('R26-05-corrupt-file-cannot-be-approved','PARSE_ERROR cannot be approved through the actual API',async()=>{
+    const b=backend();try{b.seed({parseStatus:'PARSE_ERROR'});const r=await b.approve(b.req({...view(b),rubric}));assert.notEqual(r.status,200);assert.notEqual(b.row().status,'APPROVED');return {http:r.status,status:b.row().status};}finally{b.db.close();}
+  });
+  await check('R26-06-stale-score-review','Teacher review cannot approve a newer score it did not show',async()=>{
+    const b=backend();try{b.seed();const reviewed=view(b);assert.equal((await b.draft.POST(b.req({draftSeq:12,teacherOverrideScore:47}))).status,200);const r=await b.approve(b.req({...reviewed,rubric}));assert.equal(r.status,409);assert.notEqual(b.row().status,'APPROVED');return {http:r.status,override:b.row().teacherOverrideScore};}finally{b.db.close();}
+  });
+  await check('R26-07-substring-id-is-not-identity','S1/SUB1 must not match S10/SUB10 in a modal',async()=>{
+    const r=await strictWorker({modalText:'Học Viên Mẫu S10 SUB10'});expect(r.verified===0&&r.writes===0,r,'Substring identity accepted');return {verified:r.verified,writes:r.writes};
+  });
+  await check('R26-08-foreign-session-before-browser','A session belonging to another class cannot enter the worker',async()=>{
+    await assert.rejects(()=>strictWorker({options:{sessionId:'FOREIGN_SESS_01'}}),/buổi|session|lớp/i);return {rejected:true};
+  });
+  await check('R26-10-readback-unavailable','An unreadable persisted feedback prevents VERIFIED after HTTP success',async()=>{
+    const r=await strictWorker({readbackError:true});expect(r.verified===0,r,'Unreadable feedback accepted');return {verified:r.verified,status:r.status};
+  });
+  await check('R26-13-db-write-failure-rolls-back','SQLite storage failure cannot partially change approved content or metadata',async()=>{
+    const b=backend();try{b.seed();const row=JSON.stringify(b.row()),meta=JSON.stringify(b.db.prepare('SELECT * FROM homework_submission_meta').get());
+      b.db.exec("CREATE TRIGGER r26_abort BEFORE INSERT ON homework_submission_meta BEGIN SELECT RAISE(ABORT,'R26_SYNTHETIC_FAILURE'); END;");
+      const r=await b.draft.POST(b.req({draftSeq:999,teacherOverrideScore:12}));assert.equal(r.status,500);assert.equal(JSON.stringify(b.row()),row);assert.equal(JSON.stringify(b.db.prepare('SELECT * FROM homework_submission_meta').get()),meta);b.db.exec('DROP TRIGGER r26_abort');
+      const good=await b.draft.POST(b.req({draftSeq:1,teacherOverrideScore:13}));assert.equal(good.status,200);return {failureHttp:r.status,recoveryHttp:good.status};
+    }finally{b.db.close();}
+  });
+  await check('R26-11-mark-verified-update-aborts','A failed final conditional VERIFIED update must not be reported as verified',async()=>{
+    const r=await strictWorker({beforeClick:b=>b.db.exec("CREATE TRIGGER r26_verify_abort BEFORE UPDATE ON homework_submissions WHEN NEW.status='VERIFIED' BEGIN SELECT RAISE(ABORT,'R26_VERIFY_FAILURE'); END;")});
+    expect(r.verified===0&&r.status==='FAILED'&&r.writes===1,r,'Failed VERIFIED update was reported as verified');return {verified:r.verified,status:r.status,writes:r.writes,error:r.error};
+  });
+  await check('R26-12-session-switch-stale-response','A slow prior session response cannot replace newly selected session rows',async()=>{
+    const hold=defer(),h=ui(async url=>{if(url.includes('_SESS_01')){await hold.promise;return Response.json({success:true,data:{submissions:[uiItem(record())]}});}return Response.json({success:true,data:{submissions:[uiItem(record({sessionId:cid+'_SESS_02',submissionId:'NEW_SESSION'}))]}});});
+    await h.flush();h.api.setSelectedSessionNumber(2);await h.flush();hold.resolve();await h.flush();assert.equal(h.api.submissions[0]?.submissionId,'NEW_SESSION');return {visibleSubmission:h.api.submissions[0]?.submissionId};
+  });
+  await check('R26-13-sequence-survives-module-reload','Persisted sequence rejects an equal-sequence conflicting feedback after reload',async()=>{
+    const b=backend();try{b.seed();assert.equal((await b.draft.POST(b.req({draftSeq:17,feedbackHtml:'SEVENTEEN'}))).status,200);const repo=reloadRepo(b),post=mod('src/app/api/homework-grader/submissions/route.ts',['POST'],{...routeBindings(b),...repo}).POST;
+      const r=await post(b.req({draftSeq:17,feedbackHtml:'STALE'}));assert.equal(r.status,409);assert.equal(b.row().feedbackHtml,'SEVENTEEN');return {http:r.status,feedback:b.row().feedbackHtml};
+    }finally{b.db.close();}
+  });
+  await check('R26-14-only-new-download-enters-ai','A successful download batch excludes older cached submission IDs from AI',async()=>{
+    const b=backend();try{b.seed();b.homeworkSubmissionRepo.upsert(record({submissionId:'OLD_CACHED',studentId:'S1'}));let seen=[];
+      const route=mod('src/app/api/homework-grader/download-and-grade/route.ts',['POST'],{...b,...local,NextResponse:Response,taskQueue:{enqueue:async t=>t.execute()},SubmissionDownloader:{downloadLessonSubmissions:async()=>({success:true,items:[{success:true,submissionId:'SUB1'}]})},HomeworkAiGrader:{gradeBatchSubmissions:async c=>{seen=c.map(x=>x.submissionId);return[];}},getGradingRubrics:()=>[rubric],findLessonInSyllabus:()=>null});
+      const r=await route.POST(b.req({rubric}));assert.equal(r.status,200);assert.deepEqual(seen,['SUB1']);return {http:r.status,aiSubmissions:seen};
+    }finally{b.db.close();}
+  });
+  // R20/21 returned saveGrade for a selected saveHomeworkGrade. Preserve their failures; prove current contract separately.
+  for(const originalId of ['R20-10-complete-control','R21-08-mapping-valid','R21-10-readback-complete','R21-10-readback-redo-complete','R21-11-final-cas'])
+    await check('R26-COMPAT-'+originalId,'Original behavioral control with the response field corrected to its selected mutation',async()=>{
+      const redo=originalId.includes('redo-complete'),cas=originalId.includes('final-cas');
+      const patch={apiBody:fullMutation(redo?{variables:{studentId:'S1',submissionId:'SUB1',decision:'REDO',feedback:'APPROVED FEEDBACK'}}:{}),responseBody:{data:{saveHomeworkGrade:true}}};
+      if(redo)Object.assign(patch,{seed:{decision:'REDO'},readbackDecision:'REDO'});
+      if(originalId.includes('mapping-valid'))Object.assign(patch,{options:{lessonId:'L1'},columns:[{columnId:'L1',lessonId:'L1',sessionNumber:1,colIndex:0},{columnId:'L2',lessonId:'L2',sessionNumber:2,colIndex:1}]});
+      if(cas)patch.duringReadback=b=>b.homeworkSubmissionRepo.upsert({...b.row(),feedbackHtml:'NEW EDIT',status:'WAITING_APPROVAL',contentHash:''});
+      const r=await strictWorker(patch);assert.equal(r.verified,cas?0:1);if(cas)assert.equal(r.status,'WAITING_APPROVAL');if(originalId==='R20-10-complete-control'){assert.equal(r.writes,1);assert.equal(r.modalReads,2);}
+      return {originalId,correctedResponseField:'saveHomeworkGrade',verified:r.verified,status:r.status,modalReads:r.modalReads};
+    });

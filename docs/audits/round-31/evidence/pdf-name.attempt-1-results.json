@@ -1,0 +1,62 @@
+{
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "baseline": {
+    "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "mediaSha256": "3d677823077a3c7eb36f7261f45970ca7b7903e9797b1568ce602f86109760ac",
+    "expectedHash": "3d677823077a3c7eb36f7261f45970ca7b7903e9797b1568ce602f86109760ac",
+    "hashVerified": true
+  },
+  "method": "Direct current product imports; immutable hash-verified R30 source in VM reproduces both faults and both passing controls.",
+  "results": [
+    {
+      "id": "R30-01-pdf-nested-empty-name",
+      "pass": true,
+      "expected": "PARSED",
+      "r30Success": false,
+      "baselineExpected": false,
+      "currentStatus": "PARSED",
+      "inlineParts": 1,
+      "rawDictionaryBase64": "PDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgL090aGVyIDw8IC9WYWx1ZSAvID4+ID4+",
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgL090aGVyIDw8IC9WYWx1ZSAvID4+ID4+CmVuZG9iagozIDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNzIgNzJdIC9SZXNvdXJjZXMgPDwgPj4gPj4KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMzcgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyMjMKJSVFT0YK",
+      "fixtureSha256": "5a71e43ddf399862fd5baf6fe7692313011249cc00ee750cda315fc97f159113"
+    },
+    {
+      "id": "R30-01-pdf-array-empty-name",
+      "pass": true,
+      "expected": "PARSED",
+      "r30Success": false,
+      "baselineExpected": false,
+      "currentStatus": "PARSED",
+      "inlineParts": 1,
+      "rawDictionaryBase64": "PDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgL090aGVyIFsvXSA+Pg==",
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgL090aGVyIFsvXSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSAvUmVzb3VyY2VzIDw8ID4+ID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTI2IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNSAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjEyCiUlRU9GCg==",
+      "fixtureSha256": "957f0a2a0773c3dc08472a4474b7a6ed3741788e7052054d1407e8e7891472dd"
+    },
+    {
+      "id": "R30-01-pdf-nested-name-control",
+      "pass": true,
+      "expected": "PARSED",
+      "r30Success": true,
+      "baselineExpected": true,
+      "currentStatus": "PARSED",
+      "inlineParts": 1,
+      "rawDictionaryBase64": "PDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgL090aGVyIDw8IC9WYWx1ZSAvTm9uZW1wdHkgPj4gPj4=",
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgL090aGVyIDw8IC9WYWx1ZSAvTm9uZW1wdHkgPj4gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDE0NSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDUgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIzMQolJUVPRgo=",
+      "fixtureSha256": "4dab32104551f287de09cf320a9df7862cb771aeb21d1492c6e18066cf8b3176"
+    },
+    {
+      "id": "R30-01-pdf-array-name-control",
+      "pass": true,
+      "expected": "PARSED",
+      "r30Success": true,
+      "baselineExpected": true,
+      "currentStatus": "PARSED",
+      "inlineParts": 1,
+      "rawDictionaryBase64": "PDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgL090aGVyIFsvTm9uZW1wdHldID4+",
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgL090aGVyIFsvTm9uZW1wdHldID4+CmVuZG9iagozIDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNzIgNzJdIC9SZXNvdXJjZXMgPDwgPj4gPj4KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMzQgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyMjAKJSVFT0YK",
+      "fixtureSha256": "711ed7d9fb3193a0ea4bf8f60f6deb1e30196fdd9ebbac7708eaec95f81d7198"
+    }
+  ]
+}

@@ -1,0 +1,902 @@
+{
+  "round": 22,
+  "checkedAt": "2026-10-20T11:54:05.711Z",
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat\\snapshot",
+  "fixtureWorkspace": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-r22-fixtures-A1nKCK",
+  "sqlite": ":memory:",
+  "realLmsCalls": 0,
+  "realGeminiCalls": 0,
+  "method": "Actual snapshot function bodies, imports/types removed only; deterministic UI/DOM/Gemini doubles, real in-memory SQLite and physical synthetic files; sharp independently decodes image fixtures. Module reload tests instantiate the same unmodified source against the same SQLite database. No live browser/React scheduling acceptance.",
+  "sourceHashes": {
+    "src/lib/file-parsers/media-reader.ts": "0b668377de5af9ea2991ec3688ad480bb3060f408447bcf3f705cf99b07d48ce",
+    "src/lib/gemini/homework-grader.ts": "b2bd3a4efeb8706ddfce190fecaef5d30aab76420bc8e0f9b34c1ab785483c57",
+    "src/lib/gemini/score-auditor.ts": "79378d1d142d033b6f89807e959f59c04b5a840161a28d6f908849c5236401da",
+    "src/lib/db/sqlite.ts": "5c852a18b15b68c2181d812a07bc12aa251d892d41251cee1369208b4a4ccda3",
+    "src/lib/playwright/download-submissions.ts": "f56327ef033fbd0a0a1bf6a1b520f7a4b0ded26a30809a43cab981d1f0bfe958",
+    "src/lib/playwright/grade-worker.ts": "1c95d2a5fc7cc1874e448d7ac69b68653d1193a317a9f01736501e2330775cfc",
+    "src/lib/playwright/network-interceptor.ts": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad",
+    "src/app/api/homework-grader/submissions/route.ts": "69b688d25349b5bc8e3bc6433342d4e076753138fa651c433c5edec8ed37e0e3",
+    "src/app/api/homework-grader/approve/route.ts": "c0964d58eac75255a39d076729a7f942af5078f3ae4e825b73bd525e4943b053",
+    "src/components/homework-auto-grader-tab.tsx": "b63b613e26eec300274fb0fc040f77444a08d4866a5a60beb25974cb44671c21"
+  },
+  "total": 53,
+  "passed": 28,
+  "failed": 25,
+  "results": [
+    {
+      "id": "R22-01-valid-png",
+      "criterion": "Valid media must retain exact bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 96
+      }
+    },
+    {
+      "id": "R22-01-valid-jpg",
+      "criterion": "Valid media must retain exact bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 269
+      }
+    },
+    {
+      "id": "R22-01-valid-webp",
+      "criterion": "Valid media must retain exact bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 64
+      }
+    },
+    {
+      "id": "R22-01-valid-pdf",
+      "criterion": "Valid media must retain exact bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 428
+      }
+    },
+    {
+      "id": "R22-01-png-crc-IHDR",
+      "criterion": "CRC of every PNG chunk must be checked",
+      "pass": true
+    },
+    {
+      "id": "R22-01-png-crc-IDAT",
+      "criterion": "CRC of every PNG chunk must be checked",
+      "pass": true
+    },
+    {
+      "id": "R22-01-png-crc-IEND",
+      "criterion": "CRC of every PNG chunk must be checked",
+      "pass": true
+    },
+    {
+      "id": "R22-01-png-invalid-zlib-header",
+      "criterion": "Recomputed CRC cannot hide invalid zlib header",
+      "pass": true,
+      "observation": {
+        "bytes": 96,
+        "decoderError": "vipspng: libpng read error",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R22-01-png-valid-header-broken-deflate",
+      "criterion": "Valid zlib header and CRC do not prove compressed data is valid",
+      "pass": false,
+      "observation": {
+        "bytes": 96,
+        "decoderError": "vipspng: libpng read error",
+        "parseStatus": "PARSED",
+        "inlineParts": 1
+      },
+      "error": "Error: Invalid media accepted as multimodal input\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at invalidImage (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:174:338)\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:181:3"
+    },
+    {
+      "id": "R22-01-png-invalid-bit-depth",
+      "criterion": "Invalid IHDR bit depth with correct CRC must be rejected",
+      "pass": false,
+      "observation": {
+        "bytes": 96,
+        "decoderError": "Input buffer has corrupt header:",
+        "parseStatus": "PARSED",
+        "inlineParts": 1
+      },
+      "error": "Error: Invalid media accepted as multimodal input\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at invalidImage (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:174:338)\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:182:3"
+    },
+    {
+      "id": "R22-01-jpeg-valid-markers-invalid-component",
+      "criterion": "SOF/SOS component IDs must refer to the same actual image components",
+      "pass": false,
+      "observation": {
+        "bytes": 97,
+        "decoderError": "Input buffer has corrupt header: VipsJpeg: Invalid component ID 2 in SOS\nVipsJpeg: Invalid component ID 2 in SOS\nVipsJpeg: Invalid component ID 2 in SOS",
+        "parseStatus": "PARSED",
+        "inlineParts": 1
+      },
+      "error": "Error: Invalid media accepted as multimodal input\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at invalidImage (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:174:338)\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:185:3"
+    },
+    {
+      "id": "R22-01-jpeg-zero-dimension",
+      "criterion": "JPEG zero dimension must be rejected",
+      "pass": true
+    },
+    {
+      "id": "R22-01-webp-vp8-header-only",
+      "criterion": "VP8 start code and dimensions without image data must fail",
+      "pass": false,
+      "observation": {
+        "bytes": 30,
+        "decoderError": "webp2vips: unable to read pixels",
+        "parseStatus": "PARSED",
+        "inlineParts": 1
+      },
+      "error": "Error: Invalid media accepted as multimodal input\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at invalidImage (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:174:338)\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:189:3"
+    },
+    {
+      "id": "R22-01-webp-vp8l-header-only",
+      "criterion": "VP8L signature/version without image data must fail",
+      "pass": false,
+      "observation": {
+        "bytes": 26,
+        "decoderError": "webp2vips: unable to read pixels",
+        "parseStatus": "PARSED",
+        "inlineParts": 1
+      },
+      "error": "Error: Invalid media accepted as multimodal input\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at invalidImage (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:174:338)\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:190:3"
+    },
+    {
+      "id": "R22-01-webp-vp8x-empty-child",
+      "criterion": "VP8X must validate the declared following image chunk",
+      "pass": false,
+      "observation": {
+        "bytes": 38,
+        "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+        "parseStatus": "PARSED",
+        "inlineParts": 1
+      },
+      "error": "Error: Invalid media accepted as multimodal input\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at invalidImage (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:174:338)\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:191:3"
+    },
+    {
+      "id": "R22-01-webp-valid-transparent",
+      "criterion": "A decoder-valid transparent extended WebP must remain supported",
+      "pass": false,
+      "observation": {
+        "bytes": 96,
+        "firstChunk": "VP8X",
+        "nextChunk": "ALPH",
+        "parseStatus": "PARSE_ERROR"
+      },
+      "error": "Error: Valid alpha WebP rejected\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:192:445\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:192:3"
+    },
+    {
+      "id": "R22-01-pdf-comments-only",
+      "criterion": "PDF words must identify actual usable objects/pages",
+      "pass": false,
+      "observation": {
+        "bytes": 85,
+        "parseStatus": "PARSED",
+        "inlineParts": 1,
+        "body": "%PDF-1.4\n% 1 0 obj /Type /Catalog endobj\n% NO REAL OBJECTS HERE, ONLY COMMENTS\n%%EOF\n"
+      },
+      "error": "Error: Structurally invalid PDF accepted\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:196:241\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:196:11"
+    },
+    {
+      "id": "R22-01-pdf-missing-pages",
+      "criterion": "PDF words must identify actual usable objects/pages",
+      "pass": false,
+      "observation": {
+        "bytes": 86,
+        "parseStatus": "PARSED",
+        "inlineParts": 1,
+        "body": "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 999 0 R >>\nendobj\n%%EOF\n                    "
+      },
+      "error": "Error: Structurally invalid PDF accepted\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:196:241\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:196:11"
+    },
+    {
+      "id": "R22-04-supplied-unchanged",
+      "criterion": "Disk must be rechecked after AI even with supplied parsed content",
+      "pass": true,
+      "observation": {
+        "mode": "unchanged",
+        "staleIgnored": false,
+        "dbUnchanged": false
+      }
+    },
+    {
+      "id": "R22-04-supplied-changed",
+      "criterion": "Disk must be rechecked after AI even with supplied parsed content",
+      "pass": true,
+      "observation": {
+        "mode": "changed",
+        "staleIgnored": true,
+        "dbUnchanged": true
+      }
+    },
+    {
+      "id": "R22-04-supplied-deleted",
+      "criterion": "Disk must be rechecked after AI even with supplied parsed content",
+      "pass": true,
+      "observation": {
+        "mode": "deleted",
+        "staleIgnored": true,
+        "dbUnchanged": true
+      }
+    },
+    {
+      "id": "R22-05-ui-rubric-single",
+      "criterion": "All three UI handlers must send and enforce active rubric",
+      "pass": true,
+      "observation": {
+        "mode": "single",
+        "requestHasRubric": true,
+        "rubricId": "R19",
+        "status": "WAITING_APPROVAL",
+        "points": 80,
+        "http": 400
+      }
+    },
+    {
+      "id": "R22-05-ui-rubric-bulk",
+      "criterion": "All three UI handlers must send and enforce active rubric",
+      "pass": true,
+      "observation": {
+        "mode": "bulk",
+        "requestHasRubric": true,
+        "rubricId": "R19",
+        "status": "WAITING_APPROVAL",
+        "points": 80,
+        "http": 200
+      }
+    },
+    {
+      "id": "R22-05-ui-rubric-criterion",
+      "criterion": "All three UI handlers must send and enforce active rubric",
+      "pass": true,
+      "observation": {
+        "mode": "criterion",
+        "requestHasRubric": true,
+        "rubricId": "R19",
+        "status": "WAITING_APPROVAL",
+        "points": 80,
+        "http": 400
+      }
+    },
+    {
+      "id": "R22-06-single-missing-hash-true",
+      "criterion": "Every single approval must prove reviewed file version",
+      "pass": true,
+      "observation": {
+        "withDecision": true,
+        "http": 409,
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R22-06-single-missing-hash-false",
+      "criterion": "Every single approval must prove reviewed file version",
+      "pass": false,
+      "observation": {
+        "withDecision": false,
+        "http": 200,
+        "status": "APPROVED"
+      },
+      "error": "Error: Omitting decision bypasses mandatory file version\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:199:335\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:199:42"
+    },
+    {
+      "id": "R22-06-bulk-review-missing-list",
+      "criterion": "Bulk approval must require the complete reviewed version",
+      "pass": false,
+      "observation": {
+        "mode": "missing-list",
+        "http": 200,
+        "status": "APPROVED",
+        "approvedCount": 1,
+        "skipped": []
+      },
+      "error": "Error: Bulk signed data without complete matching reviewed snapshot\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:200:706\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:200:81"
+    },
+    {
+      "id": "R22-06-bulk-review-missing-feedback",
+      "criterion": "Bulk approval must require the complete reviewed version",
+      "pass": false,
+      "observation": {
+        "mode": "missing-feedback",
+        "http": 200,
+        "status": "APPROVED",
+        "approvedCount": 1,
+        "skipped": []
+      },
+      "error": "Error: Bulk signed data without complete matching reviewed snapshot\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:200:706\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:200:81"
+    },
+    {
+      "id": "R22-06-bulk-review-matching",
+      "criterion": "Bulk approval must require the complete reviewed version",
+      "pass": true,
+      "observation": {
+        "mode": "matching",
+        "http": 200,
+        "status": "APPROVED",
+        "approvedCount": 1,
+        "skipped": []
+      }
+    },
+    {
+      "id": "R22-06-bulk-review-wrong-hash",
+      "criterion": "Bulk approval must require the complete reviewed version",
+      "pass": true,
+      "observation": {
+        "mode": "wrong-hash",
+        "http": 200,
+        "status": "WAITING_APPROVAL",
+        "approvedCount": 0,
+        "skipped": [
+          {
+            "submissionId": "SUB1",
+            "reason": "[Stale Conflict] Phiên bản file hoặc nội dung nhận xét đã thay đổi so với bản hiển thị trên giao diện."
+          }
+        ]
+      }
+    },
+    {
+      "id": "R22-06-ui-bulk-drift-criteria",
+      "criterion": "Bulk must compare every reviewed scoring field",
+      "pass": false,
+      "observation": {
+        "field": "criteria",
+        "result": true,
+        "status": "APPROVED",
+        "reviewed": {
+          "score": 80,
+          "decision": "GRADE"
+        },
+        "stored": {
+          "score": 90,
+          "override": null,
+          "decision": "GRADE"
+        },
+        "request": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "approveAll": true,
+          "rubric": {
+            "rubricId": "R19",
+            "courseCode": "PTA",
+            "sessionNumber": 1,
+            "assignmentTitle": "Print",
+            "assignmentPrompt": "Print 1",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "Print 1",
+                "expectedSnippetOrConcept": "print(1)"
+              }
+            ]
+          },
+          "reviewedSubmissions": [
+            {
+              "submissionId": "SUB1",
+              "fileHash": "file-v1",
+              "feedbackHtml": "<p>APPROVED FEEDBACK</p>",
+              "criteriaGrades": [
+                {
+                  "criterionId": "C1",
+                  "criterionName": "Output",
+                  "earnedPoints": 80,
+                  "maxPoints": 100,
+                  "evidenceSnippet": "print(1)",
+                  "deductionReason": "Thiếu định dạng"
+                }
+              ],
+              "decision": "GRADE",
+              "teacherOverrideScore": null
+            }
+          ]
+        }
+      },
+      "error": "Error: Real UI bulk handler signed a different reviewed score/decision\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:201:983\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:201:75"
+    },
+    {
+      "id": "R22-06-ui-bulk-drift-override",
+      "criterion": "Bulk must compare every reviewed scoring field",
+      "pass": false,
+      "observation": {
+        "field": "override",
+        "result": true,
+        "status": "APPROVED",
+        "reviewed": {
+          "score": 80,
+          "decision": "GRADE"
+        },
+        "stored": {
+          "score": 80,
+          "override": 25,
+          "decision": "GRADE"
+        },
+        "request": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "approveAll": true,
+          "rubric": {
+            "rubricId": "R19",
+            "courseCode": "PTA",
+            "sessionNumber": 1,
+            "assignmentTitle": "Print",
+            "assignmentPrompt": "Print 1",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "Print 1",
+                "expectedSnippetOrConcept": "print(1)"
+              }
+            ]
+          },
+          "reviewedSubmissions": [
+            {
+              "submissionId": "SUB1",
+              "fileHash": "file-v1",
+              "feedbackHtml": "<p>APPROVED FEEDBACK</p>",
+              "criteriaGrades": [
+                {
+                  "criterionId": "C1",
+                  "criterionName": "Output",
+                  "earnedPoints": 80,
+                  "maxPoints": 100,
+                  "evidenceSnippet": "print(1)",
+                  "deductionReason": "Thiếu định dạng"
+                }
+              ],
+              "decision": "GRADE",
+              "teacherOverrideScore": null
+            }
+          ]
+        }
+      },
+      "error": "Error: Real UI bulk handler signed a different reviewed score/decision\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:201:983\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:201:75"
+    },
+    {
+      "id": "R22-06-ui-bulk-drift-decision",
+      "criterion": "Bulk must compare every reviewed scoring field",
+      "pass": false,
+      "observation": {
+        "field": "decision",
+        "result": true,
+        "status": "APPROVED",
+        "reviewed": {
+          "score": 80,
+          "decision": "GRADE"
+        },
+        "stored": {
+          "score": 80,
+          "override": null,
+          "decision": "REDO"
+        },
+        "request": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "approveAll": true,
+          "rubric": {
+            "rubricId": "R19",
+            "courseCode": "PTA",
+            "sessionNumber": 1,
+            "assignmentTitle": "Print",
+            "assignmentPrompt": "Print 1",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "Print 1",
+                "expectedSnippetOrConcept": "print(1)"
+              }
+            ]
+          },
+          "reviewedSubmissions": [
+            {
+              "submissionId": "SUB1",
+              "fileHash": "file-v1",
+              "feedbackHtml": "<p>APPROVED FEEDBACK</p>",
+              "criteriaGrades": [
+                {
+                  "criterionId": "C1",
+                  "criterionName": "Output",
+                  "earnedPoints": 80,
+                  "maxPoints": 100,
+                  "evidenceSnippet": "print(1)",
+                  "deductionReason": "Thiếu định dạng"
+                }
+              ],
+              "decision": "GRADE",
+              "teacherOverrideScore": null
+            }
+          ]
+        }
+      },
+      "error": "Error: Real UI bulk handler signed a different reviewed score/decision\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:201:983\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:201:75"
+    },
+    {
+      "id": "R22-06-ui-bulk-drift-feedback",
+      "criterion": "Bulk must compare every reviewed scoring field",
+      "pass": true,
+      "observation": {
+        "field": "feedback",
+        "result": false,
+        "status": "WAITING_APPROVAL",
+        "reviewed": {
+          "score": 80,
+          "decision": "GRADE"
+        },
+        "stored": {
+          "score": 80,
+          "override": null,
+          "decision": "GRADE"
+        },
+        "request": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "approveAll": true,
+          "rubric": {
+            "rubricId": "R19",
+            "courseCode": "PTA",
+            "sessionNumber": 1,
+            "assignmentTitle": "Print",
+            "assignmentPrompt": "Print 1",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "Print 1",
+                "expectedSnippetOrConcept": "print(1)"
+              }
+            ]
+          },
+          "reviewedSubmissions": [
+            {
+              "submissionId": "SUB1",
+              "fileHash": "file-v1",
+              "feedbackHtml": "<p>APPROVED FEEDBACK</p>",
+              "criteriaGrades": [
+                {
+                  "criterionId": "C1",
+                  "criterionName": "Output",
+                  "earnedPoints": 80,
+                  "maxPoints": 100,
+                  "evidenceSnippet": "print(1)",
+                  "deductionReason": "Thiếu định dạng"
+                }
+              ],
+              "decision": "GRADE",
+              "teacherOverrideScore": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "R22-06-ui-bulk-drift-file",
+      "criterion": "Bulk must compare every reviewed scoring field",
+      "pass": true,
+      "observation": {
+        "field": "file",
+        "result": false,
+        "status": "WAITING_APPROVAL",
+        "reviewed": {
+          "score": 80,
+          "decision": "GRADE"
+        },
+        "stored": {
+          "score": 80,
+          "override": null,
+          "decision": "GRADE"
+        },
+        "request": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "approveAll": true,
+          "rubric": {
+            "rubricId": "R19",
+            "courseCode": "PTA",
+            "sessionNumber": 1,
+            "assignmentTitle": "Print",
+            "assignmentPrompt": "Print 1",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "Print 1",
+                "expectedSnippetOrConcept": "print(1)"
+              }
+            ]
+          },
+          "reviewedSubmissions": [
+            {
+              "submissionId": "SUB1",
+              "fileHash": "file-v1",
+              "feedbackHtml": "<p>APPROVED FEEDBACK</p>",
+              "criteriaGrades": [
+                {
+                  "criterionId": "C1",
+                  "criterionName": "Output",
+                  "earnedPoints": 80,
+                  "maxPoints": 100,
+                  "evidenceSnippet": "print(1)",
+                  "deductionReason": "Thiếu định dạng"
+                }
+              ],
+              "decision": "GRADE",
+              "teacherOverrideScore": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "R22-06-graded-hash-reload",
+      "criterion": "Graded file version must survive repository module restart",
+      "pass": false,
+      "observation": {
+        "beforeRestart": "graded-v1",
+        "afterRestart": "ungraded-v2",
+        "http": 200,
+        "status": "APPROVED"
+      },
+      "error": "Error: In-memory graded hash was lost and an ungraded version approved\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:202:681\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:202:3"
+    },
+    {
+      "id": "R22-09-operation-normal",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "normal",
+        "verified": 1,
+        "writes": 1,
+        "query": null
+      }
+    },
+    {
+      "id": "R22-09-operation-comment-query",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "comment-query",
+        "verified": 0,
+        "writes": 1,
+        "query": "# mutation\nquery SaveHomeworkGrade { studentSubmission { id } }"
+      }
+    },
+    {
+      "id": "R22-09-operation-selected-query",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "selected-query",
+        "verified": 0,
+        "writes": 1,
+        "query": "mutation Other { saveHomeworkGrade } query SaveHomeworkGrade { studentSubmission { id } }"
+      }
+    },
+    {
+      "id": "R22-09-operation-attachment",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "attachment",
+        "verified": 0,
+        "writes": 1,
+        "query": "mutation SaveHomeworkGrade { saveSubmissionAttachment { id } }"
+      }
+    },
+    {
+      "id": "R22-09-operation-selected-mutation",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "selected-mutation",
+        "verified": 1,
+        "writes": 1,
+        "query": "query Other { studentSubmission { id } } mutation SaveHomeworkGrade { saveHomeworkGrade }"
+      }
+    },
+    {
+      "id": "R22-09-operation-missing-query",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": false,
+      "observation": {
+        "name": "missing-query",
+        "verified": 1,
+        "writes": 1,
+        "query": null
+      },
+      "error": "Error: GraphQL operation contract not enforced\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:213:510\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:213:5"
+    },
+    {
+      "id": "R22-09-operation-alias-introspection",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": false,
+      "observation": {
+        "name": "alias-introspection",
+        "verified": 1,
+        "writes": 1,
+        "query": "mutation SaveHomeworkGrade { score: __typename }"
+      },
+      "error": "Error: GraphQL operation contract not enforced\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:213:510\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:213:5"
+    },
+    {
+      "id": "R22-09-operation-skipped-grade",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": false,
+      "observation": {
+        "name": "skipped-grade",
+        "verified": 1,
+        "writes": 1,
+        "query": "mutation SaveHomeworkGrade { saveHomeworkGrade @skip(if: true) { id } }"
+      },
+      "error": "Error: GraphQL operation contract not enforced\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:213:510\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:213:5"
+    },
+    {
+      "id": "R22-09-operation-literal-other-submission",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": false,
+      "observation": {
+        "name": "literal-other-submission",
+        "verified": 1,
+        "writes": 1,
+        "query": "mutation SaveHomeworkGrade { saveHomeworkGrade(submissionId: \"SUB_OTHER\", studentId: \"S_OTHER\", score: 1, feedback: \"WRONG\") }"
+      },
+      "error": "Error: GraphQL operation contract not enforced\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:213:510\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:213:5"
+    },
+    {
+      "id": "R22-R12-host-mindx.edu.vn",
+      "criterion": "Domain and legacy hostname label must match only parsed hostname",
+      "pass": true,
+      "observation": [
+        {
+          "url": "https://lms-api.mindx.edu.vn/",
+          "matched": true,
+          "expected": true
+        },
+        {
+          "url": "https://evil.invalid/?next=https://lms-api.mindx.edu.vn/",
+          "matched": false,
+          "expected": false
+        },
+        {
+          "url": "https://evil.invalid/lms-api/mindx.edu.vn",
+          "matched": false,
+          "expected": false
+        },
+        {
+          "url": "https://mindx.edu.vn.evil.invalid/",
+          "matched": false,
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "R22-R12-host-lms-api",
+      "criterion": "Domain and legacy hostname label must match only parsed hostname",
+      "pass": true,
+      "observation": [
+        {
+          "url": "https://lms-api.mindx.edu.vn/",
+          "matched": true,
+          "expected": true
+        },
+        {
+          "url": "https://evil.invalid/?next=https://lms-api.mindx.edu.vn/",
+          "matched": false,
+          "expected": false
+        },
+        {
+          "url": "https://evil.invalid/lms-api/mindx.edu.vn",
+          "matched": false,
+          "expected": false
+        },
+        {
+          "url": "https://mindx.edu.vn.evil.invalid/",
+          "matched": false,
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "R22-13-reordered-same-field",
+      "criterion": "Older draft arriving after newer draft must get 409",
+      "pass": true,
+      "observation": {
+        "newer": 200,
+        "older": 409,
+        "stored": "LATEST"
+      }
+    },
+    {
+      "id": "R22-13-cross-field-reorder",
+      "criterion": "Reordering partial drafts must retain all latest edited fields",
+      "pass": false,
+      "observation": {
+        "storedFeedback": "<p>APPROVED FEEDBACK</p>",
+        "visibleFeedback": "LATEST FEEDBACK",
+        "override": 25,
+        "unsaved": {},
+        "http": [
+          200,
+          409
+        ]
+      },
+      "error": "Error: Latest successful partial save discarded another edited field\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:216:757\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:216:3"
+    },
+    {
+      "id": "R22-13-two-tabs-equal-sequence",
+      "criterion": "Independent UI counters must not let an older tab overwrite and approve the newest score",
+      "pass": false,
+      "observation": {
+        "before": {
+          "visible": 90,
+          "stored": 60,
+          "unsaved": {}
+        },
+        "status": "APPROVED",
+        "stored": 60,
+        "drafts": [
+          {
+            "seq": 1,
+            "http": 200,
+            "points": 90
+          },
+          {
+            "seq": 1,
+            "http": 200,
+            "points": 60
+          }
+        ]
+      },
+      "error": "Error: Equal client sequences allowed old score to be signed\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:217:1034\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:217:3"
+    },
+    {
+      "id": "R22-13-reload-counter",
+      "criterion": "A legitimate edit after browser reload must still save",
+      "pass": false,
+      "observation": {
+        "saved": false,
+        "stored": "TWO",
+        "visible": "THREE AFTER RELOAD",
+        "http": 409,
+        "seq": 1
+      },
+      "error": "Error: Browser reload reset client counter below server counter\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:218:674\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:218:3"
+    },
+    {
+      "id": "R22-13-invalid-request-poison",
+      "criterion": "A rejected identity must not advance another submission sequence",
+      "pass": false,
+      "observation": {
+        "bad": 400,
+        "good": 409,
+        "stored": "<p>APPROVED FEEDBACK</p>"
+      },
+      "error": "Error: Rejected request advanced sequence before identity validation\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:219:395\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:219:3"
+    },
+    {
+      "id": "R22-13-route-reload",
+      "criterion": "Server sequence protection must survive route module reload",
+      "pass": false,
+      "observation": {
+        "http": 200,
+        "stored": "OLD AFTER RELOAD"
+      },
+      "error": "Error: Server sequence existed only in process memory\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:220:430\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat/snapshot/docs/audits/round-22/verify-independent.mjs:220:3"
+    }
+  ]
+}

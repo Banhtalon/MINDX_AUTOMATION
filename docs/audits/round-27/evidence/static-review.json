@@ -1,0 +1,31 @@
+{
+  "method": "Read-only inspection of source and connected flows, supported by fresh source-function tests; no real browser claim.",
+  "loadAssumption": "One teacher on a local computer; browser jobs sequential, asynchronous AI/draft/UI results can overlap.",
+  "localHostScripts": {
+    "dev": "next dev -H 127.0.0.1 -p 3000",
+    "build": "next build",
+    "start": "next start -H 127.0.0.1 -p 3000",
+    "recon": "tsx scripts/recon.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "references": {
+    "singlePersistentContext": "src/lib/playwright/browser-manager.ts:6-103",
+    "singleQueue": "src/lib/queue/task-queue.ts:53",
+    "saveQueue": "src/app/api/homework-grader/save-lms/route.ts:29",
+    "downloadQueue": "src/app/api/homework-grader/download-and-grade/route.ts:65",
+    "fileAllowlist": "src/lib/file-parsers/index.ts:287; src/lib/playwright/download-submissions.ts:87",
+    "finalHashConditionalUpdate": "src/lib/db/sqlite.ts:942",
+    "graphqlTokenizer": "src/lib/playwright/grade-worker.ts:426",
+    "pdfStreamMask": "src/lib/file-parsers/media-reader.ts:1156",
+    "pdfKidsScan": "src/lib/file-parsers/media-reader.ts:1318"
+  },
+  "clientEntrypoints": {
+    "src/components/homework-auto-grader-tab.tsx": {
+      "sensitiveEnvironmentReference": false
+    },
+    "src/app/homework-grader/page.tsx": {
+      "sensitiveEnvironmentReference": false
+    }
+  },
+  "limits": "Targeted Phase 5 and related Phase 4 flows; not a whole-project penetration test or production acceptance."
+}

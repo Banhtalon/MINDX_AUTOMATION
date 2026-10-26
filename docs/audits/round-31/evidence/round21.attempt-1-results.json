@@ -1,0 +1,598 @@
+{
+  "checkedAt": "2026-10-20T23:38:58.748Z",
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat\\snapshot",
+  "fixtureWorkspace": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-r21-fixtures-aPiRY5",
+  "sqlite": ":memory:",
+  "realLmsCalls": 0,
+  "realGeminiCalls": 0,
+  "method": "Actual product function bodies loaded from snapshot; explicit VM doubles for DOM/Gemini; real in-memory SQLite and physical synthetic files. Independent decoder sharp checks malformed image fixtures. No browser or real React scheduling claim.",
+  "sourceHashes": {
+    "src/lib/file-parsers/media-reader.ts": "2c42b5d4d3a6a3f0f09c9b86bc44f01fcbcb70fb22ee50a15c941b1bf640e3f0",
+    "src/lib/gemini/homework-grader.ts": "b2bd3a4efeb8706ddfce190fecaef5d30aab76420bc8e0f9b34c1ab785483c57",
+    "src/lib/gemini/score-auditor.ts": "79378d1d142d033b6f89807e959f59c04b5a840161a28d6f908849c5236401da",
+    "src/lib/db/sqlite.ts": "147e883ffb1eb9798cc5c6d87f2f8b0dbc83f9748c34cfef829badd19da640ab",
+    "src/lib/playwright/download-submissions.ts": "f56327ef033fbd0a0a1bf6a1b520f7a4b0ded26a30809a43cab981d1f0bfe958",
+    "src/lib/playwright/grade-worker.ts": "f5db4a78fcdd2b2022a6c663444e0f6c24acfc6600da884cd5b62a75fef33d73",
+    "src/lib/playwright/network-interceptor.ts": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad",
+    "src/app/api/homework-grader/submissions/route.ts": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc",
+    "src/app/api/homework-grader/approve/route.ts": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283",
+    "src/components/homework-auto-grader-tab.tsx": "019bbcc3016fafd5453a6a137dc9d0e1ad6ff94c859fd8b2678e1b1e4f01f3ab"
+  },
+  "total": 49,
+  "passed": 45,
+  "failed": 4,
+  "results": [
+    {
+      "id": "R21-01-valid-png",
+      "criterion": "Media hợp lệ vẫn giữ nguyên bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 96
+      }
+    },
+    {
+      "id": "R21-01-valid-jpg",
+      "criterion": "Media hợp lệ vẫn giữ nguyên bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 269
+      }
+    },
+    {
+      "id": "R21-01-valid-webp",
+      "criterion": "Media hợp lệ vẫn giữ nguyên bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 64
+      }
+    },
+    {
+      "id": "R21-01-valid-pdf",
+      "criterion": "Media hợp lệ vẫn giữ nguyên bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 428
+      }
+    },
+    {
+      "id": "R21-01-png-invalid-idat",
+      "criterion": "IHDR/IDAT/IEND đầy đủ nhưng nội dung nén hỏng phải bị chặn",
+      "pass": true,
+      "observation": {
+        "bytes": 96,
+        "decoderError": "vipspng: libpng read error",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R21-01-jpeg-empty-sof",
+      "criterion": "SOF/SOS có tên nhưng thiếu kích thước/thành phần ảnh phải bị chặn",
+      "pass": true,
+      "observation": {
+        "bytes": 22,
+        "decoderError": "Input buffer has corrupt header: VipsJpeg: Bogus marker length\nVipsJpeg: Bogus marker length\nVipsJpeg: Bogus marker length",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R21-01-webp-VP8",
+      "criterion": "Container RIFF đúng nhưng payload không phải ảnh phải bị chặn",
+      "pass": true,
+      "observation": {
+        "bytes": 30,
+        "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R21-01-webp-VP8L",
+      "criterion": "Container RIFF đúng nhưng payload không phải ảnh phải bị chặn",
+      "pass": true,
+      "observation": {
+        "bytes": 30,
+        "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R21-01-webp-VP8X",
+      "criterion": "Container RIFF đúng nhưng payload không phải ảnh phải bị chặn",
+      "pass": true,
+      "observation": {
+        "bytes": 30,
+        "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R21-01-pdf-token-spoof",
+      "criterion": "PDF chỉ chứa các từ khóa, không có đối tượng/trang hợp lệ, phải PARSE_ERROR",
+      "pass": true,
+      "observation": {
+        "bytes": 57,
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R21-02-rubric-integrity",
+      "criterion": "Barem trùng và điểm thiếu bằng chứng vẫn bị chặn",
+      "pass": true
+    },
+    {
+      "id": "R21-03-content-hash",
+      "criterion": "Hash khóa toàn bộ file/tiêu chí/điểm/quyết định/nhận xét",
+      "pass": true
+    },
+    {
+      "id": "R21-04-disk-unchanged",
+      "criterion": "Đề xuất AI phải gắn cùng phiên bản bytes trên đĩa",
+      "pass": true,
+      "observation": {
+        "calls": 1,
+        "staleIgnored": false,
+        "status": "WAITING_APPROVAL",
+        "dbHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+        "diskHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99"
+      }
+    },
+    {
+      "id": "R21-04-disk-before",
+      "criterion": "Đề xuất AI phải gắn cùng phiên bản bytes trên đĩa",
+      "pass": true,
+      "observation": {
+        "calls": 1,
+        "staleIgnored": false,
+        "status": "WAITING_APPROVAL",
+        "dbHash": "fc92339e2c864d8fc1782834ede5e96beb34e096745cdb559c3a8bb67fbfae7c",
+        "diskHash": "fc92339e2c864d8fc1782834ede5e96beb34e096745cdb559c3a8bb67fbfae7c"
+      }
+    },
+    {
+      "id": "R21-04-disk-during",
+      "criterion": "Đề xuất AI phải gắn cùng phiên bản bytes trên đĩa",
+      "pass": true,
+      "observation": {
+        "calls": 1,
+        "staleIgnored": true,
+        "status": "WAITING_APPROVAL",
+        "dbHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+        "diskHash": "fc92339e2c864d8fc1782834ede5e96beb34e096745cdb559c3a8bb67fbfae7c"
+      }
+    },
+    {
+      "id": "R21-04-disk-deleted",
+      "criterion": "Đề xuất AI phải gắn cùng phiên bản bytes trên đĩa",
+      "pass": true,
+      "observation": {
+        "calls": 1,
+        "staleIgnored": true,
+        "status": "WAITING_APPROVAL",
+        "dbHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+        "diskHash": null
+      }
+    },
+    {
+      "id": "R21-04-disk-supplied-during",
+      "criterion": "Đề xuất AI phải gắn cùng phiên bản bytes trên đĩa",
+      "pass": true,
+      "observation": {
+        "calls": 1,
+        "staleIgnored": true,
+        "status": "WAITING_APPROVAL",
+        "dbHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+        "diskHash": "fc92339e2c864d8fc1782834ede5e96beb34e096745cdb559c3a8bb67fbfae7c"
+      }
+    },
+    {
+      "id": "R21-05-no-rubric-draft",
+      "criterion": "Chưa có barem khóa thì không tự tạo barem từ điểm",
+      "pass": true
+    },
+    {
+      "id": "R21-05-explicit-rubric",
+      "criterion": "API duyệt đối chiếu barem được truyền thay vì tự tin danh sách điểm",
+      "pass": true
+    },
+    {
+      "id": "R21-05-ui-authoritative-rubric",
+      "criterion": "Barem đang chọn trên UI phải được áp dụng khi duyệt",
+      "pass": true,
+      "observation": {
+        "draftHttp": 200,
+        "approved": false,
+        "status": "WAITING_APPROVAL",
+        "selectedRubric": [
+          "C1"
+        ],
+        "storedCriteria": [
+          "UNRELATED"
+        ],
+        "requestHasRubric": true
+      }
+    },
+    {
+      "id": "R21-06-version-fresh",
+      "criterion": "Duyệt đơn/hàng loạt phải chứng minh đúng file giáo viên đã xem",
+      "pass": true,
+      "observation": {
+        "mode": "fresh",
+        "result": true,
+        "status": "APPROVED",
+        "currentHash": "reviewed-v1",
+        "requestBody": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "studentId": "S1",
+          "submissionId": "SUB1",
+          "fileHash": "reviewed-v1",
+          "rubric": {
+            "rubricId": "CUSTOM_RUBRIC",
+            "courseCode": "CUSTOM",
+            "sessionNumber": 1,
+            "assignmentTitle": "Bài tập thực hành buổi học",
+            "assignmentPrompt": "Hoàn thành đúng yêu cầu kỹ thuật của bài tập về nhà trong buổi học.",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "",
+                "expectedSnippetOrConcept": ""
+              }
+            ]
+          },
+          "criteriaGrades": [
+            {
+              "criterionId": "C1",
+              "criterionName": "Output",
+              "earnedPoints": 80,
+              "maxPoints": 100,
+              "evidenceSnippet": "print(1)",
+              "deductionReason": "Thiếu định dạng"
+            }
+          ],
+          "teacherOverrideScore": null,
+          "decision": "GRADE",
+          "feedbackHtml": "<p>APPROVED FEEDBACK</p>"
+        }
+      }
+    },
+    {
+      "id": "R21-06-version-stale",
+      "criterion": "Duyệt đơn/hàng loạt phải chứng minh đúng file giáo viên đã xem",
+      "pass": true,
+      "observation": {
+        "mode": "stale",
+        "result": false,
+        "status": "WAITING_APPROVAL",
+        "currentHash": "new-v2",
+        "requestBody": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "studentId": "S1",
+          "submissionId": "SUB1",
+          "fileHash": "reviewed-v1",
+          "rubric": {
+            "rubricId": "CUSTOM_RUBRIC",
+            "courseCode": "CUSTOM",
+            "sessionNumber": 1,
+            "assignmentTitle": "Bài tập thực hành buổi học",
+            "assignmentPrompt": "Hoàn thành đúng yêu cầu kỹ thuật của bài tập về nhà trong buổi học.",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "",
+                "expectedSnippetOrConcept": ""
+              }
+            ]
+          },
+          "criteriaGrades": [
+            {
+              "criterionId": "C1",
+              "criterionName": "Output",
+              "earnedPoints": 80,
+              "maxPoints": 100,
+              "evidenceSnippet": "print(1)",
+              "deductionReason": "Thiếu định dạng"
+            }
+          ],
+          "teacherOverrideScore": null,
+          "decision": "GRADE",
+          "feedbackHtml": "<p>APPROVED FEEDBACK</p>"
+        }
+      }
+    },
+    {
+      "id": "R21-06-version-omitted",
+      "criterion": "Duyệt đơn/hàng loạt phải chứng minh đúng file giáo viên đã xem",
+      "pass": true,
+      "observation": {
+        "mode": "omitted",
+        "result": 409,
+        "status": "WAITING_APPROVAL",
+        "currentHash": "new-v2"
+      }
+    },
+    {
+      "id": "R21-06-version-bulk",
+      "criterion": "Duyệt đơn/hàng loạt phải chứng minh đúng file giáo viên đã xem",
+      "pass": true,
+      "observation": {
+        "mode": "bulk",
+        "result": false,
+        "status": "WAITING_APPROVAL",
+        "currentHash": "new-v2",
+        "requestBody": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "approveAll": true,
+          "rubric": {
+            "rubricId": "CUSTOM_RUBRIC",
+            "courseCode": "CUSTOM",
+            "sessionNumber": 1,
+            "assignmentTitle": "Bài tập thực hành buổi học",
+            "assignmentPrompt": "Hoàn thành đúng yêu cầu kỹ thuật của bài tập về nhà trong buổi học.",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "",
+                "expectedSnippetOrConcept": ""
+              }
+            ]
+          },
+          "reviewedSubmissions": [
+            {
+              "submissionId": "SUB1",
+              "fileHash": "reviewed-v1",
+              "feedbackHtml": "<p>APPROVED FEEDBACK</p>",
+              "criteriaGrades": [
+                {
+                  "criterionId": "C1",
+                  "criterionName": "Output",
+                  "earnedPoints": 80,
+                  "maxPoints": 100,
+                  "evidenceSnippet": "print(1)",
+                  "deductionReason": "Thiếu định dạng"
+                }
+              ],
+              "decision": "GRADE",
+              "teacherOverrideScore": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "R21-07-exact-identity",
+      "criterion": "Khớp một phần mã học viên/bài nộp không được ghi",
+      "pass": true
+    },
+    {
+      "id": "R21-08-mapping-valid",
+      "criterion": "Chỉ ghi khi lesson và session có ánh xạ xác minh",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n0 !== 1\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat/snapshot/docs/audits/round-21/verify-independent.mjs:238:141\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat/snapshot/docs/audits/round-21/verify-independent.mjs:236:52"
+    },
+    {
+      "id": "R21-08-mapping-mismatch",
+      "criterion": "Chỉ ghi khi lesson và session có ánh xạ xác minh",
+      "pass": true
+    },
+    {
+      "id": "R21-08-mapping-missing",
+      "criterion": "Chỉ ghi khi lesson và session có ánh xạ xác minh",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0
+      }
+    },
+    {
+      "id": "R21-09-required-submissionId",
+      "criterion": "Thiếu trường nghiệp vụ bắt buộc không được xác nhận lưu",
+      "pass": true,
+      "observation": {
+        "verified": 0
+      }
+    },
+    {
+      "id": "R21-09-required-studentId",
+      "criterion": "Thiếu trường nghiệp vụ bắt buộc không được xác nhận lưu",
+      "pass": true,
+      "observation": {
+        "verified": 0
+      }
+    },
+    {
+      "id": "R21-09-required-score",
+      "criterion": "Thiếu trường nghiệp vụ bắt buộc không được xác nhận lưu",
+      "pass": true,
+      "observation": {
+        "verified": 0
+      }
+    },
+    {
+      "id": "R21-09-required-feedback",
+      "criterion": "Thiếu trường nghiệp vụ bắt buộc không được xác nhận lưu",
+      "pass": true,
+      "observation": {
+        "verified": 0
+      }
+    },
+    {
+      "id": "R21-09-operation-plain-query",
+      "criterion": "Tên thao tác/payload đúng không được thay thế kiểm tra thao tác GraphQL thực tế",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "writes": 1,
+        "query": "query GradeSummary { studentSubmission { id } }",
+        "operationName": "GradeSummary"
+      }
+    },
+    {
+      "id": "R21-09-operation-comment-query",
+      "criterion": "Tên thao tác/payload đúng không được thay thế kiểm tra thao tác GraphQL thực tế",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "writes": 1,
+        "query": "# mutation\nquery SaveHomeworkGrade { studentSubmission { id } }",
+        "operationName": "SaveHomeworkGrade"
+      }
+    },
+    {
+      "id": "R21-09-operation-other-mutation",
+      "criterion": "Tên thao tác/payload đúng không được thay thế kiểm tra thao tác GraphQL thực tế",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "writes": 1,
+        "query": "mutation SaveHomeworkGrade($submissionId: ID!) { saveSubmissionAttachment(submissionId: $submissionId) { id } }",
+        "operationName": "SaveHomeworkGrade"
+      }
+    },
+    {
+      "id": "R21-09-operation-selected-query",
+      "criterion": "Tên thao tác/payload đúng không được thay thế kiểm tra thao tác GraphQL thực tế",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "writes": 1,
+        "query": "mutation Unselected { saveHomeworkGrade } query GradeLookup { studentSubmission { id } }",
+        "operationName": "GradeLookup"
+      }
+    },
+    {
+      "id": "R21-09-hostname",
+      "criterion": "Hostname thật được dùng khi lọc phản hồi",
+      "pass": true,
+      "observation": [
+        {
+          "url": "https://lms-api.mindx.edu.vn/",
+          "matched": true
+        },
+        {
+          "url": "https://unrelated.invalid/?return=mindx.edu.vn",
+          "matched": false
+        },
+        {
+          "url": "https://mindx.edu.vn.evil.invalid/",
+          "matched": false
+        }
+      ]
+    },
+    {
+      "id": "R21-09-phase4-host-token",
+      "criterion": "Hợp đồng chuỗi URL lms-api mà R12 kiểm tra vẫn phải đạt cổng hồi quy",
+      "pass": true,
+      "observation": {
+        "filter": "lms-api",
+        "url": "https://lms-api.mindx.edu.vn/",
+        "matched": true
+      }
+    },
+    {
+      "id": "R21-10-readback-complete",
+      "criterion": "Chỉ VERIFIED khi nhận xét và quyết định đọc lại khớp",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n0 !== 1\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat/snapshot/docs/audits/round-21/verify-independent.mjs:265:145\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat/snapshot/docs/audits/round-21/verify-independent.mjs:265:5"
+    },
+    {
+      "id": "R21-10-readback-empty",
+      "criterion": "Chỉ VERIFIED khi nhận xét và quyết định đọc lại khớp",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "radioReads": 0,
+        "modalReads": 1
+      }
+    },
+    {
+      "id": "R21-10-readback-unreadable",
+      "criterion": "Chỉ VERIFIED khi nhận xét và quyết định đọc lại khớp",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "radioReads": 0,
+        "modalReads": 1
+      }
+    },
+    {
+      "id": "R21-10-readback-wrong-decision",
+      "criterion": "Chỉ VERIFIED khi nhận xét và quyết định đọc lại khớp",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "radioReads": 0,
+        "modalReads": 1
+      }
+    },
+    {
+      "id": "R21-10-readback-wrong-feedback",
+      "criterion": "Chỉ VERIFIED khi nhận xét và quyết định đọc lại khớp",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "radioReads": 0,
+        "modalReads": 1
+      }
+    },
+    {
+      "id": "R21-10-readback-redo-complete",
+      "criterion": "Chỉ VERIFIED khi nhận xét và quyết định đọc lại khớp",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n0 !== 1\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat/snapshot/docs/audits/round-21/verify-independent.mjs:265:145\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat/snapshot/docs/audits/round-21/verify-independent.mjs:265:5"
+    },
+    {
+      "id": "R21-11-final-cas",
+      "criterion": "Chỉnh sửa trong lúc đọc lại không được nâng VERIFIED",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'FAILED'\n- 'WAITING_APPROVAL'\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat/snapshot/docs/audits/round-21/verify-independent.mjs:267:198\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat/snapshot/docs/audits/round-21/verify-independent.mjs:266:3"
+    },
+    {
+      "id": "R21-12-scope-race",
+      "criterion": "Phản hồi buổi cũ đến muộn không ghi đè buổi mới",
+      "pass": true
+    },
+    {
+      "id": "R21-13-old-success-new-failure",
+      "criterion": "Phản hồi thành công cũ không xóa cờ bản mới thất bại",
+      "pass": true
+    },
+    {
+      "id": "R21-13-reordered-successes",
+      "criterion": "Hai lần lưu đều 200 nhưng đến máy chủ ngược thứ tự không được duyệt bản cũ",
+      "pass": true,
+      "observation": {
+        "before": {
+          "visible": "LATEST REVIEWED",
+          "stored": "LATEST REVIEWED",
+          "unsaved": {}
+        },
+        "approvals": 1,
+        "status": "APPROVED",
+        "stored": "LATEST REVIEWED",
+        "visible": "LATEST REVIEWED"
+      }
+    },
+    {
+      "id": "R21-14-download-error",
+      "criterion": "Tải lỗi không được gọi AI, kể cả skipAi",
+      "pass": true
+    }
+  ]
+}

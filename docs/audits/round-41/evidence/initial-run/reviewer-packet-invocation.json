@@ -1,0 +1,10 @@
+{
+  "requestedModel": "claude-sonnet-5-5-high",
+  "requestedEffort": "high",
+  "method": "inline read-only evidence packet; tools prohibited",
+  "promptCharacters": 19790,
+  "startedAt": "2026-10-21T08:15:49.800Z",
+  "completedAt": "2026-10-21T08:16:38.493Z",
+  "exitCode": 0,
+  "error": null
+}

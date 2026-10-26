@@ -1,0 +1,103 @@
+{
+  "verdict": "NO-GO",
+  "sourceHead": "2570d96b6770957e218031c91f14ce98e766dfa7",
+  "sourceManifestHash": "b4e468d5c3af29dd2d20ef38b76d23c192186436ef69c3caf56a5c28b8da85d7",
+  "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round21-20261020T112635411955Z-mindx-round20-compat\\snapshot",
+  "gates": [
+    {
+      "name": "round20",
+      "exitCode": 0,
+      "pass": true,
+      "log": "round20.attempt-2.log",
+      "total": 145,
+      "passed": 145,
+      "failed": 0,
+      "results": "round20.attempt-2-results.json"
+    },
+    {
+      "name": "round21",
+      "exitCode": 1,
+      "pass": false,
+      "log": "round21.attempt-3.log",
+      "total": 49,
+      "passed": 34,
+      "failed": 15,
+      "results": "round21.attempt-3-results.json"
+    },
+    {
+      "name": "round12",
+      "exitCode": 1,
+      "pass": false,
+      "log": "round12.attempt-2.log",
+      "total": 43,
+      "passed": 42,
+      "failed": 1,
+      "results": "round12.attempt-2-results.json"
+    },
+    {
+      "name": "round13",
+      "exitCode": 0,
+      "pass": true,
+      "log": "round13.attempt-2.log",
+      "total": 89,
+      "passed": 89,
+      "failed": 0,
+      "results": "round13.attempt-2-results.json"
+    },
+    {
+      "name": "round16",
+      "exitCode": 0,
+      "pass": true,
+      "log": "round16.attempt-2.log",
+      "total": 16,
+      "passed": 16,
+      "failed": 0,
+      "results": "round16.attempt-2-results.json"
+    },
+    {
+      "name": "round17",
+      "exitCode": 0,
+      "pass": true,
+      "log": "round17.attempt-2.log",
+      "total": 38,
+      "passed": 38,
+      "failed": 0,
+      "results": "round17.attempt-2-results.json"
+    },
+    {
+      "name": "phase4",
+      "exitCode": 0,
+      "pass": true,
+      "log": "phase4.attempt-2.log"
+    },
+    {
+      "name": "phase5",
+      "exitCode": 0,
+      "pass": true,
+      "log": "phase5.attempt-2.log"
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "pass": true,
+      "log": "typecheck.attempt-2.log"
+    },
+    {
+      "name": "build",
+      "exitCode": 0,
+      "pass": true,
+      "log": "build.attempt-2.log"
+    }
+  ],
+  "passedGates": 8,
+  "totalGates": 10,
+  "regressions": {
+    "total": 186,
+    "passed": 185
+  },
+  "closedSource": 8,
+  "partiallyFixed": 6,
+  "originalSourceUnchanged": true,
+  "protectedUnchanged": true,
+  "r21SourceHashesMatchSnapshotBaseline": true
+}

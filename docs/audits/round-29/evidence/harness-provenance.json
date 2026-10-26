@@ -1,0 +1,16 @@
+{
+  "base": "../round-28/verify-independent.mjs",
+  "baseSha256": "2373898d9bdad411422bbbb1394ea710ee898e115103a42df6a505e6e786859d",
+  "inheritedChecks": 737,
+  "inheritedAssertionsChanged": false,
+  "newFragmentSha256": "e94e1535493dc6cb5d2b2854737c6fd45bf6d690122e7c5db498275caaf505e6",
+  "harnessSha256": "385f7722513d757355cd82c2bdd3da3757b78790f0ef077fdc289fbcaee9e9fe",
+  "envelopeChanges": [
+    "round/output directory",
+    "TEMP prefix",
+    "case import locations",
+    "summary round/inherited count",
+    "new case imports"
+  ],
+  "method": "All R28 assertion bodies and expectations inherited verbatim; append R29 checks and corroborate through direct product imports."
+}

@@ -1,0 +1,887 @@
+{
+  "round": 22,
+  "checkedAt": "2026-10-20T13:09:16.673Z",
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round25-20261020T130841Z-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat-mindx-round21-compat-mindx-round20-compat\\snapshot",
+  "fixtureWorkspace": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-r22-fixtures-uB3M6v",
+  "sqlite": ":memory:",
+  "realLmsCalls": 0,
+  "realGeminiCalls": 0,
+  "method": "Actual snapshot function bodies, imports/types removed only; deterministic UI/DOM/Gemini doubles, real in-memory SQLite and physical synthetic files; sharp independently decodes image fixtures. Module reload tests instantiate the same unmodified source against the same SQLite database. No live browser/React scheduling acceptance.",
+  "sourceHashes": {
+    "src/lib/file-parsers/media-reader.ts": "31cf42c2524a24a1a9f70dd4cee45c4e6250c745a26e5c6f40df8e4b529089c8",
+    "src/lib/gemini/homework-grader.ts": "b2bd3a4efeb8706ddfce190fecaef5d30aab76420bc8e0f9b34c1ab785483c57",
+    "src/lib/gemini/score-auditor.ts": "79378d1d142d033b6f89807e959f59c04b5a840161a28d6f908849c5236401da",
+    "src/lib/db/sqlite.ts": "147e883ffb1eb9798cc5c6d87f2f8b0dbc83f9748c34cfef829badd19da640ab",
+    "src/lib/playwright/download-submissions.ts": "f56327ef033fbd0a0a1bf6a1b520f7a4b0ded26a30809a43cab981d1f0bfe958",
+    "src/lib/playwright/grade-worker.ts": "ddffdf10fe1b6b5eb0985724423f9753e16f59dbebbfa040c1120bc1c970f765",
+    "src/lib/playwright/network-interceptor.ts": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad",
+    "src/app/api/homework-grader/submissions/route.ts": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc",
+    "src/app/api/homework-grader/approve/route.ts": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283",
+    "src/components/homework-auto-grader-tab.tsx": "019bbcc3016fafd5453a6a137dc9d0e1ad6ff94c859fd8b2678e1b1e4f01f3ab"
+  },
+  "total": 53,
+  "passed": 53,
+  "failed": 0,
+  "results": [
+    {
+      "id": "R22-01-valid-png",
+      "criterion": "Valid media must retain exact bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 96
+      }
+    },
+    {
+      "id": "R22-01-valid-jpg",
+      "criterion": "Valid media must retain exact bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 269
+      }
+    },
+    {
+      "id": "R22-01-valid-webp",
+      "criterion": "Valid media must retain exact bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 64
+      }
+    },
+    {
+      "id": "R22-01-valid-pdf",
+      "criterion": "Valid media must retain exact bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 428
+      }
+    },
+    {
+      "id": "R22-01-png-crc-IHDR",
+      "criterion": "CRC of every PNG chunk must be checked",
+      "pass": true
+    },
+    {
+      "id": "R22-01-png-crc-IDAT",
+      "criterion": "CRC of every PNG chunk must be checked",
+      "pass": true
+    },
+    {
+      "id": "R22-01-png-crc-IEND",
+      "criterion": "CRC of every PNG chunk must be checked",
+      "pass": true
+    },
+    {
+      "id": "R22-01-png-invalid-zlib-header",
+      "criterion": "Recomputed CRC cannot hide invalid zlib header",
+      "pass": true,
+      "observation": {
+        "bytes": 96,
+        "decoderError": "vipspng: libpng read error",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R22-01-png-valid-header-broken-deflate",
+      "criterion": "Valid zlib header and CRC do not prove compressed data is valid",
+      "pass": true,
+      "observation": {
+        "bytes": 96,
+        "decoderError": "vipspng: libpng read error",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R22-01-png-invalid-bit-depth",
+      "criterion": "Invalid IHDR bit depth with correct CRC must be rejected",
+      "pass": true,
+      "observation": {
+        "bytes": 96,
+        "decoderError": "Input buffer has corrupt header:",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R22-01-jpeg-valid-markers-invalid-component",
+      "criterion": "SOF/SOS component IDs must refer to the same actual image components",
+      "pass": true,
+      "observation": {
+        "bytes": 97,
+        "decoderError": "Input buffer has corrupt header: VipsJpeg: Invalid component ID 2 in SOS\nVipsJpeg: Invalid component ID 2 in SOS\nVipsJpeg: Invalid component ID 2 in SOS",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R22-01-jpeg-zero-dimension",
+      "criterion": "JPEG zero dimension must be rejected",
+      "pass": true
+    },
+    {
+      "id": "R22-01-webp-vp8-header-only",
+      "criterion": "VP8 start code and dimensions without image data must fail",
+      "pass": true,
+      "observation": {
+        "bytes": 30,
+        "decoderError": "webp2vips: unable to read pixels",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R22-01-webp-vp8l-header-only",
+      "criterion": "VP8L signature/version without image data must fail",
+      "pass": true,
+      "observation": {
+        "bytes": 26,
+        "decoderError": "webp2vips: unable to read pixels",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R22-01-webp-vp8x-empty-child",
+      "criterion": "VP8X must validate the declared following image chunk",
+      "pass": true,
+      "observation": {
+        "bytes": 38,
+        "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0
+      }
+    },
+    {
+      "id": "R22-01-webp-valid-transparent",
+      "criterion": "A decoder-valid transparent extended WebP must remain supported",
+      "pass": true,
+      "observation": {
+        "bytes": 96,
+        "firstChunk": "VP8X",
+        "nextChunk": "ALPH",
+        "parseStatus": "PARSED"
+      }
+    },
+    {
+      "id": "R22-01-pdf-comments-only",
+      "criterion": "PDF words must identify actual usable objects/pages",
+      "pass": true,
+      "observation": {
+        "bytes": 85,
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0,
+        "body": "%PDF-1.4\n% 1 0 obj /Type /Catalog endobj\n% NO REAL OBJECTS HERE, ONLY COMMENTS\n%%EOF\n"
+      }
+    },
+    {
+      "id": "R22-01-pdf-missing-pages",
+      "criterion": "PDF words must identify actual usable objects/pages",
+      "pass": true,
+      "observation": {
+        "bytes": 86,
+        "parseStatus": "PARSE_ERROR",
+        "inlineParts": 0,
+        "body": "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 999 0 R >>\nendobj\n%%EOF\n                    "
+      }
+    },
+    {
+      "id": "R22-04-supplied-unchanged",
+      "criterion": "Disk must be rechecked after AI even with supplied parsed content",
+      "pass": true,
+      "observation": {
+        "mode": "unchanged",
+        "staleIgnored": false,
+        "dbUnchanged": false
+      }
+    },
+    {
+      "id": "R22-04-supplied-changed",
+      "criterion": "Disk must be rechecked after AI even with supplied parsed content",
+      "pass": true,
+      "observation": {
+        "mode": "changed",
+        "staleIgnored": true,
+        "dbUnchanged": true
+      }
+    },
+    {
+      "id": "R22-04-supplied-deleted",
+      "criterion": "Disk must be rechecked after AI even with supplied parsed content",
+      "pass": true,
+      "observation": {
+        "mode": "deleted",
+        "staleIgnored": true,
+        "dbUnchanged": true
+      }
+    },
+    {
+      "id": "R22-05-ui-rubric-single",
+      "criterion": "All three UI handlers must send and enforce active rubric",
+      "pass": true,
+      "observation": {
+        "mode": "single",
+        "requestHasRubric": true,
+        "rubricId": "R19",
+        "status": "WAITING_APPROVAL",
+        "points": 80,
+        "http": 400
+      }
+    },
+    {
+      "id": "R22-05-ui-rubric-bulk",
+      "criterion": "All three UI handlers must send and enforce active rubric",
+      "pass": true,
+      "observation": {
+        "mode": "bulk",
+        "requestHasRubric": true,
+        "rubricId": "R19",
+        "status": "WAITING_APPROVAL",
+        "points": 80,
+        "http": 200
+      }
+    },
+    {
+      "id": "R22-05-ui-rubric-criterion",
+      "criterion": "All three UI handlers must send and enforce active rubric",
+      "pass": true,
+      "observation": {
+        "mode": "criterion",
+        "requestHasRubric": true,
+        "rubricId": "R19",
+        "status": "WAITING_APPROVAL",
+        "points": 80,
+        "http": 400
+      }
+    },
+    {
+      "id": "R22-06-single-missing-hash-true",
+      "criterion": "Every single approval must prove reviewed file version",
+      "pass": true,
+      "observation": {
+        "withDecision": true,
+        "http": 409,
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R22-06-single-missing-hash-false",
+      "criterion": "Every single approval must prove reviewed file version",
+      "pass": true,
+      "observation": {
+        "withDecision": false,
+        "http": 409,
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R22-06-bulk-review-missing-list",
+      "criterion": "Bulk approval must require the complete reviewed version",
+      "pass": true,
+      "observation": {
+        "mode": "missing-list",
+        "http": 200,
+        "status": "WAITING_APPROVAL",
+        "approvedCount": 0,
+        "skipped": [
+          {
+            "submissionId": "SUB1",
+            "reason": "[Stale Conflict] Thiếu thông tin phiên bản bài nộp đã xem trên giao diện (reviewedSubmissions)."
+          }
+        ]
+      }
+    },
+    {
+      "id": "R22-06-bulk-review-missing-feedback",
+      "criterion": "Bulk approval must require the complete reviewed version",
+      "pass": true,
+      "observation": {
+        "mode": "missing-feedback",
+        "http": 200,
+        "status": "WAITING_APPROVAL",
+        "approvedCount": 0,
+        "skipped": [
+          {
+            "submissionId": "SUB1",
+            "reason": "[Stale Conflict] Nội dung nhận xét (feedbackHtml) thiếu hoặc đã thay đổi so với bản hiển thị trên giao diện."
+          }
+        ]
+      }
+    },
+    {
+      "id": "R22-06-bulk-review-matching",
+      "criterion": "Bulk approval must require the complete reviewed version",
+      "pass": true,
+      "observation": {
+        "mode": "matching",
+        "http": 200,
+        "status": "APPROVED",
+        "approvedCount": 1,
+        "skipped": []
+      }
+    },
+    {
+      "id": "R22-06-bulk-review-wrong-hash",
+      "criterion": "Bulk approval must require the complete reviewed version",
+      "pass": true,
+      "observation": {
+        "mode": "wrong-hash",
+        "http": 200,
+        "status": "WAITING_APPROVAL",
+        "approvedCount": 0,
+        "skipped": [
+          {
+            "submissionId": "SUB1",
+            "reason": "[Stale Conflict] Phiên bản file bài nộp (fileHash) đã thay đổi so với bản hiển thị trên giao diện."
+          }
+        ]
+      }
+    },
+    {
+      "id": "R22-06-ui-bulk-drift-criteria",
+      "criterion": "Bulk must compare every reviewed scoring field",
+      "pass": true,
+      "observation": {
+        "field": "criteria",
+        "result": false,
+        "status": "WAITING_APPROVAL",
+        "reviewed": {
+          "score": 80,
+          "decision": "GRADE"
+        },
+        "stored": {
+          "score": 90,
+          "override": null,
+          "decision": "GRADE"
+        },
+        "request": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "approveAll": true,
+          "rubric": {
+            "rubricId": "R19",
+            "courseCode": "PTA",
+            "sessionNumber": 1,
+            "assignmentTitle": "Print",
+            "assignmentPrompt": "Print 1",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "Print 1",
+                "expectedSnippetOrConcept": "print(1)"
+              }
+            ]
+          },
+          "reviewedSubmissions": [
+            {
+              "submissionId": "SUB1",
+              "fileHash": "file-v1",
+              "feedbackHtml": "<p>APPROVED FEEDBACK</p>",
+              "criteriaGrades": [
+                {
+                  "criterionId": "C1",
+                  "criterionName": "Output",
+                  "earnedPoints": 80,
+                  "maxPoints": 100,
+                  "evidenceSnippet": "print(1)",
+                  "deductionReason": "Thiếu định dạng"
+                }
+              ],
+              "decision": "GRADE",
+              "teacherOverrideScore": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "R22-06-ui-bulk-drift-override",
+      "criterion": "Bulk must compare every reviewed scoring field",
+      "pass": true,
+      "observation": {
+        "field": "override",
+        "result": false,
+        "status": "WAITING_APPROVAL",
+        "reviewed": {
+          "score": 80,
+          "decision": "GRADE"
+        },
+        "stored": {
+          "score": 80,
+          "override": 25,
+          "decision": "GRADE"
+        },
+        "request": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "approveAll": true,
+          "rubric": {
+            "rubricId": "R19",
+            "courseCode": "PTA",
+            "sessionNumber": 1,
+            "assignmentTitle": "Print",
+            "assignmentPrompt": "Print 1",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "Print 1",
+                "expectedSnippetOrConcept": "print(1)"
+              }
+            ]
+          },
+          "reviewedSubmissions": [
+            {
+              "submissionId": "SUB1",
+              "fileHash": "file-v1",
+              "feedbackHtml": "<p>APPROVED FEEDBACK</p>",
+              "criteriaGrades": [
+                {
+                  "criterionId": "C1",
+                  "criterionName": "Output",
+                  "earnedPoints": 80,
+                  "maxPoints": 100,
+                  "evidenceSnippet": "print(1)",
+                  "deductionReason": "Thiếu định dạng"
+                }
+              ],
+              "decision": "GRADE",
+              "teacherOverrideScore": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "R22-06-ui-bulk-drift-decision",
+      "criterion": "Bulk must compare every reviewed scoring field",
+      "pass": true,
+      "observation": {
+        "field": "decision",
+        "result": false,
+        "status": "WAITING_APPROVAL",
+        "reviewed": {
+          "score": 80,
+          "decision": "GRADE"
+        },
+        "stored": {
+          "score": 80,
+          "override": null,
+          "decision": "REDO"
+        },
+        "request": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "approveAll": true,
+          "rubric": {
+            "rubricId": "R19",
+            "courseCode": "PTA",
+            "sessionNumber": 1,
+            "assignmentTitle": "Print",
+            "assignmentPrompt": "Print 1",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "Print 1",
+                "expectedSnippetOrConcept": "print(1)"
+              }
+            ]
+          },
+          "reviewedSubmissions": [
+            {
+              "submissionId": "SUB1",
+              "fileHash": "file-v1",
+              "feedbackHtml": "<p>APPROVED FEEDBACK</p>",
+              "criteriaGrades": [
+                {
+                  "criterionId": "C1",
+                  "criterionName": "Output",
+                  "earnedPoints": 80,
+                  "maxPoints": 100,
+                  "evidenceSnippet": "print(1)",
+                  "deductionReason": "Thiếu định dạng"
+                }
+              ],
+              "decision": "GRADE",
+              "teacherOverrideScore": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "R22-06-ui-bulk-drift-feedback",
+      "criterion": "Bulk must compare every reviewed scoring field",
+      "pass": true,
+      "observation": {
+        "field": "feedback",
+        "result": false,
+        "status": "WAITING_APPROVAL",
+        "reviewed": {
+          "score": 80,
+          "decision": "GRADE"
+        },
+        "stored": {
+          "score": 80,
+          "override": null,
+          "decision": "GRADE"
+        },
+        "request": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "approveAll": true,
+          "rubric": {
+            "rubricId": "R19",
+            "courseCode": "PTA",
+            "sessionNumber": 1,
+            "assignmentTitle": "Print",
+            "assignmentPrompt": "Print 1",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "Print 1",
+                "expectedSnippetOrConcept": "print(1)"
+              }
+            ]
+          },
+          "reviewedSubmissions": [
+            {
+              "submissionId": "SUB1",
+              "fileHash": "file-v1",
+              "feedbackHtml": "<p>APPROVED FEEDBACK</p>",
+              "criteriaGrades": [
+                {
+                  "criterionId": "C1",
+                  "criterionName": "Output",
+                  "earnedPoints": 80,
+                  "maxPoints": 100,
+                  "evidenceSnippet": "print(1)",
+                  "deductionReason": "Thiếu định dạng"
+                }
+              ],
+              "decision": "GRADE",
+              "teacherOverrideScore": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "R22-06-ui-bulk-drift-file",
+      "criterion": "Bulk must compare every reviewed scoring field",
+      "pass": true,
+      "observation": {
+        "field": "file",
+        "result": false,
+        "status": "WAITING_APPROVAL",
+        "reviewed": {
+          "score": 80,
+          "decision": "GRADE"
+        },
+        "stored": {
+          "score": 80,
+          "override": null,
+          "decision": "GRADE"
+        },
+        "request": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "approveAll": true,
+          "rubric": {
+            "rubricId": "R19",
+            "courseCode": "PTA",
+            "sessionNumber": 1,
+            "assignmentTitle": "Print",
+            "assignmentPrompt": "Print 1",
+            "maxTotalScore": 100,
+            "criteria": [
+              {
+                "criterionId": "C1",
+                "name": "Output",
+                "maxPoints": 100,
+                "description": "Print 1",
+                "expectedSnippetOrConcept": "print(1)"
+              }
+            ]
+          },
+          "reviewedSubmissions": [
+            {
+              "submissionId": "SUB1",
+              "fileHash": "file-v1",
+              "feedbackHtml": "<p>APPROVED FEEDBACK</p>",
+              "criteriaGrades": [
+                {
+                  "criterionId": "C1",
+                  "criterionName": "Output",
+                  "earnedPoints": 80,
+                  "maxPoints": 100,
+                  "evidenceSnippet": "print(1)",
+                  "deductionReason": "Thiếu định dạng"
+                }
+              ],
+              "decision": "GRADE",
+              "teacherOverrideScore": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "R22-06-graded-hash-reload",
+      "criterion": "Graded file version must survive repository module restart",
+      "pass": true,
+      "observation": {
+        "beforeRestart": "graded-v1",
+        "afterRestart": "graded-v1",
+        "http": 409,
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R22-09-operation-normal",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "normal",
+        "verified": 1,
+        "writes": 1,
+        "query": null
+      }
+    },
+    {
+      "id": "R22-09-operation-comment-query",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "comment-query",
+        "verified": 0,
+        "writes": 1,
+        "query": "# mutation\nquery SaveHomeworkGrade { studentSubmission { id } }"
+      }
+    },
+    {
+      "id": "R22-09-operation-selected-query",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "selected-query",
+        "verified": 0,
+        "writes": 1,
+        "query": "mutation Other { saveHomeworkGrade } query SaveHomeworkGrade { studentSubmission { id } }"
+      }
+    },
+    {
+      "id": "R22-09-operation-attachment",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "attachment",
+        "verified": 0,
+        "writes": 1,
+        "query": "mutation SaveHomeworkGrade { saveSubmissionAttachment { id } }"
+      }
+    },
+    {
+      "id": "R22-09-operation-selected-mutation",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "selected-mutation",
+        "verified": 1,
+        "writes": 1,
+        "query": "query Other { studentSubmission { id } } mutation SaveHomeworkGrade { saveHomeworkGrade }"
+      }
+    },
+    {
+      "id": "R22-09-operation-missing-query",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "missing-query",
+        "verified": 0,
+        "writes": 1,
+        "query": null
+      }
+    },
+    {
+      "id": "R22-09-operation-alias-introspection",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "alias-introspection",
+        "verified": 0,
+        "writes": 1,
+        "query": "mutation SaveHomeworkGrade { score: __typename }"
+      }
+    },
+    {
+      "id": "R22-09-operation-skipped-grade",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "skipped-grade",
+        "verified": 0,
+        "writes": 1,
+        "query": "mutation SaveHomeworkGrade { saveHomeworkGrade @skip(if: true) { id } }"
+      }
+    },
+    {
+      "id": "R22-09-operation-literal-other-submission",
+      "criterion": "Only the selected actual grading mutation with matching arguments may confirm a write",
+      "pass": true,
+      "observation": {
+        "name": "literal-other-submission",
+        "verified": 0,
+        "writes": 1,
+        "query": "mutation SaveHomeworkGrade { saveHomeworkGrade(submissionId: \"SUB_OTHER\", studentId: \"S_OTHER\", score: 1, feedback: \"WRONG\") }"
+      }
+    },
+    {
+      "id": "R22-R12-host-mindx.edu.vn",
+      "criterion": "Domain and legacy hostname label must match only parsed hostname",
+      "pass": true,
+      "observation": [
+        {
+          "url": "https://lms-api.mindx.edu.vn/",
+          "matched": true,
+          "expected": true
+        },
+        {
+          "url": "https://evil.invalid/?next=https://lms-api.mindx.edu.vn/",
+          "matched": false,
+          "expected": false
+        },
+        {
+          "url": "https://evil.invalid/lms-api/mindx.edu.vn",
+          "matched": false,
+          "expected": false
+        },
+        {
+          "url": "https://mindx.edu.vn.evil.invalid/",
+          "matched": false,
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "R22-R12-host-lms-api",
+      "criterion": "Domain and legacy hostname label must match only parsed hostname",
+      "pass": true,
+      "observation": [
+        {
+          "url": "https://lms-api.mindx.edu.vn/",
+          "matched": true,
+          "expected": true
+        },
+        {
+          "url": "https://evil.invalid/?next=https://lms-api.mindx.edu.vn/",
+          "matched": false,
+          "expected": false
+        },
+        {
+          "url": "https://evil.invalid/lms-api/mindx.edu.vn",
+          "matched": false,
+          "expected": false
+        },
+        {
+          "url": "https://mindx.edu.vn.evil.invalid/",
+          "matched": false,
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "R22-13-reordered-same-field",
+      "criterion": "Older draft arriving after newer draft must get 409",
+      "pass": true,
+      "observation": {
+        "newer": 200,
+        "older": 409,
+        "stored": "LATEST"
+      }
+    },
+    {
+      "id": "R22-13-cross-field-reorder",
+      "criterion": "Reordering partial drafts must retain all latest edited fields",
+      "pass": true,
+      "observation": {
+        "storedFeedback": "LATEST FEEDBACK",
+        "visibleFeedback": "LATEST FEEDBACK",
+        "override": 25,
+        "unsaved": {},
+        "http": [
+          200,
+          200
+        ]
+      }
+    },
+    {
+      "id": "R22-13-two-tabs-equal-sequence",
+      "criterion": "Independent UI counters must not let an older tab overwrite and approve the newest score",
+      "pass": true,
+      "observation": {
+        "before": {
+          "visible": 90,
+          "stored": 90,
+          "unsaved": {}
+        },
+        "status": "APPROVED",
+        "stored": 90,
+        "drafts": [
+          {
+            "seq": 1,
+            "http": 200,
+            "points": 90
+          },
+          {
+            "seq": 1,
+            "http": 409,
+            "points": 60
+          }
+        ]
+      }
+    },
+    {
+      "id": "R22-13-reload-counter",
+      "criterion": "A legitimate edit after browser reload must still save",
+      "pass": true,
+      "observation": {
+        "saved": true,
+        "stored": "THREE AFTER RELOAD",
+        "visible": "THREE AFTER RELOAD",
+        "http": 200,
+        "seq": 3
+      }
+    },
+    {
+      "id": "R22-13-invalid-request-poison",
+      "criterion": "A rejected identity must not advance another submission sequence",
+      "pass": true,
+      "observation": {
+        "bad": 400,
+        "good": 200,
+        "stored": "LEGITIMATE"
+      }
+    },
+    {
+      "id": "R22-13-route-reload",
+      "criterion": "Server sequence protection must survive route module reload",
+      "pass": true,
+      "observation": {
+        "http": 409,
+        "stored": "LATEST"
+      }
+    }
+  ]
+}

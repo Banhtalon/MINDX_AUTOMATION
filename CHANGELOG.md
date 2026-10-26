@@ -1,0 +1,266 @@
+# CHANGELOG — LỊCH SỬ PHIÊN BẢN DỰ ÁN MINDX AUTOMATION BOT
+
+Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng mới, cải tiến giao diện và các bản vá lỗi thực tế trên hệ thống MindX LMS theo từng phiên bản.
+
+---
+
+## [v2.7.2] — 2026-10-25 (Sửa AI nhận xét Buổi 12/13 khi Buổi 14 đã nộp, Ưu tiên Ảnh Owner làm Thumbnail, Ảnh chụp App/Web 960×540 không lệch, Nhập Playlist YouTube cho lớp Robotics)
+
+### 🐛 Sửa lỗi AI soạn nhận xét Buổi 12/13 bị bỏ trống & lỗi ẩn bảng học viên khi lưu nhận xét buổi học (`src/lib/gemini/spck-comment.ts`, `src/app/final-project/page.tsx`, `src/lib/playwright/save-comments.ts`)
+- **Khắc phục lỗi mất bảng học viên (`số dòng khớp=0`) sau khi lưu `Summary`/`Homework` trên LMS (`VT-CSA04-HB` Buổi 1):** Trên MindX LMS, việc click lại vào ô buổi học (`#class-comments-slot-carousel-X`) khi ô đó đang `.active` sẽ làm LMS bỏ chọn buổi học (`.inactive`) và ẩn toàn bộ bảng học viên bên dưới. Đã đổi sang click tiêu đề bảng học viên (`th:has-text("student")`) để kích hoạt `ClickAwayListener` lưu `Summary`/`Homework` và kiểm tra đảm bảo slot luôn giữ trạng thái `.active` trước khi điền nhận xét từng học viên (đã đẩy thành công `7/7 VERIFIED` cho lớp `VT-CSA04-HB` Buổi 1).
+- **Nguyên nhân:** Khi Buổi 14 đã `VERIFIED`, bản ghi chung `spck_uploads.status = "VERIFIED"` khiến bộ kiểm tra "sửa đồng thời" coi mọi lần soạn AI ở Buổi 12/13 là xung đột (`staleIgnored = true`) → nhận xét AI bị bỏ, nộp lỗi `Bình luận của giáo viên* không được để trống`.
+- **Khắc phục:** Chỉ coi là xung đột khi trạng thái **thay đổi trong lúc AI đang chạy** (so với `initialDbStatus` / `initialSessionStatus`); bỏ nhãn nội bộ `buổi 12`, `giai đoạn 1` khỏi câu thay thế trong `sanitizeStage1ProgressClaims`.
+- **Thông báo trung thực:** Banner sau khi AI soạn ghi rõ số bài soạn thành công / thiếu Quick Tags-Ghi chú / lỗi AI (không còn báo xanh giả). Quét lại thư mục không làm mất Quick Tags / Ghi chú / Nhận xét đang có trên màn hình và đánh dấu đúng `isDirty = true` khi giữ dữ liệu chưa lưu từ màn hình.
+- Bổ sung kịch bản hồi quy trong `scripts/test-spck-v270.ts` (Buổi 14 `VERIFIED` → AI Buổi 12 vẫn lưu đủ nhận xét, Buổi 14 giữ nguyên `VERIFIED`).
+
+### 🖼️ Ưu tiên Ảnh Owner làm Ảnh đại diện (Thumbnail) (`spck-scanner.ts`, `spck-app-screenshotter.ts`, `api/spck/scan`)
+- Hàm mới `findOwnerProvidedRootPhotos()` nhận diện ảnh Owner để sẵn ở thư mục gốc của học viên (VD `Demo.png`, `Presentation.png`, ảnh thuyết trình) mà **code của học viên không dùng tới** (quét `.html/.css/.js/.py/.ui/.qss/.json/.ipynb`, gộp chuỗi ghép động như `"ban" + "ner"` trong Python/JS và yêu cầu dấu hiệu ảnh Owner rõ ràng khi dự án có mã gọi ảnh động), bỏ qua icon nhỏ (< 200px) và ảnh hỏng.
+- Thứ tự Thumbnail mới: `_spck_owner_uploads/thumb_*` → ảnh Owner tải lên khác → ảnh Owner để sẵn → ảnh giao diện đẹp nhất (AI) → Logo MindX (tuyệt đối không lấy ảnh YouTube `_spck_youtube_frames` làm Thumbnail). Ảnh chụp giao diện chuyển xuống ô ảnh bổ sung; mọi ảnh của Owner đều được giữ trong ô ảnh bổ sung và không bao giờ bị tự bỏ (báo lỗi nếu vượt giới hạn 10 ảnh).
+- Quét lại thư mục: ảnh Owner thay thế ảnh giao diện tự chụp đang làm Thumbnail (ảnh cũ được đưa xuống ô ảnh bổ sung); bổ sung kiểm tra `realpathSync` (`resolveSafeStaticFile`) trong máy chủ xem trước Web để chặn liên kết thư mục (junction/symlink) trỏ ra ngoài thư mục học viên.
+
+### 📐 Ảnh chụp App/Web vừa khít khung xem LMS, không mất chi tiết (`spck-app-screenshotter.ts`, `spck-image-normalizer.ts`)
+- **Web:** dàn trang khổ máy tính `1440×810` nhưng xuất ảnh **`960×540`** (`deviceScaleFactor = 2/3`) → không còn bị cắt chữ hai bên / thanh cuộn ngang trong hộp thoại xem ảnh của MindX LMS; ép mọi hiệu ứng `fadeIn`, `data-aos`, `animation-timeline: view()`, lớp `reveal/fade/animate` về trạng thái hiện đầy đủ, chụp với `animations: "disabled"` (hết lỗi phần đầu trang bị đen).
+- **App PyQt6:** cửa sổ App được thu vừa trọn vẹn vào khung `960×540` trên nền mờ (không lẹm nút bấm); bản chụp gốc chỉ bị xóa khi không thuộc bản nháp/bản đã nộp nào.
+
+### 🎬 Lớp Robotics: Nhập Playlist YouTube → Tự khớp học viên & lấy 2 ảnh thuyết trình (`spck-youtube-import.ts`, `POST /api/spck/import-youtube`, giao diện mục **1D**)
+- Owner dán **1 link Playlist của lớp** (hỗ trợ `m.youtube.com`, `youtu.be`, `shorts`) hoặc từng dòng `Tên học viên - link`; bot đọc tiêu đề từng video, bỏ mã lớp (`SB28-Gia Bách` → `Gia Bách`) và khớp danh sách học viên (ưu tiên khớp nguyên họ tên trước khi chấm điểm gần đúng, giữ nguyên các chữ lót như `"Thế"`). Trùng tên, 2 video cùng 1 bạn, hoặc không khớp → **báo lại, không tự gắn**.
+- Gắn link riêng của từng bạn vào ô YouTube URL, lấy **đúng 2 khung hình HD** học viên thuyết trình qua HTTP thuần (`i.ytimg.com/vi/<id>/maxres1|3.jpg`, dự phòng `sd/hq` và ảnh bìa video — không mở trình duyệt tới YouTube) chuẩn `960×540` vào ô ảnh bổ sung; Thumbnail = ảnh Owner tải lên/để sẵn, nếu không có thì **Logo MindX** (không lấy ảnh YouTube làm Thumbnail).
+- Không cần thư mục code: tự tạo thư mục `data/spck_youtube/<Lớp>/<studentId>/`, tiêu đề mặc định `SPCK <Họ Tên>`; lưu DB nguyên tử trong transaction SQLite kèm tự động xóa ảnh mới tạo nếu phát sinh lỗi ghi và chỉ dọn ảnh cũ sau khi lưu thành công; trên giao diện giữ nguyên chữ đang gõ và chặn phản hồi đến muộn kéo lùi `draftVersion` (tránh lỗi HTTP 409 khi lưu tiếp).
+- **Kiểm thử & Kiểm định Độc lập (`gpt-6.1-sol` `xhigh`):** Bộ kiểm thử `scripts/test-spck-v272.ts` (**16/16 kịch bản V01–V16 PASS**), `scripts/test-spck-v270.ts` (**16/16 T01–T16 PASS**), `scripts/test-phase6.ts` (**PASS 100%**) và đạt chứng nhận kiểm định độc lập **Codex CLI (`gpt-6.1-sol` `xhigh`) Vòng 3 — GO (đóng 10/10 phát hiện `F01`–`F10` và 3/3 điểm `R2-01`..`R2-03`)** (`docs/audits/v272/CODEX_REVIEW_ROUND3.md`).
+
+---
+
+## [v2.7.0] — 2026-10-24 (Cập nhật Quy trình Nộp SPCK Buổi 12–13–14 theo Giai đoạn 1 & Giai đoạn 2 của MindX, Tách Dữ liệu theo Buổi & Mở khóa cho Tất cả các Lớp)
+
+### ✨ Tách Dữ liệu Riêng từng Buổi & Bảo toàn Lịch sử (`src/lib/db/sqlite.ts`, `src/app/api/spck/`)
+- **Bảng cơ sở dữ liệu theo buổi (`spck_session_submissions`):**
+  - Lưu riêng cho từng bộ **`classId + studentId + sessionNumber`** (`12 | 13 | 14`): nội dung nháp của 7 nhóm thông tin, ghi chú giáo viên, phiên bản nháp (`draftVersion`), nội dung đã duyệt (`approvedContentHash`, `approvedSnapshotJson`), kết quả lần nộp gần nhất và bản lưu lần nộp thành công gần nhất (`lastVerifiedSnapshotJson`, `lastVerifiedContentHash`, `lastVerifiedAt`, `lmsWorkId`).
+  - Giữ kho tài nguyên chung trong `spck_uploads` để tái sử dụng ảnh, file và đường dẫn, kèm nút **"Dùng tài nguyên mới nhất"** để giáo viên chủ động kéo tài nguyên mới vào buổi đang chọn mà không tự động ghi đè khi chuyển buổi.
+  - Sửa nháp hoặc chạy công cụ nền ở một buổi **không làm mất trạng thái `APPROVED` hoặc bằng chứng `VERIFIED` của các buổi khác**.
+  - Lưu dấu **`hasLegacyUnknownSessionHistory`** độc lập với trạng thái nháp; dữ liệu cũ thiếu bản lưu nội dung hiển thị rõ `"Thiếu bản lưu nội dung cũ"` / `"Chưa xác định"` (không tự gán cho Buổi 13 và không bị biến mất khi sửa nháp hoặc nộp Buổi 14); dữ liệu lịch sử hỏng hiển thị `"Cần kiểm tra"`.
+  - Khi ghép lại học viên cho thư mục khác (`save-draft`), kiểm tra `expectedVersion` trước và thực hiện nguyên tử trong transaction SQLite: tách học viên cũ (`localFolderPath = ''`), tăng `draftVersion` để chặn request cũ ghi đè nhưng bảo toàn nguyên vẹn lịch sử đã nộp (`lastVerified*`).
+
+### ✨ Chuẩn hóa Tiêu đề & Bình luận AI theo Giai đoạn (`src/lib/local-files/spck-scanner.ts`, `src/lib/gemini/spck-comment.ts`)
+- **Tự động gắn hậu tố buổi vào tiêu đề sản phẩm (Tuyệt đối không ghi `Giai đoạn 2` / `GĐ2` ở Tiêu đề):**
+  - Buổi 12: `<Tên sản phẩm> — Buổi 12 (GĐ1)`
+  - Buổi 13: `<Tên sản phẩm> — Buổi 13 (GĐ1)`
+  - Buổi 14: `<Tên sản phẩm>` (giữ nguyên tên sạch, tuyệt đối không gắn `— Buổi 14 (GĐ2)`, `Giai đoạn 2` hay `GĐ2`)
+  - Khi chuyển qua lại giữa Buổi 12 / 13 / 14, hệ thống tự động cập nhật phần hậu tố (không lặp `— Buổi ...`), kiểm tra nghiêm ngặt giới hạn $\le 100$ ký tự trên toàn chuỗi tiêu đề (chặn lưu/duyệt khi vượt 100 ký tự, tuyệt đối không tự cắt ngắn âm thầm), và hiển thị nhắc nhẹ không chặn duyệt khi đang dùng tên mặc định `SPCK <Tên học viên>`.
+- **AI soạn bình luận giáo viên ghi Học bạ cho Phụ huynh xem (Không chào hỏi, giọng văn sư phạm & trang trọng, tuyệt đối không ghi `Giai đoạn 2` / `GĐ2`):**
+  - Đi thẳng vào nội dung nhận xét học bạ (không chào hỏi kiểu `"Chào ba mẹ"`, `"Kính gửi gia đình"`), giọng văn sư phạm, trang trọng, khách quan; nêu rõ **sản phẩm của học viên có những gì** (đề tài, các màn hình giao diện, tính năng thực tế, kiến thức lập trình đã vận dụng) và **cần cải thiện gì** (về giao diện, tính năng hoặc tối ưu mã nguồn).
+  - **Buổi 12 (Giai đoạn 1):** Nêu rõ sản phẩm hiện tại đã có những gì và phần cần cải thiện, hoàn thiện tiếp; không viết như sản phẩm đã hoàn tất cuối khóa.
+  - **Buổi 13 (Giai đoạn 1):** Nêu rõ hiện trạng sản phẩm, phần đã bổ sung và phần còn cần hoàn thiện; **chỉ đối chiếu với buổi trước khi có dữ liệu thực của Buổi 12** (không tự bịa phần tiến triển).
+  - **Buổi 14 (Tổng kết cuối khóa):** Đánh giá tổng kết học bạ về mức độ hoàn thành dự án, các thành phần giao diện/chức năng thực tế có trong sản phẩm và những điểm cần cải thiện, tối ưu thêm; tuyệt đối không ghi cụm từ `"Giai đoạn 2"`, `"GĐ2"` hay `"Buổi 14"` trong nội dung nhận xét; tự động lọc bỏ mọi câu suy diễn về thuyết trình hoặc làm việc nhóm khi giáo viên không cung cấp dữ kiện.
+  - Tự động chuẩn hóa ảnh tài nguyên web bị đặt lệch đuôi file (`.webp`/`.jpg` lưu tên `.png` như `album-giay-trang.png`, `album1.png`, `album2.png` ở lớp `VT-JSB15`) và tự động xóa cảnh báo độ khớp tên (`95%`) ngay khi giáo viên đã xác nhận đúng học viên (`Đúng HV`).
+
+### 🛡️ Hoàn thiện 7 Nhóm Thông tin, Đối chiếu Byte SHA-256 trên LMS & Áp dụng cho Tất cả các Lớp (`PTB`, `CSB`)
+- **Chỉ bắt buộc 3 trường có dấu `*` (`Tiêu đề*`, `Ảnh thumbnail*`, `Bình luận của giáo viên*`):**
+  - Các trường không có dấu `*` (`YouTube`, `Ảnh bổ sung`, `Tài liệu đính kèm`, `Đường dẫn liên quan`) chỉ kiểm tra hợp lệ khi có dữ liệu (tối đa `5 video`, `10 ảnh`, `10 file`, `5 link` — báo lỗi rõ trên toàn bộ các cổng `scan`, `save-draft`, `approve`, `capture-screenshots`, `upload-drive`, `deploy-web`, không tự động cắt bớt âm thầm) và không chặn duyệt khi để trống.
+  - Hiển thị rõ nguồn ảnh bìa (`Đang dùng Logo mặc định`, `Ảnh chụp giao diện`, `Ảnh phục dựng tự động`, `Ảnh giáo viên tải lên`), ưu tiên chọn ảnh tỷ lệ gần `16:9`, phân loại nhãn đường dẫn (`Chạy thử sản phẩm`, `Mã nguồn / Tải xuống`, `Tài liệu khác`) và hỗ trợ đóng gói `.zip` an toàn cho tài liệu dự án/mô hình Robotics.
+  - **Hỗ trợ chụp giao diện Website (`.html/.htm`) thực tế cho các lớp Web (`JSB`, `JSA`, `JSI`...):** Tự động khởi tạo máy chủ HTTP tĩnh cục bộ (`127.0.0.1`) + Playwright Chromium ở độ phân giải chuẩn **16:9 (`1440×810`)**, hiển thị đầy đủ các phần tử hiệu ứng cuộn (`data-aos`), tự động chụp các trang `.html` và cuộn chụp các phân đoạn trang chủ, dùng Gemini Vision chọn ảnh bìa đẹp nhất, giữ lại ảnh chụp thuyết trình Demo tại lớp trong bộ ảnh bổ sung, bảo vệ không xóa file ảnh đang được buổi khác tham chiếu và tự động cập nhật ngay vào bản nháp của buổi chưa duyệt/chưa nộp.
+  - **Tăng độ ổn định khi lưu & đối chiếu nhận xét buổi học trên LMS (`src/lib/playwright/save-comments.ts`):** Bổ sung cơ chế thử lại tối đa 3 lần kèm truy vấn lại dòng học viên mới nhất sau khi bảng `.comment-list-table` cập nhật trạng thái `Auto Approved #1` (tránh nuốt thao tác click khi đóng/mở hộp thoại `[role="dialog"]`), tự động đối chiếu trực tiếp ở chế độ xem (`View Mode`) nếu nhận xét đã được lưu khớp 100% trên LMS từ lượt trước, và đảm bảo kích hoạt `ClickAwayListener` lưu thành công cả 2 mục `Summary` & `Homework`.
+- **Đối chiếu mã kiểm tra byte (`SHA-256`) & Vượt lỗi tải tệp trên MindX LMS thật (`src/lib/playwright/spck-uploader.ts`):**
+  - Khi cập nhật bài đã nộp trên Modal LMS, đối chiếu cả tên file và mã băm nội dung byte (`thumbnailByteSha256`, `screenshots[].byteSha256`, `attachments[].byteSha256`) với `lastVerifiedSnapshotJson`; nếu file giữ nguyên tên nhưng nội dung byte đã thay đổi, tự động gỡ file cũ trên Modal và tải lại file mới (kể cả gói `.zip` đính kèm).
+  - **Tự động gom các tệp mã nguồn Web & đa tệp (`.html`, `.htm`, `.css`, `.js`, `.txt`, `.json`, `.ui`, `.qss`...) vào gói nén `.zip` (`spck_<studentId>_<hash8>.zip`):** Khắc phục triệt để lỗi `react-dropzone` trên MindX LMS từ chối ngầm tệp `.html`/`.css` khiến `page.waitForResponse` hết thời gian chờ 25 giây (`Timeout 25000ms exceeded`), đồng thời giữ nguyên cấu trúc liên kết tương đối giữa các file Web.
+  - **Vượt thanh cuộn ngang nổi (`.jss140`) che nút `"Sản phẩm của học sinh"` ở dòng cuối bảng:** Tự động cuộn phần tử về giữa vùng nhìn (`block: "center"`) và kích hoạt dự phòng `HTMLElement.prototype.click()` trực tiếp trên DOM khi thanh cuộn ngang nổi `.jss140` chặn sự kiện chuột (`intercepts pointer events`).
+  - **Chuẩn hóa đối chiếu `Read-after-Write` theo cấu trúc JSON thực tế của `resources.mindx.edu.vn` và `CreateStudentWork`/`UpdateStudentWork`:** Đọc đầy đủ trường `resJson.link` (`/uploads/...`) từ máy chủ tài nguyên và kiểm tra đồng thời `latestData.attachmentUrls` / `latestData.attachments` cùng `latestData.imageUrl` / `latestData.screenshots`. Đã nghiệm thu nộp thực tế thành công **6/6 học viên (`VERIFIED`)** của lớp `VT-JSB15` (Buổi 14).
+- **Mở khóa nộp SPCK cho tất cả các lớp (bao gồm `PTB` và `CSB`):**
+  - Gỡ bỏ hoàn toàn quy tắc miễn SPCK cho `PTB` và `CSB`. Với các công cụ phụ (Google Drive, Bảng chấm điểm Demo), kiểm tra cấu hình độc lập theo từng khóa học (không lấy nhầm thư mục/mẫu của `PTA` và không chặn luồng nộp SPCK lên LMS khi công cụ phụ chưa cấu hình).
+
+### 🧪 Kiểm thử & Kiểm định Độc lập (`scripts/test-spck-v270.ts`)
+- Xây dựng bộ kiểm thử tự động `scripts/test-spck-v270.ts` bao phủ **16 kịch bản bắt buộc (`T01`–`T16`)** và các ca kiểm tra hồi quy sâu (`F01`–`F09`); đạt kiểm thử giả lập cục bộ trên `npx tsc --noEmit --incremental false`, `npx tsx scripts/test-spck-v270.ts`, `npx tsx scripts/test-phase5.ts`, `npx tsx scripts/test-phase6.ts`, `npx tsx scripts/test-phase7.ts` và đạt **GO (đóng 9/9 phát hiện `F01`–`F09`)** qua Vòng 4 kiểm định độc lập bằng Codex CLI (`gpt-6.1-sol` `xhigh`, phiên `01a16d96-5b27-7063-9429-d17ca0ed9074`).
+- **Giới hạn phạm vi kiểm thử:** Toàn bộ kiểm thử của `v2.7.0` được thực hiện bằng dữ liệu giả cục bộ (không gọi mạng thật); **chưa nghiệm thu trên trình duyệt thật, MindX LMS thật, Gemini thật, Google Drive thật hay GitHub Pages thật** (chờ Owner duyệt mẫu thử cụ thể trước khi thực hiện).
+
+---
+
+## [v2.6.0] — 2026-10-24 (Tinh gọn Quy trình Nộp SPCK Buổi 12 / 13 / 14 thành 3 Bước Rõ ràng & Theo dõi Kết quả Riêng từng Buổi)
+
+### ✨ Tinh gọn Luồng Nghiệp vụ & Giao diện (`src/app/final-project/page.tsx`)
+- **Tổ chức màn hình SPCK (`/final-project`) thành 3 bước rõ ràng:**
+  1. **Bước 1 (Chọn lớp $\rightarrow$ Chọn buổi 12/13/14 $\rightarrow$ Chọn thư mục & kiểm tra học viên):** Chọn buổi nộp SPCK (`Buổi 12`, `Buổi 13` hoặc `Buổi 14`) **một lần ở đầu trang** (không tự động nộp cả 3 buổi, không âm thầm chuyển sang Buổi 13 khi lựa chọn không hợp lệ).
+  2. **Bước 2 (Chuẩn bị, xem lại bài & công cụ hỗ trợ theo ngữ cảnh):**
+     - Mặc định hiển thị **Bảng tóm tắt gọn** gồm: Ô chọn học viên, Họ tên học viên & xác nhận khớp thư mục, Ảnh bìa & đường dẫn tái sử dụng (Google Drive / Web Live / YouTube), Tình trạng đủ/thiếu điều kiện nộp, **3 cột kết quả riêng cho Buổi 12 / Buổi 13 / Buổi 14**, nút nộp lẻ cho buổi đang chọn và nút **"Chi tiết"** để mở/đóng khung chỉnh sửa đầy đủ khi cần.
+     - Đưa cấu hình Google Drive, Cổng Thu Bài Học Sinh Trực Tuyến và các công cụ phụ vào mục thu gọn; chỉ hiển thị công cụ **Đẩy Web chạy thử GitHub Pages** khi khóa học/thư mục có tài nguyên Web (`.html/.css/.js`) và công cụ **Chụp giao diện App** khi khóa học/thư mục có giao diện ứng dụng (`.ui/.py`).
+     - Đưa chức năng tạo Google Sheet chấm điểm vào mục **"Chuẩn bị Demo"**, vẫn cho phép tạo trước Buổi 14.
+  3. **Bước 3 (Nộp các bài đã chọn & Xem kết quả đầy đủ):**
+     - Thay thế 3 nút nộp cả lớp và 3 nút nộp ở từng học viên bằng **1 nút chính ghi rõ số bài và buổi đang chọn** (ví dụ: **`"Nộp 8 bài — Buổi 13"`**), kèm nút nộp riêng từng học viên và nút **"Thử lại bài chưa nộp"** cho các bài lỗi/bị bỏ qua.
+     - Trong lúc đang chuẩn bị hoặc nộp bài, khóa các thao tác xung đột (đổi lớp, đổi buổi, quét lại thư mục, chạy công cụ phụ) và hiển thị rõ đang xử lý buổi nào, bao nhiêu bài.
+
+### 🛡️ Theo dõi Riêng từng Buổi, Báo đủ Kết quả & Sửa lỗi Khai báo Tác vụ (`src/lib/db/sqlite.ts`, `src/lib/playwright/spck-uploader.ts`, `src/app/api/spck/upload-lms/route.ts`, `src/lib/queue/task-queue.ts`, `src/lib/playwright/spck-demo-sheet.ts`)
+- **Theo dõi kết quả riêng cho Buổi 12, 13, 14 (`spck_uploads.sessionResultsJson`):**
+  - Lưu kết quả nộp theo từng buổi (`12`, `13`, `14`) gồm trạng thái (`VERIFIED` / `FAILED`), mã băm phiên bản nội dung đã nộp (`submittedContentHash`), thời điểm nộp (`verifiedAt`) và mã băm lần xác nhận thành công gần nhất (`lastVerifiedContentHash`, `lastVerifiedAt`).
+  - Khi giáo viên chỉnh sửa bản nháp để chuẩn bị cho buổi tiếp theo, kết quả đã nộp của các buổi trước **được giữ nguyên 100%**, đồng thời hiển thị phân biệt rõ **`"Đã nộp ✓ (Bản nháp đã đổi)"`** với **`"Đã nộp ✓"`** (bản hiện tại khớp với bản đã nộp).
+  - Các bản ghi dữ liệu cũ chỉ có trạng thái chung (`status = 'VERIFIED'` nhưng chưa có lịch sử từng buổi trong `sessionResultsJson`) được hiển thị rõ là **`"Chưa xác định"`**, tuyệt đối không tự đoán là Buổi 13.
+- **Khắc phục triệt để lỗi thông báo xanh che khuất bài bị bỏ qua:**
+  - Tổng hợp kết quả theo **toàn bộ danh sách học viên đã chọn** (`totalSelected`), báo rõ số bài thành công trên tổng số bài đã chọn (ví dụ: chọn 2 học viên, 1 bài hợp lệ được nộp và 1 bài chưa đủ điều kiện bị bỏ qua sẽ báo cảnh báo vàng **`"Đã nộp 1/2 bài (Buổi 13) — 1 bài chưa nộp"`** kèm danh sách chi tiết từng học viên Thành công / Lỗi / Bỏ qua và lý do cụ thể).
+- **Kiểm tra nghiêm ngặt `sessionNumber` & Sửa lỗi khai báo tác vụ xóa/reset SPCK (`clearSessionSpck`):**
+  - `POST /api/spck/upload-lms`, `SpckUploader.uploadApprovedSpck` và `SpckUploader.clearSessionSpck` bắt buộc kiểm tra `sessionNumber` thuộc `{12, 13, 14}` (trả HTTP `400` / báo lỗi ngay nếu thiếu hoặc sai, không tự chuyển về `13`).
+  - Bổ sung `"CLEAR_SPCK"` và `"SPCK_DEMO_SHEET"` vào `TaskJobType` (`src/lib/queue/task-queue.ts`), sửa `SpckUploader.clearSessionSpck` truyền đúng `jobType: "CLEAR_SPCK"`, `sessionId: "SESSION_" + targetSessionNumber`, hỗ trợ lọc theo `studentIds`, kiểm tra khớp chính xác mã lớp trên `FindClass`, kiểm tra `Array.isArray` cho dữ liệu GraphQL `FindWorks`/`VerifyWorks`, kiểm tra nghiêm ngặt định danh buổi học (`classSessionNumber` phải là số nguyên dương hợp lệ hoặc có `classSessionId` khớp `effectiveSessionId` không xung đột) và chỉ xóa trạng thái của đúng buổi được chọn trong `sessionResultsJson` sau khi xác minh xóa thành công trên LMS (không gọi chức năng xóa/reset trên dữ liệu LMS thật).
+
+### 🧪 Kiểm thử (Phân biệt rõ Kiểm thử Giả lập Cục bộ & Xác nhận trên LMS Thật)
+- **Đã kiểm thử giả lập cục bộ (Synthetic & Local Verification — ĐẠT 100%):**
+  - `npx tsc --noEmit --incremental false`: **0 lỗi TypeScript**.
+  - `npx tsx scripts/test-phase6.ts`: **PASS 100% (5/5 nhóm)**, bao gồm nhóm `[5/5]` kiểm chứng đủ 6 điều kiện hoàn thành của quy trình 3 bước Buổi 12/13/14 trên SQLite và DOM giả lập.
+  - Hồi quy độc lập trong thư mục `TEMP` cô lập: `docs/audits/round-32/verify-phase6.mjs` (**67/67 PASS**), `docs/audits/round-38/adversarial.mjs` (**41/41 PASS**), `scripts/test-phase5.ts` (**PASS 100%**), `scripts/test-phase7.ts` (**PASS 100%**).
+- **Chưa thực hiện trên LMS thật / Google Drive thật / GitHub Pages thật:** Theo đúng giới hạn an toàn của Owner, phiên bản `v2.6.0` chỉ kiểm thử bằng dữ liệu giả cục bộ, chưa bấm nộp/xóa/thay đổi bài thật trên MindX LMS, chưa tải lên Google Drive thật hay xuất bản Web thật.
+
+---
+
+## [v2.5.0] — 2026-10-23 (Cổng Thu Bài Học Sinh Trực Tuyến: Học Sinh Tự Nộp Sản Phẩm $\rightarrow$ Tự Lưu Máy Thầy & Tự Động Up Lên Google Drive)
+
+### ✨ Tính năng mới (Added)
+- **Cổng Web Cho Học Sinh Tự Nộp Sản Phẩm Cuối Khóa (`src/lib/student-portal/student-portal-server.ts`, `src/app/api/spck/student-portal/route.ts`, `src/app/final-project/page.tsx`):**
+  - Bổ sung nút **"Mở Link Cho Học Sinh Nộp Bài"** ngay trên Màn hình 3 (`/final-project`) để giáo viên tạo đường dẫn nộp bài trực tuyến (hỗ trợ cả **Link Internet Toàn Cầu qua Cloudflare Quick Tunnel `https://*.trycloudflare.com/s/<token>`**, **Link Wi-Fi nội bộ phòng học `http://<LAN_IP>:3088/s/<token>`** và **Mã QR**).
+  - Giao diện trang nộp bài dành riêng cho học sinh (cô lập hoàn toàn với hệ thống quản trị `127.0.0.1:3000` của giáo viên):
+    1. Học sinh chọn đúng **Họ và Tên** của mình từ danh sách học viên thực tế của lớp.
+    2. Đặt **Tên Sản Phẩm / Dự Án**, dán **Link Video YouTube** hoặc **Link Slide / Canva** (nếu có).
+    3. Hỗ trợ chọn **Cả Thư Mục Dự Án** (giữ nguyên cấu trúc thư mục con `gui/`, `img/`, `assets/`... và tự lọc bỏ thư mục rác `node_modules`, `__pycache__`, `.git`) hoặc chọn **File lẻ** (`.zip`, `.sb3`, `.yyz`, `.py`, `.pptx`, hình ảnh...).
+  - **Tự động hóa khép kín ngay khi học sinh bấm Nộp:**
+    1. Lưu toàn bộ file dự án vào đúng thư mục `<Thư-mục-SPCK-Lớp>/<Họ-Tên-Học-Sinh>/` trên ổ cứng máy tính của giáo viên (chống thoát thư mục và kiểm tra Path Allowlist nghiêm ngặt).
+    2. Tự động quét phân loại tài nguyên, gắn ảnh Logo MindX mặc định nếu chưa có ảnh riêng, và khóa cứng `studentId` (`matchScore = 1.0`, `isConfirmedByTeacher = 1`) vào bảng `spck_uploads` trong SQLite.
+    3. Tự động kích hoạt đẩy sản phẩm của học sinh đó lên **Google Drive (`CODING - SPCK -> Khóa học -> Mã Lớp -> Họ Tên Học Sinh`)** qua hàng đợi `TaskQueue`, tự động dán `Link Google Drive SPCK` vào ô `Đường dẫn liên quan` và hiển thị nút mở thư mục Google Drive trực tiếp trên màn hình của học sinh lẫn màn hình theo dõi thời gian thực của giáo viên.
+
+---
+
+## [v2.4.0] — 2026-10-23 (Tự động Chụp Giao diện App SPCK & AI Chọn Thumbnail Đẹp Nhất + Tạo Google Sheet Bảng Chấm Điểm Demo cho từng Lớp)
+
+### ✨ Tính năng mới (Added)
+- **Tự động mở App chụp hình giao diện, Khôi phục Ảnh bị thiếu 4 tầng & AI chọn hình đẹp nhất làm Thumbnail (`src/lib/local-files/spck-app-screenshotter.ts`, `src/app/api/spck/capture-screenshots/route.ts`):**
+  - Tự động mở ngầm các màn hình giao diện ứng dụng của học viên (`.ui` PyQt6 với thuộc tính `WA_DontShowOnScreen = True` không làm bật cửa sổ làm phiền giáo viên), chụp hình sắc nét từng màn hình vào `<studentFolder>/_spck_app_shots/app_<NN>_<screenName>_<hash6>.png`.
+  - **Cơ chế Khôi phục Ảnh bị thiếu 4 tầng (4-Layer Missing-Image Recovery):** Khắc phục triệt để lỗi học viên chèn ảnh trực tiếp từ `C:\Users\...\Downloads\...` trên máy cá nhân nhưng quên copy thư mục ảnh khi nộp bài (khiến màn hình bị các ô vuông trắng trống trơn):
+    1. *Tầng 1 (Nội bộ thư mục học viên):* Tự tìm ảnh theo đường dẫn tương đối, tên file hoặc tên gốc bất kể lệch thư mục (`../img/` vs `./img/`) hay lệch đuôi file (`.jpg` $\leftrightarrow$ `.png` $\leftrightarrow$ `.webp`).
+    2. *Tầng 2 (Đối chiếu khung giao diện cùng lớp — Sibling UI Widget Recovery):* Nếu file `.ui` của học viên bị thiếu ảnh nhưng có học viên cùng lớp dùng chung khung giao diện (cùng tên file `.ui`, tên widget và kích thước tương ứng, ví dụ `SPCK Hà Nhật Minh` và `10 - Nguyễn Phúc Kiên`), tự động khôi phục đúng bộ ảnh món ăn/icon từ bài cùng lớp.
+    3. *Tầng 3 (Tra cứu theo tên file đặc trưng):* Tự tìm trong thư mục `Downloads` hoặc thư mục lớp với các tên file đặc trưng (`house-solid-full.svg`, `cat_mascot.jpg`...).
+    4. *Tầng 4 (Tự động vẽ bù Icon & Phông nền minh họa bằng `QtGui.QPainter`):* Nếu ảnh hoàn toàn không tồn tại trên máy (như `History.jpg` hay bản đồ thế giới trong bài của `Gia An`), tự động vẽ bù icon vector hoặc phông nền Gradient/Bản đồ thế giới tương ứng với ngữ cảnh màn hình để không bao giờ xuất hiện ô vuông trắng.
+  - Sử dụng **Gemini Vision (`gemini-3.5-flash-lite`)** quan sát trực tiếp các hình chụp giao diện (ưu tiên màn hình chính/chức năng, loại trừ màn hình đăng nhập/đăng ký đơn giản) để chọn ra **1 hình chụp giao diện App đẹp nhất** đặt làm **`Ảnh thumbnail *` (ô trên)**, đồng thời hỗ trợ nút **`+ Owner Up Thumbnail`** / **`+ Owner Up Ô Dưới`** để Owner chủ động tải thêm ảnh của riêng mình.
+  - Tự động đưa toàn bộ các hình chụp giao diện App còn lại (không lặp lại hình đã làm Thumbnail ở ô trên, tối đa 10 hình) vào **`Tải hình ảnh lên` (`screenshotsJson` — ô dưới)**, và tự động xóa từng ảnh cũ/trùng lặp theo từng nhịp render React khi cập nhật lại trên MindX LMS.
+- **Tự động tạo Google Sheet Bảng chấm điểm buổi Demo theo từng lớp & Ngoại lệ miễn SPCK cho `PTB` / `CSB` (`src/lib/playwright/spck-demo-sheet.ts`, `src/app/api/spck/create-demo-sheet/route.ts`, `data/config/demo-sheet-templates/*.xlsx`):**
+  - Tự động nhận diện tên bảng chấm điểm theo mã khóa học của lớp (ví dụ lớp `VT-C4K-PTA12` $\rightarrow$ **`Bảng chấm điểm buổi Demo App Producer - Advanced`**).
+  - Hỗ trợ dán Link Google Sheet mẫu tùy chỉnh hoặc sử dụng trực tiếp mẫu chuẩn MindX (`data/config/default-demo-sheet-template.xlsx`) với đầy đủ định dạng màu đỏ thương hiệu MindX, phông chữ `Exo`, công thức tính điểm tự động (`IF(D8="Chưa đạt", 0, IF(D8="Hoàn thành", C8/2, C8))`, `ROUND(F8,3) & " / 5"`), danh sách chọn (`Chưa đạt, Hoàn thành, Tốt`), phần nhận xét `BGK1`/`BGK2` và tab `Phân bổ điểm` (`LOs`).
+  - Tự động tạo đủ $N$ tab ứng với $N$ học viên của lớp (ví dụ `VT-C4K-PTA12` gồm 10 tab cho 10 học viên), tự động điền `Họ và tên Học viên:` vào từng tab, lấy **Ngày Demo là ngày học của Buổi 14** (tự động nội suy `+7 ngày` nếu lịch Buổi 14 trên LMS chưa điền ngày) và `Ngày đánh giá` (`+7 ngày`).
+  - Tự động lưu file `.xlsx` vào thư mục SPCK của lớp trên máy tính (VD: `F:\MINDX_SPCK_FINAL\PTA12\Bảng chấm điểm buổi Demo App Producer - Advanced.xlsx`) đồng thời tải thẳng lên thư mục Google Drive của lớp (`CODING - SPCK -> PTA -> VT-C4K-PTA12`), trả về đường dẫn chia sẻ `https://docs.google.com/spreadsheets/d/<fileId>/edit?usp=sharing` kèm nút **Mở Google Sheet** và **Copy Link Cho Giám Khảo** ngay trên Màn hình 3 (`/final-project`).
+
+---
+
+## [v2.3.1] — 2026-10-22 (Kiểm định Độc lập bằng Codex CLI `gpt-6.1-sol` `xhigh` & Gia cố Toàn diện Bảo mật / Toàn vẹn Dữ liệu)
+
+### 🛡️ Gia cố Bảo mật, Toàn vẹn Dữ liệu & Xác minh sau lưu (Fixed & Hardened)
+- **Gia cố Bộ triển khai Web GitHub Pages (`src/lib/github/spck-web-deployer.ts`, `src/app/api/spck/deploy-web/route.ts`):**
+  - Chặn tuyệt đối lỗi thoát thư mục đích (`assertInsideDirectory`) và kiểm tra định dạng mã lớp hợp lệ (`/^[A-Z0-9_-]{2,80}$/`).
+  - Chỉ sao chép danh sách định dạng tài nguyên Web tĩnh an toàn (`ALLOWED_WEB_ASSET_EXTENSIONS`) và chặn mọi tệp nhạy cảm (`credentials.json`, `.env`, khóa riêng, token...).
+  - Giữ nguyên cấu trúc cây thư mục gốc khi HTML nằm trong thư mục con (tạo trang chuyển hướng `index.html` ở gốc để không làm gãy đường dẫn tương đối `../assets/...`) và tự động chuẩn hóa tên `INDEX.HTML` về chữ thường `index.html` cho GitHub Pages.
+  - Sao chép qua thư mục đệm (`staging`) trước khi cập nhật kho Git, chỉ `git add` các đường dẫn thành công, yêu cầu giáo viên xác nhận ghép thư mục trước khi xuất bản và tự động phân biệt tên thư mục khi lớp có học viên trùng tên.
+- **Gia cố Bộ tải Google Drive SPCK (`src/lib/playwright/spck-drive-uploader.ts`):**
+  - Xác minh chặt chẽ tất cả tệp đã xuất hiện trong DOM thư mục Google Drive trước khi báo thành công; tự động thay thế tệp cùng tên khi nội dung trên máy thay đổi.
+  - Bổ sung ánh xạ khóa học `PSI` song song với `PTI`, chặn việc tạo nhầm thư mục lớp ở thư mục gốc khi không nhận diện được mã khóa học, nâng độ sâu đệ quy thư mục con lên 5 cấp và loại bỏ việc tự xóa các tệp `SPCK_*.zip` theo tên.
+  - Hợp nhất `relatedLinksJson` từ bản ghi SQLite mới nhất ngay trước khi lưu để không làm mất link GitHub Pages được gắn song song, và hạ trạng thái về `WAITING_APPROVAL` khi danh sách link thay đổi (tuân thủ nghiêm ngặt Quy tắc 4).
+- **Gia cố AI Nhận xét SPCK, Path Allowlist & Nộp SPCK LMS (`src/lib/gemini/spck-comment.ts`, `src/lib/security/path-allowlist.ts`, `src/lib/playwright/spck-uploader.ts`, `src/lib/playwright/save-comments.ts`, `src/app/api/spck/scan/route.ts`):**
+  - Ẩn danh triệt để tên học viên viết liền hoặc nối bằng dấu gạch dưới/gạch ngang trong tên file (`Nguyen_Minh_An.py` $\rightarrow$ `STUDENT_01.py`), thay tên tệp đính kèm bằng nhãn `FILE_01`, và kiểm tra bắt buộc cấu trúc/độ dài phản hồi JSON từ Gemini trước khi lưu.
+  - Giải quyết đường dẫn thực tế (`fs.realpathSync`) trước khi kiểm tra danh sách thư mục hệ thống bị cấm trong `path-allowlist.ts`.
+  - Sửa triệt để selector điền `Đường dẫn liên quan (Link)` trên Modal SPCK của MindX LMS (`input#inputRelativeUrlName` và `input#inputRelativeUrl`, tách biệt hoàn toàn với `input#inputYoutube` ở phía trên), bổ sung kiểm tra `Read-after-Write` bắt buộc thẻ `<a href="...">` xuất hiện trong danh sách `#1:` trước khi bấm `Save`, và giữ nguyên danh sách link Google Drive / GitHub Pages đã gắn trong `relatedLinksJson` khi giáo viên bấm quét lại thư mục SPCK.
+  - Gắn mã băm phiên bản ngắn theo tập tệp đính kèm vào gói `.zip` phụ trợ (`spck_<studentId>_<filesHash8>.zip`), kiểm tra lệnh Dừng khẩn cấp (`Stop Bot`) ngay trước mọi thao tác ghi/lưu, và xác minh phản hồi `UpdateSlotComment` + DOM khi lưu `Summary`/`Homework`.
+  - Tinh gọn giao diện và luồng điều khiển trên thanh điều hướng trên cùng (`src/app/layout.tsx`) và Màn hình 3 (`src/app/final-project/page.tsx`): gỡ bỏ nhãn `127.0.0.1:3000`, khối tiêu đề giới thiệu đầu trang SPCK, nút `Duyệt Khóa Hash` rời, cụm chọn `Buổi nộp SPCK: Buổi 12/13/14` trùng lặp và nút `Nộp Thử 1 HV`; hợp nhất luồng tự động duyệt khóa & đẩy thẳng lên LMS ngay khi bấm `Nộp SPCK Buổi 12 / 13 / 14` (hoặc `Nộp B.12 / B.13 / B.14`).
+
+---
+
+## [v2.3.0] — 2026-10-22 (Tự động Up Sản Phẩm lên Google Drive theo từng Học viên & Nâng cấp AI Nhận xét SPCK Tự nhiên)
+
+### ✨ Tính năng mới (Added)
+- **Tự động tải Sản phẩm Cuối khóa (SPCK) lên Google Drive & Gắn Link vào SPCK (`src/lib/playwright/spck-drive-uploader.ts`, `src/app/api/spck/upload-drive/route.ts`):**
+  - Tích hợp sẵn đường dẫn thư mục Google Drive gốc `CODING - SPCK` (`https://drive.google.com/drive/folders/1Xl8OZ7i1bOKf7000xbUBYLPcxVb2qvRD`) và tự động nhận diện thư mục khóa học tương ứng từ mã lớp (`SB`, `SA`, `SI`, `GB`, `GA`, `GI`, `PTB`, `PTA`, `PTI`, `JSB`, `JSA`, `JSI`, `CSB`, `CSA`, `CSI`).
+  - Tự động kiểm tra/tạo thư mục Lớp học (VD: `VT-C4K-PTA12`) $\rightarrow$ tạo thư mục riêng cho từng học viên (theo họ tên học viên) $\rightarrow$ tải toàn bộ file và **tự động tái tạo nguyên vẹn các thư mục con** (`gui/`, `img/`, `image/`, `src/`... không tạo file `.zip` thừa) lên Google Drive.
+  - Tự động lấy đường dẫn thư mục Google Drive của từng học viên (`https://drive.google.com/drive/folders/<folderId>`) và điền thẳng vào ô **`Đường dẫn liên quan (Link)`** (`Link Google Drive SPCK (<Tên Học Viên>) | https://drive.google.com/...`) trong SQLite và trên giao diện `/final-project`. Khi giáo viên bấm Nộp SPCK lên LMS, bot tự động dán link Drive này và bấm `+ Thêm`.
+- **Nâng cấp AI Soạn Bình luận Giáo viên cho SPCK mượt mà, tự nhiên như người thật (`src/lib/gemini/spck-comment.ts`, `src/lib/gemini/client.ts`):**
+  - Sử dụng Gemini API (`temperature = 0.85`) kết hợp **8 cấu trúc hành văn khác nhau** để mỗi học viên trong lớp có một đoạn nhận xét liền mạch, tự nhiên, xưng hô **"thầy – con"** đồng nhất (loại bỏ các tiêu đề gạch đầu dòng cứng nhắc `• Thái độ...`, không lặp lại câu chữ của Quick Tags và không trùng cấu trúc mở đầu giữa các học viên).
+  - Tự động lồng ghép tự nhiên chủ đề dự án và các màn hình/tính năng thực tế trích xuất từ code của từng bạn (ví dụ: ứng dụng đặt món ăn, ứng dụng thể thao các cự ly chạy, ứng dụng tin tức bóng đá, ứng dụng chăm sóc thú cưng, ứng dụng khám phá Hệ Mặt Trời...).
+- **Tự động Đẩy Sản phẩm Web (`.html/.css/.js`) lên GitHub Pages & Gắn Link Chạy Thử (`src/lib/github/spck-web-deployer.ts`, `src/app/api/spck/deploy-web/route.ts`):**
+  - Tạo sẵn kho GitHub công khai dùng chung `https://github.com/Banhtalon/WEB_PRODUCT_SHOW.git` và kích hoạt tự động **GitHub Pages** tại `https://banhtalon.github.io/WEB_PRODUCT_SHOW/`.
+  - Tự động sao chép thư mục Web của từng học viên theo phân cấp `<Mã-Lớp>/<Tên-Học-Viên>/` (tự động bổ sung `index.html` nếu học viên đặt tên file chính khác `index.html`), đẩy lên nhánh `main` và gắn đường dẫn `Link Web Chạy Thử (<Tên Học Viên>) | https://banhtalon.github.io/WEB_PRODUCT_SHOW/<Mã-Lớp>/<Tên-Học-Viên>/` vào ô **`Đường dẫn liên quan`** song song với Link Google Drive.
+- **Giao diện Điều khiển Google Drive & GitHub Pages trên Màn hình 3 (`/final-project`):**
+  - Bổ sung thanh nhập Link Google Drive gốc kèm nút **"Up Sản Phẩm Cả Lớp lên Drive & Gắn Link"**, thanh nhập Kho GitHub Pages kèm nút **"Đẩy Web Cả Lớp lên GitHub Pages & Gắn Link"**, và các nút thao tác lẻ (**"Up Drive & Gắn Link"**, **"Up Web Live"**) trên thẻ của từng học viên.
+  - Cấu hình `ignoreDefaultArgs: ["--enable-automation"]` trong `browser-manager.ts` để trình duyệt Persistent Chromium (`./playwright-auth`) đăng nhập Google (`accounts.google.com`) mượt mà không bị Google chặn cảnh báo tự động hóa.
+
+---
+
+## [v2.2.0] — 2026-10-22 (Hoàn thiện Nộp SPCK Thực tế trên LMS & Quản lý Tài liệu Dự án)
+
+### ✨ Tính năng mới (Added)
+- **Nộp Sản phẩm Cuối khóa (SPCK) theo Buổi 12 / Buổi 13 / Buổi 14:**
+  - Bổ sung bộ nút chọn buổi nộp SPCK tương ứng (**Buổi 12**, **Buổi 13**, **Buổi 14**) cho cả lớp (`Đẩy N bài Đã Duyệt lên LMS (Buổi X)`) hoặc từng học viên trên màn hình `/final-project` ([page.tsx](./src/app/final-project/page.tsx)).
+  - Hỗ trợ truyền `sessionNumber` (`12 | 13 | 14`) qua API `POST /api/spck/upload-lms` ([route.ts](./src/app/api/spck/upload-lms/route.ts)) để bot tự động chuyển đúng ô buổi học trên thanh trượt `#class-comments-slot-carousel-{N-1}` của LMS.
+- **Tự động lọc lớp đủ điều kiện nộp SPCK (Buổi học $\ge 12$):**
+  - Tự động quét theo tài khoản giáo viên và chỉ hiển thị những lớp có số buổi hiện tại $\ge 12$ trong danh sách lớp SPCK (`GET /api/spck/list`), kèm nhãn tiến độ buổi học hiện tại (VD: `VT-C4K-PTA12 (Buổi 12/14)`).
+- **Trình duyệt chọn thư mục SPCK trực tiếp trên giao diện Web (In-Page Folder Browser):**
+  - Bổ sung hộp chọn thư mục trực quan ngay trên trình duyệt (`GET /api/system/pick-folder?mode=list`) bên cạnh hộp thoại Windows gốc, giúp giáo viên duyệt ổ đĩa (`C:\`, `D:\`, `F:\`...) và chọn thư mục SPCK ngay cả khi cửa sổ hệ điều hành bị ẩn.
+  - Tự động cấp quyền an toàn (`registerTeacherSelectedDirectory`) vào danh sách thư mục cho phép (`data/config/teacher_browsed_dirs.json`).
+- **Tài liệu Tổng quan & Lịch sử Phiên bản cho AI:**
+  - Khởi tạo [PROJECT_STATE.md](./PROJECT_STATE.md) làm bản đồ tổng quan nhanh 1 trang cho AI Agent và [CHANGELOG.md](./CHANGELOG.md) để theo dõi lịch sử phiên bản.
+
+### 🛠️ Sửa lỗi & Tối ưu Thực tế trên MindX LMS (Fixed & Changed)
+- **Khắc phục triệt để lỗi tải ảnh/file SPCK lên `resources.mindx.edu.vn` (`ERR_CERT_AUTHORITY_INVALID`):**
+  - Cập nhật [browser-manager.ts](./src/lib/playwright/browser-manager.ts) tách riêng phân giải DNS của máy chủ tải tài nguyên `resources.mindx.edu.vn` (`45.117.83.246`) khỏi máy chủ LMS chính (`103.109.43.92`) trong `--host-resolver-rules`, đồng thời tự động nâng cấp phiên `BrowserContext` khi đổi cấu hình mạng.
+- **Tự động gắn Ảnh Logo MindX làm Ảnh bìa (Thumbnail) khi thư mục học sinh không có ảnh:**
+  - Lưu ảnh **Logo MindX (`mindX Tech & AI School`)** tại [default-spck-thumbnail.png](./data/config/default-spck-thumbnail.png) và áp dụng nguyên tắc bắt buộc: nếu thư mục dự án của học sinh không có ảnh riêng, hệ thống tự động lấy ảnh Logo MindX làm Thumbnail mặc định ngay từ bước quét thư mục ([spck-scanner.ts](./src/lib/local-files/spck-scanner.ts)) và khi đẩy lên LMS ([spck-uploader.ts](./src/lib/playwright/spck-uploader.ts)).
+  - Mở rộng [spck-scanner.ts](./src/lib/local-files/spck-scanner.ts) quét thêm 1 cấp thư mục con an toàn (`img/`, `image/`, `assets/`...) để tự động nhận diện ảnh chụp sản phẩm của từng dự án khi học sinh để ảnh trong thư mục con.
+- **Xử lý thông minh Modal SPCK thực tế trên LMS ([spck-uploader.ts](./src/lib/playwright/spck-uploader.ts)):**
+  - Tự động đóng gói các file giao diện phụ không nằm trong danh sách `accept` trực tiếp của LMS (như `.ui`, `.qss`) thành gói `.zip` để đính kèm hợp lệ.
+  - Chờ xác nhận HTTP `200/201` từ `https://resources.mindx.edu.vn/api/v1/resources` cho từng ảnh/file trước khi bấm `Save`.
+  - Bắt chính xác GraphQL mutation `CreateStudentWork` / `UpdateStudentWork` trên `https://lms-api.mindx.edu.vn/` và tự động mở rộng nút `Xem chi tiết trang` khi cập nhật lại thẻ `Sản Phẩm Học Viên 01` đã lưu trước đó.
+
+---
+
+## [v2.1.0] — 2026-10-22 (Tự động điền Summary/Homework LMS, Chuẩn hóa Zalo 2 Phần & Shortcut Desktop)
+
+### ✨ Tính năng mới (Added)
+- **Tự động điền `Summary` (Tóm tắt bài học) & `Homework` (BTVN) lên MindX LMS:**
+  - Khi bấm **Đẩy nhận xét lên LMS** trên màn hình `/session-comments`, bot ([save-comments.ts](./src/lib/playwright/save-comments.ts)) tự động mở 2 hộp thu gọn `Summary` và `Homework` của buổi học trên LMS, điền **Tiêu đề + Nội dung bài học** vào `Summary` và **Tóm tắt BTVN** vào `Homework`, sau đó kích hoạt lưu tự động (`UpdateSlotComment`) cùng với nhận xét của toàn bộ học viên.
+- **Chuẩn hóa Kỹ năng AI Thông báo Zalo Tổng kết Buổi học & Nhận xét BTVN ([SKILL.md](./.agents/skills/nhan-xet-hoc-sinh-zalo/SKILL.md)):**
+  - **Phần 1 (Tổng kết buổi học):** Đúng 6 mục ngắn gọn, súc tích (mỗi gạch đầu dòng 1 câu), tự động tịnh tiến `+7 ngày` cho buổi học kế tiếp và tra cứu tên bài `BUỔI N+1` từ kho Giáo trình (`WEB.md`, `Game_maker.md`, `Scratch.md`, `Python.md`).
+  - **Phần 2 (Nhận xét tình trạng làm BTVN):** Chỉ xuất khi giáo viên tải lên ảnh chụp danh sách nộp bài (Denise/LMS), tự động đọc ảnh bằng Gemini Vision để lọc học sinh `Not submitted` với tên rút gọn (**Tên đệm + Tên**).
+- **Chuẩn hóa Kỹ năng AI Nhận xét Học sinh 5 Cấp độ ([SKILL.md](./.agents/skills/nhan-xet-hoc-sinh/SKILL.md)):**
+  - Phân loại học sinh theo 5 cấp độ dựa trên Quick Tags và hiển thị gộp trong 1 ô nhận xét duy nhất với 3 gạch đầu dòng in đậm (`- **Điểm mạnh của học viên:**`, `- **Điểm cần cải thiện:**`, `- **Lời khuyên:**`), tự động chuyển đổi sang thẻ `<strong>` trên Quill Editor của LMS.
+- **Tạo Shortcut khởi động nhanh ngoài Desktop:**
+  - Tạo shortcut `MindX Automation Bot.lnk` ngoài màn hình Desktop với biểu tượng riêng (`mindx-bot.ico`) để giáo viên mở nhanh bằng 1 cú click đúp.
+
+### 🛠️ Sửa lỗi (Fixed)
+- **Sửa lỗi đứt kết nối đồng bộ LMS khi bật Cloudflare WARP (`1.1.1.1`):**
+  - Tự động truy vấn IP `lms.mindx.edu.vn` từ nameserver gốc Viettel IDC (`115.84.177.33`) và giữ Singleton `BrowserManager` qua `globalThis` khi Next.js HMR reload.
+
+---
+
+## [v2.0.0] — 2026-10-21 (Hoàn thành Giai đoạn 6 & 7 — SPCK, Quản trị Giáo trình & Live Log SSE)
+
+### ✨ Tính năng mới (Added)
+- **Giai đoạn 6 — Tự động Quét, Nhận xét & Upload SPCK (`/final-project`):**
+  - Chuẩn hóa tên tiếng Việt không dấu ([vietnamese-match.ts](./src/lib/utils/vietnamese-match.ts)), chấm điểm tương đồng `matchScore` và cảnh báo trùng tên học viên trong cùng lớp.
+  - Quét thư mục dự án cục bộ dưới sự bảo vệ của Path Allowlist, phân loại Thumbnail, tối đa 10 ảnh sản phẩm, 10 file đính kèm, 5 link YouTube và 5 link dự án từ `links.txt`.
+  - AI (`gemini-3.5-flash-lite`) sinh nhận xét cuối khóa 3 phần ẩn danh (`STUDENT_01`), chống tự bịa kỹ năng thuyết trình.
+  - Đạt kiểm định độc lập `AUDIT-R39` (`41/41 PASS`).
+- **Giai đoạn 7 — Quản lý Giáo trình, Barem, Live Log Drawer & Đóng gói (`/syllabus-config`):**
+  - Giao diện quản lý Giáo trình đa môn (`PTA/PTB/PTI`, `JSB/JSA/JSI`, `SB/SA/SI`, `GB/GA/GI`, `ROB`, `CSI`), Barem chấm điểm, Quick Tags và Mẫu Zalo.
+  - Thanh **Live Automation Log (SSE)** ([live-log-drawer.tsx](./src/components/live-log-drawer.tsx)) hiển thị tiến trình Playwright thời gian thực kèm nút **Dừng khẩn cấp (Stop Bot)**.
+  - Bộ script khởi chạy 1 chạm `start-bot.bat` (Windows) và `start-bot.command` (macOS).
+  - Đạt kiểm định độc lập `AUDIT-R34` & `AUDIT-R41` (`65/65 PASS`).
+
+---
+
+## [v1.5.0] — 2026-10-20 (Hoàn thành Giai đoạn 3, 4 & 5 — Nhận xét Buổi học, Cào Điểm & Chấm Bài Tập)
+
+### ✨ Tính năng mới (Added)
+- **Giai đoạn 3 — Nhận xét sau buổi học & Thông báo Zalo (`/session-comments`):**
+  - Đồng bộ danh sách lớp đang dạy (`fetchRunningClasses`) và danh sách buổi học/học viên từ LMS (`syncClass`).
+  - Khóa toàn vẹn dữ liệu bằng mã băm `contentHash` (SHA-256) và đối chiếu Read-after-Write sau khi lưu.
+- **Giai đoạn 4 — Cào bảng điểm đa trang & Xuất báo cáo (`/homework-grader`):**
+  - Tự động duyệt qua các trang điểm trên LMS, phân loại trạng thái bài nộp và xuất file Excel (`.xlsx`) / Copy Google Sheets. Đạt `AUDIT-R18`.
+- **Giai đoạn 5 — Tự động Tải & Chấm bài tập đa môn theo Barem (`/homework-grader`):**
+  - Bộ đọc file đa định dạng: Python (`.py`), Jupyter (`.ipynb`), Qt Designer (`.ui`, `.qss`), Web (`.html`, `.css`, `.js`), Scratch (`.sb3`), GameMaker (`.yyz`, `.gml`), nén (`.zip`), ảnh/PDF/Word/PPTX.
+  - AI chấm từng tiêu chí kèm trích dẫn bằng chứng code (`evidence`), TypeScript tự tính tổng điểm (`sum(earnedPoints)`), gắn cờ `PARSE_ERROR` khi file hỏng và tự động điền điểm lên LMS. Đạt `AUDIT-R31` & `AUDIT-R37`.
+
+---
+
+## [v1.0.0] — 2026-10-19 (Hoàn thành Giai đoạn 0, 1 & 2 — Nền tảng Hệ thống & Lõi Playwright)
+
+### ✨ Tính năng mới (Added)
+- Khởi tạo ứng dụng Next.js (App Router + TypeScript + Tailwind CSS) chỉ lắng nghe cục bộ tại `127.0.0.1:3000`.
+- Thiết lập cơ sở dữ liệu SQLite (`data/mindx_bot.db` với 8 bảng nghiệp vụ) và kho cấu hình JSON (`data/config/*.json`).
+- Xây dựng lõi điều khiển trình duyệt Playwright với `PersistentContext` (`./playwright-auth`), hàng đợi đơn luồng `SequentialTaskQueue`, tự động đăng nhập SSO `id.mindx.edu.vn` và bộ chặn bắt lỗi Network API.

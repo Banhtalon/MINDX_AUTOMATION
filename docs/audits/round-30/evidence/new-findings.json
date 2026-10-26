@@ -1,0 +1,37 @@
+{
+  "issueId": "R19-01",
+  "severity": "P2",
+  "totalFailingCases": 2,
+  "results": [
+    {
+      "id": "R30-01-pdf-nested-empty-name",
+      "issueId": "R19-01",
+      "severity": "P2",
+      "expected": "PARSED",
+      "currentStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "r29Success": true,
+      "mainPass": false,
+      "nativePass": false,
+      "pypdfAndIndependentOraclePass": true,
+      "fixture": "fixtures/R30-01-pdf-nested-empty-name.pdf",
+      "sha256": "5a71e43ddf399862fd5baf6fe7692313011249cc00ee750cda315fc97f159113",
+      "size": 378
+    },
+    {
+      "id": "R30-01-pdf-array-empty-name",
+      "issueId": "R19-01",
+      "severity": "P2",
+      "expected": "PARSED",
+      "currentStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "r29Success": true,
+      "mainPass": false,
+      "nativePass": false,
+      "pypdfAndIndependentOraclePass": true,
+      "fixture": "fixtures/R30-01-pdf-array-empty-name.pdf",
+      "sha256": "957f0a2a0773c3dc08472a4474b7a6ed3741788e7052054d1407e8e7891472dd",
+      "size": 367
+    }
+  ]
+}

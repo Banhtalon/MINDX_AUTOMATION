@@ -1,0 +1,478 @@
+{
+  "total": 54,
+  "passed": 54,
+  "failed": 0,
+  "method": "Unchanged independent raw-byte R30 dictionary reader, fresh executable wrapper over all 54 R29 dictionary expectations; exact PDF whitespace/delimiters and full consumption. No product parser reused.",
+  "results": [
+    {
+      "id": "R29-01-pdf-length-signed-plus",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e677468202b38203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-length-leading-zero",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e67746820303038203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-length-token-fraction",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e67746820382e3235203e3e",
+      "numberKind": "REAL",
+      "numberValue": "8.25"
+    },
+    {
+      "id": "R29-01-pdf-length-token-real-dot",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e67746820382e203e3e",
+      "numberKind": "REAL",
+      "numberValue": "8.0"
+    },
+    {
+      "id": "R29-01-pdf-length-token-real-plus",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e677468202b382e30203e3e",
+      "numberKind": "REAL",
+      "numberValue": "8.0"
+    },
+    {
+      "id": "R29-01-pdf-length-token-exponent",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e67746820386530203e3e",
+      "error": "invalid object token b'8e0'"
+    },
+    {
+      "id": "R29-01-pdf-length-token-suffix",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e6774682038666f6f203e3e",
+      "error": "invalid object token b'8foo'"
+    },
+    {
+      "id": "R29-01-pdf-length-token-two-values",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e67746820382039203e3e",
+      "error": "expected dictionary key at byte 13"
+    },
+    {
+      "id": "R29-01-pdf-length-token-missing",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e67746820203e3e",
+      "error": "unexpected delimiter at byte 12: b'>'"
+    },
+    {
+      "id": "R29-01-pdf-length-token-bool",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e6774682074727565203e3e",
+      "numberKind": "BOOL",
+      "numberValue": "True"
+    },
+    {
+      "id": "R29-01-pdf-length-token-null",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e677468206e756c6c203e3e",
+      "numberKind": "NULL",
+      "numberValue": "None"
+    },
+    {
+      "id": "R29-01-pdf-length-token-name",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e677468202f4569676874203e3e",
+      "numberKind": "NAME",
+      "numberValue": "b'Eight'"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-int",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e6774682038202f4f746865722031203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-int",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f746865722031203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-real",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e6774682038202f4f7468657220312e3235203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-real",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f7468657220312e3235203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-bool",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e6774682038202f4f746865722074727565203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-bool",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f746865722074727565203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-null",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e6774682038202f4f74686572206e756c6c203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-null",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572206e756c6c203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-name",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e6774682038202f4f74686572202f56616c7565203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-name",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572202f56616c7565203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-string",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e6774682038202f4f74686572202868656c6c6f29203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-string",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572202868656c6c6f29203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-hex",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e6774682038202f4f74686572203c343134323e203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-hex",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572203c343134323e203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-array",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e6774682038202f4f74686572205b3120325d203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-array",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572205b3120325d203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-dict",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e6774682038202f4f74686572203c3c202f4e2032203e3e203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-dict",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572203c3c202f4e2032203e3e203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-whitespace-nul",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e677468203800203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-whitespace-nul",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e74203100203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-whitespace-tab",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e677468203809203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-whitespace-tab",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e74203109203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-whitespace-formfeed",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e67746820380c203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-whitespace-formfeed",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e7420310c203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-whitespace-cr",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e67746820380d203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-whitespace-cr",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e7420310d203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-whitespace-lf",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e67746820380a203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-whitespace-lf",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e7420310a203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-delimiter-lone-gt",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e67746820383e203e3e",
+      "error": "expected dictionary key at byte 12"
+    },
+    {
+      "id": "R29-01-pdf-count-delimiter-lone-gt",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e7420313e203e3e",
+      "error": "expected dictionary key at byte 38"
+    },
+    {
+      "id": "R29-01-pdf-length-delimiter-brace-open",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e67746820387b203e3e",
+      "error": "expected dictionary key at byte 12"
+    },
+    {
+      "id": "R29-01-pdf-count-delimiter-brace-open",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e7420317b203e3e",
+      "error": "expected dictionary key at byte 38"
+    },
+    {
+      "id": "R29-01-pdf-length-delimiter-brace-close",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e67746820387d203e3e",
+      "error": "expected dictionary key at byte 12"
+    },
+    {
+      "id": "R29-01-pdf-count-delimiter-brace-close",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e7420317d203e3e",
+      "error": "expected dictionary key at byte 38"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-missing-last",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e6774682038202f4f74686572203e3e",
+      "error": "unexpected delimiter at byte 20: b'>'"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-missing-last",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572203e3e",
+      "error": "unexpected delimiter at byte 46: b'>'"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-name-value-control",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f4c656e6774682038202f4f74686572202f44616e676c696e67203e3e",
+      "numberKind": "INT",
+      "numberValue": "8"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-name-value-control",
+      "pass": true,
+      "wouldAccept": true,
+      "expected": "PARSED",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572202f44616e676c696e67203e3e",
+      "numberKind": "INT",
+      "numberValue": "1"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-unknown",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e6774682038202f4f74686572206a756e6b203e3e",
+      "error": "invalid object token b'junk'"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-unknown",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572206a756e6b203e3e",
+      "error": "invalid object token b'junk'"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-duplicate",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f4c656e6774682038202f4f746865722031202f4f746865722032203e3e",
+      "error": "duplicate key b'Other'"
+    },
+    {
+      "id": "R29-01-pdf-count-extra-duplicate",
+      "pass": true,
+      "wouldAccept": false,
+      "expected": "PARSE_ERROR",
+      "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f746865722031202f4f746865722032203e3e",
+      "error": "duplicate key b'Other'"
+    }
+  ]
+}

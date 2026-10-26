@@ -1,0 +1,18 @@
+{
+  "inheritedR27AssertionsAndResultsIdentical": true,
+  "inheritedCount": 662,
+  "r28NewChecks": 75,
+  "nativeFailureIdsEqualMain": true,
+  "sourceHashesMatchRootAndSnapshot": true,
+  "snapshotOnlyGeneratedNextEnvChanged": true,
+  "executedHarnessBytesMatchDelivery": true,
+  "allReceiptHashesVerified": true,
+  "originalSourceChanges": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "commandAttempts": 44,
+  "distinctCommands": 33,
+  "latestExitZero": 23,
+  "latestExitNonzero": 10,
+  "checkedAt": "2026-10-20T20:29:41.805159+00:00"
+}

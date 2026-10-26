@@ -1,0 +1,229 @@
+{
+  "generatedAt": "2026-10-20T10:09:32.481Z",
+  "passed": 16,
+  "failed": 0,
+  "results": [
+    {
+      "id": "R15-01",
+      "criterion": "Delayed approval request cannot restore old text",
+      "pass": true,
+      "observation": {
+        "delayedOldApprovalRejected": true,
+        "freshApprovalWorks": true
+      }
+    },
+    {
+      "id": "R15-02",
+      "criterion": "Delayed AI result preserves latest note/text/attendance in DB and UI",
+      "pass": true,
+      "observation": {
+        "storedNote": "LATEST TEACHER NOTE",
+        "storedText": "LATEST TEACHER TEXT",
+        "storedAttendance": "ABSENT"
+      }
+    },
+    {
+      "id": "R15-03",
+      "criterion": "Different page instances and recreated route preserve newer edit",
+      "pass": true,
+      "observation": {
+        "distinctPages": true,
+        "recreatedRouteUsesPersistedVersion": true,
+        "storedNote": "LATEST NEW PAGE EDIT"
+      }
+    },
+    {
+      "id": "R15-04",
+      "criterion": "Inactive/absent/unknown students blocked before LMS Save",
+      "pass": true,
+      "observation": {
+        "control": {
+          "writes": 1,
+          "verified": 1,
+          "status": "VERIFIED",
+          "attendance": "PRESENT",
+          "storedText": "old final",
+          "sentText": "old final"
+        },
+        "blocked": [
+          {
+            "writes": 0,
+            "verified": 0,
+            "status": "DRAFT",
+            "attendance": "PRESENT",
+            "storedText": "old final",
+            "sentText": "old final"
+          },
+          {
+            "writes": 0,
+            "verified": 0,
+            "status": "DRAFT",
+            "attendance": "ABSENT",
+            "storedText": "old final",
+            "sentText": "old final"
+          },
+          {
+            "writes": 0,
+            "verified": 0,
+            "status": "DRAFT",
+            "attendance": "UNKNOWN",
+            "storedText": "old final",
+            "sentText": "old final"
+          },
+          {
+            "writes": 0,
+            "verified": 0,
+            "status": "DRAFT",
+            "attendance": "EXCUSED",
+            "storedText": "old final",
+            "sentText": "old final"
+          }
+        ]
+      }
+    },
+    {
+      "id": "R15-05",
+      "criterion": "Original 100ms delayed transition yields both pages",
+      "pass": true,
+      "observation": {
+        "control": {
+          "rows": 2,
+          "index": 1,
+          "loading": false
+        },
+        "delayed": {
+          "rows": 2,
+          "index": 1,
+          "loading": false
+        }
+      }
+    },
+    {
+      "id": "R15-06",
+      "criterion": "Abort-only, cancel-only, already-aborted streams release subscriptions",
+      "pass": true,
+      "observation": {
+        "streams": 40,
+        "remainingLogs": 0,
+        "remainingStatus": 0
+      }
+    },
+    {
+      "id": "R15-07",
+      "criterion": "Topic, knowledge, note and tags contain no synthetic student names",
+      "pass": true,
+      "observation": {
+        "candidateAndAbsentPeerRedacted": true,
+        "externalCalls": 0
+      }
+    },
+    {
+      "id": "R16-01",
+      "criterion": "Slow pagination at 650ms must still collect both pages",
+      "pass": true,
+      "observation": {
+        "rows": 2,
+        "index": 1,
+        "loading": false
+      }
+    },
+    {
+      "id": "R16-02",
+      "criterion": "Loading placeholder must not be treated as end of pagination",
+      "pass": true,
+      "observation": {
+        "success": true,
+        "rows": 2,
+        "expectedRosterRows": 2,
+        "writes": 1,
+        "cachedRowsBefore": 2,
+        "cachedRows": 2,
+        "index": 1,
+        "loading": false
+      }
+    },
+    {
+      "id": "R16-03",
+      "criterion": "Stale INSUFFICIENT_INFO request must preserve newer approved draft",
+      "pass": true,
+      "observation": {
+        "beforeText": "LATEST APPROVED TEXT",
+        "beforeStatus": "APPROVED",
+        "afterText": "LATEST APPROVED TEXT",
+        "afterStatus": "APPROVED",
+        "calls": 0,
+        "result": "APPROVED"
+      }
+    },
+    {
+      "id": "R16-04",
+      "criterion": "Ignored edit in an already open page must show a conflict",
+      "pass": true,
+      "observation": {
+        "afterFirstEdit": {
+          "storedNote": "FIRST PAGE SAVED",
+          "visibleNote": "SECOND PAGE FIRST EDIT",
+          "message": {
+            "type": "error",
+            "text": "Xung đột phiên bản: Dữ liệu của học viên 'Audit S1' đã được cập nhật ở tab hoặc phiên khác (Bản đã lưu: \"FIRST PAGE SAVED\"). Bản vừa nhập chưa được lưu và đang được giữ trên màn hình để so sánh."
+          }
+        },
+        "afterSecondEdit": {
+          "storedNote": "SECOND PAGE SECOND EDIT",
+          "visibleNote": "SECOND PAGE SECOND EDIT"
+        }
+      }
+    },
+    {
+      "id": "R16-05",
+      "criterion": "Eligibility change before LMS Save must prevent the outgoing write",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0,
+        "status": "DRAFT",
+        "attendance": "ABSENT",
+        "storedText": "old final",
+        "sentText": "old final"
+      }
+    },
+    {
+      "id": "PHASE1-SCHEMA",
+      "criterion": "Seven tables, scoped student keys and immutable submission owner",
+      "pass": true,
+      "observation": {
+        "tables": 7,
+        "scopedStudent": true,
+        "immutableOwner": true
+      }
+    },
+    {
+      "id": "PHASE1-UPGRADE",
+      "criterion": "Adding versionMetaJson preserves pre-existing feedback text",
+      "pass": true,
+      "observation": {
+        "columnAdded": true,
+        "existingFeedbackPreserved": true
+      }
+    },
+    {
+      "id": "PHASE2-QUEUE",
+      "criterion": "Queue stays serial, cancels pending tasks and resumes",
+      "pass": true,
+      "observation": {
+        "maxRunning": 1,
+        "cancelled": 2
+      }
+    },
+    {
+      "id": "PHASE2-BROWSER",
+      "criterion": "Concurrent initialization creates one persistent context",
+      "pass": true,
+      "observation": {
+        "initialLaunches": 1,
+        "recoveredTabs": 1,
+        "relaunched": true
+      }
+    }
+  ]
+}

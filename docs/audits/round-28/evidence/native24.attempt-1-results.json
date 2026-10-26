@@ -1,0 +1,83 @@
+{
+  "round": 24,
+  "method": "Actual product imports through tsx; no product code transformations. sharp independently decodes WebP. PDF fixtures contain xref; no independent PDF decoder used.",
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+  "checkedAt": "2026-10-20T20:20:12.403Z",
+  "total": 8,
+  "passed": 8,
+  "failed": 0,
+  "results": [
+    {
+      "id": "native-VP8-false",
+      "expected": "PARSE_ERROR",
+      "pass": true,
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels",
+      "fixtureBase64": "UklGRhoAAABXRUJQVlA4IA4AAABwAACdASoBAAEAAAAAAA=="
+    },
+    {
+      "id": "native-VP8-true",
+      "expected": "PARSE_ERROR",
+      "pass": true,
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels",
+      "fixtureBase64": "UklGRiwAAABXRUJQVlA4WAoAAAAAAAAAAAAAAAAAVlA4IA4AAABwAACdASoBAAEAAAAAAA=="
+    },
+    {
+      "id": "native-VP8L-false",
+      "expected": "PARSE_ERROR",
+      "pass": true,
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels",
+      "fixtureBase64": "UklGRhgAAABXRUJQVlA4TAsAAAAvAAAAAAABAgMEBQA="
+    },
+    {
+      "id": "native-VP8L-true",
+      "expected": "PARSE_ERROR",
+      "pass": true,
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels",
+      "fixtureBase64": "UklGRioAAABXRUJQVlA4WAoAAAAAAAAAAAAAAAAAVlA4TAsAAAAvAAAAAAABAgMEBQA="
+    },
+    {
+      "id": "native-pdf-missing-root",
+      "expected": "PARSE_ERROR",
+      "pass": true,
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgOSAwIFIgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    },
+    {
+      "id": "native-pdf-missing-generation",
+      "expected": "PARSE_ERROR",
+      "pass": true,
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAxIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    },
+    {
+      "id": "native-valid-pdf",
+      "expected": "PARSED",
+      "pass": true,
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    },
+    {
+      "id": "native-valid-webp",
+      "expected": "PARSED",
+      "pass": true,
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "fixtureBase64": "UklGRjgAAABXRUJQVlA4ICwAAACQAQCdASoDAAMAAUAmJaACdLoAA5gA/vQYtuuMdqr/7aH/60P/1of9kAAAAA=="
+    }
+  ]
+}

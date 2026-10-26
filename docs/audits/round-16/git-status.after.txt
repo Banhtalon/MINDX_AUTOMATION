@@ -1,0 +1,30 @@
+ M AGENTS.md
+ M MINDX_AUTOMATION_PLAN.md
+ M data/config/courses_syllabus.json
+ M data/config/zalo_templates.json
+ M scripts/test-phase3.ts
+ M src/app/api/queue/stream/route.ts
+ M src/app/api/session-comments/approve/route.ts
+ M src/app/api/session-comments/generate-ai/route.ts
+ M src/app/api/session-comments/list/route.ts
+ M src/app/api/session-comments/save-draft/route.ts
+ M src/app/homework-grader/page.tsx
+ M src/app/session-comments/page.tsx
+ M src/lib/db/json-config.ts
+ M src/lib/db/sqlite.ts
+ M src/lib/gemini/comment-generator.ts
+ M src/lib/playwright/lms-helpers.ts
+ M src/lib/playwright/network-interceptor.ts
+ M src/lib/playwright/save-comments.ts
+ M src/lib/playwright/selectors.ts
+ M src/lib/playwright/sync-class.ts
+ M src/lib/zalo/broadcast-generator.ts
+ M tsconfig.tsbuildinfo
+?? data/debug_drawer_content.png
+?? data/debug_gql_tab3.json
+?? data/debug_submission_tab.png
+?? data/debug_tabpanel3.html
+?? docs/audits/
+?? scripts/test-phase4-codex-repros.ts
+?? src/app/api/homework-grader/
+?? src/lib/playwright/scrape-scores.ts

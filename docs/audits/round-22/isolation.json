@@ -1,0 +1,15 @@
+{
+  "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat\\snapshot",
+  "nodeModules": "independent copy, no junction/symlink back to root",
+  "excluded": [
+    ".env*",
+    ".git",
+    ".next",
+    "playwright-auth",
+    "temp_submissions",
+    "data except config"
+  ],
+  "environment": "Windows allowlist only; no inherited app credentials; npm offline; telemetry disabled",
+  "nodeNetworkGuard": "docs/audits/round-19/network-guard.cjs",
+  "limits": "Node socket guard is not an OS firewall; no real service/account calls authorized or attempted. Historical suites write only their snapshot outputs."
+}

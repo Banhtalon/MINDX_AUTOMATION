@@ -1,0 +1,117 @@
+[
+  {
+    "id": "01-independent",
+    "command": "node docs/audits/round-31/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 9.634,
+    "log": "01-independent.log",
+    "freshArtifactCreated": true,
+    "artifact": "fresh-verify-results.json",
+    "artifactSha256": "C5FC374FF58DA7235EA287023F88975FC168D206658519AFF1C6F86056E2B1EF"
+  },
+  {
+    "id": "02-native-media",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/native-media-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.449,
+    "log": "02-native-media.log",
+    "freshArtifactCreated": true,
+    "artifact": "fresh-native-media-results.json",
+    "artifactSha256": "33774359E12B3F7EDEA869DEC5A863C63AF7383F0C080A147C86B8E286F7BC78"
+  },
+  {
+    "id": "03-native-worker",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/native-worker-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.561,
+    "log": "03-native-worker.log",
+    "freshArtifactCreated": true,
+    "artifact": "fresh-native-worker-results.json",
+    "artifactSha256": "526DE1709953204843703BD74A619D201576989620664F46CCF3EF46B3A6250F"
+  },
+  {
+    "id": "04-pdf-name",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/pdf-name-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.314,
+    "log": "04-pdf-name.log",
+    "freshArtifactCreated": true,
+    "artifact": "fresh-pdf-name-results.json",
+    "artifactSha256": "8CABEF5325A8FBCFD17B2CC3B4AEB54DA745E3BE68A22355E64E8F4603924CC3"
+  },
+  {
+    "id": "05-pdf-boundary",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/pdf-boundary-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.244,
+    "log": "05-pdf-boundary.log",
+    "freshArtifactCreated": true,
+    "artifact": "fresh-pdf-boundary-results.json",
+    "artifactSha256": "9B154B155815AE8DF9304F653B43DBC957F2C97754BCA7EC749B584462C2189C"
+  },
+  {
+    "id": "06-phase5",
+    "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase5.ts",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.695,
+    "log": "06-phase5.log"
+  },
+  {
+    "id": "07-typescript",
+    "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.306,
+    "log": "07-typescript.log"
+  },
+  {
+    "id": "08-r35-core",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-35/core-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.302,
+    "log": "08-r35-core.log",
+    "freshArtifactCreated": true,
+    "artifact": "fresh-core-repro-results.json",
+    "artifactSha256": "CB44CEE84CD6E2AF7CC429A9F4550CD6164F8D4B3DAF7C2604A735F9539E454A"
+  },
+  {
+    "id": "09-r35-ui",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-35/ui-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 1,
+    "seconds": 0.236,
+    "log": "09-r35-ui.log",
+    "freshArtifactCreated": true,
+    "artifact": "fresh-ui-repro-results.json",
+    "artifactSha256": "3FA8747024AD29CA9BDB1831AE9F499E539CA41DADFAA0CECF09463F3A721DBA"
+  },
+  {
+    "id": "10-r35-rubric",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-35/rubric-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 1,
+    "seconds": 0.218,
+    "log": "10-r35-rubric.log",
+    "freshArtifactCreated": true,
+    "artifact": "fresh-rubric-repro-results.json",
+    "artifactSha256": "76B9A95FA680634B5E093BC21254FC5271D0D74EF70D0FE2CEB119143D9FEA53"
+  },
+  {
+    "id": "11-r36-closure",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-36/closure-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.276,
+    "log": "11-r36-closure.log",
+    "freshArtifactCreated": true,
+    "artifact": "fresh-closure-results.json",
+    "artifactSha256": "4D3DB7BE1E5A39CEFBE77F9AABFC9E2553DBA99D227A3654C0BF59CD7DD1E92E"
+  }
+]

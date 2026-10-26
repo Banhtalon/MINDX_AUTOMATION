@@ -1,0 +1,13 @@
+diff --git a/docs/audits/round-18/plan.before.md b/MINDX_AUTOMATION_PLAN.md
+index e9585b4..14f44d7 100644
+--- a/docs/audits/round-18/plan.before.md
++++ b/MINDX_AUTOMATION_PLAN.md
+@@ -417,6 +417,8 @@ D:\SPCK_MindX\VT-C4K-PTA13\
+ 
+ * [x] **AUDIT-R17:** Đã kiểm toán độc lập và đối chiếu đủ 61 mã tại `docs/audits/round-17/REPORT.vi.md`. Sáu lệnh bắt buộc thoát 0, build đủ 18/18 trang; 148/148 nhóm độc lập cũ đạt, gồm 7 ca gốc Vòng 15 và 5 ca gốc Vòng 16. Bộ mở rộng cuối có 32/38 ca đạt, 6 ca trượt thuộc 4 nhóm lỗi (1 P1, 3 P2); hai lỗi UI xác nhận bằng Chromium/HTTP và dữ liệu giả. Kết luận hiện tại: **NO-GO cấp mã nguồn để chuyển sang Giai đoạn 5**. Không sửa sản phẩm hoặc dùng LMS/Gemini thật; 111 tệp bảo vệ gồm `next-env.d.ts` và hồ sơ Vòng 12–16 giữ nguyên từng byte.
+ 
++* [x] **AUDIT-R18:** Đã kiểm chứng độc lập bốn bản sửa R17-01…04 và lập `docs/audits/round-18/REPORT.vi.md`. Bảy lệnh bắt buộc thoát 0; build hoàn tất 18/18 trang; các bộ độc lập Vòng 12/13/16/17 đạt 43/43 + 89/89 + 16/16 + 38/38 = 186/186 nhóm. Smoke Chromium/HTTP với dữ liệu giả xác nhận Copy đúng bản nháp khi thiếu thông tin, ba ô nhận xét vẫn hiện và xung đột Quick Tags hiển thị đúng thẻ đã lưu. Đối chiếu 65 mã, đóng bốn nhóm R17 trong phạm vi đã kiểm; kết luận hiện tại: **GO cấp mã nguồn để chuyển sang triển khai Giai đoạn 5**, thay thế NO-GO của AUDIT-R17. Không sửa mã sản phẩm; 149 tệp gồm `next-env.d.ts` và toàn bộ hồ sơ Vòng 12–17 giữ nguyên từng byte trong cây gốc. Chưa nghiệm thu tài khoản/dữ liệu/dịch vụ thật hoặc tính năng Giai đoạn 5.
++
+ > **✅ ĐIỀU KIỆN NGHIỆM THU GIAI ĐOẠN 4:** Dữ liệu bảng điểm khớp 100% với LMS trên mọi trang; phân biệt rõ học viên chưa nộp bài, chưa chấm và điểm 0.
+ 
+ ---

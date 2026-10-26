@@ -1,0 +1,1363 @@
+{
+  "round": 32,
+  "checkedAt": "2026-10-21T06:32:14.937Z",
+  "root": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+  "harnessSha256": "4df2c91ce66a99ff87ada9fbb2c9ce2c1cfc3baafd1341957ed0c842a51529aa",
+  "realLmsCalls": 0,
+  "realGeminiCalls": 0,
+  "method": "Native TS product imports for scanner/SQLite/API/uploader; real isolated headless Chromium with all requests intercepted. AI uses exact source bodies with fake Gemini; UI uses exact pre-JSX function bodies with deterministic hooks/responses, not full React scheduling.",
+  "sourceHashes": {
+    "src/lib/utils/vietnamese-match.ts": "017fa9883acf6d791bfd36d67ef596801c6aec13de33bd9949ae3a3bb34b41b3",
+    "src/lib/local-files/spck-scanner.ts": "c34858c6fd1d731008e22caf82c8fa0c544acec39bcc3115733752fc8b823021",
+    "src/lib/gemini/spck-comment.ts": "7bb738c5ec9744d781cd2c85ce6b5a89c93e5d6dbd7212649d64f54feedf95b4",
+    "src/lib/db/sqlite.ts": "59f8f00d68819901a286086e91f4407d21acb50ba31ad8013e7d4c9613f30edd",
+    "src/lib/playwright/spck-uploader.ts": "663727bf64b75abe6e299cf0bac3dfa31cdf1e95ff3d9cc79aea121825cd26d2",
+    "src/lib/playwright/selectors.ts": "bbdcc949e56d382e563c5b96cf37a7a748a58b0b8ad283bcd817edda16f04c3a",
+    "src/app/final-project/page.tsx": "8ff66e1ebbc2662f0c4a12aacdf37239e25ba35ec1b041212097a25140ed153d",
+    "src/app/api/spck/approve/route.ts": "b9a04ed09b0881790b665de9bd8c83495dc4b5e0f399045557d3bf2c9a08f524",
+    "src/app/api/spck/save-draft/route.ts": "24dab138ffba3f52642ca0c3a6bc2c9d76a38b622db55f316449ed747c9f5675",
+    "src/app/api/spck/scan/route.ts": "0fb49883b1e49ff85b474d87a76ac964e223bb383fcec8ec1d79a5be7d303428",
+    "src/app/api/spck/list/route.ts": "3c9dd80ee5e98fcc5ac4d82709d1f6fefb95977d733af73f4340537cccd5f593",
+    "src/app/api/spck/generate-ai/route.ts": "3db7fe0cd7245e3852c31f8ec64f038bee1c8c87a38ac9910cd924e629f8eb74",
+    "src/app/api/spck/upload-lms/route.ts": "b614fd18d3b7c9cf8439523ca2531c8b353e80bfac0301e013708485a4fcc8f3"
+  },
+  "total": 67,
+  "passed": 67,
+  "failed": 0,
+  "results": [
+    {
+      "id": "R32-N01",
+      "task": "6.1",
+      "issue": null,
+      "criterion": "Chuẩn hóa dấu, Đ/đ, NFD, ký tự đặc biệt",
+      "pass": true,
+      "observation": {
+        "a": "dang thi anh",
+        "b": "dang thi anh"
+      }
+    },
+    {
+      "id": "R32-N02",
+      "task": "6.1",
+      "issue": null,
+      "criterion": "Xác nhận thủ công khi tên mơ hồ hoặc thư mục đụng độ",
+      "pass": true,
+      "observation": [
+        {
+          "score": 1,
+          "manual": false,
+          "collision": false
+        }
+      ]
+    },
+    {
+      "id": "R32-N03",
+      "task": "6.1",
+      "issue": null,
+      "criterion": "Xác nhận thủ công khi tên mơ hồ hoặc thư mục đụng độ",
+      "pass": true,
+      "observation": [
+        {
+          "score": 0.95,
+          "manual": true,
+          "collision": false
+        }
+      ]
+    },
+    {
+      "id": "R32-N04",
+      "task": "6.1",
+      "issue": null,
+      "criterion": "Xác nhận thủ công khi tên mơ hồ hoặc thư mục đụng độ",
+      "pass": true,
+      "observation": [
+        {
+          "score": 1,
+          "manual": true,
+          "collision": false
+        }
+      ]
+    },
+    {
+      "id": "R32-N05",
+      "task": "6.1",
+      "issue": null,
+      "criterion": "Xác nhận thủ công khi tên mơ hồ hoặc thư mục đụng độ",
+      "pass": true,
+      "observation": [
+        {
+          "score": 1,
+          "manual": true,
+          "collision": true
+        },
+        {
+          "score": 1,
+          "manual": true,
+          "collision": true
+        }
+      ]
+    },
+    {
+      "id": "R32-N06",
+      "task": "6.1",
+      "issue": null,
+      "criterion": "Xác nhận thủ công khi tên mơ hồ hoặc thư mục đụng độ",
+      "pass": true,
+      "observation": [
+        {
+          "score": 0,
+          "manual": true,
+          "collision": false
+        }
+      ]
+    },
+    {
+      "id": "R32-S01",
+      "task": "6.2",
+      "issue": null,
+      "criterion": "Chặn ../ thoát vùng cho phép",
+      "pass": true,
+      "observation": {
+        "blocked": true
+      }
+    },
+    {
+      "id": "R32-S02",
+      "task": "6.2",
+      "issue": null,
+      "criterion": "Chặn junction dẫn ra ngoài allowlist",
+      "pass": true,
+      "observation": {
+        "blocked": true
+      }
+    },
+    {
+      "id": "R32-S03",
+      "task": "6.2",
+      "issue": null,
+      "criterion": "Không quét junction nội bộ như thư mục học viên",
+      "pass": true,
+      "observation": {
+        "blocked": true
+      }
+    },
+    {
+      "id": "R32-S04",
+      "task": "6.2",
+      "issue": null,
+      "criterion": "Ảnh/PDF giả bị loại; thumb/bìa được ưu tiên; giới hạn 10 ảnh/10 file",
+      "pass": true,
+      "observation": {
+        "thumbnail": "bia.png",
+        "screenshots": 10,
+        "attachments": 10,
+        "warnings": 4
+      }
+    },
+    {
+      "id": "R32-S05",
+      "task": "6.2",
+      "issue": null,
+      "criterion": "Ảnh đầu tiên làm thumbnail khi không có thumb/bìa",
+      "pass": true,
+      "observation": {
+        "thumbnail": "a.png"
+      }
+    },
+    {
+      "id": "R32-S06",
+      "task": "6.2",
+      "issue": null,
+      "criterion": "links.txt: tối đa 5+5, loại giao thức lạ, chống lặp, title <=100",
+      "pass": true,
+      "observation": {
+        "youtube": 5,
+        "related": 5,
+        "title": 100
+      }
+    },
+    {
+      "id": "R32-D01",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "Sửa nội dung sau duyệt hạ WAITING_APPROVAL",
+      "pass": true,
+      "observation": {
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R32-D02",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "markVerified từ chối hash sai",
+      "pass": true,
+      "observation": {
+        "blocked": true
+      }
+    },
+    {
+      "id": "R32-D03",
+      "task": "6.4",
+      "issue": "R32-04",
+      "criterion": "Khóa nội dung byte file sau duyệt",
+      "pass": true,
+      "observation": {
+        "before": "779a090c752e91d6e9e4fc7f87722b9521eb12d38773e371773f1820932ba7c7",
+        "after": "9aa248e1a4b75c4f9afe14c400bb9ebbdfd5b237411dd1a0d1d3d68e2b7c253c",
+        "contentHashUnchanged": true,
+        "uploadAccepted": false
+      }
+    },
+    {
+      "id": "R32-D04",
+      "task": "6.4",
+      "issue": "R32-04",
+      "criterion": "Kiểm lại chữ ký media trước upload khi file đã đổi",
+      "pass": true,
+      "observation": {
+        "invalidBytesAccepted": false
+      }
+    },
+    {
+      "id": "R32-A01",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Snapshot đúng cho phép duyệt",
+      "pass": true,
+      "observation": {
+        "http": 200
+      }
+    },
+    {
+      "id": "R32-A02",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Bắt buộc có snapshot reviewedItems",
+      "pass": true,
+      "observation": {
+        "http": 400,
+        "dbStatus": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R32-A03-screenshotsJson",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Từ chối snapshot lệch screenshotsJson",
+      "pass": true,
+      "observation": {
+        "field": "screenshotsJson",
+        "http": 409,
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R32-A03-attachmentsJson",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Từ chối snapshot lệch attachmentsJson",
+      "pass": true,
+      "observation": {
+        "field": "attachmentsJson",
+        "http": 409,
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R32-A03-youtubeUrlsJson",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Từ chối snapshot lệch youtubeUrlsJson",
+      "pass": true,
+      "observation": {
+        "field": "youtubeUrlsJson",
+        "http": 409,
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R32-A03-relatedLinksJson",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Từ chối snapshot lệch relatedLinksJson",
+      "pass": true,
+      "observation": {
+        "field": "relatedLinksJson",
+        "http": 409,
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R32-A03-thumbnailPath",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Từ chối snapshot lệch thumbnailPath",
+      "pass": true,
+      "observation": {
+        "field": "thumbnailPath",
+        "http": 409,
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R32-A03-isConfirmedByTeacher",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Từ chối snapshot lệch isConfirmedByTeacher",
+      "pass": true,
+      "observation": {
+        "field": "isConfirmedByTeacher",
+        "http": 409,
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R32-A04",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Từ chối snapshot lệch comment",
+      "pass": true,
+      "observation": {
+        "http": 409
+      }
+    },
+    {
+      "id": "R32-A05",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Batch conflict không duyệt dở một phần",
+      "pass": true,
+      "observation": {
+        "http": 409,
+        "firstStudentStatus": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R32-M01",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Chặn gán trùng đường dẫn nguyên văn",
+      "pass": true,
+      "observation": {
+        "http": 409
+      }
+    },
+    {
+      "id": "R32-M02",
+      "task": "6.5",
+      "issue": "R32-02",
+      "criterion": "Chặn cùng thư mục qua đường dẫn ../ tương đương",
+      "pass": true,
+      "observation": {
+        "http": 409,
+        "sameRealDirectory": true
+      }
+    },
+    {
+      "id": "R32-M03",
+      "task": "6.5",
+      "issue": "R32-02",
+      "criterion": "Chặn cùng thư mục khi một đường dùng / và một đường dùng \\",
+      "pass": true,
+      "observation": {
+        "http": 409,
+        "secondBindingExists": false
+      }
+    },
+    {
+      "id": "R32-M04",
+      "task": "6.1/6.5",
+      "issue": "R32-03",
+      "criterion": "Quét folder mơ hồ mới phải bỏ xác nhận của folder cũ",
+      "pass": true,
+      "observation": {
+        "http": 200,
+        "manualRequired": true,
+        "newFolder": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-32\\evidence\\fixtures\\run-EM9fe9\\rescan\\01_Ngo_Khoi_Nguyen",
+        "confirmed": 0
+      }
+    },
+    {
+      "id": "R32-M05",
+      "task": "6.5",
+      "issue": "R32-11",
+      "criterion": "Đổi gợi ý ghép từ S1 sang S2 qua luồng UI phải có cách lưu",
+      "pass": true,
+      "observation": {
+        "http": 200,
+        "oldOwnerStillExists": false,
+        "body": {
+          "success": true,
+          "record": {
+            "id": 24,
+            "classId": "AUDIT_R32_SYNTHETIC",
+            "studentId": "R32_S2",
+            "localFolderPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-32\\evidence\\fixtures\\run-EM9fe9\\student",
+            "matchScore": 0,
+            "isConfirmedByTeacher": 1,
+            "projectTitle": "SPCK Phạm Thiện Hoàng Khang",
+            "thumbnailPath": "",
+            "screenshotsJson": "[]",
+            "attachmentsJson": "[]",
+            "youtubeUrlsJson": "[]",
+            "relatedLinksJson": "[]",
+            "teacherComment": "đổi học viên",
+            "contentHash": "",
+            "status": "WAITING_APPROVAL",
+            "verifiedAt": null,
+            "errorMessage": null,
+            "draftSeq": 1,
+            "createdAt": "2026-10-21 13:32:07",
+            "updatedAt": "2026-10-21 13:32:07"
+          }
+        }
+      }
+    },
+    {
+      "id": "R32-M06",
+      "task": "6.5",
+      "issue": "R32-09",
+      "criterion": "Nháp cũ đến sau không ghi đè nháp mới",
+      "pass": true,
+      "observation": {
+        "http": 200,
+        "actual": "NEW"
+      }
+    },
+    {
+      "id": "R32-L-approve",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Local-only chặn Origin bên ngoài tại approve",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R32-L-save-draft",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Local-only chặn Origin bên ngoài tại save-draft",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R32-L-scan",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Local-only chặn Origin bên ngoài tại scan",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R32-L-list",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Local-only chặn Origin bên ngoài tại list",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R32-L-generate-ai",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Local-only chặn Origin bên ngoài tại generate-ai",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R32-L-upload-lms",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Local-only chặn Origin bên ngoài tại upload-lms",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R32-G01",
+      "task": "6.3",
+      "issue": null,
+      "criterion": "Trống tag và note không gọi AI, trả INSUFFICIENT_INFO",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "status": "INSUFFICIENT_INFO"
+      }
+    },
+    {
+      "id": "R32-G02",
+      "task": "6.3",
+      "issue": null,
+      "criterion": "Ẩn đủ họ tên mục tiêu/peer và khóa sandbox đóng giả",
+      "pass": true,
+      "observation": {
+        "fullNamesRedacted": true,
+        "sandboxInputRedacted": true
+      }
+    },
+    {
+      "id": "R32-G03",
+      "task": "6.3",
+      "issue": "R32-07",
+      "criterion": "Ẩn tên riêng của peer trong prompt thực gửi AI",
+      "pass": true,
+      "observation": {
+        "peerGivenNameLeaked": false,
+        "outboundExcerpt": "- Ghi chú của giáo viên: Làm cùng STUDENT_PEER trong nhóm."
+      }
+    },
+    {
+      "id": "R32-G04",
+      "task": "6.3",
+      "issue": "R32-07",
+      "criterion": "Ẩn tên mục tiêu không dấu khi chỉ nhắc một phần tên",
+      "pass": true,
+      "observation": {
+        "targetPartialNameLeaked": false
+      }
+    },
+    {
+      "id": "R32-G05",
+      "task": "6.3",
+      "issue": null,
+      "criterion": "Không có bằng chứng thuyết trình thì xóa câu thuyết trình thông thường",
+      "pass": true,
+      "observation": {
+        "presentationRemoved": true
+      }
+    },
+    {
+      "id": "R32-G06",
+      "task": "6.3",
+      "issue": "R32-10",
+      "criterion": "Không để lại kỹ năng nói trước đám đông khi không tích chọn",
+      "pass": true,
+      "observation": {
+        "includePresentation": false,
+        "comment": "• Ý tưởng & Thiết kế sản phẩm: Giao diện rõ ràng.\n• Kỹ thuật lập trình vận dụng: Áp dụng biến và vòng lặp."
+      }
+    },
+    {
+      "id": "R32-G07",
+      "task": "6.3",
+      "issue": null,
+      "criterion": "AI chậm không ghi đè comment giáo viên vừa sửa",
+      "pass": true,
+      "observation": {
+        "staleIgnored": true
+      }
+    },
+    {
+      "id": "R32-G08",
+      "task": "6.3",
+      "issue": "R32-08",
+      "criterion": "AI cũ bị bỏ khi gói dự án/title đổi trong lúc chờ",
+      "pass": true,
+      "observation": {
+        "staleIgnored": true,
+        "newTitle": "NEW PROJECT",
+        "commentWritten": "Nhận xét đã xem"
+      }
+    },
+    {
+      "id": "R32-G09",
+      "task": "6.3",
+      "issue": "R32-08",
+      "criterion": "Thiếu dữ kiện AI không xóa bản giáo viên đã viết/duyệt",
+      "pass": true,
+      "observation": {
+        "comment": "Teacher approved text",
+        "status": "APPROVED"
+      }
+    },
+    {
+      "id": "R32-U01",
+      "task": "6.5",
+      "issue": "R32-10",
+      "criterion": "Không tự chọn tag đánh giá tích cực thay giáo viên khi nạp DB",
+      "pass": true,
+      "observation": {
+        "preselectedTags": []
+      }
+    },
+    {
+      "id": "R32-U02",
+      "task": "6.5",
+      "issue": "R32-09",
+      "criterion": "Phản hồi lưu nháp cũ không trả UI về bản cũ",
+      "pass": true,
+      "observation": {
+        "actual": "NEW"
+      }
+    },
+    {
+      "id": "R32-U03",
+      "task": "6.5",
+      "issue": "R32-09",
+      "criterion": "Lưu nháp lỗi phải dừng trước duyệt/upload",
+      "pass": true,
+      "observation": {
+        "calls": [
+          "/api/spck/save-draft"
+        ]
+      }
+    },
+    {
+      "id": "R32-U04",
+      "task": "6.5",
+      "issue": "R32-09",
+      "criterion": "AI trả muộn không ghi đè nội dung người dùng vừa gõ trên UI",
+      "pass": true,
+      "observation": {
+        "actual": "NEW UNSAVED EDIT"
+      }
+    },
+    {
+      "id": "R32-U05",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Client không nhập cấu hình/bí mật server",
+      "pass": true,
+      "observation": {
+        "forbiddenImportsOrNames": false
+      }
+    },
+    {
+      "id": "R32-REG-SCHEMA",
+      "task": "1",
+      "issue": null,
+      "criterion": "Đủ 8 bảng và khóa học viên/bài nộp (đối chứng hợp đồng R16 cũ)",
+      "pass": true,
+      "observation": {
+        "tables": [
+          "classes_sessions",
+          "homework_submission_meta",
+          "homework_submissions",
+          "job_logs",
+          "score_matrix_cache",
+          "session_feedbacks",
+          "spck_uploads",
+          "students"
+        ],
+        "count": 8,
+        "scopedStudent": true,
+        "immutableOwner": true
+      }
+    },
+    {
+      "id": "R32-P01",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "Native browser: tạo 01, bấm + Thêm từng link, retry không tạo 02",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "VERIFIED",
+              "reusedExistingItem01": false,
+              "clickedAddSpckButton": true,
+              "youtubeAddedCount": 2,
+              "relatedLinksAddedCount": 1,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "dbStatus": "VERIFIED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          },
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 0,
+          "youtubeClicks": 2,
+          "relatedClicks": 1
+        },
+        "events": [],
+        "retry": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "cardsAfterRetry": 1
+      }
+    },
+    {
+      "id": "R32-P02",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "Native browser: HTTP 500 không VERIFIED",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "API Lưu SPCK trả về HTTP 500 (yêu cầu 200/201)."
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        },
+        "events": []
+      }
+    },
+    {
+      "id": "R32-P03",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "Native browser: GraphQL errors không VERIFIED",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "GraphQL Lưu SPCK trả về lỗi: denied"
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        },
+        "events": []
+      }
+    },
+    {
+      "id": "R32-P04",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "Native browser: ID phản hồi sai không VERIFIED",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "Phản hồi API Lưu SPCK thiếu hoặc lệch studentId: expected='R32_S1', actual='OTHER'."
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        },
+        "events": []
+      }
+    },
+    {
+      "id": "R32-P05",
+      "task": "6.4",
+      "issue": "R32-05",
+      "criterion": "Native browser: phản hồi GraphQL khác nghiệp vụ không VERIFIED",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "Phản hồi GraphQL không phải mutation lưu SPCK (operationName='GetViewer')."
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 1,
+        "serverPersisted": false,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"GetViewer\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        },
+        "events": [],
+        "screenshot": "unrelated-graphql.png"
+      }
+    },
+    {
+      "id": "R32-P06",
+      "task": "6.4",
+      "issue": "R32-05",
+      "criterion": "Native browser: success:false không VERIFIED",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "API Lưu SPCK từ chối nghiệp vụ (success=false, status='REJECTED')."
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 1,
+        "serverPersisted": false,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        },
+        "events": []
+      }
+    },
+    {
+      "id": "R32-P07",
+      "task": "6.4",
+      "issue": "R32-05",
+      "criterion": "Native browser: DOM ô nhập chưa lưu không chứng minh persisted",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "[Read-after-Write] Chỉ có giá trị trên ô input/danh sách cục bộ vừa điền, thiếu bằng chứng dữ liệu đã được lưu bền vững (persisted) trên LMS."
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 1,
+        "serverPersisted": false,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        },
+        "events": []
+      }
+    },
+    {
+      "id": "R32-P08",
+      "task": "6.4",
+      "issue": "R32-12",
+      "criterion": "Native browser: không upload được thumbnail phải thất bại",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "[Thumbnail Upload Error] Không tìm thấy control upload Thumbnail cho học viên 'R32_S1'."
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 0,
+        "serverPersisted": false,
+        "requests": [],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        },
+        "events": [],
+        "screenshot": "thumbnail-not-uploaded.png"
+      }
+    },
+    {
+      "id": "R32-P09",
+      "task": "6.4",
+      "issue": "R32-12",
+      "criterion": "Native browser: chưa có network upload hoàn tất không VERIFIED",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 1,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "[Upload Verification] Chưa ghi nhận phản hồi network hoàn tất tải file (thumbnail/ảnh/tài liệu) lên server trước khi lưu."
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 1,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        },
+        "events": []
+      }
+    },
+    {
+      "id": "R32-P10",
+      "task": "6.4",
+      "issue": "R32-12",
+      "criterion": "Native browser: tên file trong comment không thay bằng chứng upload",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 1,
+              "errorMessage": "[Upload Verification] Chưa ghi nhận phản hồi network hoàn tất tải file (thumbnail/ảnh/tài liệu) lên server trước khi lưu."
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 1,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        },
+        "events": []
+      }
+    },
+    {
+      "id": "R32-P11",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "Native browser: đổi DB trong request không đánh dấu VERIFIED",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "[Integrity Guard] Bản ghi SPCK của 'R32_S1' đã bị chỉnh sửa trong lúc gửi request lưu nên từ chối đánh dấu VERIFIED."
+            }
+          ]
+        },
+        "dbStatus": "WAITING_APPROVAL",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        },
+        "events": []
+      }
+    },
+    {
+      "id": "R32-P12",
+      "task": "6.4",
+      "issue": "R32-06",
+      "criterion": "Native browser: sửa DB khi đang điền phải chặn trước click Save",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 0,
+          "demotedCount": 1,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "WAITING_APPROVAL",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "Đã hủy Lưu do dữ liệu SPCK thay đổi trước khi bấm Lưu."
+            }
+          ]
+        },
+        "dbStatus": "WAITING_APPROVAL",
+        "saveCalls": 0,
+        "serverPersisted": false,
+        "requests": [],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        },
+        "events": [
+          {
+            "event": "db-edited",
+            "saveRequestsSoFar": 0
+          }
+        ],
+        "screenshot": "drift-before-click.png"
+      }
+    },
+    {
+      "id": "R32-P13",
+      "task": "6.4",
+      "issue": "R32-13",
+      "criterion": "Native browser: card 03 không được dùng như card 01",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": false,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "[Card Identity Guard] Phát hiện khung sản phẩm không phải 'Sản Phẩm Học Viên 01' (index='3', heading='Sản Phẩm Học Viên 03'). Dừng thao tác để chống ghi đè nhầm card."
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 0,
+        "serverPersisted": false,
+        "requests": [],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 03"
+          ],
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        },
+        "events": [],
+        "screenshot": "wrong-item03.png"
+      }
+    },
+    {
+      "id": "R32-P14",
+      "task": "6.4",
+      "issue": "R32-13",
+      "criterion": "Native browser: URL dài chứa URL ngắn không được coi là cùng link",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 1,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "dbStatus": "VERIFIED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "cardHeadings": [
+            "Sản Phẩm Học Viên 01"
+          ],
+          "uploadChanges": 0,
+          "youtubeClicks": 1,
+          "relatedClicks": 0
+        },
+        "events": []
+      }
+    }
+  ]
+}

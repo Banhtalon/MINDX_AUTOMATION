@@ -1,0 +1,34 @@
+[
+  {
+    "label": "01-r32",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-32/verify-phase6.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+    "exitCode": 1,
+    "seconds": 0.16,
+    "log": "01-r32.log"
+  },
+  {
+    "label": "02-phase6",
+    "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase6.ts",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+    "exitCode": 0,
+    "seconds": 4.72,
+    "log": "02-phase6.log"
+  },
+  {
+    "label": "03-phase5",
+    "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase5.ts",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+    "exitCode": 0,
+    "seconds": 0.76,
+    "log": "03-phase5.log"
+  },
+  {
+    "label": "04-typescript",
+    "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+    "exitCode": 0,
+    "seconds": 0.3,
+    "log": "04-typescript.log"
+  }
+]

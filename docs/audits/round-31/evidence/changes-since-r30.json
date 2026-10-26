@@ -1,0 +1,11 @@
+{
+  "productChanges": [
+    "src/lib/file-parsers/media-reader.ts"
+  ],
+  "otherDifferences": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "added": [],
+  "removed": [],
+  "gradeWorkerUnchanged": true
+}

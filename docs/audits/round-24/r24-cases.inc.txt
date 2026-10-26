@@ -1,0 +1,156 @@
+  // R24 additions. This fragment is inserted inside the inherited try block.
+  // Product code is never rewritten. Reuse of the R23 helpers/cases is explicit.
+  const r24Passes = [[0,0,8,8],[4,0,8,8],[0,4,4,8],[2,0,4,4],[0,2,2,4],[1,0,2,2],[0,1,1,2]];
+  function r24Adam7(w,h,depth=8,color=2) {
+    const channels=color===2?3:1, pieces=[], starts=[];
+    let offset=0;
+    for(const [x,y,dx,dy] of r24Passes) {
+      const cols=w>x?Math.ceil((w-x)/dx):0, rows=h>y?Math.ceil((h-y)/dy):0;
+      starts.push(cols&&rows?offset:null);
+      if(cols&&rows) { const size=1+Math.ceil(cols*channels*depth/8); pieces.push(Buffer.alloc(size*rows)); offset+=size*rows; }
+    }
+    const raw=Buffer.concat(pieces);
+    const encode=data=>{const hdr=Buffer.alloc(13);hdr.writeUInt32BE(w);hdr.writeUInt32BE(h,4);hdr[8]=depth;hdr[9]=color;hdr[12]=1;
+      return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),pngChunk('IHDR',hdr),pngChunk('IDAT',zlib.deflateSync(data)),pngChunk('IEND',Buffer.alloc(0))]);};
+    return {raw,starts,encode};
+  }
+  for(const [w,h,depth,color] of [[8,8,8,2],[17,11,8,2],[1,9,8,2],[9,1,8,2],[9,9,1,0],[9,9,4,0],[9,9,16,0]])
+    await check(`R24-01-adam7-valid-${w}x${h}-${depth}-${color}`,'Valid Adam7 images with all passes, empty passes and packed pixels remain supported',async()=>{
+      const f=r24Adam7(w,h,depth,color),buf=f.encode(f.raw); await sharp(buf).raw().toBuffer();
+      const p=parse(buf,'adam7.png');assert.equal(p.parseStatus,'PARSED');assert.equal(p.inlineDataParts[0].inlineData.data,buf.toString('base64'));
+      return {w,h,depth,color,passStarts:f.starts,inflatedBytes:f.raw.length};
+    });
+  for(let pass=0;pass<7;pass++) for(const mode of ['bad-filter','truncated'])
+    await check(`R24-01-adam7-pass${pass+1}-${mode}`,'Each of the seven actual Adam7 passes validates filters and byte length',async()=>{
+      const f=r24Adam7(8,8);let raw=Buffer.from(f.raw);
+      if(mode==='bad-filter')raw[f.starts[pass]]=5;else raw=raw.subarray(0,f.starts[pass]+1);
+      return invalidImage('png',f.encode(raw));
+    });
+  await check('R24-01-adam7-extra-bytes','Trailing inflated bytes beyond the seven passes are rejected',()=>{
+    const f=r24Adam7(8,8),p=parse(f.encode(Buffer.concat([f.raw,Buffer.from([0])])),'extra.png');assert.equal(p.parseStatus,'PARSE_ERROR');
+  });
+  const r24Vp8=Buffer.from([0x70,0,0,0x9d,1,0x2a,1,0,1,0,0,0,0,0]);
+  const r24Vp8l=Buffer.from([0x2f,0,0,0,0,0,1,2,3,4,5]);
+  for(const [kind,payload] of [['VP8 ',r24Vp8],['VP8L',r24Vp8l]]) for(const extended of [false,true])
+    await check(`R24-01-webp-${kind.trim()}-${extended?'extended':'plain'}-plausible-garbage`,'Plausible VP8/VP8L headers plus nonempty corrupt image data must not become PARSED',()=>{
+      const chunks=extended?[webpChunk('VP8X',Buffer.alloc(10)),webpChunk(kind,payload)]:[webpChunk(kind,payload)];
+      return invalidImage('webp',riff(...chunks));
+    });
+  for(const lossless of [false,true]) await check(`R24-01-webp-valid17-${lossless}`,'Larger valid WebP with alpha is preserved',async()=>{
+    const buf=await sharp({create:{width:17,height:11,channels:4,background:{r:30,g:100,b:220,alpha:.4}}}).webp({lossless}).toBuffer();
+    await sharp(buf).raw().toBuffer();const p=parse(buf,'valid.webp');assert.equal(p.parseStatus,'PARSED');assert.equal(p.inlineDataParts[0].inlineData.data,buf.toString('base64'));
+  });
+  const r24Pdf=(objects,rootRef='1 0 R')=>Buffer.from('%PDF-1.4\n'+objects.map((b,i)=>`${i+1} 0 obj\n${b}\nendobj\n`).join('')+`trailer\n<< /Root ${rootRef} >>\n%%EOF\n`);
+  const r24Tree=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Kids [3 0 R] /Count 1 >>','<< /Type /Page /Parent 2 0 R >>'];
+  for(const [name,objects,rootRef] of [
+    ['trailer-missing-root',r24Tree,'999 0 R'],
+    ['missing-generation',[r24Tree[0].replace('2 0 R','2 1 R'),...r24Tree.slice(1)],'1 0 R'],
+    ['reachable-page-plus-cycle',[r24Tree[0],'<< /Type /Pages /Kids [3 0 R 2 0 R] /Count 1 >>',r24Tree[2]],'1 0 R'],
+    ['reachable-page-plus-missing-kid',[r24Tree[0],'<< /Type /Pages /Kids [3 0 R 99 0 R] /Count 2 >>',r24Tree[2]],'1 0 R'],
+    ['wrong-parent',[...r24Tree.slice(0,2),'<< /Type /Page /Parent 99 0 R >>'],'1 0 R']
+  ]) await check('R24-01-pdf-'+name,'PDF uses the actual catalog root and resolves every page reference including its generation',()=>{
+    const buf=r24Pdf(objects,rootRef),p=parse(buf,'bad-tree.pdf'),o={fixture:buf.toString(),parseStatus:p.parseStatus,inlineParts:p.inlineDataParts.length};
+    expect(p.parseStatus==='PARSE_ERROR'&&p.inlineDataParts.length===0,o,'Invalid PDF reference graph accepted');return o;
+  });
+  await check('R24-01-pdf-valid-nested-tree','A valid nested Pages tree remains supported',()=>{
+    const buf=r24Pdf([r24Tree[0],'<< /Type /Pages /Kids [3 0 R] /Count 1 >>','<< /Type /Pages /Parent 2 0 R /Kids [4 0 R] /Count 1 >>','<< /Type /Page /Parent 3 0 R >>']);
+    assert.equal(parse(buf,'nested.pdf').parseStatus,'PARSED');
+  });
+
+  const r24Malformed={fileHash:12,feedbackHtml:[],decision:'INVALID',teacherOverrideScore:'0',criteriaGrades:{}};
+  const r24Changed={fileHash:'different-version',feedbackHtml:'OTHER FEEDBACK',decision:'REDO',teacherOverrideScore:25,criteriaGrades:grades(90)};
+  for(const mode of ['single','bulk']) for(const field of ['fileHash','feedbackHtml','decision','teacherOverrideScore','criteriaGrades'])
+    for(const kind of ['missing','wrong-type','different']) await check(`R24-06-${mode}-${kind}-${field}`,'Every reviewed snapshot field is mandatory, typed and matched in both approval modes',async()=>{
+      const b=backend();try{b.seed();const reviewed=view(b);
+        if(kind==='missing')delete reviewed[field];else reviewed[field]=(kind==='wrong-type'?r24Malformed:r24Changed)[field];
+        const body=mode==='bulk'?{approveAll:true,rubric,reviewedSubmissions:[reviewed]}:{...reviewed,rubric};
+        const r=await b.approve(approvalRequest(b,body)),j=await r.json();
+        const o={mode,field,kind,http:r.status,status:b.row().status,approved:j.data?.approvedCount??null,error:j.error??j.data?.skippedIds};
+        expect(o.status!=='APPROVED'&&o.status!=='VERIFIED'&&(mode==='single'?r.status>=400:o.approved===0),o,'Incomplete or mismatched reviewed snapshot approved');return o;
+      }finally{b.db.close();}
+    });
+  for(const mode of ['single','bulk']) for(const decision of ['GRADE','REDO']) for(const override of [null,0,100])
+    await check(`R24-06-${mode}-valid-${decision}-${override}`,'Complete reviewed snapshots including null and zero override remain approvable',async()=>{
+      const b=backend();try{b.seed({decision,teacherOverrideScore:override});const body=mode==='single'?{...view(b),rubric}:{approveAll:true,rubric,reviewedSubmissions:[view(b)]};
+        const r=await b.approve(approvalRequest(b,body));assert.equal(r.status,200);assert.equal(b.row().status,'APPROVED');assert(b.verifyHomeworkContentIntegrity(b.row()));return {mode,decision,override,http:r.status};
+      }finally{b.db.close();}
+    });
+
+  // Preserve each original R20 assertion. Only the new request supplies the full R24 reviewed contract.
+  for(const originalId of ['API-approval-control','R20-03-legacy-reapproval','R20-05-override-control','R20-06-latest-control'])
+    await check('R24-COMPAT-R20-'+originalId,'Old R20 request remains rejected; a complete current reviewed snapshot satisfies the original safety assertion',async()=>{
+      const b=backend();try{
+        if(originalId==='R20-03-legacy-reapproval'){
+          b.homeworkSubmissionRepo.upsert(record({status:'APPROVED',contentHash:sha(record().feedbackHtml)}));assert.equal(b.row().status,'WAITING_APPROVAL');assert.equal(b.row().contentHash,'');
+        }else b.seed();
+        let oldBody={};
+        if(originalId==='R20-05-override-control'){assert.equal((await b.draft.POST(b.req({teacherOverrideScore:90}))).status,200);oldBody={teacherOverrideScore:90};}
+        if(originalId==='R20-06-latest-control'){assert.equal((await b.draft.POST(b.req({feedbackHtml:'LATEST'}))).status,200);oldBody={feedbackHtml:'LATEST',criteriaGrades:JSON.parse(b.row().criteriaGradesJson)};}
+        const old=await b.approve(b.req(oldBody));assert.equal(old.status,409);assert.notEqual(b.row().status,'APPROVED');
+        const r=await b.approve(b.req({...view(b),rubric}));assert.equal(r.status,200);assert.equal(b.row().status,'APPROVED');assert(b.verifyHomeworkContentIntegrity(b.row()));
+        assert.equal(b.row().contentHash,b.computeHomeworkContentHash(b.row()));
+        if(originalId==='R20-05-override-control')assert.equal(b.row().teacherOverrideScore,90);
+        if(originalId==='R20-06-latest-control')assert.equal(b.row().feedbackHtml,'LATEST');
+        return {originalId,originalRequestHttp:old.status,completeRequestHttp:r.status,contentHash:b.row().contentHash,status:b.row().status};
+      }finally{b.db.close();}
+    });
+
+  const r24Input=()=>({...fullMutation().variables});
+  const r24Bound=(patch={})=>({operationName:'SaveHomeworkGrade',query:'mutation SaveHomeworkGrade($input: GradeInput!) { saved: saveHomeworkGrade(input: $input) { id } }',variables:{input:r24Input()},...patch});
+  const r24Result={data:{saved:{id:'SUB1',studentId:'S1',classId:cid,sessionId:sid,score:80}}};
+  await check('R24-09-valid-bound-input','A genuine variable binding with no unused decoy variables is accepted',async()=>{
+    const r=await strictWorker({apiBody:r24Bound(),responseBody:r24Result});expect(r.verified===1,r,'Valid bound input rejected');return {verified:r.verified,status:r.status};
+  });
+  for(const [name,value] of [['zero',0],['number',1],['string','ok'],['empty-string',''],['array',[]],['empty-object',{}],['explicit-failure',{success:false}],
+    ['numeric-id',{id:123}],['empty-id',{id:''}],['wrong-score-type',{id:'SUB1',score:'90'}],['wrong-score',{id:'SUB1',score:90}],
+    ['wrong-decision',{id:'SUB1',decision:'REDO'}],['wrong-feedback',{id:'SUB1',feedback:'OTHER FEEDBACK'}],['wrong-owner',{id:'SUB1',studentId:'S2'}]])
+    await check('R24-09-result-'+name,'Selected result must prove success and cannot contradict the approved grade or identity',async()=>{
+      const responseBody={data:{saved:value}},r=await strictWorker({apiBody:r24Bound(),responseBody}),o={responseBody,verified:r.verified,status:r.status,error:r.error};
+      expect(r.verified===0,o,'Invalid or contradictory response result marked VERIFIED');return o;
+    });
+  for(const [name,data] of [['alias-original-field',{saveHomeworkGrade:true}],['other-grading-field',{updateOtherGrade:true}],['wrong-alias',{gradeResult:{id:'SUB1'}}]])
+    await check('R24-09-response-field-'+name,'Response must contain the selected exact field or its chosen alias',async()=>{
+      const r=await strictWorker({apiBody:r24Bound(),responseBody:{data}}),o={data,verified:r.verified,status:r.status,error:r.error};
+      expect(r.verified===0,o,'Unselected grading-like result accepted instead of selected alias');return o;
+    });
+  const r24LiteralArgs=`classId: "${cid}", sessionId: "${sid}", submissionId: "SUB1", studentId: "S1", score: 80, decision: GRADE, feedback: "APPROVED FEEDBACK"`;
+  const r24Queries=[
+    ['unused-id-decoys',{query:'mutation SaveHomeworkGrade { saveHomeworkGrade(score: 80) { id } }',variables:r24Input()}],
+    ['nested-bound-wrong-id',{query:'mutation SaveHomeworkGrade($wrapped: GradeInput!) { saveHomeworkGrade(input: $wrapped) { id } }',variables:{...r24Input(),wrapped:{payload:{...r24Input(),submissionId:'SUB_OTHER'}}}}],
+    ['nested-bound-wrong-score',{query:'mutation SaveHomeworkGrade($wrapped: GradeInput!) { saveHomeworkGrade(input: $wrapped) { id } }',variables:{...r24Input(),wrapped:{payload:{...r24Input(),score:1}}}}],
+    ['nested-bound-wrong-feedback',{query:'mutation SaveHomeworkGrade($wrapped: GradeInput!) { saveHomeworkGrade(input: $wrapped) { id } }',variables:{...r24Input(),wrapped:{payload:{...r24Input(),feedback:'OTHER FEEDBACK'}}}}]
+  ];
+  for(const [name,patch] of r24Queries) await check('R24-09-request-'+name,'Only values really passed to the selected mutation may prove its identity and content',async()=>{
+    const request=fullMutation(patch),r=await strictWorker({apiBody:request,responseBody:{data:{saveHomeworkGrade:{id:'SUB1'}}}}),o={request,verified:r.verified,status:r.status,error:r.error};
+    expect(r.verified===0,o,'Unused variables or shallow nested validation bypassed actual argument checks');return o;
+  });
+  for(const [name,args,variables] of [
+    ['all-literals',r24LiteralArgs,{}],
+    ['renamed-bound-variables','classId: $c, sessionId: $s, submissionId: $sub, studentId: $stu, score: $n, decision: $d, feedback: $f',{c:cid,s:sid,sub:'SUB1',stu:'S1',n:80,d:'GRADE',f:'APPROVED FEEDBACK'}]
+  ]) await check('R24-09-valid-'+name,'Complete correct literal/renamed variable arguments work without unused identity variables',async()=>{
+    const request={operationName:'SaveHomeworkGrade',query:`mutation SaveHomeworkGrade${name==='all-literals'?'':'($c: ID!, $s: ID!, $sub: ID!, $stu: ID!, $n: Int!, $d: String!, $f: String!)'} { saveHomeworkGrade(${args}) { id } }`,variables};
+    const r=await strictWorker({apiBody:request,responseBody:{data:{saveHomeworkGrade:{id:'SUB1'}}}}),o={request,verified:r.verified,status:r.status,error:r.error};
+    expect(r.verified===1,o,'Correct transmitted arguments required unrelated variable names to pass');return o;
+  });
+  for(const [field,value] of [['submissionId','SUB_OTHER'],['studentId','S2'],['classId','WRONG'],['sessionId','WRONG'],['score',1],['decision','REDO'],['feedback','OTHER FEEDBACK']])
+    await check('R24-09-bound-input-mismatch-'+field,'Every direct field in a bound input is checked',async()=>{
+      const request=r24Bound({variables:{input:{...r24Input(),[field]:value}}}),r=await strictWorker({apiBody:request,responseBody:r24Result});
+      expect(r.verified===0,r,'Wrong bound input accepted');return {field,verified:r.verified,status:r.status};
+    });
+
+  for(const table of ['homework_submissions','homework_submission_meta']) await check('R24-13-rollback-'+table,'A real SQLite error in either write rolls back both tables and permits the next valid sequence',async()=>{
+    const b=backend();try{b.seed();const rowBefore=JSON.stringify(b.row()),metaBefore=b.db.prepare('SELECT * FROM homework_submission_meta').get();
+      b.db.exec(`CREATE TRIGGER audit_fail BEFORE INSERT ON ${table} BEGIN SELECT RAISE(ABORT,'AUDIT_FORCED_WRITE_FAILURE'); END;`);
+      const failed=await b.draft.POST(b.req({draftSeq:100,feedbackHtml:'MUST ROLL BACK'})),body=await failed.json();
+      const unchanged=rowBefore===JSON.stringify(b.row()),metaAfter=b.db.prepare('SELECT * FROM homework_submission_meta').get();
+      b.db.exec('DROP TRIGGER audit_fail');const next=await b.draft.POST(b.req({draftSeq:1,feedbackHtml:'RECOVERED'}));
+      const o={table,http:failed.status,error:body.error,rowUnchanged:unchanged,metaBefore,metaAfter,nextHttp:next.status,stored:b.row().feedbackHtml};
+      expect(failed.status===500&&unchanged&&JSON.stringify(metaBefore)===JSON.stringify(metaAfter)&&next.status===200&&o.stored==='RECOVERED',o,'SQLite write left a partial commit');return o;
+    }finally{b.db.close();}
+  });
+  await check('R24-13-new-row-meta-failure','Failed metadata insert cannot leave an orphan new submission',()=>{
+    const b=backend();try{b.db.exec("CREATE TRIGGER audit_fail BEFORE INSERT ON homework_submission_meta BEGIN SELECT RAISE(ABORT,'AUDIT_META_FAILURE'); END;");
+      assert.throws(()=>b.seed(),/AUDIT_META_FAILURE/);const rows=b.db.prepare('SELECT count(*) AS n FROM homework_submissions').get().n,meta=b.db.prepare('SELECT count(*) AS n FROM homework_submission_meta').get().n;
+      assert.equal(rows,0);assert.equal(meta,0);b.db.exec('DROP TRIGGER audit_fail');b.seed();assert(b.row());return {rowsAfterFailure:rows,metaAfterFailure:meta,recovered:!!b.row()};
+    }finally{b.db.close();}
+  });

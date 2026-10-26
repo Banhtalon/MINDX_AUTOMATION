@@ -1,0 +1,102 @@
+{
+  "method": "Read-only source review and fresh inherited/directed execution. Scope is Phase 5 and connected controls, not whole-repo penetration testing.",
+  "loadAssumption": "One local teacher, sequential browser tasks; AI/draft/UI responses may arrive out of order.",
+  "sourceHashes": {
+    "src/lib/playwright/browser-manager.ts": "110053838d68f5e8e12a4bb75a205e4cfe7d5f0297729624742e7d4c7812b343",
+    "src/lib/queue/task-queue.ts": "a284d7f7099045bc1e3ddd6491a9afce79409fe6fff00b9a7d4988495fa82578",
+    "src/app/api/homework-grader/save-lms/route.ts": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791",
+    "src/app/api/homework-grader/download-and-grade/route.ts": "12c52a3b53eb3db4de810eeb2e22e2d87ea2f09920341d9120c59a5d86db448b",
+    "src/lib/file-parsers/index.ts": "5ecd30c44bbe46325f8e467a4573f11015cc875d19a823c8a44291932152bc38",
+    "src/lib/playwright/download-submissions.ts": "f56327ef033fbd0a0a1bf6a1b520f7a4b0ded26a30809a43cab981d1f0bfe958",
+    "src/lib/playwright/grade-worker.ts": "f5db4a78fcdd2b2022a6c663444e0f6c24acfc6600da884cd5b62a75fef33d73",
+    "src/lib/file-parsers/media-reader.ts": "2c42b5d4d3a6a3f0f09c9b86bc44f01fcbcb70fb22ee50a15c941b1bf640e3f0",
+    "src/lib/playwright/network-interceptor.ts": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad",
+    "src/lib/db/sqlite.ts": "147e883ffb1eb9798cc5c6d87f2f8b0dbc83f9748c34cfef829badd19da640ab",
+    "src/lib/gemini/homework-grader.ts": "b2bd3a4efeb8706ddfce190fecaef5d30aab76420bc8e0f9b34c1ab785483c57",
+    "src/lib/gemini/score-auditor.ts": "79378d1d142d033b6f89807e959f59c04b5a840161a28d6f908849c5236401da",
+    "src/app/api/homework-grader/approve/route.ts": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283",
+    "src/app/api/homework-grader/submissions/route.ts": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc",
+    "src/components/homework-auto-grader-tab.tsx": "019bbcc3016fafd5453a6a137dc9d0e1ad6ff94c859fd8b2678e1b1e4f01f3ab",
+    "src/app/homework-grader/page.tsx": "0bd7b41be9c0ad2af36384e2b1921bf6440dc57499015d0cfa8e931c61523f6d"
+  },
+  "localHostScripts": {
+    "dev": "next dev -H 127.0.0.1 -p 3000",
+    "start": "next start -H 127.0.0.1 -p 3000"
+  },
+  "references": {
+    "singlePersistentContext": {
+      "file": "src/lib/playwright/browser-manager.ts",
+      "line": 78,
+      "needle": "chromium.launchPersistentContext"
+    },
+    "saveQueue": {
+      "file": "src/app/api/homework-grader/save-lms/route.ts",
+      "line": 28,
+      "needle": "taskQueue.enqueue"
+    },
+    "downloadQueue": {
+      "file": "src/app/api/homework-grader/download-and-grade/route.ts",
+      "line": 64,
+      "needle": "taskQueue.enqueue"
+    },
+    "fileAllowlist": {
+      "file": "src/lib/file-parsers/index.ts",
+      "line": 287,
+      "needle": "const safeResolvedPath = assertPathAllowed"
+    },
+    "http200or201": {
+      "file": "src/lib/playwright/network-interceptor.ts",
+      "line": 143,
+      "needle": "status !== 200 && status !== 201"
+    },
+    "toast": {
+      "file": "src/lib/playwright/network-interceptor.ts",
+      "line": 22,
+      "needle": "dismissForbiddenToast(maxAttempts"
+    },
+    "dictionaryParser": {
+      "file": "src/lib/file-parsers/media-reader.ts",
+      "line": 1360,
+      "needle": "const parsePdfDictEntries"
+    },
+    "dictionaryContinuousScanner": {
+      "file": "src/lib/file-parsers/media-reader.ts",
+      "line": 1374,
+      "needle": "while (idx < scalarDict.length)"
+    },
+    "blockString": {
+      "file": "src/lib/playwright/grade-worker.ts",
+      "line": 464,
+      "needle": "const lines = val.split"
+    },
+    "finalVerifiedHash": {
+      "file": "src/lib/db/sqlite.ts",
+      "line": 615,
+      "needle": "AND contentHash = ?"
+    },
+    "anonymization": {
+      "file": "src/lib/gemini/homework-grader.ts",
+      "line": 661,
+      "needle": "const anonymousId = `STUDENT_"
+    },
+    "parseErrorGuard": {
+      "file": "src/lib/gemini/homework-grader.ts",
+      "line": 33,
+      "needle": "PARSE_ERROR"
+    },
+    "typescriptSum": {
+      "file": "src/lib/gemini/score-auditor.ts",
+      "line": 36,
+      "needle": "sum += pts"
+    }
+  },
+  "clientEntrypoints": {
+    "src/components/homework-auto-grader-tab.tsx": {
+      "sensitiveEnvironmentReference": false
+    },
+    "src/app/homework-grader/page.tsx": {
+      "sensitiveEnvironmentReference": false
+    }
+  },
+  "limits": "No actual browser, LMS/Gemini request, LMS schema validation, real credentials/data or live React scheduling."
+}

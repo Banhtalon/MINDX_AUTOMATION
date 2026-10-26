@@ -1,0 +1,52 @@
+--- R30/media-reader.ts
++++ R31/media-reader.ts
+@@ -1167,7 +1167,6 @@
+               ) {
+                 idx++;
+               }
+-              if (idx === ks) return null;
+               const k = blob.slice(ks, idx);
+               if (keys.has(k)) return null;
+               keys.add(k);
+@@ -1211,7 +1210,6 @@
+           }
+           if (blob[idx] === "/") {
+             idx++;
+-            const ns = idx;
+             while (
+               idx < blob.length &&
+               !isWs(blob[idx]) &&
+@@ -1219,7 +1217,7 @@
+             ) {
+               idx++;
+             }
+-            return idx > ns ? "NAME" : null;
++            return "NAME";
+           }
+           if (isDelim(blob[idx])) return null;
+           const ts = idx;
+@@ -1401,7 +1399,6 @@
+             ) {
+               idx++;
+             }
+-            if (idx === start + 1) return null;
+             tokens.push(scalarDict.slice(start, idx));
+             continue;
+           }
+@@ -1426,7 +1423,6 @@
+           const key = tokens[ti++];
+           if (
+             !key.startsWith("/") ||
+-            key.length < 2 ||
+             seenKeys.has(key) ||
+             ti >= tokens.length
+           ) {
+@@ -1458,7 +1454,7 @@
+             /^[+-]?(?:\d+\.\d*|\.\d+)$/.test(t0)
+           ) {
+             entries.push({ key, val: { kind: "REAL", value: Number(t0) } });
+-          } else if (t0.startsWith("/") && t0.length >= 2) {
++          } else if (t0.startsWith("/")) {
+             entries.push({ key, val: { kind: "NAME", value: t0 } });
+           } else if (t0 === "true" || t0 === "false") {
+             entries.push({ key, val: { kind: "BOOL", value: t0 === "true" } });

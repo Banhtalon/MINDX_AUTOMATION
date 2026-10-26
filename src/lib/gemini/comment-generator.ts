@@ -1,12 +1,15 @@
 import { getGeminiModel } from "./client";
-import { sessionFeedbackRepo, type SessionFeedbackRecord } from "../db/sqlite";
+import { sessionFeedbackRepo, studentRepo, type SessionFeedbackRecord } from "../db/sqlite";
+import { getQuickTags } from "../db/json-config";
 
 export interface StudentCommentInput {
   studentId: string;
   fullName: string;
-  attendanceStatus?: "PRESENT" | "ABSENT" | "LATE";
+  isActive?: boolean | number;
+  attendanceStatus?: "PRESENT" | "ABSENT" | "LATE" | "UNKNOWN";
   quickTags?: string[];
   teacherNote?: string;
+  expectedRowVer?: number | null;
 }
 
 export interface SessionContext {
@@ -27,9 +30,44 @@ export interface GeneratedCommentResult {
   actionPlan: string;
   formattedFullComment: string;
   errorMessage?: string;
+  staleIgnored?: boolean;
+  versionMeta?: any;
+}
+
+interface CandidateSnapshot {
+  hadExistingRecord: boolean;
+  versionMetaJson: string;
+  rowVer: number;
+  attendanceStatus: string;
+  quickTagsJson: string;
+  teacherNote: string;
+  strengths: string;
+  improvements: string;
+  actionPlan: string;
+  finalText: string;
+  status: string;
+  contentHash: string;
+}
+
+function parseVersionMetaSafe(raw?: string | null): { rowVer: number; fields: Record<string, any> } {
+  if (!raw || typeof raw !== "string") return { rowVer: 0, fields: {} };
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      rowVer: typeof parsed?.rowVer === "number" && Number.isFinite(parsed.rowVer) ? parsed.rowVer : 0,
+      fields:
+        parsed?.fields && typeof parsed.fields === "object" && !Array.isArray(parsed.fields)
+          ? { ...parsed.fields }
+          : {},
+    };
+  } catch {
+    return { rowVer: 0, fields: {} };
+  }
 }
 
 export class CommentGenerator {
+  private static latestBatchSeq = 0;
+  private static latestStudentCallSeq = new Map<string, number>();
   /**
    * Generates pedagogy-aligned 3-part comments for a list of students in a session.
    * Strictly enforces:
@@ -42,52 +80,196 @@ export class CommentGenerator {
     session: SessionContext,
     students: StudentCommentInput[]
   ): Promise<GeneratedCommentResult[]> {
+    const normalizedClassId =
+      typeof session?.classId === "string" ? session.classId.trim().toUpperCase() : "";
+    const normalizedClassCode =
+      typeof session?.classCode === "string" && session.classCode.trim()
+        ? session.classCode.trim().toUpperCase()
+        : normalizedClassId;
+    const normalizedSessionId =
+      typeof session?.sessionId === "string" ? session.sessionId.trim() : "";
+
+    if (!normalizedClassId || !normalizedSessionId) {
+      throw new Error(
+        "[CommentGenerator] Thiếu classId hoặc sessionId bắt buộc trước khi sinh nhận xét AI."
+      );
+    }
+    if (normalizedClassId !== normalizedClassCode) {
+      throw new Error(
+        `[CommentGenerator] Xung đột định danh lớp: classId ('${normalizedClassId}') khác classCode ('${normalizedClassCode}').`
+      );
+    }
+
+    const escapedClassId = normalizedClassId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const sessionPrefixRegex = new RegExp(`^${escapedClassId}(?:_SESS_|[^a-zA-Z0-9_-])`, "i");
+    if (!sessionPrefixRegex.test(normalizedSessionId)) {
+      throw new Error(
+        `[CommentGenerator] Mã buổi học '${normalizedSessionId}' không thuộc đúng lớp '${normalizedClassId}'.`
+      );
+    }
+
+    const callSeq = ++CommentGenerator.latestBatchSeq;
     const results: GeneratedCommentResult[] = [];
     const validCandidates: {
       input: StudentCommentInput;
       anonymousId: string;
+      scopeKey: string;
+      initialSnapshot: CandidateSnapshot;
     }[] = [];
 
-    // Step 1: Filter and classify candidates; apply Anti-Hallucination Guardrail
+    const captureSnapshot = (
+      student: StudentCommentInput,
+      dbRecord?: SessionFeedbackRecord
+    ): CandidateSnapshot => {
+      const meta = parseVersionMetaSafe(dbRecord?.versionMetaJson);
+      return {
+        hadExistingRecord: Boolean(dbRecord),
+        versionMetaJson: dbRecord?.versionMetaJson ?? "",
+        rowVer: meta.rowVer,
+        attendanceStatus: dbRecord?.attendanceStatus ?? student.attendanceStatus ?? "PRESENT",
+        quickTagsJson: dbRecord?.quickTagsJson ?? JSON.stringify(student.quickTags || []),
+        teacherNote: dbRecord?.teacherNote ?? (student.teacherNote || ""),
+        strengths: dbRecord?.strengths ?? "",
+        improvements: dbRecord?.improvements ?? "",
+        actionPlan: dbRecord?.actionPlan ?? "",
+        finalText: dbRecord?.finalText ?? "",
+        status: dbRecord?.status ?? "DRAFT",
+        contentHash: dbRecord?.contentHash ?? "",
+      };
+    };
+
+    // Step 1: Filter and classify candidates; apply Active + Present & Anti-Hallucination Guardrail
     for (let i = 0; i < students.length; i++) {
       const student = students[i];
+      if (!student || !student.studentId) continue;
+
+      const dbStudent =
+        typeof studentRepo?.findOne === "function"
+          ? studentRepo.findOne(student.studentId, normalizedClassId)
+          : undefined;
+      const isMatchingClass =
+        !dbStudent?.classId ||
+        String(dbStudent.classId).trim().toUpperCase() === normalizedClassId;
+      const isStudentActive =
+        student.isActive !== false &&
+        student.isActive !== 0 &&
+        Boolean(dbStudent && dbStudent.isActive === 1 && isMatchingClass);
+      const isConfirmedPresent =
+        student.attendanceStatus === "PRESENT" || student.attendanceStatus === "LATE";
+
+      if (!isStudentActive || !isConfirmedPresent) {
+        continue;
+      }
+
+      const initialDbRecord =
+        typeof sessionFeedbackRepo?.findOne === "function"
+          ? sessionFeedbackRepo.findOne(normalizedClassId, normalizedSessionId, student.studentId)
+          : undefined;
+      const curMeta = parseVersionMetaSafe(initialDbRecord?.versionMetaJson);
+      const hasExpectedRowVer =
+        typeof student.expectedRowVer === "number" &&
+        Number.isFinite(student.expectedRowVer) &&
+        student.expectedRowVer >= 0;
+
+      // R16-03: Check expectedRowVer BEFORE any write branch (including INSUFFICIENT_INFO)
+      if (hasExpectedRowVer && curMeta.rowVer !== student.expectedRowVer) {
+        results.push({
+          studentId: student.studentId,
+          fullName: student.fullName,
+          status: ((initialDbRecord?.status as any) || "DRAFT") as any,
+          strengths: initialDbRecord?.strengths ?? "",
+          improvements: initialDbRecord?.improvements ?? "",
+          actionPlan: initialDbRecord?.actionPlan ?? "",
+          formattedFullComment: initialDbRecord?.finalText ?? "",
+          staleIgnored: true,
+          versionMeta: curMeta,
+          errorMessage: `Dữ liệu của học viên '${student.fullName}' đã được cập nhật mới hơn (phiên bản ${student.expectedRowVer} -> ${curMeta.rowVer}). Giữ nguyên bản hiện tại.`,
+        });
+        continue;
+      }
+
+      // R17-01: Protect already APPROVED or VERIFIED comments before EVERY AI write branch
+      if (
+        initialDbRecord &&
+        (initialDbRecord.status === "APPROVED" || initialDbRecord.status === "VERIFIED")
+      ) {
+        results.push({
+          studentId: student.studentId,
+          fullName: student.fullName,
+          status: initialDbRecord.status as any,
+          strengths: initialDbRecord.strengths ?? "",
+          improvements: initialDbRecord.improvements ?? "",
+          actionPlan: initialDbRecord.actionPlan ?? "",
+          formattedFullComment: initialDbRecord.finalText ?? "",
+          staleIgnored: true,
+          versionMeta: curMeta,
+        });
+        continue;
+      }
+
+      const scopeKey = `${normalizedClassId}::${normalizedSessionId}::${student.studentId}`;
+      CommentGenerator.latestStudentCallSeq.set(scopeKey, callSeq);
+
       const hasTags = student.quickTags && student.quickTags.length > 0;
       const hasNote = student.teacherNote && student.teacherNote.trim().length > 0;
 
       // IRON RULE 5: Nếu học viên không có cả Quick Tags lẫn ghi chú -> INSUFFICIENT_INFO (CẤM AI BỊA)
       if (!hasTags && !hasNote) {
+        const defaultInsufficientNotice =
+          "Chưa đủ thông tin để nhận xét. Vui lòng chọn ít nhất 1 Quick Tag hoặc nhập ghi chú của giáo viên.";
+        const preservedStrengths = initialDbRecord?.strengths ?? "";
+        const preservedImprovements = initialDbRecord?.improvements ?? "";
+        const preservedActionPlan = initialDbRecord?.actionPlan ?? "";
+        const preservedFinalText =
+          initialDbRecord?.finalText && initialDbRecord.finalText.trim().length > 0
+            ? initialDbRecord.finalText
+            : defaultInsufficientNotice;
+
         const insufficientResult: GeneratedCommentResult = {
           studentId: student.studentId,
           fullName: student.fullName,
           status: "INSUFFICIENT_INFO",
-          strengths: "",
-          improvements: "",
-          actionPlan: "",
-          formattedFullComment: "Chưa đủ thông tin để nhận xét. Vui lòng chọn ít nhất 1 Quick Tag hoặc nhập ghi chú của giáo viên.",
+          strengths: preservedStrengths,
+          improvements: preservedImprovements,
+          actionPlan: preservedActionPlan,
+          formattedFullComment: preservedFinalText,
+          errorMessage: defaultInsufficientNotice,
         };
 
-        // Save immediately to SQLite
+        const nextMeta = {
+          rowVer: (curMeta.rowVer || 0) + 1,
+          fields: { ...curMeta.fields },
+        };
+
+        // Save immediately to SQLite while preserving current DB attendance/tags/note/finalText if present
         sessionFeedbackRepo.upsert({
-          classId: session.classId,
-          sessionId: session.sessionId,
+          classId: normalizedClassId,
+          sessionId: normalizedSessionId,
           studentId: student.studentId,
-          attendanceStatus: student.attendanceStatus || "PRESENT",
-          quickTagsJson: JSON.stringify(student.quickTags || []),
-          teacherNote: student.teacherNote || "",
-          strengths: "",
-          improvements: "",
-          actionPlan: "",
-          finalText: insufficientResult.formattedFullComment,
+          attendanceStatus:
+            (initialDbRecord?.attendanceStatus as any) || student.attendanceStatus || "PRESENT",
+          quickTagsJson: initialDbRecord?.quickTagsJson ?? JSON.stringify(student.quickTags || []),
+          teacherNote: initialDbRecord?.teacherNote ?? (student.teacherNote || ""),
+          strengths: preservedStrengths,
+          improvements: preservedImprovements,
+          actionPlan: preservedActionPlan,
+          finalText: preservedFinalText,
           status: "INSUFFICIENT_INFO",
+          versionMetaJson: JSON.stringify(nextMeta),
         });
 
-        results.push(insufficientResult);
+        results.push({ ...insufficientResult, versionMeta: nextMeta });
         continue;
       }
 
-      // Add to AI generation queue with anonymous ID
+      // Add to AI generation queue with anonymous ID and input version snapshot
       const anonymousId = `STUDENT_${String(validCandidates.length + 1).padStart(2, "0")}`;
-      validCandidates.push({ input: student, anonymousId });
+      validCandidates.push({
+        input: student,
+        anonymousId,
+        scopeKey,
+        initialSnapshot: captureSnapshot(student, initialDbRecord),
+      });
     }
 
     // If no students need AI generation, return early
@@ -95,35 +277,205 @@ export class CommentGenerator {
       return results;
     }
 
-    // Step 2: Build anonymized payload for Gemini API
+    // Step 2: Build anonymized payload for Gemini API (strip real student names from teacherNote & quickTags)
+    const stripAccents = (s: string) =>
+      s
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D");
+
+    const dbClassStudents =
+      typeof studentRepo?.findByClass === "function"
+        ? studentRepo.findByClass(normalizedClassId, false) || []
+        : [];
+
+    const nameReplacements: { variant: string; token: string }[] = [];
+    const addNameVariants = (rawFullName: string, token: string) => {
+      const cleanName = String(rawFullName || "").replace(/\s+/g, " ").trim();
+      if (!cleanName) return;
+      const parts = cleanName.split(" ").filter(Boolean);
+      const variants = new Set<string>([cleanName, stripAccents(cleanName)]);
+      if (parts.length >= 2) {
+        const lastTwo = parts.slice(-2).join(" ");
+        variants.add(lastTwo);
+        variants.add(stripAccents(lastTwo));
+      }
+      const givenName = parts[parts.length - 1];
+      if (givenName && givenName.length >= 2) {
+        variants.add(givenName);
+        variants.add(stripAccents(givenName));
+      }
+      for (const v of variants) {
+        if (v.length >= 2) {
+          nameReplacements.push({ variant: v, token });
+        }
+      }
+    };
+
+    for (const c of validCandidates) {
+      addNameVariants(c.input.fullName, c.anonymousId);
+      const dbSt = dbClassStudents.find((s) => s.studentId === c.input.studentId);
+      if (dbSt && dbSt.fullName) {
+        addNameVariants(dbSt.fullName, c.anonymousId);
+      }
+    }
+    for (const s of students) {
+      if (!validCandidates.some((c) => c.input.studentId === s.studentId)) {
+        addNameVariants(s.fullName, "STUDENT_PEER");
+      }
+    }
+    for (const dbSt of dbClassStudents) {
+      if (!validCandidates.some((c) => c.input.studentId === dbSt.studentId)) {
+        addNameVariants(dbSt.fullName, "STUDENT_PEER");
+      }
+    }
+
+    // Sort longest variants first so full names replace before short given names
+    nameReplacements.sort((a, b) => b.variant.length - a.variant.length);
+
+    const scrubStudentNames = (rawText: string, selfName: string, selfAnonId: string): string => {
+      let text = String(rawText || "");
+      if (!text) return "";
+      const localList: { variant: string; token: string }[] = [];
+      const cleanSelf = String(selfName || "").replace(/\s+/g, " ").trim();
+      if (cleanSelf) {
+        const parts = cleanSelf.split(" ").filter(Boolean);
+        localList.push({ variant: cleanSelf, token: selfAnonId });
+        localList.push({ variant: stripAccents(cleanSelf), token: selfAnonId });
+        if (parts.length >= 2) {
+          const lastTwo = parts.slice(-2).join(" ");
+          localList.push({ variant: lastTwo, token: selfAnonId });
+          localList.push({ variant: stripAccents(lastTwo), token: selfAnonId });
+        }
+        const given = parts[parts.length - 1];
+        if (given && given.length >= 2) {
+          localList.push({ variant: given, token: selfAnonId });
+          localList.push({ variant: stripAccents(given), token: selfAnonId });
+        }
+      }
+      const combined = [...localList, ...nameReplacements].sort(
+        (a, b) => b.variant.length - a.variant.length
+      );
+      for (const { variant, token } of combined) {
+        const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const re = new RegExp(`(?<![\\p{L}\\p{N}_])${escaped}(?![\\p{L}\\p{N}_])`, "giu");
+        text = text.replace(re, token);
+      }
+      return text;
+    };
+
+    const isRoboticsClass = /rob/i.test(normalizedClassCode);
+    const configuredCategories =
+      typeof getQuickTags === "function" ? getQuickTags() || [] : [];
+    const resolveTagWithHint = (rawTag: string): string => {
+      const cleanTag = String(rawTag || "").trim();
+      if (!cleanTag || configuredCategories.length === 0) return cleanTag;
+      let fallbackHint = "";
+      for (const cat of configuredCategories) {
+        const catKey = String(cat?.category || "").toLowerCase();
+        const catName = String(cat?.categoryName || "").toLowerCase();
+        const isRobCat =
+          catKey.includes("robot") ||
+          catKey.startsWith("rob_") ||
+          /robot|lắp ráp|🤖/i.test(catName);
+        const isCodeCat =
+          catKey.includes("coding") ||
+          catKey === "execution" ||
+          /lập trình|code|💻/i.test(catName);
+
+        for (const t of cat?.tags || []) {
+          if (String(t?.label || "").trim() === cleanTag && t?.hint) {
+            if ((isRoboticsClass && isRobCat) || (!isRoboticsClass && isCodeCat)) {
+              return `${cleanTag} (Chi tiết: ${t.hint})`;
+            }
+            if (!fallbackHint) {
+              fallbackHint = t.hint;
+            }
+          }
+        }
+      }
+      return fallbackHint ? `${cleanTag} (Chi tiết: ${fallbackHint})` : cleanTag;
+    };
+
+    const classifySkillLevel = (rawTags: string[]): string => {
+      const joined = (rawTags || []).join(" ").toLowerCase();
+      const isDistracted = /mất tập trung|xao nhãng|nói chuyện riêng|làm việc riêng/.test(joined);
+      const isExcellent = /xuất sắc|giỏi|sáng tạo|🌟/.test(joined);
+      const isNeedSupport = /cần kèm|trung bình|chưa kịp|🛠️/.test(joined);
+      const isGood = /đạt yêu cầu|khá|tốt|👍/.test(joined);
+
+      if (isExcellent && !isDistracted) {
+        return "Cấp độ 1 - Giỏi: Tiếp thu nhanh, nắm vững tư duy thuật toán và công nghệ, chủ động hoàn thành tốt bài tập cơ bản lẫn nâng cao, có sự sáng tạo.";
+      }
+      if (isExcellent && isDistracted) {
+        return "Cấp độ 3 - Khá nhưng mất tập trung: Tư duy nhạy bén, hiểu bài nhanh nhưng đôi lúc còn xao nhãng, làm việc riêng hoặc thao tác vội vàng dẫn đến lỗi nhỏ không đáng có.";
+      }
+      if (isNeedSupport && isDistracted) {
+        return "Cấp độ 5 - Trung bình, mất tập trung: Chưa nắm chắc kiến thức cơ bản của buổi học do chưa thực sự tập trung lắng nghe khi thầy giảng giải, cần sự sát sao nhiều hơn để theo kịp tiến độ.";
+      }
+      if (isNeedSupport) {
+        return "Cấp độ 4 - Trung bình: Có sự cố gắng và thái độ hợp tác tốt nhưng tốc độ tiếp thu và thao tác thực hành còn chậm, cần thầy hướng dẫn từng bước để hoàn thành sản phẩm.";
+      }
+      if (isDistracted && !isGood) {
+        return "Cấp độ 5 - Trung bình, mất tập trung: Chưa nắm chắc kiến thức cơ bản của buổi học do chưa thực sự tập trung lắng nghe khi thầy giảng giải, cần sự sát sao nhiều hơn để theo kịp tiến độ.";
+      }
+      if (isDistracted) {
+        return "Cấp độ 3 - Khá nhưng mất tập trung: Tư duy nhạy bén, hiểu bài nhanh nhưng đôi lúc còn xao nhãng, làm việc riêng hoặc thao tác vội vàng dẫn đến lỗi nhỏ không đáng có.";
+      }
+      return "Cấp độ 2 - Khá: Nắm được kiến thức trọng tâm, thái độ học tập nghiêm túc, hoàn thành đúng yêu cầu bài thực hành nhưng cần thêm thời gian hoặc gợi ý ở các phần mở rộng/tối ưu hóa.";
+    };
+
     const anonymousRoster = validCandidates.map((c) => ({
       anonymousId: c.anonymousId,
-      quickTags: c.input.quickTags || [],
-      teacherNote: c.input.teacherNote || "",
+      matchedLevel: classifySkillLevel(c.input.quickTags || []),
+      quickTags: (c.input.quickTags || []).map((t) =>
+        scrubStudentNames(resolveTagWithHint(t), c.input.fullName, c.anonymousId)
+      ),
+      teacherNote: scrubStudentNames(
+        c.input.teacherNote || "",
+        c.input.fullName,
+        c.anonymousId
+      ),
       attendance: c.input.attendanceStatus || "PRESENT",
     }));
 
+    const sanitizedTopic = scrubStudentNames(session.topic || "", "", "STUDENT_PEER");
     const keyKnowledgeText =
       session.keyKnowledge && session.keyKnowledge.length > 0
-        ? session.keyKnowledge.join("; ")
-        : session.topic;
+        ? session.keyKnowledge
+            .map((k) => scrubStudentNames(String(k || ""), "", "STUDENT_PEER"))
+            .join("; ")
+        : sanitizedTopic;
 
     const prompt = `
-Bạn là Trợ lý Sư phạm Cao cấp của MindX Technology School.
-Nhiệm vụ của bạn là viết nhận xét buổi học chi tiết, chân thành và mang tính xây dựng cho phụ huynh học sinh.
+Bạn là Giảng viên Công nghệ & Lập trình tại MindX Technology School (áp dụng kỹ năng chuẩn: nhan-xet-hoc-sinh).
+Nhiệm vụ của bạn là soạn nhận xét tình hình học tập của từng học sinh sau buổi học để gửi phụ huynh qua Zalo/LMS, dựa trên Cấp độ học sinh (matchedLevel), Quick Tags và Ghi chú thực tế.
 
 ### THÔNG TIN BUỔI HỌC:
-- Lớp: ${session.classCode} (Buổi ${session.sessionNumber})
-- Chủ đề bài học: ${session.topic}
+- Lớp: ${session.classCode} (Buổi ${session.sessionNumber}) — Hướng chuyên môn: ${isRoboticsClass ? "Lắp ráp & Lập trình Robotics" : "Lập trình & Công nghệ"}
+- Chủ đề bài học: ${sanitizedTopic}
 - Kiến thức trọng tâm: ${keyKnowledgeText}
 
-### NGUYÊN TẮC BẮT BUỘC (STRICT PEDAGOGICAL RULES):
-1. CHỈ dựa vào Quick Tags và Ghi chú thực tế được cung cấp cho từng học sinh. TUYỆT ĐỐI KHÔNG tự suy diễn hoặc bịa đặt hành vi/kiến thức mà giáo viên không nhắc đến.
-2. Với mỗi học sinh, soạn đúng 3 phần rõ ràng:
-   - strengths (Điểm mạnh / Thái độ học tập): Nêu cụ thể những gì học sinh đã làm tốt trong buổi học.
-   - improvements (Điểm cần cải thiện): Chỉ ra điểm còn vướng mắc hoặc cần khắc phục một cách tinh tế, lịch sự.
-   - actionPlan (Hướng rèn luyện tiếp theo): Dặn dò cụ thể cách ôn tập hoặc bài tập cần rèn thêm ở nhà.
-3. formattedFullComment: Tổng hợp lại thành đoạn văn nhận xét hoàn chỉnh gửi phụ huynh, văn phong ấm áp, chuẩn mực, bắt đầu bằng xưng hô phù hợp với anonymousId (ví dụ: "Em {anonymousId} hôm nay...").
+### QUY TẮC BẮT BUỘC (SKILL: NHAN-XET-HOC-SINH):
+1. **Xác định ngữ cảnh & Cấp độ học sinh:**
+   - Lồng ghép trực tiếp chủ đề bài học và kiến thức trọng tâm ở trên vào nhận xét.
+   - Bám sát \`matchedLevel\` (1 trong 5 cấp độ: Cấp độ 1 - Giỏi; Cấp độ 2 - Khá; Cấp độ 3 - Khá nhưng mất tập trung; Cấp độ 4 - Trung bình; Cấp độ 5 - Trung bình, mất tập trung) kết hợp với \`quickTags\` và \`teacherNote\` của từng học sinh. TUYỆT ĐỐI KHÔNG tự bịa đặt thông tin trái ngược với thẻ đã chọn.
+2. **Xưng hô & Văn phong:**
+   - Xưng **"thầy"**, gọi học sinh là **"con"**, gọi phụ huynh là **"ba mẹ"** hoặc **"gia đình"**.
+   - **TUYỆT ĐỐI KHÔNG ghi tên học sinh hoặc mã \`STUDENT_XX\` ở đầu nhận xét** (bắt đầu trực tiếp bằng gạch đầu dòng \`- **Điểm mạnh của học viên:**\`). Trong nội dung cũng gọi học sinh là **"con"**, không chèn mã \`STUDENT_XX\`.
+   - Văn phong chuyên nghiệp, lịch sự, tích cực, mang tính xây dựng cao.
+   - Luôn bắt đầu bằng sự ghi nhận tích cực (ngay cả với Cấp độ 4 và Cấp độ 5). Không dùng từ ngữ phán xét nặng nề (như "yếu kém", "lười biếng", "cá biệt"); thay bằng cụm từ mang tính hỗ trợ (như "cần rèn luyện thêm sự tỉ mỉ", "nếu con tập trung hơn sẽ phát huy rất tốt", "cần thêm thời gian thực hành để quen thao tác").
+3. **Cấu trúc 3 gạch đầu dòng kèm in đậm bắt buộc (Độ dài tổng 100 - 250 từ/học sinh):**
+   - \`strengths\` (Nội dung phần **Điểm mạnh của học viên**): Nêu rõ kỹ năng đạt được, thái độ tích cực, sự hào hứng hoặc tiến bộ của con dựa trên nội dung bài học. Có **in đậm** (\`**...**\`) các từ khóa kỹ năng, kiến thức hoặc sản phẩm trọng tâm con đã làm được.
+   - \`improvements\` (Nội dung phần **Điểm cần cải thiện**): Nêu các vấn đề về kỹ năng thao tác, tư duy logic hoặc sự tập trung một cách khéo léo, nhẹ nhàng. Có **in đậm** (\`**...**\`) các điểm mấu chốt cần lưu ý khắc phục.
+   - \`actionPlan\` (Nội dung phần **Lời khuyên**): Gợi ý giải pháp cụ thể, thiết thực để ba mẹ dễ dàng đồng hành, khích lệ và nhắc nhở con ôn tập ở nhà. Có **in đậm** (\`**...**\`) hành động cụ thể gợi ý cho con/ba mẹ.
+   - \`formattedFullComment\`: Trình bày trọn vẹn trong 1 khối chuẩn đúng bố cục sau (KHÔNG có dòng tên học sinh ở đầu, ngắt dòng rõ ràng giữa 3 mục):
+- **Điểm mạnh của học viên:** {strengths}
+
+- **Điểm cần cải thiện:** {improvements}
+
+- **Lời khuyên:** {actionPlan}
 
 ### DANH SÁCH DỮ LIỆU ĐÁNH GIÁ (ANONYMIZED STUDENTS):
 ${JSON.stringify(anonymousRoster, null, 2)}
@@ -137,7 +489,7 @@ Trả về duy nhất 1 JSON object chuẩn theo schema sau:
       "strengths": "...",
       "improvements": "...",
       "actionPlan": "...",
-      "formattedFullComment": "..."
+      "formattedFullComment": "- **Điểm mạnh của học viên:** ...\\n\\n- **Điểm cần cải thiện:** ...\\n\\n- **Lời khuyên:** ..."
     }
   ]
 }
@@ -164,7 +516,7 @@ Trả về duy nhất 1 JSON object chuẩn theo schema sau:
         }
       }
 
-      // Step 3: De-anonymize and save drafts to SQLite
+      // Step 3: De-anonymize and conditionally save drafts to SQLite
       for (const item of validCandidates) {
         const rawFeedback = feedbackMap.get(item.anonymousId);
         const student = item.input;
@@ -173,12 +525,25 @@ Trả về duy nhất 1 JSON object chuẩn theo schema sau:
         // Friendly Vietnamese addressing: extract first name or use full name
         const displayName = studentName;
 
-        let strengths = rawFeedback?.strengths || "Hoàn thành các nội dung trong buổi học.";
-        let improvements = rawFeedback?.improvements || "Cần chú ý tập trung và làm bài tập đều đặn hơn.";
-        let actionPlan = rawFeedback?.actionPlan || "Ôn tập lại kiến thức bài học và hoàn thành bài tập về nhà.";
-        let fullComment =
-          rawFeedback?.formattedFullComment ||
-          `Em ${displayName} hôm nay đã tham gia buổi học. ${strengths} ${improvements} ${actionPlan}`;
+        let strengths = (rawFeedback?.strengths || "").trim();
+        let improvements = (rawFeedback?.improvements || "").trim();
+        let actionPlan = (rawFeedback?.actionPlan || "").trim();
+        let fullComment = (rawFeedback?.formattedFullComment || "").trim();
+
+        // R2-11 Guardrail: Never invent fallback pedagogical feedback if AI omitted this student or any required field
+        if (!rawFeedback || !strengths || !improvements || !actionPlan || !fullComment) {
+          results.push({
+            studentId: student.studentId,
+            fullName: student.fullName,
+            status: "FAILED",
+            strengths: "",
+            improvements: "",
+            actionPlan: "",
+            formattedFullComment: "",
+            errorMessage: `AI không trả về đủ 3 phần nhận xét cho học viên '${studentName}' (${item.anonymousId}).`,
+          });
+          continue;
+        }
 
         // De-anonymize text: replace anonymousId with displayName
         const replaceAnon = (str: string) =>
@@ -189,6 +554,107 @@ Trả về duy nhất 1 JSON object chuẩn theo schema sau:
         actionPlan = replaceAnon(actionPlan);
         fullComment = replaceAnon(fullComment);
 
+        // Enforce unified 3-bullet format from skill `nhan-xet-hoc-sinh` in formattedFullComment (WITHOUT student name header)
+        const cleanStrengths = strengths
+          .replace(/^[-•*]\s*\*\*Điểm mạnh(?: của học viên)?:\*\*\s*/i, "")
+          .trim();
+        const cleanImprovements = improvements
+          .replace(/^[-•*]\s*\*\*Điểm cần cải thiện:\*\*\s*/i, "")
+          .trim();
+        const cleanActionPlan = actionPlan
+          .replace(/^[-•*]\s*\*\*(?:Lời khuyên|Hướng rèn luyện):\*\*\s*/i, "")
+          .trim();
+
+        // Strip any leading **[Tên học sinh]** line before the first bullet if AI included one
+        fullComment = fullComment.replace(
+          /^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i,
+          ""
+        );
+
+        if (
+          typeof getQuickTags === "function" &&
+          !fullComment.includes("- **Điểm mạnh của học viên:**")
+        ) {
+          fullComment = [
+            `- **Điểm mạnh của học viên:** ${cleanStrengths}`,
+            "",
+            `- **Điểm cần cải thiện:** ${cleanImprovements}`,
+            "",
+            `- **Lời khuyên:** ${cleanActionPlan}`,
+          ].join("\n");
+        }
+
+        // R15-02 Guardrail: Re-verify student active status, attendance, and version/content snapshot in SQLite
+        const latestDbStudent =
+          typeof studentRepo?.findOne === "function"
+            ? studentRepo.findOne(student.studentId, normalizedClassId)
+            : undefined;
+        const latestDbRecord =
+          typeof sessionFeedbackRepo?.findOne === "function"
+            ? sessionFeedbackRepo.findOne(normalizedClassId, normalizedSessionId, student.studentId)
+            : undefined;
+        const latestMeta = parseVersionMetaSafe(latestDbRecord?.versionMetaJson);
+        const snap = item.initialSnapshot;
+
+        const supersededByNewerAiCall =
+          (CommentGenerator.latestStudentCallSeq.get(item.scopeKey) || 0) > callSeq;
+        const studentBecameInactive = Boolean(latestDbStudent && latestDbStudent.isActive !== 1);
+        const expectedRowVerMismatch =
+          typeof student.expectedRowVer === "number" &&
+          Number.isFinite(student.expectedRowVer) &&
+          student.expectedRowVer >= 0 &&
+          latestMeta.rowVer !== student.expectedRowVer;
+
+        const recordChangedDuringAi = snap.hadExistingRecord
+          ? !latestDbRecord ||
+            latestMeta.rowVer !== snap.rowVer ||
+            (latestDbRecord.versionMetaJson ?? "") !== snap.versionMetaJson ||
+            (latestDbRecord.attendanceStatus ?? "") !== snap.attendanceStatus ||
+            (latestDbRecord.quickTagsJson ?? "[]") !== snap.quickTagsJson ||
+            (latestDbRecord.teacherNote ?? "") !== snap.teacherNote ||
+            (latestDbRecord.strengths ?? "") !== snap.strengths ||
+            (latestDbRecord.improvements ?? "") !== snap.improvements ||
+            (latestDbRecord.actionPlan ?? "") !== snap.actionPlan ||
+            (latestDbRecord.finalText ?? "") !== snap.finalText ||
+            (latestDbRecord.status ?? "") !== snap.status ||
+            (latestDbRecord.contentHash ?? "") !== snap.contentHash
+          : Boolean(latestDbRecord);
+
+        if (
+          supersededByNewerAiCall ||
+          studentBecameInactive ||
+          expectedRowVerMismatch ||
+          recordChangedDuringAi
+        ) {
+          results.push({
+            studentId: student.studentId,
+            fullName: student.fullName,
+            status: ((latestDbRecord?.status as any) || "DRAFT") as any,
+            strengths: latestDbRecord?.strengths ?? "",
+            improvements: latestDbRecord?.improvements ?? "",
+            actionPlan: latestDbRecord?.actionPlan ?? "",
+            formattedFullComment: latestDbRecord?.finalText ?? "",
+            staleIgnored: true,
+            versionMeta: latestMeta,
+            errorMessage: `Dữ liệu của học viên '${studentName}' đã được cập nhật trong lúc chờ AI. Giữ nguyên bản chỉnh sửa mới nhất.`,
+          });
+          continue;
+        }
+
+        const nextFields = { ...latestMeta.fields };
+        for (const f of ["strengths", "improvements", "actionPlan", "finalText"]) {
+          const curF = nextFields[f] || { ver: 0, cid: "", rev: 0 };
+          nextFields[f] = {
+            ver: (curF.ver || 0) + 1,
+            cid: curF.cid || "",
+            rev: curF.rev || 0,
+          };
+        }
+        const nextMeta = {
+          rowVer: (latestMeta.rowVer || 0) + 1,
+          fields: nextFields,
+        };
+
         const generated: GeneratedCommentResult = {
           studentId: student.studentId,
           fullName: student.fullName,
@@ -197,21 +663,24 @@ Trả về duy nhất 1 JSON object chuẩn theo schema sau:
           improvements,
           actionPlan,
           formattedFullComment: fullComment,
+          versionMeta: nextMeta,
         };
 
-        // Persist draft to SQLite
+        // Persist draft to SQLite without overwriting existing attendance, quickTags, or teacherNote with stale inputs
         sessionFeedbackRepo.upsert({
-          classId: session.classId,
-          sessionId: session.sessionId,
+          classId: normalizedClassId,
+          sessionId: normalizedSessionId,
           studentId: student.studentId,
-          attendanceStatus: student.attendanceStatus || "PRESENT",
-          quickTagsJson: JSON.stringify(student.quickTags || []),
-          teacherNote: student.teacherNote || "",
+          attendanceStatus:
+            (latestDbRecord?.attendanceStatus as any) || student.attendanceStatus || "PRESENT",
+          quickTagsJson: latestDbRecord?.quickTagsJson ?? JSON.stringify(student.quickTags || []),
+          teacherNote: latestDbRecord?.teacherNote ?? (student.teacherNote || ""),
           strengths,
           improvements,
           actionPlan,
           finalText: fullComment,
           status: "DRAFT",
+          versionMetaJson: JSON.stringify(nextMeta),
         });
 
         results.push(generated);

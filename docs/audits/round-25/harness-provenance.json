@@ -1,0 +1,15 @@
+{
+  "base": "../round-24/verify-independent.mjs",
+  "baseSha256": "59686d216b00a8655898e5cf4f8f0fb2a5c31e4326f933a44602671d823c607d",
+  "inheritedChecks": 230,
+  "inheritedAssertionsChanged": false,
+  "newCaseFragmentSha256": "4eed1d5ae5b8e25cebd54d4ecb7ab18c93644da181cda9ac7c4b480cff1320ca",
+  "harnessSha256": "024c7c47e0e29d43315913cb2899ef3aa7f92032250fac1f56aec90e079065ab",
+  "envelopeChanges": [
+    "round/output directory",
+    "TEMP assertion and fixture prefix",
+    "media fixture import",
+    "summary metadata and output name"
+  ],
+  "productTransform": "Same R24 helper removes imports/exports/types only, no function body edits; native media is also tested by direct product import."
+}

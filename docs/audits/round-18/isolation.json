@@ -1,0 +1,30 @@
+{
+  "environmentKeys": [
+    "PATH",
+    "Path",
+    "SystemRoot",
+    "SYSTEMROOT",
+    "WINDIR",
+    "COMSPEC",
+    "PATHEXT",
+    "TEMP",
+    "TMP",
+    "USERPROFILE",
+    "APPDATA",
+    "LOCALAPPDATA",
+    "ProgramFiles",
+    "ProgramFiles(x86)",
+    "ProgramData",
+    "NUMBER_OF_PROCESSORS",
+    "PROCESSOR_ARCHITECTURE",
+    "NEXT_TELEMETRY_DISABLED",
+    "npm_config_offline",
+    "npm_config_audit",
+    "npm_config_fund",
+    "NODE_OPTIONS"
+  ],
+  "noInheritedCredentials": true,
+  "npmOffline": true,
+  "nodeNetworkGuard": true,
+  "limitation": "Node socket guard is an audit harness, not an OS firewall. Chromium routes are separately restricted to the local origin."
+}

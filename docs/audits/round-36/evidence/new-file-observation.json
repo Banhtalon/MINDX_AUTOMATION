@@ -1,0 +1,18 @@
+{
+  "fileHash": "file-v2",
+  "feedback": "OLD SAVED FEEDBACK",
+  "unsaved": {
+    "SUB1": true
+  },
+  "approveResult": false,
+  "approvalCalls": 0,
+  "banner": {
+    "type": "error",
+    "text": "Bài của Synthetic có thay đổi nháp chưa lưu thành công. Vui lòng lưu nháp trước khi duyệt."
+  },
+  "afterSecondRefresh": {
+    "unsaved": {},
+    "approveResult": true,
+    "approvalCalls": 1
+  }
+}

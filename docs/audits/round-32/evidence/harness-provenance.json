@@ -1,0 +1,28 @@
+{
+  "finalR32HarnessSha256": "c75ff63522992961cffcdc0065fd95945d774210a050d8a6c46c2d19dc2a464c",
+  "executedR32HarnessSha256": "c75ff63522992961cffcdc0065fd95945d774210a050d8a6c46c2d19dc2a464c",
+  "R31HarnessSha256": "43fe8a046a91b20cde03e8b0fd6456e563b47a5eb69cad5809bab9fc7288082a",
+  "executedR31HarnessSha256": "43fe8a046a91b20cde03e8b0fd6456e563b47a5eb69cad5809bab9fc7288082a",
+  "sourceVsWorkingTreeMatch": true,
+  "latestR32Receipt": {
+    "name": "independent",
+    "attempt": 3,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "--import",
+      "tsx",
+      "docs/audits/round-32/verify-phase6.mjs"
+    ],
+    "cwd": "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s",
+    "startedAt": "2026-10-21T00:40:11.315Z",
+    "elapsedSeconds": 6.921,
+    "exitCode": 1,
+    "log": "independent.attempt-3.log",
+    "logSha256": "3fc5f18ca6568b89eeec3210bcf89275def36753d77946deaf4bc5934297cd3d",
+    "secretEnvironmentInherited": false,
+    "esbuildBinaryPath": "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\eb.exe",
+    "results": "independent.attempt-3-results.json",
+    "resultsSha256": "da8d43fa8e934ebef7aa5c7d13d34db7dfd1d945d6ce55d54152ead3e64c7480",
+    "freshResults": true
+  }
+}

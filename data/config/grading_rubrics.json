@@ -129,5 +129,36 @@
         "expectedSnippetOrConcept": "play sound, pick random, go to"
       }
     ]
+  },
+  {
+    "rubricId": "GA_SESSION_01",
+    "courseCode": "GA",
+    "sessionNumber": 1,
+    "assignmentTitle": "Bài tập GameMaker: Thiết kế Nhân vật, Object & Màn chơi (Room)",
+    "assignmentPrompt": "Yêu cầu trong GameMaker: 1. Tạo đầy đủ Sprites cho nhân vật chính và vật cản/kẻ địch. 2. Tạo Objects tương ứng gắn đúng Sprite và thiết lập sự kiện di chuyển/tương tác. 3. Sắp xếp các Instance hợp lý vào Room (màn chơi).",
+    "maxTotalScore": 100,
+    "criteria": [
+      {
+        "criterionId": "CRIT_01",
+        "name": "Quản lý Tài nguyên Sprites & Đặt tên chuẩn",
+        "maxPoints": 30,
+        "description": "Import đầy đủ các Sprite nhân vật/vật phẩm vào dự án và đặt tên đúng quy chuẩn (spr_...).",
+        "expectedSnippetOrConcept": "Sprites, spr_"
+      },
+      {
+        "criterionId": "CRIT_02",
+        "name": "Thiết lập Objects & Sự kiện (Events / GML)",
+        "maxPoints": 40,
+        "description": "Tạo đúng các Object gắn với Sprite, cài đặt sự kiện Create/Step/Collision hoặc điều khiển di chuyển hợp lý.",
+        "expectedSnippetOrConcept": "Objects, obj_, Events (Create, Step, Collision, KeyPress)"
+      },
+      {
+        "criterionId": "CRIT_03",
+        "name": "Thiết kế Màn chơi (Room & Instances)",
+        "maxPoints": 30,
+        "description": "Bố trí các Object Instances và Background/Tileset vào Room đầy đủ, cân đối.",
+        "expectedSnippetOrConcept": "Rooms, rm_, instances"
+      }
+    ]
   }
 ]

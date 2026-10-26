@@ -1,0 +1,9 @@
+  for(const c of createR28MediaCases())await check(c.id,'R28 PDF stream lengths and page-tree members must have complete, correctly typed values',async()=>{
+    const p=parse(c.buf,c.id+'.pdf'),o={expected:c.expected,parseStatus:p.parseStatus,inlineParts:p.inlineDataParts.length,fixtureBase64:c.buf.toString('base64')};
+    expect(p.parseStatus===c.expected&&p.inlineDataParts.length===(c.expected==='PARSED'?1:0),o,'Media differs from independent expectation');
+    if(c.expected==='PARSED')assert.equal(p.inlineDataParts[0].inlineData.data,c.buf.toString('base64'));return o;
+  });
+  for(const c of createR28WorkerCases(cid,sid))await check(c.id,'R28 actual GraphQL string values, nested bindings and typed tokens govern verification',async()=>{
+    const r=await strictWorker({apiBody:c.request,responseBody:c.response,seed:{feedbackHtml:c.feedback},readbackFeedback:c.feedback}),o={request:c.request,response:c.response,expected:c.expected,verified:r.verified,writes:r.writes,status:r.status,error:r.error};
+    expect(r.verified===c.expected,o,'Worker differs from the selected contract');return o;
+  });

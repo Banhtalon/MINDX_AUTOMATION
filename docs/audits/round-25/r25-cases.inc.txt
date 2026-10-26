@@ -1,0 +1,114 @@
+  // R25 independent boundaries. Inherited R24 assertions above remain unchanged.
+  for(const c of await createMediaCases())await check(c.id,'Independent decoder/explicit PDF reference graph agrees with product parser',async()=>{
+    let decoderError='';if(c.decode)try{await sharp(c.buf).raw().toBuffer();}catch(e){decoderError=e.message;}
+    const p=parse(c.buf,c.id+'.'+c.ext),decoderMatches=!c.decode||(c.expected==='PARSED'?!decoderError:!!decoderError);
+    const bytesMatch=c.expected==='PARSED'?p.inlineDataParts.length===1&&p.inlineDataParts[0].inlineData.data===c.buf.toString('base64'):p.inlineDataParts.length===0;
+    const o={expected:c.expected,parseStatus:p.parseStatus,inlineParts:p.inlineDataParts.length,decoderError,decoderMatches,fixtureBase64:c.buf.toString('base64')};
+    expect(p.parseStatus===c.expected&&decoderMatches&&bytesMatch,o,'Product parser disagrees with valid/invalid media oracle');return o;
+  });
+  const r25Input=()=>({...fullMutation().variables});
+  const r25Req=(input=r25Input(),patch={})=>({operationName:'SaveHomeworkGrade',query:'mutation SaveHomeworkGrade($input: GradeInput!) { saved: saveHomeworkGrade(input: $input) { id } }',variables:{input},...patch});
+  const r25Run=(request,response,patch={})=>strictWorker({apiBody:request,responseBody:{data:{saved:response}},...patch});
+  for(const response of [true,{id:'SUB1'},{success:true},{submissionId:'SUB1',studentId:'S1',classId:cid,sessionId:sid,score:80,decision:'GRADE',feedback:'APPROVED FEEDBACK'}])
+    await check('R25-09-valid-result-'+(typeof response==='boolean'?'true':Object.keys(response).join('-')),'Selected boolean true or a nonempty matching object remains supported',async()=>{
+      const r=await r25Run(r25Req(),response);expect(r.verified===1,r,'Valid selected result rejected');return {response,verified:r.verified};
+    });
+  for(const field of ['id','submissionId','studentId','classId','sessionId','score','decision','status','feedback'])for(const [kind,value]of [['null',null],['number',17],['empty',''],['array',[]],['object',{}]])
+    await check(`R25-09-response-type-${field}-${kind}`,'Every present business field must have the required type and approved value',async()=>{
+      const response={id:'SUB1',[field]:value},r=await r25Run(r25Req(),response),o={response,verified:r.verified,status:r.status,error:r.error};
+      expect(r.verified===0,o,'Invalid present business field ignored/coerced');return o;
+    });
+  for(const [name,response]of [
+    ['two-submission-ids',{submissionId:'SUB1',id:'OTHER'}],['two-student-ids',{studentId:'S1',studentUid:'OTHER'}],
+    ['two-class-ids',{classId:cid,classCode:'OTHER'}],['two-decisions',{decision:'GRADE',status:'REDO'}],
+    ['two-feedbacks',{feedback:'APPROVED FEEDBACK',feedbackHtml:'OTHER'}],
+    ['null-primary-id',{submissionId:null,id:'SUB1'}],['null-primary-student',{studentId:null,studentUid:'S1'}],
+    ['null-primary-class',{classId:null,classCode:cid}],['null-primary-decision',{decision:null,status:'GRADE'}],
+    ['null-primary-feedback',{feedback:null,comment:'APPROVED FEEDBACK'}],
+    ['array-grade-decision',{decision:['GRADE']}],['array-grade-status',{status:['GRADE']}]
+  ])await check('R25-09-response-conflict-'+name,'Checking one synonym must not conceal another contradictory or malformed present field',async()=>{
+    const r=await r25Run(r25Req(),response),o={response,verified:r.verified,status:r.status,error:r.error};expect(r.verified===0,o,'Conflicting/malformed result marked VERIFIED');return o;
+  });
+  for(const [name,request,response,expected]of [
+    ['unreferenced-garbage',r25Req(r25Input(),{variables:{input:r25Input(),studentId:'OTHER',submissionId:'OTHER',score:1,feedback:'OTHER'}}),{data:{saved:true}},1],
+    ['deep-valid',r25Req({level1:{level2:r25Input()}}),{data:{saved:true}},1],
+    ['deep-wrong',r25Req({level1:{level2:{...r25Input(),submissionId:'OTHER'}}}),{data:{saved:true}},0],
+    ['only-unused-proof',{...fullMutation(),query:'mutation SaveHomeworkGrade { saved: saveHomeworkGrade(score: 80) { id } }'},{data:{saved:true}},0],
+    ['exact-field-no-alias',{...r25Req(),query:'mutation SaveHomeworkGrade($input: GradeInput!) { saveHomeworkGrade(input:$input) { id } }'},{data:{saveGrade:true}},0],
+    ['exact-field-no-args',fullMutation(),{data:{saveGrade:true}},0],
+    ['nonreferenced-object-not-proof',r25Req({score:80},{variables:{input:{score:80},decoy:r25Input()}}),{data:{saved:true}},0],
+    ['bound-array',r25Req([r25Input()]),{data:{saved:true}},0],
+    ['object-score',r25Req({...r25Input(),score:{value:1},nested:{score:80}}),{data:{saved:true}},0],
+    ['object-identity',r25Req({...r25Input(),submissionId:{value:'OTHER'},id:'SUB1'}),{data:{saved:true}},0]
+  ])await check('R25-09-request-'+name,'Only actual selected argument bindings count, and each recognized field keeps its own type',async()=>{
+    const r=await strictWorker({apiBody:request,responseBody:response}),o={request,response,expected,verified:r.verified,status:r.status,error:r.error};
+    expect(r.verified===expected,o,'Selected GraphQL argument/result contract violated');return o;
+  });
+  const r25Literal=`classId:"${cid}", sessionId:"${sid}", submissionId:"SUB1", studentId:"S1", score:80, decision:GRADE, feedback:"APPROVED FEEDBACK"`;
+  for(const [name,args,variables]of [
+    ['literal-with-decoys',r25Literal,{submissionId:'OTHER',studentId:'OTHER',score:1,feedback:'OTHER'}],
+    ['renamed-mixed',`classId:$c,sessionId:"${sid}",submissionId:$sub,studentId:"S1",score:$n,decision:GRADE,feedback:$f`,{c:cid,sub:'SUB1',n:80,f:'APPROVED FEEDBACK'}]
+  ])await check('R25-09-valid-'+name,'Literal and renamed variable arguments do not depend on unreferenced variables',async()=>{
+    const request={operationName:'SaveHomeworkGrade',query:`mutation SaveHomeworkGrade${name==='renamed-mixed'?'($c:ID!,$sub:ID!,$n:Int!,$f:String!)':''} { saved: saveHomeworkGrade(${args}) { id } }`,variables};
+    const r=await r25Run(request,true);expect(r.verified===1,r,'Correct selected arguments rejected');return {request,verified:r.verified};
+  });
+  for(const [name,response]of [['valid',{id:'SUB1',decision:'REDO',feedback:'APPROVED FEEDBACK'}],['wrong-decision',{id:'SUB1',decision:'GRADE'}],['array-decision',{id:'SUB1',decision:['REDO']}],['null-id',{submissionId:null,id:'SUB1'}]])
+    await check('R25-09-redo-'+name,'REDO checks preserve strict response types and the approved decision',async()=>{
+      const request=r25Req({...r25Input(),decision:'REDO'}),r=await r25Run(request,response,{seed:{decision:'REDO'}}),o={request,response,verified:r.verified,status:r.status,error:r.error};
+      expect(r.verified===(name==='valid'?1:0),o,'REDO response contract violated');return o;
+    });
+
+  // One fresh focused control per other R19 group; broader regressions run unchanged separately.
+  await check('R25-02-rubric-total-and-duplicate','Total comes from criterion points and duplicated criterion IDs fail',()=>{
+    const good=auditor.auditCriterionGrades(grades(73.25),rubric),bad=auditor.auditCriterionGrades([...grades(),...grades()],rubric);
+    assert.equal(good.calculatedScore,73.25);assert.equal(good.valid,true);assert.equal(bad.valid,false);return {total:good.calculatedScore,duplicateRejected:!bad.valid};
+  });
+  await check('R25-03-approved-feedback-tamper','A stale approval hash prevents a changed grade from reaching Save',async()=>{
+    const r=await strictWorker({seed:{feedbackHtml:'<p>APPROVED FEEDBACK</p>'},beforeClick:b=>{b.homeworkSubmissionRepo.upsert({...b.row(),feedbackHtml:'CHANGED'});}});
+    expect(r.verified===0&&r.writes===0,r,'Changed approved content reached Save');return {writes:r.writes,verified:r.verified,status:r.status};
+  });
+  await check('R25-04-disk-mismatch-supplied-parse','Supplied parsed data cannot hide a different physical submission',async()=>{
+    const b=backend();try{const p=path.join(work,'r25-physical.py');fs.writeFileSync(p,'print(2)');b.seed({localFilePath:p,fileHash:sha('print(1)')});const before=JSON.stringify(b.row());
+      const g=loadGrader(b,async()=>aiResponse()),r=await g.HomeworkAiGrader.gradeSingleSubmission(candidate({localFilePath:p,parsedContent:parse('print(1)','r25-physical.py')}),rubric);
+      const o={staleIgnored:r.staleIgnored,unchanged:before===JSON.stringify(b.row())};expect(r.staleIgnored===true&&o.unchanged,o,'Physical mismatch was graded');return o;
+    }finally{b.db.close();}
+  });
+  await check('R25-05-ui-unreadable-approval','Actual UI handler cannot approve a PARSE_ERROR record',async()=>{
+    const b=backend();try{b.seed({parseStatus:'PARSE_ERROR'});const events=[],h=wiredUi(b,events);await h.flush();await h.api.handleApproveSubmission(h.api.submissions[0]);await h.flush();
+      assert.notEqual(b.row().status,'APPROVED');return {status:b.row().status,requests:events};
+    }finally{b.db.close();}
+  });
+  await check('R25-06-old-view-after-new-draft','A fully populated but outdated teacher review is rejected',async()=>{
+    const b=backend();try{b.seed();const reviewed=view(b);assert.equal((await b.draft.POST(b.req({draftSeq:10,feedbackHtml:'NEW DRAFT'}))).status,200);const r=await b.approve(b.req({...reviewed,rubric}));
+      assert.equal(r.status,409);assert.notEqual(b.row().status,'APPROVED');return {http:r.status,status:b.row().status};
+    }finally{b.db.close();}
+  });
+  await check('R25-07-modal-wrong-submission','Matching student name/ID cannot override a wrong submission ID in modal',async()=>{
+    const r=await strictWorker({modalText:'Học Viên Mẫu S1 SUB_OTHER'});expect(r.verified===0&&r.writes===0,r,'Wrong submission modal reached Save');return {writes:r.writes,verified:r.verified};
+  });
+  await check('R25-08-foreign-lesson','A lesson mapped to another session must stop before saving',async()=>{
+    await assert.rejects(()=>strictWorker({options:{lessonId:'L2'},columns:[{columnId:'L2',lessonId:'L2',sessionNumber:2,colIndex:1}]}),/buổi|session|khớp/i);return {rejected:true};
+  });
+  await check('R25-10-wrong-readback-decision','HTTP success and correct score do not compensate for wrong persisted decision',async()=>{
+    const r=await strictWorker({readbackDecision:'REDO'});expect(r.verified===0,r,'Wrong readback decision accepted');return {verified:r.verified,status:r.status};
+  });
+  await check('R25-11-drift-during-readback','Changing the approved grade during readback prevents VERIFIED',async()=>{
+    const r=await strictWorker({duringReadback:b=>b.homeworkSubmissionRepo.upsert({...b.row(),teacherOverrideScore:21})});expect(r.verified===0,r,'Readback drift accepted');return {verified:r.verified,status:r.status};
+  });
+  await check('R25-12-old-class-response','An old class response cannot populate a newly selected class',async()=>{
+    const hold=defer(),next='R25_NEW_CLASS';const h=ui(async url=>{if(url.includes(cid)){await hold.promise;return Response.json({success:true,data:{submissions:[uiItem(record())]}});}return Response.json({success:true,data:{submissions:[uiItem(record({classId:next,sessionId:next+'_SESS_01',submissionId:'NEW_SUB'}))]}});});
+    await h.flush();h.setProps({classId:next,classCode:next});await h.flush();hold.resolve();await h.flush();assert.equal(h.api.submissions[0]?.classId,next);assert.equal(h.api.isLoadingSubs,false);return {visibleClass:h.api.submissions[0]?.classId};
+  });
+  await check('R25-13-rejected-multi-field-atomic','An invalid combined edit does not commit a valid companion field or consume its sequence',async()=>{
+    const b=backend();try{b.seed();const before=JSON.stringify(b.row()),meta=JSON.stringify(b.db.prepare('SELECT * FROM homework_submission_meta').get());
+      const bad=await b.draft.POST(b.req({draftSeq:50,feedbackHtml:'MUST NOT SAVE',criteriaGrades:safeGrades(101),rubric}));
+      assert.equal(bad.status,400);assert.equal(JSON.stringify(b.row()),before);assert.equal(JSON.stringify(b.db.prepare('SELECT * FROM homework_submission_meta').get()),meta);
+      const good=await b.draft.POST(b.req({draftSeq:1,feedbackHtml:'VALID'}));assert.equal(good.status,200);return {rejectedHttp:bad.status,recoveryHttp:good.status};
+    }finally{b.db.close();}
+  });
+  await check('R25-14-partial-download-stops-ai','A partial failed download never sends old cached submissions to AI',async()=>{
+    const b=backend();try{b.seed();let aiCalls=0;const download={success:false,downloadedCount:1,failedCount:1,items:[{success:true,submissionId:'SUB1'}]};
+      const route=mod('src/app/api/homework-grader/download-and-grade/route.ts',['POST'],{...b,...local,NextResponse:Response,taskQueue:{enqueue:async t=>t.execute()},SubmissionDownloader:{downloadLessonSubmissions:async()=>download},HomeworkAiGrader:{gradeBatchSubmissions:async()=>{aiCalls++;return[];}},getGradingRubrics:()=>[rubric],findLessonInSyllabus:()=>null});
+      const res=await route.POST(b.req({rubric}));assert.equal(res.status,502);assert.equal(aiCalls,0);return {http:res.status,aiCalls};
+    }finally{b.db.close();}
+  });

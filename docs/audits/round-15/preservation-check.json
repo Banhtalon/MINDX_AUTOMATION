@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-10-20T04:17:02.175Z",
+  "protectedFileCount": 58,
+  "unchangedProtectedFiles": 57,
+  "intentionalChanges": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "planOnlyAuditNoteAdded": true,
+  "productTestDataConfigFilesIdentical": true,
+  "historicalArtifactCount": 50,
+  "changedHistoricalArtifacts": [],
+  "nextEnvByteIdentical": true,
+  "nextEnvSha256": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
+  "historicalCodesInReport": 49,
+  "round2CasesInReport": 14,
+  "missingReportLinks": [],
+  "requiredCommandsExitZero": true,
+  "confirmedNewBugs": 7,
+  "newBaselineGroupsPassed": 3
+}

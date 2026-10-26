@@ -34,9 +34,11 @@ export const SELECTORS = {
   tabs: {
     general: '[role="tab"]:has-text("Thông tin chung"), [role="tab"]:has-text("Information"), [role="tab"]:has-text("General"), button:has-text("Thông tin chung"), button:has-text("Information")',
     schedule: '[role="tab"]:has-text("Lịch học"), [role="tab"]:has-text("Schedule"), [role="tab"]:has-text("Class Sessions"), [role="tab"]:has-text("Sessions"), button:has-text("Lịch học"), button:has-text("Schedule")',
-    homework: '[role="tab"]:has-text("Bài tập về nhà"), [role="tab"]:has-text("Homework"), button:has-text("Bài tập về nhà"), button:has-text("Homework")',
-    grading: '[role="tab"]:has-text("Chấm bài"), [role="tab"]:has-text("Grading"), button:has-text("Chấm bài"), button:has-text("Grading")',
-    students: '[role="tab"]:has-text("Học viên"), [role="tab"]:has-text("Students"), [role="tab"]:has-text("Student"), button:has-text("Học viên"), button:has-text("Students")',
+    homework: '[role="tab"]:has-text("Bài tập về nhà"), [role="tab"]:has-text("Homework"), #tab-2, button:has-text("Bài tập về nhà"), button:has-text("Homework")',
+    grading: '[role="tab"]:has-text("Chấm bài"), [role="tab"]:has-text("Submission"), [role="tab"]:has-text("Grading"), #tab-3, button:has-text("Chấm bài"), button:has-text("Submission")',
+    students: '[role="tab"]:has-text("Học viên"), [role="tab"]:has-text("Students"), [role="tab"]:has-text("Student"), #tab-6, button:has-text("Học viên"), button:has-text("Students")',
+    comments: '[role="tab"]:has-text("Comments"), [role="tab"]:has-text("Nhận xét"), #tab-10',
+    attendance: '[role="tab"]:has-text("Attendance"), [role="tab"]:has-text("Điểm danh"), #tab-9',
     spck: '[role="tab"]:has-text("Sản phẩm cuối khóa"), [role="tab"]:has-text("SPCK"), [role="tab"]:has-text("Final Project"), button:has-text("Sản phẩm cuối khóa"), button:has-text("SPCK")',
     nextTabArrow: '.ant-tabs-nav-more, button[aria-label="next-tab"], button[aria-label="Next"], .tab-scroll-right, .MuiTabs-scrollButtons',
   },
@@ -75,16 +77,26 @@ export const SELECTORS = {
 
   // 6. Session Feedback
   sessionComments: {
-    container: '.session-feedback-container, .attendance-comments',
-    commentRow: (studentId: string) => `[data-student-id="${studentId}"], tr:has-text("${studentId}")`,
-    richTextEditor: '.ck-content, [contenteditable="true"], textarea',
-    saveButton: 'button:has-text("Lưu nhận xét"), button:has-text("Lưu")',
+    container: 'div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight, .session-feedback-container',
+    slotCarouselItem: (slotIndex: number) => `#class-comments-slot-carousel-${slotIndex}, [id*="slot-carousel-${slotIndex}"]`,
+    studentRow: (name: string) => `table tbody tr:has-text("${name}"), tr:has-text("${name}")`,
+    openModalButton: 'button:has-text("Nhận xét học sinh"), button:has-text("Nhận xét")',
+    modal: {
+      container: '[role="dialog"]',
+      switchToManualSwitch: '[aria-label*="switch to manual mode" i]',
+      confirmManualYesButton: 'button:has-text("Yes"), button:has-text("Đồng ý")',
+      quillEditor: '.ql-editor[contenteditable="true"]',
+      saveButton: 'button:has-text("Save"), button:has-text("Lưu")',
+    },
+    richTextEditor: '.ql-editor[contenteditable="true"], .ck-content, [contenteditable="true"], textarea',
+    saveButton: 'button:has-text("Save"), button:has-text("Lưu nhận xét"), button:has-text("Lưu")',
   },
 
   // 7. SPCK Upload Form
   spck: {
     container: '.spck-container, .final-project-section',
-    spckItem01: '.spck-item, .ant-card:has-text("Sản Phẩm Học Viên 01")',
+    spckItem01:
+      '.spck-item[data-spck-index="1"], .spck-item:has(h4:has-text("Sản Phẩm Học Viên 01")), .ant-card:has-text("Sản Phẩm Học Viên 01")',
     addSpckButton: 'button:has-text("+ Thêm sản phẩm học viên"), button:has-text("Thêm sản phẩm")',
     titleInput: 'input[placeholder*="Tiêu đề" i], input[name="title"]',
     youtubeInput: 'input[placeholder*="youtube" i], input[placeholder*="Đường dẫn youtube" i]',

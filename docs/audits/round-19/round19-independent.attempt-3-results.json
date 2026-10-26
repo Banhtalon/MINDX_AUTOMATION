@@ -1,0 +1,673 @@
+{
+  "checkedAt": "2026-10-20T10:14:43.310Z",
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+  "fixtureWorkspace": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-r19-fixtures-u3IVh1",
+  "sqlite": ":memory:",
+  "realLmsCalls": 0,
+  "realGeminiCalls": 0,
+  "method": "Unmodified function bodies; imports replaced by explicit VM bindings. Hook tests check handler logic, not browser layout or real React concurrency.",
+  "total": 87,
+  "passed": 68,
+  "failed": 19,
+  "results": [
+    {
+      "id": "FORMAT-py",
+      "criterion": "Đọc định dạng py",
+      "pass": true,
+      "observation": {
+        "subject": "PYTHON"
+      }
+    },
+    {
+      "id": "FORMAT-ipynb",
+      "criterion": "Đọc định dạng ipynb",
+      "pass": true,
+      "observation": {
+        "subject": "JUPYTER"
+      }
+    },
+    {
+      "id": "FORMAT-ui",
+      "criterion": "Đọc định dạng ui",
+      "pass": true,
+      "observation": {
+        "subject": "PYQT6"
+      }
+    },
+    {
+      "id": "FORMAT-qss",
+      "criterion": "Đọc định dạng qss",
+      "pass": true,
+      "observation": {
+        "subject": "PYQT6"
+      }
+    },
+    {
+      "id": "FORMAT-html",
+      "criterion": "Đọc định dạng html",
+      "pass": true,
+      "observation": {
+        "subject": "WEB"
+      }
+    },
+    {
+      "id": "FORMAT-css",
+      "criterion": "Đọc định dạng css",
+      "pass": true,
+      "observation": {
+        "subject": "WEB"
+      }
+    },
+    {
+      "id": "FORMAT-js",
+      "criterion": "Đọc định dạng js",
+      "pass": true,
+      "observation": {
+        "subject": "WEB"
+      }
+    },
+    {
+      "id": "FORMAT-sql",
+      "criterion": "Đọc định dạng sql",
+      "pass": true,
+      "observation": {
+        "subject": "SQL"
+      }
+    },
+    {
+      "id": "FORMAT-txt",
+      "criterion": "Đọc định dạng txt",
+      "pass": true,
+      "observation": {
+        "subject": "TEXT"
+      }
+    },
+    {
+      "id": "FORMAT-gml",
+      "criterion": "Đọc định dạng gml",
+      "pass": true,
+      "observation": {
+        "subject": "GAMEMAKER"
+      }
+    },
+    {
+      "id": "FORMAT-yy",
+      "criterion": "Đọc định dạng yy",
+      "pass": true,
+      "observation": {
+        "subject": "GAMEMAKER"
+      }
+    },
+    {
+      "id": "FORMAT-sb3",
+      "criterion": "Đọc project.json của Scratch",
+      "pass": true
+    },
+    {
+      "id": "FORMAT-yyz",
+      "criterion": "Đọc GameMaker .yyz",
+      "pass": true
+    },
+    {
+      "id": "INLINE-png",
+      "criterion": "MIME và Base64 giữ đúng bytes (không chứng minh giải mã media)",
+      "pass": true
+    },
+    {
+      "id": "INLINE-jpg",
+      "criterion": "MIME và Base64 giữ đúng bytes (không chứng minh giải mã media)",
+      "pass": true
+    },
+    {
+      "id": "INLINE-webp",
+      "criterion": "MIME và Base64 giữ đúng bytes (không chứng minh giải mã media)",
+      "pass": true
+    },
+    {
+      "id": "INLINE-pdf",
+      "criterion": "MIME và Base64 giữ đúng bytes (không chứng minh giải mã media)",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-empty.py",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-binary.py",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-bad.ipynb",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-bad.ui",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-bad.sb3",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-bad.yy",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-bad.yyz",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-bad.png",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-unsupported.rar",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PATH-outside",
+      "criterion": "Từ chối file ngoài thư mục cho phép",
+      "pass": true
+    },
+    {
+      "id": "PATH-junction",
+      "criterion": "Từ chối junction thoát thư mục",
+      "pass": true
+    },
+    {
+      "id": "PATH-segments",
+      "criterion": "Tên file nguy hiểm vẫn ở temp_submissions",
+      "pass": true
+    },
+    {
+      "id": "ZIP-traversal-../evil.py",
+      "criterion": "Chặn đường dẫn ZIP nguy hiểm",
+      "pass": true
+    },
+    {
+      "id": "ZIP-traversal-C:/evil.py",
+      "criterion": "Chặn đường dẫn ZIP nguy hiểm",
+      "pass": true
+    },
+    {
+      "id": "ZIP-traversal-/evil.py",
+      "criterion": "Chặn đường dẫn ZIP nguy hiểm",
+      "pass": true
+    },
+    {
+      "id": "ZIP-traversal-..\\evil.py",
+      "criterion": "Chặn đường dẫn ZIP nguy hiểm",
+      "pass": true
+    },
+    {
+      "id": "ZIP-ignore",
+      "criterion": "Bỏ qua node_modules/.git/__pycache__",
+      "pass": true
+    },
+    {
+      "id": "ZIP-201",
+      "criterion": "Chặn 201 file ZIP",
+      "pass": true
+    },
+    {
+      "id": "ZIP-depth11",
+      "criterion": "Chặn ZIP sâu hơn 10 thành phần",
+      "pass": true
+    },
+    {
+      "id": "ZIP-50MB",
+      "criterion": "Chặn tổng khai báo 55MB trước giải nén",
+      "pass": true
+    },
+    {
+      "id": "ZIP-ratio",
+      "criterion": "Chặn tỷ lệ nén bất thường",
+      "pass": true
+    },
+    {
+      "id": "R19-01-mixed-corrupt",
+      "criterion": "ZIP có mã nguồn hỏng phải PARSE_ERROR",
+      "pass": false,
+      "observation": {
+        "parseStatus": "PARSED",
+        "parsedCodeFiles": 1,
+        "totalFiles": 2
+      },
+      "error": "Error: ZIP silently discarded corrupted main.py and is gradable\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:157:296\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:157:9"
+    },
+    {
+      "id": "R19-01-truncated-media",
+      "criterion": "PNG chỉ có 8 byte chữ ký phải PARSE_ERROR",
+      "pass": false,
+      "observation": {
+        "status": "PARSED",
+        "bytes": 8
+      },
+      "error": "Error: Truncated PNG was accepted and sent as inlineData\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:158:160\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:158:9"
+    },
+    {
+      "id": "SCORE-control",
+      "criterion": "Tổng TS bỏ qua tổng/điểm tối đa do AI tự khai",
+      "pass": true
+    },
+    {
+      "id": "SCORE-negative",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-over",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-nan",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-string",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-evidence",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-reason",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-missing",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-duplicate",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-unknown",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "R19-02-duplicate-rubric",
+      "criterion": "Barem trùng mã tiêu chí phải bị từ chối",
+      "pass": false,
+      "observation": {
+        "valid": true,
+        "score": 100,
+        "criteria": 2
+      },
+      "error": "Error: Same criterion was counted twice\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:162:242\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:162:9"
+    },
+    {
+      "id": "DB-owner-lock",
+      "criterion": "Không thể đổi chủ submissionId",
+      "pass": true
+    },
+    {
+      "id": "DB-hash-demotion",
+      "criterion": "Sửa điểm sau duyệt hạ trạng thái",
+      "pass": true
+    },
+    {
+      "id": "R19-03-legacy-hash",
+      "criterion": "Hash chỉ nhận xét không được chứng minh toàn vẹn điểm",
+      "pass": false,
+      "observation": {
+        "integrity": true,
+        "score": 99,
+        "decision": "REDO"
+      },
+      "error": "Error: Feedback-only hash still validates arbitrary score/decision\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:165:229\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:165:9"
+    },
+    {
+      "id": "AI-control",
+      "criterion": "Ẩn danh, sandbox, cộng điểm TS",
+      "pass": true,
+      "observation": {
+        "score": 80,
+        "anonymized": true
+      }
+    },
+    {
+      "id": "AI-peer",
+      "criterion": "Ẩn danh bạn cùng lớp",
+      "pass": true
+    },
+    {
+      "id": "AI-protect-APPROVED",
+      "criterion": "AI không ghi đè bản đã duyệt",
+      "pass": true
+    },
+    {
+      "id": "AI-protect-VERIFIED",
+      "criterion": "AI không ghi đè bản đã duyệt",
+      "pass": true
+    },
+    {
+      "id": "AI-parse-block",
+      "criterion": "PARSE_ERROR không gọi AI/không REDO/không được duyệt",
+      "pass": true
+    },
+    {
+      "id": "AI-concurrent-approval",
+      "criterion": "Duyệt khi AI đang chạy được giữ nguyên",
+      "pass": true
+    },
+    {
+      "id": "R19-04-ai-file-drift",
+      "criterion": "AI cũ không ghi đè fileHash/PARSE_ERROR mới",
+      "pass": false,
+      "observation": {
+        "fileHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+        "parseStatus": "PARSED",
+        "status": "WAITING_APPROVAL"
+      },
+      "error": "Error: Old AI overwrote newer file identity and parse error\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:171:465\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:171:3"
+    },
+    {
+      "id": "API-origin",
+      "criterion": "Các API từ chối Origin bên ngoài",
+      "pass": true
+    },
+    {
+      "id": "API-draft-verified-block",
+      "criterion": "Không đặt VERIFIED qua lưu nháp",
+      "pass": true
+    },
+    {
+      "id": "API-approval-control",
+      "criterion": "Duyệt đúng tạo contentHash tổng hợp",
+      "pass": true
+    },
+    {
+      "id": "R19-05-invalid-criteria",
+      "criterion": "Duyệt phải kiểm toán từng tiêu chí",
+      "pass": false,
+      "observation": {
+        "http": 200,
+        "status": "APPROVED",
+        "score": 100
+      },
+      "error": "Error: Approval accepted negative/unknown criteria without evidence\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:175:243\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:175:3"
+    },
+    {
+      "id": "R19-05-undownloaded",
+      "criterion": "Bài chưa tải/chưa phân tích không được tự nhận PARSED và duyệt",
+      "pass": false,
+      "observation": {
+        "http": 200,
+        "parse": "PARSED",
+        "fileHash": "",
+        "path": "",
+        "status": "APPROVED"
+      },
+      "error": "Error: Created and approved a submission without a file\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:176:248\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:176:3"
+    },
+    {
+      "id": "R19-06-stale-approval",
+      "criterion": "Duyệt cũ không được ghi đè sửa mới",
+      "pass": false,
+      "observation": {
+        "http": 200,
+        "text": "<p>APPROVED FEEDBACK</p>",
+        "status": "APPROVED"
+      },
+      "error": "Error: Stale approval restored old feedback and approved it\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:177:315\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:177:3"
+    },
+    {
+      "id": "DOWNLOAD-control",
+      "criterion": "Tải, hash, khóa submission vào SQLite, độc lập điểm danh",
+      "pass": true,
+      "observation": {
+        "success": true,
+        "count": 1,
+        "clicked": 1,
+        "itemErrors": [],
+        "items": [
+          {
+            "studentId": "S1",
+            "submissionId": "SUB1",
+            "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+            "lessonId": "L1",
+            "fileHash": "1a41da93b9356513e8431f5d0eb89f84e5fde642cbafa1b8589187464b922457"
+          }
+        ],
+        "stored": [
+          {
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "fileHash": "1a41da93b9356513e8431f5d0eb89f84e5fde642cbafa1b8589187464b922457"
+          }
+        ],
+        "downloadedHash": "1a41da93b9356513e8431f5d0eb89f84e5fde642cbafa1b8589187464b922457"
+      }
+    },
+    {
+      "id": "R19-07-wrong-download",
+      "criterion": "Cùng tên nhưng sai student/submission phải chặn tải",
+      "pass": false,
+      "observation": {
+        "success": true,
+        "count": 1,
+        "clicked": 1,
+        "itemErrors": [],
+        "items": [
+          {
+            "studentId": "S1",
+            "submissionId": "SUB1",
+            "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+            "lessonId": "L1",
+            "fileHash": "f3e806d62de39d7d6a53f04a85cdcd9f88315478926c16267e75a3d1f1c6f35c"
+          }
+        ],
+        "stored": [
+          {
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "fileHash": "f3e806d62de39d7d6a53f04a85cdcd9f88315478926c16267e75a3d1f1c6f35c"
+          }
+        ],
+        "downloadedHash": "f3e806d62de39d7d6a53f04a85cdcd9f88315478926c16267e75a3d1f1c6f35c"
+      },
+      "error": "Error: Downloaded S2 content and bound it to S1/SUB1\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:179:226\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:179:3"
+    },
+    {
+      "id": "R19-08-session-lesson",
+      "criterion": "Không tải bài Buổi 2 gán vào session Buổi 1",
+      "pass": false,
+      "observation": {
+        "success": true,
+        "count": 1,
+        "clicked": 1,
+        "itemErrors": [],
+        "items": [
+          {
+            "studentId": "S1",
+            "submissionId": "SUB2",
+            "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+            "lessonId": "L2",
+            "fileHash": "1a41da93b9356513e8431f5d0eb89f84e5fde642cbafa1b8589187464b922457"
+          }
+        ],
+        "stored": [
+          {
+            "submissionId": "SUB2",
+            "studentId": "S1",
+            "fileHash": "1a41da93b9356513e8431f5d0eb89f84e5fde642cbafa1b8589187464b922457"
+          }
+        ],
+        "downloadedHash": "1a41da93b9356513e8431f5d0eb89f84e5fde642cbafa1b8589187464b922457"
+      },
+      "error": "Error: Lesson L2 submission was stored under session 01\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:180:186\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:180:3"
+    },
+    {
+      "id": "WORKER-control",
+      "criterion": "GRADE chọn radio/điền điểm/nhận xét và ghi VERIFIED",
+      "pass": true,
+      "observation": {
+        "writes": 1,
+        "verified": 1
+      }
+    },
+    {
+      "id": "WORKER-redo",
+      "criterion": "REDO chọn đúng radio",
+      "pass": true
+    },
+    {
+      "id": "WORKER-block-http500",
+      "criterion": "Không VERIFIED khi thất bại",
+      "pass": true
+    },
+    {
+      "id": "WORKER-block-graphql",
+      "criterion": "Không VERIFIED khi thất bại",
+      "pass": true
+    },
+    {
+      "id": "WORKER-block-wrong-score",
+      "criterion": "Không VERIFIED khi thất bại",
+      "pass": true
+    },
+    {
+      "id": "WORKER-block-parse-error",
+      "criterion": "Không VERIFIED khi thất bại",
+      "pass": true
+    },
+    {
+      "id": "WORKER-pre-click-drift",
+      "criterion": "Sửa nhận xét trước Save chặn ghi LMS",
+      "pass": true
+    },
+    {
+      "id": "WORKER-post-click-drift",
+      "criterion": "Sửa trong lúc API chạy chặn VERIFIED",
+      "pass": true
+    },
+    {
+      "id": "R19-07-modal-same-name",
+      "criterion": "Modal không chứng minh đúng submission phải chặn",
+      "pass": false,
+      "observation": {
+        "writes": 1,
+        "verified": 1,
+        "modalText": "Học Viên Mẫu S2 SUB_OTHER"
+      },
+      "error": "Error: Worker saved to unverified modal\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:187:224\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:187:88"
+    },
+    {
+      "id": "R19-07-modal-empty",
+      "criterion": "Modal không chứng minh đúng submission phải chặn",
+      "pass": false,
+      "observation": {
+        "writes": 1,
+        "verified": 1,
+        "modalText": ""
+      },
+      "error": "Error: Worker saved to unverified modal\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:187:224\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:187:88"
+    },
+    {
+      "id": "R19-09-unrelated-api",
+      "criterion": "Phản hồi truy vấn khác chỉ cùng studentId không được xác nhận Save",
+      "pass": false,
+      "observation": {
+        "verified": 1,
+        "apiOptions": {
+          "url": "mindx.edu.vn",
+          "method": "POST",
+          "operationName": null
+        }
+      },
+      "error": "Error: Unrelated student query accepted as grading mutation\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:188:220\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:188:3"
+    },
+    {
+      "id": "R19-09-missing-submission",
+      "criterion": "Mutation chỉ cùng studentId, không có submissionId phải bị từ chối",
+      "pass": false,
+      "observation": {
+        "accepted": true,
+        "options": {
+          "url": "mindx.edu.vn",
+          "method": "POST",
+          "operationName": null
+        }
+      },
+      "error": "Error: Predicate needs only studentId\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:189:262\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:189:3"
+    },
+    {
+      "id": "R19-10-no-feedback",
+      "criterion": "Ô điểm đúng nhưng không có editor/nhận xét không được VERIFIED",
+      "pass": false,
+      "observation": {
+        "verified": 1,
+        "editorText": "",
+        "modalReads": 1
+      },
+      "error": "Error: Score alone verified absent feedback\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:190:162\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:190:3"
+    },
+    {
+      "id": "R19-11-readback-race",
+      "criterion": "Sửa khi đang đọc DOM không được đánh dấu VERIFIED bản mới",
+      "pass": false,
+      "observation": {
+        "verified": 1,
+        "status": "VERIFIED",
+        "feedback": "LATEST AFTER API"
+      },
+      "error": "Error: Unconditional markVerified upgraded an unapproved edit\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:191:277\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:191:3"
+    },
+    {
+      "id": "R19-12-ui-load-race",
+      "criterion": "Phản hồi buổi cũ không ghi đè danh sách buổi mới",
+      "pass": false,
+      "observation": {
+        "selected": 2,
+        "visible": "AUDIT_PTA_CLASS_SESS_01"
+      },
+      "error": "Error: Old response replaced session 02 list\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:192:646\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:192:3"
+    },
+    {
+      "id": "R19-13-ui-save-failure",
+      "criterion": "Lưu nháp thất bại phải báo lỗi và không giả đã lưu",
+      "pass": false,
+      "observation": {
+        "visible": "UNSAVED",
+        "banner": null
+      },
+      "error": "Error: Draft failure ignored while UI shows edited text\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:193:462\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:193:3"
+    },
+    {
+      "id": "R19-14-route-download-failure",
+      "criterion": "Tải thất bại không tiếp tục AI trên bài cũ/báo thành công",
+      "pass": false,
+      "observation": {
+        "http": 200,
+        "success": true,
+        "aiCalls": 1,
+        "download": {
+          "success": false,
+          "error": "LMS failed",
+          "items": []
+        }
+      },
+      "error": "Error: Failed download still grades old cache and reports success\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:195:214\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:194:3"
+    }
+  ]
+}

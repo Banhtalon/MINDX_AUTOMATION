@@ -1,0 +1,12 @@
+{
+  "temporaryPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+  "temporaryPathExists": false,
+  "externalFixturesRemoved": [
+    "C:\\Users\\QQ\\AppData\\Local\\Temp\\r32-out-Ni68zs"
+  ],
+  "externalFixturesRemaining": [],
+  "junctionTarget": "F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules",
+  "originalNodeModulesExists": true,
+  "originalTsxExists": true,
+  "method": "Verified exact absolute TEMP paths; removed junctions without traversing targets; recursively removed only owned snapshots/fixtures."
+}

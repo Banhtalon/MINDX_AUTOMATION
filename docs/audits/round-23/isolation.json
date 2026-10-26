@@ -1,0 +1,18 @@
+{
+  "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+  "libraries": "physical copy, no junction to original",
+  "excluded": [
+    ".env*",
+    ".git",
+    ".next",
+    "data/mindx_bot.db",
+    "playwright-auth",
+    "temp_submissions",
+    "real data except data/config"
+  ],
+  "environment": "Windows allowlist only; no inherited application credentials; npm offline; telemetry disabled",
+  "nodeSocketGuard": "copied round-19/network-guard.cjs; permits loopback; not an OS firewall",
+  "fixtures": "in-memory SQLite plus one file-backed synthetic SQLite reopened; sharp image decoder; deterministic UI/DOM/Gemini doubles",
+  "externalServiceCalls": 0,
+  "realBrowserLaunched": false
+}

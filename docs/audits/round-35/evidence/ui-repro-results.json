@@ -1,0 +1,62 @@
+{
+  "root": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r35-check",
+  "syntheticOnly": true,
+  "results": [
+    {
+      "id": "R35-UI-DRAFT-REFRESH",
+      "expected": "Failed draft must remain visible and marked unsaved until explicit discard or successful save",
+      "before": {
+        "feedback": "UNSAVED TEACHER EDIT",
+        "unsaved": {
+          "SUB1": true
+        }
+      },
+      "after": {
+        "feedback": "OLD SAVED FEEDBACK",
+        "unsaved": {},
+        "banner": {
+          "type": "error",
+          "text": "Lỗi kết nối khi lưu nháp bài của Synthetic: SYNTHETIC_OFFLINE"
+        }
+      },
+      "bugReproduced": true,
+      "gets": 2
+    },
+    {
+      "id": "R35-UI-OLD-COMPLETION",
+      "expected": "Session 2 response must load session 2 and clear loading after all requests settle",
+      "observed": {
+        "selectedSession": 2,
+        "submissions": [],
+        "isLoadingSubs": true,
+        "urls": [
+          "/api/homework-grader/submissions?classId=AUDIT_PTA_CLASS&sessionId=AUDIT_PTA_CLASS_SESS_01&lessonId=L1",
+          "/api/homework-grader/download-and-grade",
+          "/api/homework-grader/submissions?classId=AUDIT_PTA_CLASS&sessionId=AUDIT_PTA_CLASS_SESS_02&lessonId=L2",
+          "/api/homework-grader/submissions?classId=AUDIT_PTA_CLASS&sessionId=AUDIT_PTA_CLASS_SESS_01&lessonId=L1"
+        ]
+      },
+      "bugReproduced": true
+    },
+    {
+      "id": "R35-STOP-AI-BATCH",
+      "expected": "Stop must prevent starting new student AI grading work",
+      "atStop": {
+        "calls": [
+          "SUB1"
+        ],
+        "isStopped": true,
+        "isRunning": false
+      },
+      "after": {
+        "calls": [
+          "SUB1",
+          "SUB2"
+        ],
+        "success": true,
+        "isStopped": true
+      },
+      "bugReproduced": true
+    }
+  ]
+}

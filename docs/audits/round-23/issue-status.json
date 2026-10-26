@@ -1,0 +1,536 @@
+{
+  "closedSource": 10,
+  "partiallyFixed": 4,
+  "issues": [
+    {
+      "issueId": "R19-01",
+      "status": "PARTIALLY_FIXED",
+      "severity": "P2",
+      "assessment": "IHDR and noninterlaced inflate/filter checks, JPEG SOF/SOS IDs and alpha WebP controls pass. Adam7 scanlines, nonempty garbage VP8/VP8L, and connected PDF page graph still fail.",
+      "independentChecks": [
+        "R22-01-valid-png",
+        "R22-01-valid-jpg",
+        "R22-01-valid-webp",
+        "R22-01-valid-pdf",
+        "R22-01-png-crc-IHDR",
+        "R22-01-png-crc-IDAT",
+        "R22-01-png-crc-IEND",
+        "R22-01-png-invalid-zlib-header",
+        "R22-01-png-valid-header-broken-deflate",
+        "R22-01-png-invalid-bit-depth",
+        "R22-01-jpeg-valid-markers-invalid-component",
+        "R22-01-jpeg-zero-dimension",
+        "R22-01-webp-vp8-header-only",
+        "R22-01-webp-vp8l-header-only",
+        "R22-01-webp-vp8x-empty-child",
+        "R22-01-webp-valid-transparent",
+        "R22-01-pdf-comments-only",
+        "R22-01-pdf-missing-pages",
+        "R23-01-png-zero-depth",
+        "R23-01-png-rgb-depth4",
+        "R23-01-png-palette-depth16",
+        "R23-01-png-reserved-color",
+        "R23-01-png-valid-filter-0",
+        "R23-01-png-valid-filter-1",
+        "R23-01-png-valid-filter-2",
+        "R23-01-png-valid-filter-3",
+        "R23-01-png-valid-filter-4",
+        "R23-01-png-interlace0-filter5",
+        "R23-01-png-interlace0-short-row",
+        "R23-01-png-interlace1-filter5",
+        "R23-01-png-interlace1-short-row",
+        "R23-01-png-valid-adam7",
+        "R23-01-webp-vp8-nonempty-garbage",
+        "R23-01-webp-vp8l-nonempty-garbage",
+        "R23-01-webp-vp8x-alpha-garbage",
+        "R23-01-webp-valid-alpha-false",
+        "R23-01-webp-valid-alpha-true",
+        "R23-01-pdf-missing-kid",
+        "R23-01-pdf-empty-pages-orphan-leaf",
+        "R23-01-pdf-cycle-with-orphan-leaf"
+      ],
+      "failingChecks": [
+        "R23-01-png-interlace1-filter5",
+        "R23-01-png-interlace1-short-row",
+        "R23-01-webp-vp8-nonempty-garbage",
+        "R23-01-webp-vp8l-nonempty-garbage",
+        "R23-01-webp-vp8x-alpha-garbage",
+        "R23-01-pdf-missing-kid",
+        "R23-01-pdf-empty-pages-orphan-leaf",
+        "R23-01-pdf-cycle-with-orphan-leaf"
+      ],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-01-mixed-corrupt",
+          "R19-01-truncated-media",
+          "R20-01-valid-png",
+          "R20-01-valid-jpg",
+          "R20-01-valid-webp",
+          "R20-01-malformed-png",
+          "R20-01-malformed-jpg",
+          "R20-01-malformed-webp"
+        ],
+        "R21": [
+          "R21-01-valid-png",
+          "R21-01-valid-jpg",
+          "R21-01-valid-webp",
+          "R21-01-valid-pdf",
+          "R21-01-png-invalid-idat",
+          "R21-01-jpeg-empty-sof",
+          "R21-01-webp-VP8",
+          "R21-01-webp-VP8L",
+          "R21-01-webp-VP8X",
+          "R21-01-pdf-token-spoof"
+        ],
+        "R22": [
+          "R22-01-valid-png",
+          "R22-01-valid-jpg",
+          "R22-01-valid-webp",
+          "R22-01-valid-pdf",
+          "R22-01-png-crc-IHDR",
+          "R22-01-png-crc-IDAT",
+          "R22-01-png-crc-IEND",
+          "R22-01-png-invalid-zlib-header",
+          "R22-01-png-valid-header-broken-deflate",
+          "R22-01-png-invalid-bit-depth",
+          "R22-01-jpeg-valid-markers-invalid-component",
+          "R22-01-jpeg-zero-dimension",
+          "R22-01-webp-vp8-header-only",
+          "R22-01-webp-vp8l-header-only",
+          "R22-01-webp-vp8x-empty-child",
+          "R22-01-webp-valid-transparent",
+          "R22-01-pdf-comments-only",
+          "R22-01-pdf-missing-pages"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-02",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Fresh R20/R21 rubric IDs, limits, evidence and deterministic sum checks pass.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-02-duplicate-rubric",
+          "R20-02-invalid-blank",
+          "R20-02-invalid-negative",
+          "R20-02-invalid-nan",
+          "R20-02-invalid-string",
+          "R20-02-invalid-sum",
+          "R20-02-before-ai",
+          "R20-02-ui-add-after-delete"
+        ],
+        "R21": [
+          "R21-02-rubric-integrity"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-03",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Fresh composite content hash regressions pass.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-03-legacy-hash",
+          "R20-03-legacy-reapproval",
+          "R20-03-hash-fileHash",
+          "R20-03-hash-decision",
+          "R20-03-hash-calculatedScore",
+          "R20-03-hash-teacherOverrideScore",
+          "R20-03-hash-feedbackHtml",
+          "R20-03-hash-criteriaGradesJson"
+        ],
+        "R21": [
+          "R21-03-content-hash"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-04",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Fresh supplied/disk file drift and deletion checks pass; product source unchanged since R22.",
+      "independentChecks": [
+        "R22-04-supplied-unchanged",
+        "R22-04-supplied-changed",
+        "R22-04-supplied-deleted"
+      ],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-04-ai-file-drift",
+          "R20-04-path-drift",
+          "R20-04-disk-before",
+          "R20-04-disk-during"
+        ],
+        "R21": [
+          "R21-04-disk-unchanged",
+          "R21-04-disk-before",
+          "R21-04-disk-during",
+          "R21-04-disk-deleted",
+          "R21-04-disk-supplied-during"
+        ],
+        "R22": [
+          "R22-04-supplied-unchanged",
+          "R22-04-supplied-changed",
+          "R22-04-supplied-deleted"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-05",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Fresh UI active rubric checks and server criteria/parse status checks pass.",
+      "independentChecks": [
+        "R22-05-ui-rubric-single",
+        "R22-05-ui-rubric-bulk",
+        "R22-05-ui-rubric-criterion"
+      ],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-05-invalid-criteria",
+          "R19-05-undownloaded",
+          "R20-05-invalid-single",
+          "R20-05-invalid-bulk",
+          "R20-05-override-control",
+          "R20-05-authoritative-rubric"
+        ],
+        "R21": [
+          "R21-05-no-rubric-draft",
+          "R21-05-explicit-rubric",
+          "R21-05-ui-authoritative-rubric"
+        ],
+        "R22": [
+          "R22-05-ui-rubric-single",
+          "R22-05-ui-rubric-bulk",
+          "R22-05-ui-rubric-criterion"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-06",
+      "status": "PARTIALLY_FIXED",
+      "severity": "P1",
+      "assessment": "Physical SQLite reopen retains gradedFileHash. Minimal single approval still omits hash; missing/malformed decision, override and criteria allow unreviewed bulk approval.",
+      "independentChecks": [
+        "R22-06-single-missing-hash-true",
+        "R22-06-single-missing-hash-false",
+        "R22-06-bulk-review-missing-list",
+        "R22-06-bulk-review-missing-feedback",
+        "R22-06-bulk-review-matching",
+        "R22-06-bulk-review-wrong-hash",
+        "R22-06-ui-bulk-drift-criteria",
+        "R22-06-ui-bulk-drift-override",
+        "R22-06-ui-bulk-drift-decision",
+        "R22-06-ui-bulk-drift-feedback",
+        "R22-06-ui-bulk-drift-file",
+        "R22-06-graded-hash-reload",
+        "R23-06-single-omits-hash-decision-rubric",
+        "R23-06-bulk-missing-fileHash",
+        "R23-06-bulk-malformed-fileHash",
+        "R23-06-bulk-missing-feedbackHtml",
+        "R23-06-bulk-malformed-feedbackHtml",
+        "R23-06-bulk-missing-decision",
+        "R23-06-bulk-malformed-decision",
+        "R23-06-bulk-missing-teacherOverrideScore",
+        "R23-06-bulk-malformed-teacherOverrideScore",
+        "R23-06-bulk-missing-criteriaGrades",
+        "R23-06-bulk-malformed-criteriaGrades",
+        "R23-06-file-backed-reopen"
+      ],
+      "failingChecks": [
+        "R23-06-single-omits-hash-decision-rubric",
+        "R23-06-bulk-missing-decision",
+        "R23-06-bulk-malformed-decision",
+        "R23-06-bulk-missing-teacherOverrideScore",
+        "R23-06-bulk-missing-criteriaGrades",
+        "R23-06-bulk-malformed-criteriaGrades"
+      ],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-06-stale-approval",
+          "R20-06-latest-control",
+          "R20-06-file-version"
+        ],
+        "R21": [
+          "R21-06-version-fresh",
+          "R21-06-version-stale",
+          "R21-06-version-omitted",
+          "R21-06-version-bulk"
+        ],
+        "R22": [
+          "R22-06-single-missing-hash-true",
+          "R22-06-single-missing-hash-false",
+          "R22-06-bulk-review-missing-list",
+          "R22-06-bulk-review-missing-feedback",
+          "R22-06-bulk-review-matching",
+          "R22-06-bulk-review-wrong-hash",
+          "R22-06-ui-bulk-drift-criteria",
+          "R22-06-ui-bulk-drift-override",
+          "R22-06-ui-bulk-drift-decision",
+          "R22-06-ui-bulk-drift-feedback",
+          "R22-06-ui-bulk-drift-file",
+          "R22-06-graded-hash-reload"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-07",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Exact student/submission identity and substring rejection controls pass.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-07-wrong-download",
+          "R19-07-modal-same-name",
+          "R19-07-modal-empty",
+          "R20-07-id-substring",
+          "R20-07-download-empty"
+        ],
+        "R21": [
+          "R21-07-exact-identity"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-08",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Session/lesson ownership and no-mapping checks pass.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-08-session-lesson",
+          "R20-08-worker-cached-mismatch",
+          "R20-08-worker-no-mapping",
+          "R20-08-api-list-mismatch"
+        ],
+        "R21": [
+          "R21-08-mapping-valid",
+          "R21-08-mapping-mismatch",
+          "R21-08-mapping-missing"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-09",
+      "status": "PARTIALLY_FIXED",
+      "severity": "P1",
+      "assessment": "Missing operation/query, alias introspection, directives and old literal tests pass; absent/invalid/unrelated response data and incomplete argument binding still verify.",
+      "independentChecks": [
+        "R22-09-operation-normal",
+        "R22-09-operation-comment-query",
+        "R22-09-operation-selected-query",
+        "R22-09-operation-attachment",
+        "R22-09-operation-selected-mutation",
+        "R22-09-operation-missing-query",
+        "R22-09-operation-alias-introspection",
+        "R22-09-operation-skipped-grade",
+        "R22-09-operation-literal-other-submission",
+        "R23-09-response-missing-data",
+        "R23-09-response-null-data",
+        "R23-09-response-string-data",
+        "R23-09-response-array-data",
+        "R23-09-response-empty-data",
+        "R23-09-response-null-result",
+        "R23-09-response-false-result",
+        "R23-09-response-unrelated-root",
+        "R23-09-response-wrong-result-id",
+        "R23-09-request-missing-operation",
+        "R23-09-request-include-false",
+        "R23-09-request-include-true",
+        "R23-09-request-literal-wrong-class",
+        "R23-09-request-literal-wrong-session",
+        "R23-09-request-literal-wrong-decision",
+        "R23-09-request-nested-wrong-submission",
+        "R23-09-request-bound-wrong-variable",
+        "R23-09-valid-alias"
+      ],
+      "failingChecks": [
+        "R23-09-response-missing-data",
+        "R23-09-response-null-data",
+        "R23-09-response-string-data",
+        "R23-09-response-unrelated-root",
+        "R23-09-request-literal-wrong-class",
+        "R23-09-request-literal-wrong-session",
+        "R23-09-request-literal-wrong-decision",
+        "R23-09-request-nested-wrong-submission",
+        "R23-09-request-bound-wrong-variable"
+      ],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-09-unrelated-api",
+          "R19-09-missing-submission",
+          "R19-09-real-interceptor",
+          "R20-09-named-query",
+          "R20-09-missing-payload",
+          "R20-09-exact-origin",
+          "R20-09-wrong-score"
+        ],
+        "R21": [
+          "R21-09-required-submissionId",
+          "R21-09-required-studentId",
+          "R21-09-required-score",
+          "R21-09-required-feedback",
+          "R21-09-operation-plain-query",
+          "R21-09-operation-comment-query",
+          "R21-09-operation-other-mutation",
+          "R21-09-operation-selected-query",
+          "R21-09-hostname",
+          "R21-09-phase4-host-token"
+        ],
+        "R22": [
+          "R22-09-operation-normal",
+          "R22-09-operation-comment-query",
+          "R22-09-operation-selected-query",
+          "R22-09-operation-attachment",
+          "R22-09-operation-selected-mutation",
+          "R22-09-operation-missing-query",
+          "R22-09-operation-alias-introspection",
+          "R22-09-operation-skipped-grade",
+          "R22-09-operation-literal-other-submission"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-10",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Grade/redo feedback and decision DOM readback regressions pass.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-10-no-feedback",
+          "R20-10-complete-control",
+          "R20-10-wrong-feedback",
+          "R20-10-empty",
+          "R20-10-unreadable",
+          "R20-10-wrong-decision"
+        ],
+        "R21": [
+          "R21-10-readback-complete",
+          "R21-10-readback-empty",
+          "R21-10-readback-unreadable",
+          "R21-10-readback-wrong-decision",
+          "R21-10-readback-wrong-feedback",
+          "R21-10-readback-redo-complete"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-11",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Conditional final content hash check prevents promoting changed records.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-11-readback-race",
+          "R20-11-conditional-db"
+        ],
+        "R21": [
+          "R21-11-final-cas"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-12",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Fresh old-class and old-session response race checks pass.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-12-ui-load-race",
+          "R20-12-class-race"
+        ],
+        "R21": [
+          "R21-12-scope-race"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-13",
+      "status": "PARTIALLY_FIXED",
+      "severity": "P2",
+      "assessment": "Persisted per-field sequence, equal sequence, two clients, different-field ordering, validation and actual GET/UI reload all pass. SQLITE_FULL leaves metadata committed while row write fails, blocking next valid draft.",
+      "independentChecks": [
+        "R22-13-reordered-same-field",
+        "R22-13-cross-field-reorder",
+        "R22-13-two-tabs-equal-sequence",
+        "R22-13-reload-counter",
+        "R22-13-invalid-request-poison",
+        "R22-13-route-reload",
+        "R23-13-invalid-wrong-owner",
+        "R23-13-invalid-bad-override",
+        "R23-13-invalid-bad-criteria",
+        "R23-13-equal-sequence-feedbackHtml",
+        "R23-13-equal-sequence-decision",
+        "R23-13-equal-sequence-teacherOverrideScore",
+        "R23-13-equal-sequence-criteriaGrades",
+        "R23-13-distinct-fields-reversed",
+        "R23-13-real-get-ui-reload",
+        "R23-13-failed-write-metadata"
+      ],
+      "failingChecks": [
+        "R23-13-failed-write-metadata"
+      ],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-13-ui-save-failure",
+          "R20-13-single-unsaved",
+          "R20-13-bulk-unsaved",
+          "R20-13-response-order"
+        ],
+        "R21": [
+          "R21-13-old-success-new-failure",
+          "R21-13-reordered-successes"
+        ],
+        "R22": [
+          "R22-13-reordered-same-field",
+          "R22-13-cross-field-reorder",
+          "R22-13-two-tabs-equal-sequence",
+          "R22-13-reload-counter",
+          "R22-13-invalid-request-poison",
+          "R22-13-route-reload"
+        ]
+      }
+    },
+    {
+      "issueId": "R19-14",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Failed/partial download stops AI, including skipAi; successful batches retain verified submission scope.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-14-route-download-failure",
+          "R20-14-skip-ai-failure",
+          "R20-14-partial-failure",
+          "R20-14-success-scope"
+        ],
+        "R21": [
+          "R21-14-download-error"
+        ]
+      }
+    }
+  ],
+  "schemaCompatibility": {
+    "historicalR16": "FAIL: expects exactly 7 tables; actual 8",
+    "newSupersetOwnershipControl": "PASS; does not replace or modify historical gate"
+  }
+}

@@ -1,0 +1,553 @@
+{
+  "checkedAt": "2026-10-20T11:32:04.437Z",
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round21-20261020T112635411955Z-mindx-round20-compat\\snapshot",
+  "fixtureWorkspace": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-r21-fixtures-2BoV4Z",
+  "sqlite": ":memory:",
+  "realLmsCalls": 0,
+  "realGeminiCalls": 0,
+  "method": "Actual product function bodies loaded from snapshot; explicit VM doubles for DOM/Gemini; real in-memory SQLite and physical synthetic files. Independent decoder sharp checks malformed image fixtures. No browser or real React scheduling claim.",
+  "sourceHashes": {
+    "src/lib/file-parsers/media-reader.ts": "83ad7ca83eb0e1bec389d27ff2bebcb43a9b60f90235e0895a3e50b114afe5bc",
+    "src/lib/gemini/homework-grader.ts": "361897bab1365e73c9cdc38c36ee49ff2491704809880ee4805455960f634353",
+    "src/lib/gemini/score-auditor.ts": "79378d1d142d033b6f89807e959f59c04b5a840161a28d6f908849c5236401da",
+    "src/lib/db/sqlite.ts": "2999f0aee9ce7b73f7f0b2980397a249a127924de34a40786d8e6768d75da5f6",
+    "src/lib/playwright/download-submissions.ts": "f56327ef033fbd0a0a1bf6a1b520f7a4b0ded26a30809a43cab981d1f0bfe958",
+    "src/lib/playwright/grade-worker.ts": "00408c50ab4d1b3eabab71f0545f3e0f75c79be11221cf85a89a3993a0de614a",
+    "src/lib/playwright/network-interceptor.ts": "a8f7d8e8fc53fd949472e9126a8b173fab95870b8112749af59ac9b73797dcda",
+    "src/app/api/homework-grader/submissions/route.ts": "4083056ba2c4e4c590c7ef6c230d275d6a6bae7c0ce769972747312753299564",
+    "src/app/api/homework-grader/approve/route.ts": "f068bde6632db7065ed69f4a64d19eb6e83ba69fa830831081842d5616981182",
+    "src/components/homework-auto-grader-tab.tsx": "c1069081342f3fca54dedd73f4e2eaefa4e0e664763423e48742472396272fbd"
+  },
+  "total": 49,
+  "passed": 34,
+  "failed": 15,
+  "results": [
+    {
+      "id": "R21-01-valid-png",
+      "criterion": "Media hợp lệ vẫn giữ nguyên bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 96
+      }
+    },
+    {
+      "id": "R21-01-valid-jpg",
+      "criterion": "Media hợp lệ vẫn giữ nguyên bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 269
+      }
+    },
+    {
+      "id": "R21-01-valid-webp",
+      "criterion": "Media hợp lệ vẫn giữ nguyên bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 64
+      }
+    },
+    {
+      "id": "R21-01-valid-pdf",
+      "criterion": "Media hợp lệ vẫn giữ nguyên bytes",
+      "pass": true,
+      "observation": {
+        "bytes": 428
+      }
+    },
+    {
+      "id": "R21-01-png-invalid-idat",
+      "criterion": "IHDR/IDAT/IEND đầy đủ nhưng nội dung nén hỏng phải bị chặn",
+      "pass": false,
+      "observation": {
+        "bytes": 96,
+        "decoderError": "vipspng: libpng read error",
+        "parseStatus": "PARSED",
+        "inlineParts": 1
+      },
+      "error": "Error: Undecodable media still reaches multimodal grading\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at expectInvalidImage (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:170:3)\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:178:3"
+    },
+    {
+      "id": "R21-01-jpeg-empty-sof",
+      "criterion": "SOF/SOS có tên nhưng thiếu kích thước/thành phần ảnh phải bị chặn",
+      "pass": false,
+      "observation": {
+        "bytes": 22,
+        "decoderError": "Input buffer has corrupt header: VipsJpeg: Bogus marker length\nVipsJpeg: Bogus marker length\nVipsJpeg: Bogus marker length",
+        "parseStatus": "PARSED",
+        "inlineParts": 1
+      },
+      "error": "Error: Undecodable media still reaches multimodal grading\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at expectInvalidImage (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:170:3)\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:180:3"
+    },
+    {
+      "id": "R21-01-webp-VP8",
+      "criterion": "Container RIFF đúng nhưng payload không phải ảnh phải bị chặn",
+      "pass": false,
+      "observation": {
+        "bytes": 30,
+        "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+        "parseStatus": "PARSED",
+        "inlineParts": 1
+      },
+      "error": "Error: Undecodable media still reaches multimodal grading\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at expectInvalidImage (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:170:3)\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:181:46"
+    },
+    {
+      "id": "R21-01-webp-VP8L",
+      "criterion": "Container RIFF đúng nhưng payload không phải ảnh phải bị chặn",
+      "pass": false,
+      "observation": {
+        "bytes": 30,
+        "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+        "parseStatus": "PARSED",
+        "inlineParts": 1
+      },
+      "error": "Error: Undecodable media still reaches multimodal grading\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at expectInvalidImage (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:170:3)\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:181:46"
+    },
+    {
+      "id": "R21-01-webp-VP8X",
+      "criterion": "Container RIFF đúng nhưng payload không phải ảnh phải bị chặn",
+      "pass": false,
+      "observation": {
+        "bytes": 30,
+        "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+        "parseStatus": "PARSED",
+        "inlineParts": 1
+      },
+      "error": "Error: Undecodable media still reaches multimodal grading\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at expectInvalidImage (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:170:3)\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:181:46"
+    },
+    {
+      "id": "R21-01-pdf-token-spoof",
+      "criterion": "PDF chỉ chứa các từ khóa, không có đối tượng/trang hợp lệ, phải PARSE_ERROR",
+      "pass": false,
+      "observation": {
+        "bytes": 57,
+        "parseStatus": "PARSED",
+        "inlineParts": 1
+      },
+      "error": "Error: Keyword-only fake PDF accepted\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:187:96\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:184:9"
+    },
+    {
+      "id": "R21-02-rubric-integrity",
+      "criterion": "Barem trùng và điểm thiếu bằng chứng vẫn bị chặn",
+      "pass": true
+    },
+    {
+      "id": "R21-03-content-hash",
+      "criterion": "Hash khóa toàn bộ file/tiêu chí/điểm/quyết định/nhận xét",
+      "pass": true
+    },
+    {
+      "id": "R21-04-disk-unchanged",
+      "criterion": "Đề xuất AI phải gắn cùng phiên bản bytes trên đĩa",
+      "pass": true,
+      "observation": {
+        "calls": 1,
+        "staleIgnored": false,
+        "status": "WAITING_APPROVAL",
+        "dbHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+        "diskHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99"
+      }
+    },
+    {
+      "id": "R21-04-disk-before",
+      "criterion": "Đề xuất AI phải gắn cùng phiên bản bytes trên đĩa",
+      "pass": true,
+      "observation": {
+        "calls": 1,
+        "staleIgnored": false,
+        "status": "WAITING_APPROVAL",
+        "dbHash": "fc92339e2c864d8fc1782834ede5e96beb34e096745cdb559c3a8bb67fbfae7c",
+        "diskHash": "fc92339e2c864d8fc1782834ede5e96beb34e096745cdb559c3a8bb67fbfae7c"
+      }
+    },
+    {
+      "id": "R21-04-disk-during",
+      "criterion": "Đề xuất AI phải gắn cùng phiên bản bytes trên đĩa",
+      "pass": true,
+      "observation": {
+        "calls": 1,
+        "staleIgnored": true,
+        "status": "WAITING_APPROVAL",
+        "dbHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+        "diskHash": "fc92339e2c864d8fc1782834ede5e96beb34e096745cdb559c3a8bb67fbfae7c"
+      }
+    },
+    {
+      "id": "R21-04-disk-deleted",
+      "criterion": "Đề xuất AI phải gắn cùng phiên bản bytes trên đĩa",
+      "pass": true,
+      "observation": {
+        "calls": 1,
+        "staleIgnored": true,
+        "status": "WAITING_APPROVAL",
+        "dbHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+        "diskHash": null
+      }
+    },
+    {
+      "id": "R21-04-disk-supplied-during",
+      "criterion": "Đề xuất AI phải gắn cùng phiên bản bytes trên đĩa",
+      "pass": false,
+      "observation": {
+        "calls": 1,
+        "staleIgnored": false,
+        "status": "WAITING_APPROVAL",
+        "dbHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+        "diskHash": "fc92339e2c864d8fc1782834ede5e96beb34e096745cdb559c3a8bb67fbfae7c"
+      },
+      "error": "Error: AI response committed after physical-file drift\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:204:62\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:197:81"
+    },
+    {
+      "id": "R21-05-no-rubric-draft",
+      "criterion": "Chưa có barem khóa thì không tự tạo barem từ điểm",
+      "pass": true
+    },
+    {
+      "id": "R21-05-explicit-rubric",
+      "criterion": "API duyệt đối chiếu barem được truyền thay vì tự tin danh sách điểm",
+      "pass": true
+    },
+    {
+      "id": "R21-05-ui-authoritative-rubric",
+      "criterion": "Barem đang chọn trên UI phải được áp dụng khi duyệt",
+      "pass": false,
+      "observation": {
+        "draftHttp": 200,
+        "approved": true,
+        "status": "APPROVED",
+        "selectedRubric": [
+          "C1"
+        ],
+        "storedCriteria": [
+          "UNRELATED"
+        ],
+        "requestHasRubric": false
+      },
+      "error": "Error: UI approved criteria outside the currently selected authoritative rubric\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:222:5\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:213:3"
+    },
+    {
+      "id": "R21-06-version-fresh",
+      "criterion": "Duyệt đơn/hàng loạt phải chứng minh đúng file giáo viên đã xem",
+      "pass": true,
+      "observation": {
+        "mode": "fresh",
+        "result": true,
+        "status": "APPROVED",
+        "currentHash": "reviewed-v1",
+        "requestBody": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "studentId": "S1",
+          "submissionId": "SUB1",
+          "fileHash": "reviewed-v1",
+          "criteriaGrades": [
+            {
+              "criterionId": "C1",
+              "criterionName": "Output",
+              "earnedPoints": 80,
+              "maxPoints": 100,
+              "evidenceSnippet": "print(1)",
+              "deductionReason": "Thiếu định dạng"
+            }
+          ],
+          "teacherOverrideScore": null,
+          "decision": "GRADE",
+          "feedbackHtml": "<p>APPROVED FEEDBACK</p>"
+        }
+      }
+    },
+    {
+      "id": "R21-06-version-stale",
+      "criterion": "Duyệt đơn/hàng loạt phải chứng minh đúng file giáo viên đã xem",
+      "pass": true,
+      "observation": {
+        "mode": "stale",
+        "result": false,
+        "status": "WAITING_APPROVAL",
+        "currentHash": "new-v2",
+        "requestBody": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "studentId": "S1",
+          "submissionId": "SUB1",
+          "fileHash": "reviewed-v1",
+          "criteriaGrades": [
+            {
+              "criterionId": "C1",
+              "criterionName": "Output",
+              "earnedPoints": 80,
+              "maxPoints": 100,
+              "evidenceSnippet": "print(1)",
+              "deductionReason": "Thiếu định dạng"
+            }
+          ],
+          "teacherOverrideScore": null,
+          "decision": "GRADE",
+          "feedbackHtml": "<p>APPROVED FEEDBACK</p>"
+        }
+      }
+    },
+    {
+      "id": "R21-06-version-omitted",
+      "criterion": "Duyệt đơn/hàng loạt phải chứng minh đúng file giáo viên đã xem",
+      "pass": false,
+      "observation": {
+        "mode": "omitted",
+        "result": 200,
+        "status": "APPROVED",
+        "currentHash": "new-v2"
+      },
+      "error": "Error: Approval signed a different file version without review\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:233:68\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:224:56"
+    },
+    {
+      "id": "R21-06-version-bulk",
+      "criterion": "Duyệt đơn/hàng loạt phải chứng minh đúng file giáo viên đã xem",
+      "pass": false,
+      "observation": {
+        "mode": "bulk",
+        "result": true,
+        "status": "APPROVED",
+        "currentHash": "new-v2",
+        "requestBody": {
+          "classId": "AUDIT_PTA_CLASS",
+          "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+          "approveAll": true
+        }
+      },
+      "error": "Error: Approval signed a different file version without review\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:233:68\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:224:56"
+    },
+    {
+      "id": "R21-07-exact-identity",
+      "criterion": "Khớp một phần mã học viên/bài nộp không được ghi",
+      "pass": true
+    },
+    {
+      "id": "R21-08-mapping-valid",
+      "criterion": "Chỉ ghi khi lesson và session có ánh xạ xác minh",
+      "pass": true,
+      "observation": {
+        "writes": 1,
+        "verified": 1
+      }
+    },
+    {
+      "id": "R21-08-mapping-mismatch",
+      "criterion": "Chỉ ghi khi lesson và session có ánh xạ xác minh",
+      "pass": true
+    },
+    {
+      "id": "R21-08-mapping-missing",
+      "criterion": "Chỉ ghi khi lesson và session có ánh xạ xác minh",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0
+      }
+    },
+    {
+      "id": "R21-09-required-submissionId",
+      "criterion": "Thiếu trường nghiệp vụ bắt buộc không được xác nhận lưu",
+      "pass": true,
+      "observation": {
+        "verified": 0
+      }
+    },
+    {
+      "id": "R21-09-required-studentId",
+      "criterion": "Thiếu trường nghiệp vụ bắt buộc không được xác nhận lưu",
+      "pass": true,
+      "observation": {
+        "verified": 0
+      }
+    },
+    {
+      "id": "R21-09-required-score",
+      "criterion": "Thiếu trường nghiệp vụ bắt buộc không được xác nhận lưu",
+      "pass": true,
+      "observation": {
+        "verified": 0
+      }
+    },
+    {
+      "id": "R21-09-required-feedback",
+      "criterion": "Thiếu trường nghiệp vụ bắt buộc không được xác nhận lưu",
+      "pass": true,
+      "observation": {
+        "verified": 0
+      }
+    },
+    {
+      "id": "R21-09-operation-plain-query",
+      "criterion": "Tên thao tác/payload đúng không được thay thế kiểm tra thao tác GraphQL thực tế",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "writes": 1,
+        "query": "query GradeSummary { studentSubmission { id } }",
+        "operationName": "GradeSummary"
+      }
+    },
+    {
+      "id": "R21-09-operation-comment-query",
+      "criterion": "Tên thao tác/payload đúng không được thay thế kiểm tra thao tác GraphQL thực tế",
+      "pass": false,
+      "observation": {
+        "verified": 1,
+        "writes": 1,
+        "query": "# mutation\nquery SaveHomeworkGrade { studentSubmission { id } }",
+        "operationName": "SaveHomeworkGrade"
+      },
+      "error": "Error: A non-grading GraphQL operation confirmed the grade\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:249:161\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:248:5"
+    },
+    {
+      "id": "R21-09-operation-other-mutation",
+      "criterion": "Tên thao tác/payload đúng không được thay thế kiểm tra thao tác GraphQL thực tế",
+      "pass": false,
+      "observation": {
+        "verified": 1,
+        "writes": 1,
+        "query": "mutation SaveHomeworkGrade($submissionId: ID!) { saveSubmissionAttachment(submissionId: $submissionId) { id } }",
+        "operationName": "SaveHomeworkGrade"
+      },
+      "error": "Error: A non-grading GraphQL operation confirmed the grade\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:249:161\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:248:5"
+    },
+    {
+      "id": "R21-09-operation-selected-query",
+      "criterion": "Tên thao tác/payload đúng không được thay thế kiểm tra thao tác GraphQL thực tế",
+      "pass": false,
+      "observation": {
+        "verified": 1,
+        "writes": 1,
+        "query": "mutation Unselected { saveHomeworkGrade } query GradeLookup { studentSubmission { id } }",
+        "operationName": "GradeLookup"
+      },
+      "error": "Error: A non-grading GraphQL operation confirmed the grade\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:249:161\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:248:5"
+    },
+    {
+      "id": "R21-09-hostname",
+      "criterion": "Hostname thật được dùng khi lọc phản hồi",
+      "pass": true,
+      "observation": [
+        {
+          "url": "https://lms-api.mindx.edu.vn/",
+          "matched": true
+        },
+        {
+          "url": "https://unrelated.invalid/?return=mindx.edu.vn",
+          "matched": false
+        },
+        {
+          "url": "https://mindx.edu.vn.evil.invalid/",
+          "matched": false
+        }
+      ]
+    },
+    {
+      "id": "R21-09-phase4-host-token",
+      "criterion": "Hợp đồng chuỗi URL lms-api mà R12 kiểm tra vẫn phải đạt cổng hồi quy",
+      "pass": false,
+      "observation": {
+        "filter": "lms-api",
+        "url": "https://lms-api.mindx.edu.vn/",
+        "matched": false
+      },
+      "error": "Error: The legacy phase-4 URL filter can no longer match its legitimate hostname\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:262:59\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:258:3"
+    },
+    {
+      "id": "R21-10-readback-complete",
+      "criterion": "Chỉ VERIFIED khi nhận xét và quyết định đọc lại khớp",
+      "pass": true,
+      "observation": {
+        "verified": 1,
+        "radioReads": 1,
+        "modalReads": 2
+      }
+    },
+    {
+      "id": "R21-10-readback-empty",
+      "criterion": "Chỉ VERIFIED khi nhận xét và quyết định đọc lại khớp",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "radioReads": 1,
+        "modalReads": 2
+      }
+    },
+    {
+      "id": "R21-10-readback-unreadable",
+      "criterion": "Chỉ VERIFIED khi nhận xét và quyết định đọc lại khớp",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "radioReads": 1,
+        "modalReads": 2
+      }
+    },
+    {
+      "id": "R21-10-readback-wrong-decision",
+      "criterion": "Chỉ VERIFIED khi nhận xét và quyết định đọc lại khớp",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "radioReads": 1,
+        "modalReads": 2
+      }
+    },
+    {
+      "id": "R21-10-readback-wrong-feedback",
+      "criterion": "Chỉ VERIFIED khi nhận xét và quyết định đọc lại khớp",
+      "pass": true,
+      "observation": {
+        "verified": 0,
+        "radioReads": 1,
+        "modalReads": 2
+      }
+    },
+    {
+      "id": "R21-10-readback-redo-complete",
+      "criterion": "Chỉ VERIFIED khi nhận xét và quyết định đọc lại khớp",
+      "pass": true,
+      "observation": {
+        "verified": 1,
+        "radioReads": 1,
+        "modalReads": 2
+      }
+    },
+    {
+      "id": "R21-11-final-cas",
+      "criterion": "Chỉnh sửa trong lúc đọc lại không được nâng VERIFIED",
+      "pass": true
+    },
+    {
+      "id": "R21-12-scope-race",
+      "criterion": "Phản hồi buổi cũ đến muộn không ghi đè buổi mới",
+      "pass": true
+    },
+    {
+      "id": "R21-13-old-success-new-failure",
+      "criterion": "Phản hồi thành công cũ không xóa cờ bản mới thất bại",
+      "pass": true
+    },
+    {
+      "id": "R21-13-reordered-successes",
+      "criterion": "Hai lần lưu đều 200 nhưng đến máy chủ ngược thứ tự không được duyệt bản cũ",
+      "pass": false,
+      "observation": {
+        "before": {
+          "visible": "LATEST REVIEWED",
+          "stored": "FIRST OLD",
+          "unsaved": {}
+        },
+        "approvals": 1,
+        "status": "APPROVED",
+        "stored": "FIRST OLD",
+        "visible": "FIRST OLD"
+      },
+      "error": "Error: A successful older save overwrote the newer draft and bulk approval signed it\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:33:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:290:5\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:35:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round21-20261020T112635411955Z-mindx-round20-compat/snapshot/docs/audits/round-21/verify-independent.mjs:281:3"
+    },
+    {
+      "id": "R21-14-download-error",
+      "criterion": "Tải lỗi không được gọi AI, kể cả skipAi",
+      "pass": true
+    }
+  ]
+}

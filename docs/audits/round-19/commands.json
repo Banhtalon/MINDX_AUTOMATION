@@ -1,0 +1,122 @@
+[
+  {
+    "command": "npx tsx scripts/test-phase5.ts",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+    "startedAt": "2026-10-20T10:09:12.913Z",
+    "log": "phase5.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T10:09:22.219Z",
+    "logSha256": "735a579077534d64731d9948630a5d5533f5276e80cf92b2e09b7ffbe11c706b"
+  },
+  {
+    "command": "npx tsx scripts/test-phase4-codex-repros.ts",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+    "startedAt": "2026-10-20T10:09:22.225Z",
+    "log": "phase4.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T10:09:26.258Z",
+    "logSha256": "33be19616a15ba11b386a8c7c5602b0e70c081a78794bbf4697a99a0aa7513af"
+  },
+  {
+    "command": "node docs/audits/round-12/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+    "startedAt": "2026-10-20T10:09:26.260Z",
+    "log": "round12-independent.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T10:09:29.200Z",
+    "logSha256": "ec9d37094fba4f298d4defc3ed09077b82b4c764d85acecf861f5b8536b006b4"
+  },
+  {
+    "command": "node docs/audits/round-13/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+    "startedAt": "2026-10-20T10:09:29.202Z",
+    "log": "round13-independent.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T10:09:31.046Z",
+    "logSha256": "de38068e21e4dc913c359e4329b3027b4beec85d6611efc70560dd390db077ed"
+  },
+  {
+    "command": "node docs/audits/round-16/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+    "startedAt": "2026-10-20T10:09:31.048Z",
+    "log": "round16-independent.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T10:09:32.496Z",
+    "logSha256": "60db64d3557b23435e6bb5266ffec9776c1311674a3a1b283f964beb4182b84f"
+  },
+  {
+    "command": "node docs/audits/round-17/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+    "startedAt": "2026-10-20T10:09:32.497Z",
+    "log": "round17-independent.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T10:09:38.226Z",
+    "logSha256": "b839c14d0bacb04e0d95a813648f9d5aec2a539a9ff2db86d55561b340916ed0"
+  },
+  {
+    "command": "npx tsc --noEmit --incremental false",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+    "startedAt": "2026-10-20T10:09:38.228Z",
+    "log": "typecheck.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T10:09:41.115Z",
+    "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "command": "npm run build",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+    "startedAt": "2026-10-20T10:09:41.116Z",
+    "log": "build.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T10:10:12.370Z",
+    "logSha256": "0f2a3ef802f71f1c11638bf314a993e40e21b6947117a24ac7719694aa972f2e"
+  },
+  {
+    "command": "node docs/audits/round-19/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+    "startedAt": "2026-10-20T10:13:40.980Z",
+    "log": "round19-independent.log",
+    "signal": null,
+    "exitCode": 1,
+    "finishedAt": "2026-10-20T10:13:41.134Z",
+    "logSha256": "d9fe96b831d5d70fa1c4fe25f16b3c25b1ecd6f9acce484e428322c767ed672c"
+  },
+  {
+    "command": "node docs/audits/round-19/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+    "startedAt": "2026-10-20T10:13:58.931Z",
+    "log": "round19-independent.attempt-2.log",
+    "signal": null,
+    "exitCode": 1,
+    "finishedAt": "2026-10-20T10:13:59.597Z",
+    "logSha256": "d104210bd97ba23bb5de8d12dd9d7926434e688083b4637cf18cc391d8d314f6"
+  },
+  {
+    "command": "node docs/audits/round-19/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+    "startedAt": "2026-10-20T10:14:42.722Z",
+    "log": "round19-independent.attempt-3.log",
+    "signal": null,
+    "exitCode": 1,
+    "finishedAt": "2026-10-20T10:14:43.328Z",
+    "logSha256": "94a7a6bfc86d0bdb4d300b1719e97f99bc2e28a848706a0221d651d23a436208"
+  },
+  {
+    "command": "node docs/audits/round-19/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+    "startedAt": "2026-10-20T10:16:22.546Z",
+    "log": "round19-independent.attempt-4.log",
+    "signal": null,
+    "exitCode": 1,
+    "finishedAt": "2026-10-20T10:16:23.233Z",
+    "logSha256": "43422c7aa30aef044338a1a997151105dcc5a72caf571fdf4a0d60ccbff1d0ed"
+  }
+]

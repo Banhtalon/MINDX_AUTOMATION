@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-10-20T12:00:21.697162+00:00",
+  "protectedCount": 319,
+  "protectedUnchanged": true,
+  "sourceCount": 75,
+  "originalSourceUnchanged": true,
+  "originalSourceChanges": [],
+  "snapshotSourceChangesAfterGates": [
+    "next-env.d.ts"
+  ],
+  "originalNextEnvSha256": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+  "planUnchanged": true
+}

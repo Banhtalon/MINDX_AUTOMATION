@@ -1,0 +1,675 @@
+{
+  "generatedAt": "2026-10-20T05:57:15.358Z",
+  "verdict": "GO_SOURCE_ONLY_PHASE5",
+  "scope": "Stage 1-4 source verification gate; real accounts/services and Phase 5 feature acceptance excluded.",
+  "historicalCodes": 61,
+  "round17FindingGroups": 4,
+  "totalCodes": 65,
+  "independentCounts": {
+    "round12": {
+      "passed": 43,
+      "failed": 0
+    },
+    "round13": {
+      "passed": 89,
+      "failed": 0
+    },
+    "round16": {
+      "passed": 16,
+      "failed": 0
+    },
+    "round17": {
+      "passed": 38,
+      "failed": 0
+    }
+  },
+  "independentTotal": 186,
+  "smokePassed": true,
+  "openFindingsInVerifiedScope": 0,
+  "issues": [
+    {
+      "id": "#1",
+      "criterion": "Đọc lại đầy đủ nhận xét, từ chối nội dung thừa",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#2",
+      "criterion": "Phản hồi nghiệp vụ thành công và nội dung đọc lại phải đúng",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#3",
+      "criterion": "Khóa đúng lớp, buổi, học viên",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#4",
+      "criterion": "Đọc nhiều trang; không phá dữ liệu khi đồng bộ rỗng",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#5",
+      "criterion": "Sửa trong lúc lưu LMS không biến nháp mới thành VERIFIED",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#6",
+      "criterion": "Điền nội dung như văn bản, không thực thi thẻ HTML",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#7",
+      "criterion": "Trùng tên vẫn tách mã; dữ liệu điểm sai không ghi đè bản lưu",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#8",
+      "criterion": "Phân biệt điểm 0, chưa chấm, chưa nộp, làm lại",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#9",
+      "criterion": "Chặn công thức bảng tính và ký tự làm lệch hàng/cột",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#10",
+      "criterion": "Đổi lớp/đọc lại không xuất bảng điểm cũ",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#11",
+      "criterion": "Tách Quiz và thực hành, giữ điểm 0 và trạng thái xuất",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#12",
+      "criterion": "Không bịa 14 buổi; Zalo theo khóa, không gán lịch cứng",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#13",
+      "criterion": "AI lọc học viên đủ điều kiện; thiếu dữ kiện không tự viết",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "#14",
+      "criterion": "Đọc cấu hình qua giới hạn đường dẫn cho phép",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R2-01",
+      "criterion": "A01 — So toàn bộ nội dung đã duyệt",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R2-02",
+      "criterion": "A09 — Lọc đúng thao tác và định danh yêu cầu mạng",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R2-03",
+      "criterion": "A02 — Tên ngắn không khớp một phần tên dài",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R2-04",
+      "criterion": "A11 — Mã học viên ổn định khi đổi thứ tự danh sách",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R2-05",
+      "criterion": "A03/A05 — Chặn lớp chưa xác thực, danh sách sai, trùng tên mơ hồ",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R2-06",
+      "criterion": "A04/A06 — Thiếu bài nộp hoặc ma trận không hợp lệ bị chặn",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R2-07",
+      "criterion": "A12 — Phát hiện trang trùng/kẹt/vượt giới hạn",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R2-08",
+      "criterion": "A10 — Đổi lớp/đọc điểm không treo trạng thái chờ",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R2-09",
+      "criterion": "A07/A08 — API nháp/duyệt/AI kiểm tra thành viên và điểm danh",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R2-10",
+      "criterion": "A12/A14 — Quiz riêng, MARKED thiếu điểm bị chặn",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R2-11",
+      "criterion": "A13 — AI thiếu nội dung trả FAILED, không tạo nhận xét thay thế",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R3-01",
+      "criterion": "Nội dung thừa cùng dòng/xuống dòng/tab không được VERIFIED",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R3-02",
+      "criterion": "Yêu cầu mạng rỗng hoặc sai buổi bị chặn",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R3-03",
+      "criterion": "Sai danh sách dù cùng số lượng hoặc trùng tên thiếu mã bị chặn",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R3-04",
+      "criterion": "Trạng thái, điểm, mã cột không hợp lệ bị chặn",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R3-05",
+      "criterion": "Tra học viên bắt buộc theo lớp, AI thiếu định danh không chạy",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R3-06",
+      "criterion": "AI lỗi/lưu ghi chú riêng không xóa nhận xét đang có",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R3-07",
+      "criterion": "Ẩn tên trong ghi chú và thẻ trước khi gọi AI",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R4-01",
+      "criterion": "Danh sách lớp cũ đến muộn không thay lớp mới",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R4-02",
+      "criterion": "Định danh mâu thuẫn hoặc yêu cầu chỉ có nhận xét bị chặn",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R4-03",
+      "criterion": "Đọc điểm lỗi khi tải bản lưu phải tắt cả hai trạng thái chờ",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R4-04",
+      "criterion": "Thiếu columnId/maxScore/score bị từ chối",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R4-05",
+      "criterion": "Gọi trực tiếp AI với buổi khác lớp cũng bị chặn",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R4-06",
+      "criterion": "Hết 50 trang vẫn còn trang tiếp phải báo chưa đọc đủ",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R5-01",
+      "criterion": "Đổi buổi cùng lớp bỏ hàng cũ, chặn lưu/duyệt nhầm buổi",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R5-02",
+      "criterion": "Duyệt bản cũ không làm sai trạng thái/nội dung bản vừa sửa",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R5-03",
+      "criterion": "Trường định danh/nội dung null bị chặn ở mọi tầng yêu cầu",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R5-04",
+      "criterion": "Đổi lớp rồi đọc điểm lỗi ngay không tạo GET thừa gây treo",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R6-01",
+      "criterion": "API nháp/duyệt chỉ chấp nhận học viên đúng lớp, đang học; duyệt PRESENT/LATE",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R7-01",
+      "criterion": "Sửa ghi chú/thẻ/điểm danh lưu DRAFT qua đọc lại",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R8-01",
+      "criterion": "Điểm danh cả lớp có lỗi không báo tất cả thành công",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R9-01",
+      "criterion": "Phản hồi lưu lỗi cũ không khôi phục đè dòng mới/lớp mới",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R10-01",
+      "criterion": "Đối chiếu sau lỗi điểm danh không xóa ghi chú mới đang chờ",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R11-01",
+      "criterion": "S1 chờ lưu không kéo theo dữ liệu cũ làm mất sửa mới của S2",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R12-01",
+      "criterion": "Yêu cầu lưu cũ thành công đến muộn không đè chỉnh sửa mới",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round12-independent-results.json",
+        "round13-independent-results.json"
+      ]
+    },
+    {
+      "id": "R15-01",
+      "criterion": "Duyệt cũ tới muộn không ghi đè bản sửa mới; chờ lưu nháp và duyệt đúng phiên bản",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round16-independent-results.json",
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R15-02",
+      "criterion": "Kết quả AI cũ không thay dữ liệu mới",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round16-independent-results.json",
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R15-03",
+      "criterion": "Bảo toàn dữ liệu giữa các lần mở trang, phản ánh đúng kết quả lưu",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round16-independent-results.json",
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R15-04",
+      "criterion": "Kiểm tra active/điểm danh trước khi ghi LMS",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round16-independent-results.json",
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R15-05",
+      "criterion": "Chờ phân trang DOM hoàn tất rồi đọc đủ bảng điểm",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round16-independent-results.json",
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R15-06",
+      "criterion": "Đóng SSE phải gỡ đăng ký nhận nhật ký và trạng thái",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round16-independent-results.json",
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R15-07",
+      "criterion": "Ẩn tên trong topic/keyKnowledge và dữ liệu đánh giá trước AI",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round16-independent-results.json",
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R16-01",
+      "criterion": "Phân trang DOM trễ 650 ms vẫn thu đủ",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round16-independent-results.json",
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R16-02",
+      "criterion": "Không coi 0 dòng khi tải là hết trang; thiếu roster phải giữ cache",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round16-independent-results.json",
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R16-03",
+      "criterion": "Mọi nhánh AI bảo vệ phiên bản 0, bản duyệt và nội dung hiện có",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round16-independent-results.json",
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R16-04",
+      "criterion": "staleIgnored trả false, giữ bản nhập và hiển thị đúng bản đã lưu",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round16-independent-results.json",
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R16-05",
+      "criterion": "Đọc lại điều kiện/nội dung ngay trước Save và kiểm tra sau ghi",
+      "status": "PASS_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "regressions.log",
+        "round16-independent-results.json",
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R17-01",
+      "criterion": "Protect APPROVED/VERIFIED before every AI branch; preserve entire SQLite row; zero AI calls.",
+      "status": "CLOSED_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R17-02",
+      "criterion": "Preserve stored/returned draft and sections; separate warning; real clipboard and visible editors match.",
+      "status": "CLOSED_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "round17-independent-results.json",
+        "smoke-results.json"
+      ]
+    },
+    {
+      "id": "R17-03",
+      "criterion": "Reject incomplete network or DOM roster including inactive students before cache write.",
+      "status": "CLOSED_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "round17-independent-results.json"
+      ]
+    },
+    {
+      "id": "R17-04",
+      "criterion": "Quick-tag conflict displays saved tags and retains unsaved local selection.",
+      "status": "CLOSED_IN_VERIFIED_SCOPE",
+      "evidence": [
+        "round17-independent-results.json",
+        "smoke-results.json"
+      ]
+    }
+  ]
+}

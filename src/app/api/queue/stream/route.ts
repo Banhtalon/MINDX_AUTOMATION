@@ -1,5 +1,5 @@
 import { taskQueue } from "@/lib/queue/task-queue";
-import type { JobLogRecord } from "@/lib/db/sqlite";
+import { jobLogRepo, type JobLogRecord } from "@/lib/db/sqlite";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 
 export const dynamic = "force-dynamic";
@@ -9,35 +9,80 @@ export async function GET(req: Request) {
   if (securityCheck) return securityCheck;
 
   const encoder = new TextEncoder();
+  let cleanedUp = false;
+  let unsubscribeLogs: (() => void) | null = null;
+  let unsubscribeStatus: (() => void) | null = null;
+
+  const cleanup = () => {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    try {
+      unsubscribeLogs?.();
+    } catch {
+      // ignore
+    }
+    try {
+      unsubscribeStatus?.();
+    } catch {
+      // ignore
+    }
+    unsubscribeLogs = null;
+    unsubscribeStatus = null;
+    try {
+      req.signal?.removeEventListener?.("abort", cleanup);
+    } catch {
+      // ignore
+    }
+  };
 
   const stream = new ReadableStream({
     start(controller) {
-      // Send initial status
+      if (req.signal?.aborted) {
+        cleanup();
+        try {
+          controller.close();
+        } catch {
+          // ignore
+        }
+        return;
+      }
+
+      // Send initial status and recent logs
       const initialStatus = `data: ${JSON.stringify({ type: "STATUS", data: taskQueue.getStatus() })}\n\n`;
       controller.enqueue(encoder.encode(initialStatus));
 
-      const unsubscribeLogs = taskQueue.subscribeLogs((log: JobLogRecord) => {
+      try {
+        const recentLogs = jobLogRepo.getRecentLogs(50).reverse();
+        const recentLogsEvent = `data: ${JSON.stringify({ type: "RECENT_LOGS", data: recentLogs })}\n\n`;
+        controller.enqueue(encoder.encode(recentLogsEvent));
+      } catch {
+        // Ignore if DB not initialized yet
+      }
+
+      unsubscribeLogs = taskQueue.subscribeLogs((log: JobLogRecord) => {
+        if (cleanedUp) return;
         try {
           const message = `data: ${JSON.stringify({ type: "LOG", data: log })}\n\n`;
           controller.enqueue(encoder.encode(message));
         } catch {
-          // Stream might be closed by client
+          cleanup();
         }
       });
 
-      const unsubscribeStatus = taskQueue.subscribeStatus((status) => {
+      unsubscribeStatus = taskQueue.subscribeStatus((status) => {
+        if (cleanedUp) return;
         try {
           const message = `data: ${JSON.stringify({ type: "STATUS", data: status })}\n\n`;
           controller.enqueue(encoder.encode(message));
         } catch {
-          // Stream might be closed by client
+          cleanup();
         }
       });
 
-      return () => {
-        unsubscribeLogs();
-        unsubscribeStatus();
-      };
+      req.signal?.addEventListener?.("abort", cleanup, { once: true });
+    },
+    cancel() {
+      cleanup();
     },
   });
 

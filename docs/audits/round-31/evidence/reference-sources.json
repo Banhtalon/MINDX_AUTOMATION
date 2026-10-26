@@ -1,0 +1,31 @@
+{
+  "checkedAt": "2026-10-20T23:40:10.992303+00:00",
+  "references": [
+    {
+      "title": "Adobe PDF 32000-1:2008",
+      "url": "https://raw.githubusercontent.com/adobe/dc-acrobat-sdk-docs/master/docs/standards/pdfstandards/pdf/PDF32000_2008.pdf",
+      "sha256": "9de0ca9e8570d6209e8bd48a355be8eb6ec376acfc3fc3ae97cd8730351417ff",
+      "bytes": 22491828,
+      "section": "7.3.5",
+      "pdfPageNumbers": [
+        25
+      ],
+      "verified": true,
+      "shortExcerpt": "The token SOLIDUS (a slash followed by no regular characters) introduces a unique valid name defined by the empty sequence of characters.",
+      "method": "Fresh primary Adobe PDF downloaded into memory and text checked; web tool could not open 22 MB file. No full specification persisted."
+    },
+    {
+      "title": "GraphQL September 2025",
+      "url": "https://spec.graphql.org/September2025/#sec-String-Value",
+      "method": "Fresh official web open; independent Python and inherited JS block-string oracles checked separately."
+    },
+    {
+      "title": "Installed Next CLI and TypeScript guides",
+      "files": [
+        "node_modules/next/dist/docs/01-app/03-api-reference/06-cli/next.md",
+        "node_modules/next/dist/docs/01-app/03-api-reference/05-config/02-typescript.md"
+      ],
+      "method": "Read before build; confirms --webpack and build regeneration of next-env.d.ts."
+    }
+  ]
+}

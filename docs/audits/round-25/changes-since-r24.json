@@ -1,0 +1,37 @@
+{
+  "files": [
+    {
+      "path": "MINDX_AUTOMATION_PLAN.md",
+      "r24": {
+        "sha256": "055f9af87253039fe2917e4119465bf917c64acf6bcce1fedca6ad769fd3d855",
+        "bytes": 63130
+      },
+      "r25": {
+        "size": 64285,
+        "sha256": "b9ef6bd75fcf632b2dbb53eda84b2adf39f4844c1aabe55112fa7ceb93a6cb66"
+      }
+    },
+    {
+      "path": "src/lib/file-parsers/media-reader.ts",
+      "r24": {
+        "sha256": "34a7ed4cf18dc7426fb8aeddd59479329326d4d4060a225fb7baa42bb1658d80",
+        "bytes": 19333
+      },
+      "r25": {
+        "size": 24136,
+        "sha256": "31cf42c2524a24a1a9f70dd4cee45c4e6250c745a26e5c6f40df8e4b529089c8"
+      }
+    },
+    {
+      "path": "src/lib/playwright/grade-worker.ts",
+      "r24": {
+        "sha256": "11300641af2dd2b2bde2d409dc37f2a8fef7017ffdd1d256ebbbdb016ef4a9d5",
+        "bytes": 41015
+      },
+      "r25": {
+        "size": 42178,
+        "sha256": "ddffdf10fe1b6b5eb0985724423f9753e16f59dbebbfa040c1120bc1c970f765"
+      }
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "freshSourceManifest": "b2eb2d0eee51744fb6cad2af95e86d976a9b1133b8e8afb2d679a1e3525269fa",
+  "total": 9,
+  "closed": 9,
+  "results": [
+    {
+      "id": "R28-01-pdf-length-direct-fraction",
+      "previousPass": false,
+      "currentPass": true
+    },
+    {
+      "id": "R28-01-pdf-length-direct-real-integral",
+      "previousPass": false,
+      "currentPass": true
+    },
+    {
+      "id": "R28-01-pdf-length-direct-junk",
+      "previousPass": false,
+      "currentPass": true
+    },
+    {
+      "id": "R28-01-pdf-count-1_5",
+      "previousPass": false,
+      "currentPass": true
+    },
+    {
+      "id": "R28-01-pdf-count-1_0",
+      "previousPass": false,
+      "currentPass": true
+    },
+    {
+      "id": "R28-01-pdf-count-1_foo",
+      "previousPass": false,
+      "currentPass": true
+    },
+    {
+      "id": "R28-09-block-two-lines",
+      "previousPass": false,
+      "currentPass": true
+    },
+    {
+      "id": "R28-09-block-two-lines-crlf",
+      "previousPass": false,
+      "currentPass": true
+    },
+    {
+      "id": "R28-09-block-tabs",
+      "previousPass": false,
+      "currentPass": true
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "beforeSha256": "ac9164f06e857eff0c3e9927ffbcafc9f38f36a51467529771b8b4d7a886ad84",
+  "afterSha256": "bbbb2f45e6eb6b0c1f088e9ea30347123fa4a13f0544e94f7e6f14df8db02066",
+  "onlyInsertion": true,
+  "entryFile": "plan-entry.vi.txt",
+  "auditCompleted": true,
+  "sourceAcceptance": false,
+  "liveOperationalAcceptance": false,
+  "verdict": "NO-GO",
+  "closedSource": 13,
+  "existingTaskCheckboxesUnchanged": true,
+  "updatedAt": "2026-10-20T21:12:28.260525+00:00"
+}

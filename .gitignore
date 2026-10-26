@@ -27,7 +27,11 @@ package-lock.json.bak
 /data/*.db*
 /data/submissions/
 /data/spck/
+/data/spck_youtube/
 /data/downloads/
+/data/debug_*
+/data/running_classes.json
+/data/config/teacher_browsed_dirs.json
 
 # Environment variables & secrets
 .env

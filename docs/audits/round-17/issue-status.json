@@ -1,0 +1,500 @@
+{
+  "generatedAt": "2026-10-20T05:32:26.167Z",
+  "verdict": "NO-GO",
+  "scope": "Cấp mã nguồn để chuyển Giai đoạn 5",
+  "historicalOriginalScenariosPassed": 49,
+  "round15OriginalScenariosPassed": 7,
+  "round16OriginalScenariosPassed": 5,
+  "independentRound12GroupsPassed": 43,
+  "independentRound13GroupsPassed": 89,
+  "independentRound16GroupsPassed": 16,
+  "round17Expanded": {
+    "total": 38,
+    "passed": 32,
+    "failed": 6,
+    "findingGroups": 4
+  },
+  "issues": [
+    {
+      "id": "#1",
+      "criterion": "Đọc lại đầy đủ nhận xét, từ chối nội dung thừa",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:117"
+    },
+    {
+      "id": "#2",
+      "criterion": "Phản hồi nghiệp vụ thành công và nội dung đọc lại phải đúng",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:117,144"
+    },
+    {
+      "id": "#3",
+      "criterion": "Khóa đúng lớp, buổi, học viên",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:117,158"
+    },
+    {
+      "id": "#4",
+      "criterion": "Đọc nhiều trang; không phá dữ liệu khi đồng bộ rỗng",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:179"
+    },
+    {
+      "id": "#5",
+      "criterion": "Sửa trong lúc lưu LMS không biến nháp mới thành VERIFIED",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:117"
+    },
+    {
+      "id": "#6",
+      "criterion": "Điền nội dung như văn bản, không thực thi thẻ HTML",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:125"
+    },
+    {
+      "id": "#7",
+      "criterion": "Trùng tên vẫn tách mã; dữ liệu điểm sai không ghi đè bản lưu",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:158,190"
+    },
+    {
+      "id": "#8",
+      "criterion": "Phân biệt điểm 0, chưa chấm, chưa nộp, làm lại",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:166"
+    },
+    {
+      "id": "#9",
+      "criterion": "Chặn công thức bảng tính và ký tự làm lệch hàng/cột",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:224"
+    },
+    {
+      "id": "#10",
+      "criterion": "Đổi lớp/đọc lại không xuất bảng điểm cũ",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:240"
+    },
+    {
+      "id": "#11",
+      "criterion": "Tách Quiz và thực hành, giữ điểm 0 và trạng thái xuất",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:158,166,224"
+    },
+    {
+      "id": "#12",
+      "criterion": "Không bịa 14 buổi; Zalo theo khóa, không gán lịch cứng",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:179,231"
+    },
+    {
+      "id": "#13",
+      "criterion": "AI lọc học viên đủ điều kiện; thiếu dữ kiện không tự viết",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:212"
+    },
+    {
+      "id": "#14",
+      "criterion": "Đọc cấu hình qua giới hạn đường dẫn cho phép",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:231"
+    },
+    {
+      "id": "R2-01",
+      "criterion": "A01 — So toàn bộ nội dung đã duyệt",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:117"
+    },
+    {
+      "id": "R2-02",
+      "criterion": "A09 — Lọc đúng thao tác và định danh yêu cầu mạng",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:133,144"
+    },
+    {
+      "id": "R2-03",
+      "criterion": "A02 — Tên ngắn không khớp một phần tên dài",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:152"
+    },
+    {
+      "id": "R2-04",
+      "criterion": "A11 — Mã học viên ổn định khi đổi thứ tự danh sách",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:179"
+    },
+    {
+      "id": "R2-05",
+      "criterion": "A03/A05 — Chặn lớp chưa xác thực, danh sách sai, trùng tên mơ hồ",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:158"
+    },
+    {
+      "id": "R2-06",
+      "criterion": "A04/A06 — Thiếu bài nộp hoặc ma trận không hợp lệ bị chặn",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:158,190"
+    },
+    {
+      "id": "R2-07",
+      "criterion": "A12 — Phát hiện trang trùng/kẹt/vượt giới hạn",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:172"
+    },
+    {
+      "id": "R2-08",
+      "criterion": "A10 — Đổi lớp/đọc điểm không treo trạng thái chờ",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:240"
+    },
+    {
+      "id": "R2-09",
+      "criterion": "A07/A08 — API nháp/duyệt/AI kiểm tra thành viên và điểm danh",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:202,212"
+    },
+    {
+      "id": "R2-10",
+      "criterion": "A12/A14 — Quiz riêng, MARKED thiếu điểm bị chặn",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:158,166"
+    },
+    {
+      "id": "R2-11",
+      "criterion": "A13 — AI thiếu nội dung trả FAILED, không tạo nhận xét thay thế",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:212,255"
+    },
+    {
+      "id": "R3-01",
+      "criterion": "Nội dung thừa cùng dòng/xuống dòng/tab không được VERIFIED",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:117"
+    },
+    {
+      "id": "R3-02",
+      "criterion": "Yêu cầu mạng rỗng hoặc sai buổi bị chặn",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:133"
+    },
+    {
+      "id": "R3-03",
+      "criterion": "Sai danh sách dù cùng số lượng hoặc trùng tên thiếu mã bị chặn",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:158"
+    },
+    {
+      "id": "R3-04",
+      "criterion": "Trạng thái, điểm, mã cột không hợp lệ bị chặn",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:190"
+    },
+    {
+      "id": "R3-05",
+      "criterion": "Tra học viên bắt buộc theo lớp, AI thiếu định danh không chạy",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:190,212"
+    },
+    {
+      "id": "R3-06",
+      "criterion": "AI lỗi/lưu ghi chú riêng không xóa nhận xét đang có",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:202,255"
+    },
+    {
+      "id": "R3-07",
+      "criterion": "Ẩn tên trong ghi chú và thẻ trước khi gọi AI",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:212"
+    },
+    {
+      "id": "R4-01",
+      "criterion": "Danh sách lớp cũ đến muộn không thay lớp mới",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:243"
+    },
+    {
+      "id": "R4-02",
+      "criterion": "Định danh mâu thuẫn hoặc yêu cầu chỉ có nhận xét bị chặn",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:133"
+    },
+    {
+      "id": "R4-03",
+      "criterion": "Đọc điểm lỗi khi tải bản lưu phải tắt cả hai trạng thái chờ",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:240"
+    },
+    {
+      "id": "R4-04",
+      "criterion": "Thiếu columnId/maxScore/score bị từ chối",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:190"
+    },
+    {
+      "id": "R4-05",
+      "criterion": "Gọi trực tiếp AI với buổi khác lớp cũng bị chặn",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:212"
+    },
+    {
+      "id": "R4-06",
+      "criterion": "Hết 50 trang vẫn còn trang tiếp phải báo chưa đọc đủ",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:172"
+    },
+    {
+      "id": "R5-01",
+      "criterion": "Đổi buổi cùng lớp bỏ hàng cũ, chặn lưu/duyệt nhầm buổi",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:243"
+    },
+    {
+      "id": "R5-02",
+      "criterion": "Duyệt bản cũ không làm sai trạng thái/nội dung bản vừa sửa",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:252"
+    },
+    {
+      "id": "R5-03",
+      "criterion": "Trường định danh/nội dung null bị chặn ở mọi tầng yêu cầu",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:133"
+    },
+    {
+      "id": "R5-04",
+      "criterion": "Đổi lớp rồi đọc điểm lỗi ngay không tạo GET thừa gây treo",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:240"
+    },
+    {
+      "id": "R6-01",
+      "criterion": "API nháp/duyệt chỉ chấp nhận học viên đúng lớp, đang học; duyệt PRESENT/LATE",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:202"
+    },
+    {
+      "id": "R7-01",
+      "criterion": "Sửa ghi chú/thẻ/điểm danh lưu DRAFT qua đọc lại",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:264,; I13"
+    },
+    {
+      "id": "R8-01",
+      "criterion": "Điểm danh cả lớp có lỗi không báo tất cả thành công",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:261"
+    },
+    {
+      "id": "R9-01",
+      "criterion": "Phản hồi lưu lỗi cũ không khôi phục đè dòng mới/lớp mới",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:258,267"
+    },
+    {
+      "id": "R10-01",
+      "criterion": "Đối chiếu sau lỗi điểm danh không xóa ghi chú mới đang chờ",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:267"
+    },
+    {
+      "id": "R11-01",
+      "criterion": "S1 chờ lưu không kéo theo dữ liệu cũ làm mất sửa mới của S2",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:272–280"
+    },
+    {
+      "id": "R12-01",
+      "criterion": "Yêu cầu lưu cũ thành công đến muộn không đè chỉnh sửa mới",
+      "originalScenario": "PASS",
+      "status": "Đạt ca lịch sử",
+      "evidence": "T; I12:285; I13:89 nhóm; I16:R15-03"
+    },
+    {
+      "id": "R15-01",
+      "criterion": "Duyệt cũ tới muộn không ghi đè bản sửa mới; chờ lưu nháp và duyệt đúng phiên bản",
+      "originalScenario": "PASS",
+      "status": "Đạt ca đã thử",
+      "evidence": "I16:R15-01; duyệt cũ bị chặn, duyệt mới hợp lệ thành công."
+    },
+    {
+      "id": "R15-02",
+      "criterion": "Kết quả AI cũ không thay dữ liệu mới",
+      "originalScenario": "PASS",
+      "status": "Đạt ca gốc; còn mở rộng",
+      "evidence": "I16:R15-02; R17-01/02 còn mở bảo vệ bản duyệt và phản hồi thiếu dữ kiện."
+    },
+    {
+      "id": "R15-03",
+      "criterion": "Bảo toàn dữ liệu giữa các lần mở trang, phản ánh đúng kết quả lưu",
+      "originalScenario": "PASS",
+      "status": "Đạt ca gốc; còn mở rộng",
+      "evidence": "I16:R15-03; I17:R16-04-detail; SM:noteConflictFixed; R17-04 còn mở so sánh Quick Tags."
+    },
+    {
+      "id": "R15-04",
+      "criterion": "Kiểm tra active/điểm danh trước khi ghi LMS",
+      "originalScenario": "PASS",
+      "status": "Đạt ca đã thử",
+      "evidence": "I16:R15-04; I17:13 ca R16-05 gồm PRESENT/LATE, 10 ca trước click và 1 ca sau click."
+    },
+    {
+      "id": "R15-05",
+      "criterion": "Chờ phân trang DOM hoàn tất rồi đọc đủ bảng điểm",
+      "originalScenario": "PASS",
+      "status": "Đạt phân trang DOM; còn nhánh mạng",
+      "evidence": "I16:R15-05; I17:9 ca DOM; R17-03 còn mở bảo toàn cache qua GraphQL."
+    },
+    {
+      "id": "R15-06",
+      "criterion": "Đóng SSE phải gỡ đăng ký nhận nhật ký và trạng thái",
+      "originalScenario": "PASS",
+      "status": "Đạt ca đã thử",
+      "evidence": "I16:R15-06; 40 luồng, không còn đăng ký nhận sự kiện."
+    },
+    {
+      "id": "R15-07",
+      "criterion": "Ẩn tên trong topic/keyKnowledge và dữ liệu đánh giá trước AI",
+      "originalScenario": "PASS",
+      "status": "Đạt phạm vi dữ liệu giả",
+      "evidence": "I16:R15-07; T; không có tên ứng viên/bạn vắng trong prompt giả."
+    },
+    {
+      "id": "R16-01",
+      "criterion": "Phân trang DOM trễ 650 ms vẫn thu đủ",
+      "originalScenario": "PASS",
+      "status": "Đạt ca đã thử",
+      "evidence": "T:3825; I16:R16-01; I17:0/100/650 ms có/không trống tải."
+    },
+    {
+      "id": "R16-02",
+      "criterion": "Không coi 0 dòng khi tải là hết trang; thiếu roster phải giữ cache",
+      "originalScenario": "PASS",
+      "status": "Đạt DOM; chưa đóng toàn quy tắc",
+      "evidence": "T:3828; I16:R16-02; I17:9 ca DOM; R17-03 còn hở nhánh mạng."
+    },
+    {
+      "id": "R16-03",
+      "criterion": "Mọi nhánh AI bảo vệ phiên bản 0, bản duyệt và nội dung hiện có",
+      "originalScenario": "PASS",
+      "status": "Chưa đóng toàn diện",
+      "evidence": "T:3835; I16:R16-03; I17:6 ca version 0 đạt; R17-01/02 trượt."
+    },
+    {
+      "id": "R16-04",
+      "criterion": "staleIgnored trả false, giữ bản nhập và hiển thị đúng bản đã lưu",
+      "originalScenario": "PASS",
+      "status": "Đạt ghi chú; chưa đủ Quick Tags",
+      "evidence": "T:3957; I16:R16-04; I17:R16-04-detail đạt; SM:noteConflictFixed; R17-04 trượt."
+    },
+    {
+      "id": "R16-05",
+      "criterion": "Đọc lại điều kiện/nội dung ngay trước Save và kiểm tra sau ghi",
+      "originalScenario": "PASS",
+      "status": "Đạt ca đã thử",
+      "evidence": "T:4036; I16:R16-05; I17:13 ca R16-05 đạt."
+    }
+  ],
+  "findings": [
+    {
+      "id": "R17-01",
+      "priority": "P1",
+      "related": [
+        "R16-03",
+        "R15-02"
+      ],
+      "title": "Nhánh AI đủ dữ kiện vẫn ghi đè bản APPROVED/VERIFIED",
+      "tests": [
+        "R17-01-APPROVED-true",
+        "R17-01-VERIFIED-true"
+      ]
+    },
+    {
+      "id": "R17-02",
+      "priority": "P2",
+      "related": [
+        "R16-03",
+        "R15-02"
+      ],
+      "title": "Thiếu dữ kiện giữ SQLite nhưng thay nội dung màn hình và clipboard",
+      "tests": [
+        "R17-02-insufficient-response",
+        "R17-02-ui"
+      ],
+      "smoke": "insufficientCopy"
+    },
+    {
+      "id": "R17-03",
+      "priority": "P2",
+      "related": [
+        "R16-02",
+        "R15-05"
+      ],
+      "title": "GraphQL thiếu inactive vẫn báo thành công và thay cache đủ bằng cache thiếu",
+      "tests": [
+        "R17-03-partial-network"
+      ]
+    },
+    {
+      "id": "R17-04",
+      "priority": "P2",
+      "related": [
+        "R16-04",
+        "R15-03"
+      ],
+      "title": "Xung đột Quick Tags hiển thị điểm danh thay các thẻ đã lưu",
+      "tests": [
+        "R17-04-tags-conflict"
+      ],
+      "smoke": "tagConflictWrongValue"
+    }
+  ]
+}

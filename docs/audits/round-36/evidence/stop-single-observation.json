@@ -1,0 +1,19 @@
+{
+  "calls": 1,
+  "writes": 0,
+  "result": {
+    "submissionId": "SUB1",
+    "studentId": "S1",
+    "fullName": "Synthetic",
+    "parseStatus": "PARSED",
+    "parseErrorReason": null,
+    "status": "FAILED",
+    "decision": "GRADE",
+    "calculatedScore": 0,
+    "maxTotalScore": 100,
+    "criteriaGrades": [],
+    "feedbackHtml": "",
+    "staleIgnored": true,
+    "errorMessage": "TASK_CANCELLED: Đã dừng chấm AI theo lệnh Dừng khẩn cấp (Stop Bot) trước khi ghi kết quả."
+  }
+}

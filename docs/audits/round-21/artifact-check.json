@@ -1,0 +1,12 @@
+{
+  "uniqueR21CaseIds": true,
+  "r21CountConsistent": true,
+  "canonicalResultsMatchLastAttempt": true,
+  "allLogHashesMatch": true,
+  "r21ScriptMatchesExecutedSnapshot": true,
+  "originalProtectedFilesUnchanged": true,
+  "originalSourceFilesUnchanged": true,
+  "resultSourceHashesMatchBaseline": true,
+  "mandatoryArtifactsPresent": true,
+  "r21ScriptMatchesReceipt": true
+}

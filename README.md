@@ -1,4 +1,4 @@
-# MindX Automation Bot (v2.1)
+# MindX Automation Bot (v2.2.0)
 
 Hệ thống trợ lý tự động hóa toàn diện dành cho Giáo viên tại MindX — Giảm tải 90% các tác vụ thủ công sau mỗi buổi học và cuối khóa học.
 
@@ -32,4 +32,6 @@ Hệ thống trợ lý tự động hóa toàn diện dành cho Giáo viên tạ
 
 ## 📖 Tài liệu chi tiết
 
-Xem chi tiết kiến trúc và kế hoạch triển khai tại [MINDX_AUTOMATION_PLAN.md](./MINDX_AUTOMATION_PLAN.md).
+- **Tổng quan nhanh & Bản đồ file hiện tại:** [PROJECT_STATE.md](./PROJECT_STATE.md)
+- **Lịch sử các phiên bản thay đổi (Changelog):** [CHANGELOG.md](./CHANGELOG.md)
+- **Kế hoạch triển khai & Kiến trúc đầy đủ:** [MINDX_AUTOMATION_PLAN.md](./MINDX_AUTOMATION_PLAN.md)

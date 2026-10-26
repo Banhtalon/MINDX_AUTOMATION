@@ -1,0 +1,679 @@
+{
+  "total": 8,
+  "passed": 8,
+  "failed": 0,
+  "status": "HASH_VERIFIED_R28_R29_BASELINES",
+  "method": "All historical src/scripts hashes checked before executing read-only media source in VM. Current parser imported directly through tsx. Eight byte-identical R29 fixtures; no old snapshot modified.",
+  "baselines": [
+    {
+      "round": 28,
+      "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+      "productFileCount": 57,
+      "allProductHashesMatch": true,
+      "mediaSha256": "0decc7a823d03784cfe62564bad6980fc94b02e76dbfa40f93a393fea3ae23cd",
+      "checks": [
+        {
+          "file": "scripts/recon.ts",
+          "expectedSha256": "50a9cfffd20e1d043112852433070ea78fb084b919d85ad537f96f67b33ee5e2",
+          "observedSha256": "50a9cfffd20e1d043112852433070ea78fb084b919d85ad537f96f67b33ee5e2"
+        },
+        {
+          "file": "scripts/test-patches-round2.ts",
+          "expectedSha256": "2e1b15a66ee4fe900f8f5580a19e40cca4fde9dc27cfaf59bb87c7c268275ba5",
+          "observedSha256": "2e1b15a66ee4fe900f8f5580a19e40cca4fde9dc27cfaf59bb87c7c268275ba5"
+        },
+        {
+          "file": "scripts/test-phase3.ts",
+          "expectedSha256": "436dfb7bb8ae90f09344146e1b3596c06221c993b5fa3b2ad4b1533051b894d1",
+          "observedSha256": "436dfb7bb8ae90f09344146e1b3596c06221c993b5fa3b2ad4b1533051b894d1"
+        },
+        {
+          "file": "scripts/test-phase4-codex-repros.ts",
+          "expectedSha256": "58db0934899bf35da525f3498c169d2de6f74a4fb61d8ea1c6e3b456267372f5",
+          "observedSha256": "58db0934899bf35da525f3498c169d2de6f74a4fb61d8ea1c6e3b456267372f5"
+        },
+        {
+          "file": "scripts/test-phase5.ts",
+          "expectedSha256": "a9ecc128fd60da1634447a7053fc61ced63d5104bb47477e8c228c6e8c5461bd",
+          "observedSha256": "a9ecc128fd60da1634447a7053fc61ced63d5104bb47477e8c228c6e8c5461bd"
+        },
+        {
+          "file": "src/app/api/auth/login/route.ts",
+          "expectedSha256": "6a1fbf964c9f8393459173317d5784d4cc6c07c34a7d0a1a822e144c5afe487a",
+          "observedSha256": "6a1fbf964c9f8393459173317d5784d4cc6c07c34a7d0a1a822e144c5afe487a"
+        },
+        {
+          "file": "src/app/api/auth/status/route.ts",
+          "expectedSha256": "df3438881441ede00e32b3dda49ec1a11c704ed6a0d7fcd6103a069033e5156a",
+          "observedSha256": "df3438881441ede00e32b3dda49ec1a11c704ed6a0d7fcd6103a069033e5156a"
+        },
+        {
+          "file": "src/app/api/homework-grader/approve/route.ts",
+          "expectedSha256": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283",
+          "observedSha256": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283"
+        },
+        {
+          "file": "src/app/api/homework-grader/download-and-grade/route.ts",
+          "expectedSha256": "12c52a3b53eb3db4de810eeb2e22e2d87ea2f09920341d9120c59a5d86db448b",
+          "observedSha256": "12c52a3b53eb3db4de810eeb2e22e2d87ea2f09920341d9120c59a5d86db448b"
+        },
+        {
+          "file": "src/app/api/homework-grader/export/route.ts",
+          "expectedSha256": "4b57dba8f7b78a601de7ba1cd7dcdbb8ea78e48709e5c1791335d7bbbc2fe80a",
+          "observedSha256": "4b57dba8f7b78a601de7ba1cd7dcdbb8ea78e48709e5c1791335d7bbbc2fe80a"
+        },
+        {
+          "file": "src/app/api/homework-grader/save-lms/route.ts",
+          "expectedSha256": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791",
+          "observedSha256": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791"
+        },
+        {
+          "file": "src/app/api/homework-grader/scores/route.ts",
+          "expectedSha256": "adf189bafc396c2dec67b4f769def8ec1822be143029e959eda7d55c93a93dfa",
+          "observedSha256": "adf189bafc396c2dec67b4f769def8ec1822be143029e959eda7d55c93a93dfa"
+        },
+        {
+          "file": "src/app/api/homework-grader/submissions/route.ts",
+          "expectedSha256": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc",
+          "observedSha256": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc"
+        },
+        {
+          "file": "src/app/api/queue/control/route.ts",
+          "expectedSha256": "ba10880adeeb8e5de6807313f13ad01731ed28edebecf859d9687e362c8c2e70",
+          "observedSha256": "ba10880adeeb8e5de6807313f13ad01731ed28edebecf859d9687e362c8c2e70"
+        },
+        {
+          "file": "src/app/api/queue/stream/route.ts",
+          "expectedSha256": "fa33c36a430831964d81fc0a2e51c70e1c7dfa91bf0b1fd3327661619e0961c2",
+          "observedSha256": "fa33c36a430831964d81fc0a2e51c70e1c7dfa91bf0b1fd3327661619e0961c2"
+        },
+        {
+          "file": "src/app/api/session-comments/approve/route.ts",
+          "expectedSha256": "f5bd8e5abc2ec11ce92f1a0279232f83a94222cfa39012f7389f754947253caa",
+          "observedSha256": "f5bd8e5abc2ec11ce92f1a0279232f83a94222cfa39012f7389f754947253caa"
+        },
+        {
+          "file": "src/app/api/session-comments/generate-ai/route.ts",
+          "expectedSha256": "325f6b1d9248f8907bd2bd4f2971d1155bcff6522ae05790d0572dc7c2e9cfd6",
+          "observedSha256": "325f6b1d9248f8907bd2bd4f2971d1155bcff6522ae05790d0572dc7c2e9cfd6"
+        },
+        {
+          "file": "src/app/api/session-comments/list/route.ts",
+          "expectedSha256": "f3e3657417934d7ef877baf582e041d86892ee4d5d81575f25831a598e97c77d",
+          "observedSha256": "f3e3657417934d7ef877baf582e041d86892ee4d5d81575f25831a598e97c77d"
+        },
+        {
+          "file": "src/app/api/session-comments/save-draft/route.ts",
+          "expectedSha256": "055e0633fb74a56187c9c0c901bee7a901eaee8376d1ee208afe34310b875948",
+          "observedSha256": "055e0633fb74a56187c9c0c901bee7a901eaee8376d1ee208afe34310b875948"
+        },
+        {
+          "file": "src/app/api/session-comments/save-lms/route.ts",
+          "expectedSha256": "c0c13bda18cff153709b4bc238fd7c3922d5bda8b7fa94d1af6ab59106c0905c",
+          "observedSha256": "c0c13bda18cff153709b4bc238fd7c3922d5bda8b7fa94d1af6ab59106c0905c"
+        },
+        {
+          "file": "src/app/api/session-comments/sync/route.ts",
+          "expectedSha256": "89567e459fe7ba88ead3cccdd5b4db40aeed0ef67e869705d33b1234166fcf32",
+          "observedSha256": "89567e459fe7ba88ead3cccdd5b4db40aeed0ef67e869705d33b1234166fcf32"
+        },
+        {
+          "file": "src/app/final-project/page.tsx",
+          "expectedSha256": "75bf591ab72f3502c7a187a8302fdfa5e5c2fb25e6c64b8ace0ffec06a7c19e8",
+          "observedSha256": "75bf591ab72f3502c7a187a8302fdfa5e5c2fb25e6c64b8ace0ffec06a7c19e8"
+        },
+        {
+          "file": "src/app/globals.css",
+          "expectedSha256": "39dfece0f5bb4745efdfc93653e01124d72ac7f286ca0e7887653169743826b8",
+          "observedSha256": "39dfece0f5bb4745efdfc93653e01124d72ac7f286ca0e7887653169743826b8"
+        },
+        {
+          "file": "src/app/homework-grader/page.tsx",
+          "expectedSha256": "0bd7b41be9c0ad2af36384e2b1921bf6440dc57499015d0cfa8e931c61523f6d",
+          "observedSha256": "0bd7b41be9c0ad2af36384e2b1921bf6440dc57499015d0cfa8e931c61523f6d"
+        },
+        {
+          "file": "src/app/layout.tsx",
+          "expectedSha256": "0e331573cb47afa19f14e607e32079ca080443dcc81bf3b5f1519dd9be196eac",
+          "observedSha256": "0e331573cb47afa19f14e607e32079ca080443dcc81bf3b5f1519dd9be196eac"
+        },
+        {
+          "file": "src/app/page.tsx",
+          "expectedSha256": "b2ab1d00a895bd171eea4ed207d82fd5ce5c55c9ed67ba9b0e2369293bf2e76d",
+          "observedSha256": "b2ab1d00a895bd171eea4ed207d82fd5ce5c55c9ed67ba9b0e2369293bf2e76d"
+        },
+        {
+          "file": "src/app/session-comments/page.tsx",
+          "expectedSha256": "f1e3eddda28ef9af5835e660f73750ca5852a7476df02481f3b2992e74a577c3",
+          "observedSha256": "f1e3eddda28ef9af5835e660f73750ca5852a7476df02481f3b2992e74a577c3"
+        },
+        {
+          "file": "src/app/syllabus-config/page.tsx",
+          "expectedSha256": "427663d38323433d187570853742af30b641550c11a5cea6606b71d498ebc721",
+          "observedSha256": "427663d38323433d187570853742af30b641550c11a5cea6606b71d498ebc721"
+        },
+        {
+          "file": "src/components/homework-auto-grader-tab.tsx",
+          "expectedSha256": "019bbcc3016fafd5453a6a137dc9d0e1ad6ff94c859fd8b2678e1b1e4f01f3ab",
+          "observedSha256": "019bbcc3016fafd5453a6a137dc9d0e1ad6ff94c859fd8b2678e1b1e4f01f3ab"
+        },
+        {
+          "file": "src/components/live-log-drawer.tsx",
+          "expectedSha256": "73dcb92235ddd5e92c6a85933913e82fc58e07a1ff333c84cf88110438d71cd3",
+          "observedSha256": "73dcb92235ddd5e92c6a85933913e82fc58e07a1ff333c84cf88110438d71cd3"
+        },
+        {
+          "file": "src/lib/config.ts",
+          "expectedSha256": "4ac1332ab0becaaf212e5ac03944b077074572eb43375f7ce8f9b34d6ed3b309",
+          "observedSha256": "4ac1332ab0becaaf212e5ac03944b077074572eb43375f7ce8f9b34d6ed3b309"
+        },
+        {
+          "file": "src/lib/db/json-config.ts",
+          "expectedSha256": "989c335b68721fc62a49e4eb6b74ce08c462c8584eceadc78866520888caca32",
+          "observedSha256": "989c335b68721fc62a49e4eb6b74ce08c462c8584eceadc78866520888caca32"
+        },
+        {
+          "file": "src/lib/db/sqlite.ts",
+          "expectedSha256": "147e883ffb1eb9798cc5c6d87f2f8b0dbc83f9748c34cfef829badd19da640ab",
+          "observedSha256": "147e883ffb1eb9798cc5c6d87f2f8b0dbc83f9748c34cfef829badd19da640ab"
+        },
+        {
+          "file": "src/lib/file-parsers/archive-reader.ts",
+          "expectedSha256": "9363446a1ad08fb9f34a270127d648a90b33e1695c02a016349127901e3e63a2",
+          "observedSha256": "9363446a1ad08fb9f34a270127d648a90b33e1695c02a016349127901e3e63a2"
+        },
+        {
+          "file": "src/lib/file-parsers/code-reader.ts",
+          "expectedSha256": "9d04a75f4baf99c0f8110f6716b2695fa7322eeca5ccdd01f0dbb36b7a08133c",
+          "observedSha256": "9d04a75f4baf99c0f8110f6716b2695fa7322eeca5ccdd01f0dbb36b7a08133c"
+        },
+        {
+          "file": "src/lib/file-parsers/game-reader.ts",
+          "expectedSha256": "796a07b3d8714920a14c3f016cbf72dcf1e666aa98579cfd4030f1ba8e4fa218",
+          "observedSha256": "796a07b3d8714920a14c3f016cbf72dcf1e666aa98579cfd4030f1ba8e4fa218"
+        },
+        {
+          "file": "src/lib/file-parsers/index.ts",
+          "expectedSha256": "5ecd30c44bbe46325f8e467a4573f11015cc875d19a823c8a44291932152bc38",
+          "observedSha256": "5ecd30c44bbe46325f8e467a4573f11015cc875d19a823c8a44291932152bc38"
+        },
+        {
+          "file": "src/lib/file-parsers/media-reader.ts",
+          "expectedSha256": "0decc7a823d03784cfe62564bad6980fc94b02e76dbfa40f93a393fea3ae23cd",
+          "observedSha256": "0decc7a823d03784cfe62564bad6980fc94b02e76dbfa40f93a393fea3ae23cd"
+        },
+        {
+          "file": "src/lib/gemini/client.ts",
+          "expectedSha256": "87382033af0fdd3d2858d8dc495e43a7acb1079172d2c11011a1ea53d0c37851",
+          "observedSha256": "87382033af0fdd3d2858d8dc495e43a7acb1079172d2c11011a1ea53d0c37851"
+        },
+        {
+          "file": "src/lib/gemini/comment-generator.ts",
+          "expectedSha256": "a424c188f5a47e979395300235d69531c1eea9af0c90356db6fc0acf5e06e771",
+          "observedSha256": "a424c188f5a47e979395300235d69531c1eea9af0c90356db6fc0acf5e06e771"
+        },
+        {
+          "file": "src/lib/gemini/homework-grader.ts",
+          "expectedSha256": "b2bd3a4efeb8706ddfce190fecaef5d30aab76420bc8e0f9b34c1ab785483c57",
+          "observedSha256": "b2bd3a4efeb8706ddfce190fecaef5d30aab76420bc8e0f9b34c1ab785483c57"
+        },
+        {
+          "file": "src/lib/gemini/score-auditor.ts",
+          "expectedSha256": "79378d1d142d033b6f89807e959f59c04b5a840161a28d6f908849c5236401da",
+          "observedSha256": "79378d1d142d033b6f89807e959f59c04b5a840161a28d6f908849c5236401da"
+        },
+        {
+          "file": "src/lib/playwright/auth.ts",
+          "expectedSha256": "2708e5b91ccf96ed193f46af69937ea0ad29593d5a6b999e5dc1b5902b740209",
+          "observedSha256": "2708e5b91ccf96ed193f46af69937ea0ad29593d5a6b999e5dc1b5902b740209"
+        },
+        {
+          "file": "src/lib/playwright/browser-manager.ts",
+          "expectedSha256": "110053838d68f5e8e12a4bb75a205e4cfe7d5f0297729624742e7d4c7812b343",
+          "observedSha256": "110053838d68f5e8e12a4bb75a205e4cfe7d5f0297729624742e7d4c7812b343"
+        },
+        {
+          "file": "src/lib/playwright/download-submissions.ts",
+          "expectedSha256": "f56327ef033fbd0a0a1bf6a1b520f7a4b0ded26a30809a43cab981d1f0bfe958",
+          "observedSha256": "f56327ef033fbd0a0a1bf6a1b520f7a4b0ded26a30809a43cab981d1f0bfe958"
+        },
+        {
+          "file": "src/lib/playwright/grade-worker.ts",
+          "expectedSha256": "3fe319e5ca6dfe60f07a6c0bba37d4554110caad5afc36a3f320e20cd9b13a8e",
+          "observedSha256": "3fe319e5ca6dfe60f07a6c0bba37d4554110caad5afc36a3f320e20cd9b13a8e"
+        },
+        {
+          "file": "src/lib/playwright/lms-helpers.ts",
+          "expectedSha256": "c140ac729d4bddaf88b33256bca6d3987a3838f0977d014545f422f2c59556f3",
+          "observedSha256": "c140ac729d4bddaf88b33256bca6d3987a3838f0977d014545f422f2c59556f3"
+        },
+        {
+          "file": "src/lib/playwright/network-interceptor.ts",
+          "expectedSha256": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad",
+          "observedSha256": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad"
+        },
+        {
+          "file": "src/lib/playwright/save-comments.ts",
+          "expectedSha256": "58ffc415148a6d2ab2106b40e71d7287bfd502afa96ab7ed1b102da993e26983",
+          "observedSha256": "58ffc415148a6d2ab2106b40e71d7287bfd502afa96ab7ed1b102da993e26983"
+        },
+        {
+          "file": "src/lib/playwright/scrape-scores.ts",
+          "expectedSha256": "9f9cfda275d73f855b8a491cace2276f44e9fa210eacc8e385fee5640c2a2d10",
+          "observedSha256": "9f9cfda275d73f855b8a491cace2276f44e9fa210eacc8e385fee5640c2a2d10"
+        },
+        {
+          "file": "src/lib/playwright/selectors.ts",
+          "expectedSha256": "720f48cdea9d7038564aba5ad97a2913525f02a2fc2d9bfb50bf10e5bc291a0e",
+          "observedSha256": "720f48cdea9d7038564aba5ad97a2913525f02a2fc2d9bfb50bf10e5bc291a0e"
+        },
+        {
+          "file": "src/lib/playwright/sync-class.ts",
+          "expectedSha256": "d4904d83dd46f6036efa32788065b301fe704097ee52e2b00c3548c1adc2d563",
+          "observedSha256": "d4904d83dd46f6036efa32788065b301fe704097ee52e2b00c3548c1adc2d563"
+        },
+        {
+          "file": "src/lib/queue/task-queue.ts",
+          "expectedSha256": "a284d7f7099045bc1e3ddd6491a9afce79409fe6fff00b9a7d4988495fa82578",
+          "observedSha256": "a284d7f7099045bc1e3ddd6491a9afce79409fe6fff00b9a7d4988495fa82578"
+        },
+        {
+          "file": "src/lib/security/local-guard.ts",
+          "expectedSha256": "205f8ec95b183b33cbf65add0fca169f4a4882a43236ad1a9e69f5d926baf470",
+          "observedSha256": "205f8ec95b183b33cbf65add0fca169f4a4882a43236ad1a9e69f5d926baf470"
+        },
+        {
+          "file": "src/lib/security/path-allowlist.ts",
+          "expectedSha256": "a3466414a7c626b2c75d95c93b4a66e2b32d3d2be78cfa8dec79d3d145e1af0b",
+          "observedSha256": "a3466414a7c626b2c75d95c93b4a66e2b32d3d2be78cfa8dec79d3d145e1af0b"
+        },
+        {
+          "file": "src/lib/utils.ts",
+          "expectedSha256": "ec94d82b9920dd7bde4a8d48a878d1a72c336a12101d411779877ab337eeb466",
+          "observedSha256": "ec94d82b9920dd7bde4a8d48a878d1a72c336a12101d411779877ab337eeb466"
+        },
+        {
+          "file": "src/lib/zalo/broadcast-generator.ts",
+          "expectedSha256": "178ab13591a6fbbb52ccf46d717248447c1f93d9bd7d9da96ef7c60caf6799ec",
+          "observedSha256": "178ab13591a6fbbb52ccf46d717248447c1f93d9bd7d9da96ef7c60caf6799ec"
+        }
+      ]
+    },
+    {
+      "round": 29,
+      "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round29-20261020T203838Z-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+      "productFileCount": 57,
+      "allProductHashesMatch": true,
+      "mediaSha256": "c019389c427ca6c0ce0607309850100f1d46020a0c942727e585aa6fbddb9a1a",
+      "checks": [
+        {
+          "file": "scripts/recon.ts",
+          "expectedSha256": "50a9cfffd20e1d043112852433070ea78fb084b919d85ad537f96f67b33ee5e2",
+          "observedSha256": "50a9cfffd20e1d043112852433070ea78fb084b919d85ad537f96f67b33ee5e2"
+        },
+        {
+          "file": "scripts/test-patches-round2.ts",
+          "expectedSha256": "2e1b15a66ee4fe900f8f5580a19e40cca4fde9dc27cfaf59bb87c7c268275ba5",
+          "observedSha256": "2e1b15a66ee4fe900f8f5580a19e40cca4fde9dc27cfaf59bb87c7c268275ba5"
+        },
+        {
+          "file": "scripts/test-phase3.ts",
+          "expectedSha256": "436dfb7bb8ae90f09344146e1b3596c06221c993b5fa3b2ad4b1533051b894d1",
+          "observedSha256": "436dfb7bb8ae90f09344146e1b3596c06221c993b5fa3b2ad4b1533051b894d1"
+        },
+        {
+          "file": "scripts/test-phase4-codex-repros.ts",
+          "expectedSha256": "58db0934899bf35da525f3498c169d2de6f74a4fb61d8ea1c6e3b456267372f5",
+          "observedSha256": "58db0934899bf35da525f3498c169d2de6f74a4fb61d8ea1c6e3b456267372f5"
+        },
+        {
+          "file": "scripts/test-phase5.ts",
+          "expectedSha256": "a9ecc128fd60da1634447a7053fc61ced63d5104bb47477e8c228c6e8c5461bd",
+          "observedSha256": "a9ecc128fd60da1634447a7053fc61ced63d5104bb47477e8c228c6e8c5461bd"
+        },
+        {
+          "file": "src/app/api/auth/login/route.ts",
+          "expectedSha256": "6a1fbf964c9f8393459173317d5784d4cc6c07c34a7d0a1a822e144c5afe487a",
+          "observedSha256": "6a1fbf964c9f8393459173317d5784d4cc6c07c34a7d0a1a822e144c5afe487a"
+        },
+        {
+          "file": "src/app/api/auth/status/route.ts",
+          "expectedSha256": "df3438881441ede00e32b3dda49ec1a11c704ed6a0d7fcd6103a069033e5156a",
+          "observedSha256": "df3438881441ede00e32b3dda49ec1a11c704ed6a0d7fcd6103a069033e5156a"
+        },
+        {
+          "file": "src/app/api/homework-grader/approve/route.ts",
+          "expectedSha256": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283",
+          "observedSha256": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283"
+        },
+        {
+          "file": "src/app/api/homework-grader/download-and-grade/route.ts",
+          "expectedSha256": "12c52a3b53eb3db4de810eeb2e22e2d87ea2f09920341d9120c59a5d86db448b",
+          "observedSha256": "12c52a3b53eb3db4de810eeb2e22e2d87ea2f09920341d9120c59a5d86db448b"
+        },
+        {
+          "file": "src/app/api/homework-grader/export/route.ts",
+          "expectedSha256": "4b57dba8f7b78a601de7ba1cd7dcdbb8ea78e48709e5c1791335d7bbbc2fe80a",
+          "observedSha256": "4b57dba8f7b78a601de7ba1cd7dcdbb8ea78e48709e5c1791335d7bbbc2fe80a"
+        },
+        {
+          "file": "src/app/api/homework-grader/save-lms/route.ts",
+          "expectedSha256": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791",
+          "observedSha256": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791"
+        },
+        {
+          "file": "src/app/api/homework-grader/scores/route.ts",
+          "expectedSha256": "adf189bafc396c2dec67b4f769def8ec1822be143029e959eda7d55c93a93dfa",
+          "observedSha256": "adf189bafc396c2dec67b4f769def8ec1822be143029e959eda7d55c93a93dfa"
+        },
+        {
+          "file": "src/app/api/homework-grader/submissions/route.ts",
+          "expectedSha256": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc",
+          "observedSha256": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc"
+        },
+        {
+          "file": "src/app/api/queue/control/route.ts",
+          "expectedSha256": "ba10880adeeb8e5de6807313f13ad01731ed28edebecf859d9687e362c8c2e70",
+          "observedSha256": "ba10880adeeb8e5de6807313f13ad01731ed28edebecf859d9687e362c8c2e70"
+        },
+        {
+          "file": "src/app/api/queue/stream/route.ts",
+          "expectedSha256": "fa33c36a430831964d81fc0a2e51c70e1c7dfa91bf0b1fd3327661619e0961c2",
+          "observedSha256": "fa33c36a430831964d81fc0a2e51c70e1c7dfa91bf0b1fd3327661619e0961c2"
+        },
+        {
+          "file": "src/app/api/session-comments/approve/route.ts",
+          "expectedSha256": "f5bd8e5abc2ec11ce92f1a0279232f83a94222cfa39012f7389f754947253caa",
+          "observedSha256": "f5bd8e5abc2ec11ce92f1a0279232f83a94222cfa39012f7389f754947253caa"
+        },
+        {
+          "file": "src/app/api/session-comments/generate-ai/route.ts",
+          "expectedSha256": "325f6b1d9248f8907bd2bd4f2971d1155bcff6522ae05790d0572dc7c2e9cfd6",
+          "observedSha256": "325f6b1d9248f8907bd2bd4f2971d1155bcff6522ae05790d0572dc7c2e9cfd6"
+        },
+        {
+          "file": "src/app/api/session-comments/list/route.ts",
+          "expectedSha256": "f3e3657417934d7ef877baf582e041d86892ee4d5d81575f25831a598e97c77d",
+          "observedSha256": "f3e3657417934d7ef877baf582e041d86892ee4d5d81575f25831a598e97c77d"
+        },
+        {
+          "file": "src/app/api/session-comments/save-draft/route.ts",
+          "expectedSha256": "055e0633fb74a56187c9c0c901bee7a901eaee8376d1ee208afe34310b875948",
+          "observedSha256": "055e0633fb74a56187c9c0c901bee7a901eaee8376d1ee208afe34310b875948"
+        },
+        {
+          "file": "src/app/api/session-comments/save-lms/route.ts",
+          "expectedSha256": "c0c13bda18cff153709b4bc238fd7c3922d5bda8b7fa94d1af6ab59106c0905c",
+          "observedSha256": "c0c13bda18cff153709b4bc238fd7c3922d5bda8b7fa94d1af6ab59106c0905c"
+        },
+        {
+          "file": "src/app/api/session-comments/sync/route.ts",
+          "expectedSha256": "89567e459fe7ba88ead3cccdd5b4db40aeed0ef67e869705d33b1234166fcf32",
+          "observedSha256": "89567e459fe7ba88ead3cccdd5b4db40aeed0ef67e869705d33b1234166fcf32"
+        },
+        {
+          "file": "src/app/final-project/page.tsx",
+          "expectedSha256": "75bf591ab72f3502c7a187a8302fdfa5e5c2fb25e6c64b8ace0ffec06a7c19e8",
+          "observedSha256": "75bf591ab72f3502c7a187a8302fdfa5e5c2fb25e6c64b8ace0ffec06a7c19e8"
+        },
+        {
+          "file": "src/app/globals.css",
+          "expectedSha256": "39dfece0f5bb4745efdfc93653e01124d72ac7f286ca0e7887653169743826b8",
+          "observedSha256": "39dfece0f5bb4745efdfc93653e01124d72ac7f286ca0e7887653169743826b8"
+        },
+        {
+          "file": "src/app/homework-grader/page.tsx",
+          "expectedSha256": "0bd7b41be9c0ad2af36384e2b1921bf6440dc57499015d0cfa8e931c61523f6d",
+          "observedSha256": "0bd7b41be9c0ad2af36384e2b1921bf6440dc57499015d0cfa8e931c61523f6d"
+        },
+        {
+          "file": "src/app/layout.tsx",
+          "expectedSha256": "0e331573cb47afa19f14e607e32079ca080443dcc81bf3b5f1519dd9be196eac",
+          "observedSha256": "0e331573cb47afa19f14e607e32079ca080443dcc81bf3b5f1519dd9be196eac"
+        },
+        {
+          "file": "src/app/page.tsx",
+          "expectedSha256": "b2ab1d00a895bd171eea4ed207d82fd5ce5c55c9ed67ba9b0e2369293bf2e76d",
+          "observedSha256": "b2ab1d00a895bd171eea4ed207d82fd5ce5c55c9ed67ba9b0e2369293bf2e76d"
+        },
+        {
+          "file": "src/app/session-comments/page.tsx",
+          "expectedSha256": "f1e3eddda28ef9af5835e660f73750ca5852a7476df02481f3b2992e74a577c3",
+          "observedSha256": "f1e3eddda28ef9af5835e660f73750ca5852a7476df02481f3b2992e74a577c3"
+        },
+        {
+          "file": "src/app/syllabus-config/page.tsx",
+          "expectedSha256": "427663d38323433d187570853742af30b641550c11a5cea6606b71d498ebc721",
+          "observedSha256": "427663d38323433d187570853742af30b641550c11a5cea6606b71d498ebc721"
+        },
+        {
+          "file": "src/components/homework-auto-grader-tab.tsx",
+          "expectedSha256": "019bbcc3016fafd5453a6a137dc9d0e1ad6ff94c859fd8b2678e1b1e4f01f3ab",
+          "observedSha256": "019bbcc3016fafd5453a6a137dc9d0e1ad6ff94c859fd8b2678e1b1e4f01f3ab"
+        },
+        {
+          "file": "src/components/live-log-drawer.tsx",
+          "expectedSha256": "73dcb92235ddd5e92c6a85933913e82fc58e07a1ff333c84cf88110438d71cd3",
+          "observedSha256": "73dcb92235ddd5e92c6a85933913e82fc58e07a1ff333c84cf88110438d71cd3"
+        },
+        {
+          "file": "src/lib/config.ts",
+          "expectedSha256": "4ac1332ab0becaaf212e5ac03944b077074572eb43375f7ce8f9b34d6ed3b309",
+          "observedSha256": "4ac1332ab0becaaf212e5ac03944b077074572eb43375f7ce8f9b34d6ed3b309"
+        },
+        {
+          "file": "src/lib/db/json-config.ts",
+          "expectedSha256": "989c335b68721fc62a49e4eb6b74ce08c462c8584eceadc78866520888caca32",
+          "observedSha256": "989c335b68721fc62a49e4eb6b74ce08c462c8584eceadc78866520888caca32"
+        },
+        {
+          "file": "src/lib/db/sqlite.ts",
+          "expectedSha256": "147e883ffb1eb9798cc5c6d87f2f8b0dbc83f9748c34cfef829badd19da640ab",
+          "observedSha256": "147e883ffb1eb9798cc5c6d87f2f8b0dbc83f9748c34cfef829badd19da640ab"
+        },
+        {
+          "file": "src/lib/file-parsers/archive-reader.ts",
+          "expectedSha256": "9363446a1ad08fb9f34a270127d648a90b33e1695c02a016349127901e3e63a2",
+          "observedSha256": "9363446a1ad08fb9f34a270127d648a90b33e1695c02a016349127901e3e63a2"
+        },
+        {
+          "file": "src/lib/file-parsers/code-reader.ts",
+          "expectedSha256": "9d04a75f4baf99c0f8110f6716b2695fa7322eeca5ccdd01f0dbb36b7a08133c",
+          "observedSha256": "9d04a75f4baf99c0f8110f6716b2695fa7322eeca5ccdd01f0dbb36b7a08133c"
+        },
+        {
+          "file": "src/lib/file-parsers/game-reader.ts",
+          "expectedSha256": "796a07b3d8714920a14c3f016cbf72dcf1e666aa98579cfd4030f1ba8e4fa218",
+          "observedSha256": "796a07b3d8714920a14c3f016cbf72dcf1e666aa98579cfd4030f1ba8e4fa218"
+        },
+        {
+          "file": "src/lib/file-parsers/index.ts",
+          "expectedSha256": "5ecd30c44bbe46325f8e467a4573f11015cc875d19a823c8a44291932152bc38",
+          "observedSha256": "5ecd30c44bbe46325f8e467a4573f11015cc875d19a823c8a44291932152bc38"
+        },
+        {
+          "file": "src/lib/file-parsers/media-reader.ts",
+          "expectedSha256": "c019389c427ca6c0ce0607309850100f1d46020a0c942727e585aa6fbddb9a1a",
+          "observedSha256": "c019389c427ca6c0ce0607309850100f1d46020a0c942727e585aa6fbddb9a1a"
+        },
+        {
+          "file": "src/lib/gemini/client.ts",
+          "expectedSha256": "87382033af0fdd3d2858d8dc495e43a7acb1079172d2c11011a1ea53d0c37851",
+          "observedSha256": "87382033af0fdd3d2858d8dc495e43a7acb1079172d2c11011a1ea53d0c37851"
+        },
+        {
+          "file": "src/lib/gemini/comment-generator.ts",
+          "expectedSha256": "a424c188f5a47e979395300235d69531c1eea9af0c90356db6fc0acf5e06e771",
+          "observedSha256": "a424c188f5a47e979395300235d69531c1eea9af0c90356db6fc0acf5e06e771"
+        },
+        {
+          "file": "src/lib/gemini/homework-grader.ts",
+          "expectedSha256": "b2bd3a4efeb8706ddfce190fecaef5d30aab76420bc8e0f9b34c1ab785483c57",
+          "observedSha256": "b2bd3a4efeb8706ddfce190fecaef5d30aab76420bc8e0f9b34c1ab785483c57"
+        },
+        {
+          "file": "src/lib/gemini/score-auditor.ts",
+          "expectedSha256": "79378d1d142d033b6f89807e959f59c04b5a840161a28d6f908849c5236401da",
+          "observedSha256": "79378d1d142d033b6f89807e959f59c04b5a840161a28d6f908849c5236401da"
+        },
+        {
+          "file": "src/lib/playwright/auth.ts",
+          "expectedSha256": "2708e5b91ccf96ed193f46af69937ea0ad29593d5a6b999e5dc1b5902b740209",
+          "observedSha256": "2708e5b91ccf96ed193f46af69937ea0ad29593d5a6b999e5dc1b5902b740209"
+        },
+        {
+          "file": "src/lib/playwright/browser-manager.ts",
+          "expectedSha256": "110053838d68f5e8e12a4bb75a205e4cfe7d5f0297729624742e7d4c7812b343",
+          "observedSha256": "110053838d68f5e8e12a4bb75a205e4cfe7d5f0297729624742e7d4c7812b343"
+        },
+        {
+          "file": "src/lib/playwright/download-submissions.ts",
+          "expectedSha256": "f56327ef033fbd0a0a1bf6a1b520f7a4b0ded26a30809a43cab981d1f0bfe958",
+          "observedSha256": "f56327ef033fbd0a0a1bf6a1b520f7a4b0ded26a30809a43cab981d1f0bfe958"
+        },
+        {
+          "file": "src/lib/playwright/grade-worker.ts",
+          "expectedSha256": "f5db4a78fcdd2b2022a6c663444e0f6c24acfc6600da884cd5b62a75fef33d73",
+          "observedSha256": "f5db4a78fcdd2b2022a6c663444e0f6c24acfc6600da884cd5b62a75fef33d73"
+        },
+        {
+          "file": "src/lib/playwright/lms-helpers.ts",
+          "expectedSha256": "c140ac729d4bddaf88b33256bca6d3987a3838f0977d014545f422f2c59556f3",
+          "observedSha256": "c140ac729d4bddaf88b33256bca6d3987a3838f0977d014545f422f2c59556f3"
+        },
+        {
+          "file": "src/lib/playwright/network-interceptor.ts",
+          "expectedSha256": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad",
+          "observedSha256": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad"
+        },
+        {
+          "file": "src/lib/playwright/save-comments.ts",
+          "expectedSha256": "58ffc415148a6d2ab2106b40e71d7287bfd502afa96ab7ed1b102da993e26983",
+          "observedSha256": "58ffc415148a6d2ab2106b40e71d7287bfd502afa96ab7ed1b102da993e26983"
+        },
+        {
+          "file": "src/lib/playwright/scrape-scores.ts",
+          "expectedSha256": "9f9cfda275d73f855b8a491cace2276f44e9fa210eacc8e385fee5640c2a2d10",
+          "observedSha256": "9f9cfda275d73f855b8a491cace2276f44e9fa210eacc8e385fee5640c2a2d10"
+        },
+        {
+          "file": "src/lib/playwright/selectors.ts",
+          "expectedSha256": "720f48cdea9d7038564aba5ad97a2913525f02a2fc2d9bfb50bf10e5bc291a0e",
+          "observedSha256": "720f48cdea9d7038564aba5ad97a2913525f02a2fc2d9bfb50bf10e5bc291a0e"
+        },
+        {
+          "file": "src/lib/playwright/sync-class.ts",
+          "expectedSha256": "d4904d83dd46f6036efa32788065b301fe704097ee52e2b00c3548c1adc2d563",
+          "observedSha256": "d4904d83dd46f6036efa32788065b301fe704097ee52e2b00c3548c1adc2d563"
+        },
+        {
+          "file": "src/lib/queue/task-queue.ts",
+          "expectedSha256": "a284d7f7099045bc1e3ddd6491a9afce79409fe6fff00b9a7d4988495fa82578",
+          "observedSha256": "a284d7f7099045bc1e3ddd6491a9afce79409fe6fff00b9a7d4988495fa82578"
+        },
+        {
+          "file": "src/lib/security/local-guard.ts",
+          "expectedSha256": "205f8ec95b183b33cbf65add0fca169f4a4882a43236ad1a9e69f5d926baf470",
+          "observedSha256": "205f8ec95b183b33cbf65add0fca169f4a4882a43236ad1a9e69f5d926baf470"
+        },
+        {
+          "file": "src/lib/security/path-allowlist.ts",
+          "expectedSha256": "a3466414a7c626b2c75d95c93b4a66e2b32d3d2be78cfa8dec79d3d145e1af0b",
+          "observedSha256": "a3466414a7c626b2c75d95c93b4a66e2b32d3d2be78cfa8dec79d3d145e1af0b"
+        },
+        {
+          "file": "src/lib/utils.ts",
+          "expectedSha256": "ec94d82b9920dd7bde4a8d48a878d1a72c336a12101d411779877ab337eeb466",
+          "observedSha256": "ec94d82b9920dd7bde4a8d48a878d1a72c336a12101d411779877ab337eeb466"
+        },
+        {
+          "file": "src/lib/zalo/broadcast-generator.ts",
+          "expectedSha256": "178ab13591a6fbbb52ccf46d717248447c1f93d9bd7d9da96ef7c60caf6799ec",
+          "observedSha256": "178ab13591a6fbbb52ccf46d717248447c1f93d9bd7d9da96ef7c60caf6799ec"
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "id": "R29-01-pdf-length-whitespace-nul",
+      "pass": true,
+      "expected": "PARSED",
+      "fixtureSha256": "b56603bd2f3a52f44a10ef24486b60a649051137a846a039c9edaec159f44a5c",
+      "r28Success": true,
+      "r29Success": false,
+      "currentParseStatus": "PARSED",
+      "currentInlineParts": 1
+    },
+    {
+      "id": "R29-01-pdf-count-whitespace-nul",
+      "pass": true,
+      "expected": "PARSED",
+      "fixtureSha256": "6d23e94cbe2d2958a58a012ee6cd7a155572d6e5f8869a219876d6edd87b57e6",
+      "r28Success": true,
+      "r29Success": false,
+      "currentParseStatus": "PARSED",
+      "currentInlineParts": 1
+    },
+    {
+      "id": "R29-01-pdf-length-delimiter-lone-gt",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "fixtureSha256": "b395b8ee5f40c90124a6e51e832aa52171197e33797ffdf4c2bd4579fb5426cc",
+      "r28Success": true,
+      "r29Success": true,
+      "currentParseStatus": "PARSE_ERROR",
+      "currentInlineParts": 0
+    },
+    {
+      "id": "R29-01-pdf-count-delimiter-lone-gt",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "fixtureSha256": "61a5b08de918aaa8d78e5a803d20b0078c7189f4045b1f1dbf293e307d4d4deb",
+      "r28Success": true,
+      "r29Success": true,
+      "currentParseStatus": "PARSE_ERROR",
+      "currentInlineParts": 0
+    },
+    {
+      "id": "R29-01-pdf-length-delimiter-brace-open",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "fixtureSha256": "2e992797c2b268114c22edf443027ae653ffc80d59d7357f4c7a8b881b9e1419",
+      "r28Success": true,
+      "r29Success": true,
+      "currentParseStatus": "PARSE_ERROR",
+      "currentInlineParts": 0
+    },
+    {
+      "id": "R29-01-pdf-count-delimiter-brace-open",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "fixtureSha256": "7d9618ad8b4a7af032aafa3b9a9b27a522981b49e0c55c6dc935832d32f00f47",
+      "r28Success": true,
+      "r29Success": true,
+      "currentParseStatus": "PARSE_ERROR",
+      "currentInlineParts": 0
+    },
+    {
+      "id": "R29-01-pdf-length-delimiter-brace-close",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "fixtureSha256": "068e3e2f41b5a5352620164a36cf1ec85369b2066862f85af26cdb1a1f6896ab",
+      "r28Success": true,
+      "r29Success": true,
+      "currentParseStatus": "PARSE_ERROR",
+      "currentInlineParts": 0
+    },
+    {
+      "id": "R29-01-pdf-count-delimiter-brace-close",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "fixtureSha256": "aca36ccb9c120496488a3052e6cd64ad39927298c24a9a6160b799b58f9aac01",
+      "r28Success": true,
+      "r29Success": true,
+      "currentParseStatus": "PARSE_ERROR",
+      "currentInlineParts": 0
+    }
+  ]
+}

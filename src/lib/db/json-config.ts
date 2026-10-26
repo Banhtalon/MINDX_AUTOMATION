@@ -1,23 +1,30 @@
 import fs from "node:fs";
 import path from "node:path";
+import { assertPathAllowed } from "../security/path-allowlist";
 
 const CONFIG_DIR = path.resolve(process.cwd(), "data", "config");
 
-function ensureConfigDir() {
-  if (!fs.existsSync(CONFIG_DIR)) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+function resolveSafeConfigFilePath(fileName: string): string {
+  const safeBaseName = path.basename(fileName);
+  if (!safeBaseName || safeBaseName !== fileName || fileName.includes("..")) {
+    throw new Error(`[Security Exception] Invalid config file name: '${fileName}'`);
   }
+  const allowedDir = assertPathAllowed(CONFIG_DIR);
+  if (!fs.existsSync(allowedDir)) {
+    fs.mkdirSync(allowedDir, { recursive: true });
+  }
+  return assertPathAllowed(path.join(allowedDir, safeBaseName));
 }
 
 function readJsonFile<T>(fileName: string, fallback: T): T {
-  ensureConfigDir();
-  const filePath = path.join(CONFIG_DIR, fileName);
+  const filePath = resolveSafeConfigFilePath(fileName);
   if (!fs.existsSync(filePath)) {
     writeJsonFile(fileName, fallback);
     return fallback;
   }
   try {
-    const raw = fs.readFileSync(filePath, "utf-8");
+    const safeReadPath = assertPathAllowed(filePath);
+    const raw = fs.readFileSync(safeReadPath, "utf-8");
     const parsed = JSON.parse(raw);
     if (Array.isArray(fallback) && !Array.isArray(parsed)) {
       console.warn(`[json-config] Expected array in ${fileName}, got ${typeof parsed}. Using fallback.`);
@@ -25,15 +32,17 @@ function readJsonFile<T>(fileName: string, fallback: T): T {
     }
     return parsed as T;
   } catch (err) {
+    if (err instanceof Error && err.message.includes("[Security Exception]")) {
+      throw err;
+    }
     console.error(`[json-config] Error reading ${fileName}:`, err);
     return fallback;
   }
 }
 
 function writeJsonFile<T>(fileName: string, data: T): void {
-  ensureConfigDir();
-  const filePath = path.join(CONFIG_DIR, fileName);
-  const tempPath = `${filePath}.tmp`;
+  const filePath = resolveSafeConfigFilePath(fileName);
+  const tempPath = assertPathAllowed(`${filePath}.tmp`);
   fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), "utf-8");
   fs.renameSync(tempPath, filePath);
 }
@@ -75,7 +84,8 @@ export function findLessonInSyllabus(
 ): CourseSession | undefined {
   const allCourses = getCoursesSyllabus();
   const upperCode = classCode.toUpperCase();
-  const matched = allCourses.find((c) => upperCode.includes(c.courseCode.toUpperCase()));
+  const sorted = [...allCourses].sort((a, b) => b.courseCode.length - a.courseCode.length);
+  const matched = sorted.find((c) => upperCode.includes(c.courseCode.toUpperCase()));
   if (!matched) return undefined;
   return matched.sessions.find((s) => s.sessionNumber === sessionNumber);
 }
@@ -131,10 +141,12 @@ export interface QuickTag {
   label: string;
   sentiment: "positive" | "constructive" | "neutral";
   hint: string;
+  category?: string;
+  categoryName?: string;
 }
 
 export interface QuickTagCategory {
-  category: "attitude" | "comprehension" | "execution" | "presentation" | string;
+  category: "attitude" | "comprehension" | "execution" | "robotics" | "presentation" | string;
   categoryName: string;
   tags: QuickTag[];
 }
@@ -182,4 +194,50 @@ export function renderZaloBroadcast(
     text = text.replace(reg, () => val ?? "");
   }
   return text;
+}
+
+// ==========================================
+// 5. RUNNING CLASSES CACHE (FROM LMS)
+// ==========================================
+
+export interface RunningClassItem {
+  classCode: string;
+  courseName?: string;
+  center?: string;
+  status: string;
+  updatedAt?: string;
+}
+
+const RUNNING_CLASSES_FILE = path.resolve(process.cwd(), "data", "running_classes.json");
+
+export function getRunningClasses(): RunningClassItem[] {
+  try {
+    const safePath = assertPathAllowed(RUNNING_CLASSES_FILE);
+    if (!fs.existsSync(safePath)) {
+      return [];
+    }
+    const raw = fs.readFileSync(safePath, "utf-8");
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is RunningClassItem =>
+        Boolean(item && typeof item === "object" && typeof item.classCode === "string" && item.classCode.trim())
+    );
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("[Security Exception]")) {
+      throw err;
+    }
+    return [];
+  }
+}
+
+export function saveRunningClasses(classes: RunningClassItem[]): void {
+  const dataDir = assertPathAllowed(path.resolve(process.cwd(), "data"));
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  const safePath = assertPathAllowed(RUNNING_CLASSES_FILE);
+  const tempPath = assertPathAllowed(`${safePath}.tmp`);
+  fs.writeFileSync(tempPath, JSON.stringify(classes, null, 2), "utf-8");
+  fs.renameSync(tempPath, safePath);
 }

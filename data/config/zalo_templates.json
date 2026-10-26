@@ -1,8 +1,8 @@
 [
   {
     "id": "standard_session_broadcast",
-    "name": "Mẫu Tổng Kết Buổi Học Tiêu Chuẩn",
-    "template": "📢 THÔNG BÁO TỔNG KẾT BUỔI HỌC - LỚP {{className}}\n\nKính gửi Quý Phụ huynh và các con học sinh,\nThầy/Cô gửi thông tin tóm tắt buổi học số {{sessionNumber}} ngày hôm nay:\n\n📖 1. NỘI DUNG BÀI HỌC:\n- Chủ đề: {{sessionTopic}}\n- Kiến thức trọng tâm:\n{{keyKnowledge}}\n\n🌟 2. TỔNG QUAN TINH THẦN HỌC TẬP CỦA LỚP:\n{{generalFeedback}}\n\n📝 3. BÀI TẬP VỀ NHÀ (BTVN):\n{{homeworkSummary}}\n⏰ Hạn nộp BTVN: Trước buổi học kế tiếp 24h trên hệ thống LMS MindX.\n\nNhận xét chi tiết của từng con đã được Thầy/Cô cập nhật đầy đủ trên hệ thống LMS. Phụ huynh vui lòng đăng nhập LMS để theo dõi sự tiến bộ của con nhé!\n\nNếu cần hỗ trợ thêm về bài học, các con và ba mẹ hãy nhắn tin trực tiếp trong nhóm lớp. Thầy/Cô chúc các con hoàn thành tốt bài tập về nhà! ❤️"
+    "name": "Mẫu Tổng Kết Buổi Học Tiêu Chuẩn (MindX)",
+    "template": "@All Kính gửi quý phụ huynh học viên\nEm xin phép tổng kết sau buổi học số {{sessionNumber}} – {{sessionDate}}\nMã lớp: {{className}}\n\n- Lớp sĩ số {{attendanceCount}}\n- {{generalFeedback}}\n\n📘 NỘI DUNG BUỔI HỌC:\nBÀI {{sessionNumber}}: {{lessonTopic}}\n{{keyKnowledge}}\n\n📍 NHỮNG ĐIỂM CẦN LƯU Ý:\n{{keyNotes}}\n\n📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:\nThời gian: {{nextSessionTime}}\nNội dung bài học: BUỔI {{nextSessionNumber}}: {{nextSessionTopic}}\n\n📝 NHIỆM VỤ KHI VỀ NHÀ:\nLàm bài tập về nhà trên Denise bao gồm:\n{{homeworkSummary}}\n⏰ Hạn nộp: {{homeworkDeadline}}"
   },
   {
     "id": "checkpoint_broadcast",

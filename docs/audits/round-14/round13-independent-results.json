@@ -1,0 +1,785 @@
+{
+  "generatedAt": "2026-10-20T04:01:37.132Z",
+  "passed": 89,
+  "failed": 0,
+  "results": [
+    {
+      "name": "R12-01 / teacherNote / DRAFT / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / teacherNote / DRAFT / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / teacherNote / APPROVED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / teacherNote / APPROVED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / teacherNote / VERIFIED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / teacherNote / VERIFIED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / quickTags / DRAFT / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / quickTags / DRAFT / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / quickTags / APPROVED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / quickTags / APPROVED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / quickTags / VERIFIED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / quickTags / VERIFIED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / attendanceStatus / DRAFT / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / attendanceStatus / DRAFT / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / attendanceStatus / APPROVED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / attendanceStatus / APPROVED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / attendanceStatus / VERIFIED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / attendanceStatus / VERIFIED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / strengths / DRAFT / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / strengths / DRAFT / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / strengths / APPROVED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / strengths / APPROVED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / strengths / VERIFIED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / strengths / VERIFIED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / improvements / DRAFT / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / improvements / DRAFT / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / improvements / APPROVED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / improvements / APPROVED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / improvements / VERIFIED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / improvements / VERIFIED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / actionPlan / DRAFT / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / actionPlan / DRAFT / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / actionPlan / APPROVED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / actionPlan / APPROVED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / actionPlan / VERIFIED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / actionPlan / VERIFIED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / finalText / DRAFT / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / finalText / DRAFT / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / finalText / APPROVED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / finalText / APPROVED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / finalText / VERIFIED / older-request-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01 / finalText / VERIFIED / older-response-last",
+      "pass": true
+    },
+    {
+      "name": "R12-01: header-only metadata protects every field, including clearing tags/text",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields teacherNote rev10 and quickTags rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields teacherNote rev10 and attendanceStatus rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields teacherNote rev10 and strengths rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields teacherNote rev10 and improvements rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields teacherNote rev10 and actionPlan rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields teacherNote rev10 and finalText rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields quickTags rev10 and teacherNote rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields quickTags rev10 and attendanceStatus rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields quickTags rev10 and strengths rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields quickTags rev10 and improvements rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields quickTags rev10 and actionPlan rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields quickTags rev10 and finalText rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields attendanceStatus rev10 and teacherNote rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields attendanceStatus rev10 and quickTags rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields attendanceStatus rev10 and strengths rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields attendanceStatus rev10 and improvements rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields attendanceStatus rev10 and actionPlan rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields attendanceStatus rev10 and finalText rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields strengths rev10 and teacherNote rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields strengths rev10 and quickTags rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields strengths rev10 and attendanceStatus rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields strengths rev10 and improvements rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields strengths rev10 and actionPlan rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields strengths rev10 and finalText rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields improvements rev10 and teacherNote rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields improvements rev10 and quickTags rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields improvements rev10 and attendanceStatus rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields improvements rev10 and strengths rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields improvements rev10 and actionPlan rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields improvements rev10 and finalText rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields actionPlan rev10 and teacherNote rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields actionPlan rev10 and quickTags rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields actionPlan rev10 and attendanceStatus rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields actionPlan rev10 and strengths rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields actionPlan rev10 and improvements rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields actionPlan rev10 and finalText rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields finalText rev10 and teacherNote rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields finalText rev10 and quickTags rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields finalText rev10 and attendanceStatus rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields finalText rev10 and strengths rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields finalText rev10 and improvements rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: independent fields finalText rev10 and actionPlan rev20 both survive",
+      "pass": true
+    },
+    {
+      "name": "R12-01: mixed stale/fresh payload preserves latest finalText and applies older independent note",
+      "pass": true
+    },
+    {
+      "name": "R12-01: ignored stale request preserves APPROVED hash/status and VERIFIED timestamp",
+      "pass": true
+    },
+    {
+      "name": "R12-01: revision keys isolate student, session, class; page sequence survives leaving and returning",
+      "pass": true
+    },
+    {
+      "name": "Security baseline: hostile Host/Origin/Sec-Fetch-Site blocked before save",
+      "pass": true
+    }
+  ],
+  "observations": [
+    {
+      "field": "teacherNote",
+      "initialStatus": "DRAFT",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": ""
+    },
+    {
+      "field": "teacherNote",
+      "initialStatus": "DRAFT",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": ""
+    },
+    {
+      "field": "teacherNote",
+      "initialStatus": "APPROVED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": ""
+    },
+    {
+      "field": "teacherNote",
+      "initialStatus": "APPROVED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": ""
+    },
+    {
+      "field": "teacherNote",
+      "initialStatus": "VERIFIED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": ""
+    },
+    {
+      "field": "teacherNote",
+      "initialStatus": "VERIFIED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": ""
+    },
+    {
+      "field": "quickTags",
+      "initialStatus": "DRAFT",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": []
+    },
+    {
+      "field": "quickTags",
+      "initialStatus": "DRAFT",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": []
+    },
+    {
+      "field": "quickTags",
+      "initialStatus": "APPROVED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": []
+    },
+    {
+      "field": "quickTags",
+      "initialStatus": "APPROVED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": []
+    },
+    {
+      "field": "quickTags",
+      "initialStatus": "VERIFIED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": []
+    },
+    {
+      "field": "quickTags",
+      "initialStatus": "VERIFIED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": []
+    },
+    {
+      "field": "attendanceStatus",
+      "initialStatus": "DRAFT",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATE"
+    },
+    {
+      "field": "attendanceStatus",
+      "initialStatus": "DRAFT",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATE"
+    },
+    {
+      "field": "attendanceStatus",
+      "initialStatus": "APPROVED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATE"
+    },
+    {
+      "field": "attendanceStatus",
+      "initialStatus": "APPROVED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATE"
+    },
+    {
+      "field": "attendanceStatus",
+      "initialStatus": "VERIFIED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATE"
+    },
+    {
+      "field": "attendanceStatus",
+      "initialStatus": "VERIFIED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATE"
+    },
+    {
+      "field": "strengths",
+      "initialStatus": "DRAFT",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST strengths"
+    },
+    {
+      "field": "strengths",
+      "initialStatus": "DRAFT",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST strengths"
+    },
+    {
+      "field": "strengths",
+      "initialStatus": "APPROVED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST strengths"
+    },
+    {
+      "field": "strengths",
+      "initialStatus": "APPROVED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST strengths"
+    },
+    {
+      "field": "strengths",
+      "initialStatus": "VERIFIED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST strengths"
+    },
+    {
+      "field": "strengths",
+      "initialStatus": "VERIFIED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST strengths"
+    },
+    {
+      "field": "improvements",
+      "initialStatus": "DRAFT",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST improvements"
+    },
+    {
+      "field": "improvements",
+      "initialStatus": "DRAFT",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST improvements"
+    },
+    {
+      "field": "improvements",
+      "initialStatus": "APPROVED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST improvements"
+    },
+    {
+      "field": "improvements",
+      "initialStatus": "APPROVED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST improvements"
+    },
+    {
+      "field": "improvements",
+      "initialStatus": "VERIFIED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST improvements"
+    },
+    {
+      "field": "improvements",
+      "initialStatus": "VERIFIED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST improvements"
+    },
+    {
+      "field": "actionPlan",
+      "initialStatus": "DRAFT",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST actionPlan"
+    },
+    {
+      "field": "actionPlan",
+      "initialStatus": "DRAFT",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST actionPlan"
+    },
+    {
+      "field": "actionPlan",
+      "initialStatus": "APPROVED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST actionPlan"
+    },
+    {
+      "field": "actionPlan",
+      "initialStatus": "APPROVED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST actionPlan"
+    },
+    {
+      "field": "actionPlan",
+      "initialStatus": "VERIFIED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST actionPlan"
+    },
+    {
+      "field": "actionPlan",
+      "initialStatus": "VERIFIED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST actionPlan"
+    },
+    {
+      "field": "finalText",
+      "initialStatus": "DRAFT",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST finalText"
+    },
+    {
+      "field": "finalText",
+      "initialStatus": "DRAFT",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST finalText"
+    },
+    {
+      "field": "finalText",
+      "initialStatus": "APPROVED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST finalText"
+    },
+    {
+      "field": "finalText",
+      "initialStatus": "APPROVED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST finalText"
+    },
+    {
+      "field": "finalText",
+      "initialStatus": "VERIFIED",
+      "order": "older-request-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST finalText"
+    },
+    {
+      "field": "finalText",
+      "initialStatus": "VERIFIED",
+      "order": "older-response-last",
+      "statuses": [
+        200,
+        200
+      ],
+      "stored": "LATEST finalText"
+    }
+  ]
+}

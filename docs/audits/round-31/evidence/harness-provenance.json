@@ -1,0 +1,101 @@
+{
+  "derivatives": [
+    {
+      "file": "verify-independent.mjs",
+      "derivedFrom": "docs/audits/round-30/verify-independent.mjs",
+      "originalSha256": "67b4b79a01b4bbcd395c3131aec444a382e86166ba639187806ded3d41a01d24",
+      "sha256": "43fe8a046a91b20cde03e8b0fd6456e563b47a5eb69cad5809bab9fc7288082a",
+      "changes": "Audit output/TEMP prefix/round metadata only; all case IDs and expectations preserved."
+    },
+    {
+      "file": "native-media-repro.mjs",
+      "derivedFrom": "docs/audits/round-30/native-media-repro.mjs",
+      "originalSha256": "32ae9e6a698cfe11f22051b776c865f7ea2c676b17ee2e96d49d136d20db790b",
+      "sha256": "e4fea5fcb44d986adc8d1145a51dd4c58b972216e4a379c9b10a6eb7cca093cd",
+      "changes": "Audit output/TEMP prefix/round metadata only; all case IDs and expectations preserved."
+    },
+    {
+      "file": "native-worker-repro.mjs",
+      "derivedFrom": "docs/audits/round-30/native-worker-repro.mjs",
+      "originalSha256": "545cfdab9a9dd44b80eeeaa0052cd80910f1518b9faafc808bcae2d88b975ecf",
+      "sha256": "5f7f7a71f49eeb0cbeee4385756e54e203493a2a0a58c5a1e08df6f95a61013c",
+      "changes": "Audit output/TEMP prefix/round metadata only; all case IDs and expectations preserved."
+    },
+    {
+      "file": "media-cases.mjs",
+      "derivedFrom": "docs/audits/round-30/media-cases.mjs",
+      "originalSha256": "79f3b1aa1bd7b4426ecc98dd833fcb792e7f81f80f5be447bf7bb3e1d69f9700",
+      "sha256": "18b81745470cf2ab63a5f02830c6c70067de201b5fcfa9aeb1f9fc9d9dd78634",
+      "changes": "Audit output/TEMP prefix/round metadata only; all case IDs and expectations preserved."
+    },
+    {
+      "file": "network-guard.cjs",
+      "derivedFrom": "docs/audits/round-30/network-guard.cjs",
+      "originalSha256": "fb66af9b3a5243b2aef86b657032c6c86843571da506be9208c63f31587f6962",
+      "sha256": "64867bab187a3b052f0442516edc0b137f250e186692ed0a1444c34d2869d044",
+      "changes": "Audit output/TEMP prefix/round metadata only; all case IDs and expectations preserved."
+    },
+    {
+      "file": "graphql-oracle.mjs",
+      "derivedFrom": "docs/audits/round-30/graphql-oracle.mjs",
+      "originalSha256": "14f80ce7604b8ed35f17e16695c71de9add6b18b35c675d7e0873b5e8f47770d",
+      "sha256": "3d63b947ba2b838bea79b7d67cb371da0c0ff6ee653f3fcf6c2518c4c2ceac61",
+      "changes": "Audit output/TEMP prefix/round metadata only; all case IDs and expectations preserved."
+    },
+    {
+      "file": "block-string-oracle.mjs",
+      "derivedFrom": "docs/audits/round-30/block-string-oracle.mjs",
+      "originalSha256": "8a9314d51d3f545102d27427787f03965165eed27ca439ca9ccc22cb9a1ab067",
+      "sha256": "2335ce1531203fa92cdcfd596d496d218fb2481896ffbd417222b6b6d5b39f9f",
+      "changes": "Audit output/TEMP prefix/round metadata only; all case IDs and expectations preserved."
+    },
+    {
+      "file": "pdf-oracle.py",
+      "derivedFrom": "docs/audits/round-30/pdf-oracle.py",
+      "originalSha256": "d04649de2216e25dc24518947c33e2dc7bc626b2223c210844b324668bae3e5e",
+      "sha256": "932c2ad406c8a7fb3b4ef7f28f477b64a21f3d6640b86a138641d2489c63d483",
+      "changes": "Audit output/TEMP prefix/round metadata only; all case IDs and expectations preserved."
+    },
+    {
+      "file": "pdf-name-oracle.py",
+      "derivedFrom": "docs/audits/round-30/pdf-name-oracle.py",
+      "originalSha256": "0084ba194c9ebc652189c5082516400ae1af9e126d8f4fb1e576a422d4bc8d5c",
+      "sha256": "82f3b7169dbe207c480181ccdac6293691541aaf308d62e986a265c9947e1502",
+      "changes": "Audit paths/prefix and baseline metadata key r29Success -> r30Success; same 4 Name expectations."
+    },
+    {
+      "file": "pdf_dict_oracle.py",
+      "derivedFrom": "docs/audits/round-30/pdf_dict_oracle.py",
+      "originalSha256": "fd90f815ac817e381e9e3f2033ecf1c5edc3285e6f908ddd6440ade020618537",
+      "sha256": "5ae0e8e9ce7d384fd5ecf14855c7c752426864295071d2d42ea198ae01c4e9a0",
+      "changes": "Original independent dictionary() unchanged; added executable 54-case wrapper."
+    },
+    {
+      "file": "capture-static.py",
+      "derivedFrom": "docs/audits/round-30/capture-static.py",
+      "originalSha256": "8df113cea8e6741158b9544e01d675383309af394751b79ca6ca10c21f6feb84",
+      "sha256": "ae53c90e1e9958b20e87eadd47c9db67ac20ce7037791ba89db49a79b88495dd",
+      "changes": "Audit output/TEMP prefix/round metadata only; all case IDs and expectations preserved."
+    }
+  ],
+  "newIndependentFiles": [
+    {
+      "file": "pdf-name-repro.mjs",
+      "sha256": "e93ea886216d349db3c300da3ea4a3289dea8eb267b3a1584aacb2579124e06f"
+    },
+    {
+      "file": "graphql_worker_oracle.py",
+      "sha256": "869e7f4234a9ca784baf3afea190cce785d98e0029017edad5a156dfeb3a06a0"
+    },
+    {
+      "file": "export-worker-cases.mjs",
+      "sha256": "c4c3c3dac373e0467ee5d74af0679d25c1210bd648df88a1e92423bb5079e13b"
+    },
+    {
+      "file": "pdf-boundary-repro.mjs",
+      "sha256": "9f4823903e815489bc3b80cc7d861c49e75f931a50b59b2d6abf079df08970ac"
+    }
+  ],
+  "main819UnchangedExceptAuditMetadata": true,
+  "historicalHarnessesModified": false
+}

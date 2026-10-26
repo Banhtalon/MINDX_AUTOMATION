@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-20",
+  "cwd": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "node": "v24.21.0",
+  "commands": [
+    {"command": "npx tsx scripts/test-phase4-codex-repros.ts", "exitCode": 0, "log": "regressions.log"},
+    {"command": "npx tsc --noEmit --incremental false", "exitCode": 0, "log": "typecheck.log", "output": "No diagnostics"},
+    {"command": "npm run build", "exitCode": 0, "log": "build.log", "note": "Successful direct retry after an EPERM during redirected capture; failing attempt retained separately"},
+    {"command": "npm run build (redirected capture attempt)", "exitCode": 1, "log": "build-capture-eperm.log", "reason": "spawn EPERM at TypeScript worker startup"},
+    {"command": "node docs/audits/round-12/verify-independent.mjs", "exitCode": 1, "log": "independent.log", "passedGroups": 42, "failedGroups": 1, "failure": "R12-01: older successful note request overwrites newer successful note"}
+  ],
+  "nextEnvRestoredByteForByte": true,
+  "productCodeEditedByAudit": false,
+  "realLmsOrGeminiCalls": false,
+  "verdict": "NO-GO"
+}

@@ -1,0 +1,9 @@
+﻿{
+    "status":  "PENDING_CURRENT_SOURCE_VERIFICATION",
+    "appendOnly":  true,
+    "beforeSha256":  "D4BFB0D39AA4706FC9DCEC75006DBB559348C21DFED51D4CFE7FF91408FDF89B",
+    "afterSha256":  "E82D8934305A1E7373D1BDCCB7DE19563864923DAAB070E1581AC1779D267F74",
+    "entry":  "AUDIT-R41",
+    "checkbox":  "unchecked",
+    "reason":  "await source stability; no official current-source GO"
+}

@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { classId, classCode, sessionId, studentId } = body;
+    const { classId, classCode, sessionId, studentId, topic, keyKnowledge, homeworkBrief } = body;
 
     if (!classId || !classCode || !sessionId) {
       return NextResponse.json(
@@ -35,6 +35,9 @@ export async function POST(req: Request) {
           classCode,
           sessionId,
           studentId,
+          topic: typeof topic === "string" ? topic : undefined,
+          keyKnowledge: Array.isArray(keyKnowledge) ? keyKnowledge : undefined,
+          homeworkBrief: typeof homeworkBrief === "string" ? homeworkBrief : undefined,
         });
       },
     });

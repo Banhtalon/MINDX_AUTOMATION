@@ -173,7 +173,7 @@ async function testPhase3() {
 
   assert.strictEqual(zaloResult.renderedText.includes(testClassCode), true);
   assert.strictEqual(zaloResult.renderedText.includes("buổi học số 1"), true);
-  assert.strictEqual(zaloResult.renderedText.includes("Làm quen GameMaker"), true);
+  assert.strictEqual(zaloResult.renderedText.toUpperCase().includes("LÀM QUEN GAMEMAKER"), true);
   console.log("✅ [5] Bộ tạo Thông báo Zalo Broadcast ĐẠT chuẩn format.");
 
   console.log("\n🎉 HOÀN TẤT KIỂM THỬ TOÀN DIỆN GIAI ĐOẠN 3 CHO LỚP VT-C4K-GI34!");

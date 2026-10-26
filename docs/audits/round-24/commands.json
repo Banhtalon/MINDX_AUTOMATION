@@ -1,0 +1,528 @@
+[
+  {
+    "name": "round23",
+    "attempt": 1,
+    "command": "node docs/audits/round-23/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-23/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:38:55.643206+00:00",
+    "endedAt": "2026-10-20T12:38:55.678207+00:00",
+    "elapsedSeconds": 0.047,
+    "exitCode": 1,
+    "log": "round23.attempt-1.log",
+    "logSha256": "87cc65c1ded08375936b536084a250effacff526f7ec1e6628af7b51f1f4df30"
+  },
+  {
+    "name": "round22",
+    "attempt": 1,
+    "command": "node docs/audits/round-22/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-22/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:38:55.696524+00:00",
+    "endedAt": "2026-10-20T12:38:55.726914+00:00",
+    "elapsedSeconds": 0.031,
+    "exitCode": 1,
+    "log": "round22.attempt-1.log",
+    "logSha256": "87cc65c1ded08375936b536084a250effacff526f7ec1e6628af7b51f1f4df30"
+  },
+  {
+    "name": "round21",
+    "attempt": 1,
+    "command": "node docs/audits/round-21/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-21/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:38:55.727913+00:00",
+    "endedAt": "2026-10-20T12:38:55.762833+00:00",
+    "elapsedSeconds": 0.031,
+    "exitCode": 1,
+    "log": "round21.attempt-1.log",
+    "logSha256": "87cc65c1ded08375936b536084a250effacff526f7ec1e6628af7b51f1f4df30"
+  },
+  {
+    "name": "round20",
+    "attempt": 1,
+    "command": "node docs/audits/round-20/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-20/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:38:55.763841+00:00",
+    "endedAt": "2026-10-20T12:38:55.801451+00:00",
+    "elapsedSeconds": 0.032,
+    "exitCode": 1,
+    "log": "round20.attempt-1.log",
+    "logSha256": "87cc65c1ded08375936b536084a250effacff526f7ec1e6628af7b51f1f4df30"
+  },
+  {
+    "name": "round12",
+    "attempt": 1,
+    "command": "node docs/audits/round-12/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-12/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:38:55.803451+00:00",
+    "endedAt": "2026-10-20T12:38:55.836463+00:00",
+    "elapsedSeconds": 0.031,
+    "exitCode": 1,
+    "log": "round12.attempt-1.log",
+    "logSha256": "87cc65c1ded08375936b536084a250effacff526f7ec1e6628af7b51f1f4df30"
+  },
+  {
+    "name": "round13",
+    "attempt": 1,
+    "command": "node docs/audits/round-13/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-13/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:38:55.838935+00:00",
+    "endedAt": "2026-10-20T12:38:55.869638+00:00",
+    "elapsedSeconds": 0.032,
+    "exitCode": 1,
+    "log": "round13.attempt-1.log",
+    "logSha256": "87cc65c1ded08375936b536084a250effacff526f7ec1e6628af7b51f1f4df30"
+  },
+  {
+    "name": "round16",
+    "attempt": 1,
+    "command": "node docs/audits/round-16/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-16/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:38:55.870812+00:00",
+    "endedAt": "2026-10-20T12:38:55.906525+00:00",
+    "elapsedSeconds": 0.031,
+    "exitCode": 1,
+    "log": "round16.attempt-1.log",
+    "logSha256": "87cc65c1ded08375936b536084a250effacff526f7ec1e6628af7b51f1f4df30"
+  },
+  {
+    "name": "round17",
+    "attempt": 1,
+    "command": "node docs/audits/round-17/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-17/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:38:55.908524+00:00",
+    "endedAt": "2026-10-20T12:38:55.941395+00:00",
+    "elapsedSeconds": 0.031,
+    "exitCode": 1,
+    "log": "round17.attempt-1.log",
+    "logSha256": "87cc65c1ded08375936b536084a250effacff526f7ec1e6628af7b51f1f4df30"
+  },
+  {
+    "name": "phase4",
+    "attempt": 1,
+    "command": "npx tsx scripts/test-phase4-codex-repros.ts",
+    "argv": [
+      "C:\\WINDOWS\\system32\\cmd.exe",
+      "/d",
+      "/s",
+      "/c",
+      "npx tsx scripts/test-phase4-codex-repros.ts"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:38:55.943395+00:00",
+    "endedAt": "2026-10-20T12:38:56.075809+00:00",
+    "elapsedSeconds": 0.125,
+    "exitCode": 1,
+    "log": "phase4.attempt-1.log",
+    "logSha256": "c590d7baa1e7816cfbcf18d1553afdd936261c0557eab9d3c832903fbd7d336a"
+  },
+  {
+    "name": "phase5",
+    "attempt": 1,
+    "command": "npx tsx scripts/test-phase5.ts",
+    "argv": [
+      "C:\\WINDOWS\\system32\\cmd.exe",
+      "/d",
+      "/s",
+      "/c",
+      "npx tsx scripts/test-phase5.ts"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:38:56.093361+00:00",
+    "endedAt": "2026-10-20T12:38:56.209568+00:00",
+    "elapsedSeconds": 0.125,
+    "exitCode": 1,
+    "log": "phase5.attempt-1.log",
+    "logSha256": "c590d7baa1e7816cfbcf18d1553afdd936261c0557eab9d3c832903fbd7d336a"
+  },
+  {
+    "name": "typecheck",
+    "attempt": 1,
+    "command": "npx tsc --noEmit --incremental false",
+    "argv": [
+      "C:\\WINDOWS\\system32\\cmd.exe",
+      "/d",
+      "/s",
+      "/c",
+      "npx tsc --noEmit --incremental false"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:38:56.210570+00:00",
+    "endedAt": "2026-10-20T12:38:56.322251+00:00",
+    "elapsedSeconds": 0.11,
+    "exitCode": 1,
+    "log": "typecheck.attempt-1.log",
+    "logSha256": "c590d7baa1e7816cfbcf18d1553afdd936261c0557eab9d3c832903fbd7d336a"
+  },
+  {
+    "name": "build",
+    "attempt": 1,
+    "command": "npm run build",
+    "argv": [
+      "C:\\WINDOWS\\system32\\cmd.exe",
+      "/d",
+      "/s",
+      "/c",
+      "npm run build"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:38:56.323263+00:00",
+    "endedAt": "2026-10-20T12:38:56.435720+00:00",
+    "elapsedSeconds": 0.109,
+    "exitCode": 1,
+    "log": "build.attempt-1.log",
+    "logSha256": "c590d7baa1e7816cfbcf18d1553afdd936261c0557eab9d3c832903fbd7d336a"
+  },
+  {
+    "name": "round23",
+    "attempt": 2,
+    "command": "node docs/audits/round-23/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-23/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:39:11.663833+00:00",
+    "endedAt": "2026-10-20T12:39:14.403375+00:00",
+    "elapsedSeconds": 2.734,
+    "exitCode": 0,
+    "log": "round23.attempt-2.log",
+    "logSha256": "5c930ca5bc09a6eab4d63c16319c64e34df6091fef12a2e95928700a482a2839",
+    "results": "round23.attempt-2-results.json",
+    "resultsSha256": "e747587da18c986e4523f73cb7ce538c1fe010faec122082521d5d1e473b2616",
+    "total": 116,
+    "passed": 116,
+    "failed": 0,
+    "canonicalResults": "round23-results.json"
+  },
+  {
+    "name": "round22",
+    "attempt": 2,
+    "command": "node docs/audits/round-22/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-22/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:39:14.442489+00:00",
+    "endedAt": "2026-10-20T12:39:15.049694+00:00",
+    "elapsedSeconds": 0.61,
+    "exitCode": 0,
+    "log": "round22.attempt-2.log",
+    "logSha256": "3a9084341bb5a276019d759a150f0e6c52246585d3ac13dd848ee57d39c6436f",
+    "results": "round22.attempt-2-results.json",
+    "resultsSha256": "a742d97642a8846ac870829e081adac4f83db01457e85429839bded7882d95f1",
+    "total": 53,
+    "passed": 53,
+    "failed": 0,
+    "canonicalResults": "round22-results.json"
+  },
+  {
+    "name": "round21",
+    "attempt": 2,
+    "command": "node docs/audits/round-21/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-21/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:39:15.102578+00:00",
+    "endedAt": "2026-10-20T12:39:15.789534+00:00",
+    "elapsedSeconds": 0.688,
+    "exitCode": 0,
+    "log": "round21.attempt-2.log",
+    "logSha256": "09a1388cd8199f6945e124b46c8d1b4b4b7169c7aecda5bd4ac306e88dd9b530",
+    "results": "round21.attempt-2-results.json",
+    "resultsSha256": "aaf9255aed1800b0b92ee45693be43c3b77a723bd7ff39dbe44f0a18962ae134",
+    "total": 49,
+    "passed": 49,
+    "failed": 0,
+    "canonicalResults": "round21-results.json"
+  },
+  {
+    "name": "round20",
+    "attempt": 2,
+    "command": "node docs/audits/round-20/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-20/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:39:15.823851+00:00",
+    "endedAt": "2026-10-20T12:39:16.909106+00:00",
+    "elapsedSeconds": 1.078,
+    "exitCode": 1,
+    "log": "round20.attempt-2.log",
+    "logSha256": "5f1a58af77592ed0e51f6694fdb6fc0120113fdf9eea0880486203d9c137de2a",
+    "results": "round20.attempt-2-results.json",
+    "resultsSha256": "44f98212eec46a08e84e5af1b124c6e5f6709c0a2891be1cb1b76f1b73ca6fff",
+    "total": 145,
+    "passed": 141,
+    "failed": 4,
+    "canonicalResults": "round20-results.json"
+  },
+  {
+    "name": "round12",
+    "attempt": 2,
+    "command": "node docs/audits/round-12/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-12/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:39:16.957922+00:00",
+    "endedAt": "2026-10-20T12:39:20.172690+00:00",
+    "elapsedSeconds": 3.219,
+    "exitCode": 0,
+    "log": "round12.attempt-2.log",
+    "logSha256": "6d5b496ad12c6b0823c78a96e88da34a7db578adfbe21fc0fb6b783891ddf840",
+    "results": "round12.attempt-2-results.json",
+    "resultsSha256": "d94d65ca6dcffb8f6ba8e75672cc71c18d6ed08525da08ba05dd202b9811533f",
+    "total": null,
+    "passed": 43,
+    "failed": 0,
+    "canonicalResults": "round12-results.json"
+  },
+  {
+    "name": "round13",
+    "attempt": 2,
+    "command": "node docs/audits/round-13/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-13/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:39:20.210921+00:00",
+    "endedAt": "2026-10-20T12:39:21.473133+00:00",
+    "elapsedSeconds": 1.25,
+    "exitCode": 0,
+    "log": "round13.attempt-2.log",
+    "logSha256": "8408e9b8058b26ba2693c318d1e172218935fbc49c7d1cd586c8fec2667b9234",
+    "results": "round13.attempt-2-results.json",
+    "resultsSha256": "1a78a2a0131bc0f50545b992c3fbf2503f0a81c81bdaedbc5ac6b5974bdd4fb8",
+    "total": null,
+    "passed": 89,
+    "failed": 0,
+    "canonicalResults": "round13-results.json"
+  },
+  {
+    "name": "round16",
+    "attempt": 2,
+    "command": "node docs/audits/round-16/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-16/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:39:21.524064+00:00",
+    "endedAt": "2026-10-20T12:39:22.904629+00:00",
+    "elapsedSeconds": 1.375,
+    "exitCode": 1,
+    "log": "round16.attempt-2.log",
+    "logSha256": "04fd6b7e35b291ed27ae9ef87ad694837f2381a7663a5138cb49a2db956c55fe",
+    "results": "round16.attempt-2-results.json",
+    "resultsSha256": "8fa826f916bd534c47d31802188a92e3a7137c86c0dca7b1ef05b773a3149c21",
+    "total": null,
+    "passed": 15,
+    "failed": 1,
+    "canonicalResults": "round16-results.json"
+  },
+  {
+    "name": "round17",
+    "attempt": 2,
+    "command": "node docs/audits/round-17/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-17/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:39:22.936448+00:00",
+    "endedAt": "2026-10-20T12:39:28.465363+00:00",
+    "elapsedSeconds": 5.531,
+    "exitCode": 0,
+    "log": "round17.attempt-2.log",
+    "logSha256": "87d4a90b6604a36aad883c361027d5f4fc8bf9635c683de040aff494eaf2f9e6",
+    "results": "round17.attempt-2-results.json",
+    "resultsSha256": "9ceb8056f0a44be47c7cdaa872b86fd634579a4340b0bf4238789e04c1c96b4a",
+    "total": null,
+    "passed": 38,
+    "failed": 0,
+    "canonicalResults": "round17-results.json"
+  },
+  {
+    "name": "phase4",
+    "attempt": 2,
+    "command": "npx tsx scripts/test-phase4-codex-repros.ts",
+    "argv": [
+      "C:\\WINDOWS\\system32\\cmd.exe",
+      "/d",
+      "/s",
+      "/c",
+      "npx tsx scripts/test-phase4-codex-repros.ts"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:39:28.496282+00:00",
+    "endedAt": "2026-10-20T12:39:37.313548+00:00",
+    "elapsedSeconds": 8.812,
+    "exitCode": 0,
+    "log": "phase4.attempt-2.log",
+    "logSha256": "0777f0bcd062d5f2edf10fa4f50e6a8018aa0d5e4b8ae2d3069743a488dbaf38"
+  },
+  {
+    "name": "phase5",
+    "attempt": 2,
+    "command": "npx tsx scripts/test-phase5.ts",
+    "argv": [
+      "C:\\WINDOWS\\system32\\cmd.exe",
+      "/d",
+      "/s",
+      "/c",
+      "npx tsx scripts/test-phase5.ts"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:39:37.334547+00:00",
+    "endedAt": "2026-10-20T12:39:38.831410+00:00",
+    "elapsedSeconds": 1.485,
+    "exitCode": 0,
+    "log": "phase5.attempt-2.log",
+    "logSha256": "735a579077534d64731d9948630a5d5533f5276e80cf92b2e09b7ffbe11c706b"
+  },
+  {
+    "name": "typecheck",
+    "attempt": 2,
+    "command": "npx tsc --noEmit --incremental false",
+    "argv": [
+      "C:\\WINDOWS\\system32\\cmd.exe",
+      "/d",
+      "/s",
+      "/c",
+      "npx tsc --noEmit --incremental false"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:39:38.832407+00:00",
+    "endedAt": "2026-10-20T12:39:41.754324+00:00",
+    "elapsedSeconds": 2.922,
+    "exitCode": 0,
+    "log": "typecheck.attempt-2.log",
+    "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "build",
+    "attempt": 2,
+    "command": "npm run build",
+    "argv": [
+      "C:\\WINDOWS\\system32\\cmd.exe",
+      "/d",
+      "/s",
+      "/c",
+      "npm run build"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:39:41.754324+00:00",
+    "endedAt": "2026-10-20T12:40:08.013957+00:00",
+    "elapsedSeconds": 26.265,
+    "exitCode": 0,
+    "log": "build.attempt-2.log",
+    "logSha256": "119e5b69e677c226f81b0ad83799fd4530e4f2874b40ebea84ef5fed05fa7d9b"
+  },
+  {
+    "name": "round24",
+    "attempt": 1,
+    "command": "node docs/audits/round-24/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-24/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:43:03.708081+00:00",
+    "endedAt": "2026-10-20T12:43:05.651556+00:00",
+    "elapsedSeconds": 1.953,
+    "exitCode": 1,
+    "log": "round24.attempt-1.log",
+    "logSha256": "625746d812c45286bc8b7f7ba0748333881f7e2f9daf501ed57fa7bdaf997cc2",
+    "results": "independent-results.json",
+    "resultsSha256": "c8b8f6182993e43c4557f3df6849d3f25ca0db9c66d8df36292da1e57b77946b",
+    "total": 230,
+    "passed": 203,
+    "failed": 27,
+    "resultsAvailable": false,
+    "retentionNote": "The first R24 result JSON was overwritten by attempt 2 before per-attempt JSON archiving was added. Original observed checksum and full log are retained; final attempt 2 JSON is retained and authoritative."
+  },
+  {
+    "name": "native-media",
+    "attempt": 1,
+    "command": "npx tsx docs/audits/round-24/native-media-repro.mjs",
+    "argv": [
+      "C:\\WINDOWS\\system32\\cmd.exe",
+      "/d",
+      "/s",
+      "/c",
+      "npx tsx docs/audits/round-24/native-media-repro.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:44:33.380525+00:00",
+    "endedAt": "2026-10-20T12:44:34.283912+00:00",
+    "elapsedSeconds": 0.906,
+    "exitCode": 1,
+    "log": "native-media.attempt-1.log",
+    "logSha256": "680c30490742432713482cf00f3795c1bb959d5a9b59807dc580a32c84a20495",
+    "results": "native-media.attempt-1-results.json",
+    "resultsSha256": "cfc203b6cb688eacedf482d2d2167eb6064e93f2109a3e1f196251f08aac24bb",
+    "total": 8,
+    "passed": 2,
+    "failed": 6,
+    "canonicalResults": "native-media-results.json"
+  },
+  {
+    "name": "round24",
+    "attempt": 2,
+    "command": "node docs/audits/round-24/verify-independent.mjs",
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-24/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:47:17.903955+00:00",
+    "endedAt": "2026-10-20T12:47:19.854219+00:00",
+    "elapsedSeconds": 1.953,
+    "exitCode": 1,
+    "log": "round24.attempt-2.log",
+    "logSha256": "fcfa3c1ed2f176942a4fda599dede2c48ad13a7a1c680d9cf0d5ca5b0cd6dd7c",
+    "results": "round24.attempt-2-results.json",
+    "resultsSha256": "a16fca6098639a6974269107fa6ad1c2724eed4d5ab4a78e757d5edc8bffe954",
+    "total": 230,
+    "passed": 203,
+    "failed": 27,
+    "canonicalResults": "independent-results.json"
+  }
+]

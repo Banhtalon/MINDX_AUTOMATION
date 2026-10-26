@@ -1,0 +1,14 @@
+{
+  "inheritedR29AssertionsAndResultsIdentical": true,
+  "inheritedCount": 815,
+  "newMainAssertions": 4,
+  "nativeFailureIdsMatchMain": true,
+  "sourceHashesMatchRootAndAllExecutionSnapshots": true,
+  "executedHarnessBytesMatchDelivery": true,
+  "allReceiptHashesVerified": true,
+  "r29EightFixturesByteIdenticalAndClosed": true,
+  "tenCompatibilityControlsPass": true,
+  "commandAttempts": 48,
+  "distinctCommands": 42,
+  "checkedAt": "2026-10-20T21:12:28.483195+00:00"
+}

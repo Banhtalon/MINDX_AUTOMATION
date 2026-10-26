@@ -1,0 +1,16 @@
+{
+  "label": "01b-r32-compatible",
+  "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-38/r32-compatible.mjs",
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+  "exitCode": 0,
+  "seconds": 8.72,
+  "log": "01b-r32-compatible.log",
+  "adaptation": {
+    "onlyChange": "TEMP folder-name guard r32 to r38",
+    "originalSha256": "C75FF63522992961CFFCDC0065FD95945D774210A050D8A6C46C2D19DC2A464C",
+    "adaptedSha256": "4DF2C91CE66A99FF87ADA9FBB2C9CE2C1CFC3BAAFD1341957ED0C842A51529AA"
+  },
+  "newExternalFixtures": [
+    "C:\\Users\\QQ\\AppData\\Local\\Temp\\r32-out-Ku9xci"
+  ]
+}

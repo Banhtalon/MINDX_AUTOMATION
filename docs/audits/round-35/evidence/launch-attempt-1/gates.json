@@ -1,0 +1,65 @@
+[
+  {
+    "id": "r31-main",
+    "command": "node docs/audits/round-31/verify-independent.mjs",
+    "exitCode": 1,
+    "durationSeconds": 0.085,
+    "expectedTotal": 819,
+    "log": "r31-main.log",
+    "status": "FAIL"
+  },
+  {
+    "id": "native-media",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/native-media-repro.mjs",
+    "exitCode": 1,
+    "durationSeconds": 0.048,
+    "expectedTotal": 221,
+    "log": "native-media.log",
+    "status": "FAIL"
+  },
+  {
+    "id": "native-worker",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/native-worker-repro.mjs",
+    "exitCode": 1,
+    "durationSeconds": 0.045,
+    "expectedTotal": 88,
+    "log": "native-worker.log",
+    "status": "FAIL"
+  },
+  {
+    "id": "pdf-name",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/pdf-name-repro.mjs",
+    "exitCode": 1,
+    "durationSeconds": 0.046,
+    "expectedTotal": 4,
+    "log": "pdf-name.log",
+    "status": "FAIL"
+  },
+  {
+    "id": "pdf-boundary",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/pdf-boundary-repro.mjs",
+    "exitCode": 1,
+    "durationSeconds": 0.042,
+    "expectedTotal": 28,
+    "log": "pdf-boundary.log",
+    "status": "FAIL"
+  },
+  {
+    "id": "phase5",
+    "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase5.ts",
+    "exitCode": 1,
+    "durationSeconds": 0.037,
+    "expectedTotal": null,
+    "log": "phase5.log",
+    "status": "FAIL"
+  },
+  {
+    "id": "typecheck",
+    "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false",
+    "exitCode": 1,
+    "durationSeconds": 0.036,
+    "expectedTotal": null,
+    "log": "typecheck.log",
+    "status": "FAIL"
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "id": "R27-09-block-quote-decoy-previewHomework",
+  "pass": false,
+  "expectedVerified": 0,
+  "verified": 1,
+  "status": "VERIFIED",
+  "writes": 1,
+  "request": {
+    "operationName": "SaveHomeworkGrade",
+    "query": "mutation SaveHomeworkGrade { saved:previewHomework(note:\"\"\"a \" mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } } \" b\"\"\") { id } }",
+    "variables": {
+      "input": {
+        "classId": "R27_NATIVE_PTA",
+        "sessionId": "R27_NATIVE_PTA_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "score": 80,
+        "decision": "GRADE",
+        "feedback": "APPROVED FEEDBACK"
+      }
+    }
+  },
+  "response": {
+    "data": {
+      "saved": {
+        "id": "SUB1"
+      }
+    }
+  }
+}

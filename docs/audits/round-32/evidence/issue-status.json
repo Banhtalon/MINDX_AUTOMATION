@@ -1,0 +1,268 @@
+{
+  "verdict": "NO-GO_SOURCE_PHASE6",
+  "total": 13,
+  "P1": 11,
+  "P2": 2,
+  "issues": [
+    {
+      "id": "R32-01",
+      "priority": "P1",
+      "task": "6.5",
+      "title": "Snapshot duyệt thiếu trường/không bắt buộc; batch ghi dở dang",
+      "locations": [
+        "src/app/api/spck/approve/route.ts:77",
+        "src/app/final-project/page.tsx:516"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-A02",
+        "R32-A03-screenshotsJson",
+        "R32-A03-attachmentsJson",
+        "R32-A03-youtubeUrlsJson",
+        "R32-A03-relatedLinksJson",
+        "R32-A03-thumbnailPath",
+        "R32-A03-isConfirmedByTeacher",
+        "R32-A05"
+      ],
+      "failedCases": [
+        "R32-A02",
+        "R32-A03-screenshotsJson",
+        "R32-A03-attachmentsJson",
+        "R32-A03-youtubeUrlsJson",
+        "R32-A03-relatedLinksJson",
+        "R32-A03-thumbnailPath",
+        "R32-A03-isConfirmedByTeacher",
+        "R32-A05"
+      ]
+    },
+    {
+      "id": "R32-02",
+      "priority": "P1",
+      "task": "6.5/6.4",
+      "title": "Cùng thư mục có thể gán hai học viên qua alias đường dẫn",
+      "locations": [
+        "src/app/api/spck/save-draft/route.ts:54",
+        "src/lib/playwright/spck-uploader.ts:333"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-M02",
+        "R32-M03"
+      ],
+      "failedCases": [
+        "R32-M02",
+        "R32-M03"
+      ]
+    },
+    {
+      "id": "R32-03",
+      "priority": "P1",
+      "task": "6.1/6.5",
+      "title": "Xác nhận folder cũ được giữ cho folder mơ hồ mới",
+      "locations": [
+        "src/app/api/spck/scan/route.ts:56"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-M04"
+      ],
+      "failedCases": [
+        "R32-M04"
+      ]
+    },
+    {
+      "id": "R32-04",
+      "priority": "P1",
+      "task": "6.4",
+      "title": "Hash chưa khóa byte tài nguyên; không kiểm lại media",
+      "locations": [
+        "src/lib/db/sqlite.ts:987",
+        "src/lib/playwright/spck-uploader.ts:207"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-D03",
+        "R32-D04"
+      ],
+      "failedCases": [
+        "R32-D03",
+        "R32-D04"
+      ]
+    },
+    {
+      "id": "R32-05",
+      "priority": "P1",
+      "task": "6.4",
+      "title": "Phản hồi không đúng nghiệp vụ và DOM chưa persisted vẫn VERIFIED",
+      "locations": [
+        "src/lib/playwright/spck-uploader.ts:638",
+        "src/lib/playwright/spck-uploader.ts:701"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-P05",
+        "R32-P06",
+        "R32-P07"
+      ],
+      "failedCases": [
+        "R32-P05",
+        "R32-P06",
+        "R32-P07"
+      ]
+    },
+    {
+      "id": "R32-06",
+      "priority": "P1",
+      "task": "6.4",
+      "title": "Không chặn thay đổi trước Save; chỉ phát hiện sau ghi",
+      "locations": [
+        "src/lib/playwright/spck-uploader.ts:650",
+        "src/lib/playwright/spck-uploader.ts:750"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-P12"
+      ],
+      "failedCases": [
+        "R32-P12"
+      ]
+    },
+    {
+      "id": "R32-07",
+      "priority": "P1",
+      "task": "6.3",
+      "title": "Tên riêng mục tiêu/peer lọt vào prompt",
+      "locations": [
+        "src/lib/gemini/spck-comment.ts:109",
+        "src/lib/gemini/spck-comment.ts:130"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-G03",
+        "R32-G04"
+      ],
+      "failedCases": [
+        "R32-G03",
+        "R32-G04"
+      ]
+    },
+    {
+      "id": "R32-08",
+      "priority": "P1",
+      "task": "6.3",
+      "title": "AI không khóa toàn phiên bản; nhánh thiếu dữ kiện xóa nhận xét",
+      "locations": [
+        "src/lib/gemini/spck-comment.ts:287",
+        "src/lib/gemini/spck-comment.ts:440"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-G08",
+        "R32-G09"
+      ],
+      "failedCases": [
+        "R32-G08",
+        "R32-G09"
+      ]
+    },
+    {
+      "id": "R32-09",
+      "priority": "P1",
+      "task": "6.5",
+      "title": "Nháp/API/UI về sai thứ tự; lưu lỗi vẫn gọi duyệt/upload",
+      "locations": [
+        "src/app/api/spck/save-draft/route.ts:137",
+        "src/app/final-project/page.tsx:347"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-M06",
+        "R32-U02",
+        "R32-U03",
+        "R32-U04"
+      ],
+      "failedCases": [
+        "R32-M06",
+        "R32-U02",
+        "R32-U03",
+        "R32-U04"
+      ]
+    },
+    {
+      "id": "R32-10",
+      "priority": "P2",
+      "task": "6.3/6.5",
+      "title": "Tự chọn tags tích cực; lọt diễn đạt kỹ năng thuyết trình",
+      "locations": [
+        "src/app/final-project/page.tsx:183",
+        "src/lib/gemini/spck-comment.ts:66"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-G06",
+        "R32-U01"
+      ],
+      "failedCases": [
+        "R32-G06",
+        "R32-U01"
+      ]
+    },
+    {
+      "id": "R32-11",
+      "priority": "P2",
+      "task": "6.5",
+      "title": "Thiếu luồng chuyển ghép khỏi học viên cũ",
+      "locations": [
+        "src/app/final-project/page.tsx:851",
+        "src/app/api/spck/save-draft/route.ts:54"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-M05"
+      ],
+      "failedCases": [
+        "R32-M05"
+      ]
+    },
+    {
+      "id": "R32-12",
+      "priority": "P1",
+      "task": "6.4",
+      "title": "Thiếu xác minh thumbnail và upload hoàn tất",
+      "locations": [
+        "src/lib/playwright/spck-uploader.ts:562",
+        "src/lib/playwright/spck-uploader.ts:731"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-P08",
+        "R32-P09",
+        "R32-P10"
+      ],
+      "failedCases": [
+        "R32-P08",
+        "R32-P09",
+        "R32-P10"
+      ]
+    },
+    {
+      "id": "R32-13",
+      "priority": "P1",
+      "task": "6.4",
+      "title": "Selector card quá rộng và kiểm link bằng chuỗi con",
+      "locations": [
+        "src/lib/playwright/selectors.ts:98",
+        "src/lib/playwright/spck-uploader.ts:551"
+      ],
+      "status": "OPEN",
+      "cases": [
+        "R32-P13",
+        "R32-P14"
+      ],
+      "failedCases": [
+        "R32-P13",
+        "R32-P14"
+      ]
+    }
+  ]
+}

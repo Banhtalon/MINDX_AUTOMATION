@@ -1,0 +1,54 @@
+{
+  "checkedAt": "2026-10-20T03:58:06.264Z",
+  "baselineFileCount": 53,
+  "unchangedFiles": 52,
+  "intentionalChanges": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "planOnlyAddsAuditNote": true,
+  "preserved": [
+    {
+      "file": "next-env.d.ts",
+      "sha256": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
+      "byteIdentical": true
+    },
+    {
+      "file": "docs/audits/round-12/independent-results.json",
+      "sha256": "f0762c16358740ba5b498735252350f825c4ccb35af6aa8f710a63225f88cbf0",
+      "byteIdentical": true
+    }
+  ],
+  "reportCoverage": {
+    "historicalCodes": 49,
+    "round2Subcases": 14
+  },
+  "independentResults": {
+    "round12": {
+      "passed": 43,
+      "failed": 0
+    },
+    "round13": {
+      "passed": 89,
+      "failed": 0
+    }
+  },
+  "artifacts": {
+    "build-direct.log": "8cad68e51293bbc07a9aa57b73615d64c9635d84ce99e4511d07fb30c69946a7",
+    "build-pty.log": "2fc224c6fb1c2932c0e544e9a665c017509d053a3b27f678e1fe8f57c77cf13f",
+    "build.log": "e78bd351a41b479b1c02a13ad175fd9e3405173097f25e149141952b7b558414",
+    "capture-state.mjs": "f616cb985cf4975c6b86c2776b600b135038b70bc9d915945703c6e7d4811ed0",
+    "commands.json": "59c2e3b306faa56ec0b8560c15f5d19a94df0b8916fee1bec09822c6aaaa18d7",
+    "independent-results.json": "c7a590f72877862138b58fd6961ed2f9d0f82292c8b05b83a75494d458afee06",
+    "independent.log": "db610b66f4e17a9ebc079189d8e40e1b7cf2b5f13cbd5bc483b457db6c56cfea",
+    "plan.before.md": "993f0e3fe49d3210aa6507390c31457b007f1c68f8931948506bfce4bf4fd5ce",
+    "regressions.log": "71f063a21f2ed7956dbe342aa568675f15c1c85cde6c8201ad7a74d9d21442e3",
+    "REPORT.vi.md": "95dcfd40606db4a3962073d17f8fcad18d8e3b6544cc4bebb8017414db3a3e7d",
+    "round12-independent-results.json": "375eb3d3358ee206a4b89022e00f0ae0aad0b1fccbaf4221fdc2d61f65d3f78f",
+    "round12-independent.log": "9391c5063c9a00103ddb7d970f0c37967e2c676a6eb11405e20258c0ca74e096",
+    "round12-results.before.json": "f0762c16358740ba5b498735252350f825c4ccb35af6aa8f710a63225f88cbf0",
+    "source-state.json": "592c6db9856fa1acd54cd4b43a3034f0028d3d3494ee3652b4321dcc981782f7",
+    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verify-independent.mjs": "344cf8bbba54525512b132dfee87331fa1a6ce3d7948bb06ac4967489ee8ccc6",
+    "verify-preservation.mjs": "0ca725c99cb72e6a9c2cebbb55227ab7a64ee4033ad03e2a434e81abe93f1da1"
+  }
+}

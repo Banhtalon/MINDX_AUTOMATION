@@ -1,0 +1,98 @@
+{
+  "primary": [
+    {
+      "file": "src/lib/playwright/download-submissions.ts",
+      "sha256": "b6ad6442b96ee2c2ec84e78b9222da75d38bf7f857661190ce9b966ce37dc262",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/lib/file-parsers/index.ts",
+      "sha256": "5ecd30c44bbe46325f8e467a4573f11015cc875d19a823c8a44291932152bc38",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/lib/file-parsers/code-reader.ts",
+      "sha256": "9d04a75f4baf99c0f8110f6716b2695fa7322eeca5ccdd01f0dbb36b7a08133c",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/lib/file-parsers/archive-reader.ts",
+      "sha256": "8043b40ccf5e5ef09a6e939762b01c85fca05897899e79b622563cfa1a2c9c88",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/lib/file-parsers/game-reader.ts",
+      "sha256": "796a07b3d8714920a14c3f016cbf72dcf1e666aa98579cfd4030f1ba8e4fa218",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/lib/file-parsers/media-reader.ts",
+      "sha256": "7fe1b0cae871c2577852aa253efac0d87d0ad02e43706220d7357eba0e7c5571",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/lib/gemini/score-auditor.ts",
+      "sha256": "e1057d50aea9546fd9def86aba09ce42b1fd8730488e8962a013b523a883dc83",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/lib/gemini/homework-grader.ts",
+      "sha256": "4ad39f72c218e4a53d45e873705e1629a84f9df32676414fb65b77e37b9ef687",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/lib/playwright/grade-worker.ts",
+      "sha256": "a024da93ce1a492b0f15d7e7bd4b43e3a5b41d3477a32472e16d2a8ad8119369",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/app/homework-grader/page.tsx",
+      "sha256": "926b6e479c4341f925fbf3ae85d51bbe85e3044761d63bf088debf82cc7a0a88",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/components/homework-auto-grader-tab.tsx",
+      "sha256": "2cce76a3729a67d131551d762cc4752c6b8ea55163704d57c71e24c4162f4ec7",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/app/api/homework-grader/submissions/route.ts",
+      "sha256": "5181b33948f1b73c06878d98074cac06310e8e06cefd50430b109170ecc7b0b3",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/app/api/homework-grader/download-and-grade/route.ts",
+      "sha256": "150798d12677b41fe40b39e98306e8456b0dee5d170bce8c52ffae928c923961",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/app/api/homework-grader/approve/route.ts",
+      "sha256": "1472c0bcdccbaaba7cf0c2450cf84d261de0bed7b2d6fa23ee169a98b2854c0e",
+      "matchesBaseline": true
+    },
+    {
+      "file": "src/app/api/homework-grader/save-lms/route.ts",
+      "sha256": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791",
+      "matchesBaseline": true
+    }
+  ],
+  "support": [
+    "src/lib/db/sqlite.ts",
+    "src/lib/security/path-allowlist.ts",
+    "src/lib/security/local-guard.ts",
+    "src/lib/playwright/browser-manager.ts",
+    "src/lib/playwright/network-interceptor.ts",
+    "src/lib/playwright/selectors.ts",
+    "src/lib/queue/task-queue.ts",
+    "src/lib/gemini/client.ts",
+    "src/lib/config.ts",
+    "src/app/api/homework-grader/scores/route.ts",
+    "src/lib/playwright/scrape-scores.ts",
+    "src/lib/db/json-config.ts",
+    "package.json",
+    "next.config.ts",
+    "tsconfig.json"
+  ],
+  "localSourceDocumentation": "node_modules/next/dist/docs/01-app/01-getting-started/15-route-handlers.md",
+  "assumptions": "Ứng dụng cục bộ, một giáo viên, có thể mở nhiều tab; xử lý file học viên không tin cậy. Không kiểm tra quy mô máy chủ nhiều người dùng."
+}

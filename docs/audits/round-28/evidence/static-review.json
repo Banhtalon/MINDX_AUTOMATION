@@ -1,0 +1,51 @@
+{
+  "method": "Narrow read-only inspection plus current inherited/directed source-function evidence. No actual browser or whole-repo security claim.",
+  "loadAssumption": "One local teacher; sequential browser work; asynchronous AI/draft/UI results may overlap.",
+  "localHostScripts": {
+    "dev": "next dev -H 127.0.0.1 -p 3000",
+    "start": "next start -H 127.0.0.1 -p 3000"
+  },
+  "sourceHashes": {
+    "src/lib/playwright/browser-manager.ts": "110053838d68f5e8e12a4bb75a205e4cfe7d5f0297729624742e7d4c7812b343",
+    "src/lib/queue/task-queue.ts": "a284d7f7099045bc1e3ddd6491a9afce79409fe6fff00b9a7d4988495fa82578",
+    "src/app/api/homework-grader/save-lms/route.ts": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791",
+    "src/app/api/homework-grader/download-and-grade/route.ts": "12c52a3b53eb3db4de810eeb2e22e2d87ea2f09920341d9120c59a5d86db448b",
+    "src/lib/file-parsers/index.ts": "5ecd30c44bbe46325f8e467a4573f11015cc875d19a823c8a44291932152bc38",
+    "src/lib/playwright/download-submissions.ts": "f56327ef033fbd0a0a1bf6a1b520f7a4b0ded26a30809a43cab981d1f0bfe958",
+    "src/lib/playwright/grade-worker.ts": "3fe319e5ca6dfe60f07a6c0bba37d4554110caad5afc36a3f320e20cd9b13a8e",
+    "src/lib/file-parsers/media-reader.ts": "0decc7a823d03784cfe62564bad6980fc94b02e76dbfa40f93a393fea3ae23cd",
+    "src/lib/playwright/network-interceptor.ts": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad",
+    "src/lib/db/sqlite.ts": "147e883ffb1eb9798cc5c6d87f2f8b0dbc83f9748c34cfef829badd19da640ab",
+    "src/lib/gemini/homework-grader.ts": "b2bd3a4efeb8706ddfce190fecaef5d30aab76420bc8e0f9b34c1ab785483c57",
+    "src/lib/gemini/score-auditor.ts": "79378d1d142d033b6f89807e959f59c04b5a840161a28d6f908849c5236401da",
+    "src/app/api/homework-grader/approve/route.ts": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283",
+    "src/app/api/homework-grader/submissions/route.ts": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc",
+    "src/components/homework-auto-grader-tab.tsx": "019bbcc3016fafd5453a6a137dc9d0e1ad6ff94c859fd8b2678e1b1e4f01f3ab",
+    "src/app/homework-grader/page.tsx": "0bd7b41be9c0ad2af36384e2b1921bf6440dc57499015d0cfa8e931c61523f6d"
+  },
+  "references": {
+    "singlePersistentContext": "src/lib/playwright/browser-manager.ts:86",
+    "singleQueue": "src/lib/queue/task-queue.ts:53",
+    "saveQueue": "src/app/api/homework-grader/save-lms/route.ts:36",
+    "fileAllowlist": "src/lib/file-parsers/index.ts:287",
+    "businessResponseAndToast": "src/lib/playwright/network-interceptor.ts:22",
+    "finalHashConditionalUpdate": "src/lib/db/sqlite.ts:942",
+    "pdfLength": "src/lib/file-parsers/media-reader.ts:1271",
+    "pdfCount": "src/lib/file-parsers/media-reader.ts:1442",
+    "graphqlBlockValue": "src/lib/playwright/grade-worker.ts:465",
+    "reviewedSnapshot": "src/app/api/homework-grader/approve/route.ts:106",
+    "staleUiRequest": "src/components/homework-auto-grader-tab.tsx:211",
+    "aiAnonymization": "src/lib/gemini/homework-grader.ts:178",
+    "parseErrorGuard": "src/lib/gemini/homework-grader.ts:283",
+    "typescriptSum": "src/lib/gemini/score-auditor.ts:24"
+  },
+  "clientEntrypoints": {
+    "src/components/homework-auto-grader-tab.tsx": {
+      "sensitiveEnvironmentReference": false
+    },
+    "src/app/homework-grader/page.tsx": {
+      "sensitiveEnvironmentReference": false
+    }
+  },
+  "limits": "No LMS schema validation, real API call, live UI/React scheduling, credentials or full production acceptance."
+}

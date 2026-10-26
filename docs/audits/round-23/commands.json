@@ -1,0 +1,166 @@
+[
+  {
+    "name": "round22",
+    "command": "node docs/audits/round-22/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:15:14.249826+00:00",
+    "endedAt": "2026-10-20T12:15:16.515872+00:00",
+    "exitCode": 0,
+    "log": "round22.attempt-1.log",
+    "logSha256": "b37c6f5f64411715194f30c85f8b56eceb5d09788d6e5c3249459d4651da7a27",
+    "results": "round22.attempt-1-results.json"
+  },
+  {
+    "name": "round21",
+    "command": "node docs/audits/round-21/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:15:16.597282+00:00",
+    "endedAt": "2026-10-20T12:15:17.264861+00:00",
+    "exitCode": 0,
+    "log": "round21.attempt-1.log",
+    "logSha256": "1ab8561cb8a446858f5b62e37c88e2daa6d25de5fc3d2b332793c5dfe3d37e8e",
+    "results": "round21.attempt-1-results.json"
+  },
+  {
+    "name": "round20",
+    "command": "node docs/audits/round-20/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:15:17.301121+00:00",
+    "endedAt": "2026-10-20T12:15:18.349310+00:00",
+    "exitCode": 0,
+    "log": "round20.attempt-1.log",
+    "logSha256": "95f6fa68f068c9b473a86a636d530d6ad21f0a1b93a2e2173f5687c05a158d26",
+    "results": "round20.attempt-1-results.json"
+  },
+  {
+    "name": "round12",
+    "command": "node docs/audits/round-12/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:15:18.368611+00:00",
+    "endedAt": "2026-10-20T12:15:21.633331+00:00",
+    "exitCode": 0,
+    "log": "round12.attempt-1.log",
+    "logSha256": "df3d1a9d0b83e01eae09e00d8b12e40f1a1d435093d6640484636a1d6cb482fe",
+    "results": "round12.attempt-1-results.json"
+  },
+  {
+    "name": "round13",
+    "command": "node docs/audits/round-13/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:15:21.701202+00:00",
+    "endedAt": "2026-10-20T12:15:23.005861+00:00",
+    "exitCode": 0,
+    "log": "round13.attempt-1.log",
+    "logSha256": "7c823b91e6e82e4911c44dad029a7f17722c17e5292adb87b0b9a3c2fc2eaca9",
+    "results": "round13.attempt-1-results.json"
+  },
+  {
+    "name": "round16",
+    "command": "node docs/audits/round-16/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:15:23.022388+00:00",
+    "endedAt": "2026-10-20T12:15:24.353956+00:00",
+    "exitCode": 1,
+    "log": "round16.attempt-1.log",
+    "logSha256": "900d82ab94293e91934bcb010eddc507f4c440c66c973a1aeac7f02364b03f30",
+    "results": "round16.attempt-1-results.json"
+  },
+  {
+    "name": "round17",
+    "command": "node docs/audits/round-17/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:15:24.381513+00:00",
+    "endedAt": "2026-10-20T12:15:30.157771+00:00",
+    "exitCode": 0,
+    "log": "round17.attempt-1.log",
+    "logSha256": "b0ff6209af7524c5215f6aba04afbba15a301795a661c414e456e607870a42bb",
+    "results": "round17.attempt-1-results.json"
+  },
+  {
+    "name": "phase4",
+    "command": "npx tsx scripts/test-phase4-codex-repros.ts",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:15:30.197309+00:00",
+    "endedAt": "2026-10-20T12:15:40.255174+00:00",
+    "exitCode": 0,
+    "log": "phase4.attempt-1.log",
+    "logSha256": "b638b056d6c603fd5758dce25c75ab98af9de7336ca4c1c73996e013daa6e9ea"
+  },
+  {
+    "name": "phase5",
+    "command": "npx tsx scripts/test-phase5.ts",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:15:40.280702+00:00",
+    "endedAt": "2026-10-20T12:15:41.656252+00:00",
+    "exitCode": 0,
+    "log": "phase5.attempt-1.log",
+    "logSha256": "735a579077534d64731d9948630a5d5533f5276e80cf92b2e09b7ffbe11c706b"
+  },
+  {
+    "name": "typecheck",
+    "command": "npx tsc --noEmit --incremental false",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:15:41.657261+00:00",
+    "endedAt": "2026-10-20T12:15:45.091230+00:00",
+    "exitCode": 0,
+    "log": "typecheck.attempt-1.log",
+    "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "build",
+    "command": "npm run build",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:15:45.091230+00:00",
+    "endedAt": "2026-10-20T12:16:16.512383+00:00",
+    "exitCode": 0,
+    "log": "build.attempt-1.log",
+    "logSha256": "e351bff2e1297cc82a037a1737e03c0dab20306de1d39eb39f7ca91dd71c98b1"
+  },
+  {
+    "name": "round23",
+    "command": "node docs/audits/round-23/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:18:06.412504+00:00",
+    "endedAt": "2026-10-20T12:18:06.474768+00:00",
+    "exitCode": 1,
+    "log": "round23.attempt-1.log",
+    "logSha256": "a2dbf7377bf37c340b474ef0ff062be05a26266e85feb860e5f7cdc393122ddc",
+    "scriptSha256": "d0814eef0912d466aeb3722a9e427a14764cfb2d72c99ae38d075780f33905b6"
+  },
+  {
+    "name": "round23",
+    "command": "node docs/audits/round-23/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:18:32.992267+00:00",
+    "endedAt": "2026-10-20T12:18:34.119411+00:00",
+    "exitCode": 1,
+    "log": "round23.attempt-2.log",
+    "logSha256": "0b9c9d51aa4548d837d52ff5128f24c572543d67c540a2d649c4eb893229089d",
+    "scriptSha256": "d772b9e0bc84378d2f5aa5ca9688449d7704477f7e0c320bd63c272a31462ef1",
+    "results": "round23.attempt-2-results.json"
+  },
+  {
+    "name": "round23",
+    "command": "node docs/audits/round-23/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:19:18.306673+00:00",
+    "endedAt": "2026-10-20T12:19:19.432654+00:00",
+    "exitCode": 1,
+    "log": "round23.attempt-3.log",
+    "logSha256": "e48fcfa5717290cfc29eafe445eeabb702f6e0bcd27052b30c96f24fcafce420",
+    "scriptSha256": "6a25cd2d334b3dbad5e24fd77eb9fe759829b2a8b1a61964da15425a059932fd",
+    "results": "round23.attempt-3-results.json"
+  },
+  {
+    "name": "round23",
+    "command": "node docs/audits/round-23/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+    "startedAt": "2026-10-20T12:20:03.997337+00:00",
+    "endedAt": "2026-10-20T12:20:05.169204+00:00",
+    "exitCode": 1,
+    "log": "round23.attempt-4.log",
+    "logSha256": "ab96818bb06950c7220c01f68abbfc4d999b2c87afc3bf65e18bffa5abb7bfea",
+    "scriptSha256": "af410d446dea5b9a95fe92bfcafaa979fc02b325de3578ec2cbd92551f225a83",
+    "results": "round23.attempt-4-results.json"
+  }
+]

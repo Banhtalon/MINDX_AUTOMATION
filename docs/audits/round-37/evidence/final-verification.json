@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "protectedFiles": 1738,
+  "historicalFiles": 1657,
+  "historicalByteEquality": true,
+  "nextEnvHashMatches": true,
+  "planPrefixByteEquality": true,
+  "allNewStatusPathsWithinRound37": true,
+  "tempAbsent": true,
+  "requiredDeliverablesReadable": true,
+  "note": "Final content/integrity check only; product gates were not repeated or broadened."
+}

@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-10-20T05:01:14.921Z",
+  "externalRequests": [],
+  "pageErrors": [],
+  "observations": {
+    "silentConflict": {
+      "status": 200,
+      "body": {
+        "success": true,
+        "staleIgnored": true,
+        "message": "Bỏ qua yêu cầu lưu nháp cũ đến muộn.",
+        "versionMeta": {
+          "rowVer": 2,
+          "fields": {
+            "teacherNote": {
+              "ver": 1,
+              "cid": "sc_1792472476281_paidn9",
+              "rev": 2
+            }
+          }
+        }
+      },
+      "visible": "SECOND PAGE USER EDIT",
+      "stored": "FIRST PAGE SAVED",
+      "reloaded": "FIRST PAGE SAVED",
+      "reproduced": true
+    },
+    "staleInsufficient": {
+      "status": 200,
+      "afterAi": {
+        "finalText": "Chưa đủ thông tin để nhận xét. Vui lòng chọn ít nhất 1 Quick Tag hoặc nhập ghi chú của giáo viên.",
+        "status": "INSUFFICIENT_INFO"
+      },
+      "reproduced": true
+    },
+    "hostileOriginBlocked": true
+  },
+  "completed": true
+}

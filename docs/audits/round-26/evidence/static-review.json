@@ -1,0 +1,27 @@
+{
+  "method": "Targeted read-only source inspection, supported by fresh source-level tests; no real server/browser claim.",
+  "localHostScripts": {
+    "dev": "next dev -H 127.0.0.1 -p 3000",
+    "build": "next build",
+    "start": "next start -H 127.0.0.1 -p 3000",
+    "recon": "tsx scripts/recon.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "references": {
+    "persistentSingleContext": "src/lib/playwright/browser-manager.ts:6-103",
+    "saveQueue": "src/app/api/homework-grader/save-lms/route.ts:29",
+    "downloadQueue": "src/app/api/homework-grader/download-and-grade/route.ts:65",
+    "pathAllowlist": "src/lib/playwright/download-submissions.ts:87-91; src/lib/file-parsers/index.ts; src/lib/security/path-allowlist.ts",
+    "clientBoundaries": "src/components/homework-auto-grader-tab.tsx; src/app/homework-grader/page.tsx",
+    "appRouterExports": "src/app/api/homework-grader/export/route.ts:54; src/app/homework-grader/page.tsx:112"
+  },
+  "appRouterRuntimeExports": {
+    "exportRoute": [
+      "GET"
+    ],
+    "homeworkPage": [
+      "default"
+    ]
+  },
+  "noSensitiveEnvironmentReferencesOrServerConfigImportsInTwoReviewedClientEntrypoints": true
+}

@@ -1,0 +1,17 @@
+{
+  "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round25-20261020T130841Z-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat-mindx-round21-compat-mindx-round20-compat\\snapshot",
+  "sourceMismatch": [],
+  "excludedAbsent": [
+    ".env.local",
+    ".env",
+    ".git",
+    ".next",
+    "playwright-auth",
+    "data/mindx_bot.db",
+    "temp_submissions"
+  ],
+  "dependenciesCopied": true,
+  "dependencyJunctionUsed": false,
+  "nodeVersion": "v24.21.0",
+  "preparedAt": "2026-10-20T13:08:51.717401+00:00"
+}

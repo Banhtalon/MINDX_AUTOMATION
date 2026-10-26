@@ -1,0 +1,81 @@
+{
+  "round": 23,
+  "verdict": "NO-GO",
+  "scope": "source and synthetic checks only, no live-service or Owner acceptance",
+  "head": "2570d96b6770957e218031c91f14ce98e766dfa7",
+  "sourceManifestSha256": "07d9a21b600e9700bee1a56cc145f137e0d845dd10b42bd43d2652300e91acdf",
+  "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round23-20261020T121436965204Z-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+  "closedSource": 10,
+  "partiallyFixed": 4,
+  "requiredDistinctCommands": 12,
+  "passingCommands": 10,
+  "failingCommands": [
+    "round23",
+    "round16"
+  ],
+  "R23": {
+    "total": 116,
+    "passed": 92,
+    "failed": 24
+  },
+  "newR23Checks": {
+    "total": 63,
+    "passed": 39,
+    "failed": 24
+  },
+  "freshRegressions": {
+    "12": {
+      "passed": 43,
+      "failed": 0,
+      "total": 43,
+      "exitCode": 0
+    },
+    "13": {
+      "passed": 89,
+      "failed": 0,
+      "total": 89,
+      "exitCode": 0
+    },
+    "16": {
+      "passed": 15,
+      "failed": 1,
+      "total": 16,
+      "exitCode": 1
+    },
+    "17": {
+      "passed": 38,
+      "failed": 0,
+      "total": 38,
+      "exitCode": 0
+    },
+    "20": {
+      "passed": 145,
+      "failed": 0,
+      "total": 145,
+      "exitCode": 0
+    },
+    "21": {
+      "passed": 49,
+      "failed": 0,
+      "total": 49,
+      "exitCode": 0
+    },
+    "22": {
+      "passed": 53,
+      "failed": 0,
+      "total": 53,
+      "exitCode": 0
+    }
+  },
+  "historicalRegressionPassed": 185,
+  "historicalRegressionTotal": 186,
+  "protectedUnchanged": true,
+  "protectedFiles": 364,
+  "historicalFiles": 363,
+  "productSourceScriptsConfigUnchanged": true,
+  "sourceFiles": 75,
+  "allowedOriginalChanges": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "suiteSha256": "af410d446dea5b9a95fe92bfcafaa979fc02b325de3578ec2cbd92551f225a83"
+}

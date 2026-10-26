@@ -1,0 +1,16 @@
+[
+  {
+    "file": "src/lib/file-parsers/media-reader.ts",
+    "baselineMatchesRecordedHash": false,
+    "expectedSha256": "0decc7a823d03784cfe62564bad6980fc94b02e76dbfa40f93a393fea3ae23cd",
+    "observedSha256": "c019389c427ca6c0ce0607309850100f1d46020a0c942727e585aa6fbddb9a1a",
+    "diffProduced": false
+  },
+  {
+    "file": "src/lib/playwright/grade-worker.ts",
+    "baselineMatchesRecordedHash": false,
+    "expectedSha256": "3fe319e5ca6dfe60f07a6c0bba37d4554110caad5afc36a3f320e20cd9b13a8e",
+    "observedSha256": "f5db4a78fcdd2b2022a6c663444e0f6c24acfc6600da884cd5b62a75fef33d73",
+    "diffProduced": false
+  }
+]

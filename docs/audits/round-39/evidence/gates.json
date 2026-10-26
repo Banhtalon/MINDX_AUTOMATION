@@ -1,0 +1,52 @@
+[
+  {
+    "id": "01-r32-compatible",
+    "command": "node --import tsx docs/audits/round-38/r32-compatible.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+    "startedAt": "2026-10-21T06:32:06.600979+00:00",
+    "exitCode": 0,
+    "seconds": 8.411,
+    "log": "01-r32-compatible.log",
+    "logSha256": "43F3A330953E9D2FA37CFF066959F2F8FE38D0787C4561043911FFAA4F0ABE58"
+  },
+  {
+    "id": "02-adversarial",
+    "command": "node --import tsx docs/audits/round-38/adversarial.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+    "startedAt": "2026-10-21T06:32:15.030796+00:00",
+    "exitCode": 0,
+    "seconds": 3.872,
+    "log": "02-adversarial.log",
+    "logSha256": "3BF62C0892CA49D1272B3D984D77D5CDF62CEF03AA7463B1159642F52153B860"
+  },
+  {
+    "id": "03-phase6",
+    "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase6.ts",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+    "startedAt": "2026-10-21T06:32:18.930715+00:00",
+    "exitCode": 0,
+    "seconds": 2.68,
+    "log": "03-phase6.log",
+    "logSha256": "6AD6176F4392248C4456374E7A34CACCE7E5B2071AC688384C1A6CF3EC0517FF"
+  },
+  {
+    "id": "04-phase5",
+    "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase5.ts",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+    "startedAt": "2026-10-21T06:32:21.621492+00:00",
+    "exitCode": 0,
+    "seconds": 0.629,
+    "log": "04-phase5.log",
+    "logSha256": "168EF00CC7AF49C1D0BB0D3AD5E3C19A1B2E97EAC9A746588ADA04FF1A5DD515"
+  },
+  {
+    "id": "05-typescript",
+    "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+    "startedAt": "2026-10-21T06:32:22.267734+00:00",
+    "exitCode": 0,
+    "seconds": 10.587,
+    "log": "05-typescript.log",
+    "logSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  }
+]

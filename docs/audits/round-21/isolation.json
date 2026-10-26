@@ -1,0 +1,12 @@
+{
+  "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round21-20261020T112635411955Z-mindx-round20-compat\\snapshot",
+  "pathCompatibilitySuffix": "mindx-round20-compat keeps the original R20 path guard unchanged within TEMP/mindx-round21-<timestamp>/snapshot",
+  "noCredentialsCopied": true,
+  "noLiveDatabaseCopied": true,
+  "noBrowserProfileCopied": true,
+  "nodeModules": "Physical copy, not a junction or symlink; no package install/update",
+  "processEnvironment": "Minimal Windows runtime allowlist, npm offline, telemetry disabled; no service credential variables",
+  "networkGuard": "--require docs/audits/round-19/network-guard.cjs from snapshot; Node socket guard, not an OS firewall",
+  "noRealBrowserLaunchedByAudit": true,
+  "limitations": "VM DOM/API/Gemini doubles and real in-memory SQLite; no LMS/Gemini calls or real account acceptance. R21 malformed-image controls use installed sharp."
+}

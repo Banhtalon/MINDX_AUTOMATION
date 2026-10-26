@@ -1,0 +1,11 @@
+{
+  "productChanges": [
+    "src/lib/file-parsers/media-reader.ts"
+  ],
+  "otherDifferences": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "gradeWorkerUnchanged": true,
+  "currentMediaSha256": "3d677823077a3c7eb36f7261f45970ca7b7903e9797b1568ce602f86109760ac",
+  "currentWorkerSha256": "f5db4a78fcdd2b2022a6c663444e0f6c24acfc6600da884cd5b62a75fef33d73"
+}

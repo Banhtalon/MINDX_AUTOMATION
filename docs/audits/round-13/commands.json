@@ -1,0 +1,23 @@
+{
+  "workingDirectory": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "dateLocal": "2026-10-20",
+  "node": "v24.21.0",
+  "next": "16.4.2",
+  "commands": [
+    {"command":"npx tsx scripts/test-phase4-codex-repros.ts","exitCode":0,"result":"PASS","log":"regressions.log"},
+    {"command":"node docs/audits/round-12/verify-independent.mjs","exitCode":0,"passed":43,"failed":0,"result":"PASS","log":"round12-independent.log","results":"round12-independent-results.json"},
+    {"command":"npx tsc --noEmit --incremental false","exitCode":0,"result":"PASS","log":"typecheck.log"},
+    {"command":"npm run build","attempt":1,"mode":"redirected output","exitCode":1,"result":"BLOCKED_ENVIRONMENT","error":"spawn EPERM after compilation, during TypeScript worker creation","log":"build.log"},
+    {"command":"npm run build","attempt":2,"mode":"direct output","exitCode":1,"result":"BLOCKED_ENVIRONMENT","error":"spawn EPERM after compilation, during TypeScript worker creation","log":"build-direct.log"},
+    {"command":"npm run build","attempt":3,"mode":"terminal output (PTY)","exitCode":1,"result":"BLOCKED_ENVIRONMENT","error":"spawn EPERM after compilation","log":"build-pty.log"},
+    {"command":"node docs/audits/round-13/verify-independent.mjs","exitCode":0,"passed":89,"failed":0,"result":"PASS","log":"independent.log","results":"independent-results.json"}
+  ],
+  "notes": [
+    "Command exit codes are from actual executions; no pipe masks a failed exit status.",
+    "next-env.d.ts was restored byte-for-byte in a finally block after every build attempt.",
+    "Round 12 results generated in this run were copied here and the historical file restored byte-for-byte.",
+    "The initial capture-state helper failed to spawn git (EPERM). Git was read directly by PowerShell and supplied as input; the helper was corrected and succeeded before subsequent commands.",
+    "The final Round 13 script was rerun after adding assertions for all seven persisted fields; the final run also passed 89/89.",
+    "No build success is claimed for this checkout in Round 13."
+  ]
+}

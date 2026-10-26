@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-10-20T05:59:43.080Z",
+  "sourceManifestSha256": "4405fa75120bcccff53c5686669cfe2f17a42e8ad1ebaec6a280cdf48d49bf5d",
+  "preservation": {
+    "checkedAt": "2026-10-20T05:59:43.017Z",
+    "checkedFiles": 149,
+    "changed": [],
+    "added": [],
+    "removed": [],
+    "byteIdentical": true
+  },
+  "sourceChanges": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "unexpectedChanges": [],
+  "productFilesChecked": 46,
+  "productAdded": [],
+  "productRemoved": [],
+  "onlyPlanChangedAmongCapturedSourceFiles": true,
+  "planSha256": "0fd8f3452585eac8db82960ac300ed3214a971623131c247538eedde5292f99b",
+  "reportSha256": "e6b258ad864ce0b5d44fa63517504421f79e7223b519baeef85984568ed7712e",
+  "commandLogHashesMatch": true,
+  "gatePassed": true,
+  "smokeAttempts": [
+    {
+      "log": "smoke-local.log",
+      "exitCode": 1
+    },
+    {
+      "log": "smoke-final.log",
+      "exitCode": 1
+    },
+    {
+      "log": "smoke-accepted.log",
+      "exitCode": 0
+    }
+  ],
+  "verdict": "GO_SOURCE_ONLY_PHASE5"
+}

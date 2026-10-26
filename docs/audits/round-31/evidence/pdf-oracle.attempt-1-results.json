@@ -1,0 +1,4128 @@
+{
+  "method": "pypdf strict=True; authoritative trailer Root, xref before recovery, actual stream bytes using Length, direct Kids types. Recovery behavior recorded; not rendering or full PDF conformance.",
+  "version": "6.10.2",
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-20261020T233526Z-mindx-round25-compat\\snapshot",
+  "r29IndependentDictionaryChecks": 54,
+  "results": [
+    {
+      "id": "R27-01-pdf-control",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 1727238671872)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238671872)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238671872)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R27-01-pdf-valid-literal-markers",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 1727238672256)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238672256)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238672256)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R27-01-pdf-valid-nested-literal",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 1727238672880)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238672880)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238672880)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R27-01-pdf-stream-early-marker-_endstream_",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(9, 0, 1727238673360)",
+      "rootDeclaredInXref": false,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "actualStreamBytes": 82,
+      "streamContainsEarlyEndstream": true,
+      "streamContainsFakeCatalog9": true,
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238673360)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238673360)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R27-01-pdf-valid-stream-marker-_endstream_",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 1727238673936)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "actualStreamBytes": 82,
+      "streamContainsEarlyEndstream": true,
+      "streamContainsFakeCatalog9": true,
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238673936)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238673936)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R27-01-pdf-stream-early-marker-_endstream_r_",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(9, 0, 1727238672352)",
+      "rootDeclaredInXref": false,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "actualStreamBytes": 83,
+      "streamContainsEarlyEndstream": true,
+      "streamContainsFakeCatalog9": true,
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238672352)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238672352)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R27-01-pdf-valid-stream-marker-_endstream_r_",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 1727238674320)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "actualStreamBytes": 83,
+      "streamContainsEarlyEndstream": true,
+      "streamContainsFakeCatalog9": true,
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238674320)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238674320)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R27-01-pdf-stream-early-marker-_endstream_n_",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(9, 0, 1727238675088)",
+      "rootDeclaredInXref": false,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "actualStreamBytes": 83,
+      "streamContainsEarlyEndstream": true,
+      "streamContainsFakeCatalog9": true,
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238675088)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238675088)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R27-01-pdf-valid-stream-marker-_endstream_n_",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 1727238675856)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "actualStreamBytes": 83,
+      "streamContainsEarlyEndstream": true,
+      "streamContainsFakeCatalog9": true,
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238675856)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238675856)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R27-01-pdf-kids-foreign-scalar",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238676720)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238676720)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238676720)"
+        },
+        {
+          "type": "NumberObject",
+          "value": "999"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R27-01-pdf-kids-nested-reference",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238677392)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238677392)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "ArrayObject",
+          "value": "[IndirectObject(3, 0, 1727238677392)]"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R27-01-pdf-kids-dictionary-reference",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238678256)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238678256)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "DictionaryObject",
+          "value": "{'/Hint': IndirectObject(3, 0, 1727238678256)}"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R27-01-pdf-duplicate-kids",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238678976)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238678976)}",
+      "strictRootResolutionSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Multiple definitions in dictionary at byte 0x6d for key /Kids"
+    },
+    {
+      "id": "R27-01-pdf-duplicate-type",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238679504)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238679504)}",
+      "strictRootResolutionSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Multiple definitions in dictionary at byte 0x5d for key /Type"
+    },
+    {
+      "id": "R27-01-pdf-duplicate-Pages",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238679936)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "strictRootResolutionSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Multiple definitions in dictionary at byte 0x3c for key /Pages"
+    },
+    {
+      "id": "R27-01-pdf-duplicate-Parent",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238680128)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238680128)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238680128)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-direct-eight",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238681040)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238681040)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238681040)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-direct-short",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "7"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238681712)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238681712)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238681712)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-direct-long",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "10"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238682432)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238682432)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238682432)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-direct-fraction",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentLength": {
+        "type": "FloatObject",
+        "value": "8.5"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238683104)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238683104)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238683104)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-direct-real-integral",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentLength": {
+        "type": "FloatObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238683872)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238683872)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238683872)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-direct-junk",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238815920)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238815920)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238815920)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-direct-array",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentLength": {
+        "type": "ArrayObject",
+        "value": "[8]"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238683776)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238683776)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238683776)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-direct-negative",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "-8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238682864)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238682864)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238682864)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-valid-stream-lf",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238681184)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "actualStreamBytes": 8,
+      "streamContainsEarlyEndstream": false,
+      "streamContainsFakeCatalog9": false,
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238681184)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238681184)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-valid-stream-crlf",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238680704)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "actualStreamBytes": 8,
+      "streamContainsEarlyEndstream": false,
+      "streamContainsFakeCatalog9": false,
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238680704)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238680704)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-valid-stream-cr",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238679264)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "actualStreamBytes": 8,
+      "streamContainsEarlyEndstream": false,
+      "streamContainsFakeCatalog9": false,
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238679264)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238679264)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-valid-stream-no-extra-eol",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238677920)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "actualStreamBytes": 8,
+      "streamContainsEarlyEndstream": false,
+      "streamContainsFakeCatalog9": false,
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238677920)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238677920)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-zero-control",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "0"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238675232)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238675232)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238675232)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-extra-key-control",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238674368)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238674368)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238674368)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-count-extra-key-control",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 1727238674224)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238674224)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238674224)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-ref-before",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "independentDictionaryError": {
+        "type": "KeyError",
+        "error": "'/Length'"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238672928)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "2": [
+          5
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238672928)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238672928)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-ref-after",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "independentDictionaryError": {
+        "type": "KeyError",
+        "error": "'/Length'"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238816304)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "2": [
+          5
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238816304)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238816304)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-ref-wrong-generation",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentDictionaryError": {
+        "type": "KeyError",
+        "error": "'/Length'"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238817216)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238817216)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238817216)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-ref-fractional",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentDictionaryError": {
+        "type": "KeyError",
+        "error": "'/Length'"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238817936)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "2": [
+          5
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238817936)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238817936)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-ref-negative",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentDictionaryError": {
+        "type": "KeyError",
+        "error": "'/Length'"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238818656)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "2": [
+          5
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238818656)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238818656)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-ref-array",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentDictionaryError": {
+        "type": "KeyError",
+        "error": "'/Length'"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238819376)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "2": [
+          5
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238819376)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238819376)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-ref-dict",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentDictionaryError": {
+        "type": "KeyError",
+        "error": "'/Length'"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238820096)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "2": [
+          5
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238820096)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238820096)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-ref-missing",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentDictionaryError": {
+        "type": "KeyError",
+        "error": "'/Length'"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727237642320)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727237642320)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727237642320)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-length-duplicate",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238672256)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238672256)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238672256)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-endstream-wrong-token",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238674656)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "actualStreamBytes": 8,
+      "streamContainsEarlyEndstream": false,
+      "streamContainsFakeCatalog9": false,
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238674656)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238674656)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-endobj-extra-token",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238678160)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238678160)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238678160)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-kids-scalar",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238679552)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238679552)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238679552)"
+        },
+        {
+          "type": "NumberObject",
+          "value": "1"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-kids-name",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238680752)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238680752)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238680752)"
+        },
+        {
+          "type": "NameObject",
+          "value": "'/Other'"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-kids-boolean",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238682144)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238682144)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238682144)"
+        },
+        {
+          "type": "BooleanObject",
+          "value": "True"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-kids-null",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238683536)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238683536)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238683536)"
+        },
+        {
+          "type": "NullObject",
+          "value": "NullObject"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-kids-string",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238818896)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238818896)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238818896)"
+        },
+        {
+          "type": "TextStringObject",
+          "value": "'4 0 R'"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-kids-hex",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238818416)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238818416)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238818416)"
+        },
+        {
+          "type": "TextStringObject",
+          "value": "'4 0 R'"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-kids-array",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238817600)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238817600)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238817600)"
+        },
+        {
+          "type": "ArrayObject",
+          "value": "[IndirectObject(4, 0, 1727238817600)]"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-kids-missing-r",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238821152)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238821152)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "NumberObject",
+          "value": "3"
+        },
+        {
+          "type": "NumberObject",
+          "value": "0"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-kids-duplicate",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238821728)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238821728)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238821728)"
+        },
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238821728)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-count-0",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238822592)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238822592)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "0"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238822592)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-count-2",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238823264)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238823264)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "2"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238823264)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-count-1_5",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238823936)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238823936)}",
+      "independentCount": {
+        "type": "FloatObject",
+        "value": "1.5"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238823936)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-count-1_0",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238824704)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238824704)}",
+      "independentCount": {
+        "type": "FloatObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238824704)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-count-1_foo",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727237642320)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727237642320)}",
+      "strictRootResolutionSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "PdfReadError(\"Invalid Elementary Object starting with b'>' @109: b'3 0 R] /Count 1/foo >>\\\\nendobj\\\\n3 0 obj\\\\n<< /Type /Page /Parent 2 0 R /MediaBox [0 '\")"
+    },
+    {
+      "id": "R28-01-pdf-count-1_0_R",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238683296)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238683296)}",
+      "independentCount": {
+        "type": "IndirectObject",
+        "value": "IndirectObject(1, 0, 1727238683296)"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238683296)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-nested-count-control",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 1727238681472)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238681472)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "2"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(5, 0, 1727238681472)"
+        },
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(4, 0, 1727238681472)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R28-01-pdf-nested-count-wrong",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 1727238679456)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238679456)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "2"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(5, 0, 1727238679456)"
+        },
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(4, 0, 1727238679456)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-signed-plus",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e677468202b38203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238673072)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238673072)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238673072)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-leading-zero",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e67746820303038203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238823456)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238823456)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238823456)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-token-fraction",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "FloatObject",
+        "numberValue": "8.25",
+        "rawHex": "3c3c202f4c656e67746820382e3235203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "REAL",
+        "numberValue": "8.25",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "FloatObject",
+        "value": "8.25"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238822352)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238822352)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238822352)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-token-real-dot",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "FloatObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e67746820382e203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "REAL",
+        "numberValue": "8.0",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "FloatObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238820864)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238820864)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238820864)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-token-real-plus",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "FloatObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e677468202b382e30203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "REAL",
+        "numberValue": "8.0",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "FloatObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238818560)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238818560)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238818560)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-token-exponent",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "PdfReadError(\"Invalid Elementary Object starting with b'e' @18: b'<< /Length 8e0 >>\\\\n'\")",
+        "rawHex": "3c3c202f4c656e67746820386530203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "invalid object token b'8e0'",
+        "wouldAccept": false
+      },
+      "independentDictionaryError": {
+        "type": "PdfStreamError",
+        "error": "Stream has ended unexpectedly"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238819856)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238819856)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238819856)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-token-suffix",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "PdfReadError('Could not read Boolean object')",
+        "rawHex": "3c3c202f4c656e6774682038666f6f203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "invalid object token b'8foo'",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238826144)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238826144)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238826144)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-token-two-values",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "PdfReadError('Expecting a NameObject for key but found 9')",
+        "rawHex": "3c3c202f4c656e67746820382039203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "expected dictionary key at byte 13",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238827104)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238827104)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238827104)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-token-missing",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "PdfReadError(\"Invalid Elementary Object starting with b'>' @12: b'<< /Length  >>\\\\n'\")",
+        "rawHex": "3c3c202f4c656e67746820203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "unexpected delimiter at byte 12: b'>'",
+        "wouldAccept": false
+      },
+      "independentDictionaryError": {
+        "type": "KeyError",
+        "error": "'/Length'"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238828160)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238828160)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238828160)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-token-bool",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "BooleanObject",
+        "numberValue": "True",
+        "rawHex": "3c3c202f4c656e6774682074727565203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "BOOL",
+        "numberValue": "True",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "BooleanObject",
+        "value": "True"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238818896)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238818896)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238818896)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-token-null",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NullObject",
+        "numberValue": "NullObject",
+        "rawHex": "3c3c202f4c656e677468206e756c6c203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "NULL",
+        "numberValue": "None",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "NullObject",
+        "value": "NullObject"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238674080)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238674080)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238674080)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-token-name",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NameObject",
+        "numberValue": "'/Eight'",
+        "rawHex": "3c3c202f4c656e677468202f4569676874203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "NAME",
+        "numberValue": "b'Eight'",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "NameObject",
+        "value": "'/Eight'"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238672496)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238672496)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238672496)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-extra-int",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e6774682038202f4f746865722031203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238828928)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238828928)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238828928)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-int",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f746865722031203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238829168)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238829168)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238829168)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-extra-real",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e6774682038202f4f7468657220312e3235203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238826816)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238826816)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238826816)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-real",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f7468657220312e3235203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238825328)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238825328)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238825328)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-extra-bool",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e6774682038202f4f746865722074727565203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238819136)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238819136)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238819136)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-bool",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f746865722074727565203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238817600)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238817600)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238817600)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-extra-null",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e6774682038202f4f74686572206e756c6c203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238823072)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238823072)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238823072)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-null",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572206e756c6c203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238824080)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238824080)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238824080)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-extra-name",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e6774682038202f4f74686572202f56616c7565203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238830656)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238830656)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238830656)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-name",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572202f56616c7565203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238831568)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238831568)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238831568)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-extra-string",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e6774682038202f4f74686572202868656c6c6f29203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239045776)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239045776)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239045776)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-string",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572202868656c6c6f29203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238830176)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238830176)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238830176)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-extra-hex",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e6774682038202f4f74686572203c343134323e203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238831136)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238831136)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238831136)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-hex",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572203c343134323e203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238821968)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238821968)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238821968)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-extra-array",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e6774682038202f4f74686572205b3120325d203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238817168)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238817168)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238817168)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-array",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572205b3120325d203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238817696)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238817696)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238817696)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-extra-dict",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e6774682038202f4f74686572203c3c202f4e2032203e3e203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238829168)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238829168)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238829168)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-dict",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572203c3c202f4e2032203e3e203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238827104)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238827104)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238827104)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-whitespace-nul",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e677468203800203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238681616)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238681616)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238681616)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-whitespace-nul",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e74203100203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239047120)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239047120)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239047120)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-whitespace-tab",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e677468203809203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239046976)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239046976)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239046976)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-whitespace-tab",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e74203109203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239049184)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239049184)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239049184)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-whitespace-formfeed",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e67746820380c203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239049040)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239049040)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239049040)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-whitespace-formfeed",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e7420310c203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238679456)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238679456)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238679456)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-whitespace-cr",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e67746820380d203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238674368)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238674368)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238674368)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-whitespace-cr",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e7420310d203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238826096)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238826096)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238826096)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-whitespace-lf",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e67746820380a203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238826624)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238826624)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238826624)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-whitespace-lf",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e7420310a203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238823648)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238823648)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238823648)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-delimiter-lone-gt",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e67746820383e203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "expected dictionary key at byte 12",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238829984)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238829984)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238829984)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-delimiter-lone-gt",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e7420313e203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "expected dictionary key at byte 38",
+        "wouldAccept": false
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239049616)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239049616)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239049616)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-delimiter-brace-open",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "PdfReadError(\"Invalid Elementary Object starting with b'{' @12: b'<< /Length 8{ >>\\\\n'\")",
+        "rawHex": "3c3c202f4c656e67746820387b203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "expected dictionary key at byte 12",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239048176)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239048176)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239048176)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-delimiter-brace-open",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "PdfReadError(\"Invalid Elementary Object starting with b'{' @38: b'ids [3 0 R] /Count 1{ >>\\\\n'\")",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e7420317b203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "expected dictionary key at byte 38",
+        "wouldAccept": false
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239045632)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239045632)}",
+      "strictRootResolutionSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "PdfReadError(\"Invalid Elementary Object starting with b'{' @104: b'ids [3 0 R] /Count 1{ >>\\\\nendobj\\\\n3 0 obj\\\\n<< /Type /Page /Parent 2 0 R /MediaBox ['\")"
+    },
+    {
+      "id": "R29-01-pdf-length-delimiter-brace-close",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "PdfReadError(\"Invalid Elementary Object starting with b'}' @12: b'<< /Length 8} >>\\\\n'\")",
+        "rawHex": "3c3c202f4c656e67746820387d203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "expected dictionary key at byte 12",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239051104)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239051104)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239051104)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-delimiter-brace-close",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "PdfReadError(\"Invalid Elementary Object starting with b'}' @38: b'ids [3 0 R] /Count 1} >>\\\\n'\")",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e7420317d203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "expected dictionary key at byte 38",
+        "wouldAccept": false
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239052208)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239052208)}",
+      "strictRootResolutionSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "PdfReadError(\"Invalid Elementary Object starting with b'}' @104: b'ids [3 0 R] /Count 1} >>\\\\nendobj\\\\n3 0 obj\\\\n<< /Type /Page /Parent 2 0 R /MediaBox ['\")"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-missing-last",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "PdfReadError(\"Invalid Elementary Object starting with b'>' @20: b'<< /Length 8 /Other >>\\\\n'\")",
+        "rawHex": "3c3c202f4c656e6774682038202f4f74686572203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "unexpected delimiter at byte 20: b'>'",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239052688)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239052688)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239052688)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-missing-last",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "PdfReadError(\"Invalid Elementary Object starting with b'>' @46: b' R] /Count 1 /Other >>\\\\n'\")",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "unexpected delimiter at byte 46: b'>'",
+        "wouldAccept": false
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239053888)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239053888)}",
+      "strictRootResolutionSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "PdfReadError(\"Invalid Elementary Object starting with b'>' @112: b' R] /Count 1 /Other >>\\\\nendobj\\\\n3 0 obj\\\\n<< /Type /Page /Parent 2 0 R /MediaBox [0 '\")"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-name-value-control",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "8",
+        "rawHex": "3c3c202f4c656e6774682038202f4f74686572202f44616e676c696e67203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "8",
+        "wouldAccept": true
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238824512)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238824512)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238824512)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-name-value-control",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "r29RawDictionary": {
+        "parsed": true,
+        "numberType": "NumberObject",
+        "numberValue": "1",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572202f44616e676c696e67203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": true,
+        "numberKind": "INT",
+        "numberValue": "1",
+        "wouldAccept": true
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238823408)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238823408)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238823408)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-length-extra-unknown",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "PdfReadError(\"Invalid Elementary Object starting with b'j' @20: b'<< /Length 8 /Other junk >>\\\\n'\")",
+        "rawHex": "3c3c202f4c656e6774682038202f4f74686572206a756e6b203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "invalid object token b'junk'",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238827392)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238827392)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238827392)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-unknown",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "PdfReadError(\"Invalid Elementary Object starting with b'j' @46: b' R] /Count 1 /Other junk >>\\\\n'\")",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f74686572206a756e6b203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "invalid object token b'junk'",
+        "wouldAccept": false
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238828736)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238828736)}",
+      "strictRootResolutionSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "PdfReadError(\"Invalid Elementary Object starting with b'j' @112: b' R] /Count 1 /Other junk >>\\\\nendobj\\\\n3 0 obj\\\\n<< /Type /Page /Parent 2 0 R /MediaBo'\")"
+    },
+    {
+      "id": "R29-01-pdf-length-extra-duplicate",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "Multiple definitions in dictionary at byte 0x1e for key /Other",
+        "rawHex": "3c3c202f4c656e6774682038202f4f746865722031202f4f746865722032203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "duplicate key b'Other'",
+        "wouldAccept": false
+      },
+      "independentLength": {
+        "type": "NumberObject",
+        "value": "8"
+      },
+      "rootReference": "IndirectObject(1, 0, 1727238682240)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727238682240)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727238682240)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R29-01-pdf-count-extra-duplicate",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "r29RawDictionary": {
+        "parsed": false,
+        "errorType": "PdfReadError",
+        "error": "Multiple definitions in dictionary at byte 0x38 for key /Other",
+        "rawHex": "3c3c202f54797065202f5061676573202f4b696473205b33203020525d202f436f756e742031202f4f746865722031202f4f746865722032203e3e"
+      },
+      "r29IndependentSyntax": {
+        "dictionaryValid": false,
+        "error": "duplicate key b'Other'",
+        "wouldAccept": false
+      },
+      "rootReference": "IndirectObject(1, 0, 1727239053984)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239053984)}",
+      "strictRootResolutionSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Multiple definitions in dictionary at byte 0x7a for key /Other"
+    },
+    {
+      "id": "R30-01-pdf-nested-empty-name",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 1727239054128)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239054128)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239054128)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R30-01-pdf-array-empty-name",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 1727239052496)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239052496)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239052496)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R30-01-pdf-nested-name-control",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 1727239051632)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239051632)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239051632)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    },
+    {
+      "id": "R30-01-pdf-array-name-control",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 1727239046592)",
+      "rootDeclaredInXref": true,
+      "xrefObjectsBeforeResolution": {
+        "65535": [],
+        "0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 1727239046592)}",
+      "independentCount": {
+        "type": "NumberObject",
+        "value": "1"
+      },
+      "rawKids": [
+        {
+          "type": "IndirectObject",
+          "value": "IndirectObject(3, 0, 1727239046592)"
+        }
+      ],
+      "strictRootResolutionSucceeded": true
+    }
+  ]
+}

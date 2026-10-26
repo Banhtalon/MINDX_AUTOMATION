@@ -1,0 +1,13 @@
+{
+  "totalBefore": 1287,
+  "totalAfter": 1287,
+  "changed": [],
+  "added": [],
+  "missing": [],
+  "protectedCount": 1210,
+  "protectedMismatches": [],
+  "nextEnvSha256": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
+  "allPreserved": true,
+  "planUnchanged": true,
+  "checkedAt": "2026-10-20T23:46:04.732559+00:00"
+}

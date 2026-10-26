@@ -1,0 +1,13 @@
+{
+  "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round19-t3RoFj",
+  "mismatches": [],
+  "excludedAbsent": {
+    ".env": true,
+    ".env.local": true,
+    ".env.production": true,
+    "data/mindx_bot.db": true,
+    "playwright-auth": true,
+    ".playwright-profile": true,
+    "temp_submissions": true
+  }
+}

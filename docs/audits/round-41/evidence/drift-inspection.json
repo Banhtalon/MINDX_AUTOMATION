@@ -1,0 +1,17 @@
+﻿{
+    "reviewedAt":  "2026-10-21T08:27:44.4324492Z",
+    "path":  "src/lib/playwright/save-comments.ts",
+    "comparison":  "current working tree versus repository HEAD; not a reconstruction of the exact post-gate edit",
+    "observedAreas":  [
+                          "class/session and roster checks",
+                          "student row/editor selection",
+                          "business API request matching",
+                          "full readback and approval hash checks",
+                          "error handling"
+                      ],
+    "scope":  "Adjacent comment-saving flow, outside the eight original Phase7 reproducers; inspected current Git diff, not independently accepted as a Phase4 change",
+    "exactPreDriftContentAvailable":  false,
+    "actor":  "not established",
+    "action":  "preserved source; final five gates rerun against current bytes",
+    "historicalRecord":  "round-12 independent-results.json changed generatedAt to 2026-10-21T08:20:37.591Z and reports 43 tests; this old record is not used as fresh R41 evidence"
+}

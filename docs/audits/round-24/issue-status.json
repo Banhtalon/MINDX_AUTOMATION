@@ -1,0 +1,1069 @@
+{
+  "round": 24,
+  "verdict": "NO-GO",
+  "closedSource": 12,
+  "partiallyFixed": 2,
+  "issues": [
+    {
+      "issueId": "R19-01",
+      "status": "PARTIALLY_FIXED",
+      "severity": "P2",
+      "assessment": "Adam7 bảy lượt và cây Kids cơ bản đạt; WebP hỏng có header hợp lệ vẫn PARSED; PDF bỏ qua trailer Root và generation tham chiếu.",
+      "independentChecks": [
+        "R22-01-valid-png",
+        "R22-01-valid-jpg",
+        "R22-01-valid-webp",
+        "R22-01-valid-pdf",
+        "R22-01-png-crc-IHDR",
+        "R22-01-png-crc-IDAT",
+        "R22-01-png-crc-IEND",
+        "R22-01-png-invalid-zlib-header",
+        "R22-01-png-valid-header-broken-deflate",
+        "R22-01-png-invalid-bit-depth",
+        "R22-01-jpeg-valid-markers-invalid-component",
+        "R22-01-jpeg-zero-dimension",
+        "R22-01-webp-vp8-header-only",
+        "R22-01-webp-vp8l-header-only",
+        "R22-01-webp-vp8x-empty-child",
+        "R22-01-webp-valid-transparent",
+        "R22-01-pdf-comments-only",
+        "R22-01-pdf-missing-pages",
+        "R23-01-png-zero-depth",
+        "R23-01-png-rgb-depth4",
+        "R23-01-png-palette-depth16",
+        "R23-01-png-reserved-color",
+        "R23-01-png-valid-filter-0",
+        "R23-01-png-valid-filter-1",
+        "R23-01-png-valid-filter-2",
+        "R23-01-png-valid-filter-3",
+        "R23-01-png-valid-filter-4",
+        "R23-01-png-interlace0-filter5",
+        "R23-01-png-interlace0-short-row",
+        "R23-01-png-interlace1-filter5",
+        "R23-01-png-interlace1-short-row",
+        "R23-01-png-valid-adam7",
+        "R23-01-webp-vp8-nonempty-garbage",
+        "R23-01-webp-vp8l-nonempty-garbage",
+        "R23-01-webp-vp8x-alpha-garbage",
+        "R23-01-webp-valid-alpha-false",
+        "R23-01-webp-valid-alpha-true",
+        "R23-01-pdf-missing-kid",
+        "R23-01-pdf-empty-pages-orphan-leaf",
+        "R23-01-pdf-cycle-with-orphan-leaf"
+      ],
+      "failingChecks": [
+        "R24-01-webp-VP8-plain-plausible-garbage",
+        "R24-01-webp-VP8-extended-plausible-garbage",
+        "R24-01-webp-VP8L-plain-plausible-garbage",
+        "R24-01-webp-VP8L-extended-plausible-garbage",
+        "R24-01-pdf-trailer-missing-root",
+        "R24-01-pdf-missing-generation"
+      ],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-01-mixed-corrupt",
+          "R19-01-truncated-media",
+          "R20-01-valid-png",
+          "R20-01-valid-jpg",
+          "R20-01-valid-webp",
+          "R20-01-malformed-png",
+          "R20-01-malformed-jpg",
+          "R20-01-malformed-webp"
+        ],
+        "R21": [
+          "R21-01-valid-png",
+          "R21-01-valid-jpg",
+          "R21-01-valid-webp",
+          "R21-01-valid-pdf",
+          "R21-01-png-invalid-idat",
+          "R21-01-jpeg-empty-sof",
+          "R21-01-webp-VP8",
+          "R21-01-webp-VP8L",
+          "R21-01-webp-VP8X",
+          "R21-01-pdf-token-spoof"
+        ],
+        "R22": [
+          "R22-01-valid-png",
+          "R22-01-valid-jpg",
+          "R22-01-valid-webp",
+          "R22-01-valid-pdf",
+          "R22-01-png-crc-IHDR",
+          "R22-01-png-crc-IDAT",
+          "R22-01-png-crc-IEND",
+          "R22-01-png-invalid-zlib-header",
+          "R22-01-png-valid-header-broken-deflate",
+          "R22-01-png-invalid-bit-depth",
+          "R22-01-jpeg-valid-markers-invalid-component",
+          "R22-01-jpeg-zero-dimension",
+          "R22-01-webp-vp8-header-only",
+          "R22-01-webp-vp8l-header-only",
+          "R22-01-webp-vp8x-empty-child",
+          "R22-01-webp-valid-transparent",
+          "R22-01-pdf-comments-only",
+          "R22-01-pdf-missing-pages"
+        ]
+      },
+      "r24Checks": [
+        "R24-01-adam7-valid-8x8-8-2",
+        "R24-01-adam7-valid-17x11-8-2",
+        "R24-01-adam7-valid-1x9-8-2",
+        "R24-01-adam7-valid-9x1-8-2",
+        "R24-01-adam7-valid-9x9-1-0",
+        "R24-01-adam7-valid-9x9-4-0",
+        "R24-01-adam7-valid-9x9-16-0",
+        "R24-01-adam7-pass1-bad-filter",
+        "R24-01-adam7-pass1-truncated",
+        "R24-01-adam7-pass2-bad-filter",
+        "R24-01-adam7-pass2-truncated",
+        "R24-01-adam7-pass3-bad-filter",
+        "R24-01-adam7-pass3-truncated",
+        "R24-01-adam7-pass4-bad-filter",
+        "R24-01-adam7-pass4-truncated",
+        "R24-01-adam7-pass5-bad-filter",
+        "R24-01-adam7-pass5-truncated",
+        "R24-01-adam7-pass6-bad-filter",
+        "R24-01-adam7-pass6-truncated",
+        "R24-01-adam7-pass7-bad-filter",
+        "R24-01-adam7-pass7-truncated",
+        "R24-01-adam7-extra-bytes",
+        "R24-01-webp-VP8-plain-plausible-garbage",
+        "R24-01-webp-VP8-extended-plausible-garbage",
+        "R24-01-webp-VP8L-plain-plausible-garbage",
+        "R24-01-webp-VP8L-extended-plausible-garbage",
+        "R24-01-webp-valid17-false",
+        "R24-01-webp-valid17-true",
+        "R24-01-pdf-trailer-missing-root",
+        "R24-01-pdf-missing-generation",
+        "R24-01-pdf-reachable-page-plus-cycle",
+        "R24-01-pdf-reachable-page-plus-missing-kid",
+        "R24-01-pdf-wrong-parent",
+        "R24-01-pdf-valid-nested-tree"
+      ],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-01-mixed-corrupt",
+            "R19-01-truncated-media",
+            "R20-01-valid-png",
+            "R20-01-valid-jpg",
+            "R20-01-valid-webp",
+            "R20-01-malformed-png",
+            "R20-01-malformed-jpg",
+            "R20-01-malformed-webp"
+          ],
+          "failed": []
+        },
+        "R21": {
+          "passed": [
+            "R21-01-valid-png",
+            "R21-01-valid-jpg",
+            "R21-01-valid-webp",
+            "R21-01-valid-pdf",
+            "R21-01-png-invalid-idat",
+            "R21-01-jpeg-empty-sof",
+            "R21-01-webp-VP8",
+            "R21-01-webp-VP8L",
+            "R21-01-webp-VP8X",
+            "R21-01-pdf-token-spoof"
+          ],
+          "failed": []
+        },
+        "R22": {
+          "passed": [
+            "R22-01-valid-png",
+            "R22-01-valid-jpg",
+            "R22-01-valid-webp",
+            "R22-01-valid-pdf",
+            "R22-01-png-crc-IHDR",
+            "R22-01-png-crc-IDAT",
+            "R22-01-png-crc-IEND",
+            "R22-01-png-invalid-zlib-header",
+            "R22-01-png-valid-header-broken-deflate",
+            "R22-01-png-invalid-bit-depth",
+            "R22-01-jpeg-valid-markers-invalid-component",
+            "R22-01-jpeg-zero-dimension",
+            "R22-01-webp-vp8-header-only",
+            "R22-01-webp-vp8l-header-only",
+            "R22-01-webp-vp8x-empty-child",
+            "R22-01-webp-valid-transparent",
+            "R22-01-pdf-comments-only",
+            "R22-01-pdf-missing-pages"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": []
+    },
+    {
+      "issueId": "R19-02",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Mã tiêu chí, giới hạn barem, bằng chứng và tổng điểm tính bằng mã nguồn tiếp tục đạt hồi quy mới.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-02-duplicate-rubric",
+          "R20-02-invalid-blank",
+          "R20-02-invalid-negative",
+          "R20-02-invalid-nan",
+          "R20-02-invalid-string",
+          "R20-02-invalid-sum",
+          "R20-02-before-ai",
+          "R20-02-ui-add-after-delete"
+        ],
+        "R21": [
+          "R21-02-rubric-integrity"
+        ]
+      },
+      "r24Checks": [],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-02-duplicate-rubric",
+            "R20-02-invalid-blank",
+            "R20-02-invalid-negative",
+            "R20-02-invalid-nan",
+            "R20-02-invalid-string",
+            "R20-02-invalid-sum",
+            "R20-02-before-ai",
+            "R20-02-ui-add-after-delete"
+          ],
+          "failed": []
+        },
+        "R21": {
+          "passed": [
+            "R21-02-rubric-integrity"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": []
+    },
+    {
+      "issueId": "R19-03",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Hash tổng hợp bảo vệ điểm/nội dung; duyệt lại hash cũ đạt với snapshot đầy đủ trong ca tương thích R24.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-03-legacy-hash",
+          "R20-03-legacy-reapproval",
+          "R20-03-hash-fileHash",
+          "R20-03-hash-decision",
+          "R20-03-hash-calculatedScore",
+          "R20-03-hash-teacherOverrideScore",
+          "R20-03-hash-feedbackHtml",
+          "R20-03-hash-criteriaGradesJson"
+        ],
+        "R21": [
+          "R21-03-content-hash"
+        ]
+      },
+      "r24Checks": [],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-03-legacy-hash",
+            "R20-03-hash-fileHash",
+            "R20-03-hash-decision",
+            "R20-03-hash-calculatedScore",
+            "R20-03-hash-teacherOverrideScore",
+            "R20-03-hash-feedbackHtml",
+            "R20-03-hash-criteriaGradesJson"
+          ],
+          "failed": [
+            "R20-03-legacy-reapproval"
+          ]
+        },
+        "R21": {
+          "passed": [
+            "R21-03-content-hash"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": [
+        "R24-COMPAT-R20-API-approval-control",
+        "R24-COMPAT-R20-R20-03-legacy-reapproval"
+      ]
+    },
+    {
+      "issueId": "R19-04",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Đổi/xóa file trước hoặc trong AI và parsedContent có sẵn đều được kiểm tra lại trên đĩa.",
+      "independentChecks": [
+        "R22-04-supplied-unchanged",
+        "R22-04-supplied-changed",
+        "R22-04-supplied-deleted"
+      ],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-04-ai-file-drift",
+          "R20-04-path-drift",
+          "R20-04-disk-before",
+          "R20-04-disk-during"
+        ],
+        "R21": [
+          "R21-04-disk-unchanged",
+          "R21-04-disk-before",
+          "R21-04-disk-during",
+          "R21-04-disk-deleted",
+          "R21-04-disk-supplied-during"
+        ],
+        "R22": [
+          "R22-04-supplied-unchanged",
+          "R22-04-supplied-changed",
+          "R22-04-supplied-deleted"
+        ]
+      },
+      "r24Checks": [],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-04-ai-file-drift",
+            "R20-04-path-drift",
+            "R20-04-disk-before",
+            "R20-04-disk-during"
+          ],
+          "failed": []
+        },
+        "R21": {
+          "passed": [
+            "R21-04-disk-unchanged",
+            "R21-04-disk-before",
+            "R21-04-disk-during",
+            "R21-04-disk-deleted",
+            "R21-04-disk-supplied-during"
+          ],
+          "failed": []
+        },
+        "R22": {
+          "passed": [
+            "R22-04-supplied-unchanged",
+            "R22-04-supplied-changed",
+            "R22-04-supplied-deleted"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": []
+    },
+    {
+      "issueId": "R19-05",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Ba handler gửi barem đang chọn; tiêu chí sai/bài chưa đọc bị chặn; điểm ghi đè hợp lệ đạt hợp đồng duyệt mới.",
+      "independentChecks": [
+        "R22-05-ui-rubric-single",
+        "R22-05-ui-rubric-bulk",
+        "R22-05-ui-rubric-criterion"
+      ],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-05-invalid-criteria",
+          "R19-05-undownloaded",
+          "R20-05-invalid-single",
+          "R20-05-invalid-bulk",
+          "R20-05-override-control",
+          "R20-05-authoritative-rubric"
+        ],
+        "R21": [
+          "R21-05-no-rubric-draft",
+          "R21-05-explicit-rubric",
+          "R21-05-ui-authoritative-rubric"
+        ],
+        "R22": [
+          "R22-05-ui-rubric-single",
+          "R22-05-ui-rubric-bulk",
+          "R22-05-ui-rubric-criterion"
+        ]
+      },
+      "r24Checks": [],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-05-invalid-criteria",
+            "R19-05-undownloaded",
+            "R20-05-invalid-single",
+            "R20-05-invalid-bulk",
+            "R20-05-authoritative-rubric"
+          ],
+          "failed": [
+            "R20-05-override-control"
+          ]
+        },
+        "R21": {
+          "passed": [
+            "R21-05-no-rubric-draft",
+            "R21-05-explicit-rubric",
+            "R21-05-ui-authoritative-rubric"
+          ],
+          "failed": []
+        },
+        "R22": {
+          "passed": [
+            "R22-05-ui-rubric-single",
+            "R22-05-ui-rubric-bulk",
+            "R22-05-ui-rubric-criterion"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": [
+        "R24-COMPAT-R20-R20-05-override-control"
+      ]
+    },
+    {
+      "issueId": "R19-06",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Duyệt đơn và hàng loạt bắt buộc đủ năm trường và đối chiếu giá trị; thiếu, sai kiểu hoặc khác phiên bản đều bị chặn; hash giữ qua mở lại SQLite.",
+      "independentChecks": [
+        "R22-06-single-missing-hash-true",
+        "R22-06-single-missing-hash-false",
+        "R22-06-bulk-review-missing-list",
+        "R22-06-bulk-review-missing-feedback",
+        "R22-06-bulk-review-matching",
+        "R22-06-bulk-review-wrong-hash",
+        "R22-06-ui-bulk-drift-criteria",
+        "R22-06-ui-bulk-drift-override",
+        "R22-06-ui-bulk-drift-decision",
+        "R22-06-ui-bulk-drift-feedback",
+        "R22-06-ui-bulk-drift-file",
+        "R22-06-graded-hash-reload",
+        "R23-06-single-omits-hash-decision-rubric",
+        "R23-06-bulk-missing-fileHash",
+        "R23-06-bulk-malformed-fileHash",
+        "R23-06-bulk-missing-feedbackHtml",
+        "R23-06-bulk-malformed-feedbackHtml",
+        "R23-06-bulk-missing-decision",
+        "R23-06-bulk-malformed-decision",
+        "R23-06-bulk-missing-teacherOverrideScore",
+        "R23-06-bulk-malformed-teacherOverrideScore",
+        "R23-06-bulk-missing-criteriaGrades",
+        "R23-06-bulk-malformed-criteriaGrades",
+        "R23-06-file-backed-reopen"
+      ],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-06-stale-approval",
+          "R20-06-latest-control",
+          "R20-06-file-version"
+        ],
+        "R21": [
+          "R21-06-version-fresh",
+          "R21-06-version-stale",
+          "R21-06-version-omitted",
+          "R21-06-version-bulk"
+        ],
+        "R22": [
+          "R22-06-single-missing-hash-true",
+          "R22-06-single-missing-hash-false",
+          "R22-06-bulk-review-missing-list",
+          "R22-06-bulk-review-missing-feedback",
+          "R22-06-bulk-review-matching",
+          "R22-06-bulk-review-wrong-hash",
+          "R22-06-ui-bulk-drift-criteria",
+          "R22-06-ui-bulk-drift-override",
+          "R22-06-ui-bulk-drift-decision",
+          "R22-06-ui-bulk-drift-feedback",
+          "R22-06-ui-bulk-drift-file",
+          "R22-06-graded-hash-reload"
+        ]
+      },
+      "r24Checks": [
+        "R24-06-single-missing-fileHash",
+        "R24-06-single-wrong-type-fileHash",
+        "R24-06-single-different-fileHash",
+        "R24-06-single-missing-feedbackHtml",
+        "R24-06-single-wrong-type-feedbackHtml",
+        "R24-06-single-different-feedbackHtml",
+        "R24-06-single-missing-decision",
+        "R24-06-single-wrong-type-decision",
+        "R24-06-single-different-decision",
+        "R24-06-single-missing-teacherOverrideScore",
+        "R24-06-single-wrong-type-teacherOverrideScore",
+        "R24-06-single-different-teacherOverrideScore",
+        "R24-06-single-missing-criteriaGrades",
+        "R24-06-single-wrong-type-criteriaGrades",
+        "R24-06-single-different-criteriaGrades",
+        "R24-06-bulk-missing-fileHash",
+        "R24-06-bulk-wrong-type-fileHash",
+        "R24-06-bulk-different-fileHash",
+        "R24-06-bulk-missing-feedbackHtml",
+        "R24-06-bulk-wrong-type-feedbackHtml",
+        "R24-06-bulk-different-feedbackHtml",
+        "R24-06-bulk-missing-decision",
+        "R24-06-bulk-wrong-type-decision",
+        "R24-06-bulk-different-decision",
+        "R24-06-bulk-missing-teacherOverrideScore",
+        "R24-06-bulk-wrong-type-teacherOverrideScore",
+        "R24-06-bulk-different-teacherOverrideScore",
+        "R24-06-bulk-missing-criteriaGrades",
+        "R24-06-bulk-wrong-type-criteriaGrades",
+        "R24-06-bulk-different-criteriaGrades",
+        "R24-06-single-valid-GRADE-null",
+        "R24-06-single-valid-GRADE-0",
+        "R24-06-single-valid-GRADE-100",
+        "R24-06-single-valid-REDO-null",
+        "R24-06-single-valid-REDO-0",
+        "R24-06-single-valid-REDO-100",
+        "R24-06-bulk-valid-GRADE-null",
+        "R24-06-bulk-valid-GRADE-0",
+        "R24-06-bulk-valid-GRADE-100",
+        "R24-06-bulk-valid-REDO-null",
+        "R24-06-bulk-valid-REDO-0",
+        "R24-06-bulk-valid-REDO-100"
+      ],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-06-stale-approval",
+            "R20-06-file-version"
+          ],
+          "failed": [
+            "R20-06-latest-control"
+          ]
+        },
+        "R21": {
+          "passed": [
+            "R21-06-version-fresh",
+            "R21-06-version-stale",
+            "R21-06-version-omitted",
+            "R21-06-version-bulk"
+          ],
+          "failed": []
+        },
+        "R22": {
+          "passed": [
+            "R22-06-single-missing-hash-true",
+            "R22-06-single-missing-hash-false",
+            "R22-06-bulk-review-missing-list",
+            "R22-06-bulk-review-missing-feedback",
+            "R22-06-bulk-review-matching",
+            "R22-06-bulk-review-wrong-hash",
+            "R22-06-ui-bulk-drift-criteria",
+            "R22-06-ui-bulk-drift-override",
+            "R22-06-ui-bulk-drift-decision",
+            "R22-06-ui-bulk-drift-feedback",
+            "R22-06-ui-bulk-drift-file",
+            "R22-06-graded-hash-reload"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": [
+        "R24-COMPAT-R20-R20-06-latest-control"
+      ]
+    },
+    {
+      "issueId": "R19-07",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Khóa chính xác học viên/bài nộp và từ chối tên trùng, ID một phần hoặc modal thiếu ID tiếp tục đạt.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-07-wrong-download",
+          "R19-07-modal-same-name",
+          "R19-07-modal-empty",
+          "R20-07-id-substring",
+          "R20-07-download-empty"
+        ],
+        "R21": [
+          "R21-07-exact-identity"
+        ]
+      },
+      "r24Checks": [],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-07-wrong-download",
+            "R19-07-modal-same-name",
+            "R19-07-modal-empty",
+            "R20-07-id-substring",
+            "R20-07-download-empty"
+          ],
+          "failed": []
+        },
+        "R21": {
+          "passed": [
+            "R21-07-exact-identity"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": []
+    },
+    {
+      "issueId": "R19-08",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Đối chiếu lesson/session và chặn thiếu ánh xạ tiếp tục đạt.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-08-session-lesson",
+          "R20-08-worker-cached-mismatch",
+          "R20-08-worker-no-mapping",
+          "R20-08-api-list-mismatch"
+        ],
+        "R21": [
+          "R21-08-mapping-valid",
+          "R21-08-mapping-mismatch",
+          "R21-08-mapping-missing"
+        ]
+      },
+      "r24Checks": [],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-08-session-lesson",
+            "R20-08-worker-cached-mismatch",
+            "R20-08-worker-no-mapping",
+            "R20-08-api-list-mismatch"
+          ],
+          "failed": []
+        },
+        "R21": {
+          "passed": [
+            "R21-08-mapping-valid",
+            "R21-08-mapping-mismatch",
+            "R21-08-mapping-missing"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": []
+    },
+    {
+      "issueId": "R19-09",
+      "status": "PARTIALLY_FIXED",
+      "severity": "P1",
+      "assessment": "Đã chặn data sai hình dạng và mẫu sai R23; còn chấp nhận sai alias/giá trị phản hồi, dùng biến không được truyền làm bằng chứng, bỏ sót dữ liệu lồng; hai đối chứng literal/biến đổi tên bị từ chối.",
+      "independentChecks": [
+        "R22-09-operation-normal",
+        "R22-09-operation-comment-query",
+        "R22-09-operation-selected-query",
+        "R22-09-operation-attachment",
+        "R22-09-operation-selected-mutation",
+        "R22-09-operation-missing-query",
+        "R22-09-operation-alias-introspection",
+        "R22-09-operation-skipped-grade",
+        "R22-09-operation-literal-other-submission",
+        "R23-09-response-missing-data",
+        "R23-09-response-null-data",
+        "R23-09-response-string-data",
+        "R23-09-response-array-data",
+        "R23-09-response-empty-data",
+        "R23-09-response-null-result",
+        "R23-09-response-false-result",
+        "R23-09-response-unrelated-root",
+        "R23-09-response-wrong-result-id",
+        "R23-09-request-missing-operation",
+        "R23-09-request-include-false",
+        "R23-09-request-include-true",
+        "R23-09-request-literal-wrong-class",
+        "R23-09-request-literal-wrong-session",
+        "R23-09-request-literal-wrong-decision",
+        "R23-09-request-nested-wrong-submission",
+        "R23-09-request-bound-wrong-variable",
+        "R23-09-valid-alias"
+      ],
+      "failingChecks": [
+        "R24-09-result-zero",
+        "R24-09-result-number",
+        "R24-09-result-string",
+        "R24-09-result-empty-string",
+        "R24-09-result-array",
+        "R24-09-result-empty-object",
+        "R24-09-result-explicit-failure",
+        "R24-09-result-numeric-id",
+        "R24-09-result-empty-id",
+        "R24-09-result-wrong-score-type",
+        "R24-09-result-wrong-decision",
+        "R24-09-result-wrong-feedback",
+        "R24-09-response-field-alias-original-field",
+        "R24-09-response-field-other-grading-field",
+        "R24-09-response-field-wrong-alias",
+        "R24-09-request-unused-id-decoys",
+        "R24-09-request-nested-bound-wrong-id",
+        "R24-09-request-nested-bound-wrong-score",
+        "R24-09-request-nested-bound-wrong-feedback",
+        "R24-09-valid-all-literals",
+        "R24-09-valid-renamed-bound-variables"
+      ],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-09-unrelated-api",
+          "R19-09-missing-submission",
+          "R19-09-real-interceptor",
+          "R20-09-named-query",
+          "R20-09-missing-payload",
+          "R20-09-exact-origin",
+          "R20-09-wrong-score"
+        ],
+        "R21": [
+          "R21-09-required-submissionId",
+          "R21-09-required-studentId",
+          "R21-09-required-score",
+          "R21-09-required-feedback",
+          "R21-09-operation-plain-query",
+          "R21-09-operation-comment-query",
+          "R21-09-operation-other-mutation",
+          "R21-09-operation-selected-query",
+          "R21-09-hostname",
+          "R21-09-phase4-host-token"
+        ],
+        "R22": [
+          "R22-09-operation-normal",
+          "R22-09-operation-comment-query",
+          "R22-09-operation-selected-query",
+          "R22-09-operation-attachment",
+          "R22-09-operation-selected-mutation",
+          "R22-09-operation-missing-query",
+          "R22-09-operation-alias-introspection",
+          "R22-09-operation-skipped-grade",
+          "R22-09-operation-literal-other-submission"
+        ]
+      },
+      "r24Checks": [
+        "R24-09-valid-bound-input",
+        "R24-09-result-zero",
+        "R24-09-result-number",
+        "R24-09-result-string",
+        "R24-09-result-empty-string",
+        "R24-09-result-array",
+        "R24-09-result-empty-object",
+        "R24-09-result-explicit-failure",
+        "R24-09-result-numeric-id",
+        "R24-09-result-empty-id",
+        "R24-09-result-wrong-score-type",
+        "R24-09-result-wrong-score",
+        "R24-09-result-wrong-decision",
+        "R24-09-result-wrong-feedback",
+        "R24-09-result-wrong-owner",
+        "R24-09-response-field-alias-original-field",
+        "R24-09-response-field-other-grading-field",
+        "R24-09-response-field-wrong-alias",
+        "R24-09-request-unused-id-decoys",
+        "R24-09-request-nested-bound-wrong-id",
+        "R24-09-request-nested-bound-wrong-score",
+        "R24-09-request-nested-bound-wrong-feedback",
+        "R24-09-valid-all-literals",
+        "R24-09-valid-renamed-bound-variables",
+        "R24-09-bound-input-mismatch-submissionId",
+        "R24-09-bound-input-mismatch-studentId",
+        "R24-09-bound-input-mismatch-classId",
+        "R24-09-bound-input-mismatch-sessionId",
+        "R24-09-bound-input-mismatch-score",
+        "R24-09-bound-input-mismatch-decision",
+        "R24-09-bound-input-mismatch-feedback"
+      ],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-09-unrelated-api",
+            "R19-09-missing-submission",
+            "R19-09-real-interceptor",
+            "R20-09-named-query",
+            "R20-09-missing-payload",
+            "R20-09-exact-origin",
+            "R20-09-wrong-score"
+          ],
+          "failed": []
+        },
+        "R21": {
+          "passed": [
+            "R21-09-required-submissionId",
+            "R21-09-required-studentId",
+            "R21-09-required-score",
+            "R21-09-required-feedback",
+            "R21-09-operation-plain-query",
+            "R21-09-operation-comment-query",
+            "R21-09-operation-other-mutation",
+            "R21-09-operation-selected-query",
+            "R21-09-hostname",
+            "R21-09-phase4-host-token"
+          ],
+          "failed": []
+        },
+        "R22": {
+          "passed": [
+            "R22-09-operation-normal",
+            "R22-09-operation-comment-query",
+            "R22-09-operation-selected-query",
+            "R22-09-operation-attachment",
+            "R22-09-operation-selected-mutation",
+            "R22-09-operation-missing-query",
+            "R22-09-operation-alias-introspection",
+            "R22-09-operation-skipped-grade",
+            "R22-09-operation-literal-other-submission"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": []
+    },
+    {
+      "issueId": "R19-10",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Đọc lại điểm, quyết định và nhận xét cho GRADE/REDO đạt với DOM mô phỏng.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-10-no-feedback",
+          "R20-10-complete-control",
+          "R20-10-wrong-feedback",
+          "R20-10-empty",
+          "R20-10-unreadable",
+          "R20-10-wrong-decision"
+        ],
+        "R21": [
+          "R21-10-readback-complete",
+          "R21-10-readback-empty",
+          "R21-10-readback-unreadable",
+          "R21-10-readback-wrong-decision",
+          "R21-10-readback-wrong-feedback",
+          "R21-10-readback-redo-complete"
+        ]
+      },
+      "r24Checks": [],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-10-no-feedback",
+            "R20-10-complete-control",
+            "R20-10-wrong-feedback",
+            "R20-10-empty",
+            "R20-10-unreadable",
+            "R20-10-wrong-decision"
+          ],
+          "failed": []
+        },
+        "R21": {
+          "passed": [
+            "R21-10-readback-complete",
+            "R21-10-readback-empty",
+            "R21-10-readback-unreadable",
+            "R21-10-readback-wrong-decision",
+            "R21-10-readback-wrong-feedback",
+            "R21-10-readback-redo-complete"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": []
+    },
+    {
+      "issueId": "R19-11",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Đối chiếu hash có điều kiện trước VERIFIED vẫn chặn dữ liệu bị sửa trong lúc lưu/đọc lại.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-11-readback-race",
+          "R20-11-conditional-db"
+        ],
+        "R21": [
+          "R21-11-final-cas"
+        ]
+      },
+      "r24Checks": [],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-11-readback-race",
+            "R20-11-conditional-db"
+          ],
+          "failed": []
+        },
+        "R21": {
+          "passed": [
+            "R21-11-final-cas"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": []
+    },
+    {
+      "issueId": "R19-12",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Phản hồi cũ từ lớp/buổi trước không ghi đè phạm vi mới trong kiểm chứng handler giao diện.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-12-ui-load-race",
+          "R20-12-class-race"
+        ],
+        "R21": [
+          "R21-12-scope-race"
+        ]
+      },
+      "r24Checks": [],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-12-ui-load-race",
+            "R20-12-class-race"
+          ],
+          "failed": []
+        },
+        "R21": {
+          "passed": [
+            "R21-12-scope-race"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": []
+    },
+    {
+      "issueId": "R19-13",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Hai câu ghi trong cùng db.transaction; SQLITE_FULL, lỗi ghi bài và lỗi ghi metadata đều hoàn tác, không tăng sequence dở dang; không có bản ghi mồ côi.",
+      "independentChecks": [
+        "R22-13-reordered-same-field",
+        "R22-13-cross-field-reorder",
+        "R22-13-two-tabs-equal-sequence",
+        "R22-13-reload-counter",
+        "R22-13-invalid-request-poison",
+        "R22-13-route-reload",
+        "R23-13-invalid-wrong-owner",
+        "R23-13-invalid-bad-override",
+        "R23-13-invalid-bad-criteria",
+        "R23-13-equal-sequence-feedbackHtml",
+        "R23-13-equal-sequence-decision",
+        "R23-13-equal-sequence-teacherOverrideScore",
+        "R23-13-equal-sequence-criteriaGrades",
+        "R23-13-distinct-fields-reversed",
+        "R23-13-real-get-ui-reload",
+        "R23-13-failed-write-metadata"
+      ],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-13-ui-save-failure",
+          "R20-13-single-unsaved",
+          "R20-13-bulk-unsaved",
+          "R20-13-response-order"
+        ],
+        "R21": [
+          "R21-13-old-success-new-failure",
+          "R21-13-reordered-successes"
+        ],
+        "R22": [
+          "R22-13-reordered-same-field",
+          "R22-13-cross-field-reorder",
+          "R22-13-two-tabs-equal-sequence",
+          "R22-13-reload-counter",
+          "R22-13-invalid-request-poison",
+          "R22-13-route-reload"
+        ]
+      },
+      "r24Checks": [
+        "R24-13-rollback-homework_submissions",
+        "R24-13-rollback-homework_submission_meta",
+        "R24-13-new-row-meta-failure"
+      ],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-13-ui-save-failure",
+            "R20-13-single-unsaved",
+            "R20-13-bulk-unsaved",
+            "R20-13-response-order"
+          ],
+          "failed": []
+        },
+        "R21": {
+          "passed": [
+            "R21-13-old-success-new-failure",
+            "R21-13-reordered-successes"
+          ],
+          "failed": []
+        },
+        "R22": {
+          "passed": [
+            "R22-13-reordered-same-field",
+            "R22-13-cross-field-reorder",
+            "R22-13-two-tabs-equal-sequence",
+            "R22-13-reload-counter",
+            "R22-13-invalid-request-poison",
+            "R22-13-route-reload"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": []
+    },
+    {
+      "issueId": "R19-14",
+      "status": "CLOSED_SOURCE",
+      "severity": null,
+      "assessment": "Tải thất bại hoặc một phần vẫn dừng AI; lượt thành công chỉ chấm đúng tập bài đã tải.",
+      "independentChecks": [],
+      "failingChecks": [],
+      "freshHistoricalChecks": {
+        "R20": [
+          "R19-14-route-download-failure",
+          "R20-14-skip-ai-failure",
+          "R20-14-partial-failure",
+          "R20-14-success-scope"
+        ],
+        "R21": [
+          "R21-14-download-error"
+        ]
+      },
+      "r24Checks": [],
+      "freshHistoricalOutcomes": {
+        "R20": {
+          "passed": [
+            "R19-14-route-download-failure",
+            "R20-14-skip-ai-failure",
+            "R20-14-partial-failure",
+            "R20-14-success-scope"
+          ],
+          "failed": []
+        },
+        "R21": {
+          "passed": [
+            "R21-14-download-error"
+          ],
+          "failed": []
+        }
+      },
+      "compatibilityChecks": []
+    }
+  ],
+  "schemaCompatibility": {
+    "originalR16": "15/16; PHASE1-SCHEMA expects 7 tables instead of 8",
+    "r24InheritedCompatibilityCheck": "R23-COMPAT-R16-schema PASS; original result unchanged"
+  },
+  "r20Compatibility": {
+    "original": "141/145; four failures remain recorded",
+    "r24CorrectedContract": {
+      "API-approval-control": "R24-COMPAT-R20-API-approval-control",
+      "R20-03-legacy-reapproval": "R24-COMPAT-R20-R20-03-legacy-reapproval",
+      "R20-05-override-control": "R24-COMPAT-R20-R20-05-override-control",
+      "R20-06-latest-control": "R24-COMPAT-R20-R20-06-latest-control"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+* [x] **AUDIT-R28:** Đã hoàn tất kiểm toán độc lập Giai đoạn 5 tại `docs/audits/round-28/REPORT.vi.md`; **NO-GO cấp mã nguồn, 12/14 CLOSED_SOURCE**, chưa nghiệm thu. Đã đóng đủ 12 lỗi R27: R27 662/662, native media 120/120, native worker 32/32. R28 giữ nguyên 662 ca và thêm 75 ca, đạt **728/737**; native xác nhận 6 PDF sai cấu trúc được nhận và 3 block string GraphQL hợp lệ bị từ chối. Hai nhóm R19-01/R19-09 còn P2; không tái hiện VERIFIED sai P1 của R27 trong phạm vi đã kiểm. R22–R26, Phase 4/5, TypeScript trước/sau build và build 22/22 trang đạt; kết quả lịch sử nguyên bản được giữ và giải thích riêng. Bảo toàn 772/772 tệp bảo vệ gồm next-env.d.ts và R12–R27, 57/57 src/scripts; không sửa sản phẩm, không dùng dữ liệu/dịch vụ thật. Dấu [x] chỉ xác nhận đã làm kiểm toán.
+
+* [ ] **NGHIỆM THU SAU AUDIT-R28:** Chưa đạt 14/14 CLOSED_SOURCE / GO; sửa theo `docs/audits/round-28/FIX_PROMPT.vi.md` và kiểm toán lại đúng nguồn cuối trước khi ký nghiệm thu Giai đoạn 5.
+

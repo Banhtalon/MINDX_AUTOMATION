@@ -1,0 +1,10 @@
+{
+  "changed": [
+    "scripts/test-phase4-codex-repros.ts",
+    "src/app/api/homework-grader/export/route.ts",
+    "src/app/homework-grader/page.tsx",
+    "src/lib/file-parsers/media-reader.ts",
+    "src/lib/playwright/grade-worker.ts"
+  ],
+  "note": "All five differences existed before this audit. No product fixes were made."
+}

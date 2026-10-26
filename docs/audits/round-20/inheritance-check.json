@@ -1,0 +1,50 @@
+{
+  "checkedAt": "2026-10-20T10:52:35.173Z",
+  "inherited94IdsAndOrderIdentical": true,
+  "inherited94AssertionsAndCriteriaUnchangedAfterDocumentedFixtureSubstitution": true,
+  "inheritedNormalizedSourceSha256": "5d2d14e6edef43d84fe8f6dfdb0f665b8839c991e513804511cb89aacb1e0fce",
+  "fixtureSubstitutions": [
+    "INLINE-png",
+    "INLINE-jpg",
+    "INLINE-webp",
+    "INLINE-pdf"
+  ],
+  "fixtureRationale": "Valid encoded images and a minimal PDF replace header-only data; no conflicting accept/reject expectations for the same malformed fixture.",
+  "originalCount": 94,
+  "originalPasses": 94,
+  "r20Total": 145,
+  "r20Passed": 129,
+  "r20Failed": 16,
+  "added": 51,
+  "dependencies": [
+    {
+      "name": "next",
+      "version": "16.4.2"
+    },
+    {
+      "name": "react",
+      "version": "19.3.1"
+    },
+    {
+      "name": "typescript",
+      "version": "7.0.2"
+    },
+    {
+      "name": "sharp",
+      "version": "0.35.5"
+    },
+    {
+      "name": "better-sqlite3",
+      "version": "13.0.3"
+    },
+    {
+      "name": "adm-zip",
+      "version": "0.6.1"
+    },
+    {
+      "name": "tsx",
+      "version": "4.23.15"
+    }
+  ],
+  "node": "v24.21.0"
+}

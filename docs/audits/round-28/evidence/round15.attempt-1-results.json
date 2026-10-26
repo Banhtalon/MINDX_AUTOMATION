@@ -1,0 +1,77 @@
+{
+  "generatedAt": "2026-10-20T20:22:25.085Z",
+  "confirmedBugs": 0,
+  "baselinePassed": 2,
+  "executionErrors": 8,
+  "results": [
+    {
+      "id": "R15-01",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'LATEST TEACHER TEXT'\n- 'old final'\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:43:12\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:23:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:32:1"
+    },
+    {
+      "id": "R15-02",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'LATEST TEACHER NOTE'\n- 'old S1'\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:68:12\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:23:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:49:1"
+    },
+    {
+      "id": "R15-03",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'LATEST NEW PAGE EDIT'\n- 'OLDER PAGE EDIT'\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:90:12\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:23:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:76:1"
+    },
+    {
+      "id": "R15-04",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n0 !== 1\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:119:10\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:23:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:115:1"
+    },
+    {
+      "id": "R15-05",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: The \"string\" argument must be of type string. Received type undefined (undefined)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:139:41\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:23:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:123:1"
+    },
+    {
+      "id": "R15-06",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n0 !== 3\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:153:10\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:23:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:143:1"
+    },
+    {
+      "id": "R15-07",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert(prompt.includes('- Chủ đề bài học: Dự án của Audit S1'))\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:167:5\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:23:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:157:1"
+    },
+    {
+      "id": "PHASE1-SCHEMA",
+      "kind": "BASELINE_PASS",
+      "reproducedOrPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n8 !== 7\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:178:12\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:23:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-15/verify-independent.mjs:174:7"
+    },
+    {
+      "id": "PHASE2-QUEUE",
+      "kind": "BASELINE_PASS",
+      "reproducedOrPassed": true,
+      "observation": {
+        "maxConcurrentTasks": 1,
+        "cancelledPendingTasks": 2,
+        "resumed": true
+      }
+    },
+    {
+      "id": "PHASE2-BROWSER",
+      "kind": "BASELINE_PASS",
+      "reproducedOrPassed": true,
+      "observation": {
+        "initialConcurrentCalls": 8,
+        "initialLaunches": 1,
+        "emptyContextRecoveredWithOneTab": true,
+        "relaunchedAfterClose": true
+      }
+    }
+  ]
+}

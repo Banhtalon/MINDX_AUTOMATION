@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-10-20T04:01:33.844Z",
+  "headMatches": true,
+  "round13ManifestSha256": "592c6db9856fa1acd54cd4b43a3034f0028d3d3494ee3652b4321dcc981782f7",
+  "baselineFileCount": 53,
+  "unchangedFiles": 52,
+  "intentionalChanges": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "onlyRound13AuditNoteAdded": true,
+  "productTestConfigFileSetIdentical": true,
+  "missingFiles": [],
+  "addedProductTestConfigFiles": [],
+  "removedProductTestConfigFiles": []
+}

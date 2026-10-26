@@ -1,0 +1,13 @@
+{
+  "root": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "temp": "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s",
+  "excluded": [
+    ".env*",
+    ".git",
+    ".next",
+    "playwright-auth",
+    "data except config",
+    "temp_submissions"
+  ],
+  "executionPolicy": "All product execution only in physical TEMP copy; no real accounts, no real data."
+}

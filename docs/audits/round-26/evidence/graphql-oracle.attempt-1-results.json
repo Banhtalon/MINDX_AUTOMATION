@@ -1,0 +1,519 @@
+{
+  "method": "Independent lexical scanner masks quoted strings and comments, verifies balanced delimiters, actual selected root, and executable variable tokens; no GraphQL schema validation.",
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+  "total": 54,
+  "passed": 54,
+  "failed": 0,
+  "results": [
+    {
+      "id": "R26-09-control-all-synonyms",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-submissionId",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-submissionId",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-id",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-id",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-_id",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-_id",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-studentId",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-studentId",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-studentUid",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-studentUid",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-classId",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-classId",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-classCode",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-classCode",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-sessionId",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-sessionId",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-score",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-score",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-decision",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-decision",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-status",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-status",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-feedback",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-feedback",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-comment",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-comment",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-teacherNote",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-teacherNote",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-response-null-feedbackHtml",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-request-container-feedbackHtml",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-literal-hash",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-variable-hash",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-literal-quote",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-variable-quote",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-literal-parentheses",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-variable-parentheses",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-literal-braces",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-variable-braces",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-literal-brace-open",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-variable-brace-open",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-literal-close-brace",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-variable-close-brace",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-literal-backslash",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-variable-backslash",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-literal-unicode",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-variable-unicode",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-comment-with-spoofed-keys",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-alias-other-result",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-error-array",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-object-no-confirmation",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-selected-query",
+      "pass": true,
+      "realRootField": "saveHomeworkGrade",
+      "executableVariables": [
+        "input",
+        "input"
+      ],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-quoted-operation-decoy",
+      "pass": true,
+      "realRootField": "deleteAttachment",
+      "executableVariables": [],
+      "stringsOpaque": true
+    },
+    {
+      "id": "R26-09-quoted-operation-preview-decoy",
+      "pass": true,
+      "realRootField": "previewHomework",
+      "executableVariables": [],
+      "stringsOpaque": true
+    }
+  ]
+}

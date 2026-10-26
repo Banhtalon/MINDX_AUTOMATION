@@ -1,0 +1,36 @@
+{
+  "startedAt": "2026-10-20T04:12:38.418Z",
+  "bind": "127.0.0.1",
+  "port": 55704,
+  "checks": [
+    {
+      "route": "/session-comments",
+      "status": 200,
+      "expectedPageTextPresent": true
+    },
+    {
+      "route": "/homework-grader",
+      "status": 200,
+      "expectedPageTextPresent": true
+    },
+    {
+      "route": "/api/auth/status",
+      "hostileOriginStatus": 403
+    },
+    {
+      "route": "/api/session-comments/list?classId=A",
+      "hostileOriginStatus": 403
+    },
+    {
+      "route": "/api/homework-grader/scores?classId=A",
+      "hostileOriginStatus": 403
+    },
+    {
+      "route": "/api/session-comments/save-draft",
+      "hostilePostStatus": 403
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-10-20T04:12:39.131Z",
+  "temporaryServerStopped": true
+}

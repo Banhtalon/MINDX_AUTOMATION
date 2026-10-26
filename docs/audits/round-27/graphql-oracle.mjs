@@ -1,0 +1,85 @@
+// Separate recursive scanner/parser for this fixture corpus, including GraphQL block strings.
+// This verifies syntax and binding; it does not claim access to a real LMS schema.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {createR27WorkerCases} from './worker-cases.mjs';
+assert(process.cwd().startsWith(path.resolve(os.tmpdir())+path.sep)&&process.cwd().includes('mindx-round27-'));
+function lex(q) {
+  const ts=[];let i=0;
+  while(i<q.length) {
+    if(/[\s,\uFEFF]/.test(q[i])){i++;continue;}
+    if(q[i]==='#'){while(i<q.length&&!/[\r\n]/.test(q[i]))i++;continue;}
+    if(q.startsWith('"""',i)) {
+      i+=3;let value='',closed=false;
+      while(i<q.length) {
+        if(q.startsWith('\\"""',i)){value+='"""';i+=4;continue;}
+        if(q.startsWith('"""',i)){i+=3;closed=true;break;}
+        value+=q[i++];
+      }
+      assert(closed);ts.push({kind:'STRING',value});continue;
+    }
+    if(q[i]==='"') {
+      const start=i++;let closed=false;
+      while(i<q.length){if(q[i]==='\\'){i+=2;continue;}if(q[i++]==='"'){closed=true;break;}}
+      assert(closed);ts.push({kind:'STRING',value:JSON.parse(q.slice(start,i))});continue;
+    }
+    const name=/^[_A-Za-z][_0-9A-Za-z]*/.exec(q.slice(i));
+    if(name){ts.push({kind:'NAME',value:name[0]});i+=name[0].length;continue;}
+    const num=/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(q.slice(i));
+    if(num){ts.push({kind:'NUMBER',value:Number(num[0])});i+=num[0].length;continue;}
+    assert('{}():[]!$=@'.includes(q[i]),'Unexpected character '+q[i]);
+    ts.push({kind:'SYMBOL',value:q[i++]});
+  }
+  return ts;
+}
+function parse(q) {
+  const ts=lex(q);let i=0;
+  const peek=v=>ts[i]?.value===v;
+  const take=v=>{const t=ts[i++];assert(t&&(!v||t.value===v),'Expected '+v);return t;};
+  const name=()=>{const t=take();assert.equal(t.kind,'NAME');return t.value;};
+  function value() {
+    if(peek('$')){take('$');return {kind:'VARIABLE',value:name()};}
+    if(peek('{')){take('{');const fields={};while(!peek('}')){const k=name();take(':');assert(!(k in fields));fields[k]=value();}take('}');return {kind:'OBJECT',value:fields};}
+    if(peek('[')){take('[');const items=[];while(!peek(']'))items.push(value());take(']');return {kind:'ARRAY',value:items};}
+    const t=take();assert(['NAME','STRING','NUMBER'].includes(t.kind));return {...t,kind:t.kind==='NAME'?'ENUM':t.kind};
+  }
+  function args() {
+    const fields={};if(!peek('('))return fields;take('(');
+    while(!peek(')')){const k=name();take(':');assert(!(k in fields));fields[k]=value();}
+    take(')');return fields;
+  }
+  function fields() {
+    take('{');const out=[];
+    while(!peek('}')){let field=name(),alias='';if(peek(':')){take(':');alias=field;field=name();}const a=args();while(peek('@')){take('@');name();args();}const selection=peek('{')?fields():[];out.push({field,alias,args:a,selection});}
+    take('}');return out;
+  }
+  const operations=[];
+  while(i<ts.length) {
+    const type=name();assert(['mutation','query','subscription'].includes(type));const opName=name();
+    // Fixture variable definitions: nested punctuation checked without relying on regex bodies.
+    if(peek('(')){take('(');let depth=1;while(depth){const t=take();if(t.value==='(')depth++;if(t.value===')')depth--;}}
+    operations.push({type,name:opName,fields:fields()});
+  }
+  return operations;
+}
+const cid='R27_ORACLE',sid=cid+'_SESS_01',results=[];
+for(const c of createR27WorkerCases(cid,sid)) {
+  const ops=parse(c.request.query),selected=ops.filter(o=>o.name===c.request.operationName);assert.equal(selected.length,1);
+  const op=selected[0],root=op.fields[0],references=[];
+  const resolve=node=>{
+    if(node.kind==='VARIABLE'){references.push(node.value);return c.request.variables[node.value];}
+    if(node.kind==='OBJECT')return Object.fromEntries(Object.entries(node.value).map(([k,v])=>[k,resolve(v)]));
+    if(node.kind==='ARRAY')return node.value.map(resolve);
+    return node.value;
+  };
+  const bound=Object.fromEntries(Object.entries(root.args).map(([k,v])=>[k,resolve(v)]));
+  const payload=bound.input??bound;
+  if(c.id.includes('decoy')&&!c.id.includes('placeholder')){assert(['deleteAttachment','previewHomework'].includes(root.field));assert.equal(references.length,0);}
+  if(c.expected===1){assert.equal(root.field,'saveHomeworkGrade');assert.equal(op.type,'mutation');assert.equal(payload.submissionId,'SUB1');assert.equal(payload.studentId,'S1');assert.equal(payload.score,80);assert.equal(payload.feedback,c.feedback);}
+  if(c.id.includes('placeholder-enum'))assert.equal(root.args.feedback.kind,'ENUM');
+  results.push({id:c.id,pass:true,operationType:op.type,rootField:root.field,alias:root.alias,actualArgumentVariables:references,resolvedArguments:bound,feedbackValueKind:root.args.feedback?.kind??null});
+}
+const summary={total:results.length,passed:results.length,failed:0,method:'Independent character scanner and recursive fixture parser, block strings opaque, variable references from selected root arguments only; no actual schema validation.',results};
+fs.writeFileSync('docs/audits/round-27/evidence/graphql-oracle-results.json',JSON.stringify(summary,null,2)+'\n');console.log('SUMMARY '+JSON.stringify({total:summary.total,passed:summary.passed,failed:0}));

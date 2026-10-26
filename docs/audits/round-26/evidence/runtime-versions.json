@@ -1,0 +1,26 @@
+{
+  "next": {
+    "version": "16.4.2",
+    "packageSha256": "e84ada0a68191fed192392bfb8ee35ad4ed8e7439f645a40dd48cf139588ddc5"
+  },
+  "typescript": {
+    "version": "7.0.2",
+    "packageSha256": "3722b30210616a13a3213ded11575ba6b2dbab10c32a5ef67afca8513e27017e"
+  },
+  "tsx": {
+    "version": "4.23.15",
+    "packageSha256": "ab5f14c4251638844ade3905d3cfc52fc1c833644694d655a05f6d0ca746b83c"
+  },
+  "sharp": {
+    "version": "0.35.5",
+    "packageSha256": "ad4a2535d72eb638053a38867b1abf43c328cd1c1dbae5cf4172d498365a8b97"
+  },
+  "better-sqlite3": {
+    "version": "13.0.3",
+    "packageSha256": "6c9ea355190dfce3646ad4d2a31c9506de36d884a6461b3655a2a0c4ba3d1695"
+  },
+  "playwright": {
+    "version": "1.64.1",
+    "packageSha256": "313d23ce667d93962d3a1ab4be80908cefe840e4d9e48f1cd5863b91f65e8e39"
+  }
+}

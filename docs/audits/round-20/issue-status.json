@@ -1,0 +1,928 @@
+{
+  "round": 20,
+  "checkedAt": "2026-10-20T10:58:35.212Z",
+  "verdict": "NO-GO",
+  "scope": "Phase 5 source-level verification; no live-service acceptance",
+  "sourceManifestSha256": "6b696ae94e101cf608870eb6ccf892003e81814e29c6c9500cd701b46f3701c1",
+  "closed": 6,
+  "partiallyFixed": 8,
+  "open": 8,
+  "openPriorities": {
+    "P1": 7,
+    "P2": 1
+  },
+  "originalCases": {
+    "total": 94,
+    "passed": 94,
+    "failed": 0
+  },
+  "independent": {
+    "total": 145,
+    "passed": 129,
+    "failed": 16
+  },
+  "findings": [
+    {
+      "id": "R19-01",
+      "title": "File hỏng vẫn được coi là đã đọc thành công",
+      "previousPriority": "P1",
+      "priority": "P2",
+      "status": "PARTIALLY_FIXED",
+      "fixed": "Chặn ZIP hỏng và PNG cụt chữ ký; kiểm tra cấu trúc media vẫn chưa đủ.",
+      "residual": "Ảnh PNG 37 byte, JPG 8 byte và WebP 21 byte bị sharp từ chối nhưng parser vẫn PARSED và tạo inlineData.",
+      "locations": [
+        "src/lib/file-parsers/archive-reader.ts:362",
+        "src/lib/file-parsers/media-reader.ts:36"
+      ],
+      "recommendation": "Dùng bộ đọc định dạng đáng tin cậy hoặc kiểm tra cấu trúc đầy đủ; lỗi phải PARSE_ERROR, không chuyển inlineData cho AI.",
+      "acceptance": "Ảnh thật vẫn đọc được; ba ảnh hỏng phải bị từ chối trước AI.",
+      "originalCases": [
+        "R19-01-mixed-corrupt",
+        "R19-01-truncated-media"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-01-valid-png",
+        "R20-01-valid-jpg",
+        "R20-01-valid-webp",
+        "R20-01-malformed-png",
+        "R20-01-malformed-jpg",
+        "R20-01-malformed-webp"
+      ],
+      "remainingFailureCases": [
+        "R20-01-malformed-png",
+        "R20-01-malformed-jpg",
+        "R20-01-malformed-webp"
+      ],
+      "evidence": [
+        {
+          "id": "R19-01-mixed-corrupt",
+          "pass": true,
+          "observation": {
+            "parseStatus": "PARSE_ERROR",
+            "parsedCodeFiles": 0,
+            "totalFiles": 2
+          }
+        },
+        {
+          "id": "R19-01-truncated-media",
+          "pass": true
+        },
+        {
+          "id": "R20-01-valid-png",
+          "pass": true,
+          "observation": {
+            "bytes": 96
+          }
+        },
+        {
+          "id": "R20-01-valid-jpg",
+          "pass": true,
+          "observation": {
+            "bytes": 269
+          }
+        },
+        {
+          "id": "R20-01-valid-webp",
+          "pass": true,
+          "observation": {
+            "bytes": 64
+          }
+        },
+        {
+          "id": "R20-01-malformed-png",
+          "pass": false,
+          "observation": {
+            "bytes": 37,
+            "decoderError": "Input buffer has corrupt header:",
+            "parseStatus": "PARSED",
+            "inlineParts": 1
+          }
+        },
+        {
+          "id": "R20-01-malformed-jpg",
+          "pass": false,
+          "observation": {
+            "bytes": 8,
+            "decoderError": "Input buffer has corrupt header: VipsJpeg: JPEG datastream contains no image\nVipsJpeg: JPEG datastream contains no image\nVipsJpeg: JPEG datastream contains no image",
+            "parseStatus": "PARSED",
+            "inlineParts": 1
+          }
+        },
+        {
+          "id": "R20-01-malformed-webp",
+          "pass": false,
+          "observation": {
+            "bytes": 21,
+            "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+            "parseStatus": "PARSED",
+            "inlineParts": 1
+          }
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-02",
+      "title": "Barem trùng mã tiêu chí được cộng hai lần",
+      "previousPriority": "P2",
+      "priority": "P2",
+      "status": "CLOSED_SOURCE",
+      "fixed": "Barem trùng/thiếu mã, điểm tối đa sai và tổng không khớp bị chặn; AI kiểm tra trước lời gọi model; nút thêm sinh mã chưa dùng.",
+      "residual": null,
+      "locations": [
+        "src/lib/gemini/score-auditor.ts:74",
+        "src/lib/gemini/homework-grader.ts:328",
+        "src/components/homework-auto-grader-tab.tsx:790"
+      ],
+      "recommendation": null,
+      "acceptance": "Barem trùng bị từ chối trước AI; barem hợp lệ và các ca SCORE-* hiện đạt vẫn giữ nguyên kết quả.",
+      "originalCases": [
+        "R19-02-duplicate-rubric"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-02-invalid-blank",
+        "R20-02-invalid-negative",
+        "R20-02-invalid-nan",
+        "R20-02-invalid-string",
+        "R20-02-invalid-sum",
+        "R20-02-before-ai",
+        "R20-02-ui-add-after-delete"
+      ],
+      "remainingFailureCases": [],
+      "evidence": [
+        {
+          "id": "R19-02-duplicate-rubric",
+          "pass": true
+        },
+        {
+          "id": "R20-02-invalid-blank",
+          "pass": true
+        },
+        {
+          "id": "R20-02-invalid-negative",
+          "pass": true
+        },
+        {
+          "id": "R20-02-invalid-nan",
+          "pass": true
+        },
+        {
+          "id": "R20-02-invalid-string",
+          "pass": true
+        },
+        {
+          "id": "R20-02-invalid-sum",
+          "pass": true
+        },
+        {
+          "id": "R20-02-before-ai",
+          "pass": true
+        },
+        {
+          "id": "R20-02-ui-add-after-delete",
+          "pass": true,
+          "observation": {
+            "ids": [
+              "CRIT_01",
+              "CRIT_03",
+              "CRIT_04"
+            ]
+          }
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-03",
+      "title": "Hash cũ chỉ của nhận xét vẫn được coi là toàn vẹn bài chấm",
+      "previousPriority": "P2",
+      "priority": "P2",
+      "status": "CLOSED_SOURCE",
+      "fixed": "Chỉ chấp nhận hash tổng hợp; hash cũ hạ về chờ duyệt và có thể duyệt lại; sửa trường đã khóa làm kiểm tra thất bại.",
+      "residual": null,
+      "locations": [
+        "src/lib/db/sqlite.ts:671",
+        "src/lib/db/sqlite.ts:701",
+        "src/lib/db/sqlite.ts:777"
+      ],
+      "recommendation": null,
+      "acceptance": "Đổi bất kỳ trường được duyệt nào phải làm xác minh thất bại; dữ liệu cũ vẫn có đường duyệt lại an toàn.",
+      "originalCases": [
+        "R19-03-legacy-hash"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-03-legacy-reapproval",
+        "R20-03-hash-fileHash",
+        "R20-03-hash-decision",
+        "R20-03-hash-calculatedScore",
+        "R20-03-hash-teacherOverrideScore",
+        "R20-03-hash-feedbackHtml",
+        "R20-03-hash-criteriaGradesJson"
+      ],
+      "remainingFailureCases": [],
+      "evidence": [
+        {
+          "id": "R19-03-legacy-hash",
+          "pass": true
+        },
+        {
+          "id": "R20-03-legacy-reapproval",
+          "pass": true
+        },
+        {
+          "id": "R20-03-hash-fileHash",
+          "pass": true
+        },
+        {
+          "id": "R20-03-hash-decision",
+          "pass": true
+        },
+        {
+          "id": "R20-03-hash-calculatedScore",
+          "pass": true
+        },
+        {
+          "id": "R20-03-hash-teacherOverrideScore",
+          "pass": true
+        },
+        {
+          "id": "R20-03-hash-feedbackHtml",
+          "pass": true
+        },
+        {
+          "id": "R20-03-hash-criteriaGradesJson",
+          "pass": true
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-04",
+      "title": "AI cũ có thể ghi đè file mới và xóa cờ PARSE_ERROR",
+      "previousPriority": "P1",
+      "priority": "P1",
+      "status": "PARTIALLY_FIXED",
+      "fixed": "Đã bảo vệ thay hash/path/parseStatus trong SQLite khi AI chạy.",
+      "residual": "File trên đĩa đổi trước hoặc trong AI nhưng SQLite chưa đổi thì vẫn tạo WAITING_APPROVAL với hash file cũ.",
+      "locations": [
+        "src/lib/gemini/homework-grader.ts:230",
+        "src/lib/gemini/homework-grader.ts:355",
+        "src/lib/gemini/homework-grader.ts:530",
+        "src/lib/gemini/homework-grader.ts:578"
+      ],
+      "recommendation": "Đối chiếu parsed.fileHash với bản tải đã khóa; kiểm tra lại bytes/hash trước ghi đề xuất. Nếu file đổi trong AI, bỏ kết quả và yêu cầu phân tích lại.",
+      "acceptance": "Không được gắn điểm của file mới vào hash cũ hoặc dùng điểm file cũ sau khi file đã đổi.",
+      "originalCases": [
+        "R19-04-ai-file-drift"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-04-path-drift",
+        "R20-04-disk-before",
+        "R20-04-disk-during"
+      ],
+      "remainingFailureCases": [
+        "R20-04-disk-before",
+        "R20-04-disk-during"
+      ],
+      "evidence": [
+        {
+          "id": "R19-04-ai-file-drift",
+          "pass": true
+        },
+        {
+          "id": "R20-04-path-drift",
+          "pass": true
+        },
+        {
+          "id": "R20-04-disk-before",
+          "pass": false,
+          "observation": {
+            "status": "WAITING_APPROVAL",
+            "staleIgnored": false,
+            "dbHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+            "diskHash": "fc92339e2c864d8fc1782834ede5e96beb34e096745cdb559c3a8bb67fbfae7c"
+          }
+        },
+        {
+          "id": "R20-04-disk-during",
+          "pass": false,
+          "observation": {
+            "status": "WAITING_APPROVAL",
+            "staleIgnored": false,
+            "dbHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+            "diskHash": "fc92339e2c864d8fc1782834ede5e96beb34e096745cdb559c3a8bb67fbfae7c"
+          }
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-05",
+      "title": "API duyệt bỏ qua kiểm toán tiêu chí và bằng chứng đã đọc file",
+      "previousPriority": "P1",
+      "priority": "P1",
+      "status": "PARTIALLY_FIXED",
+      "fixed": "API duyệt đơn/hàng loạt đã kiểm toán giới hạn và bằng chứng; nháp chưa tải giữ PENDING.",
+      "residual": "Khi bài đã tải nhưng chưa có điểm thành phần, API nháp lấy criteriaGrades do client gửi làm barem, rồi /approve tin danh sách đó và bỏ qua barem C1 được chọn. UNRELATED đạt 100 được APPROVED.",
+      "locations": [
+        "src/app/api/homework-grader/submissions/route.ts:211",
+        "src/app/api/homework-grader/approve/route.ts:14",
+        "src/app/api/homework-grader/approve/route.ts:214",
+        "src/lib/db/sqlite.ts:111"
+      ],
+      "recommendation": "Lưu riêng barem/phiên bản barem có thẩm quyền cho bài; đối chiếu điểm với barem đó ở cả nháp và duyệt, không lấy kết quả chấm làm barem.",
+      "acceptance": "Bài PARSED nhưng chưa chấm không được tự định nghĩa tiêu chí qua API nháp; barem đúng và điểm giáo viên chỉnh vẫn duyệt được.",
+      "originalCases": [
+        "R19-05-invalid-criteria",
+        "R19-05-undownloaded"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-05-invalid-single",
+        "R20-05-invalid-bulk",
+        "R20-05-override-control",
+        "R20-05-authoritative-rubric"
+      ],
+      "remainingFailureCases": [
+        "R20-05-authoritative-rubric"
+      ],
+      "evidence": [
+        {
+          "id": "R19-05-invalid-criteria",
+          "pass": true
+        },
+        {
+          "id": "R19-05-undownloaded",
+          "pass": true
+        },
+        {
+          "id": "R20-05-invalid-single",
+          "pass": true
+        },
+        {
+          "id": "R20-05-invalid-bulk",
+          "pass": true
+        },
+        {
+          "id": "R20-05-override-control",
+          "pass": true
+        },
+        {
+          "id": "R20-05-authoritative-rubric",
+          "pass": false,
+          "observation": {
+            "draftHttp": 200,
+            "approveHttp": 200,
+            "status": "APPROVED",
+            "criteria": [
+              "UNRELATED"
+            ],
+            "actualRubric": [
+              "C1"
+            ]
+          }
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-06",
+      "title": "Bản duyệt cũ ghi đè nhận xét giáo viên vừa sửa",
+      "previousPriority": "P1",
+      "priority": "P1",
+      "status": "PARTIALLY_FIXED",
+      "fixed": "Yêu cầu duyệt có nhận xét/điểm/quyết định cũ đã trả 409; duyệt bản mới hợp lệ đạt.",
+      "residual": "File đã thay mới nhưng điểm/nhận xét cũ giữ nguyên thì yêu cầu duyệt cũ vẫn HTTP 200, APPROVED cho hash mới; body.fileHash cũ bị bỏ qua.",
+      "locations": [
+        "src/app/api/homework-grader/approve/route.ts:230",
+        "src/components/homework-auto-grader-tab.tsx:444"
+      ],
+      "recommendation": "Duyệt kèm phiên bản toàn bộ bản đang xem, gồm hash file và barem; server so với bản hiện tại và từ chối 409 khi khác, áp dụng hàng loạt.",
+      "acceptance": "File đổi dù nội dung nhận xét giống nhau phải làm bản duyệt cũ hết hiệu lực; UI tải bản mới rồi duyệt lại được.",
+      "originalCases": [
+        "R19-06-stale-approval"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-06-latest-control",
+        "R20-06-file-version"
+      ],
+      "remainingFailureCases": [
+        "R20-06-file-version"
+      ],
+      "evidence": [
+        {
+          "id": "R19-06-stale-approval",
+          "pass": true
+        },
+        {
+          "id": "R20-06-latest-control",
+          "pass": true
+        },
+        {
+          "id": "R20-06-file-version",
+          "pass": false,
+          "observation": {
+            "http": 200,
+            "status": "APPROVED",
+            "oldFileHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+            "currentFileHash": "fc92339e2c864d8fc1782834ede5e96beb34e096745cdb559c3a8bb67fbfae7c"
+          }
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-07",
+      "title": "Tên trùng hoặc modal trống vẫn qua kiểm tra định danh",
+      "previousPriority": "P1",
+      "priority": "P1",
+      "status": "CLOSED_SOURCE",
+      "fixed": "Dòng/modal phải có đúng studentId và submissionId; chặn trống, cùng tên sai ID và SUB10 khớp nhầm SUB1.",
+      "residual": null,
+      "locations": [
+        "src/lib/playwright/download-submissions.ts:528",
+        "src/lib/playwright/download-submissions.ts:568",
+        "src/lib/playwright/grade-worker.ts:254",
+        "src/lib/playwright/grade-worker.ts:296"
+      ],
+      "recommendation": null,
+      "acceptance": "Cả ba ca không được tải/ghi LMS; ca đúng ID vẫn chạy. Chưa dùng LMS thật để xác nhận vị trí ID trên website.",
+      "originalCases": [
+        "R19-07-wrong-download",
+        "R19-07-modal-same-name",
+        "R19-07-modal-empty"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-07-id-substring",
+        "R20-07-download-empty"
+      ],
+      "remainingFailureCases": [],
+      "evidence": [
+        {
+          "id": "R19-07-wrong-download",
+          "pass": true
+        },
+        {
+          "id": "R19-07-modal-same-name",
+          "pass": true
+        },
+        {
+          "id": "R19-07-modal-empty",
+          "pass": true
+        },
+        {
+          "id": "R20-07-id-substring",
+          "pass": true
+        },
+        {
+          "id": "R20-07-download-empty",
+          "pass": true
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-08",
+      "title": "lessonId của buổi khác được gắn vào session đang chọn",
+      "previousPriority": "P1",
+      "priority": "P1",
+      "status": "PARTIALLY_FIXED",
+      "fixed": "Downloader và API danh sách chặn lessonId/session khác nhau khi có ánh xạ; worker cũng chặn nếu có cache.",
+      "residual": "Nếu cache ánh xạ không có, worker bỏ qua lessonId được yêu cầu và suy cột theo số buổi; yêu cầu L2/session01 vẫn click Save và VERIFIED trong mô phỏng.",
+      "locations": [
+        "src/lib/playwright/grade-worker.ts:160",
+        "src/lib/playwright/download-submissions.ts:166",
+        "src/app/api/homework-grader/submissions/route.ts:58"
+      ],
+      "recommendation": "Khi không chứng minh được ánh xạ lesson/session/cột thì tải lại ánh xạ hoặc dừng; không bỏ qua lessonId hay đoán cột.",
+      "acceptance": "Thiếu cache hoặc lesson không khớp phải chặn trước Save; cặp đúng có bằng chứng vẫn lưu được.",
+      "originalCases": [
+        "R19-08-session-lesson"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-08-worker-cached-mismatch",
+        "R20-08-worker-no-mapping",
+        "R20-08-api-list-mismatch"
+      ],
+      "remainingFailureCases": [
+        "R20-08-worker-no-mapping"
+      ],
+      "evidence": [
+        {
+          "id": "R19-08-session-lesson",
+          "pass": true
+        },
+        {
+          "id": "R20-08-worker-cached-mismatch",
+          "pass": true
+        },
+        {
+          "id": "R20-08-worker-no-mapping",
+          "pass": false,
+          "observation": {
+            "writes": 1,
+            "verified": 1,
+            "lessonId": "L2",
+            "sessionId": "AUDIT_PTA_CLASS_SESS_01"
+          }
+        },
+        {
+          "id": "R20-08-api-list-mismatch",
+          "pass": true
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-09",
+      "title": "Phản hồi không phải lưu điểm vẫn được coi là thành công",
+      "previousPriority": "P1",
+      "priority": "P1",
+      "status": "PARTIALLY_FIXED",
+      "fixed": "Đã loại truy vấn GetStudentProfile, thiếu submissionId và điểm có giá trị sai.",
+      "residual": "Query có tên StudentSubmissionSummary hoặc thao tác SaveSubmissionAttachment chỉ kèm hai ID vẫn được nhận làm xác nhận lưu; URL chỉ chứa mindx.edu.vn cũng qua bộ lọc thật.",
+      "locations": [
+        "src/lib/playwright/grade-worker.ts:393",
+        "src/lib/playwright/grade-worker.ts:419",
+        "src/lib/playwright/grade-worker.ts:489",
+        "src/lib/playwright/grade-worker.ts:496",
+        "src/lib/playwright/network-interceptor.ts:72"
+      ],
+      "recommendation": "Khóa origin/path và đúng mutation lưu điểm đã được xác minh; bắt buộc đủ ID/điểm/quyết định/nhận xét đã chuẩn hóa. Không suy nghiệp vụ từ vài từ trong operationName.",
+      "acceptance": "Các query/thao tác khác/URL khác/thiếu payload phải bị loại; mutation đúng và HTTP 200/201 không GraphQL errors mới được xét đọc lại.",
+      "originalCases": [
+        "R19-09-unrelated-api",
+        "R19-09-missing-submission",
+        "R19-09-real-interceptor"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-09-named-query",
+        "R20-09-missing-payload",
+        "R20-09-exact-origin",
+        "R20-09-wrong-score"
+      ],
+      "remainingFailureCases": [
+        "R20-09-named-query",
+        "R20-09-missing-payload",
+        "R20-09-exact-origin"
+      ],
+      "evidence": [
+        {
+          "id": "R19-09-unrelated-api",
+          "pass": true
+        },
+        {
+          "id": "R19-09-missing-submission",
+          "pass": true
+        },
+        {
+          "id": "R19-09-real-interceptor",
+          "pass": true
+        },
+        {
+          "id": "R20-09-named-query",
+          "pass": false,
+          "observation": {
+            "verified": 1,
+            "writes": 1,
+            "body": {
+              "operationName": "StudentSubmissionSummary",
+              "query": "query StudentSubmissionSummary { studentSubmission { id } }",
+              "variables": {
+                "studentId": "S1",
+                "submissionId": "SUB1"
+              }
+            },
+            "apiOptions": {
+              "url": "mindx.edu.vn",
+              "method": "POST",
+              "operationName": null
+            }
+          }
+        },
+        {
+          "id": "R20-09-missing-payload",
+          "pass": false,
+          "observation": {
+            "verified": 1,
+            "writes": 1,
+            "body": {
+              "operationName": "SaveSubmissionAttachment",
+              "variables": {
+                "studentId": "S1",
+                "submissionId": "SUB1"
+              }
+            },
+            "apiOptions": {
+              "url": "mindx.edu.vn",
+              "method": "POST",
+              "operationName": null
+            }
+          }
+        },
+        {
+          "id": "R20-09-exact-origin",
+          "pass": false,
+          "observation": {
+            "matched": true,
+            "url": "https://unrelated.invalid/?return=mindx.edu.vn",
+            "configuredUrl": "mindx.edu.vn"
+          }
+        },
+        {
+          "id": "R20-09-wrong-score",
+          "pass": true
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-10",
+      "title": "VERIFIED dù chưa điền và chưa đọc lại nhận xét",
+      "previousPriority": "P1",
+      "priority": "P1",
+      "status": "PARTIALLY_FIXED",
+      "fixed": "Thiếu editor trước lưu hoặc nhận xét đọc lại khác có chữ đã bị chặn; có mở lại modal và kiểm tra ID.",
+      "residual": "Nhận xét đọc lại trống hoặc đọc lỗi vẫn VERIFIED vì điều kiện chỉ so khi editorDomText có chữ; không đọc radio quyết định, nên modal REDO đối lập GRADE vẫn VERIFIED nếu ô điểm cũ khớp.",
+      "locations": [
+        "src/lib/playwright/grade-worker.ts:574",
+        "src/lib/playwright/grade-worker.ts:594"
+      ],
+      "recommendation": "Chờ đúng modal tải lại; bắt buộc đọc đủ điểm, radio/quyết định và nhận xét; lỗi đọc hay trống là thất bại. So dữ liệu đã lưu, không dựa vào ô điểm cũ.",
+      "acceptance": "Ba ca trống/đọc lỗi/sai quyết định đều không VERIFIED; ca đúng đủ dữ liệu tiếp tục đạt.",
+      "originalCases": [
+        "R19-10-no-feedback"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-10-complete-control",
+        "R20-10-wrong-feedback",
+        "R20-10-empty",
+        "R20-10-unreadable",
+        "R20-10-wrong-decision"
+      ],
+      "remainingFailureCases": [
+        "R20-10-empty",
+        "R20-10-unreadable",
+        "R20-10-wrong-decision"
+      ],
+      "evidence": [
+        {
+          "id": "R19-10-no-feedback",
+          "pass": true
+        },
+        {
+          "id": "R20-10-complete-control",
+          "pass": true,
+          "observation": {
+            "writes": 1,
+            "verified": 1,
+            "modalReads": 2
+          }
+        },
+        {
+          "id": "R20-10-wrong-feedback",
+          "pass": true
+        },
+        {
+          "id": "R20-10-empty",
+          "pass": false,
+          "observation": {
+            "verified": 1,
+            "modalReads": 2,
+            "radioReads": 0,
+            "editorWritten": "APPROVED FEEDBACK",
+            "readback": {
+              "readbackFeedback": ""
+            }
+          }
+        },
+        {
+          "id": "R20-10-unreadable",
+          "pass": false,
+          "observation": {
+            "verified": 1,
+            "modalReads": 2,
+            "radioReads": 0,
+            "editorWritten": "APPROVED FEEDBACK",
+            "readback": {
+              "readbackError": true
+            }
+          }
+        },
+        {
+          "id": "R20-10-wrong-decision",
+          "pass": false,
+          "observation": {
+            "verified": 1,
+            "modalReads": 2,
+            "radioReads": 0,
+            "editorWritten": "APPROVED FEEDBACK",
+            "readback": {
+              "readbackDecision": "REDO"
+            }
+          }
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-11",
+      "title": "Sửa sau phản hồi API vẫn bị nâng thành VERIFIED",
+      "previousPriority": "P1",
+      "priority": "P1",
+      "status": "CLOSED_SOURCE",
+      "fixed": "Có kiểm tra cuối sau đọc DOM và markVerified có điều kiện theo hash/trạng thái; hash cũ không nâng bản mới.",
+      "residual": null,
+      "locations": [
+        "src/lib/playwright/grade-worker.ts:606",
+        "src/lib/db/sqlite.ts:852"
+      ],
+      "recommendation": null,
+      "acceptance": "Ca sửa trong lần đọc DOM giữ WAITING_APPROVAL và verifiedCount=0; ca bình thường, trước click và sau click vẫn đúng.",
+      "originalCases": [
+        "R19-11-readback-race"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-11-conditional-db"
+      ],
+      "remainingFailureCases": [],
+      "evidence": [
+        {
+          "id": "R19-11-readback-race",
+          "pass": true
+        },
+        {
+          "id": "R20-11-conditional-db",
+          "pass": true
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-12",
+      "title": "Danh sách buổi cũ có thể ghi đè buổi vừa chọn",
+      "previousPriority": "P2",
+      "priority": "P2",
+      "status": "CLOSED_SOURCE",
+      "fixed": "Bỏ phản hồi tải cũ bằng số lượt và phạm vi; đổi buổi/đổi lớp đều giữ danh sách mới trong bộ hook mô phỏng.",
+      "residual": null,
+      "locations": [
+        "src/components/homework-auto-grader-tab.tsx:189",
+        "src/components/homework-auto-grader-tab.tsx:209"
+      ],
+      "recommendation": null,
+      "acceptance": "Phản hồi Buổi 1 đến muộn không đổi danh sách Buổi 2; áp dụng tương tự khi đổi lớp.",
+      "originalCases": [
+        "R19-12-ui-load-race"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-12-class-race"
+      ],
+      "remainingFailureCases": [],
+      "evidence": [
+        {
+          "id": "R19-12-ui-load-race",
+          "pass": true
+        },
+        {
+          "id": "R20-12-class-race",
+          "pass": true
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-13",
+      "title": "Lưu nháp thất bại nhưng giao diện không báo",
+      "previousPriority": "P2",
+      "priority": "P1",
+      "status": "PARTIALLY_FIXED",
+      "fixed": "Đã báo lỗi lưu nháp và chặn duyệt đơn; nội dung chưa lưu được giữ tại chỗ ở luồng đơn.",
+      "residual": "Duyệt hàng loạt không kiểm tra unsavedSubIds, duyệt nhận xét cũ rồi tải lại đè mất nội dung mới chưa lưu. Phản hồi lưu cũ đến sau cũng xóa cờ lỗi của lần sửa mới.",
+      "locations": [
+        "src/components/homework-auto-grader-tab.tsx:361",
+        "src/components/homework-auto-grader-tab.tsx:419",
+        "src/components/homework-auto-grader-tab.tsx:493",
+        "src/components/homework-auto-grader-tab.tsx:532",
+        "src/components/homework-auto-grader-tab.tsx:729"
+      ],
+      "recommendation": "Dùng phiên bản và thứ tự lưu theo từng bài; chỉ xóa cờ chưa lưu cho đúng phiên bản đã lưu. Chặn duyệt/lưu đơn lẫn hàng loạt khi còn bản nháp lỗi hoặc đang lưu; không tải lại ghi đè nội dung đó.",
+      "acceptance": "Duyệt hàng loạt không gọi API khi có thay đổi chưa lưu; phản hồi cũ không xóa cờ bản mới; giữ nguyên nội dung mới.",
+      "originalCases": [
+        "R19-13-ui-save-failure"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-13-single-unsaved",
+        "R20-13-bulk-unsaved",
+        "R20-13-response-order"
+      ],
+      "remainingFailureCases": [
+        "R20-13-bulk-unsaved",
+        "R20-13-response-order"
+      ],
+      "evidence": [
+        {
+          "id": "R19-13-ui-save-failure",
+          "pass": true
+        },
+        {
+          "id": "R20-13-single-unsaved",
+          "pass": true
+        },
+        {
+          "id": "R20-13-bulk-unsaved",
+          "pass": false,
+          "observation": {
+            "approvals": 1,
+            "status": "APPROVED",
+            "dbText": "<p>APPROVED FEEDBACK</p>",
+            "visibleText": "<p>APPROVED FEEDBACK</p>",
+            "unsaved": {
+              "SUB1": true
+            }
+          }
+        },
+        {
+          "id": "R20-13-response-order",
+          "pass": false,
+          "observation": {
+            "approvals": 1,
+            "unsaved": {},
+            "visible": "LATEST UNSAVED"
+          }
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    },
+    {
+      "id": "R19-14",
+      "title": "Tải bài thất bại vẫn chấm cache cũ và trả thành công",
+      "previousPriority": "P1",
+      "priority": "P1",
+      "status": "CLOSED_SOURCE",
+      "fixed": "Tải thất bại kể cả skipAi trả 502/success=false và không gọi AI; lỗi một phần dừng rõ; thành công chỉ chấm bài xác minh ở lượt tải.",
+      "residual": null,
+      "locations": [
+        "src/app/api/homework-grader/download-and-grade/route.ts:82",
+        "src/app/api/homework-grader/download-and-grade/route.ts:144"
+      ],
+      "recommendation": null,
+      "acceptance": "Ca tải thất bại không gọi AI và trả success=false; lượt thành công vẫn chấm đúng danh sách đã xác minh.",
+      "originalCases": [
+        "R19-14-route-download-failure"
+      ],
+      "originalPassed": true,
+      "additionalCases": [
+        "R20-14-skip-ai-failure",
+        "R20-14-partial-failure",
+        "R20-14-success-scope"
+      ],
+      "remainingFailureCases": [],
+      "evidence": [
+        {
+          "id": "R19-14-route-download-failure",
+          "pass": true
+        },
+        {
+          "id": "R20-14-skip-ai-failure",
+          "pass": true
+        },
+        {
+          "id": "R20-14-partial-failure",
+          "pass": true
+        },
+        {
+          "id": "R20-14-success-scope",
+          "pass": true
+        }
+      ],
+      "evidenceFile": "independent-results.json",
+      "realLmsAcceptance": false
+    }
+  ]
+}

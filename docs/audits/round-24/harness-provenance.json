@@ -1,0 +1,15 @@
+{
+  "inheritedFrom": "docs/audits/round-23/verify-independent.mjs",
+  "inheritedChecksUnchanged": 116,
+  "historicalHarnessSha256": "af410d446dea5b9a95fe92bfcafaa979fc02b325de3578ec2cbd92551f225a83",
+  "newHarnessSha256": "59686d216b00a8655898e5cf4f8f0fb2a5c31e4326f933a44602671d823c607d",
+  "adjustments": [
+    "output directory",
+    "TEMP guard label",
+    "fixture directory prefix",
+    "summary metadata",
+    "append R24 cases before finally"
+  ],
+  "productSourceTransform": "Only existing import/export and TypeScript removal from R23 helper; no product body modifications.",
+  "r20Compatibility": "Four separately identified R24 cases supply the full reviewed snapshot. Original R20 file, assertions and results remain unchanged."
+}

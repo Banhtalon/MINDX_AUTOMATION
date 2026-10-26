@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-10-20T12:26:27.131241+00:00",
+  "protectedFiles": 364,
+  "historicalFiles": 363,
+  "protectedUnchanged": true,
+  "sourceFiles": 75,
+  "productSourceScriptsConfigUnchanged": true,
+  "originalChanges": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "allowedPlanUpdate": true,
+  "snapshotSourceChangesAfterGates": [
+    "next-env.d.ts"
+  ],
+  "originalNextEnvSha256": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000"
+}

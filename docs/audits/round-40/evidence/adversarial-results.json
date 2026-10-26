@@ -1,0 +1,419 @@
+{
+  "audit": "AUDIT-R40",
+  "createdAt": "2026-10-21T07:58:50.916Z",
+  "mode": "synthetic TEMP only",
+  "summary": {
+    "total": 65,
+    "pass": 35,
+    "fail": 30
+  },
+  "tests": [
+    {
+      "id": "security-config-get-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-get-host",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-get-cross-site",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-get-null-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-post-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-post-host",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-post-cross-site",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-post-null-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-stream-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-stream-host",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-stream-cross-site",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-stream-null-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-get-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-get-host",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-get-cross-site",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-get-null-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-post-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-post-host",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-post-cross-site",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-post-null-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "path-outside-root",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "path-traversal",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "config-junction-escape-blocked",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "config-crud-all-sections",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "reject-scale-10",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "reject-duplicate-course-id",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "reject-duplicate-rubric-id",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "empty-courses",
+      "finding": "R40-01",
+      "status": "FAIL",
+      "detail": "Invalid courses accepted HTTP 200; saved=[]\n\n200 !== 400\n"
+    },
+    {
+      "id": "empty-rubrics",
+      "finding": "R40-01",
+      "status": "FAIL",
+      "detail": "Invalid rubrics accepted HTTP 200; saved=[]\n\n200 !== 400\n"
+    },
+    {
+      "id": "empty-quickTags",
+      "finding": "R40-01",
+      "status": "FAIL",
+      "detail": "Invalid quickTags accepted HTTP 200; saved=[]\n\n200 !== 400\n"
+    },
+    {
+      "id": "malformed-course-sessions",
+      "finding": "R40-01",
+      "status": "FAIL",
+      "detail": "Invalid courses accepted HTTP 200; saved=[{\"courseCode\":\"PTA\",\"courseName\":\"Synthetic PTA\",\"description\":\"R40 fixture\",\"sessions\":[]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "malformed-course-code",
+      "finding": "R40-01",
+      "status": "FAIL",
+      "detail": "Invalid courses accepted HTTP 200; saved=[{\"courseCode\":\"[OBJECT OBJECT]\",\"courseName\":\"Synthetic PTA\",\"description\":\"R40 fixture\",\"sessions\":[{\"sessionNumber\":1,\"topic\":\"Topic\",\"keyKnowledge\":[\"Loop\"],\"homeworkBrief\":\"Code a loop\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "blank-session-topic",
+      "finding": "R40-01",
+      "status": "FAIL",
+      "detail": "Invalid courses accepted HTTP 200; saved=[{\"courseCode\":\"PTA\",\"courseName\":\"Synthetic PTA\",\"description\":\"R40 fixture\",\"sessions\":[{\"sessionNumber\":1,\"topic\":\"\",\"keyKnowledge\":[\"Loop\"],\"homeworkBrief\":\"Code a loop\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "malformed-quicktag-tags",
+      "finding": "R40-01",
+      "status": "FAIL",
+      "detail": "Invalid quickTags accepted HTTP 200; saved=[{\"category\":\"attitude\",\"categoryName\":\"Attitude\",\"tags\":[]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "zalo-invalid-row-silently-dropped",
+      "finding": "R40-01",
+      "status": "FAIL",
+      "detail": "Invalid zaloTemplates accepted HTTP 200; saved=[{\"id\":\"Z1\",\"name\":\"Z1\",\"template\":\"Class {{className}} learned {{topic}}\"}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "rubric-negative-session",
+      "finding": "R40-01",
+      "status": "FAIL",
+      "detail": "Invalid rubrics accepted HTTP 200; saved=[{\"rubricId\":\"R40-R\",\"courseCode\":\"PTA\",\"sessionNumber\":1,\"assignmentTitle\":\"Loop\",\"assignmentPrompt\":\"Write a loop\",\"maxTotalScore\":100,\"criteria\":[{\"criterionId\":\"C1\",\"name\":\"C1\",\"maxPoints\":40,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"},{\"criterionId\":\"C2\",\"name\":\"C2\",\"maxPoints\":60,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "bad-session--1",
+      "finding": "R40-01",
+      "status": "FAIL",
+      "detail": "Invalid courses accepted HTTP 200; saved=[{\"courseCode\":\"PTA\",\"courseName\":\"Synthetic PTA\",\"description\":\"R40 fixture\",\"sessions\":[{\"sessionNumber\":1,\"topic\":\"Topic\",\"keyKnowledge\":[\"Loop\"],\"homeworkBrief\":\"Code a loop\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "bad-session-0",
+      "finding": "R40-01",
+      "status": "FAIL",
+      "detail": "Invalid courses accepted HTTP 200; saved=[{\"courseCode\":\"PTA\",\"courseName\":\"Synthetic PTA\",\"description\":\"R40 fixture\",\"sessions\":[{\"sessionNumber\":1,\"topic\":\"Topic\",\"keyKnowledge\":[\"Loop\"],\"homeworkBrief\":\"Code a loop\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "bad-session-0.2",
+      "finding": "R40-01",
+      "status": "FAIL",
+      "detail": "Invalid courses accepted HTTP 200; saved=[{\"courseCode\":\"PTA\",\"courseName\":\"Synthetic PTA\",\"description\":\"R40 fixture\",\"sessions\":[{\"sessionNumber\":0,\"topic\":\"Topic\",\"keyKnowledge\":[\"Loop\"],\"homeworkBrief\":\"Code a loop\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "duplicate-session-id",
+      "finding": "R40-02",
+      "status": "FAIL",
+      "detail": "Invalid courses accepted HTTP 200; saved=[{\"courseCode\":\"PTA\",\"courseName\":\"Synthetic PTA\",\"description\":\"R40 fixture\",\"sessions\":[{\"sessionNumber\":1,\"topic\":\"Topic\",\"keyKnowledge\":[\"Loop\"],\"homeworkBrief\":\"Code a loop\"},{\"sessionNumber\":1,\"topic\":\"Conflicting topic\",\"keyKnowledge\":[\"Loop\"],\"homeworkBrief\":\"Code a loop\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "duplicate-criterion-id",
+      "finding": "R40-02",
+      "status": "FAIL",
+      "detail": "Invalid rubrics accepted HTTP 200; saved=[{\"rubricId\":\"R40-R\",\"courseCode\":\"PTA\",\"sessionNumber\":1,\"assignmentTitle\":\"Loop\",\"assignmentPrompt\":\"Write a loop\",\"maxTotalScore\":100,\"criteria\":[{\"criterionId\":\"C1\",\"name\":\"C1\",\"maxPoints\":40,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"},{\"criterionId\":\"C1\",\"name\":\"C2\",\"maxPoints\":60,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "duplicate-quicktag-id",
+      "finding": "R40-02",
+      "status": "FAIL",
+      "detail": "Invalid quickTags accepted HTTP 200; saved=[{\"category\":\"attitude\",\"categoryName\":\"Attitude\",\"tags\":[{\"id\":\"T1\",\"label\":\"Participates\",\"sentiment\":\"positive\",\"hint\":\"Participates in class\"},{\"id\":\"T1\",\"label\":\"Opposite\",\"sentiment\":\"constructive\",\"hint\":\"Participates in class\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "duplicate-category-id",
+      "finding": "R40-02",
+      "status": "FAIL",
+      "detail": "Invalid quickTags accepted HTTP 200; saved=[{\"category\":\"attitude\",\"categoryName\":\"Attitude\",\"tags\":[{\"id\":\"T1\",\"label\":\"Participates\",\"sentiment\":\"positive\",\"hint\":\"Participates in class\"}]},{\"category\":\"attitude\",\"categoryName\":\"Attitude\",\"tags\":[{\"id\":\"T1\",\"label\":\"Participates\",\"sentiment\":\"positive\",\"hint\":\"Participates in class\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "duplicate-zalo-id",
+      "finding": "R40-02",
+      "status": "FAIL",
+      "detail": "Invalid zaloTemplates accepted HTTP 200; saved=[{\"id\":\"Z1\",\"name\":\"Z1\",\"template\":\"Class {{className}} learned {{topic}}\"},{\"id\":\"Z1\",\"name\":\"Z1\",\"template\":\"Conflicting template\"}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "invalid-points--5",
+      "finding": "R40-03",
+      "status": "FAIL",
+      "detail": "Invalid rubrics accepted HTTP 200; saved=[{\"rubricId\":\"R40-R\",\"courseCode\":\"PTA\",\"sessionNumber\":1,\"assignmentTitle\":\"Loop\",\"assignmentPrompt\":\"Write a loop\",\"maxTotalScore\":100,\"criteria\":[{\"criterionId\":\"C1\",\"name\":\"C1\",\"maxPoints\":1,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"},{\"criterionId\":\"C2\",\"name\":\"C2\",\"maxPoints\":99,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "invalid-points-0",
+      "finding": "R40-03",
+      "status": "FAIL",
+      "detail": "Invalid rubrics accepted HTTP 200; saved=[{\"rubricId\":\"R40-R\",\"courseCode\":\"PTA\",\"sessionNumber\":1,\"assignmentTitle\":\"Loop\",\"assignmentPrompt\":\"Write a loop\",\"maxTotalScore\":100,\"criteria\":[{\"criterionId\":\"C1\",\"name\":\"C1\",\"maxPoints\":1,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"},{\"criterionId\":\"C2\",\"name\":\"C2\",\"maxPoints\":99,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "invalid-points-NaN",
+      "finding": "R40-03",
+      "status": "FAIL",
+      "detail": "Invalid rubrics accepted HTTP 200; saved=[{\"rubricId\":\"R40-R\",\"courseCode\":\"PTA\",\"sessionNumber\":1,\"assignmentTitle\":\"Loop\",\"assignmentPrompt\":\"Write a loop\",\"maxTotalScore\":100,\"criteria\":[{\"criterionId\":\"C1\",\"name\":\"C1\",\"maxPoints\":1,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"},{\"criterionId\":\"C2\",\"name\":\"C2\",\"maxPoints\":99,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "invalid-points-null",
+      "finding": "R40-03",
+      "status": "FAIL",
+      "detail": "Invalid rubrics accepted HTTP 200; saved=[{\"rubricId\":\"R40-R\",\"courseCode\":\"PTA\",\"sessionNumber\":1,\"assignmentTitle\":\"Loop\",\"assignmentPrompt\":\"Write a loop\",\"maxTotalScore\":100,\"criteria\":[{\"criterionId\":\"C1\",\"name\":\"C1\",\"maxPoints\":1,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"},{\"criterionId\":\"C2\",\"name\":\"C2\",\"maxPoints\":99,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "invalid-points-true",
+      "finding": "R40-03",
+      "status": "FAIL",
+      "detail": "Invalid rubrics accepted HTTP 200; saved=[{\"rubricId\":\"R40-R\",\"courseCode\":\"PTA\",\"sessionNumber\":1,\"assignmentTitle\":\"Loop\",\"assignmentPrompt\":\"Write a loop\",\"maxTotalScore\":100,\"criteria\":[{\"criterionId\":\"C1\",\"name\":\"C1\",\"maxPoints\":1,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"},{\"criterionId\":\"C2\",\"name\":\"C2\",\"maxPoints\":99,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "round-positive-to-zero",
+      "finding": "R40-03",
+      "status": "FAIL",
+      "detail": "Invalid rubrics accepted HTTP 200; saved=[{\"rubricId\":\"R40-R\",\"courseCode\":\"PTA\",\"sessionNumber\":1,\"assignmentTitle\":\"Loop\",\"assignmentPrompt\":\"Write a loop\",\"maxTotalScore\":100,\"criteria\":[{\"criterionId\":\"C1\",\"name\":\"C1\",\"maxPoints\":0,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"},{\"criterionId\":\"C2\",\"name\":\"C2\",\"maxPoints\":100,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"}]}]\n\n200 !== 400\n"
+    },
+    {
+      "id": "json-overflow-infinity",
+      "finding": "R40-03",
+      "status": "FAIL",
+      "detail": "Overflow accepted 200\n\n200 !== 400\n"
+    },
+    {
+      "id": "stale-two-client-save",
+      "finding": "R40-04",
+      "status": "FAIL",
+      "detail": "Both writes succeeded; final=[{\"courseCode\":\"PTA\",\"courseName\":\"Synthetic PTA\",\"description\":\"Teacher B revision\",\"sessions\":[{\"sessionNumber\":1,\"topic\":\"Topic\",\"keyKnowledge\":[\"Loop\"],\"homeworkBrief\":\"Code a loop\"}]}]"
+    },
+    {
+      "id": "approved-verified-preserved-config-and-stop",
+      "finding": null,
+      "status": "PASS",
+      "detail": {
+        "homework": 2,
+        "spck": 2,
+        "byteEquivalentRows": true
+      }
+    },
+    {
+      "id": "queue-pending-stop-serial-preserves",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "sse-final-status-is-idle",
+      "finding": "R40-08",
+      "status": "FAIL",
+      "detail": "Last emitted status={\"isRunning\":true,\"isStopped\":false,\"currentTask\":null,\"pendingCount\":0,\"completedCount\":2,\"failedCount\":0,\"tasks\":[{\"id\":\"R40-first\",\"jobType\":\"CUSTOM\",\"description\":\"Synthetic\",\"status\":\"COMPLETED\",\"createdAt\":\"2026-10-21T07:58:46.520Z\"},{\"id\":\"R40-second\",\"jobType\":\"CUSTOM\",\"description\":\"Synthetic\",\"status\":\"CANCELLED\",\"createdAt\":\"2026-10-21T07:58:46.520Z\"},{\"id\":\"R40-idle\",\"jobType\":\"CUSTOM\",\"description\":\"Synthetic idle\",\"status\":\"COMPLETED\",\"createdAt\":\"2026-10-21T07:58:46.521Z\"}]}; actual idle=true\n\ntrue !== false\n"
+    },
+    {
+      "id": "sse-live-and-cleanup-60-connections",
+      "finding": null,
+      "status": "PASS",
+      "detail": {
+        "connections": 60,
+        "listenersBefore": [
+          0,
+          0
+        ],
+        "listenersAfter": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "id": "phase5-batch-halts-next-student",
+      "finding": "R40-05",
+      "status": "FAIL",
+      "detail": "Next student processed after Stop: {\"result\":{\"classId\":\"R40-BATCH\",\"classCode\":\"R40-BATCH\",\"sessionId\":\"R40-BATCH_SESS_1\",\"totalCandidates\":2,\"savedCount\":0,\"verifiedCount\":0,\"failedCount\":2,\"results\":[{\"submissionId\":\"R40-BATCH-1\",\"studentId\":\"R40-BS-1\",\"fullName\":\"R40-BS-1\",\"decision\":\"GRADE\",\"effectiveScore\":80,\"success\":false,\"verified\":false,\"error\":\"R40_BROWSER_BOUNDARY_AFTER_STOP\"},{\"submissionId\":\"R40-BATCH-2\",\"studentId\":\"R40-BS-2\",\"fullName\":\"R40-BS-2\",\"decision\":\"GRADE\",\"effectiveScore\":80,\"success\":false,\"verified\":false,\"error\":\"R40_BROWSER_BOUNDARY_AFTER_STOP\"}]},\"second\":{\"status\":\"FAILED\"},\"touched\":3}\n+ actual - expected\n\n+ 'FAILED'\n- 'APPROVED'\n"
+    },
+    {
+      "id": "launcher-windows-npm-failure-detected",
+      "finding": "R40-06",
+      "status": "FAIL",
+      "detail": "npm install exit=37 but launcher continued; shell exit=0"
+    },
+    {
+      "id": "launcher-local-bind-and-quoted-cwd",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "launcher-windows-env-preflight-spaces",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "ui-add-edit-delete-session",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "ui-inflight-edit-preserved",
+      "finding": "R40-07",
+      "status": "FAIL",
+      "detail": "Successful older response overwrote newer unsaved edit\n+ actual - expected\n\n+ 'First submitted name'\n- 'Second unsaved name'\n"
+    },
+    {
+      "id": "ui-drawer-control-stop-resume",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "ui-delete-add-criterion-unique",
+      "finding": "R40-02",
+      "status": "FAIL",
+      "detail": "Saved duplicate criteria: [{\"criterionId\":\"C2\",\"name\":\"C2\",\"maxPoints\":60,\"description\":\"Evidence\",\"expectedSnippetOrConcept\":\"for\"},{\"criterionId\":\"C2\",\"name\":\"Tiêu chí C2\",\"maxPoints\":40,\"description\":\"Mô tả yêu cầu đạt điểm tối đa...\",\"expectedSnippetOrConcept\":\"Từ khóa code hoặc khái niệm cần có\"}]\n\n1 !== 2\n"
+    },
+    {
+      "id": "client-bundle-does-not-import-secrets",
+      "finding": null,
+      "status": "PASS",
+      "detail": {
+        "bundleInputs": 1918,
+        "streamConnections": 1
+      }
+    }
+  ]
+}

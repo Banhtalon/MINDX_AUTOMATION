@@ -1,0 +1,1642 @@
+{
+  "round": 28,
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round29-20261020T203838Z-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+  "checkedAt": "2026-10-20T20:41:41.896Z",
+  "method": "Direct unmodified product import through tsx; libwebp/sharp full pixel decode oracle for WebP; explicit PDF object graphs, no independent PDF rendering.",
+  "harnessSha256": "f014b15bee33afb2e8490be091e43ffc0ce1346093d26151f07a8e9812b1ae6d",
+  "total": 163,
+  "passed": 163,
+  "failed": 0,
+  "results": [
+    {
+      "id": "R27-01-valid-2x3-gradient-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjIAAABXRUJQVlA4ICYAAACQAQCdASoCAAMABgCIJaACdAEOUsAA/VHLK5astRDkfrhbLJwAAA=="
+    },
+    {
+      "id": "R27-01-valid-2x3-gradient-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjoAAABXRUJQVlA4IC4AAADwAQCdASoCAAMAAgA2JaACdLoAAwkG/ewA/tD/pkRN/+q+ILaja//wG6+LV/AA"
+    },
+    {
+      "id": "R27-01-valid-2x3-gradient-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkwAAABXRUJQVlA4IEAAAABwAgCdASoCAAMAAIAIJaACdLoB+AH6AAMyrEZgAP77JzD/qEefXepWR/LdVf/ln7B3t3/LQv/w4+owoP/C/gAA"
+    },
+    {
+      "id": "R27-01-valid-2x3-gradient-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRj4AAABXRUJQVlA4TDEAAAAvAYAAAC9AkG2bYth2lRNk24amsP0E2bYphm2n/PzHecQ+iH0QEAikIYVYZjmi/6EBAA=="
+    },
+    {
+      "id": "R27-01-valid-2x3-noise-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjwAAABXRUJQVlA4IDAAAACwAQCdASoCAAMABgCIJagCdAEOZzdAAM3dpt+smAN1HigUyhd+3Ot/DeYgaU9wAAA="
+    },
+    {
+      "id": "R27-01-valid-2x3-noise-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkwAAABXRUJQVlA4IEAAAABwAgCdASoCAAMAAgA2JagCdGuAwQD1/wPQ7YhAAM4saJV4M3NwIfoUuncbjPykTZgmUfTX/EUo/58X1/5KcRgA"
+    },
+    {
+      "id": "R27-01-valid-2x3-noise-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRmoAAABXRUJQVlA4IF4AAADwAwCdASoCAAMAAIAIJagCdLoBJgP4BhAH8A9v+7AP0AHmAGZViQgAAM4/6/+Y/+QP8T70/4PxMd14+eX/cCx/5NMVkXfNkfuYzV//jpEgfv/4sEaNN/+o2f+oPAAA"
+    },
+    {
+      "id": "R27-01-valid-2x3-noise-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkwAAABXRUJQVlA4TD8AAAAvAYAAAC9AFmCis2/S6UQQQz6KApCBoqihrkLKsONJJm1joE7K/vmb3nmY/1gyPFB/1VADAgHKWLHBAxH9j+4A"
+    },
+    {
+      "id": "R27-01-valid-2x3-checker-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjYAAABXRUJQVlA4ICoAAACQAQCdASoCAAMABgCIJaQAAudLLQAA/PrBZRUVodYh43y/36ZnIYAAAAA="
+    },
+    {
+      "id": "R27-01-valid-2x3-checker-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjoAAABXRUJQVlA4IC4AAADQAQCdASoCAAMAAgA2JaQADqVTMqxGYAD+yrwI/iWOd/N61lM8Yo4zPy34ngAA"
+    },
+    {
+      "id": "R27-01-valid-2x3-checker-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkgAAABXRUJQVlA4IDwAAAAQAgCdASoCAAMAAIAIJaQADqAPwdNCld8AAP77ZP/w/fbH/9tggf7e//8xHOEGlFpHXvYmnf9Goo3wAAA="
+    },
+    {
+      "id": "R27-01-valid-2x3-checker-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiAAAABXRUJQVlA4TBQAAAAvAYAAAA8w//M///MfeFiBiP5HAQ=="
+    },
+    {
+      "id": "R27-01-valid-2x3-alpha-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRlYAAABXRUJQVlA4WAoAAAAQAAAAAQAAAgAAQUxQSAcAAAAAAClHcI63AFZQOCAoAAAAkAEAnQEqAgADAAYAiCWgAnQA8UAAAP1Qkpx7Cuk/U/0VJxBR0AAAAA=="
+    },
+    {
+      "id": "R27-01-valid-2x3-alpha-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRmQAAABXRUJQVlA4WAoAAAAQAAAAAQAAAgAAQUxQSAcAAAAAAClHcI63AFZQOCA2AAAA8AEAnQEqAgADAAIANiWgAnS6AAKzEa4AAP68nmHxf+bd9YC6Q8X/cHLlxBRl/7FnLYEKAAAA"
+    },
+    {
+      "id": "R27-01-valid-2x3-alpha-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRnQAAABXRUJQVlA4WAoAAAAQAAAAAQAAAgAAQUxQSAcAAAAAAClHcI63AFZQOCBGAAAAcAIAnQEqAgADAACACCWgAnS6AfgB+gADMqszQAD++VN//lMxB4vnsnS6vEjDDdXzv8//ln7B3t3/LQv/w4+owoP/C/gAAA=="
+    },
+    {
+      "id": "R27-01-valid-2x3-alpha-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkAAAABXRUJQVlA4TDQAAAAvAYAAEC9AIEAZ60LYhCDbNjSF7ScQoOhCeOu8WDDFkfQvgO7tW7VvFQQCaUghllmO6H9o"
+    },
+    {
+      "id": "R27-01-valid-9x17-gradient-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRoYAAABXRUJQVlA4IHoAAADQAwCdASoJABEAP1WSv1YxqiajsAgCMCqJbACdH8ACaoxPkLOOA0AA9izvIequFdtLYBvX8CAUEpcASeNQKH0AeuJCzkxDjXnAUhMC13/THEbIP9vtGP03TilkytAzkMebBW+DF+rInxf/g7voSP/Q7vrR34EQPjwAAA=="
+    },
+    {
+      "id": "R27-01-valid-9x17-gradient-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRtYAAABXRUJQVlA4IMoAAADQBACdASoJABEAPpU8mEeloyKhMAgAsBKJbACdMoMYGo7fsAR1wSCAtS1UrkkOYAD2unI4HHQ1I26MvLTp6X1VXqCXBOzYlAUtZifoA7nWCoTNrJqDvbP6bm1WPZ8yQpzsGXokuVmNy9dl6eJGAeAv/X/EoHlUDX468IXCHuUb24bQUyP/jAb/B8xaswp+FaP7OTOag3/z/zkSQ1WDebIG+bnG/tEJ0H/rBQ/SH/yQWff/5MOpD/5ILPv/8mGG6tf9nhuvr/2bAAAA"
+    },
+    {
+      "id": "R27-01-valid-9x17-gradient-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRlQBAABXRUJQVlA4IEgBAACwCACdASoJABEAPhkIg0EhBgEABABhLYATplCOBfgQzO1AP6rfgHkzexL+rv9J9UlcgGQgfkBPT/6r9oHSWf3EcktEMuI4SM7ZvizKGgAA/q38cfXmNtXsvoZ9ljMX8M3/fEifLoPx+Ff/9T0APog9yfw/7au5Vf9RM//Ktl7/7f9PmFjP275Ulmw+v5kYF4v5XP0g/8XCtTTtKt//yGH0L5ZB9fJpS832j8hn1v4g+XTuxfxKFxmc6HiwpK1rp9J+JTLljOH98lgKw7V9//BeQSD3ujuZnoB/+L8NONxmf1WQwZndtDUfYzAjeb4OIn9SYQh4WhY2E+H17l/hLNhfPm7+P/7qC+EDX4/11vX/xz7hyZs3/+WYfsvxwR//OLn/9kr2qP9Uz918z9o+ptwP+Uz918z9o+pthXmYk/++QiGb0//fFgAA"
+    },
+    {
+      "id": "R27-01-valid-9x17-gradient-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRioAAABXRUJQVlA4TB4AAAAvCAAEAM1VIKL/AbJsJIaDOITzp/v151memsiGkTs="
+    },
+    {
+      "id": "R27-01-valid-9x17-noise-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRpQAAABXRUJQVlA4IIgAAACQAwCdASoJABEAP1WSv1YxqiajsAgCMCqJbACdEcAAML7IpzeoAMkMvBD9CQTiWWrUuRYTA3Jm0N2oqHAvtA7pwQu6fkRyigpt4ljkscJ/A7x2p6N7WfCWRHMEdjNtAUSWByQwV8WTjJ4j54MUaVpyORmVSeJDKuXS8oPsEX9pG0PMPv7SJQAA"
+    },
+    {
+      "id": "R27-01-valid-9x17-noise-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRvAAAABXRUJQVlA4IOQAAACwBQCdASoJABEAPpU6mEeloyKhMAgAsBKJbACdMoMYJgA0gD2AP0A6w/yZiZTEz9Qw1huS8FAA4Y1d/rzyggqzJLutP2q/JPYizZPL/3Zl8uja2ewP6+JgqC1YnuXJVT7sEcoinubtJ32VeobrHBE0CEdkl+rzXaGOPX80Ra795ZEdlkwyhuX6F+k//GQ8DQC1nnP/5OTEE/S2mONO79KfyYVAJTCxJUpFaWpSHk8wiZd3opERn9jkxUeojqYS/6APan/tf/857Pj3l/++TI6h7i7f/3kyOoe4nwpelUodHRmAAAA="
+    },
+    {
+      "id": "R27-01-valid-9x17-noise-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRnQBAABXRUJQVlA4IGgBAADQCgCdASoJABEAPhkIg0EhBgEABABhLYATplCOBtgHCBdgHqAf2b1AP4B0gHAAfoB6IH+A/gHwAfqr6IlyArEDESfwz9mL8A71X1Dv6v+V/GAfpWPGZYN+PJC1S2m0QAD4+fpCTfPKQAp0SyXmx/lCR7P/yq7tlntwqJprVPS//xRstzc3sgssHrK/v8jRrmLiewz9TPKnTn0GMK/Zu7pt3jv6ugqdc1/4fG8psqPlvbuHU87K/I+INY3/+cj5CJlph8dv/onM//2/IW7Mp+ONmMCd0emthuRz/fGWuxbX+DOQrZILsJPwxKd1Hf/7pn/jffdDKBNv7rQJU/3nP146RjpX/wz6Fdkr//pZ7FMCo5gvMQHYnTQ4I/eXlhDc5NZ9iFeA0Aojtm0wpfpen0VfP1j/xWjvL/8V/49reXpjbhz5//uIV3Nuf1nPx/9SlFkshC+kH/6lKLJZCCqx9u8eKrH27xUAAAA="
+    },
+    {
+      "id": "R27-01-valid-9x17-noise-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRoICAABXRUJQVlA4THYCAAAvCAAEAMfkNgAAwznfx7bTpfQGGTsDOCltm2+t4UYAQFP5tn/25EYeoWN0uKbO0GRztG275zAAAEP5bNu23QbN0AxN2Ba27bq3/+c//CLfTf+9eACpXwTHbTcw9d/2Pd3cyTRzbWd2efSgoexkfrCJu435vWEEOQO3IZv6ioC3m0MiLmpAyOtppEgPyuF7JpoYly3Lv99J0rD2T/S+Ug4XK9hWcC5FSpKj377gEAeWFPaTut9ftImP8pYbG3S0goT9mYvdXn77tNHdx3fTia6U2AtWejt5KzT5ewR3ZXnACxslMCpDYJ8ywxEQgJ6AGKOGIRNCmYh3pe/e4eKX4OpMiJrq/ecenA5C1IQuJfK6CdAk54kEHzpJ2izYEoW/OrOvkYmExG0/IE4qXlsCQO9iw0k+NQCCTKLLO1cIo6gexAgtdFzgr/GBgYOGeLw5/WSEjh6mpvZ3ymOfpZqVlncMGf+1DCzIqH0uRgzR0u0aBatBlLfSfm46YJFZUJcWqS/elh8QonKq1kiI/BlQA/z12AcVhKpJyIu01rBSFC8mJ7wYIhsl4EqbI4ROgGgWUZ8T/ALgc6KoIiedKgLmmE9Aa/XSEAUl49vHYx1hUqmpKegkrNK1NUAMAIBgMtu2bdu2bWfbtt3pEf2PaHEr7Y4tJrWKwkmX+PG0cMzj2MzidzV1bn/59/XyGTPTbT92DCilBbGWoZwxEv9Yz2pj/bAlvGId8VdC/UDtW3XndNBuRvM5gpeJbwpS7fCpdUgCv+2WDr7uz6u4De6eDwSBV0wvxgFUGgQiybewuv9CHomz/zZ38vax5OHapV/qTUUTtOZHlv0ElOk="
+    },
+    {
+      "id": "R27-01-valid-9x17-checker-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRnwAAABXRUJQVlA4IHAAAABwBACdASoJABEAP1WWv1WxqyajMAgCMCqJaQAEPJ/QD8AOr/8wAVSbAG2AAADJMbxM+wQV0tHFvmHFkzlSty932F+TbMOLJnKlbl7vsL8m2YcWTOVK3L3fYX5NsyAfznz/zn3xNaMf/nPv/0gAAAAA"
+    },
+    {
+      "id": "R27-01-valid-9x17-checker-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRowAAABXRUJQVlA4IIAAAAAQBQCdASoJABEAPpU+mEelo6KhMAgAsBKJaQAQoBcADCAv0n+AfgB1f/mACqTYA2wAAMkuLvcOFWqmwVOKM/paU4p2hS53bhX7xmNkf0szMan8SapnGkz0/Q7D0szMan8SapnGkz0/Q7D0tLz/oef/Ofu9//Ny/+c/f75btIAAAA=="
+    },
+    {
+      "id": "R27-01-valid-9x17-checker-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRpwAAABXRUJQVlA4IJAAAABQBQCdASoJABEAPhkKhEEhBgEABABhLSACFAP0AugD8APwAY4F+AfgB0//mACqTr9aKS4A+fowE2SLrfWbe/DpstDnM58KkwyQk/YjIyzAXdQZZWVgiTo60VeuVhdQ32p8DW4gVf42b8p7p6ZM4ur+arMlbE7lNLOZz4ff/9rD1//VS6//2sPX/9VP+XtQAAA="
+    },
+    {
+      "id": "R27-01-valid-9x17-checker-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRi4AAABXRUJQVlA4TCIAAAAvCAAEAA8w//M///MfeCDIttkgJ3nTG0T0n2CSptqOGXke"
+    },
+    {
+      "id": "R27-01-valid-9x17-alpha-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRsAAAABXRUJQVlA4WAoAAAAQAAAACAAAEAAAQUxQSBcAAAABuQpE9D9ApG0zO1My/6JOjyMmIKnJHQBWUDggggAAABAEAJ0BKgkAEQA/VZK+VbGqJqMwCAIwKolsAJ0ygAK11cVK+iw1+I1AAMsoF2eAz8QCaGpq4lpVRFibdT7bXV+6sjAzm1C4Ci0QE29nQsEAjbY5Ulbv5R3PUaUY+oPb+Wchi61sOmouPfolKX/wdt/kqdv/Q7b/Iezf7CMJ+IwAAAA="
+    },
+    {
+      "id": "R27-01-valid-9x17-alpha-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRg4BAABXRUJQVlA4WAoAAAAQAAAACAAAEAAAQUxQSBcAAAABuQpE9D9ApG0zO1My/6JOjyMmIKnJHQBWUDgg0AAAABAFAJ0BKgkAEQA+lTqYR6WjIqEwCACwEolsAJ0ygxggsDSVf1u624pcwj12NHGeI0AAziyYFKX/vuBOn3Y1Bi4fngaRv+TmfkuN+x1CmrtJObkW504CJLUlThaK2gMVtptks+ZIU52DL0SXKzIgOXFkuyTawm/+1/SONR9tcu+4fZv5MDtljY3k/+bM9MfNPnM5dgxY4/2cmc1Bv/vJQfIZ4ZaP/g4tlmLMzooahn/6o0On/5lB/f4vxI//MoP7/F84SL4K/9kMojub/seQAAA="
+    },
+    {
+      "id": "R27-01-valid-9x17-alpha-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRogBAABXRUJQVlA4WAoAAAAQAAAACAAAEAAAQUxQSBcAAAABuQpE9D9ApG0zO1My/6JOjyMmIKnJHQBWUDggSgEAAJAIAJ0BKgkAEQA+GQiDQSEGAQAEAGEtgBOmUI4D3AYIB/K/bA3ADeQPYT/XT+Aeq1bAD9AMhV/ICeu/0nlIP76NJjGpbEwxna7+fJuAAPw6780GfJiH2jdwdr50wge8M3/ewXbuJz/4/Cv/+p7tZ6IPS/+NvsPIfX/1JbzveFu/+7z/t8wsZ/ReKnPe3st0oPKdpN7O7Ab/fYublMP/8oCM2XedB/JpaAP2j9Nv658QfLp2B8DZZUDeh4s+eJ2y8IrPxNUUbXGdetwJ//0IT/4L8K592O/eBQpEfzENh5ru+nz7egOqwZ7ICpaKM+Kpi/zZ/HFNmbRCjB0aLCn4j+d58xel/9/ZXjylcnx3AF/EoyA//OE2e/e3If/5xc//skoq81/++Xq/v/+4c8tW0P/vl6v7//uHPHl/2am///dhf/s1N//+7CAAAA=="
+    },
+    {
+      "id": "R27-01-valid-9x17-alpha-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjgAAABXRUJQVlA4TCwAAAAvCAAEEM1VIKL/sYuI/gfIBCxWQQhVhNA/its9y1MjkE1DC+ckJZQJ2ze/AQ=="
+    },
+    {
+      "id": "R27-01-valid-31x18-gradient-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRi4BAABXRUJQVlA4ICIBAAAwBwCdASofABIAP1WSvlWxqiajMAgCMCqJbACdMoS2DQBjhyQOb/zkD1Af/++dF+BVFhceA0HBPddfIzbze6O5/0AA9hMCGF8r3YMUpHwfbbNuslPMXg543JcHQi2f9vEVr8x2cejoxXMmm1FgFCdVldIpITt3EqE7JhCKl+N4uQLEPKOKuKQKsouA9iykq70mXLK8T/l1EdsmoqZeM/EC8OnkLx1Qz3jZwfJnqhm8U2b3tAJeQ7RpHIBnJVW41AS06rtQ50rklaXyeNx/LC/Ez4RUN5MubqIL7Tsii+2+Rw6oCwPL2YjqgK9FQmv1mXCgyciZb34nujXmnbZzMH+Syd18rwSbVFGxJQtk54ktA/PdtpPCAtvpTvdeXXTKSeAAAA=="
+    },
+    {
+      "id": "R27-01-valid-31x18-gradient-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhACAABXRUJQVlA4IAQCAADwDQCdASofABIAPpU6mEeloyKhMAgAsBKJbACdMoMYQYB9gHuCcKf4DpAeX/5AH6Ae4D9AOhA/wH8A67PqQPRV/UD0r/2M+BT9jf2K9oT//3gFR1lrWOlxWdRYzlagflAesD0VRJyuhPyJX/xd6QAEP29DmY2GbIAA9rnSRDdGZjwhpiVuL86WbHqCJTHOb503KWVcGXfOQsvI/whfZAe5O2z+0UGtJXiIAukj2XiFK0bIeRofgTgff65xxmpueGqkyX+KZJ30d7xFfX7EsCMZFrZaMB5h/gmQ8yhHWHNY9kwhmkko3WbEhzidtPNyKsLrlZyuLQ+3ZqQUdqfMv2wuFpe66VeiqB/wHWIShKk1XSb6+z0dDqqveRHMI46+tKCN33hat6SDZCOPs2aH1W0LzgCO0EUZ229m/5bTARlk7ZSHVvZO9pTTx4cdLFg4H28r6EqeHjPJjZ73pEg60m306ONSDP701KyZ+mTWZnvODwki6Z7aL0hwcLtNqb7gwmbtcrPvvD/Jm7vvH/b/17X/Yvx5+ZSzXXvmW0KYaGLEu1WGlqxZBv0n4p1gYKQP2/6r1gYK2ltNsA+P/9r+ImVrzNsLEpyC2Sf9MdmNu3//9LnY+vfxiVDq+PbwPPB9lKfZwBFkKb9yJXsK+c7/3KT5Jr5zv7a4SYb35S/rThJhPHygAAA="
+    },
+    {
+      "id": "R27-01-truncate-31x18-gradient-false-73-1",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhACAABXRUJQVlA4IAMCAADwDQCdASofABIAPpU6mEeloyKhMAgAsBKJbACdMoMYQYB9gHuCcKf4DpAeX/5AH6Ae4D9AOhA/wH8A67PqQPRV/UD0r/2M+BT9jf2K9oT//3gFR1lrWOlxWdRYzlagflAesD0VRJyuhPyJX/xd6QAEP29DmY2GbIAA9rnSRDdGZjwhpiVuL86WbHqCJTHOb503KWVcGXfOQsvI/whfZAe5O2z+0UGtJXiIAukj2XiFK0bIeRofgTgff65xxmpueGqkyX+KZJ30d7xFfX7EsCMZFrZaMB5h/gmQ8yhHWHNY9kwhmkko3WbEhzidtPNyKsLrlZyuLQ+3ZqQUdqfMv2wuFpe66VeiqB/wHWIShKk1XSb6+z0dDqqveRHMI46+tKCN33hat6SDZCOPs2aH1W0LzgCO0EUZ229m/5bTARlk7ZSHVvZO9pTTx4cdLFg4H28r6EqeHjPJjZ73pEg60m306ONSDP701KyZ+mTWZnvODwki6Z7aL0hwcLtNqb7gwmbtcrPvvD/Jm7vvH/b/17X/Yvx5+ZSzXXvmW0KYaGLEu1WGlqxZBv0n4p1gYKQP2/6r1gYK2ltNsA+P/9r+ImVrzNsLEpyC2Sf9MdmNu3//9LnY+vfxiVDq+PbwPPB9lKfZwBFkKb9yJXsK+c7/3KT5Jr5zv7a4SYb35S/rThJhPHygAAA="
+    },
+    {
+      "id": "R27-01-truncate-31x18-gradient-false-73-2",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRg4CAABXRUJQVlA4IAICAADwDQCdASofABIAPpU6mEeloyKhMAgAsBKJbACdMoMYQYB9gHuCcKf4DpAeX/5AH6Ae4D9AOhA/wH8A67PqQPRV/UD0r/2M+BT9jf2K9oT//3gFR1lrWOlxWdRYzlagflAesD0VRJyuhPyJX/xd6QAEP29DmY2GbIAA9rnSRDdGZjwhpiVuL86WbHqCJTHOb503KWVcGXfOQsvI/whfZAe5O2z+0UGtJXiIAukj2XiFK0bIeRofgTgff65xxmpueGqkyX+KZJ30d7xFfX7EsCMZFrZaMB5h/gmQ8yhHWHNY9kwhmkko3WbEhzidtPNyKsLrlZyuLQ+3ZqQUdqfMv2wuFpe66VeiqB/wHWIShKk1XSb6+z0dDqqveRHMI46+tKCN33hat6SDZCOPs2aH1W0LzgCO0EUZ229m/5bTARlk7ZSHVvZO9pTTx4cdLFg4H28r6EqeHjPJjZ73pEg60m306ONSDP701KyZ+mTWZnvODwki6Z7aL0hwcLtNqb7gwmbtcrPvvD/Jm7vvH/b/17X/Yvx5+ZSzXXvmW0KYaGLEu1WGlqxZBv0n4p1gYKQP2/6r1gYK2ltNsA+P/9r+ImVrzNsLEpyC2Sf9MdmNu3//9LnY+vfxiVDq+PbwPPB9lKfZwBFkKb9yJXsK+c7/3KT5Jr5zv7a4SYb35S/rThJhPHyg"
+    },
+    {
+      "id": "R27-01-truncate-31x18-gradient-false-73-3",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRg4CAABXRUJQVlA4IAECAADwDQCdASofABIAPpU6mEeloyKhMAgAsBKJbACdMoMYQYB9gHuCcKf4DpAeX/5AH6Ae4D9AOhA/wH8A67PqQPRV/UD0r/2M+BT9jf2K9oT//3gFR1lrWOlxWdRYzlagflAesD0VRJyuhPyJX/xd6QAEP29DmY2GbIAA9rnSRDdGZjwhpiVuL86WbHqCJTHOb503KWVcGXfOQsvI/whfZAe5O2z+0UGtJXiIAukj2XiFK0bIeRofgTgff65xxmpueGqkyX+KZJ30d7xFfX7EsCMZFrZaMB5h/gmQ8yhHWHNY9kwhmkko3WbEhzidtPNyKsLrlZyuLQ+3ZqQUdqfMv2wuFpe66VeiqB/wHWIShKk1XSb6+z0dDqqveRHMI46+tKCN33hat6SDZCOPs2aH1W0LzgCO0EUZ229m/5bTARlk7ZSHVvZO9pTTx4cdLFg4H28r6EqeHjPJjZ73pEg60m306ONSDP701KyZ+mTWZnvODwki6Z7aL0hwcLtNqb7gwmbtcrPvvD/Jm7vvH/b/17X/Yvx5+ZSzXXvmW0KYaGLEu1WGlqxZBv0n4p1gYKQP2/6r1gYK2ltNsA+P/9r+ImVrzNsLEpyC2Sf9MdmNu3//9LnY+vfxiVDq+PbwPPB9lKfZwBFkKb9yJXsK+c7/3KT5Jr5zv7a4SYb35S/rThJhPHwA"
+    },
+    {
+      "id": "R27-01-truncate-31x18-gradient-false-73-5",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRgwCAABXRUJQVlA4IP8BAADwDQCdASofABIAPpU6mEeloyKhMAgAsBKJbACdMoMYQYB9gHuCcKf4DpAeX/5AH6Ae4D9AOhA/wH8A67PqQPRV/UD0r/2M+BT9jf2K9oT//3gFR1lrWOlxWdRYzlagflAesD0VRJyuhPyJX/xd6QAEP29DmY2GbIAA9rnSRDdGZjwhpiVuL86WbHqCJTHOb503KWVcGXfOQsvI/whfZAe5O2z+0UGtJXiIAukj2XiFK0bIeRofgTgff65xxmpueGqkyX+KZJ30d7xFfX7EsCMZFrZaMB5h/gmQ8yhHWHNY9kwhmkko3WbEhzidtPNyKsLrlZyuLQ+3ZqQUdqfMv2wuFpe66VeiqB/wHWIShKk1XSb6+z0dDqqveRHMI46+tKCN33hat6SDZCOPs2aH1W0LzgCO0EUZ229m/5bTARlk7ZSHVvZO9pTTx4cdLFg4H28r6EqeHjPJjZ73pEg60m306ONSDP701KyZ+mTWZnvODwki6Z7aL0hwcLtNqb7gwmbtcrPvvD/Jm7vvH/b/17X/Yvx5+ZSzXXvmW0KYaGLEu1WGlqxZBv0n4p1gYKQP2/6r1gYK2ltNsA+P/9r+ImVrzNsLEpyC2Sf9MdmNu3//9LnY+vfxiVDq+PbwPPB9lKfZwBFkKb9yJXsK+c7/3KT5Jr5zv7a4SYb35S/rThJhAA=="
+    },
+    {
+      "id": "R27-01-truncate-31x18-gradient-false-73-11",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRgYCAABXRUJQVlA4IPkBAADwDQCdASofABIAPpU6mEeloyKhMAgAsBKJbACdMoMYQYB9gHuCcKf4DpAeX/5AH6Ae4D9AOhA/wH8A67PqQPRV/UD0r/2M+BT9jf2K9oT//3gFR1lrWOlxWdRYzlagflAesD0VRJyuhPyJX/xd6QAEP29DmY2GbIAA9rnSRDdGZjwhpiVuL86WbHqCJTHOb503KWVcGXfOQsvI/whfZAe5O2z+0UGtJXiIAukj2XiFK0bIeRofgTgff65xxmpueGqkyX+KZJ30d7xFfX7EsCMZFrZaMB5h/gmQ8yhHWHNY9kwhmkko3WbEhzidtPNyKsLrlZyuLQ+3ZqQUdqfMv2wuFpe66VeiqB/wHWIShKk1XSb6+z0dDqqveRHMI46+tKCN33hat6SDZCOPs2aH1W0LzgCO0EUZ229m/5bTARlk7ZSHVvZO9pTTx4cdLFg4H28r6EqeHjPJjZ73pEg60m306ONSDP701KyZ+mTWZnvODwki6Z7aL0hwcLtNqb7gwmbtcrPvvD/Jm7vvH/b/17X/Yvx5+ZSzXXvmW0KYaGLEu1WGlqxZBv0n4p1gYKQP2/6r1gYK2ltNsA+P/9r+ImVrzNsLEpyC2Sf9MdmNu3//9LnY+vfxiVDq+PbwPPB9lKfZwBFkKb9yJXsK+c7/3KT5Jr5zv7a4SYb3AA=="
+    },
+    {
+      "id": "R27-01-valid-31x18-gradient-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkwDAABXRUJQVlA4IEADAAAwFQCdASofABIAPhkIg0EhBgEABABhLYATplCPTx8cAP1A3BEgXRN9u/FX+Ab9V/ANwB+gH8o9Q/+gfwDsAP65/jusA9Br9gPRs/Zn4J/0z/yv9J9xL+Z/fNeRudM7zetmTZ+waAB/CP5B+N35YZh7+ifkZkAcDr/Lecx+4/cZ7GvnP/Aflh9Af8c/lv98/Mn/Af//lH/0vIQ0BmwpGYqVh4ao/KSF3vY61iQzP0lmnOrAAP6tzTy4QVb5f3Q/v7TKT2sxDgJCCxLnNasQnjq6VfeVQlXTM2b3wYjn5U/Cif03tJkyCyP9KzYFB5GFnFpg417SiWW7IhBg4P//3bLFP0IutgP+Kl7R/KM/zYULWeLbDEB//5C938tBhcHZUN+ykysULH+4YLCvKYpWS/6QQo8gLH7kX2ell6uF0yRFc90JggyNkaPojWhc80N/wMhFajWrXtdYDS/K6ZedRoOezx/8Fr/33N1hzRyL6Ep8EJFarx+pROpkojDUpVdxYXrHo5/aAa38K6E8Qn/rmJL8COlO9YimRquVn/7pIW4ydUVamrw/cY0DZv4fDL1s1JaimL3SCGgCrOZ/AnSOLokqln1fsBgfzUzpmzbiIwOwPE+XOkm5fudi/6OtNrni1ioc27ak74IFhVGGb6kDcJt+7WUwt72wnyQ4AVPh3sI+t5czZwBt2EeO7QFRKLEqKjBCuEvn3npoKQM/0Sgbv5slV3Hu2pChOeTNUi6WpVRyKBJrWd71tB6Bn8NoawIJcwIh7//Lhh28ODR6l7znrLPLCdH/8ek/5c+x7TbH3/Y3u5Qrzaph6sJo1P7D+Hj+tckd0RFkztW2oL/nUvgOrrJ+z8IHoYk60JH7m1G7IRTHzkfYXaH9SAgQ2LDrvMtEAX+W3GdRD/Z1lsUbDhDr/E7uI+K9/+DX3VysPBycuul2Pe4rQMmHGfR/7dFXPxp8yDAf/26KufjT5kF/oBPlxq5MKxYn9PEUFcMq/pa3fuJQwbQ+7mz/AwdR//1Gnq9BoYH6juuJsh//z7pQxq8gIVBpioH/qgaagxOFyUyzwF71xVbOqTEqZxvJGXLuvfPvv/8CnZaHnoJyu//gU7KAAAAA"
+    },
+    {
+      "id": "R27-01-valid-31x18-gradient-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiwAAABXRUJQVlA4TB8AAAAvHkAEAM1lRP8DZNlIDAdxCOfP9+tPszw1MQENY3kDAA=="
+    },
+    {
+      "id": "R27-01-truncate-31x18-gradient-true-73-1",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRioAAABXRUJQVlA4TB4AAAAvHkAEAM1lRP8DZNlIDAdxCOfP9+tPszw1MQENY3k="
+    },
+    {
+      "id": "R27-01-truncate-31x18-gradient-true-73-2",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRioAAABXRUJQVlA4TB0AAAAvHkAEAM1lRP8DZNlIDAdxCOfP9+tPszw1MQENYwA="
+    },
+    {
+      "id": "R27-01-truncate-31x18-gradient-true-73-3",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRigAAABXRUJQVlA4TBwAAAAvHkAEAM1lRP8DZNlIDAdxCOfP9+tPszw1MQEN"
+    },
+    {
+      "id": "R27-01-truncate-31x18-gradient-true-73-5",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiYAAABXRUJQVlA4TBoAAAAvHkAEAM1lRP8DZNlIDAdxCOfP9+tPszw1MQ=="
+    },
+    {
+      "id": "R27-01-truncate-31x18-gradient-true-73-11",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiAAAABXRUJQVlA4TBQAAAAvHkAEAM1lRP8DZNlIDAdxCOfP9w=="
+    },
+    {
+      "id": "R27-01-valid-31x18-noise-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkwBAABXRUJQVlA4IEABAACwBwCdASofABIAP1WSvlYxqiYjsAgCMCqJbACsMoMrnT/6Gv//iTu43eyB0cLvBbg3wNMGy1vAAOU+13dkRr2X9dCtZyLAAMk4pnnCVjhuwYceuNOa4KJhtGdnNtnarzDn5uEriLw61y5cCopGXOtDzWCrPUyQ1TSn4kLr7l+81h/0zleYWOmvhtubo6gGnW7wtw5lyAEukwJ7sXRh6KNmI6U7pDGVFP8GzO+pOk909xjsaOYnvcmYwOPT8haT6kOagSrs2Qt/KgMvdQWNB09n4ZXwN0fnl/ytOx1yOoTpOvYukUPUe4oIYi8oS0Tq3O0BGwqA0IWKjdT1Fiy36iwLZR4Hk+x3YdZr+OfqnndF0rLLUP6C572S61GU7tHX/YMZj2PQiNDGzYR/hG78pEeTwGvwoYKzGlRr8a3Pv0AAAA=="
+    },
+    {
+      "id": "R27-01-valid-31x18-noise-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkICAABXRUJQVlA4IDYCAAAQDACdASofABIAPpU6mEeloyKhMAgAsBKJbACdMoPIOcN4EGA8uDoAc0z6gN4A/W72QOkb/byhBMgfAVRPEA4KPmXf5Pks+bPYC/VzqgfsB7HP6uDFYCl5GvxKY4LlhlJVxs4Xa9GVaIAA1ToT9DI9K9+ux0m6gwjs7kP+1FuqlCmfBGSrGIPMMhbnRtmotum3HHpppvsBpec4P5fAu+0Pf3swndbBp9V8rt7m6HFen/CenBROxCE6tmJbYK2nqatSRelgBtudSxL2JGhCzGrMWr9fUnp6I/Vy3GAMw5zJlFcb03XShIokxIOBHTxMaNjLDRVtPtZjyf8xvSxV4Gcu4EZVfDc1harA0J1H5ko+BWeDWXfo/cvLCOv8M5+u1y7SJ5mUTeFJ/tbuWs6q7T/9ulcjahaoYq3G4+Kzs8dSHs4JFDt9rEO4Uh1QvhLSxHh49w9sm97mPorMfmnshGn38nw48Vq5EkDZiTAwTouvNxMfz6w7+Bwk9wylZUFAfZ+a8Pml6vFsk92+pu/L6RYXhXJCGTe/cFvu8a+8sqyzHL6FSOfe6TdX2X4kstXxz/sSVOn7zxniiX/8bhA87SqfUCLvt4OqJhv5BEyFrwI7KXNlBJxRXTd5soJOM3i0H+4j0BPq9r/cR6An8fDwZy4c87zzFf6iCTlv+cvsgWjJuTyrXt5FU2cXmq5azmGmyUKBpybomix46Wjef+j+HseUwv2RF0demVMyj/7L7ysqZlH/qAAAAA=="
+    },
+    {
+      "id": "R27-01-truncate-31x18-noise-false-73-1",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkICAABXRUJQVlA4IDUCAAAQDACdASofABIAPpU6mEeloyKhMAgAsBKJbACdMoPIOcN4EGA8uDoAc0z6gN4A/W72QOkb/byhBMgfAVRPEA4KPmXf5Pks+bPYC/VzqgfsB7HP6uDFYCl5GvxKY4LlhlJVxs4Xa9GVaIAA1ToT9DI9K9+ux0m6gwjs7kP+1FuqlCmfBGSrGIPMMhbnRtmotum3HHpppvsBpec4P5fAu+0Pf3swndbBp9V8rt7m6HFen/CenBROxCE6tmJbYK2nqatSRelgBtudSxL2JGhCzGrMWr9fUnp6I/Vy3GAMw5zJlFcb03XShIokxIOBHTxMaNjLDRVtPtZjyf8xvSxV4Gcu4EZVfDc1harA0J1H5ko+BWeDWXfo/cvLCOv8M5+u1y7SJ5mUTeFJ/tbuWs6q7T/9ulcjahaoYq3G4+Kzs8dSHs4JFDt9rEO4Uh1QvhLSxHh49w9sm97mPorMfmnshGn38nw48Vq5EkDZiTAwTouvNxMfz6w7+Bwk9wylZUFAfZ+a8Pml6vFsk92+pu/L6RYXhXJCGTe/cFvu8a+8sqyzHL6FSOfe6TdX2X4kstXxz/sSVOn7zxniiX/8bhA87SqfUCLvt4OqJhv5BEyFrwI7KXNlBJxRXTd5soJOM3i0H+4j0BPq9r/cR6An8fDwZy4c87zzFf6iCTlv+cvsgWjJuTyrXt5FU2cXmq5azmGmyUKBpybomix46Wjef+j+HseUwv2RF0demVMyj/7L7ysqZlH/qAAAAA=="
+    },
+    {
+      "id": "R27-01-truncate-31x18-noise-false-73-2",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkACAABXRUJQVlA4IDQCAAAQDACdASofABIAPpU6mEeloyKhMAgAsBKJbACdMoPIOcN4EGA8uDoAc0z6gN4A/W72QOkb/byhBMgfAVRPEA4KPmXf5Pks+bPYC/VzqgfsB7HP6uDFYCl5GvxKY4LlhlJVxs4Xa9GVaIAA1ToT9DI9K9+ux0m6gwjs7kP+1FuqlCmfBGSrGIPMMhbnRtmotum3HHpppvsBpec4P5fAu+0Pf3swndbBp9V8rt7m6HFen/CenBROxCE6tmJbYK2nqatSRelgBtudSxL2JGhCzGrMWr9fUnp6I/Vy3GAMw5zJlFcb03XShIokxIOBHTxMaNjLDRVtPtZjyf8xvSxV4Gcu4EZVfDc1harA0J1H5ko+BWeDWXfo/cvLCOv8M5+u1y7SJ5mUTeFJ/tbuWs6q7T/9ulcjahaoYq3G4+Kzs8dSHs4JFDt9rEO4Uh1QvhLSxHh49w9sm97mPorMfmnshGn38nw48Vq5EkDZiTAwTouvNxMfz6w7+Bwk9wylZUFAfZ+a8Pml6vFsk92+pu/L6RYXhXJCGTe/cFvu8a+8sqyzHL6FSOfe6TdX2X4kstXxz/sSVOn7zxniiX/8bhA87SqfUCLvt4OqJhv5BEyFrwI7KXNlBJxRXTd5soJOM3i0H+4j0BPq9r/cR6An8fDwZy4c87zzFf6iCTlv+cvsgWjJuTyrXt5FU2cXmq5azmGmyUKBpybomix46Wjef+j+HseUwv2RF0demVMyj/7L7ysqZlH/qAA="
+    },
+    {
+      "id": "R27-01-truncate-31x18-noise-false-73-3",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkACAABXRUJQVlA4IDMCAAAQDACdASofABIAPpU6mEeloyKhMAgAsBKJbACdMoPIOcN4EGA8uDoAc0z6gN4A/W72QOkb/byhBMgfAVRPEA4KPmXf5Pks+bPYC/VzqgfsB7HP6uDFYCl5GvxKY4LlhlJVxs4Xa9GVaIAA1ToT9DI9K9+ux0m6gwjs7kP+1FuqlCmfBGSrGIPMMhbnRtmotum3HHpppvsBpec4P5fAu+0Pf3swndbBp9V8rt7m6HFen/CenBROxCE6tmJbYK2nqatSRelgBtudSxL2JGhCzGrMWr9fUnp6I/Vy3GAMw5zJlFcb03XShIokxIOBHTxMaNjLDRVtPtZjyf8xvSxV4Gcu4EZVfDc1harA0J1H5ko+BWeDWXfo/cvLCOv8M5+u1y7SJ5mUTeFJ/tbuWs6q7T/9ulcjahaoYq3G4+Kzs8dSHs4JFDt9rEO4Uh1QvhLSxHh49w9sm97mPorMfmnshGn38nw48Vq5EkDZiTAwTouvNxMfz6w7+Bwk9wylZUFAfZ+a8Pml6vFsk92+pu/L6RYXhXJCGTe/cFvu8a+8sqyzHL6FSOfe6TdX2X4kstXxz/sSVOn7zxniiX/8bhA87SqfUCLvt4OqJhv5BEyFrwI7KXNlBJxRXTd5soJOM3i0H+4j0BPq9r/cR6An8fDwZy4c87zzFf6iCTlv+cvsgWjJuTyrXt5FU2cXmq5azmGmyUKBpybomix46Wjef+j+HseUwv2RF0demVMyj/7L7ysqZlH/qAA="
+    },
+    {
+      "id": "R27-01-truncate-31x18-noise-false-73-5",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRj4CAABXRUJQVlA4IDECAAAQDACdASofABIAPpU6mEeloyKhMAgAsBKJbACdMoPIOcN4EGA8uDoAc0z6gN4A/W72QOkb/byhBMgfAVRPEA4KPmXf5Pks+bPYC/VzqgfsB7HP6uDFYCl5GvxKY4LlhlJVxs4Xa9GVaIAA1ToT9DI9K9+ux0m6gwjs7kP+1FuqlCmfBGSrGIPMMhbnRtmotum3HHpppvsBpec4P5fAu+0Pf3swndbBp9V8rt7m6HFen/CenBROxCE6tmJbYK2nqatSRelgBtudSxL2JGhCzGrMWr9fUnp6I/Vy3GAMw5zJlFcb03XShIokxIOBHTxMaNjLDRVtPtZjyf8xvSxV4Gcu4EZVfDc1harA0J1H5ko+BWeDWXfo/cvLCOv8M5+u1y7SJ5mUTeFJ/tbuWs6q7T/9ulcjahaoYq3G4+Kzs8dSHs4JFDt9rEO4Uh1QvhLSxHh49w9sm97mPorMfmnshGn38nw48Vq5EkDZiTAwTouvNxMfz6w7+Bwk9wylZUFAfZ+a8Pml6vFsk92+pu/L6RYXhXJCGTe/cFvu8a+8sqyzHL6FSOfe6TdX2X4kstXxz/sSVOn7zxniiX/8bhA87SqfUCLvt4OqJhv5BEyFrwI7KXNlBJxRXTd5soJOM3i0H+4j0BPq9r/cR6An8fDwZy4c87zzFf6iCTlv+cvsgWjJuTyrXt5FU2cXmq5azmGmyUKBpybomix46Wjef+j+HseUwv2RF0demVMyj/7L7ysqZlEA"
+    },
+    {
+      "id": "R27-01-truncate-31x18-noise-false-73-11",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjgCAABXRUJQVlA4ICsCAAAQDACdASofABIAPpU6mEeloyKhMAgAsBKJbACdMoPIOcN4EGA8uDoAc0z6gN4A/W72QOkb/byhBMgfAVRPEA4KPmXf5Pks+bPYC/VzqgfsB7HP6uDFYCl5GvxKY4LlhlJVxs4Xa9GVaIAA1ToT9DI9K9+ux0m6gwjs7kP+1FuqlCmfBGSrGIPMMhbnRtmotum3HHpppvsBpec4P5fAu+0Pf3swndbBp9V8rt7m6HFen/CenBROxCE6tmJbYK2nqatSRelgBtudSxL2JGhCzGrMWr9fUnp6I/Vy3GAMw5zJlFcb03XShIokxIOBHTxMaNjLDRVtPtZjyf8xvSxV4Gcu4EZVfDc1harA0J1H5ko+BWeDWXfo/cvLCOv8M5+u1y7SJ5mUTeFJ/tbuWs6q7T/9ulcjahaoYq3G4+Kzs8dSHs4JFDt9rEO4Uh1QvhLSxHh49w9sm97mPorMfmnshGn38nw48Vq5EkDZiTAwTouvNxMfz6w7+Bwk9wylZUFAfZ+a8Pml6vFsk92+pu/L6RYXhXJCGTe/cFvu8a+8sqyzHL6FSOfe6TdX2X4kstXxz/sSVOn7zxniiX/8bhA87SqfUCLvt4OqJhv5BEyFrwI7KXNlBJxRXTd5soJOM3i0H+4j0BPq9r/cR6An8fDwZy4c87zzFf6iCTlv+cvsgWjJuTyrXt5FU2cXmq5azmGmyUKBpybomix46Wjef+j+HseUwv2RF0demVMyj/4A"
+    },
+    {
+      "id": "R27-01-valid-31x18-noise-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRpYDAABXRUJQVlA4IIoDAACwFgCdASofABIAPhkIg0EhBgEABABhLYATplCQWfQOHP2J7k7QiQLqD/Afkz/Vd+u2UD/AepX/mf6r1OXqAfyv2AP1J9h39SfRO/YD4CP07/Zb2SKOH+IH7d5dd6LnCf6J+S+WL/I/7x+S38z1gn+m/kN7AcQf/EP6n+T3+d9wL+K8onxJ/M/yA/mf2Afwv+Mf07+wftv/V////0PsA9QH6Aewx+lg3CPRWk/RpEdCZ7xSnS+pDABWaH9s8VnAAPyfYQkSGFd2tBtAxlfmLf+P0Um+tdihNPl7A4T/5RsQ4idT8XrCdl/nQHDzF2rA3X+/vMsnIfNtImW9my452RQ6+AjW9EpnkSt17gstK2KX/4pdxhwBX7lbzMdXSHV6ZGbyolCXmVQI+PKjXabIwN5GGdzps0n//mntpa4b2k8I+Xyk7eQGM7CgeXygf95wPeL+3GeZJXrriw0frz5oIV+CbDf+zl8E8D3BqRE1/wuwx0MwNXrYVq/k1jv0H8tqhXrYO06epH78WXocfTEAwXTEAIaJnm/QmCNXu9Sor5AnfQlvd1vBzh20P/zo94fTcs8kOGupLWkv99sv3zZXRge+S83UlqJffCDBKaxbfM4YseY+qQCb8ZyZBtenZoVoGjv7ZzhkP1zMAuNY2mxqa0OYtA1p28jFOqbO//qhHNAHYeoCIHQXOeWe4yAwS9k+r/Z4pJl6PhHPckKlbCR6VtOrbpfirlFlWtRCTNJvqnJiDsIcjijqVjtXvNNDeR6Yhv/hES7CkHJAHj5BsuZqt5zksZ6TP3NDQ1hTUmcelfjkRJKwsu8zxEnZ1YtN1O80b96MR7DYiM6vrbGZFqdZpp+rLjuDp8A2RITkoSEF37eQPoEVJNdH4um/9GPggarFB7E85zn/FhkcbkT4fVrt/JKPoqqVTh3RmdVY71IBzj8dsYmmf2ZqHOkWbn2BijHortz/zLTC9z/Ks88GBMLtGf/me8xuftDRWGx8Oqh//mJccssDEyvuba4KVMz3UpndxBgKuZHHq4Um7AHk1sZJgx5LeqEPP5Xwlt8krsJvnBwsaVrGkKI6R0H4Tv0l/Wb38qFidG7DKES5dtKusf18WokhifYb1v4dmMn5lJzSRMZKvpRA240s5NbE5A4qKa/VzlAGCfsNDThg859/46vJIYj6ZTgv4+SQxH1H3fjyF82scSB7Wvqz0+XAAAA="
+    },
+    {
+      "id": "R27-01-valid-31x18-noise-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R27-01-truncate-31x18-noise-true-73-1",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R27-01-truncate-31x18-noise-true-73-2",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R27-01-truncate-31x18-noise-true-73-3",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R27-01-truncate-31x18-noise-true-73-5",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R27-01-truncate-31x18-noise-true-73-11",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRs4GAABXRUJQVlA4TMIGAAAvHkAEAFAIAABh27Zt27Zt27Zt27Zt27Zta0MCBAAEE72zbdscsm3btm3btm3btut32balAAAA4v/////////////rf6QI+m7f0yY0wPjTYRkiR5ZLKlU7Dhmp8jyl4NFv4ow/E3FzJv1s3rVHd5nubHjZec16z3GByC3HZcIGdUiheN9FZAUZ1MKO5z8XxeYGc86d8liLH22sa9pMEEPSi8hWYyJTbAf7kYB9yiAjIaLrwa0Moi7+f8/YSo8cgFH2sxPwGU8RvppYzSSwI7Y1JfNQFzYvlhkos+Rs/rUMECbhhupZDJ0Pu+tHrrL9BN69yuWP0Gb5nxB7EswHetLsFrF1bWnCSNwefu7E8rktc9OV3CPs5MZaatKCtxa7t5ofbGPcqsGp2VkxmMjGR25Pu8zCd82YjWxOAdu99uerU7NiZdl6eCv5XcZFkUkHp4PTu9yWXA4LnExtGtXKJWm75ua9eFU7S8dvLWKijZ5u4h/IQg0oOyqYklVOI8xHMIWm2EHk6dvDmp1GkniU1okrc9w2UjsbOnqmruf9xdFLFI2DfTMODTmdlMS533RDef5XGtSGZUuBniJ8zBTLVO4sTum27BeARJzW/BKfQtpKQUz2YIuYM8RDKszqlcKzFKWLZPfjzlCv3DixeQHgsijpoPWROTq5BP+cKe6ocMJ7xpBFAaF1tYeA9Nt8q9ULqYv9cJoRtdsJl9VsHain71eQEauWKgFUmDHkG0y3vGdqHw8Eq9Nz7KEzETZSJs0Btjci2pX0bIkJ1xRF3CJP09dfTQt2zZlf9HN2LhbFknnpczQlEzNRcKOh+ph9HVmgGcy+7qrg+T3sG/ON0m+8X2/fdcjudqxUcOt5zlpvj3ksmqSPP2AZgbrBYbWw0RKByyRBwWnOLQOP1/crr4W5mLBN56wQ0K1vzCu5Js3QihYRKBVYCb0fDN2fvR59nuQ7Bl3T42TQEry2p/uiqCMlaEvDM4c3Iyhx6ZOPIh8l8oLein5Q1HUWneiB5AL5yUfyOt6zpPZ36ED44LRMuS1MIMVRk9N18WwR7rfFY1V725CQNAjvIk178QDLL9frzMbjYnlLBY7IccMT+4vpSchVRvOoiNgrbCzpGgisAST2VVLXl2we3+sLVX/AbIe+CXbcRg2xc9WQr2ZWUR7shh9EhmU7kg4OJRSmdOpLBsqEE2NZxF1yDAagRtARriCeRf+y6tdn9J85AwPFHefqdbKZ9VOBHoc3ol05stkgrBloxUsyX9rN6Lh9U+mnnDal1RiMjYM2zhpWRMmTtcYkihhMJhjIvk0wPTkx1rllry9NwKz7RdaSMKuIIiwRZYZwI8YnzJKu3nPDrdueXrZKuMhyPXyW+kM17p3NPQjunCjVUI75JJHjHUhQb3CuTDB2rRyzHaD8I01Cnkigt/PpWKmHpev0AM2EHTu6B2PU5YASwT0JIIhPmNj5frflFQ0q2uRvfCpBWH2fM61hg0m9zD8FWIxrLJZUODjRV45C+TvjqYBzIFWSpnNmRiVbianXkhaKIe3yarxiDjoHBzpi84/qFxEIT+jQAJenQAJIjnDXIVCHPwtAfVPI1Njd1986os6pzHo9Lm8iUmoy5juyOg1+EsjUAfHUtdO48uxI8M1A3bAis3V0HOMfdcbcVnEpkQDKLbEIWVU40wypWex/CPb5a0UZMDhlN6Yd5SusN4c62jHyG4bfOMOgOMMBc0taLTA3HOIPTaxNi18BBUEZQwSc8VLGcjwqd7MtnBA529+gYpulNn/TdoQjjivwuZIlQUBGAia6DAAGzkXwCk4PTNplb+vVK4VmqftOibTfuwpk5gv+u3JAyuSf1ZMrjmuboCQtNEEZLdb/wfCwrYVdrS/rA0oee/htTlwJnABiDKcJRepFfcWaywlEAb2qAZkFAMaNp0Ycsfa3pA07CFNZAjfQwgkriFknFpaLdHdeQuYhTIaBUZRI0bc6vCbWAwoOHWzbxHniKptz43FgZRYAbUTPzmsOgNs/BDL5Ge4Ja4AgtjsBtYxzQw35Xszx2xeOvXKyxt0CfwNfNyT5X0CJP6Tk/diL8jGDbmz1jtKecQbXMdtopbV4J8YO9Ycfeb4hwxSGmO6mHeKnPh9+rgkTe2ZqCe2VUktO7dKe0JogV24jhSOIHSdWBQYfwx+mSQGQO3DK8ZsdaHXC6DciP1HSctMg1yhBa6J62qQ8wt5WKPV8u5Ao7y46orACAcRrtWvBm3yV/snsuPvCn/2sMm6jPZEJft7TorQT4fw7Ljjjm67O5sei3H4QgVQUbCSyZgu43pBCapBD5Q=="
+    },
+    {
+      "id": "R27-01-valid-31x18-checker-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhABAABXRUJQVlA4IAQBAACwBwCdASofABIAP1WUxFaxqigjqA1SMCqJaQAUUXqQdnOXhzv50D/45CD+3av38Pf4bpAP975h/3/9wB+gA+F66sR0eh4wAMuAw80MDoHfPTRLe5EqkYww7m2ROWCqRlzoTyQ+UCqe2eq460MDnzS/i2eelvguf+HNm1MCuksmicQtGz8VujiWmsg9ZNW+5GF28elMghCPXKEj7cYxC0bPxW6OJaayD1k1b7kYXbyUBahFe3A/w1++PlD60tP2z4wn+0Unl9IzejNz/V/aKTy97Wc7Hkfl/kAwQwEmo+0V7JHWRmOvKBc2DrgEePOB5MhxW2AU39ZZUIfcNZhSE9wF0lYAAA=="
+    },
+    {
+      "id": "R27-01-valid-31x18-checker-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkwBAABXRUJQVlA4IEABAADwCgCdASofABIAPpU8m0gloyKhKA1QsBKJaTOBcgH2AfMXoEd+2//gA/gGoBfqv8a/qv/m/h/QA/9P8A/gHqAfwD8AP3/8QAAuwDFA/QDVAv4D7AOkN/w/qAIqU2DVSlQA/N78Wm9+XeoFKItzKnFBL0MZMnfYwec+UrDpdVt3YzhNn2md5DWZBIVxOzz5KetEEzvIazIJCuJ2eTPpdhF4b82T/fMR91Sr65bJgf76gaXli1+2Ytf3+h/HY1H6ag975hEu+YRLvmGBzFSnTzIrEUPaN4MoJF3UDTQ9D+OxqP01E3/7v2sJsY9XTl0LmsJsY9XTl0LmsJsY9XTl0LmsJsY9XTj6EFtvYj1zjDEecs70XdLD10ixb3Or9Bfp5166RYt7nV/w4f1Prdyf8hPRn96b3fWOTu0qMW8qAAAAAA=="
+    },
+    {
+      "id": "R27-01-truncate-31x18-checker-false-73-1",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkwBAABXRUJQVlA4ID8BAADwCgCdASofABIAPpU8m0gloyKhKA1QsBKJaTOBcgH2AfMXoEd+2//gA/gGoBfqv8a/qv/m/h/QA/9P8A/gHqAfwD8AP3/8QAAuwDFA/QDVAv4D7AOkN/w/qAIqU2DVSlQA/N78Wm9+XeoFKItzKnFBL0MZMnfYwec+UrDpdVt3YzhNn2md5DWZBIVxOzz5KetEEzvIazIJCuJ2eTPpdhF4b82T/fMR91Sr65bJgf76gaXli1+2Ytf3+h/HY1H6ag975hEu+YRLvmGBzFSnTzIrEUPaN4MoJF3UDTQ9D+OxqP01E3/7v2sJsY9XTl0LmsJsY9XTl0LmsJsY9XTl0LmsJsY9XTj6EFtvYj1zjDEecs70XdLD10ixb3Or9Bfp5166RYt7nV/w4f1Prdyf8hPRn96b3fWOTu0qMW8qAAAAAA=="
+    },
+    {
+      "id": "R27-01-truncate-31x18-checker-false-73-2",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkoBAABXRUJQVlA4ID4BAADwCgCdASofABIAPpU8m0gloyKhKA1QsBKJaTOBcgH2AfMXoEd+2//gA/gGoBfqv8a/qv/m/h/QA/9P8A/gHqAfwD8AP3/8QAAuwDFA/QDVAv4D7AOkN/w/qAIqU2DVSlQA/N78Wm9+XeoFKItzKnFBL0MZMnfYwec+UrDpdVt3YzhNn2md5DWZBIVxOzz5KetEEzvIazIJCuJ2eTPpdhF4b82T/fMR91Sr65bJgf76gaXli1+2Ytf3+h/HY1H6ag975hEu+YRLvmGBzFSnTzIrEUPaN4MoJF3UDTQ9D+OxqP01E3/7v2sJsY9XTl0LmsJsY9XTl0LmsJsY9XTl0LmsJsY9XTj6EFtvYj1zjDEecs70XdLD10ixb3Or9Bfp5166RYt7nV/w4f1Prdyf8hPRn96b3fWOTu0qMW8qAAA="
+    },
+    {
+      "id": "R27-01-truncate-31x18-checker-false-73-3",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkoBAABXRUJQVlA4ID0BAADwCgCdASofABIAPpU8m0gloyKhKA1QsBKJaTOBcgH2AfMXoEd+2//gA/gGoBfqv8a/qv/m/h/QA/9P8A/gHqAfwD8AP3/8QAAuwDFA/QDVAv4D7AOkN/w/qAIqU2DVSlQA/N78Wm9+XeoFKItzKnFBL0MZMnfYwec+UrDpdVt3YzhNn2md5DWZBIVxOzz5KetEEzvIazIJCuJ2eTPpdhF4b82T/fMR91Sr65bJgf76gaXli1+2Ytf3+h/HY1H6ag975hEu+YRLvmGBzFSnTzIrEUPaN4MoJF3UDTQ9D+OxqP01E3/7v2sJsY9XTl0LmsJsY9XTl0LmsJsY9XTl0LmsJsY9XTj6EFtvYj1zjDEecs70XdLD10ixb3Or9Bfp5166RYt7nV/w4f1Prdyf8hPRn96b3fWOTu0qMW8qAAA="
+    },
+    {
+      "id": "R27-01-truncate-31x18-checker-false-73-5",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkgBAABXRUJQVlA4IDsBAADwCgCdASofABIAPpU8m0gloyKhKA1QsBKJaTOBcgH2AfMXoEd+2//gA/gGoBfqv8a/qv/m/h/QA/9P8A/gHqAfwD8AP3/8QAAuwDFA/QDVAv4D7AOkN/w/qAIqU2DVSlQA/N78Wm9+XeoFKItzKnFBL0MZMnfYwec+UrDpdVt3YzhNn2md5DWZBIVxOzz5KetEEzvIazIJCuJ2eTPpdhF4b82T/fMR91Sr65bJgf76gaXli1+2Ytf3+h/HY1H6ag975hEu+YRLvmGBzFSnTzIrEUPaN4MoJF3UDTQ9D+OxqP01E3/7v2sJsY9XTl0LmsJsY9XTl0LmsJsY9XTl0LmsJsY9XTj6EFtvYj1zjDEecs70XdLD10ixb3Or9Bfp5166RYt7nV/w4f1Prdyf8hPRn96b3fWOTu0qMW8A"
+    },
+    {
+      "id": "R27-01-truncate-31x18-checker-false-73-11",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkIBAABXRUJQVlA4IDUBAADwCgCdASofABIAPpU8m0gloyKhKA1QsBKJaTOBcgH2AfMXoEd+2//gA/gGoBfqv8a/qv/m/h/QA/9P8A/gHqAfwD8AP3/8QAAuwDFA/QDVAv4D7AOkN/w/qAIqU2DVSlQA/N78Wm9+XeoFKItzKnFBL0MZMnfYwec+UrDpdVt3YzhNn2md5DWZBIVxOzz5KetEEzvIazIJCuJ2eTPpdhF4b82T/fMR91Sr65bJgf76gaXli1+2Ytf3+h/HY1H6ag975hEu+YRLvmGBzFSnTzIrEUPaN4MoJF3UDTQ9D+OxqP01E3/7v2sJsY9XTl0LmsJsY9XTl0LmsJsY9XTl0LmsJsY9XTj6EFtvYj1zjDEecs70XdLD10ixb3Or9Bfp5166RYt7nV/w4f1Prdyf8hPRn96b3fUA"
+    },
+    {
+      "id": "R27-01-valid-31x18-checker-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRogBAABXRUJQVlA4IHwBAAAwCQCdASofABIAPhkIgkEhBv6qBABhLSZwLoC/APwA+IvQL8A/ADK/UfPgA/gGoBfgH4Ec4D/qfwD+AeoB/APwA/Rb+PeQANYA/gH2AAHuZJRAAP6up9arjt4D1cyY7xB7d4p2KYFY4BA4pqv0yKy4dps1ifC6vpAf7tMWOEAkOhaTlFvUB4g179nMg61gscAgcU1X6ZFZcO02axPhdX0gP92mLHCAESWerqnmhggCbnEkcTiZxWunI+B2tP9cWlO1sKXRlOthS6Mp1sKXRlknBEOAps/ujnRUn2o2dQx1oAm5gg5uetP53aIcBTZ/dHOipPtRs6hjrQBNzBBzc9afzu0Q4Cmz+6OdFmf/9yAHrBFQ1ZNikt42c83sSz7XLE4iqCEsBFO42l/I4YIbN4WbShnoYcv+pe7//alXx34PzTYitH21TQ+5Lyye/p3v9ND7kvLJ7+ne/00PuS8snv6d79av/w/f29js//29/+H3AocHIlChFya2m0SAAA=="
+    },
+    {
+      "id": "R27-01-valid-31x18-checker-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjAAAABXRUJQVlA4TCMAAAAvHkAEAA8w//M///MfeCDItvG5TyWneoGI/hNM0lTbMdXgfwA="
+    },
+    {
+      "id": "R27-01-truncate-31x18-checker-true-73-1",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRi4AAABXRUJQVlA4TCIAAAAvHkAEAA8w//M///MfeCDItvG5TyWneoGI/hNM0lTbMdXg"
+    },
+    {
+      "id": "R27-01-truncate-31x18-checker-true-73-2",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRi4AAABXRUJQVlA4TCEAAAAvHkAEAA8w//M///MfeCDItvG5TyWneoGI/hNM0lTbMdUA"
+    },
+    {
+      "id": "R27-01-truncate-31x18-checker-true-73-3",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiwAAABXRUJQVlA4TCAAAAAvHkAEAA8w//M///MfeCDItvG5TyWneoGI/hNM0lTbMQ=="
+    },
+    {
+      "id": "R27-01-truncate-31x18-checker-true-73-5",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRioAAABXRUJQVlA4TB4AAAAvHkAEAA8w//M///MfeCDItvG5TyWneoGI/hNM0lQ="
+    },
+    {
+      "id": "R27-01-truncate-31x18-checker-true-73-11",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiQAAABXRUJQVlA4TBgAAAAvHkAEAA8w//M///MfeCDItvG5TyWneoE="
+    },
+    {
+      "id": "R27-01-valid-31x18-alpha-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRmwBAABXRUJQVlA4WAoAAAAQAAAAHgAAEQAAQUxQSBgAAAABuYzof4BI22Z2pmT+ZZ0eRUzABFDjvAFWUDggLgEAADAIAJ0BKh8AEgA/VZC+VjGppqOwCAIwKolsAJ0yhLgFAHAr4xAu+b/zm71Af//fAPQA/YDrVTZ/tzcyxh4bHIYKSDzf6g9imJq0AMsoDbj//5Ji1dgmOoa8k993qy9TP3pFI+sc/e4nJXd/9cmHTQnPNXxWBDok3BBsLfuLPLm2aFZfn1H6v4TqnGE/Z3Lv060Wowr6uOxBtJ7DxToSWxjbsKGHqbT78N3gUnjtBqZQ8ORxd7T2Qbv93LUnEe4CLxBY5Luj4DacPYNh0MFHyHRmPfJh/CKC7u+mKbwIN0j9WbFbG3XrwPTBoc8/5ZBqRm/5/ywzTIx4BE5XVgz/khK6sHP98yTbOKdUrWH7DP+W8vOAcOgdu/tse3WWK0jpnfnvRgV3pc2KQN8lAAAA"
+    },
+    {
+      "id": "R27-01-valid-31x18-alpha-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkwCAABXRUJQVlA4WAoAAAAQAAAAHgAAEQAAQUxQSBgAAAABuYzof4BI22Z2pmT+ZZ0eRUzABFDjvAFWUDggDgIAAPALAJ0BKh8AEgA+lTqYR6WjIqEwCACwEolsAJ0yg7ptsM4E106QHl3eQB6gP0A6C3/JfwDrs98A/Un0g/2q+B79XfRo//6/AYzbFD1HDOGqB9En0MxJzrXz9t5P8v3IyU5z0DAl084AAM4roMju+G/QPEVXN0nGfEdA+QVOPzYp57R60FSW1uGKQZoQnbM368naQD6/cWN1G+LbP/NJNt6LZH7tKKzDPqn8h19maq+DXRAy78bs1yW7/Fzxl/qhLILk3QK8y5brAe+sSapR4ACtw2brOKXsThaSzAAsPvDkCxMlh+oxZkSoBRc2ahko+9jFPG+NRj9vynQQ8SkHoufzQVxtF1OfiAFVYriKUqIvn0QeE5fic9lgpZroo4+cZR6WWv+ysN0n83xnfg5Nm9DOam+H03jmGUFVmiRCMCBpiZa5Alo8Jr1XuNouocNfsEf1Q8mNihTafEK7155YRqLUB2TWNb8wTyBjlRLOWLfiM5YHjn/C2aGt5oduFN3BOs+21pv2Uz+vAcWMSed/8CAVIX/9naVyMMTTfKRrNAt3huPfOwnrfY5F3dEBw7P+BhhtjWuSM+r/Aww2xrXJF/+ybelf/8DOV8o9k2+t//AzlfULu5orgKBCg+P//pcrXZ/3NtucDIN6jZJgxf1IPdRyD3+b91cuMiPpTPwtsvrHg432eM4Od7tmpfAAAAA="
+    },
+    {
+      "id": "R27-01-truncate-31x18-alpha-false-73-1",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRksCAABXRUJQVlA4WAoAAAAQAAAAHgAAEQAAQUxQSBgAAAABuYzof4BI22Z2pmT+ZZ0eRUzABFDjvAFWUDggDgIAAPALAJ0BKh8AEgA+lTqYR6WjIqEwCACwEolsAJ0yg7ptsM4E106QHl3eQB6gP0A6C3/JfwDrs98A/Un0g/2q+B79XfRo//6/AYzbFD1HDOGqB9En0MxJzrXz9t5P8v3IyU5z0DAl084AAM4roMju+G/QPEVXN0nGfEdA+QVOPzYp57R60FSW1uGKQZoQnbM368naQD6/cWN1G+LbP/NJNt6LZH7tKKzDPqn8h19maq+DXRAy78bs1yW7/Fzxl/qhLILk3QK8y5brAe+sSapR4ACtw2brOKXsThaSzAAsPvDkCxMlh+oxZkSoBRc2ahko+9jFPG+NRj9vynQQ8SkHoufzQVxtF1OfiAFVYriKUqIvn0QeE5fic9lgpZroo4+cZR6WWv+ysN0n83xnfg5Nm9DOam+H03jmGUFVmiRCMCBpiZa5Alo8Jr1XuNouocNfsEf1Q8mNihTafEK7155YRqLUB2TWNb8wTyBjlRLOWLfiM5YHjn/C2aGt5oduFN3BOs+21pv2Uz+vAcWMSed/8CAVIX/9naVyMMTTfKRrNAt3huPfOwnrfY5F3dEBw7P+BhhtjWuSM+r/Aww2xrXJF/+ybelf/8DOV8o9k2+t//AzlfULu5orgKBCg+P//pcrXZ/3NtucDIN6jZJgxf1IPdRyD3+b91cuMiPpTPwtsvrHg432eM4Od7tmpfAAAA=="
+    },
+    {
+      "id": "R27-01-truncate-31x18-alpha-false-73-2",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkoCAABXRUJQVlA4WAoAAAAQAAAAHgAAEQAAQUxQSBgAAAABuYzof4BI22Z2pmT+ZZ0eRUzABFDjvAFWUDggDgIAAPALAJ0BKh8AEgA+lTqYR6WjIqEwCACwEolsAJ0yg7ptsM4E106QHl3eQB6gP0A6C3/JfwDrs98A/Un0g/2q+B79XfRo//6/AYzbFD1HDOGqB9En0MxJzrXz9t5P8v3IyU5z0DAl084AAM4roMju+G/QPEVXN0nGfEdA+QVOPzYp57R60FSW1uGKQZoQnbM368naQD6/cWN1G+LbP/NJNt6LZH7tKKzDPqn8h19maq+DXRAy78bs1yW7/Fzxl/qhLILk3QK8y5brAe+sSapR4ACtw2brOKXsThaSzAAsPvDkCxMlh+oxZkSoBRc2ahko+9jFPG+NRj9vynQQ8SkHoufzQVxtF1OfiAFVYriKUqIvn0QeE5fic9lgpZroo4+cZR6WWv+ysN0n83xnfg5Nm9DOam+H03jmGUFVmiRCMCBpiZa5Alo8Jr1XuNouocNfsEf1Q8mNihTafEK7155YRqLUB2TWNb8wTyBjlRLOWLfiM5YHjn/C2aGt5oduFN3BOs+21pv2Uz+vAcWMSed/8CAVIX/9naVyMMTTfKRrNAt3huPfOwnrfY5F3dEBw7P+BhhtjWuSM+r/Aww2xrXJF/+ybelf/8DOV8o9k2+t//AzlfULu5orgKBCg+P//pcrXZ/3NtucDIN6jZJgxf1IPdRyD3+b91cuMiPpTPwtsvrHg432eM4Od7tmpfAA"
+    },
+    {
+      "id": "R27-01-truncate-31x18-alpha-false-73-3",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkkCAABXRUJQVlA4WAoAAAAQAAAAHgAAEQAAQUxQSBgAAAABuYzof4BI22Z2pmT+ZZ0eRUzABFDjvAFWUDggDgIAAPALAJ0BKh8AEgA+lTqYR6WjIqEwCACwEolsAJ0yg7ptsM4E106QHl3eQB6gP0A6C3/JfwDrs98A/Un0g/2q+B79XfRo//6/AYzbFD1HDOGqB9En0MxJzrXz9t5P8v3IyU5z0DAl084AAM4roMju+G/QPEVXN0nGfEdA+QVOPzYp57R60FSW1uGKQZoQnbM368naQD6/cWN1G+LbP/NJNt6LZH7tKKzDPqn8h19maq+DXRAy78bs1yW7/Fzxl/qhLILk3QK8y5brAe+sSapR4ACtw2brOKXsThaSzAAsPvDkCxMlh+oxZkSoBRc2ahko+9jFPG+NRj9vynQQ8SkHoufzQVxtF1OfiAFVYriKUqIvn0QeE5fic9lgpZroo4+cZR6WWv+ysN0n83xnfg5Nm9DOam+H03jmGUFVmiRCMCBpiZa5Alo8Jr1XuNouocNfsEf1Q8mNihTafEK7155YRqLUB2TWNb8wTyBjlRLOWLfiM5YHjn/C2aGt5oduFN3BOs+21pv2Uz+vAcWMSed/8CAVIX/9naVyMMTTfKRrNAt3huPfOwnrfY5F3dEBw7P+BhhtjWuSM+r/Aww2xrXJF/+ybelf/8DOV8o9k2+t//AzlfULu5orgKBCg+P//pcrXZ/3NtucDIN6jZJgxf1IPdRyD3+b91cuMiPpTPwtsvrHg432eM4Od7tmpfA="
+    },
+    {
+      "id": "R27-01-truncate-31x18-alpha-false-73-5",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkcCAABXRUJQVlA4WAoAAAAQAAAAHgAAEQAAQUxQSBgAAAABuYzof4BI22Z2pmT+ZZ0eRUzABFDjvAFWUDggDgIAAPALAJ0BKh8AEgA+lTqYR6WjIqEwCACwEolsAJ0yg7ptsM4E106QHl3eQB6gP0A6C3/JfwDrs98A/Un0g/2q+B79XfRo//6/AYzbFD1HDOGqB9En0MxJzrXz9t5P8v3IyU5z0DAl084AAM4roMju+G/QPEVXN0nGfEdA+QVOPzYp57R60FSW1uGKQZoQnbM368naQD6/cWN1G+LbP/NJNt6LZH7tKKzDPqn8h19maq+DXRAy78bs1yW7/Fzxl/qhLILk3QK8y5brAe+sSapR4ACtw2brOKXsThaSzAAsPvDkCxMlh+oxZkSoBRc2ahko+9jFPG+NRj9vynQQ8SkHoufzQVxtF1OfiAFVYriKUqIvn0QeE5fic9lgpZroo4+cZR6WWv+ysN0n83xnfg5Nm9DOam+H03jmGUFVmiRCMCBpiZa5Alo8Jr1XuNouocNfsEf1Q8mNihTafEK7155YRqLUB2TWNb8wTyBjlRLOWLfiM5YHjn/C2aGt5oduFN3BOs+21pv2Uz+vAcWMSed/8CAVIX/9naVyMMTTfKRrNAt3huPfOwnrfY5F3dEBw7P+BhhtjWuSM+r/Aww2xrXJF/+ybelf/8DOV8o9k2+t//AzlfULu5orgKBCg+P//pcrXZ/3NtucDIN6jZJgxf1IPdRyD3+b91cuMiPpTPwtsvrHg432eM4Od7tm"
+    },
+    {
+      "id": "R27-01-truncate-31x18-alpha-false-73-11",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkECAABXRUJQVlA4WAoAAAAQAAAAHgAAEQAAQUxQSBgAAAABuYzof4BI22Z2pmT+ZZ0eRUzABFDjvAFWUDggDgIAAPALAJ0BKh8AEgA+lTqYR6WjIqEwCACwEolsAJ0yg7ptsM4E106QHl3eQB6gP0A6C3/JfwDrs98A/Un0g/2q+B79XfRo//6/AYzbFD1HDOGqB9En0MxJzrXz9t5P8v3IyU5z0DAl084AAM4roMju+G/QPEVXN0nGfEdA+QVOPzYp57R60FSW1uGKQZoQnbM368naQD6/cWN1G+LbP/NJNt6LZH7tKKzDPqn8h19maq+DXRAy78bs1yW7/Fzxl/qhLILk3QK8y5brAe+sSapR4ACtw2brOKXsThaSzAAsPvDkCxMlh+oxZkSoBRc2ahko+9jFPG+NRj9vynQQ8SkHoufzQVxtF1OfiAFVYriKUqIvn0QeE5fic9lgpZroo4+cZR6WWv+ysN0n83xnfg5Nm9DOam+H03jmGUFVmiRCMCBpiZa5Alo8Jr1XuNouocNfsEf1Q8mNihTafEK7155YRqLUB2TWNb8wTyBjlRLOWLfiM5YHjn/C2aGt5oduFN3BOs+21pv2Uz+vAcWMSed/8CAVIX/9naVyMMTTfKRrNAt3huPfOwnrfY5F3dEBw7P+BhhtjWuSM+r/Aww2xrXJF/+ybelf/8DOV8o9k2+t//AzlfULu5orgKBCg+P//pcrXZ/3NtucDIN6jZJgxf1IPdRyD3+b91cuMiPpTPwtsvrHg432"
+    },
+    {
+      "id": "R27-01-valid-31x18-alpha-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRowDAABXRUJQVlA4WAoAAAAQAAAAHgAAEQAAQUxQSBgAAAABuYzof4BI22Z2pmT+ZZ0eRUzABFDjvAFWUDggTgMAAHAWAJ0BKh8AEgA+GQiDQSEGAQAEAGEtgBOmUI6g9d4QzgHur+wH9AywThv+2fjv/bt+n/gG0MfzP1D/5B1gH9J8wD2APQA/Sv0G/8t/gPgP/VL+2ew//N/vqvF/PCdy/YD9mcuQ9O0AD+H/zD8WfylzkH5N/UPyAyAP5X/ZvEGi4/znnhft3km+Wv8J+Uv0B/xv+T/3r8yv8f//+4A9h79OB56bMpwZxQ/BNSFC5jY/ZG98S5tsqmE9bk3oAPvlzjMvukHXTE7w+VUSQetF34frDDyy4Qv1OBmzqD52nN/qGzvKY9pHjj/AU7UKw4VvtfeL9n0s48UI58mYl7wx7yt+odtImrnLgvumVwDd75Cdm3sKP4b4KTUJj/Yz//J/FzPsVPuzfUfZYUo7UfQO8zYL0aAt//ESFVXdCngb8blogrSfOcxMnPHshyx1NV1VOV0YkaihPQYyG5cRGvXYHD27cylbjgGv/gucVAFC4no9d0Lu+HAMdmJGKlNcPztDSdxcfl+o4Rv/SReZkK/ZK/F5tq/qL/xd2xfSWCoTUDJ9CVvXxLfmFF0I//f0Xgnicw/M9Px2V3reXnNZKWc9NqZMJuBVVso8i1t/Oi2zN6lZm7MkKP/L5yK1y7H1A3ibWf+3+9Wb+9+gPOjhmCeDTRI7grpvwMUa8wvXty/d9UhUZda/RxMLMZ7OpZqrqUuKMAcPj0T42qC/nr9Yea0A+5LlfbEf1jGxI/M4CdBcyExnfyBEKCp4MTJY8CauIBMZBuUs8k0iH6RjLtesxRNnnDAY6H/+WwhR3w6yKDeZX1zT9B4FerkXQM2bxdZ/jOHiIx4nY+w6J+V2ppiAqNbf5RngtmK9OMvv/VXI1k7ladapq2GEvyygPknj/88gv56bi2wSNS8AsmknI4c4Uog7qgSr0OP4twG17/ltOZBovs6a2Lt1ruvFpNBMl/8GvurZ4eDlbqkAoFthrviemC0+8TsnompasF43++MWzFjnAlGGE9AjPcnanvqcRaqdF9WEL5Hc+/fOB2qW4l/wLyPn/6jT1eg0Vn6jtuJsV//z7uSCa8fqFQdYsTfuGqarcvgWghRbPy/NtEmPi7KRMHzpGwsoEF9nwQ1qv/GtaJAAAA=="
+    },
+    {
+      "id": "R27-01-valid-31x18-alpha-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRmQAAABXRUJQVlA4TFcAAAAvHkAEELmM6H8sAILw3y1iQArS/1SRoRiSJKkVSmFmV2Uh1h/lvr+zrJCNJDhWhVW4R24Fsmlo4ZykCRClBQYjynkH3YKhLXJf9aUQoz8m+hG9ghmTugEA"
+    },
+    {
+      "id": "R27-01-truncate-31x18-alpha-true-73-1",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRmIAAABXRUJQVlA4TFYAAAAvHkAEELmM6H8sAILw3y1iQArS/1SRoRiSJKkVSmFmV2Uh1h/lvr+zrJCNJDhWhVW4R24Fsmlo4ZykCRClBQYjynkH3YKhLXJf9aUQoz8m+hG9ghmTug=="
+    },
+    {
+      "id": "R27-01-truncate-31x18-alpha-true-73-2",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRmIAAABXRUJQVlA4TFUAAAAvHkAEELmM6H8sAILw3y1iQArS/1SRoRiSJKkVSmFmV2Uh1h/lvr+zrJCNJDhWhVW4R24Fsmlo4ZykCRClBQYjynkH3YKhLXJf9aUQoz8m+hG9ghmTAA=="
+    },
+    {
+      "id": "R27-01-truncate-31x18-alpha-true-73-3",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRmAAAABXRUJQVlA4TFQAAAAvHkAEELmM6H8sAILw3y1iQArS/1SRoRiSJKkVSmFmV2Uh1h/lvr+zrJCNJDhWhVW4R24Fsmlo4ZykCRClBQYjynkH3YKhLXJf9aUQoz8m+hG9ghk="
+    },
+    {
+      "id": "R27-01-truncate-31x18-alpha-true-73-5",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRl4AAABXRUJQVlA4TFIAAAAvHkAEELmM6H8sAILw3y1iQArS/1SRoRiSJKkVSmFmV2Uh1h/lvr+zrJCNJDhWhVW4R24Fsmlo4ZykCRClBQYjynkH3YKhLXJf9aUQoz8m+hG9"
+    },
+    {
+      "id": "R27-01-truncate-31x18-alpha-true-73-11",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRlgAAABXRUJQVlA4TEwAAAAvHkAEELmM6H8sAILw3y1iQArS/1SRoRiSJKkVSmFmV2Uh1h/lvr+zrJCNJDhWhVW4R24Fsmlo4ZykCRClBQYjynkH3YKhLXJf9aUQ"
+    },
+    {
+      "id": "R27-01-valid-48x65-gradient-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRi4EAABXRUJQVlA4ICIEAAAwFgCdASowAEEAPy14r1WupyQjOYgB0CWJbACdMoS3dUB/AKN/8z4xIgXTj8r+5n5783/51fQBzx/9d/bf3Af//p/+pJ/TP04/Y8/eP1AOr/vBTLp9PaH+tIwTxv940TPR+R4mg/jbDGb546P3nfAETBFZP+LZfODmqWgB3D7CNX8RuEQ2Tf6Z1+i9PSklin7GpbXeAVQf/YSMw95GQ//RT+pd+/jHL/H//589XfolL8Mloc+zbJUq4QwA9P9sv1Pk8okdpy42vZ0mML1vvslS5gMZXUvmJZsBf3yKYz7k4wf7DG4vL3k/ufASO/Zmlt20E3jz7lPYyvI2UelAZirhX7VT2u+Pi1eY+gH8Zv7WMRH/OWSUm06QzzArumLO2zeSCYA2fszTknGjPs/rdPivSvoQRhLiiC3Xb7k31cHHPzX51LdvB3zeYW0tLEsW8tKCnhs9MhwnpVj6SKdgKjUF1ZqpDvTH2xy9aJF1PKoS/Sy1E1+4bSIpSI8ijgIzqjcdCLqb/deA9FFu8HMcebkt51vgpBBcYnJG1Tj7jlIg2m8Fcuwqo1qpA+dPNqMZEvbaYDh2qgo2fycRxQdQNkKeUhNXmPoB/Gd08epaX804nVA7WBXb/39Vgogk80iYpMAzm6xRhu+CJexdmWeM7QSUnqAk025DxdTi+xTymgv5DqdqhX+OVdBvsH9xCwK8EgVcWLgZCKEyR4xMWzVL4VlZDZw25+6aU/JO1+KmJqu0I4i/k3n2FFTVPUn1bmSaYv1PM43z8mPQDCTYTM7DspRBPJwVy7CqjWqm0mtjxUozmCfy1RlpwXIyM25UV9s58xCtxF8MoBnOMYq9L8O21KoNz3adPdVsVJaecHwwIUm5J86rOrND5UIhCJA37b9mLcpIKPNMMm5DMjmrzA8O2k/lxTq7rgt8Tc4q8sir8HvNbY+VSsFso/w1UIh0yIk+UxrltHOWyACUjJJD07AyIFtnKIFKFL6Yhehgu99G9WYRle9n+/ClWwzc6E8pLyajJTWZihFL6SF8wK7k5Bd/vsMi+QzjykDJH3pQglLMl9co0YvSczRMZl6YdHGZOwkY37syNEg4HTXmn5bGg1YZvGT6rxoUPB6qV9f7eD7rtu1zEpKhL5iWbAX98iiZ7Z+mILDpxI2WMUwPFa+nNxk+XFKe+tHxUTZTwDnS9DMZ1yEQybTmVi4KsHOcpnR/sj37verbYJ1QAvJtEPbmccpNHR35BWIG7/P9n6NvJov1kfWOPNgMb4RC8Ag993iBPbx//48HHSBofr/VZLzF+v9WAt6/cSXT5fSVDvwNiS/7aPLkUBBn4Z1cu+9qHs1wrrmsmNbdOCWNVs4+1y7L78t+A/MOJkndZGARoKNCNPRvCXv4pn2C+kJyBX4JCfmnIWrEigAAAA=="
+    },
+    {
+      "id": "R27-01-valid-48x65-gradient-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R27-01-valid-48x65-gradient-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R27-01-valid-48x65-gradient-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiwAAABXRUJQVlA4TB8AAAAvLwAQAM1lRP8DBNk2DIMYwvz9DvDM8tTEBDSsy/0HAA=="
+    },
+    {
+      "id": "R27-01-valid-48x65-noise-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRsAEAABXRUJQVlA4ILQEAADwEwCdASowAEEAPy14r1WupyQjOYgB0CWJbACdMq90dUH+AaJnID+z4vkLfoN/+Xp/9BTnuvxV9v/fef0A9gDzxfVl/4nr/+YB//7YEyDOA7PvYDKB4AccPeDGh81T7jvZR63EGQ6PnaJXwrtbbg4eVP2qJ4bfLkcXs2OPk94jncC+0KO2RhH4dOoZUxseHNH5VDEHsy3jM4Z4tmxgRvIGV3IjGp1TaQAA1xz1utKfstRTqCLgs+KaSlnRLyt0W9Q4jZTDH448ZAUf3qDBFLLrNgi01W8+B2azh4H4DPKbiz5YT4HAy9KOhqzUMuK4u3usvNnjIM3bHoGlLLQQVRucmVdFCc31bLwCwO8oNZ/Wd78tW84OLFSDyFuFWyqIvjTArurw3/ZjBmDhZOzzij31RgHYe83625+LElpuFL2dgQLxwlPK8ToLBtxEKN2pQpJOtY643hqjmyi6oQFNbDsrBcx56j04E8vHOfhHxnnc3ZXa6SQuTlPSM1tiDhSgiu7Q78Az84Vx0Lh9vG3geRmn8i0KNBIEGB11H0mVTgDOMTZaJSY7S2WnkQtXUkWRsfuvcxKLKIvqIVz5Y3NWMV3LNY22CTuQqkoCshDonjW0c5YMO9EhQ6PIETH399jshKC/Cb15nHGDYVKh/DlyWT8uW07i5bIIK5TqVcUXE00aT3wgacPpNShs37lZxMav0xzYxqgclSUTiiLrB2XRm/Z2nwDXQAZFBu3+BKtH8gcELErh7XZ0a5lrC1SsHoRApEtv8NMG3M86di+vGxYKrSbyreEUMnIA3ZmIkHy0h5h++Y4KfPRWBHUorDpWtkcAbBsMfPfc0m+bnWrxPToiibkFhSlwOOlKB7P+l94AT4Rnfr+4NibVhcsJQavgqvLRerA6JWAHqzZ8UoORymRFv1wxdmItylAmS1/Ls3WWpr7mrVHapp8SRvCKLlmEeULSRfv4E5ArGUcldpRzRvyZEr08OdlM91W9rwpq0slnjwauNgtmdqhyXHjk4P6kPEcGnjTkTC+mmIT5Z5NN1amzqFrAF0QlzN+jB3EPzCc6QZbSgPeqT9XL976khQHWSxnXP70gk9tGUHSiJ30VhyPnUzbs9uqTMF433uuc3dZgV5Fb20kxBi+8Q4l32Ca0lUYMqsdmWm+O9nYR7vOblynfCu+DFZHGnfUVnlrlObghchBRYuK2K2qcGbjQuubkdopl6resskAi+QpwKDKjsLE4VFi8HSZmeWD/V/N6Mo5Opi3AtgY82oczISwLTS8PfEmBCRAnh4n6fbT4VUnqlk/q3atfVqjAymf6dxJXmZffdZSwDG/6Ku98qfF3ESzwXZOWkBcU4ExDvM1ciTC/go1U3npg4lFVz+MWqFx+Uo+jnHENSvt/L4gL2eD1CsWnNNh+MEECdeSPhPGSsyk3KFp5feBnXBrrvssTwW66vrkb3aOaDJRbV08eXHkFWRcM62Rii/3JvbGQXTtKIQbs7qsBCV9ebZUeCFgeyo8EK99go/Tvc5G8vcfgFf63vGW+ReHOdywUy0nffdPG5crX5RTxuXK2Ud56IS4GPxv92eBhXnkhwVC5xeeybK1vwqpPfOwb64LwAAAA"
+    },
+    {
+      "id": "R27-01-valid-48x65-noise-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R27-01-valid-48x65-noise-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R27-01-valid-48x65-noise-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R27-01-valid-48x65-checker-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRpoCAABXRUJQVlA4II4CAACQCwCdASowAEEAP1GOu1WwqaYjLM1SECoJaQAUXbrB/8PUC9APn/XA/gH2AfX/b//P+w/5gX//p/8AD+AbEn+V/5n+q///pCP//5gH8A+//////8vlnUAHgAXACY4oRlq3rVQhAADMkCp6Z8IP7REMMrtEXqiHwH2yW5EnVWwJQKUjsJ7adhVZRTHl2DrHu3bl7K7MGV2iL1R2JbmE2Ud78NOLadhVZM34QNOKm70Q927cvZXYsfDxV6oh8B9sluU9gP7J1VsCUDkW07CqyZvwgacVN3oh7t25eyuxY+Hir1RD4D7ZLciTqqc2UgJso734acW07CqyimPLsHWPdu3L2V2iL1RD4D7ZLciTqrYEoFKR2E9tOwqskxJuVi682479n59IXLIUm7WoUdRnrAX2w/vxoyQuWQpN2tQo6jPWAckLlkKTdrUKOoz1gL7Yf340ZIXLIUm7WoUdRnrAX2w/vxoyQuWQpj0rsWPh4q9UQ+A/snVU5so734acW09M+EDTipu9EPdu3RUeHir1RD4D7ZLcZQLjmx6iT7ESblYuvNuO/Z+fSFyyFJu1qFHUZ6wF9sP78aMkLlkKRsXXm3Hfs/PpC5ZCk3a1CjqM9YC+2H9+NGSFyyFJu1qFHUZ6wF9sR8+EDTipu9EPdu3RUeHir1RD4D7ZLcwmyjvfhpxbTsKrKKY8uwdY927cvZXXvF15tx37Pz6QuWQpN2tQo6jPWAvth/fjRkhcshSbtahR1GesBfbDwIUm7WoUdRnrAX2w/vxoyQuWQpN2tQo6jPWAvth/fjRkhcshSbta9ffw7NRwT0YDUNrMuY+7vBeorkC4J6MBuBpRvNr93gvUVyBcx93j2iuQLgnovQAAAAA="
+    },
+    {
+      "id": "R27-01-valid-48x65-checker-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRgIDAABXRUJQVlA4IPYCAABQDACdASowAEEAPpE4lkeloyIhLM1QsBIJaTuI//ED//8vy/24A///p/qAP5X/APxV/////6gH//8wD+AfgB+//8AAZejnAvwD8AKj/uv9ID+AfwC9/0sEAMXJ2xOPBL+xFJ9RKxn2Gf6ZwAD83wqqcFmof6LLEfJrWA21lEr5eIzhLAkKeCmmXOV2xzxVxSZlcaLylLq8VcUmZXGi8pS6vFXFKSP0jlmVxovKUurxVxSZlcaLylLq8VcUmZXGi8pS6vFXFJmVxovKUurxVxSZlcaLylLq8VcUpI/SOWZXGi8pS6vFXFJmVxovKUurxVxSZlcaLylLq8VcUmZXGi8pS6vFXFJmVxovKUurxVxSkj9I5ZlcaLylLq8VcUmZXGi8pS6vFXFJmVxovKUurxVxSZlcaLylLq8VcUmZXGi8pS6vFXFEkE9t5fW+qEL158ATxw6munRHEehY8Ln42CMqIvzIAmjY9c79VHPYM5DLarRvOiF6onoWPC5+NgjKiL8yAJo2PXO/VRz2DOQy2q0bzohevPgCeOHU106I4j0LHhc/GwRlSWzt1EUk+XyWwPlyrjReUpdXirikzK40XlKXV4q4pMyuNF5Sl1eKuKTMrjReUpdXirikzK40Exo2PXO/VRz2DOQy2q0bzohevPgCeOHU106I4j0LHhc/GwRlRF+ZAE0bHrnfqo56/4ufjYIyoi/MgCaNj1zv1Uc9gzkMtqtG86IXrz4Anjh1NdOiOI9Cx4XPxsEZURfmQV3uuU/EZwlgSFPBTTLnK7Y54q4pMyuNF5Sl1eKuKTMrjReUpdXirikzK40XlKXV4q4pMyuNBMaNj1zv1Uc9gzkMtqtG86IXrz4Anjh1NdOiOI9Cx4XPxsEZURfmQBNGx6536qOev+Ln42CMqIvzIAmjY9c79VHPYM5DLarRvOiF68+AJ44dTXTojiPQseFz8bBGVEX5kKD/01m/iRKalMk6k+YntvoFzXr9FbJzA1NB73+X/++ScAAAAA=="
+    },
+    {
+      "id": "R27-01-valid-48x65-checker-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjgEAABXRUJQVlA4ICwEAADwCwCdASowAEEAPhkIg0EhBZmqBABhLSdxH/4gf//l+X+3AH//9P9QB/APwA/ar/VdQD//+YB/APwA/QD+AALIA+gDtAvwD8AL//uv9ID+AfwC9/0sEAMXJ2xOOrI1vgUJTPMzoCOJoAD+vBRwZtvoQHK8Nwd8AM2NtijhKxtsUcJWNtijhKxtsUcJWNtijhKxtsUcJWNtijhKxtsUcJWNtijhKxtsUcJWNtijhKxtsUcJWNtijhKxtsVgZp93B3wAzY22KOErG2xRwlY22KOErG2xRwlY22KOErG2xRwlY22KOErG2xRwlY22KOErG2xRwlY22KOErG2xRwlY22KOErG2xRwlY22KwM0+7g74AZsbbFHCVjbYo4SsbbFHCVjbYo4SsbbFHCVjbYo4SsbbFHCVjbYo4SsbbFHCVjbYo4SsbbFHCVjbYo4SsbbFHCVjbYo4SsbbFYGafdwd8AM2NtijhKxtsUcJWNtijhKxtsUcJWNtijhKxtsUcJWNtijhKxtsUcJWNtijhKxtsUcJWNtijhKxtsUcJWNtijhKxtsUcJWNtiQI96eQLZM2n262PvbIiwkK+cqZclTvwYIcE8CFcU4VTyNzYVTyNzYVTyNzYVTyNzYVTyNzYVTyNzYVTyNzYVTyNzYVTyNzYVSHkb5Y/td7ACqeRubCqeRubCqeRubCqeRubCqeRubCqeRubCqeRubCqeRubCqeRubCqeRubCqeRubCqeRubCqeRubCqeRubCq4IcL5Pk3lkh58m8skPPk3lkh58m8skPPk3lkh58m8skPPk3lkh58m8skPPk3lkh58m8skPPk3lkh58m8skPPk3lkh58m8skPPk3lkh58mwOEip34MEOCeBCuKcKp5G5sKp5G5sKp5G5sKp5G5sKp5G5sKp5G5sKp5G5sKp5G5sKp5G5sKp5G5sKp5G5sKp5G5sKp5G5sKpDyN8sf2u9gBVPI3NhVPI3NhVPI3NhVPI3NhVPI3NhVPI3NhVPI3NhVPI3NhVPI3NhVPI3NhVPI3NhVPI3NhVPI3NhVPI3NhVcEOF8nybyyQ8+TeWSHnybyyQ8+TeWSHnybyyQ8+TeWSHnybyyQ8+TeWSHnybyyQ8+TeWSHnybyyQ8+TeWSHnybyyQ8+TeWSHnybyyQ8+TYHCRU78GCHBPAhXFOFU8jc2FU8jc2FU8jc2FU8jc2FU8jc2FU8jc2FU8jc2FU8jc2FU8jc2FU8jc2FU8jc2FU8jc2FU8jc2FUh5G+WP7XewAqnkbmwqnkbmwqnkbmwqnkbmwqnkbmwqnkbmwqnkbmwqnkbmwqnkbmwqnkbmwqnkbmwqnkbmwqnkbmwqnkbmwquR/+1tROb0SxT398b43vq9VBRz8OpNhyaZr6gqCEi98NpFTOdWpIsLCnuyX/IK//a2oj4AAA="
+    },
+    {
+      "id": "R27-01-valid-48x65-checker-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRi4AAABXRUJQVlA4TCIAAAAvLwAQAA8w//M///MfeBALJpSTjLYzov8EkzTVdkxVAecP"
+    },
+    {
+      "id": "R27-01-valid-48x65-alpha-false-15",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRpYEAABXRUJQVlA4WAoAAAAQAAAALwAAQAAAQUxQSBgAAAABuYzof4Ag22Y6I5m/1gGeiAmYAGo99x9WUDggWAQAANAWAJ0BKjAAQQA/LXivVa6nJCM5iAHQJYlsAJ0yhLk9QH55oi8Qn7/iCcdf2n7mfoL6APL/88noA57f+wfrN7gP/R0QHsq+gB+mfp0exR/dN/wvBvHD9naH+tIwTxf9r49+F9+HwY/udatN88eP7xvgCyxLGh3pulqKY6FIWpaAHcPsKZX6S9A5mm/75N6leYB+yJ/gzsVUvKz3/2l2t48b6L/9P9pNh94dV/+Kzmh/+m9l4y9lNc6iAMVv5cJgAM2K/wY7UHhcsLsKRJ1LQDfx9joLIN3jjzdOCDsHvCgJtxfDaW8ZSojY3qWD7oTio8bdvvkRhR75lzdmPrTYGW+oYrCyIkIXOqWGT1iRVAlpH2Zu6oNyrEaM/9NmAnYtfP19spnH9jJv+q8kovLeM2R5RN5Q2nop4wW1pRYrYExFg5Y01dg78VCR+SgcWiiWEZ5u7HflNjxNNBKzgU6giR8YLdm/Bu+Pzu8t1eMfTZnju9sc16YeiWtcDc2S5PZnEzrn1PfU7+r/nza+AnA5i0e61mqsx3NUv7Udg0aksWo0pYTHH0fN4K0TI/i2tMmiN7k6UFXfv/+CwnPhyg1loIiYb/oBYJv17fMF8b/0Xia03gdzeQWLUNpQBHSb/pVZaJ3DDIkay6J9z/hhTMnF3z/mlki8PwuDef0TxVc3LQWox0N7DUCS5yIiSmB0oEOfyPMNqXrwwcN9ZQrh54odCr/Bnw46lLlQPwI00PT5DPN34z+6ZbCWu5AMRveL0xm6GwPq5QqUnFW/c53DxIBqGP93TJLuuOCVA+ZcLK9pHLFAlQ85oErHc37YMxZIuIDe5OlBV38AAoO8bCmW9bb/itukNbbMcQq+4w9RokSQU/FS8INk+Ba3FEBW7rw2CDnsyWsyKfqGAZnNwgeN08xA1Hc1SwqN/gz0Rlam78gAaDAPCtz2HV0LJULIqed/INMZQZPUyvnFNkWJWPl6BzInS95IOsLwHi0c7oN9xRAbIFfzWyujtOZ/uwJB0aRwRROWOY9N68VLT4+nnbLa8vJq5kKVDXQDGvEn5jW2IjcZRsElY9/pU7mvtrtTIlOfL8CuPlF5cAIwHYvbsb7L9DH2hTQp3KUGrqvLSLxdxIYZgTpWMfJ8S/vZ4o//vR6O5UVLeMs//HkDyLq9NxmUJ/Oev6rKfRbS9Q6trkeB04xk6Ev4LS3OpVDUGDH9U+84pyXhLxzwbidbGwQq480eG+V5g89mJwM2yrc/8WSssFObTlZBO0rFAloVDxKTDNxExTokq3aNh21DkYIDe5OnO5LtqYGJPtfK1A5salO9fT0d5zhkwlE0AGyEGQ6vHeenL/2iG2+Cw/iiHsDD2p/OgzhECt4ZJkVx/SvN37TzHdFJZVg6S+Bujp+qpA/1jHLnjI0qtBKKIM6k/2mQ47zrVaYSl4PxHtqX7qhr+9qsgGtA5qWP4mN5O5gqAmsvvTViRA3fL701YukjFAAA"
+    },
+    {
+      "id": "R27-01-valid-48x65-alpha-false-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R27-01-valid-48x65-alpha-false-95",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRgINAABXRUJQVlA4WAoAAAAQAAAALwAAQAAAQUxQSBgAAAABuYzof4Ag22Y6I5m/1gGeiAmYAGo99x9WUDggxAwAANA1AJ0BKjAAQQA+FQaCQSEHMAQAUS2AE6ZQjt/4zzBKW/QfwL+0Pur4xOVfIE4z/zn9V/rn9o/f/4oeoD8Z/6D3AP0d/qX8z/ID4AP4B7AP4B/AP4j7AP4X/D/6b/ZvY5/t3+O7AD+i/3r/8ew//I///7gH9M/sf//9wD+Y/2L1Sf5Z/dP7D+8f0Cfp//gP6/+9f0Ffxj+Xfe/+////5zf+AfvdtO/yv8GvMH8D+B/pf8z/ZH8ZtMD+EfXH7T+avoB/APwA/Sv1B9kf4B+Ff7M/6b7CPxD+Ffx38aP3m/0HqAcwD+AeoF6X/I/53+T39+8h38gPcD6Af4D3AP1a/x3mN/If9f/bvIG+j/0L/l/yL4AP41/Lf+N7HH6j/nf8B+7n8V9l/5P/Sf8Z/jP2H/wf/////6Bfxv+Qf3H+z/5j/h/2n////T7lPWr+mfsF/p19/5l91uuiQy/m0tBmBDuH/qPceAn//s5DOEBhWWA3Gl1v7n1F/ml0HtQ/+8QOeMm51xnsAJxpxqits2i5UuT3QucgwQ/eaFOpV/XDRznHNP4/zRrwdWyEDRZMV4Gi37AZCcaOP0AA+82aIqbfnPuVo60zzHV+BLjRkcdkXJp7IoWNjyqPBqXUd2NHBd8kBeGlJFdQovtnItFJfV/oJSeIc6hN7AJK4nH3ZNrOIhaEkLxqDDvjapbZmMdWvmCjiNaLDXKh37mQ0Yegg5oYkAzYQDK8VB+Yl3Yje81ZaoiVtrToTop1bncNw90pdF0eBAMl0x+Q1KS3pKAWfiJEmSIT4fNcKZw77i5KJtUbJaV78IcA4dwoXGtHHb1cIk7IMBmesb8ofD8VvylcnEsLM57C7le79VBNGzTbtF61hixUsqf+1g5nGgcuET53CKyS/RA0DGhg6u7DhWi90ugjpOfARd4O5LlldGC1TaedfRbclKRCcRCJBq5fp2T8e18kMhmW+KnAlLvhdt3MiMSfJVfrdwwcneiDVnSl31t075kwCGjaj+wi2XRmtRKzRaIKwfD5YPUElKHnWMPUBTpvj9jPDFxIZKDCzWvKLbvhwOXL8B1MERWnDUOJ9xKIPZLbGXLSlP+fukbGkKSpNDNvUF28vsUTbptGOvukCQCPj2UOSeAjDJuSTr0/Dg/0VQKwVHps8uVsJXzi8N1EfWd5XBdFeZSTx04Z4PUb5z1DblqRWlBRkIsTM52q8ptWjd7sE/MwyNr0zicbHqoZD9Kqpb+MgOqlu7enuzURlDsx1OACW+ucHTxELHE9Mm90Gm5QuDbnzOv9D6kfxVtyzB0T4iRJjxa19ZTIZRKtOLOYw5LWKT1nQmOpQcQcbLh2cPFXLmpKUbwrrsRjLzleuefUT2x+EKB8/yZTSbZDKVBXzXGvJEc0KLHMNU11mZtmWVxd0b8yuK2ouMiBKrb/tFpMKJi15oHfGQfV24sME+xkDAKGMaQ3W3i+mlr3AyAjnKvUWmyyir8MW+E+rXri+b0jaAPBTb9qWJlU3dvxTuQ2fI24SztGM1qT69KEA0xvr470VlGZUt0Cgy/4LTrrzNzpjwSWn8SPHmsqHJGkxy//5yhQH5VtNeedw5XgehNe1THwT5AdrWFMJHCc5rH8HT0ra5BiCjy1Imos9iake6rqJww2p/bTt2WLJIB1Qoi4WrkYibtxICx7Mv1l0nGeWn2ZpyQG/gHqMjkB2mWhQzudc/R/C1LLniq6Be64t2LWremUg3Isv7AW74L1zLAgLAmaBMcHJ+2n9WIeVF3OaHB1LvFA0tW5kSTzUQWeZxiHeZbkpSITiIRILOYqXFvLQnaFSaGQrf9Rg/TC9QkfRO86pDEpr3Hz/c7qxkrIbc8W0kO3OtsfZnR32caCxSxgsYw9hYeDBwSm/e+Gmg7zdvFZwFLIvXUy6T2Cd+MRfjus8Tf4i1AfUyJBgMHekG33Es0qyESB9lGlatrASXNUmCXC3YHBjAsyswwA1kDKh8+zDMD7fSWQDScb49XkFN+8BxqomfA5+nztb0ChJ+Q6DRSitYmCdshX4xfOVt33i5jZNWQb5wogSFO3kddU8PmPu0x6NeLhL+giu5ILIJvXAS+XV/TBglBJfPUQYDVQv0UYNqg8TgAlvrnwQxihKNY3O/0v3k3hf6H1I/hJ7T4yhYM0n+kPgL+DyuyZ1QMVrPBWAl974gmRqQcvuUyCODxkv7AQYQSKSuEXv81+CGaZ9bCyeDIh+yEcusf7QfAXwYSU83GqDede8XRI5oaanxlfJopG1YGneP5OULzL4RtZkFPvYUnfeTiBM0/Npv6I3qbPnNU2SUovgdMzbJn9jzoe17h4eOJp2qbBEdYr44BUjlDjvG/bP6QbmK9y1yuQKhlV3f1dN6E34TNP45jKQ/JyEYYqMr5fR16kbRvCtFhrlQ8psmopy//YsJ17O6SpMs2Bqv+YRtR/acwD9Ca9qmPgnyBLHWFMJHCcnrdpgY8V332lIkdViJPBkiyI7Q0cSUcAw/I66Yjd1YwQRv1LnC09Uz3jE7sKyuMzPgPp98fHlhLw0UQjBA7i1ZKpYtcVnfOzaESZH+M6pqx/3L5lYqP1hrgyHBDvkY97Vne522lh8NJOelNjdTi07fFYMyG5sKlddJp86RSGoEBQ3LA24b9z9zTF87b9H1cMlyAlO+37eYU0Gl7DaEBJDmQ3aXauUqlCqDc/oN6R9yGicJT3hWtd8E/rcbrqoiTeBALQ10VFXEYAOWgj9RC9QFOm+P2M8MXEhkoMJXQlfXgNO5X8rN65TzLdTOzElaEzj0HWyaUuhTWFU5Lz1aosOQOR9RS7FcqHf6wSs9kSjEjvhDb2y9pIcyG6gykkoPw/Hs4wTx/0hA2YPPMGUPvmLQMOYlHhBSIUouOZm6kA9ILRnHDFPFFmqhJCFaKrCLtl7JTcsCGRb/5pgzG4OWCFc3gXhUy9oPMVTdjqiTC/OoYKSvnH6kpdGUT0Yucpz14eejGcYZNhCDjlZFCxseXfvaTMySzG8fGM//noqzqjPAGmWqkhRW1t3zqtCLTFuEBMo+eT/bES7FtKVFS/GyGbB8/2g+Av5DBM0/2gaC2bXqWlG/q2qvqPG4fZavoJltqVv/HepaKQrsdUihH8VuEOoPcuBBxsX1grGMnxSvIprWbCom+VDRYIqBgJ157qdkdvWoy2Oq42rDTbQl7q28MVH/b1QTPRb7V/sJd4Pje73d3VZezaoGA0oTvadTwVErozcZ//8/k0Gv9o+O5sNCrLfFTgSl3w35I26SORnXdvgTstwmDu+RzziodgQyde4P28zI8eAqwfghCtl+1o5K6jhPyyFoTfepG+wHaMbQ/XPNmHk0VhY8lvQVTzC0qbJLZ/zcHahv9Zh5CppcUGk//IMIkVzGz53z+Sat/+O3IX+Bk/lfIuGrUUC3N5jAdntxBK/m5w5P3B30b060jX01/ulrP1rXBb87CYRkhYYhLEwJSFM0F0IBw6vZ52JzVq/ofe6Az75kxDia1Xz/SdjQppDnuRViQiLeYTo7gr979DlgAc47fuv1QDNUzXFxudvTJCAYLOJdM6HL+NxvCSoCO4fEzgcPLL1IBS1UidsV/osjQHNJqk+qmivcpYXt7X3i4FpgtrI2JK0JnHoOtk0pcmmThYMhx1FPvxrkTcHF8dD4HWreAl8ur+mDBKBt3vRqwNO8gkkHoTXtUx8E+QJY5YO1SEMYp+rbZm/Yb3/qkDJ3g+ev98U3LY46gNSRm1W8qKD31gi/5mgO9Rk0It4GR5cXYClJXeDt+iHhs5ikXQ8DXq4DpzpVqgQio5+hzNfZy+QcBVctRlQYPk2+pNMPSZ5ET9T3yhGZK4BRTizdr9i97hLhqCn5x4/4Kwi53eY6lU05YxkMEuk6yXJDU+bNb+jZG/PTsm+15+yIQlF8TriTPERfhA1l5s8MP/97m4uPBHl5vTz6LaRizXg81PTUfof3Tw3rN/awwVAtr84/5bGXwgKdN8fsZ5snvlCNTq93Buli9xyOh7i1AYZrSOWePgeBl/T9kXkAgtyAIuV5D8/TfzW4A4RJhiQPlQgGmsgs126cCVKMLA4tQ0trmp3IflSHSverNZCDAmZSbgAScRWIDJPDcV/Plcki5FKz2R/1g7vczQjfwQYfABD/7Iat0xd2STRE3/ZDVumLuySaM//MFa3aztBUGoVv/mCtbtZ2gqDUKBXrzh2jYzOff394HrJ/tg/Zvl7CoAfr1tmAlNKjBwZ2ceMBY33AdeiJImDW/p5+zA/0GLEepXYfXOkwDQH+bh2Uw+vySB4AK3KP9G3+nbAhL1g4toq1KcDYFUyGmODol1gmBsCp9mzdgfIp/UMk/D+zZuwPkU/qGSfgAAAAA="
+    },
+    {
+      "id": "R27-01-valid-48x65-alpha-true-73",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRnIAAABXRUJQVlA4TGYAAAAvLwAQELmM6H+MYkAK0v/IwaZtJEFHYSnc3VN5EM+fy86n3HKmmWWCbNtUFQ5xuQlk09DCOUkTsOidAvzbhfbCxk8P94QOrTtPHJrQobXHiUMTOrT+NHFoQocmHCYOTejQhH78MnQ="
+    },
+    {
+      "id": "R27-01-pdf-control",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    },
+    {
+      "id": "R27-01-pdf-valid-literal-markers",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iagooZXNjYXBlZCBcKCB0cmFpbGVyIDw8IC9Sb290IDkgMCBSID4+IGVuZG9iaiA5IDAgb2JqKQplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo0IDEKMDAwMDAwMDIwMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDUgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjI3MAolJUVPRgo="
+    },
+    {
+      "id": "R27-01-pdf-valid-nested-literal",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iagoob25lICh0d28gKHRyYWlsZXIgPDwgL1Jvb3QgOSAwIFIgPj4pKSBlbmRvYmopCmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCjQgMQowMDAwMDAwMjAxIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNSAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjYzCiUlRU9GCg=="
+    },
+    {
+      "id": "R27-01-pdf-stream-early-marker-_endstream_",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDgyID4+CnN0cmVhbQplbmRzdHJlYW0KZW5kb2JqCjkgMCBvYmoKPDwgL1R5cGUgL0NhdGFsb2cgL1BhZ2VzIDIgMCBSID4+CmVuZG9iagp0cmFpbGluZy1wYXlsb2FkCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo0IDEKMDAwMDAwMDIwMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEwIC9Sb290IDkgMCBSID4+CnN0YXJ0eHJlZgozMzMKJSVFT0YK"
+    },
+    {
+      "id": "R27-01-pdf-valid-stream-marker-_endstream_",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDgyID4+CnN0cmVhbQplbmRzdHJlYW0KZW5kb2JqCjkgMCBvYmoKPDwgL1R5cGUgL0NhdGFsb2cgL1BhZ2VzIDIgMCBSID4+CmVuZG9iagp0cmFpbGluZy1wYXlsb2FkCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo0IDEKMDAwMDAwMDIwMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDUgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjMzMwolJUVPRgo="
+    },
+    {
+      "id": "R27-01-pdf-stream-early-marker-_endstream_r_",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDgzID4+CnN0cmVhbQplbmRzdHJlYW0NCmVuZG9iago5IDAgb2JqCjw8IC9UeXBlIC9DYXRhbG9nIC9QYWdlcyAyIDAgUiA+PgplbmRvYmoKdHJhaWxpbmctcGF5bG9hZAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKNCAxCjAwMDAwMDAyMDEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMCAvUm9vdCA5IDAgUiA+PgpzdGFydHhyZWYKMzM0CiUlRU9GCg=="
+    },
+    {
+      "id": "R27-01-pdf-valid-stream-marker-_endstream_r_",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDgzID4+CnN0cmVhbQplbmRzdHJlYW0NCmVuZG9iago5IDAgb2JqCjw8IC9UeXBlIC9DYXRhbG9nIC9QYWdlcyAyIDAgUiA+PgplbmRvYmoKdHJhaWxpbmctcGF5bG9hZAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKNCAxCjAwMDAwMDAyMDEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgozMzQKJSVFT0YK"
+    },
+    {
+      "id": "R27-01-pdf-stream-early-marker-_endstream_n_",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDgzID4+CnN0cmVhbQplbmRzdHJlYW0KCmVuZG9iago5IDAgb2JqCjw8IC9UeXBlIC9DYXRhbG9nIC9QYWdlcyAyIDAgUiA+PgplbmRvYmoKdHJhaWxpbmctcGF5bG9hZAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKNCAxCjAwMDAwMDAyMDEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMCAvUm9vdCA5IDAgUiA+PgpzdGFydHhyZWYKMzM0CiUlRU9GCg=="
+    },
+    {
+      "id": "R27-01-pdf-valid-stream-marker-_endstream_n_",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDgzID4+CnN0cmVhbQplbmRzdHJlYW0KCmVuZG9iago5IDAgb2JqCjw8IC9UeXBlIC9DYXRhbG9nIC9QYWdlcyAyIDAgUiA+PgplbmRvYmoKdHJhaWxpbmctcGF5bG9hZAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKNCAxCjAwMDAwMDAyMDEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgozMzQKJSVFT0YK"
+    },
+    {
+      "id": "R27-01-pdf-kids-foreign-scalar",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUiA5OTldIC9Db3VudCAxID4+CmVuZG9iagozIDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNzIgNzJdIC9SZXNvdXJjZXMgPDwgPj4gPj4KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTkgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA0IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyMDUKJSVFT0YK"
+    },
+    {
+      "id": "R27-01-pdf-kids-nested-reference",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFtbMyAwIFJdXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSAvUmVzb3VyY2VzIDw8ID4+ID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE3IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNCAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjAzCiUlRU9GCg=="
+    },
+    {
+      "id": "R27-01-pdf-kids-dictionary-reference",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFs8PCAvSGludCAzIDAgUiA+Pl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDEyNyAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIxMwolJUVPRgo="
+    },
+    {
+      "id": "R27-01-pdf-duplicate-kids",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0tpZHMgWzkgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSAvUmVzb3VyY2VzIDw8ID4+ID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTI5IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNCAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjE1CiUlRU9GCg=="
+    },
+    {
+      "id": "R27-01-pdf-duplicate-type",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9UeXBlIC9QYWdlIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDEyNyAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIxMwolJUVPRgo="
+    },
+    {
+      "id": "R27-01-pdf-duplicate-Pages",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL1BhZ2VzIDkgMCBSID4+CmVuZG9iagoyIDAgb2JqCjw8IC9UeXBlIC9QYWdlcyAvS2lkcyBbMyAwIFJdIC9Db3VudCAxID4+CmVuZG9iagozIDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNzIgNzJdIC9SZXNvdXJjZXMgPDwgPj4gPj4KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNzEgMDAwMDAgbiAKMyAxCjAwMDAwMDAxMjggMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA0IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyMTQKJSVFT0YK"
+    },
+    {
+      "id": "R27-01-pdf-duplicate-Parent",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvUGFyZW50IDkgMCBSID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNCAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMTc2CiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-length-direct-eight",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDggPj4Kc3RyZWFtCkFCQ0RFRkdICmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo0IDEKMDAwMDAwMDIwMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyNTgKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-length-direct-short",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDcgPj4Kc3RyZWFtCkFCQ0RFRkdICmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo0IDEKMDAwMDAwMDIwMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyNTgKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-length-direct-long",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDEwID4+CnN0cmVhbQpBQkNERUZHSAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKNCAxCjAwMDAwMDAyMDEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjU5CiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-length-direct-fraction",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDguNSA+PgpzdHJlYW0KQUJDREVGR0gKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCjQgMQowMDAwMDAwMjAxIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjI2MAolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-length-direct-real-integral",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDguMCA+PgpzdHJlYW0KQUJDREVGR0gKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCjQgMQowMDAwMDAwMjAxIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjI2MAolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-length-direct-junk",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDgvZm9vID4+CnN0cmVhbQpBQkNERUZHSAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKNCAxCjAwMDAwMDAyMDEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjYyCiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-length-direct-array",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIFs4XSA+PgpzdHJlYW0KQUJDREVGR0gKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCjQgMQowMDAwMDAwMjAxIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjI2MAolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-length-direct-negative",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIC04ID4+CnN0cmVhbQpBQkNERUZHSAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKNCAxCjAwMDAwMDAyMDEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjU5CiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-valid-stream-lf",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDggPj4Kc3RyZWFtCkFCQ0RFRkdICmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo0IDEKMDAwMDAwMDIwMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyNTgKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-valid-stream-crlf",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDggPj4Kc3RyZWFtDQpBQkNERUZHSA0KZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCjQgMQowMDAwMDAwMjAxIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjI2MAolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-valid-stream-cr",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDggPj4Kc3RyZWFtDUFCQ0RFRkdIDWVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo0IDEKMDAwMDAwMDIwMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyNTgKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-valid-stream-no-extra-eol",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDggPj4Kc3RyZWFtCkFCQ0RFRkdIZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCjQgMQowMDAwMDAwMjAxIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjI1NwolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-length-zero-control",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDAgPj4Kc3RyZWFtCgplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKNCAxCjAwMDAwMDAyMDEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjUwCiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-length-extra-key-control",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDggL090aGVyIDEgPj4Kc3RyZWFtCkFCQ0RFRkdICmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo0IDEKMDAwMDAwMDIwMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyNjcKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-count-extra-key-control",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgL090aGVyIDIgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDEyNCAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyMTAKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-length-ref-before",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNSAyIG9iago4CmVuZG9iago0IDAgb2JqCjw8IC9MZW5ndGggNSAyIFIgPj4Kc3RyZWFtCkFCQ0RFRkdICmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo1IDEKMDAwMDAwMDIwMSAwMDAwMiBuIAo0IDEKMDAwMDAwMDIxOCAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyNzkKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-length-ref-after",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDUgMiBSID4+CnN0cmVhbQpBQkNERUZHSAplbmRzdHJlYW0KZW5kb2JqCjUgMiBvYmoKOAplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo0IDEKMDAwMDAwMDIwMSAwMDAwMCBuIAo1IDEKMDAwMDAwMDI2MiAwMDAwMiBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyNzkKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-length-ref-wrong-generation",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNSAwIG9iago4CmVuZG9iago0IDAgb2JqCjw8IC9MZW5ndGggNSAyIFIgPj4Kc3RyZWFtCkFCQ0RFRkdICmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo1IDEKMDAwMDAwMDIwMSAwMDAwMCBuIAo0IDEKMDAwMDAwMDIxOCAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyNzkKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-length-ref-fractional",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNSAyIG9iago4LjUKZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA1IDIgUiA+PgpzdHJlYW0KQUJDREVGR0gKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCjUgMQowMDAwMDAwMjAxIDAwMDAyIG4gCjQgMQowMDAwMDAwMjIwIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjI4MQolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-length-ref-negative",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNSAyIG9iagotOAplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDUgMiBSID4+CnN0cmVhbQpBQkNERUZHSAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKNSAxCjAwMDAwMDAyMDEgMDAwMDIgbiAKNCAxCjAwMDAwMDAyMTkgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjgwCiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-length-ref-array",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNSAyIG9iagpbOF0KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA1IDIgUiA+PgpzdHJlYW0KQUJDREVGR0gKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCjUgMQowMDAwMDAwMjAxIDAwMDAyIG4gCjQgMQowMDAwMDAwMjIwIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjI4MQolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-length-ref-dict",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNSAyIG9iago8PCAvTiA4ID4+CmVuZG9iago0IDAgb2JqCjw8IC9MZW5ndGggNSAyIFIgPj4Kc3RyZWFtCkFCQ0RFRkdICmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo1IDEKMDAwMDAwMDIwMSAwMDAwMiBuIAo0IDEKMDAwMDAwMDIyNyAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyODgKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-length-ref-missing",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDUgMiBSID4+CnN0cmVhbQpBQkNERUZHSAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKNCAxCjAwMDAwMDAyMDEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjYyCiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-length-duplicate",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDggL0xlbmd0aCA4ID4+CnN0cmVhbQpBQkNERUZHSAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKNCAxCjAwMDAwMDAyMDEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjY4CiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-endstream-wrong-token",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDggPj4Kc3RyZWFtCkFCQ0RFRkdICmVuZHN0cmVhbVgKZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKNCAxCjAwMDAwMDAyMDEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjU5CiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-endobj-extra-token",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDggPj4Kc3RyZWFtCkFCQ0RFRkdICmVuZHN0cmVhbQpPVEhFUgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAo0IDEKMDAwMDAwMDIwMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyNjQKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-kids-scalar",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUiAxXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSAvUmVzb3VyY2VzIDw8ID4+ID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE3IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIwMwolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-kids-name",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUiAvT3RoZXJdIC9Db3VudCAxID4+CmVuZG9iagozIDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNzIgNzJdIC9SZXNvdXJjZXMgPDwgPj4gPj4KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMjIgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjA4CiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-kids-boolean",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUiB0cnVlXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSAvUmVzb3VyY2VzIDw8ID4+ID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTIwIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIwNgolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-kids-null",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUiBudWxsXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSAvUmVzb3VyY2VzIDw8ID4+ID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTIwIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIwNgolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-kids-string",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUiAoNCAwIFIpXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSAvUmVzb3VyY2VzIDw8ID4+ID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTIzIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIwOQolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-kids-hex",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUiA8MzQyMDMwMjA1Mj5dIC9Db3VudCAxID4+CmVuZG9iagozIDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNzIgNzJdIC9SZXNvdXJjZXMgPDwgPj4gPj4KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMjggMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjE0CiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-kids-array",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUiBbNCAwIFJdXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSAvUmVzb3VyY2VzIDw8ID4+ID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTIzIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIwOQolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-kids-missing-r",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDBdIC9Db3VudCAxID4+CmVuZG9iagozIDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNzIgNzJdIC9SZXNvdXJjZXMgPDwgPj4gPj4KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTMgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMTk5CiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-kids-duplicate",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUiAzIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDEyMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyMDcKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-count-0",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDAgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyMDEKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-count-2",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDIgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyMDEKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-count-1_5",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEuNSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSAvUmVzb3VyY2VzIDw8ID4+ID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE3IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIwMwolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-count-1_0",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEuMCA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSAvUmVzb3VyY2VzIDw8ID4+ID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE3IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTIgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIwMwolJUVPRgo="
+    },
+    {
+      "id": "R28-01-pdf-count-1_foo",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEvZm9vID4+CmVuZG9iagozIDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNzIgNzJdIC9SZXNvdXJjZXMgPDwgPj4gPj4KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTkgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjA1CiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-count-1_0_R",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgMCBSID4+CmVuZG9iagozIDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNzIgNzJdIC9SZXNvdXJjZXMgPDwgPj4gPj4KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTkgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjA1CiUlRU9GCg=="
+    },
+    {
+      "id": "R28-01-pdf-nested-count-control",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFs1IDAgUiA0IDAgUl0gL0NvdW50IDIgPj4KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9QYXJlbnQgMiAwIFIgL0tpZHMgWzMgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDUgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAo1IDEKMDAwMDAwMDEyMSAwMDAwMCBuIAozIDEKMDAwMDAwMDE5MiAwMDAwMCBuIAo0IDEKMDAwMDAwMDI2MSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgozMzAKJSVFT0YK"
+    },
+    {
+      "id": "R28-01-pdf-nested-count-wrong",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFs1IDAgUiA0IDAgUl0gL0NvdW50IDIgPj4KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9QYXJlbnQgMiAwIFIgL0tpZHMgWzMgMCBSXSAvQ291bnQgMiA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDUgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDcyIDcyXSA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAo1IDEKMDAwMDAwMDEyMSAwMDAwMCBuIAozIDEKMDAwMDAwMDE5MiAwMDAwMCBuIAo0IDEKMDAwMDAwMDI2MSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDEyIC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgozMzAKJSVFT0YK"
+    }
+  ]
+}

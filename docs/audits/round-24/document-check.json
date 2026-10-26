@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-10-20T12:53:29.572768+00:00",
+  "localLinksChecked": 80,
+  "missingLinks": [],
+  "utf8": "PASS",
+  "planOnlyAddedR24": "PASS",
+  "issues": "12 CLOSED_SOURCE + 2 PARTIALLY_FIXED",
+  "results": "203/230",
+  "requiredCommands": 13,
+  "passedCommands": 10,
+  "failedCommands": 3,
+  "supplementaryCommands": 1,
+  "pythonHelpersCompile": "PASS"
+}

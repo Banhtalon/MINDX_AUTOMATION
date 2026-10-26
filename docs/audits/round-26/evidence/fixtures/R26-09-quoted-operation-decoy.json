@@ -1,0 +1,30 @@
+{
+  "id": "R26-09-quoted-operation-decoy",
+  "pass": false,
+  "expectedVerified": 0,
+  "verified": 1,
+  "status": "VERIFIED",
+  "writes": 1,
+  "request": {
+    "operationName": "SaveHomeworkGrade",
+    "query": "mutation SaveHomeworkGrade { saved:deleteAttachment(note:\"mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }\") { id } }",
+    "variables": {
+      "input": {
+        "classId": "R26_NATIVE_PTA",
+        "sessionId": "R26_NATIVE_PTA_SESS_01",
+        "submissionId": "SUB1",
+        "studentId": "S1",
+        "score": 80,
+        "decision": "GRADE",
+        "feedback": "APPROVED FEEDBACK"
+      }
+    }
+  },
+  "response": {
+    "data": {
+      "saved": {
+        "id": "SUB1"
+      }
+    }
+  }
+}

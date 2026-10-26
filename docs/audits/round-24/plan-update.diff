@@ -1,0 +1,11 @@
+--- plan.before
++++ plan.after
+@@ -463,6 +463,8 @@
+ 
+ * [x] **AUDIT-R23:** Đã hoàn tất kiểm toán độc lập Giai đoạn 5 tại `docs/audits/round-23/REPORT.vi.md`; phán quyết **NO-GO cấp mã nguồn**, chưa nghiệm thu. Có 10/14 nhóm CLOSED_SOURCE, còn R19-01/R19-06/R19-09/R19-13; R23 đạt 92/116, còn 24 ca trượt. R22/R21/R20 nguyên bản đạt 53/53, 49/49, 145/145; hồi quy R12/13/16/17 đạt 185/186 (R16 lệch kỳ vọng 7 bảng so với 8 bảng hiện tại). Đã chạy đủ 12 lệnh trong snapshot TEMP: 10 PASS, 2 FAIL; Phase 4/5, TypeScript và build đạt. Giữ nguyên 364/364 tệp bảo vệ, không sửa src/scripts và không dùng dịch vụ hoặc dữ liệu thật. Dấu hoàn tất chỉ xác nhận đã làm kiểm toán, không ký nghiệm thu TASK-5.x.
+ 
++* [x] **AUDIT-R24:** Đã hoàn tất kiểm toán độc lập Giai đoạn 5 tại `docs/audits/round-24/REPORT.vi.md`; phán quyết **NO-GO cấp mã nguồn**, chưa nghiệm thu. Có **12/14 nhóm CLOSED_SOURCE**, mới đóng R19-06/R19-13, còn R19-01 (P2)/R19-09 (P1). R24 đạt **203/230**, còn 27 ca trượt; R23/R22/R21 nguyên bản chạy mới đạt **116/116, 53/53, 49/49**. R20 nguyên bản **141/145** do bốn ca cũ thiếu snapshot duyệt bắt buộc; bốn đối chứng tương thích R24 đủ snapshot đạt, không sửa lịch sử. Hồi quy R12/13/16/17 đạt **185/186**, R16 vẫn lệch kỳ vọng 7 bảng so với 8; đối chứng schema tương thích đạt. Đủ **13 lệnh bắt buộc** trong snapshot TEMP: 10 PASS, 3 FAIL; Phase 4/5, TypeScript và build **22/22 trang** đạt. Nạp trực tiếp mô-đun sản phẩm xác nhận lại sáu ca WebP/PDF hỏng bị nhận. Giữ nguyên **417/417 tệp bảo vệ** và **57/57 tệp src/scripts**; không dùng dịch vụ hoặc dữ liệu thật. Dấu hoàn tất chỉ xác nhận đã làm kiểm toán, không ký nghiệm thu TASK-5.x.
++
+ ---
+ 
+ ### GIAI ĐOẠN 6: LUỒNG 4 (AUTO UPLOAD SPCK BOTTOM-UP: MÁY $\rightarrow$ LMS) — QUÉT THƯ MỤC, GHÉP `studentId` & UPLOAD CHỐNG TRÙNG

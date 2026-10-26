@@ -1,0 +1,283 @@
+{
+  "audit": "AUDIT-R35",
+  "verdict": "NO-GO",
+  "startedAt": "2026-10-21T05:00:40.703365+00:00",
+  "head": "2570d96b6770957e218031c91f14ce98e766dfa7",
+  "scope": "Current working tree including uncommitted/untracked files; TASK-5.1..5.5 and Phase 6/7 interfaces",
+  "modelConfiguration": {
+    "independentReviewModel": "gpt-6.1-sol",
+    "reasoningEffort": "high",
+    "reviewRuns": 2
+  },
+  "initialGitStatus": " M AGENTS.md\n M GEMINI.md\n M MINDX_AUTOMATION_PLAN.md\n M data/config/courses_syllabus.json\n M data/config/grading_rubrics.json\n M data/config/zalo_templates.json\n M scripts/test-phase3.ts\n M src/app/api/queue/stream/route.ts\n M src/app/api/session-comments/approve/route.ts\n M src/app/api/session-comments/generate-ai/route.ts\n M src/app/api/session-comments/list/route.ts\n M src/app/api/session-comments/save-draft/route.ts\n M src/app/final-project/page.tsx\n M src/app/homework-grader/page.tsx\n M src/app/session-comments/page.tsx\n M src/app/syllabus-config/page.tsx\n M src/components/live-log-drawer.tsx\n M src/lib/db/json-config.ts\n M src/lib/db/sqlite.ts\n M src/lib/gemini/comment-generator.ts\n M src/lib/playwright/auth.ts\n M src/lib/playwright/lms-helpers.ts\n M src/lib/playwright/network-interceptor.ts\n M src/lib/playwright/save-comments.ts\n M src/lib/playwright/selectors.ts\n M src/lib/playwright/sync-class.ts\n M src/lib/zalo/broadcast-generator.ts\n M start-bot.bat\n M start-bot.command\n M tsconfig.tsbuildinfo\n?? .agent/\n?? .agents/\n?? data/debug_class_not_found.png\n?? data/debug_drawer_content.png\n?? data/debug_gql_tab3.json\n?? data/debug_submission_tab.png\n?? data/debug_tabpanel3.html\n?? docs/audits/\n?? scripts/test-phase4-codex-repros.ts\n?? scripts/test-phase5.ts\n?? scripts/test-phase6.ts\n?? scripts/test-phase7.ts\n?? src/app/api/config/\n?? src/app/api/homework-grader/\n?? src/app/api/spck/\n?? src/components/homework-auto-grader-tab.tsx\n?? src/lib/file-parsers/\n?? src/lib/gemini/homework-grader.ts\n?? src/lib/gemini/score-auditor.ts\n?? src/lib/gemini/spck-comment.ts\n?? src/lib/local-files/\n?? src/lib/playwright/download-submissions.ts\n?? src/lib/playwright/grade-worker.ts\n?? src/lib/playwright/scrape-scores.ts\n?? src/lib/playwright/spck-uploader.ts\n?? src/lib/utils/\n",
+  "snapshot": {
+    "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r35-check",
+    "sourceMatchedBeforeRun": true,
+    "excluded": [
+      ".env.local",
+      ".env",
+      "playwright-auth",
+      "real DB",
+      "real submissions",
+      ".git"
+    ],
+    "nodeModules": "junction to existing installed packages; no install or package edits",
+    "networkGuard": "docs/audits/round-31/network-guard.cjs",
+    "ESBUILD_BINARY_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-esbuild.exe",
+    "credentialEnvironmentRemoved": true
+  },
+  "requiredGates": [
+    {
+      "id": "r31-main",
+      "command": "node docs/audits/round-31/verify-independent.mjs",
+      "exitCode": 0,
+      "durationSeconds": 10.023,
+      "expectedTotal": 819,
+      "log": "r31-main.log",
+      "status": "PASS",
+      "summary": {
+        "total": 819,
+        "passed": 819,
+        "failed": 0
+      },
+      "artifactPathInHarness": "docs/audits/round-31/verify-results.json"
+    },
+    {
+      "id": "native-media",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/native-media-repro.mjs",
+      "exitCode": 0,
+      "durationSeconds": 0.52,
+      "expectedTotal": 221,
+      "log": "native-media.log",
+      "summary": {
+        "total": 221,
+        "passed": 221,
+        "failed": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "native-worker",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/native-worker-repro.mjs",
+      "exitCode": 0,
+      "durationSeconds": 0.589,
+      "expectedTotal": 88,
+      "log": "native-worker.log",
+      "summary": {
+        "total": 88,
+        "passed": 88,
+        "failed": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "pdf-name",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/pdf-name-repro.mjs",
+      "exitCode": 0,
+      "durationSeconds": 0.328,
+      "expectedTotal": 4,
+      "log": "pdf-name.log",
+      "summary": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "pdf-boundary",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/pdf-boundary-repro.mjs",
+      "exitCode": 0,
+      "durationSeconds": 0.253,
+      "expectedTotal": 28,
+      "log": "pdf-boundary.log",
+      "summary": {
+        "total": 28,
+        "passed": 28,
+        "failed": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "phase5",
+      "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase5.ts",
+      "exitCode": 0,
+      "durationSeconds": 0.895,
+      "expectedTotal": null,
+      "log": "phase5.log",
+      "status": "PASS"
+    },
+    {
+      "id": "typecheck",
+      "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false",
+      "exitCode": 0,
+      "durationSeconds": 0.357,
+      "expectedTotal": null,
+      "log": "typecheck.log",
+      "status": "PASS"
+    }
+  ],
+  "requiredGatePassCount": 7,
+  "fiveSuiteAssertions": {
+    "total": 1160,
+    "passed": 1160,
+    "failed": 0,
+    "uniqueCases": false
+  },
+  "additionalChecks": [
+    {
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-35/core-repro.mjs",
+      "exitCode": 1,
+      "expectedBehaviorFailures": 3,
+      "artifact": "core-repro-results.json",
+      "method": "Direct game parser import; downloader exact-source VM and collaborator doubles"
+    },
+    {
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-35/ui-repro.mjs",
+      "exitCode": 0,
+      "bugsReproduced": 3,
+      "artifact": "ui-repro-results.json",
+      "method": "Exact-source VM; deterministic hooks/HTTP/DB/AI doubles; real queue/route/batch loop"
+    },
+    {
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-35/rubric-repro.mjs",
+      "exitCode": 0,
+      "bugsReproduced": 1,
+      "artifact": "rubric-repro-results.json",
+      "method": "Exact config/auditor/approval source; in-memory collaborators; worker inspected statically"
+    }
+  ],
+  "findings": [
+    {
+      "id": "R35-01",
+      "severity": "P1",
+      "reproductionId": "R35-RUBRIC-SCALE",
+      "status": "OPEN_REPRODUCED",
+      "details": "../REPORT.vi.md"
+    },
+    {
+      "id": "R35-02",
+      "severity": "P2",
+      "reproductionId": "R35-UI-DRAFT-REFRESH",
+      "status": "OPEN_REPRODUCED",
+      "details": "../REPORT.vi.md"
+    },
+    {
+      "id": "R35-03",
+      "severity": "P2",
+      "reproductionId": "R35-UI-OLD-COMPLETION",
+      "status": "OPEN_REPRODUCED",
+      "details": "../REPORT.vi.md"
+    },
+    {
+      "id": "R35-04",
+      "severity": "P2",
+      "reproductionId": "R35-STOP-AI-BATCH",
+      "status": "OPEN_REPRODUCED",
+      "details": "../REPORT.vi.md"
+    },
+    {
+      "id": "R35-05",
+      "severity": "P2",
+      "reproductionId": "R35-NEW-SUBMISSION-HIDDEN-BY-CACHE",
+      "status": "OPEN_REPRODUCED",
+      "details": "../REPORT.vi.md"
+    },
+    {
+      "id": "R35-06",
+      "severity": "P2",
+      "reproductionId": "R35-SB3-NESTED-ARGS",
+      "status": "OPEN_REPRODUCED",
+      "details": "../REPORT.vi.md"
+    },
+    {
+      "id": "R35-07",
+      "severity": "P2",
+      "reproductionId": "R35-YYZ-PARTIAL-CORRUPTION",
+      "status": "OPEN_REPRODUCED",
+      "details": "../REPORT.vi.md"
+    }
+  ],
+  "sourceReview": {
+    "reviewedPhase5Files": [
+      "src/lib/file-parsers/archive-reader.ts",
+      "src/lib/file-parsers/code-reader.ts",
+      "src/lib/file-parsers/game-reader.ts",
+      "src/lib/file-parsers/index.ts",
+      "src/lib/file-parsers/media-reader.ts",
+      "src/app/api/homework-grader/approve/route.ts",
+      "src/app/api/homework-grader/download-and-grade/route.ts",
+      "src/app/api/homework-grader/export/route.ts",
+      "src/app/api/homework-grader/save-lms/route.ts",
+      "src/app/api/homework-grader/scores/route.ts",
+      "src/app/api/homework-grader/submissions/route.ts",
+      "src/lib/gemini/score-auditor.ts",
+      "src/lib/gemini/homework-grader.ts",
+      "src/lib/playwright/download-submissions.ts",
+      "src/lib/playwright/scrape-scores.ts",
+      "src/lib/playwright/grade-worker.ts",
+      "src/lib/db/sqlite.ts",
+      "src/components/homework-auto-grader-tab.tsx",
+      "src/app/homework-grader/page.tsx"
+    ],
+    "sharedChecks": [
+      "src/app/api/config/route.ts",
+      "src/app/syllabus-config/page.tsx",
+      "src/lib/db/json-config.ts",
+      "src/lib/queue/task-queue.ts",
+      "src/lib/playwright/selectors.ts",
+      "src/lib/playwright/browser-manager.ts",
+      "src/lib/playwright/network-interceptor.ts",
+      "src/lib/security/path-allowlist.ts",
+      "src/lib/security/local-guard.ts"
+    ],
+    "changedPathsComparedWithR31Manifest": [
+      "data/config/courses_syllabus.json",
+      "data/config/quick_tags.json",
+      "src/app/api/queue/stream/route.ts",
+      "src/app/final-project/page.tsx",
+      "src/app/syllabus-config/page.tsx",
+      "src/components/live-log-drawer.tsx",
+      "src/lib/db/sqlite.ts",
+      "src/lib/playwright/selectors.ts"
+    ],
+    "regressionConclusion": "R31 gates pass. Confirmed Phase 7 integration defects: rubric scale and Stop control of Phase 5 AI. Other findings are not attributed to a historical change without a matching baseline experiment."
+  },
+  "integrity": {
+    "allUnchanged": true,
+    "protectedCount": 1653,
+    "manifest": "integrity.json",
+    "nextEnvSha256": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000"
+  },
+  "planChange": {
+    "beforeSha256": "9942D4C63C78BAA375C06B186A09329E709AA349CA1BC90E456D23EE993AB9A7",
+    "afterSha256": "04A84F46E0CBD378B464433673DFE8E6A7D7AAD7EEFCF8C5F2B94AC865B5C937",
+    "action": "Added completed AUDIT-R35 entry; existing TASK-5.x acceptance flags unchanged"
+  },
+  "limitations": [
+    "No live browser/React scheduling validation",
+    "No live LMS/Gemini/authentication or real data access",
+    "No build or packaged launcher run",
+    "VM checks replace imports/types and supply deterministic collaborators",
+    "Worker raw score and /100 readback inspected statically, not live LMS"
+  ],
+  "launchAttempt1": {
+    "status": "LAUNCH_ERROR_BEFORE_TEST_EXECUTION",
+    "cause": "Windows backslashes consumed in NODE_OPTIONS preload path",
+    "resolution": "Forward slashes in TEMP runner; reran all seven gates",
+    "evidence": "launch-attempt-1/"
+  },
+  "cleanup": {
+    "completed": true,
+    "removedDirectories": [
+      "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r35-check",
+      "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-fixtures-6TIl1g",
+      "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-native-worker-AKCaBL"
+    ],
+    "snapshotExists": false,
+    "existingEsbuildPreserved": true,
+    "temporaryControllerScriptsRemoved": true
+  },
+  "completedAt": "2026-10-21T05:08:38.984382+00:00",
+  "finalGitStatus": " M AGENTS.md\n M GEMINI.md\n M MINDX_AUTOMATION_PLAN.md\n M data/config/courses_syllabus.json\n M data/config/grading_rubrics.json\n M data/config/zalo_templates.json\n M scripts/test-phase3.ts\n M src/app/api/queue/stream/route.ts\n M src/app/api/session-comments/approve/route.ts\n M src/app/api/session-comments/generate-ai/route.ts\n M src/app/api/session-comments/list/route.ts\n M src/app/api/session-comments/save-draft/route.ts\n M src/app/final-project/page.tsx\n M src/app/homework-grader/page.tsx\n M src/app/session-comments/page.tsx\n M src/app/syllabus-config/page.tsx\n M src/components/live-log-drawer.tsx\n M src/lib/db/json-config.ts\n M src/lib/db/sqlite.ts\n M src/lib/gemini/comment-generator.ts\n M src/lib/playwright/auth.ts\n M src/lib/playwright/lms-helpers.ts\n M src/lib/playwright/network-interceptor.ts\n M src/lib/playwright/save-comments.ts\n M src/lib/playwright/selectors.ts\n M src/lib/playwright/sync-class.ts\n M src/lib/zalo/broadcast-generator.ts\n M start-bot.bat\n M start-bot.command\n M tsconfig.tsbuildinfo\n?? .agent/\n?? .agents/\n?? data/debug_class_not_found.png\n?? data/debug_drawer_content.png\n?? data/debug_gql_tab3.json\n?? data/debug_submission_tab.png\n?? data/debug_tabpanel3.html\n?? docs/audits/\n?? scripts/test-phase4-codex-repros.ts\n?? scripts/test-phase5.ts\n?? scripts/test-phase6.ts\n?? scripts/test-phase7.ts\n?? src/app/api/config/\n?? src/app/api/homework-grader/\n?? src/app/api/spck/\n?? src/components/homework-auto-grader-tab.tsx\n?? src/lib/file-parsers/\n?? src/lib/gemini/homework-grader.ts\n?? src/lib/gemini/score-auditor.ts\n?? src/lib/gemini/spck-comment.ts\n?? src/lib/local-files/\n?? src/lib/playwright/download-submissions.ts\n?? src/lib/playwright/grade-worker.ts\n?? src/lib/playwright/scrape-scores.ts\n?? src/lib/playwright/spck-uploader.ts\n?? src/lib/utils/\n"
+}

@@ -1,0 +1,15 @@
+{
+  "harnessRootMatchesSnapshot": true,
+  "harnessMatchesResult": true,
+  "sourceHashesMatchRootAndSnapshot": true,
+  "inheritedR23CasesUnchangedAndAllPass": 116,
+  "commandLogsAndAvailableResultsMatchReceipts": true,
+  "supersededResultsNotRetained": [
+    {
+      "name": "round24",
+      "attempt": 1,
+      "observedSha256": "c8b8f6182993e43c4557f3df6849d3f25ca0db9c66d8df36292da1e57b77946b"
+    }
+  ],
+  "r24HarnessSha256": "59686d216b00a8655898e5cf4f8f0fb2a5c31e4326f933a44602671d823c607d"
+}

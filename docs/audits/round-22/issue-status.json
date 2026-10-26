@@ -1,0 +1,224 @@
+{
+  "closedSource": 10,
+  "partiallyFixed": 4,
+  "issues": [
+    {
+      "issueId": "R19-01",
+      "status": "PARTIALLY_FIXED",
+      "remainingSeverity": "P2",
+      "round22Checks": [
+        "R22-01-valid-png",
+        "R22-01-valid-jpg",
+        "R22-01-valid-webp",
+        "R22-01-valid-pdf",
+        "R22-01-png-crc-IHDR",
+        "R22-01-png-crc-IDAT",
+        "R22-01-png-crc-IEND",
+        "R22-01-png-invalid-zlib-header",
+        "R22-01-png-valid-header-broken-deflate",
+        "R22-01-png-invalid-bit-depth",
+        "R22-01-jpeg-valid-markers-invalid-component",
+        "R22-01-jpeg-zero-dimension",
+        "R22-01-webp-vp8-header-only",
+        "R22-01-webp-vp8l-header-only",
+        "R22-01-webp-vp8x-empty-child",
+        "R22-01-webp-valid-transparent",
+        "R22-01-pdf-comments-only",
+        "R22-01-pdf-missing-pages"
+      ],
+      "failingRound22Checks": [
+        "R22-01-png-valid-header-broken-deflate",
+        "R22-01-png-invalid-bit-depth",
+        "R22-01-jpeg-valid-markers-invalid-component",
+        "R22-01-webp-vp8-header-only",
+        "R22-01-webp-vp8l-header-only",
+        "R22-01-webp-vp8x-empty-child",
+        "R22-01-webp-valid-transparent",
+        "R22-01-pdf-comments-only",
+        "R22-01-pdf-missing-pages"
+      ],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "CRC/header checks fix old samples, but undecodable payloads, invalid PDF objects and valid alpha WebP still fail safe parsing requirements."
+    },
+    {
+      "issueId": "R19-02",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "round22Checks": [],
+      "failingRound22Checks": [],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Original R20/R21 rubric-integrity checks pass."
+    },
+    {
+      "issueId": "R19-03",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "round22Checks": [],
+      "failingRound22Checks": [],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Original R20/R21 composite content-hash checks pass."
+    },
+    {
+      "issueId": "R19-04",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "round22Checks": [
+        "R22-04-supplied-unchanged",
+        "R22-04-supplied-changed",
+        "R22-04-supplied-deleted"
+      ],
+      "failingRound22Checks": [],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Physical file checked after AI for both parsed and supplied content; changed/deleted fixtures are ignored without overwriting DB."
+    },
+    {
+      "issueId": "R19-05",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "round22Checks": [
+        "R22-05-ui-rubric-single",
+        "R22-05-ui-rubric-bulk",
+        "R22-05-ui-rubric-criterion"
+      ],
+      "failingRound22Checks": [],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Single approval, bulk approval and criterion editing all send active rubric; unrelated criteria blocked."
+    },
+    {
+      "issueId": "R19-06",
+      "status": "PARTIALLY_FIXED",
+      "remainingSeverity": "P1",
+      "round22Checks": [
+        "R22-06-single-missing-hash-true",
+        "R22-06-single-missing-hash-false",
+        "R22-06-bulk-review-missing-list",
+        "R22-06-bulk-review-missing-feedback",
+        "R22-06-bulk-review-matching",
+        "R22-06-bulk-review-wrong-hash",
+        "R22-06-ui-bulk-drift-criteria",
+        "R22-06-ui-bulk-drift-override",
+        "R22-06-ui-bulk-drift-decision",
+        "R22-06-ui-bulk-drift-feedback",
+        "R22-06-ui-bulk-drift-file",
+        "R22-06-graded-hash-reload"
+      ],
+      "failingRound22Checks": [
+        "R22-06-single-missing-hash-false",
+        "R22-06-bulk-review-missing-list",
+        "R22-06-bulk-review-missing-feedback",
+        "R22-06-ui-bulk-drift-criteria",
+        "R22-06-ui-bulk-drift-override",
+        "R22-06-ui-bulk-drift-decision",
+        "R22-06-graded-hash-reload"
+      ],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Bulk ignores reviewed points/override/decision; missing proof is optional; graded file hash is only in process memory."
+    },
+    {
+      "issueId": "R19-07",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "round22Checks": [],
+      "failingRound22Checks": [],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Exact submission/student modal identity checks retain passing regressions."
+    },
+    {
+      "issueId": "R19-08",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "round22Checks": [],
+      "failingRound22Checks": [],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Lesson/session mapping checks retain passing regressions."
+    },
+    {
+      "issueId": "R19-09",
+      "status": "PARTIALLY_FIXED",
+      "remainingSeverity": "P1",
+      "round22Checks": [
+        "R22-09-operation-normal",
+        "R22-09-operation-comment-query",
+        "R22-09-operation-selected-query",
+        "R22-09-operation-attachment",
+        "R22-09-operation-selected-mutation",
+        "R22-09-operation-missing-query",
+        "R22-09-operation-alias-introspection",
+        "R22-09-operation-skipped-grade",
+        "R22-09-operation-literal-other-submission"
+      ],
+      "failingRound22Checks": [
+        "R22-09-operation-missing-query",
+        "R22-09-operation-alias-introspection",
+        "R22-09-operation-skipped-grade",
+        "R22-09-operation-literal-other-submission"
+      ],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Old comment/selected-operation samples blocked, but alias/introspection, skipped mutation, missing query and unbound variables can still verify."
+    },
+    {
+      "issueId": "R19-10",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "round22Checks": [],
+      "failingRound22Checks": [],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Feedback and decision readback retain passing regressions."
+    },
+    {
+      "issueId": "R19-11",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "round22Checks": [],
+      "failingRound22Checks": [],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Conditional final verification retains passing regressions."
+    },
+    {
+      "issueId": "R19-12",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "round22Checks": [],
+      "failingRound22Checks": [],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Class/session response-race checks retain passing regressions."
+    },
+    {
+      "issueId": "R19-13",
+      "status": "PARTIALLY_FIXED",
+      "remainingSeverity": "P1",
+      "round22Checks": [
+        "R22-13-reordered-same-field",
+        "R22-13-cross-field-reorder",
+        "R22-13-two-tabs-equal-sequence",
+        "R22-13-reload-counter",
+        "R22-13-invalid-request-poison",
+        "R22-13-route-reload"
+      ],
+      "failingRound22Checks": [
+        "R22-13-cross-field-reorder",
+        "R22-13-two-tabs-equal-sequence",
+        "R22-13-reload-counter",
+        "R22-13-invalid-request-poison",
+        "R22-13-route-reload"
+      ],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Same-field monotonic case fixed, but partial-field saves, independent counters, invalid-request poisoning and reloads remain unsafe."
+    },
+    {
+      "issueId": "R19-14",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "round22Checks": [],
+      "failingRound22Checks": [],
+      "basis": "Fresh unchanged R20 (145), R21 (49), required regression suites, plus R22 boundary cases where present. Source-level scope only.",
+      "assessment": "Download failure blocks AI, including skipAi, with retained passing regressions."
+    }
+  ],
+  "R12Regression": {
+    "status": "PASS",
+    "passed": 43,
+    "total": 43,
+    "extraHostnameChecks": "R22-R12-host-mindx.edu.vn and R22-R12-host-lms-api PASS"
+  }
+}

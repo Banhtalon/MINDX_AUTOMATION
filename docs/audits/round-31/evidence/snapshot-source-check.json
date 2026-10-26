@@ -1,0 +1,53 @@
+{
+  "snapshots": [
+    {
+      "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-20261020T233526Z-mindx-round25-compat\\snapshot",
+      "filesChecked": 74,
+      "changedFiles": [
+        "next-env.d.ts"
+      ],
+      "productMatches": true,
+      "historicalHarnessBytesUnchanged": true
+    },
+    {
+      "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-20261020T233526Z-mindx-round30-compat-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+      "filesChecked": 74,
+      "changedFiles": [],
+      "productMatches": true,
+      "historicalHarnessBytesUnchanged": true
+    },
+    {
+      "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-20261020T233526Z-mindx-round30-x-mindx-round29-x-mindx-round28-x-mindx-round27-x-mindx-round26-x-mindx-round25-x-mindx-round24-x-mindx-round23-x-mindx-round22-x\\snapshot",
+      "filesChecked": 74,
+      "changedFiles": [
+        "next-env.d.ts"
+      ],
+      "productMatches": true,
+      "historicalHarnessBytesUnchanged": true
+    },
+    {
+      "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-history-20261020T233526Z-mindx-round20-compat-mindx-round21-compat\\snapshot",
+      "filesChecked": 74,
+      "changedFiles": [],
+      "productMatches": true,
+      "historicalHarnessBytesUnchanged": true
+    }
+  ],
+  "executedAuditFiles": {
+    "verify-independent.mjs": "43fe8a046a91b20cde03e8b0fd6456e563b47a5eb69cad5809bab9fc7288082a",
+    "native-media-repro.mjs": "e4fea5fcb44d986adc8d1145a51dd4c58b972216e4a379c9b10a6eb7cca093cd",
+    "native-worker-repro.mjs": "5f7f7a71f49eeb0cbeee4385756e54e203493a2a0a58c5a1e08df6f95a61013c",
+    "media-cases.mjs": "18b81745470cf2ab63a5f02830c6c70067de201b5fcfa9aeb1f9fc9d9dd78634",
+    "network-guard.cjs": "64867bab187a3b052f0442516edc0b137f250e186692ed0a1444c34d2869d044",
+    "pdf-name-repro.mjs": "e93ea886216d349db3c300da3ea4a3289dea8eb267b3a1584aacb2579124e06f",
+    "pdf-name-oracle.py": "82f3b7169dbe207c480181ccdac6293691541aaf308d62e986a265c9947e1502",
+    "pdf_dict_oracle.py": "5ae0e8e9ce7d384fd5ecf14855c7c752426864295071d2d42ea198ae01c4e9a0",
+    "pdf-oracle.py": "932c2ad406c8a7fb3b4ef7f28f477b64a21f3d6640b86a138641d2489c63d483",
+    "graphql-oracle.mjs": "3d63b947ba2b838bea79b7d67cb371da0c0ff6ee653f3fcf6c2518c4c2ceac61",
+    "block-string-oracle.mjs": "2335ce1531203fa92cdcfd596d496d218fb2481896ffbd417222b6b6d5b39f9f",
+    "graphql_worker_oracle.py": "869e7f4234a9ca784baf3afea190cce785d98e0029017edad5a156dfeb3a06a0",
+    "export-worker-cases.mjs": "c4c3c3dac373e0467ee5d74af0679d25c1210bd648df88a1e92423bb5079e13b",
+    "pdf-boundary-repro.mjs": "9f4823903e815489bc3b80cc7d861c49e75f931a50b59b2d6abf079df08970ac"
+  },
+  "allMatch": true
+}

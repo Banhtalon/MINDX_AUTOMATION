@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-10-20T05:29:43.393Z",
+  "externalRequests": [],
+  "pageErrors": [],
+  "observations": {
+    "insufficientCopy": {
+      "status": 200,
+      "returnedText": "Chưa đủ thông tin để nhận xét. Vui lòng chọn ít nhất 1 Quick Tag hoặc nhập ghi chú của giáo viên.",
+      "storedText": "TEACHER DRAFT TO PRESERVE",
+      "copiedText": "Chưa đủ thông tin để nhận xét. Vui lòng chọn ít nhất 1 Quick Tag hoặc nhập ghi chú của giáo viên.",
+      "priorEditorHidden": true,
+      "reproduced": true
+    },
+    "noteConflictFixed": {
+      "staleIgnored": true,
+      "visibleNote": "SECOND TAB UNSAVED",
+      "storedNote": "FIRST TAB SAVED",
+      "warningShowsSavedNote": true
+    },
+    "tagConflictWrongValue": {
+      "staleIgnored": true,
+      "storedTags": "[\"Hăng hái phát biểu\"]",
+      "actualStoredTag": "Hăng hái phát biểu",
+      "unsavedTag": "Tập trung cao độ",
+      "displayedStoredValue": "PRESENT",
+      "reproduced": true
+    },
+    "hostileOriginBlocked": true
+  },
+  "completed": true
+}

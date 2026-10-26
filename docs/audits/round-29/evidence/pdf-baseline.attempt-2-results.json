@@ -1,0 +1,8 @@
+{
+  "status": "BASELINE_SOURCE_HASH_MISMATCH",
+  "method": "Read-only hash check. Old TEMP snapshot is mutable and no longer matches the R28 recorded source. No baseline product executed; no regression claim.",
+  "baselinePath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round28-20261020T201903Z-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\src\\lib\\file-parsers\\media-reader.ts",
+  "observedSha256": "c019389c427ca6c0ce0607309850100f1d46020a0c942727e585aa6fbddb9a1a",
+  "declaredSha256": "0decc7a823d03784cfe62564bad6980fc94b02e76dbfa40f93a393fea3ae23cd",
+  "results": []
+}

@@ -1,0 +1,10 @@
+{
+  "baseline": "round-14/source-state.json",
+  "changed": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "added": [
+    "start-bot.bat",
+    "start-bot.command"
+  ]
+}

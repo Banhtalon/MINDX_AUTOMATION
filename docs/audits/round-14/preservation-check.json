@@ -1,0 +1,51 @@
+{
+  "checkedAt": "2026-10-20T04:04:42.423Z",
+  "head": "2570d96b6770957e218031c91f14ce98e766dfa7",
+  "baselineFileCount": 57,
+  "unchangedFiles": 56,
+  "intentionalChanges": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "planOnlyAddsRound14AuditNote": true,
+  "historicalArtifactCount": 30,
+  "allHistoricalArtifactsByteIdentical": true,
+  "nextEnv": {
+    "byteIdentical": true,
+    "sha256": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000"
+  },
+  "allFiveCommandsPassed": true,
+  "independentGroups": {
+    "passed": 132,
+    "failed": 0
+  },
+  "reportCoverage": {
+    "historicalCodes": 49,
+    "round2Subcases": 14
+  },
+  "buildArtifacts": {
+    ".next/BUILD_ID": "afbab2bedc008cbd6b0d2592cbb0866e16bf7cd382a8909d6ca72099d0ab5e8c",
+    ".next/prerender-manifest.json": "a830ea59d50f77c3b166ae316d825c486e90d11bd89c567bd35f73fca38ec1e6",
+    ".next/routes-manifest.json": "29529b9e9ff6f383ad464863a33d230b67161bb934dbbf321662b0a8b9008d27",
+    ".next/server/app-paths-manifest.json": "196672075e918e14fd77ea0b845df07bf95cb4c036ccb1f5c48823155bea5959"
+  },
+  "artifacts": {
+    "docs/audits/round-14/REPORT.vi.md": "780b51140bb2079177e4692c88b13840c6425cfe11c2627c0d93ea466c1c43ff",
+    "docs/audits/round-14/baseline-comparison.json": "90a9c02515e75c6d0224c96abc62e8ace64b40c1ca70906ff5cf6004edbd78e6",
+    "docs/audits/round-14/build.log": "ac2f77a063c298e15d231f7e38aa1e548fd8b796f2b62465f259ded2d5673de6",
+    "docs/audits/round-14/commands.json": "08efeedf46b7ad3634fcd8f8722632a87fc809f8f3afb097248233b66eb053d0",
+    "docs/audits/round-14/git-status.before.txt": "0fe3753c4652099107515baca92166f8347571e02c60f7e86098c562ac923c0a",
+    "docs/audits/round-14/next-env.before.txt": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
+    "docs/audits/round-14/plan.before.md": "98a50b3ed978459f7ae0491556dd316e65fdfe01a1e96b2c115abf2a5697a4bf",
+    "docs/audits/round-14/regressions.log": "e20d6d4b5c4343553d369502b32a4c16dfc7e0eaaed6f20b3ba48c51b12104d4",
+    "docs/audits/round-14/round12-independent-results.json": "eb367caa7a48b5b051c993ea86eec79944d6c8df9f518e8dd6d67d0314d7c911",
+    "docs/audits/round-14/round12-independent.log": "e977d1aa8967b24196e007d70b6b67c684315c48304136b9da4253e1b702fd6b",
+    "docs/audits/round-14/round12-results.before.json": "f0762c16358740ba5b498735252350f825c4ccb35af6aa8f710a63225f88cbf0",
+    "docs/audits/round-14/round13-independent-results.json": "55736e1eec962767ec7cbaa52c1a7f686a1dd5062129de27aba5e5ff40587c45",
+    "docs/audits/round-14/round13-independent.log": "ad6d3071f5fbbe36ab5e405a723a8e15144bd801155e115ac93e878eb08e4c63",
+    "docs/audits/round-14/round13-results.before.json": "c7a590f72877862138b58fd6961ed2f9d0f82292c8b05b83a75494d458afee06",
+    "docs/audits/round-14/run-checks.mjs": "dd7cf5f79216cade08ae0370076bffd2540960a0fd473fd5fc4f1a6e4c7b5afc",
+    "docs/audits/round-14/source-state.json": "bdd6598c935f2a36998e1ccd903fc72cadd4cdc5de7d5b9c7ce9a508e702aa0b",
+    "docs/audits/round-14/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "docs/audits/round-14/verify-preservation.mjs": "73e8bf17fd33b0da378541519a763ff4630dd6fb862e7d65dd9808d248668184"
+  }
+}

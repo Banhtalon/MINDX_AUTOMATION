@@ -1,0 +1,89 @@
+{
+  "changedSinceR36": [
+    "scripts/test-phase5.ts",
+    "src/components/homework-auto-grader-tab.tsx"
+  ],
+  "changedFileHashes": {
+    "scripts/test-phase5.ts": "C009A17A052F9EA8955541B0A6F25D14D7C58A2FC9C214D1F4515DBB3DAD323C",
+    "src/components/homework-auto-grader-tab.tsx": "3BCBBA6F6EC50178F5F4B66EC75CFC05A47AF7703C4752D4837CE4864ABC80F0"
+  },
+  "findings": [],
+  "closures": [
+    {
+      "id": "R35-01",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/app/syllabus-config/page.tsx:667",
+        "src/app/api/config/route.ts:193",
+        "src/lib/gemini/score-auditor.ts:113",
+        "src/lib/gemini/homework-grader.ts:360",
+        "src/app/api/homework-grader/download-and-grade/route.ts:143",
+        "src/app/api/homework-grader/approve/route.ts"
+      ],
+      "proof": "Thang 10 bị cấu hình/kiểm điểm/chấm/duyệt từ chối; thang 100 cho 40+40=80, duyệt APPROVED. AI calls=0 với barem sai."
+    },
+    {
+      "id": "R35-02",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/components/homework-auto-grader-tab.tsx:231"
+      ],
+      "proof": "Lưu lỗi rồi làm mới cùng file giữ chữ và cờ chưa lưu; xác nhận draftSeq mới xóa cờ."
+    },
+    {
+      "id": "R35-03",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/components/homework-auto-grader-tab.tsx:208",
+        "src/components/homework-auto-grader-tab.tsx:355"
+      ],
+      "proof": "Đổi sang buổi 2 khi chấm buổi 1: SUB2 hiện đúng và isLoadingSubs=false; không phát GET cũ làm vô hiệu lượt mới."
+    },
+    {
+      "id": "R35-04",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/lib/gemini/homework-grader.ts:618",
+        "src/lib/gemini/homework-grader.ts:710",
+        "src/app/api/homework-grader/download-and-grade/route.ts:231"
+      ],
+      "proof": "Stop ngăn SUB2; API success=false; chấm đơn gọi AI giả 1 lần, ghi 0 lần, trả TASK_CANCELLED."
+    },
+    {
+      "id": "R35-05",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/lib/playwright/download-submissions.ts:147"
+      ],
+      "proof": "Đọc bảng mới trước khi lọc: scrapeCalls=1 dù cache cũ chưa có bài. Bộ gốc cố ý dừng tại BrowserManager giả, chưa chứng minh tải thật."
+    },
+    {
+      "id": "R35-06",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/lib/file-parsers/game-reader.ts:25"
+      ],
+      "proof": "Giữ đủ toán hạng 1+2 và 100+200; ca vòng tham chiếu và sâu đều kết thúc có giới hạn."
+    },
+    {
+      "id": "R35-07",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/lib/file-parsers/game-reader.ts:623",
+        "src/lib/file-parsers/game-reader.ts:646"
+      ],
+      "proof": "GML hỏng làm PARSE_ERROR với tên Step_0.gml; YY JSON hỏng bị từ chối; gói hợp lệ vẫn đọc được."
+    },
+    {
+      "id": "R36-01",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/components/homework-auto-grader-tab.tsx:231",
+        "src/components/homework-auto-grader-tab.tsx:306",
+        "scripts/test-phase5.ts:686"
+      ],
+      "proof": "file-v2 thay nháp cũ, unsaved={} ngay lần làm mới đầu; approveResult=true, approvalCalls=1. Test Phase5 kiểm tra cả giữ nháp cùng file và Duyệt sau đổi file."
+    }
+  ],
+  "scope": "Direct reading of the final source and related callers; no product edits; synthetic/runtime-source verification only."
+}

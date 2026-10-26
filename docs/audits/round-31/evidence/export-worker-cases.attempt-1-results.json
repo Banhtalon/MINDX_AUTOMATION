@@ -1,0 +1,1784 @@
+{
+  "classId": "R29_NATIVE_PTA",
+  "sessionId": "R29_NATIVE_PTA_SESS_01",
+  "total": 88,
+  "results": [
+    {
+      "id": "R27-09-control-bound",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-literal-unpaired-open",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED { FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED { FEEDBACK"
+    },
+    {
+      "id": "R27-09-bound-unpaired-open",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED { FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED { FEEDBACK"
+    },
+    {
+      "id": "R27-09-literal-unpaired-close",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED } FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED } FEEDBACK"
+    },
+    {
+      "id": "R27-09-bound-unpaired-close",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED } FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED } FEEDBACK"
+    },
+    {
+      "id": "R27-09-literal-hash-newline",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED #\\nFEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED #\nFEEDBACK"
+    },
+    {
+      "id": "R27-09-bound-hash-newline",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED #\nFEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED #\nFEEDBACK"
+    },
+    {
+      "id": "R27-09-literal-nested-parenthesis",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED ) ( FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED ) ( FEEDBACK"
+    },
+    {
+      "id": "R27-09-bound-nested-parenthesis",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED ) ( FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED ) ( FEEDBACK"
+    },
+    {
+      "id": "R27-09-literal-escaped-quote",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED \\\" FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED \" FEEDBACK"
+    },
+    {
+      "id": "R27-09-bound-escaped-quote",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED \" FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED \" FEEDBACK"
+    },
+    {
+      "id": "R27-09-literal-sentinel-text",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"__GQL_STR_0__\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "__GQL_STR_0__"
+    },
+    {
+      "id": "R27-09-bound-sentinel-text",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "__GQL_STR_0__"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "__GQL_STR_0__"
+    },
+    {
+      "id": "R27-09-literal-exponent-score",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:8e1,feedback:\"APPROVED FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-literal-block-string",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"APPROVED FEEDBACK\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-literal-block-string-braces",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"APPROVED { FEEDBACK\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED { FEEDBACK"
+    },
+    {
+      "id": "R27-09-nested-selection",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id submission { id } } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "submission": {
+              "id": "SUB1"
+            }
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-deep-nested-selection",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id submission { student { id } } } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "submission": {
+              "student": {
+                "id": "S1"
+              }
+            }
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-comment-bound",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { # fake saveHomeworkGrade(input:$wrong)\n saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-multi-operation-selected",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "query ReadHomework { ignored:previewHomework { id } } mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-selected-query",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "query SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-wrong-bound-variable",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "OTHER",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          },
+          "unused": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-no-referenced-variable",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "unused": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-unreferenced-conflict",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          },
+          "unused": {
+            "submissionId": "OTHER",
+            "score": 1
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-quoted-decoy-deleteAttachment-1",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:deleteAttachment(note:\"mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-quoted-decoy-deleteAttachment-3",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:deleteAttachment(note:\"\"\"mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }\"\"\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-block-quote-decoy-deleteAttachment",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:deleteAttachment(note:\"\"\"a \" mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } } \" b\"\"\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-quoted-decoy-previewHomework-1",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:previewHomework(note:\"mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-quoted-decoy-previewHomework-3",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:previewHomework(note:\"\"\"mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }\"\"\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-block-quote-decoy-previewHomework",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:previewHomework(note:\"\"\"a \" mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } } \" b\"\"\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-placeholder-enum-decoy",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(note:\"APPROVED FEEDBACK\",classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:__GQL_STR_0__) { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R27-09-wrong-response-alias",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saveHomeworkGrade": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-number-8E1",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:8E1,feedback:\"APPROVED FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-number-8e_1",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:8e+1,feedback:\"APPROVED FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-number-80_0",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80.0,feedback:\"APPROVED FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-number-0_8e2",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:0.8e2,feedback:\"APPROVED FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-number-800e_1",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:800e-1,feedback:\"APPROVED FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-block-two-lines",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED\n    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\nFEEDBACK"
+    },
+    {
+      "id": "R28-09-block-two-lines-crlf",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\r\n    APPROVED\r\n    FEEDBACK\r\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\nFEEDBACK"
+    },
+    {
+      "id": "R28-09-block-uneven-indent",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED\n      FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\n  FEEDBACK"
+    },
+    {
+      "id": "R28-09-block-tabs",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n\tAPPROVED\n\tFEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\nFEEDBACK"
+    },
+    {
+      "id": "R28-09-block-escaped-triple",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"APPROVED \\\"\"\" FEEDBACK\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED \"\"\" FEEDBACK"
+    },
+    {
+      "id": "R28-09-ordinary-unicode",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"APPROVED \\u0046EEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-ordinary-escaped-tab",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"APPROVED\\tFEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-ordinary-escaped-newline",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"APPROVED\\nFEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\nFEEDBACK"
+    },
+    {
+      "id": "R28-09-selection-depth-3",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { child { child { child { id } } } } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-selection-depth-8",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { child { child { child { child { child { child { child { child { id } } } } } } } } } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-selection-depth-24",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { child { child { child { child { child { child { child { child { child { child { child { child { child { child { child { child { child { child { child { child { child { child { child { child { id } } } } } } } } } } } } } } } } } } } } } } } } } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-comment-crlf",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { # } mutation Wrong { fake }\r\n saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R29_NATIVE_PTA",
+            "sessionId": "R29_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-nested-object",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:{envelope:{classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"APPROVED FEEDBACK\"}}) { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-nested-wrong-submission",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:{envelope:{classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"OTHER\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"APPROVED FEEDBACK\"}}) { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-array-business-decoy",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:[{classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"APPROVED FEEDBACK\"}]) { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-duplicate-score",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,score:1,feedback:\"APPROVED FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-nested-duplicate-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"APPROVED FEEDBACK\",feedback:\"WRONG\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-feedback-kind-__GQL_STR_1__",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:__GQL_STR_1__) { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-feedback-kind-APPROVED_FEEDBACK",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:APPROVED_FEEDBACK) { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-feedback-kind-null",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:null) { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-feedback-kind-false",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:false) { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-submission-kind-80",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:80,studentId:\"S1\",decision:GRADE,score:80,feedback:\"APPROVED FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-submission-kind-null",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:null,studentId:\"S1\",decision:GRADE,score:80,feedback:\"APPROVED FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-submission-kind-__SUB1__",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:[\"SUB1\"],studentId:\"S1\",decision:GRADE,score:80,feedback:\"APPROVED FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-submission-kind-_id__SUB1__",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:{id:\"SUB1\"},studentId:\"S1\",decision:GRADE,score:80,feedback:\"APPROVED FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED FEEDBACK"
+    },
+    {
+      "id": "R28-09-opaque-feedback-ordinary",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"APPROVED } # FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED } # FEEDBACK"
+    },
+    {
+      "id": "R28-09-opaque-feedback-block",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"APPROVED } # FEEDBACK\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED } # FEEDBACK"
+    },
+    {
+      "id": "R29-09-first-line-excluded",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"APPROVED\n    FEEDBACK\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\nFEEDBACK"
+    },
+    {
+      "id": "R29-09-first-line-excluded-wrong-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"APPROVED\n    FEEDBACK\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED\nFEEDBACK CHANGED"
+    },
+    {
+      "id": "R29-09-first-line-indent-retained",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"  APPROVED\n    FEEDBACK\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "  APPROVED\nFEEDBACK"
+    },
+    {
+      "id": "R29-09-first-line-indent-retained-wrong-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"  APPROVED\n    FEEDBACK\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "  APPROVED\nFEEDBACK CHANGED"
+    },
+    {
+      "id": "R29-09-blank-edges",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n \t\n    APPROVED\n    FEEDBACK\n \t\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\nFEEDBACK"
+    },
+    {
+      "id": "R29-09-blank-edges-wrong-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n \t\n    APPROVED\n    FEEDBACK\n \t\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED\nFEEDBACK CHANGED"
+    },
+    {
+      "id": "R29-09-internal-blank",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED\n\n    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\n\nFEEDBACK"
+    },
+    {
+      "id": "R29-09-internal-blank-wrong-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED\n\n    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED\n\nFEEDBACK CHANGED"
+    },
+    {
+      "id": "R29-09-mixed-eols",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\r\n    APPROVED\r    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\nFEEDBACK"
+    },
+    {
+      "id": "R29-09-mixed-eols-wrong-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\r\n    APPROVED\r    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED\nFEEDBACK CHANGED"
+    },
+    {
+      "id": "R29-09-tab-space-indent",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n\t APPROVED\n\t FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\nFEEDBACK"
+    },
+    {
+      "id": "R29-09-tab-space-indent-wrong-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n\t APPROVED\n\t FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED\nFEEDBACK CHANGED"
+    },
+    {
+      "id": "R29-09-unequal-indent",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED\n      FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\n  FEEDBACK"
+    },
+    {
+      "id": "R29-09-unequal-indent-wrong-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED\n      FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED\n  FEEDBACK CHANGED"
+    },
+    {
+      "id": "R29-09-zero-common-indent",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\nAPPROVED\n    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\n    FEEDBACK"
+    },
+    {
+      "id": "R29-09-zero-common-indent-wrong-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\nAPPROVED\n    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED\n    FEEDBACK CHANGED"
+    },
+    {
+      "id": "R29-09-escape-triple",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED \\\"\"\"\n    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED \"\"\"\nFEEDBACK"
+    },
+    {
+      "id": "R29-09-escape-triple-wrong-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED \\\"\"\"\n    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED \"\"\"\nFEEDBACK CHANGED"
+    },
+    {
+      "id": "R29-09-single-quote-opaque",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED \" FEEDBACK\n    END\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED \" FEEDBACK\nEND"
+    },
+    {
+      "id": "R29-09-single-quote-opaque-wrong-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED \" FEEDBACK\n    END\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED \" FEEDBACK\nEND CHANGED"
+    },
+    {
+      "id": "R29-09-literal-backslash",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED\\n\n    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED\\n\nFEEDBACK"
+    },
+    {
+      "id": "R29-09-literal-backslash-wrong-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED\\n\n    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED\\n\nFEEDBACK CHANGED"
+    },
+    {
+      "id": "R29-09-brace-comment-opaque",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED } #\n    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 1,
+      "feedback": "APPROVED } #\nFEEDBACK"
+    },
+    {
+      "id": "R29-09-brace-comment-opaque-wrong-feedback",
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R29_NATIVE_PTA\",sessionId:\"R29_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n    APPROVED } #\n    FEEDBACK\n\"\"\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      },
+      "expected": 0,
+      "feedback": "APPROVED } #\nFEEDBACK CHANGED"
+    }
+  ]
+}

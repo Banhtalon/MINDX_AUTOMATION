@@ -1,0 +1,14 @@
+{
+  "documents": [
+    "REPORT.vi.md",
+    "FIX_PROMPT.vi.md"
+  ],
+  "allRelativeLinksExist": true,
+  "linkCount": 43,
+  "countsMatchExecutedEvidence": true,
+  "allTwelveFailedFixturesPresentAndHashed": true,
+  "protectedFilesUnchanged": 652,
+  "productSrcScriptsUnchanged": 57,
+  "masterPlanOnlyAuditEntryAdded": true,
+  "result": "PASS"
+}

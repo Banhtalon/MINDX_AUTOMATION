@@ -1,0 +1,70 @@
+﻿{
+    "audit":  "AUDIT-R41",
+    "head":  "2570d96b6770957e218031c91f14ce98e766dfa7",
+    "startedAt":  "2026-10-21T08:19:40.6155828Z",
+    "completedAt":  "2026-10-21T08:20:20.4224894Z",
+    "clone":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round40-phase7",
+    "copyIntegrity":  {
+                          "checkedBeforeGates":  true,
+                          "differences":  [
+
+                                          ],
+                          "identical":  true,
+                          "filesCompared":  1871
+                      },
+    "gates":  [
+                  {
+                      "id":  "adversarial",
+                      "command":  "node --import tsx docs/audits/round-40/adversarial.mjs",
+                      "exitCode":  0,
+                      "startedAt":  "2026-10-21T08:20:07.0620090Z",
+                      "durationMs":  3684,
+                      "log":  "adversarial.log"
+                  },
+                  {
+                      "id":  "phase7",
+                      "command":  "node node_modules/tsx/dist/cli.mjs scripts/test-phase7.ts",
+                      "exitCode":  0,
+                      "startedAt":  "2026-10-21T08:20:10.7652635Z",
+                      "durationMs":  337,
+                      "log":  "phase7.log"
+                  },
+                  {
+                      "id":  "phase6",
+                      "command":  "node node_modules/tsx/dist/cli.mjs scripts/test-phase6.ts",
+                      "exitCode":  0,
+                      "startedAt":  "2026-10-21T08:20:11.1081421Z",
+                      "durationMs":  2812,
+                      "log":  "phase6.log"
+                  },
+                  {
+                      "id":  "phase5",
+                      "command":  "node node_modules/tsx/dist/cli.mjs scripts/test-phase5.ts",
+                      "exitCode":  0,
+                      "startedAt":  "2026-10-21T08:20:13.9221993Z",
+                      "durationMs":  733,
+                      "log":  "phase5.log"
+                  },
+                  {
+                      "id":  "tsc",
+                      "command":  "node node_modules/typescript/bin/tsc --noEmit --incremental false",
+                      "exitCode":  0,
+                      "startedAt":  "2026-10-21T08:20:14.6649221Z",
+                      "durationMs":  389,
+                      "log":  "tsc.log"
+                  }
+              ],
+    "integrity":  {
+                      "nextEnvSha256":  "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+                      "differences":  [
+
+                                      ],
+                      "beforeCount":  1871,
+                      "unchanged":  true,
+                      "afterCount":  1871
+                  },
+    "cleanup":  {
+                    "nodeModulesPreserved":  true,
+                    "cloneRemoved":  true
+                }
+}

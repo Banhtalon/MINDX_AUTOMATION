@@ -1,0 +1,306 @@
+{
+  "closedSource": 8,
+  "partiallyFixed": 6,
+  "issues": [
+    {
+      "id": "R19-01",
+      "status": "PARTIALLY_FIXED",
+      "remainingSeverity": "P2",
+      "reason": "Media chỉ xác nhận cấu trúc nông; 5 ảnh không giải mã được và PDF giả vẫn PARSED.",
+      "r21Cases": [
+        "R21-01-valid-png",
+        "R21-01-valid-jpg",
+        "R21-01-valid-webp",
+        "R21-01-valid-pdf",
+        "R21-01-png-invalid-idat",
+        "R21-01-jpeg-empty-sof",
+        "R21-01-webp-VP8",
+        "R21-01-webp-VP8L",
+        "R21-01-webp-VP8X",
+        "R21-01-pdf-token-spoof"
+      ],
+      "r21Failed": [
+        "R21-01-png-invalid-idat",
+        "R21-01-jpeg-empty-sof",
+        "R21-01-webp-VP8",
+        "R21-01-webp-VP8L",
+        "R21-01-webp-VP8X",
+        "R21-01-pdf-token-spoof"
+      ],
+      "r20Cases": [
+        "R19-01-mixed-corrupt",
+        "R19-01-truncated-media",
+        "R20-01-valid-png",
+        "R20-01-valid-jpg",
+        "R20-01-valid-webp",
+        "R20-01-malformed-png",
+        "R20-01-malformed-jpg",
+        "R20-01-malformed-webp"
+      ]
+    },
+    {
+      "id": "R19-02",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "reason": "Đạt các tái hiện R20 và các kiểm tra R21 trong phạm vi mã nguồn/dữ liệu giả.",
+      "r21Cases": [
+        "R21-02-rubric-integrity"
+      ],
+      "r21Failed": [],
+      "r20Cases": [
+        "R19-02-duplicate-rubric",
+        "R20-02-invalid-blank",
+        "R20-02-invalid-negative",
+        "R20-02-invalid-nan",
+        "R20-02-invalid-string",
+        "R20-02-invalid-sum",
+        "R20-02-before-ai",
+        "R20-02-ui-add-after-delete"
+      ]
+    },
+    {
+      "id": "R19-03",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "reason": "Đạt các tái hiện R20 và các kiểm tra R21 trong phạm vi mã nguồn/dữ liệu giả.",
+      "r21Cases": [
+        "R21-03-content-hash"
+      ],
+      "r21Failed": [],
+      "r20Cases": [
+        "R19-03-legacy-hash",
+        "R20-03-legacy-reapproval",
+        "R20-03-hash-fileHash",
+        "R20-03-hash-decision",
+        "R20-03-hash-calculatedScore",
+        "R20-03-hash-teacherOverrideScore",
+        "R20-03-hash-feedbackHtml",
+        "R20-03-hash-criteriaGradesJson"
+      ]
+    },
+    {
+      "id": "R19-04",
+      "status": "PARTIALLY_FIXED",
+      "remainingSeverity": "P2",
+      "reason": "Nhánh parsedContent được truyền sẵn bỏ qua kiểm tra lại bytes trên đĩa; route hiện tại không truyền nhánh này.",
+      "r21Cases": [
+        "R21-04-disk-unchanged",
+        "R21-04-disk-before",
+        "R21-04-disk-during",
+        "R21-04-disk-deleted",
+        "R21-04-disk-supplied-during"
+      ],
+      "r21Failed": [
+        "R21-04-disk-supplied-during"
+      ],
+      "r20Cases": [
+        "R19-04-ai-file-drift",
+        "R20-04-path-drift",
+        "R20-04-disk-before",
+        "R20-04-disk-during"
+      ]
+    },
+    {
+      "id": "R19-05",
+      "status": "PARTIALLY_FIXED",
+      "remainingSeverity": "P1",
+      "reason": "UI không gửi barem đang chọn khi duyệt; điểm của barem khác vẫn được APPROVED.",
+      "r21Cases": [
+        "R21-05-no-rubric-draft",
+        "R21-05-explicit-rubric",
+        "R21-05-ui-authoritative-rubric"
+      ],
+      "r21Failed": [
+        "R21-05-ui-authoritative-rubric"
+      ],
+      "r20Cases": [
+        "R19-05-invalid-criteria",
+        "R19-05-undownloaded",
+        "R20-05-invalid-single",
+        "R20-05-invalid-bulk",
+        "R20-05-override-control",
+        "R20-05-authoritative-rubric"
+      ]
+    },
+    {
+      "id": "R19-06",
+      "status": "PARTIALLY_FIXED",
+      "remainingSeverity": "P1",
+      "reason": "fileHash là tùy chọn ở duyệt đơn; duyệt hàng loạt không đối chiếu phiên bản đã xem.",
+      "r21Cases": [
+        "R21-06-version-fresh",
+        "R21-06-version-stale",
+        "R21-06-version-omitted",
+        "R21-06-version-bulk"
+      ],
+      "r21Failed": [
+        "R21-06-version-omitted",
+        "R21-06-version-bulk"
+      ],
+      "r20Cases": [
+        "R19-06-stale-approval",
+        "R20-06-latest-control",
+        "R20-06-file-version"
+      ]
+    },
+    {
+      "id": "R19-07",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "reason": "Đạt các tái hiện R20 và các kiểm tra R21 trong phạm vi mã nguồn/dữ liệu giả.",
+      "r21Cases": [
+        "R21-07-exact-identity"
+      ],
+      "r21Failed": [],
+      "r20Cases": [
+        "R19-07-wrong-download",
+        "R19-07-modal-same-name",
+        "R19-07-modal-empty",
+        "R20-07-id-substring",
+        "R20-07-download-empty"
+      ]
+    },
+    {
+      "id": "R19-08",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "reason": "Đạt các tái hiện R20 và các kiểm tra R21 trong phạm vi mã nguồn/dữ liệu giả.",
+      "r21Cases": [
+        "R21-08-mapping-valid",
+        "R21-08-mapping-mismatch",
+        "R21-08-mapping-missing"
+      ],
+      "r21Failed": [],
+      "r20Cases": [
+        "R19-08-session-lesson",
+        "R20-08-worker-cached-mismatch",
+        "R20-08-worker-no-mapping",
+        "R20-08-api-list-mismatch"
+      ]
+    },
+    {
+      "id": "R19-09",
+      "status": "PARTIALLY_FIXED",
+      "remainingSeverity": "P1",
+      "reason": "GraphQL comment/selected query/mutation attachment vẫn xác nhận lưu điểm.",
+      "r21Cases": [
+        "R21-09-required-submissionId",
+        "R21-09-required-studentId",
+        "R21-09-required-score",
+        "R21-09-required-feedback",
+        "R21-09-operation-plain-query",
+        "R21-09-operation-comment-query",
+        "R21-09-operation-other-mutation",
+        "R21-09-operation-selected-query",
+        "R21-09-hostname",
+        "R21-09-phase4-host-token"
+      ],
+      "r21Failed": [
+        "R21-09-operation-comment-query",
+        "R21-09-operation-other-mutation",
+        "R21-09-operation-selected-query",
+        "R21-09-phase4-host-token"
+      ],
+      "r20Cases": [
+        "R19-09-unrelated-api",
+        "R19-09-missing-submission",
+        "R19-09-real-interceptor",
+        "R20-09-named-query",
+        "R20-09-missing-payload",
+        "R20-09-exact-origin",
+        "R20-09-wrong-score"
+      ]
+    },
+    {
+      "id": "R19-10",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "reason": "Đạt các tái hiện R20 và các kiểm tra R21 trong phạm vi mã nguồn/dữ liệu giả.",
+      "r21Cases": [
+        "R21-10-readback-complete",
+        "R21-10-readback-empty",
+        "R21-10-readback-unreadable",
+        "R21-10-readback-wrong-decision",
+        "R21-10-readback-wrong-feedback",
+        "R21-10-readback-redo-complete"
+      ],
+      "r21Failed": [],
+      "r20Cases": [
+        "R19-10-no-feedback",
+        "R20-10-complete-control",
+        "R20-10-wrong-feedback",
+        "R20-10-empty",
+        "R20-10-unreadable",
+        "R20-10-wrong-decision"
+      ]
+    },
+    {
+      "id": "R19-11",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "reason": "Đạt các tái hiện R20 và các kiểm tra R21 trong phạm vi mã nguồn/dữ liệu giả.",
+      "r21Cases": [
+        "R21-11-final-cas"
+      ],
+      "r21Failed": [],
+      "r20Cases": [
+        "R19-11-readback-race",
+        "R20-11-conditional-db"
+      ]
+    },
+    {
+      "id": "R19-12",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "reason": "Đạt các tái hiện R20 và các kiểm tra R21 trong phạm vi mã nguồn/dữ liệu giả.",
+      "r21Cases": [
+        "R21-12-scope-race"
+      ],
+      "r21Failed": [],
+      "r20Cases": [
+        "R19-12-ui-load-race",
+        "R20-12-class-race"
+      ]
+    },
+    {
+      "id": "R19-13",
+      "status": "PARTIALLY_FIXED",
+      "remainingSeverity": "P1",
+      "reason": "Hai lưu nháp đều thành công nhưng đến máy chủ ngược thứ tự; duyệt hàng loạt ký bản cũ.",
+      "r21Cases": [
+        "R21-13-old-success-new-failure",
+        "R21-13-reordered-successes"
+      ],
+      "r21Failed": [
+        "R21-13-reordered-successes"
+      ],
+      "r20Cases": [
+        "R19-13-ui-save-failure",
+        "R20-13-single-unsaved",
+        "R20-13-bulk-unsaved",
+        "R20-13-response-order"
+      ]
+    },
+    {
+      "id": "R19-14",
+      "status": "CLOSED_SOURCE",
+      "remainingSeverity": null,
+      "reason": "Đạt các tái hiện R20 và các kiểm tra R21 trong phạm vi mã nguồn/dữ liệu giả.",
+      "r21Cases": [
+        "R21-14-download-error"
+      ],
+      "r21Failed": [],
+      "r20Cases": [
+        "R19-14-route-download-failure",
+        "R20-14-skip-ai-failure",
+        "R20-14-partial-failure",
+        "R20-14-success-scope"
+      ]
+    }
+  ],
+  "extraGateCompatibilityFailure": {
+    "case": "R21-09-phase4-host-token",
+    "severity": "P2",
+    "note": "R12 requires substring token lms-api; current Phase 4 caller uses a RegExp. Gate FAIL is confirmed; an actual Phase 4 production-flow failure is not established."
+  }
+}

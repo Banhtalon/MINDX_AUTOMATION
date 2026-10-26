@@ -1,0 +1,123 @@
+{
+  "checkedAt": "2026-10-20T10:58:35.213Z",
+  "requiredGroups": [
+    "R19-01",
+    "R19-02",
+    "R19-03",
+    "R19-04",
+    "R19-05",
+    "R19-06",
+    "R19-07",
+    "R19-08",
+    "R19-09",
+    "R19-10",
+    "R19-11",
+    "R19-12",
+    "R19-13",
+    "R19-14"
+  ],
+  "files": [
+    {
+      "path": "src/lib/file-parsers/archive-reader.ts",
+      "sha256": "9363446a1ad08fb9f34a270127d648a90b33e1695c02a016349127901e3e63a2"
+    },
+    {
+      "path": "src/lib/file-parsers/media-reader.ts",
+      "sha256": "6f9a3bbfd4106441c1404579e6b2e4f8b944f312a5a961d7d3c76ae76ec16e5e"
+    },
+    {
+      "path": "src/lib/gemini/score-auditor.ts",
+      "sha256": "79378d1d142d033b6f89807e959f59c04b5a840161a28d6f908849c5236401da"
+    },
+    {
+      "path": "src/components/homework-auto-grader-tab.tsx",
+      "sha256": "d869c9ec71b3fc734dfa6f620cbbf0f786d60c62883c91e0af6123a20aafb2e6"
+    },
+    {
+      "path": "src/lib/db/sqlite.ts",
+      "sha256": "2999f0aee9ce7b73f7f0b2980397a249a127924de34a40786d8e6768d75da5f6"
+    },
+    {
+      "path": "src/lib/gemini/homework-grader.ts",
+      "sha256": "ad25ddd28a9c829c9c5037770e8d6c8624c0da0cf15a243ee3761f66d93a572d"
+    },
+    {
+      "path": "src/app/api/homework-grader/approve/route.ts",
+      "sha256": "fb86621dbede6ac07ac4ef2a4946b0fd1cda62acc7d6ca52da026d421e48b39a"
+    },
+    {
+      "path": "src/app/api/homework-grader/submissions/route.ts",
+      "sha256": "3977e7e109e5899e9ea22de1825579205cf391eac38697b4b2099e4a799211e8"
+    },
+    {
+      "path": "src/lib/playwright/download-submissions.ts",
+      "sha256": "f56327ef033fbd0a0a1bf6a1b520f7a4b0ded26a30809a43cab981d1f0bfe958"
+    },
+    {
+      "path": "src/lib/playwright/grade-worker.ts",
+      "sha256": "7947d1d75ae538ff6bd638053c55afb5b6701bea75fb751cdcf5b725d16e0051"
+    },
+    {
+      "path": "src/app/api/homework-grader/download-and-grade/route.ts",
+      "sha256": "12c52a3b53eb3db4de810eeb2e22e2d87ea2f09920341d9120c59a5d86db448b"
+    },
+    {
+      "path": "src/app/api/homework-grader/save-lms/route.ts",
+      "sha256": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791"
+    },
+    {
+      "path": "src/lib/file-parsers/index.ts",
+      "sha256": "5ecd30c44bbe46325f8e467a4573f11015cc875d19a823c8a44291932152bc38"
+    },
+    {
+      "path": "src/lib/security/path-allowlist.ts",
+      "sha256": "a3466414a7c626b2c75d95c93b4a66e2b32d3d2be78cfa8dec79d3d145e1af0b"
+    },
+    {
+      "path": "src/lib/security/local-guard.ts",
+      "sha256": "205f8ec95b183b33cbf65add0fca169f4a4882a43236ad1a9e69f5d926baf470"
+    },
+    {
+      "path": "src/lib/playwright/network-interceptor.ts",
+      "sha256": "0191bd89a9a42884bf0db0328e5a6dec35ffb1b62463083bef4929453beb8613"
+    },
+    {
+      "path": "src/lib/playwright/selectors.ts",
+      "sha256": "720f48cdea9d7038564aba5ad97a2913525f02a2fc2d9bfb50bf10e5bc291a0e"
+    },
+    {
+      "path": "src/lib/playwright/browser-manager.ts",
+      "sha256": "110053838d68f5e8e12a4bb75a205e4cfe7d5f0297729624742e7d4c7812b343"
+    },
+    {
+      "path": "src/lib/queue/task-queue.ts",
+      "sha256": "a284d7f7099045bc1e3ddd6491a9afce79409fe6fff00b9a7d4988495fa82578"
+    },
+    {
+      "path": "src/lib/config.ts",
+      "sha256": "4ac1332ab0becaaf212e5ac03944b077074572eb43375f7ce8f9b34d6ed3b309"
+    }
+  ],
+  "references": [
+    {
+      "path": "AGENTS.md",
+      "sha256Before": "1065350ac14f5faaf453b3cab2a7bcf0a469414c1d311649b12952a8a373d2d1"
+    },
+    {
+      "path": "MINDX_AUTOMATION_PLAN.md",
+      "sha256Before": "a88490028587af1d73808a3773a6f341a1ab49dd1412ba0675ba6f890bf419fe"
+    },
+    {
+      "path": "docs/audits/round-19/REPORT.vi.md",
+      "sha256Before": "0fc44a02a1cc84df04386c1ff693d9420a004400068bc20c69a817b0aba4588e"
+    },
+    {
+      "path": "docs/audits/round-19/issue-status.json",
+      "sha256Before": "0995a24eb861b19914c9e1d0975b90cdd878d08e7826a088d4be8d686383c820"
+    },
+    {
+      "path": "docs/audits/round-19/verify-independent.mjs",
+      "sha256Before": "765121dd5d54617c3d9564f0b8cc5646e7b2cf6c701738758741577bb211816a"
+    }
+  ]
+}

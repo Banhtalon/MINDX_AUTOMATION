@@ -1,46 +1,110 @@
 [
   {
-    "category": "attitude",
-    "categoryName": "Thái độ học tập",
+    "category": "level_coding",
+    "categoryName": "💻 Mức đánh giá nhanh (Lập trình)",
     "tags": [
-      { "id": "att_hieu_hoc", "label": "Hăng hái phát biểu", "sentiment": "positive", "hint": "Tích cực đóng góp ý kiến, tương tác sôi nổi với giáo viên." },
-      { "id": "att_cham_chu", "label": "Tập trung cao độ", "sentiment": "positive", "hint": "Chú ý lắng nghe giảng bài và không bị xao nhãng." },
-      { "id": "att_giup_ban", "label": "Hỗ trợ bạn bè", "sentiment": "positive", "hint": "Chủ động giúp đỡ các bạn xung quanh khi xong bài sớm." },
-      { "id": "att_mat_tap_trung", "label": "Hay xao nhãng", "sentiment": "constructive", "hint": "Đôi lúc làm việc riêng, mở tab khác trong giờ học." },
-      { "id": "att_tram_lang", "label": "Khá trầm tính", "sentiment": "neutral", "hint": "Ít khi chủ động hỏi bài hoặc bật mic/giơ tay phát biểu." },
-      { "id": "att_di_muon", "label": "Vào lớp muộn", "sentiment": "constructive", "hint": "Vào lớp trễ một vài phút ảnh hưởng đến phần đầu bài học." }
+      {
+        "id": "lvl_code_xuat_sac",
+        "label": "🌟 Xuất sắc & Sáng tạo",
+        "sentiment": "positive",
+        "hint": "Thái độ học tập rất tập trung, hiểu bài nhanh, hoàn thành bài code sớm và chủ động sáng tạo thêm tính năng mở rộng"
+      },
+      {
+        "id": "lvl_code_dat",
+        "label": "👍 Đạt yêu cầu",
+        "sentiment": "positive",
+        "hint": "Chăm chú nghe giảng, nắm vững kiến thức trọng tâm của buổi học và tự hoàn thành bài thực hành lập trình đúng yêu cầu tại lớp"
+      },
+      {
+        "id": "lvl_code_can_kem",
+        "label": "🛠️ Cần kèm thêm",
+        "sentiment": "constructive",
+        "hint": "Có cố gắng trong giờ học nhưng tiếp thu kiến thức lập trình mới còn chậm, cần giáo viên hướng dẫn từng bước để hoàn thiện bài"
+      }
     ]
   },
   {
-    "category": "comprehension",
-    "categoryName": "Khả năng tiếp thu",
+    "category": "note_coding",
+    "categoryName": "💻 Lưu ý & Lỗi thường gặp (Lập trình)",
     "tags": [
-      { "id": "comp_nhanh_nhay", "label": "Tiếp thu rất nhanh", "sentiment": "positive", "hint": "Nắm bắt cú pháp và logic bài học ngay sau lần hướng dẫn đầu tiên." },
-      { "id": "comp_kha", "label": "Nắm vững bài học", "sentiment": "positive", "hint": "Hiểu rõ các khái niệm cốt lõi của buổi học." },
-      { "id": "comp_can_huong_dan", "label": "Cần thêm gợi ý", "sentiment": "constructive", "hint": "Cần giáo viên đặt câu hỏi gợi ý để hoàn thành bài tập khó." },
-      { "id": "comp_cham", "label": "Tiếp thu hơi chậm", "sentiment": "constructive", "hint": "Mất nhiều thời gian để nắm bắt cú pháp mới." },
-      { "id": "comp_sang_tao", "label": "Tư duy sáng tạo", "sentiment": "positive", "hint": "Có ý tưởng phát triển tính năng mới ngoài yêu cầu bài học." }
+      {
+        "id": "note_code_hang_hai",
+        "label": "🗣️ Hăng hái & Tự tin",
+        "sentiment": "positive",
+        "hint": "Sôi nổi giơ tay phát biểu xây dựng bài và tự tin thuyết trình sản phẩm rõ ràng trước lớp"
+      },
+      {
+        "id": "note_code_mat_tap_trung",
+        "label": "👀 Hơi mất tập trung",
+        "sentiment": "constructive",
+        "hint": "Đôi lúc còn xao nhãng hoặc làm việc riêng trong lúc nghe giảng lý thuyết, cần tập trung hơn"
+      },
+      {
+        "id": "note_code_thao_tac_cham",
+        "label": "🐢 Thao tác máy chậm",
+        "sentiment": "constructive",
+        "hint": "Hiểu được logic bài học nhưng tốc độ gõ phím và thao tác trên phần mềm còn chậm nên cần thêm thời gian làm bài"
+      },
+      {
+        "id": "note_code_sai_cu_phap",
+        "label": "🐛 Hay nhầm lệnh/cú pháp",
+        "sentiment": "constructive",
+        "hint": "Khi thực hành còn hay nhầm cú pháp câu lệnh hoặc ghép nhầm khối lệnh, cần rèn thói quen tự dò và sửa lỗi (debug)"
+      }
     ]
   },
   {
-    "category": "execution",
-    "categoryName": "Kỹ năng thao tác & Lập trình",
+    "category": "level_robotics",
+    "categoryName": "🤖 Mức đánh giá nhanh (Robotics)",
     "tags": [
-      { "id": "exec_thao_tac_nhanh", "label": "Thao tác gõ máy nhanh", "sentiment": "positive", "hint": "Gõ phím chuẩn xác, dùng phím tắt thành thạo." },
-      { "id": "exec_code_sach", "label": "Code sạch & Rõ ràng", "sentiment": "positive", "hint": "Đặt tên biến có nghĩa, thụt lề chuẩn, code gọn gàng." },
-      { "id": "exec_hay_sai_cu_phap", "label": "Hay gõ sai cú pháp", "sentiment": "constructive", "hint": "Thường quên dấu hai chấm, đóng ngoặc hoặc sai thụt lề." },
-      { "id": "exec_hoan_thanh_som", "label": "Xong bài sớm", "sentiment": "positive", "hint": "Hoàn thành toàn bộ bài tập trên lớp trước thời hạn." },
-      { "id": "exec_chua_xong_bai", "label": "Chưa hoàn thành bài", "sentiment": "constructive", "hint": "Chưa hoàn thành hết các câu hỏi thực hành trên lớp." }
+      {
+        "id": "lvl_rob_xuat_sac",
+        "label": "🌟 Xuất sắc (Lắp & Code)",
+        "sentiment": "positive",
+        "hint": "Hào hứng học tập, lắp ráp mô hình robot nhanh và chắc chắn, hiểu rõ cơ cấu truyền động và lập trình điều khiển chạy mượt mà"
+      },
+      {
+        "id": "lvl_rob_dat",
+        "label": "👍 Đạt yêu cầu",
+        "sentiment": "positive",
+        "hint": "Tập trung học tập, lắp ráp hoàn chỉnh mô hình robot theo bản vẽ hướng dẫn, cắm đúng cổng động cơ/cảm biến và chạy được chương trình cơ bản"
+      },
+      {
+        "id": "lvl_rob_can_kem",
+        "label": "🛠️ Cần kèm thêm",
+        "sentiment": "constructive",
+        "hint": "Có cố gắng nhưng thao tác lắp ráp chi tiết cơ khí hoặc lập trình điều khiển robot còn lúng túng, cần giáo viên hỗ trợ kèm 1-1"
+      }
     ]
   },
   {
-    "category": "presentation",
-    "categoryName": "Kỹ năng Trình bày & Thuyết trình",
+    "category": "note_robotics",
+    "categoryName": "🤖 Lưu ý & Lỗi thường gặp (Robotics)",
     "tags": [
-      { "id": "pres_tu_tin", "label": "Thuyết trình tự tin", "sentiment": "positive", "hint": "Giọng nói to rõ, tự tin giải thích sản phẩm trước lớp." },
-      { "id": "pres_mach_lac", "label": "Mạch lạc & Rõ ràng", "sentiment": "positive", "hint": "Trình bày logic các bước thực hiện và tính năng của ứng dụng." },
-      { "id": "pres_hoi_rut_re", "label": "Hơi rụt rè", "sentiment": "constructive", "hint": "Nói nhỏ, còn ngập ngừng khi chia sẻ ý tưởng trước tập thể." },
-      { "id": "pres_slide_dep", "label": "Slide / Demo đẹp mắt", "sentiment": "positive", "hint": "Chuẩn bị slide chỉn chu, demo mượt mà không lỗi." }
+      {
+        "id": "note_rob_nhom_tot",
+        "label": "🤝 Nhóm & Bảo quản Kit tốt",
+        "sentiment": "positive",
+        "hint": "Phối hợp làm việc nhóm ăn ý, tự tin thuyết trình nguyên lý mô hình và phân loại, cất giữ linh kiện bộ kit gọn gàng sau buổi học"
+      },
+      {
+        "id": "note_rob_mat_tap_trung",
+        "label": "👀 Hơi mất tập trung",
+        "sentiment": "constructive",
+        "hint": "Đôi lúc còn xao nhãng khi giáo viên hướng dẫn nguyên lý, cần tập trung và cẩn thận hơn khi tìm lắp linh kiện"
+      },
+      {
+        "id": "note_rob_nham_chi_tiet",
+        "label": "🔩 Lắp nhầm chốt/ngược chiều",
+        "sentiment": "constructive",
+        "hint": "Trong lúc lắp ráp đôi khi còn gắn nhầm chốt hoặc ngược chiều bánh răng/khung đỡ, cần quan sát kỹ bản vẽ 3D hơn"
+      },
+      {
+        "id": "note_rob_lung_tung_mach",
+        "label": "🔌 Lúng túng phần Code/Mạch",
+        "sentiment": "constructive",
+        "hint": "Lắp ráp phần khung cơ khí tốt nhưng còn lúng túng khi đấu nối cổng dây cảm biến/động cơ hoặc viết lệnh điều khiển"
+      }
     ]
   }
 ]

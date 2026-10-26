@@ -1,0 +1,197 @@
+{
+  "raw": {
+    "round16": {
+      "passed": 15,
+      "failed": 1,
+      "failedIds": [
+        "PHASE1-SCHEMA"
+      ]
+    },
+    "round19": {
+      "passed": 89,
+      "failed": 5,
+      "failedIds": [
+        "API-approval-control",
+        "INLINE-jpg",
+        "INLINE-pdf",
+        "INLINE-png",
+        "INLINE-webp"
+      ]
+    },
+    "round20": {
+      "passed": 140,
+      "failed": 5,
+      "failedIds": [
+        "API-approval-control",
+        "R20-03-legacy-reapproval",
+        "R20-05-override-control",
+        "R20-06-latest-control",
+        "R20-10-complete-control"
+      ]
+    },
+    "round21": {
+      "passed": 45,
+      "failed": 4,
+      "failedIds": [
+        "R21-08-mapping-valid",
+        "R21-10-readback-complete",
+        "R21-10-readback-redo-complete",
+        "R21-11-final-cas"
+      ]
+    }
+  },
+  "round16Reason": "Seven-table expectation predates eighth durable metadata table; original assertion retained as FAIL.",
+  "round19Reason": "Four old inline placeholders are corrupt/incomplete and now rejected; approval lacks mandatory reviewed snapshot.",
+  "round20Reason": "Four approvals lack reviewed snapshot, one response uses saveGrade instead of selected saveHomeworkGrade.",
+  "round21Reason": "Four responses use saveGrade instead of selected saveHomeworkGrade, including CAS fixture before readback.",
+  "freshCompatibilityChecks": [
+    {
+      "id": "R23-COMPAT-R16-schema",
+      "criterion": "Eight tables include all seven historical tables plus durable homework metadata",
+      "pass": true,
+      "observation": {
+        "tables": [
+          "classes_sessions",
+          "homework_submission_meta",
+          "homework_submissions",
+          "job_logs",
+          "score_matrix_cache",
+          "session_feedbacks",
+          "spck_uploads",
+          "students"
+        ],
+        "columns": [
+          "submissionId",
+          "gradedFileHash",
+          "draftSeq",
+          "fieldSeqJson"
+        ],
+        "scopedStudent": true,
+        "immutableOwner": true
+      }
+    },
+    {
+      "id": "R24-COMPAT-R20-API-approval-control",
+      "criterion": "Old R20 request remains rejected; a complete current reviewed snapshot satisfies the original safety assertion",
+      "pass": true,
+      "observation": {
+        "originalId": "API-approval-control",
+        "originalRequestHttp": 409,
+        "completeRequestHttp": 200,
+        "contentHash": "c49fbe5adef4096d690a2a3acffd08140ba4c8182fb0b2bcea5ca6f4b23a558e",
+        "status": "APPROVED"
+      }
+    },
+    {
+      "id": "R24-COMPAT-R20-R20-03-legacy-reapproval",
+      "criterion": "Old R20 request remains rejected; a complete current reviewed snapshot satisfies the original safety assertion",
+      "pass": true,
+      "observation": {
+        "originalId": "R20-03-legacy-reapproval",
+        "originalRequestHttp": 409,
+        "completeRequestHttp": 200,
+        "contentHash": "c49fbe5adef4096d690a2a3acffd08140ba4c8182fb0b2bcea5ca6f4b23a558e",
+        "status": "APPROVED"
+      }
+    },
+    {
+      "id": "R24-COMPAT-R20-R20-05-override-control",
+      "criterion": "Old R20 request remains rejected; a complete current reviewed snapshot satisfies the original safety assertion",
+      "pass": true,
+      "observation": {
+        "originalId": "R20-05-override-control",
+        "originalRequestHttp": 409,
+        "completeRequestHttp": 200,
+        "contentHash": "e1bb9ff62490895fa4cefb8397e46ed4e53ecf995f60d949a6a1dfa44b119988",
+        "status": "APPROVED"
+      }
+    },
+    {
+      "id": "R24-COMPAT-R20-R20-06-latest-control",
+      "criterion": "Old R20 request remains rejected; a complete current reviewed snapshot satisfies the original safety assertion",
+      "pass": true,
+      "observation": {
+        "originalId": "R20-06-latest-control",
+        "originalRequestHttp": 409,
+        "completeRequestHttp": 200,
+        "contentHash": "c571140d432702c184c983b69df0afb5acd654339db593aec13614e84faaf4ce",
+        "status": "APPROVED"
+      }
+    },
+    {
+      "id": "R26-COMPAT-R20-10-complete-control",
+      "criterion": "Original behavioral control with the response field corrected to its selected mutation",
+      "pass": true,
+      "observation": {
+        "originalId": "R20-10-complete-control",
+        "correctedResponseField": "saveHomeworkGrade",
+        "verified": 1,
+        "status": "VERIFIED",
+        "modalReads": 2
+      }
+    },
+    {
+      "id": "R26-COMPAT-R21-08-mapping-valid",
+      "criterion": "Original behavioral control with the response field corrected to its selected mutation",
+      "pass": true,
+      "observation": {
+        "originalId": "R21-08-mapping-valid",
+        "correctedResponseField": "saveHomeworkGrade",
+        "verified": 1,
+        "status": "VERIFIED",
+        "modalReads": 2
+      }
+    },
+    {
+      "id": "R26-COMPAT-R21-10-readback-complete",
+      "criterion": "Original behavioral control with the response field corrected to its selected mutation",
+      "pass": true,
+      "observation": {
+        "originalId": "R21-10-readback-complete",
+        "correctedResponseField": "saveHomeworkGrade",
+        "verified": 1,
+        "status": "VERIFIED",
+        "modalReads": 2
+      }
+    },
+    {
+      "id": "R26-COMPAT-R21-10-readback-redo-complete",
+      "criterion": "Original behavioral control with the response field corrected to its selected mutation",
+      "pass": true,
+      "observation": {
+        "originalId": "R21-10-readback-redo-complete",
+        "correctedResponseField": "saveHomeworkGrade",
+        "verified": 1,
+        "status": "VERIFIED",
+        "modalReads": 2
+      }
+    },
+    {
+      "id": "R26-COMPAT-R21-11-final-cas",
+      "criterion": "Original behavioral control with the response field corrected to its selected mutation",
+      "pass": true,
+      "observation": {
+        "originalId": "R21-11-final-cas",
+        "correctedResponseField": "saveHomeworkGrade",
+        "verified": 0,
+        "status": "WAITING_APPROVAL",
+        "modalReads": 2
+      }
+    }
+  ],
+  "historicalResultsNotReclassified": true,
+  "round15": {
+    "confirmedBugs": 0,
+    "baselinePassed": 2,
+    "executionErrors": 8,
+    "meaning": "Original historical bug assertions and outdated contracts fail, including fixture type error and seven-table expectation. Not a product PASS."
+  },
+  "round14and18": {
+    "status": "BLOCKED_REPLAY_PRECONDITION",
+    "exitCodes": {
+      "historical14": 1,
+      "historical18": 1
+    },
+    "reason": "Original one-time capture runners refuse overwriting existing audit records. No deletion or bypass. Components and type/build gates executed separately."
+  }
+}

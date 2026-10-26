@@ -1,0 +1,102 @@
+[
+  {
+    "command": "npx tsx scripts/test-phase4-codex-repros.ts",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round18-etNeOk",
+    "startedAt": "2026-10-20T05:52:34.008Z",
+    "log": "regressions.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T05:52:44.825Z",
+    "logSha256": "10dbe13ec6213f077172b208df53067b9a521e8415db5f5ad60deeed0ef94948"
+  },
+  {
+    "command": "node docs/audits/round-12/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round18-etNeOk",
+    "startedAt": "2026-10-20T05:52:44.826Z",
+    "log": "round12-independent.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T05:52:47.529Z",
+    "logSha256": "fcf8b787743080b74b70a5d25e350f556e188b085a6c24f0c88427474f4554d5"
+  },
+  {
+    "command": "node docs/audits/round-13/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round18-etNeOk",
+    "startedAt": "2026-10-20T05:52:47.532Z",
+    "log": "round13-independent.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T05:52:49.196Z",
+    "logSha256": "57177d1cd84593a13ccc95903c14fa98a802418db24a123d4e0302b9f3cbedd9"
+  },
+  {
+    "command": "node docs/audits/round-16/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round18-etNeOk",
+    "startedAt": "2026-10-20T05:52:49.197Z",
+    "log": "round16-independent.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T05:52:50.558Z",
+    "logSha256": "0931c30b0aa2764fa1042b3a9c2e90986636a41a906e2a8eaae38101540d4bd5"
+  },
+  {
+    "command": "node docs/audits/round-17/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round18-etNeOk",
+    "startedAt": "2026-10-20T05:52:50.561Z",
+    "log": "round17-independent.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T05:52:56.484Z",
+    "logSha256": "00a74a64753355e7dc3fe4059351fa4609e683739efcc76b279e967bbb0fe9ac"
+  },
+  {
+    "command": "npx tsc --noEmit --incremental false",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round18-etNeOk",
+    "startedAt": "2026-10-20T05:52:56.485Z",
+    "log": "typecheck.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T05:52:59.414Z",
+    "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "command": "npm run build",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round18-etNeOk",
+    "startedAt": "2026-10-20T05:52:59.415Z",
+    "log": "build.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T05:53:26.452Z",
+    "logSha256": "33156b9c338847a1e24bd066910ce805a029f68bb8fe2a5b34808901e4d0c728"
+  },
+  {
+    "command": "node docs/audits/round-18/smoke-local.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round18-etNeOk",
+    "startedAt": "2026-10-20T05:54:22.255Z",
+    "log": "smoke-local.log",
+    "signal": null,
+    "exitCode": 1,
+    "finishedAt": "2026-10-20T05:54:58.359Z",
+    "logSha256": "819b452acfcc4bb565133483ab7310b906bdb3d88a0489b436f6d74034bf5263"
+  },
+  {
+    "command": "node docs/audits/round-18/smoke-local.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round18-etNeOk",
+    "startedAt": "2026-10-20T05:55:26.782Z",
+    "log": "smoke-final.log",
+    "signal": null,
+    "exitCode": 1,
+    "finishedAt": "2026-10-20T05:55:31.182Z",
+    "logSha256": "040274f37571608b33bd49e4cf385b859408a3333234951b7835739f1e67435d"
+  },
+  {
+    "command": "node docs/audits/round-18/smoke-local.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round18-etNeOk",
+    "startedAt": "2026-10-20T05:55:51.521Z",
+    "log": "smoke-accepted.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T05:55:57.504Z",
+    "logSha256": "ba0bfb32e23d83d6f36939bafd40b4c28a069a4a116bdfc603b891750262349f"
+  }
+]

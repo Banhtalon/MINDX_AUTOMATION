@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-10-20T05:55:27.044Z",
+  "externalRequests": [],
+  "pageErrors": [],
+  "observations": {
+    "insufficientCopy": {
+      "pass": true,
+      "httpStatus": 200,
+      "returnedText": "TEACHER DRAFT TO PRESERVE",
+      "storedText": "TEACHER DRAFT TO PRESERVE",
+      "copiedText": "TEACHER DRAFT TO PRESERVE",
+      "visibleEditors": {
+        "strengths": "OLD STRENGTH",
+        "improvements": "OLD IMPROVEMENT",
+        "actionPlan": "OLD PLAN"
+      },
+      "separateWarning": "Chưa đủ thông tin để nhận xét. Vui lòng chọn ít nhất 1 Quick Tag hoặc nhập ghi chú của giáo viên."
+    }
+  },
+  "completed": false,
+  "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'INSUFFICIENT_INFO'\n- 'DRAFT'\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round18-etNeOk/docs/audits/round-18/smoke-local.mjs:91:79"
+}

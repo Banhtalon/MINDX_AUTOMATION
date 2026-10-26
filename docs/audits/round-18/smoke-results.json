@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-10-20T05:55:51.767Z",
+  "externalRequests": [],
+  "pageErrors": [],
+  "observations": {
+    "insufficientCopy": {
+      "pass": true,
+      "httpStatus": 200,
+      "returnedText": "TEACHER DRAFT TO PRESERVE",
+      "storedText": "TEACHER DRAFT TO PRESERVE",
+      "copiedText": "TEACHER DRAFT TO PRESERVE",
+      "visibleEditors": {
+        "strengths": "OLD STRENGTH",
+        "improvements": "OLD IMPROVEMENT",
+        "actionPlan": "OLD PLAN"
+      },
+      "separateWarning": "Chưa đủ thông tin để nhận xét. Vui lòng chọn ít nhất 1 Quick Tag hoặc nhập ghi chú của giáo viên."
+    },
+    "insufficientEditReload": {
+      "pass": true,
+      "improvements": "TEACHER EDIT AFTER INSUFFICIENT",
+      "finalText": "Em Audit S1 OLD STRENGTH TEACHER EDIT AFTER INSUFFICIENT OLD PLAN",
+      "status": "INSUFFICIENT_INFO"
+    },
+    "noteConflict": {
+      "pass": true,
+      "staleIgnored": true,
+      "storedNote": "FIRST TAB SAVED",
+      "visibleNote": "SECOND TAB UNSAVED"
+    },
+    "tagConflict": {
+      "pass": true,
+      "staleIgnored": true,
+      "storedTags": [
+        "Hăng hái phát biểu"
+      ],
+      "visibleUnsavedTag": "Tập trung cao độ",
+      "unsavedTagSelected": true,
+      "warningText": "Xung đột phiên bản: Dữ liệu của học viên 'Audit S1' đã được cập nhật ở tab hoặc phiên khác (Bản đã lưu: \"Hăng hái phát biểu\"). Bản vừa nhập chưa được lưu và đang được giữ trên màn hình để so sánh."
+    },
+    "tagReload": {
+      "pass": true,
+      "selectedTag": "Hăng hái phát biểu"
+    },
+    "hostileOriginBlocked": {
+      "pass": true,
+      "status": 403
+    }
+  },
+  "completed": true
+}

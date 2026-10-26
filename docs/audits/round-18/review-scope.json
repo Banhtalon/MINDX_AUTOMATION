@@ -1,0 +1,83 @@
+{
+  "generatedAt": "2026-10-20T05:57:15.282Z",
+  "sourceManifestSha256": "4405fa75120bcccff53c5686669cfe2f17a42e8ad1ebaec6a280cdf48d49bf5d",
+  "changedSinceRound17": [
+    "MINDX_AUTOMATION_PLAN.md",
+    "scripts/test-phase4-codex-repros.ts",
+    "src/app/session-comments/page.tsx",
+    "src/lib/gemini/comment-generator.ts",
+    "src/lib/playwright/scrape-scores.ts"
+  ],
+  "productFilesChecked": 46,
+  "originalProductChanges": [],
+  "snapshotProductChangesAfterChecks": [],
+  "versions": {
+    "next": {
+      "original": "16.4.2",
+      "isolated": "16.4.2",
+      "manifestIdentical": true
+    },
+    "typescript": {
+      "original": "7.0.2",
+      "isolated": "7.0.2",
+      "manifestIdentical": true
+    },
+    "tsx": {
+      "original": "4.23.15",
+      "isolated": "4.23.15",
+      "manifestIdentical": true
+    },
+    "playwright": {
+      "original": "1.64.1",
+      "isolated": "1.64.1",
+      "manifestIdentical": true
+    },
+    "better-sqlite3": {
+      "original": "13.0.3",
+      "isolated": "13.0.3",
+      "manifestIdentical": true
+    },
+    "react": {
+      "original": "19.3.1",
+      "isolated": "19.3.1",
+      "manifestIdentical": true
+    },
+    "xlsx": {
+      "original": "0.18.5",
+      "isolated": "0.18.5",
+      "manifestIdentical": true
+    }
+  },
+  "browserBundleScan": {
+    "files": 14,
+    "pattern": "TEACHING_PASSWORD|LMS_PASSWORD|MINDX_PASSWORD|GEMINI_API_KEY",
+    "hits": [],
+    "limitation": "Known variable names only. No real credentials were available to the build or browser."
+  },
+  "readInCurrentAudit": [
+    "MINDX_AUTOMATION_PLAN.md",
+    "AGENTS.md",
+    "package.json",
+    "next.config.ts",
+    "tsconfig.json",
+    ".gitignore",
+    "src/lib/gemini/comment-generator.ts",
+    "src/lib/playwright/scrape-scores.ts",
+    "src/app/session-comments/page.tsx",
+    "src/app/api/session-comments/generate-ai/route.ts",
+    "src/app/api/session-comments/save-draft/route.ts",
+    "src/app/api/session-comments/approve/route.ts",
+    "src/app/api/session-comments/save-lms/route.ts",
+    "src/lib/db/sqlite.ts",
+    "src/lib/db/json-config.ts",
+    "src/lib/playwright/browser-manager.ts",
+    "src/lib/queue/task-queue.ts",
+    "src/lib/playwright/save-comments.ts",
+    "src/lib/security/path-allowlist.ts",
+    "src/lib/security/local-guard.ts",
+    "src/lib/config.ts",
+    "scripts/test-phase4-codex-repros.ts"
+  ],
+  "readScope": "Focused review of changed branches and connected flows; not a line-by-line reread of every file.",
+  "historicalReportsUsedAsIndexOnly": true
+}

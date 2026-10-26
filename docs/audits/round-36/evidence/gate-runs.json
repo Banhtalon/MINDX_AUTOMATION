@@ -1,0 +1,114 @@
+[
+  {
+    "id": "01-independent",
+    "command": "node docs/audits/round-31/verify-independent.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 10.031,
+    "log": "01-independent.log"
+  },
+  {
+    "id": "02-requested-media",
+    "command": "node docs/audits/round-22/native-media-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 1,
+    "seconds": 0.047,
+    "log": "02-requested-media.log"
+  },
+  {
+    "id": "03-requested-worker",
+    "command": "node docs/audits/round-24/native-worker-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 1,
+    "seconds": 0.047,
+    "log": "03-requested-worker.log"
+  },
+  {
+    "id": "04-requested-name",
+    "command": "node docs/audits/round-25/pdf-name-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 1,
+    "seconds": 0.047,
+    "log": "04-requested-name.log"
+  },
+  {
+    "id": "05-requested-boundary",
+    "command": "node docs/audits/round-26/pdf-boundary-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 1,
+    "seconds": 0.047,
+    "log": "05-requested-boundary.log"
+  },
+  {
+    "id": "06-phase5",
+    "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase5.ts",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.75,
+    "log": "06-phase5.log"
+  },
+  {
+    "id": "07-typescript",
+    "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.312,
+    "log": "07-typescript.log"
+  },
+  {
+    "id": "08-core",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-35/core-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.219,
+    "log": "08-core.log"
+  },
+  {
+    "id": "09-ui",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-35/ui-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 1,
+    "seconds": 0.219,
+    "log": "09-ui.log"
+  },
+  {
+    "id": "10-rubric",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-35/rubric-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 1,
+    "seconds": 0.281,
+    "log": "10-rubric.log"
+  },
+  {
+    "id": "11-media",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/native-media-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.453,
+    "log": "11-media.log"
+  },
+  {
+    "id": "12-worker",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/native-worker-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.688,
+    "log": "12-worker.log"
+  },
+  {
+    "id": "13-name",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/pdf-name-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.297,
+    "log": "13-name.log"
+  },
+  {
+    "id": "14-boundary",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/pdf-boundary-repro.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "exitCode": 0,
+    "seconds": 0.265,
+    "log": "14-boundary.log"
+  }
+]

@@ -1,0 +1,709 @@
+﻿{
+    "audit":  "AUDIT-R41",
+    "type":  "Closure Verification",
+    "createdAt":  "2026-10-21T08:30:00.730Z",
+    "decision":  "PENDING_CURRENT_SOURCE_VERIFICATION",
+    "testedSnapshotDecision":  "GO for original R40-01..08 SOURCE reproducers only",
+    "reason":  "Source changed repeatedly after passing gates; current source does not match tested snapshot. Await stable source before official current-source GO.",
+    "summary":  {
+                    "closedFindingsOnTestedSnapshot":  8,
+                    "totalFindings":  8,
+                    "gatesPassed":  5,
+                    "gatesTotal":  5,
+                    "adversarial":  {
+                                        "total":  65,
+                                        "pass":  65,
+                                        "fail":  0
+                                    },
+                    "findingTests":  30,
+                    "otherTests":  35
+                },
+    "source":  {
+                   "head":  "2570d96b6770957e218031c91f14ce98e766dfa7",
+                   "workingTree":  "dirty; tested working-tree snapshot, not clean HEAD",
+                   "manifest":  "integrity-before.json",
+                   "manifestSha256":  "77F2362D4B449F4E6BB8F29C71B5A14C4A581DF95F730980730B3083BA17B3A9"
+               },
+    "findings":  [
+                     {
+                         "id":  "R40-01",
+                         "status":  "CLOSED_ON_TESTED_SNAPSHOT",
+                         "pass":  12,
+                         "total":  12,
+                         "testIds":  [
+                                         "empty-courses",
+                                         "empty-rubrics",
+                                         "empty-quickTags",
+                                         "malformed-course-sessions",
+                                         "malformed-course-code",
+                                         "blank-session-topic",
+                                         "malformed-quicktag-tags",
+                                         "zalo-invalid-row-silently-dropped",
+                                         "rubric-negative-session",
+                                         "bad-session--1",
+                                         "bad-session-0",
+                                         "bad-session-0.2"
+                                     ]
+                     },
+                     {
+                         "id":  "R40-02",
+                         "status":  "CLOSED_ON_TESTED_SNAPSHOT",
+                         "pass":  6,
+                         "total":  6,
+                         "testIds":  [
+                                         "duplicate-session-id",
+                                         "duplicate-criterion-id",
+                                         "duplicate-quicktag-id",
+                                         "duplicate-category-id",
+                                         "duplicate-zalo-id",
+                                         "ui-delete-add-criterion-unique"
+                                     ]
+                     },
+                     {
+                         "id":  "R40-03",
+                         "status":  "CLOSED_ON_TESTED_SNAPSHOT",
+                         "pass":  7,
+                         "total":  7,
+                         "testIds":  [
+                                         "invalid-points--5",
+                                         "invalid-points-0",
+                                         "invalid-points-NaN",
+                                         "invalid-points-null",
+                                         "invalid-points-true",
+                                         "round-positive-to-zero",
+                                         "json-overflow-infinity"
+                                     ]
+                     },
+                     {
+                         "id":  "R40-04",
+                         "status":  "CLOSED_ON_TESTED_SNAPSHOT",
+                         "pass":  1,
+                         "total":  1,
+                         "testIds":  [
+                                         "stale-two-client-save"
+                                     ]
+                     },
+                     {
+                         "id":  "R40-05",
+                         "status":  "CLOSED_ON_TESTED_SNAPSHOT",
+                         "pass":  1,
+                         "total":  1,
+                         "testIds":  [
+                                         "phase5-batch-halts-next-student"
+                                     ]
+                     },
+                     {
+                         "id":  "R40-06",
+                         "status":  "CLOSED_ON_TESTED_SNAPSHOT",
+                         "pass":  1,
+                         "total":  1,
+                         "testIds":  [
+                                         "launcher-windows-npm-failure-detected"
+                                     ]
+                     },
+                     {
+                         "id":  "R40-07",
+                         "status":  "CLOSED_ON_TESTED_SNAPSHOT",
+                         "pass":  1,
+                         "total":  1,
+                         "testIds":  [
+                                         "ui-inflight-edit-preserved"
+                                     ]
+                     },
+                     {
+                         "id":  "R40-08",
+                         "status":  "CLOSED_ON_TESTED_SNAPSHOT",
+                         "pass":  1,
+                         "total":  1,
+                         "testIds":  [
+                                         "sse-final-status-is-idle"
+                                     ]
+                     }
+                 ],
+    "gates":  [
+                  {
+                      "id":  "adversarial",
+                      "command":  "node --import tsx docs/audits/round-40/adversarial.mjs",
+                      "exitCode":  0,
+                      "startedAt":  "2026-10-21T08:24:51.2942621Z",
+                      "durationMs":  5287,
+                      "log":  "adversarial.log"
+                  },
+                  {
+                      "id":  "phase7",
+                      "command":  "node node_modules/tsx/dist/cli.mjs scripts/test-phase7.ts",
+                      "exitCode":  0,
+                      "startedAt":  "2026-10-21T08:24:56.5958256Z",
+                      "durationMs":  313,
+                      "log":  "phase7.log"
+                  },
+                  {
+                      "id":  "phase6",
+                      "command":  "node node_modules/tsx/dist/cli.mjs scripts/test-phase6.ts",
+                      "exitCode":  0,
+                      "startedAt":  "2026-10-21T08:24:56.9137623Z",
+                      "durationMs":  2779,
+                      "log":  "phase6.log"
+                  },
+                  {
+                      "id":  "phase5",
+                      "command":  "node node_modules/tsx/dist/cli.mjs scripts/test-phase5.ts",
+                      "exitCode":  0,
+                      "startedAt":  "2026-10-21T08:24:59.6946479Z",
+                      "durationMs":  817,
+                      "log":  "phase5.log"
+                  },
+                  {
+                      "id":  "tsc",
+                      "command":  "node node_modules/typescript/bin/tsc --noEmit --incremental false",
+                      "exitCode":  0,
+                      "startedAt":  "2026-10-21T08:25:00.5166847Z",
+                      "durationMs":  394,
+                      "log":  "tsc.log"
+                  }
+              ],
+    "copyIntegrity":  {
+                          "checkedBeforeGates":  true,
+                          "differences":  [
+
+                                          ],
+                          "identical":  true,
+                          "filesCompared":  1871
+                      },
+    "integrityAtGateCompletion":  {
+                                      "nextEnvSha256":  "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+                                      "differences":  [
+
+                                                      ],
+                                      "beforeCount":  1871,
+                                      "unchanged":  true,
+                                      "afterCount":  1871
+                                  },
+    "currentSourceDrift":  {
+                               "checkedAt":  "2026-10-21T08:28:41.7210219Z",
+                               "sessionChanges":  [
+                                                      {
+                                                          "path":  "docs/audits/round-12/independent-results.json",
+                                                          "before":  "D29445389D5C88F4792063C6E194710E2F1C5727911B79D378E510225C6829C7",
+                                                          "after":  "D97A1FD6BB81D9BB669E077ABE6A63E7ECC9AA282DB783A4FA31AE47E894E064",
+                                                          "lastWriteUtc":  "2026-10-21T08:20:37.5914647Z"
+                                                      },
+                                                      {
+                                                          "path":  "src/lib/playwright/save-comments.ts",
+                                                          "before":  "F3F0117E6B03730447BFBE4C88C9CBE2E3BCD955774AAE62CA7555FC02E03529",
+                                                          "after":  "2ABE605C7BC697427423D1F30B6BA6FAE092FADB2010744717165554891EB6CC",
+                                                          "lastWriteUtc":  "2026-10-21T08:25:12.7268602Z"
+                                                      }
+                                                  ],
+                               "changesSinceLatestGates":  [
+                                                               {
+                                                                   "path":  "src/lib/playwright/save-comments.ts",
+                                                                   "testedSha256":  "3B91A28670DE83F8912D5D9C029274A4678DE6E777483D576DBA91B9C050742C",
+                                                                   "currentSha256":  "2ABE605C7BC697427423D1F30B6BA6FAE092FADB2010744717165554891EB6CC"
+                                                               }
+                                                           ],
+                               "nextEnvSha256":  "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+                               "tempRemoved":  true
+                           },
+    "cleanup":  {
+                    "nodeModulesPreserved":  true,
+                    "cloneRemoved":  true
+                },
+    "tests":  [
+                  {
+                      "id":  "security-config-get-origin",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-config-get-host",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-config-get-cross-site",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-config-get-null-origin",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-config-post-origin",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-config-post-host",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-config-post-cross-site",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-config-post-null-origin",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-stream-origin",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-stream-host",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-stream-cross-site",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-stream-null-origin",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-control-get-origin",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-control-get-host",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-control-get-cross-site",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-control-get-null-origin",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-control-post-origin",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-control-post-host",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-control-post-cross-site",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "security-control-post-null-origin",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "path-outside-root",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "path-traversal",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "config-junction-escape-blocked",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "config-crud-all-sections",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "reject-scale-10",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "reject-duplicate-course-id",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "reject-duplicate-rubric-id",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "empty-courses",
+                      "finding":  "R40-01",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "empty-rubrics",
+                      "finding":  "R40-01",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "empty-quickTags",
+                      "finding":  "R40-01",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "malformed-course-sessions",
+                      "finding":  "R40-01",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "malformed-course-code",
+                      "finding":  "R40-01",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "blank-session-topic",
+                      "finding":  "R40-01",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "malformed-quicktag-tags",
+                      "finding":  "R40-01",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "zalo-invalid-row-silently-dropped",
+                      "finding":  "R40-01",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "rubric-negative-session",
+                      "finding":  "R40-01",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "bad-session--1",
+                      "finding":  "R40-01",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "bad-session-0",
+                      "finding":  "R40-01",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "bad-session-0.2",
+                      "finding":  "R40-01",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "duplicate-session-id",
+                      "finding":  "R40-02",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "duplicate-criterion-id",
+                      "finding":  "R40-02",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "duplicate-quicktag-id",
+                      "finding":  "R40-02",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "duplicate-category-id",
+                      "finding":  "R40-02",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "duplicate-zalo-id",
+                      "finding":  "R40-02",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "invalid-points--5",
+                      "finding":  "R40-03",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "invalid-points-0",
+                      "finding":  "R40-03",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "invalid-points-NaN",
+                      "finding":  "R40-03",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "invalid-points-null",
+                      "finding":  "R40-03",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "invalid-points-true",
+                      "finding":  "R40-03",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "round-positive-to-zero",
+                      "finding":  "R40-03",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "json-overflow-infinity",
+                      "finding":  "R40-03",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "stale-two-client-save",
+                      "finding":  "R40-04",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "approved-verified-preserved-config-and-stop",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  {
+                                     "homework":  2,
+                                     "spck":  2,
+                                     "byteEquivalentRows":  true
+                                 }
+                  },
+                  {
+                      "id":  "queue-pending-stop-serial-preserves",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "sse-final-status-is-idle",
+                      "finding":  "R40-08",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "sse-live-and-cleanup-60-connections",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  {
+                                     "connections":  60,
+                                     "listenersBefore":  [
+                                                             0,
+                                                             0
+                                                         ],
+                                     "listenersAfter":  [
+                                                            0,
+                                                            0
+                                                        ]
+                                 }
+                  },
+                  {
+                      "id":  "phase5-batch-halts-next-student",
+                      "finding":  "R40-05",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "launcher-windows-npm-failure-detected",
+                      "finding":  "R40-06",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "launcher-local-bind-and-quoted-cwd",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "launcher-windows-env-preflight-spaces",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "ui-add-edit-delete-session",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "ui-inflight-edit-preserved",
+                      "finding":  "R40-07",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "ui-drawer-control-stop-resume",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "ui-delete-add-criterion-unique",
+                      "finding":  "R40-02",
+                      "status":  "PASS",
+                      "detail":  null
+                  },
+                  {
+                      "id":  "client-bundle-does-not-import-secrets",
+                      "finding":  null,
+                      "status":  "PASS",
+                      "detail":  {
+                                     "bundleInputs":  1918,
+                                     "streamConnections":  1
+                                 }
+                  }
+              ],
+    "reviewer":  {
+                     "requestedModel":  "claude-sonnet-5-5-high",
+                     "requestedEffort":  "high",
+                     "conversationId":  "4d0afaed-920f-4b29-abd3-e626fd0aa6cb",
+                     "assessment":  {
+                                        "decision":  "GO (có điều kiện) cho việc đóng 8 case R40-01..08 ở mức SOURCE. Đây không phải GO cho đúng đắn đồng thời tổng thể hay cho nghiệm thu LMS/Gemini/macOS thật.",
+                                        "findings":  [
+                                                         {
+                                                             "id":  "R40-01",
+                                                             "status":  "CLOSED",
+                                                             "reason":  "11 test gắn R40-01 đều PASS: mảng rỗng, sai kiểu, topic rỗng, session -1/0/0.2, dòng Zalo sai. Đoạn mã excerpt có kiểm tra Array.isArray, courses.length === 0 và kiểu chuỗi, trả HTTP 400. Hàm reject() ban đầu còn assert dữ liệu lưu không đổi sau khi bị từ chối. Excerpt chỉ cho thấy nhánh courses, nên các section còn lại chỉ được chứng minh qua kết quả test, không qua mã nguồn."
+                                                         },
+                                                         {
+                                                             "id":  "R40-02",
+                                                             "status":  "CLOSED",
+                                                             "reason":  "5 test trùng ID (session, criterion, quickTag, category, zalo) và test UI xóa rồi thêm tiêu chí đều PASS. Mã UI tránh trùng bằng cách tính ID C{n} dựa trên tập ID hiện có, không dùng length+1. Chưa có bằng chứng về trùng ID phân biệt hoa/thường ngoài trường hợp đã test."
+                                                         },
+                                                         {
+                                                             "id":  "R40-03",
+                                                             "status":  "CLOSED",
+                                                             "reason":  "7 test điểm sai (-5, 0, NaN, null, true, số dương làm tròn về 0, overflow Infinity) đều PASS. Mã kiểm tra typeof number, isFinite, \u003e 0 và kiểm tra lại sau khi làm tròn 2 chữ số."
+                                                         },
+                                                         {
+                                                             "id":  "R40-04",
+                                                             "status":  "REPRODUCER_CLOSED_ONLY",
+                                                             "reason":  "Test gốc PASS, nhưng chỉ vì cơ chế bảo vệ hiện tại bắt được đúng kịch bản mẫu. Excerpt cho thấy đây là heuristic, không phải khóa phiên bản (ETag/revision): nó dùng biến toàn cục (preWriteCoursesBaseline, lastServedCoursesSnapshot, writesSinceLastGetCourses) và so sánh nội dung gửi lên với baseline để đoán \u0027bị quay về giá trị cũ\u0027. Assertion gốc cũng chấp nhận hoặc 409 hoặc gộp được cả hai bản sửa. Các điểm yếu đã thấy qua excerpt: trạng thái dùng chung toàn tiến trình thay vì theo từng client; hai client cùng sửa một trường thì không bị phát hiện; người dùng cố ý hoàn tác có thể bị 409 oan; chỉ áp dụng cho section courses. Các mối lo kiến trúc này được ghi rõ là ngoài phạm vi đóng case và không được coi là đã chứng minh đúng."
+                                                         },
+                                                         {
+                                                             "id":  "R40-05",
+                                                             "status":  "CLOSED",
+                                                             "reason":  "Worker có kiểm tra cờ __mindxQueueStopped ở đầu mỗi vòng lặp học viên và break. Test mô phỏng bấm Stop khi học viên 1 đang thao tác trình duyệt, rồi assert học viên 2 vẫn APPROVED (chưa bị xử lý). Test PASS. Lưu ý: dùng mock trình duyệt và cờ toàn cục trên process, chưa kiểm chứng trên Playwright thật. Học viên 1 sau khi Stop ở giữa chừng ra trạng thái nào thì test không assert."
+                                                         },
+                                                         {
+                                                             "id":  "R40-06",
+                                                             "status":  "CLOSED",
+                                                             "reason":  "start-bot.bat đã có setlocal EnableDelayedExpansion và kiểm tra !errorlevel! neq 0 rồi exit /b 1. Test chạy khối cài đặt thật bằng cmd.exe với npm.cmd giả trả mã 37, và assert không tới được bước khởi động server. Test PASS. Đường dẫn có khoảng trắng cũng được test. Chưa có bằng chứng về macOS (.command)."
+                                                         },
+                                                         {
+                                                             "id":  "R40-07",
+                                                             "status":  "CLOSED",
+                                                             "reason":  "UI dùng editVersionRef: chỉ ghi đè state khi phiên bản lúc gửi trùng phiên bản hiện tại. Test UI trình duyệt trì hoãn phản hồi POST, gõ thêm nội dung mới rồi giải phóng phản hồi cũ, và assert ô nhập vẫn giữ giá trị chưa lưu. Test PASS. Test chỉ bao phủ section courses. Mã cho thấy cùng cơ chế với 3 section còn lại nhưng không có test riêng cho chúng."
+                                                         },
+                                                         {
+                                                             "id":  "R40-08",
+                                                             "status":  "CLOSED",
+                                                             "reason":  "Hàm xử lý hàng đợi giờ gọi emitStatus() ở nhánh kết thúc (else) sau khi isProcessing = false. Test assert trạng thái phát cuối cùng có isRunning=false. Test PASS. Test này dùng một task giả đơn giản, chưa kiểm tra các nhánh lỗi hoặc huỷ."
+                                                         }
+                                                     ],
+                                        "evidence_checks":  {
+                                                                "gates":  "Cả 5 gate (adversarial, phase7, phase6, phase5, tsc) đều có exitCode 0. Tổng 65/65 test PASS, so với 35/65 ở R40. Cả 8 mã R40-01..08 đều có test gắn nhãn và đều PASS. Thời gian chạy của các gate liền mạch, không chồng lấn.",
+                                                                "copy_integrity":  "SHA256 của 1871 file trong bản clone khớp với working tree, đã kiểm tra trước khi chạy gate đầu tiên. Sau khi chạy, integrity cuối cùng cũng không có khác biệt (1871 -\u003e 1871). Clone và thư mục tạm đã được dọn.",
+                                                                "regression":  "phase5, phase6, phase7 và tsc đều sạch. Các test không dính tới case R40 vẫn PASS: kiểm tra Origin/Host, path traversal, junction, bundle không import secret, SSE 60 kết nối không rò listener.",
+                                                                "assertions":  "Các assertion gốc và excerpt mã nguồn được nhúng đủ, và khớp với mô tả case. Riêng assertion R40-04 chấp nhận hai kết quả thay vì một.",
+                                                                "scope_note":  "Bằng chứng này chỉ chứng minh case đã tái hiện được thì nay không tái hiện nữa. Nó không chứng minh toàn hệ thống đúng ngoài các case đó."
+                                                            },
+                                        "limitations":  [
+                                                            "Đây là kết luận lý luận độc lập dựa trên bằng chứng được nhúng trong gói. Tôi không chạy lại test nào, và các log đã được coordinator thu thập.",
+                                                            "Kết quả chỉ áp dụng cho working tree hiện tại (đã so khớp bản clone với snapshot đó). Đây KHÔNG phải xác nhận clean HEAD 2570d96.",
+                                                            "Tương tác đồng thời tổng thể (nhiều giáo viên, nhiều tiến trình, nhiều tab) chưa được chứng minh. R40-04 vẫn là cơ chế heuristic cục bộ trong một process, không phải kiểm soát phiên bản đúng nghĩa.",
+                                                            "Trình duyệt Playwright, LMS, Gemini và macOS đều là mock hoặc không được chạy thật. Test dùng dữ liệu tổng hợp trong thư mục TEMP, nên chưa có nghiệm thu thực tế.",
+                                                            "Stop bot dựa vào cờ toàn cục trên process. Chưa có bằng chứng về trạng thái học viên đang xử lý dở khi Stop.",
+                                                            "Test R40-07 và R40-08 chỉ phủ một section hoặc một kịch bản đơn giản."
+                                                        ],
+                                        "additional_observations":  [
+                                                                        "Phát sinh hai thay đổi ngoài tác vụ trong phiên: src/lib/playwright/save-comments.ts (mã sản phẩm, sửa lúc 08:20:25Z) và docs/audits/round-12/independent-results.json (file lịch sử, sửa lúc 08:20:37Z). Coordinator nói không tự sửa và không che giấu, nhưng nguồn gốc vẫn chưa rõ. Gói không có diff nội dung của hai file này. Hash trước và sau chỉ cho biết file khác nhau. Gate cuối cùng đã chạy trên trạng thái sau thay đổi, nên chúng được kiểm thử, nhưng chưa được review từng dòng.",
+                                                                        "File audit lịch sử round-12 bị sửa là điểm đáng ngờ về tính toàn vẹn bằng chứng. Nên truy nguồn trước khi dùng round-12 làm tham chiếu. Điều này không chặn việc đóng R40 vì R40 không phụ thuộc vào file đó.",
+                                                                        "Điều kiện để GO có hiệu lực: (1) ghi nhận rõ R40-04 là \u0027đóng reproducer, chưa đóng kiến trúc\u0027; (2) truy nguồn hoặc xem diff của save-comments.ts; (3) không dùng kết quả này làm nghiệm thu LMS/Gemini/macOS thật.",
+                                                                        "Đề xuất mở một finding riêng về đồng thời cho courses và các section khác (versioning/ETag theo từng section), cùng một vòng kiểm thử LMS thật và macOS trước khi phát hành."
+                                                                    ]
+                                    },
+                     "method":  "inline evidence reasoning review; did not independently rerun gates",
+                     "quantitativeCorrection":  "Reviewer prose says 11 R40-01 tests; actual machine count is 12."
+                 },
+    "limitations":  [
+                        "Original R40 reproducers only; R40-04 does not establish general concurrency correctness.",
+                        "Synthetic local fixtures; no real Teaching/LMS/Gemini/macOS acceptance.",
+                        "Code and historical changes outside the audit commands are preserved and not reverted; actor not established."
+                    ],
+    "handoffState":  {
+                         "tempRemoved":  true,
+                         "nextEnvHash":  "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+                         "currentSaveCommentsHash":  "02EE2DD073718BBECCF7FA59548429659A6D3CAA835F0EC5DD4312750ED49E72",
+                         "currentR12Hash":  "5810A4605E7D5FDDFBBB4D7C7581BF68BCF528AB0DFDDE4417428CE35B9D55B1",
+                         "reportExists":  true,
+                         "matrixExists":  true,
+                         "resultsExists":  true
+                     },
+    "handoffNote":  "Both external target files changed again during the 60-second wait for source stability; handoff hashes differ from current-source-drift.json earlier sample. Await confirmation before any final-source GO."
+}

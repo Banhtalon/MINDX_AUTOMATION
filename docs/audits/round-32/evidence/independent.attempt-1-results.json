@@ -1,0 +1,1251 @@
+{
+  "round": 32,
+  "checkedAt": "2026-10-21T00:37:05.104Z",
+  "root": "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s",
+  "realLmsCalls": 0,
+  "realGeminiCalls": 0,
+  "method": "Native TS product imports for scanner/SQLite/API/uploader; real isolated headless Chromium with all requests intercepted. AI uses exact source bodies with fake Gemini; UI uses exact pre-JSX function bodies with deterministic hooks/responses, not full React scheduling.",
+  "sourceHashes": {
+    "src/lib/utils/vietnamese-match.ts": "017fa9883acf6d791bfd36d67ef596801c6aec13de33bd9949ae3a3bb34b41b3",
+    "src/lib/local-files/spck-scanner.ts": "afbc9fe932f7a0ee07c11c16fdbc90fbb57a767f8cfbc8d5bf60d7d0160dff4d",
+    "src/lib/gemini/spck-comment.ts": "8f328b90ca36b32bab54947289701255e327be288bdf71e74cc2ad6f1550c8dd",
+    "src/lib/db/sqlite.ts": "dac8d5c72664fad3ce3b58b669da81694f18216831e422ed99e8ece6fbb2b665",
+    "src/lib/playwright/spck-uploader.ts": "3bb27d9bb7cf0ee7438aaed48e02bc97454f0c7f76c01c9b9e429ffbcc27ffc6",
+    "src/lib/playwright/selectors.ts": "720f48cdea9d7038564aba5ad97a2913525f02a2fc2d9bfb50bf10e5bc291a0e",
+    "src/app/final-project/page.tsx": "fdc82beeeafee1a7b261121597d51d1a9a1ab23587f63cb8492e79c6f4c570e7",
+    "src/app/api/spck/approve/route.ts": "95230cbfbe81a16692de29d8ec3b457386a293292370833a80a2317d2f4d5f29",
+    "src/app/api/spck/save-draft/route.ts": "037d33dc170aeba84642010bcd27eef0acfbb2638e5b8aea017d2670860b99ab",
+    "src/app/api/spck/scan/route.ts": "347ef1f552f2f07fa9ee1a33453a813ae836eedb7d41d8f2da395844a582a9a0",
+    "src/app/api/spck/list/route.ts": "3c9dd80ee5e98fcc5ac4d82709d1f6fefb95977d733af73f4340537cccd5f593",
+    "src/app/api/spck/generate-ai/route.ts": "3db7fe0cd7245e3852c31f8ec64f038bee1c8c87a38ac9910cd924e629f8eb74",
+    "src/app/api/spck/upload-lms/route.ts": "b614fd18d3b7c9cf8439523ca2531c8b353e80bfac0301e013708485a4fcc8f3"
+  },
+  "total": 65,
+  "passed": 33,
+  "failed": 32,
+  "results": [
+    {
+      "id": "R32-N01",
+      "task": "6.1",
+      "issue": null,
+      "criterion": "Chuẩn hóa dấu, Đ/đ, NFD, ký tự đặc biệt",
+      "pass": true,
+      "observation": {
+        "a": "dang thi anh",
+        "b": "dang thi anh"
+      }
+    },
+    {
+      "id": "R32-N02",
+      "task": "6.1",
+      "issue": null,
+      "criterion": "Xác nhận thủ công khi tên mơ hồ hoặc thư mục đụng độ",
+      "pass": true,
+      "observation": [
+        {
+          "score": 1,
+          "manual": false,
+          "collision": false
+        }
+      ]
+    },
+    {
+      "id": "R32-N03",
+      "task": "6.1",
+      "issue": null,
+      "criterion": "Xác nhận thủ công khi tên mơ hồ hoặc thư mục đụng độ",
+      "pass": true,
+      "observation": [
+        {
+          "score": 0.95,
+          "manual": true,
+          "collision": false
+        }
+      ]
+    },
+    {
+      "id": "R32-N04",
+      "task": "6.1",
+      "issue": null,
+      "criterion": "Xác nhận thủ công khi tên mơ hồ hoặc thư mục đụng độ",
+      "pass": true,
+      "observation": [
+        {
+          "score": 1,
+          "manual": true,
+          "collision": false
+        }
+      ]
+    },
+    {
+      "id": "R32-N05",
+      "task": "6.1",
+      "issue": null,
+      "criterion": "Xác nhận thủ công khi tên mơ hồ hoặc thư mục đụng độ",
+      "pass": true,
+      "observation": [
+        {
+          "score": 1,
+          "manual": true,
+          "collision": true
+        },
+        {
+          "score": 1,
+          "manual": true,
+          "collision": true
+        }
+      ]
+    },
+    {
+      "id": "R32-N06",
+      "task": "6.1",
+      "issue": null,
+      "criterion": "Xác nhận thủ công khi tên mơ hồ hoặc thư mục đụng độ",
+      "pass": true,
+      "observation": [
+        {
+          "score": 0,
+          "manual": true,
+          "collision": false
+        }
+      ]
+    },
+    {
+      "id": "R32-S01",
+      "task": "6.2",
+      "issue": null,
+      "criterion": "Chặn ../ thoát vùng cho phép",
+      "pass": true,
+      "observation": {
+        "blocked": true
+      }
+    },
+    {
+      "id": "R32-S02",
+      "task": "6.2",
+      "issue": null,
+      "criterion": "Chặn junction dẫn ra ngoài allowlist",
+      "pass": true,
+      "observation": {
+        "blocked": true
+      }
+    },
+    {
+      "id": "R32-S03",
+      "task": "6.2",
+      "issue": null,
+      "criterion": "Không quét junction nội bộ như thư mục học viên",
+      "pass": true,
+      "observation": {
+        "blocked": true
+      }
+    },
+    {
+      "id": "R32-S04",
+      "task": "6.2",
+      "issue": null,
+      "criterion": "Ảnh/PDF giả bị loại; thumb/bìa được ưu tiên; giới hạn 10 ảnh/10 file",
+      "pass": true,
+      "observation": {
+        "thumbnail": "bia.png",
+        "screenshots": 10,
+        "attachments": 10,
+        "warnings": 4
+      }
+    },
+    {
+      "id": "R32-S05",
+      "task": "6.2",
+      "issue": null,
+      "criterion": "Ảnh đầu tiên làm thumbnail khi không có thumb/bìa",
+      "pass": true,
+      "observation": {
+        "thumbnail": "a.png"
+      }
+    },
+    {
+      "id": "R32-S06",
+      "task": "6.2",
+      "issue": null,
+      "criterion": "links.txt: tối đa 5+5, loại giao thức lạ, chống lặp, title <=100",
+      "pass": true,
+      "observation": {
+        "youtube": 5,
+        "related": 5,
+        "title": 100
+      }
+    },
+    {
+      "id": "R32-D01",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "Sửa nội dung sau duyệt hạ WAITING_APPROVAL",
+      "pass": true,
+      "observation": {
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R32-D02",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "markVerified từ chối hash sai",
+      "pass": true,
+      "observation": {
+        "blocked": true
+      }
+    },
+    {
+      "id": "R32-D03",
+      "task": "6.4",
+      "issue": "R32-04",
+      "criterion": "Khóa nội dung byte file sau duyệt",
+      "pass": false,
+      "observation": {
+        "before": "779a090c752e91d6e9e4fc7f87722b9521eb12d38773e371773f1820932ba7c7",
+        "after": "9aa248e1a4b75c4f9afe14c400bb9ebbdfd5b237411dd1a0d1d3d68e2b7c253c",
+        "contentHashUnchanged": true,
+        "uploadAccepted": true
+      },
+      "error": "Acceptance condition failed: {\"before\":\"779a090c752e91d6e9e4fc7f87722b9521eb12d38773e371773f1820932ba7c7\",\"after\":\"9aa248e1a4b75c4f9afe14c400bb9ebbdfd5b237411dd1a0d1d3d68e2b7c253c\",\"contentHashUnchanged\":true,\"uploadAccepted\":true}",
+      "stack": "Error: Acceptance condition failed: {\"before\":\"779a090c752e91d6e9e4fc7f87722b9521eb12d38773e371773f1820932ba7c7\",\"after\":\"9aa248e1a4b75c4f9afe14c400bb9ebbdfd5b237411dd1a0d1d3d68e2b7c253c\",\"contentHashUnchanged\":true,\"uploadAccepted\":true}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:56:428)\n    at check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:78)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:56:7)"
+    },
+    {
+      "id": "R32-D04",
+      "task": "6.4",
+      "issue": "R32-04",
+      "criterion": "Kiểm lại chữ ký media trước upload khi file đã đổi",
+      "pass": false,
+      "observation": {
+        "invalidBytesAccepted": true
+      },
+      "error": "Acceptance condition failed: {\"invalidBytesAccepted\":true}",
+      "stack": "Error: Acceptance condition failed: {\"invalidBytesAccepted\":true}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:57:332)\n    at check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:78)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:57:7)"
+    },
+    {
+      "id": "R32-A01",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Snapshot đúng cho phép duyệt",
+      "pass": true,
+      "observation": {
+        "http": 200
+      }
+    },
+    {
+      "id": "R32-A02",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Bắt buộc có snapshot reviewedItems",
+      "pass": false,
+      "observation": {
+        "http": 200,
+        "dbStatus": "APPROVED"
+      },
+      "error": "Acceptance condition failed: {\"http\":200,\"dbStatus\":\"APPROVED\"}",
+      "stack": "Error: Acceptance condition failed: {\"http\":200,\"dbStatus\":\"APPROVED\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:59:135)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:59:1)"
+    },
+    {
+      "id": "R32-A03-screenshotsJson",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Từ chối snapshot lệch screenshotsJson",
+      "pass": false,
+      "observation": {
+        "field": "screenshotsJson",
+        "http": 200,
+        "status": "APPROVED"
+      },
+      "error": "Acceptance condition failed: {\"field\":\"screenshotsJson\",\"http\":200,\"status\":\"APPROVED\"}",
+      "stack": "Error: Acceptance condition failed: {\"field\":\"screenshotsJson\",\"http\":200,\"status\":\"APPROVED\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:60:487)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:60:134)"
+    },
+    {
+      "id": "R32-A03-attachmentsJson",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Từ chối snapshot lệch attachmentsJson",
+      "pass": false,
+      "observation": {
+        "field": "attachmentsJson",
+        "http": 200,
+        "status": "APPROVED"
+      },
+      "error": "Acceptance condition failed: {\"field\":\"attachmentsJson\",\"http\":200,\"status\":\"APPROVED\"}",
+      "stack": "Error: Acceptance condition failed: {\"field\":\"attachmentsJson\",\"http\":200,\"status\":\"APPROVED\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:60:487)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:60:134)"
+    },
+    {
+      "id": "R32-A03-youtubeUrlsJson",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Từ chối snapshot lệch youtubeUrlsJson",
+      "pass": false,
+      "observation": {
+        "field": "youtubeUrlsJson",
+        "http": 200,
+        "status": "APPROVED"
+      },
+      "error": "Acceptance condition failed: {\"field\":\"youtubeUrlsJson\",\"http\":200,\"status\":\"APPROVED\"}",
+      "stack": "Error: Acceptance condition failed: {\"field\":\"youtubeUrlsJson\",\"http\":200,\"status\":\"APPROVED\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:60:487)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:60:134)"
+    },
+    {
+      "id": "R32-A03-relatedLinksJson",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Từ chối snapshot lệch relatedLinksJson",
+      "pass": false,
+      "observation": {
+        "field": "relatedLinksJson",
+        "http": 200,
+        "status": "APPROVED"
+      },
+      "error": "Acceptance condition failed: {\"field\":\"relatedLinksJson\",\"http\":200,\"status\":\"APPROVED\"}",
+      "stack": "Error: Acceptance condition failed: {\"field\":\"relatedLinksJson\",\"http\":200,\"status\":\"APPROVED\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:60:487)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:60:134)"
+    },
+    {
+      "id": "R32-A03-thumbnailPath",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Từ chối snapshot lệch thumbnailPath",
+      "pass": false,
+      "observation": {
+        "field": "thumbnailPath",
+        "http": 200,
+        "status": "APPROVED"
+      },
+      "error": "Acceptance condition failed: {\"field\":\"thumbnailPath\",\"http\":200,\"status\":\"APPROVED\"}",
+      "stack": "Error: Acceptance condition failed: {\"field\":\"thumbnailPath\",\"http\":200,\"status\":\"APPROVED\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:60:487)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:60:134)"
+    },
+    {
+      "id": "R32-A03-isConfirmedByTeacher",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Từ chối snapshot lệch isConfirmedByTeacher",
+      "pass": false,
+      "observation": {
+        "field": "isConfirmedByTeacher",
+        "http": 200,
+        "status": "APPROVED"
+      },
+      "error": "Acceptance condition failed: {\"field\":\"isConfirmedByTeacher\",\"http\":200,\"status\":\"APPROVED\"}",
+      "stack": "Error: Acceptance condition failed: {\"field\":\"isConfirmedByTeacher\",\"http\":200,\"status\":\"APPROVED\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:60:487)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:60:134)"
+    },
+    {
+      "id": "R32-A04",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Từ chối snapshot lệch comment",
+      "pass": true,
+      "observation": {
+        "http": 409
+      }
+    },
+    {
+      "id": "R32-A05",
+      "task": "6.5",
+      "issue": "R32-01",
+      "criterion": "Batch conflict không duyệt dở một phần",
+      "pass": false,
+      "observation": {
+        "http": 409,
+        "firstStudentStatus": "APPROVED"
+      },
+      "error": "Acceptance condition failed: {\"http\":409,\"firstStudentStatus\":\"APPROVED\"}",
+      "stack": "Error: Acceptance condition failed: {\"http\":409,\"firstStudentStatus\":\"APPROVED\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:62:399)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:62:1)"
+    },
+    {
+      "id": "R32-M01",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Chặn gán trùng đường dẫn nguyên văn",
+      "pass": true,
+      "observation": {
+        "http": 409
+      }
+    },
+    {
+      "id": "R32-M02",
+      "task": "6.5",
+      "issue": "R32-02",
+      "criterion": "Chặn cùng thư mục qua đường dẫn ../ tương đương",
+      "pass": false,
+      "observation": {
+        "http": 200,
+        "sameRealDirectory": true,
+        "storedFolder": "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\evidence\\fixtures\\student\\..\\student"
+      },
+      "error": "Acceptance condition failed: {\"http\":200,\"sameRealDirectory\":true,\"storedFolder\":\"C:\\\\WINDOWS\\\\Temp\\\\mindx-round31-r32-mvhdlh7s\\\\docs\\\\audits\\\\round-32\\\\evidence\\\\fixtures\\\\student\\\\..\\\\student\"}",
+      "stack": "Error: Acceptance condition failed: {\"http\":200,\"sameRealDirectory\":true,\"storedFolder\":\"C:\\\\WINDOWS\\\\Temp\\\\mindx-round31-r32-mvhdlh7s\\\\docs\\\\audits\\\\round-32\\\\evidence\\\\fixtures\\\\student\\\\..\\\\student\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:64:283)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:64:1)"
+    },
+    {
+      "id": "R32-M03",
+      "task": "6.5",
+      "issue": "R32-02",
+      "criterion": "Chặn cùng thư mục khi một đường dùng / và một đường dùng \\",
+      "pass": false,
+      "observation": {
+        "http": 200,
+        "secondBindingExists": true
+      },
+      "error": "Acceptance condition failed: {\"http\":200,\"secondBindingExists\":true}",
+      "stack": "Error: Acceptance condition failed: {\"http\":200,\"secondBindingExists\":true}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:65:265)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:65:1)"
+    },
+    {
+      "id": "R32-M04",
+      "task": "6.1/6.5",
+      "issue": "R32-03",
+      "criterion": "Quét folder mơ hồ mới phải bỏ xác nhận của folder cũ",
+      "pass": false,
+      "observation": {
+        "http": 200,
+        "manualRequired": true,
+        "newFolder": "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\evidence\\fixtures\\rescan\\01_Ngo_Khoi_Nguyen",
+        "confirmed": 1
+      },
+      "error": "Acceptance condition failed: {\"http\":200,\"manualRequired\":true,\"newFolder\":\"C:\\\\WINDOWS\\\\Temp\\\\mindx-round31-r32-mvhdlh7s\\\\docs\\\\audits\\\\round-32\\\\evidence\\\\fixtures\\\\rescan\\\\01_Ngo_Khoi_Nguyen\",\"confirmed\":1}",
+      "stack": "Error: Acceptance condition failed: {\"http\":200,\"manualRequired\":true,\"newFolder\":\"C:\\\\WINDOWS\\\\Temp\\\\mindx-round31-r32-mvhdlh7s\\\\docs\\\\audits\\\\round-32\\\\evidence\\\\fixtures\\\\rescan\\\\01_Ngo_Khoi_Nguyen\",\"confirmed\":1}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:66:432)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:66:1)"
+    },
+    {
+      "id": "R32-M05",
+      "task": "6.5",
+      "issue": "R32-11",
+      "criterion": "Đổi gợi ý ghép từ S1 sang S2 qua luồng UI phải có cách lưu",
+      "pass": false,
+      "observation": {
+        "http": 409,
+        "oldOwnerStillExists": true,
+        "body": {
+          "success": false,
+          "error": "Thư mục 'C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\evidence\\fixtures\\student' đã được ghép với học viên 'R32_S1'. Không thể ghép trùng 1 thư mục cho 2 học viên."
+        }
+      },
+      "error": "Acceptance condition failed: {\"http\":409,\"oldOwnerStillExists\":true,\"body\":{\"success\":false,\"error\":\"Thư mục 'C:\\\\WINDOWS\\\\Temp\\\\mindx-round31-r32-mvhdlh7s\\\\docs\\\\audits\\\\round-32\\\\evidence\\\\fixtures\\\\student' đã được ghép với học viên 'R32_S1'. Không thể ghép trùng 1 thư mục cho 2 học viên.\"}}",
+      "stack": "Error: Acceptance condition failed: {\"http\":409,\"oldOwnerStillExists\":true,\"body\":{\"success\":false,\"error\":\"Thư mục 'C:\\\\WINDOWS\\\\Temp\\\\mindx-round31-r32-mvhdlh7s\\\\docs\\\\audits\\\\round-32\\\\evidence\\\\fixtures\\\\student' đã được ghép với học viên 'R32_S1'. Không thể ghép trùng 1 thư mục cho 2 học viên.\"}}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:67:254)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:67:1)"
+    },
+    {
+      "id": "R32-M06",
+      "task": "6.5",
+      "issue": "R32-09",
+      "criterion": "Nháp cũ đến sau không ghi đè nháp mới",
+      "pass": false,
+      "observation": {
+        "http": 200,
+        "actual": "OLD"
+      },
+      "error": "Acceptance condition failed: {\"http\":200,\"actual\":\"OLD\"}",
+      "stack": "Error: Acceptance condition failed: {\"http\":200,\"actual\":\"OLD\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:68:265)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:68:1)"
+    },
+    {
+      "id": "R32-L-approve",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Local-only chặn Origin bên ngoài tại approve",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R32-L-save-draft",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Local-only chặn Origin bên ngoài tại save-draft",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R32-L-scan",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Local-only chặn Origin bên ngoài tại scan",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R32-L-list",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Local-only chặn Origin bên ngoài tại list",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R32-L-generate-ai",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Local-only chặn Origin bên ngoài tại generate-ai",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R32-L-upload-lms",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Local-only chặn Origin bên ngoài tại upload-lms",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R32-G01",
+      "task": "6.3",
+      "issue": null,
+      "criterion": "Trống tag và note không gọi AI, trả INSUFFICIENT_INFO",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "status": "INSUFFICIENT_INFO"
+      }
+    },
+    {
+      "id": "R32-G02",
+      "task": "6.3",
+      "issue": null,
+      "criterion": "Ẩn đủ họ tên mục tiêu/peer và khóa sandbox đóng giả",
+      "pass": true,
+      "observation": {
+        "fullNamesRedacted": true,
+        "sandboxInputRedacted": true
+      }
+    },
+    {
+      "id": "R32-G03",
+      "task": "6.3",
+      "issue": "R32-07",
+      "criterion": "Ẩn tên riêng của peer trong prompt thực gửi AI",
+      "pass": false,
+      "observation": {
+        "peerGivenNameLeaked": true,
+        "outboundExcerpt": "- Ghi chú của giáo viên: Làm cùng Khang trong nhóm."
+      },
+      "error": "Acceptance condition failed: {\"peerGivenNameLeaked\":true,\"outboundExcerpt\":\"- Ghi chú của giáo viên: Làm cùng Khang trong nhóm.\"}",
+      "stack": "Error: Acceptance condition failed: {\"peerGivenNameLeaked\":true,\"outboundExcerpt\":\"- Ghi chú của giáo viên: Làm cùng Khang trong nhóm.\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:79:254)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:79:1)"
+    },
+    {
+      "id": "R32-G04",
+      "task": "6.3",
+      "issue": "R32-07",
+      "criterion": "Ẩn tên mục tiêu không dấu khi chỉ nhắc một phần tên",
+      "pass": false,
+      "observation": {
+        "targetPartialNameLeaked": true
+      },
+      "error": "Acceptance condition failed: {\"targetPartialNameLeaked\":true}",
+      "stack": "Error: Acceptance condition failed: {\"targetPartialNameLeaked\":true}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:80:255)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:80:1)"
+    },
+    {
+      "id": "R32-G05",
+      "task": "6.3",
+      "issue": null,
+      "criterion": "Không có bằng chứng thuyết trình thì xóa câu thuyết trình thông thường",
+      "pass": true,
+      "observation": {
+        "presentationRemoved": true
+      }
+    },
+    {
+      "id": "R32-G06",
+      "task": "6.3",
+      "issue": "R32-10",
+      "criterion": "Không để lại kỹ năng nói trước đám đông khi không tích chọn",
+      "pass": false,
+      "observation": {
+        "includePresentation": false,
+        "comment": "• Thái độ & Quá trình làm dự án: Em diễn đạt lưu loát trước đám đông và giao tiếp với khán giả tốt.\n• Ý tưởng & Thiết kế sản phẩm: Giao diện rõ ràng.\n• Kỹ thuật lập trình vận dụng: Áp dụng biến và vòng lặp."
+      },
+      "error": "Acceptance condition failed: {\"includePresentation\":false,\"comment\":\"• Thái độ & Quá trình làm dự án: Em diễn đạt lưu loát trước đám đông và giao tiếp với khán giả tốt.\\n• Ý tưởng & Thiết kế sản phẩm: Giao diện rõ ràng.\\n• Kỹ thuật lập trình vận dụng: Áp dụng biến và vòng lặp.\"}",
+      "stack": "Error: Acceptance condition failed: {\"includePresentation\":false,\"comment\":\"• Thái độ & Quá trình làm dự án: Em diễn đạt lưu loát trước đám đông và giao tiếp với khán giả tốt.\\n• Ý tưởng & Thiết kế sản phẩm: Giao diện rõ ràng.\\n• Kỹ thuật lập trình vận dụng: Áp dụng biến và vòng lặp.\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:82:279)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:82:1)"
+    },
+    {
+      "id": "R32-G07",
+      "task": "6.3",
+      "issue": null,
+      "criterion": "AI chậm không ghi đè comment giáo viên vừa sửa",
+      "pass": true,
+      "observation": {
+        "staleIgnored": true
+      }
+    },
+    {
+      "id": "R32-G08",
+      "task": "6.3",
+      "issue": "R32-08",
+      "criterion": "AI cũ bị bỏ khi gói dự án/title đổi trong lúc chờ",
+      "pass": false,
+      "observation": {
+        "staleIgnored": false,
+        "newTitle": "NEW PROJECT",
+        "commentWritten": "• Thái độ & Quá trình làm dự án: Ngô Khôi Nguyên hoàn thành sản phẩm.\n• Ý tưởng & Thiết kế sản phẩm: Giao diện rõ ràng.\n• Kỹ thuật lập trình vận dụng: Áp dụng biến và vòng lặp."
+      },
+      "error": "Acceptance condition failed: {\"staleIgnored\":false,\"newTitle\":\"NEW PROJECT\",\"commentWritten\":\"• Thái độ & Quá trình làm dự án: Ngô Khôi Nguyên hoàn thành sản phẩm.\\n• Ý tưởng & Thiết kế sản phẩm: Giao diện rõ ràng.\\n• Kỹ thuật lập trình vận dụng: Áp dụng biến và vòng lặp.\"}",
+      "stack": "Error: Acceptance condition failed: {\"staleIgnored\":false,\"newTitle\":\"NEW PROJECT\",\"commentWritten\":\"• Thái độ & Quá trình làm dự án: Ngô Khôi Nguyên hoàn thành sản phẩm.\\n• Ý tưởng & Thiết kế sản phẩm: Giao diện rõ ràng.\\n• Kỹ thuật lập trình vận dụng: Áp dụng biến và vòng lặp.\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:84:378)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:84:1)"
+    },
+    {
+      "id": "R32-G09",
+      "task": "6.3",
+      "issue": "R32-08",
+      "criterion": "Thiếu dữ kiện AI không xóa bản giáo viên đã viết/duyệt",
+      "pass": false,
+      "observation": {
+        "comment": "",
+        "status": "WAITING_APPROVAL"
+      },
+      "error": "Acceptance condition failed: {\"comment\":\"\",\"status\":\"WAITING_APPROVAL\"}",
+      "stack": "Error: Acceptance condition failed: {\"comment\":\"\",\"status\":\"WAITING_APPROVAL\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:85:311)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:85:1)"
+    },
+    {
+      "id": "R32-U01",
+      "task": "6.5",
+      "issue": "R32-10",
+      "criterion": "Không tự chọn tag đánh giá tích cực thay giáo viên khi nạp DB",
+      "pass": false,
+      "observation": {
+        "preselectedTags": [
+          "Hoàn thành tốt sản phẩm cuối khóa",
+          "Vận dụng vững kiến thức lập trình đã học"
+        ]
+      },
+      "error": "Acceptance condition failed: {\"preselectedTags\":[\"Hoàn thành tốt sản phẩm cuối khóa\",\"Vận dụng vững kiến thức lập trình đã học\"]}",
+      "stack": "Error: Acceptance condition failed: {\"preselectedTags\":[\"Hoàn thành tốt sản phẩm cuối khóa\",\"Vận dụng vững kiến thức lập trình đã học\"]}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:95:184)\n    at check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:78)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:95:7)"
+    },
+    {
+      "id": "R32-U02",
+      "task": "6.5",
+      "issue": "R32-09",
+      "criterion": "Phản hồi lưu nháp cũ không trả UI về bản cũ",
+      "pass": false,
+      "observation": {
+        "actual": "OLD"
+      },
+      "error": "Acceptance condition failed: {\"actual\":\"OLD\"}",
+      "stack": "Error: Acceptance condition failed: {\"actual\":\"OLD\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:96:469)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:96:1)"
+    },
+    {
+      "id": "R32-U03",
+      "task": "6.5",
+      "issue": "R32-09",
+      "criterion": "Lưu nháp lỗi phải dừng trước duyệt/upload",
+      "pass": false,
+      "observation": {
+        "calls": [
+          "/api/spck/save-draft",
+          "/api/spck/approve",
+          "/api/spck/upload-lms"
+        ]
+      },
+      "error": "Acceptance condition failed: {\"calls\":[\"/api/spck/save-draft\",\"/api/spck/approve\",\"/api/spck/upload-lms\"]}",
+      "stack": "Error: Acceptance condition failed: {\"calls\":[\"/api/spck/save-draft\",\"/api/spck/approve\",\"/api/spck/upload-lms\"]}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:97:547)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:97:1)"
+    },
+    {
+      "id": "R32-U04",
+      "task": "6.5",
+      "issue": "R32-09",
+      "criterion": "AI trả muộn không ghi đè nội dung người dùng vừa gõ trên UI",
+      "pass": false,
+      "observation": {
+        "actual": "OLDER AI"
+      },
+      "error": "Acceptance condition failed: {\"actual\":\"OLDER AI\"}",
+      "stack": "Error: Acceptance condition failed: {\"actual\":\"OLDER AI\"}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:98:419)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:98:1)"
+    },
+    {
+      "id": "R32-U05",
+      "task": "6.5",
+      "issue": null,
+      "criterion": "Client không nhập cấu hình/bí mật server",
+      "pass": true,
+      "observation": {
+        "forbiddenImportsOrNames": false
+      }
+    },
+    {
+      "id": "R32-REG-SCHEMA",
+      "task": "1",
+      "issue": null,
+      "criterion": "Đủ 8 bảng nghiệp vụ/meta hiện tại (đối chứng hợp đồng R16 cũ)",
+      "pass": false,
+      "error": "The expression evaluated to a falsy value:\n\n  assert(tables.includes(n))\n",
+      "stack": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert(tables.includes(n))\n\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:100:446)\n    at check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:78)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:100:7)"
+    },
+    {
+      "id": "R32-P01",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "Native browser: tạo 01, bấm + Thêm từng link, retry không tạo 02",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "VERIFIED",
+              "reusedExistingItem01": false,
+              "clickedAddSpckButton": true,
+              "youtubeAddedCount": 2,
+              "relatedLinksAddedCount": 1,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "dbStatus": "VERIFIED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          },
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "youtubeClicks": 2,
+          "relatedClicks": 1
+        },
+        "retry": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "cardsAfterRetry": 1
+      }
+    },
+    {
+      "id": "R32-P02",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "Native browser: HTTP 500 không VERIFIED",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "API Lưu SPCK trả về HTTP 500 (yêu cầu 200/201)."
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        }
+      }
+    },
+    {
+      "id": "R32-P03",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "Native browser: GraphQL errors không VERIFIED",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "GraphQL Lưu SPCK trả về lỗi: denied"
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        }
+      }
+    },
+    {
+      "id": "R32-P04",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "Native browser: ID phản hồi sai không VERIFIED",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "Phản hồi API Lưu SPCK lệch studentId: expected='R32_S1', actual='OTHER'."
+            }
+          ]
+        },
+        "dbStatus": "FAILED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        }
+      }
+    },
+    {
+      "id": "R32-P05",
+      "task": "6.4",
+      "issue": "R32-05",
+      "criterion": "Native browser: phản hồi GraphQL khác nghiệp vụ không VERIFIED",
+      "pass": false,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "dbStatus": "VERIFIED",
+        "saveCalls": 1,
+        "serverPersisted": false,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"GetViewer\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        }
+      },
+      "error": "Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"dbStatus\":\"VERIFIED\",\"saveCalls\":1,\"serverPersisted\":false,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"GetViewer\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":0,\"youtubeClicks\":0,\"relatedClicks\":0}}",
+      "stack": "Error: Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"dbStatus\":\"VERIFIED\",\"saveCalls\":1,\"serverPersisted\":false,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"GetViewer\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":0,\"youtubeClicks\":0,\"relatedClicks\":0}}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:131:251)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:131:2)"
+    },
+    {
+      "id": "R32-P06",
+      "task": "6.4",
+      "issue": "R32-05",
+      "criterion": "Native browser: success:false không VERIFIED",
+      "pass": false,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "dbStatus": "VERIFIED",
+        "saveCalls": 1,
+        "serverPersisted": false,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        }
+      },
+      "error": "Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"dbStatus\":\"VERIFIED\",\"saveCalls\":1,\"serverPersisted\":false,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":0,\"youtubeClicks\":0,\"relatedClicks\":0}}",
+      "stack": "Error: Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"dbStatus\":\"VERIFIED\",\"saveCalls\":1,\"serverPersisted\":false,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":0,\"youtubeClicks\":0,\"relatedClicks\":0}}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:132:272)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:132:2)"
+    },
+    {
+      "id": "R32-P07",
+      "task": "6.4",
+      "issue": "R32-05",
+      "criterion": "Native browser: DOM ô nhập chưa lưu không chứng minh persisted",
+      "pass": false,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "dbStatus": "VERIFIED",
+        "saveCalls": 1,
+        "serverPersisted": false,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        }
+      },
+      "error": "Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"dbStatus\":\"VERIFIED\",\"saveCalls\":1,\"serverPersisted\":false,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":0,\"youtubeClicks\":0,\"relatedClicks\":0}}",
+      "stack": "Error: Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"dbStatus\":\"VERIFIED\",\"saveCalls\":1,\"serverPersisted\":false,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":0,\"youtubeClicks\":0,\"relatedClicks\":0}}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:133:189)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:133:2)"
+    },
+    {
+      "id": "R32-P08",
+      "task": "6.4",
+      "issue": "R32-05",
+      "criterion": "Native browser: không upload được thumbnail phải thất bại",
+      "pass": false,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "dbStatus": "VERIFIED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        }
+      },
+      "error": "Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"dbStatus\":\"VERIFIED\",\"saveCalls\":1,\"serverPersisted\":true,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":0,\"youtubeClicks\":0,\"relatedClicks\":0}}",
+      "stack": "Error: Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"dbStatus\":\"VERIFIED\",\"saveCalls\":1,\"serverPersisted\":true,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":0,\"youtubeClicks\":0,\"relatedClicks\":0}}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:134:253)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:134:2)"
+    },
+    {
+      "id": "R32-P09",
+      "task": "6.4",
+      "issue": "R32-05",
+      "criterion": "Native browser: chưa có network upload hoàn tất không VERIFIED",
+      "pass": false,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 1,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "dbStatus": "VERIFIED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 1,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        }
+      },
+      "error": "Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":1,\"attachmentsUploadedCount\":0}]},\"dbStatus\":\"VERIFIED\",\"saveCalls\":1,\"serverPersisted\":true,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":1,\"youtubeClicks\":0,\"relatedClicks\":0}}",
+      "stack": "Error: Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":1,\"attachmentsUploadedCount\":0}]},\"dbStatus\":\"VERIFIED\",\"saveCalls\":1,\"serverPersisted\":true,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":1,\"youtubeClicks\":0,\"relatedClicks\":0}}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:135:261)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:135:2)"
+    },
+    {
+      "id": "R32-P10",
+      "task": "6.4",
+      "issue": "R32-05",
+      "criterion": "Native browser: tên file trong comment không thay bằng chứng upload",
+      "pass": false,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "dbStatus": "VERIFIED",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        }
+      },
+      "error": "Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"dbStatus\":\"VERIFIED\",\"saveCalls\":1,\"serverPersisted\":true,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":0,\"youtubeClicks\":0,\"relatedClicks\":0}}",
+      "stack": "Error: Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"dbStatus\":\"VERIFIED\",\"saveCalls\":1,\"serverPersisted\":true,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":0,\"youtubeClicks\":0,\"relatedClicks\":0}}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:136:290)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:136:2)"
+    },
+    {
+      "id": "R32-P11",
+      "task": "6.4",
+      "issue": null,
+      "criterion": "Native browser: đổi DB trong request không đánh dấu VERIFIED",
+      "pass": true,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "[Integrity Guard] Bản ghi SPCK của 'R32_S1' đã bị chỉnh sửa trong lúc upload nên không đánh dấu VERIFIED."
+            }
+          ]
+        },
+        "dbStatus": "WAITING_APPROVAL",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        }
+      }
+    },
+    {
+      "id": "R32-P12",
+      "task": "6.4",
+      "issue": "R32-06",
+      "criterion": "Native browser: sửa DB khi đang điền phải chặn trước click Save",
+      "pass": false,
+      "observation": {
+        "summary": {
+          "classId": "AUDIT_R32_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R32_S1",
+              "fullName": "Ngô Khôi Nguyên",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "[Integrity Guard] Bản ghi SPCK của 'R32_S1' đã bị chỉnh sửa trong lúc upload nên không đánh dấu VERIFIED."
+            }
+          ]
+        },
+        "dbStatus": "WAITING_APPROVAL",
+        "saveCalls": 1,
+        "serverPersisted": true,
+        "requests": [
+          {
+            "url": "https://r32.invalid/graphql",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"studentId\":\"R32_S1\"}}"
+          }
+        ],
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "youtubeClicks": 0,
+          "relatedClicks": 0
+        }
+      },
+      "error": "Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":0,\"failedCount\":1,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"FAILED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0,\"errorMessage\":\"[Integrity Guard] Bản ghi SPCK của 'R32_S1' đã bị chỉnh sửa trong lúc upload nên không đánh dấu VERIFIED.\"}]},\"dbStatus\":\"WAITING_APPROVAL\",\"saveCalls\":1,\"serverPersisted\":true,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":0,\"youtubeClicks\":0,\"relatedClicks\":0}}",
+      "stack": "Error: Acceptance condition failed: {\"summary\":{\"classId\":\"AUDIT_R32_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":0,\"failedCount\":1,\"demotedCount\":0,\"results\":[{\"studentId\":\"R32_S1\",\"fullName\":\"Ngô Khôi Nguyên\",\"status\":\"FAILED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0,\"errorMessage\":\"[Integrity Guard] Bản ghi SPCK của 'R32_S1' đã bị chỉnh sửa trong lúc upload nên không đánh dấu VERIFIED.\"}]},\"dbStatus\":\"WAITING_APPROVAL\",\"saveCalls\":1,\"serverPersisted\":true,\"requests\":[{\"url\":\"https://r32.invalid/graphql\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R32_SYNTHETIC\\\",\\\"studentId\\\":\\\"R32_S1\\\"}}\"}],\"dom\":{\"cards\":1,\"uploadChanges\":0,\"youtubeClicks\":0,\"relatedClicks\":0}}\n    at expect (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:26:49)\n    at <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:138:201)\n    at async check (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:25:72)\n    at async <anonymous> (C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\verify-phase6.mjs:138:2)"
+    }
+  ]
+}

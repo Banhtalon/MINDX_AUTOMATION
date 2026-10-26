@@ -1,0 +1,21 @@
+{
+  "id": "R28-09-block-tabs",
+  "pass": false,
+  "expectedVerified": 1,
+  "verified": 0,
+  "status": "FAILED",
+  "writes": 1,
+  "request": {
+    "operationName": "SaveHomeworkGrade",
+    "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R28_NATIVE_PTA\",sessionId:\"R28_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",decision:GRADE,score:80,feedback:\"\"\"\n\tAPPROVED\n\tFEEDBACK\n\"\"\") { id } }",
+    "variables": {}
+  },
+  "response": {
+    "data": {
+      "saved": {
+        "id": "SUB1"
+      }
+    }
+  },
+  "error": "Synthetic API did not match"
+}

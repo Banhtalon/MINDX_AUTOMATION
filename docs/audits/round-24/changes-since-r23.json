@@ -1,0 +1,81 @@
+{
+  "files": [
+    {
+      "path": "MINDX_AUTOMATION_PLAN.md",
+      "r23": {
+        "sha256": "c75acc897a2f82f6ab579833c0876d66e67903a58b58be2c6318fbb8cfc241ba",
+        "bytes": 62358
+      },
+      "r24": {
+        "sha256": "055f9af87253039fe2917e4119465bf917c64acf6bcce1fedca6ad769fd3d855",
+        "bytes": 63130
+      }
+    },
+    {
+      "path": "scripts/test-phase5.ts",
+      "r23": {
+        "sha256": "a20e0dafecbfe0869f31bf268bb095c6a31d55f719b7e1761c94c3b192e5de3c",
+        "bytes": 21376
+      },
+      "r24": {
+        "sha256": "a9ecc128fd60da1634447a7053fc61ced63d5104bb47477e8c228c6e8c5461bd",
+        "bytes": 21715
+      }
+    },
+    {
+      "path": "src/app/api/homework-grader/approve/route.ts",
+      "r23": {
+        "sha256": "85b43628a634f53395d63ad0eca3da8ab882997f564b4f162934783d75e000fa",
+        "bytes": 16455
+      },
+      "r24": {
+        "sha256": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283",
+        "bytes": 17032
+      }
+    },
+    {
+      "path": "src/components/homework-auto-grader-tab.tsx",
+      "r23": {
+        "sha256": "93f6dc6905e977ab95416b0c7c50be88bc5f49a7e5aecc0aa0e4c2273a32d12d",
+        "bytes": 56461
+      },
+      "r24": {
+        "sha256": "019bbcc3016fafd5453a6a137dc9d0e1ad6ff94c859fd8b2678e1b1e4f01f3ab",
+        "bytes": 56492
+      }
+    },
+    {
+      "path": "src/lib/db/sqlite.ts",
+      "r23": {
+        "sha256": "eec2148c5182874290643ee8e1271e1845c21eaf98914f83f63c37816515e252",
+        "bytes": 47703
+      },
+      "r24": {
+        "sha256": "147e883ffb1eb9798cc5c6d87f2f8b0dbc83f9748c34cfef829badd19da640ab",
+        "bytes": 47875
+      }
+    },
+    {
+      "path": "src/lib/file-parsers/media-reader.ts",
+      "r23": {
+        "sha256": "ff5142673465684e962ac9ab99a455b174684c5a7ca620c13556ba299f47d591",
+        "bytes": 16068
+      },
+      "r24": {
+        "sha256": "34a7ed4cf18dc7426fb8aeddd59479329326d4d4060a225fb7baa42bb1658d80",
+        "bytes": 19333
+      }
+    },
+    {
+      "path": "src/lib/playwright/grade-worker.ts",
+      "r23": {
+        "sha256": "d59f2be1ad657448a096ebcca4abdd3045db1ae63fd1b6a3bdb02e3483f91250",
+        "bytes": 35618
+      },
+      "r24": {
+        "sha256": "11300641af2dd2b2bde2d409dc37f2a8fef7017ffdd1d256ebbbdb016ef4a9d5",
+        "bytes": 41015
+      }
+    }
+  ]
+}

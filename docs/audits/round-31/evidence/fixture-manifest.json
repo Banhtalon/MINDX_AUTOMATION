@@ -1,0 +1,54 @@
+[
+  {
+    "id": "R30-01-pdf-nested-empty-name",
+    "r30Status": "PARSE_ERROR",
+    "r30BaselineSuccess": false,
+    "currentStatus": "PARSED",
+    "inlineParts": 1,
+    "mainPass": true,
+    "nativePass": true,
+    "oraclePass": true,
+    "fixture": "fixtures/R30-01-pdf-nested-empty-name.pdf",
+    "sha256": "5a71e43ddf399862fd5baf6fe7692313011249cc00ee750cda315fc97f159113",
+    "size": 378
+  },
+  {
+    "id": "R30-01-pdf-array-empty-name",
+    "r30Status": "PARSE_ERROR",
+    "r30BaselineSuccess": false,
+    "currentStatus": "PARSED",
+    "inlineParts": 1,
+    "mainPass": true,
+    "nativePass": true,
+    "oraclePass": true,
+    "fixture": "fixtures/R30-01-pdf-array-empty-name.pdf",
+    "sha256": "957f0a2a0773c3dc08472a4474b7a6ed3741788e7052054d1407e8e7891472dd",
+    "size": 367
+  },
+  {
+    "id": "R30-01-pdf-nested-name-control",
+    "r30Status": "PARSED",
+    "r30BaselineSuccess": true,
+    "currentStatus": "PARSED",
+    "inlineParts": 1,
+    "mainPass": true,
+    "nativePass": true,
+    "oraclePass": true,
+    "fixture": "fixtures/R30-01-pdf-nested-name-control.pdf",
+    "sha256": "4dab32104551f287de09cf320a9df7862cb771aeb21d1492c6e18066cf8b3176",
+    "size": 386
+  },
+  {
+    "id": "R30-01-pdf-array-name-control",
+    "r30Status": "PARSED",
+    "r30BaselineSuccess": true,
+    "currentStatus": "PARSED",
+    "inlineParts": 1,
+    "mainPass": true,
+    "nativePass": true,
+    "oraclePass": true,
+    "fixture": "fixtures/R30-01-pdf-array-name-control.pdf",
+    "sha256": "711ed7d9fb3193a0ea4bf8f60f6deb1e30196fdd9ebbac7708eaec95f81d7198",
+    "size": 375
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "root": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+  "syntheticOnly": true,
+  "limitations": "Config route, score auditor and approval route executed from exact source; worker raw score fill and /100 contract confirmed by source inspection, no browser/LMS runtime claim.",
+  "results": [
+    {
+      "id": "R35-RUBRIC-SCALE",
+      "expected": "Default new Phase 7 rubric must retain correct 80-percent result on 100-point LMS",
+      "observed": {
+        "configHttp": 400,
+        "auditValid": false,
+        "earned": 0,
+        "approveHttp": 400,
+        "status": "WAITING_APPROVAL",
+        "approvedScore": 0,
+        "displayFromRealUi": "0/100",
+        "workerPassesRawScore": true
+      },
+      "bugReproduced": false
+    }
+  ]
+}

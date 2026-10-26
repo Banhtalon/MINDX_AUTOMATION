@@ -1,0 +1,9 @@
+{
+  "productChanges": [
+    "src/lib/file-parsers/media-reader.ts",
+    "src/lib/playwright/grade-worker.ts"
+  ],
+  "documentDifferences": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round24-20261020T123758Z-mindx-round23-mindx-round22-compat-mindx-round21-mindx-round20-compat\\snapshot",
+  "original": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "dependencies": "physical independent copy; no junction",
+  "copyExit": 1,
+  "sourceFilesMatch": true,
+  "excluded": [
+    ".env*",
+    ".git",
+    ".next",
+    "playwright-auth",
+    "temp_submissions",
+    "real SQLite",
+    "data/debug*"
+  ],
+  "unexpectedSensitiveFiles": []
+}

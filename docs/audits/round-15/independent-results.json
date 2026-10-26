@@ -1,0 +1,126 @@
+{
+  "generatedAt": "2026-10-20T04:11:06.117Z",
+  "confirmedBugs": 7,
+  "baselinePassed": 3,
+  "executionErrors": 0,
+  "results": [
+    {
+      "id": "R15-01",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": true,
+      "observation": {
+        "uiText": "LATEST TEACHER TEXT",
+        "uiStatus": "DRAFT",
+        "storedText": "old final",
+        "storedStatus": "APPROVED",
+        "hashMatchesOldText": true
+      }
+    },
+    {
+      "id": "R15-02",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": true,
+      "observation": {
+        "storedNote": "old S1",
+        "storedAttendance": "PRESENT",
+        "storedText": "AI RESULT FROM OLD INPUT",
+        "uiAttendance": "ABSENT",
+        "uiNote": "LATEST TEACHER NOTE"
+      }
+    },
+    {
+      "id": "R15-03",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": true,
+      "observation": {
+        "distinctPageInstances": true,
+        "storedAndReloaded": "OLDER PAGE EDIT"
+      }
+    },
+    {
+      "id": "R15-04",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": true,
+      "observation": {
+        "control": {
+          "isActive": 1,
+          "attendanceStatus": "PRESENT",
+          "verified": 1,
+          "storedStatus": "VERIFIED"
+        },
+        "inactive": {
+          "isActive": 0,
+          "attendanceStatus": "PRESENT",
+          "verified": 1,
+          "storedStatus": "VERIFIED"
+        }
+      }
+    },
+    {
+      "id": "R15-05",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": true,
+      "observation": {
+        "control": {
+          "rows": 2
+        },
+        "delayed": {
+          "error": "Phát hiện dòng học viên trùng lặp hoặc phân trang DOM bị kẹt tại trang 2 cho học viên 'Audit page 0' (STU_VT-C4K-GA38_AUDIT_PAGE_0).",
+          "pageWhenFailed": 0
+        }
+      }
+    },
+    {
+      "id": "R15-06",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": true,
+      "observation": {
+        "closedStreams": 3,
+        "remainingLogSubscriptions": 3,
+        "remainingStatusSubscriptions": 3
+      }
+    },
+    {
+      "id": "R15-07",
+      "kind": "CONFIRMED_BUG",
+      "reproducedOrPassed": true,
+      "observation": {
+        "syntheticStudentNameVisibleInTopic": true,
+        "visibleInKeyKnowledge": true,
+        "noteAndTagRedacted": true,
+        "externalApiCalls": 0
+      }
+    },
+    {
+      "id": "PHASE1-SCHEMA",
+      "kind": "BASELINE_PASS",
+      "reproducedOrPassed": true,
+      "observation": {
+        "tables": 7,
+        "compositeStudentKey": true,
+        "submissionReassignmentBlocked": true
+      }
+    },
+    {
+      "id": "PHASE2-QUEUE",
+      "kind": "BASELINE_PASS",
+      "reproducedOrPassed": true,
+      "observation": {
+        "maxConcurrentTasks": 1,
+        "cancelledPendingTasks": 2,
+        "resumed": true
+      }
+    },
+    {
+      "id": "PHASE2-BROWSER",
+      "kind": "BASELINE_PASS",
+      "reproducedOrPassed": true,
+      "observation": {
+        "initialConcurrentCalls": 8,
+        "initialLaunches": 1,
+        "emptyContextRecoveredWithOneTab": true,
+        "relaunchedAfterClose": true
+      }
+    }
+  ]
+}

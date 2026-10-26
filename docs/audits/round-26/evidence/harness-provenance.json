@@ -1,0 +1,15 @@
+{
+  "base": "../round-25/verify-independent.mjs",
+  "baseSha256": "024c7c47e0e29d43315913cb2899ef3aa7f92032250fac1f56aec90e079065ab",
+  "inheritedChecks": 344,
+  "inheritedAssertionsChanged": false,
+  "newCaseFragmentSha256": "7b392e65535131a4eea48c8485669736c6aacd90a26a55d7005104104e878000",
+  "harnessSha256": "8416a1de6e76b5d0780347f59eec97f45d423095a0087485e524b5453827c6b4",
+  "envelopeChanges": [
+    "round and output directory",
+    "TEMP guard and prefix",
+    "fixture imports",
+    "summary round and inherited count"
+  ],
+  "productTransform": "Inherited helper strips imports/exports/types only. Native R26 repro imports actual product modules unchanged."
+}

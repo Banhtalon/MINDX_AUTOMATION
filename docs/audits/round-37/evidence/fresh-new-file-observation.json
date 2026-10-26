@@ -1,0 +1,16 @@
+{
+  "fileHash": "file-v2",
+  "feedback": "OLD SAVED FEEDBACK",
+  "unsaved": {},
+  "approveResult": true,
+  "approvalCalls": 1,
+  "banner": {
+    "type": "success",
+    "text": "Đã duyệt & khóa SHA-256 contentHash cho bài nộp của Synthetic."
+  },
+  "afterSecondRefresh": {
+    "unsaved": {},
+    "approveResult": true,
+    "approvalCalls": 2
+  }
+}

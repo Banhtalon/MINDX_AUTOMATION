@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import os from 'node:os';
+import path from 'node:path';
+import {createR27WorkerCases} from '../round-27/worker-cases.mjs';
+import {createR28WorkerCases} from '../round-28/worker-cases.mjs';
+import {createR29WorkerCases} from '../round-29/worker-cases.mjs';
+assert(process.cwd().startsWith(path.resolve(os.tmpdir())+path.sep)&&process.cwd().includes('mindx-round31-'));
+const cid='R29_NATIVE_PTA',sid=cid+'_SESS_01';
+const results=[...createR27WorkerCases(cid,sid),...createR28WorkerCases(cid,sid),...createR29WorkerCases(cid,sid)];
+assert.equal(results.length,88);
+fs.writeFileSync('docs/audits/round-31/evidence/worker-cases.json',JSON.stringify({classId:cid,sessionId:sid,total:88,results},null,2)+'\n');
+console.log('EXPORTED 88 immutable historical fixture expectations; no product import.');

@@ -9,6 +9,8 @@ export type TaskJobType =
   | "SCRAPE_SCORES"
   | "GRADE_HOMEWORK"
   | "UPLOAD_SPCK"
+  | "CLEAR_SPCK"
+  | "SPCK_DEMO_SHEET"
   | "CUSTOM";
 
 export interface TaskDefinition<T = unknown> {
@@ -180,6 +182,8 @@ export class SequentialTaskQueue {
     // Continue to next task in queue unless stopped
     if (!this.isStopped && this.queue.length > 0) {
       this.processNext();
+    } else {
+      this.emitStatus();
     }
   }
 
@@ -189,6 +193,7 @@ export class SequentialTaskQueue {
    */
   public stopQueue(): void {
     this.isStopped = true;
+    (process as any).__mindxQueueStopped = true;
     const cancelError = new Error(
       "TASK_CANCELLED: Hàng đợi đã bị tạm dừng bởi giáo viên (Stop Bot)."
     );
@@ -222,6 +227,7 @@ export class SequentialTaskQueue {
    * Resumes queue execution if previously stopped.
    */
   public resumeQueue(): void {
+    (process as any).__mindxQueueStopped = false;
     if (this.isStopped) {
       this.isStopped = false;
       this.log({

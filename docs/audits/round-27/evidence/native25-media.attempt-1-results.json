@@ -1,0 +1,262 @@
+{
+  "round": 25,
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round27-20261020T194806Z-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+  "checkedAt": "2026-10-20T19:49:17.326Z",
+  "method": "Actual product imports through tsx; sharp independently decodes all WebP fixtures. PDF checks use explicit object graphs and xref fixtures, no independent PDF decoder.",
+  "harnessSha256": "ad80fcb8fff187286dda2b12f46842bc9d6d3877ddc5a7708bc8f4d53454ab6c",
+  "total": 25,
+  "passed": 25,
+  "failed": 0,
+  "results": [
+    {
+      "id": "R25-01-vp8-entropy-garbage-false",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRigAAABXRUJQVlA4IBwAAABQAQCdASoBAAEAAAECAwQFBgcICQECAwQFBgcI"
+    },
+    {
+      "id": "R25-01-vp8-entropy-garbage-true",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjoAAABXRUJQVlA4WAoAAAAAAAAAAAAAAAAAVlA4IBwAAABQAQCdASoBAAEAAAECAwQFBgcICQECAwQFBgcI"
+    },
+    {
+      "id": "R25-01-vp8l-no-pixels-false",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhwAAABXRUJQVlA4TA8AAAAvP8APAJiACZiACZgAAAAA"
+    },
+    {
+      "id": "R25-01-vp8l-no-pixels-true",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRi4AAABXRUJQVlA4WAoAAAAAAAAAPwAAPwAAVlA4TA8AAAAvP8APAJiACZiACZgAAAAA"
+    },
+    {
+      "id": "R25-01-vp8l-overfull-trees-false",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRh4AAABXRUJQVlA4TBEAAAAvP8APAABJAiQJkCRAkgBJAgA="
+    },
+    {
+      "id": "R25-01-vp8l-overfull-trees-true",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjAAAABXRUJQVlA4WAoAAAAAAAAAPwAAPwAAVlA4TBEAAAAvP8APAABJAiQJkCRAkgBJAgA="
+    },
+    {
+      "id": "R25-01-vp8l-transform-without-main-false",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhwAAABXRUJQVlA4TA8AAAAvP8APAAGQJCIiAAAAAAAA"
+    },
+    {
+      "id": "R25-01-vp8l-transform-without-main-true",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRi4AAABXRUJQVlA4WAoAAAAAAAAAPwAAPwAAVlA4TA8AAAAvP8APAAGQJCIiAAAAAAAA"
+    },
+    {
+      "id": "R25-01-valid-1x1-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v02aAA="
+    },
+    {
+      "id": "R25-01-valid-1x1-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhoAAABXRUJQVlA4TA4AAAAvAAAAAAcQEf0PRET/Aw=="
+    },
+    {
+      "id": "R25-01-valid-2x2-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoCAAIAAUAmJaQAA3AA/vz0AAA="
+    },
+    {
+      "id": "R25-01-valid-2x2-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRh4AAABXRUJQVlA4TBEAAAAvAUAAAAfQ//73v/+BiOh/AAA="
+    },
+    {
+      "id": "R25-01-valid-8x8-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjwAAABXRUJQVlA4IDAAAADQAQCdASoIAAgAAUAmJaACdLoB+AADsAD+8ut//NgVzXPv9//S4P0uD9Lg/9KQAAA="
+    },
+    {
+      "id": "R25-01-valid-8x8-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhwAAABXRUJQVlA4TA8AAAAvB8ABAAcQ/Y/+ByKi/wEA"
+    },
+    {
+      "id": "R25-01-valid-17x11-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRmoAAABXRUJQVlA4WAoAAAAQAAAAEAAACgAAQUxQSAoAAAABB1CziAhERP8DVlA4IDoAAAAwAwCdASoRAAsAPm0skUWkIqGYBABABsSgC7LoB+AACEUAAP7uCmf/VofLQ+Wh+59/+QXq3zbHfSYA"
+    },
+    {
+      "id": "R25-01-valid-17x11-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRh4AAABXRUJQVlA4TBEAAAAvEIACEAdQsnqUu2aBiOh/AAA="
+    },
+    {
+      "id": "R25-01-pdf-nonzero-generations",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAyIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAzIFIgPj4KZW5kb2JqCjIgMyBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDQgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgNCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDMgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gPj4KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDIgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDMgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDQgbiAKdHJhaWxlcgo8PCAvU2l6ZSA0IC9Sb290IDEgMiBSID4+CnN0YXJ0eHJlZgoxODQKJSVFT0YK"
+    },
+    {
+      "id": "R25-01-pdf-root-absent",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    },
+    {
+      "id": "R25-01-pdf-root-missing-object",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgOSAwIFIgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    },
+    {
+      "id": "R25-01-pdf-root-wrong-generation",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAxIFIgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    },
+    {
+      "id": "R25-01-pdf-kid-wrong-generation",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDEgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    },
+    {
+      "id": "R25-01-pdf-parent-wrong-generation",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDEgUiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjE2MgolJUVPRgo="
+    },
+    {
+      "id": "R25-01-pdf-root-decoy-string",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvSGludCAoL1Jvb3QgMSAwIFIpID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCjQgMQowMDAwMDAwMjAxIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNSAvUm9vdCA5IDAgUiA+PgpzdGFydHhyZWYKMjQyCiUlRU9GCg=="
+    },
+    {
+      "id": "R25-01-pdf-root-decoy-no-trailer-root",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvSGludCAoL1Jvb3QgMSAwIFIpID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCjQgMQowMDAwMDAwMjAxIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNSA+PgpzdGFydHhyZWYKMjQyCiUlRU9GCg=="
+    },
+    {
+      "id": "R25-01-pdf-root-decoy-nested-trailer",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL0luZm8gPDwgL1Jvb3QgMSAwIFIgPj4gL1Jvb3QgOSAwIFIgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    }
+  ]
+}

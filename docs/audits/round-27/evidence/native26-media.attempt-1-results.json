@@ -1,0 +1,952 @@
+{
+  "round": 26,
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round27-20261020T194806Z-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+  "checkedAt": "2026-10-20T19:49:11.288Z",
+  "method": "Direct unmodified product import through tsx; libwebp/sharp full pixel decode oracle for WebP; explicit PDF object graphs, no independent PDF rendering.",
+  "harnessSha256": "905e8f5e831eba6583bb50fc23daaa8cc297b3b15707a1e17c32dc18434f5aa5",
+  "total": 94,
+  "passed": 94,
+  "failed": 0,
+  "results": [
+    {
+      "id": "R26-01-valid-1x1-gradient-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjgAAABXRUJQVlA4ICwAAADQAQCdASoBAAEAAgA2JaACdLoB+AADsAD+8dyP/OJY6nd3Z//MEr8g3XIAAA=="
+    },
+    {
+      "id": "R26-01-valid-1x1-gradient-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhwAAABXRUJQVlA4TBAAAAAvAAAAAAfQqahp/wMR0f8A"
+    },
+    {
+      "id": "R26-01-valid-1x1-checker-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAgA2JaQAA3AA/vucwAA="
+    },
+    {
+      "id": "R26-01-valid-1x1-checker-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhoAAABXRUJQVlA4TA4AAAAvAAAAAAcQEf0PRET/Aw=="
+    },
+    {
+      "id": "R26-01-valid-1x1-alpha-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRlQAAABXRUJQVlA4WAoAAAAQAAAAAAAAAAAAQUxQSAIAAAAAAFZQOCAsAAAA0AEAnQEqAQABAAIANiWgAnS6AfgAA7AA/vHcj/ziWOp3d2f/zBK/IN1yAAA="
+    },
+    {
+      "id": "R26-01-valid-1x1-alpha-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA=="
+    },
+    {
+      "id": "R26-01-valid-1x1-noise-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjgAAABXRUJQVlA4ICwAAACQAQCdASoBAAEAAgA2JaACdLoAA5gA/utkX/1OP/k4/+Tj+vt/i2kdCk8AAA=="
+    },
+    {
+      "id": "R26-01-valid-1x1-noise-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRh4AAABXRUJQVlA4TBEAAAAvAAAAAAfQ5ta1pP+BiOh/AAA="
+    },
+    {
+      "id": "R26-01-valid-3x2-gradient-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkoAAABXRUJQVlA4ID4AAADQAQCdASoDAAIAAgA2JagCdAEO9sV+AADieeBnzAjOPJP/exfT/8G+5OZgz0//BsA//GEN//K1/YQ39SgAAA=="
+    },
+    {
+      "id": "R26-01-valid-3x2-gradient-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkYAAABXRUJQVlA4TDoAAAAvAkAAAC+gpm0DNnSVw0ZVBW3bsKGejcNX07YBc5XDpl+c8x/H74dFSGDRfqCmbQM21PkXUyP6H/ML"
+    },
+    {
+      "id": "R26-01-valid-3x2-checker-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjwAAABXRUJQVlA4IDAAAACQAQCdASoDAAIAAgA2JaQAAudZtgAA/sqV6L6O9sz//b38g8vpkP+MX58/+J4AAAA="
+    },
+    {
+      "id": "R26-01-valid-3x2-checker-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiYAAABXRUJQVlA4TBkAAAAvAkAAAA8w//M///MfeFCQtgEL252I/kcOAA=="
+    },
+    {
+      "id": "R26-01-valid-3x2-alpha-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRm4AAABXRUJQVlA4WAoAAAAQAAAAAgAAAQAAQUxQSAcAAAAAAEmSH2ixAFZQOCBAAAAAsAEAnQEqAwACAAIANiWoAnQBDiP8gAD5OuJIq9xlsL9Kwj/UwfX/4N+1B/qYPr/8G5vf/GEN//K1/YQ38HAAAA=="
+    },
+    {
+      "id": "R26-01-valid-3x2-alpha-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRk4AAABXRUJQVlA4TEEAAAAvAkAAEC9AkG0zxjnebQ4XERIQNvo/wAdFTdsGTDGWP4BA6HgEAoQeZWY8B4iZCv8vVAeFbCPAoXsJTugi+h/XCgA="
+    },
+    {
+      "id": "R26-01-valid-3x2-noise-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjwAAABXRUJQVlA4IDAAAACwAQCdASoDAAIAAgA2JQBOgCHfwHkAAP6KIY/bJ8PwVmNt1Man7615+5Fwqd8kAAA="
+    },
+    {
+      "id": "R26-01-valid-3x2-noise-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkYAAABXRUJQVlA4TDoAAAAvAkAAAC9AJEAygy1Um9n/J1xDEEAiEEkTDb/AFAQBJAEEM8O7zjn/8X8qEg51RkFAQqbkgyci+h+T"
+    },
+    {
+      "id": "R26-01-valid-7x5-gradient-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRoIAAABXRUJQVlA4IHYAAABwAwCdASoHAAUAAgA2JbACdH8EAAfoB8AH6Z/qB7NwMGjTzgAA4dzvULNE9ilPOe1Y/rFUabhD8+rF7UT+y93uiCXgj4ysbvoYAhHy0/w7AW82Rv/B3fyd/Jv+5EHdSd0+vr38wG4Pd/+VFVOD4Mv5nf0N5TAA"
+    },
+    {
+      "id": "R26-01-valid-7x5-gradient-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiwAAABXRUJQVlA4TCAAAAAvBgABAM1lRP8DCtlIgkgWY0nW3+a7M5jWmYoJ0MCSFw=="
+    },
+    {
+      "id": "R26-01-valid-7x5-checker-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRlIAAABXRUJQVlA4IEYAAABQAgCdASoHAAUAAgA2JaQAEOA/oH2gFJMo7wAA7+UOPRL3sYWYHgRHIrx+bciv+daE3/uYn/2px/9BHRxf+Vf/+fFtAAAA"
+    },
+    {
+      "id": "R26-01-valid-7x5-checker-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiIAAABXRUJQVlA4TBUAAAAvBgABAA8w//M///MfeLhKVUT/QwEA"
+    },
+    {
+      "id": "R26-01-valid-7x5-alpha-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRrYAAABXRUJQVlA4WAoAAAAQAAAABgAABAAAQUxQSBoAAAABuYzof0AhG0nQmizP+it9dwYREzABKJZeAFZQOCB2AAAA8AIAnQEqBwAFAAIANiWwAnQ1QD0AP1A64AH+N3zXE4AA91C/1VN+wYbQsiOsq1zXXK9P7sY/T/+P9esKQYb6nzd/f601n+08tH8tP8OwFvNli/8Hd+/qmfu8uT5Sd0+OXHWr2dphPSP8qK1lH1jfzOA5WIAAAA=="
+    },
+    {
+      "id": "R26-01-valid-7x5-alpha-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjoAAABXRUJQVlA4TC4AAAAvBgABEM1lRP9jFxH9DygEgIZJJIy8wsh7F2FaZ0ogm4YWSTyfAJBH1DzRin8A"
+    },
+    {
+      "id": "R26-01-valid-7x5-noise-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRnQAAABXRUJQVlA4IGgAAABQAgCdASoHAAUAAgA2JbACdDKbvYABaLrd2AAA3iwEnt8PuFHE1MTukdxrt78aurMCPxioELt0b5jwhtucH+Pye/f9/hexhbLHqmjs8s6fq5/Ud3+c+xx/8/8MqNXefZL3/5ZdhEAAAA=="
+    },
+    {
+      "id": "R26-01-valid-7x5-noise-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRsoAAABXRUJQVlA4TL4AAAAvBgABABfhNgAAsolt3GAns8/Jq3nBZkdM7RtMAwBMMsXdrRFdOgdwJc/wgEUayS5QtpFtK/n+Pxq6a0gFdEszhE5GDW/IfGb+Y4300D0b5UBNfq8YfJIbAhyQaiOTVjlcviOwGUxDuusS7B8wjfC3EPEcHMvo7G4nm4HXnqrdYs8k9q+EG/llY2872668q1CDdkpu+EW1aj4c2wkMAgAsG5tt64zof0jytRQ7u/M/rvo4rxAM4J0bC7M0p+VY"
+    },
+    {
+      "id": "R26-01-valid-16x16-gradient-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRvYAAABXRUJQVlA4IOoAAABwBQCdASoQABAAAgA2JbACdDiAOdz/0fuAfrB+s3tIGfBqQWYJ5d9gDdHf2AOK4R+vBj2AAOHc70MXnYgkxBc+UDGGfR+/qKsmEoe/LSOby6sFNGCpKxkXXDboph2Y8qgCxkITBBSWsuI3B+HoJboGzyY8dLdbobDUYrbUtBQ9o1jX0oS59W78XXp702qDrLpRwUc9x4sSzvXEJUIamMwUbE6WnbpHUq5xjRg/DbopV0HwBfmsdaJq9ic77MN2pGGMHwSB0NV4WzjVwKs48zDh4yyc8c1S1v3FkBxj9rKCwuNKRwJLqaNcAAA="
+    },
+    {
+      "id": "R26-01-valid-16x16-gradient-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiwAAABXRUJQVlA4TB8AAAAvD8ADAM1lRP8DZNlIJIdxJOfP8+Ov0zpTMQENq9wFAA=="
+    },
+    {
+      "id": "R26-01-valid-16x16-checker-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRnQAAABXRUJQVlA4IGgAAADwBACdASoQABAAAgA2JaTuHJ88/8QC/Vf4B/AP///AOgB///MA/gH4Afv//AAAXMAA/N7j51zYG67b5dfeeiwkZ1Yqd0WFTHNfrY3XbfLr9bG673auuIM1rDBi1nv8NYQe3Tjur0vUAA=="
+    },
+    {
+      "id": "R26-01-valid-16x16-checker-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiwAAABXRUJQVlA4TCAAAAAvD8ADAA8w//M///MfeBAIJJRJbrpBRP8JJmmq7ZhiHQ=="
+    },
+    {
+      "id": "R26-01-valid-16x16-alpha-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjABAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSBgAAAABuYzof4BI22ZOpmf+RR2eRkzABDCr7gJWUDgg8gAAABAFAJ0BKhAAEAACADYlsAJ0fwQDn7AH65fqr7SBS+vEF8zewBujv7AHFdVj/6S1OgAA91DxyiUljYHqgufKBpPeL/f1FWTCbK1Czfm3hvt4RU/3lz1zqm3RPijOYA7knnBCazGYfJN6t+i/RBLm+5/uO0RvKkSxittS0FW+svNfShLwQOUOgzxYbgnB1E0pAy3+JSHurXS3/WWcnZnutBVi+0aUcYQAlJ/u5vnxJctzHl/3rD8UyjeY6cxSejrGzbFv44lsw8hB7++Rlv3pq8oyHKJ35y/EBmwWnMi5By49Si4UtZhq+tH+YDFD+GfegAAA"
+    },
+    {
+      "id": "R26-01-valid-16x16-alpha-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkIAAABXRUJQVlA4TDYAAAAvD8ADELmM6H/soiAF6X9ATSMp0Bk5GbyqkIFyrqOe1jEVyKahRRLPJwA0I8R9QjX+GdBQzho="
+    },
+    {
+      "id": "R26-01-valid-16x16-noise-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRvQAAABXRUJQVlA4IOgAAACwBACdASoQABAAAgA2JbACdFKAXoBvAH7VEaB+rX/F9wD9P/RA6h02ab0oZf6AAPac7bF/oCPAwvnpc3CWcq17shZj2rnze7kb/rxO9ptwI36Aa+Y7n4c4A6C0D+MaGfyDm4kP8Fxs+io5RPpKCv2Rn/xU1KxqjFSGGiEzySccRpz9oajV1yOpbYwiiwyZ7eN7BO0VBY9+HxKv5HWdrqWdecCwc2zZOo3Mfv3mRmXB9q13kvfVYVnUoGsi5JWNCZx6KF4ic/9TwUtM82bNG+If4dEv9cbyBusYQrk3zLSf7JXUDXCsSgAA"
+    },
+    {
+      "id": "R26-01-valid-16x16-noise-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRvgDAABXRUJQVlA4TOsDAAAvD8ADAP8HSQDAMlJqBGPbM7dZ82f7vr3btnfrdmaCb0ASACBtg8faubu7b4/aO3fdA+ruHk+QBEi2bSdWUtFy/7i7wwwYA2OlS48mLXd3h3IjefMfOToQbFEzwZwLzroBpSIobLeyXk2TUoYA9YyLNzViBymmORlo4C6jjV81dImCD/RMgnt/CPnDK50cUxa6oRcVfVnDRmNhFOY2ktkIZW84IhN1O7DYUmxrCPXG/RPX9wkCSCg5qfD7TmBbOJjkKJtrcr9CeUkJFb7JkD9wgtirTyr8pu0bXp3GfiI9KwQdVhLyTB1X5t1+15vC2wzMYgena+avCeaY8tx3IgBduTRjiBkoUdDR4QxzpZGcUS6f8h0NEsAhNqUr7kDBOHtkM7sYJb9k/Cn0MvI/Vg9BSqRMXNIn/dKUi0e1BrYdrFmULRfQpori0AFTDQ0DUhMgUZklNEHN1m7RrGHyG5qb+tKNVJ/iHiJmFsgVHt3wbPCIfV+up5D4uNz1H9Zk/ah0rVFPP+npgzVUYVOKZ0P0NgWLlCX7ZfIE902fQ5vs9JslEedM+bMqCzCpMiCqxULDo3KzTMK/FBeFR/DB8iQQ+7LTkmJOwk6sF0mWwpwVE4FPsX8tMp9hG8iw8JLvc3KJxBcss/UsX73Fpvf4C9UJ+1Ex1k/ARsLpGSqJrqxuFBAVL3XiWcjV+03cK1BpyA9jg5K6kXs1DLkjxjqNSbsj1MBjqRhbMVIYcIWAd4QfHrIvDefOtx9j01vCvYbI105qxkovqANVjp7EFtmYPwwSySUWVl5iZtfXixlQvRHL3Ntt41cnft+UUArw4gdx9wyKQsEpscIDxJhq9429tmPrz7JLqDoApIT9alsWLvDn4FIVvl0hfMQ0vkhqm6bHrfR56eugBe7PXI7+Ib6NjAPQxaRypFmaVh4GqD6Unwxytreovxz6eLP39gW8LbvZGrSRbIBCAAAI27Zt27Zt27Zt27Zt27ZtWxsR/Y9cNqJzbotTxO9egje1i20IaBEKfhgBhRo85kWwLOFlpAFMUHnf+NKTzCGGtkgx6TEXwal1HDOlloTd7E7rugpgZSsuwGM+UwNU1WRvV0WtIPp62c27nqWrpB85Z/AzOni/D8buG70JiQX7dwSABvRykmn/WKMmKp8XpiK4QPOjjrj+Pjsawj3LUJPb+0RW8bxXoPn2MuSYavYS3udLyOJWleEHDP3U8ByQyaoNbBQvbawI3BlKUvIdD9s5qZE/TZun5kKhrq30R0co2q9gGcMCYl0nSbRBjYw02P2AsPFZdWr86BWWf47KtRDPUXdRzihjss/VFAedg9/aQ57Ga7d8AA=="
+    },
+    {
+      "id": "R26-01-valid-17x31-gradient-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRgoCAABXRUJQVlA4IP4BAADQCwCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYE/g7ZfqA2wH6AfwD0AP9V7bvoA3gDnZP9l/M/gA/W79oPaXcIHeDEQcv9t1qJmYn6U33f6zexmD3iUVEntEdaKF+8XWTKAAOGy/HdUU/+q1YfdoyHEN24zejRxN2Swnw2Gq51vfb9Zteayh+ISpCkwwBQPK3LNxqR7P5bVCkw4lSzpAU2nCEz1xusk3pPVluGqMyDlJlbeXNN0YINMPrTnywqcJK8vssYZlNLjy7safNi6S4Y2OYW6qMMXikc/8YM1To6rM6a0KK7H07S5H+4nMuMSsx1NLtwwuL/Qjqy9kWfqnPmn+AKkVrdjT/Bxe5I2RNuSNkFfXPxOHvA4fZl1OspGAjy+RGETzlzL75TAaCwVvGQ6LameXQRk8C3iuFRzUfrnuY5OoVlcJx1tb3dx62iHcJn+b8XQmV/qAqNWlSzidvpCMbCoVvw1SUUGcfrNrzWUPxCVITI5blMw03xbqOb27XSPuiIbwkXnr0o8Ijxh8KvXYyd2Qf4trxea7EPvH4LwXatGO1FfN4F26Ifj0IfA+5pf7oggKYB3ScZf/J6xhm7KuVeFD8b53Yr7qh+amfW1FeYjcTHP4VW8dUkaVhG0kM/7gWMsX+AsyxZ8c+EOIzp/7jtn+IzoAAA="
+    },
+    {
+      "id": "R26-01-valid-17x31-gradient-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiwAAABXRUJQVlA4TB8AAAAvEIAHAM1VIKL/AbJsJJLDOJLz5/n5t2mdqciGKecDAA=="
+    },
+    {
+      "id": "R26-01-valid-17x31-checker-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRggBAABXRUJQVlA4IPwAAAAwCgCdASoRAB8APpU8mkkloyIhMBgIALASiWk7h6A0P1n47/8AH8A1AL9c/jv9g///8g6AH/y/QD1AP4B+AH7/gLsC9ALkC/APwAYoF+AfgB1cZd0EO6rJdsAA/N8QKNLjWfk5hrf8mmtH7PmbZI1F2ImPTfbw+66etTAVV469xW8xW/8CsaXFATcfZ/ycrFv+t5SL8Z8sbOoTtEPVYBwX8kngct297DegtyFO9GwfDFgX36oY6on/ThzBFFQJ6C3IU70aPm2v/Ng0AJm9gZPvYNACZvYGT72DQAmb2Bk+9g0AJm9gY6dSi9+MA2ktITa4Bs2Wbn/9OHVQkAA="
+    },
+    {
+      "id": "R26-01-valid-17x31-checker-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjAAAABXRUJQVlA4TCMAAAAvEIAHAA8w//M///MfeCDIttkhJznWA0T0n2CSptqOKXSvBwA="
+    },
+    {
+      "id": "R26-01-valid-17x31-alpha-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkgCAABXRUJQVlA4WAoAAAAQAAAAEAAAHgAAQUxQSBgAAAABuQpE9D9ApG0zJ9Mz/6KOzyImIJmp8wFWUDggCgIAAFAMAJ0BKhEAHwA+lTqYR6WjIqEwCACwEolsAJ0ygxg9gT//tq/2b8VfkBtgPMB+jH8z9v/0AbwBzuv+V/snwI/sP+s3tgOFDvB9yUQDL/wwUvzxF/SG/J/Wb2JQe8dZ+C+IW49jQGJbHFNgANv2CHC+X/WlcdoFncKnarQuvVXcMNTAFGMhedcMPv1wRpN/MvxKJzkuj3gnOAYLM6lA9vjWwsNLVrZXuHdPT/nrQiE4+6y5vptUgoxKoN7bj1132BZlpHB1uFIqt7RPXpN82W/W6HOtn5fEevFGrBCQ/SWwI7EdHq51kkmyoO9XAZe0NqeduHHF6h/B/5P0OJt8ubS15oYy/4+pnpB+ocsSbl+n/AFSK1u0r/g4v8ONbN/tXfbm+EzcBnYZAz/GUlbZD/jKSt8w29G7wY3p1UFlE5Z7os8bvhV9or1kOyVuUY8F3Jb45JTT4E2HVramIDIMoK5VBs/hqMz/RJV74ZqNr+pQio94Rt02WtKg9c8vHNK9APLocA/3ujpxGKae2UZcZFSYM+AKp35ATLIE+unC9ICepy1YnEyW/Q9cGVvZSqG+rWN5TPGSmk46r/lOLgMayV7rYhF5RhGa1rDkQUNd2f/5PiNUnFJs/pMLUc+lm+gx+Ciw6a0fSIdfC+NmI3W/+R9BTnf/kfQgQDLhViM9zJGlTDNOx838HhwAAA=="
+    },
+    {
+      "id": "R26-01-valid-17x31-alpha-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRlwAAABXRUJQVlA4TFAAAAAvEIAHELmM6H8sAILw/+1hQArS/1AkKGokSRkjLWOPVJ2MM874nVaCbJuKTOTA5xTIpqFFEs8nQJQf6ETKD7qML4PUDyIkdAHwHUIyXdUtAA=="
+    },
+    {
+      "id": "R26-01-valid-17x31-noise-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhgCAABXRUJQVlA4IAwCAABwCgCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYEba/xXsA2wH65eoD9AP8z7WWmAc9J7Dz4CZgtTNPkv+V5I/lrfm+gB+zItP70kD6N6MKmQk7PdKoYVuADNpm2TsOTEdkf0+81FEjiPrjjv+AfmUrpUKtmlNk3wvb7ORt1Quf44dMOvgBz1dY+LpbQaackcBfDX83SHr3Z2GnNZjGNyb/WtVFTkJ2WTkwt9Sdq91czfqs+Ch+QlbVVSD9Xk2hzj56/u9m1uF39JhDRLBcvF5T6MDkDKcLldG5KnOPO0NG9Hi+3LA+KaInkXdK5rYvn+/G4PTnGZPbPWn6eno8JTuWy4v/8ZrH48AvPah8m/uF1PIt1wunitMs4Xhp6F+A6Z94uNNWeL82C0C7/Jh1WXL2UftfFr3ZLBJAcnLDkqCb7eGvpWDCCJDi6sEUDinblilQgdt5Ui5VLVL3+OJ88rkX2piiZv4/9mSAhKC8XiRgBLxzn91Lp6+K111Ks19elqGUA40Ykxu9j6Zi9Nsbrpeb47YvKNmVEwUWncdWPjZiq/zH5ZO9NfSYvz8wp2WXUNDoD+NWpYFdOIEZxYUYWYIa+8Ux+VTnmUPtTKuaDvr9I62TWxd7PJkFZx741cq3hmWM2assFQUOBI0mH0t5mUPpZK3siDsQNke5EHYcInpzY2kenNQAAAAA=="
+    },
+    {
+      "id": "R26-01-valid-17x31-noise-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R26-01-valid-65x33-gradient-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R26-01-valid-65x33-gradient-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiwAAABXRUJQVlA4TB8AAAAvQAAIAM1lRP8DZNI2SiqjSupf0f4xrTMVE9AwL/cAAA=="
+    },
+    {
+      "id": "R26-01-valid-65x33-checker-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRl4CAABXRUJQVlA4IFICAABQEACdASpBACEAPpVAm0olo6IhpmtQsBKJaTuI//EP//8vy/24A///p/qAP6r/AP7B///4B0AP//5gH8A/AD9/wHn/0jVrvUC9APwA9wL8A/ADHA/gH4AcX/df6av8A/gH4Afv//AN7V/AP4B+AHV/l/h8iGHipFhNX2DzKX87Q8RhuPl3ECErPMsQAPzfDOdSptlnUgeyf4fYeYvqf6zs/2m2ZdT7H4x9hPi+p/rOz/abZlznsfkH2E+L6n+s7P/ks1HltWZc57H4x9hPi+p/rOz/abZl1PsfkH2E+L6n+s7P9ptmXU+x+QfYT4vqf6zs/+SzUeW1ZlznsfjH2E+L6n+s7P9ptmXU+x+QfYT4vqf6zs/2m2ZdT7H5B9hPi+p/rOz/5LNR5bVmXOex+MfYT4vqf6zs/2m2ZdT7H5B9hPi+p/rOz/abZl1PsfkH2E+L6n+s7QCXFlvIb5K9r/qd5PzxbcHzY52PsJ8X1P9Z2f7JrLoF9ik82uz6zUeW1Zl1PsfkH2E+L6n+jLP9ptmXU+x+QfYQj4VeFx/saYXvM58O7KM/BAFAVXTERwmQChdrFVDlJCPrq1wKrpiI4TIBQu1iqgtdWuBVdMRHCZAKF2sVUOUkI+urXAqumIjhMgFC7WKqHKSEfXVrgVXTERwmQChcfSQj66tcCq6YiOEyAULtYqocpIR9dWuBVdMRHCZAKF2sVUOUkI+urXAqumIjhNUn6reQ3yV7X/U7yfni3JjXEdO0Ay/K8CSnaAZfleBJTtAMvyvAkp2gGX+f/MTQAAA="
+    },
+    {
+      "id": "R26-01-valid-65x33-checker-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRjIAAABXRUJQVlA4TCUAAAAvQAAIAA8w//M///MfeCASIMGRnvQn3RjRf4JJmmo7ZpLKvHIAAA=="
+    },
+    {
+      "id": "R26-01-valid-65x33-alpha-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R26-01-valid-65x33-alpha-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRogAAABXRUJQVlA4THwAAAAvQAAIELmM6H8sFKRtwMS/7h0LA1KQ/k+AFcnbDRQ1kqSMkZFxNKpOxklfOHpOq4K2bSQTKYzdU8DDKZBNQ4sknqtt24ahp7Q1R4DmRSSHYt2JdIWfDxDsAOHEgiIt7wVI2QHCBisfC5DaYOVjAVJ2gNQGZx+nmAP+rxcF"
+    },
+    {
+      "id": "R26-01-valid-65x33-noise-false",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R26-01-valid-65x33-noise-true",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R26-01-differential-gradient-false-flip25",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRgoCAABXRUJQVlA4IP4BAADQCwCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYE/g7ZfqA2wH6AfwD0AP9V7bvoA3gDnZP9l/M/gA/W79oPaXcIHeDEQcv9t1qJmYn6U33f6zexmD3iUVEntEdaKF+8XWTKAAOGy/HdUU/+q1YfdoyHEN24zejRxN2SwHw2Gq51vfb9Zteayh+ISpCkwwBQPK3LNxqR7P5bVCkw4lSzpAU2nCEz1xusk3pPVluGqMyDlJlbeXNN0YINMPrTnywqcJK8vssYZlNLjy7safNi6S4Y2OYW6qMMXikc/8YM1To6rM6a0KK7H07S5H+4nMuMSsx1NLtwwuL/Qjqy9kWfqnPmn+AKkVrdjT/Bxe5I2RNuSNkFfXPxOHvA4fZl1OspGAjy+RGETzlzL75TAaCwVvGQ6LameXQRk8C3iuFRzUfrnuY5OoVlcJx1tb3dx62iHcJn+b8XQmV/qAqNWlSzidvpCMbCoVvw1SUUGcfrNrzWUPxCVITI5blMw03xbqOb27XSPuiIbwkXnr0o8Ijxh8KvXYyd2Qf4trxea7EPvH4LwXatGO1FfN4F26Ifj0IfA+5pf7oggKYB3ScZf/J6xhm7KuVeFD8b53Yr7qh+amfW1FeYjcTHP4VW8dUkaVhG0kM/7gWMsX+AsyxZ8c+EOIzp/7jtn+IzoAAA="
+    },
+    {
+      "id": "R26-01-differential-gradient-false-flip50",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRgoCAABXRUJQVlA4IP4BAADQCwCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYE/g7ZfqA2wH6AfwD0AP9V7bvoA3gDnZP9l/M/gA/W79oPaXcIHeDEQcv9t1qJmYn6U33f6zexmD3iUVEntEdaKF+8XWTKAAOGy/HdUU/+q1YfdoyHEN24zejRxN2Swnw2Gq51vfb9Zteayh+ISpCkwwBQPK3LNxqR7P5bVCkw4lSzpAU2nCEz1xusk3pPVluGqMyDlJlbeXNN0YINMPrTnywqcJK8vssYZlNLjy7safNi6S4Y2OYW6qMMXikc/8YM1To6rM6a0KK7H07S5H+4nMuMSsx1NLtwwuL/Qjqw9kWfqnPmn+AKkVrdjT/Bxe5I2RNuSNkFfXPxOHvA4fZl1OspGAjy+RGETzlzL75TAaCwVvGQ6LameXQRk8C3iuFRzUfrnuY5OoVlcJx1tb3dx62iHcJn+b8XQmV/qAqNWlSzidvpCMbCoVvw1SUUGcfrNrzWUPxCVITI5blMw03xbqOb27XSPuiIbwkXnr0o8Ijxh8KvXYyd2Qf4trxea7EPvH4LwXatGO1FfN4F26Ifj0IfA+5pf7oggKYB3ScZf/J6xhm7KuVeFD8b53Yr7qh+amfW1FeYjcTHP4VW8dUkaVhG0kM/7gWMsX+AsyxZ8c+EOIzp/7jtn+IzoAAA="
+    },
+    {
+      "id": "R26-01-differential-gradient-false-flip75",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRgoCAABXRUJQVlA4IP4BAADQCwCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYE/g7ZfqA2wH6AfwD0AP9V7bvoA3gDnZP9l/M/gA/W79oPaXcIHeDEQcv9t1qJmYn6U33f6zexmD3iUVEntEdaKF+8XWTKAAOGy/HdUU/+q1YfdoyHEN24zejRxN2Swnw2Gq51vfb9Zteayh+ISpCkwwBQPK3LNxqR7P5bVCkw4lSzpAU2nCEz1xusk3pPVluGqMyDlJlbeXNN0YINMPrTnywqcJK8vssYZlNLjy7safNi6S4Y2OYW6qMMXikc/8YM1To6rM6a0KK7H07S5H+4nMuMSsx1NLtwwuL/Qjqy9kWfqnPmn+AKkVrdjT/Bxe5I2RNuSNkFfXPxOHvA4fZl1OspGAjy+RGETzlzL75TAaCwVvGQ6LameXQRk8C3iuFRzUfrnuY5OoVlcJx1tb3dx62iHcJn+b8XQmV/qAqNWlSzidvpCMbCoVvw1SUUGcfrNrzWUPxCVITI5blMwU3xbqOb27XSPuiIbwkXnr0o8Ijxh8KvXYyd2Qf4trxea7EPvH4LwXatGO1FfN4F26Ifj0IfA+5pf7oggKYB3ScZf/J6xhm7KuVeFD8b53Yr7qh+amfW1FeYjcTHP4VW8dUkaVhG0kM/7gWMsX+AsyxZ8c+EOIzp/7jtn+IzoAAA="
+    },
+    {
+      "id": "R26-01-differential-gradient-false-truncate2",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRggCAABXRUJQVlA4IPwBAADQCwCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYE/g7ZfqA2wH6AfwD0AP9V7bvoA3gDnZP9l/M/gA/W79oPaXcIHeDEQcv9t1qJmYn6U33f6zexmD3iUVEntEdaKF+8XWTKAAOGy/HdUU/+q1YfdoyHEN24zejRxN2Swnw2Gq51vfb9Zteayh+ISpCkwwBQPK3LNxqR7P5bVCkw4lSzpAU2nCEz1xusk3pPVluGqMyDlJlbeXNN0YINMPrTnywqcJK8vssYZlNLjy7safNi6S4Y2OYW6qMMXikc/8YM1To6rM6a0KK7H07S5H+4nMuMSsx1NLtwwuL/Qjqy9kWfqnPmn+AKkVrdjT/Bxe5I2RNuSNkFfXPxOHvA4fZl1OspGAjy+RGETzlzL75TAaCwVvGQ6LameXQRk8C3iuFRzUfrnuY5OoVlcJx1tb3dx62iHcJn+b8XQmV/qAqNWlSzidvpCMbCoVvw1SUUGcfrNrzWUPxCVITI5blMw03xbqOb27XSPuiIbwkXnr0o8Ijxh8KvXYyd2Qf4trxea7EPvH4LwXatGO1FfN4F26Ifj0IfA+5pf7oggKYB3ScZf/J6xhm7KuVeFD8b53Yr7qh+amfW1FeYjcTHP4VW8dUkaVhG0kM/7gWMsX+AsyxZ8c+EOIzp/7jtn+Izo"
+    },
+    {
+      "id": "R26-01-differential-gradient-false-truncate7",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRgQCAABXRUJQVlA4IPcBAADQCwCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYE/g7ZfqA2wH6AfwD0AP9V7bvoA3gDnZP9l/M/gA/W79oPaXcIHeDEQcv9t1qJmYn6U33f6zexmD3iUVEntEdaKF+8XWTKAAOGy/HdUU/+q1YfdoyHEN24zejRxN2Swnw2Gq51vfb9Zteayh+ISpCkwwBQPK3LNxqR7P5bVCkw4lSzpAU2nCEz1xusk3pPVluGqMyDlJlbeXNN0YINMPrTnywqcJK8vssYZlNLjy7safNi6S4Y2OYW6qMMXikc/8YM1To6rM6a0KK7H07S5H+4nMuMSsx1NLtwwuL/Qjqy9kWfqnPmn+AKkVrdjT/Bxe5I2RNuSNkFfXPxOHvA4fZl1OspGAjy+RGETzlzL75TAaCwVvGQ6LameXQRk8C3iuFRzUfrnuY5OoVlcJx1tb3dx62iHcJn+b8XQmV/qAqNWlSzidvpCMbCoVvw1SUUGcfrNrzWUPxCVITI5blMw03xbqOb27XSPuiIbwkXnr0o8Ijxh8KvXYyd2Qf4trxea7EPvH4LwXatGO1FfN4F26Ifj0IfA+5pf7oggKYB3ScZf/J6xhm7KuVeFD8b53Yr7qh+amfW1FeYjcTHP4VW8dUkaVhG0kM/7gWMsX+AsyxZ8c+EOIzp/7gA="
+    },
+    {
+      "id": "R26-01-differential-gradient-true-flip25",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiwAAABXRUJQVlA4TB8AAAAvEIAHAM1VICL/AbJsJJLDOJLz5/n5t2mdqciGKecDAA=="
+    },
+    {
+      "id": "R26-01-differential-gradient-true-flip50",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiwAAABXRUJQVlA4TB8AAAAvEIAHAM1VIKL/AbJsJJLDuJLz5/n5t2mdqciGKecDAA=="
+    },
+    {
+      "id": "R26-01-differential-gradient-true-flip75",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiwAAABXRUJQVlA4TB8AAAAvEIAHAM1VIKL/AbJsJJLDOJLz5/n5t2kdqciGKecDAA=="
+    },
+    {
+      "id": "R26-01-differential-gradient-true-truncate2",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRioAAABXRUJQVlA4TB0AAAAvEIAHAM1VIKL/AbJsJJLDOJLz5/n5t2mdqciGKQA="
+    },
+    {
+      "id": "R26-01-differential-gradient-true-truncate7",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRiQAAABXRUJQVlA4TBgAAAAvEIAHAM1VIKL/AbJsJJLDOJLz5/n5t2k="
+    },
+    {
+      "id": "R26-01-differential-alpha-false-flip25",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkgCAABXRUJQVlA4WAoAAAAQAAAAEAAAHgAAQUxQSBgAAAABuQpE9D9ApG0zJ9Mz/6KOzyImIJmp8wFWUDggCgIAAFAMAJ0BKhEAHwA+lTqYR6WjIqEwCACwEolsAJ0ygxg9gT//tq/2b8VfkBtgPMB+jH8z9v/0AbwBzuv+V/snwI/sP+s3tgOFDvB9yUQDL/wwUvzxF/SG/J/Wb2JQe0dZ+C+IW49jQGJbHFNgANv2CHC+X/WlcdoFncKnarQuvVXcMNTAFGMhedcMPv1wRpN/MvxKJzkuj3gnOAYLM6lA9vjWwsNLVrZXuHdPT/nrQiE4+6y5vptUgoxKoN7bj1132BZlpHB1uFIqt7RPXpN82W/W6HOtn5fEevFGrBCQ/SWwI7EdHq51kkmyoO9XAZe0NqeduHHF6h/B/5P0OJt8ubS15oYy/4+pnpB+ocsSbl+n/AFSK1u0r/g4v8ONbN/tXfbm+EzcBnYZAz/GUlbZD/jKSt8w29G7wY3p1UFlE5Z7os8bvhV9or1kOyVuUY8F3Jb45JTT4E2HVramIDIMoK5VBs/hqMz/RJV74ZqNr+pQio94Rt02WtKg9c8vHNK9APLocA/3ujpxGKae2UZcZFSYM+AKp35ATLIE+unC9ICepy1YnEyW/Q9cGVvZSqG+rWN5TPGSmk46r/lOLgMayV7rYhF5RhGa1rDkQUNd2f/5PiNUnFJs/pMLUc+lm+gx+Ciw6a0fSIdfC+NmI3W/+R9BTnf/kfQgQDLhViM9zJGlTDNOx838HhwAAA=="
+    },
+    {
+      "id": "R26-01-differential-alpha-false-flip50",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkgCAABXRUJQVlA4WAoAAAAQAAAAEAAAHgAAQUxQSBgAAAABuQpE9D9ApG0zJ9Mz/6KOzyImIJmp8wFWUDggCgIAAFAMAJ0BKhEAHwA+lTqYR6WjIqEwCACwEolsAJ0ygxg9gT//tq/2b8VfkBtgPMB+jH8z9v/0AbwBzuv+V/snwI/sP+s3tgOFDvB9yUQDL/wwUvzxF/SG/J/Wb2JQe8dZ+C+IW49jQGJbHFNgANv2CHC+X/WlcdoFncKnarQuvVXcMNTAFGMhedcMPv1wRpN/MvxKJzkuj3gnOAYLM6lA9vjWwsNLVrZXuHdPT/nrQiE4+6y5vptUgoxKoN7bj1132BZlpHB1uFIqt7RPXpN82W/W6HOtn5fEevFGrBCQ/SWwI7EdHq51kkmyoO9XgZe0NqeduHHF6h/B/5P0OJt8ubS15oYy/4+pnpB+ocsSbl+n/AFSK1u0r/g4v8ONbN/tXfbm+EzcBnYZAz/GUlbZD/jKSt8w29G7wY3p1UFlE5Z7os8bvhV9or1kOyVuUY8F3Jb45JTT4E2HVramIDIMoK5VBs/hqMz/RJV74ZqNr+pQio94Rt02WtKg9c8vHNK9APLocA/3ujpxGKae2UZcZFSYM+AKp35ATLIE+unC9ICepy1YnEyW/Q9cGVvZSqG+rWN5TPGSmk46r/lOLgMayV7rYhF5RhGa1rDkQUNd2f/5PiNUnFJs/pMLUc+lm+gx+Ciw6a0fSIdfC+NmI3W/+R9BTnf/kfQgQDLhViM9zJGlTDNOx838HhwAAA=="
+    },
+    {
+      "id": "R26-01-differential-alpha-false-flip75",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkgCAABXRUJQVlA4WAoAAAAQAAAAEAAAHgAAQUxQSBgAAAABuQpE9D9ApG0zJ9Mz/6KOzyImIJmp8wFWUDggCgIAAFAMAJ0BKhEAHwA+lTqYR6WjIqEwCACwEolsAJ0ygxg9gT//tq/2b8VfkBtgPMB+jH8z9v/0AbwBzuv+V/snwI/sP+s3tgOFDvB9yUQDL/wwUvzxF/SG/J/Wb2JQe8dZ+C+IW49jQGJbHFNgANv2CHC+X/WlcdoFncKnarQuvVXcMNTAFGMhedcMPv1wRpN/MvxKJzkuj3gnOAYLM6lA9vjWwsNLVrZXuHdPT/nrQiE4+6y5vptUgoxKoN7bj1132BZlpHB1uFIqt7RPXpN82W/W6HOtn5fEevFGrBCQ/SWwI7EdHq51kkmyoO9XAZe0NqeduHHF6h/B/5P0OJt8ubS15oYy/4+pnpB+ocsSbl+n/AFSK1u0r/g4v8ONbN/tXfbm+EzcBnYZAz/GUlbZD/jKSt8w29G7wY3p1UFlE5Z7os8bvhV9or1kOyVuUY8F3Jb45JTT4E2HVramIDIMoK5VBs/hqMz/RJV74ZqNr+pQio94Rt02WtKg9c+vHNK9APLocA/3ujpxGKae2UZcZFSYM+AKp35ATLIE+unC9ICepy1YnEyW/Q9cGVvZSqG+rWN5TPGSmk46r/lOLgMayV7rYhF5RhGa1rDkQUNd2f/5PiNUnFJs/pMLUc+lm+gx+Ciw6a0fSIdfC+NmI3W/+R9BTnf/kfQgQDLhViM9zJGlTDNOx838HhwAAA=="
+    },
+    {
+      "id": "R26-01-differential-alpha-false-truncate2",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkYCAABXRUJQVlA4WAoAAAAQAAAAEAAAHgAAQUxQSBgAAAABuQpE9D9ApG0zJ9Mz/6KOzyImIJmp8wFWUDggCgIAAFAMAJ0BKhEAHwA+lTqYR6WjIqEwCACwEolsAJ0ygxg9gT//tq/2b8VfkBtgPMB+jH8z9v/0AbwBzuv+V/snwI/sP+s3tgOFDvB9yUQDL/wwUvzxF/SG/J/Wb2JQe8dZ+C+IW49jQGJbHFNgANv2CHC+X/WlcdoFncKnarQuvVXcMNTAFGMhedcMPv1wRpN/MvxKJzkuj3gnOAYLM6lA9vjWwsNLVrZXuHdPT/nrQiE4+6y5vptUgoxKoN7bj1132BZlpHB1uFIqt7RPXpN82W/W6HOtn5fEevFGrBCQ/SWwI7EdHq51kkmyoO9XAZe0NqeduHHF6h/B/5P0OJt8ubS15oYy/4+pnpB+ocsSbl+n/AFSK1u0r/g4v8ONbN/tXfbm+EzcBnYZAz/GUlbZD/jKSt8w29G7wY3p1UFlE5Z7os8bvhV9or1kOyVuUY8F3Jb45JTT4E2HVramIDIMoK5VBs/hqMz/RJV74ZqNr+pQio94Rt02WtKg9c8vHNK9APLocA/3ujpxGKae2UZcZFSYM+AKp35ATLIE+unC9ICepy1YnEyW/Q9cGVvZSqG+rWN5TPGSmk46r/lOLgMayV7rYhF5RhGa1rDkQUNd2f/5PiNUnFJs/pMLUc+lm+gx+Ciw6a0fSIdfC+NmI3W/+R9BTnf/kfQgQDLhViM9zJGlTDNOx838Hhw="
+    },
+    {
+      "id": "R26-01-differential-alpha-false-truncate7",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "Input buffer has corrupt header: webp: unable to parse image",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRkECAABXRUJQVlA4WAoAAAAQAAAAEAAAHgAAQUxQSBgAAAABuQpE9D9ApG0zJ9Mz/6KOzyImIJmp8wFWUDggCgIAAFAMAJ0BKhEAHwA+lTqYR6WjIqEwCACwEolsAJ0ygxg9gT//tq/2b8VfkBtgPMB+jH8z9v/0AbwBzuv+V/snwI/sP+s3tgOFDvB9yUQDL/wwUvzxF/SG/J/Wb2JQe8dZ+C+IW49jQGJbHFNgANv2CHC+X/WlcdoFncKnarQuvVXcMNTAFGMhedcMPv1wRpN/MvxKJzkuj3gnOAYLM6lA9vjWwsNLVrZXuHdPT/nrQiE4+6y5vptUgoxKoN7bj1132BZlpHB1uFIqt7RPXpN82W/W6HOtn5fEevFGrBCQ/SWwI7EdHq51kkmyoO9XAZe0NqeduHHF6h/B/5P0OJt8ubS15oYy/4+pnpB+ocsSbl+n/AFSK1u0r/g4v8ONbN/tXfbm+EzcBnYZAz/GUlbZD/jKSt8w29G7wY3p1UFlE5Z7os8bvhV9or1kOyVuUY8F3Jb45JTT4E2HVramIDIMoK5VBs/hqMz/RJV74ZqNr+pQio94Rt02WtKg9c8vHNK9APLocA/3ujpxGKae2UZcZFSYM+AKp35ATLIE+unC9ICepy1YnEyW/Q9cGVvZSqG+rWN5TPGSmk46r/lOLgMayV7rYhF5RhGa1rDkQUNd2f/5PiNUnFJs/pMLUc+lm+gx+Ciw6a0fSIdfC+NmI3W/+R9BTnf/kfQgQDLhViM9zJGlTDNO"
+    },
+    {
+      "id": "R26-01-differential-alpha-true-flip25",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRlwAAABXRUJQVlA4TFAAAAAvEIAHELmM6H8sAILw/+1hQArS/9AkKGokSRkjLWOPVJ2MM874nVaCbJuKTOTA5xTIpqFFEs8nQJQf6ETKD7qML4PUDyIkdAHwHUIyXdUtAA=="
+    },
+    {
+      "id": "R26-01-differential-alpha-true-flip50",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRlwAAABXRUJQVlA4TFAAAAAvEIAHELmM6H8sAILw/+1hQArS/1AkKGokSRkjLWOPVJ2MM874nVaC7JuKTOTA5xTIpqFFEs8nQJQf6ETKD7qML4PUDyIkdAHwHUIyXdUtAA=="
+    },
+    {
+      "id": "R26-01-differential-alpha-true-flip75",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRlwAAABXRUJQVlA4TFAAAAAvEIAHELmM6H8sAILw/+1hQArS/1AkKGokSRkjLWOPVJ2MM874nVaCbJuKTOTA5xTIpqFFEs8nQJQf6ERKD7qML4PUDyIkdAHwHUIyXdUtAA=="
+    },
+    {
+      "id": "R26-01-differential-alpha-true-truncate2",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRloAAABXRUJQVlA4TE4AAAAvEIAHELmM6H8sAILw/+1hQArS/1AkKGokSRkjLWOPVJ2MM874nVaCbJuKTOTA5xTIpqFFEs8nQJQf6ETKD7qML4PUDyIkdAHwHUIyXdU="
+    },
+    {
+      "id": "R26-01-differential-alpha-true-truncate7",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRlYAAABXRUJQVlA4TEkAAAAvEIAHELmM6H8sAILw/+1hQArS/1AkKGokSRkjLWOPVJ2MM874nVaCbJuKTOTA5xTIpqFFEs8nQJQf6ETKD7qML4PUDyIkdAHwAA=="
+    },
+    {
+      "id": "R26-01-differential-noise-false-flip25",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhgCAABXRUJQVlA4IAwCAABwCgCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYEba/xXsA2wH65eoD9AP8z7WWmAc9J7Dz4CZgtTNPkv+V5I/lrfm+gB+zItP70kD6N6MKmQk7PdKoYVuADNpm2TsOTEdkf0+81FEjiPrjjv+AfmUrpUKtmlNk3wvb7ORt1QuX44dMOvgBz1dY+LpbQaackcBfDX83SHr3Z2GnNZjGNyb/WtVFTkJ2WTkwt9Sdq91czfqs+Ch+QlbVVSD9Xk2hzj56/u9m1uF39JhDRLBcvF5T6MDkDKcLldG5KnOPO0NG9Hi+3LA+KaInkXdK5rYvn+/G4PTnGZPbPWn6eno8JTuWy4v/8ZrH48AvPah8m/uF1PIt1wunitMs4Xhp6F+A6Z94uNNWeL82C0C7/Jh1WXL2UftfFr3ZLBJAcnLDkqCb7eGvpWDCCJDi6sEUDinblilQgdt5Ui5VLVL3+OJ88rkX2piiZv4/9mSAhKC8XiRgBLxzn91Lp6+K111Ks19elqGUA40Ykxu9j6Zi9Nsbrpeb47YvKNmVEwUWncdWPjZiq/zH5ZO9NfSYvz8wp2WXUNDoD+NWpYFdOIEZxYUYWYIa+8Ux+VTnmUPtTKuaDvr9I62TWxd7PJkFZx741cq3hmWM2assFQUOBI0mH0t5mUPpZK3siDsQNke5EHYcInpzY2kenNQAAAAA=="
+    },
+    {
+      "id": "R26-01-differential-noise-false-flip50",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhgCAABXRUJQVlA4IAwCAABwCgCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYEba/xXsA2wH65eoD9AP8z7WWmAc9J7Dz4CZgtTNPkv+V5I/lrfm+gB+zItP70kD6N6MKmQk7PdKoYVuADNpm2TsOTEdkf0+81FEjiPrjjv+AfmUrpUKtmlNk3wvb7ORt1Quf44dMOvgBz1dY+LpbQaackcBfDX83SHr3Z2GnNZjGNyb/WtVFTkJ2WTkwt9Sdq91czfqs+Ch+QlbVVSD9Xk2hzj56/u9m1uF39JhDRLBcvF5T6MDkDKcLldG5KnOPO0NG9Hi+3LA+KaInkXdK5rYvn+/G4PTnGZPbPWn6eno8JTuWy4P/8ZrH48AvPah8m/uF1PIt1wunitMs4Xhp6F+A6Z94uNNWeL82C0C7/Jh1WXL2UftfFr3ZLBJAcnLDkqCb7eGvpWDCCJDi6sEUDinblilQgdt5Ui5VLVL3+OJ88rkX2piiZv4/9mSAhKC8XiRgBLxzn91Lp6+K111Ks19elqGUA40Ykxu9j6Zi9Nsbrpeb47YvKNmVEwUWncdWPjZiq/zH5ZO9NfSYvz8wp2WXUNDoD+NWpYFdOIEZxYUYWYIa+8Ux+VTnmUPtTKuaDvr9I62TWxd7PJkFZx741cq3hmWM2assFQUOBI0mH0t5mUPpZK3siDsQNke5EHYcInpzY2kenNQAAAAA=="
+    },
+    {
+      "id": "R26-01-differential-noise-false-flip75",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhgCAABXRUJQVlA4IAwCAABwCgCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYEba/xXsA2wH65eoD9AP8z7WWmAc9J7Dz4CZgtTNPkv+V5I/lrfm+gB+zItP70kD6N6MKmQk7PdKoYVuADNpm2TsOTEdkf0+81FEjiPrjjv+AfmUrpUKtmlNk3wvb7ORt1Quf44dMOvgBz1dY+LpbQaackcBfDX83SHr3Z2GnNZjGNyb/WtVFTkJ2WTkwt9Sdq91czfqs+Ch+QlbVVSD9Xk2hzj56/u9m1uF39JhDRLBcvF5T6MDkDKcLldG5KnOPO0NG9Hi+3LA+KaInkXdK5rYvn+/G4PTnGZPbPWn6eno8JTuWy4v/8ZrH48AvPah8m/uF1PIt1wunitMs4Xhp6F+A6Z94uNNWeL82C0C7/Jh1WXL2UftfFr3ZLBJAcnLDkqCb7eGvpWDCCJDi6sEUDinblilQgdt5Ui5VLVL3+OJ88rkX2piiZv4/9mSAhKC8XiRgBLxzn91Lp6+K111Ks19elqGUA40Ymxu9j6Zi9Nsbrpeb47YvKNmVEwUWncdWPjZiq/zH5ZO9NfSYvz8wp2WXUNDoD+NWpYFdOIEZxYUYWYIa+8Ux+VTnmUPtTKuaDvr9I62TWxd7PJkFZx741cq3hmWM2assFQUOBI0mH0t5mUPpZK3siDsQNke5EHYcInpzY2kenNQAAAAA=="
+    },
+    {
+      "id": "R26-01-differential-noise-false-truncate2",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhYCAABXRUJQVlA4IAoCAABwCgCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYEba/xXsA2wH65eoD9AP8z7WWmAc9J7Dz4CZgtTNPkv+V5I/lrfm+gB+zItP70kD6N6MKmQk7PdKoYVuADNpm2TsOTEdkf0+81FEjiPrjjv+AfmUrpUKtmlNk3wvb7ORt1Quf44dMOvgBz1dY+LpbQaackcBfDX83SHr3Z2GnNZjGNyb/WtVFTkJ2WTkwt9Sdq91czfqs+Ch+QlbVVSD9Xk2hzj56/u9m1uF39JhDRLBcvF5T6MDkDKcLldG5KnOPO0NG9Hi+3LA+KaInkXdK5rYvn+/G4PTnGZPbPWn6eno8JTuWy4v/8ZrH48AvPah8m/uF1PIt1wunitMs4Xhp6F+A6Z94uNNWeL82C0C7/Jh1WXL2UftfFr3ZLBJAcnLDkqCb7eGvpWDCCJDi6sEUDinblilQgdt5Ui5VLVL3+OJ88rkX2piiZv4/9mSAhKC8XiRgBLxzn91Lp6+K111Ks19elqGUA40Ykxu9j6Zi9Nsbrpeb47YvKNmVEwUWncdWPjZiq/zH5ZO9NfSYvz8wp2WXUNDoD+NWpYFdOIEZxYUYWYIa+8Ux+VTnmUPtTKuaDvr9I62TWxd7PJkFZx741cq3hmWM2assFQUOBI0mH0t5mUPpZK3siDsQNke5EHYcInpzY2kenNQAA="
+    },
+    {
+      "id": "R26-01-differential-noise-false-truncate7",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhICAABXRUJQVlA4IAUCAABwCgCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYEba/xXsA2wH65eoD9AP8z7WWmAc9J7Dz4CZgtTNPkv+V5I/lrfm+gB+zItP70kD6N6MKmQk7PdKoYVuADNpm2TsOTEdkf0+81FEjiPrjjv+AfmUrpUKtmlNk3wvb7ORt1Quf44dMOvgBz1dY+LpbQaackcBfDX83SHr3Z2GnNZjGNyb/WtVFTkJ2WTkwt9Sdq91czfqs+Ch+QlbVVSD9Xk2hzj56/u9m1uF39JhDRLBcvF5T6MDkDKcLldG5KnOPO0NG9Hi+3LA+KaInkXdK5rYvn+/G4PTnGZPbPWn6eno8JTuWy4v/8ZrH48AvPah8m/uF1PIt1wunitMs4Xhp6F+A6Z94uNNWeL82C0C7/Jh1WXL2UftfFr3ZLBJAcnLDkqCb7eGvpWDCCJDi6sEUDinblilQgdt5Ui5VLVL3+OJ88rkX2piiZv4/9mSAhKC8XiRgBLxzn91Lp6+K111Ks19elqGUA40Ykxu9j6Zi9Nsbrpeb47YvKNmVEwUWncdWPjZiq/zH5ZO9NfSYvz8wp2WXUNDoD+NWpYFdOIEZxYUYWYIa+8Ux+VTnmUPtTKuaDvr9I62TWxd7PJkFZx741cq3hmWM2assFQUOBI0mH0t5mUPpZK3siDsQNke5EHYcInpzY2AA=="
+    },
+    {
+      "id": "R26-01-differential-noise-true-flip25",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRnYGAABXRUJQVlA4TGkGAAAvEIAHAIAYAACBxrZt27Zt27Zt27Zt22q2bdu4QwEAAMT/////////////pwAAAOL/////////////63/MuZKGSR89X5URBZqzCTfJ2h2pZToHuj26z2QSxFbvzKWbc9plTQ3DOtpFf5UwcqPw2mGNi6MASN4u0Xd4grDOcaAi0SZLBfl66wsyKJ5jGmix5PFXHE2eZFGDQ/993bahUqZLMitAeUjrcXtMqf8LB/Rs1DNFMqT3HD2vBgadZDDe7XmlP40meHlW8Nxjxj4IcXwPJb8dzh45lu6aUuPoI2/zH17gNQTaa5VTYKIBxoKo3U5SThmNjFKecXon0OTlS29Cnl1M2t2o6DjqmfwPhPMMkT8Av7Okuo7SzYXCFCkqRjJomJhUyIu5sBqvLx47aYYGHcVGmCbFo3Km0Vj8zKyYKGjw5MzCPK7Hr9AGmH4BTFsaAXTJUKcoZVr9eBQjVGB3Qq1gBQiiqlSOuNwPvVnLucsxYlbLLgoxtnBjDkET929UUIxhDovi2EYn/4jPk33rY3gDJNy0Hf8Tzzc3EtE+1R8GSghGH644Togehx4VL3jHf1IJlz3JIV6UMrXKcSe87E7E8CYJ0fAaRcqPjYq6O2cxn0GnBWHoUBCJ2mSmG9OMWt5Cgct5Bq4FNyx5ZV04RELDDQzoSCELtSjPlA3Pa+9YUQNpof1Qw1potgWGEnKgLAchfuR862JkC5bitdO1cQDoZcO8mKpJm422MEPbJdsha7JbejKXqV0XOQ3hp532uMyQqgkyFO4V++Gq8ALdB+ua/DjNM7gp6ceLi9tliP8IsDDYJ3VOw2DJK7RlZK3ePrBZrsnx4DZ5oyjSFlJQDalmi6E9FVDMukC3+7rTMCf0GRQFrAQxXcxcTXrrnMboD9ox9EyA70Op08Xv88C29qAcvB2ARDMhvBmldaUjcuQuyGU40VXJC67jh97sidBlWyt05k7xECUndbRHFXduuUx/L8yy6iOH8gCU8ZOObz/EWl54/Tzyih3+kauoCQzvT3+YjYhLfU3sM/gh8XsZ5NacpVqt8rLZT0CUMOnEZfKhj+uRoqFLWIh2iI+BdPKaQgTCuZgAOKfV5bqSbYcwGcOTxZB/mmWIOb3lz4BWdqUKuqGkkTnSgbQSCx+4YdHR4317wUCAsaH8iXBnu1nFoYbamycKZiv/6kLuYv/2fpG07VNhiDCvJBrJ6apA0Gk39/e9j8cW0pnjInFPKb1qIiNgGhaCut/FnFwtq62AnjPJgCjog3BVRGKvH3x2dNcVkMit1/+XNzRt8GhuyY76vf6wC7sIO5dl9Dhcg4xT3DhY62LSKcJpZ9yIwlAsEfH9k+xXUXioA6BC7hiMtmTHBRHMTBzW6Qmq+Ftk3x8zsLUMpZzkD0gMxqu9vsBsbQr1w/Hz9vRKMX+C2zfqa/VhLPecVNxz42VCSXpCNeL/asYyVsFLRvzKW7LhTHETyX6rZ3D41PXf89HKvdBrOuDRzqiRcZ7f01sVUk+D6+0LuK11RAkYa/JuFAyQg6PsDUkZsLVsSD53GbNczRWs2fazC1enOZLo9kGEjOugtqFsi5VOntBhYQJiuU4Yd8/sRolLzfYqPqSlzjZZhivTPnVioM/dZkWnoJMG4P9UAxmQa/cMJD1VhkDfVyOPxSgAcBgc2ObKgDBJhMcx/37qC2SLlNChmg6nj+y/xG1gnocaTsj8jAV1Ev21X2N39aRIXC+uqCCtpqAJAvKYws/3J+oyNe98eYjMdR3M5PIxrdWitvimsqADhFSWXQRUhvVrantSPqQcXCA9YKO8RRrnMkcMW5rnM9tJDx6fbfNDhv6F4jHW4EJ5CKVs6XpSmq7CIrr2xecB5r62svhuFzTFvEX0a8eFCzhetygRy7zYz++ul9XDRAdIbOJUSeDJSfLXzQUzwDvNgsKiXLB0moRfURuRGoJJcf7tPPPo1WQeZ0pE9uJF5gQNXlm8VjOVzwl0A+PtSOIwGAEd0JlffsWyTuYgvA6HzZpUgwkSybIQGwwAFS2EnjXtdIZjSbrg391WZEw5UKgea1Ewvyxu9qlvfu3EVhiazL0BwJyfS7JHSGGrED8fQht68QvKOjXTERex3j04EJHy/zQzLVbb4oYXKBxguDRZCeJGvhWZtaRtzFcdQrHkJyo+9UvZ4QxvGVTQGaLBEyS249SiygQA"
+    },
+    {
+      "id": "R26-01-differential-noise-true-flip50",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R26-01-differential-noise-true-flip75",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R26-01-differential-noise-true-truncate2",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R26-01-differential-noise-true-truncate7",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error",
+      "decoderMatches": true,
+      "fixtureBase64": "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"
+    },
+    {
+      "id": "R26-01-pdf-valid-direct-graph",
+      "pass": true,
+      "expected": "PARSED",
+      "parseStatus": "PARSED",
+      "inlineParts": 1,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDUgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    },
+    {
+      "id": "R26-01-pdf-root-array-decoy",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL0hpbnQgWy9Sb290IDEgMCBSXSAvUm9vdCA5IDAgUiA+PgpzdGFydHhyZWYKMjAxCiUlRU9GCg=="
+    },
+    {
+      "id": "R26-01-pdf-root-nested-array-decoy",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL0hpbnQgW1sgL1Jvb3QgMSAwIFIgXV0gL1Jvb3QgOSAwIFIgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    },
+    {
+      "id": "R26-01-pdf-root-escaped-string-decoy",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL0hpbnQgKGVzY2FwZWQgXCggL1Jvb3QgMSAwIFIpIC9Sb290IDkgMCBSID4+CnN0YXJ0eHJlZgoyMDEKJSVFT0YK"
+    },
+    {
+      "id": "R26-01-pdf-root-trailer-token-in-string",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgOSAwIFIgL0hpbnQgKAp0cmFpbGVyIDw8IC9Sb290IDEgMCBSID4+KSA+PgpzdGFydHhyZWYKMjAxCiUlRU9GCg=="
+    },
+    {
+      "id": "R26-01-pdf-root-duplicate-conflict",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgL1Jvb3QgOSAwIFIgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    },
+    {
+      "id": "R26-01-pdf-pages-nested-dict-decoy",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvSGludCA8PCAvUGFnZXMgMiAwIFIgPj4gL1BhZ2VzIDkgMCBSID4+CmVuZG9iagoyIDAgb2JqCjw8IC9UeXBlIC9QYWdlcyAvS2lkcyBbMyAwIFJdIC9Db3VudCAxID4+CmVuZG9iagozIDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNzIgNzJdIC9SZXNvdXJjZXMgPDwgPj4gPj4KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwODMgMDAwMDAgbiAKMyAxCjAwMDAwMDAxNDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA0IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoyMjYKJSVFT0YK"
+    },
+    {
+      "id": "R26-01-pdf-pages-array-decoy",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvSGludCBbL1BhZ2VzIDIgMCBSXSAvUGFnZXMgOSAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA3OSAwMDAwMCBuIAozIDEKMDAwMDAwMDEzNiAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIyMgolJUVPRgo="
+    },
+    {
+      "id": "R26-01-pdf-page-type-string-decoy",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL0hpbnQgKC9UeXBlIC9QYWdlKSAvUGFyZW50IDIgMCBSID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNCAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMTcwCiUlRU9GCg=="
+    },
+    {
+      "id": "R26-01-pdf-parent-array-decoy",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL0hpbnQgWy9QYXJlbnQgMiAwIFJdIC9QYXJlbnQgOSAwIFIgPj4KZW5kb2JqCnhyZWYKMCAxCjAwMDAwMDAwMDAgNjU1MzUgZiAKMSAxCjAwMDAwMDAwMDkgMDAwMDAgbiAKMiAxCjAwMDAwMDAwNTggMDAwMDAgbiAKMyAxCjAwMDAwMDAxMTUgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA0IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoxODQKJSVFT0YK"
+    },
+    {
+      "id": "R26-01-pdf-parent-missing",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL01lZGlhQm94IFswIDAgNzIgNzJdID4+CmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNCAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMTcwCiUlRU9GCg=="
+    },
+    {
+      "id": "R26-01-pdf-kids-wrong-generation",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSA0IG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiA1IFIgPj4KZW5kb2JqCjIgNSBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgNiBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDUgUiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwNCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwNSBuIAozIDEKMDAwMDAwMDExNSAwMDAwNiBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSA0IFIgPj4Kc3RhcnR4cmVmCjE2MgolJUVPRgo="
+    },
+    {
+      "id": "R26-01-pdf-root-object-in-string",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iagooZW5kb2JqCjkgMCBvYmoKPDwgL1R5cGUgL0NhdGFsb2cgL1BhZ2VzIDIgMCBSID4+CmVuZG9iagopCmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCjQgMQowMDAwMDAwMjAxIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTAgL1Jvb3QgOSAwIFIgPj4Kc3RhcnR4cmVmCjI3NQolJUVPRgo="
+    },
+    {
+      "id": "R26-01-pdf-stream-object-decoy",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDc1ID4+CnN0cmVhbQo5IDAgb2JqCjw8IC9UeXBlIC9DYXRhbG9nIC9QYWdlcyAyIDAgUiA+PgplbmRvYmoKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgMQowMDAwMDAwMDAwIDY1NTM1IGYgCjEgMQowMDAwMDAwMDA5IDAwMDAwIG4gCjIgMQowMDAwMDAwMDU4IDAwMDAwIG4gCjMgMQowMDAwMDAwMTE1IDAwMDAwIG4gCjQgMQowMDAwMDAwMjAxIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMTAgL1Jvb3QgOSAwIFIgPj4Kc3RhcnR4cmVmCjI5OQolJUVPRgo="
+    },
+    {
+      "id": "R26-01-pdf-root-generation-conflict",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA3MiA3Ml0gL1Jlc291cmNlcyA8PCA+PiA+PgplbmRvYmoKeHJlZgowIDEKMDAwMDAwMDAwMCA2NTUzNSBmIAoxIDEKMDAwMDAwMDAwOSAwMDAwMCBuIAoyIDEKMDAwMDAwMDA1OCAwMDAwMCBuIAozIDEKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAxIFIgPj4Kc3RhcnR4cmVmCjIwMQolJUVPRgo="
+    },
+    {
+      "id": "R26-01-vp8x-canvas-mismatch",
+      "pass": true,
+      "expected": "PARSE_ERROR",
+      "parseStatus": "PARSE_ERROR",
+      "inlineParts": 0,
+      "decoderError": "",
+      "decoderMatches": true,
+      "fixtureBase64": "UklGRhwCAABXRUJQVlA4WAoAAAAAAAAAEQAAHgAAVlA4IP4BAADQCwCdASoRAB8APpU6mEeloyKhMAgAsBKJbACdMoMYPYE/g7ZfqA2wH6AfwD0AP9V7bvoA3gDnZP9l/M/gA/W79oPaXcIHeDEQcv9t1qJmYn6U33f6zexmD3iUVEntEdaKF+8XWTKAAOGy/HdUU/+q1YfdoyHEN24zejRxN2Swnw2Gq51vfb9Zteayh+ISpCkwwBQPK3LNxqR7P5bVCkw4lSzpAU2nCEz1xusk3pPVluGqMyDlJlbeXNN0YINMPrTnywqcJK8vssYZlNLjy7safNi6S4Y2OYW6qMMXikc/8YM1To6rM6a0KK7H07S5H+4nMuMSsx1NLtwwuL/Qjqy9kWfqnPmn+AKkVrdjT/Bxe5I2RNuSNkFfXPxOHvA4fZl1OspGAjy+RGETzlzL75TAaCwVvGQ6LameXQRk8C3iuFRzUfrnuY5OoVlcJx1tb3dx62iHcJn+b8XQmV/qAqNWlSzidvpCMbCoVvw1SUUGcfrNrzWUPxCVITI5blMw03xbqOb27XSPuiIbwkXnr0o8Ijxh8KvXYyd2Qf4trxea7EPvH4LwXatGO1FfN4F26Ifj0IfA+5pf7oggKYB3ScZf/J6xhm7KuVeFD8b53Yr7qh+amfW1FeYjcTHP4VW8dUkaVhG0kM/7gWMsX+AsyxZ8c+EOIzp/7jtn+IzoAAA="
+    }
+  ]
+}

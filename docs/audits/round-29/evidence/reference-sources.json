@@ -1,0 +1,23 @@
+{
+  "pdf": {
+    "url": "https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf",
+    "localSha256": "9de0ca9e8570d6209e8bd48a355be8eb6ec376acfc3fc3ae97cd8730351417ff",
+    "sections": [
+      "7.2.2 Table 1 and Table 2",
+      "7.3.7 Dictionary Objects"
+    ],
+    "printedPages": [
+      12,
+      13,
+      18,
+      19
+    ],
+    "paraphrase": "PDF whitespace includes NUL, HT, LF, FF, CR, SPACE; delimiters terminate objects but must still form valid syntax; dictionaries have name keys paired with object values."
+  },
+  "graphql": {
+    "url": "https://spec.graphql.org/September2025/#sec-String-Value",
+    "algorithm": "BlockStringValue",
+    "paraphrase": "Split on line terminators, compute common indentation excluding first line and blank lines, strip indentation from later lines, remove blank edges, join with LF."
+  },
+  "limits": "References inform explicit fixture expectations, not full PDF conformance or live LMS schema acceptance."
+}

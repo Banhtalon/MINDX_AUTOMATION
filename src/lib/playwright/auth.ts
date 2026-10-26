@@ -147,12 +147,13 @@ export class AuthService {
       const submitBtn = page.locator(submitSelector).first();
       await submitBtn.click();
 
-      // Wait for navigation or indicator
-      await page.waitForTimeout(3000);
-
-      const postStatus = await this.checkAuthStatus(system);
-      if (postStatus.isAuthenticated) {
-        return { success: true, message: `Đăng nhập ${system} thành công!` };
+      // Wait for SSO navigation / redirect and indicator (up to 10s)
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await page.waitForTimeout(2000);
+        const postStatus = await this.checkAuthStatus(system);
+        if (postStatus.isAuthenticated) {
+          return { success: true, message: `Đăng nhập ${system} thành công!` };
+        }
       }
 
       return {

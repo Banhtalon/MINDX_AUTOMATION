@@ -1,0 +1,11 @@
+{
+  "verdict": "NO-GO",
+  "localLinksChecked": 61,
+  "localLinksValid": true,
+  "reportCountsAndHashesMatch": true,
+  "planOnlyAddsOneNonemptyAuditEntry": true,
+  "auditManifestHashesMatch": true,
+  "protectedFiles": 364,
+  "protectedUnchanged": true,
+  "sourceScriptsUnchanged": true
+}

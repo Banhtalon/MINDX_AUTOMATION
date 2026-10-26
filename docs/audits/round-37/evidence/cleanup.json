@@ -1,0 +1,25 @@
+{
+    "completedAt":  "2026-10-21T05:42:11.5354782Z",
+    "method":  "Validated absolute TEMP paths and absence of reparse points; deleted junction nonrecursively with .NET Directory.Delete after Windows PowerShell Remove-Item raised NullReferenceException; recursive cleanup with native Remove-Item without Force",
+    "junctionRemovedBeforeRecursion":  true,
+    "targets":  [
+                    {
+                        "path":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+                        "removed":  true
+                    },
+                    {
+                        "path":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-fixtures-QFd2gK",
+                        "removed":  true
+                    },
+                    {
+                        "path":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-native-worker-8jHnB4",
+                        "removed":  true
+                    }
+                ],
+    "snapshotAbsent":  true,
+    "originalNodeModulesPresent":  true,
+    "preexistingEsbuildPresent":  true,
+    "initialForceCleanupRejectedByAutomaticReview":  true,
+    "rejectionReason":  "blocked by policy (no further reason supplied)",
+    "saferCleanupSucceeded":  true
+}

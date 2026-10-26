@@ -1,0 +1,343 @@
+{
+  "audit": "AUDIT-R37",
+  "completedAt": "2026-10-21T05:44:40.690510+00:00",
+  "verdict": "GO_SOURCE",
+  "head": "2570d96b6770957e218031c91f14ce98e766dfa7",
+  "scope": "Phase 5 closure for exact current working-tree contents including uncommitted/untracked files; source-level and synthetic verification",
+  "reviewer": {
+    "actor": "Current Codex assistant; direct independent audit, no delegated agents",
+    "requestedModel": "gpt-6.1-sol",
+    "requestedReasoningEffort": "high",
+    "identityProvenance": "Owner-requested configuration; no independent runtime attestation"
+  },
+  "requiredCommandsExecuted": 11,
+  "gatesPassedByRequiredCriteria": 11,
+  "exitCodeZeroCount": 9,
+  "expectedLegacyExitCodeOneCount": 2,
+  "gates": [
+    {
+      "id": "01-independent",
+      "command": "node docs/audits/round-31/verify-independent.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+      "exitCode": 0,
+      "seconds": 9.634,
+      "log": "01-independent.log",
+      "freshArtifactCreated": true,
+      "artifact": "fresh-verify-results.json",
+      "artifactSha256": "C5FC374FF58DA7235EA287023F88975FC168D206658519AFF1C6F86056E2B1EF",
+      "status": "PASS",
+      "summary": {
+        "total": 819,
+        "passed": 819,
+        "failed": 0
+      }
+    },
+    {
+      "id": "02-native-media",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/native-media-repro.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+      "exitCode": 0,
+      "seconds": 0.449,
+      "log": "02-native-media.log",
+      "freshArtifactCreated": true,
+      "artifact": "fresh-native-media-results.json",
+      "artifactSha256": "33774359E12B3F7EDEA869DEC5A863C63AF7383F0C080A147C86B8E286F7BC78",
+      "status": "PASS",
+      "summary": {
+        "total": 221,
+        "passed": 221,
+        "failed": 0
+      }
+    },
+    {
+      "id": "03-native-worker",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/native-worker-repro.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+      "exitCode": 0,
+      "seconds": 0.561,
+      "log": "03-native-worker.log",
+      "freshArtifactCreated": true,
+      "artifact": "fresh-native-worker-results.json",
+      "artifactSha256": "526DE1709953204843703BD74A619D201576989620664F46CCF3EF46B3A6250F",
+      "status": "PASS",
+      "summary": {
+        "total": 88,
+        "passed": 88,
+        "failed": 0
+      }
+    },
+    {
+      "id": "04-pdf-name",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/pdf-name-repro.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+      "exitCode": 0,
+      "seconds": 0.314,
+      "log": "04-pdf-name.log",
+      "freshArtifactCreated": true,
+      "artifact": "fresh-pdf-name-results.json",
+      "artifactSha256": "8CABEF5325A8FBCFD17B2CC3B4AEB54DA745E3BE68A22355E64E8F4603924CC3",
+      "status": "PASS",
+      "summary": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0
+      }
+    },
+    {
+      "id": "05-pdf-boundary",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-31/pdf-boundary-repro.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+      "exitCode": 0,
+      "seconds": 0.244,
+      "log": "05-pdf-boundary.log",
+      "freshArtifactCreated": true,
+      "artifact": "fresh-pdf-boundary-results.json",
+      "artifactSha256": "9B154B155815AE8DF9304F653B43DBC957F2C97754BCA7EC749B584462C2189C",
+      "status": "PASS",
+      "summary": {
+        "total": 28,
+        "passed": 28,
+        "failed": 0
+      }
+    },
+    {
+      "id": "06-phase5",
+      "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase5.ts",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+      "exitCode": 0,
+      "seconds": 0.695,
+      "log": "06-phase5.log",
+      "status": "PASS",
+      "summary": {
+        "groupsPassed": 8,
+        "includesR35AndR3601": true
+      }
+    },
+    {
+      "id": "07-typescript",
+      "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+      "exitCode": 0,
+      "seconds": 0.306,
+      "log": "07-typescript.log",
+      "status": "PASS",
+      "summary": {
+        "diagnostics": 0
+      }
+    },
+    {
+      "id": "08-r35-core",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-35/core-repro.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+      "exitCode": 0,
+      "seconds": 0.302,
+      "log": "08-r35-core.log",
+      "freshArtifactCreated": true,
+      "artifact": "fresh-core-repro-results.json",
+      "artifactSha256": "CB44CEE84CD6E2AF7CC429A9F4550CD6164F8D4B3DAF7C2604A735F9539E454A",
+      "status": "PASS",
+      "summary": {
+        "total": 3,
+        "passed": 3
+      }
+    },
+    {
+      "id": "09-r35-ui",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-35/ui-repro.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+      "exitCode": 1,
+      "seconds": 0.236,
+      "log": "09-r35-ui.log",
+      "freshArtifactCreated": true,
+      "artifact": "fresh-ui-repro-results.json",
+      "artifactSha256": "3FA8747024AD29CA9BDB1831AE9F499E539CA41DADFAA0CECF09463F3A721DBA",
+      "status": "PASS_EXPECTED_LEGACY_EXIT_1",
+      "summary": {
+        "total": 3,
+        "bugReproduced": [
+          false,
+          false,
+          false
+        ]
+      },
+      "explanation": "Unmodified historical detector exits 1 when any original bug is no longer reproduced; fresh JSON confirms every requested case false."
+    },
+    {
+      "id": "10-r35-rubric",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-35/rubric-repro.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+      "exitCode": 1,
+      "seconds": 0.218,
+      "log": "10-r35-rubric.log",
+      "freshArtifactCreated": true,
+      "artifact": "fresh-rubric-repro-results.json",
+      "artifactSha256": "76B9A95FA680634B5E093BC21254FC5271D0D74EF70D0FE2CEB119143D9FEA53",
+      "status": "PASS_EXPECTED_LEGACY_EXIT_1",
+      "summary": {
+        "total": 1,
+        "bugReproduced": [
+          false
+        ]
+      },
+      "explanation": "Unmodified historical detector exits 1 when any original bug is no longer reproduced; fresh JSON confirms every requested case false."
+    },
+    {
+      "id": "11-r36-closure",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-36/closure-repro.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+      "exitCode": 0,
+      "seconds": 0.276,
+      "log": "11-r36-closure.log",
+      "freshArtifactCreated": true,
+      "artifact": "fresh-closure-results.json",
+      "artifactSha256": "4D3DB7BE1E5A39CEFBE77F9AABFC9E2553DBA99D227A3654C0BF59CD7DD1E92E",
+      "status": "PASS",
+      "summary": {
+        "total": 10,
+        "passed": 10,
+        "failed": 0
+      }
+    }
+  ],
+  "closures": [
+    {
+      "id": "R35-01",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/app/syllabus-config/page.tsx:667",
+        "src/app/api/config/route.ts:193",
+        "src/lib/gemini/score-auditor.ts:113",
+        "src/lib/gemini/homework-grader.ts:360",
+        "src/app/api/homework-grader/download-and-grade/route.ts:143",
+        "src/app/api/homework-grader/approve/route.ts"
+      ],
+      "proof": "Thang 10 bị cấu hình/kiểm điểm/chấm/duyệt từ chối; thang 100 cho 40+40=80, duyệt APPROVED. AI calls=0 với barem sai."
+    },
+    {
+      "id": "R35-02",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/components/homework-auto-grader-tab.tsx:231"
+      ],
+      "proof": "Lưu lỗi rồi làm mới cùng file giữ chữ và cờ chưa lưu; xác nhận draftSeq mới xóa cờ."
+    },
+    {
+      "id": "R35-03",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/components/homework-auto-grader-tab.tsx:208",
+        "src/components/homework-auto-grader-tab.tsx:355"
+      ],
+      "proof": "Đổi sang buổi 2 khi chấm buổi 1: SUB2 hiện đúng và isLoadingSubs=false; không phát GET cũ làm vô hiệu lượt mới."
+    },
+    {
+      "id": "R35-04",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/lib/gemini/homework-grader.ts:618",
+        "src/lib/gemini/homework-grader.ts:710",
+        "src/app/api/homework-grader/download-and-grade/route.ts:231"
+      ],
+      "proof": "Stop ngăn SUB2; API success=false; chấm đơn gọi AI giả 1 lần, ghi 0 lần, trả TASK_CANCELLED."
+    },
+    {
+      "id": "R35-05",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/lib/playwright/download-submissions.ts:147"
+      ],
+      "proof": "Đọc bảng mới trước khi lọc: scrapeCalls=1 dù cache cũ chưa có bài. Bộ gốc cố ý dừng tại BrowserManager giả, chưa chứng minh tải thật."
+    },
+    {
+      "id": "R35-06",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/lib/file-parsers/game-reader.ts:25"
+      ],
+      "proof": "Giữ đủ toán hạng 1+2 và 100+200; ca vòng tham chiếu và sâu đều kết thúc có giới hạn."
+    },
+    {
+      "id": "R35-07",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/lib/file-parsers/game-reader.ts:623",
+        "src/lib/file-parsers/game-reader.ts:646"
+      ],
+      "proof": "GML hỏng làm PARSE_ERROR với tên Step_0.gml; YY JSON hỏng bị từ chối; gói hợp lệ vẫn đọc được."
+    },
+    {
+      "id": "R36-01",
+      "status": "CLOSED_SOURCE",
+      "source": [
+        "src/components/homework-auto-grader-tab.tsx:231",
+        "src/components/homework-auto-grader-tab.tsx:306",
+        "scripts/test-phase5.ts:686"
+      ],
+      "proof": "file-v2 thay nháp cũ, unsaved={} ngay lần làm mới đầu; approveResult=true, approvalCalls=1. Test Phase5 kiểm tra cả giữ nháp cùng file và Duyệt sau đổi file."
+    }
+  ],
+  "openFindings": [],
+  "changedSinceR36": {
+    "scripts/test-phase5.ts": "C009A17A052F9EA8955541B0A6F25D14D7C58A2FC9C214D1F4515DBB3DAD323C",
+    "src/components/homework-auto-grader-tab.tsx": "3BCBBA6F6EC50178F5F4B66EC75CFC05A47AF7703C4752D4837CE4864ABC80F0"
+  },
+  "integrity": {
+    "beforeCount": 1738,
+    "afterCount": 1738,
+    "unchanged": true,
+    "historicalRounds": "12..36",
+    "historicalFileCount": 1657,
+    "historicalUnchanged": true,
+    "nextEnvSha256": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+    "changed": [],
+    "added": [],
+    "deleted": [],
+    "planPriorBytesPreserved": true,
+    "planBeforeSha256": "0D68914A200C4251E681DAF8537CD9C71CE7371C7D44226F2A9F129C528487A3",
+    "planAfterSha256": "B38040137804DFBC3CB7F64D53C17A733A6C0510DEF1527554E9D4DC7BF6C1B4"
+  },
+  "cleanup": {
+    "completedAt": "2026-10-21T05:42:11.5354782Z",
+    "method": "Validated absolute TEMP paths and absence of reparse points; deleted junction nonrecursively with .NET Directory.Delete after Windows PowerShell Remove-Item raised NullReferenceException; recursive cleanup with native Remove-Item without Force",
+    "junctionRemovedBeforeRecursion": true,
+    "targets": [
+      {
+        "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+        "removed": true
+      },
+      {
+        "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-fixtures-QFd2gK",
+        "removed": true
+      },
+      {
+        "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-native-worker-8jHnB4",
+        "removed": true
+      }
+    ],
+    "snapshotAbsent": true,
+    "originalNodeModulesPresent": true,
+    "preexistingEsbuildPresent": true,
+    "initialForceCleanupRejectedByAutomaticReview": true,
+    "rejectionReason": "blocked by policy (no further reason supplied)",
+    "saferCleanupSucceeded": true
+  },
+  "snapshot": {
+    "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r36-check",
+    "copiedMatchingFiles": 1735,
+    "forbiddenFilesFound": [],
+    "nodeVersion": "v24.21.0",
+    "esbuildPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-esbuild.exe",
+    "esbuildSha256": "C7BEE37877D0AA6A046E52783FA0A2CF1A9CE5579D68BB3083BDA99D4BFF18EF"
+  },
+  "notChecked": [
+    "Real browser and React scheduling",
+    "Application build",
+    "Real LMS/Gemini/accounts/student data",
+    "Complete Phase 6/7 flow",
+    "Cancellation of already dispatched external AI requests"
+  ],
+  "productCodeEdited": false,
+  "historicalAuditFilesEdited": false,
+  "report": "docs/audits/round-37/REPORT.vi.md",
+  "regressionMatrix": "docs/audits/round-37/REGRESSION_MATRIX.md"
+}

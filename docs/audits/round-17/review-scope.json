@@ -1,0 +1,58 @@
+{
+  "generatedAt": "2026-10-20T05:31:28.025Z",
+  "sourceFiles": 58,
+  "protectedFiles": 111,
+  "changedSinceRound16": [
+    "MINDX_AUTOMATION_PLAN.md",
+    "scripts/test-phase4-codex-repros.ts",
+    "src/app/session-comments/page.tsx",
+    "src/lib/gemini/comment-generator.ts",
+    "src/lib/playwright/save-comments.ts",
+    "src/lib/playwright/scrape-scores.ts"
+  ],
+  "versions": {
+    "next": {
+      "original": "16.4.2",
+      "isolated": "16.4.2",
+      "manifestIdentical": true
+    },
+    "typescript": {
+      "original": "7.0.2",
+      "isolated": "7.0.2",
+      "manifestIdentical": true
+    },
+    "tsx": {
+      "original": "4.23.15",
+      "isolated": "4.23.15",
+      "manifestIdentical": true
+    },
+    "playwright": {
+      "original": "1.64.1",
+      "isolated": "1.64.1",
+      "manifestIdentical": true
+    },
+    "better-sqlite3": {
+      "original": "13.0.3",
+      "isolated": "13.0.3",
+      "manifestIdentical": true
+    },
+    "react": {
+      "original": "19.3.1",
+      "isolated": "19.3.1",
+      "manifestIdentical": true
+    },
+    "xlsx": {
+      "original": "0.18.5",
+      "isolated": "0.18.5",
+      "manifestIdentical": true
+    }
+  },
+  "browserBundleScan": {
+    "checkedFiles": 14,
+    "variableNames": "TEACHING_PASSWORD|LMS_PASSWORD|MINDX_PASSWORD|GEMINI_API_KEY",
+    "hitFiles": [],
+    "limitation": "Only known sensitive variable names were checked; no real credentials copied or loaded."
+  },
+  "historicalReportsUsedAsIndexOnly": true,
+  "newCommandResultsRequiredForVerdict": true
+}

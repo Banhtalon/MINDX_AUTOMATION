@@ -1,0 +1,8 @@
+{
+  "label": "05-adversarial",
+  "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-38/adversarial.mjs",
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+  "exitCode": 1,
+  "seconds": 6.75,
+  "log": "05-adversarial.log"
+}

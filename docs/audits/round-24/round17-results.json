@@ -1,0 +1,493 @@
+{
+  "generatedAt": "2026-10-20T12:39:28.449Z",
+  "passed": 38,
+  "failed": 0,
+  "results": [
+    {
+      "id": "R16-03-zero-DRAFT-false",
+      "criterion": "Version zero is not permission to overwrite a newer row",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "status": "DRAFT",
+        "text": "PRESERVED TEXT",
+        "staleIgnored": true
+      }
+    },
+    {
+      "id": "R16-03-zero-DRAFT-true",
+      "criterion": "Version zero is not permission to overwrite a newer row",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "status": "DRAFT",
+        "text": "PRESERVED TEXT",
+        "staleIgnored": true
+      }
+    },
+    {
+      "id": "R16-03-zero-APPROVED-false",
+      "criterion": "Version zero is not permission to overwrite a newer row",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "status": "APPROVED",
+        "text": "PRESERVED TEXT",
+        "staleIgnored": true
+      }
+    },
+    {
+      "id": "R16-03-zero-APPROVED-true",
+      "criterion": "Version zero is not permission to overwrite a newer row",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "status": "APPROVED",
+        "text": "PRESERVED TEXT",
+        "staleIgnored": true
+      }
+    },
+    {
+      "id": "R16-03-zero-VERIFIED-false",
+      "criterion": "Version zero is not permission to overwrite a newer row",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "status": "VERIFIED",
+        "text": "PRESERVED TEXT",
+        "staleIgnored": true
+      }
+    },
+    {
+      "id": "R16-03-zero-VERIFIED-true",
+      "criterion": "Version zero is not permission to overwrite a newer row",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "status": "VERIFIED",
+        "text": "PRESERVED TEXT",
+        "staleIgnored": true
+      }
+    },
+    {
+      "id": "R17-01-APPROVED-false",
+      "criterion": "Approved or verified row is protected before every AI write branch",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "initialStatus": "APPROVED",
+        "tags": false,
+        "afterStatus": "APPROVED",
+        "afterText": "APPROVED TEACHER TEXT",
+        "afterHash": "f2299773ded8c4a12f5dc99af8ce713017b0a97dc50222a0ad716ab8624da2bc",
+        "result": "APPROVED"
+      }
+    },
+    {
+      "id": "R17-01-APPROVED-true",
+      "criterion": "Approved or verified row is protected before every AI write branch",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "initialStatus": "APPROVED",
+        "tags": true,
+        "afterStatus": "APPROVED",
+        "afterText": "APPROVED TEACHER TEXT",
+        "afterHash": "f2299773ded8c4a12f5dc99af8ce713017b0a97dc50222a0ad716ab8624da2bc",
+        "result": "APPROVED"
+      }
+    },
+    {
+      "id": "R17-01-VERIFIED-false",
+      "criterion": "Approved or verified row is protected before every AI write branch",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "initialStatus": "VERIFIED",
+        "tags": false,
+        "afterStatus": "VERIFIED",
+        "afterText": "APPROVED TEACHER TEXT",
+        "afterHash": "f2299773ded8c4a12f5dc99af8ce713017b0a97dc50222a0ad716ab8624da2bc",
+        "result": "VERIFIED"
+      }
+    },
+    {
+      "id": "R17-01-VERIFIED-true",
+      "criterion": "Approved or verified row is protected before every AI write branch",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "initialStatus": "VERIFIED",
+        "tags": true,
+        "afterStatus": "VERIFIED",
+        "afterText": "APPROVED TEACHER TEXT",
+        "afterHash": "f2299773ded8c4a12f5dc99af8ce713017b0a97dc50222a0ad716ab8624da2bc",
+        "result": "VERIFIED"
+      }
+    },
+    {
+      "id": "R17-02-insufficient-response",
+      "criterion": "No-information response preserves the same existing draft that SQLite preserves",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "storedText": "TEACHER DRAFT TO PRESERVE",
+        "returnedText": "TEACHER DRAFT TO PRESERVE",
+        "storedStrengths": "old strength",
+        "returnedStrengths": "old strength"
+      }
+    },
+    {
+      "id": "R17-02-ui",
+      "criterion": "Actual page retains all prior comment sections after no-information generation",
+      "pass": true,
+      "observation": {
+        "afterGenerate": {
+          "visibleText": "TEACHER DRAFT TO PRESERVE",
+          "storedText": "TEACHER DRAFT TO PRESERVE",
+          "visibleImprovement": "old improvement",
+          "storedImprovement": "old improvement"
+        },
+        "status": "INSUFFICIENT_INFO",
+        "storedTextPreserved": true
+      }
+    },
+    {
+      "id": "R17-03-complete-control",
+      "criterion": "Complete network roster remains supported",
+      "pass": true,
+      "observation": {
+        "success": true,
+        "rows": 2,
+        "writes": 1,
+        "cachedRows": 2,
+        "cacheUnchanged": false,
+        "rosterRows": 2
+      }
+    },
+    {
+      "id": "R17-03-partial-network",
+      "criterion": "Missing inactive student in GraphQL must preserve complete cache",
+      "pass": true,
+      "observation": {
+        "success": false,
+        "rows": 0,
+        "writes": 0,
+        "cachedRows": 2,
+        "cacheUnchanged": true,
+        "rosterRows": 2,
+        "error": "Dữ liệu GraphQL trả về số học viên (1) ít hơn danh sách học viên đã đồng bộ của lớp (2)."
+      }
+    },
+    {
+      "id": "R16-05-control-PRESENT",
+      "criterion": "Eligible approved comment saves normally",
+      "pass": true,
+      "observation": {
+        "writes": 1,
+        "verified": 1,
+        "status": "VERIFIED",
+        "text": "old final",
+        "attendance": "PRESENT",
+        "changed": false
+      }
+    },
+    {
+      "id": "R16-05-control-LATE",
+      "criterion": "Eligible approved comment saves normally",
+      "pass": true,
+      "observation": {
+        "writes": 1,
+        "verified": 1,
+        "status": "VERIFIED",
+        "text": "old final",
+        "attendance": "LATE",
+        "changed": false
+      }
+    },
+    {
+      "id": "R16-05-editor-absent",
+      "criterion": "Drift blocks outgoing Save and preserves DRAFT",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0,
+        "status": "DRAFT",
+        "text": "old final",
+        "attendance": "ABSENT",
+        "changed": true
+      }
+    },
+    {
+      "id": "R16-05-editor-unknown",
+      "criterion": "Drift blocks outgoing Save and preserves DRAFT",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0,
+        "status": "DRAFT",
+        "text": "old final",
+        "attendance": "UNKNOWN",
+        "changed": true
+      }
+    },
+    {
+      "id": "R16-05-editor-inactive",
+      "criterion": "Drift blocks outgoing Save and preserves DRAFT",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0,
+        "status": "DRAFT",
+        "text": "old final",
+        "attendance": "PRESENT",
+        "changed": true
+      }
+    },
+    {
+      "id": "R16-05-editor-text",
+      "criterion": "Drift blocks outgoing Save and preserves DRAFT",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0,
+        "status": "DRAFT",
+        "text": "LATEST DRAFT",
+        "attendance": "PRESENT",
+        "changed": true
+      }
+    },
+    {
+      "id": "R16-05-editor-note",
+      "criterion": "Drift blocks outgoing Save and preserves DRAFT",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0,
+        "status": "DRAFT",
+        "text": "old final",
+        "attendance": "PRESENT",
+        "changed": true
+      }
+    },
+    {
+      "id": "R16-05-toast-absent",
+      "criterion": "Drift blocks outgoing Save and preserves DRAFT",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0,
+        "status": "DRAFT",
+        "text": "old final",
+        "attendance": "ABSENT",
+        "changed": true
+      }
+    },
+    {
+      "id": "R16-05-toast-unknown",
+      "criterion": "Drift blocks outgoing Save and preserves DRAFT",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0,
+        "status": "DRAFT",
+        "text": "old final",
+        "attendance": "UNKNOWN",
+        "changed": true
+      }
+    },
+    {
+      "id": "R16-05-toast-inactive",
+      "criterion": "Drift blocks outgoing Save and preserves DRAFT",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0,
+        "status": "DRAFT",
+        "text": "old final",
+        "attendance": "PRESENT",
+        "changed": true
+      }
+    },
+    {
+      "id": "R16-05-toast-text",
+      "criterion": "Drift blocks outgoing Save and preserves DRAFT",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0,
+        "status": "DRAFT",
+        "text": "LATEST DRAFT",
+        "attendance": "PRESENT",
+        "changed": true
+      }
+    },
+    {
+      "id": "R16-05-toast-note",
+      "criterion": "Drift blocks outgoing Save and preserves DRAFT",
+      "pass": true,
+      "observation": {
+        "writes": 0,
+        "verified": 0,
+        "status": "DRAFT",
+        "text": "old final",
+        "attendance": "PRESENT",
+        "changed": true
+      }
+    },
+    {
+      "id": "R16-05-after-click",
+      "criterion": "Post-write drift must still prevent VERIFIED",
+      "pass": true,
+      "observation": {
+        "writes": 1,
+        "verified": 0,
+        "status": "DRAFT",
+        "text": "old final",
+        "attendance": "ABSENT",
+        "changed": true
+      }
+    },
+    {
+      "id": "R16-04-detail",
+      "criterion": "Conflict returns false, retains input, reads correct scope and shows stored value",
+      "pass": true,
+      "observation": {
+        "ok": false,
+        "storedNote": "FIRST TAB SAVED NOTE",
+        "visibleNote": "SECOND TAB UNSAVED NOTE",
+        "message": {
+          "type": "error",
+          "text": "Xung đột phiên bản: Dữ liệu của học viên 'Audit S1' đã được cập nhật ở tab hoặc phiên khác (Bản đã lưu: \"FIRST TAB SAVED NOTE\"). Bản vừa nhập chưa được lưu và đang được giữ trên màn hình để so sánh."
+        },
+        "reread": "/api/session-comments/list?classId=VT-C4K-GA38&sessionId=VT-C4K-GA38_SESS_01"
+      }
+    },
+    {
+      "id": "R17-04-tags-conflict",
+      "criterion": "Quick-tag conflict shows the actual stored tags for comparison",
+      "pass": true,
+      "observation": {
+        "storedTags": "[\"SAVED_TAG_A\"]",
+        "visibleTags": [
+          "UNSAVED_TAG_B"
+        ],
+        "message": {
+          "type": "error",
+          "text": "Xung đột phiên bản: Dữ liệu của học viên 'Audit S1' đã được cập nhật ở tab hoặc phiên khác (Bản đã lưu: \"SAVED_TAG_A\"). Bản vừa nhập chưa được lưu và đang được giữ trên màn hình để so sánh."
+        }
+      }
+    },
+    {
+      "id": "R16-01-02-DOM-0-false",
+      "criterion": "Full DOM worker collects active and inactive students",
+      "pass": true,
+      "observation": {
+        "success": true,
+        "rows": 2,
+        "writes": 1,
+        "cacheUnchanged": false,
+        "cachedRows": 2
+      }
+    },
+    {
+      "id": "R16-01-02-DOM-0-true",
+      "criterion": "Full DOM worker collects active and inactive students",
+      "pass": true,
+      "observation": {
+        "success": true,
+        "rows": 2,
+        "writes": 1,
+        "cacheUnchanged": false,
+        "cachedRows": 2
+      }
+    },
+    {
+      "id": "R16-01-02-DOM-100-false",
+      "criterion": "Full DOM worker collects active and inactive students",
+      "pass": true,
+      "observation": {
+        "success": true,
+        "rows": 2,
+        "writes": 1,
+        "cacheUnchanged": false,
+        "cachedRows": 2
+      }
+    },
+    {
+      "id": "R16-01-02-DOM-100-true",
+      "criterion": "Full DOM worker collects active and inactive students",
+      "pass": true,
+      "observation": {
+        "success": true,
+        "rows": 2,
+        "writes": 1,
+        "cacheUnchanged": false,
+        "cachedRows": 2
+      }
+    },
+    {
+      "id": "R16-01-02-DOM-650-false",
+      "criterion": "Full DOM worker collects active and inactive students",
+      "pass": true,
+      "observation": {
+        "success": true,
+        "rows": 2,
+        "writes": 1,
+        "cacheUnchanged": false,
+        "cachedRows": 2
+      }
+    },
+    {
+      "id": "R16-01-02-DOM-650-true",
+      "criterion": "Full DOM worker collects active and inactive students",
+      "pass": true,
+      "observation": {
+        "success": true,
+        "rows": 2,
+        "writes": 1,
+        "cacheUnchanged": false,
+        "cachedRows": 2
+      }
+    },
+    {
+      "id": "R16-02-preserve-missingNext",
+      "criterion": "Incomplete or stalled DOM pagination preserves cache byte for byte",
+      "pass": true,
+      "observation": {
+        "success": false,
+        "rows": 0,
+        "writes": 0,
+        "cacheUnchanged": true,
+        "cachedRows": 2,
+        "error": "Cào bảng điểm DOM trả về ít học viên (1) hơn danh sách học viên của lớp (2)."
+      }
+    },
+    {
+      "id": "R16-02-preserve-emptyFinal",
+      "criterion": "Incomplete or stalled DOM pagination preserves cache byte for byte",
+      "pass": true,
+      "observation": {
+        "success": false,
+        "rows": 0,
+        "writes": 0,
+        "cacheUnchanged": true,
+        "cachedRows": 2,
+        "error": "Phân trang bảng điểm DOM của lớp VT-C4K-GA38 bị trống tại trang 2 khi chuyển trang, chưa thu thập đủ toàn bộ học viên."
+      }
+    },
+    {
+      "id": "R16-02-preserve-stalled",
+      "criterion": "Incomplete or stalled DOM pagination preserves cache byte for byte",
+      "pass": true,
+      "observation": {
+        "success": false,
+        "rows": 0,
+        "writes": 0,
+        "cacheUnchanged": true,
+        "cachedRows": 2,
+        "error": "Dữ liệu bảng điểm DOM không khớp hoặc mơ hồ với danh sách lớp 'VT-C4K-GA38': Không thể xác thực định danh duy nhất cho học viên 'Audit page 0'."
+      }
+    }
+  ]
+}

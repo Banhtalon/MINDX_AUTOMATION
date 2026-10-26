@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { assertPathAllowed } from "../security/path-allowlist";
 
 let dbInstance: Database.Database | null = null;
 
@@ -30,12 +31,12 @@ export function getDb(): Database.Database {
     return dbInstance;
   }
 
-  const dataDir = path.resolve(process.cwd(), "data");
+  const dataDir = assertPathAllowed(path.resolve(process.cwd(), "data"));
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
-  const dbPath = path.join(dataDir, "mindx_bot.db");
+  const dbPath = assertPathAllowed(path.join(dataDir, "mindx_bot.db"));
   const db = new Database(dbPath);
 
   // Performance & safety pragmas
@@ -89,7 +90,7 @@ function initSchema(db: Database.Database) {
       classId TEXT NOT NULL,
       sessionId TEXT NOT NULL,
       studentId TEXT NOT NULL,
-      attendanceStatus TEXT NOT NULL DEFAULT 'PRESENT',
+      attendanceStatus TEXT NOT NULL DEFAULT 'UNKNOWN',
       quickTagsJson TEXT DEFAULT '[]',
       teacherNote TEXT DEFAULT '',
       strengths TEXT DEFAULT '',
@@ -100,6 +101,7 @@ function initSchema(db: Database.Database) {
       status TEXT NOT NULL DEFAULT 'DRAFT',
       verifiedAt TEXT DEFAULT NULL,
       errorMessage TEXT DEFAULT NULL,
+      versionMetaJson TEXT DEFAULT '{}',
       createdAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       UNIQUE(classId, sessionId, studentId)
@@ -152,11 +154,59 @@ function initSchema(db: Database.Database) {
       status TEXT NOT NULL DEFAULT 'DRAFT',
       verifiedAt TEXT DEFAULT NULL,
       errorMessage TEXT DEFAULT NULL,
+      draftSeq INTEGER NOT NULL DEFAULT 0,
+      sessionResultsJson TEXT DEFAULT '{}',
+      baseProjectTitle TEXT DEFAULT '',
+      hasLegacyUnknownSessionHistory INTEGER NOT NULL DEFAULT 0,
+      legacyHistoryMetaJson TEXT DEFAULT '{}',
+      historyCorrupted INTEGER NOT NULL DEFAULT 0,
+      historyCorruptedReason TEXT DEFAULT NULL,
+      approvedSessionNumber INTEGER DEFAULT NULL,
       createdAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       UNIQUE(classId, studentId)
     );
     CREATE INDEX IF NOT EXISTS idx_spck_uploads_lookup ON spck_uploads(classId, studentId);
+
+    -- 5b. spck_session_submissions (v2.7.0 per-session draft, approval & submission snapshot)
+    CREATE TABLE IF NOT EXISTS spck_session_submissions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      classId TEXT NOT NULL,
+      studentId TEXT NOT NULL,
+      sessionNumber INTEGER NOT NULL,
+      stageNumber INTEGER NOT NULL DEFAULT 1,
+      localFolderPath TEXT DEFAULT '',
+      isConfirmedByTeacher INTEGER NOT NULL DEFAULT 0,
+      projectTitle TEXT DEFAULT '',
+      thumbnailPath TEXT DEFAULT '',
+      screenshotsJson TEXT DEFAULT '[]',
+      attachmentsJson TEXT DEFAULT '[]',
+      youtubeUrlsJson TEXT DEFAULT '[]',
+      relatedLinksJson TEXT DEFAULT '[]',
+      teacherComment TEXT DEFAULT '',
+      teacherNote TEXT DEFAULT '',
+      quickTagsJson TEXT DEFAULT '[]',
+      draftVersion INTEGER NOT NULL DEFAULT 1,
+      isDraftInitialized INTEGER NOT NULL DEFAULT 1,
+      draftStatus TEXT NOT NULL DEFAULT 'DRAFT',
+      approvedContentHash TEXT DEFAULT '',
+      approvedSnapshotJson TEXT DEFAULT '{}',
+      approvedAt TEXT DEFAULT NULL,
+      lastAttemptStatus TEXT DEFAULT NULL,
+      lastAttemptHash TEXT DEFAULT '',
+      lastAttemptAt TEXT DEFAULT NULL,
+      lastErrorMessage TEXT DEFAULT NULL,
+      lastVerifiedHash TEXT DEFAULT '',
+      lastVerifiedAt TEXT DEFAULT NULL,
+      lastVerifiedLmsWorkId TEXT DEFAULT NULL,
+      lastVerifiedSnapshotJson TEXT DEFAULT '{}',
+      missingLegacySnapshot INTEGER NOT NULL DEFAULT 0,
+      createdAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(classId, studentId, sessionNumber)
+    );
+    CREATE INDEX IF NOT EXISTS idx_spck_session_submissions_lookup
+      ON spck_session_submissions(classId, studentId, sessionNumber);
 
     -- 6. job_logs
     CREATE TABLE IF NOT EXISTS job_logs (
@@ -173,7 +223,58 @@ function initSchema(db: Database.Database) {
       timestamp TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     );
     CREATE INDEX IF NOT EXISTS idx_job_logs_job ON job_logs(jobId, timestamp);
+
+    -- 7. score_matrix_cache
+    CREATE TABLE IF NOT EXISTS score_matrix_cache (
+      classId TEXT PRIMARY KEY,
+      matrixJson TEXT NOT NULL DEFAULT '{}',
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+
+    -- 8. homework_submission_meta
+    CREATE TABLE IF NOT EXISTS homework_submission_meta (
+      submissionId TEXT PRIMARY KEY,
+      gradedFileHash TEXT NOT NULL DEFAULT '',
+      draftSeq INTEGER NOT NULL DEFAULT 0,
+      fieldSeqJson TEXT NOT NULL DEFAULT '{}'
+    );
   `);
+
+  try {
+    const cols = db.prepare(`PRAGMA table_info(session_feedbacks)`).all() as Array<{ name: string }>;
+    if (cols.length > 0 && !cols.some((c) => c.name === "versionMetaJson")) {
+      db.exec(`ALTER TABLE session_feedbacks ADD COLUMN versionMetaJson TEXT DEFAULT '{}'`);
+    }
+  } catch {}
+
+  try {
+    const spckCols = db.prepare(`PRAGMA table_info(spck_uploads)`).all() as Array<{ name: string }>;
+    if (spckCols.length > 0 && !spckCols.some((c) => c.name === "draftSeq")) {
+      db.exec(`ALTER TABLE spck_uploads ADD COLUMN draftSeq INTEGER NOT NULL DEFAULT 0`);
+    }
+    if (spckCols.length > 0 && !spckCols.some((c) => c.name === "sessionResultsJson")) {
+      db.exec(`ALTER TABLE spck_uploads ADD COLUMN sessionResultsJson TEXT DEFAULT '{}'`);
+    }
+    if (spckCols.length > 0 && !spckCols.some((c) => c.name === "baseProjectTitle")) {
+      db.exec(`ALTER TABLE spck_uploads ADD COLUMN baseProjectTitle TEXT DEFAULT ''`);
+    }
+    if (spckCols.length > 0 && !spckCols.some((c) => c.name === "hasLegacyUnknownSessionHistory")) {
+      db.exec(`ALTER TABLE spck_uploads ADD COLUMN hasLegacyUnknownSessionHistory INTEGER NOT NULL DEFAULT 0`);
+    }
+    if (spckCols.length > 0 && !spckCols.some((c) => c.name === "legacyHistoryMetaJson")) {
+      db.exec(`ALTER TABLE spck_uploads ADD COLUMN legacyHistoryMetaJson TEXT DEFAULT '{}'`);
+    }
+    if (spckCols.length > 0 && !spckCols.some((c) => c.name === "historyCorrupted")) {
+      db.exec(`ALTER TABLE spck_uploads ADD COLUMN historyCorrupted INTEGER NOT NULL DEFAULT 0`);
+    }
+    if (spckCols.length > 0 && !spckCols.some((c) => c.name === "historyCorruptedReason")) {
+      db.exec(`ALTER TABLE spck_uploads ADD COLUMN historyCorruptedReason TEXT DEFAULT NULL`);
+    }
+    if (spckCols.length > 0 && !spckCols.some((c) => c.name === "approvedSessionNumber")) {
+      db.exec(`ALTER TABLE spck_uploads ADD COLUMN approvedSessionNumber INTEGER DEFAULT NULL`);
+    }
+    migrateSpckSessionSubmissions(db);
+  } catch {}
 }
 
 // ==========================================
@@ -233,6 +334,26 @@ export interface StudentRecord {
 export const studentRepo = {
   upsert(record: StudentRecord) {
     const db = getDb();
+    const existing = db
+      .prepare(`SELECT fullName FROM students WHERE classId = ? AND studentId = ?`)
+      .get(record.classId, record.studentId) as { fullName: string } | undefined;
+
+    if (existing && /^STU_/i.test(record.studentId)) {
+      const norm = (s: string) =>
+        s
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[đĐ]/g, "d")
+          .toLowerCase()
+          .replace(/\s+/g, " ")
+          .trim();
+      if (norm(existing.fullName) !== norm(record.fullName)) {
+        throw new Error(
+          `[studentRepo] Chặn gán lại mã định danh tạm thời '${record.studentId}' của học viên '${existing.fullName}' sang học viên khác ('${record.fullName}') trong lớp ${record.classId}.`
+        );
+      }
+    }
+
     const stmt = db.prepare(`
       INSERT INTO students (studentId, classId, fullName, isActive, avatarUrl, updatedAt)
       VALUES (@studentId, @classId, @fullName, @isActive, @avatarUrl, datetime('now', 'localtime'))
@@ -259,18 +380,54 @@ export const studentRepo = {
     return db.prepare(query).all(classId) as StudentRecord[];
   },
 
-  findOne(studentId: string): StudentRecord | undefined {
+  findOne(studentId: string, classId?: string): StudentRecord | undefined {
+    const normalizedClassId = typeof classId === "string" ? classId.trim().toUpperCase() : "";
+    const normalizedStudentId = typeof studentId === "string" ? studentId.trim() : "";
+    if (!normalizedClassId || !normalizedStudentId) {
+      return undefined;
+    }
     const db = getDb();
-    return db.prepare(`SELECT * FROM students WHERE studentId = ?`).get(studentId) as StudentRecord | undefined;
+    return db
+      .prepare(`SELECT * FROM students WHERE classId = ? AND studentId = ?`)
+      .get(normalizedClassId, normalizedStudentId) as StudentRecord | undefined;
   },
 };
+
+export interface FieldVersionMeta {
+  ver: number;
+  cid: string;
+  rev: number;
+}
+
+export interface FeedbackVersionMeta {
+  rowVer: number;
+  fields: Record<string, FieldVersionMeta>;
+}
+
+export function parseFeedbackVersionMeta(raw?: string | null): FeedbackVersionMeta {
+  if (!raw || typeof raw !== "string") {
+    return { rowVer: 0, fields: {} };
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    const rowVer =
+      typeof parsed?.rowVer === "number" && Number.isFinite(parsed.rowVer) ? parsed.rowVer : 0;
+    const fields =
+      parsed?.fields && typeof parsed.fields === "object" && !Array.isArray(parsed.fields)
+        ? { ...parsed.fields }
+        : {};
+    return { rowVer, fields };
+  } catch {
+    return { rowVer: 0, fields: {} };
+  }
+}
 
 export interface SessionFeedbackRecord {
   id?: number;
   classId: string;
   sessionId: string;
   studentId: string;
-  attendanceStatus?: "PRESENT" | "ABSENT" | "EXCUSED" | "LATE";
+  attendanceStatus?: "PRESENT" | "ABSENT" | "EXCUSED" | "LATE" | "UNKNOWN";
   quickTagsJson?: string;
   teacherNote?: string;
   strengths?: string;
@@ -281,6 +438,7 @@ export interface SessionFeedbackRecord {
   status: "INSUFFICIENT_INFO" | "DRAFT" | "APPROVED" | "SAVING" | "VERIFIED" | "FAILED";
   verifiedAt?: string | null;
   errorMessage?: string | null;
+  versionMetaJson?: string;
 }
 
 export const sessionFeedbackRepo = {
@@ -290,10 +448,16 @@ export const sessionFeedbackRepo = {
     // Check for content modification on previously APPROVED / VERIFIED records
     const existing = db
       .prepare(
-        `SELECT status, contentHash, finalText FROM session_feedbacks WHERE classId = ? AND sessionId = ? AND studentId = ?`
+        `SELECT status, contentHash, finalText, attendanceStatus, versionMetaJson FROM session_feedbacks WHERE classId = ? AND sessionId = ? AND studentId = ?`
       )
       .get(record.classId, record.sessionId, record.studentId) as
-      | { status: string; contentHash: string; finalText: string }
+      | {
+          status: string;
+          contentHash: string;
+          finalText: string;
+          attendanceStatus: string;
+          versionMetaJson?: string;
+        }
       | undefined;
 
     let targetStatus = record.status || "DRAFT";
@@ -313,16 +477,25 @@ export const sessionFeedbackRepo = {
       }
     }
 
+    let targetVersionMetaJson = record.versionMetaJson;
+    if (targetVersionMetaJson === undefined) {
+      const prevMeta = parseFeedbackVersionMeta(existing?.versionMetaJson);
+      targetVersionMetaJson = JSON.stringify({
+        rowVer: (prevMeta.rowVer || 0) + 1,
+        fields: {},
+      });
+    }
+
     const stmt = db.prepare(`
       INSERT INTO session_feedbacks (
         classId, sessionId, studentId, attendanceStatus,
         quickTagsJson, teacherNote, strengths, improvements, actionPlan,
-        finalText, contentHash, status, verifiedAt, errorMessage, updatedAt
+        finalText, contentHash, status, verifiedAt, errorMessage, versionMetaJson, updatedAt
       )
       VALUES (
         @classId, @sessionId, @studentId, @attendanceStatus,
         @quickTagsJson, @teacherNote, @strengths, @improvements, @actionPlan,
-        @finalText, @contentHash, @status, @verifiedAt, @errorMessage, datetime('now', 'localtime')
+        @finalText, @contentHash, @status, @verifiedAt, @errorMessage, @versionMetaJson, datetime('now', 'localtime')
       )
       ON CONFLICT(classId, sessionId, studentId) DO UPDATE SET
         attendanceStatus = excluded.attendanceStatus,
@@ -336,13 +509,14 @@ export const sessionFeedbackRepo = {
         status = excluded.status,
         verifiedAt = excluded.verifiedAt,
         errorMessage = excluded.errorMessage,
+        versionMetaJson = excluded.versionMetaJson,
         updatedAt = datetime('now', 'localtime')
     `);
     return stmt.run({
       classId: record.classId,
       sessionId: record.sessionId,
       studentId: record.studentId,
-      attendanceStatus: record.attendanceStatus || "PRESENT",
+      attendanceStatus: record.attendanceStatus || existing?.attendanceStatus || "UNKNOWN",
       quickTagsJson: record.quickTagsJson ?? "[]",
       teacherNote: record.teacherNote ?? "",
       strengths: record.strengths ?? "",
@@ -353,7 +527,137 @@ export const sessionFeedbackRepo = {
       status: targetStatus,
       verifiedAt: record.verifiedAt ?? null,
       errorMessage: record.errorMessage ?? null,
+      versionMetaJson: targetVersionMetaJson,
     });
+  },
+
+  approveConditional(params: {
+    classId: string;
+    sessionId: string;
+    studentId: string;
+    attendanceStatus: "PRESENT" | "LATE";
+    finalText: string;
+    contentHash: string;
+    expectedRowVer?: number | null;
+    clientInstanceId?: string;
+    clientRev?: number;
+  }): { approved: boolean; conflict?: boolean; reason?: string; versionMeta?: FeedbackVersionMeta } {
+    const db = getDb();
+    const runTx = () => {
+      const existing = db
+        .prepare(
+          `SELECT status, contentHash, finalText, attendanceStatus, quickTagsJson, teacherNote, strengths, improvements, actionPlan, versionMetaJson
+           FROM session_feedbacks
+           WHERE classId = ? AND sessionId = ? AND studentId = ?`
+        )
+        .get(params.classId, params.sessionId, params.studentId) as
+        | (SessionFeedbackRecord & { versionMetaJson?: string })
+        | undefined;
+
+      const meta = parseFeedbackVersionMeta(existing?.versionMetaJson);
+      const hasExpectedRowVer =
+        typeof params.expectedRowVer === "number" &&
+        Number.isFinite(params.expectedRowVer) &&
+        params.expectedRowVer > 0;
+      const hasClientRev =
+        typeof params.clientRev === "number" && Number.isFinite(params.clientRev) && params.clientRev > 0;
+      const hasClientCid = Boolean(params.clientInstanceId && params.clientInstanceId.trim());
+
+      if (existing) {
+        if (hasExpectedRowVer && meta.rowVer !== params.expectedRowVer) {
+          return { approved: false, conflict: true, reason: "ROW_VERSION_CONFLICT", versionMeta: meta };
+        }
+        if (hasClientCid || hasClientRev) {
+          for (const fEntry of Object.values(meta.fields)) {
+            if (!fEntry) continue;
+            if (hasClientCid && fEntry.cid === params.clientInstanceId && fEntry.rev > (params.clientRev || 0)) {
+              return { approved: false, conflict: true, reason: "NEWER_CLIENT_EDIT", versionMeta: meta };
+            }
+            if (hasClientCid && fEntry.cid && fEntry.cid !== params.clientInstanceId && fEntry.ver > 0) {
+              if (!hasExpectedRowVer || meta.rowVer !== params.expectedRowVer) {
+                return { approved: false, conflict: true, reason: "OTHER_CLIENT_EDIT", versionMeta: meta };
+              }
+            }
+          }
+        }
+        const finalTextEditedByUiClient = Boolean(
+          meta.fields?.finalText && meta.fields.finalText.cid && meta.fields.finalText.rev > 0
+        );
+        if (
+          (hasExpectedRowVer || hasClientCid || hasClientRev || finalTextEditedByUiClient) &&
+          (existing.finalText || "").trim() !== params.finalText.trim()
+        ) {
+          return { approved: false, conflict: true, reason: "FINAL_TEXT_DRIFT", versionMeta: meta };
+        }
+      }
+
+      const nextMeta: FeedbackVersionMeta = {
+        rowVer: (meta.rowVer || 0) + 1,
+        fields: { ...meta.fields },
+      };
+      const nextVersionMetaJson = JSON.stringify(nextMeta);
+
+      if (existing) {
+        const res = db
+          .prepare(`
+            UPDATE session_feedbacks
+            SET attendanceStatus = @attendanceStatus,
+                finalText = @finalText,
+                contentHash = @contentHash,
+                status = 'APPROVED',
+                errorMessage = NULL,
+                versionMetaJson = @versionMetaJson,
+                updatedAt = datetime('now', 'localtime')
+            WHERE classId = @classId
+              AND sessionId = @sessionId
+              AND studentId = @studentId
+              AND COALESCE(versionMetaJson, '') = @expectedVersionMetaJson
+              AND COALESCE(finalText, '') = @expectedExistingFinalText
+          `)
+          .run({
+            classId: params.classId,
+            sessionId: params.sessionId,
+            studentId: params.studentId,
+            attendanceStatus: params.attendanceStatus,
+            finalText: params.finalText,
+            contentHash: params.contentHash,
+            versionMetaJson: nextVersionMetaJson,
+            expectedVersionMetaJson: existing.versionMetaJson ?? "",
+            expectedExistingFinalText: existing.finalText ?? "",
+          });
+        if (res.changes === 0) {
+          return { approved: false, conflict: true, reason: "ATOMIC_CAS_FAILED", versionMeta: meta };
+        }
+      } else {
+        db.prepare(`
+          INSERT INTO session_feedbacks (
+            classId, sessionId, studentId, attendanceStatus,
+            quickTagsJson, teacherNote, strengths, improvements, actionPlan,
+            finalText, contentHash, status, verifiedAt, errorMessage, versionMetaJson, updatedAt
+          )
+          VALUES (
+            @classId, @sessionId, @studentId, @attendanceStatus,
+            '[]', '', '', '', '',
+            @finalText, @contentHash, 'APPROVED', NULL, NULL, @versionMetaJson, datetime('now', 'localtime')
+          )
+        `).run({
+          classId: params.classId,
+          sessionId: params.sessionId,
+          studentId: params.studentId,
+          attendanceStatus: params.attendanceStatus,
+          finalText: params.finalText,
+          contentHash: params.contentHash,
+          versionMetaJson: nextVersionMetaJson,
+        });
+      }
+
+      return { approved: true, versionMeta: nextMeta };
+    };
+
+    if (typeof (db as any).transaction === "function") {
+      return (db as any).transaction(runTx)();
+    }
+    return runTx();
   },
 
   findBySession(classId: string, sessionId: string): SessionFeedbackRecord[] {
@@ -376,9 +680,27 @@ export const sessionFeedbackRepo = {
     studentId: string,
     status: SessionFeedbackRecord["status"],
     verifiedAt?: string | null,
-    errorMessage?: string | null
+    errorMessage?: string | null,
+    expectedContentHash?: string | null
   ) {
     const db = getDb();
+    if (expectedContentHash !== undefined && expectedContentHash !== null) {
+      return db
+        .prepare(`
+          UPDATE session_feedbacks
+          SET status = ?, verifiedAt = ?, errorMessage = ?, updatedAt = datetime('now', 'localtime')
+          WHERE classId = ? AND sessionId = ? AND studentId = ? AND contentHash = ?
+        `)
+        .run(
+          status,
+          verifiedAt ?? null,
+          errorMessage ?? null,
+          classId,
+          sessionId,
+          studentId,
+          expectedContentHash
+        );
+    }
     return db
       .prepare(`
         UPDATE session_feedbacks
@@ -388,8 +710,17 @@ export const sessionFeedbackRepo = {
       .run(status, verifiedAt ?? null, errorMessage ?? null, classId, sessionId, studentId);
   },
 
-  markVerified(classId: string, sessionId: string, studentId: string) {
+  markVerified(classId: string, sessionId: string, studentId: string, expectedContentHash?: string | null) {
     const db = getDb();
+    if (expectedContentHash !== undefined && expectedContentHash !== null) {
+      return db
+        .prepare(`
+          UPDATE session_feedbacks
+          SET status = 'VERIFIED', verifiedAt = datetime('now', 'localtime'), errorMessage = NULL, updatedAt = datetime('now', 'localtime')
+          WHERE classId = ? AND sessionId = ? AND studentId = ? AND contentHash = ?
+        `)
+        .run(classId, sessionId, studentId, expectedContentHash);
+    }
     return db
       .prepare(`
         UPDATE session_feedbacks
@@ -422,6 +753,78 @@ export interface HomeworkSubmissionRecord {
   errorMessage?: string | null;
 }
 
+export function computeHomeworkContentHash(record: {
+  submissionId: string;
+  studentId: string;
+  classId: string;
+  sessionId: string;
+  fileHash?: string | null;
+  decision?: "GRADE" | "REDO" | string;
+  calculatedScore?: number | null;
+  teacherOverrideScore?: number | null;
+  criteriaGradesJson?: string | null;
+  feedbackHtml?: string | null;
+}): string {
+  const effectiveScore =
+    typeof record.teacherOverrideScore === "number" && Number.isFinite(record.teacherOverrideScore)
+      ? record.teacherOverrideScore
+      : Number(record.calculatedScore ?? 0);
+  const canonical = JSON.stringify({
+    submissionId: String(record.submissionId || "").trim(),
+    studentId: String(record.studentId || "").trim(),
+    classId: String(record.classId || "").trim().toUpperCase(),
+    sessionId: String(record.sessionId || "").trim(),
+    fileHash: String(record.fileHash ?? ""),
+    decision: record.decision === "REDO" ? "REDO" : "GRADE",
+    effectiveScore,
+    criteriaGradesJson: String(record.criteriaGradesJson ?? "[]"),
+    feedbackHtml: String(record.feedbackHtml ?? ""),
+  });
+  return calculateSha256(canonical);
+}
+
+export function verifyHomeworkContentIntegrity(record: HomeworkSubmissionRecord): boolean {
+  if (!record || !record.contentHash) return false;
+  const compositeHash = computeHomeworkContentHash(record);
+  return record.contentHash === compositeHash;
+}
+
+function attachGradedFileHash(
+  row: HomeworkSubmissionRecord | undefined
+): HomeworkSubmissionRecord | undefined {
+  if (!row) return row;
+  const db = getDb();
+  const meta = db
+    .prepare(
+      `SELECT gradedFileHash, draftSeq, fieldSeqJson FROM homework_submission_meta WHERE submissionId = ?`
+    )
+    .get(row.submissionId) as
+    | { gradedFileHash: string; draftSeq: number; fieldSeqJson: string }
+    | undefined;
+  const gHash = meta ? meta.gradedFileHash : row.fileHash ?? "";
+  const dSeq = meta?.draftSeq ?? 0;
+  const fSeqJson = meta?.fieldSeqJson ?? "{}";
+  Object.defineProperty(row, "_gradedFileHash", {
+    value: gHash,
+    enumerable: false,
+    configurable: true,
+  });
+  Object.defineProperty(row, "_draftSeq", {
+    value: dSeq,
+    enumerable: false,
+    configurable: true,
+  });
+  Object.defineProperty(row, "_fieldSeqJson", {
+    value: fSeqJson,
+    enumerable: false,
+    configurable: true,
+  });
+  if (dSeq > 0) {
+    (row as any).draftSeq = dSeq;
+  }
+  return row;
+}
+
 export const homeworkSubmissionRepo = {
   upsert(record: HomeworkSubmissionRecord) {
     const db = getDb();
@@ -429,7 +832,7 @@ export const homeworkSubmissionRepo = {
     // Strict ID integrity check: prevent reassigning submissionId to a different student, class, or session
     const existing = db
       .prepare(
-        `SELECT studentId, classId, sessionId, status, contentHash, feedbackHtml FROM homework_submissions WHERE submissionId = ?`
+        `SELECT studentId, classId, sessionId, status, contentHash, feedbackHtml, decision, calculatedScore, teacherOverrideScore, criteriaGradesJson, fileHash, parseStatus FROM homework_submissions WHERE submissionId = ?`
       )
       .get(record.submissionId) as
       | {
@@ -439,6 +842,12 @@ export const homeworkSubmissionRepo = {
           status: string;
           contentHash: string;
           feedbackHtml: string;
+          decision: string;
+          calculatedScore: number;
+          teacherOverrideScore: number | null;
+          criteriaGradesJson: string;
+          fileHash: string;
+          parseStatus: string;
         }
       | undefined;
 
@@ -456,17 +865,75 @@ export const homeworkSubmissionRepo = {
 
     let targetStatus = record.status || "PENDING";
     let targetHash = record.contentHash ?? "";
+    let targetVerifiedAt = record.verifiedAt ?? null;
 
     if (existing && (existing.status === "APPROVED" || existing.status === "VERIFIED")) {
       const feedbackChanged = (record.feedbackHtml ?? "") !== (existing.feedbackHtml ?? "");
-      if (feedbackChanged) {
-        const newHash = calculateSha256(record.feedbackHtml ?? "");
-        if (record.contentHash !== newHash) {
-          targetStatus = "WAITING_APPROVAL";
-          targetHash = newHash;
-        }
+      const scoreChanged = (record.calculatedScore ?? 0) !== (existing.calculatedScore ?? 0);
+      const overrideChanged =
+        (record.teacherOverrideScore ?? null) !== (existing.teacherOverrideScore ?? null);
+      const decisionChanged = (record.decision || "GRADE") !== (existing.decision || "GRADE");
+      const criteriaChanged =
+        (record.criteriaGradesJson ?? "[]") !== (existing.criteriaGradesJson ?? "[]");
+      const fileChanged = (record.fileHash ?? "") !== (existing.fileHash ?? "");
+      const parseChanged = (record.parseStatus || "PENDING") !== (existing.parseStatus || "PENDING");
+
+      const anyContentChanged =
+        feedbackChanged ||
+        scoreChanged ||
+        overrideChanged ||
+        decisionChanged ||
+        criteriaChanged ||
+        fileChanged ||
+        parseChanged;
+
+      const compositeHash = computeHomeworkContentHash(record);
+      if (anyContentChanged && (record.contentHash !== compositeHash || record.contentHash === existing.contentHash)) {
+        targetStatus = "WAITING_APPROVAL";
+        targetHash = "";
+        targetVerifiedAt = null;
       }
     }
+
+    if (targetStatus === "APPROVED" || targetStatus === "VERIFIED") {
+      const compositeHash = computeHomeworkContentHash(record);
+      if (targetHash !== compositeHash) {
+        targetStatus = "WAITING_APPROVAL";
+        targetHash = "";
+        targetVerifiedAt = null;
+      }
+    }
+
+    const existingMeta = db
+      .prepare(
+        `SELECT gradedFileHash, draftSeq, fieldSeqJson FROM homework_submission_meta WHERE submissionId = ?`
+      )
+      .get(record.submissionId) as
+      | { gradedFileHash: string; draftSeq: number; fieldSeqJson: string }
+      | undefined;
+
+    let nextGradedFileHash = existingMeta?.gradedFileHash ?? "";
+    if (!existing) {
+      nextGradedFileHash = String(record.fileHash ?? "");
+    } else if (
+      (record as any)._freshlyGraded ||
+      (record as any)._freshlyReviewed ||
+      targetStatus === "APPROVED" ||
+      targetStatus === "VERIFIED"
+    ) {
+      nextGradedFileHash = String(record.fileHash ?? "");
+    } else if (!existingMeta) {
+      nextGradedFileHash = String(existing.fileHash ?? "");
+    }
+
+    const nextDraftSeq =
+      typeof (record as any)._draftSeq === "number"
+        ? (record as any)._draftSeq
+        : existingMeta?.draftSeq ?? 0;
+    const nextFieldSeqJson =
+      typeof (record as any)._fieldSeqJson === "string"
+        ? (record as any)._fieldSeqJson
+        : existingMeta?.fieldSeqJson ?? "{}";
 
     const stmt = db.prepare(`
       INSERT INTO homework_submissions (
@@ -498,53 +965,433 @@ export const homeworkSubmissionRepo = {
         errorMessage = excluded.errorMessage,
         updatedAt = datetime('now', 'localtime')
     `);
-    return stmt.run({
-      classId: record.classId,
-      sessionId: record.sessionId,
-      studentId: record.studentId,
-      submissionId: record.submissionId,
-      originalFileName: record.originalFileName ?? "",
-      localFilePath: record.localFilePath ?? "",
-      fileHash: record.fileHash ?? "",
-      parseStatus: record.parseStatus || "PENDING",
-      parseErrorReason: record.parseErrorReason ?? null,
-      criteriaGradesJson: record.criteriaGradesJson ?? "[]",
-      calculatedScore: record.calculatedScore ?? 0,
-      teacherOverrideScore: record.teacherOverrideScore ?? null,
-      decision: record.decision || "GRADE",
-      feedbackHtml: record.feedbackHtml ?? "",
-      contentHash: targetHash,
-      status: targetStatus,
-      verifiedAt: record.verifiedAt ?? null,
-      errorMessage: record.errorMessage ?? null,
+    const metaStmt = db.prepare(`
+      INSERT INTO homework_submission_meta (submissionId, gradedFileHash, draftSeq, fieldSeqJson)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(submissionId) DO UPDATE SET
+        gradedFileHash = excluded.gradedFileHash,
+        draftSeq = excluded.draftSeq,
+        fieldSeqJson = excluded.fieldSeqJson
+    `);
+    const runAtomicUpsert = db.transaction(() => {
+      const res = stmt.run({
+        classId: record.classId,
+        sessionId: record.sessionId,
+        studentId: record.studentId,
+        submissionId: record.submissionId,
+        originalFileName: record.originalFileName ?? "",
+        localFilePath: record.localFilePath ?? "",
+        fileHash: record.fileHash ?? "",
+        parseStatus: record.parseStatus || "PENDING",
+        parseErrorReason: record.parseErrorReason ?? null,
+        criteriaGradesJson: record.criteriaGradesJson ?? "[]",
+        calculatedScore: record.calculatedScore ?? 0,
+        teacherOverrideScore: record.teacherOverrideScore ?? null,
+        decision: record.decision || "GRADE",
+        feedbackHtml: record.feedbackHtml ?? "",
+        contentHash: targetHash,
+        status: targetStatus,
+        verifiedAt: targetVerifiedAt,
+        errorMessage: record.errorMessage ?? null,
+      });
+      metaStmt.run(record.submissionId, nextGradedFileHash, nextDraftSeq, nextFieldSeqJson);
+      return res;
     });
+    return runAtomicUpsert();
   },
 
   findBySession(classId: string, sessionId: string): HomeworkSubmissionRecord[] {
     const db = getDb();
-    return db
+    const rows = db
       .prepare(`SELECT * FROM homework_submissions WHERE classId = ? AND sessionId = ?`)
       .all(classId, sessionId) as HomeworkSubmissionRecord[];
+    return rows.map((r) => attachGradedFileHash(r)!);
   },
 
   findBySubmissionId(submissionId: string): HomeworkSubmissionRecord | undefined {
     const db = getDb();
-    return db
+    const row = db
       .prepare(`SELECT * FROM homework_submissions WHERE submissionId = ?`)
       .get(submissionId) as HomeworkSubmissionRecord | undefined;
+    return attachGradedFileHash(row);
   },
 
-  markVerified(submissionId: string) {
+  markVerified(submissionId: string, expectedContentHash?: string) {
     const db = getDb();
+    const current = db
+      .prepare(`SELECT * FROM homework_submissions WHERE submissionId = ?`)
+      .get(submissionId) as HomeworkSubmissionRecord | undefined;
+
+    if (
+      !current ||
+      (current.status !== "APPROVED" && current.status !== "FAILED") ||
+      !verifyHomeworkContentIntegrity(current) ||
+      (expectedContentHash !== undefined && current.contentHash !== expectedContentHash)
+    ) {
+      return { changes: 0, lastInsertRowid: 0 };
+    }
+
     return db
       .prepare(`
         UPDATE homework_submissions
         SET status = 'VERIFIED', verifiedAt = datetime('now', 'localtime'), errorMessage = NULL, updatedAt = datetime('now', 'localtime')
-        WHERE submissionId = ?
+        WHERE submissionId = ? AND (status = 'APPROVED' OR status = 'FAILED') AND contentHash = ?
       `)
-      .run(submissionId);
+      .run(submissionId, current.contentHash);
   },
 };
+
+export type SpckSessionSlotNumber = 12 | 13 | 14;
+export type SpckSessionNumber = SpckSessionSlotNumber;
+export type SpckStageNumber = 1 | 2;
+export type SpckStageCode = "GĐ1" | "GĐ2";
+
+export interface SpckStageInfo {
+  sessionNumber: SpckSessionSlotNumber;
+  stageNumber: SpckStageNumber;
+  stageCode: SpckStageCode;
+  stageLabel: string;
+  fullBadgeLabel: string;
+  titleSuffix: string;
+}
+
+export function isValidSpckSessionSlot(raw: unknown): raw is SpckSessionSlotNumber {
+  const num = typeof raw === "string" && raw.trim() !== "" ? Number(raw.trim()) : raw;
+  return typeof num === "number" && Number.isInteger(num) && (num === 12 || num === 13 || num === 14);
+}
+
+export function parseSpckSessionSlotStrict(raw: unknown, contextLabel = "SPCK"): SpckSessionSlotNumber {
+  if (raw === undefined || raw === null || (typeof raw === "string" && raw.trim() === "")) {
+    throw new Error(`[${contextLabel}] Thiếu thông tin buổi nộp SPCK (sessionNumber bắt buộc là 12, 13 hoặc 14).`);
+  }
+  const num = typeof raw === "string" ? Number(raw.trim()) : raw;
+  if (typeof num !== "number" || !Number.isInteger(num) || (num !== 12 && num !== 13 && num !== 14)) {
+    throw new Error(
+      `[${contextLabel}] Buổi nộp SPCK không hợp lệ (${String(raw)}). Chỉ chấp nhận buổi 12, 13 hoặc 14.`
+    );
+  }
+  return num as SpckSessionSlotNumber;
+}
+
+export function getSpckStageInfo(rawSessionNumber: unknown, contextLabel = "SPCK"): SpckStageInfo {
+  const sessionNumber = parseSpckSessionSlotStrict(rawSessionNumber, contextLabel);
+  if (sessionNumber === 12 || sessionNumber === 13) {
+    return {
+      sessionNumber,
+      stageNumber: 1,
+      stageCode: "GĐ1",
+      stageLabel: "Giai đoạn 1",
+      fullBadgeLabel: `Buổi ${sessionNumber} — Giai đoạn 1`,
+      titleSuffix: ` — Buổi ${sessionNumber} (GĐ1)`,
+    };
+  }
+  return {
+    sessionNumber: 14,
+    stageNumber: 2,
+    stageCode: "GĐ2",
+    stageLabel: "Tổng kết cuối khóa",
+    fullBadgeLabel: "Buổi 14 — Tổng kết cuối khóa",
+    titleSuffix: "",
+  };
+}
+
+export function assertClassHasSpckSession(
+  classId: string,
+  rawSessionNumber: unknown,
+  contextLabel = "SPCK"
+): SpckStageInfo {
+  const stageInfo = getSpckStageInfo(rawSessionNumber, contextLabel);
+  const normalizedClassId = String(classId || "").trim().toUpperCase();
+  if (!normalizedClassId) {
+    throw new Error(`[${contextLabel}] Thiếu mã lớp (classId).`);
+  }
+  const classSessions = classSessionRepo.findByClass(normalizedClassId);
+  if (
+    classSessions.length > 0 &&
+    !classSessions.some((s) => Number(s.sessionNumber) === stageInfo.sessionNumber)
+  ) {
+    throw new Error(
+      `[${contextLabel}] Lớp ${normalizedClassId} chưa có Buổi ${stageInfo.sessionNumber} trong danh sách buổi học đã đồng bộ.`
+    );
+  }
+  return stageInfo;
+}
+
+const SPCK_SESSION_SUFFIX_REGEX =
+  /\s*(?:(?:—|–|-|\|)\s*Buổi(?:\s+số)?\s*(?:12|13|14)(?:\s*\((?:GĐ\s*[12]|Giai\s+đoạn\s*[12])\))?|\((?:GĐ\s*2|Giai\s+đoạn\s*2)\)|(?:—|–|-|\|)\s*(?:GĐ\s*2|Giai\s+đoạn\s*2))\s*$/i;
+const FORBIDDEN_STAGE2_TITLE_REGEX = /\b(?:giai\s*đoạn\s*2|gđ\s*2)\b/i;
+
+export function stripSpckSessionSuffix(rawTitle?: string | null): string {
+  let current = String(rawTitle ?? "").replace(/\s+/g, " ").trim();
+  while (SPCK_SESSION_SUFFIX_REGEX.test(current)) {
+    current = current.replace(SPCK_SESSION_SUFFIX_REGEX, "").trim();
+  }
+  current = current
+    .replace(/\s*(?:—|–|-|\|)?\s*\(?(?:GĐ\s*2|Giai\s+đoạn\s*2)\)?/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return current;
+}
+
+export function formatSpckSessionTitle(
+  rawOrBaseTitle: string | null | undefined,
+  rawSessionNumber: unknown,
+  fallbackStudentName?: string | null
+): string {
+  const stageInfo = getSpckStageInfo(rawSessionNumber, "formatSpckSessionTitle");
+  const stripped = stripSpckSessionSuffix(rawOrBaseTitle);
+  const fallbackBase =
+    fallbackStudentName && String(fallbackStudentName).trim()
+      ? `SPCK ${String(fallbackStudentName).replace(/\s+/g, " ").trim()}`
+      : "Sản phẩm cuối khóa";
+  const base = stripped || fallbackBase;
+  return `${base}${stageInfo.titleSuffix}`;
+}
+
+export function isDefaultSpckProductTitle(
+  title?: string | null,
+  studentFullName?: string | null
+): boolean {
+  const base = stripSpckSessionSuffix(title);
+  if (!base) return true;
+  const norm = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[đĐ]/g, "d")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  const normBase = norm(base);
+  if (
+    !normBase ||
+    normBase === "spck" ||
+    normBase === "san pham cuoi khoa" ||
+    normBase === "du an cuoi khoa"
+  ) {
+    return true;
+  }
+  if (studentFullName && String(studentFullName).trim()) {
+    const normStu = norm(studentFullName);
+    if (
+      normStu &&
+      (normBase === normStu ||
+        normBase === `spck ${normStu}` ||
+        normBase === `san pham cuoi khoa ${normStu}` ||
+        normBase === `du an ${normStu}`)
+    ) {
+      return true;
+    }
+  }
+  // Also detect generic "SPCK <2-5 capitalized words>" with no separator or topic
+  if (/^spck\s+[a-z]+(?:\s+[a-z]+){1,4}$/i.test(normBase) && !/[-:–—|]/.test(base)) {
+    return true;
+  }
+  return false;
+}
+
+export function validateSpckTitleLength(
+  fullTitle?: string | null,
+  expectedSessionNumber?: SpckSessionSlotNumber
+): {
+  valid: boolean;
+  length: number;
+  maxLength: 100;
+  baseTitle: string;
+  hasValidSuffix: boolean;
+  isDefaultProductTitle?: boolean;
+  reason?: string;
+} {
+  const trimmed = String(fullTitle ?? "").replace(/\s+/g, " ").trim();
+  const length = trimmed.length;
+  const baseTitle = stripSpckSessionSuffix(trimmed);
+
+  if (length === 0) {
+    return {
+      valid: false,
+      length: 0,
+      maxLength: 100,
+      baseTitle: "",
+      hasValidSuffix: false,
+      reason: "Tiêu đề dự án đang để trống.",
+    };
+  }
+  if (!baseTitle) {
+    return {
+      valid: false,
+      length,
+      maxLength: 100,
+      baseTitle: "",
+      hasValidSuffix: false,
+      reason: "Tiêu đề thiếu tên sản phẩm gốc trước hậu tố buổi/giai đoạn.",
+    };
+  }
+  if (FORBIDDEN_STAGE2_TITLE_REGEX.test(trimmed)) {
+    return {
+      valid: false,
+      length,
+      maxLength: 100,
+      baseTitle,
+      hasValidSuffix: false,
+      reason: "Tiêu đề dự án không được ghi 'Giai đoạn 2' hoặc 'GĐ2'.",
+    };
+  }
+
+  let hasValidSuffix = true;
+  if (expectedSessionNumber !== undefined && isValidSpckSessionSlot(expectedSessionNumber)) {
+    const expectedSuffix = getSpckStageInfo(expectedSessionNumber).titleSuffix.trim();
+    if (expectedSuffix) {
+      hasValidSuffix = trimmed.endsWith(expectedSuffix);
+      if (!hasValidSuffix) {
+        return {
+          valid: false,
+          length,
+          maxLength: 100,
+          baseTitle,
+          hasValidSuffix: false,
+          reason: `Tiêu đề phải kết thúc bằng hậu tố giai đoạn "${expectedSuffix}".`,
+        };
+      }
+    } else {
+      hasValidSuffix = !SPCK_SESSION_SUFFIX_REGEX.test(trimmed);
+      if (!hasValidSuffix) {
+        return {
+          valid: false,
+          length,
+          maxLength: 100,
+          baseTitle,
+          hasValidSuffix: false,
+          reason: "Tiêu đề dự án Buổi 14 không được gắn hậu tố Giai đoạn 2.",
+        };
+      }
+    }
+  }
+
+  if (length > 100) {
+    return {
+      valid: false,
+      length,
+      maxLength: 100,
+      baseTitle,
+      hasValidSuffix,
+      reason: `Tiêu đề đầy đủ vượt quá 100 ký tự (${length}/100). Vui lòng rút gọn tên sản phẩm (không tự động cắt tên).`,
+    };
+  }
+
+  return {
+    valid: true,
+    length,
+    maxLength: 100,
+    baseTitle,
+    hasValidSuffix,
+  };
+}
+
+export interface SpckSessionSubmissionResult {
+  sessionNumber: SpckSessionSlotNumber;
+  status: "VERIFIED" | "FAILED";
+  submittedContentHash: string;
+  verifiedAt?: string | null;
+  lastVerifiedContentHash?: string | null;
+  lastVerifiedAt?: string | null;
+  lmsWorkId?: string | null;
+  updatedAt: string;
+  errorMessage?: string | null;
+}
+
+export type SpckSessionResultsMap = Partial<
+  Record<"12" | "13" | "14", SpckSessionSubmissionResult>
+>;
+
+export interface SpckSessionResultsInspection {
+  valid: boolean;
+  corruptedReason: string | null;
+  entries: SpckSessionResultsMap;
+}
+
+export function inspectSpckSessionResultsRaw(raw?: string | null): SpckSessionResultsInspection {
+  if (raw === undefined || raw === null) {
+    return { valid: true, corruptedReason: null, entries: {} };
+  }
+  if (typeof raw !== "string") {
+    return {
+      valid: false,
+      corruptedReason: "Dữ liệu lịch sử buổi nộp không phải chuỗi JSON.",
+      entries: {},
+    };
+  }
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed === "{}") {
+    return { valid: true, corruptedReason: null, entries: {} };
+  }
+  let parsed: any;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch (err: any) {
+    return {
+      valid: false,
+      corruptedReason: `JSON lịch sử buổi nộp bị lỗi cú pháp: ${err?.message || "Invalid JSON"}`,
+      entries: {},
+    };
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return {
+      valid: false,
+      corruptedReason: "Cấu trúc lịch sử buổi nộp không phải đối tượng hợp lệ.",
+      entries: {},
+    };
+  }
+
+  const out: SpckSessionResultsMap = {};
+  let corruptedReason: string | null = null;
+  const allowedKeys = new Set(["12", "13", "14"]);
+
+  for (const key of Object.keys(parsed)) {
+    if (!allowedKeys.has(key)) {
+      corruptedReason = `Lịch sử chứa mã buổi không hợp lệ: "${key}".`;
+      continue;
+    }
+    const entry = parsed[key];
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      corruptedReason = `Bản ghi lịch sử buổi ${key} không phải object hợp lệ.`;
+      continue;
+    }
+    if (entry.status !== "VERIFIED" && entry.status !== "FAILED") {
+      corruptedReason = `Trạng thái lịch sử buổi ${key} không hợp lệ: "${String(entry.status)}".`;
+      continue;
+    }
+    const subHash = String(entry.submittedContentHash || "").trim();
+    const verHash = String(entry.lastVerifiedContentHash || "").trim();
+    const verAt = String(entry.verifiedAt || entry.lastVerifiedAt || "").trim();
+    if (entry.status === "VERIFIED" && !subHash && !verHash && !verAt) {
+      corruptedReason = `Bản ghi VERIFIED buổi ${key} thiếu cả mã băm và thời gian xác nhận.`;
+      continue;
+    }
+    const slotKey = key as "12" | "13" | "14";
+    out[slotKey] = {
+      sessionNumber: Number(key) as SpckSessionSlotNumber,
+      status: entry.status,
+      submittedContentHash: subHash,
+      verifiedAt: entry.verifiedAt ?? null,
+      lastVerifiedContentHash: entry.lastVerifiedContentHash ?? (entry.status === "VERIFIED" ? subHash : null),
+      lastVerifiedAt: entry.lastVerifiedAt ?? (entry.status === "VERIFIED" ? entry.verifiedAt ?? null : null),
+      lmsWorkId: entry.lmsWorkId ?? null,
+      updatedAt: String(entry.updatedAt || entry.verifiedAt || ""),
+      errorMessage: entry.errorMessage ?? null,
+    };
+  }
+
+  return {
+    valid: corruptedReason === null,
+    corruptedReason,
+    entries: out,
+  };
+}
+
+export function parseSpckSessionResults(raw?: string | null): SpckSessionResultsMap {
+  return inspectSpckSessionResultsRaw(raw).entries;
+}
 
 export interface SpckUploadRecord {
   id?: number;
@@ -554,6 +1401,7 @@ export interface SpckUploadRecord {
   matchScore?: number;
   isConfirmedByTeacher: number;
   projectTitle?: string;
+  baseProjectTitle?: string;
   thumbnailPath?: string;
   screenshotsJson?: string;
   attachmentsJson?: string;
@@ -561,32 +1409,825 @@ export interface SpckUploadRecord {
   relatedLinksJson?: string;
   teacherComment?: string;
   contentHash?: string;
-  status: "DRAFT" | "WAITING_APPROVAL" | "APPROVED" | "SAVING" | "VERIFIED" | "FAILED";
+  status: "INSUFFICIENT_INFO" | "DRAFT" | "WAITING_APPROVAL" | "APPROVED" | "SAVING" | "VERIFIED" | "FAILED";
   verifiedAt?: string | null;
   errorMessage?: string | null;
+  draftSeq?: number;
+  sessionResultsJson?: string;
+  hasLegacyUnknownSessionHistory?: number;
+  legacyHistoryMetaJson?: string;
+  historyCorrupted?: number;
+  historyCorruptedReason?: string | null;
+  approvedSessionNumber?: number | null;
+}
+
+export interface SpckSubmissionSnapshot {
+  classId: string;
+  studentId: string;
+  sessionNumber: SpckSessionSlotNumber;
+  stageNumber: SpckStageNumber;
+  stageCode: SpckStageCode;
+  localFolderPath: string;
+  projectTitle: string;
+  thumbnailPath: string;
+  thumbnailByteSha256: string;
+  screenshots: Array<{ path: string; byteSha256: string }>;
+  attachments: Array<{ path: string; byteSha256: string }>;
+  youtubeUrls: string[];
+  relatedLinks: Array<{ name: string; url: string }>;
+  teacherComment: string;
+  teacherNote?: string;
+  quickTags?: string[];
+  contentHash: string;
+  capturedAt: string;
+  lmsWorkId?: string | null;
+  missingSnapshot?: boolean;
+  note?: string;
+}
+
+export interface SpckSessionSubmissionRecord {
+  id?: number;
+  classId: string;
+  studentId: string;
+  sessionNumber: SpckSessionSlotNumber;
+  stageNumber: SpckStageNumber;
+  localFolderPath: string;
+  isConfirmedByTeacher: number;
+  projectTitle: string;
+  thumbnailPath: string;
+  screenshotsJson: string;
+  attachmentsJson: string;
+  youtubeUrlsJson: string;
+  relatedLinksJson: string;
+  teacherComment: string;
+  teacherNote: string;
+  quickTagsJson: string;
+  draftVersion: number;
+  isDraftInitialized: number;
+  draftStatus: "INSUFFICIENT_INFO" | "DRAFT" | "WAITING_APPROVAL" | "APPROVED" | "SAVING" | "VERIFIED" | "FAILED";
+  approvedContentHash: string;
+  approvedSnapshotJson: string;
+  approvedAt: string | null;
+  lastAttemptStatus: "VERIFIED" | "FAILED" | null;
+  lastAttemptHash: string;
+  lastAttemptAt: string | null;
+  lastErrorMessage: string | null;
+  lastVerifiedHash: string;
+  lastVerifiedAt: string | null;
+  lastVerifiedLmsWorkId: string | null;
+  lastVerifiedSnapshotJson: string;
+  missingLegacySnapshot: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export function canonicalizeSpckFolderPath(rawPath?: string | null): string {
+  const trimmed = String(rawPath ?? "").trim();
+  if (!trimmed) return "";
+  const safe = assertPathAllowed(trimmed);
+  try {
+    if (fs.existsSync(safe)) {
+      return fs.realpathSync(safe);
+    }
+  } catch {
+    // Fallback to resolved safe path if realpath fails
+  }
+  return path.resolve(safe);
+}
+
+export function normalizeSpckFolderKey(rawPath?: string | null): string {
+  const trimmed = String(rawPath ?? "").trim();
+  if (!trimmed) return "";
+  try {
+    return canonicalizeSpckFolderPath(trimmed)
+      .replace(/\\/g, "/")
+      .replace(/\/+$/, "")
+      .toLowerCase();
+  } catch {
+    return path
+      .resolve(trimmed)
+      .replace(/\\/g, "/")
+      .replace(/\/+$/, "")
+      .toLowerCase();
+  }
+}
+
+function parseSpckPathArraySafe(raw?: string | null): string[] {
+  if (!raw || typeof raw !== "string") return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.map((item) => String(item ?? "").trim()).filter(Boolean)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseSpckRelatedLinksArraySafe(raw?: string | null): Array<{ name: string; url: string }> {
+  if (!raw || typeof raw !== "string") return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const url = String((item as any).url ?? "").trim();
+        const name = String((item as any).name ?? url).trim();
+        return url ? { name: name || url, url } : null;
+      })
+      .filter((x): x is { name: string; url: string } => Boolean(x));
+  } catch {
+    return [];
+  }
+}
+
+export function computeSafeFileByteDigest(filePath?: string | null): string {
+  const trimmed = String(filePath ?? "").trim();
+  if (!trimmed) return "";
+  try {
+    const safe = assertPathAllowed(trimmed);
+    if (fs.existsSync(safe) && fs.statSync(safe).isFile()) {
+      return calculateSha256(fs.readFileSync(safe));
+    }
+    return "MISSING";
+  } catch {
+    return "DISALLOWED";
+  }
+}
+
+export function computeSpckContentHash(record: {
+  classId: string;
+  studentId: string;
+  localFolderPath?: string | null;
+  isConfirmedByTeacher?: number | boolean | null;
+  projectTitle?: string | null;
+  thumbnailPath?: string | null;
+  screenshotsJson?: string | null;
+  attachmentsJson?: string | null;
+  youtubeUrlsJson?: string | null;
+  relatedLinksJson?: string | null;
+  teacherComment?: string | null;
+}): string {
+  const screenshotPaths = parseSpckPathArraySafe(record.screenshotsJson);
+  const attachmentPaths = parseSpckPathArraySafe(record.attachmentsJson);
+
+  const canonical = JSON.stringify({
+    classId: String(record.classId || "").trim().toUpperCase(),
+    studentId: String(record.studentId || "").trim(),
+    localFolderPath: normalizeSpckFolderKey(record.localFolderPath),
+    isConfirmedByTeacher: record.isConfirmedByTeacher ? 1 : 0,
+    projectTitle: String(record.projectTitle ?? "").trim(),
+    thumbnailPath: String(record.thumbnailPath ?? "").trim(),
+    thumbnailByteSha256: computeSafeFileByteDigest(record.thumbnailPath),
+    screenshotsJson: String(record.screenshotsJson ?? "[]"),
+    screenshotByteSha256s: screenshotPaths.map((p) => computeSafeFileByteDigest(p)),
+    attachmentsJson: String(record.attachmentsJson ?? "[]"),
+    attachmentByteSha256s: attachmentPaths.map((p) => computeSafeFileByteDigest(p)),
+    youtubeUrlsJson: String(record.youtubeUrlsJson ?? "[]"),
+    relatedLinksJson: String(record.relatedLinksJson ?? "[]"),
+    teacherComment: String(record.teacherComment ?? ""),
+  });
+  return calculateSha256(canonical);
+}
+
+export function computeSpckSessionContentHash(
+  record: {
+    classId: string;
+    studentId: string;
+    localFolderPath?: string | null;
+    isConfirmedByTeacher?: number | boolean | null;
+    projectTitle?: string | null;
+    thumbnailPath?: string | null;
+    screenshotsJson?: string | null;
+    attachmentsJson?: string | null;
+    youtubeUrlsJson?: string | null;
+    relatedLinksJson?: string | null;
+    teacherComment?: string | null;
+  },
+  sessionNumber: SpckSessionSlotNumber
+): string {
+  const stageInfo = getSpckStageInfo(sessionNumber, "computeSpckSessionContentHash");
+  const rawTitle = String(record.projectTitle ?? "").trim();
+  const effectiveTitle = rawTitle.endsWith(stageInfo.titleSuffix.trim())
+    ? rawTitle
+    : formatSpckSessionTitle(rawTitle, stageInfo.sessionNumber);
+
+  return computeSpckContentHash({
+    ...record,
+    projectTitle: effectiveTitle,
+  });
+}
+
+export function verifySpckContentIntegrity(record: SpckUploadRecord | undefined): boolean {
+  if (!record || !record.contentHash) return false;
+  if (Number(record.isConfirmedByTeacher) !== 1) return false;
+  const expected = computeSpckContentHash(record);
+  return record.contentHash === expected;
+}
+
+export function verifySpckSessionIntegrity(
+  sessionRow: SpckSessionSubmissionRecord | undefined,
+  expectedSessionNumber?: SpckSessionSlotNumber
+): boolean {
+  if (!sessionRow || !sessionRow.approvedContentHash) return false;
+  if (Number(sessionRow.isConfirmedByTeacher) !== 1) return false;
+  if (
+    expectedSessionNumber !== undefined &&
+    Number(sessionRow.sessionNumber) !== Number(expectedSessionNumber)
+  ) {
+    return false;
+  }
+  const expected = computeSpckSessionContentHash(sessionRow, sessionRow.sessionNumber);
+  const rawExpected = computeSpckContentHash(sessionRow);
+  return (
+    sessionRow.approvedContentHash === expected ||
+    sessionRow.approvedContentHash === rawExpected
+  );
+}
+
+export function buildSpckSubmissionSnapshot(
+  record: {
+    classId: string;
+    studentId: string;
+    localFolderPath?: string | null;
+    projectTitle?: string | null;
+    thumbnailPath?: string | null;
+    screenshotsJson?: string | null;
+    attachmentsJson?: string | null;
+    youtubeUrlsJson?: string | null;
+    relatedLinksJson?: string | null;
+    teacherComment?: string | null;
+    teacherNote?: string | null;
+    quickTagsJson?: string | null;
+  },
+  sessionNumber: SpckSessionSlotNumber,
+  contentHash: string,
+  capturedAt: string,
+  lmsWorkId?: string | null
+): SpckSubmissionSnapshot {
+  const stageInfo = getSpckStageInfo(sessionNumber, "buildSpckSubmissionSnapshot");
+  const screenshotPaths = parseSpckPathArraySafe(record.screenshotsJson);
+  const attachmentPaths = parseSpckPathArraySafe(record.attachmentsJson);
+  const youtubeUrls = parseSpckPathArraySafe(record.youtubeUrlsJson);
+  const relatedLinks = parseSpckRelatedLinksArraySafe(record.relatedLinksJson);
+  const quickTags = parseSpckPathArraySafe(record.quickTagsJson);
+  const thumbPath = String(record.thumbnailPath ?? "").trim();
+
+  return {
+    classId: String(record.classId || "").trim().toUpperCase(),
+    studentId: String(record.studentId || "").trim(),
+    sessionNumber: stageInfo.sessionNumber,
+    stageNumber: stageInfo.stageNumber,
+    stageCode: stageInfo.stageCode,
+    localFolderPath: String(record.localFolderPath ?? "").trim(),
+    projectTitle: String(record.projectTitle ?? "").trim(),
+    thumbnailPath: thumbPath,
+    thumbnailByteSha256: computeSafeFileByteDigest(thumbPath),
+    screenshots: screenshotPaths.map((p) => ({
+      path: p,
+      byteSha256: computeSafeFileByteDigest(p),
+    })),
+    attachments: attachmentPaths.map((p) => ({
+      path: p,
+      byteSha256: computeSafeFileByteDigest(p),
+    })),
+    youtubeUrls,
+    relatedLinks,
+    teacherComment: String(record.teacherComment ?? ""),
+    teacherNote: String(record.teacherNote ?? ""),
+    quickTags,
+    contentHash,
+    capturedAt,
+    lmsWorkId: lmsWorkId ?? null,
+    missingSnapshot: false,
+  };
+}
+
+export function parseSpckSubmissionSnapshot(rawJson?: string | null): SpckSubmissionSnapshot | null {
+  if (!rawJson || typeof rawJson !== "string") return null;
+  const trimmed = rawJson.trim();
+  if (!trimmed || trimmed === "{}") return null;
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    return parsed as SpckSubmissionSnapshot;
+  } catch {
+    return null;
+  }
+}
+
+export function checkSpckSnapshotFileDrift(snapshot: SpckSubmissionSnapshot | null): {
+  hasFileDrift: boolean;
+  driftedFiles: string[];
+} {
+  if (!snapshot || snapshot.missingSnapshot) {
+    return { hasFileDrift: false, driftedFiles: [] };
+  }
+  const driftedFiles: string[] = [];
+
+  if (snapshot.thumbnailPath && snapshot.thumbnailByteSha256) {
+    const currentDigest = computeSafeFileByteDigest(snapshot.thumbnailPath);
+    if (currentDigest !== snapshot.thumbnailByteSha256) {
+      driftedFiles.push(path.basename(snapshot.thumbnailPath) || snapshot.thumbnailPath);
+    }
+  }
+
+  for (const item of Array.isArray(snapshot.screenshots) ? snapshot.screenshots : []) {
+    if (item?.path && item?.byteSha256) {
+      const currentDigest = computeSafeFileByteDigest(item.path);
+      if (currentDigest !== item.byteSha256) {
+        driftedFiles.push(path.basename(item.path) || item.path);
+      }
+    }
+  }
+
+  for (const item of Array.isArray(snapshot.attachments) ? snapshot.attachments : []) {
+    if (item?.path && item?.byteSha256) {
+      const currentDigest = computeSafeFileByteDigest(item.path);
+      if (currentDigest !== item.byteSha256) {
+        driftedFiles.push(path.basename(item.path) || item.path);
+      }
+    }
+  }
+
+  return {
+    hasFileDrift: driftedFiles.length > 0,
+    driftedFiles: Array.from(new Set(driftedFiles)),
+  };
+}
+
+export function migrateSpckSessionSubmissions(customDb?: Database.Database): {
+  migratedSessionRows: number;
+  legacyUnknownRows: number;
+  corruptedRows: number;
+} {
+  const db = customDb || getDb();
+  let migratedSessionRows = 0;
+  let legacyUnknownRows = 0;
+  let corruptedRows = 0;
+
+  const rows = db.prepare(`SELECT * FROM spck_uploads`).all() as Array<
+    SpckUploadRecord & { createdAt?: string; updatedAt?: string }
+  >;
+
+  for (const row of rows) {
+    const baseTitle = stripSpckSessionSuffix(row.baseProjectTitle || row.projectTitle || "");
+    if (baseTitle && (!row.baseProjectTitle || !row.baseProjectTitle.trim())) {
+      db.prepare(`UPDATE spck_uploads SET baseProjectTitle = ? WHERE classId = ? AND studentId = ?`).run(
+        baseTitle,
+        row.classId,
+        row.studentId
+      );
+    }
+
+    const inspection = inspectSpckSessionResultsRaw(row.sessionResultsJson);
+
+    if (!inspection.valid) {
+      corruptedRows++;
+      db.prepare(
+        `UPDATE spck_uploads
+         SET historyCorrupted = 1,
+             historyCorruptedReason = ?
+         WHERE classId = ? AND studentId = ?`
+      ).run(inspection.corruptedReason, row.classId, row.studentId);
+    }
+
+    const entryKeys = Object.keys(inspection.entries) as Array<"12" | "13" | "14">;
+    if (entryKeys.length > 0) {
+      for (const key of entryKeys) {
+        const entry = inspection.entries[key]!;
+        const sessionNum = Number(key) as SpckSessionSlotNumber;
+        const stageInfo = getSpckStageInfo(sessionNum);
+        const existingSession = db
+          .prepare(
+            `SELECT * FROM spck_session_submissions WHERE classId = ? AND studentId = ? AND sessionNumber = ?`
+          )
+          .get(row.classId, row.studentId, sessionNum) as SpckSessionSubmissionRecord | undefined;
+
+        const verHash =
+          entry.status === "VERIFIED"
+            ? entry.submittedContentHash || entry.lastVerifiedContentHash || row.contentHash || ""
+            : entry.lastVerifiedContentHash || "";
+        const verAt =
+          entry.status === "VERIFIED"
+            ? entry.verifiedAt || entry.lastVerifiedAt || row.verifiedAt || entry.updatedAt || null
+            : entry.lastVerifiedAt || entry.verifiedAt || null;
+
+        if (!existingSession) {
+          const hasVer = Boolean(verHash || verAt);
+          const legacySnap = hasVer
+            ? JSON.stringify({
+                classId: row.classId,
+                studentId: row.studentId,
+                sessionNumber: sessionNum,
+                stageNumber: stageInfo.stageNumber,
+                stageCode: stageInfo.stageCode,
+                contentHash: verHash,
+                capturedAt: verAt || entry.updatedAt || "",
+                missingSnapshot: true,
+                note: "Thiếu bản lưu nội dung cũ (dữ liệu chuyển đổi chỉ có mã kiểm tra và thời gian xác nhận).",
+              })
+            : "{}";
+
+          const formattedTitle = formatSpckSessionTitle(
+            baseTitle || row.projectTitle,
+            sessionNum
+          );
+
+          db.prepare(
+            `INSERT INTO spck_session_submissions (
+              classId, studentId, sessionNumber, stageNumber, localFolderPath,
+              isConfirmedByTeacher, projectTitle, thumbnailPath, screenshotsJson,
+              attachmentsJson, youtubeUrlsJson, relatedLinksJson, teacherComment,
+              teacherNote, quickTagsJson, draftVersion, isDraftInitialized,
+              draftStatus, approvedContentHash, approvedSnapshotJson, approvedAt,
+              lastAttemptStatus, lastAttemptHash, lastAttemptAt, lastErrorMessage,
+              lastVerifiedHash, lastVerifiedAt, lastVerifiedLmsWorkId,
+              lastVerifiedSnapshotJson, missingLegacySnapshot, updatedAt
+            ) VALUES (
+              ?, ?, ?, ?, ?,
+              ?, ?, ?, ?,
+              ?, ?, ?, ?,
+              '', '[]', 1, 1,
+              ?, '', '{}', NULL,
+              ?, ?, ?, ?,
+              ?, ?, ?,
+              ?, ?, ?
+            )`
+          ).run(
+            row.classId,
+            row.studentId,
+            sessionNum,
+            stageInfo.stageNumber,
+            row.localFolderPath || "",
+            row.isConfirmedByTeacher ?? 0,
+            formattedTitle,
+            row.thumbnailPath || "",
+            row.screenshotsJson || "[]",
+            row.attachmentsJson || "[]",
+            row.youtubeUrlsJson || "[]",
+            row.relatedLinksJson || "[]",
+            row.teacherComment || "",
+            entry.status === "VERIFIED" ? "VERIFIED" : "FAILED",
+            entry.status,
+            entry.submittedContentHash || "",
+            entry.updatedAt || verAt || null,
+            entry.errorMessage ?? null,
+            verHash,
+            verAt,
+            entry.lmsWorkId ?? null,
+            legacySnap,
+            hasVer ? 1 : 0,
+            entry.updatedAt || verAt || new Date().toISOString()
+          );
+          migratedSessionRows++;
+        } else if (!existingSession.lastAttemptStatus && entry.status) {
+          const hasVer = Boolean(verHash || verAt);
+          const legacySnap =
+            hasVer && (!existingSession.lastVerifiedSnapshotJson || existingSession.lastVerifiedSnapshotJson === "{}")
+              ? JSON.stringify({
+                  classId: row.classId,
+                  studentId: row.studentId,
+                  sessionNumber: sessionNum,
+                  stageNumber: stageInfo.stageNumber,
+                  stageCode: stageInfo.stageCode,
+                  contentHash: verHash,
+                  capturedAt: verAt || entry.updatedAt || "",
+                  missingSnapshot: true,
+                  note: "Thiếu bản lưu nội dung cũ (dữ liệu chuyển đổi chỉ có mã kiểm tra và thời gian xác nhận).",
+                })
+              : existingSession.lastVerifiedSnapshotJson || "{}";
+
+          db.prepare(
+            `UPDATE spck_session_submissions
+             SET lastAttemptStatus = ?,
+                 lastAttemptHash = ?,
+                 lastAttemptAt = ?,
+                 lastErrorMessage = ?,
+                 lastVerifiedHash = COALESCE(NULLIF(lastVerifiedHash, ''), ?),
+                 lastVerifiedAt = COALESCE(lastVerifiedAt, ?),
+                 lastVerifiedSnapshotJson = ?,
+                 missingLegacySnapshot = CASE WHEN missingLegacySnapshot = 1 OR ? = 1 THEN 1 ELSE 0 END
+             WHERE classId = ? AND studentId = ? AND sessionNumber = ?`
+          ).run(
+            entry.status,
+            entry.submittedContentHash || "",
+            entry.updatedAt || verAt || null,
+            entry.errorMessage ?? null,
+            verHash,
+            verAt,
+            legacySnap,
+            hasVer && (!existingSession.lastVerifiedSnapshotJson || existingSession.lastVerifiedSnapshotJson === "{}") ? 1 : 0,
+            row.classId,
+            row.studentId,
+            sessionNum
+          );
+          migratedSessionRows++;
+        }
+      }
+    } else if (
+      inspection.valid &&
+      (row.status === "VERIFIED" || (row.verifiedAt && String(row.verifiedAt).trim() !== ""))
+    ) {
+      // Legacy record verified without session breakdown -> mark hasLegacyUnknownSessionHistory = 1 permanently
+      const sessionRowsCount = (
+        db
+          .prepare(
+            `SELECT COUNT(*) AS cnt FROM spck_session_submissions WHERE classId = ? AND studentId = ? AND lastAttemptStatus IS NOT NULL`
+          )
+          .get(row.classId, row.studentId) as { cnt: number }
+      ).cnt;
+
+      if (sessionRowsCount === 0) {
+        const legacyMeta = JSON.stringify({
+          legacyVerifiedAt: row.verifiedAt || row.updatedAt || null,
+          legacyContentHash: row.contentHash || "",
+          missingSnapshot: true,
+          note: "Thiếu bản lưu nội dung cũ (bản ghi từ phiên bản trước không ghi nhận cụ thể buổi 12, 13 hay 14).",
+        });
+        db.prepare(
+          `UPDATE spck_uploads
+           SET hasLegacyUnknownSessionHistory = 1,
+               legacyHistoryMetaJson = CASE WHEN legacyHistoryMetaJson IS NULL OR legacyHistoryMetaJson = '' OR legacyHistoryMetaJson = '{}' THEN ? ELSE legacyHistoryMetaJson END
+           WHERE classId = ? AND studentId = ?`
+        ).run(legacyMeta, row.classId, row.studentId);
+        legacyUnknownRows++;
+      }
+    }
+  }
+
+  return { migratedSessionRows, legacyUnknownRows, corruptedRows };
+}
+
+function mergeSessionResultsPreservingHistory(
+  existingRaw: string | null | undefined,
+  incomingRaw: string | null | undefined,
+  classId: string,
+  studentId: string,
+  db: Database.Database
+): {
+  mergedJson: string;
+  historyCorrupted: number;
+  historyCorruptedReason: string | null;
+} {
+  const existingInsp = inspectSpckSessionResultsRaw(existingRaw);
+  const incomingInsp =
+    incomingRaw !== undefined && incomingRaw !== null
+      ? inspectSpckSessionResultsRaw(incomingRaw)
+      : { valid: true, corruptedReason: null, entries: {} as SpckSessionResultsMap };
+
+  if (!existingInsp.valid) {
+    return {
+      mergedJson: String(existingRaw || "{}"),
+      historyCorrupted: 1,
+      historyCorruptedReason: existingInsp.corruptedReason,
+    };
+  }
+  if (!incomingInsp.valid) {
+    return {
+      mergedJson: String(incomingRaw || "{}"),
+      historyCorrupted: 1,
+      historyCorruptedReason: incomingInsp.corruptedReason,
+    };
+  }
+
+  // Merge: start from existing entries, overlay incoming entries (never deleting existing keys if incoming is "{}" from a stale read!),
+  // and overlay any authoritative rows from spck_session_submissions.
+  const merged: SpckSessionResultsMap = { ...existingInsp.entries };
+  for (const key of ["12", "13", "14"] as const) {
+    const inc = incomingInsp.entries[key];
+    if (inc) {
+      const prev = merged[key];
+      if (!prev) {
+        merged[key] = inc;
+      } else {
+        // Preserve lastVerified* if prev was VERIFIED
+        merged[key] = {
+          ...inc,
+          lastVerifiedContentHash:
+            inc.lastVerifiedContentHash ||
+            (prev.status === "VERIFIED" ? prev.submittedContentHash : prev.lastVerifiedContentHash) ||
+            null,
+          lastVerifiedAt:
+            inc.lastVerifiedAt ||
+            (prev.status === "VERIFIED" ? prev.verifiedAt : prev.lastVerifiedAt) ||
+            null,
+        };
+      }
+    }
+  }
+
+  try {
+    const sessionRows = db
+      .prepare(
+        `SELECT sessionNumber, lastAttemptStatus, lastAttemptHash, lastAttemptAt, lastErrorMessage, lastVerifiedHash, lastVerifiedAt, lastVerifiedLmsWorkId
+         FROM spck_session_submissions
+         WHERE classId = ? AND studentId = ? AND lastAttemptStatus IS NOT NULL`
+      )
+      .all(classId, studentId) as Array<{
+      sessionNumber: number;
+      lastAttemptStatus: "VERIFIED" | "FAILED" | null;
+      lastAttemptHash: string;
+      lastAttemptAt: string | null;
+      lastErrorMessage: string | null;
+      lastVerifiedHash: string;
+      lastVerifiedAt: string | null;
+      lastVerifiedLmsWorkId: string | null;
+    }>;
+
+    for (const sr of sessionRows) {
+      if ((sr.sessionNumber === 12 || sr.sessionNumber === 13 || sr.sessionNumber === 14) && sr.lastAttemptStatus) {
+        const key = String(sr.sessionNumber) as "12" | "13" | "14";
+        merged[key] = {
+          sessionNumber: sr.sessionNumber as SpckSessionSlotNumber,
+          status: sr.lastAttemptStatus,
+          submittedContentHash: sr.lastAttemptHash || sr.lastVerifiedHash || "",
+          verifiedAt: sr.lastAttemptStatus === "VERIFIED" ? sr.lastVerifiedAt : sr.lastVerifiedAt ?? null,
+          lastVerifiedContentHash: sr.lastVerifiedHash || null,
+          lastVerifiedAt: sr.lastVerifiedAt || null,
+          lmsWorkId: sr.lastVerifiedLmsWorkId || null,
+          updatedAt: sr.lastAttemptAt || sr.lastVerifiedAt || "",
+          errorMessage: sr.lastAttemptStatus === "FAILED" ? sr.lastErrorMessage : null,
+        };
+      }
+    }
+  } catch {}
+
+  return {
+    mergedJson: JSON.stringify(merged),
+    historyCorrupted: 0,
+    historyCorruptedReason: null,
+  };
 }
 
 export const spckUploadRepo = {
   upsert(record: SpckUploadRecord) {
     const db = getDb();
+    const existing = db
+      .prepare(
+        `SELECT localFolderPath, isConfirmedByTeacher, projectTitle, baseProjectTitle, thumbnailPath, screenshotsJson, attachmentsJson, youtubeUrlsJson, relatedLinksJson, teacherComment, contentHash, status, verifiedAt, draftSeq, sessionResultsJson, hasLegacyUnknownSessionHistory, legacyHistoryMetaJson, historyCorrupted, historyCorruptedReason, approvedSessionNumber FROM spck_uploads WHERE classId = ? AND studentId = ?`
+      )
+      .get(record.classId, record.studentId) as
+      | {
+          localFolderPath: string;
+          isConfirmedByTeacher: number;
+          projectTitle: string;
+          baseProjectTitle?: string;
+          thumbnailPath: string;
+          screenshotsJson: string;
+          attachmentsJson: string;
+          youtubeUrlsJson: string;
+          relatedLinksJson: string;
+          teacherComment: string;
+          contentHash: string;
+          status: string;
+          verifiedAt: string | null;
+          draftSeq?: number;
+          sessionResultsJson?: string;
+          hasLegacyUnknownSessionHistory?: number;
+          legacyHistoryMetaJson?: string;
+          historyCorrupted?: number;
+          historyCorruptedReason?: string | null;
+          approvedSessionNumber?: number | null;
+        }
+      | undefined;
+
+    let targetStatus = record.status || "DRAFT";
+    let targetHash = record.contentHash ?? "";
+    let targetVerifiedAt = record.verifiedAt ?? null;
+    let targetApprovedSessionNumber =
+      record.approvedSessionNumber !== undefined
+        ? record.approvedSessionNumber
+        : existing?.approvedSessionNumber ?? null;
+
+    if (existing && (existing.status === "APPROVED" || existing.status === "VERIFIED")) {
+      const folderChanged =
+        normalizeSpckFolderKey(record.localFolderPath) !==
+        normalizeSpckFolderKey(existing.localFolderPath);
+      const confirmedChanged =
+        (record.isConfirmedByTeacher ?? 0) !== (existing.isConfirmedByTeacher ?? 0);
+      const titleChanged = (record.projectTitle ?? "") !== (existing.projectTitle ?? "");
+      const thumbChanged = (record.thumbnailPath ?? "") !== (existing.thumbnailPath ?? "");
+      const screenshotsChanged =
+        (record.screenshotsJson ?? "[]") !== (existing.screenshotsJson ?? "[]");
+      const attachmentsChanged =
+        (record.attachmentsJson ?? "[]") !== (existing.attachmentsJson ?? "[]");
+      const youtubeChanged =
+        (record.youtubeUrlsJson ?? "[]") !== (existing.youtubeUrlsJson ?? "[]");
+      const linksChanged =
+        (record.relatedLinksJson ?? "[]") !== (existing.relatedLinksJson ?? "[]");
+      const commentChanged = (record.teacherComment ?? "") !== (existing.teacherComment ?? "");
+
+      const anyChanged =
+        folderChanged ||
+        confirmedChanged ||
+        titleChanged ||
+        thumbChanged ||
+        screenshotsChanged ||
+        attachmentsChanged ||
+        youtubeChanged ||
+        linksChanged ||
+        commentChanged;
+
+      const compositeHash = computeSpckContentHash(record);
+      if (anyChanged && (record.contentHash !== compositeHash || record.contentHash === existing.contentHash)) {
+        targetStatus = "WAITING_APPROVAL";
+        targetHash = "";
+        targetVerifiedAt = null;
+        targetApprovedSessionNumber = null;
+      }
+    }
+
+    if (targetStatus === "APPROVED" || targetStatus === "VERIFIED") {
+      const compositeHash = computeSpckContentHash(record);
+      if (Number(record.isConfirmedByTeacher) !== 1 || targetHash !== compositeHash) {
+        targetStatus = "WAITING_APPROVAL";
+        targetHash = "";
+        targetVerifiedAt = null;
+        targetApprovedSessionNumber = null;
+      }
+    }
+
+    const nextDraftSeq =
+      typeof record.draftSeq === "number" && Number.isFinite(record.draftSeq)
+        ? Math.max(record.draftSeq, existing?.draftSeq ?? 0)
+        : existing?.draftSeq ?? 0;
+
+    // Merge sessionResultsJson so a slow background job holding stale `existing.sessionResultsJson = "{}"`
+    // NEVER erases newly verified/failed session results!
+    const mergedHistory = mergeSessionResultsPreservingHistory(
+      existing?.sessionResultsJson,
+      record.sessionResultsJson,
+      record.classId,
+      record.studentId,
+      db
+    );
+    const nextSessionResultsJson = mergedHistory.mergedJson;
+
+    const nextHistoryCorrupted =
+      record.historyCorrupted !== undefined
+        ? record.historyCorrupted
+        : existing?.historyCorrupted || mergedHistory.historyCorrupted || 0;
+    const nextHistoryCorruptedReason =
+      record.historyCorruptedReason !== undefined
+        ? record.historyCorruptedReason
+        : existing?.historyCorruptedReason || mergedHistory.historyCorruptedReason || null;
+
+    // Detect legacy unknown-session VERIFIED record and preserve flag across edits & Session 14 submissions (T08)
+    let nextHasLegacyUnknown =
+      record.hasLegacyUnknownSessionHistory !== undefined
+        ? record.hasLegacyUnknownSessionHistory
+        : existing?.hasLegacyUnknownSessionHistory ?? 0;
+    let nextLegacyMetaJson =
+      record.legacyHistoryMetaJson && record.legacyHistoryMetaJson !== "{}"
+        ? record.legacyHistoryMetaJson
+        : existing?.legacyHistoryMetaJson ?? "{}";
+
+    if (
+      !nextHasLegacyUnknown &&
+      nextHistoryCorrupted === 0 &&
+      (targetStatus === "VERIFIED" || (targetVerifiedAt && String(targetVerifiedAt).trim() !== "")) &&
+      Object.keys(parseSpckSessionResults(nextSessionResultsJson)).length === 0
+    ) {
+      nextHasLegacyUnknown = 1;
+      if (!nextLegacyMetaJson || nextLegacyMetaJson === "{}") {
+        nextLegacyMetaJson = JSON.stringify({
+          legacyVerifiedAt: targetVerifiedAt || new Date().toISOString(),
+          legacyContentHash: targetHash || "",
+          missingSnapshot: true,
+          note: "Thiếu bản lưu nội dung cũ (bản ghi từ phiên bản trước không ghi nhận cụ thể buổi 12, 13 hay 14).",
+        });
+      }
+    }
+
+    const computedBaseTitle =
+      stripSpckSessionSuffix(record.baseProjectTitle || record.projectTitle || "") ||
+      stripSpckSessionSuffix(existing?.baseProjectTitle || existing?.projectTitle || "");
+
     const stmt = db.prepare(`
       INSERT INTO spck_uploads (
         classId, studentId, localFolderPath, matchScore, isConfirmedByTeacher,
-        projectTitle, thumbnailPath, screenshotsJson, attachmentsJson,
+        projectTitle, baseProjectTitle, thumbnailPath, screenshotsJson, attachmentsJson,
         youtubeUrlsJson, relatedLinksJson, teacherComment, contentHash,
-        status, verifiedAt, errorMessage, updatedAt
+        status, verifiedAt, errorMessage, draftSeq, sessionResultsJson,
+        hasLegacyUnknownSessionHistory, legacyHistoryMetaJson,
+        historyCorrupted, historyCorruptedReason, approvedSessionNumber, updatedAt
       )
       VALUES (
         @classId, @studentId, @localFolderPath, @matchScore, @isConfirmedByTeacher,
-        @projectTitle, @thumbnailPath, @screenshotsJson, @attachmentsJson,
+        @projectTitle, @baseProjectTitle, @thumbnailPath, @screenshotsJson, @attachmentsJson,
         @youtubeUrlsJson, @relatedLinksJson, @teacherComment, @contentHash,
-        @status, @verifiedAt, @errorMessage, datetime('now', 'localtime')
+        @status, @verifiedAt, @errorMessage, @draftSeq, @sessionResultsJson,
+        @hasLegacyUnknownSessionHistory, @legacyHistoryMetaJson,
+        @historyCorrupted, @historyCorruptedReason, @approvedSessionNumber, datetime('now', 'localtime')
       )
       ON CONFLICT(classId, studentId) DO UPDATE SET
         localFolderPath = excluded.localFolderPath,
         matchScore = excluded.matchScore,
         isConfirmedByTeacher = excluded.isConfirmedByTeacher,
         projectTitle = excluded.projectTitle,
+        baseProjectTitle = excluded.baseProjectTitle,
         thumbnailPath = excluded.thumbnailPath,
         screenshotsJson = excluded.screenshotsJson,
         attachmentsJson = excluded.attachmentsJson,
@@ -597,32 +2238,215 @@ export const spckUploadRepo = {
         status = excluded.status,
         verifiedAt = excluded.verifiedAt,
         errorMessage = excluded.errorMessage,
+        draftSeq = excluded.draftSeq,
+        sessionResultsJson = excluded.sessionResultsJson,
+        hasLegacyUnknownSessionHistory = excluded.hasLegacyUnknownSessionHistory,
+        legacyHistoryMetaJson = excluded.legacyHistoryMetaJson,
+        historyCorrupted = excluded.historyCorrupted,
+        historyCorruptedReason = excluded.historyCorruptedReason,
+        approvedSessionNumber = excluded.approvedSessionNumber,
         updatedAt = datetime('now', 'localtime')
     `);
-    return stmt.run({
+    const res = stmt.run({
       classId: record.classId,
       studentId: record.studentId,
       localFolderPath: record.localFolderPath ?? "",
       matchScore: record.matchScore ?? 0.0,
       isConfirmedByTeacher: record.isConfirmedByTeacher ?? 0,
       projectTitle: record.projectTitle ?? "",
+      baseProjectTitle: computedBaseTitle,
       thumbnailPath: record.thumbnailPath ?? "",
       screenshotsJson: record.screenshotsJson ?? "[]",
       attachmentsJson: record.attachmentsJson ?? "[]",
       youtubeUrlsJson: record.youtubeUrlsJson ?? "[]",
       relatedLinksJson: record.relatedLinksJson ?? "[]",
       teacherComment: record.teacherComment ?? "",
-      contentHash: record.contentHash ?? "",
-      status: record.status || "DRAFT",
-      verifiedAt: record.verifiedAt ?? null,
+      contentHash: targetHash,
+      status: targetStatus,
+      verifiedAt: targetVerifiedAt,
       errorMessage: record.errorMessage ?? null,
+      draftSeq: nextDraftSeq,
+      sessionResultsJson: nextSessionResultsJson,
+      hasLegacyUnknownSessionHistory: nextHasLegacyUnknown,
+      legacyHistoryMetaJson: nextLegacyMetaJson,
+      historyCorrupted: nextHistoryCorrupted,
+      historyCorruptedReason: nextHistoryCorruptedReason,
+      approvedSessionNumber: targetApprovedSessionNumber,
     });
+
+    return res;
+  },
+
+  /**
+   * Safe shared-resource updater for background tools (capture-screenshots, upload-drive, deploy-web, student-portal, scan).
+   * Updates only shared resource columns in spck_uploads, verifies folder binding (T16), and NEVER overwrites
+   * session submission history or edited session comments/titles (T01, T07).
+   */
+  updateSharedResources(
+    paramsOrClassId:
+      | string
+      | {
+          classId: string;
+          studentId: string;
+          expectedFolderPath?: string;
+          localFolderPath?: string;
+          matchScore?: number;
+          isConfirmedByTeacher?: number;
+          baseProjectTitle?: string;
+          thumbnailPath?: string;
+          screenshotsJson?: string;
+          attachmentsJson?: string;
+          youtubeUrlsJson?: string;
+          relatedLinksJson?: string;
+          syncSessionNumber?: SpckSessionSlotNumber;
+        },
+    studentIdArg?: string,
+    patchArg?: {
+      localFolderPath?: string;
+      matchScore?: number;
+      isConfirmedByTeacher?: number;
+      baseProjectTitle?: string;
+      thumbnailPath?: string;
+      screenshotsJson?: string;
+      attachmentsJson?: string;
+      youtubeUrlsJson?: string;
+      relatedLinksJson?: string;
+      syncSessionNumber?: SpckSessionSlotNumber;
+    },
+    expectedFolderPathArg?: string
+  ): { updated: boolean; reason?: string; record?: SpckUploadRecord } {
+    const params =
+      typeof paramsOrClassId === "string"
+        ? {
+            classId: paramsOrClassId,
+            studentId: String(studentIdArg || ""),
+            expectedFolderPath: expectedFolderPathArg,
+            ...(patchArg || {}),
+          }
+        : paramsOrClassId;
+    const existing = this.findOne(params.classId, params.studentId);
+    if (!existing) {
+      return { updated: false, reason: "Không tìm thấy bản ghi SPCK của học viên." };
+    }
+    if (
+      params.expectedFolderPath !== undefined &&
+      normalizeSpckFolderKey(params.expectedFolderPath) !==
+        normalizeSpckFolderKey(existing.localFolderPath)
+    ) {
+      return {
+        updated: false,
+        reason: "Thư mục dự án của học viên đã thay đổi trong lúc tác vụ nền đang chạy (chặn ghi đè chéo học viên).",
+      };
+    }
+
+    const nextThumb = params.thumbnailPath !== undefined ? params.thumbnailPath : existing.thumbnailPath;
+    const nextScreens = params.screenshotsJson !== undefined ? params.screenshotsJson : existing.screenshotsJson;
+    const nextAttach = params.attachmentsJson !== undefined ? params.attachmentsJson : existing.attachmentsJson;
+    const nextYt = params.youtubeUrlsJson !== undefined ? params.youtubeUrlsJson : existing.youtubeUrlsJson;
+    const nextLinks = params.relatedLinksJson !== undefined ? params.relatedLinksJson : existing.relatedLinksJson;
+    const nextFolder = params.localFolderPath !== undefined ? params.localFolderPath : existing.localFolderPath;
+    const nextConfirmed =
+      params.isConfirmedByTeacher !== undefined ? params.isConfirmedByTeacher : existing.isConfirmedByTeacher;
+    const nextBaseTitle =
+      params.baseProjectTitle !== undefined
+        ? stripSpckSessionSuffix(params.baseProjectTitle)
+        : existing.baseProjectTitle || stripSpckSessionSuffix(existing.projectTitle);
+    const nextMatchScore = params.matchScore !== undefined ? params.matchScore : existing.matchScore;
+
+    const db = getDb();
+    const sessionRowsMap = spckSessionRepo.findByStudent(params.classId, params.studentId);
+    const hasAnyApprovedSessionRow = Object.values(sessionRowsMap).some(
+      (r) => r && (r.draftStatus === "APPROVED" || r.draftStatus === "VERIFIED")
+    );
+
+    if (hasAnyApprovedSessionRow) {
+      // Update only shared resource pool columns so existing per-session approvals remain untouched until teacher explicitly clicks "Dùng tài nguyên mới nhất"
+      db.prepare(
+        `UPDATE spck_uploads
+         SET localFolderPath = ?,
+             matchScore = ?,
+             isConfirmedByTeacher = ?,
+             baseProjectTitle = ?,
+             thumbnailPath = ?,
+             screenshotsJson = ?,
+             attachmentsJson = ?,
+             youtubeUrlsJson = ?,
+             relatedLinksJson = ?,
+             draftSeq = COALESCE(draftSeq, 0) + 1,
+             updatedAt = datetime('now', 'localtime')
+         WHERE classId = ? AND studentId = ?`
+      ).run(
+        nextFolder ?? "",
+        nextMatchScore ?? 0.0,
+        nextConfirmed ?? 0,
+        nextBaseTitle ?? "",
+        nextThumb ?? "",
+        nextScreens ?? "[]",
+        nextAttach ?? "[]",
+        nextYt ?? "[]",
+        nextLinks ?? "[]",
+        params.classId,
+        params.studentId
+      );
+    } else {
+      this.upsert({
+        ...existing,
+        localFolderPath: nextFolder,
+        matchScore: nextMatchScore,
+        isConfirmedByTeacher: nextConfirmed,
+        baseProjectTitle: nextBaseTitle,
+        thumbnailPath: nextThumb,
+        screenshotsJson: nextScreens,
+        attachmentsJson: nextAttach,
+        youtubeUrlsJson: nextYt,
+        relatedLinksJson: nextLinks,
+      });
+    }
+
+    if (params.syncSessionNumber && isValidSpckSessionSlot(params.syncSessionNumber)) {
+      for (const slotNum of [12, 13, 14] as const) {
+        const sessRow = spckSessionRepo.findOne(
+          params.classId,
+          params.studentId,
+          slotNum
+        );
+        if (!sessRow || sessRow.lastVerifiedAt || sessRow.draftStatus === "APPROVED") {
+          continue;
+        }
+        const isTargetSlot = slotNum === params.syncSessionNumber;
+        const hasMissingThumbOnDisk =
+          Boolean(sessRow.thumbnailPath) && !fs.existsSync(sessRow.thumbnailPath);
+        if (isTargetSlot || hasMissingThumbOnDisk) {
+          spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
+            params.classId,
+            params.studentId,
+            slotNum
+          );
+        }
+      }
+    }
+
+    return {
+      updated: true,
+      record: this.findOne(params.classId, params.studentId),
+    };
+  },
+
+  deleteOne(classId: string, studentId: string) {
+    const db = getDb();
+    db.prepare(`DELETE FROM spck_session_submissions WHERE classId = ? AND studentId = ?`).run(
+      classId,
+      studentId
+    );
+    return db
+      .prepare(`DELETE FROM spck_uploads WHERE classId = ? AND studentId = ?`)
+      .run(classId, studentId);
   },
 
   findByClass(classId: string): SpckUploadRecord[] {
     const db = getDb();
     return db
-      .prepare(`SELECT * FROM spck_uploads WHERE classId = ?`)
+      .prepare(`SELECT * FROM spck_uploads WHERE classId = ? ORDER BY studentId ASC`)
       .all(classId) as SpckUploadRecord[];
   },
 
@@ -633,15 +2457,1132 @@ export const spckUploadRepo = {
       .get(classId, studentId) as SpckUploadRecord | undefined;
   },
 
-  markVerified(classId: string, studentId: string) {
+  markVerified(
+    classId: string,
+    studentId: string,
+    expectedContentHash?: string,
+    sessionNumber?: number,
+    lmsWorkId?: string | null
+  ) {
     const db = getDb();
+    const current = db
+      .prepare(`SELECT * FROM spck_uploads WHERE classId = ? AND studentId = ?`)
+      .get(classId, studentId) as SpckUploadRecord | undefined;
+
+    const slot =
+      sessionNumber !== undefined && isValidSpckSessionSlot(sessionNumber)
+        ? (Number(sessionNumber) as SpckSessionSlotNumber)
+        : undefined;
+    const sessRow = slot ? spckSessionRepo.findOne(classId, studentId, slot) : undefined;
+
+    const isSessionRowValid =
+      Boolean(
+        slot &&
+          sessRow &&
+          (sessRow.draftStatus === "APPROVED" ||
+            sessRow.draftStatus === "SAVING" ||
+            sessRow.draftStatus === "FAILED") &&
+          verifySpckSessionIntegrity(sessRow, slot) &&
+          (expectedContentHash === undefined ||
+            sessRow.approvedContentHash === expectedContentHash ||
+            computeSpckContentHash(sessRow) === expectedContentHash)
+      );
+
+    const isLegacyCurrentValid =
+      Boolean(
+        current &&
+          (current.status === "APPROVED" ||
+            current.status === "SAVING" ||
+            current.status === "FAILED") &&
+          verifySpckContentIntegrity(current) &&
+          (expectedContentHash === undefined || current.contentHash === expectedContentHash)
+      );
+
+    if (!current || (!isSessionRowValid && !isLegacyCurrentValid)) {
+      return { changes: 0, lastInsertRowid: 0 };
+    }
+
+    const nowRow = db
+      .prepare(`SELECT datetime('now', 'localtime') AS nowStr`)
+      .get() as { nowStr: string };
+    const nowStr = nowRow?.nowStr || new Date().toISOString();
+
+    const verifiedHash =
+      expectedContentHash ||
+      (isSessionRowValid ? sessRow!.approvedContentHash : current.contentHash) ||
+      "";
+
+    let nextSessionResultsJson = current.sessionResultsJson || "{}";
+    if (slot) {
+      const sessKey = String(slot) as "12" | "13" | "14";
+      const parsedMap = parseSpckSessionResults(current.sessionResultsJson);
+      parsedMap[sessKey] = {
+        sessionNumber: slot,
+        status: "VERIFIED",
+        submittedContentHash: verifiedHash,
+        verifiedAt: nowStr,
+        lastVerifiedContentHash: verifiedHash,
+        lastVerifiedAt: nowStr,
+        lmsWorkId: lmsWorkId ?? null,
+        updatedAt: nowStr,
+        errorMessage: null,
+      };
+      nextSessionResultsJson = JSON.stringify(parsedMap);
+
+      const sourceUploadForSnapshot: SpckUploadRecord = isSessionRowValid
+        ? {
+            ...current,
+            localFolderPath: sessRow!.localFolderPath || current.localFolderPath,
+            isConfirmedByTeacher:
+              sessRow!.isConfirmedByTeacher ?? current.isConfirmedByTeacher,
+            projectTitle: sessRow!.projectTitle || current.projectTitle,
+            thumbnailPath: sessRow!.thumbnailPath || current.thumbnailPath,
+            screenshotsJson: sessRow!.screenshotsJson || current.screenshotsJson,
+            attachmentsJson: sessRow!.attachmentsJson || current.attachmentsJson,
+            youtubeUrlsJson: sessRow!.youtubeUrlsJson || current.youtubeUrlsJson,
+            relatedLinksJson: sessRow!.relatedLinksJson || current.relatedLinksJson,
+            teacherComment: sessRow!.teacherComment || current.teacherComment,
+            contentHash: verifiedHash,
+          }
+        : current;
+
+      spckSessionRepo.markSessionVerifiedFromUpload(
+        classId,
+        studentId,
+        slot,
+        sourceUploadForSnapshot,
+        nowStr,
+        lmsWorkId ?? null
+      );
+    }
+
+    if (isLegacyCurrentValid || !slot || current.approvedSessionNumber === slot) {
+      return db
+        .prepare(`
+          UPDATE spck_uploads
+          SET status = 'VERIFIED',
+              verifiedAt = ?,
+              errorMessage = NULL,
+              sessionResultsJson = ?,
+              updatedAt = ?
+          WHERE classId = ? AND studentId = ?
+        `)
+        .run(nowStr, nextSessionResultsJson, nowStr, classId, studentId);
+    }
+
     return db
       .prepare(`
         UPDATE spck_uploads
-        SET status = 'VERIFIED', verifiedAt = datetime('now', 'localtime'), errorMessage = NULL, updatedAt = datetime('now', 'localtime')
+        SET sessionResultsJson = ?,
+            updatedAt = ?
         WHERE classId = ? AND studentId = ?
       `)
-      .run(classId, studentId);
+      .run(nextSessionResultsJson, nowStr, classId, studentId);
+  },
+
+  recordSessionFailure(
+    classId: string,
+    studentId: string,
+    sessionNumber: number | undefined,
+    attemptedContentHash: string,
+    errorMessage: string
+  ) {
+    const db = getDb();
+    const current = db
+      .prepare(`SELECT * FROM spck_uploads WHERE classId = ? AND studentId = ?`)
+      .get(classId, studentId) as SpckUploadRecord | undefined;
+
+    const slot =
+      sessionNumber !== undefined && isValidSpckSessionSlot(sessionNumber)
+        ? (Number(sessionNumber) as SpckSessionSlotNumber)
+        : undefined;
+    const sessRow = slot ? spckSessionRepo.findOne(classId, studentId, slot) : undefined;
+    const isSessionMatch = Boolean(
+      slot && sessRow && sessRow.approvedContentHash === attemptedContentHash
+    );
+    const isCurrentMatch = Boolean(current && current.contentHash === attemptedContentHash);
+
+    if (!current || (!isSessionMatch && !isCurrentMatch)) {
+      return { changes: 0, lastInsertRowid: 0 };
+    }
+
+    const nowRow = db
+      .prepare(`SELECT datetime('now', 'localtime') AS nowStr`)
+      .get() as { nowStr: string };
+    const nowStr = nowRow?.nowStr || new Date().toISOString();
+
+    let nextSessionResultsJson = current.sessionResultsJson || "{}";
+    if (slot) {
+      const sessKey = String(slot) as "12" | "13" | "14";
+      const parsedMap = parseSpckSessionResults(current.sessionResultsJson);
+      const prev = parsedMap[sessKey];
+      parsedMap[sessKey] = {
+        sessionNumber: slot,
+        status: "FAILED",
+        submittedContentHash: attemptedContentHash,
+        verifiedAt: prev?.status === "VERIFIED" ? prev.verifiedAt : prev?.lastVerifiedAt ?? null,
+        lastVerifiedContentHash:
+          prev?.status === "VERIFIED"
+            ? prev.submittedContentHash
+            : prev?.lastVerifiedContentHash ?? null,
+        lastVerifiedAt:
+          prev?.status === "VERIFIED" ? prev.verifiedAt : prev?.lastVerifiedAt ?? null,
+        lmsWorkId: prev?.lmsWorkId ?? null,
+        updatedAt: nowStr,
+        errorMessage,
+      };
+      nextSessionResultsJson = JSON.stringify(parsedMap);
+
+      spckSessionRepo.recordSessionFailedFromUpload(
+        classId,
+        studentId,
+        slot,
+        attemptedContentHash,
+        errorMessage,
+        nowStr
+      );
+    }
+
+    if (isCurrentMatch || !slot || current.approvedSessionNumber === slot) {
+      return db
+        .prepare(`
+          UPDATE spck_uploads
+          SET status = 'FAILED',
+              errorMessage = ?,
+              sessionResultsJson = ?,
+              updatedAt = ?
+          WHERE classId = ? AND studentId = ?
+        `)
+        .run(errorMessage, nextSessionResultsJson, nowStr, classId, studentId);
+    }
+
+    return db
+      .prepare(`
+        UPDATE spck_uploads
+        SET sessionResultsJson = ?,
+            updatedAt = ?
+        WHERE classId = ? AND studentId = ?
+      `)
+      .run(nextSessionResultsJson, nowStr, classId, studentId);
+  },
+};
+
+export interface SpckSessionHistoryCellSummary {
+  sessionNumber: SpckSessionSlotNumber;
+  stageNumber: SpckStageNumber;
+  stageCode: SpckStageCode;
+  displayState:
+    | "VERIFIED"
+    | "VERIFIED_WITH_UNSUBMITTED_EDITS"
+    | "VERIFIED_FILE_DRIFT"
+    | "FAILED_AFTER_VERIFIED"
+    | "FAILED"
+    | "UNKNOWN_LEGACY"
+    | "CORRUPTED"
+    | "NOT_SUBMITTED";
+  badgeLabel: string;
+  draftStatus: SpckSessionSubmissionRecord["draftStatus"];
+  draftVersion: number;
+  isDraftInitialized: boolean;
+  hasUnsubmittedChanges: boolean;
+  hasNewerSharedResources: boolean;
+  hasFileDriftAfterVerified: boolean;
+  driftedFiles: string[];
+  lastAttemptStatus: "VERIFIED" | "FAILED" | null;
+  lastAttemptAt: string | null;
+  lastErrorMessage: string | null;
+  lastVerifiedHash: string | null;
+  lastVerifiedAt: string | null;
+  lastVerifiedLmsWorkId: string | null;
+  lastVerifiedSnapshot: SpckSubmissionSnapshot | null;
+  missingLegacySnapshot: boolean;
+}
+
+export const spckSessionRepo = {
+  findOne(
+    classId: string,
+    studentId: string,
+    rawSessionNumber: unknown
+  ): SpckSessionSubmissionRecord | undefined {
+    const sessionNumber = parseSpckSessionSlotStrict(rawSessionNumber, "spckSessionRepo.findOne");
+    const db = getDb();
+    return db
+      .prepare(
+        `SELECT * FROM spck_session_submissions WHERE classId = ? AND studentId = ? AND sessionNumber = ?`
+      )
+      .get(classId, studentId, sessionNumber) as SpckSessionSubmissionRecord | undefined;
+  },
+
+  findByStudent(
+    classId: string,
+    studentId: string
+  ): Partial<Record<"12" | "13" | "14", SpckSessionSubmissionRecord>> {
+    const db = getDb();
+    const rows = db
+      .prepare(
+        `SELECT * FROM spck_session_submissions WHERE classId = ? AND studentId = ? ORDER BY sessionNumber ASC`
+      )
+      .all(classId, studentId) as SpckSessionSubmissionRecord[];
+    const map: Partial<Record<"12" | "13" | "14", SpckSessionSubmissionRecord>> = {};
+    for (const r of rows) {
+      if (r.sessionNumber === 12 || r.sessionNumber === 13 || r.sessionNumber === 14) {
+        map[String(r.sessionNumber) as "12" | "13" | "14"] = r;
+      }
+    }
+    return map;
+  },
+
+  getOrInitSessionDraft(
+    classId: string,
+    studentId: string,
+    rawSessionNumber: unknown,
+    fallbackStudentName?: string | null
+  ): SpckSessionSubmissionRecord {
+    const stageInfo = getSpckStageInfo(rawSessionNumber, "spckSessionRepo.getOrInitSessionDraft");
+    const existing = this.findOne(classId, studentId, stageInfo.sessionNumber);
+    if (existing) {
+      return existing;
+    }
+
+    const db = getDb();
+    const shared = spckUploadRepo.findOne(classId, studentId);
+    const student =
+      fallbackStudentName ||
+      (
+        db
+          .prepare(`SELECT fullName FROM students WHERE classId = ? AND studentId = ?`)
+          .get(classId, studentId) as { fullName?: string } | undefined
+      )?.fullName ||
+      "";
+
+    const baseTitle = stripSpckSessionSuffix(shared?.baseProjectTitle || shared?.projectTitle || "");
+    const formattedTitle = formatSpckSessionTitle(
+      baseTitle,
+      stageInfo.sessionNumber,
+      student
+    );
+
+    // Check if there is a previous session (e.g., Session 12 when initializing Session 13, or Session 13/12 when initializing Session 14)
+    // to inherit shared resources while keeping comment empty for the new session.
+    const folderPath = shared?.localFolderPath || "";
+    const isConfirmed = shared?.isConfirmedByTeacher ?? 0;
+    const thumbPath = shared?.thumbnailPath || "";
+    const screensJson = shared?.screenshotsJson || "[]";
+    const attachJson = shared?.attachmentsJson || "[]";
+    const ytJson = shared?.youtubeUrlsJson || "[]";
+    const linksJson = shared?.relatedLinksJson || "[]";
+
+    // Only reuse shared.teacherComment if no session rows exist at all and shared.teacherComment was already saved before v2.7.0
+    const anyExistingSessions = Object.keys(this.findByStudent(classId, studentId)).length > 0;
+    const initialComment = !anyExistingSessions && shared?.teacherComment ? shared.teacherComment : "";
+
+    db.prepare(
+      `INSERT INTO spck_session_submissions (
+        classId, studentId, sessionNumber, stageNumber, localFolderPath,
+        isConfirmedByTeacher, projectTitle, thumbnailPath, screenshotsJson,
+        attachmentsJson, youtubeUrlsJson, relatedLinksJson, teacherComment,
+        teacherNote, quickTagsJson, draftVersion, isDraftInitialized,
+        draftStatus, approvedContentHash, approvedSnapshotJson, approvedAt,
+        lastAttemptStatus, lastAttemptHash, lastAttemptAt, lastErrorMessage,
+        lastVerifiedHash, lastVerifiedAt, lastVerifiedLmsWorkId,
+        lastVerifiedSnapshotJson, missingLegacySnapshot, updatedAt
+      ) VALUES (
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        '', '[]', 1, 1,
+        ?, '', '{}', NULL,
+        NULL, '', NULL, NULL,
+        '', NULL, NULL,
+        '{}', 0, datetime('now', 'localtime')
+      )
+      ON CONFLICT(classId, studentId, sessionNumber) DO NOTHING`
+    ).run(
+      classId,
+      studentId,
+      stageInfo.sessionNumber,
+      stageInfo.stageNumber,
+      folderPath,
+      isConfirmed,
+      formattedTitle,
+      thumbPath,
+      screensJson,
+      attachJson,
+      ytJson,
+      linksJson,
+      initialComment,
+      initialComment ? "WAITING_APPROVAL" : "DRAFT"
+    );
+
+    return this.findOne(classId, studentId, stageInfo.sessionNumber)!;
+  },
+
+  hasNewerSharedResources(
+    shared: SpckUploadRecord | undefined,
+    sessionRow: SpckSessionSubmissionRecord | undefined
+  ): boolean {
+    if (!shared || !sessionRow) return false;
+    if (
+      normalizeSpckFolderKey(shared.localFolderPath) !==
+      normalizeSpckFolderKey(sessionRow.localFolderPath)
+    ) {
+      return Boolean(shared.localFolderPath && shared.localFolderPath.trim());
+    }
+    if ((shared.thumbnailPath || "") !== (sessionRow.thumbnailPath || "")) return true;
+    if ((shared.screenshotsJson || "[]") !== (sessionRow.screenshotsJson || "[]")) return true;
+    if ((shared.attachmentsJson || "[]") !== (sessionRow.attachmentsJson || "[]")) return true;
+    if ((shared.youtubeUrlsJson || "[]") !== (sessionRow.youtubeUrlsJson || "[]")) return true;
+    if ((shared.relatedLinksJson || "[]") !== (sessionRow.relatedLinksJson || "[]")) return true;
+    return false;
+  },
+
+  syncLatestSharedResourcesToSessionDraft(
+    classId: string,
+    studentId: string,
+    rawSessionNumber: unknown,
+    expectedVersion?: number
+  ): {
+    success: boolean;
+    conflict?: boolean;
+    currentVersion?: number;
+    record: SpckSessionSubmissionRecord;
+  } {
+    const stageInfo = getSpckStageInfo(
+      rawSessionNumber,
+      "spckSessionRepo.syncLatestSharedResourcesToSessionDraft"
+    );
+    const current = this.getOrInitSessionDraft(classId, studentId, stageInfo.sessionNumber);
+    if (
+      expectedVersion !== undefined &&
+      Number.isFinite(expectedVersion) &&
+      Number(expectedVersion) !== current.draftVersion
+    ) {
+      return {
+        success: false,
+        conflict: true,
+        currentVersion: current.draftVersion,
+        record: current,
+      };
+    }
+
+    const shared = spckUploadRepo.findOne(classId, studentId);
+    if (!shared) {
+      return { success: true, record: current };
+    }
+
+    const baseTitle =
+      stripSpckSessionSuffix(current.projectTitle) ||
+      stripSpckSessionSuffix(shared.baseProjectTitle || shared.projectTitle);
+    const nextTitle = formatSpckSessionTitle(baseTitle, stageInfo.sessionNumber);
+
+    return this.saveSessionDraft({
+      classId,
+      studentId,
+      sessionNumber: stageInfo.sessionNumber,
+      localFolderPath: shared.localFolderPath ?? current.localFolderPath,
+      isConfirmedByTeacher: shared.isConfirmedByTeacher ?? current.isConfirmedByTeacher,
+      projectTitle: nextTitle,
+      thumbnailPath: shared.thumbnailPath ?? current.thumbnailPath,
+      screenshotsJson: shared.screenshotsJson ?? current.screenshotsJson,
+      attachmentsJson: shared.attachmentsJson ?? current.attachmentsJson,
+      youtubeUrlsJson: shared.youtubeUrlsJson ?? current.youtubeUrlsJson,
+      relatedLinksJson: shared.relatedLinksJson ?? current.relatedLinksJson,
+      teacherComment: current.teacherComment,
+      teacherNote: current.teacherNote,
+      quickTagsJson: current.quickTagsJson,
+      updateSharedPool: false,
+    });
+  },
+
+  saveSessionDraft(params: {
+    classId: string;
+    studentId: string;
+    sessionNumber: unknown;
+    expectedVersion?: number;
+    localFolderPath?: string;
+    isConfirmedByTeacher?: number;
+    projectTitle?: string;
+    thumbnailPath?: string;
+    screenshotsJson?: string;
+    attachmentsJson?: string;
+    youtubeUrlsJson?: string;
+    relatedLinksJson?: string;
+    teacherComment?: string;
+    teacherNote?: string;
+    quickTagsJson?: string;
+    draftStatus?: SpckSessionSubmissionRecord["draftStatus"];
+    updateSharedPool?: boolean;
+  }): {
+    success: boolean;
+    conflict?: boolean;
+    currentVersion?: number;
+    record: SpckSessionSubmissionRecord;
+  } {
+    const stageInfo = getSpckStageInfo(params.sessionNumber, "spckSessionRepo.saveSessionDraft");
+    const db = getDb();
+    const current = this.getOrInitSessionDraft(
+      params.classId,
+      params.studentId,
+      stageInfo.sessionNumber
+    );
+
+    if (
+      params.expectedVersion !== undefined &&
+      Number.isFinite(params.expectedVersion) &&
+      Number(params.expectedVersion) !== current.draftVersion
+    ) {
+      return {
+        success: false,
+        conflict: true,
+        currentVersion: current.draftVersion,
+        record: current,
+      };
+    }
+
+    const nextFolder =
+      params.localFolderPath !== undefined ? params.localFolderPath : current.localFolderPath;
+    const nextConfirmed =
+      params.isConfirmedByTeacher !== undefined
+        ? params.isConfirmedByTeacher
+        : current.isConfirmedByTeacher;
+
+    const studentRow = db
+      .prepare(`SELECT fullName FROM students WHERE classId = ? AND studentId = ?`)
+      .get(params.classId, params.studentId) as { fullName?: string } | undefined;
+
+    const rawTitleInput =
+      params.projectTitle !== undefined ? params.projectTitle : current.projectTitle;
+    const nextTitle = formatSpckSessionTitle(
+      rawTitleInput,
+      stageInfo.sessionNumber,
+      studentRow?.fullName
+    );
+    const nextBaseTitle = stripSpckSessionSuffix(nextTitle);
+
+    const nextThumb =
+      params.thumbnailPath !== undefined ? params.thumbnailPath : current.thumbnailPath;
+    const nextScreens =
+      params.screenshotsJson !== undefined ? params.screenshotsJson : current.screenshotsJson;
+    const nextAttach =
+      params.attachmentsJson !== undefined ? params.attachmentsJson : current.attachmentsJson;
+    const nextYt =
+      params.youtubeUrlsJson !== undefined ? params.youtubeUrlsJson : current.youtubeUrlsJson;
+    const nextLinks =
+      params.relatedLinksJson !== undefined ? params.relatedLinksJson : current.relatedLinksJson;
+    const nextComment =
+      params.teacherComment !== undefined ? params.teacherComment : current.teacherComment;
+    const nextNote =
+      params.teacherNote !== undefined ? params.teacherNote : current.teacherNote;
+    const nextTags =
+      params.quickTagsJson !== undefined ? params.quickTagsJson : current.quickTagsJson;
+
+    const candidateHash = computeSpckSessionContentHash(
+      {
+        classId: params.classId,
+        studentId: params.studentId,
+        localFolderPath: nextFolder,
+        isConfirmedByTeacher: nextConfirmed,
+        projectTitle: nextTitle,
+        thumbnailPath: nextThumb,
+        screenshotsJson: nextScreens,
+        attachmentsJson: nextAttach,
+        youtubeUrlsJson: nextYt,
+        relatedLinksJson: nextLinks,
+        teacherComment: nextComment,
+      },
+      stageInfo.sessionNumber
+    );
+
+    const contentChangedFromApproved =
+      Boolean(current.approvedContentHash) && current.approvedContentHash !== candidateHash;
+    const contentChangedFromCurrent =
+      normalizeSpckFolderKey(nextFolder) !== normalizeSpckFolderKey(current.localFolderPath) ||
+      nextConfirmed !== current.isConfirmedByTeacher ||
+      nextTitle !== current.projectTitle ||
+      nextThumb !== current.thumbnailPath ||
+      nextScreens !== current.screenshotsJson ||
+      nextAttach !== current.attachmentsJson ||
+      nextYt !== current.youtubeUrlsJson ||
+      nextLinks !== current.relatedLinksJson ||
+      nextComment !== current.teacherComment ||
+      nextNote !== current.teacherNote ||
+      nextTags !== current.quickTagsJson;
+
+    let nextDraftStatus = params.draftStatus || current.draftStatus || "WAITING_APPROVAL";
+    let nextApprovedHash = current.approvedContentHash || "";
+    let nextApprovedSnapshot = current.approvedSnapshotJson || "{}";
+    let nextApprovedAt = current.approvedAt || null;
+
+    if (contentChangedFromApproved || contentChangedFromCurrent) {
+      if (nextApprovedHash && contentChangedFromApproved) {
+        nextDraftStatus = "WAITING_APPROVAL";
+        nextApprovedHash = "";
+        nextApprovedSnapshot = "{}";
+        nextApprovedAt = null;
+      } else if (nextDraftStatus === "VERIFIED" || nextDraftStatus === "APPROVED") {
+        nextDraftStatus = "WAITING_APPROVAL";
+      } else if (nextDraftStatus === "DRAFT" && nextComment.trim()) {
+        nextDraftStatus = "WAITING_APPROVAL";
+      }
+    }
+
+    const nextVersion = contentChangedFromCurrent ? current.draftVersion + 1 : current.draftVersion;
+
+    db.prepare(
+      `UPDATE spck_session_submissions
+       SET stageNumber = ?,
+           localFolderPath = ?,
+           isConfirmedByTeacher = ?,
+           projectTitle = ?,
+           thumbnailPath = ?,
+           screenshotsJson = ?,
+           attachmentsJson = ?,
+           youtubeUrlsJson = ?,
+           relatedLinksJson = ?,
+           teacherComment = ?,
+           teacherNote = ?,
+           quickTagsJson = ?,
+           draftVersion = ?,
+           isDraftInitialized = 1,
+           draftStatus = ?,
+           approvedContentHash = ?,
+           approvedSnapshotJson = ?,
+           approvedAt = ?,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ? AND studentId = ? AND sessionNumber = ?`
+    ).run(
+      stageInfo.stageNumber,
+      nextFolder,
+      nextConfirmed,
+      nextTitle,
+      nextThumb,
+      nextScreens,
+      nextAttach,
+      nextYt,
+      nextLinks,
+      nextComment,
+      nextNote,
+      nextTags,
+      nextVersion,
+      nextDraftStatus,
+      nextApprovedHash,
+      nextApprovedSnapshot,
+      nextApprovedAt,
+      params.classId,
+      params.studentId,
+      stageInfo.sessionNumber
+    );
+
+    if (params.updateSharedPool !== false) {
+      const shared = spckUploadRepo.findOne(params.classId, params.studentId);
+      const sharedThumb =
+        params.thumbnailPath !== undefined
+          ? nextThumb
+          : shared?.thumbnailPath || nextThumb;
+      const sharedScreens =
+        params.screenshotsJson !== undefined
+          ? nextScreens
+          : shared?.screenshotsJson || nextScreens;
+      const sharedAttach =
+        params.attachmentsJson !== undefined
+          ? nextAttach
+          : shared?.attachmentsJson || nextAttach;
+      const sharedYt =
+        params.youtubeUrlsJson !== undefined
+          ? nextYt
+          : shared?.youtubeUrlsJson || nextYt;
+      const sharedLinks =
+        params.relatedLinksJson !== undefined
+          ? nextLinks
+          : shared?.relatedLinksJson || nextLinks;
+
+      spckUploadRepo.upsert({
+        classId: params.classId,
+        studentId: params.studentId,
+        localFolderPath: nextFolder,
+        matchScore: shared?.matchScore ?? 1.0,
+        isConfirmedByTeacher: nextConfirmed,
+        projectTitle: nextTitle,
+        baseProjectTitle: nextBaseTitle,
+        thumbnailPath: sharedThumb,
+        screenshotsJson: sharedScreens,
+        attachmentsJson: sharedAttach,
+        youtubeUrlsJson: sharedYt,
+        relatedLinksJson: sharedLinks,
+        teacherComment: nextComment,
+        contentHash: nextApprovedHash
+          ? computeSpckContentHash({
+              classId: params.classId,
+              studentId: params.studentId,
+              localFolderPath: nextFolder,
+              isConfirmedByTeacher: nextConfirmed,
+              projectTitle: nextTitle,
+              thumbnailPath: nextThumb,
+              screenshotsJson: nextScreens,
+              attachmentsJson: nextAttach,
+              youtubeUrlsJson: nextYt,
+              relatedLinksJson: nextLinks,
+              teacherComment: nextComment,
+            })
+          : "",
+        status: nextDraftStatus,
+        draftSeq: (shared?.draftSeq ?? 0) + 1,
+        approvedSessionNumber: nextApprovedHash ? stageInfo.sessionNumber : null,
+      });
+    }
+
+    return {
+      success: true,
+      record: this.findOne(params.classId, params.studentId, stageInfo.sessionNumber)!,
+    };
+  },
+
+  approveSessionDraft(
+    classId: string,
+    studentId: string,
+    rawSessionNumber: unknown,
+    expectedVersion?: number
+  ): {
+    success: boolean;
+    conflict?: boolean;
+    reason?: string;
+    record: SpckSessionSubmissionRecord;
+  } {
+    const stageInfo = getSpckStageInfo(rawSessionNumber, "spckSessionRepo.approveSessionDraft");
+    const db = getDb();
+    const current = this.getOrInitSessionDraft(classId, studentId, stageInfo.sessionNumber);
+
+    if (
+      expectedVersion !== undefined &&
+      Number.isFinite(expectedVersion) &&
+      Number(expectedVersion) !== current.draftVersion
+    ) {
+      return {
+        success: false,
+        conflict: true,
+        reason: `Phiên bản bản nháp đã thay đổi (expected=${expectedVersion}, actual=${current.draftVersion}).`,
+        record: current,
+      };
+    }
+
+    const formattedTitle = formatSpckSessionTitle(current.projectTitle, stageInfo.sessionNumber);
+    const titleCheck = validateSpckTitleLength(formattedTitle, stageInfo.sessionNumber);
+    if (!titleCheck.valid) {
+      return {
+        success: false,
+        reason: titleCheck.reason || "Tiêu đề dự án không hợp lệ.",
+        record: current,
+      };
+    }
+
+    if (Number(current.isConfirmedByTeacher) !== 1) {
+      return {
+        success: false,
+        reason: "Chưa xác nhận gán đúng học viên.",
+        record: current,
+      };
+    }
+
+    if (!String(current.thumbnailPath || "").trim()) {
+      return {
+        success: false,
+        reason: "Thiếu ảnh đại diện sản phẩm (Thumbnail*).",
+        record: current,
+      };
+    }
+
+    if (!String(current.teacherComment || "").trim()) {
+      return {
+        success: false,
+        reason: "Thiếu bình luận của giáo viên (Bình luận*).",
+        record: current,
+      };
+    }
+
+    const nowRow = db
+      .prepare(`SELECT datetime('now', 'localtime') AS nowStr`)
+      .get() as { nowStr: string };
+    const nowStr = nowRow?.nowStr || new Date().toISOString();
+
+    const updatedRecordForHash = {
+      ...current,
+      projectTitle: formattedTitle,
+    };
+    const approvedSessionHash = computeSpckSessionContentHash(
+      updatedRecordForHash,
+      stageInfo.sessionNumber
+    );
+    const snapshot = buildSpckSubmissionSnapshot(
+      updatedRecordForHash,
+      stageInfo.sessionNumber,
+      approvedSessionHash,
+      nowStr
+    );
+
+    db.prepare(
+      `UPDATE spck_session_submissions
+       SET projectTitle = ?,
+           draftStatus = 'APPROVED',
+           approvedContentHash = ?,
+           approvedSnapshotJson = ?,
+           approvedAt = ?,
+           updatedAt = ?
+       WHERE classId = ? AND studentId = ? AND sessionNumber = ?`
+    ).run(
+      formattedTitle,
+      approvedSessionHash,
+      JSON.stringify(snapshot),
+      nowStr,
+      nowStr,
+      classId,
+      studentId,
+      stageInfo.sessionNumber
+    );
+
+    // Mirror active approved session onto spck_uploads for uploader & legacy compatibility
+    const shared = spckUploadRepo.findOne(classId, studentId);
+    const legacyHash = computeSpckContentHash({
+      classId,
+      studentId,
+      localFolderPath: current.localFolderPath,
+      isConfirmedByTeacher: current.isConfirmedByTeacher,
+      projectTitle: formattedTitle,
+      thumbnailPath: current.thumbnailPath,
+      screenshotsJson: current.screenshotsJson,
+      attachmentsJson: current.attachmentsJson,
+      youtubeUrlsJson: current.youtubeUrlsJson,
+      relatedLinksJson: current.relatedLinksJson,
+      teacherComment: current.teacherComment,
+    });
+    spckUploadRepo.upsert({
+      ...(shared || {
+        classId,
+        studentId,
+        matchScore: 1.0,
+      }),
+      localFolderPath: current.localFolderPath,
+      isConfirmedByTeacher: current.isConfirmedByTeacher,
+      projectTitle: formattedTitle,
+      baseProjectTitle: stripSpckSessionSuffix(formattedTitle),
+      thumbnailPath: current.thumbnailPath,
+      screenshotsJson: current.screenshotsJson,
+      attachmentsJson: current.attachmentsJson,
+      youtubeUrlsJson: current.youtubeUrlsJson,
+      relatedLinksJson: current.relatedLinksJson,
+      teacherComment: current.teacherComment,
+      contentHash: legacyHash,
+      status: "APPROVED",
+      errorMessage: null,
+      approvedSessionNumber: stageInfo.sessionNumber,
+    });
+
+    return {
+      success: true,
+      record: this.findOne(classId, studentId, stageInfo.sessionNumber)!,
+    };
+  },
+
+  markSessionVerifiedFromUpload(
+    classId: string,
+    studentId: string,
+    sessionNumber: SpckSessionSlotNumber,
+    uploadRecord: SpckUploadRecord,
+    nowStr: string,
+    lmsWorkId?: string | null
+  ) {
+    const db = getDb();
+    const current = this.getOrInitSessionDraft(classId, studentId, sessionNumber);
+    const sourceRecord = {
+      classId,
+      studentId,
+      localFolderPath: uploadRecord.localFolderPath || current.localFolderPath,
+      isConfirmedByTeacher: uploadRecord.isConfirmedByTeacher ?? current.isConfirmedByTeacher,
+      projectTitle: uploadRecord.projectTitle || current.projectTitle,
+      thumbnailPath: uploadRecord.thumbnailPath || current.thumbnailPath,
+      screenshotsJson: uploadRecord.screenshotsJson || current.screenshotsJson,
+      attachmentsJson: uploadRecord.attachmentsJson || current.attachmentsJson,
+      youtubeUrlsJson: uploadRecord.youtubeUrlsJson || current.youtubeUrlsJson,
+      relatedLinksJson: uploadRecord.relatedLinksJson || current.relatedLinksJson,
+      teacherComment: uploadRecord.teacherComment || current.teacherComment,
+      teacherNote: current.teacherNote,
+      quickTagsJson: current.quickTagsJson,
+    };
+    const sessionHash =
+      uploadRecord.contentHash ||
+      current.approvedContentHash ||
+      computeSpckSessionContentHash(sourceRecord, sessionNumber);
+    const snapshot = buildSpckSubmissionSnapshot(
+      sourceRecord,
+      sessionNumber,
+      sessionHash,
+      nowStr,
+      lmsWorkId
+    );
+
+    db.prepare(
+      `UPDATE spck_session_submissions
+       SET projectTitle = ?,
+           thumbnailPath = ?,
+           screenshotsJson = ?,
+           attachmentsJson = ?,
+           youtubeUrlsJson = ?,
+           relatedLinksJson = ?,
+           teacherComment = ?,
+           draftStatus = 'VERIFIED',
+           approvedContentHash = ?,
+           lastAttemptStatus = 'VERIFIED',
+           lastAttemptHash = ?,
+           lastAttemptAt = ?,
+           lastErrorMessage = NULL,
+           lastVerifiedHash = ?,
+           lastVerifiedAt = ?,
+           lastVerifiedLmsWorkId = ?,
+           lastVerifiedSnapshotJson = ?,
+           missingLegacySnapshot = 0,
+           updatedAt = ?
+       WHERE classId = ? AND studentId = ? AND sessionNumber = ?`
+    ).run(
+      sourceRecord.projectTitle,
+      sourceRecord.thumbnailPath,
+      sourceRecord.screenshotsJson,
+      sourceRecord.attachmentsJson,
+      sourceRecord.youtubeUrlsJson,
+      sourceRecord.relatedLinksJson,
+      sourceRecord.teacherComment,
+      sessionHash,
+      sessionHash,
+      nowStr,
+      sessionHash,
+      nowStr,
+      lmsWorkId ?? null,
+      JSON.stringify(snapshot),
+      nowStr,
+      classId,
+      studentId,
+      sessionNumber
+    );
+  },
+
+  recordSessionFailedFromUpload(
+    classId: string,
+    studentId: string,
+    sessionNumber: SpckSessionSlotNumber,
+    attemptedHash: string,
+    errorMessage: string,
+    nowStr: string
+  ) {
+    const db = getDb();
+    const current = this.getOrInitSessionDraft(classId, studentId, sessionNumber);
+    const sessionAttemptHash =
+      current.approvedContentHash ||
+      attemptedHash ||
+      computeSpckSessionContentHash(current, sessionNumber);
+
+    // Note: lastVerifiedHash, lastVerifiedAt, lastVerifiedLmsWorkId, lastVerifiedSnapshotJson, missingLegacySnapshot
+    // are intentionally NOT overwritten so prior successful submission proof is preserved!
+    db.prepare(
+      `UPDATE spck_session_submissions
+       SET draftStatus = 'FAILED',
+           lastAttemptStatus = 'FAILED',
+           lastAttemptHash = ?,
+           lastAttemptAt = ?,
+           lastErrorMessage = ?,
+           updatedAt = ?
+       WHERE classId = ? AND studentId = ? AND sessionNumber = ?`
+    ).run(
+      sessionAttemptHash,
+      nowStr,
+      errorMessage,
+      nowStr,
+      classId,
+      studentId,
+      sessionNumber
+    );
+  },
+
+  clearSessionSubmissionHistory(
+    classId: string,
+    studentId: string,
+    rawSessionNumber: unknown
+  ) {
+    const stageInfo = getSpckStageInfo(
+      rawSessionNumber,
+      "spckSessionRepo.clearSessionSubmissionHistory"
+    );
+    const db = getDb();
+    db.prepare(
+      `UPDATE spck_session_submissions
+       SET draftStatus = 'WAITING_APPROVAL',
+           approvedContentHash = '',
+           approvedSnapshotJson = '{}',
+           approvedAt = NULL,
+           lastAttemptStatus = NULL,
+           lastAttemptHash = '',
+           lastAttemptAt = NULL,
+           lastErrorMessage = NULL,
+           lastVerifiedHash = '',
+           lastVerifiedAt = NULL,
+           lastVerifiedLmsWorkId = NULL,
+           lastVerifiedSnapshotJson = '{}',
+           missingLegacySnapshot = 0,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ? AND studentId = ? AND sessionNumber = ?`
+    ).run(classId, studentId, stageInfo.sessionNumber);
+
+    const shared = spckUploadRepo.findOne(classId, studentId);
+    if (shared) {
+      const sessionMap = parseSpckSessionResults(shared.sessionResultsJson);
+      delete sessionMap[String(stageInfo.sessionNumber) as "12" | "13" | "14"];
+      db.prepare(
+        `UPDATE spck_uploads
+         SET status = 'WAITING_APPROVAL',
+             contentHash = '',
+             verifiedAt = NULL,
+             errorMessage = NULL,
+             sessionResultsJson = ?,
+             approvedSessionNumber = CASE WHEN approvedSessionNumber = ? THEN NULL ELSE approvedSessionNumber END,
+             updatedAt = datetime('now', 'localtime')
+         WHERE classId = ? AND studentId = ?`
+      ).run(
+        JSON.stringify(sessionMap),
+        stageInfo.sessionNumber,
+        classId,
+        studentId
+      );
+    }
+  },
+
+  buildStudentSessionHistorySummary(
+    classId: string,
+    studentId: string
+  ): {
+    historyCorrupted: boolean;
+    historyCorruptedReason: string | null;
+    hasLegacyUnknownSessionHistory: boolean;
+    legacyHistoryMeta: Record<string, any> | null;
+    sessions: Record<"12" | "13" | "14", SpckSessionHistoryCellSummary>;
+  } {
+    const shared = spckUploadRepo.findOne(classId, studentId);
+    const sessionRowsMap = this.findByStudent(classId, studentId);
+    const legacyResultsMap = parseSpckSessionResults(shared?.sessionResultsJson);
+    const rawInspection = inspectSpckSessionResultsRaw(shared?.sessionResultsJson);
+
+    const historyCorrupted =
+      Boolean(shared?.historyCorrupted) || !rawInspection.valid;
+    const historyCorruptedReason =
+      shared?.historyCorruptedReason || rawInspection.corruptedReason || null;
+
+    const hasLegacyUnknownSessionHistory = Boolean(shared?.hasLegacyUnknownSessionHistory);
+    let legacyHistoryMeta: Record<string, any> | null = null;
+    if (shared?.legacyHistoryMetaJson && shared.legacyHistoryMetaJson !== "{}") {
+      try {
+        legacyHistoryMeta = JSON.parse(shared.legacyHistoryMetaJson);
+      } catch {}
+    }
+
+    const sessions = {} as Record<"12" | "13" | "14", SpckSessionHistoryCellSummary>;
+
+    for (const slot of [12, 13, 14] as const) {
+      const key = String(slot) as "12" | "13" | "14";
+      const stageInfo = getSpckStageInfo(slot);
+      const sRow = sessionRowsMap[key];
+      const legEntry = legacyResultsMap[key];
+
+      const lastAttemptStatus = sRow?.lastAttemptStatus || legEntry?.status || null;
+      const lastAttemptAt = sRow?.lastAttemptAt || legEntry?.updatedAt || null;
+      const lastErrorMessage = sRow?.lastErrorMessage || legEntry?.errorMessage || null;
+      const lastVerifiedHash =
+        sRow?.lastVerifiedHash || legEntry?.lastVerifiedContentHash || (legEntry?.status === "VERIFIED" ? legEntry.submittedContentHash : "") || null;
+      const lastVerifiedAt =
+        sRow?.lastVerifiedAt || legEntry?.lastVerifiedAt || (legEntry?.status === "VERIFIED" ? legEntry.verifiedAt : null) || null;
+      const lastVerifiedLmsWorkId = sRow?.lastVerifiedLmsWorkId || legEntry?.lmsWorkId || null;
+      const missingLegacySnapshot = Boolean(sRow?.missingLegacySnapshot) || Boolean(lastVerifiedAt && !sRow?.lastVerifiedSnapshotJson);
+
+      const snapshot = parseSpckSubmissionSnapshot(sRow?.lastVerifiedSnapshotJson);
+      const driftCheck = checkSpckSnapshotFileDrift(snapshot);
+
+      let currentSessionHash = "";
+      let currentRawHash = "";
+      if (sRow) {
+        currentSessionHash = computeSpckSessionContentHash(sRow, slot);
+        currentRawHash = computeSpckContentHash(sRow);
+      }
+      const hashChangedFromVerified = Boolean(
+        lastVerifiedHash &&
+          sRow &&
+          sRow.lastAttemptHash &&
+          currentSessionHash !== sRow.lastVerifiedHash &&
+          currentRawHash !== sRow.lastVerifiedHash
+      );
+      const hasUnsubmittedChanges = Boolean(
+        lastVerifiedHash &&
+          sRow &&
+          (hashChangedFromVerified ||
+            sRow.draftStatus === "WAITING_APPROVAL" ||
+            sRow.draftStatus === "DRAFT")
+      );
+
+      const newerShared = this.hasNewerSharedResources(shared, sRow);
+
+      let displayState: SpckSessionHistoryCellSummary["displayState"] = "NOT_SUBMITTED";
+      let badgeLabel = "Chưa nộp";
+
+      if (historyCorrupted && !lastAttemptStatus && !lastVerifiedAt) {
+        displayState = "CORRUPTED";
+        badgeLabel = "Cần kiểm tra";
+      } else if (lastAttemptStatus === "FAILED" && lastVerifiedAt) {
+        displayState = "FAILED_AFTER_VERIFIED";
+        badgeLabel = `Lỗi nộp lại (đã nộp ${lastVerifiedAt.slice(0, 10)})`;
+      } else if (lastAttemptStatus === "FAILED") {
+        displayState = "FAILED";
+        badgeLabel = "Lỗi";
+      } else if (lastVerifiedAt || lastAttemptStatus === "VERIFIED") {
+        if (driftCheck.hasFileDrift) {
+          displayState = "VERIFIED_FILE_DRIFT";
+          badgeLabel = "Đã nộp (tệp gốc đã đổi)";
+        } else if (hasUnsubmittedChanges) {
+          displayState = "VERIFIED_WITH_UNSUBMITTED_EDITS";
+          badgeLabel = "Đã nộp (có bản sửa mới)";
+        } else {
+          displayState = "VERIFIED";
+          badgeLabel = "Đã nộp";
+        }
+      } else if (hasLegacyUnknownSessionHistory) {
+        displayState = "UNKNOWN_LEGACY";
+        badgeLabel = "Chưa xác định";
+      }
+
+      sessions[key] = {
+        sessionNumber: slot,
+        stageNumber: stageInfo.stageNumber,
+        stageCode: stageInfo.stageCode,
+        displayState,
+        badgeLabel,
+        draftStatus: sRow?.draftStatus || "DRAFT",
+        draftVersion: sRow?.draftVersion ?? 0,
+        isDraftInitialized: Boolean(sRow?.isDraftInitialized),
+        hasUnsubmittedChanges,
+        hasNewerSharedResources: newerShared,
+        hasFileDriftAfterVerified: driftCheck.hasFileDrift,
+        driftedFiles: driftCheck.driftedFiles,
+        lastAttemptStatus,
+        lastAttemptAt,
+        lastErrorMessage,
+        lastVerifiedHash,
+        lastVerifiedAt,
+        lastVerifiedLmsWorkId,
+        lastVerifiedSnapshot: snapshot,
+        missingLegacySnapshot,
+      };
+    }
+
+    return {
+      historyCorrupted,
+      historyCorruptedReason,
+      hasLegacyUnknownSessionHistory,
+      legacyHistoryMeta,
+      sessions,
+    };
   },
 };
 
@@ -691,5 +3632,183 @@ export const jobLogRepo = {
     return db
       .prepare(`SELECT * FROM job_logs ORDER BY id DESC LIMIT ?`)
       .all(limit) as JobLogRecord[];
+  },
+};
+
+export const scoreMatrixRepo = {
+  save(classId: string, matrixData: any) {
+    const normalizedId = classId.trim().toUpperCase();
+    if (!normalizedId) {
+      throw new Error("[scoreMatrixRepo] classId không được để trống.");
+    }
+    if (
+      !matrixData ||
+      typeof matrixData !== "object" ||
+      matrixData.success !== true ||
+      !Array.isArray(matrixData.columns) ||
+      matrixData.columns.length === 0 ||
+      !Array.isArray(matrixData.rows) ||
+      matrixData.rows.length === 0
+    ) {
+      throw new Error(
+        `[scoreMatrixRepo] Từ chối lưu ma trận điểm rỗng, chưa thành công (success !== true) hoặc không hợp lệ cho lớp ${normalizedId} để bảo vệ cache hiện có.`
+      );
+    }
+    if (
+      matrixData.classId &&
+      String(matrixData.classId).trim().toUpperCase() !== normalizedId
+    ) {
+      throw new Error(
+        `[scoreMatrixRepo] Xung đột mã lớp khi lưu bảng điểm: expected=${normalizedId}, actual=${matrixData.classId}`
+      );
+    }
+
+    const colIds = new Set<string>();
+    for (const col of matrixData.columns) {
+      const cid = String(col?.columnId || "").trim();
+      if (!cid || colIds.has(cid)) {
+        throw new Error(
+          `[scoreMatrixRepo] Cột bài tập thiếu columnId hoặc bị trùng lặp ('${cid}') trong lớp ${normalizedId}.`
+        );
+      }
+      colIds.add(cid);
+    }
+
+    const validCellStatuses = new Set([
+      "GRADED",
+      "SUBMITTED_UNGRADED",
+      "NOT_SUBMITTED",
+      "REDO_REQUESTED",
+    ]);
+
+    const rowStudentIds = new Set<string>();
+    for (const row of matrixData.rows) {
+      const sid = String(row?.studentId || "").trim();
+      if (!sid || rowStudentIds.has(sid)) {
+        throw new Error(
+          `[scoreMatrixRepo] Dòng học viên thiếu studentId hoặc bị trùng lặp ('${sid}') trong lớp ${normalizedId}.`
+        );
+      }
+      rowStudentIds.add(sid);
+
+      if (!row.cells || typeof row.cells !== "object" || Array.isArray(row.cells)) {
+        throw new Error(
+          `[scoreMatrixRepo] Học viên '${sid}' thiếu danh sách ô điểm (cells) trong lớp ${normalizedId}.`
+        );
+      }
+
+      for (const cellKey of Object.keys(row.cells)) {
+        if (!colIds.has(cellKey)) {
+          throw new Error(
+            `[scoreMatrixRepo] Học viên '${sid}' chứa ô điểm có mã cột lạ '${cellKey}' không nằm trong danh sách cột của lớp ${normalizedId}.`
+          );
+        }
+      }
+
+      for (const cid of colIds) {
+        const cell = row.cells[cid];
+        if (!cell || typeof cell !== "object" || !validCellStatuses.has(String(cell.status))) {
+          throw new Error(
+            `[scoreMatrixRepo] Học viên '${sid}' có trạng thái ô điểm không hợp lệ ('${cell?.status}') tại cột '${cid}' trong lớp ${normalizedId}.`
+          );
+        }
+        if (typeof cell.columnId !== "string" || cell.columnId.trim() !== cid) {
+          throw new Error(
+            `[scoreMatrixRepo] Ô điểm của học viên '${sid}' tại cột '${cid}' thiếu hoặc sai lệch columnId ('${cell.columnId}').`
+          );
+        }
+        if (
+          typeof cell.maxScore !== "number" ||
+          !Number.isFinite(cell.maxScore) ||
+          cell.maxScore <= 0 ||
+          cell.maxScore > 100
+        ) {
+          throw new Error(
+            `[scoreMatrixRepo] Ô điểm của học viên '${sid}' tại cột '${cid}' thiếu hoặc có maxScore không hợp lệ (${cell.maxScore}).`
+          );
+        }
+        const maxScore = cell.maxScore;
+
+        if (!("score" in cell) || cell.score === undefined) {
+          throw new Error(
+            `[scoreMatrixRepo] Ô điểm của học viên '${sid}' tại cột '${cid}' thiếu trường bắt buộc 'score'.`
+          );
+        }
+
+        if (cell.status === "GRADED") {
+          if (
+            typeof cell.score !== "number" ||
+            !Number.isFinite(cell.score) ||
+            cell.score < 0 ||
+            cell.score > maxScore
+          ) {
+            throw new Error(
+              `[scoreMatrixRepo] Ô điểm GRADED của học viên '${sid}' tại cột '${cid}' có điểm số không hợp lệ (score=${cell.score}, maxScore=${maxScore}).`
+            );
+          }
+        } else if (cell.status === "SUBMITTED_UNGRADED" || cell.status === "NOT_SUBMITTED") {
+          if (cell.score !== null) {
+            throw new Error(
+              `[scoreMatrixRepo] Ô điểm '${cell.status}' của học viên '${sid}' tại cột '${cid}' bắt buộc có score=null (actual=${cell.score}).`
+            );
+          }
+        } else if (cell.status === "REDO_REQUESTED") {
+          if (
+            cell.score !== null &&
+            (typeof cell.score !== "number" ||
+              !Number.isFinite(cell.score) ||
+              cell.score < 0 ||
+              cell.score > maxScore)
+          ) {
+            throw new Error(
+              `[scoreMatrixRepo] Ô điểm REDO_REQUESTED của học viên '${sid}' tại cột '${cid}' có điểm số không hợp lệ (score=${cell.score}).`
+            );
+          }
+        }
+
+        if (
+          cell.quizScore !== null &&
+          cell.quizScore !== undefined &&
+          (typeof cell.quizScore !== "number" ||
+            !Number.isFinite(cell.quizScore) ||
+            cell.quizScore < 0 ||
+            cell.quizScore > 100)
+        ) {
+          throw new Error(
+            `[scoreMatrixRepo] Ô điểm của học viên '${sid}' tại cột '${cid}' có điểm Quiz không hợp lệ (quizScore=${cell.quizScore}).`
+          );
+        }
+      }
+    }
+
+    const db = getDb();
+    return db
+      .prepare(`
+        INSERT INTO score_matrix_cache (classId, matrixJson, updatedAt)
+        VALUES (?, ?, datetime('now', 'localtime'))
+        ON CONFLICT(classId) DO UPDATE SET
+          matrixJson = excluded.matrixJson,
+          updatedAt = datetime('now', 'localtime')
+      `)
+      .run(normalizedId, JSON.stringify(matrixData));
+  },
+
+  findByClass(classId: string): { matrix: any; updatedAt: string } | null {
+    const normalizedId = classId.trim().toUpperCase();
+    if (!normalizedId) return null;
+    const db = getDb();
+    const row = db
+      .prepare(`SELECT matrixJson, updatedAt FROM score_matrix_cache WHERE classId = ?`)
+      .get(normalizedId) as { matrixJson: string; updatedAt: string } | undefined;
+
+    if (!row) return null;
+    try {
+      return {
+        matrix: JSON.parse(row.matrixJson),
+        updatedAt: row.updatedAt,
+      };
+    } catch {
+      return null;
+    }
   },
 };

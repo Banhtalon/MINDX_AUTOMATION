@@ -1,0 +1,90 @@
+[
+  {
+    "id": "R27-01-pdf-stream-early-marker-_endstream_",
+    "file": "fixtures/R27-01-pdf-stream-early-marker-_endstream_.pdf",
+    "sha256": "364a3c067501790e6601461b1ef024d78ee688dfc1c922dbc8726d44d06bc86b",
+    "size": 513,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED"
+  },
+  {
+    "id": "R27-01-pdf-stream-early-marker-_endstream_r_",
+    "file": "fixtures/R27-01-pdf-stream-early-marker-_endstream_r_.pdf",
+    "sha256": "e85a0843380e157858d18d31114590c0ee7cdabc8faed0f176349ce726b0bcba",
+    "size": 514,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED"
+  },
+  {
+    "id": "R27-01-pdf-stream-early-marker-_endstream_n_",
+    "file": "fixtures/R27-01-pdf-stream-early-marker-_endstream_n_.pdf",
+    "sha256": "b156dbcde955221031e3f0af1d4c12657979eda8e528c456377be997fc6f71eb",
+    "size": 514,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED"
+  },
+  {
+    "id": "R27-01-pdf-kids-foreign-scalar",
+    "file": "fixtures/R27-01-pdf-kids-foreign-scalar.pdf",
+    "sha256": "129290170f9e9412078f04c88b95fc060eeea56997033d8643d74d722179f62d",
+    "size": 360,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED"
+  },
+  {
+    "id": "R27-09-literal-exponent-score",
+    "file": "fixtures/R27-09-literal-exponent-score.json",
+    "sha256": "e822c23fda6fc073b68736b2efc1d01c7c8df1d902ed50703e2ded54f30afeb0",
+    "expectedVerified": 1,
+    "observedVerified": 0
+  },
+  {
+    "id": "R27-09-literal-block-string",
+    "file": "fixtures/R27-09-literal-block-string.json",
+    "sha256": "58304c6592265e60f03fcad8d3b9a8cf10b506c8930e5e4a66e5a392cf94bb54",
+    "expectedVerified": 1,
+    "observedVerified": 0
+  },
+  {
+    "id": "R27-09-literal-block-string-braces",
+    "file": "fixtures/R27-09-literal-block-string-braces.json",
+    "sha256": "b60061e7882f05c9f177b60edb593aafc92a4b596c7edeb71f610aaf7e6e17f4",
+    "expectedVerified": 1,
+    "observedVerified": 0
+  },
+  {
+    "id": "R27-09-nested-selection",
+    "file": "fixtures/R27-09-nested-selection.json",
+    "sha256": "5eff3838e231b79c3422228814eaa7f296d497c42a66960cb7bfefc36e455b37",
+    "expectedVerified": 1,
+    "observedVerified": 0
+  },
+  {
+    "id": "R27-09-deep-nested-selection",
+    "file": "fixtures/R27-09-deep-nested-selection.json",
+    "sha256": "d503de0616bb768af7fe1b8042b70ad3cec2ed7ed6797da15b81226f8055a93a",
+    "expectedVerified": 1,
+    "observedVerified": 0
+  },
+  {
+    "id": "R27-09-block-quote-decoy-deleteAttachment",
+    "file": "fixtures/R27-09-block-quote-decoy-deleteAttachment.json",
+    "sha256": "e343ff21bce0e73c0ab2a10d74dcbff26503d1a1ac721d4467ae9ac9cae0997b",
+    "expectedVerified": 0,
+    "observedVerified": 1
+  },
+  {
+    "id": "R27-09-block-quote-decoy-previewHomework",
+    "file": "fixtures/R27-09-block-quote-decoy-previewHomework.json",
+    "sha256": "b9939780dc729676a0a5c3fa82621651ec65376e0bd4468cd4c16d53d63f807d",
+    "expectedVerified": 0,
+    "observedVerified": 1
+  },
+  {
+    "id": "R27-09-placeholder-enum-decoy",
+    "file": "fixtures/R27-09-placeholder-enum-decoy.json",
+    "sha256": "a790113f868596984af6d23fc6eeb41484d735e091547da1f6423b9696054c1b",
+    "expectedVerified": 0,
+    "observedVerified": 1
+  }
+]

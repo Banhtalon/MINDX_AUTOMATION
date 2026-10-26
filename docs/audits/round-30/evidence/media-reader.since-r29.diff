@@ -1,0 +1,235 @@
+--- R29/src/lib/file-parsers/media-reader.ts
++++ R30/src/lib/file-parsers/media-reader.ts
+@@ -1117,6 +1117,144 @@
+       if (eofIdx < 0) return false;
+       const rawPdfBody = text.slice(0, eofIdx);
+ 
++      const validateRawPdfDict = (blob: string): boolean => {
++        const isWs = (c: string): boolean =>
++          c === "\x00" ||
++          c === "\t" ||
++          c === "\n" ||
++          c === "\f" ||
++          c === "\r" ||
++          c === " ";
++        const isDelim = (c: string): boolean => "()<>[]{}/%".includes(c);
++        let idx = 0;
++        const skip = (): void => {
++          while (idx < blob.length) {
++            if (isWs(blob[idx])) {
++              idx++;
++            } else if (blob[idx] === "%") {
++              while (
++                idx < blob.length &&
++                blob[idx] !== "\n" &&
++                blob[idx] !== "\r"
++              ) {
++                idx++;
++              }
++            } else {
++              break;
++            }
++          }
++        };
++        const parseVal = (): string | null => {
++          skip();
++          if (idx >= blob.length) return null;
++          if (blob.startsWith("<<", idx)) {
++            idx += 2;
++            const keys = new Set<string>();
++            while (true) {
++              skip();
++              if (idx >= blob.length) return null;
++              if (blob.startsWith(">>", idx)) {
++                idx += 2;
++                return "DICT";
++              }
++              if (blob[idx] !== "/") return null;
++              idx++;
++              const ks = idx;
++              while (
++                idx < blob.length &&
++                !isWs(blob[idx]) &&
++                !isDelim(blob[idx])
++              ) {
++                idx++;
++              }
++              if (idx === ks) return null;
++              const k = blob.slice(ks, idx);
++              if (keys.has(k)) return null;
++              keys.add(k);
++              if (!parseVal()) return null;
++            }
++          }
++          if (blob[idx] === "[") {
++            idx++;
++            while (true) {
++              skip();
++              if (idx >= blob.length) return null;
++              if (blob[idx] === "]") {
++                idx++;
++                return "ARRAY";
++              }
++              if (!parseVal()) return null;
++            }
++          }
++          if (blob[idx] === "(") {
++            idx++;
++            let depth = 1;
++            while (idx < blob.length && depth > 0) {
++              const ch = blob[idx++];
++              if (ch === "\\") idx++;
++              else if (ch === "(") depth++;
++              else if (ch === ")") depth--;
++            }
++            return depth === 0 ? "STRING" : null;
++          }
++          if (blob[idx] === "<") {
++            idx++;
++            while (idx < blob.length && blob[idx] !== ">") {
++              if (!isWs(blob[idx]) && !/[0-9A-Fa-f]/.test(blob[idx])) {
++                return null;
++              }
++              idx++;
++            }
++            if (idx >= blob.length) return null;
++            idx++;
++            return "STRING";
++          }
++          if (blob[idx] === "/") {
++            idx++;
++            const ns = idx;
++            while (
++              idx < blob.length &&
++              !isWs(blob[idx]) &&
++              !isDelim(blob[idx])
++            ) {
++              idx++;
++            }
++            return idx > ns ? "NAME" : null;
++          }
++          if (isDelim(blob[idx])) return null;
++          const ts = idx;
++          while (
++            idx < blob.length &&
++            !isWs(blob[idx]) &&
++            !isDelim(blob[idx])
++          ) {
++            idx++;
++          }
++          const tok = blob.slice(ts, idx);
++          if (/^[+-]?\d+$/.test(tok)) {
++            const saved = idx;
++            skip();
++            const rm =
++              /^(\d+)[\x00\t\n\f\r ]+R(?=[\x00\t\n\f\r ()<>\[\]{}/%]|$)/.exec(
++                blob.slice(idx)
++              );
++            if (/^\d+$/.test(tok) && rm) {
++              idx += rm[0].length;
++              return "REF";
++            }
++            idx = saved;
++            return "INT";
++          }
++          if (/^[+-]?(?:\d+\.\d*|\.\d+)$/.test(tok)) return "REAL";
++          if (tok === "true" || tok === "false") return "BOOL";
++          if (tok === "null") return "NULL";
++          return null;
++        };
++        const rootKind = parseVal();
++        skip();
++        return rootKind === "DICT" && idx === blob.length;
++      };
++
+       const extractDirectDictWithSpan = (
+         src: string,
+         startIdx = 0
+@@ -1168,6 +1306,9 @@
+           if (ch === ">" && src[i + 1] === ">") {
+             dictDepth--;
+             if (dictDepth === 0) {
++              if (!validateRawPdfDict(src.slice(openIdx, i + 2))) {
++                return null;
++              }
+               return { content: out.join(""), openIdx, closeIdx: i + 2 };
+             }
+             out.push(bracketDepth >= 1 ? "@@" : "  ");
+@@ -1221,10 +1362,63 @@
+       const parsePdfDictEntries = (
+         scalarDict: string
+       ): Array<{ key: string; val: PdfDictVal }> | null => {
+-        const tokens =
+-          scalarDict.match(
+-            /\[\]|<<>>|\(\)|<>|\/[^\s\/<>()\[\]{}%]+|[^\s\/<>()\[\]{}%]+/g
+-          ) || [];
++        const isPdfWs = (c: string): boolean =>
++          c === "\x00" ||
++          c === "\t" ||
++          c === "\n" ||
++          c === "\f" ||
++          c === "\r" ||
++          c === " ";
++        const isPdfDelim = (c: string): boolean => "()<>[]{}/%".includes(c);
++
++        const tokens: string[] = [];
++        let idx = 0;
++        while (idx < scalarDict.length) {
++          while (idx < scalarDict.length && isPdfWs(scalarDict[idx])) {
++            idx++;
++          }
++          if (idx >= scalarDict.length) break;
++          if (scalarDict.startsWith("<<>>", idx)) {
++            tokens.push("<<>>");
++            idx += 4;
++            continue;
++          }
++          if (
++            scalarDict.startsWith("[]", idx) ||
++            scalarDict.startsWith("()", idx) ||
++            scalarDict.startsWith("<>", idx)
++          ) {
++            tokens.push(scalarDict.slice(idx, idx + 2));
++            idx += 2;
++            continue;
++          }
++          if (scalarDict[idx] === "/") {
++            const start = idx++;
++            while (
++              idx < scalarDict.length &&
++              !isPdfWs(scalarDict[idx]) &&
++              !isPdfDelim(scalarDict[idx])
++            ) {
++              idx++;
++            }
++            if (idx === start + 1) return null;
++            tokens.push(scalarDict.slice(start, idx));
++            continue;
++          }
++          if (isPdfDelim(scalarDict[idx])) {
++            return null;
++          }
++          const start = idx;
++          while (
++            idx < scalarDict.length &&
++            !isPdfWs(scalarDict[idx]) &&
++            !isPdfDelim(scalarDict[idx])
++          ) {
++            idx++;
++          }
++          tokens.push(scalarDict.slice(start, idx));
++        }
++
+         const entries: Array<{ key: string; val: PdfDictVal }> = [];
+         const seenKeys = new Set<string>();
+         let ti = 0;
+@@ -1261,8 +1455,7 @@
+           if (/^[+-]?\d+$/.test(t0)) {
+             entries.push({ key, val: { kind: "INT", value: Number(t0) } });
+           } else if (
+-            /^[+-]?(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?$/.test(t0) ||
+-            /^[+-]?\d+[eE][+-]?\d+$/.test(t0)
++            /^[+-]?(?:\d+\.\d*|\.\d+)$/.test(t0)
+           ) {
+             entries.push({ key, val: { kind: "REAL", value: Number(t0) } });
+           } else if (t0.startsWith("/") && t0.length >= 2) {

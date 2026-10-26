@@ -1,0 +1,93 @@
+[
+  {
+    "id": "R26-01-differential-gradient-false-truncate2",
+    "file": "fixtures/R26-01-differential-gradient-false-truncate2.webp",
+    "sha256": "3764158d819e1aca3e8e70c002d263e820bad8637510b05601aad3d8c78beea0",
+    "size": 528,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error"
+  },
+  {
+    "id": "R26-01-differential-gradient-false-truncate7",
+    "file": "fixtures/R26-01-differential-gradient-false-truncate7.webp",
+    "sha256": "d111f8ff67fb5d1335451c9022a09d4bb3d45ccb4bd97a14b30523e2fe1d9178",
+    "size": 524,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error"
+  },
+  {
+    "id": "R26-01-differential-noise-false-truncate7",
+    "file": "fixtures/R26-01-differential-noise-false-truncate7.webp",
+    "sha256": "1c057c21bff66f38bf3bd849026c555a244a32340449dad7caeb843bbf461423",
+    "size": 538,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "decoderError": "webp2vips: unable to read pixels\nwebpload_buffer: load error"
+  },
+  {
+    "id": "R26-01-pdf-root-trailer-token-in-string",
+    "file": "fixtures/R26-01-pdf-root-trailer-token-in-string.pdf",
+    "sha256": "db022e87f7076b3a8aed219d19a2eb5210e975918737127999c1fd3f0480f87d",
+    "size": 391,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "decoderError": ""
+  },
+  {
+    "id": "R26-01-pdf-root-duplicate-conflict",
+    "file": "fixtures/R26-01-pdf-root-duplicate-conflict.pdf",
+    "sha256": "d5b3d09e854274d4526c8fd636d9f723028674a8b5af82f98bc55cad38e0ec34",
+    "size": 368,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "decoderError": ""
+  },
+  {
+    "id": "R26-01-pdf-parent-missing",
+    "file": "fixtures/R26-01-pdf-parent-missing.pdf",
+    "sha256": "8eb051d32fab0022d4d6fa247b62d07c37ec99ed400135f2b8abf3e3dff88ce5",
+    "size": 325,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "decoderError": ""
+  },
+  {
+    "id": "R26-01-pdf-root-object-in-string",
+    "file": "fixtures/R26-01-pdf-root-object-in-string.pdf",
+    "sha256": "2acd17f2fb05b0327ca949f1a183b3c8414c21235d870581ab8c0da7bee8f8ee",
+    "size": 455,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "decoderError": ""
+  },
+  {
+    "id": "R26-09-literal-brace-open",
+    "file": "fixtures/R26-09-literal-brace-open.json",
+    "sha256": "d3c43f53112ab529db3896bc75cbe30e81206468018da6aa58b90bb8d7b64910",
+    "expectedVerified": 1,
+    "observedVerified": 0
+  },
+  {
+    "id": "R26-09-literal-close-brace",
+    "file": "fixtures/R26-09-literal-close-brace.json",
+    "sha256": "7d0edb972985ef9c6ed1f720c7fe9283dc07490fee873a519220385840155f4b",
+    "expectedVerified": 1,
+    "observedVerified": 0
+  },
+  {
+    "id": "R26-09-quoted-operation-decoy",
+    "file": "fixtures/R26-09-quoted-operation-decoy.json",
+    "sha256": "f61b44a6faec6df2f66726be7a4b7705f7883027ec6099d369a70671201ca501",
+    "expectedVerified": 0,
+    "observedVerified": 1
+  },
+  {
+    "id": "R26-09-quoted-operation-preview-decoy",
+    "file": "fixtures/R26-09-quoted-operation-preview-decoy.json",
+    "sha256": "15b5ecf175e258193855463bb0913a3d25eb9256fdeedfd5d9e8f66c855d4246",
+    "expectedVerified": 0,
+    "observedVerified": 1
+  }
+]

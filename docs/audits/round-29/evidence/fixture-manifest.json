@@ -1,0 +1,74 @@
+[
+  {
+    "id": "R29-01-pdf-length-whitespace-nul",
+    "file": "fixtures/R29-01-pdf-length-whitespace-nul.pdf",
+    "sha256": "b56603bd2f3a52f44a10ef24486b60a649051137a846a039c9edaec159f44a5c",
+    "size": 439,
+    "expected": "PARSED",
+    "observed": "PARSE_ERROR",
+    "inlineParts": 0
+  },
+  {
+    "id": "R29-01-pdf-count-whitespace-nul",
+    "file": "fixtures/R29-01-pdf-count-whitespace-nul.pdf",
+    "sha256": "6d23e94cbe2d2958a58a012ee6cd7a155572d6e5f8869a219876d6edd87b57e6",
+    "size": 358,
+    "expected": "PARSED",
+    "observed": "PARSE_ERROR",
+    "inlineParts": 0
+  },
+  {
+    "id": "R29-01-pdf-length-delimiter-lone-gt",
+    "file": "fixtures/R29-01-pdf-length-delimiter-lone-gt.pdf",
+    "sha256": "b395b8ee5f40c90124a6e51e832aa52171197e33797ffdf4c2bd4579fb5426cc",
+    "size": 439,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "inlineParts": 1
+  },
+  {
+    "id": "R29-01-pdf-count-delimiter-lone-gt",
+    "file": "fixtures/R29-01-pdf-count-delimiter-lone-gt.pdf",
+    "sha256": "61a5b08de918aaa8d78e5a803d20b0078c7189f4045b1f1dbf293e307d4d4deb",
+    "size": 358,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "inlineParts": 1
+  },
+  {
+    "id": "R29-01-pdf-length-delimiter-brace-open",
+    "file": "fixtures/R29-01-pdf-length-delimiter-brace-open.pdf",
+    "sha256": "2e992797c2b268114c22edf443027ae653ffc80d59d7357f4c7a8b881b9e1419",
+    "size": 439,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "inlineParts": 1
+  },
+  {
+    "id": "R29-01-pdf-count-delimiter-brace-open",
+    "file": "fixtures/R29-01-pdf-count-delimiter-brace-open.pdf",
+    "sha256": "7d9618ad8b4a7af032aafa3b9a9b27a522981b49e0c55c6dc935832d32f00f47",
+    "size": 358,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "inlineParts": 1
+  },
+  {
+    "id": "R29-01-pdf-length-delimiter-brace-close",
+    "file": "fixtures/R29-01-pdf-length-delimiter-brace-close.pdf",
+    "sha256": "068e3e2f41b5a5352620164a36cf1ec85369b2066862f85af26cdb1a1f6896ab",
+    "size": 439,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "inlineParts": 1
+  },
+  {
+    "id": "R29-01-pdf-count-delimiter-brace-close",
+    "file": "fixtures/R29-01-pdf-count-delimiter-brace-close.pdf",
+    "sha256": "aca36ccb9c120496488a3052e6cd64ad39927298c24a9a6160b799b58f9aac01",
+    "size": 358,
+    "expected": "PARSE_ERROR",
+    "observed": "PARSED",
+    "inlineParts": 1
+  }
+]

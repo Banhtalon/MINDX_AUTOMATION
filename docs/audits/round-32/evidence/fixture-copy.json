@@ -1,0 +1,12 @@
+{
+  "source": "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\evidence",
+  "skippedSymlinks": [
+    "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\evidence\\fixtures\\inside-link",
+    "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\evidence\\fixtures\\outside-link",
+    "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\evidence\\fixtures\\run-LTThEc\\inside-link",
+    "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\evidence\\fixtures\\run-LTThEc\\outside-link",
+    "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\evidence\\fixtures\\run-NggXf7\\inside-link",
+    "C:\\WINDOWS\\Temp\\mindx-round31-r32-mvhdlh7s\\docs\\audits\\round-32\\evidence\\fixtures\\run-NggXf7\\outside-link"
+  ],
+  "policy": "Never dereference junctions; regular synthetic fixtures only"
+}

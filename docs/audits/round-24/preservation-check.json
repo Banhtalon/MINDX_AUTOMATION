@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-10-20T12:53:29.824057+00:00",
+  "protectedCount": 417,
+  "protectedUnchanged": true,
+  "protectedDifferences": [],
+  "rootNextEnvSha256": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+  "sourceFileCount": 74,
+  "sourceDifferences": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "authorizedSourceManifestChanges": [
+    "MINDX_AUTOMATION_PLAN.md"
+  ],
+  "noUnauthorizedSourceChanges": true,
+  "productInventoryUnchanged": true,
+  "productFiles": 57,
+  "snapshotDifferencesAfterGates": [
+    "next-env.d.ts"
+  ]
+}

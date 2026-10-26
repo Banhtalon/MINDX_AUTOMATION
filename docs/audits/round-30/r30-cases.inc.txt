@@ -1,0 +1,5 @@
+  for(const c of createR30MediaCases())await check(c.id,'R30 legal empty Name values remain valid inside a dictionary or array; nonempty controls stay accepted',async()=>{
+    const parsed=parse(c.buf,c.id+'.pdf'),o={expected:c.expected,parseStatus:parsed.parseStatus,inlineParts:parsed.inlineDataParts.length,fixtureBase64:c.buf.toString('base64')};
+    expect(parsed.parseStatus===c.expected&&parsed.inlineDataParts.length===1,o,'Legal PDF Name was rejected');
+    assert.equal(parsed.inlineDataParts[0].inlineData.data,c.buf.toString('base64'));return o;
+  });

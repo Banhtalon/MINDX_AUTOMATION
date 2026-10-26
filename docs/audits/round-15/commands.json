@@ -1,0 +1,50 @@
+[
+  {
+    "command": "npx tsx scripts/test-phase4-codex-repros.ts",
+    "startedAt": "2026-10-20T04:07:16.764Z",
+    "log": "regressions.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T04:07:18.362Z",
+    "logSha256": "c99691a47683d3f14452e7655d36c23b88c1fe80725b9ff97af9a9fa01a920f6"
+  },
+  {
+    "command": "node docs/audits/round-12/verify-independent.mjs",
+    "startedAt": "2026-10-20T04:07:18.364Z",
+    "log": "round12-independent.log",
+    "signal": null,
+    "exitCode": 0,
+    "restoredByteIdentical": true,
+    "finishedAt": "2026-10-20T04:07:19.189Z",
+    "logSha256": "b32a62dadb8c81a5b77d85f05f489e5f984fce9780d6ffedf93ea919642777ef"
+  },
+  {
+    "command": "node docs/audits/round-13/verify-independent.mjs",
+    "startedAt": "2026-10-20T04:07:19.190Z",
+    "log": "round13-independent.log",
+    "signal": null,
+    "exitCode": 0,
+    "restoredByteIdentical": true,
+    "finishedAt": "2026-10-20T04:07:20.316Z",
+    "logSha256": "3c12370d96bc2e7ea133ffa8348fc78ce7365317443bbcb11d6e023007a97559"
+  },
+  {
+    "command": "npx tsc --noEmit --incremental false",
+    "startedAt": "2026-10-20T04:07:20.317Z",
+    "log": "typecheck.log",
+    "signal": null,
+    "exitCode": 0,
+    "finishedAt": "2026-10-20T04:07:21.177Z",
+    "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "command": "npm run build",
+    "startedAt": "2026-10-20T04:07:21.178Z",
+    "log": "build.log",
+    "signal": null,
+    "exitCode": 0,
+    "restoredByteIdentical": true,
+    "finishedAt": "2026-10-20T04:07:25.364Z",
+    "logSha256": "7e35b8645b0ce85e2f94da105da6b084dd0d54680cbeedb67e8eeadb346c8784"
+  }
+]

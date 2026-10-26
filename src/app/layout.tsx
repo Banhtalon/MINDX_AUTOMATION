@@ -23,9 +23,6 @@ export default function RootLayout({
               <span className="text-xl font-bold bg-gradient-to-r from-orange-400 via-rose-400 to-amber-300 bg-clip-text text-transparent">
                 ⚡ MindX Bot v2.1
               </span>
-              <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">
-                127.0.0.1:3000
-              </span>
             </div>
 
             <nav className="flex items-center space-x-1 sm:space-x-3 text-sm">

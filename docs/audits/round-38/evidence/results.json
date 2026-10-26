@@ -1,0 +1,372 @@
+{
+  "audit": "AUDIT-R38",
+  "phase": 6,
+  "scope": [
+    "TASK-6.1",
+    "TASK-6.2",
+    "TASK-6.3",
+    "TASK-6.4",
+    "TASK-6.5"
+  ],
+  "verdict": "NO-GO",
+  "completedAt": "2026-10-21T06:03:15.371135+00:00",
+  "reviewer": {
+    "agent": "Codex primary agent, direct independent audit",
+    "requestedModel": "gpt-6.1-sol",
+    "requestedReasoning": "high",
+    "runtimeModelIndependentlyAttested": false,
+    "delegated": false
+  },
+  "head": "2570d96b6770957e218031c91f14ce98e766dfa7",
+  "sourceBasis": "Exact dirty working tree; HEAD alone does not identify the audited source. See integrity-before/after and snapshot copiedHashes.",
+  "baselineGates": [
+    {
+      "label": "01-r32",
+      "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-32/verify-phase6.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+      "exitCode": 1,
+      "seconds": 0.16,
+      "log": "01-r32.log"
+    },
+    {
+      "label": "02-phase6",
+      "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase6.ts",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+      "exitCode": 0,
+      "seconds": 4.72,
+      "log": "02-phase6.log"
+    },
+    {
+      "label": "03-phase5",
+      "command": "node node_modules/tsx/dist/cli.mjs scripts/test-phase5.ts",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+      "exitCode": 0,
+      "seconds": 0.76,
+      "log": "03-phase5.log"
+    },
+    {
+      "label": "04-typescript",
+      "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+      "exitCode": 0,
+      "seconds": 0.3,
+      "log": "04-typescript.log"
+    }
+  ],
+  "r32Compatibility": {
+    "label": "01b-r32-compatible",
+    "command": "node node_modules/tsx/dist/cli.mjs docs/audits/round-38/r32-compatible.mjs",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+    "exitCode": 0,
+    "seconds": 8.72,
+    "log": "01b-r32-compatible.log",
+    "adaptation": {
+      "onlyChange": "TEMP folder-name guard r32 to r38",
+      "originalSha256": "C75FF63522992961CFFCDC0065FD95945D774210A050D8A6C46C2D19DC2A464C",
+      "adaptedSha256": "4DF2C91CE66A99FF87ADA9FBB2C9CE2C1CFC3BAAFD1341957ED0C842A51529AA"
+    },
+    "newExternalFixtures": [
+      "C:\\Users\\QQ\\AppData\\Local\\Temp\\r32-out-Ku9xci"
+    ]
+  },
+  "baselineR32": {
+    "total": 67,
+    "passed": 67,
+    "failed": 0,
+    "exactCommandStatus": "BLOCKED_BY_HISTORICAL_TEMP_NAME_GUARD",
+    "compatibilityOnlyChange": "TEMP directory-name assertion r32 -> r38; 67 original cases unchanged"
+  },
+  "adversarial": {
+    "total": 41,
+    "passed": 24,
+    "failed": 17,
+    "evidence": "r38-adversarial-results.json",
+    "syntheticBrowser": true,
+    "uiMethod": "Exact pre-JSX handlers with deterministic hook doubles, not full mounted React or live LMS",
+    "aiMethod": "Exact source body with fake Gemini boundary, no real call"
+  },
+  "findings": [
+    {
+      "id": "R38-01",
+      "priority": "P1",
+      "title": "Link vừa hiện trên form bị coi là bằng chứng LMS đã lưu",
+      "location": "src/lib/playwright/spck-uploader.ts:973-981",
+      "cause": "Điều kiện hasRenderedNonInputEvidence chấp nhận bất kỳ danh sách link/file khác rỗng. Danh sách này đã được cập nhật ngay khi bấm + Thêm, trước khi có bằng chứng máy chủ lưu thành công.",
+      "repro": "R38-P-no-persist: form có link mới; phản hồi HTTP 200 đúng mã học viên nhưng máy chủ giả không ghi bản nào (serverRows={}). SQLite vẫn thành VERIFIED.",
+      "fix": "Sau Lưu, đọc lại dữ liệu SPCK từ máy chủ hoặc mở lại khung từ dữ liệu vừa tải; đối chiếu đầy đủ tiêu đề, bình luận và danh sách đã lưu. Không dùng danh sách cục bộ vừa sửa làm bằng chứng.",
+      "impact": "Giáo viên thấy hoàn tất nhưng sản phẩm thực tế chưa được lưu.",
+      "cases": [
+        "R38-P-no-persist"
+      ]
+    },
+    {
+      "id": "R38-02",
+      "priority": "P1",
+      "title": "Phản hồi request của học viên/lớp khác vẫn có thể VERIFIED",
+      "location": "src/lib/playwright/spck-uploader.ts:790-869",
+      "cause": "Bộ chờ chỉ lọc URL/method và tên operation rất rộng; không khóa variables của request theo classId/studentId. Mã trong response chỉ được so khi có mặt.",
+      "repro": "R38-P-wrong-request: request SaveStudentSpck gửi OTHER_CLASS/OTHER_STUDENT, response data.saveStudentSpck={persisted:true}. Máy chủ giả chỉ có OTHER_STUDENT nhưng SQLite ghi R38_S1=VERIFIED.",
+      "fix": "Khóa phản hồi theo mutation đúng SPCK và variables đúng lớp/học viên; kiểm tra định danh kết quả hoặc lần đọc lại độc lập. Thiếu bằng chứng định danh phải từ chối.",
+      "impact": "Trạng thái hoàn tất bị gắn cho học viên chưa được lưu đúng.",
+      "cases": [
+        "R38-P-wrong-request"
+      ]
+    },
+    {
+      "id": "R38-03",
+      "priority": "P1",
+      "title": "Chưa tải xong file vẫn bấm Lưu và VERIFIED",
+      "location": "src/lib/playwright/spck-uploader.ts:623-638, 713-720, 786-806, 872-882",
+      "cause": "setInputFiles chỉ chọn file. Bộ đếm chấp nhận một HTTP 200/201 có chuỗi /file, /media, /storage hoặc /upload; không gắn với từng file, không đợi tất cả upload kết thúc trước Lưu.",
+      "repro": "R38-P-pending-files: chọn 2 file, cả 2 vẫn pending; chỉ POST /files/telemetry trả 200. Bot gửi Lưu và ghi VERIFIED, attachmentsUploadedCount=2 dù không có request tải file nào hoàn tất.",
+      "fix": "Theo dõi upload thật của từng tài nguyên và mã file trả về, đợi mọi upload thành công trước bấm Lưu; phản hồi nền không được tính. Đối chiếu manifest đã lưu sau đó.",
+      "impact": "LMS có thể thiếu file dù giáo viên được báo đã tải đủ.",
+      "cases": [
+        "R38-P-pending-files"
+      ]
+    },
+    {
+      "id": "R38-04",
+      "priority": "P1",
+      "title": "File mới trùng tên file cũ trên LMS bị bỏ qua",
+      "location": "src/lib/playwright/spck-uploader.ts:686-720, 936-947",
+      "cause": "Chống trùng ảnh/tài liệu chỉ so basename. Đối chiếu sau lưu cũng chỉ kiểm tra tên, không chứng minh file trên LMS là phiên bản bytes giáo viên đã duyệt.",
+      "repro": "R38-P-old-file: LMS giả đã có main.py phiên bản cũ, ổ đĩa có main.py bytes khác. Không chọn/upload file nào (uploadChanges=0), hai SHA-256 khác nhau, vẫn VERIFIED khi response có filesUploaded=true.",
+      "fix": "Giữ manifest phiên bản file/định danh server gắn với hash đã duyệt; file cùng tên nhưng khác nội dung phải thay thế. Nếu LMS không cung cấp bằng chứng đủ tin cậy, không đánh dấu VERIFIED.",
+      "impact": "Giáo viên có thể nộp nhầm phiên bản cũ của sản phẩm.",
+      "cases": [
+        "R38-P-old-file"
+      ]
+    },
+    {
+      "id": "R38-05",
+      "priority": "P1",
+      "title": "Stop Bot không chặn học viên kế tiếp trong một lượt cả lớp",
+      "location": "src/lib/gemini/spck-comment.ts:286-289; src/lib/playwright/spck-uploader.ts:517-520; src/lib/queue/task-queue.ts:155-185",
+      "cause": "stopQueue hủy tác vụ còn chờ, nhưng cả lớp đang nằm trong một tác vụ. Hai vòng lặp AI/upload không kiểm tra tín hiệu dừng giữa các học viên.",
+      "repro": "R38-G-stop: dừng sau lời gọi AI đầu, vẫn có 2 calls/2 results. R38-P-stop: dừng khi lưu học viên đầu, vẫn lưu và VERIFIED cả R38_S1 lẫn R38_S2, stopFlag=true.",
+      "fix": "Truyền tín hiệu hủy chung; kiểm tra trước học viên kế tiếp và trước các bước gây ghi dữ liệu. Học viên chưa chạy phải giữ nguyên, không ghi đè các bản đã VERIFIED.",
+      "impact": "Bot tiếp tục gọi AI và ghi lên LMS sau khi giáo viên yêu cầu dừng.",
+      "cases": [
+        "R38-G-stop",
+        "R38-P-stop"
+      ]
+    },
+    {
+      "id": "R38-06",
+      "priority": "P2",
+      "title": "Gói ZIP, Scratch, GameMaker và Office hỏng vẫn được nhận",
+      "location": "src/lib/local-files/spck-scanner.ts:309-324; src/lib/playwright/spck-uploader.ts:270-299",
+      "cause": "Ảnh/PDF được kiểm tra cấu trúc, nhưng các gói zip/sb3/yyz/docx/pptx chỉ cần khác 0 bytes và đúng đuôi tên.",
+      "repro": "5 ca R38-S-corrupt-*: mỗi file chỉ chứa THIS IS NOT A ZIP OR OFFICE PACKAGE nhưng vẫn nằm trong attachments, không có cảnh báo hỏng.",
+      "fix": "Kiểm tra chữ ký và cấu trúc thực của từng loại gói; chặn hoặc cảnh báo bắt buộc xử lý trước duyệt. Không đánh đồng lỗi đọc file với bài làm kém.",
+      "impact": "Gói không mở được vẫn đi qua bước chuẩn bị nộp.",
+      "cases": [
+        "R38-S-corrupt-zip",
+        "R38-S-corrupt-sb3",
+        "R38-S-corrupt-yyz",
+        "R38-S-corrupt-docx",
+        "R38-S-corrupt-pptx"
+      ]
+    },
+    {
+      "id": "R38-07",
+      "priority": "P2",
+      "title": "API cho duyệt URL không phải HTTP/HTTPS",
+      "location": "src/app/api/spck/save-draft/route.ts:143-165; src/app/api/spck/approve/route.ts:208-227; src/lib/playwright/spck-uploader.ts:88-208",
+      "cause": "Bộ đọc links.txt có kiểm tra URL nhưng đường lưu/sửa nháp chỉ trim/cắt số lượng. Bước duyệt và chuẩn bị upload cũng không kiểm tra lại giao thức hay cấu trúc URL.",
+      "repro": "R38-D-unsafe-url: javascript:alert(1) và file:///C:/Windows/system.ini được save-draft=200, approve=200, status=APPROVED, uploadValidation=true.",
+      "fix": "Dùng chung kiểm tra new URL và chỉ nhận http:/https: ở phía server cho cả lưu, duyệt và upload; kiểm tra thêm hostname Youtube cho danh sách Youtube.",
+      "impact": "Dữ liệu không hợp lệ lọt qua luồng API cục bộ. Chưa kết luận LMS thực thi script; không chứng minh tấn công từ website ngoài.",
+      "cases": [
+        "R38-D-unsafe-url"
+      ]
+    },
+    {
+      "id": "R38-08",
+      "priority": "P2",
+      "title": "Đường API bỏ qua danh mục file được phép nộp",
+      "location": "src/app/api/spck/save-draft/route.ts:137-141; src/app/api/spck/approve/route.ts:208-227; src/lib/playwright/spck-uploader.ts:269-302",
+      "cause": "API chỉ kiểm tra đường dẫn nằm trong vùng cho phép; approve chỉ kiểm tra số lượng; upload chỉ kiểm tra tồn tại và cấu trúc nếu là PDF. Không dùng chung danh mục đuôi file.",
+      "repro": "R38-D-exe: payload.exe nằm trong thư mục giả được APPROVED và preflightValid=true dù không có trong danh mục LMS hoặc bộ quét.",
+      "fix": "Áp dụng danh mục và kiểm tra kiểu file thống nhất ở mọi cửa vào, rồi kiểm tra lại trước upload.",
+      "impact": "Người gọi API cục bộ có thể đưa nhầm tài nguyên không được LMS hỗ trợ qua bước duyệt.",
+      "cases": [
+        "R38-D-exe"
+      ]
+    },
+    {
+      "id": "R38-09",
+      "priority": "P2",
+      "title": "Sau tải lại trang, sửa nháp mới bị bỏ qua mà UI vẫn báo lưu thành công",
+      "location": "src/app/final-project/page.tsx:135-137, 369-370, 414-429; src/app/api/spck/save-draft/route.ts:51-62",
+      "cause": "Số thứ tự nháp của trình duyệt bắt đầu lại từ 0 mỗi lần tải trang nhưng SQLite giữ số cũ. Server trả staleIgnored=true; UI vẫn return true và không cảnh báo nội dung chưa lưu.",
+      "repro": "R38-U-reload: DB draftSeq=900, lần sửa đầu sau reload gửi seq=1. Nội dung vẫn OLD PERSISTED, UI trả success=true và staleIgnored=true.",
+      "fix": "Khởi tạo phiên bản từ server hoặc dùng định danh phiên chỉnh sửa cùng phiên bản bản ghi; staleIgnored phải báo xung đột/tải lại, không được coi như đã lưu sửa mới.",
+      "impact": "Giáo viên có thể mất phần vừa sửa. Bước kiểm tra snapshot hiện vẫn chặn duyệt nội dung lệch; chưa chứng minh lỗi này vượt khóa duyệt.",
+      "cases": [
+        "R38-U-reload"
+      ]
+    },
+    {
+      "id": "R38-10",
+      "priority": "P2",
+      "title": "Đổi lớp trong lúc duyệt/upload làm hiển thị trạng thái của lớp trước",
+      "location": "src/app/final-project/page.tsx:560-698, 761",
+      "cause": "Ô chọn lớp chỉ bị khóa khi đang tải/quét, vẫn đổi được khi duyệt/upload. Handler duyệt/upload không kiểm tra lớp đang hiển thị trước khi ghép kết quả theo studentId.",
+      "repro": "R38-U-class-race: lớp A đang chờ duyệt; chuyển sang lớp B có cùng học viên. Phản hồi A đến sau: nội dung B giữ CLASS B STILL WAITING nhưng trạng thái đổi VERIFIED và nhận HASH_OF_CLASS_A.",
+      "fix": "Khóa yêu cầu và kết quả bằng classId+studentId, bỏ kết quả khỏi UI khi đã đổi lớp; có thể khóa đổi lớp trong bước ghi nếu phù hợp trải nghiệm.",
+      "impact": "Giao diện gắn nhãn đã nộp sai lớp. Ca này không chứng minh dữ liệu lớp B trên LMS bị ghi sai.",
+      "cases": [
+        "R38-U-class-race"
+      ]
+    },
+    {
+      "id": "R38-11",
+      "priority": "P2",
+      "title": "AI trả muộn vẫn áp dụng nhận xét dựa trên ghi chú cũ",
+      "location": "src/app/final-project/page.tsx:465-480, 521-544",
+      "cause": "Snapshot chống ghi đè chỉ so teacherComment/projectTitle/folderPath; bỏ qua teacherNote, quickTags, includePresentation và các tài nguyên đầu vào khác.",
+      "repro": "R38-U-note-race: đang gọi AI, giáo viên sửa note thành sản phẩm chưa hoàn thành. AI dựa trên note cũ vẫn thay teacherComment thành OLD AI BASED ON OLD NOTE.",
+      "fix": "So phiên bản hoặc dấu kiểm tra toàn bộ đầu vào AI trước khi nhận kết quả. Nếu đã đổi dữ kiện, giữ sửa mới và yêu cầu soạn lại.",
+      "impact": "Nhận xét có thể trái với dữ kiện giáo viên vừa chỉnh, nhưng vẫn cần giáo viên duyệt trước khi upload.",
+      "cases": [
+        "R38-U-note-race"
+      ]
+    },
+    {
+      "id": "R38-12",
+      "priority": "P2",
+      "title": "Nhận xét cuối khóa chỉ đọc lịch sử của buổi 01",
+      "location": "src/lib/gemini/spck-comment.ts:233-268",
+      "cause": "Hai truy vấn lịch sử đều cố định sessionId `${classId}_SESS_01`, không lấy toàn khóa hoặc buổi có ID thực khác.",
+      "repro": "R38-G-history: DB có nhận xét VERIFIED với marker R38_HISTORY_SESSION_TWO ở buổi 02. Prompt không chứa marker và còn báo Chưa có lịch sử điểm/nhận xét.",
+      "fix": "Đọc lịch sử theo classId+studentId xuyên các buổi, có chính sách lọc trạng thái hợp lệ; tổng hợp điểm/nhận xét từ đúng dữ liệu thay vì giả định chỉ buổi đầu.",
+      "impact": "AI tổng kết cuối khóa bỏ sót tiến bộ hoặc vấn đề ở các buổi sau.",
+      "cases": [
+        "R38-G-history"
+      ]
+    }
+  ],
+  "counts": {
+    "P1": 5,
+    "P2": 7,
+    "groups": 12
+  },
+  "integrity": {
+    "protectedFiles": 1786,
+    "unchangedFiles": 1786,
+    "srcScripts": 70,
+    "historicalFilesR12R37": 1705,
+    "nextEnvSha256": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+    "allUnchanged": true,
+    "addedDeletedProtectedFiles": 0
+  },
+  "cleanup": {
+    "expectedPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6",
+    "existsAfter": false,
+    "removedLinksOnly": [
+      {
+        "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\node_modules",
+        "target": "F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules"
+      },
+      {
+        "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\data\\r38-fixtures-AsJ4Oq\\outside-junction",
+        "target": "C:\\Users\\QQ\\AppData\\Local\\Temp"
+      },
+      {
+        "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\data\\r38-fixtures-fYNTwq\\outside-junction",
+        "target": "C:\\Users\\QQ\\AppData\\Local\\Temp"
+      },
+      {
+        "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\data\\r38-fixtures-TySDB8\\outside-junction",
+        "target": "C:\\Users\\QQ\\AppData\\Local\\Temp"
+      },
+      {
+        "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-32\\evidence\\fixtures\\run-qg3DqL\\inside-link",
+        "target": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-32\\evidence\\fixtures\\run-qg3DqL\\student"
+      },
+      {
+        "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-32\\evidence\\fixtures\\run-qg3DqL\\outside-link",
+        "target": "C:\\Users\\QQ\\AppData\\Local\\Temp\\r32-out-Ku9xci"
+      }
+    ],
+    "removedExternalEmptyFixtures": [
+      "C:\\Users\\QQ\\AppData\\Local\\Temp\\r32-out-Ku9xci"
+    ],
+    "workspaceNodeModulesExists": true,
+    "environmentFilesFound": []
+  },
+  "realServices": {
+    "lmsCalls": 0,
+    "geminiCalls": 0,
+    "credentialsCopied": false,
+    "realDatabasesCopied": false,
+    "realBrowserProfileCopied": false
+  },
+  "notChecked": [
+    "Live LMS identity/selectors/upload/network contract",
+    "Live Gemini quality and refusal robustness",
+    "Mounted React end-to-end scheduling",
+    "Production operation/owner acceptance"
+  ],
+  "scopeRemapping": {
+    "missing": [
+      "src/app/api/final-project/route.ts",
+      "src/lib/db/repositories/spck-submission-repo.ts"
+    ],
+    "actual": [
+      "src/app/api/spck/{scan,list,save-draft,approve,generate-ai,upload-lms}/route.ts",
+      "src/lib/db/sqlite.ts"
+    ]
+  },
+  "planUpdate": {
+    "prefixPreserved": true,
+    "beforeSha256": "B38040137804DFBC3CB7F64D53C17A733A6C0510DEF1527554E9D4DC7BF6C1B4",
+    "afterSha256": "EB2D5E8FD99433DC1D86CA762BA7424A2C77570F1E81D8916B55F9A952041A55",
+    "appendedEntry": "* [x] **AUDIT-R38:** Đã hoàn tất Adversarial Review độc lập Giai đoạn 6 (`TASK-6.1`..`TASK-6.5`) tại `docs/audits/round-38/REPORT.vi.md`; **NO-GO cấp mã nguồn**: 12 nhóm lỗi mới (5 P1, 7 P2), bộ mới **24/41 PASS, 17 FAIL**. Phase 6, Phase 5 (8 nhóm) và TypeScript 0 lỗi đạt; R32 nguyên bản bị chặn bởi tên TEMP, bản tương thích chỉ đổi assertion tên đạt **67/67**. Bảo toàn **1786/1786 tệp**, gồm **70/70 src/scripts**, **1705/1705 hồ sơ R12–R37** và next-env.d.ts đúng hash. Đã xóa bản sao TEMP cùng fixture ngoài do lượt này tạo; không sửa sản phẩm, không dùng LMS/Gemini/dữ liệu thật. Dấu [x] chỉ xác nhận hoàn tất kiểm toán, chưa nghiệm thu Giai đoạn 6."
+  },
+  "artifactHashes": {
+    "adversarial.mjs": "A9F7EFDAFFF92B510F9FFBD89D41A7AB26717B1A7E7E240B7EF8756F99D39C21",
+    "audit-runner.py": "B92D312962A488E420735D82ABB4455ED35F3DB8233FC59130EDE181B4612EDC",
+    "finalize-audit.py": "9E2810CC056C2AF32791C22327EFA3EF1DAC6FC96E76EAF05BFECEBBA45D62FF",
+    "FIX_PROMPT.vi.md": "030CDF874C13C390C05655B2776074FA66E21D4B18EAF89F60E4BE7F356983AC",
+    "r32-compatible.mjs": "4DF2C91CE66A99FF87ADA9FBB2C9CE2C1CFC3BAAFD1341957ED0C842A51529AA",
+    "REGRESSION_MATRIX.md": "3A491E95299A39653CA6E03357CFA1FEADDF8E7E485F8FAD885E981513F5CE17",
+    "REPORT.vi.md": "31DBD70228EE886B6661C2A9CD8CEE338AFB622EB819FD4C31AADBD1CE226EB0",
+    "evidence/01-r32.log": "0E3245FF8401FDC15592CB29A19EF5F860F586BC86FDC43AE405D3893A76C9D7",
+    "evidence/01-r32.previous.log": "C2EA2691AA81478E459C43D5553858E92363B8724E91EBBA202C31C698A142B2",
+    "evidence/01b-r32-compatible.log": "450B2093A88E5E81B91EEE2568F984C014019D34B8DC029B121313CB8DEA593F",
+    "evidence/02-phase6.log": "8D3166C497CDC58697A5CD45A01FF91C8983B6F353F8DF6955065CB820FC5404",
+    "evidence/02-phase6.previous.log": "C2EA2691AA81478E459C43D5553858E92363B8724E91EBBA202C31C698A142B2",
+    "evidence/03-phase5.log": "F3C91584ABA9B2D140BE8A95321F80549262300498A3BE103D7ECD68C9B0A0E5",
+    "evidence/03-phase5.previous.log": "C2EA2691AA81478E459C43D5553858E92363B8724E91EBBA202C31C698A142B2",
+    "evidence/04-typescript.log": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "evidence/04-typescript.previous.log": "C2EA2691AA81478E459C43D5553858E92363B8724E91EBBA202C31C698A142B2",
+    "evidence/05-adversarial.log": "D96D4D6B33924B3615221EB57A6AE728547A22CEF3ABA03648E463677A3377F0",
+    "evidence/05-adversarial.previous.log": "362A37B3CD7CA46446C9FB30DE770EF71ABB29D208DDC6CCC965FC75EB2217E0",
+    "evidence/adversarial-gate.json": "7B24EBDF54C8A97A3E52422615515DF8425DCCE1C300D0E3B009BAC355DC0A03",
+    "evidence/baseline-gates.json": "9F091788A43F7AFCC8244A5BA1B1803C03ABC6A8E111C120EEFA2A87ACD53B4B",
+    "evidence/cleanup.json": "57BA78974A9AB8C2960FC72E9373D07AC3572FEFD35A34BB470A7CBE641F709E",
+    "evidence/compatibility-gate.json": "1AFFBB5728D27A73C6331106133A1078971BBFBCC149EB7BBE85C274B253ED35",
+    "evidence/fixture-manifest.json": "3B2C3D8529BFF4BE72B23481BA9B3C3CE877BE4013F034746A6D59076CA3B6F7",
+    "evidence/git-status-after.txt": "5C5E781576A2AD80DCB52CAC1F9D7C9227AD9891CD6C63A8BF3F7D433582990E",
+    "evidence/git-status-before.txt": "F6A04A195F7C8C6CE867C09E8BD754CDCCC8B6D4F495D04394B59A141622AEA2",
+    "evidence/integrity-after.json": "8C19CE1CA45F7A4E184C834F09BB6B26EAD11AADEDCBB85FC8F7BC29709C79E8",
+    "evidence/integrity-before.json": "8C19CE1CA45F7A4E184C834F09BB6B26EAD11AADEDCBB85FC8F7BC29709C79E8",
+    "evidence/plan-before.bin": "B38040137804DFBC3CB7F64D53C17A733A6C0510DEF1527554E9D4DC7BF6C1B4",
+    "evidence/r32-browser-scenarios.json": "2DB15FB24894C21788F260F0113D2BF692E9877B84A0F3CD97CD69682440BDF5",
+    "evidence/r32-phase6-results.json": "A545F7792AF6953BA6C1AE25CD3A0CA3758AEC15B2B9B89E16DF20B31E4D35F9",
+    "evidence/r38-adversarial-results.json": "CD54844461CF0A98AEFF17685345F207FDE059DF68DB1979B0A57979070E1C42",
+    "evidence/r38-browser-scenarios.json": "CB0838132522F4876728A132343103D446AABEE034E7FB47AF389021E5701BF0",
+    "evidence/r38-drift-before-save.png": "94FFA4ACCB9D1B22B79685D8754D9C46D85342D64B849715F4AB700079BC2358",
+    "evidence/r38-happy.png": "241C6EC14A784370D18992A161B49440C390AD83EB16A71ED927F81B5AF15A01",
+    "evidence/r38-http500.png": "6A3045C0E00DE1FC80BA95B007EE39078115449D1AA469056E6624CEE38BA2EC",
+    "evidence/r38-optimistic-links.png": "241C6EC14A784370D18992A161B49440C390AD83EB16A71ED927F81B5AF15A01",
+    "evidence/r38-pending-files.png": "B8CAE133771C597123F081E0CD8A4B185AF7140BEDF2C08ED63B97B41A31018B",
+    "evidence/r38-same-filename-old-bytes.png": "F592A97593D0CFF604B15E753F33CF19CCC886EF20F500DE6F2486B6608DBF02",
+    "evidence/r38-stop-during-class.png": "794C5D01FB4BC88928EC6468D9846AF1A489C748FBE1C7B0A5A4566D08060752",
+    "evidence/r38-wrong-request-owner.png": "241C6EC14A784370D18992A161B49440C390AD83EB16A71ED927F81B5AF15A01",
+    "evidence/snapshot.json": "653399B76E852E0228532BF31A908F7CCF7CCFCBC74F12F1F4E43AC53227107A"
+  }
+}

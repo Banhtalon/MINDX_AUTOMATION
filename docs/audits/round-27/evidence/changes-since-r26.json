@@ -1,0 +1,8 @@
+{
+  "changed": [
+    "src/lib/file-parsers/media-reader.ts",
+    "src/lib/playwright/grade-worker.ts"
+  ],
+  "added": [],
+  "missing": []
+}

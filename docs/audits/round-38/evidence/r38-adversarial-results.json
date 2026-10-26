@@ -1,0 +1,1039 @@
+{
+  "round": 38,
+  "checkedAt": "2026-10-21T05:58:26.473Z",
+  "method": "Native product imports + real SQLite/API/uploader + intercepted Chromium. AI and UI use exact source function bodies with deterministic boundary doubles, not a full mounted React app.",
+  "realLmsCalls": 0,
+  "realGeminiCalls": 0,
+  "sourceHashes": {
+    "src/lib/utils/vietnamese-match.ts": "017fa9883acf6d791bfd36d67ef596801c6aec13de33bd9949ae3a3bb34b41b3",
+    "src/lib/local-files/spck-scanner.ts": "afbc9fe932f7a0ee07c11c16fdbc90fbb57a767f8cfbc8d5bf60d7d0160dff4d",
+    "src/lib/gemini/spck-comment.ts": "5598ded2d1c230178c7734db726642e2e7c1e9609bd6d46970fd6703aff20a6c",
+    "src/lib/playwright/spck-uploader.ts": "5088763c2a490cdbbbc7f7800ef8c171ad4170533cb123a93cb945e5e0719d40",
+    "src/lib/db/sqlite.ts": "59f8f00d68819901a286086e91f4407d21acb50ba31ad8013e7d4c9613f30edd",
+    "src/app/final-project/page.tsx": "ded2b09a5cde44034241f5df0f3d193e3fe79a44cf66d21699b7e64a61ac4751",
+    "src/app/api/spck/scan/route.ts": "0fb49883b1e49ff85b474d87a76ac964e223bb383fcec8ec1d79a5be7d303428",
+    "src/app/api/spck/list/route.ts": "3c9dd80ee5e98fcc5ac4d82709d1f6fefb95977d733af73f4340537cccd5f593",
+    "src/app/api/spck/save-draft/route.ts": "58fa0b9beff15ee58f74155f19c9382e34202187a999ca396f6ce16e85c074b7",
+    "src/app/api/spck/approve/route.ts": "a16750ec86a7453bb1a8eb43316089e164e3eec0f92551d083f220da10732449",
+    "src/app/api/spck/generate-ai/route.ts": "3db7fe0cd7245e3852c31f8ec64f038bee1c8c87a38ac9910cd924e629f8eb74",
+    "src/app/api/spck/upload-lms/route.ts": "b614fd18d3b7c9cf8439523ca2531c8b353e80bfac0301e013708485a4fcc8f3"
+  },
+  "total": 41,
+  "passed": 24,
+  "failed": 17,
+  "results": [
+    {
+      "id": "R38-N01",
+      "task": "6.1",
+      "issue": null,
+      "title": "Tên NFD, tiền tố số, tên trùng và va chạm thư mục vẫn yêu cầu xác nhận",
+      "pass": true,
+      "observation": [
+        {
+          "score": 0.95,
+          "manual": true
+        },
+        {
+          "score": 1,
+          "manual": true
+        }
+      ]
+    },
+    {
+      "id": "R38-S-outside-root",
+      "task": "6.2",
+      "issue": null,
+      "title": "Chặn đường dẫn hoặc junction thoát allowlist: outside-root",
+      "pass": true,
+      "observation": {
+        "blocked": true
+      }
+    },
+    {
+      "id": "R38-S-child-junction",
+      "task": "6.2",
+      "issue": null,
+      "title": "Chặn đường dẫn hoặc junction thoát allowlist: child-junction",
+      "pass": true,
+      "observation": {
+        "blocked": true
+      }
+    },
+    {
+      "id": "R38-S-file-via-junction",
+      "task": "6.2",
+      "issue": null,
+      "title": "Chặn đường dẫn hoặc junction thoát allowlist: file-via-junction",
+      "pass": true,
+      "observation": {
+        "blocked": true
+      }
+    },
+    {
+      "id": "R38-S-corrupt-zip",
+      "task": "6.2",
+      "issue": "R38-06",
+      "title": "Loại gói zip hỏng cấu trúc",
+      "pass": false,
+      "observation": {
+        "accepted": [
+          "broken.zip"
+        ],
+        "warnings": [
+          "Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung)."
+        ]
+      },
+      "error": "Acceptance failed: {\"accepted\":[\"broken.zip\"],\"warnings\":[\"Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung).\"]}",
+      "stack": "Error: Acceptance failed: {\"accepted\":[\"broken.zip\"],\"warnings\":[\"Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung).\"]}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:62:52)\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:32)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:60:59)"
+    },
+    {
+      "id": "R38-S-corrupt-sb3",
+      "task": "6.2",
+      "issue": "R38-06",
+      "title": "Loại gói sb3 hỏng cấu trúc",
+      "pass": false,
+      "observation": {
+        "accepted": [
+          "broken.sb3"
+        ],
+        "warnings": [
+          "Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung)."
+        ]
+      },
+      "error": "Acceptance failed: {\"accepted\":[\"broken.sb3\"],\"warnings\":[\"Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung).\"]}",
+      "stack": "Error: Acceptance failed: {\"accepted\":[\"broken.sb3\"],\"warnings\":[\"Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung).\"]}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:62:52)\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:32)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:60:59)"
+    },
+    {
+      "id": "R38-S-corrupt-yyz",
+      "task": "6.2",
+      "issue": "R38-06",
+      "title": "Loại gói yyz hỏng cấu trúc",
+      "pass": false,
+      "observation": {
+        "accepted": [
+          "broken.yyz"
+        ],
+        "warnings": [
+          "Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung)."
+        ]
+      },
+      "error": "Acceptance failed: {\"accepted\":[\"broken.yyz\"],\"warnings\":[\"Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung).\"]}",
+      "stack": "Error: Acceptance failed: {\"accepted\":[\"broken.yyz\"],\"warnings\":[\"Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung).\"]}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:62:52)\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:32)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:60:59)"
+    },
+    {
+      "id": "R38-S-corrupt-docx",
+      "task": "6.2",
+      "issue": "R38-06",
+      "title": "Loại gói docx hỏng cấu trúc",
+      "pass": false,
+      "observation": {
+        "accepted": [
+          "broken.docx"
+        ],
+        "warnings": [
+          "Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung)."
+        ]
+      },
+      "error": "Acceptance failed: {\"accepted\":[\"broken.docx\"],\"warnings\":[\"Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung).\"]}",
+      "stack": "Error: Acceptance failed: {\"accepted\":[\"broken.docx\"],\"warnings\":[\"Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung).\"]}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:62:52)\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:32)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:60:59)"
+    },
+    {
+      "id": "R38-S-corrupt-pptx",
+      "task": "6.2",
+      "issue": "R38-06",
+      "title": "Loại gói pptx hỏng cấu trúc",
+      "pass": false,
+      "observation": {
+        "accepted": [
+          "broken.pptx"
+        ],
+        "warnings": [
+          "Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung)."
+        ]
+      },
+      "error": "Acceptance failed: {\"accepted\":[\"broken.pptx\"],\"warnings\":[\"Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung).\"]}",
+      "stack": "Error: Acceptance failed: {\"accepted\":[\"broken.pptx\"],\"warnings\":[\"Chưa có ảnh sản phẩm trong thư mục (sẽ giữ nguyên ảnh Thumbnail mặc định của MindX nếu không bổ sung).\"]}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:62:52)\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:32)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:60:59)"
+    },
+    {
+      "id": "R38-S-links",
+      "task": "6.2",
+      "issue": null,
+      "title": "links.txt chặn giao thức lạ và giới hạn 5+5",
+      "pass": true,
+      "observation": {
+        "youtube": 5,
+        "related": 5,
+        "warnings": 6
+      }
+    },
+    {
+      "id": "R38-L-scan",
+      "task": "6.5",
+      "issue": null,
+      "title": "API scan từ chối website bên ngoài",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R38-L-list",
+      "task": "6.5",
+      "issue": null,
+      "title": "API list từ chối website bên ngoài",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R38-L-save-draft",
+      "task": "6.5",
+      "issue": null,
+      "title": "API save-draft từ chối website bên ngoài",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R38-L-approve",
+      "task": "6.5",
+      "issue": null,
+      "title": "API approve từ chối website bên ngoài",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R38-L-generate-ai",
+      "task": "6.5",
+      "issue": null,
+      "title": "API generate-ai từ chối website bên ngoài",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R38-L-upload-lms",
+      "task": "6.5",
+      "issue": null,
+      "title": "API upload-lms từ chối website bên ngoài",
+      "pass": true,
+      "observation": {
+        "http": 403
+      }
+    },
+    {
+      "id": "R38-L-client",
+      "task": "6.5",
+      "issue": null,
+      "title": "Client không nhập mật khẩu, khóa API hoặc thư viện server",
+      "pass": true,
+      "observation": {
+        "clientSecrets": false,
+        "configuredLoopback": true
+      }
+    },
+    {
+      "id": "R38-D-student",
+      "task": "6.5",
+      "issue": null,
+      "title": "Không lưu nháp cho studentId ngoài lớp",
+      "pass": true,
+      "observation": {
+        "http": 400
+      }
+    },
+    {
+      "id": "R38-D-drift-teacherComment",
+      "task": "6.5",
+      "issue": null,
+      "title": "Sửa teacherComment sau duyệt hạ WAITING_APPROVAL",
+      "pass": true,
+      "observation": {
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R38-D-drift-projectTitle",
+      "task": "6.5",
+      "issue": null,
+      "title": "Sửa projectTitle sau duyệt hạ WAITING_APPROVAL",
+      "pass": true,
+      "observation": {
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R38-D-drift-youtubeUrlsJson",
+      "task": "6.5",
+      "issue": null,
+      "title": "Sửa youtubeUrlsJson sau duyệt hạ WAITING_APPROVAL",
+      "pass": true,
+      "observation": {
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R38-D-drift-relatedLinksJson",
+      "task": "6.5",
+      "issue": null,
+      "title": "Sửa relatedLinksJson sau duyệt hạ WAITING_APPROVAL",
+      "pass": true,
+      "observation": {
+        "status": "WAITING_APPROVAL"
+      }
+    },
+    {
+      "id": "R38-D-file-drift",
+      "task": "6.4",
+      "issue": null,
+      "title": "Đổi bytes file sau duyệt chặn upload",
+      "pass": true,
+      "observation": {
+        "blocked": true,
+        "reason": "Phát hiện nội dung SPCK đã bị chỉnh sửa sau khi duyệt (contentHash không khớp). Đã tự động hạ về WAITING_APPROVAL."
+      }
+    },
+    {
+      "id": "R38-D-unsafe-url",
+      "task": "6.5",
+      "issue": "R38-07",
+      "title": "API không duyệt URL javascript: dù bỏ qua UI",
+      "pass": false,
+      "observation": {
+        "draftHttp": 200,
+        "approveHttp": 200,
+        "status": "APPROVED",
+        "uploadValidation": true,
+        "youtube": "[\"javascript:alert(1)\"]",
+        "related": "[{\"name\":\"unsafe\",\"url\":\"file:///C:/Windows/system.ini\"}]"
+      },
+      "error": "Acceptance failed: {\"draftHttp\":200,\"approveHttp\":200,\"status\":\"APPROVED\",\"uploadValidation\":true,\"youtube\":\"[\\\"javascript:alert(1)\\\"]\",\"related\":\"[{\\\"name\\\":\\\"unsafe\\\",\\\"url\\\":\\\"file:///C:/Windows/system.ini\\\"}]\"}",
+      "stack": "Error: Acceptance failed: {\"draftHttp\":200,\"approveHttp\":200,\"status\":\"APPROVED\",\"uploadValidation\":true,\"youtube\":\"[\\\"javascript:alert(1)\\\"]\",\"related\":\"[{\\\"name\\\":\\\"unsafe\\\",\\\"url\\\":\\\"file:///C:/Windows/system.ini\\\"}]\"}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:84:9)\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:26)\n    at async <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:82:1)"
+    },
+    {
+      "id": "R38-D-exe",
+      "task": "6.2/6.5",
+      "issue": "R38-08",
+      "title": "API không duyệt file ngoài danh mục LMS",
+      "pass": false,
+      "observation": {
+        "approveHttp": 200,
+        "status": "APPROVED",
+        "preflightValid": true,
+        "extension": ".exe"
+      },
+      "error": "Acceptance failed: {\"approveHttp\":200,\"status\":\"APPROVED\",\"preflightValid\":true,\"extension\":\".exe\"}",
+      "stack": "Error: Acceptance failed: {\"approveHttp\":200,\"status\":\"APPROVED\",\"preflightValid\":true,\"extension\":\".exe\"}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:87:312)\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:26)\n    at async <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:86:1)"
+    },
+    {
+      "id": "R38-D-approval-snapshot",
+      "task": "6.5",
+      "issue": null,
+      "title": "Snapshot nội dung cũ không được duyệt",
+      "pass": true,
+      "observation": {
+        "http": 409
+      }
+    },
+    {
+      "id": "R38-G-stop",
+      "task": "6.3",
+      "issue": "R38-05",
+      "title": "Stop Bot giữa danh sách AI không gọi học viên kế tiếp",
+      "pass": false,
+      "observation": {
+        "calls": 2,
+        "results": 2,
+        "stopFlagWasSet": true
+      },
+      "error": "Acceptance failed: {\"calls\":2,\"results\":2,\"stopFlagWasSet\":true}",
+      "stack": "Error: Acceptance failed: {\"calls\":2,\"results\":2,\"stopFlagWasSet\":true}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:101:180)\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:26)\n    at async <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:99:1)"
+    },
+    {
+      "id": "R38-G-empty",
+      "task": "6.3",
+      "issue": null,
+      "title": "Thiếu tag và note không gọi AI",
+      "pass": true,
+      "observation": {
+        "calls": 0,
+        "status": "INSUFFICIENT_INFO"
+      }
+    },
+    {
+      "id": "R38-G-privacy",
+      "task": "6.3",
+      "issue": null,
+      "title": "Ẩn tên target/peer và khóa thẻ đóng sandbox giả",
+      "pass": true,
+      "observation": {
+        "namesRedacted": true,
+        "sandboxEscapeRedacted": true,
+        "restoredTarget": true,
+        "presentationRemoved": true
+      }
+    },
+    {
+      "id": "R38-G-history",
+      "task": "6.3",
+      "issue": "R38-12",
+      "title": "Lịch sử buổi 2 phải được dùng khi tổng kết cuối khóa",
+      "pass": false,
+      "observation": {
+        "session2InDb": true,
+        "session2InPrompt": false,
+        "claimsNoHistory": true
+      },
+      "error": "Acceptance failed: {\"session2InDb\":true,\"session2InPrompt\":false,\"claimsNoHistory\":true}",
+      "stack": "Error: Acceptance failed: {\"session2InDb\":true,\"session2InPrompt\":false,\"claimsNoHistory\":true}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:111:160)\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:26)\n    at async <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:108:1)"
+    },
+    {
+      "id": "R38-U-reload",
+      "task": "6.5",
+      "issue": "R38-09",
+      "title": "Sau tải lại trang, lần sửa mới không bị coi là nháp cũ",
+      "pass": false,
+      "observation": {
+        "uiReturnedSuccess": true,
+        "staleIgnored": true,
+        "actual": "OLD PERSISTED",
+        "dbSeq": 900
+      },
+      "error": "Acceptance failed: {\"uiReturnedSuccess\":true,\"staleIgnored\":true,\"actual\":\"OLD PERSISTED\",\"dbSeq\":900}",
+      "stack": "Error: Acceptance failed: {\"uiReturnedSuccess\":true,\"staleIgnored\":true,\"actual\":\"OLD PERSISTED\",\"dbSeq\":900}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:125:159)\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:26)\n    at async <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:122:1)"
+    },
+    {
+      "id": "R38-U-class-race",
+      "task": "6.5",
+      "issue": "R38-10",
+      "title": "Đổi lớp khi đang duyệt: phản hồi lớp A không ghi trạng thái/hash lên lớp B",
+      "pass": false,
+      "observation": {
+        "selectedClass": "R38_B",
+        "displayedComment": "CLASS B STILL WAITING",
+        "displayedStatus": "VERIFIED",
+        "displayedHash": "HASH_OF_CLASS_A",
+        "calls": [
+          {
+            "url": "/api/spck/save-draft",
+            "body": {
+              "classId": "AUDIT_R38_SYNTHETIC",
+              "studentId": "R38_S1",
+              "localFolderPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\data\\r38-fixtures-fYNTwq\\student-1",
+              "matchScore": 1,
+              "isConfirmedByTeacher": true,
+              "projectTitle": "SPCK reviewed",
+              "thumbnailPath": "",
+              "screenshots": [],
+              "attachments": [],
+              "youtubeUrls": [],
+              "relatedLinks": [],
+              "teacherComment": "Nhận xét giáo viên đã duyệt.",
+              "draftSeq": 1,
+              "reassignFolder": false
+            }
+          },
+          {
+            "url": "/api/spck/approve",
+            "body": {
+              "classId": "AUDIT_R38_SYNTHETIC",
+              "studentIds": [
+                "R38_S1"
+              ],
+              "reviewedItems": [
+                {
+                  "studentId": "R38_S1",
+                  "localFolderPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\data\\r38-fixtures-fYNTwq\\student-1",
+                  "isConfirmedByTeacher": 1,
+                  "projectTitle": "SPCK reviewed",
+                  "thumbnailPath": "",
+                  "screenshotsJson": "[]",
+                  "attachmentsJson": "[]",
+                  "youtubeUrlsJson": "[]",
+                  "relatedLinksJson": "[]",
+                  "teacherComment": "Nhận xét giáo viên đã duyệt."
+                }
+              ]
+            }
+          },
+          {
+            "url": "/api/spck/list?classId=R38_B",
+            "body": null
+          },
+          {
+            "url": "/api/spck/upload-lms",
+            "body": {
+              "classId": "AUDIT_R38_SYNTHETIC",
+              "studentIds": [
+                "R38_S1"
+              ]
+            }
+          }
+        ]
+      },
+      "error": "Acceptance failed: {\"selectedClass\":\"R38_B\",\"displayedComment\":\"CLASS B STILL WAITING\",\"displayedStatus\":\"VERIFIED\",\"displayedHash\":\"HASH_OF_CLASS_A\",\"calls\":[{\"url\":\"/api/spck/save-draft\",\"body\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\",\"localFolderPath\":\"C:\\\\Users\\\\QQ\\\\AppData\\\\Local\\\\Temp\\\\mindx-round31-r38-phase6\\\\data\\\\r38-fixtures-fYNTwq\\\\student-1\",\"matchScore\":1,\"isConfirmedByTeacher\":true,\"projectTitle\":\"SPCK reviewed\",\"thumbnailPath\":\"\",\"screenshots\":[],\"attachments\":[],\"youtubeUrls\":[],\"relatedLinks\":[],\"teacherComment\":\"Nhận xét giáo viên đã duyệt.\",\"draftSeq\":1,\"reassignFolder\":false}},{\"url\":\"/api/spck/approve\",\"body\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentIds\":[\"R38_S1\"],\"reviewedItems\":[{\"studentId\":\"R38_S1\",\"localFolderPath\":\"C:\\\\Users\\\\QQ\\\\AppData\\\\Local\\\\Temp\\\\mindx-round31-r38-phase6\\\\data\\\\r38-fixtures-fYNTwq\\\\student-1\",\"isConfirmedByTeacher\":1,\"projectTitle\":\"SPCK reviewed\",\"thumbnailPath\":\"\",\"screenshotsJson\":\"[]\",\"attachmentsJson\":\"[]\",\"youtubeUrlsJson\":\"[]\",\"relatedLinksJson\":\"[]\",\"teacherComment\":\"Nhận xét giáo viên đã duyệt.\"}]}},{\"url\":\"/api/spck/list?classId=R38_B\",\"body\":null},{\"url\":\"/api/spck/upload-lms\",\"body\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentIds\":[\"R38_S1\"]}}]}",
+      "stack": "Error: Acceptance failed: {\"selectedClass\":\"R38_B\",\"displayedComment\":\"CLASS B STILL WAITING\",\"displayedStatus\":\"VERIFIED\",\"displayedHash\":\"HASH_OF_CLASS_A\",\"calls\":[{\"url\":\"/api/spck/save-draft\",\"body\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\",\"localFolderPath\":\"C:\\\\Users\\\\QQ\\\\AppData\\\\Local\\\\Temp\\\\mindx-round31-r38-phase6\\\\data\\\\r38-fixtures-fYNTwq\\\\student-1\",\"matchScore\":1,\"isConfirmedByTeacher\":true,\"projectTitle\":\"SPCK reviewed\",\"thumbnailPath\":\"\",\"screenshots\":[],\"attachments\":[],\"youtubeUrls\":[],\"relatedLinks\":[],\"teacherComment\":\"Nhận xét giáo viên đã duyệt.\",\"draftSeq\":1,\"reassignFolder\":false}},{\"url\":\"/api/spck/approve\",\"body\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentIds\":[\"R38_S1\"],\"reviewedItems\":[{\"studentId\":\"R38_S1\",\"localFolderPath\":\"C:\\\\Users\\\\QQ\\\\AppData\\\\Local\\\\Temp\\\\mindx-round31-r38-phase6\\\\data\\\\r38-fixtures-fYNTwq\\\\student-1\",\"isConfirmedByTeacher\":1,\"projectTitle\":\"SPCK reviewed\",\"thumbnailPath\":\"\",\"screenshotsJson\":\"[]\",\"attachmentsJson\":\"[]\",\"youtubeUrlsJson\":\"[]\",\"relatedLinksJson\":\"[]\",\"teacherComment\":\"Nhận xét giáo viên đã duyệt.\"}]}},{\"url\":\"/api/spck/list?classId=R38_B\",\"body\":null},{\"url\":\"/api/spck/upload-lms\",\"body\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentIds\":[\"R38_S1\"]}}]}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:141:9)\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:26)\n    at async <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:127:1)"
+    },
+    {
+      "id": "R38-U-note-race",
+      "task": "6.3/6.5",
+      "issue": "R38-11",
+      "title": "Đổi ghi chú khi AI đang chạy không nhận kết quả dựa trên ghi chú cũ",
+      "pass": false,
+      "observation": {
+        "teacherNote": "Ghi chú MỚI, sản phẩm chưa hoàn thành",
+        "teacherComment": "OLD AI BASED ON OLD NOTE"
+      },
+      "error": "Acceptance failed: {\"teacherNote\":\"Ghi chú MỚI, sản phẩm chưa hoàn thành\",\"teacherComment\":\"OLD AI BASED ON OLD NOTE\"}",
+      "stack": "Error: Acceptance failed: {\"teacherNote\":\"Ghi chú MỚI, sản phẩm chưa hoàn thành\",\"teacherComment\":\"OLD AI BASED ON OLD NOTE\"}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:146:9)\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:26)\n    at async <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:143:1)"
+    },
+    {
+      "id": "R38-P-happy",
+      "task": "6.4",
+      "issue": null,
+      "title": "Đối chứng: tạo 01, bấm Thêm, retry không tạo 02",
+      "pass": true,
+      "observation": {
+        "name": "happy",
+        "summary": {
+          "classId": "AUDIT_R38_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R38_S1",
+              "fullName": "Đặng Minh An",
+              "status": "VERIFIED",
+              "reusedExistingItem01": false,
+              "clickedAddSpckButton": true,
+              "youtubeAddedCount": 1,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "saves": 1,
+        "saveStudentIds": [
+          "R38_S1",
+          "R38_S1"
+        ],
+        "serverRows": {
+          "R38_S1": {
+            "title": "SPCK reviewed",
+            "comment": "Nhận xét giáo viên đã duyệt."
+          }
+        },
+        "serverFileSha256": null,
+        "unrelatedUploadResponses": 0,
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "ytClicks": 1,
+          "pendingFiles": 0
+        },
+        "requests": [
+          {
+            "url": "https://r38.invalid/graphql",
+            "method": "POST",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+          },
+          {
+            "url": "https://r38.invalid/graphql",
+            "method": "POST",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+          }
+        ],
+        "dbRows": [
+          {
+            "studentId": "R38_S1",
+            "status": "VERIFIED"
+          }
+        ],
+        "stopFlag": false,
+        "retry": {
+          "classId": "AUDIT_R38_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R38_S1",
+              "fullName": "Đặng Minh An",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "cardsAfterRetry": 1
+      }
+    },
+    {
+      "id": "R38-P-no-persist",
+      "task": "6.4",
+      "issue": "R38-01",
+      "title": "Link hiện ở form chưa lưu không được dùng làm bằng chứng lưu bền vững",
+      "pass": false,
+      "observation": {
+        "name": "optimistic-links",
+        "summary": {
+          "classId": "AUDIT_R38_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R38_S1",
+              "fullName": "Đặng Minh An",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 1,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "saves": 1,
+        "saveStudentIds": [
+          "R38_S1"
+        ],
+        "serverRows": {},
+        "serverFileSha256": null,
+        "unrelatedUploadResponses": 0,
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "ytClicks": 1,
+          "pendingFiles": 0
+        },
+        "requests": [
+          {
+            "url": "https://r38.invalid/graphql",
+            "method": "POST",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+          }
+        ],
+        "dbRows": [
+          {
+            "studentId": "R38_S1",
+            "status": "VERIFIED"
+          }
+        ],
+        "stopFlag": false
+      },
+      "error": "Acceptance failed: {\"name\":\"optimistic-links\",\"summary\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R38_S1\",\"fullName\":\"Đặng Minh An\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":1,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"saves\":1,\"saveStudentIds\":[\"R38_S1\"],\"serverRows\":{},\"serverFileSha256\":null,\"unrelatedUploadResponses\":0,\"dom\":{\"cards\":1,\"uploadChanges\":0,\"ytClicks\":1,\"pendingFiles\":0},\"requests\":[{\"url\":\"https://r38.invalid/graphql\",\"method\":\"POST\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R38_SYNTHETIC\\\",\\\"studentId\\\":\\\"R38_S1\\\"}}\"}],\"dbRows\":[{\"studentId\":\"R38_S1\",\"status\":\"VERIFIED\"}],\"stopFlag\":false}",
+      "stack": "Error: Acceptance failed: {\"name\":\"optimistic-links\",\"summary\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R38_S1\",\"fullName\":\"Đặng Minh An\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":1,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"saves\":1,\"saveStudentIds\":[\"R38_S1\"],\"serverRows\":{},\"serverFileSha256\":null,\"unrelatedUploadResponses\":0,\"dom\":{\"cards\":1,\"uploadChanges\":0,\"ytClicks\":1,\"pendingFiles\":0},\"requests\":[{\"url\":\"https://r38.invalid/graphql\",\"method\":\"POST\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R38_SYNTHETIC\\\",\\\"studentId\\\":\\\"R38_S1\\\"}}\"}],\"dbRows\":[{\"studentId\":\"R38_S1\",\"status\":\"VERIFIED\"}],\"stopFlag\":false}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:191:218)\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:26)\n    at async <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:191:2)"
+    },
+    {
+      "id": "R38-P-wrong-request",
+      "task": "6.4",
+      "issue": "R38-02",
+      "title": "Request lưu sai studentId/classId không được VERIFIED",
+      "pass": false,
+      "observation": {
+        "name": "wrong-request-owner",
+        "summary": {
+          "classId": "AUDIT_R38_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R38_S1",
+              "fullName": "Đặng Minh An",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 1,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "saves": 1,
+        "saveStudentIds": [
+          "OTHER_STUDENT"
+        ],
+        "serverRows": {
+          "OTHER_STUDENT": {
+            "title": "SPCK reviewed",
+            "comment": "Nhận xét giáo viên đã duyệt."
+          }
+        },
+        "serverFileSha256": null,
+        "unrelatedUploadResponses": 0,
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "ytClicks": 1,
+          "pendingFiles": 0
+        },
+        "requests": [
+          {
+            "url": "https://r38.invalid/graphql",
+            "method": "POST",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"OTHER_CLASS\",\"studentId\":\"OTHER_STUDENT\"}}"
+          }
+        ],
+        "dbRows": [
+          {
+            "studentId": "R38_S1",
+            "status": "VERIFIED"
+          }
+        ],
+        "stopFlag": false
+      },
+      "error": "Acceptance failed: {\"name\":\"wrong-request-owner\",\"summary\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R38_S1\",\"fullName\":\"Đặng Minh An\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":1,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"saves\":1,\"saveStudentIds\":[\"OTHER_STUDENT\"],\"serverRows\":{\"OTHER_STUDENT\":{\"title\":\"SPCK reviewed\",\"comment\":\"Nhận xét giáo viên đã duyệt.\"}},\"serverFileSha256\":null,\"unrelatedUploadResponses\":0,\"dom\":{\"cards\":1,\"uploadChanges\":0,\"ytClicks\":1,\"pendingFiles\":0},\"requests\":[{\"url\":\"https://r38.invalid/graphql\",\"method\":\"POST\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"OTHER_CLASS\\\",\\\"studentId\\\":\\\"OTHER_STUDENT\\\"}}\"}],\"dbRows\":[{\"studentId\":\"R38_S1\",\"status\":\"VERIFIED\"}],\"stopFlag\":false}",
+      "stack": "Error: Acceptance failed: {\"name\":\"wrong-request-owner\",\"summary\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R38_S1\",\"fullName\":\"Đặng Minh An\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":1,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"saves\":1,\"saveStudentIds\":[\"OTHER_STUDENT\"],\"serverRows\":{\"OTHER_STUDENT\":{\"title\":\"SPCK reviewed\",\"comment\":\"Nhận xét giáo viên đã duyệt.\"}},\"serverFileSha256\":null,\"unrelatedUploadResponses\":0,\"dom\":{\"cards\":1,\"uploadChanges\":0,\"ytClicks\":1,\"pendingFiles\":0},\"requests\":[{\"url\":\"https://r38.invalid/graphql\",\"method\":\"POST\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"OTHER_CLASS\\\",\\\"studentId\\\":\\\"OTHER_STUDENT\\\"}}\"}],\"dbRows\":[{\"studentId\":\"R38_S1\",\"status\":\"VERIFIED\"}],\"stopFlag\":false}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:192:250)\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:26)\n    at async <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:192:2)"
+    },
+    {
+      "id": "R38-P-pending-files",
+      "task": "6.4",
+      "issue": "R38-03",
+      "title": "Một network không liên quan không thay cho mọi file tải hoàn tất",
+      "pass": false,
+      "observation": {
+        "name": "pending-files",
+        "summary": {
+          "classId": "AUDIT_R38_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R38_S1",
+              "fullName": "Đặng Minh An",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 2
+            }
+          ]
+        },
+        "saves": 1,
+        "saveStudentIds": [
+          "R38_S1"
+        ],
+        "serverRows": {
+          "R38_S1": {
+            "title": "SPCK reviewed",
+            "comment": "Nhận xét giáo viên đã duyệt."
+          }
+        },
+        "serverFileSha256": null,
+        "unrelatedUploadResponses": 1,
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 1,
+          "ytClicks": 0,
+          "pendingFiles": 2
+        },
+        "requests": [
+          {
+            "url": "https://r38.invalid/files/telemetry",
+            "method": "POST",
+            "body": null
+          },
+          {
+            "url": "https://r38.invalid/graphql",
+            "method": "POST",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+          }
+        ],
+        "dbRows": [
+          {
+            "studentId": "R38_S1",
+            "status": "VERIFIED"
+          }
+        ],
+        "stopFlag": false
+      },
+      "error": "Acceptance failed: {\"name\":\"pending-files\",\"summary\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R38_S1\",\"fullName\":\"Đặng Minh An\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":2}]},\"saves\":1,\"saveStudentIds\":[\"R38_S1\"],\"serverRows\":{\"R38_S1\":{\"title\":\"SPCK reviewed\",\"comment\":\"Nhận xét giáo viên đã duyệt.\"}},\"serverFileSha256\":null,\"unrelatedUploadResponses\":1,\"dom\":{\"cards\":1,\"uploadChanges\":1,\"ytClicks\":0,\"pendingFiles\":2},\"requests\":[{\"url\":\"https://r38.invalid/files/telemetry\",\"method\":\"POST\",\"body\":null},{\"url\":\"https://r38.invalid/graphql\",\"method\":\"POST\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R38_SYNTHETIC\\\",\\\"studentId\\\":\\\"R38_S1\\\"}}\"}],\"dbRows\":[{\"studentId\":\"R38_S1\",\"status\":\"VERIFIED\"}],\"stopFlag\":false}",
+      "stack": "Error: Acceptance failed: {\"name\":\"pending-files\",\"summary\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R38_S1\",\"fullName\":\"Đặng Minh An\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":2}]},\"saves\":1,\"saveStudentIds\":[\"R38_S1\"],\"serverRows\":{\"R38_S1\":{\"title\":\"SPCK reviewed\",\"comment\":\"Nhận xét giáo viên đã duyệt.\"}},\"serverFileSha256\":null,\"unrelatedUploadResponses\":1,\"dom\":{\"cards\":1,\"uploadChanges\":1,\"ytClicks\":0,\"pendingFiles\":2},\"requests\":[{\"url\":\"https://r38.invalid/files/telemetry\",\"method\":\"POST\",\"body\":null},{\"url\":\"https://r38.invalid/graphql\",\"method\":\"POST\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R38_SYNTHETIC\\\",\\\"studentId\\\":\\\"R38_S1\\\"}}\"}],\"dbRows\":[{\"studentId\":\"R38_S1\",\"status\":\"VERIFIED\"}],\"stopFlag\":false}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:194:225)\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:26)\n    at async <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:193:2)"
+    },
+    {
+      "id": "R38-P-old-file",
+      "task": "6.4",
+      "issue": "R38-04",
+      "title": "Tên file giống nhau không chứng minh bytes LMS khớp file đã duyệt",
+      "pass": false,
+      "observation": {
+        "name": "same-filename-old-bytes",
+        "summary": {
+          "classId": "AUDIT_R38_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 1,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R38_S1",
+              "fullName": "Đặng Minh An",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "saves": 1,
+        "saveStudentIds": [
+          "R38_S1"
+        ],
+        "serverRows": {
+          "R38_S1": {
+            "title": "SPCK reviewed",
+            "comment": "Nhận xét giáo viên đã duyệt."
+          }
+        },
+        "serverFileSha256": "4a9611cc669019616f210f4b4800aa2ab5457d05b7ddff2a64770a6a2d12d1c3",
+        "unrelatedUploadResponses": 0,
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "ytClicks": 0,
+          "pendingFiles": 0
+        },
+        "requests": [
+          {
+            "url": "https://r38.invalid/graphql",
+            "method": "POST",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+          }
+        ],
+        "dbRows": [
+          {
+            "studentId": "R38_S1",
+            "status": "VERIFIED"
+          }
+        ],
+        "stopFlag": false,
+        "approvedFileSha256": "a51a6c4bff2bb1bf421d697d996d2fce4ca3e735dcaff6b3db2157a5f6b010f7"
+      },
+      "error": "Acceptance failed: {\"name\":\"same-filename-old-bytes\",\"summary\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R38_S1\",\"fullName\":\"Đặng Minh An\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"saves\":1,\"saveStudentIds\":[\"R38_S1\"],\"serverRows\":{\"R38_S1\":{\"title\":\"SPCK reviewed\",\"comment\":\"Nhận xét giáo viên đã duyệt.\"}},\"serverFileSha256\":\"4a9611cc669019616f210f4b4800aa2ab5457d05b7ddff2a64770a6a2d12d1c3\",\"unrelatedUploadResponses\":0,\"dom\":{\"cards\":1,\"uploadChanges\":0,\"ytClicks\":0,\"pendingFiles\":0},\"requests\":[{\"url\":\"https://r38.invalid/graphql\",\"method\":\"POST\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R38_SYNTHETIC\\\",\\\"studentId\\\":\\\"R38_S1\\\"}}\"}],\"dbRows\":[{\"studentId\":\"R38_S1\",\"status\":\"VERIFIED\"}],\"stopFlag\":false,\"approvedFileSha256\":\"a51a6c4bff2bb1bf421d697d996d2fce4ca3e735dcaff6b3db2157a5f6b010f7\"}",
+      "stack": "Error: Acceptance failed: {\"name\":\"same-filename-old-bytes\",\"summary\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"totalRequested\":1,\"verifiedCount\":1,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R38_S1\",\"fullName\":\"Đặng Minh An\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"saves\":1,\"saveStudentIds\":[\"R38_S1\"],\"serverRows\":{\"R38_S1\":{\"title\":\"SPCK reviewed\",\"comment\":\"Nhận xét giáo viên đã duyệt.\"}},\"serverFileSha256\":\"4a9611cc669019616f210f4b4800aa2ab5457d05b7ddff2a64770a6a2d12d1c3\",\"unrelatedUploadResponses\":0,\"dom\":{\"cards\":1,\"uploadChanges\":0,\"ytClicks\":0,\"pendingFiles\":0},\"requests\":[{\"url\":\"https://r38.invalid/graphql\",\"method\":\"POST\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R38_SYNTHETIC\\\",\\\"studentId\\\":\\\"R38_S1\\\"}}\"}],\"dbRows\":[{\"studentId\":\"R38_S1\",\"status\":\"VERIFIED\"}],\"stopFlag\":false,\"approvedFileSha256\":\"a51a6c4bff2bb1bf421d697d996d2fce4ca3e735dcaff6b3db2157a5f6b010f7\"}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:196:428)\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:26)\n    at async <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:196:2)"
+    },
+    {
+      "id": "R38-P-stop",
+      "task": "6.4",
+      "issue": "R38-05",
+      "title": "Stop Bot sau học viên đầu không lưu học viên thứ hai",
+      "pass": false,
+      "observation": {
+        "name": "stop-during-class",
+        "summary": {
+          "classId": "AUDIT_R38_SYNTHETIC",
+          "totalRequested": 2,
+          "verifiedCount": 2,
+          "failedCount": 0,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R38_S1",
+              "fullName": "Đặng Minh An",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            },
+            {
+              "studentId": "R38_S2",
+              "fullName": "Lê Hoàng Bình",
+              "status": "VERIFIED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0
+            }
+          ]
+        },
+        "saves": 2,
+        "saveStudentIds": [
+          "R38_S1",
+          "R38_S2"
+        ],
+        "serverRows": {
+          "R38_S1": {
+            "title": "SPCK reviewed",
+            "comment": "Nhận xét giáo viên đã duyệt."
+          },
+          "R38_S2": {
+            "title": "SPCK reviewed",
+            "comment": "Nhận xét giáo viên đã duyệt."
+          }
+        },
+        "serverFileSha256": null,
+        "unrelatedUploadResponses": 0,
+        "dom": {
+          "cards": 2,
+          "uploadChanges": 0,
+          "ytClicks": 0,
+          "pendingFiles": 0
+        },
+        "requests": [
+          {
+            "url": "https://r38.invalid/graphql",
+            "method": "POST",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+          },
+          {
+            "url": "https://r38.invalid/graphql",
+            "method": "POST",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S2\"}}"
+          }
+        ],
+        "dbRows": [
+          {
+            "studentId": "R38_S1",
+            "status": "VERIFIED"
+          },
+          {
+            "studentId": "R38_S2",
+            "status": "VERIFIED"
+          }
+        ],
+        "stopFlag": true
+      },
+      "error": "Acceptance failed: {\"name\":\"stop-during-class\",\"summary\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"totalRequested\":2,\"verifiedCount\":2,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R38_S1\",\"fullName\":\"Đặng Minh An\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0},{\"studentId\":\"R38_S2\",\"fullName\":\"Lê Hoàng Bình\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"saves\":2,\"saveStudentIds\":[\"R38_S1\",\"R38_S2\"],\"serverRows\":{\"R38_S1\":{\"title\":\"SPCK reviewed\",\"comment\":\"Nhận xét giáo viên đã duyệt.\"},\"R38_S2\":{\"title\":\"SPCK reviewed\",\"comment\":\"Nhận xét giáo viên đã duyệt.\"}},\"serverFileSha256\":null,\"unrelatedUploadResponses\":0,\"dom\":{\"cards\":2,\"uploadChanges\":0,\"ytClicks\":0,\"pendingFiles\":0},\"requests\":[{\"url\":\"https://r38.invalid/graphql\",\"method\":\"POST\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R38_SYNTHETIC\\\",\\\"studentId\\\":\\\"R38_S1\\\"}}\"},{\"url\":\"https://r38.invalid/graphql\",\"method\":\"POST\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R38_SYNTHETIC\\\",\\\"studentId\\\":\\\"R38_S2\\\"}}\"}],\"dbRows\":[{\"studentId\":\"R38_S1\",\"status\":\"VERIFIED\"},{\"studentId\":\"R38_S2\",\"status\":\"VERIFIED\"}],\"stopFlag\":true}",
+      "stack": "Error: Acceptance failed: {\"name\":\"stop-during-class\",\"summary\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"totalRequested\":2,\"verifiedCount\":2,\"failedCount\":0,\"demotedCount\":0,\"results\":[{\"studentId\":\"R38_S1\",\"fullName\":\"Đặng Minh An\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0},{\"studentId\":\"R38_S2\",\"fullName\":\"Lê Hoàng Bình\",\"status\":\"VERIFIED\",\"reusedExistingItem01\":true,\"clickedAddSpckButton\":false,\"youtubeAddedCount\":0,\"relatedLinksAddedCount\":0,\"screenshotsUploadedCount\":0,\"attachmentsUploadedCount\":0}]},\"saves\":2,\"saveStudentIds\":[\"R38_S1\",\"R38_S2\"],\"serverRows\":{\"R38_S1\":{\"title\":\"SPCK reviewed\",\"comment\":\"Nhận xét giáo viên đã duyệt.\"},\"R38_S2\":{\"title\":\"SPCK reviewed\",\"comment\":\"Nhận xét giáo viên đã duyệt.\"}},\"serverFileSha256\":null,\"unrelatedUploadResponses\":0,\"dom\":{\"cards\":2,\"uploadChanges\":0,\"ytClicks\":0,\"pendingFiles\":0},\"requests\":[{\"url\":\"https://r38.invalid/graphql\",\"method\":\"POST\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R38_SYNTHETIC\\\",\\\"studentId\\\":\\\"R38_S1\\\"}}\"},{\"url\":\"https://r38.invalid/graphql\",\"method\":\"POST\",\"body\":\"{\\\"operationName\\\":\\\"SaveStudentSpck\\\",\\\"variables\\\":{\\\"classId\\\":\\\"AUDIT_R38_SYNTHETIC\\\",\\\"studentId\\\":\\\"R38_S2\\\"}}\"}],\"dbRows\":[{\"studentId\":\"R38_S1\",\"status\":\"VERIFIED\"},{\"studentId\":\"R38_S2\",\"status\":\"VERIFIED\"}],\"stopFlag\":true}\n    at expect (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:43:49)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:197:204)\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:40:26)\n    at async <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round31-r38-phase6\\docs\\audits\\round-38\\adversarial.mjs:197:2)"
+    },
+    {
+      "id": "R38-P-drift",
+      "task": "6.4",
+      "issue": null,
+      "title": "Sửa DB khi đang điền phải chặn trước bấm Lưu",
+      "pass": true,
+      "observation": {
+        "name": "drift-before-save",
+        "summary": {
+          "classId": "AUDIT_R38_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 0,
+          "demotedCount": 1,
+          "results": [
+            {
+              "studentId": "R38_S1",
+              "fullName": "Đặng Minh An",
+              "status": "WAITING_APPROVAL",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "Đã hủy Lưu do dữ liệu SPCK thay đổi trước khi bấm Lưu."
+            }
+          ]
+        },
+        "saves": 0,
+        "saveStudentIds": [],
+        "serverRows": {},
+        "serverFileSha256": null,
+        "unrelatedUploadResponses": 0,
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "ytClicks": 0,
+          "pendingFiles": 0
+        },
+        "requests": [],
+        "dbRows": [
+          {
+            "studentId": "R38_S1",
+            "status": "WAITING_APPROVAL"
+          }
+        ],
+        "stopFlag": false
+      }
+    },
+    {
+      "id": "R38-P-http500",
+      "task": "6.4",
+      "issue": null,
+      "title": "HTTP 500 không được VERIFIED",
+      "pass": true,
+      "observation": {
+        "name": "http500",
+        "summary": {
+          "classId": "AUDIT_R38_SYNTHETIC",
+          "totalRequested": 1,
+          "verifiedCount": 0,
+          "failedCount": 1,
+          "demotedCount": 0,
+          "results": [
+            {
+              "studentId": "R38_S1",
+              "fullName": "Đặng Minh An",
+              "status": "FAILED",
+              "reusedExistingItem01": true,
+              "clickedAddSpckButton": false,
+              "youtubeAddedCount": 0,
+              "relatedLinksAddedCount": 0,
+              "screenshotsUploadedCount": 0,
+              "attachmentsUploadedCount": 0,
+              "errorMessage": "API Lưu SPCK trả về HTTP 500 (yêu cầu 200/201)."
+            }
+          ]
+        },
+        "saves": 1,
+        "saveStudentIds": [
+          "R38_S1"
+        ],
+        "serverRows": {},
+        "serverFileSha256": null,
+        "unrelatedUploadResponses": 0,
+        "dom": {
+          "cards": 1,
+          "uploadChanges": 0,
+          "ytClicks": 0,
+          "pendingFiles": 0
+        },
+        "requests": [
+          {
+            "url": "https://r38.invalid/graphql",
+            "method": "POST",
+            "body": "{\"operationName\":\"SaveStudentSpck\",\"variables\":{\"classId\":\"AUDIT_R38_SYNTHETIC\",\"studentId\":\"R38_S1\"}}"
+          }
+        ],
+        "dbRows": [
+          {
+            "studentId": "R38_S1",
+            "status": "FAILED"
+          }
+        ],
+        "stopFlag": false
+      }
+    }
+  ]
+}

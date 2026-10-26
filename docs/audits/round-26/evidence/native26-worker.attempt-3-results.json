@@ -1,0 +1,1888 @@
+{
+  "round": 26,
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+  "fixtureWorkspace": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-native-worker-bdEjvH",
+  "checkedAt": "2026-10-20T14:26:52.674Z",
+  "method": "Actual product modules imported through tsx, no source/type/import stripping. Real SQLite in snapshot; deterministic browser/API doubles by replacing collaborator methods at runtime. No actual browser or LMS.",
+  "harnessSha256": "08c19d10a45591a4bf57c7a809417b18b00f02acb7cf36a4b2faf406a0e41297",
+  "total": 54,
+  "passed": 50,
+  "failed": 4,
+  "results": [
+    {
+      "id": "R26-09-control-all-synonyms",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "submissionId": "SUB1",
+            "id": "SUB1",
+            "_id": "SUB1",
+            "studentId": "S1",
+            "studentUid": "S1",
+            "classId": "R26_NATIVE_PTA",
+            "classCode": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "score": 80,
+            "decision": "GRADE",
+            "status": "GRADED",
+            "feedback": "APPROVED FEEDBACK",
+            "comment": "APPROVED FEEDBACK",
+            "teacherNote": "APPROVED FEEDBACK",
+            "feedbackHtml": "<p>APPROVED FEEDBACK</p>"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-response-null-submissionId",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": null,
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về submissionId 'null' không khớp với 'SUB1'."
+    },
+    {
+      "id": "R26-09-request-container-submissionId",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": {
+              "value": "OTHER"
+            },
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-id",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "id": null
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về id 'null' không khớp với 'SUB1'."
+    },
+    {
+      "id": "R26-09-request-container-id",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "id": {
+              "value": "OTHER"
+            },
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-_id",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "_id": null
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về _id 'null' không khớp với 'SUB1'."
+    },
+    {
+      "id": "R26-09-request-container-_id",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "_id": {
+              "value": "OTHER"
+            },
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-studentId",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": null,
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về studentId 'null' không khớp với 'S1'."
+    },
+    {
+      "id": "R26-09-request-container-studentId",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": {
+              "value": "OTHER"
+            },
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-studentUid",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "studentUid": null
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về studentUid 'null' không khớp với 'S1'."
+    },
+    {
+      "id": "R26-09-request-container-studentUid",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "studentUid": {
+              "value": "OTHER"
+            },
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-classId",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": null,
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về classId 'null' không khớp với 'R26_NATIVE_PTA'."
+    },
+    {
+      "id": "R26-09-request-container-classId",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": {
+              "value": "OTHER"
+            },
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-classCode",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "classCode": null
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về classCode 'null' không khớp với 'R26_NATIVE_PTA'."
+    },
+    {
+      "id": "R26-09-request-container-classCode",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "classCode": {
+              "value": "OTHER"
+            },
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-sessionId",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": null,
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về sessionId 'null' không khớp với 'R26_NATIVE_PTA_SESS_01'."
+    },
+    {
+      "id": "R26-09-request-container-sessionId",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": {
+              "value": "OTHER"
+            },
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-score",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": null,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về score 'null' không khớp với '80'."
+    },
+    {
+      "id": "R26-09-request-container-score",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": {
+              "value": "OTHER"
+            },
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-decision",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": null,
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về decision không phải chuỗi hợp lệ."
+    },
+    {
+      "id": "R26-09-request-container-decision",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": {
+              "value": "OTHER"
+            },
+            "feedback": "APPROVED FEEDBACK",
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-status",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "status": null
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về status không phải chuỗi hợp lệ."
+    },
+    {
+      "id": "R26-09-request-container-status",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "status": {
+              "value": "OTHER"
+            },
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-feedback",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": null
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về feedback không khớp với bản đã duyệt."
+    },
+    {
+      "id": "R26-09-request-container-feedback",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": {
+              "value": "OTHER"
+            },
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-comment",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "comment": null
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về comment không khớp với bản đã duyệt."
+    },
+    {
+      "id": "R26-09-request-container-comment",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "comment": {
+              "value": "OTHER"
+            },
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-teacherNote",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "teacherNote": null
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về teacherNote không khớp với bản đã duyệt."
+    },
+    {
+      "id": "R26-09-request-container-teacherNote",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "teacherNote": {
+              "value": "OTHER"
+            },
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-response-null-feedbackHtml",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "success": true,
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "feedbackHtml": null
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về feedbackHtml không khớp với bản đã duyệt."
+    },
+    {
+      "id": "R26-09-request-container-feedbackHtml",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK",
+            "feedbackHtml": {
+              "value": "OTHER"
+            },
+            "decoy": {
+              "classId": "R26_NATIVE_PTA",
+              "sessionId": "R26_NATIVE_PTA_SESS_01",
+              "submissionId": "SUB1",
+              "studentId": "S1",
+              "score": 80,
+              "decision": "GRADE",
+              "feedback": "APPROVED FEEDBACK"
+            }
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-literal-hash",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R26_NATIVE_PTA\",sessionId:\"R26_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED # FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED # FEEDBACK"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-variable-hash",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED # FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED # FEEDBACK"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-literal-quote",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R26_NATIVE_PTA\",sessionId:\"R26_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED \\\" FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED \" FEEDBACK"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-variable-quote",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED \" FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED \" FEEDBACK"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-literal-parentheses",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R26_NATIVE_PTA\",sessionId:\"R26_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED ( FEEDBACK )\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED ( FEEDBACK )"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-variable-parentheses",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED ( FEEDBACK )"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED ( FEEDBACK )"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-literal-braces",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R26_NATIVE_PTA\",sessionId:\"R26_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED { FEEDBACK }\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED { FEEDBACK }"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-variable-braces",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED { FEEDBACK }"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED { FEEDBACK }"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-literal-brace-open",
+      "pass": false,
+      "expectedVerified": 1,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R26_NATIVE_PTA\",sessionId:\"R26_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED { FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED { FEEDBACK"
+          }
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-variable-brace-open",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED { FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED { FEEDBACK"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-literal-close-brace",
+      "pass": false,
+      "expectedVerified": 1,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R26_NATIVE_PTA\",sessionId:\"R26_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED } FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED } FEEDBACK"
+          }
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-variable-close-brace",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED } FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED } FEEDBACK"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-literal-backslash",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R26_NATIVE_PTA\",sessionId:\"R26_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"APPROVED \\\\ FEEDBACK\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED \\ FEEDBACK"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-variable-backslash",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED \\ FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "APPROVED \\ FEEDBACK"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-literal-unicode",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:saveHomeworkGrade(classId:\"R26_NATIVE_PTA\",sessionId:\"R26_NATIVE_PTA_SESS_01\",submissionId:\"SUB1\",studentId:\"S1\",score:80,decision:GRADE,feedback:\"Đã làm đúng # cần luyện thêm\") { id } }",
+        "variables": {}
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "Đã làm đúng # cần luyện thêm"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-variable-unicode",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "Đã làm đúng # cần luyện thêm"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1",
+            "score": 80,
+            "feedback": "Đã làm đúng # cần luyện thêm"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-comment-with-spoofed-keys",
+      "pass": true,
+      "expectedVerified": 1,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { # score:1 submissionId:\"OTHER\"\n saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      }
+    },
+    {
+      "id": "R26-09-alias-other-result",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saveGrade": true
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về alias không khớp ('saveGrade' !== 'saved')."
+    },
+    {
+      "id": "R26-09-error-array",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        },
+        "errors": [
+          {
+            "message": "DENIED"
+          }
+        ]
+      },
+      "error": "GraphQL Lưu điểm trả về lỗi: DENIED"
+    },
+    {
+      "id": "R26-09-object-no-confirmation",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "message": "ok"
+          }
+        }
+      },
+      "error": "GraphQL Lưu điểm trả về object thiếu trường xác nhận hợp lệ tại 'saved'."
+    },
+    {
+      "id": "R26-09-selected-query",
+      "pass": true,
+      "expectedVerified": 0,
+      "verified": 0,
+      "status": "FAILED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "query SaveHomeworkGrade($input:GradeInput!) { saved:saveHomeworkGrade(input:$input) { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": true
+        }
+      },
+      "error": "Synthetic API did not match"
+    },
+    {
+      "id": "R26-09-quoted-operation-decoy",
+      "pass": false,
+      "expectedVerified": 0,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:deleteAttachment(note:\"mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    },
+    {
+      "id": "R26-09-quoted-operation-preview-decoy",
+      "pass": false,
+      "expectedVerified": 0,
+      "verified": 1,
+      "status": "VERIFIED",
+      "writes": 1,
+      "request": {
+        "operationName": "SaveHomeworkGrade",
+        "query": "mutation SaveHomeworkGrade { saved:previewHomework(note:\"mutation SaveHomeworkGrade { saved:saveHomeworkGrade(input:$input) { id } }\") { id } }",
+        "variables": {
+          "input": {
+            "classId": "R26_NATIVE_PTA",
+            "sessionId": "R26_NATIVE_PTA_SESS_01",
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "score": 80,
+            "decision": "GRADE",
+            "feedback": "APPROVED FEEDBACK"
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "saved": {
+            "id": "SUB1"
+          }
+        }
+      }
+    }
+  ]
+}

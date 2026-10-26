@@ -1,0 +1,33 @@
+{
+  "checkedAt": "2026-10-21T00:45:31.029Z",
+  "requiredFiles": [
+    {
+      "file": "REPORT.vi.md",
+      "present": true
+    },
+    {
+      "file": "FIX_PROMPT.vi.md",
+      "present": true
+    },
+    {
+      "file": "REGRESSION_MATRIX.md",
+      "present": true
+    },
+    {
+      "file": "verify-phase6.mjs",
+      "present": true
+    }
+  ],
+  "badLinks": [],
+  "latestSummary": {
+    "total": 67,
+    "passed": 34,
+    "failed": 33
+  },
+  "issues": 13,
+  "priorityCounts": {
+    "P1": 11,
+    "P2": 2
+  },
+  "finalHarnessMatchesExecuted": true
+}

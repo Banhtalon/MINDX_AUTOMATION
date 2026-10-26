@@ -1,0 +1,577 @@
+{
+  "checkedAt": "2026-10-20T10:22:39.006Z",
+  "verdict": "NO-GO",
+  "open": 14,
+  "findings": [
+    {
+      "id": "R19-01",
+      "priority": "P1",
+      "task": "TASK-5.2",
+      "title": "File hỏng vẫn được coi là đã đọc thành công",
+      "locations": [
+        "src/lib/file-parsers/archive-reader.ts:362-374",
+        "src/lib/file-parsers/media-reader.ts:35-63"
+      ],
+      "cases": [
+        "R19-01-mixed-corrupt",
+        "R19-01-truncated-media"
+      ],
+      "cause": "ZIP chỉ thêm file mà parseCodeBuffer đọc thành công, bỏ qua lỗi của các file mã nguồn còn lại. Bộ đọc ảnh/PDF chỉ nhìn vài byte chữ ký, chưa xác nhận cấu trúc file.",
+      "reproduction": "ZIP có readme.txt đọc được và main.py chứa byte nhị phân trả PARSED, parsedCodeFiles=1, totalFiles=2. PNG chỉ có 8 byte chữ ký cũng trả PARSED và được chuyển thành inlineData.",
+      "impact": "AI có thể chấm dự án sau khi bỏ mất file chính; ảnh bị cắt cụt không vào nhánh PARSE_ERROR. Ca ZIP là P1; ca media là P2 trong cùng nhóm xử lý lỗi đọc file.",
+      "fix": "Nếu một file mã nguồn thuộc loại được hỗ trợ bị lỗi, trả lỗi kèm đường dẫn file và khóa chấm tự động cho gói đó. Xác nhận media bằng bộ đọc định dạng hoặc cơ chế kiểm tra cấu trúc đáng tin cậy trước khi gửi AI.",
+      "acceptance": "Hai ca phải trả PARSE_ERROR; không gọi AI, không ghi điểm hoặc REDO lên LMS.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-01-mixed-corrupt",
+          "criterion": "ZIP có mã nguồn hỏng phải PARSE_ERROR",
+          "pass": false,
+          "observation": {
+            "parseStatus": "PARSED",
+            "parsedCodeFiles": 1,
+            "totalFiles": 2
+          },
+          "error": "Error: ZIP silently discarded corrupted main.py and is gradable\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:163:296\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:163:9"
+        },
+        {
+          "id": "R19-01-truncated-media",
+          "criterion": "PNG chỉ có 8 byte chữ ký phải PARSE_ERROR",
+          "pass": false,
+          "observation": {
+            "status": "PARSED",
+            "bytes": 8
+          },
+          "error": "Error: Truncated PNG was accepted and sent as inlineData\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:164:160\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:164:9"
+        }
+      ]
+    },
+    {
+      "id": "R19-02",
+      "priority": "P2",
+      "task": "TASK-5.3 / TASK-5.5",
+      "title": "Barem trùng mã tiêu chí được cộng hai lần",
+      "locations": [
+        "src/lib/gemini/score-auditor.ts:74-84",
+        "src/lib/gemini/score-auditor.ts:114-166",
+        "src/components/homework-auto-grader-tab.tsx:698-711"
+      ],
+      "cases": [
+        "R19-02-duplicate-rubric"
+      ],
+      "cause": "rubricMap ghi đè mã trùng, nhưng vòng tính điểm vẫn duyệt toàn bộ barem ban đầu. Nút thêm tiêu chí lấy mã từ độ dài danh sách, nên sau khi xóa một tiêu chí ở giữa có thể tạo lại mã đã có.",
+      "reproduction": "Barem có hai C1, mỗi mục tối đa 50; AI trả một C1 đạt 50. Bộ kiểm toán trả valid=true, hai mục kết quả và tổng 100.",
+      "impact": "Một yêu cầu được đánh giá hai lần, tổng điểm không còn phản ánh các tiêu chí độc lập.",
+      "fix": "Từ chối barem trùng/thiếu criterionId, điểm tối đa không hữu hạn/không hợp lệ và tổng thang điểm không nhất quán. Nút thêm tiêu chí phải sinh mã chưa có.",
+      "acceptance": "Barem trùng bị từ chối trước AI; barem hợp lệ và các ca SCORE-* hiện đạt vẫn giữ nguyên kết quả.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-02-duplicate-rubric",
+          "criterion": "Barem trùng mã tiêu chí phải bị từ chối",
+          "pass": false,
+          "observation": {
+            "valid": true,
+            "score": 100,
+            "criteria": 2
+          },
+          "error": "Error: Same criterion was counted twice\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:168:242\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:168:9"
+        }
+      ]
+    },
+    {
+      "id": "R19-03",
+      "priority": "P2",
+      "task": "TASK-5.3 / TASK-5.4",
+      "title": "Hash cũ chỉ của nhận xét vẫn được coi là toàn vẹn bài chấm",
+      "locations": [
+        "src/lib/db/sqlite.ts:701-705",
+        "src/lib/db/sqlite.ts:758-779"
+      ],
+      "cases": [
+        "R19-03-legacy-hash"
+      ],
+      "cause": "verifyHomeworkContentIntegrity chấp nhận cả hash tổng hợp lẫn hash chỉ của feedbackHtml. Một số nhánh hạ trạng thái cũng ghi hash chỉ của nhận xét.",
+      "reproduction": "Bản ghi có hash của nhận xét, đổi điểm thành 99 và quyết định REDO vẫn được hàm xác minh trả true.",
+      "impact": "Không thể dùng kết quả true này để chứng minh điểm, quyết định và fileHash đã được duyệt. Ca tái hiện kiểm tra hợp đồng của hàm; chưa chứng minh API hiện tại tạo APPROVED bằng hash cũ.",
+      "fix": "Chỉ chấp nhận hash tổng hợp khi lưu LMS. Với dữ liệu hash cũ, hạ về chờ duyệt và yêu cầu duyệt lại; không tự nâng độ tin cậy.",
+      "acceptance": "Đổi bất kỳ trường được duyệt nào phải làm xác minh thất bại; dữ liệu cũ vẫn có đường duyệt lại an toàn.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-03-legacy-hash",
+          "criterion": "Hash chỉ nhận xét không được chứng minh toàn vẹn điểm",
+          "pass": false,
+          "observation": {
+            "integrity": true,
+            "score": 99,
+            "decision": "REDO"
+          },
+          "error": "Error: Feedback-only hash still validates arbitrary score/decision\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:171:229\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:171:9"
+        }
+      ]
+    },
+    {
+      "id": "R19-04",
+      "priority": "P1",
+      "task": "TASK-5.3",
+      "title": "AI cũ có thể ghi đè file mới và xóa cờ PARSE_ERROR",
+      "locations": [
+        "src/lib/gemini/homework-grader.ts:332-346",
+        "src/lib/gemini/homework-grader.ts:501-511",
+        "src/lib/gemini/homework-grader.ts:541-562"
+      ],
+      "cases": [
+        "R19-04-ai-file-drift"
+      ],
+      "cause": "Ảnh chụp trước khi gọi AI không gồm fileHash, localFilePath và parseStatus. Kiểm tra sau AI vì thế không phát hiện thay đổi nguồn bài nộp nếu các trường điểm/nhận xét chưa đổi.",
+      "reproduction": "Trong lúc model giả đang xử lý, cập nhật fileHash=file-v2 và PARSE_ERROR. Khi AI cũ trả về, chúng bị thay lại bằng hash của file-v1, PARSED và WAITING_APPROVAL.",
+      "impact": "Đề xuất điểm của file cũ được gắn lên trạng thái mới; cờ cần giáo viên kiểm tra thủ công bị mất.",
+      "fix": "Chụp và đối chiếu đầy đủ phiên bản bài nộp, đặc biệt hash/path/trạng thái đọc file, rồi ghi có điều kiện trong cùng thao tác DB. Giữ nguyên bản mới nếu lệch.",
+      "acceptance": "Kết quả AI cũ bị bỏ qua; file-v2 và PARSE_ERROR còn nguyên. Các ca bảo vệ APPROVED/VERIFIED vẫn đạt.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-04-ai-file-drift",
+          "criterion": "AI cũ không ghi đè fileHash/PARSE_ERROR mới",
+          "pass": false,
+          "observation": {
+            "fileHash": "d287bb7f9d15abdc5b6e98536263815744b6ef21c8f3c839fc434ca70d8efe99",
+            "parseStatus": "PARSED",
+            "status": "WAITING_APPROVAL"
+          },
+          "error": "Error: Old AI overwrote newer file identity and parse error\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:177:465\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:177:3"
+        }
+      ]
+    },
+    {
+      "id": "R19-05",
+      "priority": "P1",
+      "task": "TASK-5.5",
+      "title": "API duyệt bỏ qua kiểm toán tiêu chí và bằng chứng đã đọc file",
+      "locations": [
+        "src/app/api/homework-grader/approve/route.ts:32-79",
+        "src/app/api/homework-grader/approve/route.ts:132-170",
+        "src/app/api/homework-grader/submissions/route.ts:198-245"
+      ],
+      "cases": [
+        "R19-05-invalid-criteria",
+        "R19-05-undownloaded"
+      ],
+      "cause": "API duyệt chỉ cộng earnedPoints và kiểm tra tổng 0–100; không gọi auditCriterionGrades với barem đã khóa. API lưu nháp cho phép tạo bản ghi mới và mặc định PARSED dù chưa có file/hash.",
+      "reproduction": "Hai mục -10 và 110, có mã tiêu chí lạ và thiếu bằng chứng, vẫn trả HTTP 200, APPROVED, tổng 100. Một bản ghi mới không có file/path/hash cũng được tạo PARSED rồi duyệt APPROVED.",
+      "impact": "Các rào chắn điểm thành phần và đọc file bị vượt qua tại bước cuối trước LMS; kiểm tra input trên giao diện không đủ bảo vệ.",
+      "fix": "Khóa barem/phiên bản barem cho bài chấm; kiểm toán từng tiêu chí ở cả duyệt đơn và hàng loạt. Không cho API nháp tự tạo chứng nhận PARSED; yêu cầu bản tải/parse đã được hệ thống xác nhận.",
+      "acceptance": "Hai yêu cầu giả bị từ chối; duyệt đúng và giáo viên gán điểm trong phạm vi cho phép vẫn hoạt động.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-05-invalid-criteria",
+          "criterion": "Duyệt phải kiểm toán từng tiêu chí",
+          "pass": false,
+          "observation": {
+            "http": 200,
+            "status": "APPROVED",
+            "score": 100
+          },
+          "error": "Error: Approval accepted negative/unknown criteria without evidence\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:184:243\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:184:3"
+        },
+        {
+          "id": "R19-05-undownloaded",
+          "criterion": "Bài chưa tải/chưa phân tích không được tự nhận PARSED và duyệt",
+          "pass": false,
+          "observation": {
+            "http": 200,
+            "parse": "PARSED",
+            "fileHash": "",
+            "path": "",
+            "status": "APPROVED"
+          },
+          "error": "Error: Created and approved a submission without a file\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:185:248\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:185:3"
+        }
+      ]
+    },
+    {
+      "id": "R19-06",
+      "priority": "P1",
+      "task": "TASK-5.5",
+      "title": "Bản duyệt cũ ghi đè nhận xét giáo viên vừa sửa",
+      "locations": [
+        "src/app/api/homework-grader/approve/route.ts:145-206",
+        "src/components/homework-auto-grader-tab.tsx:353-385"
+      ],
+      "cases": [
+        "R19-06-stale-approval"
+      ],
+      "cause": "Yêu cầu duyệt gửi lại toàn bộ nội dung nhưng không mang số phiên bản/hash của bản đang xem. Server ghi lại nội dung đó mà không kiểm tra nó đã cũ chưa.",
+      "reproduction": "Giữ một bản cũ, lưu nhận xét LATEST TEACHER EDIT, sau đó gửi yêu cầu duyệt từ bản cũ. HTTP 200 khôi phục APPROVED FEEDBACK và đánh dấu APPROVED.",
+      "impact": "Giáo viên mất chỉnh sửa mới; LMS có thể nhận bản cũ đã được duyệt nhầm.",
+      "fix": "Duyệt phải kèm phiên bản kỳ vọng của bản đang xem; nếu DB đã đổi thì trả 409, giữ nội dung mới và yêu cầu xem lại. Không dùng nội dung từ yêu cầu cũ để khôi phục dữ liệu.",
+      "acceptance": "Ca duyệt cũ nhận 409; nhận xét mới còn nguyên; duyệt lại từ phiên bản mới thành công.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-06-stale-approval",
+          "criterion": "Duyệt cũ không được ghi đè sửa mới",
+          "pass": false,
+          "observation": {
+            "http": 200,
+            "text": "<p>APPROVED FEEDBACK</p>",
+            "status": "APPROVED"
+          },
+          "error": "Error: Stale approval restored old feedback and approved it\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:186:315\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:186:3"
+        }
+      ]
+    },
+    {
+      "id": "R19-07",
+      "priority": "P1",
+      "task": "TASK-5.1 / TASK-5.4",
+      "title": "Tên trùng hoặc modal trống vẫn qua kiểm tra định danh",
+      "locations": [
+        "src/lib/playwright/download-submissions.ts:534-555",
+        "src/lib/playwright/grade-worker.ts:267-306"
+      ],
+      "cases": [
+        "R19-07-wrong-download",
+        "R19-07-modal-same-name",
+        "R19-07-modal-empty"
+      ],
+      "cause": "Dòng/modal được chấp nhận khi khớp tên HOẶC mã học viên HOẶC mã bài. Worker còn bỏ qua chặn định danh nếu modalText rỗng. Tên hiển thị chưa đủ chứng minh đúng submissionId.",
+      "reproduction": "DOM giả hiện cùng tên nhưng S2/SUB_OTHER: downloader tải nội dung S2, lưu studentId=S1/submissionId=SUB1 kèm hash của S2. Worker cũng bấm Lưu và VERIFIED trên modal S2/SUB_OTHER, hoặc modal trống.",
+      "impact": "Vi phạm điều kiện quan trọng nhất: có thể ghép nhầm bài hoặc ghi điểm sai người/bài.",
+      "fix": "Bắt buộc xác minh bộ ID lớp/buổi/học viên/bài nộp từ thuộc tính DOM hoặc phản hồi nghiệp vụ đã khóa. Thiếu hoặc mâu thuẫn ID thì dừng; tên chỉ dùng hiển thị. Không dùng nút mở modal chung khi chưa chứng minh đúng đối tượng.",
+      "acceptance": "Cả ba ca không được tải/ghi LMS; ca đúng ID vẫn chạy. Chưa dùng LMS thật để xác nhận vị trí ID trên website.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-07-wrong-download",
+          "criterion": "Cùng tên nhưng sai student/submission phải chặn tải",
+          "pass": false,
+          "observation": {
+            "success": true,
+            "count": 1,
+            "clicked": 1,
+            "itemErrors": [],
+            "items": [
+              {
+                "studentId": "S1",
+                "submissionId": "SUB1",
+                "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+                "lessonId": "L1",
+                "fileHash": "f3e806d62de39d7d6a53f04a85cdcd9f88315478926c16267e75a3d1f1c6f35c"
+              }
+            ],
+            "stored": [
+              {
+                "submissionId": "SUB1",
+                "studentId": "S1",
+                "fileHash": "f3e806d62de39d7d6a53f04a85cdcd9f88315478926c16267e75a3d1f1c6f35c",
+                "status": "PENDING"
+              }
+            ],
+            "downloadedHash": "f3e806d62de39d7d6a53f04a85cdcd9f88315478926c16267e75a3d1f1c6f35c"
+          },
+          "error": "Error: Downloaded S2 content and bound it to S1/SUB1\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:190:226\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:190:3"
+        },
+        {
+          "id": "R19-07-modal-same-name",
+          "criterion": "Modal không chứng minh đúng submission phải chặn",
+          "pass": false,
+          "observation": {
+            "writes": 1,
+            "verified": 1,
+            "modalText": "Học Viên Mẫu S2 SUB_OTHER"
+          },
+          "error": "Error: Worker saved to unverified modal\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:198:224\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:198:88"
+        },
+        {
+          "id": "R19-07-modal-empty",
+          "criterion": "Modal không chứng minh đúng submission phải chặn",
+          "pass": false,
+          "observation": {
+            "writes": 1,
+            "verified": 1,
+            "modalText": ""
+          },
+          "error": "Error: Worker saved to unverified modal\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:198:224\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:198:88"
+        }
+      ]
+    },
+    {
+      "id": "R19-08",
+      "priority": "P1",
+      "task": "TASK-5.1 / TASK-5.5",
+      "title": "lessonId của buổi khác được gắn vào session đang chọn",
+      "locations": [
+        "src/lib/playwright/download-submissions.ts:126-129",
+        "src/lib/playwright/download-submissions.ts:161-176",
+        "src/app/api/homework-grader/submissions/route.ts:47-58"
+      ],
+      "cases": [
+        "R19-08-session-lesson"
+      ],
+      "cause": "lessonId ưu tiên chọn cột mà không kiểm tra cột đó thuộc sessionNumber. Khi không tìm thấy còn rơi về thứ tự cột; sessionId được giữ nguyên để ghi DB.",
+      "reproduction": "Gửi session _SESS_01 và lessonId=L2 của Buổi 2: tải thành công SUB2 và ghi vào _SESS_01.",
+      "impact": "AI có thể dùng đề/barem Buổi 1 để chấm bài Buổi 2; bản ghi bị khóa sai phạm vi buổi học.",
+      "fix": "Đối chiếu lessonId, sessionId, số buổi và loại bài theo ánh xạ có thẩm quyền. Từ chối mâu thuẫn hoặc thiếu ánh xạ; áp dụng thống nhất cho list/download/save, bỏ suy đoán theo vị trí cột.",
+      "acceptance": "Yêu cầu L2/session01 bị chặn trước tải và ghi DB; cặp đúng vẫn được hỗ trợ.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-08-session-lesson",
+          "criterion": "Không tải bài Buổi 2 gán vào session Buổi 1",
+          "pass": false,
+          "observation": {
+            "success": true,
+            "count": 1,
+            "clicked": 1,
+            "itemErrors": [],
+            "items": [
+              {
+                "studentId": "S1",
+                "submissionId": "SUB2",
+                "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+                "lessonId": "L2",
+                "fileHash": "1a41da93b9356513e8431f5d0eb89f84e5fde642cbafa1b8589187464b922457"
+              }
+            ],
+            "stored": [
+              {
+                "submissionId": "SUB2",
+                "studentId": "S1",
+                "fileHash": "1a41da93b9356513e8431f5d0eb89f84e5fde642cbafa1b8589187464b922457",
+                "status": "PENDING"
+              }
+            ],
+            "downloadedHash": "1a41da93b9356513e8431f5d0eb89f84e5fde642cbafa1b8589187464b922457"
+          },
+          "error": "Error: Lesson L2 submission was stored under session 01\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:191:186\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:191:3"
+        }
+      ]
+    },
+    {
+      "id": "R19-09",
+      "priority": "P1",
+      "task": "TASK-5.4",
+      "title": "Phản hồi không phải lưu điểm vẫn được coi là thành công",
+      "locations": [
+        "src/lib/playwright/grade-worker.ts:380-447",
+        "src/lib/playwright/network-interceptor.ts:76-125"
+      ],
+      "cases": [
+        "R19-09-unrelated-api",
+        "R19-09-missing-submission",
+        "R19-09-real-interceptor"
+      ],
+      "cause": "Worker lọc bằng chuỗi mindx.edu.vn, POST, và matchedIdentity chỉ cần studentId hoặc submissionId; không khóa operationName của thao tác lưu điểm. Điểm/decision/nhận xét không bắt buộc hiện diện.",
+      "reproduction": "GetStudentProfile với variables.studentId=S1 được predicate chấp nhận; worker có thể VERIFIED nếu ô đã có 80/100. Ca bổ sung chạy NetworkInterceptor thật cũng xác nhận bộ lọc nhận truy vấn này.",
+      "impact": "Một phản hồi nền 200 có thể bị nhầm thành bằng chứng LMS đã lưu bài đang chấm.",
+      "fix": "Khóa origin/path, operationName của mutation lưu điểm thực tế, đủ bộ ID cùng điểm/decision/nhận xét chuẩn hóa. HTTP 200/201 và không có GraphQL errors chỉ là bước sau khi đã khớp đúng nghiệp vụ.",
+      "acceptance": "Ba ca truy vấn/thiếu ID phải bị từ chối; mutation đúng được nhận, HTTP 500 và GraphQL errors tiếp tục bị chặn.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-09-unrelated-api",
+          "criterion": "Phản hồi truy vấn khác chỉ cùng studentId không được xác nhận Save",
+          "pass": false,
+          "observation": {
+            "verified": 1,
+            "apiOptions": {
+              "url": "mindx.edu.vn",
+              "method": "POST",
+              "operationName": null
+            }
+          },
+          "error": "Error: Unrelated student query accepted as grading mutation\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:199:220\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:199:3"
+        },
+        {
+          "id": "R19-09-missing-submission",
+          "criterion": "Mutation chỉ cùng studentId, không có submissionId phải bị từ chối",
+          "pass": false,
+          "observation": {
+            "accepted": true,
+            "options": {
+              "url": "mindx.edu.vn",
+              "method": "POST",
+              "operationName": null
+            }
+          },
+          "error": "Error: Predicate needs only studentId\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:200:262\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:200:3"
+        },
+        {
+          "id": "R19-09-real-interceptor",
+          "criterion": "Bộ lọc NetworkInterceptor thật phải từ chối truy vấn không phải lưu điểm",
+          "pass": false,
+          "observation": {
+            "matched": true,
+            "operation": "GetStudentProfile"
+          },
+          "error": "Error: Actual network filter accepts unrelated query\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:201:747\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:201:3"
+        }
+      ]
+    },
+    {
+      "id": "R19-10",
+      "priority": "P1",
+      "task": "TASK-5.4",
+      "title": "VERIFIED dù chưa điền và chưa đọc lại nhận xét",
+      "locations": [
+        "src/lib/playwright/grade-worker.ts:318-353",
+        "src/lib/playwright/grade-worker.ts:492-521"
+      ],
+      "cases": [
+        "R19-10-no-feedback"
+      ],
+      "cause": "Không tìm thấy radio/input/editor thì worker bỏ qua mà không báo lỗi. Sau Save chỉ kiểm tra văn bản ô điểm hoặc chữ làm lại, không mở lại đúng bài để so nhận xét.",
+      "reproduction": "DOM giả không có editor, ô điểm đã là 80/100. editorText rỗng nhưng verifiedCount=1; modal chỉ được đọc một lần trước Save.",
+      "impact": "Điểm có thể đúng nhưng nhận xét chưa lưu hoặc quyết định chưa đúng vẫn hiện đã khớp LMS.",
+      "fix": "Thiếu trường bắt buộc phải dừng. Sau lưu, đọc lại đúng submission, kiểm tra radio/trạng thái, điểm và nhận xét theo cùng quy tắc chuẩn hóa; chỉ đánh dấu VERIFIED khi tất cả khớp.",
+      "acceptance": "Ca thiếu editor không được VERIFIED; thêm ca nhận xét sai/thiếu và quyết định sai đều phải thất bại.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-10-no-feedback",
+          "criterion": "Ô điểm đúng nhưng không có editor/nhận xét không được VERIFIED",
+          "pass": false,
+          "observation": {
+            "verified": 1,
+            "editorText": "",
+            "modalReads": 1
+          },
+          "error": "Error: Score alone verified absent feedback\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:202:162\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:202:3"
+        }
+      ]
+    },
+    {
+      "id": "R19-11",
+      "priority": "P1",
+      "task": "TASK-5.4",
+      "title": "Sửa sau phản hồi API vẫn bị nâng thành VERIFIED",
+      "locations": [
+        "src/lib/playwright/grade-worker.ts:471-521",
+        "src/lib/db/sqlite.ts:849-857"
+      ],
+      "cases": [
+        "R19-11-readback-race"
+      ],
+      "cause": "Kiểm tra DB sau API xảy ra trước một khoảng chờ và lần đọc DOM. markVerified cuối cùng chỉ có điều kiện submissionId, không kiểm tra hash/phiên bản/trạng thái hiện tại.",
+      "reproduction": "Khi worker đang đọc lại ô điểm, giáo viên đổi nhận xét thành LATEST AFTER API và hạ về WAITING_APPROVAL. Worker sau đó đánh dấu chính bản mới này VERIFIED.",
+      "impact": "Một nội dung chưa được duyệt và chưa được gửi lên LMS có thể mang nhãn đã đối chiếu thành công.",
+      "fix": "Cập nhật VERIFIED có điều kiện bằng hash/phiên bản của bản đã gửi và trạng thái hợp lệ. Nếu không cập nhật được đúng một bản ghi, giữ trạng thái mới và báo cần duyệt lại.",
+      "acceptance": "Ca sửa trong lần đọc DOM giữ WAITING_APPROVAL và verifiedCount=0; ca bình thường, trước click và sau click vẫn đúng.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-11-readback-race",
+          "criterion": "Sửa khi đang đọc DOM không được đánh dấu VERIFIED bản mới",
+          "pass": false,
+          "observation": {
+            "verified": 1,
+            "status": "VERIFIED",
+            "feedback": "LATEST AFTER API"
+          },
+          "error": "Error: Unconditional markVerified upgraded an unapproved edit\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:203:277\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:203:3"
+        }
+      ]
+    },
+    {
+      "id": "R19-12",
+      "priority": "P2",
+      "task": "TASK-5.5",
+      "title": "Danh sách buổi cũ có thể ghi đè buổi vừa chọn",
+      "locations": [
+        "src/components/homework-auto-grader-tab.tsx:183-203"
+      ],
+      "cases": [
+        "R19-12-ui-load-race"
+      ],
+      "cause": "loadSessionSubmissions không gắn mã phiên tải hoặc hủy yêu cầu cũ; mọi phản hồi đến sau đều được setSubmissions.",
+      "reproduction": "Giữ phản hồi Buổi 1, chuyển sang Buổi 2 và nhận danh sách Buổi 2 trước, rồi cho Buổi 1 trả về. selectedSessionNumber=2 nhưng danh sách hiện _SESS_01.",
+      "impact": "Giáo viên xem nhầm danh sách; API có kiểm tra phạm vi vẫn có thể từ chối thao tác sau đó, nên ca này chưa chứng minh ghi sai lớp/buổi trực tiếp.",
+      "fix": "Hủy hoặc bỏ qua phản hồi không còn khớp lớp/buổi/lesson/phiên tải đang chọn. Xóa dữ liệu cũ khi đổi phạm vi và khóa thao tác trong lúc tải.",
+      "acceptance": "Phản hồi Buổi 1 đến muộn không đổi danh sách Buổi 2; áp dụng tương tự khi đổi lớp.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-12-ui-load-race",
+          "criterion": "Phản hồi buổi cũ không ghi đè danh sách buổi mới",
+          "pass": false,
+          "observation": {
+            "selected": 2,
+            "visible": "AUDIT_PTA_CLASS_SESS_01"
+          },
+          "error": "Error: Old response replaced session 02 list\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:204:646\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:204:3"
+        }
+      ]
+    },
+    {
+      "id": "R19-13",
+      "priority": "P2",
+      "task": "TASK-5.5",
+      "title": "Lưu nháp thất bại nhưng giao diện không báo",
+      "locations": [
+        "src/components/homework-auto-grader-tab.tsx:292-352"
+      ],
+      "cases": [
+        "R19-13-ui-save-failure"
+      ],
+      "cause": "Hai hàm sửa điểm/nhận xét cập nhật giao diện trước rồi gọi fetch, không kiểm tra HTTP hoặc success và không quản lý trạng thái chưa lưu.",
+      "reproduction": "API giả trả HTTP 500, success=false, lỗi Synthetic disk full. UI vẫn hiển thị UNSAVED và banner=null.",
+      "impact": "Giáo viên tưởng đã lưu nhưng có thể mất sửa khi làm mới; thứ tự phản hồi cũng chưa được khóa.",
+      "fix": "Kiểm tra kết quả lưu, thông báo lỗi rõ, giữ bản nhập chưa lưu và chặn duyệt/lưu LMS đến khi lưu nháp thành công. Kết hợp cơ chế phiên bản với R19-06.",
+      "acceptance": "Ca HTTP 500 có thông báo lỗi; sửa chưa lưu không bị mất và không được duyệt ngầm.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-13-ui-save-failure",
+          "criterion": "Lưu nháp thất bại phải báo lỗi và không giả đã lưu",
+          "pass": false,
+          "observation": {
+            "visible": "UNSAVED",
+            "banner": null
+          },
+          "error": "Error: Draft failure ignored while UI shows edited text\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:205:462\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:205:3"
+        }
+      ]
+    },
+    {
+      "id": "R19-14",
+      "priority": "P1",
+      "task": "TASK-5.5",
+      "title": "Tải bài thất bại vẫn chấm cache cũ và trả thành công",
+      "locations": [
+        "src/app/api/homework-grader/download-and-grade/route.ts:62-90",
+        "src/app/api/homework-grader/download-and-grade/route.ts:123-164",
+        "src/components/homework-auto-grader-tab.tsx:240-264"
+      ],
+      "cases": [
+        "R19-14-route-download-failure"
+      ],
+      "cause": "Route không kiểm tra downloadResult.success trước khi đọc toàn bộ bản ghi session từ DB để gọi AI. Nhánh skipAi và phản hồi cuối đều đặt success=true.",
+      "reproduction": "Downloader giả trả success=false/error=LMS failed, DB có bản cũ. Route vẫn gọi gradeBatchSubmissions một lần và trả HTTP 200, success=true.",
+      "impact": "Giáo viên có thể nhận đề xuất từ bài cũ khi tưởng vừa tải bài mới; lỗi tải bị che bằng thông báo hoàn tất.",
+      "fix": "Dừng AI khi tải thất bại; nếu chỉ lỗi một số bài thì nêu rõ kết quả từng bài và chỉ chấm bản đã tải/xác minh đúng trong lượt đó. Trả trạng thái tổng phản ánh thất bại, kể cả skipAi.",
+      "acceptance": "Ca tải thất bại không gọi AI và trả success=false; lượt thành công vẫn chấm đúng danh sách đã xác minh.",
+      "status": "OPEN",
+      "evidence": [
+        {
+          "id": "R19-14-route-download-failure",
+          "criterion": "Tải thất bại không tiếp tục AI trên bài cũ/báo thành công",
+          "pass": false,
+          "observation": {
+            "http": 200,
+            "success": true,
+            "aiCalls": 1,
+            "download": {
+              "success": false,
+              "error": "LMS failed",
+              "items": []
+            }
+          },
+          "error": "Error: Failed download still grades old cache and reports success\n    at expect (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:31:66)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:207:214\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round19-t3RoFj/docs/audits/round-19/verify-independent.mjs:206:3"
+        }
+      ]
+    }
+  ]
+}

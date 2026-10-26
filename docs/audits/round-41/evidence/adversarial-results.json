@@ -1,0 +1,419 @@
+{
+  "audit": "AUDIT-R40",
+  "createdAt": "2026-10-21T08:24:56.515Z",
+  "mode": "synthetic TEMP only",
+  "summary": {
+    "total": 65,
+    "pass": 65,
+    "fail": 0
+  },
+  "tests": [
+    {
+      "id": "security-config-get-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-get-host",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-get-cross-site",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-get-null-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-post-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-post-host",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-post-cross-site",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-config-post-null-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-stream-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-stream-host",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-stream-cross-site",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-stream-null-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-get-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-get-host",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-get-cross-site",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-get-null-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-post-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-post-host",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-post-cross-site",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "security-control-post-null-origin",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "path-outside-root",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "path-traversal",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "config-junction-escape-blocked",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "config-crud-all-sections",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "reject-scale-10",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "reject-duplicate-course-id",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "reject-duplicate-rubric-id",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "empty-courses",
+      "finding": "R40-01",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "empty-rubrics",
+      "finding": "R40-01",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "empty-quickTags",
+      "finding": "R40-01",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "malformed-course-sessions",
+      "finding": "R40-01",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "malformed-course-code",
+      "finding": "R40-01",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "blank-session-topic",
+      "finding": "R40-01",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "malformed-quicktag-tags",
+      "finding": "R40-01",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "zalo-invalid-row-silently-dropped",
+      "finding": "R40-01",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "rubric-negative-session",
+      "finding": "R40-01",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "bad-session--1",
+      "finding": "R40-01",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "bad-session-0",
+      "finding": "R40-01",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "bad-session-0.2",
+      "finding": "R40-01",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "duplicate-session-id",
+      "finding": "R40-02",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "duplicate-criterion-id",
+      "finding": "R40-02",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "duplicate-quicktag-id",
+      "finding": "R40-02",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "duplicate-category-id",
+      "finding": "R40-02",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "duplicate-zalo-id",
+      "finding": "R40-02",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "invalid-points--5",
+      "finding": "R40-03",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "invalid-points-0",
+      "finding": "R40-03",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "invalid-points-NaN",
+      "finding": "R40-03",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "invalid-points-null",
+      "finding": "R40-03",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "invalid-points-true",
+      "finding": "R40-03",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "round-positive-to-zero",
+      "finding": "R40-03",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "json-overflow-infinity",
+      "finding": "R40-03",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "stale-two-client-save",
+      "finding": "R40-04",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "approved-verified-preserved-config-and-stop",
+      "finding": null,
+      "status": "PASS",
+      "detail": {
+        "homework": 2,
+        "spck": 2,
+        "byteEquivalentRows": true
+      }
+    },
+    {
+      "id": "queue-pending-stop-serial-preserves",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "sse-final-status-is-idle",
+      "finding": "R40-08",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "sse-live-and-cleanup-60-connections",
+      "finding": null,
+      "status": "PASS",
+      "detail": {
+        "connections": 60,
+        "listenersBefore": [
+          0,
+          0
+        ],
+        "listenersAfter": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "id": "phase5-batch-halts-next-student",
+      "finding": "R40-05",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "launcher-windows-npm-failure-detected",
+      "finding": "R40-06",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "launcher-local-bind-and-quoted-cwd",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "launcher-windows-env-preflight-spaces",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "ui-add-edit-delete-session",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "ui-inflight-edit-preserved",
+      "finding": "R40-07",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "ui-drawer-control-stop-resume",
+      "finding": null,
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "ui-delete-add-criterion-unique",
+      "finding": "R40-02",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "id": "client-bundle-does-not-import-secrets",
+      "finding": null,
+      "status": "PASS",
+      "detail": {
+        "bundleInputs": 1918,
+        "streamConnections": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,557 @@
+[
+  {
+    "name": "round25",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-25/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:20:45.296539+00:00",
+    "elapsedSeconds": 5.031,
+    "log": "round25.attempt-1.log",
+    "logSha256": "c548b4ed0ead33b413aa3a18c308bda6d690242a825d88689c4123b5b96721ba",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "round25.attempt-1-results.json",
+    "resultsSha256": "c7695f0390a0819500d393995152c550ca58b767a3399b57efa82f493b052954",
+    "total": 344,
+    "passed": 344,
+    "failed": 0
+  },
+  {
+    "name": "native25-media",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/tsx/dist/cli.mjs",
+      "docs/audits/round-25/native-media-repro.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:20:50.377146+00:00",
+    "elapsedSeconds": 1.765,
+    "log": "native25-media.attempt-1.log",
+    "logSha256": "95cb9fcfbe4cd1da394c02085267015aba044e2358781ef6001211099ed7df5e",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "native25-media.attempt-1-results.json",
+    "resultsSha256": "3425b31aae8cc733e8c9244b921b44d183e1789e72c32dffb2eea27f03ed26d6",
+    "total": 25,
+    "passed": 25,
+    "failed": 0
+  },
+  {
+    "name": "native25-worker",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/tsx/dist/cli.mjs",
+      "docs/audits/round-25/native-worker-repro.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:20:52.187448+00:00",
+    "elapsedSeconds": 2.953,
+    "log": "native25-worker.attempt-1.log",
+    "logSha256": "f33824cdc0e3be727fdd8c39f225ebe7ace20510045662ad5aabf4dab0a92791",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "native25-worker.attempt-1-results.json",
+    "resultsSha256": "fbc3dd89dcec6e81a500abce57b6a4a167b04d6d7936acb0d1cb96209c4b1df2",
+    "total": 9,
+    "passed": 9,
+    "failed": 0
+  },
+  {
+    "name": "round24",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-24/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:20:55.160746+00:00",
+    "elapsedSeconds": 1.844,
+    "log": "round24.attempt-1.log",
+    "logSha256": "131914f68cdfa10b53a3ae371ae2405a1942705031f2af54eda2e341e2bfa373",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "round24.attempt-1-results.json",
+    "resultsSha256": "0f6e8c24bef8f5eeaeb6ae4e3cd79e5f2686ebc365d0993ae0d121cdf4cd7467",
+    "total": 230,
+    "passed": 230,
+    "failed": 0
+  },
+  {
+    "name": "round23",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-23/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:20:57.032034+00:00",
+    "elapsedSeconds": 1.062,
+    "log": "round23.attempt-1.log",
+    "logSha256": "5e9b6003b3d03e7a9d7c808a6eac0c357f6b4a9bc5421f8fb1982bedd33e5b68",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "round23.attempt-1-results.json",
+    "resultsSha256": "58d7d2e7d6d58f6ab761aa00f1209a3f13527e4529d9442574ddd94d4e9b4190",
+    "total": 116,
+    "passed": 116,
+    "failed": 0
+  },
+  {
+    "name": "round22",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-22/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:20:58.129023+00:00",
+    "elapsedSeconds": 0.609,
+    "log": "round22.attempt-1.log",
+    "logSha256": "4a3c840bf38716a48fb37871f797659a055ddc8932128c93047e685744c8320e",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "round22.attempt-1-results.json",
+    "resultsSha256": "3a2cd9352801681d834628fd2c56409bcbded3e01f238e07b7067a6eb49ee4d1",
+    "total": 53,
+    "passed": 53,
+    "failed": 0
+  },
+  {
+    "name": "native24",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/tsx/dist/cli.mjs",
+      "docs/audits/round-24/native-media-repro.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:20:58.799542+00:00",
+    "elapsedSeconds": 0.25,
+    "log": "native24.attempt-1.log",
+    "logSha256": "77d2bc396781df08d22d49a3a8a2a3100f995701bb3a19b6f1d4b82c3bfae26e",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "native24.attempt-1-results.json",
+    "resultsSha256": "0235290946c25cb1932748b04744c533c86a07630c0abf4a6019a3a07ee96e38",
+    "total": 8,
+    "passed": 8,
+    "failed": 0
+  },
+  {
+    "name": "phase4",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/tsx/dist/cli.mjs",
+      "scripts/test-phase4-codex-repros.ts"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:20:59.093741+00:00",
+    "elapsedSeconds": 2.5,
+    "log": "phase4.attempt-1.log",
+    "logSha256": "b532e1c6890210523740d5e863810eb4c1253d63ffafdb6b06219185d486d6c9",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs"
+  },
+  {
+    "name": "phase5",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/tsx/dist/cli.mjs",
+      "scripts/test-phase5.ts"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:21:01.618819+00:00",
+    "elapsedSeconds": 2.5,
+    "log": "phase5.attempt-1.log",
+    "logSha256": "735a579077534d64731d9948630a5d5533f5276e80cf92b2e09b7ffbe11c706b",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs"
+  },
+  {
+    "name": "typecheck-before",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/typescript/bin/tsc",
+      "--noEmit",
+      "--incremental",
+      "false"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:21:04.120869+00:00",
+    "elapsedSeconds": 2.14,
+    "log": "typecheck-before.attempt-1.log",
+    "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs"
+  },
+  {
+    "name": "build",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:21:06.269112+00:00",
+    "elapsedSeconds": 54.438,
+    "log": "build.attempt-1.log",
+    "logSha256": "78de08259583b06ce2e48572675117eadc3548c7e6f0be6a1089331f94267afe",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs"
+  },
+  {
+    "name": "typecheck-after",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/typescript/bin/tsc",
+      "--noEmit",
+      "--incremental",
+      "false"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:22:00.711235+00:00",
+    "elapsedSeconds": 0.282,
+    "log": "typecheck-after.attempt-1.log",
+    "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs"
+  },
+  {
+    "name": "native26-media",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/tsx/dist/cli.mjs",
+      "docs/audits/round-26/native-media-repro.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 1,
+    "startedAt": "2026-10-20T14:22:46.163061+00:00",
+    "elapsedSeconds": 0.359,
+    "log": "native26-media.attempt-1.log",
+    "logSha256": "fd9425599ba3b862220ccb98251938d61da5f16d9e1df27074e468bc8471c775",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "native26-media.attempt-1-results.json",
+    "resultsSha256": "a9495a093ca193a970a33e8fc0e32685e197ed26b4d1d1b774e666c607c7081c",
+    "total": 94,
+    "passed": 88,
+    "failed": 6
+  },
+  {
+    "name": "round26",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-26/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 1,
+    "startedAt": "2026-10-20T14:24:23.879411+00:00",
+    "elapsedSeconds": 3.547,
+    "log": "round26.attempt-1.log",
+    "logSha256": "1ce3c608850071f06202a6bce1358d9d2ff79ad0454e78eea2a943812ff251ab",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "round26.attempt-1-results.json",
+    "resultsSha256": "ede98bb40a260cfd7393e19c54613dc7571d90207a090fb6d1e24cd70e1d522f",
+    "total": 502,
+    "passed": 492,
+    "failed": 10
+  },
+  {
+    "name": "round26",
+    "attempt": 2,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-26/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 1,
+    "startedAt": "2026-10-20T14:25:33.242692+00:00",
+    "elapsedSeconds": 4.593,
+    "log": "round26.attempt-2.log",
+    "logSha256": "21d9587ecc9eb41343a95a6ba8d9c3b70a4b53d2b09a7acb4bc4798dd27297f3",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "round26.attempt-2-results.json",
+    "resultsSha256": "4b4db68bb791117911dbdbbd46073bc74766040bb2f1ef113b3f9acd9920e05f",
+    "total": 502,
+    "passed": 493,
+    "failed": 9
+  },
+  {
+    "name": "native26-media",
+    "attempt": 2,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/tsx/dist/cli.mjs",
+      "docs/audits/round-26/native-media-repro.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 1,
+    "startedAt": "2026-10-20T14:25:37.910747+00:00",
+    "elapsedSeconds": 0.453,
+    "log": "native26-media.attempt-2.log",
+    "logSha256": "4a31fe9444aa62769861ba612d5b44fa7d47c39bc8b2057e48d70c2c040a98a5",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "native26-media.attempt-2-results.json",
+    "resultsSha256": "db7afa2266628ecd70cddf1ebb85a04f5628810814325243ab9569fdf677ecb0",
+    "total": 94,
+    "passed": 87,
+    "failed": 7
+  },
+  {
+    "name": "native26-worker",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/tsx/dist/cli.mjs",
+      "docs/audits/round-26/native-worker-repro.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 1,
+    "startedAt": "2026-10-20T14:25:38.404345+00:00",
+    "elapsedSeconds": 0.453,
+    "log": "native26-worker.attempt-1.log",
+    "logSha256": "7418cf2c2433468a8c2a7b70b79722bec910bb865cd1af997c517365837bbf13",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs"
+  },
+  {
+    "name": "native26-worker",
+    "attempt": 2,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/tsx/dist/cli.mjs",
+      "docs/audits/round-26/native-worker-repro.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 1,
+    "startedAt": "2026-10-20T14:26:07.279828+00:00",
+    "elapsedSeconds": 0.484,
+    "log": "native26-worker.attempt-2.log",
+    "logSha256": "b356746db028f24d811aebbd24e8469b5809803e78a0da167e43358f4b2119a2",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "native26-worker.attempt-2-results.json",
+    "resultsSha256": "b73217f86448d0047e563176b1f9b2bf5f09a2cfc2b405f0b6815a20e7b7762b",
+    "total": 52,
+    "passed": 50,
+    "failed": 2
+  },
+  {
+    "name": "pdf-oracle",
+    "attempt": 1,
+    "argv": [
+      "C:\\Users\\QQ\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "docs/audits/round-26/pdf-oracle.py"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:26:07.818526+00:00",
+    "elapsedSeconds": 0.422,
+    "log": "pdf-oracle.attempt-1.log",
+    "logSha256": "f9513294a146731c3dc5c3b4a31eef5315d606793ce0a3819136e86b5434e964",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "pdf-oracle.attempt-1-results.json",
+    "resultsSha256": "9b50c1b49426662beea5dc3b94447b498c2235e8fb391b8be541fadc81206479",
+    "total": null,
+    "passed": null,
+    "failed": null
+  },
+  {
+    "name": "round26",
+    "attempt": 3,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-26/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 1,
+    "startedAt": "2026-10-20T14:26:47.979499+00:00",
+    "elapsedSeconds": 4.141,
+    "log": "round26.attempt-3.log",
+    "logSha256": "0a69ee72a21669c7bdf5fa194cb0f5ed480029ffd7b605f15e975d04204cf242",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "round26.attempt-3-results.json",
+    "resultsSha256": "4f187749a4f1b5f9f39b7134853539f4ad6df93e34bd738faac6446c28a82dbc",
+    "total": 504,
+    "passed": 493,
+    "failed": 11
+  },
+  {
+    "name": "native26-worker",
+    "attempt": 3,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "node_modules/tsx/dist/cli.mjs",
+      "docs/audits/round-26/native-worker-repro.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 1,
+    "startedAt": "2026-10-20T14:26:52.164228+00:00",
+    "elapsedSeconds": 0.531,
+    "log": "native26-worker.attempt-3.log",
+    "logSha256": "1bff874d761437b22874ceb9fdd68c6cdda8b18fcb72d06bba2ccfa21cbaab41",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "native26-worker.attempt-3-results.json",
+    "resultsSha256": "cf7c1089959d0e4e12bc16eca1d5ed577960e8144aac11e0ca1c09033d6a3685",
+    "total": 54,
+    "passed": 50,
+    "failed": 4
+  },
+  {
+    "name": "pdf-oracle",
+    "attempt": 2,
+    "argv": [
+      "C:\\Users\\QQ\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "docs/audits/round-26/pdf-oracle.py"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:28:46.144509+00:00",
+    "elapsedSeconds": 0.25,
+    "log": "pdf-oracle.attempt-2.log",
+    "logSha256": "1a3c7d581078e6d447e21d79fc2e946e03eb80df5ea600b08d1a1fda212547f5",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "pdf-oracle.attempt-2-results.json",
+    "resultsSha256": "cce1a9a730953f24c74b6ad8c1acdc24caa9d8c876ac8e5896e7fec3de21aa59",
+    "total": null,
+    "passed": null,
+    "failed": null
+  },
+  {
+    "name": "graphql-oracle",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-26/graphql-oracle.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 0,
+    "startedAt": "2026-10-20T14:28:46.432780+00:00",
+    "elapsedSeconds": 0.047,
+    "log": "graphql-oracle.attempt-1.log",
+    "logSha256": "ae3537cad5be27997d6c4b1fb94685061a014676d218c232e459db5060bc82db",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "graphql-oracle.attempt-1-results.json",
+    "resultsSha256": "0aae72cb3785e7c727e7e09f9ab58fa44546304cce646662a47276cbdbc4266a",
+    "total": 54,
+    "passed": 54,
+    "failed": 0
+  },
+  {
+    "name": "round20",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-20/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\mindx-round20-compat-mindx-round21-compat\\snapshot",
+    "exitCode": 1,
+    "startedAt": "2026-10-20T14:29:07.661643+00:00",
+    "elapsedSeconds": 3.328,
+    "log": "round20.attempt-1.log",
+    "logSha256": "7063e9bbc257a02dedfc504a0c9feee83ab567386569d22233ef0346a875b79d",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "round20.attempt-1-results.json",
+    "resultsSha256": "ee0e2aa5db220e47024f9f589b9e3c7041ef46ba628b0407875a090d17573c12",
+    "total": 145,
+    "passed": 140,
+    "failed": 5
+  },
+  {
+    "name": "round21",
+    "attempt": 1,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-21/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\mindx-round20-compat-mindx-round21-compat\\snapshot",
+    "exitCode": 1,
+    "startedAt": "2026-10-20T14:29:11.018373+00:00",
+    "elapsedSeconds": 0.782,
+    "log": "round21.attempt-1.log",
+    "logSha256": "d745fde23da3d4993e94f6197bf03fd5addeba0b63be71917b8ffc62ae8b1cf3",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "round21.attempt-1-results.json",
+    "resultsSha256": "783fc605d79100e363f25be5789c89a32a9b2c73aa0aaa9d36cf662a820cfe5e",
+    "total": 49,
+    "passed": 45,
+    "failed": 4
+  },
+  {
+    "name": "round26",
+    "attempt": 4,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-26/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 1,
+    "startedAt": "2026-10-20T14:30:18.690166+00:00",
+    "elapsedSeconds": 4.422,
+    "log": "round26.attempt-4.log",
+    "logSha256": "c33460b7e3aafa2e49470f77078cc68c56391e489c95c89c328204577e775ddc",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "round26.attempt-4-results.json",
+    "resultsSha256": "61446954c60e121308a4aa9f6cefa27b8fcd57692f6faa18e70cab5fd86acd05",
+    "total": 510,
+    "passed": 498,
+    "failed": 12
+  },
+  {
+    "name": "round26",
+    "attempt": 5,
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "docs/audits/round-26/verify-independent.mjs"
+    ],
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+    "exitCode": 1,
+    "startedAt": "2026-10-20T14:30:43.379892+00:00",
+    "elapsedSeconds": 4.484,
+    "log": "round26.attempt-5.log",
+    "logSha256": "9a5909ef9d0db780cda13494c0970817cb56714b9f3fd6530ccd52dff79c6af0",
+    "secretEnvironmentInherited": false,
+    "nodeSocketGuard": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot\\docs\\audits\\round-26\\network-guard.cjs",
+    "results": "round26.attempt-5-results.json",
+    "resultsSha256": "60331f803c79ca5ff7d763872e76a7036a1339e1b807665346a87f158fa73c90",
+    "total": 510,
+    "passed": 499,
+    "failed": 11
+  }
+]

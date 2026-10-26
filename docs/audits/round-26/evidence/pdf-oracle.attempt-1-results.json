@@ -1,0 +1,162 @@
+{
+  "method": "pypdf strict=True, exact fixture bytes, resolve authoritative trailer /Root and enumerate pages; not a rendering engine",
+  "version": "6.10.2",
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round26-20261020T142026Z-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+  "results": [
+    {
+      "id": "R26-01-pdf-valid-direct-graph",
+      "expected": "PARSED",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 3003467982912)",
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 3003467982912)}",
+      "pageCount": 1,
+      "pageParentsPresent": [
+        true
+      ],
+      "strictReadSucceeded": true
+    },
+    {
+      "id": "R26-01-pdf-root-array-decoy",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(9, 0, 3003467520464)",
+      "strictReadSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Could not find object."
+    },
+    {
+      "id": "R26-01-pdf-root-nested-array-decoy",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(9, 0, 3003465554048)",
+      "strictReadSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Could not find object."
+    },
+    {
+      "id": "R26-01-pdf-root-escaped-string-decoy",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(9, 0, 3003467983440)",
+      "strictReadSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Could not find object."
+    },
+    {
+      "id": "R26-01-pdf-root-trailer-token-in-string",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(9, 0, 3003467983536)",
+      "strictReadSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Could not find object."
+    },
+    {
+      "id": "R26-01-pdf-root-duplicate-conflict",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSED",
+      "strictReadSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Multiple definitions in dictionary at byte 0x158 for key /Root"
+    },
+    {
+      "id": "R26-01-pdf-pages-nested-dict-decoy",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 3003467983296)",
+      "resolvedRoot": "{'/Type': '/Catalog', '/Hint': {'/Pages': IndirectObject(2, 0, 3003467983296)}, '/Pages': IndirectObject(9, 0, 3003467983296)}",
+      "strictReadSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Could not find object."
+    },
+    {
+      "id": "R26-01-pdf-pages-array-decoy",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 3003467983872)",
+      "resolvedRoot": "{'/Type': '/Catalog', '/Hint': ['/Pages', IndirectObject(2, 0, 3003467983872)], '/Pages': IndirectObject(9, 0, 3003467983872)}",
+      "strictReadSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Could not find object."
+    },
+    {
+      "id": "R26-01-pdf-page-type-string-decoy",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 3003467984064)",
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 3003467984064)}",
+      "pageCount": 1,
+      "pageParentsPresent": [
+        true
+      ],
+      "strictReadSucceeded": true
+    },
+    {
+      "id": "R26-01-pdf-parent-array-decoy",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 0, 3003467984352)",
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 3003467984352)}",
+      "pageCount": 1,
+      "pageParentsPresent": [
+        true
+      ],
+      "strictReadSucceeded": true
+    },
+    {
+      "id": "R26-01-pdf-parent-missing",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(1, 0, 3003467984928)",
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 3003467984928)}",
+      "pageCount": 1,
+      "pageParentsPresent": [
+        false
+      ],
+      "strictReadSucceeded": true
+    },
+    {
+      "id": "R26-01-pdf-kids-wrong-generation",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 4, 3003467985744)",
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 5, 3003467985744)}",
+      "strictReadSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Could not find object."
+    },
+    {
+      "id": "R26-01-pdf-root-object-in-string",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSED",
+      "rootReference": "IndirectObject(9, 0, 3003467986416)",
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 3003467986416)}",
+      "pageCount": 1,
+      "pageParentsPresent": [
+        true
+      ],
+      "strictReadSucceeded": true
+    },
+    {
+      "id": "R26-01-pdf-stream-object-decoy",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(9, 0, 3003465554048)",
+      "resolvedRoot": "{'/Type': '/Catalog', '/Pages': IndirectObject(2, 0, 3003465554048)}",
+      "pageCount": 1,
+      "pageParentsPresent": [
+        true
+      ],
+      "strictReadSucceeded": true
+    },
+    {
+      "id": "R26-01-pdf-root-generation-conflict",
+      "expected": "PARSE_ERROR",
+      "productStatus": "PARSE_ERROR",
+      "rootReference": "IndirectObject(1, 1, 3003467986320)",
+      "strictReadSucceeded": false,
+      "errorType": "PdfReadError",
+      "error": "Could not find object."
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-10-20T05:54:22.500Z",
+  "externalRequests": [],
+  "pageErrors": [],
+  "observations": {
+    "insufficientCopy": {
+      "pass": true,
+      "httpStatus": 200,
+      "returnedText": "TEACHER DRAFT TO PRESERVE",
+      "storedText": "TEACHER DRAFT TO PRESERVE",
+      "copiedText": "TEACHER DRAFT TO PRESERVE",
+      "visibleEditors": {
+        "strengths": "OLD STRENGTH",
+        "improvements": "OLD IMPROVEMENT",
+        "actionPlan": "OLD PLAN"
+      },
+      "separateWarning": "Chưa đủ thông tin để nhận xét. Vui lòng chọn ít nhất 1 Quick Tag hoặc nhập ghi chú của giáo viên."
+    }
+  },
+  "completed": false,
+  "error": "page.waitForResponse: Timeout 30000ms exceeded while waiting for event \"response\"\n    at waitSave (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round18-etNeOk\\docs\\audits\\round-18\\smoke-local.mjs:63:33)\n    at C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round18-etNeOk\\docs\\audits\\round-18\\smoke-local.mjs:83:20"
+}

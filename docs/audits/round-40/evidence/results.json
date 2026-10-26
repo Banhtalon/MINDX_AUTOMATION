@@ -1,0 +1,25 @@
+{
+  "round": 40,
+  "phase": "Phase 7 (TASK-7.1..TASK-7.3)",
+  "verdict": "NO-GO",
+  "codexSessionId": "01a15d6d-6cce-7e71-bd59-ad68bac6237a",
+  "model": "gpt-6.1-sol",
+  "reasoningEffort": "high",
+  "openFindings": [
+    "R40-01",
+    "R40-02",
+    "R40-03",
+    "R40-04",
+    "R40-05",
+    "R40-06",
+    "R40-07",
+    "R40-08"
+  ],
+  "gates": {
+    "testPhase7": { "status": "PASS", "exitCode": 0 },
+    "testPhase6": { "status": "PASS", "exitCode": 0 },
+    "testPhase5": { "status": "PASS", "exitCode": 0 },
+    "typescript": { "errors": 0, "exitCode": 0 },
+    "r40Adversarial": { "total": 65, "passed": 35, "failed": 30, "exitCode": 1 }
+  }
+}

@@ -1,0 +1,203 @@
+﻿{
+    "capturedAt":  "2026-10-20T10:38:32.5643606+07:00",
+    "head":  "2570d96b6770957e218031c91f14ce98e766dfa7",
+    "scope":  "Working tree, including uncommitted changes; no environment files or real databases included",
+    "files":  [
+                  {
+                      "path":  "AGENTS.md",
+                      "sha256":  "1065350ac14f5faaf453b3cab2a7bcf0a469414c1d311649b12952a8a373d2d1"
+                  },
+                  {
+                      "path":  "MINDX_AUTOMATION_PLAN.md",
+                      "sha256":  "993f0e3fe49d3210aa6507390c31457b007f1c68f8931948506bfce4bf4fd5ce"
+                  },
+                  {
+                      "path":  "next.config.ts",
+                      "sha256":  "f2f04da154b8bbbf207a2c7617bce5a35c8cb92e3227c15a9dd2764ba108ac49"
+                  },
+                  {
+                      "path":  "next-env.d.ts",
+                      "sha256":  "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000"
+                  },
+                  {
+                      "path":  "package.json",
+                      "sha256":  "1472c4e48d2ce7486cfb9c7debe373a96fcf0f72043661cda77f9e901b7415f9"
+                  },
+                  {
+                      "path":  "package-lock.json",
+                      "sha256":  "b0def36b403f0106ed80e9e361c499612ff9c3daab1c4d45199d9cda93007366"
+                  },
+                  {
+                      "path":  "scripts\\recon.ts",
+                      "sha256":  "50a9cfffd20e1d043112852433070ea78fb084b919d85ad537f96f67b33ee5e2"
+                  },
+                  {
+                      "path":  "scripts\\test-patches-round2.ts",
+                      "sha256":  "2e1b15a66ee4fe900f8f5580a19e40cca4fde9dc27cfaf59bb87c7c268275ba5"
+                  },
+                  {
+                      "path":  "scripts\\test-phase3.ts",
+                      "sha256":  "436dfb7bb8ae90f09344146e1b3596c06221c993b5fa3b2ad4b1533051b894d1"
+                  },
+                  {
+                      "path":  "scripts\\test-phase4-codex-repros.ts",
+                      "sha256":  "00301df0da0d31a28ba17599796ad967a85eef8ad6739506e83671524cb853ca"
+                  },
+                  {
+                      "path":  "src\\app\\api\\auth\\login\\route.ts",
+                      "sha256":  "6a1fbf964c9f8393459173317d5784d4cc6c07c34a7d0a1a822e144c5afe487a"
+                  },
+                  {
+                      "path":  "src\\app\\api\\auth\\status\\route.ts",
+                      "sha256":  "df3438881441ede00e32b3dda49ec1a11c704ed6a0d7fcd6103a069033e5156a"
+                  },
+                  {
+                      "path":  "src\\app\\api\\homework-grader\\export\\route.ts",
+                      "sha256":  "7f585ec9d7718ec5ee7dd2337916d6ec6cb69f59ac635d3db93f4b99261e2fe3"
+                  },
+                  {
+                      "path":  "src\\app\\api\\homework-grader\\scores\\route.ts",
+                      "sha256":  "adf189bafc396c2dec67b4f769def8ec1822be143029e959eda7d55c93a93dfa"
+                  },
+                  {
+                      "path":  "src\\app\\api\\queue\\control\\route.ts",
+                      "sha256":  "ba10880adeeb8e5de6807313f13ad01731ed28edebecf859d9687e362c8c2e70"
+                  },
+                  {
+                      "path":  "src\\app\\api\\queue\\stream\\route.ts",
+                      "sha256":  "355bcdcb423bff6bcfc1edf407c0b1c8ec204226afc236df83e35554b3027bde"
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\approve\\route.ts",
+                      "sha256":  "f6b1a58f90bdd1bd949c836b137a6d5bdeabf8ff67b447877516c7cc1a2a4c7f"
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\generate-ai\\route.ts",
+                      "sha256":  "325f6b1d9248f8907bd2bd4f2971d1155bcff6522ae05790d0572dc7c2e9cfd6"
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\list\\route.ts",
+                      "sha256":  "f3e3657417934d7ef877baf582e041d86892ee4d5d81575f25831a598e97c77d"
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\save-draft\\route.ts",
+                      "sha256":  "acbbfe2bf91334018ea88f5556adebd246d6b80631d3478e6bec541435b9355c"
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\save-lms\\route.ts",
+                      "sha256":  "c0c13bda18cff153709b4bc238fd7c3922d5bda8b7fa94d1af6ab59106c0905c"
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\sync\\route.ts",
+                      "sha256":  "89567e459fe7ba88ead3cccdd5b4db40aeed0ef67e869705d33b1234166fcf32"
+                  },
+                  {
+                      "path":  "src\\app\\final-project\\page.tsx",
+                      "sha256":  "75bf591ab72f3502c7a187a8302fdfa5e5c2fb25e6c64b8ace0ffec06a7c19e8"
+                  },
+                  {
+                      "path":  "src\\app\\globals.css",
+                      "sha256":  "39dfece0f5bb4745efdfc93653e01124d72ac7f286ca0e7887653169743826b8"
+                  },
+                  {
+                      "path":  "src\\app\\homework-grader\\page.tsx",
+                      "sha256":  "6076e08c02ab111c472def0889842baa415d01734b5c63774f9a6c3618bab7bf"
+                  },
+                  {
+                      "path":  "src\\app\\layout.tsx",
+                      "sha256":  "0e331573cb47afa19f14e607e32079ca080443dcc81bf3b5f1519dd9be196eac"
+                  },
+                  {
+                      "path":  "src\\app\\page.tsx",
+                      "sha256":  "b2ab1d00a895bd171eea4ed207d82fd5ce5c55c9ed67ba9b0e2369293bf2e76d"
+                  },
+                  {
+                      "path":  "src\\app\\session-comments\\page.tsx",
+                      "sha256":  "0932ea2409faf868fcef3faf1d0a2eeb58192c84b27ee4ca7e631e8193b8d03f"
+                  },
+                  {
+                      "path":  "src\\app\\syllabus-config\\page.tsx",
+                      "sha256":  "427663d38323433d187570853742af30b641550c11a5cea6606b71d498ebc721"
+                  },
+                  {
+                      "path":  "src\\components\\live-log-drawer.tsx",
+                      "sha256":  "73dcb92235ddd5e92c6a85933913e82fc58e07a1ff333c84cf88110438d71cd3"
+                  },
+                  {
+                      "path":  "src\\lib\\config.ts",
+                      "sha256":  "4ac1332ab0becaaf212e5ac03944b077074572eb43375f7ce8f9b34d6ed3b309"
+                  },
+                  {
+                      "path":  "src\\lib\\db\\json-config.ts",
+                      "sha256":  "989c335b68721fc62a49e4eb6b74ce08c462c8584eceadc78866520888caca32"
+                  },
+                  {
+                      "path":  "src\\lib\\db\\sqlite.ts",
+                      "sha256":  "6cfb3c565098c69f7d5b291f4db91ea2127b473d80ad6284f2dd7bc709785072"
+                  },
+                  {
+                      "path":  "src\\lib\\gemini\\client.ts",
+                      "sha256":  "87382033af0fdd3d2858d8dc495e43a7acb1079172d2c11011a1ea53d0c37851"
+                  },
+                  {
+                      "path":  "src\\lib\\gemini\\comment-generator.ts",
+                      "sha256":  "a3054cd6e6dea1b7b77c644cb0ecff804b53c977fef0758b03bd8f02301c7b24"
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\auth.ts",
+                      "sha256":  "c9e85bb020b6e31b3490b10dcc7767a64f319cfab72de85c8ca257fe26641bd6"
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\browser-manager.ts",
+                      "sha256":  "110053838d68f5e8e12a4bb75a205e4cfe7d5f0297729624742e7d4c7812b343"
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\lms-helpers.ts",
+                      "sha256":  "f7c7d0536de526eac7116ab9eff32122a38b947e82722b41eea849f86cff86a4"
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\network-interceptor.ts",
+                      "sha256":  "0191bd89a9a42884bf0db0328e5a6dec35ffb1b62463083bef4929453beb8613"
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\save-comments.ts",
+                      "sha256":  "b1e74d0c6f2301bc94dc770ab82413d6ee77bd47b1be4cdd1460501fcbb3d86c"
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\scrape-scores.ts",
+                      "sha256":  "e998e7f6e4f3ebc7b0fc7d72946736183a4be6b46b735eb787f5d8129b9487a8"
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\selectors.ts",
+                      "sha256":  "720f48cdea9d7038564aba5ad97a2913525f02a2fc2d9bfb50bf10e5bc291a0e"
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\sync-class.ts",
+                      "sha256":  "02f6e05110433725571e4b03e1e21e62c28d23c3f0ffb56aa51820fc37434cbf"
+                  },
+                  {
+                      "path":  "src\\lib\\queue\\task-queue.ts",
+                      "sha256":  "a284d7f7099045bc1e3ddd6491a9afce79409fe6fff00b9a7d4988495fa82578"
+                  },
+                  {
+                      "path":  "src\\lib\\security\\local-guard.ts",
+                      "sha256":  "205f8ec95b183b33cbf65add0fca169f4a4882a43236ad1a9e69f5d926baf470"
+                  },
+                  {
+                      "path":  "src\\lib\\security\\path-allowlist.ts",
+                      "sha256":  "a3466414a7c626b2c75d95c93b4a66e2b32d3d2be78cfa8dec79d3d145e1af0b"
+                  },
+                  {
+                      "path":  "src\\lib\\utils.ts",
+                      "sha256":  "ec94d82b9920dd7bde4a8d48a878d1a72c336a12101d411779877ab337eeb466"
+                  },
+                  {
+                      "path":  "src\\lib\\zalo\\broadcast-generator.ts",
+                      "sha256":  "178ab13591a6fbbb52ccf46d717248447c1f93d9bd7d9da96ef7c60caf6799ec"
+                  },
+                  {
+                      "path":  "tsconfig.json",
+                      "sha256":  "f70b288c3af6635001481b32d8f9d12df250fd446d0943b6ed31294cdafd9428"
+                  }
+              ]
+}

@@ -1,0 +1,50 @@
+{
+  "verdict": "NO-GO",
+  "scope": "source only, no live service or Owner acceptance",
+  "sourceManifestSha256": "32ceec9fd76bfa299f230ad4431a76dc93ed20375351d2a78fe4a3d46ba4a74b",
+  "head": "2570d96b6770957e218031c91f14ce98e766dfa7",
+  "snapshot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round22-20261020T114849399873Z-mindx-round21-mindx-round20-compat\\snapshot",
+  "closedSource": 10,
+  "partiallyFixed": 4,
+  "requiredDistinctCommands": 11,
+  "passingCommands": 10,
+  "failingCommands": [
+    "round22"
+  ],
+  "R22": {
+    "total": 53,
+    "passed": 28,
+    "failed": 25
+  },
+  "freshRegressions": {
+    "12": {
+      "passed": 43,
+      "failed": 0
+    },
+    "13": {
+      "passed": 89,
+      "failed": 0
+    },
+    "16": {
+      "passed": 16,
+      "failed": 0
+    },
+    "17": {
+      "passed": 38,
+      "failed": 0
+    },
+    "20": {
+      "passed": 145,
+      "failed": 0
+    },
+    "21": {
+      "passed": 49,
+      "failed": 0
+    }
+  },
+  "protectedUnchanged": true,
+  "protectedFiles": 319,
+  "sourceUnchanged": true,
+  "sourceFiles": 75,
+  "suiteSha256": "ac2e17ba62657db66a87bdb45d6177e55c98cd3bc89b7447e760cf1c3905b950"
+}

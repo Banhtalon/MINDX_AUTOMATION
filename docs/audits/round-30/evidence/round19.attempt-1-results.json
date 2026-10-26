@@ -1,0 +1,559 @@
+{
+  "checkedAt": "2026-10-20T21:00:04.228Z",
+  "sourceRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat\\snapshot",
+  "fixtureWorkspace": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-r19-fixtures-yIKslR",
+  "sqlite": ":memory:",
+  "realLmsCalls": 0,
+  "realGeminiCalls": 0,
+  "method": "Unmodified function bodies; imports replaced by explicit VM bindings. Hook tests check handler logic, not browser layout or real React concurrency.",
+  "total": 94,
+  "passed": 89,
+  "failed": 5,
+  "results": [
+    {
+      "id": "FORMAT-py",
+      "criterion": "Đọc định dạng py",
+      "pass": true,
+      "observation": {
+        "subject": "PYTHON"
+      }
+    },
+    {
+      "id": "FORMAT-ipynb",
+      "criterion": "Đọc định dạng ipynb",
+      "pass": true,
+      "observation": {
+        "subject": "JUPYTER"
+      }
+    },
+    {
+      "id": "FORMAT-ui",
+      "criterion": "Đọc định dạng ui",
+      "pass": true,
+      "observation": {
+        "subject": "PYQT6"
+      }
+    },
+    {
+      "id": "FORMAT-qss",
+      "criterion": "Đọc định dạng qss",
+      "pass": true,
+      "observation": {
+        "subject": "PYQT6"
+      }
+    },
+    {
+      "id": "FORMAT-html",
+      "criterion": "Đọc định dạng html",
+      "pass": true,
+      "observation": {
+        "subject": "WEB"
+      }
+    },
+    {
+      "id": "FORMAT-css",
+      "criterion": "Đọc định dạng css",
+      "pass": true,
+      "observation": {
+        "subject": "WEB"
+      }
+    },
+    {
+      "id": "FORMAT-js",
+      "criterion": "Đọc định dạng js",
+      "pass": true,
+      "observation": {
+        "subject": "WEB"
+      }
+    },
+    {
+      "id": "FORMAT-sql",
+      "criterion": "Đọc định dạng sql",
+      "pass": true,
+      "observation": {
+        "subject": "SQL"
+      }
+    },
+    {
+      "id": "FORMAT-txt",
+      "criterion": "Đọc định dạng txt",
+      "pass": true,
+      "observation": {
+        "subject": "TEXT"
+      }
+    },
+    {
+      "id": "FORMAT-gml",
+      "criterion": "Đọc định dạng gml",
+      "pass": true,
+      "observation": {
+        "subject": "GAMEMAKER"
+      }
+    },
+    {
+      "id": "FORMAT-yy",
+      "criterion": "Đọc định dạng yy",
+      "pass": true,
+      "observation": {
+        "subject": "GAMEMAKER"
+      }
+    },
+    {
+      "id": "FORMAT-sb3",
+      "criterion": "Đọc project.json của Scratch",
+      "pass": true
+    },
+    {
+      "id": "FORMAT-yyz",
+      "criterion": "Đọc GameMaker .yyz",
+      "pass": true
+    },
+    {
+      "id": "INLINE-png",
+      "criterion": "MIME và Base64 giữ đúng bytes (không chứng minh giải mã media)",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'PARSE_ERROR'\n- 'PARSED'\n        ^\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:150:141\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:33:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:150:11"
+    },
+    {
+      "id": "INLINE-jpg",
+      "criterion": "MIME và Base64 giữ đúng bytes (không chứng minh giải mã media)",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'PARSE_ERROR'\n- 'PARSED'\n        ^\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:150:141\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:33:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:150:11"
+    },
+    {
+      "id": "INLINE-webp",
+      "criterion": "MIME và Base64 giữ đúng bytes (không chứng minh giải mã media)",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'PARSE_ERROR'\n- 'PARSED'\n        ^\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:150:141\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:33:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:150:11"
+    },
+    {
+      "id": "INLINE-pdf",
+      "criterion": "MIME và Base64 giữ đúng bytes (không chứng minh giải mã media)",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'PARSE_ERROR'\n- 'PARSED'\n        ^\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:150:141\n    at check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:33:35)\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:150:11"
+    },
+    {
+      "id": "PARSE-ERROR-empty.py",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-binary.py",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-bad.ipynb",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-bad.ui",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-bad.sb3",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-bad.yy",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-bad.yyz",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-bad.png",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PARSE-ERROR-unsupported.rar",
+      "criterion": "Lỗi định dạng được gắn PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "PATH-outside",
+      "criterion": "Từ chối file ngoài thư mục cho phép",
+      "pass": true
+    },
+    {
+      "id": "PATH-junction",
+      "criterion": "Từ chối junction thoát thư mục",
+      "pass": true
+    },
+    {
+      "id": "PATH-segments",
+      "criterion": "Tên file nguy hiểm vẫn ở temp_submissions",
+      "pass": true
+    },
+    {
+      "id": "ZIP-traversal-../evil.py",
+      "criterion": "Chặn đường dẫn ZIP nguy hiểm",
+      "pass": true
+    },
+    {
+      "id": "ZIP-traversal-C:/evil.py",
+      "criterion": "Chặn đường dẫn ZIP nguy hiểm",
+      "pass": true
+    },
+    {
+      "id": "ZIP-traversal-/evil.py",
+      "criterion": "Chặn đường dẫn ZIP nguy hiểm",
+      "pass": true
+    },
+    {
+      "id": "ZIP-traversal-..\\evil.py",
+      "criterion": "Chặn đường dẫn ZIP nguy hiểm",
+      "pass": true
+    },
+    {
+      "id": "ZIP-ignore",
+      "criterion": "Bỏ qua node_modules/.git/__pycache__",
+      "pass": true
+    },
+    {
+      "id": "ZIP-201",
+      "criterion": "Chặn 201 file ZIP",
+      "pass": true
+    },
+    {
+      "id": "ZIP-depth11",
+      "criterion": "Chặn ZIP sâu hơn 10 thành phần",
+      "pass": true
+    },
+    {
+      "id": "ZIP-50MB",
+      "criterion": "Chặn tổng khai báo 55MB trước giải nén",
+      "pass": true
+    },
+    {
+      "id": "ZIP-ratio",
+      "criterion": "Chặn tỷ lệ nén bất thường",
+      "pass": true
+    },
+    {
+      "id": "R19-01-mixed-corrupt",
+      "criterion": "ZIP có mã nguồn hỏng phải PARSE_ERROR",
+      "pass": true,
+      "observation": {
+        "parseStatus": "PARSE_ERROR",
+        "parsedCodeFiles": 0,
+        "totalFiles": 2
+      }
+    },
+    {
+      "id": "R19-01-truncated-media",
+      "criterion": "PNG chỉ có 8 byte chữ ký phải PARSE_ERROR",
+      "pass": true
+    },
+    {
+      "id": "SCORE-control",
+      "criterion": "Tổng TS bỏ qua tổng/điểm tối đa do AI tự khai",
+      "pass": true
+    },
+    {
+      "id": "SCORE-negative",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-over",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-nan",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-string",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-evidence",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-reason",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-missing",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-duplicate",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "SCORE-unknown",
+      "criterion": "Từ chối điểm thành phần không hợp lệ",
+      "pass": true
+    },
+    {
+      "id": "R19-02-duplicate-rubric",
+      "criterion": "Barem trùng mã tiêu chí phải bị từ chối",
+      "pass": true
+    },
+    {
+      "id": "DB-owner-lock",
+      "criterion": "Không thể đổi chủ submissionId",
+      "pass": true
+    },
+    {
+      "id": "DB-hash-demotion",
+      "criterion": "Sửa điểm sau duyệt hạ trạng thái",
+      "pass": true
+    },
+    {
+      "id": "R19-03-legacy-hash",
+      "criterion": "Hash chỉ nhận xét không được chứng minh toàn vẹn điểm",
+      "pass": true
+    },
+    {
+      "id": "AI-control",
+      "criterion": "Ẩn danh, sandbox, cộng điểm TS",
+      "pass": true,
+      "observation": {
+        "score": 80,
+        "anonymized": true
+      }
+    },
+    {
+      "id": "AI-peer",
+      "criterion": "Ẩn danh bạn cùng lớp",
+      "pass": true
+    },
+    {
+      "id": "AI-protect-APPROVED",
+      "criterion": "AI không ghi đè bản đã duyệt",
+      "pass": true
+    },
+    {
+      "id": "AI-protect-VERIFIED",
+      "criterion": "AI không ghi đè bản đã duyệt",
+      "pass": true
+    },
+    {
+      "id": "AI-parse-block",
+      "criterion": "PARSE_ERROR không gọi AI/không REDO/không được duyệt",
+      "pass": true
+    },
+    {
+      "id": "AI-concurrent-approval",
+      "criterion": "Duyệt khi AI đang chạy được giữ nguyên",
+      "pass": true
+    },
+    {
+      "id": "R19-04-ai-file-drift",
+      "criterion": "AI cũ không ghi đè fileHash/PARSE_ERROR mới",
+      "pass": true
+    },
+    {
+      "id": "API-origin",
+      "criterion": "Các API từ chối Origin bên ngoài",
+      "pass": true
+    },
+    {
+      "id": "API-draft-verified-block",
+      "criterion": "Không đặt VERIFIED qua lưu nháp",
+      "pass": true
+    },
+    {
+      "id": "API-approval-control",
+      "criterion": "Duyệt đúng tạo contentHash tổng hợp",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n409 !== 200\n\n    at file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:180:124\n    at async check (file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:33:29)\n    at async file:///C:/Users/QQ/AppData/Local/Temp/mindx-round30-20261020T205749Z-mindx-round29-compat-mindx-round28-compat-mindx-round27-compat-mindx-round26-compat-mindx-round25-compat-mindx-round24-compat-mindx-round23-compat-mindx-round22-compat/snapshot/docs/audits/round-19/verify-independent.mjs:180:3"
+    },
+    {
+      "id": "API-approve-scope",
+      "criterion": "Từ chối duyệt sai học viên/lớp",
+      "pass": true
+    },
+    {
+      "id": "API-list-preview",
+      "criterion": "Danh sách đọc preview của file giả đúng hash",
+      "pass": true
+    },
+    {
+      "id": "API-save-queue",
+      "criterion": "save-lms gọi worker qua hàng đợi và trả thất bại đúng",
+      "pass": true
+    },
+    {
+      "id": "R19-05-invalid-criteria",
+      "criterion": "Duyệt phải kiểm toán từng tiêu chí",
+      "pass": true
+    },
+    {
+      "id": "R19-05-undownloaded",
+      "criterion": "Bài chưa tải/chưa phân tích không được tự nhận PARSED và duyệt",
+      "pass": true
+    },
+    {
+      "id": "R19-06-stale-approval",
+      "criterion": "Duyệt cũ không được ghi đè sửa mới",
+      "pass": true
+    },
+    {
+      "id": "DOWNLOAD-control",
+      "criterion": "Tải, hash, khóa submission vào SQLite, độc lập điểm danh",
+      "pass": true,
+      "observation": {
+        "success": true,
+        "count": 1,
+        "clicked": 1,
+        "itemErrors": [],
+        "items": [
+          {
+            "studentId": "S1",
+            "submissionId": "SUB1",
+            "sessionId": "AUDIT_PTA_CLASS_SESS_01",
+            "lessonId": "L1",
+            "fileHash": "1a41da93b9356513e8431f5d0eb89f84e5fde642cbafa1b8589187464b922457"
+          }
+        ],
+        "stored": [
+          {
+            "submissionId": "SUB1",
+            "studentId": "S1",
+            "fileHash": "1a41da93b9356513e8431f5d0eb89f84e5fde642cbafa1b8589187464b922457",
+            "status": "PENDING"
+          }
+        ],
+        "downloadedHash": "1a41da93b9356513e8431f5d0eb89f84e5fde642cbafa1b8589187464b922457"
+      }
+    },
+    {
+      "id": "DOWNLOAD-preserve-APPROVED",
+      "criterion": "Tải lại cùng hash giữ bản đã duyệt",
+      "pass": true
+    },
+    {
+      "id": "DOWNLOAD-preserve-VERIFIED",
+      "criterion": "Tải lại cùng hash giữ bản đã duyệt",
+      "pass": true
+    },
+    {
+      "id": "DOWNLOAD-owner-block",
+      "criterion": "Chặn submissionId đã khóa cho học viên khác",
+      "pass": true
+    },
+    {
+      "id": "R19-07-wrong-download",
+      "criterion": "Cùng tên nhưng sai student/submission phải chặn tải",
+      "pass": true
+    },
+    {
+      "id": "R19-08-session-lesson",
+      "criterion": "Không tải bài Buổi 2 gán vào session Buổi 1",
+      "pass": true
+    },
+    {
+      "id": "WORKER-control",
+      "criterion": "GRADE chọn radio/điền điểm/nhận xét và ghi VERIFIED",
+      "pass": true,
+      "observation": {
+        "writes": 1,
+        "verified": 1
+      }
+    },
+    {
+      "id": "WORKER-redo",
+      "criterion": "REDO chọn đúng radio",
+      "pass": true
+    },
+    {
+      "id": "WORKER-block-http500",
+      "criterion": "Không VERIFIED khi thất bại",
+      "pass": true
+    },
+    {
+      "id": "WORKER-block-graphql",
+      "criterion": "Không VERIFIED khi thất bại",
+      "pass": true
+    },
+    {
+      "id": "WORKER-block-wrong-score",
+      "criterion": "Không VERIFIED khi thất bại",
+      "pass": true
+    },
+    {
+      "id": "WORKER-block-parse-error",
+      "criterion": "Không VERIFIED khi thất bại",
+      "pass": true
+    },
+    {
+      "id": "WORKER-pre-click-drift",
+      "criterion": "Sửa nhận xét trước Save chặn ghi LMS",
+      "pass": true
+    },
+    {
+      "id": "WORKER-post-click-drift",
+      "criterion": "Sửa trong lúc API chạy chặn VERIFIED",
+      "pass": true
+    },
+    {
+      "id": "R19-07-modal-same-name",
+      "criterion": "Modal không chứng minh đúng submission phải chặn",
+      "pass": true
+    },
+    {
+      "id": "R19-07-modal-empty",
+      "criterion": "Modal không chứng minh đúng submission phải chặn",
+      "pass": true
+    },
+    {
+      "id": "R19-09-unrelated-api",
+      "criterion": "Phản hồi truy vấn khác chỉ cùng studentId không được xác nhận Save",
+      "pass": true
+    },
+    {
+      "id": "R19-09-missing-submission",
+      "criterion": "Mutation chỉ cùng studentId, không có submissionId phải bị từ chối",
+      "pass": true
+    },
+    {
+      "id": "R19-09-real-interceptor",
+      "criterion": "Bộ lọc NetworkInterceptor thật phải từ chối truy vấn không phải lưu điểm",
+      "pass": true
+    },
+    {
+      "id": "R19-10-no-feedback",
+      "criterion": "Ô điểm đúng nhưng không có editor/nhận xét không được VERIFIED",
+      "pass": true
+    },
+    {
+      "id": "R19-11-readback-race",
+      "criterion": "Sửa khi đang đọc DOM không được đánh dấu VERIFIED bản mới",
+      "pass": true
+    },
+    {
+      "id": "R19-12-ui-load-race",
+      "criterion": "Phản hồi buổi cũ không ghi đè danh sách buổi mới",
+      "pass": true
+    },
+    {
+      "id": "R19-13-ui-save-failure",
+      "criterion": "Lưu nháp thất bại phải báo lỗi và không giả đã lưu",
+      "pass": true
+    },
+    {
+      "id": "R19-14-route-download-failure",
+      "criterion": "Tải thất bại không tiếp tục AI trên bài cũ/báo thành công",
+      "pass": true
+    }
+  ]
+}

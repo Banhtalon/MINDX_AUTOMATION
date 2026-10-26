@@ -1,0 +1,11 @@
+﻿{
+    "command":  "node node_modules/typescript/bin/tsc --noEmit --incremental false --listFilesOnly",
+    "exitCode":  0,
+    "totalFiles":  786,
+    "projectSourceFiles":  62,
+    "includesSyllabus":  true,
+    "includesConfigRoute":  true,
+    "includesGradeWorker":  true,
+    "includesQueue":  true,
+    "note":  "Read-only supplemental file enumeration; five mandatory gate outcomes remain the final isolated run."
+}
