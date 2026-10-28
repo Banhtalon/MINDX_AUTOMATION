@@ -1,0 +1,18 @@
+[
+  {
+    "file": "src/app/globals.css",
+    "sha256": "bfea8cf1a89ea20673f8a7fe116d99c68e58dd74ab666d80ff08c2146c522ff4"
+  },
+  {
+    "file": "src/app/homework-grader/page.tsx",
+    "sha256": "cef70ae1452b9bea50c78e708678b61301a5bdd8ade482f263173d2fbe7fda71"
+  },
+  {
+    "file": "src/app/session-comments/page.tsx",
+    "sha256": "eccad27cc28ef2eacce278454fcf340c8fc285a6e42e794b617b6c753a3ae273"
+  },
+  {
+    "file": "src/components/top-navbar.tsx",
+    "sha256": "c04c3340ce6e94bd67bec640a4391a826fe9e98d337d60456ca981fdb4aa5bac"
+  }
+]

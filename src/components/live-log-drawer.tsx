@@ -97,86 +97,82 @@ export function LiveLogDrawer() {
 
   return (
     <>
-      {/* Floating Bottom Status Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 border-t border-slate-800 px-4 py-2 backdrop-blur flex items-center justify-between shadow-2xl">
-        <div className="flex items-center space-x-3">
+      {/* Floating Bottom-Left Status Pill */}
+      <div className="fixed bottom-3 left-3 z-40 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          title="Bấm để mở hoặc ẩn Nhật ký hoạt động"
+          className="mindx-log-pill flex items-center space-x-2 text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-all cursor-pointer"
+        >
+          <span
+            className={`w-2 h-2 rounded-full ${
+              isRunning
+                ? "bg-amber-400 animate-ping"
+                : isStopped
+                ? "bg-rose-500"
+                : "bg-emerald-500"
+            }`}
+          />
+          <span>
+            {isRunning
+              ? "Bot đang chạy tác vụ..."
+              : isStopped
+              ? "Đã tạm dừng khẩn cấp"
+              : "Sẵn sàng"}
+          </span>
+          <span className="opacity-75 font-mono text-[11px]">
+            ({status?.pendingCount ?? 0} chờ • {status?.completedCount ?? 0} xong • {logs.length} dòng)
+          </span>
+          <span className="text-indigo-500 dark:text-sky-400 text-[10px] ml-1 font-bold">
+            {isOpen ? "▼ Thu gọn" : "▲ Nhật ký"}
+          </span>
+        </button>
+
+        {status?.currentTask && (
+          <span className="mindx-log-pill text-xs px-3 py-1.5 rounded-lg truncate max-w-md hidden sm:inline">
+            ⚡ {status.currentTask.description}
+          </span>
+        )}
+
+        {(status?.pendingCount ?? 0) > 0 && (
           <button
             type="button"
-            onClick={() => setIsOpen(!isOpen)}
-            title="Bấm để mở hoặc ẩn Nhật ký hoạt động"
-            className="flex items-center space-x-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors cursor-pointer"
+            onClick={() => handleQueueControl("clear")}
+            className="mindx-log-pill text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
           >
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isRunning
-                  ? "bg-amber-400 animate-ping"
-                  : isStopped
-                  ? "bg-rose-500"
-                  : "bg-emerald-400"
-              }`}
-            />
-            <span>
-              {isRunning
-                ? "Bot đang chạy tác vụ..."
-                : isStopped
-                ? "Đã tạm dừng khẩn cấp"
-                : "Sẵn sàng"}
-            </span>
-            <span className="text-slate-400 font-mono text-[11px]">
-              ({status?.pendingCount ?? 0} chờ • {status?.completedCount ?? 0} xong • {logs.length} dòng)
-            </span>
-            <span className="text-slate-400 text-[10px] ml-1">
-              {isOpen ? "▼ Thu gọn" : "▲ Nhật ký"}
-            </span>
+            Xóa hàng chờ ({status?.pendingCount})
           </button>
+        )}
 
-          {status?.currentTask && (
-            <span className="text-xs text-amber-300 truncate max-w-md hidden sm:inline">
-              ⚡ {status.currentTask.description}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center space-x-2">
-          {(status?.pendingCount ?? 0) > 0 && (
+        {isStopped ? (
+          <button
+            type="button"
+            onClick={() => handleQueueControl("resume")}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow transition-colors cursor-pointer"
+          >
+            ▶️ Tiếp tục chạy
+          </button>
+        ) : (
+          (isRunning || (status?.pendingCount ?? 0) > 0) && (
             <button
               type="button"
-              onClick={() => handleQueueControl("clear")}
-              className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors cursor-pointer"
+              onClick={() => handleQueueControl("stop")}
+              disabled={isStopping}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white shadow transition-colors disabled:opacity-50 cursor-pointer"
             >
-              Xóa hàng chờ ({status?.pendingCount})
+              🛑 Dừng khẩn cấp (Stop Bot)
             </button>
-          )}
-
-          {isStopped ? (
-            <button
-              type="button"
-              onClick={() => handleQueueControl("resume")}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer"
-            >
-              ▶️ Tiếp tục chạy
-            </button>
-          ) : (
-            (isRunning || (status?.pendingCount ?? 0) > 0) && (
-              <button
-                type="button"
-                onClick={() => handleQueueControl("stop")}
-                disabled={isStopping}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                🛑 Dừng khẩn cấp (Stop Bot)
-              </button>
-            )
-          )}
-        </div>
+          )
+        )}
       </div>
 
       {/* Slide-up Live Log Drawer */}
       {isOpen && (
-        <div className="fixed bottom-12 left-0 right-0 z-40 bg-slate-950/98 border-t border-slate-800 p-4 max-h-80 flex flex-col shadow-2xl backdrop-blur">
+        <div className="fixed bottom-12 left-3 right-3 max-w-5xl z-40 bg-slate-950/95 border border-slate-700 rounded-xl p-4 max-h-80 flex flex-col shadow-2xl backdrop-blur text-slate-100">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800 mb-2">
             <div className="flex items-center space-x-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
                 Nhật Ký Tự Động Hóa Thời Gian Thực (SSE Live Stream)
               </span>
               <div className="flex items-center space-x-1 text-[11px]">
@@ -200,7 +196,7 @@ export function LiveLogDrawer() {
             <button
               type="button"
               onClick={() => setLogs([])}
-              className="text-[11px] text-slate-500 hover:text-slate-300 cursor-pointer"
+              className="text-[11px] text-slate-400 hover:text-slate-200 cursor-pointer"
             >
               Xóa màn hình nhật ký
             </button>
@@ -208,7 +204,7 @@ export function LiveLogDrawer() {
 
           <div className="flex-1 overflow-y-auto space-y-1 font-mono text-xs pr-1">
             {filteredLogs.length === 0 ? (
-              <div className="text-slate-600 py-4 text-center italic">
+              <div className="text-slate-400 py-4 text-center italic">
                 Chưa có nhật ký hoạt động nào ở bộ lọc này. Khi bot bắt đầu thực thi tác vụ, tiến
                 trình sẽ hiển thị trực tiếp tại đây.
               </div>
@@ -223,17 +219,17 @@ export function LiveLogDrawer() {
                       ? "text-amber-300"
                       : log.level === "SUCCESS"
                       ? "text-emerald-400"
-                      : "text-slate-300"
+                      : "text-slate-200"
                   }`}
                 >
-                  <span className="text-slate-500 text-[10px] whitespace-nowrap">
+                  <span className="text-slate-400 text-[10px] whitespace-nowrap">
                     [{new Date(log.timestamp || Date.now()).toLocaleTimeString()}]
                   </span>
-                  <span className="font-semibold text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
+                  <span className="font-semibold text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-200">
                     {log.jobType}
                   </span>
                   {log.classId && (
-                    <span className="text-[10px] px-1 rounded bg-slate-900 border border-slate-800 text-cyan-400">
+                    <span className="text-[10px] px-1 rounded bg-slate-900 border border-slate-700 text-cyan-300">
                       {log.classId}
                     </span>
                   )}

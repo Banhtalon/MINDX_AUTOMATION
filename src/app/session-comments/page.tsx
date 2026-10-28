@@ -1993,17 +1993,17 @@ ${homeworkDetails}
 
   return (
     <div className="space-y-6">
-      {/* 1. Header & Class Selector */}
-      <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+      {/* 1. Hero Header & Class Selector */}
+      <div className="mindx-hero p-5 sm:p-6 rounded-2xl transition-all">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <span className="p-2 rounded-xl bg-blue-500/10 text-blue-400 text-2xl">📝</span>
+              <span className="p-2.5 rounded-xl bg-white/15 text-white text-2xl shadow-sm">📝</span>
               <div>
-                <h1 className="text-xl font-bold text-white tracking-wide">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
                   Nhận xét Buổi học &amp; Thông báo Zalo
                 </h1>
-                <p className="text-xs text-slate-400">
+                <p className="mindx-hero-sub text-xs mt-0.5">
                   Quick Tags 1 chạm gọn theo môn • AI soạn nhận xét 3 phần chuẩn • Lưu &amp; kiểm tra trực tiếp trên LMS
                 </p>
               </div>
@@ -2011,15 +2011,15 @@ ${homeworkDetails}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-700">
-              <span className="text-xs font-semibold text-slate-400 mr-2">Mã lớp:</span>
+            <div className="flex items-center bg-white/95 dark:bg-slate-900/90 rounded-lg px-3 py-1.5 border border-white/40 dark:border-slate-700 shadow-sm">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 mr-2">Mã lớp:</span>
               {!isManualClassInput && runningClasses.length > 0 ? (
                 <select
                   value={classCode}
                   onChange={(e) => {
                     handleSelectRunningClass(e.target.value);
                   }}
-                  className="bg-slate-800 text-sm font-bold text-white focus:outline-none min-w-[180px] max-w-[300px] cursor-pointer"
+                  className="bg-transparent text-sm font-bold text-slate-900 dark:text-white focus:outline-none min-w-[180px] max-w-[300px] cursor-pointer"
                 >
                   {!runningClasses.some((c) => c.classCode === classCode) && classCode && (
                     <option value={classCode} className="bg-slate-900 text-white">
@@ -2045,7 +2045,7 @@ ${homeworkDetails}
                   type="text"
                   value={classCode}
                   onChange={(e) => setClassCode(e.target.value.toUpperCase())}
-                  className="bg-transparent text-sm font-bold text-white focus:outline-none w-36 uppercase"
+                  className="bg-transparent text-sm font-bold text-slate-900 dark:text-white focus:outline-none w-36 uppercase"
                   placeholder="VD: VT-C4K-PTA12"
                 />
               )}
@@ -2057,7 +2057,7 @@ ${homeworkDetails}
                     ? "Chuyển sang chọn từ danh sách lớp đang học"
                     : "Gõ mã lớp thủ công"
                 }
-                className="ml-2 text-xs text-slate-400 hover:text-white px-1.5 py-0.5 rounded bg-slate-700/60 hover:bg-slate-700 transition cursor-pointer"
+                className="ml-2 text-xs text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition cursor-pointer"
               >
                 {isManualClassInput ? "📋 Chọn lớp" : "✏️"}
               </button>
@@ -2067,7 +2067,7 @@ ${homeworkDetails}
               type="button"
               onClick={() => handleSyncFromLms()}
               disabled={isSyncing || isFetchingClasses}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white text-sm font-semibold transition shadow-md shadow-blue-600/20 cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:bg-slate-700 text-white text-sm font-semibold transition shadow-md cursor-pointer"
               title="Quét danh sách lớp đang học (nếu chưa có) và đồng bộ buổi học & học viên của lớp đang chọn từ LMS"
             >
               <RefreshCw
@@ -2081,16 +2081,19 @@ ${homeworkDetails}
             </button>
           </div>
         </div>
+      </div>
 
+      {/* 2. Session & Syllabus Selection Card */}
+      <div className="mindx-card p-5 rounded-2xl">
         {/* Status notification toast */}
         {statusMessage && (
           <div
-            className={`mt-4 p-3 rounded-lg flex items-center justify-between text-sm ${
+            className={`mb-4 p-3 rounded-lg flex items-center justify-between text-sm ${
               statusMessage.type === "success"
-                ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+                ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
                 : statusMessage.type === "error"
-                ? "bg-rose-500/10 border border-rose-500/20 text-rose-400"
-                : "bg-blue-500/10 border border-blue-500/20 text-blue-400"
+                ? "bg-rose-500/10 border border-rose-500/30 text-rose-400"
+                : "bg-blue-500/10 border border-blue-500/30 text-blue-400"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -2112,10 +2115,9 @@ ${homeworkDetails}
           </div>
         )}
 
-        {/* 2. Session & Syllabus Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
               Chọn Buổi học
             </label>
             <select
@@ -2141,11 +2143,11 @@ ${homeworkDetails}
                 <option value="">(Chưa đồng bộ buổi học từ LMS)</option>
               )}
             </select>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-indigo-300/90 px-1">
+            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400 px-1">
               <span>📌 Buổi 14 (Tổng kết cuối khóa &amp; SPCK) chấm riêng:</span>
               <a
                 href="/final-project"
-                className="font-semibold text-indigo-400 hover:text-indigo-300 underline underline-offset-2"
+                className="font-semibold text-blue-600 dark:text-indigo-400 hover:underline underline-offset-2"
               >
                 Mở trang SPCK →
               </a>
@@ -2153,7 +2155,7 @@ ${homeworkDetails}
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
               Chủ đề &amp; Kiến thức trọng tâm (Từ Giáo trình)
             </label>
             <input
@@ -2164,17 +2166,16 @@ ${homeworkDetails}
               placeholder="Chủ đề buổi học hôm nay..."
             />
             {currentKeyKnowledge.length > 0 && (
-              <div className="mt-2 p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/70 text-xs text-slate-300 space-y-1">
-                <div className="font-semibold text-blue-400">Nội dung buổi học:</div>
+              <div className="mindx-warm-box mt-2.5 p-3 rounded-lg text-xs space-y-1">
+                <div className="font-bold">Nội dung buổi học:</div>
                 <ul className="list-disc list-inside space-y-0.5">
                   {currentKeyKnowledge.map((item, idx) => (
                     <li key={idx}>{item}</li>
                   ))}
                 </ul>
                 {currentHomeworkBrief && (
-                  <div className="pt-1 text-slate-400">
-                    <span className="font-semibold text-amber-400">Tóm tắt BTVN:</span>{" "}
-                    {currentHomeworkBrief}
+                  <div className="pt-1">
+                    <span className="font-bold">Tóm tắt BTVN:</span> {currentHomeworkBrief}
                   </div>
                 )}
               </div>
@@ -2184,7 +2185,7 @@ ${homeworkDetails}
 
         {/* Checkpoint Session Reminder Banner (3.3) */}
         {isCurrentSessionCheckpoint && (
-          <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center justify-between gap-3">
+          <div className="mindx-warm-box mt-4 p-3 rounded-xl text-xs flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="text-base">📌</span>
               <span>
@@ -2192,7 +2193,7 @@ ${homeworkDetails}
                 <strong>chỉ điền ô Nhận xét chung</strong> — thầy tự tích Điểm Năng lực [ĐNL] &amp; Điểm kiểm tra trên LMS.
               </span>
             </div>
-            <span className="shrink-0 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold text-[11px]">
+            <span className="mindx-badge-amber shrink-0 px-2.5 py-0.5 rounded-full font-semibold text-[11px]">
               Chỉ điền Nhận xét
             </span>
           </div>
@@ -2200,12 +2201,12 @@ ${homeworkDetails}
       </div>
 
       {/* 3. Action Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-slate-900 border border-slate-800">
+      <div className="mindx-card flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs text-slate-400 font-medium">
             Đang học: <strong className="text-white">{students.length}</strong> |
             Có mặt:{" "}
-            <strong className="text-emerald-400">
+            <strong className="text-emerald-600 dark:text-emerald-400">
               {
                 students.filter(
                   (s) => s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE"
@@ -2213,7 +2214,7 @@ ${homeworkDetails}
               }
             </strong>{" "}
             | Chưa điểm danh:{" "}
-            <strong className="text-amber-400">
+            <strong className="text-amber-600 dark:text-amber-400">
               {
                 students.filter(
                   (s) => !s.attendanceStatus || s.attendanceStatus === "UNKNOWN"
@@ -2221,16 +2222,16 @@ ${homeworkDetails}
               }
             </strong>{" "}
             | Đã duyệt:{" "}
-            <strong className="text-indigo-400">
+            <strong className="text-indigo-600 dark:text-indigo-400">
               {students.filter((s) => s.status === "APPROVED" || s.status === "VERIFIED").length}
             </strong>
           </span>
 
           {/* Auto-detected Track Badge + 1-click switch button (3.1) */}
-          <div className="flex items-center gap-1.5 bg-slate-950/90 border border-slate-800 rounded-lg px-2.5 py-1">
+          <div className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1">
             <span
               className={`text-xs font-semibold ${
-                quickTagTrack === "robotics" ? "text-orange-300" : "text-cyan-300"
+                quickTagTrack === "robotics" ? "text-orange-600 dark:text-orange-300" : "text-sky-700 dark:text-cyan-300"
               }`}
             >
               {quickTagTrack === "robotics" ? "🤖 Thẻ Robotics (6)" : "💻 Thẻ Lập trình (7)"}
@@ -2240,7 +2241,7 @@ ${homeworkDetails}
               onClick={() =>
                 setQuickTagTrack((prev) => (prev === "coding" ? "robotics" : "coding"))
               }
-              className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 hover:text-white transition cursor-pointer border border-slate-700"
+              className="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-[11px] text-white transition cursor-pointer mindx-dark-btn"
               title="Đổi sang bộ thẻ của môn kia nếu cần"
             >
               ⇄ Đổi bộ thẻ
@@ -2253,17 +2254,17 @@ ${homeworkDetails}
             type="button"
             onClick={() => handleConfirmAllPresent(true)}
             disabled={students.length === 0}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer"
+            className="mindx-dark-btn flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition shadow-sm cursor-pointer"
             title="Điểm danh cả lớp Có mặt + tự gắn thẻ Tiếp thu tốt mặc định cho các bạn chưa chọn thẻ"
           >
-            <UserCheck className="w-4 h-4" />
+            <UserCheck className="w-4 h-4 text-emerald-400" />
             ⚡ Bắt đầu nhanh (Có mặt + Tiếp thu tốt)
           </button>
 
           <button
             onClick={handleGenerateAi}
             disabled={isGeneratingAi || students.length === 0}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white text-sm font-semibold shadow-lg shadow-purple-600/20 transition cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm font-semibold shadow-md transition cursor-pointer"
           >
             <Sparkles className={`w-4 h-4 ${isGeneratingAi ? "animate-spin" : ""}`} />
             {isGeneratingAi ? "AI Đang Soạn..." : "AI Soạn Nhận Xét"}
@@ -2272,7 +2273,7 @@ ${homeworkDetails}
           <button
             onClick={handleApproveAll}
             disabled={students.length === 0}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-750 text-indigo-300 border border-indigo-500/30 text-sm font-medium transition cursor-pointer"
+            className="mindx-dark-btn flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-white border border-indigo-800 text-sm font-semibold shadow-sm transition cursor-pointer"
           >
             <Check className="w-4 h-4" />
             Duyệt Tất Cả
@@ -2281,7 +2282,7 @@ ${homeworkDetails}
           <button
             onClick={() => handleSaveToLms()}
             disabled={isSavingLms || students.filter((s) => s.status === "APPROVED").length === 0}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold shadow-lg shadow-emerald-600/20 transition cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold shadow-md transition cursor-pointer"
           >
             <Send className={`w-4 h-4 ${isSavingLms ? "animate-spin" : ""}`} />
             {isSavingLms
@@ -2292,20 +2293,20 @@ ${homeworkDetails}
       </div>
 
       {/* 4. Student Comments Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div className="mindx-card rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-300">
-            <thead className="bg-slate-950 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
+            <thead className="mindx-thead text-xs uppercase font-bold border-b border-slate-800">
               <tr>
                 <th className="px-4 py-3.5 w-44">Học viên &amp; Điểm danh</th>
                 <th className="px-4 py-3.5 w-80">
                   <div className="flex items-center justify-between gap-1">
                     <span>Quick Tags 1-Chạm</span>
                     <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold normal-case ${
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-bold normal-case ${
                         quickTagTrack === "robotics"
-                          ? "bg-orange-500/20 text-orange-300 border border-orange-500/30"
-                          : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                          ? "bg-amber-500 text-white"
+                          : "bg-sky-500 text-white"
                       }`}
                     >
                       {quickTagTrack === "robotics" ? "🤖 Robotics" : "💻 Lập trình"}
@@ -2316,7 +2317,7 @@ ${homeworkDetails}
                 <th className="px-4 py-3.5 min-w-[340px]">
                   <div className="flex flex-wrap items-center justify-between gap-1">
                     <span>Nhận xét 3 phần (Sửa trực tiếp)</span>
-                    <span className="text-[10px] font-normal normal-case text-slate-500">
+                    <span className="text-[10px] font-normal normal-case opacity-80">
                       Chuẩn 3 mục: Điểm mạnh • Cần cải thiện • Lời khuyên
                     </span>
                   </div>
@@ -2335,18 +2336,18 @@ ${homeworkDetails}
                   return (
                     <tr
                       key={student.studentId}
-                      className={`hover:bg-slate-850/60 transition ${
+                      className={`border-l-4 transition ${
                         student.status === "VERIFIED"
-                          ? "bg-emerald-950/10"
+                          ? "border-l-emerald-500 bg-emerald-950/10"
                           : student.status === "APPROVED"
-                          ? "bg-indigo-950/10"
-                          : ""
+                          ? "border-l-indigo-600 bg-indigo-950/10"
+                          : "border-l-amber-500"
                       }`}
                     >
                       {/* Name & Attendance (3.6: No STT column, no studentId subtext) */}
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-white">{student.fullName}</span>
+                          <span className="font-bold text-white">{student.fullName}</span>
                           {!student.isActive && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
                               Nghỉ/Bảo lưu
@@ -2356,19 +2357,19 @@ ${homeworkDetails}
                         <div className="mt-2 flex items-center gap-1.5">
                           <button
                             onClick={() => handleAttendanceChange(student.studentId)}
-                            className={`px-2 py-0.5 rounded text-[11px] font-semibold transition cursor-pointer ${
+                            className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition cursor-pointer ${
                               isPresent
-                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                ? "bg-emerald-500 text-white shadow-sm"
                                 : isAbsent
-                                ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-                                : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                ? "bg-rose-500 text-white shadow-sm"
+                                : "bg-amber-400 text-slate-950 shadow-sm"
                             }`}
                           >
                             {isPresent
                               ? "✓ Có mặt"
                               : isAbsent
                               ? "✕ Nghỉ học"
-                              : "? Chưa điểm danh"}
+                              : "! Chưa điểm danh"}
                           </button>
                         </div>
                       </td>
@@ -2423,8 +2424,8 @@ ${homeworkDetails}
                                 const unselectedClass =
                                   "bg-slate-800/80 text-slate-300 border-slate-700/80 hover:border-slate-500 hover:text-white";
                                 const selectedClass = isConstructive
-                                  ? "bg-amber-600/35 text-amber-200 border-amber-400 font-bold shadow-sm"
-                                  : "bg-emerald-600/35 text-emerald-200 border-emerald-400 font-bold shadow-sm";
+                                  ? "mindx-dark-btn bg-amber-600 text-white border-amber-500 font-bold shadow-sm"
+                                  : "mindx-dark-btn bg-emerald-600 text-white border-emerald-500 font-bold shadow-sm";
 
                                 return (
                                   <button
@@ -2516,7 +2517,7 @@ ${homeworkDetails}
                               {(student.status !== "INSUFFICIENT_INFO" ||
                                 Boolean(displayValue.trim())) && (
                                 <textarea
-                                  rows={6}
+                                  rows={5}
                                   value={displayValue}
                                   onChange={(e) =>
                                     handleTextEdit(student.studentId, "finalText", e.target.value)
@@ -2534,23 +2535,23 @@ ${homeworkDetails}
                       <td className="px-4 py-4 text-right space-y-2">
                         <div>
                           {student.status === "VERIFIED" ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            <span className="mindx-dark-keep inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-700 text-white shadow-sm">
                               <ShieldCheck className="w-3.5 h-3.5" /> Đã lưu LMS ✓
                             </span>
                           ) : student.status === "APPROVED" ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            <span className="mindx-dark-keep inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-700 text-white shadow-sm">
                               <Check className="w-3.5 h-3.5" /> Đã duyệt
                             </span>
                           ) : student.status === "SAVING" ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 animate-pulse">
+                            <span className="mindx-dark-keep inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-700 text-white animate-pulse">
                               Đang lưu...
                             </span>
                           ) : student.status === "FAILED" ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                            <span className="mindx-dark-keep inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-700 text-white">
                               Thất bại
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                            <span className="mindx-dark-keep inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-700 text-white">
                               Bản nháp
                             </span>
                           )}
@@ -2561,7 +2562,7 @@ ${homeworkDetails}
                             <button
                               onClick={() => handleApprove(student.studentId)}
                               disabled={!student.finalText || student.status === "INSUFFICIENT_INFO"}
-                              className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-semibold transition cursor-pointer"
+                              className="mindx-dark-btn px-3.5 py-1 rounded-md bg-indigo-950 hover:bg-indigo-900 disabled:opacity-40 text-white text-xs font-bold transition cursor-pointer"
                             >
                               Duyệt
                             </button>
@@ -2569,7 +2570,7 @@ ${homeworkDetails}
                             <button
                               onClick={() => handleSaveToLms(student.studentId)}
                               disabled={isSavingThis}
-                              className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
                             >
                               {isSavingThis ? (
                                 <RefreshCw className="w-3 h-3 animate-spin" />
@@ -2586,7 +2587,7 @@ ${homeworkDetails}
                             className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition cursor-pointer"
                           >
                             {copiedStudentId === student.studentId ? (
-                              <Check className="w-3 h-3 text-emerald-400" />
+                              <Check className="w-3 h-3 text-emerald-500" />
                             ) : (
                               <Copy className="w-3 h-3" />
                             )}
@@ -2610,10 +2611,10 @@ ${homeworkDetails}
       </div>
 
       {/* 5. Zalo Broadcast Preview Box (3.8: compact overflow menu for secondary actions) */}
-      <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+      <div className="mindx-card p-6 rounded-2xl space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 text-xl">📱</span>
+            <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 text-xl">📱</span>
             <div>
               <h2 className="text-base font-bold text-white">Thông báo chung gửi Nhóm Zalo</h2>
               <p className="text-xs text-slate-400">
@@ -2637,7 +2638,7 @@ ${homeworkDetails}
               type="button"
               onClick={() => btvnImageInputRef.current?.click()}
               disabled={isAnalyzingBtvnImage}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 disabled:opacity-50 text-amber-300 border border-amber-500/30 text-xs font-semibold transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-semibold shadow-sm transition cursor-pointer"
               title="Tải ảnh chụp danh sách nộp BTVN (Denise/LMS) để AI lọc các bạn 'Not submitted' (Tên đệm + Tên) và tự động nối Phần 2 vào cuối tin nhắn Zalo"
             >
               {isAnalyzingBtvnImage ? (
@@ -2647,7 +2648,7 @@ ${homeworkDetails}
               )}
               {isAnalyzingBtvnImage
                 ? "Đang đọc ảnh BTVN..."
-                : "Tải ảnh BTVN (Thêm Phần 2)"}
+                : "Tải ảnh BTVN"}
             </button>
 
             {(zaloBtvnPart2Text || isZaloManuallyEdited) && (
@@ -2690,7 +2691,7 @@ ${homeworkDetails}
 
             <button
               onClick={() => copyToClipboard(zaloBroadcastText)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition shadow-md shadow-emerald-600/20 cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition shadow-md cursor-pointer"
             >
               {copiedZalo ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copiedZalo ? "Đã sao chép tin nhắn Zalo!" : "Copy Thông báo Zalo"}
@@ -2700,7 +2701,7 @@ ${homeworkDetails}
 
         <div className="relative">
           <textarea
-            rows={16}
+            rows={14}
             value={zaloBroadcastText}
             onChange={(e) => {
               setIsZaloManuallyEdited(true);

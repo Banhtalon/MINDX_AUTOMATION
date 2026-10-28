@@ -247,16 +247,16 @@ export default function SyllabusConfigPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="p-6 rounded-2xl mindx-hero flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 shadow-md">
         <div className="flex items-start space-x-3">
-          <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-400">
+          <div className="p-3 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 shrink-0">
             <BookOpen className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">
+            <h1 className="text-2xl font-extrabold tracking-tight">
               Màn hình 4: Quản lý Giáo trình, Barem Chấm điểm & Bộ Thẻ Nhận Xét
             </h1>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-blue-100 mt-1">
               Quản lý nội dung từng buổi học, cấu hình Buổi Kiểm tra (Checkpoint), Đề bài & Barem
               chấm điểm và Bộ thẻ nhận xét nhanh 1 chạm theo từng hướng học.
             </p>
@@ -268,10 +268,10 @@ export default function SyllabusConfigPage() {
           <button
             type="button"
             onClick={() => setActiveTab("courses")}
-            className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+            className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm ${
               activeTab === "courses"
-                ? "bg-orange-600 text-white"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                ? "bg-amber-600 text-white mindx-dark-btn"
+                : "bg-white/95 text-slate-900 hover:bg-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 border border-slate-300/60 dark:border-slate-700"
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -281,10 +281,10 @@ export default function SyllabusConfigPage() {
           <button
             type="button"
             onClick={() => setActiveTab("rubrics")}
-            className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+            className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm ${
               activeTab === "rubrics"
-                ? "bg-cyan-600 text-white"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                ? "bg-amber-600 text-white mindx-dark-btn"
+                : "bg-white/95 text-slate-900 hover:bg-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 border border-slate-300/60 dark:border-slate-700"
             }`}
           >
             <ClipboardCheck className="w-4 h-4" />
@@ -294,10 +294,10 @@ export default function SyllabusConfigPage() {
           <button
             type="button"
             onClick={() => setActiveTab("quickTags")}
-            className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+            className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm ${
               activeTab === "quickTags"
-                ? "bg-purple-600 text-white"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                ? "bg-amber-600 text-white mindx-dark-btn"
+                : "bg-white/95 text-slate-900 hover:bg-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 border border-slate-300/60 dark:border-slate-700"
             }`}
           >
             <Tags className="w-4 h-4" />
@@ -330,7 +330,7 @@ export default function SyllabusConfigPage() {
       )}
 
       {loading ? (
-        <div className="p-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center space-x-3 text-slate-400">
+        <div className="p-12 rounded-2xl mindx-card flex items-center justify-center space-x-3 text-slate-400">
           <Loader2 className="w-5 h-5 animate-spin text-orange-400" />
           <span>Đang tải dữ liệu cấu hình...</span>
         </div>
@@ -342,9 +342,9 @@ export default function SyllabusConfigPage() {
           {activeTab === "courses" && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Left Sidebar: Course List */}
-              <div className="lg:col-span-4 p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
+              <div className="lg:col-span-4 p-5 rounded-2xl mindx-card space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300">
+                  <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-300">
                     Danh sách Khóa học ({courses.length})
                   </h2>
                   <button
@@ -368,40 +368,40 @@ export default function SyllabusConfigPage() {
                       setCourses((prev) => [...prev, nextCourse]);
                       setSelectedCourseIdx(courses.length);
                     }}
-                    className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold cursor-pointer"
+                    className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-sm cursor-pointer mindx-dark-btn"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Thêm khóa</span>
                   </button>
                 </div>
 
-                <div className="space-y-2 max-h-[540px] overflow-y-auto pr-1">
+                <div className="space-y-2.5 max-h-[580px] overflow-y-auto pr-1">
                   {courses.map((course, idx) => (
                     <div
                       key={idx}
                       onClick={() => setSelectedCourseIdx(idx)}
-                      className={`p-3 rounded-lg border transition-colors cursor-pointer ${
+                      className={`p-3.5 rounded-xl border transition-all cursor-pointer border-l-4 ${
                         selectedCourseIdx === idx
-                          ? "bg-orange-950/30 border-orange-500/70"
-                          : "bg-slate-950 border-slate-800 hover:border-slate-700"
+                          ? "bg-amber-950/30 border-amber-500/70 border-l-amber-600 shadow-sm"
+                          : "bg-slate-950 border-slate-800 hover:border-slate-700 border-l-rose-500"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-orange-400 text-sm">
+                        <span className="font-extrabold text-orange-400 text-sm">
                           {course.courseCode}
                         </span>
                         <div className="flex items-center gap-1.5">
                           {course.checkpointSessions && course.checkpointSessions.length > 0 && (
-                            <span className="px-1.5 py-0.5 rounded bg-amber-950/70 border border-amber-700/60 text-amber-300 text-[10px] font-semibold">
-                              🎯 CP: {course.checkpointSessions.join(", ")}
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold mindx-badge-amber">
+                              ⚡ CP: {course.checkpointSessions.join(", ")}
                             </span>
                           )}
-                          <span className="text-xs text-slate-400">
+                          <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-400">
                             {course.sessions.length} buổi
                           </span>
                         </div>
                       </div>
-                      <div className="text-xs font-medium text-slate-200 mt-1 truncate">
+                      <div className="text-xs font-semibold text-slate-200 mt-1.5 truncate">
                         {course.courseName}
                       </div>
                     </div>
@@ -412,7 +412,7 @@ export default function SyllabusConfigPage() {
                   type="button"
                   onClick={() => handleSaveSection("courses")}
                   disabled={savingSection === "courses"}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold cursor-pointer"
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold shadow-sm cursor-pointer mindx-dark-btn"
                 >
                   {savingSection === "courses" ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -424,7 +424,7 @@ export default function SyllabusConfigPage() {
               </div>
 
               {/* Right Detail Editor: Course Metadata & Sessions */}
-              <div className="lg:col-span-8 p-6 rounded-xl bg-slate-900 border border-slate-800 space-y-5">
+              <div className="lg:col-span-8 p-6 rounded-2xl mindx-card space-y-5">
                 {!activeCourse ? (
                   <div className="text-center text-slate-400 py-12 text-sm">
                     Hãy chọn một khóa học bên trái hoặc bấm &ldquo;Thêm khóa&rdquo;.
@@ -432,7 +432,7 @@ export default function SyllabusConfigPage() {
                 ) : (
                   <>
                     <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                      <h3 className="text-base font-bold text-white">
+                      <h3 className="text-base font-extrabold text-white">
                         Chi tiết Khóa học:{" "}
                         <span className="text-orange-400">{activeCourse.courseCode}</span>
                       </h3>
@@ -442,7 +442,7 @@ export default function SyllabusConfigPage() {
                           setCourses((prev) => prev.filter((_, i) => i !== selectedCourseIdx));
                           setSelectedCourseIdx(0);
                         }}
-                        className="flex items-center space-x-1 px-2.5 py-1 rounded bg-rose-950/60 hover:bg-rose-900/70 text-rose-300 border border-rose-800 text-xs cursor-pointer"
+                        className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs shadow-sm cursor-pointer mindx-dark-btn"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Xóa khóa này</span>
@@ -451,7 +451,7 @@ export default function SyllabusConfigPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">
+                        <label className="block text-xs font-semibold text-slate-400 mb-1">
                           Mã khóa (VD: PTA, PTB, JSB, ROB...)
                         </label>
                         <input
@@ -465,12 +465,14 @@ export default function SyllabusConfigPage() {
                               )
                             );
                           }}
-                          className="w-full px-3 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs font-bold"
+                          className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-bold"
                         />
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-xs text-slate-400 mb-1">Tên khóa học</label>
+                        <label className="block text-xs font-semibold text-slate-400 mb-1">
+                          Tên khóa học
+                        </label>
                         <input
                           type="text"
                           value={activeCourse.courseName}
@@ -482,13 +484,15 @@ export default function SyllabusConfigPage() {
                               )
                             );
                           }}
-                          className="w-full px-3 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs"
+                          className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-medium"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs text-slate-400 mb-1">Mô tả khóa học</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">
+                        Mô tả khóa học
+                      </label>
                       <input
                         type="text"
                         value={activeCourse.description}
@@ -500,15 +504,15 @@ export default function SyllabusConfigPage() {
                             )
                           );
                         }}
-                        className="w-full px-3 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs"
+                        className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"
                       />
                     </div>
 
                     {/* Checkpoint Sessions Selector */}
-                    <div className="p-3.5 rounded-lg bg-slate-950 border border-amber-800/50 space-y-2.5">
+                    <div className="p-4 rounded-xl mindx-warm-box space-y-2.5">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
-                          <div className="text-xs font-bold text-amber-300">
+                          <div className="text-xs font-extrabold text-amber-300">
                             🎯 Cấu hình Buổi Kiểm tra / Checkpoint (từ Buổi 1 đến Buổi 13)
                           </div>
                           <div className="text-[11px] text-slate-400 mt-0.5">
@@ -528,7 +532,7 @@ export default function SyllabusConfigPage() {
                                 )
                               );
                             }}
-                            className="px-2 py-1 rounded bg-cyan-950/60 hover:bg-cyan-900/70 border border-cyan-700/60 text-cyan-200 text-[11px] font-semibold cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-bold cursor-pointer shadow-sm mindx-dark-btn"
                           >
                             Mẫu Lập trình (5, 9)
                           </button>
@@ -543,7 +547,7 @@ export default function SyllabusConfigPage() {
                                 )
                               );
                             }}
-                            className="px-2 py-1 rounded bg-orange-950/60 hover:bg-orange-900/70 border border-orange-700/60 text-orange-200 text-[11px] font-semibold cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold cursor-pointer shadow-sm mindx-dark-btn"
                           >
                             Mẫu Robotics (4, 8)
                           </button>
@@ -578,13 +582,13 @@ export default function SyllabusConfigPage() {
                                   })
                                 );
                               }}
-                              className={`px-2.5 py-1 rounded text-xs font-semibold border transition-colors cursor-pointer ${
+                              className={`px-3 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                                 isChecked
-                                  ? "bg-amber-600/30 border-amber-400 text-amber-200"
-                                  : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
+                                  ? "bg-amber-600 border-amber-700 text-white shadow-sm mindx-dark-btn"
+                                  : "bg-slate-900 border-slate-800 text-slate-400 hover:border-amber-400"
                               }`}
                             >
-                              {isChecked ? `🎯 Buổi ${sessNum}` : `Buổi ${sessNum}`}
+                              {isChecked ? `⚡ Buổi ${sessNum}` : `Buổi ${sessNum}`}
                             </button>
                           );
                         })}
@@ -594,7 +598,7 @@ export default function SyllabusConfigPage() {
                     {/* Sessions List */}
                     <div className="space-y-3 pt-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-slate-300">
                           Danh sách Buổi học ({activeCourse.sessions.length} buổi linh hoạt)
                         </span>
                         <button
@@ -618,7 +622,7 @@ export default function SyllabusConfigPage() {
                               )
                             );
                           }}
-                          className="flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-orange-300 border border-slate-700 text-xs font-semibold cursor-pointer"
+                          className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-sm cursor-pointer mindx-dark-btn"
                         >
                           <Plus className="w-3.5 h-3.5" />
                           <span>Thêm buổi học</span>
@@ -629,11 +633,11 @@ export default function SyllabusConfigPage() {
                         {activeCourse.sessions.map((sess, sIdx) => (
                           <div
                             key={sIdx}
-                            className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-3"
+                            className="p-4 rounded-xl bg-slate-950 border border-slate-800 border-l-4 border-l-amber-500 space-y-3"
                           >
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center space-x-2 flex-1">
-                                <span className="text-xs text-slate-400">Buổi số:</span>
+                                <span className="text-xs font-semibold text-slate-400">Buổi số:</span>
                                 <input
                                   type="number"
                                   min={1}
@@ -658,8 +662,8 @@ export default function SyllabusConfigPage() {
                                 {(activeCourse.checkpointSessions || []).includes(
                                   sess.sessionNumber
                                 ) && (
-                                  <span className="px-2 py-0.5 rounded bg-amber-950/70 border border-amber-600/60 text-amber-300 text-[11px] font-semibold shrink-0">
-                                    🎯 Checkpoint
+                                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold mindx-badge-amber shrink-0">
+                                    ⚡ Checkpoint
                                   </span>
                                 )}
                                 <input
@@ -699,7 +703,7 @@ export default function SyllabusConfigPage() {
                                     )
                                   );
                                 }}
-                                className="text-xs text-rose-400 hover:text-rose-300 px-2 py-1 cursor-pointer"
+                                className="text-xs font-semibold text-rose-500 hover:text-rose-400 px-2 py-1 cursor-pointer"
                               >
                                 Xóa buổi
                               </button>
@@ -707,7 +711,7 @@ export default function SyllabusConfigPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-[11px] text-slate-400 mb-1">
+                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
                                   Kiến thức trọng tâm (phân cách bằng dấu phẩy)
                                 </label>
                                 <input
@@ -731,12 +735,12 @@ export default function SyllabusConfigPage() {
                                       )
                                     );
                                   }}
-                                  className="w-full px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                                  className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs"
                                 />
                               </div>
 
                               <div>
-                                <label className="block text-[11px] text-slate-400 mb-1">
+                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
                                   Tóm tắt bài tập về nhà
                                 </label>
                                 <input
@@ -757,13 +761,30 @@ export default function SyllabusConfigPage() {
                                       )
                                     );
                                   }}
-                                  className="w-full px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                                  className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs"
                                 />
                               </div>
                             </div>
                           </div>
                         ))}
                       </div>
+                    </div>
+
+                    {/* Full-Width Bottom Save Bar matching Image 5 */}
+                    <div className="pt-3 border-t border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveSection("courses")}
+                        disabled={savingSection === "courses"}
+                        className="w-full flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-bold shadow-md cursor-pointer mindx-dark-btn"
+                      >
+                        {savingSection === "courses" ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Save className="w-4 h-4" />
+                        )}
+                        <span>Lưu Toàn Bộ Giáo Trình Xuống Hệ Thống</span>
+                      </button>
                     </div>
                   </>
                 )}
@@ -777,7 +798,7 @@ export default function SyllabusConfigPage() {
           {activeTab === "rubrics" && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Left Sidebar: Rubric List */}
-              <div className="lg:col-span-4 p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
+              <div className="lg:col-span-4 p-5 rounded-2xl mindx-card space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300">
                     Danh sách Barem ({rubrics.length})
@@ -812,7 +833,7 @@ export default function SyllabusConfigPage() {
                       setRubrics((prev) => [...prev, newRubric]);
                       setSelectedRubricIdx(rubrics.length);
                     }}
-                    className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold cursor-pointer"
+                    className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold cursor-pointer mindx-dark-btn"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Thêm Barem</span>
@@ -824,10 +845,10 @@ export default function SyllabusConfigPage() {
                     <div
                       key={idx}
                       onClick={() => setSelectedRubricIdx(idx)}
-                      className={`p-3 rounded-lg border transition-colors cursor-pointer ${
+                      className={`p-3 rounded-lg border border-l-4 transition-colors cursor-pointer ${
                         selectedRubricIdx === idx
-                          ? "bg-cyan-950/30 border-cyan-500/70"
-                          : "bg-slate-950 border-slate-800 hover:border-slate-700"
+                          ? "bg-cyan-950/30 border-cyan-500/70 border-l-cyan-500"
+                          : "bg-slate-950 border-slate-800 hover:border-slate-700 border-l-slate-500"
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -847,7 +868,7 @@ export default function SyllabusConfigPage() {
                   type="button"
                   onClick={() => handleSaveSection("rubrics")}
                   disabled={savingSection === "rubrics"}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold cursor-pointer"
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold cursor-pointer mindx-dark-btn"
                 >
                   {savingSection === "rubrics" ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -859,7 +880,7 @@ export default function SyllabusConfigPage() {
               </div>
 
               {/* Right Editor: Rubric Details & Criteria */}
-              <div className="lg:col-span-8 p-6 rounded-xl bg-slate-900 border border-slate-800 space-y-5">
+              <div className="lg:col-span-8 p-6 rounded-2xl mindx-card space-y-5">
                 {!activeRubric ? (
                   <div className="text-center text-slate-400 py-12 text-sm">
                     Hãy chọn một Barem bên trái hoặc bấm &ldquo;Thêm Barem&rdquo;.
@@ -1176,7 +1197,7 @@ export default function SyllabusConfigPage() {
           {/* TAB 3: QUẢN LÝ BỘ THẺ NHẬN XÉT NHANH (QUICK TAGS)          */}
           {/* ========================================================= */}
           {activeTab === "quickTags" && (
-            <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 space-y-5">
+            <div className="p-6 rounded-2xl mindx-card space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
                 <div>
                   <h2 className="text-base font-bold text-white">

@@ -4350,22 +4350,27 @@ export default function FinalProjectPage() {
       )}
 
       {/* BƯỚC 1: Chọn lớp -> Chọn buổi 12/13/14 -> Chọn thư mục và kiểm tra học viên */}
-      <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800">
-          <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold">
-              Bước 1 / {totalStepsCount}
-            </span>
-            <h2 className="text-sm font-bold text-white">
-              Chọn Lớp &rarr; Chọn Buổi Nộp (12 / 13 / 14) &rarr; Chọn Thư Mục &amp; Khớp Học Viên
-            </h2>
+      <div className="rounded-2xl overflow-hidden shadow-md">
+        <div className="mindx-hero px-5 py-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <span className="mindx-badge-emerald px-2.5 py-0.5 rounded-full text-xs font-bold">
+                Bước 1 / {totalStepsCount}
+              </span>
+              <h2 className="text-base sm:text-lg font-extrabold text-white">
+                Chọn Lớp &rarr; Chọn Buổi Nộp (12 / 13 / 14) &rarr; Chọn Thư Mục &amp; Khớp Học Viên
+              </h2>
+            </div>
+            <p className="mindx-hero-sub text-xs">
+              Quét thư mục sản phẩm cuối khóa, chuẩn bị ảnh bìa &amp; đường dẫn sản phẩm, nộp SPCK Buổi 12–14 và đẩy Thư tổng kết Buổi 14.
+            </p>
           </div>
           <button
             type="button"
             onClick={handleScanTeacherClasses}
             disabled={isAnyOperationBusy}
             title="Quét các lớp đang dạy trên tài khoản giáo viên và chỉ lọc các lớp có buổi học >= 12"
-            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 border border-white/30 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
           >
             <RefreshCw
               className={`w-3.5 h-3.5 ${scanningTeacherClasses ? "animate-spin" : ""}`}
@@ -4376,6 +4381,7 @@ export default function FinalProjectPage() {
           </button>
         </div>
 
+        <div className="mindx-card p-5 space-y-4 rounded-b-2xl">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
           {/* 1A. Chọn Lớp */}
           <div className="md:col-span-4">
@@ -4616,6 +4622,7 @@ export default function FinalProjectPage() {
           )}
         </div>
         )}
+        </div>
       </div>
 
       {/* Status Alert Banner */}
@@ -4641,11 +4648,11 @@ export default function FinalProjectPage() {
       )}
 
       {/* BƯỚC 2: Chuẩn bị, xem lại bài & Công cụ tùy chọn thu gọn */}
-      <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
+      <div className="mindx-card-blue p-5 rounded-xl space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/50 text-purple-300 text-xs font-bold">
+              <span className="mindx-badge-blue px-2.5 py-0.5 rounded-full text-xs font-bold">
                 Bước 2 / {totalStepsCount}
               </span>
               <h2 className="text-sm font-bold text-white">
@@ -4653,7 +4660,7 @@ export default function FinalProjectPage() {
               </h2>
               <span className="text-xs text-slate-400">
                 • Đủ điều kiện nộp:{" "}
-                <strong className="text-emerald-400">{confirmedReadyStudentIds.length}</strong>/{rows.length}
+                <strong className="text-emerald-600 dark:text-emerald-400">{confirmedReadyStudentIds.length}</strong>/{rows.length}
               </span>
             </div>
             <p className="text-xs text-slate-400">
@@ -4752,7 +4759,7 @@ export default function FinalProjectPage() {
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold uppercase tracking-wider">
+                    <span className="mindx-dark-keep px-2 py-0.5 rounded-full bg-rose-700 text-white text-[10px] font-bold uppercase tracking-wider">
                       Cổng Thu Bài Học Sinh
                     </span>
                     <span className="text-xs font-bold text-white">
@@ -6010,11 +6017,11 @@ export default function FinalProjectPage() {
       </div>
 
       {/* BƯỚC 3: Nộp các bài đã chọn & Xem kết quả đầy đủ */}
-      <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
+      <div className="mindx-card-emerald p-5 rounded-xl space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold">
+              <span className="mindx-badge-emerald px-2.5 py-0.5 rounded-full text-xs font-bold">
                 Bước 3 / {totalStepsCount}
               </span>
               <h2 className="text-sm font-bold text-white">
@@ -6023,7 +6030,7 @@ export default function FinalProjectPage() {
             </div>
             <p className="text-xs text-slate-400">
               Hệ thống sẽ kiểm tra nội dung đã duyệt, nộp đúng{" "}
-              <strong className="text-emerald-400">Buổi {selectedSessionNumber}</strong> và đọc lại từ LMS để xác nhận lưu thật trước khi đánh dấu hoàn tất.
+              <strong className="text-emerald-600 dark:text-emerald-400">Buổi {selectedSessionNumber}</strong> và đọc lại từ LMS để xác nhận lưu thật trước khi đánh dấu hoàn tất.
             </p>
           </div>
 
@@ -6180,11 +6187,11 @@ export default function FinalProjectPage() {
 
       {/* BƯỚC 4 (RIÊNG BUỔI 14): Đánh giá Tổng kết Cuối khóa & Điểm Demo (Cột 2 LMS: "Nhận xét học sinh" / Thư từ MindX) */}
       {selectedSessionNumber === 14 && selectedClassId && (
-        <div className="p-5 rounded-xl bg-slate-900 border border-indigo-500/40 space-y-4">
+        <div className="mindx-card-purple p-5 rounded-xl space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
             <div className="space-y-1">
               <div className="flex items-center space-x-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/50 text-indigo-300 text-xs font-bold">
+                <span className="mindx-badge-blue px-2.5 py-0.5 rounded-full text-xs font-bold">
                   Bước 4 / 4 — Riêng Buổi 14 (Tổng kết cuối khóa)
                 </span>
                 <h2 className="text-sm font-bold text-white">
@@ -6201,7 +6208,7 @@ export default function FinalProjectPage() {
                 type="button"
                 disabled={isAnyOperationBusy}
                 onClick={() => handleGenerateSession14EvalAi()}
-                className="px-3.5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold flex items-center space-x-1.5 cursor-pointer"
+                className="px-3.5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm cursor-pointer"
               >
                 {generatingS14EvalAi ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -6215,7 +6222,7 @@ export default function FinalProjectPage() {
                 type="button"
                 disabled={isAnyOperationBusy}
                 onClick={() => handleApproveAndUploadSession14Eval()}
-                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center space-x-1.5 cursor-pointer"
+                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm cursor-pointer"
               >
                 {uploadingS14EvalLms ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -6260,19 +6267,19 @@ export default function FinalProjectPage() {
               return (
                 <div
                   key={ev.studentId}
-                  className="rounded-lg bg-slate-950 border border-slate-800 overflow-hidden"
+                  className="rounded-xl bg-slate-950 border border-slate-800 border-l-4 border-l-slate-800 dark:border-l-indigo-500 shadow-sm overflow-hidden"
                 >
                   <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-2 bg-slate-900/60">
                     <div className="flex flex-wrap items-center gap-2.5">
-                      <span className="text-xs font-bold text-white">{ev.fullName}</span>
-                      <span className="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-700/60 text-indigo-300 text-[11px] font-semibold">
+                      <span className="text-sm font-bold text-white">{ev.fullName}</span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-indigo-950 border border-indigo-700/60 text-indigo-300 text-[11px] font-semibold">
                         Điểm Demo: {ev.demoTotalScore} / 5.0
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-700/60 text-cyan-300 text-[11px] font-semibold">
+                      <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-700/60 text-cyan-300 text-[11px] font-semibold">
                         Điểm Năng lực [ĐNL]: {ev.competencyTotalScore} / 5.0
                       </span>
                       <span
-                        className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                           ev.status === "VERIFIED"
                             ? "bg-emerald-950 border border-emerald-600/60 text-emerald-300"
                             : ev.status === "APPROVED"
@@ -6299,7 +6306,7 @@ export default function FinalProjectPage() {
                         type="button"
                         disabled={isAnyOperationBusy}
                         onClick={() => handleGenerateSession14EvalAi([ev.studentId])}
-                        className="px-2.5 py-1 rounded bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/40 text-purple-200 text-xs font-semibold cursor-pointer disabled:opacity-50"
+                        className="mindx-dark-btn px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm cursor-pointer disabled:opacity-50"
                       >
                         ✨ AI Soạn riêng
                       </button>
@@ -6307,7 +6314,7 @@ export default function FinalProjectPage() {
                         type="button"
                         disabled={isAnyOperationBusy}
                         onClick={() => handleApproveAndUploadSession14Eval([ev.studentId])}
-                        className="px-2.5 py-1 rounded bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/40 text-emerald-200 text-xs font-semibold cursor-pointer disabled:opacity-50"
+                        className="mindx-dark-btn px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm cursor-pointer disabled:opacity-50"
                       >
                         🚀 Đẩy lên LMS
                       </button>
@@ -6319,7 +6326,7 @@ export default function FinalProjectPage() {
                             [ev.studentId]: !prev[ev.studentId],
                           }))
                         }
-                        className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold cursor-pointer"
                       >
                         {isExpanded ? "Thu gọn ▲" : "Chi tiết Điểm & Thư 3 phần ▼"}
                       </button>

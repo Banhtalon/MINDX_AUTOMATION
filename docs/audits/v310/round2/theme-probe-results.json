@@ -1,0 +1,102 @@
+[
+  {
+    "os": "light",
+    "app": "light",
+    "picker": {
+      "color": "rgb(15, 23, 42)",
+      "bg": "rgb(255, 255, 255)"
+    },
+    "input": {
+      "color": "rgb(15, 23, 42)",
+      "bg": "rgb(255, 255, 255)"
+    },
+    "pickerWrapper": "rgb(255, 255, 255)",
+    "count": {
+      "color": "rgb(255, 255, 255)",
+      "bg": "rgba(0, 0, 0, 0)"
+    },
+    "countBg": {
+      "color": "rgb(15, 23, 42)",
+      "bg": "rgb(255, 255, 255)"
+    },
+    "title": {
+      "color": "rgb(15, 23, 42)",
+      "bg": "rgba(0, 0, 0, 0)"
+    }
+  },
+  {
+    "os": "light",
+    "app": "dark",
+    "picker": {
+      "color": "rgb(255, 255, 255)",
+      "bg": "rgba(0, 0, 0, 0)"
+    },
+    "input": {
+      "color": "rgb(255, 255, 255)",
+      "bg": "rgba(0, 0, 0, 0)"
+    },
+    "pickerWrapper": "oklab(0.208 -0.00310889 -0.0418848 / 0.9)",
+    "count": {
+      "color": "rgb(255, 255, 255)",
+      "bg": "rgba(0, 0, 0, 0)"
+    },
+    "countBg": {
+      "color": "oklch(0.929 0.013 255.508)",
+      "bg": "oklch(0.129 0.042 264.695)"
+    },
+    "title": {
+      "color": "rgb(255, 255, 255)",
+      "bg": "rgba(0, 0, 0, 0)"
+    }
+  },
+  {
+    "os": "dark",
+    "app": "light",
+    "picker": {
+      "color": "rgb(15, 23, 42)",
+      "bg": "rgb(255, 255, 255)"
+    },
+    "input": {
+      "color": "rgb(15, 23, 42)",
+      "bg": "rgb(255, 255, 255)"
+    },
+    "pickerWrapper": "rgb(255, 255, 255)",
+    "count": {
+      "color": "rgb(255, 255, 255)",
+      "bg": "rgba(0, 0, 0, 0)"
+    },
+    "countBg": {
+      "color": "rgb(15, 23, 42)",
+      "bg": "rgb(255, 255, 255)"
+    },
+    "title": {
+      "color": "rgb(15, 23, 42)",
+      "bg": "rgba(0, 0, 0, 0)"
+    }
+  },
+  {
+    "os": "dark",
+    "app": "dark",
+    "picker": {
+      "color": "rgb(255, 255, 255)",
+      "bg": "rgba(0, 0, 0, 0)"
+    },
+    "input": {
+      "color": "rgb(255, 255, 255)",
+      "bg": "rgba(0, 0, 0, 0)"
+    },
+    "pickerWrapper": "oklab(0.208 -0.00310889 -0.0418848 / 0.9)",
+    "count": {
+      "color": "rgb(255, 255, 255)",
+      "bg": "rgba(0, 0, 0, 0)"
+    },
+    "countBg": {
+      "color": "oklch(0.929 0.013 255.508)",
+      "bg": "oklch(0.129 0.042 264.695)"
+    },
+    "title": {
+      "color": "rgb(255, 255, 255)",
+      "bg": "rgba(0, 0, 0, 0)"
+    }
+  }
+]

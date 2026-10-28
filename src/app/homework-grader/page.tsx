@@ -543,25 +543,25 @@ export default function HomeworkGraderPage() {
   return (
     <div className="space-y-6">
       {/* 1. Header & Class Selector */}
-      <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+      <div className="p-6 rounded-2xl mindx-hero shadow-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-2xl">
+            <span className="p-2.5 rounded-xl bg-sky-500/20 border border-sky-400/30 text-sky-300 text-2xl">
               📊
             </span>
             <div>
-              <h1 className="text-xl font-bold text-white tracking-wide">
+              <h1 className="text-xl font-extrabold tracking-wide">
                 Tự Chấm Bài Tập &amp; Bảng Điểm Báo Cáo Toàn Khóa
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-blue-100 mt-0.5">
                 Quét bảng điểm lớp &amp; xuất báo cáo • Tải bài tập về máy &amp; chấm tự động theo Barem
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-700 gap-2">
-              <span className="text-xs font-semibold text-slate-400">Lớp:</span>
+            <div className="flex items-center bg-white/95 dark:bg-slate-900 rounded-xl px-3.5 py-2 border border-slate-300 dark:border-slate-700 gap-2 shadow-sm">
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Lớp:</span>
               {!showCustomClassInput ? (
                 <select
                   value={classCode}
@@ -579,7 +579,7 @@ export default function HomeworkGraderPage() {
                     setClassId(val);
                   }}
                   disabled={isScraping || isFetchingClasses}
-                  className="bg-slate-800 text-sm font-bold text-white focus:outline-none cursor-pointer"
+                  className="bg-transparent text-sm font-extrabold text-slate-900 dark:text-white focus:outline-none cursor-pointer"
                 >
                   {Array.from(new Set([classCode, ...runningClasses].filter(Boolean))).map(
                     (code) => (
@@ -613,7 +613,7 @@ export default function HomeworkGraderPage() {
                         }
                       }
                     }}
-                    className="bg-transparent text-sm font-bold text-white focus:outline-none w-36 uppercase"
+                    className="bg-transparent text-sm font-bold text-slate-900 dark:text-white focus:outline-none w-36 uppercase"
                     placeholder="VD: VT-C4K-PTA12"
                     autoFocus
                   />
@@ -640,7 +640,7 @@ export default function HomeworkGraderPage() {
             <button
               onClick={handleScrapeScores}
               disabled={isScraping}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white text-sm font-semibold transition shadow-md shadow-blue-600/20 cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 text-white text-sm font-bold transition shadow-md cursor-pointer mindx-dark-btn"
             >
               <RefreshCw className={`w-4 h-4 ${isScraping ? "animate-spin" : ""}`} />
               {isScraping ? "Đang cào bảng điểm..." : "Cào dữ liệu điểm mới nhất"}
@@ -680,10 +680,10 @@ export default function HomeworkGraderPage() {
 
         {/* Single-Line Summary Bar (Replaces 6 Bulky Cards) */}
         {matrix && (
-          <div className="mt-4 pt-3.5 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="mt-4 pt-3.5 border-t border-white/15 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-slate-200 font-semibold">
-                👥 Học viên: <strong className="text-white">{matrix.summary.totalStudents}</strong>
+                👥 Học viên: <strong className="text-slate-900 dark:text-white">{matrix.summary.totalStudents}</strong>
               </span>
               <span className="px-2.5 py-1 rounded-md bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 font-semibold">
                 ✅ Đã chấm: <strong>{matrix.summary.gradedCells}</strong>
@@ -702,7 +702,7 @@ export default function HomeworkGraderPage() {
               </span>
             </div>
             {updatedAt && (
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-blue-100">
                 Cập nhật gần nhất: {updatedAt}
               </span>
             )}
@@ -711,13 +711,13 @@ export default function HomeworkGraderPage() {
       </div>
 
       {/* Tab Switcher: Tab 1 (Bảng Điểm Tổng Hợp) vs Tab 2 (Chấm Bài Tự Động) */}
-      <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900 border border-slate-800 w-fit">
+      <div className="flex items-center gap-2 p-1.5 rounded-xl mindx-card w-fit">
         <button
           type="button"
           onClick={() => setActiveTab("scores")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
             activeTab === "scores"
-              ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
+              ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 mindx-dark-btn"
               : "text-slate-400 hover:text-white hover:bg-slate-800"
           }`}
         >
@@ -727,9 +727,9 @@ export default function HomeworkGraderPage() {
         <button
           type="button"
           onClick={() => setActiveTab("grader")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
             activeTab === "grader"
-              ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+              ? "bg-purple-600 text-white shadow-md shadow-purple-600/20 mindx-dark-btn"
               : "text-slate-400 hover:text-white hover:bg-slate-800"
           }`}
         >
@@ -749,14 +749,14 @@ export default function HomeworkGraderPage() {
       ) : (
         <>
           {/* 2. Export & View Mode Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-slate-900 border border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl mindx-card">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-slate-400 mr-1">Chế độ xem:</span>
           <button
             onClick={() => setViewMode("both")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               viewMode === "both"
-                ? "bg-blue-600 text-white"
+                ? "bg-blue-600 text-white mindx-dark-btn"
                 : "bg-slate-800 text-slate-400 hover:text-white"
             }`}
           >
@@ -764,9 +764,9 @@ export default function HomeworkGraderPage() {
           </button>
           <button
             onClick={() => setViewMode("practice")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               viewMode === "practice"
-                ? "bg-blue-600 text-white"
+                ? "bg-blue-600 text-white mindx-dark-btn"
                 : "bg-slate-800 text-slate-400 hover:text-white"
             }`}
           >
@@ -774,9 +774,9 @@ export default function HomeworkGraderPage() {
           </button>
           <button
             onClick={() => setViewMode("quiz")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               viewMode === "quiz"
-                ? "bg-blue-600 text-white"
+                ? "bg-blue-600 text-white mindx-dark-btn"
                 : "bg-slate-800 text-slate-400 hover:text-white"
             }`}
           >
@@ -808,7 +808,7 @@ export default function HomeworkGraderPage() {
               type="button"
               onClick={() => handleExportFile(exportFormat)}
               disabled={!isMatrixMatchedWithSelection}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition cursor-pointer mindx-dark-btn"
             >
               <FileSpreadsheet className="w-4 h-4" />
               <span>Xuất file</span>
@@ -818,32 +818,32 @@ export default function HomeworkGraderPage() {
       </div>
 
       {/* 3. Score Matrix Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div className="mindx-card rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-300">
-            <thead className="bg-slate-950 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
+            <thead className="mindx-thead text-xs uppercase font-bold tracking-wider">
               <tr>
-                <th className="px-3 py-3.5 w-12 text-center sticky left-0 bg-slate-950 z-10">
+                <th className="px-3 py-3.5 w-12 text-center sticky left-0 bg-[#172554] z-10">
                   STT
                 </th>
-                <th className="px-4 py-3.5 min-w-[200px] sticky left-12 bg-slate-950 z-10 border-r border-slate-800">
+                <th className="px-4 py-3.5 min-w-[200px] sticky left-12 bg-[#172554] z-10 border-r border-slate-700/60">
                   Học viên
                 </th>
                 {matrix?.columns?.map((col) => (
                   <th
                     key={col.columnId}
-                    className="px-3 py-3.5 min-w-[135px] text-center border-r border-slate-800/60"
+                    className="px-3 py-3.5 min-w-[135px] text-center border-r border-slate-700/60"
                     title={col.title}
                   >
-                    <div className="font-bold text-slate-200 truncate max-w-[150px] mx-auto">
+                    <div className="font-bold text-white truncate max-w-[150px] mx-auto">
                       {col.title}
                     </div>
                   </th>
                 ))}
-                <th className="px-3 py-3.5 w-28 text-center bg-slate-950/90 font-bold text-emerald-400">
+                <th className="px-3 py-3.5 w-28 text-center bg-[#172554] font-bold text-emerald-300">
                   TB Thực hành
                 </th>
-                <th className="px-3 py-3.5 w-24 text-center bg-slate-950/90 font-bold text-sky-400">
+                <th className="px-3 py-3.5 w-24 text-center bg-[#172554] font-bold text-sky-300">
                   TB Quiz
                 </th>
               </tr>
@@ -851,7 +851,7 @@ export default function HomeworkGraderPage() {
             <tbody className="divide-y divide-slate-800">
               {matrix && matrix.rows.length > 0 ? (
                 matrix.rows.map((student, idx) => (
-                  <tr key={student.studentId} className="hover:bg-slate-850/60 transition">
+                  <tr key={student.studentId} className="hover:bg-slate-850/60 transition border-l-4 border-l-sky-500">
                     <td className="px-3 py-3.5 text-center font-mono text-xs text-slate-500 sticky left-0 bg-slate-900">
                       {String(idx + 1).padStart(2, "0")}
                     </td>
@@ -900,7 +900,7 @@ export default function HomeworkGraderPage() {
       {/* 4. Submission Detail Modal */}
       {selectedDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+          <div className="mindx-card rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-base font-bold text-white">

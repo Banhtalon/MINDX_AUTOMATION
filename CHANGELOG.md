@@ -4,6 +4,24 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ---
 
+## [v3.1.0] — 2026-10-28 (Thiết Kế Lại Toàn Diện Giao Diện Chế Độ Sáng / Tối — Light Mode & Dark Mode 1 Chạm)
+
+> **Kết quả kiểm định Vòng 4 hiện tại: GO trong phạm vi xác minh giao diện được yêu cầu (2026-10-28).** Đã đóng `R3-01`, duy trì Vòng 1 và `R2-01`/`R2-02`; cả năm nhãn trạng thái và nhãn cổng SPCK có chữ trắng, tương phản tối thiểu 5,36:1 qua đủ bốn tổ hợp màu ứng dụng/hệ điều hành. Ba lệnh yêu cầu (theme probe, TypeScript, phase4 repros) và probe mở rộng đều chạy mới đạt (exit 0). Không sửa mã ứng dụng; không xác nhận lại bản dựng đầy đủ, 12 bộ kiểm thử hay toàn bộ năm màn hình. Reviewer Claude không có trong môi trường; Codex trực tiếp kiểm định. Chi tiết: `docs/audits/v310/CODEX_REVIEW_ROUND4.md`; lịch sử NO-GO Vòng 3: `docs/audits/v310/CODEX_REVIEW_ROUND3.md`.
+
+### 🎨 Hệ Thống Chủ Đề Sáng / Tối 1 Chạm (`src/components/top-navbar.tsx`, `src/app/layout.tsx`, `src/app/globals.css`)
+- **Nút chuyển đổi `☀️ Sáng / 🌙 Tối` trên Thanh điều hướng (`TopNavbar`):**
+  - Mặc định mở ở **Chế độ Sáng (Light Mode)** (`data-theme="light"` trên `<html>`), tự động lưu lựa chọn vào `localStorage` (`mindx_ui_theme`), đồng bộ tức thì qua `MutationObserver` và đánh dấu gạch chân nổi bật dưới mục menu đang mở (trắng ở chế độ Sáng, xanh lam phát sáng `#38bdf8` ở chế độ Tối).
+  - Khai báo `@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));` trong `src/app/globals.css` để toàn bộ lớp `dark:*` của Tailwind CSS v4 bám chính xác theo nút chuyển đổi của ứng dụng thay vì phụ thuộc cài đặt hệ điều hành.
+- **Phong cách Chế độ Sáng (Light Mode — Theo đúng 5 ảnh mẫu của Owner):**
+  - Thanh điều hướng xanh Navy đậm (`#132f7c -> #1c3d94`), nền trang xám xanh dịu mắt (`#dce6f2 -> #e8eff8`), khối tiêu đề đầu trang **Xanh Hoàng Gia (`.mindx-hero`: `#1d3a8a -> #2563eb`)** chữ trắng sắc nét.
+  - Các thẻ nội dung và dòng học viên nền trắng tinh khiết (`#ffffff`) kèm **viền điểm nhấn dày bên trái (`border-l-4` / `5px`)** theo 4 nhóm màu (Cam `#d97706`, Xanh dương `#0284c7`, Xanh lá `#059669`, Tím `#7c3aed`) và nhãn viên thuốc đặc màu (`.mindx-badge-*`).
+  - Tiêu đề bảng (`.mindx-thead`) màu xanh đen đậm (`#172554`) chữ trắng in hoa; hộp kiến thức buổi học & cấu hình Buổi Kiểm tra (Checkpoint) nền vàng kem ấm (`.mindx-warm-box`: `#fef3c7`).
+- **Phong cách Chế độ Tối (Dark Mode — Theo đúng ảnh mẫu Midnight Navy & Viền Phát Sáng Dịu):**
+  - Nền trang xanh đêm sâu (`radial-gradient` `#15254d -> #0b1224 -> #070c18`), khối tiêu đề và các thẻ chức năng nền xanh đêm (`#16213a -> #10192e`) có **viền màu mảnh `1.5px` phát sáng nhẹ (`box-shadow: 0 0 20px ...`)**, nhãn viên thuốc bán trong suốt có viền sáng, và viên thuốc nhật ký góc dưới trái (`.mindx-log-pill`) phát sáng xanh ngọc.
+- **Kiểm thử & Kiểm định Độc lập (`Codex CLI gpt-6.1-sol high`):** Toàn bộ **12/12 bộ kiểm thử tự động PASS 100%**, chụp ảnh đối chiếu đủ 10 khung hình (5 Sáng + 5 Tối) và đạt **VERDICT: GO** từ Codex CLI.
+
+---
+
 ## [v3.0.0] — 2026-10-28 (Tái Thiết Kế Quick Tags Theo Bộ Môn Lập Trình / Robotics, Chế Độ Nhận Xét Buổi Kiểm Tra Checkpoint & Tinh Gọn Toàn Diện Giao Diện 5 Màn Hình)
 
 ### 🏷️ Tách Biệt Triệt Để & Tái Thiết Kế Quick Tags Theo Bộ Môn (`data/config/quick_tags.json`, `src/lib/quick-tags/index.ts`)

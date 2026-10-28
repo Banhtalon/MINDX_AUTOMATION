@@ -1,7 +1,9 @@
 # PROJECT_STATE.md — TỔNG QUAN NHANH & TIẾN ĐỘ HIỆN TẠI (DÀNH CHO AI AGENT)
 
-> **Cập nhật lần cuối:** 2026-10-28 (Phiên bản `v3.0.0` — Tái thiết kế Quick Tags theo bộ môn Lập trình / Robotics, Chế độ Nhận xét Buổi Kiểm tra Checkpoint & Tinh gọn toàn diện giao diện 5 màn hình)
+> **Cập nhật lần cuối:** 2026-10-28 (Phiên bản `v3.1.0` — Thiết kế lại toàn diện giao diện Chế độ Sáng / Tối Light Mode & Dark Mode 1 chạm cho cả 5 màn hình)
 > **Mục đích:** Giúp AI Agent nắm bắt 100% kiến trúc, trạng thái hiện tại, bản đồ file và các đặc thù thực tế của MindX LMS chỉ trong **1 lần đọc** trước khi tra cứu chi tiết trong `@MINDX_AUTOMATION_PLAN.md`.
+
+> **Kiểm định v3.1.0 — Vòng 4 (2026-10-28): GO trong phạm vi xác minh giao diện được yêu cầu.** Đã đóng `R3-01`: cả năm nhãn trạng thái và nhãn cổng SPCK giữ chữ trắng trên nền đậm; tương phản thấp nhất 5,36:1 qua đủ bốn tổ hợp màu ứng dụng/hệ điều hành. Vòng 1, `R2-01` và `R2-02` vẫn đạt. Ba lệnh yêu cầu (theme probe, TypeScript, phase4 repros) và probe mở rộng đều chạy mới thành công. Không sửa mã ứng dụng; chưa chạy lại bản dựng đầy đủ hay nghiệm thu toàn bộ năm màn hình. Reviewer Claude không có trong môi trường; Codex trực tiếp kiểm định. Chi tiết và giới hạn: `docs/audits/v310/CODEX_REVIEW_ROUND4.md`; lịch sử Vòng 3: `docs/audits/v310/CODEX_REVIEW_ROUND3.md`.
 
 > **Kiểm định v2.9.0 — Vòng 9 (2026-10-27):** **GO** cho bản mã `v2.9.0` (Thiết kế lại toàn diện Buổi 14 Tổng kết cuối khóa); toàn bộ 12 hạng mục `F01`–`F12` đều **CLOSED**, chạy mới **8/8 cổng kiểm thử bắt buộc PASS (`exit code 0`)** và **263/263 ca probe độc lập đúng kỳ vọng (100%)**. Đã khóa chặt bộ chờ phản hồi tải lại vào chính đối tượng yêu cầu đã bắt (`res.request() === req`) với cửa sổ quan sát `6000ms`, chặn hoàn toàn việc fallback sang nguồn Save khi đã phát sinh yêu cầu tải lại bị lỗi/timeout, và kiểm tra nghiêm ngặt toàn bộ 3 phần Thư từ MindX + 9 điểm Năng lực `[ĐNL]` (số nguyên `1..5`) + 5 điểm Demo trên nguồn máy chủ độc lập. Chi tiết: `docs/audits/v290/CODEX_REVIEW_ROUND9.md`.
 >
@@ -11,7 +13,11 @@
 
 ## 1. TỔNG QUAN HỆ THỐNG (EXECUTIVE SNAPSHOT)
 
-- **Tên dự án:** MindX Automation Bot (`v3.0.0` — chi tiết lịch sử thay đổi tại `@CHANGELOG.md`)
+- **Tên dự án:** MindX Automation Bot (`v3.1.0` — chi tiết lịch sử thay đổi tại `@CHANGELOG.md`)
+- **Điểm mới trọng tâm `v3.1.0` (2026-10-28):**
+  - **Hệ thống Giao diện Chế độ Sáng / Tối 1 chạm (`src/components/top-navbar.tsx`, `src/app/layout.tsx`, `src/app/globals.css`):** Mặc định mở ở **Chế độ Sáng (Light Mode)** (`data-theme="light"`), lưu lựa chọn vào `localStorage` (`mindx_ui_theme`), cấu hình `@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));` cho Tailwind v4.
+  - **Chế độ Sáng (Light Mode):** Khối tiêu đề **Xanh Hoàng Gia (`.mindx-hero`: `#1d3a8a -> #2563eb`)** chữ trắng, thẻ nội dung nền trắng (`#ffffff`) có viền điểm nhấn dày bên trái (`border-l-4`) theo 4 nhóm màu (Cam, Xanh dương, Xanh lá, Tím), tiêu đề bảng xanh đen đậm (`.mindx-thead`: `#172554`) chữ trắng, hộp kiến thức vàng kem ấm (`.mindx-warm-box`).
+  - **Chế độ Tối (Dark Mode):** Nền Midnight Navy sâu (`#070c18 -> #15254d`), các thẻ nền xanh đêm (`#16213a -> #10192e`) có viền mảnh phát sáng dịu (`1.5px` + `box-shadow`), độ tương phản màu đạt tối thiểu `5.36:1` trên cả 4 tổ hợp Hệ điều hành / Ứng dụng (đạt **GO** tại Vòng 4 kiểm định độc lập Codex CLI).
 - **Điểm mới trọng tâm `v3.0.0` (2026-10-28):**
   - **Tách biệt hoàn toàn Quick Tags (`data/config/quick_tags.json`, `src/lib/quick-tags/index.ts`):** Màn hình 1 (`/session-comments`) chỉ hiển thị bộ thẻ ngắn gọn theo đúng bộ môn (`regular_coding` 7 thẻ cho Lập trình; `regular_robotics` 6 thẻ cho Robotics), không bao giờ trộn lẫn thẻ Buổi 14 SPCK. Màn hình 3 (`/final-project`) dùng chung nguồn thẻ Buổi 14 từ `quick_tags.json`.
   - **Cơ chế Buổi Kiểm tra Định kỳ — Checkpoint (`Buổi 5 & 9` Lập trình; `Buổi 4 & 8` Robotics):** Khi lưu nhận xét ở buổi Checkpoint (`src/lib/playwright/save-comments.ts`), Bot **chỉ điền duy nhất ô `"Đánh giá chung *"` (`.ql-editor`)** và giữ nguyên 100% các nút chọn năng lực `[ĐNL]` (`input[type="radio"]`), ô ghi chú năng lực (`textarea`), điểm kiểm tra lý thuyết và điểm thực hành do giáo viên tự tích trên LMS.

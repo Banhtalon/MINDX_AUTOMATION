@@ -1,0 +1,286 @@
+[
+  {
+    "osTheme": "light",
+    "appTheme": "light",
+    "titles": [
+      {
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(23, 37, 84)",
+        "contrast": 14.694794518800467
+      },
+      {
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(23, 37, 84)",
+        "contrast": 14.694794518800467
+      }
+    ],
+    "count": {
+      "color": "rgb(15, 23, 43)",
+      "background": "rgb(255, 255, 255)",
+      "contrast": 17.8305532523795
+    },
+    "total": "7",
+    "picker": "rgb(15, 23, 42)",
+    "input": "rgb(15, 23, 42)",
+    "pickerContrast": {
+      "color": "rgb(15, 23, 42)",
+      "background": "rgb(255, 255, 255)",
+      "contrast": 17.85253496299567
+    },
+    "inputContrast": {
+      "color": "rgb(15, 23, 42)",
+      "background": "rgb(255, 255, 255)",
+      "contrast": 17.85253496299567
+    },
+    "portal": {
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(199, 0, 54)",
+      "contrast": 6.031551664969671
+    },
+    "statusBadges": [
+      {
+        "label": "Đã lưu LMS",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(0, 122, 85)",
+        "contrast": 5.363999913316052
+      },
+      {
+        "label": "Đã duyệt",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(67, 45, 215)",
+        "contrast": 8.091637084623738
+      },
+      {
+        "label": "Đang lưu",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(20, 71, 230)",
+        "contrast": 6.832214471392099
+      },
+      {
+        "label": "Thất bại",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(199, 0, 54)",
+        "contrast": 6.031551664969671
+      },
+      {
+        "label": "Bản nháp",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(49, 65, 88)",
+        "contrast": 10.356927400589216
+      }
+    ]
+  },
+  {
+    "osTheme": "light",
+    "appTheme": "dark",
+    "titles": [
+      {
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(13, 22, 43)",
+        "contrast": 17.99855285750166
+      },
+      {
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(13, 22, 43)",
+        "contrast": 17.99855285750166
+      }
+    ],
+    "count": {
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(2, 6, 24)",
+      "contrast": 20.15701984292255
+    },
+    "total": "7",
+    "picker": "rgb(255, 255, 255)",
+    "input": "rgb(255, 255, 255)",
+    "pickerContrast": {
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(16, 23, 43)",
+      "contrast": 17.804548295438966
+    },
+    "inputContrast": {
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(16, 23, 43)",
+      "contrast": 17.804548295438966
+    },
+    "portal": {
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(199, 0, 54)",
+      "contrast": 6.031551664969671
+    },
+    "statusBadges": [
+      {
+        "label": "Đã lưu LMS",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(0, 122, 85)",
+        "contrast": 5.363999913316052
+      },
+      {
+        "label": "Đã duyệt",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(67, 45, 215)",
+        "contrast": 8.091637084623738
+      },
+      {
+        "label": "Đang lưu",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(20, 71, 230)",
+        "contrast": 6.832214471392099
+      },
+      {
+        "label": "Thất bại",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(199, 0, 54)",
+        "contrast": 6.031551664969671
+      },
+      {
+        "label": "Bản nháp",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(49, 65, 88)",
+        "contrast": 10.356927400589216
+      }
+    ]
+  },
+  {
+    "osTheme": "dark",
+    "appTheme": "light",
+    "titles": [
+      {
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(23, 37, 84)",
+        "contrast": 14.694794518800467
+      },
+      {
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(23, 37, 84)",
+        "contrast": 14.694794518800467
+      }
+    ],
+    "count": {
+      "color": "rgb(15, 23, 43)",
+      "background": "rgb(255, 255, 255)",
+      "contrast": 17.8305532523795
+    },
+    "total": "7",
+    "picker": "rgb(15, 23, 42)",
+    "input": "rgb(15, 23, 42)",
+    "pickerContrast": {
+      "color": "rgb(15, 23, 42)",
+      "background": "rgb(255, 255, 255)",
+      "contrast": 17.85253496299567
+    },
+    "inputContrast": {
+      "color": "rgb(15, 23, 42)",
+      "background": "rgb(255, 255, 255)",
+      "contrast": 17.85253496299567
+    },
+    "portal": {
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(199, 0, 54)",
+      "contrast": 6.031551664969671
+    },
+    "statusBadges": [
+      {
+        "label": "Đã lưu LMS",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(0, 122, 85)",
+        "contrast": 5.363999913316052
+      },
+      {
+        "label": "Đã duyệt",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(67, 45, 215)",
+        "contrast": 8.091637084623738
+      },
+      {
+        "label": "Đang lưu",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(20, 71, 230)",
+        "contrast": 6.832214471392099
+      },
+      {
+        "label": "Thất bại",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(199, 0, 54)",
+        "contrast": 6.031551664969671
+      },
+      {
+        "label": "Bản nháp",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(49, 65, 88)",
+        "contrast": 10.356927400589216
+      }
+    ]
+  },
+  {
+    "osTheme": "dark",
+    "appTheme": "dark",
+    "titles": [
+      {
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(13, 22, 43)",
+        "contrast": 17.99855285750166
+      },
+      {
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(13, 22, 43)",
+        "contrast": 17.99855285750166
+      }
+    ],
+    "count": {
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(2, 6, 24)",
+      "contrast": 20.15701984292255
+    },
+    "total": "7",
+    "picker": "rgb(255, 255, 255)",
+    "input": "rgb(255, 255, 255)",
+    "pickerContrast": {
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(16, 23, 43)",
+      "contrast": 17.804548295438966
+    },
+    "inputContrast": {
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(16, 23, 43)",
+      "contrast": 17.804548295438966
+    },
+    "portal": {
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(199, 0, 54)",
+      "contrast": 6.031551664969671
+    },
+    "statusBadges": [
+      {
+        "label": "Đã lưu LMS",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(0, 122, 85)",
+        "contrast": 5.363999913316052
+      },
+      {
+        "label": "Đã duyệt",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(67, 45, 215)",
+        "contrast": 8.091637084623738
+      },
+      {
+        "label": "Đang lưu",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(20, 71, 230)",
+        "contrast": 6.832214471392099
+      },
+      {
+        "label": "Thất bại",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(199, 0, 54)",
+        "contrast": 6.031551664969671
+      },
+      {
+        "label": "Bản nháp",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(49, 65, 88)",
+        "contrast": 10.356927400589216
+      }
+    ]
+  }
+]
