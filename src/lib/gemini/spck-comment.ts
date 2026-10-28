@@ -6,6 +6,7 @@
  * and zero fabrication of presentation skills unless explicitly selected by the teacher).
  */
 
+import fs from "node:fs";
 import path from "node:path";
 import {
   assertClassHasSpckSession,
@@ -174,9 +175,35 @@ export function detectPresentationEvidence(
   const combined = stripVietnameseDiacritics(
     [...(quickTags || []), teacherNote || ""].join(" | ")
   );
-  return /(?:thuyet\s*trinh|trinh\s*bay|bao\s*ve|phan\s*bien|tra\s*loi\s*cau\s*hoi|noi\s*to|noi\s*ro|phong\s*thai|tu\s*tin\s*trinh\s*bay)/i.test(
+  return /(?:thuyet\s*trinh|trinh\s*bay|bao\s*ve|phan\s*bien|tra\s*loi\s*cau\s*hoi|noi\s*to|noi\s*ro|phong\s*thai|tu\s*tin\s*trinh\s*bay|slide|dien\s*dat|giai\s*thich\s*code|khi\s*duoc\s*hoi|tu\s*tin\s*hon\s*truoc\s*lop)/i.test(
     combined
   );
+}
+
+/**
+ * Formats a student's full name into the natural short call name used by MindX teachers
+ * (e.g. "Nguyễn Thiên Phúc" -> "Thiên Phúc", "Mccully Mac Dallas" -> "Dallas", "Lê Nguyên" -> "Lê Nguyên").
+ */
+export function formatSpckStudentCallName(fullName: string): string {
+  const words = String(fullName || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length === 0) return "Học viên";
+  if (words.length <= 2) return words.join(" ");
+
+  const hasVietDiacritics = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(
+    fullName
+  );
+  const firstAscii = stripVietnameseDiacritics(words[0]).toLowerCase();
+  const isVietSurname =
+    /^(nguyen|tran|le|pham|hoang|huynh|phan|vu|vo|dang|bui|do|ho|ngo|duong|ly|dinh|doan|luong|truong|mai|cao|to|ha|ta|chau|mach|lam|trinh|quach|luu|ton|khong)$/.test(
+      firstAscii
+    );
+  if (!hasVietDiacritics && !isVietSurname) {
+    return words[words.length - 1];
+  }
+  return words.slice(-2).join(" ");
 }
 
 /**
@@ -352,13 +379,102 @@ function buildPreliminaryProjectSummary(
   attachments: string[],
   studentFullName: string,
   anonymousToken: string,
-  peerNames: string[]
+  peerNames: string[],
+  localFolderPath?: string
 ): string {
-  if (!Array.isArray(attachments) || attachments.length === 0) {
-    return "Không có file mã nguồn đính kèm.";
+  const summaries: string[] = [];
+
+  if (localFolderPath && localFolderPath.trim()) {
+    try {
+      const safeDir = assertPathAllowed(localFolderPath);
+      if (fs.existsSync(safeDir) && !fs.lstatSync(safeDir).isSymbolicLink() && fs.statSync(safeDir).isDirectory()) {
+        const realSafeRoot = fs.realpathSync(safeDir);
+        const htmlFiles: string[] = [];
+        const cssFiles: string[] = [];
+        const jsFiles: string[] = [];
+        const walkDir = (dir: string, depth = 0) => {
+          if (depth > 3) return;
+          const entries = fs.readdirSync(dir, { withFileTypes: true });
+          for (const entry of entries) {
+            if (entry.name.startsWith("_spck_") || entry.name === "node_modules" || entry.name.startsWith(".")) {
+              continue;
+            }
+            if (entry.isSymbolicLink()) continue;
+            const full = path.join(dir, entry.name);
+            try {
+              assertPathAllowed(full);
+              const realChild = fs.realpathSync(full);
+              const rel = path.relative(realSafeRoot, realChild);
+              if (rel.startsWith("..") || path.isAbsolute(rel)) continue;
+            } catch {
+              continue;
+            }
+            if (entry.isDirectory()) {
+              walkDir(full, depth + 1);
+            } else {
+              const ext = path.extname(entry.name).toLowerCase();
+              if (ext === ".html" || ext === ".htm") htmlFiles.push(full);
+              else if (ext === ".css") cssFiles.push(full);
+              else if (ext === ".js") jsFiles.push(full);
+            }
+          }
+        };
+        walkDir(safeDir, 0);
+
+        if (htmlFiles.length > 0 || cssFiles.length > 0) {
+          const pageTitles: string[] = [];
+          let usesFlexbox = false;
+          let usesGrid = false;
+          let usesResponsive = false;
+
+          for (const hf of htmlFiles.slice(0, 6)) {
+            const rawHtml = fs.readFileSync(hf, "utf-8").slice(0, 12000);
+            const titleMatch = rawHtml.match(/<title[^>]*>([^<]{1,80})<\/title>/i);
+            const h1Match = rawHtml.match(/<h1[^>]*>([^<]{1,80})<\/h1>/i);
+            const extracted = (titleMatch?.[1] || h1Match?.[1] || "").replace(/\s+/g, " ").trim();
+            if (extracted && !/^document$/i.test(extracted)) {
+              pageTitles.push(extracted);
+            }
+            if (/display\s*:\s*flex|\bflex\b/i.test(rawHtml)) usesFlexbox = true;
+            if (/display\s*:\s*grid|\bgrid\b/i.test(rawHtml)) usesGrid = true;
+          }
+
+          for (const cf of cssFiles.slice(0, 4)) {
+            const rawCss = fs.readFileSync(cf, "utf-8").slice(0, 20000);
+            if (/display\s*:\s*(?:inline-)?flex/i.test(rawCss)) usesFlexbox = true;
+            if (/display\s*:\s*(?:inline-)?grid/i.test(rawCss)) usesGrid = true;
+            if (/@media\b/i.test(rawCss)) usesResponsive = true;
+          }
+
+          const layoutTechs = [
+            usesFlexbox ? "Flexbox" : "",
+            usesGrid ? "CSS Grid" : "",
+            usesResponsive ? "Responsive" : "",
+          ].filter(Boolean);
+
+          const webHighlight = [
+            `- Đặc trưng dự án Web: gồm ${htmlFiles.length} trang HTML${pageTitles.length > 0 ? ` (tiêu đề trang: ${Array.from(new Set(pageTitles)).slice(0, 3).join(", ")})` : ""}, ${cssFiles.length} file CSS, ${jsFiles.length} file JavaScript.`,
+            layoutTechs.length > 0
+              ? `- Kỹ thuật dàn trang phát hiện trong code: ${layoutTechs.join(", ")}.`
+              : "",
+          ]
+            .filter(Boolean)
+            .join("\n");
+
+          summaries.push(
+            anonymizeSpckText(webHighlight, studentFullName, anonymousToken, peerNames)
+          );
+        }
+      }
+    } catch {
+      // Ignore folder scan error
+    }
   }
 
-  const summaries: string[] = [];
+  if (!Array.isArray(attachments) || attachments.length === 0) {
+    return summaries.length > 0 ? summaries.join("\n") : "Không có file mã nguồn đính kèm.";
+  }
+
   const maxFilesToInspect = Math.min(2, attachments.length);
 
   for (let i = 0; i < maxFilesToInspect; i++) {
@@ -618,7 +734,8 @@ export class SpckCommentGenerator {
         item.attachments || [],
         item.fullName,
         anonymousToken,
-        peerNames
+        peerNames,
+        item.localFolderPath || initialSessionRow.localFolderPath
       );
       const historySummary = buildStudentLearningHistorySummary(
         normalizedClassId,
@@ -629,7 +746,9 @@ export class SpckCommentGenerator {
       );
 
       const presentationRuleInstruction = hasPresentationEvidence
-        ? `- Giáo viên CÓ cung cấp dữ kiện về thuyết trình: hãy viết nhận xét kỹ năng thuyết trình tự nhiên vào trường "presentationEvaluation" dựa sát theo thẻ/ghi chú của giáo viên.`
+        ? stageInfo.sessionNumber === 14
+          ? `- Giáo viên CÓ cung cấp dữ kiện về thuyết trình ở Buổi 14: hãy viết nhận xét "1. Về phần thuyết trình" (2–3 câu liền mạch) vào trường "presentationEvaluation" theo phong cách giáo viên thực tế: đánh giá sự chuẩn bị slide (mẫu thiết kế, bố cục rõ ràng, nội dung đầy đủ/sáng tạo), cách giới thiệu các nội dung chính & ý tưởng sản phẩm, và lời khuyên rèn luyện sự tự tin/diễn đạt hoặc tìm hiểu kỹ hơn về đoạn code trong sản phẩm để giải thích khi thuyết trình.`
+          : `- Giáo viên CÓ cung cấp dữ kiện về thuyết trình: hãy viết nhận xét kỹ năng thuyết trình tự nhiên vào trường "presentationEvaluation" dựa sát theo thẻ/ghi chú của giáo viên.`
         : `- NGHIÊM CẤM BỊA ĐẶT KỸ NĂNG THUYẾT TRÌNH: Giáo viên KHÔNG tích chọn hoặc ghi chú về kỹ năng thuyết trình. Trường "presentationEvaluation" BẮT BUỘC phải để chuỗi rỗng "" và tuyệt đối KHÔNG nhắc đến từ "thuyết trình", "trình bày trước lớp", "đám đông", "khán giả", "bảo vệ dự án" hay "phản biện" trong toàn bộ nhận xét.`;
 
       let stageSpecificInstruction = "";
@@ -651,6 +770,9 @@ ${
       } else {
         stageSpecificInstruction = `YÊU CẦU RIÊNG CHO BUỔI 14 (${stageInfo.stageLabel} - ${stageInfo.stageCode}):
 - Đây là nhận xét chính thức ghi vào **Học bạ tổng kết Sản phẩm cuối khóa** để Phụ huynh theo dõi kết quả học tập.
+- Phong cách viết chuẩn mẫu giáo viên MindX ở Buổi 14:
+  + Xưng là **"giáo viên"** (ví dụ: "giáo viên ghi nhận...", "giáo viên đánh giá cao..."), tuyệt đối KHÔNG xưng "thầy", "cô" hay "thầy/cô"; gọi học viên bằng tên gọi ("${anonymousToken}") kết hợp đại từ **"em"** (nhất quán dùng "em", hạn chế dùng "con" ở Buổi 14).
+  + Về phần sản phẩm cuối khóa (ghép từ attitudeSummary + productAndDesignEvaluation + technicalApplicationEvaluation): mở đầu nêu rõ "${anonymousToken} đã xây dựng/hoàn thiện sản phẩm/website [Tên đề tài] với giao diện đẹp mắt, bố cục rõ ràng/hợp lý...", nêu rõ cách sử dụng bố cục/kỹ thuật (như Flexbox, các trang chức năng, kiến thức HTML, CSS, JavaScript hoặc công cụ môn học đã vận dụng), ghi nhận sự sáng tạo/cố gắng/tiến bộ; nếu giáo viên có tích chọn hoặc ghi chú học viên còn phụ thuộc AI hoặc chưa hiểu sâu code thì nhắc nhở khéo léo ("Tuy nhiên, em còn phụ thuộc khá nhiều vào AI và chưa thực sự hiểu sâu phần cốt lõi của code. Nếu chủ động tự tìm hiểu, tự viết và nắm rõ cách hoạt động của các đoạn code hơn, em sẽ phát huy tốt hơn năng lực lập trình của mình.").
 - Nội dung bắt buộc thể hiện rõ ràng, mạch lạc: (1) **Đánh giá tổng quan & Sản phẩm của học viên có những gì** (đề tài dự án, các trang/màn hình giao diện, chức năng thực tế và kiến thức lập trình đã vận dụng); và (2) **Sản phẩm cần cải thiện những gì** (những điểm còn hạn chế, phần giao diện, tính năng hoặc mã nguồn cần trau chuốt, tối ưu thêm).
 - TUYỆT ĐỐI KHÔNG ghi cụm từ "Giai đoạn 2", "GĐ2", "Buổi 14", "đợt nộp" vào trong lời nhận xét đầu ra.
 - TUYỆT ĐỐI KHÔNG tự bịa lỗi kỹ thuật cụ thể nếu giáo viên không ghi chú, và KHÔNG tự khẳng định "sản phẩm hoàn hảo không có bất kỳ hạn chế nào" hay "chạy hoàn chỉnh tuyệt đối" khi thiếu dữ kiện.`;
@@ -780,29 +902,41 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi 
               hasLimitationEvidence,
               hasPerfectionEvidence
             );
+            cleaned = cleaned
+              .replace(/\bthầy\s*\/\s*cô\b/giu, (m) =>
+                m[0] === m[0].toUpperCase() ? "Giáo viên" : "giáo viên"
+              )
+              .replace(/\bthầy\s+cô\b/giu, (m) =>
+                m[0] === m[0].toUpperCase() ? "Giáo viên" : "giáo viên"
+              );
           }
           return cleaned.replace(/\s+/g, " ").trim();
         };
+
+        const displayStudentName =
+          stageInfo.sessionNumber === 14
+            ? formatSpckStudentCallName(item.fullName)
+            : item.fullName;
 
         let attitudeSummary = sanitizeOutputText(
           deAnonymizeSpckText(
             String(parsed.attitudeSummary || "").trim(),
             anonymousToken,
-            item.fullName
+            displayStudentName
           )
         );
         let productAndDesignEvaluation = sanitizeOutputText(
           deAnonymizeSpckText(
             String(parsed.productAndDesignEvaluation || "").trim(),
             anonymousToken,
-            item.fullName
+            displayStudentName
           )
         );
         let technicalApplicationEvaluation = sanitizeOutputText(
           deAnonymizeSpckText(
             String(parsed.technicalApplicationEvaluation || "").trim(),
             anonymousToken,
-            item.fullName
+            displayStudentName
           )
         );
         if (!hasPresentationEvidence) {
@@ -829,7 +963,7 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi 
               deAnonymizeSpckText(
                 String(parsed.presentationEvaluation || "").trim(),
                 anonymousToken,
-                item.fullName
+                displayStudentName
               )
             )
           : "";
@@ -850,10 +984,19 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi 
         if (
           attitudeSummary &&
           !attitudeSummary.includes(item.fullName) &&
+          !attitudeSummary.includes(displayStudentName) &&
           !productAndDesignEvaluation.includes(item.fullName) &&
-          !technicalApplicationEvaluation.includes(item.fullName)
+          !productAndDesignEvaluation.includes(displayStudentName) &&
+          !technicalApplicationEvaluation.includes(item.fullName) &&
+          !technicalApplicationEvaluation.includes(displayStudentName)
         ) {
-          if (/^Con\b/.test(attitudeSummary)) {
+          if (stageInfo.sessionNumber === 14) {
+            if (/^(?:Con|Em)\b/.test(attitudeSummary)) {
+              attitudeSummary = attitudeSummary.replace(/^(?:Con|Em)\b/, displayStudentName);
+            } else {
+              attitudeSummary = `${displayStudentName} — ${attitudeSummary}`;
+            }
+          } else if (/^Con\b/.test(attitudeSummary)) {
             attitudeSummary = attitudeSummary.replace(/^Con\b/, `Học viên ${item.fullName}`);
           } else if (/\bcon\b/.test(attitudeSummary)) {
             attitudeSummary = attitudeSummary.replace(/\bcon\b/, `con ${item.fullName}`);
@@ -862,16 +1005,45 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi 
           }
         }
 
-        const commentSections = [
-          attitudeSummary,
-          productAndDesignEvaluation,
-          technicalApplicationEvaluation,
-          hasPresentationEvidence && presentationEvaluation
-            ? presentationEvaluation
-            : "",
-        ].filter(Boolean);
-
-        const formattedTeacherComment = commentSections.join(" ").replace(/\s+/g, " ").trim();
+        let formattedTeacherComment = "";
+        if (stageInfo.sessionNumber === 14 && hasPresentationEvidence && presentationEvaluation) {
+          const productOnlyAttitude =
+            stripHallucinatedPresentationSentences(attitudeSummary) || attitudeSummary;
+          const productOnlyDesign =
+            stripHallucinatedPresentationSentences(productAndDesignEvaluation) ||
+            productAndDesignEvaluation;
+          const productOnlyTech =
+            stripHallucinatedPresentationSentences(technicalApplicationEvaluation) ||
+            technicalApplicationEvaluation;
+          const productBody = [productOnlyAttitude, productOnlyDesign, productOnlyTech]
+            .filter(Boolean)
+            .join(" ")
+            .replace(/\s+/g, " ")
+            .trim();
+          let normalizedPresentation = presentationEvaluation;
+          if (
+            !normalizedPresentation.includes(displayStudentName) &&
+            !normalizedPresentation.includes(item.fullName)
+          ) {
+            if (/^(?:Con|Em)\b/.test(normalizedPresentation)) {
+              normalizedPresentation = normalizedPresentation.replace(
+                /^(?:Con|Em)\b/,
+                displayStudentName
+              );
+            }
+          }
+          formattedTeacherComment = `1. Về phần thuyết trình\n${normalizedPresentation}\n2. Về phần sản phẩm cuối khóa\n${productBody}`;
+        } else {
+          const commentSections = [
+            attitudeSummary,
+            productAndDesignEvaluation,
+            technicalApplicationEvaluation,
+            hasPresentationEvidence && presentationEvaluation
+              ? presentationEvaluation
+              : "",
+          ].filter(Boolean);
+          formattedTeacherComment = commentSections.join(" ").replace(/\s+/g, " ").trim();
+        }
         const firstWords = anonymizeSpckText(
           attitudeSummary,
           item.fullName,

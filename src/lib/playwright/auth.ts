@@ -10,76 +10,153 @@ export interface AuthStatusResult {
   username: string;
 }
 
+export function parseUrlParts(rawUrl: string): { hostname: string; pathname: string } {
+  try {
+    const parsed = new URL(rawUrl);
+    return {
+      hostname: parsed.hostname.toLowerCase(),
+      pathname: parsed.pathname.toLowerCase(),
+    };
+  } catch {
+    return { hostname: "", pathname: "" };
+  }
+}
+
+export function isLoginHostOrPath(rawUrl: string, targetHost: string): boolean {
+  const { hostname, pathname } = parseUrlParts(rawUrl);
+  if (!hostname) return false;
+  const normalizedTargetHost = targetHost.toLowerCase();
+  if (
+    hostname.includes("base.mindx.edu.vn") ||
+    hostname.includes("id.mindx.edu.vn") ||
+    hostname.startsWith("auth.") ||
+    hostname.startsWith("sso.") ||
+    hostname.startsWith("login.")
+  ) {
+    return true;
+  }
+  if (
+    pathname.includes("/login") ||
+    pathname.includes("/signin") ||
+    pathname.includes("/auth")
+  ) {
+    return true;
+  }
+  return hostname !== normalizedTargetHost;
+}
+
 export class AuthService {
   /**
    * Checks whether the user is already authenticated on LMS or Teaching
    * using the persistent browser context.
+   * Strictly parses hostname and pathname (never trusting query strings like ?callbackUrl=...)
+   * and waits for client-side SSO redirects to settle before concluding authenticated status.
    */
   public async checkAuthStatus(system: "TEACHING" | "LMS"): Promise<AuthStatusResult> {
     const page = await browserManager.getPage();
     const targetUrl = system === "TEACHING" ? config.teachingUrl : config.lmsUrl;
     const username = system === "TEACHING" ? config.teachingUsername : config.lmsUsername;
+    const targetHost = parseUrlParts(targetUrl).hostname;
+
+    const pwdSelector =
+      system === "TEACHING"
+        ? SELECTORS.auth.teaching.passwordInput
+        : SELECTORS.auth.lms.passwordInput;
+    const indicatorSelector =
+      system === "TEACHING"
+        ? SELECTORS.auth.teaching.loggedInIndicator
+        : SELECTORS.auth.lms.loggedInIndicator;
 
     try {
       const currentUrl = page.url();
-      const targetHost = new URL(targetUrl).hostname;
-      if (!currentUrl.includes(targetHost)) {
-        await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
-        await page.waitForTimeout(1500);
-      }
+      const currentParts = parseUrlParts(currentUrl);
 
-      const activeUrl = page.url();
-      const isLoginUrl =
-        activeUrl.includes("/login") ||
-        activeUrl.includes("/signin") ||
-        activeUrl.includes("/auth");
-
-      // 1. Password input is the definitive sign of an unauthenticated login form
-      const pwdSelector =
-        system === "TEACHING"
-          ? SELECTORS.auth.teaching.passwordInput
-          : SELECTORS.auth.lms.passwordInput;
-      const hasPasswordInput = await page.locator(pwdSelector).first().isVisible().catch(() => false);
-
-      // If password input is visible or explicitly at /login, definitely logged out
-      if (hasPasswordInput || (isLoginUrl && !activeUrl.includes("/dashboard") && !activeUrl.includes("/admin"))) {
-        return { system, isAuthenticated: false, currentUrl: activeUrl, username };
-      }
-
-      // 2. Known authenticated application routes
-      const hasAppRoute =
-        activeUrl.includes("/dashboard") ||
-        activeUrl.includes("/admin") ||
-        activeUrl.includes("/classes") ||
-        activeUrl.includes("/class") ||
-        activeUrl.includes("/schedule") ||
-        activeUrl.includes("/teacher");
-
-      // 3. Check DOM indicators
-      const indicatorSelector =
-        system === "TEACHING"
-          ? SELECTORS.auth.teaching.loggedInIndicator
-          : SELECTORS.auth.lms.loggedInIndicator;
-
-      const indicator = page.locator(indicatorSelector).first();
-      const hasIndicator = await indicator.isVisible().catch(() => false);
-
-      // 4. Check for application content (sidebar, table, nav, avatar)
-      const hasAppContent = await page
-        .locator('table, nav, aside, .ant-layout-sider, .ant-menu, a[href*="class"], .class-card, .avatar, [data-testid="user-profile"], button:has-text("Đăng xuất")')
+      // If already sitting on a visible login form for this flow, return false immediately
+      const initialHasPwd = await page
+        .locator(pwdSelector)
         .first()
         .isVisible()
         .catch(() => false);
+      if (initialHasPwd && currentParts.hostname) {
+        const isRelevantLoginHost =
+          system === "LMS"
+            ? currentParts.hostname.includes("mindx.edu.vn")
+            : currentParts.hostname === targetHost;
+        if (isRelevantLoginHost) {
+          return { system, isAuthenticated: false, currentUrl, username };
+        }
+      }
 
-      const isAuthenticated = (hasAppRoute || hasIndicator || hasAppContent) && !hasPasswordInput;
+      // Navigate to target system if not currently on targetHost
+      if (currentParts.hostname !== targetHost || isLoginHostOrPath(currentUrl, targetHost)) {
+        await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
+        await page.waitForTimeout(1000);
+      }
+
+      // Poll up to 12 times (6s) to let client-side SPA session checks / SSO redirects settle
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const activeUrl = page.url();
+        const { hostname } = parseUrlParts(activeUrl);
+
+        const hasPasswordInput = await page
+          .locator(pwdSelector)
+          .first()
+          .isVisible()
+          .catch(() => false);
+
+        if (hasPasswordInput || isLoginHostOrPath(activeUrl, targetHost)) {
+          return { system, isAuthenticated: false, currentUrl: activeUrl, username };
+        }
+
+        const hasIndicator = await page
+          .locator(indicatorSelector)
+          .first()
+          .isVisible()
+          .catch(() => false);
+
+        const hasAppContent = await page
+          .locator(
+            'table, nav, aside, .MuiDrawer-docked, [data-testid="sidebar"], .ant-layout-sider, .ant-menu, a[href*="class"], .class-card, .avatar, [data-testid="user-profile"], button:has-text("Đăng xuất")'
+          )
+          .first()
+          .isVisible()
+          .catch(() => false);
+
+        if (hostname === targetHost && (hasIndicator || hasAppContent) && !hasPasswordInput) {
+          // Wait briefly to confirm no in-flight client-side redirect to base.mindx.edu.vn/login
+          await page.waitForTimeout(500);
+          const confirmUrl = page.url();
+          const confirmHasPwd = await page
+            .locator(pwdSelector)
+            .first()
+            .isVisible()
+            .catch(() => false);
+          if (!confirmHasPwd && !isLoginHostOrPath(confirmUrl, targetHost)) {
+            return {
+              system,
+              isAuthenticated: true,
+              currentUrl: confirmUrl,
+              username,
+            };
+          }
+          return {
+            system,
+            isAuthenticated: false,
+            currentUrl: confirmUrl,
+            username,
+          };
+        }
+
+        await page.waitForTimeout(500);
+      }
 
       return {
         system,
-        isAuthenticated,
-        currentUrl: activeUrl,
+        isAuthenticated: false,
+        currentUrl: page.url(),
         username,
       };
-    } catch (err) {
+    } catch {
       return {
         system,
         isAuthenticated: false,
@@ -107,48 +184,91 @@ export class AuthService {
       };
     }
 
-    try {
-      await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-      await page.waitForTimeout(1000);
+    const userInputSelector =
+      system === "TEACHING"
+        ? SELECTORS.auth.teaching.emailInput
+        : SELECTORS.auth.lms.usernameInput;
+    const passwordSelector =
+      system === "TEACHING"
+        ? SELECTORS.auth.teaching.passwordInput
+        : SELECTORS.auth.lms.passwordInput;
+    const submitSelector =
+      system === "TEACHING"
+        ? SELECTORS.auth.teaching.submitButton
+        : SELECTORS.auth.lms.submitButton;
 
-      // Check if already authenticated
-      const status = await this.checkAuthStatus(system);
-      if (status.isAuthenticated) {
-        return { success: true, message: `Đã đăng nhập sẵn trên ${system}` };
+    try {
+      const currentUrl = page.url();
+      const { hostname: currentHost } = parseUrlParts(currentUrl);
+      const targetHost = parseUrlParts(targetUrl).hostname;
+      const isAlreadyOnRelevantLoginForm =
+        (await page
+          .locator(passwordSelector)
+          .first()
+          .isVisible()
+          .catch(() => false)) &&
+        (system === "LMS"
+          ? currentHost.includes("mindx.edu.vn")
+          : currentHost === targetHost);
+
+      if (!isAlreadyOnRelevantLoginForm) {
+        await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+        await page.waitForTimeout(1000);
+
+        const status = await this.checkAuthStatus(system);
+        if (status.isAuthenticated) {
+          return { success: true, message: `Đã đăng nhập sẵn trên ${system}` };
+        }
       }
 
-      const userInputSelector =
-        system === "TEACHING"
-          ? SELECTORS.auth.teaching.emailInput
-          : SELECTORS.auth.lms.usernameInput;
-
-      // Fill username
-      const usernameInput = page.locator(userInputSelector).first();
-      await usernameInput.waitFor({ state: "visible", timeout: 10000 });
-      await usernameInput.fill(username);
-
-      // Fill password
-      const passwordSelector =
-        system === "TEACHING"
-          ? SELECTORS.auth.teaching.passwordInput
-          : SELECTORS.auth.lms.passwordInput;
+      // If LMS is on an intermediate landing screen with a Login button before redirecting to SSO form, click it
       const passwordInput = page.locator(passwordSelector).first();
-      await passwordInput.waitFor({ state: "visible", timeout: 10000 });
+      const isPwdReadySoon = await passwordInput
+        .waitFor({ state: "visible", timeout: 4000 })
+        .then(() => true)
+        .catch(() => false);
+
+      if (!isPwdReadySoon) {
+        const ssoEntryBtn = page
+          .locator(
+            'button:has-text("Đăng nhập"), button:has-text("Login"), a:has-text("Đăng nhập"), a:has-text("Login")'
+          )
+          .first();
+        if (await ssoEntryBtn.isVisible().catch(() => false)) {
+          await ssoEntryBtn.click().catch(() => {});
+          await page.waitForTimeout(1500);
+        }
+      }
+
+      // Fill username reliably (clearing any browser autofill first so React state updates)
+      const usernameInput = page.locator(userInputSelector).first();
+      await usernameInput.waitFor({ state: "visible", timeout: 15000 });
+      await usernameInput.click({ force: true }).catch(() => {});
+      await usernameInput.fill("");
+      await usernameInput.fill(username);
+      if ((await usernameInput.inputValue().catch(() => "")).trim() !== username.trim()) {
+        await usernameInput.pressSequentially(username, { delay: 15 });
+      }
+
+      // Fill password reliably
+      await passwordInput.waitFor({ state: "visible", timeout: 15000 });
+      await passwordInput.click({ force: true }).catch(() => {});
+      await passwordInput.fill("");
       await passwordInput.fill(password);
+      if (!(await passwordInput.inputValue().catch(() => ""))) {
+        await passwordInput.pressSequentially(password, { delay: 15 });
+      }
 
       // Dismiss any toasts before clicking submit
       await interceptor.dismissForbiddenToast();
 
       // Click submit
-      const submitSelector =
-        system === "TEACHING"
-          ? SELECTORS.auth.teaching.submitButton
-          : SELECTORS.auth.lms.submitButton;
       const submitBtn = page.locator(submitSelector).first();
+      await submitBtn.waitFor({ state: "visible", timeout: 10000 });
       await submitBtn.click();
 
-      // Wait for SSO navigation / redirect and indicator (up to 10s)
-      for (let attempt = 0; attempt < 5; attempt++) {
+      // Wait for SSO navigation / redirect and indicator (up to 16s)
+      for (let attempt = 0; attempt < 8; attempt++) {
         await page.waitForTimeout(2000);
         const postStatus = await this.checkAuthStatus(system);
         if (postStatus.isAuthenticated) {

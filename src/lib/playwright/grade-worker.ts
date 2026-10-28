@@ -255,7 +255,9 @@ export class HomeworkGradeWorker {
             );
           }
 
-          // Locate student row & target cell on LMS #tabpanel-3
+          // Ensure no leftover dialog or toast is open before locating student row & target cell on LMS #tabpanel-3
+          await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+
           const drawer = page
             .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
             .first();
@@ -267,28 +269,37 @@ export class HomeworkGradeWorker {
           const exactIdRegex = new RegExp(`(^|[^a-zA-Z0-9_-])${escapedStuId}([^a-zA-Z0-9_-]|$)`, "i");
           const exactSubIdRegex = new RegExp(`(^|[^a-zA-Z0-9_-])${escapedSubId}([^a-zA-Z0-9_-]|$)`, "i");
 
-          const rowItems = context.locator(
-            'div:has(> div > svg[data-testid="ExpandMoreIcon"]), table tbody tr'
-          );
-          const rowCount = await rowItems.count().catch(() => 0);
-          let targetCellLocator: any = null;
-
-          for (let r = 0; r < rowCount; r++) {
-            const item = rowItems.nth(r);
-            const rowContainer =
-              (await item.locator("..").locator("..").count().catch(() => 0)) > 0
+          const findTargetCellLocator = async () => {
+            const rowItems = context.locator(
+              'div:has(> div > svg[data-testid="ExpandMoreIcon"]), table tbody tr'
+            );
+            const rowCount = await rowItems.count().catch(() => 0);
+            for (let r = 0; r < rowCount; r++) {
+              const item = rowItems.nth(r);
+              const hasDirectTd = (await item.locator("> td").count().catch(() => 0)) > 0;
+              const rowContainer = hasDirectTd
+                ? item
+                : (await item.locator("..").locator("..").count().catch(() => 0)) > 0
                 ? item.locator("..").locator("..")
                 : item;
-            const rowText = (await rowContainer.innerText().catch(() => "")).trim();
-            // Strictly require studentId match on the row (never rely on display name alone)
-            if (!exactIdRegex.test(rowText)) {
-              continue;
+              const rowText = (await rowContainer.innerText().catch(() => "")).trim();
+              // Strictly require studentId match on the row (never rely on display name alone)
+              if (!exactIdRegex.test(rowText)) {
+                continue;
+              }
+              const cells = rowContainer.locator("> div, > td");
+              const cellCount = await cells.count().catch(() => 0);
+              return colIndex + 1 < cellCount ? cells.nth(colIndex + 1) : cells.last();
             }
-            const cells = rowContainer.locator("> div, > td");
-            const cellCount = await cells.count().catch(() => 0);
-            targetCellLocator =
-              colIndex + 1 < cellCount ? cells.nth(colIndex + 1) : cells.last();
-            break;
+            return null;
+          };
+
+          let targetCellLocator: any = await findTargetCellLocator();
+          if (!targetCellLocator) {
+            await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+            await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.grading).catch(() => {});
+            await page.waitForTimeout?.(400);
+            targetCellLocator = await findTargetCellLocator();
           }
 
           if (!targetCellLocator) {
@@ -302,7 +313,16 @@ export class HomeworkGradeWorker {
           await page.waitForTimeout?.(400);
 
           const modal = page.locator(SELECTORS.grading.modal.container).first();
-          await modal.waitFor({ state: "visible", timeout: 8000 });
+          try {
+            await modal.waitFor({ state: "visible", timeout: 8000 });
+          } catch {
+            // Self-heal once if the first cell click was swallowed by a toast/scroll animation
+            await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+            await targetCellLocator.scrollIntoViewIfNeeded().catch(() => {});
+            await targetCellLocator.click({ force: true });
+            await page.waitForTimeout?.(400);
+            await modal.waitFor({ state: "visible", timeout: 8000 });
+          }
 
           // Strictly verify modal proves BOTH studentId AND submissionId (reject empty or name-only modal)
           const modalText = (await modal.innerText().catch(() => "")).trim();

@@ -205,6 +205,7 @@ export interface RunningClassItem {
   courseName?: string;
   center?: string;
   status: string;
+  endDate?: string;
   updatedAt?: string;
 }
 

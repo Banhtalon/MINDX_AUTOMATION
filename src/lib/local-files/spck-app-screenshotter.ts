@@ -1221,9 +1221,26 @@ export function listCapturedAppScreenshots(studentDir: string): string[] {
     return [];
   }
   const exts = new Set([".png", ".jpg", ".jpeg", ".webp"]);
-  return fs
+  const rawFiles = fs
     .readdirSync(shotsDir)
-    .filter((f) => exts.has(path.extname(f).toLowerCase()))
+    .filter((f) => exts.has(path.extname(f).toLowerCase()));
+  const bySlotKey = new Map<string, { name: string; mtimeMs: number }>();
+  for (const f of rawFiles) {
+    const slotMatch = f.match(/^(app_\d+_.*?)_[0-9a-f]{6}\.png$/i);
+    const slotKey = slotMatch ? slotMatch[1].toLowerCase() : f.toLowerCase();
+    let mtimeMs = 0;
+    try {
+      mtimeMs = fs.statSync(path.join(shotsDir, f)).mtimeMs;
+    } catch {
+      mtimeMs = 0;
+    }
+    const prev = bySlotKey.get(slotKey);
+    if (!prev || mtimeMs > prev.mtimeMs || (mtimeMs === prev.mtimeMs && f > prev.name)) {
+      bySlotKey.set(slotKey, { name: f, mtimeMs });
+    }
+  }
+  return Array.from(bySlotKey.values())
+    .map((v) => v.name)
     .sort((a, b) => a.localeCompare(b))
     .map((f) => path.join(shotsDir, f));
 }
@@ -1331,18 +1348,32 @@ export async function captureStudentAppScreenshots(params: {
   const outDir = path.join(safeFolderPath, APP_SCREENSHOTS_SUBDIR);
   const ownerImages = listOwnerUploadedImages(safeFolderPath);
 
-  // Clean only unreferenced previous auto-captured shots so verified/saved session snapshots never lose their files on disk
+  // Clean only unreferenced previous auto-captured shots; only frozen (APPROVED / SUBMITTED_PENDING_VERIFY / VERIFIED)
+  // session snapshots lock old app_*.png files on disk, so unapproved DRAFT / WAITING_APPROVAL rows do not accumulate duplicates.
   const referencedFiles = new Set<string>();
   if (fs.existsSync(outDir)) {
     try {
       const db = getDb();
       const sessRows = db
         .prepare(
-          `SELECT thumbnailPath, screenshotsJson, approvedSnapshotJson, lastVerifiedSnapshotJson
+          `SELECT draftStatus, thumbnailPath, screenshotsJson, approvedSnapshotJson, lastVerifiedSnapshotJson
            FROM spck_session_submissions WHERE studentId = ?`
         )
         .all(studentId) as Array<Record<string, string | null>>;
-      const blob = JSON.stringify(sessRows).toLowerCase();
+      const protectedChunks: string[] = [];
+      for (const sRow of sessRows) {
+        if (sRow.approvedSnapshotJson) protectedChunks.push(sRow.approvedSnapshotJson);
+        if (sRow.lastVerifiedSnapshotJson) protectedChunks.push(sRow.lastVerifiedSnapshotJson);
+        if (
+          sRow.draftStatus === "APPROVED" ||
+          sRow.draftStatus === "SUBMITTED_PENDING_VERIFY" ||
+          sRow.draftStatus === "VERIFIED"
+        ) {
+          if (sRow.thumbnailPath) protectedChunks.push(sRow.thumbnailPath);
+          if (sRow.screenshotsJson) protectedChunks.push(sRow.screenshotsJson);
+        }
+      }
+      const blob = protectedChunks.join("\n").toLowerCase();
       for (const f of fs.readdirSync(outDir)) {
         if (blob.includes(f.toLowerCase())) {
           referencedFiles.add(f);
@@ -1517,6 +1548,27 @@ export async function captureStudentAppScreenshots(params: {
   }
 
   const galleryScreenshots = [...galleryCandidates];
+  // Remove any newly-captured or leftover `app_*.png` files in `_spck_app_shots` that were dropped
+  // due to the 10-image LMS cap and are not referenced by any frozen session snapshot.
+  if (fs.existsSync(outDir)) {
+    const activeChosenPaths = new Set(
+      [finalThumbnailPath, ...galleryScreenshots]
+        .filter(Boolean)
+        .map((p) => path.resolve(p).toLowerCase())
+    );
+    for (const f of fs.readdirSync(outDir)) {
+      if (!f.startsWith("app_") || !f.endsWith(".png")) continue;
+      if (referencedFiles.has(f)) continue;
+      const fullShotPath = path.resolve(outDir, f).toLowerCase();
+      if (!activeChosenPaths.has(fullShotPath)) {
+        try {
+          fs.unlinkSync(path.join(outDir, f));
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }
   const reasonParts = [
     thumbnailSource === "OWNER_UPLOAD"
       ? "Ảnh đại diện: ảnh do Owner tải lên."

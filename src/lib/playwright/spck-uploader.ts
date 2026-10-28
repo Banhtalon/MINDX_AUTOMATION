@@ -1789,20 +1789,86 @@ export class SpckUploader {
               `Không tìm thấy khung SPCK được khóa theo đúng studentId '${record.studentId}' trên LMS.`
             );
           }
-          const modalStats = await SpckUploader.uploadSingleStudentViaRealLmsModal({
-            page,
-            interceptor,
-            normalizedClassId,
-            targetSessionNumber: targetSessionNumber!,
-            record,
-            fullName,
-            studentsInClass,
-            expectedHash,
-            screenshots,
-            attachments,
-            youtubeUrls,
-            relatedLinks,
-          });
+          const runRealModalUpload = () =>
+            SpckUploader.uploadSingleStudentViaRealLmsModal({
+              page,
+              interceptor,
+              normalizedClassId,
+              targetSessionNumber: targetSessionNumber!,
+              record,
+              fullName,
+              studentsInClass,
+              expectedHash,
+              screenshots,
+              attachments,
+              youtubeUrls,
+              relatedLinks,
+            });
+          let modalStats: Awaited<ReturnType<typeof runRealModalUpload>>;
+          try {
+            modalStats = await runRealModalUpload();
+          } catch (firstErr) {
+            const firstErrMsg = firstErr instanceof Error ? firstErr.message : String(firstErr);
+            const wasSaveMutationDispatched = Boolean(
+              firstErr && typeof firstErr === "object" && (firstErr as any).saveMutationDispatched === true
+            );
+            const isRetryablePreSaveModalError =
+              !wasSaveMutationDispatched &&
+              (firstErrMsg.includes("Không tìm thấy học viên") ||
+                firstErrMsg.includes("waiting for locator('.MuiDialog-root") ||
+                firstErrMsg.includes("waiting for locator('input#title") ||
+                firstErrMsg.includes("Không tìm thấy nút '+ Thêm sản phẩm học viên'") ||
+                (firstErrMsg.includes("Timeout") && firstErrMsg.includes("exceeded"))) &&
+              !firstErrMsg.includes("[Read-after-Write]") &&
+              !firstErrMsg.includes("[Integrity Guard]") &&
+              !firstErrMsg.includes("[Card Identity Guard]") &&
+              !firstErrMsg.includes("[Identity Guard]") &&
+              !firstErrMsg.includes("HTTP ") &&
+              !firstErrMsg.includes("GraphQL ") &&
+              !firstErrMsg.includes("API Lưu SPCK") &&
+              !firstErrMsg.includes("trùng tên") &&
+              !firstErrMsg.includes("không có nút 'Sản phẩm của học sinh'") &&
+              !firstErrMsg.includes("Không thể kích hoạt Buổi học") &&
+              !firstErrMsg.includes("không còn ở trạng thái .active") &&
+              !firstErrMsg.includes("không còn tồn tại") &&
+              !firstErrMsg.includes("Không tìm thấy ô Buổi học") &&
+              !firstErrMsg.includes("đang bị khóa (disabled)") &&
+              !firstErrMsg.includes("Không thể đóng hộp thoại");
+
+            if (
+              isRetryablePreSaveModalError &&
+              !taskQueue.getStatus().isStopped &&
+              (process as any)?.__mindxQueueStopped !== true &&
+              SpckUploader.verifyRecordStillApproved(
+                normalizedClassId,
+                record.studentId,
+                expectedHash,
+                targetSessionNumber
+              )
+            ) {
+              jobLogRepo.add({
+                jobId: `SPCK_${normalizedClassId}`,
+                jobType: "UPLOAD_SPCK",
+                classId: normalizedClassId,
+                sessionId: targetSessionNumber ? `SESSION_${targetSessionNumber}` : undefined,
+                studentId: record.studentId,
+                level: "WARN",
+                message: `[Auto-Retry Pass 2] Tự động làm sạch giao diện LMS và thử nộp lại SPCK cho học viên ${fullName} (${record.studentId}) sau lỗi UI tạm thời: ${firstErrMsg}`,
+              });
+              await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+              if (targetSessionNumber) {
+                await LmsHelpers.ensureCommentsSlotReady(
+                  page,
+                  normalizedClassId,
+                  targetSessionNumber,
+                  { reopenDrawerIfClosed: true, waitForTableMs: 5000 }
+                );
+              }
+              modalStats = await runRealModalUpload();
+            } else {
+              throw firstErr;
+            }
+          }
           if (modalStats.demotedToWaitingApproval) {
             demotedCount++;
             results.push({
@@ -2490,12 +2556,10 @@ export class SpckUploader {
         .replace(/\s+/g, " ")
         .trim();
 
-    // Ensure no leftover dialog is open
-    const existingModal = page.locator('.MuiDialog-root [role="dialog"]').first();
-    if (await existingModal.isVisible().catch(() => false)) {
-      await page.keyboard.press("Escape").catch(() => {});
-      await page.waitForTimeout(400);
-    }
+    let saveMutationDispatched = false;
+
+    // Ensure no leftover dialog or toast is open
+    await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
 
     const drawer = page
       .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
@@ -2510,27 +2574,54 @@ export class SpckUploader {
       );
     }
 
+    const slotItem = drawer
+      .locator(`#class-comments-slot-carousel-${Math.max(0, targetSessionNumber - 1)}`)
+      .first();
+    const initialSlotCount =
+      typeof (slotItem as any).count === "function"
+        ? await (slotItem as any).count().catch(() => 0)
+        : 1;
+    const isSlotCurrentlyActive =
+      initialSlotCount > 0 &&
+      (await slotItem.evaluate((el) => el.classList.contains("active")).catch(() => false));
+    if (!isSlotCurrentlyActive) {
+      await LmsHelpers.ensureCommentsSlotReady(page, normalizedClassId, targetSessionNumber, {
+        reopenDrawerIfClosed: false,
+        waitForTableMs: 4000,
+      });
+    }
+
     const bodyRows = drawer.locator(".comment-list-table table tbody tr, table tbody tr");
-    const totalRows = await bodyRows.count().catch(() => 0);
-    let matchedRowIndex = -1;
+    const findRowIndexForStudent = async (): Promise<number> => {
+      const totalRows = await bodyRows.count().catch(() => 0);
+      for (let rIdx = 0; rIdx < totalRows; rIdx++) {
+        const rowLoc = bodyRows.nth(rIdx);
+        const nameNodeText = await rowLoc
+          .locator(".name-display, .full-name")
+          .first()
+          .innerText()
+          .catch(() => "");
+        const rowText = await rowLoc.innerText().catch(() => "");
+        const firstLine = (rowText.split(/\r?\n/)[0] || "").trim();
 
-    for (let rIdx = 0; rIdx < totalRows; rIdx++) {
-      const rowLoc = bodyRows.nth(rIdx);
-      const nameNodeText = await rowLoc
-        .locator(".name-display, .full-name")
-        .first()
-        .innerText()
-        .catch(() => "");
-      const rowText = await rowLoc.innerText().catch(() => "");
-      const firstLine = (rowText.split(/\r?\n/)[0] || "").trim();
-
-      if (
-        (nameNodeText && normText(nameNodeText) === normTarget) ||
-        (firstLine && normText(firstLine) === normTarget)
-      ) {
-        matchedRowIndex = rIdx;
-        break;
+        if (
+          (nameNodeText && normText(nameNodeText) === normTarget) ||
+          (firstLine && normText(firstLine) === normTarget)
+        ) {
+          return rIdx;
+        }
       }
+      return -1;
+    };
+
+    let matchedRowIndex = await findRowIndexForStudent();
+    if (matchedRowIndex < 0) {
+      await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+      await LmsHelpers.ensureCommentsSlotReady(page, normalizedClassId, targetSessionNumber, {
+        reopenDrawerIfClosed: true,
+        waitForTableMs: 4000,
+      });
+      matchedRowIndex = await findRowIndexForStudent();
     }
 
     if (matchedRowIndex < 0) {
@@ -3293,6 +3384,19 @@ export class SpckUploader {
         .locator('button[type="submit"], button:has-text("Save"), button:has-text("Lưu")')
         .first();
 
+      const preClickSlotCount =
+        typeof (slotItem as any).count === "function"
+          ? await (slotItem as any).count().catch(() => 0)
+          : 1;
+      const preClickSlotActive =
+        preClickSlotCount > 0 &&
+        (await slotItem.evaluate((el) => el.classList.contains("active")).catch(() => false));
+      if (!preClickSlotActive) {
+        throw new Error(
+          `Buổi học số ${targetSessionNumber} không còn tồn tại hoặc không còn ở trạng thái .active ngay trước khi bấm Save SPCK cho học viên '${fullName}'. Đã chặn thao tác để tránh lưu nhầm buổi học!`
+        );
+      }
+
       const responsePromise = page.waitForResponse(
         (res: Response) => {
           const url = res.url().toLowerCase();
@@ -3327,6 +3431,7 @@ export class SpckUploader {
         { timeout: 30000 }
       );
 
+      saveMutationDispatched = true;
       await saveBtn.click();
       const saveResponse = await responsePromise;
       const httpStatus = saveResponse.status();
@@ -3662,6 +3767,11 @@ export class SpckUploader {
         screenshotsUploadedCount,
         attachmentsUploadedCount,
       };
+    } catch (modalErr) {
+      if (modalErr && typeof modalErr === "object") {
+        (modalErr as any).saveMutationDispatched = saveMutationDispatched;
+      }
+      throw modalErr;
     } finally {
       if (await modal.isVisible().catch(() => false)) {
         await page.keyboard.press("Escape").catch(() => {});

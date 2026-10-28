@@ -4,7 +4,13 @@
 >
 > **Kiến trúc:** Local Web Application (Next.js App Router + TypeScript + Node.js, chạy trên `127.0.0.1:3000`)
 >
-> **Automation Engine:** Playwright (Persistent Context + Sequential Task Queue + Network Interception + Read-after-Write Verification)
+> **Automation Engine:** Playwright (Persistent Context + Sequential Task Queue + Network Interception + Read-after-Write Verification + Self-Healing UI & Auto-Retry Pass 2 `v2.8.0` + Session 14 Course Final Evaluation Uploader `v2.9.0`)
+>
+> **Cập nhật v2.9.0 (2026-10-27 — Thiết kế lại toàn diện Buổi 14 Tổng kết cuối khóa):** Tách hoàn toàn **Buổi 14** khỏi màn hình Nhận xét buổi học (`/session-comments` chỉ áp dụng cho Buổi 1–13) và tích hợp trọn vẹn cả 2 Modal của Buổi 14 vào **Tab SPCK — Buổi 14 (`/final-project`)**:
+> 1. **Modal Cột 3 (`"Sản phẩm của học sinh"`):** Nâng cấp AI viết `Bình luận của giáo viên*` Buổi 14 sang bố cục 2 mục (`1. Về phần thuyết trình` / `2. Về phần sản phẩm cuối khóa`) theo 5 mẫu thực tế của giáo viên, kèm quét sâu cấu trúc code Web (`.html/.css/.js`).
+> 2. **Modal Cột 2 (`"Nhận xét học sinh"` — Đánh giá tổng kết cuối khóa & Thư từ MindX):** Tự động đọc 5 tiêu chí `Demo Score` (tối đa `5.0`) từ file `.xlsx` / Google Sheet **Bảng chấm điểm buổi Demo**, gợi ý/chọn 9 tiêu chí `Điểm Năng lực [ĐNL]` (`1..5`), dùng AI viết **Thư từ MindX 3 phần** (`Learned From Mindx`, `Suggestions From Mindx`, `Future Direction`) theo mẫu **Mccully Mac Dallas** (TypeScript tự ghép và đồng bộ chính xác `Điểm Demo` & `Điểm Năng lực`) và tự động điền 45 radio + 5 ô điểm + 3 ô `.ql-editor` lên LMS với **Read-after-Write Verification** toàn văn (`scripts/test-session14-v290.ts` PASS 7/7 `S14-01..S14-07`, Kiểm định độc lập Vòng 9 đạt **GO** — đóng toàn bộ 12/12 ranh giới `F01`–`F12`, 8/8 cổng kiểm thử PASS và 263/263 ca probe đạt 100%, chi tiết tại `docs/audits/v290/CODEX_REVIEW_ROUND9.md`).
+>
+> **Kiểm định v2.8.0 — Vòng 4 (2026-10-26 / 2026-10-27):** **GO** cho bản mã và đủ bảy cổng kiểm chứng; `F01`–`F04`, `R2-01`–`R2-02` và `R3-01` đều **CLOSED**. Fixture T11 đã đếm dialog theo `modalOpen`; giữ nguyên mã ứng dụng và toàn bộ điều kiện T01–T16 so với Vòng 3. Chạy mới **7/7 lệnh PASS**, v270 đạt đủ T01–T16; đồng thời đã sửa triệt để lỗi tự đăng nhập SSO (`base.mindx.edu.vn/login?callbackUrl=https://lms.mindx.edu.vn/admin/dashboard`), khử trùng lặp ảnh tự chụp `_spck_app_shots`, và **cho phép giữ lại các lớp vừa kết thúc (`Finished` trong vòng 15 ngày sau Buổi 14)** khi quét LMS (`sync-class.ts`, `api/spck/list/route.ts`) để giáo viên chỉnh sửa/upload bổ sung SPCK trong 1–2 tuần sau Buổi 14. Chi tiết: `docs/audits/v280/CODEX_REVIEW_ROUND4.md`.
 >
 > **AI Engine:** Google Gemini (`gemini-3.5-flash-lite`) với Structured Outputs (JSON Schema) + Evidence-Based Grading
 >

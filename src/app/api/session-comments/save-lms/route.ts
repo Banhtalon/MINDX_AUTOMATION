@@ -18,6 +18,17 @@ export async function POST(req: Request) {
       );
     }
 
+    if (/(?:_SESS_|_S|#|BUOI_|SESSION_)14$/i.test(String(sessionId).trim())) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Buổi 14 (Tổng kết cuối khóa, Điểm Demo & Thư từ MindX) có cấu trúc Học bạ riêng trên LMS và không dùng luồng nhận xét buổi học thường kỳ. Vui lòng chuyển sang Màn hình 3 — Sản phẩm cuối khóa (Tab SPCK — Buổi 14) để thực hiện.",
+        },
+        { status: 400 }
+      );
+    }
+
     const taskLabel = studentId
       ? `Lưu thử nhận xét học viên ${studentId} lên LMS`
       : `Lưu hàng loạt nhận xét lớp ${classCode} lên LMS`;

@@ -1420,7 +1420,13 @@ async function runV270Tests() {
           nth: () => obj,
           locator: (s: string) => makeModalLoc(s),
           count: async () =>
-            selector.includes("0?2") || selector.includes("Xem chi tiết") ? 0 : 1,
+            selector.includes('[role="dialog"]')
+              ? modalOpen
+                ? 1
+                : 0
+              : selector.includes("0?2") || selector.includes("Xem chi tiết")
+                ? 0
+                : 1,
           isVisible: async () => (selector.includes("MuiDialog") ? modalOpen : true),
           waitFor: async () => {},
           scrollIntoViewIfNeeded: async () => {},

@@ -208,6 +208,34 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_spck_session_submissions_lookup
       ON spck_session_submissions(classId, studentId, sessionNumber);
 
+    -- 5c. spck_session14_evaluations (v2.9.0 Session 14 Course Final Evaluation & Demo Score)
+    CREATE TABLE IF NOT EXISTS spck_session14_evaluations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      classId TEXT NOT NULL,
+      studentId TEXT NOT NULL,
+      competencyJson TEXT DEFAULT '{}',
+      competencyTotalScore REAL DEFAULT 0.0,
+      demoScoresJson TEXT DEFAULT '{}',
+      demoTotalScore REAL DEFAULT 0.0,
+      demoSourcePath TEXT DEFAULT '',
+      demoJudgeNote TEXT DEFAULT '',
+      learnedFromMindx TEXT DEFAULT '',
+      suggestionsFromMindx TEXT DEFAULT '',
+      futureDirection TEXT DEFAULT '',
+      quickTagsJson TEXT DEFAULT '[]',
+      teacherNote TEXT DEFAULT '',
+      draftVersion INTEGER NOT NULL DEFAULT 1,
+      status TEXT NOT NULL DEFAULT 'DRAFT',
+      contentHash TEXT DEFAULT '',
+      verifiedAt TEXT DEFAULT NULL,
+      errorMessage TEXT DEFAULT NULL,
+      createdAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(classId, studentId)
+    );
+    CREATE INDEX IF NOT EXISTS idx_spck_session14_evaluations_lookup
+      ON spck_session14_evaluations(classId, studentId);
+
     -- 6. job_logs
     CREATE TABLE IF NOT EXISTS job_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -665,6 +693,13 @@ export const sessionFeedbackRepo = {
     return db
       .prepare(`SELECT * FROM session_feedbacks WHERE classId = ? AND sessionId = ?`)
       .all(classId, sessionId) as SessionFeedbackRecord[];
+  },
+
+  findByClass(classId: string): SessionFeedbackRecord[] {
+    const db = getDb();
+    return db
+      .prepare(`SELECT * FROM session_feedbacks WHERE classId = ? ORDER BY id ASC`)
+      .all(classId) as SessionFeedbackRecord[];
   },
 
   findOne(classId: string, sessionId: string, studentId: string): SessionFeedbackRecord | undefined {
@@ -3810,5 +3845,717 @@ export const scoreMatrixRepo = {
     } catch {
       return null;
     }
+  },
+};
+
+export interface SpckSession14CompetencyScores {
+  knowledgeInClass: number;      // [ĐNL] Kiến thức học viên đã được học tại lớp (1..5)
+  knowledgeSelfStudy: number;    // [ĐNL] Kiến thức học viên tự học (1..5)
+  skillCommunication: number;    // [ĐNL] Kỹ năng giao tiếp, hợp tác (1..5)
+  skillComputerUse: number;      // [ĐNL] Kỹ năng sử dụng máy tính (1..5)
+  skillProblemSolving: number;   // [ĐNL] Kỹ năng giải quyết vấn đề (1..5)
+  skillCreativity: number;       // [ĐNL] Tư duy sáng tạo (1..5)
+  skillComputational: number;    // [ĐNL] Tư duy máy tính (1..5)
+  attitudeHomework: number;      // [ĐNL] Thái độ luyện tập về nhà (1..5)
+  attitudeInClass: number;       // [ĐNL] Thái độ học tập trên lớp (1..5)
+}
+
+export interface SpckSession14DemoScores {
+  algorithm: number;             // Tư duy máy tính, tư duy thuật toán (max 1.5)
+  creativity: number;            // Tư duy sáng tạo (max 1.0)
+  communication: number;         // Kỹ năng giao tiếp, hợp tác (max 0.5)
+  problemSolving: number;        // Giải quyết vấn đề (max 1.0)
+  computerSkills: number;        // Kỹ năng sử dụng máy tính (max 1.0)
+}
+
+export interface SpckSession14EvaluationRecord {
+  id?: number;
+  classId: string;
+  studentId: string;
+  competencyJson: string;
+  competencyTotalScore: number;
+  demoScoresJson: string;
+  demoTotalScore: number;
+  demoSourcePath: string;
+  demoJudgeNote: string;
+  learnedFromMindx: string;
+  suggestionsFromMindx: string;
+  futureDirection: string;
+  quickTagsJson: string;
+  teacherNote: string;
+  draftVersion: number;
+  status: "DRAFT" | "WAITING_APPROVAL" | "APPROVED" | "VERIFIED" | "FAILED";
+  contentHash: string;
+  verifiedAt?: string | null;
+  errorMessage?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const DEFAULT_SESSION14_COMPETENCY_SCORES: SpckSession14CompetencyScores = {
+  knowledgeInClass: 4,
+  knowledgeSelfStudy: 4,
+  skillCommunication: 4,
+  skillComputerUse: 4,
+  skillProblemSolving: 4,
+  skillCreativity: 4,
+  skillComputational: 4,
+  attitudeHomework: 4,
+  attitudeInClass: 4,
+};
+
+export const DEFAULT_SESSION14_DEMO_SCORES: SpckSession14DemoScores = {
+  algorithm: 0,
+  creativity: 0,
+  communication: 0,
+  problemSolving: 0,
+  computerSkills: 0,
+};
+
+export const SESSION14_COMPETENCY_KEYS: Array<keyof SpckSession14CompetencyScores> = [
+  "knowledgeInClass",
+  "knowledgeSelfStudy",
+  "skillCommunication",
+  "skillComputerUse",
+  "skillProblemSolving",
+  "skillCreativity",
+  "skillComputational",
+  "attitudeHomework",
+  "attitudeInClass",
+];
+
+export const SESSION14_DEMO_LIMITS: Record<keyof SpckSession14DemoScores, number> = {
+  algorithm: 1.5,
+  creativity: 1.0,
+  communication: 0.5,
+  problemSolving: 1.0,
+  computerSkills: 1.0,
+};
+
+export function parseSession14CompetencyScores(
+  raw?: string | Partial<SpckSession14CompetencyScores> | null
+): SpckSession14CompetencyScores {
+  let obj: any = {};
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      obj = JSON.parse(raw);
+    } catch {
+      obj = {};
+    }
+  } else if (raw && typeof raw === "object") {
+    obj = raw;
+  }
+
+  const clampRating = (val: unknown, fallback = 4): number => {
+    const n = Number(val);
+    if (!Number.isFinite(n)) return fallback;
+    const rounded = Math.round(n);
+    if (rounded < 1) return 1;
+    if (rounded > 5) return 5;
+    return rounded;
+  };
+
+  return {
+    knowledgeInClass: clampRating(obj.knowledgeInClass, DEFAULT_SESSION14_COMPETENCY_SCORES.knowledgeInClass),
+    knowledgeSelfStudy: clampRating(obj.knowledgeSelfStudy, DEFAULT_SESSION14_COMPETENCY_SCORES.knowledgeSelfStudy),
+    skillCommunication: clampRating(obj.skillCommunication, DEFAULT_SESSION14_COMPETENCY_SCORES.skillCommunication),
+    skillComputerUse: clampRating(obj.skillComputerUse, DEFAULT_SESSION14_COMPETENCY_SCORES.skillComputerUse),
+    skillProblemSolving: clampRating(obj.skillProblemSolving, DEFAULT_SESSION14_COMPETENCY_SCORES.skillProblemSolving),
+    skillCreativity: clampRating(obj.skillCreativity, DEFAULT_SESSION14_COMPETENCY_SCORES.skillCreativity),
+    skillComputational: clampRating(obj.skillComputational, DEFAULT_SESSION14_COMPETENCY_SCORES.skillComputational),
+    attitudeHomework: clampRating(obj.attitudeHomework, DEFAULT_SESSION14_COMPETENCY_SCORES.attitudeHomework),
+    attitudeInClass: clampRating(obj.attitudeInClass, DEFAULT_SESSION14_COMPETENCY_SCORES.attitudeInClass),
+  };
+}
+
+export function calculateCompetencyAverageScore(
+  scores: SpckSession14CompetencyScores
+): number {
+  const sum = SESSION14_COMPETENCY_KEYS.reduce(
+    (acc, key) => acc + (Number(scores[key]) || 0),
+    0
+  );
+  return Math.round((sum / 9) * 100) / 100;
+}
+
+export function parseSession14DemoScores(
+  raw?: string | Partial<SpckSession14DemoScores> | null
+): SpckSession14DemoScores {
+  let obj: any = {};
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      obj = JSON.parse(raw);
+    } catch {
+      obj = {};
+    }
+  } else if (raw && typeof raw === "object") {
+    obj = raw;
+  }
+
+  const normalizeScore = (val: unknown, max: number): number => {
+    const n = Number(val);
+    if (!Number.isFinite(n) || n < 0) return 0;
+    const clamped = Math.min(n, max);
+    return Math.round(clamped * 100) / 100;
+  };
+
+  return {
+    algorithm: normalizeScore(obj.algorithm, SESSION14_DEMO_LIMITS.algorithm),
+    creativity: normalizeScore(obj.creativity, SESSION14_DEMO_LIMITS.creativity),
+    communication: normalizeScore(obj.communication, SESSION14_DEMO_LIMITS.communication),
+    problemSolving: normalizeScore(obj.problemSolving, SESSION14_DEMO_LIMITS.problemSolving),
+    computerSkills: normalizeScore(obj.computerSkills, SESSION14_DEMO_LIMITS.computerSkills),
+  };
+}
+
+export function calculateDemoTotalScore(scores: SpckSession14DemoScores): number {
+  const sum =
+    (Number(scores.algorithm) || 0) +
+    (Number(scores.creativity) || 0) +
+    (Number(scores.communication) || 0) +
+    (Number(scores.problemSolving) || 0) +
+    (Number(scores.computerSkills) || 0);
+  return Math.round(sum * 100) / 100;
+}
+
+export function formatSession14ScoreText(score: number): string {
+  const rounded = Math.round((Number(score) || 0) * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : String(Number(rounded.toFixed(2)));
+}
+
+export function syncSession14LetterScoreLines(
+  letterText: string,
+  demoTotalScore: number,
+  competencyTotalScore: number
+): string {
+  if (!letterText || !letterText.trim()) return letterText;
+  const demoStr = formatSession14ScoreText(demoTotalScore);
+  const compStr = formatSession14ScoreText(competencyTotalScore);
+  let updated = letterText.replace(
+    /^([ \t]*(?:(?:[-*•+]|\d+[.)])[ \t]+)*(?:[*_`~ \t]*Điểm[*_`~ \t]+Demo)[*_`~ \t]*:[*_`~ \t]*).*$/gim,
+    `$1${demoStr} điểm`
+  );
+  updated = updated.replace(
+    /^([ \t]*(?:(?:[-*•+]|\d+[.)])[ \t]+)*(?:[*_`~ \t]*Điểm[*_`~ \t]+Năng[*_`~ \t]+lực)[*_`~ \t]*:[*_`~ \t]*).*$/gim,
+    `$1${compStr} điểm`
+  );
+  return updated;
+}
+
+export function verifySession14LetterScoreConsistency(
+  letterText: string,
+  demoTotalScore: number,
+  competencyTotalScore: number
+): { ok: boolean; reason?: string } {
+  if (!letterText || !letterText.trim()) {
+    return {
+      ok: false,
+      reason: "Thư Learned From Mindx đang trống.",
+    };
+  }
+  const lines = letterText.split(/\r?\n/);
+  let foundDemo = false;
+  let foundComp = false;
+  for (const rawLine of lines) {
+    const cleanLine = rawLine
+      .replace(/[*_`~]/g, "")
+      .replace(/^[ \t]*(?:(?:[-•+]|\d+[.)])[ \t]+)*/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (/^Điểm Demo\b/i.test(cleanLine)) {
+      foundDemo = true;
+      const m = cleanLine.match(/^Điểm Demo[ \t]*:[ \t]*([+-]?[0-9]+(?:[.,][0-9]+)?)/i);
+      if (!m) {
+        return {
+          ok: false,
+          reason: `Dòng Điểm Demo trong thư ("${rawLine.trim()}") không có giá trị số hợp lệ.`,
+        };
+      }
+      const parsedDemo = Number(m[1].replace(",", "."));
+      if (!Number.isFinite(parsedDemo) || Math.abs(parsedDemo - demoTotalScore) > 0.01) {
+        return {
+          ok: false,
+          reason: `Điểm Demo trong thư (${m[1]}) không khớp với tổng điểm Demo hiện tại (${formatSession14ScoreText(demoTotalScore)}).`,
+        };
+      }
+    }
+    if (/^Điểm Năng lực\b/i.test(cleanLine)) {
+      foundComp = true;
+      const m = cleanLine.match(/^Điểm Năng lực[ \t]*:[ \t]*([+-]?[0-9]+(?:[.,][0-9]+)?)/i);
+      if (!m) {
+        return {
+          ok: false,
+          reason: `Dòng Điểm Năng lực trong thư ("${rawLine.trim()}") không có giá trị số hợp lệ.`,
+        };
+      }
+      const parsedComp = Number(m[1].replace(",", "."));
+      if (!Number.isFinite(parsedComp) || Math.abs(parsedComp - competencyTotalScore) > 0.01) {
+        return {
+          ok: false,
+          reason: `Điểm Năng lực trong thư (${m[1]}) không khớp với Điểm Năng lực hiện tại (${formatSession14ScoreText(competencyTotalScore)}).`,
+        };
+      }
+    }
+  }
+  if (!foundDemo || !foundComp) {
+    return {
+      ok: false,
+      reason: "Thư Learned From Mindx thiếu dòng 'Điểm Demo:' hoặc 'Điểm Năng lực:'.",
+    };
+  }
+  return { ok: true };
+}
+
+export function computeSession14EvalHash(record: {
+  classId: string;
+  studentId: string;
+  competencyJson?: string;
+  competencyTotalScore?: number;
+  demoScoresJson?: string;
+  demoTotalScore?: number;
+  learnedFromMindx?: string;
+  suggestionsFromMindx?: string;
+  futureDirection?: string;
+}): string {
+  const comp = parseSession14CompetencyScores(record.competencyJson);
+  const compTotal = calculateCompetencyAverageScore(comp);
+  const demo = parseSession14DemoScores(record.demoScoresJson);
+  const demoTotal = calculateDemoTotalScore(demo);
+  const payload = JSON.stringify({
+    v: "SESSION14_EVAL_V290",
+    classId: String(record.classId || "").trim().toUpperCase(),
+    studentId: String(record.studentId || "").trim(),
+    competency: comp,
+    competencyTotalScore: compTotal,
+    demoScores: demo,
+    demoTotalScore: demoTotal,
+    learnedFromMindx: String(record.learnedFromMindx || "").trim(),
+    suggestionsFromMindx: String(record.suggestionsFromMindx || "").trim(),
+    futureDirection: String(record.futureDirection || "").trim(),
+  });
+  return calculateSha256(payload);
+}
+
+export function verifySession14EvalIntegrity(
+  record?: SpckSession14EvaluationRecord | null
+): boolean {
+  if (!record || !record.contentHash) return false;
+  return computeSession14EvalHash(record) === record.contentHash;
+}
+
+export const session14EvalRepo = {
+  findOne(classId: string, studentId: string): SpckSession14EvaluationRecord | undefined {
+    const db = getDb();
+    return db
+      .prepare(
+        `SELECT * FROM spck_session14_evaluations WHERE classId = ? AND studentId = ?`
+      )
+      .get(classId.trim().toUpperCase(), studentId.trim()) as
+      | SpckSession14EvaluationRecord
+      | undefined;
+  },
+
+  findByClass(classId: string): SpckSession14EvaluationRecord[] {
+    const db = getDb();
+    return db
+      .prepare(
+        `SELECT * FROM spck_session14_evaluations WHERE classId = ? ORDER BY id ASC`
+      )
+      .all(classId.trim().toUpperCase()) as SpckSession14EvaluationRecord[];
+  },
+
+  getOrInit(classId: string, studentId: string): SpckSession14EvaluationRecord {
+    const normalizedClassId = classId.trim().toUpperCase();
+    const normalizedStudentId = studentId.trim();
+    const existing = this.findOne(normalizedClassId, normalizedStudentId);
+    if (existing) {
+      return existing;
+    }
+
+    const db = getDb();
+    const defaultComp = DEFAULT_SESSION14_COMPETENCY_SCORES;
+    const defaultCompTotal = calculateCompetencyAverageScore(defaultComp);
+    const defaultDemo = DEFAULT_SESSION14_DEMO_SCORES;
+    const defaultDemoTotal = calculateDemoTotalScore(defaultDemo);
+
+    db.prepare(
+      `INSERT INTO spck_session14_evaluations (
+        classId, studentId, competencyJson, competencyTotalScore,
+        demoScoresJson, demoTotalScore, demoSourcePath, demoJudgeNote,
+        learnedFromMindx, suggestionsFromMindx, futureDirection,
+        quickTagsJson, teacherNote, draftVersion, status, contentHash
+      ) VALUES (?, ?, ?, ?, ?, ?, '', '', '', '', '', '[]', '', 1, 'DRAFT', '')`
+    ).run(
+      normalizedClassId,
+      normalizedStudentId,
+      JSON.stringify(defaultComp),
+      defaultCompTotal,
+      JSON.stringify(defaultDemo),
+      defaultDemoTotal
+    );
+
+    return this.findOne(normalizedClassId, normalizedStudentId)!;
+  },
+
+  saveDraft(params: {
+    classId: string;
+    studentId: string;
+    expectedVersion?: number;
+    competencyScores?: Partial<SpckSession14CompetencyScores> | string;
+    demoScores?: Partial<SpckSession14DemoScores> | string;
+    demoSourcePath?: string;
+    demoJudgeNote?: string;
+    learnedFromMindx?: string;
+    suggestionsFromMindx?: string;
+    futureDirection?: string;
+    quickTags?: string[] | string;
+    teacherNote?: string;
+  }): {
+    success: boolean;
+    conflict?: boolean;
+    currentVersion?: number;
+    record: SpckSession14EvaluationRecord;
+  } {
+    const normalizedClassId = params.classId.trim().toUpperCase();
+    const normalizedStudentId = params.studentId.trim();
+    const current = this.getOrInit(normalizedClassId, normalizedStudentId);
+
+    if (
+      params.expectedVersion !== undefined &&
+      Number.isFinite(params.expectedVersion) &&
+      Number(params.expectedVersion) !== current.draftVersion
+    ) {
+      return {
+        success: false,
+        conflict: true,
+        currentVersion: current.draftVersion,
+        record: current,
+      };
+    }
+
+    const currentComp = parseSession14CompetencyScores(current.competencyJson);
+    const nextComp =
+      params.competencyScores !== undefined
+        ? parseSession14CompetencyScores(
+            typeof params.competencyScores === "string"
+              ? params.competencyScores
+              : { ...currentComp, ...params.competencyScores }
+          )
+        : currentComp;
+    const nextCompJson = JSON.stringify(nextComp);
+    const nextCompTotal = calculateCompetencyAverageScore(nextComp);
+
+    const currentDemo = parseSession14DemoScores(current.demoScoresJson);
+    const nextDemo =
+      params.demoScores !== undefined
+        ? parseSession14DemoScores(
+            typeof params.demoScores === "string"
+              ? params.demoScores
+              : { ...currentDemo, ...params.demoScores }
+          )
+        : currentDemo;
+    const nextDemoJson = JSON.stringify(nextDemo);
+    const nextDemoTotal = calculateDemoTotalScore(nextDemo);
+
+    const nextSourcePath =
+      params.demoSourcePath !== undefined ? params.demoSourcePath : current.demoSourcePath;
+    const nextJudgeNote =
+      params.demoJudgeNote !== undefined ? params.demoJudgeNote : current.demoJudgeNote;
+    const rawLearned =
+      params.learnedFromMindx !== undefined
+        ? params.learnedFromMindx
+        : current.learnedFromMindx;
+    const shouldAutoSyncLetterScores =
+      params.learnedFromMindx === undefined ||
+      params.demoScores !== undefined ||
+      params.competencyScores !== undefined;
+    const nextLearned = shouldAutoSyncLetterScores
+      ? syncSession14LetterScoreLines(rawLearned, nextDemoTotal, nextCompTotal)
+      : rawLearned;
+    const nextSuggestions =
+      params.suggestionsFromMindx !== undefined
+        ? params.suggestionsFromMindx
+        : current.suggestionsFromMindx;
+    const nextFuture =
+      params.futureDirection !== undefined ? params.futureDirection : current.futureDirection;
+    const nextTagsJson =
+      params.quickTags !== undefined
+        ? typeof params.quickTags === "string"
+          ? params.quickTags
+          : JSON.stringify(params.quickTags)
+        : current.quickTagsJson;
+    const nextNote =
+      params.teacherNote !== undefined ? params.teacherNote : current.teacherNote;
+
+    const candidateHash = computeSession14EvalHash({
+      classId: normalizedClassId,
+      studentId: normalizedStudentId,
+      competencyJson: nextCompJson,
+      competencyTotalScore: nextCompTotal,
+      demoScoresJson: nextDemoJson,
+      demoTotalScore: nextDemoTotal,
+      learnedFromMindx: nextLearned,
+      suggestionsFromMindx: nextSuggestions,
+      futureDirection: nextFuture,
+    });
+
+    const contentChangedFromApproved =
+      Boolean(current.contentHash) && current.contentHash !== candidateHash;
+    const contentChangedFromCurrent =
+      nextCompJson !== current.competencyJson ||
+      nextDemoJson !== current.demoScoresJson ||
+      nextSourcePath !== current.demoSourcePath ||
+      nextJudgeNote !== current.demoJudgeNote ||
+      nextLearned !== current.learnedFromMindx ||
+      nextSuggestions !== current.suggestionsFromMindx ||
+      nextFuture !== current.futureDirection ||
+      nextTagsJson !== current.quickTagsJson ||
+      nextNote !== current.teacherNote;
+
+    let nextStatus = current.status;
+    let nextHash = current.contentHash;
+    let nextVerifiedAt = current.verifiedAt ?? null;
+
+    if (contentChangedFromApproved || contentChangedFromCurrent) {
+      const hasAnyText = Boolean(
+        nextLearned.trim() || nextSuggestions.trim() || nextFuture.trim() || nextDemoTotal > 0
+      );
+      if (current.status === "APPROVED" || current.status === "VERIFIED") {
+        nextStatus = "WAITING_APPROVAL";
+        nextHash = "";
+      } else if (current.status === "DRAFT" && hasAnyText) {
+        nextStatus = "WAITING_APPROVAL";
+      } else if (current.status === "FAILED") {
+        nextStatus = "WAITING_APPROVAL";
+      }
+    }
+
+    const nextVersion = contentChangedFromCurrent
+      ? current.draftVersion + 1
+      : current.draftVersion;
+
+    const db = getDb();
+    db.prepare(
+      `UPDATE spck_session14_evaluations
+       SET competencyJson = ?,
+           competencyTotalScore = ?,
+           demoScoresJson = ?,
+           demoTotalScore = ?,
+           demoSourcePath = ?,
+           demoJudgeNote = ?,
+           learnedFromMindx = ?,
+           suggestionsFromMindx = ?,
+           futureDirection = ?,
+           quickTagsJson = ?,
+           teacherNote = ?,
+           draftVersion = ?,
+           status = ?,
+           contentHash = ?,
+           verifiedAt = ?,
+           errorMessage = NULL,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ? AND studentId = ?`
+    ).run(
+      nextCompJson,
+      nextCompTotal,
+      nextDemoJson,
+      nextDemoTotal,
+      nextSourcePath,
+      nextJudgeNote,
+      nextLearned,
+      nextSuggestions,
+      nextFuture,
+      nextTagsJson,
+      nextNote,
+      nextVersion,
+      nextStatus,
+      nextHash,
+      nextVerifiedAt,
+      normalizedClassId,
+      normalizedStudentId
+    );
+
+    return {
+      success: true,
+      record: this.findOne(normalizedClassId, normalizedStudentId)!,
+    };
+  },
+
+  approveDraft(
+    classId: string,
+    studentId: string,
+    expectedVersion?: number
+  ): {
+    success: boolean;
+    conflict?: boolean;
+    currentVersion?: number;
+    error?: string;
+    record: SpckSession14EvaluationRecord;
+  } {
+    const normalizedClassId = classId.trim().toUpperCase();
+    const normalizedStudentId = studentId.trim();
+    const current = this.getOrInit(normalizedClassId, normalizedStudentId);
+
+    if (
+      expectedVersion !== undefined &&
+      Number.isFinite(expectedVersion) &&
+      Number(expectedVersion) !== current.draftVersion
+    ) {
+      return {
+        success: false,
+        conflict: true,
+        currentVersion: current.draftVersion,
+        error: `Bản nháp đánh giá Buổi 14 của học viên ${normalizedStudentId} đã thay đổi (version=${current.draftVersion}).`,
+        record: current,
+      };
+    }
+
+    if (!current.learnedFromMindx.trim()) {
+      return {
+        success: false,
+        error: `Thiếu nội dung "Learned From Mindx" cho học viên ${normalizedStudentId}.`,
+        record: current,
+      };
+    }
+    if (!current.suggestionsFromMindx.trim()) {
+      return {
+        success: false,
+        error: `Thiếu nội dung "Suggestions From Mindx" cho học viên ${normalizedStudentId}.`,
+        record: current,
+      };
+    }
+    if (!current.futureDirection.trim()) {
+      return {
+        success: false,
+        error: `Thiếu nội dung "Future Direction" cho học viên ${normalizedStudentId}.`,
+        record: current,
+      };
+    }
+
+    const comp = parseSession14CompetencyScores(current.competencyJson);
+    const compTotal = calculateCompetencyAverageScore(comp);
+    const demo = parseSession14DemoScores(current.demoScoresJson);
+    const demoTotal = calculateDemoTotalScore(demo);
+
+    const scoreConsistency = verifySession14LetterScoreConsistency(
+      current.learnedFromMindx,
+      demoTotal,
+      compTotal
+    );
+    if (!scoreConsistency.ok) {
+      return {
+        success: false,
+        error: scoreConsistency.reason,
+        record: current,
+      };
+    }
+
+    const hash = computeSession14EvalHash({
+      classId: normalizedClassId,
+      studentId: normalizedStudentId,
+      competencyJson: JSON.stringify(comp),
+      competencyTotalScore: compTotal,
+      demoScoresJson: JSON.stringify(demo),
+      demoTotalScore: demoTotal,
+      learnedFromMindx: current.learnedFromMindx,
+      suggestionsFromMindx: current.suggestionsFromMindx,
+      futureDirection: current.futureDirection,
+    });
+
+    const db = getDb();
+    db.prepare(
+      `UPDATE spck_session14_evaluations
+       SET competencyJson = ?,
+           competencyTotalScore = ?,
+           demoScoresJson = ?,
+           demoTotalScore = ?,
+           status = 'APPROVED',
+           contentHash = ?,
+           errorMessage = NULL,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ? AND studentId = ?`
+    ).run(
+      JSON.stringify(comp),
+      compTotal,
+      JSON.stringify(demo),
+      demoTotal,
+      hash,
+      normalizedClassId,
+      normalizedStudentId
+    );
+
+    return {
+      success: true,
+      record: this.findOne(normalizedClassId, normalizedStudentId)!,
+    };
+  },
+
+  markVerified(
+    classId: string,
+    studentId: string,
+    expectedHash: string
+  ): SpckSession14EvaluationRecord {
+    const normalizedClassId = classId.trim().toUpperCase();
+    const normalizedStudentId = studentId.trim();
+    const current = this.getOrInit(normalizedClassId, normalizedStudentId);
+    const currentHash = computeSession14EvalHash(current);
+
+    if (!expectedHash || currentHash !== expectedHash) {
+      throw new Error(
+        `[session14EvalRepo.markVerified] Sai lệch mã băm nội dung Buổi 14 của học viên ${normalizedStudentId}. Đã chặn đánh dấu VERIFIED.`
+      );
+    }
+
+    const db = getDb();
+    db.prepare(
+      `UPDATE spck_session14_evaluations
+       SET status = 'VERIFIED',
+           contentHash = ?,
+           verifiedAt = datetime('now', 'localtime'),
+           errorMessage = NULL,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ? AND studentId = ?`
+    ).run(expectedHash, normalizedClassId, normalizedStudentId);
+
+    return this.findOne(normalizedClassId, normalizedStudentId)!;
+  },
+
+  markFailed(
+    classId: string,
+    studentId: string,
+    errorMessage: string
+  ): SpckSession14EvaluationRecord {
+    const normalizedClassId = classId.trim().toUpperCase();
+    const normalizedStudentId = studentId.trim();
+    this.getOrInit(normalizedClassId, normalizedStudentId);
+    const db = getDb();
+    db.prepare(
+      `UPDATE spck_session14_evaluations
+       SET status = 'FAILED',
+           errorMessage = ?,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ? AND studentId = ?`
+    ).run(errorMessage, normalizedClassId, normalizedStudentId);
+    return this.findOne(normalizedClassId, normalizedStudentId)!;
+  },
+
+  demoteToWaitingApproval(
+    classId: string,
+    studentId: string,
+    reason: string
+  ): SpckSession14EvaluationRecord {
+    const normalizedClassId = classId.trim().toUpperCase();
+    const normalizedStudentId = studentId.trim();
+    this.getOrInit(normalizedClassId, normalizedStudentId);
+    const db = getDb();
+    db.prepare(
+      `UPDATE spck_session14_evaluations
+       SET status = 'WAITING_APPROVAL',
+           contentHash = '',
+           errorMessage = ?,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ? AND studentId = ?`
+    ).run(reason, normalizedClassId, normalizedStudentId);
+    return this.findOne(normalizedClassId, normalizedStudentId)!;
   },
 };

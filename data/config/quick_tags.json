@@ -106,5 +106,71 @@
         "hint": "Lắp ráp phần khung cơ khí tốt nhưng còn lúng túng khi đấu nối cổng dây cảm biến/động cơ hoặc viết lệnh điều khiển"
       }
     ]
+  },
+  {
+    "category": "spck_session14_presentation",
+    "categoryName": "🎤 Thuyết trình & Slide (Buổi 14 SPCK)",
+    "tags": [
+      {
+        "id": "s14_pres_slide_dep",
+        "label": "📊 Slide đẹp, bố cục rõ ràng, dễ nhìn",
+        "sentiment": "positive",
+        "hint": "Chuẩn bị slide thuyết trình đầy đủ, mẫu thiết kế đẹp, bố cục rõ ràng, dễ nhìn và có sự sáng tạo phù hợp với sản phẩm cuối khóa"
+      },
+      {
+        "id": "s14_pres_trinh_bay_tot",
+        "label": "🗣️ Trình bày tốt, giới thiệu rõ nội dung chính",
+        "sentiment": "positive",
+        "hint": "Trong quá trình thuyết trình, em đã giới thiệu được những nội dung chính của dự án, thể hiện rõ ý tưởng và sự chuẩn bị nghiêm túc"
+      },
+      {
+        "id": "s14_pres_can_tu_tin",
+        "label": "😳 Cần luyện diễn đạt & tự tin hơn trước lớp",
+        "sentiment": "constructive",
+        "hint": "Nếu luyện tập thêm cách diễn đạt và tự tin hơn khi trình bày trước lớp, em sẽ phát huy tốt hơn khả năng giao tiếp và truyền đạt ý tưởng"
+      },
+      {
+        "id": "s14_pres_can_hieu_code",
+        "label": "🔍 Cần tìm hiểu kỹ code hơn để tự tin giải thích khi hỏi",
+        "sentiment": "constructive",
+        "hint": "Em cần tìm hiểu kỹ hơn về những nội dung và đoạn code được sử dụng trong sản phẩm để có thể tự tin giải thích ý tưởng cũng như cách hoạt động khi thuyết trình hoặc khi được hỏi"
+      }
+    ]
+  },
+  {
+    "category": "spck_session14_product",
+    "categoryName": "🏆 Sản phẩm cuối khóa & Mức độ tự code (Buổi 14 SPCK)",
+    "tags": [
+      {
+        "id": "s14_prod_giao_dien_dep",
+        "label": "🎨 Thiết kế rất đẹp, màu sắc hài hòa và bắt mắt",
+        "sentiment": "positive",
+        "hint": "Hoàn thiện sản phẩm với giao diện đẹp mắt, hài hòa, bắt mắt và sử dụng tông màu sắc phù hợp, tạo sự thống nhất và nổi bật"
+      },
+      {
+        "id": "s14_prod_flexbox_layout",
+        "label": "📐 Dùng Flexbox / Layout đa dạng, đủ các trang chức năng",
+        "sentiment": "positive",
+        "hint": "Sử dụng Flexbox và cách dàn trang (layout) đa dạng, hợp lý để sắp xếp các thành phần cân đối; xây dựng đầy đủ các trang và chức năng phong phú"
+      },
+      {
+        "id": "s14_prod_hoc_hoi_thuc_te",
+        "label": "🌐 Chủ động tìm hiểu, học hỏi thêm từ sản phẩm thực tế",
+        "sentiment": "positive",
+        "hint": "Chủ động tìm hiểu, học hỏi thêm từ các website/sản phẩm thực tế bên ngoài trong quá trình xây dựng để phát triển ý tưởng giúp sản phẩm có độ hoàn thiện cao"
+      },
+      {
+        "id": "s14_prod_tu_viet_code",
+        "label": "💪 Tự giác tìm hiểu và tự viết code, không phụ thuộc AI",
+        "sentiment": "positive",
+        "hint": "Chủ động tự giác tìm hiểu, tự viết code và nắm vững nguyên lý hoạt động của sản phẩm mà không phụ thuộc vào AI"
+      },
+      {
+        "id": "s14_prod_phu_thuoc_ai",
+        "label": "🤖 Còn phụ thuộc khá nhiều vào AI, chưa hiểu sâu phần cốt lõi của code",
+        "sentiment": "constructive",
+        "hint": "Tuy nhiên, trong quá trình thực hiện em còn phụ thuộc khá nhiều vào AI và chưa thực sự hiểu sâu phần cốt lõi của code. Nếu chủ động tự tìm hiểu, tự viết và nắm rõ cách hoạt động của các đoạn code hơn, em sẽ phát huy tốt hơn năng lực lập trình của mình"
+      }
+    ]
   }
 ]

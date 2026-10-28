@@ -87,6 +87,19 @@ export class CommentSaver {
       throw new Error(mismatchMsg);
     }
 
+    if (parseInt(sessionMatch[1], 10) === 14) {
+      const s14BlockMsg = `Buổi 14 (${sessionId}) là buổi Tổng kết cuối khóa (gồm Điểm Năng lực, Điểm Demo và Thư từ MindX 3 phần), không sử dụng luồng nhận xét buổi học thường kỳ. Vui lòng thực hiện tại Màn hình 3 — Sản phẩm cuối khóa (Tab SPCK — Buổi 14).`;
+      jobLogRepo.add({
+        jobId,
+        jobType: "SAVE_COMMENTS",
+        classId,
+        sessionId,
+        level: "ERROR",
+        message: s14BlockMsg,
+      });
+      throw new Error(s14BlockMsg);
+    }
+
     jobLogRepo.add({
       jobId,
       jobType: "SAVE_COMMENTS",
@@ -265,11 +278,23 @@ export class CommentSaver {
 
         const fillSlotSection = async (sectionLabel: "Summary" | "Homework", targetLines: string[]) => {
           if (targetLines.length === 0) return;
+          // Exclude any container that wraps the Drawer's top [role="tablist"] (which also has a "Homework" tab)
           const sectionCard = drawer
-            .locator(`div:has(> div > div > div > span:text-is("${sectionLabel}"))`)
+            .locator(
+              `div:has(> div > div > div > span:text-is("${sectionLabel}")):not(:has([role="tablist"])):not(:has([role="tab"]))`
+            )
             .first();
           const hasSection = await sectionCard.isVisible().catch(() => false);
           if (!hasSection) return;
+          const isTabHeaderMatch = await sectionCard
+            .evaluate((el) =>
+              Boolean(
+                el.closest('[role="tablist"]') ||
+                  el.querySelector('[role="tablist"], [role="tab"]')
+              )
+            )
+            .catch(() => false);
+          if (isTabHeaderMatch) return;
 
           const expandMoreIcon = sectionCard.locator('[data-testid="ExpandMoreIcon"]').first();
           if (await expandMoreIcon.isVisible().catch(() => false)) {
@@ -392,21 +417,6 @@ export class CommentSaver {
 
         await fillSlotSection("Summary", summaryLines);
         await fillSlotSection("Homework", homeworkLines);
-
-        // Ensure the target slot is still .active after Summary/Homework auto-save before reading student rows
-        const stillActiveAfterMeta = await slotItem
-          .evaluate((el) => el.classList.contains("active"))
-          .catch(() => true);
-        if (!stillActiveAfterMeta) {
-          const infoContainer = slotItem.locator(".info-container").first();
-          if (await infoContainer.isVisible().catch(() => false)) {
-            await infoContainer.click({ force: true }).catch(() => {});
-          } else {
-            await slotItem.click({ force: true }).catch(() => {});
-          }
-          await page.waitForTimeout(1200);
-        }
-        await studentTable.waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
       } catch (slotMetaErr) {
         jobLogRepo.add({
           jobId,
@@ -419,6 +429,22 @@ export class CommentSaver {
           }`,
         });
       }
+
+      // Ensure the target slot is still .active after Summary/Homework auto-save before reading student rows (must throw if slot is missing or cannot be re-activated)
+      const slotCountAfterMeta =
+        typeof (slotItem as any).count === "function"
+          ? await (slotItem as any).count().catch(() => 0)
+          : 1;
+      const stillActiveAfterMeta =
+        slotCountAfterMeta > 0 &&
+        (await slotItem.evaluate((el) => el.classList.contains("active")).catch(() => false));
+      if (!stillActiveAfterMeta) {
+        await LmsHelpers.ensureCommentsSlotReady(page, classCode, slotNumber, {
+          reopenDrawerIfClosed: false,
+          waitForTableMs: 5000,
+        });
+      }
+      await studentTable.waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
 
       // Helper to fetch the freshest feedback record from DB (supports both findOne and findBySession mocks)
       const getLatestFeedbackRecord = (targetStudentId: string): SessionFeedbackRecord | undefined => {
@@ -437,8 +463,40 @@ export class CommentSaver {
           ? studentRepo.findByClass(classId, false) || []
           : [];
 
-      // 6. Loop through each approved record to fill, save, and verify
-      for (const record of validRecords) {
+      const preSaveRetryEligibleIds = new Set<string>();
+
+      const isRetryablePreSaveUiError = (msg?: string): boolean => {
+        if (!msg) return false;
+        if (
+          msg.includes("Hash drift") ||
+          msg.includes("IN_FLIGHT_DRIFT") ||
+          msg.includes("Read-after-Write check failed") ||
+          msg.includes("không còn thuộc danh sách active") ||
+          msg.includes("trạng thái điểm danh") ||
+          msg.includes("trùng tên") ||
+          msg.includes("Không thể kích hoạt Buổi học") ||
+          msg.includes("không còn ở trạng thái .active") ||
+          msg.includes("không còn tồn tại") ||
+          msg.includes("Không tìm thấy ô Buổi học") ||
+          msg.includes("đang bị khóa (disabled)") ||
+          msg.includes("Không thể đóng hộp thoại")
+        ) {
+          return false;
+        }
+        return (
+          /số dòng khớp\s*=\s*0/i.test(msg) ||
+          /role=["']dialog["']/i.test(msg) ||
+          /Timeout.*exceeded/i.test(msg) ||
+          msg.includes("Không tìm thấy ô soạn thảo") ||
+          msg.includes("Không tìm thấy nút 'Save'")
+        );
+      };
+
+      // 6. Process a single student record (used for both Pass 1 and Auto-Retry Pass 2)
+      const processSingleStudentRecord = async (
+        record: SessionFeedbackRecord,
+        isRetryPass = false
+      ): Promise<SaveCommentItemResult> => {
         const student =
           typeof studentRepo.findOne === "function"
             ? studentRepo.findOne(record.studentId, classId)
@@ -481,14 +539,13 @@ export class CommentSaver {
             );
           }
 
-          results.push({
+          return {
             studentId: record.studentId,
             fullName: studentName,
             success: false,
             verified: false,
             error: eligibilityReason,
-          });
-          continue;
+          };
         }
 
         // IRON RULE 4: Hash Drift Protection
@@ -513,14 +570,13 @@ export class CommentSaver {
             );
           }
 
-          results.push({
+          return {
             studentId: record.studentId,
             fullName: studentName,
             success: false,
             verified: false,
             error: "Hash drift: Nội dung đã bị thay đổi sau khi duyệt.",
-          });
-          continue;
+          };
         }
 
         // Set status to SAVING locked by approvedHash
@@ -534,15 +590,26 @@ export class CommentSaver {
           approvedHash
         );
 
+        let saveMutationDispatched = false;
+
         try {
           const escapedStudentId = record.studentId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
           const escapedName = studentName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-          // Ensure no dangling modal is open
-          const openDialog = page.locator('[role="dialog"]').first();
-          if (await openDialog.isVisible().catch(() => false)) {
-            await page.keyboard.press("Escape").catch(() => {});
-            await page.waitForTimeout(500);
+          // Self-Healing UI before each student: close any dangling modal/toast and re-activate slot if it is not .active
+          await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+          const currentSlotCount =
+            typeof (slotItem as any).count === "function"
+              ? await (slotItem as any).count().catch(() => 0)
+              : 1;
+          const isSlotCurrentlyActive =
+            currentSlotCount > 0 &&
+            (await slotItem.evaluate((el) => el.classList.contains("active")).catch(() => false));
+          if (!isSlotCurrentlyActive || isRetryPass) {
+            await LmsHelpers.ensureCommentsSlotReady(page, classCode, slotNumber, {
+              reopenDrawerIfClosed: isRetryPass,
+              waitForTableMs: 5000,
+            });
           }
 
           const allRows = drawer.locator('.comment-list-table table tbody tr, table tbody tr, tr');
@@ -589,9 +656,7 @@ export class CommentSaver {
               : 1;
 
           let fallbackMatchedRow: any = null;
-          // In a real browser, Playwright's locator.filter({ hasText }) collapses newlines to spaces AND MindX LMS renders `<span class="name-display">Name </span>` with trailing horizontal space before `\nAttended`.
-          // Fall back to inspecting row innerText line-by-line (trimmed per line) with exactNameLineRegex so full-line matching works on real MindX LMS while preserving prefix-match protection.
-          if (!hasExplicitIdRow && matchedRowCount === 0) {
+          const scanBodyRowsByLine = async () => {
             const bodyRows = drawer.locator('.comment-list-table table tbody tr, table tbody tr');
             const totalBodyRows =
               typeof (bodyRows as any).count === "function"
@@ -614,6 +679,19 @@ export class CommentSaver {
             if (matchedRowCount === 1) {
               fallbackMatchedRow = bodyRows.nth(matchedIndices[0]);
             }
+          };
+
+          if (!hasExplicitIdRow && matchedRowCount === 0) {
+            await scanBodyRowsByLine();
+          }
+
+          // Self-healing fallback: if 0 rows matched on first check, re-verify slot active state once and re-scan
+          if (!hasExplicitIdRow && matchedRowCount === 0) {
+            await LmsHelpers.ensureCommentsSlotReady(page, classCode, slotNumber, {
+              reopenDrawerIfClosed: true,
+              waitForTableMs: 3000,
+            });
+            await scanBodyRowsByLine();
           }
 
           if (!hasExplicitIdRow && matchedRowCount !== 1) {
@@ -721,6 +799,8 @@ export class CommentSaver {
                 .filter(Boolean);
 
               if (
+                preSaveRecord.status === "VERIFIED" &&
+                !isRetryPass &&
                 normalizedExpectedPlain.length > 0 &&
                 normExisting.length > 0 &&
                 normExisting.every(
@@ -789,19 +869,6 @@ export class CommentSaver {
             const rawText = String(text || "");
             if (typeof document !== "undefined" && typeof (el as HTMLElement).replaceChildren === "function") {
               (el as HTMLElement).replaceChildren();
-              const appendFormattedLine = (parent: HTMLElement, lineStr: string) => {
-                const parts = lineStr.split(/(\*\*[^*\n]+\*\*)/g);
-                for (const part of parts) {
-                  if (!part) continue;
-                  if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
-                    const strongEl = document.createElement("strong");
-                    strongEl.appendChild(document.createTextNode(part.slice(2, -2)));
-                    parent.appendChild(strongEl);
-                  } else {
-                    parent.appendChild(document.createTextNode(part));
-                  }
-                }
-              };
               const lines = rawText
                 .split(/\r?\n/)
                 .map((l: string) => l.trim())
@@ -809,7 +876,17 @@ export class CommentSaver {
               const blocks = lines.length > 0 ? lines : [rawText];
               for (const line of blocks) {
                 const pEl = document.createElement("p");
-                appendFormattedLine(pEl, line);
+                const parts = line.split(/(\*\*[^*\n]+\*\*)/g);
+                for (const part of parts) {
+                  if (!part) continue;
+                  if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+                    const strongEl = document.createElement("strong");
+                    strongEl.appendChild(document.createTextNode(part.slice(2, -2)));
+                    pEl.appendChild(strongEl);
+                  } else {
+                    pEl.appendChild(document.createTextNode(part));
+                  }
+                }
                 el.appendChild(pEl);
               }
             } else {
@@ -879,6 +956,22 @@ export class CommentSaver {
               "IN_FLIGHT_DRIFT: Nhận xét đã bị chỉnh sửa hoặc hạ về bản nháp trước khi bấm Save LMS. Đã chặn gửi LMS."
             );
           }
+
+          const preClickSlotCount =
+            typeof (slotItem as any).count === "function"
+              ? await (slotItem as any).count().catch(() => 0)
+              : 1;
+          const preClickSlotActive =
+            preClickSlotCount > 0 &&
+            (await slotItem.evaluate((el) => el.classList.contains("active")).catch(() => false));
+          if (!preClickSlotActive) {
+            throw new Error(
+              `Buổi học số ${slotNumber} (#class-comments-slot-carousel-${slotIndex}) không còn tồn tại hoặc không còn ở trạng thái .active ngay trước khi bấm Save cho học viên '${studentName}'. Đã chặn thao tác để tránh lưu nhầm buổi học!`
+            );
+          }
+
+          // Mark that Save mutation is being dispatched — never auto-retry in Pass 2 after this point
+          saveMutationDispatched = true;
 
           // Wait strictly for the business API mutation response upon clicking save (no unrelated fallback)
           const [apiResponse] = await Promise.all([
@@ -1273,20 +1366,16 @@ export class CommentSaver {
             message: `Đã lưu & đối chiếu VERIFIED nhận xét của học viên '${studentName}'.`,
           });
 
-          results.push({
+          return {
             studentId: record.studentId,
             fullName: studentName,
             success: true,
             verified: true,
-          });
+          };
         } catch (itemErr: any) {
           await page.screenshot({ path: "data/debug_save_comment_error.png" }).catch(() => {});
           // Only press Escape if a comment modal dialog is actually open (pressing Escape when no modal is open closes the MUI Class Drawer!)
-          const openModalOnError = page.locator('[role="dialog"]').first();
-          if (await openModalOnError.isVisible().catch(() => false)) {
-            await page.keyboard.press("Escape").catch(() => {});
-            await page.waitForTimeout(500);
-          }
+          await LmsHelpers.ensureCleanDialogAndToast(page, interceptor).catch(() => {});
           const errMsg = itemErr instanceof Error ? itemErr.message : String(itemErr);
 
           // Only mark FAILED if the record was NOT concurrently edited into a new DRAFT while saving
@@ -1315,17 +1404,63 @@ export class CommentSaver {
             classId,
             sessionId,
             studentId: record.studentId,
-            level: "ERROR",
-            message: `Lỗi khi lưu nhận xét của '${studentName}': ${errMsg}`,
+            level: isRetryPass ? "ERROR" : "WARN",
+            message: `Lỗi khi lưu nhận xét của '${studentName}'${isRetryPass ? " (Lượt 2)" : ""}: ${errMsg}`,
           });
 
-          results.push({
+          if (!isRetryPass && !saveMutationDispatched && isRetryablePreSaveUiError(errMsg)) {
+            preSaveRetryEligibleIds.add(record.studentId);
+          } else {
+            preSaveRetryEligibleIds.delete(record.studentId);
+          }
+
+          return {
             studentId: record.studentId,
             fullName: studentName,
             success: false,
             verified: false,
             error: errMsg,
-          });
+          };
+        }
+      };
+
+      // Pass 1: Run through all candidate records
+      for (const record of validRecords) {
+        const itemRes = await processSingleStudentRecord(record, false);
+        results.push(itemRes);
+      }
+
+      // Pass 2 (Auto-Retry): Automatically retry ONLY records that failed before Save was clicked
+      const retryCandidates = validRecords.filter((rec) => {
+        const resItem = results.find((r) => r.studentId === rec.studentId);
+        return (
+          resItem &&
+          !resItem.success &&
+          preSaveRetryEligibleIds.has(rec.studentId) &&
+          isRetryablePreSaveUiError(resItem.error)
+        );
+      });
+
+      if (retryCandidates.length > 0) {
+        jobLogRepo.add({
+          jobId,
+          jobType: "SAVE_COMMENTS",
+          classId,
+          sessionId,
+          level: "INFO",
+          message: `Đang tự động chạy vét lại (Lượt 2) cho ${retryCandidates.length} học viên bị nghẽn giao diện ở lượt đầu...`,
+        });
+        await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+        await LmsHelpers.ensureCommentsSlotReady(page, classCode, slotNumber, {
+          reopenDrawerIfClosed: true,
+          waitForTableMs: 5000,
+        });
+        for (const rec of retryCandidates) {
+          const retryRes = await processSingleStudentRecord(rec, true);
+          const idx = results.findIndex((r) => r.studentId === rec.studentId);
+          if (idx >= 0) {
+            results[idx] = retryRes;
+          }
         }
       }
     } catch (err: any) {

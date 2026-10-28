@@ -1063,9 +1063,34 @@ export function scanStudentSpckFolder(
         continue;
       }
       try {
-        const subEntries = fs
+        let subEntries = fs
           .readdirSync(fullEntryPath, { withFileTypes: true })
           .sort((a, b) => a.name.localeCompare(b.name, "en"));
+        if (lowerDir === "_spck_app_shots") {
+          const bySlotKey = new Map<string, { entry: fs.Dirent; mtimeMs: number }>();
+          for (const se of subEntries) {
+            if (se.name.startsWith(".")) continue;
+            const slotMatch = se.name.match(/^(app_\d+_.*?)_[0-9a-f]{6}\.png$/i);
+            const slotKey = slotMatch ? slotMatch[1].toLowerCase() : se.name.toLowerCase();
+            let mtimeMs = 0;
+            try {
+              mtimeMs = fs.statSync(path.join(fullEntryPath, se.name)).mtimeMs;
+            } catch {
+              mtimeMs = 0;
+            }
+            const prev = bySlotKey.get(slotKey);
+            if (
+              !prev ||
+              mtimeMs > prev.mtimeMs ||
+              (mtimeMs === prev.mtimeMs && se.name > prev.entry.name)
+            ) {
+              bySlotKey.set(slotKey, { entry: se, mtimeMs });
+            }
+          }
+          subEntries = Array.from(bySlotKey.values())
+            .map((v) => v.entry)
+            .sort((a, b) => a.name.localeCompare(b.name, "en"));
+        }
         for (const subEntry of subEntries) {
           if (subEntry.name.startsWith(".")) continue;
           const subPath = assertPathAllowed(path.join(fullEntryPath, subEntry.name));
@@ -1338,6 +1363,18 @@ export function scanStudentSpckFolder(
     if (samePath(frame.fullPath, thumbnailPath)) continue;
     if (screenshotCandidates.some((p) => samePath(p, frame.fullPath))) continue;
     screenshotCandidates.push(frame.fullPath);
+  }
+  // Bot-generated supplementary screenshots (`_spck_app_shots` and `_spck_youtube_frames`) only fill
+  // remaining gallery slots up to MAX_SPCK_SCREENSHOTS (10), while Owner/user photos are never silently sliced.
+  if (screenshotCandidates.length > MAX_SPCK_SCREENSHOTS) {
+    const isBotGeneratedShot = (p: string) =>
+      /[\\/](?:_spck_app_shots|_spck_youtube_frames)[\\/]/i.test(p);
+    const nonBotShots = screenshotCandidates.filter((p) => !isBotGeneratedShot(p));
+    const botShots = screenshotCandidates.filter((p) => isBotGeneratedShot(p));
+    if (botShots.length > 0) {
+      const remainingSlots = Math.max(0, MAX_SPCK_SCREENSHOTS - nonBotShots.length);
+      screenshotCandidates = [...nonBotShots, ...botShots.slice(0, remainingSlots)];
+    }
   }
   const ownerPhotos = [...ownerUploadImages, ...ownerRootImages].map((img) => img.fullPath);
 

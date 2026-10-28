@@ -185,12 +185,13 @@ interface RunningClassOption {
 }
 
 function findLatestActiveSessionId(sessionList: SessionItem[]): string {
-  if (!sessionList || sessionList.length === 0) return "";
+  const candidates = (sessionList || []).filter((s) => Number(s.sessionNumber) < 14);
+  if (candidates.length === 0) return "";
   const now = new Date();
   now.setHours(23, 59, 59, 999);
 
   let latestByDate = "";
-  for (const s of sessionList) {
+  for (const s of candidates) {
     const rawDate = s.date || s.sessionDate || "";
     const m = rawDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (m) {
@@ -200,7 +201,7 @@ function findLatestActiveSessionId(sessionList: SessionItem[]): string {
       }
     }
   }
-  return latestByDate || sessionList[0].sessionId;
+  return latestByDate || candidates[0].sessionId;
 }
 
 export default function SessionCommentsPage() {
@@ -344,8 +345,17 @@ export default function SessionCommentsPage() {
 
         let effectiveSessionId = normalizedSessionId;
         if (json.data.sessions && json.data.sessions.length > 0) {
-          const sessionList: SessionItem[] = json.data.sessions;
+          const rawSessionList: SessionItem[] = json.data.sessions;
+          const sessionList = rawSessionList.filter((s) => Number(s.sessionNumber) < 14);
           setSessions(sessionList);
+
+          if (sessionList.length === 0) {
+            if (normalizedSessionId) {
+              setSelectedSessionId("");
+            }
+            setStudents([]);
+            return;
+          }
 
           const existsInClass = sessionList.some((s) => s.sessionId === normalizedSessionId);
           if (!normalizedSessionId || !existsInClass) {
@@ -1889,18 +1899,31 @@ ${homeworkDetails}
               className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
             >
               {sessions.length > 0 ? (
-                sessions.map((s) => {
-                  const dStr = s.date || s.sessionDate;
-                  return (
-                    <option key={s.sessionId} value={s.sessionId}>
-                      Buổi {s.sessionNumber}{dStr ? ` (${dStr})` : ""}: {s.topic.slice(0, 35)}
-                    </option>
-                  );
-                })
+                sessions
+                  .filter((s) => Number(s.sessionNumber) < 14)
+                  .map((s) => {
+                    const dStr = s.date || s.sessionDate;
+                    return (
+                      <option key={s.sessionId} value={s.sessionId}>
+                        Buổi {s.sessionNumber}{dStr ? ` (${dStr})` : ""}: {s.topic.slice(0, 35)}
+                      </option>
+                    );
+                  })
               ) : (
                 <option value="">(Chưa đồng bộ buổi học từ LMS)</option>
               )}
             </select>
+            <div className="mt-2 p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-[11px] text-indigo-300 flex items-center justify-between gap-2">
+              <span>
+                📌 <strong>Buổi 14 (Tổng kết cuối khóa &amp; Điểm Demo)</strong> có biểu mẫu Học bạ 3 phần riêng và được thực hiện trọn gói tại tab SPCK.
+              </span>
+              <a
+                href="/final-project"
+                className="shrink-0 px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition"
+              >
+                Mở Buổi 14 (SPCK) →
+              </a>
+            </div>
           </div>
 
           <div className="md:col-span-2">

@@ -1,3 +1,4 @@
+import fs from "fs";
 import { NextResponse } from "next/server";
 import {
   assertClassHasSpckSession,
@@ -144,8 +145,16 @@ export async function POST(req: Request) {
       const mergedYoutubeUrls = Array.from(new Set([...existingYt, ...scannedYt]));
 
       const ytFrameRe = /[\\/]_spck_youtube_frames[\\/]/i;
+      const isBotGeneratedShot = (p: string) =>
+        /[\\/](?:_spck_app_shots|_spck_youtube_frames)[\\/]/i.test(p);
       const existingScreensRaw = sameFolder
-        ? parseSafeArray<string>(existing?.screenshotsJson)
+        ? parseSafeArray<string>(existing?.screenshotsJson).filter((p) => {
+            try {
+              return Boolean(p) && fs.existsSync(p);
+            } catch {
+              return false;
+            }
+          })
         : [];
       const existingHasYoutubeFrames = existingScreensRaw.some((p) => ytFrameRe.test(p));
       const hasExistingCapturedShots =
@@ -172,7 +181,9 @@ export async function POST(req: Request) {
         existing?.thumbnailPath || ""
       );
       let resolvedThumbnailPath =
-        hasExistingCapturedShots && existing?.thumbnailPath
+        hasExistingCapturedShots &&
+        existing?.thumbnailPath &&
+        fs.existsSync(existing.thumbnailPath)
           ? existing.thumbnailPath
           : item.packageData.thumbnailPath;
       if (
@@ -198,12 +209,21 @@ export async function POST(req: Request) {
         resolvedThumbnailPath = DEFAULT_SPCK_THUMBNAIL_PATH;
       }
       // V272-F05: every Owner photo must appear in the gallery (except the one used as Thumbnail).
-      // If this exceeds the LMS limit, validateSpckResourceLimits below reports it (no silent drop).
+      // If Owner photos alone exceed the LMS limit, validateSpckResourceLimits below reports it (no silent drop);
+      // bot-generated shots (`_spck_app_shots` / `_spck_youtube_frames`) only fill remaining slots up to MAX_SPCK_SCREENSHOTS.
       const missingOwnerPhotos = (item.packageData.ownerPhotos || []).filter(
         (p) => p !== resolvedThumbnailPath && !finalScreenshots.includes(p)
       );
       if (missingOwnerPhotos.length > 0) {
         finalScreenshots = [...missingOwnerPhotos, ...finalScreenshots];
+      }
+      if (finalScreenshots.length > MAX_SPCK_SCREENSHOTS) {
+        const nonBot = finalScreenshots.filter((p) => !isBotGeneratedShot(p));
+        const botOnly = finalScreenshots.filter((p) => isBotGeneratedShot(p));
+        if (botOnly.length > 0) {
+          const remainingSlots = Math.max(0, MAX_SPCK_SCREENSHOTS - nonBot.length);
+          finalScreenshots = [...nonBot, ...botOnly.slice(0, remainingSlots)];
+        }
       }
       const finalAttachments =
         item.packageData.allAttachments || item.packageData.attachments || [];

@@ -23,6 +23,8 @@ interface ClassOption {
   currentSessionNumber?: number;
   maxSessionNumber?: number;
   spckSessions?: number[];
+  status?: string;
+  session14Date?: string;
 }
 
 interface StudentOption {
@@ -205,6 +207,85 @@ const DEFAULT_SPCK_TAGS = [
   "Chủ động tìm tòi, xử lý lỗi tốt",
   "Cần trau chuốt thêm phần giao diện và tối ưu code",
   "Thuyết trình tự tin, trình bày rõ ràng mạch lạc",
+];
+
+const SESSION14_SPCK_TAGS = [
+  "Chuẩn bị slide thuyết trình đầy đủ, bố cục rõ ràng và sáng tạo",
+  "Nếu luyện tập thêm và tự tin hơn khi trình bày trước lớp sẽ phát huy tốt hơn",
+  "Cần tìm hiểu kỹ hơn về đoạn code trong sản phẩm để tự tin giải thích khi thuyết trình",
+  "Giao diện đẹp mắt, bố cục hợp lý, sử dụng Flexbox phù hợp",
+  "Vận dụng tốt kiến thức đã học, có sự sáng tạo và đầu tư vào sản phẩm",
+  "Còn phụ thuộc khá nhiều vào AI, chưa thực sự hiểu sâu phần cốt lõi của code",
+  "Tự giác tìm hiểu và hoàn thành bài tập mà không phụ thuộc vào AI",
+];
+
+interface Session14CompetencyScoresUI {
+  knowledgeInClass: number;
+  knowledgeSelfStudy: number;
+  skillCommunication: number;
+  skillComputerUse: number;
+  skillProblemSolving: number;
+  skillCreativity: number;
+  skillComputational: number;
+  attitudeHomework: number;
+  attitudeInClass: number;
+}
+
+interface Session14DemoScoresUI {
+  algorithm: number;
+  creativity: number;
+  communication: number;
+  problemSolving: number;
+  computerSkills: number;
+}
+
+interface Session14EvalItemUI {
+  classId: string;
+  studentId: string;
+  fullName: string;
+  competencyScores: Session14CompetencyScoresUI;
+  competencyTotalScore: number;
+  demoScores: Session14DemoScoresUI;
+  demoTotalScore: number;
+  demoSourcePath: string;
+  demoJudgeNote: string;
+  learnedFromMindx: string;
+  suggestionsFromMindx: string;
+  futureDirection: string;
+  quickTags: string[];
+  teacherNote: string;
+  draftVersion: number;
+  status: "DRAFT" | "WAITING_APPROVAL" | "APPROVED" | "VERIFIED" | "FAILED";
+  contentHash: string;
+  verifiedAt?: string | null;
+  errorMessage?: string | null;
+}
+
+const COMPETENCY_ITEMS_UI: Array<{
+  key: keyof Session14CompetencyScoresUI;
+  label: string;
+}> = [
+  { key: "knowledgeInClass", label: "1. [ĐNL] Kiến thức học tại lớp" },
+  { key: "knowledgeSelfStudy", label: "2. [ĐNL] Kiến thức tự học" },
+  { key: "skillCommunication", label: "3. [ĐNL] Giao tiếp, hợp tác" },
+  { key: "skillComputerUse", label: "4. [ĐNL] Sử dụng máy tính" },
+  { key: "skillProblemSolving", label: "5. [ĐNL] Giải quyết vấn đề" },
+  { key: "skillCreativity", label: "6. [ĐNL] Tư duy sáng tạo" },
+  { key: "skillComputational", label: "7. [ĐNL] Tư duy máy tính" },
+  { key: "attitudeHomework", label: "8. [ĐNL] Thái độ BTVN" },
+  { key: "attitudeInClass", label: "9. [ĐNL] Thái độ trên lớp" },
+];
+
+const DEMO_SCORE_ITEMS_UI: Array<{
+  key: keyof Session14DemoScoresUI;
+  label: string;
+  max: number;
+}> = [
+  { key: "algorithm", label: "Tư duy máy tính, thuật toán", max: 1.5 },
+  { key: "creativity", label: "Tư duy sáng tạo", max: 1.0 },
+  { key: "communication", label: "Kỹ năng giao tiếp, hợp tác", max: 0.5 },
+  { key: "problemSolving", label: "Giải quyết vấn đề", max: 1.0 },
+  { key: "computerSkills", label: "Kỹ năng sử dụng máy tính", max: 1.0 },
 ];
 
 function getStageMeta(sessionNum: 12 | 13 | 14): {
@@ -809,7 +890,7 @@ function buildRowFromDbRecord(
     relatedLinksText: serializeRelatedLinksToText(relatedLinks),
     quickTags,
     teacherNote: rec.teacherNote || "",
-    includePresentation: false,
+    includePresentation: targetSess === 14,
     teacherComment: rec.teacherComment || "",
     contentHash: rec.contentHash || "",
     status: rec.status || "DRAFT",
@@ -946,6 +1027,14 @@ export default function FinalProjectPage() {
     slot: ReturnType<typeof getSessionSlotDisplay>;
   } | null>(null);
 
+  // Session 14 Course Evaluation & Demo Score State (appended at end of state hooks)
+  const [session14Evals, setSession14Evals] = useState<Session14EvalItemUI[]>([]);
+  const [demoScoreSourceInput, setDemoScoreSourceInput] = useState<string>("");
+  const [importingDemoScores, setImportingDemoScores] = useState<boolean>(false);
+  const [generatingS14EvalAi, setGeneratingS14EvalAi] = useState<boolean>(false);
+  const [uploadingS14EvalLms, setUploadingS14EvalLms] = useState<boolean>(false);
+  const [expandedS14EvalIds, setExpandedS14EvalIds] = useState<Record<string, boolean>>({});
+
   const hydrateRowsFromDb = useCallback(
     (
       dbRecords: SpckRecordRow[],
@@ -997,7 +1086,7 @@ export default function FinalProjectPage() {
           relatedLinksText: serializeRelatedLinksToText(relatedLinks),
           quickTags,
           teacherNote: rec.teacherNote || "",
-          includePresentation: false,
+          includePresentation: targetSess === 14,
           teacherComment: rec.teacherComment || "",
           contentHash: rec.contentHash || "",
           status: rec.status || "DRAFT",
@@ -1157,7 +1246,7 @@ export default function FinalProjectPage() {
       hydrateRowsFromDb(data.records || [], data.students || [], resolvedSession);
       setBannerMessage({
         type: "success",
-        text: `Đã quét tài khoản giáo viên (${data.totalRunningClasses || 0} lớp đang dạy) → Lọc được ${(data.classes || []).length} lớp có buổi học ≥ 12 đủ điều kiện nộp SPCK.`,
+        text: `Đã quét tài khoản giáo viên (${data.totalRunningClasses || 0} lớp đang dạy & mới kết thúc ≤ 15 ngày) → Lọc được ${(data.classes || []).length} lớp đủ điều kiện nộp SPCK (Buổi ≥ 12).`,
       });
     } catch (err) {
       setBannerMessage({
@@ -3177,6 +3266,842 @@ export default function FinalProjectPage() {
     } catch {}
   };
 
+  // 13. Session 14 Course Final Evaluation & Demo Score Handlers (v2.9.0)
+  const loadSession14Evals = useCallback(
+    async (targetClassId: string) => {
+      if (!targetClassId) return;
+      const reqClass = String(targetClassId).trim().toUpperCase();
+      const g = globalThis as any;
+      if (!g.__s14EvalRuntime) {
+        g.__s14EvalRuntime = {
+          inFlightSaves: new Map<string, Promise<any>>(),
+          lastServerSnapshots: new Map<string, any>(),
+          loadSeq: 0,
+          latestAppliedLoadSeq: new Map<string, number>(),
+        };
+      }
+      const runtime = g.__s14EvalRuntime;
+      if (typeof runtime.loadSeq !== "number") runtime.loadSeq = 0;
+      if (!(runtime.latestAppliedLoadSeq instanceof Map)) {
+        runtime.latestAppliedLoadSeq = new Map<string, number>();
+      }
+      const reqSeq = ++runtime.loadSeq;
+
+      let snapshotsBeforeLoad = new Map<string, any>();
+      setSession14Evals((prev: Session14EvalItemUI[]) => {
+        if (Array.isArray(prev)) {
+          for (const item of prev) {
+            if (item?.studentId) {
+              snapshotsBeforeLoad.set(item.studentId, JSON.parse(JSON.stringify(item)));
+            }
+          }
+        }
+        return prev;
+      });
+
+      try {
+        const res = await fetch(
+          `/api/spck/session14-eval?classId=${encodeURIComponent(reqClass)}`
+        );
+        const data = await res.json();
+        if (!data?.success || !Array.isArray(data.records)) return;
+        if (String(selectedClassId || "").trim().toUpperCase() !== reqClass) return;
+        if (
+          g.__s14LatestRenderedClassId &&
+          String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClass
+        ) {
+          return;
+        }
+
+        const validRecords = data.records.filter(
+          (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClass
+        );
+
+        const editableKeys = [
+          "learnedFromMindx",
+          "suggestionsFromMindx",
+          "futureDirection",
+          "teacherNote",
+          "demoScores",
+          "competencyScores",
+          "quickTags",
+        ] as const;
+
+        setSession14Evals((prev: Session14EvalItemUI[]) => {
+          if (String(selectedClassId || "").trim().toUpperCase() !== reqClass) {
+            return prev;
+          }
+          if (
+            g.__s14LatestRenderedClassId &&
+            String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClass
+          ) {
+            return prev;
+          }
+          if (
+            Array.isArray(prev) &&
+            prev.some(
+              (p) => p?.classId && String(p.classId).trim().toUpperCase() !== reqClass
+            )
+          ) {
+            return prev;
+          }
+          const latestSeq = runtime.latestAppliedLoadSeq.get(reqClass) || 0;
+          if (reqSeq < latestSeq) {
+            return prev;
+          }
+          runtime.latestAppliedLoadSeq.set(reqClass, reqSeq);
+
+          const prevList = Array.isArray(prev) ? prev : [];
+          if (prevList.length === 0) {
+            return validRecords;
+          }
+
+          const prevMap = new Map(prevList.map((p) => [p.studentId, p]));
+          return validRecords.map((srv: any) => {
+            const prevItem = prevMap.get(srv.studentId);
+            if (!prevItem) return srv;
+            if (
+              typeof prevItem.draftVersion === "number" &&
+              typeof srv.draftVersion === "number" &&
+              prevItem.draftVersion > srv.draftVersion
+            ) {
+              return prevItem;
+            }
+            const merged: any = { ...prevItem, ...srv };
+            const snapBefore = snapshotsBeforeLoad.get(srv.studentId);
+            let hasUnsavedLocalEdit = false;
+            if (snapBefore) {
+              for (const k of editableKeys) {
+                if (JSON.stringify((prevItem as any)[k]) !== JSON.stringify(snapBefore[k])) {
+                  merged[k] = (prevItem as any)[k];
+                  hasUnsavedLocalEdit = true;
+                }
+              }
+            }
+            if (hasUnsavedLocalEdit) {
+              merged.status = "WAITING_APPROVAL";
+              merged.contentHash = "";
+            }
+            return merged;
+          });
+        });
+      } catch {}
+    },
+    [selectedClassId]
+  );
+
+  if (typeof globalThis !== "undefined") {
+    (globalThis as any).__s14LatestRenderedClassId = String(selectedClassId || "")
+      .trim()
+      .toUpperCase();
+  }
+
+  useEffect(() => {
+    if (selectedClassId && selectedSessionNumber === 14) {
+      loadSession14Evals(selectedClassId);
+    }
+  }, [selectedClassId, selectedSessionNumber, loadSession14Evals]);
+
+  const handleSaveSession14EvalDraft = async (
+    studentId: string,
+    patch: Partial<Session14EvalItemUI>
+  ): Promise<{ success: boolean; record?: any; conflict?: boolean; error?: string }> => {
+    const reqClassId = String(selectedClassId || "").trim().toUpperCase();
+    const sid = String(studentId || "").trim();
+    if (!reqClassId || !sid) return { success: false, error: "Missing classId or studentId" };
+
+    const g = globalThis as any;
+    if (!g.__s14EvalRuntime) {
+      g.__s14EvalRuntime = {
+        inFlightSaves: new Map<string, Promise<any>>(),
+        lastServerSnapshots: new Map<string, any>(),
+        loadSeq: 0,
+        latestAppliedLoadSeq: new Map<string, number>(),
+      };
+    }
+    const runtime = g.__s14EvalRuntime as {
+      inFlightSaves: Map<string, Promise<any>>;
+      lastServerSnapshots: Map<string, any>;
+    };
+
+    const readLiveList = (): Session14EvalItemUI[] => {
+      let current: Session14EvalItemUI[] = Array.isArray(session14Evals) ? session14Evals : [];
+      setSession14Evals((prev: Session14EvalItemUI[]) => {
+        if (Array.isArray(prev)) current = prev;
+        return prev;
+      });
+      return current;
+    };
+
+    const liveBefore = readLiveList();
+    const snapshotBeforeSend = liveBefore.find((r) => r.studentId === sid)
+      ? JSON.parse(JSON.stringify(liveBefore.find((r) => r.studentId === sid)))
+      : undefined;
+
+    const saveKey = `${reqClassId}:${sid}`;
+    const editableKeys = [
+      "learnedFromMindx",
+      "suggestionsFromMindx",
+      "futureDirection",
+      "teacherNote",
+      "demoScores",
+      "competencyScores",
+      "quickTags",
+    ] as const;
+
+    let taskPromise!: Promise<any>;
+    taskPromise = (async () => {
+      try {
+        const res = await fetch("/api/spck/session14-eval", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "save_draft",
+            classId: reqClassId,
+            studentId: sid,
+            ...(typeof snapshotBeforeSend?.draftVersion === "number"
+              ? { expectedVersion: snapshotBeforeSend.draftVersion }
+              : {}),
+            ...patch,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data?.success) {
+          const errMsg = data?.error || `Lỗi khi lưu nháp đánh giá Buổi 14 (HTTP ${res.status}).`;
+          setBannerMessage({ type: "error", text: errMsg });
+          return {
+            success: false,
+            conflict: Boolean(data?.conflict || res.status === 409),
+            error: errMsg,
+          };
+        }
+
+        if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) {
+          return { success: true, ignoredDueToClassSwitch: true };
+        }
+        if (
+          g.__s14LatestRenderedClassId &&
+          String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClassId
+        ) {
+          return { success: true, ignoredDueToClassSwitch: true };
+        }
+
+        const serverRecords: any[] = Array.isArray(data.records) ? data.records : [];
+        const srvStudentRec =
+          data.record || serverRecords.find((r: any) => r.studentId === sid);
+        if (srvStudentRec) {
+          runtime.lastServerSnapshots.set(saveKey, JSON.parse(JSON.stringify(srvStudentRec)));
+        }
+
+        if (serverRecords.length > 0 || srvStudentRec) {
+          setSession14Evals((prev: Session14EvalItemUI[]) => {
+            if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) {
+              return prev;
+            }
+            if (
+              g.__s14LatestRenderedClassId &&
+              String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClassId
+            ) {
+              return prev;
+            }
+            if (
+              Array.isArray(prev) &&
+              prev.some(
+                (p) => p?.classId && String(p.classId).trim().toUpperCase() !== reqClassId
+              )
+            ) {
+              return prev;
+            }
+            return (prev || []).map((prevItem) => {
+              if (prevItem.studentId !== sid) return prevItem;
+              const srv =
+                serverRecords.find((r: any) => r.studentId === sid) ||
+                srvStudentRec ||
+                prevItem;
+              if (srv.classId && String(srv.classId).trim().toUpperCase() !== reqClassId) {
+                return prevItem;
+              }
+              if (
+                typeof prevItem.draftVersion === "number" &&
+                typeof srv.draftVersion === "number" &&
+                prevItem.draftVersion > srv.draftVersion
+              ) {
+                return prevItem;
+              }
+              const merged: any = { ...prevItem, ...srv };
+              let hasUnsavedLocalEdit = false;
+              if (snapshotBeforeSend) {
+                for (const k of editableKeys) {
+                  const wasInPatch = Object.prototype.hasOwnProperty.call(patch, k);
+                  const currentValStr = JSON.stringify((prevItem as any)[k]);
+                  const beforeValStr = JSON.stringify((snapshotBeforeSend as any)[k]);
+                  if (!wasInPatch && currentValStr !== beforeValStr) {
+                    merged[k] = (prevItem as any)[k];
+                    hasUnsavedLocalEdit = true;
+                  } else if (wasInPatch) {
+                    const patchValStr = JSON.stringify((patch as any)[k]);
+                    if (currentValStr !== patchValStr && currentValStr !== beforeValStr) {
+                      merged[k] = (prevItem as any)[k];
+                      hasUnsavedLocalEdit = true;
+                    }
+                  }
+                }
+              }
+              if (hasUnsavedLocalEdit) {
+                merged.status = "WAITING_APPROVAL";
+                merged.contentHash = "";
+              }
+              return merged;
+            });
+          });
+        }
+
+        return { success: true, record: srvStudentRec };
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        setBannerMessage({ type: "error", text: errMsg });
+        return { success: false, error: errMsg };
+      } finally {
+        if (runtime.inFlightSaves.get(saveKey) === taskPromise) {
+          runtime.inFlightSaves.delete(saveKey);
+        }
+      }
+    })();
+
+    runtime.inFlightSaves.set(saveKey, taskPromise);
+    return taskPromise;
+  };
+
+  const handleImportDemoScores = async () => {
+    if (!selectedClassId) return;
+    const reqClassId = String(selectedClassId).trim().toUpperCase();
+    const g = globalThis as any;
+    const editableKeys = [
+      "learnedFromMindx",
+      "suggestionsFromMindx",
+      "futureDirection",
+      "teacherNote",
+      "demoScores",
+      "competencyScores",
+      "quickTags",
+    ] as const;
+
+    const snapshotsBefore = new Map<string, any>();
+    setSession14Evals((prev: Session14EvalItemUI[]) => {
+      if (Array.isArray(prev)) {
+        for (const item of prev) {
+          if (item?.studentId) {
+            snapshotsBefore.set(item.studentId, JSON.parse(JSON.stringify(item)));
+          }
+        }
+      }
+      return prev;
+    });
+
+    setImportingDemoScores(true);
+    setBannerMessage(null);
+    try {
+      const source = (demoScoreSourceInput || generatedDemoSheetUrl || "").trim();
+      const res = await fetch("/api/spck/session14-eval/import-demo-scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: reqClassId,
+          sourcePathOrUrl: source,
+        }),
+      });
+      const data = await res.json();
+      if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) return;
+      if (
+        g.__s14LatestRenderedClassId &&
+        String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClassId
+      ) {
+        return;
+      }
+      if (!data.success) {
+        setBannerMessage({
+          type: "error",
+          text: data.error || "Không thể đọc điểm Demo từ file chấm điểm.",
+        });
+        return;
+      }
+      if (Array.isArray(data.records)) {
+        const validRecords = data.records.filter(
+          (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClassId
+        );
+        setSession14Evals((prev: Session14EvalItemUI[]) => {
+          if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) {
+            return prev;
+          }
+          if (
+            g.__s14LatestRenderedClassId &&
+            String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClassId
+          ) {
+            return prev;
+          }
+          if (
+            Array.isArray(prev) &&
+            prev.some(
+              (p) => p?.classId && String(p.classId).trim().toUpperCase() !== reqClassId
+            )
+          ) {
+            return prev;
+          }
+          const prevList = Array.isArray(prev) ? prev : [];
+          if (prevList.length === 0) return validRecords;
+          const prevMap = new Map(prevList.map((p) => [p.studentId, p]));
+          return validRecords.map((srv: any) => {
+            const prevItem = prevMap.get(srv.studentId);
+            if (!prevItem) return srv;
+            if (
+              typeof prevItem.draftVersion === "number" &&
+              typeof srv.draftVersion === "number" &&
+              prevItem.draftVersion > srv.draftVersion
+            ) {
+              return prevItem;
+            }
+            const merged: any = { ...prevItem, ...srv };
+            const snapBefore = snapshotsBefore.get(srv.studentId);
+            let hasUnsavedLocalEdit = false;
+            if (snapBefore) {
+              for (const k of editableKeys) {
+                if (JSON.stringify((prevItem as any)[k]) !== JSON.stringify(snapBefore[k])) {
+                  merged[k] = (prevItem as any)[k];
+                  hasUnsavedLocalEdit = true;
+                }
+              }
+            }
+            if (hasUnsavedLocalEdit) {
+              merged.status = "WAITING_APPROVAL";
+              merged.contentHash = "";
+            }
+            return merged;
+          });
+        });
+      }
+      const matched = data.importResult?.matchedCount || 0;
+      setBannerMessage({
+        type: "success",
+        text: `Đã đọc thành công Điểm Demo & gợi ý Điểm Năng lực [ĐNL] cho ${matched} học viên lớp ${reqClassId}!`,
+      });
+    } catch (err) {
+      setBannerMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setImportingDemoScores(false);
+    }
+  };
+
+  const handleGenerateSession14EvalAi = async (targetStudentIds?: string[]) => {
+    if (!selectedClassId) return;
+    const reqClassId = String(selectedClassId).trim().toUpperCase();
+    const g = globalThis as any;
+    const editableKeys = [
+      "learnedFromMindx",
+      "suggestionsFromMindx",
+      "futureDirection",
+      "teacherNote",
+      "demoScores",
+      "competencyScores",
+      "quickTags",
+    ] as const;
+
+    let liveStartList: Session14EvalItemUI[] = Array.isArray(session14Evals)
+      ? session14Evals
+      : [];
+    const snapshotsBefore = new Map<string, any>();
+    setSession14Evals((prev: Session14EvalItemUI[]) => {
+      if (Array.isArray(prev)) {
+        liveStartList = prev;
+        for (const item of prev) {
+          if (item?.studentId) {
+            snapshotsBefore.set(item.studentId, JSON.parse(JSON.stringify(item)));
+          }
+        }
+      }
+      return prev;
+    });
+
+    const listToGen =
+      targetStudentIds && targetStudentIds.length > 0
+        ? liveStartList.filter((e) => targetStudentIds.includes(e.studentId))
+        : liveStartList;
+    if (listToGen.length === 0) return;
+
+    setGeneratingS14EvalAi(true);
+    setBannerMessage(null);
+    try {
+      const spckRowMap = new Map(rows.map((r) => [r.assignedStudentId, r]));
+      const payloadStudents = listToGen.map((ev) => {
+        const spckRow = spckRowMap.get(ev.studentId);
+        return {
+          studentId: ev.studentId,
+          expectedVersion: ev.draftVersion,
+          competencyScores: ev.competencyScores,
+          demoScores: ev.demoScores,
+          quickTags:
+            ev.quickTags && ev.quickTags.length > 0
+              ? ev.quickTags
+              : spckRow?.quickTags || [],
+          teacherNote: ev.teacherNote || spckRow?.teacherNote || "",
+        };
+      });
+
+      const res = await fetch("/api/spck/session14-eval/generate-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: reqClassId,
+          students: payloadStudents,
+        }),
+      });
+      const data = await res.json();
+      if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) return;
+      if (
+        g.__s14LatestRenderedClassId &&
+        String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClassId
+      ) {
+        return;
+      }
+      if (!data.success) {
+        setBannerMessage({
+          type: "error",
+          text: data.error || "Lỗi khi AI soạn Thư tổng kết Buổi 14.",
+        });
+        return;
+      }
+      if (Array.isArray(data.records)) {
+        const validRecords = data.records.filter(
+          (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClassId
+        );
+        setSession14Evals((prev: Session14EvalItemUI[]) => {
+          if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) {
+            return prev;
+          }
+          if (
+            g.__s14LatestRenderedClassId &&
+            String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClassId
+          ) {
+            return prev;
+          }
+          if (
+            Array.isArray(prev) &&
+            prev.some(
+              (p) => p?.classId && String(p.classId).trim().toUpperCase() !== reqClassId
+            )
+          ) {
+            return prev;
+          }
+          const prevList = Array.isArray(prev) ? prev : [];
+          if (prevList.length === 0) return validRecords;
+          const prevMap = new Map(prevList.map((p) => [p.studentId, p]));
+          return validRecords.map((srv: any) => {
+            const prevItem = prevMap.get(srv.studentId);
+            if (!prevItem) return srv;
+            if (
+              typeof prevItem.draftVersion === "number" &&
+              typeof srv.draftVersion === "number" &&
+              prevItem.draftVersion > srv.draftVersion
+            ) {
+              return prevItem;
+            }
+            const merged: any = { ...prevItem, ...srv };
+            const snapBefore = snapshotsBefore.get(srv.studentId);
+            let hasUnsavedLocalEdit = false;
+            if (snapBefore) {
+              for (const k of editableKeys) {
+                if (JSON.stringify((prevItem as any)[k]) !== JSON.stringify(snapBefore[k])) {
+                  merged[k] = (prevItem as any)[k];
+                  hasUnsavedLocalEdit = true;
+                }
+              }
+            }
+            if (hasUnsavedLocalEdit) {
+              merged.status = "WAITING_APPROVAL";
+              merged.contentHash = "";
+            }
+            return merged;
+          });
+        });
+      }
+      const okCount = (data.results || []).filter(
+        (r: any) => r.status === "SUCCESS"
+      ).length;
+      setBannerMessage({
+        type: okCount > 0 ? "success" : "warning",
+        text: `AI đã soạn xong Thư tổng kết 3 phần (Learned / Suggestions / Future Direction) cho ${okCount}/${listToGen.length} học viên!`,
+      });
+    } catch (err) {
+      setBannerMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setGeneratingS14EvalAi(false);
+    }
+  };
+
+  const handleApproveAndUploadSession14Eval = async (targetStudentIds?: string[]) => {
+    if (!selectedClassId) return;
+    const reqClassId = String(selectedClassId).trim().toUpperCase();
+
+    const readLiveList = (): Session14EvalItemUI[] => {
+      let current: Session14EvalItemUI[] = Array.isArray(session14Evals) ? session14Evals : [];
+      setSession14Evals((prev: Session14EvalItemUI[]) => {
+        if (Array.isArray(prev)) current = prev;
+        return prev;
+      });
+      return current;
+    };
+
+    const currentList = readLiveList();
+    const ids =
+      targetStudentIds && targetStudentIds.length > 0
+        ? targetStudentIds
+        : currentList
+            .filter(
+              (ev) =>
+                ev.learnedFromMindx.trim() &&
+                ev.suggestionsFromMindx.trim() &&
+                ev.futureDirection.trim()
+            )
+            .map((ev) => ev.studentId);
+
+    if (ids.length === 0) {
+      setBannerMessage({
+        type: "warning",
+        text: "Chưa có học viên nào đủ nội dung 3 phần Thư từ MindX để duyệt và đẩy lên LMS.",
+      });
+      return;
+    }
+
+    const g = globalThis as any;
+    const runtime = g.__s14EvalRuntime as
+      | {
+          inFlightSaves: Map<string, Promise<any>>;
+          lastServerSnapshots: Map<string, any>;
+        }
+      | undefined;
+
+    setUploadingS14EvalLms(true);
+    setBannerMessage(null);
+    try {
+      // 1. Wait for any in-flight blur save for the target students (F07)
+      if (runtime) {
+        for (const sid of ids) {
+          const saveKey = `${reqClassId}:${sid}`;
+          const pending = runtime.inFlightSaves.get(saveKey);
+          if (pending) {
+            const raceRes = await Promise.race([
+              pending,
+              new Promise<{ timedOut: true }>((resolve) =>
+                setTimeout(() => resolve({ timedOut: true }), 150)
+              ),
+            ]);
+            if (raceRes && (raceRes as any).timedOut) {
+              setBannerMessage({
+                type: "error",
+                text: `Thao tác lưu nháp của học viên ${sid} chưa hoàn tất. Đã dừng duyệt và đẩy LMS để tránh gửi bản cũ.`,
+              });
+              return;
+            }
+            if (!raceRes || !raceRes.success) {
+              return;
+            }
+          }
+        }
+      }
+
+      // 2. Flush visible state if any target student has unsaved changes compared to last server snapshot
+      const latestBeforeApprove = readLiveList();
+      const expectedVersions: Record<string, number> = {};
+
+      for (const sid of ids) {
+        const visibleItem = latestBeforeApprove.find((r) => r.studentId === sid);
+        if (!visibleItem) continue;
+        const saveKey = `${reqClassId}:${sid}`;
+        const lastSrv = runtime?.lastServerSnapshots.get(saveKey);
+        const needsFlush =
+          !lastSrv ||
+          lastSrv.learnedFromMindx !== visibleItem.learnedFromMindx ||
+          lastSrv.suggestionsFromMindx !== visibleItem.suggestionsFromMindx ||
+          lastSrv.futureDirection !== visibleItem.futureDirection ||
+          (visibleItem.teacherNote !== undefined &&
+            lastSrv.teacherNote !== visibleItem.teacherNote);
+
+        if (needsFlush) {
+          const flushPromise = handleSaveSession14EvalDraft(sid, {
+            learnedFromMindx: visibleItem.learnedFromMindx,
+            suggestionsFromMindx: visibleItem.suggestionsFromMindx,
+            futureDirection: visibleItem.futureDirection,
+            teacherNote: visibleItem.teacherNote,
+            demoScores: visibleItem.demoScores,
+            competencyScores: visibleItem.competencyScores,
+            quickTags: visibleItem.quickTags,
+          });
+          const flushRes = await Promise.race([
+            flushPromise,
+            new Promise<{ timedOut: true }>((resolve) =>
+              setTimeout(() => resolve({ timedOut: true }), 150)
+            ),
+          ]);
+          if (!flushRes || (flushRes as any).timedOut || !(flushRes as any).success) {
+            setBannerMessage({
+              type: "error",
+              text: `Không thể lưu bản đang hiển thị của học viên ${sid} trước khi duyệt.`,
+            });
+            return;
+          }
+          if (typeof (flushRes as any).record?.draftVersion === "number") {
+            expectedVersions[sid] = (flushRes as any).record.draftVersion;
+          }
+        } else if (typeof lastSrv?.draftVersion === "number") {
+          expectedVersions[sid] = lastSrv.draftVersion;
+        } else if (typeof visibleItem.draftVersion === "number") {
+          expectedVersions[sid] = visibleItem.draftVersion;
+        }
+      }
+
+      if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) return;
+      if (
+        g.__s14LatestRenderedClassId &&
+        String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClassId
+      ) {
+        return;
+      }
+
+      const snapshotsBeforeUpload = new Map<string, any>();
+      for (const item of readLiveList()) {
+        if (item?.studentId) {
+          snapshotsBeforeUpload.set(item.studentId, JSON.parse(JSON.stringify(item)));
+        }
+      }
+
+      const appRes = await fetch("/api/spck/session14-eval", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "approve",
+          classId: reqClassId,
+          studentIds: ids,
+          expectedVersions,
+          ...(ids.length === 1 && expectedVersions[ids[0]] !== undefined
+            ? { expectedVersion: expectedVersions[ids[0]] }
+            : {}),
+        }),
+      });
+      const appData = await appRes.json().catch(() => ({}));
+      const approvedIds: string[] = Array.isArray(appData.approvedIds)
+        ? appData.approvedIds
+        : [];
+      if (!appRes.ok || !appData.success || approvedIds.length !== ids.length) {
+        setBannerMessage({
+          type: "error",
+          text:
+            appData.errors?.[0]?.error ||
+            appData.error ||
+            "Không thể duyệt đánh giá Buổi 14 trước khi đẩy lên LMS.",
+        });
+        return;
+      }
+
+      const upRes = await fetch("/api/spck/session14-eval/upload-lms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: reqClassId,
+          studentIds: approvedIds,
+        }),
+      });
+      const upData = await upRes.json();
+      if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) return;
+      if (
+        g.__s14LatestRenderedClassId &&
+        String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClassId
+      ) {
+        return;
+      }
+      if (Array.isArray(upData.records)) {
+        const validRecords = upData.records.filter(
+          (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClassId
+        );
+        const editableKeys = [
+          "learnedFromMindx",
+          "suggestionsFromMindx",
+          "futureDirection",
+          "teacherNote",
+          "demoScores",
+          "competencyScores",
+          "quickTags",
+        ] as const;
+        setSession14Evals((prev: Session14EvalItemUI[]) => {
+          if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) {
+            return prev;
+          }
+          if (
+            g.__s14LatestRenderedClassId &&
+            String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClassId
+          ) {
+            return prev;
+          }
+          if (
+            Array.isArray(prev) &&
+            prev.some(
+              (p) => p?.classId && String(p.classId).trim().toUpperCase() !== reqClassId
+            )
+          ) {
+            return prev;
+          }
+          const prevList = Array.isArray(prev) ? prev : [];
+          if (prevList.length === 0) return validRecords;
+          const prevMap = new Map(prevList.map((p) => [p.studentId, p]));
+          return validRecords.map((srv: any) => {
+            const prevItem = prevMap.get(srv.studentId);
+            if (!prevItem) return srv;
+            if (
+              typeof prevItem.draftVersion === "number" &&
+              typeof srv.draftVersion === "number" &&
+              prevItem.draftVersion > srv.draftVersion
+            ) {
+              return prevItem;
+            }
+            const merged: any = { ...prevItem, ...srv };
+            const snapBefore = snapshotsBeforeUpload.get(srv.studentId);
+            let hasUnsavedLocalEdit = false;
+            if (snapBefore) {
+              for (const k of editableKeys) {
+                if (JSON.stringify((prevItem as any)[k]) !== JSON.stringify(snapBefore[k])) {
+                  merged[k] = (prevItem as any)[k];
+                  hasUnsavedLocalEdit = true;
+                }
+              }
+            }
+            if (hasUnsavedLocalEdit) {
+              merged.status = "WAITING_APPROVAL";
+              merged.contentHash = "";
+            }
+            return merged;
+          });
+        });
+      }
+      const verCount = upData.uploadResult?.verifiedCount || 0;
+      const failCount = upData.uploadResult?.failedCount || 0;
+      setBannerMessage({
+        type: failCount === 0 && verCount > 0 ? "success" : "warning",
+        text: `Đã đẩy & xác minh (Read-after-Write) đánh giá tổng kết + Điểm Demo Buổi 14 cho ${verCount}/${approvedIds.length} học viên lên LMS!`,
+      });
+    } catch (err) {
+      setBannerMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setUploadingS14EvalLms(false);
+    }
+  };
+
   useEffect(() => {
     if (!selectedClassId) return;
     let cancelled = false;
@@ -3527,7 +4452,11 @@ export default function FinalProjectPage() {
               {classes.map((cls) => (
                 <option key={cls.classId} value={cls.classId}>
                   {cls.classId}
-                  {cls.currentSessionNumber
+                  {cls.status === "Finished"
+                    ? ` — Đã xong Buổi 14${
+                        cls.session14Date ? ` (${cls.session14Date})` : " (≤ 15 ngày)"
+                      }`
+                    : cls.currentSessionNumber
                     ? ` — Đang ở Buổi ${cls.currentSessionNumber}`
                     : ` (${cls.className})`}
                 </option>
@@ -5040,7 +5969,10 @@ export default function FinalProjectPage() {
                               </div>
 
                               <div className="flex flex-wrap gap-1.5">
-                                {DEFAULT_SPCK_TAGS.map((tag) => {
+                                {(selectedSessionNumber === 14
+                                  ? SESSION14_SPCK_TAGS
+                                  : DEFAULT_SPCK_TAGS
+                                ).map((tag) => {
                                   const active = row.quickTags.includes(tag);
                                   return (
                                     <button
@@ -5323,6 +6255,319 @@ export default function FinalProjectPage() {
           </div>
         )}
       </div>
+
+      {/* BƯỚC 4 (RIÊNG BUỔI 14): Đánh giá Tổng kết Cuối khóa & Điểm Demo (Cột 2 LMS: "Nhận xét học sinh" / Thư từ MindX) */}
+      {selectedSessionNumber === 14 && selectedClassId && (
+        <div className="p-5 rounded-xl bg-slate-900 border border-indigo-500/40 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/50 text-indigo-300 text-xs font-bold">
+                  Riêng Buổi 14 — Tổng kết cuối khóa
+                </span>
+                <h2 className="text-sm font-bold text-white">
+                  Đánh Giá Tổng Kết Cuối Khóa, Điểm Demo &amp; Thư Từ MindX (Cột 2 LMS: &quot;Nhận xét học sinh&quot;)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-400">
+                Đọc tự động 5 tiêu chí Điểm Demo từ file chấm điểm BGK (.xlsx / Google Sheet), chọn 9 mục Điểm Năng lực [ĐNL], AI soạn Thư tổng kết 3 phần (Learned From Mindx / Suggestions From Mindx / Future Direction) và tự động đẩy lên LMS.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={generatingS14EvalAi || uploadingS14EvalLms || importingDemoScores}
+                onClick={() => handleGenerateSession14EvalAi()}
+                className="px-3.5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold flex items-center space-x-1.5 cursor-pointer"
+              >
+                {generatingS14EvalAi ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5" />
+                )}
+                <span>✨ AI Soạn Thư Tổng Kết 3 Phần (Cả lớp)</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={uploadingS14EvalLms || generatingS14EvalAi || importingDemoScores}
+                onClick={() => handleApproveAndUploadSession14Eval()}
+                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center space-x-1.5 cursor-pointer"
+              >
+                {uploadingS14EvalLms ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <UploadCloud className="w-3.5 h-3.5" />
+                )}
+                <span>🚀 Duyệt &amp; Đẩy Đánh Giá Buổi 14 Lên LMS</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Thanh đọc Điểm Demo từ file chấm điểm BGK */}
+          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 flex flex-wrap items-center gap-2.5">
+            <span className="text-xs font-semibold text-indigo-300 shrink-0">
+              📊 File chấm điểm BGK (.xlsx hoặc Link Google Sheet):
+            </span>
+            <input
+              type="text"
+              value={demoScoreSourceInput}
+              onChange={(e) => setDemoScoreSourceInput(e.target.value)}
+              placeholder={
+                generatedDemoSheetUrl ||
+                "Để trống để tự tìm file 'Bảng chấm điểm buổi Demo.xlsx' trong thư mục lớp, hoặc dán đường dẫn/link Google Sheet..."
+              }
+              className="flex-1 min-w-[260px] px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+            />
+            <button
+              type="button"
+              disabled={importingDemoScores || uploadingS14EvalLms}
+              onClick={handleImportDemoScores}
+              className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer"
+            >
+              {importingDemoScores ? "Đang đọc điểm..." : "📥 Đọc Điểm Demo từ File Chấm Điểm"}
+            </button>
+          </div>
+
+          {/* Danh sách đánh giá Buổi 14 của từng học viên */}
+          <div className="space-y-2.5">
+            {session14Evals.map((ev) => {
+              const isExpanded = Boolean(expandedS14EvalIds[ev.studentId]);
+              return (
+                <div
+                  key={ev.studentId}
+                  className="rounded-lg bg-slate-950 border border-slate-800 overflow-hidden"
+                >
+                  <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-2 bg-slate-900/60">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="text-xs font-bold text-white">{ev.fullName}</span>
+                      <span className="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-700/60 text-indigo-300 text-[11px] font-semibold">
+                        Điểm Demo: {ev.demoTotalScore} / 5.0
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-700/60 text-cyan-300 text-[11px] font-semibold">
+                        Điểm Năng lực [ĐNL]: {ev.competencyTotalScore} / 5.0
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                          ev.status === "VERIFIED"
+                            ? "bg-emerald-950 border border-emerald-600/60 text-emerald-300"
+                            : ev.status === "APPROVED"
+                            ? "bg-teal-950 border border-teal-600/60 text-teal-300"
+                            : ev.status === "FAILED"
+                            ? "bg-rose-950 border border-rose-600/60 text-rose-300"
+                            : "bg-slate-800 text-slate-300"
+                        }`}
+                      >
+                        {ev.status === "VERIFIED"
+                          ? "Đã lưu LMS ✓"
+                          : ev.status === "APPROVED"
+                          ? "Đã duyệt"
+                          : ev.status === "FAILED"
+                          ? "Lỗi lưu"
+                          : ev.learnedFromMindx
+                          ? "Chờ duyệt"
+                          : "Chưa soạn"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        disabled={generatingS14EvalAi}
+                        onClick={() => handleGenerateSession14EvalAi([ev.studentId])}
+                        className="px-2.5 py-1 rounded bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/40 text-purple-200 text-xs font-semibold cursor-pointer"
+                      >
+                        ✨ AI Soạn riêng
+                      </button>
+                      <button
+                        type="button"
+                        disabled={uploadingS14EvalLms}
+                        onClick={() => handleApproveAndUploadSession14Eval([ev.studentId])}
+                        className="px-2.5 py-1 rounded bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/40 text-emerald-200 text-xs font-semibold cursor-pointer"
+                      >
+                        🚀 Đẩy lên LMS
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedS14EvalIds((prev) => ({
+                            ...prev,
+                            [ev.studentId]: !prev[ev.studentId],
+                          }))
+                        }
+                        className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs cursor-pointer"
+                      >
+                        {isExpanded ? "Thu gọn ▲" : "Chi tiết Điểm & Thư 3 phần ▼"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="p-4 space-y-4 border-t border-slate-800 text-xs">
+                      {/* 5 Tiêu chí Điểm Demo */}
+                      <div>
+                        <div className="font-semibold text-indigo-300 mb-2">
+                          1. Điểm Demo (5 tiêu chí — Tổng: {ev.demoTotalScore} / 5.0 điểm)
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+                          {DEMO_SCORE_ITEMS_UI.map((item) => (
+                            <div
+                              key={item.key}
+                              className="p-2 rounded bg-slate-900 border border-slate-800 space-y-1"
+                            >
+                              <label className="block text-[11px] text-slate-400">
+                                {item.label} (tối đa {item.max})
+                              </label>
+                              <input
+                                type="number"
+                                step="0.05"
+                                min={0}
+                                max={item.max}
+                                value={ev.demoScores[item.key]}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value) || 0;
+                                  const nextDemo = {
+                                    ...ev.demoScores,
+                                    [item.key]: Math.min(item.max, Math.max(0, val)),
+                                  };
+                                  handleSaveSession14EvalDraft(ev.studentId, {
+                                    demoScores: nextDemo,
+                                  });
+                                }}
+                                className="w-full px-2 py-1 rounded bg-slate-950 border border-slate-700 text-white text-xs font-mono"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 9 Tiêu chí Điểm Năng Lực [ĐNL] */}
+                      <div>
+                        <div className="font-semibold text-cyan-300 mb-2">
+                          2. Điểm Năng Lực [ĐNL] (9 tiêu chí thang 1..5 — Trung bình: {ev.competencyTotalScore} / 5.0)
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          {COMPETENCY_ITEMS_UI.map((item) => (
+                            <div
+                              key={item.key}
+                              className="p-2 rounded bg-slate-900 border border-slate-800 flex items-center justify-between gap-2"
+                            >
+                              <span className="text-[11px] text-slate-300">{item.label}</span>
+                              <select
+                                value={ev.competencyScores[item.key]}
+                                onChange={(e) => {
+                                  const nextComp = {
+                                    ...ev.competencyScores,
+                                    [item.key]: Number(e.target.value) || 4,
+                                  };
+                                  handleSaveSession14EvalDraft(ev.studentId, {
+                                    competencyScores: nextComp,
+                                  });
+                                }}
+                                className="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-cyan-300 text-xs font-bold"
+                              >
+                                {[1, 2, 3, 4, 5].map((score) => (
+                                  <option key={score} value={score}>
+                                    {score} điểm
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 3 Ô Thư từ MindX */}
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block font-semibold text-emerald-300 mb-1">
+                            Phần 1: Learned From Mindx (Thư tổng kết khóa học &amp; Kết quả đánh giá)
+                          </label>
+                          <textarea
+                            rows={10}
+                            value={ev.learnedFromMindx}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSession14Evals((prev) =>
+                                prev.map((it) =>
+                                  it.studentId === ev.studentId
+                                    ? { ...it, learnedFromMindx: val }
+                                    : it
+                                )
+                              );
+                            }}
+                            onBlur={() =>
+                              handleSaveSession14EvalDraft(ev.studentId, {
+                                learnedFromMindx: ev.learnedFromMindx,
+                              })
+                            }
+                            className="w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white text-xs leading-relaxed"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block font-semibold text-amber-300 mb-1">
+                              Phần 2: Suggestions From Mindx (Lời khuyên cải thiện)
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={ev.suggestionsFromMindx}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSession14Evals((prev) =>
+                                  prev.map((it) =>
+                                    it.studentId === ev.studentId
+                                      ? { ...it, suggestionsFromMindx: val }
+                                      : it
+                                  )
+                                );
+                              }}
+                              onBlur={() =>
+                                handleSaveSession14EvalDraft(ev.studentId, {
+                                  suggestionsFromMindx: ev.suggestionsFromMindx,
+                                })
+                              }
+                              className="w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white text-xs leading-relaxed"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block font-semibold text-sky-300 mb-1">
+                              Phần 3: Future Direction (Định hướng khóa học tiếp theo)
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={ev.futureDirection}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSession14Evals((prev) =>
+                                  prev.map((it) =>
+                                    it.studentId === ev.studentId
+                                      ? { ...it, futureDirection: val }
+                                      : it
+                                  )
+                                );
+                              }}
+                              onBlur={() =>
+                                handleSaveSession14EvalDraft(ev.studentId, {
+                                  futureDirection: ev.futureDirection,
+                                })
+                              }
+                              className="w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white text-xs leading-relaxed"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* In-Page Folder Browser Modal */}
       {folderModalOpen && (
