@@ -98,11 +98,12 @@ export function LiveLogDrawer() {
   return (
     <>
       {/* Floating Bottom Status Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 border-t border-slate-800 px-4 py-2.5 backdrop-blur flex items-center justify-between shadow-2xl">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 border-t border-slate-800 px-4 py-2 backdrop-blur flex items-center justify-between shadow-2xl">
         <div className="flex items-center space-x-3">
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
+            title="Bấm để mở hoặc ẩn Nhật ký hoạt động"
             className="flex items-center space-x-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors cursor-pointer"
           >
             <span
@@ -118,11 +119,14 @@ export function LiveLogDrawer() {
               {isRunning
                 ? "Bot đang chạy tác vụ..."
                 : isStopped
-                ? "Hàng đợi đang DỪNG KHẨN CẤP"
-                : "Hàng đợi Sẵn sàng"}
+                ? "Đã tạm dừng khẩn cấp"
+                : "Sẵn sàng"}
             </span>
             <span className="text-slate-400 font-mono text-[11px]">
-              ({status?.pendingCount ?? 0} chờ • {status?.completedCount ?? 0} xong)
+              ({status?.pendingCount ?? 0} chờ • {status?.completedCount ?? 0} xong • {logs.length} dòng)
+            </span>
+            <span className="text-slate-400 text-[10px] ml-1">
+              {isOpen ? "▼ Thu gọn" : "▲ Nhật ký"}
             </span>
           </button>
 
@@ -153,24 +157,17 @@ export function LiveLogDrawer() {
               ▶️ Tiếp tục chạy
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={() => handleQueueControl("stop")}
-              disabled={isStopping}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              🛑 Dừng khẩn cấp (Stop Bot)
-            </button>
+            (isRunning || (status?.pendingCount ?? 0) > 0) && (
+              <button
+                type="button"
+                onClick={() => handleQueueControl("stop")}
+                disabled={isStopping}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                🛑 Dừng khẩn cấp (Stop Bot)
+              </button>
+            )
           )}
-
-          <button
-            type="button"
-            onClick={() => setIsOpen(!isOpen)}
-            className="text-xs px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 cursor-pointer"
-            title="Đóng / Mở Log Drawer"
-          >
-            {isOpen ? "▼ Ẩn Nhật ký" : `▲ Xem Nhật ký (${logs.length})`}
-          </button>
         </div>
       </div>
 

@@ -22,7 +22,8 @@ export function buildEnrichedSession14EvalList(classId: string) {
       ...rec,
       fullName: stu.fullName,
       competencyScores: parseSession14CompetencyScores(rec.competencyJson),
-      demoScores: parseSession14DemoScores(rec.demoScoresJson),
+      demoScores: parseSession14DemoScores(rec.demoScoresJson, normalizedClassId),
+      awardRanking: rec.awardRanking || "",
       quickTags,
     };
   });
@@ -229,6 +230,7 @@ export async function POST(req: Request) {
       learnedFromMindx: body?.learnedFromMindx,
       suggestionsFromMindx: body?.suggestionsFromMindx,
       futureDirection: body?.futureDirection,
+      awardRanking: body?.awardRanking,
       quickTags: body?.quickTags,
       teacherNote: body?.teacherNote,
     });

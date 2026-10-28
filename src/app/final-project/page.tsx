@@ -210,14 +210,35 @@ const DEFAULT_SPCK_TAGS = [
 ];
 
 const SESSION14_SPCK_TAGS = [
-  "Chuẩn bị slide thuyết trình đầy đủ, bố cục rõ ràng và sáng tạo",
-  "Nếu luyện tập thêm và tự tin hơn khi trình bày trước lớp sẽ phát huy tốt hơn",
-  "Cần tìm hiểu kỹ hơn về đoạn code trong sản phẩm để tự tin giải thích khi thuyết trình",
-  "Giao diện đẹp mắt, bố cục hợp lý, sử dụng Flexbox phù hợp",
-  "Vận dụng tốt kiến thức đã học, có sự sáng tạo và đầu tư vào sản phẩm",
-  "Còn phụ thuộc khá nhiều vào AI, chưa thực sự hiểu sâu phần cốt lõi của code",
-  "Tự giác tìm hiểu và hoàn thành bài tập mà không phụ thuộc vào AI",
+  "📊 Slide đẹp, bố cục rõ ràng, dễ nhìn",
+  "🗣️ Trình bày tốt, giới thiệu rõ nội dung chính",
+  "😳 Cần luyện diễn đạt & tự tin hơn trước lớp",
+  "🔍 Cần tìm hiểu kỹ code hơn để tự tin giải thích khi hỏi",
+  "🎨 Thiết kế rất đẹp, màu sắc hài hòa và bắt mắt",
+  "📐 Dùng Flexbox / Layout đa dạng, đủ các trang chức năng",
+  "🌐 Chủ động tìm hiểu, học hỏi thêm từ sản phẩm thực tế",
+  "💪 Tự giác tìm hiểu và tự viết code, không phụ thuộc AI",
+  "🤖 Còn phụ thuộc khá nhiều vào AI, chưa hiểu sâu phần cốt lõi của code",
 ];
+
+function extractSession14TagLabelsFromConfig(rawCategories: unknown): string[] {
+  if (!Array.isArray(rawCategories)) return SESSION14_SPCK_TAGS;
+  const labels: string[] = [];
+  for (const cat of rawCategories) {
+    if (!cat || typeof cat !== "object") continue;
+    const c = cat as { category?: string; categoryName?: string; track?: string; tags?: Array<{ label?: string }> };
+    const track = String(c.track || "").toLowerCase();
+    const key = String(c.category || "").toLowerCase();
+    const name = String(c.categoryName || "").toLowerCase();
+    if (track === "session14" || key.startsWith("spck_") || /buổi\s*14|spck/i.test(name)) {
+      for (const t of c.tags || []) {
+        const lbl = String(t?.label || "").trim();
+        if (lbl && !labels.includes(lbl)) labels.push(lbl);
+      }
+    }
+  }
+  return labels.length > 0 ? labels : SESSION14_SPCK_TAGS;
+}
 
 interface Session14CompetencyScoresUI {
   knowledgeInClass: number;
@@ -252,6 +273,7 @@ interface Session14EvalItemUI {
   learnedFromMindx: string;
   suggestionsFromMindx: string;
   futureDirection: string;
+  awardRanking?: string;
   quickTags: string[];
   teacherNote: string;
   draftVersion: number;
@@ -288,11 +310,21 @@ const DEMO_SCORE_ITEMS_UI: Array<{
   { key: "computerSkills", label: "Kỹ năng sử dụng máy tính", max: 1.0 },
 ];
 
+const DEMO_SCORE_ITEMS_ROBOTICS_UI: Array<{
+  key: keyof Session14DemoScoresUI;
+  label: string;
+  max: number;
+}> = [
+  { key: "creativity", label: "Tư duy sáng tạo", max: 1.25 },
+  { key: "communication", label: "Kỹ năng giao tiếp, hợp tác", max: 0.75 },
+  { key: "problemSolving", label: "Giải quyết vấn đề", max: 1.0 },
+  { key: "computerSkills", label: "Kỹ năng sử dụng máy tính", max: 0.5 },
+  { key: "algorithm", label: "Tư duy máy tính, thuật toán", max: 1.0 },
+];
+
 function getStageMeta(sessionNum: 12 | 13 | 14): {
   stageNumber: 1 | 2;
-  stageLabel: string;
   stageTitle: string;
-  shortStageLabel: string;
   stageShort: string;
   suffix: string;
   noteHint: string;
@@ -303,9 +335,7 @@ function getStageMeta(sessionNum: 12 | 13 | 14): {
       "Buổi 12 (Giai đoạn 1): Nêu tiến độ hiện tại và phần cần hoàn thiện tiếp theo.";
     return {
       stageNumber: 1,
-      stageLabel: "Giai đoạn 1",
       stageTitle: "Giai đoạn 1",
-      shortStageLabel: "GĐ1",
       stageShort: "GĐ1",
       suffix: " — Buổi 12 (GĐ1)",
       noteHint: hint,
@@ -317,9 +347,7 @@ function getStageMeta(sessionNum: 12 | 13 | 14): {
       "Buổi 13 (Giai đoạn 1): Nêu tiến độ hiện tại, phần đã bổ sung và phần còn cần hoàn thiện (chỉ đối chiếu Buổi 12 khi có dữ liệu).";
     return {
       stageNumber: 1,
-      stageLabel: "Giai đoạn 1",
       stageTitle: "Giai đoạn 1",
-      shortStageLabel: "GĐ1",
       stageShort: "GĐ1",
       suffix: " — Buổi 13 (GĐ1)",
       noteHint: hint,
@@ -330,9 +358,7 @@ function getStageMeta(sessionNum: 12 | 13 | 14): {
     "Buổi 14 (Tổng kết cuối khóa): Đánh giá kết quả sản phẩm hoàn thiện, nội dung cập nhật và hạn chế nếu có.";
   return {
     stageNumber: 2,
-    stageLabel: "Tổng kết cuối khóa",
     stageTitle: "Tổng kết cuối khóa",
-    shortStageLabel: "CK",
     stageShort: "CK",
     suffix: "",
     noteHint: hint,
@@ -1034,6 +1060,7 @@ export default function FinalProjectPage() {
   const [generatingS14EvalAi, setGeneratingS14EvalAi] = useState<boolean>(false);
   const [uploadingS14EvalLms, setUploadingS14EvalLms] = useState<boolean>(false);
   const [expandedS14EvalIds, setExpandedS14EvalIds] = useState<Record<string, boolean>>({});
+  const [session14TagLabels, setSession14TagLabels] = useState<string[]>(SESSION14_SPCK_TAGS);
 
   const hydrateRowsFromDb = useCallback(
     (
@@ -1049,61 +1076,9 @@ export default function FinalProjectPage() {
         }
       }
       const studentMap = new Map(classStudents.map((s) => [s.studentId, s]));
-      const mapped: ScannedFolderUIItem[] = dbRecords.map((rec) => {
-        const stu = studentMap.get(rec.studentId);
-        const screenshots = parseJsonSafe<string[]>(rec.screenshotsJson, []);
-        const attachments = parseJsonSafe<string[]>(rec.attachmentsJson, []);
-        const youtubeUrls = parseJsonSafe<string[]>(rec.youtubeUrlsJson, []);
-        const relatedLinks = parseJsonSafe<RelatedLinkItem[]>(rec.relatedLinksJson, []);
-        const quickTags = parseJsonSafe<string[]>(rec.quickTagsJson, []);
-        const folderParts = (rec.localFolderPath || "").split(/[\\/]/).filter(Boolean);
-        const folderName =
-          folderParts[folderParts.length - 1] || stu?.fullName || rec.studentId;
-        const fallbackName = stu?.fullName || rec.studentId;
-        const rawTitle = rec.projectTitle || `SPCK ${fallbackName}`;
-        const formattedTitle =
-          rec.activeSessionNumber === targetSess
-            ? rawTitle
-            : formatUiSessionTitle(rawTitle, targetSess, fallbackName);
-
-        return {
-          folderName,
-          folderPath: rec.localFolderPath || "",
-          assignedStudentId: rec.studentId,
-          matchScore: typeof rec.matchScore === "number" ? rec.matchScore : 1.0,
-          requiresManualConfirmation: Number(rec.isConfirmedByTeacher) !== 1,
-          isConfirmedByTeacher: Number(rec.isConfirmedByTeacher) === 1,
-          warningReasons:
-            Number(rec.isConfirmedByTeacher) !== 1
-              ? ["Cần giáo viên xác nhận ghép nối studentId trước khi duyệt."]
-              : [],
-          projectTitle: formattedTitle,
-          baseProjectTitle: rec.baseProjectTitle || stripUiSessionSuffix(formattedTitle),
-          thumbnailPath: rec.thumbnailPath || "",
-          screenshots,
-          attachments,
-          youtubeUrlsText: youtubeUrls.join("\n"),
-          relatedLinksText: serializeRelatedLinksToText(relatedLinks),
-          quickTags,
-          teacherNote: rec.teacherNote || "",
-          includePresentation: targetSess === 14,
-          teacherComment: rec.teacherComment || "",
-          contentHash: rec.contentHash || "",
-          status: rec.status || "DRAFT",
-          verifiedAt: rec.verifiedAt,
-          errorMessage: rec.errorMessage,
-          sessionResults: parseSessionResultsMap(rec.sessionResultsJson),
-          sessionHistory: rec.sessionHistory,
-          draftVersion: rec.draftVersion,
-          hasNewerSharedResources: Boolean(rec.hasNewerSharedResources),
-          isDefaultProductTitle:
-            rec.isDefaultProductTitle !== undefined
-              ? rec.isDefaultProductTitle
-              : isDefaultUiProductTitle(formattedTitle, stu?.fullName),
-          thumbnailInspection: rec.thumbnailInspection,
-          isDirty: false,
-        };
-      });
+      const mapped: ScannedFolderUIItem[] = dbRecords.map((rec) =>
+        buildRowFromDbRecord(rec, studentMap.get(rec.studentId), targetSess)
+      );
       setRows(mapped);
       const assignedIds = mapped.map((r) => r.assignedStudentId).filter(Boolean);
       const readyIds = mapped
@@ -1166,6 +1141,9 @@ export default function FinalProjectPage() {
             : 13);
         setSelectedSessionNumber(resolvedSession);
         setStudents(data.students || []);
+        if (Array.isArray(data.quickTags)) {
+          setSession14TagLabels(extractSession14TagLabelsFromConfig(data.quickTags));
+        }
         if (data.demoSheetMeta) {
           setDemoSheetTitle(
             data.demoSheetMeta.sheetTitle ||
@@ -1235,6 +1213,9 @@ export default function FinalProjectPage() {
           : selectedSessionNumber;
       setSelectedSessionNumber(resolvedSession);
       setStudents(data.students || []);
+        if (Array.isArray(data.quickTags)) {
+          setSession14TagLabels(extractSession14TagLabelsFromConfig(data.quickTags));
+        }
       if (data.demoSheetMeta) {
         setDemoSheetTitle(
           data.demoSheetMeta.sheetTitle ||
@@ -1984,7 +1965,7 @@ export default function FinalProjectPage() {
       if (insufficientItems.length === 0 && failedItems.length === 0 && successCount >= targetRows.length) {
         setBannerMessage({
           type: "success",
-          text: `Đã hoàn tất AI soạn nhận xét Buổi ${requestSessionNum}${stageMeta.stageLabel ? ` (${stageMeta.stageLabel})` : ""} cho ${successCount}/${targetRows.length} học viên.`,
+          text: `Đã hoàn tất AI soạn nhận xét Buổi ${requestSessionNum}${stageMeta.stageTitle ? ` (${stageMeta.stageTitle})` : ""} cho ${successCount}/${targetRows.length} học viên.`,
         });
       } else {
         const detailParts: string[] = [];
@@ -3321,6 +3302,7 @@ export default function FinalProjectPage() {
           "learnedFromMindx",
           "suggestionsFromMindx",
           "futureDirection",
+          "awardRanking",
           "teacherNote",
           "demoScores",
           "competencyScores",
@@ -3443,6 +3425,7 @@ export default function FinalProjectPage() {
       "learnedFromMindx",
       "suggestionsFromMindx",
       "futureDirection",
+      "awardRanking",
       "teacherNote",
       "demoScores",
       "competencyScores",
@@ -3580,6 +3563,7 @@ export default function FinalProjectPage() {
       "learnedFromMindx",
       "suggestionsFromMindx",
       "futureDirection",
+      "awardRanking",
       "teacherNote",
       "demoScores",
       "competencyScores",
@@ -3702,6 +3686,7 @@ export default function FinalProjectPage() {
       "learnedFromMindx",
       "suggestionsFromMindx",
       "futureDirection",
+      "awardRanking",
       "teacherNote",
       "demoScores",
       "competencyScores",
@@ -3928,6 +3913,7 @@ export default function FinalProjectPage() {
           lastSrv.learnedFromMindx !== visibleItem.learnedFromMindx ||
           lastSrv.suggestionsFromMindx !== visibleItem.suggestionsFromMindx ||
           lastSrv.futureDirection !== visibleItem.futureDirection ||
+          String(lastSrv.awardRanking || "") !== String(visibleItem.awardRanking || "") ||
           (visibleItem.teacherNote !== undefined &&
             lastSrv.teacherNote !== visibleItem.teacherNote);
 
@@ -3936,6 +3922,7 @@ export default function FinalProjectPage() {
             learnedFromMindx: visibleItem.learnedFromMindx,
             suggestionsFromMindx: visibleItem.suggestionsFromMindx,
             futureDirection: visibleItem.futureDirection,
+            awardRanking: visibleItem.awardRanking || "",
             teacherNote: visibleItem.teacherNote,
             demoScores: visibleItem.demoScores,
             competencyScores: visibleItem.competencyScores,
@@ -4031,6 +4018,7 @@ export default function FinalProjectPage() {
           "learnedFromMindx",
           "suggestionsFromMindx",
           "futureDirection",
+          "awardRanking",
           "teacherNote",
           "demoScores",
           "competencyScores",
@@ -4124,48 +4112,9 @@ export default function FinalProjectPage() {
           setRows((prev) => {
             if (prev.length === 0) {
               const studentMap = new Map(students.map((s) => [s.studentId, s]));
-              return dbRecords.map((rec) => {
-                const stu = studentMap.get(rec.studentId);
-                const screenshots = parseJsonSafe<string[]>(rec.screenshotsJson, []);
-                const attachments = parseJsonSafe<string[]>(rec.attachmentsJson, []);
-                const youtubeUrls = parseJsonSafe<string[]>(rec.youtubeUrlsJson, []);
-                const relatedLinks = parseJsonSafe<RelatedLinkItem[]>(
-                  rec.relatedLinksJson,
-                  []
-                );
-                const folderParts = (rec.localFolderPath || "")
-                  .split(/[\\/]/)
-                  .filter(Boolean);
-                const folderName =
-                  folderParts[folderParts.length - 1] ||
-                  stu?.fullName ||
-                  rec.studentId;
-                return {
-                  folderName,
-                  folderPath: rec.localFolderPath || "",
-                  assignedStudentId: rec.studentId,
-                  matchScore: typeof rec.matchScore === "number" ? rec.matchScore : 1.0,
-                  requiresManualConfirmation: Number(rec.isConfirmedByTeacher) !== 1,
-                  isConfirmedByTeacher: Number(rec.isConfirmedByTeacher) === 1,
-                  warningReasons: [],
-                  projectTitle:
-                    rec.projectTitle || `SPCK ${stu?.fullName || rec.studentId}`,
-                  thumbnailPath: rec.thumbnailPath || "",
-                  screenshots,
-                  attachments,
-                  youtubeUrlsText: youtubeUrls.join("\n"),
-                  relatedLinksText: serializeRelatedLinksToText(relatedLinks),
-                  quickTags: [],
-                  teacherNote: "",
-                  includePresentation: false,
-                  teacherComment: rec.teacherComment || "",
-                  contentHash: rec.contentHash || "",
-                  status: rec.status || "WAITING_APPROVAL",
-                  verifiedAt: rec.verifiedAt,
-                  errorMessage: rec.errorMessage,
-                  sessionResults: parseSessionResultsMap(rec.sessionResultsJson),
-                };
-              });
+              return dbRecords.map((rec) =>
+                buildRowFromDbRecord(rec, studentMap.get(rec.studentId), selectedSessionNumber)
+              );
             }
 
             const existingIds = new Set(prev.map((r) => r.assignedStudentId));
@@ -4199,46 +4148,9 @@ export default function FinalProjectPage() {
 
             for (const rec of dbRecords) {
               if (!existingIds.has(rec.studentId)) {
-                const stu = studentMap.get(rec.studentId);
-                const screenshots = parseJsonSafe<string[]>(rec.screenshotsJson, []);
-                const attachments = parseJsonSafe<string[]>(rec.attachmentsJson, []);
-                const youtubeUrls = parseJsonSafe<string[]>(rec.youtubeUrlsJson, []);
-                const relatedLinks = parseJsonSafe<RelatedLinkItem[]>(
-                  rec.relatedLinksJson,
-                  []
+                updatedRows.push(
+                  buildRowFromDbRecord(rec, studentMap.get(rec.studentId), selectedSessionNumber)
                 );
-                const folderParts = (rec.localFolderPath || "")
-                  .split(/[\\/]/)
-                  .filter(Boolean);
-                const folderName =
-                  folderParts[folderParts.length - 1] ||
-                  stu?.fullName ||
-                  rec.studentId;
-                updatedRows.push({
-                  folderName,
-                  folderPath: rec.localFolderPath || "",
-                  assignedStudentId: rec.studentId,
-                  matchScore: 1.0,
-                  requiresManualConfirmation: false,
-                  isConfirmedByTeacher: true,
-                  warningReasons: [],
-                  projectTitle:
-                    rec.projectTitle || `SPCK ${stu?.fullName || rec.studentId}`,
-                  thumbnailPath: rec.thumbnailPath || "",
-                  screenshots,
-                  attachments,
-                  youtubeUrlsText: youtubeUrls.join("\n"),
-                  relatedLinksText: serializeRelatedLinksToText(relatedLinks),
-                  quickTags: [],
-                  teacherNote: "",
-                  includePresentation: false,
-                  teacherComment: rec.teacherComment || "",
-                  contentHash: rec.contentHash || "",
-                  status: rec.status || "WAITING_APPROVAL",
-                  verifiedAt: rec.verifiedAt,
-                  errorMessage: rec.errorMessage,
-                  sessionResults: parseSessionResultsMap(rec.sessionResultsJson),
-                });
               }
             }
             return updatedRows;
@@ -4311,7 +4223,10 @@ export default function FinalProjectPage() {
     creatingDemoSheet ||
     capturingScreenshots ||
     importingYoutube ||
-    togglingStudentPortal;
+    togglingStudentPortal ||
+    importingDemoScores ||
+    generatingS14EvalAi ||
+    uploadingS14EvalLms;
 
   const activeBusyDescription = useMemo(() => {
     if (uploading) {
@@ -4319,6 +4234,15 @@ export default function FinalProjectPage() {
         activeActionLabel ||
         `Đang nộp SPCK lên LMS — Buổi ${selectedSessionNumber} (${effectiveSelectedStudentIds.length} bài)...`
       );
+    }
+    if (uploadingS14EvalLms) {
+      return "Đang duyệt và đẩy Đánh giá tổng kết Buổi 14 (Điểm Demo, ĐNL & Thư từ MindX) lên LMS...";
+    }
+    if (generatingS14EvalAi) {
+      return "Đang gọi AI soạn Thư tổng kết 3 phần (Buổi 14) cho học viên...";
+    }
+    if (importingDemoScores) {
+      return "Đang đọc Điểm Demo từ file chấm điểm BGK (.xlsx / Google Sheet)...";
     }
     if (scanning) return "Đang quét thư mục sản phẩm trên máy và khớp danh sách học viên...";
     if (generatingAi) return "Đang gọi AI soạn nhận xét cuối khóa cho các học viên...";
@@ -4332,6 +4256,9 @@ export default function FinalProjectPage() {
     return "";
   }, [
     uploading,
+    uploadingS14EvalLms,
+    generatingS14EvalAi,
+    importingDemoScores,
     activeActionLabel,
     selectedSessionNumber,
     effectiveSelectedStudentIds.length,
@@ -4349,6 +4276,19 @@ export default function FinalProjectPage() {
     () => classes.find((c) => c.classId === selectedClassId),
     [classes, selectedClassId]
   );
+
+  const isRoboticsClass = useMemo(() => {
+    const classText = `${selectedClassId} ${selectedClassMeta?.className || ""}`.toUpperCase();
+    return /\b(ROB|ROBO|ROBOT|ROBOTICS|PREB|PREA|PREI|ARM|ARMA|ARMB|ARMI|SEM|SEMA|SEMB|SEMI|EV3|VEX|SPIKE|WEDO|ARDUINO)[A-Z0-9]*\b/i.test(
+      classText
+    );
+  }, [selectedClassId, selectedClassMeta]);
+
+  const activeDemoScoreItems = isRoboticsClass
+    ? DEMO_SCORE_ITEMS_ROBOTICS_UI
+    : DEMO_SCORE_ITEMS_UI;
+
+  const totalStepsCount = selectedSessionNumber === 14 ? 4 : 3;
 
   const isWebClassOrProduct = useMemo(() => {
     const classText = `${selectedClassId} ${selectedClassMeta?.className || ""}`.toUpperCase();
@@ -4414,7 +4354,7 @@ export default function FinalProjectPage() {
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800">
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold">
-              Bước 1 / 3
+              Bước 1 / {totalStepsCount}
             </span>
             <h2 className="text-sm font-bold text-white">
               Chọn Lớp &rarr; Chọn Buổi Nộp (12 / 13 / 14) &rarr; Chọn Thư Mục &amp; Khớp Học Viên
@@ -4552,7 +4492,19 @@ export default function FinalProjectPage() {
           </div>
         </div>
 
-        {/* 1D. Robotics / sản phẩm chỉ có video YouTube */}
+        {/* 1D. Robotics / sản phẩm chỉ có video YouTube (Mặc định hiển thị cho lớp Robotics, lớp khác ẩn gọn) */}
+        {!isRoboticsClass && !showYoutubeImport ? (
+          <div className="flex items-center justify-end">
+            <button
+              type="button"
+              onClick={() => setShowYoutubeImport(true)}
+              className="inline-flex items-center gap-1.5 text-[11px] text-rose-300/80 hover:text-rose-200 underline cursor-pointer"
+            >
+              <Video className="w-3.5 h-3.5 text-rose-400" />
+              <span>Mở công cụ nhập Playlist YouTube (Dành cho lớp Robotics / Video)</span>
+            </button>
+          </div>
+        ) : (
         <div className="rounded-lg border border-rose-500/30 bg-rose-950/20">
           <button
             type="button"
@@ -4567,7 +4519,7 @@ export default function FinalProjectPage() {
               {showYoutubeImport ? "Thu gọn ▴" : "Mở ▾"}
             </span>
           </button>
-          {showYoutubeImport && (
+          {(showYoutubeImport || isRoboticsClass) && (
             <div className="px-3 pb-3 space-y-2">
               <textarea
                 value={youtubeImportInput}
@@ -4663,6 +4615,7 @@ export default function FinalProjectPage() {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Status Alert Banner */}
@@ -4693,7 +4646,7 @@ export default function FinalProjectPage() {
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/50 text-purple-300 text-xs font-bold">
-                Bước 2 / 3
+                Bước 2 / {totalStepsCount}
               </span>
               <h2 className="text-sm font-bold text-white">
                 Chuẩn Bị &amp; Xem Lại Bài ({rows.length} học viên)
@@ -4792,17 +4745,6 @@ export default function FinalProjectPage() {
               <span className="text-xs font-bold text-sky-300 uppercase">
                 Công cụ tùy chọn: Cổng thu bài học sinh, Google Drive &amp; Cấu hình chạy thử
               </span>
-              {!isWebClassOrProduct && (
-                <button
-                  type="button"
-                  onClick={() => handleDeployWebToGithubPages()}
-                  disabled={isAnyOperationBusy || !selectedClassId || rows.length === 0}
-                  className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-indigo-600/80 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
-                >
-                  <Rocket className="w-3.5 h-3.5" />
-                  <span>Đẩy Web Live (Nếu có file .html)</span>
-                </button>
-              )}
             </div>
 
             {/* Student Direct SPCK Upload Portal */}
@@ -5059,35 +5001,18 @@ export default function FinalProjectPage() {
             </div>
 
             {/* GitHub Pages Web Repo Config */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-              <div className="md:col-span-8">
-                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                  Kho GitHub Pages Chạy Thử Web Live (Dành cho sản phẩm Web có file .html)
-                </label>
-                <input
-                  type="text"
-                  value={webRepoUrl}
-                  onChange={(e) => setWebRepoUrl(e.target.value)}
-                  disabled={isAnyOperationBusy}
-                  placeholder="https://github.com/Banhtalon/WEB_PRODUCT_SHOW.git"
-                  className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-              <div className="md:col-span-4">
-                <button
-                  type="button"
-                  onClick={() => handleDeployWebToGithubPages()}
-                  disabled={isAnyOperationBusy || !selectedClassId || rows.length === 0}
-                  className="w-full flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs transition-colors cursor-pointer"
-                >
-                  {deployingWeb ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Rocket className="w-4 h-4" />
-                  )}
-                  <span>Đẩy Web Cả Lớp lên GitHub Pages &amp; Gắn Link</span>
-                </button>
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
+                Kho GitHub Pages Chạy Thử Web Live (Dành cho sản phẩm Web có file .html — bấm nút &ldquo;Chạy Thử Web&rdquo; trên thanh công cụ Bước 2 để đẩy)
+              </label>
+              <input
+                type="text"
+                value={webRepoUrl}
+                onChange={(e) => setWebRepoUrl(e.target.value)}
+                disabled={isAnyOperationBusy}
+                placeholder="https://github.com/Banhtalon/WEB_PRODUCT_SHOW.git"
+                className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-indigo-500"
+              />
             </div>
           </div>
         )}
@@ -5452,15 +5377,12 @@ export default function FinalProjectPage() {
                               : `Thiếu/Lỗi: ${readiness.missingItems.join(", ")}`}
                           </span>
                           {row.hasNewerSharedResources && (
-                            <button
-                              type="button"
-                              onClick={() => handleSyncLatestResources(row)}
-                              disabled={isAnyOperationBusy}
-                              title="Kho tài nguyên chung vừa có ảnh hoặc đường dẫn mới. Bấm để cập nhật vào bản nháp buổi này."
-                              className="px-2 py-0.5 rounded bg-sky-600 hover:bg-sky-500 text-white font-semibold text-[10px] cursor-pointer"
+                            <span
+                              title="Kho tài nguyên chung vừa có ảnh hoặc đường dẫn mới. Bấm 'Chi tiết ▾' để đồng bộ vào bản nháp buổi này."
+                              className="px-2 py-0.5 rounded bg-sky-950/80 border border-sky-500/50 text-sky-300 font-semibold text-[10px]"
                             >
-                              🔄 Dùng tài nguyên mới nhất
-                            </button>
+                              🔄 Có tài nguyên mới
+                            </span>
                           )}
                         </div>
 
@@ -5970,7 +5892,7 @@ export default function FinalProjectPage() {
 
                               <div className="flex flex-wrap gap-1.5">
                                 {(selectedSessionNumber === 14
-                                  ? SESSION14_SPCK_TAGS
+                                  ? session14TagLabels
                                   : DEFAULT_SPCK_TAGS
                                 ).map((tag) => {
                                   const active = row.quickTags.includes(tag);
@@ -6093,7 +6015,7 @@ export default function FinalProjectPage() {
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold">
-                Bước 3 / 3
+                Bước 3 / {totalStepsCount}
               </span>
               <h2 className="text-sm font-bold text-white">
                 Nộp Các Bài Đã Chọn &amp; Đối Chiếu Kết Quả LMS
@@ -6263,21 +6185,21 @@ export default function FinalProjectPage() {
             <div className="space-y-1">
               <div className="flex items-center space-x-2">
                 <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/50 text-indigo-300 text-xs font-bold">
-                  Riêng Buổi 14 — Tổng kết cuối khóa
+                  Bước 4 / 4 — Riêng Buổi 14 (Tổng kết cuối khóa)
                 </span>
                 <h2 className="text-sm font-bold text-white">
                   Đánh Giá Tổng Kết Cuối Khóa, Điểm Demo &amp; Thư Từ MindX (Cột 2 LMS: &quot;Nhận xét học sinh&quot;)
                 </h2>
               </div>
               <p className="text-xs text-slate-400">
-                Đọc tự động 5 tiêu chí Điểm Demo từ file chấm điểm BGK (.xlsx / Google Sheet), chọn 9 mục Điểm Năng lực [ĐNL], AI soạn Thư tổng kết 3 phần (Learned From Mindx / Suggestions From Mindx / Future Direction) và tự động đẩy lên LMS.
+                Đọc tự động 5 tiêu chí Điểm Demo từ file chấm điểm BGK (.xlsx / Google Sheet), chọn 9 mục Điểm Năng lực [ĐNL], AI soạn Thư tổng kết 3 phần (Learned From Mindx / Suggestions From Mindx / Future Direction){isRoboticsClass ? " + Xếp hạng giải Robotics" : ""} và tự động đẩy lên LMS.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                disabled={generatingS14EvalAi || uploadingS14EvalLms || importingDemoScores}
+                disabled={isAnyOperationBusy}
                 onClick={() => handleGenerateSession14EvalAi()}
                 className="px-3.5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold flex items-center space-x-1.5 cursor-pointer"
               >
@@ -6291,7 +6213,7 @@ export default function FinalProjectPage() {
 
               <button
                 type="button"
-                disabled={uploadingS14EvalLms || generatingS14EvalAi || importingDemoScores}
+                disabled={isAnyOperationBusy}
                 onClick={() => handleApproveAndUploadSession14Eval()}
                 className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center space-x-1.5 cursor-pointer"
               >
@@ -6314,15 +6236,16 @@ export default function FinalProjectPage() {
               type="text"
               value={demoScoreSourceInput}
               onChange={(e) => setDemoScoreSourceInput(e.target.value)}
+              disabled={isAnyOperationBusy}
               placeholder={
                 generatedDemoSheetUrl ||
                 "Để trống để tự tìm file 'Bảng chấm điểm buổi Demo.xlsx' trong thư mục lớp, hoặc dán đường dẫn/link Google Sheet..."
               }
-              className="flex-1 min-w-[260px] px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+              className="flex-1 min-w-[260px] px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono disabled:opacity-60"
             />
             <button
               type="button"
-              disabled={importingDemoScores || uploadingS14EvalLms}
+              disabled={isAnyOperationBusy}
               onClick={handleImportDemoScores}
               className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer"
             >
@@ -6374,17 +6297,17 @@ export default function FinalProjectPage() {
                     <div className="flex items-center space-x-2">
                       <button
                         type="button"
-                        disabled={generatingS14EvalAi}
+                        disabled={isAnyOperationBusy}
                         onClick={() => handleGenerateSession14EvalAi([ev.studentId])}
-                        className="px-2.5 py-1 rounded bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/40 text-purple-200 text-xs font-semibold cursor-pointer"
+                        className="px-2.5 py-1 rounded bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/40 text-purple-200 text-xs font-semibold cursor-pointer disabled:opacity-50"
                       >
                         ✨ AI Soạn riêng
                       </button>
                       <button
                         type="button"
-                        disabled={uploadingS14EvalLms}
+                        disabled={isAnyOperationBusy}
                         onClick={() => handleApproveAndUploadSession14Eval([ev.studentId])}
-                        className="px-2.5 py-1 rounded bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/40 text-emerald-200 text-xs font-semibold cursor-pointer"
+                        className="px-2.5 py-1 rounded bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/40 text-emerald-200 text-xs font-semibold cursor-pointer disabled:opacity-50"
                       >
                         🚀 Đẩy lên LMS
                       </button>
@@ -6408,10 +6331,10 @@ export default function FinalProjectPage() {
                       {/* 5 Tiêu chí Điểm Demo */}
                       <div>
                         <div className="font-semibold text-indigo-300 mb-2">
-                          1. Điểm Demo (5 tiêu chí — Tổng: {ev.demoTotalScore} / 5.0 điểm)
+                          1. Điểm Demo ({isRoboticsClass ? "Thang Robotics" : "Thang Lập trình"} — Tổng: {ev.demoTotalScore} / 5.0 điểm)
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-                          {DEMO_SCORE_ITEMS_UI.map((item) => (
+                          {activeDemoScoreItems.map((item) => (
                             <div
                               key={item.key}
                               className="p-2 rounded bg-slate-900 border border-slate-800 space-y-1"
@@ -6478,7 +6401,7 @@ export default function FinalProjectPage() {
                         </div>
                       </div>
 
-                      {/* 3 Ô Thư từ MindX */}
+                      {/* 3 Ô Thư từ MindX (+ Ô 4 Xếp hạng giải cho lớp Robotics) */}
                       <div className="space-y-3">
                         <div>
                           <label className="block font-semibold text-emerald-300 mb-1">
@@ -6559,6 +6482,35 @@ export default function FinalProjectPage() {
                             />
                           </div>
                         </div>
+
+                        {isRoboticsClass && (
+                          <div>
+                            <label className="block font-semibold text-rose-300 mb-1">
+                              Phần 4: Xếp hạng giải của học viên (Riêng lớp Robotics — Cột 2 LMS Buổi 14, Tùy chọn)
+                            </label>
+                            <input
+                              type="text"
+                              value={ev.awardRanking || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSession14Evals((prev) =>
+                                  prev.map((it) =>
+                                    it.studentId === ev.studentId
+                                      ? { ...it, awardRanking: val }
+                                      : it
+                                  )
+                                );
+                              }}
+                              onBlur={() =>
+                                handleSaveSession14EvalDraft(ev.studentId, {
+                                  awardRanking: ev.awardRanking || "",
+                                })
+                              }
+                              placeholder="VD: Giải Nhất / Giải Sáng Tạo / Giải Thuyết Trình Ấn Tượng (Để trống nếu không điền)"
+                              className="w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white text-xs"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

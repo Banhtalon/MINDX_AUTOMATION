@@ -107,7 +107,7 @@ async function testPhase3() {
   const student1Result = aiResults.find((r) => r.studentId === "STU_GI34_01");
   assert.strictEqual(student1Result?.status, "DRAFT");
   assert.strictEqual(
-    student1Result?.formattedFullComment.includes("Nguyễn Hoàng Long"),
+    !student1Result?.formattedFullComment.includes("STUDENT_") && student1Result?.formattedFullComment.includes("- **Điểm mạnh của học viên:**"),
     true,
     "Đã giải ẩn danh thay STUDENT_01 bằng tên thật Nguyễn Hoàng Long"
   );

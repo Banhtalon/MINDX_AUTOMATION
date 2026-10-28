@@ -4,7 +4,7 @@ import { LiveLogDrawer } from "@/components/live-log-drawer";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MindX Automation Bot (v2.1)",
+  title: "MindX Automation Bot (v3.0)",
   description: "Hệ thống trợ lý tự động hóa toàn diện dành cho Giáo viên tại MindX",
 };
 
@@ -21,7 +21,7 @@ export default function RootLayout({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <span className="text-xl font-bold bg-gradient-to-r from-orange-400 via-rose-400 to-amber-300 bg-clip-text text-transparent">
-                ⚡ MindX Bot v2.1
+                ⚡ MindX Bot v3.0
               </span>
             </div>
 

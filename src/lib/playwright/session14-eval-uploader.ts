@@ -10,6 +10,7 @@
 import type { Page } from "playwright";
 import {
   computeSession14EvalHash,
+  isRoboticsClassCode,
   jobLogRepo,
   parseSession14CompetencyScores,
   parseSession14DemoScores,
@@ -62,6 +63,7 @@ function verifyServerEvaluationPayload(
     learnedFromMindx: string;
     suggestionsFromMindx: string;
     futureDirection: string;
+    awardRanking?: string;
   },
   compScores: SpckSession14CompetencyScores,
   demoValuesInDomOrder: number[],
@@ -90,7 +92,9 @@ function verifyServerEvaluationPayload(
       ? (payloadObj.letter as Record<string, unknown>)
       : payloadObj;
   const textsArr =
-    Array.isArray(payloadObj.texts) && payloadObj.texts.length === 3
+    Array.isArray(payloadObj.texts) &&
+    payloadObj.texts.length >= 3 &&
+    payloadObj.texts.length <= 4
       ? (payloadObj.texts as unknown[])
       : null;
 
@@ -132,10 +136,30 @@ function verifyServerEvaluationPayload(
     throw new Error("Nội dung futureDirection từ máy chủ trả về không khớp với bản đã duyệt.");
   }
 
+  const isRobotics = isRoboticsClassCode(classId);
+  const expectedAward = normalizePlainText(record.awardRanking || "");
+  const srvAward =
+    typeof letterObj.awardRanking === "string"
+      ? letterObj.awardRanking
+      : typeof payloadObj.awardRanking === "string"
+      ? payloadObj.awardRanking
+      : textsArr && typeof textsArr[3] === "string"
+      ? textsArr[3]
+      : undefined;
+
+  if (typeof srvAward === "string" && normalizePlainText(srvAward) !== expectedAward) {
+    throw new Error(
+      "Nội dung Xếp hạng giải của học viên (awardRanking) từ máy chủ trả về không khớp với bản đã duyệt."
+    );
+  }
+  const hasAwardWhenRequired =
+    (!isRobotics && !expectedAward) || typeof srvAward === "string";
+
   const hasAllThreeLetters =
     typeof srvLearned === "string" &&
     typeof srvSuggestions === "string" &&
-    typeof srvFuture === "string";
+    typeof srvFuture === "string" &&
+    hasAwardWhenRequired;
 
   // 2. Check 9 [ĐNL] competency ratings
   const compContainer =
@@ -184,14 +208,12 @@ function verifyServerEvaluationPayload(
   const hasAllNineCompetencies = matchedCompetencyCount === SESSION14_COMPETENCY_KEYS.length;
 
   // 3. Check 5 Demo Scores
-  const demoKeys = [
-    "algorithm",
-    "creativity",
-    "communication",
-    "problemSolving",
-    "computerSkills",
-  ] as const;
-  const demoMaxByIndex = [1.5, 1.0, 0.5, 1.0, 1.0] as const;
+  const demoKeys = isRobotics
+    ? (["creativity", "communication", "problemSolving", "computerSkills", "algorithm"] as const)
+    : (["algorithm", "creativity", "communication", "problemSolving", "computerSkills"] as const);
+  const demoMaxByIndex = isRobotics
+    ? ([1.25, 0.75, 1.0, 0.5, 1.0] as const)
+    : ([1.5, 1.0, 0.5, 1.0, 1.0] as const);
   const demoContainer =
     payloadObj.demoScores &&
     typeof payloadObj.demoScores === "object" &&
@@ -443,7 +465,8 @@ export class Session14EvalUploader {
     }
 
     const compScores = parseSession14CompetencyScores(record.competencyJson);
-    const demoScores = parseSession14DemoScores(record.demoScoresJson);
+    const demoScores = parseSession14DemoScores(record.demoScoresJson, classId);
+    const isRobotics = isRoboticsClassCode(classId);
 
     if (!skipNavigation) {
       await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
@@ -536,13 +559,21 @@ export class Session14EvalUploader {
       .catch(() => totalNumInputs >= 6);
     const offset = firstDisabled && totalNumInputs >= 6 ? 1 : 0;
 
-    const demoValuesInDomOrder: number[] = [
-      demoScores.algorithm,
-      demoScores.creativity,
-      demoScores.communication,
-      demoScores.problemSolving,
-      demoScores.computerSkills,
-    ];
+    const demoValuesInDomOrder: number[] = isRobotics
+      ? [
+          demoScores.creativity,
+          demoScores.communication,
+          demoScores.problemSolving,
+          demoScores.computerSkills,
+          demoScores.algorithm,
+        ]
+      : [
+          demoScores.algorithm,
+          demoScores.creativity,
+          demoScores.communication,
+          demoScores.problemSolving,
+          demoScores.computerSkills,
+        ];
 
     for (let idx = 0; idx < 5; idx++) {
       const inputLoc = numberInputs.nth(offset + idx);
@@ -567,18 +598,28 @@ export class Session14EvalUploader {
         .catch(() => {});
     }
 
-    // 3. Fill 3 Quill Editors ("Learned From Mindx", "Suggestions From Mindx", "Future Direction")
+    // 3. Fill 3 Quill Editors ("Learned From Mindx", "Suggestions From Mindx", "Future Direction") + 4th ("Xếp hạng giải") for Robotics
     const quills = dialog.locator(".ql-editor");
     const quillCount = await quills.count().catch(() => 0);
+    const cleanAwardRanking = String(record.awardRanking || "").trim();
+    const requiresFourthQuill = isRobotics || cleanAwardRanking.length > 0;
     if (quillCount < 3) {
       throw new Error(
         `Modal "Nhận xét học sinh" Buổi 14 của "${fullName}" không đủ 3 ô Thư từ MindX (.ql-editor tìm thấy=${quillCount}).`
+      );
+    }
+    if (requiresFourthQuill && quillCount < 4) {
+      throw new Error(
+        `Modal "Nhận xét học sinh" Buổi 14 của "${fullName}" thiếu ô thứ 4 "Xếp hạng giải của học viên" (.ql-editor tìm thấy=${quillCount}, yêu cầu >= 4).`
       );
     }
 
     await this.fillQuillEditor(quills.nth(0), record.learnedFromMindx);
     await this.fillQuillEditor(quills.nth(1), record.suggestionsFromMindx);
     await this.fillQuillEditor(quills.nth(2), record.futureDirection);
+    if (quillCount >= 4) {
+      await this.fillQuillEditor(quills.nth(3), cleanAwardRanking);
+    }
 
     // Re-check CAS hash and Session 14 active slot immediately before clicking Save (F03)
     const latestBeforeSave = session14EvalRepo.findOne(classId, studentId);
@@ -954,12 +995,20 @@ export class Session14EvalUploader {
     }
     await ensureDialogExpanded();
 
-    // Verify full text of all 3 Quill editors (F02)
+    // Verify full text of all Quill editors after reopen (F02 + Robotics 4th Quill)
+    const minRequiredQuills = requiresFourthQuill ? 4 : 3;
+    const reopenQuillCount = await quills.count();
+    if (reopenQuillCount < minRequiredQuills) {
+      throw new Error(
+        `Đối chiếu Read-after-Write thất bại: Sau khi mở lại chỉ tìm thấy ${reopenQuillCount}/${minRequiredQuills} ô soạn thảo (.ql-editor) cho "${fullName}".`
+      );
+    }
+
     const readQuillText = async (index: number): Promise<string> => {
       const loc = quills.nth(index);
-      const raw = await loc
-        .evaluate((el: HTMLElement) => el.innerText || el.textContent || "")
-        .catch(() => "");
+      const raw = await loc.evaluate(
+        (el: HTMLElement) => el.innerText || el.textContent || ""
+      );
       return normalizePlainText(raw);
     };
 
@@ -975,6 +1024,20 @@ export class Session14EvalUploader {
       throw new Error(
         `Đối chiếu Read-after-Write thất bại: Nội dung toàn văn 3 ô Thư từ MindX trên DOM không khớp 100% với bản đã duyệt của "${fullName}".`
       );
+    }
+    if (requiresFourthQuill || reopenQuillCount >= 4 || quillCount >= 4) {
+      if (reopenQuillCount < 4) {
+        throw new Error(
+          `Đối chiếu Read-after-Write thất bại: Không tìm thấy ô thứ 4 "Xếp hạng giải của học viên" trên DOM khi đọc lại của "${fullName}".`
+        );
+      }
+      const readQuill3 = await readQuillText(3);
+      const expQuill3 = normalizePlainText(cleanAwardRanking);
+      if (readQuill3 !== expQuill3) {
+        throw new Error(
+          `Đối chiếu Read-after-Write thất bại: Nội dung ô "Xếp hạng giải của học viên" trên DOM ("${readQuill3}") không khớp với bản đã duyệt ("${expQuill3}") của "${fullName}".`
+        );
+      }
     }
 
     // Verify 9 [ĐNL] Competency radio selections

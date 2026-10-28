@@ -1,6 +1,6 @@
 import { getGeminiModel } from "./client";
 import { sessionFeedbackRepo, studentRepo, type SessionFeedbackRecord } from "../db/sqlite";
-import { getQuickTags } from "../db/json-config";
+import { getCoursesSyllabus, getQuickTags } from "../db/json-config";
 
 export interface StudentCommentInput {
   studentId: string;
@@ -19,6 +19,7 @@ export interface SessionContext {
   sessionNumber: number;
   topic: string;
   keyKnowledge?: string[];
+  isCheckpointSession?: boolean;
 }
 
 export interface GeneratedCommentResult {
@@ -112,13 +113,56 @@ export class CommentGenerator {
     const results: GeneratedCommentResult[] = [];
     const validCandidates: {
       input: StudentCommentInput;
+      regularQuickTags: string[];
       anonymousId: string;
       scopeKey: string;
       initialSnapshot: CandidateSnapshot;
     }[] = [];
 
+    const rawCategories = typeof getQuickTags === "function" ? getQuickTags() || [] : [];
+    const isSession14CategoryObj = (cat: any): boolean => {
+      const track = String(cat?.track || "").trim().toLowerCase();
+      const key = String(cat?.category || "").trim().toLowerCase();
+      const name = String(cat?.categoryName || "").trim().toLowerCase();
+      return (
+        track === "session14" ||
+        track === "spck" ||
+        key.startsWith("spck_") ||
+        key.includes("session14") ||
+        /buổi\s*14|spck/i.test(name)
+      );
+    };
+    const configuredCategories = rawCategories.filter((cat) => !isSession14CategoryObj(cat));
+    const session14TagSet = new Set<string>();
+    for (const cat of rawCategories) {
+      if (!isSession14CategoryObj(cat)) continue;
+      for (const t of cat?.tags || []) {
+        if (t?.id) session14TagSet.add(String(t.id).trim().toLowerCase());
+        if (t?.label) session14TagSet.add(String(t.label).trim().toLowerCase());
+      }
+    }
+    const filterRegularTags = (tags?: string[]): string[] => {
+      if (!Array.isArray(tags)) return [];
+      return tags
+        .map((t) => String(t || "").trim())
+        .filter((t) => {
+          if (!t) return false;
+          const lower = t.toLowerCase();
+          if (session14TagSet.has(lower)) return false;
+          if (
+            /^s14_|slide thuyết trình|phụ thuộc.*vào ai|bố cục.*flexbox|thuyết trình còn nhỏ|sản phẩm chạy mượt/i.test(
+              lower
+            )
+          ) {
+            return false;
+          }
+          return true;
+        });
+    };
+
     const captureSnapshot = (
       student: StudentCommentInput,
+      regularQuickTags: string[],
       dbRecord?: SessionFeedbackRecord
     ): CandidateSnapshot => {
       const meta = parseVersionMetaSafe(dbRecord?.versionMetaJson);
@@ -127,7 +171,7 @@ export class CommentGenerator {
         versionMetaJson: dbRecord?.versionMetaJson ?? "",
         rowVer: meta.rowVer,
         attendanceStatus: dbRecord?.attendanceStatus ?? student.attendanceStatus ?? "PRESENT",
-        quickTagsJson: dbRecord?.quickTagsJson ?? JSON.stringify(student.quickTags || []),
+        quickTagsJson: dbRecord?.quickTagsJson ?? JSON.stringify(regularQuickTags),
         teacherNote: dbRecord?.teacherNote ?? (student.teacherNote || ""),
         strengths: dbRecord?.strengths ?? "",
         improvements: dbRecord?.improvements ?? "",
@@ -210,8 +254,9 @@ export class CommentGenerator {
       const scopeKey = `${normalizedClassId}::${normalizedSessionId}::${student.studentId}`;
       CommentGenerator.latestStudentCallSeq.set(scopeKey, callSeq);
 
-      const hasTags = student.quickTags && student.quickTags.length > 0;
-      const hasNote = student.teacherNote && student.teacherNote.trim().length > 0;
+      const regularQuickTags = filterRegularTags(student.quickTags);
+      const hasTags = regularQuickTags.length > 0;
+      const hasNote = Boolean(student.teacherNote && student.teacherNote.trim().length > 0);
 
       // IRON RULE 5: Nếu học viên không có cả Quick Tags lẫn ghi chú -> INSUFFICIENT_INFO (CẤM AI BỊA)
       if (!hasTags && !hasNote) {
@@ -248,7 +293,7 @@ export class CommentGenerator {
           studentId: student.studentId,
           attendanceStatus:
             (initialDbRecord?.attendanceStatus as any) || student.attendanceStatus || "PRESENT",
-          quickTagsJson: initialDbRecord?.quickTagsJson ?? JSON.stringify(student.quickTags || []),
+          quickTagsJson: initialDbRecord?.quickTagsJson ?? JSON.stringify(regularQuickTags),
           teacherNote: initialDbRecord?.teacherNote ?? (student.teacherNote || ""),
           strengths: preservedStrengths,
           improvements: preservedImprovements,
@@ -266,9 +311,10 @@ export class CommentGenerator {
       const anonymousId = `STUDENT_${String(validCandidates.length + 1).padStart(2, "0")}`;
       validCandidates.push({
         input: student,
+        regularQuickTags,
         anonymousId,
         scopeKey,
-        initialSnapshot: captureSnapshot(student, initialDbRecord),
+        initialSnapshot: captureSnapshot(student, regularQuickTags, initialDbRecord),
       });
     }
 
@@ -365,71 +411,178 @@ export class CommentGenerator {
       return text;
     };
 
-    const isRoboticsClass = /rob/i.test(normalizedClassCode);
-    const configuredCategories =
-      typeof getQuickTags === "function" ? getQuickTags() || [] : [];
+    const isRoboticsClass = /(?:rob|pre[bai]|arm[bai]|semi[bai]|vex)/i.test(normalizedClassCode);
+
     const resolveTagWithHint = (rawTag: string): string => {
       const cleanTag = String(rawTag || "").trim();
       if (!cleanTag || configuredCategories.length === 0) return cleanTag;
+      const cleanLower = cleanTag.toLowerCase();
       let fallbackHint = "";
+      let fallbackLabel = cleanTag;
       for (const cat of configuredCategories) {
+        const catTrack = String((cat as any)?.track || "").toLowerCase();
         const catKey = String(cat?.category || "").toLowerCase();
         const catName = String(cat?.categoryName || "").toLowerCase();
         const isRobCat =
+          catTrack === "robotics" ||
           catKey.includes("robot") ||
           catKey.startsWith("rob_") ||
           /robot|lắp ráp|🤖/i.test(catName);
         const isCodeCat =
+          catTrack === "coding" ||
           catKey.includes("coding") ||
           catKey === "execution" ||
           /lập trình|code|💻/i.test(catName);
 
         for (const t of cat?.tags || []) {
-          if (String(t?.label || "").trim() === cleanTag && t?.hint) {
+          const tLabel = String(t?.label || "").trim();
+          const tId = String(t?.id || "").trim();
+          if (
+            (tLabel.toLowerCase() === cleanLower || tId.toLowerCase() === cleanLower) &&
+            t?.hint
+          ) {
+            const displayLabel = tLabel || cleanTag;
             if ((isRoboticsClass && isRobCat) || (!isRoboticsClass && isCodeCat)) {
-              return `${cleanTag} (Chi tiết: ${t.hint})`;
+              return `${displayLabel} (Chi tiết: ${t.hint})`;
             }
             if (!fallbackHint) {
               fallbackHint = t.hint;
+              fallbackLabel = displayLabel;
             }
           }
         }
       }
-      return fallbackHint ? `${cleanTag} (Chi tiết: ${fallbackHint})` : cleanTag;
+      return fallbackHint ? `${fallbackLabel} (Chi tiết: ${fallbackHint})` : cleanTag;
     };
 
-    const classifySkillLevel = (rawTags: string[]): string => {
-      const joined = (rawTags || []).join(" ").toLowerCase();
-      const isDistracted = /mất tập trung|xao nhãng|nói chuyện riêng|làm việc riêng/.test(joined);
-      const isExcellent = /xuất sắc|giỏi|sáng tạo|🌟/.test(joined);
-      const isNeedSupport = /cần kèm|trung bình|chưa kịp|🛠️/.test(joined);
-      const isGood = /đạt yêu cầu|khá|tốt|👍/.test(joined);
+    const tagLookup = new Map<string, any>();
+    for (const cat of configuredCategories) {
+      for (const t of cat?.tags || []) {
+        if (t?.label) tagLookup.set(String(t.label).trim().toLowerCase(), t);
+        if (t?.id) tagLookup.set(String(t.id).trim().toLowerCase(), t);
+      }
+    }
 
-      if (isExcellent && !isDistracted) {
-        return "Cấp độ 1 - Giỏi: Tiếp thu nhanh, nắm vững tư duy thuật toán và công nghệ, chủ động hoàn thành tốt bài tập cơ bản lẫn nâng cao, có sự sáng tạo.";
+    const classifySkillLevel = (rawTags: string[]): string => {
+      const tags = filterRegularTags(rawTags);
+      let hasExcellent = false;
+      let hasGood = false;
+      let hasSlow = false;
+      let hasDistracted = false;
+      let hasImprove = false;
+      let positiveCount = 0;
+
+      for (const raw of tags) {
+        const lower = raw.toLowerCase();
+        const matched = tagLookup.get(lower);
+        const role = String(matched?.role || "").trim().toLowerCase();
+
+        if (role) {
+          if (role === "excellent") {
+            hasExcellent = true;
+            positiveCount++;
+          } else if (role === "distracted") {
+            hasDistracted = true;
+          } else if (role === "slow") {
+            hasSlow = true;
+          } else if (role === "improve") {
+            hasImprove = true;
+          } else if (role === "good" || role === "positive") {
+            hasGood = true;
+            positiveCount++;
+          }
+          continue;
+        }
+
+        if (
+          /xuất sắc|giỏi|vận dụng.*sáng tạo|sáng tạo|🌟|💡|lvl_.*xuat_sac|tier_1/i.test(lower)
+        ) {
+          hasExcellent = true;
+          positiveCount++;
+          continue;
+        }
+        if (
+          /mất tập trung|xao nhãng|nói chuyện riêng|làm việc riêng|cần tập trung hơn|👀|tier_3/i.test(
+            lower
+          )
+        ) {
+          hasDistracted = true;
+          continue;
+        }
+        if (/thao tác.*chậm|cú pháp còn chậm|lúng túng|hay nhầm lệnh|⌨️|🔌|🐛/i.test(lower)) {
+          hasImprove = true;
+          continue;
+        }
+        if (
+          /tiếp thu chậm|lắp ráp còn chậm|nhầm chốt|cần kèm|trung bình|chưa kịp|🐢|🔩|🛠️|lvl_.*can_kem|tier_4|tier_5/i.test(
+            lower
+          )
+        ) {
+          hasSlow = true;
+          continue;
+        }
+        if (
+          /tiếp thu tốt|làm bài tập đầy đủ|lắp ráp.*lập trình tốt|hăng hái|phối hợp nhóm|giữ kit tốt|đạt yêu cầu|khá|tốt|tích cực|hiểu bài nhanh|👍|✅|📝|🙋|🤖|🤝|lvl_.*dat|tier_2/i.test(
+            lower
+          )
+        ) {
+          hasGood = true;
+          positiveCount++;
+        }
       }
-      if (isExcellent && isDistracted) {
-        return "Cấp độ 3 - Khá nhưng mất tập trung: Tư duy nhạy bén, hiểu bài nhanh nhưng đôi lúc còn xao nhãng, làm việc riêng hoặc thao tác vội vàng dẫn đến lỗi nhỏ không đáng có.";
+
+      if (positiveCount >= 3 && !hasSlow && !hasDistracted && !hasImprove) {
+        hasExcellent = true;
       }
-      if (isNeedSupport && isDistracted) {
+
+      const isNeedSupport = hasSlow || (hasImprove && !hasGood && !hasExcellent);
+
+      if (isNeedSupport && hasDistracted) {
         return "Cấp độ 5 - Trung bình, mất tập trung: Chưa nắm chắc kiến thức cơ bản của buổi học do chưa thực sự tập trung lắng nghe khi thầy giảng giải, cần sự sát sao nhiều hơn để theo kịp tiến độ.";
       }
       if (isNeedSupport) {
         return "Cấp độ 4 - Trung bình: Có sự cố gắng và thái độ hợp tác tốt nhưng tốc độ tiếp thu và thao tác thực hành còn chậm, cần thầy hướng dẫn từng bước để hoàn thành sản phẩm.";
       }
-      if (isDistracted && !isGood) {
+      if (hasDistracted && (hasGood || hasExcellent)) {
+        return "Cấp độ 3 - Khá nhưng mất tập trung: Tư duy nhạy bén, hiểu bài nhanh nhưng đôi lúc còn xao nhãng, làm việc riêng hoặc thao tác vội vàng dẫn đến lỗi nhỏ không đáng có.";
+      }
+      if (hasDistracted) {
         return "Cấp độ 5 - Trung bình, mất tập trung: Chưa nắm chắc kiến thức cơ bản của buổi học do chưa thực sự tập trung lắng nghe khi thầy giảng giải, cần sự sát sao nhiều hơn để theo kịp tiến độ.";
       }
-      if (isDistracted) {
-        return "Cấp độ 3 - Khá nhưng mất tập trung: Tư duy nhạy bén, hiểu bài nhanh nhưng đôi lúc còn xao nhãng, làm việc riêng hoặc thao tác vội vàng dẫn đến lỗi nhỏ không đáng có.";
+      if (hasExcellent && !hasImprove) {
+        return "Cấp độ 1 - Giỏi: Tiếp thu nhanh, nắm vững tư duy thuật toán và công nghệ, chủ động hoàn thành tốt bài tập cơ bản lẫn nâng cao, có sự sáng tạo.";
       }
       return "Cấp độ 2 - Khá: Nắm được kiến thức trọng tâm, thái độ học tập nghiêm túc, hoàn thành đúng yêu cầu bài thực hành nhưng cần thêm thời gian hoặc gợi ý ở các phần mở rộng/tối ưu hóa.";
     };
 
+    const syllabusList =
+      typeof getCoursesSyllabus === "function" ? getCoursesSyllabus() || [] : [];
+    const matchedCourse = [...syllabusList]
+      .sort((a, b) => String(b.courseCode || "").length - String(a.courseCode || "").length)
+      .find((c) => {
+        const code = String(c?.courseCode || "").trim().toUpperCase();
+        return Boolean(code && normalizedClassCode.includes(code));
+      });
+    const validCourseCheckpoints = Array.isArray(matchedCourse?.checkpointSessions)
+      ? matchedCourse.checkpointSessions
+          .map((n) => Number(n))
+          .filter((n) => Number.isInteger(n) && n >= 1 && n <= 13)
+      : [];
+    const checkpointNums =
+      validCourseCheckpoints.length > 0
+        ? Array.from(new Set(validCourseCheckpoints)).sort((a, b) => a - b)
+        : isRoboticsClass
+        ? [4, 8]
+        : [5, 9];
+    const isCheckpoint =
+      typeof session.isCheckpointSession === "boolean"
+        ? session.isCheckpointSession
+        : checkpointNums.includes(Number(session.sessionNumber));
+
     const anonymousRoster = validCandidates.map((c) => ({
       anonymousId: c.anonymousId,
-      matchedLevel: classifySkillLevel(c.input.quickTags || []),
-      quickTags: (c.input.quickTags || []).map((t) =>
+      matchedLevel: classifySkillLevel(c.regularQuickTags),
+      quickTags: c.regularQuickTags.map((t) =>
         scrubStudentNames(resolveTagWithHint(t), c.input.fullName, c.anonymousId)
       ),
       teacherNote: scrubStudentNames(
@@ -448,12 +601,16 @@ export class CommentGenerator {
             .join("; ")
         : sanitizedTopic;
 
+    const checkpointNotice = isCheckpoint
+      ? `\n- Loại buổi học: Buổi Kiểm tra Định kỳ (Checkpoint) — Phần điểm kiểm tra và đánh giá năng lực [ĐNL] do giáo viên chấm riêng trên LMS; bạn chỉ viết phần "Đánh giá chung" 3 gạch đầu dòng bên dưới để tổng kết mức độ nắm kiến thức, kỹ năng thực hành và lời khuyên ôn tập. TUYỆT ĐỐI KHÔNG tự bịa điểm số kiểm tra nếu giáo viên không ghi trong teacherNote.`
+      : "";
+
     const prompt = `
 Bạn là Giảng viên Công nghệ & Lập trình tại MindX Technology School (áp dụng kỹ năng chuẩn: nhan-xet-hoc-sinh).
 Nhiệm vụ của bạn là soạn nhận xét tình hình học tập của từng học sinh sau buổi học để gửi phụ huynh qua Zalo/LMS, dựa trên Cấp độ học sinh (matchedLevel), Quick Tags và Ghi chú thực tế.
 
 ### THÔNG TIN BUỔI HỌC:
-- Lớp: ${session.classCode} (Buổi ${session.sessionNumber}) — Hướng chuyên môn: ${isRoboticsClass ? "Lắp ráp & Lập trình Robotics" : "Lập trình & Công nghệ"}
+- Lớp: ${session.classCode} (Buổi ${session.sessionNumber}) — Hướng chuyên môn: ${isRoboticsClass ? "Lắp ráp & Lập trình Robotics" : "Lập trình & Công nghệ"}${checkpointNotice}
 - Chủ đề bài học: ${sanitizedTopic}
 - Kiến thức trọng tâm: ${keyKnowledgeText}
 
@@ -673,7 +830,7 @@ Trả về duy nhất 1 JSON object chuẩn theo schema sau:
           studentId: student.studentId,
           attendanceStatus:
             (latestDbRecord?.attendanceStatus as any) || student.attendanceStatus || "PRESENT",
-          quickTagsJson: latestDbRecord?.quickTagsJson ?? JSON.stringify(student.quickTags || []),
+          quickTagsJson: latestDbRecord?.quickTagsJson ?? JSON.stringify(item.regularQuickTags),
           teacherNote: latestDbRecord?.teacherNote ?? (student.teacherNote || ""),
           strengths,
           improvements,

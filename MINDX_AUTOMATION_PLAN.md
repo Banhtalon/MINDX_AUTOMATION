@@ -1,6 +1,6 @@
 # KẾ HOẠCH TRIỂN KHAI & KIẾN TRÚC KỸ THUẬT: MINDX AUTOMATION BOT (v2.1 - FULL MASTER PLAN)
 
-> **Phiên bản:** 2.1 (Bản đầy đủ 8 Giai đoạn: Giai đoạn 0 $\rightarrow$ Giai đoạn 7 — Không lược bỏ tính năng)
+> **Phiên bản:** 3.0.0 (Bản đầy đủ 8 Giai đoạn + Tái thiết kế Quick Tags Lập trình/Robotics, Chế độ Nhận xét Buổi Kiểm tra Checkpoint & Tinh gọn toàn diện 5 màn hình — Không lược bỏ tính năng)
 >
 > **Kiến trúc:** Local Web Application (Next.js App Router + TypeScript + Node.js, chạy trên `127.0.0.1:3000`)
 >

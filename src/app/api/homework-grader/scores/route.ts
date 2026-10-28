@@ -3,7 +3,7 @@ import { validateLocalRequest } from "@/lib/security/local-guard";
 import { taskQueue } from "@/lib/queue/task-queue";
 import { ScoreScraper } from "@/lib/playwright/scrape-scores";
 import { classSessionRepo, studentRepo, scoreMatrixRepo } from "@/lib/db/sqlite";
-import { getGradingRubrics } from "@/lib/db/json-config";
+import { getGradingRubrics, getRunningClasses } from "@/lib/db/json-config";
 
 export async function GET(req: Request) {
   const guard = validateLocalRequest(req);
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
         updatedAt: cached?.updatedAt || null,
         sessions,
         students,
-        rubrics,
+        rubrics, runningClasses: getRunningClasses().map((c) => c.classCode),
       },
     });
   } catch (err: any) {

@@ -4,6 +4,37 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ---
 
+## [v3.0.0] — 2026-10-28 (Tái Thiết Kế Quick Tags Theo Bộ Môn Lập Trình / Robotics, Chế Độ Nhận Xét Buổi Kiểm Tra Checkpoint & Tinh Gọn Toàn Diện Giao Diện 5 Màn Hình)
+
+### 🏷️ Tách Biệt Triệt Để & Tái Thiết Kế Quick Tags Theo Bộ Môn (`data/config/quick_tags.json`, `src/lib/quick-tags/index.ts`)
+- **Xóa bỏ hoàn toàn sự chồng chéo giữa thẻ buổi thường và buổi 14 SPCK:**
+  - Màn hình 1 (`/session-comments`) và `CommentGenerator` (`src/lib/gemini/comment-generator.ts`) chỉ sử dụng bộ thẻ đánh giá buổi học thường kỳ (`regular_coding` hoặc `regular_robotics`) theo đúng bộ môn của lớp, tuyệt đối không bao giờ trộn lẫn thẻ `spck_session14_presentation` / `spck_session14_product`.
+  - Màn hình 3 (`/final-project`) đọc trực tiếp thẻ thuyết trình & sản phẩm Buổi 14 từ `quick_tags.json` làm nguồn chuẩn duy nhất (Single Source of Truth), loại bỏ mảng hằng số trùng lặp.
+- **Bộ Quick Tags tinh gọn theo đúng đặc thù bộ môn:**
+  - **Lập trình (`regular_coding` — 7 thẻ):** `✅ Tiếp thu tốt` (`good`), `📝 Làm bài tập đầy đủ` (`good`), `🙋 Hăng hái phát biểu` (`positive`), `💡 Vận dụng & Sáng tạo tốt` (`excellent`), `🐢 Tiếp thu chậm` (`slow`), `👀 Mất tập trung` (`distracted`), `⌨️ Thao tác / Cú pháp còn chậm` (`improve`).
+  - **Robotics (`regular_robotics` — 6 thẻ):** `🤖 Lắp ráp & Lập trình tốt` (`good`), `🙋 Hăng hái phát biểu` (`positive`), `🤝 Phối hợp nhóm & Giữ Kit tốt` (`positive`), `👀 Mất tập trung` (`distracted`), `🔩 Lắp ráp còn chậm / Nhầm chốt` (`slow`), `🔌 Lập trình / Đấu mạch còn lúng túng` (`improve`).
+
+### 🎯 Cơ Chế Xử Lý Buổi Kiểm Tra Định Kỳ — Checkpoint (`Buổi 5 & 9` Lập trình; `Buổi 4 & 8` Robotics)
+- **Tự động nhận diện Buổi Kiểm tra (Checkpoint) theo từng khóa học (`data/config/courses_syllabus.json`, `src/lib/quick-tags/index.ts`):**
+  - Các khóa Lập trình (`SCRATCH`, `GAMEMAKER`, `PYTHON`, `WEB`, `CS`): `checkpointSessions: [5, 9]`.
+  - Các khóa Robotics (`ROBO_PRE`, `ROBO_ARM`): `checkpointSessions: [4, 8]`.
+- **Nguyên tắc Vàng khi lưu LMS ở Buổi Checkpoint (`src/lib/playwright/save-comments.ts`):**
+  - Giáo viên tự chấm điểm kiểm tra và tích chọn 9 mục Điểm Năng lực `[ĐNL]` trên LMS trước.
+  - Bot mở hộp thoại nhận xét (tự động chuyển từ chế độ Xem sang chế độ Sửa nếu đã có bảng tổng hợp điểm năng lực), **chỉ điền duy nhất ô `"Đánh giá chung *"` (`.ql-editor`)**, **tuyệt đối không chạm vào bất kỳ nút chọn năng lực (`input[type="radio"]`), ô ghi chú năng lực (`textarea`), ô tích bài kiểm tra (`checkbox`) hay ô điểm thực hành nào**, sau đó bấm `Save` và mở lại hộp thoại để đối chiếu `Read-after-Write`.
+  - Nếu giáo viên quên chưa tích Điểm Năng lực `[ĐNL]` khiến LMS từ chối lưu, Bot tự động trả về thông báo rõ ràng nhắc giáo viên tích `[ĐNL]` trên LMS trước.
+- **Hỗ trợ tính Điểm Demo Buổi 14 chuẩn xác cho cả lớp Robotics (`src/lib/local-files/spck-demo-score-reader.ts`, `src/lib/gemini/session14-course-summary.ts`):**
+  - Tự động nhận diện thang điểm Demo 5 tiêu chí riêng của khóa Robotics (`1.0 / 0.5 / 1.25 / 0.75 / 1.0`, tổng `4.5` điểm) và hiển thị đúng thang điểm trong prompt AI tổng kết cuối khóa Buổi 14.
+
+### ✨ Tinh Gọn Toàn Diện Giao Diện 5 Màn Hình & Thanh Nhật Ký (`src/app/**`, `src/components/live-log-drawer.tsx`)
+- **Trang chủ (`/`) & Thanh Nhật ký (`live-log-drawer.tsx`):** Thu gọn còn 4 thẻ công cụ trực quan và dải trạng thái 1 dòng; chuyển nút mở thanh nhật ký sang dạng viên thuốc gọn nhẹ ở góc dưới bên phải (không còn thanh bar cố định che khuất nội dung).
+- **Màn hình 1 (`/session-comments`):** Gộp thanh chọn Lớp + Buổi + Tải danh sách lên 1 hàng ngang duy nhất; hiển thị nhãn phân biệt rõ `Buổi thường` / `🎯 Buổi Kiểm tra (Checkpoint)` kèm lưu ý ngắn gọn; tự động ẩn các nút chọn hàng loạt mẫu cũ không thuộc bộ thẻ mới.
+- **Màn hình 2 (`/homework-grader`):** Dùng chung danh sách lớp đang dạy (`runningClasses`) và tự động nhớ mã lớp vừa chọn (`mindx_last_class_code`), giáo viên chỉ cần chọn 1 lần ở đầu trang cho cả 2 tab *Cào Bảng Điểm* và *Chấm Bài Tập*.
+- **Màn hình 3 (`/final-project`):** Gom các công cụ phụ (Cổng thu bài học sinh, Tạo bảng chấm điểm Demo, Tải lên Google Drive / GitHub Pages, Nhập link YouTube) vào menu gọn **"🧰 Công cụ chuẩn bị & thu bài"**; tự động ẩn khu vực Đánh giá Buổi 14 khi đang chọn Buổi 12 hoặc Buổi 13.
+- **Màn hình 4 (`/syllabus-config`):** Ẩn tab *Mẫu Zalo* không còn dùng trên giao diện (vẫn giữ nguyên API backend tương thích ngược) và hiển thị thẻ Quick Tags phân nhóm rõ theo 3 danh mục (*Lập trình*, *Robotics*, *SPCK Buổi 14*).
+- **Kiểm thử & Kiểm định Độc lập (`scripts/test-quick-tags-v300.ts`, `scripts/test-checkpoint-v300.ts`):** Toàn bộ **12/12 bộ kiểm thử tự động PASS 100%**, đạt **VERDICT: GO** từ Codex CLI (`gpt-6.1-sol` high).
+
+---
+
 ## [v2.9.0] — 2026-10-27 (Thiết kế lại Buổi 14 — Tổng kết Cuối khóa, Tự động đọc Điểm Demo từ File Chấm Điểm BGK, AI Nhận xét SPCK 2 Phần & Thư từ MindX 3 Phần)
 
 ### 🚫 Tách Biệt Hoàn Toàn Buổi 14 Khỏi Màn Hình 1 (`/session-comments` $\rightarrow$ Chuyển 100% Sang `/final-project`)

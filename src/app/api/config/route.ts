@@ -16,6 +16,7 @@ import {
   type QuickTagCategory,
   type ZaloTemplate,
 } from "@/lib/db/json-config";
+import { getDefaultCheckpointSessions } from "@/lib/quick-tags";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 
 export const dynamic = "force-dynamic";
@@ -232,10 +233,23 @@ export async function POST(req: Request) {
 
         sessions.sort((a, b) => a.sessionNumber - b.sessionNumber);
 
+        let checkpointSessions: number[] | undefined;
+        if (Array.isArray(rawCourse.checkpointSessions)) {
+          const parsedCheckpoints: number[] = (rawCourse.checkpointSessions as unknown[])
+            .map((n: unknown) => Number(n))
+            .filter((n: number) => Number.isInteger(n) && n >= 1 && n <= 13);
+          checkpointSessions = Array.from(new Set<number>(parsedCheckpoints)).sort(
+            (a: number, b: number) => a - b
+          );
+        } else {
+          checkpointSessions = getDefaultCheckpointSessions(courseCode);
+        }
+
         normalizedCourses.push({
           courseCode,
           courseName,
           description,
+          checkpointSessions,
           sessions,
         });
       }
@@ -255,8 +269,13 @@ export async function POST(req: Request) {
             const revertedSessions =
               JSON.stringify(curr.sessions) !== JSON.stringify(base.sessions) &&
               JSON.stringify(inc.sessions) === JSON.stringify(base.sessions);
+            const revertedCheckpoints =
+              JSON.stringify(curr.checkpointSessions ?? []) !==
+                JSON.stringify(base.checkpointSessions ?? []) &&
+              JSON.stringify(inc.checkpointSessions ?? []) ===
+                JSON.stringify(base.checkpointSessions ?? []);
 
-            if (revertedName || revertedDesc || revertedSessions) {
+            if (revertedName || revertedDesc || revertedSessions || revertedCheckpoints) {
               return NextResponse.json(
                 {
                   success: false,
@@ -554,7 +573,7 @@ export async function POST(req: Request) {
           }
           seenTagIds.add(tagKey);
 
-          tags.push({
+          const tagObj: QuickTag = {
             id: tagId,
             label: t.label.trim(),
             sentiment:
@@ -562,14 +581,22 @@ export async function POST(req: Request) {
                 ? t.sentiment
                 : "neutral",
             hint: typeof t.hint === "string" ? t.hint.trim() : "",
-          });
+          };
+          if (typeof t.role === "string" && t.role.trim()) {
+            tagObj.role = t.role.trim();
+          }
+          tags.push(tagObj);
         }
 
-        normalizedCategories.push({
+        const catObj: QuickTagCategory = {
           category,
           categoryName: cat.categoryName.trim(),
           tags,
-        });
+        };
+        if (typeof cat.track === "string" && cat.track.trim()) {
+          catObj.track = cat.track.trim();
+        }
+        normalizedCategories.push(catObj);
       }
 
       saveQuickTags(normalizedCategories);

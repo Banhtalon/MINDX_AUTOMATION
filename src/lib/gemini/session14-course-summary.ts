@@ -11,7 +11,7 @@
 
 import {
   calculateCompetencyAverageScore,
-  calculateDemoTotalScore,
+  calculateDemoTotalScore, isRoboticsClassCode,
   parseSession14CompetencyScores,
   parseSession14DemoScores,
   session14EvalRepo,
@@ -644,7 +644,7 @@ export class Session14CourseSummaryGenerator {
       );
       const compTotal = calculateCompetencyAverageScore(compScores);
 
-      const demoScores = parseSession14DemoScores(item.demoScores || evalRow.demoScoresJson);
+      const demoScores = parseSession14DemoScores(item.demoScores || evalRow.demoScoresJson, normalizedClassId);
       const demoTotal = calculateDemoTotalScore(demoScores);
 
       let storedTags: string[] = [];
@@ -776,7 +776,7 @@ DỮ LIỆU ĐẦU VÀO CỦA HỌC VIÊN:
 - Mã học viên ẩn danh: ${shortToken} (họ tên đầy đủ: ${fullToken})
 - Khóa học hiện tại: ${courseProg.currentCourseLabel} (kiến thức trọng tâm: ${courseProg.domainKeywords})
 - Định hướng khóa kế tiếp: ${courseProg.nextCourseLabel}
-- Điểm Demo (thang 5.0): ${formatScoreDisplay(demoTotal)}/5.0 (Thuật toán: ${demoScores.algorithm}/1.5, Sáng tạo: ${demoScores.creativity}/1.0, Giao tiếp: ${demoScores.communication}/0.5, Giải quyết vấn đề: ${demoScores.problemSolving}/1.0, Kỹ năng máy tính: ${demoScores.computerSkills}/1.0)
+- Điểm Demo (thang 5.0): ${formatScoreDisplay(demoTotal)}/5.0 (${isRoboticsClassCode(normalizedClassId) ? `Giải quyết vấn đề: ${demoScores.problemSolving}/1.0, Kỹ năng máy tính: ${demoScores.computerSkills}/0.5, Sáng tạo: ${demoScores.creativity}/1.25, Giao tiếp: ${demoScores.communication}/0.75, Thuật toán: ${demoScores.algorithm}/1.0` : `Thuật toán: ${demoScores.algorithm}/1.5, Sáng tạo: ${demoScores.creativity}/1.0, Giao tiếp: ${demoScores.communication}/0.5, Giải quyết vấn đề: ${demoScores.problemSolving}/1.0, Kỹ năng máy tính: ${demoScores.computerSkills}/1.0`})
 - Điểm Năng lực [ĐNL] (thang 5.0): ${formatScoreDisplay(compTotal)}/5.0 (Kiến thức trên lớp: ${compScores.knowledgeInClass}/5, Tự học: ${compScores.knowledgeSelfStudy}/5, Giao tiếp & hợp tác: ${compScores.skillCommunication}/5, Sử dụng máy tính: ${compScores.skillComputerUse}/5, Giải quyết vấn đề: ${compScores.skillProblemSolving}/5, Sáng tạo: ${compScores.skillCreativity}/5, Tư duy máy tính: ${compScores.skillComputational}/5, Thái độ BTVN: ${compScores.attitudeHomework}/5, Thái độ học tập trên lớp: ${compScores.attitudeInClass}/5)
 - Thẻ đánh giá nhanh (Quick Tags): ${JSON.stringify(anonTags)}
 - Ghi chú của giáo viên: ${anonNote || "(Không có ghi chú riêng)"}

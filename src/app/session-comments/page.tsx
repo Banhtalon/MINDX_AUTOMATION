@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useTransition } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   RefreshCw,
   Sparkles,
@@ -10,9 +10,6 @@ import {
   AlertCircle,
   Clock,
   Check,
-  ChevronDown,
-  BookOpen,
-  MessageSquare,
   ShieldCheck,
   UserCheck,
 } from "lucide-react";
@@ -51,12 +48,26 @@ interface QuickTagItem {
   hint?: string;
   category?: string;
   categoryName?: string;
+  track?: "coding" | "robotics" | "session14" | "common";
+  role?: "excellent" | "good" | "positive" | "slow" | "distracted" | "improve";
 }
 
-function classifyQuickTagTrack(tag: QuickTagItem): "common" | "coding" | "robotics" {
+function classifyQuickTagTrack(tag: QuickTagItem): "common" | "coding" | "robotics" | "session14" {
+  const track = String(tag.track || "").trim().toLowerCase();
   const cat = String(tag.category || "").toLowerCase();
   const catName = String(tag.categoryName || "").toLowerCase();
   const id = String(tag.id || "").toLowerCase();
+  if (
+    track === "session14" ||
+    cat.startsWith("spck_") ||
+    cat.includes("session14") ||
+    id.startsWith("s14_") ||
+    /buổi\s*14|spck/i.test(catName)
+  ) {
+    return "session14";
+  }
+  if (track === "robotics") return "robotics";
+  if (track === "coding") return "coding";
   if (
     cat.includes("robot") ||
     cat.startsWith("rob_") ||
@@ -68,7 +79,9 @@ function classifyQuickTagTrack(tag: QuickTagItem): "common" | "coding" | "roboti
   if (
     cat === "execution" ||
     cat.includes("coding") ||
+    cat.startsWith("code_") ||
     cat.startsWith("exec_") ||
+    id.startsWith("code_") ||
     id.startsWith("exec_") ||
     /lập trình|code|cú pháp|💻/i.test(catName)
   ) {
@@ -78,7 +91,9 @@ function classifyQuickTagTrack(tag: QuickTagItem): "common" | "coding" | "roboti
 }
 
 function detectTrackByClassCode(code: string): "coding" | "robotics" {
-  return /rob/i.test(String(code || "")) ? "robotics" : "coding";
+  return /(?:rob|pre[bai]|arm[bai]|semi[bai]|vex)/i.test(String(code || "").trim())
+    ? "robotics"
+    : "coding";
 }
 
 function isQuickTagLevel(tagOrLabel: QuickTagItem | string, allTags?: QuickTagItem[]): boolean {
@@ -97,64 +112,145 @@ function isQuickTagLevel(tagOrLabel: QuickTagItem | string, allTags?: QuickTagIt
   return false;
 }
 
-function resolveStudentSkillLevelLabel(tags?: string[]): {
+function resolveStudentSkillLevelLabel(
+  tags?: string[],
+  configuredTags?: QuickTagItem[]
+): {
   levelCode: 1 | 2 | 3 | 4 | 5 | 0;
   label: string;
   badgeClass: string;
 } {
-  if (!tags || tags.length === 0) {
+  const cleanTags = Array.isArray(tags)
+    ? tags
+        .map((t) => String(t || "").trim())
+        .filter(
+          (t) =>
+            Boolean(t) &&
+            !/^s14_|slide thuyết trình|phụ thuộc.*vào ai|bố cục.*flexbox|thuyết trình còn nhỏ|sản phẩm chạy mượt/i.test(
+              t
+            )
+        )
+    : [];
+  if (cleanTags.length === 0) {
     return {
       levelCode: 0,
-      label: "Chưa chọn Tag cấp độ",
+      label: "Chưa chọn thẻ",
       badgeClass: "bg-slate-800 text-slate-400 border-slate-700",
     };
   }
-  const joined = tags.join(" ").toLowerCase();
-  const isDistracted = /mất tập trung|xao nhãng|nói chuyện riêng|làm việc riêng/.test(joined);
-  const isExcellent = /xuất sắc|giỏi|sáng tạo|🌟/.test(joined);
-  const isNeedSupport = /cần kèm|trung bình|chưa kịp|🛠️/.test(joined);
-  const isGood = /đạt yêu cầu|khá|tốt|👍/.test(joined);
 
-  if (isExcellent && !isDistracted) {
-    return {
-      levelCode: 1,
-      label: "Cấp độ 1 - Giỏi",
-      badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
-    };
+  const lookup = new Map<string, QuickTagItem>();
+  if (Array.isArray(configuredTags)) {
+    for (const t of configuredTags) {
+      if (classifyQuickTagTrack(t) === "session14") continue;
+      if (t?.label) lookup.set(t.label.trim().toLowerCase(), t);
+      if (t?.id) lookup.set(t.id.trim().toLowerCase(), t);
+    }
   }
-  if (isExcellent && isDistracted) {
-    return {
-      levelCode: 3,
-      label: "Cấp độ 3 - Khá nhưng mất tập trung",
-      badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-    };
+
+  let hasExcellent = false;
+  let hasGood = false;
+  let hasSlow = false;
+  let hasDistracted = false;
+  let hasImprove = false;
+  let positiveCount = 0;
+
+  for (const raw of cleanTags) {
+    const lower = raw.toLowerCase();
+    const matched = lookup.get(lower);
+    const role = String(matched?.role || "").trim().toLowerCase();
+
+    if (role) {
+      if (role === "excellent") {
+        hasExcellent = true;
+        positiveCount++;
+      } else if (role === "distracted") {
+        hasDistracted = true;
+      } else if (role === "slow") {
+        hasSlow = true;
+      } else if (role === "improve") {
+        hasImprove = true;
+      } else if (role === "good" || role === "positive") {
+        hasGood = true;
+        positiveCount++;
+      }
+      continue;
+    }
+
+    if (/xuất sắc|giỏi|vận dụng.*sáng tạo|sáng tạo|🌟|💡|lvl_.*xuat_sac|tier_1/i.test(lower)) {
+      hasExcellent = true;
+      positiveCount++;
+      continue;
+    }
+    if (
+      /mất tập trung|xao nhãng|nói chuyện riêng|làm việc riêng|cần tập trung hơn|👀|tier_3/i.test(
+        lower
+      )
+    ) {
+      hasDistracted = true;
+      continue;
+    }
+    if (/thao tác.*chậm|cú pháp còn chậm|lúng túng|hay nhầm lệnh|⌨️|🔌|🐛/i.test(lower)) {
+      hasImprove = true;
+      continue;
+    }
+    if (
+      /tiếp thu chậm|lắp ráp còn chậm|nhầm chốt|cần kèm|trung bình|chưa kịp|🐢|🔩|🛠️|lvl_.*can_kem|tier_4|tier_5/i.test(
+        lower
+      )
+    ) {
+      hasSlow = true;
+      continue;
+    }
+    if (
+      /tiếp thu tốt|làm bài tập đầy đủ|lắp ráp.*lập trình tốt|hăng hái|phối hợp nhóm|giữ kit tốt|đạt yêu cầu|khá|tốt|tích cực|hiểu bài nhanh|👍|✅|📝|🙋|🤖|🤝|lvl_.*dat|tier_2/i.test(
+        lower
+      )
+    ) {
+      hasGood = true;
+      positiveCount++;
+    }
   }
-  if (isNeedSupport && isDistracted) {
+
+  if (positiveCount >= 3 && !hasSlow && !hasDistracted && !hasImprove) {
+    hasExcellent = true;
+  }
+
+  const needsSupport = hasSlow || (hasImprove && !hasGood && !hasExcellent);
+
+  if (needsSupport && hasDistracted) {
     return {
       levelCode: 5,
       label: "Cấp độ 5 - Trung bình, mất tập trung",
       badgeClass: "bg-rose-500/20 text-rose-300 border-rose-500/40",
     };
   }
-  if (isNeedSupport) {
+  if (needsSupport) {
     return {
       levelCode: 4,
       label: "Cấp độ 4 - Trung bình",
       badgeClass: "bg-orange-500/20 text-orange-300 border-orange-500/40",
     };
   }
-  if (isDistracted && !isGood) {
+  if (hasDistracted && (hasGood || hasExcellent)) {
+    return {
+      levelCode: 3,
+      label: "Cấp độ 3 - Khá nhưng mất tập trung",
+      badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+    };
+  }
+  if (hasDistracted) {
     return {
       levelCode: 5,
       label: "Cấp độ 5 - Trung bình, mất tập trung",
       badgeClass: "bg-rose-500/20 text-rose-300 border-rose-500/40",
     };
   }
-  if (isDistracted) {
+  if (hasExcellent && !hasImprove) {
     return {
-      levelCode: 3,
-      label: "Cấp độ 3 - Khá nhưng mất tập trung",
-      badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+      levelCode: 1,
+      label: "Cấp độ 1 - Giỏi",
+      badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
     };
   }
   return {
@@ -174,6 +270,7 @@ interface SyllabusSession {
 interface SyllabusCourse {
   courseCode: string;
   courseName: string;
+  checkpointSessions?: number[];
   sessions: SyllabusSession[];
 }
 
@@ -205,8 +302,18 @@ function findLatestActiveSessionId(sessionList: SessionItem[]): string {
 }
 
 export default function SessionCommentsPage() {
-  const [classCode, setClassCode] = useState("VT-C4K-GA38");
-  const [classId, setClassId] = useState("VT-C4K-GA38");
+  const initialSavedClass = (() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        return String(window.localStorage.getItem("mindx_last_class_code") || "")
+          .trim()
+          .toUpperCase();
+      }
+    } catch {}
+    return "";
+  })();
+  const [classCode, setClassCode] = useState(initialSavedClass);
+  const [classId, setClassId] = useState(initialSavedClass);
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [students, rawSetStudents] = useState<StudentItem[]>([]);
@@ -220,7 +327,7 @@ export default function SessionCommentsPage() {
     rawSetStudents(next);
   };
   const [quickTags, setQuickTags] = useState<QuickTagItem[]>([]);
-  const [quickTagTrack, setQuickTagTrack] = useState<"coding" | "robotics" | "all">("coding");
+  const [quickTagTrack, setQuickTagTrack] = useState<"coding" | "robotics">("coding");
   const [syllabusList, setSyllabusList] = useState<SyllabusCourse[]>([]);
 
   // Selected topic details
@@ -229,7 +336,6 @@ export default function SessionCommentsPage() {
   const [currentHomeworkBrief, setCurrentHomeworkBrief] = useState("");
 
   // Zalo Broadcast
-  const [zaloTemplateId, setZaloTemplateId] = useState("general_session_summary");
   const [zaloBroadcastText, setZaloBroadcastText] = useState("");
   const [zaloBtvnPart2Text, setZaloBtvnPart2Text] = useState("");
   const [isAnalyzingBtvnImage, setIsAnalyzingBtvnImage] = useState(false);
@@ -242,9 +348,7 @@ export default function SessionCommentsPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isFetchingClasses, setIsFetchingClasses] = useState(false);
   const [isManualClassInput, setIsManualClassInput] = useState(false);
-  const [runningClasses, setRunningClasses] = useState<RunningClassOption[]>([
-    { classCode: "VT-C4K-GA38", status: "Running" },
-  ]);
+  const [runningClasses, setRunningClasses] = useState<RunningClassOption[]>([]);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [isSavingLms, setIsSavingLms] = useState(false);
   const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
@@ -255,7 +359,7 @@ export default function SessionCommentsPage() {
 
   const latestLoadRequestIdRef = useRef(0);
   const latestAiRequestIdRef = useRef(0);
-  const activeClassIdRef = useRef("VT-C4K-GA38");
+  const activeClassIdRef = useRef(initialSavedClass);
   const activeSessionIdRef = useRef("");
   const loadedScopeKeyRef = useRef("");
   const editSequenceRef = useRef(0);
@@ -269,17 +373,46 @@ export default function SessionCommentsPage() {
   >({});
   const pendingSavePromisesRef = useRef<Record<string, Promise<boolean> | undefined>>({});
 
+  // Restore last selected class from browser localStorage on initial mount (safe in SSR & VM sandbox)
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const savedClass = String(window.localStorage.getItem("mindx_last_class_code") || "")
+          .trim()
+          .toUpperCase();
+        if (savedClass && savedClass !== classId) {
+          setClassCode(savedClass);
+          setClassId(savedClass);
+          setQuickTagTrack(detectTrackByClassCode(savedClass));
+        }
+      }
+    } catch {}
+  }, []);
+
   // Reset manual Zalo edit flag and fetch initial data when class/session changes
   useEffect(() => {
-    const normClass = classId.trim().toUpperCase();
+    let normClass = classId.trim().toUpperCase();
     const normSess = selectedSessionId.trim();
+    if (!normClass && normSess.includes("_SESS_")) {
+      const derivedFromSess = normSess.replace(/_SESS_\d+$/i, "").trim().toUpperCase();
+      if (derivedFromSess) {
+        normClass = derivedFromSess;
+        setClassCode(derivedFromSess);
+        setClassId(derivedFromSess);
+      }
+    }
     const classChanged = activeClassIdRef.current !== normClass;
     const scopeChanged =
       classChanged || activeSessionIdRef.current !== normSess;
     activeClassIdRef.current = normClass;
     activeSessionIdRef.current = normSess;
-    if (classChanged) {
+    if (classChanged && normClass) {
       setQuickTagTrack(detectTrackByClassCode(normClass));
+      try {
+        if (typeof window !== "undefined" && window.localStorage) {
+          window.localStorage.setItem("mindx_last_class_code", normClass);
+        }
+      } catch {}
     }
     setIsZaloManuallyEdited(false);
     if (scopeChanged) {
@@ -305,7 +438,6 @@ export default function SessionCommentsPage() {
   const loadClassData = async (targetClassId: string, targetSessionId: string) => {
     const normalizedClassId = targetClassId.trim().toUpperCase();
     const normalizedSessionId = targetSessionId.trim();
-    if (!normalizedClassId) return;
     const requestId = ++latestLoadRequestIdRef.current;
     try {
       const res = await fetch(
@@ -321,10 +453,33 @@ export default function SessionCommentsPage() {
       }
       if (json.success && json.data) {
         if (
+          normalizedClassId &&
           json.data.classId &&
           String(json.data.classId).trim().toUpperCase() !== normalizedClassId
         ) {
           return;
+        }
+        let effectiveClassId = normalizedClassId;
+        if (!effectiveClassId) {
+          const inferredClassId = String(
+            json.data.resolvedClassId ||
+              json.data.classId ||
+              json.data.students?.[0]?.classId ||
+              (json.data.sessions?.[0]?.sessionId
+                ? String(json.data.sessions[0].sessionId).replace(/_SESS_\d+$/i, "")
+                : "") ||
+              json.data.runningClasses?.[0]?.classCode ||
+              ""
+          )
+            .trim()
+            .toUpperCase();
+          if (inferredClassId) {
+            effectiveClassId = inferredClassId;
+            activeClassIdRef.current = inferredClassId;
+            setClassCode(inferredClassId);
+            setClassId(inferredClassId);
+            setQuickTagTrack(detectTrackByClassCode(inferredClassId));
+          }
         }
         if (json.data.quickTags) setQuickTags(json.data.quickTags);
         if (json.data.syllabusList) setSyllabusList(json.data.syllabusList);
@@ -342,6 +497,8 @@ export default function SessionCommentsPage() {
             return Array.from(map.values());
           });
         }
+
+        if (!effectiveClassId) return;
 
         let effectiveSessionId = normalizedSessionId;
         if (json.data.sessions && json.data.sessions.length > 0) {
@@ -373,7 +530,7 @@ export default function SessionCommentsPage() {
             (st: any) =>
               st.isActive !== false &&
               st.isActive !== 0 &&
-              (!st.classId || String(st.classId).trim().toUpperCase() === normalizedClassId)
+              (!st.classId || String(st.classId).trim().toUpperCase() === effectiveClassId)
           );
           const feedbacks = json.data.feedbacks || [];
           const feedbackMap = new Map<string, any>(feedbacks.map((f: any) => [f.studentId, f]));
@@ -412,7 +569,7 @@ export default function SessionCommentsPage() {
             }
             return {
               ...st,
-              classId: normalizedClassId,
+              classId: effectiveClassId,
               sessionId: effectiveSessionId,
               isActive: true,
               attendanceStatus: fb?.attendanceStatus || "UNKNOWN",
@@ -429,7 +586,7 @@ export default function SessionCommentsPage() {
             };
           });
 
-          loadedScopeKeyRef.current = `${normalizedClassId}::${effectiveSessionId}`;
+          loadedScopeKeyRef.current = `${effectiveClassId}::${effectiveSessionId}`;
           studentAttendanceVersionRef.current = {};
           studentServerMetaRef.current = nextServerMeta;
           setStudents(merged);
@@ -443,7 +600,7 @@ export default function SessionCommentsPage() {
   };
 
   // Fetch all Running classes from LMS Classes table into dropdown
-  const handleFetchRunningClasses = async () => {
+  const handleFetchRunningClasses = async (): Promise<string> => {
     setIsFetchingClasses(true);
     setStatusMessage({
       type: "info",
@@ -476,8 +633,9 @@ export default function SessionCommentsPage() {
 
         setStatusMessage({
           type: "success",
-          text: `Đã lấy thành công ${fetched.length} lớp đang học (Running) từ LMS vào ô Mã lớp! Chỉ cần chọn lớp trong danh sách.`,
+          text: `Đã lấy thành công ${fetched.length} lớp đang học (Running) từ LMS vào ô Mã lớp!`,
         });
+        return nextCode;
       } else {
         setStatusMessage({
           type: "error",
@@ -485,18 +643,27 @@ export default function SessionCommentsPage() {
             data.error || "Chưa tìm thấy lớp nào có trạng thái Running trên LMS."
           }`,
         });
+        return "";
       }
     } catch (err: any) {
       setStatusMessage({
         type: "error",
         text: `Lỗi kết nối khi lấy danh sách lớp: ${err.message}`,
       });
+      return "";
     } finally {
       setIsFetchingClasses(false);
     }
   };
 
   const handleSelectRunningClass = async (rawCode: string) => {
+    if (rawCode === "__FETCH_RUNNING__") {
+      const nextCode = await handleFetchRunningClasses();
+      if (nextCode) {
+        await handleSyncFromLms(nextCode);
+      }
+      return;
+    }
     const selected = rawCode.trim().toUpperCase();
     if (!selected) return;
     setClassCode(selected);
@@ -518,10 +685,16 @@ export default function SessionCommentsPage() {
     } catch {}
   };
 
-  // Sync class from LMS via Playwright
+  // Sync class (and discover running classes if needed) from LMS via Playwright
   const handleSyncFromLms = async (overrideClassCode?: string) => {
-    const rawTarget = typeof overrideClassCode === "string" ? overrideClassCode : classCode;
-    const normalizedCode = rawTarget.trim().toUpperCase();
+    let rawTarget = typeof overrideClassCode === "string" ? overrideClassCode : classCode;
+    let normalizedCode = rawTarget.trim().toUpperCase();
+    if (!normalizedCode || (runningClasses.length === 0 && typeof overrideClassCode !== "string")) {
+      const discoveredCode = await handleFetchRunningClasses();
+      if (!normalizedCode) {
+        normalizedCode = discoveredCode;
+      }
+    }
     if (!normalizedCode) return;
     setClassCode(normalizedCode);
     setIsSyncing(true);
@@ -1271,7 +1444,7 @@ ${homeworkDetails}
     }
   };
 
-  const handleConfirmAllPresent = async () => {
+  const handleConfirmAllPresent = async (assignDefaultGoodTag = false) => {
     const reqClassId = classId.trim().toUpperCase();
     const reqSessionId = selectedSessionId.trim();
     const reqScopeKey = `${reqClassId}::${reqSessionId}`;
@@ -1283,11 +1456,17 @@ ${homeworkDetails}
     );
     if (activeStudents.length === 0) return;
 
+    const defaultGoodLabel =
+      quickTagTrack === "robotics" || detectTrackByClassCode(reqClassId) === "robotics"
+        ? "🤖 Lắp ráp & Lập trình tốt"
+        : "✅ Tiếp thu tốt";
+
     const initialAttendanceVersions = new Map<string, number>(
       activeStudents.map((s) => [s.studentId, studentAttendanceVersionRef.current[s.studentId] || 0])
     );
 
     let successCount = 0;
+    let taggedCount = 0;
     let failCount = 0;
     const failedIds = new Set<string>();
     const failedVersions = new Map<string, number>();
@@ -1308,13 +1487,27 @@ ${homeworkDetails}
         successCount++;
         continue;
       }
+      const curStu =
+        studentsRef.current.find(
+          (item) =>
+            item.studentId === s.studentId &&
+            (!item.classId || item.classId.trim().toUpperCase() === reqClassId) &&
+            (!item.sessionId || item.sessionId.trim() === reqSessionId)
+        ) || s;
+      const shouldAddDefaultTag = Boolean(
+        assignDefaultGoodTag && (!curStu.quickTags || curStu.quickTags.length === 0)
+      );
       const expectedVersion = editSequenceRef.current + 1;
       const ok = await saveDraftToServer(s.studentId, {
         attendanceStatus: "PRESENT",
         status: "DRAFT",
+        ...(shouldAddDefaultTag ? { quickTags: [defaultGoodLabel] } : {}),
       });
       if (ok) {
         successCount++;
+        if (shouldAddDefaultTag) {
+          taggedCount++;
+        }
       } else {
         failCount++;
         failedIds.add(s.studentId);
@@ -1334,7 +1527,9 @@ ${homeworkDetails}
     if (failCount === 0) {
       setStatusMessage({
         type: "success",
-        text: `Đã xác nhận điểm danh 'Có mặt' cho toàn bộ ${successCount} học viên đang học.`,
+        text: assignDefaultGoodTag
+          ? `Đã điểm danh 'Có mặt' cả lớp (${successCount} học viên) và gắn thẻ mặc định "${defaultGoodLabel}" cho ${taggedCount} bạn chưa chọn thẻ! Thầy chỉ cần chỉnh lại vài bạn nổi bật hoặc cần lưu ý.`
+          : `Đã xác nhận điểm danh 'Có mặt' cho toàn bộ ${successCount} học viên đang học.`,
       });
     } else {
       // Reconcile failed rows with server feedback truth if available without wiping rows or clobbering newer edits
@@ -1363,9 +1558,17 @@ ${homeworkDetails}
               }
               const fb = fbMap.get(s.studentId);
               if (!fb) return s;
+              let serverTags = s.quickTags;
+              if (fb.quickTagsJson) {
+                try {
+                  const parsed = JSON.parse(fb.quickTagsJson);
+                  if (Array.isArray(parsed)) serverTags = parsed;
+                } catch {}
+              }
               return {
                 ...s,
                 attendanceStatus: fb.attendanceStatus || "UNKNOWN",
+                quickTags: serverTags,
                 contentHash: fb.contentHash || undefined,
                 status: fb.status || "DRAFT",
                 verifiedAt: fb.verifiedAt,
@@ -1687,6 +1890,29 @@ ${homeworkDetails}
     activeSessionObj?.sessionNumber ||
     parseInt(selectedSessionId.match(/(\d+)(?!.*\d)/)?.[1] || "1", 10);
 
+  const upperCodeForCheckpoint = classCode.trim().toUpperCase();
+  const sortedSyllabusForCheckpoint = [...syllabusList].sort(
+    (a, b) => (b.courseCode?.length || 0) - (a.courseCode?.length || 0)
+  );
+  const matchedCourseForCheckpoint = sortedSyllabusForCheckpoint.find((c) =>
+    upperCodeForCheckpoint.includes(String(c.courseCode || "").toUpperCase())
+  );
+  const validCourseCheckpointNums = Array.isArray(matchedCourseForCheckpoint?.checkpointSessions)
+    ? matchedCourseForCheckpoint.checkpointSessions
+        .map((n) => Number(n))
+        .filter((n) => Number.isInteger(n) && n >= 1 && n <= 13)
+    : [];
+  const effectiveCheckpointSessions =
+    validCourseCheckpointNums.length > 0
+      ? validCourseCheckpointNums
+      : detectTrackByClassCode(upperCodeForCheckpoint) === "robotics"
+      ? [4, 8]
+      : [5, 9];
+  const isCurrentSessionCheckpoint =
+    activeSessionNumber >= 1 &&
+    activeSessionNumber < 14 &&
+    effectiveCheckpointSessions.includes(activeSessionNumber);
+
   // Push to LMS (Single or All)
   const handleSaveToLms = async (targetStudentId?: string) => {
     if (targetStudentId) {
@@ -1725,7 +1951,7 @@ ${homeworkDetails}
         if (batchRes.verifiedCount > 0 && batchRes.failedCount === 0) {
           setStatusMessage({
             type: "success",
-            text: `Đã lưu & đối chiếu (Buổi ${activeSessionNumber}): ${batchRes.verifiedCount}/${batchRes.totalCandidates} học viên đạt VERIFIED!`,
+            text: `Đã lưu & đối chiếu (Buổi ${activeSessionNumber}): ${batchRes.verifiedCount}/${batchRes.totalCandidates} học viên đã lưu LMS ✓!`,
           });
         } else {
           const firstError =
@@ -1733,7 +1959,7 @@ ${homeworkDetails}
             "Không tìm thấy nhận xét đã duyệt hoặc lỗi đối chiếu trên LMS";
           setStatusMessage({
             type: "error",
-            text: `Lưu LMS (Buổi ${activeSessionNumber}) không đạt (${batchRes.verifiedCount}/${batchRes.totalCandidates} VERIFIED): ${firstError}`,
+            text: `Lưu LMS (Buổi ${activeSessionNumber}) không đạt (${batchRes.verifiedCount}/${batchRes.totalCandidates} đã lưu): ${firstError}`,
           });
         }
         await loadClassData(normalizedClassId, selectedSessionId);
@@ -1775,16 +2001,16 @@ ${homeworkDetails}
               <span className="p-2 rounded-xl bg-blue-500/10 text-blue-400 text-2xl">📝</span>
               <div>
                 <h1 className="text-xl font-bold text-white tracking-wide">
-                  Nhận xét Buổi học & Thông báo Zalo (Giai đoạn 3)
+                  Nhận xét Buổi học &amp; Thông báo Zalo
                 </h1>
                 <p className="text-xs text-slate-400">
-                  Lọc danh sách học viên theo ID • Quick Tags 1 chạm • AI 3 phần không bịa • Đối chiếu VERIFIED
+                  Quick Tags 1 chạm gọn theo môn • AI soạn nhận xét 3 phần chuẩn • Lưu &amp; kiểm tra trực tiếp trên LMS
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-700">
               <span className="text-xs font-semibold text-slate-400 mr-2">Mã lớp:</span>
               {!isManualClassInput && runningClasses.length > 0 ? (
@@ -1810,6 +2036,9 @@ ${homeworkDetails}
                       {item.courseName ? ` — ${item.courseName}` : ""}
                     </option>
                   ))}
+                  <option value="__FETCH_RUNNING__" className="bg-slate-950 text-emerald-300">
+                    📥 Quét lại danh sách lớp đang học từ LMS...
+                  </option>
                 </select>
               ) : (
                 <input
@@ -1817,7 +2046,7 @@ ${homeworkDetails}
                   value={classCode}
                   onChange={(e) => setClassCode(e.target.value.toUpperCase())}
                   className="bg-transparent text-sm font-bold text-white focus:outline-none w-36 uppercase"
-                  placeholder="VD: VT-C4K-GA38"
+                  placeholder="VD: VT-C4K-PTA12"
                 />
               )}
               <button
@@ -1836,23 +2065,19 @@ ${homeworkDetails}
 
             <button
               type="button"
-              onClick={handleFetchRunningClasses}
-              disabled={isFetchingClasses || isSyncing}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 text-white text-sm font-medium transition shadow-md shadow-emerald-600/20 cursor-pointer"
-              title="Tự động vào LMS quét toàn bộ các lớp đang học (Status: Running) đưa vào ô Mã lớp"
-            >
-              <RefreshCw className={`w-4 h-4 ${isFetchingClasses ? "animate-spin" : ""}`} />
-              {isFetchingClasses ? "Đang lấy danh sách lớp..." : "📥 Lấy lớp đang học"}
-            </button>
-
-            <button
-              type="button"
               onClick={() => handleSyncFromLms()}
               disabled={isSyncing || isFetchingClasses}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white text-sm font-medium transition shadow-md shadow-blue-600/20 cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white text-sm font-semibold transition shadow-md shadow-blue-600/20 cursor-pointer"
+              title="Quét danh sách lớp đang học (nếu chưa có) và đồng bộ buổi học & học viên của lớp đang chọn từ LMS"
             >
-              <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
-              {isSyncing ? "Đang đồng bộ..." : "Đồng bộ từ LMS"}
+              <RefreshCw
+                className={`w-4 h-4 ${isSyncing || isFetchingClasses ? "animate-spin" : ""}`}
+              />
+              {isFetchingClasses
+                ? "Đang quét lớp..."
+                : isSyncing
+                ? "Đang đồng bộ..."
+                : "Đồng bộ lớp"}
             </button>
           </div>
         </div>
@@ -1903,9 +2128,12 @@ ${homeworkDetails}
                   .filter((s) => Number(s.sessionNumber) < 14)
                   .map((s) => {
                     const dStr = s.date || s.sessionDate;
+                    const isCp = effectiveCheckpointSessions.includes(Number(s.sessionNumber));
                     return (
                       <option key={s.sessionId} value={s.sessionId}>
-                        Buổi {s.sessionNumber}{dStr ? ` (${dStr})` : ""}: {s.topic.slice(0, 35)}
+                        Buổi {s.sessionNumber}
+                        {isCp ? " [Checkpoint]" : ""}
+                        {dStr ? ` (${dStr})` : ""}: {s.topic.slice(0, 35)}
                       </option>
                     );
                   })
@@ -1913,22 +2141,20 @@ ${homeworkDetails}
                 <option value="">(Chưa đồng bộ buổi học từ LMS)</option>
               )}
             </select>
-            <div className="mt-2 p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-[11px] text-indigo-300 flex items-center justify-between gap-2">
-              <span>
-                📌 <strong>Buổi 14 (Tổng kết cuối khóa &amp; Điểm Demo)</strong> có biểu mẫu Học bạ 3 phần riêng và được thực hiện trọn gói tại tab SPCK.
-              </span>
+            <div className="mt-2 flex items-center justify-between text-[11px] text-indigo-300/90 px-1">
+              <span>📌 Buổi 14 (Tổng kết cuối khóa &amp; SPCK) chấm riêng:</span>
               <a
                 href="/final-project"
-                className="shrink-0 px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition"
+                className="font-semibold text-indigo-400 hover:text-indigo-300 underline underline-offset-2"
               >
-                Mở Buổi 14 (SPCK) →
+                Mở trang SPCK →
               </a>
             </div>
           </div>
 
           <div className="md:col-span-2">
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-              Chủ đề & Kiến thức trọng tâm (Từ Giáo trình)
+              Chủ đề &amp; Kiến thức trọng tâm (Từ Giáo trình)
             </label>
             <input
               type="text"
@@ -1955,13 +2181,29 @@ ${homeworkDetails}
             )}
           </div>
         </div>
+
+        {/* Checkpoint Session Reminder Banner (3.3) */}
+        {isCurrentSessionCheckpoint && (
+          <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-base">📌</span>
+              <span>
+                <strong>Buổi Kiểm tra Định kỳ (Checkpoint — Buổi {activeSessionNumber}):</strong> Bot{" "}
+                <strong>chỉ điền ô Nhận xét chung</strong> — thầy tự tích Điểm Năng lực [ĐNL] &amp; Điểm kiểm tra trên LMS.
+              </span>
+            </div>
+            <span className="shrink-0 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold text-[11px]">
+              Chỉ điền Nhận xét
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 3. Action Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-slate-900 border border-slate-800">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs text-slate-400 font-medium">
-            Đang học: <strong className="text-white">{students.length}</strong> học viên |
+            Đang học: <strong className="text-white">{students.length}</strong> |
             Có mặt:{" "}
             <strong className="text-emerald-400">
               {
@@ -1984,118 +2226,67 @@ ${homeworkDetails}
             </strong>
           </span>
 
-          {/* Quick Tag Track Switcher (Lập trình vs Robotics) */}
-          <div className="flex items-center gap-1 bg-slate-950/90 border border-slate-800 rounded-lg p-1">
-            <span className="text-[11px] font-semibold text-slate-400 px-2">
-              Bộ Quick Tags:
+          {/* Auto-detected Track Badge + 1-click switch button (3.1) */}
+          <div className="flex items-center gap-1.5 bg-slate-950/90 border border-slate-800 rounded-lg px-2.5 py-1">
+            <span
+              className={`text-xs font-semibold ${
+                quickTagTrack === "robotics" ? "text-orange-300" : "text-cyan-300"
+              }`}
+            >
+              {quickTagTrack === "robotics" ? "🤖 Thẻ Robotics (6)" : "💻 Thẻ Lập trình (7)"}
             </span>
             <button
               type="button"
-              onClick={() => setQuickTagTrack("coding")}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
-                quickTagTrack === "coding"
-                  ? "bg-cyan-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800"
-              }`}
-              title="Hiển thị nhóm Chung + nhóm Kỹ năng Thao tác & Lập trình"
+              onClick={() =>
+                setQuickTagTrack((prev) => (prev === "coding" ? "robotics" : "coding"))
+              }
+              className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 hover:text-white transition cursor-pointer border border-slate-700"
+              title="Đổi sang bộ thẻ của môn kia nếu cần"
             >
-              💻 Lập trình
-            </button>
-            <button
-              type="button"
-              onClick={() => setQuickTagTrack("robotics")}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
-                quickTagTrack === "robotics"
-                  ? "bg-orange-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800"
-              }`}
-              title="Hiển thị nhóm Chung + nhóm Kỹ năng Lắp ráp & Robotics"
-            >
-              🤖 Robotics
-            </button>
-            <button
-              type="button"
-              onClick={() => setQuickTagTrack("all")}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
-                quickTagTrack === "all"
-                  ? "bg-purple-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800"
-              }`}
-              title="Hiển thị toàn bộ thẻ của cả 2 hướng"
-            >
-              📋 Tất cả
+              ⇄ Đổi bộ thẻ
             </button>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={handleConfirmAllPresent}
+            type="button"
+            onClick={() => handleConfirmAllPresent(true)}
             disabled={students.length === 0}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer"
+            title="Điểm danh cả lớp Có mặt + tự gắn thẻ Tiếp thu tốt mặc định cho các bạn chưa chọn thẻ"
           >
             <UserCheck className="w-4 h-4" />
-            Xác nhận cả lớp Có mặt
-          </button>
-
-          <button
-            type="button"
-            onClick={async () => {
-              const presentStudents = studentsRef.current.filter(
-                (s) =>
-                  s.isActive !== false &&
-                  (s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE") &&
-                  !(s.quickTags || []).some((t) => isQuickTagLevel(t, quickTags))
-              );
-              if (presentStudents.length === 0) {
-                setStatusMessage({
-                  type: "info",
-                  text: "Tất cả học viên có mặt đã có thẻ Mức đánh giá (hoặc chưa điểm danh Có mặt).",
-                });
-                return;
-              }
-              let count = 0;
-              for (const s of presentStudents) {
-                await toggleQuickTag(s.studentId, "👍 Đạt yêu cầu");
-                count++;
-              }
-              setStatusMessage({
-                type: "success",
-                text: `Đã gắn nhanh mức "👍 Đạt yêu cầu" cho ${count} học viên có mặt! Bạn chỉ cần chỉnh lại vài bạn nổi bật hoặc cần kèm thêm.`,
-              });
-            }}
-            disabled={students.length === 0}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition cursor-pointer"
-            title="Gắn nhanh mức '👍 Đạt yêu cầu' cho tất cả học viên có mặt chưa chọn mức, giúp tiết kiệm 80% thao tác"
-          >
-            <span>👍 Mặc định &ldquo;Đạt yêu cầu&rdquo; cả lớp</span>
+            ⚡ Bắt đầu nhanh (Có mặt + Tiếp thu tốt)
           </button>
 
           <button
             onClick={handleGenerateAi}
             disabled={isGeneratingAi || students.length === 0}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white text-sm font-semibold shadow-lg shadow-purple-600/20 transition"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white text-sm font-semibold shadow-lg shadow-purple-600/20 transition cursor-pointer"
           >
             <Sparkles className={`w-4 h-4 ${isGeneratingAi ? "animate-spin" : ""}`} />
-            {isGeneratingAi ? "AI Đang Soạn..." : "AI Soạn Nhận Xét Hàng Loạt"}
+            {isGeneratingAi ? "AI Đang Soạn..." : "AI Soạn Nhận Xét"}
           </button>
 
           <button
             onClick={handleApproveAll}
             disabled={students.length === 0}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-750 text-indigo-400 border border-indigo-500/30 text-sm font-medium transition"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-750 text-indigo-300 border border-indigo-500/30 text-sm font-medium transition cursor-pointer"
           >
             <Check className="w-4 h-4" />
-            Duyệt Tất Cả Bản Nháp
+            Duyệt Tất Cả
           </button>
 
           <button
             onClick={() => handleSaveToLms()}
             disabled={isSavingLms || students.filter((s) => s.status === "APPROVED").length === 0}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold shadow-lg shadow-emerald-600/20 transition"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold shadow-lg shadow-emerald-600/20 transition cursor-pointer"
           >
             <Send className={`w-4 h-4 ${isSavingLms ? "animate-spin" : ""}`} />
-            {isSavingLms ? `Đang Ghi LMS (Buổi ${activeSessionNumber})...` : `Đẩy Cả Lớp Vào LMS (Buổi ${activeSessionNumber})`}
+            {isSavingLms
+              ? `Đang Ghi LMS (Buổi ${activeSessionNumber})...`
+              : `Đẩy Cả Lớp Vào LMS (Buổi ${activeSessionNumber})`}
           </button>
         </div>
       </div>
@@ -2106,8 +2297,7 @@ ${homeworkDetails}
           <table className="w-full text-left text-sm text-slate-300">
             <thead className="bg-slate-950 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
               <tr>
-                <th className="px-4 py-3.5 w-12 text-center">STT</th>
-                <th className="px-4 py-3.5 w-48">Học viên & Điểm danh</th>
+                <th className="px-4 py-3.5 w-44">Học viên &amp; Điểm danh</th>
                 <th className="px-4 py-3.5 w-80">
                   <div className="flex items-center justify-between gap-1">
                     <span>Quick Tags 1-Chạm</span>
@@ -2115,27 +2305,28 @@ ${homeworkDetails}
                       className={`text-[10px] px-1.5 py-0.5 rounded font-bold normal-case ${
                         quickTagTrack === "robotics"
                           ? "bg-orange-500/20 text-orange-300 border border-orange-500/30"
-                          : quickTagTrack === "coding"
-                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                          : "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                          : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                       }`}
                     >
-                      {quickTagTrack === "robotics"
-                        ? "🤖 Hướng Robot"
-                        : quickTagTrack === "coding"
-                        ? "💻 Hướng Lập trình"
-                        : "📋 Cả 2 hướng"}
+                      {quickTagTrack === "robotics" ? "🤖 Robotics" : "💻 Lập trình"}
                     </span>
                   </div>
                 </th>
-                <th className="px-4 py-3.5 w-52">Ghi chú riêng của GV</th>
-                <th className="px-4 py-3.5 min-w-[320px]">Nhận xét 3 phần (Sửa trực tiếp)</th>
-                <th className="px-4 py-3.5 w-44 text-right">Trạng thái & Lưu</th>
+                <th className="px-4 py-3.5 w-52">Ghi chú của GV</th>
+                <th className="px-4 py-3.5 min-w-[340px]">
+                  <div className="flex flex-wrap items-center justify-between gap-1">
+                    <span>Nhận xét 3 phần (Sửa trực tiếp)</span>
+                    <span className="text-[10px] font-normal normal-case text-slate-500">
+                      Chuẩn 3 mục: Điểm mạnh • Cần cải thiện • Lời khuyên
+                    </span>
+                  </div>
+                </th>
+                <th className="px-4 py-3.5 w-40 text-right">Trạng thái &amp; Lưu</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {students.length > 0 ? (
-                students.map((student, idx) => {
+                students.map((student) => {
                   const attStatus = student.attendanceStatus || "UNKNOWN";
                   const isPresent = attStatus === "PRESENT" || attStatus === "LATE";
                   const isAbsent = attStatus === "ABSENT";
@@ -2152,12 +2343,7 @@ ${homeworkDetails}
                           : ""
                       }`}
                     >
-                      {/* STT */}
-                      <td className="px-4 py-4 text-center font-mono text-xs text-slate-500">
-                        {String(idx + 1).padStart(2, "0")}
-                      </td>
-
-                      {/* Name & Attendance */}
+                      {/* Name & Attendance (3.6: No STT column, no studentId subtext) */}
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-white">{student.fullName}</span>
@@ -2167,13 +2353,10 @@ ${homeworkDetails}
                             </span>
                           )}
                         </div>
-                        <div className="text-xs font-mono text-slate-400 mt-0.5">
-                          {student.studentId}
-                        </div>
                         <div className="mt-2 flex items-center gap-1.5">
                           <button
                             onClick={() => handleAttendanceChange(student.studentId)}
-                            className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
+                            className={`px-2 py-0.5 rounded text-[11px] font-semibold transition cursor-pointer ${
                               isPresent
                                 ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                                 : isAbsent
@@ -2190,13 +2373,12 @@ ${homeworkDetails}
                         </div>
                       </td>
 
-                      {/* Quick Tags */}
+                      {/* Quick Tags (3.2: Single compact row of 7 Coding or 6 Robotics tags) */}
                       <td className="px-4 py-4">
                         {(() => {
-                          // Filter tags by selected track (coding vs robotics), deduplicating identical labels across tracks
                           const rawVisible = quickTags.filter((tag) => {
-                            if (quickTagTrack === "all") return true;
                             const tagTrack = classifyQuickTagTrack(tag);
+                            if (tagTrack === "session14") return false;
                             return tagTrack === "common" || tagTrack === quickTagTrack;
                           });
 
@@ -2208,96 +2390,60 @@ ${homeworkDetails}
                               visibleTags.push(t);
                             }
                           }
-                          // Ensure any already-selected tag on this student remains visible
+                          // Ensure any already-selected non-Session14 tag on this student remains visible
                           for (const selLabel of student.quickTags || []) {
-                            if (!seenLabels.has(selLabel)) {
+                            if (
+                              !seenLabels.has(selLabel) &&
+                              !/^s14_|slide thuyết trình|phụ thuộc.*vào ai|bố cục.*flexbox|thuyết trình còn nhỏ|sản phẩm chạy mượt/i.test(
+                                selLabel
+                              )
+                            ) {
                               const found = quickTags.find((q) => q.label === selLabel);
                               seenLabels.add(selLabel);
                               visibleTags.push(
-                                found || { id: `sel_${selLabel}`, label: selLabel, sentiment: "neutral" }
+                                found || {
+                                  id: `sel_${selLabel}`,
+                                  label: selLabel,
+                                  sentiment: "neutral",
+                                }
                               );
                             }
                           }
 
-                          const levelTags = visibleTags.filter((tag) =>
-                            isQuickTagLevel(tag, quickTags)
-                          );
-                          const modifierTags = visibleTags.filter(
-                            (tag) => !isQuickTagLevel(tag, quickTags)
-                          );
-
-                          const renderTagButton = (
-                            tag: QuickTagItem,
-                            tagIdx: number,
-                            isLevelBtn: boolean
-                          ) => {
-                            const isSelected = student.quickTags?.includes(tag.label);
-                            const isConstructive = tag.sentiment === "constructive";
-
-                            let unselectedClass = isLevelBtn
-                              ? "bg-slate-900 text-slate-200 border-slate-700 hover:border-blue-400 font-medium"
-                              : "bg-slate-800/80 text-slate-400 border-slate-700/80 hover:border-slate-500 hover:text-slate-200";
-
-                            const selectedClass = isConstructive
-                              ? "bg-amber-600/35 text-amber-200 border-amber-400 font-bold shadow-sm"
-                              : isLevelBtn
-                              ? "bg-emerald-600/35 text-emerald-200 border-emerald-400 font-bold shadow-sm ring-1 ring-emerald-500/40"
-                              : "bg-blue-600/35 text-blue-200 border-blue-400 font-semibold shadow-sm";
-
-                            return (
-                              <button
-                                key={tag.id || `tag-${tagIdx}`}
-                                type="button"
-                                title={
-                                  tag.hint
-                                    ? `AI sẽ hiểu: "${tag.hint}"`
-                                    : tag.categoryName || tag.label
-                                }
-                                onClick={() => toggleQuickTag(student.studentId, tag.label)}
-                                className={`px-2 py-1 rounded text-xs transition border cursor-pointer ${
-                                  isSelected ? selectedClass : unselectedClass
-                                }`}
-                              >
-                                {tag.label}
-                              </button>
-                            );
-                          };
-
-                          if (levelTags.length === 0) {
-                            return (
-                              <div className="flex flex-wrap gap-1.5">
-                                {visibleTags.map((tag, tagIdx) =>
-                                  renderTagButton(tag, tagIdx, false)
-                                )}
-                              </div>
-                            );
-                          }
-
                           return (
-                            <div className="space-y-2">
-                              <div>
-                                <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400/90 mb-1">
-                                  1. Chọn 1 mức tổng quát:
-                                </div>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {levelTags.map((tag, tagIdx) =>
-                                    renderTagButton(tag, tagIdx, true)
-                                  )}
-                                </div>
-                              </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {visibleTags.map((tag, tagIdx) => {
+                                const isSelected = student.quickTags?.includes(tag.label);
+                                const isConstructive =
+                                  tag.sentiment === "constructive" ||
+                                  tag.role === "slow" ||
+                                  tag.role === "distracted" ||
+                                  tag.role === "improve";
 
-                              {modifierTags.length > 0 && (
-                                <div className="pt-1.5 border-t border-slate-800/80">
-                                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-                                    2. Cộng thêm điểm nhấn / lưu ý (nếu có):
-                                  </div>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {modifierTags.map((tag, tagIdx) =>
-                                      renderTagButton(tag, tagIdx + 100, false)
-                                    )}
-                                  </div>
-                                </div>
-                              )}
+                                const unselectedClass =
+                                  "bg-slate-800/80 text-slate-300 border-slate-700/80 hover:border-slate-500 hover:text-white";
+                                const selectedClass = isConstructive
+                                  ? "bg-amber-600/35 text-amber-200 border-amber-400 font-bold shadow-sm"
+                                  : "bg-emerald-600/35 text-emerald-200 border-emerald-400 font-bold shadow-sm";
+
+                                return (
+                                  <button
+                                    key={tag.id || `tag-${tagIdx}`}
+                                    type="button"
+                                    title={
+                                      tag.hint
+                                        ? `AI sẽ hiểu: "${tag.hint}"`
+                                        : tag.categoryName || tag.label
+                                    }
+                                    onClick={() => toggleQuickTag(student.studentId, tag.label)}
+                                    className={`px-2 py-1 rounded text-xs transition border cursor-pointer ${
+                                      isSelected ? selectedClass : unselectedClass
+                                    }`}
+                                  >
+                                    {tag.label}
+                                  </button>
+                                );
+                              })}
                             </div>
                           );
                         })()}
@@ -2309,15 +2455,18 @@ ${homeworkDetails}
                           rows={2}
                           value={student.teacherNote || ""}
                           onChange={(e) => handleNoteChange(student.studentId, e.target.value)}
-                          placeholder="Ghi chú nhanh cho học sinh..."
+                          placeholder="Ghi chú thêm cho học sinh..."
                           className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-blue-500 resize-none"
                         />
                       </td>
 
-                      {/* Unified 3-Part Comment Editor (1 Box per skill nhan-xet-hoc-sinh) */}
+                      {/* Unified 3-Part Comment Editor (3.7: moved hint to table header) */}
                       <td className="px-4 py-4 space-y-2">
                         {(() => {
-                          const levelInfo = resolveStudentSkillLevelLabel(student.quickTags);
+                          const levelInfo = resolveStudentSkillLevelLabel(
+                            student.quickTags,
+                            quickTags
+                          );
                           const rawFinalText =
                             student.finalText &&
                             !student.finalText.startsWith("Chưa đủ thông tin")
@@ -2343,13 +2492,15 @@ ${homeworkDetails}
                               <div className="flex flex-wrap items-center justify-between gap-1.5">
                                 <span
                                   className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${levelInfo.badgeClass}`}
-                                  title="Tự động phân loại vào 1 trong 5 cấp độ chuẩn của skill nhan-xet-hoc-sinh dựa trên Quick Tags đã tích chọn"
+                                  title="Tự động phân loại vào 1 trong 5 cấp độ chuẩn dựa trên Quick Tags đã tích chọn"
                                 >
                                   🎯 {levelInfo.label}
                                 </span>
-                                <span className="text-[10px] text-slate-500">
-                                  Chuẩn 3 mục: Điểm mạnh • Cần cải thiện • Lời khuyên
-                                </span>
+                                {student.errorMessage && student.status !== "INSUFFICIENT_INFO" && (
+                                  <span className="text-[11px] text-amber-300 font-medium">
+                                    ⚠️ {student.errorMessage}
+                                  </span>
+                                )}
                               </div>
 
                               {student.status === "INSUFFICIENT_INFO" && (
@@ -2365,7 +2516,7 @@ ${homeworkDetails}
                               {(student.status !== "INSUFFICIENT_INFO" ||
                                 Boolean(displayValue.trim())) && (
                                 <textarea
-                                  rows={7}
+                                  rows={6}
                                   value={displayValue}
                                   onChange={(e) =>
                                     handleTextEdit(student.studentId, "finalText", e.target.value)
@@ -2379,13 +2530,12 @@ ${homeworkDetails}
                         })()}
                       </td>
 
-                      {/* Status & Actions */}
+                      {/* Status & Actions (3.6: "Đã lưu LMS ✓" & "Duyệt") */}
                       <td className="px-4 py-4 text-right space-y-2">
-                        {/* Status Badge */}
                         <div>
                           {student.status === "VERIFIED" ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                              <ShieldCheck className="w-3.5 h-3.5" /> VERIFIED
+                              <ShieldCheck className="w-3.5 h-3.5" /> Đã lưu LMS ✓
                             </span>
                           ) : student.status === "APPROVED" ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
@@ -2406,35 +2556,34 @@ ${homeworkDetails}
                           )}
                         </div>
 
-                        {/* Action buttons */}
                         <div className="flex flex-col gap-1 items-end">
                           {student.status !== "APPROVED" && student.status !== "VERIFIED" ? (
                             <button
                               onClick={() => handleApprove(student.studentId)}
                               disabled={!student.finalText || student.status === "INSUFFICIENT_INFO"}
-                              className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-semibold transition"
+                              className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-semibold transition cursor-pointer"
                             >
-                              Duyệt (Khóa Hash)
+                              Duyệt
                             </button>
                           ) : (
-                              <button
-                                onClick={() => handleSaveToLms(student.studentId)}
-                                disabled={isSavingThis}
-                                className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition flex items-center gap-1"
-                              >
-                                {isSavingThis ? (
-                                  <RefreshCw className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Send className="w-3 h-3" />
-                                )}
-                                Lưu thử vào LMS (Buổi {activeSessionNumber})
-                              </button>
+                            <button
+                              onClick={() => handleSaveToLms(student.studentId)}
+                              disabled={isSavingThis}
+                              className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                            >
+                              {isSavingThis ? (
+                                <RefreshCw className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Send className="w-3 h-3" />
+                              )}
+                              Lưu thử vào LMS (Buổi {activeSessionNumber})
+                            </button>
                           )}
 
                           <button
                             onClick={() => copyToClipboard(student.finalText || "", student.studentId)}
                             disabled={!student.finalText}
-                            className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition"
+                            className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition cursor-pointer"
                           >
                             {copiedStudentId === student.studentId ? (
                               <Check className="w-3 h-3 text-emerald-400" />
@@ -2450,8 +2599,8 @@ ${homeworkDetails}
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
-                    Chưa có dữ liệu học viên. Vui lòng bấm <strong>"Đồng bộ từ LMS"</strong> ở trên.
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                    Chưa có dữ liệu học viên. Vui lòng bấm <strong>&ldquo;Đồng bộ lớp&rdquo;</strong> ở trên.
                   </td>
                 </tr>
               )}
@@ -2460,7 +2609,7 @@ ${homeworkDetails}
         </div>
       </div>
 
-      {/* 5. Zalo Broadcast Preview Box */}
+      {/* 5. Zalo Broadcast Preview Box (3.8: compact overflow menu for secondary actions) */}
       <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -2501,35 +2650,47 @@ ${homeworkDetails}
                 : "Tải ảnh BTVN (Thêm Phần 2)"}
             </button>
 
-            {zaloBtvnPart2Text && (
-              <button
-                type="button"
-                onClick={() => {
-                  setZaloBtvnPart2Text("");
-                  setIsZaloManuallyEdited(false);
-                  setZaloBroadcastText(buildAutoZaloBroadcastText(""));
-                }}
-                className="px-2.5 py-2 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-medium transition cursor-pointer"
-                title="Xóa Phần 2 (nhắc nhở BTVN) khỏi tin nhắn Zalo"
-              >
-                ✕ Bỏ Phần 2 BTVN
-              </button>
+            {(zaloBtvnPart2Text || isZaloManuallyEdited) && (
+              <details className="relative">
+                <summary
+                  className="list-none px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold cursor-pointer select-none"
+                  title="Tùy chọn khôi phục mẫu Zalo"
+                >
+                  ⋯
+                </summary>
+                <div className="absolute right-0 mt-1.5 w-48 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl p-1.5 z-20 space-y-1">
+                  {zaloBtvnPart2Text && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setZaloBtvnPart2Text("");
+                        setIsZaloManuallyEdited(false);
+                        setZaloBroadcastText(buildAutoZaloBroadcastText(""));
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-rose-500/15 text-rose-300 text-xs font-medium transition cursor-pointer"
+                    >
+                      ✕ Bỏ Phần 2 BTVN
+                    </button>
+                  )}
+                  {isZaloManuallyEdited && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsZaloManuallyEdited(false);
+                        setZaloBroadcastText(buildAutoZaloBroadcastText());
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-slate-200 text-xs font-medium transition cursor-pointer"
+                    >
+                      ↺ Khôi phục mẫu tự động
+                    </button>
+                  )}
+                </div>
+              </details>
             )}
 
-            {isZaloManuallyEdited && (
-              <button
-                onClick={() => {
-                  setIsZaloManuallyEdited(false);
-                  setZaloBroadcastText(buildAutoZaloBroadcastText());
-                }}
-                className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition"
-              >
-                Khôi phục mẫu tự động
-              </button>
-            )}
             <button
               onClick={() => copyToClipboard(zaloBroadcastText)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition shadow-md shadow-emerald-600/20"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition shadow-md shadow-emerald-600/20 cursor-pointer"
             >
               {copiedZalo ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copiedZalo ? "Đã sao chép tin nhắn Zalo!" : "Copy Thông báo Zalo"}

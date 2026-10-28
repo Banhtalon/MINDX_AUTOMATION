@@ -110,8 +110,12 @@ function htmlToPlainText(rawHtml?: string): string {
 }
 
 export default function HomeworkGraderPage() {
-  const [classCode, setClassCode] = useState("VT-C4K-GA38");
-  const [classId, setClassId] = useState("VT-C4K-GA38");
+  const [classCode, setClassCode] = useState("VT-C4K-PTA12");
+  const [classId, setClassId] = useState("VT-C4K-PTA12");
+  const [runningClasses, setRunningClasses] = useState<string[]>([]);
+  const [isFetchingClasses, setIsFetchingClasses] = useState(false);
+  const [showCustomClassInput, setShowCustomClassInput] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"xlsx" | "csv">("xlsx");
   const [activeTab, setActiveTab] = useState<"scores" | "grader">("scores");
   const [matrix, setMatrix] = useState<ClassScoreMatrixResult | null>(null);
   const [rubrics, setRubrics] = useState<GradingRubric[]>([]);
@@ -137,11 +141,37 @@ export default function HomeworkGraderPage() {
   const latestScrapeRequestIdRef = useRef(0);
   const scrapingClassRef = useRef<string | null>(null);
   const skipNextEffectLoadForClassRef = useRef<string | null>(null);
-  const activeClassIdRef = useRef("VT-C4K-GA38");
+  const activeClassIdRef = useRef("VT-C4K-PTA12");
+  const hasRestoredClassCodeRef = useRef(false);
+  const restoredTargetClassRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!hasRestoredClassCodeRef.current) {
+      hasRestoredClassCodeRef.current = true;
+      if (typeof window !== "undefined") {
+        try {
+          const saved = window.localStorage.getItem("mindx_last_class_code");
+          if (saved && saved.trim()) {
+            restoredTargetClassRef.current = saved.trim().toUpperCase();
+          }
+        } catch {}
+      }
+    }
     const norm = classId.trim().toUpperCase();
+    if (restoredTargetClassRef.current && norm !== restoredTargetClassRef.current) {
+      const target = restoredTargetClassRef.current;
+      setClassCode(target);
+      setClassId(target);
+      activeClassIdRef.current = target;
+      return;
+    }
+    restoredTargetClassRef.current = null;
     activeClassIdRef.current = norm;
+    if (norm && typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem("mindx_last_class_code", norm);
+      } catch {}
+    }
     if (scrapingClassRef.current && scrapingClassRef.current !== norm) {
       latestScrapeRequestIdRef.current++;
       scrapingClassRef.current = null;
@@ -161,6 +191,33 @@ export default function HomeworkGraderPage() {
     loadCachedScores(norm);
   }, [classId]);
 
+  const handleFetchRunningClasses = async () => {
+    setIsFetchingClasses(true);
+    try {
+      const res = await fetch("/api/session-comments/fetch-classes", { method: "POST" });
+      const json = await res.json();
+      const rawList = Array.isArray(json.classes)
+        ? json.classes
+        : Array.isArray(json.data?.classes)
+        ? json.data.classes
+        : [];
+      if (json.success && rawList.length > 0) {
+        const codes: string[] = rawList
+          .map((c: any) => (typeof c === "string" ? c : c?.classCode))
+          .filter(Boolean);
+        setRunningClasses(codes);
+        if (codes.length > 0 && !codes.includes(classCode)) {
+          setClassCode(codes[0]);
+          setClassId(codes[0]);
+        }
+      }
+    } catch {
+      // Ignore error
+    } finally {
+      setIsFetchingClasses(false);
+    }
+  };
+
   const loadCachedScores = async (targetClassId: string) => {
     const norm = targetClassId.trim().toUpperCase();
     if (!norm) return;
@@ -178,6 +235,11 @@ export default function HomeworkGraderPage() {
         return;
       }
       if (json.success && json.data) {
+        if (Array.isArray(json.data.runningClasses) && json.data.runningClasses.length > 0) {
+          setRunningClasses((prev) =>
+            Array.from(new Set([...json.data.runningClasses, ...prev]))
+          );
+        }
         const fetchedMatrix = json.data.matrix as ClassScoreMatrixResult | null;
         if (
           fetchedMatrix &&
@@ -489,35 +551,96 @@ export default function HomeworkGraderPage() {
             </span>
             <div>
               <h1 className="text-xl font-bold text-white tracking-wide">
-                Tự Chấm Bài Tập & Bảng Điểm Báo Cáo Toàn Khóa (Giai đoạn 4 & 5)
+                Tự Chấm Bài Tập &amp; Bảng Điểm Báo Cáo Toàn Khóa
               </h1>
               <p className="text-xs text-slate-400">
-                Tab 1: Quét ma trận điểm & Xuất Excel/Google Sheets • Tab 2: Tải bài kèm khóa cứng ID, đọc code đa môn & Chấm tự động theo Barem
+                Quét bảng điểm lớp &amp; xuất báo cáo • Tải bài tập về máy &amp; chấm tự động theo Barem
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-700">
-              <span className="text-xs font-semibold text-slate-400 mr-2">Mã lớp:</span>
-              <input
-                type="text"
-                value={classCode}
-                onChange={(e) => setClassCode(e.target.value.toUpperCase())}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    setClassId(classCode.trim().toUpperCase());
-                  }
-                }}
-                className="bg-transparent text-sm font-bold text-white focus:outline-none w-36 uppercase"
-                placeholder="VD: VT-C4K-GA38"
-              />
+            <div className="flex items-center bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-700 gap-2">
+              <span className="text-xs font-semibold text-slate-400">Lớp:</span>
+              {!showCustomClassInput ? (
+                <select
+                  value={classCode}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "__CUSTOM__") {
+                      setShowCustomClassInput(true);
+                      return;
+                    }
+                    if (val === "__RESCAN_LMS__") {
+                      handleFetchRunningClasses();
+                      return;
+                    }
+                    setClassCode(val);
+                    setClassId(val);
+                  }}
+                  disabled={isScraping || isFetchingClasses}
+                  className="bg-slate-800 text-sm font-bold text-white focus:outline-none cursor-pointer"
+                >
+                  {Array.from(new Set([classCode, ...runningClasses].filter(Boolean))).map(
+                    (code) => (
+                      <option key={code} value={code} className="bg-slate-900 text-white">
+                        {code}
+                      </option>
+                    )
+                  )}
+                  <option value="__RESCAN_LMS__" className="bg-slate-900 text-cyan-400">
+                    📥 Quét lại danh sách lớp đang học từ LMS...
+                  </option>
+                  <option value="__CUSTOM__" className="bg-slate-900 text-amber-300">
+                    ✏️ Nhập mã lớp khác...
+                  </option>
+                </select>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={classCode}
+                    onChange={(e) => setClassCode(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const norm = classCode.trim().toUpperCase();
+                        if (norm) {
+                          setRunningClasses((prev) =>
+                            prev.includes(norm) ? prev : [norm, ...prev]
+                          );
+                          setClassId(norm);
+                          setShowCustomClassInput(false);
+                        }
+                      }
+                    }}
+                    className="bg-transparent text-sm font-bold text-white focus:outline-none w-36 uppercase"
+                    placeholder="VD: VT-C4K-PTA12"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const norm = classCode.trim().toUpperCase();
+                      if (norm) {
+                        setRunningClasses((prev) =>
+                          prev.includes(norm) ? prev : [norm, ...prev]
+                        );
+                        setClassId(norm);
+                      }
+                      setShowCustomClassInput(false);
+                    }}
+                    className="text-xs px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200"
+                  >
+                    Xong
+                  </button>
+                </div>
+              )}
             </div>
 
             <button
               onClick={handleScrapeScores}
               disabled={isScraping}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white text-sm font-semibold transition shadow-md shadow-blue-600/20"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white text-sm font-semibold transition shadow-md shadow-blue-600/20 cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${isScraping ? "animate-spin" : ""}`} />
               {isScraping ? "Đang cào bảng điểm..." : "Cào dữ liệu điểm mới nhất"}
@@ -555,45 +678,34 @@ export default function HomeworkGraderPage() {
           </div>
         )}
 
-        {/* Summary Cards */}
+        {/* Single-Line Summary Bar (Replaces 6 Bulky Cards) */}
         {matrix && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 pt-5 border-t border-slate-800">
-            <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-              <div className="text-[11px] text-slate-400 uppercase font-semibold">Học viên</div>
-              <div className="text-xl font-bold text-white mt-0.5">
-                {matrix.summary.totalStudents}
-              </div>
+          <div className="mt-4 pt-3.5 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-slate-200 font-semibold">
+                👥 Học viên: <strong className="text-white">{matrix.summary.totalStudents}</strong>
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 font-semibold">
+                ✅ Đã chấm: <strong>{matrix.summary.gradedCells}</strong>
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-amber-950/30 border border-amber-500/30 text-amber-300 font-semibold">
+                ⏳ Chờ chấm: <strong>{matrix.summary.submittedUngradedCells}</strong>
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-purple-950/30 border border-purple-500/30 text-purple-300 font-semibold">
+                🔄 Làm lại: <strong>{matrix.summary.redoCells}</strong>
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-rose-950/30 border border-rose-500/30 text-rose-300 font-semibold">
+                ⚠️ Điểm 0: <strong>{matrix.summary.zeroScoreCells}</strong>
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-slate-400 font-semibold">
+                📭 Chưa nộp: <strong className="text-slate-200">{matrix.summary.notSubmittedCells}</strong>
+              </span>
             </div>
-            <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/20">
-              <div className="text-[11px] text-emerald-400 uppercase font-semibold">Đã chấm (GRADED)</div>
-              <div className="text-xl font-bold text-emerald-300 mt-0.5">
-                {matrix.summary.gradedCells}
-              </div>
-            </div>
-            <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/20">
-              <div className="text-[11px] text-amber-400 uppercase font-semibold">Chờ chấm</div>
-              <div className="text-xl font-bold text-amber-300 mt-0.5">
-                {matrix.summary.submittedUngradedCells}
-              </div>
-            </div>
-            <div className="p-3 rounded-xl bg-purple-950/20 border border-purple-500/20">
-              <div className="text-[11px] text-purple-400 uppercase font-semibold">Yêu cầu làm lại</div>
-              <div className="text-xl font-bold text-purple-300 mt-0.5">
-                {matrix.summary.redoCells}
-              </div>
-            </div>
-            <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-500/20">
-              <div className="text-[11px] text-rose-400 uppercase font-semibold">Điểm 0 (0/100)</div>
-              <div className="text-xl font-bold text-rose-300 mt-0.5">
-                {matrix.summary.zeroScoreCells}
-              </div>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-              <div className="text-[11px] text-slate-400 uppercase font-semibold">Chưa nộp</div>
-              <div className="text-xl font-bold text-slate-300 mt-0.5">
-                {matrix.summary.notSubmittedCells}
-              </div>
-            </div>
+            {updatedAt && (
+              <span className="text-[11px] text-slate-500">
+                Cập nhật gần nhất: {updatedAt}
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -676,29 +788,32 @@ export default function HomeworkGraderPage() {
           <button
             onClick={handleCopyForGoogleSheets}
             disabled={!isMatrixMatchedWithSelection}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer"
           >
             {copiedSheets ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             {copiedSheets ? "Đã copy chuẩn Google Sheets!" : "Copy Bảng điểm (Chuẩn Google Sheets)"}
           </button>
 
-          <button
-            onClick={() => handleExportFile("csv")}
-            disabled={!isMatrixMatchedWithSelection}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 border border-slate-700 text-xs font-semibold transition"
-          >
-            <Download className="w-4 h-4" />
-            Xuất file .CSV
-          </button>
-
-          <button
-            onClick={() => handleExportFile("xlsx")}
-            disabled={!isMatrixMatchedWithSelection}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition shadow-md shadow-emerald-600/20"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            Xuất file Excel (.XLSX)
-          </button>
+          <div className="inline-flex items-center rounded-lg overflow-hidden border border-emerald-500/40 bg-slate-950">
+            <select
+              value={exportFormat}
+              onChange={(e) => setExportFormat(e.target.value as "xlsx" | "csv")}
+              disabled={!isMatrixMatchedWithSelection}
+              className="px-2.5 py-2 bg-slate-900 text-xs font-semibold text-slate-200 border-r border-slate-800 focus:outline-none cursor-pointer disabled:opacity-40"
+            >
+              <option value="xlsx">Excel (.XLSX)</option>
+              <option value="csv">CSV (.CSV)</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => handleExportFile(exportFormat)}
+              disabled={!isMatrixMatchedWithSelection}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition cursor-pointer"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Xuất file</span>
+            </button>
+          </div>
         </div>
       </div>
 

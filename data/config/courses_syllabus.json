@@ -149,6 +149,10 @@
         ],
         "homeworkBrief": "Tổng kết toàn bộ kiến thức Python OOP, PyQt6 & Qt Designer đã học trong khóa PTA và hoàn thiện sản phẩm sau buổi thuyết trình."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -303,6 +307,10 @@
         ],
         "homeworkBrief": "Tổng kết toàn bộ kiến thức nền tảng Python đã học trong khóa App Producer Basic (PTB) và hoàn thiện các bài toán trong kỳ thi Hackathon."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -458,6 +466,10 @@
         ],
         "homeworkBrief": "Tổng kết toàn bộ kiến thức HTML, CSS, Responsive, Bootstrap & Web Design đã học trong khóa JSB sau buổi thuyết trình cuối khóa."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -622,6 +634,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Scratch Basic (SB) và lưu giữ file dự án (.sb3) cùng slide thuyết trình vào hồ sơ cá nhân."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -773,6 +789,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Game Creator Basic (GB) và lưu giữ sản phẩm game cùng slide thuyết trình vào hồ sơ cá nhân."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -810,6 +830,10 @@
         ],
         "homeworkBrief": "Lập trình robot xe tự hành vượt mê cung."
       }
+    ],
+    "checkpointSessions": [
+      4,
+      8
     ]
   },
   {
@@ -958,6 +982,10 @@
         ],
         "homeworkBrief": "Tổng kết toàn bộ kiến thức Lập trình hướng đối tượng (OOP), Cấu trúc dữ liệu và Giải thuật đã học trong khóa CSB."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -1112,6 +1140,10 @@
         ],
         "homeworkBrief": "Tổng kết toàn bộ kiến thức Phân tích dữ liệu (Pandas), Trực quan hóa (Matplotlib/Seaborn), Mô hình dự đoán tuyến tính (Scikit-Learn) & Streamlit trong khóa CSA."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -1260,6 +1292,10 @@
         ],
         "homeworkBrief": "Tổng kết toàn bộ kiến thức Mạng Neuron (Keras/CNN), Thị giác máy tính (OpenCV/Object Detection), NLP, LLM/Prompt Engineering & Streamlit trong khóa CSI."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -1422,6 +1458,10 @@
         ],
         "homeworkBrief": "Tổng kết toàn bộ kiến thức quản lý danh sách đối tượng OOP, dữ liệu JSON, giao diện PyQt6 & tích hợp AI API trong khóa PTI."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -1570,6 +1610,10 @@
         ],
         "homeworkBrief": "Tổng kết toàn bộ kiến thức CSS Grid, JavaScript, DOM, LocalStorage, API & Git/GitHub đã học trong khóa JSA sau buổi thuyết trình."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -1726,6 +1770,10 @@
         ],
         "homeworkBrief": "Tổng kết toàn bộ kiến thức ES6, Firebase Authentication, Firestore, Google Analytics, AI Chatbot & quản lý dự án Waterfall trong khóa JSI."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -1881,6 +1929,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Scratch Advanced (SA) và lưu giữ sản phẩm cuối khóa cùng slide thuyết trình vào hồ sơ cá nhân."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -2074,6 +2126,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Scratch Intensive (SI) và lưu giữ mã nguồn, hình ảnh/video sản phẩm STEM Micro:bit cuối khóa."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -2230,6 +2286,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Game Creator Advanced (GA) và lưu giữ sản phẩm game cùng slide thuyết trình vào hồ sơ cá nhân."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -2390,6 +2450,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Game Creator Intensive (GI) và lưu giữ đường link GX.games cùng mã nguồn dự án vào hồ sơ cá nhân."
       }
+    ],
+    "checkpointSessions": [
+      5,
+      9
     ]
   },
   {
@@ -2538,6 +2602,10 @@
         ],
         "homeworkBrief": "Tổng kết hành trình khám phá Sao Hỏa cùng VEX GO và lưu giữ hình ảnh/video sản phẩm Robot cuối khóa."
       }
+    ],
+    "checkpointSessions": [
+      4,
+      8
     ]
   },
   {
@@ -2687,6 +2755,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Khu Vườn Bách Thú (PreA) và lưu giữ hình ảnh/video sản phẩm Robot cuối khóa."
       }
+    ],
+    "checkpointSessions": [
+      4,
+      8
     ]
   },
   {
@@ -2828,6 +2900,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Cuộc Trở Lại Sao Hỏa (PreI) và lưu giữ hình ảnh/video sản phẩm Robot cuối khóa."
       }
+    ],
+    "checkpointSessions": [
+      4,
+      8
     ]
   },
   {
@@ -2980,6 +3056,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Hành Trình Thám Hiểm Trái Đất (ARMB) và lưu giữ hình ảnh/video sản phẩm Robot cuối khóa."
       }
+    ],
+    "checkpointSessions": [
+      4,
+      8
     ]
   },
   {
@@ -3125,6 +3205,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Nhiệm Vụ Bất Khả Thi (ARMA) và lưu giữ hình ảnh/video sản phẩm Robot cuối khóa."
       }
+    ],
+    "checkpointSessions": [
+      4,
+      8
     ]
   },
   {
@@ -3273,6 +3357,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Thành Phố Hiện Đại (ARMI) và lưu giữ hình ảnh/video sản phẩm Robot cuối khóa."
       }
+    ],
+    "checkpointSessions": [
+      4,
+      8
     ]
   },
   {
@@ -3417,6 +3505,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Nền Tảng Robot (SEMIB) và lưu giữ hình ảnh/video sản phẩm Robot VEX IQ cuối khóa."
       }
+    ],
+    "checkpointSessions": [
+      4,
+      8
     ]
   },
   {
@@ -3561,6 +3653,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Tương Tác Hệ Thống (SEMIA) và lưu giữ hình ảnh/video sản phẩm Robot VEX IQ cuối khóa."
       }
+    ],
+    "checkpointSessions": [
+      4,
+      8
     ]
   },
   {
@@ -3708,6 +3804,10 @@
         ],
         "homeworkBrief": "Tổng kết khóa học Thách Thức Sáng Tạo (SEMII) và lưu giữ hình ảnh/video sản phẩm Robot VEX IQ cuối khóa."
       }
+    ],
+    "checkpointSessions": [
+      4,
+      8
     ]
   }
 ]

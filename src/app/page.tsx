@@ -1,96 +1,62 @@
 import Link from "next/link";
 import { getSafePublicConfig } from "@/lib/config";
-import { getCoursesSyllabus, getGradingRubrics, getQuickTags, getZaloTemplates } from "@/lib/db/json-config";
+import { getCoursesSyllabus, getGradingRubrics } from "@/lib/db/json-config";
 import { getDb } from "@/lib/db/sqlite";
 
 export default function DashboardPage() {
   const publicConfig = getSafePublicConfig();
   const courses = getCoursesSyllabus();
   const rubrics = getGradingRubrics();
-  const tags = getQuickTags();
-  const templates = getZaloTemplates();
 
-  // Test SQLite connection
-  let dbStatus = "Hoạt động";
+  let dbReady = true;
   try {
     getDb();
-  } catch (err) {
-    dbStatus = `Lỗi: ${err instanceof Error ? err.message : String(err)}`;
+  } catch {
+    dbReady = false;
   }
 
+  const isSystemReady = dbReady && publicConfig.hasGeminiKey;
+
   return (
-    <div className="space-y-8">
-      {/* Welcome Banner */}
+    <div className="space-y-6">
+      {/* Compact Welcome & Single Status Line */}
       <div className="p-6 rounded-xl bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 shadow-xl">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              Bảng Điều Khiển Tự Động Hóa MindX
+              Trợ Lý Giảng Dạy MindX (v3.0)
             </h1>
             <p className="mt-1 text-sm text-slate-400">
-              Hệ thống trợ lý tối ưu quy trình sau buổi học, tự động chấm bài và upload sản phẩm cuối khóa.
+              Nhận xét buổi học &amp; tổng kết Zalo, chấm bài tập tự động, nộp sản phẩm cuối khóa (SPCK) và quản lý giáo trình.
             </p>
           </div>
-          <div className="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-full text-emerald-400 text-xs font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Hệ thống Cục bộ Sẵn sàng</span>
-          </div>
-        </div>
-      </div>
-
-      {/* System Status Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-lg bg-slate-900 border border-slate-800">
-          <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Cơ sở dữ liệu SQLite</div>
-          <div className="mt-2 text-lg font-bold text-white flex items-center justify-between">
-            <span>mindx_bot.db</span>
-            <span className="text-xs font-normal text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
-              {dbStatus}
-            </span>
-          </div>
-          <div className="mt-1 text-xs text-slate-500">WAL Mode • Lưu vết Task & Nháp</div>
-        </div>
-
-        <div className="p-4 rounded-lg bg-slate-900 border border-slate-800">
-          <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Trí tuệ nhân tạo AI</div>
-          <div className="mt-2 text-lg font-bold text-white flex items-center justify-between">
-            <span>{publicConfig.geminiModel}</span>
-            <span className={`text-xs font-normal px-2 py-0.5 rounded border ${
-              publicConfig.hasGeminiKey
-                ? "text-emerald-400 bg-emerald-950/60 border-emerald-800"
-                : "text-amber-400 bg-amber-950/60 border-amber-800"
-            }`}>
-              {publicConfig.hasGeminiKey ? "Đã có API Key" : "Chưa có Key"}
-            </span>
-          </div>
-          <div className="mt-1 text-xs text-slate-500">Structured Outputs & Evidence</div>
-        </div>
-
-        <div className="p-4 rounded-lg bg-slate-900 border border-slate-800">
-          <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Kho Giáo Trình & Barem</div>
-          <div className="mt-2 text-lg font-bold text-white">
-            {courses.length} Khóa học • {rubrics.length} Barem
-          </div>
-          <div className="mt-1 text-xs text-slate-500">PTA, PTB, JSB, SB, GB, ROB, CSI</div>
-        </div>
-
-        <div className="p-4 rounded-lg bg-slate-900 border border-slate-800">
-          <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">Tài khoản Teaching & LMS</div>
-          <div className="mt-2 text-sm font-semibold text-white truncate">
-            Teaching: {publicConfig.teachingUsernameMasked || "Chưa cấu hình"}
-          </div>
-          <div className="text-sm font-semibold text-white truncate">
-            LMS: {publicConfig.lmsUsernameMasked || "Chưa cấu hình"}
-          </div>
-          <div className="mt-1 text-xs text-slate-500">
-            {publicConfig.headlessMode ? "Headless Mode" : "Hiển thị giao diện Chrome"}
+          <div className="flex flex-wrap items-center gap-2">
+            <div
+              className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-semibold border ${
+                isSystemReady
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                  : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isSystemReady ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+                }`}
+              />
+              <span>
+                {isSystemReady
+                  ? `Sẵn sàng (${courses.length} khóa học • ${rubrics.length} barem)`
+                  : !publicConfig.hasGeminiKey
+                  ? "Thiếu khóa AI (GEMINI_API_KEY)"
+                  : "Đang kiểm tra dữ liệu"}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* 4 Core Workspaces Grid */}
       <div>
-        <h2 className="text-lg font-bold text-slate-200 mb-4">Các Không Gian Làm Việc Chính (4 Workspaces)</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Workspace 1 */}
           <Link
@@ -99,15 +65,15 @@ export default function DashboardPage() {
           >
             <div className="flex items-center justify-between">
               <span className="text-2xl">📝</span>
-              <span className="text-xs font-semibold text-orange-400 bg-orange-950/40 border border-orange-800 px-2 py-0.5 rounded">
-                Giai đoạn 3
+              <span className="text-xs font-semibold text-orange-300 bg-orange-950/40 border border-orange-800/60 px-2.5 py-0.5 rounded-full">
+                Buổi 1 – 13 &amp; Checkpoint
               </span>
             </div>
             <h3 className="mt-4 text-lg font-bold text-white group-hover:text-orange-400 transition-colors">
-              Màn hình 1: Nhận xét Buổi học & Thông báo Zalo
+              1. Nhận xét Buổi học &amp; Thông báo Zalo
             </h3>
             <p className="mt-2 text-sm text-slate-400">
-              Đồng bộ lịch dạy Teaching, cào học viên LMS, đánh giá bằng Quick Tags 1 chạm, AI soạn nhận xét 3 phần và lưu đối chiếu LMS + copy Zalo.
+              Đồng bộ lớp đang dạy, tích nhanh thẻ Lập trình / Robotics trên 1 hàng gọn, AI soạn nhận xét 3 mục chuẩn (hỗ trợ buổi Checkpoint) và soạn tin nhắn tổng kết Zalo.
             </p>
           </Link>
 
@@ -118,15 +84,15 @@ export default function DashboardPage() {
           >
             <div className="flex items-center justify-between">
               <span className="text-2xl">📊</span>
-              <span className="text-xs font-semibold text-cyan-400 bg-cyan-950/40 border border-cyan-800 px-2 py-0.5 rounded">
-                Giai đoạn 4 & 5
+              <span className="text-xs font-semibold text-cyan-300 bg-cyan-950/40 border border-cyan-800/60 px-2.5 py-0.5 rounded-full">
+                Bảng điểm &amp; BTVN
               </span>
             </div>
             <h3 className="mt-4 text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">
-              Màn hình 2: Bảng điểm Báo cáo & Tự chấm Bài tập
+              2. Bảng điểm Báo cáo &amp; Tự chấm Bài tập
             </h3>
             <p className="mt-2 text-sm text-slate-400">
-              Quét toàn bộ điểm lớp xuất Excel/Google Sheets; tải bài tập kèm ID, đọc mã nguồn đa môn (Python, Web, Game, Scratch), AI đề xuất điểm kèm bằng chứng và lưu LMS.
+              Quét bảng điểm toàn khóa xuất Excel / Google Sheets; tải bài tập về máy, chấm điểm tự động theo Barem kèm bằng chứng và đẩy kết quả lên LMS.
             </p>
           </Link>
 
@@ -137,15 +103,15 @@ export default function DashboardPage() {
           >
             <div className="flex items-center justify-between">
               <span className="text-2xl">🚀</span>
-              <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/40 border border-emerald-800 px-2 py-0.5 rounded">
-                Giai đoạn 6
+              <span className="text-xs font-semibold text-emerald-300 bg-emerald-950/40 border border-emerald-800/60 px-2.5 py-0.5 rounded-full">
+                Buổi 12, 13 &amp; 14
               </span>
             </div>
             <h3 className="mt-4 text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">
-              Màn hình 3: Tự động Upload Sản phẩm Cuối khóa (SPCK)
+              3. Nộp Sản phẩm Cuối khóa (SPCK) &amp; Tổng kết Buổi 14
             </h3>
             <p className="mt-2 text-sm text-slate-400">
-              Quét thư mục dự án trên ổ cứng, bảng ghép nối studentId an toàn, kiểm tra chống trùng, upload toàn bộ ảnh thumbnail, file, link và nhận xét cuối khóa lên LMS.
+              Quét thư mục dự án hoặc Playlist YouTube (Robotics), chuẩn bị ảnh bìa &amp; đường dẫn sản phẩm, nộp SPCK các buổi 12–14 và đẩy Thư tổng kết cuối khóa Buổi 14.
             </p>
           </Link>
 
@@ -156,15 +122,15 @@ export default function DashboardPage() {
           >
             <div className="flex items-center justify-between">
               <span className="text-2xl">⚙️</span>
-              <span className="text-xs font-semibold text-purple-400 bg-purple-950/40 border border-purple-800 px-2 py-0.5 rounded">
-                Giai đoạn 7
+              <span className="text-xs font-semibold text-purple-300 bg-purple-950/40 border border-purple-800/60 px-2.5 py-0.5 rounded-full">
+                Cấu hình
               </span>
             </div>
             <h3 className="mt-4 text-lg font-bold text-white group-hover:text-purple-400 transition-colors">
-              Màn hình 4: Quản lý Giáo trình, Barem & Mẫu Zalo
+              4. Quản lý Giáo trình, Barem &amp; Thẻ Nhận xét
             </h3>
             <p className="mt-2 text-sm text-slate-400">
-              Tùy chỉnh trực tiếp nội dung từng buổi học, cấu hình câu hỏi và barem điểm chấm bài, tinh chỉnh bộ thẻ Quick Tags và mẫu gửi thông báo Zalo.
+              Tùy chỉnh nội dung từng buổi học, đánh dấu buổi Kiểm tra (Checkpoint), cấu hình barem chấm điểm và quản lý 3 bộ thẻ nhận xét nhanh (Lập trình, Robotics, Buổi 14).
             </p>
           </Link>
         </div>

@@ -10,6 +10,7 @@
    - Mọi thao tác điều khiển trình duyệt phải đẩy vào `SequentialTaskQueue` đơn luồng.
    - Bắt lỗi ở tầng Network API (kiểm tra HTTP status của đúng API nghiệp vụ). Tự động đóng các toast `.Forbidden` phụ ở góc dưới bên phải để không che khuất nút bấm.
    - Luôn thực hiện **Read-after-Write Verification** (chờ HTTP 200/201 + đọc lại DOM đối chiếu với bản đã duyệt) trước khi đánh dấu `VERIFIED` trong SQLite.
+   - **Quy tắc Buổi Kiểm tra / Checkpoint (Lập trình: Buổi 5 & 9; Robotics: Buổi 4 & 8):** Bot **CHỈ điền duy nhất ô `"Đánh giá chung *"` (`.ql-editor`)** và **tuyệt đối không tự tích chọn hay sửa đổi các ô Điểm Năng lực `[ĐNL]`, nhận xét năng lực hoặc Điểm kiểm tra/thực hành** (việc tích ô năng lực và điểm kiểm tra do giáo viên tự thực hiện trên LMS).
 4. **Data Integrity & Hashing:**
    - Khóa dữ liệu theo `classId`, `sessionId`, `studentId`, `submissionId`.
    - Khi giáo viên bấm Duyệt, lưu `contentHash` (SHA-256). Nếu nội dung bị chỉnh sửa sau khi duyệt (`newHash !== contentHash`), tự động hạ trạng thái về `DRAFT` / `WAITING_APPROVAL`.

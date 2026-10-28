@@ -222,6 +222,7 @@ function initSchema(db: Database.Database) {
       learnedFromMindx TEXT DEFAULT '',
       suggestionsFromMindx TEXT DEFAULT '',
       futureDirection TEXT DEFAULT '',
+      awardRanking TEXT DEFAULT '',
       quickTagsJson TEXT DEFAULT '[]',
       teacherNote TEXT DEFAULT '',
       draftVersion INTEGER NOT NULL DEFAULT 1,
@@ -302,6 +303,13 @@ function initSchema(db: Database.Database) {
       db.exec(`ALTER TABLE spck_uploads ADD COLUMN approvedSessionNumber INTEGER DEFAULT NULL`);
     }
     migrateSpckSessionSubmissions(db);
+  } catch {}
+
+  try {
+    const s14Cols = db.prepare(`PRAGMA table_info(spck_session14_evaluations)`).all() as Array<{ name: string }>;
+    if (s14Cols.length > 0 && !s14Cols.some((c) => c.name === "awardRanking")) {
+      db.exec(`ALTER TABLE spck_session14_evaluations ADD COLUMN awardRanking TEXT DEFAULT ''`);
+    }
   } catch {}
 }
 
@@ -3881,6 +3889,7 @@ export interface SpckSession14EvaluationRecord {
   learnedFromMindx: string;
   suggestionsFromMindx: string;
   futureDirection: string;
+  awardRanking?: string;
   quickTagsJson: string;
   teacherNote: string;
   draftVersion: number;
@@ -3932,6 +3941,22 @@ export const SESSION14_DEMO_LIMITS: Record<keyof SpckSession14DemoScores, number
   computerSkills: 1.0,
 };
 
+export const SESSION14_DEMO_LIMITS_ROBOTICS: Record<keyof SpckSession14DemoScores, number> = {
+  creativity: 1.25,
+  communication: 0.75,
+  problemSolving: 1.0,
+  computerSkills: 0.5,
+  algorithm: 1.0,
+};
+
+export function isRoboticsClassCode(classId?: string | null): boolean {
+  const s = String(classId || "").trim().toUpperCase();
+  if (!s) return false;
+  return /(?:^|[-_\s])(ROB|ROBO|ROBOT|ROBOTICS|PREB|PREA|PREI|ARM|ARMA|ARMB|ARMI|SEM|SEMA|SEMB|SEMI|EV3|VEX|SPIKE|WEDO|ARDUINO)[A-Z0-9]*\b/i.test(
+    s
+  );
+}
+
 export function parseSession14CompetencyScores(
   raw?: string | Partial<SpckSession14CompetencyScores> | null
 ): SpckSession14CompetencyScores {
@@ -3979,7 +4004,8 @@ export function calculateCompetencyAverageScore(
 }
 
 export function parseSession14DemoScores(
-  raw?: string | Partial<SpckSession14DemoScores> | null
+  raw?: string | Partial<SpckSession14DemoScores> | null,
+  classId?: string | null
 ): SpckSession14DemoScores {
   let obj: any = {};
   if (typeof raw === "string" && raw.trim()) {
@@ -3992,6 +4018,10 @@ export function parseSession14DemoScores(
     obj = raw;
   }
 
+  const limits = isRoboticsClassCode(classId)
+    ? SESSION14_DEMO_LIMITS_ROBOTICS
+    : SESSION14_DEMO_LIMITS;
+
   const normalizeScore = (val: unknown, max: number): number => {
     const n = Number(val);
     if (!Number.isFinite(n) || n < 0) return 0;
@@ -4000,11 +4030,11 @@ export function parseSession14DemoScores(
   };
 
   return {
-    algorithm: normalizeScore(obj.algorithm, SESSION14_DEMO_LIMITS.algorithm),
-    creativity: normalizeScore(obj.creativity, SESSION14_DEMO_LIMITS.creativity),
-    communication: normalizeScore(obj.communication, SESSION14_DEMO_LIMITS.communication),
-    problemSolving: normalizeScore(obj.problemSolving, SESSION14_DEMO_LIMITS.problemSolving),
-    computerSkills: normalizeScore(obj.computerSkills, SESSION14_DEMO_LIMITS.computerSkills),
+    algorithm: normalizeScore(obj.algorithm, limits.algorithm),
+    creativity: normalizeScore(obj.creativity, limits.creativity),
+    communication: normalizeScore(obj.communication, limits.communication),
+    problemSolving: normalizeScore(obj.problemSolving, limits.problemSolving),
+    computerSkills: normalizeScore(obj.computerSkills, limits.computerSkills),
   };
 }
 
@@ -4116,11 +4146,13 @@ export function computeSession14EvalHash(record: {
   learnedFromMindx?: string;
   suggestionsFromMindx?: string;
   futureDirection?: string;
+  awardRanking?: string;
 }): string {
   const comp = parseSession14CompetencyScores(record.competencyJson);
   const compTotal = calculateCompetencyAverageScore(comp);
-  const demo = parseSession14DemoScores(record.demoScoresJson);
+  const demo = parseSession14DemoScores(record.demoScoresJson, record.classId);
   const demoTotal = calculateDemoTotalScore(demo);
+  const cleanAward = String(record.awardRanking || "").trim();
   const payload = JSON.stringify({
     v: "SESSION14_EVAL_V290",
     classId: String(record.classId || "").trim().toUpperCase(),
@@ -4132,6 +4164,7 @@ export function computeSession14EvalHash(record: {
     learnedFromMindx: String(record.learnedFromMindx || "").trim(),
     suggestionsFromMindx: String(record.suggestionsFromMindx || "").trim(),
     futureDirection: String(record.futureDirection || "").trim(),
+    ...(cleanAward ? { awardRanking: cleanAward } : {}),
   });
   return calculateSha256(payload);
 }
@@ -4208,6 +4241,7 @@ export const session14EvalRepo = {
     learnedFromMindx?: string;
     suggestionsFromMindx?: string;
     futureDirection?: string;
+    awardRanking?: string;
     quickTags?: string[] | string;
     teacherNote?: string;
   }): {
@@ -4245,13 +4279,14 @@ export const session14EvalRepo = {
     const nextCompJson = JSON.stringify(nextComp);
     const nextCompTotal = calculateCompetencyAverageScore(nextComp);
 
-    const currentDemo = parseSession14DemoScores(current.demoScoresJson);
+    const currentDemo = parseSession14DemoScores(current.demoScoresJson, normalizedClassId);
     const nextDemo =
       params.demoScores !== undefined
         ? parseSession14DemoScores(
             typeof params.demoScores === "string"
               ? params.demoScores
-              : { ...currentDemo, ...params.demoScores }
+              : { ...currentDemo, ...params.demoScores },
+            normalizedClassId
           )
         : currentDemo;
     const nextDemoJson = JSON.stringify(nextDemo);
@@ -4278,6 +4313,8 @@ export const session14EvalRepo = {
         : current.suggestionsFromMindx;
     const nextFuture =
       params.futureDirection !== undefined ? params.futureDirection : current.futureDirection;
+    const nextAwardRanking =
+      params.awardRanking !== undefined ? params.awardRanking : current.awardRanking || "";
     const nextTagsJson =
       params.quickTags !== undefined
         ? typeof params.quickTags === "string"
@@ -4297,6 +4334,7 @@ export const session14EvalRepo = {
       learnedFromMindx: nextLearned,
       suggestionsFromMindx: nextSuggestions,
       futureDirection: nextFuture,
+      awardRanking: nextAwardRanking,
     });
 
     const contentChangedFromApproved =
@@ -4309,6 +4347,7 @@ export const session14EvalRepo = {
       nextLearned !== current.learnedFromMindx ||
       nextSuggestions !== current.suggestionsFromMindx ||
       nextFuture !== current.futureDirection ||
+      nextAwardRanking !== (current.awardRanking || "") ||
       nextTagsJson !== current.quickTagsJson ||
       nextNote !== current.teacherNote;
 
@@ -4318,7 +4357,11 @@ export const session14EvalRepo = {
 
     if (contentChangedFromApproved || contentChangedFromCurrent) {
       const hasAnyText = Boolean(
-        nextLearned.trim() || nextSuggestions.trim() || nextFuture.trim() || nextDemoTotal > 0
+        nextLearned.trim() ||
+          nextSuggestions.trim() ||
+          nextFuture.trim() ||
+          nextAwardRanking.trim() ||
+          nextDemoTotal > 0
       );
       if (current.status === "APPROVED" || current.status === "VERIFIED") {
         nextStatus = "WAITING_APPROVAL";
@@ -4346,6 +4389,7 @@ export const session14EvalRepo = {
            learnedFromMindx = ?,
            suggestionsFromMindx = ?,
            futureDirection = ?,
+           awardRanking = ?,
            quickTagsJson = ?,
            teacherNote = ?,
            draftVersion = ?,
@@ -4365,6 +4409,7 @@ export const session14EvalRepo = {
       nextLearned,
       nextSuggestions,
       nextFuture,
+      nextAwardRanking,
       nextTagsJson,
       nextNote,
       nextVersion,
@@ -4434,7 +4479,7 @@ export const session14EvalRepo = {
 
     const comp = parseSession14CompetencyScores(current.competencyJson);
     const compTotal = calculateCompetencyAverageScore(comp);
-    const demo = parseSession14DemoScores(current.demoScoresJson);
+    const demo = parseSession14DemoScores(current.demoScoresJson, normalizedClassId);
     const demoTotal = calculateDemoTotalScore(demo);
 
     const scoreConsistency = verifySession14LetterScoreConsistency(
@@ -4460,6 +4505,7 @@ export const session14EvalRepo = {
       learnedFromMindx: current.learnedFromMindx,
       suggestionsFromMindx: current.suggestionsFromMindx,
       futureDirection: current.futureDirection,
+      awardRanking: current.awardRanking,
     });
 
     const db = getDb();

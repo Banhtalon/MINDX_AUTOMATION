@@ -1,6 +1,6 @@
 # PROJECT_STATE.md — TỔNG QUAN NHANH & TIẾN ĐỘ HIỆN TẠI (DÀNH CHO AI AGENT)
 
-> **Cập nhật lần cuối:** 2026-10-27
+> **Cập nhật lần cuối:** 2026-10-28 (Phiên bản `v3.0.0` — Tái thiết kế Quick Tags theo bộ môn Lập trình / Robotics, Chế độ Nhận xét Buổi Kiểm tra Checkpoint & Tinh gọn toàn diện giao diện 5 màn hình)
 > **Mục đích:** Giúp AI Agent nắm bắt 100% kiến trúc, trạng thái hiện tại, bản đồ file và các đặc thù thực tế của MindX LMS chỉ trong **1 lần đọc** trước khi tra cứu chi tiết trong `@MINDX_AUTOMATION_PLAN.md`.
 
 > **Kiểm định v2.9.0 — Vòng 9 (2026-10-27):** **GO** cho bản mã `v2.9.0` (Thiết kế lại toàn diện Buổi 14 Tổng kết cuối khóa); toàn bộ 12 hạng mục `F01`–`F12` đều **CLOSED**, chạy mới **8/8 cổng kiểm thử bắt buộc PASS (`exit code 0`)** và **263/263 ca probe độc lập đúng kỳ vọng (100%)**. Đã khóa chặt bộ chờ phản hồi tải lại vào chính đối tượng yêu cầu đã bắt (`res.request() === req`) với cửa sổ quan sát `6000ms`, chặn hoàn toàn việc fallback sang nguồn Save khi đã phát sinh yêu cầu tải lại bị lỗi/timeout, và kiểm tra nghiêm ngặt toàn bộ 3 phần Thư từ MindX + 9 điểm Năng lực `[ĐNL]` (số nguyên `1..5`) + 5 điểm Demo trên nguồn máy chủ độc lập. Chi tiết: `docs/audits/v290/CODEX_REVIEW_ROUND9.md`.
@@ -11,7 +11,11 @@
 
 ## 1. TỔNG QUAN HỆ THỐNG (EXECUTIVE SNAPSHOT)
 
-- **Tên dự án:** MindX Automation Bot (`v2.9.0` — chi tiết lịch sử thay đổi tại `@CHANGELOG.md`)
+- **Tên dự án:** MindX Automation Bot (`v3.0.0` — chi tiết lịch sử thay đổi tại `@CHANGELOG.md`)
+- **Điểm mới trọng tâm `v3.0.0` (2026-10-28):**
+  - **Tách biệt hoàn toàn Quick Tags (`data/config/quick_tags.json`, `src/lib/quick-tags/index.ts`):** Màn hình 1 (`/session-comments`) chỉ hiển thị bộ thẻ ngắn gọn theo đúng bộ môn (`regular_coding` 7 thẻ cho Lập trình; `regular_robotics` 6 thẻ cho Robotics), không bao giờ trộn lẫn thẻ Buổi 14 SPCK. Màn hình 3 (`/final-project`) dùng chung nguồn thẻ Buổi 14 từ `quick_tags.json`.
+  - **Cơ chế Buổi Kiểm tra Định kỳ — Checkpoint (`Buổi 5 & 9` Lập trình; `Buổi 4 & 8` Robotics):** Khi lưu nhận xét ở buổi Checkpoint (`src/lib/playwright/save-comments.ts`), Bot **chỉ điền duy nhất ô `"Đánh giá chung *"` (`.ql-editor`)** và giữ nguyên 100% các nút chọn năng lực `[ĐNL]` (`input[type="radio"]`), ô ghi chú năng lực (`textarea`), điểm kiểm tra lý thuyết và điểm thực hành do giáo viên tự tích trên LMS.
+  - **Tinh gọn toàn diện 5 màn hình (`/`, `/session-comments`, `/homework-grader`, `/final-project`, `/syllabus-config`, `live-log-drawer.tsx`)** và bổ sung thang điểm Demo Robotics (`4.5` điểm) cho Buổi 14. Toàn bộ **12/12 bộ kiểm thử tự động PASS (`exit code 0`)** và đạt **GO** từ Codex CLI (`gpt-6.1-sol` high).
 - **Chức năng chính:** Trợ lý tự động hóa chạy cục bộ (`http://127.0.0.1:3000`) hỗ trợ Giáo viên MindX thực hiện 4 luồng nghiệp vụ:
   1. **Màn hình 1 (`/session-comments`):** Đồng bộ lớp/học viên từ LMS, chọn Quick Tags 5 cấp độ cho **Buổi 1 $\rightarrow$ Buổi 13** (Buổi 14 được tách riêng sang Tab SPCK — Buổi 14), AI (`gemini-3.5-flash-lite`) soạn nhận xét 3 gạch đầu dòng in đậm + Thông báo Zalo 2 phần, tự động đẩy nhận xét học viên + `Summary` + `Homework` lên LMS.
   2. **Màn hình 2 (`/homework-grader`):** Cào bảng điểm đa trang xuất Excel/Google Sheets & Tự động tải file bài nộp đa môn (`.py`, `.ipynb`, `.ui/.qss`, `.html/.css/.js`, `.zip`, `.sb3`, `.yyz/.gml`, ảnh/PDF) về chấm theo Barem kèm bằng chứng code.

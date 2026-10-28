@@ -438,7 +438,7 @@ export class CommentSaver {
       const stillActiveAfterMeta =
         slotCountAfterMeta > 0 &&
         (await slotItem.evaluate((el) => el.classList.contains("active")).catch(() => false));
-      if (!stillActiveAfterMeta) {
+      if (!stillActiveAfterMeta && typeof LmsHelpers?.ensureCommentsSlotReady === "function") {
         await LmsHelpers.ensureCommentsSlotReady(page, classCode, slotNumber, {
           reopenDrawerIfClosed: false,
           waitForTableMs: 5000,
@@ -470,6 +470,8 @@ export class CommentSaver {
         if (
           msg.includes("Hash drift") ||
           msg.includes("IN_FLIGHT_DRIFT") ||
+          msg.includes("CHECKPOINT_COMPETENCY_REQUIRED") ||
+          msg.includes("Buổi Kiểm tra (Checkpoint)") ||
           msg.includes("Read-after-Write check failed") ||
           msg.includes("không còn thuộc danh sách active") ||
           msg.includes("trạng thái điểm danh") ||
@@ -597,7 +599,9 @@ export class CommentSaver {
           const escapedName = studentName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
           // Self-Healing UI before each student: close any dangling modal/toast and re-activate slot if it is not .active
-          await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+          if (typeof LmsHelpers?.ensureCleanDialogAndToast === "function") {
+            await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+          }
           const currentSlotCount =
             typeof (slotItem as any).count === "function"
               ? await (slotItem as any).count().catch(() => 0)
@@ -605,7 +609,10 @@ export class CommentSaver {
           const isSlotCurrentlyActive =
             currentSlotCount > 0 &&
             (await slotItem.evaluate((el) => el.classList.contains("active")).catch(() => false));
-          if (!isSlotCurrentlyActive || isRetryPass) {
+          if (
+            (!isSlotCurrentlyActive || isRetryPass) &&
+            typeof LmsHelpers?.ensureCommentsSlotReady === "function"
+          ) {
             await LmsHelpers.ensureCommentsSlotReady(page, classCode, slotNumber, {
               reopenDrawerIfClosed: isRetryPass,
               waitForTableMs: 5000,
@@ -687,10 +694,12 @@ export class CommentSaver {
 
           // Self-healing fallback: if 0 rows matched on first check, re-verify slot active state once and re-scan
           if (!hasExplicitIdRow && matchedRowCount === 0) {
-            await LmsHelpers.ensureCommentsSlotReady(page, classCode, slotNumber, {
-              reopenDrawerIfClosed: true,
-              waitForTableMs: 3000,
-            });
+            if (typeof LmsHelpers?.ensureCommentsSlotReady === "function") {
+              await LmsHelpers.ensureCommentsSlotReady(page, classCode, slotNumber, {
+                reopenDrawerIfClosed: true,
+                waitForTableMs: 3000,
+              });
+            }
             await scanBodyRowsByLine();
           }
 
@@ -762,10 +771,59 @@ export class CommentSaver {
             .replace(/\s+/g, " ")
             .trim();
 
-          // Locate Quill rich text editor
-          const editor = dialog
-            .locator('.ql-editor[contenteditable="true"], .ck-content, [contenteditable="true"], textarea')
-            .first();
+          const checkIfCheckpointModal = async (): Promise<boolean> => {
+            const radioLoc = dialog.locator('input[type="radio"]');
+            const textareaLoc = dialog.locator("textarea");
+            const rCount =
+              typeof (radioLoc as any).count === "function"
+                ? await (radioLoc as any).count().catch(() => 0)
+                : 0;
+            const tCount =
+              typeof (textareaLoc as any).count === "function"
+                ? await (textareaLoc as any).count().catch(() => 0)
+                : 0;
+            if (rCount >= 5 || tCount >= 2) return true;
+            const savedRowLoc = dialog.locator("table tbody tr").first();
+            if (await savedRowLoc.isVisible().catch(() => false)) {
+              const rowTxt = await savedRowLoc.innerText().catch(() => "");
+              if (
+                /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[ĐNL\]/i.test(
+                  rowTxt
+                )
+              ) {
+                return true;
+              }
+            }
+            return false;
+          };
+
+          let isCheckpointModal = await checkIfCheckpointModal();
+
+          // Locate Quill rich text editor ("Đánh giá chung *") WITHOUT including <textarea> (which on Checkpoint modals are competency [ĐNL] notes)
+          const resolveRichEditor = async () => {
+            const allRichEditors = dialog.locator(
+              '.ql-editor[contenteditable="true"], .ql-editor, .ck-content, [contenteditable="true"]'
+            );
+            let target = allRichEditors.first();
+            if (isCheckpointModal && typeof (allRichEditors as any).count === "function") {
+              const qlCount = await (allRichEditors as any).count().catch(() => 1);
+              if (qlCount > 1) {
+                const generalEditor = dialog
+                  .locator(
+                    'div:has(> p:has-text("Đánh giá chung")) .ql-editor[contenteditable="true"], div:has(> label:has-text("Đánh giá chung")) .ql-editor[contenteditable="true"]'
+                  )
+                  .first();
+                if (await generalEditor.isVisible().catch(() => false)) {
+                  target = generalEditor;
+                } else if (typeof (allRichEditors as any).last === "function") {
+                  target = (allRichEditors as any).last();
+                }
+              }
+            }
+            return target;
+          };
+
+          let editor = await resolveRichEditor();
 
           let isEditorVisible = await editor.isVisible().catch(() => false);
           let alreadySavedAndVerifiedInViewMode = false;
@@ -788,6 +846,14 @@ export class CommentSaver {
                   if (raw1) existingCandidates.push(raw1);
                 }
               }
+              const joinedExistingRaw = existingCandidates.join(" ");
+              if (
+                /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[ĐNL\]/i.test(
+                  joinedExistingRaw
+                )
+              ) {
+                isCheckpointModal = true;
+              }
               const normExisting = existingCandidates
                 .map((c) =>
                   c
@@ -799,6 +865,7 @@ export class CommentSaver {
                 .filter(Boolean);
 
               if (
+                !isCheckpointModal &&
                 preSaveRecord.status === "VERIFIED" &&
                 !isRetryPass &&
                 normalizedExpectedPlain.length > 0 &&
@@ -824,14 +891,18 @@ export class CommentSaver {
                 }
                 wasSwitchedFromViewMode = true;
                 await page.waitForTimeout(800);
+                isCheckpointModal = isCheckpointModal || (await checkIfCheckpointModal());
+                editor = await resolveRichEditor();
               }
             }
 
-            // Case B: In by-areas mode (new comment)
+            // Case B: In by-areas mode (new comment on regular sessions ONLY; never click switch on Checkpoint modals)
             if (!alreadySavedAndVerifiedInViewMode) {
               isEditorVisible = await editor.isVisible().catch(() => false);
-              if (!isEditorVisible) {
-                const switchRoot = dialog.locator('.MuiSwitch-root, span:has(.MuiSwitch-input), [aria-label*="switch to manual mode" i]').first();
+              if (!isEditorVisible && !isCheckpointModal) {
+                const switchRoot = dialog
+                  .locator('[aria-label*="switch to manual mode" i]')
+                  .first();
                 if (await switchRoot.isVisible().catch(() => false)) {
                   await switchRoot.click({ force: true });
                   await page.waitForTimeout(800);
@@ -842,6 +913,13 @@ export class CommentSaver {
                     await page.waitForTimeout(1200);
                   }
                 }
+              }
+              // Fallback to textarea ONLY on non-Checkpoint modals if richEditor is still not visible
+              isEditorVisible = await editor.isVisible().catch(() => false);
+              if (!isEditorVisible && !isCheckpointModal) {
+                editor = dialog
+                  .locator('.ql-editor[contenteditable="true"], .ck-content, [contenteditable="true"], textarea')
+                  .first();
               }
             }
           }
@@ -896,7 +974,7 @@ export class CommentSaver {
             el.dispatchEvent(new Event("change", { bubbles: true }));
           }, commentText);
 
-          if (wasSwitchedFromViewMode && typeof page.keyboard?.insertText === "function") {
+          if ((wasSwitchedFromViewMode || isCheckpointModal) && typeof page.keyboard?.insertText === "function") {
             await page.keyboard.press("End").catch(() => {});
             await page.keyboard.insertText(" ").catch(() => {});
             await page.keyboard.press("Backspace").catch(() => {});
@@ -973,193 +1051,260 @@ export class CommentSaver {
           // Mark that Save mutation is being dispatched — never auto-retry in Pass 2 after this point
           saveMutationDispatched = true;
 
-          // Wait strictly for the business API mutation response upon clicking save (no unrelated fallback)
-          const [apiResponse] = await Promise.all([
-            interceptor.waitForApiResponse(
-              /lms-api\.mindx\.edu\.vn/i,
-              {
-                method: "POST",
-                timeoutMs: 15000,
-                operationName: /^(UpdateSlotComment|CreateSlotComment|SaveSlotComment|CommentMakeup)$/i,
-                requestPredicate: (postData: string) => {
-                  if (!postData) return false;
-                  try {
-                    const parsed = JSON.parse(postData);
-                    const op = String(parsed?.operationName || "").trim();
-                    if (!/^(UpdateSlotComment|CreateSlotComment|SaveSlotComment|CommentMakeup)$/i.test(op)) {
-                      return false;
-                    }
-                    const rawVars = parsed?.variables;
-                    if (!rawVars || typeof rawVars !== "object" || Array.isArray(rawVars)) {
-                      return false;
-                    }
-                    if (
-                      Object.prototype.hasOwnProperty.call(rawVars, "payload") &&
-                      (!rawVars.payload || typeof rawVars.payload !== "object" || Array.isArray(rawVars.payload))
-                    ) {
-                      return false;
-                    }
-                    if (
-                      Object.prototype.hasOwnProperty.call(rawVars, "input") &&
-                      (!rawVars.input || typeof rawVars.input !== "object" || Array.isArray(rawVars.input))
-                    ) {
-                      return false;
-                    }
+          let checkpointCheckedRadios = -1;
+          if (isCheckpointModal) {
+            const checkedRadioLoc = dialog.locator('input[type="radio"]:checked');
+            checkpointCheckedRadios =
+              typeof (checkedRadioLoc as any).count === "function"
+                ? await (checkedRadioLoc as any).count().catch(() => -1)
+                : -1;
+          }
 
-                    const scopes = [
-                      rawVars,
-                      rawVars.payload,
-                      rawVars.input,
-                    ].filter((o) => o && typeof o === "object" && !Array.isArray(o));
+          let apiResponse: any = null;
+          try {
+            // Wait strictly for the business API mutation response upon clicking save (no unrelated fallback)
+            [apiResponse] = await Promise.all([
+              interceptor.waitForApiResponse(
+                /lms-api\.mindx\.edu\.vn/i,
+                {
+                  method: "POST",
+                  timeoutMs: 15000,
+                  operationName: /^(UpdateSlotComment|CreateSlotComment|SaveSlotComment|CommentMakeup)$/i,
+                  requestPredicate: (postData: string) => {
+                    if (!postData) return false;
+                    try {
+                      const parsed = JSON.parse(postData);
+                      const op = String(parsed?.operationName || "").trim();
+                      if (!/^(UpdateSlotComment|CreateSlotComment|SaveSlotComment|CommentMakeup)$/i.test(op)) {
+                        return false;
+                      }
+                      const rawVars = parsed?.variables;
+                      if (!rawVars || typeof rawVars !== "object" || Array.isArray(rawVars)) {
+                        return false;
+                      }
+                      if (
+                        Object.prototype.hasOwnProperty.call(rawVars, "payload") &&
+                        (!rawVars.payload || typeof rawVars.payload !== "object" || Array.isArray(rawVars.payload))
+                      ) {
+                        return false;
+                      }
+                      if (
+                        Object.prototype.hasOwnProperty.call(rawVars, "input") &&
+                        (!rawVars.input || typeof rawVars.input !== "object" || Array.isArray(rawVars.input))
+                      ) {
+                        return false;
+                      }
 
-                    let hasClassIdentifier = false;
-                    let hasSessionIdentifier = false;
-                    let hasStudentIdentifier = false;
-                    const expectedCommentRawNorm = commentText.replace(/\s+/g, " ").trim();
-                    const expectedCommentPlainNorm = commentText
-                      .replace(/\*\*([^*\n]+)\*\*/g, "$1")
-                      .replace(/\s+/g, " ")
-                      .trim();
-                    const normalizeCommentPayloadText = (rawStr: string) =>
-                      rawStr
-                        .replace(/<\/?(?:p|div|br|li|ul|ol)\s*\/?>/gi, " ")
-                        .replace(/<\/?(?:strong|b|em|i|u|span)\b[^>]*>/gi, "")
-                        .replace(/&nbsp;/gi, " ")
-                        .replace(/&amp;/gi, "&")
-                        .replace(/&lt;/gi, "<")
-                        .replace(/&gt;/gi, ">")
-                        .replace(/&quot;/gi, '"')
-                        .replace(/&#39;|&apos;/gi, "'")
+                      const scopes = [
+                        rawVars,
+                        rawVars.payload,
+                        rawVars.input,
+                      ].filter((o) => o && typeof o === "object" && !Array.isArray(o));
+
+                      let hasClassIdentifier = false;
+                      let hasSessionIdentifier = false;
+                      let hasStudentIdentifier = false;
+                      const expectedCommentRawNorm = commentText.replace(/\s+/g, " ").trim();
+                      const expectedCommentPlainNorm = commentText
+                        .replace(/\*\*([^*\n]+)\*\*/g, "$1")
                         .replace(/\s+/g, " ")
-                        .trim()
-                        .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
                         .trim();
-                    const isMongoObjectId = (v: string) => /^[a-f0-9]{24}$/i.test(v);
+                      const normalizeCommentPayloadText = (rawStr: string) =>
+                        rawStr
+                          .replace(/<\/?(?:p|div|br|li|ul|ol)\s*\/?>/gi, " ")
+                          .replace(/<\/?(?:strong|b|em|i|u|span)\b[^>]*>/gi, "")
+                          .replace(/&nbsp;/gi, " ")
+                          .replace(/&amp;/gi, "&")
+                          .replace(/&lt;/gi, "<")
+                          .replace(/&gt;/gi, ">")
+                          .replace(/&quot;/gi, '"')
+                          .replace(/&#39;|&apos;/gi, "'")
+                          .replace(/\s+/g, " ")
+                          .trim()
+                          .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
+                          .trim();
+                      const isMongoObjectId = (v: string) => /^[a-f0-9]{24}$/i.test(v);
 
-                    const studentCommentObj =
-                      rawVars.payload?.studentComment || rawVars.input?.studentComment;
-                    if (studentCommentObj && typeof studentCommentObj === "object") {
-                      if (typeof studentCommentObj.studentId === "string" && studentCommentObj.studentId.trim()) {
-                        hasStudentIdentifier = true;
-                      }
-                      if (typeof studentCommentObj.content === "string") {
-                        const cleanedHtmlContent = normalizeCommentPayloadText(studentCommentObj.content);
-                        if (
-                          !cleanedHtmlContent ||
-                          (cleanedHtmlContent !== expectedCommentRawNorm &&
-                            cleanedHtmlContent !== expectedCommentPlainNorm)
-                        ) {
-                          return false;
-                        }
-                      }
-                    }
-
-                    for (const scope of scopes) {
-                      for (const k of ["classCode", "classId", "className"]) {
-                        if (Object.prototype.hasOwnProperty.call(scope, k)) {
-                          const raw = scope[k];
-                          if (typeof raw !== "string") return false;
-                          const val = raw.trim().toUpperCase();
-                          const isRealLmsClassId =
-                            k === "classId" &&
-                            isMongoObjectId(val) &&
-                            !Object.prototype.hasOwnProperty.call(scope, "classCode");
-                          if (!val || (!isRealLmsClassId && val !== classCode && val !== classId)) {
-                            return false;
-                          }
-                          hasClassIdentifier = true;
-                        }
-                      }
-
-                      for (const k of ["sessionId", "slotId"]) {
-                        if (Object.prototype.hasOwnProperty.call(scope, k)) {
-                          const raw = scope[k];
-                          if (typeof raw !== "string") return false;
-                          const val = raw.trim().toUpperCase();
-                          const isRealLmsSlotId = k === "slotId" && isMongoObjectId(val);
-                          if (!val || (!isRealLmsSlotId && val !== sessionId.toUpperCase())) {
-                            return false;
-                          }
-                          hasSessionIdentifier = true;
-                        }
-                      }
-
-                      for (const k of ["slotNumber", "sessionNumber"]) {
-                        if (Object.prototype.hasOwnProperty.call(scope, k)) {
-                          const raw = scope[k];
-                          if (typeof raw !== "number" && typeof raw !== "string") return false;
-                          const rawVal = String(raw).trim();
-                          const num = Number(rawVal);
-                          if (!rawVal || !Number.isFinite(num) || num !== slotNumber) {
-                            return false;
-                          }
-                          hasSessionIdentifier = true;
-                        }
-                      }
-
-                      if (Object.prototype.hasOwnProperty.call(scope, "slotIndex")) {
-                        const raw = scope.slotIndex;
-                        if (typeof raw !== "number" && typeof raw !== "string") return false;
-                        const rawVal = String(raw).trim();
-                        const idx = Number(rawVal);
-                        if (!rawVal || !Number.isFinite(idx) || idx + 1 !== slotNumber) {
-                          return false;
-                        }
-                        hasSessionIdentifier = true;
-                      }
-
-                      for (const k of ["studentId", "studentUid", "userId"]) {
-                        if (Object.prototype.hasOwnProperty.call(scope, k)) {
-                          const raw = scope[k];
-                          if (typeof raw !== "string") return false;
-                          const val = raw.trim();
-                          const isRealLmsStudentId =
-                            (k === "studentId" || k === "studentUid") && isMongoObjectId(val);
-                          if (!val || (!isRealLmsStudentId && val !== record.studentId)) {
-                            return false;
-                          }
+                      const studentCommentObj =
+                        rawVars.payload?.studentComment || rawVars.input?.studentComment;
+                      if (studentCommentObj && typeof studentCommentObj === "object") {
+                        if (typeof studentCommentObj.studentId === "string" && studentCommentObj.studentId.trim()) {
                           hasStudentIdentifier = true;
                         }
-                      }
-
-                      for (const k of ["comment", "content", "note", "feedback"]) {
-                        if (Object.prototype.hasOwnProperty.call(scope, k)) {
-                          const raw = scope[k];
-                          if (typeof raw !== "string") return false;
-                          const val = normalizeCommentPayloadText(raw);
-                          if (
-                            !val ||
-                            (val !== expectedCommentRawNorm && val !== expectedCommentPlainNorm)
-                          ) {
+                        const byAreasList = Array.isArray(studentCommentObj.byAreas)
+                          ? studentCommentObj.byAreas
+                          : [];
+                        const byAreasNormalizedContents = byAreasList
+                          .map((area: any) =>
+                            typeof area?.content === "string"
+                              ? normalizeCommentPayloadText(area.content)
+                              : ""
+                          )
+                          .filter(Boolean);
+                        if (typeof studentCommentObj.content === "string" || byAreasNormalizedContents.length > 0) {
+                          const cleanedHtmlContent =
+                            typeof studentCommentObj.content === "string"
+                              ? normalizeCommentPayloadText(studentCommentObj.content)
+                              : "";
+                          const matchesByAreasContent =
+                            isCheckpointModal &&
+                            byAreasNormalizedContents.some(
+                              (c: string) =>
+                                c === expectedCommentRawNorm ||
+                                c === expectedCommentPlainNorm ||
+                                c.includes(expectedCommentPlainNorm) ||
+                                c.includes(expectedCommentRawNorm)
+                            );
+                          const matchesExpectedContent =
+                            cleanedHtmlContent === expectedCommentRawNorm ||
+                            cleanedHtmlContent === expectedCommentPlainNorm ||
+                            (isCheckpointModal &&
+                              (cleanedHtmlContent.includes(expectedCommentPlainNorm) ||
+                                cleanedHtmlContent.includes(expectedCommentRawNorm) ||
+                                matchesByAreasContent));
+                          if ((!cleanedHtmlContent && !matchesByAreasContent) || !matchesExpectedContent) {
                             return false;
                           }
                         }
                       }
-                    }
 
-                    // Must carry at least one concrete target entity identifier (never accept comment-only or empty payload)
-                    if (!hasClassIdentifier && !hasSessionIdentifier && !hasStudentIdentifier) {
+                      for (const scope of scopes) {
+                        for (const k of ["classCode", "classId", "className"]) {
+                          if (Object.prototype.hasOwnProperty.call(scope, k)) {
+                            const raw = scope[k];
+                            if (typeof raw !== "string") return false;
+                            const val = raw.trim().toUpperCase();
+                            const isRealLmsClassId =
+                              k === "classId" &&
+                              isMongoObjectId(val) &&
+                              !Object.prototype.hasOwnProperty.call(scope, "classCode");
+                            if (!val || (!isRealLmsClassId && val !== classCode && val !== classId)) {
+                              return false;
+                            }
+                            hasClassIdentifier = true;
+                          }
+                        }
+
+                        for (const k of ["sessionId", "slotId"]) {
+                          if (Object.prototype.hasOwnProperty.call(scope, k)) {
+                            const raw = scope[k];
+                            if (typeof raw !== "string") return false;
+                            const val = raw.trim().toUpperCase();
+                            const isRealLmsSlotId = k === "slotId" && isMongoObjectId(val);
+                            if (!val || (!isRealLmsSlotId && val !== sessionId.toUpperCase())) {
+                              return false;
+                            }
+                            hasSessionIdentifier = true;
+                          }
+                        }
+
+                        for (const k of ["slotNumber", "sessionNumber"]) {
+                          if (Object.prototype.hasOwnProperty.call(scope, k)) {
+                            const raw = scope[k];
+                            if (typeof raw !== "number" && typeof raw !== "string") return false;
+                            const rawVal = String(raw).trim();
+                            const num = Number(rawVal);
+                            if (!rawVal || !Number.isFinite(num) || num !== slotNumber) {
+                              return false;
+                            }
+                            hasSessionIdentifier = true;
+                          }
+                        }
+
+                        if (Object.prototype.hasOwnProperty.call(scope, "slotIndex")) {
+                          const raw = scope.slotIndex;
+                          if (typeof raw !== "number" && typeof raw !== "string") return false;
+                          const rawVal = String(raw).trim();
+                          const idx = Number(rawVal);
+                          if (!rawVal || !Number.isFinite(idx) || idx + 1 !== slotNumber) {
+                            return false;
+                          }
+                          hasSessionIdentifier = true;
+                        }
+
+                        for (const k of ["studentId", "studentUid", "userId"]) {
+                          if (Object.prototype.hasOwnProperty.call(scope, k)) {
+                            const raw = scope[k];
+                            if (typeof raw !== "string") return false;
+                            const val = raw.trim();
+                            const isRealLmsStudentId =
+                              (k === "studentId" || k === "studentUid") && isMongoObjectId(val);
+                            if (!val || (!isRealLmsStudentId && val !== record.studentId)) {
+                              return false;
+                            }
+                            hasStudentIdentifier = true;
+                          }
+                        }
+
+                        for (const k of ["comment", "content", "note", "feedback"]) {
+                          if (Object.prototype.hasOwnProperty.call(scope, k)) {
+                            const raw = scope[k];
+                            if (typeof raw !== "string") return false;
+                            const val = normalizeCommentPayloadText(raw);
+                            const matchesVal =
+                              val === expectedCommentRawNorm ||
+                              val === expectedCommentPlainNorm ||
+                              (isCheckpointModal &&
+                                (val.includes(expectedCommentPlainNorm) ||
+                                  val.includes(expectedCommentRawNorm)));
+                            if (!val || !matchesVal) {
+                              return false;
+                            }
+                          }
+                        }
+                      }
+
+                      // Must carry at least one concrete target entity identifier (never accept comment-only or empty payload)
+                      if (!hasClassIdentifier && !hasSessionIdentifier && !hasStudentIdentifier) {
+                        return false;
+                      }
+                      return true;
+                    } catch {
                       return false;
                     }
-                    return true;
-                  } catch {
-                    return false;
-                  }
-                },
-              }
-            ),
-            saveBtn.click({ force: true }),
-          ]);
+                  },
+                }
+              ),
+              saveBtn.click({ force: true }),
+            ]);
+          } catch (saveWaitErr) {
+            const saveWaitMsg =
+              saveWaitErr instanceof Error ? saveWaitErr.message : String(saveWaitErr);
+            if (
+              isCheckpointModal &&
+              (checkpointCheckedRadios === 0 ||
+                /competency|năng\s+lực|required|bắt\s+buộc|score|điểm|validation|chưa\s+nhập|chưa\s+chọn|timeout/i.test(
+                  saveWaitMsg
+                ))
+            ) {
+              throw new Error(
+                `CHECKPOINT_COMPETENCY_REQUIRED: Buổi Kiểm tra (Checkpoint): Vui lòng tích Điểm Năng lực [ĐNL] & Điểm kiểm tra cho học viên '${studentName}' trên LMS trước khi bấm Đẩy nhận xét.`
+              );
+            }
+            throw saveWaitErr;
+          }
 
           // Check HTTP status AND ensure no GraphQL errors inside HTTP 200 payload
           let apiSuccess = Boolean(
             apiResponse && (apiResponse.status() === 200 || apiResponse.status() === 201)
           );
+          let graphqlErrorText = "";
           if (apiSuccess && typeof (apiResponse as any).json === "function") {
             const respBody = await (apiResponse as any).json().catch(() => null);
             if (respBody && Array.isArray(respBody.errors) && respBody.errors.length > 0) {
               apiSuccess = false;
+              graphqlErrorText = respBody.errors.map((e: any) => String(e?.message || "")).join("; ");
             }
+          }
+          if (
+            !apiSuccess &&
+            isCheckpointModal &&
+            (checkpointCheckedRadios === 0 ||
+              /competency|năng\s+lực|required|bắt\s+buộc|score|điểm/i.test(graphqlErrorText))
+          ) {
+            throw new Error(
+              `CHECKPOINT_COMPETENCY_REQUIRED: Buổi Kiểm tra (Checkpoint): Vui lòng tích Điểm Năng lực [ĐNL] & Điểm kiểm tra cho học viên '${studentName}' trên LMS trước khi bấm Đẩy nhận xét.`
+            );
           }
 
           await page.waitForTimeout(1000);
@@ -1237,25 +1382,63 @@ export class CommentSaver {
           await page.waitForTimeout(600);
 
           const candidates: string[] = [];
-          const editorLoc = dialog
-            .locator('.ql-editor[contenteditable="true"], .comment-content')
-            .first();
-          if (await editorLoc.isVisible().catch(() => false)) {
+          let editorLoc = isCheckpointModal
+            ? await resolveRichEditor()
+            : dialog.locator('.ql-editor[contenteditable="true"], .comment-content').first();
+          let isVerifyEditorVisible = await editorLoc.isVisible().catch(() => false);
+          if (isVerifyEditorVisible) {
             const editorReadback = await editorLoc.innerText().catch(() => "");
             if (editorReadback) candidates.push(editorReadback);
           }
 
           const cell2Loc = dialog.locator("table tbody tr td:nth-child(2)").first();
-          if (await cell2Loc.isVisible().catch(() => false)) {
-            const cellReadback = await cell2Loc.innerText().catch(() => "");
-            if (cellReadback) candidates.push(cellReadback);
-          }
+          const cell2Visible = await cell2Loc.isVisible().catch(() => false);
+          const cell2Readback = cell2Visible ? await cell2Loc.innerText().catch(() => "") : "";
 
-          // Real MindX LMS view-mode modal renders a single-column table (`table tbody tr td`) prefixed with "- Đánh giá chung: "
-          if (candidates.length === 0) {
-            const cell1Loc = dialog.locator("table tbody tr td").first();
-            if (await cell1Loc.isVisible().catch(() => false)) {
-              const rawCell1 = await cell1Loc.innerText().catch(() => "");
+          const cell1Loc = dialog.locator("table tbody tr td").first();
+          const cell1Visible = await cell1Loc.isVisible().catch(() => false);
+          const rawCell1 = cell1Visible ? await cell1Loc.innerText().catch(() => "") : "";
+
+          const isCheckpointSummaryTable =
+            isCheckpointModal ||
+            /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[ĐNL\]/i.test(
+              `${cell2Readback} ${rawCell1}`
+            );
+
+          if (isCheckpointSummaryTable) {
+            isCheckpointModal = true;
+            // On Checkpoint sessions, View Mode only shows Competency/Theory/Practice scores ("Điểm lý thuyết... Điểm năng lực...").
+            // Expand into Edit Mode so we can read back and verify the ".ql-editor" ("Đánh giá chung *") content directly.
+            if (!isVerifyEditorVisible) {
+              const verifySavedRow = dialog.locator("table tbody tr").first();
+              if (await verifySavedRow.isVisible().catch(() => false)) {
+                await verifySavedRow.hover().catch(() => {});
+                await page.waitForTimeout(250);
+                const verifyEditBtn = dialog
+                  .locator(
+                    'button:has([data-testid="EditIcon"]), [aria-label="Edit"] button, button:has-text("Edit")'
+                  )
+                  .first();
+                if (await verifyEditBtn.isVisible().catch(() => false)) {
+                  await verifyEditBtn.click({ force: true });
+                } else {
+                  await verifySavedRow.click({ force: true });
+                }
+                await page.waitForTimeout(800);
+                editorLoc = await resolveRichEditor();
+                isVerifyEditorVisible = await editorLoc.isVisible().catch(() => false);
+                if (isVerifyEditorVisible) {
+                  const expandedEditorReadback = await editorLoc.innerText().catch(() => "");
+                  if (expandedEditorReadback) candidates.push(expandedEditorReadback);
+                }
+              }
+            }
+          } else {
+            if (cell2Readback) {
+              candidates.push(cell2Readback);
+            }
+            // Real MindX LMS view-mode modal renders a single-column table (`table tbody tr td`) prefixed with "- Đánh giá chung: "
+            if (candidates.length === 0 && rawCell1) {
               const strippedCell1 = rawCell1
                 .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
                 .trim();
@@ -1375,10 +1558,16 @@ export class CommentSaver {
         } catch (itemErr: any) {
           await page.screenshot({ path: "data/debug_save_comment_error.png" }).catch(() => {});
           // Only press Escape if a comment modal dialog is actually open (pressing Escape when no modal is open closes the MUI Class Drawer!)
-          await LmsHelpers.ensureCleanDialogAndToast(page, interceptor).catch(() => {});
-          const errMsg = itemErr instanceof Error ? itemErr.message : String(itemErr);
+          if (typeof LmsHelpers?.ensureCleanDialogAndToast === "function") {
+            await LmsHelpers.ensureCleanDialogAndToast(page, interceptor).catch(() => {});
+          }
+          const rawErrMsg = itemErr instanceof Error ? itemErr.message : String(itemErr);
+          const isCheckpointMissingCompetency = rawErrMsg.startsWith(
+            "CHECKPOINT_COMPETENCY_REQUIRED:"
+          );
+          const errMsg = rawErrMsg.replace(/^CHECKPOINT_COMPETENCY_REQUIRED:\s*/i, "");
 
-          // Only mark FAILED if the record was NOT concurrently edited into a new DRAFT while saving
+          // Only update status if the record was NOT concurrently edited into a new DRAFT while saving
           const latestOnError = getLatestFeedbackRecord(record.studentId);
           const wasEditedDuringSave =
             latestOnError &&
@@ -1391,7 +1580,7 @@ export class CommentSaver {
               classId,
               sessionId,
               record.studentId,
-              "FAILED",
+              isCheckpointMissingCompetency ? "APPROVED" : "FAILED",
               null,
               errMsg,
               approvedHash
@@ -1408,7 +1597,12 @@ export class CommentSaver {
             message: `Lỗi khi lưu nhận xét của '${studentName}'${isRetryPass ? " (Lượt 2)" : ""}: ${errMsg}`,
           });
 
-          if (!isRetryPass && !saveMutationDispatched && isRetryablePreSaveUiError(errMsg)) {
+          if (
+            !isRetryPass &&
+            !saveMutationDispatched &&
+            !isCheckpointMissingCompetency &&
+            isRetryablePreSaveUiError(rawErrMsg)
+          ) {
             preSaveRetryEligibleIds.add(record.studentId);
           } else {
             preSaveRetryEligibleIds.delete(record.studentId);
@@ -1450,11 +1644,15 @@ export class CommentSaver {
           level: "INFO",
           message: `Đang tự động chạy vét lại (Lượt 2) cho ${retryCandidates.length} học viên bị nghẽn giao diện ở lượt đầu...`,
         });
-        await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
-        await LmsHelpers.ensureCommentsSlotReady(page, classCode, slotNumber, {
-          reopenDrawerIfClosed: true,
-          waitForTableMs: 5000,
-        });
+        if (typeof LmsHelpers?.ensureCleanDialogAndToast === "function") {
+          await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+        }
+        if (typeof LmsHelpers?.ensureCommentsSlotReady === "function") {
+          await LmsHelpers.ensureCommentsSlotReady(page, classCode, slotNumber, {
+            reopenDrawerIfClosed: true,
+            waitForTableMs: 5000,
+          });
+        }
         for (const rec of retryCandidates) {
           const retryRes = await processSingleStudentRecord(rec, true);
           const idx = results.findIndex((r) => r.studentId === rec.studentId);

@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Loader2,
-  MessageSquare,
   Plus,
   Save,
   Tags,
@@ -24,6 +23,7 @@ interface CourseSyllabusItem {
   courseCode: string;
   courseName: string;
   description: string;
+  checkpointSessions?: number[];
   sessions: CourseSessionItem[];
 }
 
@@ -49,12 +49,14 @@ interface QuickTagItem {
   id: string;
   label: string;
   sentiment: "positive" | "constructive" | "neutral";
+  role?: string;
   hint: string;
 }
 
 interface QuickTagCategoryItem {
   category: string;
   categoryName: string;
+  track?: string;
   tags: QuickTagItem[];
 }
 
@@ -252,11 +254,11 @@ export default function SyllabusConfigPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">
-              Màn hình 4: Quản lý Giáo trình, Barem Chấm điểm & Mẫu Zalo
+              Màn hình 4: Quản lý Giáo trình, Barem Chấm điểm & Bộ Thẻ Nhận Xét
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              Thêm, chỉnh sửa và lưu trữ cố định Nội dung từng buổi học, Đề bài & Barem chấm điểm,
-              Bộ thẻ nhận xét nhanh 1 chạm và Mẫu tin nhắn tổng kết Zalo.
+              Quản lý nội dung từng buổi học, cấu hình Buổi Kiểm tra (Checkpoint), Đề bài & Barem
+              chấm điểm và Bộ thẻ nhận xét nhanh 1 chạm theo từng hướng học.
             </p>
           </div>
         </div>
@@ -300,19 +302,6 @@ export default function SyllabusConfigPage() {
           >
             <Tags className="w-4 h-4" />
             <span>Quick Tags ({quickTags.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("zaloTemplates")}
-            className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-              activeTab === "zaloTemplates"
-                ? "bg-emerald-600 text-white"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Mẫu Zalo ({zaloTemplates.length})</span>
           </button>
         </div>
       </div>
@@ -366,6 +355,7 @@ export default function SyllabusConfigPage() {
                         courseCode: nextCode,
                         courseName: `Khóa học mới (${nextCode})`,
                         description: "Mô tả tóm tắt nội dung khóa học",
+                        checkpointSessions: [5, 9],
                         sessions: [
                           {
                             sessionNumber: 1,
@@ -400,9 +390,16 @@ export default function SyllabusConfigPage() {
                         <span className="font-bold text-orange-400 text-sm">
                           {course.courseCode}
                         </span>
-                        <span className="text-xs text-slate-400">
-                          {course.sessions.length} buổi
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {course.checkpointSessions && course.checkpointSessions.length > 0 && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-950/70 border border-amber-700/60 text-amber-300 text-[10px] font-semibold">
+                              🎯 CP: {course.checkpointSessions.join(", ")}
+                            </span>
+                          )}
+                          <span className="text-xs text-slate-400">
+                            {course.sessions.length} buổi
+                          </span>
+                        </div>
                       </div>
                       <div className="text-xs font-medium text-slate-200 mt-1 truncate">
                         {course.courseName}
@@ -507,6 +504,93 @@ export default function SyllabusConfigPage() {
                       />
                     </div>
 
+                    {/* Checkpoint Sessions Selector */}
+                    <div className="p-3.5 rounded-lg bg-slate-950 border border-amber-800/50 space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <div className="text-xs font-bold text-amber-300">
+                            🎯 Cấu hình Buổi Kiểm tra / Checkpoint (từ Buổi 1 đến Buổi 13)
+                          </div>
+                          <div className="text-[11px] text-slate-400 mt-0.5">
+                            Ở các buổi này, Bot chỉ điền ô &ldquo;Đánh giá chung *&rdquo;, việc tích
+                            Điểm Năng lực [ĐNL] & Điểm kiểm tra do giáo viên tự thực hiện trên LMS.
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCourses((prev) =>
+                                prev.map((c, i) =>
+                                  i === selectedCourseIdx
+                                    ? { ...c, checkpointSessions: [5, 9] }
+                                    : c
+                                )
+                              );
+                            }}
+                            className="px-2 py-1 rounded bg-cyan-950/60 hover:bg-cyan-900/70 border border-cyan-700/60 text-cyan-200 text-[11px] font-semibold cursor-pointer"
+                          >
+                            Mẫu Lập trình (5, 9)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCourses((prev) =>
+                                prev.map((c, i) =>
+                                  i === selectedCourseIdx
+                                    ? { ...c, checkpointSessions: [4, 8] }
+                                    : c
+                                )
+                              );
+                            }}
+                            className="px-2 py-1 rounded bg-orange-950/60 hover:bg-orange-900/70 border border-orange-700/60 text-orange-200 text-[11px] font-semibold cursor-pointer"
+                          >
+                            Mẫu Robotics (4, 8)
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5">
+                        {Array.from({ length: 13 }, (_, idx) => idx + 1).map((sessNum) => {
+                          const isChecked = (activeCourse.checkpointSessions || []).includes(
+                            sessNum
+                          );
+                          return (
+                            <button
+                              key={sessNum}
+                              type="button"
+                              onClick={() => {
+                                setCourses((prev) =>
+                                  prev.map((c, i) => {
+                                    if (i !== selectedCourseIdx) return c;
+                                    const current = new Set(c.checkpointSessions || []);
+                                    if (current.has(sessNum)) {
+                                      current.delete(sessNum);
+                                    } else {
+                                      current.add(sessNum);
+                                    }
+                                    return {
+                                      ...c,
+                                      checkpointSessions: Array.from(current).sort(
+                                        (a, b) => a - b
+                                      ),
+                                    };
+                                  })
+                                );
+                              }}
+                              className={`px-2.5 py-1 rounded text-xs font-semibold border transition-colors cursor-pointer ${
+                                isChecked
+                                  ? "bg-amber-600/30 border-amber-400 text-amber-200"
+                                  : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
+                              }`}
+                            >
+                              {isChecked ? `🎯 Buổi ${sessNum}` : `Buổi ${sessNum}`}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     {/* Sessions List */}
                     <div className="space-y-3 pt-2">
                       <div className="flex items-center justify-between">
@@ -571,6 +655,13 @@ export default function SyllabusConfigPage() {
                                   }}
                                   className="w-16 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-orange-400 font-bold text-xs"
                                 />
+                                {(activeCourse.checkpointSessions || []).includes(
+                                  sess.sessionNumber
+                                ) && (
+                                  <span className="px-2 py-0.5 rounded bg-amber-950/70 border border-amber-600/60 text-amber-300 text-[11px] font-semibold shrink-0">
+                                    🎯 Checkpoint
+                                  </span>
+                                )}
                                 <input
                                   type="text"
                                   value={sess.topic}
@@ -1103,13 +1194,15 @@ export default function SyllabusConfigPage() {
                       setQuickTags((prev) => [
                         ...prev,
                         {
-                          category: `custom_${prev.length + 1}`,
+                          category: `coding_custom_${prev.length + 1}`,
                           categoryName: `Nhóm đánh giá mới ${prev.length + 1}`,
+                          track: "coding",
                           tags: [
                             {
                               id: `tag_new_${Date.now()}`,
                               label: "Chủ động phát biểu xây dựng bài",
                               sentiment: "positive",
+                              role: "positive",
                               hint: "Khen ngợi tinh thần tích cực trong giờ học",
                             },
                           ],
@@ -1138,14 +1231,34 @@ export default function SyllabusConfigPage() {
                 </div>
               </div>
 
+              <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                <span className="px-2.5 py-1 rounded-full bg-cyan-950/60 border border-cyan-700/60 text-cyan-200 font-semibold">
+                  💻 Hướng Lập trình (Buổi 1–13): Chỉ hiện ở Màn hình 1 cho lớp Lập trình
+                </span>
+                <span className="px-2.5 py-1 rounded-full bg-orange-950/60 border border-orange-700/60 text-orange-200 font-semibold">
+                  🤖 Hướng Robotics (Buổi 1–13): Chỉ hiện ở Màn hình 1 cho lớp Robotics
+                </span>
+                <span className="px-2.5 py-1 rounded-full bg-purple-950/60 border border-purple-700/60 text-purple-200 font-semibold">
+                  🎓 Buổi 14 — Sản phẩm cuối khóa (SPCK): Chỉ hiện ở Màn hình 3 (Buổi 14)
+                </span>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {quickTags.map((cat, catIdx) => {
                   const catKey = String(cat.category || "").toLowerCase();
                   const catName = String(cat.categoryName || "").toLowerCase();
-                  const currentTrack: "common" | "coding" | "robotics" =
-                    catKey.includes("robot") ||
-                    catKey.startsWith("rob_") ||
-                    /robot|lắp ráp|cơ khí|cảm biến|🤖/i.test(catName)
+                  const rawTrack = String(cat.track || "").toLowerCase();
+                  const currentTrack: "common" | "coding" | "robotics" | "session14" =
+                    rawTrack === "session14" ||
+                    rawTrack === "robotics" ||
+                    rawTrack === "coding" ||
+                    rawTrack === "common"
+                      ? rawTrack
+                      : catKey.startsWith("spck_") || catKey.includes("session14")
+                      ? "session14"
+                      : catKey.includes("robot") ||
+                        catKey.startsWith("rob_") ||
+                        /robot|lắp ráp|cơ khí|cảm biến|🤖/i.test(catName)
                       ? "robotics"
                       : catKey === "execution" ||
                         catKey.includes("coding") ||
@@ -1176,15 +1289,30 @@ export default function SyllabusConfigPage() {
                         <select
                           value={currentTrack}
                           onChange={(e) => {
-                            const nextTrack = e.target.value as "common" | "coding" | "robotics";
+                            const nextTrack = e.target.value as
+                              | "common"
+                              | "coding"
+                              | "robotics"
+                              | "session14";
                             setQuickTags((prev) =>
                               prev.map((c, i) => {
                                 if (i !== catIdx) return c;
-                                const rawBase = c.category
-                                  .replace(/^(robotics_|coding_|common_)/i, "")
-                                  .trim() || `group_${i + 1}`;
+                                const isCoreCategory =
+                                  c.category === "regular_coding" ||
+                                  c.category === "regular_robotics" ||
+                                  c.category === "spck_session14_presentation" ||
+                                  c.category === "spck_session14_product";
+                                if (isCoreCategory) {
+                                  return { ...c, track: nextTrack };
+                                }
+                                const rawBase =
+                                  c.category
+                                    .replace(/^(robotics_|coding_|common_|spck_)/i, "")
+                                    .trim() || `group_${i + 1}`;
                                 const nextCat =
-                                  nextTrack === "robotics"
+                                  nextTrack === "session14"
+                                    ? `spck_${rawBase}`
+                                    : nextTrack === "robotics"
                                     ? rawBase === "robotics"
                                       ? "robotics"
                                       : `robotics_${rawBase}`
@@ -1193,12 +1321,14 @@ export default function SyllabusConfigPage() {
                                       ? "execution"
                                       : `coding_${rawBase}`
                                     : rawBase;
-                                return { ...c, category: nextCat };
+                                return { ...c, category: nextCat, track: nextTrack };
                               })
                             );
                           }}
                           className={`px-2 py-1 rounded border text-[11px] font-semibold cursor-pointer ${
-                            currentTrack === "robotics"
+                            currentTrack === "session14"
+                              ? "bg-purple-950/50 border-purple-600/60 text-purple-300"
+                              : currentTrack === "robotics"
                               ? "bg-orange-950/50 border-orange-600/60 text-orange-300"
                               : currentTrack === "coding"
                               ? "bg-cyan-950/50 border-cyan-600/60 text-cyan-300"
@@ -1206,9 +1336,10 @@ export default function SyllabusConfigPage() {
                           }`}
                           title="Chọn hướng lớp học sẽ hiển thị nhóm thẻ này"
                         >
-                          <option value="common">🌐 Dùng chung (Cả 2 hướng)</option>
-                          <option value="coding">💻 Hướng Lập trình</option>
-                          <option value="robotics">🤖 Hướng Robotics</option>
+                          <option value="coding">💻 Hướng Lập trình (Buổi 1–13)</option>
+                          <option value="robotics">🤖 Hướng Robotics (Buổi 1–13)</option>
+                          <option value="session14">🎓 Buổi 14 — SPCK</option>
+                          <option value="common">🌐 Dùng chung (Buổi 1–13)</option>
                         </select>
                         <button
                           type="button"
@@ -1224,6 +1355,7 @@ export default function SyllabusConfigPage() {
                                           id: `tag_${catIdx}_${Date.now()}`,
                                           label: "Thẻ nhận xét mới",
                                           sentiment: "positive" as const,
+                                          role: "positive",
                                           hint: "",
                                         },
                                       ],
@@ -1297,6 +1429,33 @@ export default function SyllabusConfigPage() {
                                 <option value="positive">Tích cực</option>
                                 <option value="constructive">Cần cải thiện</option>
                                 <option value="neutral">Trung lập</option>
+                              </select>
+                              <select
+                                value={tag.role || "positive"}
+                                onChange={(e) => {
+                                  const nextRole = e.target.value;
+                                  setQuickTags((prev) =>
+                                    prev.map((c, i) =>
+                                      i === catIdx
+                                        ? {
+                                            ...c,
+                                            tags: c.tags.map((t, j) =>
+                                              j === tIdx ? { ...t, role: nextRole } : t
+                                            ),
+                                          }
+                                        : c
+                                    )
+                                  );
+                                }}
+                                title="Vai trò phân loại cấp độ học sinh (5 cấp độ)"
+                                className="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-[11px] text-purple-300"
+                              >
+                                <option value="excellent">Vận dụng / Giỏi (excellent)</option>
+                                <option value="good">Tiếp thu tốt (good)</option>
+                                <option value="positive">Thái độ tốt (positive)</option>
+                                <option value="slow">Tiếp thu chậm (slow)</option>
+                                <option value="distracted">Mất tập trung (distracted)</option>
+                                <option value="improve">Cần rèn luyện (improve)</option>
                               </select>
                               <button
                                 type="button"

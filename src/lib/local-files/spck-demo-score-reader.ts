@@ -12,8 +12,11 @@ import AdmZip from "adm-zip";
 import {
   calculateCompetencyAverageScore,
   calculateDemoTotalScore,
+  isRoboticsClassCode,
   parseSession14CompetencyScores,
   parseSession14DemoScores,
+  SESSION14_DEMO_LIMITS,
+  SESSION14_DEMO_LIMITS_ROBOTICS,
   session14EvalRepo,
   sessionFeedbackRepo,
   spckSessionRepo,
@@ -191,7 +194,10 @@ function sumCellRange(
   };
 }
 
-function extractDemoScoresFromWorksheet(cells: Map<string, ParsedCell>): {
+function extractDemoScoresFromWorksheet(
+  cells: Map<string, ParsedCell>,
+  classId?: string
+): {
   studentNameInCellB2: string;
   demoScores: SpckSession14DemoScores;
   demoTotalScore: number;
@@ -200,6 +206,9 @@ function extractDemoScoresFromWorksheet(cells: Map<string, ParsedCell>): {
   scoredCriteriaCount: number;
 } {
   const b2 = cells.get("B2")?.stringValue || "";
+  const limits = isRoboticsClassCode(classId)
+    ? SESSION14_DEMO_LIMITS_ROBOTICS
+    : SESSION14_DEMO_LIMITS;
 
   // Check if E8:E27 have numeric values
   const eAlgo = sumCellRange(cells, "E", 8, 13);
@@ -246,11 +255,11 @@ function extractDemoScoresFromWorksheet(cells: Map<string, ParsedCell>): {
     return { hasScore: false, isValid: true, value: 0 };
   };
 
-  const resAlgo = resolveScore(b32, eAlgo, 1.5);
-  const resComp = resolveScore(b33, eComp, 1.0);
-  const resCreative = resolveScore(b34, eCreative, 1.0);
-  const resProb = resolveScore(b35, eProb, 1.0);
-  const resComm = resolveScore(b36, eComm, 0.5);
+  const resAlgo = resolveScore(b32, eAlgo, limits.algorithm);
+  const resComp = resolveScore(b33, eComp, limits.computerSkills);
+  const resCreative = resolveScore(b34, eCreative, limits.creativity);
+  const resProb = resolveScore(b35, eProb, limits.problemSolving);
+  const resComm = resolveScore(b36, eComm, limits.communication);
 
   const hasCriterionScore = {
     algorithm: resAlgo.hasScore,
@@ -283,7 +292,7 @@ function extractDemoScoresFromWorksheet(cells: Map<string, ParsedCell>): {
     if (!label || !bCell || bCell.numericValue === null) continue;
     if (!bCell.formula) {
       if (label.includes("thuat toan") || label.includes("tu duy may tinh")) {
-        if (isWithinMax(bCell.numericValue, 1.5)) {
+        if (isWithinMax(bCell.numericValue, limits.algorithm)) {
           rawDemo.algorithm = bCell.numericValue;
           hasCriterionScore.algorithm = true;
           criterionValid.algorithm = true;
@@ -292,7 +301,7 @@ function extractDemoScoresFromWorksheet(cells: Map<string, ParsedCell>): {
           criterionValid.algorithm = false;
         }
       } else if (label.includes("su dung may tinh")) {
-        if (isWithinMax(bCell.numericValue, 1.0)) {
+        if (isWithinMax(bCell.numericValue, limits.computerSkills)) {
           rawDemo.computerSkills = bCell.numericValue;
           hasCriterionScore.computerSkills = true;
           criterionValid.computerSkills = true;
@@ -301,7 +310,7 @@ function extractDemoScoresFromWorksheet(cells: Map<string, ParsedCell>): {
           criterionValid.computerSkills = false;
         }
       } else if (label.includes("sang tao")) {
-        if (isWithinMax(bCell.numericValue, 1.0)) {
+        if (isWithinMax(bCell.numericValue, limits.creativity)) {
           rawDemo.creativity = bCell.numericValue;
           hasCriterionScore.creativity = true;
           criterionValid.creativity = true;
@@ -310,7 +319,7 @@ function extractDemoScoresFromWorksheet(cells: Map<string, ParsedCell>): {
           criterionValid.creativity = false;
         }
       } else if (label.includes("giai quyet van de")) {
-        if (isWithinMax(bCell.numericValue, 1.0)) {
+        if (isWithinMax(bCell.numericValue, limits.problemSolving)) {
           rawDemo.problemSolving = bCell.numericValue;
           hasCriterionScore.problemSolving = true;
           criterionValid.problemSolving = true;
@@ -319,7 +328,7 @@ function extractDemoScoresFromWorksheet(cells: Map<string, ParsedCell>): {
           criterionValid.problemSolving = false;
         }
       } else if (label.includes("giao tiep") || label.includes("hop tac")) {
-        if (isWithinMax(bCell.numericValue, 0.5)) {
+        if (isWithinMax(bCell.numericValue, limits.communication)) {
           rawDemo.communication = bCell.numericValue;
           hasCriterionScore.communication = true;
           criterionValid.communication = true;
@@ -337,7 +346,7 @@ function extractDemoScoresFromWorksheet(cells: Map<string, ParsedCell>): {
   const hasCompleteScores =
     scoredCriteriaCount === 5 && Object.values(criterionValid).every(Boolean);
 
-  const demoScores = parseSession14DemoScores(rawDemo);
+  const demoScores = parseSession14DemoScores(rawDemo, classId);
   const demoTotalScore = calculateDemoTotalScore(demoScores);
 
   const bgkNotes: string[] = [];
@@ -434,17 +443,20 @@ export function suggestCompetencyScoresForStudent(params: {
     allTagsText.includes("phu thuoc ai") ||
     allTagsText.includes("chua hieu sau phan cot loi");
 
-  const knowledgeInClass = ratioToRating(demoScores.algorithm, 1.5, 4);
+  const limits = isRoboticsClassCode(classId)
+    ? SESSION14_DEMO_LIMITS_ROBOTICS
+    : SESSION14_DEMO_LIMITS;
+  const knowledgeInClass = ratioToRating(demoScores.algorithm, limits.algorithm, 4);
   const knowledgeSelfStudy = reliesOnAi
     ? 3
     : selfStudyPositive
     ? 5
-    : ratioToRating(demoScores.algorithm, 1.5, 4);
-  const skillCommunication = ratioToRating(demoScores.communication, 0.5, 4);
-  const skillComputerUse = ratioToRating(demoScores.computerSkills, 1.0, 4);
-  const skillProblemSolving = ratioToRating(demoScores.problemSolving, 1.0, 4);
-  const skillCreativity = ratioToRating(demoScores.creativity, 1.0, 4);
-  const skillComputational = ratioToRating(demoScores.algorithm, 1.5, 4);
+    : ratioToRating(demoScores.algorithm, limits.algorithm, 4);
+  const skillCommunication = ratioToRating(demoScores.communication, limits.communication, 4);
+  const skillComputerUse = ratioToRating(demoScores.computerSkills, limits.computerSkills, 4);
+  const skillProblemSolving = ratioToRating(demoScores.problemSolving, limits.problemSolving, 4);
+  const skillCreativity = ratioToRating(demoScores.creativity, limits.creativity, 4);
+  const skillComputational = ratioToRating(demoScores.algorithm, limits.algorithm, 4);
   const attitudeHomework = homeworkWeak ? 3 : selfStudyPositive ? 4 : 4;
   const attitudeInClass = distractedCount >= 3 ? 3 : 4;
 
@@ -664,7 +676,7 @@ export function parseDemoWorkbookBufferForClass(
     if (!wsEntry) continue;
     const wsXml = wsEntry.getData().toString("utf8");
     const cells = parseWorksheetCells(wsXml, sharedStrings);
-    const extracted = extractDemoScoresFromWorksheet(cells);
+    const extracted = extractDemoScoresFromWorksheet(cells, normalizedClassId);
 
     const normCellB2 = normalizeVietnameseName(extracted.studentNameInCellB2);
     const b2Candidates = findCandidatesByName(normCellB2);

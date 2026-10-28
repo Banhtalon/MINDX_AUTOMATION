@@ -447,6 +447,7 @@ export async function POST(req: Request) {
       spckSessions: [12, 13, 14],
       students,
       records: spckRecords,
+      quickTags: getQuickTags(),
       demoSheetMeta: getClassDemoSheetMeta(targetClassId),
     });
   } catch (err) {

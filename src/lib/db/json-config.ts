@@ -62,6 +62,7 @@ export interface CourseSyllabus {
   courseCode: string;
   courseName: string;
   description: string;
+  checkpointSessions?: number[];
   sessions: CourseSession[];
 }
 
@@ -140,14 +141,27 @@ export interface QuickTag {
   id: string;
   label: string;
   sentiment: "positive" | "constructive" | "neutral";
+  role?: "excellent" | "good" | "positive" | "slow" | "distracted" | "improve" | string;
   hint: string;
   category?: string;
   categoryName?: string;
+  track?: string;
 }
 
 export interface QuickTagCategory {
-  category: "attitude" | "comprehension" | "execution" | "robotics" | "presentation" | string;
+  category:
+    | "regular_coding"
+    | "regular_robotics"
+    | "spck_session14_presentation"
+    | "spck_session14_product"
+    | "attitude"
+    | "comprehension"
+    | "execution"
+    | "robotics"
+    | "presentation"
+    | string;
   categoryName: string;
+  track?: "coding" | "robotics" | "session14" | string;
   tags: QuickTag[];
 }
 

@@ -9,6 +9,20 @@ import {
   type RunningClassItem,
 } from "@/lib/db/json-config";
 
+function isSession14Category(cat: { category?: string; categoryName?: string; track?: string } | null | undefined): boolean {
+  if (!cat) return false;
+  const track = String(cat.track || "").trim().toLowerCase();
+  const key = String(cat.category || "").trim().toLowerCase();
+  const name = String(cat.categoryName || "").trim().toLowerCase();
+  return (
+    track === "session14" ||
+    track === "spck" ||
+    key.startsWith("spck_") ||
+    key.includes("session14") ||
+    /buổi\s*14|spck/i.test(name)
+  );
+}
+
 function buildMergedRunningClasses(): RunningClassItem[] {
   const fromCache = typeof getRunningClasses === "function" ? getRunningClasses() : [];
   if (fromCache.length > 0) {
@@ -47,7 +61,25 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const rawClassId = url.searchParams.get("classId");
-    const classId = rawClassId ? rawClassId.trim().toUpperCase() : null;
+    const runningClasses = buildMergedRunningClasses();
+    let classId = rawClassId && rawClassId.trim() ? rawClassId.trim().toUpperCase() : null;
+    if (!classId) {
+      if (runningClasses.length > 0) {
+        classId = runningClasses[0].classCode;
+      } else {
+        try {
+          const db = typeof getDb === "function" ? getDb() : null;
+          if (typeof (db as any)?.prepare === "function") {
+            const firstRow = (db as any)
+              .prepare(`SELECT classId FROM classes_sessions ORDER BY id ASC LIMIT 1`)
+              .get() as { classId?: string } | undefined;
+            if (firstRow?.classId) {
+              classId = String(firstRow.classId).trim().toUpperCase();
+            }
+          }
+        } catch {}
+      }
+    }
     const sessionId = url.searchParams.get("sessionId");
 
     const includeInactive = url.searchParams.get("includeInactive") === "true";
@@ -55,21 +87,25 @@ export async function GET(req: Request) {
     const allStudents = classId ? studentRepo.findByClass(classId, !includeInactive) : [];
     const feedbacks = classId && sessionId ? sessionFeedbackRepo.findBySession(classId, sessionId) : [];
 
-    const quickCategories = getQuickTags();
+    const rawCategories = typeof getQuickTags === "function" ? getQuickTags() || [] : [];
+    const quickCategories = rawCategories.filter((c) => !isSession14Category(c));
     const quickTags = quickCategories.flatMap((c) =>
-      (c.tags || []).map((t) => ({
-        ...t,
-        category: c.category || "",
-        categoryName: c.categoryName || c.category || "",
-      }))
+      (c.tags || [])
+        .filter((t) => !String(t?.id || "").toLowerCase().startsWith("s14_"))
+        .map((t) => ({
+          ...t,
+          category: c.category || "",
+          categoryName: c.categoryName || c.category || "",
+          track: c.track || "",
+        }))
     );
     const syllabusList = getCoursesSyllabus();
     const zaloTemplates = getZaloTemplates();
-    const runningClasses = buildMergedRunningClasses();
 
     return NextResponse.json({
       success: true,
       data: {
+        resolvedClassId: classId || undefined,
         sessions: allSessions,
         students: allStudents,
         feedbacks,

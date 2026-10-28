@@ -1,138 +1,140 @@
 [
   {
-    "category": "level_coding",
-    "categoryName": "💻 Mức đánh giá nhanh (Lập trình)",
+    "category": "regular_coding",
+    "categoryName": "💻 Nhận xét nhanh — Lập trình",
+    "track": "coding",
     "tags": [
       {
-        "id": "lvl_code_xuat_sac",
-        "label": "🌟 Xuất sắc & Sáng tạo",
+        "id": "code_tiep_thu_tot",
+        "label": "✅ Tiếp thu tốt",
         "sentiment": "positive",
-        "hint": "Thái độ học tập rất tập trung, hiểu bài nhanh, hoàn thành bài code sớm và chủ động sáng tạo thêm tính năng mở rộng"
+        "role": "good",
+        "hint": "Chăm chú nghe giảng, tiếp thu tốt kiến thức lập trình của buổi học và nắm vững nguyên lý bài giảng"
       },
       {
-        "id": "lvl_code_dat",
-        "label": "👍 Đạt yêu cầu",
+        "id": "code_btap_day_du",
+        "label": "📝 Làm bài tập đầy đủ",
         "sentiment": "positive",
-        "hint": "Chăm chú nghe giảng, nắm vững kiến thức trọng tâm của buổi học và tự hoàn thành bài thực hành lập trình đúng yêu cầu tại lớp"
+        "role": "good",
+        "hint": "Thực hành nghiêm túc tại lớp và hoàn thành đầy đủ các bài tập lập trình theo đúng yêu cầu của buổi học"
       },
       {
-        "id": "lvl_code_can_kem",
-        "label": "🛠️ Cần kèm thêm",
+        "id": "code_hang_hai",
+        "label": "🙋 Hăng hái phát biểu",
+        "sentiment": "positive",
+        "role": "positive",
+        "hint": "Thái độ học tập tích cực, sôi nổi giơ tay phát biểu xây dựng bài và chủ động trao đổi với thầy"
+      },
+      {
+        "id": "code_van_dung_sang_tao",
+        "label": "💡 Vận dụng & Sáng tạo tốt",
+        "sentiment": "positive",
+        "role": "excellent",
+        "hint": "Tư duy lập trình nhạy bén, hoàn thành bài nhanh và chủ động vận dụng sáng tạo thêm tính năng mở rộng cho sản phẩm"
+      },
+      {
+        "id": "code_tiep_thu_cham",
+        "label": "🐢 Tiếp thu chậm",
         "sentiment": "constructive",
-        "hint": "Có cố gắng trong giờ học nhưng tiếp thu kiến thức lập trình mới còn chậm, cần giáo viên hướng dẫn từng bước để hoàn thiện bài"
+        "role": "slow",
+        "hint": "Có cố gắng trong giờ học nhưng tốc độ tiếp thu kiến thức lập trình mới còn chậm, cần thầy hướng dẫn từng bước để hoàn thiện bài"
+      },
+      {
+        "id": "code_mat_tap_trung",
+        "label": "👀 Mất tập trung",
+        "sentiment": "constructive",
+        "role": "distracted",
+        "hint": "Trong giờ học đôi lúc còn xao nhãng, mất tập trung khi nghe giảng lý thuyết nên cần sự nhắc nhở sát sao hơn"
+      },
+      {
+        "id": "code_thao_tac_cham",
+        "label": "⌨️ Thao tác / Cú pháp còn chậm",
+        "sentiment": "constructive",
+        "role": "improve",
+        "hint": "Hiểu được ý tưởng bài học nhưng thao tác gõ phím, viết cú pháp câu lệnh hoặc ghép khối lệnh còn chậm, đôi lúc còn nhầm lệnh nhỏ"
       }
     ]
   },
   {
-    "category": "note_coding",
-    "categoryName": "💻 Lưu ý & Lỗi thường gặp (Lập trình)",
+    "category": "regular_robotics",
+    "categoryName": "🤖 Nhận xét nhanh — Robotics",
+    "track": "robotics",
     "tags": [
       {
-        "id": "note_code_hang_hai",
-        "label": "🗣️ Hăng hái & Tự tin",
+        "id": "rob_lap_rap_code_tot",
+        "label": "🤖 Lắp ráp & Lập trình tốt",
         "sentiment": "positive",
-        "hint": "Sôi nổi giơ tay phát biểu xây dựng bài và tự tin thuyết trình sản phẩm rõ ràng trước lớp"
+        "role": "good",
+        "hint": "Tập trung học tập, lắp ráp hoàn chỉnh mô hình robot chắc chắn theo bản vẽ và lập trình điều khiển robot vận hành tốt"
       },
       {
-        "id": "note_code_mat_tap_trung",
-        "label": "👀 Hơi mất tập trung",
-        "sentiment": "constructive",
-        "hint": "Đôi lúc còn xao nhãng hoặc làm việc riêng trong lúc nghe giảng lý thuyết, cần tập trung hơn"
-      },
-      {
-        "id": "note_code_thao_tac_cham",
-        "label": "🐢 Thao tác máy chậm",
-        "sentiment": "constructive",
-        "hint": "Hiểu được logic bài học nhưng tốc độ gõ phím và thao tác trên phần mềm còn chậm nên cần thêm thời gian làm bài"
-      },
-      {
-        "id": "note_code_sai_cu_phap",
-        "label": "🐛 Hay nhầm lệnh/cú pháp",
-        "sentiment": "constructive",
-        "hint": "Khi thực hành còn hay nhầm cú pháp câu lệnh hoặc ghép nhầm khối lệnh, cần rèn thói quen tự dò và sửa lỗi (debug)"
-      }
-    ]
-  },
-  {
-    "category": "level_robotics",
-    "categoryName": "🤖 Mức đánh giá nhanh (Robotics)",
-    "tags": [
-      {
-        "id": "lvl_rob_xuat_sac",
-        "label": "🌟 Xuất sắc (Lắp & Code)",
+        "id": "rob_hang_hai",
+        "label": "🙋 Hăng hái phát biểu",
         "sentiment": "positive",
-        "hint": "Hào hứng học tập, lắp ráp mô hình robot nhanh và chắc chắn, hiểu rõ cơ cấu truyền động và lập trình điều khiển chạy mượt mà"
+        "role": "positive",
+        "hint": "Hào hứng tham gia giờ học, sôi nổi giơ tay phát biểu tìm hiểu nguyên lý cơ khí và tự tin chia sẻ ý tưởng"
       },
       {
-        "id": "lvl_rob_dat",
-        "label": "👍 Đạt yêu cầu",
+        "id": "rob_nhom_giu_kit_tot",
+        "label": "🤝 Phối hợp nhóm & Giữ Kit tốt",
         "sentiment": "positive",
-        "hint": "Tập trung học tập, lắp ráp hoàn chỉnh mô hình robot theo bản vẽ hướng dẫn, cắm đúng cổng động cơ/cảm biến và chạy được chương trình cơ bản"
+        "role": "positive",
+        "hint": "Phối hợp làm việc nhóm ăn ý với bạn cùng bàn và có ý thức phân loại, cất giữ linh kiện bộ kit gọn gàng sau buổi học"
       },
       {
-        "id": "lvl_rob_can_kem",
-        "label": "🛠️ Cần kèm thêm",
+        "id": "rob_mat_tap_trung",
+        "label": "👀 Mất tập trung",
         "sentiment": "constructive",
-        "hint": "Có cố gắng nhưng thao tác lắp ráp chi tiết cơ khí hoặc lập trình điều khiển robot còn lúng túng, cần giáo viên hỗ trợ kèm 1-1"
-      }
-    ]
-  },
-  {
-    "category": "note_robotics",
-    "categoryName": "🤖 Lưu ý & Lỗi thường gặp (Robotics)",
-    "tags": [
-      {
-        "id": "note_rob_nhom_tot",
-        "label": "🤝 Nhóm & Bảo quản Kit tốt",
-        "sentiment": "positive",
-        "hint": "Phối hợp làm việc nhóm ăn ý, tự tin thuyết trình nguyên lý mô hình và phân loại, cất giữ linh kiện bộ kit gọn gàng sau buổi học"
+        "role": "distracted",
+        "hint": "Đôi lúc còn xao nhãng, mất tập trung khi thầy hướng dẫn nguyên lý hoặc nghịch linh kiện riêng, cần tập trung hơn"
       },
       {
-        "id": "note_rob_mat_tap_trung",
-        "label": "👀 Hơi mất tập trung",
+        "id": "rob_lap_cham_nham_chot",
+        "label": "🔩 Lắp ráp còn chậm / Nhầm chốt",
         "sentiment": "constructive",
-        "hint": "Đôi lúc còn xao nhãng khi giáo viên hướng dẫn nguyên lý, cần tập trung và cẩn thận hơn khi tìm lắp linh kiện"
+        "role": "slow",
+        "hint": "Có cố gắng nhưng thao tác tìm linh kiện và lắp ráp cơ khí còn chậm, đôi khi gắn nhầm chốt hoặc ngược chiều chi tiết cần quan sát kỹ bản vẽ 3D hơn"
       },
       {
-        "id": "note_rob_nham_chi_tiet",
-        "label": "🔩 Lắp nhầm chốt/ngược chiều",
+        "id": "rob_code_mach_lung_tung",
+        "label": "🔌 Lập trình / Đấu mạch còn lúng túng",
         "sentiment": "constructive",
-        "hint": "Trong lúc lắp ráp đôi khi còn gắn nhầm chốt hoặc ngược chiều bánh răng/khung đỡ, cần quan sát kỹ bản vẽ 3D hơn"
-      },
-      {
-        "id": "note_rob_lung_tung_mach",
-        "label": "🔌 Lúng túng phần Code/Mạch",
-        "sentiment": "constructive",
-        "hint": "Lắp ráp phần khung cơ khí tốt nhưng còn lúng túng khi đấu nối cổng dây cảm biến/động cơ hoặc viết lệnh điều khiển"
+        "role": "improve",
+        "hint": "Lắp ráp phần khung mô hình được nhưng còn lúng túng khi cắm dây cổng động cơ/cảm biến hoặc thiết lập khối lệnh điều khiển robot"
       }
     ]
   },
   {
     "category": "spck_session14_presentation",
     "categoryName": "🎤 Thuyết trình & Slide (Buổi 14 SPCK)",
+    "track": "session14",
     "tags": [
       {
         "id": "s14_pres_slide_dep",
         "label": "📊 Slide đẹp, bố cục rõ ràng, dễ nhìn",
         "sentiment": "positive",
+        "role": "positive",
         "hint": "Chuẩn bị slide thuyết trình đầy đủ, mẫu thiết kế đẹp, bố cục rõ ràng, dễ nhìn và có sự sáng tạo phù hợp với sản phẩm cuối khóa"
       },
       {
         "id": "s14_pres_trinh_bay_tot",
         "label": "🗣️ Trình bày tốt, giới thiệu rõ nội dung chính",
         "sentiment": "positive",
+        "role": "good",
         "hint": "Trong quá trình thuyết trình, em đã giới thiệu được những nội dung chính của dự án, thể hiện rõ ý tưởng và sự chuẩn bị nghiêm túc"
       },
       {
         "id": "s14_pres_can_tu_tin",
         "label": "😳 Cần luyện diễn đạt & tự tin hơn trước lớp",
         "sentiment": "constructive",
+        "role": "improve",
         "hint": "Nếu luyện tập thêm cách diễn đạt và tự tin hơn khi trình bày trước lớp, em sẽ phát huy tốt hơn khả năng giao tiếp và truyền đạt ý tưởng"
       },
       {
         "id": "s14_pres_can_hieu_code",
         "label": "🔍 Cần tìm hiểu kỹ code hơn để tự tin giải thích khi hỏi",
         "sentiment": "constructive",
+        "role": "improve",
         "hint": "Em cần tìm hiểu kỹ hơn về những nội dung và đoạn code được sử dụng trong sản phẩm để có thể tự tin giải thích ý tưởng cũng như cách hoạt động khi thuyết trình hoặc khi được hỏi"
       }
     ]
@@ -140,35 +142,41 @@
   {
     "category": "spck_session14_product",
     "categoryName": "🏆 Sản phẩm cuối khóa & Mức độ tự code (Buổi 14 SPCK)",
+    "track": "session14",
     "tags": [
       {
         "id": "s14_prod_giao_dien_dep",
         "label": "🎨 Thiết kế rất đẹp, màu sắc hài hòa và bắt mắt",
         "sentiment": "positive",
+        "role": "excellent",
         "hint": "Hoàn thiện sản phẩm với giao diện đẹp mắt, hài hòa, bắt mắt và sử dụng tông màu sắc phù hợp, tạo sự thống nhất và nổi bật"
       },
       {
         "id": "s14_prod_flexbox_layout",
         "label": "📐 Dùng Flexbox / Layout đa dạng, đủ các trang chức năng",
         "sentiment": "positive",
+        "role": "good",
         "hint": "Sử dụng Flexbox và cách dàn trang (layout) đa dạng, hợp lý để sắp xếp các thành phần cân đối; xây dựng đầy đủ các trang và chức năng phong phú"
       },
       {
         "id": "s14_prod_hoc_hoi_thuc_te",
         "label": "🌐 Chủ động tìm hiểu, học hỏi thêm từ sản phẩm thực tế",
         "sentiment": "positive",
+        "role": "excellent",
         "hint": "Chủ động tìm hiểu, học hỏi thêm từ các website/sản phẩm thực tế bên ngoài trong quá trình xây dựng để phát triển ý tưởng giúp sản phẩm có độ hoàn thiện cao"
       },
       {
         "id": "s14_prod_tu_viet_code",
         "label": "💪 Tự giác tìm hiểu và tự viết code, không phụ thuộc AI",
         "sentiment": "positive",
+        "role": "excellent",
         "hint": "Chủ động tự giác tìm hiểu, tự viết code và nắm vững nguyên lý hoạt động của sản phẩm mà không phụ thuộc vào AI"
       },
       {
         "id": "s14_prod_phu_thuoc_ai",
         "label": "🤖 Còn phụ thuộc khá nhiều vào AI, chưa hiểu sâu phần cốt lõi của code",
         "sentiment": "constructive",
+        "role": "improve",
         "hint": "Tuy nhiên, trong quá trình thực hiện em còn phụ thuộc khá nhiều vào AI và chưa thực sự hiểu sâu phần cốt lõi của code. Nếu chủ động tự tìm hiểu, tự viết và nắm rõ cách hoạt động của các đoạn code hơn, em sẽ phát huy tốt hơn năng lực lập trình của mình"
       }
     ]
