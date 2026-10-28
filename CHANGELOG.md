@@ -4,6 +4,22 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ---
 
+## [v3.1.1] — 2026-10-28 (Tự Động Chuyển Bộ Thẻ Robotics Theo Mã Lớp `ROB`, Tự Nhớ Quick Tags Từ Buổi Học Trước & Tinh Gọn Ghi Chú Trang SPCK)
+
+### 🤖 Tự Động Nhận Diện Bộ Thẻ Robotics / Lập Trình & Bỏ Hộp Đổi Thẻ Thủ Công (`src/app/session-comments/page.tsx`, `src/lib/quick-tags/index.ts`)
+- Khi chọn hoặc tải lớp trên `/session-comments`, mọi lớp có chữ `ROB` (ví dụ `VT-ROB-SEMIA05`, `VT-KIND-ROB4I02`, `VT-ROB-ARMA13`) hoặc mã Robotics (`PRE`, `ARM`, `SEMI`, `VEX`) tự động áp dụng **bộ 6 thẻ Robotics**; các lớp còn lại tự động áp dụng **bộ 7 thẻ Lập trình**.
+- Loại bỏ hoàn toàn hộp nút **`[💻 Thẻ Lập trình (7) | ⇄ Đổi bộ thẻ]`** trên thanh công cụ và ngừng nối thêm các thẻ mẫu cũ (`"👍 Đạt yêu cầu"`) vào danh sách nút chọn của học viên.
+
+### 🧠 Tự Động Nhớ Quick Tags Từ Buổi Học Trước (`src/app/api/session-comments/list/route.ts`, `src/app/session-comments/page.tsx`, `src/lib/quick-tags/index.ts`, `src/lib/gemini/comment-generator.ts`)
+- Bổ sung `previousQuickTagsByStudent` trong `GET /api/session-comments/list`: tự động tìm bộ thẻ của buổi học gần nhất trước đó (`sessionNumber < curSessNum`) cho từng học viên, tôn trọng trường hợp giáo viên đã chủ động xóa trắng thẻ ở buổi liền trước (`fields.quickTags`), và chuẩn hóa thẻ cũ sang bộ thẻ chuẩn theo bộ môn qua `normalizeQuickTagsForTrack`.
+- Trên `/session-comments`, học viên ở buổi mới chưa có thẻ/nhận xét sẽ được tự động gắn sẵn bộ thẻ từ buổi trước kèm nhãn nhỏ **`↺ Nhớ từ Buổi X`**, giúp giáo viên chỉ cần gắn thẻ 1 lần ở Buổi 1 và các buổi sau chỉ chỉnh lại những bạn có thay đổi. Khi điểm danh, nhập ghi chú hoặc bấm soạn AI, bộ thẻ kế thừa được tự động lưu bền vững vào SQLite của buổi hiện tại.
+
+### 🧹 Tinh Gọn Giao Diện Trang Chủ (`/`) & Trang SPCK (`/final-project`) (`src/app/page.tsx`, `src/app/final-project/page.tsx`)
+- Cân đối lại chiều cao và bố cục 2 cột trên Dashboard (`src/app/page.tsx`) để lấp đầy khung nhìn màn hình hài hòa, không bị khoảng trống thừa bên dưới.
+- Loại bỏ 6 cụm chữ ghi chú nhỏ gây rối mắt trên `/final-project` (dưới mục `1A`, `1B`, `1C`, `Bước 2`, khu vực `Chuẩn bị Demo`, thanh lọc chọn học viên, `Bước 3` và `Bước 4`).
+
+---
+
 ## [v3.1.0] — 2026-10-28 (Thiết Kế Lại Toàn Diện Giao Diện Chế Độ Sáng / Tối — Light Mode & Dark Mode 1 Chạm)
 
 > **Kết quả kiểm định Vòng 4 hiện tại: GO trong phạm vi xác minh giao diện được yêu cầu (2026-10-28).** Đã đóng `R3-01`, duy trì Vòng 1 và `R2-01`/`R2-02`; cả năm nhãn trạng thái và nhãn cổng SPCK có chữ trắng, tương phản tối thiểu 5,36:1 qua đủ bốn tổ hợp màu ứng dụng/hệ điều hành. Ba lệnh yêu cầu (theme probe, TypeScript, phase4 repros) và probe mở rộng đều chạy mới đạt (exit 0). Không sửa mã ứng dụng; không xác nhận lại bản dựng đầy đủ, 12 bộ kiểm thử hay toàn bộ năm màn hình. Reviewer Claude không có trong môi trường; Codex trực tiếp kiểm định. Chi tiết: `docs/audits/v310/CODEX_REVIEW_ROUND4.md`; lịch sử NO-GO Vòng 3: `docs/audits/v310/CODEX_REVIEW_ROUND3.md`.

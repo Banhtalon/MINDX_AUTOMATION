@@ -2,6 +2,7 @@ import assert from "node:assert";
 import { GET as getSessionCommentsList } from "../src/app/api/session-comments/list/route";
 import { GET as getSpckList } from "../src/app/api/spck/list/route";
 import { getCoursesSyllabus, getQuickTags } from "../src/lib/db/json-config";
+import { getDb, sessionFeedbackRepo } from "../src/lib/db/sqlite";
 import {
   classifyQuickTagTrack,
   classifyStudentSkillLevel,
@@ -159,7 +160,105 @@ async function runQuickTagsV300Tests() {
   assert.strictEqual(classifyQuickTagTrack(roboticsCat), "robotics");
   assert.strictEqual(classifyQuickTagTrack(s14PresCat), "session14");
 
-  console.log("✅ TẤT CẢ KIỂM THỬ QUICK TAGS & CHECKPOINT (v3.0.0) ĐỀU PASS 100%!");
+  // 6. Verify previousQuickTagsByStudent inheritance across sessions (v3.1.1)
+  const testClassId = "VT-ROB-SEMIA05";
+  const db = getDb();
+  try {
+    sessionFeedbackRepo.upsert({
+      classId: testClassId,
+      sessionId: `${testClassId}_SESS_01`,
+      studentId: "STU_INHERIT_1",
+      attendanceStatus: "PRESENT",
+      quickTagsJson: JSON.stringify(["👍 Đạt yêu cầu", "🙋 Hăng hái phát biểu"]),
+      teacherNote: "",
+      strengths: "",
+      improvements: "",
+      actionPlan: "",
+      finalText: "",
+      status: "DRAFT",
+      versionMetaJson: JSON.stringify({ rowVer: 1, fields: { quickTags: { ver: 1, cid: "t", rev: 1 } } }),
+    });
+    sessionFeedbackRepo.upsert({
+      classId: testClassId,
+      sessionId: `${testClassId}_SESS_01`,
+      studentId: "STU_CLEARED_IN_S2",
+      attendanceStatus: "PRESENT",
+      quickTagsJson: JSON.stringify(["🤖 Lắp ráp & Lập trình tốt"]),
+      teacherNote: "",
+      strengths: "",
+      improvements: "",
+      actionPlan: "",
+      finalText: "",
+      status: "DRAFT",
+      versionMetaJson: JSON.stringify({ rowVer: 1, fields: { quickTags: { ver: 1, cid: "t", rev: 1 } } }),
+    });
+    // SESS_02: STU_INHERIT_1 only has attendance marked (no explicit quickTags edit)
+    sessionFeedbackRepo.upsert({
+      classId: testClassId,
+      sessionId: `${testClassId}_SESS_02`,
+      studentId: "STU_INHERIT_1",
+      attendanceStatus: "PRESENT",
+      quickTagsJson: "[]",
+      teacherNote: "",
+      strengths: "",
+      improvements: "",
+      actionPlan: "",
+      finalText: "",
+      status: "DRAFT",
+      versionMetaJson: JSON.stringify({ rowVer: 1, fields: { attendanceStatus: { ver: 1, cid: "t", rev: 1 } } }),
+    });
+    // SESS_02: STU_CLEARED_IN_S2 had quickTags explicitly cleared by teacher
+    sessionFeedbackRepo.upsert({
+      classId: testClassId,
+      sessionId: `${testClassId}_SESS_02`,
+      studentId: "STU_CLEARED_IN_S2",
+      attendanceStatus: "PRESENT",
+      quickTagsJson: "[]",
+      teacherNote: "",
+      strengths: "",
+      improvements: "",
+      actionPlan: "",
+      finalText: "",
+      status: "DRAFT",
+      versionMetaJson: JSON.stringify({ rowVer: 1, fields: { quickTags: { ver: 1, cid: "t", rev: 1 } } }),
+    });
+
+    // Query SESS_02 -> STU_INHERIT_1 should inherit normalized Robotics tags from SESS_01
+    const s2Res = await getSessionCommentsList(
+      new Request(
+        `http://127.0.0.1:3000/api/session-comments/list?classId=${testClassId}&sessionId=${testClassId}_SESS_02`,
+        { method: "GET", headers: { host: "127.0.0.1:3000" } }
+      )
+    );
+    const s2Json = await s2Res.json();
+    assert.deepStrictEqual(s2Json.data?.previousQuickTagsByStudent?.["STU_INHERIT_1"], {
+      tags: ["🤖 Lắp ráp & Lập trình tốt", "🙋 Hăng hái phát biểu"],
+      fromSessionNumber: 1,
+    });
+
+    // Query SESS_03 -> STU_INHERIT_1 skips attendance-only SESS_02 and inherits from SESS_01;
+    // STU_CLEARED_IN_S2 respects explicit tag clear in SESS_02
+    const s3Res = await getSessionCommentsList(
+      new Request(
+        `http://127.0.0.1:3000/api/session-comments/list?classId=${testClassId}&sessionId=${testClassId}_SESS_03`,
+        { method: "GET", headers: { host: "127.0.0.1:3000" } }
+      )
+    );
+    const s3Json = await s3Res.json();
+    assert.deepStrictEqual(s3Json.data?.previousQuickTagsByStudent?.["STU_INHERIT_1"], {
+      tags: ["🤖 Lắp ráp & Lập trình tốt", "🙋 Hăng hái phát biểu"],
+      fromSessionNumber: 1,
+    });
+    assert.strictEqual(
+      s3Json.data?.previousQuickTagsByStudent?.["STU_CLEARED_IN_S2"],
+      undefined,
+      "Học viên đã bị xóa thẻ chủ động ở Buổi 2 không được tự động lấy lại thẻ từ Buổi 1 khi sang Buổi 3"
+    );
+  } finally {
+    db.prepare(`DELETE FROM session_feedbacks WHERE classId = ?`).run(testClassId);
+  }
+
+  console.log("✅ TẤT CẢ KIỂM THỬ QUICK TAGS & CHECKPOINT (v3.0.0 / v3.1.1) ĐỀU PASS 100%!");
 }
 
 runQuickTagsV300Tests().catch((err) => {

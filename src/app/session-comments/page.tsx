@@ -583,10 +583,7 @@ export default function SessionCommentsPage() {
             if (
               tags.length === 0 &&
               !hasExplicitQuickTagEdit &&
-              (!fb ||
-                (!fb.finalText &&
-                  !fb.teacherNote &&
-                  (!fb.status || fb.status === "DRAFT"))) &&
+              (!fb || (!fb.finalText && (!fb.status || fb.status === "DRAFT"))) &&
               Array.isArray(prevEntry?.tags) &&
               prevEntry.tags.length > 0
             ) {
@@ -1114,7 +1111,17 @@ ${homeworkDetails}
         };
       })
     );
-    saveDraftToServer(studentId, { teacherNote: note, status: nextDraftStatus }, preEditSnapshot);
+    saveDraftToServer(
+      studentId,
+      {
+        teacherNote: note,
+        status: nextDraftStatus,
+        ...(target?.inheritedFromSession && target?.quickTags?.length
+          ? { quickTags: target.quickTags }
+          : {}),
+      },
+      preEditSnapshot
+    );
   };
 
   // Handle Attendance Change with instant auto-save and approval demotion
@@ -1270,7 +1277,9 @@ ${homeworkDetails}
           ...(patch.attendanceStatus !== undefined
             ? { attendanceStatus: patch.attendanceStatus }
             : {}),
-          ...(patch.quickTags !== undefined ? { quickTags: patch.quickTags } : {}),
+          ...(patch.quickTags !== undefined
+            ? { quickTags: patch.quickTags, inheritedFromSession: undefined }
+            : {}),
           ...(patch.teacherNote !== undefined ? { teacherNote: patch.teacherNote } : {}),
           ...(patch.strengths !== undefined ? { strengths: patch.strengths } : {}),
           ...(patch.improvements !== undefined ? { improvements: patch.improvements } : {}),

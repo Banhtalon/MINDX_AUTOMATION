@@ -97,45 +97,71 @@ export async function GET(req: Request) {
         const db = typeof getDb === "function" ? getDb() : null;
         if (typeof (db as any)?.prepare === "function") {
           const track = detectTrackByClassCode(classId);
-          const curSessNum = Number(String(sessionId).match(/(\d+)$/)?.[1] || 0);
+          const curSessRow = allSessions.find((s) => s.sessionId === sessionId);
+          const curSessNum =
+            curSessRow?.sessionNumber ||
+            Number(String(sessionId).match(/(\d+)$/)?.[1] || 0);
           const prevRows = (db as any)
             .prepare(
-              `SELECT sf.studentId, sf.sessionId, sf.quickTagsJson, COALESCE(cs.sessionNumber, 0) as sessionNumber
+              `SELECT sf.studentId, sf.sessionId, sf.quickTagsJson, sf.versionMetaJson, COALESCE(cs.sessionNumber, 0) as sessionNumber
                FROM session_feedbacks sf
                LEFT JOIN classes_sessions cs ON cs.classId = sf.classId AND cs.sessionId = sf.sessionId
                WHERE sf.classId = ?
                  AND sf.sessionId != ?
-                 AND sf.quickTagsJson IS NOT NULL
-                 AND TRIM(sf.quickTagsJson) != ''
-                 AND TRIM(sf.quickTagsJson) != '[]'
                ORDER BY
-                 CASE WHEN ? > 0 AND COALESCE(cs.sessionNumber, 0) > 0 AND COALESCE(cs.sessionNumber, 0) < ? THEN 0 ELSE 1 END ASC,
                  COALESCE(cs.sessionNumber, 0) DESC,
                  sf.updatedAt DESC,
                  sf.id DESC`
             )
-            .all(classId, sessionId, curSessNum, curSessNum) as Array<{
+            .all(classId, sessionId) as Array<{
             studentId: string;
             sessionId: string;
             quickTagsJson: string;
+            versionMetaJson?: string;
             sessionNumber: number;
           }>;
 
-          for (const row of prevRows) {
-            if (!row?.studentId || previousQuickTagsByStudent[row.studentId]) continue;
+          const inferSessNum = (r: { sessionId: string; sessionNumber: number }) =>
+            r.sessionNumber > 0
+              ? r.sessionNumber
+              : Number(String(r.sessionId || "").match(/(\d+)$/)?.[1] || 0);
+
+          const eligiblePrevRows = prevRows
+            .filter((r) => {
+              const rNum = inferSessNum(r);
+              if (curSessNum > 0 && rNum > 0) {
+                return rNum < curSessNum;
+              }
+              return true;
+            })
+            .sort((a, b) => {
+              const aNum = inferSessNum(a);
+              const bNum = inferSessNum(b);
+              if (aNum !== bNum) return bNum - aNum;
+              return 0;
+            });
+
+          const resolvedStudents = new Set<string>();
+          for (const row of eligiblePrevRows) {
+            if (!row?.studentId || resolvedStudents.has(row.studentId)) continue;
             try {
-              const parsed = JSON.parse(row.quickTagsJson);
+              const parsed = row.quickTagsJson ? JSON.parse(row.quickTagsJson) : [];
               if (Array.isArray(parsed) && parsed.length > 0) {
                 const normalized = normalizeQuickTagsForTrack(parsed, track);
                 if (normalized.length > 0) {
-                  const inferredNum =
-                    row.sessionNumber > 0
-                      ? row.sessionNumber
-                      : Number(String(row.sessionId || "").match(/(\d+)$/)?.[1] || 0) || undefined;
+                  const inferredNum = inferSessNum(row) || undefined;
                   previousQuickTagsByStudent[row.studentId] = {
                     tags: normalized,
                     fromSessionNumber: inferredNum,
                   };
+                  resolvedStudents.add(row.studentId);
+                }
+                continue;
+              }
+              if (row.versionMetaJson) {
+                const meta = JSON.parse(row.versionMetaJson);
+                if (meta?.fields?.quickTags) {
+                  resolvedStudents.add(row.studentId);
                 }
               }
             } catch {}

@@ -830,7 +830,11 @@ Trả về duy nhất 1 JSON object chuẩn theo schema sau:
           studentId: student.studentId,
           attendanceStatus:
             (latestDbRecord?.attendanceStatus as any) || student.attendanceStatus || "PRESENT",
-          quickTagsJson: latestDbRecord?.quickTagsJson ?? JSON.stringify(item.regularQuickTags),
+          quickTagsJson:
+            latestDbRecord?.quickTagsJson &&
+            (latestDbRecord.quickTagsJson.trim() !== "[]" || Boolean(latestMeta.fields?.quickTags))
+              ? latestDbRecord.quickTagsJson
+              : JSON.stringify(item.regularQuickTags),
           teacherNote: latestDbRecord?.teacherNote ?? (student.teacherNote || ""),
           strengths,
           improvements,

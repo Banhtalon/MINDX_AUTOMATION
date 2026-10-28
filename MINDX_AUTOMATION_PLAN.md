@@ -1,6 +1,6 @@
 # KẾ HOẠCH TRIỂN KHAI & KIẾN TRÚC KỸ THUẬT: MINDX AUTOMATION BOT (v2.1 - FULL MASTER PLAN)
 
-> **Phiên bản:** 3.1.0 (Bản đầy đủ 8 Giai đoạn + Thiết kế lại toàn diện giao diện Chế độ Sáng / Tối Light Mode & Dark Mode 1 chạm `v3.1.0` + Quick Tags Lập trình/Robotics & Buổi Kiểm tra Checkpoint `v3.0.0` — Không lược bỏ tính năng)
+> **Phiên bản:** 3.1.1 (Bản đầy đủ 8 Giai đoạn + Tự động chuyển thẻ Robotics `ROB` & Tự nhớ Quick Tags từ buổi trước `v3.1.1` + Thiết kế lại toàn diện giao diện Chế độ Sáng / Tối Light Mode & Dark Mode 1 chạm `v3.1.0` + Quick Tags Lập trình/Robotics & Buổi Kiểm tra Checkpoint `v3.0.0` — Không lược bỏ tính năng)
 >
 > **Kiểm định bản thiết kế lại v3.1.0 — Vòng 4 (2026-10-28): GO trong phạm vi xác minh giao diện được yêu cầu.** `R3-01` đã đóng: năm nhãn trạng thái và nhãn cổng SPCK dùng `.mindx-dark-keep`, chữ trắng và nền đậm mức 700, tương phản tối thiểu 5,36:1 qua bốn tổ hợp màu ứng dụng/hệ điều hành; giữ nguyên kết quả đạt của Vòng 1, `R2-01` và `R2-02`. Ba lệnh yêu cầu và probe mở rộng đều chạy mới đạt (exit 0). Không sửa mã ứng dụng; chưa chạy lại bản dựng đầy đủ, giới hạn lỗi export API có sẵn của Vòng 2 vẫn được ghi nhận. Reviewer Claude không có trong môi trường; Codex trực tiếp kiểm định. Hồ sơ: `docs/audits/v310/CODEX_REVIEW_ROUND4.md`.
 >

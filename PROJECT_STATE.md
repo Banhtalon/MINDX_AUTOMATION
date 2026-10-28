@@ -1,6 +1,6 @@
 # PROJECT_STATE.md — TỔNG QUAN NHANH & TIẾN ĐỘ HIỆN TẠI (DÀNH CHO AI AGENT)
 
-> **Cập nhật lần cuối:** 2026-10-28 (Phiên bản `v3.1.0` — Thiết kế lại toàn diện giao diện Chế độ Sáng / Tối Light Mode & Dark Mode 1 chạm cho cả 5 màn hình)
+> **Cập nhật lần cuối:** 2026-10-28 (Phiên bản `v3.1.1` — Tự động nhận diện lớp Robotics (`ROB`), tự nhớ Quick Tags từ buổi học trước & tinh gọn ghi chú trang SPCK)
 > **Mục đích:** Giúp AI Agent nắm bắt 100% kiến trúc, trạng thái hiện tại, bản đồ file và các đặc thù thực tế của MindX LMS chỉ trong **1 lần đọc** trước khi tra cứu chi tiết trong `@MINDX_AUTOMATION_PLAN.md`.
 
 > **Kiểm định v3.1.0 — Vòng 4 (2026-10-28): GO trong phạm vi xác minh giao diện được yêu cầu.** Đã đóng `R3-01`: cả năm nhãn trạng thái và nhãn cổng SPCK giữ chữ trắng trên nền đậm; tương phản thấp nhất 5,36:1 qua đủ bốn tổ hợp màu ứng dụng/hệ điều hành. Vòng 1, `R2-01` và `R2-02` vẫn đạt. Ba lệnh yêu cầu (theme probe, TypeScript, phase4 repros) và probe mở rộng đều chạy mới thành công. Không sửa mã ứng dụng; chưa chạy lại bản dựng đầy đủ hay nghiệm thu toàn bộ năm màn hình. Reviewer Claude không có trong môi trường; Codex trực tiếp kiểm định. Chi tiết và giới hạn: `docs/audits/v310/CODEX_REVIEW_ROUND4.md`; lịch sử Vòng 3: `docs/audits/v310/CODEX_REVIEW_ROUND3.md`.
@@ -13,7 +13,11 @@
 
 ## 1. TỔNG QUAN HỆ THỐNG (EXECUTIVE SNAPSHOT)
 
-- **Tên dự án:** MindX Automation Bot (`v3.1.0` — chi tiết lịch sử thay đổi tại `@CHANGELOG.md`)
+- **Tên dự án:** MindX Automation Bot (`v3.1.1` — chi tiết lịch sử thay đổi tại `@CHANGELOG.md`)
+- **Điểm mới trọng tâm `v3.1.1` (2026-10-28):**
+  - **Tự động nhận diện lớp Robotics (`ROB`) & Bỏ hộp đổi thẻ thủ công (`src/app/session-comments/page.tsx`, `src/lib/quick-tags/index.ts`):** Mọi lớp có chữ `ROB` (như `VT-ROB-SEMIA05`, `VT-KIND-ROB4I02`, `VT-ROB-ARMA13`) hoặc mã Robotics tự động chuyển sang bộ 6 thẻ Robotics; các lớp còn lại dùng bộ 7 thẻ Lập trình. Bỏ hẳn nút `"⇄ Đổi bộ thẻ"` và không hiển thị lại các thẻ mẫu cũ (`"👍 Đạt yêu cầu"`).
+  - **Tự động nhớ Quick Tags từ buổi học trước (`src/app/api/session-comments/list/route.ts`, `src/app/session-comments/page.tsx`, `src/lib/quick-tags/index.ts`, `src/lib/gemini/comment-generator.ts`):** Khi mở buổi học mới chưa gắn thẻ, hệ thống tự động điền sẵn bộ thẻ của buổi gần nhất trước đó cho từng học viên (kèm nhãn `↺ Nhớ từ Buổi X` và chuẩn hóa thẻ cũ sang bộ thẻ chuẩn qua `normalizeQuickTagsForTrack`), đồng thời tự lưu bền vững vào SQLite khi điểm danh / ghi chú / gọi AI.
+  - **Tinh gọn giao diện Trang chủ (`/`) & Trang SPCK (`/final-project`):** Cân đối bố cục chiều cao trang chủ (`src/app/page.tsx`) và loại bỏ 6 cụm chữ ghi chú nhỏ gây rối mắt trên `/final-project` (`src/app/final-project/page.tsx`).
 - **Điểm mới trọng tâm `v3.1.0` (2026-10-28):**
   - **Hệ thống Giao diện Chế độ Sáng / Tối 1 chạm (`src/components/top-navbar.tsx`, `src/app/layout.tsx`, `src/app/globals.css`):** Mặc định mở ở **Chế độ Sáng (Light Mode)** (`data-theme="light"`), lưu lựa chọn vào `localStorage` (`mindx_ui_theme`), cấu hình `@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));` cho Tailwind v4.
   - **Chế độ Sáng (Light Mode):** Khối tiêu đề **Xanh Hoàng Gia (`.mindx-hero`: `#1d3a8a -> #2563eb`)** chữ trắng, thẻ nội dung nền trắng (`#ffffff`) có viền điểm nhấn dày bên trái (`border-l-4`) theo 4 nhóm màu (Cam, Xanh dương, Xanh lá, Tím), tiêu đề bảng xanh đen đậm (`.mindx-thead`: `#172554`) chữ trắng, hộp kiến thức vàng kem ấm (`.mindx-warm-box`).
