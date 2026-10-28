@@ -97,42 +97,48 @@ export async function GET(req: Request) {
         const db = typeof getDb === "function" ? getDb() : null;
         if (typeof (db as any)?.prepare === "function") {
           const track = detectTrackByClassCode(classId);
+          const parseVerifiedSessionNumber = (sid: unknown, dbSessionNum?: unknown): number => {
+            const n = Number(dbSessionNum);
+            if (Number.isInteger(n) && n > 0) return n;
+            const match = String(sid || "")
+              .trim()
+              .match(/(?:^|[_-])SESS(?:ION)?[_-]?0*(\d+)$/i);
+            if (!match) return 0;
+            const parsed = Number(match[1]);
+            return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
+          };
           const curSessRow = allSessions.find((s) => s.sessionId === sessionId);
-          const curSessNum =
-            curSessRow?.sessionNumber ||
-            Number(String(sessionId).match(/(\d+)$/)?.[1] || 0);
-          const prevRows = (db as any)
-            .prepare(
-              `SELECT sf.studentId, sf.sessionId, sf.quickTagsJson, sf.versionMetaJson, COALESCE(cs.sessionNumber, 0) as sessionNumber
-               FROM session_feedbacks sf
-               LEFT JOIN classes_sessions cs ON cs.classId = sf.classId AND cs.sessionId = sf.sessionId
-               WHERE sf.classId = ?
-                 AND sf.sessionId != ?
-               ORDER BY
-                 COALESCE(cs.sessionNumber, 0) DESC,
-                 sf.updatedAt DESC,
-                 sf.id DESC`
-            )
-            .all(classId, sessionId) as Array<{
-            studentId: string;
-            sessionId: string;
-            quickTagsJson: string;
-            versionMetaJson?: string;
-            sessionNumber: number;
-          }>;
+          const curSessNum = parseVerifiedSessionNumber(sessionId, curSessRow?.sessionNumber);
+          const prevRows =
+            curSessNum > 0
+              ? ((db as any)
+                  .prepare(
+                    `SELECT sf.studentId, sf.sessionId, sf.quickTagsJson, sf.versionMetaJson, COALESCE(cs.sessionNumber, 0) as sessionNumber
+                     FROM session_feedbacks sf
+                     LEFT JOIN classes_sessions cs ON cs.classId = sf.classId AND cs.sessionId = sf.sessionId
+                     WHERE sf.classId = ?
+                       AND sf.sessionId != ?
+                     ORDER BY
+                       COALESCE(cs.sessionNumber, 0) DESC,
+                       sf.updatedAt DESC,
+                       sf.id DESC`
+                  )
+                  .all(classId, sessionId) as Array<{
+                  studentId: string;
+                  sessionId: string;
+                  quickTagsJson: string;
+                  versionMetaJson?: string;
+                  sessionNumber: number;
+                }>)
+              : [];
 
           const inferSessNum = (r: { sessionId: string; sessionNumber: number }) =>
-            r.sessionNumber > 0
-              ? r.sessionNumber
-              : Number(String(r.sessionId || "").match(/(\d+)$/)?.[1] || 0);
+            parseVerifiedSessionNumber(r.sessionId, r.sessionNumber);
 
           const eligiblePrevRows = prevRows
             .filter((r) => {
               const rNum = inferSessNum(r);
-              if (curSessNum > 0 && rNum > 0) {
-                return rNum < curSessNum;
-              }
-              return true;
+              return curSessNum > 0 && rNum > 0 && rNum < curSessNum;
             })
             .sort((a, b) => {
               const aNum = inferSessNum(a);
@@ -148,8 +154,8 @@ export async function GET(req: Request) {
               const parsed = row.quickTagsJson ? JSON.parse(row.quickTagsJson) : [];
               if (Array.isArray(parsed) && parsed.length > 0) {
                 const normalized = normalizeQuickTagsForTrack(parsed, track);
-                if (normalized.length > 0) {
-                  const inferredNum = inferSessNum(row) || undefined;
+                const inferredNum = inferSessNum(row);
+                if (normalized.length > 0 && inferredNum > 0) {
                   previousQuickTagsByStudent[row.studentId] = {
                     tags: normalized,
                     fromSessionNumber: inferredNum,

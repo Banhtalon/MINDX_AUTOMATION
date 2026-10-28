@@ -1,0 +1,42 @@
+[
+    {
+        "file":  "src/app/page.tsx",
+        "sha256":  "5ee7f8fa5e3900b8016e563ca40cdcc910feeff050ff794dc08d81ccfed7ac26"
+    },
+    {
+        "file":  "src/app/layout.tsx",
+        "sha256":  "79b012a8f14e3fff15988bef6a16c9903c857fee6602ce43558c1f87a2d0398a"
+    },
+    {
+        "file":  "src/app/session-comments/page.tsx",
+        "sha256":  "3bc93d4c4dec2225d0d60c244763240d6b68e8d27f70402de4c274a9955257fb"
+    },
+    {
+        "file":  "src/app/api/session-comments/list/route.ts",
+        "sha256":  "bc73b1a38cbcf089e7c5c40d8b548b11acf60a9fd567e9c89eaebff83d754382"
+    },
+    {
+        "file":  "src/app/final-project/page.tsx",
+        "sha256":  "681473913ecf7cdd12dc25b9d22962374b44af691e70877844e194813026ce2f"
+    },
+    {
+        "file":  "src/lib/quick-tags/index.ts",
+        "sha256":  "945585fd289f9b5ba5308aa68d1f26f76207a622d39d822da6a8a8106f405aa8"
+    },
+    {
+        "file":  "src/lib/gemini/comment-generator.ts",
+        "sha256":  "51c2588b30e630bae612f7d203aa1228404d0ab6d7374e95943c5fb4af8d950b"
+    },
+    {
+        "file":  "scripts/test-quick-tags-v300.ts",
+        "sha256":  "f2817900776c4d9559b7265ee708535b2267cbf6e2653e3a7d1a9bed66876af2"
+    },
+    {
+        "file":  "scripts/test-phase4-codex-repros.ts",
+        "sha256":  "f7d0b5b75125b39a7876abbc4a2d5622aa08acd4162aca6fc8850f1f344bce6d"
+    },
+    {
+        "file":  "docs/audits/v310/round3/theme-probe.mjs",
+        "sha256":  "6bd75ee630d01b2012fcec6ce3f2315cc969ce991f6421bc5cd0ac27a86366d8"
+    }
+]

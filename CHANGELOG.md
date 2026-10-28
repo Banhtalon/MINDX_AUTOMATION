@@ -6,6 +6,8 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ## [v3.1.1] — 2026-10-28 (Tự Động Chuyển Bộ Thẻ Robotics Theo Mã Lớp `ROB`, Tự Nhớ Quick Tags Từ Buổi Học Trước & Tinh Gọn Ghi Chú Trang SPCK)
 
+> **Kiểm định độc lập Vòng 1 (2026-10-28): NO-GO.** Chạy mới 4/4 cổng đạt trong bản sao tạm, nhưng probe độc lập chỉ đạt 12/18 kiểm tra: `R1-01` test có thể xóa nhận xét lớp thật, `R1-02` chưa lưu bền thẻ kế thừa khi hai lần nhập chồng nhau và lần đầu thất bại, `R1-03` nhánh số buổi không xác định có thể kế thừa sai thời gian. Dashboard đã có từ commit nền còn chưa vừa 1366×768 (`R1-04`). Không sửa mã ứng dụng hay DB Owner; bổ sung báo cáo, probe và bằng chứng tại `docs/audits/v311/CODEX_REVIEW_ROUND1.md`.
+
 ### 🤖 Tự Động Nhận Diện Bộ Thẻ Robotics / Lập Trình & Bỏ Hộp Đổi Thẻ Thủ Công (`src/app/session-comments/page.tsx`, `src/lib/quick-tags/index.ts`)
 - Khi chọn hoặc tải lớp trên `/session-comments`, mọi lớp có chữ `ROB` (ví dụ `VT-ROB-SEMIA05`, `VT-KIND-ROB4I02`, `VT-ROB-ARMA13`) hoặc mã Robotics (`PRE`, `ARM`, `SEMI`, `VEX`) tự động áp dụng **bộ 6 thẻ Robotics**; các lớp còn lại tự động áp dụng **bộ 7 thẻ Lập trình**.
 - Loại bỏ hoàn toàn hộp nút **`[💻 Thẻ Lập trình (7) | ⇄ Đổi bộ thẻ]`** trên thanh công cụ và ngừng nối thêm các thẻ mẫu cũ (`"👍 Đạt yêu cầu"`) vào danh sách nút chọn của học viên.

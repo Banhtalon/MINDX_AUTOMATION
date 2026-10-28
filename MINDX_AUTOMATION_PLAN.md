@@ -2,6 +2,8 @@
 
 > **Phiên bản:** 3.1.1 (Bản đầy đủ 8 Giai đoạn + Tự động chuyển thẻ Robotics `ROB` & Tự nhớ Quick Tags từ buổi trước `v3.1.1` + Thiết kế lại toàn diện giao diện Chế độ Sáng / Tối Light Mode & Dark Mode 1 chạm `v3.1.0` + Quick Tags Lập trình/Robotics & Buổi Kiểm tra Checkpoint `v3.0.0` — Không lược bỏ tính năng)
 >
+> **Kiểm định v3.1.1 — Vòng 1 (2026-10-28): NO-GO.** Bốn cổng bắt buộc đều đạt trên DB cô lập; probe bổ sung đạt 12/18 kiểm tra. Cần đóng `R1-01` (test xóa toàn bộ nhận xét lớp thật), `R1-02` (mất trạng thái cần lưu thẻ kế thừa khi nhập chồng nhau/lỗi mạng), `R1-03` (chỉ kế thừa khi chứng minh được số buổi nhỏ hơn hiện tại). `R1-04` là khoảng thiếu nghiệm thu có sẵn: Dashboard 1366×768 cao 890px, cần điều chỉnh nếu yêu cầu vừa màn laptop. Chưa sửa mã ứng dụng; kiểm định lại theo tiêu chí tại `docs/audits/v311/CODEX_REVIEW_ROUND1.md`.
+>
 > **Kiểm định bản thiết kế lại v3.1.0 — Vòng 4 (2026-10-28): GO trong phạm vi xác minh giao diện được yêu cầu.** `R3-01` đã đóng: năm nhãn trạng thái và nhãn cổng SPCK dùng `.mindx-dark-keep`, chữ trắng và nền đậm mức 700, tương phản tối thiểu 5,36:1 qua bốn tổ hợp màu ứng dụng/hệ điều hành; giữ nguyên kết quả đạt của Vòng 1, `R2-01` và `R2-02`. Ba lệnh yêu cầu và probe mở rộng đều chạy mới đạt (exit 0). Không sửa mã ứng dụng; chưa chạy lại bản dựng đầy đủ, giới hạn lỗi export API có sẵn của Vòng 2 vẫn được ghi nhận. Reviewer Claude không có trong môi trường; Codex trực tiếp kiểm định. Hồ sơ: `docs/audits/v310/CODEX_REVIEW_ROUND4.md`.
 >
 > **Kiến trúc:** Local Web Application (Next.js App Router + TypeScript + Node.js, chạy trên `127.0.0.1:3000`)

@@ -1,0 +1,11 @@
+Đã lưu [báo cáo kiểm định đầy đủ](</D:/MY PROJECT/MINDX_AUTOMATION/docs/audits/v311/CODEX_REVIEW_ROUND1.md>), kèm vị trí file:dòng và bằng chứng tái hiện.
+
+Cả **4 cổng kiểm tra đều PASS**, nhưng phát hiện 3 lỗi:
+
+- Test Quick Tags có thể xóa nhận xét của lớp thật.
+- Thẻ kế thừa có thể chưa được lưu khi nhập liên tiếp và gặp lỗi mạng.
+- API có thể kế thừa sai thứ tự khi không xác định được số buổi.
+
+Dashboard cũng chưa vừa màn 1366×768. Đã cập nhật ba tài liệu quản lý; không sửa mã ứng dụng hay dữ liệu Owner.
+
+**VERDICT: NO-GO**

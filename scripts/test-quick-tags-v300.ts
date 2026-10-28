@@ -161,8 +161,30 @@ async function runQuickTagsV300Tests() {
   assert.strictEqual(classifyQuickTagTrack(s14PresCat), "session14");
 
   // 6. Verify previousQuickTagsByStudent inheritance across sessions (v3.1.1)
-  const testClassId = "VT-ROB-SEMIA05";
+  // R1-01: Use an isolated synthetic classId and delete only the exact test rows so real class data is never touched
+  const testClassId = "TEST_V311_ROB_SEMIA05";
+  const sentinelClassId = "VT-ROB-SEMIA05";
+  const sentinelSessionId = `${sentinelClassId}_SESS_99_SENTINEL`;
+  const sentinelStudentId = "STU_SENTINEL_R101";
   const db = getDb();
+  const hadPreExistingSentinel = Boolean(
+    sessionFeedbackRepo.findOne(sentinelClassId, sentinelSessionId, sentinelStudentId)
+  );
+  if (!hadPreExistingSentinel) {
+    sessionFeedbackRepo.upsert({
+      classId: sentinelClassId,
+      sessionId: sentinelSessionId,
+      studentId: sentinelStudentId,
+      attendanceStatus: "PRESENT",
+      quickTagsJson: "[]",
+      teacherNote: "Sentinel row must not be deleted",
+      strengths: "",
+      improvements: "",
+      actionPlan: "",
+      finalText: "Sentinel content",
+      status: "DRAFT",
+    });
+  }
   try {
     sessionFeedbackRepo.upsert({
       classId: testClassId,
@@ -255,7 +277,28 @@ async function runQuickTagsV300Tests() {
       "Học viên đã bị xóa thẻ chủ động ở Buổi 2 không được tự động lấy lại thẻ từ Buổi 1 khi sang Buổi 3"
     );
   } finally {
-    db.prepare(`DELETE FROM session_feedbacks WHERE classId = ?`).run(testClassId);
+    db.prepare(
+      `DELETE FROM session_feedbacks
+       WHERE classId = ?
+         AND sessionId IN (?, ?)
+         AND studentId IN (?, ?)`
+    ).run(
+      testClassId,
+      `${testClassId}_SESS_01`,
+      `${testClassId}_SESS_02`,
+      "STU_INHERIT_1",
+      "STU_CLEARED_IN_S2"
+    );
+  }
+
+  assert.ok(
+    sessionFeedbackRepo.findOne(sentinelClassId, sentinelSessionId, sentinelStudentId),
+    "R1-01: Dữ liệu của lớp thật VT-ROB-SEMIA05 phải còn nguyên vẹn sau khi chạy test"
+  );
+  if (!hadPreExistingSentinel) {
+    db.prepare(
+      `DELETE FROM session_feedbacks WHERE classId = ? AND sessionId = ? AND studentId = ?`
+    ).run(sentinelClassId, sentinelSessionId, sentinelStudentId);
   }
 
   console.log("✅ TẤT CẢ KIỂM THỬ QUICK TAGS & CHECKPOINT (v3.0.0 / v3.1.1) ĐỀU PASS 100%!");

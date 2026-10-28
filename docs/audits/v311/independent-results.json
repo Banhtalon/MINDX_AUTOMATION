@@ -1,0 +1,150 @@
+[
+  {
+    "name": "API chooses most recent earlier number, excluding future",
+    "pass": true,
+    "actual": {
+      "tags": [
+        "👀 Mất tập trung"
+      ],
+      "fromSessionNumber": 2
+    },
+    "expected": {
+      "tags": [
+        "👀 Mất tập trung"
+      ],
+      "fromSessionNumber": 2
+    }
+  },
+  {
+    "name": "API honors explicit clear in previous session",
+    "pass": true
+  },
+  {
+    "name": "API excludes known future session",
+    "pass": true
+  },
+  {
+    "name": "API must exclude history with unknown session number",
+    "pass": true
+  },
+  {
+    "name": "API normalizes legacy tag to Robotics",
+    "pass": true,
+    "actual": {
+      "tags": [
+        "🤖 Lắp ráp & Lập trình tốt"
+      ],
+      "fromSessionNumber": 2
+    },
+    "expected": {
+      "tags": [
+        "🤖 Lắp ráp & Lập trình tốt"
+      ],
+      "fromSessionNumber": 2
+    }
+  },
+  {
+    "name": "API must not inherit future tags when current number is unknown",
+    "pass": true
+  },
+  {
+    "name": "UI inherits normalized tags and provenance",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "UI provenance points to session 2",
+    "pass": true,
+    "actual": 2,
+    "expected": 2
+  },
+  {
+    "name": "UI preserves existing finalText without inheriting",
+    "pass": true,
+    "actual": 0,
+    "expected": 0
+  },
+  {
+    "name": "Note interaction durably stores inherited tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "UI respects explicit clear in current session",
+    "pass": true,
+    "actual": 0,
+    "expected": 0
+  },
+  {
+    "name": "ATTEND: attendance durably preserves inherited tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "BULK: attendance durably preserves inherited tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "Overlapping second note must retain tags when first save fails",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "After failure unsaved tags must retain inheritance marker",
+    "pass": true,
+    "actual": 2,
+    "expected": 2
+  },
+  {
+    "name": "Database retains tags after overlapping note succeeds",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "AI success persists inherited tags over attendance-only empty row",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "Required quick-tag test preserves unrelated pre-existing feedback",
+    "pass": true,
+    "actual": true,
+    "expected": true
+  }
+]

@@ -589,6 +589,9 @@ export default function SessionCommentsPage() {
             ) {
               tags = [...prevEntry.tags];
               inheritedFromSession = prevEntry.fromSessionNumber;
+              studentEditVersionRef.current[`__qt_pending__${st.studentId}`] = 1;
+            } else {
+              delete studentEditVersionRef.current[`__qt_pending__${st.studentId}`];
             }
             return {
               ...st,
@@ -1116,7 +1119,9 @@ ${homeworkDetails}
       {
         teacherNote: note,
         status: nextDraftStatus,
-        ...(target?.inheritedFromSession && target?.quickTags?.length
+        ...((target?.inheritedFromSession ||
+          studentEditVersionRef.current[`__qt_pending__${studentId}`]) &&
+        target?.quickTags?.length
           ? { quickTags: target.quickTags }
           : {}),
       },
@@ -1164,7 +1169,9 @@ ${homeworkDetails}
       {
         attendanceStatus: nextAttStatus,
         status: nextDraftStatus,
-        ...(target?.inheritedFromSession && target?.quickTags?.length
+        ...((target?.inheritedFromSession ||
+          studentEditVersionRef.current[`__qt_pending__${studentId}`]) &&
+        target?.quickTags?.length
           ? { quickTags: target.quickTags }
           : {}),
       },
@@ -1252,6 +1259,9 @@ ${homeworkDetails}
     const requestScopeKey = `${normalizedClassId}::${normalizedSessionId}`;
     const requestEditVersion = ++editSequenceRef.current;
     studentEditVersionRef.current[targetStudentId] = requestEditVersion;
+    if (patch.quickTags !== undefined) {
+      studentEditVersionRef.current[`__qt_pending__${targetStudentId}`] = requestEditVersion;
+    }
 
     const isStaleSaveResponse = () =>
       activeClassIdRef.current !== normalizedClassId ||
@@ -1277,9 +1287,7 @@ ${homeworkDetails}
           ...(patch.attendanceStatus !== undefined
             ? { attendanceStatus: patch.attendanceStatus }
             : {}),
-          ...(patch.quickTags !== undefined
-            ? { quickTags: patch.quickTags, inheritedFromSession: undefined }
-            : {}),
+          ...(patch.quickTags !== undefined ? { quickTags: patch.quickTags } : {}),
           ...(patch.teacherNote !== undefined ? { teacherNote: patch.teacherNote } : {}),
           ...(patch.strengths !== undefined ? { strengths: patch.strengths } : {}),
           ...(patch.improvements !== undefined ? { improvements: patch.improvements } : {}),
@@ -1453,6 +1461,13 @@ ${homeworkDetails}
             }
           }
           return false;
+        }
+        if (
+          patch.quickTags !== undefined &&
+          (studentEditVersionRef.current[`__qt_pending__${targetStudentId}`] || 0) <=
+            requestEditVersion
+        ) {
+          delete studentEditVersionRef.current[`__qt_pending__${targetStudentId}`];
         }
         return true;
       } catch (err: any) {
