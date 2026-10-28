@@ -5,6 +5,8 @@ import {
   AlertTriangle,
   Calendar,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   ClipboardList,
   ExternalLink,
   Loader2,
@@ -120,7 +122,8 @@ export default function TeachingProjectsPage() {
 
   const [courseName, setCourseName] = useState<string>("");
   const [dateSourceLabel, setDateSourceLabel] = useState<string>("");
-  const [teacherHint, setTeacherHint] = useState<string>("");
+  const [teacherHint] = useState<string>("");
+  const [isTasksDetailOpen, setIsTasksDetailOpen] = useState<boolean>(false);
 
   const [isLoadingClass, setIsLoadingClass] = useState<boolean>(false);
   const [isFetchingLmsDates, setIsFetchingLmsDates] = useState<boolean>(false);
@@ -1189,34 +1192,49 @@ export default function TeachingProjectsPage() {
       </section>
 
       {/* KHUNG 2: Danh sách Học sinh & Bộ 5 Phần Công Việc (20% × 5 = 100%) */}
-      <section className="mindx-card mindx-card-emerald p-4 sm:p-5 rounded-2xl space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-700/50 pb-3">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base sm:text-lg font-bold">
-                2. Bộ 5 Phần Công Việc Chuẩn (Timeline Làm Sản Phẩm Cuối Khóa)
-              </h2>
-              {courseName && (
-                <span className="mindx-dark-keep bg-indigo-700 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
-                  📚 {courseName}
-                </span>
-              )}
-              <span
-                className={`mindx-dark-keep text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                  Math.abs(totalWeightPercent - 100) <= 0.01 && tasks.length === 5
-                    ? "bg-emerald-700 text-white"
-                    : "bg-rose-700 text-white"
-                }`}
-              >
-                Tổng tỷ trọng: {totalWeightPercent}% ({tasks.length}/5 công việc)
+      <section className="mindx-card mindx-card-emerald p-4 sm:p-5 rounded-2xl space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold">
+              2. Bộ 5 Phần Công Việc Chuẩn (Timeline Làm Sản Phẩm Cuối Khóa)
+            </h2>
+            {courseName && (
+              <span className="mindx-dark-keep bg-indigo-700 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+                📚 {courseName}
               </span>
-            </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Theo quy tắc chuẩn: mỗi lớp có đúng 5 phần công việc (mỗi phần 20%), có tiêu đề chung và mô tả chi tiết, Deadline = Ngày kết khóa ({endDate || "chưa chọn"}).
-            </p>
+            )}
+            <span
+              className={`mindx-dark-keep text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                Math.abs(totalWeightPercent - 100) <= 0.01 && tasks.length === 5
+                  ? "bg-emerald-700 text-white"
+                  : "bg-rose-700 text-white"
+              }`}
+            >
+              Tổng tỷ trọng: {totalWeightPercent}% ({tasks.length}/5 công việc)
+            </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsTasksDetailOpen((prev) => !prev)}
+              className="mindx-dark-keep px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-700 hover:bg-slate-800 mindx-dark-btn text-white flex items-center gap-1.5 cursor-pointer transition"
+            >
+              {isTasksDetailOpen ? (
+                <>
+                  <ChevronUp className="w-3.5 h-3.5" />
+                  <span>Ẩn chi tiết</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                  <span>
+                    Xem chi tiết ({tasks.length} việc • {assignedStudentIds.length}/{students.length} HS)
+                  </span>
+                </>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => handleGenerateTasks("template")}
@@ -1243,201 +1261,190 @@ export default function TeachingProjectsPage() {
           </div>
         </div>
 
-        {/* Optional AI Hint Input */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <span className="text-xs font-bold shrink-0">
-            Gợi ý chủ đề thêm cho AI (tùy chọn):
-          </span>
-          <input
-            type="text"
-            value={teacherHint}
-            disabled={!isClassReady}
-            onChange={(e) => setTeacherHint(e.target.value)}
-            placeholder="VD: Làm game bắn thiên thạch / Website bán hàng / Robot xe tự hành tránh vật cản..."
-            className="flex-1 px-3 py-1.5 rounded-xl border border-slate-600/80 bg-slate-900/90 text-white text-xs disabled:opacity-60"
-          />
-        </div>
-
-        {/* Assigned Students Selection Box (Image 4 equivalent) */}
-        <div className="p-3.5 rounded-xl border border-slate-700/70 bg-slate-900/60 space-y-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-bold">
-              <Users className="w-4 h-4 text-emerald-400" />
-              <span>
-                Giao cho học sinh ({assignedStudentIds.length}/{students.length} học sinh đang chọn):
-              </span>
-            </div>
-            {students.length > 0 && (
-              <button
-                type="button"
-                disabled={!isClassReady}
-                onClick={handleToggleAllStudents}
-                className="mindx-dark-keep px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-700 hover:bg-slate-800 mindx-dark-btn disabled:opacity-60 text-white cursor-pointer"
-              >
-                {assignedStudentIds.length === students.length
-                  ? "Bỏ chọn tất cả"
-                  : "✓ Chọn tất cả học sinh"}
-              </button>
-            )}
-          </div>
-
-          {students.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-              {students.map((stu) => {
-                const checked = assignedStudentIds.includes(stu.id);
-                return (
-                  <label
-                    key={stu.id}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition ${
-                      checked
-                        ? "border-emerald-500/70 bg-emerald-950/50 text-white"
-                        : "border-slate-700/70 bg-slate-900/40 text-slate-400"
-                    }`}
+        {isTasksDetailOpen && (
+          <div className="space-y-3 pt-2 border-t border-slate-700/50">
+            {/* Assigned Students Selection Box */}
+            <div className="p-3.5 rounded-xl border border-slate-700/70 bg-slate-900/60 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <Users className="w-4 h-4 text-emerald-400" />
+                  <span>
+                    Giao cho học sinh ({assignedStudentIds.length}/{students.length} học sinh đang chọn):
+                  </span>
+                </div>
+                {students.length > 0 && (
+                  <button
+                    type="button"
+                    disabled={!isClassReady}
+                    onClick={handleToggleAllStudents}
+                    className="mindx-dark-keep px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-700 hover:bg-slate-800 mindx-dark-btn disabled:opacity-60 text-white cursor-pointer"
                   >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={!isClassReady}
-                      onChange={() => handleToggleStudent(stu.id)}
-                      className="rounded accent-emerald-500"
-                    />
-                    <span className="truncate" title={stu.studentName}>
-                      {stu.studentName}
-                    </span>
-                  </label>
+                    {assignedStudentIds.length === students.length
+                      ? "Bỏ chọn tất cả"
+                      : "✓ Chọn tất cả học sinh"}
+                  </button>
+                )}
+              </div>
+
+              {students.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                  {students.map((stu) => {
+                    const checked = assignedStudentIds.includes(stu.id);
+                    return (
+                      <label
+                        key={stu.id}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition ${
+                          checked
+                            ? "border-emerald-500/70 bg-emerald-950/50 text-white"
+                            : "border-slate-700/70 bg-slate-900/40 text-slate-400"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={!isClassReady}
+                          onChange={() => handleToggleStudent(stu.id)}
+                          className="rounded accent-emerald-500"
+                        />
+                        <span className="truncate" title={stu.studentName}>
+                          {stu.studentName}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400">
+                  Chưa có danh sách học sinh từ Teaching cho lớp này.
+                </p>
+              )}
+            </div>
+
+            {/* 5 Task Cards */}
+            <div className="grid grid-cols-1 gap-3">
+              {tasks.map((task) => {
+                const isDeadlineValid =
+                  /^\d{4}-\d{2}-\d{2}$/.test(task.deadline) && task.deadline !== "0000-00-00";
+                return (
+                  <div
+                    key={task.slotIndex}
+                    className="p-3.5 rounded-xl border border-slate-700/80 bg-slate-900/75 space-y-2.5"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="mindx-dark-keep px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-700 text-white">
+                          Phần {task.slotIndex}/5
+                        </span>
+                        {task.taskId ? (
+                          <span className="mindx-dark-keep bg-blue-700 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
+                            Teaching Task #{task.taskId}
+                          </span>
+                        ) : (
+                          <span className="mindx-dark-keep bg-amber-800 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
+                            Sẽ thêm mới lên Teaching
+                          </span>
+                        )}
+                        {!isDeadlineValid && (
+                          <span className="mindx-dark-keep bg-rose-700 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
+                            ⚠ Thiếu Deadline
+                          </span>
+                        )}
+                      </div>
+
+                      <span className="text-xs text-slate-400">
+                        Giao cho:{" "}
+                        <strong className="text-white">
+                          {assignedStudentIds.length} học sinh
+                        </strong>
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5">
+                      <div className="md:col-span-7">
+                        <label className="block text-[11px] font-bold mb-1">
+                          Công việc *:
+                        </label>
+                        <input
+                          type="text"
+                          value={task.taskName}
+                          disabled={!isClassReady}
+                          onChange={(e) =>
+                            handleTaskFieldChange(task.slotIndex, "taskName", e.target.value)
+                          }
+                          placeholder="VD: 1. Lên ý tưởng & thiết kế bố cục sản phẩm"
+                          className="w-full px-3 py-1.5 rounded-lg border border-slate-600/80 bg-slate-950/90 text-white text-xs sm:text-sm font-bold disabled:opacity-60"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-[11px] font-bold mb-1">
+                          Tỷ trọng (%) *:
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={task.weightPercent}
+                          disabled={!isClassReady}
+                          onChange={(e) =>
+                            handleTaskFieldChange(
+                              task.slotIndex,
+                              "weightPercent",
+                              Number(e.target.value)
+                            )
+                          }
+                          className="w-full px-3 py-1.5 rounded-lg border border-slate-600/80 bg-slate-950/90 text-white text-xs sm:text-sm font-bold text-center disabled:opacity-60"
+                        />
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <label className="block text-[11px] font-bold mb-1">
+                          Deadline (Ngày kết khóa):
+                        </label>
+                        <input
+                          type="date"
+                          value={isDeadlineValid ? task.deadline : ""}
+                          disabled={!isClassReady}
+                          onChange={(e) =>
+                            handleTaskFieldChange(task.slotIndex, "deadline", e.target.value)
+                          }
+                          className="w-full px-3 py-1.5 rounded-lg border border-slate-600/80 bg-slate-950/90 text-white text-xs sm:text-sm font-semibold disabled:opacity-60"
+                        />
+                      </div>
+
+                      <div className="md:col-span-12">
+                        <label className="block text-[11px] font-bold mb-1">
+                          Mô tả công việc *:
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={task.description}
+                          disabled={!isClassReady}
+                          onChange={(e) =>
+                            handleTaskFieldChange(
+                              task.slotIndex,
+                              "description",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Mô tả cụ thể các hạng mục học sinh cần làm trong giai đoạn này..."
+                          className="w-full px-3 py-1.5 rounded-lg border border-slate-600/80 bg-slate-950/90 text-white text-xs leading-relaxed disabled:opacity-60"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
             </div>
-          ) : (
-            <p className="text-xs text-slate-400">
-              Chưa có danh sách học sinh từ Teaching cho lớp này. Hãy bấm &ldquo;Đọc mới từ Teaching&rdquo; sau khi nhập mã lớp đúng.
-            </p>
-          )}
-        </div>
-
-        {/* 5 Task Cards */}
-        <div className="grid grid-cols-1 gap-3">
-          {tasks.map((task) => {
-            const isDeadlineValid =
-              /^\d{4}-\d{2}-\d{2}$/.test(task.deadline) && task.deadline !== "0000-00-00";
-            return (
-              <div
-                key={task.slotIndex}
-                className="p-3.5 rounded-xl border border-slate-700/80 bg-slate-900/75 space-y-2.5"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="mindx-dark-keep px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-700 text-white">
-                      Phần {task.slotIndex}/5
-                    </span>
-                    {task.taskId ? (
-                      <span className="mindx-dark-keep bg-blue-700 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
-                        Teaching Task #{task.taskId}
-                      </span>
-                    ) : (
-                      <span className="mindx-dark-keep bg-amber-800 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
-                        Sẽ thêm mới lên Teaching
-                      </span>
-                    )}
-                    {!isDeadlineValid && (
-                      <span className="mindx-dark-keep bg-rose-700 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
-                        ⚠ Thiếu Deadline
-                      </span>
-                    )}
-                  </div>
-
-                  <span className="text-xs text-slate-400">
-                    Giao cho:{" "}
-                    <strong className="text-white">
-                      {assignedStudentIds.length} học sinh
-                    </strong>
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5">
-                  <div className="md:col-span-7">
-                    <label className="block text-[11px] font-bold mb-1">
-                      Công việc * (Tiêu đề phần công việc chung):
-                    </label>
-                    <input
-                      type="text"
-                      value={task.taskName}
-                      disabled={!isClassReady}
-                      onChange={(e) =>
-                        handleTaskFieldChange(task.slotIndex, "taskName", e.target.value)
-                      }
-                      placeholder="VD: 1. Lên ý tưởng & thiết kế bố cục sản phẩm"
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-600/80 bg-slate-950/90 text-white text-xs sm:text-sm font-bold disabled:opacity-60"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-[11px] font-bold mb-1">
-                      Tỷ trọng (%) *:
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={100}
-                      value={task.weightPercent}
-                      disabled={!isClassReady}
-                      onChange={(e) =>
-                        handleTaskFieldChange(
-                          task.slotIndex,
-                          "weightPercent",
-                          Number(e.target.value)
-                        )
-                      }
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-600/80 bg-slate-950/90 text-white text-xs sm:text-sm font-bold text-center disabled:opacity-60"
-                    />
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <label className="block text-[11px] font-bold mb-1">
-                      Deadline (Ngày kết khóa):
-                    </label>
-                    <input
-                      type="date"
-                      value={isDeadlineValid ? task.deadline : ""}
-                      disabled={!isClassReady}
-                      onChange={(e) =>
-                        handleTaskFieldChange(task.slotIndex, "deadline", e.target.value)
-                      }
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-600/80 bg-slate-950/90 text-white text-xs sm:text-sm font-semibold disabled:opacity-60"
-                    />
-                  </div>
-
-                  <div className="md:col-span-12">
-                    <label className="block text-[11px] font-bold mb-1">
-                      Mô tả công việc * (Các bước chi tiết học sinh cần hoàn thành):
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={task.description}
-                      disabled={!isClassReady}
-                      onChange={(e) =>
-                        handleTaskFieldChange(
-                          task.slotIndex,
-                          "description",
-                          e.target.value
-                        )
-                      }
-                      placeholder="Mô tả cụ thể các hạng mục học sinh cần làm trong giai đoạn này..."
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-600/80 bg-slate-950/90 text-white text-xs leading-relaxed disabled:opacity-60"
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+          </div>
+        )}
 
         {/* Action Bar: Save Draft / Approve & Sync to Teaching */}
-        <div className="pt-2 border-t border-slate-700/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="pt-2.5 border-t border-slate-700/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div className="text-xs text-slate-400">
             {verifiedAt ? (
               <span>
-                Đã xác thực Read-after-Write lần cuối lúc:{" "}
+                Đã đồng bộ lúc:{" "}
                 <strong className="text-white">
                   {new Date(verifiedAt).toLocaleString("vi-VN")}
                 </strong>
@@ -1448,7 +1455,7 @@ export default function TeachingProjectsPage() {
               </span>
             ) : (
               <span>
-                Kiểm tra kỹ Tên dự án, Ngày bắt đầu/kết thúc và 5 phần công việc trước khi bấm Duyệt &amp; Đẩy lên Teaching.
+                Đang giao cho <strong className="text-white">{assignedStudentIds.length}/{students.length}</strong> học sinh • Hạn kết khóa: <strong className="text-white">{endDate || "chưa chọn"}</strong>
               </span>
             )}
           </div>
