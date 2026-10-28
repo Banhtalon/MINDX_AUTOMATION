@@ -9,6 +9,7 @@ import {
   filterRegularSessionQuickTagCategories,
   isCheckpointSession,
   isSession14QuickTagCategory,
+  normalizeQuickTagsForTrack,
 } from "../src/lib/quick-tags";
 
 async function runQuickTagsV300Tests() {
@@ -130,7 +131,20 @@ async function runQuickTagsV300Tests() {
   const syllabus = getCoursesSyllabus();
   assert.strictEqual(detectTrackByClassCode("VT-C4K-PTA12"), "coding");
   assert.strictEqual(detectTrackByClassCode("VT-ROB-ARMA13"), "robotics");
+  assert.strictEqual(detectTrackByClassCode("VT-ROB-SEMIA05"), "robotics");
+  assert.strictEqual(detectTrackByClassCode("VT-KIND-ROB4I02"), "robotics");
   assert.strictEqual(detectTrackByClassCode("VT-SEMIB02"), "robotics");
+
+  assert.deepStrictEqual(
+    normalizeQuickTagsForTrack(["👍 Đạt yêu cầu", "📝 Làm bài tập đầy đủ"], "coding"),
+    ["✅ Tiếp thu tốt", "📝 Làm bài tập đầy đủ"],
+    "Chuẩn hóa thẻ cũ sang bộ thẻ Lập trình mới"
+  );
+  assert.deepStrictEqual(
+    normalizeQuickTagsForTrack(["👍 Đạt yêu cầu", "🙋 Hăng hái phát biểu"], "robotics"),
+    ["🤖 Lắp ráp & Lập trình tốt", "🙋 Hăng hái phát biểu"],
+    "Chuẩn hóa thẻ cũ sang bộ thẻ Robotics mới"
+  );
 
   assert.strictEqual(isCheckpointSession("VT-C4K-PTA12", 5, syllabus), true, "PTA12 Buổi 5 là Checkpoint");
   assert.strictEqual(isCheckpointSession("VT-C4K-PTA12", 9, syllabus), true, "PTA12 Buổi 9 là Checkpoint");

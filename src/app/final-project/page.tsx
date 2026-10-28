@@ -4408,11 +4408,6 @@ export default function FinalProjectPage() {
                 </option>
               ))}
             </select>
-            <p className="mt-1.5 text-[11px] text-slate-400">
-              Áp dụng cho tất cả các lớp có buổi 12, 13, 14 (bao gồm{" "}
-              <span className="font-semibold text-emerald-400">PTB</span> và{" "}
-              <span className="font-semibold text-emerald-400">CSB</span>).
-            </p>
           </div>
 
           {/* 1B. Chọn Buổi nộp một lần ở đầu trang */}
@@ -4441,13 +4436,6 @@ export default function FinalProjectPage() {
                 );
               })}
             </div>
-            <p className="mt-1.5 text-[11px] text-slate-400">
-              Đang chọn nộp cho{" "}
-              <strong className="text-emerald-400">
-                Buổi {selectedSessionNumber} ({getStageMeta(selectedSessionNumber).stageShort})
-              </strong>{" "}
-              — chỉ nộp đúng buổi đã chọn, lưu nháp &amp; kết quả riêng từng buổi.
-            </p>
           </div>
 
           {/* 1C. Chọn Thư mục & Quét */}
@@ -4492,9 +4480,6 @@ export default function FinalProjectPage() {
                 <span>Quét &amp; Khớp HV</span>
               </button>
             </div>
-            <p className="mt-1.5 text-[11px] text-slate-400">
-              Khi quét lại cùng thư mục, ảnh bìa đã chụp và đường dẫn Drive / Web Live đã có sẽ được giữ nguyên để tái sử dụng.
-            </p>
           </div>
         </div>
 
@@ -4650,23 +4635,17 @@ export default function FinalProjectPage() {
       {/* BƯỚC 2: Chuẩn bị, xem lại bài & Công cụ tùy chọn thu gọn */}
       <div className="mindx-card-blue p-5 rounded-xl space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="mindx-badge-blue px-2.5 py-0.5 rounded-full text-xs font-bold">
-                Bước 2 / {totalStepsCount}
-              </span>
-              <h2 className="text-sm font-bold text-white">
-                Chuẩn Bị &amp; Xem Lại Bài ({rows.length} học viên)
-              </h2>
-              <span className="text-xs text-slate-400">
-                • Đủ điều kiện nộp:{" "}
-                <strong className="text-emerald-600 dark:text-emerald-400">{confirmedReadyStudentIds.length}</strong>/{rows.length}
-              </span>
-            </div>
-            <p className="text-xs text-slate-400">
-              Bảng gọn bên dưới hiển thị tình trạng đủ/thiếu và kết quả riêng từng buổi 12, 13, 14. Bấm{" "}
-              <strong className="text-slate-200">&ldquo;Chi tiết&rdquo;</strong> ở từng học viên khi cần sửa tiêu đề, đường dẫn hoặc nhận xét.
-            </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mindx-badge-blue px-2.5 py-0.5 rounded-full text-xs font-bold">
+              Bước 2 / {totalStepsCount}
+            </span>
+            <h2 className="text-sm font-bold text-white">
+              Chuẩn Bị &amp; Xem Lại Bài ({rows.length} học viên)
+            </h2>
+            <span className="text-xs text-slate-400">
+              • Đủ điều kiện nộp:{" "}
+              <strong className="text-emerald-600 dark:text-emerald-400">{confirmedReadyStudentIds.length}</strong>/{rows.length}
+            </span>
           </div>
 
           {/* Primary Preparation Actions & Collapsible Tool Toggles */}
@@ -5027,16 +5006,10 @@ export default function FinalProjectPage() {
         {/* Collapsible Panel B: Chuẩn bị Demo (Bảng chấm điểm Buổi 14 - cho phép tạo trước Buổi 14) */}
         {(showDemoPrepPanel || Boolean(generatedDemoSheetUrl)) && (
           <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-700/50 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-bold text-amber-300 uppercase">
-                Chuẩn bị Demo: Tạo Bảng Chấm Điểm Buổi 14 (Có thể chuẩn bị trước Buổi 14 bất kỳ lúc nào)
-              </span>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
               <div className="md:col-span-6">
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                  Link Google Sheet Bảng Chấm Điểm Mẫu (Để trống dùng mẫu chuẩn: &ldquo;{demoSheetTitle}&rdquo;)
+                  Link Google Sheet mẫu (Để trống dùng mẫu chuẩn)
                 </label>
                 <input
                   type="text"
@@ -5177,9 +5150,6 @@ export default function FinalProjectPage() {
                 >
                   Bỏ chọn
                 </button>
-              </div>
-              <div className="text-[11px] text-slate-400">
-                Sửa bản nháp chỉ đánh dấu <span className="text-teal-300">bản hiện tại đã đổi</span>, không xóa kết quả đã nộp của các buổi trước.
               </div>
             </div>
 
@@ -6019,19 +5989,13 @@ export default function FinalProjectPage() {
       {/* BƯỚC 3: Nộp các bài đã chọn & Xem kết quả đầy đủ */}
       <div className="mindx-card-emerald p-5 rounded-xl space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="mindx-badge-emerald px-2.5 py-0.5 rounded-full text-xs font-bold">
-                Bước 3 / {totalStepsCount}
-              </span>
-              <h2 className="text-sm font-bold text-white">
-                Nộp Các Bài Đã Chọn &amp; Đối Chiếu Kết Quả LMS
-              </h2>
-            </div>
-            <p className="text-xs text-slate-400">
-              Hệ thống sẽ kiểm tra nội dung đã duyệt, nộp đúng{" "}
-              <strong className="text-emerald-600 dark:text-emerald-400">Buổi {selectedSessionNumber}</strong> và đọc lại từ LMS để xác nhận lưu thật trước khi đánh dấu hoàn tất.
-            </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mindx-badge-emerald px-2.5 py-0.5 rounded-full text-xs font-bold">
+              Bước 3 / {totalStepsCount}
+            </span>
+            <h2 className="text-sm font-bold text-white">
+              Nộp Các Bài Đã Chọn &amp; Đối Chiếu Kết Quả LMS
+            </h2>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -6189,18 +6153,13 @@ export default function FinalProjectPage() {
       {selectedSessionNumber === 14 && selectedClassId && (
         <div className="mindx-card-purple p-5 rounded-xl space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2">
-                <span className="mindx-badge-blue px-2.5 py-0.5 rounded-full text-xs font-bold">
-                  Bước 4 / 4 — Riêng Buổi 14 (Tổng kết cuối khóa)
-                </span>
-                <h2 className="text-sm font-bold text-white">
-                  Đánh Giá Tổng Kết Cuối Khóa, Điểm Demo &amp; Thư Từ MindX (Cột 2 LMS: &quot;Nhận xét học sinh&quot;)
-                </h2>
-              </div>
-              <p className="text-xs text-slate-400">
-                Đọc tự động 5 tiêu chí Điểm Demo từ file chấm điểm BGK (.xlsx / Google Sheet), chọn 9 mục Điểm Năng lực [ĐNL], AI soạn Thư tổng kết 3 phần (Learned From Mindx / Suggestions From Mindx / Future Direction){isRoboticsClass ? " + Xếp hạng giải Robotics" : ""} và tự động đẩy lên LMS.
-              </p>
+            <div className="flex items-center space-x-2">
+              <span className="mindx-badge-blue px-2.5 py-0.5 rounded-full text-xs font-bold">
+                Bước 4 / 4 — Riêng Buổi 14 (Tổng kết cuối khóa)
+              </span>
+              <h2 className="text-sm font-bold text-white">
+                Đánh Giá Tổng Kết Cuối Khóa, Điểm Demo &amp; Thư Từ MindX (Cột 2 LMS: &quot;Nhận xét học sinh&quot;)
+              </h2>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">

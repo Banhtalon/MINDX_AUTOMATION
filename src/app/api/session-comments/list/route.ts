@@ -8,6 +8,7 @@ import {
   getRunningClasses,
   type RunningClassItem,
 } from "@/lib/db/json-config";
+import { detectTrackByClassCode, normalizeQuickTagsForTrack } from "@/lib/quick-tags";
 
 function isSession14Category(cat: { category?: string; categoryName?: string; track?: string } | null | undefined): boolean {
   if (!cat) return false;
@@ -87,6 +88,62 @@ export async function GET(req: Request) {
     const allStudents = classId ? studentRepo.findByClass(classId, !includeInactive) : [];
     const feedbacks = classId && sessionId ? sessionFeedbackRepo.findBySession(classId, sessionId) : [];
 
+    const previousQuickTagsByStudent: Record<
+      string,
+      { tags: string[]; fromSessionNumber?: number }
+    > = {};
+    if (classId && sessionId) {
+      try {
+        const db = typeof getDb === "function" ? getDb() : null;
+        if (typeof (db as any)?.prepare === "function") {
+          const track = detectTrackByClassCode(classId);
+          const curSessNum = Number(String(sessionId).match(/(\d+)$/)?.[1] || 0);
+          const prevRows = (db as any)
+            .prepare(
+              `SELECT sf.studentId, sf.sessionId, sf.quickTagsJson, COALESCE(cs.sessionNumber, 0) as sessionNumber
+               FROM session_feedbacks sf
+               LEFT JOIN classes_sessions cs ON cs.classId = sf.classId AND cs.sessionId = sf.sessionId
+               WHERE sf.classId = ?
+                 AND sf.sessionId != ?
+                 AND sf.quickTagsJson IS NOT NULL
+                 AND TRIM(sf.quickTagsJson) != ''
+                 AND TRIM(sf.quickTagsJson) != '[]'
+               ORDER BY
+                 CASE WHEN ? > 0 AND COALESCE(cs.sessionNumber, 0) > 0 AND COALESCE(cs.sessionNumber, 0) < ? THEN 0 ELSE 1 END ASC,
+                 COALESCE(cs.sessionNumber, 0) DESC,
+                 sf.updatedAt DESC,
+                 sf.id DESC`
+            )
+            .all(classId, sessionId, curSessNum, curSessNum) as Array<{
+            studentId: string;
+            sessionId: string;
+            quickTagsJson: string;
+            sessionNumber: number;
+          }>;
+
+          for (const row of prevRows) {
+            if (!row?.studentId || previousQuickTagsByStudent[row.studentId]) continue;
+            try {
+              const parsed = JSON.parse(row.quickTagsJson);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                const normalized = normalizeQuickTagsForTrack(parsed, track);
+                if (normalized.length > 0) {
+                  const inferredNum =
+                    row.sessionNumber > 0
+                      ? row.sessionNumber
+                      : Number(String(row.sessionId || "").match(/(\d+)$/)?.[1] || 0) || undefined;
+                  previousQuickTagsByStudent[row.studentId] = {
+                    tags: normalized,
+                    fromSessionNumber: inferredNum,
+                  };
+                }
+              }
+            } catch {}
+          }
+        }
+      } catch {}
+    }
+
     const rawCategories = typeof getQuickTags === "function" ? getQuickTags() || [] : [];
     const quickCategories = rawCategories.filter((c) => !isSession14Category(c));
     const quickTags = quickCategories.flatMap((c) =>
@@ -109,6 +166,7 @@ export async function GET(req: Request) {
         sessions: allSessions,
         students: allStudents,
         feedbacks,
+        previousQuickTagsByStudent,
         quickTags,
         syllabusList,
         zaloTemplates,

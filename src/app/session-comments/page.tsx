@@ -30,6 +30,7 @@ interface StudentItem {
   isActive: boolean;
   attendanceStatus?: "PRESENT" | "ABSENT" | "LATE" | "UNKNOWN";
   quickTags?: string[];
+  inheritedFromSession?: number;
   teacherNote?: string;
   strengths?: string;
   improvements?: string;
@@ -327,7 +328,9 @@ export default function SessionCommentsPage() {
     rawSetStudents(next);
   };
   const [quickTags, setQuickTags] = useState<QuickTagItem[]>([]);
-  const [quickTagTrack, setQuickTagTrack] = useState<"coding" | "robotics">("coding");
+  const [quickTagTrack, setQuickTagTrack] = useState<"coding" | "robotics">(() =>
+    detectTrackByClassCode(initialSavedClass)
+  );
   const [syllabusList, setSyllabusList] = useState<SyllabusCourse[]>([]);
 
   // Selected topic details
@@ -406,13 +409,15 @@ export default function SessionCommentsPage() {
       classChanged || activeSessionIdRef.current !== normSess;
     activeClassIdRef.current = normClass;
     activeSessionIdRef.current = normSess;
-    if (classChanged && normClass) {
+    if (normClass) {
       setQuickTagTrack(detectTrackByClassCode(normClass));
-      try {
-        if (typeof window !== "undefined" && window.localStorage) {
-          window.localStorage.setItem("mindx_last_class_code", normClass);
-        }
-      } catch {}
+      if (classChanged) {
+        try {
+          if (typeof window !== "undefined" && window.localStorage) {
+            window.localStorage.setItem("mindx_last_class_code", normClass);
+          }
+        } catch {}
+      }
     }
     setIsZaloManuallyEdited(false);
     if (scopeChanged) {
@@ -534,6 +539,10 @@ export default function SessionCommentsPage() {
           );
           const feedbacks = json.data.feedbacks || [];
           const feedbackMap = new Map<string, any>(feedbacks.map((f: any) => [f.studentId, f]));
+          const previousQuickTagsMap: Record<
+            string,
+            { tags: string[]; fromSessionNumber?: number }
+          > = json.data.previousQuickTagsByStudent || {};
 
           const nextServerMeta: Record<
             string,
@@ -542,9 +551,11 @@ export default function SessionCommentsPage() {
 
           const merged: StudentItem[] = activeRawStudents.map((st: any) => {
             const fb = feedbackMap.get(st.studentId);
+            let hasExplicitQuickTagEdit = false;
             if (fb?.versionMetaJson) {
               try {
                 const parsed = JSON.parse(fb.versionMetaJson);
+                hasExplicitQuickTagEdit = Boolean(parsed?.fields?.quickTags);
                 nextServerMeta[st.studentId] = {
                   rowVer:
                     typeof parsed?.rowVer === "number" && Number.isFinite(parsed.rowVer)
@@ -567,6 +578,21 @@ export default function SessionCommentsPage() {
                 tags = JSON.parse(fb.quickTagsJson);
               } catch {}
             }
+            let inheritedFromSession: number | undefined = undefined;
+            const prevEntry = previousQuickTagsMap[st.studentId];
+            if (
+              tags.length === 0 &&
+              !hasExplicitQuickTagEdit &&
+              (!fb ||
+                (!fb.finalText &&
+                  !fb.teacherNote &&
+                  (!fb.status || fb.status === "DRAFT"))) &&
+              Array.isArray(prevEntry?.tags) &&
+              prevEntry.tags.length > 0
+            ) {
+              tags = [...prevEntry.tags];
+              inheritedFromSession = prevEntry.fromSessionNumber;
+            }
             return {
               ...st,
               classId: effectiveClassId,
@@ -574,6 +600,7 @@ export default function SessionCommentsPage() {
               isActive: true,
               attendanceStatus: fb?.attendanceStatus || "UNKNOWN",
               quickTags: tags,
+              inheritedFromSession,
               teacherNote: fb?.teacherNote || "",
               strengths: fb?.strengths || "",
               improvements: fb?.improvements || "",
@@ -1049,6 +1076,7 @@ ${homeworkDetails}
         return {
           ...s,
           quickTags: newTags,
+          inheritedFromSession: undefined,
           status: demotedStatus,
           contentHash: demotedStatus !== s.status ? undefined : s.contentHash,
         };
@@ -1126,7 +1154,13 @@ ${homeworkDetails}
     );
     saveDraftToServer(
       studentId,
-      { attendanceStatus: nextAttStatus, status: nextDraftStatus },
+      {
+        attendanceStatus: nextAttStatus,
+        status: nextDraftStatus,
+        ...(target?.inheritedFromSession && target?.quickTags?.length
+          ? { quickTags: target.quickTags }
+          : {}),
+      },
       preEditSnapshot
     );
   };
@@ -1494,14 +1528,24 @@ ${homeworkDetails}
             (!item.classId || item.classId.trim().toUpperCase() === reqClassId) &&
             (!item.sessionId || item.sessionId.trim() === reqSessionId)
         ) || s;
+      const hasExistingOrInheritedTags = Boolean(
+        curStu.quickTags && curStu.quickTags.length > 0
+      );
       const shouldAddDefaultTag = Boolean(
-        assignDefaultGoodTag && (!curStu.quickTags || curStu.quickTags.length === 0)
+        assignDefaultGoodTag && !hasExistingOrInheritedTags
+      );
+      const shouldPersistInheritedTags = Boolean(
+        hasExistingOrInheritedTags && curStu.inheritedFromSession
       );
       const expectedVersion = editSequenceRef.current + 1;
       const ok = await saveDraftToServer(s.studentId, {
         attendanceStatus: "PRESENT",
         status: "DRAFT",
-        ...(shouldAddDefaultTag ? { quickTags: [defaultGoodLabel] } : {}),
+        ...(shouldAddDefaultTag
+          ? { quickTags: [defaultGoodLabel] }
+          : shouldPersistInheritedTags
+          ? { quickTags: curStu.quickTags }
+          : {}),
       });
       if (ok) {
         successCount++;
@@ -2226,27 +2270,6 @@ ${homeworkDetails}
               {students.filter((s) => s.status === "APPROVED" || s.status === "VERIFIED").length}
             </strong>
           </span>
-
-          {/* Auto-detected Track Badge + 1-click switch button (3.1) */}
-          <div className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1">
-            <span
-              className={`text-xs font-semibold ${
-                quickTagTrack === "robotics" ? "text-orange-600 dark:text-orange-300" : "text-sky-700 dark:text-cyan-300"
-              }`}
-            >
-              {quickTagTrack === "robotics" ? "🤖 Thẻ Robotics (6)" : "💻 Thẻ Lập trình (7)"}
-            </span>
-            <button
-              type="button"
-              onClick={() =>
-                setQuickTagTrack((prev) => (prev === "coding" ? "robotics" : "coding"))
-              }
-              className="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-[11px] text-white transition cursor-pointer mindx-dark-btn"
-              title="Đổi sang bộ thẻ của môn kia nếu cần"
-            >
-              ⇄ Đổi bộ thẻ
-            </button>
-          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -2255,10 +2278,10 @@ ${homeworkDetails}
             onClick={() => handleConfirmAllPresent(true)}
             disabled={students.length === 0}
             className="mindx-dark-btn flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition shadow-sm cursor-pointer"
-            title="Điểm danh cả lớp Có mặt + tự gắn thẻ Tiếp thu tốt mặc định cho các bạn chưa chọn thẻ"
+            title="Điểm danh cả lớp Có mặt (giữ nguyên thẻ đã nhớ từ buổi trước, hoặc gắn thẻ Tiếp thu tốt cho bạn chưa có thẻ)"
           >
             <UserCheck className="w-4 h-4 text-emerald-400" />
-            ⚡ Bắt đầu nhanh (Có mặt + Tiếp thu tốt)
+            ⚡ Điểm danh cả lớp Có mặt
           </button>
 
           <button
@@ -2391,25 +2414,6 @@ ${homeworkDetails}
                               visibleTags.push(t);
                             }
                           }
-                          // Ensure any already-selected non-Session14 tag on this student remains visible
-                          for (const selLabel of student.quickTags || []) {
-                            if (
-                              !seenLabels.has(selLabel) &&
-                              !/^s14_|slide thuyết trình|phụ thuộc.*vào ai|bố cục.*flexbox|thuyết trình còn nhỏ|sản phẩm chạy mượt/i.test(
-                                selLabel
-                              )
-                            ) {
-                              const found = quickTags.find((q) => q.label === selLabel);
-                              seenLabels.add(selLabel);
-                              visibleTags.push(
-                                found || {
-                                  id: `sel_${selLabel}`,
-                                  label: selLabel,
-                                  sentiment: "neutral",
-                                }
-                              );
-                            }
-                          }
 
                           return (
                             <div className="flex flex-wrap gap-1.5">
@@ -2491,12 +2495,22 @@ ${homeworkDetails}
                           return (
                             <>
                               <div className="flex flex-wrap items-center justify-between gap-1.5">
-                                <span
-                                  className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${levelInfo.badgeClass}`}
-                                  title="Tự động phân loại vào 1 trong 5 cấp độ chuẩn dựa trên Quick Tags đã tích chọn"
-                                >
-                                  🎯 {levelInfo.label}
-                                </span>
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span
+                                    className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${levelInfo.badgeClass}`}
+                                    title="Tự động phân loại vào 1 trong 5 cấp độ chuẩn dựa trên Quick Tags đã tích chọn"
+                                  >
+                                    🎯 {levelInfo.label}
+                                  </span>
+                                  {student.inheritedFromSession && (
+                                    <span
+                                      className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30"
+                                      title={`Đã tự động nhớ bộ thẻ từ Buổi ${student.inheritedFromSession}. Thầy chỉ cần bấm đổi thẻ nếu buổi hôm nay bạn học khác đi.`}
+                                    >
+                                      ↺ Nhớ từ Buổi {student.inheritedFromSession}
+                                    </span>
+                                  )}
+                                </div>
                                 {student.errorMessage && student.status !== "INSUFFICIENT_INFO" && (
                                   <span className="text-[11px] text-amber-300 font-medium">
                                     ⚠️ {student.errorMessage}

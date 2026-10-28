@@ -338,3 +338,86 @@ export function classifyStudentSkillLevel(
     badgeClass: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40",
   };
 }
+
+const CODING_VALID_LABELS = new Set<string>([
+  "✅ Tiếp thu tốt",
+  "📝 Làm bài tập đầy đủ",
+  "🙋 Hăng hái phát biểu",
+  "💡 Vận dụng & Sáng tạo tốt",
+  "🐢 Tiếp thu chậm",
+  "👀 Mất tập trung",
+  "⌨️ Thao tác / Cú pháp còn chậm",
+]);
+
+const ROBOTICS_VALID_LABELS = new Set<string>([
+  "🤖 Lắp ráp & Lập trình tốt",
+  "🙋 Hăng hái phát biểu",
+  "🤝 Phối hợp nhóm & Giữ Kit tốt",
+  "👀 Mất tập trung",
+  "🔩 Lắp ráp còn chậm / Nhầm chốt",
+  "🔌 Lập trình / Đấu mạch còn lúng túng",
+]);
+
+export function normalizeQuickTagsForTrack(
+  rawTags: string[] | undefined | null,
+  track: "coding" | "robotics"
+): string[] {
+  if (!Array.isArray(rawTags) || rawTags.length === 0) return [];
+  const validSet = track === "robotics" ? ROBOTICS_VALID_LABELS : CODING_VALID_LABELS;
+  const result: string[] = [];
+  const addUnique = (label: string) => {
+    if (label && !result.includes(label)) {
+      result.push(label);
+    }
+  };
+
+  for (const raw of rawTags) {
+    const trimmed = String(raw || "").trim();
+    if (!trimmed) continue;
+    if (validSet.has(trimmed)) {
+      addUnique(trimmed);
+      continue;
+    }
+    const lower = trimmed.toLowerCase();
+    if (
+      /^s14_|slide thuyết trình|phụ thuộc.*vào ai|bố cục.*flexbox|thuyết trình còn nhỏ|sản phẩm chạy mượt/i.test(
+        lower
+      )
+    ) {
+      continue;
+    }
+    if (/xuất sắc|sáng tạo|vận dụng tốt|🌟|💡/i.test(lower)) {
+      addUnique(
+        track === "robotics" ? "🤖 Lắp ráp & Lập trình tốt" : "💡 Vận dụng & Sáng tạo tốt"
+      );
+    } else if (/hăng hái|phát biểu|🙋/i.test(lower)) {
+      addUnique("🙋 Hăng hái phát biểu");
+    } else if (/làm bài tập đầy đủ|📝/i.test(lower)) {
+      addUnique(
+        track === "robotics" ? "🤖 Lắp ráp & Lập trình tốt" : "📝 Làm bài tập đầy đủ"
+      );
+    } else if (/phối hợp nhóm|giữ kit|🤝/i.test(lower)) {
+      addUnique(
+        track === "robotics" ? "🤝 Phối hợp nhóm & Giữ Kit tốt" : "✅ Tiếp thu tốt"
+      );
+    } else if (/mất tập trung|xao nhãng|nói chuyện|làm việc riêng|👀/i.test(lower)) {
+      addUnique("👀 Mất tập trung");
+    } else if (/tiếp thu chậm|nhầm chốt|lắp ráp còn chậm|cần kèm thêm|🐢|🔩|🛠️/i.test(lower)) {
+      addUnique(
+        track === "robotics" ? "🔩 Lắp ráp còn chậm / Nhầm chốt" : "🐢 Tiếp thu chậm"
+      );
+    } else if (/thao tác.*chậm|cú pháp.*chậm|đấu mạch|lúng túng|⌨️|🔌/i.test(lower)) {
+      addUnique(
+        track === "robotics"
+          ? "🔌 Lập trình / Đấu mạch còn lúng túng"
+          : "⌨️ Thao tác / Cú pháp còn chậm"
+      );
+    } else if (/đạt yêu cầu|tiếp thu tốt|lắp ráp.*tốt|tập trung tốt|chăm chỉ|👍|✅|🤖/i.test(lower)) {
+      addUnique(
+        track === "robotics" ? "🤖 Lắp ráp & Lập trình tốt" : "✅ Tiếp thu tốt"
+      );
+    }
+  }
+
+  return result;
+}
