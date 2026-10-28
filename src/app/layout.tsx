@@ -22,12 +22,12 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="mindx-body min-h-screen flex flex-col pb-12 transition-colors duration-200">
+      <body className="mindx-body min-h-screen flex flex-col transition-colors duration-200">
         {/* Top Navbar */}
         <TopNavbar />
 
         {/* Main Content Area */}
-        <main className="mindx-main flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 mb-4">
+        <main className="mindx-main flex-1 flex flex-col max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
           {children}
         </main>
 
@@ -35,7 +35,7 @@ export default function RootLayout({
         <LiveLogDrawer />
 
         {/* Footer */}
-        <footer className="mindx-footer py-3 text-center text-xs mb-6">
+        <footer className="mindx-footer py-3 text-center text-xs">
           MindX Automation Bot • Local-Only Application • SQLite & Playwright Engine
         </footer>
       </body>
