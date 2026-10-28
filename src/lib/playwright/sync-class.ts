@@ -29,39 +29,50 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
  */
 export function parseClassDateToEndOfDayMs(rawDate?: string | null): number | null {
   const text = String(rawDate || "").trim();
-  if (!text) return null;
+  if (!text || text === "0000-00-00") return null;
 
-  const dmy = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if (dmy && dmy[1].length <= 2 && dmy[3].length !== 1) {
-    const first = parseInt(dmy[1], 10);
-    const second = parseInt(dmy[2], 10);
-    const thirdRaw = dmy[3];
-    // Distinguish YYYY-MM-DD from DD/MM/YYYY
-    if (dmy[1].length === 4 || first > 31) {
-      const year = first;
-      const month = second;
-      const day = parseInt(thirdRaw, 10);
-      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-        return new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
-      }
-    } else {
-      const day = first;
-      const month = second;
-      const year = thirdRaw.length === 2 ? 2000 + parseInt(thirdRaw, 10) : parseInt(thirdRaw, 10);
-      if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 2020) {
-        return new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
-      }
+  const buildValidatedEndOfDayMs = (year: number, month: number, day: number): number | null => {
+    if (
+      !Number.isInteger(year) ||
+      !Number.isInteger(month) ||
+      !Number.isInteger(day) ||
+      year < 2020 ||
+      year > 2100 ||
+      month < 1 ||
+      month > 12 ||
+      day < 1 ||
+      day > 31
+    ) {
+      return null;
     }
-  }
+    const dt = new Date(year, month - 1, day, 23, 59, 59, 999);
+    if (
+      dt.getFullYear() !== year ||
+      dt.getMonth() !== month - 1 ||
+      dt.getDate() !== day
+    ) {
+      return null;
+    }
+    return dt.getTime();
+  };
 
-  const ymd = text.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  // 1. Check anchored/word-bounded YYYY-MM-DD or YYYY/MM/DD first so 4-digit year prefix is never misread as 2-digit day
+  const ymd = text.match(/(?:^|\b)(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:\b|$)/);
   if (ymd) {
     const year = parseInt(ymd[1], 10);
     const month = parseInt(ymd[2], 10);
     const day = parseInt(ymd[3], 10);
-    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-      return new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
-    }
+    return buildValidatedEndOfDayMs(year, month, day);
+  }
+
+  // 2. Check anchored/word-bounded DD/MM/YYYY, DD-MM-YYYY, or DD/MM/YY
+  const dmy = text.match(/(?:^|\b)(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2}|\d{4})(?:\b|$)/);
+  if (dmy) {
+    const day = parseInt(dmy[1], 10);
+    const month = parseInt(dmy[2], 10);
+    const yearRaw = dmy[3];
+    const year = yearRaw.length === 2 ? 2000 + parseInt(yearRaw, 10) : parseInt(yearRaw, 10);
+    return buildValidatedEndOfDayMs(year, month, day);
   }
 
   return null;
@@ -73,6 +84,112 @@ function formatMsToDdMmYyyy(ms: number): string {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const year = String(d.getFullYear());
   return `${day}/${month}/${year}`;
+}
+
+/**
+ * Verifies that a network request is specifically a MindX LMS class-list / class-search request
+ * for the exact `targetClassCode` (never a prefix match like `SYNTH-LMS-F11-OTHER` and never an
+ * unrelated operation like `GetStudents` or `GetComments`).
+ */
+export function isLmsClassSearchRequestForCode(
+  resUrl: string,
+  method: string,
+  postData: string,
+  targetClassCode: string
+): boolean {
+  if (String(method || "").toUpperCase() === "OPTIONS") return false;
+  const target = String(targetClassCode || "").trim().toUpperCase();
+  if (!target) return false;
+
+  const urlStr = String(resUrl || "");
+  const isLmsEndpoint =
+    urlStr.includes("lms-api.mindx.edu.vn") ||
+    urlStr.includes("graphql") ||
+    urlStr.includes("/classes");
+  if (!isLmsEndpoint) return false;
+
+  const bodyStr = String(postData || "").trim();
+  if (bodyStr) {
+    // Reject non-class operations (e.g., GetStudents, GetComments, GetAttendance, GetSlots)
+    try {
+      const parsed = JSON.parse(bodyStr);
+      const opText = `${parsed?.operationName || ""} ${parsed?.query || ""}`;
+      if (
+        /\b(getstudents|students|getcomments|comments|getslots|slots|attendance|submissions|homework)\b/i.test(
+          opText
+        ) &&
+        !/\b(getclasses|searchclasses|findclasses|classlist)\b/i.test(opText)
+      ) {
+        return false;
+      }
+      if (!/\b(getclasses|searchclasses|findclasses|classes|classlist)\b/i.test(opText)) {
+        return false;
+      }
+    } catch {
+      if (
+        /\b(getstudents|getcomments|getslots|attendance|submissions)\b/i.test(bodyStr) ||
+        !/\b(getclasses|searchclasses|findclasses|classes|classlist)\b/i.test(bodyStr)
+      ) {
+        return false;
+      }
+    }
+  } else {
+    // GET request must target a /classes endpoint, not /students or /comments
+    if (!/\/classes\b/i.test(urlStr) || /\/(students|comments|slots|attendance)\b/i.test(urlStr)) {
+      return false;
+    }
+  }
+
+  const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const exactCodeRegex = new RegExp(`(?<![A-Z0-9_-])${escapedTarget}(?![A-Z0-9_-])`, "i");
+  return exactCodeRegex.test(`${urlStr} ${bodyStr}`);
+}
+
+export function doesLmsClassSearchPayloadMatchCode(
+  payload: unknown,
+  targetClassCode: string
+): boolean {
+  const target = String(targetClassCode || "").trim().toUpperCase();
+  if (!target || !payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return false;
+  }
+
+  const obj = payload as Record<string, any>;
+  if (obj.success === false) {
+    return false;
+  }
+  if (Array.isArray(obj.errors) && obj.errors.length > 0) {
+    return false;
+  }
+
+  const candidates =
+    obj?.data?.classes?.data ??
+    obj?.data?.classes?.items ??
+    obj?.data?.classes?.docs ??
+    obj?.data?.classes ??
+    obj?.data?.searchClasses?.data ??
+    obj?.data?.searchClasses?.items ??
+    obj?.data?.searchClasses ??
+    obj?.data?.findClasses?.data ??
+    obj?.data?.findClasses?.items ??
+    obj?.data?.findClasses ??
+    obj?.classes?.data ??
+    obj?.classes?.items ??
+    obj?.classes?.docs ??
+    obj?.classes ??
+    (Array.isArray(obj?.data) ? obj.data : null);
+
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    return false;
+  }
+
+  return candidates.some((item: any) => {
+    if (!item || typeof item !== "object") return false;
+    const codes = [item.code, item.classCode, item.class_code, item.name]
+      .filter((v) => typeof v === "string")
+      .map((v: string) => v.trim().toUpperCase());
+    return codes.includes(target);
+  });
 }
 
 /**
@@ -189,6 +306,147 @@ export function isFinishedClassWithinGraceWindow(
     isKnownDate: true,
     session14Date: info.session14Date,
     daysSinceSession14,
+  };
+}
+
+function formatMsToIsoYmd(ms: number): string {
+  const d = new Date(ms);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = String(d.getFullYear());
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Resolves both Start Date (Buổi 1 / cột Bắt đầu) and End Date (Buổi 14 / cột Kết thúc)
+ * for a class from `running_classes.json` or SQLite `classes_sessions`.
+ */
+export function resolveClassDateRangeInfo(
+  classCode: string,
+  hints?: { startDateHint?: string | null; endDateHint?: string | null }
+): {
+  startDateIso: string;
+  endDateIso: string;
+  startDateDmy: string;
+  endDateDmy: string;
+  courseName: string;
+  source: "LMS_CACHE" | "SQLITE_EXACT" | "SQLITE_ESTIMATED" | "NONE";
+} {
+  const normalizedCode = String(classCode || "").trim().toUpperCase();
+  let startMs: number | null = parseClassDateToEndOfDayMs(hints?.startDateHint);
+  let endMs: number | null = parseClassDateToEndOfDayMs(hints?.endDateHint);
+  let courseName = "";
+  let source: "LMS_CACHE" | "SQLITE_EXACT" | "SQLITE_ESTIMATED" | "NONE" =
+    startMs !== null && endMs !== null ? "LMS_CACHE" : "NONE";
+
+  if (normalizedCode) {
+    try {
+      const running = getRunningClasses();
+      const matchedClass = running.find(
+        (c) => String(c.classCode || "").trim().toUpperCase() === normalizedCode
+      );
+      if (matchedClass) {
+        if (matchedClass.courseName) courseName = matchedClass.courseName;
+        if (startMs === null && matchedClass.startDate) {
+          startMs = parseClassDateToEndOfDayMs(matchedClass.startDate);
+        }
+        if (endMs === null && matchedClass.endDate) {
+          endMs = parseClassDateToEndOfDayMs(matchedClass.endDate);
+        }
+        if (startMs !== null && endMs !== null && source === "NONE") {
+          source = "LMS_CACHE";
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      const db = getDb();
+      if (typeof (db as any)?.prepare === "function") {
+        const rows = (db as any)
+          .prepare(
+            `SELECT sessionNumber, date, className FROM classes_sessions
+             WHERE classId = ? AND TRIM(COALESCE(date, '')) <> ''
+             ORDER BY sessionNumber DESC`
+          )
+          .all(normalizedCode) as Array<{
+          sessionNumber: number;
+          date: string;
+          className?: string;
+        }>;
+
+        if (
+          !courseName &&
+          rows.length > 0 &&
+          rows[0].className &&
+          rows[0].className !== normalizedCode
+        ) {
+          courseName = rows[0].className;
+        }
+
+        const s1 = rows.find((r) => Number(r.sessionNumber) === 1);
+        const s14 = rows.find((r) => Number(r.sessionNumber) === 14);
+
+        if (startMs === null && s1) {
+          const ms = parseClassDateToEndOfDayMs(s1.date);
+          if (ms !== null) {
+            const laterRow = rows.find((r) => Number(r.sessionNumber) > 1);
+            const laterMs = laterRow ? parseClassDateToEndOfDayMs(laterRow.date) : null;
+            if (laterMs === null || ms <= laterMs) {
+              startMs = ms;
+            }
+          }
+        }
+
+        if (endMs === null && s14) {
+          const ms = parseClassDateToEndOfDayMs(s14.date);
+          if (ms !== null) {
+            endMs = ms;
+          }
+        }
+
+        if (startMs !== null && endMs !== null && source === "NONE") {
+          source = "SQLITE_EXACT";
+        }
+
+        if ((startMs === null || endMs === null) && rows.length > 0) {
+          const anchor = rows[0];
+          const anchorMs = parseClassDateToEndOfDayMs(anchor.date);
+          const sessNum = Number(anchor.sessionNumber) || 0;
+          if (anchorMs !== null && sessNum >= 1 && sessNum <= 14) {
+            if (startMs === null) {
+              startMs = anchorMs - (sessNum - 1) * 7 * ONE_DAY_MS;
+            }
+            if (endMs === null) {
+              endMs = anchorMs + (14 - sessNum) * 7 * ONE_DAY_MS;
+            }
+            if (source === "NONE") {
+              source = "SQLITE_ESTIMATED";
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (startMs === null && endMs !== null) {
+    startMs = endMs - 13 * 7 * ONE_DAY_MS;
+    if (source === "NONE") source = "SQLITE_ESTIMATED";
+  } else if (endMs === null && startMs !== null) {
+    endMs = startMs + 13 * 7 * ONE_DAY_MS;
+    if (source === "NONE") source = "SQLITE_ESTIMATED";
+  }
+
+  return {
+    startDateIso: startMs !== null ? formatMsToIsoYmd(startMs) : "",
+    endDateIso: endMs !== null ? formatMsToIsoYmd(endMs) : "",
+    startDateDmy: startMs !== null ? formatMsToDdMmYyyy(startMs) : "",
+    endDateDmy: endMs !== null ? formatMsToDdMmYyyy(endMs) : "",
+    courseName,
+    source,
   };
 }
 
@@ -850,6 +1108,7 @@ export class ClassSyncer {
             courseName: string;
             center: string;
             status: "Running" | "Finished";
+            rowStartDate: string;
             rowEndDate: string;
           }> = [];
           const trs = Array.from(document.querySelectorAll("table tbody tr"));
@@ -884,7 +1143,7 @@ export class ClassSyncer {
             const courseName = (tds[2] || "").trim();
             const center = (tds[3] || "").trim();
 
-            // Extract any date strings in the row cells (e.g., Start date / End date columns if present)
+            // Extract any date strings in the row cells (Start date / End date columns)
             const dateMatches: string[] = [];
             for (const cell of tds) {
               const matches =
@@ -894,6 +1153,7 @@ export class ClassSyncer {
                 dateMatches.push(m);
               }
             }
+            const rowStartDate = dateMatches.length >= 2 ? dateMatches[0] : "";
             const rowEndDate = dateMatches.length > 0 ? dateMatches[dateMatches.length - 1] : "";
 
             results.push({
@@ -901,6 +1161,7 @@ export class ClassSyncer {
               courseName,
               center,
               status: hasRunning ? "Running" : "Finished",
+              rowStartDate,
               rowEndDate,
             });
           }
@@ -914,12 +1175,19 @@ export class ClassSyncer {
         for (const item of pageRows) {
           if (collectedMap.has(item.classCode)) continue;
 
+          const startMs = parseClassDateToEndOfDayMs(item.rowStartDate);
+          const endMs = parseClassDateToEndOfDayMs(item.rowEndDate);
+          const startDateFormatted = startMs !== null ? formatMsToDdMmYyyy(startMs) : undefined;
+          const endDateFormatted = endMs !== null ? formatMsToDdMmYyyy(endMs) : undefined;
+
           if (item.status === "Running") {
             collectedMap.set(item.classCode, {
               classCode: item.classCode,
               courseName: item.courseName,
               center: item.center,
               status: "Running",
+              ...(startDateFormatted ? { startDate: startDateFormatted } : {}),
+              ...(endDateFormatted ? { endDate: endDateFormatted } : {}),
               updatedAt: nowIso,
             });
             foundActiveOrRecentOnThisPage++;
@@ -940,6 +1208,7 @@ export class ClassSyncer {
                 courseName: item.courseName,
                 center: item.center,
                 status: "Finished",
+                ...(startDateFormatted ? { startDate: startDateFormatted } : {}),
                 endDate: graceCheck.session14Date,
                 updatedAt: nowIso,
               });
@@ -972,6 +1241,8 @@ export class ClassSyncer {
               courseName: item.courseName,
               center: item.center,
               status: "Finished",
+              ...(startDateFormatted ? { startDate: startDateFormatted } : {}),
+              ...(endDateFormatted ? { endDate: endDateFormatted } : {}),
               updatedAt: nowIso,
             });
             foundActiveOrRecentOnThisPage++;
@@ -1070,6 +1341,295 @@ export class ClassSyncer {
       return {
         success: false,
         classes: getRunningClasses(),
+        error: errMsg,
+      };
+    }
+  }
+
+  /**
+   * Scrapes the exact Start Date ("Bắt đầu") and End Date ("Kết thúc") columns
+   * for a specific classCode directly from the MindX LMS `/admin/classes` table (Ảnh 3).
+   */
+  public static async fetchClassDatesFromLms(
+    rawClassCode: string,
+    options?: { testPage?: Page; skipAuth?: boolean; searchTimeoutMs?: number }
+  ): Promise<{
+    success: boolean;
+    classCode: string;
+    courseName: string;
+    startDateIso: string;
+    endDateIso: string;
+    startDateDmy: string;
+    endDateDmy: string;
+    source: "LMS_LIVE" | "NONE";
+    error?: string;
+  }> {
+    const classCode = String(rawClassCode || "").trim().toUpperCase();
+    const jobId = `fetch_lms_dates_${classCode}_${Date.now()}`;
+    jobLogRepo.add({
+      jobId,
+      jobType: "SYNC_CLASS",
+      classId: classCode,
+      level: "INFO",
+      message: `Đang lấy Ngày bắt đầu & Ngày kết thúc của lớp ${classCode} từ bảng Lớp học LMS...`,
+    });
+
+    const page =
+      options?.testPage ??
+      (await (async () => {
+        const browserManager = BrowserManager.getInstance();
+        return typeof browserManager.getPage === "function"
+          ? await browserManager.getPage()
+          : (await browserManager.getContext()).pages()[0] ||
+              (await (await browserManager.getContext()).newPage());
+      })());
+    const interceptor = createNetworkInterceptor(page);
+
+    try {
+      if (!options?.skipAuth && !options?.testPage) {
+        await authService.ensureAuthenticated("LMS");
+      }
+
+      // Close any open class drawer first so the classes table is accessible
+      const existingDrawer = page
+        .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
+        .first();
+      if (await existingDrawer.isVisible().catch(() => false)) {
+        await page.keyboard.press("Escape").catch(() => {});
+        const closeBtn = page.locator(SELECTORS.classes.closeDrawerButton).first();
+        if (await closeBtn.isVisible().catch(() => false)) {
+          await closeBtn.click().catch(() => {});
+        }
+        await page.waitForTimeout(500);
+      }
+
+      const url = page.url();
+      const { hostname, pathname } = parseUrlParts(url);
+      if (
+        !options?.testPage &&
+        (!hostname ||
+          isLoginHostOrPath(url, "lms.mindx.edu.vn") ||
+          pathname.includes("/dashboard") ||
+          (!pathname.includes("/class") && !pathname.includes("/classes")))
+      ) {
+        const baseLmsUrl = config.lmsUrl
+          .replace(/\/+$/, "")
+          .replace(/\/(admin\/)?(classes|class|dashboard)$/i, "");
+        const navResponsePromise = page
+          .waitForResponse(
+            (res) =>
+              (res.url().includes("lms-api.mindx.edu.vn") ||
+                res.url().includes("graphql") ||
+                res.url().includes("/classes")) &&
+              res.request().method() !== "OPTIONS",
+            { timeout: 12000 }
+          )
+          .catch(() => null);
+        await page
+          .goto(`${baseLmsUrl}/admin/classes`, {
+            waitUntil: "domcontentloaded",
+            timeout: 25000,
+          })
+          .catch(() => {});
+        const navApiRes = await navResponsePromise;
+        if (!navApiRes) {
+          throw new Error("Hết thời gian chờ phản hồi API bảng Lớp học trên LMS.");
+        }
+        if (navApiRes.status() < 200 || navApiRes.status() >= 300) {
+          throw new Error(
+            `API bảng Lớp học LMS trả về lỗi HTTP ${navApiRes.status()}.`
+          );
+        }
+      }
+
+      await interceptor.dismissForbiddenToast();
+
+      // F11 Guard: Search for classCode in the search input on /admin/classes and strictly verify the class-search API response
+      const searchInput = page.locator(SELECTORS.classes.searchInput).first();
+      const isSearchVisible = await searchInput.isVisible().catch(() => false);
+      if (!isSearchVisible) {
+        throw new Error(
+          "Không tìm thấy ô tìm kiếm lớp học trên trang /admin/classes của LMS."
+        );
+      }
+
+      const searchApiPromise = page
+        .waitForResponse(
+          (res) =>
+            isLmsClassSearchRequestForCode(
+              res.url(),
+              res.request().method(),
+              String(res.request().postData() || ""),
+              classCode
+            ),
+          { timeout: options?.searchTimeoutMs ?? 10000 }
+        )
+        .catch(() => null);
+
+      await searchInput.click({ force: true }).catch(() => {});
+      await searchInput.fill("");
+      await searchInput.fill(classCode);
+      await searchInput.press("Enter").catch(() => {});
+      await page.keyboard.press("Enter").catch(() => {});
+
+      const searchApiRes = await searchApiPromise;
+      if (!searchApiRes) {
+        throw new Error(
+          `Hết thời gian chờ phản hồi API tìm kiếm lớp ${classCode} trên MindX LMS.`
+        );
+      }
+      if (searchApiRes.status() < 200 || searchApiRes.status() >= 300) {
+        throw new Error(
+          `API tìm kiếm lớp ${classCode} trên LMS trả về lỗi HTTP ${searchApiRes.status()}.`
+        );
+      }
+      const searchJson = await searchApiRes.json().catch(() => null);
+      if (
+        searchJson &&
+        Array.isArray(searchJson.errors) &&
+        searchJson.errors.length > 0
+      ) {
+        throw new Error(
+          `API GraphQL tìm kiếm lớp ${classCode} trả về lỗi: ${
+            searchJson.errors[0]?.message || "GraphQL Error"
+          }`
+        );
+      }
+      if (!doesLmsClassSearchPayloadMatchCode(searchJson, classCode)) {
+        throw new Error(
+          `Phản hồi API tìm kiếm lớp trên LMS không chứa mã lớp chính xác ${classCode}.`
+        );
+      }
+      await page.waitForTimeout(400);
+
+      await interceptor.dismissForbiddenToast();
+
+      const rowMatch = (await page.evaluate(`(() => {
+        const targetCode = ${JSON.stringify(classCode)};
+        const trs = Array.from(document.querySelectorAll("table tbody tr"));
+        for (const tr of trs) {
+          if (tr.closest('[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')) {
+            continue;
+          }
+          const tds = Array.from(tr.querySelectorAll("td")).map((td) =>
+            (td.innerText || td.textContent || "").replace(/\\s+/g, " ").trim()
+          );
+          if (tds.length < 2) continue;
+          const matchesTarget = tds.some((c) => c.toUpperCase() === targetCode);
+          if (!matchesTarget) continue;
+
+          const courseName = (tds[2] || "").trim();
+          const center = (tds[3] || "").trim();
+          const dateMatches = [];
+          for (const cell of tds) {
+            const matches =
+              cell.match(
+                /\\b(?:\\d{1,2}[\\/\\-]\\d{1,2}[\\/\\-]\\d{2,4}|\\d{4}[\\/\\-]\\d{1,2}[\\/\\-]\\d{1,2})\\b/g
+              ) || [];
+            for (const m of matches) {
+              dateMatches.push(m);
+            }
+          }
+          return {
+            found: true,
+            courseName,
+            center,
+            rawStart: dateMatches.length >= 2 ? dateMatches[0] : "",
+            rawEnd: dateMatches.length > 0 ? dateMatches[dateMatches.length - 1] : "",
+          };
+        }
+        return { found: false, courseName: "", center: "", rawStart: "", rawEnd: "" };
+      })()`)) as {
+        found: boolean;
+        courseName: string;
+        center: string;
+        rawStart: string;
+        rawEnd: string;
+      };
+
+      if (rowMatch.found && rowMatch.rawStart && rowMatch.rawEnd) {
+        const startMs = parseClassDateToEndOfDayMs(rowMatch.rawStart);
+        const endMs = parseClassDateToEndOfDayMs(rowMatch.rawEnd);
+        const startDateDmy = startMs !== null ? formatMsToDdMmYyyy(startMs) : "";
+        const endDateDmy = endMs !== null ? formatMsToDdMmYyyy(endMs) : "";
+        const startDateIso = startMs !== null ? formatMsToIsoYmd(startMs) : "";
+        const endDateIso = endMs !== null ? formatMsToIsoYmd(endMs) : "";
+
+        if (!startDateIso || !endDateIso) {
+          throw new Error(
+            `Dòng lớp ${classCode} trên LMS thiếu ngày Bắt đầu hoặc Kết thúc hợp lệ (${rowMatch.rawStart} - ${rowMatch.rawEnd}).`
+          );
+        }
+
+        // Persist into running_classes.json cache
+        const existingList = getRunningClasses();
+        const idx = existingList.findIndex(
+          (c) => String(c.classCode || "").trim().toUpperCase() === classCode
+        );
+        const nowIso = new Date().toISOString();
+        if (idx >= 0) {
+          existingList[idx] = {
+            ...existingList[idx],
+            courseName: rowMatch.courseName || existingList[idx].courseName,
+            center: rowMatch.center || existingList[idx].center,
+            startDate: startDateDmy,
+            endDate: endDateDmy,
+            updatedAt: nowIso,
+          };
+        } else {
+          existingList.unshift({
+            classCode,
+            courseName: rowMatch.courseName,
+            center: rowMatch.center,
+            status: "Running",
+            startDate: startDateDmy,
+            endDate: endDateDmy,
+            updatedAt: nowIso,
+          });
+        }
+        saveRunningClasses(existingList);
+
+        jobLogRepo.add({
+          jobId,
+          jobType: "SYNC_CLASS",
+          classId: classCode,
+          level: "SUCCESS",
+          message: `Đã lấy ngày khóa học lớp ${classCode} trực tiếp từ LMS: Bắt đầu ${startDateDmy} - Kết thúc ${endDateDmy}.`,
+        });
+
+        return {
+          success: true,
+          classCode,
+          courseName: rowMatch.courseName,
+          startDateIso,
+          endDateIso,
+          startDateDmy,
+          endDateDmy,
+          source: "LMS_LIVE",
+        };
+      }
+
+      throw new Error(
+        `Không tìm thấy dòng lớp ${classCode} hoặc cột ngày Bắt đầu / Kết thúc trên bảng Lớp học LMS.`
+      );
+    } catch (err: any) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      jobLogRepo.add({
+        jobId,
+        jobType: "SYNC_CLASS",
+        classId: classCode,
+        level: "ERROR",
+        message: `Lỗi lấy ngày lớp ${classCode} từ LMS: ${errMsg}`,
+      });
+      return {
+        success: false,
+        classCode,
+        courseName: "",
+        startDateIso: "",
+        endDateIso: "",
+        startDateDmy: "",
+        endDateDmy: "",
+        source: "NONE",
         error: errMsg,
       };
     }

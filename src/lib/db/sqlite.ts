@@ -36,7 +36,10 @@ export function getDb(): Database.Database {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
-  const dbPath = assertPathAllowed(path.join(dataDir, "mindx_bot.db"));
+  const customDbPath = process.env.MINDX_DB_PATH?.trim();
+  const dbPath = customDbPath
+    ? assertPathAllowed(path.resolve(process.cwd(), customDbPath))
+    : assertPathAllowed(path.join(dataDir, "mindx_bot.db"));
   const db = new Database(dbPath);
 
   // Performance & safety pragmas
@@ -48,6 +51,17 @@ export function getDb(): Database.Database {
 
   dbInstance = db;
   return dbInstance;
+}
+
+export function closeDb(): void {
+  if (dbInstance) {
+    try {
+      dbInstance.close();
+    } catch {
+      // ignore close errors
+    }
+    dbInstance = null;
+  }
 }
 
 /**
@@ -267,6 +281,29 @@ function initSchema(db: Database.Database) {
       draftSeq INTEGER NOT NULL DEFAULT 0,
       fieldSeqJson TEXT NOT NULL DEFAULT '{}'
     );
+
+    -- 9. teaching_final_projects (v3.2.0 Teaching Final Project & 5-Task Timeline)
+    CREATE TABLE IF NOT EXISTS teaching_final_projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      classId TEXT NOT NULL UNIQUE,
+      teachingProjectId INTEGER DEFAULT NULL,
+      projectName TEXT NOT NULL DEFAULT '',
+      startDate TEXT NOT NULL DEFAULT '',
+      endDate TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      tasksJson TEXT NOT NULL DEFAULT '[]',
+      studentsJson TEXT NOT NULL DEFAULT '[]',
+      progressJson TEXT NOT NULL DEFAULT '{}',
+      draftVersion INTEGER NOT NULL DEFAULT 1,
+      status TEXT NOT NULL DEFAULT 'DRAFT',
+      contentHash TEXT NOT NULL DEFAULT '',
+      verifiedAt TEXT DEFAULT NULL,
+      verifiedSnapshotJson TEXT DEFAULT '{}',
+      errorMessage TEXT DEFAULT NULL,
+      createdAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_teaching_final_projects_class ON teaching_final_projects(classId);
   `);
 
   try {
@@ -4605,3 +4642,833 @@ export const session14EvalRepo = {
     return this.findOne(normalizedClassId, normalizedStudentId)!;
   },
 };
+
+// ==========================================
+// 9. TEACHING FINAL PROJECTS (v3.2.0)
+// ==========================================
+
+export interface TeachingStudentItem {
+  id: number;
+  studentName: string;
+  classCode: string;
+  status: string;
+}
+
+export interface TeachingProjectTaskItem {
+  slotIndex: number;
+  taskId?: number | null;
+  taskName: string;
+  description: string;
+  weightPercent: number;
+  deadline: string;
+  assignedStudentIds: number[];
+}
+
+export type TeachingProjectStatus =
+  | "DRAFT"
+  | "WAITING_APPROVAL"
+  | "APPROVED"
+  | "SAVING"
+  | "VERIFIED"
+  | "FAILED";
+
+export interface TeachingFinalProjectRecord {
+  id?: number;
+  classId: string;
+  teachingProjectId?: number | null;
+  projectName: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  tasksJson: string;
+  studentsJson: string;
+  progressJson: string;
+  draftVersion: number;
+  status: TeachingProjectStatus;
+  contentHash: string;
+  verifiedAt?: string | null;
+  verifiedSnapshotJson?: string;
+  errorMessage?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Validates that a date string is a real calendar date in YYYY-MM-DD format (and not 0000-00-00).
+ */
+export function isValidIsoDateYmd(rawDate?: string | null): boolean {
+  const s = String(rawDate || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s) || s === "0000-00-00") return false;
+  const [yStr, mStr, dStr] = s.split("-");
+  const y = Number(yStr);
+  const m = Number(mStr);
+  const d = Number(dStr);
+  if (!Number.isInteger(y) || y < 2020 || y > 2100) return false;
+  if (!Number.isInteger(m) || m < 1 || m > 12) return false;
+  if (!Number.isInteger(d) || d < 1 || d > 31) return false;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return (
+    dt.getUTCFullYear() === y &&
+    dt.getUTCMonth() === m - 1 &&
+    dt.getUTCDate() === d
+  );
+}
+
+/**
+ * Normalizes a date string (`DD/MM/YYYY`, `DD-MM-YYYY`, or `YYYY-MM-DD`) into `YYYY-MM-DD`, or returns `""` if invalid.
+ */
+export function normalizeDateToIsoYmd(rawDate?: string | null): string {
+  const s = String(rawDate || "").trim();
+  if (!s || s === "0000-00-00") return "";
+  if (isValidIsoDateYmd(s)) return s;
+
+  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (dmy) {
+    const first = Number(dmy[1]);
+    const second = Number(dmy[2]);
+    const thirdRaw = dmy[3];
+    if (dmy[1].length === 4 || first > 31) {
+      const candidate = `${String(first).padStart(4, "0")}-${String(second).padStart(2, "0")}-${String(Number(thirdRaw)).padStart(2, "0")}`;
+      return isValidIsoDateYmd(candidate) ? candidate : "";
+    }
+    const year = thirdRaw.length === 2 ? 2000 + Number(thirdRaw) : Number(thirdRaw);
+    const candidate = `${String(year).padStart(4, "0")}-${String(second).padStart(2, "0")}-${String(first).padStart(2, "0")}`;
+    return isValidIsoDateYmd(candidate) ? candidate : "";
+  }
+  return "";
+}
+
+/**
+ * Builds the default project name for Teaching (`SPCK - <ShortClassCode>`).
+ * Example: `VT-C4K-GA38` -> `SPCK - GA38`, `VT-JSB16` -> `SPCK - JSB16`.
+ */
+export function buildDefaultTeachingProjectName(
+  classCode: string,
+  useFullCode: boolean = false
+): string {
+  const clean = String(classCode || "").trim().toUpperCase();
+  if (!clean) return "SPCK";
+  if (useFullCode) return `SPCK - ${clean}`;
+  const shortCode = clean
+    .replace(/^[A-Z]{2,4}-(?:C4K-|ROB-)?/i, "")
+    .trim();
+  return `SPCK - ${shortCode || clean}`;
+}
+
+export function normalizeAssignedStudentIds(raw: unknown): number[] {
+  let arr: unknown[] = [];
+  if (Array.isArray(raw)) {
+    arr = raw;
+  } else if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) arr = parsed;
+    } catch {
+      arr = [];
+    }
+  }
+  const set = new Set<number>();
+  for (const item of arr) {
+    const n = Number(item);
+    if (Number.isInteger(n) && n > 0) {
+      set.add(n);
+    }
+  }
+  return Array.from(set).sort((a, b) => a - b);
+}
+
+export function normalizeTeachingProjectTasks(
+  rawTasks: unknown,
+  fallbackEndDate?: string,
+  fallbackStudentIds?: number[]
+): TeachingProjectTaskItem[] {
+  let list: any[] = [];
+  if (Array.isArray(rawTasks)) {
+    list = rawTasks;
+  } else if (typeof rawTasks === "string" && rawTasks.trim()) {
+    try {
+      const parsed = JSON.parse(rawTasks);
+      if (Array.isArray(parsed)) list = parsed;
+    } catch {
+      list = [];
+    }
+  }
+
+  const validFallbackDeadline = normalizeDateToIsoYmd(fallbackEndDate);
+  const defaultStudents = normalizeAssignedStudentIds(fallbackStudentIds || []);
+
+  return list.map((item, idx) => {
+    const rawTaskId = item?.taskId ?? item?.id ?? null;
+    const numTaskId =
+      rawTaskId !== null && rawTaskId !== undefined && String(rawTaskId).trim() !== ""
+        ? Number(rawTaskId)
+        : null;
+    const taskId =
+      numTaskId !== null && Number.isInteger(numTaskId) && numTaskId > 0
+        ? numTaskId
+        : null;
+
+    const hasExplicitWeight =
+      item?.weightPercent !== undefined || item?.weight_percent !== undefined;
+    const rawWeight = Number(item?.weightPercent ?? item?.weight_percent);
+    const weightPercent = hasExplicitWeight
+      ? Number.isFinite(rawWeight)
+        ? rawWeight
+        : 0
+      : 20;
+
+    const hasExplicitDeadline =
+      item?.deadline !== undefined && item?.deadline !== null;
+    const deadline = hasExplicitDeadline
+      ? normalizeDateToIsoYmd(item.deadline)
+      : validFallbackDeadline || "";
+
+    const hasExplicitAssigned =
+      item?.assignedStudentIds !== undefined || item?.assigned_students !== undefined;
+    const rawAssigned =
+      item?.assignedStudentIds !== undefined
+        ? item.assignedStudentIds
+        : item?.assigned_students;
+    const assignedStudentIds = hasExplicitAssigned
+      ? normalizeAssignedStudentIds(rawAssigned)
+      : defaultStudents;
+
+    return {
+      slotIndex: idx + 1,
+      taskId,
+      taskName: String(item?.taskName ?? item?.task_name ?? "")
+        .replace(/\r\n/g, "\n")
+        .trim(),
+      description: String(item?.description ?? "")
+        .replace(/\r\n/g, "\n")
+        .trim(),
+      weightPercent,
+      deadline,
+      assignedStudentIds,
+    };
+  });
+}
+
+export function computeTeachingProjectHash(input: {
+  classId: string;
+  projectName: string;
+  startDate: string;
+  endDate: string;
+  description?: string;
+  tasks?: TeachingProjectTaskItem[] | string;
+}): string {
+  const normalizedClassId = String(input.classId || "").trim().toUpperCase();
+  const tasks = normalizeTeachingProjectTasks(input.tasks);
+  const canonical = {
+    classId: normalizedClassId,
+    projectName: String(input.projectName || "").trim(),
+    startDate: normalizeDateToIsoYmd(input.startDate),
+    endDate: normalizeDateToIsoYmd(input.endDate),
+    description: String(input.description || "")
+      .replace(/\r\n/g, "\n")
+      .trim(),
+    tasks: tasks.map((t, idx) => ({
+      slotIndex: idx + 1,
+      taskName: String(t.taskName || "").trim(),
+      description: String(t.description || "")
+        .replace(/\r\n/g, "\n")
+        .trim(),
+      weightPercent: Number(t.weightPercent) || 0,
+      deadline: normalizeDateToIsoYmd(t.deadline),
+      assignedStudentIds: normalizeAssignedStudentIds(t.assignedStudentIds),
+    })),
+  };
+  return calculateSha256(JSON.stringify(canonical));
+}
+
+export function validateTeachingProjectForApproval(input: {
+  classId: string;
+  projectName: string;
+  startDate: string;
+  endDate: string;
+  description?: string;
+  tasks?: TeachingProjectTaskItem[] | string;
+}): { ok: boolean; reason?: string; normalizedTasks: TeachingProjectTaskItem[] } {
+  const projectName = String(input.projectName || "").trim();
+  if (!projectName) {
+    return {
+      ok: false,
+      reason: "Tên dự án không được để trống (ví dụ: SPCK - GA38).",
+      normalizedTasks: [],
+    };
+  }
+
+  const startDate = normalizeDateToIsoYmd(input.startDate);
+  const endDate = normalizeDateToIsoYmd(input.endDate);
+  if (!startDate) {
+    return {
+      ok: false,
+      reason: "Ngày bắt đầu dự án không hợp lệ (cần định dạng YYYY-MM-DD).",
+      normalizedTasks: [],
+    };
+  }
+  if (!endDate) {
+    return {
+      ok: false,
+      reason: "Ngày kết thúc dự án không hợp lệ (cần định dạng YYYY-MM-DD).",
+      normalizedTasks: [],
+    };
+  }
+  if (startDate > endDate) {
+    return {
+      ok: false,
+      reason: `Ngày bắt đầu (${startDate}) không được lớn hơn Ngày kết thúc (${endDate}).`,
+      normalizedTasks: [],
+    };
+  }
+
+  // Strict validation without fallback deadline or fallback student roster
+  const tasks = normalizeTeachingProjectTasks(input.tasks);
+  if (tasks.length !== 5) {
+    return {
+      ok: false,
+      reason: `Theo quy tắc bắt buộc phải có đúng 5 phần công việc (hiện có ${tasks.length} phần).`,
+      normalizedTasks: tasks,
+    };
+  }
+
+  let totalWeight = 0;
+  for (let i = 0; i < tasks.length; i++) {
+    const t = tasks[i];
+    const num = i + 1;
+    if (!t.taskName.trim()) {
+      return {
+        ok: false,
+        reason: `Phần công việc thứ ${num} chưa có tên công việc (Phần chung).`,
+        normalizedTasks: tasks,
+      };
+    }
+    if (!t.description.trim()) {
+      return {
+        ok: false,
+        reason: `Phần công việc thứ ${num} ("${t.taskName}") chưa có Mô tả công việc chi tiết.`,
+        normalizedTasks: tasks,
+      };
+    }
+    if (!Number.isInteger(t.weightPercent) || t.weightPercent < 1 || t.weightPercent > 100) {
+      return {
+        ok: false,
+        reason: `Phần công việc thứ ${num} có tỷ trọng không hợp lệ (${t.weightPercent}%).`,
+        normalizedTasks: tasks,
+      };
+    }
+    if (!isValidIsoDateYmd(t.deadline)) {
+      return {
+        ok: false,
+        reason: `Phần công việc thứ ${num} chưa có ngày Deadline hợp lệ (không được để 0000-00-00).`,
+        normalizedTasks: tasks,
+      };
+    }
+    if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) {
+      return {
+        ok: false,
+        reason: `Phần công việc thứ ${num} chưa được giao cho học sinh nào.`,
+        normalizedTasks: tasks,
+      };
+    }
+    totalWeight += t.weightPercent;
+  }
+
+  if (totalWeight !== 100) {
+    return {
+      ok: false,
+      reason: `Tổng tỷ trọng của 5 phần công việc phải bằng đúng 100% (hiện tại là ${totalWeight}%).`,
+      normalizedTasks: tasks,
+    };
+  }
+
+  return { ok: true, normalizedTasks: tasks };
+}
+
+export const teachingProjectRepo = {
+  findOne(classId: string): TeachingFinalProjectRecord | undefined {
+    const db = getDb();
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    return db
+      .prepare(`SELECT * FROM teaching_final_projects WHERE classId = ?`)
+      .get(normalizedClassId) as TeachingFinalProjectRecord | undefined;
+  },
+
+  parseTasks(record?: TeachingFinalProjectRecord | null): TeachingProjectTaskItem[] {
+    if (!record || !record.tasksJson) return [];
+    return normalizeTeachingProjectTasks(record.tasksJson);
+  },
+
+  getOrInit(
+    classId: string,
+    defaults?: Partial<{
+      teachingProjectId: number | null;
+      projectName: string;
+      startDate: string;
+      endDate: string;
+      description: string;
+      tasks: TeachingProjectTaskItem[];
+      students: TeachingStudentItem[];
+      progress: Record<string, number>;
+    }>
+  ): TeachingFinalProjectRecord {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    const existing = this.findOne(normalizedClassId);
+    if (existing) return existing;
+
+    const db = getDb();
+    const projectName =
+      defaults?.projectName?.trim() || buildDefaultTeachingProjectName(normalizedClassId);
+    const startDate = normalizeDateToIsoYmd(defaults?.startDate);
+    const endDate = normalizeDateToIsoYmd(defaults?.endDate);
+    const description = String(defaults?.description || "").trim();
+    const students = Array.isArray(defaults?.students) ? defaults!.students : [];
+    const studentIds = students.map((s) => s.id);
+    const tasks = normalizeTeachingProjectTasks(defaults?.tasks || [], endDate, studentIds);
+    const progress = defaults?.progress || {};
+
+    db.prepare(
+      `INSERT INTO teaching_final_projects (
+        classId, teachingProjectId, projectName, startDate, endDate, description,
+        tasksJson, studentsJson, progressJson, draftVersion, status, contentHash,
+        createdAt, updatedAt
+      ) VALUES (
+        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, 1, 'DRAFT', '',
+        datetime('now', 'localtime'), datetime('now', 'localtime')
+      )`
+    ).run(
+      normalizedClassId,
+      defaults?.teachingProjectId ?? null,
+      projectName,
+      startDate,
+      endDate,
+      description,
+      JSON.stringify(tasks),
+      JSON.stringify(students),
+      JSON.stringify(progress)
+    );
+
+    return this.findOne(normalizedClassId)!;
+  },
+
+  syncRemoteMetadata(input: {
+    classId: string;
+    teachingProjectId?: number | null;
+    students?: TeachingStudentItem[];
+    progress?: Record<string, number>;
+  }): TeachingFinalProjectRecord {
+    const normalizedClassId = String(input.classId || "").trim().toUpperCase();
+    const current = this.getOrInit(normalizedClassId);
+    const nextProjectId =
+      input.teachingProjectId !== undefined
+        ? input.teachingProjectId
+        : current.teachingProjectId ?? null;
+    const nextStudentsJson =
+      input.students !== undefined
+        ? JSON.stringify(input.students)
+        : current.studentsJson;
+    const nextProgressJson =
+      input.progress !== undefined
+        ? JSON.stringify(input.progress)
+        : current.progressJson;
+
+    const db = getDb();
+    db.prepare(
+      `UPDATE teaching_final_projects
+       SET teachingProjectId = ?,
+           studentsJson = ?,
+           progressJson = ?,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ?`
+    ).run(nextProjectId, nextStudentsJson, nextProgressJson, normalizedClassId);
+
+    return this.findOne(normalizedClassId)!;
+  },
+
+  saveDraft(input: {
+    classId: string;
+    teachingProjectId?: number | null;
+    projectName?: string;
+    startDate?: string;
+    endDate?: string;
+    description?: string;
+    tasks?: TeachingProjectTaskItem[];
+    students?: TeachingStudentItem[];
+    progress?: Record<string, number>;
+    expectedVersion?: number;
+  }): {
+    success: boolean;
+    conflict?: boolean;
+    currentVersion?: number;
+    downgradedFromApproved?: boolean;
+    error?: string;
+    record: TeachingFinalProjectRecord;
+  } {
+    const normalizedClassId = String(input.classId || "").trim().toUpperCase();
+    const current = this.getOrInit(normalizedClassId);
+
+    if (
+      input.expectedVersion !== undefined &&
+      input.expectedVersion !== null &&
+      Number(input.expectedVersion) !== Number(current.draftVersion)
+    ) {
+      return {
+        success: false,
+        conflict: true,
+        currentVersion: current.draftVersion,
+        error: `Dữ liệu dự án lớp ${normalizedClassId} đã thay đổi ở phiên bản mới hơn (v${current.draftVersion}). Vui lòng tải lại trước khi lưu.`,
+        record: current,
+      };
+    }
+
+    const nextTeachingProjectId =
+      input.teachingProjectId !== undefined
+        ? input.teachingProjectId
+        : current.teachingProjectId ?? null;
+    const nextProjectName =
+      input.projectName !== undefined
+        ? String(input.projectName).trim()
+        : current.projectName;
+    const nextStartDate =
+      input.startDate !== undefined
+        ? normalizeDateToIsoYmd(input.startDate)
+        : current.startDate;
+    const nextEndDate =
+      input.endDate !== undefined
+        ? normalizeDateToIsoYmd(input.endDate)
+        : current.endDate;
+    const nextDescription =
+      input.description !== undefined
+        ? String(input.description).replace(/\r\n/g, "\n").trim()
+        : current.description;
+
+    let nextStudents: TeachingStudentItem[] = [];
+    if (input.students !== undefined) {
+      nextStudents = input.students;
+    } else {
+      try {
+        nextStudents = JSON.parse(current.studentsJson || "[]");
+      } catch {
+        nextStudents = [];
+      }
+    }
+
+    const nextTasks =
+      input.tasks !== undefined
+        ? normalizeTeachingProjectTasks(input.tasks)
+        : normalizeTeachingProjectTasks(current.tasksJson);
+
+    let nextProgress: Record<string, number> = {};
+    if (input.progress !== undefined) {
+      nextProgress = input.progress;
+    } else {
+      try {
+        nextProgress = JSON.parse(current.progressJson || "{}");
+      } catch {
+        nextProgress = {};
+      }
+    }
+
+    const oldHash = computeTeachingProjectHash({
+      classId: normalizedClassId,
+      projectName: current.projectName,
+      startDate: current.startDate,
+      endDate: current.endDate,
+      description: current.description,
+      tasks: current.tasksJson,
+    });
+
+    const newHash = computeTeachingProjectHash({
+      classId: normalizedClassId,
+      projectName: nextProjectName,
+      startDate: nextStartDate,
+      endDate: nextEndDate,
+      description: nextDescription,
+      tasks: nextTasks,
+    });
+
+    const contentChanged = newHash !== oldHash;
+    let nextStatus: TeachingProjectStatus = current.status;
+    let nextContentHash = current.contentHash;
+    let downgradedFromApproved = false;
+
+    if (current.status === "APPROVED" || current.status === "VERIFIED") {
+      if (!current.contentHash || newHash !== current.contentHash) {
+        nextStatus = "WAITING_APPROVAL";
+        nextContentHash = "";
+        downgradedFromApproved = true;
+      }
+    } else if (current.status === "FAILED" || current.status === "SAVING") {
+      nextStatus = "WAITING_APPROVAL";
+      nextContentHash = "";
+    } else if (contentChanged && current.status === "DRAFT") {
+      nextStatus = "WAITING_APPROVAL";
+    }
+
+    const nextVersion = contentChanged || downgradedFromApproved
+      ? current.draftVersion + 1
+      : current.draftVersion;
+
+    const db = getDb();
+    db.prepare(
+      `UPDATE teaching_final_projects
+       SET teachingProjectId = ?,
+           projectName = ?,
+           startDate = ?,
+           endDate = ?,
+           description = ?,
+           tasksJson = ?,
+           studentsJson = ?,
+           progressJson = ?,
+           draftVersion = ?,
+           status = ?,
+           contentHash = ?,
+           errorMessage = CASE WHEN ? = 1 THEN 'Nội dung đã chỉnh sửa sau khi duyệt, cần bấm Duyệt lại.' ELSE errorMessage END,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ?`
+    ).run(
+      nextTeachingProjectId,
+      nextProjectName,
+      nextStartDate,
+      nextEndDate,
+      nextDescription,
+      JSON.stringify(nextTasks),
+      JSON.stringify(nextStudents),
+      JSON.stringify(nextProgress),
+      nextVersion,
+      nextStatus,
+      nextContentHash,
+      downgradedFromApproved ? 1 : 0,
+      normalizedClassId
+    );
+
+    return {
+      success: true,
+      downgradedFromApproved,
+      record: this.findOne(normalizedClassId)!,
+    };
+  },
+
+  approveDraft(
+    classId: string,
+    expectedVersion?: number
+  ): {
+    success: boolean;
+    conflict?: boolean;
+    currentVersion?: number;
+    error?: string;
+    record: TeachingFinalProjectRecord;
+  } {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    const current = this.getOrInit(normalizedClassId);
+
+    if (
+      expectedVersion !== undefined &&
+      expectedVersion !== null &&
+      Number(expectedVersion) !== Number(current.draftVersion)
+    ) {
+      return {
+        success: false,
+        conflict: true,
+        currentVersion: current.draftVersion,
+        error: `Bản nháp dự án lớp ${normalizedClassId} đã thay đổi (v${current.draftVersion}). Vui lòng kiểm tra lại trước khi Duyệt.`,
+        record: current,
+      };
+    }
+
+    const validation = validateTeachingProjectForApproval({
+      classId: normalizedClassId,
+      projectName: current.projectName,
+      startDate: current.startDate,
+      endDate: current.endDate,
+      description: current.description,
+      tasks: current.tasksJson,
+    });
+
+    if (!validation.ok) {
+      return {
+        success: false,
+        error: validation.reason,
+        record: current,
+      };
+    }
+
+    const hash = computeTeachingProjectHash({
+      classId: normalizedClassId,
+      projectName: current.projectName,
+      startDate: current.startDate,
+      endDate: current.endDate,
+      description: current.description,
+      tasks: validation.normalizedTasks,
+    });
+
+    const db = getDb();
+    db.prepare(
+      `UPDATE teaching_final_projects
+       SET tasksJson = ?,
+           status = 'APPROVED',
+           contentHash = ?,
+           errorMessage = NULL,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ?`
+    ).run(JSON.stringify(validation.normalizedTasks), hash, normalizedClassId);
+
+    return {
+      success: true,
+      record: this.findOne(normalizedClassId)!,
+    };
+  },
+
+  markSaving(classId: string, expectedHash: string): TeachingFinalProjectRecord {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    const current = this.getOrInit(normalizedClassId);
+    const liveHash = computeTeachingProjectHash({
+      classId: normalizedClassId,
+      projectName: current.projectName,
+      startDate: current.startDate,
+      endDate: current.endDate,
+      description: current.description,
+      tasks: current.tasksJson,
+    });
+
+    if (!expectedHash || liveHash !== expectedHash || current.contentHash !== expectedHash) {
+      this.demoteToWaitingApproval(
+        normalizedClassId,
+        "Nội dung dự án đã thay đổi so với bản đã duyệt. Vui lòng bấm Duyệt lại."
+      );
+      throw new Error(
+        `[teachingProjectRepo.markSaving] Sai lệch contentHash của lớp ${normalizedClassId}. Đã chặn đẩy lên Teaching.`
+      );
+    }
+
+    const db = getDb();
+    db.prepare(
+      `UPDATE teaching_final_projects
+       SET status = 'SAVING',
+           errorMessage = NULL,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ?`
+    ).run(normalizedClassId);
+
+    return this.findOne(normalizedClassId)!;
+  },
+
+  markVerified(
+    classId: string,
+    expectedHash: string,
+    verifiedMeta: {
+      teachingProjectId: number;
+      verifiedProject?: {
+        projectName: string;
+        startDate: string;
+        endDate: string;
+        description?: string;
+      };
+      verifiedTasks: TeachingProjectTaskItem[];
+      verifiedSnapshot?: unknown;
+    }
+  ): TeachingFinalProjectRecord {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    const current = this.getOrInit(normalizedClassId);
+    const currentHash = computeTeachingProjectHash({
+      classId: normalizedClassId,
+      projectName: current.projectName,
+      startDate: current.startDate,
+      endDate: current.endDate,
+      description: current.description,
+      tasks: current.tasksJson,
+    });
+
+    const verifiedProj = verifiedMeta.verifiedProject;
+    const verifiedHash = computeTeachingProjectHash({
+      classId: normalizedClassId,
+      projectName: verifiedProj ? verifiedProj.projectName : current.projectName,
+      startDate: verifiedProj ? verifiedProj.startDate : current.startDate,
+      endDate: verifiedProj ? verifiedProj.endDate : current.endDate,
+      description:
+        verifiedProj && verifiedProj.description !== undefined
+          ? verifiedProj.description
+          : current.description,
+      tasks: verifiedMeta.verifiedTasks,
+    });
+
+    if (!expectedHash || currentHash !== expectedHash || verifiedHash !== expectedHash) {
+      this.demoteToWaitingApproval(
+        normalizedClassId,
+        "Nội dung dự án bị thay đổi hoặc không khớp với dữ liệu đối chiếu từ Teaching."
+      );
+      throw new Error(
+        `[teachingProjectRepo.markVerified] Sai lệch mã băm nội dung dự án lớp ${normalizedClassId}. Đã chặn đánh dấu VERIFIED.`
+      );
+    }
+
+    const db = getDb();
+    db.prepare(
+      `UPDATE teaching_final_projects
+       SET teachingProjectId = ?,
+           tasksJson = ?,
+           status = 'VERIFIED',
+           contentHash = ?,
+           verifiedAt = datetime('now', 'localtime'),
+           verifiedSnapshotJson = ?,
+           errorMessage = NULL,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ?`
+    ).run(
+      verifiedMeta.teachingProjectId,
+      JSON.stringify(verifiedMeta.verifiedTasks),
+      expectedHash,
+      JSON.stringify(verifiedMeta.verifiedSnapshot ?? {}),
+      normalizedClassId
+    );
+
+    return this.findOne(normalizedClassId)!;
+  },
+
+  markFailed(classId: string, errorMessage: string): TeachingFinalProjectRecord {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    this.getOrInit(normalizedClassId);
+    const db = getDb();
+    db.prepare(
+      `UPDATE teaching_final_projects
+       SET status = 'FAILED',
+           errorMessage = ?,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ?`
+    ).run(errorMessage, normalizedClassId);
+    return this.findOne(normalizedClassId)!;
+  },
+
+  demoteToWaitingApproval(classId: string, reason: string): TeachingFinalProjectRecord {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    this.getOrInit(normalizedClassId);
+    const db = getDb();
+    db.prepare(
+      `UPDATE teaching_final_projects
+       SET status = 'WAITING_APPROVAL',
+           contentHash = '',
+           errorMessage = ?,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ?`
+    ).run(reason, normalizedClassId);
+    return this.findOne(normalizedClassId)!;
+  },
+
+  updateProgressSnapshot(
+    classId: string,
+    progressMap: Record<string, number>
+  ): TeachingFinalProjectRecord {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    this.getOrInit(normalizedClassId);
+    const db = getDb();
+    db.prepare(
+      `UPDATE teaching_final_projects
+       SET progressJson = ?,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ?`
+    ).run(JSON.stringify(progressMap || {}), normalizedClassId);
+    return this.findOne(normalizedClassId)!;
+  },
+};
+

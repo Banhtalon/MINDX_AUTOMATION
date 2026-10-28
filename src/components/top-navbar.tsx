@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/session-comments", label: "Nhận xét buổi học" },
   { href: "/homework-grader", label: "Chấm bài & Điểm" },
   { href: "/final-project", label: "Upload SPCK" },
+  { href: "/teaching-projects", label: "Dự án Teaching" },
   { href: "/syllabus-config", label: "Giáo trình & Barem" },
 ];
 

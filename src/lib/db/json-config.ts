@@ -219,15 +219,24 @@ export interface RunningClassItem {
   courseName?: string;
   center?: string;
   status: string;
+  startDate?: string;
   endDate?: string;
   updatedAt?: string;
 }
 
 const RUNNING_CLASSES_FILE = path.resolve(process.cwd(), "data", "running_classes.json");
 
+function resolveRunningClassesFilePath(): string {
+  const customPath = process.env.MINDX_RUNNING_CLASSES_PATH?.trim();
+  if (customPath) {
+    return assertPathAllowed(path.resolve(process.cwd(), customPath));
+  }
+  return assertPathAllowed(RUNNING_CLASSES_FILE);
+}
+
 export function getRunningClasses(): RunningClassItem[] {
   try {
-    const safePath = assertPathAllowed(RUNNING_CLASSES_FILE);
+    const safePath = resolveRunningClassesFilePath();
     if (!fs.existsSync(safePath)) {
       return [];
     }
@@ -251,7 +260,7 @@ export function saveRunningClasses(classes: RunningClassItem[]): void {
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
-  const safePath = assertPathAllowed(RUNNING_CLASSES_FILE);
+  const safePath = resolveRunningClassesFilePath();
   const tempPath = assertPathAllowed(`${safePath}.tmp`);
   fs.writeFileSync(tempPath, JSON.stringify(classes, null, 2), "utf-8");
   fs.renameSync(tempPath, safePath);

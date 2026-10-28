@@ -4,6 +4,26 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ---
 
+## [v3.2.0] — 2026-10-28 (Trang Riêng `🚀 Dự Án Teaching` `/teaching-projects` — Tự Động Tạo Dự Án Cuối Khóa, Soạn 5 Phần Công Việc `20% × 5 = 100%` & Báo Cáo Tiến Độ Học Viên Trên `teachingmindx.top`)
+
+> **Kiểm định độc lập v3.2.0 — Vòng 5 (2026-10-28): GO.** Toàn bộ **15/15 phát hiện (`F01`–`F14` và `R4-01`) đã CLOSED**, chạy mới **`npx tsc --noEmit --incremental false` PASS (exit 0)** và **`npx tsx scripts/test-teaching-project-v320.ts` PASS (exit 0, 6/6 nhóm `TP-01` $\rightarrow$ `TP-06`)** trên CSDL SQLite và bộ nhớ đệm danh sách lớp cô lập (`MINDX_DB_PATH` & `MINDX_RUNNING_CLASSES_PATH`), bảo toàn 100% SHA-256 của `data/mindx_bot.db` và `data/running_classes.json`. Báo cáo chi tiết: `docs/audits/v320/CODEX_REVIEW_ROUND5.md`.
+
+### 🚀 Trang Riêng `Dự Án Teaching` (`/teaching-projects`, `src/app/teaching-projects/page.tsx`, `src/components/top-navbar.tsx`)
+- **Tách riêng tab `/teaching-projects` trên Thanh điều hướng (`TopNavbar`):** Giúp giáo viên quản lý toàn bộ báo cáo Dự án cuối khóa trên `https://teachingmindx.top/hocsinh.php` trong một màn hình chuyên biệt, không làm phình trang SPCK LMS (`/final-project`).
+- **Khu vực 1 — Thông tin Dự án & Tự động lấy Ngày Bắt đầu / Kết thúc từ LMS (`src/lib/playwright/sync-class.ts`, `src/app/api/teaching-projects/fetch-lms-dates/route.ts`):**
+  - Tự động điền **Tên dự án** chuẩn `SPCK - <tên lớp>` (mặc định mã rút gọn như `SPCK - GA38` kèm nút đổi 1 chạm sang `SPCK - VT-C4K-GA38`).
+  - Tự động nội suy **Ngày bắt đầu** (Buổi 1) và **Ngày kết thúc** (Buổi 14) từ lịch SQLite hoặc bấm **`"🔄 Lấy ngày từ LMS"`** để quét trực tiếp cột `Bắt đầu` & `Kết thúc` trên `/admin/classes` (xác minh phản hồi mạng LMS `source === "LMS_LIVE"` và kiểm tra ngày lịch hợp lệ trước khi lưu).
+- **Khu vực 2 — Bảng 5 Phần Công Việc Chuẩn (`20% × 5 = 100%`, `Deadline = Ngày kết thúc khóa`) (`src/lib/gemini/teaching-project-generator.ts`, `src/app/api/teaching-projects/generate-ai/route.ts`):**
+  - Hỗ trợ 1 chạm **`"⚡ Điền 5 Công việc Mẫu"`** theo 6 nhóm bộ môn (`GAMEMAKER`, `SCRATCH`, `PYTHON_APP`, `WEB`, `COMPUTER_SCIENCE`, `ROBOTICS`) và **`"🤖 AI Soạn 5 Công việc"`** bằng Gemini (`gemini-3.5-flash-lite`) bám sát `courses_syllabus.json` (ẩn danh 100% họ tên, tên đệm+tên và tên gọi 1 từ của học viên thành `STUDENT_01`, `STUDENT_02`..., trả `INSUFFICIENT_INFO` nếu thiếu dữ kiện).
+  - Khi tải dự án đã tạo dở trên Teaching (ví dụ chỉ mới có 1/5 công việc hoặc `deadline = 0000-00-00`), hệ thống tự động giữ nguyên `taskId` cũ ở phần 1, sửa `deadline` về ngày kết thúc khóa và bù đủ 4 phần công việc còn thiếu ở trạng thái nháp (`DRAFT`) để giáo viên kiểm tra trước khi duyệt.
+- **Khu vực 3 — Đồng bộ & Báo cáo Tiến độ Học viên Kèm Đối Chiếu Read-after-Write (`src/lib/playwright/teaching-project-service.ts`, `src/lib/db/sqlite.ts`):**
+  - Lưu trữ vào bảng `teaching_final_projects` kèm khóa `contentHash` (`SHA-256`) và `draftVersion` (`HTTP 409` khi lệch phiên bản); tự động hạ trạng thái về `WAITING_APPROVAL` nếu giáo viên chỉnh sửa sau khi đã `APPROVED` / `VERIFIED`.
+  - Đẩy Dự án + 5 Công việc lên `teachingmindx.top/hocsinh.php` qua `SequentialTaskQueue` đơn luồng và đối chiếu **Read-after-Write Verification** toàn bộ 4 trường thông tin dự án (`project_name`, `start_date`, `end_date`, `description`) cùng 5 công việc trước khi đánh dấu `VERIFIED`.
+  - Cung cấp 5 nút mốc tiến độ nhanh cho cả lớp (**`20%`**, **`40%`**, **`60%`**, **`80%`**, **`100% Hoàn tất`**) và thanh trượt / ô tích `Xong` cho từng học viên, kiểm tra chặt quyền sở hữu `taskId` / `studentId` của lớp trước khi ghi và đối chiếu `Read-after-Write` từng khóa `taskId_studentId`.
+- **Kiểm thử Tự động Cô lập (`scripts/test-teaching-project-v320.ts`):** Đạt **6/6 nhóm kiểm thử (`TP-01` $\rightarrow$ `TP-06`)** trên CSDL SQLite cô lập (`MINDX_DB_PATH`), bảo toàn 100% SHA-256 của `data/mindx_bot.db` và đạt độ tương phản $\ge 5.36:1$ ở cả Chế độ Sáng & Tối.
+
+---
+
 ## [v3.1.1] — 2026-10-28 (Tự Động Chuyển Bộ Thẻ Robotics Theo Mã Lớp `ROB`, Tự Nhớ Quick Tags Từ Buổi Học Trước & Tinh Gọn Ghi Chú Trang SPCK)
 
 > **Kiểm định độc lập v3.1.1 — Vòng 3 (2026-10-28): GO trong phạm vi tái kiểm được yêu cầu.** Commit `3afb54c` đã đóng cả `R2-01` và `R2-02`: chuyển tiếp thao tác xóa hết thẻ khi ghi chú/điểm danh và bảo toàn thẻ đang chờ khi điểm danh cả lớp, kể cả bật thẻ mặc định. Chạy mới **7/7 cổng PASS**, probe gốc **18/18**, probe Vòng 2 **57/57**, Dashboard **8/8 tổ hợp đạt**; **48/48 assertion bổ sung PASS** (probe kết hợp 105/105, không cộng trùng). Đã xác nhận metadata xóa thẻ trong SQLite và giữ đúng ý định sau tải lại qua harness. Không sửa mã ứng dụng hoặc DB Owner; chưa nghiệm thu production/LMS thật. Báo cáo: `docs/audits/v311/CODEX_REVIEW_ROUND3.md`; bằng chứng mới: `docs/audits/v311/round3/`. Các kết luận NO-GO bên dưới là lịch sử vòng trước.
