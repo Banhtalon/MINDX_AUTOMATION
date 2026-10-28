@@ -6,6 +6,8 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ## [v3.1.1] — 2026-10-28 (Tự Động Chuyển Bộ Thẻ Robotics Theo Mã Lớp `ROB`, Tự Nhớ Quick Tags Từ Buổi Học Trước & Tinh Gọn Ghi Chú Trang SPCK)
 
+> **Kiểm định độc lập v3.1.1 — Vòng 2 (2026-10-28): NO-GO.** Commit `2b70f95` chạy mới **6/6 cổng PASS**, probe vòng 1 **18/18 PASS**, Dashboard **8/8 tổ hợp vừa viewport**. Cả bốn biểu hiện vòng 1 đã hết; phạm vi lưu thẻ của R1-02 còn hai thiếu sót P2: `R2-01` không chuyển tiếp xóa trắng thẻ khi ghi chú/điểm danh lưu chồng nhau, `R2-02` điểm danh cả lớp bỏ qua thẻ đang chờ lưu. Probe mở rộng **47/57 PASS, 10 assertion FAIL thuộc hai lỗi**; so sánh component cũ xác nhận lỗi có sẵn, không quy là hồi quy mới của bản sửa. Không sửa mã ứng dụng hoặc DB Owner. Báo cáo và điều kiện GO: `docs/audits/v311/CODEX_REVIEW_ROUND2.md`; bằng chứng mới: `docs/audits/v311/round2/`.
+
 > **Kiểm định độc lập Vòng 1 (2026-10-28): NO-GO.** Chạy mới 4/4 cổng đạt trong bản sao tạm, nhưng probe độc lập chỉ đạt 12/18 kiểm tra: `R1-01` test có thể xóa nhận xét lớp thật, `R1-02` chưa lưu bền thẻ kế thừa khi hai lần nhập chồng nhau và lần đầu thất bại, `R1-03` nhánh số buổi không xác định có thể kế thừa sai thời gian. Dashboard đã có từ commit nền còn chưa vừa 1366×768 (`R1-04`). Không sửa mã ứng dụng hay DB Owner; bổ sung báo cáo, probe và bằng chứng tại `docs/audits/v311/CODEX_REVIEW_ROUND1.md`.
 
 ### 🤖 Tự Động Nhận Diện Bộ Thẻ Robotics / Lập Trình & Bỏ Hộp Đổi Thẻ Thủ Công (`src/app/session-comments/page.tsx`, `src/lib/quick-tags/index.ts`)

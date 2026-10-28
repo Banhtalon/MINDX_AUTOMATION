@@ -1119,9 +1119,9 @@ ${homeworkDetails}
       {
         teacherNote: note,
         status: nextDraftStatus,
-        ...((target?.inheritedFromSession ||
-          studentEditVersionRef.current[`__qt_pending__${studentId}`]) &&
-        target?.quickTags?.length
+        ...(studentEditVersionRef.current[`__qt_pending__${studentId}`]
+          ? { quickTags: Array.isArray(target?.quickTags) ? target.quickTags : [] }
+          : target?.inheritedFromSession && target?.quickTags?.length
           ? { quickTags: target.quickTags }
           : {}),
       },
@@ -1169,9 +1169,9 @@ ${homeworkDetails}
       {
         attendanceStatus: nextAttStatus,
         status: nextDraftStatus,
-        ...((target?.inheritedFromSession ||
-          studentEditVersionRef.current[`__qt_pending__${studentId}`]) &&
-        target?.quickTags?.length
+        ...(studentEditVersionRef.current[`__qt_pending__${studentId}`]
+          ? { quickTags: Array.isArray(target?.quickTags) ? target.quickTags : [] }
+          : target?.inheritedFromSession && target?.quickTags?.length
           ? { quickTags: target.quickTags }
           : {}),
       },
@@ -1552,14 +1552,17 @@ ${homeworkDetails}
             (!item.classId || item.classId.trim().toUpperCase() === reqClassId) &&
             (!item.sessionId || item.sessionId.trim() === reqSessionId)
         ) || s;
+      const hasPendingQuickTagsEdit = Boolean(
+        studentEditVersionRef.current[`__qt_pending__${s.studentId}`]
+      );
       const hasExistingOrInheritedTags = Boolean(
         curStu.quickTags && curStu.quickTags.length > 0
       );
       const shouldAddDefaultTag = Boolean(
-        assignDefaultGoodTag && !hasExistingOrInheritedTags
+        assignDefaultGoodTag && !hasExistingOrInheritedTags && !hasPendingQuickTagsEdit
       );
-      const shouldPersistInheritedTags = Boolean(
-        hasExistingOrInheritedTags && curStu.inheritedFromSession
+      const shouldPersistPendingOrInheritedTags = Boolean(
+        hasPendingQuickTagsEdit || (hasExistingOrInheritedTags && curStu.inheritedFromSession)
       );
       const expectedVersion = editSequenceRef.current + 1;
       const ok = await saveDraftToServer(s.studentId, {
@@ -1567,8 +1570,8 @@ ${homeworkDetails}
         status: "DRAFT",
         ...(shouldAddDefaultTag
           ? { quickTags: [defaultGoodLabel] }
-          : shouldPersistInheritedTags
-          ? { quickTags: curStu.quickTags }
+          : shouldPersistPendingOrInheritedTags
+          ? { quickTags: Array.isArray(curStu.quickTags) ? curStu.quickTags : [] }
           : {}),
       });
       if (ok) {

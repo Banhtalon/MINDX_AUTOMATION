@@ -1,0 +1,38 @@
+[
+  {
+    "gate": 1,
+    "command": "npx.cmd tsc --noEmit --incremental false",
+    "exit": 0,
+    "seconds": 1.17
+  },
+  {
+    "gate": 2,
+    "command": "npx.cmd tsx scripts/test-quick-tags-v300.ts",
+    "exit": 0,
+    "seconds": 2.29
+  },
+  {
+    "gate": 3,
+    "command": "npx.cmd tsx scripts/test-phase4-codex-repros.ts",
+    "exit": 0,
+    "seconds": 3.22
+  },
+  {
+    "gate": 4,
+    "command": "node docs/audits/v310/round3/theme-probe.mjs",
+    "exit": 0,
+    "seconds": 4.31
+  },
+  {
+    "gate": 5,
+    "command": "npx.cmd tsx docs/audits/v311/independent-probe.ts",
+    "exit": 0,
+    "seconds": 2.01
+  },
+  {
+    "gate": 6,
+    "command": "npx.cmd tsx docs/audits/v311/dashboard-probe.tsx",
+    "exit": 0,
+    "seconds": 2.47
+  }
+]

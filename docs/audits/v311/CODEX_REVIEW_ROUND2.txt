@@ -1,0 +1,7 @@
+Đã ghi [báo cáo Round 2](</D:/MY PROJECT/MINDX_AUTOMATION/docs/audits/v311/CODEX_REVIEW_ROUND2.md>).
+
+- 6/6 cổng đạt trong bản sao cô lập; các ca lỗi vòng 1 đều đã hết.
+- Kiểm tra mở rộng còn hai lỗi P2: mất thao tác xóa hết thẻ và mất thẻ chờ lưu khi điểm danh cả lớp.
+- Đã lưu bằng chứng và cập nhật ba tài liệu trạng thái; không sửa mã ứng dụng hay DB thật.
+
+**VERDICT: NO-GO**
