@@ -39,9 +39,9 @@ if not exist ".env.local" (
 )
 
 :: 3. Kiem tra thu vien node_modules
-if not exist "node_modules" (
+if not exist "node_modules\.bin\next.cmd" (
     echo [INFO] Dang cai dat thu vien lan dau ^(npm install^)...
-    call npm install
+    call npm install --ignore-scripts
     if !errorlevel! neq 0 (
         echo [LOI] Cai dat thu vien that bai!
         pause
