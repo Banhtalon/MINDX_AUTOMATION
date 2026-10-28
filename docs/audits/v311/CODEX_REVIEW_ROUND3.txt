@@ -1,0 +1,8 @@
+Đã ghi [báo cáo Round 3](</D:/MY PROJECT/MINDX_AUTOMATION/docs/audits/v311/CODEX_REVIEW_ROUND3.md>).
+
+- **R2-01 và R2-02: CLOSED.**
+- **7/7** bước kiểm chứng đạt trên bản sao cô lập.
+- Probe cũ **57/57**, kiểm tra bổ sung **48/48** đạt.
+- Đã cập nhật ba tài liệu quản lý; không sửa mã ứng dụng hoặc dữ liệu thật.
+
+**VERDICT: GO**

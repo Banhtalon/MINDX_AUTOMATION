@@ -1,5 +1,7 @@
 # PROJECT_STATE.md — TỔNG QUAN NHANH & TIẾN ĐỘ HIỆN TẠI (DÀNH CHO AI AGENT)
 
+> **Kiểm định độc lập v3.1.1 — Vòng 3 (2026-10-28): GO trong phạm vi tái kiểm được yêu cầu.** Commit `3afb54c` đã đóng cả `R2-01` và `R2-02`: chuyển tiếp thao tác xóa hết thẻ khi ghi chú/điểm danh và bảo toàn thẻ đang chờ khi điểm danh cả lớp, kể cả bật thẻ mặc định. Chạy mới **7/7 cổng PASS**, probe gốc **18/18**, probe Vòng 2 **57/57**, Dashboard **8/8 tổ hợp đạt**; **48/48 assertion bổ sung PASS** (probe kết hợp 105/105, không cộng trùng). Đã xác nhận metadata xóa thẻ trong SQLite và giữ đúng ý định sau tải lại qua harness. Không sửa mã ứng dụng hoặc DB Owner; chưa nghiệm thu production/LMS thật. Báo cáo: `docs/audits/v311/CODEX_REVIEW_ROUND3.md`; bằng chứng mới: `docs/audits/v311/round3/`. Các kết luận NO-GO bên dưới là lịch sử vòng trước.
+
 > **Cập nhật lần cuối:** 2026-10-28 (Phiên bản `v3.1.1` — Tự động nhận diện lớp Robotics (`ROB`), tự nhớ Quick Tags từ buổi học trước & tinh gọn ghi chú trang SPCK)
 > **Mục đích:** Giúp AI Agent nắm bắt 100% kiến trúc, trạng thái hiện tại, bản đồ file và các đặc thù thực tế của MindX LMS chỉ trong **1 lần đọc** trước khi tra cứu chi tiết trong `@MINDX_AUTOMATION_PLAN.md`.
 

@@ -1,0 +1,38 @@
+[
+  {
+    "studentId": "EXT_clear_note",
+    "quickTags": [],
+    "quickTagsFieldMeta": {
+      "ver": 1,
+      "cid": "sc_1793185674752_p0ddlx",
+      "rev": 4
+    }
+  },
+  {
+    "studentId": "EXT_clear_attendance",
+    "quickTags": [],
+    "quickTagsFieldMeta": {
+      "ver": 1,
+      "cid": "sc_1793185674771_cof9qu",
+      "rev": 4
+    }
+  },
+  {
+    "studentId": "EXT_inherit-clear_note",
+    "quickTags": [],
+    "quickTagsFieldMeta": {
+      "ver": 1,
+      "cid": "sc_1793185674799_enirbo",
+      "rev": 4
+    }
+  },
+  {
+    "studentId": "EXT_inherit-clear_attendance",
+    "quickTags": [],
+    "quickTagsFieldMeta": {
+      "ver": 1,
+      "cid": "sc_1793185674841_zf5h8w",
+      "rev": 4
+    }
+  }
+]

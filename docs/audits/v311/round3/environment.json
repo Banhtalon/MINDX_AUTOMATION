@@ -1,0 +1,21 @@
+{
+  "owner": "D:\\MY PROJECT\\MINDX_AUTOMATION",
+  "repo": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-v311-review-round3-y7novb2k\\repo",
+  "out": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-v311-review-round3-y7novb2k\\repo\\docs\\audits\\v311\\round3",
+  "commit": "3afb54c41f71ff6d7097963c7e217638b238521d",
+  "node": "v24.15.0",
+  "packages": {
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "typescript": "7.0.2",
+    "tsx": "4.23.15",
+    "playwright": "1.64.1",
+    "better-sqlite3": "13.0.3"
+  },
+  "credentials_copied": false,
+  "owner_database_copied": false,
+  "owner_browser_profile_copied": false,
+  "dependency_junction": "D:\\MY PROJECT\\MINDX_AUTOMATION\\node_modules",
+  "line_endings": "12 reviewed files restored to exact commit blob bytes; owner normalized LF content matches",
+  "reviewed_at_utc": "2026-10-28T11:08:35.902891+00:00"
+}

@@ -1,0 +1,924 @@
+[
+  {
+    "name": "API chooses most recent earlier number, excluding future",
+    "pass": true,
+    "actual": {
+      "tags": [
+        "👀 Mất tập trung"
+      ],
+      "fromSessionNumber": 2
+    },
+    "expected": {
+      "tags": [
+        "👀 Mất tập trung"
+      ],
+      "fromSessionNumber": 2
+    }
+  },
+  {
+    "name": "API honors explicit clear in previous session",
+    "pass": true
+  },
+  {
+    "name": "API excludes known future session",
+    "pass": true
+  },
+  {
+    "name": "API must exclude history with unknown session number",
+    "pass": true
+  },
+  {
+    "name": "API normalizes legacy tag to Robotics",
+    "pass": true,
+    "actual": {
+      "tags": [
+        "🤖 Lắp ráp & Lập trình tốt"
+      ],
+      "fromSessionNumber": 2
+    },
+    "expected": {
+      "tags": [
+        "🤖 Lắp ráp & Lập trình tốt"
+      ],
+      "fromSessionNumber": 2
+    }
+  },
+  {
+    "name": "API must not inherit future tags when current number is unknown",
+    "pass": true
+  },
+  {
+    "name": "UI inherits normalized tags and provenance",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "UI provenance points to session 2",
+    "pass": true,
+    "actual": 2,
+    "expected": 2
+  },
+  {
+    "name": "UI preserves existing finalText without inheriting",
+    "pass": true,
+    "actual": 0,
+    "expected": 0
+  },
+  {
+    "name": "Note interaction durably stores inherited tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "UI respects explicit clear in current session",
+    "pass": true,
+    "actual": 0,
+    "expected": 0
+  },
+  {
+    "name": "ATTEND: attendance durably preserves inherited tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "BULK: attendance durably preserves inherited tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "Overlapping second note must retain tags when first save fails",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "After failure unsaved tags must retain inheritance marker",
+    "pass": true,
+    "actual": 2,
+    "expected": 2
+  },
+  {
+    "name": "Database retains tags after overlapping note succeeds",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "AI success persists inherited tags over attendance-only empty row",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "Required quick-tag test preserves unrelated pre-existing feedback",
+    "pass": true,
+    "actual": true,
+    "expected": true
+  },
+  {
+    "name": "EXT inherit/attendance: second save includes pending tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "EXT inherit/attendance: SQLite equals visible tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "EXT inherit/attendance: failed older response preserves visible tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "EXT replace/note: second save includes pending tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "EXT replace/note: SQLite equals visible tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "EXT replace/note: failed older response preserves visible tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "EXT replace/attendance: second save includes pending tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "EXT replace/attendance: SQLite equals visible tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "EXT replace/attendance: failed older response preserves visible tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "EXT clear/note: second save includes pending tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT clear/note: SQLite equals visible tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT clear/note: failed older response preserves visible tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT clear/attendance: second save includes pending tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT clear/attendance: SQLite equals visible tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT clear/attendance: failed older response preserves visible tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT replace/bulk: second save includes pending tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "EXT replace/bulk: SQLite equals visible tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "EXT replace/bulk: failed older response preserves visible tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "EXT inherit-clear/note: second save includes pending tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT inherit-clear/note: SQLite equals visible tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT inherit-clear/note: failed older response preserves visible tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT inherit-clear/note: explicit clear stays clear after reload",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT inherit-clear/attendance: second save includes pending tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT inherit-clear/attendance: SQLite equals visible tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT inherit-clear/attendance: failed older response preserves visible tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "EXT inherit-clear/attendance: explicit clear stays clear after reload",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 saved/clear/default=false: bulk payload keeps teacher intent",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 saved/clear/default=false: SQLite keeps teacher intent",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 saved/clear/default=false: explicit field metadata persisted",
+    "pass": true,
+    "actual": true,
+    "expected": true
+  },
+  {
+    "name": "R3 saved/clear/default=false: attendance persisted",
+    "pass": true,
+    "actual": "PRESENT",
+    "expected": "PRESENT"
+  },
+  {
+    "name": "R3 saved/clear/default=false: late error cannot change visible tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 saved/clear/default=false: successful newer save clears pending flag",
+    "pass": true,
+    "actual": false,
+    "expected": false
+  },
+  {
+    "name": "R3 saved/clear/default=false: reload keeps teacher intent",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 saved/clear/default=true: bulk payload keeps teacher intent",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 saved/clear/default=true: SQLite keeps teacher intent",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 saved/clear/default=true: explicit field metadata persisted",
+    "pass": true,
+    "actual": true,
+    "expected": true
+  },
+  {
+    "name": "R3 saved/clear/default=true: attendance persisted",
+    "pass": true,
+    "actual": "PRESENT",
+    "expected": "PRESENT"
+  },
+  {
+    "name": "R3 saved/clear/default=true: late error cannot change visible tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 saved/clear/default=true: successful newer save clears pending flag",
+    "pass": true,
+    "actual": false,
+    "expected": false
+  },
+  {
+    "name": "R3 saved/clear/default=true: reload keeps teacher intent",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 inherited/clear/default=false: bulk payload keeps teacher intent",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 inherited/clear/default=false: SQLite keeps teacher intent",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 inherited/clear/default=false: explicit field metadata persisted",
+    "pass": true,
+    "actual": true,
+    "expected": true
+  },
+  {
+    "name": "R3 inherited/clear/default=false: attendance persisted",
+    "pass": true,
+    "actual": "PRESENT",
+    "expected": "PRESENT"
+  },
+  {
+    "name": "R3 inherited/clear/default=false: late error cannot change visible tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 inherited/clear/default=false: successful newer save clears pending flag",
+    "pass": true,
+    "actual": false,
+    "expected": false
+  },
+  {
+    "name": "R3 inherited/clear/default=false: reload keeps teacher intent",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 inherited/clear/default=true: bulk payload keeps teacher intent",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 inherited/clear/default=true: SQLite keeps teacher intent",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 inherited/clear/default=true: explicit field metadata persisted",
+    "pass": true,
+    "actual": true,
+    "expected": true
+  },
+  {
+    "name": "R3 inherited/clear/default=true: attendance persisted",
+    "pass": true,
+    "actual": "PRESENT",
+    "expected": "PRESENT"
+  },
+  {
+    "name": "R3 inherited/clear/default=true: late error cannot change visible tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 inherited/clear/default=true: successful newer save clears pending flag",
+    "pass": true,
+    "actual": false,
+    "expected": false
+  },
+  {
+    "name": "R3 inherited/clear/default=true: reload keeps teacher intent",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 saved/add/default=true: bulk payload keeps teacher intent",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "R3 saved/add/default=true: SQLite keeps teacher intent",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "R3 saved/add/default=true: explicit field metadata persisted",
+    "pass": true,
+    "actual": true,
+    "expected": true
+  },
+  {
+    "name": "R3 saved/add/default=true: attendance persisted",
+    "pass": true,
+    "actual": "PRESENT",
+    "expected": "PRESENT"
+  },
+  {
+    "name": "R3 saved/add/default=true: late error cannot change visible tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "R3 saved/add/default=true: successful newer save clears pending flag",
+    "pass": true,
+    "actual": false,
+    "expected": false
+  },
+  {
+    "name": "R3 saved/add/default=true: reload keeps teacher intent",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "R3 inherited/add/default=true: bulk payload keeps teacher intent",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "R3 inherited/add/default=true: SQLite keeps teacher intent",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "R3 inherited/add/default=true: explicit field metadata persisted",
+    "pass": true,
+    "actual": true,
+    "expected": true
+  },
+  {
+    "name": "R3 inherited/add/default=true: attendance persisted",
+    "pass": true,
+    "actual": "PRESENT",
+    "expected": "PRESENT"
+  },
+  {
+    "name": "R3 inherited/add/default=true: late error cannot change visible tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "R3 inherited/add/default=true: successful newer save clears pending flag",
+    "pass": true,
+    "actual": false,
+    "expected": false
+  },
+  {
+    "name": "R3 inherited/add/default=true: reload keeps teacher intent",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt",
+      "👀 Mất tập trung"
+    ]
+  },
+  {
+    "name": "R3 untouched/default=false: SQLite tags",
+    "pass": true,
+    "actual": [],
+    "expected": []
+  },
+  {
+    "name": "R3 untouched/default=false: payload default only when requested",
+    "pass": true
+  },
+  {
+    "name": "R3 untouched/default=false: attendance saved",
+    "pass": true,
+    "actual": "PRESENT",
+    "expected": "PRESENT"
+  },
+  {
+    "name": "R3 untouched/default=true: SQLite tags",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "R3 untouched/default=true: payload default only when requested",
+    "pass": true,
+    "actual": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ],
+    "expected": [
+      "🤖 Lắp ráp & Lập trình tốt"
+    ]
+  },
+  {
+    "name": "R3 untouched/default=true: attendance saved",
+    "pass": true,
+    "actual": "PRESENT",
+    "expected": "PRESENT"
+  },
+  {
+    "name": "EXT number BAD_77/0: valid earlier only",
+    "pass": true
+  },
+  {
+    "name": "EXT number SESS_UNKNOWN/0: valid earlier only",
+    "pass": true
+  },
+  {
+    "name": "EXT number SESS_ZERO/0: valid earlier only",
+    "pass": true
+  },
+  {
+    "name": "EXT number SESS_NEG/-2: valid earlier only",
+    "pass": true
+  },
+  {
+    "name": "EXT number SESS_FRAC/1.5: valid earlier only",
+    "pass": true
+  },
+  {
+    "name": "EXT number SESS_0002/0: valid earlier only",
+    "pass": true,
+    "actual": {
+      "tags": [
+        "🤖 Lắp ráp & Lập trình tốt"
+      ],
+      "fromSessionNumber": 2
+    },
+    "expected": {
+      "tags": [
+        "🤖 Lắp ráp & Lập trình tốt"
+      ],
+      "fromSessionNumber": 2
+    }
+  },
+  {
+    "name": "EXT number SESS_03/0: valid earlier only",
+    "pass": true,
+    "actual": {
+      "tags": [
+        "🤖 Lắp ráp & Lập trình tốt"
+      ],
+      "fromSessionNumber": 3
+    },
+    "expected": {
+      "tags": [
+        "🤖 Lắp ráp & Lập trình tốt"
+      ],
+      "fromSessionNumber": 3
+    }
+  },
+  {
+    "name": "EXT number SESS_05/0: valid earlier only",
+    "pass": true
+  },
+  {
+    "name": "EXT number CUSTOM/2: valid earlier only",
+    "pass": true,
+    "actual": {
+      "tags": [
+        "🤖 Lắp ráp & Lập trình tốt"
+      ],
+      "fromSessionNumber": 2
+    },
+    "expected": {
+      "tags": [
+        "🤖 Lắp ráp & Lập trình tốt"
+      ],
+      "fromSessionNumber": 2
+    }
+  },
+  {
+    "name": "EXT quick-tags runner exits successfully with pre-existing sentinel",
+    "pass": true,
+    "actual": 0,
+    "expected": 0
+  },
+  {
+    "name": "EXT preserve full unrelated row 0",
+    "pass": true,
+    "actual": {
+      "id": 88,
+      "classId": "VT-ROB-SEMIA05",
+      "sessionId": "VT-ROB-SEMIA05_SESS_99_SENTINEL",
+      "studentId": "STU_SENTINEL_R101",
+      "attendanceStatus": "UNKNOWN",
+      "quickTagsJson": "[\"🤖 Lắp ráp & Lập trình tốt\"]",
+      "teacherNote": "Keep exact content",
+      "strengths": "",
+      "improvements": "",
+      "actionPlan": "",
+      "finalText": "Owner approved content",
+      "contentHash": "",
+      "status": "DRAFT",
+      "verifiedAt": null,
+      "errorMessage": null,
+      "versionMetaJson": "{\"rowVer\":2,\"fields\":{}}",
+      "createdAt": "2026-10-28 18:07:04",
+      "updatedAt": "2026-10-28 18:07:55"
+    },
+    "expected": {
+      "id": 88,
+      "classId": "VT-ROB-SEMIA05",
+      "sessionId": "VT-ROB-SEMIA05_SESS_99_SENTINEL",
+      "studentId": "STU_SENTINEL_R101",
+      "attendanceStatus": "UNKNOWN",
+      "quickTagsJson": "[\"🤖 Lắp ráp & Lập trình tốt\"]",
+      "teacherNote": "Keep exact content",
+      "strengths": "",
+      "improvements": "",
+      "actionPlan": "",
+      "finalText": "Owner approved content",
+      "contentHash": "",
+      "status": "DRAFT",
+      "verifiedAt": null,
+      "errorMessage": null,
+      "versionMetaJson": "{\"rowVer\":2,\"fields\":{}}",
+      "createdAt": "2026-10-28 18:07:04",
+      "updatedAt": "2026-10-28 18:07:55"
+    }
+  },
+  {
+    "name": "EXT preserve full unrelated row 1",
+    "pass": true,
+    "actual": {
+      "id": 89,
+      "classId": "TEST_V311_ROB_SEMIA05",
+      "sessionId": "TEST_V311_ROB_SEMIA05_SESS_09",
+      "studentId": "STU_INHERIT_1",
+      "attendanceStatus": "UNKNOWN",
+      "quickTagsJson": "[\"🤖 Lắp ráp & Lập trình tốt\"]",
+      "teacherNote": "Keep exact content",
+      "strengths": "",
+      "improvements": "",
+      "actionPlan": "",
+      "finalText": "Owner approved content",
+      "contentHash": "",
+      "status": "DRAFT",
+      "verifiedAt": null,
+      "errorMessage": null,
+      "versionMetaJson": "{\"rowVer\":2,\"fields\":{}}",
+      "createdAt": "2026-10-28 18:07:04",
+      "updatedAt": "2026-10-28 18:07:55"
+    },
+    "expected": {
+      "id": 89,
+      "classId": "TEST_V311_ROB_SEMIA05",
+      "sessionId": "TEST_V311_ROB_SEMIA05_SESS_09",
+      "studentId": "STU_INHERIT_1",
+      "attendanceStatus": "UNKNOWN",
+      "quickTagsJson": "[\"🤖 Lắp ráp & Lập trình tốt\"]",
+      "teacherNote": "Keep exact content",
+      "strengths": "",
+      "improvements": "",
+      "actionPlan": "",
+      "finalText": "Owner approved content",
+      "contentHash": "",
+      "status": "DRAFT",
+      "verifiedAt": null,
+      "errorMessage": null,
+      "versionMetaJson": "{\"rowVer\":2,\"fields\":{}}",
+      "createdAt": "2026-10-28 18:07:04",
+      "updatedAt": "2026-10-28 18:07:55"
+    }
+  },
+  {
+    "name": "EXT preserve full unrelated row 2",
+    "pass": true,
+    "actual": {
+      "id": 90,
+      "classId": "TEST_V311_ROB_SEMIA05",
+      "sessionId": "TEST_V311_ROB_SEMIA05_SESS_01",
+      "studentId": "UNRELATED_STUDENT",
+      "attendanceStatus": "UNKNOWN",
+      "quickTagsJson": "[\"🤖 Lắp ráp & Lập trình tốt\"]",
+      "teacherNote": "Keep exact content",
+      "strengths": "",
+      "improvements": "",
+      "actionPlan": "",
+      "finalText": "Owner approved content",
+      "contentHash": "",
+      "status": "DRAFT",
+      "verifiedAt": null,
+      "errorMessage": null,
+      "versionMetaJson": "{\"rowVer\":2,\"fields\":{}}",
+      "createdAt": "2026-10-28 18:07:04",
+      "updatedAt": "2026-10-28 18:07:55"
+    },
+    "expected": {
+      "id": 90,
+      "classId": "TEST_V311_ROB_SEMIA05",
+      "sessionId": "TEST_V311_ROB_SEMIA05_SESS_01",
+      "studentId": "UNRELATED_STUDENT",
+      "attendanceStatus": "UNKNOWN",
+      "quickTagsJson": "[\"🤖 Lắp ráp & Lập trình tốt\"]",
+      "teacherNote": "Keep exact content",
+      "strengths": "",
+      "improvements": "",
+      "actionPlan": "",
+      "finalText": "Owner approved content",
+      "contentHash": "",
+      "status": "DRAFT",
+      "verifiedAt": null,
+      "errorMessage": null,
+      "versionMetaJson": "{\"rowVer\":2,\"fields\":{}}",
+      "createdAt": "2026-10-28 18:07:04",
+      "updatedAt": "2026-10-28 18:07:55"
+    }
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "file": "src/app/session-comments/page.tsx",
+    "sha256": "50a5b3c99200c692454b063a53a0f9c0b489c5a3470f11e848fdd6c19d2e0ef2",
+    "matches_commit": true,
+    "matches_owner_normalized": true
+  },
+  {
+    "file": "src/app/api/session-comments/save-draft/route.ts",
+    "sha256": "055e0633fb74a56187c9c0c901bee7a901eaee8376d1ee208afe34310b875948",
+    "matches_commit": true,
+    "matches_owner_normalized": true
+  },
+  {
+    "file": "src/app/api/session-comments/list/route.ts",
+    "sha256": "9da5d98ccfe8af0e2a3ec27c17bde1a2aa1a50922e8cc642c24a20d4a4e7e16e",
+    "matches_commit": true,
+    "matches_owner_normalized": true
+  },
+  {
+    "file": "src/app/page.tsx",
+    "sha256": "53605922f3732dfb75e3e279ce5637c0583099e6480927753393811db635675a",
+    "matches_commit": true,
+    "matches_owner_normalized": true
+  },
+  {
+    "file": "src/app/layout.tsx",
+    "sha256": "50e5ebb7d7bafafd00708b1ff1177aff5c276f2967f0761c9188b33406a80a04",
+    "matches_commit": true,
+    "matches_owner_normalized": true
+  },
+  {
+    "file": "src/app/globals.css",
+    "sha256": "bfea8cf1a89ea20673f8a7fe116d99c68e58dd74ab666d80ff08c2146c522ff4",
+    "matches_commit": true,
+    "matches_owner_normalized": true
+  },
+  {
+    "file": "scripts/test-quick-tags-v300.ts",
+    "sha256": "41352be5093f78c23fa01e16f3802eaab0ef84da5739011ffb117641b2448054",
+    "matches_commit": true,
+    "matches_owner_normalized": true
+  },
+  {
+    "file": "scripts/test-phase4-codex-repros.ts",
+    "sha256": "58db0934899bf35da525f3498c169d2de6f74a4fb61d8ea1c6e3b456267372f5",
+    "matches_commit": true,
+    "matches_owner_normalized": true
+  },
+  {
+    "file": "docs/audits/v310/round3/theme-probe.mjs",
+    "sha256": "6bd75ee630d01b2012fcec6ce3f2315cc969ce991f6421bc5cd0ac27a86366d8",
+    "matches_commit": true,
+    "matches_owner_normalized": true
+  },
+  {
+    "file": "docs/audits/v311/independent-probe.ts",
+    "sha256": "bf59ae6c70ba4d79cb9a4ff9067563b1af2f7efdf13a0b653627615caa99cd13",
+    "matches_commit": true,
+    "matches_owner_normalized": true
+  },
+  {
+    "file": "docs/audits/v311/dashboard-probe.tsx",
+    "sha256": "f40afbbe284f792a9f6ca2234194372b76fad08d48fee0834a8567154d28c58c",
+    "matches_commit": true,
+    "matches_owner_normalized": true
+  },
+  {
+    "file": "docs/audits/v311/round2/extended-probe.ts",
+    "sha256": "df657c146bf65fef585f3b595a4b8313b0f6a7664586784903a0e63c8224ef6b",
+    "matches_commit": true,
+    "matches_owner_normalized": true
+  }
+]

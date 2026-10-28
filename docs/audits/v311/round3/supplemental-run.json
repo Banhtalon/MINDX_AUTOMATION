@@ -1,0 +1,10 @@
+{
+  "command": "npx.cmd tsx docs/audits/v311/round3/supplemental-probe.ts",
+  "exit_code": 0,
+  "total": 105,
+  "passed": 105,
+  "original_assertions": 57,
+  "additional_assertions": 48,
+  "typecheck_exit_code": 0,
+  "typecheck_seconds": 1.2
+}
