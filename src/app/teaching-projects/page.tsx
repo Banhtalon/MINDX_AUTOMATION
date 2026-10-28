@@ -855,6 +855,25 @@ export default function TeachingProjectsPage() {
   const shortNameOption = getShortProjectName(activeClassCode);
   const fullNameOption = getFullProjectName(activeClassCode);
 
+  const reportClassCode = useMemo(() => {
+    const raw = (loadedClassCode || selectedClassCode || customClassInput).trim().toUpperCase();
+    const stuClass = String(students[0]?.classCode || "").trim().toUpperCase();
+    if (stuClass && stuClass.includes("-")) {
+      return stuClass;
+    }
+    if (!raw) return "";
+    const exactMatch = classes.find((c) => c.classCode.trim().toUpperCase() === raw);
+    if (exactMatch) return exactMatch.classCode.trim().toUpperCase();
+    const suffixMatch = classes.find((c) =>
+      c.classCode.trim().toUpperCase().endsWith(`-${raw}`)
+    );
+    if (suffixMatch) return suffixMatch.classCode.trim().toUpperCase();
+    if (!raw.includes("-")) {
+      return `VT-${raw}`;
+    }
+    return raw;
+  }, [loadedClassCode, selectedClassCode, customClassInput, students, classes]);
+
   return (
     <div className="space-y-5 pb-10">
       {/* Hero Header */}
@@ -893,17 +912,17 @@ export default function TeachingProjectsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {activeClassCode && (
+            {reportClassCode && (
               <a
                 href={`https://teachingmindx.top/duan_tiendo_hocsinh.php?class_code=${encodeURIComponent(
-                  activeClassCode
+                  reportClassCode
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mindx-dark-keep px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white border border-blue-400/50 flex items-center gap-1.5 transition"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                <span>Xem trang Báo cáo Phụ huynh</span>
+                <span>Xem trang Báo cáo Phụ huynh ({reportClassCode})</span>
               </a>
             )}
           </div>
@@ -1474,11 +1493,26 @@ export default function TeachingProjectsPage() {
             </p>
           </div>
 
-          {!allTasksHaveRemoteIds && (
-            <span className="mindx-dark-keep px-3 py-1 rounded-full text-xs font-bold bg-amber-800 text-white">
-              ⚠ Hãy bấm &ldquo;Duyệt &amp; Đẩy Dự án + 5 Công việc lên Teaching&rdquo; ở mục 2 trước khi cập nhật % tiến độ
-            </span>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {!allTasksHaveRemoteIds && (
+              <span className="mindx-dark-keep px-3 py-1 rounded-full text-xs font-bold bg-amber-800 text-white">
+                ⚠ Hãy bấm &ldquo;Duyệt &amp; Đẩy Dự án + 5 Công việc lên Teaching&rdquo; ở mục 2 trước khi cập nhật % tiến độ
+              </span>
+            )}
+            {reportClassCode && (
+              <a
+                href={`https://teachingmindx.top/duan_tiendo_hocsinh.php?class_code=${encodeURIComponent(
+                  reportClassCode
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mindx-dark-keep px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white border border-blue-400/50 flex items-center gap-1.5 shadow-sm transition"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Mở trang Báo cáo Tiến độ ({reportClassCode})</span>
+              </a>
+            )}
+          </div>
         </div>
 
         {/* 1-Click Class-Wide Milestone Bar */}
