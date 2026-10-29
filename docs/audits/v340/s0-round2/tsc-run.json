@@ -1,0 +1,15 @@
+﻿{
+    "Command":  "npx tsc --noEmit --incremental false",
+    "WorkingDirectory":  "F:\\MINDX_project test\\MINDX-AUTOMATION",
+    "StartedUtc":  "2026-10-29T16:56:27.4059906Z",
+    "TEMP":  "C:\\Users\\QQ\\AppData\\Local\\Temp",
+    "ALLOWED_LOCAL_DIRS":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-v340-s0-r2-5ebf41eae89a4943b34c64f3e451c570",
+    "MINDX_DB_PATH":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-v340-s0-r2-5ebf41eae89a4943b34c64f3e451c570\\test.db",
+    "MINDX_RUNNING_CLASSES_PATH":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-v340-s0-r2-5ebf41eae89a4943b34c64f3e451c570\\running_classes.json",
+    "NpmOffline":  "true",
+    "NpmCache":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-v340-s0-r2-5ebf41eae89a4943b34c64f3e451c570\\npm-cache",
+    "ExitCode":  0,
+    "CompletedUtc":  "2026-10-29T16:56:28.5241762Z",
+    "IsolatedDatabaseCreated":  false,
+    "IsolatedRunningClassesCreated":  false
+}

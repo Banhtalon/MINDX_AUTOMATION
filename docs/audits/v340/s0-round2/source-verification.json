@@ -1,0 +1,20 @@
+{
+  "VerifiedUtc": "2026-10-29T16:58:24.916113+00:00",
+  "Head": "d7e3fe85a4c314631a45e21fd3647a528bb4fd1b",
+  "ProtectedFileCount": 1403,
+  "Round1HashMismatchCount": 0,
+  "PathSetChanges": [],
+  "ProtectedGitDiffExitCode": 0,
+  "SourceAnchorCount": 7,
+  "SourceAnchorsMatchRound1": true,
+  "SourceAnchorsMatchHead": true,
+  "DocumentDifferencesFromRound1": [
+    "PROJECT_STATE.md",
+    "MINDX_AUTOMATION_PLAN.md",
+    "CHANGELOG.md",
+    "docs/audits/v340/prompts/TEMPLATE.md"
+  ],
+  "TscExitCode": 0,
+  "PathInventoryMethod": "rg --files (respects repository ignore rules; Git inventory independently matches)",
+  "TrackedPathSetChanges": []
+}

@@ -1,0 +1,142 @@
+[
+  {
+    "Target": "S1.1",
+    "Path": "src/app/api/spck/list/route.ts",
+    "FirstLine": 348,
+    "LastLine": 348,
+    "Text": "    const runningRes = await ClassSyncer.fetchRunningClasses();"
+  },
+  {
+    "Target": "S1.1",
+    "Path": "src/app/api/spck/list/route.ts",
+    "FirstLine": 373,
+    "LastLine": 373,
+    "Text": "          const syncRes = await ClassSyncer.syncClass(code);"
+  },
+  {
+    "Target": "S1.1",
+    "Path": "src/app/api/spck/list/route.ts",
+    "FirstLine": 399,
+    "LastLine": 399,
+    "Text": "        const syncRes = await ClassSyncer.syncClass(code);"
+  },
+  {
+    "Target": "S1.2",
+    "Path": "src/app/api/spck/list/route.ts",
+    "FirstLine": 406,
+    "LastLine": 413,
+    "Text": "    if (expiredFinishedCodes.size > 0) {\n      const prunedList = runningList.filter(\n        (item) => !expiredFinishedCodes.has((item.classCode || \"\").trim().toUpperCase())\n      );\n      if (prunedList.length > 0) {\n        saveRunningClasses(prunedList);\n      }\n    }"
+  },
+  {
+    "Target": "S1.3",
+    "Path": "src/lib/playwright/teaching-project-service.ts",
+    "FirstLine": 148,
+    "LastLine": 157,
+    "Text": "export class LiveTeachingHttpTransport implements TeachingHttpTransport {\n  private cookieHeader: string = \"\";\n  private baseOrigin: string;\n\n  constructor(baseOrigin?: string) {\n    this.baseOrigin = (baseOrigin || resolveTeachingBaseOrigin()).replace(/\\/+$/, \"\");\n  }\n\n  private async ensureLoggedIn(): Promise<void> {\n    if (this.cookieHeader) return;"
+  },
+  {
+    "Target": "S1.3",
+    "Path": "src/lib/playwright/teaching-project-service.ts",
+    "FirstLine": 221,
+    "LastLine": 246,
+    "Text": "  private async getJson<T>(query: string): Promise<T> {\n    await this.ensureLoggedIn();\n    const url = `${this.baseOrigin}/hocsinh.php${query.startsWith(\"?\") ? query : `?${query}`}`;\n    const res = await fetch(url, {\n      method: \"GET\",\n      headers: {\n        Cookie: this.cookieHeader,\n        Accept: \"application/json, text/plain, */*\",\n      },\n      redirect: \"manual\",\n    });\n\n    if (res.status === 301 || res.status === 302) {\n      // Session expired, retry login once\n      this.cookieHeader = \"\";\n      await this.ensureLoggedIn();\n      const retryRes = await fetch(url, {\n        method: \"GET\",\n        headers: {\n          Cookie: this.cookieHeader,\n          Accept: \"application/json, text/plain, */*\",\n        },\n      });\n      if (!retryRes.ok) {\n        throw new Error(`HTTP ${retryRes.status} khi đọc dữ liệu từ Teaching (${query}).`);\n      }"
+  },
+  {
+    "Target": "S1.3",
+    "Path": "src/lib/playwright/teaching-project-service.ts",
+    "FirstLine": 256,
+    "LastLine": 282,
+    "Text": "  private async postForm<T>(formParams: URLSearchParams): Promise<T> {\n    await this.ensureLoggedIn();\n    const url = `${this.baseOrigin}/hocsinh.php`;\n    const res = await fetch(url, {\n      method: \"POST\",\n      headers: {\n        \"Content-Type\": \"application/x-www-form-urlencoded; charset=UTF-8\",\n        Cookie: this.cookieHeader,\n        Accept: \"application/json, text/plain, */*\",\n      },\n      body: formParams.toString(),\n      redirect: \"manual\",\n    });\n\n    if (res.status === 301 || res.status === 302) {\n      this.cookieHeader = \"\";\n      await this.ensureLoggedIn();\n      const retryRes = await fetch(url, {\n        method: \"POST\",\n        headers: {\n          \"Content-Type\": \"application/x-www-form-urlencoded; charset=UTF-8\",\n          Cookie: this.cookieHeader,\n          Accept: \"application/json, text/plain, */*\",\n        },\n        body: formParams.toString(),\n      });\n      if (!retryRes.ok) {"
+  },
+  {
+    "Target": "S1.3",
+    "Path": "src/lib/playwright/teaching-report-card-sync.ts",
+    "FirstLine": 156,
+    "LastLine": 163,
+    "Text": "async function runWithStopGuard<T>(operation: () => Promise<T>): Promise<T> {\n  ensureQueueNotStopped();\n  let unsubscribe: (() => void) | null = null;\n  try {\n    let rejectStop!: (err: Error) => void;\n    const stopPromise = new Promise<never>((_resolve, reject) => {\n      rejectStop = reject;\n    });"
+  },
+  {
+    "Target": "S1.3",
+    "Path": "src/lib/playwright/teaching-report-card-sync.ts",
+    "FirstLine": 529,
+    "LastLine": 545,
+    "Text": "{\n  private cookieHeader: string = \"\";\n  private baseOrigin: string;\n  private requestTimeoutMs: number;\n\n  constructor(baseOrigin?: string, requestTimeoutMs: number = 30000) {\n    this.baseOrigin = (baseOrigin || resolveTeachingBaseOrigin()).replace(/\\/+$/, \"\");\n    this.requestTimeoutMs = requestTimeoutMs;\n  }\n\n  private async fetchWithStopAndTimeout<T = Response>(\n    url: string,\n    init?: RequestInit,\n    consumeResponse?: (res: Response) => Promise<T>\n  ): Promise<T> {\n    ensureQueueNotStopped();\n    const controller = new AbortController();"
+  },
+  {
+    "Target": "S1.4",
+    "Path": "src/lib/playwright/teaching-report-card-sync.ts",
+    "FirstLine": 1027,
+    "LastLine": 1046,
+    "Text": "          // Must be APPROVED or VERIFIED before syncing to Teaching\n          if (current.status !== \"APPROVED\" && current.status !== \"VERIFIED\") {\n            if (current.contentHash && current.contentHash !== liveHash) {\n              try {\n                reportCardRepo.markSyncingTeaching(classId, liveHash);\n              } catch {\n                // ignore expected throw after durable repair\n              }\n            }\n            const refreshed = reportCardRepo.findOne(classId) || current;\n            return {\n              success: false,\n              statusCode: 400,\n              classId,\n              classCode: classId,\n              syncedScoreCount: 0,\n              declaredExerciseCount: 0,\n              record: refreshed,\n              error: `Phiếu điểm lớp ${classId} chưa ở trạng thái đã duyệt (trạng thái hiện tại: ${refreshed.status}). Vui lòng bấm Duyệt trước khi đồng bộ lên Teaching.`,\n            };"
+  },
+  {
+    "Target": "S1.4",
+    "Path": "src/components/teaching-report-card-view.tsx",
+    "FirstLine": 1753,
+    "LastLine": 1765,
+    "Text": "              onClick={handleSyncToTeaching}\n              disabled={\n                !isClassMatched ||\n                isLoading ||\n                isSyncingTeaching ||\n                !record ||\n                (record.status !== \"APPROVED\" && record.status !== \"VERIFIED\")\n              }\n              title={\n                !isClassMatched ||\n                (record?.status !== \"APPROVED\" && record?.status !== \"VERIFIED\")\n                  ? \"Vui lòng bấm 'Duyệt Phiếu Điểm' trước khi đồng bộ lên trang Teaching\"\n                  : \"Khai báo bài tập & đồng bộ toàn bộ điểm đã duyệt lên teachingmindx.top/hocsinh.php\""
+  },
+  {
+    "Target": "S1.5",
+    "Path": "src/app/final-project/page.tsx",
+    "FirstLine": 1134,
+    "LastLine": 1141,
+    "Text": "        const resolvedSession: 12 | 13 | 14 =\n          targetSessionNumber ||\n          ([12, 13, 14].includes(Number(data.activeSessionNumber))\n            ? (Number(data.activeSessionNumber) as 12 | 13 | 14)\n            : matchedClass?.currentSessionNumber &&\n              [12, 13, 14].includes(Number(matchedClass.currentSessionNumber))\n            ? (Number(matchedClass.currentSessionNumber) as 12 | 13 | 14)\n            : 13);"
+  },
+  {
+    "Target": "S1.5",
+    "Path": "src/app/api/spck/list/route.ts",
+    "FirstLine": 306,
+    "LastLine": 306,
+    "Text": "      selectedSessionNumber: activeSessionNumber,"
+  },
+  {
+    "Target": "S1.5",
+    "Path": "src/app/api/spck/list/route.ts",
+    "FirstLine": 445,
+    "LastLine": 445,
+    "Text": "      selectedSessionNumber: activeSessionNumber,"
+  },
+  {
+    "Target": "S1.6",
+    "Path": "src/lib/playwright/spck-uploader.ts",
+    "FirstLine": 791,
+    "LastLine": 796,
+    "Text": "            let effectiveSessionId = targetSessionId;\n            if (!effectiveSessionId && classCode === \"VT-C4K-PTA12\") {\n              if (Number(targetSession) === 12) effectiveSessionId = \"6a5dd58c8c3ce9e30a9877ab\";\n              else if (Number(targetSession) === 13) effectiveSessionId = \"6a5dd58c8c3ce9e30a9877ac\";\n              else if (Number(targetSession) === 14) effectiveSessionId = \"6a5dd58c8c3ce9e30a9877ad\";\n            }"
+  },
+  {
+    "Target": "S1.7",
+    "Path": "AGENTS.md",
+    "FirstLine": 4,
+    "LastLine": 7,
+    "Text": "2. **Local-Only Security:**\n   - Server chỉ bind vào `127.0.0.1`.\n   - Không bao giờ import hoặc trả biến môi trường nhạy cảm (`TEACHING_PASSWORD`, `LMS_PASSWORD`, `GEMINI_API_KEY`) về Client Components (`'use client'`).\n   - Mọi thao tác đọc file trên ổ cứng phải đi qua hàm kiểm tra Path Allowlist."
+  },
+  {
+    "Target": "S1.7",
+    "Path": "PROJECT_STATE.md",
+    "FirstLine": 104,
+    "LastLine": 104,
+    "Text": "- `src/lib/student-portal/student-portal-server.ts` & `src/app/api/spck/student-portal/route.ts`: Máy chủ **Cổng Thu Bài Học Sinh Trực Tuyến** cô lập (bảo vệ bằng khóa `sessionToken`, tự động tạo Link Internet toàn cầu qua `Cloudflare Quick Tunnel` + Link mạng LAN nội bộ phòng học + Mã QR), cho phép học sinh tự chọn tên trong danh sách lớp và tải cả thư mục dự án hoặc file lẻ lên $\\rightarrow$ tự động lưu vào đúng thư mục `<Thư-mục-Lớp>/<Họ-Tên-Học-Viên>/` trên máy giáo viên, tự động khóa `studentId` (`matchScore = 1.0`, `isConfirmedByTeacher = 1`) và tự động đẩy thẳng lên Google Drive kèm gắn Link Drive vào `relatedLinksJson`."
+  },
+  {
+    "Target": "S1.7",
+    "Path": "src/lib/student-portal/student-portal-server.ts",
+    "FirstLine": 362,
+    "LastLine": 378,
+    "Text": "    this.sessionToken = crypto.randomBytes(6).toString(\"hex\");\n    this.submissions.clear();\n    this.syncSubmissionsWithExistingRecords();\n\n    // Start HTTP Server on an available port (3088..3099)\n    this.port = await this.listenOnAvailablePort(3088, 3099);\n    const lanIp = getLanIpAddress();\n    this.localUrl = `http://127.0.0.1:${this.port}/s/${this.sessionToken}`;\n    this.lanUrl = `http://${lanIp}:${this.port}/s/${this.sessionToken}`;\n    this.publicTunnelUrl = null;\n    this.tunnelStatus = \"STARTING\";\n    this.tunnelProvider = \"Đang khởi tạo Link Internet...\";\n    this.startedAt = new Date().toISOString();\n    this.isRunning = true;\n\n    // Launch Public Internet Tunnel in background so startPortal returns fast\n    this.startPublicTunnelInBackground(this.port, this.sessionToken).catch(() => {"
+  },
+  {
+    "Target": "S1.7",
+    "Path": "src/lib/student-portal/student-portal-server.ts",
+    "FirstLine": 507,
+    "LastLine": 507,
+    "Text": "          srv.listen(candidatePort, \"0.0.0.0\", () => {"
+  },
+  {
+    "Target": "S1.7",
+    "Path": "src/lib/student-portal/student-portal-server.ts",
+    "FirstLine": 695,
+    "LastLine": 702,
+    "Text": "    const expectedPrefix = `/s/${this.sessionToken}`;\n\n    if (!this.isRunning || !this.sessionToken || !pathname.startsWith(expectedPrefix)) {\n      res.writeHead(403, { \"Content-Type\": \"text/html; charset=utf-8\" });\n      res.end(\n        `<!DOCTYPE html><html lang=\"vi\"><head><meta charset=\"utf-8\"><title>Cổng nộp bài đã đóng</title></head><body style=\"background:#0f172a;color:#f8fafc;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;\"><div style=\"text-align:center;max-width:460px;padding:24px;border:1px solid #334155;border-radius:16px;background:#1e293b;\"><h2>🔒 Đường dẫn nộp bài không hợp lệ hoặc đã đóng</h2><p style=\"color:#94a3b8;font-size:14px;\">Vui lòng xin lại đường dẫn mới nhất từ Thầy giảng viên.</p></div></body></html>`\n      );\n      return;"
+  }
+]

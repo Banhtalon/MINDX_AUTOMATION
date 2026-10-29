@@ -1,0 +1,16 @@
+{
+  "VerifiedUtc": "2026-10-29T17:02:16.5002213Z",
+  "Decision": "GO for S0 Baseline",
+  "Finding": "S0-01 CLOSED",
+  "ProtectedFiles": 1403,
+  "ProtectedMismatches": 0,
+  "ProductionDataMismatches": 0,
+  "TscExitCode": 0,
+  "LiveLmsTeachingRequestsIssued": false,
+  "ProductionSqliteConnectionsOpened": false,
+  "FinalReportsAndLinksValid": true,
+  "FinalGitDiffCheckExitCode": 0,
+  "FinalProtectedGitDiffExitCode": 0,
+  "TrackingS0AndS05Complete": true,
+  "S1StillPending": true
+}

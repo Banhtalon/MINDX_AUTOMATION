@@ -671,6 +671,42 @@ D:\SPCK_MindX\VT-C4K-PTA13\
   * [x] Xây dựng `scripts/test-report-card-v330.ts` chạy trên DB cô lập (`TEMP`) kiểm tra toàn diện 6 nhóm kịch bản `RC-01`..`RC-06` (gồm đối chiếu toán học với dữ liệu thật của `VT-C4K-GB40`, `VT-C4K-GA22`, `VT-JSB16`, `VT-C4K-GA38`, `VT-ROB-ARMA12`).
   * [x] Chạy Review độc lập sau mỗi chặng bằng **Codex CLI (`gpt-6.1-sol` `high`)** đạt **GO** trên cả 4 chặng (`CODEX_STAGE1_ROUND4.md`, `CODEX_STAGE2_AUDIT_ROUND4.md`, `CODEX_STAGE3_ROUND3.md`, `CODEX_STAGE4_ROUND3.md`) và đảm bảo toàn bộ cổng hồi quy (`tsc --noEmit --incremental false`, `test-phase4-codex-repros.ts`, `test-phase5.ts`, `test-phase6.ts`, `test-phase7.ts`, `test-teaching-project-v320.ts`) đạt 100% PASS.
 
+---
+
+### GIAI ĐOẠN 10 (`v3.4.0`): TINH GỌN LUỒNG NGHIỆP VỤ, GIẢM SỐ LẦN BẤM & LIÊN THÔNG 5 MÀN HÌNH (S0 $\rightarrow$ S8)
+> **Mục tiêu:** Giảm tối đa số lần bấm của giáo viên trên từng màn hình (Màn 1: `5 -> 3 bấm`, Màn 2: `4 -> 2 bấm`, Màn 3 Buổi 12/13: `6 -> 4 bấm`, Màn 3 Buổi 14: `10–11 -> ~6 bấm`), xóa bỏ sự chồng chéo giữa 5 màn hình (1 nguồn danh sách lớp chung, 1 bộ kết nối Teaching chung có giới hạn chờ & nút Stop, 1 bộ ẩn danh PII chung), liên thông gợi ý công việc giữa các màn và kiểm định độc lập **Codex CLI (`gpt-6.1-sol` `high`)** sau mỗi chặng (`S0` $\rightarrow$ `S8`).
+
+* [x] **CHẶNG S0 (Chuẩn bị & Chốt mốc xuất phát `v3.4.0` — GO, kiểm định độc lập Round 2 hoàn tất):**
+  * [x] **S0.1:** Chạy toàn bộ 11 cổng kiểm thử nền trên môi trường cô lập `TEMP`, bảo toàn 100% SHA-256 của `data/mindx_bot.db` và `data/running_classes.json` (`docs/audits/v340/BASELINE.md`).
+  * [x] **S0.2:** Chốt snapshot `chore: snapshot before v3.4.0 streamlining` (`d7e3fe8`).
+  * [x] **S0.3:** Tạo khung lời nhắn kiểm định độc lập Codex CLI tại `docs/audits/v340/prompts/TEMPLATE.md`.
+  * [x] **S0.4:** Cập nhật kế hoạch Giai đoạn 10 (`v3.4.0`) vào `MINDX_AUTOMATION_PLAN.md`, `PROJECT_STATE.md` và `CHANGELOG.md`.
+  * [x] **S0.5:** Kiểm định độc lập mốc xuất phát $\rightarrow$ [S0 Baseline](docs/audits/v340/CODEX_S0_BASELINE.md), [Round 2](docs/audits/v340/CODEX_S0_ROUND2.md): **GO — S0-01 CLOSED**. Owner đã cho phép đo SHA-256 chỉ đọc; hash, kích thước và thời gian ghi của hai tệp dữ liệu thật khớp trước/sau. TypeScript chạy mới PASS (exit 0), bảo toàn 1.403/1.403 tệp được bảo vệ và xác nhận đủ vị trí S1.1–S1.7 tại snapshot `d7e3fe8`. Đủ điều kiện triển khai S1; mười bộ hồi quy còn lại là bằng chứng BASELINE trước đó, không chạy lại ở Round 2; chưa nghiệm thu LMS/Teaching thật.
+* [ ] **CHẶNG S1 (Sửa lỗi an toàn & độ tin cậy ưu tiên cao nhất):**
+  * [ ] **S1.1:** Đưa `ClassSyncer.fetchRunningClasses()` và `ClassSyncer.syncClass()` trong `POST /api/spck/list` vào `taskQueue.enqueue` (tuân thủ nghiêm ngặt Quy tắc 3).
+  * [ ] **S1.2:** Bỏ việc tự xóa bớt lớp khỏi `data/running_classes.json` trong `POST /api/spck/list`; chỉ lọc ở tầng trả kết quả của Màn 3.
+  * [ ] **S1.3:** Tách bộ kết nối Teaching dùng chung `src/lib/teaching/teaching-http-client.ts` (có `fetchWithStopAndTimeout`, `runWithStopGuard`, tự đăng nhập lại khi 401 và dùng chung phiên cookie cho cả `teaching-project-service.ts` và `teaching-report-card-sync.ts`).
+  * [ ] **S1.4:** Cho phép thử đồng bộ lại Phiếu điểm lên Teaching từ trạng thái `FAILED` khi `contentHash` vẫn khớp bản đã duyệt (`teaching-report-card-sync.ts` & `teaching-report-card-view.tsx`).
+  * [ ] **S1.5:** Đọc đúng `selectedSessionNumber` từ `/api/spck/list` trong `src/app/final-project/page.tsx` (kèm nhánh dự phòng).
+  * [ ] **S1.6:** Loại bỏ mã buổi học viết cứng của `VT-C4K-PTA12` trong đường chạy thật của `src/lib/playwright/spck-uploader.ts`.
+  * [ ] **S1.7:** Ghi rõ ngoại lệ có chủ đích của Cổng thu bài học sinh (`0.0.0.0` + Cloudflare Quick Tunnel, bảo vệ bởi `sessionToken`) trong `AGENTS.md` và `PROJECT_STATE.md`.
+  * [ ] **S1.8:** Xây dựng `scripts/test-streamline-v340-s1.ts` và kiểm định độc lập **Codex CLI (`gpt-6.1-sol` `high`)** đạt **GO**.
+* [ ] **CHẶNG S2 (Nền tảng dùng chung: 1 danh sách lớp `class-directory.ts` & 1 `<ClassPicker>`):**
+  * [ ] **S2.1–S2.6:** Xây dựng `src/lib/classes/class-directory.ts`, route `POST /api/classes/refresh`, component `src/components/class-picker.tsx`, tích hợp trên Màn 1, 2, 3, 5, viết `scripts/test-streamline-v340-s2.ts` và đạt **GO** từ Codex CLI.
+* [ ] **CHẶNG S3 (Tinh gọn Màn 1 `/session-comments`: 5 bấm $\rightarrow$ 3 bấm):**
+  * [ ] **S3.1–S3.8:** Lưu nháp hàng loạt + debounce 600ms, hỏi xác nhận điểm danh Có mặt khi bấm AI Soạn, gộp nút `"✅ Duyệt & Đẩy LMS"`, gom 1 bộ tạo Zalo `src/lib/zalo/zalo-summary.ts`, dọn code thừa, viết `scripts/test-streamline-v340-s3.ts` và đạt **GO** từ Codex CLI.
+* [ ] **CHẶNG S4 (Tinh gọn Màn 2 `/homework-grader`: 4 bấm $\rightarrow$ 2 bấm):**
+  * [ ] **S4.1–S4.7:** Giữ 1 nút Quét duy nhất, gộp nút `"✅ Duyệt & 🚀 Đồng bộ Teaching"`, cảnh báo dữ liệu Buổi 14 mới hơn bản quét, gộp Ma trận bài nộp vào mục thu gọn, 1 hàm định dạng TSV/Excel, viết `scripts/test-streamline-v340-s4.ts` và đạt **GO** từ Codex CLI.
+* [ ] **CHẶNG S5a & S5b (Tách module & Tinh gọn Màn 3 `/final-project`: Buổi 12/13 còn 4 bấm, Buổi 14 còn ~6 bấm):**
+  * [ ] **S5a.1–S5a.3:** Tách component trong `src/components/final-project/` bảo toàn 100% hành vi và ranh giới harness `round-38`, đạt **GO** từ Codex CLI.
+  * [ ] **S5b.1–S5b.9:** Công tắc tự chạy công cụ sau Quét & Khớp HV, hộp xác nhận trước khi làm rớt duyệt, gộp `"AI soạn tất cả"` và `"Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá)"`, tự đọc Điểm Demo, viết `scripts/test-streamline-v340-s5.ts` và đạt **GO** từ Codex CLI.
+* [ ] **CHẶNG S6 (Tinh gọn Màn 5 `/teaching-projects` & Liên thông giữa các màn):**
+  * [ ] **S6.1–S6.6:** Nút `"Cập nhật tiến độ theo buổi hiện tại"` trên Màn 5, thẻ gợi ý cập nhật tiến độ Teaching ngay sau khi nộp SPCK ở Màn 3, gợi ý mở Phiếu điểm sau Buổi 14, thẻ `"Việc cần làm hôm nay"` trên Trang chủ `/`, viết `scripts/test-streamline-v340-s6.ts` và đạt **GO** từ Codex CLI.
+* [ ] **CHẶNG S7 (Dọn dẹp nội bộ, gỡ UI bỏ rơi & hợp nhất bộ ẩn danh PII / chuẩn hóa tiếng Việt):**
+  * [ ] **S7.1–S7.6:** Gỡ `homework-auto-grader-tab.tsx` và 2 tab chết trên `/syllabus-config`, chuyển Cài đặt lên góc phải Navbar, hợp nhất `src/lib/ai/pii-anonymizer.ts` và `src/lib/utils/vietnamese-match.ts`, xóa sạch `{false && ...}`, viết `scripts/test-streamline-v340-s7.ts` và đạt **GO** từ Codex CLI.
+* [ ] **CHẶNG S8 (Nghiệm thu tổng thể `v3.4.0` & Bàn giao Owner):**
+  * [ ] **S8.1–S8.5:** Chạy toàn bộ cổng kiểm thử + `npm run build`, kiểm định tổng thể bằng Codex CLI (`CODEX_V340_FINAL.md`), cập nhật 3 tài liệu và bàn giao phiếu thử cho Owner.
+
 ## Independent audit: v3.3.0 Phase 9 Stage 1 (2026-10-29)
 
 - **NO-GO** for TASK-9.1 / TASK-9.2: seven findings cover non-atomic version locking, raw-score validation, incomplete content hashing, drift during SAVING/FAILED, optional approval versions, decimal rounding, and snapshot class identity.

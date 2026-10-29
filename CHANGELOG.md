@@ -4,6 +4,16 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ---
 
+## [v3.4.0 — Đang thực hiện] — 2026-10-29 (Giai Đoạn 10: Tinh Gọn Luồng Nghiệp Vụ, Giảm Số Lần Bấm & Liên Thông 5 Màn Hình `S0` $\rightarrow$ `S8`)
+
+- **Chặng S0 (Chuẩn bị & Chốt mốc xuất phát — GO, S0.5 hoàn tất):**
+  - Chạy mới toàn bộ 11/11 cổng kiểm thử nền trên môi trường cô lập `TEMP`, bảo toàn 100% SHA-256 của `data/mindx_bot.db` và `data/running_classes.json` (`docs/audits/v340/BASELINE.md`).
+  - Lưu mốc snapshot `d7e3fe8` (`chore: snapshot before v3.4.0 streamlining`) và khởi tạo khung kiểm định độc lập **Codex CLI (`gpt-6.1-sol` `high`)** tại `docs/audits/v340/prompts/TEMPLATE.md`.
+  - **Kiểm định độc lập S0 Round 1 (lịch sử): NO-GO do thiếu xác minh SHA-256 dữ liệu thật**, chưa kết luận dữ liệu đã đổi. HEAD đúng snapshot; TypeScript PASS (exit 0); xác định đủ S1.1–S1.7 và 1.403 tệp được bảo vệ giữ nguyên. Báo cáo ngắn gốc được giữ tại `docs/audits/v340/s0-round2/round1-report-original.txt`; bằng chứng Round 1 không thay đổi.
+  - **Kiểm định độc lập S0 Round 2: GO — S0-01 CLOSED, S0.5 hoàn tất (2026-10-29–2026-10-30).** Owner xác nhận ngoại lệ đo SHA-256 chỉ đọc trong mẫu kiểm định S0–S8. Chạy mới TypeScript với ba đường dẫn dữ liệu cô lập trong TEMP, PASS (exit 0); hai tệp dữ liệu thật khớp 100% hash kỳ vọng, kích thước và thời gian ghi trước/sau. 1.403/1.403 tệp được bảo vệ và các vị trí S1.1–S1.7 giữ nguyên tại HEAD `d7e3fe8`. Không sửa mã ứng dụng, không mở kết nối SQLite tới dữ liệu thật, không gọi LMS/Teaching thật. Mười bộ hồi quy ngoài TypeScript là kết quả BASELINE trước đó, không chạy lại ở Round 2. Báo cáo: `docs/audits/v340/CODEX_S0_BASELINE.md`, `docs/audits/v340/CODEX_S0_ROUND2.md`; bằng chứng: `docs/audits/v340/s0-round2/`. Đủ điều kiện triển khai S1, chưa nghiệm thu S1 hoặc toàn bộ v3.4.0.
+
+---
+
 ## [v3.3.0] — 2026-10-29 (Phiếu Điểm Tổng Kết Chuẩn Teaching `/homework-grader` — Tự Động Lấy Điểm BTVN, Checkpoint 1 & 2, Cuối Khóa DEMO Từ LMS, Vẽ Biểu Đồ, Copy Ảnh Zalo & Đồng Bộ 1 Chạm Lên `teachingmindx.top`)
 
 > **Kiểm định độc lập v3.3.0 — Hoàn tất cả 4 Chặng (2026-10-29): GO.** Toàn bộ **Giai đoạn 9 (`v3.3.0`)** đã vượt qua cả 4 chặng kiểm định độc lập **Codex CLI (`gpt-6.1-sol` `high`)** đạt **`VERDICT: GO`**: [Chặng 1 Round 4](docs/audits/v330/CODEX_STAGE1_ROUND4.md) (`7/7 CLOSED`), [Chặng 2 Round 4](docs/audits/v330/CODEX_STAGE2_AUDIT_ROUND4.md) (`10/10 CLOSED`), [Chặng 3 Round 3](docs/audits/v330/CODEX_STAGE3_ROUND3.md) (`9/9 CLOSED`), và [Chặng 4 Round 3](docs/audits/v330/CODEX_STAGE4_ROUND3.md) (`7/7 CLOSED`, `959/959` ca probe độc lập PASS). Chạy mới toàn bộ **`npx tsc --noEmit --incremental false` PASS**, **`scripts/test-report-card-v330.ts` PASS (`RC-01` $\rightarrow$ `RC-06`)**, cùng toàn bộ các bộ kiểm thử hồi quy (`test-phase4-codex-repros.ts`, `test-phase5.ts`, `test-phase6.ts`, `test-phase7.ts`, `test-teaching-project-v320.ts`) đạt `100% PASS (exit code 0)` trên môi trường cô lập.

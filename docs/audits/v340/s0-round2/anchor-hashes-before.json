@@ -1,0 +1,134 @@
+[
+  {
+    "Path": "src/app/api/spck/list/route.ts",
+    "Round1SHA256": "D3194D3B545B0ACDCBC3641DAD63784355EA1D57207640C7603C20CAB74A9976",
+    "CurrentSHA256": "D3194D3B545B0ACDCBC3641DAD63784355EA1D57207640C7603C20CAB74A9976",
+    "MatchesRound1": true,
+    "ExistsInCommit": true,
+    "CommitRawSHA256": "A3183EB385B0EBC87033F2415CFA83B96304553DD1DE4AF49D9A34396BD68CFF",
+    "HeadBlob": "00d9d008f03ff959cd74acc6814db83d6569b616",
+    "WorkingGitBlob": "00d9d008f03ff959cd74acc6814db83d6569b616",
+    "MatchesHeadAfterGitNormalization": true
+  },
+  {
+    "Path": "src/lib/playwright/teaching-project-service.ts",
+    "Round1SHA256": "E99CFBCB598084246767C1370D98D014612EC23BE63AA6DCF95DF61CC9C2A289",
+    "CurrentSHA256": "E99CFBCB598084246767C1370D98D014612EC23BE63AA6DCF95DF61CC9C2A289",
+    "MatchesRound1": true,
+    "ExistsInCommit": true,
+    "CommitRawSHA256": "513BAFDBC3EA9A78B3BA7CE58CCF04CFF3DB0610F86610DB3AF33D0A98B390C4",
+    "HeadBlob": "d765b5ba5935f03cfc5f5c35a566f07641e68d46",
+    "WorkingGitBlob": "d765b5ba5935f03cfc5f5c35a566f07641e68d46",
+    "MatchesHeadAfterGitNormalization": true
+  },
+  {
+    "Path": "src/lib/playwright/teaching-report-card-sync.ts",
+    "Round1SHA256": "825D507D2F3DC1E9AC22383610C797A734C7E551EBBA3C21EF09087FFFDEDBA5",
+    "CurrentSHA256": "825D507D2F3DC1E9AC22383610C797A734C7E551EBBA3C21EF09087FFFDEDBA5",
+    "MatchesRound1": true,
+    "ExistsInCommit": true,
+    "CommitRawSHA256": "07BD8A569F3000F1235BEDF81AD834FCBB09CE3ECBFF46E70F3CF77D7DFD2438",
+    "HeadBlob": "4ceafc76650c7c3f7c606058d28b4f21c0b46d88",
+    "WorkingGitBlob": "4ceafc76650c7c3f7c606058d28b4f21c0b46d88",
+    "MatchesHeadAfterGitNormalization": true
+  },
+  {
+    "Path": "src/components/teaching-report-card-view.tsx",
+    "Round1SHA256": "3D55226A553350F957D039D4D69C0589E47BB302597D5F11497F44E375CDD156",
+    "CurrentSHA256": "3D55226A553350F957D039D4D69C0589E47BB302597D5F11497F44E375CDD156",
+    "MatchesRound1": true,
+    "ExistsInCommit": true,
+    "CommitRawSHA256": "3D55226A553350F957D039D4D69C0589E47BB302597D5F11497F44E375CDD156",
+    "HeadBlob": "190a45d9f3a9dd84af866f15bc518b06a7858188",
+    "WorkingGitBlob": "190a45d9f3a9dd84af866f15bc518b06a7858188",
+    "MatchesHeadAfterGitNormalization": true
+  },
+  {
+    "Path": "src/app/final-project/page.tsx",
+    "Round1SHA256": "1B0F721CCB90787176A25AB40A4E1A31AC616E98F182797C32155B72D2F0E503",
+    "CurrentSHA256": "1B0F721CCB90787176A25AB40A4E1A31AC616E98F182797C32155B72D2F0E503",
+    "MatchesRound1": true,
+    "ExistsInCommit": true,
+    "CommitRawSHA256": "1B0F721CCB90787176A25AB40A4E1A31AC616E98F182797C32155B72D2F0E503",
+    "HeadBlob": "e63581b16a848a016f47c2901f8738273bcffb10",
+    "WorkingGitBlob": "e63581b16a848a016f47c2901f8738273bcffb10",
+    "MatchesHeadAfterGitNormalization": true
+  },
+  {
+    "Path": "src/lib/playwright/spck-uploader.ts",
+    "Round1SHA256": "25C158E35C3F4AD1219125984A01BC81A865E67B9B9C53E144F580D033FF7072",
+    "CurrentSHA256": "25C158E35C3F4AD1219125984A01BC81A865E67B9B9C53E144F580D033FF7072",
+    "MatchesRound1": true,
+    "ExistsInCommit": true,
+    "CommitRawSHA256": "25C158E35C3F4AD1219125984A01BC81A865E67B9B9C53E144F580D033FF7072",
+    "HeadBlob": "d0c825aecc8ebd95c33f4c42419fdcb2bcc9ab03",
+    "WorkingGitBlob": "d0c825aecc8ebd95c33f4c42419fdcb2bcc9ab03",
+    "MatchesHeadAfterGitNormalization": true
+  },
+  {
+    "Path": "AGENTS.md",
+    "Round1SHA256": "0FCF70CA853709D9C2E43E8E685DA866F5D00288F280D5B0DCC9180637DF8426",
+    "CurrentSHA256": "0FCF70CA853709D9C2E43E8E685DA866F5D00288F280D5B0DCC9180637DF8426",
+    "MatchesRound1": true,
+    "ExistsInCommit": true,
+    "CommitRawSHA256": "93F0C3BF2DF1BFCA54DF7FF381EEA02AB1665B8B3C755FE40C27941233B4E0A3",
+    "HeadBlob": "c8bdf05de29aafee5c1f4aa0a48293fa851b2271",
+    "WorkingGitBlob": "c8bdf05de29aafee5c1f4aa0a48293fa851b2271",
+    "MatchesHeadAfterGitNormalization": true
+  },
+  {
+    "Path": "PROJECT_STATE.md",
+    "Round1SHA256": "193DB04D12E2803E45B27E2E7816B5065A31093D16B6FDFC82C41BB000AE619E",
+    "CurrentSHA256": "1DB2C84876229A3BAC6B25AE9B80B8E4E5D39D33BE3D28C7A058FFD25D880F13",
+    "MatchesRound1": false,
+    "ExistsInCommit": true,
+    "CommitRawSHA256": "5A0AFE746D16BF7AB416474BA44A8AF7D0E10B57048A82B87ECC683F1D41B361",
+    "HeadBlob": "8d903fb3d4bef48af476b36f45dbaf976bb858e2",
+    "WorkingGitBlob": "bc8bb65727c51796a897d3ce272f8eed61c7bf6d",
+    "MatchesHeadAfterGitNormalization": false
+  },
+  {
+    "Path": "MINDX_AUTOMATION_PLAN.md",
+    "Round1SHA256": "ED547AFBD1BD3A213D994F65A9725989158154ED2537C992D42BA30EF432DEAF",
+    "CurrentSHA256": "DB8F817965539AB843D206A1F302DFB3473901A8D31B175BF6A481BCCDA6AE03",
+    "MatchesRound1": false,
+    "ExistsInCommit": true,
+    "CommitRawSHA256": "CDB66969C091625B83D2CE64F06F99290BF3B27861CFB63498CBA20327B50D46",
+    "HeadBlob": "b392fcfd331e565b74aee032a40ed56edddecced",
+    "WorkingGitBlob": "66844354c89872493cb7f600b4def5f1ac0835e5",
+    "MatchesHeadAfterGitNormalization": false
+  },
+  {
+    "Path": "CHANGELOG.md",
+    "Round1SHA256": "BE61A10132D2A6EA589DD12EE1DF79F90E593A20C08890D124FB405207F61151",
+    "CurrentSHA256": "6D380E0B2102496DA901DE678C4254217FC4F37D0EC1C4995A31C047B1B06CF3",
+    "MatchesRound1": false,
+    "ExistsInCommit": true,
+    "CommitRawSHA256": "A7408D4126E897661306DDA30AA2E4F3AB1C339099199DAC5AFDFBE4286E15E1",
+    "HeadBlob": "f8c19c01eea52d23fd360c3a2dae4165495e0639",
+    "WorkingGitBlob": "35006b105a1bc2ca885c42d8e53345e83e6fdab3",
+    "MatchesHeadAfterGitNormalization": false
+  },
+  {
+    "Path": "docs/audits/v340/BASELINE.md",
+    "Round1SHA256": "1C3FDFEB03D0D29A9C4D6BF8F5C77C2AAC19E56659AEC2206F2B3F64590AC6A1",
+    "CurrentSHA256": "1C3FDFEB03D0D29A9C4D6BF8F5C77C2AAC19E56659AEC2206F2B3F64590AC6A1",
+    "MatchesRound1": true,
+    "ExistsInCommit": false,
+    "CommitRawSHA256": null,
+    "HeadBlob": null,
+    "WorkingGitBlob": "8de6f73e797883d3c1e77e091f4924f19aef2c8f",
+    "MatchesHeadAfterGitNormalization": false
+  },
+  {
+    "Path": "docs/audits/v340/prompts/TEMPLATE.md",
+    "Round1SHA256": "CFA99E4BDD735E573CD1217ED93A6069C53AA6133377E10EB762820ED3AAA5C6",
+    "CurrentSHA256": "DDA2CFF08F257B1F3E7D4CB5F1691D4EFE8586461570D661A014873CC46B0E36",
+    "MatchesRound1": false,
+    "ExistsInCommit": false,
+    "CommitRawSHA256": null,
+    "HeadBlob": null,
+    "WorkingGitBlob": "f9808b70ffbb5d486035d18834ba76a05c8787d3",
+    "MatchesHeadAfterGitNormalization": false
+  }
+]

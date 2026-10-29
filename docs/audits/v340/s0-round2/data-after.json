@@ -1,0 +1,20 @@
+﻿[
+    {
+        "Path":  "data/mindx_bot.db",
+        "SHA256":  "06E698070D6D3F50D4CD749169E5D3B3993A80F2BB3B3CDE4EC74A149D2304DB",
+        "Length":  1527808,
+        "LastWriteTimeUtc":  "2026-10-29T07:57:02.6342898Z",
+        "MeasuredUtc":  "2026-10-29T17:02:15.1902057Z",
+        "MatchesExpected":  true,
+        "MatchesBefore":  true
+    },
+    {
+        "Path":  "data/running_classes.json",
+        "SHA256":  "ADBEE2357251FCDC56DF07CAA866015BF1E75C7247439D7F7E2C2B2D78DE63E2",
+        "Length":  2392,
+        "LastWriteTimeUtc":  "2026-10-29T10:09:04.3932646Z",
+        "MeasuredUtc":  "2026-10-29T17:02:15.1952949Z",
+        "MatchesExpected":  true,
+        "MatchesBefore":  true
+    }
+]

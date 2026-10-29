@@ -1,0 +1,50 @@
+﻿[
+    {
+        "Path":  "src/app/api/spck/list/route.ts",
+        "SHA256":  "D3194D3B545B0ACDCBC3641DAD63784355EA1D57207640C7603C20CAB74A9976"
+    },
+    {
+        "Path":  "src/lib/playwright/teaching-project-service.ts",
+        "SHA256":  "E99CFBCB598084246767C1370D98D014612EC23BE63AA6DCF95DF61CC9C2A289"
+    },
+    {
+        "Path":  "src/lib/playwright/teaching-report-card-sync.ts",
+        "SHA256":  "825D507D2F3DC1E9AC22383610C797A734C7E551EBBA3C21EF09087FFFDEDBA5"
+    },
+    {
+        "Path":  "src/components/teaching-report-card-view.tsx",
+        "SHA256":  "3D55226A553350F957D039D4D69C0589E47BB302597D5F11497F44E375CDD156"
+    },
+    {
+        "Path":  "src/app/final-project/page.tsx",
+        "SHA256":  "1B0F721CCB90787176A25AB40A4E1A31AC616E98F182797C32155B72D2F0E503"
+    },
+    {
+        "Path":  "src/lib/playwright/spck-uploader.ts",
+        "SHA256":  "25C158E35C3F4AD1219125984A01BC81A865E67B9B9C53E144F580D033FF7072"
+    },
+    {
+        "Path":  "AGENTS.md",
+        "SHA256":  "0FCF70CA853709D9C2E43E8E685DA866F5D00288F280D5B0DCC9180637DF8426"
+    },
+    {
+        "Path":  "PROJECT_STATE.md",
+        "SHA256":  "193DB04D12E2803E45B27E2E7816B5065A31093D16B6FDFC82C41BB000AE619E"
+    },
+    {
+        "Path":  "MINDX_AUTOMATION_PLAN.md",
+        "SHA256":  "ED547AFBD1BD3A213D994F65A9725989158154ED2537C992D42BA30EF432DEAF"
+    },
+    {
+        "Path":  "CHANGELOG.md",
+        "SHA256":  "BE61A10132D2A6EA589DD12EE1DF79F90E593A20C08890D124FB405207F61151"
+    },
+    {
+        "Path":  "docs/audits/v340/BASELINE.md",
+        "SHA256":  "1C3FDFEB03D0D29A9C4D6BF8F5C77C2AAC19E56659AEC2206F2B3F64590AC6A1"
+    },
+    {
+        "Path":  "docs/audits/v340/prompts/TEMPLATE.md",
+        "SHA256":  "CFA99E4BDD735E573CD1217ED93A6069C53AA6133377E10EB762820ED3AAA5C6"
+    }
+]

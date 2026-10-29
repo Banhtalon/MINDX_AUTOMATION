@@ -1,0 +1,9 @@
+**Decision: NO-GO for S0 Baseline — còn thiếu xác minh SHA-256.**
+
+- **Đã làm:** Xác nhận đúng commit `d7e3fe8`, ghi đủ vị trí S1.1–S1.7; cập nhật báo cáo và ba tài liệu theo dõi.
+- **Kết quả:** TypeScript **PASS, exit 0**. Toàn bộ **1.403 tệp được bảo vệ giữ nguyên**; không sửa mã ứng dụng.
+- **Chưa kiểm tra:** Hai mã SHA-256 vì yêu cầu đồng thời cấm mở tệp. Không truy cập LMS/Teaching thật; không chạy lại mười bộ kiểm thử còn lại.
+- **Việc tiếp theo:** Làm rõ ngoại lệ chỉ tính SHA-256 theo câu hỏi đã gửi để hoàn tất S0.
+
+[Báo cáo chi tiết và vị trí từng dòng](</F:/MINDX_project test/MINDX-AUTOMATION/docs/audits/v340/CODEX_S0_BASELINE.md>).
+
