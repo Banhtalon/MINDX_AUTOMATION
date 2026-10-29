@@ -962,7 +962,9 @@ export class ClassSyncer {
    * Scrapes all classes with Status = "Running" (Đang học) from the MindX LMS Classes table
    * and caches them into data/running_classes.json for one-click selection.
    */
-  public static async fetchRunningClasses(): Promise<{
+  public static async fetchRunningClasses(options?: {
+    persistToConfig?: boolean;
+  }): Promise<{
     success: boolean;
     classes: RunningClassItem[];
     error?: string;
@@ -1309,7 +1311,8 @@ export class ClassSyncer {
       }
 
       const runningList = Array.from(collectedMap.values());
-      if (runningList.length > 0) {
+      const shouldPersist = options?.persistToConfig !== false;
+      if (runningList.length > 0 && shouldPersist) {
         saveRunningClasses(runningList);
       }
 

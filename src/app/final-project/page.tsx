@@ -1131,10 +1131,13 @@ export default function FinalProjectPage() {
           setSelectedClassId(resolvedClassId);
         }
         const matchedClass = classList.find((c) => c.classId === resolvedClassId);
+        const apiSelectedSession = Number(
+          data.selectedSessionNumber ?? data.activeSessionNumber
+        );
         const resolvedSession: 12 | 13 | 14 =
           targetSessionNumber ||
-          ([12, 13, 14].includes(Number(data.activeSessionNumber))
-            ? (Number(data.activeSessionNumber) as 12 | 13 | 14)
+          ([12, 13, 14].includes(apiSelectedSession)
+            ? (apiSelectedSession as 12 | 13 | 14)
             : matchedClass?.currentSessionNumber &&
               [12, 13, 14].includes(Number(matchedClass.currentSessionNumber))
             ? (Number(matchedClass.currentSessionNumber) as 12 | 13 | 14)
@@ -1206,9 +1209,14 @@ export default function FinalProjectPage() {
       const resolvedClassId = data.selectedClassId || "";
       setSelectedClassId(resolvedClassId);
       const matchedClass = classList.find((c) => c.classId === resolvedClassId);
+      const apiSelectedSession = Number(
+        data.selectedSessionNumber ?? data.activeSessionNumber
+      );
       const resolvedSession: 12 | 13 | 14 =
-        matchedClass?.currentSessionNumber &&
-        [12, 13, 14].includes(Number(matchedClass.currentSessionNumber))
+        [12, 13, 14].includes(apiSelectedSession)
+          ? (apiSelectedSession as 12 | 13 | 14)
+          : matchedClass?.currentSessionNumber &&
+            [12, 13, 14].includes(Number(matchedClass.currentSessionNumber))
           ? (Number(matchedClass.currentSessionNumber) as 12 | 13 | 14)
           : selectedSessionNumber;
       setSelectedSessionNumber(resolvedSession);

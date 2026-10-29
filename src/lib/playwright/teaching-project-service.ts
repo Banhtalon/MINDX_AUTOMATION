@@ -17,6 +17,12 @@ import {
   mergeExistingTeachingTasksWithStandardFive,
 } from "../gemini/teaching-project-generator";
 import { taskQueue } from "../queue/task-queue";
+import {
+  TeachingHttpClient,
+  ensureQueueNotStopped,
+  resolveTeachingBaseOrigin,
+  runWithStopGuard,
+} from "../teaching/teaching-http-client";
 import { resolveClassDateRangeInfo } from "./sync-class";
 
 export interface RemoteTeachingProject {
@@ -80,21 +86,6 @@ export interface TeachingHttpTransport {
   }): Promise<{ success: boolean; message?: string }>;
 }
 
-function resolveTeachingBaseOrigin(): string {
-  const raw = String(config.teachingUrl || "").trim();
-  try {
-    if (raw) {
-      const parsed = new URL(raw);
-      if (parsed.hostname.includes("teachingmindx.top")) {
-        return parsed.origin;
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return "https://teachingmindx.top";
-}
-
 export function parseStrictTeachingProgressInput(raw: unknown): number | null {
   if (raw === null || raw === undefined || typeof raw === "boolean") {
     return null;
@@ -146,153 +137,17 @@ export function parseRemoteTeachingProgressPayload(data: unknown): Record<string
 }
 
 export class LiveTeachingHttpTransport implements TeachingHttpTransport {
-  private cookieHeader: string = "";
-  private baseOrigin: string;
+  private client: TeachingHttpClient;
 
-  constructor(baseOrigin?: string) {
-    this.baseOrigin = (baseOrigin || resolveTeachingBaseOrigin()).replace(/\/+$/, "");
-  }
-
-  private async ensureLoggedIn(): Promise<void> {
-    if (this.cookieHeader) return;
-
-    const username = config.teachingUsername;
-    const password = config.teachingPassword;
-    if (!username || !password) {
-      throw new Error(
-        "Chưa cấu hình tài khoản hoặc mật khẩu TEACHING trong file .env.local."
-      );
-    }
-
-    const loginUrl = `${this.baseOrigin}/login.php`;
-    const r1 = await fetch(loginUrl, { redirect: "manual" });
-    const cookies1 =
-      typeof (r1.headers as any).getSetCookie === "function"
-        ? ((r1.headers as any).getSetCookie() as string[])
-        : [r1.headers.get("set-cookie") || ""];
-    const initialCookie = cookies1
-      .map((c) => c.split(";")[0].trim())
-      .filter(Boolean)
-      .join("; ");
-
-    const body = new URLSearchParams({
-      username,
-      password,
-      remember: "on",
-      redirect: "/hocsinh.php",
-    });
-
-    const r2 = await fetch(loginUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        ...(initialCookie ? { Cookie: initialCookie } : {}),
-      },
-      body: body.toString(),
-      redirect: "manual",
-    });
-
-    const cookies2 =
-      typeof (r2.headers as any).getSetCookie === "function"
-        ? ((r2.headers as any).getSetCookie() as string[])
-        : [r2.headers.get("set-cookie") || ""];
-
-    const cookieMap = new Map<string, string>();
-    for (const rawCookie of [...cookies1, ...cookies2]) {
-      const pair = rawCookie.split(";")[0].trim();
-      if (!pair) continue;
-      const eqIdx = pair.indexOf("=");
-      if (eqIdx > 0) {
-        cookieMap.set(pair.slice(0, eqIdx).trim(), pair.slice(eqIdx + 1).trim());
-      }
-    }
-
-    this.cookieHeader = Array.from(cookieMap.entries())
-      .map(([k, v]) => `${k}=${v}`)
-      .join("; ");
-
-    if (!this.cookieHeader) {
-      throw new Error(
-        "Không nhận được phiên đăng nhập (Cookie) từ hệ thống Teaching."
-      );
-    }
-  }
-
-  private async getJson<T>(query: string): Promise<T> {
-    await this.ensureLoggedIn();
-    const url = `${this.baseOrigin}/hocsinh.php${query.startsWith("?") ? query : `?${query}`}`;
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        Cookie: this.cookieHeader,
-        Accept: "application/json, text/plain, */*",
-      },
-      redirect: "manual",
-    });
-
-    if (res.status === 301 || res.status === 302) {
-      // Session expired, retry login once
-      this.cookieHeader = "";
-      await this.ensureLoggedIn();
-      const retryRes = await fetch(url, {
-        method: "GET",
-        headers: {
-          Cookie: this.cookieHeader,
-          Accept: "application/json, text/plain, */*",
-        },
-      });
-      if (!retryRes.ok) {
-        throw new Error(`HTTP ${retryRes.status} khi đọc dữ liệu từ Teaching (${query}).`);
-      }
-      return (await retryRes.json()) as T;
-    }
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} khi đọc dữ liệu từ Teaching (${query}).`);
-    }
-    return (await res.json()) as T;
-  }
-
-  private async postForm<T>(formParams: URLSearchParams): Promise<T> {
-    await this.ensureLoggedIn();
-    const url = `${this.baseOrigin}/hocsinh.php`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        Cookie: this.cookieHeader,
-        Accept: "application/json, text/plain, */*",
-      },
-      body: formParams.toString(),
-      redirect: "manual",
-    });
-
-    if (res.status === 301 || res.status === 302) {
-      this.cookieHeader = "";
-      await this.ensureLoggedIn();
-      const retryRes = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          Cookie: this.cookieHeader,
-          Accept: "application/json, text/plain, */*",
-        },
-        body: formParams.toString(),
-      });
-      if (!retryRes.ok) {
-        throw new Error(`HTTP ${retryRes.status} khi gửi dữ liệu lên Teaching.`);
-      }
-      return (await retryRes.json()) as T;
-    }
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} khi gửi dữ liệu lên Teaching.`);
-    }
-    return (await res.json()) as T;
+  constructor(baseOrigin?: string, requestTimeoutMs: number = 30000) {
+    this.client = new TeachingHttpClient(
+      baseOrigin || resolveTeachingBaseOrigin(),
+      requestTimeoutMs
+    );
   }
 
   public async getProject(classCode: string): Promise<RemoteTeachingProject | null> {
-    const data = await this.getJson<any>(
+    const data = await this.client.getJson<any>(
       `?get_duan_project=1&class_code=${encodeURIComponent(classCode)}`
     );
     if (!data || typeof data !== "object" || !data.id) {
@@ -309,9 +164,7 @@ export class LiveTeachingHttpTransport implements TeachingHttpTransport {
   }
 
   public async getStudents(classCode: string): Promise<RemoteTeachingStudent[]> {
-    const data = await this.getJson<any>(
-      `?get_students_of_class=1&class_code=${encodeURIComponent(classCode)}`
-    );
+    const data = await this.client.getStudentsOfClass<any>(classCode);
     if (!Array.isArray(data)) return [];
     return data
       .map((s) => ({
@@ -324,7 +177,7 @@ export class LiveTeachingHttpTransport implements TeachingHttpTransport {
   }
 
   public async getTasks(projectId: number): Promise<RemoteTeachingTask[]> {
-    const data = await this.getJson<any>(
+    const data = await this.client.getJson<any>(
       `?get_duan_tasks=1&project_id=${encodeURIComponent(String(projectId))}`
     );
     if (!Array.isArray(data)) return [];
@@ -343,7 +196,7 @@ export class LiveTeachingHttpTransport implements TeachingHttpTransport {
   }
 
   public async getTaskProgress(projectId: number): Promise<Record<string, number>> {
-    const data = await this.getJson<RemoteTeachingProgressMap | unknown[]>(
+    const data = await this.client.getJson<RemoteTeachingProgressMap | unknown[]>(
       `?get_duan_task_progress=1&project_id=${encodeURIComponent(String(projectId))}`
     );
     return parseRemoteTeachingProgressPayload(data);
@@ -363,7 +216,7 @@ export class LiveTeachingHttpTransport implements TeachingHttpTransport {
     params.set("start_date", payload.startDate);
     params.set("end_date", payload.endDate);
     params.set("description", payload.description || "");
-    return await this.postForm<{ success: boolean; message?: string; id?: number }>(params);
+    return await this.client.postForm<{ success: boolean; message?: string; id?: number }>(params);
   }
 
   public async saveTask(payload: {
@@ -386,14 +239,14 @@ export class LiveTeachingHttpTransport implements TeachingHttpTransport {
     for (const sid of payload.assignedStudentIds) {
       params.append("assigned_students[]", String(sid));
     }
-    return await this.postForm<{ success: boolean; message?: string; id?: number }>(params);
+    return await this.client.postForm<{ success: boolean; message?: string; id?: number }>(params);
   }
 
   public async deleteTask(taskId: number): Promise<{ success: boolean; message?: string }> {
     const params = new URLSearchParams();
     params.set("action", "delete_task");
     params.set("task_id", String(taskId));
-    return await this.postForm<{ success: boolean; message?: string }>(params);
+    return await this.client.postForm<{ success: boolean; message?: string }>(params);
   }
 
   public async updateTaskProgress(payload: {
@@ -406,7 +259,7 @@ export class LiveTeachingHttpTransport implements TeachingHttpTransport {
     params.set("task_id", String(payload.taskId));
     params.set("student_id", String(payload.studentId));
     params.set("progress_percent", String(payload.progressPercent));
-    return await this.postForm<{ success: boolean; message?: string }>(params);
+    return await this.client.postForm<{ success: boolean; message?: string }>(params);
   }
 }
 
@@ -452,18 +305,22 @@ export class TeachingProjectService {
     let remoteFetchError: string | undefined;
 
     try {
-      const [prj, stus] = await Promise.all([
-        transport.getProject(classCode),
-        transport.getStudents(classCode),
-      ]);
+      const [prj, stus] = await runWithStopGuard(() =>
+        Promise.all([
+          transport.getProject(classCode),
+          transport.getStudents(classCode),
+        ])
+      );
       remoteProject = prj;
       remoteStudentsRaw = stus;
 
       if (prj && prj.id) {
-        const [tasks, prog] = await Promise.all([
-          transport.getTasks(prj.id),
-          transport.getTaskProgress(prj.id),
-        ]);
+        const [tasks, prog] = await runWithStopGuard(() =>
+          Promise.all([
+            transport.getTasks(prj.id),
+            transport.getTaskProgress(prj.id),
+          ])
+        );
         remoteTasksRaw = tasks;
         remoteProgress = prog;
       }
@@ -655,7 +512,13 @@ export class TeachingProjectService {
     const transport = options?.transport || new LiveTeachingHttpTransport();
 
     const current = teachingProjectRepo.getOrInit(classCode);
-    if (current.status !== "APPROVED" && current.status !== "VERIFIED") {
+    const canRetryFailed =
+      current.status === "FAILED" && Boolean(current.contentHash);
+    if (
+      current.status !== "APPROVED" &&
+      current.status !== "VERIFIED" &&
+      !canRetryFailed
+    ) {
       return {
         success: false,
         classCode,
@@ -695,9 +558,7 @@ export class TeachingProjectService {
       description: `Đẩy Dự án cuối khóa & 5 phần công việc lớp ${classCode} lên Teaching`,
       execute: async () => {
         try {
-          if ((process as any).__mindxQueueStopped) {
-            throw new Error("Tác vụ đã bị dừng khẩn cấp (Stop Bot).");
-          }
+          ensureQueueNotStopped();
 
           const savingRecord = teachingProjectRepo.markSaving(classCode, expectedHash);
           const approvedTasks = normalizeTeachingProjectTasks(
@@ -712,7 +573,9 @@ export class TeachingProjectService {
           }
 
           // 1. Check or Create Project on Teaching
-          let remoteProject = await transport.getProject(classCode);
+          let remoteProject = await runWithStopGuard(() =>
+            transport.getProject(classCode)
+          );
           let createdNewProject = false;
 
           if (!remoteProject || !remoteProject.id) {
@@ -724,13 +587,15 @@ export class TeachingProjectService {
               message: `Lớp ${classCode} chưa có dự án trên Teaching -> Đang tạo dự án "${savingRecord.projectName}" (${savingRecord.startDate} -> ${savingRecord.endDate})...`,
             });
 
-            const createRes = await transport.createProject({
-              classCode,
-              projectName: savingRecord.projectName,
-              startDate: savingRecord.startDate,
-              endDate: savingRecord.endDate,
-              description: savingRecord.description,
-            });
+            const createRes = await runWithStopGuard(() =>
+              transport.createProject({
+                classCode,
+                projectName: savingRecord.projectName,
+                startDate: savingRecord.startDate,
+                endDate: savingRecord.endDate,
+                description: savingRecord.description,
+              })
+            );
 
             if (!createRes || !createRes.success) {
               throw new Error(
@@ -740,7 +605,9 @@ export class TeachingProjectService {
             }
 
             createdNewProject = true;
-            remoteProject = await transport.getProject(classCode);
+            remoteProject = await runWithStopGuard(() =>
+              transport.getProject(classCode)
+            );
             if (!remoteProject || !remoteProject.id) {
               throw new Error(
                 `Đã gọi create_project cho lớp ${classCode} nhưng không tìm thấy project_id khi đọc lại từ Teaching.`
@@ -751,13 +618,13 @@ export class TeachingProjectService {
           const projectId = Number(remoteProject.id);
 
           // 2. Fetch existing remote tasks so we update in-place instead of duplicating
-          const existingRemoteTasks = await transport.getTasks(projectId);
+          const existingRemoteTasks = await runWithStopGuard(() =>
+            transport.getTasks(projectId)
+          );
           const usedRemoteIds = new Set<number>();
 
           for (let i = 0; i < 5; i++) {
-            if ((process as any).__mindxQueueStopped) {
-              throw new Error("Tác vụ đã bị dừng khẩn cấp (Stop Bot).");
-            }
+            ensureQueueNotStopped();
 
             const t = approvedTasks[i];
             let targetTaskId: number | null = null;
@@ -787,15 +654,17 @@ export class TeachingProjectService {
               message: `Đang ${targetTaskId ? `cập nhật (ID=${targetTaskId})` : "thêm mới"} Công việc ${i + 1}/5: "${t.taskName}" (${t.weightPercent}%, hạn ${t.deadline})...`,
             });
 
-            const saveRes = await transport.saveTask({
-              projectId,
-              taskId: targetTaskId,
-              taskName: t.taskName,
-              weightPercent: t.weightPercent,
-              deadline: t.deadline,
-              description: t.description,
-              assignedStudentIds: t.assignedStudentIds,
-            });
+            const saveRes = await runWithStopGuard(() =>
+              transport.saveTask({
+                projectId,
+                taskId: targetTaskId,
+                taskName: t.taskName,
+                weightPercent: t.weightPercent,
+                deadline: t.deadline,
+                description: t.description,
+                assignedStudentIds: t.assignedStudentIds,
+              })
+            );
 
             if (!saveRes || !saveRes.success) {
               throw new Error(
@@ -810,7 +679,7 @@ export class TeachingProjectService {
             for (const rt of existingRemoteTasks) {
               const rid = Number(rt.id);
               if (!usedRemoteIds.has(rid)) {
-                await transport.deleteTask(rid);
+                await runWithStopGuard(() => transport.deleteTask(rid));
               }
             }
           }
@@ -824,10 +693,12 @@ export class TeachingProjectService {
             message: `Đang thực hiện Read-after-Write Verification đối chiếu Dự án & 5 Công việc trên Teaching...`,
           });
 
-          const [verifiedPrj, verifiedRemoteTasks] = await Promise.all([
-            transport.getProject(classCode),
-            transport.getTasks(projectId),
-          ]);
+          const [verifiedPrj, verifiedRemoteTasks] = await runWithStopGuard(() =>
+            Promise.all([
+              transport.getProject(classCode),
+              transport.getTasks(projectId),
+            ])
+          );
 
           if (!verifiedPrj || Number(verifiedPrj.id) !== projectId) {
             throw new Error(
@@ -1088,13 +959,16 @@ export class TeachingProjectService {
       description: `Cập nhật tiến độ ${sanitizedUpdates.length} mục dự án lớp ${classCode} trên Teaching`,
       execute: async () => {
         try {
+          ensureQueueNotStopped();
           const current = teachingProjectRepo.getOrInit(classCode);
           let projectId = current.teachingProjectId
             ? Number(current.teachingProjectId)
             : null;
 
           if (!projectId) {
-            const remotePrj = await transport.getProject(classCode);
+            const remotePrj = await runWithStopGuard(() =>
+              transport.getProject(classCode)
+            );
             if (!remotePrj || !remotePrj.id) {
               throw new Error(
                 `Không tìm thấy dự án của lớp ${classCode} trên Teaching để cập nhật tiến độ.`
@@ -1125,10 +999,12 @@ export class TeachingProjectService {
             // ignore
           }
 
-          const [remoteTasks, remoteStudents] = await Promise.all([
-            transport.getTasks(projectId),
-            transport.getStudents(classCode),
-          ]);
+          const [remoteTasks, remoteStudents] = await runWithStopGuard(() =>
+            Promise.all([
+              transport.getTasks(projectId!),
+              transport.getStudents(classCode),
+            ])
+          );
           const remoteTaskMap = new Map<number, RemoteTeachingTask>();
           for (const rt of remoteTasks) {
             if (Number(rt.project_id) === projectId) {
@@ -1201,14 +1077,14 @@ export class TeachingProjectService {
           }
 
           for (const item of sanitizedUpdates) {
-            if ((process as any).__mindxQueueStopped) {
-              throw new Error("Tác vụ đã bị dừng khẩn cấp (Stop Bot).");
-            }
-            const res = await transport.updateTaskProgress({
-              taskId: item.taskId,
-              studentId: item.studentId,
-              progressPercent: item.progressPercent,
-            });
+            ensureQueueNotStopped();
+            const res = await runWithStopGuard(() =>
+              transport.updateTaskProgress({
+                taskId: item.taskId,
+                studentId: item.studentId,
+                progressPercent: item.progressPercent,
+              })
+            );
             if (!res || !res.success) {
               throw new Error(
                 res?.message ||
@@ -1218,7 +1094,9 @@ export class TeachingProjectService {
           }
 
           // F09 Guard: Read-after-Write Verification on task progress must require explicit key presence and valid integer 0..100
-          const rawVerifiedProgress = await transport.getTaskProgress(projectId);
+          const rawVerifiedProgress = await runWithStopGuard(() =>
+            transport.getTaskProgress(projectId!)
+          );
           const verifiedProgress = parseRemoteTeachingProgressPayload(rawVerifiedProgress);
           for (const item of sanitizedUpdates) {
             const key = `${item.taskId}_${item.studentId}`;

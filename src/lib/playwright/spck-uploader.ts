@@ -16,6 +16,7 @@ import type { Page, Response } from "playwright";
 import { config } from "../config";
 import {
   assertClassHasSpckSession,
+  classSessionRepo,
   computeSafeFileByteDigest,
   computeSpckContentHash,
   getDb,
@@ -663,6 +664,23 @@ export class SpckUploader {
           .evaluate("window.__name = window.__name || function(f){ return f; }")
           .catch(() => {});
 
+        if (!capturedSessionId) {
+          try {
+            const dbSessions = classSessionRepo.findByClass(normalizedClassId);
+            const matchedDbSession = dbSessions.find(
+              (s) => Number(s.sessionNumber) === Number(targetSessionNumber)
+            );
+            if (
+              matchedDbSession?.sessionId &&
+              /^[a-f0-9]{24}$/i.test(matchedDbSession.sessionId.trim())
+            ) {
+              capturedSessionId = matchedDbSession.sessionId.trim();
+            }
+          } catch {
+            // ignore DB lookup error
+          }
+        }
+
         const clearSummary = await page.evaluate(
           async ({
             classCode,
@@ -788,13 +806,13 @@ export class SpckUploader {
             const isNotDeleted = (w: any) =>
               w.isDeleted !== true && String(w.isDeleted || "").toLowerCase() !== "true";
 
-            let effectiveSessionId = targetSessionId;
-            if (!effectiveSessionId && classCode === "VT-C4K-PTA12") {
-              if (Number(targetSession) === 12) effectiveSessionId = "6a5dd58c8c3ce9e30a9877ab";
-              else if (Number(targetSession) === 13) effectiveSessionId = "6a5dd58c8c3ce9e30a9877ac";
-              else if (Number(targetSession) === 14) effectiveSessionId = "6a5dd58c8c3ce9e30a9877ad";
-            }
-            if (!effectiveSessionId && !isCustomPage) {
+            const isValidHex24 = (val: unknown): val is string =>
+              typeof val === "string" && /^[a-f0-9]{24}$/i.test(val.trim());
+
+            let effectiveSessionId = isValidHex24(targetSessionId)
+              ? targetSessionId.trim()
+              : "";
+            if (!effectiveSessionId) {
               const slotRes = await gql(
                 `query GetClassSlots($id: ID!) {
                   class(id: $id) {
@@ -807,7 +825,7 @@ export class SpckUploader {
               const slotIdx = Number(targetSession) - 1;
               if (Array.isArray(slotsArr) && slotIdx >= 0 && slotIdx < slotsArr.length) {
                 const candidateSlotId = slotsArr[slotIdx]?._id;
-                if (typeof candidateSlotId === "string" && candidateSlotId.trim() !== "") {
+                if (isValidHex24(candidateSlotId)) {
                   effectiveSessionId = candidateSlotId.trim();
                 }
               }

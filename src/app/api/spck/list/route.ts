@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { getQuickTags, getRunningClasses, saveRunningClasses } from "@/lib/db/json-config";
+import { getQuickTags, getRunningClasses } from "@/lib/db/json-config";
+import { taskQueue } from "@/lib/queue/task-queue";
+import { ensureQueueNotStopped } from "@/lib/teaching/teaching-http-client";
 import {
   getDb,
   getSpckStageInfo,
@@ -345,72 +347,91 @@ export async function POST(req: Request) {
       );
     }
 
-    const runningRes = await ClassSyncer.fetchRunningClasses();
-    const runningList =
-      runningRes.classes && runningRes.classes.length > 0
-        ? runningRes.classes
-        : getRunningClasses();
+    const { runningList, syncedClassCodes, allowedRunningSet } =
+      await taskQueue.enqueue({
+        id: `spck_list_sync_${Date.now()}`,
+        jobType: "SYNC_CLASS",
+        description:
+          "Quét và đồng bộ danh sách lớp đủ điều kiện nộp SPCK trên LMS",
+        execute: async () => {
+          ensureQueueNotStopped();
+          const runningRes = await ClassSyncer.fetchRunningClasses({
+            persistToConfig: false,
+          });
+          ensureQueueNotStopped();
+          const list =
+            runningRes.classes && runningRes.classes.length > 0
+              ? runningRes.classes.map((c) => ({ ...c }))
+              : getRunningClasses().map((c) => ({ ...c }));
 
-    const { allClassesMap: beforeMap } = queryEligibleSpckClasses(12);
-    const syncedClassCodes: string[] = [];
-    const allowedRunningSet = new Set<string>();
-    const expiredFinishedCodes = new Set<string>();
+          const { allClassesMap: beforeMap } = queryEligibleSpckClasses(12);
+          const syncedCodes: string[] = [];
+          const allowedSet = new Set<string>();
 
-    for (const item of runningList) {
-      const code = (item.classCode || "").trim().toUpperCase();
-      if (!code) continue;
-      const existingMeta = beforeMap.get(code);
-      const isFinished = item.status === "Finished";
+          for (const item of list) {
+            ensureQueueNotStopped();
+            const code = (item.classCode || "").trim().toUpperCase();
+            if (!code) continue;
+            const existingMeta = beforeMap.get(code);
+            const isFinished = item.status === "Finished";
 
-      if (isFinished) {
-        const s14InfoBefore = resolveClassSession14DateInfo(code, item.endDate);
-        const hasStudents = studentRepo.findByClass(code, false).length > 0;
-        const needsFinishedSync =
-          !existingMeta ||
-          !s14InfoBefore.isExactSession14 ||
-          !hasStudents;
-        if (needsFinishedSync) {
-          const syncRes = await ClassSyncer.syncClass(code);
-          if (syncRes.success) {
-            syncedClassCodes.push(code);
+            if (isFinished) {
+              const s14InfoBefore = resolveClassSession14DateInfo(
+                code,
+                item.endDate
+              );
+              const hasStudents = studentRepo.findByClass(code, false).length > 0;
+              const needsFinishedSync =
+                !existingMeta ||
+                !s14InfoBefore.isExactSession14 ||
+                !hasStudents;
+              if (needsFinishedSync) {
+                ensureQueueNotStopped();
+                const syncRes = await ClassSyncer.syncClass(code);
+                ensureQueueNotStopped();
+                if (syncRes.success) {
+                  syncedCodes.push(code);
+                }
+              }
+              const postGrace = isFinishedClassWithinGraceWindow(
+                code,
+                item.endDate,
+                FINISHED_CLASS_GRACE_DAYS
+              );
+              if (postGrace.withinWindow) {
+                allowedSet.add(code);
+                item.endDate = postGrace.session14Date || item.endDate;
+              }
+              continue;
+            }
+
+            allowedSet.add(code);
+            const needsSync =
+              !existingMeta ||
+              existingMeta.currentSessionNumber === 0 ||
+              existingMeta.currentSessionNumber >= 10 ||
+              (forceResyncAll &&
+                String(body?.classId || "").trim().toUpperCase() === code);
+            if (needsSync) {
+              ensureQueueNotStopped();
+              const syncRes = await ClassSyncer.syncClass(code);
+              ensureQueueNotStopped();
+              if (syncRes.success) {
+                syncedCodes.push(code);
+              }
+            }
           }
-        }
-        const postGrace = isFinishedClassWithinGraceWindow(
-          code,
-          item.endDate,
-          FINISHED_CLASS_GRACE_DAYS
-        );
-        if (postGrace.withinWindow) {
-          allowedRunningSet.add(code);
-          item.endDate = postGrace.session14Date || item.endDate;
-        } else {
-          expiredFinishedCodes.add(code);
-        }
-        continue;
-      }
 
-      allowedRunningSet.add(code);
-      const needsSync =
-        !existingMeta ||
-        existingMeta.currentSessionNumber === 0 ||
-        existingMeta.currentSessionNumber >= 10 ||
-        (forceResyncAll && String(body?.classId || "").trim().toUpperCase() === code);
-      if (needsSync) {
-        const syncRes = await ClassSyncer.syncClass(code);
-        if (syncRes.success) {
-          syncedClassCodes.push(code);
-        }
-      }
-    }
+          ensureQueueNotStopped();
+          return {
+            runningList: list,
+            syncedClassCodes: syncedCodes,
+            allowedRunningSet: allowedSet,
+          };
+        },
+      });
 
-    if (expiredFinishedCodes.size > 0) {
-      const prunedList = runningList.filter(
-        (item) => !expiredFinishedCodes.has((item.classCode || "").trim().toUpperCase())
-      );
-      if (prunedList.length > 0) {
-        saveRunningClasses(prunedList);
-      }
-    }
+    ensureQueueNotStopped();
 
     const { eligibleClasses } = queryEligibleSpckClasses(
       12,

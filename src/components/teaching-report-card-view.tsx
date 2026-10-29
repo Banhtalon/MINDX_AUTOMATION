@@ -1756,11 +1756,15 @@ export default function TeachingReportCardView({
                 isLoading ||
                 isSyncingTeaching ||
                 !record ||
-                (record.status !== "APPROVED" && record.status !== "VERIFIED")
+                (record.status !== "APPROVED" &&
+                  record.status !== "VERIFIED" &&
+                  !(record.status === "FAILED" && Boolean(record.contentHash)))
               }
               title={
                 !isClassMatched ||
-                (record?.status !== "APPROVED" && record?.status !== "VERIFIED")
+                (record?.status !== "APPROVED" &&
+                  record?.status !== "VERIFIED" &&
+                  !(record?.status === "FAILED" && Boolean(record?.contentHash)))
                   ? "Vui lòng bấm 'Duyệt Phiếu Điểm' trước khi đồng bộ lên trang Teaching"
                   : "Khai báo bài tập & đồng bộ toàn bộ điểm đã duyệt lên teachingmindx.top/hocsinh.php"
               }
