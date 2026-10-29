@@ -1,0 +1,985 @@
+[
+  {
+    "id": "S3-01-TEACHING_-missing-with-name-fallback",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "calls": [
+        "getStudents"
+      ],
+      "scoreWrites": 0
+    }
+  },
+  {
+    "id": "S3-01-TEACHING_-inactive-with-active-fallback",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "calls": [
+        "getStudents"
+      ],
+      "scoreWrites": 0
+    }
+  },
+  {
+    "id": "S3-01-TEACHING_-wrong-tone-with-exact-fallback",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "calls": [
+        "getStudents"
+      ],
+      "scoreWrites": 0
+    }
+  },
+  {
+    "id": "S3-01-TEACHING_-wrong-name-with-no-tone-fallback",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "calls": [
+        "getStudents"
+      ],
+      "scoreWrites": 0
+    }
+  },
+  {
+    "id": "S3-01-TEACHING_-duplicate-remote-name",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "calls": [
+        "getStudents"
+      ],
+      "scoreWrites": 0
+    }
+  },
+  {
+    "id": "S3-01-TEACHING_-duplicate-remote-id",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "calls": [
+        "getStudents"
+      ],
+      "scoreWrites": 0
+    }
+  },
+  {
+    "id": "S3-01-TEACHING_-local-reuse",
+    "result": "CLOSED",
+    "details": "Both explicit prefixes cannot claim one remote student"
+  },
+  {
+    "id": "S3-01-TEACHING_-normalized-positive",
+    "result": "CLOSED",
+    "details": "NFC, whitespace and case normalization preserve exact tones"
+  },
+  {
+    "id": "S3-01-TID:-missing-with-name-fallback",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "calls": [
+        "getStudents"
+      ],
+      "scoreWrites": 0
+    }
+  },
+  {
+    "id": "S3-01-TID:-inactive-with-active-fallback",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "calls": [
+        "getStudents"
+      ],
+      "scoreWrites": 0
+    }
+  },
+  {
+    "id": "S3-01-TID:-wrong-tone-with-exact-fallback",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "calls": [
+        "getStudents"
+      ],
+      "scoreWrites": 0
+    }
+  },
+  {
+    "id": "S3-01-TID:-wrong-name-with-no-tone-fallback",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "calls": [
+        "getStudents"
+      ],
+      "scoreWrites": 0
+    }
+  },
+  {
+    "id": "S3-01-TID:-duplicate-remote-name",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "calls": [
+        "getStudents"
+      ],
+      "scoreWrites": 0
+    }
+  },
+  {
+    "id": "S3-01-TID:-duplicate-remote-id",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "calls": [
+        "getStudents"
+      ],
+      "scoreWrites": 0
+    }
+  },
+  {
+    "id": "S3-01-TID:-local-reuse",
+    "result": "CLOSED",
+    "details": "Both explicit prefixes cannot claim one remote student"
+  },
+  {
+    "id": "S3-01-TID:-normalized-positive",
+    "result": "CLOSED",
+    "details": "NFC, whitespace and case normalization preserve exact tones"
+  },
+  {
+    "id": "S3-03-exact",
+    "result": "CLOSED",
+    "details": {
+      "status": "VERIFIED",
+      "scoreWrites": 9
+    }
+  },
+  {
+    "id": "S3-03-numeric-string",
+    "result": "CLOSED",
+    "details": {
+      "status": "VERIFIED",
+      "scoreWrites": 9
+    }
+  },
+  {
+    "id": "S3-03-same-rounded-value",
+    "result": "CLOSED",
+    "details": {
+      "status": "VERIFIED",
+      "scoreWrites": 9
+    }
+  },
+  {
+    "id": "S3-03-cent-plus-string",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "scoreWrites": 9
+    }
+  },
+  {
+    "id": "S3-03-cent-minus-string",
+    "result": "CLOSED",
+    "details": {
+      "status": "FAILED",
+      "scoreWrites": 9
+    }
+  },
+  {
+    "id": "S3-07-legacy-0+1",
+    "result": "CLOSED",
+    "details": {
+      "status": 400,
+      "repositoryUnchanged": true
+    }
+  },
+  {
+    "id": "S3-07-legacy-0+2",
+    "result": "CLOSED",
+    "details": {
+      "status": 400,
+      "repositoryUnchanged": true
+    }
+  },
+  {
+    "id": "S3-07-legacy-1+2",
+    "result": "CLOSED",
+    "details": {
+      "status": 400,
+      "repositoryUnchanged": true
+    }
+  },
+  {
+    "id": "S3-07-legacy-0+1+2",
+    "result": "CLOSED",
+    "details": {
+      "status": 400,
+      "repositoryUnchanged": true
+    }
+  },
+  {
+    "id": "S3-07-legacy-partial-sources",
+    "result": "CLOSED",
+    "details": "Four partial/empty top-level sources plus updates rejected without repository changes"
+  },
+  {
+    "id": "S3-07-legacy-single-0",
+    "result": "CLOSED",
+    "details": {
+      "status": 200,
+      "normScore": 1
+    }
+  },
+  {
+    "id": "S3-07-legacy-single-1",
+    "result": "CLOSED",
+    "details": {
+      "status": 200,
+      "normScore": 2
+    }
+  },
+  {
+    "id": "S3-07-legacy-single-2",
+    "result": "CLOSED",
+    "details": {
+      "status": 200,
+      "normScore": 3
+    }
+  },
+  {
+    "id": "S3-07-set_override-0+1",
+    "result": "CLOSED",
+    "details": {
+      "status": 400,
+      "repositoryUnchanged": true
+    }
+  },
+  {
+    "id": "S3-07-set_override-0+2",
+    "result": "CLOSED",
+    "details": {
+      "status": 400,
+      "repositoryUnchanged": true
+    }
+  },
+  {
+    "id": "S3-07-set_override-1+2",
+    "result": "CLOSED",
+    "details": {
+      "status": 400,
+      "repositoryUnchanged": true
+    }
+  },
+  {
+    "id": "S3-07-set_override-0+1+2",
+    "result": "CLOSED",
+    "details": {
+      "status": 400,
+      "repositoryUnchanged": true
+    }
+  },
+  {
+    "id": "S3-07-set_override-partial-sources",
+    "result": "CLOSED",
+    "details": "Four partial/empty top-level sources plus updates rejected without repository changes"
+  },
+  {
+    "id": "S3-07-set_override-single-0",
+    "result": "CLOSED",
+    "details": {
+      "status": 200,
+      "normScore": 1
+    }
+  },
+  {
+    "id": "S3-07-set_override-single-1",
+    "result": "CLOSED",
+    "details": {
+      "status": 200,
+      "normScore": 2
+    }
+  },
+  {
+    "id": "S3-07-set_override-single-2",
+    "result": "CLOSED",
+    "details": {
+      "status": 200,
+      "normScore": 3
+    }
+  },
+  {
+    "id": "S3-07-save_overrides-0+1",
+    "result": "CLOSED",
+    "details": {
+      "status": 400,
+      "repositoryUnchanged": true
+    }
+  },
+  {
+    "id": "S3-07-save_overrides-0+2",
+    "result": "CLOSED",
+    "details": {
+      "status": 400,
+      "repositoryUnchanged": true
+    }
+  },
+  {
+    "id": "S3-07-save_overrides-1+2",
+    "result": "CLOSED",
+    "details": {
+      "status": 400,
+      "repositoryUnchanged": true
+    }
+  },
+  {
+    "id": "S3-07-save_overrides-0+1+2",
+    "result": "CLOSED",
+    "details": {
+      "status": 400,
+      "repositoryUnchanged": true
+    }
+  },
+  {
+    "id": "S3-07-save_overrides-partial-sources",
+    "result": "CLOSED",
+    "details": "Four partial/empty top-level sources plus updates rejected without repository changes"
+  },
+  {
+    "id": "S3-07-save_overrides-single-0",
+    "result": "CLOSED",
+    "details": {
+      "status": 200,
+      "normScore": 1
+    }
+  },
+  {
+    "id": "S3-07-save_overrides-single-1",
+    "result": "CLOSED",
+    "details": {
+      "status": 200,
+      "normScore": 2
+    }
+  },
+  {
+    "id": "S3-07-save_overrides-single-2",
+    "result": "CLOSED",
+    "details": {
+      "status": 200,
+      "normScore": 3
+    }
+  },
+  {
+    "id": "S3-04-retry-addMultiExercise-0",
+    "result": "CLOSED",
+    "details": {
+      "ack": null,
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-addMultiExercise-1",
+    "result": "CLOSED",
+    "details": {
+      "ack": [],
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-addMultiExercise-2",
+    "result": "CLOSED",
+    "details": {
+      "ack": true,
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-addMultiExercise-3",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "ok": true
+      },
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-addMultiExercise-4",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "status": "success"
+      },
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-addMultiExercise-5",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "success": "true",
+        "ok": true
+      },
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-addMultiExercise-6",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "success": 1,
+        "status": "success"
+      },
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-addMultiExercise-7",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "success": true
+      },
+      "accepted": true,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-saveScores-0",
+    "result": "CLOSED",
+    "details": {
+      "ack": null,
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-saveScores-1",
+    "result": "CLOSED",
+    "details": {
+      "ack": [],
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-saveScores-2",
+    "result": "CLOSED",
+    "details": {
+      "ack": true,
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-saveScores-3",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "ok": true
+      },
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-saveScores-4",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "status": "success"
+      },
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-saveScores-5",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "success": "true",
+        "ok": true
+      },
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-saveScores-6",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "success": 1,
+        "status": "success"
+      },
+      "accepted": false,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-04-retry-saveScores-7",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "success": true
+      },
+      "accepted": true,
+      "businessCalls": 2
+    }
+  },
+  {
+    "id": "S3-08-getStudents-direct-stop",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getStudents-direct-timeout",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 30
+    }
+  },
+  {
+    "id": "S3-08-getStudents-direct-success",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getStudents-direct-malformed",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getStudents-retry-stop",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getStudents-retry-timeout",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 30
+    }
+  },
+  {
+    "id": "S3-08-getStudents-retry-success",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getStudents-retry-malformed",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getExercises-direct-stop",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getExercises-direct-timeout",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 30
+    }
+  },
+  {
+    "id": "S3-08-getExercises-direct-success",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getExercises-direct-malformed",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getExercises-retry-stop",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getExercises-retry-timeout",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 30
+    }
+  },
+  {
+    "id": "S3-08-getExercises-retry-success",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getExercises-retry-malformed",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getScores-direct-stop",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getScores-direct-timeout",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 30
+    }
+  },
+  {
+    "id": "S3-08-getScores-direct-success",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getScores-direct-malformed",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getScores-retry-stop",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getScores-retry-timeout",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 30
+    }
+  },
+  {
+    "id": "S3-08-getScores-retry-success",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-getScores-retry-malformed",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-addMultiExercise-direct-stop",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-addMultiExercise-direct-timeout",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 30
+    }
+  },
+  {
+    "id": "S3-08-addMultiExercise-direct-success",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-addMultiExercise-direct-malformed",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-addMultiExercise-retry-stop",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-addMultiExercise-retry-timeout",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 30
+    }
+  },
+  {
+    "id": "S3-08-addMultiExercise-retry-success",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-addMultiExercise-retry-malformed",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-saveScores-direct-stop",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-saveScores-direct-timeout",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 30
+    }
+  },
+  {
+    "id": "S3-08-saveScores-direct-success",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-saveScores-direct-malformed",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 1,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-saveScores-retry-stop",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-saveScores-retry-timeout",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": true,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 30
+    }
+  },
+  {
+    "id": "S3-08-saveScores-retry-success",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  },
+  {
+    "id": "S3-08-saveScores-retry-malformed",
+    "result": "CLOSED",
+    "details": {
+      "signalAborted": false,
+      "settled": true,
+      "subscriptionsAfter": 0,
+      "businessCalls": 2,
+      "timeoutMs": 1000
+    }
+  }
+]

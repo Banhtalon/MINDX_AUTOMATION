@@ -1,0 +1,69 @@
+﻿{
+    "Files":  [
+                  {
+                      "Path":  "data/mindx_bot.db",
+                      "BeforeSHA256":  "93CDF719342E7B7AF6A49C2A96382842C8ECBDD161319063BB2FBC65EE4DF5EA",
+                      "AfterSHA256":  "93CDF719342E7B7AF6A49C2A96382842C8ECBDD161319063BB2FBC65EE4DF5EA",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "LastWriteTimeUnchanged":  true
+                  },
+                  {
+                      "Path":  "data/running_classes.json",
+                      "BeforeSHA256":  "614F2CA361B5FE238A3F4BF067945C0F734AEF5524A295A1217688999A6C3581",
+                      "AfterSHA256":  "614F2CA361B5FE238A3F4BF067945C0F734AEF5524A295A1217688999A6C3581",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "LastWriteTimeUnchanged":  true
+                  },
+                  {
+                      "Path":  "src/lib/playwright/scrape-scores.ts",
+                      "BeforeSHA256":  "160A32D8F32B41E9A4797785878EFD1A954090486BA030B0CD426E49BDAAAF17",
+                      "AfterSHA256":  "160A32D8F32B41E9A4797785878EFD1A954090486BA030B0CD426E49BDAAAF17",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "LastWriteTimeUnchanged":  true
+                  },
+                  {
+                      "Path":  "scripts/test-report-card-v330.ts",
+                      "BeforeSHA256":  "80C40D79D3DD90D39CDD9BA6BC233EE634F314512247AFE811C9CF94C46BE41F",
+                      "AfterSHA256":  "80C40D79D3DD90D39CDD9BA6BC233EE634F314512247AFE811C9CF94C46BE41F",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "LastWriteTimeUnchanged":  true
+                  },
+                  {
+                      "Path":  "docs/audits/v330/stage2/probe.ts",
+                      "BeforeSHA256":  "1C18611C55518D28FF7F12092CF74216E242A963A2AD206168E91632AAFC4B96",
+                      "AfterSHA256":  "1C18611C55518D28FF7F12092CF74216E242A963A2AD206168E91632AAFC4B96",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "LastWriteTimeUnchanged":  true
+                  },
+                  {
+                      "Path":  "docs/audits/v330/stage2-round2/probe.ts",
+                      "BeforeSHA256":  "EC33088C0D3F5EB3BE32CBF630CCD0E565CF4581F34774D59BC02C48E1549B94",
+                      "AfterSHA256":  "EC33088C0D3F5EB3BE32CBF630CCD0E565CF4581F34774D59BC02C48E1549B94",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "LastWriteTimeUnchanged":  true
+                  },
+                  {
+                      "Path":  "src/lib/db/sqlite.ts",
+                      "BeforeSHA256":  "E7B0CAD9127BC7C3AB5A4EEB4AE871D70E206CC333C1C2164F25DD3880239A4C",
+                      "AfterSHA256":  "E7B0CAD9127BC7C3AB5A4EEB4AE871D70E206CC333C1C2164F25DD3880239A4C",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "LastWriteTimeUnchanged":  true
+                  }
+              ],
+    "TemporaryDirectoryCleanup":  {
+                                      "Status":  "Retained",
+                                      "Reason":  "Automatic approval review rejected deletion: blocked by policy",
+                                      "Paths":  [
+                                                    "data/_temp_stage2_round3_7d57383edb7a4082ade3084fc57c0018",
+                                                    "data/_temp_stage2_round3_extra_ca79167d3339488d8e4f9c6f726ebc50",
+                                                    "data/_temp_stage2_round3_typecheck_ba2fc2d3e43542699931d0527c066345"
+                                                ]
+                                  }
+}

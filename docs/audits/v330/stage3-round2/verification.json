@@ -1,0 +1,62 @@
+﻿{
+    "date":  "2026-10-29",
+    "head":  "4f7a87069f0675c27d89ee5d88fd238ea71b4d88",
+    "scope":  "TASK-9.4 Stage 3 Round 2",
+    "verdict":  "NO-GO",
+    "closedFindings":  [
+                           "S3-02",
+                           "S3-05",
+                           "S3-06",
+                           "S3-09 (audited sync path)"
+                       ],
+    "partialOpenFindings":  [
+                                "S3-01",
+                                "S3-03",
+                                "S3-04",
+                                "S3-07",
+                                "S3-08"
+                            ],
+    "tempRoot":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round2-e93d94e101f94a2785649717115f4c57",
+    "commands":  [
+                     {
+                         "command":  "npx.cmd tsc --noEmit --incremental false",
+                         "exitCode":  0,
+                         "log":  "tsc-final.log"
+                     },
+                     {
+                         "command":  "npx.cmd tsx scripts/test-report-card-v330.ts",
+                         "exitCode":  0,
+                         "log":  "report-card.log"
+                     },
+                     {
+                         "command":  "npx.cmd tsx scripts/test-phase4-codex-repros.ts",
+                         "exitCode":  0,
+                         "log":  "phase4.log"
+                     },
+                     {
+                         "command":  "npx.cmd tsx docs/audits/v330/stage3/adversarial-probe.ts",
+                         "exitCode":  0,
+                         "log":  "stage3.log"
+                     },
+                     {
+                         "command":  "npx.cmd tsx docs/audits/v330/stage3-round2/closure-probe.ts",
+                         "exitCode":  0,
+                         "log":  "closure-probe.log"
+                     }
+                 ],
+    "originalProbe":  {
+                          "pass":  40,
+                          "observations":  40
+                      },
+    "supplementalProbe":  {
+                              "exitZeroMeans":  "Evidence collection complete; OPEN records are release blockers",
+                              "observations":  72,
+                              "open":  17,
+                              "closed":  55
+                          },
+    "preservation":  {
+                         "allUnchanged":  true,
+                         "files":  145
+                     },
+    "liveRequests":  false
+}

@@ -14,13 +14,11 @@ import {
   FileCode,
   Eye,
   X,
-  Bot,
+  Award,
   Table2,
 } from "lucide-react";
-import {
-  HomeworkAutoGraderTab,
-  type GradingRubric,
-} from "@/components/homework-auto-grader-tab";
+import TeachingReportCardView from "@/components/teaching-report-card-view";
+import type { GradingRubric } from "@/components/homework-auto-grader-tab";
 
 type ScoreCellStatus =
   | "GRADED"
@@ -116,7 +114,7 @@ export default function HomeworkGraderPage() {
   const [isFetchingClasses, setIsFetchingClasses] = useState(false);
   const [showCustomClassInput, setShowCustomClassInput] = useState(false);
   const [exportFormat, setExportFormat] = useState<"xlsx" | "csv">("xlsx");
-  const [activeTab, setActiveTab] = useState<"scores" | "grader">("scores");
+  const [activeTab, setActiveTab] = useState<"report_card" | "scores">("report_card");
   const [matrix, setMatrix] = useState<ClassScoreMatrixResult | null>(null);
   const [rubrics, setRubrics] = useState<GradingRubric[]>([]);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
@@ -267,9 +265,14 @@ export default function HomeworkGraderPage() {
     }
   };
 
-  const handleScrapeScores = async () => {
+  const handleScrapeScores = async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
     const norm = classCode.trim().toUpperCase();
-    if (!norm) return;
+    if (!norm) {
+      return { success: false, error: "Mã lớp không hợp lệ." };
+    }
     const scrapeRequestId = ++latestScrapeRequestIdRef.current;
     latestLoadRequestIdRef.current++;
     setIsLoadingCache(false);
@@ -300,32 +303,40 @@ export default function HomeworkGraderPage() {
         scrapeRequestId !== latestScrapeRequestIdRef.current ||
         activeClassIdRef.current !== norm
       ) {
-        return;
+        return {
+          success: false,
+          error: "Yêu cầu quét điểm đã bị hủy do đổi lớp.",
+        };
       }
       // Invalidate any concurrent cache GET so it cannot overwrite the fresh scrape result
       latestLoadRequestIdRef.current++;
       setIsLoadingCache(false);
 
-      if (data.success) {
+      if (res.ok !== false && data?.success) {
         setMatrix(data);
         setUpdatedAt(new Date().toLocaleString("vi-VN"));
         setStatusMessage({
           type: "success",
           text: `Đã cào thành công bảng điểm lớp ${norm}: ${data.summary?.totalStudents || 0} học viên × ${data.summary?.totalColumns || 0} cột bài tập (${data.summary?.gradedCells || 0} đã chấm, ${data.summary?.submittedUngradedCells || 0} chờ chấm, ${data.summary?.redoCells || 0} yêu cầu làm lại).`,
         });
+        return { success: true };
       } else {
+        const errText = `Cào bảng điểm thất bại: ${data?.error || "Không thể đọc dữ liệu từ LMS"}`;
         setStatusMessage({
           type: "error",
-          text: `Cào bảng điểm thất bại: ${data.error || "Không thể đọc dữ liệu từ LMS"}`,
+          text: errText,
         });
+        return { success: false, error: errText };
       }
     } catch (err: any) {
+      const errText = `Lỗi kết nối API: ${err.message}`;
       if (scrapeRequestId === latestScrapeRequestIdRef.current) {
         setStatusMessage({
           type: "error",
-          text: `Lỗi kết nối API: ${err.message}`,
+          text: errText,
         });
       }
+      return { success: false, error: errText };
     } finally {
       if (scrapeRequestId === latestScrapeRequestIdRef.current) {
         scrapingClassRef.current = null;
@@ -551,10 +562,10 @@ export default function HomeworkGraderPage() {
             </span>
             <div>
               <h1 className="text-xl font-extrabold tracking-wide">
-                Tự Chấm Bài Tập &amp; Bảng Điểm Báo Cáo Toàn Khóa
+                Phiếu Điểm Tổng Kết (Chuẩn Teaching) &amp; Bảng Điểm BTVN
               </h1>
               <p className="text-xs text-blue-100 mt-0.5">
-                Quét bảng điểm lớp &amp; xuất báo cáo • Tải bài tập về máy &amp; chấm tự động theo Barem
+                Tự động lấy điểm BTVN, Check-point 1 &amp; 2, Năng lực `[ĐNL]` và Cuối khóa DEMO từ LMS • Đồng bộ 1 chạm lên Teaching
               </p>
             </div>
           </div>
@@ -710,41 +721,45 @@ export default function HomeworkGraderPage() {
         )}
       </div>
 
-      {/* Tab Switcher: Tab 1 (Bảng Điểm Tổng Hợp) vs Tab 2 (Chấm Bài Tự Động) */}
-      <div className="flex items-center gap-2 p-1.5 rounded-xl mindx-card w-fit">
+      {/* Tab Switcher: Tab 1 (Phiếu Điểm Tổng Kết Chuẩn Teaching) vs Tab 2 (Ma Trận Bài Nộp LMS) */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-xl mindx-card w-fit">
+        <button
+          type="button"
+          onClick={() => setActiveTab("report_card")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+            activeTab === "report_card"
+              ? "bg-indigo-700 text-white shadow-md shadow-indigo-700/20 mindx-dark-btn mindx-dark-keep"
+              : "text-slate-400 hover:text-white hover:bg-slate-800"
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          Phiếu Điểm Tổng Kết (Chuẩn Teaching — BTVN, CP1, CP2 &amp; DEMO)
+        </button>
         <button
           type="button"
           onClick={() => setActiveTab("scores")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
             activeTab === "scores"
-              ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 mindx-dark-btn"
+              ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 mindx-dark-btn mindx-dark-keep"
               : "text-slate-400 hover:text-white hover:bg-slate-800"
           }`}
         >
           <Table2 className="w-4 h-4" />
-          Tab 1: Bảng Điểm Tổng Hợp (Xuất Excel / Google Sheets)
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("grader")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
-            activeTab === "grader"
-              ? "bg-purple-600 text-white shadow-md shadow-purple-600/20 mindx-dark-btn"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
-          }`}
-        >
-          <Bot className="w-4 h-4" />
-          Tab 2: Chấm Bài Tự Động Theo Barem (AI + ScoreAuditor)
+          Ma Trận Bài Nộp BTVN Chi Tiết Trên LMS (Xuất Excel / Xem Nhận Xét)
         </button>
       </div>
 
-      {activeTab === "grader" ? (
-        <HomeworkAutoGraderTab
+      {activeTab === "report_card" ? (
+        <TeachingReportCardView
           classId={classId}
           classCode={classCode}
-          columns={matrix?.columns || []}
-          initialRubrics={rubrics}
-          onRefreshMatrix={() => loadCachedScores(classId)}
+          onSelectClass={(nextCode) => {
+            setClassCode(nextCode);
+            setClassId(nextCode);
+          }}
+          scrapeTrigger={updatedAt || matrix?.scrapedAt || ""}
+          onRequestScrapeLms={handleScrapeScores}
+          isScrapingExternal={isScraping}
         />
       ) : (
         <>

@@ -1,0 +1,72 @@
+﻿[
+    {
+        "path":  "src/components/teaching-report-card-view.tsx",
+        "sha256":  "787BA1D75CFFE2D97BD4A4A1AF9EDF46617F1DF9680A106AACA98F1F3626BC95",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "src/app/homework-grader/page.tsx",
+        "sha256":  "27EFB7ADB35D8589987B5EF72D46793682F7DC6EBB531C10B5B011C8F3DBD2A0",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "src/app/syllabus-config/page.tsx",
+        "sha256":  "2A0CA24582D10C0952C7AED2B83A9B1172DA25B0DF62EA86D57FDEE5FB623944",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "src/app/page.tsx",
+        "sha256":  "BFA59DC675507CF5939D119F618B01667473ED6FE6C9FE3F00B3C84A8F53013B",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "src/components/top-navbar.tsx",
+        "sha256":  "940F8343C9F3F5C76DA55C0447D71B8982A7FC53CEADD1AF4B5244A2B8F0706C",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "scripts/test-report-card-v330.ts",
+        "sha256":  "890E614F1FC0D021FB093866692216B326DF8995A926145BA33CD1B4055FADD5",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "scripts/test-phase4-codex-repros.ts",
+        "sha256":  "ED31335FB5F17D154A02F3829833C3976CBCC7BC1F0D8E5D1F1AFC59A30146B2",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "scripts/test-phase5.ts",
+        "sha256":  "86D8EF70CCDFF949010EE30B76F6F2C9CB9AAB7C08DCD5350A9F2A0E105EA690",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "scripts/test-phase7.ts",
+        "sha256":  "4B82AC2DAC6B4E302B34E2839ABD61D1D3AC1050F076D57F7CA50F25F6B0CE7E",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "src/lib/report-card/report-card-calculator.ts",
+        "sha256":  "E0FFE06E41D429AFE511F737E68599B1D7EC17FD09F3B43DEAB5FC3B206671AA",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "src/app/api/report-card/route.ts",
+        "sha256":  "2A93406FA205441BA882A1EAA9DD6D40E685F101674E16D45B58AF7CD551B23C",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "src/app/api/report-card/sync-teaching/route.ts",
+        "sha256":  "DB462266F21E0AF6A42CBF94C95FE493EC4F0C0DD51DA94B8A259BB571D3404D",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "src/components/homework-auto-grader-tab.tsx",
+        "sha256":  "7FE409BA7F72DA97A2B3F12DACB0DE6A1D89ABAD24D0EF15060D7DC412D7098B",
+        "matchesPreTestCopy":  true
+    },
+    {
+        "path":  "src/lib/db/sqlite.ts",
+        "sha256":  "50E7198AE53BA5D28C27F7B27F0CA680CB6CB9F946E0291137E7DFC3F1DAA275",
+        "matchesPreTestCopy":  true
+    }
+]

@@ -1,0 +1,309 @@
+[
+  {
+    "id": "CONTROL-parser",
+    "result": "PASS",
+    "details": "Invalid numeric inputs rejected; zero and numeric strings retained"
+  },
+  {
+    "id": "CONTROL-identity",
+    "result": "PASS",
+    "details": "Ordinary duplicate names and cross-class rows blocked"
+  },
+  {
+    "id": "S3-01-accent-collision",
+    "result": "PASS",
+    "details": {
+      "localStudentId": "101",
+      "localFullName": "Nguyễn Văn An",
+      "teachingStudentId": 102,
+      "teachingStudentName": "Nguyễn Văn An"
+    }
+  },
+  {
+    "id": "S3-01-duplicate-bypass",
+    "result": "PASS",
+    "details": "Bare numeric LMS ID does not bypass duplicate Teaching name ambiguity"
+  },
+  {
+    "id": "S3-01-end-to-end",
+    "result": "PASS",
+    "details": "VERIFIED after all scores written to exact match An (#102), never Ân (#101)"
+  },
+  {
+    "id": "S3-02-inactive",
+    "result": "PASS",
+    "details": {
+      "status": "inactive",
+      "excluded": true
+    }
+  },
+  {
+    "id": "S3-02-dropped",
+    "result": "PASS",
+    "details": {
+      "status": "dropped",
+      "excluded": true
+    }
+  },
+  {
+    "id": "S3-02-nghỉ học",
+    "result": "PASS",
+    "details": {
+      "status": "nghỉ học",
+      "excluded": true
+    }
+  },
+  {
+    "id": "S3-02-nghi_hoc",
+    "result": "PASS",
+    "details": {
+      "status": "nghi_hoc",
+      "excluded": true
+    }
+  },
+  {
+    "id": "S3-02-ascii-status",
+    "result": "PASS",
+    "details": "nghi_hoc excluded cleanly and active #102 selected"
+  },
+  {
+    "id": "S3-02-end-to-end",
+    "result": "PASS",
+    "details": {
+      "status": "FAILED",
+      "inactiveStudentScoresWritten": 0
+    }
+  },
+  {
+    "id": "S3-03-normalized-undefined",
+    "result": "PASS",
+    "details": {
+      "success": false,
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-normalized-null",
+    "result": "PASS",
+    "details": {
+      "success": false,
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-normalized-\"\"",
+    "result": "PASS",
+    "details": {
+      "success": false,
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-normalized-\"   \"",
+    "result": "PASS",
+    "details": {
+      "success": false,
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-normalized-[]",
+    "result": "PASS",
+    "details": {
+      "success": false,
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-slot-normalized",
+    "result": "PASS",
+    "details": {
+      "success": false,
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "CONTROL-readback-raw",
+    "result": "PASS",
+    "details": {
+      "status": "FAILED",
+      "error": "[Read-after-Write Error] Điểm raw_score tại (101-1-btvn-theory) trên Teaching (1) không khớp với giá trị đã lưu (80)."
+    }
+  },
+  {
+    "id": "CONTROL-readback-normalized",
+    "result": "PASS",
+    "details": {
+      "status": "FAILED",
+      "error": "[Read-after-Write Error] Điểm quy đổi thang 5 tại (101-1-btvn-theory) trên Teaching (1) không khớp mức kỳ vọng (4)."
+    }
+  },
+  {
+    "id": "CONTROL-readback-stale-null",
+    "result": "PASS",
+    "details": {
+      "status": "FAILED",
+      "error": "[Read-after-Write Error] Phát hiện điểm raw_score cũ hoặc không hợp lệ trên Teaching tại (101-1-btvn-practice) = 90 trong khi bản duyệt hiện tại để trống (null)."
+    }
+  },
+  {
+    "id": "CONTROL-robotics",
+    "result": "PASS",
+    "details": "CP1=4, CP2=8, final=14; no BTVN declarations or scores"
+  },
+  {
+    "id": "S3-05-omitted-service-version",
+    "result": "PASS",
+    "details": {
+      "statusCode": 400
+    }
+  },
+  {
+    "id": "CONTROL-midflight-content-drift",
+    "result": "PASS",
+    "details": "Normal edits blocked; external SQL score change rejected and approval durably cleared"
+  },
+  {
+    "id": "S3-09-state-transition",
+    "result": "PASS",
+    "details": "Externally changed FAILED state rejected by SAVING/SYNCING ownership predicate"
+  },
+  {
+    "id": "S3-08-stop-side-effects",
+    "result": "PASS",
+    "details": {
+      "declarationsAfterStop": [],
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "CONTROL-queued-version",
+    "result": "PASS",
+    "details": "Version checked after earlier queue task completes; stale task rejected before transport writes"
+  },
+  {
+    "id": "S3-06-malformed-POST-report-card",
+    "result": "PASS",
+    "details": {
+      "status": 400,
+      "body": {
+        "success": false,
+        "error": "Cú pháp JSON trong yêu cầu không hợp lệ."
+      }
+    }
+  },
+  {
+    "id": "S3-06-malformed-PUT-report-card",
+    "result": "PASS",
+    "details": {
+      "status": 400,
+      "body": {
+        "success": false,
+        "error": "Cú pháp JSON trong yêu cầu không hợp lệ."
+      }
+    }
+  },
+  {
+    "id": "S3-06-malformed-POST-sync-teaching",
+    "result": "PASS",
+    "details": {
+      "status": 400,
+      "body": {
+        "success": false,
+        "error": "Cú pháp JSON trong yêu cầu không hợp lệ."
+      }
+    }
+  },
+  {
+    "id": "CONTROL-route-guards",
+    "result": "PASS",
+    "details": "All 4 handlers reject nonlocal Host, cross-origin and cross-site requests before JSON parse"
+  },
+  {
+    "id": "CONTROL-api-validation",
+    "result": "PASS",
+    "details": "Missing/invalid versions, invalid scores and stale version 409 checks pass"
+  },
+  {
+    "id": "S3-07-action-set_override",
+    "result": "PASS",
+    "details": {
+      "status": 200,
+      "version": 3,
+      "recordStatus": "WAITING_APPROVAL"
+    }
+  },
+  {
+    "id": "S3-07-action-clear_override",
+    "result": "PASS",
+    "details": {
+      "status": 200,
+      "version": 4,
+      "recordStatus": "WAITING_APPROVAL"
+    }
+  },
+  {
+    "id": "S3-07-action-reset_student_overrides",
+    "result": "PASS",
+    "details": {
+      "status": 200,
+      "version": 5,
+      "recordStatus": "WAITING_APPROVAL"
+    }
+  },
+  {
+    "id": "S3-07-action-reset_all_overrides",
+    "result": "PASS",
+    "details": {
+      "status": 200,
+      "version": 6,
+      "recordStatus": "WAITING_APPROVAL"
+    }
+  },
+  {
+    "id": "S3-07-action-approve",
+    "result": "PASS",
+    "details": {
+      "status": 200,
+      "version": 6,
+      "recordStatus": "APPROVED"
+    }
+  },
+  {
+    "id": "S3-07-action-ignored",
+    "result": "PASS",
+    "details": "clear_override + updates rejected with 400; contradictory/unknown actions rejected"
+  },
+  {
+    "id": "S3-04-live-protocol",
+    "result": "PASS",
+    "details": {
+      "loginStatuses": [
+        503,
+        200,
+        200
+      ],
+      "firstExerciseRead": {
+        "success": false
+      },
+      "writesAfterError": 0,
+      "finalStatus": "FAILED",
+      "requestsHaveAbortSignal": true
+    }
+  },
+  {
+    "id": "S3-08-stalled-read-stop",
+    "result": "PASS",
+    "details": {
+      "syncSettled": true,
+      "requestHasAbortSignal": true,
+      "statusAfterStop": "FAILED",
+      "queueRunningAfterStop": false
+    }
+  },
+  {
+    "id": "CONTROL-live-http-json",
+    "result": "PASS",
+    "details": "Invalid JSON syntax and business HTTP 403 rejected"
+  }
+]

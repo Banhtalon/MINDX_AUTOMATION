@@ -1,0 +1,620 @@
+[
+  {
+    "id": "S3-01-valid-TEACHING_101",
+    "result": "CLOSED",
+    "details": "Exact active explicit binding accepted"
+  },
+  {
+    "id": "S3-01-wrong-tone-TEACHING_101",
+    "result": "CLOSED",
+    "details": {
+      "rejected": true,
+      "error": "Error: [Student Match Error] Họ tên học viên \"Nguyễn Văn An\" không khớp chính xác dấu tiếng Việt với học sinh ID=#101 (\"Nguyễn Văn Ân\") trên Teaching."
+    }
+  },
+  {
+    "id": "S3-02-explicit-TEACHING_101",
+    "result": "CLOSED",
+    "details": {
+      "rejected": true,
+      "error": "Error: [Student Match Error] Học viên \"Nguyễn Văn An\" (ID=#101) trên Teaching đang ở trạng thái nghỉ học / bảo lưu (inactive), không thể tự động ghi điểm."
+    }
+  },
+  {
+    "id": "S3-01-duplicate-TEACHING_101",
+    "result": "CLOSED",
+    "details": {
+      "rejected": true,
+      "error": "Error: [Student Match Error] Có nhiều học sinh trùng tên \"Nguyễn Văn An\" trên Teaching ở lớp AUDIT-MATCH, không thể tự động ghép điểm an toàn."
+    }
+  },
+  {
+    "id": "S3-01-valid-TID:101",
+    "result": "CLOSED",
+    "details": "Exact active explicit binding accepted"
+  },
+  {
+    "id": "S3-01-wrong-tone-TID:101",
+    "result": "CLOSED",
+    "details": {
+      "rejected": true,
+      "error": "Error: [Student Match Error] Họ tên học viên \"Nguyễn Văn An\" không khớp chính xác dấu tiếng Việt với học sinh ID=#101 (\"Nguyễn Văn Ân\") trên Teaching."
+    }
+  },
+  {
+    "id": "S3-02-explicit-TID:101",
+    "result": "CLOSED",
+    "details": {
+      "rejected": true,
+      "error": "Error: [Student Match Error] Học viên \"Nguyễn Văn An\" (ID=#101) trên Teaching đang ở trạng thái nghỉ học / bảo lưu (inactive), không thể tự động ghi điểm."
+    }
+  },
+  {
+    "id": "S3-01-duplicate-TID:101",
+    "result": "CLOSED",
+    "details": {
+      "rejected": true,
+      "error": "Error: [Student Match Error] Có nhiều học sinh trùng tên \"Nguyễn Văn An\" trên Teaching ở lớp AUDIT-MATCH, không thể tự động ghép điểm an toàn."
+    }
+  },
+  {
+    "id": "S3-01-numeric-name-priority",
+    "result": "CLOSED",
+    "details": {
+      "id": 102,
+      "rejected": false
+    }
+  },
+  {
+    "id": "S3-01-explicit-wrong-tone-end-to-end",
+    "result": "CLOSED",
+    "details": {
+      "success": false,
+      "status": "FAILED",
+      "scoreWrites": 0,
+      "writtenStudentIds": []
+    }
+  },
+  {
+    "id": "S3-02-status-matrix",
+    "result": "CLOSED",
+    "details": "13 inactive statuses excluded from exact and no-tone branches; explicit inactive cases above"
+  },
+  {
+    "id": "S3-03-pushed-0",
+    "result": "CLOSED",
+    "details": {
+      "value": "undefined",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-pushed-1",
+    "result": "CLOSED",
+    "details": {
+      "value": "null",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-pushed-2",
+    "result": "CLOSED",
+    "details": {
+      "value": "",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-pushed-3",
+    "result": "CLOSED",
+    "details": {
+      "value": " ",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-pushed-4",
+    "result": "CLOSED",
+    "details": {
+      "value": "",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-pushed-5",
+    "result": "CLOSED",
+    "details": {
+      "value": "[object Object]",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-pushed-6",
+    "result": "CLOSED",
+    "details": {
+      "value": "true",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-pushed-7",
+    "result": "CLOSED",
+    "details": {
+      "value": "NaN",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-pushed-8",
+    "result": "CLOSED",
+    "details": {
+      "value": "Infinity",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-pushed-9",
+    "result": "CLOSED",
+    "details": {
+      "value": "bad",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-raw_score-0",
+    "result": "CLOSED",
+    "details": {
+      "value": "0",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-raw_score-1",
+    "result": "CLOSED",
+    "details": {
+      "value": "5",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-raw_score-2",
+    "result": "CLOSED",
+    "details": {
+      "value": "0",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-raw_score-3",
+    "result": "CLOSED",
+    "details": {
+      "value": "5",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-raw_score-4",
+    "result": "CLOSED",
+    "details": {
+      "value": "",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-raw_score-5",
+    "result": "CLOSED",
+    "details": {
+      "value": "[object Object]",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-raw_score-6",
+    "result": "CLOSED",
+    "details": {
+      "value": "true",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-raw_score-7",
+    "result": "CLOSED",
+    "details": {
+      "value": "NaN",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-raw_score-8",
+    "result": "CLOSED",
+    "details": {
+      "value": "Infinity",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-raw_score-9",
+    "result": "CLOSED",
+    "details": {
+      "value": "bad",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-normalized_score-0",
+    "result": "CLOSED",
+    "details": {
+      "value": "0",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-normalized_score-1",
+    "result": "CLOSED",
+    "details": {
+      "value": "5",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-normalized_score-2",
+    "result": "CLOSED",
+    "details": {
+      "value": "0",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-normalized_score-3",
+    "result": "CLOSED",
+    "details": {
+      "value": "5",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-normalized_score-4",
+    "result": "CLOSED",
+    "details": {
+      "value": "",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-normalized_score-5",
+    "result": "CLOSED",
+    "details": {
+      "value": "[object Object]",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-normalized_score-6",
+    "result": "CLOSED",
+    "details": {
+      "value": "true",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-normalized_score-7",
+    "result": "CLOSED",
+    "details": {
+      "value": "NaN",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-normalized_score-8",
+    "result": "CLOSED",
+    "details": {
+      "value": "Infinity",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-null-normalized_score-9",
+    "result": "CLOSED",
+    "details": {
+      "value": "bad",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-normalized-cent-0.01",
+    "result": "CLOSED",
+    "details": {
+      "expected": 4,
+      "returned": 4.01,
+      "success": false,
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-03-normalized-cent--0.01",
+    "result": "CLOSED",
+    "details": {
+      "expected": 4,
+      "returned": 3.99,
+      "success": false,
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-05-invalid-service-versions",
+    "result": "CLOSED",
+    "details": "11 invalid/omitted versions rejected before transport"
+  },
+  {
+    "id": "S3-05-repository-version-forwarding",
+    "result": "CLOSED",
+    "details": [
+      [
+        "syncing",
+        2
+      ],
+      [
+        "verified",
+        2
+      ]
+    ]
+  },
+  {
+    "id": "S3-09-stale-version",
+    "result": "CLOSED",
+    "details": "Same hash, stale expectedVersion cannot verify"
+  },
+  {
+    "id": "S3-06-body-matrix",
+    "result": "CLOSED",
+    "details": "18 malformed/non-object requests returned 400"
+  },
+  {
+    "id": "S3-07-invalid-actions",
+    "result": "CLOSED",
+    "details": "Unknown action and specified contradictory action payloads rejected"
+  },
+  {
+    "id": "S3-07-conflicting-score-payloads",
+    "result": "CLOSED",
+    "details": {
+      "status": 400
+    }
+  },
+  {
+    "id": "S3-07-action-effects-and-stale-versions",
+    "result": "CLOSED",
+    "details": "All five actions verified against actual override contents/status; each rejects stale version with 409"
+  },
+  {
+    "id": "S3-04-login-statuses",
+    "result": "CLOSED",
+    "details": "Both login GET/POST reject 400 and 503"
+  },
+  {
+    "id": "S3-04-read-shapes",
+    "result": "CLOSED",
+    "details": "15 error/non-array responses rejected on all three read endpoints"
+  },
+  {
+    "id": "S3-04-ack-addMultiExercise-0",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "ok": true
+      },
+      "accepted": false
+    }
+  },
+  {
+    "id": "S3-04-ack-saveScores-0",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "ok": true
+      },
+      "accepted": false
+    }
+  },
+  {
+    "id": "S3-04-ack-addMultiExercise-1",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "status": "success"
+      },
+      "accepted": false
+    }
+  },
+  {
+    "id": "S3-04-ack-saveScores-1",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "status": "success"
+      },
+      "accepted": false
+    }
+  },
+  {
+    "id": "S3-04-ack-addMultiExercise-2",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "success": "true",
+        "ok": true
+      },
+      "accepted": false
+    }
+  },
+  {
+    "id": "S3-04-ack-saveScores-2",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "success": "true",
+        "ok": true
+      },
+      "accepted": false
+    }
+  },
+  {
+    "id": "S3-04-ack-addMultiExercise-3",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "success": 1,
+        "status": "success"
+      },
+      "accepted": false
+    }
+  },
+  {
+    "id": "S3-04-ack-saveScores-3",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "success": 1,
+        "status": "success"
+      },
+      "accepted": false
+    }
+  },
+  {
+    "id": "S3-04-ack-addMultiExercise-4",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "success": true
+      },
+      "accepted": true
+    }
+  },
+  {
+    "id": "S3-04-ack-saveScores-4",
+    "result": "CLOSED",
+    "details": {
+      "ack": {
+        "success": true
+      },
+      "accepted": true
+    }
+  },
+  {
+    "id": "S3-08-before-headers-stop",
+    "result": "CLOSED",
+    "details": {
+      "requestSignalAborted": true,
+      "rejected": true
+    }
+  },
+  {
+    "id": "S3-08-before-headers-timeout",
+    "result": "CLOSED",
+    "details": {
+      "requestSignalAborted": true,
+      "rejected": true
+    }
+  },
+  {
+    "id": "S3-08-response-body-stop",
+    "result": "CLOSED",
+    "details": {
+      "requestSignalAborted": true,
+      "settledAfter60ms": true,
+      "requestTimeoutMs": 20
+    }
+  },
+  {
+    "id": "S3-08-response-body-timeout",
+    "result": "CLOSED",
+    "details": {
+      "requestSignalAborted": true,
+      "settledAfter60ms": true,
+      "requestTimeoutMs": 20
+    }
+  },
+  {
+    "id": "S3-08-service-body-stop",
+    "result": "CLOSED",
+    "details": {
+      "success": false,
+      "status": "FAILED",
+      "queueRunning": false,
+      "requestSignalAborted": true
+    }
+  },
+  {
+    "id": "S3-08-service-stop-getStudents",
+    "result": "CLOSED",
+    "details": {
+      "calls": [
+        "getStudents"
+      ],
+      "callsAfterStop": 0,
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-08-service-stop-getExercises",
+    "result": "CLOSED",
+    "details": {
+      "calls": [
+        "getStudents",
+        "getExercises"
+      ],
+      "callsAfterStop": 0,
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-08-service-stop-addMultiExercise",
+    "result": "CLOSED",
+    "details": {
+      "calls": [
+        "getStudents",
+        "getExercises",
+        "addMultiExercise"
+      ],
+      "callsAfterStop": 0,
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-08-service-stop-saveScores",
+    "result": "CLOSED",
+    "details": {
+      "calls": [
+        "getStudents",
+        "getExercises",
+        "addMultiExercise",
+        "addMultiExercise",
+        "addMultiExercise",
+        "addMultiExercise",
+        "getExercises",
+        "saveScores"
+      ],
+      "callsAfterStop": 0,
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S3-08-service-stop-getScores",
+    "result": "CLOSED",
+    "details": {
+      "calls": [
+        "getStudents",
+        "getExercises",
+        "addMultiExercise",
+        "addMultiExercise",
+        "addMultiExercise",
+        "addMultiExercise",
+        "getExercises",
+        "saveScores",
+        "getScores"
+      ],
+      "callsAfterStop": 0,
+      "status": "FAILED"
+    }
+  }
+]

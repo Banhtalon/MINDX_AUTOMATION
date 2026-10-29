@@ -1,0 +1,76 @@
+{
+  "observations": [
+    {
+      "id": "S2-02",
+      "status": "CLOSED",
+      "events": [
+        "fresh request",
+        "fresh response score=80",
+        "old request response score=99"
+      ],
+      "expectedFreshScore": 80,
+      "returnedScore": 80,
+      "cachedScore": 80,
+      "snapshotScore": 80
+    },
+    {
+      "id": "S2-07",
+      "status": "CLOSED",
+      "sourceHasNoCheckpointOrSessionIdentity": true,
+      "expectedCp1Theory": null,
+      "actualCp1Theory": null,
+      "actualCp1Practice": null
+    },
+    {
+      "id": "S2-08",
+      "status": "CLOSED",
+      "ungradedDefaultsWithoutNote": null,
+      "ungradedDefaultsWithGeneralNote": null,
+      "hasDemoCompletionEvidence": false
+    },
+    {
+      "id": "R2-01",
+      "status": "CLOSED",
+      "severity": "P2",
+      "expectedMissingDemo": null,
+      "blankDemoScores": [
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "actualFinalProduct": null
+    },
+    {
+      "id": "S2-03",
+      "status": "CLOSED",
+      "secondWriteFailureRollsBackSnapshotAndVersion": true
+    },
+    {
+      "id": "S2-01",
+      "status": "CLOSED",
+      "codingAndRoboticsRejectGraphqlErrorsAndMissingCapture": true
+    },
+    {
+      "id": "S2-04",
+      "status": "CLOSED",
+      "fullWorkerWithCrmRosterAndDomScores": true
+    },
+    {
+      "id": "S2-05",
+      "status": "CLOSED",
+      "crossedAliasesPreserveBothMatrixAndSnapshotIdentity": true
+    },
+    {
+      "id": "S2-06",
+      "status": "CLOSED",
+      "distinctCrmIdsWithSameNameInBothOutputs": true
+    },
+    {
+      "id": "S2-09",
+      "status": "CLOSED",
+      "smallGraphqlAndDomPayloadsAndOptIn": true
+    }
+  ]
+}

@@ -1,0 +1,542 @@
+﻿[
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\globals.css",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\layout.tsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\page.tsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\auth\\login\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\auth\\status\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\config\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\approve\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\download-and-grade\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\export\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\save-lms\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\scores\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\submissions\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\queue\\control\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\queue\\stream\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\report-card\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\report-card\\sync-teaching\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\approve\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\fetch-classes\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\generate-ai\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\list\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\save-draft\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\save-lms\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\sync\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\zalo-btvn-image\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\approve\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\browse-folder\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\capture-screenshots\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\create-demo-sheet\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\deploy-web\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\generate-ai\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\import-youtube\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\list\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\save-draft\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\scan\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\session14-eval\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\session14-eval\\generate-ai\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\session14-eval\\import-demo-scores\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\session14-eval\\upload-lms\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\student-portal\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\upload-drive\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\upload-lms\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\fetch-lms-dates\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\generate-ai\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\progress\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\sync\\route.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\final-project\\page.tsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\homework-grader\\page.tsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\session-comments\\page.tsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\syllabus-config\\page.tsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\teaching-projects\\page.tsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\components\\homework-auto-grader-tab.tsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\components\\live-log-drawer.tsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\components\\teaching-report-card-view.tsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\components\\top-navbar.tsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\config.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\utils.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\db\\json-config.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\db\\sqlite.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\archive-reader.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\code-reader.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\game-reader.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\index.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\media-reader.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\client.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\comment-generator.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\homework-grader.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\score-auditor.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\session14-course-summary.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\spck-comment.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\teaching-project-generator.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\github\\spck-web-deployer.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-app-screenshotter.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-demo-score-reader.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-image-normalizer.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-scanner.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-youtube-import.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\auth.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\browser-manager.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\download-submissions.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\grade-worker.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\lms-helpers.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\network-interceptor.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\save-comments.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\scrape-scores.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\selectors.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\session14-eval-uploader.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\spck-demo-sheet.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\spck-drive-uploader.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\spck-uploader.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\sync-class.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\teaching-project-service.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\teaching-report-card-sync.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\queue\\task-queue.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\quick-tags\\index.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\report-card\\report-card-calculator.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\security\\local-guard.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\security\\path-allowlist.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\student-portal\\student-portal-server.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\utils\\vietnamese-match.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\zalo\\broadcast-generator.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\recon.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-checkpoint-v300.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-lms-reliability-v280.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-patches-round2.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase3.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase4-codex-repros.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase5.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase6.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase7.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-quick-tags-v300.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-report-card-v330.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-session14-v290.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-spck-v270.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-spck-v272.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-teaching-project-v320.ts",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\courses_syllabus.json",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\default-demo-sheet-template.xlsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\default-spck-thumbnail.png",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\grading_rubrics.json",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\mindx-bot.ico",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\quick_tags.json",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\zalo_templates.json",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\CSA.xlsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\CSI.xlsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\JSA.xlsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\JSB.xlsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\JSI.xlsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\PSI.xlsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\PTA.xlsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\PTI.xlsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\SA.xlsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\SB.xlsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\SI.xlsx",
+        "matches":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\docs\\audits\\v330\\stage4\\probe.mjs",
+        "matches":  true
+    }
+]

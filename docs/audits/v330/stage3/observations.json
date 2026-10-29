@@ -1,0 +1,322 @@
+[
+  {
+    "id": "CONTROL-parser",
+    "result": "PASS",
+    "details": "Invalid numeric inputs rejected; zero and numeric strings retained"
+  },
+  {
+    "id": "CONTROL-identity",
+    "result": "PASS",
+    "details": "Ordinary duplicate names and cross-class rows blocked"
+  },
+  {
+    "id": "S3-01-accent-collision",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "localStudentId": "101",
+      "localFullName": "Nguyễn Văn An",
+      "teachingStudentId": 101,
+      "teachingStudentName": "Nguyễn Văn Ân"
+    }
+  },
+  {
+    "id": "S3-01-duplicate-bypass",
+    "result": "BUG_REPRODUCED",
+    "details": "Bare numeric LMS ID silently disambiguates duplicate Teaching names"
+  },
+  {
+    "id": "S3-01-end-to-end",
+    "result": "BUG_REPRODUCED",
+    "details": "VERIFIED after all scores written to Ân (#101), although exact An (#102) exists"
+  },
+  {
+    "id": "S3-02-inactive",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": "inactive",
+      "matchedId": 101
+    }
+  },
+  {
+    "id": "S3-02-dropped",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": "dropped",
+      "matchedId": 101
+    }
+  },
+  {
+    "id": "S3-02-nghỉ học",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": "nghỉ học",
+      "matchedId": 101
+    }
+  },
+  {
+    "id": "S3-02-nghi_hoc",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": "nghi_hoc",
+      "matchedId": 101
+    }
+  },
+  {
+    "id": "S3-02-ascii-status",
+    "result": "BUG_REPRODUCED",
+    "details": "nghi_hoc also causes false ambiguity beside an active student"
+  },
+  {
+    "id": "S3-02-end-to-end",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": "VERIFIED",
+      "inactiveStudentScoresWritten": 9
+    }
+  },
+  {
+    "id": "S3-03-normalized-undefined",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "success": true,
+      "status": "VERIFIED"
+    }
+  },
+  {
+    "id": "S3-03-normalized-null",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "success": true,
+      "status": "VERIFIED"
+    }
+  },
+  {
+    "id": "S3-03-normalized-\"\"",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "success": true,
+      "status": "VERIFIED"
+    }
+  },
+  {
+    "id": "S3-03-normalized-\"   \"",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "success": true,
+      "status": "VERIFIED"
+    }
+  },
+  {
+    "id": "S3-03-normalized-[]",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "success": true,
+      "status": "VERIFIED"
+    }
+  },
+  {
+    "id": "S3-03-null-slot-normalized",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "success": true,
+      "status": "VERIFIED"
+    }
+  },
+  {
+    "id": "CONTROL-readback-raw",
+    "result": "PASS",
+    "details": {
+      "status": "FAILED",
+      "error": "[Read-after-Write Error] Điểm raw_score tại (101-1-btvn-theory) trên Teaching (1) không khớp với giá trị đã lưu (80)."
+    }
+  },
+  {
+    "id": "CONTROL-readback-normalized",
+    "result": "PASS",
+    "details": {
+      "status": "FAILED",
+      "error": "[Read-after-Write Error] Điểm quy đổi thang 5 tại (101-1-btvn-theory) trên Teaching (1) không khớp mức kỳ vọng (4)."
+    }
+  },
+  {
+    "id": "CONTROL-readback-stale-null",
+    "result": "PASS",
+    "details": {
+      "status": "FAILED",
+      "error": "[Read-after-Write Error] Phát hiện điểm cũ trên Teaching tại (101-1-btvn-practice) = 90 trong khi bản duyệt hiện tại để trống (null)."
+    }
+  },
+  {
+    "id": "CONTROL-robotics",
+    "result": "PASS",
+    "details": "CP1=4, CP2=8, final=14; no BTVN declarations or scores"
+  },
+  {
+    "id": "S3-05-omitted-service-version",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": "VERIFIED"
+    }
+  },
+  {
+    "id": "CONTROL-midflight-content-drift",
+    "result": "PASS",
+    "details": "Normal edits blocked; external SQL score change rejected and approval durably cleared"
+  },
+  {
+    "id": "S3-09-state-transition",
+    "result": "BUG_REPRODUCED",
+    "details": "Externally changed FAILED state overwritten by VERIFIED without SAVING/SYNCING predicate"
+  },
+  {
+    "id": "S3-08-stop-side-effects",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "declarationsAfterStop": [
+        "cp1",
+        "cp2",
+        "final"
+      ],
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "CONTROL-queued-version",
+    "result": "PASS",
+    "details": "Version checked after earlier queue task completes; stale task rejected before transport writes"
+  },
+  {
+    "id": "S3-06-malformed-POST-report-card",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": 500,
+      "body": {
+        "success": false,
+        "error": "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+      }
+    }
+  },
+  {
+    "id": "S3-06-malformed-PUT-report-card",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": 500,
+      "body": {
+        "success": false,
+        "error": "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+      }
+    }
+  },
+  {
+    "id": "S3-06-malformed-POST-sync-teaching",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": 500,
+      "body": {
+        "success": false,
+        "error": "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+      }
+    }
+  },
+  {
+    "id": "CONTROL-route-guards",
+    "result": "PASS",
+    "details": "All 4 handlers reject nonlocal Host, cross-origin and cross-site requests before JSON parse"
+  },
+  {
+    "id": "CONTROL-api-validation",
+    "result": "PASS",
+    "details": "Missing/invalid versions, invalid scores and stale version 409 checks pass"
+  },
+  {
+    "id": "S3-07-action-approve",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": 400,
+      "body": {
+        "success": false,
+        "error": "Không có dữ liệu cập nhật điểm (updates / patchOverrides)."
+      }
+    }
+  },
+  {
+    "id": "S3-07-action-set_override",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": 400,
+      "body": {
+        "success": false,
+        "error": "Không có dữ liệu cập nhật điểm (updates / patchOverrides)."
+      }
+    }
+  },
+  {
+    "id": "S3-07-action-clear_override",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": 400,
+      "body": {
+        "success": false,
+        "error": "Không có dữ liệu cập nhật điểm (updates / patchOverrides)."
+      }
+    }
+  },
+  {
+    "id": "S3-07-action-reset_student_overrides",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": 400,
+      "body": {
+        "success": false,
+        "error": "Không có dữ liệu cập nhật điểm (updates / patchOverrides)."
+      }
+    }
+  },
+  {
+    "id": "S3-07-action-reset_all_overrides",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "status": 400,
+      "body": {
+        "success": false,
+        "error": "Không có dữ liệu cập nhật điểm (updates / patchOverrides)."
+      }
+    }
+  },
+  {
+    "id": "S3-07-action-ignored",
+    "result": "BUG_REPRODUCED",
+    "details": "clear_override + updates creates override=2 instead of clearing; unknown actions likewise ignored"
+  },
+  {
+    "id": "S3-04-live-protocol",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "loginStatuses": [
+        503,
+        503
+      ],
+      "firstExerciseRead": {
+        "success": false
+      },
+      "writesAfterError": 3,
+      "finalStatus": "VERIFIED",
+      "requestsHaveAbortSignal": false
+    }
+  },
+  {
+    "id": "S3-08-stalled-read-stop",
+    "result": "BUG_REPRODUCED",
+    "details": {
+      "syncSettled": false,
+      "requestHasAbortSignal": false,
+      "statusAfterStop": "SAVING",
+      "queueRunningAfterStop": true
+    }
+  },
+  {
+    "id": "CONTROL-live-http-json",
+    "result": "PASS",
+    "details": "Invalid JSON syntax and business HTTP 403 rejected"
+  }
+]

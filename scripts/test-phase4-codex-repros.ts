@@ -47,6 +47,17 @@ const { sanitizeTsvCell, htmlToPlainText } = pageHelpersCtx.out as {
   sanitizeTsvCell: (value: string | number) => string;
   htmlToPlainText: (rawHtml?: string) => string;
 };
+import os from "node:os";
+import { closeDb } from "../src/lib/db/sqlite";
+let _autoTempDir: string | null = null;
+if (!process.env.MINDX_DB_PATH) {
+  _autoTempDir = fs.mkdtempSync(path.join(os.tmpdir(), "mindx-repros-"));
+  process.env.MINDX_DB_PATH = path.join(_autoTempDir, "repros.db");
+}
+if (!process.env.MINDX_RUNNING_CLASSES_PATH) {
+  if (!_autoTempDir) _autoTempDir = fs.mkdtempSync(path.join(os.tmpdir(), "mindx-repros-"));
+  process.env.MINDX_RUNNING_CLASSES_PATH = path.join(_autoTempDir, "running_classes.json");
+}
 async function runTests() {
   console.log("=== [SELF-TEST] KIỂM TRA TRIỆT ĐỂ 14 MỤC CODEX REVIEW (PHASE 3 & PHASE 4) ===");
 
@@ -101,22 +112,28 @@ async function runTests() {
     const page: any = {
       locator: () => emptyLoc,
       on(ev: string, fn: any) {
+        if (ev === "request") this._reqFn = fn;
         if (ev === "response") this._fn = fn;
       },
       off() {},
       async waitForTimeout() {
         if (!opts.noGql && this._fn && !this._called) {
           this._called = true;
+          const reqObj = {
+            url: () => "https://lms-api.mindx.edu.vn/",
+            method: () => "POST",
+            postDataJSON: () => ({
+              operationName: "FindStudentSubmissionByClass",
+              variables: { payload: { classId: opts.reqClassId ?? "LMS_CLASS_1" } },
+            }),
+          };
+          if (this._reqFn) {
+            this._reqFn(reqObj);
+          }
           await this._fn({
             url: () => "https://lms-api.mindx.edu.vn/",
             status: () => opts.gqlStatus ?? 200,
-            request: () => ({
-              method: () => "POST",
-              postDataJSON: () => ({
-                operationName: "FindStudentSubmissionByClass",
-                variables: { payload: { classId: opts.reqClassId ?? "LMS_CLASS_1" } },
-              }),
-            }),
+            request: () => reqObj,
             json: async () => ({
               data: { findStudentSubmissionByClass: opts.gqlPayload },
             }),
@@ -4438,6 +4455,7 @@ async function runTests() {
                   .prepare("SELECT matrixJson FROM score_matrix_cache WHERE classId = ?")
                   .get(cidR15) as any;
 
+                let requestListener1703: any = null;
                 let responseListener1703: any = null;
                 let emitted1703 = false;
                 let writes1703 = 0;
@@ -4461,23 +4479,29 @@ async function runTests() {
                 });
                 const page1703: any = {
                   locator: () => emptyLoc1703(),
-                  on: (_e: string, fn: any) => {
-                    responseListener1703 = fn;
+                  on: (e: string, fn: any) => {
+                    if (e === "request") requestListener1703 = fn;
+                    if (e === "response") responseListener1703 = fn;
                   },
                   off: () => {},
                   waitForTimeout: async () => {
                     if (emitted1703 || !responseListener1703) return;
                     emitted1703 = true;
+                    const req1703 = {
+                      url: () => "https://lms-api.mindx.edu.vn/",
+                      method: () => "POST",
+                      postDataJSON: () => ({
+                        operationName: "FindStudentSubmissionByClass",
+                        variables: { payload: { classId: cidR15 } },
+                      }),
+                    };
+                    if (requestListener1703) {
+                      requestListener1703(req1703);
+                    }
                     await responseListener1703({
                       url: () => "https://lms-api.mindx.edu.vn/",
                       status: () => 200,
-                      request: () => ({
-                        method: () => "POST",
-                        postDataJSON: () => ({
-                          operationName: "FindStudentSubmissionByClass",
-                          variables: { payload: { classId: cidR15 } },
-                        }),
-                      }),
+                      request: () => req1703,
                       json: async () => ({
                         data: {
                           findStudentSubmissionByClass: {
@@ -4780,7 +4804,18 @@ async function runTests() {
   console.log("\n✅ TẤT CẢ CÁC MỤC KIỂM TRA (ROUND 1 -> ROUND 17) ĐỀU ĐẠT 100%!");
 }
 
-runTests().catch((err) => {
-  console.error("❌ TEST FAILED:", err);
-  process.exit(1);
-});
+runTests()
+  .catch((err) => {
+    console.error("❌ TEST FAILED:", err);
+    process.exitCode = 1;
+  })
+  .finally(() => {
+    try {
+      closeDb();
+    } catch {}
+    if (_autoTempDir) {
+      try {
+        fs.rmSync(_autoTempDir, { recursive: true, force: true });
+      } catch {}
+    }
+  });

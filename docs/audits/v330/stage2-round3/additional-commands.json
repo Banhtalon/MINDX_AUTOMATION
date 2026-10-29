@@ -1,0 +1,14 @@
+﻿[
+    {
+        "Command":  "npx.cmd --no-install tsx docs/audits/v330/stage2-round3/probe.ts",
+        "ExitCode":  0,
+        "MINDX_DB_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_extra_ca79167d3339488d8e4f9c6f726ebc50\\audit.db",
+        "MINDX_RUNNING_CLASSES_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_extra_ca79167d3339488d8e4f9c6f726ebc50\\running-classes.json"
+    },
+    {
+        "Command":  "npx.cmd --no-install tsc --noEmit --incremental false",
+        "ExitCode":  0,
+        "MINDX_DB_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_typecheck_ba2fc2d3e43542699931d0527c066345\\audit.db",
+        "MINDX_RUNNING_CLASSES_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_typecheck_ba2fc2d3e43542699931d0527c066345\\running-classes.json"
+    }
+]

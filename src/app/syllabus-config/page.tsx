@@ -254,11 +254,10 @@ export default function SyllabusConfigPage() {
           </div>
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight">
-              Màn hình 4: Quản lý Giáo trình, Barem Chấm điểm & Bộ Thẻ Nhận Xét
+              Màn hình 4: Quản lý Giáo trình &amp; Bộ Thẻ Nhận Xét Nhanh
             </h1>
             <p className="text-sm text-blue-100 mt-1">
-              Quản lý nội dung từng buổi học, cấu hình Buổi Kiểm tra (Checkpoint), Đề bài & Barem
-              chấm điểm và Bộ thẻ nhận xét nhanh 1 chạm theo từng hướng học.
+              Quản lý nội dung từng buổi học, cấu hình Buổi Kiểm tra (Checkpoint) và Bộ thẻ nhận xét nhanh 1 chạm theo từng hướng học (Lập trình, Robotics, Buổi 14).
             </p>
           </div>
         </div>
@@ -270,7 +269,7 @@ export default function SyllabusConfigPage() {
             onClick={() => setActiveTab("courses")}
             className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm ${
               activeTab === "courses"
-                ? "bg-amber-600 text-white mindx-dark-btn"
+                ? "bg-amber-600 text-white mindx-dark-btn mindx-dark-keep"
                 : "bg-white/95 text-slate-900 hover:bg-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 border border-slate-300/60 dark:border-slate-700"
             }`}
           >
@@ -280,23 +279,10 @@ export default function SyllabusConfigPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab("rubrics")}
-            className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm ${
-              activeTab === "rubrics"
-                ? "bg-amber-600 text-white mindx-dark-btn"
-                : "bg-white/95 text-slate-900 hover:bg-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 border border-slate-300/60 dark:border-slate-700"
-            }`}
-          >
-            <ClipboardCheck className="w-4 h-4" />
-            <span>Barem chấm bài ({rubrics.length})</span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => setActiveTab("quickTags")}
             className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm ${
               activeTab === "quickTags"
-                ? "bg-amber-600 text-white mindx-dark-btn"
+                ? "bg-amber-600 text-white mindx-dark-btn mindx-dark-keep"
                 : "bg-white/95 text-slate-900 hover:bg-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 border border-slate-300/60 dark:border-slate-700"
             }`}
           >

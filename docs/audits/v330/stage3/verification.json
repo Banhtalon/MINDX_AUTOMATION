@@ -1,0 +1,16 @@
+﻿{
+    "typecheckExitCode":  0,
+    "reportCardExitCode":  0,
+    "phase4ExitCode":  0,
+    "probeExitCode":  0,
+    "probeObservationCount":  40,
+    "bugObservationCount":  29,
+    "controlObservationCount":  11,
+    "tempWorkspace":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-92d8032a679c4c41a0a7465317ee3728",
+    "protectedFileCount":  117,
+    "changedProtectedFileCount":  0,
+    "tscFinalOutput":  {
+
+                       },
+    "note":  "Application and existing test source bytes unchanged; the RC script runs in a TEMP mirror because it unconditionally replaces MINDX_DB_PATH."
+}

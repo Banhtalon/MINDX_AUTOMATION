@@ -1,0 +1,1177 @@
+﻿{
+    "checkedAt":  "2026-10-29T13:50:22.1590143+07:00",
+    "protectedFileCount":  117,
+    "changedFileCount":  0,
+    "files":  [
+                  {
+                      "path":  "data/mindx_bot.db",
+                      "sha256Before":  "D6A90B5B0795A3DBC0FABFCCAFBCA423E17D4CD5157605CC09A68D24D5F85A40",
+                      "sha256After":  "D6A90B5B0795A3DBC0FABFCCAFBCA423E17D4CD5157605CC09A68D24D5F85A40",
+                      "lengthBefore":  417792,
+                      "lengthAfter":  417792,
+                      "lastWriteUtcTicksBefore":  639288390643378692,
+                      "lastWriteUtcTicksAfter":  639288390643378692,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "data/running_classes.json",
+                      "sha256Before":  "614F2CA361B5FE238A3F4BF067945C0F734AEF5524A295A1217688999A6C3581",
+                      "sha256After":  "614F2CA361B5FE238A3F4BF067945C0F734AEF5524A295A1217688999A6C3581",
+                      "lengthBefore":  1879,
+                      "lengthAfter":  1879,
+                      "lastWriteUtcTicksBefore":  639287882811214243,
+                      "lastWriteUtcTicksAfter":  639287882811214243,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\globals.css",
+                      "sha256Before":  "BFEA8CF1A89EA20673F8A7FE116D99C68E58DD74AB666D80FF08C2146C522FF4",
+                      "sha256After":  "BFEA8CF1A89EA20673F8A7FE116D99C68E58DD74AB666D80FF08C2146C522FF4",
+                      "lengthBefore":  17100,
+                      "lengthAfter":  17100,
+                      "lastWriteUtcTicksBefore":  639287733807412088,
+                      "lastWriteUtcTicksAfter":  639287733807412088,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\layout.tsx",
+                      "sha256Before":  "50E5EBB7D7BAFAFD00708B1FF1177AFF5C276F2967F0761C9188B33406A80A04",
+                      "sha256After":  "50E5EBB7D7BAFAFD00708B1FF1177AFF5C276F2967F0761C9188B33406A80A04",
+                      "lengthBefore":  1439,
+                      "lengthAfter":  1439,
+                      "lastWriteUtcTicksBefore":  639287814144893367,
+                      "lastWriteUtcTicksAfter":  639287814144893367,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\page.tsx",
+                      "sha256Before":  "53605922F3732DFB75E3E279CE5637C0583099E6480927753393811DB635675A",
+                      "sha256After":  "53605922F3732DFB75E3E279CE5637C0583099E6480927753393811DB635675A",
+                      "lengthBefore":  14942,
+                      "lengthAfter":  14942,
+                      "lastWriteUtcTicksBefore":  639287845361177515,
+                      "lastWriteUtcTicksAfter":  639287845361177515,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\auth\\login\\route.ts",
+                      "sha256Before":  "804D595235BC38444B3F9AFD491AAF99F32654C6D615C4EB69924E91646EC835",
+                      "sha256After":  "804D595235BC38444B3F9AFD491AAF99F32654C6D615C4EB69924E91646EC835",
+                      "lengthBefore":  1334,
+                      "lengthAfter":  1334,
+                      "lastWriteUtcTicksBefore":  639287474023369244,
+                      "lastWriteUtcTicksAfter":  639287474023369244,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\auth\\status\\route.ts",
+                      "sha256Before":  "BEE02AC7358F464C1624D357DAFAD77DF3D70319B27151C9BC9ADBB6A0641C51",
+                      "sha256After":  "BEE02AC7358F464C1624D357DAFAD77DF3D70319B27151C9BC9ADBB6A0641C51",
+                      "lengthBefore":  1656,
+                      "lengthAfter":  1656,
+                      "lastWriteUtcTicksBefore":  639287474023369244,
+                      "lastWriteUtcTicksAfter":  639287474023369244,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\config\\route.ts",
+                      "sha256Before":  "50F877A08359DB5BC0075AA132CA39A5F6002FFA169B27A0477D558CDA0D6DEF",
+                      "sha256After":  "50F877A08359DB5BC0075AA132CA39A5F6002FFA169B27A0477D558CDA0D6DEF",
+                      "lengthBefore":  22562,
+                      "lengthAfter":  22562,
+                      "lastWriteUtcTicksBefore":  639287590107062868,
+                      "lastWriteUtcTicksAfter":  639287590107062868,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\homework-grader\\approve\\route.ts",
+                      "sha256Before":  "4B045AB1A5FB8D37A5458C41D9449F1385BED9709340D5344C8591FAC114544B",
+                      "sha256After":  "4B045AB1A5FB8D37A5458C41D9449F1385BED9709340D5344C8591FAC114544B",
+                      "lengthBefore":  17528,
+                      "lengthAfter":  17528,
+                      "lastWriteUtcTicksBefore":  639287474023389868,
+                      "lastWriteUtcTicksAfter":  639287474023389868,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\homework-grader\\download-and-grade\\route.ts",
+                      "sha256Before":  "A129B0EA4A25A94DFC86AF76A8D5FE1CFFCD620397FFDA86208876F20C6CFB7B",
+                      "sha256After":  "A129B0EA4A25A94DFC86AF76A8D5FE1CFFCD620397FFDA86208876F20C6CFB7B",
+                      "lengthBefore":  9114,
+                      "lengthAfter":  9114,
+                      "lastWriteUtcTicksBefore":  639287474023420884,
+                      "lastWriteUtcTicksAfter":  639287474023420884,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\homework-grader\\export\\route.ts",
+                      "sha256Before":  "DD99667EF8F2338A1AC16ACAB3623381A2C16C60988610D7C24CBEA0DF9DB8E8",
+                      "sha256After":  "DD99667EF8F2338A1AC16ACAB3623381A2C16C60988610D7C24CBEA0DF9DB8E8",
+                      "lengthBefore":  5516,
+                      "lengthAfter":  5516,
+                      "lastWriteUtcTicksBefore":  639287474023432776,
+                      "lastWriteUtcTicksAfter":  639287474023432776,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\homework-grader\\save-lms\\route.ts",
+                      "sha256Before":  "39EDB4AC37E0681D82001C26B060F49460CB1B40E65A39FC239122668FB4205A",
+                      "sha256After":  "39EDB4AC37E0681D82001C26B060F49460CB1B40E65A39FC239122668FB4205A",
+                      "lengthBefore":  2040,
+                      "lengthAfter":  2040,
+                      "lastWriteUtcTicksBefore":  639287474023443704,
+                      "lastWriteUtcTicksAfter":  639287474023443704,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\homework-grader\\scores\\route.ts",
+                      "sha256Before":  "2B2AF620D9AC53A005C64295C7438A80E758495CA765DDBEB5C769F6EA0961AA",
+                      "sha256After":  "2B2AF620D9AC53A005C64295C7438A80E758495CA765DDBEB5C769F6EA0961AA",
+                      "lengthBefore":  2493,
+                      "lengthAfter":  2493,
+                      "lastWriteUtcTicksBefore":  639287601046753755,
+                      "lastWriteUtcTicksAfter":  639287601046753755,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\homework-grader\\submissions\\route.ts",
+                      "sha256Before":  "E51A68E36B8DD14831A53F5E626750378DEEA39D9B0C24BC136F2992D4B3A790",
+                      "sha256After":  "E51A68E36B8DD14831A53F5E626750378DEEA39D9B0C24BC136F2992D4B3A790",
+                      "lengthBefore":  13804,
+                      "lengthAfter":  13804,
+                      "lastWriteUtcTicksBefore":  639287474023466101,
+                      "lastWriteUtcTicksAfter":  639287474023466101,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\queue\\control\\route.ts",
+                      "sha256Before":  "9B54D133FE8C8A3366C663E7AD045844DB9E43BF9D28F9EADD599F90E2C7BE0B",
+                      "sha256After":  "9B54D133FE8C8A3366C663E7AD045844DB9E43BF9D28F9EADD599F90E2C7BE0B",
+                      "lengthBefore":  1918,
+                      "lengthAfter":  1918,
+                      "lastWriteUtcTicksBefore":  639287474023484272,
+                      "lastWriteUtcTicksAfter":  639287474023484272,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\queue\\stream\\route.ts",
+                      "sha256Before":  "C0F2E90C90DA860C3AD3699EC7FFD23812722D7190F840586A4FFAFFF8150B32",
+                      "sha256After":  "C0F2E90C90DA860C3AD3699EC7FFD23812722D7190F840586A4FFAFFF8150B32",
+                      "lengthBefore":  2721,
+                      "lengthAfter":  2721,
+                      "lastWriteUtcTicksBefore":  639287474023498204,
+                      "lastWriteUtcTicksAfter":  639287474023498204,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\report-card\\route.ts",
+                      "sha256Before":  "667728AC7EE2ECF97C4CA981FA4C1A137F4821C5FF1141908F6F08600A833061",
+                      "sha256After":  "667728AC7EE2ECF97C4CA981FA4C1A137F4821C5FF1141908F6F08600A833061",
+                      "lengthBefore":  12745,
+                      "lengthAfter":  12745,
+                      "lastWriteUtcTicksBefore":  639288524968174858,
+                      "lastWriteUtcTicksAfter":  639288524968174858,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\report-card\\sync-teaching\\route.ts",
+                      "sha256Before":  "2B0FDAD4F660593D351EB436C87C35E505726C62D9FCB856617A6C51A027F43A",
+                      "sha256After":  "2B0FDAD4F660593D351EB436C87C35E505726C62D9FCB856617A6C51A027F43A",
+                      "lengthBefore":  2822,
+                      "lengthAfter":  2822,
+                      "lastWriteUtcTicksBefore":  639288519954950378,
+                      "lastWriteUtcTicksAfter":  639288519954950378,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\approve\\route.ts",
+                      "sha256Before":  "0C67C27334078362341F9FB6680A026027660613772DAEFACDDB84059FE57843",
+                      "sha256After":  "0C67C27334078362341F9FB6680A026027660613772DAEFACDDB84059FE57843",
+                      "lengthBefore":  6929,
+                      "lengthAfter":  6929,
+                      "lastWriteUtcTicksBefore":  639287474023508982,
+                      "lastWriteUtcTicksAfter":  639287474023508982,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\fetch-classes\\route.ts",
+                      "sha256Before":  "ECC7C1F2539C07A5A8DE69AC4DC7343B6FFA032409FDC5E25E2E2B25CF6C0C63",
+                      "sha256After":  "ECC7C1F2539C07A5A8DE69AC4DC7343B6FFA032409FDC5E25E2E2B25CF6C0C63",
+                      "lengthBefore":  3029,
+                      "lengthAfter":  3029,
+                      "lastWriteUtcTicksBefore":  639287474023514241,
+                      "lastWriteUtcTicksAfter":  639287474023514241,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\generate-ai\\route.ts",
+                      "sha256Before":  "F18B06DD8F486DBD5E9935CD18B36B950D60B9409CDD3B94F28318168C136A33",
+                      "sha256After":  "F18B06DD8F486DBD5E9935CD18B36B950D60B9409CDD3B94F28318168C136A33",
+                      "lengthBefore":  3177,
+                      "lengthAfter":  3177,
+                      "lastWriteUtcTicksBefore":  639287474023529329,
+                      "lastWriteUtcTicksAfter":  639287474023529329,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\list\\route.ts",
+                      "sha256Before":  "9DA5D98CCFE8AF0E2A3EC27C17BDE1A2AA1A50922E8CC642C24A20D4A4E7E16E",
+                      "sha256After":  "9DA5D98CCFE8AF0E2A3EC27C17BDE1A2AA1A50922E8CC642C24A20D4A4E7E16E",
+                      "lengthBefore":  8284,
+                      "lengthAfter":  8284,
+                      "lastWriteUtcTicksBefore":  639287813392049272,
+                      "lastWriteUtcTicksAfter":  639287813392049272,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\save-draft\\route.ts",
+                      "sha256Before":  "653CEDF9176588B073E7EA19781719F01B4522EEEE37336F6FB558D4F24D02DA",
+                      "sha256After":  "653CEDF9176588B073E7EA19781719F01B4522EEEE37336F6FB558D4F24D02DA",
+                      "lengthBefore":  11681,
+                      "lengthAfter":  11681,
+                      "lastWriteUtcTicksBefore":  639287474023534369,
+                      "lastWriteUtcTicksAfter":  639287474023534369,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\save-lms\\route.ts",
+                      "sha256Before":  "C97972BA84B5E4BDF2A2A8C3F50D742B894AE48F521118BFAE72EE2124FA3BD3",
+                      "sha256After":  "C97972BA84B5E4BDF2A2A8C3F50D742B894AE48F521118BFAE72EE2124FA3BD3",
+                      "lengthBefore":  2304,
+                      "lengthAfter":  2304,
+                      "lastWriteUtcTicksBefore":  639287474023554438,
+                      "lastWriteUtcTicksAfter":  639287474023554438,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\sync\\route.ts",
+                      "sha256Before":  "3D502A65B6DDCC415DC4463918263A37CE993172FECB72C68FA2DBE88C31CD6C",
+                      "sha256After":  "3D502A65B6DDCC415DC4463918263A37CE993172FECB72C68FA2DBE88C31CD6C",
+                      "lengthBefore":  1227,
+                      "lengthAfter":  1227,
+                      "lastWriteUtcTicksBefore":  639287474023554438,
+                      "lastWriteUtcTicksAfter":  639287474023554438,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\session-comments\\zalo-btvn-image\\route.ts",
+                      "sha256Before":  "19C637A4F83313E2AAC044AC0C22B81BC36E75D53DE1B902118D98B93F65339E",
+                      "sha256After":  "19C637A4F83313E2AAC044AC0C22B81BC36E75D53DE1B902118D98B93F65339E",
+                      "lengthBefore":  2857,
+                      "lengthAfter":  2857,
+                      "lastWriteUtcTicksBefore":  639287474023574504,
+                      "lastWriteUtcTicksAfter":  639287474023574504,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\approve\\route.ts",
+                      "sha256Before":  "D597F533F9DE2F85D98D746BDED731D2F4ADCA909DD0201BDDA146ABEF83918C",
+                      "sha256After":  "D597F533F9DE2F85D98D746BDED731D2F4ADCA909DD0201BDDA146ABEF83918C",
+                      "lengthBefore":  19797,
+                      "lengthAfter":  19797,
+                      "lastWriteUtcTicksBefore":  639287474023597944,
+                      "lastWriteUtcTicksAfter":  639287474023597944,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\browse-folder\\route.ts",
+                      "sha256Before":  "541FC5A0725166A6C3575F8DAE2844CA60E4F7F0591186508C1B6DCC909FC80E",
+                      "sha256After":  "541FC5A0725166A6C3575F8DAE2844CA60E4F7F0591186508C1B6DCC909FC80E",
+                      "lengthBefore":  4682,
+                      "lengthAfter":  4682,
+                      "lastWriteUtcTicksBefore":  639287474023608707,
+                      "lastWriteUtcTicksAfter":  639287474023608707,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\capture-screenshots\\route.ts",
+                      "sha256Before":  "9C49DA0B527744916E7EC5900F297B833CD8C66F424E45B18577D51632EC8204",
+                      "sha256After":  "9C49DA0B527744916E7EC5900F297B833CD8C66F424E45B18577D51632EC8204",
+                      "lengthBefore":  8816,
+                      "lengthAfter":  8816,
+                      "lastWriteUtcTicksBefore":  639287474023619241,
+                      "lastWriteUtcTicksAfter":  639287474023619241,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\create-demo-sheet\\route.ts",
+                      "sha256Before":  "A955644FDB4B26CB88E48A60284CD4F97940453A50061708E457AB49C9400642",
+                      "sha256After":  "A955644FDB4B26CB88E48A60284CD4F97940453A50061708E457AB49C9400642",
+                      "lengthBefore":  2889,
+                      "lengthAfter":  2889,
+                      "lastWriteUtcTicksBefore":  639287474023628315,
+                      "lastWriteUtcTicksAfter":  639287474023628315,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\deploy-web\\route.ts",
+                      "sha256Before":  "C804732BD4F328C30E230609301BFF89338C805A5F2A56F5B55DAD0C9577AC5C",
+                      "sha256After":  "C804732BD4F328C30E230609301BFF89338C805A5F2A56F5B55DAD0C9577AC5C",
+                      "lengthBefore":  2370,
+                      "lengthAfter":  2370,
+                      "lastWriteUtcTicksBefore":  639287474023639560,
+                      "lastWriteUtcTicksAfter":  639287474023639560,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\generate-ai\\route.ts",
+                      "sha256Before":  "CA6AF6140ECC0D9451CD41B23DAFF88081B426FF5D0BB7EE43A227EFACB3F306",
+                      "sha256After":  "CA6AF6140ECC0D9451CD41B23DAFF88081B426FF5D0BB7EE43A227EFACB3F306",
+                      "lengthBefore":  4972,
+                      "lengthAfter":  4972,
+                      "lastWriteUtcTicksBefore":  639287474023650666,
+                      "lastWriteUtcTicksAfter":  639287474023650666,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\import-youtube\\route.ts",
+                      "sha256Before":  "AAC4D08BDE61CBABB5704D4F08046BBEB3FE85C8BC99EFD85A9AA4176DA0D166",
+                      "sha256After":  "AAC4D08BDE61CBABB5704D4F08046BBEB3FE85C8BC99EFD85A9AA4176DA0D166",
+                      "lengthBefore":  2767,
+                      "lengthAfter":  2767,
+                      "lastWriteUtcTicksBefore":  639287474023661303,
+                      "lastWriteUtcTicksAfter":  639287474023661303,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\list\\route.ts",
+                      "sha256Before":  "7B9E8E8A2511A9E4E3030DC77E2A1951D4CA79A860406B265005775D8BF02695",
+                      "sha256After":  "7B9E8E8A2511A9E4E3030DC77E2A1951D4CA79A860406B265005775D8BF02695",
+                      "lengthBefore":  15569,
+                      "lengthAfter":  15569,
+                      "lastWriteUtcTicksBefore":  639287548670567205,
+                      "lastWriteUtcTicksAfter":  639287548670567205,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\save-draft\\route.ts",
+                      "sha256Before":  "4490E52FDB2E35F3DD1746E8FAACE826F76D26CEB169C4BE33E0F1680D2106CB",
+                      "sha256After":  "4490E52FDB2E35F3DD1746E8FAACE826F76D26CEB169C4BE33E0F1680D2106CB",
+                      "lengthBefore":  17241,
+                      "lengthAfter":  17241,
+                      "lastWriteUtcTicksBefore":  639287474023685595,
+                      "lastWriteUtcTicksAfter":  639287474023685595,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\scan\\route.ts",
+                      "sha256Before":  "577EE312DEFDDF5A8BEFE0ECAA9630B9C203411339E5CA715DD4BF79E6AA59A2",
+                      "sha256After":  "577EE312DEFDDF5A8BEFE0ECAA9630B9C203411339E5CA715DD4BF79E6AA59A2",
+                      "lengthBefore":  12778,
+                      "lengthAfter":  12778,
+                      "lastWriteUtcTicksBefore":  639287474023690830,
+                      "lastWriteUtcTicksAfter":  639287474023690830,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\session14-eval\\route.ts",
+                      "sha256Before":  "EDA8D5AF61BFBAC5C106ED1E9C09C6BF483098854F7433AAB172450E48F0EDB7",
+                      "sha256After":  "EDA8D5AF61BFBAC5C106ED1E9C09C6BF483098854F7433AAB172450E48F0EDB7",
+                      "lengthBefore":  8110,
+                      "lengthAfter":  8110,
+                      "lastWriteUtcTicksBefore":  639287577658761925,
+                      "lastWriteUtcTicksAfter":  639287577658761925,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\session14-eval\\generate-ai\\route.ts",
+                      "sha256Before":  "E39B2C8281FC57FDE490628B7FE4AE0CE59CE4D40144E83971218D14F2EA1285",
+                      "sha256After":  "E39B2C8281FC57FDE490628B7FE4AE0CE59CE4D40144E83971218D14F2EA1285",
+                      "lengthBefore":  2549,
+                      "lengthAfter":  2549,
+                      "lastWriteUtcTicksBefore":  639287474023710884,
+                      "lastWriteUtcTicksAfter":  639287474023710884,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\session14-eval\\import-demo-scores\\route.ts",
+                      "sha256Before":  "1D51FB35ECA0464365C69F67792364BFFEC8FB5B41AFCC5143CD73938FED4CD9",
+                      "sha256After":  "1D51FB35ECA0464365C69F67792364BFFEC8FB5B41AFCC5143CD73938FED4CD9",
+                      "lengthBefore":  1216,
+                      "lengthAfter":  1216,
+                      "lastWriteUtcTicksBefore":  639287474023710884,
+                      "lastWriteUtcTicksAfter":  639287474023710884,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\session14-eval\\upload-lms\\route.ts",
+                      "sha256Before":  "098414283E512B7AC191E59EAA29FE9A90F8FE1C710ACC2E695DE500B3664EDA",
+                      "sha256After":  "098414283E512B7AC191E59EAA29FE9A90F8FE1C710ACC2E695DE500B3664EDA",
+                      "lengthBefore":  1466,
+                      "lengthAfter":  1466,
+                      "lastWriteUtcTicksBefore":  639287474023730952,
+                      "lastWriteUtcTicksAfter":  639287474023730952,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\student-portal\\route.ts",
+                      "sha256Before":  "6F2197A6BED4F93520091BDD1ED55AD097DDC41B6B08C8AA6AAD574B3E14BA3F",
+                      "sha256After":  "6F2197A6BED4F93520091BDD1ED55AD097DDC41B6B08C8AA6AAD574B3E14BA3F",
+                      "lengthBefore":  2857,
+                      "lengthAfter":  2857,
+                      "lastWriteUtcTicksBefore":  639287474023751031,
+                      "lastWriteUtcTicksAfter":  639287474023751031,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\upload-drive\\route.ts",
+                      "sha256Before":  "BE790EFCE785BBACF28AD0D179D0AE6D9E070BB2355CD8F928DA33F808B7065F",
+                      "sha256After":  "BE790EFCE785BBACF28AD0D179D0AE6D9E070BB2355CD8F928DA33F808B7065F",
+                      "lengthBefore":  1990,
+                      "lengthAfter":  1990,
+                      "lastWriteUtcTicksBefore":  639287474023767270,
+                      "lastWriteUtcTicksAfter":  639287474023767270,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\spck\\upload-lms\\route.ts",
+                      "sha256Before":  "5C7741BB4C30461CD9868B7C1CF62F38CF017EA81E876A3C7E0587770495F52B",
+                      "sha256After":  "5C7741BB4C30461CD9868B7C1CF62F38CF017EA81E876A3C7E0587770495F52B",
+                      "lengthBefore":  3180,
+                      "lengthAfter":  3180,
+                      "lastWriteUtcTicksBefore":  639287474023772630,
+                      "lastWriteUtcTicksAfter":  639287474023772630,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\teaching-projects\\route.ts",
+                      "sha256Before":  "8A5336B7B92BA838DA60BDA4B3D91869FA23A1872725A3BDC20FF22ACFC95E09",
+                      "sha256After":  "8A5336B7B92BA838DA60BDA4B3D91869FA23A1872725A3BDC20FF22ACFC95E09",
+                      "lengthBefore":  7214,
+                      "lengthAfter":  7214,
+                      "lastWriteUtcTicksBefore":  639287856396824067,
+                      "lastWriteUtcTicksAfter":  639287856396824067,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\teaching-projects\\fetch-lms-dates\\route.ts",
+                      "sha256Before":  "6F635F14A0C140E18B37CB28255C050B8617C1EEA1897D6F81B75362B068840E",
+                      "sha256After":  "6F635F14A0C140E18B37CB28255C050B8617C1EEA1897D6F81B75362B068840E",
+                      "lengthBefore":  3753,
+                      "lengthAfter":  3753,
+                      "lastWriteUtcTicksBefore":  639287856697868674,
+                      "lastWriteUtcTicksAfter":  639287856697868674,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\teaching-projects\\generate-ai\\route.ts",
+                      "sha256Before":  "D0238B7B11B25F03FDBC567C3FE4ADEB772A0CE7823CC6A292D6675EB841358A",
+                      "sha256After":  "D0238B7B11B25F03FDBC567C3FE4ADEB772A0CE7823CC6A292D6675EB841358A",
+                      "lengthBefore":  5511,
+                      "lengthAfter":  5511,
+                      "lastWriteUtcTicksBefore":  639287856679725125,
+                      "lastWriteUtcTicksAfter":  639287856679725125,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\teaching-projects\\progress\\route.ts",
+                      "sha256Before":  "36D78485BF1EE5239F30B9DC87222114A38F345691233A4D91D9099C91059D68",
+                      "sha256After":  "36D78485BF1EE5239F30B9DC87222114A38F345691233A4D91D9099C91059D68",
+                      "lengthBefore":  4588,
+                      "lengthAfter":  4588,
+                      "lastWriteUtcTicksBefore":  639287904392624223,
+                      "lastWriteUtcTicksAfter":  639287904392624223,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\api\\teaching-projects\\sync\\route.ts",
+                      "sha256Before":  "CC6E48ED5F7A9EBDB992416E1DF3BFE8152949B0450CC7B7DAE0D560DFF16E9C",
+                      "sha256After":  "CC6E48ED5F7A9EBDB992416E1DF3BFE8152949B0450CC7B7DAE0D560DFF16E9C",
+                      "lengthBefore":  4894,
+                      "lengthAfter":  4894,
+                      "lastWriteUtcTicksBefore":  639287856415454101,
+                      "lastWriteUtcTicksAfter":  639287856415454101,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\final-project\\page.tsx",
+                      "sha256Before":  "681473913ECF7CDD12DC25B9D22962374B44AF691E70877844E194813026CE2F",
+                      "sha256After":  "681473913ECF7CDD12DC25B9D22962374B44AF691E70877844E194813026CE2F",
+                      "lengthBefore":  294285,
+                      "lengthAfter":  294285,
+                      "lastWriteUtcTicksBefore":  639287793221441367,
+                      "lastWriteUtcTicksAfter":  639287793221441367,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\homework-grader\\page.tsx",
+                      "sha256Before":  "CEF70AE1452B9BEA50C78E708678B61301A5BDD8ADE482F263173D2FBE7FDA71",
+                      "sha256After":  "CEF70AE1452B9BEA50C78E708678B61301A5BDD8ADE482F263173D2FBE7FDA71",
+                      "lengthBefore":  38648,
+                      "lengthAfter":  38648,
+                      "lastWriteUtcTicksBefore":  639287726324141755,
+                      "lastWriteUtcTicksAfter":  639287726324141755,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\session-comments\\page.tsx",
+                      "sha256Before":  "50A5B3C99200C692454B063A53A0F9C0B489C5A3470F11E848FDD6C19D2E0EF2",
+                      "sha256After":  "50A5B3C99200C692454B063A53A0F9C0B489C5A3470F11E848FDD6C19D2E0EF2",
+                      "lengthBefore":  114544,
+                      "lengthAfter":  114544,
+                      "lastWriteUtcTicksBefore":  639287822212704955,
+                      "lastWriteUtcTicksAfter":  639287822212704955,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\syllabus-config\\page.tsx",
+                      "sha256Before":  "BB60A97E9FECCCD8E8B4A2D055CF8B44E93300B497EA36FEA9D812EF402D37C0",
+                      "sha256After":  "BB60A97E9FECCCD8E8B4A2D055CF8B44E93300B497EA36FEA9D812EF402D37C0",
+                      "lengthBefore":  84316,
+                      "lengthAfter":  84316,
+                      "lastWriteUtcTicksBefore":  639287714037371904,
+                      "lastWriteUtcTicksAfter":  639287714037371904,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\app\\teaching-projects\\page.tsx",
+                      "sha256Before":  "B3E5B797E91E16ACDC0F050DDE64333A79C8BE340A5B51DA06028B8138E647F3",
+                      "sha256After":  "B3E5B797E91E16ACDC0F050DDE64333A79C8BE340A5B51DA06028B8138E647F3",
+                      "lengthBefore":  71546,
+                      "lengthAfter":  71546,
+                      "lastWriteUtcTicksBefore":  639288041729009080,
+                      "lastWriteUtcTicksAfter":  639288041729009080,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\components\\homework-auto-grader-tab.tsx",
+                      "sha256Before":  "7FE409BA7F72DA97A2B3F12DACB0DE6A1D89ABAD24D0EF15060D7DC412D7098B",
+                      "sha256After":  "7FE409BA7F72DA97A2B3F12DACB0DE6A1D89ABAD24D0EF15060D7DC412D7098B",
+                      "lengthBefore":  61303,
+                      "lengthAfter":  61303,
+                      "lastWriteUtcTicksBefore":  639287474023939782,
+                      "lastWriteUtcTicksAfter":  639287474023939782,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\components\\live-log-drawer.tsx",
+                      "sha256Before":  "781A5F0560FD9A5813CE167402967BF9981CF74BCA1CC90442892C28D943ED2B",
+                      "sha256After":  "781A5F0560FD9A5813CE167402967BF9981CF74BCA1CC90442892C28D943ED2B",
+                      "lengthBefore":  8902,
+                      "lengthAfter":  8902,
+                      "lastWriteUtcTicksBefore":  639287698202838484,
+                      "lastWriteUtcTicksAfter":  639287698202838484,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\components\\top-navbar.tsx",
+                      "sha256Before":  "A573B7F4912E36EDBC79E4115BBD672B8B02CB87A3818EDFDF5902F2D186159D",
+                      "sha256After":  "A573B7F4912E36EDBC79E4115BBD672B8B02CB87A3818EDFDF5902F2D186159D",
+                      "lengthBefore":  3819,
+                      "lengthAfter":  3819,
+                      "lastWriteUtcTicksBefore":  639287835592642360,
+                      "lastWriteUtcTicksAfter":  639287835592642360,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\config.ts",
+                      "sha256Before":  "FD1F3500D07801B263C2660DAD64736F78E172F78488CC2B48AB7AC5A0DE1E2A",
+                      "sha256After":  "FD1F3500D07801B263C2660DAD64736F78E172F78488CC2B48AB7AC5A0DE1E2A",
+                      "lengthBefore":  2272,
+                      "lengthAfter":  2272,
+                      "lastWriteUtcTicksBefore":  639287474023962594,
+                      "lastWriteUtcTicksAfter":  639287474023962594,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\utils.ts",
+                      "sha256Before":  "2A7E00266C284DF9B56BB9DD56FC57E1983F195BB03D1EBB1675A7CFDDEE3B63",
+                      "sha256After":  "2A7E00266C284DF9B56BB9DD56FC57E1983F195BB03D1EBB1675A7CFDDEE3B63",
+                      "lengthBefore":  248,
+                      "lengthAfter":  248,
+                      "lastWriteUtcTicksBefore":  639287474024472927,
+                      "lastWriteUtcTicksAfter":  639287474024472927,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\db\\json-config.ts",
+                      "sha256Before":  "F5075F27B57430CF8C358AF15188851C181FB9C2F4D48BEF78F87BB0B0093153",
+                      "sha256After":  "F5075F27B57430CF8C358AF15188851C181FB9C2F4D48BEF78F87BB0B0093153",
+                      "lengthBefore":  8036,
+                      "lengthAfter":  8036,
+                      "lastWriteUtcTicksBefore":  639287889277019072,
+                      "lastWriteUtcTicksAfter":  639287889277019072,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\db\\sqlite.ts",
+                      "sha256Before":  "E7B0CAD9127BC7C3AB5A4EEB4AE871D70E206CC333C1C2164F25DD3880239A4C",
+                      "sha256After":  "E7B0CAD9127BC7C3AB5A4EEB4AE871D70E206CC333C1C2164F25DD3880239A4C",
+                      "lengthBefore":  235695,
+                      "lengthAfter":  235695,
+                      "lastWriteUtcTicksBefore":  639288342472831510,
+                      "lastWriteUtcTicksAfter":  639288342472831510,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\file-parsers\\archive-reader.ts",
+                      "sha256Before":  "8083A9B2CB4C7ADA46AD0922F002D6665325BFA0601A6DE0C09A8E01AF3545DD",
+                      "sha256After":  "8083A9B2CB4C7ADA46AD0922F002D6665325BFA0601A6DE0C09A8E01AF3545DD",
+                      "lengthBefore":  14154,
+                      "lengthAfter":  14154,
+                      "lastWriteUtcTicksBefore":  639287474024032811,
+                      "lastWriteUtcTicksAfter":  639287474024032811,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\file-parsers\\code-reader.ts",
+                      "sha256Before":  "5A22ED853A8F1E78347F8486D3F5F6CA421F324C76C28C479046743941D775FD",
+                      "sha256After":  "5A22ED853A8F1E78347F8486D3F5F6CA421F324C76C28C479046743941D775FD",
+                      "lengthBefore":  12200,
+                      "lengthAfter":  12200,
+                      "lastWriteUtcTicksBefore":  639287474024041172,
+                      "lastWriteUtcTicksAfter":  639287474024041172,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\file-parsers\\game-reader.ts",
+                      "sha256Before":  "8C8BC86FE888898C6E9C6E60721C30FD0A06E90B00E0DEB891B24E8285C8804D",
+                      "sha256After":  "8C8BC86FE888898C6E9C6E60721C30FD0A06E90B00E0DEB891B24E8285C8804D",
+                      "lengthBefore":  26198,
+                      "lengthAfter":  26198,
+                      "lastWriteUtcTicksBefore":  639287474024049864,
+                      "lastWriteUtcTicksAfter":  639287474024049864,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\file-parsers\\index.ts",
+                      "sha256Before":  "C0D22C770D0A5B76A98646F1C67EAA1C08F439EA3FD5BDC477ACB053AFED4F0E",
+                      "sha256After":  "C0D22C770D0A5B76A98646F1C67EAA1C08F439EA3FD5BDC477ACB053AFED4F0E",
+                      "lengthBefore":  10723,
+                      "lengthAfter":  10723,
+                      "lastWriteUtcTicksBefore":  639287474024057327,
+                      "lastWriteUtcTicksAfter":  639287474024057327,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\file-parsers\\media-reader.ts",
+                      "sha256Before":  "6DF7C0EBD69558CEAA01055A787DDDC49E058F4435D4FCED0848FCE8DDAC79CC",
+                      "sha256After":  "6DF7C0EBD69558CEAA01055A787DDDC49E058F4435D4FCED0848FCE8DDAC79CC",
+                      "lengthBefore":  70886,
+                      "lengthAfter":  70886,
+                      "lastWriteUtcTicksBefore":  639287474024079167,
+                      "lastWriteUtcTicksAfter":  639287474024079167,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\gemini\\client.ts",
+                      "sha256Before":  "36E6788916D2912C975EC2C34CDE4530498978C75A16FD2721F8537ADF8170B6",
+                      "sha256After":  "36E6788916D2912C975EC2C34CDE4530498978C75A16FD2721F8537ADF8170B6",
+                      "lengthBefore":  1283,
+                      "lengthAfter":  1283,
+                      "lastWriteUtcTicksBefore":  639287474024084916,
+                      "lastWriteUtcTicksAfter":  639287474024084916,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\gemini\\comment-generator.ts",
+                      "sha256Before":  "51C2588B30E630BAE612F7D203AA1228404D0AB6D7374E95943C5FB4AF8D950B",
+                      "sha256After":  "51C2588B30E630BAE612F7D203AA1228404D0AB6D7374E95943C5FB4AF8D950B",
+                      "lengthBefore":  38018,
+                      "lengthAfter":  38018,
+                      "lastWriteUtcTicksBefore":  639287802612992093,
+                      "lastWriteUtcTicksAfter":  639287802612992093,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\gemini\\homework-grader.ts",
+                      "sha256Before":  "0328CAE2695CF5318374DA128F0AB2678332BC49E56E35E590CC6F96D9D31C2F",
+                      "sha256After":  "0328CAE2695CF5318374DA128F0AB2678332BC49E56E35E590CC6F96D9D31C2F",
+                      "lengthBefore":  29058,
+                      "lengthAfter":  29058,
+                      "lastWriteUtcTicksBefore":  639287474024098289,
+                      "lastWriteUtcTicksAfter":  639287474024098289,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\gemini\\score-auditor.ts",
+                      "sha256Before":  "C8BA71AE08206F7B70EB394225813F5648A3C570810AFEDDFABCA7005048DBCE",
+                      "sha256After":  "C8BA71AE08206F7B70EB394225813F5648A3C570810AFEDDFABCA7005048DBCE",
+                      "lengthBefore":  7820,
+                      "lengthAfter":  7820,
+                      "lastWriteUtcTicksBefore":  639287474024098289,
+                      "lastWriteUtcTicksAfter":  639287474024098289,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\gemini\\session14-course-summary.ts",
+                      "sha256Before":  "DF2D01C5FBF523793B0F0797C43A12A48E5297EDD5CCA582D8AA3D765512568C",
+                      "sha256After":  "DF2D01C5FBF523793B0F0797C43A12A48E5297EDD5CCA582D8AA3D765512568C",
+                      "lengthBefore":  47777,
+                      "lengthAfter":  47777,
+                      "lastWriteUtcTicksBefore":  639287604845546762,
+                      "lastWriteUtcTicksAfter":  639287604845546762,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\gemini\\spck-comment.ts",
+                      "sha256Before":  "468D725DF57E949F553FE23519972797C0244DA837824874F34D2A0174027F68",
+                      "sha256After":  "468D725DF57E949F553FE23519972797C0244DA837824874F34D2A0174027F68",
+                      "lengthBefore":  59846,
+                      "lengthAfter":  59846,
+                      "lastWriteUtcTicksBefore":  639287474024152461,
+                      "lastWriteUtcTicksAfter":  639287474024152461,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\gemini\\teaching-project-generator.ts",
+                      "sha256Before":  "3A7A6DFE35C55C4E07B229F5E6FE8D4797865652852315635195D7608344AC19",
+                      "sha256After":  "3A7A6DFE35C55C4E07B229F5E6FE8D4797865652852315635195D7608344AC19",
+                      "lengthBefore":  37013,
+                      "lengthAfter":  37013,
+                      "lastWriteUtcTicksBefore":  639287889502962356,
+                      "lastWriteUtcTicksAfter":  639287889502962356,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\github\\spck-web-deployer.ts",
+                      "sha256Before":  "501DB67A12AF2A9C4FCAEBB16378C63800CC040C5C3F6E1D702774184041A2A4",
+                      "sha256After":  "501DB67A12AF2A9C4FCAEBB16378C63800CC040C5C3F6E1D702774184041A2A4",
+                      "lengthBefore":  27849,
+                      "lengthAfter":  27849,
+                      "lastWriteUtcTicksBefore":  639287474024152461,
+                      "lastWriteUtcTicksAfter":  639287474024152461,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\local-files\\spck-app-screenshotter.ts",
+                      "sha256Before":  "40CCD17557EA038B3FB8A0CE94C400374BACAF3C71CD5652CE2D714876286D87",
+                      "sha256After":  "40CCD17557EA038B3FB8A0CE94C400374BACAF3C71CD5652CE2D714876286D87",
+                      "lengthBefore":  69663,
+                      "lengthAfter":  69663,
+                      "lastWriteUtcTicksBefore":  639287474024176621,
+                      "lastWriteUtcTicksAfter":  639287474024176621,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\local-files\\spck-demo-score-reader.ts",
+                      "sha256Before":  "852200D29066E75DAF4063F4FA12457897530584F52E0B6D722D23AC4F638B3C",
+                      "sha256After":  "852200D29066E75DAF4063F4FA12457897530584F52E0B6D722D23AC4F638B3C",
+                      "lengthBefore":  27794,
+                      "lengthAfter":  27794,
+                      "lastWriteUtcTicksBefore":  639287587887889892,
+                      "lastWriteUtcTicksAfter":  639287587887889892,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\local-files\\spck-image-normalizer.ts",
+                      "sha256Before":  "B0DF75CAD5C1619066AB173321860795F6041B2802BC4CC6C04581C1D34743B9",
+                      "sha256After":  "B0DF75CAD5C1619066AB173321860795F6041B2802BC4CC6C04581C1D34743B9",
+                      "lengthBefore":  4611,
+                      "lengthAfter":  4611,
+                      "lastWriteUtcTicksBefore":  639287474024210954,
+                      "lastWriteUtcTicksAfter":  639287474024210954,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\local-files\\spck-scanner.ts",
+                      "sha256Before":  "8E875C59C78B92EDAA5020363E58AB9DC960038AE00FC98222ADEF32A952C3C6",
+                      "sha256After":  "8E875C59C78B92EDAA5020363E58AB9DC960038AE00FC98222ADEF32A952C3C6",
+                      "lengthBefore":  55381,
+                      "lengthAfter":  55381,
+                      "lastWriteUtcTicksBefore":  639287474024227004,
+                      "lastWriteUtcTicksAfter":  639287474024227004,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\local-files\\spck-youtube-import.ts",
+                      "sha256Before":  "F5D9DD077107933F9C20D90B4B9D9D275D7B2BFCFBE2AFC517055C19B11B56FC",
+                      "sha256After":  "F5D9DD077107933F9C20D90B4B9D9D275D7B2BFCFBE2AFC517055C19B11B56FC",
+                      "lengthBefore":  34097,
+                      "lengthAfter":  34097,
+                      "lastWriteUtcTicksBefore":  639287474024237920,
+                      "lastWriteUtcTicksAfter":  639287474024237920,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\auth.ts",
+                      "sha256Before":  "921B910E1B355B3217EDCE0C37F3B0FF85D84608A441719F472101B01E264842",
+                      "sha256After":  "921B910E1B355B3217EDCE0C37F3B0FF85D84608A441719F472101B01E264842",
+                      "lengthBefore":  11226,
+                      "lengthAfter":  11226,
+                      "lastWriteUtcTicksBefore":  639287474024249177,
+                      "lastWriteUtcTicksAfter":  639287474024249177,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\browser-manager.ts",
+                      "sha256Before":  "6200E42818D6668B766A4FAD4FC627235D6A07C217ADAD4A633D87085935D912",
+                      "sha256After":  "6200E42818D6668B766A4FAD4FC627235D6A07C217ADAD4A633D87085935D912",
+                      "lengthBefore":  7319,
+                      "lengthAfter":  7319,
+                      "lastWriteUtcTicksBefore":  639287474024260908,
+                      "lastWriteUtcTicksAfter":  639287474024260908,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\download-submissions.ts",
+                      "sha256Before":  "02C7B49C19650593602C5D97A6A5179E283F4DE913FD446BDCCCF07A91B4B7A7",
+                      "sha256After":  "02C7B49C19650593602C5D97A6A5179E283F4DE913FD446BDCCCF07A91B4B7A7",
+                      "lengthBefore":  25292,
+                      "lengthAfter":  25292,
+                      "lastWriteUtcTicksBefore":  639287474024266367,
+                      "lastWriteUtcTicksAfter":  639287474024266367,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\grade-worker.ts",
+                      "sha256Before":  "8FFC43C0E17A0762EAC463BCED54ACE084FBEE770EDFFE3F7D8735C6F556F821",
+                      "sha256After":  "8FFC43C0E17A0762EAC463BCED54ACE084FBEE770EDFFE3F7D8735C6F556F821",
+                      "lengthBefore":  63760,
+                      "lengthAfter":  63760,
+                      "lastWriteUtcTicksBefore":  639287474024288316,
+                      "lastWriteUtcTicksAfter":  639287474024288316,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\lms-helpers.ts",
+                      "sha256Before":  "387A45F57209EF99889D651D6D02F674B7962C268CFBB8973075D909838B35C9",
+                      "sha256After":  "387A45F57209EF99889D651D6D02F674B7962C268CFBB8973075D909838B35C9",
+                      "lengthBefore":  26113,
+                      "lengthAfter":  26113,
+                      "lastWriteUtcTicksBefore":  639287474024298361,
+                      "lastWriteUtcTicksAfter":  639287474024298361,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\network-interceptor.ts",
+                      "sha256Before":  "1E526A20307B5AB2CD6786DD72ED8947F786DA690A53A8755E0E50697647E744",
+                      "sha256After":  "1E526A20307B5AB2CD6786DD72ED8947F786DA690A53A8755E0E50697647E744",
+                      "lengthBefore":  6435,
+                      "lengthAfter":  6435,
+                      "lastWriteUtcTicksBefore":  639287474024309676,
+                      "lastWriteUtcTicksAfter":  639287474024309676,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\save-comments.ts",
+                      "sha256Before":  "762ED1CAF2C7BC0E12F0D2070D1BC0B025CD6368DA840780541B76C6C134F802",
+                      "sha256After":  "762ED1CAF2C7BC0E12F0D2070D1BC0B025CD6368DA840780541B76C6C134F802",
+                      "lengthBefore":  75138,
+                      "lengthAfter":  75138,
+                      "lastWriteUtcTicksBefore":  639287651249102013,
+                      "lastWriteUtcTicksAfter":  639287651249102013,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\scrape-scores.ts",
+                      "sha256Before":  "B98B2152FB488E569E38D3DE5F47D7F8EB5C60171D76E5C0C3E9431AFA7B78F6",
+                      "sha256After":  "B98B2152FB488E569E38D3DE5F47D7F8EB5C60171D76E5C0C3E9431AFA7B78F6",
+                      "lengthBefore":  112249,
+                      "lengthAfter":  112249,
+                      "lastWriteUtcTicksBefore":  639288387733289261,
+                      "lastWriteUtcTicksAfter":  639288387733289261,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\selectors.ts",
+                      "sha256Before":  "B13D14204BE904A1D0BC2873C5FFB2ECC127A4414A391B0D9D3529DE1E9ABA7F",
+                      "sha256After":  "B13D14204BE904A1D0BC2873C5FFB2ECC127A4414A391B0D9D3529DE1E9ABA7F",
+                      "lengthBefore":  8796,
+                      "lengthAfter":  8796,
+                      "lastWriteUtcTicksBefore":  639287474024344315,
+                      "lastWriteUtcTicksAfter":  639287474024344315,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\session14-eval-uploader.ts",
+                      "sha256Before":  "E5F7485B7C7B8CFE1C7451F59F3782CEEA5604052BEE9D7C746EC998F8E4D70D",
+                      "sha256After":  "E5F7485B7C7B8CFE1C7451F59F3782CEEA5604052BEE9D7C746EC998F8E4D70D",
+                      "lengthBefore":  43135,
+                      "lengthAfter":  43135,
+                      "lastWriteUtcTicksBefore":  639287602753565098,
+                      "lastWriteUtcTicksAfter":  639287602753565098,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\spck-demo-sheet.ts",
+                      "sha256Before":  "02FD9567B8CB76B05372041F94B204D1676ACB9D7AB82322501CE6CDC874FF95",
+                      "sha256After":  "02FD9567B8CB76B05372041F94B204D1676ACB9D7AB82322501CE6CDC874FF95",
+                      "lengthBefore":  51225,
+                      "lengthAfter":  51225,
+                      "lastWriteUtcTicksBefore":  639287474024364432,
+                      "lastWriteUtcTicksAfter":  639287474024364432,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\spck-drive-uploader.ts",
+                      "sha256Before":  "715325319DCC64AE1DBA48BB4DFDB66BC1590BE0AB7B3ED2B8D167C4AA594C58",
+                      "sha256After":  "715325319DCC64AE1DBA48BB4DFDB66BC1590BE0AB7B3ED2B8D167C4AA594C58",
+                      "lengthBefore":  32708,
+                      "lengthAfter":  32708,
+                      "lastWriteUtcTicksBefore":  639287474024386329,
+                      "lastWriteUtcTicksAfter":  639287474024386329,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\spck-uploader.ts",
+                      "sha256Before":  "A560F857D4A7603121119732EB3E9B5C68DF2D31525DE2F464FF21A50BE91124",
+                      "sha256After":  "A560F857D4A7603121119732EB3E9B5C68DF2D31525DE2F464FF21A50BE91124",
+                      "lengthBefore":  150057,
+                      "lengthAfter":  150057,
+                      "lastWriteUtcTicksBefore":  639287474024406428,
+                      "lastWriteUtcTicksAfter":  639287474024406428,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\sync-class.ts",
+                      "sha256Before":  "0E9D280E63AEDE79412701417367D094120470B7F8833EACE76FAE58E6F3F35D",
+                      "sha256After":  "0E9D280E63AEDE79412701417367D094120470B7F8833EACE76FAE58E6F3F35D",
+                      "lengthBefore":  61286,
+                      "lengthAfter":  61286,
+                      "lastWriteUtcTicksBefore":  639287902519356801,
+                      "lastWriteUtcTicksAfter":  639287902519356801,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\teaching-project-service.ts",
+                      "sha256Before":  "513BAFDBC3EA9A78B3BA7CE58CCF04CFF3DB0610F86610DB3AF33D0A98B390C4",
+                      "sha256After":  "513BAFDBC3EA9A78B3BA7CE58CCF04CFF3DB0610F86610DB3AF33D0A98B390C4",
+                      "lengthBefore":  47079,
+                      "lengthAfter":  47079,
+                      "lastWriteUtcTicksBefore":  639287903887801496,
+                      "lastWriteUtcTicksAfter":  639287903887801496,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\playwright\\teaching-report-card-sync.ts",
+                      "sha256Before":  "9DB0ADEBE81E9DB9EF2412636B3D8DCB8FBE884055DD808340D7F9AED902634E",
+                      "sha256After":  "9DB0ADEBE81E9DB9EF2412636B3D8DCB8FBE884055DD808340D7F9AED902634E",
+                      "lengthBefore":  47068,
+                      "lengthAfter":  47068,
+                      "lastWriteUtcTicksBefore":  639288524980397518,
+                      "lastWriteUtcTicksAfter":  639288524980397518,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\queue\\task-queue.ts",
+                      "sha256Before":  "D5D841003E1D5C7B45025F6DABF68CEA83C35226E75425819140281558FD710C",
+                      "sha256After":  "D5D841003E1D5C7B45025F6DABF68CEA83C35226E75425819140281558FD710C",
+                      "lengthBefore":  8714,
+                      "lengthAfter":  8714,
+                      "lastWriteUtcTicksBefore":  639287474024428633,
+                      "lastWriteUtcTicksAfter":  639287474024428633,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\quick-tags\\index.ts",
+                      "sha256Before":  "945585FD289F9B5BA5308AA68D1F26F76207A622D39D822DA6A8A8106F405AA8",
+                      "sha256After":  "945585FD289F9B5BA5308AA68D1F26F76207A622D39D822DA6A8A8106F405AA8",
+                      "lengthBefore":  14796,
+                      "lengthAfter":  14796,
+                      "lastWriteUtcTicksBefore":  639287790096706165,
+                      "lastWriteUtcTicksAfter":  639287790096706165,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\report-card\\report-card-calculator.ts",
+                      "sha256Before":  "E0FFE06E41D429AFE511F737E68599B1D7EC17FD09F3B43DEAB5FC3B206671AA",
+                      "sha256After":  "E0FFE06E41D429AFE511F737E68599B1D7EC17FD09F3B43DEAB5FC3B206671AA",
+                      "lengthBefore":  25516,
+                      "lengthAfter":  25516,
+                      "lastWriteUtcTicksBefore":  639288084580771686,
+                      "lastWriteUtcTicksAfter":  639288084580771686,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\security\\local-guard.ts",
+                      "sha256Before":  "A1C29F8A409D8C91B1C7E730F078FB16B1EE7D7E873BEE5058618BD77F082E85",
+                      "sha256After":  "A1C29F8A409D8C91B1C7E730F078FB16B1EE7D7E873BEE5058618BD77F082E85",
+                      "lengthBefore":  2218,
+                      "lengthAfter":  2218,
+                      "lastWriteUtcTicksBefore":  639287474024439477,
+                      "lastWriteUtcTicksAfter":  639287474024439477,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\security\\path-allowlist.ts",
+                      "sha256Before":  "EA82BBDFAD9C932691B2CC292CB203D1294906CD2BBCB1725A72133D24D395E5",
+                      "sha256After":  "EA82BBDFAD9C932691B2CC292CB203D1294906CD2BBCB1725A72133D24D395E5",
+                      "lengthBefore":  7128,
+                      "lengthAfter":  7128,
+                      "lastWriteUtcTicksBefore":  639287474024447793,
+                      "lastWriteUtcTicksAfter":  639287474024447793,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\student-portal\\student-portal-server.ts",
+                      "sha256Before":  "62A6F4A5C09581E04C710E0F39360A2C31E8A2598B3380D2A4B6C3E9F5285C41",
+                      "sha256After":  "62A6F4A5C09581E04C710E0F39360A2C31E8A2598B3380D2A4B6C3E9F5285C41",
+                      "lengthBefore":  60266,
+                      "lengthAfter":  60266,
+                      "lastWriteUtcTicksBefore":  639287474024465922,
+                      "lastWriteUtcTicksAfter":  639287474024465922,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\utils\\vietnamese-match.ts",
+                      "sha256Before":  "AB68EFD65177A6EE48BBA8DA56BA592EFA718D8E906811E23E789F4CCB4BC1C7",
+                      "sha256After":  "AB68EFD65177A6EE48BBA8DA56BA592EFA718D8E906811E23E789F4CCB4BC1C7",
+                      "lengthBefore":  11482,
+                      "lengthAfter":  11482,
+                      "lastWriteUtcTicksBefore":  639287474024484187,
+                      "lastWriteUtcTicksAfter":  639287474024484187,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "src\\lib\\zalo\\broadcast-generator.ts",
+                      "sha256Before":  "3FA54F740D08583BA8FDC0E210FFAAC373CD0E00C26D4D11A182B7F2D8904682",
+                      "sha256After":  "3FA54F740D08583BA8FDC0E210FFAAC373CD0E00C26D4D11A182B7F2D8904682",
+                      "lengthBefore":  10153,
+                      "lengthAfter":  10153,
+                      "lastWriteUtcTicksBefore":  639287474024497782,
+                      "lastWriteUtcTicksAfter":  639287474024497782,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\recon.ts",
+                      "sha256Before":  "37ADF05E90F24D7683600ECEEC948BC965FCC23D250DCF3E07ADA28E4FB25C92",
+                      "sha256After":  "37ADF05E90F24D7683600ECEEC948BC965FCC23D250DCF3E07ADA28E4FB25C92",
+                      "lengthBefore":  7539,
+                      "lengthAfter":  7539,
+                      "lastWriteUtcTicksBefore":  639287474023231399,
+                      "lastWriteUtcTicksAfter":  639287474023231399,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-checkpoint-v300.ts",
+                      "sha256Before":  "51A151F5A36A4FBC056831724C4984347ABB5A05E472923C15D687A473B44F15",
+                      "sha256After":  "51A151F5A36A4FBC056831724C4984347ABB5A05E472923C15D687A473B44F15",
+                      "lengthBefore":  13151,
+                      "lengthAfter":  13151,
+                      "lastWriteUtcTicksBefore":  639287568160088702,
+                      "lastWriteUtcTicksAfter":  639287568160088702,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-lms-reliability-v280.ts",
+                      "sha256Before":  "319B72AB565ED8DD9B97591EAEE476F58CA851DC9B36BE6BFDEE3BA4A4D8DEC6",
+                      "sha256After":  "319B72AB565ED8DD9B97591EAEE476F58CA851DC9B36BE6BFDEE3BA4A4D8DEC6",
+                      "lengthBefore":  63042,
+                      "lengthAfter":  63042,
+                      "lastWriteUtcTicksBefore":  639287474023247992,
+                      "lastWriteUtcTicksAfter":  639287474023247992,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-patches-round2.ts",
+                      "sha256Before":  "7A408C522591E6FD5819D064BB7F86145CA3AFDEBDBFE50DC693A958DF203A3E",
+                      "sha256After":  "7A408C522591E6FD5819D064BB7F86145CA3AFDEBDBFE50DC693A958DF203A3E",
+                      "lengthBefore":  7455,
+                      "lengthAfter":  7455,
+                      "lastWriteUtcTicksBefore":  639287474023247992,
+                      "lastWriteUtcTicksAfter":  639287474023247992,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-phase3.ts",
+                      "sha256Before":  "594CA880D6F149AD3F5E50BA0E7F583455D6A96A1426B8D777E74CD40290F8A1",
+                      "sha256After":  "594CA880D6F149AD3F5E50BA0E7F583455D6A96A1426B8D777E74CD40290F8A1",
+                      "lengthBefore":  8437,
+                      "lengthAfter":  8437,
+                      "lastWriteUtcTicksBefore":  639287608009185265,
+                      "lastWriteUtcTicksAfter":  639287608009185265,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-phase4-codex-repros.ts",
+                      "sha256Before":  "ED31335FB5F17D154A02F3829833C3976CBCC7BC1F0D8E5D1F1AFC59A30146B2",
+                      "sha256After":  "ED31335FB5F17D154A02F3829833C3976CBCC7BC1F0D8E5D1F1AFC59A30146B2",
+                      "lengthBefore":  183305,
+                      "lengthAfter":  183305,
+                      "lastWriteUtcTicksBefore":  639288393422299663,
+                      "lastWriteUtcTicksAfter":  639288393422299663,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-phase5.ts",
+                      "sha256Before":  "86D8EF70CCDFF949010EE30B76F6F2C9CB9AAB7C08DCD5350A9F2A0E105EA690",
+                      "sha256After":  "86D8EF70CCDFF949010EE30B76F6F2C9CB9AAB7C08DCD5350A9F2A0E105EA690",
+                      "lengthBefore":  32324,
+                      "lengthAfter":  32324,
+                      "lastWriteUtcTicksBefore":  639287474023305380,
+                      "lastWriteUtcTicksAfter":  639287474023305380,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-phase6.ts",
+                      "sha256Before":  "A3DE9030753006234E2F18CEC41434BA6B4A35414F360A7FFE589BAD9AD5AC91",
+                      "sha256After":  "A3DE9030753006234E2F18CEC41434BA6B4A35414F360A7FFE589BAD9AD5AC91",
+                      "lengthBefore":  59552,
+                      "lengthAfter":  59552,
+                      "lastWriteUtcTicksBefore":  639287474023316084,
+                      "lastWriteUtcTicksAfter":  639287474023316084,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-phase7.ts",
+                      "sha256Before":  "4B82AC2DAC6B4E302B34E2839ABD61D1D3AC1050F076D57F7CA50F25F6B0CE7E",
+                      "sha256After":  "4B82AC2DAC6B4E302B34E2839ABD61D1D3AC1050F076D57F7CA50F25F6B0CE7E",
+                      "lengthBefore":  21594,
+                      "lengthAfter":  21594,
+                      "lastWriteUtcTicksBefore":  639287474023323225,
+                      "lastWriteUtcTicksAfter":  639287474023323225,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-quick-tags-v300.ts",
+                      "sha256Before":  "41352BE5093F78C23FA01E16F3802EAAB0EF84DA5739011FFB117641B2448054",
+                      "sha256After":  "41352BE5093F78C23FA01E16F3802EAAB0EF84DA5739011FFB117641B2448054",
+                      "lengthBefore":  14025,
+                      "lengthAfter":  14025,
+                      "lastWriteUtcTicksBefore":  639287813344896907,
+                      "lastWriteUtcTicksAfter":  639287813344896907,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-report-card-v330.ts",
+                      "sha256Before":  "45E544C9FDEBD532CB4C79104806E0B2DFB49246170A5E583B652CA47C60B7BE",
+                      "sha256After":  "45E544C9FDEBD532CB4C79104806E0B2DFB49246170A5E583B652CA47C60B7BE",
+                      "lengthBefore":  116584,
+                      "lengthAfter":  116584,
+                      "lastWriteUtcTicksBefore":  639288524019671828,
+                      "lastWriteUtcTicksAfter":  639288524019671828,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-session14-v290.ts",
+                      "sha256Before":  "46CA456E2FA0A1C3E8881CB19CEF5D8EB3FA866656A9A4C2910166F0F1866AB0",
+                      "sha256After":  "46CA456E2FA0A1C3E8881CB19CEF5D8EB3FA866656A9A4C2910166F0F1866AB0",
+                      "lengthBefore":  70859,
+                      "lengthAfter":  70859,
+                      "lastWriteUtcTicksBefore":  639287474023323225,
+                      "lastWriteUtcTicksAfter":  639287474023323225,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-spck-v270.ts",
+                      "sha256Before":  "97A945C3395596F9A0E1270D72E6AFFCAA19586D546DE0ADD9D7B47FEE904E6B",
+                      "sha256After":  "97A945C3395596F9A0E1270D72E6AFFCAA19586D546DE0ADD9D7B47FEE904E6B",
+                      "lengthBefore":  96768,
+                      "lengthAfter":  96768,
+                      "lastWriteUtcTicksBefore":  639287474023347402,
+                      "lastWriteUtcTicksAfter":  639287474023347402,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-spck-v272.ts",
+                      "sha256Before":  "F0EFA22434BCB934EB0DB97C94B454D8057EA6D147E99E690C4CC90680654385",
+                      "sha256After":  "F0EFA22434BCB934EB0DB97C94B454D8057EA6D147E99E690C4CC90680654385",
+                      "lengthBefore":  35059,
+                      "lengthAfter":  35059,
+                      "lastWriteUtcTicksBefore":  639287474023347402,
+                      "lastWriteUtcTicksAfter":  639287474023347402,
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "scripts\\test-teaching-project-v320.ts",
+                      "sha256Before":  "F572A5FCB6F7C7E56F336392EF39CCFE08D4F8503962C6F2B1403BF99C091366",
+                      "sha256After":  "F572A5FCB6F7C7E56F336392EF39CCFE08D4F8503962C6F2B1403BF99C091366",
+                      "lengthBefore":  64713,
+                      "lengthAfter":  64713,
+                      "lastWriteUtcTicksBefore":  639287905674438281,
+                      "lastWriteUtcTicksAfter":  639287905674438281,
+                      "unchanged":  true
+                  }
+              ]
+}

@@ -175,30 +175,30 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <span className="text-xl drop-shadow-sm">📊</span>
               <span className="mindx-badge-blue text-xs px-3 py-0.5 rounded-full">
-                Bảng điểm &amp; BTVN
+                Phiếu điểm Teaching &amp; BTVN
               </span>
             </div>
             <h3 className="mt-2 text-base font-bold group-hover:text-sky-500 transition-colors">
-              2. Bảng điểm Báo cáo &amp; Tự chấm Bài tập
+              2. Phiếu Điểm Tổng Kết (Chuẩn Teaching) &amp; Bảng Điểm BTVN
             </h3>
             <p className="mt-1 text-xs text-slate-400 leading-snug">
-              Quét bảng điểm toàn khóa xuất Excel / Google Sheets; tải bài tập về máy, chấm điểm tự động theo Barem kèm bằng chứng và đẩy kết quả lên LMS.
+              Tự động tổng hợp điểm BTVN (Lập trình), Check-point 1 &amp; 2, Điểm Năng lực `[ĐNL]` và Cuối khóa DEMO từ LMS; xuất ảnh gửi Zalo và đồng bộ 1 chạm lên Teaching.
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
               <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                📥 Xuất Excel &amp; Google Sheets
+                🏆 Xếp hạng A / B / C / D chuẩn Teaching
               </span>
               <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                🤖 Chấm BTVN theo Barem
+                📸 Copy ảnh BTVN &amp; Tổng kết gửi Zalo
               </span>
               <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                🔍 Đính kèm bằng chứng code
+                🚀 Đồng bộ điểm lên Teaching
               </span>
             </div>
           </div>
           <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-between text-xs">
             <span className="text-slate-400">
-              Bài nộp đã tải: <strong className="text-white">{totalSubmissions}</strong> bài • <strong className="text-white">{rubrics.length}</strong> barem
+              Hỗ trợ: <strong className="text-white">Lập trình (BTVN + CP + DEMO) • Robotics (CP + DEMO)</strong>
             </span>
             <span className="font-bold text-sky-400 group-hover:translate-x-0.5 transition-transform">
               Mở công cụ &rarr;
@@ -259,17 +259,14 @@ export default function DashboardPage() {
               </span>
             </div>
             <h3 className="mt-2 text-base font-bold group-hover:text-purple-500 transition-colors">
-              4. Quản lý Giáo trình, Barem &amp; Thẻ Nhận xét
+              4. Quản lý Giáo trình &amp; Bộ Thẻ Nhận xét Nhanh
             </h3>
             <p className="mt-1 text-xs text-slate-400 leading-snug">
-              Tùy chỉnh nội dung từng buổi học, đánh dấu buổi Kiểm tra (Checkpoint), cấu hình barem chấm điểm và quản lý 3 bộ thẻ nhận xét nhanh (Lập trình, Robotics, Buổi 14).
+              Tùy chỉnh nội dung từng buổi học, đánh dấu buổi Kiểm tra (Checkpoint) và quản lý 3 bộ thẻ nhận xét nhanh (Lập trình, Robotics, Buổi 14).
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
               <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
                 📚 {courses.length} Khóa học chuẩn
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                📋 {rubrics.length} Barem chấm bài
               </span>
               <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
                 🏷️ 3 Bộ thẻ Quick Tags
@@ -278,7 +275,7 @@ export default function DashboardPage() {
           </div>
           <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-between text-xs">
             <span className="text-slate-400">
-              Đang kích hoạt: <strong className="text-white">{courses.length} giáo trình • {rubrics.length} barem</strong>
+              Đang kích hoạt: <strong className="text-white">{courses.length} giáo trình chuẩn</strong>
             </span>
             <span className="font-bold text-purple-400 group-hover:translate-x-0.5 transition-transform">
               Mở cấu hình &rarr;

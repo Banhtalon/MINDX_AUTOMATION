@@ -1,0 +1,812 @@
+﻿[
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\globals.css",
+        "hash":  "BFEA8CF1A89EA20673F8A7FE116D99C68E58DD74AB666D80FF08C2146C522FF4",
+        "size":  17100,
+        "modified":  "2026-10-28T08:36:20.7412088Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\layout.tsx",
+        "hash":  "50E5EBB7D7BAFAFD00708B1FF1177AFF5C276F2967F0761C9188B33406A80A04",
+        "size":  1439,
+        "modified":  "2026-10-28T10:50:14.4893367Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\page.tsx",
+        "hash":  "BFA59DC675507CF5939D119F618B01667473ED6FE6C9FE3F00B3C84A8F53013B",
+        "size":  14759,
+        "modified":  "2026-10-29T07:43:06.4351676Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\auth\\login\\route.ts",
+        "hash":  "804D595235BC38444B3F9AFD491AAF99F32654C6D615C4EB69924E91646EC835",
+        "size":  1334,
+        "modified":  "2026-10-28T01:23:22.3369244Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\auth\\status\\route.ts",
+        "hash":  "BEE02AC7358F464C1624D357DAFAD77DF3D70319B27151C9BC9ADBB6A0641C51",
+        "size":  1656,
+        "modified":  "2026-10-28T01:23:22.3369244Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\config\\route.ts",
+        "hash":  "50F877A08359DB5BC0075AA132CA39A5F6002FFA169B27A0477D558CDA0D6DEF",
+        "size":  22562,
+        "modified":  "2026-10-28T04:36:50.7062868Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\approve\\route.ts",
+        "hash":  "4B045AB1A5FB8D37A5458C41D9449F1385BED9709340D5344C8591FAC114544B",
+        "size":  17528,
+        "modified":  "2026-10-28T01:23:22.3389868Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\download-and-grade\\route.ts",
+        "hash":  "A129B0EA4A25A94DFC86AF76A8D5FE1CFFCD620397FFDA86208876F20C6CFB7B",
+        "size":  9114,
+        "modified":  "2026-10-28T01:23:22.3420884Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\export\\route.ts",
+        "hash":  "DD99667EF8F2338A1AC16ACAB3623381A2C16C60988610D7C24CBEA0DF9DB8E8",
+        "size":  5516,
+        "modified":  "2026-10-28T01:23:22.3432776Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\save-lms\\route.ts",
+        "hash":  "39EDB4AC37E0681D82001C26B060F49460CB1B40E65A39FC239122668FB4205A",
+        "size":  2040,
+        "modified":  "2026-10-28T01:23:22.3443704Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\scores\\route.ts",
+        "hash":  "2B2AF620D9AC53A005C64295C7438A80E758495CA765DDBEB5C769F6EA0961AA",
+        "size":  2493,
+        "modified":  "2026-10-28T04:55:04.6753755Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\submissions\\route.ts",
+        "hash":  "E51A68E36B8DD14831A53F5E626750378DEEA39D9B0C24BC136F2992D4B3A790",
+        "size":  13804,
+        "modified":  "2026-10-28T01:23:22.3466101Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\queue\\control\\route.ts",
+        "hash":  "9B54D133FE8C8A3366C663E7AD045844DB9E43BF9D28F9EADD599F90E2C7BE0B",
+        "size":  1918,
+        "modified":  "2026-10-28T01:23:22.3484272Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\queue\\stream\\route.ts",
+        "hash":  "C0F2E90C90DA860C3AD3699EC7FFD23812722D7190F840586A4FFAFFF8150B32",
+        "size":  2721,
+        "modified":  "2026-10-28T01:23:22.3498204Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\report-card\\route.ts",
+        "hash":  "2A93406FA205441BA882A1EAA9DD6D40E685F101674E16D45B58AF7CD551B23C",
+        "size":  22161,
+        "modified":  "2026-10-29T07:22:04.0482802Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\report-card\\sync-teaching\\route.ts",
+        "hash":  "DB462266F21E0AF6A42CBF94C95FE493EC4F0C0DD51DA94B8A259BB571D3404D",
+        "size":  3378,
+        "modified":  "2026-10-29T06:59:00.1738646Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\approve\\route.ts",
+        "hash":  "0C67C27334078362341F9FB6680A026027660613772DAEFACDDB84059FE57843",
+        "size":  6929,
+        "modified":  "2026-10-28T01:23:22.3508982Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\fetch-classes\\route.ts",
+        "hash":  "ECC7C1F2539C07A5A8DE69AC4DC7343B6FFA032409FDC5E25E2E2B25CF6C0C63",
+        "size":  3029,
+        "modified":  "2026-10-28T01:23:22.3514241Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\generate-ai\\route.ts",
+        "hash":  "F18B06DD8F486DBD5E9935CD18B36B950D60B9409CDD3B94F28318168C136A33",
+        "size":  3177,
+        "modified":  "2026-10-28T01:23:22.3529329Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\list\\route.ts",
+        "hash":  "9DA5D98CCFE8AF0E2A3EC27C17BDE1A2AA1A50922E8CC642C24A20D4A4E7E16E",
+        "size":  8284,
+        "modified":  "2026-10-28T10:48:59.2049272Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\save-draft\\route.ts",
+        "hash":  "653CEDF9176588B073E7EA19781719F01B4522EEEE37336F6FB558D4F24D02DA",
+        "size":  11681,
+        "modified":  "2026-10-28T01:23:22.3534369Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\save-lms\\route.ts",
+        "hash":  "C97972BA84B5E4BDF2A2A8C3F50D742B894AE48F521118BFAE72EE2124FA3BD3",
+        "size":  2304,
+        "modified":  "2026-10-28T01:23:22.3554438Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\sync\\route.ts",
+        "hash":  "3D502A65B6DDCC415DC4463918263A37CE993172FECB72C68FA2DBE88C31CD6C",
+        "size":  1227,
+        "modified":  "2026-10-28T01:23:22.3554438Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\zalo-btvn-image\\route.ts",
+        "hash":  "19C637A4F83313E2AAC044AC0C22B81BC36E75D53DE1B902118D98B93F65339E",
+        "size":  2857,
+        "modified":  "2026-10-28T01:23:22.3574504Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\approve\\route.ts",
+        "hash":  "D597F533F9DE2F85D98D746BDED731D2F4ADCA909DD0201BDDA146ABEF83918C",
+        "size":  19797,
+        "modified":  "2026-10-28T01:23:22.3597944Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\browse-folder\\route.ts",
+        "hash":  "541FC5A0725166A6C3575F8DAE2844CA60E4F7F0591186508C1B6DCC909FC80E",
+        "size":  4682,
+        "modified":  "2026-10-28T01:23:22.3608707Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\capture-screenshots\\route.ts",
+        "hash":  "9C49DA0B527744916E7EC5900F297B833CD8C66F424E45B18577D51632EC8204",
+        "size":  8816,
+        "modified":  "2026-10-28T01:23:22.3619241Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\create-demo-sheet\\route.ts",
+        "hash":  "A955644FDB4B26CB88E48A60284CD4F97940453A50061708E457AB49C9400642",
+        "size":  2889,
+        "modified":  "2026-10-28T01:23:22.3628315Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\deploy-web\\route.ts",
+        "hash":  "C804732BD4F328C30E230609301BFF89338C805A5F2A56F5B55DAD0C9577AC5C",
+        "size":  2370,
+        "modified":  "2026-10-28T01:23:22.3639560Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\generate-ai\\route.ts",
+        "hash":  "CA6AF6140ECC0D9451CD41B23DAFF88081B426FF5D0BB7EE43A227EFACB3F306",
+        "size":  4972,
+        "modified":  "2026-10-28T01:23:22.3650666Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\import-youtube\\route.ts",
+        "hash":  "AAC4D08BDE61CBABB5704D4F08046BBEB3FE85C8BC99EFD85A9AA4176DA0D166",
+        "size":  2767,
+        "modified":  "2026-10-28T01:23:22.3661303Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\list\\route.ts",
+        "hash":  "7B9E8E8A2511A9E4E3030DC77E2A1951D4CA79A860406B265005775D8BF02695",
+        "size":  15569,
+        "modified":  "2026-10-28T03:27:47.0567205Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\save-draft\\route.ts",
+        "hash":  "4490E52FDB2E35F3DD1746E8FAACE826F76D26CEB169C4BE33E0F1680D2106CB",
+        "size":  17241,
+        "modified":  "2026-10-28T01:23:22.3685595Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\scan\\route.ts",
+        "hash":  "577EE312DEFDDF5A8BEFE0ECAA9630B9C203411339E5CA715DD4BF79E6AA59A2",
+        "size":  12778,
+        "modified":  "2026-10-28T01:23:22.3690830Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\session14-eval\\route.ts",
+        "hash":  "EDA8D5AF61BFBAC5C106ED1E9C09C6BF483098854F7433AAB172450E48F0EDB7",
+        "size":  8110,
+        "modified":  "2026-10-28T04:16:05.8761925Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\session14-eval\\generate-ai\\route.ts",
+        "hash":  "E39B2C8281FC57FDE490628B7FE4AE0CE59CE4D40144E83971218D14F2EA1285",
+        "size":  2549,
+        "modified":  "2026-10-28T01:23:22.3710884Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\session14-eval\\import-demo-scores\\route.ts",
+        "hash":  "1D51FB35ECA0464365C69F67792364BFFEC8FB5B41AFCC5143CD73938FED4CD9",
+        "size":  1216,
+        "modified":  "2026-10-28T01:23:22.3710884Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\session14-eval\\upload-lms\\route.ts",
+        "hash":  "098414283E512B7AC191E59EAA29FE9A90F8FE1C710ACC2E695DE500B3664EDA",
+        "size":  1466,
+        "modified":  "2026-10-28T01:23:22.3730952Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\student-portal\\route.ts",
+        "hash":  "6F2197A6BED4F93520091BDD1ED55AD097DDC41B6B08C8AA6AAD574B3E14BA3F",
+        "size":  2857,
+        "modified":  "2026-10-28T01:23:22.3751031Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\upload-drive\\route.ts",
+        "hash":  "BE790EFCE785BBACF28AD0D179D0AE6D9E070BB2355CD8F928DA33F808B7065F",
+        "size":  1990,
+        "modified":  "2026-10-28T01:23:22.3767270Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\upload-lms\\route.ts",
+        "hash":  "5C7741BB4C30461CD9868B7C1CF62F38CF017EA81E876A3C7E0587770495F52B",
+        "size":  3180,
+        "modified":  "2026-10-28T01:23:22.3772630Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\route.ts",
+        "hash":  "8A5336B7B92BA838DA60BDA4B3D91869FA23A1872725A3BDC20FF22ACFC95E09",
+        "size":  7214,
+        "modified":  "2026-10-28T12:00:39.6824067Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\fetch-lms-dates\\route.ts",
+        "hash":  "6F635F14A0C140E18B37CB28255C050B8617C1EEA1897D6F81B75362B068840E",
+        "size":  3753,
+        "modified":  "2026-10-28T12:01:09.7868674Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\generate-ai\\route.ts",
+        "hash":  "D0238B7B11B25F03FDBC567C3FE4ADEB772A0CE7823CC6A292D6675EB841358A",
+        "size":  5511,
+        "modified":  "2026-10-28T12:01:07.9725125Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\progress\\route.ts",
+        "hash":  "36D78485BF1EE5239F30B9DC87222114A38F345691233A4D91D9099C91059D68",
+        "size":  4588,
+        "modified":  "2026-10-28T13:20:39.2624223Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\sync\\route.ts",
+        "hash":  "CC6E48ED5F7A9EBDB992416E1DF3BFE8152949B0450CC7B7DAE0D560DFF16E9C",
+        "size":  4894,
+        "modified":  "2026-10-28T12:00:41.5454101Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\final-project\\page.tsx",
+        "hash":  "681473913ECF7CDD12DC25B9D22962374B44AF691E70877844E194813026CE2F",
+        "size":  294285,
+        "modified":  "2026-10-28T10:15:22.1441367Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\homework-grader\\page.tsx",
+        "hash":  "3C2FF816F6EFFEA3E0413AB24288D2A1C0DAEFBD0F88CF2A59C444EC9D6523BD",
+        "size":  39462,
+        "modified":  "2026-10-29T08:02:09.1371760Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\session-comments\\page.tsx",
+        "hash":  "50A5B3C99200C692454B063A53A0F9C0B489C5A3470F11E848FDD6C19D2E0EF2",
+        "size":  114544,
+        "modified":  "2026-10-28T11:03:41.2704955Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\syllabus-config\\page.tsx",
+        "hash":  "2A0CA24582D10C0952C7AED2B83A9B1172DA25B0DF62EA86D57FDEE5FB623944",
+        "size":  83654,
+        "modified":  "2026-10-29T07:43:01.1646591Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\teaching-projects\\page.tsx",
+        "hash":  "B3E5B797E91E16ACDC0F050DDE64333A79C8BE340A5B51DA06028B8138E647F3",
+        "size":  71546,
+        "modified":  "2026-10-28T17:09:32.9009080Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\components\\homework-auto-grader-tab.tsx",
+        "hash":  "7FE409BA7F72DA97A2B3F12DACB0DE6A1D89ABAD24D0EF15060D7DC412D7098B",
+        "size":  61303,
+        "modified":  "2026-10-28T01:23:22.3939782Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\components\\live-log-drawer.tsx",
+        "hash":  "781A5F0560FD9A5813CE167402967BF9981CF74BCA1CC90442892C28D943ED2B",
+        "size":  8902,
+        "modified":  "2026-10-28T07:37:00.2838484Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\components\\teaching-report-card-view.tsx",
+        "hash":  "557183ECE2B9D540827CC9DF8F4BE3095750FB97D8B0B5AA88FE3E479C8CEA5F",
+        "size":  111438,
+        "modified":  "2026-10-29T08:06:45.5346309Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\components\\top-navbar.tsx",
+        "hash":  "940F8343C9F3F5C76DA55C0447D71B8982A7FC53CEADD1AF4B5244A2B8F0706C",
+        "size":  3820,
+        "modified":  "2026-10-29T07:43:08.7254262Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\config.ts",
+        "hash":  "FD1F3500D07801B263C2660DAD64736F78E172F78488CC2B48AB7AC5A0DE1E2A",
+        "size":  2272,
+        "modified":  "2026-10-28T01:23:22.3962594Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\utils.ts",
+        "hash":  "2A7E00266C284DF9B56BB9DD56FC57E1983F195BB03D1EBB1675A7CFDDEE3B63",
+        "size":  248,
+        "modified":  "2026-10-28T01:23:22.4472927Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\db\\json-config.ts",
+        "hash":  "F5075F27B57430CF8C358AF15188851C181FB9C2F4D48BEF78F87BB0B0093153",
+        "size":  8036,
+        "modified":  "2026-10-28T12:55:27.7019072Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\db\\sqlite.ts",
+        "hash":  "50E7198AE53BA5D28C27F7B27F0CA680CB6CB9F946E0291137E7DFC3F1DAA275",
+        "size":  237303,
+        "modified":  "2026-10-29T06:53:30.0963814Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\archive-reader.ts",
+        "hash":  "8083A9B2CB4C7ADA46AD0922F002D6665325BFA0601A6DE0C09A8E01AF3545DD",
+        "size":  14154,
+        "modified":  "2026-10-28T01:23:22.4032811Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\code-reader.ts",
+        "hash":  "5A22ED853A8F1E78347F8486D3F5F6CA421F324C76C28C479046743941D775FD",
+        "size":  12200,
+        "modified":  "2026-10-28T01:23:22.4041172Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\game-reader.ts",
+        "hash":  "8C8BC86FE888898C6E9C6E60721C30FD0A06E90B00E0DEB891B24E8285C8804D",
+        "size":  26198,
+        "modified":  "2026-10-28T01:23:22.4049864Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\index.ts",
+        "hash":  "C0D22C770D0A5B76A98646F1C67EAA1C08F439EA3FD5BDC477ACB053AFED4F0E",
+        "size":  10723,
+        "modified":  "2026-10-28T01:23:22.4057327Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\media-reader.ts",
+        "hash":  "6DF7C0EBD69558CEAA01055A787DDDC49E058F4435D4FCED0848FCE8DDAC79CC",
+        "size":  70886,
+        "modified":  "2026-10-28T01:23:22.4079167Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\client.ts",
+        "hash":  "36E6788916D2912C975EC2C34CDE4530498978C75A16FD2721F8537ADF8170B6",
+        "size":  1283,
+        "modified":  "2026-10-28T01:23:22.4084916Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\comment-generator.ts",
+        "hash":  "51C2588B30E630BAE612F7D203AA1228404D0AB6D7374E95943C5FB4AF8D950B",
+        "size":  38018,
+        "modified":  "2026-10-28T10:31:01.2992093Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\homework-grader.ts",
+        "hash":  "0328CAE2695CF5318374DA128F0AB2678332BC49E56E35E590CC6F96D9D31C2F",
+        "size":  29058,
+        "modified":  "2026-10-28T01:23:22.4098289Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\score-auditor.ts",
+        "hash":  "C8BA71AE08206F7B70EB394225813F5648A3C570810AFEDDFABCA7005048DBCE",
+        "size":  7820,
+        "modified":  "2026-10-28T01:23:22.4098289Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\session14-course-summary.ts",
+        "hash":  "DF2D01C5FBF523793B0F0797C43A12A48E5297EDD5CCA582D8AA3D765512568C",
+        "size":  47777,
+        "modified":  "2026-10-28T05:01:24.5546762Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\spck-comment.ts",
+        "hash":  "468D725DF57E949F553FE23519972797C0244DA837824874F34D2A0174027F68",
+        "size":  59846,
+        "modified":  "2026-10-28T01:23:22.4152461Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\teaching-project-generator.ts",
+        "hash":  "3A7A6DFE35C55C4E07B229F5E6FE8D4797865652852315635195D7608344AC19",
+        "size":  37013,
+        "modified":  "2026-10-28T12:55:50.2962356Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\github\\spck-web-deployer.ts",
+        "hash":  "501DB67A12AF2A9C4FCAEBB16378C63800CC040C5C3F6E1D702774184041A2A4",
+        "size":  27849,
+        "modified":  "2026-10-28T01:23:22.4152461Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-app-screenshotter.ts",
+        "hash":  "40CCD17557EA038B3FB8A0CE94C400374BACAF3C71CD5652CE2D714876286D87",
+        "size":  69663,
+        "modified":  "2026-10-28T01:23:22.4176621Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-demo-score-reader.ts",
+        "hash":  "852200D29066E75DAF4063F4FA12457897530584F52E0B6D722D23AC4F638B3C",
+        "size":  27794,
+        "modified":  "2026-10-28T04:33:08.7889892Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-image-normalizer.ts",
+        "hash":  "B0DF75CAD5C1619066AB173321860795F6041B2802BC4CC6C04581C1D34743B9",
+        "size":  4611,
+        "modified":  "2026-10-28T01:23:22.4210954Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-scanner.ts",
+        "hash":  "8E875C59C78B92EDAA5020363E58AB9DC960038AE00FC98222ADEF32A952C3C6",
+        "size":  55381,
+        "modified":  "2026-10-28T01:23:22.4227004Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-youtube-import.ts",
+        "hash":  "F5D9DD077107933F9C20D90B4B9D9D275D7B2BFCFBE2AFC517055C19B11B56FC",
+        "size":  34097,
+        "modified":  "2026-10-28T01:23:22.4237920Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\auth.ts",
+        "hash":  "921B910E1B355B3217EDCE0C37F3B0FF85D84608A441719F472101B01E264842",
+        "size":  11226,
+        "modified":  "2026-10-28T01:23:22.4249177Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\browser-manager.ts",
+        "hash":  "6200E42818D6668B766A4FAD4FC627235D6A07C217ADAD4A633D87085935D912",
+        "size":  7319,
+        "modified":  "2026-10-28T01:23:22.4260908Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\download-submissions.ts",
+        "hash":  "02C7B49C19650593602C5D97A6A5179E283F4DE913FD446BDCCCF07A91B4B7A7",
+        "size":  25292,
+        "modified":  "2026-10-28T01:23:22.4266367Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\grade-worker.ts",
+        "hash":  "8FFC43C0E17A0762EAC463BCED54ACE084FBEE770EDFFE3F7D8735C6F556F821",
+        "size":  63760,
+        "modified":  "2026-10-28T01:23:22.4288316Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\lms-helpers.ts",
+        "hash":  "387A45F57209EF99889D651D6D02F674B7962C268CFBB8973075D909838B35C9",
+        "size":  26113,
+        "modified":  "2026-10-28T01:23:22.4298361Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\network-interceptor.ts",
+        "hash":  "1E526A20307B5AB2CD6786DD72ED8947F786DA690A53A8755E0E50697647E744",
+        "size":  6435,
+        "modified":  "2026-10-28T01:23:22.4309676Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\save-comments.ts",
+        "hash":  "762ED1CAF2C7BC0E12F0D2070D1BC0B025CD6368DA840780541B76C6C134F802",
+        "size":  75138,
+        "modified":  "2026-10-28T06:18:44.9102013Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\scrape-scores.ts",
+        "hash":  "B98B2152FB488E569E38D3DE5F47D7F8EB5C60171D76E5C0C3E9431AFA7B78F6",
+        "size":  112249,
+        "modified":  "2026-10-29T02:46:13.3289261Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\selectors.ts",
+        "hash":  "B13D14204BE904A1D0BC2873C5FFB2ECC127A4414A391B0D9D3529DE1E9ABA7F",
+        "size":  8796,
+        "modified":  "2026-10-28T01:23:22.4344315Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\session14-eval-uploader.ts",
+        "hash":  "E5F7485B7C7B8CFE1C7451F59F3782CEEA5604052BEE9D7C746EC998F8E4D70D",
+        "size":  43135,
+        "modified":  "2026-10-28T04:57:55.3565098Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\spck-demo-sheet.ts",
+        "hash":  "02FD9567B8CB76B05372041F94B204D1676ACB9D7AB82322501CE6CDC874FF95",
+        "size":  51225,
+        "modified":  "2026-10-28T01:23:22.4364432Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\spck-drive-uploader.ts",
+        "hash":  "715325319DCC64AE1DBA48BB4DFDB66BC1590BE0AB7B3ED2B8D167C4AA594C58",
+        "size":  32708,
+        "modified":  "2026-10-28T01:23:22.4386329Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\spck-uploader.ts",
+        "hash":  "A560F857D4A7603121119732EB3E9B5C68DF2D31525DE2F464FF21A50BE91124",
+        "size":  150057,
+        "modified":  "2026-10-28T01:23:22.4406428Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\sync-class.ts",
+        "hash":  "0E9D280E63AEDE79412701417367D094120470B7F8833EACE76FAE58E6F3F35D",
+        "size":  61286,
+        "modified":  "2026-10-28T13:17:31.9356801Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\teaching-project-service.ts",
+        "hash":  "513BAFDBC3EA9A78B3BA7CE58CCF04CFF3DB0610F86610DB3AF33D0A98B390C4",
+        "size":  47079,
+        "modified":  "2026-10-28T13:19:48.7801496Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\teaching-report-card-sync.ts",
+        "hash":  "07BD8A569F3000F1235BEDF81AD834FCBB09CE3ECBFF46E70F3CF77D7DFD2438",
+        "size":  57472,
+        "modified":  "2026-10-29T07:21:43.4034575Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\queue\\task-queue.ts",
+        "hash":  "D5D841003E1D5C7B45025F6DABF68CEA83C35226E75425819140281558FD710C",
+        "size":  8714,
+        "modified":  "2026-10-28T01:23:22.4428633Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\quick-tags\\index.ts",
+        "hash":  "945585FD289F9B5BA5308AA68D1F26F76207A622D39D822DA6A8A8106F405AA8",
+        "size":  14796,
+        "modified":  "2026-10-28T10:10:09.6706165Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\report-card\\report-card-calculator.ts",
+        "hash":  "E0FFE06E41D429AFE511F737E68599B1D7EC17FD09F3B43DEAB5FC3B206671AA",
+        "size":  25516,
+        "modified":  "2026-10-28T18:20:58.0771686Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\security\\local-guard.ts",
+        "hash":  "A1C29F8A409D8C91B1C7E730F078FB16B1EE7D7E873BEE5058618BD77F082E85",
+        "size":  2218,
+        "modified":  "2026-10-28T01:23:22.4439477Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\security\\path-allowlist.ts",
+        "hash":  "EA82BBDFAD9C932691B2CC292CB203D1294906CD2BBCB1725A72133D24D395E5",
+        "size":  7128,
+        "modified":  "2026-10-28T01:23:22.4447793Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\student-portal\\student-portal-server.ts",
+        "hash":  "62A6F4A5C09581E04C710E0F39360A2C31E8A2598B3380D2A4B6C3E9F5285C41",
+        "size":  60266,
+        "modified":  "2026-10-28T01:23:22.4465922Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\utils\\vietnamese-match.ts",
+        "hash":  "AB68EFD65177A6EE48BBA8DA56BA592EFA718D8E906811E23E789F4CCB4BC1C7",
+        "size":  11482,
+        "modified":  "2026-10-28T01:23:22.4484187Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\zalo\\broadcast-generator.ts",
+        "hash":  "3FA54F740D08583BA8FDC0E210FFAAC373CD0E00C26D4D11A182B7F2D8904682",
+        "size":  10153,
+        "modified":  "2026-10-28T01:23:22.4497782Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\recon.ts",
+        "hash":  "37ADF05E90F24D7683600ECEEC948BC965FCC23D250DCF3E07ADA28E4FB25C92",
+        "size":  7539,
+        "modified":  "2026-10-28T01:23:22.3231399Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-checkpoint-v300.ts",
+        "hash":  "51A151F5A36A4FBC056831724C4984347ABB5A05E472923C15D687A473B44F15",
+        "size":  13151,
+        "modified":  "2026-10-28T04:00:16.0088702Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-lms-reliability-v280.ts",
+        "hash":  "319B72AB565ED8DD9B97591EAEE476F58CA851DC9B36BE6BFDEE3BA4A4D8DEC6",
+        "size":  63042,
+        "modified":  "2026-10-28T01:23:22.3247992Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-patches-round2.ts",
+        "hash":  "7A408C522591E6FD5819D064BB7F86145CA3AFDEBDBFE50DC693A958DF203A3E",
+        "size":  7455,
+        "modified":  "2026-10-28T01:23:22.3247992Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase3.ts",
+        "hash":  "594CA880D6F149AD3F5E50BA0E7F583455D6A96A1426B8D777E74CD40290F8A1",
+        "size":  8437,
+        "modified":  "2026-10-28T05:06:40.9185265Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase4-codex-repros.ts",
+        "hash":  "ED31335FB5F17D154A02F3829833C3976CBCC7BC1F0D8E5D1F1AFC59A30146B2",
+        "size":  183305,
+        "modified":  "2026-10-29T07:07:25.9037779Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase5.ts",
+        "hash":  "86D8EF70CCDFF949010EE30B76F6F2C9CB9AAB7C08DCD5350A9F2A0E105EA690",
+        "size":  32324,
+        "modified":  "2026-10-28T01:23:22.3305380Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase6.ts",
+        "hash":  "A3DE9030753006234E2F18CEC41434BA6B4A35414F360A7FFE589BAD9AD5AC91",
+        "size":  59552,
+        "modified":  "2026-10-28T01:23:22.3316084Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase7.ts",
+        "hash":  "4B82AC2DAC6B4E302B34E2839ABD61D1D3AC1050F076D57F7CA50F25F6B0CE7E",
+        "size":  21594,
+        "modified":  "2026-10-28T01:23:22.3323225Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-quick-tags-v300.ts",
+        "hash":  "41352BE5093F78C23FA01E16F3802EAAB0EF84DA5739011FFB117641B2448054",
+        "size":  14025,
+        "modified":  "2026-10-28T10:48:54.4896907Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-report-card-v330.ts",
+        "hash":  "2E1C9803727E5340A2EF95AA4EE8815C0C2B764C0D1C689DFA4227169A34B908",
+        "size":  147483,
+        "modified":  "2026-10-29T08:09:09.1137724Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-session14-v290.ts",
+        "hash":  "46CA456E2FA0A1C3E8881CB19CEF5D8EB3FA866656A9A4C2910166F0F1866AB0",
+        "size":  70859,
+        "modified":  "2026-10-28T01:23:22.3323225Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-spck-v270.ts",
+        "hash":  "97A945C3395596F9A0E1270D72E6AFFCAA19586D546DE0ADD9D7B47FEE904E6B",
+        "size":  96768,
+        "modified":  "2026-10-28T01:23:22.3347402Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-spck-v272.ts",
+        "hash":  "F0EFA22434BCB934EB0DB97C94B454D8057EA6D147E99E690C4CC90680654385",
+        "size":  35059,
+        "modified":  "2026-10-28T01:23:22.3347402Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-teaching-project-v320.ts",
+        "hash":  "F572A5FCB6F7C7E56F336392EF39CCFE08D4F8503962C6F2B1403BF99C091366",
+        "size":  64713,
+        "modified":  "2026-10-28T13:22:47.4438281Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\courses_syllabus.json",
+        "hash":  "E4112B43C48E106D55F9B76AABD0603F809FD200B64FDBC4BC1619CAFD96896D",
+        "size":  226526,
+        "modified":  "2026-10-29T07:44:59.5082416Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\default-demo-sheet-template.xlsx",
+        "hash":  "C9109377BDAAECD43D95315919E8DDF70256B2D0D4BA70A4766B4DC12695FB14",
+        "size":  14542,
+        "modified":  "2026-10-28T01:23:20.9489035Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\default-spck-thumbnail.png",
+        "hash":  "B31256112A957B8933D0AEF93F8A015D70BA807953192D05036DFCDAC5B77DB6",
+        "size":  88187,
+        "modified":  "2026-10-28T01:23:20.9509105Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\grading_rubrics.json",
+        "hash":  "559A16D43DD68B20715269893AF78266F83EA3D0FD6E36D949F29014CB31F1C4",
+        "size":  8047,
+        "modified":  "2026-10-29T07:44:59.5087967Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\mindx-bot.ico",
+        "hash":  "81C07E09019DF65ED5CED9FF26233CB7AB5F82289C0022BC78E8DED43984023D",
+        "size":  15928,
+        "modified":  "2026-10-28T01:23:20.9754652Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\quick_tags.json",
+        "hash":  "2FC449AC45F35DE0F3E584BF48F5AE7DE930AA84B5928D91529622C466A4B0F1",
+        "size":  8927,
+        "modified":  "2026-10-29T07:44:59.5093504Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\zalo_templates.json",
+        "hash":  "7F75336C5072C4C1E9662AA40324D1A484A044B7D6CEEFB5BE87318D62797BB4",
+        "size":  2297,
+        "modified":  "2026-10-29T07:44:59.5099148Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\CSA.xlsx",
+        "hash":  "B88557069D6BE3BDE33C10DC769958C5EA9573C0D4F332FAA77FF57D599A3FF3",
+        "size":  13298,
+        "modified":  "2026-10-28T01:23:20.9528456Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\CSI.xlsx",
+        "hash":  "4C0F262D2036A496377E0AFB0B7C902ADE6CDC9E59EE9C1461955D9DF0571467",
+        "size":  13258,
+        "modified":  "2026-10-28T01:23:20.9528456Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\JSA.xlsx",
+        "hash":  "F05A1E38E76551B62611F9DA020792E371081206116FB3482FC1B488A7724511",
+        "size":  14023,
+        "modified":  "2026-10-28T01:23:20.9589124Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\JSB.xlsx",
+        "hash":  "6AFA5D6C0498F108ED746E953062F7F8D093891289BB1F150270E5649D087A05",
+        "size":  14578,
+        "modified":  "2026-10-28T01:23:20.9589124Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\JSI.xlsx",
+        "hash":  "C56D3C985ABAF2A268A79966DC260CCC7159B7AF2E70B8F34B0695D119E53452",
+        "size":  14097,
+        "modified":  "2026-10-28T01:23:20.9589124Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\PSI.xlsx",
+        "hash":  "D64C1313140895FD4FF058E22B3BA6CF151EFBAEE4DB45CBF9F17D978F39C42D",
+        "size":  11075,
+        "modified":  "2026-10-28T01:23:20.9608763Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\PTA.xlsx",
+        "hash":  "C9109377BDAAECD43D95315919E8DDF70256B2D0D4BA70A4766B4DC12695FB14",
+        "size":  14542,
+        "modified":  "2026-10-28T01:23:20.9695496Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\PTI.xlsx",
+        "hash":  "D64C1313140895FD4FF058E22B3BA6CF151EFBAEE4DB45CBF9F17D978F39C42D",
+        "size":  11075,
+        "modified":  "2026-10-28T01:23:20.9705634Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\SA.xlsx",
+        "hash":  "8851385559BDAAFB3D07BE867FF84AA0612EB1CD8FB3B58B6332E7A518111BD1",
+        "size":  14470,
+        "modified":  "2026-10-28T01:23:20.9705634Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\SB.xlsx",
+        "hash":  "60FE10ADE4FAF5C8BB062B17FF02E89C76B81C91D471FA5B22CA25165A1D7303",
+        "size":  14821,
+        "modified":  "2026-10-28T01:23:20.9705634Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\SI.xlsx",
+        "hash":  "AD7C85F304257429146A947678239025BC87805F76BAFA50D9A107822222FC97",
+        "size":  14436,
+        "modified":  "2026-10-28T01:23:20.9705634Z"
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\docs\\audits\\v330\\stage4\\probe.mjs",
+        "hash":  "885C47E139AE8FEAF7DC91DCEF442B46E0B2EFC36490C3FB27448C8B323AA44E",
+        "size":  23139,
+        "modified":  "2026-10-29T08:08:07.7072289Z"
+    }
+]

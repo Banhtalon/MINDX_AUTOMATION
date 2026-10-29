@@ -304,6 +304,26 @@ function initSchema(db: Database.Database) {
       updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     );
     CREATE INDEX IF NOT EXISTS idx_teaching_final_projects_class ON teaching_final_projects(classId);
+
+    -- 10. class_report_cards (v3.3.0 Teaching Report Card Snapshot & Manual Overrides)
+    CREATE TABLE IF NOT EXISTS class_report_cards (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      classId TEXT NOT NULL UNIQUE,
+      classCode TEXT NOT NULL DEFAULT '',
+      lmsSnapshotJson TEXT NOT NULL DEFAULT '{}',
+      manualOverridesJson TEXT NOT NULL DEFAULT '{}',
+      selectedBtvnSessionsJson TEXT NOT NULL DEFAULT '[]',
+      draftVersion INTEGER NOT NULL DEFAULT 1,
+      status TEXT NOT NULL DEFAULT 'DRAFT',
+      contentHash TEXT NOT NULL DEFAULT '',
+      teachingSyncStatus TEXT NOT NULL DEFAULT 'NOT_SYNCED',
+      teachingSyncedAt TEXT DEFAULT NULL,
+      teachingVerifiedSnapshotJson TEXT NOT NULL DEFAULT '{}',
+      errorMessage TEXT DEFAULT NULL,
+      createdAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_class_report_cards_class ON class_report_cards(classId);
   `);
 
   try {
@@ -5471,4 +5491,1138 @@ export const teachingProjectRepo = {
     return this.findOne(normalizedClassId)!;
   },
 };
+
+// ============================================================================
+// 10. CLASS REPORT CARDS REPOSITORY (v3.3.0 Teaching Report Card & Overrides)
+// ============================================================================
+
+import {
+  computeClassReportCard,
+  isValidOverrideFieldKey,
+  makeOverrideKey,
+  normalizeScoreToScale5,
+  round2,
+  type ClassReportCardLmsSnapshot,
+  type ManualScoreOverrideEntry,
+  type ManualScoreOverrideMap,
+} from "../report-card/report-card-calculator";
+
+export type ReportCardApprovalStatus =
+  | "DRAFT"
+  | "WAITING_APPROVAL"
+  | "APPROVED"
+  | "SAVING"
+  | "VERIFIED"
+  | "FAILED";
+
+export type TeachingReportCardSyncStatus =
+  | "NOT_SYNCED"
+  | "SYNCING"
+  | "VERIFIED"
+  | "OUT_OF_SYNC"
+  | "FAILED";
+
+export interface ClassReportCardRecord {
+  id: number;
+  classId: string;
+  classCode: string;
+  lmsSnapshotJson: string;
+  manualOverridesJson: string;
+  selectedBtvnSessionsJson: string;
+  draftVersion: number;
+  status: ReportCardApprovalStatus;
+  contentHash: string;
+  teachingSyncStatus: TeachingReportCardSyncStatus;
+  teachingSyncedAt: string | null;
+  teachingVerifiedSnapshotJson: string;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function parseReportCardLmsSnapshot(
+  rawJson: string | null | undefined,
+  fallbackClassId = ""
+): ClassReportCardLmsSnapshot | null {
+  if (!rawJson || !rawJson.trim() || rawJson.trim() === "{}") return null;
+  try {
+    const parsed = JSON.parse(rawJson);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    if (!Array.isArray(parsed.students)) return null;
+    const normClassId = String(parsed.classId || fallbackClassId || "")
+      .trim()
+      .toUpperCase();
+    return {
+      classId: normClassId,
+      classCode: String(parsed.classCode || normClassId).trim().toUpperCase(),
+      lmsClassId: parsed.lmsClassId ? String(parsed.lmsClassId) : undefined,
+      isRobotics: Boolean(parsed.isRobotics ?? isRoboticsClassCode(normClassId)),
+      btvnSessions: Array.isArray(parsed.btvnSessions) ? parsed.btvnSessions : [],
+      students: parsed.students,
+      scrapedAt: String(parsed.scrapedAt || ""),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function parseManualOverridesMap(
+  rawJson: string | null | undefined
+): ManualScoreOverrideMap {
+  if (!rawJson || !rawJson.trim()) return {};
+  try {
+    const parsed = JSON.parse(rawJson);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const out: ManualScoreOverrideMap = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (!v || typeof v !== "object" || Array.isArray(v)) continue;
+      const entry = v as Record<string, unknown>;
+      const studentId = String(entry.studentId || "").trim();
+      const fieldKey = String(entry.fieldKey || "").trim();
+      if (!studentId || !isValidOverrideFieldKey(fieldKey)) continue;
+      const isStageField = !/^btvn_(\d+)_(theory|practice)$/.test(fieldKey);
+      const normScore =
+        entry.normScore === null
+          ? null
+          : typeof entry.normScore === "number" &&
+            Number.isFinite(entry.normScore) &&
+            entry.normScore >= 0 &&
+            entry.normScore <= 5
+          ? round2(entry.normScore)
+          : undefined;
+      if (normScore === undefined) continue;
+
+      const maxScore = isStageField
+        ? 5
+        : typeof entry.maxScore === "number" &&
+          Number.isFinite(entry.maxScore) &&
+          entry.maxScore > 0
+        ? entry.maxScore
+        : undefined;
+
+      let rawScore: number | null | undefined = undefined;
+      if (normScore === null) {
+        rawScore = null;
+      } else if (
+        typeof entry.rawScore === "number" &&
+        Number.isFinite(entry.rawScore) &&
+        entry.rawScore >= 0
+      ) {
+        const effMax = maxScore ?? (isStageField ? 5 : 100);
+        if (entry.rawScore <= effMax) {
+          const checkNorm =
+            effMax === 5
+              ? round2(entry.rawScore)
+              : normalizeScoreToScale5(entry.rawScore, effMax);
+          if (checkNorm === normScore) {
+            rawScore = round2(entry.rawScore);
+          }
+        }
+      }
+
+      out[k] = {
+        studentId,
+        fieldKey,
+        normScore,
+        rawScore,
+        maxScore,
+        note: typeof entry.note === "string" ? entry.note : undefined,
+        updatedAt: String(entry.updatedAt || ""),
+      };
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Computes canonical SHA-256 contentHash over all effective report card metadata and scores
+ * (merging LMS snapshot + teacher manual overrides) for Data Integrity & Drift Detection.
+ */
+export function computeReportCardContentHash(
+  snapshot: ClassReportCardLmsSnapshot | null,
+  overrides: ManualScoreOverrideMap
+): string {
+  if (!snapshot || !Array.isArray(snapshot.students) || snapshot.students.length === 0) {
+    return "";
+  }
+  const computed = computeClassReportCard(snapshot, overrides, {
+    includeInactiveStudents: false,
+  });
+  const canonicalPayload = {
+    classId: computed.classId.trim().toUpperCase(),
+    classCode: computed.classCode.trim().toUpperCase(),
+    isRobotics: computed.isRobotics,
+    btvnSessions: computed.isRobotics
+      ? []
+      : computed.btvnSessions.map((s) => ({
+          sessionNumber: s.sessionNumber,
+          title: String(s.title || "").trim(),
+          hasTheory: Boolean(s.hasTheory),
+          hasPractice: Boolean(s.hasPractice),
+          practiceTaskCount: s.practiceTaskCount ?? (s.hasPractice ? 1 : 0),
+          maxTheoryScore: s.maxTheoryScore ?? 100,
+          maxPracticeScore: s.maxPracticeScore ?? 100,
+        })),
+    students: computed.students.map((stu) => ({
+      studentId: stu.studentId,
+      studentUid: stu.studentUid ?? "",
+      fullName: stu.fullName.trim(),
+      btvn: computed.isRobotics
+        ? {}
+        : Object.fromEntries(
+            computed.btvnSessions.map((s) => {
+              const cell = stu.btvnCells[s.sessionNumber];
+              return [
+                String(s.sessionNumber),
+                {
+                  theoryRaw: cell?.theoryRaw ?? null,
+                  theoryMax: cell?.theoryMax ?? 100,
+                  theoryNorm: cell?.theoryNorm ?? null,
+                  isTheoryOverridden: cell?.isTheoryOverridden ?? false,
+                  theoryNote: cell?.theoryNote ?? "",
+                  practiceRaw: cell?.practiceRaw ?? null,
+                  practiceMax: cell?.practiceMax ?? 100,
+                  practiceNorm: cell?.practiceNorm ?? null,
+                  isPracticeOverridden: cell?.isPracticeOverridden ?? false,
+                  practiceTask1Raw: cell?.practiceTask1Raw ?? null,
+                  practiceTask2Raw: cell?.practiceTask2Raw ?? null,
+                  practiceNote: cell?.practiceNote ?? "",
+                },
+              ];
+            })
+          ),
+      submittedCount: stu.submittedCount,
+      totalAssignedItems: stu.totalAssignedItems,
+      btvnAvgNorm: stu.btvnAvgNorm,
+      btvnAvgRaw: stu.btvnAvgRaw,
+      cp1: {
+        lt: stu.cp1.theory.value,
+        ltNote: stu.cp1.theory.note ?? "",
+        th: stu.cp1.practice.value,
+        thNote: stu.cp1.practice.note ?? "",
+        nl: stu.cp1.competency.value,
+        nlNote: stu.cp1.competency.note ?? "",
+        total: stu.cp1.total,
+        chartAvg: stu.cp1.chartAvg,
+      },
+      cp2: {
+        lt: stu.cp2.theory.value,
+        ltNote: stu.cp2.theory.note ?? "",
+        th: stu.cp2.practice.value,
+        thNote: stu.cp2.practice.note ?? "",
+        nl: stu.cp2.competency.value,
+        nlNote: stu.cp2.competency.note ?? "",
+        total: stu.cp2.total,
+        chartAvg: stu.cp2.chartAvg,
+      },
+      final: {
+        sp: stu.final.product.value,
+        spNote: stu.final.product.note ?? "",
+        nl: stu.final.competency.value,
+        nlNote: stu.final.competency.note ?? "",
+        total: stu.final.total,
+        chartAvg: stu.final.chartAvg,
+      },
+      tbck: stu.tbck,
+      xepLoai: stu.xepLoai,
+      hang: stu.hang,
+      rankCode: stu.rankCode,
+      hasMissingOrZeroComponent: stu.hasMissingOrZeroComponent,
+    })),
+  };
+  return calculateSha256(JSON.stringify(canonicalPayload));
+}
+
+function computeNextApprovalAndSyncState(
+  current: ClassReportCardRecord,
+  newHash: string
+): {
+  nextStatus: ReportCardApprovalStatus;
+  nextSyncStatus: TeachingReportCardSyncStatus;
+  nextContentHash: string;
+} {
+  let nextStatus: ReportCardApprovalStatus = current.status;
+  let nextSyncStatus: TeachingReportCardSyncStatus = current.teachingSyncStatus;
+  let nextContentHash = current.contentHash;
+
+  const hasExistingApprovalOrSync =
+    Boolean(current.contentHash) ||
+    current.status === "APPROVED" ||
+    current.status === "VERIFIED" ||
+    current.status === "FAILED";
+
+  if (hasExistingApprovalOrSync && newHash !== current.contentHash) {
+    nextStatus = "WAITING_APPROVAL";
+    nextContentHash = "";
+    if (current.teachingSyncStatus === "VERIFIED") {
+      nextSyncStatus = "OUT_OF_SYNC";
+    } else if (current.teachingSyncStatus === "SYNCING") {
+      nextSyncStatus = "FAILED";
+    }
+  }
+
+  return { nextStatus, nextSyncStatus, nextContentHash };
+}
+
+export const reportCardRepo = {
+  findOne(classId: string): ClassReportCardRecord | undefined {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    if (!normalizedClassId) return undefined;
+    const db = getDb();
+    return db
+      .prepare(`SELECT * FROM class_report_cards WHERE classId = ?`)
+      .get(normalizedClassId) as ClassReportCardRecord | undefined;
+  },
+
+  getOrInit(classId: string): ClassReportCardRecord {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    if (!normalizedClassId) {
+      throw new Error("Thiếu mã lớp (classId) khi khởi tạo Phiếu Điểm Tổng Kết.");
+    }
+    const existing = this.findOne(normalizedClassId);
+    if (existing) return existing;
+
+    const db = getDb();
+    db.prepare(
+      `INSERT INTO class_report_cards (
+        classId, classCode, lmsSnapshotJson, manualOverridesJson, selectedBtvnSessionsJson,
+        draftVersion, status, contentHash, teachingSyncStatus
+      ) VALUES (?, ?, '{}', '{}', '[]', 1, 'DRAFT', '', 'NOT_SYNCED')
+      ON CONFLICT(classId) DO NOTHING`
+    ).run(normalizedClassId, normalizedClassId);
+
+    return this.findOne(normalizedClassId)!;
+  },
+
+  /**
+   * Saves a fresh LMS snapshot while strictly preserving all teacher manual overrides (`manualOverridesJson`).
+   * Validates snapshot class identity and automatically detects drift against previously approved/verified contentHash.
+   */
+  saveLmsSnapshot(
+    classId: string,
+    snapshot: ClassReportCardLmsSnapshot
+  ): ClassReportCardRecord {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    if (!normalizedClassId) {
+      throw new Error("Thiếu mã lớp (classId) khi lưu dữ liệu điểm LMS.");
+    }
+    if (!snapshot || typeof snapshot !== "object") {
+      throw new Error("Dữ liệu snapshot LMS không hợp lệ.");
+    }
+
+    const snapClassId = String(snapshot.classId || "").trim().toUpperCase();
+    const snapClassCode = String(snapshot.classCode || "").trim().toUpperCase();
+    if (snapClassId && snapClassId !== normalizedClassId) {
+      throw new Error(
+        `[reportCardRepo.saveLmsSnapshot] Sai lệch mã lớp: tham số classId='${normalizedClassId}' nhưng snapshot.classId='${snapClassId}'.`
+      );
+    }
+    if (snapClassCode && snapClassCode !== normalizedClassId) {
+      throw new Error(
+        `[reportCardRepo.saveLmsSnapshot] Sai lệch mã lớp: tham số classId='${normalizedClassId}' nhưng snapshot.classCode='${snapClassCode}'.`
+      );
+    }
+
+    const db = getDb();
+    const tx = db.transaction(() => {
+      const current = this.getOrInit(normalizedClassId);
+      if (current.status === "SAVING" || current.teachingSyncStatus === "SYNCING") {
+        throw new Error(
+          `[reportCardRepo.saveLmsSnapshot] Phiếu điểm lớp ${normalizedClassId} đang đồng bộ lên Teaching (SAVING). Không thể ghi đè snapshot lúc này.`
+        );
+      }
+
+      const existingOverrides = parseManualOverridesMap(current.manualOverridesJson);
+
+      const cleanSnapshot: ClassReportCardLmsSnapshot = {
+        ...snapshot,
+        classId: normalizedClassId,
+        classCode: normalizedClassId,
+        isRobotics: Boolean(snapshot.isRobotics ?? isRoboticsClassCode(normalizedClassId)),
+      };
+
+      let selectedSessions: number[] = [];
+      try {
+        const parsedSel = JSON.parse(current.selectedBtvnSessionsJson || "[]");
+        if (Array.isArray(parsedSel) && parsedSel.length > 0) {
+          const validSet = new Set(cleanSnapshot.btvnSessions.map((s) => s.sessionNumber));
+          selectedSessions = parsedSel
+            .map((n) => Number(n))
+            .filter((n) => Number.isInteger(n) && validSet.has(n));
+        }
+      } catch {
+        selectedSessions = [];
+      }
+      if (selectedSessions.length === 0) {
+        selectedSessions = cleanSnapshot.btvnSessions.map((s) => s.sessionNumber);
+      }
+
+      const newHash = computeReportCardContentHash(cleanSnapshot, existingOverrides);
+      const { nextStatus, nextSyncStatus, nextContentHash } =
+        computeNextApprovalAndSyncState(current, newHash);
+
+      db.prepare(
+        `UPDATE class_report_cards
+         SET classCode = ?,
+             lmsSnapshotJson = ?,
+             selectedBtvnSessionsJson = ?,
+             draftVersion = draftVersion + 1,
+             status = ?,
+             contentHash = ?,
+             teachingSyncStatus = ?,
+             errorMessage = NULL,
+             updatedAt = datetime('now', 'localtime')
+         WHERE classId = ?`
+      ).run(
+        cleanSnapshot.classCode,
+        JSON.stringify(cleanSnapshot),
+        JSON.stringify(selectedSessions),
+        nextStatus,
+        nextContentHash,
+        nextSyncStatus,
+        normalizedClassId
+      );
+    });
+
+    tx();
+    return this.findOne(normalizedClassId)!;
+  },
+
+  /**
+   * Saves or updates a single manual score override (or batch of overrides) with atomic optimistic locking
+   * and strict raw/norm/max score validation.
+   */
+  saveManualOverrides(params: {
+    classId: string;
+    expectedVersion?: number;
+    updates: Array<{
+      studentId: string;
+      fieldKey: string;
+      normScore: number | null;
+      rawScore?: number | null;
+      maxScore?: number;
+      note?: string;
+    }>;
+  }): {
+    success: boolean;
+    conflict?: boolean;
+    currentVersion?: number;
+    error?: string;
+    record: ClassReportCardRecord;
+  } {
+    const normalizedClassId = String(params.classId || "").trim().toUpperCase();
+    if (!normalizedClassId) {
+      throw new Error("Thiếu mã lớp (classId).");
+    }
+
+    const db = getDb();
+    const tx = db.transaction(
+      (): {
+        success: boolean;
+        conflict?: boolean;
+        currentVersion?: number;
+        error?: string;
+        record: ClassReportCardRecord;
+      } => {
+        const current = this.getOrInit(normalizedClassId);
+
+        if (current.status === "SAVING" || current.teachingSyncStatus === "SYNCING") {
+          return {
+            success: false,
+            conflict: true,
+            currentVersion: current.draftVersion,
+            error: `Phiếu điểm lớp ${normalizedClassId} đang đồng bộ lên Teaching (SAVING). Vui lòng chờ hoàn tất trước khi chỉnh sửa.`,
+            record: current,
+          };
+        }
+
+        if (
+          params.expectedVersion === undefined ||
+          params.expectedVersion === null ||
+          !Number.isInteger(Number(params.expectedVersion)) ||
+          Number(params.expectedVersion) < 1
+        ) {
+          return {
+            success: false,
+            currentVersion: current.draftVersion,
+            error: "Thiếu phiên bản dữ liệu hợp lệ (expectedVersion).",
+            record: current,
+          };
+        }
+
+        const expectedVer = Number(params.expectedVersion);
+        if (expectedVer !== Number(current.draftVersion)) {
+          return {
+            success: false,
+            conflict: true,
+            currentVersion: current.draftVersion,
+            error: `Dữ liệu phiếu điểm lớp ${normalizedClassId} đã thay đổi ở phiên khác (v${current.draftVersion}). Vui lòng tải lại trước khi lưu.`,
+            record: current,
+          };
+        }
+
+        if (!Array.isArray(params.updates) || params.updates.length === 0) {
+          return {
+            success: false,
+            currentVersion: current.draftVersion,
+            error: "Danh sách ô điểm cần cập nhật trống.",
+            record: current,
+          };
+        }
+
+        const snapshot = parseReportCardLmsSnapshot(current.lmsSnapshotJson, normalizedClassId);
+        const validStudentIds = new Set(
+          (snapshot?.students || []).map((s) => String(s.studentId || "").trim())
+        );
+        for (const st of studentRepo.findByClass(normalizedClassId, false)) {
+          validStudentIds.add(st.studentId);
+        }
+
+        const overrides = parseManualOverridesMap(current.manualOverridesJson);
+        const nowIso = new Date().toISOString();
+
+        for (const item of params.updates) {
+          const studentId = String(item.studentId || "").trim();
+          const fieldKey = String(item.fieldKey || "").trim();
+          if (!studentId) {
+            return {
+              success: false,
+              currentVersion: current.draftVersion,
+              error: "Thiếu mã học viên (studentId) khi cập nhật điểm.",
+              record: current,
+            };
+          }
+          if (validStudentIds.size > 0 && !validStudentIds.has(studentId)) {
+            return {
+              success: false,
+              currentVersion: current.draftVersion,
+              error: `Học viên '${studentId}' không thuộc danh sách lớp ${normalizedClassId}.`,
+              record: current,
+            };
+          }
+          if (!isValidOverrideFieldKey(fieldKey)) {
+            return {
+              success: false,
+              currentVersion: current.draftVersion,
+              error: `Trường điểm '${fieldKey}' không hợp lệ.`,
+              record: current,
+            };
+          }
+
+          const btvnMatch = /^btvn_(\d+)_(theory|practice)$/.exec(fieldKey);
+          const isStageField = !btvnMatch;
+
+          let effectiveMaxScore = 5;
+          if (isStageField) {
+            if (
+              item.maxScore !== undefined &&
+              item.maxScore !== null &&
+              (typeof item.maxScore !== "number" ||
+                !Number.isFinite(item.maxScore) ||
+                item.maxScore !== 5)
+            ) {
+              return {
+                success: false,
+                currentVersion: current.draftVersion,
+                error: `Trường điểm giai đoạn '${fieldKey}' chỉ sử dụng thang điểm tối đa là 5 (nhận được maxScore=${item.maxScore}).`,
+                record: current,
+              };
+            }
+          } else {
+            const sessionNum = Number(btvnMatch![1]);
+            const kind = btvnMatch![2] as "theory" | "practice";
+            if (item.maxScore !== undefined) {
+              if (
+                item.maxScore === null ||
+                typeof item.maxScore !== "number" ||
+                !Number.isFinite(item.maxScore) ||
+                item.maxScore <= 0
+              ) {
+                return {
+                  success: false,
+                  currentVersion: current.draftVersion,
+                  error: `Thang điểm tối đa (maxScore) của '${fieldKey}' không hợp lệ (${item.maxScore}).`,
+                  record: current,
+                };
+              }
+              effectiveMaxScore = item.maxScore;
+            } else {
+              const stuSnap = (snapshot?.students || []).find(
+                (s) => String(s.studentId || "").trim() === studentId
+              );
+              const cellSnap = stuSnap?.btvnScores?.[sessionNum];
+              const sessMeta = (snapshot?.btvnSessions || []).find(
+                (s) => s.sessionNumber === sessionNum
+              );
+              const fallbackMax =
+                kind === "theory"
+                  ? cellSnap?.theoryMax ?? sessMeta?.maxTheoryScore ?? 100
+                  : cellSnap?.practiceMax ?? sessMeta?.maxPracticeScore ?? 100;
+              effectiveMaxScore =
+                typeof fallbackMax === "number" && Number.isFinite(fallbackMax) && fallbackMax > 0
+                  ? fallbackMax
+                  : 100;
+            }
+          }
+
+          let normalizedNorm: number | null = null;
+          let normalizedRaw: number | null = null;
+
+          if (item.normScore === null) {
+            if (item.rawScore !== undefined && item.rawScore !== null) {
+              return {
+                success: false,
+                currentVersion: current.draftVersion,
+                error: `Không thể truyền điểm gốc (rawScore=${item.rawScore}) khi điểm quy đổi (normScore) là null cho '${fieldKey}'.`,
+                record: current,
+              };
+            }
+            normalizedNorm = null;
+            normalizedRaw = null;
+          } else {
+            if (
+              typeof item.normScore !== "number" ||
+              !Number.isFinite(item.normScore) ||
+              item.normScore < 0 ||
+              item.normScore > 5
+            ) {
+              return {
+                success: false,
+                currentVersion: current.draftVersion,
+                error: `Điểm quy đổi thang 5 của '${fieldKey}' (${item.normScore}) không hợp lệ (yêu cầu từ 0 đến 5).`,
+                record: current,
+              };
+            }
+            normalizedNorm = round2(item.normScore);
+
+            if (item.rawScore !== undefined) {
+              if (
+                item.rawScore === null ||
+                typeof item.rawScore !== "number" ||
+                !Number.isFinite(item.rawScore) ||
+                item.rawScore < 0 ||
+                item.rawScore > effectiveMaxScore
+              ) {
+                return {
+                  success: false,
+                  currentVersion: current.draftVersion,
+                  error: `Điểm gốc (rawScore=${item.rawScore}) của '${fieldKey}' không hợp lệ (yêu cầu trong khoảng 0 đến ${effectiveMaxScore}).`,
+                  record: current,
+                };
+              }
+              const expectedNormFromRaw =
+                effectiveMaxScore === 5
+                  ? round2(item.rawScore)
+                  : normalizeScoreToScale5(item.rawScore, effectiveMaxScore);
+              if (expectedNormFromRaw !== normalizedNorm) {
+                return {
+                  success: false,
+                  currentVersion: current.draftVersion,
+                  error: `Điểm gốc (${item.rawScore}/${effectiveMaxScore} -> ${expectedNormFromRaw}) mâu thuẫn với điểm thang 5 (${normalizedNorm}) ở '${fieldKey}'.`,
+                  record: current,
+                };
+              }
+              normalizedRaw = round2(item.rawScore);
+            } else {
+              normalizedRaw =
+                effectiveMaxScore === 5
+                  ? normalizedNorm
+                  : round2((normalizedNorm / 5) * effectiveMaxScore);
+            }
+          }
+
+          const key = makeOverrideKey(studentId, fieldKey);
+          overrides[key] = {
+            studentId,
+            fieldKey,
+            normScore: normalizedNorm,
+            rawScore: normalizedRaw,
+            maxScore: effectiveMaxScore,
+            note: typeof item.note === "string" ? item.note : undefined,
+            updatedAt: nowIso,
+          };
+        }
+
+        const newHash = computeReportCardContentHash(snapshot, overrides);
+        const { nextStatus, nextSyncStatus, nextContentHash } =
+          computeNextApprovalAndSyncState(current, newHash);
+
+        const info = db
+          .prepare(
+            `UPDATE class_report_cards
+             SET manualOverridesJson = ?,
+                 draftVersion = draftVersion + 1,
+                 status = ?,
+                 contentHash = ?,
+                 teachingSyncStatus = ?,
+                 errorMessage = NULL,
+                 updatedAt = datetime('now', 'localtime')
+             WHERE classId = ? AND draftVersion = ?`
+          )
+          .run(
+            JSON.stringify(overrides),
+            nextStatus,
+            nextContentHash,
+            nextSyncStatus,
+            normalizedClassId,
+            expectedVer
+          );
+
+        if (info.changes !== 1) {
+          const latest = this.getOrInit(normalizedClassId);
+          return {
+            success: false,
+            conflict: true,
+            currentVersion: latest.draftVersion,
+            error: `Dữ liệu phiếu điểm lớp ${normalizedClassId} đã thay đổi đồng thời (v${latest.draftVersion}). Vui lòng tải lại.`,
+            record: latest,
+          };
+        }
+
+        return {
+          success: true,
+          record: this.findOne(normalizedClassId)!,
+        };
+      }
+    );
+
+    return tx();
+  },
+
+  /**
+   * Restores overridden cells back to original LMS values with atomic optimistic locking.
+   * If `studentId` and `fieldKey` are given, restores that single cell.
+   * If only `studentId` is given, restores all cells for that student.
+   * If `studentId === "*"`, restores all cells for the entire class.
+   */
+  restoreLmsValues(params: {
+    classId: string;
+    expectedVersion?: number;
+    studentId: string;
+    fieldKey?: string;
+  }): {
+    success: boolean;
+    conflict?: boolean;
+    currentVersion?: number;
+    error?: string;
+    record: ClassReportCardRecord;
+  } {
+    const normalizedClassId = String(params.classId || "").trim().toUpperCase();
+    if (!normalizedClassId) {
+      throw new Error("Thiếu mã lớp (classId).");
+    }
+
+    const db = getDb();
+    const tx = db.transaction(
+      (): {
+        success: boolean;
+        conflict?: boolean;
+        currentVersion?: number;
+        error?: string;
+        record: ClassReportCardRecord;
+      } => {
+        const current = this.getOrInit(normalizedClassId);
+
+        if (current.status === "SAVING" || current.teachingSyncStatus === "SYNCING") {
+          return {
+            success: false,
+            conflict: true,
+            currentVersion: current.draftVersion,
+            error: `Phiếu điểm lớp ${normalizedClassId} đang đồng bộ lên Teaching (SAVING). Không thể khôi phục điểm lúc này.`,
+            record: current,
+          };
+        }
+
+        if (
+          params.expectedVersion === undefined ||
+          params.expectedVersion === null ||
+          !Number.isInteger(Number(params.expectedVersion)) ||
+          Number(params.expectedVersion) < 1
+        ) {
+          return {
+            success: false,
+            currentVersion: current.draftVersion,
+            error: "Thiếu phiên bản dữ liệu hợp lệ (expectedVersion).",
+            record: current,
+          };
+        }
+
+        const expectedVer = Number(params.expectedVersion);
+        if (expectedVer !== Number(current.draftVersion)) {
+          return {
+            success: false,
+            conflict: true,
+            currentVersion: current.draftVersion,
+            error: `Dữ liệu phiếu điểm lớp ${normalizedClassId} đã thay đổi (v${current.draftVersion}). Vui lòng tải lại.`,
+            record: current,
+          };
+        }
+
+        const overrides = parseManualOverridesMap(current.manualOverridesJson);
+        const stuId = String(params.studentId || "").trim();
+        const fKey = params.fieldKey ? String(params.fieldKey).trim() : undefined;
+
+        if (stuId === "*") {
+          for (const k of Object.keys(overrides)) {
+            delete overrides[k];
+          }
+        } else if (fKey) {
+          delete overrides[makeOverrideKey(stuId, fKey)];
+        } else {
+          for (const [k, v] of Object.entries(overrides)) {
+            if (v.studentId === stuId) {
+              delete overrides[k];
+            }
+          }
+        }
+
+        const snapshot = parseReportCardLmsSnapshot(current.lmsSnapshotJson, normalizedClassId);
+        const newHash = computeReportCardContentHash(snapshot, overrides);
+        const { nextStatus, nextSyncStatus, nextContentHash } =
+          computeNextApprovalAndSyncState(current, newHash);
+
+        const info = db
+          .prepare(
+            `UPDATE class_report_cards
+             SET manualOverridesJson = ?,
+                 draftVersion = draftVersion + 1,
+                 status = ?,
+                 contentHash = ?,
+                 teachingSyncStatus = ?,
+                 errorMessage = NULL,
+                 updatedAt = datetime('now', 'localtime')
+             WHERE classId = ? AND draftVersion = ?`
+          )
+          .run(
+            JSON.stringify(overrides),
+            nextStatus,
+            nextContentHash,
+            nextSyncStatus,
+            normalizedClassId,
+            expectedVer
+          );
+
+        if (info.changes !== 1) {
+          const latest = this.getOrInit(normalizedClassId);
+          return {
+            success: false,
+            conflict: true,
+            currentVersion: latest.draftVersion,
+            error: `Dữ liệu phiếu điểm lớp ${normalizedClassId} đã thay đổi đồng thời (v${latest.draftVersion}). Vui lòng tải lại.`,
+            record: latest,
+          };
+        }
+
+        return {
+          success: true,
+          record: this.findOne(normalizedClassId)!,
+        };
+      }
+    );
+
+    return tx();
+  },
+
+  approveReportCard(
+    classId: string,
+    expectedVersion: number
+  ): {
+    success: boolean;
+    conflict?: boolean;
+    currentVersion?: number;
+    error?: string;
+    record: ClassReportCardRecord;
+  } {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    if (!normalizedClassId) {
+      throw new Error("Thiếu mã lớp (classId).");
+    }
+
+    const db = getDb();
+    const tx = db.transaction(
+      (): {
+        success: boolean;
+        conflict?: boolean;
+        currentVersion?: number;
+        error?: string;
+        record: ClassReportCardRecord;
+      } => {
+        const current = this.getOrInit(normalizedClassId);
+
+        if (current.status === "SAVING" || current.teachingSyncStatus === "SYNCING") {
+          return {
+            success: false,
+            conflict: true,
+            currentVersion: current.draftVersion,
+            error: `Phiếu điểm lớp ${normalizedClassId} đang đồng bộ lên Teaching (SAVING). Vui lòng chờ hoàn tất.`,
+            record: current,
+          };
+        }
+
+        if (
+          expectedVersion === undefined ||
+          expectedVersion === null ||
+          !Number.isInteger(Number(expectedVersion)) ||
+          Number(expectedVersion) < 1
+        ) {
+          return {
+            success: false,
+            currentVersion: current.draftVersion,
+            error: "Thiếu phiên bản dữ liệu hợp lệ (expectedVersion) khi duyệt phiếu điểm.",
+            record: current,
+          };
+        }
+
+        const expectedVer = Number(expectedVersion);
+        if (expectedVer !== Number(current.draftVersion)) {
+          return {
+            success: false,
+            conflict: true,
+            currentVersion: current.draftVersion,
+            error: `Bản nháp phiếu điểm lớp ${normalizedClassId} đã thay đổi (v${current.draftVersion}). Vui lòng kiểm tra lại trước khi Duyệt.`,
+            record: current,
+          };
+        }
+
+        const snapshot = parseReportCardLmsSnapshot(current.lmsSnapshotJson, normalizedClassId);
+        if (!snapshot || !Array.isArray(snapshot.students) || snapshot.students.length === 0) {
+          return {
+            success: false,
+            currentVersion: current.draftVersion,
+            error: `Lớp ${normalizedClassId} chưa có dữ liệu bảng điểm để duyệt.`,
+            record: current,
+          };
+        }
+
+        const overrides = parseManualOverridesMap(current.manualOverridesJson);
+        const hash = computeReportCardContentHash(snapshot, overrides);
+
+        const info = db
+          .prepare(
+            `UPDATE class_report_cards
+             SET status = 'APPROVED',
+                 contentHash = ?,
+                 errorMessage = NULL,
+                 updatedAt = datetime('now', 'localtime')
+             WHERE classId = ? AND draftVersion = ?`
+          )
+          .run(hash, normalizedClassId, expectedVer);
+
+        if (info.changes !== 1) {
+          const latest = this.getOrInit(normalizedClassId);
+          return {
+            success: false,
+            conflict: true,
+            currentVersion: latest.draftVersion,
+            error: `Bản nháp phiếu điểm lớp ${normalizedClassId} đã thay đổi đồng thời (v${latest.draftVersion}). Vui lòng kiểm tra lại trước khi Duyệt.`,
+            record: latest,
+          };
+        }
+
+        return {
+          success: true,
+          record: this.findOne(normalizedClassId)!,
+        };
+      }
+    );
+
+    return tx();
+  },
+
+  markSyncingTeaching(
+    classId: string,
+    expectedHash: string,
+    expectedVersion?: number
+  ): ClassReportCardRecord {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    const db = getDb();
+    const tx = db.transaction(
+      (): { ok: true; record: ClassReportCardRecord } | { ok: false; errorMsg: string } => {
+        const current = this.getOrInit(normalizedClassId);
+        if (
+          expectedVersion !== undefined &&
+          current.draftVersion !== expectedVersion
+        ) {
+          return {
+            ok: false,
+            errorMsg: `[reportCardRepo.markSyncingTeaching] Phiên bản phiếu điểm lớp ${normalizedClassId} đã thay đổi (v${current.draftVersion} !== v${expectedVersion}).`,
+          };
+        }
+        const snapshot = parseReportCardLmsSnapshot(current.lmsSnapshotJson, normalizedClassId);
+        const overrides = parseManualOverridesMap(current.manualOverridesJson);
+        const liveHash = computeReportCardContentHash(snapshot, overrides);
+
+        if (
+          !expectedHash ||
+          liveHash !== expectedHash ||
+          current.contentHash !== expectedHash ||
+          (current.status !== "APPROVED" &&
+            current.status !== "VERIFIED" &&
+            current.status !== "FAILED")
+        ) {
+          const nextSyncStatus: TeachingReportCardSyncStatus =
+            current.teachingSyncStatus === "VERIFIED"
+              ? "OUT_OF_SYNC"
+              : current.teachingSyncStatus === "SYNCING"
+              ? "FAILED"
+              : current.teachingSyncStatus;
+          db.prepare(
+            `UPDATE class_report_cards
+             SET status = 'WAITING_APPROVAL',
+                 contentHash = '',
+                 teachingSyncStatus = ?,
+                 errorMessage = ?,
+                 updatedAt = datetime('now', 'localtime')
+             WHERE classId = ?`
+          ).run(
+            nextSyncStatus,
+            "Nội dung phiếu điểm đã thay đổi hoặc chưa được duyệt. Vui lòng kiểm tra và bấm Duyệt lại.",
+            normalizedClassId
+          );
+          return {
+            ok: false,
+            errorMsg: `[reportCardRepo.markSyncingTeaching] Sai lệch contentHash hoặc trạng thái duyệt của lớp ${normalizedClassId}. Đã chặn đẩy lên Teaching.`,
+          };
+        }
+
+        db.prepare(
+          `UPDATE class_report_cards
+           SET status = 'SAVING',
+               teachingSyncStatus = 'SYNCING',
+               errorMessage = NULL,
+               updatedAt = datetime('now', 'localtime')
+           WHERE classId = ?`
+        ).run(normalizedClassId);
+
+        return { ok: true, record: this.findOne(normalizedClassId)! };
+      }
+    );
+
+    const res = tx();
+    if (!res.ok) {
+      throw new Error(res.errorMsg);
+    }
+    return res.record;
+  },
+
+  markTeachingVerified(
+    classId: string,
+    expectedHash: string,
+    verifiedSnapshot: unknown,
+    expectedVersion?: number
+  ): ClassReportCardRecord {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    const db = getDb();
+    const tx = db.transaction(
+      (): { ok: true; record: ClassReportCardRecord } | { ok: false; errorMsg: string } => {
+        const current = this.getOrInit(normalizedClassId);
+        const snapshot = parseReportCardLmsSnapshot(current.lmsSnapshotJson, normalizedClassId);
+        const overrides = parseManualOverridesMap(current.manualOverridesJson);
+        const liveHash = computeReportCardContentHash(snapshot, overrides);
+
+        if (!expectedHash || liveHash !== expectedHash || current.contentHash !== expectedHash) {
+          const nextSyncStatus: TeachingReportCardSyncStatus =
+            current.teachingSyncStatus === "VERIFIED" ? "OUT_OF_SYNC" : "FAILED";
+          db.prepare(
+            `UPDATE class_report_cards
+             SET status = 'WAITING_APPROVAL',
+                 contentHash = '',
+                 teachingSyncStatus = ?,
+                 errorMessage = ?,
+                 updatedAt = datetime('now', 'localtime')
+             WHERE classId = ?`
+          ).run(
+            nextSyncStatus,
+            "Nội dung phiếu điểm đã thay đổi trong quá trình đồng bộ Teaching. Vui lòng kiểm tra và bấm Duyệt lại.",
+            normalizedClassId
+          );
+          return {
+            ok: false,
+            errorMsg: `[reportCardRepo.markTeachingVerified] Sai lệch contentHash của lớp ${normalizedClassId} khi xác nhận đồng bộ Teaching.`,
+          };
+        }
+
+        if (
+          expectedVersion !== undefined &&
+          current.draftVersion !== expectedVersion
+        ) {
+          return {
+            ok: false,
+            errorMsg: `[reportCardRepo.markTeachingVerified] Phiên bản phiếu điểm lớp ${normalizedClassId} đã thay đổi trong khi đồng bộ (v${current.draftVersion} !== v${expectedVersion}).`,
+          };
+        }
+
+        if (
+          current.status !== "SAVING" ||
+          current.teachingSyncStatus !== "SYNCING"
+        ) {
+          return {
+            ok: false,
+            errorMsg: `[reportCardRepo.markTeachingVerified] Trạng thái lớp ${normalizedClassId} không còn ở SAVING/SYNCING (status=${current.status}, sync=${current.teachingSyncStatus}). Chặn ghi đè VERIFIED.`,
+          };
+        }
+
+        const updateRes = db.prepare(
+          `UPDATE class_report_cards
+           SET status = 'VERIFIED',
+               teachingSyncStatus = 'VERIFIED',
+               teachingSyncedAt = datetime('now', 'localtime'),
+               teachingVerifiedSnapshotJson = ?,
+               errorMessage = NULL,
+               updatedAt = datetime('now', 'localtime')
+           WHERE classId = ? AND status = 'SAVING' AND teachingSyncStatus = 'SYNCING'`
+        ).run(JSON.stringify(verifiedSnapshot ?? {}), normalizedClassId);
+
+        if (updateRes.changes !== 1) {
+          return {
+            ok: false,
+            errorMsg: `[reportCardRepo.markTeachingVerified] Không thể cập nhật VERIFIED do trạng thái SAVING/SYNCING của lớp ${normalizedClassId} đã thay đổi.`,
+          };
+        }
+
+        return { ok: true, record: this.findOne(normalizedClassId)! };
+      }
+    );
+
+    const res = tx();
+    if (!res.ok) {
+      throw new Error(res.errorMsg);
+    }
+    return res.record;
+  },
+
+  markTeachingSyncFailed(classId: string, errorMessage: string): ClassReportCardRecord {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    const db = getDb();
+    const tx = db.transaction(() => {
+      const current = this.getOrInit(normalizedClassId);
+      const snapshot = parseReportCardLmsSnapshot(current.lmsSnapshotJson, normalizedClassId);
+      const overrides = parseManualOverridesMap(current.manualOverridesJson);
+      const liveHash = computeReportCardContentHash(snapshot, overrides);
+      const hashStillMatches = Boolean(current.contentHash) && liveHash === current.contentHash;
+
+      db.prepare(
+        `UPDATE class_report_cards
+         SET status = ?,
+             contentHash = ?,
+             teachingSyncStatus = 'FAILED',
+             errorMessage = ?,
+             updatedAt = datetime('now', 'localtime')
+         WHERE classId = ?`
+      ).run(
+        hashStillMatches ? "FAILED" : "WAITING_APPROVAL",
+        hashStillMatches ? current.contentHash : "",
+        errorMessage,
+        normalizedClassId
+      );
+
+      return this.findOne(normalizedClassId)!;
+    });
+
+    return tx();
+  },
+};
+
 

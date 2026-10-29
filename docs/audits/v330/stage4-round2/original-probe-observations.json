@@ -1,0 +1,261 @@
+[
+  {
+    "id": "CONTROL",
+    "case": "late GET is correctly ignored",
+    "status": "PASS",
+    "observed": "B"
+  },
+  {
+    "id": "S4-01",
+    "case": "late handleApproveReportCard while B is selected is rejected",
+    "status": "CLOSED",
+    "observed": {
+      "record": "B",
+      "snapshot": "B",
+      "heading": "B"
+    }
+  },
+  {
+    "id": "S4-01",
+    "case": "late handleSyncToTeaching while B is selected is rejected",
+    "status": "CLOSED",
+    "observed": {
+      "record": "B",
+      "snapshot": "B",
+      "heading": "B"
+    }
+  },
+  {
+    "id": "S4-01",
+    "case": "late handleSaveManualOverride while B is selected is rejected",
+    "status": "CLOSED",
+    "observed": {
+      "record": "B",
+      "snapshot": "B",
+      "heading": "B"
+    }
+  },
+  {
+    "id": "S4-01",
+    "case": "late handleClearSingleOverride while B is selected is rejected",
+    "status": "CLOSED",
+    "observed": {
+      "record": "B",
+      "snapshot": "B",
+      "heading": "B"
+    }
+  },
+  {
+    "id": "S4-01",
+    "case": "late handleResetAllOverrides while B is selected is rejected",
+    "status": "CLOSED",
+    "observed": {
+      "record": "B",
+      "snapshot": "B",
+      "heading": "B"
+    }
+  },
+  {
+    "id": "S4-01",
+    "case": "late handleScrapeFromLms while B is selected is rejected",
+    "status": "CLOSED",
+    "observed": {
+      "record": "B",
+      "snapshot": "B",
+      "heading": "B"
+    }
+  },
+  {
+    "id": "S4-02",
+    "case": "unseen B is blocked from approval while B GET is loading",
+    "status": "CLOSED",
+    "observed": {
+      "postCount": 0,
+      "status": "DRAFT",
+      "loading": true
+    }
+  },
+  {
+    "id": "S4-01",
+    "case": "late A action does not contaminate B session filter",
+    "status": "CLOSED",
+    "observed": {
+      "record": "B",
+      "selected": [
+        6,
+        7
+      ],
+      "effective": [
+        6,
+        7
+      ]
+    }
+  },
+  {
+    "id": "S4-01",
+    "case": "same-class late GET cannot regress post-mutation version",
+    "status": "CLOSED",
+    "observed": {
+      "expected": 3,
+      "actual": 3
+    }
+  },
+  {
+    "id": "S4-03",
+    "case": "editor opened at v2 rejects stale save after refresh to v3",
+    "status": "CLOSED",
+    "observed": {
+      "errorMsg": "Dữ liệu bảng điểm đã thay đổi sang phiên bản mới (v3 so với v2 lúc mở ô điểm). Vui lòng đóng và mở lại ô điểm để kiểm tra điểm mới nhất trước khi lưu.",
+      "scorePreserved": 5
+    }
+  },
+  {
+    "id": "CONTROL",
+    "case": "subset BTVN filter and average",
+    "status": "PASS",
+    "observed": {
+      "active": [
+        1
+      ],
+      "avg": 3.5
+    }
+  },
+  {
+    "id": "S4-04",
+    "case": "unchecking final selected session keeps 0 active sessions",
+    "status": "CLOSED",
+    "observed": {
+      "selected": [],
+      "effective": []
+    }
+  },
+  {
+    "id": "S4-05",
+    "case": "parent scrape failure produces child error without success toast",
+    "status": "CLOSED",
+    "observed": {
+      "parent": {
+        "type": "error",
+        "text": "Cào bảng điểm thất bại: synthetic scrape rejected"
+      },
+      "childError": "Cào bảng điểm thất bại: synthetic scrape rejected",
+      "childToast": null
+    }
+  },
+  {
+    "id": "S4-05",
+    "case": "failed post-scrape read suppresses success toast",
+    "status": "CLOSED",
+    "observed": {
+      "error": "reload failed",
+      "toast": null
+    }
+  },
+  {
+    "id": "S4-06",
+    "case": "displayed formulas and legend match calculator 100%",
+    "status": "CLOSED",
+    "observed": {
+      "cp1": 4.2,
+      "demo": 3.4,
+      "tbck": 3.48
+    }
+  },
+  {
+    "id": "S4-06",
+    "case": "missing component tooltip matches Hạng C when TBCK >= 2.50",
+    "status": "CLOSED",
+    "observed": {
+      "rank": "Hạng C",
+      "title": "Có thành phần điểm = 0 hoặc khuyết nên không xét Hạng A/B (xếp Hạng C do TBCK ≥ 2.50)"
+    }
+  },
+  {
+    "id": "CONTROL",
+    "case": "TSV and canvas table values match calculator in scale5",
+    "status": "PASS",
+    "observed": {
+      "tsvTheory": "4.00",
+      "summaryCp1": "4.20",
+      "tbck": "3.48",
+      "injectionGuard": [
+        "'=SUM(A1:A2)",
+        "'+Unsafe Name"
+      ]
+    }
+  },
+  {
+    "id": "CONTROL",
+    "case": "cp1 chart bars/average/threshold/toggles/image path scale5",
+    "status": "PASS",
+    "observed": "OK"
+  },
+  {
+    "id": "CONTROL",
+    "case": "cp2 chart bars/average/threshold/toggles/image path scale5",
+    "status": "PASS",
+    "observed": "OK"
+  },
+  {
+    "id": "CONTROL",
+    "case": "final chart bars/average/threshold/toggles/image path scale5",
+    "status": "PASS",
+    "observed": "OK"
+  },
+  {
+    "id": "CONTROL",
+    "case": "TSV and canvas table values match calculator in raw",
+    "status": "PASS",
+    "observed": {
+      "tsvTheory": "80",
+      "summaryCp1": "4.20",
+      "tbck": "3.48",
+      "injectionGuard": [
+        "'=SUM(A1:A2)",
+        "'+Unsafe Name"
+      ]
+    }
+  },
+  {
+    "id": "CONTROL",
+    "case": "cp1 chart bars/average/threshold/toggles/image path raw",
+    "status": "PASS",
+    "observed": "OK"
+  },
+  {
+    "id": "CONTROL",
+    "case": "cp2 chart bars/average/threshold/toggles/image path raw",
+    "status": "PASS",
+    "observed": "OK"
+  },
+  {
+    "id": "CONTROL",
+    "case": "final chart bars/average/threshold/toggles/image path raw",
+    "status": "PASS",
+    "observed": "OK"
+  },
+  {
+    "id": "CONTROL",
+    "case": "robotics stage filter all",
+    "status": "PASS",
+    "observed": "OK"
+  },
+  {
+    "id": "CONTROL",
+    "case": "robotics stage filter cp1",
+    "status": "PASS",
+    "observed": "OK"
+  },
+  {
+    "id": "CONTROL",
+    "case": "robotics stage filter cp2",
+    "status": "PASS",
+    "observed": "OK"
+  },
+  {
+    "id": "CONTROL",
+    "case": "robotics stage filter cp1_cp2",
+    "status": "PASS",
+    "observed": "OK"
+  }
+]

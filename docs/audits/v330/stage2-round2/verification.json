@@ -1,0 +1,62 @@
+﻿{
+    "checks":  [
+                   {
+                       "exitCode":  0,
+                       "command":  "npx.cmd --no-install tsc --noEmit --incremental false",
+                       "log":  "tsc-final.log"
+                   },
+                   {
+                       "exitCode":  0,
+                       "command":  "npx.cmd --no-install tsx scripts/test-report-card-v330.ts",
+                       "log":  "rc.log"
+                   },
+                   {
+                       "exitCode":  0,
+                       "command":  "npx.cmd --no-install tsx docs/audits/v330/stage2/probe.ts",
+                       "log":  "probe.log"
+                   },
+                   {
+                       "exitCode":  0,
+                       "command":  "npx.cmd --no-install tsx scripts/test-phase4-codex-repros.ts",
+                       "log":  "phase4.log"
+                   },
+                   {
+                       "exitCode":  0,
+                       "command":  "npx.cmd --no-install tsx docs/audits/v330/stage2-round2/probe.ts",
+                       "note":  "Confirms observed defects as well as supplementary closure checks; exit 0 is not GO",
+                       "log":  "independent.log"
+                   }
+               ],
+    "open":  [
+                 "S2-02",
+                 "S2-07",
+                 "S2-08"
+             ],
+    "verdict":  "NO-GO",
+    "new":  [
+                "R2-01"
+            ],
+    "date":  "2026-10-29",
+    "reviewedFileHashes":  [
+                               {
+                                   "Path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\scrape-scores.ts",
+                                   "Hash":  "99489933C19A09077B3484C9A782020C5BBB40A0B0621A9781BE8BC110096895"
+                               },
+                               {
+                                   "Path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-report-card-v330.ts",
+                                   "Hash":  "FE682231D154A105481BE925EBB8F14A7B741457B75AA39200CA2A47B0D80375"
+                               },
+                               {
+                                   "Path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\docs\\audits\\v330\\stage2\\probe.ts",
+                                   "Hash":  "1C18611C55518D28FF7F12092CF74216E242A963A2AD206168E91632AAFC4B96"
+                               }
+                           ],
+    "closed":  [
+                   "S2-01",
+                   "S2-03",
+                   "S2-04",
+                   "S2-05",
+                   "S2-06",
+                   "S2-09"
+               ]
+}

@@ -1,0 +1,44 @@
+﻿[
+    {
+        "Path":  "data/mindx_bot.db",
+        "SHA256":  "93CDF719342E7B7AF6A49C2A96382842C8ECBDD161319063BB2FBC65EE4DF5EA",
+        "LastWriteTimeUtc":  "2026-10-28T17:34:40.8756660Z",
+        "Length":  417792
+    },
+    {
+        "Path":  "data/running_classes.json",
+        "SHA256":  "614F2CA361B5FE238A3F4BF067945C0F734AEF5524A295A1217688999A6C3581",
+        "LastWriteTimeUtc":  "2026-10-28T12:44:41.1214243Z",
+        "Length":  1879
+    },
+    {
+        "Path":  "src/lib/playwright/scrape-scores.ts",
+        "SHA256":  "160A32D8F32B41E9A4797785878EFD1A954090486BA030B0CD426E49BDAAAF17",
+        "LastWriteTimeUtc":  "2026-10-29T02:36:39.2667125Z",
+        "Length":  112240
+    },
+    {
+        "Path":  "scripts/test-report-card-v330.ts",
+        "SHA256":  "80C40D79D3DD90D39CDD9BA6BC233EE634F314512247AFE811C9CF94C46BE41F",
+        "LastWriteTimeUtc":  "2026-10-29T02:37:26.9859755Z",
+        "Length":  83542
+    },
+    {
+        "Path":  "docs/audits/v330/stage2/probe.ts",
+        "SHA256":  "1C18611C55518D28FF7F12092CF74216E242A963A2AD206168E91632AAFC4B96",
+        "LastWriteTimeUtc":  "2026-10-29T02:26:45.9404655Z",
+        "Length":  17151
+    },
+    {
+        "Path":  "docs/audits/v330/stage2-round2/probe.ts",
+        "SHA256":  "EC33088C0D3F5EB3BE32CBF630CCD0E565CF4581F34774D59BC02C48E1549B94",
+        "LastWriteTimeUtc":  "2026-10-29T02:37:54.5418573Z",
+        "Length":  13394
+    },
+    {
+        "Path":  "src/lib/db/sqlite.ts",
+        "SHA256":  "E7B0CAD9127BC7C3AB5A4EEB4AE871D70E206CC333C1C2164F25DD3880239A4C",
+        "LastWriteTimeUtc":  "2026-10-29T01:30:47.2831510Z",
+        "Length":  235695
+    }
+]

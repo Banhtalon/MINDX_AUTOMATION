@@ -1,0 +1,47 @@
+﻿[
+    {
+        "Name":  "typecheck",
+        "Command":  "npx.cmd --no-install tsc --noEmit --incremental false",
+        "ExitCode":  0,
+        "StartedUtc":  "2026-10-29T02:40:20.1164790Z",
+        "FinishedUtc":  "2026-10-29T02:40:21.2707650Z",
+        "MINDX_DB_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_7d57383edb7a4082ade3084fc57c0018\\typecheck.db",
+        "MINDX_RUNNING_CLASSES_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_7d57383edb7a4082ade3084fc57c0018\\typecheck-running-classes.json"
+    },
+    {
+        "Name":  "report-card",
+        "Command":  "npx.cmd --no-install tsx scripts/test-report-card-v330.ts",
+        "ExitCode":  0,
+        "StartedUtc":  "2026-10-29T02:40:21.3360391Z",
+        "FinishedUtc":  "2026-10-29T02:40:22.6295865Z",
+        "MINDX_DB_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_7d57383edb7a4082ade3084fc57c0018\\report-card.db",
+        "MINDX_RUNNING_CLASSES_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_7d57383edb7a4082ade3084fc57c0018\\report-card-running-classes.json"
+    },
+    {
+        "Name":  "stage2",
+        "Command":  "npx.cmd --no-install tsx docs/audits/v330/stage2/probe.ts",
+        "ExitCode":  0,
+        "StartedUtc":  "2026-10-29T02:40:22.6295865Z",
+        "FinishedUtc":  "2026-10-29T02:40:23.4881390Z",
+        "MINDX_DB_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_7d57383edb7a4082ade3084fc57c0018\\stage2.db",
+        "MINDX_RUNNING_CLASSES_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_7d57383edb7a4082ade3084fc57c0018\\stage2-running-classes.json"
+    },
+    {
+        "Name":  "stage2-round2",
+        "Command":  "npx.cmd --no-install tsx docs/audits/v330/stage2-round2/probe.ts",
+        "ExitCode":  0,
+        "StartedUtc":  "2026-10-29T02:40:23.5156604Z",
+        "FinishedUtc":  "2026-10-29T02:40:24.3704973Z",
+        "MINDX_DB_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_7d57383edb7a4082ade3084fc57c0018\\stage2-round2.db",
+        "MINDX_RUNNING_CLASSES_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_7d57383edb7a4082ade3084fc57c0018\\stage2-round2-running-classes.json"
+    },
+    {
+        "Name":  "phase4",
+        "Command":  "npx.cmd --no-install tsx scripts/test-phase4-codex-repros.ts",
+        "ExitCode":  0,
+        "StartedUtc":  "2026-10-29T02:40:24.3747306Z",
+        "FinishedUtc":  "2026-10-29T02:40:27.1358532Z",
+        "MINDX_DB_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_7d57383edb7a4082ade3084fc57c0018\\phase4.db",
+        "MINDX_RUNNING_CLASSES_PATH":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\_temp_stage2_round3_7d57383edb7a4082ade3084fc57c0018\\phase4-running-classes.json"
+    }
+]

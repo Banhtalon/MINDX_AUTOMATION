@@ -1,0 +1,86 @@
+{
+  "observations": [
+    {
+      "id": "S2-01",
+      "status": "CLOSED",
+      "success": false,
+      "priorCp1": 4,
+      "persistedCp1": 4,
+      "roboticsTabClicks": 0
+    },
+    {
+      "id": "S2-01b",
+      "status": "CLOSED",
+      "delayedResolvedCp1": 5,
+      "timeoutSuccess": false
+    },
+    {
+      "id": "S2-02",
+      "status": "CLOSED",
+      "verifiedClassId": "aaaaaaaaaaaaaaaaaaaaaaaa",
+      "rejectedForeignRequestId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+      "success": false
+    },
+    {
+      "id": "S2-02b",
+      "status": "CLOSED",
+      "foreignCodeMissing": true,
+      "success": false
+    },
+    {
+      "id": "S2-03",
+      "status": "CLOSED",
+      "success": false,
+      "matrixCached": null,
+      "persistedReportCp1": 4
+    },
+    {
+      "id": "S2-04",
+      "status": "CLOSED",
+      "domPractice": 80,
+      "reportPractice": 80
+    },
+    {
+      "id": "S2-05",
+      "status": "CLOSED",
+      "expectedLocalAScore": 90,
+      "assignedLocalAScore": 90
+    },
+    {
+      "id": "S2-06",
+      "status": "CLOSED",
+      "activeCrmStudents": 2,
+      "returnedMatrixStudents": 2,
+      "snapshotStudents": 2,
+      "sameNameDistinctCrmSnapshotStudents": 2
+    },
+    {
+      "id": "S2-07",
+      "status": "CLOSED",
+      "source": "Checkpoint 2",
+      "cp1Theory": null,
+      "cp2Theory": 4
+    },
+    {
+      "id": "S2-08",
+      "status": "CLOSED",
+      "explicitDemoScores": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "extractedFinalProduct": 0,
+      "ungradedDefaultFinalProduct": null
+    },
+    {
+      "id": "S2-09",
+      "status": "CLOSED",
+      "lessonsCount": 1,
+      "btvnSessionsLength": 0
+    }
+  ],
+  "productionDbHashBefore": "93cdf719342e7b7af6a49c2a96382842c8ecbdd161319063bb2fbc65ee4df5ea",
+  "productionDbHashAfter": "93cdf719342e7b7af6a49c2a96382842c8ecbdd161319063bb2fbc65ee4df5ea"
+}

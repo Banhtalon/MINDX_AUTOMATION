@@ -1,0 +1,672 @@
+﻿{
+    "protectedFiles":  166,
+    "unchanged":  166,
+    "changed":  0,
+    "productionData":  "Explicitly excluded: never opened, hashed, copied or compared",
+    "results":  [
+                    {
+                        "path":  "data/config/courses_syllabus.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/default-demo-sheet-template.xlsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/default-spck-thumbnail.png",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/demo-sheet-templates/CSA.xlsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/demo-sheet-templates/CSI.xlsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/demo-sheet-templates/JSA.xlsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/demo-sheet-templates/JSB.xlsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/demo-sheet-templates/JSI.xlsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/demo-sheet-templates/PSI.xlsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/demo-sheet-templates/PTA.xlsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/demo-sheet-templates/PTI.xlsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/demo-sheet-templates/SA.xlsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/demo-sheet-templates/SB.xlsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/demo-sheet-templates/SI.xlsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/grading_rubrics.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/mindx-bot.ico",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/quick_tags.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "data/config/zalo_templates.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4/observations.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4/probe.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4/probe.mjs",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4/source-manifest.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4/test-phase4-codex-repros.ts.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4/test-phase5.ts.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4/test-phase7.ts.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4/test-phase7-final.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4/test-report-card-v330.ts.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4/typecheck.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/cases.mjs",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/observations.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/original-probe-observations.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/probe.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/probe.mjs",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/probe.mjs.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/results.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/source-before.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/source-verification.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/temp-root.txt",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/test-phase4-codex-repros.ts.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/test-phase5.ts.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/test-phase7.ts.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/test-report-card-v330.ts.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/typecheck.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "docs/audits/v330/stage4-round2/typecheck-final.log",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "next-env.d.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "package.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "package-lock.json",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/recon.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-checkpoint-v300.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-lms-reliability-v280.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-patches-round2.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-phase3.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-phase4-codex-repros.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-phase5.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-phase6.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-phase7.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-quick-tags-v300.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-report-card-v330.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-session14-v290.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-spck-v270.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-spck-v272.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "scripts/test-teaching-project-v320.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/auth/login/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/auth/status/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/config/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/homework-grader/approve/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/homework-grader/download-and-grade/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/homework-grader/export/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/homework-grader/save-lms/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/homework-grader/scores/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/homework-grader/submissions/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/queue/control/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/queue/stream/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/report-card/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/report-card/sync-teaching/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/session-comments/approve/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/session-comments/fetch-classes/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/session-comments/generate-ai/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/session-comments/list/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/session-comments/save-draft/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/session-comments/save-lms/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/session-comments/sync/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/session-comments/zalo-btvn-image/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/approve/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/browse-folder/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/capture-screenshots/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/create-demo-sheet/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/deploy-web/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/generate-ai/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/import-youtube/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/list/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/save-draft/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/scan/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/session14-eval/generate-ai/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/session14-eval/import-demo-scores/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/session14-eval/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/session14-eval/upload-lms/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/student-portal/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/upload-drive/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/spck/upload-lms/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/teaching-projects/fetch-lms-dates/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/teaching-projects/generate-ai/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/teaching-projects/progress/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/teaching-projects/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/api/teaching-projects/sync/route.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/final-project/page.tsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/globals.css",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/homework-grader/page.tsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/layout.tsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/page.tsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/session-comments/page.tsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/syllabus-config/page.tsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/app/teaching-projects/page.tsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/components/homework-auto-grader-tab.tsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/components/live-log-drawer.tsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/components/teaching-report-card-view.tsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/components/top-navbar.tsx",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/config.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/db/json-config.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/db/sqlite.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/file-parsers/archive-reader.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/file-parsers/code-reader.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/file-parsers/game-reader.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/file-parsers/index.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/file-parsers/media-reader.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/gemini/client.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/gemini/comment-generator.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/gemini/homework-grader.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/gemini/score-auditor.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/gemini/session14-course-summary.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/gemini/spck-comment.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/gemini/teaching-project-generator.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/github/spck-web-deployer.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/local-files/spck-app-screenshotter.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/local-files/spck-demo-score-reader.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/local-files/spck-image-normalizer.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/local-files/spck-scanner.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/local-files/spck-youtube-import.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/auth.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/browser-manager.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/download-submissions.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/grade-worker.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/lms-helpers.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/network-interceptor.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/save-comments.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/scrape-scores.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/selectors.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/session14-eval-uploader.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/spck-demo-sheet.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/spck-drive-uploader.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/spck-uploader.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/sync-class.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/teaching-project-service.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/playwright/teaching-report-card-sync.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/queue/task-queue.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/quick-tags/index.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/report-card/report-card-calculator.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/security/local-guard.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/security/path-allowlist.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/student-portal/student-portal-server.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/utils.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/utils/vietnamese-match.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "src/lib/zalo/broadcast-generator.ts",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "start-bot.bat",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "start-bot.command",
+                        "unchanged":  true
+                    },
+                    {
+                        "path":  "tsconfig.json",
+                        "unchanged":  true
+                    }
+                ]
+}

@@ -1,0 +1,59 @@
+﻿{
+    "date":  "2026-10-29",
+    "baselineHead":  "4f7a87069f0675c27d89ee5d88fd238ea71b4d88",
+    "scope":  "current working files",
+    "tempRoot":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-round2-8bc1dc5b08af4f4db28fa0eb3a902af5",
+    "protectedOwnerFilesRead":  false,
+    "commands":  [
+                     {
+                         "exitCode":  0,
+                         "command":  "npx tsc --noEmit --incremental false",
+                         "cwd":  "D:\\MY PROJECT\\MINDX_AUTOMATION",
+                         "log":  "typecheck.log"
+                     },
+                     {
+                         "exitCode":  0,
+                         "command":  "npx tsx docs/audits/v330/stage4/probe.mjs",
+                         "cwd":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-round2-8bc1dc5b08af4f4db28fa0eb3a902af5\\workspace",
+                         "log":  "probe.mjs.log"
+                     },
+                     {
+                         "exitCode":  0,
+                         "command":  "npx tsx scripts/test-report-card-v330.ts",
+                         "cwd":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-round2-8bc1dc5b08af4f4db28fa0eb3a902af5\\workspace",
+                         "log":  "test-report-card-v330.ts.log"
+                     },
+                     {
+                         "exitCode":  0,
+                         "command":  "npx tsx scripts/test-phase4-codex-repros.ts",
+                         "cwd":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-round2-8bc1dc5b08af4f4db28fa0eb3a902af5\\workspace",
+                         "log":  "test-phase4-codex-repros.ts.log"
+                     },
+                     {
+                         "exitCode":  0,
+                         "command":  "npx tsx scripts/test-phase5.ts",
+                         "cwd":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-round2-8bc1dc5b08af4f4db28fa0eb3a902af5\\workspace",
+                         "log":  "test-phase5.ts.log"
+                     },
+                     {
+                         "exitCode":  0,
+                         "command":  "npx tsx scripts/test-phase7.ts",
+                         "cwd":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-round2-8bc1dc5b08af4f4db28fa0eb3a902af5\\workspace",
+                         "log":  "test-phase7.ts.log"
+                     },
+                     {
+                         "interpretation":  "evidence collection complete; 22 OPEN observations",
+                         "exitCode":  0,
+                         "command":  "npx tsx docs/audits/v330/stage4-round2/probe.mjs",
+                         "cwd":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-round2-8bc1dc5b08af4f4db28fa0eb3a902af5\\workspace",
+                         "log":  "probe.log"
+                     },
+                     {
+                         "exitCode":  0,
+                         "command":  "npx tsc --noEmit --incremental false",
+                         "cwd":  "D:\\MY PROJECT\\MINDX_AUTOMATION",
+                         "log":  "typecheck-final.log"
+                     }
+                 ],
+    "verdict":  "NO-GO"
+}

@@ -1,0 +1,106 @@
+{
+    "Date":  "2026-10-29",
+    "Head":  "4f7a87069f0675c27d89ee5d88fd238ea71b4d88",
+    "Scope":  "TASK-9.4 Stage 3 Round 3 closure of S3-01 through S3-09; current working files",
+    "TempRoot":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf",
+    "Results":  [
+                    {
+                        "value":  [
+                                      {
+                                          "Id":  "01-tsc",
+                                          "Command":  "npx tsc --noEmit --incremental false",
+                                          "ExitCode":  0,
+                                          "StartedUtc":  "2026-10-29T07:25:51.0513050Z",
+                                          "EndedUtc":  "2026-10-29T07:25:53.7208657Z",
+                                          "DbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\01-tsc\\audit.db",
+                                          "CachePath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\01-tsc\\running_classes.json",
+                                          "ObservationsPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\01-tsc\\observations.json",
+                                          "Log":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\01-tsc\\command.log"
+                                      },
+                                      {
+                                          "Id":  "02-report-card",
+                                          "Command":  "npx tsx scripts/test-report-card-v330.ts",
+                                          "ExitCode":  0,
+                                          "StartedUtc":  "2026-10-29T07:25:53.9426021Z",
+                                          "EndedUtc":  "2026-10-29T07:25:56.9153475Z",
+                                          "DbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\02-report-card\\audit.db",
+                                          "CachePath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\02-report-card\\running_classes.json",
+                                          "ObservationsPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\02-report-card\\observations.json",
+                                          "Log":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\02-report-card\\command.log"
+                                      },
+                                      {
+                                          "Id":  "03-phase4",
+                                          "Command":  "npx tsx scripts/test-phase4-codex-repros.ts",
+                                          "ExitCode":  0,
+                                          "StartedUtc":  "2026-10-29T07:25:56.9341438Z",
+                                          "EndedUtc":  "2026-10-29T07:26:01.8196220Z",
+                                          "DbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\03-phase4\\audit.db",
+                                          "CachePath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\03-phase4\\running_classes.json",
+                                          "ObservationsPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\03-phase4\\observations.json",
+                                          "Log":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\03-phase4\\command.log"
+                                      },
+                                      {
+                                          "Id":  "04-stage3",
+                                          "Command":  "npx tsx docs/audits/v330/stage3/adversarial-probe.ts",
+                                          "ExitCode":  0,
+                                          "StartedUtc":  "2026-10-29T07:26:01.8356375Z",
+                                          "EndedUtc":  "2026-10-29T07:26:04.4276847Z",
+                                          "DbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\04-stage3\\audit.db",
+                                          "CachePath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\04-stage3\\running_classes.json",
+                                          "ObservationsPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\04-stage3\\observations.json",
+                                          "Log":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\04-stage3\\command.log"
+                                      },
+                                      {
+                                          "Id":  "05-round2",
+                                          "Command":  "npx tsx docs/audits/v330/stage3-round2/closure-probe.ts",
+                                          "ExitCode":  0,
+                                          "StartedUtc":  "2026-10-29T07:26:04.4463845Z",
+                                          "EndedUtc":  "2026-10-29T07:26:07.3476230Z",
+                                          "DbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\05-round2\\audit.db",
+                                          "CachePath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\05-round2\\running_classes.json",
+                                          "ObservationsPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\05-round2\\observations.json",
+                                          "Log":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\05-round2\\command.log"
+                                      }
+                                  ],
+                        "Count":  5
+                    },
+                    {
+                        "Id":  "06-final-boundaries",
+                        "Command":  "npx tsx docs/audits/v330/stage3-round3/closure-boundaries.ts",
+                        "ExitCode":  0,
+                        "DbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\08-final-boundaries\\audit.db",
+                        "CachePath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\08-final-boundaries\\running_classes.json",
+                        "ObservationsPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\08-final-boundaries\\observations.json",
+                        "Log":  "closure-boundaries.log"
+                    },
+                    {
+                        "Id":  "07-final-tsc",
+                        "Command":  "npx tsc --noEmit --incremental false",
+                        "ExitCode":  0,
+                        "DbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\07-final-tsc.db",
+                        "CachePath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\07-final-tsc-cache.json",
+                        "ObservationsPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage3-round3-a2fbd9af53d9439094e3ece52f9d1abf\\07-final-tsc-observations.json",
+                        "Log":  "final-tsc.log"
+                    }
+                ],
+    "OriginalProbe":  {
+                          "Observations":  40,
+                          "PASS":  40,
+                          "BUG_REPRODUCED":  0
+                      },
+    "Round2Probe":  {
+                        "Observations":  72,
+                        "OPEN":  0,
+                        "CLOSED":  72
+                    },
+    "Round3Probe":  {
+                        "Observations":  101,
+                        "OPEN":  0,
+                        "CLOSED":  101
+                    },
+    "Notes":  [
+                  "npx.cmd is the native Windows launcher for the requested npx commands.",
+                  "A missing class_code type in the new audit-only fixture was corrected before final TypeScript and supplemental reruns. No production TypeScript failure occurred.",
+                  "RC suite internally uses a disposable child folder beneath the supplied TEMP database parent."
+              ]
+}

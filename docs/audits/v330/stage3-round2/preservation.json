@@ -1,0 +1,1162 @@
+﻿[
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\globals.css",
+        "sha256":  "BFEA8CF1A89EA20673F8A7FE116D99C68E58DD74AB666D80FF08C2146C522FF4",
+        "beforeSha256":  "BFEA8CF1A89EA20673F8A7FE116D99C68E58DD74AB666D80FF08C2146C522FF4",
+        "length":  17100,
+        "lastWriteUtc":  "2026-10-28T08:36:20.7412088Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\layout.tsx",
+        "sha256":  "50E5EBB7D7BAFAFD00708B1FF1177AFF5C276F2967F0761C9188B33406A80A04",
+        "beforeSha256":  "50E5EBB7D7BAFAFD00708B1FF1177AFF5C276F2967F0761C9188B33406A80A04",
+        "length":  1439,
+        "lastWriteUtc":  "2026-10-28T10:50:14.4893367Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\page.tsx",
+        "sha256":  "53605922F3732DFB75E3E279CE5637C0583099E6480927753393811DB635675A",
+        "beforeSha256":  "53605922F3732DFB75E3E279CE5637C0583099E6480927753393811DB635675A",
+        "length":  14942,
+        "lastWriteUtc":  "2026-10-28T11:42:16.1177515Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\auth\\login\\route.ts",
+        "sha256":  "804D595235BC38444B3F9AFD491AAF99F32654C6D615C4EB69924E91646EC835",
+        "beforeSha256":  "804D595235BC38444B3F9AFD491AAF99F32654C6D615C4EB69924E91646EC835",
+        "length":  1334,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3369244Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\auth\\status\\route.ts",
+        "sha256":  "BEE02AC7358F464C1624D357DAFAD77DF3D70319B27151C9BC9ADBB6A0641C51",
+        "beforeSha256":  "BEE02AC7358F464C1624D357DAFAD77DF3D70319B27151C9BC9ADBB6A0641C51",
+        "length":  1656,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3369244Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\config\\route.ts",
+        "sha256":  "50F877A08359DB5BC0075AA132CA39A5F6002FFA169B27A0477D558CDA0D6DEF",
+        "beforeSha256":  "50F877A08359DB5BC0075AA132CA39A5F6002FFA169B27A0477D558CDA0D6DEF",
+        "length":  22562,
+        "lastWriteUtc":  "2026-10-28T04:36:50.7062868Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\approve\\route.ts",
+        "sha256":  "4B045AB1A5FB8D37A5458C41D9449F1385BED9709340D5344C8591FAC114544B",
+        "beforeSha256":  "4B045AB1A5FB8D37A5458C41D9449F1385BED9709340D5344C8591FAC114544B",
+        "length":  17528,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3389868Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\download-and-grade\\route.ts",
+        "sha256":  "A129B0EA4A25A94DFC86AF76A8D5FE1CFFCD620397FFDA86208876F20C6CFB7B",
+        "beforeSha256":  "A129B0EA4A25A94DFC86AF76A8D5FE1CFFCD620397FFDA86208876F20C6CFB7B",
+        "length":  9114,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3420884Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\export\\route.ts",
+        "sha256":  "DD99667EF8F2338A1AC16ACAB3623381A2C16C60988610D7C24CBEA0DF9DB8E8",
+        "beforeSha256":  "DD99667EF8F2338A1AC16ACAB3623381A2C16C60988610D7C24CBEA0DF9DB8E8",
+        "length":  5516,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3432776Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\save-lms\\route.ts",
+        "sha256":  "39EDB4AC37E0681D82001C26B060F49460CB1B40E65A39FC239122668FB4205A",
+        "beforeSha256":  "39EDB4AC37E0681D82001C26B060F49460CB1B40E65A39FC239122668FB4205A",
+        "length":  2040,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3443704Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\scores\\route.ts",
+        "sha256":  "2B2AF620D9AC53A005C64295C7438A80E758495CA765DDBEB5C769F6EA0961AA",
+        "beforeSha256":  "2B2AF620D9AC53A005C64295C7438A80E758495CA765DDBEB5C769F6EA0961AA",
+        "length":  2493,
+        "lastWriteUtc":  "2026-10-28T04:55:04.6753755Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\homework-grader\\submissions\\route.ts",
+        "sha256":  "E51A68E36B8DD14831A53F5E626750378DEEA39D9B0C24BC136F2992D4B3A790",
+        "beforeSha256":  "E51A68E36B8DD14831A53F5E626750378DEEA39D9B0C24BC136F2992D4B3A790",
+        "length":  13804,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3466101Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\queue\\control\\route.ts",
+        "sha256":  "9B54D133FE8C8A3366C663E7AD045844DB9E43BF9D28F9EADD599F90E2C7BE0B",
+        "beforeSha256":  "9B54D133FE8C8A3366C663E7AD045844DB9E43BF9D28F9EADD599F90E2C7BE0B",
+        "length":  1918,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3484272Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\queue\\stream\\route.ts",
+        "sha256":  "C0F2E90C90DA860C3AD3699EC7FFD23812722D7190F840586A4FFAFFF8150B32",
+        "beforeSha256":  "C0F2E90C90DA860C3AD3699EC7FFD23812722D7190F840586A4FFAFFF8150B32",
+        "length":  2721,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3498204Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\report-card\\route.ts",
+        "sha256":  "ADFD858EF1EE4985789683061DB6B5CF98BE863C4363B854778AD48A998B7FAF",
+        "beforeSha256":  "ADFD858EF1EE4985789683061DB6B5CF98BE863C4363B854778AD48A998B7FAF",
+        "length":  21187,
+        "lastWriteUtc":  "2026-10-29T06:58:58.1106928Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\report-card\\sync-teaching\\route.ts",
+        "sha256":  "DB462266F21E0AF6A42CBF94C95FE493EC4F0C0DD51DA94B8A259BB571D3404D",
+        "beforeSha256":  "DB462266F21E0AF6A42CBF94C95FE493EC4F0C0DD51DA94B8A259BB571D3404D",
+        "length":  3378,
+        "lastWriteUtc":  "2026-10-29T06:59:00.1738646Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\approve\\route.ts",
+        "sha256":  "0C67C27334078362341F9FB6680A026027660613772DAEFACDDB84059FE57843",
+        "beforeSha256":  "0C67C27334078362341F9FB6680A026027660613772DAEFACDDB84059FE57843",
+        "length":  6929,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3508982Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\fetch-classes\\route.ts",
+        "sha256":  "ECC7C1F2539C07A5A8DE69AC4DC7343B6FFA032409FDC5E25E2E2B25CF6C0C63",
+        "beforeSha256":  "ECC7C1F2539C07A5A8DE69AC4DC7343B6FFA032409FDC5E25E2E2B25CF6C0C63",
+        "length":  3029,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3514241Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\generate-ai\\route.ts",
+        "sha256":  "F18B06DD8F486DBD5E9935CD18B36B950D60B9409CDD3B94F28318168C136A33",
+        "beforeSha256":  "F18B06DD8F486DBD5E9935CD18B36B950D60B9409CDD3B94F28318168C136A33",
+        "length":  3177,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3529329Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\list\\route.ts",
+        "sha256":  "9DA5D98CCFE8AF0E2A3EC27C17BDE1A2AA1A50922E8CC642C24A20D4A4E7E16E",
+        "beforeSha256":  "9DA5D98CCFE8AF0E2A3EC27C17BDE1A2AA1A50922E8CC642C24A20D4A4E7E16E",
+        "length":  8284,
+        "lastWriteUtc":  "2026-10-28T10:48:59.2049272Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\save-draft\\route.ts",
+        "sha256":  "653CEDF9176588B073E7EA19781719F01B4522EEEE37336F6FB558D4F24D02DA",
+        "beforeSha256":  "653CEDF9176588B073E7EA19781719F01B4522EEEE37336F6FB558D4F24D02DA",
+        "length":  11681,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3534369Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\save-lms\\route.ts",
+        "sha256":  "C97972BA84B5E4BDF2A2A8C3F50D742B894AE48F521118BFAE72EE2124FA3BD3",
+        "beforeSha256":  "C97972BA84B5E4BDF2A2A8C3F50D742B894AE48F521118BFAE72EE2124FA3BD3",
+        "length":  2304,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3554438Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\sync\\route.ts",
+        "sha256":  "3D502A65B6DDCC415DC4463918263A37CE993172FECB72C68FA2DBE88C31CD6C",
+        "beforeSha256":  "3D502A65B6DDCC415DC4463918263A37CE993172FECB72C68FA2DBE88C31CD6C",
+        "length":  1227,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3554438Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\session-comments\\zalo-btvn-image\\route.ts",
+        "sha256":  "19C637A4F83313E2AAC044AC0C22B81BC36E75D53DE1B902118D98B93F65339E",
+        "beforeSha256":  "19C637A4F83313E2AAC044AC0C22B81BC36E75D53DE1B902118D98B93F65339E",
+        "length":  2857,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3574504Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\approve\\route.ts",
+        "sha256":  "D597F533F9DE2F85D98D746BDED731D2F4ADCA909DD0201BDDA146ABEF83918C",
+        "beforeSha256":  "D597F533F9DE2F85D98D746BDED731D2F4ADCA909DD0201BDDA146ABEF83918C",
+        "length":  19797,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3597944Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\browse-folder\\route.ts",
+        "sha256":  "541FC5A0725166A6C3575F8DAE2844CA60E4F7F0591186508C1B6DCC909FC80E",
+        "beforeSha256":  "541FC5A0725166A6C3575F8DAE2844CA60E4F7F0591186508C1B6DCC909FC80E",
+        "length":  4682,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3608707Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\capture-screenshots\\route.ts",
+        "sha256":  "9C49DA0B527744916E7EC5900F297B833CD8C66F424E45B18577D51632EC8204",
+        "beforeSha256":  "9C49DA0B527744916E7EC5900F297B833CD8C66F424E45B18577D51632EC8204",
+        "length":  8816,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3619241Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\create-demo-sheet\\route.ts",
+        "sha256":  "A955644FDB4B26CB88E48A60284CD4F97940453A50061708E457AB49C9400642",
+        "beforeSha256":  "A955644FDB4B26CB88E48A60284CD4F97940453A50061708E457AB49C9400642",
+        "length":  2889,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3628315Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\deploy-web\\route.ts",
+        "sha256":  "C804732BD4F328C30E230609301BFF89338C805A5F2A56F5B55DAD0C9577AC5C",
+        "beforeSha256":  "C804732BD4F328C30E230609301BFF89338C805A5F2A56F5B55DAD0C9577AC5C",
+        "length":  2370,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3639560Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\generate-ai\\route.ts",
+        "sha256":  "CA6AF6140ECC0D9451CD41B23DAFF88081B426FF5D0BB7EE43A227EFACB3F306",
+        "beforeSha256":  "CA6AF6140ECC0D9451CD41B23DAFF88081B426FF5D0BB7EE43A227EFACB3F306",
+        "length":  4972,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3650666Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\import-youtube\\route.ts",
+        "sha256":  "AAC4D08BDE61CBABB5704D4F08046BBEB3FE85C8BC99EFD85A9AA4176DA0D166",
+        "beforeSha256":  "AAC4D08BDE61CBABB5704D4F08046BBEB3FE85C8BC99EFD85A9AA4176DA0D166",
+        "length":  2767,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3661303Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\list\\route.ts",
+        "sha256":  "7B9E8E8A2511A9E4E3030DC77E2A1951D4CA79A860406B265005775D8BF02695",
+        "beforeSha256":  "7B9E8E8A2511A9E4E3030DC77E2A1951D4CA79A860406B265005775D8BF02695",
+        "length":  15569,
+        "lastWriteUtc":  "2026-10-28T03:27:47.0567205Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\save-draft\\route.ts",
+        "sha256":  "4490E52FDB2E35F3DD1746E8FAACE826F76D26CEB169C4BE33E0F1680D2106CB",
+        "beforeSha256":  "4490E52FDB2E35F3DD1746E8FAACE826F76D26CEB169C4BE33E0F1680D2106CB",
+        "length":  17241,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3685595Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\scan\\route.ts",
+        "sha256":  "577EE312DEFDDF5A8BEFE0ECAA9630B9C203411339E5CA715DD4BF79E6AA59A2",
+        "beforeSha256":  "577EE312DEFDDF5A8BEFE0ECAA9630B9C203411339E5CA715DD4BF79E6AA59A2",
+        "length":  12778,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3690830Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\session14-eval\\route.ts",
+        "sha256":  "EDA8D5AF61BFBAC5C106ED1E9C09C6BF483098854F7433AAB172450E48F0EDB7",
+        "beforeSha256":  "EDA8D5AF61BFBAC5C106ED1E9C09C6BF483098854F7433AAB172450E48F0EDB7",
+        "length":  8110,
+        "lastWriteUtc":  "2026-10-28T04:16:05.8761925Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\session14-eval\\generate-ai\\route.ts",
+        "sha256":  "E39B2C8281FC57FDE490628B7FE4AE0CE59CE4D40144E83971218D14F2EA1285",
+        "beforeSha256":  "E39B2C8281FC57FDE490628B7FE4AE0CE59CE4D40144E83971218D14F2EA1285",
+        "length":  2549,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3710884Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\session14-eval\\import-demo-scores\\route.ts",
+        "sha256":  "1D51FB35ECA0464365C69F67792364BFFEC8FB5B41AFCC5143CD73938FED4CD9",
+        "beforeSha256":  "1D51FB35ECA0464365C69F67792364BFFEC8FB5B41AFCC5143CD73938FED4CD9",
+        "length":  1216,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3710884Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\session14-eval\\upload-lms\\route.ts",
+        "sha256":  "098414283E512B7AC191E59EAA29FE9A90F8FE1C710ACC2E695DE500B3664EDA",
+        "beforeSha256":  "098414283E512B7AC191E59EAA29FE9A90F8FE1C710ACC2E695DE500B3664EDA",
+        "length":  1466,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3730952Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\student-portal\\route.ts",
+        "sha256":  "6F2197A6BED4F93520091BDD1ED55AD097DDC41B6B08C8AA6AAD574B3E14BA3F",
+        "beforeSha256":  "6F2197A6BED4F93520091BDD1ED55AD097DDC41B6B08C8AA6AAD574B3E14BA3F",
+        "length":  2857,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3751031Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\upload-drive\\route.ts",
+        "sha256":  "BE790EFCE785BBACF28AD0D179D0AE6D9E070BB2355CD8F928DA33F808B7065F",
+        "beforeSha256":  "BE790EFCE785BBACF28AD0D179D0AE6D9E070BB2355CD8F928DA33F808B7065F",
+        "length":  1990,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3767270Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\spck\\upload-lms\\route.ts",
+        "sha256":  "5C7741BB4C30461CD9868B7C1CF62F38CF017EA81E876A3C7E0587770495F52B",
+        "beforeSha256":  "5C7741BB4C30461CD9868B7C1CF62F38CF017EA81E876A3C7E0587770495F52B",
+        "length":  3180,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3772630Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\route.ts",
+        "sha256":  "8A5336B7B92BA838DA60BDA4B3D91869FA23A1872725A3BDC20FF22ACFC95E09",
+        "beforeSha256":  "8A5336B7B92BA838DA60BDA4B3D91869FA23A1872725A3BDC20FF22ACFC95E09",
+        "length":  7214,
+        "lastWriteUtc":  "2026-10-28T12:00:39.6824067Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\fetch-lms-dates\\route.ts",
+        "sha256":  "6F635F14A0C140E18B37CB28255C050B8617C1EEA1897D6F81B75362B068840E",
+        "beforeSha256":  "6F635F14A0C140E18B37CB28255C050B8617C1EEA1897D6F81B75362B068840E",
+        "length":  3753,
+        "lastWriteUtc":  "2026-10-28T12:01:09.7868674Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\generate-ai\\route.ts",
+        "sha256":  "D0238B7B11B25F03FDBC567C3FE4ADEB772A0CE7823CC6A292D6675EB841358A",
+        "beforeSha256":  "D0238B7B11B25F03FDBC567C3FE4ADEB772A0CE7823CC6A292D6675EB841358A",
+        "length":  5511,
+        "lastWriteUtc":  "2026-10-28T12:01:07.9725125Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\progress\\route.ts",
+        "sha256":  "36D78485BF1EE5239F30B9DC87222114A38F345691233A4D91D9099C91059D68",
+        "beforeSha256":  "36D78485BF1EE5239F30B9DC87222114A38F345691233A4D91D9099C91059D68",
+        "length":  4588,
+        "lastWriteUtc":  "2026-10-28T13:20:39.2624223Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\api\\teaching-projects\\sync\\route.ts",
+        "sha256":  "CC6E48ED5F7A9EBDB992416E1DF3BFE8152949B0450CC7B7DAE0D560DFF16E9C",
+        "beforeSha256":  "CC6E48ED5F7A9EBDB992416E1DF3BFE8152949B0450CC7B7DAE0D560DFF16E9C",
+        "length":  4894,
+        "lastWriteUtc":  "2026-10-28T12:00:41.5454101Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\final-project\\page.tsx",
+        "sha256":  "681473913ECF7CDD12DC25B9D22962374B44AF691E70877844E194813026CE2F",
+        "beforeSha256":  "681473913ECF7CDD12DC25B9D22962374B44AF691E70877844E194813026CE2F",
+        "length":  294285,
+        "lastWriteUtc":  "2026-10-28T10:15:22.1441367Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\homework-grader\\page.tsx",
+        "sha256":  "CEF70AE1452B9BEA50C78E708678B61301A5BDD8ADE482F263173D2FBE7FDA71",
+        "beforeSha256":  "CEF70AE1452B9BEA50C78E708678B61301A5BDD8ADE482F263173D2FBE7FDA71",
+        "length":  38648,
+        "lastWriteUtc":  "2026-10-28T08:23:52.4141755Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\session-comments\\page.tsx",
+        "sha256":  "50A5B3C99200C692454B063A53A0F9C0B489C5A3470F11E848FDD6C19D2E0EF2",
+        "beforeSha256":  "50A5B3C99200C692454B063A53A0F9C0B489C5A3470F11E848FDD6C19D2E0EF2",
+        "length":  114544,
+        "lastWriteUtc":  "2026-10-28T11:03:41.2704955Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\syllabus-config\\page.tsx",
+        "sha256":  "BB60A97E9FECCCD8E8B4A2D055CF8B44E93300B497EA36FEA9D812EF402D37C0",
+        "beforeSha256":  "BB60A97E9FECCCD8E8B4A2D055CF8B44E93300B497EA36FEA9D812EF402D37C0",
+        "length":  84316,
+        "lastWriteUtc":  "2026-10-28T08:03:23.7371904Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\app\\teaching-projects\\page.tsx",
+        "sha256":  "B3E5B797E91E16ACDC0F050DDE64333A79C8BE340A5B51DA06028B8138E647F3",
+        "beforeSha256":  "B3E5B797E91E16ACDC0F050DDE64333A79C8BE340A5B51DA06028B8138E647F3",
+        "length":  71546,
+        "lastWriteUtc":  "2026-10-28T17:09:32.9009080Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\components\\homework-auto-grader-tab.tsx",
+        "sha256":  "7FE409BA7F72DA97A2B3F12DACB0DE6A1D89ABAD24D0EF15060D7DC412D7098B",
+        "beforeSha256":  "7FE409BA7F72DA97A2B3F12DACB0DE6A1D89ABAD24D0EF15060D7DC412D7098B",
+        "length":  61303,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3939782Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\components\\live-log-drawer.tsx",
+        "sha256":  "781A5F0560FD9A5813CE167402967BF9981CF74BCA1CC90442892C28D943ED2B",
+        "beforeSha256":  "781A5F0560FD9A5813CE167402967BF9981CF74BCA1CC90442892C28D943ED2B",
+        "length":  8902,
+        "lastWriteUtc":  "2026-10-28T07:37:00.2838484Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\components\\top-navbar.tsx",
+        "sha256":  "A573B7F4912E36EDBC79E4115BBD672B8B02CB87A3818EDFDF5902F2D186159D",
+        "beforeSha256":  "A573B7F4912E36EDBC79E4115BBD672B8B02CB87A3818EDFDF5902F2D186159D",
+        "length":  3819,
+        "lastWriteUtc":  "2026-10-28T11:25:59.2642360Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\config.ts",
+        "sha256":  "FD1F3500D07801B263C2660DAD64736F78E172F78488CC2B48AB7AC5A0DE1E2A",
+        "beforeSha256":  "FD1F3500D07801B263C2660DAD64736F78E172F78488CC2B48AB7AC5A0DE1E2A",
+        "length":  2272,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3962594Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\utils.ts",
+        "sha256":  "2A7E00266C284DF9B56BB9DD56FC57E1983F195BB03D1EBB1675A7CFDDEE3B63",
+        "beforeSha256":  "2A7E00266C284DF9B56BB9DD56FC57E1983F195BB03D1EBB1675A7CFDDEE3B63",
+        "length":  248,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4472927Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\db\\json-config.ts",
+        "sha256":  "F5075F27B57430CF8C358AF15188851C181FB9C2F4D48BEF78F87BB0B0093153",
+        "beforeSha256":  "F5075F27B57430CF8C358AF15188851C181FB9C2F4D48BEF78F87BB0B0093153",
+        "length":  8036,
+        "lastWriteUtc":  "2026-10-28T12:55:27.7019072Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\db\\sqlite.ts",
+        "sha256":  "50E7198AE53BA5D28C27F7B27F0CA680CB6CB9F946E0291137E7DFC3F1DAA275",
+        "beforeSha256":  "50E7198AE53BA5D28C27F7B27F0CA680CB6CB9F946E0291137E7DFC3F1DAA275",
+        "length":  237303,
+        "lastWriteUtc":  "2026-10-29T06:53:30.0963814Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\archive-reader.ts",
+        "sha256":  "8083A9B2CB4C7ADA46AD0922F002D6665325BFA0601A6DE0C09A8E01AF3545DD",
+        "beforeSha256":  "8083A9B2CB4C7ADA46AD0922F002D6665325BFA0601A6DE0C09A8E01AF3545DD",
+        "length":  14154,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4032811Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\code-reader.ts",
+        "sha256":  "5A22ED853A8F1E78347F8486D3F5F6CA421F324C76C28C479046743941D775FD",
+        "beforeSha256":  "5A22ED853A8F1E78347F8486D3F5F6CA421F324C76C28C479046743941D775FD",
+        "length":  12200,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4041172Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\game-reader.ts",
+        "sha256":  "8C8BC86FE888898C6E9C6E60721C30FD0A06E90B00E0DEB891B24E8285C8804D",
+        "beforeSha256":  "8C8BC86FE888898C6E9C6E60721C30FD0A06E90B00E0DEB891B24E8285C8804D",
+        "length":  26198,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4049864Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\index.ts",
+        "sha256":  "C0D22C770D0A5B76A98646F1C67EAA1C08F439EA3FD5BDC477ACB053AFED4F0E",
+        "beforeSha256":  "C0D22C770D0A5B76A98646F1C67EAA1C08F439EA3FD5BDC477ACB053AFED4F0E",
+        "length":  10723,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4057327Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\file-parsers\\media-reader.ts",
+        "sha256":  "6DF7C0EBD69558CEAA01055A787DDDC49E058F4435D4FCED0848FCE8DDAC79CC",
+        "beforeSha256":  "6DF7C0EBD69558CEAA01055A787DDDC49E058F4435D4FCED0848FCE8DDAC79CC",
+        "length":  70886,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4079167Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\client.ts",
+        "sha256":  "36E6788916D2912C975EC2C34CDE4530498978C75A16FD2721F8537ADF8170B6",
+        "beforeSha256":  "36E6788916D2912C975EC2C34CDE4530498978C75A16FD2721F8537ADF8170B6",
+        "length":  1283,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4084916Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\comment-generator.ts",
+        "sha256":  "51C2588B30E630BAE612F7D203AA1228404D0AB6D7374E95943C5FB4AF8D950B",
+        "beforeSha256":  "51C2588B30E630BAE612F7D203AA1228404D0AB6D7374E95943C5FB4AF8D950B",
+        "length":  38018,
+        "lastWriteUtc":  "2026-10-28T10:31:01.2992093Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\homework-grader.ts",
+        "sha256":  "0328CAE2695CF5318374DA128F0AB2678332BC49E56E35E590CC6F96D9D31C2F",
+        "beforeSha256":  "0328CAE2695CF5318374DA128F0AB2678332BC49E56E35E590CC6F96D9D31C2F",
+        "length":  29058,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4098289Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\score-auditor.ts",
+        "sha256":  "C8BA71AE08206F7B70EB394225813F5648A3C570810AFEDDFABCA7005048DBCE",
+        "beforeSha256":  "C8BA71AE08206F7B70EB394225813F5648A3C570810AFEDDFABCA7005048DBCE",
+        "length":  7820,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4098289Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\session14-course-summary.ts",
+        "sha256":  "DF2D01C5FBF523793B0F0797C43A12A48E5297EDD5CCA582D8AA3D765512568C",
+        "beforeSha256":  "DF2D01C5FBF523793B0F0797C43A12A48E5297EDD5CCA582D8AA3D765512568C",
+        "length":  47777,
+        "lastWriteUtc":  "2026-10-28T05:01:24.5546762Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\spck-comment.ts",
+        "sha256":  "468D725DF57E949F553FE23519972797C0244DA837824874F34D2A0174027F68",
+        "beforeSha256":  "468D725DF57E949F553FE23519972797C0244DA837824874F34D2A0174027F68",
+        "length":  59846,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4152461Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\gemini\\teaching-project-generator.ts",
+        "sha256":  "3A7A6DFE35C55C4E07B229F5E6FE8D4797865652852315635195D7608344AC19",
+        "beforeSha256":  "3A7A6DFE35C55C4E07B229F5E6FE8D4797865652852315635195D7608344AC19",
+        "length":  37013,
+        "lastWriteUtc":  "2026-10-28T12:55:50.2962356Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\github\\spck-web-deployer.ts",
+        "sha256":  "501DB67A12AF2A9C4FCAEBB16378C63800CC040C5C3F6E1D702774184041A2A4",
+        "beforeSha256":  "501DB67A12AF2A9C4FCAEBB16378C63800CC040C5C3F6E1D702774184041A2A4",
+        "length":  27849,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4152461Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-app-screenshotter.ts",
+        "sha256":  "40CCD17557EA038B3FB8A0CE94C400374BACAF3C71CD5652CE2D714876286D87",
+        "beforeSha256":  "40CCD17557EA038B3FB8A0CE94C400374BACAF3C71CD5652CE2D714876286D87",
+        "length":  69663,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4176621Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-demo-score-reader.ts",
+        "sha256":  "852200D29066E75DAF4063F4FA12457897530584F52E0B6D722D23AC4F638B3C",
+        "beforeSha256":  "852200D29066E75DAF4063F4FA12457897530584F52E0B6D722D23AC4F638B3C",
+        "length":  27794,
+        "lastWriteUtc":  "2026-10-28T04:33:08.7889892Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-image-normalizer.ts",
+        "sha256":  "B0DF75CAD5C1619066AB173321860795F6041B2802BC4CC6C04581C1D34743B9",
+        "beforeSha256":  "B0DF75CAD5C1619066AB173321860795F6041B2802BC4CC6C04581C1D34743B9",
+        "length":  4611,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4210954Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-scanner.ts",
+        "sha256":  "8E875C59C78B92EDAA5020363E58AB9DC960038AE00FC98222ADEF32A952C3C6",
+        "beforeSha256":  "8E875C59C78B92EDAA5020363E58AB9DC960038AE00FC98222ADEF32A952C3C6",
+        "length":  55381,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4227004Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\local-files\\spck-youtube-import.ts",
+        "sha256":  "F5D9DD077107933F9C20D90B4B9D9D275D7B2BFCFBE2AFC517055C19B11B56FC",
+        "beforeSha256":  "F5D9DD077107933F9C20D90B4B9D9D275D7B2BFCFBE2AFC517055C19B11B56FC",
+        "length":  34097,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4237920Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\auth.ts",
+        "sha256":  "921B910E1B355B3217EDCE0C37F3B0FF85D84608A441719F472101B01E264842",
+        "beforeSha256":  "921B910E1B355B3217EDCE0C37F3B0FF85D84608A441719F472101B01E264842",
+        "length":  11226,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4249177Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\browser-manager.ts",
+        "sha256":  "6200E42818D6668B766A4FAD4FC627235D6A07C217ADAD4A633D87085935D912",
+        "beforeSha256":  "6200E42818D6668B766A4FAD4FC627235D6A07C217ADAD4A633D87085935D912",
+        "length":  7319,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4260908Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\download-submissions.ts",
+        "sha256":  "02C7B49C19650593602C5D97A6A5179E283F4DE913FD446BDCCCF07A91B4B7A7",
+        "beforeSha256":  "02C7B49C19650593602C5D97A6A5179E283F4DE913FD446BDCCCF07A91B4B7A7",
+        "length":  25292,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4266367Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\grade-worker.ts",
+        "sha256":  "8FFC43C0E17A0762EAC463BCED54ACE084FBEE770EDFFE3F7D8735C6F556F821",
+        "beforeSha256":  "8FFC43C0E17A0762EAC463BCED54ACE084FBEE770EDFFE3F7D8735C6F556F821",
+        "length":  63760,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4288316Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\lms-helpers.ts",
+        "sha256":  "387A45F57209EF99889D651D6D02F674B7962C268CFBB8973075D909838B35C9",
+        "beforeSha256":  "387A45F57209EF99889D651D6D02F674B7962C268CFBB8973075D909838B35C9",
+        "length":  26113,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4298361Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\network-interceptor.ts",
+        "sha256":  "1E526A20307B5AB2CD6786DD72ED8947F786DA690A53A8755E0E50697647E744",
+        "beforeSha256":  "1E526A20307B5AB2CD6786DD72ED8947F786DA690A53A8755E0E50697647E744",
+        "length":  6435,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4309676Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\save-comments.ts",
+        "sha256":  "762ED1CAF2C7BC0E12F0D2070D1BC0B025CD6368DA840780541B76C6C134F802",
+        "beforeSha256":  "762ED1CAF2C7BC0E12F0D2070D1BC0B025CD6368DA840780541B76C6C134F802",
+        "length":  75138,
+        "lastWriteUtc":  "2026-10-28T06:18:44.9102013Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\scrape-scores.ts",
+        "sha256":  "B98B2152FB488E569E38D3DE5F47D7F8EB5C60171D76E5C0C3E9431AFA7B78F6",
+        "beforeSha256":  "B98B2152FB488E569E38D3DE5F47D7F8EB5C60171D76E5C0C3E9431AFA7B78F6",
+        "length":  112249,
+        "lastWriteUtc":  "2026-10-29T02:46:13.3289261Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\selectors.ts",
+        "sha256":  "B13D14204BE904A1D0BC2873C5FFB2ECC127A4414A391B0D9D3529DE1E9ABA7F",
+        "beforeSha256":  "B13D14204BE904A1D0BC2873C5FFB2ECC127A4414A391B0D9D3529DE1E9ABA7F",
+        "length":  8796,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4344315Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\session14-eval-uploader.ts",
+        "sha256":  "E5F7485B7C7B8CFE1C7451F59F3782CEEA5604052BEE9D7C746EC998F8E4D70D",
+        "beforeSha256":  "E5F7485B7C7B8CFE1C7451F59F3782CEEA5604052BEE9D7C746EC998F8E4D70D",
+        "length":  43135,
+        "lastWriteUtc":  "2026-10-28T04:57:55.3565098Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\spck-demo-sheet.ts",
+        "sha256":  "02FD9567B8CB76B05372041F94B204D1676ACB9D7AB82322501CE6CDC874FF95",
+        "beforeSha256":  "02FD9567B8CB76B05372041F94B204D1676ACB9D7AB82322501CE6CDC874FF95",
+        "length":  51225,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4364432Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\spck-drive-uploader.ts",
+        "sha256":  "715325319DCC64AE1DBA48BB4DFDB66BC1590BE0AB7B3ED2B8D167C4AA594C58",
+        "beforeSha256":  "715325319DCC64AE1DBA48BB4DFDB66BC1590BE0AB7B3ED2B8D167C4AA594C58",
+        "length":  32708,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4386329Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\spck-uploader.ts",
+        "sha256":  "A560F857D4A7603121119732EB3E9B5C68DF2D31525DE2F464FF21A50BE91124",
+        "beforeSha256":  "A560F857D4A7603121119732EB3E9B5C68DF2D31525DE2F464FF21A50BE91124",
+        "length":  150057,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4406428Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\sync-class.ts",
+        "sha256":  "0E9D280E63AEDE79412701417367D094120470B7F8833EACE76FAE58E6F3F35D",
+        "beforeSha256":  "0E9D280E63AEDE79412701417367D094120470B7F8833EACE76FAE58E6F3F35D",
+        "length":  61286,
+        "lastWriteUtc":  "2026-10-28T13:17:31.9356801Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\teaching-project-service.ts",
+        "sha256":  "513BAFDBC3EA9A78B3BA7CE58CCF04CFF3DB0610F86610DB3AF33D0A98B390C4",
+        "beforeSha256":  "513BAFDBC3EA9A78B3BA7CE58CCF04CFF3DB0610F86610DB3AF33D0A98B390C4",
+        "length":  47079,
+        "lastWriteUtc":  "2026-10-28T13:19:48.7801496Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\playwright\\teaching-report-card-sync.ts",
+        "sha256":  "EE0C4BD49904852803895FF0DEFA89ECFD522AB1C93611F19BA6F73AC217B55A",
+        "beforeSha256":  "EE0C4BD49904852803895FF0DEFA89ECFD522AB1C93611F19BA6F73AC217B55A",
+        "length":  55233,
+        "lastWriteUtc":  "2026-10-29T07:03:33.2867942Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\queue\\task-queue.ts",
+        "sha256":  "D5D841003E1D5C7B45025F6DABF68CEA83C35226E75425819140281558FD710C",
+        "beforeSha256":  "D5D841003E1D5C7B45025F6DABF68CEA83C35226E75425819140281558FD710C",
+        "length":  8714,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4428633Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\quick-tags\\index.ts",
+        "sha256":  "945585FD289F9B5BA5308AA68D1F26F76207A622D39D822DA6A8A8106F405AA8",
+        "beforeSha256":  "945585FD289F9B5BA5308AA68D1F26F76207A622D39D822DA6A8A8106F405AA8",
+        "length":  14796,
+        "lastWriteUtc":  "2026-10-28T10:10:09.6706165Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\report-card\\report-card-calculator.ts",
+        "sha256":  "E0FFE06E41D429AFE511F737E68599B1D7EC17FD09F3B43DEAB5FC3B206671AA",
+        "beforeSha256":  "E0FFE06E41D429AFE511F737E68599B1D7EC17FD09F3B43DEAB5FC3B206671AA",
+        "length":  25516,
+        "lastWriteUtc":  "2026-10-28T18:20:58.0771686Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\security\\local-guard.ts",
+        "sha256":  "A1C29F8A409D8C91B1C7E730F078FB16B1EE7D7E873BEE5058618BD77F082E85",
+        "beforeSha256":  "A1C29F8A409D8C91B1C7E730F078FB16B1EE7D7E873BEE5058618BD77F082E85",
+        "length":  2218,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4439477Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\security\\path-allowlist.ts",
+        "sha256":  "EA82BBDFAD9C932691B2CC292CB203D1294906CD2BBCB1725A72133D24D395E5",
+        "beforeSha256":  "EA82BBDFAD9C932691B2CC292CB203D1294906CD2BBCB1725A72133D24D395E5",
+        "length":  7128,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4447793Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\student-portal\\student-portal-server.ts",
+        "sha256":  "62A6F4A5C09581E04C710E0F39360A2C31E8A2598B3380D2A4B6C3E9F5285C41",
+        "beforeSha256":  "62A6F4A5C09581E04C710E0F39360A2C31E8A2598B3380D2A4B6C3E9F5285C41",
+        "length":  60266,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4465922Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\utils\\vietnamese-match.ts",
+        "sha256":  "AB68EFD65177A6EE48BBA8DA56BA592EFA718D8E906811E23E789F4CCB4BC1C7",
+        "beforeSha256":  "AB68EFD65177A6EE48BBA8DA56BA592EFA718D8E906811E23E789F4CCB4BC1C7",
+        "length":  11482,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4484187Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\src\\lib\\zalo\\broadcast-generator.ts",
+        "sha256":  "3FA54F740D08583BA8FDC0E210FFAAC373CD0E00C26D4D11A182B7F2D8904682",
+        "beforeSha256":  "3FA54F740D08583BA8FDC0E210FFAAC373CD0E00C26D4D11A182B7F2D8904682",
+        "length":  10153,
+        "lastWriteUtc":  "2026-10-28T01:23:22.4497782Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\recon.ts",
+        "sha256":  "37ADF05E90F24D7683600ECEEC948BC965FCC23D250DCF3E07ADA28E4FB25C92",
+        "beforeSha256":  "37ADF05E90F24D7683600ECEEC948BC965FCC23D250DCF3E07ADA28E4FB25C92",
+        "length":  7539,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3231399Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-checkpoint-v300.ts",
+        "sha256":  "51A151F5A36A4FBC056831724C4984347ABB5A05E472923C15D687A473B44F15",
+        "beforeSha256":  "51A151F5A36A4FBC056831724C4984347ABB5A05E472923C15D687A473B44F15",
+        "length":  13151,
+        "lastWriteUtc":  "2026-10-28T04:00:16.0088702Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-lms-reliability-v280.ts",
+        "sha256":  "319B72AB565ED8DD9B97591EAEE476F58CA851DC9B36BE6BFDEE3BA4A4D8DEC6",
+        "beforeSha256":  "319B72AB565ED8DD9B97591EAEE476F58CA851DC9B36BE6BFDEE3BA4A4D8DEC6",
+        "length":  63042,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3247992Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-patches-round2.ts",
+        "sha256":  "7A408C522591E6FD5819D064BB7F86145CA3AFDEBDBFE50DC693A958DF203A3E",
+        "beforeSha256":  "7A408C522591E6FD5819D064BB7F86145CA3AFDEBDBFE50DC693A958DF203A3E",
+        "length":  7455,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3247992Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase3.ts",
+        "sha256":  "594CA880D6F149AD3F5E50BA0E7F583455D6A96A1426B8D777E74CD40290F8A1",
+        "beforeSha256":  "594CA880D6F149AD3F5E50BA0E7F583455D6A96A1426B8D777E74CD40290F8A1",
+        "length":  8437,
+        "lastWriteUtc":  "2026-10-28T05:06:40.9185265Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase4-codex-repros.ts",
+        "sha256":  "ED31335FB5F17D154A02F3829833C3976CBCC7BC1F0D8E5D1F1AFC59A30146B2",
+        "beforeSha256":  "ED31335FB5F17D154A02F3829833C3976CBCC7BC1F0D8E5D1F1AFC59A30146B2",
+        "length":  183305,
+        "lastWriteUtc":  "2026-10-29T07:07:25.9037779Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase5.ts",
+        "sha256":  "86D8EF70CCDFF949010EE30B76F6F2C9CB9AAB7C08DCD5350A9F2A0E105EA690",
+        "beforeSha256":  "86D8EF70CCDFF949010EE30B76F6F2C9CB9AAB7C08DCD5350A9F2A0E105EA690",
+        "length":  32324,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3305380Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase6.ts",
+        "sha256":  "A3DE9030753006234E2F18CEC41434BA6B4A35414F360A7FFE589BAD9AD5AC91",
+        "beforeSha256":  "A3DE9030753006234E2F18CEC41434BA6B4A35414F360A7FFE589BAD9AD5AC91",
+        "length":  59552,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3316084Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-phase7.ts",
+        "sha256":  "4B82AC2DAC6B4E302B34E2839ABD61D1D3AC1050F076D57F7CA50F25F6B0CE7E",
+        "beforeSha256":  "4B82AC2DAC6B4E302B34E2839ABD61D1D3AC1050F076D57F7CA50F25F6B0CE7E",
+        "length":  21594,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3323225Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-quick-tags-v300.ts",
+        "sha256":  "41352BE5093F78C23FA01E16F3802EAAB0EF84DA5739011FFB117641B2448054",
+        "beforeSha256":  "41352BE5093F78C23FA01E16F3802EAAB0EF84DA5739011FFB117641B2448054",
+        "length":  14025,
+        "lastWriteUtc":  "2026-10-28T10:48:54.4896907Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-report-card-v330.ts",
+        "sha256":  "33381AAF1F43962593E070CA082E99E0B839521A938C7224898F5C99F795891C",
+        "beforeSha256":  "33381AAF1F43962593E070CA082E99E0B839521A938C7224898F5C99F795891C",
+        "length":  126565,
+        "lastWriteUtc":  "2026-10-29T07:04:54.4200212Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-session14-v290.ts",
+        "sha256":  "46CA456E2FA0A1C3E8881CB19CEF5D8EB3FA866656A9A4C2910166F0F1866AB0",
+        "beforeSha256":  "46CA456E2FA0A1C3E8881CB19CEF5D8EB3FA866656A9A4C2910166F0F1866AB0",
+        "length":  70859,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3323225Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-spck-v270.ts",
+        "sha256":  "97A945C3395596F9A0E1270D72E6AFFCAA19586D546DE0ADD9D7B47FEE904E6B",
+        "beforeSha256":  "97A945C3395596F9A0E1270D72E6AFFCAA19586D546DE0ADD9D7B47FEE904E6B",
+        "length":  96768,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3347402Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-spck-v272.ts",
+        "sha256":  "F0EFA22434BCB934EB0DB97C94B454D8057EA6D147E99E690C4CC90680654385",
+        "beforeSha256":  "F0EFA22434BCB934EB0DB97C94B454D8057EA6D147E99E690C4CC90680654385",
+        "length":  35059,
+        "lastWriteUtc":  "2026-10-28T01:23:22.3347402Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\scripts\\test-teaching-project-v320.ts",
+        "sha256":  "F572A5FCB6F7C7E56F336392EF39CCFE08D4F8503962C6F2B1403BF99C091366",
+        "beforeSha256":  "F572A5FCB6F7C7E56F336392EF39CCFE08D4F8503962C6F2B1403BF99C091366",
+        "length":  64713,
+        "lastWriteUtc":  "2026-10-28T13:22:47.4438281Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\debug_drawer_content.png",
+        "sha256":  "491AB556DEA13A4D10C99991FDC8E58A86E1D6EAF36F58142217DA8B22455392",
+        "beforeSha256":  "491AB556DEA13A4D10C99991FDC8E58A86E1D6EAF36F58142217DA8B22455392",
+        "length":  72655,
+        "lastWriteUtc":  "2026-10-28T17:35:56.8060899Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\debug_save_comment_error.png",
+        "sha256":  "24B19752A4AD440D02346945897AF82C8E57D778108759D52F1736BA41948517",
+        "beforeSha256":  "24B19752A4AD440D02346945897AF82C8E57D778108759D52F1736BA41948517",
+        "length":  9157,
+        "lastWriteUtc":  "2026-10-28T11:41:19.0350002Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\mindx_bot.db",
+        "sha256":  "D6A90B5B0795A3DBC0FABFCCAFBCA423E17D4CD5157605CC09A68D24D5F85A40",
+        "beforeSha256":  "D6A90B5B0795A3DBC0FABFCCAFBCA423E17D4CD5157605CC09A68D24D5F85A40",
+        "length":  417792,
+        "lastWriteUtc":  "2026-10-29T02:51:04.3378692Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\running_classes.json",
+        "sha256":  "614F2CA361B5FE238A3F4BF067945C0F734AEF5524A295A1217688999A6C3581",
+        "beforeSha256":  "614F2CA361B5FE238A3F4BF067945C0F734AEF5524A295A1217688999A6C3581",
+        "length":  1879,
+        "lastWriteUtc":  "2026-10-28T12:44:41.1214243Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\courses_syllabus.json",
+        "sha256":  "E4112B43C48E106D55F9B76AABD0603F809FD200B64FDBC4BC1619CAFD96896D",
+        "beforeSha256":  "E4112B43C48E106D55F9B76AABD0603F809FD200B64FDBC4BC1619CAFD96896D",
+        "length":  226526,
+        "lastWriteUtc":  "2026-10-28T11:38:36.5317745Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\default-demo-sheet-template.xlsx",
+        "sha256":  "C9109377BDAAECD43D95315919E8DDF70256B2D0D4BA70A4766B4DC12695FB14",
+        "beforeSha256":  "C9109377BDAAECD43D95315919E8DDF70256B2D0D4BA70A4766B4DC12695FB14",
+        "length":  14542,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9489035Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\default-spck-thumbnail.png",
+        "sha256":  "B31256112A957B8933D0AEF93F8A015D70BA807953192D05036DFCDAC5B77DB6",
+        "beforeSha256":  "B31256112A957B8933D0AEF93F8A015D70BA807953192D05036DFCDAC5B77DB6",
+        "length":  88187,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9509105Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\grading_rubrics.json",
+        "sha256":  "559A16D43DD68B20715269893AF78266F83EA3D0FD6E36D949F29014CB31F1C4",
+        "beforeSha256":  "559A16D43DD68B20715269893AF78266F83EA3D0FD6E36D949F29014CB31F1C4",
+        "length":  8047,
+        "lastWriteUtc":  "2026-10-28T11:38:36.5317745Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\mindx-bot.ico",
+        "sha256":  "81C07E09019DF65ED5CED9FF26233CB7AB5F82289C0022BC78E8DED43984023D",
+        "beforeSha256":  "81C07E09019DF65ED5CED9FF26233CB7AB5F82289C0022BC78E8DED43984023D",
+        "length":  15928,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9754652Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\quick_tags.json",
+        "sha256":  "2FC449AC45F35DE0F3E584BF48F5AE7DE930AA84B5928D91529622C466A4B0F1",
+        "beforeSha256":  "2FC449AC45F35DE0F3E584BF48F5AE7DE930AA84B5928D91529622C466A4B0F1",
+        "length":  8927,
+        "lastWriteUtc":  "2026-10-28T11:38:36.5317745Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\zalo_templates.json",
+        "sha256":  "7F75336C5072C4C1E9662AA40324D1A484A044B7D6CEEFB5BE87318D62797BB4",
+        "beforeSha256":  "7F75336C5072C4C1E9662AA40324D1A484A044B7D6CEEFB5BE87318D62797BB4",
+        "length":  2297,
+        "lastWriteUtc":  "2026-10-28T11:38:36.5317745Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\CSA.xlsx",
+        "sha256":  "B88557069D6BE3BDE33C10DC769958C5EA9573C0D4F332FAA77FF57D599A3FF3",
+        "beforeSha256":  "B88557069D6BE3BDE33C10DC769958C5EA9573C0D4F332FAA77FF57D599A3FF3",
+        "length":  13298,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9528456Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\CSI.xlsx",
+        "sha256":  "4C0F262D2036A496377E0AFB0B7C902ADE6CDC9E59EE9C1461955D9DF0571467",
+        "beforeSha256":  "4C0F262D2036A496377E0AFB0B7C902ADE6CDC9E59EE9C1461955D9DF0571467",
+        "length":  13258,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9528456Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\JSA.xlsx",
+        "sha256":  "F05A1E38E76551B62611F9DA020792E371081206116FB3482FC1B488A7724511",
+        "beforeSha256":  "F05A1E38E76551B62611F9DA020792E371081206116FB3482FC1B488A7724511",
+        "length":  14023,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9589124Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\JSB.xlsx",
+        "sha256":  "6AFA5D6C0498F108ED746E953062F7F8D093891289BB1F150270E5649D087A05",
+        "beforeSha256":  "6AFA5D6C0498F108ED746E953062F7F8D093891289BB1F150270E5649D087A05",
+        "length":  14578,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9589124Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\JSI.xlsx",
+        "sha256":  "C56D3C985ABAF2A268A79966DC260CCC7159B7AF2E70B8F34B0695D119E53452",
+        "beforeSha256":  "C56D3C985ABAF2A268A79966DC260CCC7159B7AF2E70B8F34B0695D119E53452",
+        "length":  14097,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9589124Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\PSI.xlsx",
+        "sha256":  "D64C1313140895FD4FF058E22B3BA6CF151EFBAEE4DB45CBF9F17D978F39C42D",
+        "beforeSha256":  "D64C1313140895FD4FF058E22B3BA6CF151EFBAEE4DB45CBF9F17D978F39C42D",
+        "length":  11075,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9608763Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\PTA.xlsx",
+        "sha256":  "C9109377BDAAECD43D95315919E8DDF70256B2D0D4BA70A4766B4DC12695FB14",
+        "beforeSha256":  "C9109377BDAAECD43D95315919E8DDF70256B2D0D4BA70A4766B4DC12695FB14",
+        "length":  14542,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9695496Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\PTI.xlsx",
+        "sha256":  "D64C1313140895FD4FF058E22B3BA6CF151EFBAEE4DB45CBF9F17D978F39C42D",
+        "beforeSha256":  "D64C1313140895FD4FF058E22B3BA6CF151EFBAEE4DB45CBF9F17D978F39C42D",
+        "length":  11075,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9705634Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\SA.xlsx",
+        "sha256":  "8851385559BDAAFB3D07BE867FF84AA0612EB1CD8FB3B58B6332E7A518111BD1",
+        "beforeSha256":  "8851385559BDAAFB3D07BE867FF84AA0612EB1CD8FB3B58B6332E7A518111BD1",
+        "length":  14470,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9705634Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\SB.xlsx",
+        "sha256":  "60FE10ADE4FAF5C8BB062B17FF02E89C76B81C91D471FA5B22CA25165A1D7303",
+        "beforeSha256":  "60FE10ADE4FAF5C8BB062B17FF02E89C76B81C91D471FA5B22CA25165A1D7303",
+        "length":  14821,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9705634Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\data\\config\\demo-sheet-templates\\SI.xlsx",
+        "sha256":  "AD7C85F304257429146A947678239025BC87805F76BAFA50D9A107822222FC97",
+        "beforeSha256":  "AD7C85F304257429146A947678239025BC87805F76BAFA50D9A107822222FC97",
+        "length":  14436,
+        "lastWriteUtc":  "2026-10-28T01:23:20.9705634Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\next-env.d.ts",
+        "sha256":  "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+        "beforeSha256":  "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+        "length":  303,
+        "lastWriteUtc":  "2026-10-28T08:12:50.3307038Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\docs\\audits\\v330\\stage3\\adversarial-probe.ts",
+        "sha256":  "22870F9A529115103CD655E79F0AF6634F0627C71C9B2F9BA42B951801633DCD",
+        "beforeSha256":  "22870F9A529115103CD655E79F0AF6634F0627C71C9B2F9BA42B951801633DCD",
+        "length":  25059,
+        "lastWriteUtc":  "2026-10-29T07:06:17.4582035Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\docs\\audits\\v330\\stage3\\observations.json",
+        "sha256":  "21F66E61C8D17C6551B2322E95015FAC5A5C13501E9E884316D93D6F0BC2EC55",
+        "beforeSha256":  "21F66E61C8D17C6551B2322E95015FAC5A5C13501E9E884316D93D6F0BC2EC55",
+        "length":  7883,
+        "lastWriteUtc":  "2026-10-29T06:46:23.9508280Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\docs\\audits\\v330\\stage3\\phase4.log",
+        "sha256":  "48CE7A3F0D94ED722CB57F620F5D5D359E7CCB6FEC6223367316FE9AC6BC0EDA",
+        "beforeSha256":  "48CE7A3F0D94ED722CB57F620F5D5D359E7CCB6FEC6223367316FE9AC6BC0EDA",
+        "length":  2553,
+        "lastWriteUtc":  "2026-10-29T06:50:21.7283562Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\docs\\audits\\v330\\stage3\\preservation.json",
+        "sha256":  "C0D593FBCCCA6C7B2EFE203C4579907691CE623ECF7A1E391FADDE20A6D24C34",
+        "beforeSha256":  "C0D593FBCCCA6C7B2EFE203C4579907691CE623ECF7A1E391FADDE20A6D24C34",
+        "length":  71347,
+        "lastWriteUtc":  "2026-10-29T06:50:22.2060938Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\docs\\audits\\v330\\stage3\\probe.log",
+        "sha256":  "A8066F12451A353D94859C3F4D014E18BA0432D58299B292DC78175DF8CCB72D",
+        "beforeSha256":  "A8066F12451A353D94859C3F4D014E18BA0432D58299B292DC78175DF8CCB72D",
+        "length":  6535,
+        "lastWriteUtc":  "2026-10-29T06:50:21.7314313Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\docs\\audits\\v330\\stage3\\report-card.log",
+        "sha256":  "345B7A72E6F0AF4A704F8449BFB6B7037AF831ECE44E9E456573CD18CEEB032B",
+        "beforeSha256":  "345B7A72E6F0AF4A704F8449BFB6B7037AF831ECE44E9E456573CD18CEEB032B",
+        "length":  1844,
+        "lastWriteUtc":  "2026-10-29T06:50:21.7156425Z",
+        "unchanged":  true
+    },
+    {
+        "path":  "D:\\MY PROJECT\\MINDX_AUTOMATION\\docs\\audits\\v330\\stage3\\verification.json",
+        "sha256":  "122555811C29CACBE76598877A75D52370DDC735E2AF5454F5E774C0CDF86220",
+        "beforeSha256":  "122555811C29CACBE76598877A75D52370DDC735E2AF5454F5E774C0CDF86220",
+        "length":  620,
+        "lastWriteUtc":  "2026-10-29T06:50:22.2060938Z",
+        "unchanged":  true
+    }
+]

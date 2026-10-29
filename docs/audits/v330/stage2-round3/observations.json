@@ -1,0 +1,67 @@
+{
+  "observations": [
+    {
+      "id": "S2-02",
+      "status": "CLOSED",
+      "cid": "CLASS_A",
+      "events": [
+        "stale class response before first fresh request",
+        "fresh submission request",
+        "fresh submission response"
+      ],
+      "expectedSuccess": false,
+      "actualSuccess": false,
+      "priorCp1": 4,
+      "persistedCp1": 4,
+      "cachedCp1": 4,
+      "freshGetClassByIdRequests": 0
+    },
+    {
+      "id": "S2-02",
+      "status": "CLOSED",
+      "cid": "VT-ROB-AUDIT",
+      "events": [
+        "stale class response before first fresh request"
+      ],
+      "expectedSuccess": false,
+      "actualSuccess": false,
+      "priorCp1": 4,
+      "persistedCp1": 4,
+      "cachedCp1": 4,
+      "freshGetClassByIdRequests": 0
+    },
+    {
+      "id": "S2-07",
+      "status": "CLOSED",
+      "position": 5,
+      "checkpointHasName": false,
+      "checkpointHasSession": false,
+      "checkpointHasDisplayOrder": false,
+      "stage": "cp1Theory",
+      "expectedTheory": null,
+      "actualTheory": null
+    },
+    {
+      "id": "S2-07",
+      "status": "CLOSED",
+      "position": 9,
+      "checkpointHasName": false,
+      "checkpointHasSession": false,
+      "checkpointHasDisplayOrder": false,
+      "stage": "cp2Theory",
+      "expectedTheory": null,
+      "actualTheory": null
+    },
+    {
+      "id": "S2-08",
+      "status": "CLOSED",
+      "generalContentDoesNotGradeDefaultZeros": true
+    },
+    {
+      "id": "R2-01",
+      "status": "CLOSED",
+      "blankWhitespaceNullUndefinedAndBooleansStayMissing": true,
+      "explicitNumericAndStringZeroPreserved": true
+    }
+  ]
+}

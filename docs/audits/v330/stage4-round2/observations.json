@@ -1,0 +1,835 @@
+{
+  "summary": {
+    "observations": 82,
+    "closed": 82,
+    "open": 0
+  },
+  "observations": [
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleApproveReportCard A-B-A fetch success",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleApproveReportCard A-B-A fetch business-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleApproveReportCard A-B-A fetch body-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleApproveReportCard A-B-A json success",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleApproveReportCard A-B-A json business-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleApproveReportCard A-B-A json body-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleSyncToTeaching A-B-A fetch success",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleSyncToTeaching A-B-A fetch business-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleSyncToTeaching A-B-A fetch body-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleSyncToTeaching A-B-A json success",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleSyncToTeaching A-B-A json business-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleSyncToTeaching A-B-A json body-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleSaveManualOverride A-B-A fetch success",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleSaveManualOverride A-B-A fetch business-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleSaveManualOverride A-B-A fetch body-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleSaveManualOverride A-B-A json success",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleSaveManualOverride A-B-A json business-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleSaveManualOverride A-B-A json body-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleClearSingleOverride A-B-A fetch success",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleClearSingleOverride A-B-A fetch business-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleClearSingleOverride A-B-A fetch body-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleClearSingleOverride A-B-A json success",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleClearSingleOverride A-B-A json business-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleClearSingleOverride A-B-A json body-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleResetAllOverrides A-B-A fetch success",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleResetAllOverrides A-B-A fetch business-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleResetAllOverrides A-B-A fetch body-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleResetAllOverrides A-B-A json success",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleResetAllOverrides A-B-A json business-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleResetAllOverrides A-B-A json body-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleScrapeFromLms A-B-A fetch success",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleScrapeFromLms A-B-A fetch business-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleScrapeFromLms A-B-A fetch body-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleScrapeFromLms A-B-A json success",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleScrapeFromLms A-B-A json business-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01-CONTROL",
+      "case": "handleScrapeFromLms A-B-A json body-error",
+      "status": "CLOSED",
+      "observed": {
+        "version": 4,
+        "extraGets": 0
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleApproveReportCard: late fetch mutation after v4 GET",
+      "status": "CLOSED",
+      "observed": {
+        "acceptedGetVersion": 4,
+        "finalVisibleVersion": 4,
+        "finalVisibleTheory": 5,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleApproveReportCard: late json mutation after v4 GET",
+      "status": "CLOSED",
+      "observed": {
+        "acceptedGetVersion": 4,
+        "finalVisibleVersion": 4,
+        "finalVisibleTheory": 5,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleSyncToTeaching: late fetch mutation after v4 GET",
+      "status": "CLOSED",
+      "observed": {
+        "acceptedGetVersion": 4,
+        "finalVisibleVersion": 4,
+        "finalVisibleTheory": 5,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleSyncToTeaching: late json mutation after v4 GET",
+      "status": "CLOSED",
+      "observed": {
+        "acceptedGetVersion": 4,
+        "finalVisibleVersion": 4,
+        "finalVisibleTheory": 5,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleSaveManualOverride: late fetch mutation after v4 GET",
+      "status": "CLOSED",
+      "observed": {
+        "acceptedGetVersion": 4,
+        "finalVisibleVersion": 4,
+        "finalVisibleTheory": 5,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleSaveManualOverride: late json mutation after v4 GET",
+      "status": "CLOSED",
+      "observed": {
+        "acceptedGetVersion": 4,
+        "finalVisibleVersion": 4,
+        "finalVisibleTheory": 5,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleClearSingleOverride: late fetch mutation after v4 GET",
+      "status": "CLOSED",
+      "observed": {
+        "acceptedGetVersion": 4,
+        "finalVisibleVersion": 4,
+        "finalVisibleTheory": 5,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleClearSingleOverride: late json mutation after v4 GET",
+      "status": "CLOSED",
+      "observed": {
+        "acceptedGetVersion": 4,
+        "finalVisibleVersion": 4,
+        "finalVisibleTheory": 5,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleResetAllOverrides: late fetch mutation after v4 GET",
+      "status": "CLOSED",
+      "observed": {
+        "acceptedGetVersion": 4,
+        "finalVisibleVersion": 4,
+        "finalVisibleTheory": 5,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleResetAllOverrides: late json mutation after v4 GET",
+      "status": "CLOSED",
+      "observed": {
+        "acceptedGetVersion": 4,
+        "finalVisibleVersion": 4,
+        "finalVisibleTheory": 5,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleScrapeFromLms: late fetch mutation after v4 GET",
+      "status": "CLOSED",
+      "observed": {
+        "acceptedGetVersion": 4,
+        "finalVisibleVersion": 4,
+        "finalVisibleTheory": 5,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleScrapeFromLms: late json mutation after v4 GET",
+      "status": "CLOSED",
+      "observed": {
+        "acceptedGetVersion": 4,
+        "finalVisibleVersion": 4,
+        "finalVisibleTheory": 5,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleApproveReportCard: wrong-class successful payload",
+      "status": "CLOSED",
+      "observed": {
+        "recordClass": "A",
+        "error": null,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleSyncToTeaching: wrong-class successful payload",
+      "status": "CLOSED",
+      "observed": {
+        "recordClass": "A",
+        "error": null,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleSaveManualOverride: wrong-class successful payload",
+      "status": "CLOSED",
+      "observed": {
+        "recordClass": "A",
+        "error": null,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleClearSingleOverride: wrong-class successful payload",
+      "status": "CLOSED",
+      "observed": {
+        "recordClass": "A",
+        "error": null,
+        "toast": null
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "handleResetAllOverrides: wrong-class successful payload",
+      "status": "CLOSED",
+      "observed": {
+        "recordClass": "A",
+        "error": null,
+        "toast": null
+      }
+    },
+    {
+      "id": "R2-01",
+      "case": "handleApproveReportCard superseded by enabled reset",
+      "status": "CLOSED",
+      "observed": {
+        "requestsCompleted": 2,
+        "flags": {
+          "isApproving": false,
+          "isSyncingTeaching": false,
+          "isScrapingLms": false,
+          "isSavingOverride": false
+        },
+        "strandedButtonDisabled": false,
+        "displayedVersion": 3
+      }
+    },
+    {
+      "id": "R2-01",
+      "case": "handleSyncToTeaching superseded by enabled reset",
+      "status": "CLOSED",
+      "observed": {
+        "requestsCompleted": 2,
+        "flags": {
+          "isApproving": false,
+          "isSyncingTeaching": false,
+          "isScrapingLms": false,
+          "isSavingOverride": false
+        },
+        "strandedButtonDisabled": true,
+        "displayedVersion": 3
+      }
+    },
+    {
+      "id": "R2-01",
+      "case": "handleScrapeFromLms superseded by enabled reset",
+      "status": "CLOSED",
+      "observed": {
+        "requestsCompleted": 2,
+        "flags": {
+          "isApproving": false,
+          "isSyncingTeaching": false,
+          "isScrapingLms": false,
+          "isSavingOverride": false
+        },
+        "strandedButtonDisabled": false,
+        "displayedVersion": 3
+      }
+    },
+    {
+      "id": "S4-03",
+      "case": "handleSaveManualOverride refuses newer version and preserves unsaved input",
+      "status": "CLOSED",
+      "observed": {
+        "mutations": 0,
+        "input": "4.75",
+        "version": 3
+      }
+    },
+    {
+      "id": "S4-03",
+      "case": "handleClearSingleOverride refuses newer version and preserves unsaved input",
+      "status": "CLOSED",
+      "observed": {
+        "mutations": 0,
+        "input": "4.75",
+        "version": 3
+      }
+    },
+    {
+      "id": "S4-02",
+      "case": "business reload failure blocks mutations/exports",
+      "status": "CLOSED",
+      "observed": {
+        "mutations": 0,
+        "clipboardWrites": 0,
+        "modalRetained": false,
+        "selectedSessionsRetained": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "id": "S4-02",
+      "case": "http reload failure blocks mutations/exports",
+      "status": "CLOSED",
+      "observed": {
+        "mutations": 0,
+        "clipboardWrites": 0,
+        "modalRetained": false,
+        "selectedSessionsRetained": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "id": "S4-02",
+      "case": "network reload failure blocks mutations/exports",
+      "status": "CLOSED",
+      "observed": {
+        "mutations": 0,
+        "clipboardWrites": 0,
+        "modalRetained": false,
+        "selectedSessionsRetained": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "id": "S4-02",
+      "case": "json reload failure blocks mutations/exports",
+      "status": "CLOSED",
+      "observed": {
+        "mutations": 0,
+        "clipboardWrites": 0,
+        "modalRetained": false,
+        "selectedSessionsRetained": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "id": "S4-04",
+      "case": "empty sessions persist and match TSV/PNG scale5",
+      "status": "CLOSED",
+      "observed": {
+        "active": [],
+        "submitted": "0/0",
+        "average": null
+      }
+    },
+    {
+      "id": "S4-04",
+      "case": "empty sessions persist and match TSV/PNG raw",
+      "status": "CLOSED",
+      "observed": {
+        "active": [],
+        "submitted": "0/0",
+        "average": null
+      }
+    },
+    {
+      "id": "S4-05",
+      "case": "integrated callback business",
+      "status": "CLOSED",
+      "observed": {
+        "parentStatus": "error",
+        "childError": "Cào bảng điểm thất bại: synthetic rejected",
+        "childToast": null
+      }
+    },
+    {
+      "id": "S4-05",
+      "case": "integrated callback http",
+      "status": "CLOSED",
+      "observed": {
+        "parentStatus": "error",
+        "childError": "Cào bảng điểm thất bại: synthetic rejected",
+        "childToast": null
+      }
+    },
+    {
+      "id": "S4-05",
+      "case": "integrated callback network",
+      "status": "CLOSED",
+      "observed": {
+        "parentStatus": "error",
+        "childError": "Lỗi kết nối API: synthetic network",
+        "childToast": null
+      }
+    },
+    {
+      "id": "S4-05",
+      "case": "integrated callback json",
+      "status": "CLOSED",
+      "observed": {
+        "parentStatus": "error",
+        "childError": "Lỗi kết nối API: synthetic JSON",
+        "childToast": null
+      }
+    },
+    {
+      "id": "S4-05",
+      "case": "integrated callback success",
+      "status": "CLOSED",
+      "observed": {
+        "parentStatus": "success",
+        "childError": null,
+        "childToast": "Đã quét & tính toán Phiếu điểm tổng kết lớp A từ LMS!"
+      }
+    },
+    {
+      "id": "S4-06",
+      "case": "rank boundary 2.49",
+      "status": "CLOSED",
+      "observed": {
+        "tbck": 2.49,
+        "rank": "D"
+      }
+    },
+    {
+      "id": "S4-06",
+      "case": "rank boundary 2.5",
+      "status": "CLOSED",
+      "observed": {
+        "tbck": 2.5,
+        "rank": "C"
+      }
+    },
+    {
+      "id": "S4-06",
+      "case": "rank boundary 3.99",
+      "status": "CLOSED",
+      "observed": {
+        "tbck": 3.99,
+        "rank": "C"
+      }
+    },
+    {
+      "id": "S4-06",
+      "case": "rank boundary 4",
+      "status": "CLOSED",
+      "observed": {
+        "tbck": 4,
+        "rank": "B"
+      }
+    },
+    {
+      "id": "S4-06",
+      "case": "rank boundary 4.49",
+      "status": "CLOSED",
+      "observed": {
+        "tbck": 4.49,
+        "rank": "B"
+      }
+    },
+    {
+      "id": "S4-06",
+      "case": "rank boundary 4.5",
+      "status": "CLOSED",
+      "observed": {
+        "tbck": 4.5,
+        "rank": "A"
+      }
+    },
+    {
+      "id": "S4-06",
+      "case": "component null others 5",
+      "status": "CLOSED",
+      "observed": {
+        "tbck": 5,
+        "rank": "C",
+        "tooltip": "Có thành phần điểm = 0 hoặc khuyết nên không xét Hạng A/B (xếp Hạng C do TBCK ≥ 2.50)"
+      }
+    },
+    {
+      "id": "S4-06",
+      "case": "component null others 1",
+      "status": "CLOSED",
+      "observed": {
+        "tbck": 1,
+        "rank": "D",
+        "tooltip": "Có thành phần điểm = 0 hoặc khuyết và TBCK < 2.50 (xếp Hạng D)"
+      }
+    },
+    {
+      "id": "S4-06",
+      "case": "component 0 others 5",
+      "status": "CLOSED",
+      "observed": {
+        "tbck": 4.8,
+        "rank": "C",
+        "tooltip": "Có thành phần điểm = 0 hoặc khuyết nên không xét Hạng A/B (xếp Hạng C do TBCK ≥ 2.50)"
+      }
+    },
+    {
+      "id": "S4-06",
+      "case": "component 0 others 1",
+      "status": "CLOSED",
+      "observed": {
+        "tbck": 0.96,
+        "rank": "D",
+        "tooltip": "Có thành phần điểm = 0 hoặc khuyết và TBCK < 2.50 (xếp Hạng D)"
+      }
+    },
+    {
+      "id": "S4-01",
+      "case": "REAL GET/PUT + TEMP SQLite: late v3 body overwrites displayed/exported v4",
+      "status": "CLOSED",
+      "observed": {
+        "databaseVersion": 4,
+        "displayedVersion": 4,
+        "displayedTheory": 5,
+        "exportedTheory": "5.00",
+        "toast": null
+      }
+    },
+    {
+      "id": "CONTROL",
+      "case": "REAL stale write remains rejected by server version guard",
+      "status": "CLOSED",
+      "observed": {
+        "http": 409,
+        "databaseVersion": 4
+      }
+    },
+    {
+      "id": "R2-01",
+      "case": "REAL POST approve + PUT reset complete but approve remains busy",
+      "status": "CLOSED",
+      "observed": {
+        "databaseVersion": 5,
+        "databaseStatus": "WAITING_APPROVAL",
+        "isApproving": false,
+        "isSavingOverride": false
+      }
+    }
+  ]
+}

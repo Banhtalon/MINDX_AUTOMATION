@@ -633,3 +633,119 @@ D:\SPCK_MindX\VT-C4K-PTA13\
   * [x] Khóa mọi thao tác bất đồng bộ theo `activeLoadSeqRef` & `loadedClassCodeRef` (`F03`), mặc định `forceRefresh = false` khi mở trang/đổi lớp để bảo vệ bản nháp (`F04`), và dùng toàn bộ nhãn/nút `.mindx-dark-keep` nền đậm (`bg-*-700/800`, `hover:bg-*-800`, `text-white`) đạt độ tương phản WCAG AA $\ge 4.5:1$ ở cả trạng thái thường và `hover` trên 4 tổ hợp Sáng/Tối (`F12`).
 
 > **✅ ĐIỀU KIỆN NGHIỆM THU GIAI ĐOẠN 8 (`v3.2.0`):** Giáo viên chọn hoặc nhập mã lớp trên `/teaching-projects`, tự động có Tên dự án `SPCK - <tên lớp>`, Ngày bắt đầu/kết thúc chuẩn từ LMS và đủ 5 phần công việc (`20% × 5 = 100%`, `Deadline = Ngày kết khóa`); bấm Duyệt & Đẩy lên `teachingmindx.top/hocsinh.php` đạt `VERIFIED` sau đối chiếu Read-after-Write; cập nhật nhanh tiến độ `20%..100%` chính xác; toàn bộ 6 nhóm kiểm thử `scripts/test-teaching-project-v320.ts` (`TP-01`..`TP-06`) chạy trên DB cô lập đạt 100% PASS và giữ nguyên SHA-256 của `data/mindx_bot.db`.
+
+---
+
+### GIAI ĐOẠN 9 (`v3.3.0`): PHIẾU ĐIỂM TỔNG KẾT CHUẨN TEACHING (`/homework-grader`) — TỰ ĐỘNG LẤY ĐIỂM BTVN, CHECKPOINT 1 & 2, CUỐI KHÓA DEMO TỪ LMS & ĐỒNG BỘ TEACHING
+> **Mục tiêu:** Tự động gom điểm BTVN (Lý thuyết + Thực hành 1 & 2), Điểm Checkpoint 1 & 2 (`Lý thuyết`, `Thực hành`, `Năng lực`) và Điểm Final DEMO (Buổi 14: `Sản phẩm`, `Năng lực`) từ MindX LMS và dữ liệu Web Owner; dựng thành **Phiếu Điểm Tổng Kết** ngay trên Màn hình 2 (`/homework-grader`) giống hệt 100% trang `teachingmindx.top/diem-tong-ket.php` (hỗ trợ cả lớp Lập trình và lớp Robotics, bộ lọc, sửa điểm trực tiếp, 3 biểu đồ, chụp ảnh dán Zalo, xuất Excel) và hỗ trợ nút 1 chạm đẩy đồng bộ điểm lên `teachingmindx.top/hocsinh.php`.
+
+* [x] **TASK-9.1 (SQLite `class_report_cards` & Quản lý Điểm Sửa Tay / Chống Ghi Đè):** Stage 1 Round 4 closure **GO** (`docs/audits/v330/CODEX_STAGE1_ROUND4.md`, đóng `7/7` phát hiện `F01`–`F07`).
+  * [x] Bổ sung bảng `class_report_cards` và `reportCardRepo` trong `src/lib/db/sqlite.ts` (khóa theo `classId`, hỗ trợ biến môi trường `MINDX_DB_PATH` để kiểm thử cô lập).
+  * [x] Lưu tách biệt `lmsSnapshotJson` (điểm gốc cào từ LMS) và `manualOverridesJson` (các ô điểm giáo viên tự nhập bù / sửa tay), kèm `teachingSyncStatus`, `teachingSyncedAt`, `draftVersion`.
+  * [x] Khi cào lại dữ liệu từ LMS: tự động cập nhật `lmsSnapshotJson` mới nhưng **bảo toàn 100% các ô điểm giáo viên đã sửa tay** trong `manualOverridesJson` (có nút khôi phục từng ô về điểm LMS gốc); kiểm tra nghiêm ngặt `expectedVersion` (`HTTP 400` khi thiếu, `HTTP 409` khi lệch phiên bản).
+* [x] **TASK-9.2 (Bộ Công Thức Tính Điểm & Xếp Hạng Chuẩn Teaching `src/lib/report-card/report-card-calculator.ts`):** Stage 1 Round 4 closure **GO** (`docs/audits/v330/CODEX_STAGE1_ROUND4.md`).
+  * [x] Quy đổi điểm BTVN về thang 5: $\text{norm} = \text{round2}\left(\frac{\text{raw}}{\text{maxScore}} \times 5\right)$, đánh dấu `.btvn-low` cho các ô có điểm quy đổi `< 2.50` (kể cả `0.00`), tính `Số bài nộp` và `Điểm TB` (trên cả thang 5 và thang gốc).
+  * [x] Tính `Điểm TB (LT, TH)` của từng kỳ CP (nếu chỉ có 1 trong 2 cột thì lấy cột hiện có); `Tổng CP1` = $\text{round2}(0.4 \times \text{TB(LT, TH)}_{CP1} + 0.6 \times \text{NL}_{CP1})$; `Tổng CP2` = $\text{round2}(0.4 \times \text{TB(LT, TH)}_{CP2} + 0.6 \times \text{NL}_{CP2})$.
+  * [x] Tính `Tổng Final` = $\text{round2}(0.6 \times \text{Sản phẩm} + 0.4 \times \text{NL}_{Final})$.
+  * [x] Tính `Điểm TB (CP1, CP2)` (trung bình cộng `Tổng CP1` và `Tổng CP2`, nếu mới có 1 kỳ CP thì lấy điểm kỳ đó); `TBCK` = $\text{round2}(0.4 \times \text{TB(CP1, CP2)} + 0.6 \times \text{Tổng Final})$ (phần chưa có tính là `0`).
+  * [x] Xếp hạng `A / B / C / D` và Xếp loại `Xuất sắc / Giỏi / Khá / Đạt / Yếu / Kém`: kiểm tra điều kiện đủ 8 cột thành phần (`CP1_LT`, `CP1_TH`, `CP1_NL`, `CP2_LT`, `CP2_TH`, `CP2_NL`, `FINAL_SP`, `FINAL_NL`) đều có điểm `> 0` cho Hạng A ($\ge 4.50$) và Hạng B ($4.00 \le \text{TBCK} < 4.50$); Hạng C ($2.50 \le \text{TBCK} < 4.00$ hoặc $\ge 4.00$ nhưng khuyết/0 điểm cột thành phần); Hạng D ($\text{TBCK} < 2.50$).
+* [x] **TASK-9.3 (Nâng Cấp Bộ Thu Thập Điểm LMS Toàn Diện cho Lập Trình & Robotics `src/lib/playwright/scrape-scores.ts`):** Stage 2 Round 4 closure **GO** (`docs/audits/v330/CODEX_STAGE2_AUDIT_ROUND4.md`, đóng `10/10` phát hiện `S2-01`..`S2-09` & `R2-01`).
+  * [x] **Hỗ trợ buổi có 2 bài Thực hành (`PRACTICE_TASK1` + `PRACTICE_TASK2`):** Trong `FindStudentSubmissionByClass`, lấy tất cả bài nộp thực hành (`PRACTICE_TASK1`, `PRACTICE_TASK2`...) đã chấm (`MARKED`) của buổi đó và tính trung bình cộng làm điểm `Thực hành` của buổi học (thay vì chỉ lấy `PRACTICE_TASK1`).
+  * [x] **Chuẩn hóa danh sách buổi BTVN:** Lọc bỏ các cột `lesson.type === "CHECKPOINT"` khỏi bảng BTVN và ẩn các buổi trùng buổi Checkpoint (`Buổi 5`, `Buổi 9` đối với khóa Lập trình, giữ chuẩn 7 buổi BTVN `1, 2, 3, 4, 6, 7, 8`).
+  * [x] **Trích xuất tự động điểm Checkpoint 1, Checkpoint 2 & Final DEMO từ `GetClassById.slots`:**
+    * Lớp Lập trình: đọc CP1 từ **Buổi 5** (`slots[4]`) và CP2 từ **Buổi 9** (`slots[8]`) — lấy `checkpoint.checkpointScore` (`Lý thuyết`), `checkpoint.practiceScore` (`Thực hành`), và trung bình cộng 9 ô `type === "RATE"` có `grade > 0` (`Năng lực`), kèm dự phòng từ 2 cột `Bài kiểm tra` trong `FindStudentSubmissionByClass`.
+    * Lớp Robotics (`isRoboticsClassCode`): **bỏ qua tab `Chấm bài` (`#tab-3`)** (không có BTVN), chỉ đọc trực tiếp CP1 từ **Buổi 4** (`slots[3]`), CP2 từ **Buổi 8** (`slots[7]`) và Final từ **Buổi 14** (`slots[13]`) trong phần Nhận xét (`GetClassById.slots`).
+    * Giai đoạn Final DEMO (Buổi 14): tự động ghép điểm từ bảng `spck_session14_evaluations` trong SQLite (`demoTotalScore` $\rightarrow$ `Sản phẩm`, `competencyTotalScore` $\rightarrow$ `Năng lực`) và `GetClassById.slots[13]` trên LMS.
+* [x] **TASK-9.4 (Đồng Bộ 1 Chạm Lên Trang Teaching `src/lib/playwright/teaching-report-card-sync.ts` & API Routes):** Stage 3 Round 3 closure **GO** (2026-10-29); nghiệm thu mã hiện tại trong phạm vi kiểm định, chưa xác nhận chạy Teaching thật. Báo cáo: `docs/audits/v330/CODEX_STAGE3_ROUND3.md`.
+  * [x] Xây dựng `teaching-report-card-sync.ts` chạy qua `SequentialTaskQueue` đơn luồng: lấy danh sách học sinh (`get_students_of_class`), khớp học viên an toàn, kiểm tra đầu bài (`get_class_exercises`), tự động khai báo bù đầu bài còn thiếu (`add_multi_exercise`: BTVN cho lớp Lập trình, `cp1`, `cp2`, `final`), đẩy điểm (`save_scores`) và thực hiện **Read-after-Write Verification** (`get_scores`) đối chiếu khớp 100%.
+  * [x] Xây dựng các API routes `/api/report-card` (`GET`, `POST`, `PUT`) và `/api/report-card/sync-teaching` (`POST`) bảo vệ `validateLocalRequest` (`127.0.0.1`).
+* [x] **TASK-9.5 (Giao Diện Phiếu Điểm Tổng Kết Chuẩn Teaching & Tinh Gọn Màn Hình 2):** Stage 4 Round 3 closure **GO** (`docs/audits/v330/CODEX_STAGE4_ROUND3.md`, đóng `7/7` phát hiện `S4-01`..`S4-06` & `R2-01`, `959/959` ca probe bổ sung PASS).
+  * [x] Xây dựng `src/components/teaching-report-card-view.tsx` và nâng cấp `src/app/homework-grader/page.tsx`:
+    * Khung Header Phiếu Điểm chuẩn MindX + **Khối 1: Bảng Điểm BTVN** (tự động ẩn với lớp Robotics) + **Khối 2: Bảng Tổng Kết Điểm Đánh Giá Chi Tiết (Thang 5)**.
+    * Nút gạt *Hiển thị điểm gốc (thang 100) / Điểm quy đổi (thang 5)*, Bộ lọc buổi BTVN, Bộ lọc giai đoạn (*Tất cả*, *Chỉ CP1*, *Chỉ CP2*, *CP1 & CP2*), sắp xếp theo cột.
+    * Cho phép bấm sửa / nhập bù trực tiếp từng ô điểm trên bảng (tự động tính lại tổng & xếp hạng tức thì).
+    * Hộp thoại *Công thức*, **3 Hộp thoại Biểu đồ (`Biểu đồ CP1`, `Biểu đồ CP2`, `Biểu đồ DEMO`)** có đường Mốc Đạt `2.5` + nút *Copy hình*, và 2 nút **`Copy ảnh BTVN`** / **`Copy ảnh Tổng kết`** chụp PNG sắc nét dán thẳng vào Zalo.
+    * Nút Xuất Excel (`.xlsx`) / Copy Google Sheets và nút **Đẩy đồng bộ điểm lên Teaching** + mở nhanh trang `teachingmindx.top/diem-tong-ket.php`.
+  * [x] Tinh gọn giao diện: Bỏ phần giao diện thừa *"Tự chấm BTVN theo Barem"* trên `/homework-grader`, ẩn tab *"Barem chấm bài"* trên `/syllabus-config`, cập nhật tiêu đề trên `/` và `top-navbar.tsx` (giữ nguyên các module backend ngầm để bảo toàn 100% tương thích với các bộ kiểm thử cũ).
+* [x] **TASK-9.6 (Kiểm Thử Tự Động Cô Lập `RC-01`..`RC-06` & Review Độc Lập Codex CLI `gpt-6.1-sol` `high`):** Stage 4 Round 3 closure **GO** (`docs/audits/v330/CODEX_STAGE4_ROUND3.md`).
+  * [x] Xây dựng `scripts/test-report-card-v330.ts` chạy trên DB cô lập (`TEMP`) kiểm tra toàn diện 6 nhóm kịch bản `RC-01`..`RC-06` (gồm đối chiếu toán học với dữ liệu thật của `VT-C4K-GB40`, `VT-C4K-GA22`, `VT-JSB16`, `VT-C4K-GA38`, `VT-ROB-ARMA12`).
+  * [x] Chạy Review độc lập sau mỗi chặng bằng **Codex CLI (`gpt-6.1-sol` `high`)** đạt **GO** trên cả 4 chặng (`CODEX_STAGE1_ROUND4.md`, `CODEX_STAGE2_AUDIT_ROUND4.md`, `CODEX_STAGE3_ROUND3.md`, `CODEX_STAGE4_ROUND3.md`) và đảm bảo toàn bộ cổng hồi quy (`tsc --noEmit --incremental false`, `test-phase4-codex-repros.ts`, `test-phase5.ts`, `test-phase6.ts`, `test-phase7.ts`, `test-teaching-project-v320.ts`) đạt 100% PASS.
+
+## Independent audit: v3.3.0 Phase 9 Stage 1 (2026-10-29)
+
+- **NO-GO** for TASK-9.1 / TASK-9.2: seven findings cover non-atomic version locking, raw-score validation, incomplete content hashing, drift during SAVING/FAILED, optional approval versions, decimal rounding, and snapshot class identity.
+- Installed native TypeScript compiler: PASS (exit 0). Extracted RC-01/RC-02 math checks: 139 assertions PASS. Both requested `npx` commands could not launch because Node/npx is inaccessible to this session; the complete SQLite RC-03 suite remains unverified.
+- Production `data/mindx_bot.db` SHA-256 unchanged: `93CDF719342E7B7AF6A49C2A96382842C8ECBDD161319063BB2FBC65EE4DF5EA`. No application source, test source or production database was modified by the auditor.
+- Findings and evidence: [Stage 1 audit](docs/audits/v330/CODEX_STAGE1_AUDIT.md). TASK-9.1 and TASK-9.2 remain pending acceptance.
+
+## Independent audit: v3.3.0 Phase 9 Stage 2 (2026-10-29)
+
+- **NO-GO for TASK-9.3:** nine open findings (six P1, three P2) cover failed/delayed class capture overwriting scores, cross-class response acceptance, suppressed snapshot-save failures, lost DOM fallback scores, unsafe identity precedence, omitted CRM pupils, checkpoint fallback identity, zero DEMO handling, and small-payload BTVN filtering.
+- Fresh TypeScript, RC-01 through RC-04, and Phase 4 VM regression commands all PASS (exit 0). An independent harness reproduced 11 defect observations using mocked browser events and real temporary SQLite repositories where required. RC-04 currently lacks scraper/persistence integration coverage.
+- Production DB SHA-256 remained `93CDF719342E7B7AF6A49C2A96382842C8ECBDD161319063BB2FBC65EE4DF5EA`; all SQLite tests were isolated via `MINDX_DB_PATH`. No application or existing test source was modified; audit artifacts and project tracking only.
+- Report and acceptance conditions: [Stage 2 audit](docs/audits/v330/CODEX_STAGE2_AUDIT.md). Evidence: `docs/audits/v330/stage2/`. TASK-9.3 remains pending acceptance.
+
+## Independent audit: v3.3.0 Phase 9 Stage 2 Round 2 (2026-10-29)
+
+- **NO-GO for TASK-9.3:** six findings CLOSED (`S2-01`, `S2-03` through `S2-06`, `S2-09`); three remain partially fixed/OPEN (`S2-02`, `S2-07`, `S2-08`). New P2 regression `R2-01`: blank DEMO fields become zero.
+- All four requested verification commands PASS (exit 0). Additional independent probes reproduce stale responses overwriting fresh persisted scores, unidentified checkpoints being assigned to CP1, and ungraded/blank DEMO values becoming zero; real SQLite rollback and both-output identity/roster checks also pass.
+- Production DB and running-class cache SHA-256 values are unchanged. All SQLite executions used disposable DB overrides. No application code or existing test code was edited by this audit.
+- Report: [Stage 2 Round 2 audit](docs/audits/v330/CODEX_STAGE2_AUDIT_ROUND2.md). Evidence: `docs/audits/v330/stage2-round2/`. TASK-9.3 remains pending acceptance.
+
+## Independent audit: v3.3.0 Phase 9 Stage 2 Round 3 (2026-10-29)
+
+- **NO-GO for TASK-9.3: eight of ten findings CLOSED.** S2-08 and R2-01 are now closed; the six previously closed findings remain closed. S2-02 and S2-07 remain partially fixed/OPEN.
+- All five requested commands PASS (exit 0), including both prior probes. Additional independent cases reproduce an old class response accepted before the first fresh request (CP1 4 -> 5 in both real SQLite stores, Coding and Robotics) and an unnamed checkpoint assigned to CP1/CP2 from its array position.
+- Production DB and running-class cache hashes, lengths and modification times are unchanged; all executions used disposable DB/cache overrides. Application and existing test/probe source were not edited.
+- Report: [Stage 2 Round 3 audit](docs/audits/v330/CODEX_STAGE2_AUDIT_ROUND3.md). Evidence: `docs/audits/v330/stage2-round3/`. TASK-9.3 remains pending acceptance; no live LMS or later Phase 9 acceptance is implied.
+
+## Independent audit: v3.3.0 Phase 9 Stage 2 Round 4 (2026-10-29)
+
+- **GO for the TASK-9.3 Stage 2 closure gate: all 10 findings CLOSED (`S2-01`..`S2-09`, `R2-01`).** S2-02 now unconditionally requires the exact fresh request object for both GraphQL operations; the legacy mocks emit request before response using that same object. S2-07 resolves checkpoint identity from the original trimmed source title, keeping unnamed checkpoints at positions 5/9 missing.
+- All six fresh verification commands PASS (exit 0): TypeScript, RC-01 through RC-04/RC-04C, the original Stage 2 probe, Round 2 probe, Round 3 probe, and Phase 4 compatibility suite. Probe observations: 11/11, 10/10, and 6/6 CLOSED records respectively (not assertion counts). Former Round 3 failures now meet closure expectations.
+- All executions received isolated DB/cache overrides. All 118 protected source/script/data/probe/report files retain their SHA-256, lengths and modification times; production DB/cache are unchanged. Temporary files/directories were deleted, and prior observation JSON contents restored. Only this report and the three required tracking documents were changed.
+- Report: [Stage 2 Round 4 closure audit](docs/audits/v330/CODEX_STAGE2_AUDIT_ROUND4.md). Earlier NO-GO entries remain historical. This accepts the requested closure scope only; live LMS/Teaching operation, Stage 1 re-acceptance and later Phase 9 tasks are not certified. The named Claude reviewer is unavailable; Codex performed the direct audit.
+
+## Independent audit: v3.3.0 Phase 9 Stage 3 (2026-10-29)
+
+- **NO-GO for TASK-9.4: 9 findings (5 HIGH, 3 MEDIUM, 1 LOW; no CRITICAL).** Reproduced wrong-student numeric-ID matching, inactive-student writes, incomplete normalized/null readback, failed exercise reads triggering declarations, optional service version checks, malformed JSON returning 500, missing/ignored PUT actions, writes after Stop, and a state-transition hardening gap.
+- All three requested commands PASS (exit 0): TypeScript, RC-01..RC-05, and Phase 4 compatibility. Independent probe: 40 observation records, comprising 29 bug observations grouped into the 9 findings and 11 passing control records; these are not assertion counts.
+- Commands used TEMP DB/cache overrides. The unchanged RC suite ran in a TEMP workspace mirror because it replaces its DB override internally. All 117 pre-existing protected source/script/data files retain SHA-256, length and last-write timestamps; production DB/cache are unchanged. No application or existing test code was edited, and no live LMS/Teaching requests were made.
+- Report: [Stage 3 audit](docs/audits/v330/CODEX_STAGE3_AUDIT.md). Evidence/probe: `docs/audits/v330/stage3/`. TASK-9.4 remains pending acceptance; the earlier Stage 2 closure decision remains unchanged.
+
+## Independent audit: v3.3.0 Phase 9 Stage 3 Round 2 (2026-10-29)
+
+- **TASK-9.4 remains NO-GO:** `S3-02`, `S3-05`, `S3-06`, `S3-09` CLOSED for the audited sync path; `S3-01`, `S3-03`, `S3-04`, `S3-07`, `S3-08` PARTIALLY FIXED / OPEN.
+- Remaining acceptance work: reject failed explicit Teaching bindings before weaker fallback; require equal two-decimal normalized scores; require literal success=true mutation acknowledgment; reject conflicting score payload sources; keep Stop/timeout active through response-body decoding and underlying request cancellation.
+- Four requested commands freshly PASS; original Stage 3 probe 40 PASS observations; supplemental probe 72 observations (55 CLOSED / 17 OPEN across five findings). All executions use TEMP DB/cache; 145 pre-existing protected files including production data remain unchanged. No production fixes were made by the auditor.
+- Report and closure evidence: [Stage 3 Round 2](docs/audits/v330/CODEX_STAGE3_ROUND2.md), `docs/audits/v330/stage3-round2/`. Rerun the mandatory commands and supplemental probe after correction; acceptance requires no remaining OPEN boundaries. Earlier TASK-9.3 Stage 2 GO is unchanged.
+
+## Independent audit: v3.3.0 Phase 9 Stage 3 Round 3 (2026-10-29)
+
+- **TASK-9.4 Stage 3 closure GO:** all nine findings S3-01 through S3-09 CLOSED. The five Round 2 blockers are resolved and the four previously closed findings remain closed for the audited sync/API path.
+- Five requested verification commands freshly PASS (exit 0): TypeScript, RC-01..RC-05, Phase 4, original Stage 3 probe and Round 2 closure probe. Observations: 40 PASS; 72 CLOSED / zero OPEN. New independent probe: 101 CLOSED observations, including initial/retry JSON body Stop/timeout across all five transport methods. Final TypeScript PASS; counts are observation records, not assertion totals.
+- All executions used TEMP DB/cache/observation overrides; all 202 pre-existing protected files, including production data and earlier audit evidence, remain unchanged. Auditor added evidence and tracking only, with no application fixes or live remote writes.
+- Report: [Stage 3 Round 3](docs/audits/v330/CODEX_STAGE3_ROUND3.md). Evidence: `docs/audits/v330/stage3-round3/`. Acceptance covers current working files and supersedes TASK-9.4 Round 2 NO-GO. Earlier TASK-9.3 Stage 2 GO is unchanged; TASK-9.5/TASK-9.6 and live Teaching verification are not accepted by this audit.
+
+## Independent audit: v3.3.0 Phase 9 Stage 4 (2026-10-29)
+
+- **TASK-9.5 / TASK-9.6 remain pending: NO-GO.** Six OPEN findings: `S4-01` stale class/revision responses and filter contamination; `S4-02` actions before class-matched loading completes; `S4-03` stale editor adopts a newer version; `S4-04` empty BTVN selection selects all; `S4-05` failed scrape/read announced as successful; `S4-06` formula/rank guidance contradicts calculation.
+- Acceptance requires class/generation guards for every asynchronous action, a matching-loaded-record invariant for writes/exports, editor-bound versions, explicit empty-selection behavior, propagated scrape/read results, and shared accurate formula/rank explanations. Add behavioral regressions for each case and rerun the requested gates.
+- Five requested gates freshly PASS (TypeScript, RC-01..RC-06, Phase 4, Phase 5, Phase 7); independent probe collected 32 observation records with six findings. All tests used TEMP DB/cache overrides; neither production data file was opened, hashed, copied or modified. Application and existing test source unchanged.
+- Report/acceptance details: [Stage 4 audit](docs/audits/v330/CODEX_STAGE4_AUDIT.md). Evidence: `docs/audits/v330/stage4/`. Earlier TASK-9.3/TASK-9.4 closure decisions remain unchanged; live Teaching layout/clipboard operation remains outside verified acceptance.
+
+## Independent audit: v3.3.0 Phase 9 Stage 4 Round 2 (2026-10-29)
+
+- **TASK-9.5 / TASK-9.6: NO-GO.** Five Round 1 findings CLOSED (`S4-02`..`S4-06`); `S4-01` remains PARTIALLY FIXED / OPEN (HIGH): a late mutation can replace a newer same-class GET and export stale scores. New MEDIUM regression `R2-01`: overlapping operation types strand the earlier operation's busy flag.
+- All six requested commands freshly PASS (exit 0), including the updated original Stage 4 probe (29 records: 15 closure records, 14 controls). Supplemental independent probe: 82 observation records, 60 CLOSED/control and 22 OPEN across the two blockers; counts are not assertion totals. Both blockers additionally reproduced through actual local API handlers and disposable SQLite. Server stale-write protection still returns HTTP 409.
+- All runtime tests ran in a TEMP mirror with TEMP DB/cache overrides; neither production DB nor running-class cache was opened, hashed, copied or modified. All 135 recorded source/script/configuration/original-probe files retain hashes, sizes and modification times. No application or existing test/probe edits, and no live remote writes.
+- Report and closure criteria: [Stage 4 Round 2](docs/audits/v330/CODEX_STAGE4_ROUND2.md). Evidence: `docs/audits/v330/stage4-round2/`. Earlier Stage 2/3 closure decisions remain unchanged. Native browser rendering/clipboard and live Teaching/LMS operation remain outside verified acceptance. The named Claude reviewer is unavailable; Codex performed the independent audit directly.
+
+## Independent audit: v3.3.0 Phase 9 Stage 4 Round 3 (2026-10-29)
+
+- **GO for the TASK-9.5 / TASK-9.6 Stage 4 closure gate: all seven findings CLOSED (`S4-01`..`S4-06`, `R2-01`).** All mutation payloads now honor the monotonic version floor and acceptance-gated success effects; per-operation busy ownership releases completed actions without disturbing pending ones. Read failures close editors, and opening during loading/unmatched class is blocked.
+- All seven requested commands freshly PASS (exit 0): TypeScript, original Stage 4 probe, Round 2 probe, RC-01..RC-06, Phase 4, Phase 5 and Phase 7. Original probe: 29 records (15 CLOSED, 14 controls); Round 2: 82 CLOSED / zero OPEN. New independent Round 3 probe: **959 CLOSED / zero OPEN**, including 864 cross-owner pairing scenarios, 6 disabled same-owner controls, 60 A-B-A/new-operation cases, 24 payload-rejection cases and 5 cleanup boundaries. Counts are observation records, not unique assertions.
+- Actual TEMP SQLite/API replay retains v4/theory 5 and TSV `5.00` after delayed v3; stale writes return HTTP 409. Actual approve/reset completes at v5 / WAITING_APPROVAL with both busy flags false.
+- All command data/allowlist overrides point below Windows TEMP; runtime gates used a TEMP mirror, including Phase 7 configuration writes. Neither production DB nor running-class cache was opened, hashed, copied or modified. All 166 enumerated pre-existing source/script/config/original-probe/metadata files retain hashes, lengths and timestamps. No application or existing test/probe edits or live remote writes.
+- Report: [Stage 4 Round 3 closure audit](docs/audits/v330/CODEX_STAGE4_ROUND3.md). Evidence: `docs/audits/v330/stage4-round3/`. Supersedes Round 2 NO-GO for this closure scope; prior Stage 2/3 acceptance is unchanged. Native rendering/clipboard, live LMS/Teaching operation and broader unrun release gates remain outside acceptance. The designated Claude reviewer is unavailable; Codex performed the independent audit directly. Broader task checkboxes are not marked fully complete by this scoped closure.
+

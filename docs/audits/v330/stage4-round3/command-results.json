@@ -1,0 +1,104 @@
+{
+  "recordedAt": "2026-10-29T08:40:32.367Z",
+  "auditRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a",
+  "applicationSourceEdited": false,
+  "productionDataRead": false,
+  "commands": [
+    {
+      "command": "npx.cmd tsc --noEmit --incremental false",
+      "cwd": "D:\\MY PROJECT\\MINDX_AUTOMATION",
+      "log": "typecheck.log",
+      "exitCode": 0,
+      "result": "PASS",
+      "environment": {
+        "MINDX_DB_PATH": "below auditRoot",
+        "MINDX_RUNNING_CLASSES_PATH": "below auditRoot",
+        "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a"
+      }
+    },
+    {
+      "command": "npx.cmd tsx docs/audits/v330/stage4/probe.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a\\workspace",
+      "log": "original-probe.log",
+      "exitCode": 0,
+      "result": "PASS",
+      "environment": {
+        "MINDX_DB_PATH": "below auditRoot",
+        "MINDX_RUNNING_CLASSES_PATH": "below auditRoot",
+        "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a"
+      }
+    },
+    {
+      "command": "npx.cmd tsx docs/audits/v330/stage4-round2/probe.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a\\workspace",
+      "log": "round2-probe.log",
+      "exitCode": 0,
+      "result": "PASS",
+      "environment": {
+        "MINDX_DB_PATH": "below auditRoot",
+        "MINDX_RUNNING_CLASSES_PATH": "below auditRoot",
+        "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a"
+      }
+    },
+    {
+      "command": "npx.cmd tsx scripts/test-report-card-v330.ts",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a\\workspace",
+      "log": "report-card.log",
+      "exitCode": 0,
+      "result": "PASS",
+      "environment": {
+        "MINDX_DB_PATH": "below auditRoot",
+        "MINDX_RUNNING_CLASSES_PATH": "below auditRoot",
+        "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a"
+      }
+    },
+    {
+      "command": "npx.cmd tsx scripts/test-phase4-codex-repros.ts",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a\\workspace",
+      "log": "phase4.log",
+      "exitCode": 0,
+      "result": "PASS",
+      "environment": {
+        "MINDX_DB_PATH": "below auditRoot",
+        "MINDX_RUNNING_CLASSES_PATH": "below auditRoot",
+        "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a"
+      }
+    },
+    {
+      "command": "npx.cmd tsx scripts/test-phase5.ts",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a\\workspace",
+      "log": "phase5.log",
+      "exitCode": 0,
+      "result": "PASS",
+      "environment": {
+        "MINDX_DB_PATH": "below auditRoot",
+        "MINDX_RUNNING_CLASSES_PATH": "below auditRoot",
+        "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a"
+      }
+    },
+    {
+      "command": "npx.cmd tsx scripts/test-phase7.ts",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a\\workspace",
+      "log": "phase7.log",
+      "exitCode": 0,
+      "result": "PASS",
+      "environment": {
+        "MINDX_DB_PATH": "below auditRoot",
+        "MINDX_RUNNING_CLASSES_PATH": "below auditRoot",
+        "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a"
+      }
+    },
+    {
+      "command": "npx.cmd tsx docs/audits/v330/stage4-round3/probe.mjs",
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a\\workspace",
+      "log": "probe.log",
+      "exitCode": 0,
+      "result": "PASS",
+      "environment": {
+        "MINDX_DB_PATH": "below auditRoot",
+        "MINDX_RUNNING_CLASSES_PATH": "below auditRoot",
+        "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-stage4-r3-635944c7170e4f34b6de14a705b9843a"
+      }
+    }
+  ]
+}

@@ -7,10 +7,10 @@ import { usePathname } from "next/navigation";
 const NAV_ITEMS = [
   { href: "/", label: "Tổng quan" },
   { href: "/session-comments", label: "Nhận xét buổi học" },
-  { href: "/homework-grader", label: "Chấm bài & Điểm" },
+  { href: "/homework-grader", label: "Phiếu điểm & BTVN" },
   { href: "/final-project", label: "Upload SPCK" },
   { href: "/teaching-projects", label: "Dự án Teaching" },
-  { href: "/syllabus-config", label: "Giáo trình & Barem" },
+  { href: "/syllabus-config", label: "Giáo trình & Thẻ" },
 ];
 
 export function TopNavbar() {
