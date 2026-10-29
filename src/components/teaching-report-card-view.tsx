@@ -1668,20 +1668,24 @@ export default function TeachingReportCardView({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="px-2.5 py-1 rounded-md text-xs font-extrabold uppercase tracking-wider bg-indigo-700 text-white border border-indigo-500 mindx-dark-keep">
-                CHUẨN TEACHING MINDX
-              </span>
-              <span
-                className={`px-2.5 py-1 rounded-md text-xs font-bold border ${
-                  computedReportCard?.isRobotics
-                    ? "bg-amber-700 text-white border-amber-500 mindx-dark-keep"
-                    : "bg-sky-700 text-white border-sky-500 mindx-dark-keep"
-                }`}
-              >
-                {computedReportCard?.isRobotics
-                  ? "🤖 ROBOTICS (Chỉ CP1 Buổi 4, CP2 Buổi 8 & DEMO Buổi 14 — Không có BTVN)"
-                  : "💻 LẬP TRÌNH (7 Buổi BTVN + CP1 Buổi 5, CP2 Buổi 9 & DEMO Buổi 14)"}
-              </span>
+              {false && (
+                <>
+                  <span className="px-2.5 py-1 rounded-md text-xs font-extrabold uppercase tracking-wider bg-indigo-700 text-white border border-indigo-500 mindx-dark-keep">
+                    CHUẨN TEACHING MINDX
+                  </span>
+                  <span
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold border ${
+                      computedReportCard?.isRobotics
+                        ? "bg-amber-700 text-white border-amber-500 mindx-dark-keep"
+                        : "bg-sky-700 text-white border-sky-500 mindx-dark-keep"
+                    }`}
+                  >
+                    {computedReportCard?.isRobotics
+                      ? "🤖 ROBOTICS (Chỉ CP1 Buổi 4, CP2 Buổi 8 & DEMO Buổi 14 — Không có BTVN)"
+                      : "💻 LẬP TRÌNH (7 Buổi BTVN + CP1 Buổi 5, CP2 Buổi 9 & DEMO Buổi 14)"}
+                  </span>
+                </>
+              )}
               <span
                 className={`px-2.5 py-1 rounded-md text-xs font-bold border ${statusBadge.className}`}
               >
@@ -1699,19 +1703,21 @@ export default function TeachingReportCardView({
               PHIẾU ĐIỂM TỔNG KẾT KHÓA HỌC — LỚP{" "}
               <span className="text-indigo-400">{effectiveClassId || "..."}</span>
             </h2>
-            <p className="text-xs text-slate-400">
-              Tự động tổng hợp điểm BTVN (`#tab-3`), Điểm Kiểm tra CP1/CP2 &amp; Điểm Năng lực `[ĐNL]` (`#tab-10`) cùng Điểm Sản phẩm Cuối khóa Buổi 14 theo đúng công thức của{" "}
-              <a
-                href={`https://teachingmindx.top/diem-tong-ket.php?from=hocsinh&class_code=${encodeURIComponent(
-                  effectiveClassId
-                )}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sky-400 underline hover:text-sky-300 font-semibold"
-              >
-                teachingmindx.top/diem-tong-ket.php ↗
-              </a>
-            </p>
+            {false && (
+              <p className="text-xs text-slate-400">
+                Tự động tổng hợp điểm BTVN (`#tab-3`), Điểm Kiểm tra CP1/CP2 &amp; Điểm Năng lực `[ĐNL]` (`#tab-10`) cùng Điểm Sản phẩm Cuối khóa Buổi 14 theo đúng công thức của{" "}
+                <a
+                  href={`https://teachingmindx.top/diem-tong-ket.php?from=hocsinh&class_code=${encodeURIComponent(
+                    effectiveClassId
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sky-400 underline hover:text-sky-300 font-semibold"
+                >
+                  teachingmindx.top/diem-tong-ket.php ↗
+                </a>
+              </p>
+            )}
           </div>
 
           {/* Primary Action Buttons */}
@@ -2237,10 +2243,12 @@ export default function TeachingReportCardView({
                 <h3 className="text-sm font-extrabold uppercase tracking-wider text-white">
                   {computedReportCard.showBtvnBlock ? "2." : "1."} BẢNG ĐIỂM TỔNG KẾT &amp; XẾP HẠNG CUỐI KHÓA (CHECK-POINT 1, CHECK-POINT 2 &amp; DEMO)
                 </h3>
-                <p className="text-[11px] text-slate-400">
-                  Điểm Kiểm tra và Điểm Năng lực `[ĐNL]` lấy trực tiếp từ LMS (hoặc bấm vào ô để sửa tay). Khuyết hoặc 0 điểm ở bất kỳ thành phần nào sẽ không xét{" "}
-                  <strong className="text-amber-400">Hạng A / B</strong> (tối đa Hạng C nếu TBCK ≥ 2.50, hoặc Hạng D nếu TBCK &lt; 2.50).
-                </p>
+                {false && (
+                  <p className="text-[11px] text-slate-400">
+                    Điểm Kiểm tra và Điểm Năng lực `[ĐNL]` lấy trực tiếp từ LMS (hoặc bấm vào ô để sửa tay). Khuyết hoặc 0 điểm ở bất kỳ thành phần nào sẽ không xét{" "}
+                    <strong className="text-amber-400">Hạng A / B</strong> (tối đa Hạng C nếu TBCK ≥ 2.50, hoặc Hạng D nếu TBCK &lt; 2.50).
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2 text-[11px]">
                 <span className="px-2 py-0.5 rounded bg-emerald-700 text-white mindx-dark-keep font-bold">

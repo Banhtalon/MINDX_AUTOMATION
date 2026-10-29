@@ -690,7 +690,7 @@ export default function HomeworkGraderPage() {
         )}
 
         {/* Single-Line Summary Bar (Replaces 6 Bulky Cards) */}
-        {matrix && (
+        {matrix && Boolean(0) && (
           <div className="mt-4 pt-3.5 border-t border-white/15 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-slate-200 font-semibold">

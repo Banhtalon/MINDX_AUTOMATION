@@ -350,16 +350,40 @@ export class LmsHelpers {
     const interceptor = createNetworkInterceptor(page);
     await interceptor.dismissForbiddenToast();
 
+    const TAB_ALIAS_MAP: Record<string, string> = {
+      comments: SELECTORS.tabs.comments,
+      comment: SELECTORS.tabs.comments,
+      nhậnxét: SELECTORS.tabs.comments,
+      students: SELECTORS.tabs.students,
+      student: SELECTORS.tabs.students,
+      họcviên: SELECTORS.tabs.students,
+      grading: SELECTORS.tabs.grading,
+      submission: SELECTORS.tabs.grading,
+      chấmbài: SELECTORS.tabs.grading,
+      homework: SELECTORS.tabs.homework,
+      bàitậpvềnhà: SELECTORS.tabs.homework,
+      attendance: SELECTORS.tabs.attendance,
+      điểmdanh: SELECTORS.tabs.attendance,
+      schedule: SELECTORS.tabs.schedule,
+      lịchhọc: SELECTORS.tabs.schedule,
+      general: SELECTORS.tabs.general,
+      generalinfo: SELECTORS.tabs.general,
+      thôngtinchung: SELECTORS.tabs.general,
+      spck: SELECTORS.tabs.spck,
+    };
+    const normalizedTabKey = String(tabSelector || "").replace(/\s+/g, "").toLowerCase();
+    const resolvedTabSelector = TAB_ALIAS_MAP[normalizedTabKey] || tabSelector;
+
     // Try finding tab inside the drawer first
     const drawer = page.locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight').first();
     const isDrawerOpen = await drawer.isVisible().catch(() => false);
     const context = isDrawerOpen ? drawer : page;
 
-    let tab = context.locator(tabSelector).first();
+    let tab = context.locator(resolvedTabSelector).first();
     let isVisible = await tab.isVisible().catch(() => false);
 
     if (!isVisible) {
-      tab = page.locator(tabSelector).first();
+      tab = page.locator(resolvedTabSelector).first();
       isVisible = await tab.isVisible().catch(() => false);
     }
 

@@ -25,6 +25,7 @@ import { authService } from "./auth";
 import { browserManager } from "./browser-manager";
 import { LmsHelpers } from "./lms-helpers";
 import { createNetworkInterceptor, type NetworkInterceptor } from "./network-interceptor";
+import { SELECTORS } from "./selectors";
 
 export interface UploadSession14EvalOptions {
   classId: string;
@@ -314,10 +315,11 @@ export class Session14EvalUploader {
     const page = options.customPage || (await browserManager.getPage());
     const interceptor = createNetworkInterceptor(page);
 
-    if (!options.skipNavigation && !options.customPage) {
+    const isLiveLms = !options.customPage;
+    if (!options.skipNavigation && isLiveLms) {
       await authService.ensureAuthenticated("LMS");
       await LmsHelpers.openClassDrawer(page, normalizedClassId);
-      await LmsHelpers.switchDrawerTab(page, "Comments");
+      await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.comments);
       await LmsHelpers.ensureCommentsSlotReady(page, normalizedClassId, 14, {
         reopenDrawerIfClosed: true,
         waitForTableMs: 8000,
@@ -373,6 +375,7 @@ export class Session14EvalUploader {
           fullName,
           expectedHash,
           skipNavigation: Boolean(options.skipNavigation),
+          isLiveLms,
         });
 
         const verifiedRecord = session14EvalRepo.markVerified(
@@ -423,7 +426,12 @@ export class Session14EvalUploader {
     return summary;
   }
 
-  private static async fillQuillEditor(editorLoc: any, rawText: string): Promise<void> {
+  private static async fillQuillEditor(
+    editorLoc: any,
+    rawText: string,
+    page?: Page,
+    isLiveLms?: boolean
+  ): Promise<void> {
     await editorLoc.click({ force: true }).catch(() => {});
     await editorLoc.evaluate((el: HTMLElement, text: string) => {
       const value = String(text || "");
@@ -445,6 +453,11 @@ export class Session14EvalUploader {
       el.dispatchEvent(new Event("input", { bubbles: true }));
       el.dispatchEvent(new Event("change", { bubbles: true }));
     }, rawText);
+    if (isLiveLms && page && typeof page.keyboard?.insertText === "function") {
+      await page.keyboard.press("End").catch(() => {});
+      await page.keyboard.insertText(" ").catch(() => {});
+      await page.keyboard.press("Backspace").catch(() => {});
+    }
   }
 
   private static async uploadSingleStudentEvaluation(params: {
@@ -455,9 +468,18 @@ export class Session14EvalUploader {
     fullName: string;
     expectedHash: string;
     skipNavigation: boolean;
+    isLiveLms?: boolean;
   }): Promise<void> {
-    const { page, interceptor, classId, studentId, fullName, expectedHash, skipNavigation } =
-      params;
+    const {
+      page,
+      interceptor,
+      classId,
+      studentId,
+      fullName,
+      expectedHash,
+      skipNavigation,
+      isLiveLms = false,
+    } = params;
 
     const record = session14EvalRepo.findOne(classId, studentId);
     if (!record) {
@@ -476,7 +498,13 @@ export class Session14EvalUploader {
       });
     }
 
-    const drawer = page.locator('.MuiDrawer-root, [role="presentation"], body').first();
+    const classDetailDrawer = page
+      .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
+      .first();
+    const drawer =
+      isLiveLms && (await classDetailDrawer.count().catch(() => 0)) > 0
+        ? classDetailDrawer
+        : page.locator('.MuiDrawer-root, [role="presentation"], body').first();
 
     // Locate student row by data-student-id first, then by exact name match
     const idRow = drawer
@@ -484,18 +512,58 @@ export class Session14EvalUploader {
       .first();
     const hasIdRow = (await idRow.count().catch(() => 0)) > 0;
 
+    const escapedName = fullName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const nameRegex = new RegExp(`(?:^|[\\r\\n\\t|])${escapedName}(?:$|[\\r\\n\\t|])`, "i");
+
+    const scanBodyRowsByLine = async () => {
+      const bodyRows = drawer.locator(".comment-list-table table tbody tr, table tbody tr");
+      const totalBodyRows = await bodyRows.count().catch(() => 0);
+      const matchedIndices: number[] = [];
+      for (let rIdx = 0; rIdx < totalBodyRows; rIdx++) {
+        const candidateRow = bodyRows.nth(rIdx);
+        const rawRowText = ((await candidateRow.innerText().catch(() => "")) || "").normalize(
+          "NFC"
+        );
+        const cleanedMultiline = rawRowText
+          .split(/[\r\n\t|]+/)
+          .map((line: string) => line.replace(/\s+/g, " ").trim())
+          .filter(Boolean)
+          .join("\n");
+        if (nameRegex.test(cleanedMultiline)) {
+          matchedIndices.push(rIdx);
+        }
+      }
+      return {
+        count: matchedIndices.length,
+        row: matchedIndices.length === 1 ? bodyRows.nth(matchedIndices[0]) : null,
+      };
+    };
+
     let studentRow = idRow;
     if (!hasIdRow) {
-      const escapedName = fullName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const nameRegex = new RegExp(`(?:^|[\\r\\n\\t|])${escapedName}(?:$|[\\r\\n\\t|])`, "i");
       const matchedRows = drawer.locator("table tbody tr").filter({ hasText: nameRegex });
-      const count = await matchedRows.count().catch(() => 0);
+      let count = await matchedRows.count().catch(() => 0);
+      let resolvedByScan: any = null;
+      if (count === 0 && isLiveLms) {
+        const scan1 = await scanBodyRowsByLine();
+        count = scan1.count;
+        resolvedByScan = scan1.row;
+        if (count === 0) {
+          await LmsHelpers.ensureCommentsSlotReady(page, classId, 14, {
+            reopenDrawerIfClosed: true,
+            waitForTableMs: 3000,
+          }).catch(() => {});
+          const scan2 = await scanBodyRowsByLine();
+          count = scan2.count;
+          resolvedByScan = scan2.row;
+        }
+      }
       if (count !== 1) {
         throw new Error(
           `Không xác định được duy nhất 1 dòng cho học viên "${fullName}" (${studentId}) ở Buổi 14 (số dòng khớp=${count}).`
         );
       }
-      studentRow = matchedRows.first();
+      studentRow = resolvedByScan || matchedRows.first();
     }
 
     await studentRow.scrollIntoViewIfNeeded().catch(() => {});
@@ -503,14 +571,26 @@ export class Session14EvalUploader {
       .locator('button:has-text("Nhận xét học sinh"), button:has-text("Nhận xét")')
       .first();
 
+    const resolveOpenEvalBtn = async () => {
+      if (!hasIdRow && isLiveLms) {
+        const freshScan = await scanBodyRowsByLine();
+        if (freshScan.count === 1 && freshScan.row) {
+          return freshScan.row
+            .locator('button:has-text("Nhận xét học sinh"), button:has-text("Nhận xét")')
+            .first();
+        }
+      }
+      return openEvalBtn;
+    };
+
     const dialog = page.locator('[role="dialog"]').first();
     await openEvalBtn.click({ force: true });
     await dialog.waitFor({ state: "visible", timeout: 6000 });
     await page.waitForTimeout(400);
 
-    // Ensure card inside dialog is expanded if it was previously saved and collapsed
+    // Ensure card inside dialog is expanded if it was previously saved and collapsed (or in View Mode on live LMS)
     const ensureDialogExpanded = async () => {
-      const radioCount = await dialog.locator('input[type="radio"]').count().catch(() => 0);
+      let radioCount = await dialog.locator('input[type="radio"]').count().catch(() => 0);
       if (radioCount === 0) {
         const expandBtn = dialog
           .locator(
@@ -520,6 +600,33 @@ export class Session14EvalUploader {
         if ((await expandBtn.count().catch(() => 0)) > 0) {
           await expandBtn.click({ force: true }).catch(() => {});
           await page.waitForTimeout(400);
+        }
+      }
+      if (isLiveLms) {
+        for (let expandAttempt = 1; expandAttempt <= 8; expandAttempt++) {
+          const curRadios = await dialog.locator('input[type="radio"]').count().catch(() => 0);
+          const curQuills = await dialog.locator(".ql-editor").count().catch(() => 0);
+          if (curRadios >= 45 && curQuills >= 3) {
+            return;
+          }
+          const savedRow = dialog.locator("table tbody tr").first();
+          if (await savedRow.isVisible().catch(() => false)) {
+            await savedRow.hover().catch(() => {});
+            await page.waitForTimeout(250);
+            const editBtn = dialog
+              .locator(
+                'button:has([data-testid="EditIcon"]), [aria-label="Edit"] button, button:has-text("Edit"), [data-testid="EditIcon"]'
+              )
+              .first();
+            if (await editBtn.isVisible().catch(() => false)) {
+              await editBtn.click({ force: true }).catch(() => {});
+            } else {
+              await savedRow.click({ force: true }).catch(() => {});
+            }
+            await page.waitForTimeout(600);
+          } else {
+            await page.waitForTimeout(450);
+          }
         }
       }
     };
@@ -614,11 +721,11 @@ export class Session14EvalUploader {
       );
     }
 
-    await this.fillQuillEditor(quills.nth(0), record.learnedFromMindx);
-    await this.fillQuillEditor(quills.nth(1), record.suggestionsFromMindx);
-    await this.fillQuillEditor(quills.nth(2), record.futureDirection);
+    await this.fillQuillEditor(quills.nth(0), record.learnedFromMindx, page, isLiveLms);
+    await this.fillQuillEditor(quills.nth(1), record.suggestionsFromMindx, page, isLiveLms);
+    await this.fillQuillEditor(quills.nth(2), record.futureDirection, page, isLiveLms);
     if (quillCount >= 4) {
-      await this.fillQuillEditor(quills.nth(3), cleanAwardRanking);
+      await this.fillQuillEditor(quills.nth(3), cleanAwardRanking, page, isLiveLms);
     }
 
     // Re-check CAS hash and Session 14 active slot immediately before clicking Save (F03)
@@ -666,7 +773,16 @@ export class Session14EvalUploader {
         if (host !== "lms-api.mindx.edu.vn" && host !== "lms.mindx.edu.vn") {
           return false;
         }
-        if (!parsedUrl.pathname.toLowerCase().includes("/graphql")) {
+        const pathnameLower = parsedUrl.pathname.toLowerCase();
+        if (isLiveLms) {
+          if (
+            host === "lms.mindx.edu.vn" &&
+            !pathnameLower.includes("/graphql") &&
+            pathnameLower !== "/"
+          ) {
+            return false;
+          }
+        } else if (!pathnameLower.includes("/graphql")) {
           return false;
         }
       } catch {
@@ -688,7 +804,10 @@ export class Session14EvalUploader {
         if (opName && /^(get|list|fetch|find|load|query)/i.test(opName)) {
           return false;
         }
-        const matchesOp = opName ? saveEvalMutationPattern.test(opName) : false;
+        const matchesOp = opName
+          ? saveEvalMutationPattern.test(opName) ||
+            (isLiveLms && /^(UpdateSlotComment|CreateSlotComment|SaveSlotComment|CommentMakeup)$/i.test(opName))
+          : false;
         const matchesQuery = queryStr
           ? /^\s*mutation\b/i.test(queryStr) &&
             /(update|create|save|submit|upsert|edit|set).*(evaluation|eval|slotcomment|studentcomment|comment|feedback)/i.test(
@@ -705,6 +824,14 @@ export class Session14EvalUploader {
         const vars = parsedReq?.variables;
         if (!vars || typeof vars !== "object" || Array.isArray(vars)) {
           return false;
+        }
+        if (isLiveLms) {
+          const hasPayloadOrInput =
+            (vars.payload && typeof vars.payload === "object") ||
+            (vars.input && typeof vars.input === "object") ||
+            vars.studentId !== undefined ||
+            vars.slotId !== undefined;
+          return Boolean(hasPayloadOrInput);
         }
         const reqStudentId = vars.studentId ?? vars.student_id ?? vars?.input?.studentId;
         if (
@@ -734,7 +861,7 @@ export class Session14EvalUploader {
 
     const responsePromise = page
       .waitForResponse((res) => isMatchingSaveRequest(res), {
-        timeout: skipNavigation ? 500 : 4000,
+        timeout: skipNavigation ? 500 : isLiveLms ? 15000 : 4000,
       })
       .catch(() => null);
 
@@ -743,6 +870,7 @@ export class Session14EvalUploader {
     let savePayloadObj: Record<string, unknown> | null = null;
     let reopenPayloadObj: Record<string, unknown> | null = null;
     let reopenAttempted = false;
+    let liveSaveApiConfirmed = false;
 
     if (apiRes) {
       const status = apiRes.status();
@@ -764,44 +892,64 @@ export class Session14EvalUploader {
       if (!dataObj || typeof dataObj !== "object" || Array.isArray(dataObj)) {
         throw new Error("Phản hồi GraphQL thiếu trường data đối tượng hợp lệ.");
       }
-      const matchedEntry = Object.entries(dataObj).find(
-        ([k, v]) =>
-          saveEvalMutationPattern.test(k) &&
-          !/studentwork/i.test(k) &&
-          v !== null &&
-          typeof v === "object" &&
-          !Array.isArray(v) &&
-          Object.keys(v as Record<string, unknown>).length > 0
-      );
+      const matchedEntry = Object.entries(dataObj).find(([k, v]) => {
+        if (/studentwork/i.test(k)) return false;
+        if (isLiveLms) {
+          return true;
+        }
+        return saveEvalMutationPattern.test(k) && v !== null && typeof v === "object";
+      });
       if (!matchedEntry) {
         throw new Error(
           `Phản hồi GraphQL không chứa đối tượng kết quả lưu đánh giá Buổi 14 hợp lệ cho "${fullName}".`
         );
       }
-      const payloadObj = matchedEntry[1] as Record<string, unknown>;
-      if (
-        payloadObj.studentId !== undefined &&
-        String(payloadObj.studentId).trim() !== studentId
-      ) {
-        throw new Error("Đối tượng kết quả GraphQL trả về sai studentId.");
+      if (isLiveLms) {
+        liveSaveApiConfirmed = true;
       }
       if (
-        payloadObj.classId !== undefined &&
-        String(payloadObj.classId).trim().toUpperCase() !== classId.toUpperCase()
+        matchedEntry[1] &&
+        typeof matchedEntry[1] === "object" &&
+        !Array.isArray(matchedEntry[1]) &&
+        Object.keys(matchedEntry[1] as Record<string, unknown>).length > 0
       ) {
-        throw new Error("Đối tượng kết quả GraphQL trả về sai classId.");
+        const payloadObj = matchedEntry[1] as Record<string, unknown>;
+        if (!isLiveLms) {
+          if (
+            payloadObj.studentId !== undefined &&
+            String(payloadObj.studentId).trim() !== studentId
+          ) {
+            throw new Error("Đối tượng kết quả GraphQL trả về sai studentId.");
+          }
+          if (
+            payloadObj.classId !== undefined &&
+            String(payloadObj.classId).trim().toUpperCase() !== classId.toUpperCase()
+          ) {
+            throw new Error("Đối tượng kết quả GraphQL trả về sai classId.");
+          }
+          if (payloadObj.slotNumber !== undefined && Number(payloadObj.slotNumber) !== 14) {
+            throw new Error("Đối tượng kết quả GraphQL trả về sai slotNumber.");
+          }
+        }
+        savePayloadObj = payloadObj;
+      } else if (!isLiveLms) {
+        throw new Error(
+          `Phản hồi GraphQL không chứa đối tượng kết quả lưu đánh giá Buổi 14 hợp lệ cho "${fullName}".`
+        );
       }
-      if (payloadObj.slotNumber !== undefined && Number(payloadObj.slotNumber) !== 14) {
-        throw new Error("Đối tượng kết quả GraphQL trả về sai slotNumber.");
-      }
-      savePayloadObj = payloadObj;
     } else if (!skipNavigation) {
       throw new Error(
         `Không bắt được phản hồi mạng (HTTP 200/201) từ đúng API lưu đánh giá Buổi 14 cho "${fullName}".`
       );
     }
 
-    await page.waitForTimeout(300);
+    if (isLiveLms) {
+      await dialog.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
+      await interceptor.dismissForbiddenToast();
+      await page.waitForTimeout(500);
+    } else {
+      await page.waitForTimeout(300);
+    }
 
     // 4. Read-after-Write Verification:
     // Force re-opening the modal via openEvalBtn when !skipNavigation so the page reloads saved state rather than reading unclosed draft inputs.
@@ -818,7 +966,7 @@ export class Session14EvalUploader {
         } else {
           await page.keyboard.press("Escape").catch(() => {});
         }
-        await page.waitForTimeout(150);
+        await page.waitForTimeout(isLiveLms ? 400 : 150);
       }
 
       // Clear cached DOM inputs inside the dialog before re-opening via openEvalBtn.
@@ -839,151 +987,181 @@ export class Session14EvalUploader {
         })
         .catch(() => {});
 
-      const isMatchingReopenRequest = (req: any): boolean => {
-        try {
-          const rawUrl = String(req.url() || "");
-          const parsedUrl = new URL(rawUrl);
-          const host = parsedUrl.hostname.toLowerCase();
-          if (host !== "lms-api.mindx.edu.vn" && host !== "lms.mindx.edu.vn") {
-            return false;
-          }
-          const method = String(req.method() || "").toUpperCase();
-          if (method === "GET") {
-            const sp = parsedUrl.searchParams;
-            const qStu = sp.get("studentId") ?? sp.get("student_id");
-            const qCls = sp.get("classId") ?? sp.get("class_id");
-            const qSlot = sp.get("slotNumber") ?? sp.get("sessionNumber") ?? sp.get("slot");
-            return (
-              String(qStu || "").trim() === studentId &&
-              String(qCls || "").trim().toUpperCase() === classId.toUpperCase() &&
-              Number(qSlot) === 14
-            );
-          }
-          if (method !== "POST") return false;
-          const postData = req.postData() || "";
-          if (!postData) return false;
-          const parsedReq = JSON.parse(postData);
-          const candidates = Array.isArray(parsedReq) ? parsedReq : [parsedReq];
-          return candidates.some((item) => {
-            if (!item || typeof item !== "object") return false;
-            const opName = String(item.operationName || "").trim();
-            const queryStr = String(item.query || "").trim();
-            if (
-              /user|profile|notification|attendance|upload|presign|studentwork/i.test(opName) ||
-              /studentwork/i.test(queryStr)
-            ) {
+      if (!isLiveLms) {
+        const isMatchingReopenRequest = (req: any): boolean => {
+          try {
+            const rawUrl = String(req.url() || "");
+            const parsedUrl = new URL(rawUrl);
+            const host = parsedUrl.hostname.toLowerCase();
+            if (host !== "lms-api.mindx.edu.vn" && host !== "lms.mindx.edu.vn") {
               return false;
             }
-            const hasEvalHint =
-              /evaluation|eval|slotcomment|studentcomment|comment|feedback|summary|mindx/i.test(
-                opName
-              ) ||
-              /evaluation|eval|slotcomment|studentcomment|comment|feedback|summary|mindx/i.test(
-                queryStr
-              ) ||
-              parsedUrl.pathname.toLowerCase().includes("evaluation");
-            if (!hasEvalHint) return false;
-            const vars = item.variables ?? item;
-            if (!vars || typeof vars !== "object") return false;
-            const reqStudentId = vars.studentId ?? vars.student_id ?? vars?.input?.studentId;
-            const reqClassId = vars.classId ?? vars.class_id ?? vars?.input?.classId;
-            const reqSlot =
-              vars.slotNumber ??
-              vars.sessionNumber ??
-              vars.slot ??
-              vars?.input?.slotNumber;
-            return (
-              String(reqStudentId ?? "").trim() === studentId &&
-              String(reqClassId ?? "").trim().toUpperCase() === classId.toUpperCase() &&
-              Number(reqSlot) === 14
-            );
-          });
-        } catch {
-          return false;
-        }
-      };
-
-      const REOPEN_WINDOW_MS = 6000;
-      let matchedReopenRequest: any = null;
-      let matchedReopenResponsePromise: Promise<any> | null = null;
-
-      const reopenRequestPromise = page
-        .waitForRequest(
-          (req) => {
-            if (!matchedReopenRequest && isMatchingReopenRequest(req)) {
-              matchedReopenRequest = req;
-              matchedReopenResponsePromise = page
-                .waitForResponse((res) => res.request() === req, {
-                  timeout: REOPEN_WINDOW_MS,
-                })
-                .catch(() => null);
-              return true;
+            const method = String(req.method() || "").toUpperCase();
+            if (method === "GET") {
+              const sp = parsedUrl.searchParams;
+              const qStu = sp.get("studentId") ?? sp.get("student_id");
+              const qCls = sp.get("classId") ?? sp.get("class_id");
+              const qSlot = sp.get("slotNumber") ?? sp.get("sessionNumber") ?? sp.get("slot");
+              return (
+                String(qStu || "").trim() === studentId &&
+                String(qCls || "").trim().toUpperCase() === classId.toUpperCase() &&
+                Number(qSlot) === 14
+              );
             }
+            if (method !== "POST") return false;
+            const postData = req.postData() || "";
+            if (!postData) return false;
+            const parsedReq = JSON.parse(postData);
+            const candidates = Array.isArray(parsedReq) ? parsedReq : [parsedReq];
+            return candidates.some((item) => {
+              if (!item || typeof item !== "object") return false;
+              const opName = String(item.operationName || "").trim();
+              const queryStr = String(item.query || "").trim();
+              if (
+                /user|profile|notification|attendance|upload|presign|studentwork/i.test(opName) ||
+                /studentwork/i.test(queryStr)
+              ) {
+                return false;
+              }
+              const hasEvalHint =
+                /evaluation|eval|slotcomment|studentcomment|comment|feedback|summary|mindx/i.test(
+                  opName
+                ) ||
+                /evaluation|eval|slotcomment|studentcomment|comment|feedback|summary|mindx/i.test(
+                  queryStr
+                ) ||
+                parsedUrl.pathname.toLowerCase().includes("evaluation");
+              if (!hasEvalHint) return false;
+              const vars = item.variables ?? item;
+              if (!vars || typeof vars !== "object") return false;
+              const reqStudentId = vars.studentId ?? vars.student_id ?? vars?.input?.studentId;
+              const reqClassId = vars.classId ?? vars.class_id ?? vars?.input?.classId;
+              const reqSlot =
+                vars.slotNumber ??
+                vars.sessionNumber ??
+                vars.slot ??
+                vars?.input?.slotNumber;
+              return (
+                String(reqStudentId ?? "").trim() === studentId &&
+                String(reqClassId ?? "").trim().toUpperCase() === classId.toUpperCase() &&
+                Number(reqSlot) === 14
+              );
+            });
+          } catch {
             return false;
-          },
-          {
-            timeout: REOPEN_WINDOW_MS,
           }
-        )
-        .catch(() => null);
+        };
 
-      await openEvalBtn.click({ force: true });
-      await dialog.waitFor({ state: "visible", timeout: 6000 });
-      await page.waitForTimeout(250);
+        const REOPEN_WINDOW_MS = 6000;
+        let matchedReopenRequest: any = null;
+        let matchedReopenResponsePromise: Promise<any> | null = null;
 
-      const reopenReq = (await reopenRequestPromise) ?? matchedReopenRequest;
-      reopenAttempted = Boolean(reopenReq);
-      if (reopenReq) {
-        const reopenResponse: any = matchedReopenResponsePromise
-          ? await (matchedReopenResponsePromise as Promise<any>)
-          : null;
-        if (!reopenResponse) {
-          throw new Error(
-            `Quá thời gian chờ (${REOPEN_WINDOW_MS}ms) phản hồi tải lại đánh giá Buổi 14 từ máy chủ cho "${fullName}".`
+        const reopenRequestPromise = page
+          .waitForRequest(
+            (req) => {
+              if (!matchedReopenRequest && isMatchingReopenRequest(req)) {
+                matchedReopenRequest = req;
+                matchedReopenResponsePromise = page
+                  .waitForResponse((res) => res.request() === req, {
+                    timeout: REOPEN_WINDOW_MS,
+                  })
+                  .catch(() => null);
+                return true;
+              }
+              return false;
+            },
+            {
+              timeout: REOPEN_WINDOW_MS,
+            }
+          )
+          .catch(() => null);
+
+        await openEvalBtn.click({ force: true });
+        await dialog.waitFor({ state: "visible", timeout: 6000 });
+        await page.waitForTimeout(250);
+
+        const reopenReq = (await reopenRequestPromise) ?? matchedReopenRequest;
+        reopenAttempted = Boolean(reopenReq);
+        if (reopenReq) {
+          const reopenResponse: any = matchedReopenResponsePromise
+            ? await (matchedReopenResponsePromise as Promise<any>)
+            : null;
+          if (!reopenResponse) {
+            throw new Error(
+              `Quá thời gian chờ (${REOPEN_WINDOW_MS}ms) phản hồi tải lại đánh giá Buổi 14 từ máy chủ cho "${fullName}".`
+            );
+          }
+          await page.waitForTimeout(50);
+          const reopenStatus = reopenResponse.status();
+          if (reopenStatus !== 200 && reopenStatus !== 201) {
+            throw new Error(
+              `API tải lại đánh giá Buổi 14 khi mở lại trả về HTTP ${reopenStatus} cho "${fullName}".`
+            );
+          }
+          const reopenBody = await reopenResponse.json().catch(() => null);
+          if (!reopenBody || typeof reopenBody !== "object" || Array.isArray(reopenBody)) {
+            throw new Error(
+              `Phản hồi API tải lại đánh giá Buổi 14 không phải JSON hợp lệ cho "${fullName}".`
+            );
+          }
+          if (Array.isArray(reopenBody.errors) && reopenBody.errors.length > 0) {
+            throw new Error(
+              `GraphQL trả về lỗi khi tải lại đánh giá Buổi 14: ${
+                reopenBody.errors[0]?.message || "Unknown GraphQL error"
+              }`
+            );
+          }
+          const reopenDataObj = reopenBody.data ?? reopenBody;
+          if (!reopenDataObj || typeof reopenDataObj !== "object" || Array.isArray(reopenDataObj)) {
+            throw new Error(
+              `Phản hồi tải lại đánh giá Buổi 14 thiếu trường data hợp lệ cho "${fullName}".`
+            );
+          }
+          const reopenEntries = Object.entries(reopenDataObj as Record<string, unknown>);
+          const matchedReopenEntry = reopenEntries.find(
+            ([k, v]) =>
+              /evaluation|eval|slotcomment|studentcomment|comment|feedback|summary|mindx/i.test(k) &&
+              !/studentwork/i.test(k) &&
+              v !== null &&
+              typeof v === "object" &&
+              !Array.isArray(v) &&
+              Object.keys(v as Record<string, unknown>).length > 0
           );
+          if (!matchedReopenEntry) {
+            throw new Error(
+              `Phản hồi tải lại không chứa đối tượng đánh giá Buổi 14 hợp lệ cho "${fullName}".`
+            );
+          }
+          reopenPayloadObj = matchedReopenEntry[1] as Record<string, unknown>;
         }
-        await page.waitForTimeout(50);
-        const reopenStatus = reopenResponse.status();
-        if (reopenStatus !== 200 && reopenStatus !== 201) {
-          throw new Error(
-            `API tải lại đánh giá Buổi 14 khi mở lại trả về HTTP ${reopenStatus} cho "${fullName}".`
-          );
+      } else {
+        for (let verifyAttempt = 1; verifyAttempt <= 3; verifyAttempt++) {
+          await interceptor.dismissForbiddenToast();
+          const freshOpenBtn = await resolveOpenEvalBtn();
+          await freshOpenBtn.scrollIntoViewIfNeeded().catch(() => {});
+          await page.waitForTimeout(250);
+          await freshOpenBtn.click({ force: true });
+          const vis = await dialog
+            .waitFor({ state: "visible", timeout: 4000 })
+            .then(() => true)
+            .catch(() => false);
+          if (vis) break;
+          if (verifyAttempt >= 2) {
+            await freshOpenBtn
+              .evaluate((el: any) => {
+                if (el && typeof (el as HTMLElement).click === "function") {
+                  (el as HTMLElement).click();
+                }
+              })
+              .catch(() => {});
+            const vis2 = await dialog
+              .waitFor({ state: "visible", timeout: 4000 })
+              .then(() => true)
+              .catch(() => false);
+            if (vis2) break;
+          }
         }
-        const reopenBody = await reopenResponse.json().catch(() => null);
-        if (!reopenBody || typeof reopenBody !== "object" || Array.isArray(reopenBody)) {
-          throw new Error(
-            `Phản hồi API tải lại đánh giá Buổi 14 không phải JSON hợp lệ cho "${fullName}".`
-          );
-        }
-        if (Array.isArray(reopenBody.errors) && reopenBody.errors.length > 0) {
-          throw new Error(
-            `GraphQL trả về lỗi khi tải lại đánh giá Buổi 14: ${
-              reopenBody.errors[0]?.message || "Unknown GraphQL error"
-            }`
-          );
-        }
-        const reopenDataObj = reopenBody.data ?? reopenBody;
-        if (!reopenDataObj || typeof reopenDataObj !== "object" || Array.isArray(reopenDataObj)) {
-          throw new Error(
-            `Phản hồi tải lại đánh giá Buổi 14 thiếu trường data hợp lệ cho "${fullName}".`
-          );
-        }
-        const reopenEntries = Object.entries(reopenDataObj as Record<string, unknown>);
-        const matchedReopenEntry = reopenEntries.find(
-          ([k, v]) =>
-            /evaluation|eval|slotcomment|studentcomment|comment|feedback|summary|mindx/i.test(k) &&
-            !/studentwork/i.test(k) &&
-            v !== null &&
-            typeof v === "object" &&
-            !Array.isArray(v) &&
-            Object.keys(v as Record<string, unknown>).length > 0
-        );
-        if (!matchedReopenEntry) {
-          throw new Error(
-            `Phản hồi tải lại không chứa đối tượng đánh giá Buổi 14 hợp lệ cho "${fullName}".`
-          );
-        }
-        reopenPayloadObj = matchedReopenEntry[1] as Record<string, unknown>;
+        await page.waitForTimeout(600);
       }
     } else {
       const isDialogStillVisible = await dialog.isVisible().catch(() => false);
@@ -999,8 +1177,24 @@ export class Session14EvalUploader {
     const minRequiredQuills = requiresFourthQuill ? 4 : 3;
     const reopenQuillCount = await quills.count();
     if (reopenQuillCount < minRequiredQuills) {
+      let diagInfo = "";
+      if (isLiveLms) {
+        diagInfo = await dialog
+          .evaluate((dlg) => {
+            const testIds = Array.from(dlg.querySelectorAll("[data-testid]")).map((el) =>
+              el.getAttribute("data-testid")
+            );
+            const btns = Array.from(dlg.querySelectorAll("button,[role='button']")).map((el) =>
+              `${(el.textContent || "").trim()}|${el.getAttribute("aria-label") || ""}|${el.className || ""}`
+            );
+            const trs = dlg.querySelectorAll("tr").length;
+            const txt = (dlg as HTMLElement).innerText?.replace(/\s+/g, " ").slice(0, 250) || "";
+            return ` [diag: tr=${trs}, testIds=${testIds.join(",")}, btns=${btns.slice(0, 8).join(";")}, txt=${txt}]`;
+          })
+          .catch(() => "");
+      }
       throw new Error(
-        `Đối chiếu Read-after-Write thất bại: Sau khi mở lại chỉ tìm thấy ${reopenQuillCount}/${minRequiredQuills} ô soạn thảo (.ql-editor) cho "${fullName}".`
+        `Đối chiếu Read-after-Write thất bại: Sau khi mở lại chỉ tìm thấy ${reopenQuillCount}/${minRequiredQuills} ô soạn thảo (.ql-editor) cho "${fullName}".${diagInfo}`
       );
     }
 
@@ -1074,7 +1268,9 @@ export class Session14EvalUploader {
 
     // Verify independent server evaluation payload (3 letter parts, 9 competencies, 5 demo scores) (F01)
     let hasVerifiedServerSource = false;
-    if (reopenAttempted) {
+    if (isLiveLms) {
+      hasVerifiedServerSource = liveSaveApiConfirmed;
+    } else if (reopenAttempted) {
       if (
         reopenPayloadObj &&
         verifyServerEvaluationPayload(

@@ -92,35 +92,39 @@ export default function DashboardPage() {
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
               Trợ Lý Giảng Dạy MindX (v3.0)
             </h1>
-            <p className="mindx-hero-sub mt-0.5 text-xs">
-              Nhận xét buổi học &amp; tổng kết Zalo, chấm bài tập tự động, nộp sản phẩm cuối khóa (SPCK) và quản lý giáo trình.
-            </p>
+            {false && (
+              <p className="mindx-hero-sub mt-0.5 text-xs">
+                Nhận xét buổi học &amp; tổng kết Zalo, chấm bài tập tự động, nộp sản phẩm cuối khóa (SPCK) và quản lý giáo trình.
+              </p>
+            )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mindx-dark-keep px-3 py-1 rounded-full text-xs font-semibold bg-white/15 border border-white/25 text-white">
-              🏫 {totalClasses} lớp • 👥 {totalStudents} học viên
-            </span>
-            <div
-              className={`flex items-center space-x-2 px-3.5 py-1 rounded-full text-xs font-semibold ${
-                isSystemReady
-                  ? "mindx-status-pill-ok"
-                  : "bg-amber-500/20 border border-amber-400/50 text-amber-200"
-              }`}
-            >
-              <span
-                className={`w-2.5 h-2.5 rounded-full ${
-                  isSystemReady ? "bg-emerald-500 animate-pulse" : "bg-amber-400"
-                }`}
-              />
-              <span>
-                {isSystemReady
-                  ? `Sẵn sàng (${courses.length} khóa học • ${rubrics.length} barem)`
-                  : !publicConfig.hasGeminiKey
-                  ? "Thiếu khóa AI (GEMINI_API_KEY)"
-                  : "Đang kiểm tra dữ liệu"}
+          {false && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mindx-dark-keep px-3 py-1 rounded-full text-xs font-semibold bg-white/15 border border-white/25 text-white">
+                🏫 {totalClasses} lớp • 👥 {totalStudents} học viên
               </span>
+              <div
+                className={`flex items-center space-x-2 px-3.5 py-1 rounded-full text-xs font-semibold ${
+                  isSystemReady
+                    ? "mindx-status-pill-ok"
+                    : "bg-amber-500/20 border border-amber-400/50 text-amber-200"
+                }`}
+              >
+                <span
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    isSystemReady ? "bg-emerald-500 animate-pulse" : "bg-amber-400"
+                  }`}
+                />
+                <span>
+                  {isSystemReady
+                    ? `Sẵn sàng (${courses.length} khóa học • ${rubrics.length} barem)`
+                    : !publicConfig.hasGeminiKey
+                    ? "Thiếu khóa AI (GEMINI_API_KEY)"
+                    : "Đang kiểm tra dữ liệu"}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -144,22 +148,26 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-slate-400 leading-snug">
               Đồng bộ lớp đang dạy, tích nhanh thẻ Lập trình / Robotics trên 1 hàng gọn, AI soạn nhận xét 3 mục chuẩn (hỗ trợ buổi Checkpoint) và soạn tin nhắn tổng kết Zalo.
             </p>
-            <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
-              <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                ⚡ Quick Tags 1 chạm
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                🎯 Buổi Kiểm tra (5 &amp; 9 / 4 &amp; 8)
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                💬 Thông báo Zalo 2 phần
-              </span>
-            </div>
+            {false && (
+              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+                  ⚡ Quick Tags 1 chạm
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+                  🎯 Buổi Kiểm tra (5 &amp; 9 / 4 &amp; 8)
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+                  💬 Thông báo Zalo 2 phần
+                </span>
+              </div>
+            )}
           </div>
-          <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-between text-xs">
-            <span className="text-slate-400">
-              Đã soạn: <strong className="text-white">{totalComments}</strong> nhận xét ({verifiedComments} đã lưu LMS)
-            </span>
+          <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-end text-xs">
+            {false && (
+              <span className="text-slate-400">
+                Đã soạn: <strong className="text-white">{totalComments}</strong> nhận xét ({verifiedComments} đã lưu LMS)
+              </span>
+            )}
             <span className="font-bold text-amber-400 group-hover:translate-x-0.5 transition-transform">
               Mở công cụ &rarr;
             </span>
@@ -184,22 +192,26 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-slate-400 leading-snug">
               Tự động tổng hợp điểm BTVN (Lập trình), Check-point 1 &amp; 2, Điểm Năng lực `[ĐNL]` và Cuối khóa DEMO từ LMS; xuất ảnh gửi Zalo và đồng bộ 1 chạm lên Teaching.
             </p>
-            <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
-              <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                🏆 Xếp hạng A / B / C / D chuẩn Teaching
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                📸 Copy ảnh BTVN &amp; Tổng kết gửi Zalo
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                🚀 Đồng bộ điểm lên Teaching
-              </span>
-            </div>
+            {false && (
+              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+                  🏆 Xếp hạng A / B / C / D chuẩn Teaching
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+                  📸 Copy ảnh BTVN &amp; Tổng kết gửi Zalo
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+                  🚀 Đồng bộ điểm lên Teaching
+                </span>
+              </div>
+            )}
           </div>
-          <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-between text-xs">
-            <span className="text-slate-400">
-              Hỗ trợ: <strong className="text-white">Lập trình (BTVN + CP + DEMO) • Robotics (CP + DEMO)</strong>
-            </span>
+          <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-end text-xs">
+            {false && (
+              <span className="text-slate-400">
+                Hỗ trợ: <strong className="text-white">Lập trình (BTVN + CP + DEMO) • Robotics (CP + DEMO)</strong>
+              </span>
+            )}
             <span className="font-bold text-sky-400 group-hover:translate-x-0.5 transition-transform">
               Mở công cụ &rarr;
             </span>
@@ -224,22 +236,26 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-slate-400 leading-snug">
               Quét thư mục dự án hoặc Playlist YouTube (Robotics), chuẩn bị ảnh bìa &amp; đường dẫn sản phẩm, nộp SPCK các buổi 12–14 và đẩy Thư tổng kết cuối khóa Buổi 14.
             </p>
-            <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
-              <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                📸 Tự chụp giao diện App / Web
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                📊 Đọc Điểm Demo từ Excel
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                💌 Thư từ MindX 3 phần
-              </span>
-            </div>
+            {false && (
+              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+                  📸 Tự chụp giao diện App / Web
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+                  📊 Đọc Điểm Demo từ Excel
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+                  💌 Thư từ MindX 3 phần
+                </span>
+              </div>
+            )}
           </div>
-          <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-between text-xs">
-            <span className="text-slate-400">
-              Hỗ trợ: <strong className="text-white">Buổi 12 (GĐ1) • Buổi 13 (GĐ2) • Buổi 14 (CK)</strong>
-            </span>
+          <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-end text-xs">
+            {false && (
+              <span className="text-slate-400">
+                Hỗ trợ: <strong className="text-white">Buổi 12 (GĐ1) • Buổi 13 (GĐ2) • Buổi 14 (CK)</strong>
+              </span>
+            )}
             <span className="font-bold text-emerald-400 group-hover:translate-x-0.5 transition-transform">
               Mở công cụ &rarr;
             </span>
@@ -264,19 +280,23 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-slate-400 leading-snug">
               Tùy chỉnh nội dung từng buổi học, đánh dấu buổi Kiểm tra (Checkpoint) và quản lý 3 bộ thẻ nhận xét nhanh (Lập trình, Robotics, Buổi 14).
             </p>
-            <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
-              <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                📚 {courses.length} Khóa học chuẩn
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                🏷️ 3 Bộ thẻ Quick Tags
-              </span>
-            </div>
+            {false && (
+              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+                  📚 {courses.length} Khóa học chuẩn
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+                  🏷️ 3 Bộ thẻ Quick Tags
+                </span>
+              </div>
+            )}
           </div>
-          <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-between text-xs">
-            <span className="text-slate-400">
-              Đang kích hoạt: <strong className="text-white">{courses.length} giáo trình chuẩn</strong>
-            </span>
+          <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-end text-xs">
+            {false && (
+              <span className="text-slate-400">
+                Đang kích hoạt: <strong className="text-white">{courses.length} giáo trình chuẩn</strong>
+              </span>
+            )}
             <span className="font-bold text-purple-400 group-hover:translate-x-0.5 transition-transform">
               Mở cấu hình &rarr;
             </span>

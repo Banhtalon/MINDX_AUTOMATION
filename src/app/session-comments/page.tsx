@@ -2074,9 +2074,11 @@ ${homeworkDetails}
                 <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
                   Nhận xét Buổi học &amp; Thông báo Zalo
                 </h1>
-                <p className="mindx-hero-sub text-xs mt-0.5">
-                  Quick Tags 1 chạm gọn theo môn • AI soạn nhận xét 3 phần chuẩn • Lưu &amp; kiểm tra trực tiếp trên LMS
-                </p>
+                {false && (
+                  <p className="mindx-hero-sub text-xs mt-0.5">
+                    Quick Tags 1 chạm gọn theo môn • AI soạn nhận xét 3 phần chuẩn • Lưu &amp; kiểm tra trực tiếp trên LMS
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -2214,8 +2216,8 @@ ${homeworkDetails}
                 <option value="">(Chưa đồng bộ buổi học từ LMS)</option>
               )}
             </select>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400 px-1">
-              <span>📌 Buổi 14 (Tổng kết cuối khóa &amp; SPCK) chấm riêng:</span>
+            <div className="mt-2 flex items-center justify-end text-[11px] text-slate-400 px-1">
+              {false && <span>📌 Buổi 14 (Tổng kết cuối khóa &amp; SPCK) chấm riêng:</span>}
               <a
                 href="/final-project"
                 className="font-semibold text-blue-600 dark:text-indigo-400 hover:underline underline-offset-2"
@@ -2272,32 +2274,34 @@ ${homeworkDetails}
       </div>
 
       {/* 3. Action Toolbar */}
-      <div className="mindx-card flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs text-slate-400 font-medium">
-            Đang học: <strong className="text-white">{students.length}</strong> |
-            Có mặt:{" "}
-            <strong className="text-emerald-600 dark:text-emerald-400">
-              {
-                students.filter(
-                  (s) => s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE"
-                ).length
-              }
-            </strong>{" "}
-            | Chưa điểm danh:{" "}
-            <strong className="text-amber-600 dark:text-amber-400">
-              {
-                students.filter(
-                  (s) => !s.attendanceStatus || s.attendanceStatus === "UNKNOWN"
-                ).length
-              }
-            </strong>{" "}
-            | Đã duyệt:{" "}
-            <strong className="text-indigo-600 dark:text-indigo-400">
-              {students.filter((s) => s.status === "APPROVED" || s.status === "VERIFIED").length}
-            </strong>
-          </span>
-        </div>
+      <div className="mindx-card flex flex-wrap items-center justify-end gap-3 p-4 rounded-xl">
+        {false && (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs text-slate-400 font-medium">
+              Đang học: <strong className="text-white">{students.length}</strong> |
+              Có mặt:{" "}
+              <strong className="text-emerald-600 dark:text-emerald-400">
+                {
+                  students.filter(
+                    (s) => s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE"
+                  ).length
+                }
+              </strong>{" "}
+              | Chưa điểm danh:{" "}
+              <strong className="text-amber-600 dark:text-amber-400">
+                {
+                  students.filter(
+                    (s) => !s.attendanceStatus || s.attendanceStatus === "UNKNOWN"
+                  ).length
+                }
+              </strong>{" "}
+              | Đã duyệt:{" "}
+              <strong className="text-indigo-600 dark:text-indigo-400">
+                {students.filter((s) => s.status === "APPROVED" || s.status === "VERIFIED").length}
+              </strong>
+            </span>
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -2367,9 +2371,11 @@ ${homeworkDetails}
                 <th className="px-4 py-3.5 min-w-[340px]">
                   <div className="flex flex-wrap items-center justify-between gap-1">
                     <span>Nhận xét 3 phần (Sửa trực tiếp)</span>
-                    <span className="text-[10px] font-normal normal-case opacity-80">
-                      Chuẩn 3 mục: Điểm mạnh • Cần cải thiện • Lời khuyên
-                    </span>
+                    {false && (
+                      <span className="text-[10px] font-normal normal-case opacity-80">
+                        Chuẩn 3 mục: Điểm mạnh • Cần cải thiện • Lời khuyên
+                      </span>
+                    )}
                   </div>
                 </th>
                 <th className="px-4 py-3.5 w-40 text-right">Trạng thái &amp; Lưu</th>

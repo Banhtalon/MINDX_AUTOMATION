@@ -4074,11 +4074,28 @@ export default function FinalProjectPage() {
           });
         });
       }
+      if (!upRes.ok || (!upData?.success && !upData?.uploadResult)) {
+        setBannerMessage({
+          type: "error",
+          text:
+            upData?.error ||
+            `Lỗi khi đẩy đánh giá Buổi 14 lên LMS (HTTP ${upRes.status}).`,
+        });
+        return;
+      }
       const verCount = upData.uploadResult?.verifiedCount || 0;
       const failCount = upData.uploadResult?.failedCount || 0;
+      const firstFailedItem = Array.isArray(upData.uploadResult?.results)
+        ? upData.uploadResult.results.find(
+            (r: any) => r.status === "FAILED" && r.errorMessage
+          )
+        : null;
       setBannerMessage({
-        type: failCount === 0 && verCount > 0 ? "success" : "warning",
-        text: `Đã đẩy & xác minh (Read-after-Write) đánh giá tổng kết + Điểm Demo Buổi 14 cho ${verCount}/${approvedIds.length} học viên lên LMS!`,
+        type: failCount === 0 && verCount > 0 ? "success" : failCount > 0 ? "error" : "warning",
+        text:
+          failCount > 0 && firstFailedItem
+            ? `Đã đẩy & xác minh ${verCount}/${approvedIds.length} học viên lên LMS (${failCount} lỗi — ${firstFailedItem.fullName || firstFailedItem.studentId}: ${firstFailedItem.errorMessage})`
+            : `Đã đẩy & xác minh (Read-after-Write) đánh giá tổng kết + Điểm Demo Buổi 14 cho ${verCount}/${approvedIds.length} học viên lên LMS!`,
       });
     } catch (err) {
       setBannerMessage({
@@ -4361,9 +4378,11 @@ export default function FinalProjectPage() {
                 Chọn Lớp &rarr; Chọn Buổi Nộp (12 / 13 / 14) &rarr; Chọn Thư Mục &amp; Khớp Học Viên
               </h2>
             </div>
-            <p className="mindx-hero-sub text-xs">
-              Quét thư mục sản phẩm cuối khóa, chuẩn bị ảnh bìa &amp; đường dẫn sản phẩm, nộp SPCK Buổi 12–14 và đẩy Thư tổng kết Buổi 14.
-            </p>
+            {false && (
+              <p className="mindx-hero-sub text-xs">
+                Quét thư mục sản phẩm cuối khóa, chuẩn bị ảnh bìa &amp; đường dẫn sản phẩm, nộp SPCK Buổi 12–14 và đẩy Thư tổng kết Buổi 14.
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -4642,10 +4661,12 @@ export default function FinalProjectPage() {
             <h2 className="text-sm font-bold text-white">
               Chuẩn Bị &amp; Xem Lại Bài ({rows.length} học viên)
             </h2>
-            <span className="text-xs text-slate-400">
-              • Đủ điều kiện nộp:{" "}
-              <strong className="text-emerald-600 dark:text-emerald-400">{confirmedReadyStudentIds.length}</strong>/{rows.length}
-            </span>
+            {false && (
+              <span className="text-xs text-slate-400">
+                • Đủ điều kiện nộp:{" "}
+                <strong className="text-emerald-600 dark:text-emerald-400">{confirmedReadyStudentIds.length}</strong>/{rows.length}
+              </span>
+            )}
           </div>
 
           {/* Primary Preparation Actions & Collapsible Tool Toggles */}
@@ -5058,16 +5079,18 @@ export default function FinalProjectPage() {
               <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-700/60 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div className="flex items-center space-x-2 truncate">
                   <span className="font-bold text-emerald-300">
-                    📊 {demoSheetTitle}:
+                    📊 {demoSheetTitle}
                   </span>
-                  <a
-                    href={generatedDemoSheetUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sky-300 hover:underline font-mono truncate"
-                  >
-                    {generatedDemoSheetUrl}
-                  </a>
+                  {false && (
+                    <a
+                      href={generatedDemoSheetUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sky-300 hover:underline font-mono truncate"
+                    >
+                      {generatedDemoSheetUrl}
+                    </a>
+                  )}
                 </div>
                 <div className="flex items-center space-x-2 shrink-0">
                   <a
@@ -6158,11 +6181,20 @@ export default function FinalProjectPage() {
                 Bước 4 / 4 — Riêng Buổi 14 (Tổng kết cuối khóa)
               </span>
               <h2 className="text-sm font-bold text-white">
-                Đánh Giá Tổng Kết Cuối Khóa, Điểm Demo &amp; Thư Từ MindX (Cột 2 LMS: &quot;Nhận xét học sinh&quot;)
+                Đánh Giá Tổng Kết Cuối Khóa, Điểm Demo &amp; Thư Từ MindX
               </h2>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={isAnyOperationBusy}
+                onClick={handleImportDemoScores}
+                className="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm cursor-pointer"
+              >
+                <span>{importingDemoScores ? "Đang đọc điểm..." : "📥 Đọc Điểm Demo từ File Chấm Điểm"}</span>
+              </button>
+
               <button
                 type="button"
                 disabled={isAnyOperationBusy}
@@ -6194,30 +6226,32 @@ export default function FinalProjectPage() {
           </div>
 
           {/* Thanh đọc Điểm Demo từ file chấm điểm BGK */}
-          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 flex flex-wrap items-center gap-2.5">
-            <span className="text-xs font-semibold text-indigo-300 shrink-0">
-              📊 File chấm điểm BGK (.xlsx hoặc Link Google Sheet):
-            </span>
-            <input
-              type="text"
-              value={demoScoreSourceInput}
-              onChange={(e) => setDemoScoreSourceInput(e.target.value)}
-              disabled={isAnyOperationBusy}
-              placeholder={
-                generatedDemoSheetUrl ||
-                "Để trống để tự tìm file 'Bảng chấm điểm buổi Demo.xlsx' trong thư mục lớp, hoặc dán đường dẫn/link Google Sheet..."
-              }
-              className="flex-1 min-w-[260px] px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono disabled:opacity-60"
-            />
-            <button
-              type="button"
-              disabled={isAnyOperationBusy}
-              onClick={handleImportDemoScores}
-              className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer"
-            >
-              {importingDemoScores ? "Đang đọc điểm..." : "📥 Đọc Điểm Demo từ File Chấm Điểm"}
-            </button>
-          </div>
+          {false && (
+            <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 flex flex-wrap items-center gap-2.5">
+              <span className="text-xs font-semibold text-indigo-300 shrink-0">
+                📊 File chấm điểm BGK (.xlsx hoặc Link Google Sheet):
+              </span>
+              <input
+                type="text"
+                value={demoScoreSourceInput}
+                onChange={(e) => setDemoScoreSourceInput(e.target.value)}
+                disabled={isAnyOperationBusy}
+                placeholder={
+                  generatedDemoSheetUrl ||
+                  "Để trống để tự tìm file 'Bảng chấm điểm buổi Demo.xlsx' trong thư mục lớp, hoặc dán đường dẫn/link Google Sheet..."
+                }
+                className="flex-1 min-w-[260px] px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono disabled:opacity-60"
+              />
+              <button
+                type="button"
+                disabled={isAnyOperationBusy}
+                onClick={handleImportDemoScores}
+                className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer"
+              >
+                {importingDemoScores ? "Đang đọc điểm..." : "📥 Đọc Điểm Demo từ File Chấm Điểm"}
+              </button>
+            </div>
+          )}
 
           {/* Danh sách đánh giá Buổi 14 của từng học viên */}
           <div className="space-y-2.5">

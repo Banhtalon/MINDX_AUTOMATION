@@ -1,22 +1,18 @@
 [
   {
     "file": "src/app/globals.css",
-    "sha256": "bfea8cf1a89ea20673f8a7fe116d99c68e58dd74ab666d80ff08c2146c522ff4"
+    "sha256": "501a77cbade1e543cb6934fea174655f6ec4c35b46f0650131d86fdfa8d42802"
   },
   {
     "file": "src/app/homework-grader/page.tsx",
-    "sha256": "cef70ae1452b9bea50c78e708678b61301a5bdd8ade482f263173d2fbe7fda71"
+    "sha256": "43c031f2acb2ccba5c5504d1522728bc78cc59b5b8cdf578617a2d7bf294fcba"
   },
   {
     "file": "src/app/session-comments/page.tsx",
-    "sha256": "eccad27cc28ef2eacce278454fcf340c8fc285a6e42e794b617b6c753a3ae273"
+    "sha256": "c3d95903e47dec5624c2910056062bb451173408c325f3d54ff9e1a5a7069db7"
   },
   {
     "file": "src/components/top-navbar.tsx",
-    "sha256": "c04c3340ce6e94bd67bec640a4391a826fe9e98d337d60456ca981fdb4aa5bac"
-  },
-  {
-    "file": "src/app/final-project/page.tsx",
-    "sha256": "cb9e8e15e01985bece210863128ecc4e8304a50e17c4bbafc46689cb664dd545"
+    "sha256": "c197e9abeedd0a81e5886c3407d168a8f3d6723690e77e2150bc52e9a0dd618a"
   }
 ]

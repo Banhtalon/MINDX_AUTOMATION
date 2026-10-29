@@ -1495,9 +1495,11 @@ export default function TeachingProjectsPage() {
             <h2 className="text-base sm:text-lg font-bold">
               3. Báo Cáo Tiến Độ Học Sinh &amp; Cập Nhật Nhanh Trên Teaching
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Chấm tiến độ nhanh theo từng mốc buổi học (20% &rarr; 40% &rarr; 60% &rarr; 80% &rarr; 100%) hoặc kéo thanh trượt cho từng học sinh như trên trang Teaching.
-            </p>
+            {false && (
+              <p className="text-xs text-slate-400 mt-0.5">
+                Chấm tiến độ nhanh theo từng mốc buổi học (20% &rarr; 40% &rarr; 60% &rarr; 80% &rarr; 100%) hoặc kéo thanh trượt cho từng học sinh như trên trang Teaching.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
