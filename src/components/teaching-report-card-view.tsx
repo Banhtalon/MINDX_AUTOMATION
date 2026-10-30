@@ -42,6 +42,17 @@ export interface RunningClassOption {
   endDate?: string;
 }
 
+export interface ReportCardStalenessInfoClient {
+  isStale: boolean;
+  hasNewerSession14: boolean;
+  missingCheckpointScores: boolean;
+  missingCp1: boolean;
+  missingCp2: boolean;
+  latestSession14UpdatedAt: string | null;
+  scrapedAt: string | null;
+  reasons: string[];
+}
+
 export interface TeachingReportCardViewProps {
   classId: string;
   classCode: string;
@@ -159,6 +170,7 @@ export default function TeachingReportCardView({
   const [snapshot, setSnapshot] = useState<ClassReportCardLmsSnapshot | null>(null);
   const [overrides, setOverrides] = useState<ManualScoreOverrideMap>({});
   const [serverReportCard, setServerReportCard] = useState<ComputedClassReportCard | null>(null);
+  const [staleness, setStaleness] = useState<ReportCardStalenessInfoClient | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isScrapingLms, setIsScrapingLms] = useState<boolean>(false);
@@ -254,6 +266,9 @@ export default function TeachingReportCardView({
       }
       if (data?.overrides && typeof data.overrides === "object") {
         setOverrides(data.overrides);
+      }
+      if (data?.staleness && typeof data.staleness === "object") {
+        setStaleness(data.staleness);
       }
       if (data?.reportCard) {
         setServerReportCard(data.reportCard);
@@ -356,6 +371,7 @@ export default function TeachingReportCardView({
       setSnapshot(null);
       setOverrides({});
       setServerReportCard(null);
+      setStaleness(null);
       setSelectedBtvnSessions(null);
       setShowBtvnFilterPopover(false);
       setOverrideModal(null);
@@ -531,12 +547,10 @@ export default function TeachingReportCardView({
           return;
         }
       } else {
-        const res = await fetch("/api/report-card", {
+        const res = await fetch("/api/homework-grader/scores", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            action: "scrape_lms",
-            classId: targetClassId,
             classCode: targetClassId,
           }),
         });
@@ -726,6 +740,133 @@ export default function TeachingReportCardView({
       if (
         activeClassIdRef.current === targetClassId &&
         syncBusyReqRef.current === myBusyId
+      ) {
+        setIsSyncingTeaching(false);
+      }
+    }
+  };
+
+  const handleApproveAndSyncTeaching = async () => {
+    const targetClassId = activeClassIdRef.current;
+    if (
+      !targetClassId ||
+      !isClassMatched ||
+      !record ||
+      record.classId?.trim().toUpperCase() !== targetClassId
+    ) {
+      return;
+    }
+
+    const expectedVersion = record.draftVersion;
+    const myOpGen = ++opGenRef.current;
+    const myApproveBusyId = ++approveBusyReqRef.current;
+    const mySyncBusyId = ++syncBusyReqRef.current;
+    loadReqIdRef.current += 1;
+    setIsLoading(false);
+    setIsApproving(true);
+    setErrorMsg(null);
+    setToastMsg(null);
+
+    try {
+      // Step 1: Approve with optimistic version check & SHA-256 contentHash lock
+      const approveRes = await fetch("/api/report-card", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "approve",
+          classId: targetClassId,
+          classCode: targetClassId,
+          expectedVersion,
+        }),
+      });
+      const approveData = await approveRes.json();
+      if (
+        activeClassIdRef.current !== targetClassId ||
+        myOpGen !== opGenRef.current
+      ) {
+        return;
+      }
+
+      const approveAccepted = applyApiPayload(approveData, targetClassId, false);
+
+      if (approveRes.ok === false || !approveData?.success) {
+        setErrorMsg(
+          approveData?.error ||
+            "Không thể duyệt Phiếu điểm. Dữ liệu đã được làm mới, vui lòng kiểm tra lại."
+        );
+        return;
+      }
+      if (!approveAccepted) {
+        return;
+      }
+
+      const approvedVersion = Number(
+        approveData?.record?.draftVersion ?? expectedVersion
+      );
+
+      // Step 2: Immediately sync to Teaching with Read-after-Write verification
+      if (
+        activeClassIdRef.current === targetClassId &&
+        approveBusyReqRef.current === myApproveBusyId
+      ) {
+        setIsApproving(false);
+      }
+      setIsSyncingTeaching(true);
+
+      const syncRes = await fetch("/api/report-card/sync-teaching", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: targetClassId,
+          classCode: targetClassId,
+          expectedVersion: approvedVersion,
+        }),
+      });
+      const syncData = await syncRes.json();
+      if (
+        activeClassIdRef.current !== targetClassId ||
+        myOpGen !== opGenRef.current
+      ) {
+        return;
+      }
+
+      const syncAccepted = applyApiPayload(syncData, targetClassId, false);
+
+      if (syncRes.ok === false || !syncData?.success) {
+        setErrorMsg(
+          syncData?.error || "Đồng bộ điểm lên trang Teaching không thành công."
+        );
+        return;
+      }
+      if (!syncAccepted) {
+        return;
+      }
+
+      setToastMsg(
+        `Đã duyệt (SHA-256) & đồng bộ Read-after-Write thành công ${
+          syncData.syncedScoreCount ?? 0
+        } đầu điểm lên trang Teaching cho lớp ${targetClassId}!`
+      );
+    } catch (err: any) {
+      if (
+        activeClassIdRef.current !== targetClassId ||
+        myOpGen !== opGenRef.current
+      ) {
+        return;
+      }
+      setErrorMsg(
+        err?.message || "Lỗi kết nối khi duyệt & đồng bộ điểm lên Teaching."
+      );
+    } finally {
+      if (
+        activeClassIdRef.current === targetClassId &&
+        approveBusyReqRef.current === myApproveBusyId
+      ) {
+        setIsApproving(false);
+      }
+      if (
+        activeClassIdRef.current === targetClassId &&
+        syncBusyReqRef.current === mySyncBusyId
       ) {
         setIsSyncingTeaching(false);
       }
@@ -1668,24 +1809,6 @@ export default function TeachingReportCardView({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2.5">
-              {false && (
-                <>
-                  <span className="px-2.5 py-1 rounded-md text-xs font-extrabold uppercase tracking-wider bg-indigo-700 text-white border border-indigo-500 mindx-dark-keep">
-                    CHUẨN TEACHING MINDX
-                  </span>
-                  <span
-                    className={`px-2.5 py-1 rounded-md text-xs font-bold border ${
-                      computedReportCard?.isRobotics
-                        ? "bg-amber-700 text-white border-amber-500 mindx-dark-keep"
-                        : "bg-sky-700 text-white border-sky-500 mindx-dark-keep"
-                    }`}
-                  >
-                    {computedReportCard?.isRobotics
-                      ? "🤖 ROBOTICS (Chỉ CP1 Buổi 4, CP2 Buổi 8 & DEMO Buổi 14 — Không có BTVN)"
-                      : "💻 LẬP TRÌNH (7 Buổi BTVN + CP1 Buổi 5, CP2 Buổi 9 & DEMO Buổi 14)"}
-                  </span>
-                </>
-              )}
               <span
                 className={`px-2.5 py-1 rounded-md text-xs font-bold border ${statusBadge.className}`}
               >
@@ -1697,27 +1820,24 @@ export default function TeachingReportCardView({
                   {record.contentHash ? ` • #${record.contentHash.slice(0, 8)}` : ""}
                 </span>
               )}
-            </div>
-
-            <h2 className="text-xl font-extrabold text-white tracking-tight">
-              PHIẾU ĐIỂM TỔNG KẾT KHÓA HỌC — LỚP{" "}
-              <span className="text-indigo-400">{effectiveClassId || "..."}</span>
-            </h2>
-            {false && (
-              <p className="text-xs text-slate-400">
-                Tự động tổng hợp điểm BTVN (`#tab-3`), Điểm Kiểm tra CP1/CP2 &amp; Điểm Năng lực `[ĐNL]` (`#tab-10`) cùng Điểm Sản phẩm Cuối khóa Buổi 14 theo đúng công thức của{" "}
+              {effectiveClassId && (
                 <a
                   href={`https://teachingmindx.top/diem-tong-ket.php?from=hocsinh&class_code=${encodeURIComponent(
                     effectiveClassId
                   )}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sky-400 underline hover:text-sky-300 font-semibold"
+                  className="text-xs text-sky-400 underline hover:text-sky-300 font-semibold"
                 >
                   teachingmindx.top/diem-tong-ket.php ↗
                 </a>
-              </p>
-            )}
+              )}
+            </div>
+
+            <h2 className="text-xl font-extrabold text-white tracking-tight">
+              PHIẾU ĐIỂM TỔNG KẾT KHÓA HỌC — LỚP{" "}
+              <span className="text-indigo-400">{effectiveClassId || "..."}</span>
+            </h2>
           </div>
 
           {/* Primary Action Buttons */}
@@ -1735,45 +1855,64 @@ export default function TeachingReportCardView({
 
             <button
               type="button"
+              onClick={handleApproveAndSyncTeaching}
+              disabled={
+                !isClassMatched ||
+                isLoading ||
+                isApproving ||
+                isSyncingTeaching ||
+                !computedReportCard ||
+                computedReportCard.students.length === 0
+              }
+              title="Duyệt khóa SHA-256 (expectedVersion) và đồng bộ ngay toàn bộ điểm lên teachingmindx.top/hocsinh.php"
+              className="px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white border border-emerald-500 transition cursor-pointer mindx-dark-keep"
+            >
+              {isApproving
+                ? "⏳ Đang duyệt..."
+                : isSyncingTeaching
+                ? "⏳ Đang đồng bộ Teaching..."
+                : "✅ Duyệt & 🚀 Đồng bộ Teaching"}
+            </button>
+
+            <button
+              type="button"
               onClick={handleApproveReportCard}
               disabled={
                 !isClassMatched ||
                 isLoading ||
                 isApproving ||
+                isSyncingTeaching ||
                 !computedReportCard ||
                 computedReportCard.students.length === 0
               }
-              className="px-3.5 py-2 rounded-lg text-xs font-bold bg-amber-700 hover:bg-amber-800 disabled:opacity-50 text-white border border-amber-500 transition cursor-pointer mindx-dark-keep"
+              title="Chỉ duyệt khóa SHA-256 tại máy (chưa đẩy lên Teaching)"
+              className="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-amber-300 border border-amber-500/40 transition cursor-pointer"
             >
-              {isApproving ? "⏳ Đang duyệt..." : "✅ Duyệt Phiếu Điểm (SHA-256)"}
+              Chỉ duyệt
             </button>
 
-            <button
-              type="button"
-              onClick={handleSyncToTeaching}
-              disabled={
-                !isClassMatched ||
-                isLoading ||
-                isSyncingTeaching ||
-                !record ||
-                (record.status !== "APPROVED" &&
-                  record.status !== "VERIFIED" &&
-                  !(record.status === "FAILED" && Boolean(record.contentHash)))
-              }
-              title={
-                !isClassMatched ||
-                (record?.status !== "APPROVED" &&
-                  record?.status !== "VERIFIED" &&
-                  !(record?.status === "FAILED" && Boolean(record?.contentHash)))
-                  ? "Vui lòng bấm 'Duyệt Phiếu Điểm' trước khi đồng bộ lên trang Teaching"
-                  : "Khai báo bài tập & đồng bộ toàn bộ điểm đã duyệt lên teachingmindx.top/hocsinh.php"
-              }
-              className="px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white border border-emerald-500 transition cursor-pointer mindx-dark-keep"
-            >
-              {isSyncingTeaching
-                ? "⏳ Đang đồng bộ Teaching..."
-                : "🚀 Đồng bộ điểm lên Teaching"}
-            </button>
+            {record &&
+              (record.status === "APPROVED" ||
+                (record.status === "FAILED" && Boolean(record.contentHash))) && (
+                <button
+                  type="button"
+                  onClick={handleSyncToTeaching}
+                  disabled={
+                    !isClassMatched ||
+                    isLoading ||
+                    isSyncingTeaching ||
+                    !record ||
+                    (record.status !== "APPROVED" &&
+                      !(record.status === "FAILED" && Boolean(record.contentHash)))
+                  }
+                  title="Đồng bộ bản đã duyệt lên teachingmindx.top/hocsinh.php"
+                  className="px-3 py-2 rounded-lg text-xs font-bold bg-amber-700 hover:bg-amber-800 disabled:opacity-50 text-white border border-amber-500 transition cursor-pointer mindx-dark-keep"
+                >
+                  {record.status === "FAILED"
+                    ? "🔄 Thử lại Đồng bộ điểm lên Teaching"
+                    : "🚀 Đồng bộ bản đã duyệt"}
+                </button>
+              )}
           </div>
         </div>
 
@@ -2001,6 +2140,34 @@ export default function TeachingReportCardView({
         </div>
       )}
 
+      {/* Staleness Warning Banner (S4.3) */}
+      {isClassMatched && staleness?.isStale && (
+        <div className="bg-amber-950/60 border border-amber-700 text-amber-200 px-4 py-3 rounded-xl text-sm flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <div className="font-bold text-amber-300">
+              {staleness.hasNewerSession14 && staleness.missingCheckpointScores
+                ? "⚠️ Có dữ liệu Buổi 14 mới và thiếu điểm Check-point, bấm Quét lại"
+                : staleness.hasNewerSession14
+                ? "⚠️ Có dữ liệu Buổi 14 mới, bấm Quét lại"
+                : "⚠️ Bản quét hiện tại chưa có đủ điểm Check-point, bấm Quét lại"}
+            </div>
+            {Array.isArray(staleness.reasons) && staleness.reasons.length > 0 && (
+              <div className="text-xs text-amber-200/90">
+                {staleness.reasons.join(" • ")}
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleScrapeFromLms}
+            disabled={isScrapingLms || isScrapingExternal}
+            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white border border-amber-400 transition cursor-pointer mindx-dark-keep"
+          >
+            {isScrapingLms || isScrapingExternal ? "⏳ Đang quét..." : "🔄 Quét lại"}
+          </button>
+        </div>
+      )}
+
       {/* Empty or Loading State */}
       {isLoading ? (
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-10 text-center text-slate-400 text-sm">
@@ -2221,12 +2388,6 @@ export default function TeachingReportCardView({
                 <h3 className="text-sm font-extrabold uppercase tracking-wider text-white">
                   {computedReportCard.showBtvnBlock ? "2." : "1."} BẢNG ĐIỂM TỔNG KẾT &amp; XẾP HẠNG CUỐI KHÓA (CHECK-POINT 1, CHECK-POINT 2 &amp; DEMO)
                 </h3>
-                {false && (
-                  <p className="text-[11px] text-slate-400">
-                    Điểm Kiểm tra và Điểm Năng lực `[ĐNL]` lấy trực tiếp từ LMS (hoặc bấm vào ô để sửa tay). Khuyết hoặc 0 điểm ở bất kỳ thành phần nào sẽ không xét{" "}
-                    <strong className="text-amber-400">Hạng A / B</strong> (tối đa Hạng C nếu TBCK ≥ 2.50, hoặc Hạng D nếu TBCK &lt; 2.50).
-                  </p>
-                )}
               </div>
               <div className="flex items-center gap-2 text-[11px]">
                 <span className="px-2 py-0.5 rounded bg-emerald-700 text-white mindx-dark-keep font-bold">

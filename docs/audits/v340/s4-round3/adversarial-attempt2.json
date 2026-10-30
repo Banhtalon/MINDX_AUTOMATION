@@ -1,0 +1,56 @@
+{
+  "temp": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-adversarial-AsZwhw",
+  "records": [
+    {
+      "id": "R3-A01",
+      "state": "PASS",
+      "freshSnapshots": 30,
+      "changedEffectiveSources": 88,
+      "shadowedEdits": 40
+    },
+    {
+      "id": "R3-A02",
+      "state": "PASS",
+      "statusScoreCourseCombinations": 144,
+      "crmRoundTrips": 144
+    },
+    {
+      "id": "R3-A03",
+      "state": "PASS",
+      "crmPreserved": true,
+      "zeroEditWarningThrough": [
+        "POST",
+        "PUT"
+      ],
+      "wrongVersion": 409,
+      "rescanClears": true
+    },
+    {
+      "id": "R3-A04",
+      "state": "PASS",
+      "exportFiles": 6,
+      "gradeCells": 30,
+      "zeroRetained": true,
+      "formulaFieldsNeutralized": true
+    },
+    {
+      "id": "R3-A05",
+      "state": "PASS",
+      "malformedOrMismatchedResponses": 3,
+      "noFalseSuccess": true,
+      "busyReleased": true
+    },
+    {
+      "id": "R3-A06",
+      "state": "PASS",
+      "standaloneScrapePosts": 1,
+      "initialGet": 1,
+      "postScrapeReloads": 1
+    },
+    {
+      "id": "HARNESS-ERROR",
+      "state": "ERROR",
+      "error": "Error: Xung đột định danh học viên: Có nhiều học viên trùng tên 'Đỗ Minh An' trong danh sách lớp 'AUDIT-R3-FIVE-KEYS-1', không thể ánh xạ tự động.\n    at ScoreScraper.extractReportCardSnapshotFromGql (F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\scrape-scores.ts:2144:17)\n    at extract (F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round3\\adversarial-probe.cjs:30:22)\n    at main (F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round3\\adversarial-probe.cjs:144:18)"
+    }
+  ]
+}

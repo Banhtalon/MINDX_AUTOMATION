@@ -1,0 +1,10 @@
+﻿{
+    "Node":  "v24.21.0",
+    "TypeScript":  "7.0.2",
+    "Timezone":  "Asia/Saigon",
+    "ALLOWED_LOCAL_DIRS":  "C:\\Users\\QQ\\AppData\\Local\\Temp",
+    "MINDX_DB_PATH":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex_s4_r2.db",
+    "MINDX_RUNNING_CLASSES_PATH":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex_s4_r2_rc.json",
+    "Head":  "930132f04e7f4fe411f2c3c9df58305d7a7fa51b",
+    "Scope":  "HEAD plus pre-existing uncommitted S4 changes"
+}

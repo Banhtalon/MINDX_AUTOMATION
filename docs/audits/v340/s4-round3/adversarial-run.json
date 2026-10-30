@@ -1,0 +1,5 @@
+{
+  "command": "node --require tsx/cjs docs/audits/v340/s4-round3/adversarial-probe.cjs",
+  "exit": 0,
+  "backup": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\tracker-backup"
+}

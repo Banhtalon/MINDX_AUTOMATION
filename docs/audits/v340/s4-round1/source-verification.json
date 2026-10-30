@@ -1,0 +1,50 @@
+﻿[
+    {
+        "Path":  "src/app/api/homework-grader/export/route.ts",
+        "Before":  "DFC8DCE2A35AB0D08B0641B9479B448D2251D2605BC0E38CB9A254C2E6E89F97",
+        "After":  "DFC8DCE2A35AB0D08B0641B9479B448D2251D2605BC0E38CB9A254C2E6E89F97",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "src/app/api/homework-grader/scores/route.ts",
+        "Before":  "761EC0E5852DD147FBA172D32F0C2AF9F44EF3735B723A56482E44D5C400A1ED",
+        "After":  "761EC0E5852DD147FBA172D32F0C2AF9F44EF3735B723A56482E44D5C400A1ED",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "src/app/api/report-card/route.ts",
+        "Before":  "74ED2D587C85319B77DD73ABA414E22161A2CCDF8635621AD28639DD402DDC5C",
+        "After":  "74ED2D587C85319B77DD73ABA414E22161A2CCDF8635621AD28639DD402DDC5C",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "src/app/homework-grader/page.tsx",
+        "Before":  "7885711A2BE8584616FD0D6BEC21FAB8C7B89EFA7CEA1CDB1743929441E52329",
+        "After":  "7885711A2BE8584616FD0D6BEC21FAB8C7B89EFA7CEA1CDB1743929441E52329",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "src/components/teaching-report-card-view.tsx",
+        "Before":  "2D507FD26AA2C7F9105742B786D72FA52941643C871529B0D4E3986F4BE2AAC4",
+        "After":  "2D507FD26AA2C7F9105742B786D72FA52941643C871529B0D4E3986F4BE2AAC4",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "src/lib/zalo/broadcast-generator.ts",
+        "Before":  "9B466B23970A09D66CA45E880A6914AAC394C8D0B52E659B9209825E8B36F1ED",
+        "After":  "9B466B23970A09D66CA45E880A6914AAC394C8D0B52E659B9209825E8B36F1ED",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "scripts/test-streamline-v340-s4.ts",
+        "Before":  "1D63D6F69B2F1B09EC571E0DEB7DD2CC3585BD24441E9DDBA39517DE0E4730E2",
+        "After":  "1D63D6F69B2F1B09EC571E0DEB7DD2CC3585BD24441E9DDBA39517DE0E4730E2",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "src/lib/report-card/export-cell-formatter.ts",
+        "Before":  "272ECE8FEDC2A9BBCFCF990B1E95069D357EACC34A5C315B059C5E2216716D76",
+        "After":  "272ECE8FEDC2A9BBCFCF990B1E95069D357EACC34A5C315B059C5E2216716D76",
+        "Unchanged":  true
+    }
+]

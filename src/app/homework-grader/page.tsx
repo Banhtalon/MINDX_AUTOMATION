@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import {
-  RefreshCw,
   FileSpreadsheet,
-  Download,
   Copy,
   Check,
   CheckCircle,
@@ -14,12 +12,26 @@ import {
   FileCode,
   Eye,
   X,
-  Award,
   Table2,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import TeachingReportCardView from "@/components/teaching-report-card-view";
 import { ClassPicker } from "@/components/class-picker";
-import type { GradingRubric } from "@/components/homework-auto-grader-tab";
+import {
+  formatCellForExport as _sharedFormatCellForExport,
+  type ScoreExportMode,
+} from "@/lib/report-card/export-cell-formatter";
+
+const formatCellForExport: (
+  cell?: StudentScoreCell | null,
+  mode?: ScoreExportMode
+) => string | number =
+  typeof _sharedFormatCellForExport === "function"
+    ? _sharedFormatCellForExport
+    : (globalThis as any).__mindxExportHelpers?.formatCellForExport ||
+      (typeof console !== "undefined" ? (console as any).__mindxExportHelpers?.formatCellForExport : undefined) ||
+      (typeof URL !== "undefined" ? (URL as any).__mindxExportHelpers?.formatCellForExport : undefined);
 
 type ScoreCellStatus =
   | "GRADED"
@@ -113,11 +125,9 @@ export default function HomeworkGraderPage() {
   const [classId, setClassId] = useState("VT-C4K-PTA12");
   const [runningClasses, setRunningClasses] = useState<string[]>([]);
   const [isFetchingClasses, setIsFetchingClasses] = useState(false);
-  const [showCustomClassInput, setShowCustomClassInput] = useState(false);
   const [exportFormat, setExportFormat] = useState<"xlsx" | "csv">("xlsx");
-  const [activeTab, setActiveTab] = useState<"report_card" | "scores">("report_card");
+  const [showSubmissionDetails, setShowSubmissionDetails] = useState(false);
   const [matrix, setMatrix] = useState<ClassScoreMatrixResult | null>(null);
-  const [rubrics, setRubrics] = useState<GradingRubric[]>([]);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"practice" | "both" | "quiz">("both");
 
@@ -280,9 +290,6 @@ export default function HomeworkGraderPage() {
         }
         setMatrix(fetchedMatrix || null);
         setUpdatedAt(json.data.updatedAt || null);
-        if (Array.isArray(json.data.rubrics)) {
-          setRubrics(json.data.rubrics);
-        }
       }
     } catch (err) {
       if (requestId === latestLoadRequestIdRef.current) {
@@ -394,33 +401,6 @@ export default function HomeworkGraderPage() {
     );
   };
 
-  const formatCellForTsv = (cell?: StudentScoreCell): string => {
-    if (!cell) return viewMode === "quiz" ? "Chưa làm" : "Chưa nộp";
-    if (viewMode === "quiz") {
-      return typeof cell.quizScore === "number" ? String(cell.quizScore) : "Chưa làm";
-    }
-    let basePractice: string;
-    switch (cell.status) {
-      case "GRADED":
-        basePractice = typeof cell.score === "number" ? String(cell.score) : "0";
-        break;
-      case "SUBMITTED_UNGRADED":
-        basePractice = "Chưa chấm";
-        break;
-      case "REDO_REQUESTED":
-        basePractice = "Làm lại";
-        break;
-      case "NOT_SUBMITTED":
-      default:
-        basePractice = "Chưa nộp";
-        break;
-    }
-    if (viewMode === "both" && typeof cell.quizScore === "number") {
-      return `${basePractice} (Quiz: ${cell.quizScore})`;
-    }
-    return basePractice;
-  };
-
   const handleCopyForGoogleSheets = async () => {
     if (!isMatrixMatchedWithSelection || !matrix || !matrix.rows.length) return;
     const cols = matrix.columns || [];
@@ -442,7 +422,7 @@ export default function HomeworkGraderPage() {
     const lines = [headers.join("\t")];
     matrix.rows.forEach((row, idx) => {
       const cellsText = cols.map((col) =>
-        sanitizeTsvCell(formatCellForTsv(row.cells?.[col.columnId]))
+        sanitizeTsvCell(formatCellForExport(row.cells?.[col.columnId], viewMode))
       );
       const line = [
         String(idx + 1),
@@ -619,15 +599,6 @@ export default function HomeworkGraderPage() {
               lastSyncedAt={updatedAt}
               showRefreshButton={false}
             />
-
-            <button
-              onClick={handleScrapeScores}
-              disabled={isScraping}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 text-white text-sm font-bold transition shadow-md cursor-pointer mindx-dark-btn"
-            >
-              <RefreshCw className={`w-4 h-4 ${isScraping ? "animate-spin" : ""}`} />
-              {isScraping ? "Đang cào bảng điểm..." : "Cào dữ liệu điểm mới nhất"}
-            </button>
           </div>
         </div>
 
@@ -660,228 +631,201 @@ export default function HomeworkGraderPage() {
             </button>
           </div>
         )}
+      </div>
 
-        {/* Single-Line Summary Bar (Replaces 6 Bulky Cards) */}
-        {matrix && Boolean(0) && (
-          <div className="mt-4 pt-3.5 border-t border-white/15 flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-slate-200 font-semibold">
-                👥 Học viên: <strong className="text-slate-900 dark:text-white">{matrix.summary.totalStudents}</strong>
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 font-semibold">
-                ✅ Đã chấm: <strong>{matrix.summary.gradedCells}</strong>
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-amber-950/30 border border-amber-500/30 text-amber-300 font-semibold">
-                ⏳ Chờ chấm: <strong>{matrix.summary.submittedUngradedCells}</strong>
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-purple-950/30 border border-purple-500/30 text-purple-300 font-semibold">
-                🔄 Làm lại: <strong>{matrix.summary.redoCells}</strong>
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-rose-950/30 border border-rose-500/30 text-rose-300 font-semibold">
-                ⚠️ Điểm 0: <strong>{matrix.summary.zeroScoreCells}</strong>
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-slate-400 font-semibold">
-                📭 Chưa nộp: <strong className="text-slate-200">{matrix.summary.notSubmittedCells}</strong>
-              </span>
-            </div>
-            {updatedAt && (
-              <span className="text-[11px] text-blue-100">
-                Cập nhật gần nhất: {updatedAt}
+      {/* Primary View: Phiếu Điểm Tổng Kết (Chuẩn Teaching — BTVN, CP1, CP2 & DEMO) */}
+      <TeachingReportCardView
+        classId={classId}
+        classCode={classCode}
+        onSelectClass={(nextCode) => {
+          setClassCode(nextCode);
+          setClassId(nextCode);
+        }}
+        scrapeTrigger=""
+        onRequestScrapeLms={handleScrapeScores}
+        isScrapingExternal={isScraping}
+      />
+
+      {/* Collapsible Secondary View: Chi tiết bài nộp BTVN trên LMS (Xuất Excel / Xem Nhận Xét) */}
+      <div className="mindx-card rounded-2xl overflow-hidden shadow-xl">
+        <button
+          type="button"
+          onClick={() => setShowSubmissionDetails((prev) => !prev)}
+          className="w-full px-5 py-3.5 flex items-center justify-between text-left hover:bg-slate-800/40 transition cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5">
+            <Table2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-xs font-bold text-slate-200">
+              📂 Chi tiết bài nộp BTVN trên LMS (Xuất Excel / Xem Nhận Xét)
+            </span>
+            {matrix && matrix.rows.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[11px] bg-slate-800 border border-slate-700 text-slate-300 font-medium">
+                {matrix.rows.length} HV × {matrix.columns.length} cột
               </span>
             )}
           </div>
-        )}
-      </div>
-
-      {/* Tab Switcher: Tab 1 (Phiếu Điểm Tổng Kết Chuẩn Teaching) vs Tab 2 (Ma Trận Bài Nộp LMS) */}
-      <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-xl mindx-card w-fit">
-        <button
-          type="button"
-          onClick={() => setActiveTab("report_card")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
-            activeTab === "report_card"
-              ? "bg-indigo-700 text-white shadow-md shadow-indigo-700/20 mindx-dark-btn mindx-dark-keep"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
-          }`}
-        >
-          <Award className="w-4 h-4" />
-          Phiếu Điểm Tổng Kết (Chuẩn Teaching — BTVN, CP1, CP2 &amp; DEMO)
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("scores")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
-            activeTab === "scores"
-              ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 mindx-dark-btn mindx-dark-keep"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
-          }`}
-        >
-          <Table2 className="w-4 h-4" />
-          Ma Trận Bài Nộp BTVN Chi Tiết Trên LMS (Xuất Excel / Xem Nhận Xét)
-        </button>
-      </div>
-
-      {activeTab === "report_card" ? (
-        <TeachingReportCardView
-          classId={classId}
-          classCode={classCode}
-          onSelectClass={(nextCode) => {
-            setClassCode(nextCode);
-            setClassId(nextCode);
-          }}
-          scrapeTrigger={updatedAt || matrix?.scrapedAt || ""}
-          onRequestScrapeLms={handleScrapeScores}
-          isScrapingExternal={isScraping}
-        />
-      ) : (
-        <>
-          {/* 2. Export & View Mode Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl mindx-card">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400 mr-1">Chế độ xem:</span>
-          <button
-            onClick={() => setViewMode("both")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-              viewMode === "both"
-                ? "bg-blue-600 text-white mindx-dark-btn"
-                : "bg-slate-800 text-slate-400 hover:text-white"
-            }`}
-          >
-            Thực hành + Quiz
-          </button>
-          <button
-            onClick={() => setViewMode("practice")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-              viewMode === "practice"
-                ? "bg-blue-600 text-white mindx-dark-btn"
-                : "bg-slate-800 text-slate-400 hover:text-white"
-            }`}
-          >
-            Chỉ Thực hành (File nộp)
-          </button>
-          <button
-            onClick={() => setViewMode("quiz")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-              viewMode === "quiz"
-                ? "bg-blue-600 text-white mindx-dark-btn"
-                : "bg-slate-800 text-slate-400 hover:text-white"
-            }`}
-          >
-            Chỉ Điểm Quiz
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleCopyForGoogleSheets}
-            disabled={!isMatrixMatchedWithSelection}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer"
-          >
-            {copiedSheets ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            {copiedSheets ? "Đã copy chuẩn Google Sheets!" : "Copy Bảng điểm (Chuẩn Google Sheets)"}
-          </button>
-
-          <div className="inline-flex items-center rounded-lg overflow-hidden border border-emerald-500/40 bg-slate-950">
-            <select
-              value={exportFormat}
-              onChange={(e) => setExportFormat(e.target.value as "xlsx" | "csv")}
-              disabled={!isMatrixMatchedWithSelection}
-              className="px-2.5 py-2 bg-slate-900 text-xs font-semibold text-slate-200 border-r border-slate-800 focus:outline-none cursor-pointer disabled:opacity-40"
-            >
-              <option value="xlsx">Excel (.XLSX)</option>
-              <option value="csv">CSV (.CSV)</option>
-            </select>
-            <button
-              type="button"
-              onClick={() => handleExportFile(exportFormat)}
-              disabled={!isMatrixMatchedWithSelection}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition cursor-pointer mindx-dark-btn"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              <span>Xuất file</span>
-            </button>
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+            <span>{showSubmissionDetails ? "Thu gọn" : "Mở rộng"}</span>
+            {showSubmissionDetails ? (
+              <ChevronDown className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
           </div>
-        </div>
-      </div>
+        </button>
 
-      {/* 3. Score Matrix Table */}
-      <div className="mindx-card rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-300">
-            <thead className="mindx-thead text-xs uppercase font-bold tracking-wider">
-              <tr>
-                <th className="px-3 py-3.5 w-12 text-center sticky left-0 bg-[#172554] z-10">
-                  STT
-                </th>
-                <th className="px-4 py-3.5 min-w-[200px] sticky left-12 bg-[#172554] z-10 border-r border-slate-700/60">
-                  Học viên
-                </th>
-                {matrix?.columns?.map((col) => (
-                  <th
-                    key={col.columnId}
-                    className="px-3 py-3.5 min-w-[135px] text-center border-r border-slate-700/60"
-                    title={col.title}
+        {showSubmissionDetails && (
+          <div className="border-t border-slate-800 p-4 space-y-4">
+            {/* 2. Export & View Mode Toolbar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-400 mr-1">Chế độ xem:</span>
+                <button
+                  onClick={() => setViewMode("both")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    viewMode === "both"
+                      ? "bg-blue-600 text-white mindx-dark-btn"
+                      : "bg-slate-800 text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Thực hành + Quiz
+                </button>
+                <button
+                  onClick={() => setViewMode("practice")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    viewMode === "practice"
+                      ? "bg-blue-600 text-white mindx-dark-btn"
+                      : "bg-slate-800 text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Chỉ Thực hành (File nộp)
+                </button>
+                <button
+                  onClick={() => setViewMode("quiz")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    viewMode === "quiz"
+                      ? "bg-blue-600 text-white mindx-dark-btn"
+                      : "bg-slate-800 text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Chỉ Điểm Quiz
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={handleCopyForGoogleSheets}
+                  disabled={!isMatrixMatchedWithSelection}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer"
+                >
+                  {copiedSheets ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copiedSheets ? "Đã copy chuẩn Google Sheets!" : "Copy Bảng điểm (Chuẩn Google Sheets)"}
+                </button>
+
+                <div className="inline-flex items-center rounded-lg overflow-hidden border border-emerald-500/40 bg-slate-950">
+                  <select
+                    value={exportFormat}
+                    onChange={(e) => setExportFormat(e.target.value as "xlsx" | "csv")}
+                    disabled={!isMatrixMatchedWithSelection}
+                    className="px-2.5 py-2 bg-slate-900 text-xs font-semibold text-slate-200 border-r border-slate-800 focus:outline-none cursor-pointer disabled:opacity-40"
                   >
-                    <div className="font-bold text-white truncate max-w-[150px] mx-auto">
-                      {col.title}
-                    </div>
-                  </th>
-                ))}
-                <th className="px-3 py-3.5 w-28 text-center bg-[#172554] font-bold text-emerald-300">
-                  TB Thực hành
-                </th>
-                <th className="px-3 py-3.5 w-24 text-center bg-[#172554] font-bold text-sky-300">
-                  TB Quiz
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {matrix && matrix.rows.length > 0 ? (
-                matrix.rows.map((student, idx) => (
-                  <tr key={student.studentId} className="hover:bg-slate-850/60 transition border-l-4 border-l-sky-500">
-                    <td className="px-3 py-3.5 text-center font-mono text-xs text-slate-500 sticky left-0 bg-slate-900">
-                      {String(idx + 1).padStart(2, "0")}
-                    </td>
-                    <td className="px-4 py-3.5 sticky left-12 bg-slate-900 border-r border-slate-800">
-                      <div className="font-semibold text-white">{student.fullName}</div>
-                      <div className="text-[11px] font-mono text-slate-500">
-                        {student.studentId}
-                      </div>
-                    </td>
-                    {matrix.columns.map((col) => (
-                      <td
-                        key={col.columnId}
-                        className="px-2 py-3 text-center border-r border-slate-800/40"
-                      >
-                        {renderCellBadge(student, col)}
-                      </td>
-                    ))}
-                    <td className="px-3 py-3.5 text-center font-bold text-emerald-400 bg-slate-950/30">
-                      {typeof student.averageScore === "number"
-                        ? `${student.averageScore}`
-                        : "-"}
-                    </td>
-                    <td className="px-3 py-3.5 text-center font-semibold text-sky-400 bg-slate-950/30">
-                      {typeof student.averageQuizScore === "number"
-                        ? `${student.averageQuizScore}`
-                        : "-"}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan={(matrix?.columns?.length || 0) + 4}
-                    className="px-4 py-10 text-center text-slate-500"
+                    <option value="xlsx">Excel (.XLSX)</option>
+                    <option value="csv">CSV (.CSV)</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleExportFile(exportFormat)}
+                    disabled={!isMatrixMatchedWithSelection}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition cursor-pointer mindx-dark-btn"
                   >
-                    Chưa có dữ liệu bảng điểm cho lớp <strong>{classCode}</strong>. Vui lòng bấm{" "}
-                    <strong>&quot;Cào dữ liệu điểm mới nhất&quot;</strong> ở góc trên bên phải.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    <FileSpreadsheet className="w-4 h-4" />
+                    <span>Xuất file</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Score Matrix Table */}
+            <div className="rounded-xl overflow-hidden border border-slate-800">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-slate-300">
+                  <thead className="mindx-thead text-xs uppercase font-bold tracking-wider">
+                    <tr>
+                      <th className="px-3 py-3.5 w-12 text-center sticky left-0 bg-[#172554] z-10">
+                        STT
+                      </th>
+                      <th className="px-4 py-3.5 min-w-[200px] sticky left-12 bg-[#172554] z-10 border-r border-slate-700/60">
+                        Học viên
+                      </th>
+                      {matrix?.columns?.map((col) => (
+                        <th
+                          key={col.columnId}
+                          className="px-3 py-3.5 min-w-[135px] text-center border-r border-slate-700/60"
+                          title={col.title}
+                        >
+                          <div className="font-bold text-white truncate max-w-[150px] mx-auto">
+                            {col.title}
+                          </div>
+                        </th>
+                      ))}
+                      <th className="px-3 py-3.5 w-28 text-center bg-[#172554] font-bold text-emerald-300">
+                        TB Thực hành
+                      </th>
+                      <th className="px-3 py-3.5 w-24 text-center bg-[#172554] font-bold text-sky-300">
+                        TB Quiz
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {matrix && matrix.rows.length > 0 ? (
+                      matrix.rows.map((student, idx) => (
+                        <tr key={student.studentId} className="hover:bg-slate-850/60 transition border-l-4 border-l-sky-500">
+                          <td className="px-3 py-3.5 text-center font-mono text-xs text-slate-500 sticky left-0 bg-slate-900">
+                            {String(idx + 1).padStart(2, "0")}
+                          </td>
+                          <td className="px-4 py-3.5 sticky left-12 bg-slate-900 border-r border-slate-800">
+                            <div className="font-semibold text-white">{student.fullName}</div>
+                            <div className="text-[11px] font-mono text-slate-500">
+                              {student.studentId}
+                            </div>
+                          </td>
+                          {matrix.columns.map((col) => (
+                            <td
+                              key={col.columnId}
+                              className="px-2 py-3 text-center border-r border-slate-800/40"
+                            >
+                              {renderCellBadge(student, col)}
+                            </td>
+                          ))}
+                          <td className="px-3 py-3.5 text-center font-bold text-emerald-400 bg-slate-950/30">
+                            {typeof student.averageScore === "number"
+                              ? `${student.averageScore}`
+                              : "-"}
+                          </td>
+                          <td className="px-3 py-3.5 text-center font-semibold text-sky-400 bg-slate-950/30">
+                            {typeof student.averageQuizScore === "number"
+                              ? `${student.averageQuizScore}`
+                              : "-"}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={(matrix?.columns?.length || 0) + 4}
+                          className="px-4 py-10 text-center text-slate-500"
+                        >
+                          Chưa có dữ liệu bảng điểm cho lớp <strong>{classCode}</strong>. Vui lòng bấm{" "}
+                          <strong>&quot;🔄 Quét Điểm BTVN &amp; Checkpoint từ LMS&quot;</strong> ở thanh công cụ phía trên.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 4. Submission Detail Modal */}
@@ -959,8 +903,6 @@ export default function HomeworkGraderPage() {
             </div>
           </div>
         </div>
-      )}
-        </>
       )}
     </div>
   );

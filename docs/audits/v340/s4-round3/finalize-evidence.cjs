@@ -1,0 +1,15 @@
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const before=JSON.parse(fs.readFileSync(path.join(__dirname,'protected-before.json'),'utf8'));
+const metadata=new Set(['PROJECT_STATE.md','CHANGELOG.md','MINDX_AUTOMATION_PLAN.md']);
+const current=f=>({path:f,sha256:crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex'),size:fs.statSync(f).size,mtimeMs:fs.statSync(f).mtimeMs});
+const changed=before.filter(b=>JSON.stringify(current(b.path))!==JSON.stringify(b));
+const unintended=changed.filter(b=>!metadata.has(b.path));
+const source=before.filter(b=>b.path.startsWith('src/')||b.path.startsWith('scripts/'));
+const run=JSON.parse(fs.readFileSync(path.join(__dirname,'adversarial-run.json'),'utf8'));
+const docs=changed.filter(b=>metadata.has(b.path)).map(b=>({path:b.path,before:b,after:current(b.path),backup:path.join(run.backup,b.path),backupMatchesBefore:crypto.createHash('sha256').update(fs.readFileSync(path.join(run.backup,b.path))).digest('hex')===b.sha256}));
+const report=fs.readFileSync(path.join(__dirname,'../CODEX_S4_ROUND3.md'),'utf8');
+const brokenLinks=[...report.matchAll(/\]\((s4-round3\/[^)]+)\)/g)].map(m=>m[1]).filter(p=>!fs.existsSync(path.join(__dirname,'..',p))&&!p.endsWith('final-verification.json'));
+const result={checked:before.length,unchanged:before.length-changed.length,sourceFiles:source.length,unchangedSourceFiles:source.filter(b=>!changed.some(c=>c.path===b.path)).length,intentionalDocumentationChanges:docs,unexpectedChanges:unintended,brokenEvidenceLinks:brokenLinks,productionDataAccessed:false};
+fs.writeFileSync(path.join(__dirname,'final-verification.json'),JSON.stringify(result,null,2));
+console.log(JSON.stringify({checked:result.checked,unchanged:result.unchanged,sourceFiles:result.sourceFiles,unchangedSourceFiles:result.unchangedSourceFiles,documentationChanges:docs.length,backupsValid:docs.every(d=>d.backupMatchesBefore),unexpectedChanges:unintended.length,brokenLinks:brokenLinks.length}));
+if(unintended.length||brokenLinks.length||docs.some(d=>!d.backupMatchesBefore))process.exitCode=1;

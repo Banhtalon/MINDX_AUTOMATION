@@ -1,0 +1,879 @@
+﻿{
+    "ProtectedCount":  145,
+    "UnchangedCount":  145,
+    "Failures":  [
+
+                 ],
+    "Files":  [
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\AGENTS.md",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\CHANGELOG.md",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\CODEX_S4_ROUND1.md",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\phase4-test.log",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\probe.cjs",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\probe.log",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\probe-results.json",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\s4-test.log",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\source-before.json",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\source-verification.json",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\tsbuildinfo-verification.json",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\tsc.log",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\v330-test.log",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\MINDX_AUTOMATION_PLAN.md",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\next-env.d.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\package.json",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\package-lock.json",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\PROJECT_STATE.md",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\recon.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-checkpoint-v300.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-lms-reliability-v280.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-patches-round2.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-phase3.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-phase4-codex-repros.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-phase5.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-phase6.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-phase7.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-quick-tags-v300.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-report-card-v330.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-session14-v290.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-spck-v270.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-spck-v272.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-streamline-v340-s1.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-streamline-v340-s2.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-streamline-v340-s3.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-streamline-v340-s4.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-teaching-project-v320.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\auth\\login\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\auth\\status\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\classes\\refresh\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\config\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\homework-grader\\approve\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\homework-grader\\download-and-grade\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\homework-grader\\export\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\homework-grader\\save-lms\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\homework-grader\\scores\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\homework-grader\\submissions\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\queue\\control\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\queue\\stream\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\report-card\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\report-card\\sync-teaching\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\approve\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\fetch-classes\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\generate-ai\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\list\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\save-draft\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\save-lms\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\sync\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\zalo-btvn-image\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\approve\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\browse-folder\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\capture-screenshots\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\create-demo-sheet\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\deploy-web\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\generate-ai\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\import-youtube\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\list\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\save-draft\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\scan\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\session14-eval\\generate-ai\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\session14-eval\\import-demo-scores\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\session14-eval\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\session14-eval\\upload-lms\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\student-portal\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\upload-drive\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\upload-lms\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\teaching-projects\\fetch-lms-dates\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\teaching-projects\\generate-ai\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\teaching-projects\\progress\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\teaching-projects\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\teaching-projects\\sync\\route.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\final-project\\page.tsx",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\globals.css",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\homework-grader\\page.tsx",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\layout.tsx",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\page.tsx",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\session-comments\\page.tsx",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\syllabus-config\\page.tsx",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\teaching-projects\\page.tsx",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\components\\class-picker.tsx",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\components\\homework-auto-grader-tab.tsx",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\components\\live-log-drawer.tsx",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\components\\teaching-report-card-view.tsx",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\components\\top-navbar.tsx",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\classes\\class-directory.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\config.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\db\\json-config.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\db\\sqlite.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\file-parsers\\archive-reader.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\file-parsers\\code-reader.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\file-parsers\\game-reader.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\file-parsers\\index.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\file-parsers\\media-reader.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\client.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\comment-generator.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\homework-grader.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\score-auditor.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\session14-course-summary.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\spck-comment.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\teaching-project-generator.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\github\\spck-web-deployer.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\local-files\\spck-app-screenshotter.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\local-files\\spck-demo-score-reader.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\local-files\\spck-image-normalizer.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\local-files\\spck-scanner.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\local-files\\spck-youtube-import.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\auth.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\browser-manager.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\download-submissions.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\grade-worker.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\lms-helpers.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\network-interceptor.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\save-comments.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\scrape-scores.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\selectors.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\session14-eval-uploader.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\spck-demo-sheet.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\spck-drive-uploader.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\spck-uploader.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\sync-class.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\teaching-project-service.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\teaching-report-card-sync.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\queue\\task-queue.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\quick-tags\\index.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\report-card\\export-cell-formatter.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\report-card\\report-card-calculator.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\security\\local-guard.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\security\\path-allowlist.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\student-portal\\student-portal-server.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\teaching\\teaching-http-client.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\utils.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\utils\\vietnamese-match.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\zalo\\broadcast-generator.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\zalo\\zalo-summary.ts",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  },
+                  {
+                      "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\tsconfig.json",
+                      "HashUnchanged":  true,
+                      "LengthUnchanged":  true,
+                      "TimestampUnchanged":  true
+                  }
+              ]
+}

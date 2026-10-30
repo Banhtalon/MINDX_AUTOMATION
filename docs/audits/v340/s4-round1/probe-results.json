@@ -1,0 +1,155 @@
+[
+  {
+    "id": "P01",
+    "finding": null,
+    "control": "ISO and SQLite localtime both detect newer evaluation",
+    "timezone": "Asia/Saigon"
+  },
+  {
+    "id": "P02",
+    "finding": "S4-01",
+    "actualStale": false,
+    "expectedStale": true,
+    "snapshotDemo": 4,
+    "currentDemo": 5,
+    "evaluationUpdated": "08:00:30Z",
+    "scrapeFinished": "08:01:00Z"
+  },
+  {
+    "id": "P03",
+    "finding": "S4-01",
+    "actualApproval": 200,
+    "approvedStaleScore": 4,
+    "contentHashSet": true
+  },
+  {
+    "id": "P04",
+    "finding": "S4-02",
+    "actualStale": false,
+    "expectedStale": true,
+    "previousDemo": 4,
+    "correctedDemo": 0,
+    "sameSecond": true
+  },
+  {
+    "id": "P05",
+    "finding": null,
+    "control": "same-second nonzero correction is detected"
+  },
+  {
+    "id": "C-CP-boundaries",
+    "finding": null,
+    "control": "zero CP scores are present; null checkpoints are missing; inactive students excluded; no snapshot/no evaluations does not crash",
+    "cases": 5
+  },
+  {
+    "id": "C-400",
+    "finding": null,
+    "control": "approval error prevents sync and releases busy state"
+  },
+  {
+    "id": "C-409",
+    "finding": null,
+    "control": "approval error prevents sync and releases busy state"
+  },
+  {
+    "id": "C-500",
+    "finding": null,
+    "control": "approval error prevents sync and releases busy state"
+  },
+  {
+    "id": "C-class-switch",
+    "finding": null,
+    "control": "combined action stops before sync",
+    "syncCalls": 0
+  },
+  {
+    "id": "C-newer-load",
+    "finding": null,
+    "control": "combined action stops before sync",
+    "syncCalls": 0
+  },
+  {
+    "id": "C-network-error",
+    "finding": null,
+    "control": "combined action stops before sync",
+    "syncCalls": 0
+  },
+  {
+    "id": "C-sync-409",
+    "finding": null,
+    "control": "no success toast after failed or obsolete sync; busy state released"
+  },
+  {
+    "id": "C-sync-network",
+    "finding": null,
+    "control": "no success toast after failed or obsolete sync; busy state released"
+  },
+  {
+    "id": "C-switch-during-sync",
+    "finding": null,
+    "control": "no success toast after failed or obsolete sync; busy state released"
+  },
+  {
+    "id": "P06",
+    "finding": "S4-03",
+    "actualTitle": "Có dữ liệu Buổi 14 mới, bấm Quét lại",
+    "hasNewerSession14": false,
+    "missingCp2": true
+  },
+  {
+    "id": "C-hash-version",
+    "finding": null,
+    "control": "real handlers reject stale version and invalid SHA-256 before remote access",
+    "wrongVersionStatus": 409,
+    "wrongHashStatus": 400
+  },
+  {
+    "id": "C-local-report-get",
+    "finding": null,
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-local-report-post",
+    "finding": null,
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-local-report-put",
+    "finding": null,
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-local-scores-get",
+    "finding": null,
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-local-scores-post",
+    "finding": null,
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-local-export-get",
+    "finding": null,
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-local-sync-post",
+    "finding": null,
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-formatter",
+    "finding": null,
+    "control": "formatter parity and formula escaping",
+    "cases": 29
+  }
+]

@@ -2,9 +2,21 @@ import { NextResponse } from "next/server";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { taskQueue } from "@/lib/queue/task-queue";
 import { ScoreScraper } from "@/lib/playwright/scrape-scores";
-import { classSessionRepo, scoreMatrixRepo } from "@/lib/db/sqlite";
-import { getGradingRubrics } from "@/lib/db/json-config";
-import { listClasses, listStudents } from "@/lib/classes/class-directory";
+import { scoreMatrixRepo } from "@/lib/db/sqlite";
+import { listClasses } from "@/lib/classes/class-directory";
+
+export async function enqueueScrapeClassScores(classCode: string) {
+  const cleanCode = classCode.trim().toUpperCase();
+  return taskQueue.enqueue({
+    id: `scrape_scores_${cleanCode}_${Date.now()}`,
+    jobType: "SCRAPE_SCORES",
+    description: `Cào bảng điểm toàn khóa lớp ${cleanCode} từ LMS`,
+    classId: cleanCode,
+    execute: async () => {
+      return ScoreScraper.scrapeClassScores(cleanCode);
+    },
+  });
+}
 
 export async function GET(req: Request) {
   const guard = validateLocalRequest(req);
@@ -16,18 +28,12 @@ export async function GET(req: Request) {
     const classId = rawClassId ? rawClassId.trim().toUpperCase() : "";
 
     const cached = classId ? scoreMatrixRepo.findByClass(classId) : null;
-    const sessions = classId ? classSessionRepo.findByClass(classId) : [];
-    const students = classId ? listStudents(classId, { activeOnly: false }) : [];
-    const rubrics = getGradingRubrics();
 
     return NextResponse.json({
       success: true,
       data: {
         matrix: cached?.matrix || null,
         updatedAt: cached?.updatedAt || null,
-        sessions,
-        students,
-        rubrics,
         runningClasses: listClasses({ scope: "running" }).map((c) => c.classCode),
       },
     });
@@ -55,16 +61,7 @@ export async function POST(req: Request) {
     }
 
     const classCode = rawClassCode.trim().toUpperCase();
-
-    const result = await taskQueue.enqueue({
-      id: `scrape_scores_${classCode}_${Date.now()}`,
-      jobType: "SCRAPE_SCORES",
-      description: `Cào bảng điểm toàn khóa lớp ${classCode} từ LMS`,
-      classId: classCode,
-      execute: async () => {
-        return ScoreScraper.scrapeClassScores(classCode);
-      },
-    });
+    const result = await enqueueScrapeClassScores(classCode);
 
     return NextResponse.json(result);
   } catch (err: any) {

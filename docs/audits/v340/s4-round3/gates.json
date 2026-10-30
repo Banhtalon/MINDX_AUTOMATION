@@ -1,0 +1,74 @@
+[
+  {
+    "id": "closure",
+    "command": "node --require tsx/cjs docs/audits/v340/s4-round2/closure-probe.cjs",
+    "exit": 0,
+    "signal": null,
+    "ms": 905,
+    "env": {
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\closure\\audit.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\closure\\running_classes.json",
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y"
+    }
+  },
+  {
+    "id": "parity",
+    "command": "node --require tsx/cjs docs/audits/v340/s4-round2/parity-probe.cjs",
+    "exit": 0,
+    "signal": null,
+    "ms": 670,
+    "env": {
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\parity\\audit.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\parity\\running_classes.json",
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y"
+    }
+  },
+  {
+    "id": "tsc",
+    "command": "npx tsc --noEmit --incremental false",
+    "exit": 0,
+    "signal": null,
+    "ms": 1481,
+    "env": {
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\tsc\\audit.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\tsc\\running_classes.json",
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y"
+    }
+  },
+  {
+    "id": "s4",
+    "command": "npx tsx scripts/test-streamline-v340-s4.ts",
+    "exit": 0,
+    "signal": null,
+    "ms": 2057,
+    "env": {
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\s4\\audit.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\s4\\running_classes.json",
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y"
+    }
+  },
+  {
+    "id": "v330",
+    "command": "npx tsx scripts/test-report-card-v330.ts",
+    "exit": 0,
+    "signal": null,
+    "ms": 2089,
+    "env": {
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\v330\\audit.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\v330\\running_classes.json",
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y"
+    }
+  },
+  {
+    "id": "phase4",
+    "command": "npx tsx scripts/test-phase4-codex-repros.ts",
+    "exit": 0,
+    "signal": null,
+    "ms": 3189,
+    "env": {
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\phase4\\audit.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y\\phase4\\running_classes.json",
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-c4VG1Y"
+    }
+  }
+]

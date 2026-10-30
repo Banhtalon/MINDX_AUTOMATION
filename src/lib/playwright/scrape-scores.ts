@@ -2434,6 +2434,7 @@ export class ScoreScraper {
       return {
         studentId: cand.studentId,
         studentUid: cand.studentUid,
+        ...(cand.crmStudentId ? { crmStudentId: cand.crmStudentId } : {}),
         fullName: cand.fullName,
         isActive: cand.isActive,
         btvnScores,

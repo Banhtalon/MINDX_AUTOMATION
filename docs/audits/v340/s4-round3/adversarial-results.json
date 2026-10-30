@@ -1,0 +1,64 @@
+{
+  "temp": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-adversarial-fZWzDT",
+  "records": [
+    {
+      "id": "R3-A01",
+      "state": "PASS",
+      "freshSnapshots": 30,
+      "changedEffectiveSources": 88,
+      "shadowedEdits": 40
+    },
+    {
+      "id": "R3-A02",
+      "state": "PASS",
+      "statusScoreCourseCombinations": 144,
+      "crmRoundTrips": 144
+    },
+    {
+      "id": "R3-A03",
+      "state": "PASS",
+      "crmPreserved": true,
+      "zeroEditWarningThrough": [
+        "POST",
+        "PUT"
+      ],
+      "wrongVersion": 409,
+      "rescanClears": true
+    },
+    {
+      "id": "R3-A04",
+      "state": "PASS",
+      "exportFiles": 6,
+      "gradeCells": 30,
+      "zeroRetained": true,
+      "formulaFieldsNeutralized": true
+    },
+    {
+      "id": "R3-A05",
+      "state": "PASS",
+      "malformedOrMismatchedResponses": 3,
+      "noFalseSuccess": true,
+      "busyReleased": true
+    },
+    {
+      "id": "R3-A06",
+      "state": "PASS",
+      "standaloneScrapePosts": 1,
+      "initialGet": 1,
+      "postScrapeReloads": 1
+    },
+    {
+      "id": "R3-A07",
+      "state": "PASS",
+      "aliasCombinations": 15,
+      "individualEdits": 32,
+      "changed": 15,
+      "shadowed": 17
+    },
+    {
+      "id": "R3-A08",
+      "state": "PASS",
+      "ambiguousCanonicalNameBridge": "rejected before manufacturing a snapshot"
+    }
+  ]
+}

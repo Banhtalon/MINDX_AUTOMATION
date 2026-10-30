@@ -1,0 +1,133 @@
+[
+  {
+    "id": "ID-studentId",
+    "state": "PASS",
+    "staleDetected": true,
+    "refreshedClears": true
+  },
+  {
+    "id": "ID-studentUid",
+    "state": "PASS",
+    "staleDetected": true,
+    "refreshedClears": true
+  },
+  {
+    "id": "ID-lmsStudentUid",
+    "state": "PASS",
+    "staleDetected": true,
+    "refreshedClears": true
+  },
+  {
+    "id": "ID-normalized-name",
+    "state": "PASS",
+    "staleDetected": true,
+    "refreshedClears": true
+  },
+  {
+    "id": "ID-expected-slug",
+    "state": "PASS",
+    "staleDetected": true,
+    "refreshedClears": true
+  },
+  {
+    "id": "TIME-MATRIX",
+    "state": "PASS",
+    "cases": 12,
+    "timezone": "Asia/Saigon"
+  },
+  {
+    "id": "COMPETENCY",
+    "state": "PASS",
+    "competencyChangeDetected": true
+  },
+  {
+    "id": "R2-01-PURE",
+    "state": "OPEN",
+    "finding": "S4-R2-01",
+    "severity": "HIGH",
+    "snapshotScores": [
+      5,
+      4
+    ],
+    "currentEffectiveScores": [
+      5,
+      5
+    ],
+    "actualStale": false,
+    "expectedStale": true,
+    "actualHasNewer": false
+  },
+  {
+    "id": "R2-01-API",
+    "state": "OPEN",
+    "finding": "S4-R2-01",
+    "severity": "HIGH",
+    "getHasNewer": false,
+    "approveHttp": 200,
+    "contentHashSet": true,
+    "approvedScores": [
+      5,
+      4
+    ],
+    "actualStale": false
+  },
+  {
+    "id": "R2-01-FRESH-CONTROL",
+    "state": "PASS",
+    "refreshedScores": [
+      5,
+      5
+    ],
+    "actualStale": false
+  },
+  {
+    "id": "R2-02-RESCAN-1",
+    "state": "OPEN",
+    "finding": "S4-R2-02",
+    "severity": "LOW",
+    "freshlyExtractedDemo": 4,
+    "localDefaultDemo": 0,
+    "sourceStatus": "WAITING_APPROVAL",
+    "sourceLearned": "",
+    "actualHasNewer": true,
+    "expectedHasNewer": false
+  },
+  {
+    "id": "R2-02-RESCAN-2",
+    "state": "OPEN",
+    "finding": "S4-R2-02",
+    "severity": "LOW",
+    "freshlyExtractedDemo": 4,
+    "localDefaultDemo": 0,
+    "sourceStatus": "WAITING_APPROVAL",
+    "sourceLearned": "",
+    "actualHasNewer": true,
+    "expectedHasNewer": false
+  },
+  {
+    "id": "R2-03-RESCAN-1",
+    "state": "OPEN",
+    "finding": "S4-R2-03",
+    "severity": "LOW",
+    "evalStudentId": "CRM_A",
+    "snapshotStudentId": "CANONICAL_A",
+    "snapshotUid": "UID_A",
+    "freshlyExtractedDemo": 5,
+    "currentDemo": 5,
+    "actualHasNewer": true,
+    "expectedHasNewer": false
+  },
+  {
+    "id": "R2-03-RESCAN-2",
+    "state": "OPEN",
+    "finding": "S4-R2-03",
+    "severity": "LOW",
+    "evalStudentId": "CRM_A",
+    "snapshotStudentId": "CANONICAL_A",
+    "snapshotUid": "UID_A",
+    "freshlyExtractedDemo": 5,
+    "currentDemo": 5,
+    "actualHasNewer": true,
+    "expectedHasNewer": false
+  }
+]

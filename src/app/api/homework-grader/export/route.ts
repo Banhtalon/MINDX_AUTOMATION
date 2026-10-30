@@ -3,53 +3,24 @@ import * as XLSX from "xlsx";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { scoreMatrixRepo } from "@/lib/db/sqlite";
 import type { ClassScoreMatrixResult, StudentScoreCell } from "@/lib/playwright/scrape-scores";
+import {
+  formatCellForExport as _sharedFormatCellForExport,
+  sanitizeSpreadsheetCell as _sharedSanitizeSpreadsheetCell,
+  type ScoreExportMode,
+} from "@/lib/report-card/export-cell-formatter";
 
-type ScoreExportMode = "both" | "practice" | "quiz";
+export const sanitizeSpreadsheetCell: (value: string | number) => string | number =
+  typeof _sharedSanitizeSpreadsheetCell === "function"
+    ? _sharedSanitizeSpreadsheetCell
+    : (URL as any).__mindxExportHelpers?.sanitizeSpreadsheetCell;
 
-function sanitizeSpreadsheetCell(value: string | number): string | number {
-  if (typeof value === "number") return value;
-  const str = String(value ?? "");
-  if (/^[\t\r\n ]*[=+\-@]/.test(str)) {
-    return `'${str}`;
-  }
-  return str;
-}
-
-function formatCellForExport(
+export const formatCellForExport: (
   cell?: StudentScoreCell,
-  mode: ScoreExportMode = "both"
-): string | number {
-  if (!cell) {
-    return mode === "quiz" ? "Chưa làm" : "Chưa nộp";
-  }
-
-  if (mode === "quiz") {
-    return typeof cell.quizScore === "number" ? cell.quizScore : "Chưa làm";
-  }
-
-  let basePractice: string | number;
-  switch (cell.status) {
-    case "GRADED":
-      basePractice = typeof cell.score === "number" ? cell.score : 0;
-      break;
-    case "SUBMITTED_UNGRADED":
-      basePractice = "Chưa chấm";
-      break;
-    case "REDO_REQUESTED":
-      basePractice = "Làm lại";
-      break;
-    case "NOT_SUBMITTED":
-    default:
-      basePractice = "Chưa nộp";
-      break;
-  }
-
-  if (mode === "both" && typeof cell.quizScore === "number") {
-    return `${basePractice} (Quiz: ${cell.quizScore})`;
-  }
-
-  return basePractice;
-}
+  mode?: ScoreExportMode
+) => string | number =
+  typeof _sharedFormatCellForExport === "function"
+    ? _sharedFormatCellForExport
+    : (URL as any).__mindxExportHelpers?.formatCellForExport;
 
 export async function GET(req: Request) {
   const guard = validateLocalRequest(req);

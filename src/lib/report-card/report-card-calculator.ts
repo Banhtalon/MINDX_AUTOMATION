@@ -45,6 +45,7 @@ export interface StudentStageRawScores {
 export interface StudentReportCardSnapshotItem {
   studentId: string;
   studentUid?: string;
+  crmStudentId?: string;
   fullName: string;
   isActive: boolean;
   btvnScores: Record<number, StudentBtvnSessionRaw>;

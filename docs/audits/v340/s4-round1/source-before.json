@@ -1,0 +1,34 @@
+﻿[
+    {
+        "Path":  "src/app/api/homework-grader/export/route.ts",
+        "Hash":  "DFC8DCE2A35AB0D08B0641B9479B448D2251D2605BC0E38CB9A254C2E6E89F97"
+    },
+    {
+        "Path":  "src/app/api/homework-grader/scores/route.ts",
+        "Hash":  "761EC0E5852DD147FBA172D32F0C2AF9F44EF3735B723A56482E44D5C400A1ED"
+    },
+    {
+        "Path":  "src/app/api/report-card/route.ts",
+        "Hash":  "74ED2D587C85319B77DD73ABA414E22161A2CCDF8635621AD28639DD402DDC5C"
+    },
+    {
+        "Path":  "src/app/homework-grader/page.tsx",
+        "Hash":  "7885711A2BE8584616FD0D6BEC21FAB8C7B89EFA7CEA1CDB1743929441E52329"
+    },
+    {
+        "Path":  "src/components/teaching-report-card-view.tsx",
+        "Hash":  "2D507FD26AA2C7F9105742B786D72FA52941643C871529B0D4E3986F4BE2AAC4"
+    },
+    {
+        "Path":  "src/lib/zalo/broadcast-generator.ts",
+        "Hash":  "9B466B23970A09D66CA45E880A6914AAC394C8D0B52E659B9209825E8B36F1ED"
+    },
+    {
+        "Path":  "scripts/test-streamline-v340-s4.ts",
+        "Hash":  "1D63D6F69B2F1B09EC571E0DEB7DD2CC3585BD24441E9DDBA39517DE0E4730E2"
+    },
+    {
+        "Path":  "src/lib/report-card/export-cell-formatter.ts",
+        "Hash":  "272ECE8FEDC2A9BBCFCF990B1E95069D357EACC34A5C315B059C5E2216716D76"
+    }
+]

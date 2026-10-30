@@ -11,6 +11,9 @@ import {
   buildAutoZaloBroadcastText,
   DEFAULT_STANDARD_ZALO_TEMPLATE,
 } from "./zalo-summary";
+import { formatCellForExport as _preloadExportFormatter } from "../report-card/export-cell-formatter";
+
+void _preloadExportFormatter;
 
 export interface ZaloBroadcastOptions {
   classCode: string;

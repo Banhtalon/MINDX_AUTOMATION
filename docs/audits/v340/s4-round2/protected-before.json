@@ -1,0 +1,872 @@
+﻿[
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\AGENTS.md",
+        "Hash":  "81181311CACF1142A3F0EC04A417F030DA586518C80BDFE0C2A78C23CE19F9C2",
+        "Length":  7679,
+        "LastWriteTimeUtc":  "2026-10-29T17:16:41.6140339Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\CHANGELOG.md",
+        "Hash":  "3148B6F1763D6B2816F784CCA558DAD4306DA59EEDDDADEE362C5A28E9853E26",
+        "Length":  118332,
+        "LastWriteTimeUtc":  "2026-10-30T03:59:53.8213924Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\CODEX_S4_ROUND1.md",
+        "Hash":  "CC0E0DF0B19FFA27BDA6BF750496BC0F724FE6E5A42563CAFD7F81DAE2784F06",
+        "Length":  21394,
+        "LastWriteTimeUtc":  "2026-10-30T04:40:25.3311577Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\phase4-test.log",
+        "Hash":  "0DE1114C6A9F91C753ECD2DFC5E2F10F1DD260389FAB118CFC14BDD174198041",
+        "Length":  3752,
+        "LastWriteTimeUtc":  "2026-10-30T04:33:32.9972454Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\probe.cjs",
+        "Hash":  "7DDCB873FE5965278B7193F6EF79C28FE27259A54175FBF85E21F40BFBC8C1AA",
+        "Length":  14674,
+        "LastWriteTimeUtc":  "2026-10-30T04:37:21.5151414Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\probe.log",
+        "Hash":  "9048BB324DFF06CE08D23DFD25C82B444E6FAC9E937CF23225F23B51F36F06D0",
+        "Length":  6848,
+        "LastWriteTimeUtc":  "2026-10-30T04:37:23.6217364Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\probe-results.json",
+        "Hash":  "33420D9532CA3534F7CEE12230418D638B9E34FA65216E537F4867A6D473E8E1",
+        "Length":  3709,
+        "LastWriteTimeUtc":  "2026-10-30T04:37:23.6232409Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\s4-test.log",
+        "Hash":  "6EA8505C08EBBE396FF231D971573C7DABBCE42EBBDED53715840AC1B6257CA3",
+        "Length":  2262,
+        "LastWriteTimeUtc":  "2026-10-30T04:33:08.9520909Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\source-before.json",
+        "Hash":  "81A3D9151F7F54E4682C8B8FD367AA094D286BA729B4884E33D653DF43AF2C19",
+        "Length":  1291,
+        "LastWriteTimeUtc":  "2026-10-30T04:33:07.1178143Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\source-verification.json",
+        "Hash":  "CCEBDC5E483AD4EDCB558D5ED2C1409CA297B2411C295937D360E5709C908F5B",
+        "Length":  2235,
+        "LastWriteTimeUtc":  "2026-10-30T04:40:40.9147584Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\tsbuildinfo-verification.json",
+        "Hash":  "C0646C9F0146A43788994F588E96E8702509279FC6579F10ECFB497B9079EA65",
+        "Length":  200,
+        "LastWriteTimeUtc":  "2026-10-30T04:38:17.4152301Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\tsc.log",
+        "Hash":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "Length":  0,
+        "LastWriteTimeUtc":  "2026-10-30T04:33:29.1808032Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round1\\v330-test.log",
+        "Hash":  "EECD17DDC2A063DB2B7564AA6725C775F55073ABE0768BE217399BC97C5679E4",
+        "Length":  4100,
+        "LastWriteTimeUtc":  "2026-10-30T04:33:20.3251294Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\MINDX_AUTOMATION_PLAN.md",
+        "Hash":  "B35EA84E4730E3472AF269E4C1560BEF44E1FE7A67AFD79073B70622A8D888B6",
+        "Length":  138518,
+        "LastWriteTimeUtc":  "2026-10-30T03:59:51.9520063Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\next-env.d.ts",
+        "Hash":  "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+        "Length":  303,
+        "LastWriteTimeUtc":  "2026-10-20T11:09:33.9448534Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\package.json",
+        "Hash":  "1472C4E48D2CE7486CFB9C7DEBE373A96FCF0F72043661CDA77F9E901B7415F9",
+        "Length":  1605,
+        "LastWriteTimeUtc":  "2026-10-18T14:41:22.8234620Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\package-lock.json",
+        "Hash":  "79DA2B8368A1B59F7F56C7A80307BA754C1587FC4B5503D4EFC96835481FDDA4",
+        "Length":  118860,
+        "LastWriteTimeUtc":  "2026-10-28T09:20:02.3873468Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\PROJECT_STATE.md",
+        "Hash":  "2F21A2C8953BC8627C64623EEA4D682A7AABD27AAA4EC2CE4A245F021AAF8502",
+        "Length":  68346,
+        "LastWriteTimeUtc":  "2026-10-30T03:59:49.9047560Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\recon.ts",
+        "Hash":  "50A9CFFFD20E1D043112852433070EA78FB084B919D85AD537F96F67B33EE5E2",
+        "Length":  7359,
+        "LastWriteTimeUtc":  "2026-10-18T15:09:59.6157794Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-checkpoint-v300.ts",
+        "Hash":  "FE04CF1E08167CA2D23CF604E2B749824BEB687D350788A7CF241DFB559C1969",
+        "Length":  13536,
+        "LastWriteTimeUtc":  "2026-10-28T09:20:02.3878756Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-lms-reliability-v280.ts",
+        "Hash":  "BDD8AC582B370282C820DE0C8A276562221DC3E2A2D90F2F93F26A4D4EAA4451",
+        "Length":  61566,
+        "LastWriteTimeUtc":  "2026-10-27T01:23:27.5247908Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-patches-round2.ts",
+        "Hash":  "2E1B15A66EE4FE900F8F5580A19E40CCA4FDE9DC27CFAF59BB87C7C268275BA5",
+        "Length":  7259,
+        "LastWriteTimeUtc":  "2026-10-19T01:32:04.0924859Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-phase3.ts",
+        "Hash":  "594CA880D6F149AD3F5E50BA0E7F583455D6A96A1426B8D777E74CD40290F8A1",
+        "Length":  8437,
+        "LastWriteTimeUtc":  "2026-10-28T09:20:02.3886721Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-phase4-codex-repros.ts",
+        "Hash":  "ED31335FB5F17D154A02F3829833C3976CBCC7BC1F0D8E5D1F1AFC59A30146B2",
+        "Length":  183305,
+        "LastWriteTimeUtc":  "2026-10-29T09:42:17.8179085Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-phase5.ts",
+        "Hash":  "C009A17A052F9EA8955541B0A6F25D14D7C58A2FC9C214D1F4515DBB3DAD323C",
+        "Length":  31478,
+        "LastWriteTimeUtc":  "2026-10-21T05:36:23.0348733Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-phase6.ts",
+        "Hash":  "39F2680DA6A1BD3124F52CD82DD72490B8F8A203887CB1F476E2B2F90BA8A330",
+        "Length":  58110,
+        "LastWriteTimeUtc":  "2026-10-24T04:48:05.9018865Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-phase7.ts",
+        "Hash":  "1621279BFC776BD6922AD36A3CFD1D9F997721357E0BB36245C499074EDF5D62",
+        "Length":  21050,
+        "LastWriteTimeUtc":  "2026-10-21T05:20:21.0360782Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-quick-tags-v300.ts",
+        "Hash":  "F8C19AA70204AC51D0CB898B261A6FF7D00F6D9C8B48072B3B52B015171B2D59",
+        "Length":  14335,
+        "LastWriteTimeUtc":  "2026-10-28T16:32:31.2427267Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-report-card-v330.ts",
+        "Hash":  "858902C17F3199E1FF5EDA7D39FB057C34BA6844D805A0AFCE0E6277F63AA179",
+        "Length":  155505,
+        "LastWriteTimeUtc":  "2026-10-29T09:42:17.8184735Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-session14-v290.ts",
+        "Hash":  "83BEB42B970F8E02213662CC2DA3F35FAF63093A5344C580CA4DDD4F678DD390",
+        "Length":  69398,
+        "LastWriteTimeUtc":  "2026-10-27T10:14:49.1600703Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-spck-v270.ts",
+        "Hash":  "15DCF25A0F6679509FFB7B623A48A6731C68A095BE1B40D37E8EC2131C24C176",
+        "Length":  94543,
+        "LastWriteTimeUtc":  "2026-10-26T09:35:41.6899131Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-spck-v272.ts",
+        "Hash":  "2E538641DD810AF36869EFA9605E99A507BD88A7E1C20A47494D0C0FBF407E7D",
+        "Length":  34357,
+        "LastWriteTimeUtc":  "2026-10-25T03:31:49.7669305Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-streamline-v340-s1.ts",
+        "Hash":  "4313230439831B955DB32A6F8878D3D8F0AD8CC2ABEF486574EC40B93035204B",
+        "Length":  36066,
+        "LastWriteTimeUtc":  "2026-10-29T23:30:46.7737223Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-streamline-v340-s2.ts",
+        "Hash":  "EB36A46084338910E32743F17A369482608192A17026E4851853118E3980D155",
+        "Length":  28932,
+        "LastWriteTimeUtc":  "2026-10-30T00:50:48.5822588Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-streamline-v340-s3.ts",
+        "Hash":  "37931E125544EC284140C1CE45A8E246E9DB56B96DA436726C358B7F226C5FF9",
+        "Length":  44488,
+        "LastWriteTimeUtc":  "2026-10-30T03:48:53.2047520Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-streamline-v340-s4.ts",
+        "Hash":  "8ED36817D32F215BF43083DEB3D493DF83CF59F6BDBFE7E475140231245B92D1",
+        "Length":  32037,
+        "LastWriteTimeUtc":  "2026-10-30T04:46:14.4204128Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\scripts\\test-teaching-project-v320.ts",
+        "Hash":  "08E18F7E08FF08A8B8F739392C87A924AA8D51BA5C7FD0B1E7D88A5F606A580D",
+        "Length":  66278,
+        "LastWriteTimeUtc":  "2026-10-28T16:32:31.2437263Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\auth\\login\\route.ts",
+        "Hash":  "6A1FBF964C9F8393459173317D5784D4CC6C07C34A7D0A1A822E144C5AFE487A",
+        "Length":  1292,
+        "LastWriteTimeUtc":  "2026-10-18T15:54:50.0993662Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\auth\\status\\route.ts",
+        "Hash":  "DF3438881441EDE00E32B3DDA49EC1A11C704ED6A0D7FCD6103A069033E5156A",
+        "Length":  1604,
+        "LastWriteTimeUtc":  "2026-10-18T15:54:59.2607257Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\classes\\refresh\\route.ts",
+        "Hash":  "D56D89D09617AD3A3CEDB8F5DBAE35E97BBAD1B6AFE73452012332DECBF3AE30",
+        "Length":  12036,
+        "LastWriteTimeUtc":  "2026-10-30T00:47:58.2457703Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\config\\route.ts",
+        "Hash":  "4AA83217326CA219FA59838E5E976FA2319923A941E00D003A51DE0EB3DA7863",
+        "Length":  23251,
+        "LastWriteTimeUtc":  "2026-10-28T09:20:02.3897936Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\homework-grader\\approve\\route.ts",
+        "Hash":  "60FB6F739F7854BC1D3642F8A8D5ABF7EB60AFE822D5AF99051840A241255283",
+        "Length":  17032,
+        "LastWriteTimeUtc":  "2026-10-20T12:34:41.7567318Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\homework-grader\\download-and-grade\\route.ts",
+        "Hash":  "7328A9A1687417D8AD199DB009152E2FCBE4CB23B34050677EA47ADA135A79D3",
+        "Length":  8844,
+        "LastWriteTimeUtc":  "2026-10-21T05:17:16.2124075Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\homework-grader\\export\\route.ts",
+        "Hash":  "DFC8DCE2A35AB0D08B0641B9479B448D2251D2605BC0E38CB9A254C2E6E89F97",
+        "Length":  4883,
+        "LastWriteTimeUtc":  "2026-10-30T04:09:54.8722373Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\homework-grader\\save-lms\\route.ts",
+        "Hash":  "D81922813D50186FC0ACFE290F9D74238028F764C93ACB81153728B939643791",
+        "Length":  1983,
+        "LastWriteTimeUtc":  "2026-10-20T07:53:40.2764310Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\homework-grader\\scores\\route.ts",
+        "Hash":  "761EC0E5852DD147FBA172D32F0C2AF9F44EF3735B723A56482E44D5C400A1ED",
+        "Length":  2300,
+        "LastWriteTimeUtc":  "2026-10-30T04:10:15.9437671Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\homework-grader\\submissions\\route.ts",
+        "Hash":  "E5DF175B1F4244A312427241F8AB93037A5172FEEDE325C07A163111C4BB7DBC",
+        "Length":  13410,
+        "LastWriteTimeUtc":  "2026-10-20T12:09:34.3332533Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\queue\\control\\route.ts",
+        "Hash":  "BA10880ADEEB8E5DE6807313F13AD01731ED28EDEBECF859D9687E362C8C2E70",
+        "Length":  1851,
+        "LastWriteTimeUtc":  "2026-10-18T15:55:09.5094473Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\queue\\stream\\route.ts",
+        "Hash":  "67DD1FA2DB111E18D5343BC8D3CFC7EE95D3818FA9FF8FECD9EDAA47D071ACA1",
+        "Length":  2625,
+        "LastWriteTimeUtc":  "2026-10-21T02:32:58.6181655Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\report-card\\route.ts",
+        "Hash":  "9F204D0CA2C6F212464FB2566E06A6FD79F03C601BBB46A51BC8F2A77CFE3E2A",
+        "Length":  26600,
+        "LastWriteTimeUtc":  "2026-10-30T04:44:40.6531277Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\report-card\\sync-teaching\\route.ts",
+        "Hash":  "A9E151F2582BAF6EEBCB2DFF13C58C008DAC954C71A11B042218F3C4E86AD9CD",
+        "Length":  3494,
+        "LastWriteTimeUtc":  "2026-10-29T09:42:17.8190887Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\approve\\route.ts",
+        "Hash":  "456EB64636ADD416AC0F89390E059BEBFDB6E79B4CAACF23912F3CC23F9FD65F",
+        "Length":  13289,
+        "LastWriteTimeUtc":  "2026-10-30T02:18:28.9973479Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\fetch-classes\\route.ts",
+        "Hash":  "F1A16F8BEA3860CD16B1DA4F1481F77E90C1C6C38F1C28A198A5210F89E56108",
+        "Length":  1894,
+        "LastWriteTimeUtc":  "2026-10-30T00:05:21.4797515Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\generate-ai\\route.ts",
+        "Hash":  "325F6B1D9248F8907BD2BD4F2971D1155BCFF6522AE05790D0572DC7C2E9CFD6",
+        "Length":  3088,
+        "LastWriteTimeUtc":  "2026-10-20T01:31:21.7305445Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\list\\route.ts",
+        "Hash":  "158B764B79A97AC84BB8A8455BD87ACF0BC94469657AF0B3D5EFDA4654461CCD",
+        "Length":  7689,
+        "LastWriteTimeUtc":  "2026-10-30T00:08:10.0925722Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\save-draft\\route.ts",
+        "Hash":  "94FB00B6773C45A6C0A56CEC72D3847D127EB732F062773D5DC5C208196936AE",
+        "Length":  18958,
+        "LastWriteTimeUtc":  "2026-10-30T03:28:08.0033013Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\save-lms\\route.ts",
+        "Hash":  "76A4E69BB6851E8252F5E8A0469F286CBE74631DD1AFA64932A305F67B25B22A",
+        "Length":  2238,
+        "LastWriteTimeUtc":  "2026-10-27T02:24:54.0627032Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\sync\\route.ts",
+        "Hash":  "89567E459FE7BA88EAD3CCCDD5B4DB40AEED0EF67E869705D33B1234166FCF32",
+        "Length":  1188,
+        "LastWriteTimeUtc":  "2026-10-19T02:20:08.3741878Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\session-comments\\zalo-btvn-image\\route.ts",
+        "Hash":  "A0999BA3BFD2C0572C1B5D4436B0C8405C7F6786B9C17D203DB86B39DE26BB0C",
+        "Length":  2738,
+        "LastWriteTimeUtc":  "2026-10-30T01:25:11.5112067Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\approve\\route.ts",
+        "Hash":  "E48606E7C32D31E2453F17698A5FEC918DDE75A058039AF17582454F3FBC41F8",
+        "Length":  19231,
+        "LastWriteTimeUtc":  "2026-10-24T06:36:29.5376712Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\browse-folder\\route.ts",
+        "Hash":  "FC8ED68A131EA9260DB0D494FF50DA0E4B04D2A7EE45415EBC4A6BC5D79A9CC1",
+        "Length":  4516,
+        "LastWriteTimeUtc":  "2026-10-22T05:08:13.5740055Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\capture-screenshots\\route.ts",
+        "Hash":  "B6E5D71D358F4613BE324D980BC9F4E9ABEBCBC80EA4DCA0EF21DB23989EE5F2",
+        "Length":  8561,
+        "LastWriteTimeUtc":  "2026-10-24T12:44:00.5246029Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\create-demo-sheet\\route.ts",
+        "Hash":  "2B37F408EC8D15B71BC8F3F357019CE69AAE73290B72296CC7FA4164095251B7",
+        "Length":  2788,
+        "LastWriteTimeUtc":  "2026-10-23T08:56:14.9029156Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\deploy-web\\route.ts",
+        "Hash":  "270C5CA2918439A50E15C8C68E959EFD0EBE98372DB70209ED5A046974D61CC4",
+        "Length":  2298,
+        "LastWriteTimeUtc":  "2026-10-24T04:24:29.7212583Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\generate-ai\\route.ts",
+        "Hash":  "A99B00F6579687D4E4892882A68B68A9706E0A34DD988B446F9970B1D996AE4D",
+        "Length":  4814,
+        "LastWriteTimeUtc":  "2026-10-24T06:21:36.8645528Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\import-youtube\\route.ts",
+        "Hash":  "C524FBB1AE0BAB8B3CF5F746F4FC7F280CFA300EBA59EB27ADDD3386342AE046",
+        "Length":  2690,
+        "LastWriteTimeUtc":  "2026-10-25T02:15:17.1143587Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\list\\route.ts",
+        "Hash":  "75DAB37075B5F19CF803172817F41227A660FD84EC05228B2BBB2CBE340CED90",
+        "Length":  13903,
+        "LastWriteTimeUtc":  "2026-10-30T00:07:45.3887877Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\save-draft\\route.ts",
+        "Hash":  "B2B201272DA6EAEDE2FE56EC9AC88BFDCDFB92B69CC345216E7568D0A9E2F2FE",
+        "Length":  16765,
+        "LastWriteTimeUtc":  "2026-10-24T06:21:41.4477521Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\scan\\route.ts",
+        "Hash":  "EB853F621F5DA9FAE856107B17515837FB3F557C75ED9870B3D2EE999CD0E51B",
+        "Length":  12458,
+        "LastWriteTimeUtc":  "2026-10-26T14:28:32.4432258Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\session14-eval\\generate-ai\\route.ts",
+        "Hash":  "DCD962CA4FF5E88E6FDEDB1C3587A49A44F969CDDBC98DC365255AF0AEC36BF0",
+        "Length":  2470,
+        "LastWriteTimeUtc":  "2026-10-27T02:40:26.2963508Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\session14-eval\\import-demo-scores\\route.ts",
+        "Hash":  "0C564A92FBC27825B64E69D4D3DD7485715949F9A97C227584DB159C2A9DD20A",
+        "Length":  1177,
+        "LastWriteTimeUtc":  "2026-10-27T02:40:07.8044939Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\session14-eval\\route.ts",
+        "Hash":  "DD34481C3EA94E79870A5581FB261C1D566964D72D3CEC6417685CF639AB93A8",
+        "Length":  8375,
+        "LastWriteTimeUtc":  "2026-10-28T09:20:02.3920003Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\session14-eval\\upload-lms\\route.ts",
+        "Hash":  "1DFE9C3B606B3230EE85E464ABAF773F7DC413A5975A1C1D88E03A9DEA5D743B",
+        "Length":  1421,
+        "LastWriteTimeUtc":  "2026-10-27T02:40:38.2469715Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\student-portal\\route.ts",
+        "Hash":  "7164C42B637E95C4454A9A186B0AF3FB0D9B0AFA524C80607D36A64ED18817B2",
+        "Length":  2759,
+        "LastWriteTimeUtc":  "2026-10-23T14:58:19.9452696Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\upload-drive\\route.ts",
+        "Hash":  "98CBA96D19EB5422AFD52FC1854767C6F5FDE182B97A0A808A64165EDCA9FD9F",
+        "Length":  1928,
+        "LastWriteTimeUtc":  "2026-10-24T04:24:26.5332456Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\spck\\upload-lms\\route.ts",
+        "Hash":  "607A3EDB3462DD876C321288F7AC4CD1DDF8AE9C8DABAE3A4B9CCD9CD22F3201",
+        "Length":  3075,
+        "LastWriteTimeUtc":  "2026-10-24T18:15:08.0368754Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\teaching-projects\\fetch-lms-dates\\route.ts",
+        "Hash":  "92EE00C861E2B55F11EDFE3457C6620F2A0776987E7E31EF931F4699487FD43D",
+        "Length":  3876,
+        "LastWriteTimeUtc":  "2026-10-28T16:32:31.2457252Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\teaching-projects\\generate-ai\\route.ts",
+        "Hash":  "8D4B7E357C24805F01E2998B32DDDEA769ED9E00A65C0F98CF9D3512B8924CE3",
+        "Length":  5699,
+        "LastWriteTimeUtc":  "2026-10-28T16:32:31.2457252Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\teaching-projects\\progress\\route.ts",
+        "Hash":  "9AB132E1649CAD765F1597FD6932F882330E77AD13D0296938B620BB0D62746C",
+        "Length":  4732,
+        "LastWriteTimeUtc":  "2026-10-28T16:32:31.2457252Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\teaching-projects\\route.ts",
+        "Hash":  "186A6E4185B82F955E312AFEB729DC8D4C0FD39E094751E6730C2F5A90B6D996",
+        "Length":  6239,
+        "LastWriteTimeUtc":  "2026-10-30T00:08:10.0935706Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\api\\teaching-projects\\sync\\route.ts",
+        "Hash":  "B87CFFD2206AB4BD8172B1A4485E1C8AE9A6ABFD7A370126DC781D970D235A32",
+        "Length":  5056,
+        "LastWriteTimeUtc":  "2026-10-28T16:32:31.2467249Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\final-project\\page.tsx",
+        "Hash":  "5165387F9A1E5DB8B7A888621DBC5F62F1445D17697BDA09C72481197B20B04A",
+        "Length":  296741,
+        "LastWriteTimeUtc":  "2026-10-30T00:49:01.0646083Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\globals.css",
+        "Hash":  "501A77CBADE1E543CB6934FEA174655F6EC4C35B46F0650131D86FDFA8D42802",
+        "Length":  17585,
+        "LastWriteTimeUtc":  "2026-10-28T09:20:02.3953058Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\homework-grader\\page.tsx",
+        "Hash":  "7885711A2BE8584616FD0D6BEC21FAB8C7B89EFA7CEA1CDB1743929441E52329",
+        "Length":  35675,
+        "LastWriteTimeUtc":  "2026-10-30T04:22:45.5528776Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\layout.tsx",
+        "Hash":  "F290BECD8A96C76A3420AE234FABBEE06E1300C9EA4C74180D1D136F301A6602",
+        "Length":  1483,
+        "LastWriteTimeUtc":  "2026-10-28T16:32:31.2497254Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\page.tsx",
+        "Hash":  "57CEF5A1E63E8BFC53CA366F70BC6C76141AE15FC35D1463FB6070F8656149AD",
+        "Length":  15291,
+        "LastWriteTimeUtc":  "2026-10-29T10:40:04.6442276Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\session-comments\\page.tsx",
+        "Hash":  "9619FC285124D4DE905A004238368CF62D23B0C94F1177415ADBAE72AEA68B71",
+        "Length":  171980,
+        "LastWriteTimeUtc":  "2026-10-30T03:48:24.1093540Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\syllabus-config\\page.tsx",
+        "Hash":  "C9D15D062A44792010EDF675879E4068C902D4D514223D47D03BAA6FF889F897",
+        "Length":  85357,
+        "LastWriteTimeUtc":  "2026-10-29T09:42:17.8206284Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\app\\teaching-projects\\page.tsx",
+        "Hash":  "7A857435A0339BF43B66A21D96F4DA3FEF39BB6634A00F235D8BC5EF9A902A87",
+        "Length":  70912,
+        "LastWriteTimeUtc":  "2026-10-30T00:49:36.4522367Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\components\\class-picker.tsx",
+        "Hash":  "0ACA50F0CA525B3101EB3A1DCFBD4AAB082E961197FF2E1E990AB7998148E06F",
+        "Length":  15210,
+        "LastWriteTimeUtc":  "2026-10-30T01:03:38.5845952Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\components\\homework-auto-grader-tab.tsx",
+        "Hash":  "3BCBBA6F6EC50178F5F4B66EC75CFC05A47AF7703C4752D4837CE4864ABC80F0",
+        "Length":  59870,
+        "LastWriteTimeUtc":  "2026-10-21T05:35:21.6937573Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\components\\live-log-drawer.tsx",
+        "Hash":  "A3DE262113445EC952BDE59F351109DE2C50D142FD51CABC2EFD241949F972A6",
+        "Length":  9147,
+        "LastWriteTimeUtc":  "2026-10-28T09:20:02.3992220Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\components\\teaching-report-card-view.tsx",
+        "Hash":  "2FC850D060F1A4230DF9CF37E471E5795B56564246EBF34B7576150CA8410141",
+        "Length":  116732,
+        "LastWriteTimeUtc":  "2026-10-30T04:45:00.2192093Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\components\\top-navbar.tsx",
+        "Hash":  "C197E9ABEEDD0A81E5886C3407D168A8F3D6723690E77E2150BC52E9A0DD618A",
+        "Length":  3931,
+        "LastWriteTimeUtc":  "2026-10-29T09:42:17.8216281Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\classes\\class-directory.ts",
+        "Hash":  "99B97537CB25AD926116DA646FB1D444213F0A64E4AD989996A1D55C7092AE8F",
+        "Length":  9271,
+        "LastWriteTimeUtc":  "2026-10-30T00:03:54.4166935Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\config.ts",
+        "Hash":  "4AC1332AB0BECAAF212E5AC03944B077074572EB43375F7CE8F9B34D6ED3B309",
+        "Length":  2206,
+        "LastWriteTimeUtc":  "2026-10-18T15:09:30.9363377Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\db\\json-config.ts",
+        "Hash":  "7703E5B7542EA3D9AFAD872CB1295E01BE67BA28295EC90DBB8BCC42615F4998",
+        "Length":  8303,
+        "LastWriteTimeUtc":  "2026-10-28T16:32:31.2517250Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\db\\sqlite.ts",
+        "Hash":  "701AF10188DA624760A3E459B43F270AC86D7322A2BCECF19463FE0AA78DBCBF",
+        "Length":  243931,
+        "LastWriteTimeUtc":  "2026-10-29T09:42:17.8236261Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\file-parsers\\archive-reader.ts",
+        "Hash":  "9363446A1AD08FB9F34A270127D648A90B33E1695C02A016349127901E3E63A2",
+        "Length":  13717,
+        "LastWriteTimeUtc":  "2026-10-20T10:30:31.6705413Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\file-parsers\\code-reader.ts",
+        "Hash":  "9D04A75F4BAF99C0F8110F6716B2695FA7322EECA5CCDD01F0DBB36B7A08133C",
+        "Length":  11840,
+        "LastWriteTimeUtc":  "2026-10-20T07:35:18.1230202Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\file-parsers\\game-reader.ts",
+        "Hash":  "D55C54E65D4A158C452EA963D43A7B175BEB2BCF5C3F6A2C5567A1D0AB1710C6",
+        "Length":  25400,
+        "LastWriteTimeUtc":  "2026-10-21T05:19:40.8131818Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\file-parsers\\index.ts",
+        "Hash":  "5ECD30C44BBE46325F8E467A4573F11015CC875D19A823C8A44291932152BC38",
+        "Length":  10360,
+        "LastWriteTimeUtc":  "2026-10-20T07:39:01.9434605Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\file-parsers\\media-reader.ts",
+        "Hash":  "2C42B5D4D3A6A3F0F09C9B86BC44F01FCBCB70FB22EE50A15C941B1BF640E3F0",
+        "Length":  69037,
+        "LastWriteTimeUtc":  "2026-10-20T21:13:58.0715492Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\client.ts",
+        "Hash":  "B954F04D4C057FD3F8FC6440FA86E396A6FDC0CD40AFD8E4748A7352FC0783F0",
+        "Length":  1243,
+        "LastWriteTimeUtc":  "2026-10-22T10:40:29.9821235Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\comment-generator.ts",
+        "Hash":  "413E326C9C4B63F406CBD500261938B91CDD2A01FDF18EDB6603B8C9038B9FBA",
+        "Length":  38886,
+        "LastWriteTimeUtc":  "2026-10-28T16:32:31.2547257Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\homework-grader.ts",
+        "Hash":  "DAFC0646B3C8CFE93B335A9CE3884E0941BEA422B354C64AE2FC82E363547DAF",
+        "Length":  28329,
+        "LastWriteTimeUtc":  "2026-10-21T05:16:55.4929926Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\score-auditor.ts",
+        "Hash":  "9DB56D4461ADF1273BBE99D87E1B11399B2B202D2786E2E1F73C45E9D5A0C875",
+        "Length":  7583,
+        "LastWriteTimeUtc":  "2026-10-21T05:15:52.0167091Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\session14-course-summary.ts",
+        "Hash":  "DF2D01C5FBF523793B0F0797C43A12A48E5297EDD5CCA582D8AA3D765512568C",
+        "Length":  47777,
+        "LastWriteTimeUtc":  "2026-10-28T09:20:02.4032183Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\spck-comment.ts",
+        "Hash":  "3616397609518CB9C356A2CFB5C03A3DB63AC6822CAF6A5E4BD318B00C554BF9",
+        "Length":  58675,
+        "LastWriteTimeUtc":  "2026-10-27T10:14:13.5423078Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\gemini\\teaching-project-generator.ts",
+        "Hash":  "BE3157266A891336658AF822B43C777B17200F09A5ADE6DB173EC0338D64C174",
+        "Length":  37898,
+        "LastWriteTimeUtc":  "2026-10-28T16:32:31.2547257Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\github\\spck-web-deployer.ts",
+        "Hash":  "0C9A76F7FAE21F340D069140245D9E5BFDE306AF01ECDA4F8C4D1E928E724DF4",
+        "Length":  27006,
+        "LastWriteTimeUtc":  "2026-10-24T06:26:05.6643605Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\local-files\\spck-app-screenshotter.ts",
+        "Hash":  "04BB555CFA708D1925536B481C9F2304B7E3EFD6F8A7EE17609177B92F13CF8D",
+        "Length":  67975,
+        "LastWriteTimeUtc":  "2026-10-26T14:28:22.5768313Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\local-files\\spck-demo-score-reader.ts",
+        "Hash":  "1D234A7F3FB9C61A93906239AA44896AB35E2BDDE75A7DFE69D00C400E8FC153",
+        "Length":  28579,
+        "LastWriteTimeUtc":  "2026-10-28T09:20:02.4040680Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\local-files\\spck-image-normalizer.ts",
+        "Hash":  "8325F7B5F0E793DE365C0EECB9BA61705E81F4DC6C8BF5A00FD5D4C1B83B9C54",
+        "Length":  4516,
+        "LastWriteTimeUtc":  "2026-10-25T02:05:51.8323364Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\local-files\\spck-scanner.ts",
+        "Hash":  "5B5685D1A14BB2A66C70DA67D663D71E6947190F57929BA4F561E58CA0CFDACA",
+        "Length":  53836,
+        "LastWriteTimeUtc":  "2026-10-26T14:28:27.6410572Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\local-files\\spck-youtube-import.ts",
+        "Hash":  "9C7D5E5A499B9D364EE41AFD79750CC2B6AFDF0056E86171618D70FDCF13C3A0",
+        "Length":  33220,
+        "LastWriteTimeUtc":  "2026-10-25T03:30:26.0149022Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\auth.ts",
+        "Hash":  "99C3AF292D62C67CB4C58ED7F43975BA0AE7B15689F28CED0C6232E910817A4F",
+        "Length":  10920,
+        "LastWriteTimeUtc":  "2026-10-26T10:24:57.2097861Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\browser-manager.ts",
+        "Hash":  "92DD3BFCF598C9DBEBE4CC5B55EBDFD053C46D556CFCC94098EE777AAFAA376A",
+        "Length":  7102,
+        "LastWriteTimeUtc":  "2026-10-22T10:00:11.0343946Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\download-submissions.ts",
+        "Hash":  "A26C2348F871E3D03F8E5F2511A67F4267DC9DFF10AAF59D5D5A0633BA4B5ABD",
+        "Length":  24617,
+        "LastWriteTimeUtc":  "2026-10-21T05:18:50.6419147Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\grade-worker.ts",
+        "Hash":  "402836ADDE656B35F9E143DAEAEEE57E5EB0F74832CE78260F909D4969F4F13D",
+        "Length":  62195,
+        "LastWriteTimeUtc":  "2026-10-26T08:58:29.6529653Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\lms-helpers.ts",
+        "Hash":  "388D1459DE0B4C766A987D48016D805FD6FFE8FA1E963A987F3A6284DF69A581",
+        "Length":  26529,
+        "LastWriteTimeUtc":  "2026-10-29T08:33:05.8434261Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\network-interceptor.ts",
+        "Hash":  "3DC9B0C6E015706175FD5F2AD77E2FA03566A7F2F10C0EF1161FD174F9553DAD",
+        "Length":  6258,
+        "LastWriteTimeUtc":  "2026-10-20T11:43:04.7036003Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\save-comments.ts",
+        "Hash":  "0CEAEADCEF625A0BA23F06CF7ED4326EBC2F20584560C9DAAE23115C41CDCD0F",
+        "Length":  76829,
+        "LastWriteTimeUtc":  "2026-10-28T09:20:02.4045729Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\scrape-scores.ts",
+        "Hash":  "BC0435BE4C87ECA408767CE8D7D06E9A3601FA0D6EF837667A959DA128BFFC32",
+        "Length":  115114,
+        "LastWriteTimeUtc":  "2026-10-29T09:42:17.8236261Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\selectors.ts",
+        "Hash":  "BBDCC949E56D382E563C5B96CF37A7A748A58B0B8AD283BCD817EDDA16F04C3A",
+        "Length":  8673,
+        "LastWriteTimeUtc":  "2026-10-21T01:00:49.7878807Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\session14-eval-uploader.ts",
+        "Hash":  "92AFD94EBC1D2A2742EC022E601B79EA252A17D306AAAE1D40B7777146C26E46",
+        "Length":  50932,
+        "LastWriteTimeUtc":  "2026-10-29T08:54:14.3250622Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\spck-demo-sheet.ts",
+        "Hash":  "1C8C2A1EB432362B585F09760D9ACABF7BF85BF988109F0A791544CAE2367656",
+        "Length":  49903,
+        "LastWriteTimeUtc":  "2026-10-24T04:11:15.9084884Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\spck-drive-uploader.ts",
+        "Hash":  "979E8B22597100C1940CFC0FDAAE86C6755EB5A9D81389354AD8EBADB9C7FFB7",
+        "Length":  31777,
+        "LastWriteTimeUtc":  "2026-10-24T06:26:03.8058369Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\spck-uploader.ts",
+        "Hash":  "E3F615570C2DE64147346EDF004CE892C2ABED7FA4BB5051AE9E500CAD0F1FCB",
+        "Length":  146659,
+        "LastWriteTimeUtc":  "2026-10-29T23:27:53.6915362Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\sync-class.ts",
+        "Hash":  "688DFF89125ED5CFE9EC11FB33C1808BB46D18B8223C68A9A7FD2064BBAAAE45",
+        "Length":  61413,
+        "LastWriteTimeUtc":  "2026-10-29T23:27:44.5127451Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\teaching-project-service.ts",
+        "Hash":  "5345BF1ECF5DF4EFB2DCBE47E8C56D699059E71CCA680E3FF952F971EDAAD701",
+        "Length":  43104,
+        "LastWriteTimeUtc":  "2026-10-29T17:14:29.9905904Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\playwright\\teaching-report-card-sync.ts",
+        "Hash":  "23A83D6AE342C37DA16DEBD3530AE025DA242877CCC54A2BC37DAEBDB5084A1E",
+        "Length":  46501,
+        "LastWriteTimeUtc":  "2026-10-29T17:20:42.1930851Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\queue\\task-queue.ts",
+        "Hash":  "BCDA7CB7CE608ED1BDA52B77AC4C4480632B7C260304CA5296932D3252684EDE",
+        "Length":  8398,
+        "LastWriteTimeUtc":  "2026-10-23T15:39:28.7199624Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\quick-tags\\index.ts",
+        "Hash":  "2F616DE8A3BE97B8575596F78730478838DCA53FB9692A1229B5AE753101ACAC",
+        "Length":  15219,
+        "LastWriteTimeUtc":  "2026-10-28T16:32:31.2577252Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\report-card\\export-cell-formatter.ts",
+        "Hash":  "272ECE8FEDC2A9BBCFCF990B1E95069D357EACC34A5C315B059C5E2216716D76",
+        "Length":  2038,
+        "LastWriteTimeUtc":  "2026-10-30T04:22:43.4584169Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\report-card\\report-card-calculator.ts",
+        "Hash":  "1E255FCB7C936789A586548743429B72CD40FAC8FD04EB55D3C7C96CAE2D3680",
+        "Length":  26325,
+        "LastWriteTimeUtc":  "2026-10-29T09:42:17.8246268Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\security\\local-guard.ts",
+        "Hash":  "205F8EC95B183B33CBF65ADD0FCA169F4A4882A43236AD1A9E69F5D926BAF470",
+        "Length":  2144,
+        "LastWriteTimeUtc":  "2026-10-19T01:28:00.0554086Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\security\\path-allowlist.ts",
+        "Hash":  "3AB6A6EF1239A59EEB5F4564B604AD58BE076AF67D2FBE29E27E1DBD8F38391F",
+        "Length":  6911,
+        "LastWriteTimeUtc":  "2026-10-22T14:36:03.2201801Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\student-portal\\student-portal-server.ts",
+        "Hash":  "43F1C1DB16FE5AF8A20EDC578B1D781C406578CEE02B7B5AEBE9A8E931ABB374",
+        "Length":  58569,
+        "LastWriteTimeUtc":  "2026-10-23T15:13:06.4248159Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\teaching\\teaching-http-client.ts",
+        "Hash":  "B1993A7FD260DFE5EA2A00AE85622D153319A71FC52B7CB9A50827D5C8D28C92",
+        "Length":  17363,
+        "LastWriteTimeUtc":  "2026-10-29T23:27:52.2853528Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\utils.ts",
+        "Hash":  "EC94D82B9920DD7BDE4A8D48A878D1A72C336A12101D411779877AB337EEB466",
+        "Length":  239,
+        "LastWriteTimeUtc":  "2026-10-18T14:36:20.7402451Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\utils\\vietnamese-match.ts",
+        "Hash":  "017FA9883ACF6D791BFD36D67EF596801C6AEC13DE33BD9949AE3A3BB34B41B3",
+        "Length":  11152,
+        "LastWriteTimeUtc":  "2026-10-21T00:11:42.4293999Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\zalo\\broadcast-generator.ts",
+        "Hash":  "9B466B23970A09D66CA45E880A6914AAC394C8D0B52E659B9209825E8B36F1ED",
+        "Length":  7192,
+        "LastWriteTimeUtc":  "2026-10-30T04:21:59.4667955Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\zalo\\zalo-summary.ts",
+        "Hash":  "C260C785BC89AECDD7B4682B060EAFE63AA21CC19EC1C9AC3BAD2E5DF6AD373C",
+        "Length":  13052,
+        "LastWriteTimeUtc":  "2026-10-30T02:16:59.4712048Z"
+    },
+    {
+        "Path":  "F:\\MINDX_project test\\MINDX-AUTOMATION\\tsconfig.json",
+        "Hash":  "FDE7DE96E04C006D6D27769B63C5B1457D772A48504C2F2CEC76FBE44C1C8F26",
+        "Length":  718,
+        "LastWriteTimeUtc":  "2026-10-24T11:03:19.3105377Z"
+    }
+]

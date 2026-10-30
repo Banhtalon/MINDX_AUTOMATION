@@ -1,0 +1,34 @@
+{
+  "temp": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s4-r3-adversarial-TLlF31",
+  "records": [
+    {
+      "id": "R3-A01",
+      "state": "PASS",
+      "freshSnapshots": 30,
+      "changedEffectiveSources": 88,
+      "shadowedEdits": 40
+    },
+    {
+      "id": "R3-A02",
+      "state": "PASS",
+      "statusScoreCourseCombinations": 144,
+      "crmRoundTrips": 144
+    },
+    {
+      "id": "R3-A03",
+      "state": "PASS",
+      "crmPreserved": true,
+      "zeroEditWarningThrough": [
+        "POST",
+        "PUT"
+      ],
+      "wrongVersion": 409,
+      "rescanClears": true
+    },
+    {
+      "id": "HARNESS-ERROR",
+      "state": "ERROR",
+      "error": "Error: [scoreMatrixRepo] Ô điểm của học viên '=1+1' tại cột 'C0' thiếu hoặc sai lệch columnId ('undefined').\n    at Object.save (F:\\MINDX_project test\\MINDX-AUTOMATION\\src\\lib\\db\\sqlite.ts:3816:17)\n    at main (F:\\MINDX_project test\\MINDX-AUTOMATION\\docs\\audits\\v340\\s4-round3\\adversarial-probe.cjs:103:21)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+    }
+  ]
+}

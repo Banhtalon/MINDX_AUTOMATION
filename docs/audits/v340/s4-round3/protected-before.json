@@ -1,0 +1,974 @@
+[
+  {
+    "path": "src/app/api/auth/login/route.ts",
+    "sha256": "6a1fbf964c9f8393459173317d5784d4cc6c07c34a7d0a1a822e144c5afe487a",
+    "size": 1292,
+    "mtimeMs": 1792338890099.3662
+  },
+  {
+    "path": "src/app/api/auth/status/route.ts",
+    "sha256": "df3438881441ede00e32b3dda49ec1a11c704ed6a0d7fcd6103a069033e5156a",
+    "size": 1604,
+    "mtimeMs": 1792338899260.7256
+  },
+  {
+    "path": "src/app/api/classes/refresh/route.ts",
+    "sha256": "d56d89d09617ad3a3cedb8f5dbae35e97bbad1b6afe73452012332decbf3ae30",
+    "size": 12036,
+    "mtimeMs": 1793321278245.7703
+  },
+  {
+    "path": "src/app/api/config/route.ts",
+    "sha256": "4aa83217326ca219fa59838e5e976fa2319923a941e00d003a51de0eb3da7863",
+    "size": 23251,
+    "mtimeMs": 1793179202389.7937
+  },
+  {
+    "path": "src/app/api/homework-grader/approve/route.ts",
+    "sha256": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283",
+    "size": 17032,
+    "mtimeMs": 1792499681756.7317
+  },
+  {
+    "path": "src/app/api/homework-grader/download-and-grade/route.ts",
+    "sha256": "7328a9a1687417d8ad199db009152e2fcbe4cb23b34050677ea47ada135a79d3",
+    "size": 8844,
+    "mtimeMs": 1792559836212.4075
+  },
+  {
+    "path": "src/app/api/homework-grader/export/route.ts",
+    "sha256": "dfc8dce2a35ab0d08b0641b9479b448d2251d2605bc0e38cb9a254c2e6e89f97",
+    "size": 4883,
+    "mtimeMs": 1793333394872.2373
+  },
+  {
+    "path": "src/app/api/homework-grader/save-lms/route.ts",
+    "sha256": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791",
+    "size": 1983,
+    "mtimeMs": 1792482820276.431
+  },
+  {
+    "path": "src/app/api/homework-grader/scores/route.ts",
+    "sha256": "761ec0e5852dd147fba172d32f0c2af9f44ef3735b723a56482e44d5c400a1ed",
+    "size": 2300,
+    "mtimeMs": 1793333415943.767
+  },
+  {
+    "path": "src/app/api/homework-grader/submissions/route.ts",
+    "sha256": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc",
+    "size": 13410,
+    "mtimeMs": 1792498174333.2534
+  },
+  {
+    "path": "src/app/api/queue/control/route.ts",
+    "sha256": "ba10880adeeb8e5de6807313f13ad01731ed28edebecf859d9687e362c8c2e70",
+    "size": 1851,
+    "mtimeMs": 1792338909509.4473
+  },
+  {
+    "path": "src/app/api/queue/stream/route.ts",
+    "sha256": "67dd1fa2db111e18d5343bc8d3cfc7ee95d3818fa9ff8fecd9edaa47d071aca1",
+    "size": 2625,
+    "mtimeMs": 1792549978618.1655
+  },
+  {
+    "path": "src/app/api/report-card/route.ts",
+    "sha256": "b953daf06edcf2c1cc4c98fe3455cda4e19ebdd61b40df718979eee2d4019bcb",
+    "size": 27989,
+    "mtimeMs": 1793336756926.8972
+  },
+  {
+    "path": "src/app/api/report-card/sync-teaching/route.ts",
+    "sha256": "a9e151f2582baf6eebcb2dff13c58c008dac954c71a11b042218f3c4e86ad9cd",
+    "size": 3494,
+    "mtimeMs": 1793266937819.0886
+  },
+  {
+    "path": "src/app/api/session-comments/approve/route.ts",
+    "sha256": "456eb64636add416ac0f89390e059bebfdb6e79b4caacf23912f3cc23f9fd65f",
+    "size": 13289,
+    "mtimeMs": 1793326708997.348
+  },
+  {
+    "path": "src/app/api/session-comments/fetch-classes/route.ts",
+    "sha256": "f1a16f8bea3860cd16b1da4f1481f77e90c1c6c38f1c28a198a5210f89e56108",
+    "size": 1894,
+    "mtimeMs": 1793318721479.7515
+  },
+  {
+    "path": "src/app/api/session-comments/generate-ai/route.ts",
+    "sha256": "325f6b1d9248f8907bd2bd4f2971d1155bcff6522ae05790d0572dc7c2e9cfd6",
+    "size": 3088,
+    "mtimeMs": 1792459881730.5444
+  },
+  {
+    "path": "src/app/api/session-comments/list/route.ts",
+    "sha256": "158b764b79a97ac84bb8a8455bd87acf0bc94469657af0b3d5efda4654461ccd",
+    "size": 7689,
+    "mtimeMs": 1793318890092.5723
+  },
+  {
+    "path": "src/app/api/session-comments/save-draft/route.ts",
+    "sha256": "94fb00b6773c45a6c0a56cec72d3847d127eb732f062773d5dc5c208196936ae",
+    "size": 18958,
+    "mtimeMs": 1793330888003.3013
+  },
+  {
+    "path": "src/app/api/session-comments/save-lms/route.ts",
+    "sha256": "76a4e69bb6851e8252f5e8a0469f286cbe74631dd1afa64932a305f67b25b22a",
+    "size": 2238,
+    "mtimeMs": 1793067894062.7031
+  },
+  {
+    "path": "src/app/api/session-comments/sync/route.ts",
+    "sha256": "89567e459fe7ba88ead3cccdd5b4db40aeed0ef67e869705d33b1234166fcf32",
+    "size": 1188,
+    "mtimeMs": 1792376408374.1877
+  },
+  {
+    "path": "src/app/api/session-comments/zalo-btvn-image/route.ts",
+    "sha256": "a0999ba3bfd2c0572c1b5d4436b0c8405c7f6786b9c17d203db86b39de26bb0c",
+    "size": 2738,
+    "mtimeMs": 1793323511511.2068
+  },
+  {
+    "path": "src/app/api/spck/approve/route.ts",
+    "sha256": "e48606e7c32d31e2453f17698a5fec918dde75a058039af17582454f3fbc41f8",
+    "size": 19231,
+    "mtimeMs": 1792823789537.6711
+  },
+  {
+    "path": "src/app/api/spck/browse-folder/route.ts",
+    "sha256": "fc8ed68a131ea9260db0d494ff50da0e4b04d2a7ee45415ebc4a6bc5d79a9cc1",
+    "size": 4516,
+    "mtimeMs": 1792645693574.0056
+  },
+  {
+    "path": "src/app/api/spck/capture-screenshots/route.ts",
+    "sha256": "b6e5d71d358f4613be324d980bc9f4e9abebcbc80ea4dca0ef21db23989ee5f2",
+    "size": 8561,
+    "mtimeMs": 1792845840524.6028
+  },
+  {
+    "path": "src/app/api/spck/create-demo-sheet/route.ts",
+    "sha256": "2b37f408ec8d15b71bc8f3f357019ce69aae73290b72296cc7fa4164095251b7",
+    "size": 2788,
+    "mtimeMs": 1792745774902.9155
+  },
+  {
+    "path": "src/app/api/spck/deploy-web/route.ts",
+    "sha256": "270c5ca2918439a50e15c8c68e959efd0ebe98372db70209ed5a046974d61cc4",
+    "size": 2298,
+    "mtimeMs": 1792815869721.2583
+  },
+  {
+    "path": "src/app/api/spck/generate-ai/route.ts",
+    "sha256": "a99b00f6579687d4e4892882a68b68a9706e0a34dd988b446f9970b1d996ae4d",
+    "size": 4814,
+    "mtimeMs": 1792822896864.5527
+  },
+  {
+    "path": "src/app/api/spck/import-youtube/route.ts",
+    "sha256": "c524fbb1ae0bab8b3cf5f746f4fc7f280cfa300eba59eb27addd3386342ae046",
+    "size": 2690,
+    "mtimeMs": 1792894517114.3586
+  },
+  {
+    "path": "src/app/api/spck/list/route.ts",
+    "sha256": "75dab37075b5f19cf803172817f41227a660fd84ec05228b2bbb2cbe340ced90",
+    "size": 13903,
+    "mtimeMs": 1793318865388.7876
+  },
+  {
+    "path": "src/app/api/spck/save-draft/route.ts",
+    "sha256": "b2b201272da6eaede2fe56ec9ac88bfdcdfb92b69cc345216e7568d0a9e2f2fe",
+    "size": 16765,
+    "mtimeMs": 1792822901447.7522
+  },
+  {
+    "path": "src/app/api/spck/scan/route.ts",
+    "sha256": "eb853f621f5da9fae856107b17515837fb3f557c75ed9870b3d2ee999cd0e51b",
+    "size": 12458,
+    "mtimeMs": 1793024912443.2258
+  },
+  {
+    "path": "src/app/api/spck/session14-eval/generate-ai/route.ts",
+    "sha256": "dcd962ca4ff5e88e6fdedb1c3587a49a44f969cddbc98dc365255af0aec36bf0",
+    "size": 2470,
+    "mtimeMs": 1793068826296.3508
+  },
+  {
+    "path": "src/app/api/spck/session14-eval/import-demo-scores/route.ts",
+    "sha256": "0c564a92fbc27825b64e69d4d3dd7485715949f9a97c227584db159c2a9dd20a",
+    "size": 1177,
+    "mtimeMs": 1793068807804.494
+  },
+  {
+    "path": "src/app/api/spck/session14-eval/route.ts",
+    "sha256": "dd34481c3ea94e79870a5581fb261c1d566964d72d3cec6417685cf639ab93a8",
+    "size": 8375,
+    "mtimeMs": 1793179202392.0002
+  },
+  {
+    "path": "src/app/api/spck/session14-eval/upload-lms/route.ts",
+    "sha256": "1dfe9c3b606b3230ee85e464abaf773f7dc413a5975a1c1d88e03a9dea5d743b",
+    "size": 1421,
+    "mtimeMs": 1793068838246.9714
+  },
+  {
+    "path": "src/app/api/spck/student-portal/route.ts",
+    "sha256": "7164c42b637e95c4454a9a186b0af3fb0d9b0afa524c80607d36a64ed18817b2",
+    "size": 2759,
+    "mtimeMs": 1792767499945.2695
+  },
+  {
+    "path": "src/app/api/spck/upload-drive/route.ts",
+    "sha256": "98cba96d19eb5422afd52fc1854767c6f5fde182b97a0a808a64165edca9fd9f",
+    "size": 1928,
+    "mtimeMs": 1792815866533.2456
+  },
+  {
+    "path": "src/app/api/spck/upload-lms/route.ts",
+    "sha256": "607a3edb3462dd876c321288f7ac4cd1ddf8ae9c8dabae3a4b9ccd9cd22f3201",
+    "size": 3075,
+    "mtimeMs": 1792865708036.8755
+  },
+  {
+    "path": "src/app/api/teaching-projects/fetch-lms-dates/route.ts",
+    "sha256": "92ee00c861e2b55f11edfe3457c6620f2a0776987e7e31ef931f4699487fd43d",
+    "size": 3876,
+    "mtimeMs": 1793205151245.725
+  },
+  {
+    "path": "src/app/api/teaching-projects/generate-ai/route.ts",
+    "sha256": "8d4b7e357c24805f01e2998b32dddea769ed9e00a65c0f98cf9d3512b8924ce3",
+    "size": 5699,
+    "mtimeMs": 1793205151245.725
+  },
+  {
+    "path": "src/app/api/teaching-projects/progress/route.ts",
+    "sha256": "9ab132e1649cad765f1597fd6932f882330e77ad13d0296938b620bb0d62746c",
+    "size": 4732,
+    "mtimeMs": 1793205151245.725
+  },
+  {
+    "path": "src/app/api/teaching-projects/route.ts",
+    "sha256": "186a6e4185b82f955e312afeb729dc8d4c0fd39e094751e6730c2f5a90b6d996",
+    "size": 6239,
+    "mtimeMs": 1793318890093.5706
+  },
+  {
+    "path": "src/app/api/teaching-projects/sync/route.ts",
+    "sha256": "b87cffd2206ab4bd8172b1a4485e1c8ae9a6abfd7a370126dc781d970d235a32",
+    "size": 5056,
+    "mtimeMs": 1793205151246.7249
+  },
+  {
+    "path": "src/app/final-project/page.tsx",
+    "sha256": "5165387f9a1e5db8b7a888621dbc5f62f1445d17697bda09c72481197b20b04a",
+    "size": 296741,
+    "mtimeMs": 1793321341064.6084
+  },
+  {
+    "path": "src/app/globals.css",
+    "sha256": "501a77cbade1e543cb6934fea174655f6ec4c35b46f0650131d86fdfa8d42802",
+    "size": 17585,
+    "mtimeMs": 1793179202395.306
+  },
+  {
+    "path": "src/app/homework-grader/page.tsx",
+    "sha256": "7885711a2be8584616fd0d6bec21fab8c7b89efa7cea1cdb1743929441e52329",
+    "size": 35675,
+    "mtimeMs": 1793334165552.8777
+  },
+  {
+    "path": "src/app/layout.tsx",
+    "sha256": "f290becd8a96c76a3420ae234fabbee06e1300c9ea4c74180d1d136f301a6602",
+    "size": 1483,
+    "mtimeMs": 1793205151249.7253
+  },
+  {
+    "path": "src/app/page.tsx",
+    "sha256": "57cef5a1e63e8bfc53ca366f70bc6c76141ae15fc35d1463fb6070f8656149ad",
+    "size": 15291,
+    "mtimeMs": 1793270404644.2275
+  },
+  {
+    "path": "src/app/session-comments/page.tsx",
+    "sha256": "9619fc285124d4de905a004238368cf62d23b0c94f1177415adbae72aea68b71",
+    "size": 171980,
+    "mtimeMs": 1793332104109.354
+  },
+  {
+    "path": "src/app/syllabus-config/page.tsx",
+    "sha256": "c9d15d062a44792010edf675879e4068c902d4d514223d47d03baa6ff889f897",
+    "size": 85357,
+    "mtimeMs": 1793266937820.6284
+  },
+  {
+    "path": "src/app/teaching-projects/page.tsx",
+    "sha256": "7a857435a0339bf43b66a21d96f4da3fef39bb6634a00f235d8bc5ef9a902a87",
+    "size": 70912,
+    "mtimeMs": 1793321376452.2368
+  },
+  {
+    "path": "src/components/class-picker.tsx",
+    "sha256": "0aca50f0ca525b3101eb3a1dcfbd4aab082e961197ff2e1e990ab7998148e06f",
+    "size": 15210,
+    "mtimeMs": 1793322218584.5952
+  },
+  {
+    "path": "src/components/homework-auto-grader-tab.tsx",
+    "sha256": "3bcbba6f6ec50178f5f4b66ec75cfc05a47af7703c4752d4837ce4864abc80f0",
+    "size": 59870,
+    "mtimeMs": 1792560921693.7573
+  },
+  {
+    "path": "src/components/live-log-drawer.tsx",
+    "sha256": "a3de262113445ec952bde59f351109de2c50d142fd51cabc2efd241949f972a6",
+    "size": 9147,
+    "mtimeMs": 1793179202399.222
+  },
+  {
+    "path": "src/components/teaching-report-card-view.tsx",
+    "sha256": "2fc850d060f1a4230df9cf37e471e5795b56564246ebf34b7576150ca8410141",
+    "size": 116732,
+    "mtimeMs": 1793335500219.2092
+  },
+  {
+    "path": "src/components/top-navbar.tsx",
+    "sha256": "c197e9abeedd0a81e5886c3407d168a8f3d6723690e77e2150bc52e9a0dd618a",
+    "size": 3931,
+    "mtimeMs": 1793266937821.6282
+  },
+  {
+    "path": "src/lib/classes/class-directory.ts",
+    "sha256": "99b97537cb25ad926116da646fb1d444213f0a64e4ad989996a1d55c7092ae8f",
+    "size": 9271,
+    "mtimeMs": 1793318634416.6936
+  },
+  {
+    "path": "src/lib/config.ts",
+    "sha256": "4ac1332ab0becaaf212e5ac03944b077074572eb43375f7ce8f9b34d6ed3b309",
+    "size": 2206,
+    "mtimeMs": 1792336170936.3376
+  },
+  {
+    "path": "src/lib/db/json-config.ts",
+    "sha256": "7703e5b7542ea3d9afad872cb1295e01be67ba28295ec90dbb8bcc42615f4998",
+    "size": 8303,
+    "mtimeMs": 1793205151251.725
+  },
+  {
+    "path": "src/lib/db/sqlite.ts",
+    "sha256": "701af10188da624760a3e459b43f270ac86d7322a2bcecf19463fe0aa78dbcbf",
+    "size": 243931,
+    "mtimeMs": 1793266937823.6262
+  },
+  {
+    "path": "src/lib/file-parsers/archive-reader.ts",
+    "sha256": "9363446a1ad08fb9f34a270127d648a90b33e1695c02a016349127901e3e63a2",
+    "size": 13717,
+    "mtimeMs": 1792492231670.5413
+  },
+  {
+    "path": "src/lib/file-parsers/code-reader.ts",
+    "sha256": "9d04a75f4baf99c0f8110f6716b2695fa7322eeca5ccdd01f0dbb36b7a08133c",
+    "size": 11840,
+    "mtimeMs": 1792481718123.0203
+  },
+  {
+    "path": "src/lib/file-parsers/game-reader.ts",
+    "sha256": "d55c54e65d4a158c452ea963d43a7b175beb2bcf5c3f6a2c5567a1d0ab1710c6",
+    "size": 25400,
+    "mtimeMs": 1792559980813.182
+  },
+  {
+    "path": "src/lib/file-parsers/index.ts",
+    "sha256": "5ecd30c44bbe46325f8e467a4573f11015cc875d19a823c8a44291932152bc38",
+    "size": 10360,
+    "mtimeMs": 1792481941943.4604
+  },
+  {
+    "path": "src/lib/file-parsers/media-reader.ts",
+    "sha256": "2c42b5d4d3a6a3f0f09c9b86bc44f01fcbcb70fb22ee50a15c941b1bf640e3f0",
+    "size": 69037,
+    "mtimeMs": 1792530838071.5493
+  },
+  {
+    "path": "src/lib/gemini/client.ts",
+    "sha256": "b954f04d4c057fd3f8fc6440fa86e396a6fdc0cd40afd8e4748a7352fc0783f0",
+    "size": 1243,
+    "mtimeMs": 1792665629982.1235
+  },
+  {
+    "path": "src/lib/gemini/comment-generator.ts",
+    "sha256": "413e326c9c4b63f406cbd500261938b91cdd2a01fdf18edb6603b8c9038b9fba",
+    "size": 38886,
+    "mtimeMs": 1793205151254.7256
+  },
+  {
+    "path": "src/lib/gemini/homework-grader.ts",
+    "sha256": "dafc0646b3c8cfe93b335a9ce3884e0941bea422b354c64ae2fc82e363547daf",
+    "size": 28329,
+    "mtimeMs": 1792559815492.9927
+  },
+  {
+    "path": "src/lib/gemini/score-auditor.ts",
+    "sha256": "9db56d4461adf1273bbe99d87e1b11399b2b202d2786e2e1f73c45e9d5a0c875",
+    "size": 7583,
+    "mtimeMs": 1792559752016.709
+  },
+  {
+    "path": "src/lib/gemini/session14-course-summary.ts",
+    "sha256": "df2d01c5fbf523793b0f0797c43a12a48e5297edd5cca582d8aa3d765512568c",
+    "size": 47777,
+    "mtimeMs": 1793179202403.2183
+  },
+  {
+    "path": "src/lib/gemini/spck-comment.ts",
+    "sha256": "3616397609518cb9c356a2cfb5c03a3db63ac6822caf6a5e4bd318b00c554bf9",
+    "size": 58675,
+    "mtimeMs": 1793096053542.3079
+  },
+  {
+    "path": "src/lib/gemini/teaching-project-generator.ts",
+    "sha256": "be3157266a891336658af822b43c777b17200f09a5ade6db173ec0338d64c174",
+    "size": 37898,
+    "mtimeMs": 1793205151254.7256
+  },
+  {
+    "path": "src/lib/github/spck-web-deployer.ts",
+    "sha256": "0c9a76f7fae21f340d069140245d9e5bfde306af01ecda4f8c4d1e928e724df4",
+    "size": 27006,
+    "mtimeMs": 1792823165664.3606
+  },
+  {
+    "path": "src/lib/local-files/spck-app-screenshotter.ts",
+    "sha256": "04bb555cfa708d1925536b481c9f2304b7e3efd6f8a7ee17609177b92f13cf8d",
+    "size": 67975,
+    "mtimeMs": 1793024902576.8313
+  },
+  {
+    "path": "src/lib/local-files/spck-demo-score-reader.ts",
+    "sha256": "1d234a7f3fb9c61a93906239aa44896ab35e2bdde75a7dfe69d00c400e8fc153",
+    "size": 28579,
+    "mtimeMs": 1793179202404.068
+  },
+  {
+    "path": "src/lib/local-files/spck-image-normalizer.ts",
+    "sha256": "8325f7b5f0e793de365c0eecb9ba61705e81f4dc6c8bf5a00fd5d4c1b83b9c54",
+    "size": 4516,
+    "mtimeMs": 1792893951832.3364
+  },
+  {
+    "path": "src/lib/local-files/spck-scanner.ts",
+    "sha256": "5b5685d1a14bb2a66c70da67d663d71e6947190f57929ba4f561e58ca0cfdaca",
+    "size": 53836,
+    "mtimeMs": 1793024907641.0571
+  },
+  {
+    "path": "src/lib/local-files/spck-youtube-import.ts",
+    "sha256": "9c7d5e5a499b9d364ee41afd79750cc2b6afdf0056e86171618d70fdcf13c3a0",
+    "size": 33220,
+    "mtimeMs": 1792899026014.902
+  },
+  {
+    "path": "src/lib/playwright/auth.ts",
+    "sha256": "99c3af292d62c67cb4c58ed7f43975ba0ae7b15689f28ced0c6232e910817a4f",
+    "size": 10920,
+    "mtimeMs": 1793010297209.7861
+  },
+  {
+    "path": "src/lib/playwright/browser-manager.ts",
+    "sha256": "92dd3bfcf598c9dbebe4cc5b55ebdfd053c46d556cfcc94098ee777aafaa376a",
+    "size": 7102,
+    "mtimeMs": 1792663211034.3945
+  },
+  {
+    "path": "src/lib/playwright/download-submissions.ts",
+    "sha256": "a26c2348f871e3d03f8e5f2511a67f4267dc9dff10aaf59d5d5a0633ba4b5abd",
+    "size": 24617,
+    "mtimeMs": 1792559930641.9148
+  },
+  {
+    "path": "src/lib/playwright/grade-worker.ts",
+    "sha256": "402836adde656b35f9e143daeaeee57e5eb0f74832ce78260f909d4969f4f13d",
+    "size": 62195,
+    "mtimeMs": 1793005109652.9653
+  },
+  {
+    "path": "src/lib/playwright/lms-helpers.ts",
+    "sha256": "388d1459de0b4c766a987d48016d805fd6ffe8fa1e963a987f3a6284df69a581",
+    "size": 26529,
+    "mtimeMs": 1793262785843.426
+  },
+  {
+    "path": "src/lib/playwright/network-interceptor.ts",
+    "sha256": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad",
+    "size": 6258,
+    "mtimeMs": 1792496584703.6003
+  },
+  {
+    "path": "src/lib/playwright/save-comments.ts",
+    "sha256": "0ceaeadcef625a0ba23f06cf7ed4326ebc2f20584560c9daae23115c41cdcd0f",
+    "size": 76829,
+    "mtimeMs": 1793179202404.573
+  },
+  {
+    "path": "src/lib/playwright/scrape-scores.ts",
+    "sha256": "2f133b529ab8772a67950ed49912f2d3cb5aeb33670d6065683cb67f7741bebc",
+    "size": 115190,
+    "mtimeMs": 1793336618666.375
+  },
+  {
+    "path": "src/lib/playwright/selectors.ts",
+    "sha256": "bbdcc949e56d382e563c5b96cf37a7a748a58b0b8ad283bcd817edda16f04c3a",
+    "size": 8673,
+    "mtimeMs": 1792544449787.8806
+  },
+  {
+    "path": "src/lib/playwright/session14-eval-uploader.ts",
+    "sha256": "92afd94ebc1d2a2742ec022e601b79ea252a17d306aaae1d40b7777146c26e46",
+    "size": 50932,
+    "mtimeMs": 1793264054325.0623
+  },
+  {
+    "path": "src/lib/playwright/spck-demo-sheet.ts",
+    "sha256": "1c8c2a1eb432362b585f09760d9acabf7bf85bf988109f0a791544cae2367656",
+    "size": 49903,
+    "mtimeMs": 1792815075908.4883
+  },
+  {
+    "path": "src/lib/playwright/spck-drive-uploader.ts",
+    "sha256": "979e8b22597100c1940cfc0fdaae86c6755eb5a9d81389354ad8ebadb9c7ffb7",
+    "size": 31777,
+    "mtimeMs": 1792823163805.837
+  },
+  {
+    "path": "src/lib/playwright/spck-uploader.ts",
+    "sha256": "e3f615570c2de64147346edf004ce892c2abed7fa4bb5051ae9e500cad0f1fcb",
+    "size": 146659,
+    "mtimeMs": 1793316473691.5361
+  },
+  {
+    "path": "src/lib/playwright/sync-class.ts",
+    "sha256": "688dff89125ed5cfe9ec11fb33c1808bb46d18b8223c68a9a7fd2064bbaaae45",
+    "size": 61413,
+    "mtimeMs": 1793316464512.745
+  },
+  {
+    "path": "src/lib/playwright/teaching-project-service.ts",
+    "sha256": "5345bf1ecf5df4efb2dcbe47e8c56d699059e71cca680e3ff952f971edaad701",
+    "size": 43104,
+    "mtimeMs": 1793294069990.5903
+  },
+  {
+    "path": "src/lib/playwright/teaching-report-card-sync.ts",
+    "sha256": "23a83d6ae342c37da16debd3530ae025da242877ccc54a2bc37daebdb5084a1e",
+    "size": 46501,
+    "mtimeMs": 1793294442193.0852
+  },
+  {
+    "path": "src/lib/queue/task-queue.ts",
+    "sha256": "bcda7cb7ce608ed1bda52b77ac4c4480632b7c260304ca5296932d3252684ede",
+    "size": 8398,
+    "mtimeMs": 1792769968719.9624
+  },
+  {
+    "path": "src/lib/quick-tags/index.ts",
+    "sha256": "2f616de8a3be97b8575596f78730478838dca53fb9692a1229b5ae753101acac",
+    "size": 15219,
+    "mtimeMs": 1793205151257.725
+  },
+  {
+    "path": "src/lib/report-card/export-cell-formatter.ts",
+    "sha256": "272ece8fedc2a9bbcfcf990b1e95069d357eacc34a5c315b059c5e2216716d76",
+    "size": 2038,
+    "mtimeMs": 1793334163458.417
+  },
+  {
+    "path": "src/lib/report-card/report-card-calculator.ts",
+    "sha256": "e2542135b4218a034bebcee39c31f27f24e5cdc2eee4134b4e180201d6d64170",
+    "size": 26351,
+    "mtimeMs": 1793336618659.745
+  },
+  {
+    "path": "src/lib/security/local-guard.ts",
+    "sha256": "205f8ec95b183b33cbf65add0fca169f4a4882a43236ad1a9e69f5d926baf470",
+    "size": 2144,
+    "mtimeMs": 1792373280055.4087
+  },
+  {
+    "path": "src/lib/security/path-allowlist.ts",
+    "sha256": "3ab6a6ef1239a59eeb5f4564b604ad58be076af67d2fbe29e27e1dbd8f38391f",
+    "size": 6911,
+    "mtimeMs": 1792679763220.1802
+  },
+  {
+    "path": "src/lib/student-portal/student-portal-server.ts",
+    "sha256": "43f1c1db16fe5af8a20edc578b1d781c406578cee02b7b5aebe9a8e931abb374",
+    "size": 58569,
+    "mtimeMs": 1792768386424.816
+  },
+  {
+    "path": "src/lib/teaching/teaching-http-client.ts",
+    "sha256": "b1993a7fd260dfe5ea2a00ae85622d153319a71fc52b7cb9a50827d5c8d28c92",
+    "size": 17363,
+    "mtimeMs": 1793316472285.3528
+  },
+  {
+    "path": "src/lib/utils/vietnamese-match.ts",
+    "sha256": "017fa9883acf6d791bfd36d67ef596801c6aec13de33bd9949ae3a3bb34b41b3",
+    "size": 11152,
+    "mtimeMs": 1792541502429.4
+  },
+  {
+    "path": "src/lib/utils.ts",
+    "sha256": "ec94d82b9920dd7bde4a8d48a878d1a72c336a12101d411779877ab337eeb466",
+    "size": 239,
+    "mtimeMs": 1792334180740.245
+  },
+  {
+    "path": "src/lib/zalo/broadcast-generator.ts",
+    "sha256": "9b466b23970a09d66ca45e880a6914aac394c8d0b52e659b9209825e8b36f1ed",
+    "size": 7192,
+    "mtimeMs": 1793334119466.7954
+  },
+  {
+    "path": "src/lib/zalo/zalo-summary.ts",
+    "sha256": "c260c785bc89aecdd7b4682b060eafe63aa21cc19ec1c9ac3bad2e5df6ad373c",
+    "size": 13052,
+    "mtimeMs": 1793326619471.2048
+  },
+  {
+    "path": "scripts/recon.ts",
+    "sha256": "50a9cfffd20e1d043112852433070ea78fb084b919d85ad537f96f67b33ee5e2",
+    "size": 7359,
+    "mtimeMs": 1792336199615.7793
+  },
+  {
+    "path": "scripts/test-checkpoint-v300.ts",
+    "sha256": "fe04cf1e08167ca2d23cf604e2b749824beb687d350788a7cf241dfb559c1969",
+    "size": 13536,
+    "mtimeMs": 1793179202387.8755
+  },
+  {
+    "path": "scripts/test-lms-reliability-v280.ts",
+    "sha256": "bdd8ac582b370282c820de0c8a276562221dc3e2a2d90f2f93f26a4d4eaa4451",
+    "size": 61566,
+    "mtimeMs": 1793064207524.7908
+  },
+  {
+    "path": "scripts/test-patches-round2.ts",
+    "sha256": "2e1b15a66ee4fe900f8f5580a19e40cca4fde9dc27cfaf59bb87c7c268275ba5",
+    "size": 7259,
+    "mtimeMs": 1792373524092.4858
+  },
+  {
+    "path": "scripts/test-phase3.ts",
+    "sha256": "594ca880d6f149ad3f5e50ba0e7f583455d6a96a1426b8d777e74cd40290f8a1",
+    "size": 8437,
+    "mtimeMs": 1793179202388.672
+  },
+  {
+    "path": "scripts/test-phase4-codex-repros.ts",
+    "sha256": "ed31335fb5f17d154a02f3829833c3976cbcc7bc1f0d8e5d1f1afc59a30146b2",
+    "size": 183305,
+    "mtimeMs": 1793266937817.9084
+  },
+  {
+    "path": "scripts/test-phase5.ts",
+    "sha256": "c009a17a052f9ea8955541b0a6f25d14d7c58a2fc9c214d1f4515dbb3dad323c",
+    "size": 31478,
+    "mtimeMs": 1792560983034.8733
+  },
+  {
+    "path": "scripts/test-phase6.ts",
+    "sha256": "39f2680da6a1bd3124f52cd82dd72490b8f8a203887cb1f476e2b2f90ba8a330",
+    "size": 58110,
+    "mtimeMs": 1792817285901.8865
+  },
+  {
+    "path": "scripts/test-phase7.ts",
+    "sha256": "1621279bfc776bd6922ad36a3cfd1d9f997721357e0bb36245c499074edf5d62",
+    "size": 21050,
+    "mtimeMs": 1792560021036.0781
+  },
+  {
+    "path": "scripts/test-quick-tags-v300.ts",
+    "sha256": "f8c19aa70204ac51d0cb898b261a6ff7d00f6d9c8b48072b3b52b015171b2d59",
+    "size": 14335,
+    "mtimeMs": 1793205151242.7268
+  },
+  {
+    "path": "scripts/test-report-card-v330.ts",
+    "sha256": "858902c17f3199e1ff5eda7d39fb057c34ba6844d805a0afce0e6277f63aa179",
+    "size": 155505,
+    "mtimeMs": 1793266937818.4734
+  },
+  {
+    "path": "scripts/test-session14-v290.ts",
+    "sha256": "83beb42b970f8e02213662cc2da3f35faf63093a5344c580ca4ddd4f678dd390",
+    "size": 69398,
+    "mtimeMs": 1793096089160.0703
+  },
+  {
+    "path": "scripts/test-spck-v270.ts",
+    "sha256": "15dcf25a0f6679509ffb7b623a48a6731c68a095be1b40d37e8ec2131c24c176",
+    "size": 94543,
+    "mtimeMs": 1793007341689.913
+  },
+  {
+    "path": "scripts/test-spck-v272.ts",
+    "sha256": "2e538641dd810af36869efa9605e99a507bd88a7e1c20a47494d0c0fbf407e7d",
+    "size": 34357,
+    "mtimeMs": 1792899109766.9304
+  },
+  {
+    "path": "scripts/test-streamline-v340-s1.ts",
+    "sha256": "4313230439831b955db32a6f8878d3d8f0ad8cc2abef486574ec40b93035204b",
+    "size": 36066,
+    "mtimeMs": 1793316646773.7224
+  },
+  {
+    "path": "scripts/test-streamline-v340-s2.ts",
+    "sha256": "eb36a46084338910e32743f17a369482608192a17026e4851853118e3980d155",
+    "size": 28932,
+    "mtimeMs": 1793321448582.2588
+  },
+  {
+    "path": "scripts/test-streamline-v340-s3.ts",
+    "sha256": "37931e125544ec284140c1ce45a8e246e9db56b96da436726c358b7f226c5ff9",
+    "size": 44488,
+    "mtimeMs": 1793332133204.752
+  },
+  {
+    "path": "scripts/test-streamline-v340-s4.ts",
+    "sha256": "498e28184ff86f30717e6393a2cedeeabc1f73944eb634763171a9a979fb3c13",
+    "size": 38858,
+    "mtimeMs": 1793337304862.7788
+  },
+  {
+    "path": "scripts/test-teaching-project-v320.ts",
+    "sha256": "08e18f7e08ff08a8b8f739392c87a924aa8d51ba5c7fd0b1e7d88a5f606a580d",
+    "size": 66278,
+    "mtimeMs": 1793205151243.7263
+  },
+  {
+    "path": "docs/audits/v340/s4-round1/phase4-test.log",
+    "sha256": "0de1114c6a9f91c753ecd2dfc5e2f10f1dd260389fab118cfc14bdd174198041",
+    "size": 3752,
+    "mtimeMs": 1793334812997.2454
+  },
+  {
+    "path": "docs/audits/v340/s4-round1/probe-results.json",
+    "sha256": "33420d9532ca3534f7cee12230418d638b9e34fa65216e537f4867a6d473e8e1",
+    "size": 3709,
+    "mtimeMs": 1793335043623.241
+  },
+  {
+    "path": "docs/audits/v340/s4-round1/probe.cjs",
+    "sha256": "7ddcb873fe5965278b7193f6ef79c28fe27259a54175fbf85e21f40bfbc8c1aa",
+    "size": 14674,
+    "mtimeMs": 1793335041515.1414
+  },
+  {
+    "path": "docs/audits/v340/s4-round1/probe.log",
+    "sha256": "9048bb324dff06ce08d23dfd25c82b444e6fac9e937cf23225f23b51f36f06d0",
+    "size": 6848,
+    "mtimeMs": 1793335043621.7363
+  },
+  {
+    "path": "docs/audits/v340/s4-round1/s4-test.log",
+    "sha256": "6ea8505c08ebbe396ff231d971573c7dabbce42ebbded53715840ac1b6257ca3",
+    "size": 2262,
+    "mtimeMs": 1793334788952.0908
+  },
+  {
+    "path": "docs/audits/v340/s4-round1/source-before.json",
+    "sha256": "81a3d9151f7f54e4682c8b8fd367aa094d286ba729b4884e33d653df43af2c19",
+    "size": 1291,
+    "mtimeMs": 1793334787117.8142
+  },
+  {
+    "path": "docs/audits/v340/s4-round1/source-verification.json",
+    "sha256": "ccebdc5e483ad4edcb558d5ed2c1409ca297b2411c295937d360e5709c908f5b",
+    "size": 2235,
+    "mtimeMs": 1793335240914.7583
+  },
+  {
+    "path": "docs/audits/v340/s4-round1/tsbuildinfo-verification.json",
+    "sha256": "c0646c9f0146a43788994f588e96e8702509279fc6579f10ecfb497b9079ea65",
+    "size": 200,
+    "mtimeMs": 1793335097415.23
+  },
+  {
+    "path": "docs/audits/v340/s4-round1/tsc.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0,
+    "mtimeMs": 1793334809180.8032
+  },
+  {
+    "path": "docs/audits/v340/s4-round1/v330-test.log",
+    "sha256": "eecd17ddc2a063db2b7564aa6725c775f55073abe0768be217399bc97c5679e4",
+    "size": 4100,
+    "mtimeMs": 1793334800325.1294
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/closure-probe.cjs",
+    "sha256": "0d65d6be6f4ece4f46dfb1e8cf591fd40b3911e1bb1eac182a66bf73336729f2",
+    "size": 15136,
+    "mtimeMs": 1793336061223.1272
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/closure-results.json",
+    "sha256": "870ffd2a31be4ea0d4ce89933b6c50e05d807d052cf65ffd32fba6c778ea0dab",
+    "size": 4486,
+    "mtimeMs": 1793336062828.5588
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/closure.log",
+    "sha256": "3d128fcf8f7d2a032d5f6942e9f1569bcabed04654e049bdebefda34ce796cf9",
+    "size": 8094,
+    "mtimeMs": 1793336062828.0588
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/environment.json",
+    "sha256": "5c0fd2088612a5e42c68d67a92cdc59117a6b3797b6d8da6c17fd40203adb1c4",
+    "size": 459,
+    "mtimeMs": 1793336255232.6748
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/gates.json",
+    "sha256": "48f48aa23bd53e1a62f02baea67dae7f6f28d1ed7bec297591509c8674d64f00",
+    "size": 691,
+    "mtimeMs": 1793335706232.2732
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/parity-probe.cjs",
+    "sha256": "20a30b8c3a12b603fc2e6e0061463408559f4d04b8a8165f7ec994d5b38ba000",
+    "size": 10810,
+    "mtimeMs": 1793335979954.3403
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/parity-results.json",
+    "sha256": "627acd395f9ab76d9f1b52216cf5374b099f9840bab94be5f592e0b6a6660e17",
+    "size": 2659,
+    "mtimeMs": 1793335987491.6643
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/parity.log",
+    "sha256": "50b2293eb4089a98b4f2894558ffb4f0276a371a113524465a66254ef05534aa",
+    "size": 4852,
+    "mtimeMs": 1793335987491.6643
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/phase4.log",
+    "sha256": "0d7b25502de463bdba0649b741fe6b21f48c29e9b4ee1cf33f6d14936f5bbf72",
+    "size": 3752,
+    "mtimeMs": 1793335704795.6704
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/protected-before.json",
+    "sha256": "f3aa3207f5098c679ca5b17ad4eec778595e2402ff7ec16f542e3ccc0cb67063",
+    "size": 42212,
+    "mtimeMs": 1793335678547.1743
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/protected-verification.json",
+    "sha256": "836b99b73f04d9ee021aa1816869d40c703840e0ba1c652dd2995fdc7dc9af73",
+    "size": 44585,
+    "mtimeMs": 1793336255549.6592
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/s4.log",
+    "sha256": "c0dc6a6732fd74c191dc0bc5ff908479b66782dae29a83e815513bcbe9f1e5d8",
+    "size": 2442,
+    "mtimeMs": 1793335698587.2812
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/tsbuildinfo-verification.json",
+    "sha256": "f76e00c7293b3ea66ed31dc9243bb3694c5b58c7c22d6973243293c06c90050b",
+    "size": 278,
+    "mtimeMs": 1793336255549.6592
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/tsc.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0,
+    "mtimeMs": 1793335704857.7324
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/v330.log",
+    "sha256": "d5eef0abecbb58e84b655631712be808fa7d2b9967c7f0e711680f15c1f2d983",
+    "size": 4100,
+    "mtimeMs": 1793335701273.0864
+  },
+  {
+    "path": "docs/audits/v340/s4-round2/working-tree.patch",
+    "sha256": "47255d4b11abe02bce21923d80322efc7d243019f0c470e8d83cd7c78f5cde35",
+    "size": 63798,
+    "mtimeMs": 1793336078593.069
+  },
+  {
+    "path": "docs/audits/v340/CODEX_S4_ROUND1.md",
+    "sha256": "cc0e0df0b19ffa27bda6bf750496bc0f724fe6e5a42563cafd7f81dae2784f06",
+    "size": 21394,
+    "mtimeMs": 1793335225331.1577
+  },
+  {
+    "path": "docs/audits/v340/CODEX_S4_ROUND2.md",
+    "sha256": "143897f24127006a038b70dd74c90794a68b19e03af6b8b80141323e0b2bbeee",
+    "size": 22194,
+    "mtimeMs": 1793336254541.2803
+  },
+  {
+    "path": "AGENTS.md",
+    "sha256": "81181311cacf1142a3f0ec04a417f030da586518c80bdfe0c2a78c23ce19f9c2",
+    "size": 7679,
+    "mtimeMs": 1793294201614.034
+  },
+  {
+    "path": "PROJECT_STATE.md",
+    "sha256": "2f21a2c8953bc8627c64623eea4d682a7aabd27aaa4ec2ce4a245f021aaf8502",
+    "size": 68346,
+    "mtimeMs": 1793332789904.756
+  },
+  {
+    "path": "MINDX_AUTOMATION_PLAN.md",
+    "sha256": "b35ea84e4730e3472af269e4c1560bef44e1fe7a67afd79073b70622a8d888b6",
+    "size": 138518,
+    "mtimeMs": 1793332791952.0063
+  },
+  {
+    "path": "CHANGELOG.md",
+    "sha256": "3148b6f1763d6b2816f784cca558dad4306da59eedddadee362c5a28e9853e26",
+    "size": 118332,
+    "mtimeMs": 1793332793821.3923
+  },
+  {
+    "path": "package.json",
+    "sha256": "1472c4e48d2ce7486cfb9c7debe373a96fcf0f72043661cda77f9e901b7415f9",
+    "size": 1605,
+    "mtimeMs": 1792334482823.462
+  },
+  {
+    "path": "package-lock.json",
+    "sha256": "79da2b8368a1b59f7f56c7a80307ba754c1587fc4b5503d4efc96835481fdda4",
+    "size": 118860,
+    "mtimeMs": 1793179202387.3467
+  },
+  {
+    "path": "tsconfig.json",
+    "sha256": "fde7de96e04c006d6d27769b63c5b1457d772a48504c2f2cec76fbe44c1c8f26",
+    "size": 718,
+    "mtimeMs": 1792839799310.5376
+  },
+  {
+    "path": "tsconfig.tsbuildinfo",
+    "sha256": "b88678644f2b238a5d90e06852128b010eccf0adb78850e12c0e29e4984c5d8f",
+    "size": 260442,
+    "mtimeMs": 1793334651997.8816
+  }
+]

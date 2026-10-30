@@ -1,0 +1,181 @@
+[
+  {
+    "id": "P01",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "ISO and SQLite localtime both detect newer evaluation",
+    "timezone": "Asia/Saigon"
+  },
+  {
+    "id": "P02",
+    "originalFinding": "S4-01",
+    "state": "PASS",
+    "actualStale": true,
+    "expectedStale": true,
+    "snapshotDemo": 4,
+    "currentDemo": 5,
+    "evaluationUpdated": "08:00:30Z",
+    "scrapeFinished": "08:01:00Z"
+  },
+  {
+    "id": "P03",
+    "originalFinding": "S4-01",
+    "state": "PASS",
+    "actualApproval": 200,
+    "approvedStaleScore": 4,
+    "contentHashSet": true,
+    "actualStale": true
+  },
+  {
+    "id": "P04",
+    "originalFinding": "S4-02",
+    "state": "PASS",
+    "actualStale": true,
+    "expectedStale": true,
+    "previousDemo": 4,
+    "correctedDemo": 0,
+    "sameSecond": true
+  },
+  {
+    "id": "P05",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "same-second nonzero correction is detected"
+  },
+  {
+    "id": "C-CP-boundaries",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "zero CP scores are present; null checkpoints are missing; inactive students excluded; no snapshot/no evaluations does not crash",
+    "cases": 5
+  },
+  {
+    "id": "C-400",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "approval error prevents sync and releases busy state"
+  },
+  {
+    "id": "C-409",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "approval error prevents sync and releases busy state"
+  },
+  {
+    "id": "C-500",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "approval error prevents sync and releases busy state"
+  },
+  {
+    "id": "C-class-switch",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "combined action stops before sync",
+    "syncCalls": 0
+  },
+  {
+    "id": "C-newer-load",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "combined action stops before sync",
+    "syncCalls": 0
+  },
+  {
+    "id": "C-network-error",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "combined action stops before sync",
+    "syncCalls": 0
+  },
+  {
+    "id": "C-sync-409",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "no success toast after failed or obsolete sync; busy state released"
+  },
+  {
+    "id": "C-sync-network",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "no success toast after failed or obsolete sync; busy state released"
+  },
+  {
+    "id": "C-switch-during-sync",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "no success toast after failed or obsolete sync; busy state released"
+  },
+  {
+    "id": "P06",
+    "originalFinding": "S4-03",
+    "state": "PASS",
+    "actualTitle": "Bản quét hiện tại chưa có đủ điểm Check-point, bấm Quét lại",
+    "hasNewerSession14": false,
+    "missingCp2": true
+  },
+  {
+    "id": "C-hash-version",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "real handlers reject stale version and invalid SHA-256 before remote access",
+    "wrongVersionStatus": 409,
+    "wrongHashStatus": 400
+  },
+  {
+    "id": "C-local-report-get",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-local-report-post",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-local-report-put",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-local-scores-get",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-local-scores-post",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-local-export-get",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-local-sync-post",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "nonlocal request rejected before business work",
+    "status": 403
+  },
+  {
+    "id": "C-formatter",
+    "originalFinding": null,
+    "state": "PASS",
+    "control": "formatter parity and formula escaping",
+    "cases": 29
+  }
+]
