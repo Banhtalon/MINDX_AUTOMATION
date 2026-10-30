@@ -1,0 +1,43 @@
+{
+  "head": "faf9fbc775b56bed79c766720589783b08fcee5c",
+  "protectedCount": 2003,
+  "changed": [],
+  "addedSourceFiles": [],
+  "stageReportsChanged": [],
+  "productionAfter": {
+    "data/mindx_bot.db": "A911EB02CD6E2610340604DCF42D53AFB428C50C02727C4CE44F138DEC9C8F16",
+    "data/running_classes.json": "ADBEE2357251FCDC56DF07CAA866015BF1E75C7247439D7F7E2C2B2D78DE63E2"
+  },
+  "productionMatchesBefore": true,
+  "mirrors": {
+    "tests": {
+      "sourceCount": 145,
+      "changed": []
+    },
+    "build": {
+      "sourceCount": 122,
+      "changed": []
+    }
+  },
+  "nextEnvTempRestoration": [
+    {
+      "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8\\next-env.d.ts",
+      "beforeRestore": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+      "original": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+      "afterRestore": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000"
+    },
+    {
+      "path": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-build-1793369357\\next-env.d.ts",
+      "beforeRestore": "1B59D4C6B83807DB275D43F3CF2CC8E9323F465FAB764EEA091CC5BECD5BAD37",
+      "original": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000",
+      "afterRestore": "B8B3A344484B959AF5E4E3FC1A1609DAC3CB9ECE0CDEB6C145BE29BC4C491000"
+    }
+  ],
+  "missingReportLinks": [],
+  "buildExitCode": 0,
+  "verdict": "NO-GO",
+  "openFindings": [
+    "S8-01",
+    "S8-02"
+  ]
+}

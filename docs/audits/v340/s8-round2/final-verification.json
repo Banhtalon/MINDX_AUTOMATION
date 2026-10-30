@@ -1,0 +1,47 @@
+{
+  "protectedCount": 2042,
+  "changed": [],
+  "productionMatchesExpected": true,
+  "productionBefore": [
+    {
+      "Path": "F:\\MINDX_project test\\MINDX-AUTOMATION\\data\\mindx_bot.db",
+      "Hash": "A911EB02CD6E2610340604DCF42D53AFB428C50C02727C4CE44F138DEC9C8F16"
+    },
+    {
+      "Path": "F:\\MINDX_project test\\MINDX-AUTOMATION\\data\\running_classes.json",
+      "Hash": "ADBEE2357251FCDC56DF07CAA866015BF1E75C7247439D7F7E2C2B2D78DE63E2"
+    }
+  ],
+  "productionAfter": [
+    {
+      "Path": "F:\\MINDX_project test\\MINDX-AUTOMATION\\data\\mindx_bot.db",
+      "Hash": "A911EB02CD6E2610340604DCF42D53AFB428C50C02727C4CE44F138DEC9C8F16"
+    },
+    {
+      "Path": "F:\\MINDX_project test\\MINDX-AUTOMATION\\data\\running_classes.json",
+      "Hash": "ADBEE2357251FCDC56DF07CAA866015BF1E75C7247439D7F7E2C2B2D78DE63E2"
+    }
+  ],
+  "round1ReportPreservedByteForByte": true,
+  "round1ChangedPaths": [
+    "src/app/api/spck/browse-folder/route.ts",
+    "src/app/api/spck/capture-screenshots/route.ts",
+    "src/lib/local-files/spck-app-screenshotter.ts",
+    "src/lib/local-files/spck-image-normalizer.ts"
+  ],
+  "verdict": "NO-GO",
+  "closed": [
+    "S8-01",
+    "S8-02"
+  ],
+  "open": [
+    {
+      "id": "S8-R2-01",
+      "severity": "HIGH"
+    }
+  ],
+  "mandatoryGatesPass": true,
+  "edgePassed": 20,
+  "edgeFailed": 0,
+  "rendererSecurityFailures": 3
+}

@@ -1,0 +1,10 @@
+{
+  "round2Count": 2042,
+  "changed": {
+    "src/lib/local-files/spck-app-screenshotter.ts": {
+      "round2": "EE14C560B2F9EFFF541E2A91632FEA26F91C0C0CD7DD17C13D0C6533B2246C87",
+      "round3": "E09F8093A92A5C6729BE69D0E45512CECEEF19CE9EF42EFFD429EE723A2AE810"
+    }
+  },
+  "addedSource": []
+}

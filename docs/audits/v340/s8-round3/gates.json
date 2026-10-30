@@ -1,0 +1,65 @@
+[
+  {
+    "name": "renderer-resource-probe",
+    "command": "npx tsx renderer-resource-probe.cjs",
+    "exitCode": 0,
+    "seconds": 6.04,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-8_fb9w4e"
+  },
+  {
+    "name": "renderer-compatibility-probe",
+    "command": "npx tsx renderer-compatibility-probe.cjs",
+    "exitCode": 1,
+    "seconds": 11.01,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-8_fb9w4e"
+  },
+  {
+    "name": "path-probe",
+    "command": "npx tsx path-probe.cjs",
+    "exitCode": 0,
+    "seconds": 2.05,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-8_fb9w4e"
+  },
+  {
+    "name": "browser-policy-probe",
+    "command": "npx tsx browser-policy-probe.cjs",
+    "exitCode": 0,
+    "seconds": 2.22,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-8_fb9w4e"
+  },
+  {
+    "name": "tsc",
+    "command": "npx tsc --noEmit --incremental false",
+    "exitCode": 0,
+    "seconds": 2.45,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-8_fb9w4e"
+  },
+  {
+    "name": "spck-v272",
+    "command": "npx tsx scripts/test-spck-v272.ts",
+    "exitCode": 0,
+    "seconds": 18.77,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-8_fb9w4e"
+  },
+  {
+    "name": "s5",
+    "command": "npx tsx scripts/test-streamline-v340-s5.ts",
+    "exitCode": 0,
+    "seconds": 7.67,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-8_fb9w4e"
+  },
+  {
+    "name": "s7",
+    "command": "npx tsx scripts/test-streamline-v340-s7.ts",
+    "exitCode": 0,
+    "seconds": 3.34,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-8_fb9w4e"
+  },
+  {
+    "name": "edge-probe",
+    "command": "npx tsx edge-probe.cjs",
+    "exitCode": 0,
+    "seconds": 4.63,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-8_fb9w4e"
+  }
+]

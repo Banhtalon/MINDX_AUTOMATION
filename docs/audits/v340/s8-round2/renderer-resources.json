@@ -1,0 +1,64 @@
+{
+  "fixtureOnly": true,
+  "root": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-render-resources-tWlQDP",
+  "privateImage": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-render-resources-tWlQDP\\denied\\SYNTHETIC_PRIVATE_IMAGE.png",
+  "privateImageAllowed": false,
+  "resolverRejects": {
+    "ok": false,
+    "status": 403
+  },
+  "results": [
+    {
+      "name": "control-no-image",
+      "markup": "<p>Offline synthetic control</p>",
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-render-resources-tWlQDP\\allowed\\control-no-image\\_spck_app_shots\\app_01_index_3892ea.png",
+      "capturedCount": 1,
+      "width": 960,
+      "height": 540,
+      "redPixels": 0,
+      "policyPass": true
+    },
+    {
+      "name": "quoted-file-img",
+      "markup": "<img src=\"file:///C:/Users/QQ/AppData/Local/Temp/mindx-s8-render-resources-tWlQDP/denied/SYNTHETIC_PRIVATE_IMAGE.png\" width=\"600\" height=\"400\">",
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-render-resources-tWlQDP\\allowed\\quoted-file-img\\_spck_app_shots\\app_01_index_04101e.png",
+      "capturedCount": 1,
+      "width": 960,
+      "height": 540,
+      "redPixels": 0,
+      "policyPass": true
+    },
+    {
+      "name": "unquoted-file-img",
+      "markup": "<img src=file:///C:/Users/QQ/AppData/Local/Temp/mindx-s8-render-resources-tWlQDP/denied/SYNTHETIC_PRIVATE_IMAGE.png width=600 height=400>",
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-render-resources-tWlQDP\\allowed\\unquoted-file-img\\_spck_app_shots\\app_01_index_63286b.png",
+      "capturedCount": 1,
+      "width": 960,
+      "height": 540,
+      "redPixels": 106134,
+      "policyPass": false
+    },
+    {
+      "name": "body-background",
+      "markup": "<body background=\"file:///C:/Users/QQ/AppData/Local/Temp/mindx-s8-render-resources-tWlQDP/denied/SYNTHETIC_PRIVATE_IMAGE.png\"><p>Offline synthetic background</p></body>",
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-render-resources-tWlQDP\\allowed\\body-background\\_spck_app_shots\\app_01_index_70318d.png",
+      "capturedCount": 1,
+      "width": 960,
+      "height": 540,
+      "redPixels": 517221,
+      "policyPass": false
+    },
+    {
+      "name": "css-file-background",
+      "markup": "<body style=\"background-image:url(file:///C:/Users/QQ/AppData/Local/Temp/mindx-s8-render-resources-tWlQDP/denied/SYNTHETIC_PRIVATE_IMAGE.png)\"><p>Offline synthetic CSS</p></body>",
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-render-resources-tWlQDP\\allowed\\css-file-background\\_spck_app_shots\\app_01_index_2c20fe.png",
+      "capturedCount": 1,
+      "width": 960,
+      "height": 540,
+      "redPixels": 517518,
+      "policyPass": false
+    }
+  ],
+  "passed": 2,
+  "failed": 3
+}

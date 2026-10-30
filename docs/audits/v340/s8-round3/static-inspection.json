@@ -1,0 +1,19 @@
+{
+  "browserCreationMatches": [
+    {
+      "path": "src/lib/playwright/browser-manager.ts",
+      "line": 139,
+      "text": "const ctx = await chromium.launchPersistentContext(this.profileDir, {"
+    }
+  ],
+  "safeDocumentOverride": true,
+  "loaderNeverDelegates": true,
+  "captureRouteEnqueue": true,
+  "captureJobType": true,
+  "stopGuardCalls": [
+    908,
+    1622,
+    1634
+  ],
+  "cancelRethrow": true
+}

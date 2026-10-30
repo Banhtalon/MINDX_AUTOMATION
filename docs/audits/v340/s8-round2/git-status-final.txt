@@ -1,0 +1,17 @@
+ M CHANGELOG.md
+ M MINDX_AUTOMATION_PLAN.md
+ M PROJECT_STATE.md
+ M docs/audits/v340/s5a-screenshots/parity-manifest.json
+ M src/app/api/spck/browse-folder/route.ts
+ M src/app/api/spck/capture-screenshots/route.ts
+ M src/app/layout.tsx
+ M src/app/page.tsx
+ M src/lib/local-files/spck-app-screenshotter.ts
+ M src/lib/local-files/spck-image-normalizer.ts
+?? docs/audits/v340/CODEX_V340_FINAL.md
+?? docs/audits/v340/CODEX_V340_FINAL_ROUND2.md
+?? docs/audits/v340/OWNER_LIVE_TRIAL_CHECKLIST.md
+?? docs/audits/v340/prompts/s8-final.md
+?? docs/audits/v340/prompts/s8-round2.md
+?? docs/audits/v340/s8-final/
+?? docs/audits/v340/s8-round2/

@@ -16,6 +16,7 @@ import {
 } from "@/lib/local-files/spck-scanner";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { assertPathAllowed } from "@/lib/security/path-allowlist";
+import { SequentialTaskQueue } from "@/lib/queue/task-queue";
 import { buildEnrichedClassSpckRecords } from "../list/route";
 
 export async function POST(req: Request) {
@@ -217,11 +218,18 @@ export async function POST(req: Request) {
       ? [String(body.studentId).trim()]
       : undefined;
 
-    const batchResult = await captureClassAppScreenshotsAndSelectThumbnails({
+    const batchResult = await SequentialTaskQueue.getInstance().enqueue({
+      id: `spck_shots_${classId}_${Date.now()}`,
+      jobType: "UPLOAD_SPCK",
       classId,
-      studentIds,
-      useAiVision: body?.useAiVision !== false,
-      sessionNumber: body?.syncActiveSession !== false ? activeSessionNumber : undefined,
+      description: `Chụp ảnh giao diện SPCK cho lớp ${classId}`,
+      execute: async () =>
+        captureClassAppScreenshotsAndSelectThumbnails({
+          classId,
+          studentIds,
+          useAiVision: body?.useAiVision !== false,
+          sessionNumber: body?.syncActiveSession !== false ? activeSessionNumber : undefined,
+        }),
     });
 
     const updatedRecords = buildEnrichedClassSpckRecords(classId, activeSessionNumber);

@@ -3,7 +3,12 @@ import os from "node:os";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { validateLocalRequest } from "@/lib/security/local-guard";
-import { registerTeacherSelectedDirectory } from "@/lib/security/path-allowlist";
+import {
+  assertPathAllowed,
+  getAllowedDirectories,
+  isPathAllowed,
+  registerTeacherSelectedDirectory,
+} from "@/lib/security/path-allowlist";
 
 interface FolderEntry {
   name: string;
@@ -27,23 +32,41 @@ const IGNORED_SYSTEM_DIR_NAMES = new Set([
   ".next",
 ]);
 
-function detectWindowsDrives(): string[] {
-  if (process.platform !== "win32") {
-    return ["/"];
+function detectAllowedDrivesOrRoots(): string[] {
+  const candidates: string[] = [];
+  if (process.platform === "win32") {
+    for (let code = 67; code <= 90; code++) {
+      const letter = String.fromCharCode(code);
+      const root = `${letter}:\\`;
+      try {
+        if (fs.existsSync(root) && isPathAllowed(root)) {
+          candidates.push(root);
+        }
+      } catch {
+        // Ignore inaccessible drive letters
+      }
+    }
+  } else if (isPathAllowed("/")) {
+    candidates.push("/");
   }
-  const drives: string[] = [];
-  for (let code = 67; code <= 90; code++) {
-    const letter = String.fromCharCode(code);
-    const root = `${letter}:\\`;
+
+  for (const allowedDir of getAllowedDirectories()) {
     try {
-      if (fs.existsSync(root)) {
-        drives.push(root);
+      if (
+        fs.existsSync(allowedDir) &&
+        fs.statSync(allowedDir).isDirectory() &&
+        isPathAllowed(allowedDir)
+      ) {
+        const real = fs.realpathSync(allowedDir);
+        if (!candidates.includes(real)) {
+          candidates.push(real);
+        }
       }
     } catch {
-      // Ignore inaccessible drive letters
+      // Ignore invalid allowed roots
     }
   }
-  return drives;
+  return candidates;
 }
 
 function getQuickLinks(): QuickLinkEntry[] {
@@ -54,9 +77,22 @@ function getQuickLinks(): QuickLinkEntry[] {
     { label: "Documents", path: path.join(home, "Documents") },
     { label: "Thư mục Dự án", path: process.cwd() },
   ];
+  for (const allowedDir of getAllowedDirectories()) {
+    const resolved = path.resolve(allowedDir);
+    if (!candidates.some((c) => path.resolve(c.path).toLowerCase() === resolved.toLowerCase())) {
+      candidates.push({
+        label: path.basename(resolved) || resolved,
+        path: resolved,
+      });
+    }
+  }
   return candidates.filter((item) => {
     try {
-      return fs.existsSync(item.path) && fs.statSync(item.path).isDirectory();
+      return (
+        fs.existsSync(item.path) &&
+        fs.statSync(item.path).isDirectory() &&
+        isPathAllowed(item.path)
+      );
     } catch {
       return false;
     }
@@ -64,46 +100,94 @@ function getQuickLinks(): QuickLinkEntry[] {
 }
 
 function listSubdirectories(dirPath: string): FolderEntry[] {
-  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  const safeDir = assertPathAllowed(dirPath);
+  const realDir = fs.realpathSync(safeDir);
+  assertPathAllowed(realDir);
+
+  const entries = fs.readdirSync(realDir, { withFileTypes: true });
   const folders: FolderEntry[] = [];
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
     const lower = entry.name.toLowerCase();
     if (IGNORED_SYSTEM_DIR_NAMES.has(lower) || entry.name.startsWith("$")) {
       continue;
     }
-    folders.push({
-      name: entry.name,
-      path: path.join(dirPath, entry.name),
-    });
+    const childPath = path.join(realDir, entry.name);
+    try {
+      const stat = fs.statSync(childPath);
+      if (!stat.isDirectory()) continue;
+      if (!isPathAllowed(childPath)) continue;
+      const realChild = fs.realpathSync(childPath);
+      if (!isPathAllowed(realChild)) continue;
+      folders.push({
+        name: entry.name,
+        path: childPath,
+      });
+    } catch {
+      // Skip broken symlinks/junctions or inaccessible directories
+      continue;
+    }
   }
-  folders.sort((a, b) => a.name.localeCompare(b.name, "vi", { numeric: true, sensitivity: "base" }));
+  folders.sort((a, b) =>
+    a.name.localeCompare(b.name, "vi", { numeric: true, sensitivity: "base" })
+  );
   return folders;
 }
 
-function resolveStartDirectory(rawPath: string, quickLinks: QuickLinkEntry[], drives: string[]): string {
+function resolveStartDirectory(
+  rawPath: string,
+  quickLinks: QuickLinkEntry[],
+  drives: string[]
+): string {
   const trimmed = String(rawPath || "").trim();
   if (trimmed) {
-    try {
-      const resolved = path.resolve(trimmed);
-      if (fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()) {
-        return resolved;
+    // Strictly enforce Path Allowlist before probing or falling back on any caller-supplied path
+    const resolved = assertPathAllowed(trimmed);
+    if (fs.existsSync(resolved)) {
+      const stat = fs.statSync(resolved);
+      if (stat.isDirectory()) {
+        const real = fs.realpathSync(resolved);
+        assertPathAllowed(real);
+        return real;
       }
       const parent = path.dirname(resolved);
+      assertPathAllowed(parent);
       if (fs.existsSync(parent) && fs.statSync(parent).isDirectory()) {
-        return parent;
+        const realParent = fs.realpathSync(parent);
+        assertPathAllowed(realParent);
+        return realParent;
+      }
+    } else {
+      const parent = path.dirname(resolved);
+      assertPathAllowed(parent);
+      if (fs.existsSync(parent) && fs.statSync(parent).isDirectory()) {
+        const realParent = fs.realpathSync(parent);
+        assertPathAllowed(realParent);
+        return realParent;
+      }
+    }
+    throw new Error(`Thư mục không tồn tại hoặc không hợp lệ: '${resolved}'.`);
+  }
+
+  const fallbackCandidates = [
+    ...quickLinks.map((q) => q.path),
+    ...drives,
+    ...getAllowedDirectories(),
+  ];
+  for (const cand of fallbackCandidates) {
+    try {
+      if (fs.existsSync(cand) && fs.statSync(cand).isDirectory() && isPathAllowed(cand)) {
+        const real = fs.realpathSync(cand);
+        assertPathAllowed(real);
+        return real;
       }
     } catch {
-      // Fallback below
+      continue;
     }
   }
-  if (quickLinks.length > 0) {
-    return quickLinks[0].path;
-  }
-  if (drives.length > 0) {
-    return drives[0];
-  }
-  return process.cwd();
+
+  throw new Error(
+    "[Security Exception] Access denied: Không tìm thấy thư mục hợp lệ trong ALLOWED_LOCAL_DIRS allowlist."
+  );
 }
 
 export async function POST(req: Request) {
@@ -134,13 +218,17 @@ export async function POST(req: Request) {
       });
     }
 
-    const drives = detectWindowsDrives();
+    const drives = detectAllowedDrivesOrRoots();
     const quickLinks = getQuickLinks();
     const rawTarget = String(body?.path || body?.initialDir || "").trim();
     const currentPath = resolveStartDirectory(rawTarget, quickLinks, drives);
     const parentCandidate = path.dirname(currentPath);
     const parentPath =
-      parentCandidate && parentCandidate !== currentPath ? parentCandidate : null;
+      parentCandidate &&
+      parentCandidate !== currentPath &&
+      isPathAllowed(parentCandidate)
+        ? parentCandidate
+        : null;
 
     const directories = listSubdirectories(currentPath);
 

@@ -1,0 +1,36 @@
+{
+  "immutableProtectedCount": 2892,
+  "immutableChanged": [],
+  "runtimeLogsExcluded": [
+    "docs/audits/v340/CODEX_V340_FINAL_ROUND3.stderr.log",
+    "docs/audits/v340/CODEX_V340_FINAL_ROUND3.stdout.log"
+  ],
+  "runtimeLogsObservedChanged": [
+    "docs/audits/v340/CODEX_V340_FINAL_ROUND3.stderr.log"
+  ],
+  "sourceAndScriptsUnchanged": true,
+  "mirrorSourceMatches": true,
+  "historicalDocumentBodiesPreserved": {
+    "PROJECT_STATE.md": true,
+    "CHANGELOG.md": true,
+    "MINDX_AUTOMATION_PLAN.md": true,
+    "CODEX_V340_FINAL.md": true
+  },
+  "originalProbeCopiesMatch": {
+    "s8-final/path-probe.cjs": true,
+    "s8-final/browser-policy-probe.cjs": true,
+    "s8-round2/renderer-resource-probe.cjs": true,
+    "s8-round2/edge-probe.cjs": true
+  },
+  "productionHashesMatchBeforeAfterAndExpected": true,
+  "verdict": "NO-GO",
+  "closed": [
+    "S8-01",
+    "S8-02",
+    "S8-R2-01"
+  ],
+  "open": [
+    "S8-R3-01",
+    "S8-R3-02"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "command": "npx next build --webpack",
+  "exitCode": 0,
+  "seconds": 38.7,
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-build-1793369357",
+  "environment": {
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s8_final.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s8_final_rc.json",
+    "GEMINI_API_KEY": "test-s8-dummy-key"
+  },
+  "adaptation": "Next and @next physically copied to C: TEMP; remaining packages linked; source/config unchanged; no skipped type checks"
+}

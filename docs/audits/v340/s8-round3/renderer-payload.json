@@ -1,0 +1,67 @@
+{
+  "fixtureOnly": true,
+  "sourceUnmodified": true,
+  "observedAt": "child_process.spawnSync input immediately before Python renderer",
+  "results": [
+    {
+      "name": "inline-double",
+      "inputHtml": "<body style=\"background-image:url(images/red.png)\"><p>synthetic</p></body>",
+      "html": "<html><body style=\"background-image:url(\"mem://asset_0\")\"><p>synthetic</p></body></html>",
+      "resourceKeys": [
+        "mem://asset_0"
+      ],
+      "resourceByteLengths": {
+        "mem://asset_0": 1606
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-payload-A8QnvW\\inline-double\\_spck_app_shots\\app_01_index_d77060.png",
+      "redPixels": 0,
+      "evidenceImage": "images/renderer-payload-inline-double.png"
+    },
+    {
+      "name": "inline-single-control",
+      "inputHtml": "<body style='background-image:url(images/red.png)'><p>synthetic</p></body>",
+      "html": "<html><body style='background-image:url(\"mem://asset_0\")'><p>synthetic</p></body></html>",
+      "resourceKeys": [
+        "mem://asset_0"
+      ],
+      "resourceByteLengths": {
+        "mem://asset_0": 1606
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-payload-A8QnvW\\inline-single-control\\_spck_app_shots\\app_01_index_11cddd.png",
+      "redPixels": 518022,
+      "evidenceImage": "images/renderer-payload-inline-single-control.png"
+    },
+    {
+      "name": "stylesheet",
+      "inputHtml": "<link rel=\"stylesheet\" href=\"css/site.css\"><body><p>synthetic</p></body>",
+      "html": "<html><style>\nbody{background-image:none;}\n</style><body><p>synthetic</p></body></html>",
+      "resourceKeys": [
+        "mem://asset_0"
+      ],
+      "resourceByteLengths": {
+        "mem://asset_0": 1606
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-payload-A8QnvW\\stylesheet\\_spck_app_shots\\app_01_index_d77060.png",
+      "redPixels": 0,
+      "evidenceImage": "images/renderer-payload-stylesheet.png"
+    },
+    {
+      "name": "style-control",
+      "inputHtml": "<style>body{background-image:url(images/red.png);}</style><body><p>synthetic</p></body>",
+      "html": "<html><style>body{background-image:url(\"mem://asset_0\");}</style><body><p>synthetic</p></body></html>",
+      "resourceKeys": [
+        "mem://asset_0"
+      ],
+      "resourceByteLengths": {
+        "mem://asset_0": 1606
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-payload-A8QnvW\\style-control\\_spck_app_shots\\app_01_index_11cddd.png",
+      "redPixels": 518022,
+      "evidenceImage": "images/renderer-payload-style-control.png"
+    }
+  ]
+}

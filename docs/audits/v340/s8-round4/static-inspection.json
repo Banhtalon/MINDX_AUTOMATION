@@ -1,0 +1,26 @@
+{
+  "browser": [
+    "src\\lib\\playwright\\browser-manager.ts:139:        const ctx = await chromium.launchPersistentContext(this.profileDir, {"
+  ],
+  "queue-and-resource": [
+    "src/app/api/spck/capture-screenshots/route.ts:221:    const batchResult = await SequentialTaskQueue.getInstance().enqueue({",
+    "src/app/api/spck/capture-screenshots/route.ts:223:      jobType: \"UPLOAD_SPCK\",",
+    "src/lib/local-files/spck-app-screenshotter.ts:874:function ensureCaptureNotStopped(): void {",
+    "src/lib/local-files/spck-app-screenshotter.ts:880:      \"TASK_CANCELLED: Hàng đợi đã bị tạm dừng bởi giáo viên (Stop Bot).\"",
+    "src/lib/local-files/spck-app-screenshotter.ts:908:    ensureCaptureNotStopped();",
+    "src/lib/local-files/spck-app-screenshotter.ts:937:    // whose `loadResource` never touches the filesystem.",
+    "src/lib/local-files/spck-app-screenshotter.ts:979:    const memNamespace = `mem://asset_${crypto.randomBytes(6).toString(\"hex\")}_`;",
+    "src/lib/local-files/spck-app-screenshotter.ts:989:        trimmed.startsWith(memNamespace) &&",
+    "src/lib/local-files/spck-app-screenshotter.ts:1000:        const memUri = `${memNamespace}${nextAssetIdx++}`;",
+    "src/lib/local-files/spck-app-screenshotter.ts:1003:        return memUri;",
+    "src/lib/local-files/spck-app-screenshotter.ts:1008:      const memUri = `${memNamespace}${nextAssetIdx++}`;",
+    "src/lib/local-files/spck-app-screenshotter.ts:1011:      return memUri;",
+    "src/lib/local-files/spck-app-screenshotter.ts:1022:            return memUri ? `url(${memUri})` : \"none\";",
+    "src/lib/local-files/spck-app-screenshotter.ts:1049:        return memUri ? `${prefix}\"${memUri}\"` : `${prefix}\"\"`;",
+    "src/lib/local-files/spck-app-screenshotter.ts:1110:    def loadResource(self, res_type, url):",
+    "src/lib/local-files/spck-app-screenshotter.ts:1111:        # Strictly serve ONLY pre-validated in-memory assets; never call super().loadResource()",
+    "src/lib/local-files/spck-app-screenshotter.ts:1629:  ensureCaptureNotStopped();",
+    "src/lib/local-files/spck-app-screenshotter.ts:1641:    ensureCaptureNotStopped();",
+    "src/lib/local-files/spck-app-screenshotter.ts:1683:      if (err instanceof Error && err.message.startsWith(\"TASK_CANCELLED:\")) {"
+  ]
+}

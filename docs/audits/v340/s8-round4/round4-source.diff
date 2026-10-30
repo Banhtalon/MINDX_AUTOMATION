@@ -1,0 +1,49 @@
+--- round3/src/lib/local-files/spck-app-screenshotter.ts
++++ round4/src/lib/local-files/spck-app-screenshotter.ts
+@@ -976,6 +976,7 @@
+ 
+     const approvedResources: Record<string, string> = {};
+     const approvedByRef = new Map<string, string>();
++    const memNamespace = `mem://asset_${crypto.randomBytes(6).toString("hex")}_`;
+     let nextAssetIdx = 0;
+ 
+     const registerApprovedImageRef = (
+@@ -984,13 +985,19 @@
+     ): string | null => {
+       const trimmed = String(rawRef || "").trim();
+       if (!trimmed) return null;
++      if (
++        trimmed.startsWith(memNamespace) &&
++        Object.prototype.hasOwnProperty.call(approvedResources, trimmed)
++      ) {
++        return trimmed;
++      }
+       const cacheKey = `${baseDirPosix}::${trimmed}`;
+       const existing = approvedByRef.get(cacheKey);
+       if (existing) return existing;
+ 
+       const dataMatch = trimmed.match(/^data:image\/[a-zA-Z0-9.+-]+;base64,([A-Za-z0-9+/=\s]+)$/i);
+       if (dataMatch) {
+-        const memUri = `mem://asset_${nextAssetIdx++}`;
++        const memUri = `${memNamespace}${nextAssetIdx++}`;
+         approvedResources[memUri] = dataMatch[1].replace(/\s+/g, "");
+         approvedByRef.set(cacheKey, memUri);
+         return memUri;
+@@ -998,7 +1005,7 @@
+ 
+       const resolved = resolveLocalAsset(trimmed, baseDirPosix);
+       if (!resolved || resolved.buf.length === 0) return null;
+-      const memUri = `mem://asset_${nextAssetIdx++}`;
++      const memUri = `${memNamespace}${nextAssetIdx++}`;
+       approvedResources[memUri] = resolved.buf.toString("base64");
+       approvedByRef.set(cacheKey, memUri);
+       return memUri;
+@@ -1012,7 +1019,7 @@
+           (_full, dq, sq, uq) => {
+             const refVal = dq ?? sq ?? uq ?? "";
+             const memUri = registerApprovedImageRef(refVal, baseDirPosix);
+-            return memUri ? `url("${memUri}")` : "none";
++            return memUri ? `url(${memUri})` : "none";
+           }
+         );
+ 

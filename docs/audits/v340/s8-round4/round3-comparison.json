@@ -1,0 +1,18 @@
+{
+  "round3Count": 2894,
+  "changed": {
+    "src/lib/local-files/spck-app-screenshotter.ts": {
+      "round3": "E09F8093A92A5C6729BE69D0E45512CECEEF19CE9EF42EFFD429EE723A2AE810",
+      "round4": "4B3CD6C194DAAC028B45EEFBFB65DF7DA89D8A94ACED5A4FDD161DE9AAB483C6"
+    },
+    "docs/audits/v340/CODEX_V340_FINAL_ROUND3.stderr.log": {
+      "round3": "75A062FEEC299BC46F13E69C793ACE0E72CE3FF2573B663158E0622E3AFB7243",
+      "round4": null
+    },
+    "docs/audits/v340/CODEX_V340_FINAL_ROUND3.stdout.log": {
+      "round3": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "round4": null
+    }
+  },
+  "addedSource": []
+}

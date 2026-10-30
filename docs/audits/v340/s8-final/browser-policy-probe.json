@@ -1,0 +1,11 @@
+{
+  "mockOnly": true,
+  "realBrowserStarted": false,
+  "standaloneLaunches": 1,
+  "newContexts": 1,
+  "closed": 1,
+  "offline": true,
+  "returnedItems": 1,
+  "usesPersistentContext": false,
+  "strictSinglePersistentContextPolicyPass": false
+}

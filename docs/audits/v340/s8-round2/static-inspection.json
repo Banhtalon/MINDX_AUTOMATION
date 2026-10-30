@@ -1,0 +1,23 @@
+{
+  "browserConstructionMatches": [
+    {
+      "path": "src/lib/playwright/browser-manager.ts",
+      "line": 139,
+      "text": "const ctx = await chromium.launchPersistentContext(this.profileDir, {"
+    }
+  ],
+  "standaloneLaunches": 0,
+  "newContexts": 0,
+  "persistentContextSites": 1,
+  "profileDir": "./playwright-auth",
+  "queueRoute": "src/app/api/spck/capture-screenshots/route.ts:221",
+  "stopEntry": "src/lib/local-files/spck-app-screenshotter.ts:1524",
+  "stopIteration": "src/lib/local-files/spck-app-screenshotter.ts:1536",
+  "rendererResourceBoundary": {
+    "imgQuotedRegex": 965,
+    "plainQTextDocument": 1017,
+    "setHtml": 1021,
+    "aiReadsScreenshot": 1187,
+    "aiGenerate": 1210
+  }
+}

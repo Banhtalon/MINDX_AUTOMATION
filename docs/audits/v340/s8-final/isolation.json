@@ -1,0 +1,13 @@
+{
+  "root": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "temp": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8",
+  "head": "faf9fbc775b56bed79c766720589783b08fcee5c",
+  "environment": {
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s8_final.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s8_final_rc.json",
+    "GEMINI_API_KEY": "test-s8-dummy-key"
+  },
+  "policy": "Source-only TEMP mirror; no .env, production data or login profile; external Node network blocked",
+  "sourceMatches": true
+}

@@ -1,0 +1,14 @@
+{
+  "root": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "mirror": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r4-s_nmn8xk",
+  "head": "faf9fbc775b56bed79c766720589783b08fcee5c",
+  "environment": {
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s8_r4.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s8_r4_rc.json",
+    "GEMINI_API_KEY": "test-s8-dummy-key",
+    "QT_QPA_PLATFORM": "offscreen"
+  },
+  "sourceMatches": true,
+  "policy": "Chromium offline with HTTP(S) routes aborted; TEMP source mirror; no .env, Owner DB/cache/login profile/teacher directory registry; external Node network denied; synthetic offline fixtures only"
+}

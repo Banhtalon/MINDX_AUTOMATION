@@ -13,15 +13,14 @@
 import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
-import http from "node:http";
 import path from "node:path";
-import { chromium } from "playwright";
 import {
   getDb,
   spckUploadRepo,
   type SpckSessionSlotNumber,
 } from "../db/sqlite";
 import { getGeminiModel } from "../gemini/client";
+import { SequentialTaskQueue } from "../queue/task-queue";
 import { assertPathAllowed } from "../security/path-allowlist";
 import {
   DEFAULT_SPCK_THUMBNAIL_PATH,
@@ -872,6 +871,17 @@ export function resolveSafeStaticFile(
  * captures multi-page and multi-section screenshots into `<outDir>/app_NN_<name>_<hash6>.png`,
  * and computes visual richness & widget metrics for AI Thumbnail selection.
  */
+function ensureCaptureNotStopped(): void {
+  if (
+    SequentialTaskQueue.getInstance().getStatus().isStopped ||
+    Boolean((process as any).__mindxQueueStopped)
+  ) {
+    throw new Error(
+      "TASK_CANCELLED: Hàng đợi đã bị tạm dừng bởi giáo viên (Stop Bot)."
+    );
+  }
+}
+
 async function captureHtmlWebScreenshots(params: {
   studentDir: string;
   htmlFiles: string[];
@@ -882,37 +892,6 @@ async function captureHtmlWebScreenshots(params: {
   const safeRoot = path.resolve(assertPathAllowed(studentDir));
   const results: CapturedScreenItem[] = [];
   const seenHashes = new Set<string>();
-
-  const server = http.createServer((req, res) => {
-    try {
-      const reqUrl = new URL(req.url || "/", "http://127.0.0.1");
-      const resolved = resolveSafeStaticFile(safeRoot, reqUrl.pathname);
-      if (!resolved.ok) {
-        res.writeHead(resolved.status);
-        res.end(resolved.status === 403 ? "Forbidden" : "Not Found");
-        return;
-      }
-      const ext = path.extname(resolved.filePath).toLowerCase();
-      const contentType = STATIC_MIME_TYPES[ext] || "application/octet-stream";
-      res.writeHead(200, {
-        "Content-Type": contentType,
-        "Cache-Control": "no-store",
-      });
-      res.end(fs.readFileSync(resolved.filePath));
-    } catch {
-      res.writeHead(500);
-      res.end("Internal Error");
-    }
-  });
-
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
-  });
-
-  const addr = server.address();
-  const port = typeof addr === "object" && addr ? addr.port : 0;
-  let browser: Awaited<ReturnType<typeof chromium.launch>> | null = null;
 
   const savePngWithHash = (
     pngBuf: Buffer,
@@ -925,270 +904,303 @@ async function captureHtmlWebScreenshots(params: {
     return { filePath: finalPath, hash6 };
   };
 
-  try {
-    browser = await chromium.launch({ headless: true });
-    // Render the page at a desktop layout width (1440×810 CSS px) so the student's design does not
-    // collapse into a mobile layout, but output pixels at the LMS-safe 960×540 (deviceScaleFactor 2/3)
-    // so the MindX LMS viewer never crops the left/right edges or shows a horizontal scrollbar.
-    const context = await browser.newContext({
-      viewport: { width: WEB_LAYOUT_WIDTH, height: WEB_LAYOUT_HEIGHT },
-      deviceScaleFactor: LMS_IMAGE_WIDTH / WEB_LAYOUT_WIDTH,
-    });
-    const page = await context.newPage();
+  for (let idx = 0; idx < htmlFiles.length; idx++) {
+    ensureCaptureNotStopped();
+    if (results.length >= maxShots) break;
+    const relHtml = htmlFiles[idx];
+    const relPosix = "/" + relHtml.split(path.sep).join("/");
+    const htmlResolved = resolveSafeStaticFile(safeRoot, relPosix);
+    if (!htmlResolved.ok) continue;
 
-    const takeLmsSafeScreenshot = async (): Promise<Buffer> => {
-      const raw = await page.screenshot({
-        type: "png",
-        fullPage: false,
-        animations: "disabled",
-      });
-      return Buffer.from(raw);
-    };
+    const htmlDirPosix = path.posix.dirname(relPosix);
+    let rawHtml = "";
+    try {
+      rawHtml = fs.readFileSync(htmlResolved.filePath, "utf8");
+    } catch {
+      continue;
+    }
 
-    // Forces any scroll-reveal / fade-in element that is inside the viewport (or the whole page)
-    // to its final visible state so screenshots never show empty black sections.
-    const forceRevealVisibleContent = async () => {
-      await page
-        .evaluate(() => {
-          const revealRe = /(reveal|fade|aos|animate|appear|scroll|show|slide|zoom|wow)/i;
-          const all = Array.from(document.querySelectorAll<HTMLElement>("body *"));
-          for (const el of all) {
-            const cls = typeof el.className === "string" ? el.className : "";
-            const style = window.getComputedStyle(el);
-            const hidden =
-              style.opacity === "0" ||
-              (style.visibility === "hidden" && revealRe.test(cls));
-            if (!hidden) continue;
-            if (!revealRe.test(cls) && !el.hasAttribute("data-aos")) continue;
-            el.style.setProperty("opacity", "1", "important");
-            el.style.setProperty("visibility", "visible", "important");
-            el.style.setProperty("transform", "none", "important");
-            el.style.setProperty("filter", "none", "important");
-          }
-        })
-        .catch(() => undefined);
-    };
+    const baseStem = path.basename(relHtml, path.extname(relHtml));
+    const safeStem =
+      baseStem.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "") ||
+      `web_${idx + 1}`;
+    const lowerStem = baseStem.toLowerCase();
+    const isAuth =
+      /(login|auth|register|signup|sign[_-]?up|sign[_-]?in|dang[_-]?nhap|dang[_-]?ky)/i.test(
+        lowerStem
+      );
+    const isMain = /^(index|home|main|trang[_-]?chu|default)$/i.test(lowerStem);
 
-    for (let idx = 0; idx < htmlFiles.length; idx++) {
-      if (results.length >= maxShots) break;
-      const relHtml = htmlFiles[idx];
-      const relPosix = relHtml
-        .split(path.sep)
-        .map((seg) => encodeURIComponent(seg))
-        .join("/");
-      const pageUrl = `http://127.0.0.1:${port}/${relPosix}`;
-
-      const baseStem = path.basename(relHtml, path.extname(relHtml));
-      const safeStem =
-        baseStem.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "") ||
-        `web_${idx + 1}`;
-      const lowerStem = baseStem.toLowerCase();
-      const isAuth =
-        /(login|auth|register|signup|sign[_-]?up|sign[_-]?in|dang[_-]?nhap|dang[_-]?ky)/i.test(
-          lowerStem
-        );
-      const isMain = /^(index|home|main|trang[_-]?chu|default)$/i.test(lowerStem);
-
-      try {
-        await page
-          .goto(pageUrl, { waitUntil: "load", timeout: 10_000 })
-          .catch(() => undefined);
-
-        // Force scroll-reveal animations (AOS, animation-timeline: view(), fadeIn...) to their final
-        // visible state immediately and disable smooth scroll so nothing is captured half-faded.
-        await page
-          .addStyleTag({
-            content: `
-              html, body { scroll-behavior: auto !important; }
-              *, *::before, *::after {
-                animation-duration: 0.001s !important;
-                animation-delay: 0s !important;
-                animation-iteration-count: 1 !important;
-                animation-timeline: auto !important;
-                transition-duration: 0s !important;
-                transition-delay: 0s !important;
-              }
-              [data-aos], .aos-init, .aos-animate {
-                opacity: 1 !important;
-                transform: none !important;
-                visibility: visible !important;
-                transition: none !important;
-              }
-            `,
-          })
-          .catch(() => undefined);
-
-        // Wait up to 2.2s for images & web fonts to finish loading
-        await page
-          .evaluate(async () => {
-            const imgs = Array.from(document.querySelectorAll("img"));
-            for (const img of imgs) {
-              if (img.loading === "lazy") img.loading = "eager";
-            }
-            const waitImgs = Promise.all(
-              imgs.map((img) =>
-                img.complete
-                  ? Promise.resolve()
-                  : new Promise<void>((res) => {
-                      img.addEventListener("load", () => res(), { once: true });
-                      img.addEventListener("error", () => res(), { once: true });
-                    })
-              )
-            );
-            const waitFonts =
-              document.fonts && document.fonts.ready
-                ? document.fonts.ready.then(() => undefined).catch(() => undefined)
-                : Promise.resolve();
-            await Promise.race([
-              Promise.all([waitImgs, waitFonts]),
-              new Promise<void>((res) => setTimeout(res, 2200)),
-            ]);
-            window.scrollTo(0, 0);
-          })
-          .catch(() => undefined);
-
-        await page.waitForTimeout(250);
-        await forceRevealVisibleContent();
-
-        const measureViewportMetrics = async () => {
-          return await page
-            .evaluate(() => {
-              const vh = window.innerHeight || 810;
-              const scrollHeight = Math.max(
-                document.body ? document.body.scrollHeight : 0,
-                document.documentElement ? document.documentElement.scrollHeight : 0,
-                vh
-              );
-              const selectors =
-                "button, a, input, select, textarea, img, video, canvas, svg, .card, section, article, nav, header, footer, table, form, h1, h2, h3";
-              const allNodes = Array.from(document.querySelectorAll(selectors));
-              let visibleWidgets = 0;
-              let visibleImages = 0;
-              const colorSet = new Set<string>();
-
-              for (const el of allNodes) {
-                const rect = el.getBoundingClientRect();
-                if (rect.width <= 2 || rect.height <= 2) continue;
-                if (rect.bottom < 0 || rect.top > vh) continue;
-                visibleWidgets++;
-                if (el.tagName === "IMG") visibleImages++;
-                const style = window.getComputedStyle(el);
-                if (style.backgroundColor && style.backgroundColor !== "rgba(0, 0, 0, 0)") {
-                  colorSet.add(style.backgroundColor);
-                }
-                if (style.color) {
-                  colorSet.add(style.color);
-                }
-                if (style.backgroundImage && style.backgroundImage !== "none") {
-                  colorSet.add(style.backgroundImage.slice(0, 48));
-                }
-              }
-
-              const textLen = (document.body?.innerText || "").trim().length;
-              const richness = Math.min(
-                140,
-                colorSet.size * 5 + visibleImages * 12 + Math.min(30, Math.floor(textLen / 80))
-              );
-              return {
-                scrollHeight,
-                widgetCount: Math.max(1, visibleWidgets),
-                colorRichness: Math.max(12, richness),
-                textLen,
-              };
-            })
-            .catch(() => ({
-              scrollHeight: 810,
-              widgetCount: 15,
-              colorRichness: 45,
-              textLen: 100,
-            }));
-        };
-
-        const topMetrics = await measureViewportMetrics();
-        const topPng = await takeLmsSafeScreenshot();
-        const topSaved = savePngWithHash(
-          topPng,
-          `app_${String(results.length + 1).padStart(2, "0")}_${safeStem}`
-        );
-        seenHashes.add(topSaved.hash6);
-
-        const topScore =
-          topMetrics.colorRichness * 3 +
-          Math.min(topMetrics.widgetCount, 60) * 2 +
-          (isMain ? 180 : 0) -
-          (isAuth ? 600 : 0);
-
-        results.push({
-          filePath: topSaved.filePath,
-          screenName: baseStem,
-          sourceFile: relHtml,
-          width: LMS_IMAGE_WIDTH,
-          height: LMS_IMAGE_HEIGHT,
-          widgetCount: topMetrics.widgetCount,
-          colorRichness: topMetrics.colorRichness,
-          isAuthScreen: isAuth,
-          heuristicScore: topScore,
-        });
-
-        // If this is a long multi-section page and the student has <= 4 HTML files, also capture scrolled 16:9 sections
-        if (!isAuth && htmlFiles.length <= 4 && topMetrics.scrollHeight >= 1300) {
-          const maxExtraSections =
-            htmlFiles.length === 1 ? 3 : htmlFiles.length <= 3 && isMain ? 2 : isMain ? 1 : 0;
-          const maxScrollY = Math.max(0, topMetrics.scrollHeight - WEB_LAYOUT_HEIGHT);
-
-          for (let sIdx = 1; sIdx <= maxExtraSections; sIdx++) {
-            if (results.length >= maxShots) break;
-            const targetY = Math.min(sIdx * 740, maxScrollY);
-            if (targetY < 350) break;
-
-            await page
-              .evaluate((y) => window.scrollTo(0, y), targetY)
-              .catch(() => undefined);
-            await page.waitForTimeout(250);
-            await forceRevealVisibleContent();
-
-            const secMetrics = await measureViewportMetrics();
-            const secPng = await takeLmsSafeScreenshot();
-            const secHash6 = crypto
-              .createHash("md5")
-              .update(secPng)
-              .digest("hex")
-              .slice(0, 6);
-            if (seenHashes.has(secHash6)) continue;
-
-            const secSaved = savePngWithHash(
-              secPng,
-              `app_${String(results.length + 1).padStart(2, "0")}_${safeStem}_sec${sIdx + 1}`
-            );
-            seenHashes.add(secSaved.hash6);
-
-            results.push({
-              filePath: secSaved.filePath,
-              screenName: `${baseStem}_section${sIdx + 1}`,
-              sourceFile: relHtml,
-              width: LMS_IMAGE_WIDTH,
-              height: LMS_IMAGE_HEIGHT,
-              widgetCount: secMetrics.widgetCount,
-              colorRichness: secMetrics.colorRichness,
-              isAuthScreen: false,
-              heuristicScore:
-                secMetrics.colorRichness * 3 +
-                Math.min(secMetrics.widgetCount, 60) * 2 +
-                (isMain ? 60 : 0),
-            });
-
-            if (targetY >= maxScrollY) break;
-          }
-        }
-      } catch {
-        // Ignore single broken HTML page and continue with next
+    // Inline local stylesheets and resolve local images strictly via resolveSafeStaticFile
+    // (blocks traversal/junctions, file://, UNC, drive letters & external URLs)
+    // and feed ONLY pre-validated in-memory bytes (`mem://asset_N`) into a custom `SafeTextDocument`
+    // whose `loadResource` never touches the filesystem.
+    const resolveLocalAsset = (
+      rawHref: string,
+      baseDirPosix: string = htmlDirPosix
+    ): { buf: Buffer; posixPath: string } | null => {
+      const ref = String(rawHref || "").trim();
+      if (
+        !ref ||
+        /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|\/\/|\\\\|#)/i.test(ref)
+      ) {
+        return null;
       }
+      let decodedRef = ref.split("?")[0].split("#")[0];
+      try {
+        decodedRef = decodeURIComponent(decodedRef);
+      } catch {
+        return null;
+      }
+      if (
+        !decodedRef ||
+        /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|\/\/|\\\\)/i.test(decodedRef)
+      ) {
+        return null;
+      }
+      const normalizedRef = decodedRef.replace(/\\/g, "/");
+      const joinedPosix = normalizedRef.startsWith("/")
+        ? normalizedRef
+        : path.posix.join(baseDirPosix, normalizedRef);
+      const assetRes = resolveSafeStaticFile(safeRoot, joinedPosix);
+      if (!assetRes.ok) return null;
+      try {
+        return {
+          buf: fs.readFileSync(assetRes.filePath),
+          posixPath: joinedPosix,
+        };
+      } catch {
+        return null;
+      }
+    };
+
+    const approvedResources: Record<string, string> = {};
+    const approvedByRef = new Map<string, string>();
+    const memNamespace = `mem://asset_${crypto.randomBytes(6).toString("hex")}_`;
+    let nextAssetIdx = 0;
+
+    const registerApprovedImageRef = (
+      rawRef: string,
+      baseDirPosix: string = htmlDirPosix
+    ): string | null => {
+      const trimmed = String(rawRef || "").trim();
+      if (!trimmed) return null;
+      if (
+        trimmed.startsWith(memNamespace) &&
+        Object.prototype.hasOwnProperty.call(approvedResources, trimmed)
+      ) {
+        return trimmed;
+      }
+      const cacheKey = `${baseDirPosix}::${trimmed}`;
+      const existing = approvedByRef.get(cacheKey);
+      if (existing) return existing;
+
+      const dataMatch = trimmed.match(/^data:image\/[a-zA-Z0-9.+-]+;base64,([A-Za-z0-9+/=\s]+)$/i);
+      if (dataMatch) {
+        const memUri = `${memNamespace}${nextAssetIdx++}`;
+        approvedResources[memUri] = dataMatch[1].replace(/\s+/g, "");
+        approvedByRef.set(cacheKey, memUri);
+        return memUri;
+      }
+
+      const resolved = resolveLocalAsset(trimmed, baseDirPosix);
+      if (!resolved || resolved.buf.length === 0) return null;
+      const memUri = `${memNamespace}${nextAssetIdx++}`;
+      approvedResources[memUri] = resolved.buf.toString("base64");
+      approvedByRef.set(cacheKey, memUri);
+      return memUri;
+    };
+
+    const rewriteCssUrls = (cssText: string, baseDirPosix: string): string =>
+      cssText
+        .replace(/@import\b[^;]+;?/gi, "")
+        .replace(
+          /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)"'\s]+))\s*\)/gi,
+          (_full, dq, sq, uq) => {
+            const refVal = dq ?? sq ?? uq ?? "";
+            const memUri = registerApprovedImageRef(refVal, baseDirPosix);
+            return memUri ? `url(${memUri})` : "none";
+          }
+        );
+
+    let processedHtml = rawHtml.replace(
+      /<link\b[^>]*rel\s*=\s*(?:["'][^"']*stylesheet[^"']*["']|stylesheet\b)[^>]*>/gi,
+      (tag) => {
+        const m = tag.match(/\bhref\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>"']+))/i);
+        const hrefVal = m ? m[1] ?? m[2] ?? m[3] ?? "" : "";
+        if (!hrefVal) return "";
+        const cssResolved = resolveLocalAsset(hrefVal, htmlDirPosix);
+        if (!cssResolved) return "";
+        const cssDirPosix = path.posix.dirname(cssResolved.posixPath);
+        const safeCss = rewriteCssUrls(cssResolved.buf.toString("utf8"), cssDirPosix);
+        return `<style>\n${safeCss}\n</style>`;
+      }
+    );
+
+    // Rewrite remaining CSS url(...) references (inside <style> and inline style="...")
+    processedHtml = rewriteCssUrls(processedHtml, htmlDirPosix);
+
+    // Rewrite HTML src=... and background=... attributes (quoted and unquoted)
+    processedHtml = processedHtml.replace(
+      /(\b(?:src|background)\s*=\s*)(?:"([^"]*)"|'([^']*)'|([^\s>"']+))/gi,
+      (_full, prefix, dq, sq, uq) => {
+        const refVal = dq ?? sq ?? uq ?? "";
+        const memUri = registerApprovedImageRef(refVal);
+        return memUri ? `${prefix}"${memUri}"` : `${prefix}""`;
+      }
+    );
+
+    // Force fade-in / hidden animation styles to visible so hero/section content renders clearly
+    processedHtml = processedHtml
+      .replace(/opacity\s*:\s*0\b/gi, "opacity: 1")
+      .replace(/visibility\s*:\s*hidden\b/gi, "visibility: visible")
+      .replace(/<script\b[\s\S]*?<\/script>/gi, "");
+
+    const widgetMatches =
+      processedHtml.match(
+        /<(button|a|input|select|textarea|img|video|canvas|svg|section|article|nav|header|footer|table|form|h1|h2|h3|div)\b/gi
+      ) || [];
+    const widgetCount = Math.max(4, widgetMatches.length);
+    const colorMatches =
+      processedHtml.match(/#[0-9a-fA-F]{3,8}\b|\brgba?\([^)]+\)|\bhsl\([^)]+\)/g) || [];
+    const colorRichness = Math.max(
+      18,
+      Math.min(140, new Set(colorMatches.map((c) => c.toLowerCase())).size * 8 + 20)
+    );
+
+    const maxExtraSections =
+      !isAuth && htmlFiles.length <= 4
+        ? htmlFiles.length === 1
+          ? 2
+          : isMain
+          ? 1
+          : 0
+        : 0;
+
+    try {
+      const pyScript = `
+import sys, json, base64
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QImage, QPainter, QColor, QTextDocument, QFont
+from PyQt6.QtCore import Qt, QSizeF, QRectF, QBuffer, QIODevice, QByteArray
+
+payload = json.loads(sys.stdin.read())
+html = payload.get("html", "")
+raw_resources = payload.get("resources", {}) or {}
+max_extra = int(payload.get("maxExtra", 0))
+W, H = ${LMS_IMAGE_WIDTH}, ${LMS_IMAGE_HEIGHT}
+LW, LH = ${WEB_LAYOUT_WIDTH}, ${WEB_LAYOUT_HEIGHT}
+
+app = QApplication.instance() or QApplication([])
+
+approved_images = {}
+if isinstance(raw_resources, dict):
+    for key, b64_val in raw_resources.items():
+        if not isinstance(key, str) or not key.startswith("mem://asset_"):
+            continue
+        try:
+            raw_bytes = base64.b64decode(str(b64_val))
+            qimg = QImage.fromData(raw_bytes)
+            if not qimg.isNull():
+                approved_images[key] = qimg
+        except Exception:
+            pass
+
+class SafeTextDocument(QTextDocument):
+    def loadResource(self, res_type, url):
+        # Strictly serve ONLY pre-validated in-memory assets; never call super().loadResource()
+        # so QTextDocument can never read file://, UNC, relative, or network URLs on its own.
+        key = url.toString()
+        if key in approved_images:
+            return approved_images[key]
+        return None
+
+doc = SafeTextDocument()
+doc.setDefaultFont(QFont("Segoe UI", 12))
+doc.setPageSize(QSizeF(LW, LH))
+doc.setTextWidth(LW)
+doc.setHtml(html)
+
+doc_h = max(LH, int(doc.size().height()))
+total_slices = 1
+if max_extra > 0 and doc_h >= int(LH * 1.4):
+    total_slices = min(1 + max_extra, max(1, (doc_h + LH - 1) // LH))
+
+frames = []
+for idx in range(total_slices):
+    y_off = idx * int(LH * 0.85)
+    if idx > 0 and y_off >= doc_h - 120:
+        break
+    page_img = QImage(LW, LH, QImage.Format.Format_RGB32)
+    page_img.fill(QColor(17, 24, 39))
+    p = QPainter(page_img)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+    p.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
+    p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+    p.translate(0, -y_off)
+    doc.drawContents(p, QRectF(0, y_off, LW, LH))
+    p.end()
+
+    out_img = page_img.scaled(W, H, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    ba = QByteArray()
+    qbuf = QBuffer(ba)
+    qbuf.open(QIODevice.OpenModeFlag.WriteOnly)
+    out_img.save(qbuf, "PNG")
+    frames.append(base64.b64encode(bytes(ba)).decode("ascii"))
+
+sys.stdout.write(json.dumps({"frames": frames}))
+`;
+      const pyRes = spawnSync("python", ["-c", pyScript], {
+        input: JSON.stringify({
+          html: processedHtml,
+          resources: approvedResources,
+          maxExtra: maxExtraSections,
+        }),
+        encoding: "utf8",
+        timeout: 15000,
+        windowsHide: true,
+        env: { ...process.env, QT_QPA_PLATFORM: "offscreen" },
+      });
+
+      if (pyRes.status === 0 && pyRes.stdout) {
+        const parsed = JSON.parse(pyRes.stdout.trim()) as { frames?: string[] };
+        const frameList = Array.isArray(parsed.frames) ? parsed.frames : [];
+        for (let fIdx = 0; fIdx < frameList.length; fIdx++) {
+          if (results.length >= maxShots) break;
+          const pngBuf = Buffer.from(frameList[fIdx], "base64");
+          if (pngBuf.length < 32) continue;
+          const hash6 = crypto.createHash("md5").update(pngBuf).digest("hex").slice(0, 6);
+          if (seenHashes.has(hash6)) continue;
+
+          const prefix =
+            fIdx === 0
+              ? `app_${String(results.length + 1).padStart(2, "0")}_${safeStem}`
+              : `app_${String(results.length + 1).padStart(2, "0")}_${safeStem}_sec${fIdx}`;
+          const saved = savePngWithHash(pngBuf, prefix);
+          seenHashes.add(saved.hash6);
+
+          const score =
+            colorRichness * 3 +
+            Math.min(widgetCount, 60) * 2 +
+            (isMain ? (fIdx === 0 ? 180 : 60) : 0) -
+            (isAuth ? 600 : 0);
+
+          results.push({
+            filePath: saved.filePath,
+            screenName: fIdx === 0 ? baseStem : `${baseStem}_section${fIdx}`,
+            sourceFile: relHtml,
+            width: LMS_IMAGE_WIDTH,
+            height: LMS_IMAGE_HEIGHT,
+            widgetCount,
+            colorRichness,
+            isAuthScreen: fIdx === 0 ? isAuth : false,
+            heuristicScore: score,
+          });
+        }
+      }
+    } catch {
+      // Ignore single broken HTML page and continue with next
     }
-  } finally {
-    if (browser) {
-      await browser.close().catch(() => undefined);
-    }
-    await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 
   return results;
@@ -1614,6 +1626,7 @@ export async function captureClassAppScreenshotsAndSelectThumbnails(params: {
   totalScreenshotsCaptured: number;
   results: StudentAppCaptureResult[];
 }> {
+  ensureCaptureNotStopped();
   const normalizedClassId = String(params.classId || "").trim().toUpperCase();
   const rows = spckUploadRepo.findByClass(normalizedClassId);
   const targetRows =
@@ -1625,6 +1638,7 @@ export async function captureClassAppScreenshotsAndSelectThumbnails(params: {
   let totalScreenshotsCaptured = 0;
 
   for (const row of targetRows) {
+    ensureCaptureNotStopped();
     if (!row.localFolderPath) continue;
     try {
       let preservedFrames: string[] = [];
@@ -1666,6 +1680,9 @@ export async function captureClassAppScreenshotsAndSelectThumbnails(params: {
         });
       }
     } catch (err) {
+      if (err instanceof Error && err.message.startsWith("TASK_CANCELLED:")) {
+        throw err;
+      }
       results.push({
         studentId: row.studentId,
         folderPath: row.localFolderPath,

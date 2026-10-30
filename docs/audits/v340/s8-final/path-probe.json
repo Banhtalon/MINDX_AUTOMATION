@@ -1,0 +1,10 @@
+{
+  "fixtureOnly": true,
+  "configurationOverride": "config.allowedLocalDirs=[synthetic allowed folder] inside test",
+  "assertPathAllowedDenied": true,
+  "routeStatus": 200,
+  "returnedSyntheticDirectory": true,
+  "expectedStatus": 403,
+  "policyPass": false,
+  "directoryUnregistered": true
+}

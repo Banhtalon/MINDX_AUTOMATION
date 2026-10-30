@@ -1,0 +1,6 @@
+{
+  "command": "npx tsx renderer-payload-probe.cjs",
+  "exitCode": 0,
+  "seconds": 5.17,
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-8_fb9w4e"
+}

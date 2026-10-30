@@ -1,0 +1,248 @@
+{
+  "fixtureOnly": true,
+  "root": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz",
+  "allowed": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed",
+  "denied": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\denied",
+  "results": [
+    {
+      "name": "allowed-quoted-img",
+      "mode": "allowed",
+      "form": "quoted-img",
+      "markup": "<img src=\"images/red.png\" width=\"600\" height=\"400\">",
+      "resolver": {
+        "ok": true,
+        "filePath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-quoted-img\\images\\red.png"
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-quoted-img\\_spck_app_shots\\app_01_index_63286b.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 106134,
+      "pass": true,
+      "evidenceImage": "images/renderer-compatibility-allowed-quoted-img.png"
+    },
+    {
+      "name": "allowed-unquoted-img",
+      "mode": "allowed",
+      "form": "unquoted-img",
+      "markup": "<img src=images/red.png width=600 height=400>",
+      "resolver": {
+        "ok": true,
+        "filePath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-unquoted-img\\images\\red.png"
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-unquoted-img\\_spck_app_shots\\app_01_index_63286b.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 106134,
+      "pass": true,
+      "evidenceImage": "images/renderer-compatibility-allowed-unquoted-img.png"
+    },
+    {
+      "name": "allowed-body-background",
+      "mode": "allowed",
+      "form": "body-background",
+      "markup": "<body background=\"images/red.png\"><p>synthetic</p></body>",
+      "resolver": {
+        "ok": true,
+        "filePath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-body-background\\images\\red.png"
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-body-background\\_spck_app_shots\\app_01_index_11cddd.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 518022,
+      "pass": true,
+      "evidenceImage": "images/renderer-compatibility-allowed-body-background.png"
+    },
+    {
+      "name": "allowed-inline-css",
+      "mode": "allowed",
+      "form": "inline-css",
+      "markup": "<body style=\"background-image:url(images/red.png)\"><p>synthetic</p></body>",
+      "resolver": {
+        "ok": true,
+        "filePath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-inline-css\\images\\red.png"
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-inline-css\\_spck_app_shots\\app_01_index_d77060.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 0,
+      "pass": false,
+      "evidenceImage": "images/renderer-compatibility-allowed-inline-css.png"
+    },
+    {
+      "name": "allowed-style-css",
+      "mode": "allowed",
+      "form": "style-css",
+      "markup": "<style>body {background-image:url(images/red.png);}</style><body><p>synthetic</p></body>",
+      "resolver": {
+        "ok": true,
+        "filePath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-style-css\\images\\red.png"
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-style-css\\_spck_app_shots\\app_01_index_11cddd.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 518022,
+      "pass": true,
+      "evidenceImage": "images/renderer-compatibility-allowed-style-css.png"
+    },
+    {
+      "name": "allowed-stylesheet-quoted",
+      "mode": "allowed",
+      "form": "stylesheet-quoted",
+      "markup": "<link rel=\"stylesheet\" href=\"css/site.css\"><body><p>synthetic</p></body>",
+      "resolver": {
+        "ok": true,
+        "filePath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-stylesheet-quoted\\images\\red.png"
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-stylesheet-quoted\\_spck_app_shots\\app_01_index_d77060.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 0,
+      "pass": false,
+      "evidenceImage": "images/renderer-compatibility-allowed-stylesheet-quoted.png"
+    },
+    {
+      "name": "allowed-stylesheet-unquoted",
+      "mode": "allowed",
+      "form": "stylesheet-unquoted",
+      "markup": "<link rel=stylesheet href=css/site.css><body><p>synthetic</p></body>",
+      "resolver": {
+        "ok": true,
+        "filePath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-stylesheet-unquoted\\images\\red.png"
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\allowed-stylesheet-unquoted\\_spck_app_shots\\app_01_index_d77060.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 0,
+      "pass": false,
+      "evidenceImage": "images/renderer-compatibility-allowed-stylesheet-unquoted.png"
+    },
+    {
+      "name": "junction-quoted-img",
+      "mode": "junction",
+      "form": "quoted-img",
+      "markup": "<img src=\"images/red.png\" width=\"600\" height=\"400\">",
+      "resolver": {
+        "ok": false,
+        "status": 403
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\junction-quoted-img\\_spck_app_shots\\app_01_index_04101e.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 0,
+      "pass": true,
+      "evidenceImage": "images/renderer-compatibility-junction-quoted-img.png"
+    },
+    {
+      "name": "junction-unquoted-img",
+      "mode": "junction",
+      "form": "unquoted-img",
+      "markup": "<img src=images/red.png width=600 height=400>",
+      "resolver": {
+        "ok": false,
+        "status": 403
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\junction-unquoted-img\\_spck_app_shots\\app_01_index_04101e.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 0,
+      "pass": true,
+      "evidenceImage": "images/renderer-compatibility-junction-unquoted-img.png"
+    },
+    {
+      "name": "junction-body-background",
+      "mode": "junction",
+      "form": "body-background",
+      "markup": "<body background=\"images/red.png\"><p>synthetic</p></body>",
+      "resolver": {
+        "ok": false,
+        "status": 403
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\junction-body-background\\_spck_app_shots\\app_01_index_d77060.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 0,
+      "pass": true,
+      "evidenceImage": "images/renderer-compatibility-junction-body-background.png"
+    },
+    {
+      "name": "junction-inline-css",
+      "mode": "junction",
+      "form": "inline-css",
+      "markup": "<body style=\"background-image:url(images/red.png)\"><p>synthetic</p></body>",
+      "resolver": {
+        "ok": false,
+        "status": 403
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\junction-inline-css\\_spck_app_shots\\app_01_index_d77060.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 0,
+      "pass": true,
+      "evidenceImage": "images/renderer-compatibility-junction-inline-css.png"
+    },
+    {
+      "name": "junction-style-css",
+      "mode": "junction",
+      "form": "style-css",
+      "markup": "<style>body {background-image:url(images/red.png);}</style><body><p>synthetic</p></body>",
+      "resolver": {
+        "ok": false,
+        "status": 403
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\junction-style-css\\_spck_app_shots\\app_01_index_d77060.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 0,
+      "pass": true,
+      "evidenceImage": "images/renderer-compatibility-junction-style-css.png"
+    },
+    {
+      "name": "junction-stylesheet-quoted",
+      "mode": "junction",
+      "form": "stylesheet-quoted",
+      "markup": "<link rel=\"stylesheet\" href=\"css/site.css\"><body><p>synthetic</p></body>",
+      "resolver": {
+        "ok": false,
+        "status": 403
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\junction-stylesheet-quoted\\_spck_app_shots\\app_01_index_d77060.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 0,
+      "pass": true,
+      "evidenceImage": "images/renderer-compatibility-junction-stylesheet-quoted.png"
+    },
+    {
+      "name": "junction-stylesheet-unquoted",
+      "mode": "junction",
+      "form": "stylesheet-unquoted",
+      "markup": "<link rel=stylesheet href=css/site.css><body><p>synthetic</p></body>",
+      "resolver": {
+        "ok": false,
+        "status": 403
+      },
+      "capturedCount": 1,
+      "shot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r3-compat-6pDKtz\\allowed\\junction-stylesheet-unquoted\\_spck_app_shots\\app_01_index_d77060.png",
+      "width": 960,
+      "height": 540,
+      "redPixels": 0,
+      "pass": true,
+      "evidenceImage": "images/renderer-compatibility-junction-stylesheet-unquoted.png"
+    }
+  ],
+  "passed": 11,
+  "failed": 3
+}

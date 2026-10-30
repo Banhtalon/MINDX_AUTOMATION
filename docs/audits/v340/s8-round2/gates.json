@@ -1,0 +1,51 @@
+[
+  {
+    "name": "path-probe",
+    "command": "npx tsx path-probe.cjs",
+    "exitCode": 0,
+    "seconds": 2.37,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r2-mqvql56m"
+  },
+  {
+    "name": "browser-policy-probe",
+    "command": "npx tsx browser-policy-probe.cjs",
+    "exitCode": 0,
+    "seconds": 2.71,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r2-mqvql56m"
+  },
+  {
+    "name": "tsc",
+    "command": "npx tsc --noEmit --incremental false",
+    "exitCode": 0,
+    "seconds": 3.45,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r2-mqvql56m"
+  },
+  {
+    "name": "spck-v272",
+    "command": "npx tsx scripts/test-spck-v272.ts",
+    "exitCode": 0,
+    "seconds": 17.99,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r2-mqvql56m"
+  },
+  {
+    "name": "s5",
+    "command": "npx tsx scripts/test-streamline-v340-s5.ts",
+    "exitCode": 0,
+    "seconds": 7.23,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r2-mqvql56m"
+  },
+  {
+    "name": "s7",
+    "command": "npx tsx scripts/test-streamline-v340-s7.ts",
+    "exitCode": 0,
+    "seconds": 3.22,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r2-mqvql56m"
+  },
+  {
+    "name": "edge-probe",
+    "command": "npx tsx edge-probe.cjs",
+    "exitCode": 1,
+    "seconds": 5.04,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r2-mqvql56m"
+  }
+]

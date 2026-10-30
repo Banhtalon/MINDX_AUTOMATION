@@ -1,0 +1,89 @@
+{
+  "fixtureOnly": true,
+  "fixture": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r2-edges-DWfWBR",
+  "passed": 19,
+  "failed": 1,
+  "results": [
+    {
+      "name": "outside-path",
+      "pass": true
+    },
+    {
+      "name": "outside-initialDir",
+      "pass": true
+    },
+    {
+      "name": "traversal",
+      "pass": true
+    },
+    {
+      "name": "junction-direct",
+      "pass": true
+    },
+    {
+      "name": "outside-nonexistent",
+      "pass": true
+    },
+    {
+      "name": "outside-not-read-or-registered",
+      "pass": true
+    },
+    {
+      "name": "allowed-200-junction-filter-and-metadata",
+      "pass": true
+    },
+    {
+      "name": "allowed-initialDir-200",
+      "pass": true
+    },
+    {
+      "name": "allowed-child-parent",
+      "pass": true
+    },
+    {
+      "name": "default-start-is-allowed",
+      "pass": true
+    },
+    {
+      "name": "invalid-allowed-config-fallback-safe",
+      "pass": true
+    },
+    {
+      "name": "Stop-before-batch-rejects-before-repository-read",
+      "pass": true
+    },
+    {
+      "name": "Stop-between-students-prevents-second-capture",
+      "pass": true
+    },
+    {
+      "name": "capture-route-enqueues-UPLOAD_SPCK-and-serializes",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: [{\"success\":false,\"error\":\"[Security Exception] Access denied: Path 'C:\\\\Users\\\\QQ\\\\AppData\\\\Local\\\\Temp\\\\mindx_codex_s8_r2.db' is outside the configured ALLOWED_LOCAL_DIRS allowlist.\"},{\"success\":false,\"error\":\"[Security Exception] Access denied: Path 'C:\\\\Users\\\\QQ\\\\AppData\\\\Local\\\\Temp\\\\mindx_codex_s8_r2.db' is outside the configured ALLOWED_LOCAL_DIRS allowlist.\"}]\n+ actual - expected\n\n  [\n+   500,\n+   500\n-   200,\n-   200\n  ]\n\n    at C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r2-mqvql56m\\edge-probe.cjs:40:889\n    at async check (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r2-mqvql56m\\edge-probe.cjs:7:35)\n    at async main (C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-r2-mqvql56m\\edge-probe.cjs:40:3)"
+    },
+    {
+      "name": "stopped-capture-route-does-not-start-job",
+      "pass": true
+    },
+    {
+      "name": "normalizer-PNG-contain-cover",
+      "pass": true
+    },
+    {
+      "name": "normalizer-JPEG-contain-cover",
+      "pass": true
+    },
+    {
+      "name": "normalizer-WEBP-contain-cover",
+      "pass": true
+    },
+    {
+      "name": "normalizer-GIF-contain-cover",
+      "pass": true
+    },
+    {
+      "name": "normalizer-invalid-and-empty-input",
+      "pass": true
+    }
+  ]
+}

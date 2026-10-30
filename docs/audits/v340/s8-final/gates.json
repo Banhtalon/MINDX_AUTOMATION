@@ -1,0 +1,90 @@
+[
+  {
+    "name": "tsc",
+    "command": "npx tsc --noEmit --incremental false",
+    "exitCode": 0,
+    "seconds": 1.92,
+    "startedEpoch": 1793369248.615107,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8"
+  },
+  {
+    "name": "s1",
+    "command": "npx tsx scripts/test-streamline-v340-s1.ts",
+    "exitCode": 0,
+    "seconds": 2.05,
+    "startedEpoch": 1793369250.533704,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8"
+  },
+  {
+    "name": "s2",
+    "command": "npx tsx scripts/test-streamline-v340-s2.ts",
+    "exitCode": 0,
+    "seconds": 2.18,
+    "startedEpoch": 1793369252.5855858,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8"
+  },
+  {
+    "name": "s3",
+    "command": "npx tsx scripts/test-streamline-v340-s3.ts",
+    "exitCode": 0,
+    "seconds": 2.0,
+    "startedEpoch": 1793369254.7702236,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8"
+  },
+  {
+    "name": "s4",
+    "command": "npx tsx scripts/test-streamline-v340-s4.ts",
+    "exitCode": 0,
+    "seconds": 2.02,
+    "startedEpoch": 1793369256.772157,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8"
+  },
+  {
+    "name": "s5a",
+    "command": "npx tsx scripts/test-streamline-v340-s5a.ts",
+    "exitCode": 0,
+    "seconds": 26.77,
+    "startedEpoch": 1793369258.7967148,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8"
+  },
+  {
+    "name": "s5",
+    "command": "npx tsx scripts/test-streamline-v340-s5.ts",
+    "exitCode": 0,
+    "seconds": 8.09,
+    "startedEpoch": 1793369285.5673473,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8"
+  },
+  {
+    "name": "s6",
+    "command": "npx tsx scripts/test-streamline-v340-s6.ts",
+    "exitCode": 0,
+    "seconds": 4.85,
+    "startedEpoch": 1793369293.6611583,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8"
+  },
+  {
+    "name": "s7",
+    "command": "npx tsx scripts/test-streamline-v340-s7.ts",
+    "exitCode": 0,
+    "seconds": 2.29,
+    "startedEpoch": 1793369298.5116045,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8"
+  },
+  {
+    "name": "pii-adversarial",
+    "command": "npx tsx docs/audits/v340/s7-round1/adversarial-probe.cjs",
+    "exitCode": 0,
+    "seconds": 2.52,
+    "startedEpoch": 1793369300.8003407,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8"
+  },
+  {
+    "name": "build",
+    "command": "npx next build --webpack",
+    "exitCode": 1,
+    "seconds": 16.18,
+    "startedEpoch": 1793369303.32108,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s8-final-7d1r1sf8"
+  }
+]

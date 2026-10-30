@@ -83,7 +83,7 @@ export default function DashboardPage() {
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2">
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              Trợ Lý Giảng Dạy MindX (v3.4)
+              Trợ Lý Giảng Dạy MindX (v3.4.0)
             </h1>
           </div>
         </div>

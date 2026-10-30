@@ -1,0 +1,26 @@
+[
+  {
+    "name": "edge-probe-diagnostic",
+    "exitCode": 1,
+    "results": "edge-results-diagnostic.json",
+    "reason": "Audit-only allowlist narrowed away from the isolated TEMP database; no product change"
+  },
+  {
+    "name": "edge-probe-final",
+    "command": "npx tsx edge-probe.cjs",
+    "exitCode": 0,
+    "results": "edge-results.json",
+    "passed": 20,
+    "failed": 0,
+    "change": "Audit-only configuration additionally allows the exact MINDX_DB_PATH file; denied fixture remains outside allowlist"
+  },
+  {
+    "name": "renderer-resources",
+    "command": "npx tsx renderer-resource-probe.cjs",
+    "exitCode": 1,
+    "results": "renderer-resources.json",
+    "passed": 2,
+    "failed": 3,
+    "reason": "Three reproducible reads of a synthetic image outside Path Allowlist"
+  }
+]
