@@ -9,6 +9,7 @@ import {
   type RunningClassItem,
 } from "@/lib/db/json-config";
 import { detectTrackByClassCode, normalizeQuickTagsForTrack } from "@/lib/quick-tags";
+import { listClasses, listStudents } from "@/lib/classes/class-directory";
 
 function isSession14Category(cat: { category?: string; categoryName?: string; track?: string } | null | undefined): boolean {
   if (!cat) return false;
@@ -25,34 +26,7 @@ function isSession14Category(cat: { category?: string; categoryName?: string; tr
 }
 
 function buildMergedRunningClasses(): RunningClassItem[] {
-  const fromCache = typeof getRunningClasses === "function" ? getRunningClasses() : [];
-  if (fromCache.length > 0) {
-    return fromCache.map((item) => ({
-      ...item,
-      classCode: item.classCode.trim().toUpperCase(),
-    }));
-  }
-  const map = new Map<string, RunningClassItem>();
-  try {
-    const db = typeof getDb === "function" ? getDb() : null;
-    if (typeof (db as any)?.prepare === "function") {
-      const rows = (db as any)
-        .prepare(`SELECT DISTINCT classId, className FROM classes_sessions ORDER BY classId ASC`)
-        .all() as Array<{ classId: string; className?: string }>;
-      for (const r of rows) {
-        const code = String(r?.classId || "").trim().toUpperCase();
-        if (!code || /^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(code)) continue;
-        if (!map.has(code)) {
-          map.set(code, {
-            classCode: code,
-            courseName: r.className && r.className !== code ? r.className : "",
-            status: "Running",
-          });
-        }
-      }
-    }
-  } catch {}
-  return Array.from(map.values());
+  return typeof listClasses === "function" ? listClasses({ scope: "running" }) : [];
 }
 
 export async function GET(req: Request) {
@@ -85,7 +59,11 @@ export async function GET(req: Request) {
 
     const includeInactive = url.searchParams.get("includeInactive") === "true";
     const allSessions = classId ? classSessionRepo.findByClass(classId) : [];
-    const allStudents = classId ? studentRepo.findByClass(classId, !includeInactive) : [];
+    const allStudents = classId
+      ? typeof listStudents === "function"
+        ? listStudents(classId, { activeOnly: !includeInactive })
+        : studentRepo.findByClass(classId, !includeInactive)
+      : [];
     const feedbacks = classId && sessionId ? sessionFeedbackRepo.findBySession(classId, sessionId) : [];
 
     const previousQuickTagsByStudent: Record<

@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   UserCheck,
 } from "lucide-react";
+import { ClassPicker } from "@/components/class-picker";
 
 interface SessionItem {
   sessionId: string;
@@ -635,34 +636,45 @@ export default function SessionCommentsPage() {
     });
 
     try {
-      const res = await fetch("/api/session-comments/fetch-classes", {
+      const currentUpper = classCode.trim().toUpperCase();
+      const res = await fetch("/api/classes/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          scope: "running",
+          ...(currentUpper ? { classCode: currentUpper } : {}),
+        }),
       });
       const data = await res.json();
 
-      if (data.success && Array.isArray(data.classes) && data.classes.length > 0) {
+      if (res.ok !== false && data.success && Array.isArray(data.classes)) {
         const fetched: RunningClassOption[] = data.classes.map((c: any) => ({
-          classCode: String(c.classCode || "").trim().toUpperCase(),
-          courseName: c.courseName || "",
+          classCode: String(c.classCode || c.classId || "").trim().toUpperCase(),
+          courseName: c.courseName || c.className || "",
           center: c.center || "",
           status: c.status || "Running",
         }));
         setRunningClasses(fetched);
         setIsManualClassInput(false);
 
-        const currentUpper = classCode.trim().toUpperCase();
-        const hasCurrent = fetched.some((c) => c.classCode === currentUpper);
-        const nextCode = hasCurrent ? currentUpper : fetched[0].classCode;
-        setClassCode(nextCode);
-        setClassId(nextCode);
+        if (fetched.length > 0) {
+          const hasCurrent = fetched.some((c) => c.classCode === currentUpper);
+          const nextCode = hasCurrent ? currentUpper : fetched[0].classCode;
+          setClassCode(nextCode);
+          setClassId(nextCode);
 
-        setStatusMessage({
-          type: "success",
-          text: `Đã lấy thành công ${fetched.length} lớp đang học (Running) từ LMS vào ô Mã lớp!`,
-        });
-        return nextCode;
+          setStatusMessage({
+            type: "success",
+            text: `Đã lấy thành công ${fetched.length} lớp đang học (Running) từ LMS vào ô Mã lớp!`,
+          });
+          return nextCode;
+        } else {
+          setStatusMessage({
+            type: "info",
+            text: "Đã quét LMS thành công nhưng hiện chưa có lớp nào đang mở (Running).",
+          });
+          return "";
+        }
       } else {
         setStatusMessage({
           type: "error",
@@ -2084,73 +2096,37 @@ ${homeworkDetails}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center bg-white/95 dark:bg-slate-900/90 rounded-lg px-3 py-1.5 border border-white/40 dark:border-slate-700 shadow-sm">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 mr-2">Mã lớp:</span>
-              {!isManualClassInput && runningClasses.length > 0 ? (
-                <select
-                  value={classCode}
-                  onChange={(e) => {
-                    handleSelectRunningClass(e.target.value);
-                  }}
-                  className="bg-transparent text-sm font-bold text-slate-900 dark:text-white focus:outline-none min-w-[180px] max-w-[300px] cursor-pointer"
-                >
-                  {!runningClasses.some((c) => c.classCode === classCode) && classCode && (
-                    <option value={classCode} className="bg-slate-900 text-white">
-                      🟢 {classCode}
-                    </option>
-                  )}
-                  {runningClasses.map((item) => (
-                    <option
-                      key={item.classCode}
-                      value={item.classCode}
-                      className="bg-slate-900 text-white"
-                    >
-                      🟢 {item.classCode}
-                      {item.courseName ? ` — ${item.courseName}` : ""}
-                    </option>
-                  ))}
-                  <option value="__FETCH_RUNNING__" className="bg-slate-950 text-emerald-300">
-                    📥 Quét lại danh sách lớp đang học từ LMS...
-                  </option>
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={classCode}
-                  onChange={(e) => setClassCode(e.target.value.toUpperCase())}
-                  className="bg-transparent text-sm font-bold text-slate-900 dark:text-white focus:outline-none w-36 uppercase"
-                  placeholder="VD: VT-C4K-PTA12"
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => setIsManualClassInput((prev) => !prev)}
-                title={
-                  isManualClassInput
-                    ? "Chuyển sang chọn từ danh sách lớp đang học"
-                    : "Gõ mã lớp thủ công"
-                }
-                className="ml-2 text-xs text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition cursor-pointer"
-              >
-                {isManualClassInput ? "📋 Chọn lớp" : "✏️"}
-              </button>
-            </div>
+            <ClassPicker
+              scope="running"
+              variant="hero"
+              value={classCode}
+              classes={runningClasses}
+              onChange={(code) => {
+                void handleSelectRunningClass(code);
+              }}
+              onRefresh={async () => {
+                await handleFetchRunningClasses();
+              }}
+              isRefreshing={isFetchingClasses || isSyncing}
+              disabled={isSyncing || isFetchingClasses}
+              showRefreshButton={false}
+            />
 
             <button
               type="button"
-              onClick={() => handleSyncFromLms()}
+              onClick={() => handleSyncFromLms(classCode)}
               disabled={isSyncing || isFetchingClasses}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:bg-slate-700 text-white text-sm font-semibold transition shadow-md cursor-pointer"
-              title="Quét danh sách lớp đang học (nếu chưa có) và đồng bộ buổi học & học viên của lớp đang chọn từ LMS"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:bg-slate-700 text-white text-xs sm:text-sm font-semibold transition shadow-md cursor-pointer"
+              title="Đồng bộ danh sách buổi học & học viên của lớp đang chọn từ LMS"
             >
               <RefreshCw
-                className={`w-4 h-4 ${isSyncing || isFetchingClasses ? "animate-spin" : ""}`}
+                className={`w-3.5 h-3.5 ${isSyncing || isFetchingClasses ? "animate-spin" : ""}`}
               />
               {isFetchingClasses
                 ? "Đang quét lớp..."
                 : isSyncing
                 ? "Đang đồng bộ..."
-                : "Đồng bộ lớp"}
+                : "🔄 Đồng bộ buổi học"}
             </button>
           </div>
         </div>

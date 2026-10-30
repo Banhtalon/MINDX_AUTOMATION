@@ -18,6 +18,7 @@ import {
   Table2,
 } from "lucide-react";
 import TeachingReportCardView from "@/components/teaching-report-card-view";
+import { ClassPicker } from "@/components/class-picker";
 import type { GradingRubric } from "@/components/homework-auto-grader-tab";
 
 type ScoreCellStatus =
@@ -192,25 +193,54 @@ export default function HomeworkGraderPage() {
   const handleFetchRunningClasses = async () => {
     setIsFetchingClasses(true);
     try {
-      const res = await fetch("/api/session-comments/fetch-classes", { method: "POST" });
+      const currentUpper = classCode.trim().toUpperCase();
+      const res = await fetch("/api/classes/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scope: "running",
+          ...(currentUpper ? { classCode: currentUpper } : {}),
+        }),
+      });
       const json = await res.json();
       const rawList = Array.isArray(json.classes)
         ? json.classes
         : Array.isArray(json.data?.classes)
         ? json.data.classes
-        : [];
-      if (json.success && rawList.length > 0) {
+        : null;
+      if (res.ok !== false && json.success && Array.isArray(rawList)) {
         const codes: string[] = rawList
-          .map((c: any) => (typeof c === "string" ? c : c?.classCode))
+          .map((c: any) => (typeof c === "string" ? c : c?.classCode || c?.classId))
           .filter(Boolean);
         setRunningClasses(codes);
-        if (codes.length > 0 && !codes.includes(classCode)) {
-          setClassCode(codes[0]);
-          setClassId(codes[0]);
+        if (codes.length > 0) {
+          if (!codes.includes(classCode)) {
+            setClassCode(codes[0]);
+            setClassId(codes[0]);
+          }
+          setStatusMessage({
+            type: "success",
+            text: `Đã cập nhật danh sách ${codes.length} lớp đang dạy từ LMS.`,
+          });
+        } else {
+          setStatusMessage({
+            type: "info",
+            text: "Đã quét LMS thành công nhưng hiện chưa có lớp nào đang mở (Running).",
+          });
         }
+      } else {
+        setStatusMessage({
+          type: "error",
+          text: `Không lấy được danh sách lớp từ LMS: ${
+            json?.error || "Chưa thể kết nối LMS."
+          }`,
+        });
       }
-    } catch {
-      // Ignore error
+    } catch (err: any) {
+      setStatusMessage({
+        type: "error",
+        text: `Lỗi kết nối khi lấy danh sách lớp: ${err?.message || String(err)}`,
+      });
     } finally {
       setIsFetchingClasses(false);
     }
@@ -571,82 +601,24 @@ export default function HomeworkGraderPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center bg-white/95 dark:bg-slate-900 rounded-xl px-3.5 py-2 border border-slate-300 dark:border-slate-700 gap-2 shadow-sm">
-              <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Lớp:</span>
-              {!showCustomClassInput ? (
-                <select
-                  value={classCode}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "__CUSTOM__") {
-                      setShowCustomClassInput(true);
-                      return;
-                    }
-                    if (val === "__RESCAN_LMS__") {
-                      handleFetchRunningClasses();
-                      return;
-                    }
-                    setClassCode(val);
-                    setClassId(val);
-                  }}
-                  disabled={isScraping || isFetchingClasses}
-                  className="bg-transparent text-sm font-extrabold text-slate-900 dark:text-white focus:outline-none cursor-pointer"
-                >
-                  {Array.from(new Set([classCode, ...runningClasses].filter(Boolean))).map(
-                    (code) => (
-                      <option key={code} value={code} className="bg-slate-900 text-white">
-                        {code}
-                      </option>
-                    )
-                  )}
-                  <option value="__RESCAN_LMS__" className="bg-slate-900 text-cyan-400">
-                    📥 Quét lại danh sách lớp đang học từ LMS...
-                  </option>
-                  <option value="__CUSTOM__" className="bg-slate-900 text-amber-300">
-                    ✏️ Nhập mã lớp khác...
-                  </option>
-                </select>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="text"
-                    value={classCode}
-                    onChange={(e) => setClassCode(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const norm = classCode.trim().toUpperCase();
-                        if (norm) {
-                          setRunningClasses((prev) =>
-                            prev.includes(norm) ? prev : [norm, ...prev]
-                          );
-                          setClassId(norm);
-                          setShowCustomClassInput(false);
-                        }
-                      }
-                    }}
-                    className="bg-transparent text-sm font-bold text-slate-900 dark:text-white focus:outline-none w-36 uppercase"
-                    placeholder="VD: VT-C4K-PTA12"
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const norm = classCode.trim().toUpperCase();
-                      if (norm) {
-                        setRunningClasses((prev) =>
-                          prev.includes(norm) ? prev : [norm, ...prev]
-                        );
-                        setClassId(norm);
-                      }
-                      setShowCustomClassInput(false);
-                    }}
-                    className="text-xs px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200"
-                  >
-                    Xong
-                  </button>
-                </div>
-              )}
-            </div>
+            <ClassPicker
+              scope="running"
+              variant="hero"
+              value={classCode}
+              classes={runningClasses}
+              onChange={(val) => {
+                setRunningClasses((prev) =>
+                  prev.includes(val) ? prev : [val, ...prev]
+                );
+                setClassCode(val);
+                setClassId(val);
+              }}
+              onRefresh={handleFetchRunningClasses}
+              isRefreshing={isFetchingClasses}
+              disabled={isScraping || isFetchingClasses}
+              lastSyncedAt={updatedAt}
+              showRefreshButton={false}
+            />
 
             <button
               onClick={handleScrapeScores}

@@ -13,48 +13,10 @@ import { parseStrictPositiveIntInput } from "@/lib/playwright/teaching-project-s
 import { taskQueue } from "@/lib/queue/task-queue";
 import { computeClassReportCard } from "@/lib/report-card/report-card-calculator";
 import { validateLocalRequest } from "@/lib/security/local-guard";
+import { listClasses } from "@/lib/classes/class-directory";
 
 function listAvailableClassesForReportCard(): RunningClassItem[] {
-  const running = getRunningClasses();
-  const map = new Map<string, RunningClassItem>();
-
-  for (const item of running) {
-    const code = String(item.classCode || "").trim().toUpperCase();
-    if (!code || /^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(code)) continue;
-    map.set(code, { ...item, classCode: code });
-  }
-
-  try {
-    const db = getDb();
-    const rows = db
-      .prepare(
-        `SELECT classId, MAX(className) AS className
-         FROM classes_sessions
-         GROUP BY classId
-         ORDER BY MAX(updatedAt) DESC`
-      )
-      .all() as Array<{ classId: string; className?: string }>;
-
-    for (const r of rows) {
-      const code = String(r.classId || "").trim().toUpperCase();
-      if (!code || /^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(code)) continue;
-      if (!map.has(code)) {
-        const range = resolveClassDateRangeInfo(code);
-        map.set(code, {
-          classCode: code,
-          courseName:
-            r.className && r.className !== code ? r.className : range.courseName,
-          status: "Running",
-          ...(range.startDateDmy ? { startDate: range.startDateDmy } : {}),
-          ...(range.endDateDmy ? { endDate: range.endDateDmy } : {}),
-        });
-      }
-    }
-  } catch {
-    // ignore DB errors
-  }
-
-  return Array.from(map.values());
+  return listClasses({ scope: "running" });
 }
 
 function resolveRequestClassIdentity(

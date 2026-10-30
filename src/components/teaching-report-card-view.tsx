@@ -1777,32 +1777,6 @@ export default function TeachingReportCardView({
           </div>
         </div>
 
-        {/* Quick Class Switcher Pills */}
-        {availableClasses.length > 0 && onSelectClass && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-semibold text-slate-400 mr-1">
-              Lớp đang dạy:
-            </span>
-            {availableClasses.map((cls) => {
-              const active = cls.classCode === effectiveClassId;
-              return (
-                <button
-                  key={cls.classCode}
-                  type="button"
-                  onClick={() => onSelectClass(cls.classCode)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-bold border transition cursor-pointer ${
-                    active
-                      ? "bg-indigo-700 text-white border-indigo-500 mindx-dark-keep"
-                      : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
-                  }`}
-                >
-                  {cls.classCode}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
         {/* Interactive Toolbar: Scale toggle, BTVN Session Filter, Stage Filter, Charts, Copy Zalo Images, Formula */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
           <div className="flex flex-wrap items-center gap-2">

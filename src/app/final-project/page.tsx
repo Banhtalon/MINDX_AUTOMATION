@@ -16,6 +16,7 @@ import {
   UploadCloud,
   Video,
 } from "lucide-react";
+import { ClassPicker } from "@/components/class-picker";
 
 interface ClassOption {
   classId: string;
@@ -937,6 +938,7 @@ function buildRowFromDbRecord(
 
 let clientDraftSequence = 0;
 let activeUiClassId = "";
+let loadClassRequestSeq = 0;
 const pageSessionId = `UI_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 const latestRowSaveSequence = new Map<string, number>();
 
@@ -1105,11 +1107,18 @@ export default function FinalProjectPage() {
 
   const loadClassData = useCallback(
     async (targetClassId?: string, targetSessionNumber?: 12 | 13 | 14) => {
+      const reqSeq = ++loadClassRequestSeq;
+      const requestedClassId = String(targetClassId || "").trim().toUpperCase();
+      if (requestedClassId) {
+        activeUiClassId = requestedClassId;
+      } else {
+        activeUiClassId = "";
+      }
       setLoadingInit(true);
       try {
         const params = new URLSearchParams();
-        if (targetClassId) {
-          params.set("classId", targetClassId);
+        if (requestedClassId) {
+          params.set("classId", requestedClassId);
         }
         if (targetSessionNumber) {
           params.set("sessionNumber", String(targetSessionNumber));
@@ -1117,6 +1126,12 @@ export default function FinalProjectPage() {
         const query = params.toString() ? `?${params.toString()}` : "";
         const res = await fetch(`/api/spck/list${query}`);
         const data = await res.json();
+        if (
+          reqSeq !== loadClassRequestSeq ||
+          (requestedClassId && activeUiClassId && activeUiClassId !== requestedClassId)
+        ) {
+          return;
+        }
         if (!data.success) {
           setBannerMessage({
             type: "error",
@@ -1125,9 +1140,38 @@ export default function FinalProjectPage() {
           return;
         }
         const classList: ClassOption[] = data.classes || [];
+        let savedClassId = "";
+        try {
+          if (typeof window !== "undefined" && window.localStorage) {
+            savedClassId = String(
+              window.localStorage.getItem("mindx_last_class_code") || ""
+            )
+              .trim()
+              .toUpperCase();
+          }
+        } catch {}
+        if (
+          !requestedClassId &&
+          savedClassId &&
+          savedClassId !== data.selectedClassId &&
+          classList.some((c) => c.classId === savedClassId)
+        ) {
+          activeUiClassId = savedClassId;
+          setSelectedClassId(savedClassId);
+          setClasses(classList);
+          await loadClassData(savedClassId, targetSessionNumber);
+          return;
+        }
+        const resolvedClassId = requestedClassId || data.selectedClassId || "";
+        if (
+          reqSeq !== loadClassRequestSeq ||
+          (requestedClassId && activeUiClassId && activeUiClassId !== resolvedClassId)
+        ) {
+          return;
+        }
+        activeUiClassId = resolvedClassId;
         setClasses(classList);
-        const resolvedClassId = targetClassId || data.selectedClassId || "";
-        if (!targetClassId && resolvedClassId) {
+        if (!requestedClassId && resolvedClassId) {
           setSelectedClassId(resolvedClassId);
         }
         const matchedClass = classList.find((c) => c.classId === resolvedClassId);
@@ -1158,12 +1202,16 @@ export default function FinalProjectPage() {
         setSelectedStudentIds(["__AUTO_SELECT__"]);
         hydrateRowsFromDb(data.records || [], data.students || [], resolvedSession);
       } catch (err) {
-        setBannerMessage({
-          type: "error",
-          text: err instanceof Error ? err.message : String(err),
-        });
+        if (reqSeq === loadClassRequestSeq) {
+          setBannerMessage({
+            type: "error",
+            text: err instanceof Error ? err.message : String(err),
+          });
+        }
       } finally {
-        setLoadingInit(false);
+        if (reqSeq === loadClassRequestSeq) {
+          setLoadingInit(false);
+        }
       }
     },
     [hydrateRowsFromDb]
@@ -1177,6 +1225,14 @@ export default function FinalProjectPage() {
     activeUiClassId = newClassId;
     clientDraftSequence++;
     setSelectedClassId(newClassId);
+    try {
+      if (newClassId && typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem(
+          "mindx_last_class_code",
+          newClassId.trim().toUpperCase()
+        );
+      }
+    } catch {}
     setBannerMessage(null);
     setLastSubmissionSummary(null);
     setExpandedRowKeys({});
@@ -4392,20 +4448,6 @@ export default function FinalProjectPage() {
               </p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={handleScanTeacherClasses}
-            disabled={isAnyOperationBusy}
-            title="Quét các lớp đang dạy trên tài khoản giáo viên và chỉ lọc các lớp có buổi học >= 12"
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 border border-white/30 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
-          >
-            <RefreshCw
-              className={`w-3.5 h-3.5 ${scanningTeacherClasses ? "animate-spin" : ""}`}
-            />
-            <span>
-              {scanningTeacherClasses ? "Đang quét TK GV..." : "Quét lớp TK GV (Buổi ≥ 12)"}
-            </span>
-          </button>
         </div>
 
         <div className="mindx-card p-5 space-y-4 rounded-b-2xl">
@@ -4415,26 +4457,22 @@ export default function FinalProjectPage() {
             <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
               1A. Chọn Lớp nộp SPCK (Buổi ≥ 12)
             </label>
-            <select
+            <ClassPicker
+              scope="spck"
+              variant="card"
+              autoRestore={false}
               value={selectedClassId}
-              onChange={(e) => handleClassChange(e.target.value)}
+              classes={classes}
+              onChange={(code) => {
+                void handleClassChange(code);
+              }}
+              onRefresh={handleScanTeacherClasses}
+              isRefreshing={scanningTeacherClasses}
               disabled={isAnyOperationBusy}
-              className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500 disabled:opacity-60"
-            >
-              <option value="">-- Chọn lớp đủ điều kiện (Buổi ≥ 12) --</option>
-              {classes.map((cls) => (
-                <option key={cls.classId} value={cls.classId}>
-                  {cls.classId}
-                  {cls.status === "Finished"
-                    ? ` — Đã xong Buổi 14${
-                        cls.session14Date ? ` (${cls.session14Date})` : " (≤ 15 ngày)"
-                      }`
-                    : cls.currentSessionNumber
-                    ? ` — Đang ở Buổi ${cls.currentSessionNumber}`
-                    : ` (${cls.className})`}
-                </option>
-              ))}
-            </select>
+              allowManualInput={false}
+              showRefreshButton={false}
+              placeholderOption="-- Chọn lớp đủ điều kiện (Buổi ≥ 12) --"
+            />
           </div>
 
           {/* 1B. Chọn Buổi nộp một lần ở đầu trang */}

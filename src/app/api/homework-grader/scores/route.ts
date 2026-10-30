@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { taskQueue } from "@/lib/queue/task-queue";
 import { ScoreScraper } from "@/lib/playwright/scrape-scores";
-import { classSessionRepo, studentRepo, scoreMatrixRepo } from "@/lib/db/sqlite";
-import { getGradingRubrics, getRunningClasses } from "@/lib/db/json-config";
+import { classSessionRepo, scoreMatrixRepo } from "@/lib/db/sqlite";
+import { getGradingRubrics } from "@/lib/db/json-config";
+import { listClasses, listStudents } from "@/lib/classes/class-directory";
 
 export async function GET(req: Request) {
   const guard = validateLocalRequest(req);
@@ -16,7 +17,7 @@ export async function GET(req: Request) {
 
     const cached = classId ? scoreMatrixRepo.findByClass(classId) : null;
     const sessions = classId ? classSessionRepo.findByClass(classId) : [];
-    const students = classId ? studentRepo.findByClass(classId, false) : [];
+    const students = classId ? listStudents(classId, { activeOnly: false }) : [];
     const rubrics = getGradingRubrics();
 
     return NextResponse.json({
@@ -26,7 +27,8 @@ export async function GET(req: Request) {
         updatedAt: cached?.updatedAt || null,
         sessions,
         students,
-        rubrics, runningClasses: getRunningClasses().map((c) => c.classCode),
+        rubrics,
+        runningClasses: listClasses({ scope: "running" }).map((c) => c.classCode),
       },
     });
   } catch (err: any) {

@@ -33,6 +33,11 @@ import {
   resolveClassSession14DateInfo,
 } from "@/lib/playwright/sync-class";
 import { validateLocalRequest } from "@/lib/security/local-guard";
+import {
+  isSyntheticClassCode,
+  listStudents,
+  queryClassDirectory,
+} from "@/lib/classes/class-directory";
 
 function getClassDemoSheetMeta(classId: string) {
   if (!classId) return null;
@@ -77,7 +82,7 @@ export function buildEnrichedClassSpckRecords(
 ) {
   if (!classId) return [];
   const rawRecords = spckUploadRepo.findByClass(classId);
-  const students = studentRepo.findByClass(classId, false);
+  const students = listStudents(classId, { activeOnly: false });
   const studentMap = new Map(students.map((s) => [s.studentId, s]));
 
   return rawRecords.map((rec) => {
@@ -166,97 +171,19 @@ export interface SpckClassOption {
 
 function queryEligibleSpckClasses(
   minSessionNumber = 12,
-  allowedClassCodes?: Set<string>
+  allowedClassCodes?: Set<string>,
+  includeSynthetic = false
 ): {
   eligibleClasses: SpckClassOption[];
   allClassesMap: Map<string, SpckClassOption>;
 } {
-  const db = getDb();
-  const rawRows = db
-    .prepare(
-      `SELECT
-         classId,
-         MAX(className) AS className,
-         MAX(CASE WHEN TRIM(COALESCE(date, '')) <> '' THEN sessionNumber ELSE 0 END) AS activeSessionNumber,
-         MAX(sessionNumber) AS maxSessionNumber
-       FROM classes_sessions
-       GROUP BY classId
-       ORDER BY classId ASC`
-    )
-    .all() as Array<{
-    classId: string;
-    className: string;
-    activeSessionNumber: number;
-    maxSessionNumber: number;
-  }>;
-
-  const cachedRunningMap = new Map(
-    getRunningClasses().map((c) => [c.classCode.trim().toUpperCase(), c])
-  );
-
-  const hasAnySyncedDate = rawRows.some((r) => Number(r.activeSessionNumber) > 0);
-  const allClassesMap = new Map<string, SpckClassOption>();
-  const eligibleClasses: SpckClassOption[] = [];
-
-  for (const r of rawRows) {
-    const upperId = r.classId.trim().toUpperCase();
-    const isSyntheticTestClass = /^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(upperId);
-    const cachedItem = cachedRunningMap.get(upperId);
-    const isFinishedStatus = cachedItem?.status === "Finished";
-
-    const activeSess = Number(r.activeSessionNumber) || 0;
-    const maxSess = Number(r.maxSessionNumber) || 0;
-    let currentSessionNumber = hasAnySyncedDate ? activeSess : maxSess;
-    if (isFinishedStatus && currentSessionNumber < 14 && maxSess >= 14) {
-      currentSessionNumber = 14;
-    }
-
-    const graceCheck = isFinishedClassWithinGraceWindow(
-      upperId,
-      cachedItem?.endDate,
-      FINISHED_CLASS_GRACE_DAYS
-    );
-
-    const resolvedStatus = isFinishedStatus
-      ? "Finished"
-      : cachedItem?.status === "Running"
-      ? "Running"
-      : !isSyntheticTestClass && graceCheck.isKnownDate && (graceCheck.daysSinceSession14 ?? -1) > 0
-      ? "Finished"
-      : "Running";
-
-    // Real classes that have finished Buổi 14 more than FINISHED_CLASS_GRACE_DAYS (15 days) ago are excluded
-    if (
-      !isSyntheticTestClass &&
-      resolvedStatus === "Finished" &&
-      graceCheck.isKnownDate &&
-      !graceCheck.withinWindow
-    ) {
-      continue;
-    }
-
-    const item: SpckClassOption = {
-      classId: r.classId,
-      className: r.className || r.classId,
-      currentSessionNumber: resolvedStatus === "Finished" ? Math.max(currentSessionNumber, 14) : currentSessionNumber,
-      maxSessionNumber: Math.max(maxSess, 14),
-      spckSessions: [12, 13, 14],
-      status: resolvedStatus,
-      session14Date: graceCheck.session14Date || cachedItem?.endDate || undefined,
-    };
-    allClassesMap.set(r.classId, item);
-
-    const isAllowed =
-      !allowedClassCodes ||
-      allowedClassCodes.size === 0 ||
-      allowedClassCodes.has(upperId);
-
-    if (item.currentSessionNumber >= minSessionNumber && isAllowed) {
-      eligibleClasses.push(item);
-    }
-  }
-
-  return { eligibleClasses, allClassesMap };
+  const { classes, allClassesMap } = queryClassDirectory({
+    scope: "spck",
+    minSessionNumber,
+    allowedClassCodes,
+    includeSynthetic,
+  });
+  return { eligibleClasses: classes, allClassesMap };
 }
 
 export async function GET(req: Request) {
@@ -283,7 +210,11 @@ export async function GET(req: Request) {
       );
     }
 
-    const { eligibleClasses } = queryEligibleSpckClasses(12);
+    const { eligibleClasses } = queryEligibleSpckClasses(
+      12,
+      undefined,
+      Boolean(classId && isSyntheticClassCode(classId))
+    );
     const targetClassId = classId || eligibleClasses[0]?.classId || "";
     const matchedClass = eligibleClasses.find((c) => c.classId === targetClassId);
 
@@ -295,7 +226,9 @@ export async function GET(req: Request) {
         : 13;
 
     const stageInfo = getSpckStageInfo(activeSessionNumber);
-    const students = targetClassId ? studentRepo.findByClass(targetClassId, false) : [];
+    const students = targetClassId
+      ? listStudents(targetClassId, { activeOnly: false })
+      : [];
     const spckRecords = targetClassId
       ? buildEnrichedClassSpckRecords(targetClassId, activeSessionNumber)
       : [];
@@ -433,11 +366,15 @@ export async function POST(req: Request) {
 
     ensureQueueNotStopped();
 
+    const requestedClassId = String(body?.classId || "").trim().toUpperCase();
+    const allowSynthetic =
+      Boolean(requestedClassId && isSyntheticClassCode(requestedClassId)) ||
+      Array.from(allowedRunningSet).some((code) => isSyntheticClassCode(code));
     const { eligibleClasses } = queryEligibleSpckClasses(
       12,
-      allowedRunningSet
+      allowedRunningSet,
+      allowSynthetic
     );
-    const requestedClassId = String(body?.classId || "").trim().toUpperCase();
     const targetClassId =
       requestedClassId && eligibleClasses.some((c) => c.classId === requestedClassId)
         ? requestedClassId
@@ -452,7 +389,9 @@ export async function POST(req: Request) {
         : 13;
 
     const stageInfo = getSpckStageInfo(activeSessionNumber);
-    const students = targetClassId ? studentRepo.findByClass(targetClassId, false) : [];
+    const students = targetClassId
+      ? listStudents(targetClassId, { activeOnly: false })
+      : [];
     const spckRecords = targetClassId
       ? buildEnrichedClassSpckRecords(targetClassId, activeSessionNumber)
       : [];

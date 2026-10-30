@@ -16,6 +16,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import { ClassPicker } from "@/components/class-picker";
 
 interface RunningClassOption {
   classCode: string;
@@ -354,18 +355,25 @@ export default function TeachingProjectsPage() {
     setSelectedClassCode(clean);
     setCustomClassInput(clean);
     if (clean) {
+      try {
+        window.localStorage.setItem("mindx_last_class_code", clean);
+      } catch {}
       loadClassProjectData(clean, false);
     }
   };
 
   // Explicit button to load/refresh from Teaching
   const handleLoadManualClass = (forceRefresh = false) => {
-    const clean = customClassInput.trim().toUpperCase();
+    const clean = (customClassInput || selectedClassCode).trim().toUpperCase();
     if (!clean) {
       setBanner({ type: "warning", text: "Vui lòng nhập hoặc chọn mã lớp (VD: VT-C4K-GA38)." });
       return;
     }
     setSelectedClassCode(clean);
+    setCustomClassInput(clean);
+    try {
+      window.localStorage.setItem("mindx_last_class_code", clean);
+    } catch {}
     loadClassProjectData(clean, forceRefresh);
   };
 
@@ -1006,48 +1014,28 @@ export default function TeachingProjectsPage() {
 
         {/* Row 1: Class Selector + Action Buttons */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-6">
             <label className="block text-xs font-bold mb-1">
-              Chọn từ danh sách lớp đã đồng bộ LMS:
+              Chọn lớp học (hoặc bấm ✏️ để nhập mã lớp trực tiếp):
             </label>
-            <select
+            <ClassPicker
+              scope="running"
+              variant="card"
               value={selectedClassCode}
+              classes={classes}
+              onChange={handleSelectClassChange}
+              onClassesRefreshed={(refreshed) =>
+                setClasses(refreshed as RunningClassOption[])
+              }
+              onRefreshError={(msg) => setBanner({ type: "error", text: msg })}
               disabled={isAnyMutationBusy}
-              onChange={(e) => handleSelectClassChange(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-600/80 bg-slate-900/90 text-white text-sm font-semibold disabled:opacity-60"
-            >
-              <option value="">-- Chọn mã lớp --</option>
-              {classes.map((cls) => (
-                <option key={cls.classCode} value={cls.classCode}>
-                  {cls.classCode}{" "}
-                  {cls.startDate && cls.endDate
-                    ? `(${cls.startDate} → ${cls.endDate})`
-                    : ""}
-                </option>
-              ))}
-            </select>
+              allowManualInput={true}
+              showRefreshButton={false}
+              placeholderOption="-- Chọn mã lớp --"
+            />
           </div>
 
-          <div className="lg:col-span-4">
-            <label className="block text-xs font-bold mb-1">
-              Hoặc nhập mã lớp trực tiếp (như ô lọc trang Teaching):
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={customClassInput}
-                disabled={isAnyMutationBusy}
-                onChange={(e) => setCustomClassInput(e.target.value.toUpperCase())}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleLoadManualClass(false);
-                }}
-                placeholder="VD: VT-C4K-GA38"
-                className="w-full px-3 py-2 rounded-xl border border-slate-600/80 bg-slate-900/90 text-white text-sm font-mono font-bold disabled:opacity-60"
-              />
-            </div>
-          </div>
-
-          <div className="lg:col-span-4 flex flex-wrap items-center gap-2">
+          <div className="lg:col-span-6 flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => handleLoadManualClass(true)}

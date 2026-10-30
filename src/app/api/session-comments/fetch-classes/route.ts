@@ -2,47 +2,11 @@ import { NextResponse } from "next/server";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { taskQueue } from "@/lib/queue/task-queue";
 import { ClassSyncer } from "@/lib/playwright/sync-class";
-import { getRunningClasses, type RunningClassItem } from "@/lib/db/json-config";
-import { getDb } from "@/lib/db/sqlite";
+import { type RunningClassItem } from "@/lib/db/json-config";
+import { listClasses } from "@/lib/classes/class-directory";
 
 function getMergedRunningClasses(): RunningClassItem[] {
-  const fromCache = getRunningClasses();
-  if (fromCache.length > 0) {
-    return fromCache.map((item) => ({
-      ...item,
-      classCode: item.classCode.trim().toUpperCase(),
-    }));
-  }
-  const map = new Map<string, RunningClassItem>();
-
-  try {
-    const db = getDb();
-    if (typeof (db as any)?.prepare === "function") {
-      const rows = (db as any)
-        .prepare(`SELECT DISTINCT classId, className FROM classes_sessions ORDER BY classId ASC`)
-        .all() as Array<{ classId: string; className?: string }>;
-      for (const r of rows) {
-        const code = String(r?.classId || "").trim().toUpperCase();
-        if (
-          !code ||
-          /^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(code)
-        ) {
-          continue;
-        }
-        if (!map.has(code)) {
-          map.set(code, {
-            classCode: code,
-            courseName: r.className && r.className !== code ? r.className : "",
-            status: "Running",
-          });
-        }
-      }
-    }
-  } catch {
-    // Ignore DB read fallback errors
-  }
-
-  return Array.from(map.values());
+  return listClasses({ scope: "running" });
 }
 
 export async function GET(req: Request) {
