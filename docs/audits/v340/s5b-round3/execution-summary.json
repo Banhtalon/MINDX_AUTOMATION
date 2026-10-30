@@ -1,0 +1,58 @@
+{
+  "recorded_at": "2026-10-30T18:08:34.430353+07:00",
+  "verdict": "GO",
+  "head": "a78c5a1b1b67735f6e9987d06c437513e771ae06",
+  "scope": "HEAD plus uncommitted working tree, exact source-before.json snapshot",
+  "gate_count": 17,
+  "gates_passed": 17,
+  "workspace_tsc_exit": 0,
+  "independent_probes": [
+    {
+      "probe": "reset-probe",
+      "exit": 0,
+      "seconds": 8.97,
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r3-w_38lonr"
+    },
+    {
+      "probe": "independent-probe",
+      "exit": 0,
+      "seconds": 21.22,
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r3-w_38lonr"
+    },
+    {
+      "probe": "matrix-probe",
+      "exit": 0,
+      "seconds": 12.05,
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r3-w_38lonr"
+    },
+    {
+      "probe": "repository-probe",
+      "exit": 0,
+      "seconds": 2.2,
+      "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r3-w_38lonr"
+    }
+  ],
+  "observations": {
+    "reset-observations.json": 5,
+    "observations.json": 16,
+    "matrix-observations.json": 8,
+    "repository-observations.json": 7
+  },
+  "total_observations": 36,
+  "mirror": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r3-w_38lonr",
+  "source_integrity": {
+    "source_count": 139,
+    "source_unchanged": 139,
+    "extra_source_files": [],
+    "mirror_sources_match_snapshot": true,
+    "other_changed": [
+      "PROJECT_STATE.md",
+      "MINDX_AUTOMATION_PLAN.md",
+      "CHANGELOG.md"
+    ],
+    "head": "a78c5a1b1b67735f6e9987d06c437513e771ae06"
+  },
+  "real_data_files_read_or_hashed_or_copied": false,
+  "live_services_used": false,
+  "application_sources_or_product_tests_changed_by_review": false
+}

@@ -20,8 +20,10 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
   const {
     totalStepsCount,
     rows,
-    confirmedReadyStudentIds,
+    selectedSessionNumber,
     handleGenerateAiComments,
+    handleGenerateSession14AllAi,
+    generatingS14EvalAi,
     isAnyOperationBusy,
     generatingAi,
     isAppOrGameProduct,
@@ -78,32 +80,39 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
           <h2 className="text-sm font-bold text-white">
             Chuẩn Bị &amp; Xem Lại Bài ({rows.length} học viên)
           </h2>
-          {false && (
-            <span className="text-xs text-slate-400">
-              • Đủ điều kiện nộp:{" "}
-              <strong className="text-emerald-600 dark:text-emerald-400">
-                {confirmedReadyStudentIds.length}
-              </strong>
-              /{rows.length}
-            </span>
-          )}
         </div>
 
         {/* Primary Preparation Actions & Collapsible Tool Toggles */}
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => handleGenerateAiComments()}
-            disabled={isAnyOperationBusy || rows.length === 0}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-semibold transition-colors cursor-pointer"
-          >
-            {generatingAi ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="w-3.5 h-3.5" />
-            )}
-            <span>AI Soạn Nhận Xét Cả Lớp</span>
-          </button>
+          {selectedSessionNumber === 14 ? (
+            <button
+              type="button"
+              onClick={() => handleGenerateSession14AllAi()}
+              disabled={isAnyOperationBusy || rows.length === 0}
+              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+            >
+              {generatingAi || generatingS14EvalAi ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5" />
+              )}
+              <span>✨ AI soạn tất cả (SPCK + Thư 3 phần)</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => handleGenerateAiComments()}
+              disabled={isAnyOperationBusy || rows.length === 0}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-semibold transition-colors cursor-pointer"
+            >
+              {generatingAi ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5" />
+              )}
+              <span>AI Soạn Nhận Xét Cả Lớp</span>
+            </button>
+          )}
 
           {isAppOrGameProduct && (
             <button
@@ -507,16 +516,6 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
                 <span className="font-bold text-emerald-300">
                   📊 {demoSheetTitle}
                 </span>
-                {false && (
-                  <a
-                    href={generatedDemoSheetUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sky-300 hover:underline font-mono truncate"
-                  >
-                    {generatedDemoSheetUrl}
-                  </a>
-                )}
               </div>
               <div className="flex items-center space-x-2 shrink-0">
                 <a

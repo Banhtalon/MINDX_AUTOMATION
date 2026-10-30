@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { type SpckSessionNumber } from "@/lib/db/sqlite";
+import { spckSessionRepo, type SpckSessionNumber } from "@/lib/db/sqlite";
 import {
   DEFAULT_SPCK_WEB_REPO_URL,
   SpckWebDeployer,
@@ -52,6 +52,25 @@ export async function POST(req: Request) {
       repoUrl,
       studentIds,
     });
+
+    if (body?.syncActiveSession === true && activeSessionNumber) {
+      const targetIds =
+        studentIds && studentIds.length > 0
+          ? studentIds
+          : (deployResult.results || [])
+              .filter((r: any) => r.status === "DEPLOYED")
+              .map((r: any) => String(r.studentId || ""))
+              .filter(Boolean);
+      for (const sid of targetIds) {
+        try {
+          spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
+            classId,
+            sid,
+            activeSessionNumber
+          );
+        } catch {}
+      }
+    }
 
     const updatedRecords = buildEnrichedClassSpckRecords(classId, activeSessionNumber);
 

@@ -1,0 +1,957 @@
+/**
+ * MINDX AUTOMATION BOT - STAGE S5b VERIFICATION SUITE (v3.4.0)
+ * Verifies:
+ * - [S5b-T1] S5b.1 + S5b.2: Auto-run preparation tools toggle (default ON) by class type (JSB / SB / App-Robotics) + step progress + approval demotion confirm guard
+ * - [S5b-T2] S5b.3: Single place for tools in ToolsDrawer; StudentRow hides normal-state duplicate tool buttons and only shows "🔄 Thử lại" when a tool fails
+ * - [S5b-T3] S5b.4 + S5b.5: Session 14 unified flow ("✨ AI soạn tất cả (SPCK + Thư 3 phần)", "🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá)" with independent retry, 2-tab StudentRow editor, no duplicate student list in Session14Panel, auto-import Demo scores)
+ * - [S5b-T4] S5b.6 + S5b.7 + S5b.8: Session 13 auto-selects unsubmitted students + "nêu tiến bộ so với Buổi 12" in Gemini prompt, zero "{false &&" blocks, and strict title/comment/thumbnail guardrails
+ */
+
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import tailwindcssPostcss from "@tailwindcss/postcss";
+import * as esbuild from "esbuild";
+import { chromium } from "playwright";
+import postcss from "postcss";
+import {
+  formatSpckSessionTitle,
+  isDefaultSpckProductTitle,
+  studentRepo,
+  stripSpckSessionSuffix,
+  validateSpckTitleLength,
+} from "../src/lib/db/sqlite";
+import { SpckCommentGenerator } from "../src/lib/gemini/spck-comment";
+import { DEFAULT_SPCK_THUMBNAIL_PATH } from "../src/lib/local-files/spck-scanner";
+
+const ROOT = process.cwd();
+
+async function compileRealAppCss(): Promise<string> {
+  const globalsCssPath = path.join(ROOT, "src/app/globals.css");
+  const rawCss = fs.readFileSync(globalsCssPath, "utf8");
+  const result = await postcss([tailwindcssPostcss({ base: ROOT })]).process(rawCss, {
+    from: globalsCssPath,
+  });
+  return result.css;
+}
+
+async function runTests() {
+  console.log("=== BẮT ĐẦU KIỂM THỬ GIAI ĐOẠN S5b (TINH GỌN MÀN HÌNH 3 SPCK & HỢP NHẤT BUỔI 14) ===");
+
+  // =========================================================================
+  // [S5b-T4] Kiểm tra S5b.6, S5b.7 (Zero {false && ...}) & S5b.8 (Guardrails)
+  // =========================================================================
+  console.log("\n[S5b-T4] Kiểm tra S5b.6 (tiến bộ so với Buổi 12), S5b.7 (0 khối {false && ...}) và S5b.8 (Guardrails)...");
+
+  const targetFiles = [
+    "src/app/final-project/page.tsx",
+    "src/components/final-project/Step1Header.tsx",
+    "src/components/final-project/ToolsDrawer.tsx",
+    "src/components/final-project/StudentRow.tsx",
+    "src/components/final-project/StudentTable.tsx",
+    "src/components/final-project/SubmitBar.tsx",
+    "src/components/final-project/Session14Panel.tsx",
+    "src/components/final-project/FolderBrowserModal.tsx",
+    "src/components/final-project/SnapshotModal.tsx",
+  ];
+  for (const relPath of targetFiles) {
+    const content = fs.readFileSync(path.join(ROOT, relPath), "utf8");
+    assert.ok(
+      !content.includes("{false &&"),
+      `File ${relPath} không được còn chứa khối code chết '{false && ...}' (S5b.7)`
+    );
+  }
+
+  // Kiểm tra S5b.8: Tên sản phẩm làm sạch hậu tố buổi/GĐ2 và phát hiện tên mặc định "SPCK <Họ tên>"
+  const cleanedStage2Title = formatSpckSessionTitle(
+    stripSpckSessionSuffix(
+      "Web Cửa Hàng Bánh Ngọt - Giai đoạn 2 (GĐ2) — Buổi 12 (GĐ1)"
+    ),
+    14
+  );
+  assert.strictEqual(
+    cleanedStage2Title,
+    "Web Cửa Hàng Bánh Ngọt",
+    `Tên sản phẩm Buổi 14 sau khi làm sạch phải giữ nguyên tên dự án và loại bỏ hoàn toàn hậu tố buổi/giai đoạn: '${cleanedStage2Title}'`
+  );
+  assert.strictEqual(
+    validateSpckTitleLength("Web Cửa Hàng Bánh Ngọt (GĐ2)", 14).valid,
+    false,
+    "validateSpckTitleLength phải từ chối tiêu đề chứa nhãn 'GĐ2' / 'Giai đoạn 2' (S5b.8)"
+  );
+  assert.strictEqual(
+    isDefaultSpckProductTitle("SPCK Nguyễn Minh Khôi", "Nguyễn Minh Khôi"),
+    true,
+    "isDefaultSpckProductTitle phải phát hiện tiêu đề mặc định 'SPCK <Họ tên>' (S5b.8)"
+  );
+  assert.strictEqual(
+    isDefaultSpckProductTitle("Web Cửa Hàng Bánh Ngọt", "Nguyễn Minh Khôi"),
+    false,
+    "isDefaultSpckProductTitle phải chấp nhận tên đề tài sản phẩm cụ thể (S5b.8)"
+  );
+
+  // Kiểm tra S5b.8: Ảnh bìa mặc định Logo MindX luôn tồn tại
+  assert.ok(
+    fs.existsSync(DEFAULT_SPCK_THUMBNAIL_PATH) &&
+      fs.statSync(DEFAULT_SPCK_THUMBNAIL_PATH).size > 100,
+    "Ảnh bìa mặc định Logo MindX (data/config/default-spck-thumbnail.png) phải tồn tại và hợp lệ"
+  );
+
+  // Kiểm tra S5b.6 & S5b.8 trong SpckCommentGenerator.generateBatchSpckComments (mock Gemini fetch)
+  const originalFetch = globalThis.fetch;
+  const originalApiKey = process.env.GEMINI_API_KEY;
+  process.env.GEMINI_API_KEY = "test-s5b-dummy-key";
+  try {
+    studentRepo.upsert({
+      studentId: "S5B_STU_01",
+      classId: "VT-C4K-JSB15",
+      fullName: "Nguyễn Minh Khôi",
+      isActive: 1,
+    });
+
+    globalThis.fetch = async () =>
+      Response.json({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    attitudeSummary:
+                      "Ở Buổi 13 (Giai đoạn 2 - GĐ2), STUDENT_01 thể hiện tinh thần học tập nghiêm túc và chủ động tiếp thu góp ý.",
+                    productAndDesignEvaluation:
+                      "So với Buổi 12 ở Giai đoạn 1 (GĐ1), sản phẩm của STUDENT_01 đã bổ sung thêm trang giỏ hàng và bộ lọc sản phẩm trực quan.",
+                    technicalApplicationEvaluation:
+                      "STUDENT_01 cần trau chuốt thêm phần kiểm tra dữ liệu đầu vào ở biểu mẫu thanh toán trước khi bước vào Buổi 14.",
+                    presentationEvaluation: "",
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+    const batchRes = await SpckCommentGenerator.generateBatchSpckComments(
+      {
+        classId: "VT-C4K-JSB15",
+        sessionNumber: 13,
+      },
+      [
+        {
+          studentId: "S5B_STU_01",
+          fullName: "Nguyễn Minh Khôi",
+          projectTitle: "Web Cửa Hàng Bánh Ngọt",
+          quickTags: ["Hoàn thành tốt sản phẩm cuối khóa"],
+          teacherNote: "Bổ sung giỏ hàng so với buổi trước",
+          priorSession12Summary:
+            "Buổi 12 đã nộp khung trang chủ HTML/CSS cơ bản.",
+          attachments: [],
+        },
+      ]
+    );
+
+    assert.strictEqual(batchRes.length, 1);
+    const aiRes = batchRes[0];
+    assert.strictEqual(aiRes.status, "WAITING_APPROVAL");
+    assert.ok(
+      aiRes.outboundPromptSample.includes("nêu tiến bộ so với Buổi 12"),
+      "Prompt Buổi 13 khi có dữ liệu Buổi 12 phải yêu cầu AI 'nêu tiến bộ so với Buổi 12' (S5b.6)"
+    );
+    assert.ok(
+      aiRes.outboundPromptSample.includes("đã nộp khung trang chủ HTML/CSS cơ bản"),
+      "Prompt Buổi 13 phải đính kèm tóm tắt kết quả Buổi 12 (S5b.6)"
+    );
+    assert.ok(
+      !/Buổi\s*1[234]|Giai\s*đoạn\s*[12]|GĐ\s*[12]/i.test(
+        aiRes.formattedTeacherComment
+      ),
+      `Nhận xét AI đầu ra phải lọc sạch nhãn nội bộ (Buổi 12/13/14, GĐ1/2): '${aiRes.formattedTeacherComment}' (S5b.8)`
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalApiKey === undefined) {
+      delete process.env.GEMINI_API_KEY;
+    } else {
+      process.env.GEMINI_API_KEY = originalApiKey;
+    }
+  }
+  console.log("  -> PASS [S5b-T4]: S5b.6 (Prompt tiến bộ so với Buổi 12), S5b.7 (0 khối {false && ...}) & S5b.8 (Guardrails) đạt chuẩn.");
+
+  // =========================================================================
+  // Đóng gói UI FinalProjectPage bằng esbuild + CSS thật để kiểm thử Playwright
+  // =========================================================================
+  console.log("\n[S5b-UI] Đang biên dịch bundle UI FinalProjectPage để kiểm thử S5b.1 -> S5b.6...");
+  const compiledAppCss = await compileRealAppCss();
+  const tempBuildDir = fs.mkdtempSync(path.join(os.tmpdir(), "mindx-s5b-ui-"));
+
+  const entryFile = path.join(tempBuildDir, "entry-s5b.tsx");
+  fs.writeFileSync(
+    entryFile,
+    `
+    import React from "react";
+    import { createRoot } from "react-dom/client";
+    import FinalProjectPage from ${JSON.stringify(
+      path.join(ROOT, "src/app/final-project/page.tsx")
+    )};
+
+    const rootEl = document.getElementById("root")!;
+    const root = createRoot(rootEl);
+    root.render(<FinalProjectPage />);
+  `,
+    "utf8"
+  );
+
+  const aliasPlugin: esbuild.Plugin = {
+    name: "tsconfig-path-alias",
+    setup(build) {
+      build.onResolve({ filter: /^@\// }, (args) => {
+        const targetBase = path.join(ROOT, "src", args.path.slice(2));
+        for (const ext of ["", ".tsx", ".ts", ".jsx", ".js", "/index.ts", "/index.tsx"]) {
+          if (fs.existsSync(targetBase + ext) && fs.statSync(targetBase + ext).isFile()) {
+            return { path: targetBase + ext };
+          }
+        }
+        return { path: targetBase };
+      });
+    },
+  };
+
+  const outFile = path.join(tempBuildDir, "bundle-s5b.js");
+  await esbuild.build({
+    entryPoints: [entryFile],
+    bundle: true,
+    outfile: outFile,
+    format: "iife",
+    platform: "browser",
+    target: ["es2020"],
+    jsx: "automatic",
+    absWorkingDir: ROOT,
+    nodePaths: [path.join(ROOT, "node_modules")],
+    plugins: [aliasPlugin],
+    define: {
+      "process.env.NODE_ENV": '"production"',
+    },
+  });
+  const bundleCode = fs.readFileSync(outFile, "utf8");
+
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1800 } });
+    const page = await context.newPage();
+    page.on("pageerror", (err) => {
+      console.error("[PAGEERROR]", err);
+    });
+    page.on("console", (msg) => {
+      if (msg.type() === "error") {
+        console.error("[CONSOLE ERROR]", msg.text());
+      }
+    });
+
+    const html = `<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <style>${compiledAppCss}</style>
+</head>
+<body class="bg-slate-950 text-slate-100 p-6">
+  <div id="root"></div>
+  <script>
+    window.__apiCalls = [];
+    window.__confirmCalls = [];
+    window.__confirmNextResult = true;
+    window.__simulateDriveStudentFail = false;
+    window.__simulateS14EvalStudentFail = false;
+
+    window.confirm = (msg) => {
+      window.__confirmCalls.push(String(msg));
+      return window.__confirmNextResult;
+    };
+
+    const mockClasses = [
+      { classId: "VT-C4K-JSB15", className: "Lớp Web JSB15", studentCount: 2, spckCount: 2, latestSessionNumber: 13, eligibleForSpck: true },
+      { classId: "VT-C4K-SB28", className: "Lớp Scratch SB28", studentCount: 2, spckCount: 2, latestSessionNumber: 12, eligibleForSpck: true },
+      { classId: "VT-ROB-B09", className: "Lớp Robotics B09", studentCount: 2, spckCount: 2, latestSessionNumber: 12, eligibleForSpck: true }
+    ];
+
+    const mockStudentsByClass = {
+      "VT-C4K-JSB15": [
+        { studentId: "STU_01", classId: "VT-C4K-JSB15", fullName: "Nguyễn Minh Khôi", isActive: 1 },
+        { studentId: "STU_02", classId: "VT-C4K-JSB15", fullName: "Trần Bảo Ngọc", isActive: 1 }
+      ],
+      "VT-C4K-SB28": [
+        { studentId: "STU_01", classId: "VT-C4K-SB28", fullName: "Nguyễn Minh Khôi", isActive: 1 }
+      ],
+      "VT-ROB-B09": [
+        { studentId: "STU_01", classId: "VT-ROB-B09", fullName: "Nguyễn Minh Khôi", isActive: 1 }
+      ]
+    };
+
+    const buildScannedRecord = (classId, studentId, fullName, statusOverride) => ({
+      classId,
+      studentId,
+      localFolderPath: "D:\\\\SPCK\\\\" + classId + "\\\\01_" + studentId,
+      matchScore: 1,
+      isConfirmedByTeacher: 1,
+      projectTitle: "Dự án " + fullName,
+      thumbnailPath: "D:\\\\SPCK\\\\" + classId + "\\\\01_" + studentId + "\\\\thumb.png",
+      screenshotsJson: JSON.stringify(["D:\\\\SPCK\\\\" + classId + "\\\\01_" + studentId + "\\\\screen1.png"]),
+      attachmentsJson: JSON.stringify(["D:\\\\SPCK\\\\" + classId + "\\\\01_" + studentId + "\\\\index.html"]),
+      youtubeUrlsJson: JSON.stringify([]),
+      relatedLinksJson: JSON.stringify([
+        { name: "Sản phẩm trên Google Drive", url: "https://drive.google.com/drive/folders/" + studentId },
+        { name: "Web chạy thử (Live)", url: "https://banhtalon.github.io/WEB_PRODUCT_SHOW/" + studentId }
+      ]),
+      quickTagsJson: JSON.stringify(["Hoàn thành tốt sản phẩm cuối khóa"]),
+      teacherNote: "Làm bài tốt",
+      teacherComment: "Trong quá trình thực hiện dự án, con đã chủ động hoàn thiện đầy đủ tính năng và giao diện rõ ràng.",
+      contentHash: "hash_" + studentId,
+      status: statusOverride || "WAITING_APPROVAL",
+      draftVersion: 1,
+      hasNewerSharedResources: false,
+      thumbnailInspection: { exists: true, isDefaultLogo: false, width: 1280, height: 720, aspectCategory: "16:9", label: "Ảnh SP 16:9 (1280x720)" },
+      sessionResultsJson: JSON.stringify({
+        "12": studentId === "STU_01"
+          ? {
+              status: "VERIFIED",
+              verifiedAt: "2026-10-23 10:00:00",
+              submittedContentHash: "hash_STU_01",
+              lastVerifiedSnapshot: {
+                sessionNumber: 12,
+                capturedAt: "2026-10-23 10:00:00",
+                contentHash: "hash_STU_01",
+                projectTitle: "Dự án Nguyễn Minh Khôi",
+                teacherComment: "Đã nộp khung giao diện cơ bản.",
+                thumbnailPath: "D:\\\\SPCK\\\\" + classId + "\\\\01_STU_01\\\\thumb.png",
+                screenshots: ["D:\\\\SPCK\\\\" + classId + "\\\\01_STU_01\\\\screen1.png"],
+                attachments: [],
+                youtubeUrls: [],
+                relatedLinks: [{ name: "Sản phẩm trên Google Drive", url: "https://drive.google.com/drive/folders/STU_01" }]
+              }
+            }
+          : { status: "DRAFT" },
+        "13": studentId === "STU_01"
+          ? {
+              status: "VERIFIED",
+              verifiedAt: "2026-10-25 10:00:00",
+              submittedContentHash: "hash_STU_01_13",
+              lastVerifiedSnapshot: {
+                sessionNumber: 13,
+                capturedAt: "2026-10-25 10:00:00",
+                contentHash: "hash_STU_01_13",
+                projectTitle: "Dự án Nguyễn Minh Khôi",
+                teacherComment: "Đã nộp tiến độ hoàn thiện.",
+                thumbnailPath: "D:\\\\SPCK\\\\" + classId + "\\\\01_STU_01\\\\thumb.png",
+                screenshots: [],
+                attachments: [],
+                youtubeUrls: [],
+                relatedLinks: []
+              }
+            }
+          : { status: "DRAFT" }
+      })
+    });
+
+    window.fetch = async (input, init) => {
+      const url = typeof input === "string" ? input : input.url;
+      const method = (init && init.method) || "GET";
+      let bodyObj = null;
+      if (init && typeof init.body === "string") {
+        try { bodyObj = JSON.parse(init.body); } catch {}
+      }
+      window.__apiCalls.push({ url, method, body: bodyObj });
+
+      if (url.includes("/api/spck/student-portal")) {
+        return new Response(JSON.stringify({
+          success: true,
+          portalStatus: {
+            isRunning: false,
+            rootFolderPath: "D:\\\\SPCK\\\\VT-C4K-JSB15",
+            submissions: []
+          }
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/list")) {
+        const u = new URL(url, "http://127.0.0.1:3000");
+        const cid = u.searchParams.get("classId") || "VT-C4K-JSB15";
+        const sess = Number(u.searchParams.get("sessionNumber") || 13);
+        const students = mockStudentsByClass[cid] || mockStudentsByClass["VT-C4K-JSB15"];
+        const records = students.map((s, idx) =>
+          buildScannedRecord(cid, s.studentId, s.fullName, idx === 0 ? "APPROVED" : "WAITING_APPROVAL")
+        );
+        return new Response(JSON.stringify({
+          success: true,
+          classes: mockClasses,
+          selectedClassId: cid,
+          selectedSessionNumber: sess,
+          activeSessionNumber: sess,
+          students,
+          records,
+          savedFolderPath: "D:\\\\SPCK\\\\" + cid,
+          session14TagLabels: ["Hoàn thành tốt sản phẩm cuối khóa"]
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/save-draft")) {
+        return new Response(JSON.stringify({
+          success: true,
+          draftVersion: 2
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/scan") && method === "POST") {
+        const cid = (bodyObj && bodyObj.classId) || "VT-C4K-JSB15";
+        const students = mockStudentsByClass[cid] || mockStudentsByClass["VT-C4K-JSB15"];
+        const records = students.map((s) =>
+          buildScannedRecord(cid, s.studentId, s.fullName, "WAITING_APPROVAL")
+        );
+        const items = students.map((s) => ({
+          folderName: "01_" + s.studentId,
+          folderPath: "D:\\\\SPCK\\\\" + cid + "\\\\01_" + s.studentId,
+          match: {
+            suggestedStudentId: s.studentId,
+            suggestedStudentName: s.fullName,
+            matchScore: 1,
+            isAutoMatched: true,
+            warningReasons: []
+          },
+          packageData: {
+            projectTitle: "Dự án " + s.fullName,
+            thumbnailPath: "D:\\\\SPCK\\\\" + cid + "\\\\01_" + s.studentId + "\\\\thumb.png",
+            screenshots: ["D:\\\\SPCK\\\\" + cid + "\\\\01_" + s.studentId + "\\\\screen1.png"],
+            attachments: ["D:\\\\SPCK\\\\" + cid + "\\\\01_" + s.studentId + "\\\\index.html"],
+            youtubeUrls: [],
+            relatedLinks: [
+              { name: "Sản phẩm trên Google Drive", url: "https://drive.google.com/drive/folders/" + s.studentId },
+              { name: "Web chạy thử (Live)", url: "https://banhtalon.github.io/WEB_PRODUCT_SHOW/" + s.studentId }
+            ],
+            warnings: []
+          }
+        }));
+        return new Response(JSON.stringify({
+          success: true,
+          records,
+          scanResult: { items }
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/upload-drive")) {
+        const cid = (bodyObj && bodyObj.classId) || "VT-C4K-JSB15";
+        const students = mockStudentsByClass[cid] || mockStudentsByClass["VT-C4K-JSB15"];
+        const records = students.map((s) =>
+          buildScannedRecord(cid, s.studentId, s.fullName, "WAITING_APPROVAL")
+        );
+        if (window.__simulateDriveStudentFail) {
+          return new Response(JSON.stringify({
+            success: true,
+            records,
+            driveResult: {
+              totalRequested: 2,
+              uploadedStudentsCount: 1,
+              failedStudentsCount: 1,
+              results: [
+                { studentId: "STU_01", fullName: "Nguyễn Minh Khôi", status: "FAILED", errorMessage: "Lỗi kết nối Drive cho Khôi" },
+                { studentId: "STU_02", fullName: "Trần Bảo Ngọc", status: "UPLOADED" }
+              ]
+            }
+          }), { status: 200 });
+        }
+        return new Response(JSON.stringify({
+          success: true,
+          records,
+          driveResult: {
+            totalRequested: 2,
+            uploadedStudentsCount: 2,
+            failedStudentsCount: 0,
+            results: [
+              { studentId: "STU_01", fullName: "Nguyễn Minh Khôi", status: "UPLOADED" },
+              { studentId: "STU_02", fullName: "Trần Bảo Ngọc", status: "UPLOADED" }
+            ]
+          }
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/deploy-web")) {
+        const cid = (bodyObj && bodyObj.classId) || "VT-C4K-JSB15";
+        const students = mockStudentsByClass[cid] || mockStudentsByClass["VT-C4K-JSB15"];
+        const records = students.map((s) =>
+          buildScannedRecord(cid, s.studentId, s.fullName, "WAITING_APPROVAL")
+        );
+        return new Response(JSON.stringify({
+          success: true,
+          records,
+          deployResult: {
+            totalRequested: 2,
+            deployedStudentsCount: 2,
+            failedStudentsCount: 0,
+            skippedNoHtmlCount: 0,
+            results: [
+              { studentId: "STU_01", fullName: "Nguyễn Minh Khôi", status: "DEPLOYED" },
+              { studentId: "STU_02", fullName: "Trần Bảo Ngọc", status: "DEPLOYED" }
+            ]
+          }
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/capture-screenshots")) {
+        const cid = (bodyObj && bodyObj.classId) || "VT-C4K-JSB15";
+        const students = mockStudentsByClass[cid] || mockStudentsByClass["VT-C4K-JSB15"];
+        const records = students.map((s) =>
+          buildScannedRecord(cid, s.studentId, s.fullName, "WAITING_APPROVAL")
+        );
+        return new Response(JSON.stringify({
+          success: true,
+          records,
+          batchResult: {
+            totalProcessed: 2,
+            totalScreenshotsCaptured: 4,
+            results: [
+              { studentId: "STU_01", fullName: "Nguyễn Minh Khôi", status: "CAPTURED" },
+              { studentId: "STU_02", fullName: "Trần Bảo Ngọc", status: "CAPTURED" }
+            ]
+          }
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/generate-ai")) {
+        const cid = (bodyObj && bodyObj.classId) || "VT-C4K-JSB15";
+        const students = mockStudentsByClass[cid] || mockStudentsByClass["VT-C4K-JSB15"];
+        const records = students.map((s) =>
+          buildScannedRecord(cid, s.studentId, s.fullName, "WAITING_APPROVAL")
+        );
+        return new Response(JSON.stringify({
+          success: true,
+          records,
+          results: [
+            { studentId: "STU_01", status: "WAITING_APPROVAL", formattedTeacherComment: "Nhận xét AI đã soạn cho Khôi.", draftVersion: 2 },
+            { studentId: "STU_02", status: "WAITING_APPROVAL", formattedTeacherComment: "Nhận xét AI đã soạn cho Ngọc.", draftVersion: 2 }
+          ]
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/session14-eval/import-demo-scores")) {
+        return new Response(JSON.stringify({
+          success: true,
+          matchedStudentsCount: 2,
+          records: [
+            {
+              classId: "VT-C4K-JSB15",
+              studentId: "STU_01",
+              fullName: "Nguyễn Minh Khôi",
+              competencyScores: { knowledgeInClass: 4, knowledgeSelfStudy: 4, skillCommunication: 4, skillComputerUse: 4, skillProblemSolving: 4, skillCreativity: 4, skillComputational: 4, attitudeHomework: 4, attitudeInClass: 4 },
+              competencyTotalScore: 36,
+              demoScores: { algorithm: 1.5, creativity: 1.0, communication: 0.5, problemSolving: 1.0, computerSkills: 1.0 },
+              demoTotalScore: 5.0,
+              demoSourcePath: "D:\\\\SCORE\\\\Khoi.xlsx",
+              demoJudgeNote: "Điểm tuyệt đối",
+              learnedFromMindx: "Đã học tốt HTML/CSS/JS.",
+              suggestionsFromMindx: "Rèn luyện thêm kỹ năng thuyết trình.",
+              futureDirection: "Tiếp tục học lên khóa JSA.",
+              awardRanking: "Giải Nhất",
+              quickTags: [],
+              teacherNote: "",
+              draftVersion: 1,
+              status: "APPROVED",
+              contentHash: "eval_hash_1"
+            },
+            {
+              classId: "VT-C4K-JSB15",
+              studentId: "STU_02",
+              fullName: "Trần Bảo Ngọc",
+              competencyScores: { knowledgeInClass: 4, knowledgeSelfStudy: 4, skillCommunication: 4, skillComputerUse: 4, skillProblemSolving: 4, skillCreativity: 4, skillComputational: 4, attitudeHomework: 4, attitudeInClass: 4 },
+              competencyTotalScore: 36,
+              demoScores: { algorithm: 1.25, creativity: 1.0, communication: 0.5, problemSolving: 1.0, computerSkills: 1.0 },
+              demoTotalScore: 4.75,
+              demoSourcePath: "D:\\\\SCORE\\\\Ngoc.xlsx",
+              demoJudgeNote: "Rất tốt",
+              learnedFromMindx: "Hoàn thành tốt sản phẩm.",
+              suggestionsFromMindx: "Tự tin hơn khi trả lời câu hỏi.",
+              futureDirection: "Tiếp tục học lên khóa JSA.",
+              awardRanking: "Giải Nhì",
+              quickTags: [],
+              teacherNote: "",
+              draftVersion: 1,
+              status: "APPROVED",
+              contentHash: "eval_hash_2"
+            }
+          ]
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/session14-eval/generate-ai")) {
+        return new Response(JSON.stringify({
+          success: true,
+          results: [
+            { studentId: "STU_01", status: "SUCCESS" },
+            { studentId: "STU_02", status: "SUCCESS" }
+          ],
+          records: []
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/session14-eval/upload-lms")) {
+        const requestedIds = (bodyObj && bodyObj.studentIds) || ["STU_01", "STU_02"];
+        if (window.__simulateS14EvalStudentFail) {
+          return new Response(JSON.stringify({
+            success: true,
+            records: [],
+            uploadResult: {
+              verifiedCount: 1,
+              failedCount: 1,
+              results: [
+                { studentId: "STU_01", fullName: "Nguyễn Minh Khôi", status: "VERIFIED" },
+                { studentId: "STU_02", fullName: "Trần Bảo Ngọc", status: "FAILED", errorMessage: "Không tìm thấy nút Lưu cho Ngọc" }
+              ]
+            }
+          }), { status: 200 });
+        }
+        return new Response(JSON.stringify({
+          success: true,
+          records: [],
+          uploadResult: {
+            verifiedCount: requestedIds.length,
+            failedCount: 0,
+            results: requestedIds.map((sid) => ({ studentId: sid, status: "VERIFIED" }))
+          }
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/session14-eval") && method === "GET") {
+        return new Response(JSON.stringify({
+          success: true,
+          records: [
+            {
+              classId: "VT-C4K-JSB15",
+              studentId: "STU_01",
+              fullName: "Nguyễn Minh Khôi",
+              competencyScores: { knowledgeInClass: 4, knowledgeSelfStudy: 4, skillCommunication: 4, skillComputerUse: 4, skillProblemSolving: 4, skillCreativity: 4, skillComputational: 4, attitudeHomework: 4, attitudeInClass: 4 },
+              competencyTotalScore: 36,
+              demoScores: { algorithm: 0, creativity: 0, communication: 0, problemSolving: 0, computerSkills: 0 },
+              demoTotalScore: 0,
+              demoSourcePath: "",
+              demoJudgeNote: "",
+              learnedFromMindx: "Đã học tốt HTML/CSS/JS.",
+              suggestionsFromMindx: "Rèn luyện thêm kỹ năng thuyết trình.",
+              futureDirection: "Tiếp tục học lên khóa JSA.",
+              awardRanking: "Giải Nhất",
+              quickTags: [],
+              teacherNote: "",
+              draftVersion: 1,
+              status: "APPROVED",
+              contentHash: "eval_hash_1"
+            },
+            {
+              classId: "VT-C4K-JSB15",
+              studentId: "STU_02",
+              fullName: "Trần Bảo Ngọc",
+              competencyScores: { knowledgeInClass: 4, knowledgeSelfStudy: 4, skillCommunication: 4, skillComputerUse: 4, skillProblemSolving: 4, skillCreativity: 4, skillComputational: 4, attitudeHomework: 4, attitudeInClass: 4 },
+              competencyTotalScore: 36,
+              demoScores: { algorithm: 0, creativity: 0, communication: 0, problemSolving: 0, computerSkills: 0 },
+              demoTotalScore: 0,
+              demoSourcePath: "",
+              demoJudgeNote: "",
+              learnedFromMindx: "Hoàn thành tốt sản phẩm.",
+              suggestionsFromMindx: "Tự tin hơn khi trả lời câu hỏi.",
+              futureDirection: "Tiếp tục học lên khóa JSA.",
+              awardRanking: "Giải Nhì",
+              quickTags: [],
+              teacherNote: "",
+              draftVersion: 1,
+              status: "APPROVED",
+              contentHash: "eval_hash_2"
+            }
+          ]
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/session14-eval") && method === "POST") {
+        const action = bodyObj && bodyObj.action;
+        if (action === "approve") {
+          const ids = (bodyObj && bodyObj.studentIds) || ["STU_01", "STU_02"];
+          return new Response(JSON.stringify({
+            success: true,
+            approvedIds: ids
+          }), { status: 200 });
+        }
+        return new Response(JSON.stringify({
+          success: true,
+          record: { studentId: bodyObj && bodyObj.studentId, draftVersion: 2 }
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/approve")) {
+        const ids = (bodyObj && bodyObj.studentIds) || ["STU_01", "STU_02"];
+        return new Response(JSON.stringify({
+          success: true,
+          approvedStudentIds: ids,
+          records: []
+        }), { status: 200 });
+      }
+      if (url.includes("/api/spck/upload-lms")) {
+        const ids = (bodyObj && bodyObj.studentIds) || ["STU_01", "STU_02"];
+        return new Response(JSON.stringify({
+          success: true,
+          records: [],
+          uploadResult: {
+            results: ids.map((sid) => ({ studentId: sid, status: "VERIFIED", verifiedAt: "2026-10-30 16:00:00" }))
+          }
+        }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ success: true }), { status: 200 });
+    };
+  </script>
+  <script>${bundleCode}</script>
+</body>
+</html>`;
+
+    await page.setContent(html, { waitUntil: "networkidle" });
+    await page.waitForSelector('[data-testid="s5b-auto-run-tools-checkbox"]', {
+      timeout: 3000,
+    });
+
+    // =========================================================================
+    // [S5b-T1] Kiểm tra S5b.1 (Auto-run tools theo loại lớp) & S5b.2 (Confirm khi hạ APPROVED)
+    // =========================================================================
+    console.log("\n[S5b-T1] Kiểm tra S5b.1 (Auto-run tools sau Quét) & S5b.2 (Xác nhận trước khi hạ trạng thái ĐÃ DUYỆT)...");
+    const isCheckedByDefault = await page
+      .locator('[data-testid="s5b-auto-run-tools-checkbox"]')
+      .isChecked();
+    assert.strictEqual(
+      isCheckedByDefault,
+      true,
+      "Checkbox '⚡ Tự chạy công cụ chuẩn bị sau khi Quét' phải mặc định BẬT (S5b.1)"
+    );
+
+    // Kiểm tra S5b.6: Ở Buổi 13 (mặc định khi tải lớp JSB15 có STU_01 đã nộp B.13 và STU_02 chưa nộp B.13),
+    // chỉ STU_02 được tự động tích chọn!
+    const selectedTextSess13 = await page.locator("text=Đang chọn:").first().innerText();
+    assert.ok(
+      selectedTextSess13.includes("1/2"),
+      `Buổi 13 phải tự động lọc chọn đúng 1 học viên chưa nộp Buổi 13 (STU_02), thực tế: '${selectedTextSess13}' (S5b.6)`
+    );
+
+    // Kiểm tra S5b.2: Hiện tại STU_01 đang có status = APPROVED. Khi bấm thủ công "Up Sản Phẩm Cả Lớp lên Drive & Gắn Link" mà từ chối confirm -> không gọi API upload-drive
+    await page.evaluate(() => {
+      (window as any).__apiCalls = [];
+      (window as any).__confirmCalls = [];
+      (window as any).__confirmNextResult = false;
+    });
+    await page.locator('button:has-text("Công cụ Drive & Cổng thu bài")').click();
+    await page.locator('button:has-text("Up Sản Phẩm Cả Lớp lên Drive & Gắn Link")').click();
+    const confirmCallsAfterCancel = await page.evaluate(() => (window as any).__confirmCalls);
+    const apiCallsAfterCancel = await page.evaluate(() =>
+      (window as any).__apiCalls.filter((c: any) => c.url.includes("/api/spck/upload-drive"))
+    );
+    assert.strictEqual(
+      confirmCallsAfterCancel.length,
+      1,
+      "Khi có học viên ĐÃ DUYỆT, chạy lại công cụ chia sẻ phải hiện hộp thoại xác nhận (S5b.2)"
+    );
+    assert.strictEqual(
+      apiCallsAfterCancel.length,
+      0,
+      "Khi giáo viên bấm Hủy xác nhận, không được chạy công cụ làm mất trạng thái ĐÃ DUYỆT (S5b.2)"
+    );
+
+    // Bấm "Quét & Khớp HV" trên lớp Web JSB15 -> phải tự chạy tuần tự: scan -> capture-screenshots -> deploy-web -> upload-drive
+    await page.evaluate(() => {
+      (window as any).__apiCalls = [];
+      (window as any).__confirmNextResult = true;
+    });
+    await page.locator('button:has-text("Quét & Khớp HV")').click();
+    await page.waitForFunction(
+      () =>
+        (window as any).__apiCalls.some((c: any) =>
+          c.url.includes("/api/spck/upload-drive")
+        ),
+      undefined,
+      { timeout: 5000 }
+    );
+    const jsbAutoRunUrls: string[] = await page.evaluate(() =>
+      (window as any).__apiCalls
+        .map((c: any) => c.url)
+        .filter((u: string) =>
+          /\/api\/spck\/(scan|upload-drive|deploy-web|capture-screenshots)$/.test(u)
+        )
+    );
+    assert.deepStrictEqual(
+      jsbAutoRunUrls,
+      [
+        "/api/spck/scan",
+        "/api/spck/capture-screenshots",
+        "/api/spck/deploy-web",
+        "/api/spck/upload-drive",
+      ],
+      "Lớp Web (JSB) khi bấm 'Quét & Khớp HV' phải tự chạy đúng thứ tự: Scan -> Chụp ảnh tự động -> Deploy GitHub -> Upload Drive (S5b.1)"
+    );
+    console.log("  -> PASS [S5b-T1]: Auto-run tools sau Quét (JSB) & khóa bảo vệ trạng thái ĐÃ DUYỆT hoạt động chính xác.");
+
+    // =========================================================================
+    // [S5b-T2] Kiểm tra S5b.3: StudentRow ẩn nút công cụ trùng lặp ở trạng thái bình thường, chỉ hiện "🔄 Thử lại" khi có lỗi
+    // =========================================================================
+    console.log("\n[S5b-T2] Kiểm tra S5b.3 (Chỉ 1 nơi chứa nút công cụ; chỉ hiện nút '🔄 Thử lại' trên dòng bị lỗi)...");
+    await page.locator('button:has-text("Chi tiết ▾")').first().click();
+
+    const retryDriveCountBeforeError = await page
+      .locator('button:has-text("🔄 Thử lại Up Drive & Gắn Link")')
+      .count();
+    assert.strictEqual(
+      retryDriveCountBeforeError,
+      0,
+      "Ở trạng thái bình thường (không lỗi), dòng học viên không được hiện nút công cụ trùng lặp (S5b.3)"
+    );
+
+    // Giả lập lỗi Upload Drive cho STU_01
+    await page.evaluate(() => {
+      (window as any).__simulateDriveStudentFail = true;
+    });
+    await page.locator('button:has-text("Up Sản Phẩm Cả Lớp lên Drive & Gắn Link")').click();
+    await page.waitForSelector('button:has-text("🔄 Thử lại Up Drive & Gắn Link")', {
+      timeout: 5000,
+    });
+
+    const retryDriveCountOnExpandedStu01 = await page
+      .locator('button:has-text("🔄 Thử lại Up Drive & Gắn Link")')
+      .count();
+    assert.strictEqual(
+      retryDriveCountOnExpandedStu01,
+      1,
+      "Học viên bị lỗi Upload Drive (STU_01) phải hiện nút '🔄 Thử lại Up Drive & Gắn Link' ngay trên dòng (S5b.3)"
+    );
+
+    // Bấm nút "🔄 Thử lại Up Drive & Gắn Link" trên dòng STU_01 -> hết lỗi -> nút tự ẩn
+    await page.evaluate(() => {
+      (window as any).__simulateDriveStudentFail = false;
+    });
+    await page.locator('button:has-text("🔄 Thử lại Up Drive & Gắn Link")').click();
+    await page.waitForFunction(
+      () =>
+        !Array.from(document.querySelectorAll("button")).some((b) =>
+          b.textContent?.includes("🔄 Thử lại Up Drive & Gắn Link")
+        ),
+      undefined,
+      { timeout: 5000 }
+    );
+    console.log("  -> PASS [S5b-T2]: StudentRow chỉ hiện nút '🔄 Thử lại' khi có lỗi và tự ẩn sau khi thử lại thành công.");
+
+    // =========================================================================
+    // [S5b-T3] Kiểm tra S5b.4 & S5b.5: Hợp nhất Buổi 14 (Auto-import Demo, 2 Tab trong StudentRow, AI soạn tất cả, Nộp Buổi 14 đầy đủ + Thử lại độc lập)
+    // =========================================================================
+    console.log("\n[S5b-T3] Kiểm tra S5b.4 & S5b.5 (Luồng hợp nhất Buổi 14: Auto-import Điểm Demo, 2 Tab StudentRow, AI soạn tất cả & Nộp Buổi 14 đầy đủ)...");
+    await page.evaluate(() => {
+      (window as any).__apiCalls = [];
+    });
+
+    // Chuyển sang Buổi 14
+    await page.locator('button:has-text("Buổi 14")').first().click();
+
+    // S5b.5: Phải tự động gọi import-demo-scores khi chuyển sang Buổi 14 mà chưa có điểm Demo
+    await page.waitForFunction(
+      () =>
+        (window as any).__apiCalls.some((c: any) =>
+          c.url.includes("/api/spck/session14-eval/import-demo-scores")
+        ),
+      undefined,
+      { timeout: 5000 }
+    );
+
+    // S5b.4: Dòng học viên đang mở ở Buổi 14 -> phải có 2 Tab (Tab 1: Sản phẩm SPCK | Tab 2: Điểm Demo, ĐNL & Thư 3 phần)
+    await page.waitForSelector('button:has-text("📦 Tab 1: Sản phẩm SPCK (Cột 3)")', {
+      timeout: 5000,
+    });
+    await page.waitForSelector(
+      'button:has-text("🏅 Tab 2: Điểm Demo, ĐNL & Thư 3 phần (Cột 2)")',
+      { timeout: 5000 }
+    );
+    await page
+      .locator('button:has-text("🏅 Tab 2: Điểm Demo, ĐNL & Thư 3 phần (Cột 2)")')
+      .first()
+      .click();
+    await page.waitForSelector('text=Phần 1: Learned From Mindx', {
+      timeout: 5000,
+    });
+
+    const rootTextAtTab2 = await page.locator("#root").innerText();
+    assert.ok(
+      rootTextAtTab2.includes("1. Điểm Demo") &&
+        rootTextAtTab2.includes("2. Điểm Năng Lực [ĐNL]") &&
+        rootTextAtTab2.includes("Phần 1: Learned From Mindx"),
+      "Tab 2 trong StudentRow ở Buổi 14 phải hiển thị đầy đủ Điểm Demo, 9 tiêu chí ĐNL và Thư 3 phần (S5b.4)"
+    );
+
+    // S5b.4: Kiểm tra nút "✨ AI soạn tất cả (SPCK + Thư 3 phần)" trong ToolsDrawer
+    await page.evaluate(() => {
+      (window as any).__apiCalls = [];
+    });
+    await page
+      .locator('button:has-text("✨ AI soạn tất cả (SPCK + Thư 3 phần)")')
+      .click();
+    await page.waitForFunction(
+      () =>
+        (window as any).__apiCalls.some((c: any) => c.url.includes("/api/spck/generate-ai")) &&
+        (window as any).__apiCalls.some((c: any) =>
+          c.url.includes("/api/spck/session14-eval/generate-ai")
+        ),
+      undefined,
+      { timeout: 5000 }
+    );
+
+    // S5b.4: Kiểm tra nút "🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá)" khi Phần 1 (SPCK) thành công và Phần 2 (Đánh giá) có 1 học viên lỗi -> phải giữ nguyên VERIFIED của Phần 1 và hiện nút "🔄 Thử lại riêng phần Đánh giá"
+    await page.evaluate(() => {
+      (window as any).__apiCalls = [];
+      (window as any).__simulateS14EvalStudentFail = true;
+    });
+    await page
+      .locator('button:has-text("🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá)")')
+      .click();
+    await page.waitForSelector('button:has-text("🔄 Thử lại riêng phần Đánh giá")', {
+      timeout: 5000,
+    });
+
+    const comboRootText = await page.locator("#root").innerText();
+    assert.ok(
+      comboRootText.includes("Phần 1: Sản phẩm SPCK (Cột 3 LMS)") &&
+        comboRootText.includes("Đã nộp 2/2 bài") &&
+        comboRootText.includes("Phần 2: Điểm Demo, ĐNL & Thư 3 phần (Cột 2 LMS)") &&
+        comboRootText.includes("1 cần thử lại"),
+      "Bảng trạng thái Nộp Buổi 14 đầy đủ phải tách bạch Phần 1 (Đã nộp 2/2 bài) và Phần 2 (1 cần thử lại) (S5b.4)"
+    );
+
+    // Bấm "🔄 Thử lại riêng phần Đánh giá (1)" -> chỉ gọi /api/spck/session14-eval/upload-lms cho STU_02, KHÔNG nộp lại Phần 1 (/api/spck/upload-lms)
+    await page.evaluate(() => {
+      (window as any).__apiCalls = [];
+      (window as any).__simulateS14EvalStudentFail = false;
+    });
+    await page
+      .locator('button:has-text("🔄 Thử lại riêng phần Đánh giá")')
+      .click();
+    await page.waitForFunction(
+      () =>
+        (window as any).__apiCalls.some((c: any) =>
+          c.url.includes("/api/spck/session14-eval/upload-lms")
+        ),
+      undefined,
+      { timeout: 5000 }
+    );
+    const retryOnlyEvalCalls = await page.evaluate(() => (window as any).__apiCalls);
+    assert.strictEqual(
+      retryOnlyEvalCalls.some(
+        (c: any) =>
+          c.url.includes("/api/spck/upload-lms") &&
+          !c.url.includes("/api/spck/session14-eval/upload-lms")
+      ),
+      false,
+      "Khi bấm 'Thử lại riêng phần Đánh giá', tuyệt đối không được nộp lại Phần 1 Sản phẩm SPCK (S5b.4)"
+    );
+    const evalSubmitCall = retryOnlyEvalCalls.find((c: any) =>
+      c.url.includes("/api/spck/session14-eval/upload-lms")
+    );
+    assert.deepStrictEqual(
+      evalSubmitCall.body.studentIds,
+      ["STU_02"],
+      "Nút 'Thử lại riêng phần Đánh giá' phải chỉ gửi lại đúng học viên bị lỗi (STU_02) (S5b.4)"
+    );
+    console.log("  -> PASS [S5b-T3]: Hợp nhất Buổi 14 (Auto-import Điểm Demo, 2 Tab StudentRow, AI soạn tất cả & Nộp Buổi 14 đầy đủ + Thử lại độc lập) hoạt động hoàn hảo.");
+
+    await context.close();
+  } finally {
+    await browser.close();
+    fs.rmSync(tempBuildDir, { recursive: true, force: true });
+  }
+
+  console.log("\n🎉 TẤT CẢ CÁC BÀI KIỂM THỬ GIAI ĐOẠN S5b ĐỀU PASS 100%!");
+}
+
+runTests().catch((err) => {
+  console.error("❌ LỖI KIỂM THỬ S5b:", err);
+  process.exit(1);
+});

@@ -1,0 +1,55 @@
+{
+  "id": "R2-RESET",
+  "defect": true,
+  "scenario": "A new both submission retains previous batch eval verification, retry and error while product save is pending",
+  "during": {
+    "staleEval": true,
+    "staleError": true,
+    "staleSummary": true,
+    "oldRetryVisible": true,
+    "oldRetryDisabled": true,
+    "calls": [
+      {
+        "url": "/api/spck/save-draft",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "studentId": "STU_01",
+          "sessionNumber": 14,
+          "expectedVersion": 2,
+          "localFolderPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01",
+          "matchScore": 1,
+          "isConfirmedByTeacher": true,
+          "projectTitle": "Dự án Nguyễn Minh Khôi",
+          "thumbnailPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\thumb.png",
+          "screenshots": [
+            "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\screen1.png"
+          ],
+          "attachments": [
+            "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\index.html"
+          ],
+          "youtubeUrls": [],
+          "relatedLinks": [
+            {
+              "name": "Sản phẩm trên Google Drive",
+              "url": "https://drive.google.com/drive/folders/STU_01"
+            },
+            {
+              "name": "Web chạy thử (Live)",
+              "url": "https://banhtalon.github.io/WEB_PRODUCT_SHOW/STU_01"
+            }
+          ],
+          "teacherComment": "Trong quá trình thực hiện dự án, con đã chủ động hoàn thiện đầy đủ tính năng và giao diện rõ ràng.",
+          "teacherNote": "Làm bài tốt",
+          "quickTags": [
+            "Hoàn thành tốt sản phẩm cuối khóa"
+          ],
+          "draftSeq": 3,
+          "clientSessionId": "UI_1793357464961_kv6f8u",
+          "reassignFolder": false
+        }
+      }
+    ]
+  },
+  "finalCorrect": true,
+  "note": "The completed result is reset correctly; the required immediate UI reset is missing."
+}

@@ -1,0 +1,24 @@
+ M CHANGELOG.md
+ M MINDX_AUTOMATION_PLAN.md
+ M PROJECT_STATE.md
+ M scripts/test-streamline-v340-s5a.ts
+ M src/app/api/spck/deploy-web/route.ts
+ M src/app/api/spck/generate-ai/route.ts
+ M src/app/api/spck/session14-eval/import-demo-scores/route.ts
+ M src/app/api/spck/upload-drive/route.ts
+ M src/app/final-project/page.tsx
+ M src/components/final-project/Session14Panel.tsx
+ M src/components/final-project/Step1Header.tsx
+ M src/components/final-project/StudentRow.tsx
+ M src/components/final-project/SubmitBar.tsx
+ M src/components/final-project/ToolsDrawer.tsx
+ M src/components/final-project/types.ts
+ M src/components/final-project/useSpckWorkflow.ts
+ M src/lib/gemini/spck-comment.ts
+ M src/lib/local-files/spck-demo-score-reader.ts
+?? docs/audits/v340/CODEX_S5B_ROUND1.md
+?? docs/audits/v340/CODEX_S5B_ROUND2.md
+?? docs/audits/v340/prompts/S5B_R2.md
+?? docs/audits/v340/s5b-round1/
+?? docs/audits/v340/s5b-round2/
+?? scripts/test-streamline-v340-s5.ts

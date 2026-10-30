@@ -1,0 +1,232 @@
+[
+  {
+    "id": "R2-P01",
+    "scenario": "Web preserves screenshot, links and versions across capture -> Web -> Drive",
+    "calls": [
+      "scan",
+      "capture-screenshots",
+      "deploy-web",
+      "upload-drive"
+    ],
+    "saveVersions": [
+      2,
+      2,
+      4,
+      4
+    ]
+  },
+  {
+    "id": "R2-P02",
+    "scenario": "Robotics YouTube -> Drive preserves frames, URLs and newest draftVersion",
+    "calls": [
+      "scan",
+      "import-youtube",
+      "upload-drive"
+    ]
+  },
+  {
+    "id": "R2-P03-saveFail",
+    "scenario": "early failure retains product retry; eval succeeds; retry only product",
+    "firstCalls": [
+      "/api/spck/save-draft",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval/upload-lms"
+    ],
+    "retryCalls": [
+      "/api/spck/save-draft",
+      "/api/spck/save-draft",
+      "/api/spck/approve",
+      "/api/spck/upload-lms"
+    ]
+  },
+  {
+    "id": "R2-P03-approveFail",
+    "scenario": "early failure retains product retry; eval succeeds; retry only product",
+    "firstCalls": [
+      "/api/spck/save-draft",
+      "/api/spck/save-draft",
+      "/api/spck/approve",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval/upload-lms"
+    ],
+    "retryCalls": [
+      "/api/spck/save-draft",
+      "/api/spck/save-draft",
+      "/api/spck/approve",
+      "/api/spck/upload-lms"
+    ]
+  },
+  {
+    "id": "R2-P03-approveSkip",
+    "scenario": "early failure retains product retry; eval succeeds; retry only product",
+    "firstCalls": [
+      "/api/spck/save-draft",
+      "/api/spck/save-draft",
+      "/api/spck/approve",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval/upload-lms"
+    ],
+    "retryCalls": [
+      "/api/spck/save-draft",
+      "/api/spck/save-draft",
+      "/api/spck/approve",
+      "/api/spck/upload-lms"
+    ]
+  },
+  {
+    "id": "R2-P03-approvePartial",
+    "scenario": "early failure retains product retry; eval succeeds; retry only product",
+    "firstCalls": [
+      "/api/spck/save-draft",
+      "/api/spck/save-draft",
+      "/api/spck/approve",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval/upload-lms"
+    ],
+    "retryCalls": [
+      "/api/spck/save-draft",
+      "/api/spck/save-draft",
+      "/api/spck/approve",
+      "/api/spck/upload-lms"
+    ]
+  },
+  {
+    "id": "R2-P03-uploadFail",
+    "scenario": "early failure retains product retry; eval succeeds; retry only product",
+    "firstCalls": [
+      "/api/spck/save-draft",
+      "/api/spck/save-draft",
+      "/api/spck/approve",
+      "/api/spck/upload-lms",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval/upload-lms"
+    ],
+    "retryCalls": [
+      "/api/spck/save-draft",
+      "/api/spck/save-draft",
+      "/api/spck/approve",
+      "/api/spck/upload-lms"
+    ]
+  },
+  {
+    "id": "R2-P03-exception",
+    "scenario": "early failure retains product retry; eval succeeds; retry only product",
+    "firstCalls": [
+      "/api/spck/save-draft",
+      "/api/spck/save-draft",
+      "/api/spck/approve",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval",
+      "/api/spck/session14-eval/upload-lms"
+    ],
+    "retryCalls": [
+      "/api/spck/save-draft",
+      "/api/spck/save-draft",
+      "/api/spck/approve",
+      "/api/spck/upload-lms"
+    ]
+  },
+  {
+    "id": "R2-P04-partialDemo",
+    "scenario": "Demo auto-import predicate",
+    "requests": [
+      {
+        "url": "/api/spck/session14-eval/import-demo-scores",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "sourcePathOrUrl": "",
+          "onlyMissingStudents": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "R2-P04-zeroDemo",
+    "scenario": "Demo auto-import predicate",
+    "requests": [
+      {
+        "url": "/api/spck/session14-eval/import-demo-scores",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "sourcePathOrUrl": "",
+          "onlyMissingStudents": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "R2-P04-allDemo",
+    "scenario": "Demo auto-import predicate",
+    "requests": []
+  },
+  {
+    "id": "R2-P05-allSubmitted",
+    "scenario": "Session13 selection on load, scan, session switch",
+    "selected": 0,
+    "total": 2
+  },
+  {
+    "id": "R2-P05-normal",
+    "scenario": "Session13 selection on load, scan, session switch",
+    "selected": 1,
+    "total": 2
+  },
+  {
+    "id": "R2-P05-noneSubmitted",
+    "scenario": "Session13 selection on load, scan, session switch",
+    "selected": 2,
+    "total": 2
+  },
+  {
+    "id": "R2-P06-spck",
+    "scenario": "1 verified + 1 failed; repeat failed retry; retry success yields 2 without duplicates",
+    "calls": [
+      {
+        "url": "/api/spck/save-draft"
+      },
+      {
+        "url": "/api/spck/approve",
+        "ids": [
+          "STU_02"
+        ]
+      },
+      {
+        "url": "/api/spck/upload-lms",
+        "ids": [
+          "STU_02"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "R2-P06-eval",
+    "scenario": "1 verified + 1 failed; repeat failed retry; retry success yields 2 without duplicates",
+    "calls": [
+      {
+        "url": "/api/spck/session14-eval",
+        "ids": [
+          "STU_02"
+        ]
+      },
+      {
+        "url": "/api/spck/session14-eval/upload-lms",
+        "ids": [
+          "STU_02"
+        ]
+      }
+    ]
+  }
+]

@@ -26,6 +26,9 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
     browsingFolder,
     handleScanFolder,
     scanning,
+    autoRunToolsAfterScan,
+    handleToggleAutoRunToolsAfterScan,
+    autoPrepStepProgress,
     isRoboticsClass,
     showYoutubeImport,
     setShowYoutubeImport,
@@ -48,11 +51,6 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
               Chọn Lớp &rarr; Chọn Buổi Nộp (12 / 13 / 14) &rarr; Chọn Thư Mục &amp; Khớp Học Viên
             </h2>
           </div>
-          {false && (
-            <p className="mindx-hero-sub text-xs">
-              Quét thư mục sản phẩm cuối khóa, chuẩn bị ảnh bìa &amp; đường dẫn sản phẩm, nộp SPCK Buổi 12–14 và đẩy Thư tổng kết Buổi 14.
-            </p>
-          )}
         </div>
       </div>
 
@@ -151,6 +149,31 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
                 <span>Quét &amp; Khớp HV</span>
               </button>
             </div>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+              <label className="inline-flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  data-testid="s5b-auto-run-tools-checkbox"
+                  checked={autoRunToolsAfterScan}
+                  disabled={isAnyOperationBusy}
+                  onChange={(e) =>
+                    handleToggleAutoRunToolsAfterScan(e.target.checked)
+                  }
+                  className="rounded border-slate-600 cursor-pointer"
+                />
+                <span>
+                  ⚡ Tự chạy công cụ chuẩn bị sau khi Quét (Chụp ảnh / Up Web / Up Drive theo loại lớp)
+                </span>
+              </label>
+              {autoPrepStepProgress && (
+                <span
+                  data-testid="s5b-auto-prep-progress"
+                  className="px-2.5 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/60 text-amber-200 text-[11px] font-semibold animate-pulse"
+                >
+                  {autoPrepStepProgress}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -202,7 +225,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
                   </p>
                   <button
                     type="button"
-                    onClick={handleImportYoutubeProducts}
+                    onClick={() => handleImportYoutubeProducts()}
                     disabled={isAnyOperationBusy || !selectedClassId || !youtubeImportInput.trim()}
                     className="shrink-0 flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold text-xs transition-colors cursor-pointer"
                   >

@@ -1,0 +1,159 @@
+--- round2/src/components/final-project/useSpckWorkflow.ts
++++ round3/src/components/final-project/useSpckWorkflow.ts
+@@ -3387,11 +3387,29 @@
+       return;
+     }
+ 
+-    setSession14ComboStatus((prev) => ({
+-      ...prev,
+-      running: true,
+-      currentPhase: partToRun === "eval_only" ? "eval" : "spck",
+-    }));
++    if (partToRun === "both") {
++      setLastSubmissionSummary(null);
++      setBannerMessage(null);
++    }
++
++    setSession14ComboStatus((prev) =>
++      partToRun === "both"
++        ? {
++            running: true,
++            currentPhase: "spck",
++            spckSummary: null,
++            evalVerifiedCount: 0,
++            evalVerifiedStudentIds: [],
++            evalFailedCount: 0,
++            evalRetryStudentIds: [],
++            evalErrorMessage: null,
++          }
++        : {
++            ...prev,
++            running: true,
++            currentPhase: partToRun === "eval_only" ? "eval" : "spck",
++          }
++    );
+ 
+     let nextSpckSummary =
+       partToRun === "both" ? null : session14ComboStatus.spckSummary;
+--- round2/src/components/final-project/SubmitBar.tsx
++++ round3/src/components/final-project/SubmitBar.tsx
+@@ -189,6 +189,12 @@
+                 <div className="text-slate-300 mt-0.5">
+                   {session14ComboStatus.currentPhase === "eval"
+                     ? "⏳ Đang duyệt & đẩy Đánh giá tổng kết..."
++                    : session14ComboStatus.currentPhase === "spck" &&
++                      session14ComboStatus.evalVerifiedCount === 0 &&
++                      session14ComboStatus.evalFailedCount === 0 &&
++                      session14ComboStatus.evalRetryStudentIds.length === 0 &&
++                      !session14ComboStatus.evalErrorMessage
++                    ? "Chưa chạy trong đợt này"
+                     : `Đã lưu & xác minh ${session14ComboStatus.evalVerifiedCount} học viên (${session14ComboStatus.evalRetryStudentIds.length} cần thử lại)`}
+                   {session14ComboStatus.evalErrorMessage && (
+                     <span className="block text-rose-300 mt-0.5">
+--- round2/scripts/test-streamline-v340-s5.ts
++++ round3/scripts/test-streamline-v340-s5.ts
+@@ -423,6 +423,12 @@
+         }), { status: 200 });
+       }
+       if (url.includes("/api/spck/save-draft")) {
++        if (window.__delaySaveDraftOnce) {
++          window.__delaySaveDraftOnce = false;
++          await new Promise((resolve) => {
++            window.__releaseSaveDraft = resolve;
++          });
++        }
+         if (window.__simulateSaveDraftConflict) {
+           return new Response(JSON.stringify({
+             success: false,
+@@ -1062,27 +1068,82 @@
+       { timeout: 5000 }
+     );
+ 
+-    // S5b.4: Kiểm tra S5B-02 — Khi Phần 1 (SPCK) bị lỗi sớm ở save-draft (HTTP 409), bảng kết quả phải báo lỗi rõ ràng và hiện nút "🔄 Thử lại riêng phần Sản phẩm"
++    // S5b.4 & S5B-02-R2:
++    // Bước A: Chạy đợt nộp 1 (Phần 1 thành công 2/2, Phần 2 có 1 học viên lỗi "Không tìm thấy nút Lưu cho Ngọc")
+     await page.evaluate(() => {
+       (window as any).__apiCalls = [];
+-      (window as any).__simulateSaveDraftConflict = true;
+-      (window as any).__simulateS14EvalStudentFail = false;
++      (window as any).__simulateSaveDraftConflict = false;
++      (window as any).__simulateS14EvalStudentFail = true;
+     });
+     await page
+       .locator('button:has-text("🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá)")')
+       .click();
++    await page.waitForSelector('button:has-text("🔄 Thử lại riêng phần Đánh giá")', {
++      timeout: 5000,
++    });
++    const batchAText = await page.locator("#root").innerText();
++    assert.ok(
++      batchAText.includes("Đã lưu & xác minh 1 học viên (1 cần thử lại)") &&
++        batchAText.includes("Không tìm thấy nút Lưu cho Ngọc"),
++      "Đợt A phải hiển thị 1 học viên xác minh, 1 cần thử lại và thông báo lỗi của Đợt A"
++    );
++
++    // Bước B (S5B-02-R2 + S5B-02): Bắt đầu Đợt B mới bằng "🚀 Nộp Buổi 14 đầy đủ", giữ save-draft ở trạng thái chờ để kiểm tra giao diện TRƯỚC KHI hoàn tất
++    await page.evaluate(() => {
++      (window as any).__apiCalls = [];
++      (window as any).__delaySaveDraftOnce = true;
++      (window as any).__releaseSaveDraft = null;
++      (window as any).__simulateSaveDraftConflict = true;
++      (window as any).__simulateS14EvalStudentFail = false;
++    });
++    await page
++      .locator('button:has-text("🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá)")')
++      .click();
++    await page.waitForFunction(
++      () => typeof (window as any).__releaseSaveDraft === "function",
++      undefined,
++      { timeout: 5000 }
++    );
++
++    const duringNewBatchText = await page.locator("#root").innerText();
++    assert.strictEqual(
++      duringNewBatchText.includes("Đã lưu & xác minh 1 học viên (1 cần thử lại)"),
++      false,
++      "Khi bắt đầu đợt 'both' mới (đang chờ save-draft), phải xóa ngay số xác minh/thử lại của đợt cũ (S5B-02-R2)"
++    );
++    assert.strictEqual(
++      duringNewBatchText.includes("Không tìm thấy nút Lưu cho Ngọc"),
++      false,
++      "Khi bắt đầu đợt 'both' mới (đang chờ save-draft), phải xóa ngay thông báo lỗi Đánh giá của đợt cũ (S5B-02-R2)"
++    );
++    assert.strictEqual(
++      /Đã nộp\s+2\/2\s+—/.test(duringNewBatchText),
++      false,
++      "Khi bắt đầu đợt 'both' mới (đang chờ save-draft), phải xóa ngay bảng tổng kết Sản phẩm của đợt cũ (S5B-02-R2)"
++    );
++    assert.strictEqual(
++      await page.locator('button:has-text("🔄 Thử lại riêng phần Đánh giá")').count(),
++      0,
++      "Khi bắt đầu đợt 'both' mới (đang chờ save-draft), không được còn hiển thị nút thử lại của đợt cũ (S5B-02-R2)"
++    );
++
++    // Giải phóng save-draft để kiểm tra lỗi sớm HTTP 409 ở Phần 1 vẫn hiện retry Sản phẩm và Phần 2 vẫn chạy độc lập
++    await page.evaluate(() => {
++      (window as any).__releaseSaveDraft();
++    });
+     await page.waitForSelector('button:has-text("🔄 Thử lại riêng phần Sản phẩm")', {
+       timeout: 5000,
+     });
+     const earlyFailText = await page.locator("#root").innerText();
+     assert.ok(
+       earlyFailText.includes("Đã nộp 0/2 bài") &&
+-        earlyFailText.includes("2 cần thử lại") &&
+-        earlyFailText.includes("🔄 Thử lại riêng phần Sản phẩm"),
+-      "Khi Phần 1 bị lỗi sớm ở save-draft (HTTP 409), phải báo 'Đã nộp 0/2 bài • 2 cần thử lại' và hiện nút '🔄 Thử lại riêng phần Sản phẩm' (S5B-02)"
+-    );
+-
+-    // S5b.4: Kiểm tra nút "🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá)" khi Phần 1 (SPCK) thành công và Phần 2 (Đánh giá) có 1 học viên lỗi -> phải giữ nguyên VERIFIED của Phần 1 và hiện nút "🔄 Thử lại riêng phần Đánh giá"
++        earlyFailText.includes("2 bài cần thử lại") &&
++        earlyFailText.includes("🔄 Thử lại riêng phần Sản phẩm") &&
++        earlyFailText.includes("Đã lưu & xác minh 2 học viên (0 cần thử lại)"),
++      "Khi Phần 1 bị lỗi sớm ở save-draft (HTTP 409), phải báo 'Đã nộp 0/2 bài (2 bài cần thử lại)', hiện nút '🔄 Thử lại riêng phần Sản phẩm' và Phần 2 vẫn chạy độc lập (S5B-02)"
++    );
++
++    // Bước C: Kiểm tra nút "🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá)" khi Phần 1 (SPCK) thành công và Phần 2 (Đánh giá) có 1 học viên lỗi -> giữ nguyên VERIFIED của Phần 1 và hiện nút "🔄 Thử lại riêng phần Đánh giá"
+     await page.evaluate(() => {
+       (window as any).__apiCalls = [];
+       (window as any).__simulateSaveDraftConflict = false;

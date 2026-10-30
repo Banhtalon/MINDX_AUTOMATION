@@ -120,6 +120,10 @@ export async function POST(req: Request) {
           typeof s?.expectedVersion === "number" && Number.isFinite(s.expectedVersion)
             ? s.expectedVersion
             : undefined,
+        priorSession12Summary:
+          typeof s?.priorSession12Summary === "string"
+            ? s.priorSession12Summary
+            : undefined,
       });
     }
 

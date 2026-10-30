@@ -1,0 +1,382 @@
+[
+  {
+    "id": "P01",
+    "defect": true,
+    "description": "Sau chụp ảnh version=2, cả Web và Drive dùng lại expectedVersion=1 và bị chặn trước API công cụ",
+    "conflicts": [
+      {
+        "studentId": "STU_01",
+        "expectedVersion": 1,
+        "currentVersion": 2
+      },
+      {
+        "studentId": "STU_01",
+        "expectedVersion": 1,
+        "currentVersion": 2
+      }
+    ],
+    "calls": [
+      "/api/spck/list",
+      "/api/spck/student-portal?classId=VT-C4K-JSB15",
+      "/api/spck/student-portal?classId=VT-C4K-JSB15",
+      "/api/spck/scan",
+      "/api/spck/capture-screenshots",
+      "/api/spck/save-draft",
+      "/api/spck/save-draft"
+    ],
+    "saved": [
+      {
+        "classId": "VT-C4K-JSB15",
+        "studentId": "STU_01",
+        "sessionNumber": 13,
+        "expectedVersion": 1,
+        "localFolderPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01",
+        "matchScore": 1,
+        "isConfirmedByTeacher": true,
+        "projectTitle": "Dự án Nguyễn Minh Khôi — Buổi 13 (GĐ1)",
+        "thumbnailPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\thumb.png",
+        "screenshots": [
+          "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\screen1.png"
+        ],
+        "attachments": [
+          "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\index.html"
+        ],
+        "youtubeUrls": [],
+        "relatedLinks": [
+          {
+            "name": "Sản phẩm trên Google Drive",
+            "url": "https://drive.google.com/drive/folders/STU_01"
+          },
+          {
+            "name": "Web chạy thử (Live)",
+            "url": "https://banhtalon.github.io/WEB_PRODUCT_SHOW/STU_01"
+          }
+        ],
+        "teacherComment": "Trong quá trình thực hiện dự án, con đã chủ động hoàn thiện đầy đủ tính năng và giao diện rõ ràng.",
+        "teacherNote": "Làm bài tốt",
+        "quickTags": [
+          "Hoàn thành tốt sản phẩm cuối khóa"
+        ],
+        "draftSeq": 1,
+        "clientSessionId": "UI_1793355172303_kkmzx2",
+        "reassignFolder": false
+      },
+      {
+        "classId": "VT-C4K-JSB15",
+        "studentId": "STU_01",
+        "sessionNumber": 13,
+        "expectedVersion": 1,
+        "localFolderPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01",
+        "matchScore": 1,
+        "isConfirmedByTeacher": true,
+        "projectTitle": "Dự án Nguyễn Minh Khôi — Buổi 13 (GĐ1)",
+        "thumbnailPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\thumb.png",
+        "screenshots": [
+          "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\screen1.png"
+        ],
+        "attachments": [
+          "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\index.html"
+        ],
+        "youtubeUrls": [],
+        "relatedLinks": [
+          {
+            "name": "Sản phẩm trên Google Drive",
+            "url": "https://drive.google.com/drive/folders/STU_01"
+          },
+          {
+            "name": "Web chạy thử (Live)",
+            "url": "https://banhtalon.github.io/WEB_PRODUCT_SHOW/STU_01"
+          }
+        ],
+        "teacherComment": "Trong quá trình thực hiện dự án, con đã chủ động hoàn thiện đầy đủ tính năng và giao diện rõ ràng.",
+        "teacherNote": "Làm bài tốt",
+        "quickTags": [
+          "Hoàn thành tốt sản phẩm cuối khóa"
+        ],
+        "draftSeq": 2,
+        "clientSessionId": "UI_1793355172303_kkmzx2",
+        "reassignFolder": false
+      }
+    ]
+  },
+  {
+    "id": "P02",
+    "defect": true,
+    "description": "Một học viên có Demo>0, học viên còn lại=0: không tự đọc Demo",
+    "calls": [
+      "/api/spck/list",
+      "/api/spck/student-portal?classId=VT-C4K-JSB15",
+      "/api/spck/student-portal?classId=VT-C4K-JSB15",
+      "/api/spck/list?classId=VT-C4K-JSB15&sessionNumber=14",
+      "/api/spck/session14-eval?classId=VT-C4K-JSB15",
+      "/api/spck/student-portal?classId=VT-C4K-JSB15",
+      "/api/spck/student-portal?classId=VT-C4K-JSB15"
+    ]
+  },
+  {
+    "id": "P03",
+    "defect": true,
+    "description": "Cả lớp đã nộp Buổi 13 nhưng vẫn tự chọn 2/2",
+    "selected": "Đang chọn: 2/2 học viên",
+    "submittedLabels": 3
+  },
+  {
+    "id": "P04",
+    "defect": true,
+    "description": "Lưu nháp phần Sản phẩm lỗi 409: phần Đánh giá vẫn chạy, banner hoàn tất, không có retry Sản phẩm",
+    "calls": [
+      {
+        "url": "/api/spck/save-draft",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "studentId": "STU_01",
+          "sessionNumber": 14,
+          "expectedVersion": 1,
+          "localFolderPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01",
+          "matchScore": 1,
+          "isConfirmedByTeacher": true,
+          "projectTitle": "Dự án Nguyễn Minh Khôi",
+          "thumbnailPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\thumb.png",
+          "screenshots": [
+            "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\screen1.png"
+          ],
+          "attachments": [
+            "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\index.html"
+          ],
+          "youtubeUrls": [],
+          "relatedLinks": [
+            {
+              "name": "Sản phẩm trên Google Drive",
+              "url": "https://drive.google.com/drive/folders/STU_01"
+            },
+            {
+              "name": "Web chạy thử (Live)",
+              "url": "https://banhtalon.github.io/WEB_PRODUCT_SHOW/STU_01"
+            }
+          ],
+          "teacherComment": "Trong quá trình thực hiện dự án, con đã chủ động hoàn thiện đầy đủ tính năng và giao diện rõ ràng.",
+          "teacherNote": "Làm bài tốt",
+          "quickTags": [
+            "Hoàn thành tốt sản phẩm cuối khóa"
+          ],
+          "draftSeq": 1,
+          "clientSessionId": "UI_1793355176389_5nqd9e",
+          "reassignFolder": false
+        }
+      },
+      {
+        "url": "/api/spck/session14-eval",
+        "method": "POST",
+        "body": {
+          "action": "save_draft",
+          "classId": "VT-C4K-JSB15",
+          "studentId": "STU_01",
+          "expectedVersion": 1,
+          "learnedFromMindx": "Đã học tốt HTML/CSS/JS.",
+          "suggestionsFromMindx": "Rèn luyện thêm kỹ năng thuyết trình.",
+          "futureDirection": "Tiếp tục học lên khóa JSA.",
+          "awardRanking": "Giải Nhất",
+          "teacherNote": "",
+          "demoScores": {
+            "algorithm": 1.5,
+            "creativity": 1,
+            "communication": 0.5,
+            "problemSolving": 1,
+            "computerSkills": 1
+          },
+          "competencyScores": {
+            "knowledgeInClass": 4,
+            "knowledgeSelfStudy": 4,
+            "skillCommunication": 4,
+            "skillComputerUse": 4,
+            "skillProblemSolving": 4,
+            "skillCreativity": 4,
+            "skillComputational": 4,
+            "attitudeHomework": 4,
+            "attitudeInClass": 4
+          },
+          "quickTags": []
+        }
+      },
+      {
+        "url": "/api/spck/session14-eval",
+        "method": "POST",
+        "body": {
+          "action": "save_draft",
+          "classId": "VT-C4K-JSB15",
+          "studentId": "STU_02",
+          "expectedVersion": 1,
+          "learnedFromMindx": "Hoàn thành tốt sản phẩm.",
+          "suggestionsFromMindx": "Tự tin hơn khi trả lời câu hỏi.",
+          "futureDirection": "Tiếp tục học lên khóa JSA.",
+          "awardRanking": "Giải Nhì",
+          "teacherNote": "",
+          "demoScores": {
+            "algorithm": 1.25,
+            "creativity": 1,
+            "communication": 0.5,
+            "problemSolving": 1,
+            "computerSkills": 1
+          },
+          "competencyScores": {
+            "knowledgeInClass": 4,
+            "knowledgeSelfStudy": 4,
+            "skillCommunication": 4,
+            "skillComputerUse": 4,
+            "skillProblemSolving": 4,
+            "skillCreativity": 4,
+            "skillComputational": 4,
+            "attitudeHomework": 4,
+            "attitudeInClass": 4
+          },
+          "quickTags": []
+        }
+      },
+      {
+        "url": "/api/spck/session14-eval",
+        "method": "POST",
+        "body": {
+          "action": "approve",
+          "classId": "VT-C4K-JSB15",
+          "studentIds": [
+            "STU_01",
+            "STU_02"
+          ],
+          "expectedVersions": {
+            "STU_01": 2,
+            "STU_02": 2
+          }
+        }
+      },
+      {
+        "url": "/api/spck/session14-eval/upload-lms",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "studentIds": [
+            "STU_01",
+            "STU_02"
+          ]
+        }
+      }
+    ],
+    "status": "Hoàn tất nộp Buổi 14 đầy đủ: Phần Sản phẩm SPCK (Cột 3): 0/2 bài thành công • Phần Đánh giá tổng kết & Điểm Demo (Cột 2): 2/2 bài thành công.\nĐóng\nBước 2 / 4\nChuẩn Bị & Xem Lại Bài (2 học viên)\n✨ AI soạn tất cả (SPCK + Thư 3 phần)\nChụp Giao Diện Web\nChạy Thử Web (GitHub Pages)\nCông cụ Drive & Cổng thu bài (Tùy chọn) ▾\nChuẩn bị Demo (Bảng chấm điểm) ▾\nĐang chọn: 2/2 học viên\nChọn bài đủ điều kiện ("
+  },
+  {
+    "id": "P05",
+    "defect": true,
+    "description": "Đánh giá: lần đầu 1 thành công + retry 1 thành công, tổng hiển thị chỉ 1 thay vì 2",
+    "status": "Đã lưu & xác minh 1 học viên (0 cần thử lại)",
+    "retryCalls": [
+      {
+        "url": "/api/spck/session14-eval",
+        "method": "POST",
+        "body": {
+          "action": "approve",
+          "classId": "VT-C4K-JSB15",
+          "studentIds": [
+            "STU_02"
+          ],
+          "expectedVersions": {}
+        }
+      },
+      {
+        "url": "/api/spck/session14-eval/upload-lms",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "studentIds": [
+            "STU_02"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "P06",
+    "defect": false,
+    "description": "SB .sb3: đúng thứ tự Quét -> Chụp -> Drive",
+    "calls": [
+      {
+        "url": "/api/spck/scan",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-SB28",
+          "folderPath": "D:\\SPCK\\VT-C4K-JSB15",
+          "sessionNumber": 13
+        }
+      },
+      {
+        "url": "/api/spck/capture-screenshots",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-SB28",
+          "sessionNumber": 13,
+          "studentIds": [
+            "STU_01"
+          ],
+          "useAiVision": true,
+          "syncActiveSession": true
+        }
+      },
+      {
+        "url": "/api/spck/upload-drive",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-SB28",
+          "sessionNumber": 13,
+          "driveFolderUrl": "https://drive.google.com/drive/folders/1Xl8OZ7i1bOKf7000xbUBYLPcxVb2qvRD",
+          "studentIds": [
+            "STU_01"
+          ],
+          "syncActiveSession": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "P07",
+    "defect": true,
+    "description": "App/Python PTA15 .py: chạy thêm Chụp trước Drive, khác ma trận yêu cầu hiện tại (nhưng khớp ý App/Game trong kế hoạch duyệt)",
+    "calls": [
+      {
+        "url": "/api/spck/scan",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-PTA15",
+          "folderPath": "D:\\SPCK\\VT-C4K-PTA15",
+          "sessionNumber": 13
+        }
+      },
+      {
+        "url": "/api/spck/capture-screenshots",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-PTA15",
+          "sessionNumber": 13,
+          "studentIds": [
+            "STU_01",
+            "STU_02"
+          ],
+          "useAiVision": true,
+          "syncActiveSession": true
+        }
+      },
+      {
+        "url": "/api/spck/upload-drive",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-PTA15",
+          "sessionNumber": 13,
+          "driveFolderUrl": "https://drive.google.com/drive/folders/1Xl8OZ7i1bOKf7000xbUBYLPcxVb2qvRD",
+          "studentIds": [
+            "STU_01",
+            "STU_02"
+          ],
+          "syncActiveSession": true
+        }
+      }
+    ]
+  }
+]

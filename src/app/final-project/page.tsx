@@ -273,7 +273,13 @@ interface Session14EvalItemUI {
   quickTags: string[];
   teacherNote: string;
   draftVersion: number;
-  status: "DRAFT" | "WAITING_APPROVAL" | "APPROVED" | "VERIFIED" | "FAILED";
+  status:
+    | "DRAFT"
+    | "WAITING_APPROVAL"
+    | "APPROVED"
+    | "VERIFIED"
+    | "FAILED"
+    | "INSUFFICIENT_INFO";
   contentHash: string;
   verifiedAt?: string | null;
   errorMessage?: string | null;
@@ -1078,6 +1084,13 @@ export default function FinalProjectPage() {
       );
       setRows(mapped);
       const assignedIds = mapped.map((r) => r.assignedStudentId).filter(Boolean);
+      const unsubmittedForTargetIds = mapped
+        .filter((r) => {
+          if (!r.assignedStudentId) return false;
+          const slot = getSessionSlotDisplay(r, targetSess);
+          return !slot.label.startsWith("Đã nộp ✓");
+        })
+        .map((r) => r.assignedStudentId);
       const readyIds = mapped
         .filter(
           (r) =>
@@ -1091,7 +1104,9 @@ export default function FinalProjectPage() {
         .map((r) => r.assignedStudentId);
       setSelectedStudentIds((prev) =>
         prev.includes("__AUTO_SELECT__")
-          ? readyIds.length > 0
+          ? targetSess === 13
+            ? unsubmittedForTargetIds
+            : readyIds.length > 0
             ? readyIds
             : assignedIds
           : prev.filter((id) => assignedIds.includes(id))
@@ -1442,6 +1457,13 @@ export default function FinalProjectPage() {
       );
 
       setRows(scannedItems);
+      const unsubmittedAfterScan = scannedItems
+        .filter((r) => {
+          if (!r.assignedStudentId) return false;
+          const slot = getSessionSlotDisplay(r, selectedSessionNumber);
+          return !slot.label.startsWith("Đã nộp ✓");
+        })
+        .map((r) => r.assignedStudentId);
       const readyAfterScan = scannedItems
         .filter(
           (r) =>
@@ -1456,17 +1478,28 @@ export default function FinalProjectPage() {
         .map((r) => r.assignedStudentId)
         .filter(Boolean);
       setSelectedStudentIds(
-        readyAfterScan.length > 0 ? readyAfterScan : assignedAfterScan
+        selectedSessionNumber === 13
+          ? unsubmittedAfterScan
+          : readyAfterScan.length > 0
+          ? readyAfterScan
+          : assignedAfterScan
       );
       setBannerMessage({
         type: "success",
         text: `Đã quét thành công ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}'.`,
       });
+      return {
+        success: true,
+        scannedItems,
+        classId: requestClassId,
+        sessionNumber: selectedSessionNumber,
+      };
     } catch (err) {
       setBannerMessage({
         type: "error",
         text: err instanceof Error ? err.message : String(err),
       });
+      return { success: false, scannedItems: [] as ScannedFolderUIItem[] };
     } finally {
       setScanning(false);
     }
@@ -1681,6 +1714,7 @@ export default function FinalProjectPage() {
     }
 
     setSelectedSessionNumber(nextSessionNum);
+    setSelectedStudentIds(["__AUTO_SELECT__"]);
     setBannerMessage(null);
     if (selectedClassId) {
       await loadClassData(selectedClassId, nextSessionNum);
@@ -1938,11 +1972,26 @@ export default function FinalProjectPage() {
     }
 
     if (duplicateStudentIds.size > 0) {
+      const dupErr = `Phát hiện học viên bị ghép trùng nhiều thư mục (${Array.from(duplicateStudentIds).join(", ")}). Vui lòng xử lý trên Bảng Ghép nối trước khi nộp.`;
       setBannerMessage({
         type: "error",
-        text: `Phát hiện học viên bị ghép trùng nhiều thư mục (${Array.from(duplicateStudentIds).join(", ")}). Vui lòng xử lý trên Bảng Ghép nối trước khi nộp.`,
+        text: dupErr,
       });
-      return;
+      const dupSummary: SpckBatchSubmissionSummaryUI = {
+        sessionNumber: targetSessionNum,
+        totalSelected: normalizedTargetIds.length,
+        verifiedItems: [],
+        failedItems: normalizedTargetIds.map((id) => ({
+          studentId: id,
+          studentName: id,
+          reason: dupErr,
+        })),
+        skippedItems: [],
+        retryStudentIds: normalizedTargetIds,
+        completedAt: new Date().toLocaleTimeString("vi-VN"),
+      };
+      setLastSubmissionSummary(dupSummary);
+      return dupSummary;
     }
 
     const requestClassId = selectedClassId;
@@ -1968,8 +2017,30 @@ export default function FinalProjectPage() {
         const row = rows.find((r) => r.assignedStudentId === sid);
         if (row) {
           const savedRes: any = await persistRowDraft(row, undefined, targetSessionNum);
-          if (!savedRes || (activeUiClassId && activeUiClassId !== requestClassId)) {
+          if (activeUiClassId && activeUiClassId !== requestClassId) {
             return;
+          }
+          if (!savedRes) {
+            const failReason =
+              "Không thể lưu bản nháp trước khi duyệt (xung đột phiên bản hoặc dữ liệu không hợp lệ).";
+            const failSummary: SpckBatchSubmissionSummaryUI = {
+              sessionNumber: targetSessionNum,
+              totalSelected: normalizedTargetIds.length,
+              verifiedItems: [],
+              failedItems: normalizedTargetIds.map((id) => ({
+                studentId: id,
+                studentName: resolveStudentLabel(id),
+                reason:
+                  id === sid
+                    ? failReason
+                    : "Đã dừng nộp hàng loạt do lỗi lưu nháp trước đó.",
+              })),
+              skippedItems: [],
+              retryStudentIds: normalizedTargetIds,
+              completedAt: new Date().toLocaleTimeString("vi-VN"),
+            };
+            setLastSubmissionSummary(failSummary);
+            return failSummary;
           }
           if (typeof savedRes === "object" && savedRes.row) {
             savedRowsByStudent.set(sid, savedRes.row);
@@ -2030,16 +2101,26 @@ export default function FinalProjectPage() {
               reason: String(item.reason || approveData.error || "Chưa đủ điều kiện nộp."),
             }))
           : [];
+        const approveErrReason =
+          approveData.error || "Không thể chuẩn bị gói SPCK trước khi nộp.";
+        const approveFailSummary: SpckBatchSubmissionSummaryUI = {
+          sessionNumber: targetSessionNum,
+          totalSelected: normalizedTargetIds.length,
+          verifiedItems: [],
+          failedItems:
+            approveSkippedList.length > 0
+              ? []
+              : normalizedTargetIds.map((id) => ({
+                  studentId: id,
+                  studentName: resolveStudentLabel(id),
+                  reason: approveErrReason,
+                })),
+          skippedItems: approveSkippedList,
+          retryStudentIds: normalizedTargetIds,
+          completedAt: new Date().toLocaleTimeString("vi-VN"),
+        };
+        setLastSubmissionSummary(approveFailSummary);
         if (approveSkippedList.length > 0) {
-          setLastSubmissionSummary({
-            sessionNumber: targetSessionNum,
-            totalSelected: normalizedTargetIds.length,
-            verifiedItems: [],
-            failedItems: [],
-            skippedItems: approveSkippedList,
-            retryStudentIds: normalizedTargetIds,
-            completedAt: new Date().toLocaleTimeString("vi-VN"),
-          });
           setBannerMessage({
             type: "error",
             text: `Đã nộp 0/${normalizedTargetIds.length} bài (Buổi ${targetSessionNum}) — ${approveSkippedList.length} bài bị bỏ qua: ${approveSkippedList
@@ -2049,10 +2130,10 @@ export default function FinalProjectPage() {
         } else {
           setBannerMessage({
             type: "error",
-            text: approveData.error || "Không thể chuẩn bị gói SPCK trước khi nộp.",
+            text: approveErrReason,
           });
         }
-        return;
+        return approveFailSummary;
       }
 
       const dbByStu = new Map<string, SpckRecordRow>(
@@ -2111,7 +2192,7 @@ export default function FinalProjectPage() {
             reason,
           })
         );
-        setLastSubmissionSummary({
+        const skippedSummary: SpckBatchSubmissionSummaryUI = {
           sessionNumber: targetSessionNum,
           totalSelected: normalizedTargetIds.length,
           verifiedItems: [],
@@ -2119,14 +2200,15 @@ export default function FinalProjectPage() {
           skippedItems: skippedOnly,
           retryStudentIds: normalizedTargetIds,
           completedAt: new Date().toLocaleTimeString("vi-VN"),
-        });
+        };
+        setLastSubmissionSummary(skippedSummary);
         setBannerMessage({
           type: "error",
           text: `Đã nộp 0/${normalizedTargetIds.length} bài (Buổi ${targetSessionNum}) — ${skippedOnly.length} bài bị bỏ qua: ${skippedOnly
             .map((s) => `${s.studentName} (${s.reason})`)
             .join("; ")}`,
         });
-        return;
+        return skippedSummary;
       }
 
       const uploadRes = await fetch("/api/spck/upload-lms", {
@@ -2143,11 +2225,33 @@ export default function FinalProjectPage() {
         return;
       }
       if (!uploadData.success) {
+        const uploadErrReason =
+          uploadData.error || "Lỗi khi Auto-Upload SPCK lên LMS.";
+        const uploadFailSummary: SpckBatchSubmissionSummaryUI = {
+          sessionNumber: targetSessionNum,
+          totalSelected: normalizedTargetIds.length,
+          verifiedItems: [],
+          failedItems: approvedIds.map((id) => ({
+            studentId: id,
+            studentName: resolveStudentLabel(id),
+            reason: uploadErrReason,
+          })),
+          skippedItems: Array.from(approveSkippedMap.entries()).map(
+            ([studentId, reason]) => ({
+              studentId,
+              studentName: resolveStudentLabel(studentId),
+              reason,
+            })
+          ),
+          retryStudentIds: normalizedTargetIds,
+          completedAt: new Date().toLocaleTimeString("vi-VN"),
+        };
+        setLastSubmissionSummary(uploadFailSummary);
         setBannerMessage({
           type: "error",
-          text: uploadData.error || "Lỗi khi Auto-Upload SPCK lên LMS.",
+          text: uploadErrReason,
         });
-        return;
+        return uploadFailSummary;
       }
 
       const postUploadMap = new Map<string, SpckRecordRow>(
@@ -2290,7 +2394,7 @@ export default function FinalProjectPage() {
         ])
       );
 
-      setLastSubmissionSummary({
+      const summaryObj: SpckBatchSubmissionSummaryUI = {
         sessionNumber: targetSessionNum,
         totalSelected,
         verifiedItems,
@@ -2298,7 +2402,8 @@ export default function FinalProjectPage() {
         skippedItems,
         retryStudentIds,
         completedAt: new Date().toLocaleTimeString("vi-VN"),
-      });
+      };
+      setLastSubmissionSummary(summaryObj);
 
       if (retryStudentIds.length > 0) {
         setSelectedStudentIds(retryStudentIds);
@@ -2332,13 +2437,30 @@ export default function FinalProjectPage() {
           }.`,
         });
       }
+      return summaryObj;
     } catch (err) {
+      const errReason = err instanceof Error ? err.message : String(err);
+      const catchSummary: SpckBatchSubmissionSummaryUI = {
+        sessionNumber: targetSessionNum,
+        totalSelected: normalizedTargetIds.length,
+        verifiedItems: [],
+        failedItems: normalizedTargetIds.map((id) => ({
+          studentId: id,
+          studentName: resolveStudentLabel(id),
+          reason: errReason,
+        })),
+        skippedItems: [],
+        retryStudentIds: normalizedTargetIds,
+        completedAt: new Date().toLocaleTimeString("vi-VN"),
+      };
       if (!activeUiClassId || activeUiClassId === requestClassId) {
+        setLastSubmissionSummary(catchSummary);
         setBannerMessage({
           type: "error",
-          text: err instanceof Error ? err.message : String(err),
+          text: errReason,
         });
       }
+      return catchSummary;
     } finally {
       setUploading(false);
       setActiveActionLabel(null);
@@ -2348,20 +2470,23 @@ export default function FinalProjectPage() {
   // 7. Upload student local folders (delegated to useSpckWorkflow)
 
   // 10b. Robotics: import class YouTube playlist / video links → match students → 2 presentation frames
-  const handleImportYoutubeProducts = async () => {
+  const handleImportYoutubeProducts = async (
+    sourceRows?: ScannedFolderUIItem[]
+  ): Promise<{ success: boolean; updatedRows?: ScannedFolderUIItem[] } | void> => {
+    const baseRows = sourceRows || rows;
     if (!selectedClassId) {
       setBannerMessage({
         type: "warning",
         text: "Vui lòng chọn Lớp học trước khi nhập link YouTube.",
       });
-      return;
+      return { success: false, updatedRows: baseRows };
     }
     if (!youtubeImportInput.trim()) {
       setBannerMessage({
         type: "warning",
         text: "Vui lòng dán link Playlist YouTube của lớp (hoặc danh sách 'Tên học viên - link video').",
       });
-      return;
+      return { success: false, updatedRows: baseRows };
     }
 
     const requestClassId = selectedClassId;
@@ -2381,7 +2506,7 @@ export default function FinalProjectPage() {
       });
       const data = await res.json();
       if (activeUiClassId && activeUiClassId !== requestClassId) {
-        return;
+        return { success: false, updatedRows: baseRows };
       }
       if (data.importResult) {
         setYoutubeImportReport(data.importResult);
@@ -2391,7 +2516,7 @@ export default function FinalProjectPage() {
           type: "error",
           text: data.error || "Không thể nhập link YouTube cho lớp này.",
         });
-        return;
+        return { success: false, updatedRows: baseRows };
       }
 
       // V272-F03: merge server results into the LATEST row state (functional update), so anything the
@@ -2409,7 +2534,7 @@ export default function FinalProjectPage() {
         const recSeq = typeof (rec as any).draftSeq === "number" ? (rec as any).draftSeq : 0;
         if (recSeq > clientDraftSequence) clientDraftSequence = recSeq;
       }
-      setRows((prev) => {
+      const mergeYoutubeRecordsIntoRows = (prev: ScannedFolderUIItem[]): ScannedFolderUIItem[] => {
         const prevByStudent = new Map(
           prev.filter((r) => r.assignedStudentId).map((r) => [r.assignedStudentId, r])
         );
@@ -2454,7 +2579,9 @@ export default function FinalProjectPage() {
           (r) => !r.assignedStudentId || !recordIds.has(r.assignedStudentId)
         );
         return [...merged, ...untouched];
-      });
+      };
+      const updatedRows = mergeYoutubeRecordsIntoRows(baseRows);
+      setRows((prev) => mergeYoutubeRecordsIntoRows(prev));
 
       const ir = data.importResult;
       const resultsList: any[] = ir?.results || [];
@@ -2503,6 +2630,7 @@ export default function FinalProjectPage() {
         type: allGood ? "success" : fullOk.length > 0 || appliedList.length > 0 ? "warning" : "error",
         text: parts.join(" "),
       });
+      return { success: true, updatedRows };
     } catch (err) {
       if (!activeUiClassId || activeUiClassId === requestClassId) {
         setBannerMessage({
@@ -2510,6 +2638,7 @@ export default function FinalProjectPage() {
           text: err instanceof Error ? err.message : String(err),
         });
       }
+      return { success: false, updatedRows: baseRows };
     } finally {
       setImportingYoutube(false);
     }
@@ -2531,16 +2660,6 @@ export default function FinalProjectPage() {
     [rows]
   );
 
-  const effectiveSelectedStudentIds = useMemo(() => {
-    const validSet = new Set(assignableStudentIds);
-    if (selectedStudentIds.includes("__AUTO_SELECT__")) {
-      return confirmedReadyStudentIds.length > 0
-        ? confirmedReadyStudentIds
-        : assignableStudentIds;
-    }
-    return selectedStudentIds.filter((id) => validSet.has(id));
-  }, [selectedStudentIds, assignableStudentIds, confirmedReadyStudentIds]);
-
   const unsubmittedForActiveSessionStudentIds = useMemo(
     () =>
       rows
@@ -2552,6 +2671,25 @@ export default function FinalProjectPage() {
         .map((r) => r.assignedStudentId),
     [rows, selectedSessionNumber]
   );
+
+  const effectiveSelectedStudentIds = useMemo(() => {
+    const validSet = new Set(assignableStudentIds);
+    if (selectedStudentIds.includes("__AUTO_SELECT__")) {
+      if (selectedSessionNumber === 13) {
+        return unsubmittedForActiveSessionStudentIds;
+      }
+      return confirmedReadyStudentIds.length > 0
+        ? confirmedReadyStudentIds
+        : assignableStudentIds;
+    }
+    return selectedStudentIds.filter((id) => validSet.has(id));
+  }, [
+    selectedStudentIds,
+    assignableStudentIds,
+    confirmedReadyStudentIds,
+    selectedSessionNumber,
+    unsubmittedForActiveSessionStudentIds,
+  ]);
 
   const isAnyOperationBusy =
     loadingInit ||

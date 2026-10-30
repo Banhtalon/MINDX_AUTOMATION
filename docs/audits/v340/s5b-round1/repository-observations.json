@@ -1,0 +1,13 @@
+{
+  "id": "DB01",
+  "initialVersion": 2,
+  "afterCaptureVersion": 3,
+  "attemptedVersion": 2,
+  "httpStatus": 409,
+  "response": {
+    "success": false,
+    "conflict": true,
+    "error": "[Stale Conflict] Bản nháp Buổi 13 của học viên 'AUDIT-S5B-01' đã được cập nhật ở tab/tác vụ khác (version hiện tại: 3). Vui lòng tải lại trước khi lưu.",
+    "currentDraftVersion": 3
+  }
+}

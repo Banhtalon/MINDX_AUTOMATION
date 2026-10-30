@@ -1,0 +1,17 @@
+{"gate": "tsc", "args": ["npx", "tsc", "--noEmit", "--incremental", "false"], "exit": 0, "seconds": 1.38, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-streamline-v340-s5", "args": ["npx", "tsx", "scripts/test-streamline-v340-s5.ts"], "exit": 0, "seconds": 8.76, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-streamline-v340-s5a", "args": ["npx", "tsx", "scripts/test-streamline-v340-s5a.ts"], "exit": 0, "seconds": 22.54, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-spck-v270", "args": ["npx", "tsx", "scripts/test-spck-v270.ts"], "exit": 0, "seconds": 7.24, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-spck-v272", "args": ["npx", "tsx", "scripts/test-spck-v272.ts"], "exit": 0, "seconds": 29.84, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-phase6", "args": ["npx", "tsx", "scripts/test-phase6.ts"], "exit": 0, "seconds": 9.55, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-phase5", "args": ["npx", "tsx", "scripts/test-phase5.ts"], "exit": 0, "seconds": 2.14, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-phase7", "args": ["npx", "tsx", "scripts/test-phase7.ts"], "exit": 0, "seconds": 1.32, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-phase4-codex-repros", "args": ["npx", "tsx", "scripts/test-phase4-codex-repros.ts"], "exit": 0, "seconds": 3.26, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-lms-reliability-v280", "args": ["npx", "tsx", "scripts/test-lms-reliability-v280.ts"], "exit": 0, "seconds": 82.48, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-session14-v290", "args": ["npx", "tsx", "scripts/test-session14-v290.ts"], "exit": 0, "seconds": 146.56, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-teaching-project-v320", "args": ["npx", "tsx", "scripts/test-teaching-project-v320.ts"], "exit": 1, "seconds": 13.94, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-report-card-v330", "args": ["npx", "tsx", "scripts/test-report-card-v330.ts"], "exit": 0, "seconds": 2.08, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-streamline-v340-s1", "args": ["npx", "tsx", "scripts/test-streamline-v340-s1.ts"], "exit": 0, "seconds": 2.01, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-streamline-v340-s2", "args": ["npx", "tsx", "scripts/test-streamline-v340-s2.ts"], "exit": 0, "seconds": 2.07, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-streamline-v340-s3", "args": ["npx", "tsx", "scripts/test-streamline-v340-s3.ts"], "exit": 0, "seconds": 2.05, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}
+{"gate": "test-streamline-v340-s4", "args": ["npx", "tsx", "scripts/test-streamline-v340-s4.ts"], "exit": 0, "seconds": 1.96, "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s5b-r2-d7g4vo_s"}

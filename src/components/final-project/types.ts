@@ -220,7 +220,13 @@ export interface Session14EvalItemUI {
   quickTags: string[];
   teacherNote: string;
   draftVersion: number;
-  status: "DRAFT" | "WAITING_APPROVAL" | "APPROVED" | "VERIFIED" | "FAILED";
+  status:
+    | "DRAFT"
+    | "WAITING_APPROVAL"
+    | "APPROVED"
+    | "VERIFIED"
+    | "FAILED"
+    | "INSUFFICIENT_INFO";
   contentHash: string;
   verifiedAt?: string | null;
   errorMessage?: string | null;
@@ -373,3 +379,27 @@ export const DEMO_SCORE_ITEMS_ROBOTICS_UI: Array<{
   { key: "computerSkills", label: "Kỹ năng sử dụng máy tính", max: 0.5 },
   { key: "algorithm", label: "Tư duy máy tính, thuật toán", max: 1.0 },
 ];
+
+export type SpckToolErrorKey =
+  | "ai"
+  | "drive"
+  | "web"
+  | "screenshot"
+  | "youtube"
+  | "s14_ai";
+
+export type SpckToolErrorMapUI = Record<
+  string,
+  Partial<Record<SpckToolErrorKey, string>>
+>;
+
+export interface Session14ComboStatusUI {
+  running: boolean;
+  currentPhase: "idle" | "spck" | "eval" | "done";
+  spckSummary: SpckBatchSubmissionSummaryUI | null;
+  evalVerifiedCount: number;
+  evalVerifiedStudentIds?: string[];
+  evalFailedCount: number;
+  evalRetryStudentIds: string[];
+  evalErrorMessage: string | null;
+}

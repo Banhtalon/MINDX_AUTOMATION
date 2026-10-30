@@ -760,10 +760,10 @@ export class SpckCommentGenerator {
       } else if (stageInfo.sessionNumber === 13) {
         stageSpecificInstruction = `YÊU CẦU RIÊNG CHO BUỔI 13 (${stageInfo.stageLabel} - ${stageInfo.stageCode}):
 - Sản phẩm đang trong quá trình phát triển và hoàn thiện các tính năng chính.
-- Nội dung nhận xét học bạ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện có những gì và phần đã bổ sung/triển khai được**; và (2) **Những điểm còn thiếu hoặc cần cải thiện, hoàn thiện thêm** trước khi tổng kết khóa học.
+- Nội dung nhận xét học bạ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện có những gì và phần đã bổ sung/triển khai được (nêu tiến bộ so với Buổi 12 khi có dữ liệu)**; và (2) **Những điểm còn thiếu hoặc cần cải thiện, hoàn thiện thêm** trước khi tổng kết khóa học.
 ${
   session12Evidence.hasEvidence
-    ? `- Hệ thống CÓ dữ liệu buổi trước (${anonSession12Summary}): hãy ghi nhận phần chức năng/giao diện đã bổ sung thêm so với bước đầu.`
+    ? `- Hệ thống CÓ dữ liệu buổi trước (${anonSession12Summary}): hãy nêu tiến bộ so với Buổi 12 và ghi nhận phần chức năng/giao diện đã bổ sung thêm so với bước đầu.`
     : `- LƯU Ý QUAN TRỌNG: Hệ thống CHƯA CÓ dữ liệu buổi trước của học sinh này. TUYỆT ĐỐI KHÔNG tự bịa câu "so với buổi 12", "so với buổi trước" hay tự suy đoán sự thay đổi giữa hai buổi. Chỉ nhận xét hiện trạng sản phẩm và phần cần hoàn thiện.`
 }
 - TUYỆT ĐỐI KHÔNG viết như thể sản phẩm đã tổng kết hoàn tất toàn khóa, và KHÔNG ghi các nhãn nội bộ như "Buổi 13", "Giai đoạn 1", "GĐ1".`;
@@ -876,6 +876,10 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi 
             .replace(/\bgiai\s+đoạn\s*1\b/gi, "giai đoạn đầu")
             .replace(/\s*\(\s*Buổi\s*(?:12|13|14)\s*\)/gi, "")
             .replace(/\b(?:ở|tại|trong)\s+buổi\s*14\b/gi, "trong dự án cuối khóa")
+            .replace(/\b(?:ở|tại|trong)\s+buổi\s*(?:12|13)\b/gi, "trong quá trình thực hiện dự án")
+            .replace(/\bso\s+với\s+buổi\s*(?:số\s*)?12\b/gi, "so với bước đầu")
+            .replace(/\btừ\s+buổi\s*(?:số\s*)?12\b/gi, "từ bước đầu")
+            .replace(/\bbuổi\s*(?:số\s*)?(?:12|13|14)\b/gi, "đợt thực hiện dự án")
             .replace(
               /^(?:kính\s+gửi|thân\s+gửi|gửi|chào|xin\s+chào|báo\s+cáo\s+cùng)\s+(?:quý\s+)?(?:ba\s+mẹ|gia\s+đình|phụ\s+huynh)(?:\s+học\s+viên|\s+của\s+con)?\s*[,.:;-]?\s*/gi,
               ""

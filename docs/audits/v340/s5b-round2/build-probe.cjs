@@ -1,0 +1,13 @@
+const fs=require('node:fs'), path=require('node:path');
+const out=__dirname, root=process.cwd();
+const source=fs.readFileSync(path.join(root,'scripts/test-streamline-v340-s5.ts'),'utf8');
+const imports=`// @ts-nocheck -- independent audit, not a product test\nimport assert from 'node:assert/strict';\nimport fs from 'node:fs';\nimport os from 'node:os';\nimport path from 'node:path';\nimport tailwindcssPostcss from '@tailwindcss/postcss';\nimport * as esbuild from 'esbuild';\nimport { chromium } from 'playwright';\nimport postcss from 'postcss';\nconst ROOT=process.cwd();\n`;
+const compile=source.slice(source.indexOf('async function compileRealAppCss'),source.indexOf('async function runTests()'));
+let boot=source.slice(source.indexOf('  const compiledAppCss ='),source.indexOf('    await page.setContent(html'));
+boot=boot.replace('const page = await context.newPage()', 'let page = await context.newPage()');
+const wrapper=fs.readFileSync(path.join(out,'wrapper.js.txt'),'utf8');
+boot=boot.replace('  </script>\n  <script>${bundleCode}',wrapper+'\n  </script>\n  <script>${bundleCode}');
+const checks=fs.readFileSync(path.join(out,process.argv[2]||'checks.ts.txt'),'utf8');
+const end=`\n  } finally { await browser.close(); }\n}\nrunTests().catch(e=>{console.error(e);process.exitCode=1;});\n`;
+fs.writeFileSync(path.join(out,process.argv[3]||'independent-probe.ts'),imports+compile+'\nasync function runTests(){\n'+boot+checks+end);
+console.log('Generated independent UI probe from current UI boot and strengthened fixtures.');

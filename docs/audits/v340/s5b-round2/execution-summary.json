@@ -1,0 +1,40 @@
+{
+  "verdict": "NO-GO",
+  "closed": [
+    "S5B-01",
+    "S5B-03",
+    "S5B-04",
+    "S5B-05",
+    "S5B-06",
+    "S5B-07"
+  ],
+  "partial": "S5B-02",
+  "remaining": "S5B-02-R2: reset of visible state at beginning of new both submission",
+  "gates_final": {
+    "tsc": 0,
+    "test-streamline-v340-s5": 0,
+    "test-streamline-v340-s5a": 0,
+    "test-spck-v270": 0,
+    "test-spck-v272": 0,
+    "test-phase6": 0,
+    "test-phase5": 0,
+    "test-phase7": 0,
+    "test-phase4-codex-repros": 0,
+    "test-lms-reliability-v280": 0,
+    "test-session14-v290": 0,
+    "test-teaching-project-v320": 0,
+    "test-report-card-v330": 0,
+    "test-streamline-v340-s1": 0,
+    "test-streamline-v340-s2": 0,
+    "test-streamline-v340-s3": 0,
+    "test-streamline-v340-s4": 0
+  },
+  "observations": {
+    "observations.json": 16,
+    "matrix-observations.json": 8,
+    "repository-observations.json": 7
+  },
+  "reset_defect_observations": 1,
+  "report_links_missing": [],
+  "final_tsc_exit": 0
+}

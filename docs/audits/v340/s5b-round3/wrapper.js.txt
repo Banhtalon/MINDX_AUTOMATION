@@ -1,0 +1,67 @@
+    const baseFetch=window.fetch;
+    window.__responses=[]; window.__conflicts=[]; window.__resources={};
+    window.fetch=async(input,init)=>{
+      const url=typeof input==='string'?input:input.url;
+      const body=init?.body?JSON.parse(init.body):{};
+      const mode=window.__mode;
+      const response=(data,status=200)=>new Response(JSON.stringify(data),{status});
+      if(url.endsWith('/session14-eval/upload-lms') && window.__holdEvalUploadOnce){
+        window.__holdEvalUploadOnce=false;
+        window.__heldEvalRequest={url,body};
+        await new Promise(resolve=>window.__releaseEvalUpload=resolve);
+      }
+      if(url.endsWith('/spck/save-draft') && mode==='delaySaveFail') {
+        window.__apiCalls.push({url,body});
+        if(!window.__didDelay){window.__didDelay=true;await new Promise(resolve=>window.__releaseSave=resolve);}
+        return response({success:false,error:'AUDIT delayed 409'},409);
+      }
+      if(url.endsWith('/spck/save-draft') && mode==='saveFail') {
+        window.__apiCalls.push({url,body}); return response({success:false,error:'AUDIT save 409'},409);
+      }
+      if(url.endsWith('/spck/approve') && ['approveFail','approveSkip','approvePartial','exception'].includes(mode)){
+        window.__apiCalls.push({url,body});
+        if(mode==='exception')throw new Error('AUDIT offline');
+        if(mode==='approvePartial')return response({success:false,error:'AUDIT rejected',skipped:[{studentId:'STU_01',reason:'AUDIT skip one'}]},409);
+        return response(mode==='approveSkip'?{success:true,approvedStudentIds:[],skipped:body.studentIds.map(studentId=>({studentId,reason:'AUDIT skip'}))}:{success:false,error:'AUDIT rejected'},mode==='approveSkip'?200:409);
+      }
+      if(url.endsWith('/spck/upload-lms') && mode==='uploadFail'){
+        window.__apiCalls.push({url,body}); return response({success:false,error:'AUDIT upload failed'},500);
+      }
+      if(url.endsWith('/spck/save-draft') && mode==='versions'){
+        const current=window.__serverDraftVersions[body.studentId]||1;
+        if(body.expectedVersion!==current)window.__conflicts.push({body,current});
+        const r=window.__resources[body.studentId];
+        if(r && (body.thumbnailPath!==r.thumbnailPath || JSON.stringify(body.screenshots)!==r.screenshotsJson || JSON.stringify(body.relatedLinks)!==r.relatedLinksJson || JSON.stringify(body.youtubeUrls)!==r.youtubeUrlsJson))window.__conflicts.push({reason:'resource lost',body,expected:r});
+      }
+      const orig=await baseFetch(input,init); const data=await orig.json();
+      if(window.__extension){
+        for(const r of data.records||[])if(r.attachmentsJson)r.attachmentsJson=JSON.stringify(['D:/audit/project'+window.__extension]);
+        for(const r of data.scanResult?.items||[])r.packageData.attachments=['D:/audit/project'+window.__extension];
+      }
+      if(mode==='allSubmitted' || mode==='noneSubmitted') {
+        for(const r of data.records||[]){
+          if(r.sessionResultsJson){let map=JSON.parse(r.sessionResultsJson);map['13']=mode==='allSubmitted'?{status:'VERIFIED',verifiedAt:'2026-10-30 10:00:00',submittedContentHash:r.contentHash,lastVerifiedSnapshot:{sessionNumber:13,contentHash:r.contentHash}}:{status:'DRAFT'};r.sessionResultsJson=JSON.stringify(map);}
+        }
+      }
+      if(url.includes('/session14-eval?')){
+        if(mode==='allDemo')data.records.forEach(r=>r.demoTotalScore=4.5);
+        if(mode==='zeroDemo')data.records.forEach(r=>r.demoTotalScore=0);
+      }
+      if(url.endsWith('/import-demo-scores') && mode==='partialDemo'){
+        data.records[0].demoTotalScore=4.5;
+      }
+      if(mode==='versions'){
+        if(url.endsWith('/capture-screenshots')){
+          for(const r of data.records||[]){r.thumbnailPath='D:/audit/new-'+r.studentId+'.png';r.screenshotsJson=JSON.stringify(['D:/audit/shot-'+r.studentId+'.png']);window.__resources[r.studentId]={thumbnailPath:r.thumbnailPath,screenshotsJson:r.screenshotsJson,relatedLinksJson:r.relatedLinksJson,youtubeUrlsJson:r.youtubeUrlsJson};}
+        }
+        if(url.endsWith('/import-youtube')){
+          for(const r of data.records||[]){r.youtubeUrlsJson=JSON.stringify(['https://youtube.com/watch?v=AUDIT123456']);r.screenshotsJson=JSON.stringify(['D:/audit/frame1.png','D:/audit/frame2.png']);window.__resources[r.studentId]={thumbnailPath:r.thumbnailPath,screenshotsJson:r.screenshotsJson,relatedLinksJson:r.relatedLinksJson,youtubeUrlsJson:r.youtubeUrlsJson};}
+        }
+        if(url.endsWith('/deploy-web') || url.endsWith('/upload-drive')){
+          for(const r of data.records||[]){const resources=window.__resources[r.studentId];if(resources)Object.assign(r,resources);const links=JSON.parse(r.relatedLinksJson);links.push({name:url.endsWith('/deploy-web')?'AUDIT Web':'AUDIT Drive',url:url.endsWith('/deploy-web')?'https://audit.example/web':'https://drive.google.com/drive/folders/AUDIT'});r.relatedLinksJson=JSON.stringify(links);window.__resources[r.studentId]={thumbnailPath:r.thumbnailPath,screenshotsJson:r.screenshotsJson,relatedLinksJson:r.relatedLinksJson,youtubeUrlsJson:r.youtubeUrlsJson};}
+        }
+      }
+      if(url.endsWith('/spck/upload-lms') && window.__spckPartial){data.uploadResult.results=data.uploadResult.results.map(r=>({...r,status:r.studentId==='STU_02'?'FAILED':'VERIFIED',errorMessage:r.studentId==='STU_02'?'AUDIT partial':undefined}));}
+      window.__responses.push({url,status:orig.status,success:data.success});
+      return response(data,orig.status);
+    };

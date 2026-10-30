@@ -574,7 +574,8 @@ async function loadXlsxBufferFromSource(
 export function parseDemoWorkbookBufferForClass(
   classId: string,
   buffer: Buffer,
-  sourceUsed: string
+  sourceUsed: string,
+  options?: { onlyMissingStudents?: boolean }
 ): ImportDemoScoresResult {
   const normalizedClassId = String(classId || "").trim().toUpperCase();
   const students = studentRepo.findByClass(normalizedClassId, false);
@@ -727,6 +728,9 @@ export function parseDemoWorkbookBufferForClass(
     const { tabName, student: matchedStudent, extracted } = entries[0];
     const s14Draft = spckSessionRepo.findOne(normalizedClassId, matchedStudent.studentId, 14);
     const existingEval = session14EvalRepo.getOrInit(normalizedClassId, matchedStudent.studentId);
+    if (options?.onlyMissingStudents && Number(existingEval.demoTotalScore) > 0) {
+      continue;
+    }
     let quickTags: string[] = [];
     try {
       quickTags = JSON.parse(existingEval.quickTagsJson || s14Draft?.quickTagsJson || "[]");
@@ -778,8 +782,9 @@ export function parseDemoWorkbookBufferForClass(
  */
 export async function importClassDemoScores(
   classId: string,
-  sourcePathOrUrl?: string
+  sourcePathOrUrl?: string,
+  options?: { onlyMissingStudents?: boolean }
 ): Promise<ImportDemoScoresResult> {
   const { buffer, sourceUsed } = await loadXlsxBufferFromSource(classId, sourcePathOrUrl);
-  return parseDemoWorkbookBufferForClass(classId, buffer, sourceUsed);
+  return parseDemoWorkbookBufferForClass(classId, buffer, sourceUsed, options);
 }

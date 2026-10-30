@@ -1,0 +1,120 @@
+[
+  {
+    "id": "R2-M-JSI01",
+    "classId": "VT-C4K-JSI01",
+    "ext": ".js",
+    "expected": [
+      "scan",
+      "capture-screenshots",
+      "deploy-web",
+      "upload-drive"
+    ],
+    "actual": [
+      "scan",
+      "capture-screenshots",
+      "deploy-web",
+      "upload-drive"
+    ]
+  },
+  {
+    "id": "R2-M-UNCLASSIFIED01",
+    "classId": "VT-C4K-UNCLASSIFIED01",
+    "ext": ".html",
+    "expected": [
+      "scan",
+      "capture-screenshots",
+      "deploy-web",
+      "upload-drive"
+    ],
+    "actual": [
+      "scan",
+      "capture-screenshots",
+      "deploy-web",
+      "upload-drive"
+    ]
+  },
+  {
+    "id": "R2-M-PTA08",
+    "classId": "VT-C4K-PTA08",
+    "ext": ".py",
+    "expected": [
+      "scan",
+      "capture-screenshots",
+      "upload-drive"
+    ],
+    "actual": [
+      "scan",
+      "capture-screenshots",
+      "upload-drive"
+    ]
+  },
+  {
+    "id": "R2-M-GMA22",
+    "classId": "VT-C4K-GMA22",
+    "ext": ".exe",
+    "expected": [
+      "scan",
+      "capture-screenshots",
+      "upload-drive"
+    ],
+    "actual": [
+      "scan",
+      "capture-screenshots",
+      "upload-drive"
+    ]
+  },
+  {
+    "id": "R2-M-SB28",
+    "classId": "VT-C4K-SB28",
+    "ext": ".sb3",
+    "expected": [
+      "scan",
+      "capture-screenshots",
+      "upload-drive"
+    ],
+    "actual": [
+      "scan",
+      "capture-screenshots",
+      "upload-drive"
+    ]
+  },
+  {
+    "id": "R2-M-CANVA01",
+    "classId": "VT-C4K-CANVA01",
+    "ext": ".pdf",
+    "expected": [
+      "scan",
+      "upload-drive"
+    ],
+    "actual": [
+      "scan",
+      "upload-drive"
+    ]
+  },
+  {
+    "id": "R2-M-ROB01",
+    "classId": "VT-C4K-ROB01",
+    "ext": ".pdf",
+    "expected": [
+      "scan",
+      "upload-drive"
+    ],
+    "actual": [
+      "scan",
+      "upload-drive"
+    ]
+  },
+  {
+    "id": "R2-M-saveFail",
+    "scenario": "Save-before-Web/Drive 409 blocks unsafe call and creates both row tool retries",
+    "calls": [
+      "/api/spck/list",
+      "/api/spck/student-portal?classId=VT-C4K-JSB15",
+      "/api/spck/student-portal?classId=VT-C4K-JSB15",
+      "/api/spck/scan",
+      "/api/spck/capture-screenshots",
+      "/api/spck/save-draft",
+      "/api/spck/save-draft"
+    ]
+  }
+]

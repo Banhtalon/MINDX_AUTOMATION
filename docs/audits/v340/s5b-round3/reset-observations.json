@@ -1,0 +1,295 @@
+[
+  {
+    "id": "R3-RESET-A",
+    "scenario": "Seed completed A: product 2/2; evaluation 1 verified + 1 retry with error"
+  },
+  {
+    "id": "R3-RESET-B-PENDING",
+    "scenario": "New both batch clears A before first save-draft resolves",
+    "oldEvalResult": false,
+    "oldError": false,
+    "oldSummary": false,
+    "oldBanner": false,
+    "oldRetryButtons": 0,
+    "evalPlaceholder": true,
+    "submitDisabled": true,
+    "calls": [
+      {
+        "url": "/api/spck/save-draft",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "studentId": "STU_01",
+          "sessionNumber": 14,
+          "expectedVersion": 2,
+          "localFolderPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01",
+          "matchScore": 1,
+          "isConfirmedByTeacher": true,
+          "projectTitle": "Dự án Nguyễn Minh Khôi",
+          "thumbnailPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\thumb.png",
+          "screenshots": [
+            "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\screen1.png"
+          ],
+          "attachments": [
+            "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\index.html"
+          ],
+          "youtubeUrls": [],
+          "relatedLinks": [
+            {
+              "name": "Sản phẩm trên Google Drive",
+              "url": "https://drive.google.com/drive/folders/STU_01"
+            },
+            {
+              "name": "Web chạy thử (Live)",
+              "url": "https://banhtalon.github.io/WEB_PRODUCT_SHOW/STU_01"
+            }
+          ],
+          "teacherComment": "Trong quá trình thực hiện dự án, con đã chủ động hoàn thiện đầy đủ tính năng và giao diện rõ ràng.",
+          "teacherNote": "Làm bài tốt",
+          "quickTags": [
+            "Hoàn thành tốt sản phẩm cuối khóa"
+          ],
+          "draftSeq": 3,
+          "clientSessionId": "UI_1793358188429_j7zwhs",
+          "reassignFolder": false
+        }
+      }
+    ]
+  },
+  {
+    "id": "R3-RESET-B-409",
+    "scenario": "Release pending save with HTTP409; product retry 2, evaluation independently verified 2",
+    "calls": [
+      {
+        "url": "/api/spck/save-draft",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "studentId": "STU_01",
+          "sessionNumber": 14,
+          "expectedVersion": 2,
+          "localFolderPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01",
+          "matchScore": 1,
+          "isConfirmedByTeacher": true,
+          "projectTitle": "Dự án Nguyễn Minh Khôi",
+          "thumbnailPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\thumb.png",
+          "screenshots": [
+            "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\screen1.png"
+          ],
+          "attachments": [
+            "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\index.html"
+          ],
+          "youtubeUrls": [],
+          "relatedLinks": [
+            {
+              "name": "Sản phẩm trên Google Drive",
+              "url": "https://drive.google.com/drive/folders/STU_01"
+            },
+            {
+              "name": "Web chạy thử (Live)",
+              "url": "https://banhtalon.github.io/WEB_PRODUCT_SHOW/STU_01"
+            }
+          ],
+          "teacherComment": "Trong quá trình thực hiện dự án, con đã chủ động hoàn thiện đầy đủ tính năng và giao diện rõ ràng.",
+          "teacherNote": "Làm bài tốt",
+          "quickTags": [
+            "Hoàn thành tốt sản phẩm cuối khóa"
+          ],
+          "draftSeq": 3,
+          "clientSessionId": "UI_1793358188429_j7zwhs",
+          "reassignFolder": false
+        }
+      },
+      {
+        "url": "/api/spck/session14-eval",
+        "method": "POST",
+        "body": {
+          "action": "approve",
+          "classId": "VT-C4K-JSB15",
+          "studentIds": [
+            "STU_01",
+            "STU_02"
+          ],
+          "expectedVersions": {}
+        }
+      },
+      {
+        "url": "/api/spck/session14-eval/upload-lms",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "studentIds": [
+            "STU_01",
+            "STU_02"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "R3-RETRY-SPCK",
+    "scenario": "spck_only preserves evaluation 2/2 while pending and after success; no evaluation request",
+    "calls": [
+      {
+        "url": "/api/spck/save-draft",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "studentId": "STU_01",
+          "sessionNumber": 14,
+          "expectedVersion": 2,
+          "localFolderPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01",
+          "matchScore": 1,
+          "isConfirmedByTeacher": true,
+          "projectTitle": "Dự án Nguyễn Minh Khôi",
+          "thumbnailPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\thumb.png",
+          "screenshots": [
+            "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\screen1.png"
+          ],
+          "attachments": [
+            "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\index.html"
+          ],
+          "youtubeUrls": [],
+          "relatedLinks": [
+            {
+              "name": "Sản phẩm trên Google Drive",
+              "url": "https://drive.google.com/drive/folders/STU_01"
+            },
+            {
+              "name": "Web chạy thử (Live)",
+              "url": "https://banhtalon.github.io/WEB_PRODUCT_SHOW/STU_01"
+            }
+          ],
+          "teacherComment": "Trong quá trình thực hiện dự án, con đã chủ động hoàn thiện đầy đủ tính năng và giao diện rõ ràng.",
+          "teacherNote": "Làm bài tốt",
+          "quickTags": [
+            "Hoàn thành tốt sản phẩm cuối khóa"
+          ],
+          "draftSeq": 4,
+          "clientSessionId": "UI_1793358188429_j7zwhs",
+          "reassignFolder": false
+        }
+      },
+      {
+        "url": "/api/spck/save-draft",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "studentId": "STU_02",
+          "sessionNumber": 14,
+          "expectedVersion": 2,
+          "localFolderPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_02",
+          "matchScore": 1,
+          "isConfirmedByTeacher": true,
+          "projectTitle": "Dự án Trần Bảo Ngọc",
+          "thumbnailPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_02\\thumb.png",
+          "screenshots": [
+            "D:\\SPCK\\VT-C4K-JSB15\\01_STU_02\\screen1.png"
+          ],
+          "attachments": [
+            "D:\\SPCK\\VT-C4K-JSB15\\01_STU_02\\index.html"
+          ],
+          "youtubeUrls": [],
+          "relatedLinks": [
+            {
+              "name": "Sản phẩm trên Google Drive",
+              "url": "https://drive.google.com/drive/folders/STU_02"
+            },
+            {
+              "name": "Web chạy thử (Live)",
+              "url": "https://banhtalon.github.io/WEB_PRODUCT_SHOW/STU_02"
+            }
+          ],
+          "teacherComment": "Trong quá trình thực hiện dự án, con đã chủ động hoàn thiện đầy đủ tính năng và giao diện rõ ràng.",
+          "teacherNote": "Làm bài tốt",
+          "quickTags": [
+            "Hoàn thành tốt sản phẩm cuối khóa"
+          ],
+          "draftSeq": 5,
+          "clientSessionId": "UI_1793358188429_j7zwhs",
+          "reassignFolder": false
+        }
+      },
+      {
+        "url": "/api/spck/approve",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "sessionNumber": 14,
+          "studentIds": [
+            "STU_01",
+            "STU_02"
+          ],
+          "reviewedItems": [
+            {
+              "studentId": "STU_01",
+              "draftVersion": 3,
+              "localFolderPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01",
+              "isConfirmedByTeacher": 1,
+              "projectTitle": "Dự án Nguyễn Minh Khôi",
+              "thumbnailPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_01\\thumb.png",
+              "screenshotsJson": "[\"D:\\\\SPCK\\\\VT-C4K-JSB15\\\\01_STU_01\\\\screen1.png\"]",
+              "attachmentsJson": "[\"D:\\\\SPCK\\\\VT-C4K-JSB15\\\\01_STU_01\\\\index.html\"]",
+              "youtubeUrlsJson": "[]",
+              "relatedLinksJson": "[{\"name\":\"Sản phẩm trên Google Drive\",\"url\":\"https://drive.google.com/drive/folders/STU_01\"},{\"name\":\"Web chạy thử (Live)\",\"url\":\"https://banhtalon.github.io/WEB_PRODUCT_SHOW/STU_01\"}]",
+              "teacherComment": "Trong quá trình thực hiện dự án, con đã chủ động hoàn thiện đầy đủ tính năng và giao diện rõ ràng."
+            },
+            {
+              "studentId": "STU_02",
+              "draftVersion": 3,
+              "localFolderPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_02",
+              "isConfirmedByTeacher": 1,
+              "projectTitle": "Dự án Trần Bảo Ngọc",
+              "thumbnailPath": "D:\\SPCK\\VT-C4K-JSB15\\01_STU_02\\thumb.png",
+              "screenshotsJson": "[\"D:\\\\SPCK\\\\VT-C4K-JSB15\\\\01_STU_02\\\\screen1.png\"]",
+              "attachmentsJson": "[\"D:\\\\SPCK\\\\VT-C4K-JSB15\\\\01_STU_02\\\\index.html\"]",
+              "youtubeUrlsJson": "[]",
+              "relatedLinksJson": "[{\"name\":\"Sản phẩm trên Google Drive\",\"url\":\"https://drive.google.com/drive/folders/STU_02\"},{\"name\":\"Web chạy thử (Live)\",\"url\":\"https://banhtalon.github.io/WEB_PRODUCT_SHOW/STU_02\"}]",
+              "teacherComment": "Trong quá trình thực hiện dự án, con đã chủ động hoàn thiện đầy đủ tính năng và giao diện rõ ràng."
+            }
+          ]
+        }
+      },
+      {
+        "url": "/api/spck/upload-lms",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "sessionNumber": 14,
+          "studentIds": [
+            "STU_01",
+            "STU_02"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "R3-RETRY-EVAL",
+    "scenario": "eval_only preserves product 2/2 while pending and after success; one failed student only; total 2 without duplicates",
+    "calls": [
+      {
+        "url": "/api/spck/session14-eval",
+        "method": "POST",
+        "body": {
+          "action": "approve",
+          "classId": "VT-C4K-JSB15",
+          "studentIds": [
+            "STU_02"
+          ],
+          "expectedVersions": {}
+        }
+      },
+      {
+        "url": "/api/spck/session14-eval/upload-lms",
+        "method": "POST",
+        "body": {
+          "classId": "VT-C4K-JSB15",
+          "studentIds": [
+            "STU_02"
+          ]
+        }
+      }
+    ]
+  }
+]

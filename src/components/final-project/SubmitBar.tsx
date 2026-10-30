@@ -13,6 +13,9 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
     totalStepsCount,
     lastSubmissionSummary,
     handleApproveAndUpload,
+    handleSubmitSession14Combo,
+    session14ComboStatus,
+    uploadingS14EvalLms,
     isAnyOperationBusy,
     uploading,
     effectiveSelectedStudentIds,
@@ -34,7 +37,57 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          {lastSubmissionSummary &&
+          {selectedSessionNumber === 14 &&
+            session14ComboStatus.spckSummary &&
+            session14ComboStatus.spckSummary.retryStudentIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleSubmitSession14Combo(
+                    session14ComboStatus.spckSummary!.retryStudentIds,
+                    "spck_only"
+                  )
+                }
+                disabled={isAnyOperationBusy}
+                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
+              >
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${uploading ? "animate-spin" : ""}`}
+                />
+                <span>
+                  🔄 Thử lại riêng phần Sản phẩm (
+                  {session14ComboStatus.spckSummary.retryStudentIds.length})
+                </span>
+              </button>
+            )}
+
+          {selectedSessionNumber === 14 &&
+            session14ComboStatus.evalRetryStudentIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleSubmitSession14Combo(
+                    session14ComboStatus.evalRetryStudentIds,
+                    "eval_only"
+                  )
+                }
+                disabled={isAnyOperationBusy}
+                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
+              >
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${
+                    uploadingS14EvalLms ? "animate-spin" : ""
+                  }`}
+                />
+                <span>
+                  🔄 Thử lại riêng phần Đánh giá (
+                  {session14ComboStatus.evalRetryStudentIds.length})
+                </span>
+              </button>
+            )}
+
+          {selectedSessionNumber !== 14 &&
+            lastSubmissionSummary &&
             lastSubmissionSummary.retryStudentIds.length > 0 && (
               <button
                 type="button"
@@ -58,33 +111,101 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
               </button>
             )}
 
-          <button
-            type="button"
-            onClick={() =>
-              handleApproveAndUpload(
-                effectiveSelectedStudentIds,
-                true,
-                selectedSessionNumber
-              )
-            }
-            disabled={
-              isAnyOperationBusy ||
-              !selectedClassId ||
-              effectiveSelectedStudentIds.length === 0
-            }
-            className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-bold shadow-lg shadow-emerald-950/50 transition-colors cursor-pointer"
-          >
-            {uploading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <UploadCloud className="w-4 h-4" />
-            )}
-            <span>
-              Nộp {effectiveSelectedStudentIds.length} bài — Buổi {selectedSessionNumber}
-            </span>
-          </button>
+          {selectedSessionNumber === 14 ? (
+            <button
+              type="button"
+              onClick={() =>
+                handleSubmitSession14Combo(effectiveSelectedStudentIds, "both")
+              }
+              disabled={
+                isAnyOperationBusy ||
+                !selectedClassId ||
+                effectiveSelectedStudentIds.length === 0
+              }
+              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 disabled:opacity-50 text-white text-sm font-bold shadow-lg shadow-emerald-950/50 transition-colors cursor-pointer"
+            >
+              {uploading || uploadingS14EvalLms || session14ComboStatus.running ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UploadCloud className="w-4 h-4" />
+              )}
+              <span>
+                🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá) —{" "}
+                {effectiveSelectedStudentIds.length} bài
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() =>
+                handleApproveAndUpload(
+                  effectiveSelectedStudentIds,
+                  true,
+                  selectedSessionNumber
+                )
+              }
+              disabled={
+                isAnyOperationBusy ||
+                !selectedClassId ||
+                effectiveSelectedStudentIds.length === 0
+              }
+              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-bold shadow-lg shadow-emerald-950/50 transition-colors cursor-pointer"
+            >
+              {uploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UploadCloud className="w-4 h-4" />
+              )}
+              <span>
+                Nộp {effectiveSelectedStudentIds.length} bài — Buổi {selectedSessionNumber}
+              </span>
+            </button>
+          )}
         </div>
       </div>
+
+      {selectedSessionNumber === 14 &&
+        session14ComboStatus.currentPhase !== "idle" && (
+          <div className="p-3.5 rounded-xl bg-slate-950 border border-indigo-700/60 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
+              <div>
+                <div className="font-bold text-emerald-300">
+                  Phần 1: Sản phẩm SPCK (Cột 3 LMS)
+                </div>
+                <div className="text-slate-300 mt-0.5">
+                  {session14ComboStatus.currentPhase === "spck"
+                    ? "⏳ Đang duyệt & nộp Sản phẩm SPCK..."
+                    : session14ComboStatus.spckSummary
+                    ? `Đã nộp ${session14ComboStatus.spckSummary.verifiedItems.length}/${session14ComboStatus.spckSummary.totalSelected} bài (${session14ComboStatus.spckSummary.retryStudentIds.length} bài cần thử lại)`
+                    : "Chưa chạy trong đợt này"}
+                </div>
+              </div>
+            </div>
+            <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
+              <div>
+                <div className="font-bold text-indigo-300">
+                  Phần 2: Điểm Demo, ĐNL &amp; Thư 3 phần (Cột 2 LMS)
+                </div>
+                <div className="text-slate-300 mt-0.5">
+                  {session14ComboStatus.currentPhase === "eval"
+                    ? "⏳ Đang duyệt & đẩy Đánh giá tổng kết..."
+                    : session14ComboStatus.currentPhase === "spck" &&
+                      session14ComboStatus.evalVerifiedCount === 0 &&
+                      session14ComboStatus.evalFailedCount === 0 &&
+                      session14ComboStatus.evalRetryStudentIds.length === 0 &&
+                      !session14ComboStatus.evalErrorMessage
+                    ? "Chưa chạy trong đợt này"
+                    : `Đã lưu & xác minh ${session14ComboStatus.evalVerifiedCount} học viên (${session14ComboStatus.evalRetryStudentIds.length} cần thử lại)`}
+                  {session14ComboStatus.evalErrorMessage && (
+                    <span className="block text-rose-300 mt-0.5">
+                      {session14ComboStatus.evalErrorMessage}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Detailed Batch Submission Result Card */}
       {lastSubmissionSummary && (

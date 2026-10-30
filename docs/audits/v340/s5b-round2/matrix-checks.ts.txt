@@ -1,0 +1,29 @@
+    const observations=[];const output=process.env.S5B_R2_EVIDENCE!;
+    const record=(id,details)=>{observations.push({id,...details});fs.writeFileSync(path.join(output,'matrix-observations.json'),JSON.stringify(observations,null,2));console.log('PASS',id);};
+    const fresh=async(cid,label,ext,mode='normal')=>{
+      await page.close();page=await context.newPage();await context.route('**/*',r=>r.abort());
+      const content=html.replaceAll('VT-C4K-JSB15',cid).replaceAll('Lớp Web JSB15',label).replace('window.__apiCalls = [];','window.__mode='+JSON.stringify(mode)+'; window.__extension='+JSON.stringify(ext)+'; window.__apiCalls = [];');
+      await page.setContent(content,{waitUntil:'networkidle'});await page.waitForFunction(()=>document.body.innerText.includes('Đang chọn:'));
+    };
+    const scan=async()=>{await page.locator('button:has-text("Quét & Khớp HV")').click();await page.waitForFunction(()=>!document.querySelector('[data-testid="s5b-auto-prep-progress"]'));await page.waitForTimeout(100);};
+    const cases=[
+      ['JSI01','Lớp lập trình','.js',['scan','capture-screenshots','deploy-web','upload-drive']],
+      ['UNCLASSIFIED01','Lớp mẫu','.html',['scan','capture-screenshots','deploy-web','upload-drive']],
+      ['PTA08','Lớp Python','.py',['scan','capture-screenshots','upload-drive']],
+      ['GMA22','Lớp Game','.exe',['scan','capture-screenshots','upload-drive']],
+      ['SB28','Lớp Scratch','.sb3',['scan','capture-screenshots','upload-drive']],
+      ['CANVA01','Lớp thiết kế','.pdf',['scan','upload-drive']],
+      ['ROB01','Lớp Robotics','.pdf',['scan','upload-drive']],
+    ];
+    for(const [code,label,ext,expected] of cases){
+      await fresh('VT-C4K-'+code,label,ext);await scan();
+      const calls=await page.evaluate(()=>(window as any).__apiCalls);const actual=calls.filter(c=>['/scan','/capture-screenshots','/deploy-web','/upload-drive','/import-youtube'].some(s=>c.url.endsWith(s))).map(c=>c.url.split('/').pop());
+      assert.deepEqual(actual,expected);record('R2-M-'+code,{classId:'VT-C4K-'+code,ext,expected,actual});
+    }
+    await fresh('VT-C4K-JSB15','Lớp Web JSB15','.html','saveFail');await scan();
+    const calls=await page.evaluate(()=>(window as any).__apiCalls);assert.equal(calls.some(c=>c.url==='/api/spck/deploy-web'||c.url==='/api/spck/upload-drive'),false);
+    await page.locator('button:has-text("Chi tiết ▾")').first().click();
+    assert.equal(await page.locator('button:has-text("Thử lại Up Drive & Gắn Link")').count(),1);
+    assert.equal(await page.locator('button:has-text("Thử lại Up Web Live")').count(),1);
+    record('R2-M-saveFail',{scenario:'Save-before-Web/Drive 409 blocks unsafe call and creates both row tool retries',calls:calls.map(c=>c.url)});
+    await context.close();

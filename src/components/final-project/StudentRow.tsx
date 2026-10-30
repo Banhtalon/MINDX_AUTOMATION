@@ -9,7 +9,11 @@ import {
   Paperclip,
   Video,
 } from "lucide-react";
-import { DEFAULT_SPCK_TAGS, ScannedFolderUIItem } from "./types";
+import {
+  COMPETENCY_ITEMS_UI,
+  DEFAULT_SPCK_TAGS,
+  ScannedFolderUIItem,
+} from "./types";
 import {
   formatUiSessionTitle,
   getRowReadinessSummary,
@@ -27,6 +31,7 @@ export interface StudentRowProps {
 export function StudentRow({ row, idx, workflow }: StudentRowProps) {
   const {
     expandedRowKeys,
+    setExpandedRowKeys,
     effectiveSelectedStudentIds,
     duplicateStudentIds,
     selectedSessionNumber,
@@ -50,10 +55,31 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
     handleCaptureAppScreenshots,
     handleOwnerUploadImage,
     session14TagLabels,
+    toolErrorsByStudent,
+    expandedRowTabByStudent,
+    setRowActiveTab,
+    session14Evals,
+    setSession14Evals,
+    isRoboticsClass,
+    activeDemoScoreItems,
+    handleSaveSession14EvalDraft,
+    handleGenerateSession14EvalAi,
+    handleApproveAndUploadSession14Eval,
   } = workflow;
 
   const rowKey = row.folderPath || row.assignedStudentId || String(idx);
   const isExpanded = Boolean(expandedRowKeys[rowKey]);
+  const activeTab: "spck" | "eval14" =
+    selectedSessionNumber === 14
+      ? expandedRowTabByStudent[row.assignedStudentId] || "spck"
+      : "spck";
+  const studentEval14 =
+    selectedSessionNumber === 14 && row.assignedStudentId
+      ? session14Evals.find((ev) => ev.studentId === row.assignedStudentId)
+      : undefined;
+  const rowToolErrors = row.assignedStudentId
+    ? toolErrorsByStudent[row.assignedStudentId] || {}
+    : {};
   const isSelected =
     Boolean(row.assignedStudentId) &&
     effectiveSelectedStudentIds.includes(row.assignedStudentId);
@@ -65,6 +91,10 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
   const slot13 = getSessionSlotDisplay(row, 13);
   const slot14 = getSessionSlotDisplay(row, 14);
   const activeSlot = getSessionSlotDisplay(row, selectedSessionNumber);
+  const hasRowSubmissionError =
+    activeSlot.tone === "rose" ||
+    Boolean(row.errorMessage) ||
+    (selectedSessionNumber === 14 && studentEval14?.status === "FAILED");
 
   const renderSlotPill = (
     sessNum: 12 | 13 | 14,
@@ -283,6 +313,33 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 YouTube ✓
               </span>
             )}
+            {selectedSessionNumber === 14 && studentEval14 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setRowActiveTab(row.assignedStudentId, "eval14");
+                  if (!isExpanded) {
+                    setExpandedRowKeys((prev) => ({
+                      ...prev,
+                      [rowKey]: true,
+                    }));
+                  }
+                }}
+                title="Bấm để mở Tab 2: Điểm Demo, ĐNL & Thư 3 phần (Cột 2)"
+                className="px-2 py-0.5 rounded bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/60 text-indigo-200 font-semibold text-[10px] cursor-pointer"
+              >
+                🏅 Demo: {studentEval14.demoTotalScore}/5.0 • ĐNL: {studentEval14.competencyTotalScore}/5.0 •{" "}
+                {studentEval14.status === "VERIFIED"
+                  ? "Đã lưu Cột 2 ✓"
+                  : studentEval14.status === "APPROVED"
+                  ? "Đã duyệt Cột 2"
+                  : studentEval14.status === "FAILED"
+                  ? "Lỗi Cột 2"
+                  : studentEval14.learnedFromMindx
+                  ? "Chờ duyệt Cột 2"
+                  : "Chưa soạn Thư"}
+              </button>
+            )}
           </div>
         </div>
 
@@ -293,28 +350,28 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
           {renderSlotPill(14, slot14)}
         </div>
 
-        {/* Col 10-12: Single Per-Student Submit/Retry Button + "Chi tiết" Toggle */}
+        {/* Col 10-12: Error Retry Button (only on error) + "Chi tiết" Toggle */}
         <div className="lg:col-span-2 flex items-center justify-end gap-1.5">
-          <button
-            type="button"
-            onClick={() =>
-              row.assignedStudentId &&
-              handleApproveAndUpload(
-                [row.assignedStudentId],
-                true,
-                selectedSessionNumber
-              )
-            }
-            disabled={
-              isAnyOperationBusy || !row.assignedStudentId || isDupeStudent
-            }
-            title={`Nộp riêng học viên này cho Buổi ${selectedSessionNumber}`}
-            className="px-2.5 py-1.5 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold cursor-pointer"
-          >
-            {activeSlot.tone === "rose"
-              ? `Thử lại B.${selectedSessionNumber}`
-              : `Nộp riêng B.${selectedSessionNumber}`}
-          </button>
+          {hasRowSubmissionError && (
+            <button
+              type="button"
+              onClick={() =>
+                row.assignedStudentId &&
+                handleApproveAndUpload(
+                  [row.assignedStudentId],
+                  true,
+                  selectedSessionNumber
+                )
+              }
+              disabled={
+                isAnyOperationBusy || !row.assignedStudentId || isDupeStudent
+              }
+              title={`Thử lại nộp học viên này cho Buổi ${selectedSessionNumber}`}
+              className="px-2.5 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 disabled:opacity-40 text-white text-xs font-semibold cursor-pointer"
+            >
+              🔄 Thử lại B.{selectedSessionNumber}
+            </button>
+          )}
 
           <button
             type="button"
@@ -373,7 +430,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
       {isExpanded && (
         <div className="p-4 border-t border-slate-800 bg-slate-900/70 space-y-4 rounded-b-xl">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800 text-xs">
-            <div className="flex items-center space-x-2 text-slate-300">
+            <div className="flex flex-wrap items-center gap-2 text-slate-300">
               <span className="font-bold">
                 Chỉnh sửa chi tiết Buổi {selectedSessionNumber} (
                 {getStageMeta(selectedSessionNumber).stageTitle}):
@@ -382,6 +439,36 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 {row.status} • v{row.draftVersion || 1}
                 {row.contentHash ? ` • #${row.contentHash.slice(0, 8)}` : ""}
               </span>
+              {selectedSessionNumber === 14 && (
+                <div className="inline-flex items-center rounded-lg bg-slate-950 p-1 border border-slate-700 gap-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRowActiveTab(row.assignedStudentId, "spck")
+                    }
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors cursor-pointer ${
+                      activeTab === "spck"
+                        ? "bg-emerald-600 text-white"
+                        : "text-slate-300 hover:bg-slate-800"
+                    }`}
+                  >
+                    📦 Tab 1: Sản phẩm SPCK (Cột 3)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRowActiveTab(row.assignedStudentId, "eval14")
+                    }
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors cursor-pointer ${
+                      activeTab === "eval14"
+                        ? "bg-indigo-600 text-white"
+                        : "text-slate-300 hover:bg-slate-800"
+                    }`}
+                  >
+                    🏅 Tab 2: Điểm Demo, ĐNL &amp; Thư 3 phần (Cột 2)
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
@@ -396,32 +483,40 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={() => handleGenerateAiComments([row.folderPath])}
-                disabled={isAnyOperationBusy || !row.assignedStudentId}
-                className="px-2.5 py-1 rounded bg-purple-600/85 hover:bg-purple-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
-              >
-                AI Soạn riêng (B.{selectedSessionNumber})
-              </button>
+              {(Boolean(rowToolErrors.ai) ||
+                row.status === "INSUFFICIENT_INFO" ||
+                row.status === "FAILED") && (
+                <button
+                  type="button"
+                  onClick={() => handleGenerateAiComments([row.folderPath])}
+                  disabled={isAnyOperationBusy || !row.assignedStudentId}
+                  className="px-2.5 py-1 rounded bg-purple-600/85 hover:bg-purple-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
+                >
+                  🔄 Thử lại AI Nhận xét (B.{selectedSessionNumber})
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() =>
-                  row.assignedStudentId &&
-                  handleUploadToGoogleDrive([row.assignedStudentId])
-                }
-                disabled={
-                  isAnyOperationBusy ||
-                  !row.assignedStudentId ||
-                  !row.folderPath
-                }
-                className="px-2.5 py-1 rounded bg-sky-600/85 hover:bg-sky-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
-              >
-                {uploadingDrive ? "Đang Up Drive..." : "Up Drive & Gắn Link"}
-              </button>
+              {Boolean(rowToolErrors.drive) && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    row.assignedStudentId &&
+                    handleUploadToGoogleDrive([row.assignedStudentId])
+                  }
+                  disabled={
+                    isAnyOperationBusy ||
+                    !row.assignedStudentId ||
+                    !row.folderPath
+                  }
+                  className="px-2.5 py-1 rounded bg-sky-600/85 hover:bg-sky-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
+                >
+                  {uploadingDrive
+                    ? "Đang Up Drive..."
+                    : "🔄 Thử lại Up Drive & Gắn Link"}
+                </button>
+              )}
 
-              {isWebClassOrProduct && (
+              {isWebClassOrProduct && Boolean(rowToolErrors.web) && (
                 <button
                   type="button"
                   onClick={() =>
@@ -435,12 +530,13 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   }
                   className="px-2.5 py-1 rounded bg-indigo-600/85 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
                 >
-                  {deployingWeb ? "Đang Up Web..." : "Up Web Live"}
+                  {deployingWeb ? "Đang Up Web..." : "🔄 Thử lại Up Web Live"}
                 </button>
               )}
             </div>
           </div>
 
+          {activeTab === "spck" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Left Column: Title, Files Summary & Links */}
             <div className="lg:col-span-5 space-y-3">
@@ -557,22 +653,24 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
               {/* App Screenshot Capture & Owner Image Upload Controls */}
               <div className="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 space-y-2 text-xs">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      row.assignedStudentId &&
-                      handleCaptureAppScreenshots([row.assignedStudentId])
-                    }
-                    disabled={
-                      isAnyOperationBusy ||
-                      !row.assignedStudentId ||
-                      !row.folderPath
-                    }
-                    className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-teal-600/85 hover:bg-teal-500 disabled:opacity-40 text-white font-semibold cursor-pointer"
-                  >
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    <span>Chụp App &amp; AI Chọn Thumb</span>
-                  </button>
+                  {Boolean(rowToolErrors.screenshot) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        row.assignedStudentId &&
+                        handleCaptureAppScreenshots([row.assignedStudentId])
+                      }
+                      disabled={
+                        isAnyOperationBusy ||
+                        !row.assignedStudentId ||
+                        !row.folderPath
+                      }
+                      className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-teal-600/85 hover:bg-teal-500 disabled:opacity-40 text-white font-semibold cursor-pointer"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      <span>🔄 Thử lại Chụp App &amp; AI Chọn Thumb</span>
+                    </button>
+                  )}
 
                   <label className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-amber-600/80 hover:bg-amber-500 text-white font-semibold cursor-pointer">
                     <span>+ Owner Up Thumbnail</span>
@@ -852,6 +950,291 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
               </div>
             </div>
           </div>
+          )}
+
+          {selectedSessionNumber === 14 && activeTab === "eval14" && (
+            <div className="space-y-4 text-xs">
+              {!studentEval14 ? (
+                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
+                  Đang nạp dữ liệu Điểm Demo, Điểm Năng lực [ĐNL] &amp; Thư 3 phần Buổi 14 cho học viên này...
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-slate-950 border border-indigo-800/50">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-bold text-indigo-300">
+                        🏅 Đánh giá Cột 2 Buổi 14 ({studentEval14.fullName}):
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-indigo-950 border border-indigo-700/60 text-indigo-300 text-[11px] font-semibold">
+                        Điểm Demo: {studentEval14.demoTotalScore} / 5.0
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-700/60 text-cyan-300 text-[11px] font-semibold">
+                        Điểm Năng lực [ĐNL]: {studentEval14.competencyTotalScore} / 5.0
+                      </span>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                          studentEval14.status === "VERIFIED"
+                            ? "bg-emerald-950 border border-emerald-600/60 text-emerald-300"
+                            : studentEval14.status === "APPROVED"
+                            ? "bg-teal-950 border border-teal-600/60 text-teal-300"
+                            : studentEval14.status === "FAILED"
+                            ? "bg-rose-950 border border-rose-600/60 text-rose-300"
+                            : "bg-slate-800 text-slate-300"
+                        }`}
+                      >
+                        {studentEval14.status === "VERIFIED"
+                          ? "Đã lưu LMS ✓"
+                          : studentEval14.status === "APPROVED"
+                          ? "Đã duyệt"
+                          : studentEval14.status === "FAILED"
+                          ? "Lỗi lưu"
+                          : studentEval14.learnedFromMindx
+                          ? "Chờ duyệt"
+                          : "Chưa soạn"}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {(Boolean(rowToolErrors.s14_ai) ||
+                        studentEval14.status === "INSUFFICIENT_INFO" ||
+                        studentEval14.status === "FAILED") && (
+                        <button
+                          type="button"
+                          disabled={isAnyOperationBusy}
+                          onClick={() =>
+                            handleGenerateSession14EvalAi([studentEval14.studentId])
+                          }
+                          className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer disabled:opacity-50"
+                        >
+                          🔄 Thử lại AI Thư 3 phần
+                        </button>
+                      )}
+                      {studentEval14.status === "FAILED" && (
+                        <button
+                          type="button"
+                          disabled={isAnyOperationBusy}
+                          onClick={() =>
+                            handleApproveAndUploadSession14Eval([
+                              studentEval14.studentId,
+                            ])
+                          }
+                          className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold cursor-pointer disabled:opacity-50"
+                        >
+                          🔄 Thử lại Đẩy Đánh giá B.14
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 5 Tiêu chí Điểm Demo */}
+                  <div>
+                    <div className="font-semibold text-indigo-300 mb-2">
+                      1. Điểm Demo ({isRoboticsClass ? "Thang Robotics" : "Thang Lập trình"} — Tổng: {studentEval14.demoTotalScore} / 5.0 điểm)
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+                      {activeDemoScoreItems.map((item) => (
+                        <div
+                          key={item.key}
+                          className="p-2 rounded bg-slate-950 border border-slate-800 space-y-1"
+                        >
+                          <label className="block text-[11px] text-slate-400">
+                            {item.label} (tối đa {item.max})
+                          </label>
+                          <input
+                            type="number"
+                            step="0.05"
+                            min={0}
+                            max={item.max}
+                            value={studentEval14.demoScores[item.key]}
+                            onChange={(e) => {
+                              const val = Number(e.target.value) || 0;
+                              const nextDemo = {
+                                ...studentEval14.demoScores,
+                                [item.key]: Math.min(
+                                  item.max,
+                                  Math.max(0, val)
+                                ),
+                              };
+                              handleSaveSession14EvalDraft(
+                                studentEval14.studentId,
+                                {
+                                  demoScores: nextDemo,
+                                }
+                              );
+                            }}
+                            className="w-full px-2 py-1 rounded bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 9 Tiêu chí Điểm Năng Lực [ĐNL] */}
+                  <div>
+                    <div className="font-semibold text-cyan-300 mb-2">
+                      2. Điểm Năng Lực [ĐNL] (9 tiêu chí thang 1..5 — Trung bình: {studentEval14.competencyTotalScore} / 5.0)
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      {COMPETENCY_ITEMS_UI.map((item) => (
+                        <div
+                          key={item.key}
+                          className="p-2 rounded bg-slate-950 border border-slate-800 flex items-center justify-between gap-2"
+                        >
+                          <span className="text-[11px] text-slate-300">
+                            {item.label}
+                          </span>
+                          <select
+                            value={studentEval14.competencyScores[item.key]}
+                            onChange={(e) => {
+                              const nextComp = {
+                                ...studentEval14.competencyScores,
+                                [item.key]: Number(e.target.value) || 4,
+                              };
+                              handleSaveSession14EvalDraft(
+                                studentEval14.studentId,
+                                {
+                                  competencyScores: nextComp,
+                                }
+                              );
+                            }}
+                            className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-cyan-300 text-xs font-bold"
+                          >
+                            {[1, 2, 3, 4, 5].map((score) => (
+                              <option key={score} value={score}>
+                                {score} điểm
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 3 Ô Thư từ MindX (+ Ô 4 Xếp hạng giải cho lớp Robotics) */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block font-semibold text-emerald-300 mb-1">
+                        Phần 1: Learned From Mindx (Thư tổng kết khóa học &amp; Kết quả đánh giá)
+                      </label>
+                      <textarea
+                        rows={8}
+                        value={studentEval14.learnedFromMindx}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSession14Evals((prev) =>
+                            prev.map((it) =>
+                              it.studentId === studentEval14.studentId
+                                ? { ...it, learnedFromMindx: val }
+                                : it
+                            )
+                          );
+                        }}
+                        onBlur={() =>
+                          handleSaveSession14EvalDraft(studentEval14.studentId, {
+                            learnedFromMindx: studentEval14.learnedFromMindx,
+                          })
+                        }
+                        className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-white text-xs leading-relaxed"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-semibold text-amber-300 mb-1">
+                          Phần 2: Suggestions From Mindx (Lời khuyên cải thiện)
+                        </label>
+                        <textarea
+                          rows={4}
+                          value={studentEval14.suggestionsFromMindx}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSession14Evals((prev) =>
+                              prev.map((it) =>
+                                it.studentId === studentEval14.studentId
+                                  ? { ...it, suggestionsFromMindx: val }
+                                  : it
+                              )
+                            );
+                          }}
+                          onBlur={() =>
+                            handleSaveSession14EvalDraft(
+                              studentEval14.studentId,
+                              {
+                                suggestionsFromMindx:
+                                  studentEval14.suggestionsFromMindx,
+                              }
+                            )
+                          }
+                          className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-white text-xs leading-relaxed"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-sky-300 mb-1">
+                          Phần 3: Future Direction (Định hướng khóa học tiếp theo)
+                        </label>
+                        <textarea
+                          rows={4}
+                          value={studentEval14.futureDirection}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSession14Evals((prev) =>
+                              prev.map((it) =>
+                                it.studentId === studentEval14.studentId
+                                  ? { ...it, futureDirection: val }
+                                  : it
+                              )
+                            );
+                          }}
+                          onBlur={() =>
+                            handleSaveSession14EvalDraft(
+                              studentEval14.studentId,
+                              {
+                                futureDirection: studentEval14.futureDirection,
+                              }
+                            )
+                          }
+                          className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-white text-xs leading-relaxed"
+                        />
+                      </div>
+                    </div>
+
+                    {isRoboticsClass && (
+                      <div>
+                        <label className="block font-semibold text-rose-300 mb-1">
+                          Phần 4: Xếp hạng giải của học viên (Riêng lớp Robotics — Cột 2 LMS Buổi 14, Tùy chọn)
+                        </label>
+                        <input
+                          type="text"
+                          value={studentEval14.awardRanking || ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSession14Evals((prev) =>
+                              prev.map((it) =>
+                                it.studentId === studentEval14.studentId
+                                  ? { ...it, awardRanking: val }
+                                  : it
+                              )
+                            );
+                          }}
+                          onBlur={() =>
+                            handleSaveSession14EvalDraft(
+                              studentEval14.studentId,
+                              {
+                                awardRanking: studentEval14.awardRanking || "",
+                              }
+                            )
+                          }
+                          placeholder="VD: Giải Nhất / Giải Sáng Tạo / Giải Thuyết Trình Ấn Tượng (Để trống nếu không điền)"
+                          className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-white text-xs"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

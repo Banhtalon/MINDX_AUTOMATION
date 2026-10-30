@@ -1,0 +1,12 @@
+﻿{"name":"test-streamline-v340-s5a","exitCode":0,"mirror":true,"finished":"2026-10-30T17:06:53.0408779+07:00"}
+{"name":"test-phase5","exitCode":0,"mirror":true,"finished":"2026-10-30T17:06:55.1047509+07:00"}
+{"name":"test-phase7","exitCode":1,"mirror":true,"finished":"2026-10-30T17:06:56.5346210+07:00"}
+{"name":"test-phase4-codex-repros","exitCode":0,"mirror":true,"finished":"2026-10-30T17:06:59.9023300+07:00"}
+{"name":"test-lms-reliability-v280","exitCode":0,"mirror":true,"finished":"2026-10-30T17:08:22.4631232+07:00"}
+{"name":"test-session14-v290","exitCode":1,"mirror":true,"finished":"2026-10-30T17:08:24.3229964+07:00"}
+{"name":"test-teaching-project-v320","exitCode":0,"mirror":true,"finished":"2026-10-30T17:08:38.4341278+07:00"}
+{"name":"test-report-card-v330","exitCode":0,"mirror":true,"finished":"2026-10-30T17:08:40.5316880+07:00"}
+{"name":"test-streamline-v340-s1","exitCode":1,"mirror":true,"finished":"2026-10-30T17:08:42.3610731+07:00"}
+{"name":"test-streamline-v340-s2","exitCode":0,"mirror":true,"finished":"2026-10-30T17:08:44.4033620+07:00"}
+{"name":"test-streamline-v340-s3","exitCode":0,"mirror":true,"finished":"2026-10-30T17:08:46.3503445+07:00"}
+{"name":"test-streamline-v340-s4","exitCode":0,"mirror":true,"finished":"2026-10-30T17:08:48.3028415+07:00"}

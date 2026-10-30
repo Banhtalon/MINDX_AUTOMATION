@@ -1,0 +1,100 @@
+    const out=process.env.S5B_R3_EVIDENCE!;
+    const observations=[];
+    const record=(id,details)=>{observations.push({id,...details});fs.writeFileSync(path.join(out,'reset-observations.json'),JSON.stringify(observations,null,2));console.log('PASS',id);};
+    await context.route('**/*',r=>r.abort());
+    await page.setContent(html,{waitUntil:'networkidle'});
+    await page.waitForFunction(()=>document.body.innerText.includes('Đang chọn:'));
+    await page.locator('button:has-text("Buổi 14")').first().click();
+    await page.locator('text=File chấm điểm BGK').first().waitFor();
+    const text=()=>page.locator('#root').innerText();
+    const calls=()=>page.evaluate(()=>(window as any).__apiCalls);
+    const combo=page.locator('button:has-text("🚀 Nộp Buổi 14 đầy đủ")');
+    const spckRetry=page.locator('button:has-text("Thử lại riêng phần Sản phẩm")');
+    const evalRetry=page.locator('button:has-text("Thử lại riêng phần Đánh giá")');
+    const settled=()=>page.waitForFunction(()=>{
+      const b=Array.from(document.querySelectorAll('button')).find(b=>b.textContent?.includes('🚀 Nộp Buổi 14 đầy đủ'));
+      return b && !(b as HTMLButtonElement).disabled;
+    });
+    const snap=async(name)=>{
+      fs.writeFileSync(path.join(out,name+'.txt'),await text());
+      await page.screenshot({path:path.join(out,name+'.png'),fullPage:true});
+    };
+
+    await page.evaluate(()=>{(window as any).__simulateS14EvalStudentFail=true;});
+    await combo.click();await settled();
+    const batchA=await text();
+    assert.ok(batchA.includes('Đã lưu & xác minh 1 học viên (1 cần thử lại)'));
+    assert.ok(batchA.includes('Không tìm thấy nút Lưu cho Ngọc'));
+    assert.match(batchA,/Đã nộp\s+2\/2\s+—/);
+    assert.equal(await evalRetry.count(),1);
+    await snap('R3-A-completed');
+    record('R3-RESET-A',{scenario:'Seed completed A: product 2/2; evaluation 1 verified + 1 retry with error'});
+
+    await page.evaluate(()=>{
+      (window as any).__apiCalls=[];(window as any).__responses=[];
+      (window as any).__simulateS14EvalStudentFail=false;
+      (window as any).__delaySaveDraftOnce=true;
+      (window as any).__releaseSaveDraft=null;
+      (window as any).__simulateSaveDraftConflict=true;
+    });
+    await combo.click();
+    await page.waitForFunction(()=>typeof (window as any).__releaseSaveDraft==='function');
+    const during=await text(), duringCalls=await calls();
+    assert.ok(during.includes('Chưa chạy trong đợt này'));
+    assert.ok(during.includes('Đang duyệt & nộp Sản phẩm SPCK'));
+    for(const stale of ['Đã lưu & xác minh 1 học viên (1 cần thử lại)','Không tìm thấy nút Lưu cho Ngọc','Kết quả đợt nộp Buổi','Hoàn tất nộp Buổi 14 đầy đủ'])assert.equal(during.includes(stale),false,stale);
+    assert.doesNotMatch(during,/Đã nộp\s+2\/2\s+—/);
+    assert.equal(await evalRetry.count(),0);assert.equal(await spckRetry.count(),0);
+    assert.equal(await combo.isDisabled(),true);
+    assert.ok(duringCalls.some(c=>c.url==='/api/spck/save-draft'));
+    assert.equal(duringCalls.some(c=>c.url==='/api/spck/approve'||c.url.endsWith('/upload-lms')),false);
+    assert.equal((await page.evaluate(()=>(window as any).__responses)).some(c=>c.url==='/api/spck/save-draft'),false);
+    await snap('R3-B-pending');
+    record('R3-RESET-B-PENDING',{scenario:'New both batch clears A before first save-draft resolves',oldEvalResult:false,oldError:false,oldSummary:false,oldBanner:false,oldRetryButtons:0,evalPlaceholder:true,submitDisabled:true,calls:duringCalls});
+
+    await page.evaluate(()=>{(window as any).__releaseSaveDraft();});await settled();
+    const early=await text();
+    assert.ok(early.includes('Đã nộp 0/2 bài (2 bài cần thử lại)'));
+    assert.ok(early.includes('Đã lưu & xác minh 2 học viên (0 cần thử lại)'));
+    assert.equal(await spckRetry.count(),1);assert.equal(await evalRetry.count(),0);
+    assert.ok((await page.evaluate(()=>(window as any).__responses)).some(c=>c.url==='/api/spck/save-draft'&&c.status===409));
+    await snap('R3-B-early409');
+    record('R3-RESET-B-409',{scenario:'Release pending save with HTTP409; product retry 2, evaluation independently verified 2',calls:await calls()});
+
+    await page.evaluate(()=>{
+      (window as any).__simulateSaveDraftConflict=false;(window as any).__apiCalls=[];
+      (window as any).__delaySaveDraftOnce=true;(window as any).__releaseSaveDraft=null;
+    });
+    await spckRetry.click();await page.waitForFunction(()=>typeof (window as any).__releaseSaveDraft==='function');
+    assert.ok((await text()).includes('Đã lưu & xác minh 2 học viên (0 cần thử lại)'));
+    assert.equal((await calls()).some(c=>c.url.includes('/session14-eval')),false);
+    await snap('R3-spck-retry-pending');
+    await page.evaluate(()=>{(window as any).__releaseSaveDraft();});await settled();
+    assert.ok((await text()).includes('Đã nộp 2/2 bài'));
+    assert.ok((await text()).includes('Đã lưu & xác minh 2 học viên (0 cần thử lại)'));
+    assert.equal(await spckRetry.count(),0);
+    assert.equal((await calls()).some(c=>c.url.includes('/session14-eval')),false);
+    record('R3-RETRY-SPCK',{scenario:'spck_only preserves evaluation 2/2 while pending and after success; no evaluation request',calls:await calls()});
+
+    await page.evaluate(()=>{(window as any).__simulateS14EvalStudentFail=true;(window as any).__apiCalls=[];});
+    await combo.click();await settled();assert.equal(await evalRetry.count(),1);
+    await page.evaluate(()=>{
+      (window as any).__simulateS14EvalStudentFail=false;(window as any).__apiCalls=[];
+      (window as any).__holdEvalUploadOnce=true;(window as any).__releaseEvalUpload=null;
+    });
+    await evalRetry.click();await page.waitForFunction(()=>typeof (window as any).__releaseEvalUpload==='function');
+    const evalPending=await text();assert.ok(evalPending.includes('Đã nộp 2/2 bài'));
+    assert.match(evalPending,/Đã nộp\s+2\/2\s+—/);
+    assert.ok(evalPending.includes('Đang duyệt & đẩy Đánh giá tổng kết'));
+    assert.deepEqual(await page.evaluate(()=>(window as any).__heldEvalRequest.body.studentIds),['STU_02']);
+    assert.equal((await calls()).some(c=>c.url==='/api/spck/save-draft'||c.url==='/api/spck/approve'||c.url==='/api/spck/upload-lms'),false);
+    await snap('R3-eval-retry-pending');
+    await page.evaluate(()=>{(window as any).__releaseEvalUpload();});await settled();
+    assert.ok((await text()).includes('Đã nộp 2/2 bài'));
+    assert.ok((await text()).includes('Đã lưu & xác minh 2 học viên (0 cần thử lại)'));
+    assert.equal(await evalRetry.count(),0);
+    const finalCalls=await calls();assert.deepEqual(finalCalls.find(c=>c.url==='/api/spck/session14-eval/upload-lms').body.studentIds,['STU_02']);
+    assert.equal(finalCalls.some(c=>c.url==='/api/spck/upload-lms'),false);
+    await snap('R3-retries-completed');
+    record('R3-RETRY-EVAL',{scenario:'eval_only preserves product 2/2 while pending and after success; one failed student only; total 2 without duplicates',calls:finalCalls});
+    await context.close();

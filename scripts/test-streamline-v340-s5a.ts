@@ -176,6 +176,20 @@ async function runTests() {
   const preS5aEntryFile = path.join(tempBuildDir, "pre-s5a-page.tsx");
   fs.writeFileSync(preS5aEntryFile, preS5aSource, "utf8");
 
+  const postS5aRoot = path.join(tempBuildDir, "post-s5a");
+  const s5aCommitFingerprints: Record<string, string> = {};
+  for (const relPath of allClientFiles) {
+    const fileContent = execSync(`git show a78c5a1:${relPath}`, {
+      cwd: ROOT,
+      encoding: "utf8",
+      maxBuffer: 20 * 1024 * 1024,
+    });
+    s5aCommitFingerprints[relPath] = sha256(fileContent);
+    const destPath = path.join(postS5aRoot, relPath);
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.writeFileSync(destPath, fileContent, "utf8");
+  }
+
   const harnessEntry = (pageImportPath: string) => `
     import React from "react";
     import { createRoot } from "react-dom/client";
@@ -191,26 +205,32 @@ async function runTests() {
   fs.writeFileSync(preHarnessFile, harnessEntry(preS5aEntryFile), "utf8");
   fs.writeFileSync(
     postHarnessFile,
-    harnessEntry(path.join(ROOT, "src/app/final-project/page.tsx")),
+    harnessEntry(path.join(postS5aRoot, "src/app/final-project/page.tsx")),
     "utf8"
   );
 
-  const aliasPlugin: esbuild.Plugin = {
+  const createAliasPlugin = (overrideSrcRoot?: string): esbuild.Plugin => ({
     name: "tsconfig-path-alias",
     setup(build) {
       build.onResolve({ filter: /^@\// }, (args) => {
-        const targetBase = path.join(ROOT, "src", args.path.slice(2));
-        for (const ext of ["", ".tsx", ".ts", ".jsx", ".js", "/index.ts", "/index.tsx"]) {
-          if (fs.existsSync(targetBase + ext) && fs.statSync(targetBase + ext).isFile()) {
-            return { path: targetBase + ext };
+        const subPath = args.path.slice(2);
+        const searchRoots = overrideSrcRoot
+          ? [path.join(overrideSrcRoot, "src"), path.join(ROOT, "src")]
+          : [path.join(ROOT, "src")];
+        for (const srcBase of searchRoots) {
+          const targetBase = path.join(srcBase, subPath);
+          for (const ext of ["", ".tsx", ".ts", ".jsx", ".js", "/index.ts", "/index.tsx"]) {
+            if (fs.existsSync(targetBase + ext) && fs.statSync(targetBase + ext).isFile()) {
+              return { path: targetBase + ext };
+            }
           }
         }
-        return { path: targetBase };
+        return { path: path.join(ROOT, "src", subPath) };
       });
     },
-  };
+  });
 
-  const buildBundle = async (entryPoint: string, outName: string) => {
+  const buildBundle = async (entryPoint: string, outName: string, overrideSrcRoot?: string) => {
     const outFile = path.join(tempBuildDir, outName);
     await esbuild.build({
       entryPoints: [entryPoint],
@@ -222,7 +242,7 @@ async function runTests() {
       jsx: "automatic",
       absWorkingDir: ROOT,
       nodePaths: [path.join(ROOT, "node_modules")],
-      plugins: [aliasPlugin],
+      plugins: [createAliasPlugin(overrideSrcRoot)],
       define: {
         "process.env.NODE_ENV": '"production"',
       },
@@ -231,7 +251,7 @@ async function runTests() {
   };
 
   const beforeBundleJs = await buildBundle(preHarnessFile, "bundle-before.js");
-  const afterBundleJs = await buildBundle(postHarnessFile, "bundle-after.js");
+  const afterBundleJs = await buildBundle(postHarnessFile, "bundle-after.js", postS5aRoot);
 
   const buildMockedHtmlPage = (bundleCode: string, scenarioMode: ScenarioName) => `<!DOCTYPE html>
 <html lang="vi" class="dark">
@@ -458,7 +478,7 @@ async function runTests() {
   });
   const parityManifest: Record<string, any> = {
     baselineCommit: "93b77e0098d45becd38ac377e473534682e9d98c",
-    sourceFingerprints,
+    sourceFingerprints: s5aCommitFingerprints,
     scenarios: {},
   };
 

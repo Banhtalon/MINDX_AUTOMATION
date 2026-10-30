@@ -11,6 +11,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const classId = String(body?.classId || "").trim().toUpperCase();
     const sourcePathOrUrl = String(body?.sourcePathOrUrl || "").trim();
+    const onlyMissingStudents = Boolean(body?.onlyMissingStudents);
 
     if (!classId) {
       return NextResponse.json(
@@ -19,7 +20,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const importResult = await importClassDemoScores(classId, sourcePathOrUrl || undefined);
+    const importResult = await importClassDemoScores(
+      classId,
+      sourcePathOrUrl || undefined,
+      { onlyMissingStudents }
+    );
     const records = buildEnrichedSession14EvalList(classId);
 
     return NextResponse.json({

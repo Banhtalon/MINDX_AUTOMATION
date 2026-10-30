@@ -1,0 +1,3870 @@
+diff --git a/scripts/test-streamline-v340-s5a.ts b/scripts/test-streamline-v340-s5a.ts
+index 40386b9..45fd3e1 100644
+--- a/scripts/test-streamline-v340-s5a.ts
++++ b/scripts/test-streamline-v340-s5a.ts
+@@ -176,6 +176,20 @@ async function runTests() {
+   const preS5aEntryFile = path.join(tempBuildDir, "pre-s5a-page.tsx");
+   fs.writeFileSync(preS5aEntryFile, preS5aSource, "utf8");
+ 
++  const postS5aRoot = path.join(tempBuildDir, "post-s5a");
++  const s5aCommitFingerprints: Record<string, string> = {};
++  for (const relPath of allClientFiles) {
++    const fileContent = execSync(`git show a78c5a1:${relPath}`, {
++      cwd: ROOT,
++      encoding: "utf8",
++      maxBuffer: 20 * 1024 * 1024,
++    });
++    s5aCommitFingerprints[relPath] = sha256(fileContent);
++    const destPath = path.join(postS5aRoot, relPath);
++    fs.mkdirSync(path.dirname(destPath), { recursive: true });
++    fs.writeFileSync(destPath, fileContent, "utf8");
++  }
++
+   const harnessEntry = (pageImportPath: string) => `
+     import React from "react";
+     import { createRoot } from "react-dom/client";
+@@ -191,26 +205,32 @@ async function runTests() {
+   fs.writeFileSync(preHarnessFile, harnessEntry(preS5aEntryFile), "utf8");
+   fs.writeFileSync(
+     postHarnessFile,
+-    harnessEntry(path.join(ROOT, "src/app/final-project/page.tsx")),
++    harnessEntry(path.join(postS5aRoot, "src/app/final-project/page.tsx")),
+     "utf8"
+   );
+ 
+-  const aliasPlugin: esbuild.Plugin = {
++  const createAliasPlugin = (overrideSrcRoot?: string): esbuild.Plugin => ({
+     name: "tsconfig-path-alias",
+     setup(build) {
+       build.onResolve({ filter: /^@\// }, (args) => {
+-        const targetBase = path.join(ROOT, "src", args.path.slice(2));
+-        for (const ext of ["", ".tsx", ".ts", ".jsx", ".js", "/index.ts", "/index.tsx"]) {
+-          if (fs.existsSync(targetBase + ext) && fs.statSync(targetBase + ext).isFile()) {
+-            return { path: targetBase + ext };
++        const subPath = args.path.slice(2);
++        const searchRoots = overrideSrcRoot
++          ? [path.join(overrideSrcRoot, "src"), path.join(ROOT, "src")]
++          : [path.join(ROOT, "src")];
++        for (const srcBase of searchRoots) {
++          const targetBase = path.join(srcBase, subPath);
++          for (const ext of ["", ".tsx", ".ts", ".jsx", ".js", "/index.ts", "/index.tsx"]) {
++            if (fs.existsSync(targetBase + ext) && fs.statSync(targetBase + ext).isFile()) {
++              return { path: targetBase + ext };
++            }
+           }
+         }
+-        return { path: targetBase };
++        return { path: path.join(ROOT, "src", subPath) };
+       });
+     },
+-  };
++  });
+ 
+-  const buildBundle = async (entryPoint: string, outName: string) => {
++  const buildBundle = async (entryPoint: string, outName: string, overrideSrcRoot?: string) => {
+     const outFile = path.join(tempBuildDir, outName);
+     await esbuild.build({
+       entryPoints: [entryPoint],
+@@ -222,7 +242,7 @@ async function runTests() {
+       jsx: "automatic",
+       absWorkingDir: ROOT,
+       nodePaths: [path.join(ROOT, "node_modules")],
+-      plugins: [aliasPlugin],
++      plugins: [createAliasPlugin(overrideSrcRoot)],
+       define: {
+         "process.env.NODE_ENV": '"production"',
+       },
+@@ -231,7 +251,7 @@ async function runTests() {
+   };
+ 
+   const beforeBundleJs = await buildBundle(preHarnessFile, "bundle-before.js");
+-  const afterBundleJs = await buildBundle(postHarnessFile, "bundle-after.js");
++  const afterBundleJs = await buildBundle(postHarnessFile, "bundle-after.js", postS5aRoot);
+ 
+   const buildMockedHtmlPage = (bundleCode: string, scenarioMode: ScenarioName) => `<!DOCTYPE html>
+ <html lang="vi" class="dark">
+@@ -458,7 +478,7 @@ async function runTests() {
+   });
+   const parityManifest: Record<string, any> = {
+     baselineCommit: "93b77e0098d45becd38ac377e473534682e9d98c",
+-    sourceFingerprints,
++    sourceFingerprints: s5aCommitFingerprints,
+     scenarios: {},
+   };
+ 
+diff --git a/src/app/api/spck/deploy-web/route.ts b/src/app/api/spck/deploy-web/route.ts
+index 449b1c6..4a5add0 100644
+--- a/src/app/api/spck/deploy-web/route.ts
++++ b/src/app/api/spck/deploy-web/route.ts
+@@ -1,5 +1,5 @@
+ import { NextResponse } from "next/server";
+-import { type SpckSessionNumber } from "@/lib/db/sqlite";
++import { spckSessionRepo, type SpckSessionNumber } from "@/lib/db/sqlite";
+ import {
+   DEFAULT_SPCK_WEB_REPO_URL,
+   SpckWebDeployer,
+@@ -53,6 +53,25 @@ export async function POST(req: Request) {
+       studentIds,
+     });
+ 
++    if (body?.syncActiveSession === true && activeSessionNumber) {
++      const targetIds =
++        studentIds && studentIds.length > 0
++          ? studentIds
++          : (deployResult.results || [])
++              .filter((r: any) => r.status === "DEPLOYED")
++              .map((r: any) => String(r.studentId || ""))
++              .filter(Boolean);
++      for (const sid of targetIds) {
++        try {
++          spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
++            classId,
++            sid,
++            activeSessionNumber
++          );
++        } catch {}
++      }
++    }
++
+     const updatedRecords = buildEnrichedClassSpckRecords(classId, activeSessionNumber);
+ 
+     return NextResponse.json({
+diff --git a/src/app/api/spck/generate-ai/route.ts b/src/app/api/spck/generate-ai/route.ts
+index e8ee7fd..8586f40 100644
+--- a/src/app/api/spck/generate-ai/route.ts
++++ b/src/app/api/spck/generate-ai/route.ts
+@@ -120,6 +120,10 @@ export async function POST(req: Request) {
+           typeof s?.expectedVersion === "number" && Number.isFinite(s.expectedVersion)
+             ? s.expectedVersion
+             : undefined,
++        priorSession12Summary:
++          typeof s?.priorSession12Summary === "string"
++            ? s.priorSession12Summary
++            : undefined,
+       });
+     }
+ 
+diff --git a/src/app/api/spck/session14-eval/import-demo-scores/route.ts b/src/app/api/spck/session14-eval/import-demo-scores/route.ts
+index 1c3d4aa..576682b 100644
+--- a/src/app/api/spck/session14-eval/import-demo-scores/route.ts
++++ b/src/app/api/spck/session14-eval/import-demo-scores/route.ts
+@@ -11,6 +11,7 @@ export async function POST(req: Request) {
+     const body = await req.json();
+     const classId = String(body?.classId || "").trim().toUpperCase();
+     const sourcePathOrUrl = String(body?.sourcePathOrUrl || "").trim();
++    const onlyMissingStudents = Boolean(body?.onlyMissingStudents);
+ 
+     if (!classId) {
+       return NextResponse.json(
+@@ -19,7 +20,11 @@ export async function POST(req: Request) {
+       );
+     }
+ 
+-    const importResult = await importClassDemoScores(classId, sourcePathOrUrl || undefined);
++    const importResult = await importClassDemoScores(
++      classId,
++      sourcePathOrUrl || undefined,
++      { onlyMissingStudents }
++    );
+     const records = buildEnrichedSession14EvalList(classId);
+ 
+     return NextResponse.json({
+diff --git a/src/app/api/spck/upload-drive/route.ts b/src/app/api/spck/upload-drive/route.ts
+index 20ee77d..9b39526 100644
+--- a/src/app/api/spck/upload-drive/route.ts
++++ b/src/app/api/spck/upload-drive/route.ts
+@@ -1,5 +1,5 @@
+ import { NextResponse } from "next/server";
+-import { type SpckSessionNumber } from "@/lib/db/sqlite";
++import { spckSessionRepo, type SpckSessionNumber } from "@/lib/db/sqlite";
+ import {
+   DEFAULT_SPCK_DRIVE_FOLDER_URL,
+   SpckDriveUploader,
+@@ -43,6 +43,25 @@ export async function POST(req: Request) {
+       studentIds,
+     });
+ 
++    if (body?.syncActiveSession === true && activeSessionNumber) {
++      const targetIds =
++        studentIds && studentIds.length > 0
++          ? studentIds
++          : (driveResult.results || [])
++              .filter((r: any) => r.status === "UPLOADED")
++              .map((r: any) => String(r.studentId || ""))
++              .filter(Boolean);
++      for (const sid of targetIds) {
++        try {
++          spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
++            classId,
++            sid,
++            activeSessionNumber
++          );
++        } catch {}
++      }
++    }
++
+     const updatedRecords = buildEnrichedClassSpckRecords(classId, activeSessionNumber);
+ 
+     return NextResponse.json({
+diff --git a/src/app/final-project/page.tsx b/src/app/final-project/page.tsx
+index 1d7edb5..dcbe9ba 100644
+--- a/src/app/final-project/page.tsx
++++ b/src/app/final-project/page.tsx
+@@ -273,7 +273,13 @@ interface Session14EvalItemUI {
+   quickTags: string[];
+   teacherNote: string;
+   draftVersion: number;
+-  status: "DRAFT" | "WAITING_APPROVAL" | "APPROVED" | "VERIFIED" | "FAILED";
++  status:
++    | "DRAFT"
++    | "WAITING_APPROVAL"
++    | "APPROVED"
++    | "VERIFIED"
++    | "FAILED"
++    | "INSUFFICIENT_INFO";
+   contentHash: string;
+   verifiedAt?: string | null;
+   errorMessage?: string | null;
+@@ -1078,6 +1084,13 @@ export default function FinalProjectPage() {
+       );
+       setRows(mapped);
+       const assignedIds = mapped.map((r) => r.assignedStudentId).filter(Boolean);
++      const unsubmittedForTargetIds = mapped
++        .filter((r) => {
++          if (!r.assignedStudentId) return false;
++          const slot = getSessionSlotDisplay(r, targetSess);
++          return !slot.label.startsWith("Đã nộp ✓");
++        })
++        .map((r) => r.assignedStudentId);
+       const readyIds = mapped
+         .filter(
+           (r) =>
+@@ -1091,7 +1104,9 @@ export default function FinalProjectPage() {
+         .map((r) => r.assignedStudentId);
+       setSelectedStudentIds((prev) =>
+         prev.includes("__AUTO_SELECT__")
+-          ? readyIds.length > 0
++          ? targetSess === 13
++            ? unsubmittedForTargetIds
++            : readyIds.length > 0
+             ? readyIds
+             : assignedIds
+           : prev.filter((id) => assignedIds.includes(id))
+@@ -1442,6 +1457,13 @@ export default function FinalProjectPage() {
+       );
+ 
+       setRows(scannedItems);
++      const unsubmittedAfterScan = scannedItems
++        .filter((r) => {
++          if (!r.assignedStudentId) return false;
++          const slot = getSessionSlotDisplay(r, selectedSessionNumber);
++          return !slot.label.startsWith("Đã nộp ✓");
++        })
++        .map((r) => r.assignedStudentId);
+       const readyAfterScan = scannedItems
+         .filter(
+           (r) =>
+@@ -1456,17 +1478,28 @@ export default function FinalProjectPage() {
+         .map((r) => r.assignedStudentId)
+         .filter(Boolean);
+       setSelectedStudentIds(
+-        readyAfterScan.length > 0 ? readyAfterScan : assignedAfterScan
++        selectedSessionNumber === 13
++          ? unsubmittedAfterScan
++          : readyAfterScan.length > 0
++          ? readyAfterScan
++          : assignedAfterScan
+       );
+       setBannerMessage({
+         type: "success",
+         text: `Đã quét thành công ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}'.`,
+       });
++      return {
++        success: true,
++        scannedItems,
++        classId: requestClassId,
++        sessionNumber: selectedSessionNumber,
++      };
+     } catch (err) {
+       setBannerMessage({
+         type: "error",
+         text: err instanceof Error ? err.message : String(err),
+       });
++      return { success: false, scannedItems: [] as ScannedFolderUIItem[] };
+     } finally {
+       setScanning(false);
+     }
+@@ -1681,6 +1714,7 @@ export default function FinalProjectPage() {
+     }
+ 
+     setSelectedSessionNumber(nextSessionNum);
++    setSelectedStudentIds(["__AUTO_SELECT__"]);
+     setBannerMessage(null);
+     if (selectedClassId) {
+       await loadClassData(selectedClassId, nextSessionNum);
+@@ -1938,11 +1972,26 @@ export default function FinalProjectPage() {
+     }
+ 
+     if (duplicateStudentIds.size > 0) {
++      const dupErr = `Phát hiện học viên bị ghép trùng nhiều thư mục (${Array.from(duplicateStudentIds).join(", ")}). Vui lòng xử lý trên Bảng Ghép nối trước khi nộp.`;
+       setBannerMessage({
+         type: "error",
+-        text: `Phát hiện học viên bị ghép trùng nhiều thư mục (${Array.from(duplicateStudentIds).join(", ")}). Vui lòng xử lý trên Bảng Ghép nối trước khi nộp.`,
++        text: dupErr,
+       });
+-      return;
++      const dupSummary: SpckBatchSubmissionSummaryUI = {
++        sessionNumber: targetSessionNum,
++        totalSelected: normalizedTargetIds.length,
++        verifiedItems: [],
++        failedItems: normalizedTargetIds.map((id) => ({
++          studentId: id,
++          studentName: id,
++          reason: dupErr,
++        })),
++        skippedItems: [],
++        retryStudentIds: normalizedTargetIds,
++        completedAt: new Date().toLocaleTimeString("vi-VN"),
++      };
++      setLastSubmissionSummary(dupSummary);
++      return dupSummary;
+     }
+ 
+     const requestClassId = selectedClassId;
+@@ -1968,9 +2017,31 @@ export default function FinalProjectPage() {
+         const row = rows.find((r) => r.assignedStudentId === sid);
+         if (row) {
+           const savedRes: any = await persistRowDraft(row, undefined, targetSessionNum);
+-          if (!savedRes || (activeUiClassId && activeUiClassId !== requestClassId)) {
++          if (activeUiClassId && activeUiClassId !== requestClassId) {
+             return;
+           }
++          if (!savedRes) {
++            const failReason =
++              "Không thể lưu bản nháp trước khi duyệt (xung đột phiên bản hoặc dữ liệu không hợp lệ).";
++            const failSummary: SpckBatchSubmissionSummaryUI = {
++              sessionNumber: targetSessionNum,
++              totalSelected: normalizedTargetIds.length,
++              verifiedItems: [],
++              failedItems: normalizedTargetIds.map((id) => ({
++                studentId: id,
++                studentName: resolveStudentLabel(id),
++                reason:
++                  id === sid
++                    ? failReason
++                    : "Đã dừng nộp hàng loạt do lỗi lưu nháp trước đó.",
++              })),
++              skippedItems: [],
++              retryStudentIds: normalizedTargetIds,
++              completedAt: new Date().toLocaleTimeString("vi-VN"),
++            };
++            setLastSubmissionSummary(failSummary);
++            return failSummary;
++          }
+           if (typeof savedRes === "object" && savedRes.row) {
+             savedRowsByStudent.set(sid, savedRes.row);
+           } else if (typeof savedRes === "object" && typeof savedRes.draftVersion === "number") {
+@@ -2030,16 +2101,26 @@ export default function FinalProjectPage() {
+               reason: String(item.reason || approveData.error || "Chưa đủ điều kiện nộp."),
+             }))
+           : [];
++        const approveErrReason =
++          approveData.error || "Không thể chuẩn bị gói SPCK trước khi nộp.";
++        const approveFailSummary: SpckBatchSubmissionSummaryUI = {
++          sessionNumber: targetSessionNum,
++          totalSelected: normalizedTargetIds.length,
++          verifiedItems: [],
++          failedItems:
++            approveSkippedList.length > 0
++              ? []
++              : normalizedTargetIds.map((id) => ({
++                  studentId: id,
++                  studentName: resolveStudentLabel(id),
++                  reason: approveErrReason,
++                })),
++          skippedItems: approveSkippedList,
++          retryStudentIds: normalizedTargetIds,
++          completedAt: new Date().toLocaleTimeString("vi-VN"),
++        };
++        setLastSubmissionSummary(approveFailSummary);
+         if (approveSkippedList.length > 0) {
+-          setLastSubmissionSummary({
+-            sessionNumber: targetSessionNum,
+-            totalSelected: normalizedTargetIds.length,
+-            verifiedItems: [],
+-            failedItems: [],
+-            skippedItems: approveSkippedList,
+-            retryStudentIds: normalizedTargetIds,
+-            completedAt: new Date().toLocaleTimeString("vi-VN"),
+-          });
+           setBannerMessage({
+             type: "error",
+             text: `Đã nộp 0/${normalizedTargetIds.length} bài (Buổi ${targetSessionNum}) — ${approveSkippedList.length} bài bị bỏ qua: ${approveSkippedList
+@@ -2049,10 +2130,10 @@ export default function FinalProjectPage() {
+         } else {
+           setBannerMessage({
+             type: "error",
+-            text: approveData.error || "Không thể chuẩn bị gói SPCK trước khi nộp.",
++            text: approveErrReason,
+           });
+         }
+-        return;
++        return approveFailSummary;
+       }
+ 
+       const dbByStu = new Map<string, SpckRecordRow>(
+@@ -2111,7 +2192,7 @@ export default function FinalProjectPage() {
+             reason,
+           })
+         );
+-        setLastSubmissionSummary({
++        const skippedSummary: SpckBatchSubmissionSummaryUI = {
+           sessionNumber: targetSessionNum,
+           totalSelected: normalizedTargetIds.length,
+           verifiedItems: [],
+@@ -2119,14 +2200,15 @@ export default function FinalProjectPage() {
+           skippedItems: skippedOnly,
+           retryStudentIds: normalizedTargetIds,
+           completedAt: new Date().toLocaleTimeString("vi-VN"),
+-        });
++        };
++        setLastSubmissionSummary(skippedSummary);
+         setBannerMessage({
+           type: "error",
+           text: `Đã nộp 0/${normalizedTargetIds.length} bài (Buổi ${targetSessionNum}) — ${skippedOnly.length} bài bị bỏ qua: ${skippedOnly
+             .map((s) => `${s.studentName} (${s.reason})`)
+             .join("; ")}`,
+         });
+-        return;
++        return skippedSummary;
+       }
+ 
+       const uploadRes = await fetch("/api/spck/upload-lms", {
+@@ -2143,11 +2225,33 @@ export default function FinalProjectPage() {
+         return;
+       }
+       if (!uploadData.success) {
++        const uploadErrReason =
++          uploadData.error || "Lỗi khi Auto-Upload SPCK lên LMS.";
++        const uploadFailSummary: SpckBatchSubmissionSummaryUI = {
++          sessionNumber: targetSessionNum,
++          totalSelected: normalizedTargetIds.length,
++          verifiedItems: [],
++          failedItems: approvedIds.map((id) => ({
++            studentId: id,
++            studentName: resolveStudentLabel(id),
++            reason: uploadErrReason,
++          })),
++          skippedItems: Array.from(approveSkippedMap.entries()).map(
++            ([studentId, reason]) => ({
++              studentId,
++              studentName: resolveStudentLabel(studentId),
++              reason,
++            })
++          ),
++          retryStudentIds: normalizedTargetIds,
++          completedAt: new Date().toLocaleTimeString("vi-VN"),
++        };
++        setLastSubmissionSummary(uploadFailSummary);
+         setBannerMessage({
+           type: "error",
+-          text: uploadData.error || "Lỗi khi Auto-Upload SPCK lên LMS.",
++          text: uploadErrReason,
+         });
+-        return;
++        return uploadFailSummary;
+       }
+ 
+       const postUploadMap = new Map<string, SpckRecordRow>(
+@@ -2290,7 +2394,7 @@ export default function FinalProjectPage() {
+         ])
+       );
+ 
+-      setLastSubmissionSummary({
++      const summaryObj: SpckBatchSubmissionSummaryUI = {
+         sessionNumber: targetSessionNum,
+         totalSelected,
+         verifiedItems,
+@@ -2298,7 +2402,8 @@ export default function FinalProjectPage() {
+         skippedItems,
+         retryStudentIds,
+         completedAt: new Date().toLocaleTimeString("vi-VN"),
+-      });
++      };
++      setLastSubmissionSummary(summaryObj);
+ 
+       if (retryStudentIds.length > 0) {
+         setSelectedStudentIds(retryStudentIds);
+@@ -2332,13 +2437,30 @@ export default function FinalProjectPage() {
+           }.`,
+         });
+       }
++      return summaryObj;
+     } catch (err) {
++      const errReason = err instanceof Error ? err.message : String(err);
++      const catchSummary: SpckBatchSubmissionSummaryUI = {
++        sessionNumber: targetSessionNum,
++        totalSelected: normalizedTargetIds.length,
++        verifiedItems: [],
++        failedItems: normalizedTargetIds.map((id) => ({
++          studentId: id,
++          studentName: resolveStudentLabel(id),
++          reason: errReason,
++        })),
++        skippedItems: [],
++        retryStudentIds: normalizedTargetIds,
++        completedAt: new Date().toLocaleTimeString("vi-VN"),
++      };
+       if (!activeUiClassId || activeUiClassId === requestClassId) {
++        setLastSubmissionSummary(catchSummary);
+         setBannerMessage({
+           type: "error",
+-          text: err instanceof Error ? err.message : String(err),
++          text: errReason,
+         });
+       }
++      return catchSummary;
+     } finally {
+       setUploading(false);
+       setActiveActionLabel(null);
+@@ -2348,20 +2470,23 @@ export default function FinalProjectPage() {
+   // 7. Upload student local folders (delegated to useSpckWorkflow)
+ 
+   // 10b. Robotics: import class YouTube playlist / video links → match students → 2 presentation frames
+-  const handleImportYoutubeProducts = async () => {
++  const handleImportYoutubeProducts = async (
++    sourceRows?: ScannedFolderUIItem[]
++  ): Promise<{ success: boolean; updatedRows?: ScannedFolderUIItem[] } | void> => {
++    const baseRows = sourceRows || rows;
+     if (!selectedClassId) {
+       setBannerMessage({
+         type: "warning",
+         text: "Vui lòng chọn Lớp học trước khi nhập link YouTube.",
+       });
+-      return;
++      return { success: false, updatedRows: baseRows };
+     }
+     if (!youtubeImportInput.trim()) {
+       setBannerMessage({
+         type: "warning",
+         text: "Vui lòng dán link Playlist YouTube của lớp (hoặc danh sách 'Tên học viên - link video').",
+       });
+-      return;
++      return { success: false, updatedRows: baseRows };
+     }
+ 
+     const requestClassId = selectedClassId;
+@@ -2381,7 +2506,7 @@ export default function FinalProjectPage() {
+       });
+       const data = await res.json();
+       if (activeUiClassId && activeUiClassId !== requestClassId) {
+-        return;
++        return { success: false, updatedRows: baseRows };
+       }
+       if (data.importResult) {
+         setYoutubeImportReport(data.importResult);
+@@ -2391,7 +2516,7 @@ export default function FinalProjectPage() {
+           type: "error",
+           text: data.error || "Không thể nhập link YouTube cho lớp này.",
+         });
+-        return;
++        return { success: false, updatedRows: baseRows };
+       }
+ 
+       // V272-F03: merge server results into the LATEST row state (functional update), so anything the
+@@ -2409,7 +2534,7 @@ export default function FinalProjectPage() {
+         const recSeq = typeof (rec as any).draftSeq === "number" ? (rec as any).draftSeq : 0;
+         if (recSeq > clientDraftSequence) clientDraftSequence = recSeq;
+       }
+-      setRows((prev) => {
++      const mergeYoutubeRecordsIntoRows = (prev: ScannedFolderUIItem[]): ScannedFolderUIItem[] => {
+         const prevByStudent = new Map(
+           prev.filter((r) => r.assignedStudentId).map((r) => [r.assignedStudentId, r])
+         );
+@@ -2454,7 +2579,9 @@ export default function FinalProjectPage() {
+           (r) => !r.assignedStudentId || !recordIds.has(r.assignedStudentId)
+         );
+         return [...merged, ...untouched];
+-      });
++      };
++      const updatedRows = mergeYoutubeRecordsIntoRows(baseRows);
++      setRows((prev) => mergeYoutubeRecordsIntoRows(prev));
+ 
+       const ir = data.importResult;
+       const resultsList: any[] = ir?.results || [];
+@@ -2503,6 +2630,7 @@ export default function FinalProjectPage() {
+         type: allGood ? "success" : fullOk.length > 0 || appliedList.length > 0 ? "warning" : "error",
+         text: parts.join(" "),
+       });
++      return { success: true, updatedRows };
+     } catch (err) {
+       if (!activeUiClassId || activeUiClassId === requestClassId) {
+         setBannerMessage({
+@@ -2510,6 +2638,7 @@ export default function FinalProjectPage() {
+           text: err instanceof Error ? err.message : String(err),
+         });
+       }
++      return { success: false, updatedRows: baseRows };
+     } finally {
+       setImportingYoutube(false);
+     }
+@@ -2531,16 +2660,6 @@ export default function FinalProjectPage() {
+     [rows]
+   );
+ 
+-  const effectiveSelectedStudentIds = useMemo(() => {
+-    const validSet = new Set(assignableStudentIds);
+-    if (selectedStudentIds.includes("__AUTO_SELECT__")) {
+-      return confirmedReadyStudentIds.length > 0
+-        ? confirmedReadyStudentIds
+-        : assignableStudentIds;
+-    }
+-    return selectedStudentIds.filter((id) => validSet.has(id));
+-  }, [selectedStudentIds, assignableStudentIds, confirmedReadyStudentIds]);
+-
+   const unsubmittedForActiveSessionStudentIds = useMemo(
+     () =>
+       rows
+@@ -2553,6 +2672,25 @@ export default function FinalProjectPage() {
+     [rows, selectedSessionNumber]
+   );
+ 
++  const effectiveSelectedStudentIds = useMemo(() => {
++    const validSet = new Set(assignableStudentIds);
++    if (selectedStudentIds.includes("__AUTO_SELECT__")) {
++      if (selectedSessionNumber === 13) {
++        return unsubmittedForActiveSessionStudentIds;
++      }
++      return confirmedReadyStudentIds.length > 0
++        ? confirmedReadyStudentIds
++        : assignableStudentIds;
++    }
++    return selectedStudentIds.filter((id) => validSet.has(id));
++  }, [
++    selectedStudentIds,
++    assignableStudentIds,
++    confirmedReadyStudentIds,
++    selectedSessionNumber,
++    unsubmittedForActiveSessionStudentIds,
++  ]);
++
+   const isAnyOperationBusy =
+     loadingInit ||
+     scanningTeacherClasses ||
+diff --git a/src/components/final-project/Session14Panel.tsx b/src/components/final-project/Session14Panel.tsx
+index 576350b..f369862 100644
+--- a/src/components/final-project/Session14Panel.tsx
++++ b/src/components/final-project/Session14Panel.tsx
+@@ -2,7 +2,6 @@
+ 
+ import React from "react";
+ import { Loader2, Sparkles, UploadCloud } from "lucide-react";
+-import { COMPETENCY_ITEMS_UI } from "./types";
+ import { SpckWorkflowController } from "./useSpckWorkflow";
+ 
+ export interface Session14PanelProps {
+@@ -24,43 +23,66 @@ export function Session14Panel({ workflow }: Session14PanelProps) {
+     setDemoScoreSourceInput,
+     generatedDemoSheetUrl,
+     session14Evals,
+-    expandedS14EvalIds,
+-    setExpandedS14EvalIds,
+-    isRoboticsClass,
+-    activeDemoScoreItems,
+-    handleSaveSession14EvalDraft,
+-    setSession14Evals,
++    rows,
++    setExpandedRowKeys,
++    setRowActiveTab,
+   } = workflow;
+ 
+   if (selectedSessionNumber !== 14 || !selectedClassId) {
+     return null;
+   }
+ 
++  const verifiedCount = session14Evals.filter(
++    (ev) => ev.status === "VERIFIED"
++  ).length;
++  const readyLetterCount = session14Evals.filter(
++    (ev) =>
++      ev.learnedFromMindx.trim() &&
++      ev.suggestionsFromMindx.trim() &&
++      ev.futureDirection.trim()
++  ).length;
++
++  const handleOpenAllTab2 = () => {
++    const nextExpanded: Record<string, boolean> = {};
++    rows.forEach((r, idx) => {
++      const key = r.folderPath || r.assignedStudentId || String(idx);
++      nextExpanded[key] = true;
++      if (r.assignedStudentId) {
++        setRowActiveTab(r.assignedStudentId, "eval14");
++      }
++    });
++    setExpandedRowKeys((prev) => ({ ...prev, ...nextExpanded }));
++  };
++
+   return (
+     <div className="mindx-card-purple p-5 rounded-xl space-y-4">
+       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
+-        <div className="flex items-center space-x-2">
++        <div className="flex flex-wrap items-center gap-2">
+           <span className="mindx-badge-blue px-2.5 py-0.5 rounded-full text-xs font-bold">
+             Bước 4 / 4 — Riêng Buổi 14 (Tổng kết cuối khóa)
+           </span>
+           <h2 className="text-sm font-bold text-white">
+             Đánh Giá Tổng Kết Cuối Khóa, Điểm Demo &amp; Thư Từ MindX
+           </h2>
++          <span className="text-xs text-slate-300">
++            • Đã soạn Thư 3 phần:{" "}
++            <strong className="text-indigo-300">{readyLetterCount}</strong>/
++            {session14Evals.length} • Đã lưu LMS:{" "}
++            <strong className="text-emerald-300">{verifiedCount}</strong>/
++            {session14Evals.length}
++          </span>
+         </div>
+ 
+         <div className="flex flex-wrap items-center gap-2">
+-          <button
+-            type="button"
+-            disabled={isAnyOperationBusy}
+-            onClick={handleImportDemoScores}
+-            className="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm cursor-pointer"
+-          >
+-            <span>
+-              {importingDemoScores
+-                ? "Đang đọc điểm..."
+-                : "📥 Đọc Điểm Demo từ File Chấm Điểm"}
+-            </span>
+-          </button>
++          {rows.length > 0 && (
++            <button
++              type="button"
++              onClick={handleOpenAllTab2}
++              className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-indigo-500/60 text-indigo-200 text-xs font-bold cursor-pointer"
++            >
++              🏅 Mở Tab 2 (Điểm Demo &amp; Thư 3 phần) trên danh sách học viên
++            </button>
++          )}
+ 
+           <button
+             type="button"
+@@ -92,307 +114,32 @@ export function Session14Panel({ workflow }: Session14PanelProps) {
+         </div>
+       </div>
+ 
+-      {/* Thanh đọc Điểm Demo từ file chấm điểm BGK */}
+-      {false && (
+-        <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 flex flex-wrap items-center gap-2.5">
+-          <span className="text-xs font-semibold text-indigo-300 shrink-0">
+-            📊 File chấm điểm BGK (.xlsx hoặc Link Google Sheet):
+-          </span>
+-          <input
+-            type="text"
+-            value={demoScoreSourceInput}
+-            onChange={(e) => setDemoScoreSourceInput(e.target.value)}
+-            disabled={isAnyOperationBusy}
+-            placeholder={
+-              generatedDemoSheetUrl ||
+-              "Để trống để tự tìm file 'Bảng chấm điểm buổi Demo.xlsx' trong thư mục lớp, hoặc dán đường dẫn/link Google Sheet..."
+-            }
+-            className="flex-1 min-w-[260px] px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono disabled:opacity-60"
+-          />
+-          <button
+-            type="button"
+-            disabled={isAnyOperationBusy}
+-            onClick={handleImportDemoScores}
+-            className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer"
+-          >
+-            {importingDemoScores
+-              ? "Đang đọc điểm..."
+-              : "📥 Đọc Điểm Demo từ File Chấm Điểm"}
+-          </button>
+-        </div>
+-      )}
+-
+-      {/* Danh sách đánh giá Buổi 14 của từng học viên */}
+-      <div className="space-y-2.5">
+-        {session14Evals.map((ev) => {
+-          const isExpanded = Boolean(expandedS14EvalIds[ev.studentId]);
+-          return (
+-            <div
+-              key={ev.studentId}
+-              className="rounded-xl bg-slate-950 border border-slate-800 border-l-4 border-l-slate-800 dark:border-l-indigo-500 shadow-sm overflow-hidden"
+-            >
+-              <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-2 bg-slate-900/60">
+-                <div className="flex flex-wrap items-center gap-2.5">
+-                  <span className="text-sm font-bold text-white">{ev.fullName}</span>
+-                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-950 border border-indigo-700/60 text-indigo-300 text-[11px] font-semibold">
+-                    Điểm Demo: {ev.demoTotalScore} / 5.0
+-                  </span>
+-                  <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-700/60 text-cyan-300 text-[11px] font-semibold">
+-                    Điểm Năng lực [ĐNL]: {ev.competencyTotalScore} / 5.0
+-                  </span>
+-                  <span
+-                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+-                      ev.status === "VERIFIED"
+-                        ? "bg-emerald-950 border border-emerald-600/60 text-emerald-300"
+-                        : ev.status === "APPROVED"
+-                        ? "bg-teal-950 border border-teal-600/60 text-teal-300"
+-                        : ev.status === "FAILED"
+-                        ? "bg-rose-950 border border-rose-600/60 text-rose-300"
+-                        : "bg-slate-800 text-slate-300"
+-                    }`}
+-                  >
+-                    {ev.status === "VERIFIED"
+-                      ? "Đã lưu LMS ✓"
+-                      : ev.status === "APPROVED"
+-                      ? "Đã duyệt"
+-                      : ev.status === "FAILED"
+-                      ? "Lỗi lưu"
+-                      : ev.learnedFromMindx
+-                      ? "Chờ duyệt"
+-                      : "Chưa soạn"}
+-                  </span>
+-                </div>
+-
+-                <div className="flex items-center space-x-2">
+-                  <button
+-                    type="button"
+-                    disabled={isAnyOperationBusy}
+-                    onClick={() => handleGenerateSession14EvalAi([ev.studentId])}
+-                    className="mindx-dark-btn px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm cursor-pointer disabled:opacity-50"
+-                  >
+-                    ✨ AI Soạn riêng
+-                  </button>
+-                  <button
+-                    type="button"
+-                    disabled={isAnyOperationBusy}
+-                    onClick={() =>
+-                      handleApproveAndUploadSession14Eval([ev.studentId])
+-                    }
+-                    className="mindx-dark-btn px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm cursor-pointer disabled:opacity-50"
+-                  >
+-                    🚀 Đẩy lên LMS
+-                  </button>
+-                  <button
+-                    type="button"
+-                    onClick={() =>
+-                      setExpandedS14EvalIds((prev) => ({
+-                        ...prev,
+-                        [ev.studentId]: !prev[ev.studentId],
+-                      }))
+-                    }
+-                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold cursor-pointer"
+-                  >
+-                    {isExpanded ? "Thu gọn ▲" : "Chi tiết Điểm & Thư 3 phần ▼"}
+-                  </button>
+-                </div>
+-              </div>
+-
+-              {isExpanded && (
+-                <div className="p-4 space-y-4 border-t border-slate-800 text-xs">
+-                  {/* 5 Tiêu chí Điểm Demo */}
+-                  <div>
+-                    <div className="font-semibold text-indigo-300 mb-2">
+-                      1. Điểm Demo ({isRoboticsClass ? "Thang Robotics" : "Thang Lập trình"} — Tổng: {ev.demoTotalScore} / 5.0 điểm)
+-                    </div>
+-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+-                      {activeDemoScoreItems.map((item) => (
+-                        <div
+-                          key={item.key}
+-                          className="p-2 rounded bg-slate-900 border border-slate-800 space-y-1"
+-                        >
+-                          <label className="block text-[11px] text-slate-400">
+-                            {item.label} (tối đa {item.max})
+-                          </label>
+-                          <input
+-                            type="number"
+-                            step="0.05"
+-                            min={0}
+-                            max={item.max}
+-                            value={ev.demoScores[item.key]}
+-                            onChange={(e) => {
+-                              const val = Number(e.target.value) || 0;
+-                              const nextDemo = {
+-                                ...ev.demoScores,
+-                                [item.key]: Math.min(
+-                                  item.max,
+-                                  Math.max(0, val)
+-                                ),
+-                              };
+-                              handleSaveSession14EvalDraft(ev.studentId, {
+-                                demoScores: nextDemo,
+-                              });
+-                            }}
+-                            className="w-full px-2 py-1 rounded bg-slate-950 border border-slate-700 text-white text-xs font-mono"
+-                          />
+-                        </div>
+-                      ))}
+-                    </div>
+-                  </div>
+-
+-                  {/* 9 Tiêu chí Điểm Năng Lực [ĐNL] */}
+-                  <div>
+-                    <div className="font-semibold text-cyan-300 mb-2">
+-                      2. Điểm Năng Lực [ĐNL] (9 tiêu chí thang 1..5 — Trung bình: {ev.competencyTotalScore} / 5.0)
+-                    </div>
+-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+-                      {COMPETENCY_ITEMS_UI.map((item) => (
+-                        <div
+-                          key={item.key}
+-                          className="p-2 rounded bg-slate-900 border border-slate-800 flex items-center justify-between gap-2"
+-                        >
+-                          <span className="text-[11px] text-slate-300">
+-                            {item.label}
+-                          </span>
+-                          <select
+-                            value={ev.competencyScores[item.key]}
+-                            onChange={(e) => {
+-                              const nextComp = {
+-                                ...ev.competencyScores,
+-                                [item.key]: Number(e.target.value) || 4,
+-                              };
+-                              handleSaveSession14EvalDraft(ev.studentId, {
+-                                competencyScores: nextComp,
+-                              });
+-                            }}
+-                            className="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-cyan-300 text-xs font-bold"
+-                          >
+-                            {[1, 2, 3, 4, 5].map((score) => (
+-                              <option key={score} value={score}>
+-                                {score} điểm
+-                              </option>
+-                            ))}
+-                          </select>
+-                        </div>
+-                      ))}
+-                    </div>
+-                  </div>
+-
+-                  {/* 3 Ô Thư từ MindX (+ Ô 4 Xếp hạng giải cho lớp Robotics) */}
+-                  <div className="space-y-3">
+-                    <div>
+-                      <label className="block font-semibold text-emerald-300 mb-1">
+-                        Phần 1: Learned From Mindx (Thư tổng kết khóa học &amp; Kết quả đánh giá)
+-                      </label>
+-                      <textarea
+-                        rows={10}
+-                        value={ev.learnedFromMindx}
+-                        onChange={(e) => {
+-                          const val = e.target.value;
+-                          setSession14Evals((prev) =>
+-                            prev.map((it) =>
+-                              it.studentId === ev.studentId
+-                                ? { ...it, learnedFromMindx: val }
+-                                : it
+-                            )
+-                          );
+-                        }}
+-                        onBlur={() =>
+-                          handleSaveSession14EvalDraft(ev.studentId, {
+-                            learnedFromMindx: ev.learnedFromMindx,
+-                          })
+-                        }
+-                        className="w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white text-xs leading-relaxed"
+-                      />
+-                    </div>
+-
+-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+-                      <div>
+-                        <label className="block font-semibold text-amber-300 mb-1">
+-                          Phần 2: Suggestions From Mindx (Lời khuyên cải thiện)
+-                        </label>
+-                        <textarea
+-                          rows={4}
+-                          value={ev.suggestionsFromMindx}
+-                          onChange={(e) => {
+-                            const val = e.target.value;
+-                            setSession14Evals((prev) =>
+-                              prev.map((it) =>
+-                                it.studentId === ev.studentId
+-                                  ? { ...it, suggestionsFromMindx: val }
+-                                  : it
+-                              )
+-                            );
+-                          }}
+-                          onBlur={() =>
+-                            handleSaveSession14EvalDraft(ev.studentId, {
+-                              suggestionsFromMindx: ev.suggestionsFromMindx,
+-                            })
+-                          }
+-                          className="w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white text-xs leading-relaxed"
+-                        />
+-                      </div>
+-
+-                      <div>
+-                        <label className="block font-semibold text-sky-300 mb-1">
+-                          Phần 3: Future Direction (Định hướng khóa học tiếp theo)
+-                        </label>
+-                        <textarea
+-                          rows={4}
+-                          value={ev.futureDirection}
+-                          onChange={(e) => {
+-                            const val = e.target.value;
+-                            setSession14Evals((prev) =>
+-                              prev.map((it) =>
+-                                it.studentId === ev.studentId
+-                                  ? { ...it, futureDirection: val }
+-                                  : it
+-                              )
+-                            );
+-                          }}
+-                          onBlur={() =>
+-                            handleSaveSession14EvalDraft(ev.studentId, {
+-                              futureDirection: ev.futureDirection,
+-                            })
+-                          }
+-                          className="w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white text-xs leading-relaxed"
+-                        />
+-                      </div>
+-                    </div>
+-
+-                    {isRoboticsClass && (
+-                      <div>
+-                        <label className="block font-semibold text-rose-300 mb-1">
+-                          Phần 4: Xếp hạng giải của học viên (Riêng lớp Robotics — Cột 2 LMS Buổi 14, Tùy chọn)
+-                        </label>
+-                        <input
+-                          type="text"
+-                          value={ev.awardRanking || ""}
+-                          onChange={(e) => {
+-                            const val = e.target.value;
+-                            setSession14Evals((prev) =>
+-                              prev.map((it) =>
+-                                it.studentId === ev.studentId
+-                                  ? { ...it, awardRanking: val }
+-                                  : it
+-                              )
+-                            );
+-                          }}
+-                          onBlur={() =>
+-                            handleSaveSession14EvalDraft(ev.studentId, {
+-                              awardRanking: ev.awardRanking || "",
+-                            })
+-                          }
+-                          placeholder="VD: Giải Nhất / Giải Sáng Tạo / Giải Thuyết Trình Ấn Tượng (Để trống nếu không điền)"
+-                          className="w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white text-xs"
+-                        />
+-                      </div>
+-                    )}
+-                  </div>
+-                </div>
+-              )}
+-            </div>
+-          );
+-        })}
++      {/* Thanh đọc Điểm Demo từ file chấm điểm BGK (Tự động đọc khi mở Buổi 14 + cho phép dán đường dẫn/link tùy chọn) */}
++      <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 flex flex-wrap items-center gap-2.5">
++        <span className="text-xs font-semibold text-indigo-300 shrink-0">
++          📊 File chấm điểm BGK (.xlsx hoặc Link Google Sheet):
++        </span>
++        <input
++          type="text"
++          value={demoScoreSourceInput}
++          onChange={(e) => setDemoScoreSourceInput(e.target.value)}
++          disabled={isAnyOperationBusy}
++          placeholder={
++            generatedDemoSheetUrl ||
++            "Để trống để tự tìm file 'Bảng chấm điểm buổi Demo.xlsx' trong thư mục lớp, hoặc dán đường dẫn/link Google Sheet..."
++          }
++          className="flex-1 min-w-[260px] px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono disabled:opacity-60"
++        />
++        <button
++          type="button"
++          disabled={isAnyOperationBusy}
++          onClick={() => handleImportDemoScores()}
++          className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer"
++        >
++          {importingDemoScores
++            ? "Đang đọc điểm..."
++            : "📥 Đọc Điểm Demo từ File Chấm Điểm"}
++        </button>
+       </div>
+     </div>
+   );
+diff --git a/src/components/final-project/Step1Header.tsx b/src/components/final-project/Step1Header.tsx
+index c5be60d..1c46675 100644
+--- a/src/components/final-project/Step1Header.tsx
++++ b/src/components/final-project/Step1Header.tsx
+@@ -26,6 +26,9 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
+     browsingFolder,
+     handleScanFolder,
+     scanning,
++    autoRunToolsAfterScan,
++    handleToggleAutoRunToolsAfterScan,
++    autoPrepStepProgress,
+     isRoboticsClass,
+     showYoutubeImport,
+     setShowYoutubeImport,
+@@ -48,11 +51,6 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
+               Chọn Lớp &rarr; Chọn Buổi Nộp (12 / 13 / 14) &rarr; Chọn Thư Mục &amp; Khớp Học Viên
+             </h2>
+           </div>
+-          {false && (
+-            <p className="mindx-hero-sub text-xs">
+-              Quét thư mục sản phẩm cuối khóa, chuẩn bị ảnh bìa &amp; đường dẫn sản phẩm, nộp SPCK Buổi 12–14 và đẩy Thư tổng kết Buổi 14.
+-            </p>
+-          )}
+         </div>
+       </div>
+ 
+@@ -151,6 +149,31 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
+                 <span>Quét &amp; Khớp HV</span>
+               </button>
+             </div>
++            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
++              <label className="inline-flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
++                <input
++                  type="checkbox"
++                  data-testid="s5b-auto-run-tools-checkbox"
++                  checked={autoRunToolsAfterScan}
++                  disabled={isAnyOperationBusy}
++                  onChange={(e) =>
++                    handleToggleAutoRunToolsAfterScan(e.target.checked)
++                  }
++                  className="rounded border-slate-600 cursor-pointer"
++                />
++                <span>
++                  ⚡ Tự chạy công cụ chuẩn bị sau khi Quét (Chụp ảnh / Up Web / Up Drive theo loại lớp)
++                </span>
++              </label>
++              {autoPrepStepProgress && (
++                <span
++                  data-testid="s5b-auto-prep-progress"
++                  className="px-2.5 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/60 text-amber-200 text-[11px] font-semibold animate-pulse"
++                >
++                  {autoPrepStepProgress}
++                </span>
++              )}
++            </div>
+           </div>
+         </div>
+ 
+@@ -202,7 +225,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
+                   </p>
+                   <button
+                     type="button"
+-                    onClick={handleImportYoutubeProducts}
++                    onClick={() => handleImportYoutubeProducts()}
+                     disabled={isAnyOperationBusy || !selectedClassId || !youtubeImportInput.trim()}
+                     className="shrink-0 flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold text-xs transition-colors cursor-pointer"
+                   >
+diff --git a/src/components/final-project/StudentRow.tsx b/src/components/final-project/StudentRow.tsx
+index 090df93..aa171ac 100644
+--- a/src/components/final-project/StudentRow.tsx
++++ b/src/components/final-project/StudentRow.tsx
+@@ -9,7 +9,11 @@ import {
+   Paperclip,
+   Video,
+ } from "lucide-react";
+-import { DEFAULT_SPCK_TAGS, ScannedFolderUIItem } from "./types";
++import {
++  COMPETENCY_ITEMS_UI,
++  DEFAULT_SPCK_TAGS,
++  ScannedFolderUIItem,
++} from "./types";
+ import {
+   formatUiSessionTitle,
+   getRowReadinessSummary,
+@@ -27,6 +31,7 @@ export interface StudentRowProps {
+ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
+   const {
+     expandedRowKeys,
++    setExpandedRowKeys,
+     effectiveSelectedStudentIds,
+     duplicateStudentIds,
+     selectedSessionNumber,
+@@ -50,10 +55,31 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
+     handleCaptureAppScreenshots,
+     handleOwnerUploadImage,
+     session14TagLabels,
++    toolErrorsByStudent,
++    expandedRowTabByStudent,
++    setRowActiveTab,
++    session14Evals,
++    setSession14Evals,
++    isRoboticsClass,
++    activeDemoScoreItems,
++    handleSaveSession14EvalDraft,
++    handleGenerateSession14EvalAi,
++    handleApproveAndUploadSession14Eval,
+   } = workflow;
+ 
+   const rowKey = row.folderPath || row.assignedStudentId || String(idx);
+   const isExpanded = Boolean(expandedRowKeys[rowKey]);
++  const activeTab: "spck" | "eval14" =
++    selectedSessionNumber === 14
++      ? expandedRowTabByStudent[row.assignedStudentId] || "spck"
++      : "spck";
++  const studentEval14 =
++    selectedSessionNumber === 14 && row.assignedStudentId
++      ? session14Evals.find((ev) => ev.studentId === row.assignedStudentId)
++      : undefined;
++  const rowToolErrors = row.assignedStudentId
++    ? toolErrorsByStudent[row.assignedStudentId] || {}
++    : {};
+   const isSelected =
+     Boolean(row.assignedStudentId) &&
+     effectiveSelectedStudentIds.includes(row.assignedStudentId);
+@@ -65,6 +91,10 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
+   const slot13 = getSessionSlotDisplay(row, 13);
+   const slot14 = getSessionSlotDisplay(row, 14);
+   const activeSlot = getSessionSlotDisplay(row, selectedSessionNumber);
++  const hasRowSubmissionError =
++    activeSlot.tone === "rose" ||
++    Boolean(row.errorMessage) ||
++    (selectedSessionNumber === 14 && studentEval14?.status === "FAILED");
+ 
+   const renderSlotPill = (
+     sessNum: 12 | 13 | 14,
+@@ -283,6 +313,33 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
+                 YouTube ✓
+               </span>
+             )}
++            {selectedSessionNumber === 14 && studentEval14 && (
++              <button
++                type="button"
++                onClick={() => {
++                  setRowActiveTab(row.assignedStudentId, "eval14");
++                  if (!isExpanded) {
++                    setExpandedRowKeys((prev) => ({
++                      ...prev,
++                      [rowKey]: true,
++                    }));
++                  }
++                }}
++                title="Bấm để mở Tab 2: Điểm Demo, ĐNL & Thư 3 phần (Cột 2)"
++                className="px-2 py-0.5 rounded bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/60 text-indigo-200 font-semibold text-[10px] cursor-pointer"
++              >
++                🏅 Demo: {studentEval14.demoTotalScore}/5.0 • ĐNL: {studentEval14.competencyTotalScore}/5.0 •{" "}
++                {studentEval14.status === "VERIFIED"
++                  ? "Đã lưu Cột 2 ✓"
++                  : studentEval14.status === "APPROVED"
++                  ? "Đã duyệt Cột 2"
++                  : studentEval14.status === "FAILED"
++                  ? "Lỗi Cột 2"
++                  : studentEval14.learnedFromMindx
++                  ? "Chờ duyệt Cột 2"
++                  : "Chưa soạn Thư"}
++              </button>
++            )}
+           </div>
+         </div>
+ 
+@@ -293,28 +350,28 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
+           {renderSlotPill(14, slot14)}
+         </div>
+ 
+-        {/* Col 10-12: Single Per-Student Submit/Retry Button + "Chi tiết" Toggle */}
++        {/* Col 10-12: Error Retry Button (only on error) + "Chi tiết" Toggle */}
+         <div className="lg:col-span-2 flex items-center justify-end gap-1.5">
+-          <button
+-            type="button"
+-            onClick={() =>
+-              row.assignedStudentId &&
+-              handleApproveAndUpload(
+-                [row.assignedStudentId],
+-                true,
+-                selectedSessionNumber
+-              )
+-            }
+-            disabled={
+-              isAnyOperationBusy || !row.assignedStudentId || isDupeStudent
+-            }
+-            title={`Nộp riêng học viên này cho Buổi ${selectedSessionNumber}`}
+-            className="px-2.5 py-1.5 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold cursor-pointer"
+-          >
+-            {activeSlot.tone === "rose"
+-              ? `Thử lại B.${selectedSessionNumber}`
+-              : `Nộp riêng B.${selectedSessionNumber}`}
+-          </button>
++          {hasRowSubmissionError && (
++            <button
++              type="button"
++              onClick={() =>
++                row.assignedStudentId &&
++                handleApproveAndUpload(
++                  [row.assignedStudentId],
++                  true,
++                  selectedSessionNumber
++                )
++              }
++              disabled={
++                isAnyOperationBusy || !row.assignedStudentId || isDupeStudent
++              }
++              title={`Thử lại nộp học viên này cho Buổi ${selectedSessionNumber}`}
++              className="px-2.5 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 disabled:opacity-40 text-white text-xs font-semibold cursor-pointer"
++            >
++              🔄 Thử lại B.{selectedSessionNumber}
++            </button>
++          )}
+ 
+           <button
+             type="button"
+@@ -373,7 +430,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
+       {isExpanded && (
+         <div className="p-4 border-t border-slate-800 bg-slate-900/70 space-y-4 rounded-b-xl">
+           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800 text-xs">
+-            <div className="flex items-center space-x-2 text-slate-300">
++            <div className="flex flex-wrap items-center gap-2 text-slate-300">
+               <span className="font-bold">
+                 Chỉnh sửa chi tiết Buổi {selectedSessionNumber} (
+                 {getStageMeta(selectedSessionNumber).stageTitle}):
+@@ -382,6 +439,36 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
+                 {row.status} • v{row.draftVersion || 1}
+                 {row.contentHash ? ` • #${row.contentHash.slice(0, 8)}` : ""}
+               </span>
++              {selectedSessionNumber === 14 && (
++                <div className="inline-flex items-center rounded-lg bg-slate-950 p-1 border border-slate-700 gap-1">
++                  <button
++                    type="button"
++                    onClick={() =>
++                      setRowActiveTab(row.assignedStudentId, "spck")
++                    }
++                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors cursor-pointer ${
++                      activeTab === "spck"
++                        ? "bg-emerald-600 text-white"
++                        : "text-slate-300 hover:bg-slate-800"
++                    }`}
++                  >
++                    📦 Tab 1: Sản phẩm SPCK (Cột 3)
++                  </button>
++                  <button
++                    type="button"
++                    onClick={() =>
++                      setRowActiveTab(row.assignedStudentId, "eval14")
++                    }
++                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors cursor-pointer ${
++                      activeTab === "eval14"
++                        ? "bg-indigo-600 text-white"
++                        : "text-slate-300 hover:bg-slate-800"
++                    }`}
++                  >
++                    🏅 Tab 2: Điểm Demo, ĐNL &amp; Thư 3 phần (Cột 2)
++                  </button>
++                </div>
++              )}
+             </div>
+ 
+             <div className="flex flex-wrap items-center gap-1.5">
+@@ -396,32 +483,40 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
+                 </button>
+               )}
+ 
+-              <button
+-                type="button"
+-                onClick={() => handleGenerateAiComments([row.folderPath])}
+-                disabled={isAnyOperationBusy || !row.assignedStudentId}
+-                className="px-2.5 py-1 rounded bg-purple-600/85 hover:bg-purple-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
+-              >
+-                AI Soạn riêng (B.{selectedSessionNumber})
+-              </button>
++              {(Boolean(rowToolErrors.ai) ||
++                row.status === "INSUFFICIENT_INFO" ||
++                row.status === "FAILED") && (
++                <button
++                  type="button"
++                  onClick={() => handleGenerateAiComments([row.folderPath])}
++                  disabled={isAnyOperationBusy || !row.assignedStudentId}
++                  className="px-2.5 py-1 rounded bg-purple-600/85 hover:bg-purple-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
++                >
++                  🔄 Thử lại AI Nhận xét (B.{selectedSessionNumber})
++                </button>
++              )}
+ 
+-              <button
+-                type="button"
+-                onClick={() =>
+-                  row.assignedStudentId &&
+-                  handleUploadToGoogleDrive([row.assignedStudentId])
+-                }
+-                disabled={
+-                  isAnyOperationBusy ||
+-                  !row.assignedStudentId ||
+-                  !row.folderPath
+-                }
+-                className="px-2.5 py-1 rounded bg-sky-600/85 hover:bg-sky-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
+-              >
+-                {uploadingDrive ? "Đang Up Drive..." : "Up Drive & Gắn Link"}
+-              </button>
++              {Boolean(rowToolErrors.drive) && (
++                <button
++                  type="button"
++                  onClick={() =>
++                    row.assignedStudentId &&
++                    handleUploadToGoogleDrive([row.assignedStudentId])
++                  }
++                  disabled={
++                    isAnyOperationBusy ||
++                    !row.assignedStudentId ||
++                    !row.folderPath
++                  }
++                  className="px-2.5 py-1 rounded bg-sky-600/85 hover:bg-sky-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
++                >
++                  {uploadingDrive
++                    ? "Đang Up Drive..."
++                    : "🔄 Thử lại Up Drive & Gắn Link"}
++                </button>
++              )}
+ 
+-              {isWebClassOrProduct && (
++              {isWebClassOrProduct && Boolean(rowToolErrors.web) && (
+                 <button
+                   type="button"
+                   onClick={() =>
+@@ -435,12 +530,13 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
+                   }
+                   className="px-2.5 py-1 rounded bg-indigo-600/85 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
+                 >
+-                  {deployingWeb ? "Đang Up Web..." : "Up Web Live"}
++                  {deployingWeb ? "Đang Up Web..." : "🔄 Thử lại Up Web Live"}
+                 </button>
+               )}
+             </div>
+           </div>
+ 
++          {activeTab === "spck" && (
+           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+             {/* Left Column: Title, Files Summary & Links */}
+             <div className="lg:col-span-5 space-y-3">
+@@ -557,22 +653,24 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
+               {/* App Screenshot Capture & Owner Image Upload Controls */}
+               <div className="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 space-y-2 text-xs">
+                 <div className="flex flex-wrap items-center gap-1.5">
+-                  <button
+-                    type="button"
+-                    onClick={() =>
+-                      row.assignedStudentId &&
+-                      handleCaptureAppScreenshots([row.assignedStudentId])
+-                    }
+-                    disabled={
+-                      isAnyOperationBusy ||
+-                      !row.assignedStudentId ||
+-                      !row.folderPath
+-                    }
+-                    className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-teal-600/85 hover:bg-teal-500 disabled:opacity-40 text-white font-semibold cursor-pointer"
+-                  >
+-                    <ImageIcon className="w-3.5 h-3.5" />
+-                    <span>Chụp App &amp; AI Chọn Thumb</span>
+-                  </button>
++                  {Boolean(rowToolErrors.screenshot) && (
++                    <button
++                      type="button"
++                      onClick={() =>
++                        row.assignedStudentId &&
++                        handleCaptureAppScreenshots([row.assignedStudentId])
++                      }
++                      disabled={
++                        isAnyOperationBusy ||
++                        !row.assignedStudentId ||
++                        !row.folderPath
++                      }
++                      className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-teal-600/85 hover:bg-teal-500 disabled:opacity-40 text-white font-semibold cursor-pointer"
++                    >
++                      <ImageIcon className="w-3.5 h-3.5" />
++                      <span>🔄 Thử lại Chụp App &amp; AI Chọn Thumb</span>
++                    </button>
++                  )}
+ 
+                   <label className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-amber-600/80 hover:bg-amber-500 text-white font-semibold cursor-pointer">
+                     <span>+ Owner Up Thumbnail</span>
+@@ -852,6 +950,291 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
+               </div>
+             </div>
+           </div>
++          )}
++
++          {selectedSessionNumber === 14 && activeTab === "eval14" && (
++            <div className="space-y-4 text-xs">
++              {!studentEval14 ? (
++                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
++                  Đang nạp dữ liệu Điểm Demo, Điểm Năng lực [ĐNL] &amp; Thư 3 phần Buổi 14 cho học viên này...
++                </div>
++              ) : (
++                <>
++                  <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-slate-950 border border-indigo-800/50">
++                    <div className="flex flex-wrap items-center gap-2">
++                      <span className="font-bold text-indigo-300">
++                        🏅 Đánh giá Cột 2 Buổi 14 ({studentEval14.fullName}):
++                      </span>
++                      <span className="px-2.5 py-0.5 rounded-full bg-indigo-950 border border-indigo-700/60 text-indigo-300 text-[11px] font-semibold">
++                        Điểm Demo: {studentEval14.demoTotalScore} / 5.0
++                      </span>
++                      <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-700/60 text-cyan-300 text-[11px] font-semibold">
++                        Điểm Năng lực [ĐNL]: {studentEval14.competencyTotalScore} / 5.0
++                      </span>
++                      <span
++                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
++                          studentEval14.status === "VERIFIED"
++                            ? "bg-emerald-950 border border-emerald-600/60 text-emerald-300"
++                            : studentEval14.status === "APPROVED"
++                            ? "bg-teal-950 border border-teal-600/60 text-teal-300"
++                            : studentEval14.status === "FAILED"
++                            ? "bg-rose-950 border border-rose-600/60 text-rose-300"
++                            : "bg-slate-800 text-slate-300"
++                        }`}
++                      >
++                        {studentEval14.status === "VERIFIED"
++                          ? "Đã lưu LMS ✓"
++                          : studentEval14.status === "APPROVED"
++                          ? "Đã duyệt"
++                          : studentEval14.status === "FAILED"
++                          ? "Lỗi lưu"
++                          : studentEval14.learnedFromMindx
++                          ? "Chờ duyệt"
++                          : "Chưa soạn"}
++                      </span>
++                    </div>
++
++                    <div className="flex flex-wrap items-center gap-1.5">
++                      {(Boolean(rowToolErrors.s14_ai) ||
++                        studentEval14.status === "INSUFFICIENT_INFO" ||
++                        studentEval14.status === "FAILED") && (
++                        <button
++                          type="button"
++                          disabled={isAnyOperationBusy}
++                          onClick={() =>
++                            handleGenerateSession14EvalAi([studentEval14.studentId])
++                          }
++                          className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer disabled:opacity-50"
++                        >
++                          🔄 Thử lại AI Thư 3 phần
++                        </button>
++                      )}
++                      {studentEval14.status === "FAILED" && (
++                        <button
++                          type="button"
++                          disabled={isAnyOperationBusy}
++                          onClick={() =>
++                            handleApproveAndUploadSession14Eval([
++                              studentEval14.studentId,
++                            ])
++                          }
++                          className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold cursor-pointer disabled:opacity-50"
++                        >
++                          🔄 Thử lại Đẩy Đánh giá B.14
++                        </button>
++                      )}
++                    </div>
++                  </div>
++
++                  {/* 5 Tiêu chí Điểm Demo */}
++                  <div>
++                    <div className="font-semibold text-indigo-300 mb-2">
++                      1. Điểm Demo ({isRoboticsClass ? "Thang Robotics" : "Thang Lập trình"} — Tổng: {studentEval14.demoTotalScore} / 5.0 điểm)
++                    </div>
++                    <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
++                      {activeDemoScoreItems.map((item) => (
++                        <div
++                          key={item.key}
++                          className="p-2 rounded bg-slate-950 border border-slate-800 space-y-1"
++                        >
++                          <label className="block text-[11px] text-slate-400">
++                            {item.label} (tối đa {item.max})
++                          </label>
++                          <input
++                            type="number"
++                            step="0.05"
++                            min={0}
++                            max={item.max}
++                            value={studentEval14.demoScores[item.key]}
++                            onChange={(e) => {
++                              const val = Number(e.target.value) || 0;
++                              const nextDemo = {
++                                ...studentEval14.demoScores,
++                                [item.key]: Math.min(
++                                  item.max,
++                                  Math.max(0, val)
++                                ),
++                              };
++                              handleSaveSession14EvalDraft(
++                                studentEval14.studentId,
++                                {
++                                  demoScores: nextDemo,
++                                }
++                              );
++                            }}
++                            className="w-full px-2 py-1 rounded bg-slate-900 border border-slate-700 text-white text-xs font-mono"
++                          />
++                        </div>
++                      ))}
++                    </div>
++                  </div>
++
++                  {/* 9 Tiêu chí Điểm Năng Lực [ĐNL] */}
++                  <div>
++                    <div className="font-semibold text-cyan-300 mb-2">
++                      2. Điểm Năng Lực [ĐNL] (9 tiêu chí thang 1..5 — Trung bình: {studentEval14.competencyTotalScore} / 5.0)
++                    </div>
++                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
++                      {COMPETENCY_ITEMS_UI.map((item) => (
++                        <div
++                          key={item.key}
++                          className="p-2 rounded bg-slate-950 border border-slate-800 flex items-center justify-between gap-2"
++                        >
++                          <span className="text-[11px] text-slate-300">
++                            {item.label}
++                          </span>
++                          <select
++                            value={studentEval14.competencyScores[item.key]}
++                            onChange={(e) => {
++                              const nextComp = {
++                                ...studentEval14.competencyScores,
++                                [item.key]: Number(e.target.value) || 4,
++                              };
++                              handleSaveSession14EvalDraft(
++                                studentEval14.studentId,
++                                {
++                                  competencyScores: nextComp,
++                                }
++                              );
++                            }}
++                            className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-cyan-300 text-xs font-bold"
++                          >
++                            {[1, 2, 3, 4, 5].map((score) => (
++                              <option key={score} value={score}>
++                                {score} điểm
++                              </option>
++                            ))}
++                          </select>
++                        </div>
++                      ))}
++                    </div>
++                  </div>
++
++                  {/* 3 Ô Thư từ MindX (+ Ô 4 Xếp hạng giải cho lớp Robotics) */}
++                  <div className="space-y-3">
++                    <div>
++                      <label className="block font-semibold text-emerald-300 mb-1">
++                        Phần 1: Learned From Mindx (Thư tổng kết khóa học &amp; Kết quả đánh giá)
++                      </label>
++                      <textarea
++                        rows={8}
++                        value={studentEval14.learnedFromMindx}
++                        onChange={(e) => {
++                          const val = e.target.value;
++                          setSession14Evals((prev) =>
++                            prev.map((it) =>
++                              it.studentId === studentEval14.studentId
++                                ? { ...it, learnedFromMindx: val }
++                                : it
++                            )
++                          );
++                        }}
++                        onBlur={() =>
++                          handleSaveSession14EvalDraft(studentEval14.studentId, {
++                            learnedFromMindx: studentEval14.learnedFromMindx,
++                          })
++                        }
++                        className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-white text-xs leading-relaxed"
++                      />
++                    </div>
++
++                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
++                      <div>
++                        <label className="block font-semibold text-amber-300 mb-1">
++                          Phần 2: Suggestions From Mindx (Lời khuyên cải thiện)
++                        </label>
++                        <textarea
++                          rows={4}
++                          value={studentEval14.suggestionsFromMindx}
++                          onChange={(e) => {
++                            const val = e.target.value;
++                            setSession14Evals((prev) =>
++                              prev.map((it) =>
++                                it.studentId === studentEval14.studentId
++                                  ? { ...it, suggestionsFromMindx: val }
++                                  : it
++                              )
++                            );
++                          }}
++                          onBlur={() =>
++                            handleSaveSession14EvalDraft(
++                              studentEval14.studentId,
++                              {
++                                suggestionsFromMindx:
++                                  studentEval14.suggestionsFromMindx,
++                              }
++                            )
++                          }
++                          className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-white text-xs leading-relaxed"
++                        />
++                      </div>
++
++                      <div>
++                        <label className="block font-semibold text-sky-300 mb-1">
++                          Phần 3: Future Direction (Định hướng khóa học tiếp theo)
++                        </label>
++                        <textarea
++                          rows={4}
++                          value={studentEval14.futureDirection}
++                          onChange={(e) => {
++                            const val = e.target.value;
++                            setSession14Evals((prev) =>
++                              prev.map((it) =>
++                                it.studentId === studentEval14.studentId
++                                  ? { ...it, futureDirection: val }
++                                  : it
++                              )
++                            );
++                          }}
++                          onBlur={() =>
++                            handleSaveSession14EvalDraft(
++                              studentEval14.studentId,
++                              {
++                                futureDirection: studentEval14.futureDirection,
++                              }
++                            )
++                          }
++                          className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-white text-xs leading-relaxed"
++                        />
++                      </div>
++                    </div>
++
++                    {isRoboticsClass && (
++                      <div>
++                        <label className="block font-semibold text-rose-300 mb-1">
++                          Phần 4: Xếp hạng giải của học viên (Riêng lớp Robotics — Cột 2 LMS Buổi 14, Tùy chọn)
++                        </label>
++                        <input
++                          type="text"
++                          value={studentEval14.awardRanking || ""}
++                          onChange={(e) => {
++                            const val = e.target.value;
++                            setSession14Evals((prev) =>
++                              prev.map((it) =>
++                                it.studentId === studentEval14.studentId
++                                  ? { ...it, awardRanking: val }
++                                  : it
++                              )
++                            );
++                          }}
++                          onBlur={() =>
++                            handleSaveSession14EvalDraft(
++                              studentEval14.studentId,
++                              {
++                                awardRanking: studentEval14.awardRanking || "",
++                              }
++                            )
++                          }
++                          placeholder="VD: Giải Nhất / Giải Sáng Tạo / Giải Thuyết Trình Ấn Tượng (Để trống nếu không điền)"
++                          className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-white text-xs"
++                        />
++                      </div>
++                    )}
++                  </div>
++                </>
++              )}
++            </div>
++          )}
+         </div>
+       )}
+     </div>
+diff --git a/src/components/final-project/SubmitBar.tsx b/src/components/final-project/SubmitBar.tsx
+index de02e4e..e408e09 100644
+--- a/src/components/final-project/SubmitBar.tsx
++++ b/src/components/final-project/SubmitBar.tsx
+@@ -13,6 +13,9 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
+     totalStepsCount,
+     lastSubmissionSummary,
+     handleApproveAndUpload,
++    handleSubmitSession14Combo,
++    session14ComboStatus,
++    uploadingS14EvalLms,
+     isAnyOperationBusy,
+     uploading,
+     effectiveSelectedStudentIds,
+@@ -34,7 +37,57 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
+         </div>
+ 
+         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+-          {lastSubmissionSummary &&
++          {selectedSessionNumber === 14 &&
++            session14ComboStatus.spckSummary &&
++            session14ComboStatus.spckSummary.retryStudentIds.length > 0 && (
++              <button
++                type="button"
++                onClick={() =>
++                  handleSubmitSession14Combo(
++                    session14ComboStatus.spckSummary!.retryStudentIds,
++                    "spck_only"
++                  )
++                }
++                disabled={isAnyOperationBusy}
++                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
++              >
++                <RefreshCw
++                  className={`w-3.5 h-3.5 ${uploading ? "animate-spin" : ""}`}
++                />
++                <span>
++                  🔄 Thử lại riêng phần Sản phẩm (
++                  {session14ComboStatus.spckSummary.retryStudentIds.length})
++                </span>
++              </button>
++            )}
++
++          {selectedSessionNumber === 14 &&
++            session14ComboStatus.evalRetryStudentIds.length > 0 && (
++              <button
++                type="button"
++                onClick={() =>
++                  handleSubmitSession14Combo(
++                    session14ComboStatus.evalRetryStudentIds,
++                    "eval_only"
++                  )
++                }
++                disabled={isAnyOperationBusy}
++                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
++              >
++                <RefreshCw
++                  className={`w-3.5 h-3.5 ${
++                    uploadingS14EvalLms ? "animate-spin" : ""
++                  }`}
++                />
++                <span>
++                  🔄 Thử lại riêng phần Đánh giá (
++                  {session14ComboStatus.evalRetryStudentIds.length})
++                </span>
++              </button>
++            )}
++
++          {selectedSessionNumber !== 14 &&
++            lastSubmissionSummary &&
+             lastSubmissionSummary.retryStudentIds.length > 0 && (
+               <button
+                 type="button"
+@@ -58,34 +111,96 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
+               </button>
+             )}
+ 
+-          <button
+-            type="button"
+-            onClick={() =>
+-              handleApproveAndUpload(
+-                effectiveSelectedStudentIds,
+-                true,
+-                selectedSessionNumber
+-              )
+-            }
+-            disabled={
+-              isAnyOperationBusy ||
+-              !selectedClassId ||
+-              effectiveSelectedStudentIds.length === 0
+-            }
+-            className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-bold shadow-lg shadow-emerald-950/50 transition-colors cursor-pointer"
+-          >
+-            {uploading ? (
+-              <Loader2 className="w-4 h-4 animate-spin" />
+-            ) : (
+-              <UploadCloud className="w-4 h-4" />
+-            )}
+-            <span>
+-              Nộp {effectiveSelectedStudentIds.length} bài — Buổi {selectedSessionNumber}
+-            </span>
+-          </button>
++          {selectedSessionNumber === 14 ? (
++            <button
++              type="button"
++              onClick={() =>
++                handleSubmitSession14Combo(effectiveSelectedStudentIds, "both")
++              }
++              disabled={
++                isAnyOperationBusy ||
++                !selectedClassId ||
++                effectiveSelectedStudentIds.length === 0
++              }
++              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 disabled:opacity-50 text-white text-sm font-bold shadow-lg shadow-emerald-950/50 transition-colors cursor-pointer"
++            >
++              {uploading || uploadingS14EvalLms || session14ComboStatus.running ? (
++                <Loader2 className="w-4 h-4 animate-spin" />
++              ) : (
++                <UploadCloud className="w-4 h-4" />
++              )}
++              <span>
++                🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá) —{" "}
++                {effectiveSelectedStudentIds.length} bài
++              </span>
++            </button>
++          ) : (
++            <button
++              type="button"
++              onClick={() =>
++                handleApproveAndUpload(
++                  effectiveSelectedStudentIds,
++                  true,
++                  selectedSessionNumber
++                )
++              }
++              disabled={
++                isAnyOperationBusy ||
++                !selectedClassId ||
++                effectiveSelectedStudentIds.length === 0
++              }
++              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-bold shadow-lg shadow-emerald-950/50 transition-colors cursor-pointer"
++            >
++              {uploading ? (
++                <Loader2 className="w-4 h-4 animate-spin" />
++              ) : (
++                <UploadCloud className="w-4 h-4" />
++              )}
++              <span>
++                Nộp {effectiveSelectedStudentIds.length} bài — Buổi {selectedSessionNumber}
++              </span>
++            </button>
++          )}
+         </div>
+       </div>
+ 
++      {selectedSessionNumber === 14 &&
++        session14ComboStatus.currentPhase !== "idle" && (
++          <div className="p-3.5 rounded-xl bg-slate-950 border border-indigo-700/60 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
++            <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
++              <div>
++                <div className="font-bold text-emerald-300">
++                  Phần 1: Sản phẩm SPCK (Cột 3 LMS)
++                </div>
++                <div className="text-slate-300 mt-0.5">
++                  {session14ComboStatus.currentPhase === "spck"
++                    ? "⏳ Đang duyệt & nộp Sản phẩm SPCK..."
++                    : session14ComboStatus.spckSummary
++                    ? `Đã nộp ${session14ComboStatus.spckSummary.verifiedItems.length}/${session14ComboStatus.spckSummary.totalSelected} bài (${session14ComboStatus.spckSummary.retryStudentIds.length} bài cần thử lại)`
++                    : "Chưa chạy trong đợt này"}
++                </div>
++              </div>
++            </div>
++            <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
++              <div>
++                <div className="font-bold text-indigo-300">
++                  Phần 2: Điểm Demo, ĐNL &amp; Thư 3 phần (Cột 2 LMS)
++                </div>
++                <div className="text-slate-300 mt-0.5">
++                  {session14ComboStatus.currentPhase === "eval"
++                    ? "⏳ Đang duyệt & đẩy Đánh giá tổng kết..."
++                    : `Đã lưu & xác minh ${session14ComboStatus.evalVerifiedCount} học viên (${session14ComboStatus.evalRetryStudentIds.length} cần thử lại)`}
++                  {session14ComboStatus.evalErrorMessage && (
++                    <span className="block text-rose-300 mt-0.5">
++                      {session14ComboStatus.evalErrorMessage}
++                    </span>
++                  )}
++                </div>
++              </div>
++            </div>
++          </div>
++        )}
++
+       {/* Detailed Batch Submission Result Card */}
+       {lastSubmissionSummary && (
+         <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 text-xs">
+diff --git a/src/components/final-project/ToolsDrawer.tsx b/src/components/final-project/ToolsDrawer.tsx
+index aed8a61..dd945f1 100644
+--- a/src/components/final-project/ToolsDrawer.tsx
++++ b/src/components/final-project/ToolsDrawer.tsx
+@@ -20,8 +20,10 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
+   const {
+     totalStepsCount,
+     rows,
+-    confirmedReadyStudentIds,
++    selectedSessionNumber,
+     handleGenerateAiComments,
++    handleGenerateSession14AllAi,
++    generatingS14EvalAi,
+     isAnyOperationBusy,
+     generatingAi,
+     isAppOrGameProduct,
+@@ -78,32 +80,39 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
+           <h2 className="text-sm font-bold text-white">
+             Chuẩn Bị &amp; Xem Lại Bài ({rows.length} học viên)
+           </h2>
+-          {false && (
+-            <span className="text-xs text-slate-400">
+-              • Đủ điều kiện nộp:{" "}
+-              <strong className="text-emerald-600 dark:text-emerald-400">
+-                {confirmedReadyStudentIds.length}
+-              </strong>
+-              /{rows.length}
+-            </span>
+-          )}
+         </div>
+ 
+         {/* Primary Preparation Actions & Collapsible Tool Toggles */}
+         <div className="flex flex-wrap items-center gap-2">
+-          <button
+-            type="button"
+-            onClick={() => handleGenerateAiComments()}
+-            disabled={isAnyOperationBusy || rows.length === 0}
+-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-semibold transition-colors cursor-pointer"
+-          >
+-            {generatingAi ? (
+-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+-            ) : (
+-              <Sparkles className="w-3.5 h-3.5" />
+-            )}
+-            <span>AI Soạn Nhận Xét Cả Lớp</span>
+-          </button>
++          {selectedSessionNumber === 14 ? (
++            <button
++              type="button"
++              onClick={() => handleGenerateSession14AllAi()}
++              disabled={isAnyOperationBusy || rows.length === 0}
++              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
++            >
++              {generatingAi || generatingS14EvalAi ? (
++                <Loader2 className="w-3.5 h-3.5 animate-spin" />
++              ) : (
++                <Sparkles className="w-3.5 h-3.5" />
++              )}
++              <span>✨ AI soạn tất cả (SPCK + Thư 3 phần)</span>
++            </button>
++          ) : (
++            <button
++              type="button"
++              onClick={() => handleGenerateAiComments()}
++              disabled={isAnyOperationBusy || rows.length === 0}
++              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-semibold transition-colors cursor-pointer"
++            >
++              {generatingAi ? (
++                <Loader2 className="w-3.5 h-3.5 animate-spin" />
++              ) : (
++                <Sparkles className="w-3.5 h-3.5" />
++              )}
++              <span>AI Soạn Nhận Xét Cả Lớp</span>
++            </button>
++          )}
+ 
+           {isAppOrGameProduct && (
+             <button
+@@ -507,16 +516,6 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
+                 <span className="font-bold text-emerald-300">
+                   📊 {demoSheetTitle}
+                 </span>
+-                {false && (
+-                  <a
+-                    href={generatedDemoSheetUrl}
+-                    target="_blank"
+-                    rel="noreferrer"
+-                    className="text-sky-300 hover:underline font-mono truncate"
+-                  >
+-                    {generatedDemoSheetUrl}
+-                  </a>
+-                )}
+               </div>
+               <div className="flex items-center space-x-2 shrink-0">
+                 <a
+diff --git a/src/components/final-project/types.ts b/src/components/final-project/types.ts
+index 793babd..a060b61 100644
+--- a/src/components/final-project/types.ts
++++ b/src/components/final-project/types.ts
+@@ -220,7 +220,13 @@ export interface Session14EvalItemUI {
+   quickTags: string[];
+   teacherNote: string;
+   draftVersion: number;
+-  status: "DRAFT" | "WAITING_APPROVAL" | "APPROVED" | "VERIFIED" | "FAILED";
++  status:
++    | "DRAFT"
++    | "WAITING_APPROVAL"
++    | "APPROVED"
++    | "VERIFIED"
++    | "FAILED"
++    | "INSUFFICIENT_INFO";
+   contentHash: string;
+   verifiedAt?: string | null;
+   errorMessage?: string | null;
+@@ -373,3 +379,27 @@ export const DEMO_SCORE_ITEMS_ROBOTICS_UI: Array<{
+   { key: "computerSkills", label: "Kỹ năng sử dụng máy tính", max: 0.5 },
+   { key: "algorithm", label: "Tư duy máy tính, thuật toán", max: 1.0 },
+ ];
++
++export type SpckToolErrorKey =
++  | "ai"
++  | "drive"
++  | "web"
++  | "screenshot"
++  | "youtube"
++  | "s14_ai";
++
++export type SpckToolErrorMapUI = Record<
++  string,
++  Partial<Record<SpckToolErrorKey, string>>
++>;
++
++export interface Session14ComboStatusUI {
++  running: boolean;
++  currentPhase: "idle" | "spck" | "eval" | "done";
++  spckSummary: SpckBatchSubmissionSummaryUI | null;
++  evalVerifiedCount: number;
++  evalVerifiedStudentIds?: string[];
++  evalFailedCount: number;
++  evalRetryStudentIds: string[];
++  evalErrorMessage: string | null;
++}
+diff --git a/src/components/final-project/useSpckWorkflow.ts b/src/components/final-project/useSpckWorkflow.ts
+index 7fba491..7fb2f88 100644
+--- a/src/components/final-project/useSpckWorkflow.ts
++++ b/src/components/final-project/useSpckWorkflow.ts
+@@ -1,6 +1,6 @@
+ "use client";
+ 
+-import React, { useCallback, useEffect, useMemo } from "react";
++import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+ import {
+   ClassOption,
+   DEMO_SCORE_ITEMS_ROBOTICS_UI,
+@@ -8,6 +8,7 @@ import {
+   RelatedLinkItem,
+   ScannedFolderUIItem,
+   SESSION14_SPCK_TAGS,
++  Session14ComboStatusUI,
+   Session14DemoScoresUI,
+   Session14EvalItemUI,
+   SnapshotModalDataUI,
+@@ -17,6 +18,8 @@ import {
+   SpckRowReadinessSummaryUI,
+   SpckSessionResultsMapUI,
+   SpckSlotDisplayUI,
++  SpckToolErrorKey,
++  SpckToolErrorMapUI,
+   StudentOption,
+   StudentPortalSubmissionUI,
+   YoutubeImportReportUI,
+@@ -767,7 +770,17 @@ export interface SpckWorkflowHookParams {
+   ) => Promise<void>;
+   handleClassChange: (newClassId: string) => Promise<void>;
+   handleScanTeacherClasses: () => Promise<void>;
+-  handleScanFolder: (overrideFolderPath?: string | React.MouseEvent) => Promise<void>;
++  handleScanFolder: (
++    overrideFolderPath?: string | React.MouseEvent
++  ) => Promise<
++    | void
++    | {
++        success: boolean;
++        scannedItems: ScannedFolderUIItem[];
++        classId?: string;
++        sessionNumber?: 12 | 13 | 14;
++      }
++  >;
+   persistRowDraft: (
+     row: ScannedFolderUIItem,
+     overrides?: Partial<ScannedFolderUIItem>,
+@@ -779,8 +792,10 @@ export interface SpckWorkflowHookParams {
+     targetStudentIds: string[],
+     autoUploadAfterApprove?: boolean,
+     overrideSessionNum?: 12 | 13 | 14 | number
+-  ) => Promise<void>;
+-  handleImportYoutubeProducts: () => Promise<void>;
++  ) => Promise<SpckBatchSubmissionSummaryUI | null | void>;
++  handleImportYoutubeProducts: (
++    sourceRows?: ScannedFolderUIItem[]
++  ) => Promise<{ success: boolean; updatedRows?: ScannedFolderUIItem[] } | void>;
+   getActiveUiClassId: () => string;
+   bumpRowDraftSeq: (rowKey: string) => void;
+ }
+@@ -826,6 +841,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+     setCreatingDemoSheet,
+     capturingScreenshots,
+     setCapturingScreenshots,
++    youtubeImportInput,
+     importingYoutube,
+     studentPortalRunning,
+     setStudentPortalRunning,
+@@ -843,6 +859,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+     selectedSessionNumber,
+     setSelectedStudentIds,
+     setExpandedRowKeys,
++    setLastSubmissionSummary,
+     activeActionLabel,
+     session14Evals,
+     setSession14Evals,
+@@ -854,13 +871,131 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+     uploadingS14EvalLms,
+     setUploadingS14EvalLms,
+     effectiveSelectedStudentIds,
+-    isAnyOperationBusy,
++    isAnyOperationBusy: baseIsAnyOperationBusy,
+     hydrateRowsFromDb,
+-    handleScanFolder,
++    handleScanFolder: baseHandleScanFolder,
+     persistRowDraft,
++    handleGenerateAiComments: baseHandleGenerateAiComments,
++    handleApproveAndUpload: baseHandleApproveAndUpload,
++    handleImportYoutubeProducts: baseHandleImportYoutubeProducts,
+     getActiveUiClassId,
+   } = params;
+ 
++  const [autoRunToolsAfterScan, setAutoRunToolsAfterScan] = useState<boolean>(true);
++  const [autoPrepStepProgress, setAutoPrepStepProgress] = useState<string | null>(
++    null
++  );
++  const [toolErrorsByStudent, setToolErrorsByStudent] =
++    useState<SpckToolErrorMapUI>({});
++  const [expandedRowTabByStudent, setExpandedRowTabByStudent] = useState<
++    Record<string, "spck" | "eval14">
++  >({});
++  const [session14ComboStatus, setSession14ComboStatus] =
++    useState<Session14ComboStatusUI>({
++      running: false,
++      currentPhase: "idle",
++      spckSummary: null,
++      evalVerifiedCount: 0,
++      evalVerifiedStudentIds: [],
++      evalFailedCount: 0,
++      evalRetryStudentIds: [],
++      evalErrorMessage: null,
++    });
++  const autoImportedDemoClassKeysRef = useRef<Set<string>>(new Set());
++
++  useEffect(() => {
++    try {
++      if (typeof window !== "undefined" && window.localStorage) {
++        const stored = window.localStorage.getItem(
++          "mindx_spck_auto_prep_after_scan"
++        );
++        if (stored === "false") {
++          setAutoRunToolsAfterScan(false);
++        } else if (stored === "true") {
++          setAutoRunToolsAfterScan(true);
++        }
++      }
++    } catch {}
++  }, []);
++
++  const handleToggleAutoRunToolsAfterScan = useCallback((enabled: boolean) => {
++    setAutoRunToolsAfterScan(enabled);
++    try {
++      if (typeof window !== "undefined" && window.localStorage) {
++        window.localStorage.setItem(
++          "mindx_spck_auto_prep_after_scan",
++          enabled ? "true" : "false"
++        );
++      }
++    } catch {}
++  }, []);
++
++  const setStudentToolError = useCallback(
++    (studentId: string, toolKey: SpckToolErrorKey, errMsg: string | null) => {
++      if (!studentId) return;
++      setToolErrorsByStudent((prev) => {
++        const current = { ...(prev[studentId] || {}) };
++        if (errMsg) {
++          current[toolKey] = errMsg;
++        } else {
++          delete current[toolKey];
++        }
++        return {
++          ...prev,
++          [studentId]: current,
++        };
++      });
++    },
++    []
++  );
++
++  const setRowActiveTab = useCallback(
++    (studentId: string, tab: "spck" | "eval14") => {
++      if (!studentId) return;
++      setExpandedRowTabByStudent((prev) => ({
++        ...prev,
++        [studentId]: tab,
++      }));
++    },
++    []
++  );
++
++  const confirmBeforeDemotingApprovedRows = useCallback(
++    (
++      targetStudentIds?: string[],
++      sourceRows?: ScannedFolderUIItem[]
++    ): boolean => {
++      const list = sourceRows || rows;
++      const targetSet =
++        targetStudentIds && targetStudentIds.length > 0
++          ? new Set(targetStudentIds)
++          : null;
++      const approvedRows = list.filter((r) => {
++        if (!r.assignedStudentId) return false;
++        if (targetSet && !targetSet.has(r.assignedStudentId)) return false;
++        const slot = getSessionSlotDisplay(r, selectedSessionNumber);
++        return (
++          r.status === "APPROVED" ||
++          r.status === "VERIFIED" ||
++          slot.state === "VERIFIED_CURRENT"
++        );
++      });
++      if (approvedRows.length === 0) return true;
++      if (typeof window !== "undefined" && typeof window.confirm === "function") {
++        return window.confirm(
++          `Bài của ${approvedRows.length} bạn sẽ phải duyệt lại, tiếp tục?`
++        );
++      }
++      return true;
++    },
++    [rows, selectedSessionNumber]
++  );
++
++  const isAnyOperationBusy =
++    baseIsAnyOperationBusy ||
++    Boolean(autoPrepStepProgress) ||
++    session14ComboStatus.running;
++
+   const loadBrowseDirectory = async (targetPath?: string) => {
+     setBrowsingFolder(true);
+     try {
+@@ -943,8 +1078,17 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+     }
+   };
+ 
+-  const handleSyncLatestResources = async (row: ScannedFolderUIItem) => {
++  const handleSyncLatestResources = async (
++    row: ScannedFolderUIItem,
++    options?: { skipApprovalConfirm?: boolean }
++  ) => {
+     if (!selectedClassId || !row.assignedStudentId) return;
++    if (
++      !options?.skipApprovalConfirm &&
++      !confirmBeforeDemotingApprovedRows([row.assignedStudentId])
++    ) {
++      return;
++    }
+     try {
+       const res = await fetch("/api/spck/save-draft", {
+         method: "POST",
+@@ -1011,19 +1155,30 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+     }
+   };
+ 
+-  const handleUploadToGoogleDrive = async (targetStudentIds?: string[]) => {
+-    if (!selectedClassId) {
++  const handleUploadToGoogleDrive = async (
++    targetStudentIds?: string[],
++    options?: {
++      skipApprovalConfirm?: boolean;
++      sourceRows?: ScannedFolderUIItem[];
++      classIdOverride?: string;
++      sessionOverride?: 12 | 13 | 14;
++    }
++  ): Promise<{ success: boolean; updatedRows: ScannedFolderUIItem[] } | void> => {
++    const requestClassId = options?.classIdOverride || selectedClassId;
++    const requestSessionNum = options?.sessionOverride || selectedSessionNumber;
++    const activeRows = options?.sourceRows || rows;
++    if (!requestClassId) {
+       setBannerMessage({
+         type: "warning",
+         text: "Vui lòng chọn Lớp học trước khi tải sản phẩm lên Google Drive.",
+       });
+-      return;
++      return { success: false, updatedRows: activeRows };
+     }
+ 
+     const idsToUpload =
+       targetStudentIds && targetStudentIds.length > 0
+         ? targetStudentIds
+-        : rows
++        : activeRows
+             .filter((r) => r.assignedStudentId && r.folderPath)
+             .map((r) => r.assignedStudentId);
+ 
+@@ -1032,30 +1187,49 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         type: "warning",
+         text: "Chưa có học viên nào có thư mục sản phẩm trên máy tính để tải lên Google Drive.",
+       });
+-      return;
++      return { success: false, updatedRows: activeRows };
++    }
++
++    if (
++      !options?.skipApprovalConfirm &&
++      !confirmBeforeDemotingApprovedRows(idsToUpload, activeRows)
++    ) {
++      return { success: false, updatedRows: activeRows };
+     }
+ 
+-    const requestClassId = selectedClassId;
+     setUploadingDrive(true);
+     setBannerMessage({
+       type: "warning",
+       text: `Đang mở Google Drive để tạo thư mục cho ${idsToUpload.length} học viên và tải sản phẩm lên... (Nếu lần đầu chưa đăng nhập Google trên trình duyệt Bot, vui lòng đăng nhập trực tiếp trên cửa sổ Chrome của Bot)`,
+     });
+ 
++    const flushedRows = [...activeRows];
+     try {
+-      for (const row of rows) {
++      for (let idx = 0; idx < flushedRows.length; idx++) {
++        const row = flushedRows[idx];
+         if (idsToUpload.includes(row.assignedStudentId)) {
+-          const saved = await persistRowDraft(row);
++          const saved: any = await persistRowDraft(row, undefined, requestSessionNum);
+           const activeClass = getActiveUiClassId();
+           if (activeClass && activeClass !== requestClassId) {
+-            return;
++            return { success: false, updatedRows: flushedRows };
+           }
+           if (!saved) {
++            const errMsg = `Lưu bản nháp cho học viên '${row.folderName || row.assignedStudentId}' thất bại. Đã dừng tải lên Google Drive để tránh dùng dữ liệu cũ.`;
++            setStudentToolError(row.assignedStudentId, "drive", errMsg);
+             setBannerMessage({
+               type: "error",
+-              text: `Lưu bản nháp cho học viên '${row.folderName || row.assignedStudentId}' thất bại. Đã dừng tải lên Google Drive để tránh dùng dữ liệu cũ.`,
++              text: errMsg,
+             });
+-            return;
++            return { success: false, updatedRows: flushedRows };
++          }
++          if (typeof saved === "object" && saved.row) {
++            flushedRows[idx] = saved.row;
++          } else if (typeof saved === "object" && typeof saved.draftVersion === "number") {
++            flushedRows[idx] = {
++              ...row,
++              draftVersion: saved.draftVersion,
++              isDirty: false,
++            };
+           }
+         }
+       }
+@@ -1065,23 +1239,31 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({
+           classId: requestClassId,
+-          sessionNumber: selectedSessionNumber,
++          sessionNumber: requestSessionNum,
+           driveFolderUrl: driveFolderUrl.trim(),
+           studentIds: idsToUpload,
++          syncActiveSession: true,
+         }),
+       });
+       const data = await res.json();
+       const activeClass = getActiveUiClassId();
+       if (activeClass && activeClass !== requestClassId) {
+-        return;
++        return { success: false, updatedRows: flushedRows };
+       }
+ 
+       if (!data.success) {
++        for (const sid of idsToUpload) {
++          setStudentToolError(
++            sid,
++            "drive",
++            data.error || "Lỗi khi tải sản phẩm lên Google Drive."
++          );
++        }
+         setBannerMessage({
+           type: "error",
+           text: data.error || "Lỗi khi tải sản phẩm lên Google Drive.",
+         });
+-        return;
++        return { success: false, updatedRows: flushedRows };
+       }
+ 
+       const dbByStu = new Map<string, SpckRecordRow>(
+@@ -1090,8 +1272,8 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+           .map((r: SpckRecordRow) => [r.studentId, r])
+       );
+ 
+-      setRows((prev) =>
+-        prev.map((row) => {
++      const mergeDriveRecords = (baseList: ScannedFolderUIItem[]): ScannedFolderUIItem[] =>
++        baseList.map((row) => {
+           const rec = dbByStu.get(row.assignedStudentId);
+           if (!rec) return row;
+           const relatedLinks = parseJsonSafe<RelatedLinkItem[]>(rec.relatedLinksJson, []);
+@@ -1108,11 +1290,32 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+             sessionResults:
+               parseSessionResultsMap(rec.sessionResultsJson) || row.sessionResults,
+             sessionHistory: rec.sessionHistory || row.sessionHistory,
++            isDirty: false,
+           };
+-        })
+-      );
++        });
++
++      const nextRows = mergeDriveRecords(flushedRows);
++      setRows((prev) => mergeDriveRecords(prev));
+ 
+       const dResult = data.driveResult;
++      if (Array.isArray(dResult?.results)) {
++        for (const item of dResult.results) {
++          if (!item?.studentId) continue;
++          if (item.status === "FAILED") {
++            setStudentToolError(
++              item.studentId,
++              "drive",
++              item.errorMessage || "Lỗi tải lên Google Drive."
++            );
++          } else {
++            setStudentToolError(item.studentId, "drive", null);
++          }
++        }
++      } else {
++        for (const sid of idsToUpload) {
++          setStudentToolError(sid, "drive", null);
++        }
++      }
+       const failedCount = dResult?.failedStudentsCount || 0;
+       const firstErr = dResult?.results?.find((r: any) => r.status === "FAILED")
+         ?.errorMessage;
+@@ -1124,38 +1327,55 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         text:
+           failedCount > 0
+             ? `Đã tải lên Google Drive cho ${dResult?.uploadedStudentsCount || 0}/${dResult?.totalRequested || 0} học viên (Lỗi: ${failedCount}${firstErr ? ` — ${firstErr}` : ""}).`
+-            : `Đã tạo thư mục Google Drive và lưu vào kho tài nguyên chung cho ${dResult?.uploadedStudentsCount || 0}/${dResult?.totalRequested || 0} học viên!${
++            : `Đã tạo thư mục Google Drive và gắn Link vào bản nháp cho ${dResult?.uploadedStudentsCount || 0}/${dResult?.totalRequested || 0} học viên!${
+                 hasNewerCount > 0
+-                  ? ` Bấm "Dùng tài nguyên mới nhất" ở học viên cần cập nhật vào bản nháp Buổi ${selectedSessionNumber}.`
++                  ? ` Bấm "Dùng tài nguyên mới nhất" ở học viên cần cập nhật vào bản nháp Buổi ${requestSessionNum}.`
+                   : ""
+               }`,
+       });
++      return { success: failedCount === 0, updatedRows: nextRows };
+     } catch (err) {
+       const activeClass = getActiveUiClassId();
+       if (!activeClass || activeClass === requestClassId) {
++        const msg = err instanceof Error ? err.message : String(err);
++        for (const sid of idsToUpload) {
++          setStudentToolError(sid, "drive", msg);
++        }
+         setBannerMessage({
+           type: "error",
+-          text: err instanceof Error ? err.message : String(err),
++          text: msg,
+         });
+       }
++      return { success: false, updatedRows: flushedRows };
+     } finally {
+       setUploadingDrive(false);
+     }
+   };
+ 
+-  const handleDeployWebToGithubPages = async (targetStudentIds?: string[]) => {
+-    if (!selectedClassId) {
++  const handleDeployWebToGithubPages = async (
++    targetStudentIds?: string[],
++    options?: {
++      skipApprovalConfirm?: boolean;
++      sourceRows?: ScannedFolderUIItem[];
++      classIdOverride?: string;
++      sessionOverride?: 12 | 13 | 14;
++    }
++  ): Promise<{ success: boolean; updatedRows: ScannedFolderUIItem[] } | void> => {
++    const requestClassId = options?.classIdOverride || selectedClassId;
++    const requestSessionNum = options?.sessionOverride || selectedSessionNumber;
++    const activeRows = options?.sourceRows || rows;
++    if (!requestClassId) {
+       setBannerMessage({
+         type: "warning",
+         text: "Vui lòng chọn Lớp học trước khi đẩy sản phẩm Web lên GitHub Pages.",
+       });
+-      return;
++      return { success: false, updatedRows: activeRows };
+     }
+ 
+     const idsToDeploy =
+       targetStudentIds && targetStudentIds.length > 0
+         ? targetStudentIds
+-        : rows
++        : activeRows
+             .filter((r) => r.assignedStudentId && r.folderPath)
+             .map((r) => r.assignedStudentId);
+ 
+@@ -1164,30 +1384,49 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         type: "warning",
+         text: "Chưa có học viên nào có thư mục sản phẩm trên máy tính để đẩy lên GitHub Pages.",
+       });
+-      return;
++      return { success: false, updatedRows: activeRows };
++    }
++
++    if (
++      !options?.skipApprovalConfirm &&
++      !confirmBeforeDemotingApprovedRows(idsToDeploy, activeRows)
++    ) {
++      return { success: false, updatedRows: activeRows };
+     }
+ 
+-    const requestClassId = selectedClassId;
+     setDeployingWeb(true);
+     setBannerMessage({
+       type: "warning",
+       text: `Đang đẩy thư mục Web của ${idsToDeploy.length} học viên lên GitHub Pages (Banhtalon/WEB_PRODUCT_SHOW) và tự động gắn Link Web Live...`,
+     });
+ 
++    const flushedRows = [...activeRows];
+     try {
+-      for (const row of rows) {
++      for (let idx = 0; idx < flushedRows.length; idx++) {
++        const row = flushedRows[idx];
+         if (idsToDeploy.includes(row.assignedStudentId)) {
+-          const saved = await persistRowDraft(row);
++          const saved: any = await persistRowDraft(row, undefined, requestSessionNum);
+           const activeClass = getActiveUiClassId();
+           if (activeClass && activeClass !== requestClassId) {
+-            return;
++            return { success: false, updatedRows: flushedRows };
+           }
+           if (!saved) {
++            const errMsg = `Lưu bản nháp cho học viên '${row.folderName || row.assignedStudentId}' thất bại. Đã dừng triển khai GitHub Pages để tránh dùng dữ liệu cũ.`;
++            setStudentToolError(row.assignedStudentId, "web", errMsg);
+             setBannerMessage({
+               type: "error",
+-              text: `Lưu bản nháp cho học viên '${row.folderName || row.assignedStudentId}' thất bại. Đã dừng triển khai GitHub Pages để tránh dùng dữ liệu cũ.`,
++              text: errMsg,
+             });
+-            return;
++            return { success: false, updatedRows: flushedRows };
++          }
++          if (typeof saved === "object" && saved.row) {
++            flushedRows[idx] = saved.row;
++          } else if (typeof saved === "object" && typeof saved.draftVersion === "number") {
++            flushedRows[idx] = {
++              ...row,
++              draftVersion: saved.draftVersion,
++              isDirty: false,
++            };
+           }
+         }
+       }
+@@ -1197,23 +1436,31 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({
+           classId: requestClassId,
+-          sessionNumber: selectedSessionNumber,
++          sessionNumber: requestSessionNum,
+           repoUrl: webRepoUrl.trim(),
+           studentIds: idsToDeploy,
++          syncActiveSession: true,
+         }),
+       });
+       const data = await res.json();
+       const activeClass = getActiveUiClassId();
+       if (activeClass && activeClass !== requestClassId) {
+-        return;
++        return { success: false, updatedRows: flushedRows };
+       }
+ 
+       if (!data.success) {
++        for (const sid of idsToDeploy) {
++          setStudentToolError(
++            sid,
++            "web",
++            data.error || "Lỗi khi đẩy sản phẩm Web lên GitHub Pages."
++          );
++        }
+         setBannerMessage({
+           type: "error",
+           text: data.error || "Lỗi khi đẩy sản phẩm Web lên GitHub Pages.",
+         });
+-        return;
++        return { success: false, updatedRows: flushedRows };
+       }
+ 
+       const dbByStu = new Map<string, SpckRecordRow>(
+@@ -1222,8 +1469,8 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+           .map((r: SpckRecordRow) => [r.studentId, r])
+       );
+ 
+-      setRows((prev) =>
+-        prev.map((row) => {
++      const mergeWebRecords = (baseList: ScannedFolderUIItem[]): ScannedFolderUIItem[] =>
++        baseList.map((row) => {
+           const rec = dbByStu.get(row.assignedStudentId);
+           if (!rec) return row;
+           const relatedLinks = parseJsonSafe<RelatedLinkItem[]>(rec.relatedLinksJson, []);
+@@ -1240,11 +1487,32 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+             sessionResults:
+               parseSessionResultsMap(rec.sessionResultsJson) || row.sessionResults,
+             sessionHistory: rec.sessionHistory || row.sessionHistory,
++            isDirty: false,
+           };
+-        })
+-      );
++        });
++
++      const nextRows = mergeWebRecords(flushedRows);
++      setRows((prev) => mergeWebRecords(prev));
+ 
+       const dRes = data.deployResult;
++      if (Array.isArray(dRes?.results)) {
++        for (const item of dRes.results) {
++          if (!item?.studentId) continue;
++          if (item.status === "FAILED") {
++            setStudentToolError(
++              item.studentId,
++              "web",
++              item.errorMessage || "Lỗi đẩy Web lên GitHub Pages."
++            );
++          } else {
++            setStudentToolError(item.studentId, "web", null);
++          }
++        }
++      } else {
++        for (const sid of idsToDeploy) {
++          setStudentToolError(sid, "web", null);
++        }
++      }
+       const deployedCount = dRes?.deployedStudentsCount || 0;
+       const skippedCount = dRes?.skippedNoHtmlCount || 0;
+       const failedCount = dRes?.failedStudentsCount || 0;
+@@ -1260,21 +1528,27 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+       } else {
+         setBannerMessage({
+           type: failedCount > 0 ? "warning" : "success",
+-          text: `Đã đẩy Web lên GitHub Pages và lưu Link Web Chạy Thử vào kho tài nguyên chung cho ${deployedCount}/${dRes?.totalRequested || 0} học viên!${
++          text: `Đã đẩy Web lên GitHub Pages và gắn Link Web Chạy Thử vào bản nháp cho ${deployedCount}/${dRes?.totalRequested || 0} học viên!${
+             hasNewerCount > 0
+-              ? ` Bấm "Dùng tài nguyên mới nhất" ở học viên cần cập nhật vào bản nháp Buổi ${selectedSessionNumber}.`
++              ? ` Bấm "Dùng tài nguyên mới nhất" ở học viên cần cập nhật vào bản nháp Buổi ${requestSessionNum}.`
+               : ""
+           }`,
+         });
+       }
++      return { success: failedCount === 0, updatedRows: nextRows };
+     } catch (err) {
+       const activeClass = getActiveUiClassId();
+       if (!activeClass || activeClass === requestClassId) {
++        const msg = err instanceof Error ? err.message : String(err);
++        for (const sid of idsToDeploy) {
++          setStudentToolError(sid, "web", msg);
++        }
+         setBannerMessage({
+           type: "error",
+-          text: err instanceof Error ? err.message : String(err),
++          text: msg,
+         });
+       }
++      return { success: false, updatedRows: flushedRows };
+     } finally {
+       setDeployingWeb(false);
+     }
+@@ -1350,16 +1624,40 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+     }
+   };
+ 
+-  const handleCaptureAppScreenshots = async (targetStudentIds?: string[]) => {
+-    if (!selectedClassId) {
++  const handleCaptureAppScreenshots = async (
++    targetStudentIds?: string[],
++    options?: {
++      skipApprovalConfirm?: boolean;
++      sourceRows?: ScannedFolderUIItem[];
++      classIdOverride?: string;
++      sessionOverride?: 12 | 13 | 14;
++    }
++  ): Promise<{ success: boolean; updatedRows: ScannedFolderUIItem[] } | void> => {
++    const requestClassId = options?.classIdOverride || selectedClassId;
++    const requestSessionNum = options?.sessionOverride || selectedSessionNumber;
++    const activeRows = options?.sourceRows || rows;
++    if (!requestClassId) {
+       setBannerMessage({
+         type: "warning",
+         text: "Vui lòng chọn Lớp học trước khi chụp hình giao diện App.",
+       });
+-      return;
++      return { success: false, updatedRows: activeRows };
++    }
++
++    const idsToCapture =
++      targetStudentIds && targetStudentIds.length > 0
++        ? targetStudentIds
++        : activeRows
++            .filter((r) => r.assignedStudentId && r.folderPath)
++            .map((r) => r.assignedStudentId);
++
++    if (
++      !options?.skipApprovalConfirm &&
++      !confirmBeforeDemotingApprovedRows(idsToCapture, activeRows)
++    ) {
++      return { success: false, updatedRows: activeRows };
+     }
+ 
+-    const requestClassId = selectedClassId;
+     setCapturingScreenshots(true);
+     setBannerMessage({
+       type: "warning",
+@@ -1372,22 +1670,30 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({
+           classId: requestClassId,
+-          sessionNumber: selectedSessionNumber,
++          sessionNumber: requestSessionNum,
+           studentIds: targetStudentIds,
+           useAiVision: true,
++          syncActiveSession: true,
+         }),
+       });
+       const data = await res.json();
+       const activeClass = getActiveUiClassId();
+       if (activeClass && activeClass !== requestClassId) {
+-        return;
++        return { success: false, updatedRows: activeRows };
+       }
+       if (!data.success) {
++        for (const sid of idsToCapture) {
++          setStudentToolError(
++            sid,
++            "screenshot",
++            data.error || "Không thể chụp hình giao diện App."
++          );
++        }
+         setBannerMessage({
+           type: "error",
+           text: data.error || "Không thể chụp hình giao diện App.",
+         });
+-        return;
++        return { success: false, updatedRows: activeRows };
+       }
+ 
+       const dbByStu = new Map<string, SpckRecordRow>(
+@@ -1396,8 +1702,10 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+           .map((r: SpckRecordRow) => [r.studentId, r])
+       );
+ 
+-      setRows((prev) =>
+-        prev.map((row) => {
++      const mergeScreenshotRecords = (
++        baseList: ScannedFolderUIItem[]
++      ): ScannedFolderUIItem[] =>
++        baseList.map((row) => {
+           const rec = dbByStu.get(row.assignedStudentId);
+           if (!rec) return row;
+           const screenshots = parseJsonSafe<string[]>(rec.screenshotsJson, []);
+@@ -1413,30 +1721,59 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+             sessionResults:
+               parseSessionResultsMap(rec.sessionResultsJson) || row.sessionResults,
+             sessionHistory: rec.sessionHistory || row.sessionHistory,
++            isDirty: false,
+           };
+-        })
+-      );
++        });
++
++      const nextRows = mergeScreenshotRecords(activeRows);
++      setRows((prev) => mergeScreenshotRecords(prev));
+ 
+       const bRes = data.batchResult;
++      let hasFailedScreenshot = false;
++      if (Array.isArray(bRes?.results)) {
++        for (const item of bRes.results) {
++          if (!item?.studentId) continue;
++          if (item.status === "FAILED" || item.errorMessage) {
++            hasFailedScreenshot = true;
++            setStudentToolError(
++              item.studentId,
++              "screenshot",
++              item.errorMessage || "Lỗi chụp hình giao diện."
++            );
++          } else {
++            setStudentToolError(item.studentId, "screenshot", null);
++          }
++        }
++      } else {
++        for (const sid of idsToCapture) {
++          setStudentToolError(sid, "screenshot", null);
++        }
++      }
+       const hasNewerCount = (data.records || []).filter(
+         (r: SpckRecordRow) => r.hasNewerSharedResources
+       ).length;
+       setBannerMessage({
+         type: "success",
+-        text: `Đã chụp tổng cộng ${bRes?.totalScreenshotsCaptured || 0} màn hình giao diện App cho ${bRes?.totalProcessed || 0} học viên và lưu vào kho tài nguyên chung!${
++        text: `Đã chụp tổng cộng ${bRes?.totalScreenshotsCaptured || 0} màn hình giao diện App cho ${bRes?.totalProcessed || 0} học viên và gắn vào bản nháp!${
+           hasNewerCount > 0
+-            ? ` Bấm "Dùng tài nguyên mới nhất" ở học viên cần áp dụng ảnh mới vào bản nháp Buổi ${selectedSessionNumber}.`
++            ? ` Bấm "Dùng tài nguyên mới nhất" ở học viên cần áp dụng ảnh mới vào bản nháp Buổi ${requestSessionNum}.`
+             : ""
+         }`,
+       });
++      return { success: !hasFailedScreenshot, updatedRows: nextRows };
+     } catch (err) {
+       const activeClass = getActiveUiClassId();
+       if (!activeClass || activeClass === requestClassId) {
++        const msg = err instanceof Error ? err.message : String(err);
++        for (const sid of idsToCapture) {
++          setStudentToolError(sid, "screenshot", msg);
++        }
+         setBannerMessage({
+           type: "error",
+-          text: err instanceof Error ? err.message : String(err),
++          text: msg,
+         });
+       }
++      return { success: false, updatedRows: activeRows };
+     } finally {
+       setCapturingScreenshots(false);
+     }
+@@ -2006,7 +2343,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+     return taskPromise;
+   };
+ 
+-  const handleImportDemoScores = async () => {
++  const handleImportDemoScores = async (options?: {
++    isAutoImport?: boolean;
++  }) => {
+     if (!selectedClassId) return;
+     const reqClassId = String(selectedClassId).trim().toUpperCase();
+     const g = globalThis as any;
+@@ -2037,7 +2376,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+     });
+ 
+     setImportingDemoScores(true);
+-    setBannerMessage(null);
++    if (!options?.isAutoImport) {
++      setBannerMessage(null);
++    }
+     try {
+       const source = (demoScoreSourceInput || generatedDemoSheetUrl || "").trim();
+       const res = await fetch("/api/spck/session14-eval/import-demo-scores", {
+@@ -2046,6 +2387,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         body: JSON.stringify({
+           classId: reqClassId,
+           sourcePathOrUrl: source,
++          onlyMissingStudents: Boolean(options?.isAutoImport),
+         }),
+       });
+       const data = await res.json();
+@@ -2057,10 +2399,12 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         return;
+       }
+       if (!data.success) {
+-        setBannerMessage({
+-          type: "error",
+-          text: data.error || "Không thể đọc điểm Demo từ file chấm điểm.",
+-        });
++        if (!options?.isAutoImport) {
++          setBannerMessage({
++            type: "error",
++            text: data.error || "Không thể đọc điểm Demo từ file chấm điểm.",
++          });
++        }
+         return;
+       }
+       if (Array.isArray(data.records)) {
+@@ -2091,6 +2435,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+           return validRecords.map((srv: any) => {
+             const prevItem = prevMap.get(srv.studentId);
+             if (!prevItem) return srv;
++            if (options?.isAutoImport && Number(prevItem.demoTotalScore) > 0) {
++              return prevItem;
++            }
+             if (
+               typeof prevItem.draftVersion === "number" &&
+               typeof srv.draftVersion === "number" &&
+@@ -2121,20 +2468,49 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         });
+       }
+       const matched = data.importResult?.matchedCount || 0;
+-      setBannerMessage({
+-        type: "success",
+-        text: `Đã đọc thành công Điểm Demo & gợi ý Điểm Năng lực [ĐNL] cho ${matched} học viên lớp ${reqClassId}!`,
+-      });
++      if (matched > 0 || !options?.isAutoImport) {
++        setBannerMessage({
++          type: "success",
++          text: `Đã đọc thành công Điểm Demo & gợi ý Điểm Năng lực [ĐNL] cho ${matched} học viên lớp ${reqClassId}!`,
++        });
++      }
+     } catch (err) {
+-      setBannerMessage({
+-        type: "error",
+-        text: err instanceof Error ? err.message : String(err),
+-      });
++      if (!options?.isAutoImport) {
++        setBannerMessage({
++          type: "error",
++          text: err instanceof Error ? err.message : String(err),
++        });
++      }
+     } finally {
+       setImportingDemoScores(false);
+     }
+   };
+ 
++  useEffect(() => {
++    if (!selectedClassId || selectedSessionNumber !== 14) return;
++    if (importingDemoScores || session14Evals.length === 0) return;
++    const reqClassId = String(selectedClassId).trim().toUpperCase();
++    const hasMissingDemoScore = session14Evals.some(
++      (ev) => !(Number(ev.demoTotalScore) > 0)
++    );
++    if (!hasMissingDemoScore) return;
++    const sourceKey = `${reqClassId}::${(
++      demoScoreSourceInput ||
++      generatedDemoSheetUrl ||
++      ""
++    ).trim()}`;
++    if (autoImportedDemoClassKeysRef.current.has(sourceKey)) return;
++    autoImportedDemoClassKeysRef.current.add(sourceKey);
++    void handleImportDemoScores({ isAutoImport: true });
++  }, [
++    selectedClassId,
++    selectedSessionNumber,
++    session14Evals,
++    importingDemoScores,
++    demoScoreSourceInput,
++    generatedDemoSheetUrl,
++  ]);
++
+   const handleGenerateSession14EvalAi = async (targetStudentIds?: string[]) => {
+     if (!selectedClassId) return;
+     const reqClassId = String(selectedClassId).trim().toUpperCase();
+@@ -2211,6 +2587,13 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         return;
+       }
+       if (!data.success) {
++        for (const ev of listToGen) {
++          setStudentToolError(
++            ev.studentId,
++            "s14_ai",
++            data.error || "Lỗi khi AI soạn Thư tổng kết Buổi 14."
++          );
++        }
+         setBannerMessage({
+           type: "error",
+           text: data.error || "Lỗi khi AI soạn Thư tổng kết Buổi 14.",
+@@ -2274,6 +2657,20 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+           });
+         });
+       }
++      if (Array.isArray(data.results)) {
++        for (const r of data.results) {
++          if (!r?.studentId) continue;
++          if (r.status === "SUCCESS") {
++            setStudentToolError(r.studentId, "s14_ai", null);
++          } else {
++            setStudentToolError(
++              r.studentId,
++              "s14_ai",
++              r.errorMessage || r.status || "Lỗi AI soạn Thư 3 phần."
++            );
++          }
++        }
++      }
+       const okCount = (data.results || []).filter(
+         (r: any) => r.status === "SUCCESS"
+       ).length;
+@@ -2282,9 +2679,13 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         text: `AI đã soạn xong Thư tổng kết 3 phần (Learned / Suggestions / Future Direction) cho ${okCount}/${listToGen.length} học viên!`,
+       });
+     } catch (err) {
++      const msg = err instanceof Error ? err.message : String(err);
++      for (const ev of listToGen) {
++        setStudentToolError(ev.studentId, "s14_ai", msg);
++      }
+       setBannerMessage({
+         type: "error",
+-        text: err instanceof Error ? err.message : String(err),
++        text: msg,
+       });
+     } finally {
+       setGeneratingS14EvalAi(false);
+@@ -2293,8 +2694,22 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+ 
+   const handleApproveAndUploadSession14Eval = async (
+     targetStudentIds?: string[]
+-  ) => {
+-    if (!selectedClassId) return;
++  ): Promise<{
++    verifiedCount: number;
++    verifiedStudentIds: string[];
++    failedCount: number;
++    retryStudentIds: string[];
++    errorMessage: string | null;
++  }> => {
++    if (!selectedClassId) {
++      return {
++        verifiedCount: 0,
++        verifiedStudentIds: [],
++        failedCount: 0,
++        retryStudentIds: targetStudentIds || [],
++        errorMessage: "Chưa chọn lớp học.",
++      };
++    }
+     const reqClassId = String(selectedClassId).trim().toUpperCase();
+ 
+     const readLiveList = (): Session14EvalItemUI[] => {
+@@ -2322,11 +2737,19 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+             .map((ev) => ev.studentId);
+ 
+     if (ids.length === 0) {
++      const warnMsg =
++        "Chưa có học viên nào đủ nội dung 3 phần Thư từ MindX để duyệt và đẩy lên LMS.";
+       setBannerMessage({
+         type: "warning",
+-        text: "Chưa có học viên nào đủ nội dung 3 phần Thư từ MindX để duyệt và đẩy lên LMS.",
++        text: warnMsg,
+       });
+-      return;
++      return {
++        verifiedCount: 0,
++        verifiedStudentIds: [],
++        failedCount: 0,
++        retryStudentIds: [],
++        errorMessage: warnMsg,
++      };
+     }
+ 
+     const g = globalThis as any;
+@@ -2352,14 +2775,27 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+               ),
+             ]);
+             if (raceRes && (raceRes as any).timedOut) {
++              const errMsg = `Thao tác lưu nháp của học viên ${sid} chưa hoàn tất. Đã dừng duyệt và đẩy LMS để tránh gửi bản cũ.`;
+               setBannerMessage({
+                 type: "error",
+-                text: `Thao tác lưu nháp của học viên ${sid} chưa hoàn tất. Đã dừng duyệt và đẩy LMS để tránh gửi bản cũ.`,
++                text: errMsg,
+               });
+-              return;
++              return {
++                verifiedCount: 0,
++                verifiedStudentIds: [],
++                failedCount: ids.length,
++                retryStudentIds: ids,
++                errorMessage: errMsg,
++              };
+             }
+             if (!raceRes || !raceRes.success) {
+-              return;
++              return {
++                verifiedCount: 0,
++                verifiedStudentIds: [],
++                failedCount: ids.length,
++                retryStudentIds: ids,
++                errorMessage: "Lưu nháp thất bại trước khi duyệt.",
++              };
+             }
+           }
+         }
+@@ -2405,11 +2841,18 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+             (flushRes as any).timedOut ||
+             !(flushRes as any).success
+           ) {
++            const errMsg = `Không thể lưu bản đang hiển thị của học viên ${sid} trước khi duyệt.`;
+             setBannerMessage({
+               type: "error",
+-              text: `Không thể lưu bản đang hiển thị của học viên ${sid} trước khi duyệt.`,
++              text: errMsg,
+             });
+-            return;
++            return {
++              verifiedCount: 0,
++              verifiedStudentIds: [],
++              failedCount: ids.length,
++              retryStudentIds: ids,
++              errorMessage: errMsg,
++            };
+           }
+           if (typeof (flushRes as any).record?.draftVersion === "number") {
+             expectedVersions[sid] = (flushRes as any).record.draftVersion;
+@@ -2421,12 +2864,26 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         }
+       }
+ 
+-      if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) return;
++      if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) {
++        return {
++          verifiedCount: 0,
++          verifiedStudentIds: [],
++          failedCount: 0,
++          retryStudentIds: [],
++          errorMessage: null,
++        };
++      }
+       if (
+         g.__s14LatestRenderedClassId &&
+         String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClassId
+       ) {
+-        return;
++        return {
++          verifiedCount: 0,
++          verifiedStudentIds: [],
++          failedCount: 0,
++          retryStudentIds: [],
++          errorMessage: null,
++        };
+       }
+ 
+       const snapshotsBeforeUpload = new Map<string, any>();
+@@ -2457,14 +2914,21 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         ? appData.approvedIds
+         : [];
+       if (!appRes.ok || !appData.success || approvedIds.length !== ids.length) {
++        const errMsg =
++          appData.errors?.[0]?.error ||
++          appData.error ||
++          "Không thể duyệt đánh giá Buổi 14 trước khi đẩy lên LMS.";
+         setBannerMessage({
+           type: "error",
+-          text:
+-            appData.errors?.[0]?.error ||
+-            appData.error ||
+-            "Không thể duyệt đánh giá Buổi 14 trước khi đẩy lên LMS.",
++          text: errMsg,
+         });
+-        return;
++        return {
++          verifiedCount: 0,
++          verifiedStudentIds: [],
++          failedCount: ids.length,
++          retryStudentIds: ids,
++          errorMessage: errMsg,
++        };
+       }
+ 
+       const upRes = await fetch("/api/spck/session14-eval/upload-lms", {
+@@ -2476,12 +2940,26 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         }),
+       });
+       const upData = await upRes.json();
+-      if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) return;
++      if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) {
++        return {
++          verifiedCount: 0,
++          verifiedStudentIds: [],
++          failedCount: 0,
++          retryStudentIds: [],
++          errorMessage: null,
++        };
++      }
+       if (
+         g.__s14LatestRenderedClassId &&
+         String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClassId
+       ) {
+-        return;
++        return {
++          verifiedCount: 0,
++          verifiedStudentIds: [],
++          failedCount: 0,
++          retryStudentIds: [],
++          errorMessage: null,
++        };
+       }
+       if (Array.isArray(upData.records)) {
+         const validRecords = upData.records.filter(
+@@ -2551,21 +3029,48 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+         });
+       }
+       if (!upRes.ok || (!upData?.success && !upData?.uploadResult)) {
++        const errMsg =
++          upData?.error ||
++          `Lỗi khi đẩy đánh giá Buổi 14 lên LMS (HTTP ${upRes.status}).`;
+         setBannerMessage({
+           type: "error",
+-          text:
+-            upData?.error ||
+-            `Lỗi khi đẩy đánh giá Buổi 14 lên LMS (HTTP ${upRes.status}).`,
++          text: errMsg,
+         });
+-        return;
++        return {
++          verifiedCount: 0,
++          verifiedStudentIds: [],
++          failedCount: approvedIds.length,
++          retryStudentIds: approvedIds,
++          errorMessage: errMsg,
++        };
+       }
+       const verCount = upData.uploadResult?.verifiedCount || 0;
+       const failCount = upData.uploadResult?.failedCount || 0;
++      const verifiedStudentIds = Array.isArray(upData.uploadResult?.results)
++        ? upData.uploadResult.results
++            .filter((r: any) => r.status === "VERIFIED")
++            .map((r: any) => String(r.studentId || ""))
++            .filter(Boolean)
++        : verCount > 0 && failCount === 0
++        ? approvedIds
++        : [];
++      const failedRetryIds = Array.isArray(upData.uploadResult?.results)
++        ? upData.uploadResult.results
++            .filter((r: any) => r.status !== "VERIFIED")
++            .map((r: any) => String(r.studentId || ""))
++            .filter(Boolean)
++        : failCount > 0
++        ? approvedIds
++        : [];
+       const firstFailedItem = Array.isArray(upData.uploadResult?.results)
+         ? upData.uploadResult.results.find(
+             (r: any) => r.status === "FAILED" && r.errorMessage
+           )
+         : null;
++      const statusText =
++        failCount > 0 && firstFailedItem
++          ? `Đã đẩy & xác minh ${verCount}/${approvedIds.length} học viên lên LMS (${failCount} lỗi — ${firstFailedItem.fullName || firstFailedItem.studentId}: ${firstFailedItem.errorMessage})`
++          : `Đã đẩy & xác minh (Read-after-Write) đánh giá tổng kết + Điểm Demo Buổi 14 cho ${verCount}/${approvedIds.length} học viên lên LMS!`;
+       setBannerMessage({
+         type:
+           failCount === 0 && verCount > 0
+@@ -2573,16 +3078,31 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+             : failCount > 0
+             ? "error"
+             : "warning",
+-        text:
+-          failCount > 0 && firstFailedItem
+-            ? `Đã đẩy & xác minh ${verCount}/${approvedIds.length} học viên lên LMS (${failCount} lỗi — ${firstFailedItem.fullName || firstFailedItem.studentId}: ${firstFailedItem.errorMessage})`
+-            : `Đã đẩy & xác minh (Read-after-Write) đánh giá tổng kết + Điểm Demo Buổi 14 cho ${verCount}/${approvedIds.length} học viên lên LMS!`,
++        text: statusText,
+       });
++      return {
++        verifiedCount: verCount,
++        verifiedStudentIds,
++        failedCount: failCount,
++        retryStudentIds: failedRetryIds,
++        errorMessage:
++          failCount > 0
++            ? firstFailedItem?.errorMessage || "Một số học viên lỗi lưu Đánh giá Buổi 14."
++            : null,
++      };
+     } catch (err) {
++      const errMsg = err instanceof Error ? err.message : String(err);
+       setBannerMessage({
+         type: "error",
+-        text: err instanceof Error ? err.message : String(err),
++        text: errMsg,
+       });
++      return {
++        verifiedCount: 0,
++        verifiedStudentIds: [],
++        failedCount: ids.length,
++        retryStudentIds: ids,
++        errorMessage: errMsg,
++      };
+     } finally {
+       setUploadingS14EvalLms(false);
+     }
+@@ -2694,6 +3214,17 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+   ]);
+ 
+   const activeBusyDescription = useMemo(() => {
++    if (autoPrepStepProgress) {
++      return autoPrepStepProgress;
++    }
++    if (session14ComboStatus.running) {
++      if (session14ComboStatus.currentPhase === "spck") {
++        return "[1/2] Đang duyệt và nộp Sản phẩm SPCK (Cột 3) Buổi 14 lên LMS...";
++      }
++      if (session14ComboStatus.currentPhase === "eval") {
++        return "[2/2] Đang duyệt và đẩy Đánh giá tổng kết & Điểm Demo (Cột 2) Buổi 14 lên LMS...";
++      }
++    }
+     if (uploading) {
+       return (
+         activeActionLabel ||
+@@ -2727,6 +3258,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+       return "Đang quét danh sách lớp từ tài khoản giáo viên...";
+     return "";
+   }, [
++    autoPrepStepProgress,
++    session14ComboStatus.running,
++    session14ComboStatus.currentPhase,
+     uploading,
+     uploadingS14EvalLms,
+     generatingS14EvalAi,
+@@ -2766,7 +3300,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+ 
+   const isWebClassOrProduct = useMemo(() => {
+     const classText = `${selectedClassId} ${selectedClassMeta?.className || ""}`.toUpperCase();
+-    const hasWebClassCode = /\b(JSB|JSA|JSI|WEB|HTML)\b/.test(classText);
++    const hasWebClassCode = /\b(JSB|JSA|JSI|WEB|HTML)[A-Z0-9]*\b/.test(classText);
+     const hasHtmlFiles = rows.some(
+       (r) =>
+         (r.attachments || []).some((f) => /\.html?$/i.test(f)) ||
+@@ -2777,17 +3311,406 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+ 
+   const isAppOrGameProduct = useMemo(() => {
+     const classText = `${selectedClassId} ${selectedClassMeta?.className || ""}`.toUpperCase();
+-    const hasAppClassCode = /\b(PTA|PTI|CSI|CSA|GMA|GMI|GAME|APP|PYTHON|SCRATCH)\b/.test(
++    const hasAppClassCode = /\b(PTA|PTI|CSI|CSA|GMA|GMI|GAME|APP|PYTHON|SCRATCH)[A-Z0-9]*\b/.test(
+       classText
+     );
+     const hasAppFiles = rows.some((r) =>
+       (r.attachments || []).some((f) =>
+-        /\.(py|sb3|apk|exe|gmx|yyz|rbxl|html?)$/i.test(f)
++        /\.(ui|py|sb3|apk|exe|gmx|yyz|rbxl|html?)$/i.test(f)
+       )
+     );
+     return hasAppClassCode || hasAppFiles || !isWebClassOrProduct;
+   }, [selectedClassId, selectedClassMeta, rows, isWebClassOrProduct]);
+ 
++  const handleImportYoutubeProducts = async (options?: {
++    skipApprovalConfirm?: boolean;
++    sourceRows?: ScannedFolderUIItem[];
++  }): Promise<{ success: boolean; updatedRows?: ScannedFolderUIItem[] } | void> => {
++    if (
++      !options?.skipApprovalConfirm &&
++      !confirmBeforeDemotingApprovedRows(undefined, options?.sourceRows)
++    ) {
++      return { success: false, updatedRows: options?.sourceRows || rows };
++    }
++    return await baseHandleImportYoutubeProducts(options?.sourceRows);
++  };
++
++  const handleGenerateAiComments = async (targetFolderPaths?: string[]) => {
++    await baseHandleGenerateAiComments(targetFolderPaths);
++  };
++
++  const handleApproveAndUpload = async (
++    targetStudentIds: string[],
++    autoUploadAfterApprove = true,
++    overrideSessionNum?: 12 | 13 | 14 | number
++  ) => {
++    return await baseHandleApproveAndUpload(
++      targetStudentIds,
++      autoUploadAfterApprove,
++      overrideSessionNum
++    );
++  };
++
++  const handleGenerateSession14AllAi = async (targetStudentIds?: string[]) => {
++    if (!selectedClassId) return;
++    const targetFolders =
++      targetStudentIds && targetStudentIds.length > 0
++        ? rows
++            .filter(
++              (r) =>
++                r.assignedStudentId &&
++                targetStudentIds.includes(r.assignedStudentId)
++            )
++            .map((r) => r.folderPath)
++            .filter(Boolean)
++        : undefined;
++    await handleGenerateAiComments(
++      targetFolders && targetFolders.length > 0 ? targetFolders : undefined
++    );
++    await handleGenerateSession14EvalAi(targetStudentIds);
++  };
++
++  const handleSubmitSession14Combo = async (
++    targetStudentIds?: string[],
++    partToRun: "both" | "spck_only" | "eval_only" = "both"
++  ) => {
++    if (!selectedClassId) return;
++    const ids =
++      targetStudentIds && targetStudentIds.length > 0
++        ? targetStudentIds
++        : effectiveSelectedStudentIds;
++    if (ids.length === 0) {
++      setBannerMessage({
++        type: "warning",
++        text: "Vui lòng chọn ít nhất 1 học viên để nộp Buổi 14.",
++      });
++      return;
++    }
++
++    setSession14ComboStatus((prev) => ({
++      ...prev,
++      running: true,
++      currentPhase: partToRun === "eval_only" ? "eval" : "spck",
++    }));
++
++    let nextSpckSummary =
++      partToRun === "both" ? null : session14ComboStatus.spckSummary;
++    let nextEvalVerified =
++      partToRun === "both" ? 0 : session14ComboStatus.evalVerifiedCount;
++    let nextEvalVerifiedIds =
++      partToRun === "both"
++        ? []
++        : [...(session14ComboStatus.evalVerifiedStudentIds || [])];
++    let nextEvalFailed =
++      partToRun === "both" ? 0 : session14ComboStatus.evalFailedCount;
++    let nextEvalRetryIds =
++      partToRun === "both" ? [] : [...session14ComboStatus.evalRetryStudentIds];
++    let nextEvalError =
++      partToRun === "both" ? null : session14ComboStatus.evalErrorMessage;
++
++    try {
++      if (partToRun === "both" || partToRun === "spck_only") {
++        setSession14ComboStatus((prev) => ({
++          ...prev,
++          running: true,
++          currentPhase: "spck",
++        }));
++        const spckRes = await baseHandleApproveAndUpload(ids, true, 14);
++        const resolvedSpckSummary: SpckBatchSubmissionSummaryUI =
++          spckRes && typeof spckRes === "object"
++            ? spckRes
++            : {
++                sessionNumber: 14,
++                totalSelected: ids.length,
++                verifiedItems: [],
++                failedItems: ids.map((sid) => ({
++                  studentId: sid,
++                  studentName: sid,
++                  reason: "Không thể hoàn tất nộp Sản phẩm SPCK (Buổi 14).",
++                })),
++                skippedItems: [],
++                retryStudentIds: ids,
++                completedAt: new Date().toLocaleTimeString("vi-VN"),
++              };
++
++        if (partToRun === "spck_only" && session14ComboStatus.spckSummary) {
++          const prevSpck = session14ComboStatus.spckSummary;
++          const retriedSet = new Set(ids);
++          const mergedVerifiedMap = new Map<
++            string,
++            { studentId: string; studentName: string }
++          >();
++          for (const it of prevSpck.verifiedItems) {
++            if (!retriedSet.has(it.studentId)) {
++              mergedVerifiedMap.set(it.studentId, it);
++            }
++          }
++          for (const it of resolvedSpckSummary.verifiedItems) {
++            mergedVerifiedMap.set(it.studentId, it);
++          }
++          const mergedVerified = Array.from(mergedVerifiedMap.values());
++          const mergedFailed = [
++            ...prevSpck.failedItems.filter((it) => !retriedSet.has(it.studentId)),
++            ...resolvedSpckSummary.failedItems,
++          ];
++          const mergedSkipped = [
++            ...prevSpck.skippedItems.filter((it) => !retriedSet.has(it.studentId)),
++            ...resolvedSpckSummary.skippedItems,
++          ];
++          const mergedRetryIds = Array.from(
++            new Set([
++              ...mergedFailed.map((f) => f.studentId),
++              ...mergedSkipped.map((s) => s.studentId),
++            ])
++          );
++          nextSpckSummary = {
++            ...resolvedSpckSummary,
++            totalSelected: Math.max(
++              prevSpck.totalSelected,
++              mergedVerified.length + mergedRetryIds.length
++            ),
++            verifiedItems: mergedVerified,
++            failedItems: mergedFailed,
++            skippedItems: mergedSkipped,
++            retryStudentIds: mergedRetryIds,
++          };
++          setLastSubmissionSummary(nextSpckSummary);
++        } else {
++          nextSpckSummary = resolvedSpckSummary;
++        }
++      }
++
++      if (partToRun === "both" || partToRun === "eval_only") {
++        setSession14ComboStatus((prev) => ({
++          ...prev,
++          running: true,
++          currentPhase: "eval",
++          spckSummary: nextSpckSummary,
++        }));
++        const evalRes = await handleApproveAndUploadSession14Eval(ids);
++        if (partToRun === "eval_only") {
++          const retriedSet = new Set(ids);
++          const prevVerifiedIds = (
++            session14ComboStatus.evalVerifiedStudentIds || []
++          ).filter((sid) => !retriedSet.has(sid));
++          const mergedVerifiedIds = Array.from(
++            new Set([...prevVerifiedIds, ...(evalRes.verifiedStudentIds || [])])
++          );
++          const prevRemainingRetryIds = (
++            session14ComboStatus.evalRetryStudentIds || []
++          ).filter(
++            (sid) => !retriedSet.has(sid) && !mergedVerifiedIds.includes(sid)
++          );
++          const mergedRetryIds = Array.from(
++            new Set([...prevRemainingRetryIds, ...(evalRes.retryStudentIds || [])])
++          );
++          nextEvalVerifiedIds = mergedVerifiedIds;
++          nextEvalVerified =
++            mergedVerifiedIds.length > 0
++              ? mergedVerifiedIds.length
++              : evalRes.verifiedCount;
++          nextEvalRetryIds = mergedRetryIds;
++          nextEvalFailed = mergedRetryIds.length;
++          nextEvalError = mergedRetryIds.length > 0 ? evalRes.errorMessage : null;
++        } else {
++          nextEvalVerifiedIds = evalRes.verifiedStudentIds || [];
++          nextEvalVerified = evalRes.verifiedCount;
++          nextEvalFailed = evalRes.failedCount;
++          nextEvalRetryIds = evalRes.retryStudentIds;
++          nextEvalError = evalRes.errorMessage;
++        }
++      }
++
++      setSession14ComboStatus({
++        running: false,
++        currentPhase: "done",
++        spckSummary: nextSpckSummary,
++        evalVerifiedCount: nextEvalVerified,
++        evalVerifiedStudentIds: nextEvalVerifiedIds,
++        evalFailedCount: nextEvalFailed,
++        evalRetryStudentIds: nextEvalRetryIds,
++        evalErrorMessage: nextEvalError,
++      });
++
++      const spckVerifiedCount = nextSpckSummary?.verifiedItems.length || 0;
++      const spckRetryCount = nextSpckSummary?.retryStudentIds.length || 0;
++      if (partToRun === "both") {
++        const hasAnyIssue =
++          spckRetryCount > 0 ||
++          nextEvalFailed > 0 ||
++          nextEvalRetryIds.length > 0;
++        setBannerMessage({
++          type: hasAnyIssue ? "warning" : "success",
++          text: `Hoàn tất nộp Buổi 14 đầy đủ: Phần Sản phẩm SPCK (Cột 3): ${spckVerifiedCount}/${ids.length} bài thành công${
++            spckRetryCount > 0 ? ` (${spckRetryCount} cần thử lại)` : ""
++          } • Phần Đánh giá tổng kết & Điểm Demo (Cột 2): ${nextEvalVerified}/${ids.length} bài thành công${
++            nextEvalRetryIds.length > 0
++              ? ` (${nextEvalRetryIds.length} cần thử lại)`
++              : ""
++          }.`,
++        });
++      }
++    } finally {
++      setSession14ComboStatus((prev) => ({
++        ...prev,
++        running: false,
++        currentPhase: "done",
++      }));
++    }
++  };
++
++  const runAutoPrepAfterScan = async (
++    scannedItems: ScannedFolderUIItem[],
++    scanClassId: string,
++    scanSessionNum: 12 | 13 | 14
++  ) => {
++    const unapprovedRows = scannedItems.filter(
++      (r) =>
++        r.assignedStudentId &&
++        r.status !== "APPROVED" &&
++        r.status !== "VERIFIED" &&
++        getSessionSlotDisplay(r, scanSessionNum).state !== "VERIFIED_CURRENT"
++    );
++    const unapprovedIds = unapprovedRows
++      .map((r) => r.assignedStudentId)
++      .filter(Boolean);
++    if (unapprovedIds.length === 0) return;
++
++    const classMeta = classes.find((c) => c.classId === scanClassId);
++    const classText = `${scanClassId} ${classMeta?.className || ""}`.toUpperCase();
++    const isRobotics = /\b(ROB|ROBO|ROBOT|ROBOTICS|PREB|PREA|PREI|ARM|ARMA|ARMB|ARMI|SEM|SEMA|SEMB|SEMI|EV3|VEX|SPIKE|WEDO|ARDUINO)[A-Z0-9]*\b/i.test(
++      classText
++    );
++    const isCanvaOrDesign = /\b(CANVA|DESIGN|FIGMA|PHOTOSHOP|ILLUSTRATOR|GRAPHIC)[A-Z0-9]*\b/i.test(
++      classText
++    );
++    const hasWebCode = /\b(JSB|JSA|JSI|WEB|HTML)[A-Z0-9]*\b/.test(classText);
++    const hasHtmlFiles = unapprovedRows.some((r) =>
++      (r.attachments || []).some((f) => /\.html?$/i.test(f))
++    );
++    const isWeb = !isRobotics && !isCanvaOrDesign && (hasWebCode || hasHtmlFiles);
++    const hasUiOrAppFiles = unapprovedRows.some((r) =>
++      (r.attachments || []).some((f) =>
++        /\.(ui|py|sb3|apk|exe|gmx|yyz|rbxl|html?)$/i.test(f)
++      )
++    );
++    const hasAppCode = /\b(PTA|PTI|CSI|CSA|GMA|GMI|GAME|APP|PYTHON|SCRATCH)[A-Z0-9]*\b/.test(
++      classText
++    );
++    const shouldCaptureScreenshots =
++      !isRobotics && !isCanvaOrDesign && (isWeb || hasAppCode || hasUiOrAppFiles);
++
++    let currentRows = scannedItems;
++    const steps: Array<{
++      label: string;
++      run: () => Promise<{ success: boolean; updatedRows?: ScannedFolderUIItem[] } | void>;
++    }> = [];
++
++    if (isRobotics && youtubeImportInput.trim()) {
++      steps.push({
++        label: "Đang nhập Playlist YouTube & lấy 2 ảnh thuyết trình...",
++        run: async () =>
++          await handleImportYoutubeProducts({
++            skipApprovalConfirm: true,
++            sourceRows: currentRows,
++          }),
++      });
++    }
++
++    if (shouldCaptureScreenshots) {
++      steps.push({
++        label: isWeb
++          ? "Đang chụp giao diện Web & chọn Thumbnail 16:9..."
++          : "Đang chụp giao diện App & chọn Thumbnail 16:9...",
++        run: async () =>
++          await handleCaptureAppScreenshots(unapprovedIds, {
++            skipApprovalConfirm: true,
++            sourceRows: currentRows,
++            classIdOverride: scanClassId,
++            sessionOverride: scanSessionNum,
++          }),
++      });
++    }
++
++    if (isWeb && webRepoUrl.trim()) {
++      steps.push({
++        label: "Đang đẩy sản phẩm Web lên GitHub Pages...",
++        run: async () =>
++          await handleDeployWebToGithubPages(unapprovedIds, {
++            skipApprovalConfirm: true,
++            sourceRows: currentRows,
++            classIdOverride: scanClassId,
++            sessionOverride: scanSessionNum,
++          }),
++      });
++    }
++
++    if (driveFolderUrl.trim()) {
++      steps.push({
++        label: "Đang tải sản phẩm lên Google Drive & gắn link...",
++        run: async () =>
++          await handleUploadToGoogleDrive(unapprovedIds, {
++            skipApprovalConfirm: true,
++            sourceRows: currentRows,
++            classIdOverride: scanClassId,
++            sessionOverride: scanSessionNum,
++          }),
++      });
++    }
++
++    if (steps.length === 0) return;
++
++    const stepFailures: string[] = [];
++    try {
++      for (let i = 0; i < steps.length; i++) {
++        const step = steps[i];
++        setAutoPrepStepProgress(`[${i + 1}/${steps.length}] ${step.label}`);
++        try {
++          const stepRes = await step.run();
++          if (stepRes && Array.isArray(stepRes.updatedRows)) {
++            currentRows = stepRes.updatedRows;
++          }
++          if (stepRes && stepRes.success === false) {
++            stepFailures.push(step.label);
++          }
++        } catch (err) {
++          stepFailures.push(
++            `${step.label}: ${err instanceof Error ? err.message : String(err)}`
++          );
++        }
++      }
++      if (stepFailures.length > 0) {
++        setBannerMessage({
++          type: "warning",
++          text: `Đã chạy công cụ tự động sau khi quét (${steps.length - stepFailures.length}/${steps.length} bước hoàn tất; lỗi: ${stepFailures.join(" | ")}).`,
++        });
++      }
++    } finally {
++      setAutoPrepStepProgress(null);
++    }
++  };
++
++  const handleScanFolder = async (
++    overrideFolderPath?: string | React.MouseEvent
++  ) => {
++    const res = await baseHandleScanFolder(overrideFolderPath);
++    if (
++      res &&
++      typeof res === "object" &&
++      res.success &&
++      autoRunToolsAfterScan &&
++      Array.isArray(res.scannedItems) &&
++      res.scannedItems.length > 0
++    ) {
++      await runAutoPrepAfterScan(
++        res.scannedItems,
++        res.classId || selectedClassId,
++        res.sessionNumber || selectedSessionNumber
++      );
++    }
++    return res;
++  };
++
+   const toggleSelectStudent = (studentId: string) => {
+     if (!studentId) return;
+     setSelectedStudentIds((prev) => {
+@@ -2810,6 +3733,15 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+ 
+   return {
+     ...params,
++    isAnyOperationBusy,
++    autoRunToolsAfterScan,
++    handleToggleAutoRunToolsAfterScan,
++    autoPrepStepProgress,
++    toolErrorsByStudent,
++    setStudentToolError,
++    expandedRowTabByStudent,
++    setRowActiveTab,
++    session14ComboStatus,
+     loadBrowseDirectory,
+     handleBrowseFolder,
+     handleConfirmBrowseSelection,
+@@ -2828,6 +3760,12 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+     handleImportDemoScores,
+     handleGenerateSession14EvalAi,
+     handleApproveAndUploadSession14Eval,
++    handleImportYoutubeProducts,
++    handleGenerateAiComments,
++    handleApproveAndUpload,
++    handleGenerateSession14AllAi,
++    handleSubmitSession14Combo,
++    handleScanFolder,
+     activeBusyDescription,
+     selectedClassMeta,
+     isRoboticsClass,
+diff --git a/src/lib/gemini/spck-comment.ts b/src/lib/gemini/spck-comment.ts
+index a280014..16679a5 100644
+--- a/src/lib/gemini/spck-comment.ts
++++ b/src/lib/gemini/spck-comment.ts
+@@ -760,10 +760,10 @@ export class SpckCommentGenerator {
+       } else if (stageInfo.sessionNumber === 13) {
+         stageSpecificInstruction = `YÊU CẦU RIÊNG CHO BUỔI 13 (${stageInfo.stageLabel} - ${stageInfo.stageCode}):
+ - Sản phẩm đang trong quá trình phát triển và hoàn thiện các tính năng chính.
+-- Nội dung nhận xét học bạ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện có những gì và phần đã bổ sung/triển khai được**; và (2) **Những điểm còn thiếu hoặc cần cải thiện, hoàn thiện thêm** trước khi tổng kết khóa học.
++- Nội dung nhận xét học bạ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện có những gì và phần đã bổ sung/triển khai được (nêu tiến bộ so với Buổi 12 khi có dữ liệu)**; và (2) **Những điểm còn thiếu hoặc cần cải thiện, hoàn thiện thêm** trước khi tổng kết khóa học.
+ ${
+   session12Evidence.hasEvidence
+-    ? `- Hệ thống CÓ dữ liệu buổi trước (${anonSession12Summary}): hãy ghi nhận phần chức năng/giao diện đã bổ sung thêm so với bước đầu.`
++    ? `- Hệ thống CÓ dữ liệu buổi trước (${anonSession12Summary}): hãy nêu tiến bộ so với Buổi 12 và ghi nhận phần chức năng/giao diện đã bổ sung thêm so với bước đầu.`
+     : `- LƯU Ý QUAN TRỌNG: Hệ thống CHƯA CÓ dữ liệu buổi trước của học sinh này. TUYỆT ĐỐI KHÔNG tự bịa câu "so với buổi 12", "so với buổi trước" hay tự suy đoán sự thay đổi giữa hai buổi. Chỉ nhận xét hiện trạng sản phẩm và phần cần hoàn thiện.`
+ }
+ - TUYỆT ĐỐI KHÔNG viết như thể sản phẩm đã tổng kết hoàn tất toàn khóa, và KHÔNG ghi các nhãn nội bộ như "Buổi 13", "Giai đoạn 1", "GĐ1".`;
+@@ -876,6 +876,10 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi
+             .replace(/\bgiai\s+đoạn\s*1\b/gi, "giai đoạn đầu")
+             .replace(/\s*\(\s*Buổi\s*(?:12|13|14)\s*\)/gi, "")
+             .replace(/\b(?:ở|tại|trong)\s+buổi\s*14\b/gi, "trong dự án cuối khóa")
++            .replace(/\b(?:ở|tại|trong)\s+buổi\s*(?:12|13)\b/gi, "trong quá trình thực hiện dự án")
++            .replace(/\bso\s+với\s+buổi\s*(?:số\s*)?12\b/gi, "so với bước đầu")
++            .replace(/\btừ\s+buổi\s*(?:số\s*)?12\b/gi, "từ bước đầu")
++            .replace(/\bbuổi\s*(?:số\s*)?(?:12|13|14)\b/gi, "đợt thực hiện dự án")
+             .replace(
+               /^(?:kính\s+gửi|thân\s+gửi|gửi|chào|xin\s+chào|báo\s+cáo\s+cùng)\s+(?:quý\s+)?(?:ba\s+mẹ|gia\s+đình|phụ\s+huynh)(?:\s+học\s+viên|\s+của\s+con)?\s*[,.:;-]?\s*/gi,
+               ""
+diff --git a/src/lib/local-files/spck-demo-score-reader.ts b/src/lib/local-files/spck-demo-score-reader.ts
+index 7360dc3..67458dd 100644
+--- a/src/lib/local-files/spck-demo-score-reader.ts
++++ b/src/lib/local-files/spck-demo-score-reader.ts
+@@ -574,7 +574,8 @@ async function loadXlsxBufferFromSource(
+ export function parseDemoWorkbookBufferForClass(
+   classId: string,
+   buffer: Buffer,
+-  sourceUsed: string
++  sourceUsed: string,
++  options?: { onlyMissingStudents?: boolean }
+ ): ImportDemoScoresResult {
+   const normalizedClassId = String(classId || "").trim().toUpperCase();
+   const students = studentRepo.findByClass(normalizedClassId, false);
+@@ -727,6 +728,9 @@ export function parseDemoWorkbookBufferForClass(
+     const { tabName, student: matchedStudent, extracted } = entries[0];
+     const s14Draft = spckSessionRepo.findOne(normalizedClassId, matchedStudent.studentId, 14);
+     const existingEval = session14EvalRepo.getOrInit(normalizedClassId, matchedStudent.studentId);
++    if (options?.onlyMissingStudents && Number(existingEval.demoTotalScore) > 0) {
++      continue;
++    }
+     let quickTags: string[] = [];
+     try {
+       quickTags = JSON.parse(existingEval.quickTagsJson || s14Draft?.quickTagsJson || "[]");
+@@ -778,8 +782,9 @@ export function parseDemoWorkbookBufferForClass(
+  */
+ export async function importClassDemoScores(
+   classId: string,
+-  sourcePathOrUrl?: string
++  sourcePathOrUrl?: string,
++  options?: { onlyMissingStudents?: boolean }
+ ): Promise<ImportDemoScoresResult> {
+   const { buffer, sourceUsed } = await loadXlsxBufferFromSource(classId, sourcePathOrUrl);
+-  return parseDemoWorkbookBufferForClass(classId, buffer, sourceUsed);
++  return parseDemoWorkbookBufferForClass(classId, buffer, sourceUsed, options);
+ }

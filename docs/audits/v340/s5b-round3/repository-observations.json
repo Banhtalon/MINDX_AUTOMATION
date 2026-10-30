@@ -1,0 +1,63 @@
+[
+  {
+    "id": "R3-DB01-capture",
+    "previousVersion": 2,
+    "resourceVersion": 3,
+    "savedVersion": 3,
+    "http": 200,
+    "links": []
+  },
+  {
+    "id": "R3-DB01-web",
+    "previousVersion": 3,
+    "resourceVersion": 4,
+    "savedVersion": 4,
+    "http": 200,
+    "links": [
+      {
+        "name": "web",
+        "url": "https://example.com"
+      }
+    ]
+  },
+  {
+    "id": "R3-DB01-drive",
+    "previousVersion": 4,
+    "resourceVersion": 5,
+    "savedVersion": 5,
+    "http": 200,
+    "links": [
+      {
+        "name": "web",
+        "url": "https://example.com"
+      },
+      {
+        "name": "drive",
+        "url": "https://drive.google.com/drive/folders/AUDIT"
+      }
+    ]
+  },
+  {
+    "id": "R3-DB02",
+    "scenario": "Stale version protection remains active",
+    "http": 409
+  },
+  {
+    "id": "R3-DB03",
+    "scenario": "Real API + workbook + SQLite: preserve positive score, fill missing only",
+    "matched": 1,
+    "preservedScore": 4,
+    "importedScore": 4.5,
+    "preservedAllFields": true
+  },
+  {
+    "id": "R3-DB04",
+    "scenario": "Repeat only-missing import is idempotent",
+    "matched": 0
+  },
+  {
+    "id": "R3-DB05",
+    "scenario": "Explicit manual import retains overwrite behavior",
+    "matched": 2
+  }
+]
