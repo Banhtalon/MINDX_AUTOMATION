@@ -1,0 +1,73 @@
+{
+  "baselineCommit": "93b77e0098d45becd38ac377e473534682e9d98c",
+  "sourceFingerprints": {
+    "src/app/final-project/page.tsx": "5624f33913df87291e53b6e05e3dbb36a2f02309b80dada85accb16dbb31d731",
+    "src/components/final-project/types.ts": "1eeaafee19331b166f604b11eb61fafad7468685245cdff83fbe9e7714667228",
+    "src/components/final-project/useSpckWorkflow.ts": "0f7c41ead3b6aa16638e27e9852f42d98653705cfcf933e7952b8c56ea6bdd61",
+    "src/components/final-project/Step1Header.tsx": "f735b91080ce819b36bdf912091ecb29500dc3e366de2fc8bfac5f05c863ef92",
+    "src/components/final-project/ToolsDrawer.tsx": "0aff2540ea6db3b8561130a99e98af21950458de35e6e8f3caade07b3672954b",
+    "src/components/final-project/StudentRow.tsx": "0fe6b5910ed55c2b5d2955d7f9fc5fec537117c50400666faa0283bdac11a6aa",
+    "src/components/final-project/StudentTable.tsx": "f8ad454117a50fef164bcaa2a9964ede4aecf64ed49231e4833688df6f1bdd94",
+    "src/components/final-project/SubmitBar.tsx": "ac2b74bfcc77f413f9471c69be1a72ca228acf455753c84b86e5aadd168b1195",
+    "src/components/final-project/Session14Panel.tsx": "48cd553ab5969a8d7a669ddf214b5950f2f81133cc9561afba0ae336d3cd2e07",
+    "src/components/final-project/FolderBrowserModal.tsx": "46ad11e39ca702e150b4a25af5bdca807795fb027be7d6265b7198050dd57973",
+    "src/components/final-project/SnapshotModal.tsx": "184578c5a5029e1501929996c8983560c6caf3ef961daa51776fdaaddf984660",
+    "src/components/final-project/index.ts": "0586456b922598ea0e16f64b2b71dac3e4569383befc93a12af9cb22f079d57b"
+  },
+  "scenarios": {
+    "sess12": {
+      "htmlSha256": "bb274b85098a1fc446729c2a0bf1ef5c89684610bb990ecbaf7430314287c318",
+      "pngSha256": "e74ccc806b9b26c58f2fa9ed8695299e69d4e40a1ec1077235a948cf9ac9bed1",
+      "bytes": 275192,
+      "exactByteMatch": true
+    },
+    "sess13": {
+      "htmlSha256": "0e5b4408113ce12cf1f4cd2d443a4ace07b2c12dd822500ce5c1d106937c65a1",
+      "pngSha256": "bf56196093a314caf11251a286026c95dcdd6d3109ee6dd6d052299af59552aa",
+      "bytes": 356184,
+      "exactByteMatch": true
+    },
+    "sess14": {
+      "htmlSha256": "c21147ac9a978cfffacf56ac5e9ca6299b4fc55acc97d90fea51cc86e562e405",
+      "pngSha256": "315bf24f9281030531b103ad3f198988956eccbe8e931424dad3584afe5711ed",
+      "bytes": 190618,
+      "exactByteMatch": true
+    },
+    "snapshot-modal": {
+      "htmlSha256": "d3c5d32f48d1db49939bfc069e9f803dbb40a4656a1a9502ba1ea77be9aade19",
+      "pngSha256": "45474d015166fdef008de26f66c20d98354a35a4ed49883ecf1288b31e4b3158",
+      "bytes": 121182,
+      "exactByteMatch": true
+    },
+    "folder-modal": {
+      "htmlSha256": "2c897e768e1f94967a60d48baf3f852fe607c1fa47db6c3f0ed8609829a73b46",
+      "pngSha256": "5b01b471986d04c53bbe3f069484ebb048648627aa5e2d361931a86ee538f5bb",
+      "bytes": 137083,
+      "exactByteMatch": true
+    },
+    "banner-error": {
+      "htmlSha256": "d1f8c624f17d65777865bf74be77fda98ba713c731ecd5b7126e6901bad53d58",
+      "pngSha256": "3ee89f2969ace90dcc46d066701cb78cfc49ecb71f8364439d8f86dd60287b39",
+      "bytes": 123276,
+      "exactByteMatch": true
+    },
+    "banner-success": {
+      "htmlSha256": "de26b361db0e63521b86a6d03048ca6d26878cc4bd82b7758f7cd349bb2f5cf6",
+      "pngSha256": "1640bff8c628b9593f00f078f721aafa8e3cf376d2f9fef8ba57d962b76a7d67",
+      "bytes": 276384,
+      "exactByteMatch": true
+    },
+    "banner-warning": {
+      "htmlSha256": "d25f10bdd5e3658ffbd6013fc6b75f9f26ed2c9030714341412a178ff81de10a",
+      "pngSha256": "91460406a9c9f8e7cc8645f500c1ee800043f6dbe70d5ecfa29ee01727ab0edd",
+      "bytes": 124521,
+      "exactByteMatch": true
+    },
+    "busy-uploading": {
+      "htmlSha256": "051b9c28a4dd49b05ce3bae34f75a825b4f0c25092e44a96a30cef343a2d2692",
+      "pngSha256": "0f98a2d73c7fc0b1cd8fe5f270375839cb16d456116b4f5e92d4ce63d5709fc8",
+      "bytes": 126511,
+      "exactByteMatch": true
+    }
+  }
+}

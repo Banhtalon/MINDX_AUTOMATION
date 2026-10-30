@@ -1,0 +1,8 @@
+﻿{
+    "command":  "npx tsc --noEmit",
+    "exitCode":  0,
+    "started":  "2026-10-30T16:05:16.6803620+07:00",
+    "finished":  "2026-10-30T16:05:17.8287493+07:00",
+    "note":  "Includes root next.config.ts and historical audit TypeScript files",
+    "docSupportFileCount":  1046
+}

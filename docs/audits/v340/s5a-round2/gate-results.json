@@ -1,0 +1,68 @@
+﻿[
+    {
+        "gate":  1,
+        "command":  "npx tsc --noEmit",
+        "exitCode":  0,
+        "started":  "2026-10-30T16:02:19.9805266+07:00",
+        "finished":  "2026-10-30T16:02:21.6328845+07:00",
+        "log":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\logs\\gate-1.log",
+        "dbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\isolation\\gate-1\\mindx_test.db",
+        "runningClassesPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\isolation\\gate-1\\running_classes_test.json",
+        "allowedLocalDirs":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201"
+    },
+    {
+        "gate":  2,
+        "command":  "npx tsx scripts/test-streamline-v340-s5a.ts",
+        "exitCode":  0,
+        "started":  "2026-10-30T16:02:21.6436790+07:00",
+        "finished":  "2026-10-30T16:02:45.0552096+07:00",
+        "log":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\logs\\gate-2.log",
+        "dbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\isolation\\gate-2\\mindx_test.db",
+        "runningClassesPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\isolation\\gate-2\\running_classes_test.json",
+        "allowedLocalDirs":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201"
+    },
+    {
+        "gate":  3,
+        "command":  "npx tsx scripts/test-spck-v270.ts",
+        "exitCode":  0,
+        "started":  "2026-10-30T16:02:45.0612083+07:00",
+        "finished":  "2026-10-30T16:02:49.8557098+07:00",
+        "log":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\logs\\gate-3.log",
+        "dbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\isolation\\gate-3\\mindx_test.db",
+        "runningClassesPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\isolation\\gate-3\\running_classes_test.json",
+        "allowedLocalDirs":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201"
+    },
+    {
+        "gate":  4,
+        "command":  "npx tsx scripts/test-spck-v272.ts",
+        "exitCode":  0,
+        "started":  "2026-10-30T16:02:49.8592222+07:00",
+        "finished":  "2026-10-30T16:03:19.1570653+07:00",
+        "log":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\logs\\gate-4.log",
+        "dbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\isolation\\gate-4\\mindx_test.db",
+        "runningClassesPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\isolation\\gate-4\\running_classes_test.json",
+        "allowedLocalDirs":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201"
+    },
+    {
+        "gate":  5,
+        "command":  "npx tsx scripts/test-phase6.ts",
+        "exitCode":  0,
+        "started":  "2026-10-30T16:03:19.1620571+07:00",
+        "finished":  "2026-10-30T16:03:28.6150931+07:00",
+        "log":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\logs\\gate-5.log",
+        "dbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\isolation\\gate-5\\mindx_test.db",
+        "runningClassesPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\isolation\\gate-5\\running_classes_test.json",
+        "allowedLocalDirs":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201"
+    },
+    {
+        "gate":  6,
+        "command":  "npx tsx scripts/test-session14-v290.ts",
+        "exitCode":  0,
+        "started":  "2026-10-30T16:03:28.6200984+07:00",
+        "finished":  "2026-10-30T16:05:55.1818554+07:00",
+        "log":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\logs\\gate-6.log",
+        "dbPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\isolation\\gate-6\\mindx_test.db",
+        "runningClassesPath":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201\\isolation\\gate-6\\running_classes_test.json",
+        "allowedLocalDirs":  "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s5a-round2-20261030-160201"
+    }
+]

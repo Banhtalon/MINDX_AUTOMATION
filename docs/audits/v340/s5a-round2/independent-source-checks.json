@@ -1,0 +1,14 @@
+﻿{
+    "statusBannerExactAfterNewlineNormalization":  true,
+    "busyBannerExactAfterExpressionQualification":  true,
+    "useStateCountBefore":  59,
+    "useStateCountAfter":  59,
+    "useStateOrderUnchanged":  true,
+    "protectedSourceCount":  138,
+    "modifiedRepositorySourceFiles":  [
+
+                                      ],
+    "modifiedMirrorSourceFiles":  [
+
+                                  ]
+}

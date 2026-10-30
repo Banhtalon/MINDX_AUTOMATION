@@ -1,0 +1,151 @@
+﻿{
+    "sourceFingerprints":  [
+                               {
+                                   "sha256":  "5624f33913df87291e53b6e05e3dbb36a2f02309b80dada85accb16dbb31d731",
+                                   "file":  "src/app/final-project/page.tsx",
+                                   "matchesManifest":  true
+                               },
+                               {
+                                   "sha256":  "1eeaafee19331b166f604b11eb61fafad7468685245cdff83fbe9e7714667228",
+                                   "file":  "src/components/final-project/types.ts",
+                                   "matchesManifest":  true
+                               },
+                               {
+                                   "sha256":  "0f7c41ead3b6aa16638e27e9852f42d98653705cfcf933e7952b8c56ea6bdd61",
+                                   "file":  "src/components/final-project/useSpckWorkflow.ts",
+                                   "matchesManifest":  true
+                               },
+                               {
+                                   "sha256":  "f735b91080ce819b36bdf912091ecb29500dc3e366de2fc8bfac5f05c863ef92",
+                                   "file":  "src/components/final-project/Step1Header.tsx",
+                                   "matchesManifest":  true
+                               },
+                               {
+                                   "sha256":  "0aff2540ea6db3b8561130a99e98af21950458de35e6e8f3caade07b3672954b",
+                                   "file":  "src/components/final-project/ToolsDrawer.tsx",
+                                   "matchesManifest":  true
+                               },
+                               {
+                                   "sha256":  "0fe6b5910ed55c2b5d2955d7f9fc5fec537117c50400666faa0283bdac11a6aa",
+                                   "file":  "src/components/final-project/StudentRow.tsx",
+                                   "matchesManifest":  true
+                               },
+                               {
+                                   "sha256":  "f8ad454117a50fef164bcaa2a9964ede4aecf64ed49231e4833688df6f1bdd94",
+                                   "file":  "src/components/final-project/StudentTable.tsx",
+                                   "matchesManifest":  true
+                               },
+                               {
+                                   "sha256":  "ac2b74bfcc77f413f9471c69be1a72ca228acf455753c84b86e5aadd168b1195",
+                                   "file":  "src/components/final-project/SubmitBar.tsx",
+                                   "matchesManifest":  true
+                               },
+                               {
+                                   "sha256":  "48cd553ab5969a8d7a669ddf214b5950f2f81133cc9561afba0ae336d3cd2e07",
+                                   "file":  "src/components/final-project/Session14Panel.tsx",
+                                   "matchesManifest":  true
+                               },
+                               {
+                                   "sha256":  "46ad11e39ca702e150b4a25af5bdca807795fb027be7d6265b7198050dd57973",
+                                   "file":  "src/components/final-project/FolderBrowserModal.tsx",
+                                   "matchesManifest":  true
+                               },
+                               {
+                                   "sha256":  "184578c5a5029e1501929996c8983560c6caf3ef961daa51776fdaaddf984660",
+                                   "file":  "src/components/final-project/SnapshotModal.tsx",
+                                   "matchesManifest":  true
+                               },
+                               {
+                                   "sha256":  "0586456b922598ea0e16f64b2b71dac3e4569383befc93a12af9cb22f079d57b",
+                                   "file":  "src/components/final-project/index.ts",
+                                   "matchesManifest":  true
+                               }
+                           ],
+    "screenshots":  [
+                        {
+                            "afterSha256":  "e74ccc806b9b26c58f2fa9ed8695299e69d4e40a1ec1077235a948cf9ac9bed1",
+                            "bytes":  275192,
+                            "matchesExistingEvidence":  true,
+                            "beforeSha256":  "e74ccc806b9b26c58f2fa9ed8695299e69d4e40a1ec1077235a948cf9ac9bed1",
+                            "scenario":  "sess12",
+                            "matchesManifest":  true,
+                            "beforeEqualsAfter":  true
+                        },
+                        {
+                            "afterSha256":  "bf56196093a314caf11251a286026c95dcdd6d3109ee6dd6d052299af59552aa",
+                            "bytes":  356184,
+                            "matchesExistingEvidence":  true,
+                            "beforeSha256":  "bf56196093a314caf11251a286026c95dcdd6d3109ee6dd6d052299af59552aa",
+                            "scenario":  "sess13",
+                            "matchesManifest":  true,
+                            "beforeEqualsAfter":  true
+                        },
+                        {
+                            "afterSha256":  "315bf24f9281030531b103ad3f198988956eccbe8e931424dad3584afe5711ed",
+                            "bytes":  190618,
+                            "matchesExistingEvidence":  true,
+                            "beforeSha256":  "315bf24f9281030531b103ad3f198988956eccbe8e931424dad3584afe5711ed",
+                            "scenario":  "sess14",
+                            "matchesManifest":  true,
+                            "beforeEqualsAfter":  true
+                        },
+                        {
+                            "afterSha256":  "45474d015166fdef008de26f66c20d98354a35a4ed49883ecf1288b31e4b3158",
+                            "bytes":  121182,
+                            "matchesExistingEvidence":  true,
+                            "beforeSha256":  "45474d015166fdef008de26f66c20d98354a35a4ed49883ecf1288b31e4b3158",
+                            "scenario":  "snapshot-modal",
+                            "matchesManifest":  true,
+                            "beforeEqualsAfter":  true
+                        },
+                        {
+                            "afterSha256":  "5b01b471986d04c53bbe3f069484ebb048648627aa5e2d361931a86ee538f5bb",
+                            "bytes":  137083,
+                            "matchesExistingEvidence":  true,
+                            "beforeSha256":  "5b01b471986d04c53bbe3f069484ebb048648627aa5e2d361931a86ee538f5bb",
+                            "scenario":  "folder-modal",
+                            "matchesManifest":  true,
+                            "beforeEqualsAfter":  true
+                        },
+                        {
+                            "afterSha256":  "3ee89f2969ace90dcc46d066701cb78cfc49ecb71f8364439d8f86dd60287b39",
+                            "bytes":  123276,
+                            "matchesExistingEvidence":  true,
+                            "beforeSha256":  "3ee89f2969ace90dcc46d066701cb78cfc49ecb71f8364439d8f86dd60287b39",
+                            "scenario":  "banner-error",
+                            "matchesManifest":  true,
+                            "beforeEqualsAfter":  true
+                        },
+                        {
+                            "afterSha256":  "1640bff8c628b9593f00f078f721aafa8e3cf376d2f9fef8ba57d962b76a7d67",
+                            "bytes":  276384,
+                            "matchesExistingEvidence":  true,
+                            "beforeSha256":  "1640bff8c628b9593f00f078f721aafa8e3cf376d2f9fef8ba57d962b76a7d67",
+                            "scenario":  "banner-success",
+                            "matchesManifest":  true,
+                            "beforeEqualsAfter":  true
+                        },
+                        {
+                            "afterSha256":  "91460406a9c9f8e7cc8645f500c1ee800043f6dbe70d5ecfa29ee01727ab0edd",
+                            "bytes":  124521,
+                            "matchesExistingEvidence":  true,
+                            "beforeSha256":  "91460406a9c9f8e7cc8645f500c1ee800043f6dbe70d5ecfa29ee01727ab0edd",
+                            "scenario":  "banner-warning",
+                            "matchesManifest":  true,
+                            "beforeEqualsAfter":  true
+                        },
+                        {
+                            "afterSha256":  "0f98a2d73c7fc0b1cd8fe5f270375839cb16d456116b4f5e92d4ce63d5709fc8",
+                            "bytes":  126511,
+                            "matchesExistingEvidence":  true,
+                            "beforeSha256":  "0f98a2d73c7fc0b1cd8fe5f270375839cb16d456116b4f5e92d4ce63d5709fc8",
+                            "scenario":  "busy-uploading",
+                            "matchesManifest":  true,
+                            "beforeEqualsAfter":  true
+                        }
+                    ],
+    "existingManifestMatchesFresh":  true,
+    "globalsCssSha256":  "501a77cbade1e543cb6934fea174655f6ec4c35b46f0650131d86fdfa8d42802",
+    "testSuiteSha256":  "5156dabc8148eab982a1198464514c8539ef0ea56c16ca2ed989a582d6640013",
+    "packageLockSha256":  "79da2b8368a1b59f7f56c7a80307ba754c1587fc4b5503d4efc96835481fdda4"
+}
