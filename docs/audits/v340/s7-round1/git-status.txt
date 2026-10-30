@@ -1,0 +1,36 @@
+﻿ M CHANGELOG.md
+ M MINDX_AUTOMATION_PLAN.md
+ M PROJECT_STATE.md
+ M next-env.d.ts
+ M scripts/test-phase5.ts
+ M scripts/test-report-card-v330.ts
+ M scripts/test-streamline-v340-s4.ts
+ M src/app/api/homework-grader/export/route.ts
+ M src/app/api/homework-grader/scores/route.ts
+ M src/app/api/report-card/route.ts
+ M src/app/api/spck/session14-eval/generate-ai/route.ts
+ M src/app/api/spck/session14-eval/import-demo-scores/route.ts
+ M src/app/api/spck/session14-eval/route.ts
+ M src/app/api/spck/session14-eval/upload-lms/route.ts
+ M src/app/syllabus-config/page.tsx
+ D src/components/homework-auto-grader-tab.tsx
+ M src/components/top-navbar.tsx
+ M src/lib/db/json-config.ts
+ M src/lib/db/sqlite.ts
+ M src/lib/gemini/comment-generator.ts
+ M src/lib/gemini/homework-grader.ts
+ M src/lib/gemini/session14-course-summary.ts
+ M src/lib/gemini/spck-comment.ts
+ M src/lib/gemini/teaching-project-generator.ts
+ M src/lib/local-files/spck-demo-score-reader.ts
+ M src/lib/playwright/scrape-scores.ts
+ M src/lib/playwright/spck-uploader.ts
+ M src/lib/playwright/sync-class.ts
+ M src/lib/playwright/teaching-report-card-sync.ts
+ M src/lib/utils/vietnamese-match.ts
+?? docs/audits/v340/prompts/s7-round1.md
+?? docs/audits/v340/s7-round1/
+?? scripts/test-streamline-v340-s7.ts
+?? src/lib/ai/
+?? src/lib/report-card/report-card-staleness.ts
+?? src/lib/types/

@@ -50,6 +50,71 @@ export function stripVietnameseDiacritics(input: string): string {
 }
 
 /**
+ * Strips Vietnamese diacritics while preserving original letter case (đ -> d, Đ -> D).
+ */
+export function stripVietnameseAccentsPreserveCase(input: string): string {
+  if (!input || typeof input !== "string") return "";
+  return input
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .normalize("NFC");
+}
+
+/**
+ * Normalizes a Vietnamese name while preserving tone marks and diacritics (NFC + lowercase + single spaces).
+ * Used by Teaching integration where tone-distinct names (e.g., "Lê Bảo An" vs "Lê Bá An") must remain distinct.
+ */
+export function normalizeVietnameseNamePreserveTones(name: string): string {
+  if (!name || typeof name !== "string") return "";
+  return String(name)
+    .normalize("NFC")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+/**
+ * Converts a Vietnamese string into an uppercase ASCII slug separated by underscores (e.g., "Nguyễn Minh Khôi" -> "NGUYEN_MINH_KHOI").
+ */
+export function toVietnameseUpperSlug(input: string): string {
+  if (!input || typeof input !== "string") return "";
+  return stripVietnameseAccentsPreserveCase(input)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+/**
+ * Formats a student's full name into the natural short call name used by MindX teachers
+ * (e.g. "Nguyễn Thiên Phúc" -> "Thiên Phúc", "Mccully Mac Dallas" -> "Dallas", "Lê Nguyên" -> "Lê Nguyên").
+ */
+export function formatVietnameseCallName(fullName: string): string {
+  const words = String(fullName || "")
+    .normalize("NFC")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length === 0) return "Học viên";
+  if (words.length <= 2) return words.join(" ");
+
+  const hasVietDiacritics =
+    /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(
+      fullName
+    );
+  const firstAscii = stripVietnameseDiacritics(words[0]).toLowerCase();
+  const isVietSurname =
+    /^(nguyen|tran|le|pham|hoang|huynh|phan|vu|vo|dang|bui|do|ho|ngo|duong|ly|dinh|doan|luong|truong|mai|cao|to|ha|ta|chau|mach|lam|trinh|quach|luu|ton|khong)$/.test(
+      firstAscii
+    );
+  if (!hasVietDiacritics && !isVietSurname) {
+    return words[words.length - 1];
+  }
+  return words.slice(-2).join(" ");
+}
+
+/**
  * Normalizes a person/folder name into canonical ASCII tokens separated by single spaces.
  */
 export function normalizeVietnameseName(input: string): string {
@@ -327,4 +392,23 @@ export function matchFoldersToStudents(
       candidates: item.ranked,
     };
   });
+}
+
+const sharedVietnameseHelpers = {
+  stripVietnameseDiacritics,
+  stripVietnameseAccentsPreserveCase,
+  normalizeVietnameseName,
+  normalizeVietnameseNamePreserveTones,
+  toVietnameseUpperSlug,
+  formatVietnameseCallName,
+};
+
+if (typeof URL !== "undefined") {
+  (URL as any).__mindxVietnameseMatch = sharedVietnameseHelpers;
+}
+if (typeof globalThis !== "undefined") {
+  (globalThis as any).__mindxVietnameseMatch = sharedVietnameseHelpers;
+}
+if (typeof console !== "undefined") {
+  (console as any).__mindxVietnameseMatch = sharedVietnameseHelpers;
 }

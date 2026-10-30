@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
 import { config } from "../config";
 import { getCoursesSyllabus, type CourseSyllabus } from "../db/json-config";
+import { anonymizeTeachingHintText } from "../ai/pii-anonymizer";
 import {
   getDb,
   normalizeAssignedStudentIds,
@@ -514,142 +515,10 @@ export function sanitizeTeachingAiHint(
   studentNamesToRedact?: string[],
   classCode?: string
 ): string {
-  let text = String(rawHint || "").trim();
+  const text = String(rawHint || "").trim();
   if (!text) return "";
-
-  // 1. Redact emails and phone numbers
-  text = text.replace(
-    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
-    "[REDACTED_EMAIL]"
-  );
-  text = text.replace(
-    /(?:\+?84|0)(?:\d[\s.-]?){8,10}\d/g,
-    "[REDACTED_PHONE]"
-  );
-
-  const escapeRegexToken = (token: string): string =>
-    token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-  const stripViAccents = (s: string): string =>
-    s
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/đ/g, "d")
-      .replace(/Đ/g, "D");
-
-  // 2. Collect ordered student roster and assign deterministic aliases STUDENT_01, STUDENT_02...
   const names = collectClassStudentNamesForRedaction(classCode, studentNamesToRedact);
-  const entries = names.map((fullName, index) => {
-    const alias = `STUDENT_${String(index + 1).padStart(2, "0")}`;
-    const parts = fullName
-      .trim()
-      .split(/\s+/)
-      .filter((p) => p.length >= 2);
-    return { fullName: fullName.trim(), alias, parts, index };
-  });
-
-  // Pass 1: Replace ALL full names (longest first) across the entire roster before touching shorter forms
-  const pass1Full = [...entries].sort(
-    (a, b) => b.parts.length - a.parts.length || b.fullName.length - a.fullName.length || a.index - b.index
-  );
-  for (const item of pass1Full) {
-    if (item.parts.length === 0) continue;
-    const fullPattern = item.parts.map(escapeRegexToken).join("\\s+");
-    text = text.replace(
-      new RegExp(`(?<![\\p{L}\\p{N}])${fullPattern}(?![\\p{L}\\p{N}])`, "giu"),
-      item.alias
-    );
-    const asciiParts = item.parts.map((p) => escapeRegexToken(stripViAccents(p)));
-    const asciiFullPattern = asciiParts.join("\\s+");
-    if (asciiFullPattern.toLowerCase() !== fullPattern.toLowerCase()) {
-      text = text.replace(
-        new RegExp(`(?<![\\p{L}\\p{N}])${asciiFullPattern}(?![\\p{L}\\p{N}])`, "giu"),
-        item.alias
-      );
-    }
-  }
-
-  // Pass 2: Replace ALL 2-word sub-phrases (last 2 words, first+last word, first 2 words) across all students
-  const twoWordPatterns: Array<{ pattern: string; alias: string; len: number; index: number }> = [];
-  for (const item of entries) {
-    const p = item.parts;
-    if (p.length >= 2) {
-      const pairs: Array<[string, string]> = [
-        [p[p.length - 2], p[p.length - 1]],
-        [p[0], p[p.length - 1]],
-      ];
-      if (p.length >= 3) {
-        pairs.push([p[0], p[1]]);
-      }
-      for (const [w1, w2] of pairs) {
-        const pat = `${escapeRegexToken(w1)}\\s+${escapeRegexToken(w2)}`;
-        twoWordPatterns.push({
-          pattern: pat,
-          alias: item.alias,
-          len: w1.length + w2.length,
-          index: item.index,
-        });
-        const asciiPat = `${escapeRegexToken(stripViAccents(w1))}\\s+${escapeRegexToken(stripViAccents(w2))}`;
-        if (asciiPat.toLowerCase() !== pat.toLowerCase()) {
-          twoWordPatterns.push({
-            pattern: asciiPat,
-            alias: item.alias,
-            len: w1.length + w2.length,
-            index: item.index,
-          });
-        }
-      }
-    }
-  }
-  twoWordPatterns.sort((a, b) => b.len - a.len || a.index - b.index);
-  for (const tw of twoWordPatterns) {
-    text = text.replace(
-      new RegExp(`(?<![\\p{L}\\p{N}])${tw.pattern}(?![\\p{L}\\p{N}])`, "giu"),
-      tw.alias
-    );
-  }
-
-  // Pass 3: Replace ALL single-word given names (both accented and accent-stripped last token of each student name)
-  for (const item of entries) {
-    if (item.parts.length >= 1) {
-      const given = item.parts[item.parts.length - 1];
-      if (given.length >= 2) {
-        const escapedGiven = escapeRegexToken(given);
-        text = text.replace(
-          new RegExp(`(?<![\\p{L}\\p{N}])${escapedGiven}(?![\\p{L}\\p{N}])`, "giu"),
-          item.alias
-        );
-        const asciiGiven = escapeRegexToken(stripViAccents(given));
-        if (asciiGiven.toLowerCase() !== escapedGiven.toLowerCase() && asciiGiven.length >= 2) {
-          text = text.replace(
-            new RegExp(`(?<![\\p{L}\\p{N}])${asciiGiven}(?![\\p{L}\\p{N}])`, "giu"),
-            item.alias
-          );
-        }
-      }
-    }
-  }
-
-  // Pass 4: Absorb any leftover family/middle name tokens immediately preceding STUDENT_XX
-  const allFamilyMiddleTokens = new Set<string>();
-  for (const item of entries) {
-    for (const part of item.parts.slice(0, -1)) {
-      if (part.length >= 2) {
-        allFamilyMiddleTokens.add(escapeRegexToken(part));
-        const asciiPart = escapeRegexToken(stripViAccents(part));
-        if (asciiPart.length >= 2) allFamilyMiddleTokens.add(asciiPart);
-      }
-    }
-  }
-  if (allFamilyMiddleTokens.size > 0) {
-    const tokenUnion = Array.from(allFamilyMiddleTokens).join("|");
-    text = text.replace(
-      new RegExp(`(?<![\\p{L}\\p{N}])(?:(?:${tokenUnion})\\s+)+(STUDENT_\\d{2})(?![\\p{L}\\p{N}])`, "giu"),
-      "$1"
-    );
-  }
-
-  return text.slice(0, 600);
+  return anonymizeTeachingHintText(text, names, 600);
 }
 
 const TEACHING_TASKS_RESPONSE_SCHEMA: Schema = {

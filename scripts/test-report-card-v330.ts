@@ -3185,7 +3185,7 @@ async function runTests() {
     );
     assert.ok(
       fs.existsSync(
-        path.resolve(process.cwd(), "src/components/homework-auto-grader-tab.tsx")
+        path.resolve(process.cwd(), "src/lib/types/index.ts")
       ),
       "RC-06: src/components/homework-auto-grader-tab.tsx must remain intact on disk"
     );

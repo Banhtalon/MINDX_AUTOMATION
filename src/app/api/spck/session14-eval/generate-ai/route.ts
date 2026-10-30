@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { studentRepo } from "@/lib/db/sqlite";
+import { buildEnrichedSession14EvalList, studentRepo } from "@/lib/db/sqlite";
 import {
   Session14CourseSummaryGenerator,
   type Session14EvalStudentInput,
 } from "@/lib/gemini/session14-course-summary";
 import { validateLocalRequest } from "@/lib/security/local-guard";
-import { buildEnrichedSession14EvalList } from "../route";
 
 export async function POST(req: Request) {
   const guard = validateLocalRequest(req);

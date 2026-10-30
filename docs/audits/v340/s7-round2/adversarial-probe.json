@@ -1,0 +1,13 @@
+{
+  "name": "adversarial-probe",
+  "command": "npx tsx docs/audits/v340/s7-round1/adversarial-probe.cjs",
+  "exitCode": 0,
+  "seconds": 2.31,
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7r2-audit-rcvesjt_",
+  "startedEpoch": 1793368085.075376,
+  "environment": {
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s7r2.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s7r2_rc.json"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "test-teaching-project-v320",
+  "command": "npx tsx scripts/test-teaching-project-v320.ts",
+  "exitCode": 0,
+  "seconds": 14.58,
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-teaching-project-v320",
+  "environment": {
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-teaching-project-v320",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-teaching-project-v320\\data\\test.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-teaching-project-v320\\data\\running_classes.json"
+  }
+}

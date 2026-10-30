@@ -24,7 +24,14 @@ import {
 } from "../db/sqlite";
 import { detectCoursePrefixFromClassId } from "../playwright/spck-drive-uploader";
 import { getGeminiModel } from "./client";
-import { formatSpckStudentCallName } from "./spck-comment";
+import {
+  anonymizeSession14Text,
+  deAnonymizeSession14Text,
+  escapeRegExp,
+  formatSpckStudentCallName,
+  stripVietnameseAccents,
+} from "../ai/pii-anonymizer";
+export { anonymizeSession14Text, deAnonymizeSession14Text };
 
 export interface Session14EvalStudentInput {
   studentId: string;
@@ -147,181 +154,6 @@ function getCourseProgressionInfo(classId: string) {
   };
 }
 
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function stripVietnameseAccents(str: string): string {
-  return str
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .normalize("NFC");
-}
-
-function replaceWholeNamePhrase(text: string, phrase: string, token: string): string {
-  const trimmed = phrase.trim().replace(/\s+/g, " ");
-  if (trimmed.length < 1) return text;
-  const pattern = new RegExp(
-    `(?<![\\p{L}\\p{N}_])${escapeRegExp(trimmed)}(?![\\p{L}\\p{N}_])`,
-    "giu"
-  );
-  return text.replace(pattern, token);
-}
-
-export function anonymizeSession14Text(
-  rawText: string,
-  fullName: string,
-  callName: string,
-  fullToken: string,
-  shortToken: string,
-  peerNames: string[] = []
-): string {
-  if (!rawText) return "";
-  let result = rawText.normalize("NFC");
-
-  const cleanFull = String(fullName || "")
-    .normalize("NFC")
-    .trim()
-    .replace(/\s+/g, " ");
-  const cleanCall = (
-    String(callName || "").normalize("NFC").trim() || formatSpckStudentCallName(cleanFull)
-  ).replace(/\s+/g, " ");
-  const fullWords = cleanFull.split(" ").filter(Boolean);
-  const singleGiven = fullWords.length > 0 ? fullWords[fullWords.length - 1] : "";
-
-  type ReplacementCandidate = {
-    phrase: string;
-    token: string;
-    wordCount: number;
-    priority: number;
-  };
-  const candidates: ReplacementCandidate[] = [];
-  const seen = new Set<string>();
-
-  const addCandidate = (phrase: string, token: string, priority: number) => {
-    const trimmed = String(phrase || "")
-      .normalize("NFC")
-      .trim()
-      .replace(/\s+/g, " ");
-    if (!trimmed) return;
-    const dedupeKey = trimmed.toLowerCase();
-    if (seen.has(dedupeKey)) return;
-    seen.add(dedupeKey);
-    const wordCount = trimmed.split(" ").filter(Boolean).length;
-    candidates.push({ phrase: trimmed, token, wordCount, priority });
-  };
-
-  if (cleanFull) {
-    addCandidate(cleanFull, fullToken, 100);
-    const asciiFull = stripVietnameseAccents(cleanFull);
-    if (asciiFull.toLowerCase() !== cleanFull.toLowerCase()) {
-      addCandidate(asciiFull, fullToken, 99);
-    }
-  }
-
-  for (const peer of peerNames) {
-    const cleanPeer = String(peer || "")
-      .normalize("NFC")
-      .trim()
-      .replace(/\s+/g, " ");
-    if (!cleanPeer || cleanPeer.toLowerCase() === cleanFull.toLowerCase()) continue;
-    addCandidate(cleanPeer, "PEER_STUDENT", 95);
-    const asciiPeer = stripVietnameseAccents(cleanPeer);
-    if (asciiPeer.toLowerCase() !== cleanPeer.toLowerCase()) {
-      addCandidate(asciiPeer, "PEER_STUDENT", 94);
-    }
-  }
-
-  if (cleanCall && cleanCall.toLowerCase() !== cleanFull.toLowerCase()) {
-    addCandidate(cleanCall, shortToken, 80);
-    const asciiCall = stripVietnameseAccents(cleanCall);
-    if (asciiCall.toLowerCase() !== cleanCall.toLowerCase()) {
-      addCandidate(asciiCall, shortToken, 79);
-    }
-  }
-
-  for (const peer of peerNames) {
-    const cleanPeer = String(peer || "")
-      .normalize("NFC")
-      .trim()
-      .replace(/\s+/g, " ");
-    if (!cleanPeer || cleanPeer.toLowerCase() === cleanFull.toLowerCase()) continue;
-    const peerCall = formatSpckStudentCallName(cleanPeer);
-    const peerWords = cleanPeer.split(" ").filter(Boolean);
-    const peerPrefix2 = peerWords.length >= 3 ? peerWords.slice(0, 2).join(" ") : "";
-
-    if (peerCall && peerCall.toLowerCase() !== cleanCall.toLowerCase()) {
-      addCandidate(peerCall, "PEER_STUDENT", 75);
-      const asciiPeerCall = stripVietnameseAccents(peerCall);
-      if (asciiPeerCall.toLowerCase() !== peerCall.toLowerCase()) {
-        addCandidate(asciiPeerCall, "PEER_STUDENT", 74);
-      }
-    }
-    if (peerPrefix2 && peerPrefix2.toLowerCase() !== cleanCall.toLowerCase()) {
-      addCandidate(peerPrefix2, "PEER_STUDENT", 73);
-      const asciiPrefix2 = stripVietnameseAccents(peerPrefix2);
-      if (asciiPrefix2.toLowerCase() !== peerPrefix2.toLowerCase()) {
-        addCandidate(asciiPrefix2, "PEER_STUDENT", 72);
-      }
-    }
-  }
-
-  if (
-    singleGiven.length >= 1 &&
-    singleGiven.toLowerCase() !== cleanFull.toLowerCase() &&
-    singleGiven.toLowerCase() !== cleanCall.toLowerCase()
-  ) {
-    addCandidate(singleGiven, shortToken, 50);
-    const asciiGiven = stripVietnameseAccents(singleGiven);
-    if (asciiGiven.toLowerCase() !== singleGiven.toLowerCase()) {
-      addCandidate(asciiGiven, shortToken, 49);
-    }
-  }
-
-  for (const peer of peerNames) {
-    const cleanPeer = String(peer || "")
-      .normalize("NFC")
-      .trim()
-      .replace(/\s+/g, " ");
-    if (!cleanPeer || cleanPeer.toLowerCase() === cleanFull.toLowerCase()) continue;
-    const peerWords = cleanPeer.split(" ").filter(Boolean);
-    const peerGiven = peerWords.length > 0 ? peerWords[peerWords.length - 1] : "";
-    if (peerGiven.length >= 1 && peerGiven.toLowerCase() !== singleGiven.toLowerCase()) {
-      addCandidate(peerGiven, "PEER_STUDENT", 45);
-      const asciiPeerGiven = stripVietnameseAccents(peerGiven);
-      if (asciiPeerGiven.toLowerCase() !== peerGiven.toLowerCase()) {
-        addCandidate(asciiPeerGiven, "PEER_STUDENT", 44);
-      }
-    }
-  }
-
-  candidates.sort((a, b) => {
-    if (b.wordCount !== a.wordCount) return b.wordCount - a.wordCount;
-    if (b.phrase.length !== a.phrase.length) return b.phrase.length - a.phrase.length;
-    return b.priority - a.priority;
-  });
-
-  for (const c of candidates) {
-    result = replaceWholeNamePhrase(result, c.phrase, c.token);
-  }
-
-  return result;
-}
-
-export function deAnonymizeSession14Text(
-  text: string,
-  fullToken: string,
-  shortToken: string,
-  fullName: string,
-  callName: string
-): string {
-  if (!text) return "";
-  return text
-    .replace(new RegExp(escapeRegExp(fullToken), "gi"), fullName)
-    .replace(new RegExp(escapeRegExp(shortToken), "gi"), callName);
-}
 
 function formatScoreDisplay(score: number): string {
   const rounded = Math.round((Number(score) || 0) * 100) / 100;

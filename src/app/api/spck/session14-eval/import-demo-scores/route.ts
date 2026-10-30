@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
+import { buildEnrichedSession14EvalList } from "@/lib/db/sqlite";
 import { importClassDemoScores } from "@/lib/local-files/spck-demo-score-reader";
 import { validateLocalRequest } from "@/lib/security/local-guard";
-import { buildEnrichedSession14EvalList } from "../route";
 
 export async function POST(req: Request) {
   const guard = validateLocalRequest(req);

@@ -1,0 +1,20 @@
+{
+  "protectedCount": 2053,
+  "changed": [],
+  "gates": {
+    "tsc": 0,
+    "test-streamline-v340-s7": 0,
+    "adversarial-probe": 0,
+    "test-phase4-codex-repros": 0
+  },
+  "probe": {
+    "total": 116,
+    "passed": 116,
+    "failed": 0
+  },
+  "brokenReportLinks": [],
+  "productionAfter": {
+    "data/mindx_bot.db": "A911EB02CD6E2610340604DCF42D53AFB428C50C02727C4CE44F138DEC9C8F16",
+    "data/running_classes.json": "ADBEE2357251FCDC56DF07CAA866015BF1E75C7247439D7F7E2C2B2D78DE63E2"
+  }
+}

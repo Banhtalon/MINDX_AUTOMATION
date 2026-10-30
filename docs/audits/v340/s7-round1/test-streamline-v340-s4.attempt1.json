@@ -1,0 +1,12 @@
+{
+  "name": "test-streamline-v340-s4",
+  "command": "npx tsx scripts/test-streamline-v340-s4.ts",
+  "exitCode": 1,
+  "seconds": 2.44,
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-kgf8pwev\\test-streamline-v340-s4",
+  "environment": {
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-kgf8pwev\\test-streamline-v340-s4",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-kgf8pwev\\test-streamline-v340-s4\\data\\test.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-kgf8pwev\\test-streamline-v340-s4\\data\\running_classes.json"
+  }
+}

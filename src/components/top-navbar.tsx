@@ -10,7 +10,6 @@ const NAV_ITEMS = [
   { href: "/homework-grader", label: "Phiếu điểm & BTVN" },
   { href: "/final-project", label: "Upload SPCK" },
   { href: "/teaching-projects", label: "Dự án Teaching" },
-  { href: "/syllabus-config", label: "Giáo trình & Thẻ" },
 ];
 
 export function TopNavbar() {
@@ -51,13 +50,15 @@ export function TopNavbar() {
     document.documentElement.setAttribute("data-theme", next);
   };
 
+  const isSettingsActive = Boolean(pathname?.startsWith("/syllabus-config"));
+
   return (
     <header className="mindx-navbar sticky top-0 z-50 transition-colors">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center space-x-2 group">
           <span className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-1.5 text-white">
             <span className="text-amber-400">⚡</span>
-            <span className="mindx-brand-text">MindX Bot v3.0</span>
+            <span className="mindx-brand-text">MindX Bot v3.4.0</span>
           </span>
         </Link>
 
@@ -82,28 +83,41 @@ export function TopNavbar() {
             })}
           </nav>
 
-          <button
-            type="button"
-            onClick={toggleTheme}
-            title={
-              theme === "light"
-                ? "Chuyển sang giao diện Tối (Dark Mode)"
-                : "Chuyển sang giao diện Sáng (Light Mode)"
-            }
-            className="mindx-theme-toggle ml-2 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            {theme === "light" ? (
-              <>
-                <span>☀️</span>
-                <span className="hidden md:inline">Sáng</span>
-              </>
-            ) : (
-              <>
-                <span>🌙</span>
-                <span className="hidden md:inline">Tối</span>
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-1.5 ml-2">
+            <Link
+              href="/syllabus-config"
+              title="Cài đặt Giáo trình & Bộ Thẻ Nhận Xét Nhanh"
+              className={`mindx-theme-toggle px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                isSettingsActive ? "ring-2 ring-amber-400 text-amber-200" : ""
+              }`}
+            >
+              <span>⚙</span>
+              <span className="hidden md:inline">Cài đặt</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={toggleTheme}
+              title={
+                theme === "light"
+                  ? "Chuyển sang giao diện Tối (Dark Mode)"
+                  : "Chuyển sang giao diện Sáng (Light Mode)"
+              }
+              className="mindx-theme-toggle px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              {theme === "light" ? (
+                <>
+                  <span>☀️</span>
+                  <span className="hidden md:inline">Sáng</span>
+                </>
+              ) : (
+                <>
+                  <span>🌙</span>
+                  <span className="hidden md:inline">Tối</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </header>

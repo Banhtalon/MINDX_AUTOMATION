@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   BookOpen,
   CheckCircle2,
-  ClipboardCheck,
   Loader2,
   Plus,
   Save,
@@ -27,24 +26,6 @@ interface CourseSyllabusItem {
   sessions: CourseSessionItem[];
 }
 
-interface GradingCriterionItem {
-  criterionId: string;
-  name: string;
-  maxPoints: number;
-  description: string;
-  expectedSnippetOrConcept: string;
-}
-
-interface GradingRubricItem {
-  rubricId: string;
-  courseCode: string;
-  sessionNumber: number;
-  assignmentTitle: string;
-  assignmentPrompt: string;
-  maxTotalScore: number;
-  criteria: GradingCriterionItem[];
-}
-
 interface QuickTagItem {
   id: string;
   label: string;
@@ -60,43 +41,17 @@ interface QuickTagCategoryItem {
   tags: QuickTagItem[];
 }
 
-interface ZaloTemplateItem {
-  id: string;
-  name: string;
-  template: string;
-}
-
-const ZALO_PLACEHOLDERS = [
-  "{{className}}",
-  "{{sessionNumber}}",
-  "{{date}}",
-  "{{topic}}",
-  "{{keyKnowledge}}",
-  "{{presentCount}}",
-  "{{absentCount}}",
-  "{{homeworkSummary}}",
-];
-
 export default function SyllabusConfigPage() {
-  const [activeTab, setActiveTab] = useState<
-    "courses" | "rubrics" | "quickTags" | "zaloTemplates"
-  >("courses");
+  const [activeTab, setActiveTab] = useState<"courses" | "quickTags">("courses");
 
   const [courses, rawSetCourses] = useState<CourseSyllabusItem[]>([]);
   const [selectedCourseIdx, setSelectedCourseIdx] = useState<number>(0);
 
-  const [rubrics, rawSetRubrics] = useState<GradingRubricItem[]>([]);
-  const [selectedRubricIdx, setSelectedRubricIdx] = useState<number>(0);
-
   const [quickTags, rawSetQuickTags] = useState<QuickTagCategoryItem[]>([]);
-  const [zaloTemplates, rawSetZaloTemplates] = useState<ZaloTemplateItem[]>([]);
-  const [selectedTemplateIdx, setSelectedTemplateIdx] = useState<number>(0);
 
   const editVersionRef = React.useRef({
     courses: 0,
-    rubrics: 0,
     quickTags: 0,
-    zaloTemplates: 0,
   });
 
   const setCourses = useCallback((updater: React.SetStateAction<CourseSyllabusItem[]>) => {
@@ -104,19 +59,9 @@ export default function SyllabusConfigPage() {
     rawSetCourses(updater);
   }, []);
 
-  const setRubrics = useCallback((updater: React.SetStateAction<GradingRubricItem[]>) => {
-    editVersionRef.current.rubrics += 1;
-    rawSetRubrics(updater);
-  }, []);
-
   const setQuickTags = useCallback((updater: React.SetStateAction<QuickTagCategoryItem[]>) => {
     editVersionRef.current.quickTags += 1;
     rawSetQuickTags(updater);
-  }, []);
-
-  const setZaloTemplates = useCallback((updater: React.SetStateAction<ZaloTemplateItem[]>) => {
-    editVersionRef.current.zaloTemplates += 1;
-    rawSetZaloTemplates(updater);
   }, []);
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -139,9 +84,7 @@ export default function SyllabusConfigPage() {
         return;
       }
       rawSetCourses(data.courses || []);
-      rawSetRubrics(data.rubrics || []);
       rawSetQuickTags(data.quickTags || []);
-      rawSetZaloTemplates(data.zaloTemplates || []);
     } catch (err) {
       setBanner({
         type: "error",
@@ -156,18 +99,14 @@ export default function SyllabusConfigPage() {
     loadAllConfigs();
   }, [loadAllConfigs]);
 
-  const handleSaveSection = async (
-    section: "courses" | "rubrics" | "quickTags" | "zaloTemplates"
-  ) => {
+  const handleSaveSection = async (section: "courses" | "quickTags") => {
     setSavingSection(section);
     setBanner(null);
     const versionAtSubmit = editVersionRef.current[section];
     try {
       const payload: Record<string, unknown> = { section };
       if (section === "courses") payload.courses = courses;
-      if (section === "rubrics") payload.rubrics = rubrics;
       if (section === "quickTags") payload.quickTags = quickTags;
-      if (section === "zaloTemplates") payload.zaloTemplates = zaloTemplates;
 
       const res = await fetch("/api/config", {
         method: "POST",
@@ -186,14 +125,8 @@ export default function SyllabusConfigPage() {
       if (data.courses && editVersionRef.current.courses === versionAtSubmit) {
         rawSetCourses(data.courses);
       }
-      if (data.rubrics && editVersionRef.current.rubrics === versionAtSubmit) {
-        rawSetRubrics(data.rubrics);
-      }
       if (data.quickTags && editVersionRef.current.quickTags === versionAtSubmit) {
         rawSetQuickTags(data.quickTags);
-      }
-      if (data.zaloTemplates && editVersionRef.current.zaloTemplates === versionAtSubmit) {
-        rawSetZaloTemplates(data.zaloTemplates);
       }
 
       setBanner({
@@ -213,36 +146,6 @@ export default function SyllabusConfigPage() {
   };
 
   const activeCourse = courses[selectedCourseIdx] || null;
-  const activeRubric = rubrics[selectedRubricIdx] || null;
-  const activeZaloTemplate = zaloTemplates[selectedTemplateIdx] || null;
-
-  const activeRubricTotalScore = useMemo(() => {
-    if (!activeRubric) return 0;
-    return (
-      Math.round(
-        activeRubric.criteria.reduce((sum, c) => sum + Number(c.maxPoints || 0), 0) * 100
-      ) / 100
-    );
-  }, [activeRubric]);
-
-  const previewZaloText = useMemo(() => {
-    if (!activeZaloTemplate) return "";
-    const sampleVars: Record<string, string> = {
-      className: "VT-C4K-PTA13",
-      sessionNumber: "5",
-      date: "21/10/2026",
-      topic: "Vòng lặp For/While & Xử lý danh sách trong Python",
-      keyKnowledge: "• Sử dụng vòng lặp for/while\n• Thao tác thêm/xóa phần tử trong List",
-      presentCount: "12",
-      absentCount: "0",
-      homeworkSummary: "Hoàn thành bài tập lập trình Quản lý điểm số trên LMS trước buổi 6.",
-    };
-    let text = activeZaloTemplate.template;
-    for (const [k, v] of Object.entries(sampleVars)) {
-      text = text.replace(new RegExp(`\\{\\{${k}\\}\\}`, "g"), () => v);
-    }
-    return text;
-  }, [activeZaloTemplate]);
 
   return (
     <div className="space-y-6">
@@ -254,7 +157,7 @@ export default function SyllabusConfigPage() {
           </div>
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight">
-              Màn hình 4: Quản lý Giáo trình &amp; Bộ Thẻ Nhận Xét Nhanh
+              Cài đặt Giáo trình &amp; Bộ Thẻ Nhận Xét Nhanh
             </h1>
             <p className="text-sm text-blue-100 mt-1">
               Quản lý nội dung từng buổi học, cấu hình Buổi Kiểm tra (Checkpoint) và Bộ thẻ nhận xét nhanh 1 chạm theo từng hướng học (Lập trình, Robotics, Buổi 14).
@@ -503,7 +406,7 @@ export default function SyllabusConfigPage() {
                           </div>
                           <div className="text-[11px] text-slate-400 mt-0.5">
                             Ở các buổi này, Bot chỉ điền ô &ldquo;Đánh giá chung *&rdquo;, việc tích
-                            Điểm Năng lực [ĐNL] & Điểm kiểm tra do giáo viên tự thực hiện trên LMS.
+                            Điểm Năng lực [ĐNL] &amp; Điểm kiểm tra do giáo viên tự thực hiện trên LMS.
                           </div>
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -756,7 +659,7 @@ export default function SyllabusConfigPage() {
                       </div>
                     </div>
 
-                    {/* Full-Width Bottom Save Bar matching Image 5 */}
+                    {/* Full-Width Bottom Save Bar */}
                     <div className="pt-3 border-t border-slate-800">
                       <button
                         type="button"
@@ -779,408 +682,7 @@ export default function SyllabusConfigPage() {
           )}
 
           {/* ========================================================= */}
-          {/* TAB 2: QUẢN LÝ ĐỀ BÀI & BAREM CHẤM ĐIỂM (GRADING RUBRICS)  */}
-          {/* ========================================================= */}
-          {activeTab === "rubrics" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Sidebar: Rubric List */}
-              <div className="lg:col-span-4 p-5 rounded-2xl mindx-card space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300">
-                    Danh sách Barem ({rubrics.length})
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newRubric: GradingRubricItem = {
-                        rubricId: `RUBRIC_NEW_${rubrics.length + 1}`,
-                        courseCode: courses[0]?.courseCode || "PTA",
-                        sessionNumber: 1,
-                        assignmentTitle: "Bài tập thực hành mới",
-                        assignmentPrompt: "Mô tả yêu cầu đề bài tập để AI đối chiếu...",
-                        maxTotalScore: 100,
-                        criteria: [
-                          {
-                            criterionId: "C1",
-                            name: "Hoàn thành đúng yêu cầu chính",
-                            maxPoints: 50,
-                            description: "Chương trình chạy đúng kết quả đầu ra",
-                            expectedSnippetOrConcept: "Hàm / vòng lặp / điều kiện chính",
-                          },
-                          {
-                            criterionId: "C2",
-                            name: "Trình bày code rõ ràng & xử lý ngoại lệ",
-                            maxPoints: 50,
-                            description: "Đặt tên biến hợp lý, không có lỗi cú pháp",
-                            expectedSnippetOrConcept: "Cấu trúc code sạch",
-                          },
-                        ],
-                      };
-                      setRubrics((prev) => [...prev, newRubric]);
-                      setSelectedRubricIdx(rubrics.length);
-                    }}
-                    className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold cursor-pointer mindx-dark-btn"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Thêm Barem</span>
-                  </button>
-                </div>
-
-                <div className="space-y-2 max-h-[540px] overflow-y-auto pr-1">
-                  {rubrics.map((rubric, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => setSelectedRubricIdx(idx)}
-                      className={`p-3 rounded-lg border border-l-4 transition-colors cursor-pointer ${
-                        selectedRubricIdx === idx
-                          ? "bg-cyan-950/30 border-cyan-500/70 border-l-cyan-500"
-                          : "bg-slate-950 border-slate-800 hover:border-slate-700 border-l-slate-500"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-cyan-400 text-xs">{rubric.rubricId}</span>
-                        <span className="text-[11px] text-slate-400">
-                          {rubric.courseCode} • Buổi {rubric.sessionNumber}
-                        </span>
-                      </div>
-                      <div className="text-xs font-medium text-slate-200 mt-1 truncate">
-                        {rubric.assignmentTitle}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleSaveSection("rubrics")}
-                  disabled={savingSection === "rubrics"}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold cursor-pointer mindx-dark-btn"
-                >
-                  {savingSection === "rubrics" ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  <span>Lưu Barem Chấm Điểm Xuống Hệ Thống</span>
-                </button>
-              </div>
-
-              {/* Right Editor: Rubric Details & Criteria */}
-              <div className="lg:col-span-8 p-6 rounded-2xl mindx-card space-y-5">
-                {!activeRubric ? (
-                  <div className="text-center text-slate-400 py-12 text-sm">
-                    Hãy chọn một Barem bên trái hoặc bấm &ldquo;Thêm Barem&rdquo;.
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                      <div>
-                        <h3 className="text-base font-bold text-white">
-                          Barem:{" "}
-                          <span className="text-cyan-400">{activeRubric.assignmentTitle}</span>
-                        </h3>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          Tổng điểm tự động cộng từ các tiêu chí:{" "}
-                          <strong className="text-emerald-400">
-                            {activeRubricTotalScore} điểm
-                          </strong>
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRubrics((prev) => prev.filter((_, i) => i !== selectedRubricIdx));
-                          setSelectedRubricIdx(0);
-                        }}
-                        className="flex items-center space-x-1 px-2.5 py-1 rounded bg-rose-950/60 hover:bg-rose-900/70 text-rose-300 border border-rose-800 text-xs cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Xóa Barem này</span>
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">Mã Barem</label>
-                        <input
-                          type="text"
-                          value={activeRubric.rubricId}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setRubrics((prev) =>
-                              prev.map((r, i) =>
-                                i === selectedRubricIdx ? { ...r, rubricId: val } : r
-                              )
-                            );
-                          }}
-                          className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-cyan-300 font-mono text-xs"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">Mã Khóa học</label>
-                        <input
-                          type="text"
-                          value={activeRubric.courseCode}
-                          onChange={(e) => {
-                            const val = e.target.value.toUpperCase();
-                            setRubrics((prev) =>
-                              prev.map((r, i) =>
-                                i === selectedRubricIdx ? { ...r, courseCode: val } : r
-                              )
-                            );
-                          }}
-                          className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs font-bold"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">Buổi học số</label>
-                        <input
-                          type="number"
-                          min={1}
-                          value={activeRubric.sessionNumber}
-                          onChange={(e) => {
-                            const num = Math.max(1, Number(e.target.value) || 1);
-                            setRubrics((prev) =>
-                              prev.map((r, i) =>
-                                i === selectedRubricIdx ? { ...r, sessionNumber: num } : r
-                              )
-                            );
-                          }}
-                          className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">Tiêu đề Bài tập</label>
-                      <input
-                        type="text"
-                        value={activeRubric.assignmentTitle}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setRubrics((prev) =>
-                            prev.map((r, i) =>
-                              i === selectedRubricIdx ? { ...r, assignmentTitle: val } : r
-                            )
-                          );
-                        }}
-                        className="w-full px-3 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">
-                        Nội dung Câu hỏi / Yêu cầu Đề bài chi tiết
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={activeRubric.assignmentPrompt}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setRubrics((prev) =>
-                            prev.map((r, i) =>
-                              i === selectedRubricIdx ? { ...r, assignmentPrompt: val } : r
-                            )
-                          );
-                        }}
-                        className="w-full px-3 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs"
-                      />
-                    </div>
-
-                    {/* Criteria List */}
-                    <div className="space-y-3 pt-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                          Các Tiêu chí Chấm điểm ({activeRubric.criteria.length} tiêu chí)
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const existingIds = new Set(
-                              activeRubric.criteria.map((c) => c.criterionId.trim().toUpperCase())
-                            );
-                            let n = activeRubric.criteria.length + 1;
-                            while (existingIds.has(`C${n}`)) {
-                              n++;
-                            }
-                            const nextId = `C${n}`;
-                            const newCrit: GradingCriterionItem = {
-                              criterionId: nextId,
-                              name: `Tiêu chí ${nextId}`,
-                              maxPoints: 2,
-                              description: "Mô tả yêu cầu đạt điểm tối đa...",
-                              expectedSnippetOrConcept: "Từ khóa code hoặc khái niệm cần có",
-                            };
-                            setRubrics((prev) =>
-                              prev.map((r, i) =>
-                                i === selectedRubricIdx
-                                  ? { ...r, criteria: [...r.criteria, newCrit] }
-                                  : r
-                              )
-                            );
-                          }}
-                          className="flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-xs font-semibold cursor-pointer"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Thêm tiêu chí</span>
-                        </button>
-                      </div>
-
-                      <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
-                        {activeRubric.criteria.map((crit, cIdx) => (
-                          <div
-                            key={cIdx}
-                            className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-2.5"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center space-x-2 flex-1">
-                                <input
-                                  type="text"
-                                  value={crit.criterionId}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    setRubrics((prev) =>
-                                      prev.map((r, i) =>
-                                        i === selectedRubricIdx
-                                          ? {
-                                              ...r,
-                                              criteria: r.criteria.map((c, j) =>
-                                                j === cIdx ? { ...c, criterionId: val } : c
-                                              ),
-                                            }
-                                          : r
-                                      )
-                                    );
-                                  }}
-                                  className="w-16 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-cyan-400 font-mono text-xs"
-                                />
-                                <input
-                                  type="text"
-                                  value={crit.name}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    setRubrics((prev) =>
-                                      prev.map((r, i) =>
-                                        i === selectedRubricIdx
-                                          ? {
-                                              ...r,
-                                              criteria: r.criteria.map((c, j) =>
-                                                j === cIdx ? { ...c, name: val } : c
-                                              ),
-                                            }
-                                          : r
-                                      )
-                                    );
-                                  }}
-                                  placeholder="Tên tiêu chí..."
-                                  className="flex-1 px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-white text-xs font-medium"
-                                />
-                                <span className="text-xs text-slate-400">Điểm tối đa:</span>
-                                <input
-                                  type="number"
-                                  step="0.5"
-                                  min="0.5"
-                                  value={crit.maxPoints}
-                                  onChange={(e) => {
-                                    const pts = Math.max(0.5, Number(e.target.value) || 1);
-                                    setRubrics((prev) =>
-                                      prev.map((r, i) =>
-                                        i === selectedRubricIdx
-                                          ? {
-                                              ...r,
-                                              criteria: r.criteria.map((c, j) =>
-                                                j === cIdx ? { ...c, maxPoints: pts } : c
-                                              ),
-                                            }
-                                          : r
-                                      )
-                                    );
-                                  }}
-                                  className="w-16 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-emerald-400 font-bold text-xs"
-                                />
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (activeRubric.criteria.length <= 1) return;
-                                  setRubrics((prev) =>
-                                    prev.map((r, i) =>
-                                      i === selectedRubricIdx
-                                        ? {
-                                            ...r,
-                                            criteria: r.criteria.filter((_, j) => j !== cIdx),
-                                          }
-                                        : r
-                                    )
-                                  );
-                                }}
-                                className="text-xs text-rose-400 hover:text-rose-300 px-2 py-1 cursor-pointer"
-                              >
-                                Xóa
-                              </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              <input
-                                type="text"
-                                value={crit.description}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setRubrics((prev) =>
-                                    prev.map((r, i) =>
-                                      i === selectedRubricIdx
-                                        ? {
-                                            ...r,
-                                            criteria: r.criteria.map((c, j) =>
-                                              j === cIdx ? { ...c, description: val } : c
-                                            ),
-                                          }
-                                        : r
-                                    )
-                                  );
-                                }}
-                                placeholder="Mô tả chi tiết tiêu chí..."
-                                className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 text-xs"
-                              />
-                              <input
-                                type="text"
-                                value={crit.expectedSnippetOrConcept}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setRubrics((prev) =>
-                                    prev.map((r, i) =>
-                                      i === selectedRubricIdx
-                                        ? {
-                                            ...r,
-                                            criteria: r.criteria.map((c, j) =>
-                                              j === cIdx
-                                                ? { ...c, expectedSnippetOrConcept: val }
-                                                : c
-                                            ),
-                                          }
-                                        : r
-                                    )
-                                  );
-                                }}
-                                placeholder="Bằng chứng code / Khái niệm kỳ vọng..."
-                                className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 text-xs"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* TAB 3: QUẢN LÝ BỘ THẺ NHẬN XÉT NHANH (QUICK TAGS)          */}
+          {/* TAB 2: QUẢN LÝ BỘ THẺ NHẬN XÉT NHANH (QUICK TAGS)          */}
           {/* ========================================================= */}
           {activeTab === "quickTags" && (
             <div className="p-6 rounded-2xl mindx-card space-y-5">
@@ -1510,189 +1012,6 @@ export default function SyllabusConfigPage() {
                     </div>
                   );
                 })}
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* TAB 4: QUẢN LÝ MẪU THÔNG BÁO ZALO (ZALO TEMPLATES)         */}
-          {/* ========================================================= */}
-          {activeTab === "zaloTemplates" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Sidebar: Template List */}
-              <div className="lg:col-span-4 p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300">
-                    Mẫu tin nhắn Zalo ({zaloTemplates.length})
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextTpl: ZaloTemplateItem = {
-                        id: `zalo_tpl_${zaloTemplates.length + 1}`,
-                        name: `Mẫu thông báo Zalo ${zaloTemplates.length + 1}`,
-                        template:
-                          "📢 THÔNG BÁO TỔNG KẾT BUỔI {{sessionNumber}} - LỚP {{className}}\n• Chủ đề: {{topic}}\n• Sĩ số có mặt: {{presentCount}} học viên\n• Bài tập về nhà: {{homeworkSummary}}",
-                      };
-                      setZaloTemplates((prev) => [...prev, nextTpl]);
-                      setSelectedTemplateIdx(zaloTemplates.length);
-                    }}
-                    className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Thêm mẫu</span>
-                  </button>
-                </div>
-
-                <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
-                  {zaloTemplates.map((tpl, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => setSelectedTemplateIdx(idx)}
-                      className={`p-3 rounded-lg border transition-colors cursor-pointer ${
-                        selectedTemplateIdx === idx
-                          ? "bg-emerald-950/30 border-emerald-500/70"
-                          : "bg-slate-950 border-slate-800 hover:border-slate-700"
-                      }`}
-                    >
-                      <div className="font-bold text-emerald-400 text-xs">{tpl.name}</div>
-                      <div className="text-[11px] text-slate-500 font-mono mt-0.5">{tpl.id}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleSaveSection("zaloTemplates")}
-                  disabled={savingSection === "zaloTemplates"}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold cursor-pointer"
-                >
-                  {savingSection === "zaloTemplates" ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  <span>Lưu Mẫu Thông Báo Zalo</span>
-                </button>
-              </div>
-
-              {/* Right Editor & Live Preview */}
-              <div className="lg:col-span-8 p-6 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
-                {!activeZaloTemplate ? (
-                  <div className="text-center text-slate-400 py-12 text-sm">
-                    Hãy chọn một mẫu Zalo bên trái hoặc bấm &ldquo;Thêm mẫu&rdquo;.
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                      <h3 className="text-base font-bold text-white">
-                        Chỉnh sửa Mẫu Zalo:{" "}
-                        <span className="text-emerald-400">{activeZaloTemplate.name}</span>
-                      </h3>
-                      {zaloTemplates.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setZaloTemplates((prev) =>
-                              prev.filter((_, i) => i !== selectedTemplateIdx)
-                            );
-                            setSelectedTemplateIdx(0);
-                          }}
-                          className="text-xs text-rose-400 hover:text-rose-300 cursor-pointer"
-                        >
-                          Xóa mẫu này
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">Mã định danh (ID)</label>
-                        <input
-                          type="text"
-                          value={activeZaloTemplate.id}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setZaloTemplates((prev) =>
-                              prev.map((t, i) =>
-                                i === selectedTemplateIdx ? { ...t, id: val } : t
-                              )
-                            );
-                          }}
-                          className="w-full px-3 py-1.5 rounded bg-slate-950 border border-slate-700 text-emerald-300 font-mono text-xs"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">Tên mẫu hiển thị</label>
-                        <input
-                          type="text"
-                          value={activeZaloTemplate.name}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setZaloTemplates((prev) =>
-                              prev.map((t, i) =>
-                                i === selectedTemplateIdx ? { ...t, name: val } : t
-                              )
-                            );
-                          }}
-                          className="w-full px-3 py-1.5 rounded bg-slate-950 border border-slate-700 text-white text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                        <span className="text-xs text-slate-400">
-                          Bấm để chèn nhanh từ khóa tự động:
-                        </span>
-                        <div className="flex flex-wrap gap-1">
-                          {ZALO_PLACEHOLDERS.map((ph) => (
-                            <button
-                              key={ph}
-                              type="button"
-                              onClick={() => {
-                                setZaloTemplates((prev) =>
-                                  prev.map((t, i) =>
-                                    i === selectedTemplateIdx
-                                      ? { ...t, template: `${t.template} ${ph}` }
-                                      : t
-                                  )
-                                );
-                              }}
-                              className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 font-mono text-[11px] cursor-pointer"
-                            >
-                              {ph}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <textarea
-                        rows={7}
-                        value={activeZaloTemplate.template}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setZaloTemplates((prev) =>
-                            prev.map((t, i) =>
-                              i === selectedTemplateIdx ? { ...t, template: val } : t
-                            )
-                          );
-                        }}
-                        className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-white text-xs font-mono leading-relaxed"
-                      />
-                    </div>
-
-                    <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
-                      <div className="text-xs font-semibold text-emerald-400">
-                        Xem trước bản tin Zalo mẫu (Live Preview):
-                      </div>
-                      <pre className="text-xs text-slate-300 whitespace-pre-wrap font-sans leading-relaxed">
-                        {previewZaloText}
-                      </pre>
-                    </div>
-                  </>
-                )}
               </div>
             </div>
           )}

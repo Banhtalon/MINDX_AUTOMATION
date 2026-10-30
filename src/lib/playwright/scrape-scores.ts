@@ -4,6 +4,8 @@ import { authService } from "./auth";
 import { LmsHelpers } from "./lms-helpers";
 import { SELECTORS } from "./selectors";
 import { createNetworkInterceptor } from "./network-interceptor";
+import { normalizeVietnameseName as _normalizeVietnameseName } from "../utils/vietnamese-match";
+const sharedNormViName = typeof _normalizeVietnameseName === "function" ? _normalizeVietnameseName : (console as any).__mindxVietnameseMatch?.normalizeVietnameseName;
 import {
   studentRepo,
   jobLogRepo,
@@ -150,15 +152,7 @@ function safeCheckIsRobotics(classCode: string): boolean {
 }
 
 function normalizeStudentNameKey(s: string): string {
-  return String(s || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return sharedNormViName(String(s || ""));
 }
 
 function stripHtmlTagsClean(raw?: string | null): string {

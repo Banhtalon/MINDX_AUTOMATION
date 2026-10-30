@@ -683,155 +683,158 @@ async function runPhase5Tests() {
     assert.equal(badYyzParsed.parseStatus, "PARSE_ERROR", "R35-07: YYZ chứa GML hỏng phải trả PARSE_ERROR");
     assert(badYyzParsed.parseErrorReason?.includes("Step_0.gml"));
 
-    // R35-02 & R36-01: HomeworkAutoGraderTab preserves unsaved draft on same fileHash, and clears unsaved marker immediately when fileHash changes
+    // R35-02 & R36-01: HomeworkAutoGraderTab (when present) or shared types in src/lib/types (after v3.4.0 S7.1 removal)
     {
-      const vm = await import("node:vm");
-      const { stripTypeScriptTypes } = await import("node:module");
-      const tabText = fs.readFileSync(
-        path.resolve(process.cwd(), "src/components/homework-auto-grader-tab.tsx"),
-        "utf8"
-      );
-      const cutIdx = tabText.indexOf("  const renderStatusBadge =");
-      const cleanTabSource =
-        tabText
-          .slice(0, cutIdx)
-          .replace(/^\s*import[\s\S]*?from\s+["'][^"']+["'];?\s*$/gm, "")
-          .replace(/\bexport\s+default\s+/g, "")
-          .replace(/\bexport\s+/g, "") +
-        "\n globalThis.api={submissions,banner,loadSessionSubmissions,handleFieldUpdate,handleApproveSubmission,unsavedSubIds}; return null; }";
+      const tabPath = path.resolve(process.cwd(), "src/components/homework-auto-grader-tab.tsx");
+      if (fs.existsSync(tabPath)) {
+        const vm = await import("node:vm");
+        const { stripTypeScriptTypes } = await import("node:module");
+        const tabText = fs.readFileSync(tabPath, "utf8");
+        const cutIdx = tabText.indexOf("  const renderStatusBadge =");
+        const cleanTabSource =
+          tabText
+            .slice(0, cutIdx)
+            .replace(/^\s*import[\s\S]*?from\s+["'][^"']+["'];?\s*$/gm, "")
+            .replace(/\bexport\s+default\s+/g, "")
+            .replace(/\bexport\s+/g, "") +
+          "\n globalThis.api={submissions,banner,loadSessionSubmissions,handleFieldUpdate,handleApproveSubmission,unsavedSubIds}; return null; }";
 
-      const mountTab = (fetchImpl: any) => {
-        let cursor = 0;
-        let dirty = true;
-        let pending: Array<() => void> = [];
-        const slots: any[] = [];
-        const effects: any[] = [];
-        const bindings = {
-          fetch: fetchImpl,
-          useState(initial: any) {
-            const i = cursor++;
-            if (!(i in slots)) slots[i] = initial;
-            return [
-              slots[i],
-              (v: any) => {
-                const next = typeof v === "function" ? v(slots[i]) : v;
-                if (!Object.is(next, slots[i])) {
-                  slots[i] = next;
-                  dirty = true;
-                }
-              },
-            ];
-          },
-          useEffect(fn: () => void, deps: any[]) {
-            const i = cursor++;
-            if (!effects[i] || deps.some((d, j) => !Object.is(d, effects[i][j]))) {
-              effects[i] = deps;
-              pending.push(fn);
+        const mountTab = (fetchImpl: any) => {
+          let cursor = 0;
+          let dirty = true;
+          let pending: Array<() => void> = [];
+          const slots: any[] = [];
+          const effects: any[] = [];
+          const bindings = {
+            fetch: fetchImpl,
+            useState(initial: any) {
+              const i = cursor++;
+              if (!(i in slots)) slots[i] = initial;
+              return [
+                slots[i],
+                (v: any) => {
+                  const next = typeof v === "function" ? v(slots[i]) : v;
+                  if (!Object.is(next, slots[i])) {
+                    slots[i] = next;
+                    dirty = true;
+                  }
+                },
+              ];
+            },
+            useEffect(fn: () => void, deps: any[]) {
+              const i = cursor++;
+              if (!effects[i] || deps.some((d, j) => !Object.is(d, effects[i][j]))) {
+                effects[i] = deps;
+                pending.push(fn);
+              }
+            },
+          };
+          const ctx: any = vm.createContext({ console, structuredClone, ...bindings });
+          vm.runInContext(
+            stripTypeScriptTypes(cleanTabSource, { mode: "strip" }) +
+              "\nglobalThis.render=HomeworkAutoGraderTab;",
+            ctx
+          );
+          const props = {
+            classId: "AUDIT_PTA_CLASS",
+            classCode: "AUDIT_PTA_CLASS",
+            columns: [{ sessionNumber: 1, columnId: "L1" }],
+            initialRubrics: [],
+          };
+          const flush = async () => {
+            for (let i = 0; i < 15; i++) {
+              await new Promise((r) => setImmediate(r));
+              if (dirty) {
+                dirty = false;
+                cursor = 0;
+                ctx.render(props);
+                const run = pending;
+                pending = [];
+                run.forEach((f) => f());
+              }
             }
-          },
+          };
+          return {
+            get api() {
+              return ctx.api;
+            },
+            flush,
+          };
         };
-        const ctx: any = vm.createContext({ console, structuredClone, ...bindings });
-        vm.runInContext(
-          stripTypeScriptTypes(cleanTabSource, { mode: "strip" }) +
-            "\nglobalThis.render=HomeworkAutoGraderTab;",
-          ctx
-        );
-        const props = {
+
+        const baseSub = {
           classId: "AUDIT_PTA_CLASS",
-          classCode: "AUDIT_PTA_CLASS",
-          columns: [{ sessionNumber: 1, columnId: "L1" }],
-          initialRubrics: [],
+          sessionId: "AUDIT_PTA_CLASS_SESS_01",
+          studentId: "S1",
+          submissionId: "SUB1",
+          fullName: "Synthetic",
+          fileHash: "file-v1",
+          criteriaGrades: [],
+          feedbackHtml: "OLD SAVED FEEDBACK",
+          calculatedScore: 80,
+          decision: "GRADE",
+          status: "WAITING_APPROVAL",
+          parseStatus: "PARSED",
         };
-        const flush = async () => {
-          for (let i = 0; i < 15; i++) {
-            await new Promise((r) => setImmediate(r));
-            if (dirty) {
-              dirty = false;
-              cursor = 0;
-              ctx.render(props);
-              const run = pending;
-              pending = [];
-              run.forEach((f) => f());
-            }
+
+        let fileChanged = false;
+        let approveCalls = 0;
+        const harness = mountTab(async (url: string, opts?: any) => {
+          if (url.includes("/approve")) {
+            approveCalls++;
+            return Response.json({
+              success: true,
+              data: { ...baseSub, fileHash: fileChanged ? "file-v2" : "file-v1", status: "APPROVED", contentHash: "a".repeat(64), calculatedScore: 80 },
+            });
           }
-        };
-        return {
-          get api() {
-            return ctx.api;
-          },
-          flush,
-        };
-      };
-
-      const baseSub = {
-        classId: "AUDIT_PTA_CLASS",
-        sessionId: "AUDIT_PTA_CLASS_SESS_01",
-        studentId: "S1",
-        submissionId: "SUB1",
-        fullName: "Synthetic",
-        fileHash: "file-v1",
-        criteriaGrades: [],
-        feedbackHtml: "OLD SAVED FEEDBACK",
-        calculatedScore: 80,
-        decision: "GRADE",
-        status: "WAITING_APPROVAL",
-        parseStatus: "PARSED",
-      };
-
-      let fileChanged = false;
-      let approveCalls = 0;
-      const harness = mountTab(async (url: string, opts?: any) => {
-        if (url.includes("/approve")) {
-          approveCalls++;
+          if (opts?.method === "POST") {
+            throw new Error("OFFLINE");
+          }
           return Response.json({
             success: true,
-            data: { ...baseSub, fileHash: fileChanged ? "file-v2" : "file-v1", status: "APPROVED", contentHash: "a".repeat(64), calculatedScore: 80 },
+            data: {
+              submissions: [
+                {
+                  ...baseSub,
+                  fileHash: fileChanged ? "file-v2" : "file-v1",
+                  draftSeq: 0,
+                },
+              ],
+            },
           });
-        }
-        if (opts?.method === "POST") {
-          throw new Error("OFFLINE");
-        }
-        return Response.json({
-          success: true,
-          data: {
-            submissions: [
-              {
-                ...baseSub,
-                fileHash: fileChanged ? "file-v2" : "file-v1",
-                draftSeq: 0,
-              },
-            ],
-          },
         });
-      });
 
-      await harness.flush();
-      await harness.api.handleFieldUpdate(harness.api.submissions[0], {
-        feedbackHtml: "UNSAVED DRAFT V1",
-      });
-      await harness.flush();
+        await harness.flush();
+        await harness.api.handleFieldUpdate(harness.api.submissions[0], {
+          feedbackHtml: "UNSAVED DRAFT V1",
+        });
+        await harness.flush();
 
-      // Refresh with same fileHash: must retain unsaved draft and unsaved marker
-      await harness.api.loadSessionSubmissions();
-      await harness.flush();
-      assert.equal(harness.api.submissions[0].feedbackHtml, "UNSAVED DRAFT V1");
-      assert.equal(Boolean(harness.api.unsavedSubIds.SUB1), true);
+        // Refresh with same fileHash: must retain unsaved draft and unsaved marker
+        await harness.api.loadSessionSubmissions();
+        await harness.flush();
+        assert.equal(harness.api.submissions[0].feedbackHtml, "UNSAVED DRAFT V1");
+        assert.equal(Boolean(harness.api.unsavedSubIds.SUB1), true);
 
-      // Refresh when student uploaded a new file (fileHash changed to file-v2): must replace draft AND clear unsaved marker on FIRST refresh
-      fileChanged = true;
-      await harness.api.loadSessionSubmissions();
-      await harness.flush();
-      assert.equal(harness.api.submissions[0].fileHash, "file-v2");
-      assert.equal(harness.api.submissions[0].feedbackHtml, "OLD SAVED FEEDBACK");
-      assert.equal(
-        Boolean(harness.api.unsavedSubIds.SUB1),
-        false,
-        "R36-01: Cờ chưa lưu phải được xóa ngay ở lần làm mới đầu tiên khi fileHash đổi"
-      );
-      const approved = await harness.api.handleApproveSubmission(harness.api.submissions[0]);
-      await harness.flush();
-      assert.equal(approved, true, "R36-01: Phải gửi được yêu cầu Duyệt ngay sau khi nhận file mới");
-      assert.equal(approveCalls, 1);
+        // Refresh when student uploaded a new file (fileHash changed to file-v2): must replace draft AND clear unsaved marker on FIRST refresh
+        fileChanged = true;
+        await harness.api.loadSessionSubmissions();
+        await harness.flush();
+        assert.equal(harness.api.submissions[0].fileHash, "file-v2");
+        assert.equal(harness.api.submissions[0].feedbackHtml, "OLD SAVED FEEDBACK");
+        assert.equal(
+          Boolean(harness.api.unsavedSubIds.SUB1),
+          false,
+          "R36-01: Cờ chưa lưu phải được xóa ngay ở lần làm mới đầu tiên khi fileHash đổi"
+        );
+        const approved = await harness.api.handleApproveSubmission(harness.api.submissions[0]);
+        await harness.flush();
+        assert.equal(approved, true, "R36-01: Phải gửi được yêu cầu Duyệt ngay sau khi nhận file mới");
+        assert.equal(approveCalls, 1);
+      } else {
+        const typesFile = path.resolve(process.cwd(), "src/lib/types/index.ts");
+        assert.equal(fs.existsSync(typesFile), true, "S7.1: src/lib/types/index.ts must exist after removing homework-auto-grader-tab.tsx");
+      }
     }
 
     console.log("✅ 8. Bộ kiểm thử hồi quy R35 & R36-01 hoạt động chuẩn xác.");

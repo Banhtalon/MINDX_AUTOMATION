@@ -1,0 +1,5 @@
+{
+  "root": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "temp": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz",
+  "policy": "source-only mirrors; no .env, production data, login profiles; per-gate TEMP environment"
+}

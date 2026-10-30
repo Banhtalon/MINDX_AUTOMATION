@@ -13,6 +13,8 @@ import {
   parseSubmissionFile,
   type ParsedSubmissionContent,
 } from "../file-parsers";
+import { anonymize } from "../ai/pii-anonymizer";
+import { stripVietnameseAccentsPreserveCase } from "../utils/vietnamese-match";
 
 export interface HomeworkGradeCandidateInput {
   classId: string;
@@ -72,14 +74,6 @@ export function wrapInPromptInjectionSandbox(untrustedText: string): string {
   ].join("\n");
 }
 
-function stripVietnameseAccents(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D");
-}
-
 export class HomeworkAiGrader {
   private static latestSubmissionSeq = new Map<string, number>();
   private static globalCallCounter = 0;
@@ -98,62 +92,34 @@ export class HomeworkAiGrader {
         ? studentRepo.findByClass(classId, false) || []
         : [];
 
-    const replacements: Array<{ variant: string; token: string }> = [];
+    const selfKey = stripVietnameseAccentsPreserveCase(selfFullName).toLowerCase();
+    const peerNames: string[] = [];
 
-    const addVariants = (rawName: string, token: string) => {
-      const clean = String(rawName || "").replace(/\s+/g, " ").trim();
-      if (!clean) return;
-      const parts = clean.split(" ").filter(Boolean);
-      const set = new Set<string>([clean, stripVietnameseAccents(clean)]);
-      if (parts.length >= 2) {
-        const lastTwo = parts.slice(-2).join(" ");
-        set.add(lastTwo);
-        set.add(stripVietnameseAccents(lastTwo));
-      }
-      const given = parts[parts.length - 1];
-      if (given && given.length >= 2) {
-        set.add(given);
-        set.add(stripVietnameseAccents(given));
-      }
-      for (const v of set) {
-        if (v.length >= 2) {
-          replacements.push({ variant: v, token });
-        }
-      }
-    };
-
-    addVariants(selfFullName, selfAnonymousId);
     for (const st of dbClassStudents) {
       if (
-        stripVietnameseAccents(st.fullName).toLowerCase() ===
-        stripVietnameseAccents(selfFullName).toLowerCase()
+        st?.fullName &&
+        stripVietnameseAccentsPreserveCase(st.fullName).toLowerCase() !== selfKey
       ) {
-        addVariants(st.fullName, selfAnonymousId);
-      } else {
-        addVariants(st.fullName, "STUDENT_PEER");
+        peerNames.push(st.fullName);
       }
     }
     for (const p of extraPeers) {
       if (
-        stripVietnameseAccents(p.fullName).toLowerCase() !==
-        stripVietnameseAccents(selfFullName).toLowerCase()
+        p?.fullName &&
+        stripVietnameseAccentsPreserveCase(p.fullName).toLowerCase() !== selfKey
       ) {
-        addVariants(p.fullName, "STUDENT_PEER");
+        peerNames.push(p.fullName);
       }
     }
 
-    replacements.sort((a, b) => b.variant.length - a.variant.length);
-
-    return (rawText: string): string => {
-      let text = String(rawText || "");
-      if (!text) return "";
-      for (const { variant, token } of replacements) {
-        const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const re = new RegExp(`(?<![\\p{L}\\p{N}_])${escaped}(?![\\p{L}\\p{N}_])`, "giu");
-        text = text.replace(re, token);
-      }
-      return text;
-    };
+    return (rawText: string): string =>
+      anonymize(String(rawText || ""), {
+        targetFullName: selfFullName,
+        targetToken: selfAnonymousId,
+        peerNames,
+        peerToken: "STUDENT_PEER",
+        matchJoinedFileNames: true,
+      }).text;
   }
 
   /**

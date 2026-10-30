@@ -1,0 +1,17 @@
+{
+  "root": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "temp": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7r2-audit-rcvesjt_",
+  "head": "2364c93793a0b4805e435aa98ad0df7f00e91444",
+  "environment": {
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s7r2.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s7r2_rc.json"
+  },
+  "policy": "Source-only TEMP mirror; no .env, production DB/cache or login profile; external network blocked",
+  "probeSha256": "6603ec58ce5f4f9118f301d757a49a7bd1bd8baaa2a3c0b3ee8f679d5368c3bf",
+  "initialTempDataExists": {
+    "MINDX_DB_PATH": false,
+    "MINDX_RUNNING_CLASSES_PATH": false
+  },
+  "sourceMirrorMatches": true
+}

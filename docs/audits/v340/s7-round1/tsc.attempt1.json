@@ -1,0 +1,12 @@
+{
+  "name": "tsc",
+  "command": "npx tsc --noEmit --incremental false",
+  "exitCode": 0,
+  "seconds": 1.95,
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-kgf8pwev\\tsc",
+  "environment": {
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-kgf8pwev\\tsc",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-kgf8pwev\\tsc\\data\\test.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-kgf8pwev\\tsc\\data\\running_classes.json"
+  }
+}

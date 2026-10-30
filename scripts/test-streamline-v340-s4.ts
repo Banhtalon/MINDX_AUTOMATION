@@ -32,18 +32,18 @@ async function main() {
     formatCellForExport,
     sanitizeSpreadsheetCell,
   } = await import("../src/lib/report-card/export-cell-formatter");
-  const {
-    formatCellForExport: exportRouteFormatCell,
-    sanitizeSpreadsheetCell: exportRouteSanitizeCell,
-    GET: exportGET,
-  } = await import("../src/app/api/homework-grader/export/route");
+  const exportRouteFormatCell = formatCellForExport;
+  const exportRouteSanitizeCell = sanitizeSpreadsheetCell;
+  const { GET: exportGET } = await import("../src/app/api/homework-grader/export/route");
   const { GET: scoresGET } = await import("../src/app/api/homework-grader/scores/route");
   const {
     GET: reportCardGET,
     POST: reportCardPOST,
     PUT: reportCardPUT,
-    computeReportCardStaleness,
   } = await import("../src/app/api/report-card/route");
+  const { computeReportCardStaleness } = await import(
+    "../src/lib/report-card/report-card-staleness"
+  );
   const { ScoreScraper } = await import("../src/lib/playwright/scrape-scores");
 
   function makeLocalReq(urlPath: string, init?: RequestInit): any {

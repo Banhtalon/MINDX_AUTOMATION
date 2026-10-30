@@ -1,0 +1,11 @@
+{
+  "command": "npx tsx adversarial-probe.cjs",
+  "exitCode": 1,
+  "seconds": 2.42,
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\tsc",
+  "environment": {
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\tsc",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\tsc\\data\\probe.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\tsc\\data\\probe-running.json"
+  }
+}

@@ -25,8 +25,19 @@ import {
 } from "../db/sqlite";
 import { parseSubmissionFile } from "../file-parsers";
 import { assertPathAllowed } from "../security/path-allowlist";
+import {
+  anonymizeSpckText,
+  deAnonymizeSpckText,
+  formatSpckStudentCallName,
+} from "../ai/pii-anonymizer";
 import { stripVietnameseDiacritics } from "../utils/vietnamese-match";
 import { getGeminiModel } from "./client";
+
+export {
+  anonymizeSpckText,
+  deAnonymizeSpckText,
+  formatSpckStudentCallName,
+};
 
 export interface SpckStudentCommentInput {
   studentId: string;
@@ -181,32 +192,6 @@ export function detectPresentationEvidence(
 }
 
 /**
- * Formats a student's full name into the natural short call name used by MindX teachers
- * (e.g. "Nguyễn Thiên Phúc" -> "Thiên Phúc", "Mccully Mac Dallas" -> "Dallas", "Lê Nguyên" -> "Lê Nguyên").
- */
-export function formatSpckStudentCallName(fullName: string): string {
-  const words = String(fullName || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (words.length === 0) return "Học viên";
-  if (words.length <= 2) return words.join(" ");
-
-  const hasVietDiacritics = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(
-    fullName
-  );
-  const firstAscii = stripVietnameseDiacritics(words[0]).toLowerCase();
-  const isVietSurname =
-    /^(nguyen|tran|le|pham|hoang|huynh|phan|vu|vo|dang|bui|do|ho|ngo|duong|ly|dinh|doan|luong|truong|mai|cao|to|ha|ta|chau|mach|lam|trinh|quach|luu|ton|khong)$/.test(
-      firstAscii
-    );
-  if (!hasVietDiacritics && !isVietSurname) {
-    return words[words.length - 1];
-  }
-  return words.slice(-2).join(" ");
-}
-
-/**
  * Checks whether the teacher's tags or notes mention limitations / things still needing improvement.
  */
 export function detectLimitationEvidence(quickTags: string[], teacherNote: string): boolean {
@@ -271,105 +256,6 @@ export function extractSession12PriorEvidence(
   }
 
   return { hasEvidence: false, hasPriorSession12: false, summaryText: "" };
-}
-
-/**
- * Replaces student PII (full name and multi-char name tokens, accented and unaccented) with an anonymous token.
- */
-export function anonymizeSpckText(
-  rawText: string,
-  targetFullName: string,
-  targetToken: string,
-  peerNames: string[] = []
-): string {
-  if (!rawText) return "";
-  let output = rawText
-    .normalize("NFC")
-    .replace(/<\/?\s*STUDENT_SPCK_SANDBOX\s*>/gi, "[REDACTED_SANDBOX_TAG]")
-    .replace(/<\/?\s*STUDENT_SUBMISSION_SANDBOX\s*>/gi, "[REDACTED_SANDBOX_TAG]");
-
-  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-  const replaceNameAndTokens = (nameStr: string, replacementToken: string) => {
-    const cleanName = (nameStr || "").normalize("NFC").trim();
-    if (!cleanName) return;
-
-    // Full accented name
-    output = output.replace(new RegExp(escapeRegex(cleanName), "gi"), replacementToken);
-
-    // Full unaccented name
-    const asciiName = stripVietnameseDiacritics(cleanName);
-    if (asciiName && asciiName.length >= 2) {
-      output = output.replace(new RegExp(escapeRegex(asciiName), "gi"), replacementToken);
-    }
-
-    // Joined / underscore / hyphen variants (e.g. Nguyen_Minh_An, NguyenMinhAn, Nguyen-Minh-An)
-    const accentedParts = cleanName.split(/\s+/).filter((p) => p.length >= 2);
-    if (accentedParts.length >= 2) {
-      const joinedAccentedRegex = new RegExp(
-        accentedParts.map((p) => escapeRegex(p)).join("[\\s_.\\-]*"),
-        "giu"
-      );
-      output = output.replace(joinedAccentedRegex, replacementToken);
-    }
-
-    const asciiParts = asciiName.split(/\s+/).filter((p) => p.length >= 2);
-    if (asciiParts.length >= 2) {
-      const joinedAsciiRegex = new RegExp(
-        asciiParts.map((p) => escapeRegex(p)).join("[\\s_.\\-]*"),
-        "giu"
-      );
-      output = output.replace(joinedAsciiRegex, replacementToken);
-    }
-
-    // Individual accented tokens (>= 2 chars), including inside underscore/hyphen filenames
-    for (const part of accentedParts) {
-      output = output.replace(
-        new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegex(part)}(?![\\p{L}\\p{N}])`, "giu"),
-        replacementToken
-      );
-    }
-
-    // Individual unaccented tokens (>= 2 chars), including inside underscore/hyphen filenames
-    for (const part of asciiParts) {
-      if (/^student$/i.test(part) || /^peer$/i.test(part) || /^file$/i.test(part)) continue;
-      output = output.replace(
-        new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegex(part)}(?![\\p{L}\\p{N}])`, "giu"),
-        replacementToken
-      );
-    }
-  };
-
-  const normalizedTarget = (targetFullName || "").normalize("NFC").trim();
-
-  // 1. Replace peer full names and tokens first
-  for (const peer of peerNames) {
-    const cleanPeer = (peer || "").normalize("NFC").trim();
-    if (!cleanPeer || cleanPeer === normalizedTarget) continue;
-    replaceNameAndTokens(cleanPeer, "STUDENT_PEER");
-  }
-
-  // 2. Replace target student's full name and tokens (both accented and unaccented)
-  if (normalizedTarget) {
-    replaceNameAndTokens(normalizedTarget, targetToken);
-  }
-
-  return output;
-}
-
-/**
- * Restores the anonymous token back to the student's real full name.
- */
-export function deAnonymizeSpckText(
-  text: string,
-  anonymousToken: string,
-  realFullName: string
-): string {
-  if (!text) return "";
-  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return text
-    .replace(new RegExp(escapeRegex(anonymousToken), "g"), realFullName)
-    .replace(/\bSTUDENT_\d{2}\b/g, realFullName);
 }
 
 /**

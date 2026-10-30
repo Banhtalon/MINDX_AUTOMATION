@@ -19,6 +19,12 @@ import {
   type RunningClassItem,
 } from "../db/json-config";
 import { config } from "../config";
+import { toVietnameseUpperSlug as _toVietnameseUpperSlug } from "../utils/vietnamese-match";
+
+const toVietnameseUpperSlug =
+  typeof _toVietnameseUpperSlug === "function"
+    ? _toVietnameseUpperSlug
+    : (console as any).__mindxVietnameseMatch?.toVietnameseUpperSlug;
 
 export const FINISHED_CLASS_GRACE_DAYS = 15;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -884,13 +890,7 @@ export class ClassSyncer {
 
         if (!studentId) {
           // Build deterministic identity from normalized student name (order-independent across sync runs)
-          const normSlug = fullName
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[đĐ]/g, "d")
-            .toUpperCase()
-            .replace(/[^A-Z0-9]+/g, "_")
-            .replace(/^_+|_+$/g, "");
+          const normSlug = toVietnameseUpperSlug(fullName);
           if (!normSlug) {
             throw new Error(
               `Không thể xác định định danh cho dòng học viên thứ ${globalRowIndex} của lớp ${classId}.`

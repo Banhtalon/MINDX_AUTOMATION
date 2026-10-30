@@ -1,6 +1,8 @@
 import { getGeminiModel } from "./client";
 import { sessionFeedbackRepo, studentRepo, type SessionFeedbackRecord } from "../db/sqlite";
 import { getCoursesSyllabus, getQuickTags } from "../db/json-config";
+import { createRosterNameScrubber as _createRosterNameScrubber } from "../ai/pii-anonymizer";
+const sharedCreateRosterNameScrubber = typeof _createRosterNameScrubber === "function" ? _createRosterNameScrubber : (console as any).__mindxPiiAnonymizer?.createRosterNameScrubber;
 
 export interface StudentCommentInput {
   studentId: string;
@@ -323,93 +325,35 @@ export class CommentGenerator {
       return results;
     }
 
-    // Step 2: Build anonymized payload for Gemini API (strip real student names from teacherNote & quickTags)
-    const stripAccents = (s: string) =>
-      s
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/đ/g, "d")
-        .replace(/Đ/g, "D");
-
+    // Step 2: Build anonymized payload for Gemini API via shared pii-anonymizer (S7.3)
     const dbClassStudents =
       typeof studentRepo?.findByClass === "function"
         ? studentRepo.findByClass(normalizedClassId, false) || []
         : [];
-
-    const nameReplacements: { variant: string; token: string }[] = [];
-    const addNameVariants = (rawFullName: string, token: string) => {
-      const cleanName = String(rawFullName || "").replace(/\s+/g, " ").trim();
-      if (!cleanName) return;
-      const parts = cleanName.split(" ").filter(Boolean);
-      const variants = new Set<string>([cleanName, stripAccents(cleanName)]);
-      if (parts.length >= 2) {
-        const lastTwo = parts.slice(-2).join(" ");
-        variants.add(lastTwo);
-        variants.add(stripAccents(lastTwo));
-      }
-      const givenName = parts[parts.length - 1];
-      if (givenName && givenName.length >= 2) {
-        variants.add(givenName);
-        variants.add(stripAccents(givenName));
-      }
-      for (const v of variants) {
-        if (v.length >= 2) {
-          nameReplacements.push({ variant: v, token });
-        }
-      }
-    };
-
+    const rosterEntries: { fullName: string; token: string }[] = [];
+    const peerNames: string[] = [];
     for (const c of validCandidates) {
-      addNameVariants(c.input.fullName, c.anonymousId);
-      const dbSt = dbClassStudents.find((s) => s.studentId === c.input.studentId);
+      rosterEntries.push({ fullName: c.input.fullName, token: c.anonymousId });
+      const dbSt = dbClassStudents.find((st) => st.studentId === c.input.studentId);
       if (dbSt && dbSt.fullName) {
-        addNameVariants(dbSt.fullName, c.anonymousId);
+        rosterEntries.push({ fullName: dbSt.fullName, token: c.anonymousId });
       }
     }
-    for (const s of students) {
-      if (!validCandidates.some((c) => c.input.studentId === s.studentId)) {
-        addNameVariants(s.fullName, "STUDENT_PEER");
+    for (const st of students) {
+      if (!validCandidates.some((c) => c.input.studentId === st.studentId)) {
+        peerNames.push(st.fullName);
       }
     }
     for (const dbSt of dbClassStudents) {
       if (!validCandidates.some((c) => c.input.studentId === dbSt.studentId)) {
-        addNameVariants(dbSt.fullName, "STUDENT_PEER");
+        peerNames.push(dbSt.fullName);
       }
     }
-
-    // Sort longest variants first so full names replace before short given names
-    nameReplacements.sort((a, b) => b.variant.length - a.variant.length);
-
-    const scrubStudentNames = (rawText: string, selfName: string, selfAnonId: string): string => {
-      let text = String(rawText || "");
-      if (!text) return "";
-      const localList: { variant: string; token: string }[] = [];
-      const cleanSelf = String(selfName || "").replace(/\s+/g, " ").trim();
-      if (cleanSelf) {
-        const parts = cleanSelf.split(" ").filter(Boolean);
-        localList.push({ variant: cleanSelf, token: selfAnonId });
-        localList.push({ variant: stripAccents(cleanSelf), token: selfAnonId });
-        if (parts.length >= 2) {
-          const lastTwo = parts.slice(-2).join(" ");
-          localList.push({ variant: lastTwo, token: selfAnonId });
-          localList.push({ variant: stripAccents(lastTwo), token: selfAnonId });
-        }
-        const given = parts[parts.length - 1];
-        if (given && given.length >= 2) {
-          localList.push({ variant: given, token: selfAnonId });
-          localList.push({ variant: stripAccents(given), token: selfAnonId });
-        }
-      }
-      const combined = [...localList, ...nameReplacements].sort(
-        (a, b) => b.variant.length - a.variant.length
-      );
-      for (const { variant, token } of combined) {
-        const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const re = new RegExp(`(?<![\\p{L}\\p{N}_])${escaped}(?![\\p{L}\\p{N}_])`, "giu");
-        text = text.replace(re, token);
-      }
-      return text;
-    };
+    const scrubStudentNames = sharedCreateRosterNameScrubber({
+      rosterEntries,
+      peerNames,
+      peerToken: "STUDENT_PEER",
+    });
 
     const isRoboticsClass = /(?:rob|pre[bai]|arm[bai]|semi[bai]|vex)/i.test(normalizedClassCode);
 

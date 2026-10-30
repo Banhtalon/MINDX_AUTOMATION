@@ -1,33 +1,9 @@
 import { NextResponse } from "next/server";
 import {
-  parseSession14CompetencyScores,
-  parseSession14DemoScores,
+  buildEnrichedSession14EvalList,
   session14EvalRepo,
-  studentRepo,
 } from "@/lib/db/sqlite";
 import { validateLocalRequest } from "@/lib/security/local-guard";
-
-export function buildEnrichedSession14EvalList(classId: string) {
-  const normalizedClassId = String(classId || "").trim().toUpperCase();
-  const students = studentRepo.findByClass(normalizedClassId, false);
-  return students.map((stu) => {
-    const rec = session14EvalRepo.getOrInit(normalizedClassId, stu.studentId);
-    let quickTags: string[] = [];
-    try {
-      quickTags = JSON.parse(rec.quickTagsJson || "[]");
-    } catch {
-      quickTags = [];
-    }
-    return {
-      ...rec,
-      fullName: stu.fullName,
-      competencyScores: parseSession14CompetencyScores(rec.competencyJson),
-      demoScores: parseSession14DemoScores(rec.demoScoresJson, normalizedClassId),
-      awardRanking: rec.awardRanking || "",
-      quickTags,
-    };
-  });
-}
 
 export async function GET(req: Request) {
   const guard = validateLocalRequest(req);

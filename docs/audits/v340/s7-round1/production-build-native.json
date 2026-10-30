@@ -1,0 +1,12 @@
+{
+  "command": "npx next build --webpack",
+  "exitCode": 0,
+  "seconds": 51.67,
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\build-native",
+  "environment": {
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\build-native",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\build-native\\data\\test.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\build-native\\data\\running_classes.json"
+  },
+  "adaptation": "Next and @next copied inside TEMP; no source/config changes, no skipped type checks"
+}

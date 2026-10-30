@@ -23,7 +23,11 @@ import {
   resolveTeachingBaseOrigin,
   runWithStopGuard,
 } from "../teaching/teaching-http-client";
-import { normalizeVietnameseName } from "../utils/vietnamese-match";
+import {
+  normalizeVietnameseName,
+  normalizeVietnameseNamePreserveTones,
+} from "../utils/vietnamese-match";
+export { normalizeVietnameseNamePreserveTones };
 import {
   parseStrictPositiveIntInput,
   type RemoteTeachingStudent,
@@ -102,15 +106,6 @@ export function parseStrictFiniteScore(raw: unknown): number | null {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
-}
-
-export function normalizeVietnameseNamePreserveTones(name: string): string {
-  if (!name) return "";
-  return String(name)
-    .normalize("NFC")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
 }
 
 function isRemoteStudentInactive(status: unknown): boolean {

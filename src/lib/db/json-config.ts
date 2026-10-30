@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { assertPathAllowed } from "../security/path-allowlist";
+import type { GradingCriterion, GradingRubric } from "../types";
+export type { GradingCriterion, GradingRubric };
 
 const CONFIG_DIR = path.resolve(process.cwd(), "data", "config");
 
@@ -94,24 +96,6 @@ export function findLessonInSyllabus(
 // ==========================================
 // 2. GRADING RUBRICS
 // ==========================================
-
-export interface GradingCriterion {
-  criterionId: string;
-  name: string;
-  maxPoints: number;
-  description: string;
-  expectedSnippetOrConcept: string;
-}
-
-export interface GradingRubric {
-  rubricId: string;
-  courseCode: string;
-  sessionNumber: number;
-  assignmentTitle: string;
-  assignmentPrompt: string;
-  maxTotalScore: number;
-  criteria: GradingCriterion[];
-}
 
 export function getGradingRubrics(): GradingRubric[] {
   return readJsonFile<GradingRubric[]>("grading_rubrics.json", []);

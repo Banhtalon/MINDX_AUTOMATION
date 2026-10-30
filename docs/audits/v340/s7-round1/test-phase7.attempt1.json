@@ -1,0 +1,12 @@
+{
+  "name": "test-phase7",
+  "command": "npx tsx scripts/test-phase7.ts",
+  "exitCode": 1,
+  "seconds": 1.71,
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-kgf8pwev\\test-phase7",
+  "environment": {
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-kgf8pwev\\test-phase7",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-kgf8pwev\\test-phase7\\data\\test.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-kgf8pwev\\test-phase7\\data\\running_classes.json"
+  }
+}

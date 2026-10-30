@@ -14,6 +14,7 @@ import path from "node:path";
 import AdmZip from "adm-zip";
 import type { Page, Response } from "playwright";
 import { config } from "../config";
+import { normalizeVietnameseName } from "../utils/vietnamese-match";
 import {
   assertClassHasSpckSession,
   classSessionRepo,
@@ -2564,15 +2565,7 @@ export class SpckUploader {
     let screenshotsUploadedCount = 0;
     let attachmentsUploadedCount = 0;
 
-    const normText = (s: string) =>
-      String(s || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[đĐ]/g, "d")
-        .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+    const normText = (s: string) => normalizeVietnameseName(String(s || ""));
 
     let saveMutationDispatched = false;
 

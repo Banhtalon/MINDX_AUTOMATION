@@ -9,12 +9,12 @@ import {
   type ScoreExportMode,
 } from "@/lib/report-card/export-cell-formatter";
 
-export const sanitizeSpreadsheetCell: (value: string | number) => string | number =
+const sanitizeSpreadsheetCell: (value: string | number) => string | number =
   typeof _sharedSanitizeSpreadsheetCell === "function"
     ? _sharedSanitizeSpreadsheetCell
     : (URL as any).__mindxExportHelpers?.sanitizeSpreadsheetCell;
 
-export const formatCellForExport: (
+const formatCellForExport: (
   cell?: StudentScoreCell,
   mode?: ScoreExportMode
 ) => string | number =

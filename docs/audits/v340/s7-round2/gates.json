@@ -1,0 +1,56 @@
+[
+  {
+    "name": "tsc",
+    "command": "npx tsc --noEmit --incremental false",
+    "exitCode": 0,
+    "seconds": 1.72,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7r2-audit-rcvesjt_",
+    "startedEpoch": 1793368081.240329,
+    "environment": {
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp",
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s7r2.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s7r2_rc.json"
+    }
+  },
+  {
+    "name": "test-streamline-v340-s7",
+    "command": "npx tsx scripts/test-streamline-v340-s7.ts",
+    "exitCode": 0,
+    "seconds": 2.2,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7r2-audit-rcvesjt_",
+    "startedEpoch": 1793368125.4854374,
+    "environment": {
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp",
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s7r2.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s7r2_rc.json"
+    },
+    "testSetup": "GEMINI_API_KEY=test-s7-dummy-key supplied before config import; network blocked",
+    "applicationAndTestSourcesUnmodified": true
+  },
+  {
+    "name": "adversarial-probe",
+    "command": "npx tsx docs/audits/v340/s7-round1/adversarial-probe.cjs",
+    "exitCode": 0,
+    "seconds": 2.31,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7r2-audit-rcvesjt_",
+    "startedEpoch": 1793368085.075376,
+    "environment": {
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp",
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s7r2.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s7r2_rc.json"
+    }
+  },
+  {
+    "name": "test-phase4-codex-repros",
+    "command": "npx tsx scripts/test-phase4-codex-repros.ts",
+    "exitCode": 0,
+    "seconds": 3.84,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7r2-audit-rcvesjt_",
+    "startedEpoch": 1793368087.3848052,
+    "environment": {
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp",
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s7r2.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx_codex_s7r2_rc.json"
+    }
+  }
+]

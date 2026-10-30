@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
+import { buildEnrichedSession14EvalList } from "@/lib/db/sqlite";
 import { Session14EvalUploader } from "@/lib/playwright/session14-eval-uploader";
 import { validateLocalRequest } from "@/lib/security/local-guard";
-import { buildEnrichedSession14EvalList } from "../route";
 
 export async function POST(req: Request) {
   const guard = validateLocalRequest(req);

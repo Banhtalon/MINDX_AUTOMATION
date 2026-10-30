@@ -3,6 +3,9 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { assertPathAllowed } from "../security/path-allowlist";
+import { normalizeVietnameseName as _normalizeVietnameseName, stripVietnameseDiacritics as _stripVietnameseDiacritics } from "../utils/vietnamese-match";
+const sharedStripDiacritics = typeof _stripVietnameseDiacritics === "function" ? _stripVietnameseDiacritics : (console as any).__mindxVietnameseMatch?.stripVietnameseDiacritics;
+const sharedNormViName = typeof _normalizeVietnameseName === "function" ? _normalizeVietnameseName : (console as any).__mindxVietnameseMatch?.normalizeVietnameseName;
 
 let dbInstance: Database.Database | null = null;
 
@@ -432,14 +435,7 @@ export const studentRepo = {
       .get(record.classId, record.studentId) as { fullName: string } | undefined;
 
     if (existing && /^STU_/i.test(record.studentId)) {
-      const norm = (s: string) =>
-        s
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[đĐ]/g, "d")
-          .toLowerCase()
-          .replace(/\s+/g, " ")
-          .trim();
+      const norm = (s: string) => sharedStripDiacritics(String(s || "")).replace(/\s+/g, " ").trim();
       if (norm(existing.fullName) !== norm(record.fullName)) {
         throw new Error(
           `[studentRepo] Chặn gán lại mã định danh tạm thời '${record.studentId}' của học viên '${existing.fullName}' sang học viên khác ('${record.fullName}') trong lớp ${record.classId}.`
@@ -1254,15 +1250,7 @@ export function isDefaultSpckProductTitle(
 ): boolean {
   const base = stripSpckSessionSuffix(title);
   if (!base) return true;
-  const norm = (s: string) =>
-    s
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[đĐ]/g, "d")
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+  const norm = (s: string) => sharedNormViName(String(s || ""));
   const normBase = norm(base);
   if (
     !normBase ||
@@ -6626,3 +6614,24 @@ export const reportCardRepo = {
 };
 
 
+export function buildEnrichedSession14EvalList(classId: string) {
+  const normalizedClassId = String(classId || "").trim().toUpperCase();
+  const students = studentRepo.findByClass(normalizedClassId, false);
+  return students.map((stu) => {
+    const rec = session14EvalRepo.getOrInit(normalizedClassId, stu.studentId);
+    let quickTags: string[] = [];
+    try {
+      quickTags = JSON.parse(rec.quickTagsJson || "[]");
+    } catch {
+      quickTags = [];
+    }
+    return {
+      ...rec,
+      fullName: stu.fullName,
+      competencyScores: parseSession14CompetencyScores(rec.competencyJson),
+      demoScores: parseSession14DemoScores(rec.demoScoresJson, normalizedClassId),
+      awardRanking: rec.awardRanking || "",
+      quickTags,
+    };
+  });
+}

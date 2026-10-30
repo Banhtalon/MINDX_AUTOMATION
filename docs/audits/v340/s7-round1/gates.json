@@ -1,0 +1,98 @@
+[
+  {
+    "name": "tsc",
+    "command": "npx tsc --noEmit --incremental false",
+    "exitCode": 0,
+    "seconds": 1.95,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\tsc",
+    "environment": {
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\tsc",
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\tsc\\data\\test.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\tsc\\data\\running_classes.json"
+    }
+  },
+  {
+    "name": "test-streamline-v340-s7",
+    "command": "npx tsx scripts/test-streamline-v340-s7.ts",
+    "exitCode": 0,
+    "seconds": 1.79,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-streamline-v340-s7",
+    "environment": {
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-streamline-v340-s7",
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-streamline-v340-s7\\data\\test.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-streamline-v340-s7\\data\\running_classes.json"
+    }
+  },
+  {
+    "name": "test-streamline-v340-s4",
+    "command": "npx tsx scripts/test-streamline-v340-s4.ts",
+    "exitCode": 0,
+    "seconds": 2.57,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-streamline-v340-s4",
+    "environment": {
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-streamline-v340-s4",
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-streamline-v340-s4\\data\\test.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-streamline-v340-s4\\data\\running_classes.json"
+    }
+  },
+  {
+    "name": "test-phase4-codex-repros",
+    "command": "npx tsx scripts/test-phase4-codex-repros.ts",
+    "exitCode": 0,
+    "seconds": 4.03,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-phase4-codex-repros",
+    "environment": {
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-phase4-codex-repros",
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-phase4-codex-repros\\data\\test.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-phase4-codex-repros\\data\\running_classes.json"
+    }
+  },
+  {
+    "name": "test-phase5",
+    "command": "npx tsx scripts/test-phase5.ts",
+    "exitCode": 0,
+    "seconds": 2.47,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-phase5",
+    "environment": {
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-phase5",
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-phase5\\data\\test.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-phase5\\data\\running_classes.json"
+    }
+  },
+  {
+    "name": "test-phase7",
+    "command": "npx tsx scripts/test-phase7.ts",
+    "exitCode": 0,
+    "seconds": 1.8,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-phase7",
+    "environment": {
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-phase7",
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-phase7\\data\\test.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-phase7\\data\\running_classes.json"
+    }
+  },
+  {
+    "name": "test-teaching-project-v320",
+    "command": "npx tsx scripts/test-teaching-project-v320.ts",
+    "exitCode": 0,
+    "seconds": 14.58,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-teaching-project-v320",
+    "environment": {
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-teaching-project-v320",
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-teaching-project-v320\\data\\test.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-teaching-project-v320\\data\\running_classes.json"
+    }
+  },
+  {
+    "name": "test-report-card-v330",
+    "command": "npx tsx scripts/test-report-card-v330.ts",
+    "exitCode": 0,
+    "seconds": 2.73,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-report-card-v330",
+    "environment": {
+      "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-report-card-v330",
+      "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-report-card-v330\\data\\test.db",
+      "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-s7-audit-5kut5_lz\\test-report-card-v330\\data\\running_classes.json"
+    }
+  }
+]

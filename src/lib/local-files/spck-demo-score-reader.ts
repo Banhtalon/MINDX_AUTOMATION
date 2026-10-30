@@ -28,6 +28,7 @@ import {
 } from "../db/sqlite";
 import { extractGoogleSheetId, getDemoSheetTitleForClass } from "../playwright/spck-demo-sheet";
 import { assertPathAllowed } from "../security/path-allowlist";
+import { normalizeVietnameseName } from "../utils/vietnamese-match";
 
 export interface StudentDemoScoreExtract {
   studentId: string;
@@ -58,17 +59,6 @@ function decodeXmlEntities(raw: string): string {
     .replace(/&amp;/g, "&")
     .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
     .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
-}
-
-function normalizeVietnameseName(raw: string): string {
-  return String(raw || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[đĐ]/g, "d")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 interface ParsedCell {

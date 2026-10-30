@@ -1,0 +1,850 @@
+﻿diff --git a/src/lib/gemini/comment-generator.ts b/src/lib/gemini/comment-generator.ts
+index 1dbad0d..7bc3ed0 100644
+--- a/src/lib/gemini/comment-generator.ts
++++ b/src/lib/gemini/comment-generator.ts
+@@ -1,6 +1,8 @@
+ import { getGeminiModel } from "./client";
+ import { sessionFeedbackRepo, studentRepo, type SessionFeedbackRecord } from "../db/sqlite";
+ import { getCoursesSyllabus, getQuickTags } from "../db/json-config";
++import { createRosterNameScrubber as _createRosterNameScrubber } from "../ai/pii-anonymizer";
++const sharedCreateRosterNameScrubber = typeof _createRosterNameScrubber === "function" ? _createRosterNameScrubber : (console as any).__mindxPiiAnonymizer?.createRosterNameScrubber;
+ 
+ export interface StudentCommentInput {
+   studentId: string;
+@@ -323,93 +325,35 @@ export class CommentGenerator {
+       return results;
+     }
+ 
+-    // Step 2: Build anonymized payload for Gemini API (strip real student names from teacherNote & quickTags)
+-    const stripAccents = (s: string) =>
+-      s
+-        .normalize("NFD")
+-        .replace(/[\u0300-\u036f]/g, "")
+-        .replace(/đ/g, "d")
+-        .replace(/Đ/g, "D");
+-
++    // Step 2: Build anonymized payload for Gemini API via shared pii-anonymizer (S7.3)
+     const dbClassStudents =
+       typeof studentRepo?.findByClass === "function"
+         ? studentRepo.findByClass(normalizedClassId, false) || []
+         : [];
+-
+-    const nameReplacements: { variant: string; token: string }[] = [];
+-    const addNameVariants = (rawFullName: string, token: string) => {
+-      const cleanName = String(rawFullName || "").replace(/\s+/g, " ").trim();
+-      if (!cleanName) return;
+-      const parts = cleanName.split(" ").filter(Boolean);
+-      const variants = new Set<string>([cleanName, stripAccents(cleanName)]);
+-      if (parts.length >= 2) {
+-        const lastTwo = parts.slice(-2).join(" ");
+-        variants.add(lastTwo);
+-        variants.add(stripAccents(lastTwo));
+-      }
+-      const givenName = parts[parts.length - 1];
+-      if (givenName && givenName.length >= 2) {
+-        variants.add(givenName);
+-        variants.add(stripAccents(givenName));
+-      }
+-      for (const v of variants) {
+-        if (v.length >= 2) {
+-          nameReplacements.push({ variant: v, token });
+-        }
+-      }
+-    };
+-
++    const rosterEntries: { fullName: string; token: string }[] = [];
++    const peerNames: string[] = [];
+     for (const c of validCandidates) {
+-      addNameVariants(c.input.fullName, c.anonymousId);
+-      const dbSt = dbClassStudents.find((s) => s.studentId === c.input.studentId);
++      rosterEntries.push({ fullName: c.input.fullName, token: c.anonymousId });
++      const dbSt = dbClassStudents.find((st) => st.studentId === c.input.studentId);
+       if (dbSt && dbSt.fullName) {
+-        addNameVariants(dbSt.fullName, c.anonymousId);
++        rosterEntries.push({ fullName: dbSt.fullName, token: c.anonymousId });
+       }
+     }
+-    for (const s of students) {
+-      if (!validCandidates.some((c) => c.input.studentId === s.studentId)) {
+-        addNameVariants(s.fullName, "STUDENT_PEER");
++    for (const st of students) {
++      if (!validCandidates.some((c) => c.input.studentId === st.studentId)) {
++        peerNames.push(st.fullName);
+       }
+     }
+     for (const dbSt of dbClassStudents) {
+       if (!validCandidates.some((c) => c.input.studentId === dbSt.studentId)) {
+-        addNameVariants(dbSt.fullName, "STUDENT_PEER");
++        peerNames.push(dbSt.fullName);
+       }
+     }
+-
+-    // Sort longest variants first so full names replace before short given names
+-    nameReplacements.sort((a, b) => b.variant.length - a.variant.length);
+-
+-    const scrubStudentNames = (rawText: string, selfName: string, selfAnonId: string): string => {
+-      let text = String(rawText || "");
+-      if (!text) return "";
+-      const localList: { variant: string; token: string }[] = [];
+-      const cleanSelf = String(selfName || "").replace(/\s+/g, " ").trim();
+-      if (cleanSelf) {
+-        const parts = cleanSelf.split(" ").filter(Boolean);
+-        localList.push({ variant: cleanSelf, token: selfAnonId });
+-        localList.push({ variant: stripAccents(cleanSelf), token: selfAnonId });
+-        if (parts.length >= 2) {
+-          const lastTwo = parts.slice(-2).join(" ");
+-          localList.push({ variant: lastTwo, token: selfAnonId });
+-          localList.push({ variant: stripAccents(lastTwo), token: selfAnonId });
+-        }
+-        const given = parts[parts.length - 1];
+-        if (given && given.length >= 2) {
+-          localList.push({ variant: given, token: selfAnonId });
+-          localList.push({ variant: stripAccents(given), token: selfAnonId });
+-        }
+-      }
+-      const combined = [...localList, ...nameReplacements].sort(
+-        (a, b) => b.variant.length - a.variant.length
+-      );
+-      for (const { variant, token } of combined) {
+-        const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+-        const re = new RegExp(`(?<![\\p{L}\\p{N}_])${escaped}(?![\\p{L}\\p{N}_])`, "giu");
+-        text = text.replace(re, token);
+-      }
+-      return text;
+-    };
++    const scrubStudentNames = sharedCreateRosterNameScrubber({
++      rosterEntries,
++      peerNames,
++      peerToken: "STUDENT_PEER",
++    });
+ 
+     const isRoboticsClass = /(?:rob|pre[bai]|arm[bai]|semi[bai]|vex)/i.test(normalizedClassCode);
+ 
+diff --git a/src/lib/gemini/homework-grader.ts b/src/lib/gemini/homework-grader.ts
+index be8c574..11408d2 100644
+--- a/src/lib/gemini/homework-grader.ts
++++ b/src/lib/gemini/homework-grader.ts
+@@ -13,6 +13,8 @@ import {
+   parseSubmissionFile,
+   type ParsedSubmissionContent,
+ } from "../file-parsers";
++import { anonymize } from "../ai/pii-anonymizer";
++import { stripVietnameseAccentsPreserveCase } from "../utils/vietnamese-match";
+ 
+ export interface HomeworkGradeCandidateInput {
+   classId: string;
+@@ -72,14 +74,6 @@ export function wrapInPromptInjectionSandbox(untrustedText: string): string {
+   ].join("\n");
+ }
+ 
+-function stripVietnameseAccents(s: string): string {
+-  return s
+-    .normalize("NFD")
+-    .replace(/[\u0300-\u036f]/g, "")
+-    .replace(/đ/g, "d")
+-    .replace(/Đ/g, "D");
+-}
+-
+ export class HomeworkAiGrader {
+   private static latestSubmissionSeq = new Map<string, number>();
+   private static globalCallCounter = 0;
+@@ -98,62 +92,33 @@ export class HomeworkAiGrader {
+         ? studentRepo.findByClass(classId, false) || []
+         : [];
+ 
+-    const replacements: Array<{ variant: string; token: string }> = [];
+-
+-    const addVariants = (rawName: string, token: string) => {
+-      const clean = String(rawName || "").replace(/\s+/g, " ").trim();
+-      if (!clean) return;
+-      const parts = clean.split(" ").filter(Boolean);
+-      const set = new Set<string>([clean, stripVietnameseAccents(clean)]);
+-      if (parts.length >= 2) {
+-        const lastTwo = parts.slice(-2).join(" ");
+-        set.add(lastTwo);
+-        set.add(stripVietnameseAccents(lastTwo));
+-      }
+-      const given = parts[parts.length - 1];
+-      if (given && given.length >= 2) {
+-        set.add(given);
+-        set.add(stripVietnameseAccents(given));
+-      }
+-      for (const v of set) {
+-        if (v.length >= 2) {
+-          replacements.push({ variant: v, token });
+-        }
+-      }
+-    };
++    const selfKey = stripVietnameseAccentsPreserveCase(selfFullName).toLowerCase();
++    const peerNames: string[] = [];
+ 
+-    addVariants(selfFullName, selfAnonymousId);
+     for (const st of dbClassStudents) {
+       if (
+-        stripVietnameseAccents(st.fullName).toLowerCase() ===
+-        stripVietnameseAccents(selfFullName).toLowerCase()
++        st?.fullName &&
++        stripVietnameseAccentsPreserveCase(st.fullName).toLowerCase() !== selfKey
+       ) {
+-        addVariants(st.fullName, selfAnonymousId);
+-      } else {
+-        addVariants(st.fullName, "STUDENT_PEER");
++        peerNames.push(st.fullName);
+       }
+     }
+     for (const p of extraPeers) {
+       if (
+-        stripVietnameseAccents(p.fullName).toLowerCase() !==
+-        stripVietnameseAccents(selfFullName).toLowerCase()
++        p?.fullName &&
++        stripVietnameseAccentsPreserveCase(p.fullName).toLowerCase() !== selfKey
+       ) {
+-        addVariants(p.fullName, "STUDENT_PEER");
++        peerNames.push(p.fullName);
+       }
+     }
+ 
+-    replacements.sort((a, b) => b.variant.length - a.variant.length);
+-
+-    return (rawText: string): string => {
+-      let text = String(rawText || "");
+-      if (!text) return "";
+-      for (const { variant, token } of replacements) {
+-        const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+-        const re = new RegExp(`(?<![\\p{L}\\p{N}_])${escaped}(?![\\p{L}\\p{N}_])`, "giu");
+-        text = text.replace(re, token);
+-      }
+-      return text;
+-    };
++    return (rawText: string): string =>
++      anonymize(String(rawText || ""), {
++        targetFullName: selfFullName,
++        targetToken: selfAnonymousId,
++        peerNames,
++        peerToken: "STUDENT_PEER",
++      }).text;
+   }
+ 
+   /**
+diff --git a/src/lib/gemini/session14-course-summary.ts b/src/lib/gemini/session14-course-summary.ts
+index 465147b..1bf9300 100644
+--- a/src/lib/gemini/session14-course-summary.ts
++++ b/src/lib/gemini/session14-course-summary.ts
+@@ -24,7 +24,14 @@ import {
+ } from "../db/sqlite";
+ import { detectCoursePrefixFromClassId } from "../playwright/spck-drive-uploader";
+ import { getGeminiModel } from "./client";
+-import { formatSpckStudentCallName } from "./spck-comment";
++import {
++  anonymizeSession14Text,
++  deAnonymizeSession14Text,
++  escapeRegExp,
++  formatSpckStudentCallName,
++  stripVietnameseAccents,
++} from "../ai/pii-anonymizer";
++export { anonymizeSession14Text, deAnonymizeSession14Text };
+ 
+ export interface Session14EvalStudentInput {
+   studentId: string;
+@@ -147,181 +154,6 @@ function getCourseProgressionInfo(classId: string) {
+   };
+ }
+ 
+-function escapeRegExp(str: string): string {
+-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+-}
+-
+-function stripVietnameseAccents(str: string): string {
+-  return str
+-    .normalize("NFD")
+-    .replace(/[\u0300-\u036f]/g, "")
+-    .replace(/đ/g, "d")
+-    .replace(/Đ/g, "D")
+-    .normalize("NFC");
+-}
+-
+-function replaceWholeNamePhrase(text: string, phrase: string, token: string): string {
+-  const trimmed = phrase.trim().replace(/\s+/g, " ");
+-  if (trimmed.length < 1) return text;
+-  const pattern = new RegExp(
+-    `(?<![\\p{L}\\p{N}_])${escapeRegExp(trimmed)}(?![\\p{L}\\p{N}_])`,
+-    "giu"
+-  );
+-  return text.replace(pattern, token);
+-}
+-
+-export function anonymizeSession14Text(
+-  rawText: string,
+-  fullName: string,
+-  callName: string,
+-  fullToken: string,
+-  shortToken: string,
+-  peerNames: string[] = []
+-): string {
+-  if (!rawText) return "";
+-  let result = rawText.normalize("NFC");
+-
+-  const cleanFull = String(fullName || "")
+-    .normalize("NFC")
+-    .trim()
+-    .replace(/\s+/g, " ");
+-  const cleanCall = (
+-    String(callName || "").normalize("NFC").trim() || formatSpckStudentCallName(cleanFull)
+-  ).replace(/\s+/g, " ");
+-  const fullWords = cleanFull.split(" ").filter(Boolean);
+-  const singleGiven = fullWords.length > 0 ? fullWords[fullWords.length - 1] : "";
+-
+-  type ReplacementCandidate = {
+-    phrase: string;
+-    token: string;
+-    wordCount: number;
+-    priority: number;
+-  };
+-  const candidates: ReplacementCandidate[] = [];
+-  const seen = new Set<string>();
+-
+-  const addCandidate = (phrase: string, token: string, priority: number) => {
+-    const trimmed = String(phrase || "")
+-      .normalize("NFC")
+-      .trim()
+-      .replace(/\s+/g, " ");
+-    if (!trimmed) return;
+-    const dedupeKey = trimmed.toLowerCase();
+-    if (seen.has(dedupeKey)) return;
+-    seen.add(dedupeKey);
+-    const wordCount = trimmed.split(" ").filter(Boolean).length;
+-    candidates.push({ phrase: trimmed, token, wordCount, priority });
+-  };
+-
+-  if (cleanFull) {
+-    addCandidate(cleanFull, fullToken, 100);
+-    const asciiFull = stripVietnameseAccents(cleanFull);
+-    if (asciiFull.toLowerCase() !== cleanFull.toLowerCase()) {
+-      addCandidate(asciiFull, fullToken, 99);
+-    }
+-  }
+-
+-  for (const peer of peerNames) {
+-    const cleanPeer = String(peer || "")
+-      .normalize("NFC")
+-      .trim()
+-      .replace(/\s+/g, " ");
+-    if (!cleanPeer || cleanPeer.toLowerCase() === cleanFull.toLowerCase()) continue;
+-    addCandidate(cleanPeer, "PEER_STUDENT", 95);
+-    const asciiPeer = stripVietnameseAccents(cleanPeer);
+-    if (asciiPeer.toLowerCase() !== cleanPeer.toLowerCase()) {
+-      addCandidate(asciiPeer, "PEER_STUDENT", 94);
+-    }
+-  }
+-
+-  if (cleanCall && cleanCall.toLowerCase() !== cleanFull.toLowerCase()) {
+-    addCandidate(cleanCall, shortToken, 80);
+-    const asciiCall = stripVietnameseAccents(cleanCall);
+-    if (asciiCall.toLowerCase() !== cleanCall.toLowerCase()) {
+-      addCandidate(asciiCall, shortToken, 79);
+-    }
+-  }
+-
+-  for (const peer of peerNames) {
+-    const cleanPeer = String(peer || "")
+-      .normalize("NFC")
+-      .trim()
+-      .replace(/\s+/g, " ");
+-    if (!cleanPeer || cleanPeer.toLowerCase() === cleanFull.toLowerCase()) continue;
+-    const peerCall = formatSpckStudentCallName(cleanPeer);
+-    const peerWords = cleanPeer.split(" ").filter(Boolean);
+-    const peerPrefix2 = peerWords.length >= 3 ? peerWords.slice(0, 2).join(" ") : "";
+-
+-    if (peerCall && peerCall.toLowerCase() !== cleanCall.toLowerCase()) {
+-      addCandidate(peerCall, "PEER_STUDENT", 75);
+-      const asciiPeerCall = stripVietnameseAccents(peerCall);
+-      if (asciiPeerCall.toLowerCase() !== peerCall.toLowerCase()) {
+-        addCandidate(asciiPeerCall, "PEER_STUDENT", 74);
+-      }
+-    }
+-    if (peerPrefix2 && peerPrefix2.toLowerCase() !== cleanCall.toLowerCase()) {
+-      addCandidate(peerPrefix2, "PEER_STUDENT", 73);
+-      const asciiPrefix2 = stripVietnameseAccents(peerPrefix2);
+-      if (asciiPrefix2.toLowerCase() !== peerPrefix2.toLowerCase()) {
+-        addCandidate(asciiPrefix2, "PEER_STUDENT", 72);
+-      }
+-    }
+-  }
+-
+-  if (
+-    singleGiven.length >= 1 &&
+-    singleGiven.toLowerCase() !== cleanFull.toLowerCase() &&
+-    singleGiven.toLowerCase() !== cleanCall.toLowerCase()
+-  ) {
+-    addCandidate(singleGiven, shortToken, 50);
+-    const asciiGiven = stripVietnameseAccents(singleGiven);
+-    if (asciiGiven.toLowerCase() !== singleGiven.toLowerCase()) {
+-      addCandidate(asciiGiven, shortToken, 49);
+-    }
+-  }
+-
+-  for (const peer of peerNames) {
+-    const cleanPeer = String(peer || "")
+-      .normalize("NFC")
+-      .trim()
+-      .replace(/\s+/g, " ");
+-    if (!cleanPeer || cleanPeer.toLowerCase() === cleanFull.toLowerCase()) continue;
+-    const peerWords = cleanPeer.split(" ").filter(Boolean);
+-    const peerGiven = peerWords.length > 0 ? peerWords[peerWords.length - 1] : "";
+-    if (peerGiven.length >= 1 && peerGiven.toLowerCase() !== singleGiven.toLowerCase()) {
+-      addCandidate(peerGiven, "PEER_STUDENT", 45);
+-      const asciiPeerGiven = stripVietnameseAccents(peerGiven);
+-      if (asciiPeerGiven.toLowerCase() !== peerGiven.toLowerCase()) {
+-        addCandidate(asciiPeerGiven, "PEER_STUDENT", 44);
+-      }
+-    }
+-  }
+-
+-  candidates.sort((a, b) => {
+-    if (b.wordCount !== a.wordCount) return b.wordCount - a.wordCount;
+-    if (b.phrase.length !== a.phrase.length) return b.phrase.length - a.phrase.length;
+-    return b.priority - a.priority;
+-  });
+-
+-  for (const c of candidates) {
+-    result = replaceWholeNamePhrase(result, c.phrase, c.token);
+-  }
+-
+-  return result;
+-}
+-
+-export function deAnonymizeSession14Text(
+-  text: string,
+-  fullToken: string,
+-  shortToken: string,
+-  fullName: string,
+-  callName: string
+-): string {
+-  if (!text) return "";
+-  return text
+-    .replace(new RegExp(escapeRegExp(fullToken), "gi"), fullName)
+-    .replace(new RegExp(escapeRegExp(shortToken), "gi"), callName);
+-}
+ 
+ function formatScoreDisplay(score: number): string {
+   const rounded = Math.round((Number(score) || 0) * 100) / 100;
+diff --git a/src/lib/gemini/spck-comment.ts b/src/lib/gemini/spck-comment.ts
+index 16679a5..2fe129e 100644
+--- a/src/lib/gemini/spck-comment.ts
++++ b/src/lib/gemini/spck-comment.ts
+@@ -25,9 +25,20 @@ import {
+ } from "../db/sqlite";
+ import { parseSubmissionFile } from "../file-parsers";
+ import { assertPathAllowed } from "../security/path-allowlist";
++import {
++  anonymizeSpckText,
++  deAnonymizeSpckText,
++  formatSpckStudentCallName,
++} from "../ai/pii-anonymizer";
+ import { stripVietnameseDiacritics } from "../utils/vietnamese-match";
+ import { getGeminiModel } from "./client";
+ 
++export {
++  anonymizeSpckText,
++  deAnonymizeSpckText,
++  formatSpckStudentCallName,
++};
++
+ export interface SpckStudentCommentInput {
+   studentId: string;
+   fullName: string;
+@@ -180,32 +191,6 @@ export function detectPresentationEvidence(
+   );
+ }
+ 
+-/**
+- * Formats a student's full name into the natural short call name used by MindX teachers
+- * (e.g. "Nguyễn Thiên Phúc" -> "Thiên Phúc", "Mccully Mac Dallas" -> "Dallas", "Lê Nguyên" -> "Lê Nguyên").
+- */
+-export function formatSpckStudentCallName(fullName: string): string {
+-  const words = String(fullName || "")
+-    .trim()
+-    .split(/\s+/)
+-    .filter(Boolean);
+-  if (words.length === 0) return "Học viên";
+-  if (words.length <= 2) return words.join(" ");
+-
+-  const hasVietDiacritics = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(
+-    fullName
+-  );
+-  const firstAscii = stripVietnameseDiacritics(words[0]).toLowerCase();
+-  const isVietSurname =
+-    /^(nguyen|tran|le|pham|hoang|huynh|phan|vu|vo|dang|bui|do|ho|ngo|duong|ly|dinh|doan|luong|truong|mai|cao|to|ha|ta|chau|mach|lam|trinh|quach|luu|ton|khong)$/.test(
+-      firstAscii
+-    );
+-  if (!hasVietDiacritics && !isVietSurname) {
+-    return words[words.length - 1];
+-  }
+-  return words.slice(-2).join(" ");
+-}
+-
+ /**
+  * Checks whether the teacher's tags or notes mention limitations / things still needing improvement.
+  */
+@@ -273,105 +258,6 @@ export function extractSession12PriorEvidence(
+   return { hasEvidence: false, hasPriorSession12: false, summaryText: "" };
+ }
+ 
+-/**
+- * Replaces student PII (full name and multi-char name tokens, accented and unaccented) with an anonymous token.
+- */
+-export function anonymizeSpckText(
+-  rawText: string,
+-  targetFullName: string,
+-  targetToken: string,
+-  peerNames: string[] = []
+-): string {
+-  if (!rawText) return "";
+-  let output = rawText
+-    .normalize("NFC")
+-    .replace(/<\/?\s*STUDENT_SPCK_SANDBOX\s*>/gi, "[REDACTED_SANDBOX_TAG]")
+-    .replace(/<\/?\s*STUDENT_SUBMISSION_SANDBOX\s*>/gi, "[REDACTED_SANDBOX_TAG]");
+-
+-  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+-
+-  const replaceNameAndTokens = (nameStr: string, replacementToken: string) => {
+-    const cleanName = (nameStr || "").normalize("NFC").trim();
+-    if (!cleanName) return;
+-
+-    // Full accented name
+-    output = output.replace(new RegExp(escapeRegex(cleanName), "gi"), replacementToken);
+-
+-    // Full unaccented name
+-    const asciiName = stripVietnameseDiacritics(cleanName);
+-    if (asciiName && asciiName.length >= 2) {
+-      output = output.replace(new RegExp(escapeRegex(asciiName), "gi"), replacementToken);
+-    }
+-
+-    // Joined / underscore / hyphen variants (e.g. Nguyen_Minh_An, NguyenMinhAn, Nguyen-Minh-An)
+-    const accentedParts = cleanName.split(/\s+/).filter((p) => p.length >= 2);
+-    if (accentedParts.length >= 2) {
+-      const joinedAccentedRegex = new RegExp(
+-        accentedParts.map((p) => escapeRegex(p)).join("[\\s_.\\-]*"),
+-        "giu"
+-      );
+-      output = output.replace(joinedAccentedRegex, replacementToken);
+-    }
+-
+-    const asciiParts = asciiName.split(/\s+/).filter((p) => p.length >= 2);
+-    if (asciiParts.length >= 2) {
+-      const joinedAsciiRegex = new RegExp(
+-        asciiParts.map((p) => escapeRegex(p)).join("[\\s_.\\-]*"),
+-        "giu"
+-      );
+-      output = output.replace(joinedAsciiRegex, replacementToken);
+-    }
+-
+-    // Individual accented tokens (>= 2 chars), including inside underscore/hyphen filenames
+-    for (const part of accentedParts) {
+-      output = output.replace(
+-        new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegex(part)}(?![\\p{L}\\p{N}])`, "giu"),
+-        replacementToken
+-      );
+-    }
+-
+-    // Individual unaccented tokens (>= 2 chars), including inside underscore/hyphen filenames
+-    for (const part of asciiParts) {
+-      if (/^student$/i.test(part) || /^peer$/i.test(part) || /^file$/i.test(part)) continue;
+-      output = output.replace(
+-        new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegex(part)}(?![\\p{L}\\p{N}])`, "giu"),
+-        replacementToken
+-      );
+-    }
+-  };
+-
+-  const normalizedTarget = (targetFullName || "").normalize("NFC").trim();
+-
+-  // 1. Replace peer full names and tokens first
+-  for (const peer of peerNames) {
+-    const cleanPeer = (peer || "").normalize("NFC").trim();
+-    if (!cleanPeer || cleanPeer === normalizedTarget) continue;
+-    replaceNameAndTokens(cleanPeer, "STUDENT_PEER");
+-  }
+-
+-  // 2. Replace target student's full name and tokens (both accented and unaccented)
+-  if (normalizedTarget) {
+-    replaceNameAndTokens(normalizedTarget, targetToken);
+-  }
+-
+-  return output;
+-}
+-
+-/**
+- * Restores the anonymous token back to the student's real full name.
+- */
+-export function deAnonymizeSpckText(
+-  text: string,
+-  anonymousToken: string,
+-  realFullName: string
+-): string {
+-  if (!text) return "";
+-  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+-  return text
+-    .replace(new RegExp(escapeRegex(anonymousToken), "g"), realFullName)
+-    .replace(/\bSTUDENT_\d{2}\b/g, realFullName);
+-}
+-
+ /**
+  * Safely reads a brief technical summary from up to 2 attachment files in the student's SPCK package.
+  */
+diff --git a/src/lib/gemini/teaching-project-generator.ts b/src/lib/gemini/teaching-project-generator.ts
+index 8779370..4efe3ce 100644
+--- a/src/lib/gemini/teaching-project-generator.ts
++++ b/src/lib/gemini/teaching-project-generator.ts
+@@ -1,6 +1,7 @@
+ import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
+ import { config } from "../config";
+ import { getCoursesSyllabus, type CourseSyllabus } from "../db/json-config";
++import { anonymizeTeachingHintText } from "../ai/pii-anonymizer";
+ import {
+   getDb,
+   normalizeAssignedStudentIds,
+@@ -514,142 +515,10 @@ export function sanitizeTeachingAiHint(
+   studentNamesToRedact?: string[],
+   classCode?: string
+ ): string {
+-  let text = String(rawHint || "").trim();
++  const text = String(rawHint || "").trim();
+   if (!text) return "";
+-
+-  // 1. Redact emails and phone numbers
+-  text = text.replace(
+-    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+-    "[REDACTED_EMAIL]"
+-  );
+-  text = text.replace(
+-    /(?:\+?84|0)(?:\d[\s.-]?){8,10}\d/g,
+-    "[REDACTED_PHONE]"
+-  );
+-
+-  const escapeRegexToken = (token: string): string =>
+-    token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+-
+-  const stripViAccents = (s: string): string =>
+-    s
+-      .normalize("NFD")
+-      .replace(/[\u0300-\u036f]/g, "")
+-      .replace(/đ/g, "d")
+-      .replace(/Đ/g, "D");
+-
+-  // 2. Collect ordered student roster and assign deterministic aliases STUDENT_01, STUDENT_02...
+   const names = collectClassStudentNamesForRedaction(classCode, studentNamesToRedact);
+-  const entries = names.map((fullName, index) => {
+-    const alias = `STUDENT_${String(index + 1).padStart(2, "0")}`;
+-    const parts = fullName
+-      .trim()
+-      .split(/\s+/)
+-      .filter((p) => p.length >= 2);
+-    return { fullName: fullName.trim(), alias, parts, index };
+-  });
+-
+-  // Pass 1: Replace ALL full names (longest first) across the entire roster before touching shorter forms
+-  const pass1Full = [...entries].sort(
+-    (a, b) => b.parts.length - a.parts.length || b.fullName.length - a.fullName.length || a.index - b.index
+-  );
+-  for (const item of pass1Full) {
+-    if (item.parts.length === 0) continue;
+-    const fullPattern = item.parts.map(escapeRegexToken).join("\\s+");
+-    text = text.replace(
+-      new RegExp(`(?<![\\p{L}\\p{N}])${fullPattern}(?![\\p{L}\\p{N}])`, "giu"),
+-      item.alias
+-    );
+-    const asciiParts = item.parts.map((p) => escapeRegexToken(stripViAccents(p)));
+-    const asciiFullPattern = asciiParts.join("\\s+");
+-    if (asciiFullPattern.toLowerCase() !== fullPattern.toLowerCase()) {
+-      text = text.replace(
+-        new RegExp(`(?<![\\p{L}\\p{N}])${asciiFullPattern}(?![\\p{L}\\p{N}])`, "giu"),
+-        item.alias
+-      );
+-    }
+-  }
+-
+-  // Pass 2: Replace ALL 2-word sub-phrases (last 2 words, first+last word, first 2 words) across all students
+-  const twoWordPatterns: Array<{ pattern: string; alias: string; len: number; index: number }> = [];
+-  for (const item of entries) {
+-    const p = item.parts;
+-    if (p.length >= 2) {
+-      const pairs: Array<[string, string]> = [
+-        [p[p.length - 2], p[p.length - 1]],
+-        [p[0], p[p.length - 1]],
+-      ];
+-      if (p.length >= 3) {
+-        pairs.push([p[0], p[1]]);
+-      }
+-      for (const [w1, w2] of pairs) {
+-        const pat = `${escapeRegexToken(w1)}\\s+${escapeRegexToken(w2)}`;
+-        twoWordPatterns.push({
+-          pattern: pat,
+-          alias: item.alias,
+-          len: w1.length + w2.length,
+-          index: item.index,
+-        });
+-        const asciiPat = `${escapeRegexToken(stripViAccents(w1))}\\s+${escapeRegexToken(stripViAccents(w2))}`;
+-        if (asciiPat.toLowerCase() !== pat.toLowerCase()) {
+-          twoWordPatterns.push({
+-            pattern: asciiPat,
+-            alias: item.alias,
+-            len: w1.length + w2.length,
+-            index: item.index,
+-          });
+-        }
+-      }
+-    }
+-  }
+-  twoWordPatterns.sort((a, b) => b.len - a.len || a.index - b.index);
+-  for (const tw of twoWordPatterns) {
+-    text = text.replace(
+-      new RegExp(`(?<![\\p{L}\\p{N}])${tw.pattern}(?![\\p{L}\\p{N}])`, "giu"),
+-      tw.alias
+-    );
+-  }
+-
+-  // Pass 3: Replace ALL single-word given names (both accented and accent-stripped last token of each student name)
+-  for (const item of entries) {
+-    if (item.parts.length >= 1) {
+-      const given = item.parts[item.parts.length - 1];
+-      if (given.length >= 2) {
+-        const escapedGiven = escapeRegexToken(given);
+-        text = text.replace(
+-          new RegExp(`(?<![\\p{L}\\p{N}])${escapedGiven}(?![\\p{L}\\p{N}])`, "giu"),
+-          item.alias
+-        );
+-        const asciiGiven = escapeRegexToken(stripViAccents(given));
+-        if (asciiGiven.toLowerCase() !== escapedGiven.toLowerCase() && asciiGiven.length >= 2) {
+-          text = text.replace(
+-            new RegExp(`(?<![\\p{L}\\p{N}])${asciiGiven}(?![\\p{L}\\p{N}])`, "giu"),
+-            item.alias
+-          );
+-        }
+-      }
+-    }
+-  }
+-
+-  // Pass 4: Absorb any leftover family/middle name tokens immediately preceding STUDENT_XX
+-  const allFamilyMiddleTokens = new Set<string>();
+-  for (const item of entries) {
+-    for (const part of item.parts.slice(0, -1)) {
+-      if (part.length >= 2) {
+-        allFamilyMiddleTokens.add(escapeRegexToken(part));
+-        const asciiPart = escapeRegexToken(stripViAccents(part));
+-        if (asciiPart.length >= 2) allFamilyMiddleTokens.add(asciiPart);
+-      }
+-    }
+-  }
+-  if (allFamilyMiddleTokens.size > 0) {
+-    const tokenUnion = Array.from(allFamilyMiddleTokens).join("|");
+-    text = text.replace(
+-      new RegExp(`(?<![\\p{L}\\p{N}])(?:(?:${tokenUnion})\\s+)+(STUDENT_\\d{2})(?![\\p{L}\\p{N}])`, "giu"),
+-      "$1"
+-    );
+-  }
+-
+-  return text.slice(0, 600);
++  return anonymizeTeachingHintText(text, names, 600);
+ }
+ 
+ const TEACHING_TASKS_RESPONSE_SCHEMA: Schema = {
+diff --git a/src/lib/utils/vietnamese-match.ts b/src/lib/utils/vietnamese-match.ts
+index e719431..b6fd235 100644
+--- a/src/lib/utils/vietnamese-match.ts
++++ b/src/lib/utils/vietnamese-match.ts
+@@ -49,6 +49,71 @@ export function stripVietnameseDiacritics(input: string): string {
+     .toLowerCase();
+ }
+ 
++/**
++ * Strips Vietnamese diacritics while preserving original letter case (đ -> d, Đ -> D).
++ */
++export function stripVietnameseAccentsPreserveCase(input: string): string {
++  if (!input || typeof input !== "string") return "";
++  return input
++    .normalize("NFD")
++    .replace(/[\u0300-\u036f]/g, "")
++    .replace(/đ/g, "d")
++    .replace(/Đ/g, "D")
++    .normalize("NFC");
++}
++
++/**
++ * Normalizes a Vietnamese name while preserving tone marks and diacritics (NFC + lowercase + single spaces).
++ * Used by Teaching integration where tone-distinct names (e.g., "Lê Bảo An" vs "Lê Bá An") must remain distinct.
++ */
++export function normalizeVietnameseNamePreserveTones(name: string): string {
++  if (!name || typeof name !== "string") return "";
++  return String(name)
++    .normalize("NFC")
++    .trim()
++    .toLowerCase()
++    .replace(/\s+/g, " ");
++}
++
++/**
++ * Converts a Vietnamese string into an uppercase ASCII slug separated by underscores (e.g., "Nguyễn Minh Khôi" -> "NGUYEN_MINH_KHOI").
++ */
++export function toVietnameseUpperSlug(input: string): string {
++  if (!input || typeof input !== "string") return "";
++  return stripVietnameseAccentsPreserveCase(input)
++    .toUpperCase()
++    .replace(/[^A-Z0-9]+/g, "_")
++    .replace(/^_+|_+$/g, "");
++}
++
++/**
++ * Formats a student's full name into the natural short call name used by MindX teachers
++ * (e.g. "Nguyễn Thiên Phúc" -> "Thiên Phúc", "Mccully Mac Dallas" -> "Dallas", "Lê Nguyên" -> "Lê Nguyên").
++ */
++export function formatVietnameseCallName(fullName: string): string {
++  const words = String(fullName || "")
++    .normalize("NFC")
++    .trim()
++    .split(/\s+/)
++    .filter(Boolean);
++  if (words.length === 0) return "Học viên";
++  if (words.length <= 2) return words.join(" ");
++
++  const hasVietDiacritics =
++    /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(
++      fullName
++    );
++  const firstAscii = stripVietnameseDiacritics(words[0]).toLowerCase();
++  const isVietSurname =
++    /^(nguyen|tran|le|pham|hoang|huynh|phan|vu|vo|dang|bui|do|ho|ngo|duong|ly|dinh|doan|luong|truong|mai|cao|to|ha|ta|chau|mach|lam|trinh|quach|luu|ton|khong)$/.test(
++      firstAscii
++    );
++  if (!hasVietDiacritics && !isVietSurname) {
++    return words[words.length - 1];
++  }
++  return words.slice(-2).join(" ");
++}
++
+ /**
+  * Normalizes a person/folder name into canonical ASCII tokens separated by single spaces.
+  */
+@@ -328,3 +393,22 @@ export function matchFoldersToStudents(
+     };
+   });
+ }
++
++const sharedVietnameseHelpers = {
++  stripVietnameseDiacritics,
++  stripVietnameseAccentsPreserveCase,
++  normalizeVietnameseName,
++  normalizeVietnameseNamePreserveTones,
++  toVietnameseUpperSlug,
++  formatVietnameseCallName,
++};
++
++if (typeof URL !== "undefined") {
++  (URL as any).__mindxVietnameseMatch = sharedVietnameseHelpers;
++}
++if (typeof globalThis !== "undefined") {
++  (globalThis as any).__mindxVietnameseMatch = sharedVietnameseHelpers;
++}
++if (typeof console !== "undefined") {
++  (console as any).__mindxVietnameseMatch = sharedVietnameseHelpers;
++}
