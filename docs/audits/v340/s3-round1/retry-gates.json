@@ -1,0 +1,26 @@
+[
+  {
+    "name": "test-streamline-v340-s1",
+    "command": "npx --no-install tsx scripts/test-streamline-v340-s1.ts",
+    "exitCode": 0,
+    "ms": 1804
+  },
+  {
+    "name": "test-spck-v270",
+    "command": "npx --no-install tsx scripts/test-spck-v270.ts",
+    "exitCode": 1,
+    "ms": 2810
+  },
+  {
+    "name": "test-session14-v290",
+    "command": "npx --no-install tsx scripts/test-session14-v290.ts",
+    "exitCode": 1,
+    "ms": 1895
+  },
+  {
+    "name": "test-teaching-project-v320",
+    "command": "npx --no-install tsx scripts/test-teaching-project-v320.ts",
+    "exitCode": 0,
+    "ms": 13898
+  }
+]

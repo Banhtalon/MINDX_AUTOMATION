@@ -29,7 +29,7 @@ You are acting as the **Independent Quality & Safety Auditor (`gpt-6.1-sol` `hig
   - `MINDX_RUNNING_CLASSES_PATH=<temp_dir>/running_classes.json`
   - For suites that write config files (`test-phase7.ts`), run in a temporary workspace mirror or verify exact byte-for-byte restoration of `data/config/*.json`.
 - **DO NOT** make any live network requests to `lms.mindx.edu.vn` or `teachingmindx.top`.
-- Verify that the SHA-256 of `data/mindx_bot.db` (`06E698070D6D3F50D4CD749169E5D3B3993A80F2BB3B3CDE4EC74A149D2304DB`) and `data/running_classes.json` (`ADBEE2357251FCDC56DF07CAA866015BF1E75C7247439D7F7E2C2B2D78DE63E2`) remain 100% unchanged before and after your audit.
+- Verify that the SHA-256 of `data/mindx_bot.db` (`28574C5708D04162B18D65746EC8788C456274E206542255206CE5084E446ED7`) and `data/running_classes.json` (`ADBEE2357251FCDC56DF07CAA866015BF1E75C7247439D7F7E2C2B2D78DE63E2`) remain 100% unchanged before and after your audit.
 
 ## 4. Mandatory Verification Gates to Execute Freshly
 > **SANDBOX EXECUTION NOTE (WINDOWS `spawn EPERM` & TEMP CLEANUP):**

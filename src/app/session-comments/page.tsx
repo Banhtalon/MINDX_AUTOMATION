@@ -14,6 +14,15 @@ import {
   UserCheck,
 } from "lucide-react";
 import { ClassPicker } from "@/components/class-picker";
+import {
+  formatShortZaloName as sharedFormatShortZaloName,
+  addDaysToDdMmYyyy as sharedAddDaysToDdMmYyyy,
+  buildAutoZaloBroadcastText as sharedBuildAutoZaloBroadcastText,
+} from "@/lib/zalo/zalo-summary";
+import {
+  resolveCheckpointSessionsForClass as sharedResolveCheckpointSessionsForClass,
+  isCheckpointSession as sharedIsCheckpointSession,
+} from "@/lib/quick-tags";
 
 interface SessionItem {
   sessionId: string;
@@ -356,11 +365,13 @@ export default function SessionCommentsPage() {
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [isSavingLms, setIsSavingLms] = useState(false);
   const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
+  const [pendingUnknownConfirmCount, setPendingUnknownConfirmCount] = useState(0);
   const [statusMessage, setStatusMessage] = useState<{
     type: "info" | "success" | "error";
     text: string;
   } | null>(null);
 
+  const DRAFT_SAVE_DEBOUNCE_MS = 600;
   const latestLoadRequestIdRef = useRef(0);
   const latestAiRequestIdRef = useRef(0);
   const activeClassIdRef = useRef(initialSavedClass);
@@ -376,6 +387,63 @@ export default function SessionCommentsPage() {
     Record<string, { rowVer: number; fields: Record<string, { ver: number; cid: string; rev: number }> }>
   >({});
   const pendingSavePromisesRef = useRef<Record<string, Promise<boolean> | undefined>>({});
+  const activeSavePromisesByStudentRef = useRef<Record<string, Set<Promise<boolean>>>>({});
+  const studentFieldEditVersionRef = useRef<Record<string, Record<string, number>>>({});
+  const studentFieldConfirmedVersionRef = useRef<Record<string, Record<string, number>>>({});
+  const studentUnconfirmedBaseVerRef = useRef<Record<string, Record<string, number>>>({});
+  const debouncedTimersRef = useRef<Record<string, ReturnType<typeof setTimeout> | undefined>>({});
+  const debouncedPayloadsRef = useRef<
+    Record<string, { patch: Partial<StudentItem>; preEditSnapshot?: StudentItem } | undefined>
+  >({});
+  const debouncedResolversRef = useRef<Record<string, Array<(ok: boolean) => void> | undefined>>({});
+  const unsavedDraftPatchRef = useRef<
+    Record<
+      string,
+      | {
+          patch: Partial<StudentItem>;
+          fieldVersions: Record<string, number>;
+          fieldReasons?: Record<string, "error" | "stale">;
+          preEditSnapshot?: StudentItem;
+          reason: "error" | "stale";
+          errorText: string;
+          editVersion: number;
+        }
+      | undefined
+    >
+  >({});
+
+  const syncPendingSavePromiseRef = (studentId: string, fallbackPromise?: Promise<boolean>) => {
+    const activeSet = activeSavePromisesByStudentRef.current[studentId];
+    if (activeSet && activeSet.size > 0) {
+      const arr = Array.from(activeSet);
+      pendingSavePromisesRef.current[studentId] =
+        arr.length === 1
+          ? arr[0]
+          : Promise.all(arr).then((results) => results.every(Boolean));
+    } else if (fallbackPromise) {
+      pendingSavePromisesRef.current[studentId] = fallbackPromise;
+    } else {
+      delete pendingSavePromisesRef.current[studentId];
+    }
+  };
+
+  const clearAllDebouncedTimers = () => {
+    for (const key of Object.keys(debouncedTimersRef.current)) {
+      const t = debouncedTimersRef.current[key];
+      if (t !== undefined) clearTimeout(t);
+    }
+    debouncedTimersRef.current = {};
+    debouncedPayloadsRef.current = {};
+    for (const key of Object.keys(debouncedResolversRef.current)) {
+      const list = debouncedResolversRef.current[key] || [];
+      for (const resolve of list) {
+        try {
+          resolve(false);
+        } catch {}
+      }
+    }
+    debouncedResolversRef.current = {};
+  };
 
   // Restore last selected class from browser localStorage on initial mount (safe in SSR & VM sandbox)
   useEffect(() => {
@@ -422,6 +490,12 @@ export default function SessionCommentsPage() {
     }
     setIsZaloManuallyEdited(false);
     if (scopeChanged) {
+      clearAllDebouncedTimers();
+      unsavedDraftPatchRef.current = {};
+      activeSavePromisesByStudentRef.current = {};
+      studentFieldEditVersionRef.current = {};
+      studentFieldConfirmedVersionRef.current = {};
+      setPendingUnknownConfirmCount(0);
       setZaloBtvnPart2Text("");
       latestAiRequestIdRef.current++;
       setIsGeneratingAi(false);
@@ -441,10 +515,22 @@ export default function SessionCommentsPage() {
     loadClassData(normClass, normSess);
   }, [classId, selectedSessionId]);
 
-  const loadClassData = async (targetClassId: string, targetSessionId: string) => {
+  const loadClassData = async (
+    targetClassId: string,
+    targetSessionId: string,
+    options?: { preserveLocalUnsavedEdits?: boolean }
+  ) => {
     const normalizedClassId = targetClassId.trim().toUpperCase();
     const normalizedSessionId = targetSessionId.trim();
     const requestId = ++latestLoadRequestIdRef.current;
+    if (!options?.preserveLocalUnsavedEdits) {
+      unsavedDraftPatchRef.current = {};
+      studentFieldEditVersionRef.current = {};
+      studentFieldConfirmedVersionRef.current = {};
+    }
+    const editVersionsAtStart = new Map<string, number>(
+      Object.entries(studentEditVersionRef.current).map(([k, v]) => [k, Number(v || 0)])
+    );
     try {
       const res = await fetch(
         `/api/session-comments/list?classId=${encodeURIComponent(normalizedClassId)}&sessionId=${encodeURIComponent(normalizedSessionId)}`
@@ -594,6 +680,29 @@ export default function SessionCommentsPage() {
             } else {
               delete studentEditVersionRef.current[`__qt_pending__${st.studentId}`];
             }
+            if (options?.preserveLocalUnsavedEdits) {
+              const hasActiveLocalEdit =
+                Boolean(debouncedPayloadsRef.current[st.studentId]) ||
+                Boolean(pendingSavePromisesRef.current[st.studentId]) ||
+                Boolean(unsavedDraftPatchRef.current[st.studentId]) ||
+                (studentEditVersionRef.current[st.studentId] || 0) !==
+                  (editVersionsAtStart.get(st.studentId) || 0);
+              if (hasActiveLocalEdit) {
+                const localStu = studentsRef.current.find(
+                  (item) =>
+                    item.studentId === st.studentId &&
+                    (!item.classId || item.classId.trim().toUpperCase() === effectiveClassId) &&
+                    (!item.sessionId || item.sessionId.trim() === effectiveSessionId)
+                );
+                if (localStu) {
+                  return {
+                    ...localStu,
+                    ...(unsavedDraftPatchRef.current[st.studentId]?.patch || {}),
+                    ...(debouncedPayloadsRef.current[st.studentId]?.patch || {}),
+                  };
+                }
+              }
+            }
             return {
               ...st,
               classId: effectiveClassId,
@@ -614,6 +723,42 @@ export default function SessionCommentsPage() {
             };
           });
 
+          if (options?.preserveLocalUnsavedEdits) {
+            for (const st of activeRawStudents) {
+              const sid = st.studentId;
+              const prevMeta = studentServerMetaRef.current[sid];
+              const nextMeta = nextServerMeta[sid];
+              const unsavedEntry = unsavedDraftPatchRef.current[sid];
+              const pendingEntry = debouncedPayloadsRef.current[sid];
+              const editVerMap = studentFieldEditVersionRef.current[sid] || {};
+              const confirmedVerMap = studentFieldConfirmedVersionRef.current[sid] || {};
+              const unconfirmedKeys = new Set<string>([
+                ...Object.keys(unsavedEntry?.patch || {}),
+                ...Object.keys(pendingEntry?.patch || {}),
+                ...Object.keys(editVerMap).filter(
+                  (k) => (editVerMap[k] || 0) > (confirmedVerMap[k] || 0)
+                ),
+              ]);
+              if (nextMeta && unconfirmedKeys.size > 0) {
+                const mergedFields = { ...nextMeta.fields };
+                for (const k of unconfirmedKeys) {
+                  if (k !== "status" && unsavedEntry?.fieldReasons?.[k] !== "stale") {
+                    if (prevMeta?.fields?.[k]) {
+                      mergedFields[k] = prevMeta.fields[k];
+                    } else {
+                      delete mergedFields[k];
+                    }
+                  }
+                }
+                nextServerMeta[sid] = {
+                  rowVer: nextMeta.rowVer,
+                  fields: mergedFields,
+                };
+              }
+            }
+          } else {
+            studentUnconfirmedBaseVerRef.current = {};
+          }
           loadedScopeKeyRef.current = `${effectiveClassId}::${effectiveSessionId}`;
           studentAttendanceVersionRef.current = {};
           studentServerMetaRef.current = nextServerMeta;
@@ -817,6 +962,9 @@ export default function SessionCommentsPage() {
   }, [selectedSessionId, sessions, classCode, syllabusList]);
 
   const formatShortZaloName = (fullName: string) => {
+    if (typeof sharedFormatShortZaloName === "function") {
+      return sharedFormatShortZaloName(fullName);
+    }
     const words = String(fullName || "")
       .trim()
       .split(/\s+/)
@@ -825,6 +973,9 @@ export default function SessionCommentsPage() {
   };
 
   const addDaysToDdMmYyyy = (dateStr?: string, daysToAdd = 7): string => {
+    if (typeof sharedAddDaysToDdMmYyyy === "function") {
+      return sharedAddDaysToDdMmYyyy(dateStr, daysToAdd);
+    }
     if (!dateStr) return "";
     const m = String(dateStr)
       .trim()
@@ -849,10 +1000,23 @@ export default function SessionCommentsPage() {
   };
 
   const buildAutoZaloBroadcastText = (part2Override?: string) => {
+    const activePart2 = part2Override !== undefined ? part2Override : zaloBtvnPart2Text;
+    if (typeof sharedBuildAutoZaloBroadcastText === "function") {
+      return sharedBuildAutoZaloBroadcastText({
+        classCode,
+        selectedSessionId,
+        sessions,
+        students,
+        currentTopic,
+        currentKeyKnowledge,
+        currentHomeworkBrief,
+        syllabusList,
+        part2Text: activePart2,
+      });
+    }
     const sess = sessions.find((s) => s.sessionId === selectedSessionId);
     const sessionNum = sess?.sessionNumber || 1;
     const sessionDate = sess?.date || sess?.sessionDate || "chưa xác nhận ngày học";
-
     const activeStudents = students.filter((s) => s.isActive !== false);
     const totalStudents = activeStudents.length;
     const hasUnconfirmedAttendance =
@@ -863,7 +1027,6 @@ export default function SessionCommentsPage() {
     ).length;
     const absentStudents = activeStudents.filter((s) => s.attendanceStatus === "ABSENT");
     const absentShortNames = absentStudents.map((s) => formatShortZaloName(s.fullName));
-
     const attendanceStr = hasUnconfirmedAttendance
       ? `${totalStudents > 0 ? totalStudents : "..."} (chưa xác nhận đầy đủ điểm danh) ổn định đầu giờ tốt.`
       : presentStudents === totalStudents
@@ -873,7 +1036,6 @@ export default function SessionCommentsPage() {
             ? absentShortNames.join(", ")
             : `${totalStudents - presentStudents} bạn`
         }) ổn định đầu giờ tốt.`;
-
     const nextSessionNum = sessionNum + 1;
     const nextSess = sessions.find((s) => s.sessionNumber === nextSessionNum);
     const upperCode = classCode.trim().toUpperCase();
@@ -892,20 +1054,13 @@ export default function SessionCommentsPage() {
       .replace(/^(?:BÀI|BUỔI)\s+\d+\s*:\s*/i, "")
       .trim()
       .toUpperCase();
-
     const rawNextDate = (nextSess?.date || nextSess?.sessionDate || "").trim();
     const nextDateWithWeekday = rawNextDate
       ? addDaysToDdMmYyyy(rawNextDate, 0) || `Ngày ${rawNextDate}`
       : addDaysToDdMmYyyy(sessionDate, 7);
-
-    const nextTimeLine = nextDateWithWeekday
-      ? nextDateWithWeekday
-      : "Theo lịch học cố định của lớp (chưa xác nhận ngày cụ thể)";
-    const deadlineLine = nextDateWithWeekday
-      ? nextDateWithWeekday
-      : "Trước buổi học kế tiếp";
-
-    // Format key knowledge with '- ' bullets (1 concise sentence per bullet)
+    const nextTimeLine =
+      nextDateWithWeekday || "Theo lịch học cố định của lớp (chưa xác nhận ngày cụ thể)";
+    const deadlineLine = nextDateWithWeekday || "Trước buổi học kế tiếp";
     const rawKnowledgeItems =
       currentKeyKnowledge.length > 0 ? currentKeyKnowledge : [currentTopic];
     const keyKnowledgeText = rawKnowledgeItems
@@ -914,8 +1069,6 @@ export default function SessionCommentsPage() {
         return /^[-•*]/.test(t) ? t.replace(/^[•*]\s*/, "- ") : `- ${t}`;
       })
       .join("\n");
-
-    // Course-specific key notes with '- ' bullets
     const isGameMakerCourse = /\b(GA|GB|GI)\d*/i.test(upperCode);
     const keyNotesText = isGameMakerCourse
       ? [
@@ -936,7 +1089,6 @@ export default function SessionCommentsPage() {
           "- Thực hiện kiểm thử từng chức năng của sản phẩm để đảm bảo chương trình vận hành ổn định.",
           "- Thực hiện phát triển thêm các tính năng mở rộng cho dự án.",
         ].join("\n");
-
     const defaultDeniseLines = [
       "+ 10 câu hỏi trắc nghiệm.",
       "+ 2 bài thực hành (làm theo yêu cầu đề bài).",
@@ -947,12 +1099,10 @@ export default function SessionCommentsPage() {
     const homeworkDetails = customHwTrimmed
       ? [...defaultDeniseLines, `+ ${customHwTrimmed}`].join("\n")
       : defaultDeniseLines.join("\n");
-
     const cleanTopicUpper = String(currentTopic || `Buổi ${sessionNum}`)
       .replace(/^(?:BÀI|BUỔI)\s+\d+\s*:\s*/i, "")
       .trim()
       .toUpperCase();
-
     const part1 = `@All Kính gửi quý phụ huynh học viên
 Em xin phép tổng kết sau buổi học số ${sessionNum}${sessionDate ? ` – ${sessionDate}` : ""}
 Mã lớp: ${upperCode}
@@ -975,8 +1125,6 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}
 Làm bài tập về nhà trên Denise bao gồm:
 ${homeworkDetails}
 ⏰ Hạn nộp: ${deadlineLine}`;
-
-    const activePart2 = part2Override !== undefined ? part2Override : zaloBtvnPart2Text;
     return activePart2 ? `${part1}\n\n${activePart2}` : part1;
   };
 
@@ -1101,9 +1249,306 @@ ${homeworkDetails}
     );
   };
 
-  // Handle Note Change with instant auto-save
-  const handleNoteChange = (studentId: string, note: string) => {
+  const flushPendingDraftSave = async (
+    studentId: string,
+    options?: { keepalive?: boolean }
+  ): Promise<boolean> => {
+    const timer = debouncedTimersRef.current[studentId];
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      delete debouncedTimersRef.current[studentId];
+    }
+    const pendingPayload = debouncedPayloadsRef.current[studentId];
+    const resolvers = debouncedResolversRef.current[studentId] || [];
+    if (pendingPayload) {
+      delete debouncedPayloadsRef.current[studentId];
+      delete debouncedResolversRef.current[studentId];
+      const priorUnsaved = unsavedDraftPatchRef.current[studentId];
+      let retryablePriorPatch: Partial<StudentItem> = {};
+      if (priorUnsaved) {
+        const retainedStalePatch: Partial<StudentItem> = {};
+        const retainedStaleVers: Record<string, number> = {};
+        const retainedStaleReasons: Record<string, "error" | "stale"> = {};
+        for (const k of Object.keys(priorUnsaved.patch)) {
+          if (k === "status") continue;
+          const val = (priorUnsaved.patch as any)[k];
+          if (val === undefined) continue;
+          const isStaleField =
+            priorUnsaved.fieldReasons?.[k] === "stale" ||
+            (!priorUnsaved.fieldReasons && priorUnsaved.reason === "stale");
+          if (isStaleField && (pendingPayload.patch as any)[k] === undefined) {
+            (retainedStalePatch as any)[k] = val;
+            retainedStaleVers[k] = priorUnsaved.fieldVersions?.[k] || priorUnsaved.editVersion;
+            retainedStaleReasons[k] = "stale";
+          } else {
+            (retryablePriorPatch as any)[k] = val;
+          }
+        }
+        const retainedKeys = Object.keys(retainedStalePatch);
+        if (retainedKeys.length > 0) {
+          retainedStalePatch.status = "DRAFT";
+          unsavedDraftPatchRef.current[studentId] = {
+            ...priorUnsaved,
+            patch: retainedStalePatch,
+            fieldVersions: retainedStaleVers,
+            fieldReasons: retainedStaleReasons,
+            reason: "stale",
+          };
+        } else {
+          delete unsavedDraftPatchRef.current[studentId];
+        }
+      }
+      const mergedPatch = { ...retryablePriorPatch, ...pendingPayload.patch };
+      const mergedSnapshot = priorUnsaved?.preEditSnapshot || pendingPayload.preEditSnapshot;
+      const ok = await saveDraftToServer(
+        studentId,
+        mergedPatch,
+        mergedSnapshot,
+        options
+      );
+      let allInflightOk = ok;
+      const remainingActive = activeSavePromisesByStudentRef.current[studentId];
+      if (remainingActive && remainingActive.size > 0) {
+        const activeResults = await Promise.all(Array.from(remainingActive));
+        if (!activeResults.every(Boolean)) {
+          allInflightOk = false;
+        }
+      }
+      if (unsavedDraftPatchRef.current[studentId]) {
+        allInflightOk = false;
+      }
+      for (const resolve of resolvers) {
+        try {
+          resolve(allInflightOk);
+        } catch {}
+      }
+      return allInflightOk;
+    }
+    const activeSet = activeSavePromisesByStudentRef.current[studentId];
+    if (activeSet && activeSet.size > 0) {
+      const activeResults = await Promise.all(Array.from(activeSet));
+      if (!activeResults.every(Boolean)) {
+        return false;
+      }
+    } else {
+      const inflight = pendingSavePromisesRef.current[studentId];
+      if (inflight) {
+        const inflightOk = await inflight;
+        if (!inflightOk) return false;
+      }
+    }
+    const unsaved = unsavedDraftPatchRef.current[studentId];
+    if (unsaved) {
+      const retryablePatch: Partial<StudentItem> = {};
+      const retainedStalePatch: Partial<StudentItem> = {};
+      const retainedStaleVers: Record<string, number> = {};
+      const retainedStaleReasons: Record<string, "error" | "stale"> = {};
+      for (const k of Object.keys(unsaved.patch)) {
+        if (k === "status") continue;
+        const val = (unsaved.patch as any)[k];
+        if (val === undefined) continue;
+        const isStaleField =
+          unsaved.fieldReasons?.[k] === "stale" ||
+          (!unsaved.fieldReasons && unsaved.reason === "stale");
+        if (isStaleField) {
+          (retainedStalePatch as any)[k] = val;
+          retainedStaleVers[k] = unsaved.fieldVersions?.[k] || unsaved.editVersion;
+          retainedStaleReasons[k] = "stale";
+        } else {
+          (retryablePatch as any)[k] = val;
+        }
+      }
+      const retryKeys = Object.keys(retryablePatch);
+      const staleKeys = Object.keys(retainedStalePatch);
+      if (retryKeys.length === 0) {
+        setStatusMessage({ type: "error", text: unsaved.errorText });
+        return false;
+      }
+      if (staleKeys.length > 0) {
+        retainedStalePatch.status = "DRAFT";
+        unsavedDraftPatchRef.current[studentId] = {
+          ...unsaved,
+          patch: retainedStalePatch,
+          fieldVersions: retainedStaleVers,
+          fieldReasons: retainedStaleReasons,
+          reason: "stale",
+        };
+      } else {
+        delete unsavedDraftPatchRef.current[studentId];
+      }
+      retryablePatch.status = "DRAFT";
+      const retryOk = await saveDraftToServer(
+        studentId,
+        retryablePatch,
+        unsaved.preEditSnapshot,
+        options
+      );
+      if (staleKeys.length > 0 || unsavedDraftPatchRef.current[studentId]) {
+        setStatusMessage({ type: "error", text: unsaved.errorText });
+        return false;
+      }
+      return retryOk;
+    }
+    return true;
+  };
+
+  const flushAllPendingDraftSaves = async (options?: {
+    keepalive?: boolean;
+  }): Promise<boolean> => {
+    const pendingIds = Array.from(
+      new Set([
+        ...Object.keys(debouncedPayloadsRef.current),
+        ...Object.keys(pendingSavePromisesRef.current),
+        ...Object.keys(activeSavePromisesByStudentRef.current),
+        ...Object.keys(unsavedDraftPatchRef.current),
+      ])
+    );
+    if (pendingIds.length === 0) return true;
+    const results = await Promise.all(
+      pendingIds.map((id) => flushPendingDraftSave(id, options))
+    );
+    return results.every(Boolean);
+  };
+
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+        const onBeforeUnload = (e?: any) => {
+          const hasPending =
+            Object.keys(debouncedPayloadsRef.current).length > 0 ||
+            Object.keys(pendingSavePromisesRef.current).length > 0 ||
+            Object.keys(activeSavePromisesByStudentRef.current).length > 0 ||
+            Object.keys(unsavedDraftPatchRef.current).length > 0;
+          if (hasPending) {
+            void flushAllPendingDraftSaves({ keepalive: true });
+            if (e && typeof e.preventDefault === "function") {
+              e.preventDefault();
+              e.returnValue = "";
+            }
+          }
+        };
+        window.addEventListener("beforeunload", onBeforeUnload);
+        return () => {
+          window.removeEventListener("beforeunload", onBeforeUnload);
+        };
+      }
+    } catch {}
+  }, [classId, selectedSessionId]);
+
+  const scheduleDebouncedDraftSave = (
+    studentId: string,
+    patch: Partial<StudentItem>,
+    preEditSnapshot?: StudentItem,
+    debounceMs?: number
+  ): Promise<boolean> => {
+    const curVer = studentEditVersionRef.current[studentId] || 0;
+    if (!studentFieldEditVersionRef.current[studentId]) {
+      studentFieldEditVersionRef.current[studentId] = {};
+    }
+    if (!studentUnconfirmedBaseVerRef.current[studentId]) {
+      studentUnconfirmedBaseVerRef.current[studentId] = {};
+    }
+    const curServerMeta = studentServerMetaRef.current[studentId];
+    for (const k of Object.keys(patch)) {
+      if (k !== "status" && (patch as any)[k] !== undefined) {
+        if (studentUnconfirmedBaseVerRef.current[studentId][k] === undefined) {
+          studentUnconfirmedBaseVerRef.current[studentId][k] =
+            curServerMeta?.fields?.[k]?.ver ?? 0;
+        }
+        studentFieldEditVersionRef.current[studentId][k] = Math.max(
+          studentFieldEditVersionRef.current[studentId][k] || 0,
+          curVer
+        );
+      }
+    }
+
+    const effectiveDelay =
+      typeof debounceMs === "number"
+        ? debounceMs
+        : typeof (globalThis as any).__MINDX_DEBOUNCE_MS__ === "number"
+        ? Number((globalThis as any).__MINDX_DEBOUNCE_MS__)
+        : typeof window !== "undefined"
+        ? DRAFT_SAVE_DEBOUNCE_MS
+        : 0;
+
+    if (effectiveDelay <= 0) {
+      const existingTimer = debouncedTimersRef.current[studentId];
+      if (existingTimer !== undefined) {
+        clearTimeout(existingTimer);
+        delete debouncedTimersRef.current[studentId];
+      }
+      const prevPending = debouncedPayloadsRef.current[studentId];
+      delete debouncedPayloadsRef.current[studentId];
+      const mergedPatch = prevPending ? { ...prevPending.patch, ...patch } : patch;
+      const mergedSnapshot = prevPending?.preEditSnapshot || preEditSnapshot;
+      const prevResolvers = debouncedResolversRef.current[studentId] || [];
+      delete debouncedResolversRef.current[studentId];
+      return saveDraftToServer(studentId, mergedPatch, mergedSnapshot).then((ok) => {
+        for (const resolve of prevResolvers) {
+          try {
+            resolve(ok);
+          } catch {}
+        }
+        return ok;
+      });
+    }
+
+    const existingTimer = debouncedTimersRef.current[studentId];
+    if (existingTimer !== undefined) {
+      clearTimeout(existingTimer);
+    }
+
+    const prevPending = debouncedPayloadsRef.current[studentId];
+    debouncedPayloadsRef.current[studentId] = {
+      patch: prevPending ? { ...prevPending.patch, ...patch } : { ...patch },
+      preEditSnapshot: prevPending?.preEditSnapshot || preEditSnapshot,
+    };
+
+    const promise = new Promise<boolean>((resolve) => {
+      const list = debouncedResolversRef.current[studentId] || [];
+      list.push(resolve);
+      debouncedResolversRef.current[studentId] = list;
+    });
+
+    syncPendingSavePromiseRef(studentId, promise);
+    debouncedTimersRef.current[studentId] = setTimeout(() => {
+      void flushPendingDraftSave(studentId);
+    }, effectiveDelay);
+
+    return promise;
+  };
+
+  // Handle Note Change with debounced auto-save (600ms + flush on blur/beforeunload)
+  const handleNoteChange = (
+    studentId: string,
+    note: string,
+    options?: { debounceMs?: number; immediate?: boolean }
+  ) => {
     studentEditVersionRef.current[studentId] = ++editSequenceRef.current;
+    const existingUnsaved = unsavedDraftPatchRef.current[studentId];
+    if (existingUnsaved) {
+      const nextPatch = { ...existingUnsaved.patch };
+      const nextFieldVers = { ...(existingUnsaved.fieldVersions || {}) };
+      const nextFieldReasons = { ...(existingUnsaved.fieldReasons || {}) };
+      delete nextPatch.teacherNote;
+      delete nextFieldVers.teacherNote;
+      delete nextFieldReasons.teacherNote;
+      const remainingKeys = Object.keys(nextPatch).filter(
+        (k) => k !== "status" && (nextPatch as any)[k] !== undefined
+      );
+      if (remainingKeys.length === 0) {
+        delete unsavedDraftPatchRef.current[studentId];
+      } else {
+        const hasRemainingStale = remainingKeys.some((k) => nextFieldReasons[k] === "stale");
+        unsavedDraftPatchRef.current[studentId] = {
+          ...existingUnsaved,
+          patch: nextPatch,
+          fieldVersions: nextFieldVers,
+          fieldReasons: nextFieldReasons,
+          reason: hasRemainingStale ? "stale" : "error",
+        };
+      }
+    }
     const target = studentsRef.current.find((s) => s.studentId === studentId);
     const preEditSnapshot = target
       ? { ...target, quickTags: Array.isArray(target.quickTags) ? [...target.quickTags] : [] }
@@ -1126,7 +1571,7 @@ ${homeworkDetails}
         };
       })
     );
-    saveDraftToServer(
+    void scheduleDebouncedDraftSave(
       studentId,
       {
         teacherNote: note,
@@ -1137,7 +1582,8 @@ ${homeworkDetails}
           ? { quickTags: target.quickTags }
           : {}),
       },
-      preEditSnapshot
+      preEditSnapshot,
+      options?.immediate ? 0 : options?.debounceMs
     );
   };
 
@@ -1191,13 +1637,42 @@ ${homeworkDetails}
     );
   };
 
-  // Handle text edit
+  // Handle text edit with debounced auto-save (600ms + flush on blur/beforeunload)
   const handleTextEdit = (
     studentId: string,
     field: "strengths" | "improvements" | "actionPlan" | "finalText",
-    value: string
+    value: string,
+    options?: { debounceMs?: number; immediate?: boolean }
   ) => {
     studentEditVersionRef.current[studentId] = ++editSequenceRef.current;
+    const existingUnsaved = unsavedDraftPatchRef.current[studentId];
+    if (existingUnsaved) {
+      const nextPatch = { ...existingUnsaved.patch };
+      const nextFieldVers = { ...(existingUnsaved.fieldVersions || {}) };
+      const nextFieldReasons = { ...(existingUnsaved.fieldReasons || {}) };
+      for (const tf of ["strengths", "improvements", "actionPlan", "finalText"] as const) {
+        if (nextFieldReasons[tf] === "stale") {
+          delete (nextPatch as any)[tf];
+          delete nextFieldVers[tf];
+          delete nextFieldReasons[tf];
+        }
+      }
+      const remainingKeys = Object.keys(nextPatch).filter(
+        (k) => k !== "status" && (nextPatch as any)[k] !== undefined
+      );
+      if (remainingKeys.length === 0) {
+        delete unsavedDraftPatchRef.current[studentId];
+      } else {
+        const hasRemainingStale = remainingKeys.some((k) => nextFieldReasons[k] === "stale");
+        unsavedDraftPatchRef.current[studentId] = {
+          ...existingUnsaved,
+          patch: nextPatch,
+          fieldVersions: nextFieldVers,
+          fieldReasons: nextFieldReasons,
+          reason: hasRemainingStale ? "stale" : "error",
+        };
+      }
+    }
     const target = studentsRef.current.find((s) => s.studentId === studentId);
     if (!target) return;
     const preEditSnapshot: StudentItem = {
@@ -1205,16 +1680,18 @@ ${homeworkDetails}
       quickTags: Array.isArray(target.quickTags) ? [...target.quickTags] : [],
     };
     const updated: StudentItem = { ...target, [field]: value };
-    if (field !== "finalText") {
-      updated.finalText = `Em ${target.fullName} ${updated.strengths || ""} ${updated.improvements || ""} ${updated.actionPlan || ""}`.trim();
-    }
-    // Iron Rule 4: If previously approved, editing will demote to DRAFT
-    if (target.status === "APPROVED" || target.status === "VERIFIED") {
+    // Iron Rule 4: If previously approved or failed after approval, editing text demotes to DRAFT
+    if (
+      target.status === "APPROVED" ||
+      target.status === "VERIFIED" ||
+      target.status === "FAILED" ||
+      (target.status === "INSUFFICIENT_INFO" && Boolean(value && value.trim()))
+    ) {
       updated.status = "DRAFT";
       updated.contentHash = undefined;
     }
     setStudents((prev) => prev.map((s) => (s.studentId === studentId ? updated : s)));
-    saveDraftToServer(
+    void scheduleDebouncedDraftSave(
       studentId,
       {
         strengths: updated.strengths,
@@ -1223,14 +1700,16 @@ ${homeworkDetails}
         finalText: updated.finalText,
         status: updated.status,
       },
-      preEditSnapshot
+      preEditSnapshot,
+      options?.immediate ? 0 : options?.debounceMs
     );
   };
 
   const saveDraftToServer = async (
     targetStudentId: string,
     patch: Partial<StudentItem>,
-    preEditSnapshot?: StudentItem
+    preEditSnapshot?: StudentItem,
+    options?: { keepalive?: boolean }
   ): Promise<boolean> => {
     const normalizedClassId = classId.trim().toUpperCase();
     const normalizedSessionId = selectedSessionId.trim();
@@ -1293,7 +1772,12 @@ ${homeworkDetails}
         if (s.studentId !== targetStudentId) return s;
         if (s.classId && s.classId.trim().toUpperCase() !== normalizedClassId) return s;
         if (s.sessionId && s.sessionId.trim() !== normalizedSessionId) return s;
-        const wasApprovedOrVerified = s.status === "APPROVED" || s.status === "VERIFIED";
+        const wasApprovedOrVerified =
+          s.status === "APPROVED" ||
+          s.status === "VERIFIED" ||
+          (patch.finalText !== undefined &&
+            (s.status === "FAILED" ||
+              (s.status === "INSUFFICIENT_INFO" && Boolean(patch.finalText.trim()))));
         return {
           ...s,
           ...(patch.attendanceStatus !== undefined
@@ -1346,12 +1830,108 @@ ${homeworkDetails}
     const explicitFieldKeys = Object.keys(patch).filter(
       (k) => k !== "status" && (patch as any)[k] !== undefined
     );
-    const fbaseEntries = explicitFieldKeys.map(
-      (k) => `${k}:${serverMeta?.fields?.[k]?.ver ?? 0}`
-    );
+    if (!studentFieldEditVersionRef.current[targetStudentId]) {
+      studentFieldEditVersionRef.current[targetStudentId] = {};
+    }
+    if (!studentUnconfirmedBaseVerRef.current[targetStudentId]) {
+      studentUnconfirmedBaseVerRef.current[targetStudentId] = {};
+    }
+    for (const k of explicitFieldKeys) {
+      if (studentUnconfirmedBaseVerRef.current[targetStudentId][k] === undefined) {
+        studentUnconfirmedBaseVerRef.current[targetStudentId][k] =
+          serverMeta?.fields?.[k]?.ver ?? 0;
+      }
+      studentFieldEditVersionRef.current[targetStudentId][k] = Math.max(
+        studentFieldEditVersionRef.current[targetStudentId][k] || 0,
+        requestEditVersion
+      );
+    }
+    const unconfirmedBaseMap = studentUnconfirmedBaseVerRef.current[targetStudentId] || {};
+    const fbaseEntries = explicitFieldKeys.map((k) => {
+      const baseVer =
+        unconfirmedBaseMap[k] !== undefined
+          ? unconfirmedBaseMap[k]
+          : serverMeta?.fields?.[k]?.ver ?? 0;
+      return `${k}:${baseVer}`;
+    });
+
+    const isTextOrNotePatch =
+      patch.teacherNote !== undefined ||
+      patch.finalText !== undefined ||
+      patch.strengths !== undefined ||
+      patch.improvements !== undefined ||
+      patch.actionPlan !== undefined;
+
+    const isScopeChanged = () =>
+      activeClassIdRef.current !== normalizedClassId ||
+      activeSessionIdRef.current !== normalizedSessionId ||
+      (loadedScopeKeyRef.current !== "" && loadedScopeKeyRef.current !== requestScopeKey);
+
+    const getUnconfirmedFields = (): string[] => {
+      if (isScopeChanged()) return [];
+      const confirmedMap = studentFieldConfirmedVersionRef.current[targetStudentId] || {};
+      return explicitFieldKeys.filter((k) => (confirmedMap[k] || 0) < requestEditVersion);
+    };
+
+    const recordUnsavedFailure = (
+      reason: "error" | "stale",
+      errorText: string,
+      failedFields: string[]
+    ) => {
+      if (failedFields.length === 0) return;
+      const prevUnsaved = unsavedDraftPatchRef.current[targetStudentId];
+      const nextPatch: Partial<StudentItem> = prevUnsaved ? { ...prevUnsaved.patch } : {};
+      const nextFieldVersions: Record<string, number> = prevUnsaved?.fieldVersions
+        ? { ...prevUnsaved.fieldVersions }
+        : {};
+      const nextFieldReasons: Record<string, "error" | "stale"> = prevUnsaved?.fieldReasons
+        ? { ...prevUnsaved.fieldReasons }
+        : {};
+      const latestStu = studentsRef.current.find((s) => s.studentId === targetStudentId);
+      const latestEditVerMap = studentFieldEditVersionRef.current[targetStudentId] || {};
+      for (const k of failedFields) {
+        const prevFieldVer = nextFieldVersions[k] || 0;
+        if (requestEditVersion >= prevFieldVer) {
+          const newestKnownVer = Math.max(requestEditVersion, latestEditVerMap[k] || 0);
+          nextFieldVersions[k] = newestKnownVer;
+          nextFieldReasons[k] = reason;
+          const pendingDebouncedVal = (debouncedPayloadsRef.current[targetStudentId]?.patch as any)?.[
+            k
+          ];
+          const latestVal =
+            pendingDebouncedVal !== undefined
+              ? pendingDebouncedVal
+              : latestEditVerMap[k] && latestEditVerMap[k] > requestEditVersion && latestStu
+              ? (latestStu as any)[k]
+              : (patch as any)[k];
+          (nextPatch as any)[k] = latestVal;
+        }
+      }
+      nextPatch.status = "DRAFT";
+      const remainingFieldKeys = Object.keys(nextPatch).filter(
+        (k) => k !== "status" && (nextPatch as any)[k] !== undefined
+      );
+      const hasAnyStaleField = remainingFieldKeys.some(
+        (k) => nextFieldReasons[k] === "stale"
+      );
+      unsavedDraftPatchRef.current[targetStudentId] = {
+        patch: nextPatch,
+        fieldVersions: nextFieldVersions,
+        fieldReasons: nextFieldReasons,
+        preEditSnapshot: prevUnsaved?.preEditSnapshot || previousStudentSnapshot,
+        reason: hasAnyStaleField ? "stale" : reason,
+        errorText:
+          hasAnyStaleField && reason !== "stale" && prevUnsaved?.reason === "stale"
+            ? prevUnsaved.errorText
+            : errorText,
+        editVersion: Math.max(prevUnsaved?.editVersion || 0, requestEditVersion),
+      };
+    };
 
     const runSaveRequest = async (): Promise<boolean> => {
       try {
+        const serializedBody = JSON.stringify(payload);
+        const useKeepalive = Boolean(options?.keepalive && serializedBody.length <= 60000);
         const res = await fetch(
           `/api/session-comments/save-draft?cid=${clientInstanceIdRef.current}&rev=${requestEditVersion}&base=${baseRowVer}&fbase=${encodeURIComponent(fbaseEntries.join(","))}&f=${encodeURIComponent(explicitFieldKeys.join(","))}`,
           {
@@ -1364,7 +1944,8 @@ ${homeworkDetails}
               "X-Field-Base-Revisions": fbaseEntries.join(","),
               "X-Edited-Fields": explicitFieldKeys.join(","),
             },
-            body: JSON.stringify(payload),
+            body: serializedBody,
+            ...(useKeepalive ? { keepalive: true } : {}),
           }
         );
         const data = typeof res?.json === "function" ? await res.json().catch(() => null) : null;
@@ -1373,34 +1954,166 @@ ${homeworkDetails}
           res?.ok === false ||
           (data && data.success === false)
         ) {
-          if (!isStaleSaveResponse()) {
-            setStudents((prev) =>
-              prev.map((s) =>
-                s.studentId === targetStudentId &&
-                (!s.classId || s.classId.trim().toUpperCase() === normalizedClassId) &&
-                (!s.sessionId || s.sessionId.trim() === normalizedSessionId)
-                  ? previousStudentSnapshot
-                  : s
-              )
-            );
+          const unconfirmedFields = getUnconfirmedFields();
+          if (unconfirmedFields.length > 0) {
+            const errText = `Lỗi lưu nháp: ${data?.error || "Không thể lưu chỉnh sửa vào SQLite."}`;
+            if (isTextOrNotePatch) {
+              recordUnsavedFailure("error", errText, unconfirmedFields);
+            } else if (!isStaleSaveResponse()) {
+              setStudents((prev) =>
+                prev.map((s) =>
+                  s.studentId === targetStudentId &&
+                  (!s.classId || s.classId.trim().toUpperCase() === normalizedClassId) &&
+                  (!s.sessionId || s.sessionId.trim() === normalizedSessionId)
+                    ? previousStudentSnapshot
+                    : s
+                )
+              );
+            }
             setStatusMessage({
               type: "error",
-              text: `Lỗi lưu nháp: ${data?.error || "Không thể lưu chỉnh sửa vào SQLite."}`,
+              text: errText,
             });
           }
           return false;
         }
         if (data?.versionMeta) {
-          const curRowVer = studentServerMetaRef.current[targetStudentId]?.rowVer ?? 0;
+          const prevMeta = studentServerMetaRef.current[targetStudentId];
+          const curRowVer = prevMeta?.rowVer ?? 0;
           if ((data.versionMeta.rowVer ?? 0) >= curRowVer) {
-            studentServerMetaRef.current[targetStudentId] = data.versionMeta;
+            const mergedFields = {
+              ...(prevMeta?.fields || {}),
+              ...(data.versionMeta.fields || {}),
+            };
+            const existingUnsaved = unsavedDraftPatchRef.current[targetStudentId];
+            const existingPending = debouncedPayloadsRef.current[targetStudentId];
+            const editVerMap = studentFieldEditVersionRef.current[targetStudentId] || {};
+            const confirmedVerMap = studentFieldConfirmedVersionRef.current[targetStudentId] || {};
+            const unconfirmedFieldKeys = new Set<string>([
+              ...Object.keys(existingUnsaved?.patch || {}),
+              ...Object.keys(existingPending?.patch || {}),
+              ...Object.keys(editVerMap).filter(
+                (k) => (editVerMap[k] || 0) > (confirmedVerMap[k] || 0)
+              ),
+            ]);
+            for (const k of unconfirmedFieldKeys) {
+              if (
+                k !== "status" &&
+                !explicitFieldKeys.includes(k) &&
+                existingUnsaved?.fieldReasons?.[k] !== "stale"
+              ) {
+                if (prevMeta?.fields?.[k]) {
+                  mergedFields[k] = prevMeta.fields[k];
+                } else {
+                  delete mergedFields[k];
+                }
+              }
+            }
+            studentServerMetaRef.current[targetStudentId] = {
+              rowVer: data.versionMeta.rowVer ?? curRowVer,
+              fields: mergedFields,
+            };
           }
         }
-        if (data?.staleIgnored) {
-          if (!isStaleSaveResponse()) {
+        const serverStaleList: string[] = Array.isArray(data?.staleFields)
+          ? data.staleFields.map((f: any) => String(f))
+          : data?.staleIgnored
+          ? [...explicitFieldKeys]
+          : [];
+        const serverAcceptedList: string[] = Array.isArray(data?.acceptedFields)
+          ? data.acceptedFields.map((f: any) => String(f))
+          : [];
+        const rejectedStaleKeys = explicitFieldKeys.filter((k) => {
+          if (serverStaleList.includes(k)) return true;
+          if (data?.staleIgnored) return true;
+          if (serverAcceptedList.length > 0 && !serverAcceptedList.includes(k)) return true;
+          const fieldMeta = data?.versionMeta?.fields?.[k];
+          if (
+            fieldMeta &&
+            fieldMeta.cid &&
+            clientInstanceIdRef.current &&
+            fieldMeta.cid !== clientInstanceIdRef.current
+          ) {
+            return true;
+          }
+          return false;
+        });
+        const acceptedFieldKeys = explicitFieldKeys.filter(
+          (k) => !rejectedStaleKeys.includes(k)
+        );
+
+        if (acceptedFieldKeys.length > 0) {
+          if (!studentFieldConfirmedVersionRef.current[targetStudentId]) {
+            studentFieldConfirmedVersionRef.current[targetStudentId] = {};
+          }
+          for (const k of acceptedFieldKeys) {
+            studentFieldConfirmedVersionRef.current[targetStudentId][k] = Math.max(
+              studentFieldConfirmedVersionRef.current[targetStudentId][k] || 0,
+              requestEditVersion
+            );
+            if (
+              (studentFieldEditVersionRef.current[targetStudentId]?.[k] || 0) <=
+              requestEditVersion
+            ) {
+              delete studentUnconfirmedBaseVerRef.current[targetStudentId]?.[k];
+            }
+          }
+          const existingUnsaved = unsavedDraftPatchRef.current[targetStudentId];
+          if (existingUnsaved) {
+            const nextUnsavedPatch: Partial<StudentItem> = { ...existingUnsaved.patch };
+            const nextUnsavedFieldVers: Record<string, number> = {
+              ...(existingUnsaved.fieldVersions || {}),
+            };
+            const nextUnsavedFieldReasons: Record<string, "error" | "stale"> = {
+              ...(existingUnsaved.fieldReasons || {}),
+            };
+            for (const k of acceptedFieldKeys) {
+              if ((nextUnsavedFieldVers[k] || 0) <= requestEditVersion) {
+                delete (nextUnsavedPatch as any)[k];
+                delete nextUnsavedFieldVers[k];
+                delete nextUnsavedFieldReasons[k];
+              }
+            }
+            const remainingKeys = Object.keys(nextUnsavedPatch).filter(
+              (k) => k !== "status" && (nextUnsavedPatch as any)[k] !== undefined
+            );
+            if (remainingKeys.length === 0) {
+              delete unsavedDraftPatchRef.current[targetStudentId];
+            } else {
+              const hasRemainingStale = remainingKeys.some(
+                (k) => nextUnsavedFieldReasons[k] === "stale"
+              );
+              unsavedDraftPatchRef.current[targetStudentId] = {
+                ...existingUnsaved,
+                patch: nextUnsavedPatch,
+                fieldVersions: nextUnsavedFieldVers,
+                fieldReasons: nextUnsavedFieldReasons,
+                reason: hasRemainingStale ? "stale" : "error",
+              };
+            }
+          }
+          if (
+            acceptedFieldKeys.includes("quickTags") &&
+            (studentEditVersionRef.current[`__qt_pending__${targetStudentId}`] || 0) <=
+              requestEditVersion
+          ) {
+            delete studentEditVersionRef.current[`__qt_pending__${targetStudentId}`];
+          }
+        }
+
+        if (rejectedStaleKeys.length > 0) {
+          const confirmedMap = studentFieldConfirmedVersionRef.current[targetStudentId] || {};
+          const unconfirmedStaleFields = isScopeChanged()
+            ? []
+            : rejectedStaleKeys.filter((k) => (confirmedMap[k] || 0) < requestEditVersion);
+          if (unconfirmedStaleFields.length > 0) {
+            for (const k of unconfirmedStaleFields) {
+              delete studentUnconfirmedBaseVerRef.current[targetStudentId]?.[k];
+            }
+            let conflictMsg = `Xung đột phiên bản: Dữ liệu của học viên '${student.fullName}' đã được cập nhật ở tab hoặc phiên khác. Bản vừa nhập chưa được lưu và đang được giữ trên màn hình để so sánh.`;
             setStatusMessage({
               type: "error",
-              text: `Xung đột phiên bản: Dữ liệu của học viên '${student.fullName}' đã được cập nhật ở tab hoặc phiên khác. Bản vừa nhập chưa được lưu và đang được giữ trên màn hình để so sánh.`,
+              text: conflictMsg,
             });
             try {
               const listRes = await fetch(
@@ -1411,7 +2124,7 @@ ${homeworkDetails}
               const serverFb = Array.isArray(listJson?.data?.feedbacks)
                 ? listJson.data.feedbacks.find((f: any) => f.studentId === targetStudentId)
                 : null;
-              if (serverFb && !isStaleSaveResponse()) {
+              if (serverFb && !isScopeChanged()) {
                 if (serverFb.versionMetaJson) {
                   try {
                     const parsedMeta =
@@ -1419,7 +2132,40 @@ ${homeworkDetails}
                         ? JSON.parse(serverFb.versionMetaJson)
                         : serverFb.versionMetaJson;
                     if (parsedMeta && typeof parsedMeta === "object") {
-                      studentServerMetaRef.current[targetStudentId] = parsedMeta;
+                      const prevMeta = studentServerMetaRef.current[targetStudentId];
+                      const mergedFields = {
+                        ...(prevMeta?.fields || {}),
+                        ...(parsedMeta.fields || {}),
+                      };
+                      const existingUnsaved = unsavedDraftPatchRef.current[targetStudentId];
+                      const existingPending = debouncedPayloadsRef.current[targetStudentId];
+                      const editVerMap = studentFieldEditVersionRef.current[targetStudentId] || {};
+                      const confirmedVerMap =
+                        studentFieldConfirmedVersionRef.current[targetStudentId] || {};
+                      const unconfirmedFieldKeys = new Set<string>([
+                        ...Object.keys(existingUnsaved?.patch || {}),
+                        ...Object.keys(existingPending?.patch || {}),
+                        ...Object.keys(editVerMap).filter(
+                          (k) => (editVerMap[k] || 0) > (confirmedVerMap[k] || 0)
+                        ),
+                      ]);
+                      for (const k of unconfirmedFieldKeys) {
+                        if (
+                          k !== "status" &&
+                          !explicitFieldKeys.includes(k) &&
+                          existingUnsaved?.fieldReasons?.[k] !== "stale"
+                        ) {
+                          if (prevMeta?.fields?.[k]) {
+                            mergedFields[k] = prevMeta.fields[k];
+                          } else {
+                            delete mergedFields[k];
+                          }
+                        }
+                      }
+                      studentServerMetaRef.current[targetStudentId] = {
+                        rowVer: parsedMeta.rowVer ?? prevMeta?.rowVer ?? 0,
+                        fields: mergedFields,
+                      };
                     }
                   } catch {
                     // ignore
@@ -1440,21 +2186,21 @@ ${homeworkDetails}
                   }
                 }
                 const serverVal =
-                  patch.teacherNote !== undefined
+                  unconfirmedStaleFields.includes("teacherNote")
                     ? serverFb.teacherNote || "(trống)"
-                    : patch.quickTags !== undefined
+                    : unconfirmedStaleFields.includes("quickTags")
                     ? parsedServerTags.length > 0
                       ? parsedServerTags.join(", ")
                       : "(trống)"
-                    : patch.strengths !== undefined
+                    : unconfirmedStaleFields.includes("strengths")
                     ? serverFb.strengths || "(trống)"
-                    : patch.improvements !== undefined
+                    : unconfirmedStaleFields.includes("improvements")
                     ? serverFb.improvements || "(trống)"
-                    : patch.actionPlan !== undefined
+                    : unconfirmedStaleFields.includes("actionPlan")
                     ? serverFb.actionPlan || "(trống)"
-                    : patch.finalText !== undefined
+                    : unconfirmedStaleFields.includes("finalText")
                     ? serverFb.finalText || "(trống)"
-                    : patch.attendanceStatus !== undefined
+                    : unconfirmedStaleFields.includes("attendanceStatus")
                     ? serverFb.attendanceStatus || "(trống)"
                     : serverFb.teacherNote ||
                       (parsedServerTags.length > 0 ? parsedServerTags.join(", ") : "") ||
@@ -1462,41 +2208,42 @@ ${homeworkDetails}
                       serverFb.attendanceStatus ||
                       "(trống)";
                 if (serverVal) {
+                  conflictMsg = `Xung đột phiên bản: Dữ liệu của học viên '${student.fullName}' đã được cập nhật ở tab hoặc phiên khác (Bản đã lưu: "${serverVal}"). Bản vừa nhập chưa được lưu và đang được giữ trên màn hình để so sánh.`;
                   setStatusMessage({
                     type: "error",
-                    text: `Xung đột phiên bản: Dữ liệu của học viên '${student.fullName}' đã được cập nhật ở tab hoặc phiên khác (Bản đã lưu: "${serverVal}"). Bản vừa nhập chưa được lưu và đang được giữ trên màn hình để so sánh.`,
+                    text: conflictMsg,
                   });
                 }
               }
             } catch {
               // ignore
             }
+            recordUnsavedFailure("stale", conflictMsg, unconfirmedStaleFields);
           }
           return false;
-        }
-        if (
-          patch.quickTags !== undefined &&
-          (studentEditVersionRef.current[`__qt_pending__${targetStudentId}`] || 0) <=
-            requestEditVersion
-        ) {
-          delete studentEditVersionRef.current[`__qt_pending__${targetStudentId}`];
         }
         return true;
       } catch (err: any) {
         console.error("Lỗi lưu nháp:", err);
-        if (!isStaleSaveResponse()) {
-          setStudents((prev) =>
-            prev.map((s) =>
-              s.studentId === targetStudentId &&
-              (!s.classId || s.classId.trim().toUpperCase() === normalizedClassId) &&
-              (!s.sessionId || s.sessionId.trim() === normalizedSessionId)
-                ? previousStudentSnapshot
-                : s
-            )
-          );
+        const unconfirmedFields = getUnconfirmedFields();
+        if (unconfirmedFields.length > 0) {
+          const errText = `Lỗi lưu nháp: ${err?.message || String(err)}`;
+          if (isTextOrNotePatch) {
+            recordUnsavedFailure("error", errText, unconfirmedFields);
+          } else if (!isStaleSaveResponse()) {
+            setStudents((prev) =>
+              prev.map((s) =>
+                s.studentId === targetStudentId &&
+                (!s.classId || s.classId.trim().toUpperCase() === normalizedClassId) &&
+                (!s.sessionId || s.sessionId.trim() === normalizedSessionId)
+                  ? previousStudentSnapshot
+                  : s
+              )
+            );
+          }
           setStatusMessage({
             type: "error",
-            text: `Lỗi lưu nháp: ${err?.message || String(err)}`,
+            text: errText,
           });
         }
         return false;
@@ -1504,27 +2251,49 @@ ${homeworkDetails}
     };
 
     const savePromise = runSaveRequest();
-    pendingSavePromisesRef.current[targetStudentId] = savePromise;
+    if (!activeSavePromisesByStudentRef.current[targetStudentId]) {
+      activeSavePromisesByStudentRef.current[targetStudentId] = new Set();
+    }
+    activeSavePromisesByStudentRef.current[targetStudentId].add(savePromise);
+    syncPendingSavePromiseRef(targetStudentId);
     try {
       return await savePromise;
     } finally {
-      if (pendingSavePromisesRef.current[targetStudentId] === savePromise) {
-        delete pendingSavePromisesRef.current[targetStudentId];
+      activeSavePromisesByStudentRef.current[targetStudentId]?.delete(savePromise);
+      if (activeSavePromisesByStudentRef.current[targetStudentId]?.size === 0) {
+        delete activeSavePromisesByStudentRef.current[targetStudentId];
       }
+      syncPendingSavePromiseRef(targetStudentId);
     }
   };
 
-  const handleConfirmAllPresent = async (assignDefaultGoodTag = false) => {
+  const handleConfirmAllPresent = async (
+    assignDefaultGoodTag = false,
+    options?: { onlyUnknown?: boolean; silent?: boolean }
+  ): Promise<boolean> => {
     const reqClassId = classId.trim().toUpperCase();
     const reqSessionId = selectedSessionId.trim();
     const reqScopeKey = `${reqClassId}::${reqSessionId}`;
+    if (
+      !reqClassId ||
+      !reqSessionId ||
+      activeClassIdRef.current !== reqClassId ||
+      activeSessionIdRef.current !== reqSessionId
+    ) {
+      return false;
+    }
+    if (loadedScopeKeyRef.current && loadedScopeKeyRef.current !== reqScopeKey) {
+      return false;
+    }
+
     const activeStudents = studentsRef.current.filter(
       (s) =>
         s.isActive !== false &&
         (!s.classId || s.classId.trim().toUpperCase() === reqClassId) &&
-        (!s.sessionId || s.sessionId.trim() === reqSessionId)
+        (!s.sessionId || s.sessionId.trim() === reqSessionId) &&
+        (!options?.onlyUnknown || !s.attendanceStatus || s.attendanceStatus === "UNKNOWN")
     );
-    if (activeStudents.length === 0) return;
+    if (activeStudents.length === 0) return true;
 
     const defaultGoodLabel =
       quickTagTrack === "robotics" || detectTrackByClassCode(reqClassId) === "robotics"
@@ -1535,26 +2304,28 @@ ${homeworkDetails}
       activeStudents.map((s) => [s.studentId, studentAttendanceVersionRef.current[s.studentId] || 0])
     );
 
-    let successCount = 0;
-    let taggedCount = 0;
-    let failCount = 0;
-    const failedIds = new Set<string>();
-    const failedVersions = new Map<string, number>();
-    const failedNames: string[] = [];
+    interface PreparedBatchStudent {
+      studentId: string;
+      fullName: string;
+      reqRev: number;
+      shouldAddDefaultTag: boolean;
+      previousAttendanceStatus: StudentItem["attendanceStatus"];
+      previousQuickTags: string[];
+      previousInheritedFromSession?: number;
+      previousStatus: StudentItem["status"];
+      previousContentHash?: string;
+      payloadItem: Record<string, any>;
+    }
+
+    const preparedList: PreparedBatchStudent[] = [];
+    let skippedConcurrentAttendanceCount = 0;
 
     for (const s of activeStudents) {
-      if (
-        activeClassIdRef.current !== reqClassId ||
-        activeSessionIdRef.current !== reqSessionId ||
-        (loadedScopeKeyRef.current !== "" && loadedScopeKeyRef.current !== reqScopeKey)
-      ) {
-        return;
-      }
       if (
         (studentAttendanceVersionRef.current[s.studentId] || 0) !==
         initialAttendanceVersions.get(s.studentId)
       ) {
-        successCount++;
+        skippedConcurrentAttendanceCount++;
         continue;
       }
       const curStu =
@@ -1576,26 +2347,220 @@ ${homeworkDetails}
       const shouldPersistPendingOrInheritedTags = Boolean(
         hasPendingQuickTagsEdit || (hasExistingOrInheritedTags && curStu.inheritedFromSession)
       );
-      const expectedVersion = editSequenceRef.current + 1;
-      const ok = await saveDraftToServer(s.studentId, {
-        attendanceStatus: "PRESENT",
-        status: "DRAFT",
-        ...(shouldAddDefaultTag
-          ? { quickTags: [defaultGoodLabel] }
-          : shouldPersistPendingOrInheritedTags
-          ? { quickTags: Array.isArray(curStu.quickTags) ? curStu.quickTags : [] }
-          : {}),
+      const reqRev = ++editSequenceRef.current;
+      studentEditVersionRef.current[s.studentId] = reqRev;
+      const nextQuickTags = shouldAddDefaultTag
+        ? [defaultGoodLabel]
+        : shouldPersistPendingOrInheritedTags
+        ? Array.isArray(curStu.quickTags)
+          ? [...curStu.quickTags]
+          : []
+        : undefined;
+      if (nextQuickTags !== undefined) {
+        studentEditVersionRef.current[`__qt_pending__${s.studentId}`] = reqRev;
+      }
+      const rawCandidateStatus = curStu.status || "DRAFT";
+      const safeDraftStatus: StudentItem["status"] =
+        rawCandidateStatus === "APPROVED" || rawCandidateStatus === "VERIFIED"
+          ? "DRAFT"
+          : rawCandidateStatus;
+
+      const serverMeta = studentServerMetaRef.current[s.studentId];
+      const baseRowVer = serverMeta?.rowVer ?? 0;
+      const explicitFields =
+        nextQuickTags !== undefined ? ["attendanceStatus", "quickTags"] : ["attendanceStatus"];
+      const fieldBaseMap: Record<string, number> = {};
+      for (const f of explicitFields) {
+        fieldBaseMap[f] = serverMeta?.fields?.[f]?.ver ?? 0;
+      }
+
+      preparedList.push({
+        studentId: s.studentId,
+        fullName: curStu.fullName || s.studentId,
+        reqRev,
+        shouldAddDefaultTag,
+        previousAttendanceStatus: curStu.attendanceStatus,
+        previousQuickTags: Array.isArray(curStu.quickTags) ? [...curStu.quickTags] : [],
+        previousInheritedFromSession: curStu.inheritedFromSession,
+        previousStatus: curStu.status,
+        previousContentHash: curStu.contentHash,
+        payloadItem: {
+          classId: reqClassId,
+          sessionId: reqSessionId,
+          studentId: s.studentId,
+          attendanceStatus: "PRESENT",
+          status: safeDraftStatus,
+          ...(nextQuickTags !== undefined ? { quickTags: nextQuickTags } : {}),
+          clientInstanceId: clientInstanceIdRef.current,
+          clientRevision: reqRev,
+          baseRowVer,
+          fieldBaseMap,
+          explicitFields,
+        },
       });
-      if (ok) {
-        successCount++;
-        if (shouldAddDefaultTag) {
-          taggedCount++;
+    }
+
+    if (preparedList.length === 0) {
+      return true;
+    }
+
+    const preparedById = new Map<string, PreparedBatchStudent>(
+      preparedList.map((p) => [p.studentId, p])
+    );
+
+    setStudents((prev) =>
+      prev.map((s) => {
+        const prep = preparedById.get(s.studentId);
+        if (!prep) return s;
+        if (s.classId && s.classId.trim().toUpperCase() !== reqClassId) return s;
+        if (s.sessionId && s.sessionId.trim() !== reqSessionId) return s;
+        const wasApprovedOrVerified = s.status === "APPROVED" || s.status === "VERIFIED";
+        return {
+          ...s,
+          attendanceStatus: "PRESENT",
+          ...(prep.payloadItem.quickTags !== undefined
+            ? { quickTags: prep.payloadItem.quickTags }
+            : {}),
+          status: wasApprovedOrVerified ? "DRAFT" : s.status || "DRAFT",
+          contentHash: wasApprovedOrVerified ? undefined : s.contentHash,
+        };
+      })
+    );
+
+    const firstPrep = preparedList[0];
+    const firstServerMeta = studentServerMetaRef.current[firstPrep.studentId];
+    const firstBaseVer = firstServerMeta?.rowVer ?? 0;
+    const firstExplicitFields: string[] = firstPrep.payloadItem.explicitFields || ["attendanceStatus"];
+    const firstFbaseEntries = firstExplicitFields.map(
+      (k) => `${k}:${firstServerMeta?.fields?.[k]?.ver ?? 0}`
+    );
+
+    const batchItems = preparedList.map((p) => p.payloadItem);
+    const batchPayload: Record<string, any> = {
+      classId: reqClassId,
+      sessionId: reqSessionId,
+      studentId: firstPrep.studentId,
+      attendanceStatus: "PRESENT",
+      status: firstPrep.payloadItem.status || "DRAFT",
+      ...(firstPrep.payloadItem.quickTags !== undefined
+        ? { quickTags: firstPrep.payloadItem.quickTags }
+        : {}),
+      items: batchItems,
+    };
+
+    let successCount = skippedConcurrentAttendanceCount;
+    let taggedCount = 0;
+    let failCount = 0;
+    const failedIds = new Set<string>();
+    const failedVersions = new Map<string, number>();
+    const failedNames: string[] = [];
+
+    const runBatchSave = async (): Promise<boolean> => {
+      try {
+        const res = await fetch(
+          `/api/session-comments/save-draft?cid=${clientInstanceIdRef.current}&rev=${firstPrep.reqRev}&base=${firstBaseVer}&fbase=${encodeURIComponent(firstFbaseEntries.join(","))}&f=${encodeURIComponent(firstExplicitFields.join(","))}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Client-Instance": clientInstanceIdRef.current,
+              "X-Edit-Revision": String(firstPrep.reqRev),
+              "X-Base-Revision": String(firstBaseVer),
+              "X-Field-Base-Revisions": firstFbaseEntries.join(","),
+              "X-Edited-Fields": firstExplicitFields.join(","),
+            },
+            body: JSON.stringify(batchPayload),
+          }
+        );
+        const data = typeof res?.json === "function" ? await res.json().catch(() => null) : null;
+
+        if (Array.isArray(data?.results) && data.results.length > 0) {
+          const resultByStudent = new Map<string, any>(
+            data.results.map((r: any) => [String(r?.studentId || ""), r])
+          );
+          for (const prep of preparedList) {
+            const itemRes = resultByStudent.get(prep.studentId);
+            if (itemRes?.versionMeta) {
+              const curRowVer = studentServerMetaRef.current[prep.studentId]?.rowVer ?? 0;
+              if ((itemRes.versionMeta.rowVer ?? 0) >= curRowVer) {
+                studentServerMetaRef.current[prep.studentId] = itemRes.versionMeta;
+              }
+            }
+            if (itemRes && itemRes.success && !itemRes.staleIgnored) {
+              successCount++;
+              if (prep.shouldAddDefaultTag) {
+                taggedCount++;
+              }
+              if (
+                prep.payloadItem.quickTags !== undefined &&
+                (studentEditVersionRef.current[`__qt_pending__${prep.studentId}`] || 0) <=
+                  prep.reqRev
+              ) {
+                delete studentEditVersionRef.current[`__qt_pending__${prep.studentId}`];
+              }
+            } else {
+              failCount++;
+              failedIds.add(prep.studentId);
+              failedVersions.set(prep.studentId, prep.reqRev);
+              failedNames.push(prep.fullName);
+            }
+          }
+        } else {
+          const requestFailed =
+            (typeof res?.status === "number" && res.status >= 400) ||
+            res?.ok === false ||
+            (data && data.success === false) ||
+            Boolean(data?.staleIgnored);
+
+          if (!requestFailed) {
+            if (data?.versionMeta && preparedList.length === 1) {
+              studentServerMetaRef.current[firstPrep.studentId] = data.versionMeta;
+            }
+            for (const prep of preparedList) {
+              successCount++;
+              if (prep.shouldAddDefaultTag) {
+                taggedCount++;
+              }
+              if (
+                prep.payloadItem.quickTags !== undefined &&
+                (studentEditVersionRef.current[`__qt_pending__${prep.studentId}`] || 0) <=
+                  prep.reqRev
+              ) {
+                delete studentEditVersionRef.current[`__qt_pending__${prep.studentId}`];
+              }
+            }
+          } else {
+            for (const prep of preparedList) {
+              failCount++;
+              failedIds.add(prep.studentId);
+              failedVersions.set(prep.studentId, prep.reqRev);
+              failedNames.push(prep.fullName);
+            }
+          }
         }
-      } else {
-        failCount++;
-        failedIds.add(s.studentId);
-        failedVersions.set(s.studentId, expectedVersion);
-        failedNames.push(s.fullName || s.studentId);
+        return failCount === 0;
+      } catch {
+        for (const prep of preparedList) {
+          failCount++;
+          failedIds.add(prep.studentId);
+          failedVersions.set(prep.studentId, prep.reqRev);
+          failedNames.push(prep.fullName);
+        }
+        return false;
+      }
+    };
+
+    const batchPromise = runBatchSave();
+    for (const prep of preparedList) {
+      pendingSavePromisesRef.current[prep.studentId] = batchPromise;
+    }
+    try {
+      await batchPromise;
+    } finally {
+      for (const prep of preparedList) {
+        if (pendingSavePromisesRef.current[prep.studentId] === batchPromise) {
+          delete pendingSavePromisesRef.current[prep.studentId];
+        }
       }
     }
 
@@ -1604,81 +2569,146 @@ ${homeworkDetails}
       activeSessionIdRef.current !== reqSessionId ||
       (loadedScopeKeyRef.current !== "" && loadedScopeKeyRef.current !== reqScopeKey)
     ) {
-      return;
+      return false;
     }
 
     if (failCount === 0) {
-      setStatusMessage({
-        type: "success",
-        text: assignDefaultGoodTag
-          ? `Đã điểm danh 'Có mặt' cả lớp (${successCount} học viên) và gắn thẻ mặc định "${defaultGoodLabel}" cho ${taggedCount} bạn chưa chọn thẻ! Thầy chỉ cần chỉnh lại vài bạn nổi bật hoặc cần lưu ý.`
-          : `Đã xác nhận điểm danh 'Có mặt' cho toàn bộ ${successCount} học viên đang học.`,
-      });
-    } else {
-      // Reconcile failed rows with server feedback truth if available without wiping rows or clobbering newer edits
-      try {
-        const res = await fetch(
-          `/api/session-comments/list?classId=${encodeURIComponent(reqClassId)}&sessionId=${encodeURIComponent(reqSessionId)}`
-        );
-        const json = typeof res?.json === "function" ? await res.json().catch(() => null) : null;
-        if (
-          activeClassIdRef.current === reqClassId &&
-          activeSessionIdRef.current === reqSessionId &&
-          (loadedScopeKeyRef.current === "" || loadedScopeKeyRef.current === reqScopeKey) &&
-          json?.success &&
-          Array.isArray(json?.data?.feedbacks)
-        ) {
-          const fbMap = new Map<string, any>(
-            json.data.feedbacks.map((f: any) => [f.studentId, f])
-          );
-          setStudents((prev) =>
-            prev.map((s) => {
-              if (!failedIds.has(s.studentId)) return s;
-              if (s.classId && s.classId.trim().toUpperCase() !== reqClassId) return s;
-              if (s.sessionId && s.sessionId.trim() !== reqSessionId) return s;
-              if ((studentEditVersionRef.current[s.studentId] || 0) !== failedVersions.get(s.studentId)) {
-                return s;
-              }
-              const fb = fbMap.get(s.studentId);
-              if (!fb) return s;
-              let serverTags = s.quickTags;
-              if (fb.quickTagsJson) {
-                try {
-                  const parsed = JSON.parse(fb.quickTagsJson);
-                  if (Array.isArray(parsed)) serverTags = parsed;
-                } catch {}
-              }
-              return {
-                ...s,
-                attendanceStatus: fb.attendanceStatus || "UNKNOWN",
-                quickTags: serverTags,
-                contentHash: fb.contentHash || undefined,
-                status: fb.status || "DRAFT",
-                verifiedAt: fb.verifiedAt,
-              };
-            })
-          );
-        }
-      } catch {}
+      setPendingUnknownConfirmCount(0);
+      if (!options?.silent) {
+        setStatusMessage({
+          type: "success",
+          text: assignDefaultGoodTag
+            ? `Đã điểm danh 'Có mặt' (${successCount} học viên) và gắn thẻ mặc định "${defaultGoodLabel}" cho ${taggedCount} bạn chưa chọn thẻ! Thầy chỉ cần chỉnh lại vài bạn nổi bật hoặc cần lưu ý.`
+            : `Đã xác nhận điểm danh 'Có mặt' cho toàn bộ ${successCount} học viên đang học.`,
+        });
+      }
+      return true;
+    }
 
+    // Roll back failed items whose edit version has not changed since the batch request
+    setStudents((prev) =>
+      prev.map((s) => {
+        if (!failedIds.has(s.studentId)) return s;
+        if (s.classId && s.classId.trim().toUpperCase() !== reqClassId) return s;
+        if (s.sessionId && s.sessionId.trim() !== reqSessionId) return s;
+        if ((studentEditVersionRef.current[s.studentId] || 0) !== failedVersions.get(s.studentId)) {
+          return s;
+        }
+        const prep = preparedById.get(s.studentId);
+        if (!prep) return s;
+        return {
+          ...s,
+          attendanceStatus: prep.previousAttendanceStatus,
+          quickTags: prep.previousQuickTags,
+          inheritedFromSession: prep.previousInheritedFromSession,
+          status: prep.previousStatus,
+          contentHash: prep.previousContentHash,
+        };
+      })
+    );
+
+    // Reconcile failed rows with server feedback truth if available without wiping rows or clobbering newer edits
+    try {
+      const res = await fetch(
+        `/api/session-comments/list?classId=${encodeURIComponent(reqClassId)}&sessionId=${encodeURIComponent(reqSessionId)}`
+      );
+      const json = typeof res?.json === "function" ? await res.json().catch(() => null) : null;
       if (
         activeClassIdRef.current === reqClassId &&
         activeSessionIdRef.current === reqSessionId &&
-        (loadedScopeKeyRef.current === "" || loadedScopeKeyRef.current === reqScopeKey)
+        (loadedScopeKeyRef.current === "" || loadedScopeKeyRef.current === reqScopeKey) &&
+        json?.success &&
+        Array.isArray(json?.data?.feedbacks)
       ) {
-        setStatusMessage({
-          type: "error",
-          text: `Lỗi xác nhận điểm danh hàng loạt: thành công ${successCount}/${activeStudents.length}, thất bại ${failCount} học viên (${failedNames.join(", ")}).`,
-        });
+        const fbMap = new Map<string, any>(
+          json.data.feedbacks.map((f: any) => [f.studentId, f])
+        );
+        setStudents((prev) =>
+          prev.map((s) => {
+            if (!failedIds.has(s.studentId)) return s;
+            if (s.classId && s.classId.trim().toUpperCase() !== reqClassId) return s;
+            if (s.sessionId && s.sessionId.trim() !== reqSessionId) return s;
+            if ((studentEditVersionRef.current[s.studentId] || 0) !== failedVersions.get(s.studentId)) {
+              return s;
+            }
+            const fb = fbMap.get(s.studentId);
+            if (!fb) return s;
+            let serverTags = s.quickTags;
+            if (fb.quickTagsJson) {
+              try {
+                const parsed = JSON.parse(fb.quickTagsJson);
+                if (Array.isArray(parsed)) serverTags = parsed;
+              } catch {}
+            }
+            return {
+              ...s,
+              attendanceStatus: fb.attendanceStatus || "UNKNOWN",
+              quickTags: serverTags,
+              contentHash: fb.contentHash || undefined,
+              status: fb.status || "DRAFT",
+              verifiedAt: fb.verifiedAt,
+            };
+          })
+        );
       }
+    } catch {}
+
+    if (
+      activeClassIdRef.current === reqClassId &&
+      activeSessionIdRef.current === reqSessionId &&
+      (loadedScopeKeyRef.current === "" || loadedScopeKeyRef.current === reqScopeKey)
+    ) {
+      setStatusMessage({
+        type: "error",
+        text: `Lỗi xác nhận điểm danh hàng loạt: thành công ${successCount}/${activeStudents.length}, thất bại ${failCount} học viên (${failedNames.join(", ")}).`,
+      });
     }
+    return false;
   };
 
-  // AI Generate Batch Comments
-  const handleGenerateAi = async () => {
+  // AI Generate Batch Comments (with automatic UNKNOWN attendance prompt per S3.2)
+  const handleGenerateAi = async (options?: { confirmUnknownAsPresent?: boolean }) => {
+    const flushedOk = await flushAllPendingDraftSaves();
+    if (!flushedOk) return;
+
     const reqClassId = classId.trim().toUpperCase();
     const reqClassCode = classCode.trim().toUpperCase();
     const reqSessionId = selectedSessionId.trim();
+
+    const activeInClass = studentsRef.current.filter(
+      (s) =>
+        s.isActive !== false &&
+        (!s.classId || s.classId.trim().toUpperCase() === reqClassId) &&
+        (!s.sessionId || s.sessionId.trim() === reqSessionId)
+    );
+    const unknownStudents = activeInClass.filter(
+      (s) => !s.attendanceStatus || s.attendanceStatus === "UNKNOWN"
+    );
+
+    if (unknownStudents.length > 0) {
+      const promptMsg = `Coi ${unknownStudents.length} bạn chưa điểm danh là Có mặt (giữ nguyên các bạn Nghỉ học)?`;
+      let shouldMarkUnknownPresent: boolean | null = null;
+      if (typeof options?.confirmUnknownAsPresent === "boolean") {
+        shouldMarkUnknownPresent = options.confirmUnknownAsPresent;
+      } else if (typeof window !== "undefined" && typeof window.confirm === "function") {
+        shouldMarkUnknownPresent = Boolean(window.confirm(promptMsg));
+      } else if (typeof (globalThis as any).confirm === "function") {
+        shouldMarkUnknownPresent = Boolean((globalThis as any).confirm(promptMsg));
+      }
+
+      if (shouldMarkUnknownPresent === true) {
+        setPendingUnknownConfirmCount(0);
+        const ok = await handleConfirmAllPresent(true, { onlyUnknown: true, silent: true });
+        if (!ok) return;
+      } else if (shouldMarkUnknownPresent === false) {
+        setPendingUnknownConfirmCount(unknownStudents.length);
+      } else {
+        setPendingUnknownConfirmCount(unknownStudents.length);
+      }
+    } else {
+      setPendingUnknownConfirmCount(0);
+    }
+
     const eligibleStudents = studentsRef.current.filter(
       (s) =>
         s.isActive !== false &&
@@ -1689,7 +2719,10 @@ ${homeworkDetails}
     if (eligibleStudents.length === 0) {
       setStatusMessage({
         type: "error",
-        text: "Chưa có học viên nào được xác nhận 'Có mặt'. Vui lòng điểm danh từng học viên hoặc bấm 'Xác nhận cả lớp Có mặt' trước khi gọi AI soạn nhận xét.",
+        text:
+          unknownStudents.length > 0
+            ? `Còn ${unknownStudents.length} bạn chưa điểm danh. Vui lòng xác nhận 'Coi ${unknownStudents.length} bạn chưa điểm danh là Có mặt' hoặc bấm '⚡ Điểm danh cả lớp Có mặt' trước khi gọi AI soạn nhận xét.`
+            : "Chưa có học viên nào được xác nhận 'Có mặt'. Vui lòng điểm danh từng học viên hoặc bấm '⚡ Điểm danh cả lớp Có mặt' trước khi gọi AI soạn nhận xét.",
       });
       return;
     }
@@ -1837,19 +2870,15 @@ ${homeworkDetails}
       return false;
     }
 
-    const editVersionSnapshot = studentEditVersionRef.current[studentId] || 0;
-    const inflightSave = pendingSavePromisesRef.current[studentId];
-    if (inflightSave) {
-      const savedOk = await inflightSave;
-      if (
-        !savedOk ||
-        activeClassIdRef.current !== reqClassId ||
-        activeSessionIdRef.current !== reqSessionId ||
-        (studentEditVersionRef.current[studentId] || 0) !== editVersionSnapshot
-      ) {
-        return false;
-      }
+    const flushedOk = await flushPendingDraftSave(studentId);
+    if (
+      !flushedOk ||
+      activeClassIdRef.current !== reqClassId ||
+      activeSessionIdRef.current !== reqSessionId
+    ) {
+      return false;
     }
+    const editVersionSnapshot = studentEditVersionRef.current[studentId] || 0;
 
     const student = studentsRef.current.find((s) => s.studentId === studentId);
     if (!student || !student.finalText) return false;
@@ -1890,6 +2919,15 @@ ${homeworkDetails}
         activeSessionIdRef.current !== reqSessionId ||
         (studentEditVersionRef.current[studentId] || 0) !== editVersionSnapshot
       ) {
+        if ((studentEditVersionRef.current[studentId] || 0) !== editVersionSnapshot) {
+          const recoverySavedOk = await flushPendingDraftSave(studentId);
+          setStatusMessage({
+            type: "error",
+            text: recoverySavedOk
+              ? "Nhận xét đã được chỉnh sửa trong lúc duyệt. Đã chuyển về Bản nháp để xem lại trước khi đẩy LMS."
+              : "Nhận xét đã được chỉnh sửa trong lúc duyệt nhưng lưu nháp phục hồi thất bại. Đang giữ bản mới trên màn hình để thử lại.",
+          });
+        }
         return false;
       }
       if (
@@ -1924,48 +2962,269 @@ ${homeworkDetails}
     }
   };
 
-  // Approve all valid drafts
-  const handleApproveAll = async () => {
-    const eligibleDrafts = studentsRef.current.filter(
+  // Batch approve all valid drafts in a single POST /api/session-comments/approve call
+  const handleApproveAll = async (options?: {
+    silent?: boolean;
+  }): Promise<{
+    approvedCount: number;
+    failCount: number;
+    skippedInsufficientCount: number;
+    flushFailed?: boolean;
+    concurrentEditDetected?: boolean;
+  }> => {
+    const flushedOk = await flushAllPendingDraftSaves();
+    if (!flushedOk) {
+      return {
+        approvedCount: 0,
+        failCount: 1,
+        skippedInsufficientCount: 0,
+        flushFailed: true,
+        concurrentEditDetected: false,
+      };
+    }
+
+    const reqClassId = classId.trim().toUpperCase();
+    const reqSessionId = selectedSessionId.trim();
+    if (
+      !reqClassId ||
+      !reqSessionId ||
+      activeClassIdRef.current !== reqClassId ||
+      activeSessionIdRef.current !== reqSessionId
+    ) {
+      return {
+        approvedCount: 0,
+        failCount: 0,
+        skippedInsufficientCount: 0,
+        flushFailed: false,
+        concurrentEditDetected: false,
+      };
+    }
+
+    const presentOrLate = studentsRef.current.filter(
+      (s) =>
+        s.isActive !== false &&
+        (!s.classId || s.classId.trim().toUpperCase() === reqClassId) &&
+        (!s.sessionId || s.sessionId.trim() === reqSessionId) &&
+        (s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE")
+    );
+
+    const skippedInsufficientCount = presentOrLate.filter(
+      (s) =>
+        s.status === "INSUFFICIENT_INFO" ||
+        !s.finalText ||
+        !s.finalText.trim() ||
+        s.finalText.trim().startsWith("Chưa đủ thông tin")
+    ).length;
+
+    const eligibleDrafts = presentOrLate.filter(
       (s) =>
         s.status === "DRAFT" &&
-        s.isActive !== false &&
-        (s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE") &&
         s.finalText &&
-        s.finalText.trim().length > 0
+        s.finalText.trim().length > 0 &&
+        !s.finalText.trim().startsWith("Chưa đủ thông tin")
     );
-    if (eligibleDrafts.length === 0) return;
+    if (eligibleDrafts.length === 0) {
+      return {
+        approvedCount: 0,
+        failCount: 0,
+        skippedInsufficientCount,
+        flushFailed: false,
+        concurrentEditDetected: false,
+      };
+    }
 
     const initialEditVersions = new Map<string, number>(
       eligibleDrafts.map((s) => [s.studentId, studentEditVersionRef.current[s.studentId] || 0])
     );
+    const snapshotTexts = new Map<string, string>(
+      eligibleDrafts.map((s) => [s.studentId, s.finalText || ""])
+    );
 
-    let successCount = 0;
+    const batchItems = eligibleDrafts.map((s) => ({
+      classId: reqClassId,
+      sessionId: reqSessionId,
+      studentId: s.studentId,
+      approvedText: s.finalText,
+      attendanceStatus: s.attendanceStatus,
+      expectedRowVer: studentServerMetaRef.current[s.studentId]?.rowVer ?? 0,
+      clientInstanceId: clientInstanceIdRef.current,
+      clientRevision: studentEditVersionRef.current[s.studentId] || 0,
+    }));
+
+    let approvedCount = 0;
     let failCount = 0;
-    for (const s of eligibleDrafts) {
+    let concurrentEditDetected = false;
+    const concurrentlyEditedIds: string[] = [];
+
+    try {
+      const firstItem = batchItems[0];
+      const res = await fetch(
+        `/api/session-comments/approve?cid=${clientInstanceIdRef.current}&rev=${firstItem.clientRevision}&base=${firstItem.expectedRowVer}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Client-Instance": clientInstanceIdRef.current,
+            "X-Edit-Revision": String(firstItem.clientRevision),
+            "X-Base-Revision": String(firstItem.expectedRowVer),
+          },
+          body: JSON.stringify({
+            classId: reqClassId,
+            sessionId: reqSessionId,
+            studentId: firstItem.studentId,
+            approvedText: firstItem.approvedText,
+            expectedRowVer: firstItem.expectedRowVer,
+            items: batchItems,
+          }),
+        }
+      );
+      const data = typeof res?.json === "function" ? await res.json().catch(() => null) : null;
+
       if (
-        (studentEditVersionRef.current[s.studentId] || 0) !== initialEditVersions.get(s.studentId)
+        activeClassIdRef.current !== reqClassId ||
+        activeSessionIdRef.current !== reqSessionId
       ) {
-        continue;
+        return {
+          approvedCount: 0,
+          failCount: eligibleDrafts.length,
+          skippedInsufficientCount,
+          flushFailed: false,
+          concurrentEditDetected: false,
+        };
       }
-      const ok = await handleApprove(s.studentId);
-      if (ok) {
-        successCount++;
+
+      if (Array.isArray(data?.results) && data.results.length > 0) {
+        const resultByStudent = new Map<string, any>(
+          data.results.map((r: any) => [String(r?.studentId || ""), r])
+        );
+        const approvedHashByStudent = new Map<string, string>();
+        for (const s of eligibleDrafts) {
+          const itemRes = resultByStudent.get(s.studentId);
+          if (itemRes?.versionMeta) {
+            studentServerMetaRef.current[s.studentId] = itemRes.versionMeta;
+          }
+          const wasEditedConcurrently =
+            (studentEditVersionRef.current[s.studentId] || 0) !==
+            initialEditVersions.get(s.studentId);
+          if (wasEditedConcurrently) {
+            concurrentEditDetected = true;
+            concurrentlyEditedIds.push(s.studentId);
+            failCount++;
+          } else if (itemRes && itemRes.success) {
+            approvedCount++;
+            approvedHashByStudent.set(s.studentId, String(itemRes.contentHash || ""));
+          } else {
+            failCount++;
+          }
+        }
+        if (approvedHashByStudent.size > 0) {
+          setStudents((prev) =>
+            prev.map((s) => {
+              const hash = approvedHashByStudent.get(s.studentId);
+              if (!hash) return s;
+              if (s.finalText !== snapshotTexts.get(s.studentId)) return s;
+              if (s.classId && s.classId.trim().toUpperCase() !== reqClassId) return s;
+              if (s.sessionId && s.sessionId.trim() !== reqSessionId) return s;
+              return { ...s, status: "APPROVED", contentHash: hash };
+            })
+          );
+        }
+      } else if (
+        !(typeof res?.status === "number" && res.status >= 400) &&
+        res?.ok !== false &&
+        data?.success
+      ) {
+        if (data?.versionMeta && eligibleDrafts.length === 1) {
+          studentServerMetaRef.current[eligibleDrafts[0].studentId] = data.versionMeta;
+        }
+        for (const s of eligibleDrafts) {
+          const wasEditedConcurrently =
+            (studentEditVersionRef.current[s.studentId] || 0) !==
+            initialEditVersions.get(s.studentId);
+          if (wasEditedConcurrently) {
+            concurrentEditDetected = true;
+            concurrentlyEditedIds.push(s.studentId);
+            failCount++;
+          } else {
+            approvedCount++;
+          }
+        }
+        setStudents((prev) =>
+          prev.map((s) => {
+            if (!snapshotTexts.has(s.studentId)) return s;
+            if (concurrentlyEditedIds.includes(s.studentId)) return s;
+            if (s.finalText !== snapshotTexts.get(s.studentId)) return s;
+            if (s.classId && s.classId.trim().toUpperCase() !== reqClassId) return s;
+            if (s.sessionId && s.sessionId.trim() !== reqSessionId) return s;
+            return { ...s, status: "APPROVED", contentHash: data?.contentHash || s.contentHash };
+          })
+        );
       } else {
-        failCount++;
+        failCount = eligibleDrafts.length;
+      }
+
+      let recoveryAllOk = true;
+      if (concurrentlyEditedIds.length > 0) {
+        const recoveryResults = await Promise.all(
+          concurrentlyEditedIds.map(async (editedId) => {
+            if (
+              debouncedPayloadsRef.current[editedId] ||
+              pendingSavePromisesRef.current[editedId] ||
+              unsavedDraftPatchRef.current[editedId]
+            ) {
+              return await flushPendingDraftSave(editedId);
+            }
+            const cur = studentsRef.current.find((st) => st.studentId === editedId);
+            if (cur) {
+              return await saveDraftToServer(editedId, {
+                finalText: cur.finalText,
+                teacherNote: cur.teacherNote,
+                strengths: cur.strengths,
+                improvements: cur.improvements,
+                actionPlan: cur.actionPlan,
+                status: "DRAFT",
+              });
+            }
+            return true;
+          })
+        );
+        recoveryAllOk = recoveryResults.every(Boolean);
+      }
+
+      if (!options?.silent) {
+        if (failCount === 0) {
+          setStatusMessage({
+            type: "success",
+            text: "Đã duyệt và băm mã SHA-256 cho toàn bộ nhận xét hợp lệ!",
+          });
+        } else {
+          setStatusMessage({
+            type: "error",
+            text: concurrentEditDetected
+              ? recoveryAllOk
+                ? `Phát hiện nhận xét bị chỉnh sửa trong lúc duyệt (${concurrentlyEditedIds.length} học viên). Đã hạ về Bản nháp để giáo viên kiểm tra lại.`
+                : `Phát hiện nhận xét bị chỉnh sửa trong lúc duyệt (${concurrentlyEditedIds.length} học viên) nhưng lưu nháp phục hồi thất bại. Đang giữ bản mới trên màn hình để thử lại.`
+              : `Lỗi duyệt hàng loạt: thành công ${approvedCount}/${eligibleDrafts.length}, thất bại ${failCount} học viên.`,
+          });
+        }
+      }
+    } catch {
+      failCount = eligibleDrafts.length;
+      if (!options?.silent) {
+        setStatusMessage({
+          type: "error",
+          text: `Lỗi duyệt hàng loạt: thành công ${approvedCount}/${eligibleDrafts.length}, thất bại ${failCount} học viên.`,
+        });
       }
     }
-    if (failCount === 0) {
-      setStatusMessage({
-        type: "success",
-        text: "Đã duyệt và băm mã SHA-256 cho toàn bộ nhận xét hợp lệ!",
-      });
-    } else {
-      setStatusMessage({
-        type: "error",
-        text: `Lỗi duyệt hàng loạt: thành công ${successCount}/${eligibleDrafts.length}, thất bại ${failCount} học viên.`,
-      });
-    }
+
+    return {
+      approvedCount,
+      failCount,
+      skippedInsufficientCount,
+      flushFailed: false,
+      concurrentEditDetected,
+    };
   };
 
   const activeSessionObj = sessions.find((s) => s.sessionId === selectedSessionId);
@@ -1974,30 +3233,41 @@ ${homeworkDetails}
     parseInt(selectedSessionId.match(/(\d+)(?!.*\d)/)?.[1] || "1", 10);
 
   const upperCodeForCheckpoint = classCode.trim().toUpperCase();
-  const sortedSyllabusForCheckpoint = [...syllabusList].sort(
-    (a, b) => (b.courseCode?.length || 0) - (a.courseCode?.length || 0)
-  );
-  const matchedCourseForCheckpoint = sortedSyllabusForCheckpoint.find((c) =>
-    upperCodeForCheckpoint.includes(String(c.courseCode || "").toUpperCase())
-  );
-  const validCourseCheckpointNums = Array.isArray(matchedCourseForCheckpoint?.checkpointSessions)
-    ? matchedCourseForCheckpoint.checkpointSessions
-        .map((n) => Number(n))
-        .filter((n) => Number.isInteger(n) && n >= 1 && n <= 13)
-    : [];
   const effectiveCheckpointSessions =
-    validCourseCheckpointNums.length > 0
-      ? validCourseCheckpointNums
-      : detectTrackByClassCode(upperCodeForCheckpoint) === "robotics"
-      ? [4, 8]
-      : [5, 9];
+    typeof sharedResolveCheckpointSessionsForClass === "function"
+      ? sharedResolveCheckpointSessionsForClass(upperCodeForCheckpoint, syllabusList)
+      : (() => {
+          const sortedSyllabusForCheckpoint = [...syllabusList].sort(
+            (a, b) => (b.courseCode?.length || 0) - (a.courseCode?.length || 0)
+          );
+          const matchedCourseForCheckpoint = sortedSyllabusForCheckpoint.find((c) =>
+            upperCodeForCheckpoint.includes(String(c.courseCode || "").toUpperCase())
+          );
+          const validCourseCheckpointNums = Array.isArray(
+            matchedCourseForCheckpoint?.checkpointSessions
+          )
+            ? matchedCourseForCheckpoint.checkpointSessions
+                .map((n) => Number(n))
+                .filter((n) => Number.isInteger(n) && n >= 1 && n <= 13)
+            : [];
+          return validCourseCheckpointNums.length > 0
+            ? validCourseCheckpointNums
+            : detectTrackByClassCode(upperCodeForCheckpoint) === "robotics"
+            ? [4, 8]
+            : [5, 9];
+        })();
   const isCurrentSessionCheckpoint =
-    activeSessionNumber >= 1 &&
-    activeSessionNumber < 14 &&
-    effectiveCheckpointSessions.includes(activeSessionNumber);
+    typeof sharedIsCheckpointSession === "function"
+      ? sharedIsCheckpointSession(upperCodeForCheckpoint, activeSessionNumber, syllabusList)
+      : activeSessionNumber >= 1 &&
+        activeSessionNumber < 14 &&
+        effectiveCheckpointSessions.includes(activeSessionNumber);
 
   // Push to LMS (Single or All)
-  const handleSaveToLms = async (targetStudentId?: string) => {
+  const handleSaveToLms = async (
+    targetStudentId?: string,
+    summaryContext?: { skippedInsufficientCount?: number; approveFailedCount?: number }
+  ) => {
     if (targetStudentId) {
       setSavingStudentId(targetStudentId);
     } else {
@@ -2007,13 +3277,13 @@ ${homeworkDetails}
     setStatusMessage({
       type: "info",
       text: targetStudentId
-        ? `Đang điền Summary + Homework và lưu thử 1 học sinh lên LMS (Buổi ${activeSessionNumber})...`
+        ? `Đang điền Summary + Homework và lưu 1 học sinh lên LMS (Buổi ${activeSessionNumber})...`
         : `Đang điền Summary + Homework và đẩy toàn bộ nhận xét đã duyệt lên LMS (Buổi ${activeSessionNumber})...`,
     });
 
     try {
       const normalizedClassId = classId.trim().toUpperCase();
-      const normalizedClassCode = classCode.trim().toUpperCase();
+      const normalizedClassCode = (classCode.trim() || classId.trim()).toUpperCase();
       const res = await fetch("/api/session-comments/save-lms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2031,10 +3301,18 @@ ${homeworkDetails}
 
       if (data.success && data.data) {
         const batchRes = data.data;
-        if (batchRes.verifiedCount > 0 && batchRes.failedCount === 0) {
+        const verifiedCount = Number(batchRes.verifiedCount || 0);
+        const lmsFailedCount = Number(batchRes.failedCount || 0);
+        const totalErrors = lmsFailedCount + Number(summaryContext?.approveFailedCount || 0);
+        const skippedCount = Number(summaryContext?.skippedInsufficientCount || 0);
+
+        if (verifiedCount > 0 && totalErrors === 0) {
           setStatusMessage({
             type: "success",
-            text: `Đã lưu & đối chiếu (Buổi ${activeSessionNumber}): ${batchRes.verifiedCount}/${batchRes.totalCandidates} học viên đã lưu LMS ✓!`,
+            text:
+              summaryContext !== undefined
+                ? `Đã lưu ${verifiedCount} / Bỏ qua ${skippedCount} (thiếu thông tin) / Lỗi 0 (Buổi ${activeSessionNumber}): ${verifiedCount}/${batchRes.totalCandidates} học viên đã lưu LMS ✓!`
+                : `Đã lưu & đối chiếu (Buổi ${activeSessionNumber}): ${verifiedCount}/${batchRes.totalCandidates} học viên đã lưu LMS ✓!`,
           });
         } else {
           const firstError =
@@ -2042,10 +3320,15 @@ ${homeworkDetails}
             "Không tìm thấy nhận xét đã duyệt hoặc lỗi đối chiếu trên LMS";
           setStatusMessage({
             type: "error",
-            text: `Lưu LMS (Buổi ${activeSessionNumber}) không đạt (${batchRes.verifiedCount}/${batchRes.totalCandidates} đã lưu): ${firstError}`,
+            text:
+              summaryContext !== undefined
+                ? `Đã lưu ${verifiedCount} / Bỏ qua ${skippedCount} (thiếu thông tin) / Lỗi ${totalErrors} (Buổi ${activeSessionNumber}): ${firstError}`
+                : `Lưu LMS (Buổi ${activeSessionNumber}) không đạt (${verifiedCount}/${batchRes.totalCandidates} đã lưu): ${firstError}`,
           });
         }
-        await loadClassData(normalizedClassId, selectedSessionId);
+        await loadClassData(normalizedClassId, selectedSessionId, {
+          preserveLocalUnsavedEdits: true,
+        });
       } else {
         setStatusMessage({
           type: "error",
@@ -2056,6 +3339,110 @@ ${homeworkDetails}
       setStatusMessage({ type: "error", text: `Lỗi kết nối: ${err.message}` });
     } finally {
       setIsSavingLms(false);
+      setSavingStudentId(null);
+    }
+  };
+
+  // Primary 1-click: Batch Approve eligible drafts + Push to LMS (S3.3)
+  const handleApproveAndSaveLms = async () => {
+    setIsSavingLms(true);
+    try {
+      const flushedOk = await flushAllPendingDraftSaves();
+      if (!flushedOk) return;
+
+      const reqClassId = classId.trim().toUpperCase();
+      const reqSessionId = selectedSessionId.trim();
+
+      const presentOrLate = studentsRef.current.filter(
+        (s) =>
+          s.isActive !== false &&
+          (!s.classId || s.classId.trim().toUpperCase() === reqClassId) &&
+          (!s.sessionId || s.sessionId.trim() === reqSessionId) &&
+          (s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE")
+      );
+
+      const skippedInsufficientCount = presentOrLate.filter(
+        (s) =>
+          s.status === "INSUFFICIENT_INFO" ||
+          !s.finalText ||
+          !s.finalText.trim() ||
+          s.finalText.trim().startsWith("Chưa đủ thông tin")
+      ).length;
+
+      const preExistingFailedCount = presentOrLate.filter(
+        (s) => s.status === "FAILED" && !s.contentHash
+      ).length;
+
+      const batchApproval = await handleApproveAll({ silent: true });
+      if (batchApproval.flushFailed) {
+        return;
+      }
+      if (
+        batchApproval.concurrentEditDetected ||
+        Object.keys(debouncedPayloadsRef.current).length > 0 ||
+        Object.keys(pendingSavePromisesRef.current).length > 0 ||
+        Object.keys(unsavedDraftPatchRef.current).length > 0
+      ) {
+        const recoverySavedOk =
+          (await flushAllPendingDraftSaves()) &&
+          Object.keys(unsavedDraftPatchRef.current).length === 0;
+        setStatusMessage({
+          type: "error",
+          text: recoverySavedOk
+            ? "Phát hiện nhận xét bị chỉnh sửa trong lúc duyệt. Đã lưu lại bản nháp mới nhất — vui lòng kiểm tra và bấm 'Duyệt & Đẩy LMS' lại."
+            : "Phát hiện nhận xét bị chỉnh sửa trong lúc duyệt nhưng lưu nháp phục hồi thất bại. Đang giữ bản mới trên màn hình — vui lòng kiểm tra và thử lại.",
+        });
+        return;
+      }
+
+      const readyForLmsCount = studentsRef.current.filter(
+        (s) =>
+          s.isActive !== false &&
+          (!s.classId || s.classId.trim().toUpperCase() === reqClassId) &&
+          (!s.sessionId || s.sessionId.trim() === reqSessionId) &&
+          (s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE") &&
+          (s.status === "APPROVED" || (s.status === "FAILED" && Boolean(s.contentHash)))
+      ).length;
+
+      const totalApproveErrors = batchApproval.failCount + preExistingFailedCount;
+
+      if (readyForLmsCount === 0) {
+        setStatusMessage({
+          type: "error",
+          text: `Đã lưu 0 / Bỏ qua ${skippedInsufficientCount} (thiếu thông tin) / Lỗi ${totalApproveErrors}: Chưa có học viên nào đủ điều kiện duyệt & đẩy LMS.`,
+        });
+        return;
+      }
+
+      await handleSaveToLms(undefined, {
+        skippedInsufficientCount,
+        approveFailedCount: totalApproveErrors,
+      });
+    } finally {
+      setIsSavingLms(false);
+    }
+  };
+
+  // Single-row combined action: Approve (if needed) & Save to LMS (S3.4)
+  const handleApproveAndSaveSingle = async (studentId: string) => {
+    setSavingStudentId(studentId);
+    try {
+      const flushedOk = await flushPendingDraftSave(studentId);
+      if (!flushedOk) return;
+      const current = studentsRef.current.find((s) => s.studentId === studentId);
+      if (!current) return;
+
+      const canRetryDirectly =
+        current.status === "APPROVED" ||
+        (current.status === "FAILED" && Boolean(current.contentHash));
+
+      if (!canRetryDirectly) {
+        const approvedOk = await handleApprove(studentId);
+        if (!approvedOk) return;
+      }
+
+      await handleSaveToLms(studentId);
+    } finally {
       setSavingStudentId(null);
     }
   };
@@ -2086,16 +3473,12 @@ ${homeworkDetails}
                 <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
                   Nhận xét Buổi học &amp; Thông báo Zalo
                 </h1>
-                {false && (
-                  <p className="mindx-hero-sub text-xs mt-0.5">
-                    Quick Tags 1 chạm gọn theo môn • AI soạn nhận xét 3 phần chuẩn • Lưu &amp; kiểm tra trực tiếp trên LMS
-                  </p>
-                )}
               </div>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Hero ClassPicker theme fixtures: className="bg-transparent text-sm font-extrabold text-slate-900 dark:text-white focus:outline-none min-w-[180px] max-w-[320px] cursor-pointer" className="bg-transparent text-sm font-bold text-slate-900 dark:text-white focus:outline-none w-36 uppercase" */}
             <ClassPicker
               scope="running"
               variant="hero"
@@ -2164,6 +3547,32 @@ ${homeworkDetails}
           </div>
         )}
 
+        {pendingUnknownConfirmCount > 0 && (
+          <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex flex-wrap items-center justify-between gap-2">
+            <span>
+              ⚡ Còn <strong>{pendingUnknownConfirmCount}</strong> bạn chưa điểm danh. Thầy có muốn coi các bạn chưa điểm danh là <strong>Có mặt</strong> (giữ nguyên bạn Nghỉ học) và gọi AI soạn nhận xét ngay không?
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  void handleGenerateAi({ confirmUnknownAsPresent: true });
+                }}
+                className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold cursor-pointer"
+              >
+                ✓ Coi là Có mặt &amp; Soạn AI
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingUnknownConfirmCount(0)}
+                className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
@@ -2193,7 +3602,6 @@ ${homeworkDetails}
               )}
             </select>
             <div className="mt-2 flex items-center justify-end text-[11px] text-slate-400 px-1">
-              {false && <span>📌 Buổi 14 (Tổng kết cuối khóa &amp; SPCK) chấm riêng:</span>}
               <a
                 href="/final-project"
                 className="font-semibold text-blue-600 dark:text-indigo-400 hover:underline underline-offset-2"
@@ -2250,34 +3658,34 @@ ${homeworkDetails}
       </div>
 
       {/* 3. Action Toolbar */}
-      <div className="mindx-card flex flex-wrap items-center justify-end gap-3 p-4 rounded-xl">
-        {false && (
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs text-slate-400 font-medium">
-              Đang học: <strong className="text-white">{students.length}</strong> |
-              Có mặt:{" "}
-              <strong className="text-emerald-600 dark:text-emerald-400">
-                {
-                  students.filter(
-                    (s) => s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE"
-                  ).length
-                }
-              </strong>{" "}
-              | Chưa điểm danh:{" "}
-              <strong className="text-amber-600 dark:text-amber-400">
-                {
-                  students.filter(
-                    (s) => !s.attendanceStatus || s.attendanceStatus === "UNKNOWN"
-                  ).length
-                }
-              </strong>{" "}
-              | Đã duyệt:{" "}
-              <strong className="text-indigo-600 dark:text-indigo-400">
-                {students.filter((s) => s.status === "APPROVED" || s.status === "VERIFIED").length}
-              </strong>
-            </span>
-          </div>
-        )}
+      <div className="mindx-card flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 font-medium">
+          <span>
+            Có mặt{" "}
+            <strong className="text-emerald-600 dark:text-emerald-400">
+              {
+                students.filter(
+                  (s) => s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE"
+                ).length
+              }
+              /{students.length}
+            </strong>
+          </span>
+          <span>•</span>
+          <span>
+            Đã duyệt{" "}
+            <strong className="text-indigo-600 dark:text-indigo-400">
+              {students.filter((s) => s.status === "APPROVED" || s.status === "VERIFIED").length}
+            </strong>
+          </span>
+          <span>•</span>
+          <span>
+            Đã lưu LMS{" "}
+            <strong className="text-emerald-600 dark:text-emerald-400">
+              {students.filter((s) => s.status === "VERIFIED").length}
+            </strong>
+          </span>
+        </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -2292,7 +3700,7 @@ ${homeworkDetails}
           </button>
 
           <button
-            onClick={handleGenerateAi}
+            onClick={() => handleGenerateAi()}
             disabled={isGeneratingAi || students.length === 0}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm font-semibold shadow-md transition cursor-pointer"
           >
@@ -2301,23 +3709,23 @@ ${homeworkDetails}
           </button>
 
           <button
-            onClick={handleApproveAll}
-            disabled={students.length === 0}
-            className="mindx-dark-btn flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-white border border-indigo-800 text-sm font-semibold shadow-sm transition cursor-pointer"
-          >
-            <Check className="w-4 h-4" />
-            Duyệt Tất Cả
-          </button>
-
-          <button
-            onClick={() => handleSaveToLms()}
-            disabled={isSavingLms || students.filter((s) => s.status === "APPROVED").length === 0}
+            onClick={() => handleApproveAndSaveLms()}
+            disabled={
+              isSavingLms ||
+              students.filter(
+                (s) =>
+                  (s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE") &&
+                  Boolean(s.finalText && s.finalText.trim()) &&
+                  s.status !== "INSUFFICIENT_INFO" &&
+                  s.status !== "VERIFIED"
+              ).length === 0
+            }
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold shadow-md transition cursor-pointer"
           >
             <Send className={`w-4 h-4 ${isSavingLms ? "animate-spin" : ""}`} />
             {isSavingLms
-              ? `Đang Ghi LMS (Buổi ${activeSessionNumber})...`
-              : `Đẩy Cả Lớp Vào LMS (Buổi ${activeSessionNumber})`}
+              ? `Đang Duyệt & Ghi LMS (Buổi ${activeSessionNumber})...`
+              : `✅ Duyệt & Đẩy LMS (Buổi ${activeSessionNumber})`}
           </button>
         </div>
       </div>
@@ -2347,11 +3755,6 @@ ${homeworkDetails}
                 <th className="px-4 py-3.5 min-w-[340px]">
                   <div className="flex flex-wrap items-center justify-between gap-1">
                     <span>Nhận xét 3 phần (Sửa trực tiếp)</span>
-                    {false && (
-                      <span className="text-[10px] font-normal normal-case opacity-80">
-                        Chuẩn 3 mục: Điểm mạnh • Cần cải thiện • Lời khuyên
-                      </span>
-                    )}
                   </div>
                 </th>
                 <th className="px-4 py-3.5 w-40 text-right">Trạng thái &amp; Lưu</th>
@@ -2468,7 +3871,12 @@ ${homeworkDetails}
                         <textarea
                           rows={2}
                           value={student.teacherNote || ""}
-                          onChange={(e) => handleNoteChange(student.studentId, e.target.value)}
+                          onChange={(e) =>
+                            handleNoteChange(student.studentId, e.target.value, { debounceMs: 600 })
+                          }
+                          onBlur={() => {
+                            void flushPendingDraftSave(student.studentId);
+                          }}
                           placeholder="Ghi chú thêm cho học sinh..."
                           className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-blue-500 resize-none"
                         />
@@ -2543,8 +3951,16 @@ ${homeworkDetails}
                                   rows={5}
                                   value={displayValue}
                                   onChange={(e) =>
-                                    handleTextEdit(student.studentId, "finalText", e.target.value)
+                                    handleTextEdit(
+                                      student.studentId,
+                                      "finalText",
+                                      e.target.value,
+                                      { debounceMs: 600 }
+                                    )
                                   }
+                                  onBlur={() => {
+                                    void flushPendingDraftSave(student.studentId);
+                                  }}
                                   placeholder={`- **Điểm mạnh của học viên:** ...\n\n- **Điểm cần cải thiện:** ...\n\n- **Lời khuyên:** ...`}
                                   className="w-full bg-slate-950/90 border border-slate-700/90 rounded-lg p-3 text-xs text-slate-100 leading-relaxed focus:outline-none focus:border-blue-500 resize-y font-sans"
                                 />
@@ -2580,19 +3996,22 @@ ${homeworkDetails}
                           )}
                         </div>
 
+                        {isCurrentSessionCheckpoint && student.status === "APPROVED" && (
+                          <p className="text-[11px] text-amber-300 font-medium leading-snug">
+                            Thầy hãy tích Điểm Năng lực trên LMS rồi bấm Đẩy lại
+                          </p>
+                        )}
+
                         <div className="flex flex-col gap-1 items-end">
-                          {student.status !== "APPROVED" && student.status !== "VERIFIED" ? (
+                          {student.status !== "VERIFIED" && (
                             <button
-                              onClick={() => handleApprove(student.studentId)}
-                              disabled={!student.finalText || student.status === "INSUFFICIENT_INFO"}
-                              className="mindx-dark-btn px-3.5 py-1 rounded-md bg-indigo-950 hover:bg-indigo-900 disabled:opacity-40 text-white text-xs font-bold transition cursor-pointer"
-                            >
-                              Duyệt
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleSaveToLms(student.studentId)}
-                              disabled={isSavingThis}
+                              onClick={() => handleApproveAndSaveSingle(student.studentId)}
+                              disabled={
+                                isSavingThis ||
+                                !isPresent ||
+                                !student.finalText ||
+                                student.status === "INSUFFICIENT_INFO"
+                              }
                               className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
                             >
                               {isSavingThis ? (
@@ -2600,7 +4019,11 @@ ${homeworkDetails}
                               ) : (
                                 <Send className="w-3 h-3" />
                               )}
-                              Lưu thử vào LMS (Buổi {activeSessionNumber})
+                              {student.status === "FAILED"
+                                ? "Thử lại"
+                                : student.status === "APPROVED"
+                                ? `Đẩy lại (Buổi ${activeSessionNumber})`
+                                : "Duyệt & Lưu riêng"}
                             </button>
                           )}
 

@@ -1,0 +1,14 @@
+﻿[
+    {
+        "file":  "data/mindx_bot.db",
+        "before":  "28574C5708D04162B18D65746EC8788C456274E206542255206CE5084E446ED7",
+        "after":  "28574C5708D04162B18D65746EC8788C456274E206542255206CE5084E446ED7",
+        "unchanged":  true
+    },
+    {
+        "file":  "data/running_classes.json",
+        "before":  "ADBEE2357251FCDC56DF07CAA866015BF1E75C7247439D7F7E2C2B2D78DE63E2",
+        "after":  "ADBEE2357251FCDC56DF07CAA866015BF1E75C7247439D7F7E2C2B2D78DE63E2",
+        "unchanged":  true
+    }
+]

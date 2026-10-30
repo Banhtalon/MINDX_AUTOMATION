@@ -3,6 +3,14 @@ import {
   renderZaloBroadcast,
   findLessonInSyllabus,
 } from "../db/json-config";
+import {
+  formatShortZaloName,
+  addDaysToDdMmYyyyDetailed,
+  buildCourseKeyNotes,
+  buildBtvnPart2,
+  buildAutoZaloBroadcastText,
+  DEFAULT_STANDARD_ZALO_TEMPLATE,
+} from "./zalo-summary";
 
 export interface ZaloBroadcastOptions {
   classCode: string;
@@ -33,124 +41,37 @@ export interface ZaloBroadcastResult {
 }
 
 export class ZaloBroadcastGenerator {
-  /**
-   * Rút gọn họ tên học sinh theo quy tắc Tên đệm + Tên (bỏ họ đầu nếu tên >= 3 chữ).
-   * Ví dụ: "Nguyễn Thành Phong" -> "Thành Phong", "Đức Tuấn" -> "Đức Tuấn".
-   */
   public static formatShortStudentName(fullName: string): string {
-    const words = String(fullName || "")
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
-    if (words.length >= 3) {
-      return words.slice(1).join(" ");
-    }
-    return words.join(" ");
+    return formatShortZaloName(fullName);
   }
 
-  /**
-   * Nguyên tắc Tịnh tiến Thời gian: Cộng thêm số ngày (mặc định +7 ngày) từ mốc dd/mm/yyyy
-   * và trả về Thứ trong tuần kèm ngày dd/mm/yyyy.
-   */
   public static addDaysToDdMmYyyy(
     dateStr?: string,
     daysToAdd = 7
   ): { dateFormatted: string; weekdayLabel: string; fullLabel: string } | null {
-    if (!dateStr) return null;
-    const m = String(dateStr)
-      .trim()
-      .match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (!m) return null;
-    const d = new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
-    if (Number.isNaN(d.getTime())) return null;
-    d.setDate(d.getDate() + daysToAdd);
-
-    const dd = String(d.getDate()).padStart(2, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const yyyy = String(d.getFullYear());
-    const dateFormatted = `${dd}/${mm}/${yyyy}`;
-
-    const weekdays = [
-      "Chủ nhật",
-      "Thứ Hai",
-      "Thứ Ba",
-      "Thứ Tư",
-      "Thứ Năm",
-      "Thứ Sáu",
-      "Thứ Bảy",
-    ];
-    const weekdayLabel = weekdays[d.getDay()] || "";
-    return {
-      dateFormatted,
-      weekdayLabel,
-      fullLabel: `${weekdayLabel}, ngày ${dateFormatted}`,
-    };
+    return addDaysToDdMmYyyyDetailed(dateStr, daysToAdd);
   }
 
   public static buildCourseKeyNotes(
     classCode: string,
     keyKnowledge?: string[]
   ): string[] {
-    const upperCode = (classCode || "").toUpperCase();
-    const isGameMakerCourse = /\b(GA|GB|GI)\d*/i.test(upperCode);
-
-    if (isGameMakerCourse) {
-      return [
-        "- Trình bày được mối liên hệ giữa giao diện, nhân vật và luật chơi trong vòng lặp chơi chính.",
-        "- Thực hiện lập trình ổn định các cơ chế điều khiển và chức năng cốt lõi của sản phẩm.",
-        "- Thực hiện kiểm thử từng chức năng sau khi hoàn thành để đảm bảo chương trình vận hành mượt mà.",
-      ];
-    }
-
-    if (keyKnowledge && keyKnowledge.length > 0) {
-      const cleanFirst = keyKnowledge[0].replace(/^[-•+]\s*/, "").trim();
-      return [
-        `- Trình bày được ý nghĩa và vận dụng kiến thức trọng tâm: ${cleanFirst}`,
-        "- Thực hiện viết code/xây dựng sản phẩm và kiểm thử từng chức năng để đảm bảo chương trình vận hành ổn định.",
-        "- Thực hiện hoàn thiện dự án cá nhân và rèn luyện tư duy giải quyết vấn đề.",
-      ];
-    }
-
-    return [
-      "- Trình bày được các khái niệm và cấu trúc lệnh trọng tâm đã học trong buổi.",
-      "- Thực hiện kiểm thử từng chức năng của sản phẩm để đảm bảo chương trình vận hành ổn định.",
-      "- Thực hiện phát triển thêm các tính năng mở rộng cho dự án.",
-    ];
+    return buildCourseKeyNotes(classCode, keyKnowledge);
   }
 
-  /**
-   * Xây dựng Phần 2 (Nhận xét tình trạng làm BTVN) - CHỈ xuất khi có tải ảnh BTVN.
-   */
   public static buildBtvnPart2(unsubmittedRawNames: string[]): string {
-    const shortNames = unsubmittedRawNames
-      .map((n) => this.formatShortStudentName(n))
-      .filter(Boolean);
-
-    if (shortNames.length === 0) {
-      return [
-        "Em xin phép cập nhật tình trạng làm bài của các con: Cả lớp đã hoàn thành **100% bài tập về nhà** đầy đủ và đúng hạn, rất đáng khen ngợi!",
-        "Phụ huynh tiếp tục khích lệ các con duy trì tinh thần tự giác ôn tập bài cũ để chuẩn bị tốt cho các nội dung học tập ở buổi tiếp theo.",
-        "Em xin cảm ơn Quý phụ huynh!",
-      ].join("\n");
-    }
-
-    return [
-      `Em xin phép cập nhật tình trạng làm bài của các con. Những bạn sau **chưa hoàn thành** bài cần bổ sung gấp: *${shortNames.join(", ")}*`,
-      "Phụ huynh nhắc nhở các con hoàn thành đầy đủ bài tập và ôn tập bài cũ thật kỹ để củng cố kiến thức, chuẩn bị tốt cho các nội dung học tập ở buổi tiếp theo.",
-      "Em xin cảm ơn Quý phụ huynh!",
-    ].join("\n");
+    return buildBtvnPart2(unsubmittedRawNames);
   }
 
   /**
    * Generates standard Zalo broadcast announcement for the entire class.
-   * Auto-pulls syllabus lesson details based on classCode prefix and sessionNumber.
+   * Delegates to the unified `zalo-summary` engine while preserving template variable compatibility.
    */
   public static generate(options: ZaloBroadcastOptions): ZaloBroadcastResult {
     const templates = getZaloTemplates();
     const templateId = options.templateId || "standard_session_broadcast";
     const template = templates.find((t) => t.id === templateId) || templates[0];
 
-    // Try finding syllabus data for current session and next session
     const syllabusLesson = findLessonInSyllabus(options.classCode, options.sessionNumber);
     const nextSyllabusLesson = findLessonInSyllabus(options.classCode, options.sessionNumber + 1);
 
@@ -178,7 +99,7 @@ export class ZaloBroadcastGenerator {
     const rawKeyNotesList =
       options.keyNotesOverride && options.keyNotesOverride.length > 0
         ? options.keyNotesOverride
-        : this.buildCourseKeyNotes(options.classCode, rawKnowledgeList);
+        : buildCourseKeyNotes(options.classCode, rawKnowledgeList);
     const keyNotesList = rawKeyNotesList.map((line) => {
       const trimmed = String(line || "").trim();
       return /^[-•*]/.test(trimmed) ? trimmed.replace(/^[•*]\s*/, "- ") : `- ${trimmed}`;
@@ -205,7 +126,7 @@ export class ZaloBroadcastGenerator {
       ? `${defaultDeniseHomework}\n+ ${rawCustomHw.replace(/^[+-]\s*/, "")}`
       : defaultDeniseHomework;
 
-    const plus7 = this.addDaysToDdMmYyyy(options.sessionDate, 7);
+    const plus7 = addDaysToDdMmYyyyDetailed(options.sessionDate, 7);
 
     const variables: Record<string, string> = {
       className: options.classCode,
@@ -239,11 +160,33 @@ export class ZaloBroadcastGenerator {
       supportContact: options.supportContact || "Kênh hỗ trợ lớp học MindX",
     };
 
-    let renderedText = renderZaloBroadcast(template.id, variables);
-    if (options.hasBtvnImage) {
-      const part2 = this.buildBtvnPart2(options.btvnUnsubmittedNames || []);
-      renderedText = `${renderedText}\n\n${part2}`;
-    }
+    const part2Text = options.hasBtvnImage
+      ? buildBtvnPart2(options.btvnUnsubmittedNames || [])
+      : "";
+
+    const isDefaultStandardTemplate =
+      (!options.templateId || options.templateId === "standard_session_broadcast") &&
+      (!template || template.template === DEFAULT_STANDARD_ZALO_TEMPLATE);
+
+    const renderedText = isDefaultStandardTemplate
+      ? buildAutoZaloBroadcastText({
+          classCode: options.classCode,
+          sessionNumber: options.sessionNumber,
+          sessionDate: options.sessionDate || "chưa xác nhận ngày học",
+          attendanceCountOverride: variables.attendanceCount,
+          generalFeedbackOverride: variables.generalFeedback,
+          currentTopic: lessonTopic,
+          currentKeyKnowledge: rawKnowledgeList,
+          currentHomeworkBrief: rawCustomHw,
+          keyNotesOverride: rawKeyNotesList,
+          nextSessionTimeOverride: variables.nextSessionTime,
+          nextSessionTopicOverride: nextSessionTopic,
+          homeworkDeadlineOverride: variables.homeworkDeadline,
+          part2Text,
+        })
+      : part2Text
+      ? `${renderZaloBroadcast(template.id, variables)}\n\n${part2Text}`
+      : renderZaloBroadcast(template.id, variables);
 
     return {
       templateId: template.id,

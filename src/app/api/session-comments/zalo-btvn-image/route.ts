@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { getGeminiModel } from "@/lib/gemini/client";
-import { ZaloBroadcastGenerator } from "@/lib/zalo/broadcast-generator";
+import { formatShortZaloName, buildBtvnPart2 } from "@/lib/zalo/zalo-summary";
 
 export async function POST(req: Request) {
   const guard = validateLocalRequest(req);
@@ -52,8 +52,8 @@ Quy tắc:
       ? parsed.unsubmittedStudents.map((n: any) => String(n || "").trim()).filter(Boolean)
       : [];
 
-    const shortNames = rawNames.map((n) => ZaloBroadcastGenerator.formatShortStudentName(n));
-    const part2Text = ZaloBroadcastGenerator.buildBtvnPart2(rawNames);
+    const shortNames = rawNames.map((n) => formatShortZaloName(n));
+    const part2Text = buildBtvnPart2(rawNames);
 
     return NextResponse.json({
       success: true,

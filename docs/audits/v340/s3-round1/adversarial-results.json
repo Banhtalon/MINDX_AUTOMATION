@@ -1,0 +1,358 @@
+{
+  "pass": 12,
+  "fail": 11,
+  "results": [
+    {
+      "id": "P01-debounce-no-early-request",
+      "pass": true,
+      "detail": [
+        {
+          "url": "http://127.0.0.1:3000/api/session-comments/save-draft?cid=sc_1793325886585_qwhhvu&rev=4&base=1&fbase=strengths%3A0%2Cimprovements%3A0%2CactionPlan%3A0%2CfinalText%3A0&f=strengths%2Cimprovements%2CactionPlan%2CfinalText",
+          "body": {
+            "classId": "AUDIT-S3-1",
+            "sessionId": "AUDIT-S3-1_SESS_01",
+            "studentId": "S0",
+            "status": "DRAFT",
+            "strengths": "",
+            "improvements": "",
+            "actionPlan": "",
+            "finalText": "NEW TEXT"
+          }
+        }
+      ]
+    },
+    {
+      "id": "P02-blur-latest-text",
+      "pass": true,
+      "detail": "NEW TEXT"
+    },
+    {
+      "id": "P03-save-failure-must-block-ai",
+      "pass": false,
+      "detail": {
+        "downstream": [
+          {
+            "url": "http://127.0.0.1:3000/api/session-comments/generate-ai",
+            "body": {
+              "session": {
+                "classId": "AUDIT-S3-2",
+                "classCode": "AUDIT-S3-2",
+                "sessionId": "AUDIT-S3-2_SESS_01",
+                "sessionNumber": 1,
+                "topic": "Ôn tập cú pháp Python",
+                "keyKnowledge": [
+                  "Ôn tập cú pháp Python: Biến, kiểu dữ liệu và toán tử.",
+                  "Ôn tập câu điều kiện.",
+                  "Ôn tập vòng lặp.",
+                  "Ôn tập danh sách (List).",
+                  "Ôn tập hàm (Function)."
+                ]
+              },
+              "students": [
+                {
+                  "studentId": "S0",
+                  "fullName": "Synthetic S0",
+                  "isActive": true,
+                  "attendanceStatus": "PRESENT",
+                  "quickTags": [
+                    "✅ Tiếp thu tốt"
+                  ],
+                  "teacherNote": "ORIGINAL NOTE",
+                  "expectedRowVer": 1
+                }
+              ]
+            }
+          }
+        ],
+        "dbStatus": "DRAFT",
+        "dbText": "ORIGINAL TEXT",
+        "message": {
+          "type": "success",
+          "text": "Đã soạn xong nhận xét cho 0 học sinh. (0 học sinh chưa có tags/ghi chú -> giữ Chưa đủ thông tin)."
+        }
+      }
+    },
+    {
+      "id": "P04-save-failure-must-block-all",
+      "pass": false,
+      "detail": {
+        "downstream": [
+          {
+            "url": "http://127.0.0.1:3000/api/session-comments/approve?cid=sc_1793325886683_l6u8jz&rev=2&base=1",
+            "body": {
+              "classId": "AUDIT-S3-3",
+              "sessionId": "AUDIT-S3-3_SESS_01",
+              "studentId": "S0",
+              "approvedText": "ORIGINAL TEXT",
+              "expectedRowVer": 1,
+              "items": [
+                {
+                  "classId": "AUDIT-S3-3",
+                  "sessionId": "AUDIT-S3-3_SESS_01",
+                  "studentId": "S0",
+                  "approvedText": "ORIGINAL TEXT",
+                  "attendanceStatus": "PRESENT",
+                  "expectedRowVer": 1,
+                  "clientInstanceId": "sc_1793325886683_l6u8jz",
+                  "clientRevision": 2
+                }
+              ]
+            }
+          },
+          {
+            "url": "http://127.0.0.1:3000/api/session-comments/save-lms",
+            "body": {
+              "classId": "AUDIT-S3-3",
+              "classCode": "AUDIT-S3-3",
+              "sessionId": "AUDIT-S3-3_SESS_01",
+              "topic": "Ôn tập cú pháp Python",
+              "keyKnowledge": [
+                "Ôn tập cú pháp Python: Biến, kiểu dữ liệu và toán tử.",
+                "Ôn tập câu điều kiện.",
+                "Ôn tập vòng lặp.",
+                "Ôn tập danh sách (List).",
+                "Ôn tập hàm (Function)."
+              ],
+              "homeworkBrief": "Ôn tập tổng hợp cú pháp Python nền tảng (biến, kiểu dữ liệu, toán tử, câu điều kiện, vòng lặp, danh sách và hàm)."
+            }
+          }
+        ],
+        "dbStatus": "APPROVED",
+        "dbText": "ORIGINAL TEXT",
+        "message": {
+          "type": "success",
+          "text": "Đã lưu 1 / Bỏ qua 0 (thiếu thông tin) / Lỗi 0 (Buổi 1): 1/1 học viên đã lưu LMS ✓!"
+        }
+      }
+    },
+    {
+      "id": "P05-save-failure-must-block-single",
+      "pass": false,
+      "detail": {
+        "downstream": [
+          {
+            "url": "http://127.0.0.1:3000/api/session-comments/approve?cid=sc_1793325886739_do641k&rev=2&base=1",
+            "body": {
+              "classId": "AUDIT-S3-4",
+              "sessionId": "AUDIT-S3-4_SESS_01",
+              "studentId": "S0",
+              "approvedText": "ORIGINAL TEXT",
+              "expectedRowVer": 1
+            }
+          },
+          {
+            "url": "http://127.0.0.1:3000/api/session-comments/save-lms",
+            "body": {
+              "classId": "AUDIT-S3-4",
+              "classCode": "AUDIT-S3-4",
+              "sessionId": "AUDIT-S3-4_SESS_01",
+              "studentId": "S0",
+              "topic": "Ôn tập cú pháp Python",
+              "keyKnowledge": [
+                "Ôn tập cú pháp Python: Biến, kiểu dữ liệu và toán tử.",
+                "Ôn tập câu điều kiện.",
+                "Ôn tập vòng lặp.",
+                "Ôn tập danh sách (List).",
+                "Ôn tập hàm (Function)."
+              ],
+              "homeworkBrief": "Ôn tập tổng hợp cú pháp Python nền tảng (biến, kiểu dữ liệu, toán tử, câu điều kiện, vòng lặp, danh sách và hàm)."
+            }
+          }
+        ],
+        "dbStatus": "APPROVED",
+        "dbText": "ORIGINAL TEXT",
+        "message": {
+          "type": "success",
+          "text": "Đã lưu & đối chiếu (Buổi 1): 1/1 học viên đã lưu LMS ✓!"
+        }
+      }
+    },
+    {
+      "id": "P06-save-failure-must-block-approve-only",
+      "pass": false,
+      "detail": {
+        "downstream": [
+          {
+            "url": "http://127.0.0.1:3000/api/session-comments/approve?cid=sc_1793325886798_jyx7bi&rev=2&base=1",
+            "body": {
+              "classId": "AUDIT-S3-5",
+              "sessionId": "AUDIT-S3-5_SESS_01",
+              "studentId": "S0",
+              "approvedText": "ORIGINAL TEXT",
+              "expectedRowVer": 1,
+              "items": [
+                {
+                  "classId": "AUDIT-S3-5",
+                  "sessionId": "AUDIT-S3-5_SESS_01",
+                  "studentId": "S0",
+                  "approvedText": "ORIGINAL TEXT",
+                  "attendanceStatus": "PRESENT",
+                  "expectedRowVer": 1,
+                  "clientInstanceId": "sc_1793325886798_jyx7bi",
+                  "clientRevision": 2
+                }
+              ]
+            }
+          }
+        ],
+        "dbStatus": "APPROVED",
+        "dbText": "ORIGINAL TEXT",
+        "message": {
+          "type": "success",
+          "text": "Đã duyệt và băm mã SHA-256 cho toàn bộ nhận xét hợp lệ!"
+        }
+      }
+    },
+    {
+      "id": "P07-unload-enqueue-all-rows",
+      "pass": false,
+      "detail": {
+        "sent": [
+          {
+            "studentId": "S0",
+            "keepalive": false
+          }
+        ],
+        "pending": [
+          "S1"
+        ]
+      }
+    },
+    {
+      "id": "P08-unload-request-survives-navigation",
+      "pass": false,
+      "detail": [
+        false
+      ]
+    },
+    {
+      "id": "P09-partial-batch-result-and-rollback",
+      "pass": true,
+      "detail": {
+        "states": [
+          {
+            "studentId": "S0",
+            "attendanceStatus": "PRESENT"
+          },
+          {
+            "studentId": "S1",
+            "attendanceStatus": "UNKNOWN"
+          }
+        ],
+        "message": {
+          "type": "error",
+          "text": "Lỗi xác nhận điểm danh hàng loạt: thành công 1/2, thất bại 1 học viên (Synthetic S1)."
+        }
+      }
+    },
+    {
+      "id": "P10-partial-exception-accounted",
+      "pass": false,
+      "detail": {
+        "http": 500,
+        "body": {
+          "success": false,
+          "error": "SQLite3 can only bind numbers, strings, bigints, buffers, and null"
+        },
+        "first": "COMMITTED FIRST",
+        "third": "ORIGINAL NOTE"
+      }
+    },
+    {
+      "id": "P11-stale-field-version",
+      "pass": true,
+      "detail": "LATEST"
+    },
+    {
+      "id": "P12-CAS-stale-row-blocked",
+      "pass": true,
+      "detail": 409
+    },
+    {
+      "id": "P13-approval-hash",
+      "pass": true,
+      "detail": "b336adc1bdbaff2c06e76cf416757b3fc6e72d7ca46248a14bd45c5aa1190e5c"
+    },
+    {
+      "id": "P14-edit-demotes-approved",
+      "pass": true,
+      "detail": {
+        "status": "DRAFT",
+        "hash": ""
+      }
+    },
+    {
+      "id": "P15-status-INSUFFICIENT_INFO-blocked",
+      "pass": false,
+      "detail": {
+        "http": 200,
+        "status": "APPROVED"
+      }
+    },
+    {
+      "id": "P15-status-FAILED-blocked",
+      "pass": false,
+      "detail": {
+        "http": 200,
+        "status": "APPROVED"
+      }
+    },
+    {
+      "id": "P17-concurrent-edit-not-pushed-as-old-approved-row",
+      "pass": false,
+      "detail": {
+        "lmsRequested": true,
+        "uiText": "ORIGINAL TEXT",
+        "dbText": "ORIGINAL TEXT",
+        "dbStatus": "APPROVED",
+        "dbHash": "0496b409fef66d3efc2f621a31babc6a71a8e8fe03bda4654ced43ac4f748c7d",
+        "message": {
+          "type": "error",
+          "text": "Đã lưu 2 / Bỏ qua 0 (thiếu thông tin) / Lỗi 1 (Buổi 1): Không tìm thấy nhận xét đã duyệt hoặc lỗi đối chiếu trên LMS"
+        }
+      }
+    },
+    {
+      "id": "P18-successful-flush-before-AI",
+      "pass": true,
+      "detail": "LATEST NOTE FOR AI"
+    },
+    {
+      "id": "P19-successful-flush-before-single",
+      "pass": true,
+      "detail": {
+        "text": "LATEST BEFORE APPROVE",
+        "hash": "7dc8d91bba7960daa188192692291c85bdf4ddfa015e4ba6aa10ba87a3000ae3"
+      }
+    },
+    {
+      "id": "P20-successful-flush-before-all",
+      "pass": true,
+      "detail": {
+        "text": "LATEST BEFORE APPROVE",
+        "hash": "7dc8d91bba7960daa188192692291c85bdf4ddfa015e4ba6aa10ba87a3000ae3"
+      }
+    },
+    {
+      "id": "P21-reverse-arrival-keeps-latest",
+      "pass": true,
+      "detail": "NEWER"
+    },
+    {
+      "id": "P22-unknown-confirm-preserves-absence",
+      "pass": true,
+      "detail": {
+        "first": "PRESENT",
+        "second": "ABSENT"
+      }
+    },
+    {
+      "id": "P16-standard-template-preserved",
+      "pass": false,
+      "detail": {
+        "renderedPrefix": "@All Kính gửi quý phụ huynh học viên\nEm xin phép tổng kết sau buổi học số 1 – 23/10/2026\nM",
+        "templateId": "standard_session_broadcast"
+      }
+    }
+  ]
+}

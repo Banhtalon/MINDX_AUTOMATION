@@ -1,0 +1,100 @@
+[
+  {
+    "name": "test-streamline-v340-s3",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-streamline-v340-s3.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 773
+  },
+  {
+    "name": "test-quick-tags-v300",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-quick-tags-v300.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 728
+  },
+  {
+    "name": "test-streamline-v340-s1",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-streamline-v340-s1.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 740
+  },
+  {
+    "name": "test-streamline-v340-s2",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-streamline-v340-s2.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 766
+  },
+  {
+    "name": "test-phase5",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-phase5.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 733
+  },
+  {
+    "name": "test-phase6",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-phase6.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 744
+  },
+  {
+    "name": "test-phase7",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-phase7.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 731
+  },
+  {
+    "name": "test-phase4-codex-repros",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-phase4-codex-repros.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 838
+  },
+  {
+    "name": "test-spck-v270",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-spck-v270.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 727
+  },
+  {
+    "name": "test-spck-v272",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-spck-v272.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 729
+  },
+  {
+    "name": "test-lms-reliability-v280",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-lms-reliability-v280.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 708
+  },
+  {
+    "name": "test-session14-v290",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-session14-v290.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 713
+  },
+  {
+    "name": "test-teaching-project-v320",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-teaching-project-v320.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 745
+  },
+  {
+    "name": "test-report-card-v330",
+    "command": "node F:\\MINDX_project test\\MINDX-AUTOMATION\\node_modules\\tsx\\dist\\cli.mjs scripts/test-report-card-v330.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 756
+  }
+]

@@ -1,0 +1,107 @@
+[
+  {
+    "name": "tsc",
+    "command": "npx tsc --noEmit --incremental false",
+    "exitCode": 0,
+    "signal": null,
+    "ms": 447
+  },
+  {
+    "name": "test-streamline-v340-s3",
+    "command": "node loader.cjs scripts/test-streamline-v340-s3.ts",
+    "exitCode": 0,
+    "signal": null,
+    "ms": 491
+  },
+  {
+    "name": "test-quick-tags-v300",
+    "command": "node loader.cjs scripts/test-quick-tags-v300.ts",
+    "exitCode": 0,
+    "signal": null,
+    "ms": 397
+  },
+  {
+    "name": "test-streamline-v340-s1",
+    "command": "node loader.cjs scripts/test-streamline-v340-s1.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 498
+  },
+  {
+    "name": "test-streamline-v340-s2",
+    "command": "node loader.cjs scripts/test-streamline-v340-s2.ts",
+    "exitCode": 0,
+    "signal": null,
+    "ms": 591
+  },
+  {
+    "name": "test-phase5",
+    "command": "node loader.cjs scripts/test-phase5.ts",
+    "exitCode": 0,
+    "signal": null,
+    "ms": 432
+  },
+  {
+    "name": "test-phase6",
+    "command": "node loader.cjs scripts/test-phase6.ts",
+    "exitCode": 0,
+    "signal": null,
+    "ms": 10689
+  },
+  {
+    "name": "test-phase7",
+    "command": "node loader.cjs scripts/test-phase7.ts",
+    "exitCode": 0,
+    "signal": null,
+    "ms": 265
+  },
+  {
+    "name": "test-phase4-codex-repros",
+    "command": "node loader.cjs scripts/test-phase4-codex-repros.ts",
+    "exitCode": 0,
+    "signal": null,
+    "ms": 1813
+  },
+  {
+    "name": "test-spck-v270",
+    "command": "node loader.cjs scripts/test-spck-v270.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 1341
+  },
+  {
+    "name": "test-spck-v272",
+    "command": "node loader.cjs scripts/test-spck-v272.ts",
+    "exitCode": 0,
+    "signal": null,
+    "ms": 30910
+  },
+  {
+    "name": "test-lms-reliability-v280",
+    "command": "node loader.cjs scripts/test-lms-reliability-v280.ts",
+    "exitCode": 0,
+    "signal": null,
+    "ms": 83070
+  },
+  {
+    "name": "test-session14-v290",
+    "command": "node loader.cjs scripts/test-session14-v290.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 414
+  },
+  {
+    "name": "test-teaching-project-v320",
+    "command": "node loader.cjs scripts/test-teaching-project-v320.ts",
+    "exitCode": 1,
+    "signal": null,
+    "ms": 11480
+  },
+  {
+    "name": "test-report-card-v330",
+    "command": "node loader.cjs scripts/test-report-card-v330.ts",
+    "exitCode": 0,
+    "signal": null,
+    "ms": 702
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "baseline": "ab3f570e57c908bf5d19e3df10a563efc45616f6",
+  "requiredGates": 15,
+  "finalPass": 15,
+  "finalResults": [
+    {"command":"npx --no-install tsc --noEmit --incremental false","exitCode":0},
+    {"command":"node <TEMP>/loader.cjs scripts/test-streamline-v340-s3.ts","exitCode":0},
+    {"command":"node <TEMP>/loader.cjs scripts/test-quick-tags-v300.ts","exitCode":0},
+    {"command":"npx --no-install tsx scripts/test-streamline-v340-s1.ts","exitCode":0},
+    {"command":"node <TEMP>/loader.cjs scripts/test-streamline-v340-s2.ts","exitCode":0},
+    {"command":"node <TEMP>/loader.cjs scripts/test-phase5.ts","exitCode":0},
+    {"command":"node <TEMP>/loader.cjs scripts/test-phase6.ts","exitCode":0},
+    {"command":"node <TEMP>/loader.cjs scripts/test-phase7.ts","exitCode":0},
+    {"command":"node <TEMP>/loader.cjs scripts/test-phase4-codex-repros.ts","exitCode":0},
+    {"command":"npx --no-install tsx scripts/test-spck-v270.ts","exitCode":0},
+    {"command":"node <TEMP>/loader.cjs scripts/test-spck-v272.ts","exitCode":0},
+    {"command":"node <TEMP>/loader.cjs scripts/test-lms-reliability-v280.ts","exitCode":0},
+    {"command":"npx --no-install tsx scripts/test-session14-v290.ts","exitCode":0},
+    {"command":"npx --no-install tsx scripts/test-teaching-project-v320.ts","exitCode":0},
+    {"command":"node <TEMP>/loader.cjs scripts/test-report-card-v330.ts","exitCode":0}
+  ],
+  "adversarial":{"command":"node <TEMP>/loader.cjs <TEMP>/adversarial.cjs","exitCode":1,"pass":12,"fail":11},
+  "note":"Every execution used TEMP database and running-class paths; SWC loader is explicitly authorized. Failed setup and diagnostic attempts remain in gates.json, tsx-gates.json and retry-gates.json. Final v270/v290 used a nonempty synthetic API key with network guard."
+}
