@@ -388,6 +388,15 @@ export default function TeachingReportCardView({
     }
   }, [effectiveClassId, scrapeTrigger, loadReportCard]);
 
+  const prevScrapingExternalRef = useRef<boolean>(false);
+  useEffect(() => {
+    const wasExternalScraping = prevScrapingExternalRef.current;
+    prevScrapingExternalRef.current = Boolean(isScrapingExternal);
+    if (wasExternalScraping && !isScrapingExternal && !isScrapingLms && effectiveClassId) {
+      void loadReportCard(effectiveClassId);
+    }
+  }, [isScrapingExternal, isScrapingLms, effectiveClassId, loadReportCard]);
+
   // Instant client-side recalculation when teacher filters BTVN sessions.
   // Explicitly distinguishes omitted filter (`null` -> all sessions) from empty array (`[]` -> 0 sessions).
   const computedReportCard = useMemo<ComputedClassReportCard | null>(() => {

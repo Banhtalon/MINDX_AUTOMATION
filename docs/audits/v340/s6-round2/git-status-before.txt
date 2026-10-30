@@ -1,0 +1,22 @@
+ M CHANGELOG.md
+ M MINDX_AUTOMATION_PLAN.md
+ M PROJECT_STATE.md
+ M src/app/api/teaching-projects/route.ts
+ M src/app/final-project/page.tsx
+ M src/app/homework-grader/page.tsx
+ M src/app/page.tsx
+ M src/app/session-comments/page.tsx
+ M src/app/teaching-projects/page.tsx
+ M src/components/final-project/SubmitBar.tsx
+ M src/components/final-project/types.ts
+ M src/components/final-project/useSpckWorkflow.ts
+ M src/components/teaching-report-card-view.tsx
+ M tsconfig.tsbuildinfo
+?? docs/audits/v340/CODEX_S6_ROUND1.md
+?? docs/audits/v340/prompts/s6-round1-prompt.txt
+?? docs/audits/v340/prompts/s6-round2-prompt.txt
+?? docs/audits/v340/s6-round1/
+?? docs/audits/v340/s6-round2/
+?? scripts/test-streamline-v340-s6.ts
+?? src/lib/dashboard/
+?? src/lib/teaching/session-progress-mapper.ts

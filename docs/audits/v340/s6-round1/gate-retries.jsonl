@@ -1,0 +1,2 @@
+{"gate": "test-phase7", "exit": 0, "seconds": 1.44, "note": "Restored launcher fixtures; GIT_DIR provided for read-only git show of S5a baseline; product test unchanged"}
+{"gate": "test-streamline-v340-s5a", "exit": 0, "seconds": 23.92, "note": "Restored launcher fixtures; GIT_DIR provided for read-only git show of S5a baseline; product test unchanged"}

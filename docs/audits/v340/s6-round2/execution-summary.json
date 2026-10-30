@@ -1,0 +1,44 @@
+{
+  "gates_first_pass": 17,
+  "gates_count": 18,
+  "gates_final_pass": 18,
+  "gate_rerun": {
+    "gate": "test-teaching-project-v320",
+    "exit": 0,
+    "reason": "Windows EPERM cleaning synthetic TEMP browser folder; full unchanged suite rerun passed TP01-TP06"
+  },
+  "workspace_tsc_final_exit": 0,
+  "workspace_tsc_initial_exit": 1,
+  "workspace_tsc_initial_reason": "Evidence source snapshots used .ts suffix and were included by tsc; renamed only evidence copies to .ts.txt and reran unchanged tsc",
+  "ui": {
+    "count": 34,
+    "pass": 24,
+    "fail": 10
+  },
+  "repository": {
+    "count": 20,
+    "pass": 17,
+    "fail": 3
+  },
+  "production_diagnostic": {
+    "id": "PROD01-dashboard-fresh-after-db-change",
+    "expected_session": 12,
+    "rendered_session_1_href_present": false,
+    "rendered_session_12_href_present": true,
+    "prerendered_root": false,
+    "diagnostic_only": true,
+    "second_request_session14_present": true,
+    "second_request_session12_absent": true,
+    "pass": true,
+    "measurement_note": "Exact href boundaries; sessionNumber=1 must not match sessionNumber=12."
+  },
+  "integrity": {
+    "protected_count": 143,
+    "src_scripts_count": 142,
+    "changed": [],
+    "all_unchanged": true,
+    "test_mirror_changed": [],
+    "owner_data_read_hashed_or_copied": false,
+    "note": "Hash only src, scripts, next-env.d.ts. Owner runtime files intentionally excluded and never opened."
+  }
+}

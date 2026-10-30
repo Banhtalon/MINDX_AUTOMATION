@@ -1,0 +1,6 @@
+{
+  "exit": 0,
+  "diagnostic_only": true,
+  "config_exception": "TEMP mirror next.config.ts typescript.ignoreBuildErrors=true; original config/source unchanged",
+  "build_dir": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s6-r1-production-zt4quve9"
+}

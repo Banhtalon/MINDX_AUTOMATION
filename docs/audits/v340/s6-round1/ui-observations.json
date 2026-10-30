@@ -1,0 +1,125 @@
+[
+  {
+    "id": "UI01-query-teaching-class",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI02-advanced-collapsed",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI03-advanced-expanded",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI04-query-spck-session",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI05-combo-success-href",
+    "expected": "/homework-grader?classId=VT-C4K-JSB15&autoScan=1",
+    "actual": "/homework-grader?classId=VT-C4K-JSB15&autoScan=1",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI06-no-stale-progress-after-class-change",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": "A combo VERIFIED, switch to B whose two rows are WAITING_APPROVAL"
+  },
+  {
+    "id": "UI07-no-stale-report-handoff-after-class-change",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": "Combo state is retained across class changes"
+  },
+  {
+    "id": "UI08-late-progress-response-ignored",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI09-no-write-to-unverified-class-B",
+    "expected": false,
+    "actual": true,
+    "pass": false,
+    "detail": "Actual button sends progress100% to class B based on class A combo state"
+  },
+  {
+    "id": "UI10-partial-evaluation-no-report-link",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": "Loaded session14 rows SPCK both VERIFIED, evaluations one VERIFIED one DRAFT, combo idle"
+  },
+  {
+    "id": "UI11-dirty-spck-no-report-link",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": "Completed combo, S1 edited after verification, S2 remains clean"
+  },
+  {
+    "id": "UI12-dirty-spck-no-progress-button",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI13-outside-batch-failed-row-no-progress-button",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": "Latest successful batch contains only S1; S2 still FAILED in same class/session"
+  },
+  {
+    "id": "UI14-autoScan-target",
+    "expected": [
+      "VT-C4K-JSB16"
+    ],
+    "actual": [
+      "VT-C4K-JSB16"
+    ],
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI15-report-card-refresh-after-scan",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI16-comment-query-class",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI17-comment-query-session",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  }
+]

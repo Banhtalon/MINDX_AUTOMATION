@@ -1,0 +1,244 @@
+[
+  {
+    "id": "UI01-query-teaching-class",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI02-advanced-collapsed",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI03-advanced-expanded",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "R2-UI23-unknown-session-disabled",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "R2-UI24-unknown-session-no-progress-post",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI04-query-spck-session",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI05-combo-success-href",
+    "expected": "/homework-grader?classId=VT-C4K-JSB15&autoScan=1",
+    "actual": "/homework-grader?classId=VT-C4K-JSB15&autoScan=1",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "R2-UI25-local-eval-edit-no-handoff",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": ""
+  },
+  {
+    "id": "R2-UI26-saved-eval-edit-no-handoff",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": ""
+  },
+  {
+    "id": "UI06-no-stale-progress-after-class-change",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": "A combo VERIFIED, switch to B whose two rows are WAITING_APPROVAL"
+  },
+  {
+    "id": "UI07-no-stale-report-handoff-after-class-change",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": "Combo state is retained across class changes"
+  },
+  {
+    "id": "UI08-late-progress-response-ignored",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI09-no-write-to-unverified-class-B",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI10-partial-evaluation-no-report-link",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": "Loaded session14 rows SPCK both VERIFIED, evaluations one VERIFIED one DRAFT, combo idle"
+  },
+  {
+    "id": "UI11-dirty-spck-no-report-link",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": "Completed combo, S1 edited after verification, S2 remains clean"
+  },
+  {
+    "id": "UI12-dirty-spck-no-progress-button",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI13-outside-batch-failed-row-no-progress-button",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": "Latest successful batch contains only S1; S2 still FAILED in same class/session"
+  },
+  {
+    "id": "R2-UI18-completed-clean-combo-handoff",
+    "expected": 1,
+    "actual": 1,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "R2-UI19-stale-combo-eval-DRAFT",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": "Old combo has two verified IDs, current S2 status=DRAFT"
+  },
+  {
+    "id": "R2-UI19-stale-combo-eval-WAITING_APPROVAL",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": "Old combo has two verified IDs, current S2 status=WAITING_APPROVAL"
+  },
+  {
+    "id": "R2-UI19-stale-combo-eval-FAILED",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": "Old combo has two verified IDs, current S2 status=FAILED"
+  },
+  {
+    "id": "R2-UI20-missing-current-eval-row",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": ""
+  },
+  {
+    "id": "R2-UI21-empty-current-rows-no-progress",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": ""
+  },
+  {
+    "id": "R2-UI22-mismatched-eval-IDs",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": ""
+  },
+  {
+    "id": "R2-UI30-session-change-no-stale-progress",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "R2-UI31-session-change-no-stale-handoff",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "R2-UI32-return-session-no-stale-handoff",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "R2-UI27-mapping-fixture-count",
+    "expected": 2,
+    "actual": 2,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "R2-UI28-no-current-assigned-rows-no-progress",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": "After successful combo, teacher unassigns both rows through the real selectors"
+  },
+  {
+    "id": "R2-UI29-no-current-assigned-rows-no-handoff",
+    "expected": 0,
+    "actual": 1,
+    "pass": false,
+    "detail": ""
+  },
+  {
+    "id": "UI14-autoScan-target",
+    "expected": [
+      "VT-C4K-JSB16"
+    ],
+    "actual": [
+      "VT-C4K-JSB16"
+    ],
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI15-report-card-refresh-after-scan",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI16-comment-query-class",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "id": "UI17-comment-query-session",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": ""
+  }
+]

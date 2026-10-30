@@ -1,0 +1,12 @@
+{
+  "id": "PROD01-dashboard-fresh-after-db-change",
+  "expected_session": 12,
+  "rendered_session_1_href_present": false,
+  "rendered_session_12_href_present": true,
+  "prerendered_root": false,
+  "diagnostic_only": true,
+  "second_request_session14_present": true,
+  "second_request_session12_absent": true,
+  "pass": true,
+  "measurement_note": "Exact href boundaries; sessionNumber=1 must not match sessionNumber=12."
+}

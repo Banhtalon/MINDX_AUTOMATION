@@ -1,0 +1,26 @@
+[
+  {
+    "file": "src/app/api/homework-grader/export/route.ts",
+    "matches_head_normalized": true,
+    "sha256_current": "dfc8dce2a35ab0d08b0641b9479b448d2251d2605bc0e38cb9a254c2e6e89f97",
+    "sha256_head": "dfc8dce2a35ab0d08b0641b9479b448d2251d2605bc0e38cb9a254c2e6e89f97"
+  },
+  {
+    "file": "src/app/api/homework-grader/scores/route.ts",
+    "matches_head_normalized": true,
+    "sha256_current": "761ec0e5852dd147fba172d32f0c2af9f44ef3735b723a56482e44d5c400a1ed",
+    "sha256_head": "761ec0e5852dd147fba172d32f0c2af9f44ef3735b723a56482e44d5c400a1ed"
+  },
+  {
+    "file": "src/app/api/report-card/route.ts",
+    "matches_head_normalized": true,
+    "sha256_current": "b953daf06edcf2c1cc4c98fe3455cda4e19ebdd61b40df718979eee2d4019bcb",
+    "sha256_head": "b953daf06edcf2c1cc4c98fe3455cda4e19ebdd61b40df718979eee2d4019bcb"
+  },
+  {
+    "file": "src/app/api/spck/session14-eval/route.ts",
+    "matches_head_normalized": true,
+    "sha256_current": "eda8d5af61bfbac5c106ed1e9c09c6bf483098854f7433aab172450e48f0edb7",
+    "sha256_head": "eda8d5af61bfbac5c106ed1e9c09c6bf483098854f7433aab172450e48f0edb7"
+  }
+]

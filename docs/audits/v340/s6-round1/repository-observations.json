@@ -1,0 +1,86 @@
+[
+  {
+    "id": "DB01-missing-student-feedback",
+    "expected": false,
+    "actual": true,
+    "pass": false,
+    "detail": "2 active students, only S1 has a VERIFIED feedback; S2 absent from feedback table"
+  },
+  {
+    "id": "DB02-explicit-draft-feedback",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "detail": "Control: explicit second DRAFT row"
+  },
+  {
+    "id": "DB03-all-feedback-verified",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": "Control: both VERIFIED"
+  },
+  {
+    "id": "DB11-absent-student-not-required",
+    "expected": true,
+    "actual": false,
+    "pass": false,
+    "detail": "All present students verified; remaining student ABSENT with DRAFT feedback, saver intentionally excludes absent students"
+  },
+  {
+    "id": "DB04-missing-student-spck",
+    "expected": false,
+    "actual": true,
+    "pass": false,
+    "detail": "2 active students, only S1 has a per-session SPCK row"
+  },
+  {
+    "id": "DB05-explicit-draft-spck",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "detail": "Control: explicit DRAFT row"
+  },
+  {
+    "id": "DB06-all-spck-verified",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": "Control: both VERIFIED"
+  },
+  {
+    "id": "DB07-missing-student-evaluation",
+    "expected": false,
+    "actual": true,
+    "pass": false,
+    "detail": "2 active students, only S1 has an evaluation row"
+  },
+  {
+    "id": "DB08-explicit-draft-evaluation",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "detail": "Control: explicit DRAFT row"
+  },
+  {
+    "id": "DB09-rounded-progress-100",
+    "expected": false,
+    "actual": true,
+    "pass": false,
+    "detail": "S2 task 5=99, weighted class average=99.9, code rounds to100"
+  },
+  {
+    "id": "DB10-robotics-checkpoint",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": "Control Robotics session 4"
+  },
+  {
+    "id": "API01-unknown-current-session",
+    "expected": 0,
+    "actual": 11,
+    "pass": false,
+    "detail": "Unknown class has no sessions/metadata; should not assume session11 to authorize a20% update"
+  }
+]

@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
-import { Loader2, RefreshCw, UploadCloud } from "lucide-react";
-import { SpckWorkflowController } from "./useSpckWorkflow";
+import React, { useEffect, useRef, useState } from "react";
+import { CheckCircle2, ExternalLink, Loader2, RefreshCw, TrendingUp, UploadCloud } from "lucide-react";
+import { getSpckVerifiedTeachingProgressSuggestion } from "@/lib/teaching/session-progress-mapper";
+import { getSessionSlotDisplay, SpckWorkflowController } from "./useSpckWorkflow";
 
 export interface SubmitBarProps {
   workflow: SpckWorkflowController;
@@ -10,6 +11,8 @@ export interface SubmitBarProps {
 
 export function SubmitBar({ workflow }: SubmitBarProps) {
   const {
+    rows,
+    session14Evals,
     totalStepsCount,
     lastSubmissionSummary,
     handleApproveAndUpload,
@@ -24,6 +27,181 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
     setLastSubmissionSummary,
   } = workflow;
 
+  const pushReqSeqRef = useRef(0);
+  const [teachingPushState, setTeachingPushState] = useState<{
+    loading: boolean;
+    verifiedPercent: number | null;
+    updatedCount: number | null;
+    error: string | null;
+  }>({
+    loading: false,
+    verifiedPercent: null,
+    updatedCount: null,
+    error: null,
+  });
+
+  useEffect(() => {
+    pushReqSeqRef.current += 1;
+    setTeachingPushState({
+      loading: false,
+      verifiedPercent: null,
+      updatedCount: null,
+      error: null,
+    });
+  }, [
+    selectedClassId,
+    selectedSessionNumber,
+    lastSubmissionSummary?.completedAt,
+    session14ComboStatus.spckSummary?.completedAt,
+    uploading,
+    session14ComboStatus.running,
+  ]);
+
+  const allRows = rows || [];
+  const assignedRows = allRows.filter((r) => Boolean(r.assignedStudentId));
+
+  const isRowVerifiedAndCleanForCurrentSession = (
+    r: (typeof allRows)[number]
+  ): boolean =>
+    Boolean(
+      r.assignedStudentId &&
+        !r.isDirty &&
+        getSessionSlotDisplay(r, selectedSessionNumber).state === "VERIFIED_CURRENT"
+    );
+
+  const verifiedRowsCountForCurrentSession = assignedRows.filter(
+    isRowVerifiedAndCleanForCurrentSession
+  ).length;
+
+  const unverifiedOrUnassignedRowsCountForCurrentSession = allRows.filter(
+    (r) => !isRowVerifiedAndCleanForCurrentSession(r)
+  ).length;
+
+  const isComboForCurrentClass =
+    selectedSessionNumber === 14 &&
+    session14ComboStatus.currentPhase !== "idle" &&
+    (!session14ComboStatus.classId ||
+      session14ComboStatus.classId === selectedClassId);
+
+  const isLastSummaryForCurrentClassAndSession = Boolean(
+    lastSubmissionSummary &&
+      lastSubmissionSummary.sessionNumber === selectedSessionNumber &&
+      (!lastSubmissionSummary.classId ||
+        lastSubmissionSummary.classId === selectedClassId)
+  );
+
+  const activeSummary =
+    selectedSessionNumber === 14 &&
+    isComboForCurrentClass &&
+    session14ComboStatus.spckSummary
+      ? session14ComboStatus.spckSummary
+      : isLastSummaryForCurrentClassAndSession
+      ? lastSubmissionSummary
+      : null;
+
+  const summaryRetryCount = activeSummary
+    ? activeSummary.retryStudentIds.length
+    : 0;
+
+  const verifiedSpckCountForCurrentSession = verifiedRowsCountForCurrentSession;
+
+  const pendingOrFailedSpckCountForCurrentSession =
+    unverifiedOrUnassignedRowsCountForCurrentSession + summaryRetryCount;
+
+  const evalsForCurrentClass = (session14Evals || []).filter(
+    (ev) => !ev.classId || ev.classId === selectedClassId
+  );
+
+  const evalByStudentId = new Map(
+    evalsForCurrentClass
+      .filter((ev) => Boolean(ev?.studentId))
+      .map((ev) => [ev.studentId, ev] as const)
+  );
+
+  const assignedStudentIds = assignedRows.map((r) => r.assignedStudentId);
+
+  const allAssignedStudentsHaveVerifiedEval =
+    assignedStudentIds.length > 0 &&
+    evalsForCurrentClass.length > 0 &&
+    assignedStudentIds.every(
+      (sid) => evalByStudentId.get(sid)?.status === "VERIFIED"
+    ) &&
+    evalsForCurrentClass.every((ev) => ev.status === "VERIFIED");
+
+  const comboHasPendingEvalFailures =
+    isComboForCurrentClass &&
+    (session14ComboStatus.evalRetryStudentIds.length > 0 ||
+      (session14ComboStatus.evalFailedCount || 0) > 0);
+
+  const teachingSuggestion = getSpckVerifiedTeachingProgressSuggestion({
+    sessionNumber: selectedSessionNumber,
+    verifiedCount: verifiedSpckCountForCurrentSession,
+    pendingOrFailedCount: pendingOrFailedSpckCountForCurrentSession,
+  });
+
+  const showSession14ReportCardHandoff =
+    selectedSessionNumber === 14 &&
+    !session14ComboStatus.running &&
+    !uploading &&
+    !uploadingS14EvalLms &&
+    verifiedSpckCountForCurrentSession > 0 &&
+    pendingOrFailedSpckCountForCurrentSession === 0 &&
+    allAssignedStudentsHaveVerifiedEval &&
+    !comboHasPendingEvalFailures;
+
+  const handleQuickUpdateTeachingProgress = async () => {
+    if (!selectedClassId || !teachingSuggestion.shouldShow || teachingPushState.loading) {
+      return;
+    }
+    const reqSeq = ++pushReqSeqRef.current;
+    const reqClassId = selectedClassId;
+    const reqTargetPercent = teachingSuggestion.targetPercent;
+    const reqMilestoneCount = teachingSuggestion.milestoneTaskCount;
+
+    setTeachingPushState({
+      loading: true,
+      verifiedPercent: null,
+      updatedCount: null,
+      error: null,
+    });
+    try {
+      const res = await fetch("/api/teaching-projects/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classCode: reqClassId,
+          milestoneTaskCount: reqMilestoneCount,
+          resetOthers: true,
+        }),
+      });
+      const data = await res.json();
+      if (pushReqSeqRef.current !== reqSeq) {
+        return;
+      }
+      if (!res.ok || !data.success) {
+        throw new Error(
+          data.error || "Không thể cập nhật tiến độ Teaching tự động."
+        );
+      }
+      setTeachingPushState({
+        loading: false,
+        verifiedPercent: reqTargetPercent,
+        updatedCount: data.updatedCount ?? null,
+        error: null,
+      });
+    } catch (err) {
+      if (pushReqSeqRef.current !== reqSeq) {
+        return;
+      }
+      setTeachingPushState({
+        loading: false,
+        verifiedPercent: null,
+        updatedCount: null,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
   return (
     <div className="mindx-card-emerald p-5 rounded-xl space-y-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -37,7 +215,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          {selectedSessionNumber === 14 &&
+          {isComboForCurrentClass &&
             session14ComboStatus.spckSummary &&
             session14ComboStatus.spckSummary.retryStudentIds.length > 0 && (
               <button
@@ -61,7 +239,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
               </button>
             )}
 
-          {selectedSessionNumber === 14 &&
+          {isComboForCurrentClass &&
             session14ComboStatus.evalRetryStudentIds.length > 0 && (
               <button
                 type="button"
@@ -88,6 +266,8 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
 
           {selectedSessionNumber !== 14 &&
             lastSubmissionSummary &&
+            (!lastSubmissionSummary.classId ||
+              lastSubmissionSummary.classId === selectedClassId) &&
             lastSubmissionSummary.retryStudentIds.length > 0 && (
               <button
                 type="button"
@@ -164,8 +344,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
         </div>
       </div>
 
-      {selectedSessionNumber === 14 &&
-        session14ComboStatus.currentPhase !== "idle" && (
+      {isComboForCurrentClass && (
           <div className="p-3.5 rounded-xl bg-slate-950 border border-indigo-700/60 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
             <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
               <div>
@@ -208,7 +387,9 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
         )}
 
       {/* Detailed Batch Submission Result Card */}
-      {lastSubmissionSummary && (
+      {lastSubmissionSummary &&
+        (!lastSubmissionSummary.classId ||
+          lastSubmissionSummary.classId === selectedClassId) && (
         <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800">
             <div className="font-bold text-white flex flex-wrap items-center gap-2">
@@ -303,6 +484,80 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
           </div>
         </div>
       )}
+
+      {/* S6.2 & S6.3: Next-Action Handoff Card after VERIFIED SPCK / Session 14 Submission */}
+      {!uploading &&
+        !session14ComboStatus.running &&
+        (teachingSuggestion.shouldShow || showSession14ReportCardHandoff) && (
+          <div className="p-4 rounded-xl bg-indigo-950/35 border border-indigo-500/40 space-y-3 text-xs">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="font-bold text-indigo-200 flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-indigo-400" />
+                  <span>Gợi ý bước tiếp theo sau khi đã xác minh LMS (VERIFIED):</span>
+                </div>
+                {teachingSuggestion.shouldShow && (
+                  <p className="text-slate-300">{teachingSuggestion.description}</p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                {teachingSuggestion.shouldShow && (
+                  <button
+                    type="button"
+                    onClick={handleQuickUpdateTeachingProgress}
+                    disabled={teachingPushState.loading || isAnyOperationBusy}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold shadow transition-colors cursor-pointer"
+                  >
+                    {teachingPushState.loading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <TrendingUp className="w-3.5 h-3.5" />
+                    )}
+                    <span>{teachingSuggestion.buttonText}</span>
+                  </button>
+                )}
+
+                {showSession14ReportCardHandoff && (
+                  <a
+                    href={`/homework-grader?classId=${encodeURIComponent(
+                      selectedClassId
+                    )}&autoScan=1`}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow transition-colors"
+                  >
+                    <span>📋 Mở Phiếu điểm → Quét</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {teachingPushState.verifiedPercent !== null && (
+              <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-600/60 text-emerald-200 font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>
+                  ✅ Đã cập nhật tiến độ Teaching lên {teachingPushState.verifiedPercent}% thành công (Đã đối chiếu Read-after-Write
+                  {teachingPushState.updatedCount
+                    ? ` • ${teachingPushState.updatedCount} ô`
+                    : ""}
+                  ).
+                </span>
+              </div>
+            )}
+
+            {teachingPushState.error && (
+              <div className="p-2.5 rounded-lg bg-rose-950/40 border border-rose-600/60 text-rose-200 flex flex-wrap items-center justify-between gap-2">
+                <span>⚠️ {teachingPushState.error}</span>
+                <a
+                  href={`/teaching-projects?classId=${encodeURIComponent(selectedClassId)}`}
+                  className="underline font-bold text-rose-100 hover:text-white"
+                >
+                  Mở Màn 5 (Dự án Teaching) &rarr;
+                </a>
+              </div>
+            )}
+          </div>
+        )}
     </div>
   );
 }

@@ -892,6 +892,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
   >({});
   const [session14ComboStatus, setSession14ComboStatus] =
     useState<Session14ComboStatusUI>({
+      classId: selectedClassId,
       running: false,
       currentPhase: "idle",
       spckSummary: null,
@@ -902,6 +903,27 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       evalErrorMessage: null,
     });
   const autoImportedDemoClassKeysRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    setSession14ComboStatus({
+      classId: selectedClassId,
+      running: false,
+      currentPhase: "idle",
+      spckSummary: null,
+      evalVerifiedCount: 0,
+      evalVerifiedStudentIds: [],
+      evalFailedCount: 0,
+      evalRetryStudentIds: [],
+      evalErrorMessage: null,
+    });
+    setLastSubmissionSummary((prev) =>
+      prev &&
+      prev.sessionNumber === selectedSessionNumber &&
+      (!prev.classId || prev.classId === selectedClassId)
+        ? prev
+        : null
+    );
+  }, [selectedClassId, selectedSessionNumber, setLastSubmissionSummary]);
 
   useEffect(() => {
     try {
@@ -2961,7 +2983,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           errorMessage: null,
         };
       }
-      if (Array.isArray(upData.records)) {
+      if (Array.isArray(upData.records) && upData.records.length > 0) {
         const validRecords = upData.records.filter(
           (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClassId
         );
@@ -3025,6 +3047,27 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
               merged.contentHash = "";
             }
             return merged;
+          });
+        });
+      } else if (Array.isArray(upData.uploadResult?.results)) {
+        const resByStu = new Map<string, any>(
+          upData.uploadResult.results
+            .filter((r: any) => r?.studentId)
+            .map((r: any) => [String(r.studentId), r])
+        );
+        setSession14Evals((prev: Session14EvalItemUI[]) => {
+          if (!Array.isArray(prev) || prev.length === 0) return prev;
+          if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) {
+            return prev;
+          }
+          return prev.map((item) => {
+            const r = resByStu.get(item.studentId);
+            if (!r || !r.status) return item;
+            return {
+              ...item,
+              status: r.status,
+              errorMessage: r.errorMessage || null,
+            };
           });
         });
       }
@@ -3375,6 +3418,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     partToRun: "both" | "spck_only" | "eval_only" = "both"
   ) => {
     if (!selectedClassId) return;
+    const reqClassId = selectedClassId;
+    const isStaleClass = () => {
+      const currentActive = getActiveUiClassId?.();
+      return Boolean(currentActive && currentActive !== reqClassId);
+    };
     const ids =
       targetStudentIds && targetStudentIds.length > 0
         ? targetStudentIds
@@ -3395,6 +3443,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     setSession14ComboStatus((prev) =>
       partToRun === "both"
         ? {
+            classId: reqClassId,
             running: true,
             currentPhase: "spck",
             spckSummary: null,
@@ -3406,6 +3455,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           }
         : {
             ...prev,
+            classId: reqClassId,
             running: true,
             currentPhase: partToRun === "eval_only" ? "eval" : "spck",
           }
@@ -3430,14 +3480,17 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       if (partToRun === "both" || partToRun === "spck_only") {
         setSession14ComboStatus((prev) => ({
           ...prev,
+          classId: reqClassId,
           running: true,
           currentPhase: "spck",
         }));
         const spckRes = await baseHandleApproveAndUpload(ids, true, 14);
+        if (isStaleClass()) return;
         const resolvedSpckSummary: SpckBatchSubmissionSummaryUI =
           spckRes && typeof spckRes === "object"
-            ? spckRes
+            ? { ...spckRes, classId: reqClassId }
             : {
+                classId: reqClassId,
                 sessionNumber: 14,
                 totalSelected: ids.length,
                 verifiedItems: [],
@@ -3483,6 +3536,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           );
           nextSpckSummary = {
             ...resolvedSpckSummary,
+            classId: reqClassId,
             totalSelected: Math.max(
               prevSpck.totalSelected,
               mergedVerified.length + mergedRetryIds.length
@@ -3501,11 +3555,13 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       if (partToRun === "both" || partToRun === "eval_only") {
         setSession14ComboStatus((prev) => ({
           ...prev,
+          classId: reqClassId,
           running: true,
           currentPhase: "eval",
           spckSummary: nextSpckSummary,
         }));
         const evalRes = await handleApproveAndUploadSession14Eval(ids);
+        if (isStaleClass()) return;
         if (partToRun === "eval_only") {
           const retriedSet = new Set(ids);
           const prevVerifiedIds = (
@@ -3540,6 +3596,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       }
 
       setSession14ComboStatus({
+        classId: reqClassId,
         running: false,
         currentPhase: "done",
         spckSummary: nextSpckSummary,
@@ -3569,11 +3626,14 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         });
       }
     } finally {
-      setSession14ComboStatus((prev) => ({
-        ...prev,
-        running: false,
-        currentPhase: "done",
-      }));
+      if (!isStaleClass()) {
+        setSession14ComboStatus((prev) => ({
+          ...prev,
+          classId: reqClassId,
+          running: false,
+          currentPhase: "done",
+        }));
+      }
     }
   };
 

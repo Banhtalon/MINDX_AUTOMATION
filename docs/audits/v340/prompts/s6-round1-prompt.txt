@@ -1,0 +1,37 @@
+Bạn là Reviewer kiểm định độc lập (gpt-6.1-sol, reasoning_effort=high) cho dự án MINDX-AUTOMATION.
+Nhiệm vụ: Kiểm định độc lập Chặng S6 (Vòng 1) thuộc Giai đoạn 10 (v3.4.0 — Màn 5 `/teaching-projects` 1 nút bấm + Liên thông các màn hình + Thẻ Việc cần làm hôm nay trên Trang chủ).
+
+1. Đọc kỹ kế hoạch đã được Owner phê duyệt tại:
+   `C:\Users\QQ\.gemini\antigravity\brain\2dc5f134-f73b-44e2-9d14-6c8333eb3c3b\STREAMLINE_PLAN_v340.md` (mục S6: S6.1 -> S6.6)
+   cùng `AGENTS.md`, `PROJECT_STATE.md`, `CHANGELOG.md`, `MINDX_AUTOMATION_PLAN.md`.
+
+2. Kiểm định chi tiết toàn bộ các hạng mục S6.1 -> S6.6 trên mã nguồn hiện tại:
+   - S6.1 (`src/lib/teaching/session-progress-mapper.ts`, `src/app/teaching-projects/page.tsx`, `src/app/api/teaching-projects/route.ts`):
+     + Màn 5 (`/teaching-projects`): 1 nút chính "🚀 Cập nhật tiến độ theo buổi hiện tại (Buổi X → Y%)" (Buổi <=10 -> 0%, Buổi 11 -> 20%, Buổi 12 -> 60%, Buổi 13 -> 80%, Buổi >=14 -> 100%).
+     + 6 nút mốc thủ công, các nút 100%/0% từng việc, thanh kéo từng ô học sinh và nút "Lấy ngày chuẩn từ LMS" được chuyển vào mục "⚙️ Nâng cao" thu gọn.
+   - S6.2 (`src/components/final-project/SubmitBar.tsx`, `src/lib/teaching/session-progress-mapper.ts`):
+     + Sau khi nộp SPCK Buổi 12/13/14 trên Màn 3 thành công (`VERIFIED`, không còn bài lỗi/chờ thử lại hay bản nháp đang sửa dở `isDirty`), hiện thẻ gợi ý "📈 Cập nhật tiến độ Teaching lên X%", bấm 1 lần là đẩy qua `/api/teaching-projects/progress` (qua hàng đợi, có đọc lại đối chiếu Read-after-Write), có khóa chống race khi đổi lớp/buổi.
+   - S6.3 (`src/components/final-project/SubmitBar.tsx`, `src/app/homework-grader/page.tsx`, `src/components/teaching-report-card-view.tsx`):
+     + Buổi 14: sau khi "Nộp Buổi 14 đầy đủ" thành công (cả Phần 1 Sản phẩm SPCK và Phần 2 Đánh giá Buổi 14 đều đã `VERIFIED` và không còn học viên cần thử lại), hiện gợi ý "📋 Mở Phiếu điểm → Quét" (`/homework-grader?classId=<id>&autoScan=1`).
+     + Mở `/homework-grader?classId=<id>&autoScan=1` tự chọn đúng lớp, tự kích hoạt quét LMS và làm mới Phiếu điểm tổng kết.
+   - S6.4 (`src/lib/dashboard/today-tasks.ts`, `src/app/page.tsx`, `src/app/session-comments/page.tsx`, `src/app/homework-grader/page.tsx`, `src/app/final-project/page.tsx`, `src/app/teaching-projects/page.tsx`):
+     + Trang chủ (`/`): hiển thị thẻ "📌 Việc cần làm hôm nay" cho từng lớp dựa trên buổi hiện tại và trạng thái đã lưu trong SQLite (Buổi thường 1..10, Buổi Checkpoint, Buổi 11, Buổi 12/13, Buổi 14: "① Nộp SPCK ② Đánh giá ③ Phiếu điểm ④ Tiến độ 100%").
+     + Kiểm tra chặt không báo hoàn tất giả khi chỉ mới một phần học viên trong bảng đạt `VERIFIED`.
+     + Bấm vào bước trên thẻ sẽ mở đúng màn hình, đúng lớp (và đúng buổi qua query params).
+   - S6.5 (`src/app/api/teaching-projects/route.ts`, `src/app/page.tsx`, `src/app/teaching-projects/page.tsx`):
+     + Đã xóa các hành động `approve` / `approve_and_save` không dùng trong `POST /api/teaching-projects` (trả HTTP 400), vẫn giữ `test-teaching-project-v320.ts` PASS 100%, và xóa sạch các khối `{false && ...}` trên `src/app/page.tsx` và `src/app/teaching-projects/page.tsx`.
+   - S6.6 (`scripts/test-streamline-v340-s6.ts`):
+     + Kiểm tra bộ test S6.6 và tự viết thêm probe độc lập kiểm chứng sâu các góc cạnh (race condition khi đổi lớp, trạng thái VERIFIED một phần, query params điều hướng giữa các màn, UI Playwright).
+
+3. Nguyên tắc an toàn bắt buộc:
+   - TUYỆT ĐỐI KHÔNG đọc, mở, băm hay chạm vào `data/mindx_bot.db` và `data/running_classes.json` thật của Owner.
+   - Trước MỌI lệnh chạy test/probe, bắt buộc đặt biến môi trường trỏ vào `$env:TEMP`:
+     `$env:ALLOWED_LOCAL_DIRS = $env:TEMP`
+     `$env:MINDX_DB_PATH = "$env:TEMP\codex_s6_r1.sqlite"`
+     `$env:MINDX_RUNNING_CLASSES_PATH = "$env:TEMP\codex_s6_r1_classes.json"`
+   - KHÔNG sửa đổi bất kỳ tệp nào trong `src/**` hoặc `scripts/**`, KHÔNG chạy `git commit`.
+
+4. Đầu ra bắt buộc:
+   - Ghi báo cáo kiểm định độc lập chi tiết vào `docs/audits/v340/CODEX_S6_ROUND1.md` kèm bằng chứng trong `docs/audits/v340/s6-round1/`.
+   - Nêu rõ `Verdict: GO` hoặc `Verdict: NO-GO` ngay đầu báo cáo.
+   - Cập nhật tóm tắt kết quả kiểm định vào `PROJECT_STATE.md`, `CHANGELOG.md` và `MINDX_AUTOMATION_PLAN.md`.

@@ -1,0 +1,468 @@
+// @ts-nocheck -- reviewer probes, synthetic browser and HTTP fixtures only.
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import * as esbuild from 'esbuild';
+import {chromium} from 'playwright';
+import postcss from 'postcss';
+import tailwindcssPostcss from '@tailwindcss/postcss';
+const ROOT=process.cwd(), OUT=process.env.AUDIT_OUT!;
+const results=[];
+function record(id,expected,actual,detail=''){const item={id,expected,actual,pass:JSON.stringify(expected)===JSON.stringify(actual),detail};results.push(item);console.log(JSON.stringify(item));fs.writeFileSync(path.join(OUT,'ui-observations.json'),JSON.stringify(results,null,2));}
+const aliases={name:'alias-at',setup(build){build.onResolve({filter:/^@\//},args=>{const base=path.join(ROOT,'src',args.path.slice(2));for(const ext of ['.tsx','.ts','.js','/index.tsx','/index.ts'])if(fs.existsSync(base+ext))return{path:base+ext};return{path:base};});}};
+async function bundle(module){return(await esbuild.build({stdin:{contents:`import React from 'react';import {createRoot} from 'react-dom/client';import Page from '${module}';createRoot(document.getElementById('root')).render(<Page/>);`,resolveDir:ROOT,loader:'tsx'},bundle:true,write:false,format:'iife',platform:'browser',target:['es2020'],plugins:[aliases],define:{'process.env.NODE_ENV':'"development"'}})).outputFiles[0].text;}
+async function run(){
+const css=(await postcss([tailwindcssPostcss({base:ROOT})]).process(fs.readFileSync(path.join(ROOT,'src/app/globals.css'),'utf8'),{from:path.join(ROOT,'src/app/globals.css')})).css;
+const context=await chromium.launchPersistentContext(fs.mkdtempSync(path.join(os.tmpdir(),'codex-s6-r1-browser-')),{headless:true,viewport:{width:1366,height:900}});
+await context.addInitScript("window.__name=(fn)=>fn;window.confirm=()=>true;window.alert=()=>{};");
+await context.route('**/*',async route=>{if(route.request().resourceType()==='document' && route.request().url().startsWith('http://127.0.0.1:3000/'))await route.fulfill({contentType:'text/html',body:'<!DOCTYPE html><html><head><meta charset="utf-8"></head><body class="bg-slate-950 text-white"><div id="root"></div></body></html>'});else await route.abort();});
+async function open(url){const p=await context.newPage();p.on('pageerror',e=>fs.appendFileSync(path.join(OUT,'ui-errors.log'),e.stack+'\n'));await p.goto(url);await p.addStyleTag({content:css});return p;}
+try {
+const tpBundleCode=await bundle('./src/app/teaching-projects/page');
+const spckBundleCode=await bundle('./src/app/final-project/page');
+const hwBundleCode=await bundle('./src/app/homework-grader/page');
+let pageTp=await open('http://127.0.0.1:3000/teaching-projects-test?classId=VT-C4K-JSB12');
+      await pageTp.evaluate(() => {
+        const w = window as any;
+        w.__tpProgressCalls = [];
+        w.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = typeof input === "string" ? input : (input as Request).url;
+          const method = (init?.method || "GET").toUpperCase();
+          const bodyObj = init?.body ? JSON.parse(String(init.body)) : {};
+
+          if (url.includes("/api/teaching-projects/progress") && method === "POST") {
+            w.__tpProgressCalls.push(bodyObj);
+            return new Response(
+              JSON.stringify({
+                success: true,
+                updatedCount: 10,
+                progress: {
+                  "101_1": 100,
+                  "102_1": 100,
+                  "103_1": 100,
+                  "104_1": 0,
+                  "105_1": 0,
+                },
+              }),
+              { status: 200 }
+            );
+          }
+
+          if (url.includes("/api/teaching-projects") && method === "GET") {
+            const u = new URL(url, "http://127.0.0.1:3000");
+            const cls = u.searchParams.get("classCode") || "VT-C4K-JSB12";
+            const tasks = [1, 2, 3, 4, 5].map((slot) => ({
+              slotIndex: slot,
+              taskId: 100 + slot,
+              taskName: `Việc ${slot}`,
+              description: `Mô tả ${slot}`,
+              weightPercent: 20,
+              deadline: "2026-11-15",
+              assignedStudentIds: [1, 2],
+              status: "VERIFIED",
+              contentHash: "hash",
+            }));
+            return new Response(
+              JSON.stringify({
+                success: true,
+                selectedClassCode: cls,
+                currentSessionNumber: 12,
+                runningClasses: [
+                  {
+                    classCode: "VT-C4K-JSB12",
+                    className: "JSB 12",
+                    currentSessionNumber: 12,
+                  },
+                ],
+                students: [
+                  { id: 1, studentName: "Nguyễn Minh Khôi", classCode: cls },
+                  { id: 2, studentName: "Trần Bảo Ngọc", classCode: cls },
+                ],
+                tasks,
+                progress: {},
+                record: {
+                  classId: cls,
+                  projectId: 99,
+                  projectName: "SPCK JSB12",
+                  projectDescription: "Mô tả dự án",
+                  startDate: "2026-10-01",
+                  endDate: "2026-11-15",
+                  status: "VERIFIED",
+                  draftVersion: 1,
+                },
+              }),
+              { status: 200 }
+            );
+          }
+
+          return new Response(JSON.stringify({ success: true }), { status: 200 });
+        };
+      });
+
+await pageTp.addScriptTag({content:tpBundleCode});
+await pageTp.getByRole('button',{name:/Cập nhật tiến độ theo buổi hiện tại/}).waitFor();
+record('UI01-query-teaching-class',true,(await pageTp.locator('select').first().inputValue())==='VT-C4K-JSB12');
+record('UI02-advanced-collapsed',0,await pageTp.locator('input[type=range]').count());
+await pageTp.getByRole('button',{name:/Nâng cao/}).click();
+record('UI03-advanced-expanded',true,(await pageTp.locator('input[type=range]').count())>0);
+await pageTp.screenshot({path:path.join(OUT,'teaching-advanced.png'),fullPage:true});
+await pageTp.close();
+
+let pageSpck=await open('http://127.0.0.1:3000/spck-s6-test?classId=VT-C4K-JSB15&sessionNumber=14');
+      await pageSpck.evaluate(() => {
+        const w = window as any;
+        w.__spckTeachingProgressCalls = [];
+        w.__simulateEval14FailOnce = false;
+
+        const students = [
+          { studentId: "STU_01", fullName: "Nguyễn Minh Khôi" },
+          { studentId: "STU_02", fullName: "Trần Bảo Ngọc" },
+        ];
+
+        const makeRecord = (
+          sid: string,
+          name: string,
+          status: string,
+          sessNum: number
+        ) => ({
+          classId: "VT-C4K-JSB15",
+          studentId: sid,
+          localFolderPath: "D:\\\\SPCK\\\\VT-C4K-JSB15\\\\01_" + sid,
+          matchScore: 1,
+          isConfirmedByTeacher: 1,
+          projectTitle: "Dự án " + name,
+          thumbnailPath: "D:\\\\SPCK\\\\VT-C4K-JSB15\\\\01_" + sid + "\\\\thumb.png",
+          screenshotsJson: JSON.stringify([
+            "D:\\\\SPCK\\\\VT-C4K-JSB15\\\\01_" + sid + "\\\\s1.png",
+          ]),
+          attachmentsJson: JSON.stringify(["index.html"]),
+          youtubeUrlsJson: "[]",
+          relatedLinksJson: JSON.stringify([
+            {
+              name: "Sản phẩm trên Google Drive",
+              url: "https://drive.google.com/drive/folders/" + sid,
+            },
+          ]),
+          teacherComment:
+            "- Nhận xét về sản phẩm: Tốt.\n- Nhận xét về thái độ và kỹ năng của học viên: Tốt.",
+          quickTagsJson: JSON.stringify(["Hoàn thành tốt sản phẩm cuối khóa"]),
+          teacherNote: "",
+          status,
+          contentHash: status === "VERIFIED" ? "hash_v" : "",
+          draftVersion: 1,
+          sessionResultsJson:
+            status === "VERIFIED"
+              ? JSON.stringify({
+                  [String(sessNum)]: {
+                    status: "VERIFIED",
+                    submittedContentHash: "hash_v",
+                    verifiedAt: "2026-10-30 18:00:00",
+                  },
+                })
+              : "{}",
+        });
+
+        w.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = typeof input === "string" ? input : (input as Request).url;
+          const method = (init?.method || "GET").toUpperCase();
+          const bodyObj = init?.body ? JSON.parse(String(init.body)) : {};
+
+          if (url.includes("/api/spck/student-portal")) {
+            return new Response(
+              JSON.stringify({
+                success: true,
+                portalStatus: { isRunning: false, submissions: [] },
+              }),
+              { status: 200 }
+            );
+          }
+
+          if (url.includes("/api/spck/list")) {
+            const u = new URL(url, "http://127.0.0.1:3000");
+            const sess = Number(u.searchParams.get("sessionNumber") || 12);
+            return new Response(
+              JSON.stringify({
+                success: true,
+                classes: [
+                  {
+                    classId: "VT-C4K-JSB15",
+                    className: "VT-C4K-JSB15 - Web",
+                    studentCount: 2,
+                  },
+                ],
+                selectedClassId: "VT-C4K-JSB15",
+                selectedSessionNumber: sess,
+                activeSessionNumber: sess,
+                students,
+                records: students.map((s) =>
+                  makeRecord(s.studentId, s.fullName, "WAITING_APPROVAL", sess)
+                ),
+                savedFolderPath: "D:\\\\SPCK\\\\VT-C4K-JSB15",
+                session14TagLabels: ["Hoàn thành tốt sản phẩm cuối khóa"],
+              }),
+              { status: 200 }
+            );
+          }
+
+          if (url.includes("/api/spck/approve")) {
+            const sess = Number(bodyObj.sessionNumber || 12);
+            return new Response(
+              JSON.stringify({
+                success: true,
+                approvedStudentIds: bodyObj.studentIds || ["STU_01", "STU_02"],
+                skipped: [],
+                records: students.map((s) =>
+                  makeRecord(s.studentId, s.fullName, "APPROVED", sess)
+                ),
+              }),
+              { status: 200 }
+            );
+          }
+
+          if (url.includes("/api/spck/upload-lms") && !url.includes("session14-eval")) {
+            const sess = Number(bodyObj.sessionNumber || 12);
+            return new Response(
+              JSON.stringify({
+                success: true,
+                records: students.map((s) =>
+                  makeRecord(s.studentId, s.fullName, "VERIFIED", sess)
+                ),
+                uploadResult: {
+                  verifiedCount: 2,
+                  failedCount: 0,
+                  results: [
+                    { studentId: "STU_01", status: "VERIFIED" },
+                    { studentId: "STU_02", status: "VERIFIED" },
+                  ],
+                },
+              }),
+              { status: 200 }
+            );
+          }
+
+          if (url.includes("/api/spck/session14-eval") && method === "GET") {
+            return new Response(
+              JSON.stringify({
+                success: true,
+                records: students.map((s) => ({
+                  classId: "VT-C4K-JSB15",
+                  studentId: s.studentId,
+                  fullName: s.fullName,
+                  awardRanking: "Giải Nhất",
+                  demoScores: {
+                    algorithm: 1.5,
+                    creativity: 1.0,
+                    communication: 0.5,
+                    problemSolving: 1.0,
+                    computerSkills: 1.0,
+                  },
+                  demoTotalScore: 5.0,
+                  competencyScores: {
+                    knowledgeInClass: 4,
+                    knowledgeSelfStudy: 4,
+                    skillCommunication: 4,
+                    skillComputerUse: 4,
+                    skillProblemSolving: 4,
+                    skillCreativity: 4,
+                    skillComputational: 4,
+                    attitudeHomework: 4,
+                    attitudeInClass: 4,
+                  },
+                  competencyTotalScore: 36,
+                  quickTags: ["Hoàn thành tốt sản phẩm cuối khóa"],
+                  teacherNote: "",
+                  learnedFromMindx: "Đã học tốt",
+                  suggestionsFromMindx: "Góp ý tốt",
+                  futureDirection: "Định hướng tốt",
+                  status: "APPROVED",
+                  contentHash: "eval_hash",
+                  draftVersion: 1,
+                })),
+              }),
+              { status: 200 }
+            );
+          }
+
+          if (
+            url.includes("/api/spck/session14-eval") &&
+            method === "POST" &&
+            !url.includes("upload-lms")
+          ) {
+            return new Response(
+              JSON.stringify({
+                success: true,
+                approvedIds: bodyObj.studentIds || ["STU_01", "STU_02"],
+              }),
+              { status: 200 }
+            );
+          }
+
+          if (url.includes("/api/spck/session14-eval/upload-lms")) {
+            if (w.__simulateEval14FailOnce) {
+              w.__simulateEval14FailOnce = false;
+              return new Response(
+                JSON.stringify({
+                  success: true,
+                  records: [],
+                  uploadResult: {
+                    verifiedCount: 1,
+                    failedCount: 1,
+                    results: [
+                      {
+                        studentId: "STU_01",
+                        fullName: "Nguyễn Minh Khôi",
+                        status: "VERIFIED",
+                      },
+                      {
+                        studentId: "STU_02",
+                        fullName: "Trần Bảo Ngọc",
+                        status: "FAILED",
+                        errorMessage: "Timeout Cột 2",
+                      },
+                    ],
+                  },
+                }),
+                { status: 200 }
+              );
+            }
+            const reqIds = bodyObj.studentIds || ["STU_01", "STU_02"];
+            return new Response(
+              JSON.stringify({
+                success: true,
+                records: [],
+                uploadResult: {
+                  verifiedCount: reqIds.length,
+                  failedCount: 0,
+                  results: reqIds.map((sid: string) => ({
+                    studentId: sid,
+                    status: "VERIFIED",
+                  })),
+                },
+              }),
+              { status: 200 }
+            );
+          }
+
+          if (url.includes("/api/teaching-projects/progress")) {
+            w.__spckTeachingProgressCalls.push(bodyObj);
+            return new Response(
+              JSON.stringify({
+                success: true,
+                updatedCount: 10,
+              }),
+              { status: 200 }
+            );
+          }
+
+          return new Response(JSON.stringify({ success: true }), { status: 200 });
+        };
+      });
+
+
+await pageSpck.evaluate(()=>{
+ const w=window as any, base=w.fetch;
+ w.__allFetches=[];w.__deferTeaching=false;
+ w.fetch=async(input,init)=>{
+  const url=String(input),body=init?.body?JSON.parse(init.body):{};
+  w.__allFetches.push({url,body});
+  if(url.includes('/api/teaching-projects/progress')&&w.__deferTeaching){w.__progressRequest=body;return await new Promise(resolve=>w.__releaseTeaching=()=>resolve(new Response(JSON.stringify({success:true,updatedCount:10}),{status:200})));}
+  const res=await base(input,init);
+  if(url.includes('/api/spck/list')){
+   const data=await res.json();const cls=new URL(url,location.origin).searchParams.get('classId')||'VT-C4K-JSB15';
+   data.classes=[{classId:'VT-C4K-JSB15',className:'Class A',studentCount:2,currentSessionNumber:14},{classId:'VT-C4K-JSB16',className:'Class B',studentCount:2,currentSessionNumber:14}];
+   data.selectedClassId=cls;
+   if(cls==='VT-C4K-JSB16')data.records=data.records.map(r=>({...r,classId:cls,status:'WAITING_APPROVAL',contentHash:'',sessionResultsJson:'{}'}));
+   return new Response(JSON.stringify(data),{status:200});
+  }
+  return res;
+ };
+});
+await pageSpck.addScriptTag({content:spckBundleCode});
+await pageSpck.getByRole('button',{name:/Nộp Buổi 14 đầy đủ/}).waitFor();
+record('UI04-query-spck-session',true,await pageSpck.getByRole('button',{name:/Nộp Buổi 14 đầy đủ/}).isVisible());
+await pageSpck.getByRole('button',{name:/Nộp Buổi 14 đầy đủ/}).click();
+await pageSpck.getByRole('link',{name:/Mở Phiếu điểm/}).waitFor();
+record('UI05-combo-success-href','/homework-grader?classId=VT-C4K-JSB15&autoScan=1',await pageSpck.getByRole('link',{name:/Mở Phiếu điểm/}).getAttribute('href'));
+await pageSpck.evaluate(()=>{(window as any).__deferTeaching=true;});
+await pageSpck.getByRole('button',{name:/Cập nhật tiến độ Teaching lên 100%/}).click();
+await pageSpck.waitForFunction(()=>Boolean((window as any).__releaseTeaching));
+await pageSpck.locator('select').first().selectOption('VT-C4K-JSB16');
+await pageSpck.waitForFunction(()=>document.querySelector('select')?.value==='VT-C4K-JSB16');
+await pageSpck.waitForTimeout(100);
+const bProgress=pageSpck.getByRole('button',{name:/Cập nhật tiến độ Teaching lên 100%/});
+record('UI06-no-stale-progress-after-class-change',0,await bProgress.count(),'A combo VERIFIED, switch to B whose two rows are WAITING_APPROVAL');
+record('UI07-no-stale-report-handoff-after-class-change',0,await pageSpck.getByRole('link',{name:/Mở Phiếu điểm/}).count(),'Combo state is retained across class changes');
+await pageSpck.screenshot({path:path.join(OUT,'class-B-stale-handoff.png'),fullPage:true});
+await pageSpck.evaluate(()=>{(window as any).__releaseTeaching();});
+await pageSpck.waitForTimeout(100);
+record('UI08-late-progress-response-ignored',0,await pageSpck.getByText(/Đã cập nhật tiến độ Teaching lên 100% thành công/).count());
+if(await bProgress.count()){
+ await pageSpck.evaluate(()=>{(window as any).__deferTeaching=false;});
+ await bProgress.click();
+ await pageSpck.waitForTimeout(80);
+ const calls=await pageSpck.evaluate(()=>(window as any).__allFetches.filter(c=>c.url.includes('/api/teaching-projects/progress')));
+ record('UI09-no-write-to-unverified-class-B',false,calls.some(c=>c.body.classCode==='VT-C4K-JSB16'),'Actual button sends progress100% to class B based on class A combo state');
+}
+await pageSpck.close();
+
+// Mount SubmitBar directly, keep real condition and click handler; vary only parent data.
+const bar=await open('http://127.0.0.1:3000/bar-test');
+await bar.evaluate(()=>{const w=window as any;w.__calls=[];w.fetch=async(i,n)=>{w.__calls.push(JSON.parse(n.body));return new Response(JSON.stringify({success:true,updatedCount:10}),{status:200});};});
+const barCode=(await esbuild.build({stdin:{contents:`import React from 'react';import {createRoot} from 'react-dom/client';import {SubmitBar} from './src/components/final-project/SubmitBar';const root=createRoot(document.getElementById('root'));window.mountBar=(workflow)=>root.render(<SubmitBar workflow={{...workflow,handleApproveAndUpload:()=>{},handleSubmitSession14Combo:()=>{},setLastSubmissionSummary:()=>{}}}/>);`,resolveDir:ROOT,loader:'tsx'},bundle:true,write:false,format:'iife',platform:'browser',plugins:[aliases]})).outputFiles[0].text;
+await bar.addScriptTag({content:barCode});
+async function mount(params={}){
+ await bar.evaluate(params=>{
+ const verified=(sid)=>({assignedStudentId:sid,isDirty:false,status:'VERIFIED',contentHash:'h',sessionResults:{'14':{status:'VERIFIED',submittedContentHash:'h'}}});
+ const w=window as any;
+ w.__workflow={rows:[verified('S1'),verified('S2')],session14Evals:[{studentId:'S1',status:'VERIFIED'},{studentId:'S2',status:'DRAFT'}],totalStepsCount:3,lastSubmissionSummary:null,session14ComboStatus:{running:false,currentPhase:'idle',spckSummary:null,evalVerifiedCount:0,evalRetryStudentIds:[],evalFailedCount:0},uploadingS14EvalLms:false,isAnyOperationBusy:false,uploading:false,effectiveSelectedStudentIds:['S1','S2'],selectedSessionNumber:14,selectedClassId:'VT-C4K-JSB15',...params};w.mountBar(w.__workflow);
+ },params);await bar.waitForTimeout(70);
+}
+await mount();
+record('UI10-partial-evaluation-no-report-link',0,await bar.getByRole('link',{name:/Mở Phiếu điểm/}).count(),'Loaded session14 rows SPCK both VERIFIED, evaluations one VERIFIED one DRAFT, combo idle');
+await bar.screenshot({path:path.join(OUT,'partial-eval-handoff.png'),fullPage:true});
+await mount({rows:[{assignedStudentId:'S1',isDirty:true,status:'VERIFIED'},{assignedStudentId:'S2',isDirty:false,status:'VERIFIED',contentHash:'h',sessionResults:{'14':{status:'VERIFIED',submittedContentHash:'h'}}}],session14ComboStatus:{running:false,currentPhase:'done',spckSummary:{verifiedItems:[{studentId:'S1'},{studentId:'S2'}],retryStudentIds:[]},evalVerifiedCount:2,evalRetryStudentIds:[],evalFailedCount:0}});
+record('UI11-dirty-spck-no-report-link',0,await bar.getByRole('link',{name:/Mở Phiếu điểm/}).count(),'Completed combo, S1 edited after verification, S2 remains clean');
+record('UI12-dirty-spck-no-progress-button',0,await bar.getByRole('button',{name:/Cập nhật tiến độ Teaching/}).count());
+await mount({selectedSessionNumber:12,rows:[{assignedStudentId:'S1',isDirty:false,status:'VERIFIED',contentHash:'h',sessionResults:{'12':{status:'VERIFIED',submittedContentHash:'h'}}},{assignedStudentId:'S2',isDirty:false,status:'FAILED',sessionResults:{'12':{status:'FAILED'}}}],lastSubmissionSummary:{sessionNumber:12,completedAt:'now',totalSelected:1,verifiedItems:[{studentId:'S1',studentName:'Synthetic1'}],retryStudentIds:[],failedItems:[],skippedItems:[]}});
+record('UI13-outside-batch-failed-row-no-progress-button',0,await bar.getByRole('button',{name:/Cập nhật tiến độ Teaching lên 60%/}).count(),'Latest successful batch contains only S1; S2 still FAILED in same class/session');
+await bar.close();
+
+// Real HomeworkGraderPage, synthetic fetch responses; scans and reloads captured by class.
+const hw=await open('http://127.0.0.1:3000/homework-grader?classId=VT-C4K-JSB16&autoScan=1');
+await hw.evaluate(()=>{
+ const w=window as any;w.__calls=[];w.__scanned=false;
+ w.fetch=async(input,init)=>{const url=String(input),method=init?.method||'GET',body=init?.body?JSON.parse(init.body):{};w.__calls.push({url,method,body,scanned:w.__scanned});
+ if(url.includes('/api/homework-grader/scores')&&method==='POST'){await new Promise(r=>setTimeout(r,80));w.__scanned=true;return new Response(JSON.stringify({success:true,classId:body.classCode,rows:[],columns:[],summary:{totalStudents:0,totalColumns:0}}),{status:200});}
+ if(url.includes('/api/report-card'))return new Response(JSON.stringify({success:false,error:'SYNTHETIC_EMPTY_REPORT'}),{status:200});
+ return new Response(JSON.stringify({success:true,classes:[{classCode:'VT-C4K-JSB15'},{classCode:'VT-C4K-JSB16'}],rows:[],columns:[],summary:{}}),{status:200});};
+});
+await hw.addScriptTag({content:hwBundleCode});
+await hw.waitForFunction(()=>(window as any).__scanned);
+await hw.waitForTimeout(120);
+const hwCalls=await hw.evaluate(()=>(window as any).__calls);
+record('UI14-autoScan-target', ['VT-C4K-JSB16'],hwCalls.filter(c=>c.url.includes('/api/homework-grader/scores')&&c.method==='POST').map(c=>c.body.classCode));
+record('UI15-report-card-refresh-after-scan',true,hwCalls.some(c=>c.url.includes('/api/report-card?classId=VT-C4K-JSB16')&&c.scanned));
+fs.writeFileSync(path.join(OUT,'homework-requests.json'),JSON.stringify(hwCalls,null,2));
+await hw.screenshot({path:path.join(OUT,'homework-autoScan.png'),fullPage:true});
+await hw.close();
+
+const comments=await open('http://127.0.0.1:3000/session-comments?classId=VT-C4K-JSB17&sessionNumber=5');
+await comments.evaluate(()=>{
+ const w=window as any;w.__calls=[];
+ localStorage.setItem('mindx_last_class_code','VT-C4K-JSB16');
+ w.fetch=async(input,init)=>{
+ const url=String(input);w.__calls.push(url);const u=new URL(url,location.origin),cls=u.searchParams.get('classId')||'VT-C4K-JSB17';
+ return new Response(JSON.stringify({success:true,data:{classId:cls,resolvedClassId:cls,runningClasses:[{classCode:'VT-C4K-JSB17',className:'Synthetic target'}],sessions:[1,5,7,12,13].map(n=>({sessionNumber:n,sessionId:cls+'_SESS_'+n,topic:'Synthetic topic '+n,date:'2026-10-30'})),students:[],feedbacks:[],quickTags:[],syllabusList:[]}}),{status:200});};
+});
+await comments.addScriptTag({content:await bundle('./src/app/session-comments/page')});
+await comments.waitForFunction(()=>Array.from(document.querySelectorAll('select')).some(s=>s.value==='VT-C4K-JSB17_SESS_5'));
+const commentSelects=await comments.locator('select').evaluateAll(els=>els.map(e=>e.value));
+record('UI16-comment-query-class',true,commentSelects.includes('VT-C4K-JSB17'));
+record('UI17-comment-query-session',true,commentSelects.includes('VT-C4K-JSB17_SESS_5'));
+await comments.screenshot({path:path.join(OUT,'comments-query-session5.png'),fullPage:true});
+fs.writeFileSync(path.join(OUT,'comment-requests.json'),JSON.stringify(await comments.evaluate(()=>(window as any).__calls),null,2));
+await comments.close();
+
+}finally{await context.close();}
+}
+run().catch(e=>{console.error(e);process.exitCode=1;});

@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { ClassPicker } from "@/components/class-picker";
+import { mapSessionToTeachingProgressMilestone } from "@/lib/teaching/session-progress-mapper";
 
 interface RunningClassOption {
   classCode: string;
@@ -24,6 +25,7 @@ interface RunningClassOption {
   status?: string;
   startDate?: string;
   endDate?: string;
+  currentSessionNumber?: number;
 }
 
 interface TeachingStudentItem {
@@ -125,6 +127,8 @@ export default function TeachingProjectsPage() {
   const [dateSourceLabel, setDateSourceLabel] = useState<string>("");
   const [teacherHint] = useState<string>("");
   const [isTasksDetailOpen, setIsTasksDetailOpen] = useState<boolean>(false);
+  const [currentSessionNumber, setCurrentSessionNumber] = useState<number>(0);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState<boolean>(false);
 
   const [isLoadingClass, setIsLoadingClass] = useState<boolean>(false);
   const [isFetchingLmsDates, setIsFetchingLmsDates] = useState<boolean>(false);
@@ -252,6 +256,19 @@ export default function TeachingProjectsPage() {
         if (Array.isArray(data.classes) && data.classes.length > 0) {
           setClasses(data.classes);
         }
+        const matchedClassFromList = Array.isArray(data.classes)
+          ? (data.classes as RunningClassOption[]).find(
+              (c) => String(c.classCode || "").trim().toUpperCase() === cleanCode
+            )
+          : undefined;
+        const resolvedSessNum =
+          typeof data.currentSessionNumber === "number" && data.currentSessionNumber > 0
+            ? data.currentSessionNumber
+            : typeof matchedClassFromList?.currentSessionNumber === "number" &&
+              matchedClassFromList.currentSessionNumber > 0
+            ? matchedClassFromList.currentSessionNumber
+            : 0;
+        setCurrentSessionNumber(resolvedSessNum);
         setCourseName(data.courseName || "");
         if (data.dateSource) {
           setDateSourceLabel(
@@ -327,8 +344,15 @@ export default function TeachingProjectsPage() {
 
         let initialCode = "";
         try {
-          initialCode =
-            window.localStorage.getItem("mindx_last_class_code")?.trim().toUpperCase() || "";
+          const urlParams = new URLSearchParams(window.location.search);
+          const urlClass =
+            urlParams.get("classId") || urlParams.get("classCode") || "";
+          if (urlClass.trim()) {
+            initialCode = urlClass.trim().toUpperCase();
+          } else {
+            initialCode =
+              window.localStorage.getItem("mindx_last_class_code")?.trim().toUpperCase() || "";
+          }
         } catch {
           initialCode = "";
         }
@@ -570,7 +594,7 @@ export default function TeachingProjectsPage() {
     );
   };
 
-  const handleSaveDraftOrApprove = async (approve: boolean) => {
+  const handleSaveDraft = async () => {
     const reqClass = loadedClassCodeRef.current;
     const reqSeq = activeLoadSeqRef.current;
     const reqVersion = draftVersion;
@@ -584,7 +608,7 @@ export default function TeachingProjectsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           classCode: reqClass,
-          action: approve ? "approve_and_save" : "save_draft",
+          action: "save_draft",
           expectedVersion: reqVersion,
           projectName,
           startDate,
@@ -610,9 +634,7 @@ export default function TeachingProjectsPage() {
 
       setBanner({
         type: "success",
-        text: approve
-          ? "✅ Đã duyệt cấu hình Dự án & 5 Công việc (chốt mã kiểm tra SHA-256)."
-          : "💾 Đã lưu bản nháp cấu hình dự án vào bộ nhớ cục bộ.",
+        text: "💾 Đã lưu bản nháp cấu hình dự án vào bộ nhớ cục bộ.",
       });
     } catch (err: unknown) {
       if (activeLoadSeqRef.current !== reqSeq || loadedClassCodeRef.current !== reqClass) {
@@ -865,6 +887,10 @@ export default function TeachingProjectsPage() {
 
   const shortNameOption = getShortProjectName(activeClassCode);
   const fullNameOption = getFullProjectName(activeClassCode);
+  const currentMilestone = useMemo(
+    () => mapSessionToTeachingProgressMilestone(currentSessionNumber),
+    [currentSessionNumber]
+  );
 
   const reportClassCode = useMemo(() => {
     const raw = (loadedClassCode || selectedClassCode || customClassInput).trim().toUpperCase();
@@ -1048,20 +1074,6 @@ export default function TeachingProjectsPage() {
                 <RefreshCw className="w-4 h-4" />
               )}
               <span>Đọc mới từ Teaching</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleFetchDatesFromLms}
-              disabled={!isClassReady || isAnyMutationBusy}
-              className="mindx-dark-keep px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white flex items-center gap-1.5 cursor-pointer transition"
-            >
-              {isFetchingLmsDates ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Calendar className="w-4 h-4" />
-              )}
-              <span>Lấy ngày chuẩn từ LMS</span>
             </button>
           </div>
         </div>
@@ -1451,7 +1463,7 @@ export default function TeachingProjectsPage() {
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
-              onClick={() => handleSaveDraftOrApprove(false)}
+              onClick={handleSaveDraft}
               disabled={!isClassReady || isAnyMutationBusy}
               className="mindx-dark-keep px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-700 hover:bg-slate-800 mindx-dark-btn disabled:opacity-60 text-white flex items-center gap-1.5 cursor-pointer transition"
             >
@@ -1483,11 +1495,6 @@ export default function TeachingProjectsPage() {
             <h2 className="text-base sm:text-lg font-bold">
               3. Báo Cáo Tiến Độ Học Sinh &amp; Cập Nhật Nhanh Trên Teaching
             </h2>
-            {false && (
-              <p className="text-xs text-slate-400 mt-0.5">
-                Chấm tiến độ nhanh theo từng mốc buổi học (20% &rarr; 40% &rarr; 60% &rarr; 80% &rarr; 100%) hoặc kéo thanh trượt cho từng học sinh như trên trang Teaching.
-              </p>
-            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -1512,67 +1519,137 @@ export default function TeachingProjectsPage() {
           </div>
         </div>
 
-        {/* 1-Click Class-Wide Milestone Bar */}
-        <div className="p-3.5 rounded-xl border border-slate-700/70 bg-slate-900/65 space-y-2">
-          <div className="text-xs font-bold flex items-center justify-between">
-            <span>⚡ Cập nhật nhanh tiến độ cho CẢ LỚP theo mốc hoàn thành:</span>
-            {isUpdatingProgress && (
-              <span className="flex items-center gap-1 text-amber-400">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Đang đồng bộ lên Teaching...</span>
-              </span>
-            )}
+        {/* 1-Click Current Session Milestone + Collapsible Advanced Section (S6.1) */}
+        <div className="p-3.5 rounded-xl border border-slate-700/70 bg-slate-900/65 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="text-xs font-bold flex items-center gap-2">
+                <span>⚡ Cập nhật 1 chạm theo buổi học hiện tại của lớp:</span>
+                <span className="mindx-dark-keep bg-indigo-700 text-white px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+                  {currentMilestone.label}
+                </span>
+              </div>
+              {isUpdatingProgress && (
+                <span className="flex items-center gap-1 text-xs text-amber-400">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Đang đồng bộ lên Teaching...</span>
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={
+                  !isClassReady ||
+                  !allTasksHaveRemoteIds ||
+                  isAnyMutationBusy ||
+                  !currentMilestone.isKnownSession
+                }
+                onClick={() => handleBulkMilestoneUpdate(currentMilestone.milestoneTaskCount)}
+                className="mindx-dark-keep px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white flex items-center gap-2 cursor-pointer shadow-lg transition"
+              >
+                {isUpdatingProgress ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Rocket className="w-4 h-4" />
+                )}
+                <span>{currentMilestone.buttonLabel}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsAdvancedOpen((prev) => !prev)}
+                className="mindx-dark-keep px-3 py-2 rounded-xl text-xs font-bold bg-slate-700 hover:bg-slate-800 mindx-dark-btn text-white flex items-center gap-1.5 cursor-pointer transition"
+              >
+                {isAdvancedOpen ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                    <span>Ẩn Nâng cao</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>⚙️ Nâng cao</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
-              onClick={() => handleBulkMilestoneUpdate(1)}
-              className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white cursor-pointer transition"
-            >
-              Xong Việc 1 (20%)
-            </button>
-            <button
-              type="button"
-              disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
-              onClick={() => handleBulkMilestoneUpdate(2)}
-              className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white cursor-pointer transition"
-            >
-              Xong Việc 1–2 (40%)
-            </button>
-            <button
-              type="button"
-              disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
-              onClick={() => handleBulkMilestoneUpdate(3)}
-              className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white cursor-pointer transition"
-            >
-              Xong Việc 1–3 (60% • Buổi 12)
-            </button>
-            <button
-              type="button"
-              disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
-              onClick={() => handleBulkMilestoneUpdate(4)}
-              className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white cursor-pointer transition"
-            >
-              Xong Việc 1–4 (80% • Buổi 13)
-            </button>
-            <button
-              type="button"
-              disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
-              onClick={() => handleBulkMilestoneUpdate(5)}
-              className="mindx-dark-keep px-3.5 py-1.5 rounded-lg text-xs font-extrabold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white cursor-pointer transition"
-            >
-              🏆 Hoàn thành 100% cả 5 việc (Buổi 14)
-            </button>
-            <button
-              type="button"
-              disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
-              onClick={() => handleBulkMilestoneUpdate(0)}
-              className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-700 hover:bg-slate-800 mindx-dark-btn disabled:opacity-50 text-white cursor-pointer transition"
-            >
-              Đặt lại 0%
-            </button>
-          </div>
+
+          {isAdvancedOpen && (
+            <div className="pt-3 border-t border-slate-700/60 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-bold text-slate-300">
+                  Chọn mốc tiến độ thủ công hoặc lấy lại ngày từ LMS:
+                </span>
+                <button
+                  type="button"
+                  onClick={handleFetchDatesFromLms}
+                  disabled={!isClassReady || isAnyMutationBusy}
+                  className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white flex items-center gap-1.5 cursor-pointer transition"
+                >
+                  {isFetchingLmsDates ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Calendar className="w-3.5 h-3.5" />
+                  )}
+                  <span>Lấy ngày chuẩn từ LMS</span>
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
+                  onClick={() => handleBulkMilestoneUpdate(1)}
+                  className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white cursor-pointer transition"
+                >
+                  Xong Việc 1 (20%)
+                </button>
+                <button
+                  type="button"
+                  disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
+                  onClick={() => handleBulkMilestoneUpdate(2)}
+                  className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white cursor-pointer transition"
+                >
+                  Xong Việc 1–2 (40%)
+                </button>
+                <button
+                  type="button"
+                  disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
+                  onClick={() => handleBulkMilestoneUpdate(3)}
+                  className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white cursor-pointer transition"
+                >
+                  Xong Việc 1–3 (60% • Buổi 12)
+                </button>
+                <button
+                  type="button"
+                  disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
+                  onClick={() => handleBulkMilestoneUpdate(4)}
+                  className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white cursor-pointer transition"
+                >
+                  Xong Việc 1–4 (80% • Buổi 13)
+                </button>
+                <button
+                  type="button"
+                  disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
+                  onClick={() => handleBulkMilestoneUpdate(5)}
+                  className="mindx-dark-keep px-3.5 py-1.5 rounded-lg text-xs font-extrabold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white cursor-pointer transition"
+                >
+                  🏆 Hoàn thành 100% cả 5 việc (Buổi 14)
+                </button>
+                <button
+                  type="button"
+                  disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
+                  onClick={() => handleBulkMilestoneUpdate(0)}
+                  className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-700 hover:bg-slate-800 mindx-dark-btn disabled:opacity-50 text-white cursor-pointer transition"
+                >
+                  Đặt lại 0%
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Student Overall Progress Summary Table */}
@@ -1623,8 +1700,8 @@ export default function TeachingProjectsPage() {
           </table>
         </div>
 
-        {/* Detailed Per-Task & Per-Student Sliders (Image 5 Table) */}
-        {allTasksHaveRemoteIds && students.length > 0 && (
+        {/* Detailed Per-Task & Per-Student Sliders (inside Advanced section — S6.1) */}
+        {isAdvancedOpen && allTasksHaveRemoteIds && students.length > 0 && (
           <div className="space-y-3 pt-2">
             <h3 className="text-sm font-bold">
               Bảng chi tiết từng phần công việc &amp; thanh kéo % từng học sinh:

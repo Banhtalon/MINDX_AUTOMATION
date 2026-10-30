@@ -1,0 +1,441 @@
+import {
+  getCoursesSyllabus,
+  getRunningClasses,
+  type CourseSyllabus,
+} from "@/lib/db/json-config";
+import { getDb, normalizeTeachingProjectTasks } from "@/lib/db/sqlite";
+import { listClasses } from "@/lib/classes/class-directory";
+import { isCheckpointSession } from "@/lib/quick-tags";
+import { mapSessionToTeachingProgressMilestone } from "@/lib/teaching/session-progress-mapper";
+
+export interface TodayActionStep {
+  stepNumber: number;
+  label: string;
+  statusText: string;
+  href: string;
+  isDone: boolean;
+}
+
+export interface ClassTodayTodoInput {
+  classId: string;
+  className?: string;
+  courseName?: string;
+  currentSessionNumber: number;
+  studentCount?: number;
+  isCheckpointOverride?: boolean;
+  syllabusList?: Array<Pick<CourseSyllabus, "courseCode" | "checkpointSessions">>;
+  sessionCommentVerified?: boolean;
+  reportCardVerified?: boolean;
+  spckSessionVerified?: Partial<Record<12 | 13 | 14, boolean>>;
+  session14EvalVerified?: boolean;
+  teachingProgressPercent?: number;
+}
+
+export interface ClassTodayTodoCard {
+  classId: string;
+  className: string;
+  currentSessionNumber: number;
+  sessionBadgeText: string;
+  isCheckpoint: boolean;
+  summaryText: string;
+  primaryHref: string;
+  steps: TodayActionStep[];
+  allDone: boolean;
+}
+
+const STEP_SYMBOLS = ["①", "②", "③", "④", "⑤"];
+
+/**
+ * S6.4: Hàm thuần tạo thẻ "Việc cần làm hôm nay" cho một lớp dựa trên buổi học hiện tại
+ * và trạng thái đã lưu trong SQLite.
+ * - Buổi thường (1..10, không phải Checkpoint): "Nhận xét buổi N (chưa đẩy LMS / đã đẩy LMS ✓)"
+ * - Buổi Checkpoint (Lập trình 5 & 9 / Robotics 4 & 8): ① Nhận xét buổi N + ② Phiếu điểm Checkpoint
+ * - Buổi 11: ① Nhận xét buổi 11 + ② Tiến độ 20%
+ * - Buổi 12 / 13: ① Nhận xét buổi N + ② Nộp SPCK Buổi N + ③ Tiến độ 60%/80%
+ * - Buổi 14: "① Nộp SPCK ② Đánh giá ③ Phiếu điểm ④ Tiến độ 100%"
+ */
+export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayTodoCard {
+  const classId = String(input.classId || "").trim().toUpperCase();
+  const className = String(input.className || input.courseName || classId).trim();
+  const rawSession = Number(input.currentSessionNumber) || 0;
+  const sessionNum = rawSession > 0 ? Math.min(14, Math.max(1, Math.floor(rawSession))) : 1;
+
+  const isCheckpoint =
+    typeof input.isCheckpointOverride === "boolean"
+      ? input.isCheckpointOverride
+      : isCheckpointSession(classId, sessionNum, input.syllabusList);
+
+  const commentDone = Boolean(input.sessionCommentVerified);
+  const reportCardDone = Boolean(input.reportCardVerified);
+  const spck12Done = Boolean(input.spckSessionVerified?.[12]);
+  const spck13Done = Boolean(input.spckSessionVerified?.[13]);
+  const spck14Done = Boolean(input.spckSessionVerified?.[14]);
+  const eval14Done = Boolean(input.session14EvalVerified);
+  const progressPct = Math.max(0, Math.min(100, Math.round(Number(input.teachingProgressPercent) || 0)));
+
+  const encodedClass = encodeURIComponent(classId);
+  const steps: TodayActionStep[] = [];
+
+  if (sessionNum >= 14) {
+    steps.push(
+      {
+        stepNumber: 1,
+        label: "① Nộp SPCK",
+        statusText: spck14Done ? "đã nộp LMS ✓" : "chưa nộp LMS",
+        href: `/final-project?classId=${encodedClass}&sessionNumber=14`,
+        isDone: spck14Done,
+      },
+      {
+        stepNumber: 2,
+        label: "② Đánh giá",
+        statusText: eval14Done ? "đã đẩy LMS ✓" : "chưa đẩy LMS",
+        href: `/final-project?classId=${encodedClass}&sessionNumber=14`,
+        isDone: eval14Done,
+      },
+      {
+        stepNumber: 3,
+        label: "③ Phiếu điểm",
+        statusText: reportCardDone ? "đã đồng bộ Teaching ✓" : "quét & đồng bộ",
+        href: `/homework-grader?classId=${encodedClass}`,
+        isDone: reportCardDone,
+      },
+      {
+        stepNumber: 4,
+        label: "④ Tiến độ 100%",
+        statusText: progressPct >= 100 ? "đã đạt 100% ✓" : `đang ${progressPct}%`,
+        href: `/teaching-projects?classId=${encodedClass}`,
+        isDone: progressPct >= 100,
+      }
+    );
+
+    const firstPending = steps.find((s) => !s.isDone) || steps[0];
+    return {
+      classId,
+      className,
+      currentSessionNumber: 14,
+      sessionBadgeText: "Buổi 14 • Tổng kết CK",
+      isCheckpoint: false,
+      summaryText: "① Nộp SPCK ② Đánh giá ③ Phiếu điểm ④ Tiến độ 100%",
+      primaryHref: firstPending.href,
+      steps,
+      allDone: steps.every((s) => s.isDone),
+    };
+  }
+
+  if (sessionNum === 12 || sessionNum === 13) {
+    const milestone = mapSessionToTeachingProgressMilestone(sessionNum);
+    const spckDone = sessionNum === 12 ? spck12Done : spck13Done;
+    const progressDone = progressPct >= milestone.targetPercent;
+
+    steps.push(
+      {
+        stepNumber: 1,
+        label: `① Nhận xét buổi ${sessionNum}`,
+        statusText: commentDone ? "đã đẩy LMS ✓" : "chưa đẩy LMS",
+        href: `/session-comments?classId=${encodedClass}&sessionNumber=${sessionNum}`,
+        isDone: commentDone,
+      },
+      {
+        stepNumber: 2,
+        label: `② Nộp SPCK Buổi ${sessionNum}`,
+        statusText: spckDone ? "đã nộp LMS ✓" : "chưa nộp LMS",
+        href: `/final-project?classId=${encodedClass}&sessionNumber=${sessionNum}`,
+        isDone: spckDone,
+      },
+      {
+        stepNumber: 3,
+        label: `③ Tiến độ ${milestone.targetPercent}%`,
+        statusText: progressDone
+          ? `đã đạt ${milestone.targetPercent}% ✓`
+          : `cập nhật lên ${milestone.targetPercent}%`,
+        href: `/teaching-projects?classId=${encodedClass}`,
+        isDone: progressDone,
+      }
+    );
+
+    const firstPending = steps.find((s) => !s.isDone) || steps[0];
+    return {
+      classId,
+      className,
+      currentSessionNumber: sessionNum,
+      sessionBadgeText: `Buổi ${sessionNum} • SPCK GĐ${sessionNum === 12 ? 1 : 2}`,
+      isCheckpoint: false,
+      summaryText: steps.map((s) => `${s.label} (${s.statusText})`).join(" • "),
+      primaryHref: firstPending.href,
+      steps,
+      allDone: steps.every((s) => s.isDone),
+    };
+  }
+
+  if (sessionNum === 11) {
+    const progressDone = progressPct >= 20;
+    steps.push(
+      {
+        stepNumber: 1,
+        label: "① Nhận xét buổi 11",
+        statusText: commentDone ? "đã đẩy LMS ✓" : "chưa đẩy LMS",
+        href: `/session-comments?classId=${encodedClass}&sessionNumber=11`,
+        isDone: commentDone,
+      },
+      {
+        stepNumber: 2,
+        label: "② Tiến độ 20%",
+        statusText: progressDone ? "đã đạt 20% ✓" : "khởi tạo dự án & 20%",
+        href: `/teaching-projects?classId=${encodedClass}`,
+        isDone: progressDone,
+      }
+    );
+
+    const firstPending = steps.find((s) => !s.isDone) || steps[0];
+    return {
+      classId,
+      className,
+      currentSessionNumber: 11,
+      sessionBadgeText: "Buổi 11 • Mở dự án SPCK",
+      isCheckpoint: false,
+      summaryText: steps.map((s) => `${s.label} (${s.statusText})`).join(" • "),
+      primaryHref: firstPending.href,
+      steps,
+      allDone: steps.every((s) => s.isDone),
+    };
+  }
+
+  if (isCheckpoint) {
+    steps.push(
+      {
+        stepNumber: 1,
+        label: `① Nhận xét buổi ${sessionNum}`,
+        statusText: commentDone ? "đã đẩy LMS ✓" : "chưa đẩy LMS",
+        href: `/session-comments?classId=${encodedClass}&sessionNumber=${sessionNum}`,
+        isDone: commentDone,
+      },
+      {
+        stepNumber: 2,
+        label: `② Phiếu điểm Checkpoint`,
+        statusText: reportCardDone ? "đã đồng bộ Teaching ✓" : "quét & đồng bộ Teaching",
+        href: `/homework-grader?classId=${encodedClass}`,
+        isDone: reportCardDone,
+      }
+    );
+
+    const firstPending = steps.find((s) => !s.isDone) || steps[0];
+    return {
+      classId,
+      className,
+      currentSessionNumber: sessionNum,
+      sessionBadgeText: `Buổi ${sessionNum} • Checkpoint`,
+      isCheckpoint: true,
+      summaryText: `Nhận xét buổi ${sessionNum} (${
+        commentDone ? "đã đẩy LMS ✓" : "chưa đẩy LMS"
+      }) • Phiếu điểm Checkpoint (${reportCardDone ? "đã đồng bộ ✓" : "chưa đồng bộ"})`,
+      primaryHref: firstPending.href,
+      steps,
+      allDone: steps.every((s) => s.isDone),
+    };
+  }
+
+  const singleStatusText = commentDone ? "đã đẩy LMS ✓" : "chưa đẩy LMS";
+  const singleStep: TodayActionStep = {
+    stepNumber: 1,
+    label: `${STEP_SYMBOLS[0]} Nhận xét buổi ${sessionNum}`,
+    statusText: singleStatusText,
+    href: `/session-comments?classId=${encodedClass}&sessionNumber=${sessionNum}`,
+    isDone: commentDone,
+  };
+  steps.push(singleStep);
+
+  return {
+    classId,
+    className,
+    currentSessionNumber: sessionNum,
+    sessionBadgeText: `Buổi ${sessionNum}`,
+    isCheckpoint: false,
+    summaryText: `Nhận xét buổi ${sessionNum} (${singleStatusText})`,
+    primaryHref: singleStep.href,
+    steps,
+    allDone: commentDone,
+  };
+}
+
+function computeAverageTeachingProgressPercent(
+  tasksJson?: string | null,
+  progressJson?: string | null,
+  endDate?: string | null
+): number {
+  if (!progressJson) return 0;
+  try {
+    const progressMap = JSON.parse(progressJson) as Record<string, number>;
+    const tasks = normalizeTeachingProjectTasks(tasksJson || "[]", endDate || "");
+    const validTasks = tasks.filter((t) => Number(t.taskId) > 0);
+    if (validTasks.length === 0) {
+      const vals = Object.values(progressMap).map(Number).filter(Number.isFinite);
+      if (vals.length === 0) return 0;
+      return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+    }
+    const studentIds = Array.from(
+      new Set(validTasks.flatMap((t) => t.assignedStudentIds || []))
+    );
+    if (studentIds.length === 0) return 0;
+    let totalWeighted = 0;
+    for (const sid of studentIds) {
+      let stuScore = 0;
+      for (const task of validTasks) {
+        const pct = Number(progressMap[`${task.taskId}_${sid}`] ?? 0);
+        stuScore += (pct * (Number(task.weightPercent) || 20)) / 100;
+      }
+      totalWeighted += stuScore;
+    }
+    return Math.round(totalWeighted / studentIds.length);
+  } catch {
+    return 0;
+  }
+}
+
+export function getDashboardTodayTodoCards(options?: {
+  limit?: number;
+  includeSynthetic?: boolean;
+}): ClassTodayTodoCard[] {
+  const limit = options?.limit ?? 8;
+  try {
+    const db = getDb();
+    const syllabusList = getCoursesSyllabus();
+    const rawRunningMap = new Map(
+      (getRunningClasses() || []).map((r) => [
+        String(r.classCode || "").trim().toUpperCase(),
+        Number((r as any).currentSessionNumber) || 0,
+      ])
+    );
+    const classes = listClasses({
+      scope: "running",
+      includeSynthetic: options?.includeSynthetic ?? false,
+    }).slice(0, limit);
+
+    return classes.map((cls) => {
+      const classId = cls.classCode;
+      const fallbackSess = rawRunningMap.get(classId) || 1;
+      const sessionNum =
+        cls.currentSessionNumber > 0 ? cls.currentSessionNumber : fallbackSess;
+
+      const sessionRow = db
+        .prepare(
+          `SELECT sessionId FROM classes_sessions
+           WHERE classId = ? AND sessionNumber = ?
+           LIMIT 1`
+        )
+        .get(classId, sessionNum) as { sessionId?: string } | undefined;
+      const resolvedSessionId =
+        sessionRow?.sessionId || `${classId}_SESS_${sessionNum}`;
+
+      const feedbackCounts = db
+        .prepare(
+          `SELECT
+             COUNT(*) as totalCnt,
+             SUM(CASE WHEN status = 'VERIFIED' THEN 1 ELSE 0 END) as verifiedCnt
+           FROM session_feedbacks
+           WHERE classId = ? AND sessionId = ?`
+        )
+        .get(classId, resolvedSessionId) as
+        | { totalCnt?: number; verifiedCnt?: number }
+        | undefined;
+      const totalFeedbackCount = Number(feedbackCounts?.totalCnt) || 0;
+      const verifiedFeedbackCount = Number(feedbackCounts?.verifiedCnt) || 0;
+
+      const spckRows = db
+        .prepare(
+          `SELECT status, sessionResultsJson FROM spck_uploads
+           WHERE classId = ?`
+        )
+        .all(classId) as Array<{ status?: string; sessionResultsJson?: string }>;
+
+      const spckSessionRows = db
+        .prepare(
+          `SELECT sessionNumber, draftStatus FROM spck_session_submissions
+           WHERE classId = ?`
+        )
+        .all(classId) as Array<{ sessionNumber?: number; draftStatus?: string }>;
+
+      const checkSpckSessionVerified = (targetSess: 12 | 13 | 14): boolean => {
+        const sessRows = spckSessionRows.filter(
+          (r) => Number(r.sessionNumber) === targetSess
+        );
+        if (sessRows.length > 0) {
+          return sessRows.every((r) => r.draftStatus === "VERIFIED");
+        }
+        if (spckRows.length === 0) return false;
+        return spckRows.every((row) => {
+          try {
+            const map = JSON.parse(row.sessionResultsJson || "{}") as Record<
+              string,
+              { status?: string }
+            >;
+            return map[String(targetSess)]?.status === "VERIFIED";
+          } catch {
+            return targetSess === 13 && row.status === "VERIFIED";
+          }
+        });
+      };
+
+      const evalCounts = db
+        .prepare(
+          `SELECT
+             COUNT(*) as totalCnt,
+             SUM(CASE WHEN status = 'VERIFIED' THEN 1 ELSE 0 END) as verifiedCnt
+           FROM spck_session14_evaluations
+           WHERE classId = ?`
+        )
+        .get(classId) as { totalCnt?: number; verifiedCnt?: number } | undefined;
+      const totalEvalCount = Number(evalCounts?.totalCnt) || 0;
+      const evalVerifiedCount = Number(evalCounts?.verifiedCnt) || 0;
+
+      const reportCardRow = db
+        .prepare(
+          `SELECT status FROM class_report_cards
+           WHERE classId = ?
+           LIMIT 1`
+        )
+        .get(classId) as { status?: string } | undefined;
+
+      const teachingProjRow = db
+        .prepare(
+          `SELECT status, tasksJson, progressJson, endDate FROM teaching_final_projects
+           WHERE classId = ?
+           LIMIT 1`
+        )
+        .get(classId) as
+        | {
+            status?: string;
+            tasksJson?: string;
+            progressJson?: string;
+            endDate?: string;
+          }
+        | undefined;
+
+      const teachingProgressPercent = computeAverageTeachingProgressPercent(
+        teachingProjRow?.tasksJson,
+        teachingProjRow?.progressJson,
+        teachingProjRow?.endDate
+      );
+
+      return buildClassTodayTodoCard({
+        classId,
+        className: cls.className || cls.courseName || classId,
+        courseName: cls.courseName,
+        currentSessionNumber: sessionNum,
+        syllabusList,
+        sessionCommentVerified:
+          totalFeedbackCount > 0 && verifiedFeedbackCount === totalFeedbackCount,
+        reportCardVerified: reportCardRow?.status === "VERIFIED",
+        spckSessionVerified: {
+          12: checkSpckSessionVerified(12),
+          13: checkSpckSessionVerified(13),
+          14: checkSpckSessionVerified(14),
+        },
+        session14EvalVerified:
+          totalEvalCount > 0 && evalVerifiedCount === totalEvalCount,
+        teachingProgressPercent,
+      });
+    });
+  } catch {
+    return [];
+  }
+}

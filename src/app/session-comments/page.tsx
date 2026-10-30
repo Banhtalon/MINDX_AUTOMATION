@@ -445,13 +445,21 @@ export default function SessionCommentsPage() {
     debouncedResolversRef.current = {};
   };
 
-  // Restore last selected class from browser localStorage on initial mount (safe in SSR & VM sandbox)
+  // Restore last selected class from URL query (?classId= / ?classCode=) or browser localStorage on initial mount
   useEffect(() => {
     try {
-      if (typeof window !== "undefined" && window.localStorage) {
-        const savedClass = String(window.localStorage.getItem("mindx_last_class_code") || "")
+      if (typeof window !== "undefined") {
+        const urlParams = new URLSearchParams(window.location?.search || "");
+        const urlClass = String(
+          urlParams.get("classId") || urlParams.get("classCode") || ""
+        )
           .trim()
           .toUpperCase();
+        const savedClass =
+          urlClass ||
+          String(window.localStorage?.getItem("mindx_last_class_code") || "")
+            .trim()
+            .toUpperCase();
         if (savedClass && savedClass !== classId) {
           setClassCode(savedClass);
           setClassId(savedClass);
@@ -608,7 +616,24 @@ export default function SessionCommentsPage() {
 
           const existsInClass = sessionList.some((s) => s.sessionId === normalizedSessionId);
           if (!normalizedSessionId || !existsInClass) {
-            effectiveSessionId = findLatestActiveSessionId(sessionList);
+            let urlMatchedSessionId = "";
+            try {
+              if (typeof window !== "undefined") {
+                const urlParams = new URLSearchParams(window.location?.search || "");
+                const urlClass = String(
+                  urlParams.get("classId") || urlParams.get("classCode") || ""
+                )
+                  .trim()
+                  .toUpperCase();
+                const urlSessNum = Number(urlParams.get("sessionNumber") || 0);
+                if (urlSessNum > 0 && (!urlClass || urlClass === effectiveClassId)) {
+                  urlMatchedSessionId =
+                    sessionList.find((s) => Number(s.sessionNumber) === urlSessNum)
+                      ?.sessionId || "";
+                }
+              }
+            } catch {}
+            effectiveSessionId = urlMatchedSessionId || findLatestActiveSessionId(sessionList);
             if (effectiveSessionId && effectiveSessionId !== normalizedSessionId) {
               setSelectedSessionId(effectiveSessionId);
               return; // useEffect will re-trigger loadClassData with the valid effectiveSessionId

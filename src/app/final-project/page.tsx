@@ -119,6 +119,7 @@ type SpckSessionResultsMapUI = Partial<
 >;
 
 interface SpckBatchSubmissionSummaryUI {
+  classId?: string;
   sessionNumber: 12 | 13 | 14;
   completedAt: string;
   totalSelected: number;
@@ -1151,15 +1152,29 @@ export default function FinalProjectPage() {
         }
         const classList: ClassOption[] = data.classes || [];
         let savedClassId = "";
+        let urlSessionNum: 12 | 13 | 14 | undefined = undefined;
         try {
-          if (typeof window !== "undefined" && window.localStorage) {
-            savedClassId = String(
-              window.localStorage.getItem("mindx_last_class_code") || ""
+          if (typeof window !== "undefined") {
+            const urlParams = new URLSearchParams(window.location?.search || "");
+            const urlClass = String(
+              urlParams.get("classId") || urlParams.get("classCode") || ""
             )
               .trim()
               .toUpperCase();
+            const rawUrlSess = Number(urlParams.get("sessionNumber"));
+            if ([12, 13, 14].includes(rawUrlSess)) {
+              urlSessionNum = rawUrlSess as 12 | 13 | 14;
+            }
+            savedClassId =
+              urlClass ||
+              String(
+                window.localStorage?.getItem("mindx_last_class_code") || ""
+              )
+                .trim()
+                .toUpperCase();
           }
         } catch {}
+        const effectiveTargetSession = targetSessionNumber || urlSessionNum;
         if (
           !requestedClassId &&
           savedClassId &&
@@ -1169,7 +1184,7 @@ export default function FinalProjectPage() {
           activeUiClassId = savedClassId;
           setSelectedClassId(savedClassId);
           setClasses(classList);
-          await loadClassData(savedClassId, targetSessionNumber);
+          await loadClassData(savedClassId, effectiveTargetSession);
           return;
         }
         const resolvedClassId = requestedClassId || data.selectedClassId || "";
@@ -1189,7 +1204,7 @@ export default function FinalProjectPage() {
           data.selectedSessionNumber ?? data.activeSessionNumber
         );
         const resolvedSession: 12 | 13 | 14 =
-          targetSessionNumber ||
+          effectiveTargetSession ||
           ([12, 13, 14].includes(apiSelectedSession)
             ? (apiSelectedSession as 12 | 13 | 14)
             : matchedClass?.currentSessionNumber &&
@@ -1245,6 +1260,8 @@ export default function FinalProjectPage() {
     } catch {}
     setBannerMessage(null);
     setLastSubmissionSummary(null);
+    setRows([]);
+    setSession14Evals([]);
     setExpandedRowKeys({});
     await loadClassData(newClassId);
   };
@@ -2395,6 +2412,7 @@ export default function FinalProjectPage() {
       );
 
       const summaryObj: SpckBatchSubmissionSummaryUI = {
+        classId: requestClassId,
         sessionNumber: targetSessionNum,
         totalSelected,
         verifiedItems,

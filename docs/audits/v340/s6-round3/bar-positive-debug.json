@@ -1,0 +1,84 @@
+{
+  "workflow": {
+    "rows": [
+      {
+        "assignedStudentId": "S1",
+        "isDirty": false,
+        "status": "VERIFIED",
+        "contentHash": "h",
+        "sessionResults": {
+          "14": {
+            "status": "VERIFIED",
+            "submittedContentHash": "h"
+          }
+        }
+      },
+      {
+        "assignedStudentId": "S2",
+        "isDirty": false,
+        "status": "VERIFIED",
+        "contentHash": "h",
+        "sessionResults": {
+          "14": {
+            "status": "VERIFIED",
+            "submittedContentHash": "h"
+          }
+        }
+      }
+    ],
+    "session14Evals": [
+      {
+        "classId": "VT-C4K-JSB15",
+        "studentId": "S1",
+        "status": "VERIFIED"
+      },
+      {
+        "classId": "VT-C4K-JSB15",
+        "studentId": "S2",
+        "status": "VERIFIED"
+      }
+    ],
+    "totalStepsCount": 3,
+    "lastSubmissionSummary": null,
+    "session14ComboStatus": {
+      "classId": "VT-C4K-JSB15",
+      "running": false,
+      "currentPhase": "done",
+      "spckSummary": {
+        "classId": "VT-C4K-JSB15",
+        "sessionNumber": 14,
+        "totalSelected": 2,
+        "completedAt": "now",
+        "failedItems": [],
+        "skippedItems": [],
+        "verifiedItems": [
+          {
+            "studentId": "S1"
+          },
+          {
+            "studentId": "S2"
+          }
+        ],
+        "retryStudentIds": []
+      },
+      "evalVerifiedCount": 2,
+      "evalVerifiedStudentIds": [
+        "S1",
+        "S2"
+      ],
+      "evalRetryStudentIds": [],
+      "evalFailedCount": 0
+    },
+    "uploadingS14EvalLms": false,
+    "isAnyOperationBusy": false,
+    "uploading": false,
+    "effectiveSelectedStudentIds": [
+      "S1",
+      "S2"
+    ],
+    "selectedSessionNumber": 14,
+    "selectedClassId": "VT-C4K-JSB15"
+  },
+  "text": "Bước 3 / 3\nNộp Các Bài Đã Chọn & Đối Chiếu Kết Quả LMS\n🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá) — 2 bài\nPhần 1: Sản phẩm SPCK (Cột 3 LMS)\nĐã nộp 2/2 bài (0 bài cần thử lại)\nPhần 2: Điểm Demo, ĐNL & Thư 3 phần (Cột 2 LMS)\nĐã lưu & xác minh 2 học viên (0 cần thử lại)\nGợi ý bước tiếp theo sau khi đã xác minh LMS (VERIFIED):\n\nĐã nộp & xác minh 2 bài SPCK Buổi 14 trên LMS. Bấm 1 chạm để đẩy tiến độ cả lớp lên 100% (5/5 công việc) trên Teaching.\n\n📈 Cập nhật tiến độ Teaching lên 100%\n📋 Mở Phiếu điểm → Quét",
+  "html": "<div id=\"root\"><div class=\"mindx-card-emerald p-5 rounded-xl space-y-4\"><div class=\"flex flex-col md:flex-row md:items-center justify-between gap-3\"><div class=\"flex flex-wrap items-center gap-2\"><span class=\"mindx-badge-emerald px-2.5 py-0.5 rounded-full text-xs font-bold\">Bước 3 / 3</span><h2 class=\"text-sm font-bold text-white\">Nộp Các Bài Đã Chọn &amp; Đối Chiếu Kết Quả LMS</h2></div><div class=\"flex flex-wrap items-center gap-2.5 shrink-0\"><button type=\"button\" class=\"flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 disabled:opacity-50 text-white text-sm font-bold shadow-lg shadow-emerald-950/50 transition-colors cursor-pointer\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-cloud-upload lucide-upload-cloud w-4 h-4\" aria-hidden=\"true\"><path d=\"M12 13v8\"></path><path d=\"M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242\"></path><path d=\"m8 17 4-4 4 4\"></path></svg><span>🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá) — 2 bài</span></button></div></div><div class=\"p-3.5 rounded-xl bg-slate-950 border border-indigo-700/60 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs\"><div class=\"p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2\"><div><div class=\"font-bold text-emerald-300\">Phần 1: Sản phẩm SPCK (Cột 3 LMS)</div><div class=\"text-slate-300 mt-0.5\">Đã nộp 2/2 bài (0 bài cần thử lại)</div></div></div><div class=\"p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2\"><div><div class=\"font-bold text-indigo-300\">Phần 2: Điểm Demo, ĐNL &amp; Thư 3 phần (Cột 2 LMS)</div><div class=\"text-slate-300 mt-0.5\">Đã lưu &amp; xác minh 2 học viên (0 cần thử lại)</div></div></div></div><div class=\"p-4 rounded-xl bg-indigo-950/35 border border-indigo-500/40 space-y-3 text-xs\"><div class=\"flex flex-col md:flex-row md:items-center justify-between gap-3\"><div class=\"space-y-1\"><div class=\"font-bold text-indigo-200 flex items-center gap-1.5\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-trending-up w-4 h-4 text-indigo-400\" aria-hidden=\"true\"><path d=\"M16 7h6v6\"></path><path d=\"m22 7-8.5 8.5-5-5L2 17\"></path></svg><span>Gợi ý bước tiếp theo sau khi đã xác minh LMS (VERIFIED):</span></div><p class=\"text-slate-300\">Đã nộp &amp; xác minh 2 bài SPCK Buổi 14 trên LMS. Bấm 1 chạm để đẩy tiến độ cả lớp lên 100% (5/5 công việc) trên Teaching.</p></div><div class=\"flex flex-wrap items-center gap-2.5 shrink-0\"><button type=\"button\" class=\"flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold shadow transition-colors cursor-pointer\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-trending-up w-3.5 h-3.5\" aria-hidden=\"true\"><path d=\"M16 7h6v6\"></path><path d=\"m22 7-8.5 8.5-5-5L2 17\"></path></svg><span>📈 Cập nhật tiến độ Teaching lên 100%</span></button><a href=\"/homework-grader?classId=VT-C4K-JSB15&amp;autoScan=1\" class=\"flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow transition-colors\"><span>📋 Mở Phiếu điểm → Quét</span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-external-link w-3.5 h-3.5\" aria-hidden=\"true\"><path d=\"M15 3h6v6\"></path><path d=\"M10 14 21 3\"></path><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"></path></svg></a></div></div></div></div></div>"
+}

@@ -1,0 +1,94 @@
+Bước 1 / 4
+Chọn Lớp → Chọn Buổi Nộp (12 / 13 / 14) → Chọn Thư Mục & Khớp Học Viên
+1A. CHỌN LỚP NỘP SPCK (BUỔI ≥ 12)
+-- Chọn lớp đủ điều kiện (Buổi ≥ 12) --
+VT-C4K-JSB15 (VT-C4K-JSB15 - Web)
+📥 Quét lại danh sách lớp từ LMS...
+1B. CHỌN BUỔI NỘP LMS (TỔNG KẾT CUỐI KHÓA)
+Buổi 12 (GĐ1)
+Buổi 13 (GĐ1)
+Buổi 14 (CK)
+1C. THƯ MỤC SPCK TRÊN MÁY TÍNH (ALLOWLISTED)
+Chọn...
+Quét & Khớp HV
+⚡ Tự chạy công cụ chuẩn bị sau khi Quét (Chụp ảnh / Up Web / Up Drive theo loại lớp)
+Mở công cụ nhập Playlist YouTube (Dành cho lớp Robotics / Video)
+Hoàn tất nộp Buổi 14 đầy đủ: Phần Sản phẩm SPCK (Cột 3): 2/2 bài thành công • Phần Đánh giá tổng kết & Điểm Demo (Cột 2): 2/2 bài thành công.
+Đóng
+Bước 2 / 4
+Chuẩn Bị & Xem Lại Bài (2 học viên)
+✨ AI soạn tất cả (SPCK + Thư 3 phần)
+Chụp Giao Diện Web
+Chạy Thử Web (GitHub Pages)
+Công cụ Drive & Cổng thu bài (Tùy chọn) ▾
+Chuẩn bị Demo (Bảng chấm điểm) ▾
+Đang chọn: 0/0 học viên
+Chọn bài đủ điều kiện (0)
+Chọn bài chưa nộp Buổi 14 (0)
+Chọn tất cả (0)
+Bỏ chọn
+📁 01_STU_01
+Khớp 100%
+-- Ghép học viên --
+Nguyễn Minh Khôi (STU_01)
+Trần Bảo Ngọc (STU_02)
+Đúng HV
+Thiếu/Lỗi: Chưa chọn học viên
+🖼️ Có ảnh bìa riêng
+• 1/10 ảnh
+• 1/10 file
+Kho file/code ✓
+B.12
+Chưa nộp
+B.13
+Chưa nộp
+B.14
+ĐANG CHỌN
+Đã nộp ✓ (Bản nháp đã đổi)
+Xem bản đã nộp
+Chi tiết ▾
+📁 01_STU_02
+Khớp 100%
+-- Ghép học viên --
+Nguyễn Minh Khôi (STU_01)
+Trần Bảo Ngọc (STU_02)
+Đúng HV
+Thiếu/Lỗi: Chưa chọn học viên
+🖼️ Có ảnh bìa riêng
+• 1/10 ảnh
+• 1/10 file
+Kho file/code ✓
+B.12
+Chưa nộp
+B.13
+Chưa nộp
+B.14
+ĐANG CHỌN
+Đã nộp ✓ (Bản nháp đã đổi)
+Xem bản đã nộp
+Chi tiết ▾
+Bước 3 / 4
+Nộp Các Bài Đã Chọn & Đối Chiếu Kết Quả LMS
+🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá) — 0 bài
+Phần 1: Sản phẩm SPCK (Cột 3 LMS)
+Đã nộp 2/2 bài (0 bài cần thử lại)
+Phần 2: Điểm Demo, ĐNL & Thư 3 phần (Cột 2 LMS)
+Đã lưu & xác minh 2 học viên (0 cần thử lại)
+📊 Kết quả đợt nộp Buổi 14 (Lúc 19:39:49):
+Đã nộp 2/2 — 0 bài chưa nộp
+Ẩn bảng kết quả
+✅ Thành công (2/2)
+• Nguyễn Minh Khôi (STU_01)
+• Trần Bảo Ngọc (STU_02)
+⚠️ Bị bỏ qua (0)
+Không có bài nào bị bỏ qua.
+❌ Lỗi khi nộp (0)
+Không có bài nào gặp lỗi.
+Bước 4 / 4 — Riêng Buổi 14 (Tổng kết cuối khóa)
+Đánh Giá Tổng Kết Cuối Khóa, Điểm Demo & Thư Từ MindX
+• Đã soạn Thư 3 phần: 2/2 • Đã lưu LMS: 2/2
+🏅 Mở Tab 2 (Điểm Demo & Thư 3 phần) trên danh sách học viên
+✨ AI Soạn Thư Tổng Kết 3 Phần (Cả lớp)
+🚀 Duyệt & Đẩy Đánh Giá Buổi 14 Lên LMS
+📊 File chấm điểm BGK (.xlsx hoặc Link Google Sheet):
+📥 Đọc Điểm Demo từ File Chấm Điểm

@@ -1,0 +1,28 @@
+[
+  {
+    "url": "/api/report-card?classId=VT-C4K-PTA12",
+    "method": "GET",
+    "body": {},
+    "scanned": false
+  },
+  {
+    "url": "/api/report-card?classId=VT-C4K-JSB16",
+    "method": "GET",
+    "body": {},
+    "scanned": false
+  },
+  {
+    "url": "/api/homework-grader/scores",
+    "method": "POST",
+    "body": {
+      "classCode": "VT-C4K-JSB16"
+    },
+    "scanned": false
+  },
+  {
+    "url": "/api/report-card?classId=VT-C4K-JSB16",
+    "method": "GET",
+    "body": {},
+    "scanned": true
+  }
+]

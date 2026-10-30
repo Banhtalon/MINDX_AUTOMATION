@@ -1124,7 +1124,16 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                           setSession14Evals((prev) =>
                             prev.map((it) =>
                               it.studentId === studentEval14.studentId
-                                ? { ...it, learnedFromMindx: val }
+                                ? {
+                                    ...it,
+                                    learnedFromMindx: val,
+                                    status:
+                                      it.status === "VERIFIED" ||
+                                      it.status === "APPROVED"
+                                        ? "WAITING_APPROVAL"
+                                        : it.status,
+                                    contentHash: "",
+                                  }
                                 : it
                             )
                           );
@@ -1151,7 +1160,16 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                             setSession14Evals((prev) =>
                               prev.map((it) =>
                                 it.studentId === studentEval14.studentId
-                                  ? { ...it, suggestionsFromMindx: val }
+                                  ? {
+                                      ...it,
+                                      suggestionsFromMindx: val,
+                                      status:
+                                        it.status === "VERIFIED" ||
+                                        it.status === "APPROVED"
+                                          ? "WAITING_APPROVAL"
+                                          : it.status,
+                                      contentHash: "",
+                                    }
                                   : it
                               )
                             );
@@ -1181,7 +1199,16 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                             setSession14Evals((prev) =>
                               prev.map((it) =>
                                 it.studentId === studentEval14.studentId
-                                  ? { ...it, futureDirection: val }
+                                  ? {
+                                      ...it,
+                                      futureDirection: val,
+                                      status:
+                                        it.status === "VERIFIED" ||
+                                        it.status === "APPROVED"
+                                          ? "WAITING_APPROVAL"
+                                          : it.status,
+                                      contentHash: "",
+                                    }
                                   : it
                               )
                             );
@@ -1212,7 +1239,16 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                             setSession14Evals((prev) =>
                               prev.map((it) =>
                                 it.studentId === studentEval14.studentId
-                                  ? { ...it, awardRanking: val }
+                                  ? {
+                                      ...it,
+                                      awardRanking: val,
+                                      status:
+                                        it.status === "VERIFIED" ||
+                                        it.status === "APPROVED"
+                                          ? "WAITING_APPROVAL"
+                                          : it.status,
+                                      contentHash: "",
+                                    }
                                   : it
                               )
                             );

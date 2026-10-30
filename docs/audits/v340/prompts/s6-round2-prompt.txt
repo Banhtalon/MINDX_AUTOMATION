@@ -1,0 +1,36 @@
+Bạn là Reviewer kiểm định độc lập (gpt-6.1-sol, reasoning_effort=high) cho dự án MINDX-AUTOMATION.
+Nhiệm vụ: Kiểm định độc lập Chặng S6 (Vòng 2) thuộc Giai đoạn 10 (v3.4.0 — Màn 5 `/teaching-projects` 1 nút bấm + Liên thông các màn hình + Thẻ Việc cần làm hôm nay trên Trang chủ) sau khi đã sửa toàn bộ 7 phát hiện S6-01 -> S6-07 từ `docs/audits/v340/CODEX_S6_ROUND1.md`.
+
+1. Đọc kỹ:
+   - `C:\Users\QQ\.gemini\antigravity\brain\2dc5f134-f73b-44e2-9d14-6c8333eb3c3b\STREAMLINE_PLAN_v340.md` (mục S6: S6.1 -> S6.6)
+   - `docs/audits/v340/CODEX_S6_ROUND1.md` (7 phát hiện S6-01 -> S6-07)
+   - `AGENTS.md`, `PROJECT_STATE.md`, `CHANGELOG.md`, `MINDX_AUTOMATION_PLAN.md`.
+
+2. Kiểm định chi tiết việc khắc phục S6-01 -> S6-07 và toàn bộ các hạng mục S6.1 -> S6.6:
+   - S6-01 (`src/components/final-project/SubmitBar.tsx`, `src/components/final-project/useSpckWorkflow.ts`, `src/app/final-project/page.tsx`, `src/components/final-project/types.ts`):
+     + Gắn `classId` vào `session14ComboStatus` và `lastSubmissionSummary`, tự động reset khi đổi `selectedClassId` / `selectedSessionNumber`, và kiểm tra chặt trên `SubmitBar.tsx` để trạng thái của Lớp A không bao giờ mở khóa nút cập nhật tiến độ hoặc link Mở Phiếu điểm trên Lớp B.
+   - S6-02 (`src/components/final-project/SubmitBar.tsx`):
+     + Kiểm tra toàn bộ `assignedRows` của lớp/buổi hiện tại phải đều `VERIFIED_CURRENT` và `!isDirty` (cộng với `retryStudentIds.length === 0`) trước khi hiển thị nút gợi ý cập nhật tiến độ Teaching.
+   - S6-03 (`src/components/final-project/SubmitBar.tsx`, `src/components/final-project/useSpckWorkflow.ts`):
+     + Trên Buổi 14, chỉ hiển thị link "📋 Mở Phiếu điểm → Quét" khi CẢ Phần 1 (SPCK) lẫn Phần 2 (Đánh giá Buổi 14) đều đã `VERIFIED` đầy đủ cho toàn bộ học viên của lớp hiện tại và không có dòng nào `isDirty` hay `DRAFT`/`FAILED`.
+   - S6-04 (`src/lib/dashboard/today-tasks.ts`):
+     + Đối chiếu danh sách học viên đang học (`students WHERE classId = ? AND isActive = 1`) khi tính `sessionCommentVerified`, `checkSpckSessionVerified` và `session14EvalVerified`; loại trừ học viên vắng mặt (`attendanceStatus = 'ABSENT'`) khỏi điều kiện bắt buộc của nhận xét buổi học.
+   - S6-05 (`src/lib/dashboard/today-tasks.ts`):
+     + Dùng `Math.floor` thay vì `Math.round` khi tính phần trăm tiến độ trung bình của lớp để `99.9%` không bị làm tròn giả thành `100%`.
+   - S6-06 (`src/app/api/teaching-projects/route.ts`, `src/app/teaching-projects/page.tsx`, `src/lib/teaching/session-progress-mapper.ts`):
+     + Khi lớp chưa xác định được buổi hiện tại, trả về `currentSessionNumber = 0` (không gán mặc định thành Buổi 11 / 20%) và khóa nút 1 chạm trên Màn 5.
+   - S6-07 (`src/app/page.tsx`):
+     + Khai báo `export const dynamic = "force-dynamic";` và `export const revalidate = 0;` để Trang chủ luôn đọc dữ liệu mới nhất theo từng request.
+
+3. Nguyên tắc an toàn bắt buộc:
+   - TUYỆT ĐỐI KHÔNG đọc, mở, băm hay chạm vào `data/mindx_bot.db` và `data/running_classes.json` thật của Owner.
+   - Trước MỌI lệnh chạy test/probe, bắt buộc đặt biến môi trường trỏ vào `$env:TEMP`:
+     `$env:ALLOWED_LOCAL_DIRS = $env:TEMP`
+     `$env:MINDX_DB_PATH = "$env:TEMP\codex_s6_r2.sqlite"`
+     `$env:MINDX_RUNNING_CLASSES_PATH = "$env:TEMP\codex_s6_r2_classes.json"`
+   - KHÔNG sửa đổi bất kỳ tệp nào trong `src/**` hoặc `scripts/**`, KHÔNG chạy `git commit`.
+
+4. Đầu ra bắt buộc:
+   - Ghi báo cáo kiểm định độc lập chi tiết vào `docs/audits/v340/CODEX_S6_ROUND2.md` kèm bằng chứng trong `docs/audits/v340/s6-round2/`.
+   - Nêu rõ `Verdict: GO` hoặc `Verdict: NO-GO` ngay đầu báo cáo.
+   - Cập nhật tóm tắt kết quả kiểm định vào `PROJECT_STATE.md`, `CHANGELOG.md` và `MINDX_AUTOMATION_PLAN.md`.

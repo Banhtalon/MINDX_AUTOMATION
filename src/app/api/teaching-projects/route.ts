@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRunningClasses, type RunningClassItem } from "@/lib/db/json-config";
+import { getRunningClasses } from "@/lib/db/json-config";
 import {
   buildDefaultTeachingProjectName,
   getDb,
@@ -8,12 +8,54 @@ import {
   type TeachingProjectTaskItem,
 } from "@/lib/db/sqlite";
 import { TeachingProjectService } from "@/lib/playwright/teaching-project-service";
-import { resolveClassDateRangeInfo } from "@/lib/playwright/sync-class";
 import { validateLocalRequest } from "@/lib/security/local-guard";
-import { listClasses } from "@/lib/classes/class-directory";
+import { listClasses, type ClassDirectoryItem } from "@/lib/classes/class-directory";
 
-function listAvailableClassesForTeaching(): RunningClassItem[] {
+function listAvailableClassesForTeaching(): ClassDirectoryItem[] {
   return listClasses({ scope: "running" });
+}
+
+function resolveClassCurrentSessionNumber(
+  classCode: string,
+  classes: ClassDirectoryItem[]
+): number {
+  const matched = classes.find(
+    (c) => String(c.classCode || "").trim().toUpperCase() === classCode
+  );
+  if (matched && Number(matched.currentSessionNumber) > 0) {
+    return Number(matched.currentSessionNumber);
+  }
+  try {
+    const rawRunning = getRunningClasses() || [];
+    const matchedRunning = rawRunning.find(
+      (r) => String(r.classCode || "").trim().toUpperCase() === classCode
+    );
+    const runningSess = Number((matchedRunning as any)?.currentSessionNumber) || 0;
+    if (runningSess > 0) {
+      return runningSess;
+    }
+  } catch {
+    // ignore running classes lookup error
+  }
+  try {
+    const db = getDb();
+    const row = db
+      .prepare(
+        `SELECT
+           MAX(CASE WHEN TRIM(COALESCE(date, '')) <> '' THEN sessionNumber ELSE 0 END) AS activeSess,
+           MAX(sessionNumber) AS maxSess
+         FROM classes_sessions
+         WHERE classId = ?`
+      )
+      .get(classCode) as { activeSess?: number; maxSess?: number } | undefined;
+    const active = Number(row?.activeSess) || 0;
+    const max = Number(row?.maxSess) || 0;
+    if (active > 0) return active;
+    if (max > 0) return max;
+  } catch {
+    // ignore DB lookup error
+  }
+  return 0;
 }
 
 export async function GET(request: NextRequest) {
@@ -37,10 +79,12 @@ export async function GET(request: NextRequest) {
     const loaded = await TeachingProjectService.loadClassProject(classCode, {
       forceRefreshFromTeaching: force,
     });
+    const currentSessionNumber = resolveClassCurrentSessionNumber(classCode, classes);
 
     return NextResponse.json({
       ...loaded,
       classes,
+      currentSessionNumber,
       defaultShortProjectName: buildDefaultTeachingProjectName(classCode, false),
       defaultFullProjectName: buildDefaultTeachingProjectName(classCode, true),
     });
@@ -85,7 +129,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (action === "save_draft" || action === "approve_and_save") {
+    if (action === "save_draft") {
       const saveRes = teachingProjectRepo.saveDraft({
         classId: classCode,
         projectName: body?.projectName,
@@ -115,73 +159,13 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (action === "save_draft") {
-        return NextResponse.json({
-          success: true,
-          downgradedFromApproved: saveRes.downgradedFromApproved,
-          record: saveRes.record,
-          tasks: normalizeTeachingProjectTasks(
-            saveRes.record.tasksJson,
-            saveRes.record.endDate
-          ),
-        });
-      }
-
-      // If approve_and_save, approve using the newly saved draftVersion
-      const approveRes = teachingProjectRepo.approveDraft(
-        classCode,
-        saveRes.record.draftVersion
-      );
-      if (!approveRes.success) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: approveRes.error,
-            record: approveRes.record,
-            tasks: normalizeTeachingProjectTasks(
-              approveRes.record.tasksJson,
-              approveRes.record.endDate
-            ),
-          },
-          { status: 400 }
-        );
-      }
-
       return NextResponse.json({
         success: true,
-        record: approveRes.record,
+        downgradedFromApproved: saveRes.downgradedFromApproved,
+        record: saveRes.record,
         tasks: normalizeTeachingProjectTasks(
-          approveRes.record.tasksJson,
-          approveRes.record.endDate
-        ),
-      });
-    }
-
-    if (action === "approve") {
-      const approveRes = teachingProjectRepo.approveDraft(classCode, expectedVersion);
-      if (!approveRes.success) {
-        return NextResponse.json(
-          {
-            success: false,
-            conflict: approveRes.conflict,
-            currentVersion: approveRes.currentVersion,
-            error: approveRes.error,
-            record: approveRes.record,
-            tasks: normalizeTeachingProjectTasks(
-              approveRes.record.tasksJson,
-              approveRes.record.endDate
-            ),
-          },
-          { status: approveRes.conflict ? 409 : 400 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        record: approveRes.record,
-        tasks: normalizeTeachingProjectTasks(
-          approveRes.record.tasksJson,
-          approveRes.record.endDate
+          saveRes.record.tasksJson,
+          saveRes.record.endDate
         ),
       });
     }

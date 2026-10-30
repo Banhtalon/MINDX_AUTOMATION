@@ -1,0 +1,29 @@
+You are the independent Senior Security & Quality Reviewer (`gpt-6.1-sol` high reasoning) auditing **Stage S6 (Round 3)** of the `v3.4.0` workflow streamlining plan for **MINDX-AUTOMATION**.
+
+### Context & Previous Rounds
+- **Round 1 report:** `docs/audits/v340/CODEX_S6_ROUND1.md`
+- **Round 2 report:** `docs/audits/v340/CODEX_S6_ROUND2.md`
+  - In Round 2, `18/18` regression suites passed and **4/7 findings were CLOSED** (`S6-01` HIGH, `S6-05` MEDIUM, `S6-06` MEDIUM, `S6-07` MEDIUM).
+  - **3 MEDIUM edge cases remained open** (`S6-02`, `S6-03`, `S6-04`):
+    1. **`S6-02` (`R2-UI21`, `R2-UI28`, `R2-UI29`):** In `src/components/final-project/SubmitBar.tsx`, when `assignedRows.length === 0` (e.g., `rows` is empty or the teacher unassigns all rows after a combo), `verifiedSpckCountForCurrentSession` previously fell back to `activeSummary.verifiedItems`. Now removed: `verifiedSpckCountForCurrentSession` comes strictly from `assignedRows.filter(isRowVerifiedAndCleanForCurrentSession).length`, and `pendingOrFailedSpckCountForCurrentSession` includes any unassigned rows in `allRows` (`rows || []`).
+    2. **`S6-03` (`R2-UI19-*`, `R2-UI20`, `R2-UI22`, `R2-UI25`, `R2-UI26`):**
+       - In `src/components/final-project/StudentRow.tsx`, editing any of the 4 Session 14 evaluation fields (`learnedFromMindx`, `suggestionsFromMindx`, `futureDirection`, `awardRanking`) now immediately demotes `status: "WAITING_APPROVAL"` and `contentHash: ""` on `onChange` (not waiting for `onBlur`).
+       - In `src/components/final-project/SubmitBar.tsx`, `allSession14ComboPartsVerified` now requires `allAssignedStudentsHaveVerifiedEval` (`assignedStudentIds.length > 0 && evalsForCurrentClass.length > 0 && assignedStudentIds.every(sid => evalByStudentId.get(sid)?.status === "VERIFIED") && evalsForCurrentClass.every(ev => ev.status === "VERIFIED")`), never trusting `session14ComboStatus.evalVerifiedCount` if any assigned student's current evaluation row is missing or not `"VERIFIED"`.
+    3. **`S6-04` (`R2-DB12`, `R2-DB13`, `R2-DB14`):** In `src/lib/dashboard/today-tasks.ts`, when `students` has rows for `classId` (`hasRosterInDb`), `activeStudentIds` (`isActive = 1`) is the authoritative roster for completion checks, so inactive students (`isActive = 0`) with old `DRAFT`/`FAILED` records in `session_feedbacks`, `spck_session_submissions`, `spck_uploads`, or `spck_session14_evaluations` do not block completion of the active roster.
+
+### Mandatory Safety & Isolation Rules
+1. **Never modify or read real owner data** (`data/mindx_bot.db`, `data/running_classes.json`, `./playwright-auth`). Always set `MINDX_DB_PATH`, `MINDX_RUNNING_CLASSES_PATH`, and `ALLOWED_LOCAL_DIRS` to temporary directories under `$env:TEMP`.
+2. **Note on `tsconfig.json`:** `tsconfig.json` includes `**/*.ts`. If you create temporary `.ts` probe files under `docs/audits/v340/`, either place them in `$env:TEMP` or rename them to `.ts.txt` before running `npx tsc --noEmit --incremental false` so scratch scripts with `@ts-nocheck` or untyped helpers do not pollute the project typecheck. (The existing Round 2 probes are stored at `docs/audits/v340/s6-round2/repository-probe.ts.txt` and `docs/audits/v340/s6-round2/independent-ui.ts.txt`.)
+
+### Audit Tasks
+1. Inspect the Round 3 diffs in:
+   - `src/components/final-project/SubmitBar.tsx`
+   - `src/components/final-project/StudentRow.tsx`
+   - `src/lib/dashboard/today-tasks.ts`
+   - `scripts/test-streamline-v340-s6.ts`
+2. Re-run the Round 2 probes (by copying `docs/audits/v340/s6-round2/repository-probe.ts.txt` and `docs/audits/v340/s6-round2/independent-ui.ts.txt` to `$env:TEMP` or running them with `npx tsx`) and verify all `20/20` repository checks and `34/34` UI checks pass.
+3. Run `npx tsc --noEmit --incremental false` and `npx tsx scripts/test-streamline-v340-s6.ts`.
+4. Write the complete Round 3 audit report to `docs/audits/v340/CODEX_S6_ROUND3.md` with:
+   - Status of all 7 findings (`S6-01`..`S6-07`)
+   - Verification results
+   - Final Verdict: `GO` or `NO-GO`

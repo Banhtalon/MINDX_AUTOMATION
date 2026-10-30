@@ -1,0 +1,14 @@
+{
+  "src/app/api/homework-grader/export/route.ts": {
+    "identical_to_HEAD_ignoring_CRLF": true
+  },
+  "src/app/api/homework-grader/scores/route.ts": {
+    "identical_to_HEAD_ignoring_CRLF": true
+  },
+  "src/app/api/report-card/route.ts": {
+    "identical_to_HEAD_ignoring_CRLF": true
+  },
+  "src/app/api/spck/session14-eval/route.ts": {
+    "identical_to_HEAD_ignoring_CRLF": true
+  }
+}

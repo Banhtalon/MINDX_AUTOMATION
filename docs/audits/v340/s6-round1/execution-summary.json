@@ -1,0 +1,50 @@
+{
+  "head": "2ce97352959be286aecb87d8371c70ea6a4fb484",
+  "gates": 18,
+  "gates_pass": 18,
+  "initial_harness_failures": [
+    "test-phase7 missing copied launchers",
+    "test-streamline-v340-s5a missing Git history access"
+  ],
+  "retry_results": [
+    {
+      "gate": "test-phase7",
+      "exit": 0,
+      "seconds": 1.44,
+      "note": "Restored launcher fixtures; GIT_DIR provided for read-only git show of S5a baseline; product test unchanged"
+    },
+    {
+      "gate": "test-streamline-v340-s5a",
+      "exit": 0,
+      "seconds": 23.92,
+      "note": "Restored launcher fixtures; GIT_DIR provided for read-only git show of S5a baseline; product test unchanged"
+    }
+  ],
+  "ui_checks": 17,
+  "ui_pass": 11,
+  "repository_checks": 12,
+  "repository_pass": 6,
+  "diagnostic_production": {
+    "id": "PROD01-dashboard-fresh-after-db-change",
+    "expected_session": 12,
+    "rendered_session_1_href_present": true,
+    "rendered_session_12_href_present": false,
+    "prerendered_root": true,
+    "diagnostic_only": true
+  },
+  "production_clean_build": {
+    "exit": 1,
+    "seconds": 32.84,
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s6-r1-production-zt4quve9",
+    "command": "node node_modules/next/dist/bin/next build --webpack",
+    "note": "Physical copy of next package; other dependencies reused by junction; no product edits"
+  },
+  "integrity": {
+    "checked_src_scripts": 142,
+    "next_env_checked": true,
+    "changed": [],
+    "new_src_scripts": [],
+    "all_unchanged": true,
+    "owner_runtime_data": "NOT opened, hashed, copied, connected or read; runtime tests executed in TEMP copies without owner .env or browser profile"
+  }
+}

@@ -1,0 +1,602 @@
+{
+  "scripts\\recon.ts": {
+    "sha256": "50a9cfffd20e1d043112852433070ea78fb084b919d85ad537f96f67b33ee5e2",
+    "size": 7359
+  },
+  "scripts\\test-checkpoint-v300.ts": {
+    "sha256": "fe04cf1e08167ca2d23cf604e2b749824beb687d350788a7cf241dfb559c1969",
+    "size": 13536
+  },
+  "scripts\\test-lms-reliability-v280.ts": {
+    "sha256": "bdd8ac582b370282c820de0c8a276562221dc3e2a2d90f2f93f26a4d4eaa4451",
+    "size": 61566
+  },
+  "scripts\\test-patches-round2.ts": {
+    "sha256": "2e1b15a66ee4fe900f8f5580a19e40cca4fde9dc27cfaf59bb87c7c268275ba5",
+    "size": 7259
+  },
+  "scripts\\test-phase3.ts": {
+    "sha256": "594ca880d6f149ad3f5e50ba0e7f583455d6a96a1426b8d777e74cd40290f8a1",
+    "size": 8437
+  },
+  "scripts\\test-phase4-codex-repros.ts": {
+    "sha256": "ed31335fb5f17d154a02f3829833c3976cbcc7bc1f0d8e5d1f1afc59a30146b2",
+    "size": 183305
+  },
+  "scripts\\test-phase5.ts": {
+    "sha256": "c009a17a052f9ea8955541b0a6f25d14d7c58a2fc9c214d1f4515dbb3dad323c",
+    "size": 31478
+  },
+  "scripts\\test-phase6.ts": {
+    "sha256": "39f2680da6a1bd3124f52cd82dd72490b8f8a203887cb1f476e2b2f90ba8a330",
+    "size": 58110
+  },
+  "scripts\\test-phase7.ts": {
+    "sha256": "1621279bfc776bd6922ad36a3cfd1d9f997721357e0bb36245c499074edf5d62",
+    "size": 21050
+  },
+  "scripts\\test-quick-tags-v300.ts": {
+    "sha256": "f8c19aa70204ac51d0cb898b261a6ff7d00f6d9c8b48072b3b52b015171b2d59",
+    "size": 14335
+  },
+  "scripts\\test-report-card-v330.ts": {
+    "sha256": "858902c17f3199e1ff5eda7d39fb057c34ba6844d805a0afce0e6277f63aa179",
+    "size": 155505
+  },
+  "scripts\\test-session14-v290.ts": {
+    "sha256": "83beb42b970f8e02213662cc2da3f35faf63093a5344c580ca4ddd4f678dd390",
+    "size": 69398
+  },
+  "scripts\\test-spck-v270.ts": {
+    "sha256": "15dcf25a0f6679509ffb7b623a48a6731c68a095be1b40d37e8ec2131c24c176",
+    "size": 94543
+  },
+  "scripts\\test-spck-v272.ts": {
+    "sha256": "2e538641dd810af36869efa9605e99a507bd88a7e1c20a47494d0c0fbf407e7d",
+    "size": 34357
+  },
+  "scripts\\test-streamline-v340-s1.ts": {
+    "sha256": "4313230439831b955db32a6f8878d3d8f0ad8cc2abef486574ec40b93035204b",
+    "size": 36066
+  },
+  "scripts\\test-streamline-v340-s2.ts": {
+    "sha256": "eb36a46084338910e32743f17a369482608192a17026e4851853118e3980d155",
+    "size": 28932
+  },
+  "scripts\\test-streamline-v340-s3.ts": {
+    "sha256": "37931e125544ec284140c1ce45a8e246e9db56b96da436726c358b7f226c5ff9",
+    "size": 44488
+  },
+  "scripts\\test-streamline-v340-s4.ts": {
+    "sha256": "498e28184ff86f30717e6393a2cedeeabc1f73944eb634763171a9a979fb3c13",
+    "size": 38858
+  },
+  "scripts\\test-streamline-v340-s5.ts": {
+    "sha256": "28bb04aad838b9f1277c3eb4ef06b9d158337756475ba79f4c6ac5058abd19d8",
+    "size": 55628
+  },
+  "scripts\\test-streamline-v340-s5a.ts": {
+    "sha256": "d33f5d03f7de5009328724699a8b7e679e025f210b5410d01bd5c336fa5ebf56",
+    "size": 26870
+  },
+  "scripts\\test-streamline-v340-s6.ts": {
+    "sha256": "e50437901e222b5e711ee15e3ba033783059d3a5f725fca3b2e1a5e183e6e36f",
+    "size": 39889
+  },
+  "scripts\\test-teaching-project-v320.ts": {
+    "sha256": "08e18f7e08ff08a8b8f739392c87a924aa8d51ba5c7fd0b1e7d88a5f606a580d",
+    "size": 66278
+  },
+  "src\\app\\api\\auth\\login\\route.ts": {
+    "sha256": "6a1fbf964c9f8393459173317d5784d4cc6c07c34a7d0a1a822e144c5afe487a",
+    "size": 1292
+  },
+  "src\\app\\api\\auth\\status\\route.ts": {
+    "sha256": "df3438881441ede00e32b3dda49ec1a11c704ed6a0d7fcd6103a069033e5156a",
+    "size": 1604
+  },
+  "src\\app\\api\\classes\\refresh\\route.ts": {
+    "sha256": "d56d89d09617ad3a3cedb8f5dbae35e97bbad1b6afe73452012332decbf3ae30",
+    "size": 12036
+  },
+  "src\\app\\api\\config\\route.ts": {
+    "sha256": "4aa83217326ca219fa59838e5e976fa2319923a941e00d003a51de0eb3da7863",
+    "size": 23251
+  },
+  "src\\app\\api\\homework-grader\\approve\\route.ts": {
+    "sha256": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283",
+    "size": 17032
+  },
+  "src\\app\\api\\homework-grader\\download-and-grade\\route.ts": {
+    "sha256": "7328a9a1687417d8ad199db009152e2fcbe4cb23b34050677ea47ada135a79d3",
+    "size": 8844
+  },
+  "src\\app\\api\\homework-grader\\export\\route.ts": {
+    "sha256": "dfc8dce2a35ab0d08b0641b9479b448d2251d2605bc0e38cb9a254c2e6e89f97",
+    "size": 4883
+  },
+  "src\\app\\api\\homework-grader\\save-lms\\route.ts": {
+    "sha256": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791",
+    "size": 1983
+  },
+  "src\\app\\api\\homework-grader\\scores\\route.ts": {
+    "sha256": "761ec0e5852dd147fba172d32f0c2af9f44ef3735b723a56482e44d5c400a1ed",
+    "size": 2300
+  },
+  "src\\app\\api\\homework-grader\\submissions\\route.ts": {
+    "sha256": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc",
+    "size": 13410
+  },
+  "src\\app\\api\\queue\\control\\route.ts": {
+    "sha256": "ba10880adeeb8e5de6807313f13ad01731ed28edebecf859d9687e362c8c2e70",
+    "size": 1851
+  },
+  "src\\app\\api\\queue\\stream\\route.ts": {
+    "sha256": "67dd1fa2db111e18d5343bc8d3cfc7ee95d3818fa9ff8fecd9edaa47d071aca1",
+    "size": 2625
+  },
+  "src\\app\\api\\report-card\\route.ts": {
+    "sha256": "b953daf06edcf2c1cc4c98fe3455cda4e19ebdd61b40df718979eee2d4019bcb",
+    "size": 27989
+  },
+  "src\\app\\api\\report-card\\sync-teaching\\route.ts": {
+    "sha256": "a9e151f2582baf6eebcb2dff13c58c008dac954c71a11b042218f3c4e86ad9cd",
+    "size": 3494
+  },
+  "src\\app\\api\\session-comments\\approve\\route.ts": {
+    "sha256": "456eb64636add416ac0f89390e059bebfdb6e79b4caacf23912f3cc23f9fd65f",
+    "size": 13289
+  },
+  "src\\app\\api\\session-comments\\fetch-classes\\route.ts": {
+    "sha256": "f1a16f8bea3860cd16b1da4f1481f77e90c1c6c38f1c28a198a5210f89e56108",
+    "size": 1894
+  },
+  "src\\app\\api\\session-comments\\generate-ai\\route.ts": {
+    "sha256": "325f6b1d9248f8907bd2bd4f2971d1155bcff6522ae05790d0572dc7c2e9cfd6",
+    "size": 3088
+  },
+  "src\\app\\api\\session-comments\\list\\route.ts": {
+    "sha256": "158b764b79a97ac84bb8a8455bd87acf0bc94469657af0b3d5efda4654461ccd",
+    "size": 7689
+  },
+  "src\\app\\api\\session-comments\\save-draft\\route.ts": {
+    "sha256": "94fb00b6773c45a6c0a56cec72d3847d127eb732f062773d5dc5c208196936ae",
+    "size": 18958
+  },
+  "src\\app\\api\\session-comments\\save-lms\\route.ts": {
+    "sha256": "76a4e69bb6851e8252f5e8a0469f286cbe74631dd1afa64932a305f67b25b22a",
+    "size": 2238
+  },
+  "src\\app\\api\\session-comments\\sync\\route.ts": {
+    "sha256": "89567e459fe7ba88ead3cccdd5b4db40aeed0ef67e869705d33b1234166fcf32",
+    "size": 1188
+  },
+  "src\\app\\api\\session-comments\\zalo-btvn-image\\route.ts": {
+    "sha256": "a0999ba3bfd2c0572c1b5d4436b0c8405c7f6786b9c17d203db86b39de26bb0c",
+    "size": 2738
+  },
+  "src\\app\\api\\spck\\approve\\route.ts": {
+    "sha256": "e48606e7c32d31e2453f17698a5fec918dde75a058039af17582454f3fbc41f8",
+    "size": 19231
+  },
+  "src\\app\\api\\spck\\browse-folder\\route.ts": {
+    "sha256": "fc8ed68a131ea9260db0d494ff50da0e4b04d2a7ee45415ebc4a6bc5d79a9cc1",
+    "size": 4516
+  },
+  "src\\app\\api\\spck\\capture-screenshots\\route.ts": {
+    "sha256": "b6e5d71d358f4613be324d980bc9f4e9abebcbc80ea4dca0ef21db23989ee5f2",
+    "size": 8561
+  },
+  "src\\app\\api\\spck\\create-demo-sheet\\route.ts": {
+    "sha256": "2b37f408ec8d15b71bc8f3f357019ce69aae73290b72296cc7fa4164095251b7",
+    "size": 2788
+  },
+  "src\\app\\api\\spck\\deploy-web\\route.ts": {
+    "sha256": "b2cd2d567e98cb7ea9d6be32751a981287997b9c9dee8b2ebf1302e75468a436",
+    "size": 2898
+  },
+  "src\\app\\api\\spck\\generate-ai\\route.ts": {
+    "sha256": "e96f608b16c3b76c8c8ea2e479b9cefac815dd9dfdf213a7ae0fe1c37f4993e1",
+    "size": 4963
+  },
+  "src\\app\\api\\spck\\import-youtube\\route.ts": {
+    "sha256": "c524fbb1ae0bab8b3cf5f746f4fc7f280cfa300eba59eb27addd3386342ae046",
+    "size": 2690
+  },
+  "src\\app\\api\\spck\\list\\route.ts": {
+    "sha256": "75dab37075b5f19cf803172817f41227a660fd84ec05228b2bbb2cbe340ced90",
+    "size": 13903
+  },
+  "src\\app\\api\\spck\\save-draft\\route.ts": {
+    "sha256": "b2b201272da6eaede2fe56ec9ac88bfdcdfb92b69cc345216e7568d0a9e2f2fe",
+    "size": 16765
+  },
+  "src\\app\\api\\spck\\scan\\route.ts": {
+    "sha256": "eb853f621f5da9fae856107b17515837fb3f557c75ed9870b3d2ee999cd0e51b",
+    "size": 12458
+  },
+  "src\\app\\api\\spck\\session14-eval\\generate-ai\\route.ts": {
+    "sha256": "dcd962ca4ff5e88e6fdedb1c3587a49a44f969cddbc98dc365255af0aec36bf0",
+    "size": 2470
+  },
+  "src\\app\\api\\spck\\session14-eval\\import-demo-scores\\route.ts": {
+    "sha256": "e8d66c6f7680f0a7d5fc61eb097911cc607b4e10f7db688e628cf597b5c72874",
+    "size": 1294
+  },
+  "src\\app\\api\\spck\\session14-eval\\route.ts": {
+    "sha256": "dd34481c3ea94e79870a5581fb261c1d566964d72d3cec6417685cf639ab93a8",
+    "size": 8375
+  },
+  "src\\app\\api\\spck\\session14-eval\\upload-lms\\route.ts": {
+    "sha256": "1dfe9c3b606b3230ee85e464abaf773f7dc413a5975a1c1d88e03a9dea5d743b",
+    "size": 1421
+  },
+  "src\\app\\api\\spck\\student-portal\\route.ts": {
+    "sha256": "7164c42b637e95c4454a9a186b0af3fb0d9b0afa524c80607d36a64ed18817b2",
+    "size": 2759
+  },
+  "src\\app\\api\\spck\\upload-drive\\route.ts": {
+    "sha256": "95d9fcd3360089c8bbc8981417731d39a0000db7fc5931b12ece94e870a49dbb",
+    "size": 2527
+  },
+  "src\\app\\api\\spck\\upload-lms\\route.ts": {
+    "sha256": "607a3edb3462dd876c321288f7ac4cd1ddf8ae9c8dabae3a4b9ccd9cd22f3201",
+    "size": 3075
+  },
+  "src\\app\\api\\teaching-projects\\fetch-lms-dates\\route.ts": {
+    "sha256": "92ee00c861e2b55f11edfe3457c6620f2a0776987e7e31ef931f4699487fd43d",
+    "size": 3876
+  },
+  "src\\app\\api\\teaching-projects\\generate-ai\\route.ts": {
+    "sha256": "8d4b7e357c24805f01e2998b32dddea769ed9e00a65c0f98cf9d3512b8924ce3",
+    "size": 5699
+  },
+  "src\\app\\api\\teaching-projects\\progress\\route.ts": {
+    "sha256": "9ab132e1649cad765f1597fd6932f882330e77ad13d0296938b620bb0d62746c",
+    "size": 4732
+  },
+  "src\\app\\api\\teaching-projects\\route.ts": {
+    "sha256": "c01df7520017c56ac498146b468a8ef96702bf54f9a81b2dce696faa700fa383",
+    "size": 5599
+  },
+  "src\\app\\api\\teaching-projects\\sync\\route.ts": {
+    "sha256": "b87cffd2206ab4bd8172b1a4485e1c8ae9a6abfd7a370126dc781d970d235a32",
+    "size": 5056
+  },
+  "src\\app\\final-project\\page.tsx": {
+    "sha256": "1bad697bb3b924afa23afe80cfbfe252a2839dcf60fa0337232034756a3c2224",
+    "size": 108729
+  },
+  "src\\app\\globals.css": {
+    "sha256": "501a77cbade1e543cb6934fea174655f6ec4c35b46f0650131d86fdfa8d42802",
+    "size": 17585
+  },
+  "src\\app\\homework-grader\\page.tsx": {
+    "sha256": "dd4de142277ec78621874639f1842b652e776bb2342565c51fc2b0dc212925a1",
+    "size": 36311
+  },
+  "src\\app\\layout.tsx": {
+    "sha256": "f290becd8a96c76a3420ae234fabbee06e1300c9ea4c74180d1d136f301a6602",
+    "size": 1483
+  },
+  "src\\app\\page.tsx": {
+    "sha256": "6251022557885b90839ba5f0b937f32a236fea29088f1e8b3c220411318e6697",
+    "size": 14038
+  },
+  "src\\app\\session-comments\\page.tsx": {
+    "sha256": "050d54636150520a8da8465076949525dee0a6d0b64858836f1028ab71379c54",
+    "size": 173048
+  },
+  "src\\app\\syllabus-config\\page.tsx": {
+    "sha256": "c9d15d062a44792010edf675879e4068c902d4d514223d47d03baa6ff889f897",
+    "size": 85357
+  },
+  "src\\app\\teaching-projects\\page.tsx": {
+    "sha256": "4c6dcbd6d9934564b087ebef9349539e8089ce6138fb9918cb80f3e3dc4ff47f",
+    "size": 74611
+  },
+  "src\\components\\class-picker.tsx": {
+    "sha256": "0aca50f0ca525b3101eb3a1dcfbd4aab082e961197ff2e1e990ab7998148e06f",
+    "size": 15210
+  },
+  "src\\components\\final-project\\FolderBrowserModal.tsx": {
+    "sha256": "46ad11e39ca702e150b4a25af5bdca807795fb027be7d6265b7198050dd57973",
+    "size": 9335
+  },
+  "src\\components\\final-project\\index.ts": {
+    "sha256": "0586456b922598ea0e16f64b2b71dac3e4569383befc93a12af9cb22f079d57b",
+    "size": 318
+  },
+  "src\\components\\final-project\\Session14Panel.tsx": {
+    "sha256": "e5ef71bd1ec70bd463734fc992249e48c32ec60184a430db97b00c5038721d02",
+    "size": 5746
+  },
+  "src\\components\\final-project\\SnapshotModal.tsx": {
+    "sha256": "184578c5a5029e1501929996c8983560c6caf3ef961daa51776fdaaddf984660",
+    "size": 8937
+  },
+  "src\\components\\final-project\\Step1Header.tsx": {
+    "sha256": "afbe9419323c6acb0574a0eadcf4f30e31f9f3dc3cf927c90be0c9022d6025af",
+    "size": 14938
+  },
+  "src\\components\\final-project\\StudentRow.tsx": {
+    "sha256": "8f7162f68ae99f62505f69ee666452f64a02113f2494fb5c362d5a2b9d9f6cd7",
+    "size": 54636
+  },
+  "src\\components\\final-project\\StudentTable.tsx": {
+    "sha256": "f8ad454117a50fef164bcaa2a9964ede4aecf64ed49231e4833688df6f1bdd94",
+    "size": 3570
+  },
+  "src\\components\\final-project\\SubmitBar.tsx": {
+    "sha256": "0ec5efbc0e2e7d5d7390c64384ace30b5c2986ba98c7fd823f088cbbf372dfca",
+    "size": 23818
+  },
+  "src\\components\\final-project\\ToolsDrawer.tsx": {
+    "sha256": "b5d708d32d78db0b2407a84781c4f30c06af3ae15cd9c7b160c6ba96dd82b04f",
+    "size": 25384
+  },
+  "src\\components\\final-project\\types.ts": {
+    "sha256": "042528710e5373005d616d692073aaab50b3c7c24bccf494033476f91b5611cb",
+    "size": 11775
+  },
+  "src\\components\\final-project\\useSpckWorkflow.ts": {
+    "sha256": "aeb31caf0c529f57d94b5efe0384f0a81daabec8cd6d10af18cfeaf1d5ec5346",
+    "size": 136070
+  },
+  "src\\components\\homework-auto-grader-tab.tsx": {
+    "sha256": "3bcbba6f6ec50178f5f4b66ec75cfc05a47af7703c4752d4837ce4864abc80f0",
+    "size": 59870
+  },
+  "src\\components\\live-log-drawer.tsx": {
+    "sha256": "a3de262113445ec952bde59f351109de2c50d142fd51cabc2efd241949f972a6",
+    "size": 9147
+  },
+  "src\\components\\teaching-report-card-view.tsx": {
+    "sha256": "a7e4f356d1cc0c52ea500943d89a441a49b00716d03f33ab9a8c8133e598f0d7",
+    "size": 117163
+  },
+  "src\\components\\top-navbar.tsx": {
+    "sha256": "c197e9abeedd0a81e5886c3407d168a8f3d6723690e77e2150bc52e9a0dd618a",
+    "size": 3931
+  },
+  "src\\lib\\classes\\class-directory.ts": {
+    "sha256": "99b97537cb25ad926116da646fb1d444213f0a64e4ad989996a1d55c7092ae8f",
+    "size": 9271
+  },
+  "src\\lib\\config.ts": {
+    "sha256": "4ac1332ab0becaaf212e5ac03944b077074572eb43375f7ce8f9b34d6ed3b309",
+    "size": 2206
+  },
+  "src\\lib\\dashboard\\today-tasks.ts": {
+    "sha256": "91c3362f5ed18adea0ff16b6b1213469d08984f7a7e73be2f3ffc75ee2161123",
+    "size": 17263
+  },
+  "src\\lib\\db\\json-config.ts": {
+    "sha256": "7703e5b7542ea3d9afad872cb1295e01be67ba28295ec90dbb8bcc42615f4998",
+    "size": 8303
+  },
+  "src\\lib\\db\\sqlite.ts": {
+    "sha256": "701af10188da624760a3e459b43f270ac86d7322a2bcecf19463fe0aa78dbcbf",
+    "size": 243931
+  },
+  "src\\lib\\file-parsers\\archive-reader.ts": {
+    "sha256": "9363446a1ad08fb9f34a270127d648a90b33e1695c02a016349127901e3e63a2",
+    "size": 13717
+  },
+  "src\\lib\\file-parsers\\code-reader.ts": {
+    "sha256": "9d04a75f4baf99c0f8110f6716b2695fa7322eeca5ccdd01f0dbb36b7a08133c",
+    "size": 11840
+  },
+  "src\\lib\\file-parsers\\game-reader.ts": {
+    "sha256": "d55c54e65d4a158c452ea963d43a7b175beb2bcf5c3f6a2c5567a1d0ab1710c6",
+    "size": 25400
+  },
+  "src\\lib\\file-parsers\\index.ts": {
+    "sha256": "5ecd30c44bbe46325f8e467a4573f11015cc875d19a823c8a44291932152bc38",
+    "size": 10360
+  },
+  "src\\lib\\file-parsers\\media-reader.ts": {
+    "sha256": "2c42b5d4d3a6a3f0f09c9b86bc44f01fcbcb70fb22ee50a15c941b1bf640e3f0",
+    "size": 69037
+  },
+  "src\\lib\\gemini\\client.ts": {
+    "sha256": "b954f04d4c057fd3f8fc6440fa86e396a6fdc0cd40afd8e4748a7352fc0783f0",
+    "size": 1243
+  },
+  "src\\lib\\gemini\\comment-generator.ts": {
+    "sha256": "413e326c9c4b63f406cbd500261938b91cdd2a01fdf18edb6603b8c9038b9fba",
+    "size": 38886
+  },
+  "src\\lib\\gemini\\homework-grader.ts": {
+    "sha256": "dafc0646b3c8cfe93b335a9ce3884e0941bea422b354c64ae2fc82e363547daf",
+    "size": 28329
+  },
+  "src\\lib\\gemini\\score-auditor.ts": {
+    "sha256": "9db56d4461adf1273bbe99d87e1b11399b2b202d2786e2e1f73c45e9d5a0c875",
+    "size": 7583
+  },
+  "src\\lib\\gemini\\session14-course-summary.ts": {
+    "sha256": "df2d01c5fbf523793b0f0797c43a12a48e5297edd5cca582d8aa3d765512568c",
+    "size": 47777
+  },
+  "src\\lib\\gemini\\spck-comment.ts": {
+    "sha256": "aa0b860af2d3ee030c415435691bd839628a41d4efcd373cd10b8185a5f8dce7",
+    "size": 59163
+  },
+  "src\\lib\\gemini\\teaching-project-generator.ts": {
+    "sha256": "be3157266a891336658af822b43c777b17200f09a5ade6db173ec0338d64c174",
+    "size": 37898
+  },
+  "src\\lib\\github\\spck-web-deployer.ts": {
+    "sha256": "0c9a76f7fae21f340d069140245d9e5bfde306af01ecda4f8c4d1e928e724df4",
+    "size": 27006
+  },
+  "src\\lib\\local-files\\spck-app-screenshotter.ts": {
+    "sha256": "04bb555cfa708d1925536b481c9f2304b7e3efd6f8a7ee17609177b92f13cf8d",
+    "size": 67975
+  },
+  "src\\lib\\local-files\\spck-demo-score-reader.ts": {
+    "sha256": "04bc6d849a2a2f7cf905c09b256d783a12349e522ee0f3a24390d7f6053b7cff",
+    "size": 28792
+  },
+  "src\\lib\\local-files\\spck-image-normalizer.ts": {
+    "sha256": "8325f7b5f0e793de365c0eecb9ba61705e81f4dc6c8bf5a00fd5d4c1b83b9c54",
+    "size": 4516
+  },
+  "src\\lib\\local-files\\spck-scanner.ts": {
+    "sha256": "5b5685d1a14bb2a66c70da67d663d71e6947190f57929ba4f561e58ca0cfdaca",
+    "size": 53836
+  },
+  "src\\lib\\local-files\\spck-youtube-import.ts": {
+    "sha256": "9c7d5e5a499b9d364ee41afd79750cc2b6afdf0056e86171618d70fdcf13c3a0",
+    "size": 33220
+  },
+  "src\\lib\\playwright\\auth.ts": {
+    "sha256": "99c3af292d62c67cb4c58ed7f43975ba0ae7b15689f28ced0c6232e910817a4f",
+    "size": 10920
+  },
+  "src\\lib\\playwright\\browser-manager.ts": {
+    "sha256": "92dd3bfcf598c9dbebe4cc5b55ebdfd053c46d556cfcc94098ee777aafaa376a",
+    "size": 7102
+  },
+  "src\\lib\\playwright\\download-submissions.ts": {
+    "sha256": "a26c2348f871e3d03f8e5f2511a67f4267dc9dff10aaf59d5d5a0633ba4b5abd",
+    "size": 24617
+  },
+  "src\\lib\\playwright\\grade-worker.ts": {
+    "sha256": "402836adde656b35f9e143daeaeee57e5eb0f74832ce78260f909d4969f4f13d",
+    "size": 62195
+  },
+  "src\\lib\\playwright\\lms-helpers.ts": {
+    "sha256": "388d1459de0b4c766a987d48016d805fd6ffe8fa1e963a987f3a6284df69a581",
+    "size": 26529
+  },
+  "src\\lib\\playwright\\network-interceptor.ts": {
+    "sha256": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad",
+    "size": 6258
+  },
+  "src\\lib\\playwright\\save-comments.ts": {
+    "sha256": "0ceaeadcef625a0ba23f06cf7ed4326ebc2f20584560c9daae23115c41cdcd0f",
+    "size": 76829
+  },
+  "src\\lib\\playwright\\scrape-scores.ts": {
+    "sha256": "2f133b529ab8772a67950ed49912f2d3cb5aeb33670d6065683cb67f7741bebc",
+    "size": 115190
+  },
+  "src\\lib\\playwright\\selectors.ts": {
+    "sha256": "bbdcc949e56d382e563c5b96cf37a7a748a58b0b8ad283bcd817edda16f04c3a",
+    "size": 8673
+  },
+  "src\\lib\\playwright\\session14-eval-uploader.ts": {
+    "sha256": "92afd94ebc1d2a2742ec022e601b79ea252a17d306aaae1d40b7777146c26e46",
+    "size": 50932
+  },
+  "src\\lib\\playwright\\spck-demo-sheet.ts": {
+    "sha256": "1c8c2a1eb432362b585f09760d9acabf7bf85bf988109f0a791544cae2367656",
+    "size": 49903
+  },
+  "src\\lib\\playwright\\spck-drive-uploader.ts": {
+    "sha256": "979e8b22597100c1940cfc0fdaae86c6755eb5a9d81389354ad8ebadb9c7ffb7",
+    "size": 31777
+  },
+  "src\\lib\\playwright\\spck-uploader.ts": {
+    "sha256": "e3f615570c2de64147346edf004ce892c2abed7fa4bb5051ae9e500cad0f1fcb",
+    "size": 146659
+  },
+  "src\\lib\\playwright\\sync-class.ts": {
+    "sha256": "688dff89125ed5cfe9ec11fb33c1808bb46d18b8223c68a9a7fd2064bbaaae45",
+    "size": 61413
+  },
+  "src\\lib\\playwright\\teaching-project-service.ts": {
+    "sha256": "5345bf1ecf5df4efb2dcbe47e8c56d699059e71cca680e3ff952f971edaad701",
+    "size": 43104
+  },
+  "src\\lib\\playwright\\teaching-report-card-sync.ts": {
+    "sha256": "23a83d6ae342c37da16debd3530ae025da242877ccc54a2bc37daebdb5084a1e",
+    "size": 46501
+  },
+  "src\\lib\\queue\\task-queue.ts": {
+    "sha256": "bcda7cb7ce608ed1bda52b77ac4c4480632b7c260304ca5296932d3252684ede",
+    "size": 8398
+  },
+  "src\\lib\\quick-tags\\index.ts": {
+    "sha256": "2f616de8a3be97b8575596f78730478838dca53fb9692a1229b5ae753101acac",
+    "size": 15219
+  },
+  "src\\lib\\report-card\\export-cell-formatter.ts": {
+    "sha256": "272ece8fedc2a9bbcfcf990b1e95069d357eacc34a5c315b059c5e2216716d76",
+    "size": 2038
+  },
+  "src\\lib\\report-card\\report-card-calculator.ts": {
+    "sha256": "e2542135b4218a034bebcee39c31f27f24e5cdc2eee4134b4e180201d6d64170",
+    "size": 26351
+  },
+  "src\\lib\\security\\local-guard.ts": {
+    "sha256": "205f8ec95b183b33cbf65add0fca169f4a4882a43236ad1a9e69f5d926baf470",
+    "size": 2144
+  },
+  "src\\lib\\security\\path-allowlist.ts": {
+    "sha256": "3ab6a6ef1239a59eeb5f4564b604ad58be076af67d2fbe29e27e1dbd8f38391f",
+    "size": 6911
+  },
+  "src\\lib\\student-portal\\student-portal-server.ts": {
+    "sha256": "43f1c1db16fe5af8a20edc578b1d781c406578cee02b7b5aebe9a8e931abb374",
+    "size": 58569
+  },
+  "src\\lib\\teaching\\session-progress-mapper.ts": {
+    "sha256": "bab87470a41aa6fdd1b398948bdfbe24a5319f9225123ee1788bfe4d1a6a3a1c",
+    "size": 4579
+  },
+  "src\\lib\\teaching\\teaching-http-client.ts": {
+    "sha256": "b1993a7fd260dfe5ea2a00ae85622d153319a71fc52b7cb9a50827d5c8d28c92",
+    "size": 17363
+  },
+  "src\\lib\\utils\\vietnamese-match.ts": {
+    "sha256": "017fa9883acf6d791bfd36d67ef596801c6aec13de33bd9949ae3a3bb34b41b3",
+    "size": 11152
+  },
+  "src\\lib\\utils.ts": {
+    "sha256": "ec94d82b9920dd7bde4a8d48a878d1a72c336a12101d411779877ab337eeb466",
+    "size": 239
+  },
+  "src\\lib\\zalo\\broadcast-generator.ts": {
+    "sha256": "9b466b23970a09d66ca45e880a6914aac394c8d0b52e659b9209825e8b36f1ed",
+    "size": 7192
+  },
+  "src\\lib\\zalo\\zalo-summary.ts": {
+    "sha256": "c260c785bc89aecdd7b4682b060eafe63aa21cc19ec1c9ac3bad2e5df6ad373c",
+    "size": 13052
+  },
+  "AGENTS.md": {
+    "sha256": "81181311cacf1142a3f0ec04a417f030da586518c80bdfe0c2a78c23ce19f9c2",
+    "size": 7679
+  },
+  "PROJECT_STATE.md": {
+    "sha256": "aeff50319ce56f61b42a4b3f40cee52f9417430600aec102955106940ad729bc",
+    "size": 74693
+  },
+  "MINDX_AUTOMATION_PLAN.md": {
+    "sha256": "589ea319bdf0ccd073ee7c3cf9e0581f7156926884222d189d0c9f5bb7d049f2",
+    "size": 144022
+  },
+  "CHANGELOG.md": {
+    "sha256": "da2659329e1fbda9b78e4f0d22918942768c6900ac77c12a22e5a20de328c2f0",
+    "size": 132031
+  },
+  "package.json": {
+    "sha256": "1472c4e48d2ce7486cfb9c7debe373a96fcf0f72043661cda77f9e901b7415f9",
+    "size": 1605
+  },
+  "package-lock.json": {
+    "sha256": "79da2b8368a1b59f7f56c7a80307ba754c1587fc4b5503d4efc96835481fdda4",
+    "size": 118860
+  },
+  "tsconfig.json": {
+    "sha256": "fde7de96e04c006d6d27769b63c5b1457d772a48504c2f2cec76fbe44c1c8f26",
+    "size": 718
+  },
+  "next-env.d.ts": {
+    "sha256": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
+    "size": 303
+  }
+}

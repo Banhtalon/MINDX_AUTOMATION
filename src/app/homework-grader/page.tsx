@@ -153,13 +153,23 @@ export default function HomeworkGraderPage() {
   const activeClassIdRef = useRef("VT-C4K-PTA12");
   const hasRestoredClassCodeRef = useRef(false);
   const restoredTargetClassRef = useRef<string | null>(null);
+  const autoScanOnMountRef = useRef(false);
 
   useEffect(() => {
     if (!hasRestoredClassCodeRef.current) {
       hasRestoredClassCodeRef.current = true;
       if (typeof window !== "undefined") {
         try {
-          const saved = window.localStorage.getItem("mindx_last_class_code");
+          const urlParams = new URLSearchParams(window.location?.search || "");
+          const urlClass =
+            urlParams.get("classId") || urlParams.get("classCode") || "";
+          if (urlParams.get("autoScan") === "1") {
+            autoScanOnMountRef.current = true;
+          }
+          const saved =
+            urlClass.trim() ||
+            window.localStorage?.getItem("mindx_last_class_code") ||
+            "";
           if (saved && saved.trim()) {
             restoredTargetClassRef.current = saved.trim().toUpperCase();
           }
@@ -189,6 +199,11 @@ export default function HomeworkGraderPage() {
     setMatrix((prev) => (prev && prev.classId?.trim().toUpperCase() === norm ? prev : null));
     setUpdatedAt(null);
     setSelectedDetail(null);
+    if (autoScanOnMountRef.current && norm) {
+      autoScanOnMountRef.current = false;
+      void handleScrapeScores(norm);
+      return;
+    }
     if (skipNextEffectLoadForClassRef.current === norm) {
       skipNextEffectLoadForClassRef.current = null;
       return;
@@ -302,11 +317,15 @@ export default function HomeworkGraderPage() {
     }
   };
 
-  const handleScrapeScores = async (): Promise<{
+  const handleScrapeScores = async (
+    overrideClassCode?: string
+  ): Promise<{
     success: boolean;
     error?: string;
   }> => {
-    const norm = classCode.trim().toUpperCase();
+    const norm = String(overrideClassCode || classCode || classId || "")
+      .trim()
+      .toUpperCase();
     if (!norm) {
       return { success: false, error: "Mã lớp không hợp lệ." };
     }

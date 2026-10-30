@@ -1,0 +1,137 @@
+[
+  {
+    "id": "DB01-missing-student-feedback",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "detail": "2 active students, only S1 has a VERIFIED feedback; S2 absent from feedback table"
+  },
+  {
+    "id": "DB02-explicit-draft-feedback",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "detail": "Control: explicit second DRAFT row"
+  },
+  {
+    "id": "DB03-all-feedback-verified",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": "Control: both VERIFIED"
+  },
+  {
+    "id": "DB11-absent-student-not-required",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": "All present students verified; remaining student ABSENT with DRAFT feedback, saver intentionally excludes absent students"
+  },
+  {
+    "id": "DB04-missing-student-spck",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "detail": "2 active students, only S1 has a per-session SPCK row"
+  },
+  {
+    "id": "DB05-explicit-draft-spck",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "detail": "Control: explicit DRAFT row"
+  },
+  {
+    "id": "DB06-all-spck-verified",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": "Control: both VERIFIED"
+  },
+  {
+    "id": "DB07-missing-student-evaluation",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "detail": "2 active students, only S1 has an evaluation row"
+  },
+  {
+    "id": "DB08-explicit-draft-evaluation",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "detail": "Control: explicit DRAFT row"
+  },
+  {
+    "id": "DB09-rounded-progress-100",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "detail": "S2 task 5=99, weighted class average=99.9, code rounds to100"
+  },
+  {
+    "id": "DB10-robotics-checkpoint",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "detail": "Control Robotics session 4"
+  },
+  {
+    "id": "R2-DB12-inactive-feedback-excluded",
+    "expected": true,
+    "actual": false,
+    "pass": false,
+    "detail": "S1 active VERIFIED; S2 inactive PRESENT DRAFT left from an earlier lesson"
+  },
+  {
+    "id": "R2-DB13-inactive-spck-excluded",
+    "expected": true,
+    "actual": false,
+    "pass": false,
+    "detail": "S1 active VERIFIED; S2 inactive FAILED"
+  },
+  {
+    "id": "R2-DB14-inactive-eval-excluded",
+    "expected": true,
+    "actual": false,
+    "pass": false,
+    "detail": "S1 active VERIFIED; S2 inactive DRAFT"
+  },
+  {
+    "id": "R2-DB15-inactive-without-feedback-control",
+    "expected": true,
+    "actual": true,
+    "pass": true
+  },
+  {
+    "id": "R2-DB16-inactive-without-spck-control",
+    "expected": true,
+    "actual": true,
+    "pass": true
+  },
+  {
+    "id": "R2-DB17-inactive-without-eval-control",
+    "expected": true,
+    "actual": true,
+    "pass": true
+  },
+  {
+    "id": "R2-DB18-exact100-progress",
+    "expected": true,
+    "actual": true,
+    "pass": true
+  },
+  {
+    "id": "R2-DB19-missing-progress-key",
+    "expected": false,
+    "actual": false,
+    "pass": true
+  },
+  {
+    "id": "API01-unknown-current-session",
+    "expected": 0,
+    "actual": 0,
+    "pass": true,
+    "detail": "Unknown class has no sessions/metadata; should not assume session11 to authorize a20% update"
+  }
+]

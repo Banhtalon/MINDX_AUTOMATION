@@ -1,0 +1,8 @@
+{
+  "id": "PROD01-dashboard-fresh-after-db-change",
+  "expected_session": 12,
+  "rendered_session_1_href_present": true,
+  "rendered_session_12_href_present": false,
+  "prerendered_root": true,
+  "diagnostic_only": true
+}

@@ -1,0 +1,81 @@
+// @ts-nocheck -- independent reviewer probe; no owner data.
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import { getDb } from '@/lib/db/sqlite';
+import { getDashboardTodayTodoCards, buildClassTodayTodoCard } from '@/lib/dashboard/today-tasks';
+import { GET } from '@/app/api/teaching-projects/route';
+import { TeachingProjectService } from '@/lib/playwright/teaching-project-service';
+import { NextRequest } from 'next/server';
+
+const out=process.env.AUDIT_OUT!;
+const temp=fs.mkdtempSync(path.join(os.tmpdir(),'codex-s6-r2-dbprobe-'));
+process.env.MINDX_DB_PATH=path.join(temp,'probe.sqlite');
+process.env.MINDX_RUNNING_CLASSES_PATH=path.join(temp,'classes.json');
+const observations=[];
+function record(id, expected, actual, detail) {
+  observations.push({id,expected,actual,pass:JSON.stringify(expected)===JSON.stringify(actual),detail});
+}
+const db=getDb();
+const classes=[['VT-C4K-JSB01',1],['VT-C4K-JSB12',12],['VT-C4K-JSB14',14],['VT-C4K-JSB15',14]];
+fs.writeFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!, JSON.stringify(classes.map(([classCode,currentSessionNumber])=>({classCode,currentSessionNumber,status:'Running'}))));
+for(const [cls,sess] of classes){
+  db.prepare('INSERT INTO classes_sessions(classId,className,sessionId,sessionNumber,date) VALUES(?,?,?,?,?)').run(cls,cls,cls+'_S'+sess,sess,'2026-10-30');
+  for(const sid of ['S1','S2'])db.prepare('INSERT INTO students(classId,studentId,fullName,isActive) VALUES(?,?,?,1)').run(cls,sid,'Synthetic '+sid);
+}
+function card(cls){ return getDashboardTodayTodoCards({limit:30}).find(c=>c.classId===cls); }
+db.prepare("INSERT INTO session_feedbacks(classId,sessionId,studentId,status,attendanceStatus) VALUES(?,?,?,'VERIFIED','PRESENT')").run(classes[0][0],classes[0][0]+'_S1','S1');
+record('DB01-missing-student-feedback',false,card(classes[0][0]).allDone,'2 active students, only S1 has a VERIFIED feedback; S2 absent from feedback table');
+db.prepare("INSERT INTO session_feedbacks(classId,sessionId,studentId,status,attendanceStatus) VALUES(?,?,?,'DRAFT','PRESENT')").run(classes[0][0],classes[0][0]+'_S1','S2');
+record('DB02-explicit-draft-feedback',false,card(classes[0][0]).allDone,'Control: explicit second DRAFT row');
+db.prepare("UPDATE session_feedbacks SET status='VERIFIED' WHERE classId=?").run(classes[0][0]);
+record('DB03-all-feedback-verified',true,card(classes[0][0]).allDone,'Control: both VERIFIED');
+db.prepare("UPDATE session_feedbacks SET status='DRAFT',attendanceStatus='ABSENT' WHERE classId=? AND studentId='S2'").run(classes[0][0]);
+record('DB11-absent-student-not-required',true,card(classes[0][0]).allDone,'All present students verified; remaining student ABSENT with DRAFT feedback, saver intentionally excludes absent students');
+db.prepare("INSERT INTO spck_session_submissions(classId,studentId,sessionNumber,draftStatus) VALUES(?,?,12,'VERIFIED')").run(classes[1][0],'S1');
+record('DB04-missing-student-spck',false,card(classes[1][0]).steps[1].isDone,'2 active students, only S1 has a per-session SPCK row');
+db.prepare("INSERT INTO spck_session_submissions(classId,studentId,sessionNumber,draftStatus) VALUES(?,?,12,'DRAFT')").run(classes[1][0],'S2');
+record('DB05-explicit-draft-spck',false,card(classes[1][0]).steps[1].isDone,'Control: explicit DRAFT row');
+db.prepare("UPDATE spck_session_submissions SET draftStatus='VERIFIED' WHERE classId=?").run(classes[1][0]);
+record('DB06-all-spck-verified',true,card(classes[1][0]).steps[1].isDone,'Control: both VERIFIED');
+db.prepare("INSERT INTO spck_session14_evaluations(classId,studentId,status) VALUES(?,?,'VERIFIED')").run(classes[2][0],'S1');
+record('DB07-missing-student-evaluation',false,card(classes[2][0]).steps[1].isDone,'2 active students, only S1 has an evaluation row');
+db.prepare("INSERT INTO spck_session14_evaluations(classId,studentId,status) VALUES(?,?,'DRAFT')").run(classes[2][0],'S2');
+record('DB08-explicit-draft-evaluation',false,card(classes[2][0]).steps[1].isDone,'Control: explicit DRAFT row');
+const tasks=[1,2,3,4,5].map(n=>({slotIndex:n,taskId:100+n,taskName:'Task '+n,weightPercent:20,assignedStudentIds:[1,2]}));
+const progress=Object.fromEntries(tasks.flatMap(t=>[1,2].map(s=>[`${t.taskId}_${s}`,100])));
+progress['105_2']=99;
+db.prepare("INSERT INTO teaching_final_projects(classId,tasksJson,progressJson,status) VALUES(?,?,?,'VERIFIED')").run(classes[3][0],JSON.stringify(tasks),JSON.stringify(progress));
+record('DB09-rounded-progress-100',false,card(classes[3][0]).steps[3].isDone,'S2 task 5=99, weighted class average=99.9, code rounds to100');
+const cp=buildClassTodayTodoCard({classId:'VT-ROB01',currentSessionNumber:4});
+record('DB10-robotics-checkpoint',true,cp.isCheckpoint,'Control Robotics session 4');
+// Round 2: stale records of inactive students must not block the active roster.
+const commentClass=classes[0][0], spckClass=classes[1][0], evalClass=classes[2][0];
+for(const cls of [commentClass,spckClass,evalClass]) db.prepare("UPDATE students SET isActive=0 WHERE classId=? AND studentId='S2'").run(cls);
+db.prepare("UPDATE session_feedbacks SET status='DRAFT', attendanceStatus='PRESENT' WHERE classId=? AND studentId='S2'").run(commentClass);
+record('R2-DB12-inactive-feedback-excluded',true,card(commentClass).allDone,'S1 active VERIFIED; S2 inactive PRESENT DRAFT left from an earlier lesson');
+db.prepare("UPDATE spck_session_submissions SET draftStatus='FAILED' WHERE classId=? AND studentId='S2'").run(spckClass);
+record('R2-DB13-inactive-spck-excluded',true,card(spckClass).steps[1].isDone,'S1 active VERIFIED; S2 inactive FAILED');
+record('R2-DB14-inactive-eval-excluded',true,card(evalClass).steps[1].isDone,'S1 active VERIFIED; S2 inactive DRAFT');
+db.prepare("DELETE FROM session_feedbacks WHERE classId=? AND studentId='S2'").run(commentClass);
+db.prepare("DELETE FROM spck_session_submissions WHERE classId=? AND studentId='S2'").run(spckClass);
+db.prepare("DELETE FROM spck_session14_evaluations WHERE classId=? AND studentId='S2'").run(evalClass);
+record('R2-DB15-inactive-without-feedback-control',true,card(commentClass).allDone);
+record('R2-DB16-inactive-without-spck-control',true,card(spckClass).steps[1].isDone);
+record('R2-DB17-inactive-without-eval-control',true,card(evalClass).steps[1].isDone);
+progress['105_2']=100;
+db.prepare("UPDATE teaching_final_projects SET progressJson=? WHERE classId=?").run(JSON.stringify(progress),classes[3][0]);
+record('R2-DB18-exact100-progress',true,card(classes[3][0]).steps[3].isDone);
+delete progress['105_2'];
+db.prepare("UPDATE teaching_final_projects SET progressJson=? WHERE classId=?").run(JSON.stringify(progress),classes[3][0]);
+record('R2-DB19-missing-progress-key',false,card(classes[3][0]).steps[3].isDone);
+const orig=TeachingProjectService.loadClassProject;
+TeachingProjectService.loadClassProject=async()=>({success:true});
+try{
+ const res=await GET(new NextRequest('http://127.0.0.1:3000/api/teaching-projects?classCode=VT-C4K-UNKNOWN',{headers:{host:'127.0.0.1:3000'}}));
+ const payload=await res.json();
+ record('API01-unknown-current-session',0,payload.currentSessionNumber,'Unknown class has no sessions/metadata; should not assume session11 to authorize a20% update');
+}finally{TeachingProjectService.loadClassProject=orig;}
+fs.writeFileSync(path.join(out,'repository-observations.json'),JSON.stringify(observations,null,2));
+console.log(JSON.stringify({checks:observations.length,pass:observations.filter(x=>x.pass).length,observations},null,2));
+db.close();

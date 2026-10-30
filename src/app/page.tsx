@@ -2,6 +2,10 @@ import Link from "next/link";
 import { getSafePublicConfig } from "@/lib/config";
 import { getCoursesSyllabus, getGradingRubrics } from "@/lib/db/json-config";
 import { getDb } from "@/lib/db/sqlite";
+import {
+  getDashboardTodayTodoCards,
+  type ClassTodayTodoCard,
+} from "@/lib/dashboard/today-tasks";
 
 interface RecentClassItem {
   classId: string;
@@ -11,18 +15,19 @@ interface RecentClassItem {
   updatedAt: string;
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default function DashboardPage() {
-  const publicConfig = getSafePublicConfig();
+  getSafePublicConfig();
   const courses = getCoursesSyllabus();
   const rubrics = getGradingRubrics();
 
-  let dbReady = true;
   let totalClasses = 0;
-  let totalStudents = 0;
   let totalComments = 0;
   let verifiedComments = 0;
-  let totalSubmissions = 0;
   let recentClasses: RecentClassItem[] = [];
+  let todayTodoCards: ClassTodayTodoCard[] = [];
 
   try {
     const db = getDb();
@@ -30,12 +35,6 @@ export default function DashboardPage() {
       (
         db
           .prepare(`SELECT COUNT(DISTINCT classId) as cnt FROM classes_sessions`)
-          .get() as { cnt?: number } | undefined
-      )?.cnt ?? 0;
-    totalStudents =
-      (
-        db
-          .prepare(`SELECT COUNT(*) as cnt FROM students WHERE isActive = 1`)
           .get() as { cnt?: number } | undefined
       )?.cnt ?? 0;
     totalComments =
@@ -52,12 +51,6 @@ export default function DashboardPage() {
           .prepare(
             `SELECT COUNT(*) as cnt FROM session_feedbacks WHERE status = 'VERIFIED'`
           )
-          .get() as { cnt?: number } | undefined
-      )?.cnt ?? 0;
-    totalSubmissions =
-      (
-        db
-          .prepare(`SELECT COUNT(*) as cnt FROM homework_submissions`)
           .get() as { cnt?: number } | undefined
       )?.cnt ?? 0;
 
@@ -77,56 +70,111 @@ export default function DashboardPage() {
       `
       )
       .all() as RecentClassItem[];
+
+    todayTodoCards = getDashboardTodayTodoCards({ limit: 8 });
   } catch {
-    dbReady = false;
+    // ignore DB errors on cold start
   }
 
-  const isSystemReady = dbReady && publicConfig.hasGeminiKey;
-
   return (
-    <div className="flex-1 flex flex-col justify-between gap-2.5">
+    <div className="flex-1 flex flex-col justify-between gap-3">
       {/* Hero Banner */}
       <div className="mindx-hero px-4 py-3 rounded-2xl transition-all">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2">
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              Trợ Lý Giảng Dạy MindX (v3.0)
+              Trợ Lý Giảng Dạy MindX (v3.4)
             </h1>
-            {false && (
-              <p className="mindx-hero-sub mt-0.5 text-xs">
-                Nhận xét buổi học &amp; tổng kết Zalo, chấm bài tập tự động, nộp sản phẩm cuối khóa (SPCK) và quản lý giáo trình.
-              </p>
-            )}
           </div>
-          {false && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="mindx-dark-keep px-3 py-1 rounded-full text-xs font-semibold bg-white/15 border border-white/25 text-white">
-                🏫 {totalClasses} lớp • 👥 {totalStudents} học viên
-              </span>
-              <div
-                className={`flex items-center space-x-2 px-3.5 py-1 rounded-full text-xs font-semibold ${
-                  isSystemReady
-                    ? "mindx-status-pill-ok"
-                    : "bg-amber-500/20 border border-amber-400/50 text-amber-200"
-                }`}
-              >
-                <span
-                  className={`w-2.5 h-2.5 rounded-full ${
-                    isSystemReady ? "bg-emerald-500 animate-pulse" : "bg-amber-400"
-                  }`}
-                />
-                <span>
-                  {isSystemReady
-                    ? `Sẵn sàng (${courses.length} khóa học • ${rubrics.length} barem)`
-                    : !publicConfig.hasGeminiKey
-                    ? "Thiếu khóa AI (GEMINI_API_KEY)"
-                    : "Đang kiểm tra dữ liệu"}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* S6.4: Smart "Việc cần làm hôm nay" Action Cards per Class */}
+      <section className="mindx-card mindx-card-emerald p-4 rounded-2xl space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-base">📌</span>
+            <h2 className="text-sm sm:text-base font-extrabold text-white">
+              Việc cần làm hôm nay
+            </h2>
+            <span className="text-xs text-slate-400">
+              (Tự động gợi ý theo buổi hiện tại &amp; trạng thái đã lưu của từng lớp — bấm để mở đúng màn hình &amp; đúng lớp)
+            </span>
+          </div>
+        </div>
+
+        {todayTodoCards.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            {todayTodoCards.map((card) => (
+              <div
+                key={card.classId}
+                className="p-3 rounded-xl bg-slate-900/75 border border-slate-700/80 flex flex-col justify-between gap-2"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={card.primaryHref}
+                      className="font-extrabold text-sm text-white hover:text-emerald-400 transition-colors"
+                    >
+                      {card.classId}
+                    </Link>
+                    {card.className && card.className !== card.classId && (
+                      <span className="text-xs text-slate-400 truncate max-w-[180px]">
+                        ({card.className})
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                      card.allDone
+                        ? "bg-emerald-700 text-white mindx-dark-keep"
+                        : card.currentSessionNumber >= 14
+                        ? "bg-indigo-700 text-white mindx-dark-keep"
+                        : card.isCheckpoint
+                        ? "bg-amber-800 text-white mindx-dark-keep"
+                        : "bg-slate-700 text-white mindx-dark-keep"
+                    }`}
+                  >
+                    {card.sessionBadgeText}
+                  </span>
+                </div>
+
+                <div className="text-xs text-slate-300 font-medium">
+                  {card.summaryText}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  {card.steps.map((step) => (
+                    <Link
+                      key={`${card.classId}_${step.stepNumber}`}
+                      href={step.href}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center gap-1 ${
+                        step.isDone
+                          ? "bg-emerald-950/60 border-emerald-600/60 text-emerald-300 hover:bg-emerald-900/60"
+                          : "bg-slate-800/90 border-amber-500/50 text-amber-200 hover:bg-slate-700"
+                      }`}
+                    >
+                      <span>{step.label}</span>
+                      <span className="text-[11px] opacity-85">({step.statusText})</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-xs text-slate-400">
+            Chưa có lớp đang mở nào được đồng bộ — hãy mở{" "}
+            <Link
+              href="/session-comments"
+              className="text-amber-400 font-bold underline"
+            >
+              1. Nhận xét Buổi học
+            </Link>{" "}
+            để đồng bộ danh sách lớp từ LMS.
+          </div>
+        )}
+      </section>
 
       {/* 4 Core Workspaces Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
@@ -148,26 +196,8 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-slate-400 leading-snug">
               Đồng bộ lớp đang dạy, tích nhanh thẻ Lập trình / Robotics trên 1 hàng gọn, AI soạn nhận xét 3 mục chuẩn (hỗ trợ buổi Checkpoint) và soạn tin nhắn tổng kết Zalo.
             </p>
-            {false && (
-              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                  ⚡ Quick Tags 1 chạm
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                  🎯 Buổi Kiểm tra (5 &amp; 9 / 4 &amp; 8)
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                  💬 Thông báo Zalo 2 phần
-                </span>
-              </div>
-            )}
           </div>
           <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-end text-xs">
-            {false && (
-              <span className="text-slate-400">
-                Đã soạn: <strong className="text-white">{totalComments}</strong> nhận xét ({verifiedComments} đã lưu LMS)
-              </span>
-            )}
             <span className="font-bold text-amber-400 group-hover:translate-x-0.5 transition-transform">
               Mở công cụ &rarr;
             </span>
@@ -192,26 +222,8 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-slate-400 leading-snug">
               Tự động tổng hợp điểm BTVN (Lập trình), Check-point 1 &amp; 2, Điểm Năng lực `[ĐNL]` và Cuối khóa DEMO từ LMS; xuất ảnh gửi Zalo và đồng bộ 1 chạm lên Teaching.
             </p>
-            {false && (
-              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                  🏆 Xếp hạng A / B / C / D chuẩn Teaching
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                  📸 Copy ảnh BTVN &amp; Tổng kết gửi Zalo
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                  🚀 Đồng bộ điểm lên Teaching
-                </span>
-              </div>
-            )}
           </div>
           <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-end text-xs">
-            {false && (
-              <span className="text-slate-400">
-                Hỗ trợ: <strong className="text-white">Lập trình (BTVN + CP + DEMO) • Robotics (CP + DEMO)</strong>
-              </span>
-            )}
             <span className="font-bold text-sky-400 group-hover:translate-x-0.5 transition-transform">
               Mở công cụ &rarr;
             </span>
@@ -236,26 +248,8 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-slate-400 leading-snug">
               Quét thư mục dự án hoặc Playlist YouTube (Robotics), chuẩn bị ảnh bìa &amp; đường dẫn sản phẩm, nộp SPCK các buổi 12–14 và đẩy Thư tổng kết cuối khóa Buổi 14.
             </p>
-            {false && (
-              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                  📸 Tự chụp giao diện App / Web
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                  📊 Đọc Điểm Demo từ Excel
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                  💌 Thư từ MindX 3 phần
-                </span>
-              </div>
-            )}
           </div>
           <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-end text-xs">
-            {false && (
-              <span className="text-slate-400">
-                Hỗ trợ: <strong className="text-white">Buổi 12 (GĐ1) • Buổi 13 (GĐ2) • Buổi 14 (CK)</strong>
-              </span>
-            )}
             <span className="font-bold text-emerald-400 group-hover:translate-x-0.5 transition-transform">
               Mở công cụ &rarr;
             </span>
@@ -280,23 +274,8 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-slate-400 leading-snug">
               Tùy chỉnh nội dung từng buổi học, đánh dấu buổi Kiểm tra (Checkpoint) và quản lý 3 bộ thẻ nhận xét nhanh (Lập trình, Robotics, Buổi 14).
             </p>
-            {false && (
-              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                  📚 {courses.length} Khóa học chuẩn
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
-                  🏷️ 3 Bộ thẻ Quick Tags
-                </span>
-              </div>
-            )}
           </div>
           <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-end text-xs">
-            {false && (
-              <span className="text-slate-400">
-                Đang kích hoạt: <strong className="text-white">{courses.length} giáo trình chuẩn</strong>
-              </span>
-            )}
             <span className="font-bold text-purple-400 group-hover:translate-x-0.5 transition-transform">
               Mở cấu hình &rarr;
             </span>
@@ -314,7 +293,7 @@ export default function DashboardPage() {
             recentClasses.map((cls) => (
               <Link
                 key={cls.classId}
-                href="/session-comments"
+                href={`/session-comments?classId=${encodeURIComponent(cls.classId)}`}
                 title={`${cls.className || cls.classId} (${cls.studentCount} học viên • ${cls.sessionCount} buổi)`}
                 className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 text-white font-semibold transition flex items-center gap-1.5"
               >

@@ -1,0 +1,395 @@
+
+FILE src/components/final-project/SubmitBar.tsx
+30:   const pushReqSeqRef = useRef(0);
+31:   const [teachingPushState, setTeachingPushState] = useState<{
+32:     loading: boolean;
+33:     verifiedPercent: number | null;
+34:     updatedCount: number | null;
+35:     error: string | null;
+36:   }>({
+37:     loading: false,
+38:     verifiedPercent: null,
+39:     updatedCount: null,
+40:     error: null,
+41:   });
+42: 
+43:   useEffect(() => {
+44:     pushReqSeqRef.current += 1;
+45:     setTeachingPushState({
+46:       loading: false,
+47:       verifiedPercent: null,
+48:       updatedCount: null,
+49:       error: null,
+50:     });
+51:   }, [
+52:     selectedClassId,
+53:     selectedSessionNumber,
+54:     lastSubmissionSummary?.completedAt,
+55:     session14ComboStatus.spckSummary?.completedAt,
+56:     uploading,
+57:     session14ComboStatus.running,
+58:   ]);
+59: 
+60:   const dirtyStudentIds = new Set(
+61:     (rows || [])
+62:       .filter((r) => r.assignedStudentId && r.isDirty)
+63:       .map((r) => r.assignedStudentId)
+64:   );
+65: 
+66:   const verifiedRowsCountForCurrentSession = (rows || []).filter(
+67:     (r) =>
+68:       r.assignedStudentId &&
+69:       !r.isDirty &&
+70:       getSessionSlotDisplay(r, selectedSessionNumber).state === "VERIFIED_CURRENT"
+71:   ).length;
+72: 
+73:   const verifiedSpckCountForCurrentSession =
+74:     selectedSessionNumber === 14 && session14ComboStatus.spckSummary
+75:       ? session14ComboStatus.spckSummary.verifiedItems.filter(
+76:           (it) => !dirtyStudentIds.has(it.studentId)
+77:         ).length
+78:       : lastSubmissionSummary?.sessionNumber === selectedSessionNumber
+79:       ? lastSubmissionSummary.verifiedItems.filter(
+80:           (it) => !dirtyStudentIds.has(it.studentId)
+81:         ).length
+82:       : verifiedRowsCountForCurrentSession;
+83: 
+84:   const pendingOrFailedSpckCountForCurrentSession =
+85:     selectedSessionNumber === 14 && session14ComboStatus.spckSummary
+86:       ? session14ComboStatus.spckSummary.retryStudentIds.length + dirtyStudentIds.size
+87:       : lastSubmissionSummary?.sessionNumber === selectedSessionNumber
+88:       ? lastSubmissionSummary.retryStudentIds.length + dirtyStudentIds.size
+89:       : (rows || []).filter(
+90:           (r) =>
+91:             r.assignedStudentId &&
+92:             (r.isDirty ||
+93:               getSessionSlotDisplay(r, selectedSessionNumber).state !==
+94:                 "VERIFIED_CURRENT")
+95:         ).length;
+96: 
+97:   const verifiedEvalCountForSession14 =
+98:     session14ComboStatus.currentPhase !== "idle"
+99:       ? session14ComboStatus.evalVerifiedCount
+100:       : (session14Evals || []).filter((ev) => ev.status === "VERIFIED").length;
+101: 
+102:   const teachingSuggestion = getSpckVerifiedTeachingProgressSuggestion({
+103:     sessionNumber: selectedSessionNumber,
+104:     verifiedCount: verifiedSpckCountForCurrentSession,
+105:     pendingOrFailedCount: pendingOrFailedSpckCountForCurrentSession,
+106:   });
+107: 
+108:   const showSession14ReportCardHandoff =
+109:     selectedSessionNumber === 14 &&
+110:     !session14ComboStatus.running &&
+111:     !uploading &&
+112:     !uploadingS14EvalLms &&
+113:     verifiedSpckCountForCurrentSession > 0 &&
+114:     verifiedEvalCountForSession14 > 0 &&
+115:     (session14ComboStatus.spckSummary?.retryStudentIds.length ?? 0) === 0 &&
+116:     session14ComboStatus.evalRetryStudentIds.length === 0;
+117: 
+118:   const handleQuickUpdateTeachingProgress = async () => {
+119:     if (!selectedClassId || !teachingSuggestion.shouldShow || teachingPushState.loading) {
+120:       return;
+121:     }
+122:     const reqSeq = ++pushReqSeqRef.current;
+123:     const reqClassId = selectedClassId;
+124:     const reqTargetPercent = teachingSuggestion.targetPercent;
+125:     const reqMilestoneCount = teachingSuggestion.milestoneTaskCount;
+126: 
+127:     setTeachingPushState({
+128:       loading: true,
+129:       verifiedPercent: null,
+130:       updatedCount: null,
+131:       error: null,
+132:     });
+133:     try {
+134:       const res = await fetch("/api/teaching-projects/progress", {
+135:         method: "POST",
+136:         headers: { "Content-Type": "application/json" },
+137:         body: JSON.stringify({
+138:           classCode: reqClassId,
+139:           milestoneTaskCount: reqMilestoneCount,
+140:           resetOthers: true,
+141:         }),
+142:       });
+143:       const data = await res.json();
+144:       if (pushReqSeqRef.current !== reqSeq) {
+145:         return;
+146:       }
+147:       if (!res.ok || !data.success) {
+148:         throw new Error(
+149:           data.error || "Không thể cập nhật tiến độ Teaching tự động."
+150:         );
+151:       }
+152:       setTeachingPushState({
+153:         loading: false,
+154:         verifiedPercent: reqTargetPercent,
+155:         updatedCount: data.updatedCount ?? null,
+156:         error: null,
+157:       });
+158:     } catch (err) {
+159:       if (pushReqSeqRef.current !== reqSeq) {
+160:         return;
+161:       }
+162:       setTeachingPushState({
+163:         loading: false,
+164:         verifiedPercent: null,
+165:         updatedCount: null,
+166:         error: err instanceof Error ? err.message : String(err),
+167:       });
+168:     }
+
+FILE src/components/final-project/useSpckWorkflow.ts
+893:   const [session14ComboStatus, setSession14ComboStatus] =
+894:     useState<Session14ComboStatusUI>({
+895:       running: false,
+896:       currentPhase: "idle",
+897:       spckSummary: null,
+898:       evalVerifiedCount: 0,
+899:       evalVerifiedStudentIds: [],
+900:       evalFailedCount: 0,
+901:       evalRetryStudentIds: [],
+902:       evalErrorMessage: null,
+903:     });
+904:   const autoImportedDemoClassKeysRef = useRef<Set<string>>(new Set());
+905: 
+3389: 
+3390:     if (partToRun === "both") {
+3391:       setLastSubmissionSummary(null);
+3392:       setBannerMessage(null);
+3393:     }
+3394: 
+3395:     setSession14ComboStatus((prev) =>
+3396:       partToRun === "both"
+3397:         ? {
+3398:             running: true,
+3399:             currentPhase: "spck",
+3400:             spckSummary: null,
+3401:             evalVerifiedCount: 0,
+3402:             evalVerifiedStudentIds: [],
+3403:             evalFailedCount: 0,
+3404:             evalRetryStudentIds: [],
+3405:             evalErrorMessage: null,
+3406:           }
+3407:         : {
+3408:             ...prev,
+3409:             running: true,
+3410:             currentPhase: partToRun === "eval_only" ? "eval" : "spck",
+3411:           }
+3412:     );
+3413: 
+3414:     let nextSpckSummary =
+3415:       partToRun === "both" ? null : session14ComboStatus.spckSummary;
+3416:     let nextEvalVerified =
+3417:       partToRun === "both" ? 0 : session14ComboStatus.evalVerifiedCount;
+
+FILE src/app/final-project/page.tsx
+1248:   const handleClassChange = async (newClassId: string) => {
+1249:     activeUiClassId = newClassId;
+1250:     clientDraftSequence++;
+1251:     setSelectedClassId(newClassId);
+1252:     try {
+1253:       if (newClassId && typeof window !== "undefined" && window.localStorage) {
+1254:         window.localStorage.setItem(
+1255:           "mindx_last_class_code",
+1256:           newClassId.trim().toUpperCase()
+1257:         );
+1258:       }
+1259:     } catch {}
+1260:     setBannerMessage(null);
+1261:     setLastSubmissionSummary(null);
+1262:     setExpandedRowKeys({});
+1263:     await loadClassData(newClassId);
+1264:   };
+
+FILE src/lib/dashboard/today-tasks.ts
+255:     steps,
+256:     allDone: commentDone,
+257:   };
+258: }
+259: 
+260: function computeAverageTeachingProgressPercent(
+261:   tasksJson?: string | null,
+262:   progressJson?: string | null,
+263:   endDate?: string | null
+264: ): number {
+265:   if (!progressJson) return 0;
+266:   try {
+267:     const progressMap = JSON.parse(progressJson) as Record<string, number>;
+268:     const tasks = normalizeTeachingProjectTasks(tasksJson || "[]", endDate || "");
+269:     const validTasks = tasks.filter((t) => Number(t.taskId) > 0);
+270:     if (validTasks.length === 0) {
+271:       const vals = Object.values(progressMap).map(Number).filter(Number.isFinite);
+272:       if (vals.length === 0) return 0;
+273:       return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+274:     }
+275:     const studentIds = Array.from(
+276:       new Set(validTasks.flatMap((t) => t.assignedStudentIds || []))
+277:     );
+278:     if (studentIds.length === 0) return 0;
+279:     let totalWeighted = 0;
+280:     for (const sid of studentIds) {
+281:       let stuScore = 0;
+282:       for (const task of validTasks) {
+283:         const pct = Number(progressMap[`${task.taskId}_${sid}`] ?? 0);
+284:         stuScore += (pct * (Number(task.weightPercent) || 20)) / 100;
+285:       }
+286:       totalWeighted += stuScore;
+287:     }
+288:     return Math.round(totalWeighted / studentIds.length);
+289:   } catch {
+290:     return 0;
+330:         .prepare(
+331:           `SELECT
+332:              COUNT(*) as totalCnt,
+333:              SUM(CASE WHEN status = 'VERIFIED' THEN 1 ELSE 0 END) as verifiedCnt
+334:            FROM session_feedbacks
+335:            WHERE classId = ? AND sessionId = ?`
+336:         )
+337:         .get(classId, resolvedSessionId) as
+338:         | { totalCnt?: number; verifiedCnt?: number }
+339:         | undefined;
+340:       const totalFeedbackCount = Number(feedbackCounts?.totalCnt) || 0;
+341:       const verifiedFeedbackCount = Number(feedbackCounts?.verifiedCnt) || 0;
+342: 
+343:       const spckRows = db
+344:         .prepare(
+345:           `SELECT status, sessionResultsJson FROM spck_uploads
+346:            WHERE classId = ?`
+347:         )
+348:         .all(classId) as Array<{ status?: string; sessionResultsJson?: string }>;
+349: 
+350:       const spckSessionRows = db
+351:         .prepare(
+352:           `SELECT sessionNumber, draftStatus FROM spck_session_submissions
+353:            WHERE classId = ?`
+354:         )
+355:         .all(classId) as Array<{ sessionNumber?: number; draftStatus?: string }>;
+356: 
+357:       const checkSpckSessionVerified = (targetSess: 12 | 13 | 14): boolean => {
+358:         const sessRows = spckSessionRows.filter(
+359:           (r) => Number(r.sessionNumber) === targetSess
+360:         );
+361:         if (sessRows.length > 0) {
+362:           return sessRows.every((r) => r.draftStatus === "VERIFIED");
+363:         }
+364:         if (spckRows.length === 0) return false;
+365:         return spckRows.every((row) => {
+366:           try {
+367:             const map = JSON.parse(row.sessionResultsJson || "{}") as Record<
+368:               string,
+369:               { status?: string }
+370:             >;
+371:             return map[String(targetSess)]?.status === "VERIFIED";
+372:           } catch {
+373:             return targetSess === 13 && row.status === "VERIFIED";
+374:           }
+375:         });
+376:       };
+377: 
+378:       const evalCounts = db
+379:         .prepare(
+380:           `SELECT
+381:              COUNT(*) as totalCnt,
+382:              SUM(CASE WHEN status = 'VERIFIED' THEN 1 ELSE 0 END) as verifiedCnt
+383:            FROM spck_session14_evaluations
+384:            WHERE classId = ?`
+385:         )
+386:         .get(classId) as { totalCnt?: number; verifiedCnt?: number } | undefined;
+387:       const totalEvalCount = Number(evalCounts?.totalCnt) || 0;
+420:         classId,
+421:         className: cls.className || cls.courseName || classId,
+422:         courseName: cls.courseName,
+423:         currentSessionNumber: sessionNum,
+424:         syllabusList,
+425:         sessionCommentVerified:
+426:           totalFeedbackCount > 0 && verifiedFeedbackCount === totalFeedbackCount,
+427:         reportCardVerified: reportCardRow?.status === "VERIFIED",
+428:         spckSessionVerified: {
+429:           12: checkSpckSessionVerified(12),
+430:           13: checkSpckSessionVerified(13),
+431:           14: checkSpckSessionVerified(14),
+432:         },
+433:         session14EvalVerified:
+434:           totalEvalCount > 0 && evalVerifiedCount === totalEvalCount,
+435:         teachingProgressPercent,
+436:       });
+437:     });
+438:   } catch {
+
+FILE src/app/api/teaching-projects/route.ts
+17: function resolveClassCurrentSessionNumber(
+18:   classCode: string,
+19:   classes: ClassDirectoryItem[]
+20: ): number {
+21:   const matched = classes.find(
+22:     (c) => String(c.classCode || "").trim().toUpperCase() === classCode
+23:   );
+24:   if (matched && Number(matched.currentSessionNumber) > 0) {
+25:     return Number(matched.currentSessionNumber);
+26:   }
+27:   try {
+28:     const db = getDb();
+29:     const row = db
+30:       .prepare(
+31:         `SELECT
+32:            MAX(CASE WHEN TRIM(COALESCE(date, '')) <> '' THEN sessionNumber ELSE 0 END) AS activeSess,
+33:            MAX(sessionNumber) AS maxSess
+34:          FROM classes_sessions
+35:          WHERE classId = ?`
+36:       )
+37:       .get(classCode) as { activeSess?: number; maxSess?: number } | undefined;
+38:     const active = Number(row?.activeSess) || 0;
+39:     const max = Number(row?.maxSess) || 0;
+40:     if (active > 0) return active;
+41:     if (max > 0) return max;
+42:   } catch {
+43:     // ignore DB lookup error
+44:   }
+45:   return 11;
+46: }
+
+FILE src/app/page.tsx
+1: import Link from "next/link";
+2: import { getSafePublicConfig } from "@/lib/config";
+3: import { getCoursesSyllabus, getGradingRubrics } from "@/lib/db/json-config";
+4: import { getDb } from "@/lib/db/sqlite";
+5: import {
+6:   getDashboardTodayTodoCards,
+7:   type ClassTodayTodoCard,
+8: } from "@/lib/dashboard/today-tasks";
+9: 
+10: interface RecentClassItem {
+11:   classId: string;
+12:   className: string;
+13:   sessionCount: number;
+14:   studentCount: number;
+15:   updatedAt: string;
+16: }
+17: 
+18: export default function DashboardPage() {
+19:   getSafePublicConfig();
+20:   const courses = getCoursesSyllabus();
+21:   const rubrics = getGradingRubrics();
+22: 
+23:   let totalClasses = 0;
+24:   let totalComments = 0;
+25:   let verifiedComments = 0;
+26:   let recentClasses: RecentClassItem[] = [];
+27:   let todayTodoCards: ClassTodayTodoCard[] = [];
+28: 
+63:         FROM classes_sessions cs
+64:         GROUP BY cs.classId
+65:         ORDER BY MAX(cs.updatedAt) DESC
+66:         LIMIT 5
+67:       `
+68:       )
+69:       .all() as RecentClassItem[];
+70: 
+71:     todayTodoCards = getDashboardTodayTodoCards({ limit: 8 });
+72:   } catch {
+73:     // ignore DB errors on cold start
+74:   }
+75: 
+76:   return (

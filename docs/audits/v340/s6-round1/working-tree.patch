@@ -1,0 +1,1278 @@
+diff --git a/src/app/api/teaching-projects/route.ts b/src/app/api/teaching-projects/route.ts
+index 4e51cf0..55e1fd2 100644
+--- a/src/app/api/teaching-projects/route.ts
++++ b/src/app/api/teaching-projects/route.ts
+@@ -1,5 +1,4 @@
+ import { NextRequest, NextResponse } from "next/server";
+-import { getRunningClasses, type RunningClassItem } from "@/lib/db/json-config";
+ import {
+   buildDefaultTeachingProjectName,
+   getDb,
+@@ -8,14 +7,44 @@ import {
+   type TeachingProjectTaskItem,
+ } from "@/lib/db/sqlite";
+ import { TeachingProjectService } from "@/lib/playwright/teaching-project-service";
+-import { resolveClassDateRangeInfo } from "@/lib/playwright/sync-class";
+ import { validateLocalRequest } from "@/lib/security/local-guard";
+-import { listClasses } from "@/lib/classes/class-directory";
++import { listClasses, type ClassDirectoryItem } from "@/lib/classes/class-directory";
+ 
+-function listAvailableClassesForTeaching(): RunningClassItem[] {
++function listAvailableClassesForTeaching(): ClassDirectoryItem[] {
+   return listClasses({ scope: "running" });
+ }
+ 
++function resolveClassCurrentSessionNumber(
++  classCode: string,
++  classes: ClassDirectoryItem[]
++): number {
++  const matched = classes.find(
++    (c) => String(c.classCode || "").trim().toUpperCase() === classCode
++  );
++  if (matched && Number(matched.currentSessionNumber) > 0) {
++    return Number(matched.currentSessionNumber);
++  }
++  try {
++    const db = getDb();
++    const row = db
++      .prepare(
++        `SELECT
++           MAX(CASE WHEN TRIM(COALESCE(date, '')) <> '' THEN sessionNumber ELSE 0 END) AS activeSess,
++           MAX(sessionNumber) AS maxSess
++         FROM classes_sessions
++         WHERE classId = ?`
++      )
++      .get(classCode) as { activeSess?: number; maxSess?: number } | undefined;
++    const active = Number(row?.activeSess) || 0;
++    const max = Number(row?.maxSess) || 0;
++    if (active > 0) return active;
++    if (max > 0) return max;
++  } catch {
++    // ignore DB lookup error
++  }
++  return 11;
++}
++
+ export async function GET(request: NextRequest) {
+   const guardError = validateLocalRequest(request);
+   if (guardError) return guardError;
+@@ -37,10 +66,12 @@ export async function GET(request: NextRequest) {
+     const loaded = await TeachingProjectService.loadClassProject(classCode, {
+       forceRefreshFromTeaching: force,
+     });
++    const currentSessionNumber = resolveClassCurrentSessionNumber(classCode, classes);
+ 
+     return NextResponse.json({
+       ...loaded,
+       classes,
++      currentSessionNumber,
+       defaultShortProjectName: buildDefaultTeachingProjectName(classCode, false),
+       defaultFullProjectName: buildDefaultTeachingProjectName(classCode, true),
+     });
+@@ -85,7 +116,7 @@ export async function POST(request: NextRequest) {
+       );
+     }
+ 
+-    if (action === "save_draft" || action === "approve_and_save") {
++    if (action === "save_draft") {
+       const saveRes = teachingProjectRepo.saveDraft({
+         classId: classCode,
+         projectName: body?.projectName,
+@@ -115,73 +146,13 @@ export async function POST(request: NextRequest) {
+         );
+       }
+ 
+-      if (action === "save_draft") {
+-        return NextResponse.json({
+-          success: true,
+-          downgradedFromApproved: saveRes.downgradedFromApproved,
+-          record: saveRes.record,
+-          tasks: normalizeTeachingProjectTasks(
+-            saveRes.record.tasksJson,
+-            saveRes.record.endDate
+-          ),
+-        });
+-      }
+-
+-      // If approve_and_save, approve using the newly saved draftVersion
+-      const approveRes = teachingProjectRepo.approveDraft(
+-        classCode,
+-        saveRes.record.draftVersion
+-      );
+-      if (!approveRes.success) {
+-        return NextResponse.json(
+-          {
+-            success: false,
+-            error: approveRes.error,
+-            record: approveRes.record,
+-            tasks: normalizeTeachingProjectTasks(
+-              approveRes.record.tasksJson,
+-              approveRes.record.endDate
+-            ),
+-          },
+-          { status: 400 }
+-        );
+-      }
+-
+-      return NextResponse.json({
+-        success: true,
+-        record: approveRes.record,
+-        tasks: normalizeTeachingProjectTasks(
+-          approveRes.record.tasksJson,
+-          approveRes.record.endDate
+-        ),
+-      });
+-    }
+-
+-    if (action === "approve") {
+-      const approveRes = teachingProjectRepo.approveDraft(classCode, expectedVersion);
+-      if (!approveRes.success) {
+-        return NextResponse.json(
+-          {
+-            success: false,
+-            conflict: approveRes.conflict,
+-            currentVersion: approveRes.currentVersion,
+-            error: approveRes.error,
+-            record: approveRes.record,
+-            tasks: normalizeTeachingProjectTasks(
+-              approveRes.record.tasksJson,
+-              approveRes.record.endDate
+-            ),
+-          },
+-          { status: approveRes.conflict ? 409 : 400 }
+-        );
+-      }
+-
+       return NextResponse.json({
+         success: true,
+-        record: approveRes.record,
++        downgradedFromApproved: saveRes.downgradedFromApproved,
++        record: saveRes.record,
+         tasks: normalizeTeachingProjectTasks(
+-          approveRes.record.tasksJson,
+-          approveRes.record.endDate
++          saveRes.record.tasksJson,
++          saveRes.record.endDate
+         ),
+       });
+     }
+diff --git a/src/app/final-project/page.tsx b/src/app/final-project/page.tsx
+index dcbe9ba..1369626 100644
+--- a/src/app/final-project/page.tsx
++++ b/src/app/final-project/page.tsx
+@@ -1151,15 +1151,29 @@ export default function FinalProjectPage() {
+         }
+         const classList: ClassOption[] = data.classes || [];
+         let savedClassId = "";
++        let urlSessionNum: 12 | 13 | 14 | undefined = undefined;
+         try {
+-          if (typeof window !== "undefined" && window.localStorage) {
+-            savedClassId = String(
+-              window.localStorage.getItem("mindx_last_class_code") || ""
++          if (typeof window !== "undefined") {
++            const urlParams = new URLSearchParams(window.location?.search || "");
++            const urlClass = String(
++              urlParams.get("classId") || urlParams.get("classCode") || ""
+             )
+               .trim()
+               .toUpperCase();
++            const rawUrlSess = Number(urlParams.get("sessionNumber"));
++            if ([12, 13, 14].includes(rawUrlSess)) {
++              urlSessionNum = rawUrlSess as 12 | 13 | 14;
++            }
++            savedClassId =
++              urlClass ||
++              String(
++                window.localStorage?.getItem("mindx_last_class_code") || ""
++              )
++                .trim()
++                .toUpperCase();
+           }
+         } catch {}
++        const effectiveTargetSession = targetSessionNumber || urlSessionNum;
+         if (
+           !requestedClassId &&
+           savedClassId &&
+@@ -1169,7 +1183,7 @@ export default function FinalProjectPage() {
+           activeUiClassId = savedClassId;
+           setSelectedClassId(savedClassId);
+           setClasses(classList);
+-          await loadClassData(savedClassId, targetSessionNumber);
++          await loadClassData(savedClassId, effectiveTargetSession);
+           return;
+         }
+         const resolvedClassId = requestedClassId || data.selectedClassId || "";
+@@ -1189,7 +1203,7 @@ export default function FinalProjectPage() {
+           data.selectedSessionNumber ?? data.activeSessionNumber
+         );
+         const resolvedSession: 12 | 13 | 14 =
+-          targetSessionNumber ||
++          effectiveTargetSession ||
+           ([12, 13, 14].includes(apiSelectedSession)
+             ? (apiSelectedSession as 12 | 13 | 14)
+             : matchedClass?.currentSessionNumber &&
+diff --git a/src/app/homework-grader/page.tsx b/src/app/homework-grader/page.tsx
+index d65f25c..2122c95 100644
+--- a/src/app/homework-grader/page.tsx
++++ b/src/app/homework-grader/page.tsx
+@@ -153,13 +153,23 @@ export default function HomeworkGraderPage() {
+   const activeClassIdRef = useRef("VT-C4K-PTA12");
+   const hasRestoredClassCodeRef = useRef(false);
+   const restoredTargetClassRef = useRef<string | null>(null);
++  const autoScanOnMountRef = useRef(false);
+ 
+   useEffect(() => {
+     if (!hasRestoredClassCodeRef.current) {
+       hasRestoredClassCodeRef.current = true;
+       if (typeof window !== "undefined") {
+         try {
+-          const saved = window.localStorage.getItem("mindx_last_class_code");
++          const urlParams = new URLSearchParams(window.location?.search || "");
++          const urlClass =
++            urlParams.get("classId") || urlParams.get("classCode") || "";
++          if (urlParams.get("autoScan") === "1") {
++            autoScanOnMountRef.current = true;
++          }
++          const saved =
++            urlClass.trim() ||
++            window.localStorage?.getItem("mindx_last_class_code") ||
++            "";
+           if (saved && saved.trim()) {
+             restoredTargetClassRef.current = saved.trim().toUpperCase();
+           }
+@@ -189,6 +199,11 @@ export default function HomeworkGraderPage() {
+     setMatrix((prev) => (prev && prev.classId?.trim().toUpperCase() === norm ? prev : null));
+     setUpdatedAt(null);
+     setSelectedDetail(null);
++    if (autoScanOnMountRef.current && norm) {
++      autoScanOnMountRef.current = false;
++      void handleScrapeScores(norm);
++      return;
++    }
+     if (skipNextEffectLoadForClassRef.current === norm) {
+       skipNextEffectLoadForClassRef.current = null;
+       return;
+@@ -302,11 +317,15 @@ export default function HomeworkGraderPage() {
+     }
+   };
+ 
+-  const handleScrapeScores = async (): Promise<{
++  const handleScrapeScores = async (
++    overrideClassCode?: string
++  ): Promise<{
+     success: boolean;
+     error?: string;
+   }> => {
+-    const norm = classCode.trim().toUpperCase();
++    const norm = String(overrideClassCode || classCode || classId || "")
++      .trim()
++      .toUpperCase();
+     if (!norm) {
+       return { success: false, error: "Mã lớp không hợp lệ." };
+     }
+diff --git a/src/app/page.tsx b/src/app/page.tsx
+index 5222540..fa23cba 100644
+--- a/src/app/page.tsx
++++ b/src/app/page.tsx
+@@ -2,6 +2,10 @@ import Link from "next/link";
+ import { getSafePublicConfig } from "@/lib/config";
+ import { getCoursesSyllabus, getGradingRubrics } from "@/lib/db/json-config";
+ import { getDb } from "@/lib/db/sqlite";
++import {
++  getDashboardTodayTodoCards,
++  type ClassTodayTodoCard,
++} from "@/lib/dashboard/today-tasks";
+ 
+ interface RecentClassItem {
+   classId: string;
+@@ -12,17 +16,15 @@ interface RecentClassItem {
+ }
+ 
+ export default function DashboardPage() {
+-  const publicConfig = getSafePublicConfig();
++  getSafePublicConfig();
+   const courses = getCoursesSyllabus();
+   const rubrics = getGradingRubrics();
+ 
+-  let dbReady = true;
+   let totalClasses = 0;
+-  let totalStudents = 0;
+   let totalComments = 0;
+   let verifiedComments = 0;
+-  let totalSubmissions = 0;
+   let recentClasses: RecentClassItem[] = [];
++  let todayTodoCards: ClassTodayTodoCard[] = [];
+ 
+   try {
+     const db = getDb();
+@@ -32,12 +34,6 @@ export default function DashboardPage() {
+           .prepare(`SELECT COUNT(DISTINCT classId) as cnt FROM classes_sessions`)
+           .get() as { cnt?: number } | undefined
+       )?.cnt ?? 0;
+-    totalStudents =
+-      (
+-        db
+-          .prepare(`SELECT COUNT(*) as cnt FROM students WHERE isActive = 1`)
+-          .get() as { cnt?: number } | undefined
+-      )?.cnt ?? 0;
+     totalComments =
+       (
+         db
+@@ -54,12 +50,6 @@ export default function DashboardPage() {
+           )
+           .get() as { cnt?: number } | undefined
+       )?.cnt ?? 0;
+-    totalSubmissions =
+-      (
+-        db
+-          .prepare(`SELECT COUNT(*) as cnt FROM homework_submissions`)
+-          .get() as { cnt?: number } | undefined
+-      )?.cnt ?? 0;
+ 
+     recentClasses = db
+       .prepare(
+@@ -77,56 +67,111 @@ export default function DashboardPage() {
+       `
+       )
+       .all() as RecentClassItem[];
++
++    todayTodoCards = getDashboardTodayTodoCards({ limit: 8 });
+   } catch {
+-    dbReady = false;
++    // ignore DB errors on cold start
+   }
+ 
+-  const isSystemReady = dbReady && publicConfig.hasGeminiKey;
+-
+   return (
+-    <div className="flex-1 flex flex-col justify-between gap-2.5">
++    <div className="flex-1 flex flex-col justify-between gap-3">
+       {/* Hero Banner */}
+       <div className="mindx-hero px-4 py-3 rounded-2xl transition-all">
+         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2">
+           <div>
+             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+-              Trợ Lý Giảng Dạy MindX (v3.0)
++              Trợ Lý Giảng Dạy MindX (v3.4)
+             </h1>
+-            {false && (
+-              <p className="mindx-hero-sub mt-0.5 text-xs">
+-                Nhận xét buổi học &amp; tổng kết Zalo, chấm bài tập tự động, nộp sản phẩm cuối khóa (SPCK) và quản lý giáo trình.
+-              </p>
+-            )}
+           </div>
+-          {false && (
+-            <div className="flex flex-wrap items-center gap-2">
+-              <span className="mindx-dark-keep px-3 py-1 rounded-full text-xs font-semibold bg-white/15 border border-white/25 text-white">
+-                🏫 {totalClasses} lớp • 👥 {totalStudents} học viên
+-              </span>
++        </div>
++      </div>
++
++      {/* S6.4: Smart "Việc cần làm hôm nay" Action Cards per Class */}
++      <section className="mindx-card mindx-card-emerald p-4 rounded-2xl space-y-3">
++        <div className="flex flex-wrap items-center justify-between gap-2">
++          <div className="flex items-center gap-2">
++            <span className="text-base">📌</span>
++            <h2 className="text-sm sm:text-base font-extrabold text-white">
++              Việc cần làm hôm nay
++            </h2>
++            <span className="text-xs text-slate-400">
++              (Tự động gợi ý theo buổi hiện tại &amp; trạng thái đã lưu của từng lớp — bấm để mở đúng màn hình &amp; đúng lớp)
++            </span>
++          </div>
++        </div>
++
++        {todayTodoCards.length > 0 ? (
++          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
++            {todayTodoCards.map((card) => (
+               <div
+-                className={`flex items-center space-x-2 px-3.5 py-1 rounded-full text-xs font-semibold ${
+-                  isSystemReady
+-                    ? "mindx-status-pill-ok"
+-                    : "bg-amber-500/20 border border-amber-400/50 text-amber-200"
+-                }`}
++                key={card.classId}
++                className="p-3 rounded-xl bg-slate-900/75 border border-slate-700/80 flex flex-col justify-between gap-2"
+               >
+-                <span
+-                  className={`w-2.5 h-2.5 rounded-full ${
+-                    isSystemReady ? "bg-emerald-500 animate-pulse" : "bg-amber-400"
+-                  }`}
+-                />
+-                <span>
+-                  {isSystemReady
+-                    ? `Sẵn sàng (${courses.length} khóa học • ${rubrics.length} barem)`
+-                    : !publicConfig.hasGeminiKey
+-                    ? "Thiếu khóa AI (GEMINI_API_KEY)"
+-                    : "Đang kiểm tra dữ liệu"}
+-                </span>
++                <div className="flex flex-wrap items-center justify-between gap-2">
++                  <div className="flex items-center gap-2">
++                    <Link
++                      href={card.primaryHref}
++                      className="font-extrabold text-sm text-white hover:text-emerald-400 transition-colors"
++                    >
++                      {card.classId}
++                    </Link>
++                    {card.className && card.className !== card.classId && (
++                      <span className="text-xs text-slate-400 truncate max-w-[180px]">
++                        ({card.className})
++                      </span>
++                    )}
++                  </div>
++                  <span
++                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
++                      card.allDone
++                        ? "bg-emerald-700 text-white mindx-dark-keep"
++                        : card.currentSessionNumber >= 14
++                        ? "bg-indigo-700 text-white mindx-dark-keep"
++                        : card.isCheckpoint
++                        ? "bg-amber-800 text-white mindx-dark-keep"
++                        : "bg-slate-700 text-white mindx-dark-keep"
++                    }`}
++                  >
++                    {card.sessionBadgeText}
++                  </span>
++                </div>
++
++                <div className="text-xs text-slate-300 font-medium">
++                  {card.summaryText}
++                </div>
++
++                <div className="flex flex-wrap items-center gap-1.5 pt-1">
++                  {card.steps.map((step) => (
++                    <Link
++                      key={`${card.classId}_${step.stepNumber}`}
++                      href={step.href}
++                      className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center gap-1 ${
++                        step.isDone
++                          ? "bg-emerald-950/60 border-emerald-600/60 text-emerald-300 hover:bg-emerald-900/60"
++                          : "bg-slate-800/90 border-amber-500/50 text-amber-200 hover:bg-slate-700"
++                      }`}
++                    >
++                      <span>{step.label}</span>
++                      <span className="text-[11px] opacity-85">({step.statusText})</span>
++                    </Link>
++                  ))}
++                </div>
+               </div>
+-            </div>
+-          )}
+-        </div>
+-      </div>
++            ))}
++          </div>
++        ) : (
++          <div className="text-xs text-slate-400">
++            Chưa có lớp đang mở nào được đồng bộ — hãy mở{" "}
++            <Link
++              href="/session-comments"
++              className="text-amber-400 font-bold underline"
++            >
++              1. Nhận xét Buổi học
++            </Link>{" "}
++            để đồng bộ danh sách lớp từ LMS.
++          </div>
++        )}
++      </section>
+ 
+       {/* 4 Core Workspaces Grid */}
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
+@@ -148,26 +193,8 @@ export default function DashboardPage() {
+             <p className="mt-1 text-xs text-slate-400 leading-snug">
+               Đồng bộ lớp đang dạy, tích nhanh thẻ Lập trình / Robotics trên 1 hàng gọn, AI soạn nhận xét 3 mục chuẩn (hỗ trợ buổi Checkpoint) và soạn tin nhắn tổng kết Zalo.
+             </p>
+-            {false && (
+-              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
+-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+-                  ⚡ Quick Tags 1 chạm
+-                </span>
+-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+-                  🎯 Buổi Kiểm tra (5 &amp; 9 / 4 &amp; 8)
+-                </span>
+-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+-                  💬 Thông báo Zalo 2 phần
+-                </span>
+-              </div>
+-            )}
+           </div>
+           <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-end text-xs">
+-            {false && (
+-              <span className="text-slate-400">
+-                Đã soạn: <strong className="text-white">{totalComments}</strong> nhận xét ({verifiedComments} đã lưu LMS)
+-              </span>
+-            )}
+             <span className="font-bold text-amber-400 group-hover:translate-x-0.5 transition-transform">
+               Mở công cụ &rarr;
+             </span>
+@@ -192,26 +219,8 @@ export default function DashboardPage() {
+             <p className="mt-1 text-xs text-slate-400 leading-snug">
+               Tự động tổng hợp điểm BTVN (Lập trình), Check-point 1 &amp; 2, Điểm Năng lực `[ĐNL]` và Cuối khóa DEMO từ LMS; xuất ảnh gửi Zalo và đồng bộ 1 chạm lên Teaching.
+             </p>
+-            {false && (
+-              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
+-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+-                  🏆 Xếp hạng A / B / C / D chuẩn Teaching
+-                </span>
+-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+-                  📸 Copy ảnh BTVN &amp; Tổng kết gửi Zalo
+-                </span>
+-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+-                  🚀 Đồng bộ điểm lên Teaching
+-                </span>
+-              </div>
+-            )}
+           </div>
+           <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-end text-xs">
+-            {false && (
+-              <span className="text-slate-400">
+-                Hỗ trợ: <strong className="text-white">Lập trình (BTVN + CP + DEMO) • Robotics (CP + DEMO)</strong>
+-              </span>
+-            )}
+             <span className="font-bold text-sky-400 group-hover:translate-x-0.5 transition-transform">
+               Mở công cụ &rarr;
+             </span>
+@@ -236,26 +245,8 @@ export default function DashboardPage() {
+             <p className="mt-1 text-xs text-slate-400 leading-snug">
+               Quét thư mục dự án hoặc Playlist YouTube (Robotics), chuẩn bị ảnh bìa &amp; đường dẫn sản phẩm, nộp SPCK các buổi 12–14 và đẩy Thư tổng kết cuối khóa Buổi 14.
+             </p>
+-            {false && (
+-              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
+-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+-                  📸 Tự chụp giao diện App / Web
+-                </span>
+-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+-                  📊 Đọc Điểm Demo từ Excel
+-                </span>
+-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+-                  💌 Thư từ MindX 3 phần
+-                </span>
+-              </div>
+-            )}
+           </div>
+           <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-end text-xs">
+-            {false && (
+-              <span className="text-slate-400">
+-                Hỗ trợ: <strong className="text-white">Buổi 12 (GĐ1) • Buổi 13 (GĐ2) • Buổi 14 (CK)</strong>
+-              </span>
+-            )}
+             <span className="font-bold text-emerald-400 group-hover:translate-x-0.5 transition-transform">
+               Mở công cụ &rarr;
+             </span>
+@@ -280,23 +271,8 @@ export default function DashboardPage() {
+             <p className="mt-1 text-xs text-slate-400 leading-snug">
+               Tùy chỉnh nội dung từng buổi học, đánh dấu buổi Kiểm tra (Checkpoint) và quản lý 3 bộ thẻ nhận xét nhanh (Lập trình, Robotics, Buổi 14).
+             </p>
+-            {false && (
+-              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-slate-300">
+-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+-                  📚 {courses.length} Khóa học chuẩn
+-                </span>
+-                <span className="px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70">
+-                  🏷️ 3 Bộ thẻ Quick Tags
+-                </span>
+-              </div>
+-            )}
+           </div>
+           <div className="mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-end text-xs">
+-            {false && (
+-              <span className="text-slate-400">
+-                Đang kích hoạt: <strong className="text-white">{courses.length} giáo trình chuẩn</strong>
+-              </span>
+-            )}
+             <span className="font-bold text-purple-400 group-hover:translate-x-0.5 transition-transform">
+               Mở cấu hình &rarr;
+             </span>
+@@ -314,7 +290,7 @@ export default function DashboardPage() {
+             recentClasses.map((cls) => (
+               <Link
+                 key={cls.classId}
+-                href="/session-comments"
++                href={`/session-comments?classId=${encodeURIComponent(cls.classId)}`}
+                 title={`${cls.className || cls.classId} (${cls.studentCount} học viên • ${cls.sessionCount} buổi)`}
+                 className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 text-white font-semibold transition flex items-center gap-1.5"
+               >
+diff --git a/src/app/session-comments/page.tsx b/src/app/session-comments/page.tsx
+index d3ce53e..1e803dd 100644
+--- a/src/app/session-comments/page.tsx
++++ b/src/app/session-comments/page.tsx
+@@ -445,13 +445,21 @@ export default function SessionCommentsPage() {
+     debouncedResolversRef.current = {};
+   };
+ 
+-  // Restore last selected class from browser localStorage on initial mount (safe in SSR & VM sandbox)
++  // Restore last selected class from URL query (?classId= / ?classCode=) or browser localStorage on initial mount
+   useEffect(() => {
+     try {
+-      if (typeof window !== "undefined" && window.localStorage) {
+-        const savedClass = String(window.localStorage.getItem("mindx_last_class_code") || "")
++      if (typeof window !== "undefined") {
++        const urlParams = new URLSearchParams(window.location?.search || "");
++        const urlClass = String(
++          urlParams.get("classId") || urlParams.get("classCode") || ""
++        )
+           .trim()
+           .toUpperCase();
++        const savedClass =
++          urlClass ||
++          String(window.localStorage?.getItem("mindx_last_class_code") || "")
++            .trim()
++            .toUpperCase();
+         if (savedClass && savedClass !== classId) {
+           setClassCode(savedClass);
+           setClassId(savedClass);
+@@ -608,7 +616,24 @@ export default function SessionCommentsPage() {
+ 
+           const existsInClass = sessionList.some((s) => s.sessionId === normalizedSessionId);
+           if (!normalizedSessionId || !existsInClass) {
+-            effectiveSessionId = findLatestActiveSessionId(sessionList);
++            let urlMatchedSessionId = "";
++            try {
++              if (typeof window !== "undefined") {
++                const urlParams = new URLSearchParams(window.location?.search || "");
++                const urlClass = String(
++                  urlParams.get("classId") || urlParams.get("classCode") || ""
++                )
++                  .trim()
++                  .toUpperCase();
++                const urlSessNum = Number(urlParams.get("sessionNumber") || 0);
++                if (urlSessNum > 0 && (!urlClass || urlClass === effectiveClassId)) {
++                  urlMatchedSessionId =
++                    sessionList.find((s) => Number(s.sessionNumber) === urlSessNum)
++                      ?.sessionId || "";
++                }
++              }
++            } catch {}
++            effectiveSessionId = urlMatchedSessionId || findLatestActiveSessionId(sessionList);
+             if (effectiveSessionId && effectiveSessionId !== normalizedSessionId) {
+               setSelectedSessionId(effectiveSessionId);
+               return; // useEffect will re-trigger loadClassData with the valid effectiveSessionId
+diff --git a/src/app/teaching-projects/page.tsx b/src/app/teaching-projects/page.tsx
+index d934a3f..9f4194b 100644
+--- a/src/app/teaching-projects/page.tsx
++++ b/src/app/teaching-projects/page.tsx
+@@ -17,6 +17,7 @@ import {
+   Users,
+ } from "lucide-react";
+ import { ClassPicker } from "@/components/class-picker";
++import { mapSessionToTeachingProgressMilestone } from "@/lib/teaching/session-progress-mapper";
+ 
+ interface RunningClassOption {
+   classCode: string;
+@@ -24,6 +25,7 @@ interface RunningClassOption {
+   status?: string;
+   startDate?: string;
+   endDate?: string;
++  currentSessionNumber?: number;
+ }
+ 
+ interface TeachingStudentItem {
+@@ -125,6 +127,8 @@ export default function TeachingProjectsPage() {
+   const [dateSourceLabel, setDateSourceLabel] = useState<string>("");
+   const [teacherHint] = useState<string>("");
+   const [isTasksDetailOpen, setIsTasksDetailOpen] = useState<boolean>(false);
++  const [currentSessionNumber, setCurrentSessionNumber] = useState<number>(11);
++  const [isAdvancedOpen, setIsAdvancedOpen] = useState<boolean>(false);
+ 
+   const [isLoadingClass, setIsLoadingClass] = useState<boolean>(false);
+   const [isFetchingLmsDates, setIsFetchingLmsDates] = useState<boolean>(false);
+@@ -252,6 +256,19 @@ export default function TeachingProjectsPage() {
+         if (Array.isArray(data.classes) && data.classes.length > 0) {
+           setClasses(data.classes);
+         }
++        const matchedClassFromList = Array.isArray(data.classes)
++          ? (data.classes as RunningClassOption[]).find(
++              (c) => String(c.classCode || "").trim().toUpperCase() === cleanCode
++            )
++          : undefined;
++        const resolvedSessNum =
++          typeof data.currentSessionNumber === "number" && data.currentSessionNumber > 0
++            ? data.currentSessionNumber
++            : typeof matchedClassFromList?.currentSessionNumber === "number" &&
++              matchedClassFromList.currentSessionNumber > 0
++            ? matchedClassFromList.currentSessionNumber
++            : 11;
++        setCurrentSessionNumber(resolvedSessNum);
+         setCourseName(data.courseName || "");
+         if (data.dateSource) {
+           setDateSourceLabel(
+@@ -327,8 +344,15 @@ export default function TeachingProjectsPage() {
+ 
+         let initialCode = "";
+         try {
+-          initialCode =
+-            window.localStorage.getItem("mindx_last_class_code")?.trim().toUpperCase() || "";
++          const urlParams = new URLSearchParams(window.location.search);
++          const urlClass =
++            urlParams.get("classId") || urlParams.get("classCode") || "";
++          if (urlClass.trim()) {
++            initialCode = urlClass.trim().toUpperCase();
++          } else {
++            initialCode =
++              window.localStorage.getItem("mindx_last_class_code")?.trim().toUpperCase() || "";
++          }
+         } catch {
+           initialCode = "";
+         }
+@@ -570,7 +594,7 @@ export default function TeachingProjectsPage() {
+     );
+   };
+ 
+-  const handleSaveDraftOrApprove = async (approve: boolean) => {
++  const handleSaveDraft = async () => {
+     const reqClass = loadedClassCodeRef.current;
+     const reqSeq = activeLoadSeqRef.current;
+     const reqVersion = draftVersion;
+@@ -584,7 +608,7 @@ export default function TeachingProjectsPage() {
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({
+           classCode: reqClass,
+-          action: approve ? "approve_and_save" : "save_draft",
++          action: "save_draft",
+           expectedVersion: reqVersion,
+           projectName,
+           startDate,
+@@ -610,9 +634,7 @@ export default function TeachingProjectsPage() {
+ 
+       setBanner({
+         type: "success",
+-        text: approve
+-          ? "✅ Đã duyệt cấu hình Dự án & 5 Công việc (chốt mã kiểm tra SHA-256)."
+-          : "💾 Đã lưu bản nháp cấu hình dự án vào bộ nhớ cục bộ.",
++        text: "💾 Đã lưu bản nháp cấu hình dự án vào bộ nhớ cục bộ.",
+       });
+     } catch (err: unknown) {
+       if (activeLoadSeqRef.current !== reqSeq || loadedClassCodeRef.current !== reqClass) {
+@@ -865,6 +887,10 @@ export default function TeachingProjectsPage() {
+ 
+   const shortNameOption = getShortProjectName(activeClassCode);
+   const fullNameOption = getFullProjectName(activeClassCode);
++  const currentMilestone = useMemo(
++    () => mapSessionToTeachingProgressMilestone(currentSessionNumber),
++    [currentSessionNumber]
++  );
+ 
+   const reportClassCode = useMemo(() => {
+     const raw = (loadedClassCode || selectedClassCode || customClassInput).trim().toUpperCase();
+@@ -1049,20 +1075,6 @@ export default function TeachingProjectsPage() {
+               )}
+               <span>Đọc mới từ Teaching</span>
+             </button>
+-
+-            <button
+-              type="button"
+-              onClick={handleFetchDatesFromLms}
+-              disabled={!isClassReady || isAnyMutationBusy}
+-              className="mindx-dark-keep px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white flex items-center gap-1.5 cursor-pointer transition"
+-            >
+-              {isFetchingLmsDates ? (
+-                <Loader2 className="w-4 h-4 animate-spin" />
+-              ) : (
+-                <Calendar className="w-4 h-4" />
+-              )}
+-              <span>Lấy ngày chuẩn từ LMS</span>
+-            </button>
+           </div>
+         </div>
+ 
+@@ -1451,7 +1463,7 @@ export default function TeachingProjectsPage() {
+           <div className="flex flex-wrap items-center gap-2.5">
+             <button
+               type="button"
+-              onClick={() => handleSaveDraftOrApprove(false)}
++              onClick={handleSaveDraft}
+               disabled={!isClassReady || isAnyMutationBusy}
+               className="mindx-dark-keep px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-700 hover:bg-slate-800 mindx-dark-btn disabled:opacity-60 text-white flex items-center gap-1.5 cursor-pointer transition"
+             >
+@@ -1483,11 +1495,6 @@ export default function TeachingProjectsPage() {
+             <h2 className="text-base sm:text-lg font-bold">
+               3. Báo Cáo Tiến Độ Học Sinh &amp; Cập Nhật Nhanh Trên Teaching
+             </h2>
+-            {false && (
+-              <p className="text-xs text-slate-400 mt-0.5">
+-                Chấm tiến độ nhanh theo từng mốc buổi học (20% &rarr; 40% &rarr; 60% &rarr; 80% &rarr; 100%) hoặc kéo thanh trượt cho từng học sinh như trên trang Teaching.
+-              </p>
+-            )}
+           </div>
+ 
+           <div className="flex flex-wrap items-center gap-2">
+@@ -1512,67 +1519,132 @@ export default function TeachingProjectsPage() {
+           </div>
+         </div>
+ 
+-        {/* 1-Click Class-Wide Milestone Bar */}
+-        <div className="p-3.5 rounded-xl border border-slate-700/70 bg-slate-900/65 space-y-2">
+-          <div className="text-xs font-bold flex items-center justify-between">
+-            <span>⚡ Cập nhật nhanh tiến độ cho CẢ LỚP theo mốc hoàn thành:</span>
+-            {isUpdatingProgress && (
+-              <span className="flex items-center gap-1 text-amber-400">
+-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+-                <span>Đang đồng bộ lên Teaching...</span>
+-              </span>
+-            )}
+-          </div>
+-          <div className="flex flex-wrap items-center gap-2">
+-            <button
+-              type="button"
+-              disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
+-              onClick={() => handleBulkMilestoneUpdate(1)}
+-              className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white cursor-pointer transition"
+-            >
+-              Xong Việc 1 (20%)
+-            </button>
+-            <button
+-              type="button"
+-              disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
+-              onClick={() => handleBulkMilestoneUpdate(2)}
+-              className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white cursor-pointer transition"
+-            >
+-              Xong Việc 1–2 (40%)
+-            </button>
+-            <button
+-              type="button"
+-              disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
+-              onClick={() => handleBulkMilestoneUpdate(3)}
+-              className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white cursor-pointer transition"
+-            >
+-              Xong Việc 1–3 (60% • Buổi 12)
+-            </button>
+-            <button
+-              type="button"
+-              disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
+-              onClick={() => handleBulkMilestoneUpdate(4)}
+-              className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white cursor-pointer transition"
+-            >
+-              Xong Việc 1–4 (80% • Buổi 13)
+-            </button>
+-            <button
+-              type="button"
+-              disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
+-              onClick={() => handleBulkMilestoneUpdate(5)}
+-              className="mindx-dark-keep px-3.5 py-1.5 rounded-lg text-xs font-extrabold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white cursor-pointer transition"
+-            >
+-              🏆 Hoàn thành 100% cả 5 việc (Buổi 14)
+-            </button>
+-            <button
+-              type="button"
+-              disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
+-              onClick={() => handleBulkMilestoneUpdate(0)}
+-              className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-700 hover:bg-slate-800 mindx-dark-btn disabled:opacity-50 text-white cursor-pointer transition"
+-            >
+-              Đặt lại 0%
+-            </button>
++        {/* 1-Click Current Session Milestone + Collapsible Advanced Section (S6.1) */}
++        <div className="p-3.5 rounded-xl border border-slate-700/70 bg-slate-900/65 space-y-3">
++          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
++            <div className="space-y-0.5">
++              <div className="text-xs font-bold flex items-center gap-2">
++                <span>⚡ Cập nhật 1 chạm theo buổi học hiện tại của lớp:</span>
++                <span className="mindx-dark-keep bg-indigo-700 text-white px-2.5 py-0.5 rounded-full text-[11px] font-bold">
++                  {currentMilestone.label}
++                </span>
++              </div>
++              {isUpdatingProgress && (
++                <span className="flex items-center gap-1 text-xs text-amber-400">
++                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
++                  <span>Đang đồng bộ lên Teaching...</span>
++                </span>
++              )}
++            </div>
++
++            <div className="flex flex-wrap items-center gap-2">
++              <button
++                type="button"
++                disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
++                onClick={() => handleBulkMilestoneUpdate(currentMilestone.milestoneTaskCount)}
++                className="mindx-dark-keep px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white flex items-center gap-2 cursor-pointer shadow-lg transition"
++              >
++                {isUpdatingProgress ? (
++                  <Loader2 className="w-4 h-4 animate-spin" />
++                ) : (
++                  <Rocket className="w-4 h-4" />
++                )}
++                <span>{currentMilestone.buttonLabel}</span>
++              </button>
++
++              <button
++                type="button"
++                onClick={() => setIsAdvancedOpen((prev) => !prev)}
++                className="mindx-dark-keep px-3 py-2 rounded-xl text-xs font-bold bg-slate-700 hover:bg-slate-800 mindx-dark-btn text-white flex items-center gap-1.5 cursor-pointer transition"
++              >
++                {isAdvancedOpen ? (
++                  <>
++                    <ChevronUp className="w-3.5 h-3.5" />
++                    <span>Ẩn Nâng cao</span>
++                  </>
++                ) : (
++                  <>
++                    <ChevronDown className="w-3.5 h-3.5" />
++                    <span>⚙️ Nâng cao</span>
++                  </>
++                )}
++              </button>
++            </div>
+           </div>
++
++          {isAdvancedOpen && (
++            <div className="pt-3 border-t border-slate-700/60 space-y-3">
++              <div className="flex flex-wrap items-center justify-between gap-2">
++                <span className="text-xs font-bold text-slate-300">
++                  Chọn mốc tiến độ thủ công hoặc lấy lại ngày từ LMS:
++                </span>
++                <button
++                  type="button"
++                  onClick={handleFetchDatesFromLms}
++                  disabled={!isClassReady || isAnyMutationBusy}
++                  className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white flex items-center gap-1.5 cursor-pointer transition"
++                >
++                  {isFetchingLmsDates ? (
++                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
++                  ) : (
++                    <Calendar className="w-3.5 h-3.5" />
++                  )}
++                  <span>Lấy ngày chuẩn từ LMS</span>
++                </button>
++              </div>
++
++              <div className="flex flex-wrap items-center gap-2">
++                <button
++                  type="button"
++                  disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
++                  onClick={() => handleBulkMilestoneUpdate(1)}
++                  className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white cursor-pointer transition"
++                >
++                  Xong Việc 1 (20%)
++                </button>
++                <button
++                  type="button"
++                  disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
++                  onClick={() => handleBulkMilestoneUpdate(2)}
++                  className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white cursor-pointer transition"
++                >
++                  Xong Việc 1–2 (40%)
++                </button>
++                <button
++                  type="button"
++                  disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
++                  onClick={() => handleBulkMilestoneUpdate(3)}
++                  className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white cursor-pointer transition"
++                >
++                  Xong Việc 1–3 (60% • Buổi 12)
++                </button>
++                <button
++                  type="button"
++                  disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
++                  onClick={() => handleBulkMilestoneUpdate(4)}
++                  className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white cursor-pointer transition"
++                >
++                  Xong Việc 1–4 (80% • Buổi 13)
++                </button>
++                <button
++                  type="button"
++                  disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
++                  onClick={() => handleBulkMilestoneUpdate(5)}
++                  className="mindx-dark-keep px-3.5 py-1.5 rounded-lg text-xs font-extrabold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white cursor-pointer transition"
++                >
++                  🏆 Hoàn thành 100% cả 5 việc (Buổi 14)
++                </button>
++                <button
++                  type="button"
++                  disabled={!isClassReady || !allTasksHaveRemoteIds || isAnyMutationBusy}
++                  onClick={() => handleBulkMilestoneUpdate(0)}
++                  className="mindx-dark-keep px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-700 hover:bg-slate-800 mindx-dark-btn disabled:opacity-50 text-white cursor-pointer transition"
++                >
++                  Đặt lại 0%
++                </button>
++              </div>
++            </div>
++          )}
+         </div>
+ 
+         {/* Student Overall Progress Summary Table */}
+@@ -1623,8 +1695,8 @@ export default function TeachingProjectsPage() {
+           </table>
+         </div>
+ 
+-        {/* Detailed Per-Task & Per-Student Sliders (Image 5 Table) */}
+-        {allTasksHaveRemoteIds && students.length > 0 && (
++        {/* Detailed Per-Task & Per-Student Sliders (inside Advanced section — S6.1) */}
++        {isAdvancedOpen && allTasksHaveRemoteIds && students.length > 0 && (
+           <div className="space-y-3 pt-2">
+             <h3 className="text-sm font-bold">
+               Bảng chi tiết từng phần công việc &amp; thanh kéo % từng học sinh:
+diff --git a/src/components/final-project/SubmitBar.tsx b/src/components/final-project/SubmitBar.tsx
+index c9be60d..fb69eea 100644
+--- a/src/components/final-project/SubmitBar.tsx
++++ b/src/components/final-project/SubmitBar.tsx
+@@ -1,8 +1,9 @@
+ "use client";
+ 
+-import React from "react";
+-import { Loader2, RefreshCw, UploadCloud } from "lucide-react";
+-import { SpckWorkflowController } from "./useSpckWorkflow";
++import React, { useEffect, useRef, useState } from "react";
++import { CheckCircle2, ExternalLink, Loader2, RefreshCw, TrendingUp, UploadCloud } from "lucide-react";
++import { getSpckVerifiedTeachingProgressSuggestion } from "@/lib/teaching/session-progress-mapper";
++import { getSessionSlotDisplay, SpckWorkflowController } from "./useSpckWorkflow";
+ 
+ export interface SubmitBarProps {
+   workflow: SpckWorkflowController;
+@@ -10,6 +11,8 @@ export interface SubmitBarProps {
+ 
+ export function SubmitBar({ workflow }: SubmitBarProps) {
+   const {
++    rows,
++    session14Evals,
+     totalStepsCount,
+     lastSubmissionSummary,
+     handleApproveAndUpload,
+@@ -24,6 +27,147 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
+     setLastSubmissionSummary,
+   } = workflow;
+ 
++  const pushReqSeqRef = useRef(0);
++  const [teachingPushState, setTeachingPushState] = useState<{
++    loading: boolean;
++    verifiedPercent: number | null;
++    updatedCount: number | null;
++    error: string | null;
++  }>({
++    loading: false,
++    verifiedPercent: null,
++    updatedCount: null,
++    error: null,
++  });
++
++  useEffect(() => {
++    pushReqSeqRef.current += 1;
++    setTeachingPushState({
++      loading: false,
++      verifiedPercent: null,
++      updatedCount: null,
++      error: null,
++    });
++  }, [
++    selectedClassId,
++    selectedSessionNumber,
++    lastSubmissionSummary?.completedAt,
++    session14ComboStatus.spckSummary?.completedAt,
++    uploading,
++    session14ComboStatus.running,
++  ]);
++
++  const dirtyStudentIds = new Set(
++    (rows || [])
++      .filter((r) => r.assignedStudentId && r.isDirty)
++      .map((r) => r.assignedStudentId)
++  );
++
++  const verifiedRowsCountForCurrentSession = (rows || []).filter(
++    (r) =>
++      r.assignedStudentId &&
++      !r.isDirty &&
++      getSessionSlotDisplay(r, selectedSessionNumber).state === "VERIFIED_CURRENT"
++  ).length;
++
++  const verifiedSpckCountForCurrentSession =
++    selectedSessionNumber === 14 && session14ComboStatus.spckSummary
++      ? session14ComboStatus.spckSummary.verifiedItems.filter(
++          (it) => !dirtyStudentIds.has(it.studentId)
++        ).length
++      : lastSubmissionSummary?.sessionNumber === selectedSessionNumber
++      ? lastSubmissionSummary.verifiedItems.filter(
++          (it) => !dirtyStudentIds.has(it.studentId)
++        ).length
++      : verifiedRowsCountForCurrentSession;
++
++  const pendingOrFailedSpckCountForCurrentSession =
++    selectedSessionNumber === 14 && session14ComboStatus.spckSummary
++      ? session14ComboStatus.spckSummary.retryStudentIds.length + dirtyStudentIds.size
++      : lastSubmissionSummary?.sessionNumber === selectedSessionNumber
++      ? lastSubmissionSummary.retryStudentIds.length + dirtyStudentIds.size
++      : (rows || []).filter(
++          (r) =>
++            r.assignedStudentId &&
++            (r.isDirty ||
++              getSessionSlotDisplay(r, selectedSessionNumber).state !==
++                "VERIFIED_CURRENT")
++        ).length;
++
++  const verifiedEvalCountForSession14 =
++    session14ComboStatus.currentPhase !== "idle"
++      ? session14ComboStatus.evalVerifiedCount
++      : (session14Evals || []).filter((ev) => ev.status === "VERIFIED").length;
++
++  const teachingSuggestion = getSpckVerifiedTeachingProgressSuggestion({
++    sessionNumber: selectedSessionNumber,
++    verifiedCount: verifiedSpckCountForCurrentSession,
++    pendingOrFailedCount: pendingOrFailedSpckCountForCurrentSession,
++  });
++
++  const showSession14ReportCardHandoff =
++    selectedSessionNumber === 14 &&
++    !session14ComboStatus.running &&
++    !uploading &&
++    !uploadingS14EvalLms &&
++    verifiedSpckCountForCurrentSession > 0 &&
++    verifiedEvalCountForSession14 > 0 &&
++    (session14ComboStatus.spckSummary?.retryStudentIds.length ?? 0) === 0 &&
++    session14ComboStatus.evalRetryStudentIds.length === 0;
++
++  const handleQuickUpdateTeachingProgress = async () => {
++    if (!selectedClassId || !teachingSuggestion.shouldShow || teachingPushState.loading) {
++      return;
++    }
++    const reqSeq = ++pushReqSeqRef.current;
++    const reqClassId = selectedClassId;
++    const reqTargetPercent = teachingSuggestion.targetPercent;
++    const reqMilestoneCount = teachingSuggestion.milestoneTaskCount;
++
++    setTeachingPushState({
++      loading: true,
++      verifiedPercent: null,
++      updatedCount: null,
++      error: null,
++    });
++    try {
++      const res = await fetch("/api/teaching-projects/progress", {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({
++          classCode: reqClassId,
++          milestoneTaskCount: reqMilestoneCount,
++          resetOthers: true,
++        }),
++      });
++      const data = await res.json();
++      if (pushReqSeqRef.current !== reqSeq) {
++        return;
++      }
++      if (!res.ok || !data.success) {
++        throw new Error(
++          data.error || "Không thể cập nhật tiến độ Teaching tự động."
++        );
++      }
++      setTeachingPushState({
++        loading: false,
++        verifiedPercent: reqTargetPercent,
++        updatedCount: data.updatedCount ?? null,
++        error: null,
++      });
++    } catch (err) {
++      if (pushReqSeqRef.current !== reqSeq) {
++        return;
++      }
++      setTeachingPushState({
++        loading: false,
++        verifiedPercent: null,
++        updatedCount: null,
++        error: err instanceof Error ? err.message : String(err),
++      });
++    }
++  };
++
+   return (
+     <div className="mindx-card-emerald p-5 rounded-xl space-y-4">
+       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+@@ -303,6 +447,80 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
+           </div>
+         </div>
+       )}
++
++      {/* S6.2 & S6.3: Next-Action Handoff Card after VERIFIED SPCK / Session 14 Submission */}
++      {!uploading &&
++        !session14ComboStatus.running &&
++        (teachingSuggestion.shouldShow || showSession14ReportCardHandoff) && (
++          <div className="p-4 rounded-xl bg-indigo-950/35 border border-indigo-500/40 space-y-3 text-xs">
++            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
++              <div className="space-y-1">
++                <div className="font-bold text-indigo-200 flex items-center gap-1.5">
++                  <TrendingUp className="w-4 h-4 text-indigo-400" />
++                  <span>Gợi ý bước tiếp theo sau khi đã xác minh LMS (VERIFIED):</span>
++                </div>
++                {teachingSuggestion.shouldShow && (
++                  <p className="text-slate-300">{teachingSuggestion.description}</p>
++                )}
++              </div>
++
++              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
++                {teachingSuggestion.shouldShow && (
++                  <button
++                    type="button"
++                    onClick={handleQuickUpdateTeachingProgress}
++                    disabled={teachingPushState.loading || isAnyOperationBusy}
++                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold shadow transition-colors cursor-pointer"
++                  >
++                    {teachingPushState.loading ? (
++                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
++                    ) : (
++                      <TrendingUp className="w-3.5 h-3.5" />
++                    )}
++                    <span>{teachingSuggestion.buttonText}</span>
++                  </button>
++                )}
++
++                {showSession14ReportCardHandoff && (
++                  <a
++                    href={`/homework-grader?classId=${encodeURIComponent(
++                      selectedClassId
++                    )}&autoScan=1`}
++                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow transition-colors"
++                  >
++                    <span>📋 Mở Phiếu điểm → Quét</span>
++                    <ExternalLink className="w-3.5 h-3.5" />
++                  </a>
++                )}
++              </div>
++            </div>
++
++            {teachingPushState.verifiedPercent !== null && (
++              <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-600/60 text-emerald-200 font-semibold flex items-center gap-2">
++                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
++                <span>
++                  ✅ Đã cập nhật tiến độ Teaching lên {teachingPushState.verifiedPercent}% thành công (Đã đối chiếu Read-after-Write
++                  {teachingPushState.updatedCount
++                    ? ` • ${teachingPushState.updatedCount} ô`
++                    : ""}
++                  ).
++                </span>
++              </div>
++            )}
++
++            {teachingPushState.error && (
++              <div className="p-2.5 rounded-lg bg-rose-950/40 border border-rose-600/60 text-rose-200 flex flex-wrap items-center justify-between gap-2">
++                <span>⚠️ {teachingPushState.error}</span>
++                <a
++                  href={`/teaching-projects?classId=${encodeURIComponent(selectedClassId)}`}
++                  className="underline font-bold text-rose-100 hover:text-white"
++                >
++                  Mở Màn 5 (Dự án Teaching) &rarr;
++                </a>
++              </div>
++            )}
++          </div>
++        )}
+     </div>
+   );
+ }
+diff --git a/src/components/teaching-report-card-view.tsx b/src/components/teaching-report-card-view.tsx
+index 1e14222..ee6b904 100644
+--- a/src/components/teaching-report-card-view.tsx
++++ b/src/components/teaching-report-card-view.tsx
+@@ -388,6 +388,15 @@ export default function TeachingReportCardView({
+     }
+   }, [effectiveClassId, scrapeTrigger, loadReportCard]);
+ 
++  const prevScrapingExternalRef = useRef<boolean>(false);
++  useEffect(() => {
++    const wasExternalScraping = prevScrapingExternalRef.current;
++    prevScrapingExternalRef.current = Boolean(isScrapingExternal);
++    if (wasExternalScraping && !isScrapingExternal && !isScrapingLms && effectiveClassId) {
++      void loadReportCard(effectiveClassId);
++    }
++  }, [isScrapingExternal, isScrapingLms, effectiveClassId, loadReportCard]);
++
+   // Instant client-side recalculation when teacher filters BTVN sessions.
+   // Explicitly distinguishes omitted filter (`null` -> all sessions) from empty array (`[]` -> 0 sessions).
+   const computedReportCard = useMemo<ComputedClassReportCard | null>(() => {

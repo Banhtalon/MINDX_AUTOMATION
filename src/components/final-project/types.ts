@@ -106,6 +106,7 @@ export type SpckSessionResultsMapUI = Partial<
 >;
 
 export interface SpckBatchSubmissionSummaryUI {
+  classId?: string;
   sessionNumber: 12 | 13 | 14;
   completedAt: string;
   totalSelected: number;
@@ -394,6 +395,7 @@ export type SpckToolErrorMapUI = Record<
 >;
 
 export interface Session14ComboStatusUI {
+  classId?: string;
   running: boolean;
   currentPhase: "idle" | "spck" | "eval" | "done";
   spckSummary: SpckBatchSubmissionSummaryUI | null;

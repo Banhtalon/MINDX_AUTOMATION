@@ -1,0 +1,7 @@
+{
+  "exit": 1,
+  "seconds": 20.63,
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-s6-r2-production-j6c9ejcp",
+  "command": "node node_modules/next/dist/bin/next build --webpack",
+  "note": "Physical copy of next package; other dependencies reused by junction; no product edits"
+}

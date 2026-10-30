@@ -1,0 +1,360 @@
+--- round2/src/components/final-project/SubmitBar.tsx
++++ round3/src/components/final-project/SubmitBar.tsx
+@@ -57,14 +57,11 @@
+     session14ComboStatus.running,
+   ]);
+ 
+-  const assignedRows = (rows || []).filter((r) => Boolean(r.assignedStudentId));
+-
+-  const dirtyStudentIds = new Set(
+-    assignedRows.filter((r) => r.isDirty).map((r) => r.assignedStudentId)
+-  );
++  const allRows = rows || [];
++  const assignedRows = allRows.filter((r) => Boolean(r.assignedStudentId));
+ 
+   const isRowVerifiedAndCleanForCurrentSession = (
+-    r: (typeof assignedRows)[number]
++    r: (typeof allRows)[number]
+   ): boolean =>
+     Boolean(
+       r.assignedStudentId &&
+@@ -76,7 +73,7 @@
+     isRowVerifiedAndCleanForCurrentSession
+   ).length;
+ 
+-  const unverifiedOrDirtyRowsCountForCurrentSession = assignedRows.filter(
++  const unverifiedOrUnassignedRowsCountForCurrentSession = allRows.filter(
+     (r) => !isRowVerifiedAndCleanForCurrentSession(r)
+   ).length;
+ 
+@@ -106,56 +103,35 @@
+     ? activeSummary.retryStudentIds.length
+     : 0;
+ 
+-  const verifiedSpckCountForCurrentSession =
+-    assignedRows.length > 0
+-      ? verifiedRowsCountForCurrentSession
+-      : activeSummary
+-      ? activeSummary.verifiedItems.filter(
+-          (it) => !dirtyStudentIds.has(it.studentId)
+-        ).length
+-      : 0;
++  const verifiedSpckCountForCurrentSession = verifiedRowsCountForCurrentSession;
+ 
+   const pendingOrFailedSpckCountForCurrentSession =
+-    assignedRows.length > 0
+-      ? unverifiedOrDirtyRowsCountForCurrentSession + summaryRetryCount
+-      : activeSummary
+-      ? summaryRetryCount + dirtyStudentIds.size
+-      : 0;
++    unverifiedOrUnassignedRowsCountForCurrentSession + summaryRetryCount;
+ 
+   const evalsForCurrentClass = (session14Evals || []).filter(
+     (ev) => !ev.classId || ev.classId === selectedClassId
+   );
+ 
+-  const comboEvalVerifiedIdsSet = new Set(
+-    isComboForCurrentClass ? session14ComboStatus.evalVerifiedStudentIds || [] : []
++  const evalByStudentId = new Map(
++    evalsForCurrentClass
++      .filter((ev) => Boolean(ev?.studentId))
++      .map((ev) => [ev.studentId, ev] as const)
+   );
+ 
+-  const verifiedEvalCountForSession14 = isComboForCurrentClass
+-    ? session14ComboStatus.evalVerifiedCount
+-    : evalsForCurrentClass.filter((ev) => ev.status === "VERIFIED").length;
+-
+-  const unverifiedEvalItemsCount = evalsForCurrentClass.filter(
+-    (ev) =>
+-      ev.status !== "VERIFIED" && !comboEvalVerifiedIdsSet.has(ev.studentId)
+-  ).length;
+-
+-  const requiredStudentCountForSession14 = Math.max(
+-    assignedRows.length,
+-    evalsForCurrentClass.length
+-  );
+-
+-  const pendingOrFailedEvalCountForSession14 = isComboForCurrentClass
+-    ? session14ComboStatus.evalRetryStudentIds.length +
+-      (session14ComboStatus.evalFailedCount || 0) +
+-      Math.max(
+-        0,
+-        requiredStudentCountForSession14 - session14ComboStatus.evalVerifiedCount
+-      )
+-    : unverifiedEvalItemsCount +
+-      Math.max(
+-        0,
+-        requiredStudentCountForSession14 - verifiedEvalCountForSession14
+-      );
++  const assignedStudentIds = assignedRows.map((r) => r.assignedStudentId);
++
++  const allAssignedStudentsHaveVerifiedEval =
++    assignedStudentIds.length > 0 &&
++    evalsForCurrentClass.length > 0 &&
++    assignedStudentIds.every(
++      (sid) => evalByStudentId.get(sid)?.status === "VERIFIED"
++    ) &&
++    evalsForCurrentClass.every((ev) => ev.status === "VERIFIED");
++
++  const comboHasPendingEvalFailures =
++    isComboForCurrentClass &&
++    (session14ComboStatus.evalRetryStudentIds.length > 0 ||
++      (session14ComboStatus.evalFailedCount || 0) > 0);
+ 
+   const teachingSuggestion = getSpckVerifiedTeachingProgressSuggestion({
+     sessionNumber: selectedSessionNumber,
+@@ -170,8 +146,8 @@
+     !uploadingS14EvalLms &&
+     verifiedSpckCountForCurrentSession > 0 &&
+     pendingOrFailedSpckCountForCurrentSession === 0 &&
+-    verifiedEvalCountForSession14 > 0 &&
+-    pendingOrFailedEvalCountForSession14 === 0;
++    allAssignedStudentsHaveVerifiedEval &&
++    !comboHasPendingEvalFailures;
+ 
+   const handleQuickUpdateTeachingProgress = async () => {
+     if (!selectedClassId || !teachingSuggestion.shouldShow || teachingPushState.loading) {
+--- round2/src/components/final-project/StudentRow.tsx
++++ round3/src/components/final-project/StudentRow.tsx
+@@ -1124,7 +1124,16 @@
+                           setSession14Evals((prev) =>
+                             prev.map((it) =>
+                               it.studentId === studentEval14.studentId
+-                                ? { ...it, learnedFromMindx: val }
++                                ? {
++                                    ...it,
++                                    learnedFromMindx: val,
++                                    status:
++                                      it.status === "VERIFIED" ||
++                                      it.status === "APPROVED"
++                                        ? "WAITING_APPROVAL"
++                                        : it.status,
++                                    contentHash: "",
++                                  }
+                                 : it
+                             )
+                           );
+@@ -1151,7 +1160,16 @@
+                             setSession14Evals((prev) =>
+                               prev.map((it) =>
+                                 it.studentId === studentEval14.studentId
+-                                  ? { ...it, suggestionsFromMindx: val }
++                                  ? {
++                                      ...it,
++                                      suggestionsFromMindx: val,
++                                      status:
++                                        it.status === "VERIFIED" ||
++                                        it.status === "APPROVED"
++                                          ? "WAITING_APPROVAL"
++                                          : it.status,
++                                      contentHash: "",
++                                    }
+                                   : it
+                               )
+                             );
+@@ -1181,7 +1199,16 @@
+                             setSession14Evals((prev) =>
+                               prev.map((it) =>
+                                 it.studentId === studentEval14.studentId
+-                                  ? { ...it, futureDirection: val }
++                                  ? {
++                                      ...it,
++                                      futureDirection: val,
++                                      status:
++                                        it.status === "VERIFIED" ||
++                                        it.status === "APPROVED"
++                                          ? "WAITING_APPROVAL"
++                                          : it.status,
++                                      contentHash: "",
++                                    }
+                                   : it
+                               )
+                             );
+@@ -1212,7 +1239,16 @@
+                             setSession14Evals((prev) =>
+                               prev.map((it) =>
+                                 it.studentId === studentEval14.studentId
+-                                  ? { ...it, awardRanking: val }
++                                  ? {
++                                      ...it,
++                                      awardRanking: val,
++                                      status:
++                                        it.status === "VERIFIED" ||
++                                        it.status === "APPROVED"
++                                          ? "WAITING_APPROVAL"
++                                          : it.status,
++                                      contentHash: "",
++                                    }
+                                   : it
+                               )
+                             );
+--- round2/src/lib/dashboard/today-tasks.ts
++++ round3/src/lib/dashboard/today-tasks.ts
+@@ -319,15 +319,17 @@
+       const sessionNum =
+         cls.currentSessionNumber > 0 ? cls.currentSessionNumber : fallbackSess;
+ 
+-      const activeStuRows = db
+-        .prepare(
+-          `SELECT studentId FROM students
+-           WHERE classId = ? AND isActive = 1`
+-        )
+-        .all(classId) as Array<{ studentId?: string }>;
+-      const activeStudentIds = activeStuRows
++      const allStuRows = db
++        .prepare(
++          `SELECT studentId, isActive FROM students
++           WHERE classId = ?`
++        )
++        .all(classId) as Array<{ studentId?: string; isActive?: number }>;
++      const activeStudentIds = allStuRows
++        .filter((r) => Number(r.isActive) === 1)
+         .map((r) => String(r.studentId || "").trim())
+         .filter(Boolean);
++      const hasRosterInDb = allStuRows.length > 0;
+ 
+       const sessionRow = db
+         .prepare(
+@@ -355,9 +357,9 @@
+           .map((r) => [String(r.studentId || "").trim(), r] as const)
+           .filter(([sid]) => Boolean(sid))
+       );
+-      const candidateCommentStudentIds = Array.from(
+-        new Set([...activeStudentIds, ...fbByStudent.keys()])
+-      );
++      const candidateCommentStudentIds = hasRosterInDb
++        ? activeStudentIds
++        : Array.from(fbByStudent.keys());
+       const requiredPresentCommentStudentIds = candidateCommentStudentIds.filter(
+         (sid) =>
+           String(fbByStudent.get(sid)?.attendanceStatus || "")
+@@ -406,13 +408,11 @@
+             .map((r) => [String(r.studentId || "").trim(), r] as const)
+             .filter(([sid]) => Boolean(sid))
+         );
+-        const requiredSpckStudentIds = Array.from(
+-          new Set([
+-            ...activeStudentIds,
+-            ...sessByStudent.keys(),
+-            ...spckByStudent.keys(),
+-          ])
+-        );
++        const requiredSpckStudentIds = hasRosterInDb
++          ? activeStudentIds
++          : Array.from(
++              new Set([...sessByStudent.keys(), ...spckByStudent.keys()])
++            );
+         if (requiredSpckStudentIds.length === 0) return false;
+         return requiredSpckStudentIds.every((sid) => {
+           const sessRec = sessByStudent.get(sid);
+@@ -444,9 +444,9 @@
+           .map((r) => [String(r.studentId || "").trim(), r.status] as const)
+           .filter(([sid]) => Boolean(sid))
+       );
+-      const requiredEvalStudentIds = Array.from(
+-        new Set([...activeStudentIds, ...evalByStudent.keys()])
+-      );
++      const requiredEvalStudentIds = hasRosterInDb
++        ? activeStudentIds
++        : Array.from(evalByStudent.keys());
+       const session14EvalVerified =
+         requiredEvalStudentIds.length > 0 &&
+         requiredEvalStudentIds.every((sid) => evalByStudent.get(sid) === "VERIFIED");
+--- round2/scripts/test-streamline-v340-s6.ts
++++ round3/scripts/test-streamline-v340-s6.ts
+@@ -328,6 +328,46 @@
+       cardsAbsentThird.find((c) => c.classId === "VT-C4K-JSB01")!.allDone,
+       true,
+       "S6-04: ABSENT student with DRAFT row must not block sessionCommentVerified"
++    );
++
++    // S6-04 Round 2 regression: inactive student (`isActive = 0`) with old PRESENT DRAFT/FAILED rows must not block active roster completion
++    db.prepare(
++      `INSERT INTO students (classId, studentId, fullName, isActive)
++       VALUES ('VT-C4K-JSB01', 'STU_INACTIVE', 'Học viên nghỉ học', 0),
++              ('VT-C4K-JSB12', 'STU_1', 'Học viên 1', 1),
++              ('VT-C4K-JSB12', 'STU_INACTIVE', 'Học viên nghỉ học', 0),
++              ('VT-C4K-JSB14', 'STU_1', 'Học viên 1', 1),
++              ('VT-C4K-JSB14', 'STU_INACTIVE', 'Học viên nghỉ học', 0)`
++    ).run();
++    db.prepare(
++      `INSERT INTO session_feedbacks (classId, sessionId, studentId, status, attendanceStatus)
++       VALUES ('VT-C4K-JSB01', 'VT-C4K-JSB01_SESS_1', 'STU_INACTIVE', 'DRAFT', 'PRESENT')`
++    ).run();
++    db.prepare(
++      `INSERT INTO spck_session_submissions (classId, studentId, sessionNumber, draftStatus)
++       VALUES ('VT-C4K-JSB12', 'STU_1', 12, 'VERIFIED'),
++              ('VT-C4K-JSB12', 'STU_INACTIVE', 12, 'FAILED')`
++    ).run();
++    db.prepare(
++      `INSERT INTO spck_session14_evaluations (classId, studentId, status)
++       VALUES ('VT-C4K-JSB14', 'STU_1', 'VERIFIED'),
++              ('VT-C4K-JSB14', 'STU_INACTIVE', 'DRAFT')`
++    ).run();
++    const cardsWithInactive = getDashboardTodayTodoCards({ limit: 10 });
++    assert.equal(
++      cardsWithInactive.find((c) => c.classId === "VT-C4K-JSB01")!.allDone,
++      true,
++      "S6-04 (R2-DB12): Inactive student with PRESENT DRAFT feedback must not block active roster"
++    );
++    assert.equal(
++      cardsWithInactive.find((c) => c.classId === "VT-C4K-JSB12")!.steps[1].isDone,
++      true,
++      "S6-04 (R2-DB13): Inactive student with FAILED SPCK submission must not block active roster"
++    );
++    assert.equal(
++      cardsWithInactive.find((c) => c.classId === "VT-C4K-JSB14")!.steps[1].isDone,
++      true,
++      "S6-04 (R2-DB14): Inactive student with DRAFT Session 14 evaluation must not block active roster"
+     );
+ 
+     // S6-05 regression: 99.9% weighted average must floor to 99% (not round to 100%)
+@@ -1063,6 +1103,47 @@
+         "Report Card handoff link must include classId and autoScan=1"
+       );
+ 
++      // S6-03 (R2-UI25): Editing a Session 14 letter textarea immediately demotes evaluation status -> Report Card handoff disappears
++      const firstRowExpandBtn = pageSpck
++        .locator("button:has-text('Sửa chi tiết / Cột 2')")
++        .first();
++      if ((await firstRowExpandBtn.count()) > 0) {
++        await firstRowExpandBtn.click();
++      }
++      const learnedTextarea = pageSpck
++        .locator("textarea[placeholder*='học được gì từ MindX']")
++        .first();
++      if ((await learnedTextarea.count()) > 0) {
++        await learnedTextarea.fill("Đã sửa nội dung thư gửi học viên");
++        assert.equal(
++          await pageSpck.locator("a:has-text('📋 Mở Phiếu điểm → Quét')").count(),
++          0,
++          "S6-03 (R2-UI25): Editing Session 14 evaluation text must immediately hide Report Card handoff"
++        );
++      }
++
++      // S6-02 (R2-UI28 / R2-UI29): Unassigning all student rows must hide both 100% progress button and Report Card handoff
++      const studentSelects = pageSpck
++        .locator("select")
++        .filter({ has: pageSpck.locator("option").filter({ hasText: "-- Ghép học viên --" }) });
++      const selCount = await studentSelects.count();
++      assert.equal(selCount, 2, "Must find 2 student assignment select dropdowns");
++      for (let idx = 0; idx < selCount; idx++) {
++        await studentSelects.nth(idx).selectOption("");
++      }
++      assert.equal(
++        await pageSpck
++          .locator("button:has-text('📈 Cập nhật tiến độ Teaching lên 100%')")
++          .count(),
++        0,
++        "S6-02 (R2-UI28): Unassigning all rows must hide 100% progress button"
++      );
++      assert.equal(
++        await pageSpck.locator("a:has-text('📋 Mở Phiếu điểm → Quét')").count(),
++        0,
++        "S6-02 (R2-UI29): Unassigning all rows must hide Report Card handoff"
++      );
++
+       await pageSpck.close();
+     } finally {
+       await browser.close();

@@ -1,0 +1,7 @@
+// Synthetic fixture only, before diagnostic production build.
+import fs from 'node:fs';
+import {getDb} from '@/lib/db/sqlite';
+const db=getDb();
+db.prepare("INSERT OR REPLACE INTO classes_sessions(classId,className,sessionId,sessionNumber,date) VALUES('VT-C4K-JSB88','SYNTHETIC_BUILD_FIXTURE','VT-C4K-JSB88_SESS_1',1,'2026-10-30')").run();
+fs.writeFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!,JSON.stringify([{classCode:'VT-C4K-JSB88',className:'SYNTHETIC_BUILD_FIXTURE',status:'Running',currentSessionNumber:1}]));
+db.close();
