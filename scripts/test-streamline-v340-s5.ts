@@ -17,13 +17,25 @@ import { chromium } from "playwright";
 import postcss from "postcss";
 import {
   formatSpckSessionTitle,
+  getDb,
   isDefaultSpckProductTitle,
   studentRepo,
   stripSpckSessionSuffix,
   validateSpckTitleLength,
 } from "../src/lib/db/sqlite";
-import { SpckCommentGenerator } from "../src/lib/gemini/spck-comment";
+import {
+  detectLimitationEvidence,
+  detectPresentationEvidence,
+  SpckCommentGenerator,
+} from "../src/lib/gemini/spck-comment";
+import { parseCodeBuffer } from "../src/lib/file-parsers/code-reader";
 import { DEFAULT_SPCK_THUMBNAIL_PATH } from "../src/lib/local-files/spck-scanner";
+import {
+  detectSpckCourseProfile,
+  getSpckQuickTagGroups,
+  isLimitationOrNextStepQuickTag,
+  isPresentationQuickTag,
+} from "../src/lib/spck/spck-quick-tags";
 
 const ROOT = process.cwd();
 
@@ -170,7 +182,329 @@ async function runTests() {
       ),
       `Nhận xét AI đầu ra phải lọc sạch nhãn nội bộ (Buổi 12/13/14, GĐ1/2): '${aiRes.formattedTeacherComment}' (S5b.8)`
     );
+
+    // =========================================================================
+    // [S5b-T5] Kiểm tra Quick Tags & Nhận xét AI theo đúng 6 nhóm môn học ở Buổi 12, 13, 14
+    // =========================================================================
+    console.log("\n[S5b-T5] Kiểm tra bộ Quick Tags & Nhận xét AI chuyên biệt cho 6 nhóm môn (Scratch, GameMaker, Python App, Web, Computer Science, Robotics)...");
+
+    const expectedPrefixTracks = [
+      ["VT-C4K-SB28", "SB", "SCRATCH", "SCRATCH_BASIC"],
+      ["HN-SA05", "SA", "SCRATCH", "SCRATCH_ADVANCE"],
+      ["HCM-SI12", "SI", "SCRATCH", "SCRATCH_MICROBIT"],
+      ["VT-GB10", "GB", "GAMEMAKER", "GAMEMAKER_BASIC"],
+      ["DN-GA04", "GA", "GAMEMAKER", "GAMEMAKER_GML"],
+      ["HCM-GI02", "GI", "GAMEMAKER", "GAMEMAKER_FSM"],
+      ["VT-PTB09", "PTB", "PYTHON_APP", "PYTHON_CLI"],
+      ["VT-PTA11", "PTA", "PYTHON_APP", "PYTHON_GUI"],
+      ["HCM-PTI03", "PTI", "PYTHON_APP", "PYTHON_GUI"],
+      ["VT-JSB16", "JSB", "WEB", "WEB_BASIC"],
+      ["HN-JSA08", "JSA", "WEB", "WEB_JS"],
+      ["HCM-JSI04", "JSI", "WEB", "WEB_FIREBASE"],
+      ["VT-CSB03", "CSB", "COMPUTER_SCIENCE", "CS_ALGO"],
+      ["HN-CSA06", "CSA", "COMPUTER_SCIENCE", "CS_DATA_STREAMLIT"],
+      ["HCM-CSI02", "CSI", "COMPUTER_SCIENCE", "CS_AI_STREAMLIT"],
+      ["VT-PREB14", "PREB", "ROBOTICS", "ROBOTICS_VEXGO"],
+      ["VT-PREA05", "PREA", "ROBOTICS", "ROBOTICS_VEXGO"],
+      ["VT-PREI02", "PREI", "ROBOTICS", "ROBOTICS_VEXGO"],
+      ["VT-ARMB03", "ARMB", "ROBOTICS", "ROBOTICS_VEXIQ"],
+      ["VT-ARMA02", "ARMA", "ROBOTICS", "ROBOTICS_VEXIQ"],
+      ["VT-ARMI01", "ARMI", "ROBOTICS", "ROBOTICS_VEXIQ"],
+      ["VT-SEMIB02", "SEMIB", "ROBOTICS", "ROBOTICS_GENERAL"],
+      ["VT-SEMIA01", "SEMIA", "ROBOTICS", "ROBOTICS_GENERAL"],
+      ["VT-SEMII01", "SEMII", "ROBOTICS", "ROBOTICS_GENERAL"],
+      ["VT-ROB12", "ROB", "ROBOTICS", "ROBOTICS_GENERAL"],
+    ] as const;
+
+    for (const [sampleClassId, expPrefix, expTrack, expSubTrack] of expectedPrefixTracks) {
+      const prof = detectSpckCourseProfile(sampleClassId);
+      assert.strictEqual(
+        prof.coursePrefix,
+        expPrefix,
+        `Lớp ${sampleClassId} phải nhận diện đúng mã khóa ${expPrefix}`
+      );
+      assert.strictEqual(
+        prof.track,
+        expTrack,
+        `Lớp ${sampleClassId} phải nhận diện đúng nhóm môn ${expTrack}`
+      );
+      assert.strictEqual(
+        prof.subTrack,
+        expSubTrack,
+        `Lớp ${sampleClassId} phải nhận diện đúng phân nhánh ${expSubTrack}`
+      );
+
+      for (const sNum of [12, 13, 14] as const) {
+        const bundle = getSpckQuickTagGroups({
+          classId: sampleClassId,
+          sessionNumber: sNum,
+        });
+        assert.strictEqual(
+          bundle.groups.length,
+          2,
+          `Lớp ${sampleClassId} ở Buổi ${sNum} phải có đúng 2 hàng nhóm Quick Tags`
+        );
+        if (sNum === 12 || sNum === 13) {
+          assert.strictEqual(bundle.groups[0].id, "progress");
+          assert.strictEqual(bundle.groups[1].id, "next_step");
+          assert.strictEqual(bundle.groups[0].tags.length, 4);
+          assert.strictEqual(bundle.groups[1].tags.length, 3);
+          assert.ok(
+            bundle.optionalPresentationGroup &&
+              bundle.optionalPresentationGroup.tags.length === 2,
+            `Buổi ${sNum} phải có nhóm thẻ thuyết trình thử tùy chọn`
+          );
+          for (const progTag of bundle.groups[0].tags) {
+            assert.strictEqual(
+              isPresentationQuickTag(progTag),
+              false,
+              `Thẻ tiến độ '${progTag}' tuyệt đối không được nhận nhầm là thẻ thuyết trình (F01)`
+            );
+            assert.strictEqual(
+              detectPresentationEvidence([progTag], "", false),
+              false,
+              `Thẻ tiến độ '${progTag}' tuyệt đối không được bật detectPresentationEvidence (F01)`
+            );
+            assert.strictEqual(
+              isLimitationOrNextStepQuickTag(progTag),
+              false,
+              `Thẻ tiến độ '${progTag}' tuyệt đối không được nhận nhầm là thẻ hạn chế (F04)`
+            );
+            assert.strictEqual(
+              detectLimitationEvidence([progTag], ""),
+              false,
+              `Thẻ tiến độ '${progTag}' tuyệt đối không được bật detectLimitationEvidence (F04)`
+            );
+          }
+          for (const limTag of bundle.groups[1].tags) {
+            assert.strictEqual(
+              isPresentationQuickTag(limTag),
+              false,
+              `Thẻ định hướng '${limTag}' (kể cả nhắc chuẩn bị Slide cho buổi 14) không được coi là đã thuyết trình (F01)`
+            );
+            assert.strictEqual(
+              detectPresentationEvidence([limTag], "", false),
+              false,
+              `Thẻ định hướng '${limTag}' không được bật detectPresentationEvidence (F01)`
+            );
+            assert.strictEqual(
+              isLimitationOrNextStepQuickTag(limTag),
+              true,
+              `Thẻ định hướng '${limTag}' phải được nhận diện bởi isLimitationOrNextStepQuickTag`
+            );
+            assert.strictEqual(
+              detectLimitationEvidence([limTag], ""),
+              true,
+              `Thẻ định hướng '${limTag}' phải được detectLimitationEvidence nhận diện`
+            );
+          }
+        } else {
+          assert.strictEqual(bundle.groups[0].id, "presentation");
+          assert.strictEqual(bundle.groups[1].id, "product");
+          assert.ok(bundle.groups[0].tags.length >= 5);
+          assert.ok(bundle.groups[1].tags.length >= 5);
+          for (const presTag of bundle.groups[0].tags) {
+            assert.strictEqual(
+              isPresentationQuickTag(presTag),
+              true,
+              `Thẻ thuyết trình '${presTag}' phải được nhận diện bởi isPresentationQuickTag`
+            );
+            assert.strictEqual(
+              detectPresentationEvidence([presTag], "", false),
+              true,
+              `Chọn thẻ thuyết trình '${presTag}' phải tự kích hoạt detectPresentationEvidence = true kể cả khi cờ cũ là false`
+            );
+          }
+          for (const prodTag of bundle.groups[1].tags) {
+            assert.strictEqual(
+              isPresentationQuickTag(prodTag),
+              false,
+              `Thẻ sản phẩm '${prodTag}' tuyệt đối không được nhận nhầm là thẻ thuyết trình (F01)`
+            );
+            assert.strictEqual(
+              detectPresentationEvidence([prodTag], "", false),
+              false,
+              `Thẻ sản phẩm '${prodTag}' tuyệt đối không được bật detectPresentationEvidence (F01)`
+            );
+            const expectLim = /^🔧/u.test(prodTag);
+            assert.strictEqual(
+              isLimitationOrNextStepQuickTag(prodTag),
+              expectLim,
+              `Thẻ sản phẩm '${prodTag}' phải phân loại limitation = ${expectLim} (F04)`
+            );
+            assert.strictEqual(
+              detectLimitationEvidence([prodTag], ""),
+              expectLim,
+              `Thẻ sản phẩm '${prodTag}' phải có detectLimitationEvidence = ${expectLim} (F04)`
+            );
+          }
+        }
+      }
+    }
+
+    // Kiểm tra F05-R2: Bộ đọc CSV RFC-4180 (tối đa 5 dòng dữ liệu, ô có dấu phẩy trong ngoặc kép & ô nhiều dòng trong ngoặc kép)
+    {
+      const csv20 =
+        "name,score\n" +
+        Array.from({ length: 20 }, (_, i) => `STUDENT_${i},${i}`).join("\n");
+      const rBound = parseCodeBuffer(Buffer.from(csv20), "dataset.csv", ".csv");
+      assert.strictEqual(rBound.success, true);
+      assert.match(rBound.extractedText, /Số dòng dữ liệu: 20 \| Số cột: 2/);
+      const previewCount = rBound.extractedText
+        .split("\n")
+        .filter((x) => /^\s*\d+ \|/.test(x)).length;
+      assert.strictEqual(previewCount, 6);
+      assert.doesNotMatch(rBound.extractedText, /STUDENT_5,/);
+
+      const rQuotedHeader = parseCodeBuffer(
+        Buffer.from('"student,name",score\n"Nguyen, An",9'),
+        "quoted.csv",
+        ".csv"
+      );
+      assert.strictEqual(rQuotedHeader.success, true);
+      assert.deepStrictEqual(rQuotedHeader.summary.classes, ["student,name", "score"]);
+      assert.match(rQuotedHeader.extractedText, /Số dòng dữ liệu: 1 \| Số cột: 2/);
+
+      const rMultiline = parseCodeBuffer(
+        Buffer.from('name,note\nAn,"line1\nline2"\nBinh,ok'),
+        "multiline.csv",
+        ".csv"
+      );
+      assert.strictEqual(rMultiline.success, true);
+      assert.match(rMultiline.extractedText, /Số dòng dữ liệu: 2 \| Số cột: 2/);
+    }
+
+    // Kiểm tra AI Prompt & Sanitizer Buổi 14 cho các môn khác nhau (Scratch, GameMaker, Python PTB/PTA, CS CSA/CSB, Robotics PREB)
+    const subjectTestCases = [
+      {
+        classId: "VT-C4K-SB28",
+        expectPromptKeyword: "Scratch Basic (SB)",
+        forbidWebTerms: true,
+      },
+      {
+        classId: "VT-GA04",
+        expectPromptKeyword: "GameMaker Advance (GA)",
+        forbidWebTerms: true,
+      },
+      {
+        classId: "VT-PTB09",
+        expectPromptKeyword: "Python Basic (PTB)",
+        forbidWebTerms: true,
+      },
+      {
+        classId: "VT-PTA11",
+        expectPromptKeyword: "Python App PyQt6 (PTA)",
+        forbidWebTerms: true,
+      },
+      {
+        classId: "VT-CSB03",
+        expectPromptKeyword: "Computer Science Basic (CSB)",
+        forbidWebTerms: true,
+      },
+      {
+        classId: "VT-CSA06",
+        expectPromptKeyword: "Computer Science Advance - Data & Streamlit (CSA)",
+        forbidWebTerms: true,
+      },
+      {
+        classId: "VT-PREB14",
+        expectPromptKeyword: "Robotics VEX GO Basic (PREB)",
+        forbidWebTerms: true,
+      },
+      {
+        classId: "VT-JSB16",
+        expectPromptKeyword: "Web Basic (JSB)",
+        forbidWebTerms: false,
+      },
+    ];
+
+    globalThis.fetch = async () =>
+      Response.json({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    attitudeSummary:
+                      "STUDENT_01 đã hoàn thiện website sản phẩm cuối khóa với bố cục Flexbox rõ ràng.",
+                    productAndDesignEvaluation:
+                      "Em đã vận dụng kiến thức HTML, CSS, JavaScript để xây dựng các chức năng hoạt động ổn định.",
+                    technicalApplicationEvaluation:
+                      "Giáo viên đánh giá cao sự nỗ lực của em, tuy nhiên em cần tinh chỉnh thêm một số chi tiết nhỏ để sản phẩm hoàn thiện hơn.",
+                    presentationEvaluation:
+                      "STUDENT_01 chuẩn bị slide đẹp mắt, bố cục rõ ràng và trình bày tự tin trước lớp.",
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+    for (const tc of subjectTestCases) {
+      studentRepo.upsert({
+        studentId: "S5B_STU_01",
+        classId: tc.classId,
+        fullName: "Nguyễn Minh Khôi",
+        isActive: 1,
+      });
+      const s14Bundle = getSpckQuickTagGroups({
+        classId: tc.classId,
+        sessionNumber: 14,
+      });
+      const chosenPresTag = s14Bundle.groups[0].tags[0]; // Thẻ thuyết trình
+      const chosenProdTag = s14Bundle.groups[1].tags[0]; // Thẻ sản phẩm theo môn
+
+      const res14 = await SpckCommentGenerator.generateBatchSpckComments(
+        {
+          classId: tc.classId,
+          sessionNumber: 14,
+        },
+        [
+          {
+            studentId: "S5B_STU_01",
+            fullName: "Nguyễn Minh Khôi",
+            projectTitle: "Dự Án Cuối Khóa Thông Minh",
+            quickTags: [chosenPresTag, chosenProdTag],
+            teacherNote: "",
+            includePresentation: false, // Kiểm tra chọn thẻ thuyết trình tự bật nhận xét 2 phần!
+            attachments: [],
+          },
+        ]
+      );
+      assert.strictEqual(res14.length, 1);
+      const item14 = res14[0];
+      assert.strictEqual(item14.status, "WAITING_APPROVAL");
+      assert.strictEqual(
+        item14.hasPresentationEvidence,
+        true,
+        `Khi chọn thẻ thuyết trình '${chosenPresTag}' ở lớp ${tc.classId}, hasPresentationEvidence phải bằng true`
+      );
+      assert.ok(
+        item14.outboundPromptSample?.includes(tc.expectPromptKeyword),
+        `Prompt Buổi 14 của lớp ${tc.classId} phải chứa hướng dẫn chuyên môn '${tc.expectPromptKeyword}'`
+      );
+      assert.ok(
+        item14.formattedTeacherComment.includes("1. Về phần thuyết trình") &&
+          item14.formattedTeacherComment.includes("2. Về phần sản phẩm cuối khóa"),
+        `Nhận xét Buổi 14 khi chọn thẻ thuyết trình phải xuất đúng cấu trúc 2 phần cho lớp ${tc.classId}`
+      );
+      if (tc.forbidWebTerms) {
+        assert.ok(
+          !/\b(website|Flexbox|HTML,\s*CSS)\b/i.test(item14.formattedTeacherComment),
+          `Nhận xét đầu ra của môn ${tc.classId} phải tự động lọc sạch thuật ngữ Web bịa đặt (website/Flexbox/HTML, CSS): '${item14.formattedTeacherComment}'`
+        );
+      }
+    }
+    console.log("  -> PASS [S5b-T5]: Bộ Quick Tags & Nhận xét AI chuyên biệt cho cả 6 nhóm môn (25 mã khóa) ở Buổi 12, 13, 14 hoạt động chính xác.");
   } finally {
+    try {
+      const dbConn = getDb();
+      dbConn.prepare(`DELETE FROM spck_session_submissions WHERE studentId = 'S5B_STU_01'`).run();
+      dbConn.prepare(`DELETE FROM spck_uploads WHERE studentId = 'S5B_STU_01'`).run();
+      dbConn.prepare(`DELETE FROM students WHERE studentId = 'S5B_STU_01'`).run();
+    } catch {}
     globalThis.fetch = originalFetch;
     if (originalApiKey === undefined) {
       delete process.env.GEMINI_API_KEY;
@@ -961,6 +1295,17 @@ async function runTests() {
     console.log("\n[S5b-T2] Kiểm tra S5b.3 (Chỉ 1 nơi chứa nút công cụ; chỉ hiện nút '🔄 Thử lại' trên dòng bị lỗi)...");
     await page.locator('button:has-text("Chi tiết ▾")').first().click();
 
+    // Kiểm tra UI Quick Tags ở Buổi 13 (lớp VT-C4K-JSB15 -> Web Basic (JSB)):
+    // Phải hiển thị 2 nhóm: "🟢 Tiến độ & Phần đã làm được" + "🟠 Phần cần hoàn thiện tiếp theo", và ẩn nhóm thuyết trình thử khi chưa tích checkbox
+    const expandedRow13Text = await page.locator("#root").innerText();
+    assert.ok(
+      expandedRow13Text.includes("🏷️ Web Basic (JSB) • Buổi 13") &&
+        expandedRow13Text.includes("🟢 Tiến độ & Phần đã làm được") &&
+        expandedRow13Text.includes("🟠 Phần cần hoàn thiện tiếp theo") &&
+        !expandedRow13Text.includes("🎤 Kỹ năng thuyết trình thử"),
+      "Ở Buổi 13 khi chưa tích thuyết trình, phải hiển thị đúng 2 hàng Quick Tags theo môn (Tiến độ + Cần hoàn thiện) và ẩn thẻ thuyết trình"
+    );
+
     const retryDriveCountBeforeError = await page
       .locator('button:has-text("🔄 Thử lại Up Drive & Gắn Link")')
       .count();
@@ -1031,6 +1376,13 @@ async function runTests() {
     await page.waitForSelector('button:has-text("📦 Tab 1: Sản phẩm SPCK (Cột 3)")', {
       timeout: 5000,
     });
+    const expandedRow14Tab1Text = await page.locator("#root").innerText();
+    assert.ok(
+      expandedRow14Tab1Text.includes("🏷️ Web Basic (JSB) • Buổi 14") &&
+        expandedRow14Tab1Text.includes("🎤 1. Về phần thuyết trình & Slide") &&
+        expandedRow14Tab1Text.includes("🏆 2. Về sản phẩm cuối khóa — Web Basic (JSB)"),
+      "Ở Buổi 14 (Tab 1), phải hiển thị 2 hàng Quick Tags: 1. Về phần thuyết trình & Slide và 2. Về sản phẩm cuối khóa theo đúng môn học"
+    );
     await page.waitForSelector(
       'button:has-text("🏅 Tab 2: Điểm Demo, ĐNL & Thư 3 phần (Cột 2)")',
       { timeout: 5000 }

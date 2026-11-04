@@ -63,7 +63,9 @@ export async function POST(request: NextRequest) {
         });
       }
     } else if (body?.milestoneTaskCount !== undefined) {
-      // Bulk milestone helper: sets tasks 1..milestoneTaskCount to 100% and remaining tasks to 0% (or leaves them if resetOthers=false)
+      // Bulk milestone helper:
+      // - Default (quick update, allowDecrease !== true): non-decreasing, only raises tasks 1..milestoneTaskCount to 100% and preserves existing higher progress.
+      // - Explicit decrease (resetOthers === true && allowDecrease === true): sets tasks 1..milestoneTaskCount to 100% and remaining tasks to 0%.
       const parsedMilestone = parseStrictTeachingProgressInput(
         body.milestoneTaskCount
       );
@@ -83,8 +85,84 @@ export async function POST(request: NextRequest) {
       }
       const milestoneCount = parsedMilestone;
       const resetOthers = body?.resetOthers === true;
+      const allowDecrease = body?.allowDecrease === true || milestoneCount === 0;
       const current = teachingProjectRepo.getOrInit(classCode);
       const tasks = normalizeTeachingProjectTasks(current.tasksJson, current.endDate);
+
+      let existingProgressMap: Record<string, number> = {};
+      try {
+        const parsedProg = JSON.parse(current.progressJson || "{}");
+        if (parsedProg && typeof parsedProg === "object" && !Array.isArray(parsedProg)) {
+          existingProgressMap = parsedProg as Record<string, number>;
+        }
+      } catch {
+        existingProgressMap = {};
+      }
+
+      let cachedStudents: Array<{ id: number; status?: string }> = [];
+      try {
+        const parsedStu = JSON.parse(current.studentsJson || "[]");
+        if (Array.isArray(parsedStu)) {
+          cachedStudents = parsedStu;
+        }
+      } catch {
+        cachedStudents = [];
+      }
+      const activeRosterIds = cachedStudents
+        .filter((s) => {
+          const st = String(s?.status || "").toLowerCase();
+          return !st.includes("bảo lưu") && !st.includes("nghỉ học");
+        })
+        .map((s) => Number(s.id))
+        .filter((id) => Number.isInteger(id) && id > 0);
+
+      let eligibleStudentIdSet: Set<number> | null = null;
+      if (body?.eligibleStudentIds !== undefined || body?.studentIds !== undefined) {
+        const rawIds = body?.eligibleStudentIds ?? body?.studentIds;
+        if (!Array.isArray(rawIds) || rawIds.length === 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Danh sách học viên đủ điều kiện (eligibleStudentIds) trống hoặc không hợp lệ.",
+            },
+            { status: 400 }
+          );
+        }
+        eligibleStudentIdSet = new Set<number>();
+        for (const rawId of rawIds) {
+          const parsedId = parseStrictPositiveIntInput(rawId);
+          if (parsedId === null) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: "Mã học viên trong eligibleStudentIds phải là số nguyên dương.",
+              },
+              { status: 400 }
+            );
+          }
+          eligibleStudentIdSet.add(parsedId);
+        }
+      } else if (
+        body?.verifiedSpckCount !== undefined &&
+        body?.expectedRosterCount !== undefined
+      ) {
+        const verifiedCount = Number(body.verifiedSpckCount);
+        const expectedCount = Number(body.expectedRosterCount);
+        if (
+          Number.isFinite(verifiedCount) &&
+          Number.isFinite(expectedCount) &&
+          expectedCount > 0 &&
+          verifiedCount < expectedCount
+        ) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Chưa đủ học viên hoàn thành bài nộp (${verifiedCount}/${expectedCount} học viên). Chỉ cập nhật tiến độ cả lớp khi đủ danh sách học viên đủ điều kiện.`,
+            },
+            { status: 400 }
+          );
+        }
+      }
 
       for (let i = 0; i < tasks.length; i++) {
         const t = tasks[i];
@@ -99,15 +177,51 @@ export async function POST(request: NextRequest) {
           );
         }
         const isCompletedSlot = i < milestoneCount;
-        if (!isCompletedSlot && !resetOthers) continue;
-        const pct = isCompletedSlot ? 100 : 0;
-        for (const sid of t.assignedStudentIds) {
+        // Quick milestone updates never reset higher slots unless both resetOthers and allowDecrease are explicitly enabled
+        if (!isCompletedSlot && !(resetOthers && allowDecrease)) continue;
+
+        const targetStudentIds = eligibleStudentIdSet
+          ? t.assignedStudentIds.filter((sid) => eligibleStudentIdSet!.has(sid))
+          : t.assignedStudentIds;
+
+        if (!eligibleStudentIdSet && activeRosterIds.length > 0 && isCompletedSlot) {
+          const assignedSet = new Set(t.assignedStudentIds);
+          const missingFromTask = activeRosterIds.filter(
+            (rid) => !assignedSet.has(rid)
+          );
+          if (missingFromTask.length > 0) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: `Công việc thứ ${i + 1} chưa giao đủ danh sách học viên đang học của lớp (thiếu ${missingFromTask.length} học viên). Để cập nhật riêng học viên đủ điều kiện, vui lòng truyền eligibleStudentIds hoặc giao đủ danh sách lớp.`,
+              },
+              { status: 400 }
+            );
+          }
+        }
+
+        const targetPct = isCompletedSlot ? 100 : 0;
+        for (const sid of targetStudentIds) {
+          const existingPct = Number(existingProgressMap[`${tid}_${sid}`] ?? 0);
+          const finalPct = allowDecrease
+            ? targetPct
+            : Math.max(Number.isFinite(existingPct) ? existingPct : 0, targetPct);
           updates.push({
             taskId: tid,
             studentId: sid,
-            progressPercent: pct,
+            progressPercent: finalPct,
           });
         }
+      }
+
+      if (updates.length === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Không có học viên hoặc công việc nào đủ điều kiện để cập nhật tiến độ.",
+          },
+          { status: 400 }
+        );
       }
     }
 

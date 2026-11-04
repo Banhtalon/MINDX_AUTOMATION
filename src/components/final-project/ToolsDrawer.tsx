@@ -68,7 +68,37 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
     handleCreateDemoScoringSheet,
     creatingDemoSheet,
     demoSheetTitle,
+    demoScoreSourceInput,
+    setDemoScoreSourceInput,
+    handleImportDemoScores,
+    importingDemoScores,
+    session14Evals,
+    setExpandedRowKeys,
+    setRowActiveTab,
+    autoRunToolsAfterScan,
   } = workflow;
+
+  const s14VerifiedCount = (session14Evals || []).filter(
+    (ev) => ev.status === "VERIFIED"
+  ).length;
+  const s14ReadyLetterCount = (session14Evals || []).filter(
+    (ev) =>
+      ev.learnedFromMindx?.trim() &&
+      ev.suggestionsFromMindx?.trim() &&
+      ev.futureDirection?.trim()
+  ).length;
+
+  const handleOpenAllTab2 = () => {
+    const nextExpanded: Record<string, boolean> = {};
+    rows.forEach((r, idx) => {
+      const key = r.folderPath || r.assignedStudentId || String(idx);
+      nextExpanded[key] = true;
+      if (r.assignedStudentId) {
+        setRowActiveTab(r.assignedStudentId, "eval14");
+      }
+    });
+    setExpandedRowKeys((prev) => ({ ...prev, ...nextExpanded }));
+  };
 
   return (
     <>
@@ -114,7 +144,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
             </button>
           )}
 
-          {isAppOrGameProduct && (
+          {!autoRunToolsAfterScan && isAppOrGameProduct && (
             <button
               type="button"
               onClick={() => handleCaptureAppScreenshots()}
@@ -133,7 +163,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
             </button>
           )}
 
-          {isWebClassOrProduct && (
+          {!autoRunToolsAfterScan && isWebClassOrProduct && (
             <button
               type="button"
               onClick={() => handleDeployWebToGithubPages()}
@@ -442,19 +472,57 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
             </div>
           </div>
 
-          {/* GitHub Pages Web Repo Config */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-              Kho GitHub Pages Chạy Thử Web Live (Dành cho sản phẩm Web có file .html — bấm nút &ldquo;Chạy Thử Web&rdquo; trên thanh công cụ Bước 2 để đẩy)
-            </label>
-            <input
-              type="text"
-              value={webRepoUrl}
-              onChange={(e) => setWebRepoUrl(e.target.value)}
-              disabled={isAnyOperationBusy}
-              placeholder="https://github.com/Banhtalon/WEB_PRODUCT_SHOW.git"
-              className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-indigo-500"
-            />
+          {/* GitHub Pages Web Repo Config & Manual Re-run Tools */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            <div className="md:col-span-6">
+              <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
+                Kho GitHub Pages Chạy Thử Web Live (Tự động đẩy sau khi Quét hoặc bấm chạy lại bên cạnh)
+              </label>
+              <input
+                type="text"
+                value={webRepoUrl}
+                onChange={(e) => setWebRepoUrl(e.target.value)}
+                disabled={isAnyOperationBusy}
+                placeholder="https://github.com/Banhtalon/WEB_PRODUCT_SHOW.git"
+                className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div className="md:col-span-6 flex flex-wrap items-center gap-2">
+              {isAppOrGameProduct && (
+                <button
+                  type="button"
+                  onClick={() => handleCaptureAppScreenshots()}
+                  disabled={isAnyOperationBusy || rows.length === 0}
+                  title="Chụp lại giao diện App (.ui) hoặc Website (.html) 16:9 cho cả lớp"
+                  className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  {capturingScreenshots ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <ImageIcon className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {isWebClassOrProduct ? "Chụp lại Giao Diện Web" : "Chụp lại Giao Diện App"}
+                  </span>
+                </button>
+              )}
+              {isWebClassOrProduct && (
+                <button
+                  type="button"
+                  onClick={() => handleDeployWebToGithubPages()}
+                  disabled={isAnyOperationBusy || !selectedClassId || rows.length === 0}
+                  title="Đẩy lại sản phẩm Web (.html) lên GitHub Pages và gắn Link chạy thử"
+                  className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  {deployingWeb ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Rocket className="w-3.5 h-3.5" />
+                  )}
+                  <span>Chạy Thử Web (GitHub Pages)</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -542,6 +610,65 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {selectedSessionNumber === 14 && selectedClassId && (
+        <div
+          data-testid="s14-step2-prep-bar"
+          className="mt-3 p-3.5 rounded-xl bg-slate-950/90 border border-indigo-500/40 space-y-2.5"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="font-bold text-indigo-300">
+                🏅 Chuẩn bị Điểm Demo &amp; Đánh giá Buổi 14:
+              </span>
+              <span className="text-slate-300">
+                Đã soạn Thư 3 phần:{" "}
+                <strong className="text-indigo-300">{s14ReadyLetterCount}</strong>/
+                {(session14Evals || []).length} • Đã lưu LMS:{" "}
+                <strong className="text-emerald-300">{s14VerifiedCount}</strong>/
+                {(session14Evals || []).length}
+              </span>
+            </div>
+
+            {rows.length > 0 && (
+              <button
+                type="button"
+                onClick={handleOpenAllTab2}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-indigo-500/60 text-indigo-200 text-xs font-bold cursor-pointer"
+              >
+                🏅 Mở Tab 2 (Điểm Demo &amp; Thư 3 phần) trên danh sách học viên
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="text-xs font-semibold text-indigo-300 shrink-0">
+              📊 File chấm điểm BGK (.xlsx hoặc Link Google Sheet):
+            </span>
+            <input
+              type="text"
+              value={demoScoreSourceInput}
+              onChange={(e) => setDemoScoreSourceInput(e.target.value)}
+              disabled={isAnyOperationBusy}
+              placeholder={
+                generatedDemoSheetUrl ||
+                "Để trống để tự tìm file 'Bảng chấm điểm buổi Demo.xlsx' trong thư mục lớp, hoặc dán đường dẫn/link Google Sheet..."
+              }
+              className="flex-1 min-w-[260px] px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono disabled:opacity-60"
+            />
+            <button
+              type="button"
+              disabled={isAnyOperationBusy}
+              onClick={() => handleImportDemoScores()}
+              className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer"
+            >
+              {importingDemoScores
+                ? "Đang đọc điểm..."
+                : "📥 Đọc Điểm Demo từ File Chấm Điểm"}
+            </button>
+          </div>
         </div>
       )}
     </>

@@ -1,0 +1,182 @@
+{
+  "time": "2026-11-03T04:45:08.245Z",
+  "passed": 19,
+  "failed": 0,
+  "checks": [
+    {
+      "id": "P01_nested_web_assets_and_valid_zip",
+      "status": "PASS"
+    },
+    {
+      "id": "P02_rescan_no_nested_zip",
+      "status": "PASS"
+    },
+    {
+      "id": "P03_deployer_depth2_and3_staging_privacy",
+      "status": "PASS"
+    },
+    {
+      "id": "P04_api_mixed_200_warning_valid_record",
+      "status": "PASS"
+    },
+    {
+      "id": "P05_api_all_invalid_400",
+      "status": "PASS"
+    },
+    {
+      "id": "P06_untouched_drafts_all_sessions_refresh",
+      "status": "PASS"
+    },
+    {
+      "id": "P07_commented_waiting_approved_verified_preserved",
+      "status": "PASS"
+    },
+    {
+      "id": "P08_stale_root_assets_removed_from_shared_pool",
+      "status": "PASS"
+    },
+    {
+      "id": "P09_root_htm_over10_must_bundle",
+      "status": "PASS"
+    },
+    {
+      "id": "P10_root_mjs_over10_must_bundle",
+      "status": "PASS"
+    },
+    {
+      "id": "P11_subfolder_mjs_must_bundle",
+      "status": "PASS"
+    },
+    {
+      "id": "P12_large_valid_source_must_not_disappear",
+      "status": "PASS"
+    },
+    {
+      "id": "P13_blank_root_html_must_be_ignored",
+      "status": "PASS"
+    },
+    {
+      "id": "P14_ui_preserves_approved_attachment_snapshot",
+      "status": "PASS"
+    },
+    {
+      "id": "P15_null_source_not_bundled",
+      "status": "PASS"
+    },
+    {
+      "id": "P16_large_html_capture_real_offline",
+      "status": "PASS"
+    },
+    {
+      "id": "P17_root_html_js_over10_bundles_correctly",
+      "status": "PASS"
+    },
+    {
+      "id": "P18_draft_teacher_note_or_comment_preserved",
+      "status": "PASS"
+    },
+    {
+      "id": "P19_draft_with_verified_history_preserved",
+      "status": "PASS"
+    }
+  ],
+  "observations": {
+    "nested": {
+      "attachments": [
+        "web_nested_web_package.zip"
+      ],
+      "entries": [
+        "CSS/style1.css",
+        "CSS/style10.css",
+        "CSS/style13.css",
+        "CSS/style4.css",
+        "CSS/style7.css",
+        "HTML/main/extra.csv",
+        "HTML/main/extra.htm",
+        "HTML/main/extra.json",
+        "HTML/main/extra.md",
+        "HTML/main/extra.mjs",
+        "HTML/main/extra.text",
+        "HTML/main/extra.txt",
+        "HTML/main/extra.xml",
+        "HTML/main/index.html",
+        "HTML/main/page12.html",
+        "HTML/main/page3.html",
+        "HTML/main/page6.html",
+        "HTML/main/page9.html",
+        "JS/file11.js",
+        "JS/file14.js",
+        "JS/file2.js",
+        "JS/file5.js",
+        "JS/file8.js"
+      ],
+      "screenshots": []
+    },
+    "mixed": {
+      "status": 200,
+      "warning": "[Tran Audit Loi]: Số lượng ảnh sản phẩm vượt quá giới hạn LMS (12/10 ảnh). Vui lòng bỏ bớt thay vì cắt tự động.",
+      "records": [
+        "AUDIT_GOOD"
+      ]
+    },
+    "staleRescan": {
+      "status": 200
+    },
+    "rootHtm": {
+      "attachments": [
+        "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-web-spck-audit-20261103-codex\\snapshot\\temp_submissions\\independent-web-probe\\RootHtm\\roothtm_web_package.zip"
+      ],
+      "warnings": [
+        "Chưa có ảnh sản phẩm trong thư mục (đã tự động lấy ảnh Logo MindX làm Thumbnail mặc định)."
+      ]
+    },
+    "rootMjs": {
+      "attachments": [
+        "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-web-spck-audit-20261103-codex\\snapshot\\temp_submissions\\independent-web-probe\\RootMjs\\rootmjs_web_package.zip"
+      ],
+      "warnings": [
+        "Chưa có ảnh sản phẩm trong thư mục (đã tự động lấy ảnh Logo MindX làm Thumbnail mặc định)."
+      ]
+    },
+    "nestedMjs": {
+      "attachments": [
+        "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-web-spck-audit-20261103-codex\\snapshot\\temp_submissions\\independent-web-probe\\NestedMjs\\nestedmjs_web_package.zip"
+      ]
+    },
+    "largeSource": {
+      "attachments": [
+        "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-web-spck-audit-20261103-codex\\snapshot\\temp_submissions\\independent-web-probe\\LargeSource\\index.html",
+        "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-web-spck-audit-20261103-codex\\snapshot\\temp_submissions\\independent-web-probe\\LargeSource\\large.js"
+      ],
+      "zipEntries": [],
+      "warnings": [
+        "Gói nén ZIP 'largesource_web_package.zip' bị hỏng cấu trúc: [Zip Bomb Protection] Phát hiện tỷ lệ nén bất thường (1025:1) tại 'large.js' trong 'largesource_web_package.zip'.",
+        "Chưa có ảnh sản phẩm trong thư mục (đã tự động lấy ảnh Logo MindX làm Thumbnail mặc định)."
+      ]
+    },
+    "blankRoot": {
+      "attachments": [
+        "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-web-spck-audit-20261103-codex\\snapshot\\temp_submissions\\independent-web-probe\\BlankRoot\\index.html"
+      ]
+    },
+    "uiApproved": {
+      "status": "APPROVED",
+      "dbAttachments": [
+        "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-web-spck-audit-20261103-codex\\snapshot\\temp_submissions\\independent-web-probe\\Mixed\\Nguyen Audit Tot\\index.html",
+        "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-web-spck-audit-20261103-codex\\snapshot\\temp_submissions\\independent-web-probe\\Mixed\\Nguyen Audit Tot\\new.js"
+      ],
+      "uiAttachments": [
+        "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-web-spck-audit-20261103-codex\\snapshot\\temp_submissions\\independent-web-probe\\Mixed\\Nguyen Audit Tot\\index.html",
+        "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-web-spck-audit-20261103-codex\\snapshot\\temp_submissions\\independent-web-probe\\Mixed\\Nguyen Audit Tot\\new.js"
+      ],
+      "hasNewerSharedResources": true
+    },
+    "largeCapture": {
+      "inputBytes": 16604112,
+      "screenshots": [
+        "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-web-spck-audit-20261103-codex\\snapshot\\temp_submissions\\independent-web-probe\\LargeCapture\\_spck_app_shots\\app_02_index_sec1_a30317.png"
+      ],
+      "thumbnail": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-web-spck-audit-20261103-codex\\snapshot\\temp_submissions\\independent-web-probe\\LargeCapture\\_spck_app_shots\\app_01_index_a84ae7.png"
+    }
+  }
+}

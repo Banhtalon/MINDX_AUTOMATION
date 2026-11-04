@@ -1,0 +1,44 @@
+﻿[
+    {
+        "exitCode":  0,
+        "command":  "npx --no-install tsc --noEmit --incremental false",
+        "name":  "tsc",
+        "seconds":  1.6308249,
+        "started":  "2026-11-03T11:44:16.5098442+07:00"
+    },
+    {
+        "exitCode":  0,
+        "command":  "npx --no-install tsx scripts/test-phase6.ts",
+        "name":  "test-phase6",
+        "seconds":  9.3684215,
+        "started":  "2026-11-03T11:44:18.1783120+07:00"
+    },
+    {
+        "exitCode":  0,
+        "command":  "npx --no-install tsx scripts/test-spck-v270.ts",
+        "name":  "test-spck-v270",
+        "seconds":  6.3122321,
+        "started":  "2026-11-03T11:44:27.5508372+07:00"
+    },
+    {
+        "exitCode":  0,
+        "command":  "npx --no-install tsx scripts/test-spck-v272.ts",
+        "name":  "test-spck-v272",
+        "seconds":  20.650163799999998,
+        "started":  "2026-11-03T11:44:33.8650598+07:00"
+    },
+    {
+        "exitCode":  0,
+        "command":  "npx --no-install tsx scripts/test-streamline-v340-s5.ts",
+        "name":  "test-streamline-v340-s5",
+        "seconds":  7.8213808,
+        "started":  "2026-11-03T11:44:54.5182157+07:00"
+    },
+    {
+        "exitCode":  0,
+        "command":  "npx --no-install tsx audit-probe.cts",
+        "name":  "probe",
+        "seconds":  5.9899558,
+        "started":  "2026-11-03T11:45:02.3564612+07:00"
+    }
+]

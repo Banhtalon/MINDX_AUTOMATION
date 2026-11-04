@@ -86,6 +86,10 @@ export function computeReportCardStaleness(
   if (evaluatedRows.length > 0) {
     if (!parsedSnapshot || scrapedAtMs === null) {
       hasNewerSession14 = true;
+    } else if (!Array.isArray(parsedSnapshot.students) || parsedSnapshot.students.length === 0) {
+      if (latestS14Ms !== null && latestS14Ms > scrapedAtMs) {
+        hasNewerSession14 = true;
+      }
     } else {
       const snapStudents = parsedSnapshot.students || [];
       const existingStudents = studentRepo.findByClass(cleanClassId, false);

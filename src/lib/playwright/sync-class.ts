@@ -9,6 +9,9 @@ import {
   studentRepo,
   jobLogRepo,
   getDb,
+  calculateSha256 as _calculateSha256,
+  computeSession14EvalHash as _computeSession14EvalHash,
+  session14EvalRepo as _session14EvalRepo,
   type ClassSessionRecord,
   type StudentRecord,
 } from "../db/sqlite";
@@ -456,6 +459,12 @@ export function resolveClassDateRangeInfo(
   };
 }
 
+export interface SyncClassOptions {
+  forceFreshDrawer?: boolean;
+  syncLmsCompletionStatus?: boolean;
+  preferLmsVerified?: boolean;
+}
+
 export interface SyncClassResult {
   success: boolean;
   classId: string;
@@ -465,9 +474,26 @@ export interface SyncClassResult {
   studentsCount: number;
   activeStudentsCount: number;
   latestActiveSessionId?: string;
+  lmsVerifiedSessionsCount?: number;
   sessions: ClassSessionRecord[];
   students: StudentRecord[];
   error?: string;
+}
+
+function stripLmsHtmlToPlainText(rawHtml?: string | null): string {
+  return String(rawHtml || "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(?:p|div|li|tr|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 export class ClassSyncer {
@@ -475,8 +501,13 @@ export class ClassSyncer {
    * Synchronizes class details, schedule/sessions, and student roster from LMS into SQLite.
    * Locked strictly by classCode / classId (normalized to UPPERCASE).
    */
-  public static async syncClass(rawClassCode: string): Promise<SyncClassResult> {
+  public static async syncClass(
+    rawClassCode: string,
+    options?: SyncClassOptions
+  ): Promise<SyncClassResult> {
     const classCode = rawClassCode.trim().toUpperCase();
+    const shouldSyncCompletion = options?.syncLmsCompletionStatus !== false;
+    const preferLmsVerified = options?.preferLmsVerified ?? Boolean(options?.forceFreshDrawer);
     const jobId = `sync_${classCode}_${Date.now()}`;
     jobLogRepo.add({
       jobId,
@@ -492,6 +523,73 @@ export class ClassSyncer {
         : (await browserManager.getContext()).pages()[0] ||
           (await (await browserManager.getContext()).newPage());
     const interceptor = createNetworkInterceptor(page);
+
+    let classByIdGqlData: any = null;
+    const freshClassByIdRequests = new Set<any>();
+    const pendingClassByIdTasks = new Set<Promise<void>>();
+    const canListenNetwork =
+      shouldSyncCompletion &&
+      typeof (page as any)?.on === "function" &&
+      typeof (page as any)?.off === "function";
+
+    const onRequest = (req: any) => {
+      try {
+        if (typeof req?.method === "function" && req.method() !== "POST") return;
+        const reqBody = req?.postDataJSON?.();
+        if (reqBody?.operationName === "GetClassById") {
+          freshClassByIdRequests.add(req);
+        }
+      } catch {}
+    };
+
+    const onResponse = async (res: any) => {
+      try {
+        const resUrl = typeof res?.url === "function" ? res.url() : "";
+        const reqObj = typeof res?.request === "function" ? res.request() : null;
+        if (!resUrl.includes("mindx.edu.vn") || !reqObj) return;
+        if (typeof reqObj.method === "function" && reqObj.method() !== "POST") return;
+        let reqBody: any;
+        try {
+          reqBody = reqObj.postDataJSON?.();
+        } catch {
+          return;
+        }
+        if (reqBody?.operationName !== "GetClassById") return;
+        if (freshClassByIdRequests.size > 0 && !freshClassByIdRequests.has(reqObj)) return;
+
+        const task = (async () => {
+          try {
+            const status = typeof res.status === "function" ? res.status() : 200;
+            if (status !== 200 && status !== 201) return;
+            const resJson = await res.json();
+            if (resJson && Array.isArray(resJson.errors) && resJson.errors.length > 0) return;
+            const clsPayload =
+              resJson?.data?.classesById ||
+              resJson?.data?.class ||
+              resJson?.data?.getClassById;
+            if (!clsPayload || typeof clsPayload !== "object") return;
+            const payloadCode = String(
+              clsPayload.name || clsPayload.code || clsPayload.classCode || ""
+            )
+              .trim()
+              .toUpperCase();
+            if (payloadCode && payloadCode !== classCode) return;
+            classByIdGqlData = clsPayload;
+          } catch {}
+        })();
+        pendingClassByIdTasks.add(task);
+        try {
+          await task;
+        } finally {
+          pendingClassByIdTasks.delete(task);
+        }
+      } catch {}
+    };
+
+    if (canListenNetwork) {
+      (page as any).on("request", onRequest);
+      (page as any).on("response", onResponse);
+    }
 
     try {
       // 1. Ensure authenticated on MindX LMS
@@ -569,6 +667,22 @@ export class ClassSyncer {
 
       await interceptor.dismissForbiddenToast();
 
+      // If forceFreshDrawer is requested on a real browser page, close any pre-existing drawer so GetClassById fires fresh
+      if (options?.forceFreshDrawer && typeof (page as any).keyboard?.press === "function") {
+        const preExistingDrawer = page
+          .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
+          .first();
+        if (await preExistingDrawer.isVisible().catch(() => false)) {
+          const backBtn = preExistingDrawer.locator('button:has-text("Back")').first();
+          if (await backBtn.isVisible().catch(() => false)) {
+            await backBtn.click({ force: true }).catch(() => {});
+          } else {
+            await (page as any).keyboard.press("Escape").catch(() => {});
+          }
+          await page.waitForTimeout(450);
+        }
+      }
+
       // 3. Open the drawer for target class
       jobLogRepo.add({
         jobId,
@@ -617,6 +731,35 @@ export class ClassSyncer {
         );
       }
 
+      if (pendingClassByIdTasks.size > 0) {
+        await Promise.allSettled(Array.from(pendingClassByIdTasks));
+      }
+
+      // Enrich missing session date ONLY for the latest active session (never future disabled slots, because class-directory.ts uses MAX(sessionNumber WHERE date <> '') to identify currentSessionNumber!)
+      if (Array.isArray(classByIdGqlData?.slots) && latestActiveSessionId) {
+        const activeSession = sessions.find((s) => s.sessionId === latestActiveSessionId);
+        if (activeSession && !activeSession.date) {
+          const slot = classByIdGqlData.slots.find(
+            (sl: any, idx: number) =>
+              (typeof sl?.index === "number" ? sl.index + 1 : idx + 1) ===
+              Number(activeSession.sessionNumber)
+          );
+          const rawSlotDate = slot?.startTime || slot?.date || slot?.startDate;
+          if (rawSlotDate) {
+            const ms =
+              parseClassDateToEndOfDayMs(String(rawSlotDate)) ??
+              (Number.isFinite(Date.parse(String(rawSlotDate)))
+                ? Date.parse(String(rawSlotDate))
+                : null);
+            if (ms !== null) {
+              activeSession.date = formatMsToDdMmYyyy(ms);
+            }
+          }
+        }
+      }
+
+      let lmsVerifiedSessionsCount = 0;
+
       // 6. Save all verified scraped records to SQLite atomically without deleting historical feedbacks
       const db = getDb();
       const saveTransaction = () => {
@@ -637,6 +780,20 @@ export class ClassSyncer {
         }
         for (const st of students) {
           studentRepo.upsert(st);
+        }
+        if (
+          shouldSyncCompletion &&
+          typeof (db as any)?.prepare === "function" &&
+          Array.isArray(classByIdGqlData?.slots) &&
+          classByIdGqlData.slots.length > 0
+        ) {
+          lmsVerifiedSessionsCount = this.syncLmsSlotCompletionToSqlite({
+            db,
+            classId,
+            students,
+            slots: classByIdGqlData.slots,
+            preferLmsVerified,
+          });
         }
       };
 
@@ -664,6 +821,7 @@ export class ClassSyncer {
         studentsCount: students.length,
         activeStudentsCount,
         latestActiveSessionId,
+        lmsVerifiedSessionsCount,
         sessions,
         students,
       };
@@ -686,7 +844,273 @@ export class ClassSyncer {
         students: [],
         error: errMsg,
       };
+    } finally {
+      if (canListenNetwork) {
+        try {
+          (page as any).off("request", onRequest);
+          (page as any).off("response", onResponse);
+        } catch {}
+      }
     }
+  }
+
+  /**
+   * Synchronizes already-completed LMS session comments & Session 14 evaluations from GetClassById.slots
+   * into SQLite so "📌 Việc cần làm hôm nay" reflects real-time LMS completion status.
+   */
+  public static syncLmsSlotCompletionToSqlite(params: {
+    db: any;
+    classId: string;
+    students: StudentRecord[];
+    slots: any[];
+    preferLmsVerified?: boolean;
+  }): number {
+    const { db, classId, students, slots, preferLmsVerified = false } = params;
+    if (!db || typeof db.prepare !== "function" || !Array.isArray(slots) || slots.length === 0) {
+      return 0;
+    }
+
+    const byId = new Map<string, StudentRecord>();
+    const slugCounts = new Map<string, number>();
+    const bySlug = new Map<string, StudentRecord>();
+    for (const st of students) {
+      byId.set(st.studentId, st);
+      const slug = typeof toVietnameseUpperSlug === "function" ? toVietnameseUpperSlug(st.fullName) : "";
+      if (slug) {
+        slugCounts.set(slug, (slugCounts.get(slug) || 0) + 1);
+        bySlug.set(slug, st);
+      }
+    }
+
+    const computeHashSafe = (text: string): string => {
+      if (typeof _calculateSha256 === "function") {
+        return _calculateSha256(text);
+      }
+      return `sha_${text.length}_${text.slice(0, 16)}`;
+    };
+
+    const selectFbStmt = db.prepare(
+      `SELECT status, finalText, attendanceStatus, verifiedAt
+       FROM session_feedbacks
+       WHERE classId = ? AND sessionId = ? AND studentId = ?`
+    );
+    const upsertFbVerifiedStmt = db.prepare(
+      `INSERT INTO session_feedbacks (
+         classId, sessionId, studentId, attendanceStatus,
+         quickTagsJson, teacherNote, strengths, improvements, actionPlan,
+         finalText, contentHash, status, verifiedAt, errorMessage, updatedAt
+       ) VALUES (
+         @classId, @sessionId, @studentId, @attendanceStatus,
+         '[]', '', '', '', '',
+         @finalText, @contentHash, 'VERIFIED', COALESCE(@verifiedAt, datetime('now', 'localtime')), NULL, datetime('now', 'localtime')
+       )
+       ON CONFLICT(classId, sessionId, studentId) DO UPDATE SET
+         attendanceStatus = excluded.attendanceStatus,
+         finalText = CASE WHEN TRIM(COALESCE(session_feedbacks.finalText, '')) <> '' THEN session_feedbacks.finalText ELSE excluded.finalText END,
+         contentHash = excluded.contentHash,
+         status = 'VERIFIED',
+         verifiedAt = COALESCE(session_feedbacks.verifiedAt, datetime('now', 'localtime')),
+         errorMessage = NULL,
+         updatedAt = datetime('now', 'localtime')`
+    );
+    const upsertFbAbsentStmt = db.prepare(
+      `INSERT INTO session_feedbacks (
+         classId, sessionId, studentId, attendanceStatus,
+         quickTagsJson, teacherNote, strengths, improvements, actionPlan,
+         finalText, contentHash, status, updatedAt
+       ) VALUES (
+         @classId, @sessionId, @studentId, 'ABSENT',
+         '[]', '', '', '', '',
+         '', '', 'DRAFT', datetime('now', 'localtime')
+       )
+       ON CONFLICT(classId, sessionId, studentId) DO UPDATE SET
+         attendanceStatus = 'ABSENT',
+         updatedAt = datetime('now', 'localtime')`
+    );
+
+    let verifiedSessionsCount = 0;
+
+    for (let idx = 0; idx < slots.length; idx++) {
+      const slot = slots[idx];
+      if (!slot || typeof slot !== "object") continue;
+      const sessionNumber = typeof slot.index === "number" ? slot.index + 1 : idx + 1;
+      if (sessionNumber < 1 || sessionNumber > 14) continue;
+      const sessionId = `${classId}_SESS_${String(sessionNumber).padStart(2, "0")}`;
+      const attendances = Array.isArray(slot.studentAttendance) ? slot.studentAttendance : [];
+      if (attendances.length === 0) continue;
+
+      let slotHasVerifiedStudent = false;
+      const verifiedStudentIdsInSlot = new Set<string>();
+
+      for (const att of attendances) {
+        if (!att || typeof att !== "object") continue;
+        const crmId = String(att?.student?.id || att?.studentId || "").trim();
+        const crmName = String(att?.student?.fullName || att?.fullName || "").trim();
+        const normSlug =
+          crmName && typeof toVietnameseUpperSlug === "function"
+            ? toVietnameseUpperSlug(crmName)
+            : "";
+        const matchedStudent =
+          (crmId ? byId.get(crmId) : undefined) ||
+          (normSlug && slugCounts.get(normSlug) === 1 ? bySlug.get(normSlug) : undefined);
+        if (!matchedStudent) continue;
+
+        const studentId = matchedStudent.studentId;
+        const rawStatus = String(att.status || "").trim().toUpperCase();
+        const lmsAttendance: "PRESENT" | "ABSENT" | "LATE" | "UNKNOWN" =
+          rawStatus === "ABSENT" || rawStatus === "EXCUSED"
+            ? "ABSENT"
+            : rawStatus === "LATE" || rawStatus === "LATE_ARRIVED"
+            ? "LATE"
+            : rawStatus === "ATTENDED" || rawStatus === "PRESENT"
+            ? "PRESENT"
+            : "UNKNOWN";
+
+        const areas: any[] = Array.isArray(att.commentByAreas) ? att.commentByAreas : [];
+        const contentAreas = areas
+          .filter((a) => String(a?.type || "").toUpperCase() === "CONTENT" && a?.content)
+          .map((a) => stripLmsHtmlToPlainText(a.content))
+          .filter(Boolean);
+        const lmsComment =
+          contentAreas.join("\n\n").trim() || stripLmsHtmlToPlainText(att.comment);
+
+        const existingFb = selectFbStmt.get(classId, sessionId, studentId) as
+          | {
+              status?: string;
+              finalText?: string;
+              attendanceStatus?: string;
+              verifiedAt?: string | null;
+            }
+          | undefined;
+
+        if (lmsComment.length > 0) {
+          const canMarkVerified =
+            !existingFb ||
+            existingFb.status === "VERIFIED" ||
+            !String(existingFb.finalText || "").trim() ||
+            (preferLmsVerified &&
+              existingFb.status !== "APPROVED" &&
+              existingFb.status !== "SAVING");
+
+          if (canMarkVerified) {
+            const effectiveText = String(existingFb?.finalText || "").trim() || lmsComment;
+            upsertFbVerifiedStmt.run({
+              classId,
+              sessionId,
+              studentId,
+              attendanceStatus:
+                lmsAttendance !== "UNKNOWN"
+                  ? lmsAttendance
+                  : existingFb?.attendanceStatus || "PRESENT",
+              finalText: effectiveText,
+              contentHash: computeHashSafe(effectiveText),
+              verifiedAt: existingFb?.verifiedAt || null,
+            });
+            slotHasVerifiedStudent = true;
+            verifiedStudentIdsInSlot.add(studentId);
+          }
+        } else if (lmsAttendance === "ABSENT") {
+          if (
+            !existingFb ||
+            (existingFb.status !== "APPROVED" &&
+              existingFb.status !== "SAVING" &&
+              existingFb.status !== "VERIFIED")
+          ) {
+            upsertFbAbsentStmt.run({
+              classId,
+              sessionId,
+              studentId,
+            });
+          }
+        }
+
+        // For Session 14: Also sync spck_session14_evaluations if LMS already has Session 14 evaluation content
+        if (
+          sessionNumber === 14 &&
+          lmsComment.length > 0 &&
+          typeof _session14EvalRepo?.getOrInit === "function" &&
+          typeof _computeSession14EvalHash === "function"
+        ) {
+          try {
+            const existingEval = _session14EvalRepo.findOne(classId, studentId);
+            const canVerifyEval =
+              !existingEval ||
+              existingEval.status === "VERIFIED" ||
+              !String(existingEval.learnedFromMindx || "").trim() ||
+              (preferLmsVerified &&
+                String(existingEval.status) !== "APPROVED" &&
+                String(existingEval.status) !== "SAVING");
+            if (canVerifyEval) {
+              const currentEval = _session14EvalRepo.getOrInit(classId, studentId);
+              const learned =
+                String(currentEval.learnedFromMindx || "").trim() ||
+                contentAreas[0] ||
+                lmsComment;
+              const suggestions =
+                String(currentEval.suggestionsFromMindx || "").trim() ||
+                contentAreas[1] ||
+                "Con tiếp tục phát huy tinh thần học tập tốt.";
+              const future =
+                String(currentEval.futureDirection || "").trim() ||
+                contentAreas[2] ||
+                "Tiếp tục hoàn thiện kỹ năng ở khóa học tiếp theo.";
+              const evalHash = _computeSession14EvalHash({
+                classId,
+                studentId,
+                competencyJson: currentEval.competencyJson,
+                competencyTotalScore: currentEval.competencyTotalScore,
+                demoScoresJson: currentEval.demoScoresJson,
+                demoTotalScore: currentEval.demoTotalScore,
+                learnedFromMindx: learned,
+                suggestionsFromMindx: suggestions,
+                futureDirection: future,
+                awardRanking: currentEval.awardRanking,
+              });
+              db.prepare(
+                `UPDATE spck_session14_evaluations
+                 SET learnedFromMindx = ?,
+                     suggestionsFromMindx = ?,
+                     futureDirection = ?,
+                     contentHash = ?,
+                     status = 'VERIFIED',
+                     verifiedAt = COALESCE(verifiedAt, datetime('now', 'localtime')),
+                     errorMessage = NULL,
+                     updatedAt = datetime('now', 'localtime')
+                 WHERE classId = ? AND studentId = ?`
+              ).run(learned, suggestions, future, evalHash, classId, studentId);
+            }
+          } catch {}
+        }
+      }
+
+      if (slotHasVerifiedStudent) {
+        if (preferLmsVerified) {
+          for (const st of students) {
+            if (!st.isActive || verifiedStudentIdsInSlot.has(st.studentId)) continue;
+            const existingFb = selectFbStmt.get(classId, sessionId, st.studentId) as
+              | {
+                  status?: string;
+                  finalText?: string;
+                }
+              | undefined;
+            if (
+              !existingFb ||
+              (existingFb.status === "DRAFT" &&
+                !String(existingFb.finalText || "").trim())
+            ) {
+              upsertFbAbsentStmt.run({
+                classId,
+                sessionId,
+                studentId: st.studentId,
+              });
+            }
+          }
+        }
+        verifiedSessionsCount++;
+      }
+    }
+
+    return verifiedSessionsCount;
   }
 
   /**

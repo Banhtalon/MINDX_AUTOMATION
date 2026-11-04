@@ -557,6 +557,7 @@ export function anonymizeSpckText(
     peerNames,
     peerToken: "STUDENT_PEER",
     redactSandboxTags: true,
+    redactContactInfo: true,
     matchJoinedFileNames: true,
     matchAllNameTokens: true,
   }).text;

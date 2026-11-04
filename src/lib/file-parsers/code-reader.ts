@@ -339,7 +339,112 @@ export function parseCodeBuffer(
     };
   }
 
-  // 5. SQL / Plain Text / Other code (.sql, .txt, .json, .md)
+  // 5. CSV Dataset (.csv) - RFC-4180 compliant bounded summary (header columns + row count + first 5 data rows)
+  if (ext === ".csv") {
+    const records: string[][] = [];
+    let currentRow: string[] = [];
+    let currentField = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < rawText.length; i++) {
+      const ch = rawText[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (rawText[i + 1] === '"') {
+            currentField += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          currentField += ch;
+        }
+      } else {
+        if (ch === '"' && currentField.trim().length === 0) {
+          currentField = "";
+          inQuotes = true;
+        } else if (ch === ",") {
+          currentRow.push(currentField);
+          currentField = "";
+        } else if (ch === "\r" || ch === "\n") {
+          if (ch === "\r" && rawText[i + 1] === "\n") {
+            i++;
+          }
+          currentRow.push(currentField);
+          currentField = "";
+          if (currentRow.some((cell) => cell.trim().length > 0)) {
+            records.push(currentRow);
+          }
+          currentRow = [];
+        } else {
+          currentField += ch;
+        }
+      }
+    }
+
+    if (inQuotes) {
+      return {
+        success: false,
+        subjectType: "TEXT",
+        extractedText: "",
+        summary: { fileName, extension: ext, lineCount: 0, functions: [], classes: [] },
+        errorReason: `File CSV '${fileName}' bị lỗi cú pháp (dấu ngoặc kép chưa đóng).`,
+      };
+    }
+
+    if (currentField.length > 0 || currentRow.length > 0) {
+      currentRow.push(currentField);
+      if (currentRow.some((cell) => cell.trim().length > 0)) {
+        records.push(currentRow);
+      }
+    }
+
+    if (records.length === 0) {
+      return {
+        success: false,
+        subjectType: "TEXT",
+        extractedText: "",
+        summary: { fileName, extension: ext, lineCount: 0, functions: [], classes: [] },
+        errorReason: `File CSV '${fileName}' không có dòng dữ liệu hợp lệ.`,
+      };
+    }
+
+    const headerRow = records[0] || [];
+    const columns = headerRow
+      .map((c) => c.replace(/\r?\n/g, " ").trim())
+      .filter(Boolean);
+    const previewLines = records
+      .slice(0, 6)
+      .map(
+        (row, i) =>
+          `${String(i + 1).padStart(3, " ")} | ${row
+            .map((cell) => cell.replace(/\r?\n/g, " ⏎ "))
+            .join(",")
+            .slice(0, 200)}`
+      )
+      .join("\n");
+    const dataRowCount = Math.max(0, records.length - 1);
+
+    return {
+      success: true,
+      subjectType: "TEXT",
+      extractedText: [
+        `=== CSV DATASET: ${fileName} ===`,
+        `Số dòng dữ liệu: ${dataRowCount} | Số cột: ${columns.length} (${columns.slice(0, 15).join(", ") || "Không xác định"})`,
+        `Mẫu dữ liệu đầu bảng (tối đa 5 dòng):`,
+        previewLines,
+      ].join("\n"),
+      summary: {
+        fileName,
+        extension: ext,
+        lineCount: records.length,
+        functions: [],
+        classes: columns.slice(0, 15),
+      },
+    };
+  }
+
+  // 6. SQL / Plain Text / Other code (.sql, .txt, .json, .md)
   const lines = rawText.split(/\r?\n/);
   const numberedCode = lines
     .map((line, i) => `${String(i + 1).padStart(3, " ")} | ${line}`)

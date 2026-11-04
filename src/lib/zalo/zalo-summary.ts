@@ -182,8 +182,61 @@ Làm bài tập về nhà trên Denise bao gồm:
 {{homeworkSummary}}
 ⏰ Hạn nộp: {{homeworkDeadline}}`;
 
+export const DEFAULT_ROBOTICS_ZALO_TEMPLATE = `📢 TỔNG KẾT BUỔI HỌC SỐ {{sessionNumberPad2}} – {{className}}
+@All Kính gửi Quý Phụ huynh,
+Giáo viên xin cập nhật tình hình học tập của các con sau buổi học số {{sessionNumberPad2}} – ngày {{sessionDate}}.
+👥 Sĩ số: {{totalStudentsPad2}} học viên | ✅ Hiện diện: {{presentStudentsPad2}} học viên
+📝 NỘI DUNG BUỔI HỌC
+📚 Bài {{sessionNumber}}: {{lessonTopicCasePreserved}}
+{{roboticsKeyKnowledge}}
+🌟 TÌNH HÌNH HỌC TẬP
+{{roboticsGeneralFeedback}}
+🏡 BÀI TẬP VỀ NHÀ
+{{roboticsHomeworkLines}}
+🗓 BUỔI HỌC TIẾP THEO – BUỔI {{nextSessionNumberPad2}}
+📚 Nội dung: Bài {{nextSessionNumber}} – {{nextSessionTopicCasePreserved}}
+⏰ {{roboticsNextSessionTime}}
+💖 Giáo viên chân thành cảm ơn Quý Phụ huynh đã luôn đồng hành và hỗ trợ các con trong quá trình học tập!`;
+
 /**
- * Xây dựng nội dung Thông báo Zalo Tổng kết Buổi học (Phần 1 chuẩn 6 mục + Phần 2 tùy chọn khi có ảnh BTVN).
+ * Nhận diện lớp Robotics để xuất đúng mẫu Thông báo Zalo Robotics.
+ */
+export function isRoboticsClassForZalo(classCode: string): boolean {
+  const upper = String(classCode || "").trim().toUpperCase();
+  if (!upper) return false;
+  return (
+    /\b(ROB|ROBOTICS|PREB|PREA|PREI|ARMB|ARMA|ARMI|SEMIB|SEMIA|SEMII|VEX)\w*/i.test(upper) ||
+    /(?:-|_)ROB|[A-Z]*ROB\d/i.test(upper)
+  );
+}
+
+function formatRoboticsHomeworkLines(rawHomework: string): string {
+  const trimmed = String(rawHomework || "").trim();
+  if (!trimmed) {
+    return [
+      "Ôn tập các câu lệnh và nguyên lý lắp ráp đã học trong buổi học.",
+      "Chuẩn bị bài cho buổi học tiếp theo.",
+    ].join("\n");
+  }
+  const existingLines = trimmed
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^(?:[-•*🔹+]\s*)+/, "").trim())
+    .filter(Boolean);
+  if (existingLines.length > 1) {
+    return existingLines.join("\n");
+  }
+  const singleLine = existingLines[0] || trimmed;
+  const sentences = singleLine
+    .split(
+      /(?<=[.!?])\s+(?=[A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ])/
+    )
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return (sentences.length > 0 ? sentences : [singleLine]).join("\n");
+}
+
+/**
+ * Xây dựng nội dung Thông báo Zalo Tổng kết Buổi học (Hỗ trợ cả mẫu Lập trình 6 mục & mẫu Robotics chuyên biệt + Phần 2 BTVN tùy chọn).
  */
 export function buildAutoZaloBroadcastText(params: BuildAutoZaloBroadcastParams): string {
   const sessions = Array.isArray(params.sessions) ? params.sessions : [];
@@ -214,22 +267,6 @@ export function buildAutoZaloBroadcastText(params: BuildAutoZaloBroadcastParams)
   const absentStudents = activeStudents.filter((s) => s.attendanceStatus === "ABSENT");
   const absentShortNames = absentStudents.map((s) => formatShortZaloName(s.fullName));
 
-  const attendanceStr = params.attendanceCountOverride
-    ? params.attendanceCountOverride
-    : hasUnconfirmedAttendance
-    ? `${totalStudents > 0 ? totalStudents : "..."} (chưa xác nhận đầy đủ điểm danh) ổn định đầu giờ tốt.`
-    : presentStudents === totalStudents
-    ? `${totalStudents}/${totalStudents} (đi học đầy đủ) ổn định đầu giờ tốt.`
-    : `${presentStudents}/${totalStudents} (vắng bạn ${
-        absentShortNames.length > 0
-          ? absentShortNames.join(", ")
-          : `${totalStudents - presentStudents} bạn`
-      }) ổn định đầu giờ tốt.`;
-
-  const generalFeedbackLine =
-    params.generalFeedbackOverride ||
-    "Các con nhớ bài tốt, tự giác trong quá trình học và năng nổ phát biểu, xây dựng bài trong buổi học.";
-
   const nextSessionNum = sessionNum + 1;
   const nextSess = sessions.find((s) => s.sessionNumber === nextSessionNum);
   const upperCode = String(params.classCode || "").trim().toUpperCase();
@@ -252,6 +289,122 @@ export function buildAutoZaloBroadcastText(params: BuildAutoZaloBroadcastParams)
       ? currentSyllabusSess!.keyKnowledge!
       : [effectiveTopic];
 
+  const rawNextDate = (nextSess?.date || nextSess?.sessionDate || "").trim();
+  const nextDateWithWeekday = rawNextDate
+    ? addDaysToDdMmYyyy(rawNextDate, 0) || `Ngày ${rawNextDate}`
+    : addDaysToDdMmYyyy(sessionDate, 7);
+
+  const rawHw =
+    params.currentHomeworkBrief !== undefined
+      ? params.currentHomeworkBrief
+      : currentSyllabusSess?.homeworkBrief || "";
+
+  // Nhánh 1: Mẫu Thông báo Zalo chuyên biệt cho lớp Robotics (VT-ROB-..., PREB/PREA/PREI, ARMB/ARMA/ARMI, SEMIB/SEMIA/SEMII)
+  if (isRoboticsClassForZalo(upperCode)) {
+    const sessionNumPad2 = String(sessionNum).padStart(2, "0");
+    const nextSessionNumPad2 = String(nextSessionNum).padStart(2, "0");
+    const totalPad2 = totalStudents > 0 ? String(totalStudents).padStart(2, "0") : "..";
+    const effectivePresentCount = hasUnconfirmedAttendance
+      ? Math.max(0, totalStudents - absentStudents.length)
+      : presentStudents;
+    const presentPad2 =
+      totalStudents > 0 ? String(effectivePresentCount).padStart(2, "0") : "..";
+    const absentSuffix =
+      !hasUnconfirmedAttendance && absentShortNames.length > 0
+        ? ` (Vắng: ${absentShortNames.join(", ")})`
+        : "";
+    const roboticsAttendanceLine = params.attendanceCountOverride
+      ? `👥 ${params.attendanceCountOverride}`
+      : `👥 Sĩ số: ${totalPad2} học viên | ✅ Hiện diện: ${presentPad2} học viên${absentSuffix}`;
+
+    const cleanTopicCasePreserved =
+      String(effectiveTopic || `Bài ${sessionNum}`)
+        .replace(/^(?:BÀI|BUỔI)\s+\d+\s*[-:–.]*\s*/i, "")
+        .trim() || `Bài học buổi ${sessionNum}`;
+
+    const roboticsKnowledgeLines = effectiveKnowledge
+      .map((item) => {
+        const cleanItem = String(item || "")
+          .trim()
+          .replace(/^(?:[-•*🔹+]\s*)+/, "")
+          .trim();
+        return cleanItem ? `🔹 ${cleanItem}` : "";
+      })
+      .filter(Boolean)
+      .join("\n");
+
+    const joinedKnowledge = effectiveKnowledge.join(" ");
+    const hasConditionLoopSensor =
+      /điều kiện|if\.\.\.else/i.test(joinedKnowledge) &&
+      /vòng lặp/i.test(joinedKnowledge) &&
+      /cảm biến/i.test(joinedKnowledge);
+
+    const roboticsGeneralFeedback =
+      params.generalFeedbackOverride ||
+      (hasConditionLoopSensor
+        ? `Trong buổi học số ${sessionNumPad2}, các con tham gia học tập nghiêm túc, tích cực trao đổi với giáo viên và thực hành các nhiệm vụ được giao. Qua bài học, các con được rèn luyện kỹ năng lắp ráp, tư duy logic và vận dụng câu lệnh điều kiện, vòng lặp cùng cảm biến vào lập trình mô hình.`
+        : `Trong buổi học số ${sessionNumPad2}, các con tham gia học tập nghiêm túc, tích cực trao đổi với giáo viên và thực hành các nhiệm vụ được giao. Qua bài học, các con được rèn luyện kỹ năng lắp ráp, tư duy logic và vận dụng kiến thức đã học vào chế tạo, lập trình mô hình.`);
+
+    const roboticsHomeworkBlock = formatRoboticsHomeworkLines(rawHw);
+
+    const cleanNextTopicCasePreserved =
+      String(
+        params.nextSessionTopicOverride ||
+          nextSyllabusSess?.topic ||
+          nextSess?.topic ||
+          `Nội dung buổi ${nextSessionNum}`
+      )
+        .replace(/^(?:BÀI|BUỔI)\s+\d+\s*[-:–.]*\s*/i, "")
+        .trim() || `Nội dung buổi ${nextSessionNum}`;
+
+    const roboticsNextTimeLine =
+      params.nextSessionTimeOverride ||
+      (nextDateWithWeekday
+        ? nextDateWithWeekday
+        : "Theo lịch học cố định của lớp (chưa xác nhận ngày cụ thể)");
+
+    const hasConfirmedDate =
+      Boolean(sessionDate) && sessionDate !== "chưa xác nhận ngày học";
+
+    const roboticsPart1 = `📢 TỔNG KẾT BUỔI HỌC SỐ ${sessionNumPad2} – ${upperCode}
+@All Kính gửi Quý Phụ huynh,
+Giáo viên xin cập nhật tình hình học tập của các con sau buổi học số ${sessionNumPad2}${
+      hasConfirmedDate ? ` – ngày ${sessionDate}` : ""
+    }.
+${roboticsAttendanceLine}
+📝 NỘI DUNG BUỔI HỌC
+📚 Bài ${sessionNum}: ${cleanTopicCasePreserved}
+${roboticsKnowledgeLines}
+🌟 TÌNH HÌNH HỌC TẬP
+${roboticsGeneralFeedback}
+🏡 BÀI TẬP VỀ NHÀ
+${roboticsHomeworkBlock}
+🗓 BUỔI HỌC TIẾP THEO – BUỔI ${nextSessionNumPad2}
+📚 Nội dung: Bài ${nextSessionNum} – ${cleanNextTopicCasePreserved}
+⏰ ${roboticsNextTimeLine}
+💖 Giáo viên chân thành cảm ơn Quý Phụ huynh đã luôn đồng hành và hỗ trợ các con trong quá trình học tập!`;
+
+    const activePart2 = String(params.part2Text || "").trim();
+    return activePart2 ? `${roboticsPart1}\n\n${activePart2}` : roboticsPart1;
+  }
+
+  // Nhánh 2: Mẫu Thông báo Zalo chuẩn 6 mục cho lớp Lập trình (Coding)
+  const attendanceStr = params.attendanceCountOverride
+    ? params.attendanceCountOverride
+    : hasUnconfirmedAttendance
+    ? `${totalStudents > 0 ? totalStudents : "..."} (chưa xác nhận đầy đủ điểm danh) ổn định đầu giờ tốt.`
+    : presentStudents === totalStudents
+    ? `${totalStudents}/${totalStudents} (đi học đầy đủ) ổn định đầu giờ tốt.`
+    : `${presentStudents}/${totalStudents} (vắng bạn ${
+        absentShortNames.length > 0
+          ? absentShortNames.join(", ")
+          : `${totalStudents - presentStudents} bạn`
+      }) ổn định đầu giờ tốt.`;
+
+  const generalFeedbackLine =
+    params.generalFeedbackOverride ||
+    "Các con nhớ bài tốt, tự giác trong quá trình học và năng nổ phát biểu, xây dựng bài trong buổi học.";
+
   const nextTopic = (
     params.nextSessionTopicOverride ||
     nextSyllabusSess?.topic ||
@@ -261,11 +414,6 @@ export function buildAutoZaloBroadcastText(params: BuildAutoZaloBroadcastParams)
     .replace(/^(?:BÀI|BUỔI)\s+\d+\s*:\s*/i, "")
     .trim()
     .toUpperCase();
-
-  const rawNextDate = (nextSess?.date || nextSess?.sessionDate || "").trim();
-  const nextDateWithWeekday = rawNextDate
-    ? addDaysToDdMmYyyy(rawNextDate, 0) || `Ngày ${rawNextDate}`
-    : addDaysToDdMmYyyy(sessionDate, 7);
 
   const nextTimeLine =
     params.nextSessionTimeOverride ||
@@ -298,10 +446,6 @@ export function buildAutoZaloBroadcastText(params: BuildAutoZaloBroadcastParams)
     "+ 10 câu hỏi trắc nghiệm.",
     "+ 2 bài thực hành (làm theo yêu cầu đề bài).",
   ];
-  const rawHw =
-    params.currentHomeworkBrief !== undefined
-      ? params.currentHomeworkBrief
-      : currentSyllabusSess?.homeworkBrief || "";
   const customHwTrimmed = String(rawHw || "")
     .trim()
     .replace(/^[+-]\s*/, "");

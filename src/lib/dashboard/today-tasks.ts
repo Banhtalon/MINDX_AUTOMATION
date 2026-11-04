@@ -6,6 +6,7 @@ import {
 import { getDb, normalizeTeachingProjectTasks } from "@/lib/db/sqlite";
 import { listClasses } from "@/lib/classes/class-directory";
 import { isCheckpointSession } from "@/lib/quick-tags";
+import { computeReportCardStaleness } from "@/lib/report-card/report-card-staleness";
 import { mapSessionToTeachingProgressMilestone } from "@/lib/teaching/session-progress-mapper";
 
 export interface TodayActionStep {
@@ -26,6 +27,7 @@ export interface ClassTodayTodoInput {
   syllabusList?: Array<Pick<CourseSyllabus, "courseCode" | "checkpointSessions">>;
   sessionCommentVerified?: boolean;
   reportCardVerified?: boolean;
+  reportCardStale?: boolean;
   spckSessionVerified?: Partial<Record<12 | 13 | 14, boolean>>;
   session14EvalVerified?: boolean;
   teachingProgressPercent?: number;
@@ -66,7 +68,8 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
       : isCheckpointSession(classId, sessionNum, input.syllabusList);
 
   const commentDone = Boolean(input.sessionCommentVerified);
-  const reportCardDone = Boolean(input.reportCardVerified);
+  const reportCardStale = Boolean(input.reportCardStale);
+  const reportCardDone = Boolean(input.reportCardVerified) && !reportCardStale;
   const spck12Done = Boolean(input.spckSessionVerified?.[12]);
   const spck13Done = Boolean(input.spckSessionVerified?.[13]);
   const spck14Done = Boolean(input.spckSessionVerified?.[14]);
@@ -98,7 +101,11 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
       {
         stepNumber: 3,
         label: "③ Phiếu điểm",
-        statusText: reportCardDone ? "đã đồng bộ Teaching ✓" : "quét & đồng bộ",
+        statusText: reportCardStale
+          ? "Cần quét và đồng bộ lại"
+          : reportCardDone
+          ? "đã đồng bộ Teaching ✓"
+          : "quét & đồng bộ",
         href: `/homework-grader?classId=${encodedClass}`,
         isDone: reportCardDone,
       },
@@ -215,7 +222,11 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
       {
         stepNumber: 2,
         label: `② Phiếu điểm Checkpoint`,
-        statusText: reportCardDone ? "đã đồng bộ Teaching ✓" : "quét & đồng bộ Teaching",
+        statusText: reportCardStale
+          ? "Cần quét và đồng bộ lại"
+          : reportCardDone
+          ? "đã đồng bộ Teaching ✓"
+          : "quét & đồng bộ Teaching",
         href: `/homework-grader?classId=${encodedClass}`,
         isDone: reportCardDone,
       }
@@ -230,7 +241,13 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
       isCheckpoint: true,
       summaryText: `Nhận xét buổi ${sessionNum} (${
         commentDone ? "đã đẩy LMS ✓" : "chưa đẩy LMS"
-      }) • Phiếu điểm Checkpoint (${reportCardDone ? "đã đồng bộ ✓" : "chưa đồng bộ"})`,
+      }) • Phiếu điểm Checkpoint (${
+        reportCardStale
+          ? "Cần quét và đồng bộ lại"
+          : reportCardDone
+          ? "đã đồng bộ ✓"
+          : "chưa đồng bộ"
+      })`,
       primaryHref: firstPending.href,
       steps,
       allDone: steps.every((s) => s.isDone),
@@ -298,14 +315,21 @@ export function getDashboardTodayTodoCards(options?: {
   limit?: number;
   includeSynthetic?: boolean;
 }): ClassTodayTodoCard[] {
-  const limit = options?.limit ?? 8;
+  const limit = options?.limit ?? 12;
   try {
     const db = getDb();
     const syllabusList = getCoursesSyllabus();
+    const rawRunningList = getRunningClasses() || [];
     const rawRunningMap = new Map(
-      (getRunningClasses() || []).map((r) => [
+      rawRunningList.map((r) => [
         String(r.classCode || "").trim().toUpperCase(),
         Number((r as any).currentSessionNumber) || 0,
+      ])
+    );
+    const rawRunningStatusMap = new Map(
+      rawRunningList.map((r) => [
+        String(r.classCode || "").trim().toUpperCase(),
+        String(r.status || "").trim().toUpperCase(),
       ])
     );
     const classes = listClasses({
@@ -338,19 +362,21 @@ export function getDashboardTodayTodoCards(options?: {
            LIMIT 1`
         )
         .get(classId, sessionNum) as { sessionId?: string } | undefined;
-      const resolvedSessionId =
-        sessionRow?.sessionId || `${classId}_SESS_${sessionNum}`;
+      const paddedSessionId = `${classId}_SESS_${String(sessionNum).padStart(2, "0")}`;
+      const unpaddedSessionId = `${classId}_SESS_${sessionNum}`;
+      const resolvedSessionId = sessionRow?.sessionId || paddedSessionId;
 
       const fbRows = db
         .prepare(
-          `SELECT studentId, status, attendanceStatus
+          `SELECT studentId, status, attendanceStatus, finalText
            FROM session_feedbacks
-           WHERE classId = ? AND sessionId = ?`
+           WHERE classId = ? AND sessionId IN (?, ?, ?)`
         )
-        .all(classId, resolvedSessionId) as Array<{
+        .all(classId, resolvedSessionId, paddedSessionId, unpaddedSessionId) as Array<{
         studentId?: string;
         status?: string;
         attendanceStatus?: string;
+        finalText?: string;
       }>;
       const fbByStudent = new Map(
         fbRows
@@ -366,11 +392,38 @@ export function getDashboardTodayTodoCards(options?: {
             .trim()
             .toUpperCase() !== "ABSENT"
       );
-      const sessionCommentVerified =
+      const hasAllStrictVerified =
         requiredPresentCommentStudentIds.length > 0 &&
         requiredPresentCommentStudentIds.every(
           (sid) => fbByStudent.get(sid)?.status === "VERIFIED"
         );
+      const hasVerifiedWithRealTextAndOnlyEmptyDrafts =
+        requiredPresentCommentStudentIds.length > 0 &&
+        requiredPresentCommentStudentIds.every((sid) => fbByStudent.has(sid)) &&
+        requiredPresentCommentStudentIds.some((sid) => {
+          const r = fbByStudent.get(sid);
+          return (
+            r?.status === "VERIFIED" &&
+            String(r?.finalText || "").trim().length > 0
+          );
+        }) &&
+        requiredPresentCommentStudentIds.every((sid) => {
+          const r = fbByStudent.get(sid);
+          if (!r) return false;
+          if (r.status === "VERIFIED") {
+            return String(r.finalText || "").trim().length > 0;
+          }
+          return (
+            r.status === "DRAFT" &&
+            String(r.finalText || "").trim().length === 0
+          );
+        });
+      const isFinishedClass =
+        rawRunningStatusMap.get(classId) === "FINISHED";
+      const sessionCommentVerified =
+        isFinishedClass ||
+        hasAllStrictVerified ||
+        hasVerifiedWithRealTextAndOnlyEmptyDrafts;
 
       const spckRows = db
         .prepare(
@@ -453,11 +506,56 @@ export function getDashboardTodayTodoCards(options?: {
 
       const reportCardRow = db
         .prepare(
-          `SELECT status FROM class_report_cards
+          `SELECT status, teachingSyncStatus, lmsSnapshotJson, teachingSyncedAt, updatedAt
+           FROM class_report_cards
            WHERE classId = ?
            LIMIT 1`
         )
-        .get(classId) as { status?: string } | undefined;
+        .get(classId) as
+        | {
+            status?: string;
+            teachingSyncStatus?: string;
+            lmsSnapshotJson?: string;
+            teachingSyncedAt?: string | null;
+            updatedAt?: string;
+          }
+        | undefined;
+
+      let parsedSnapshot: { scrapedAt?: string } | null = null;
+      if (reportCardRow?.lmsSnapshotJson) {
+        try {
+          const parsed = JSON.parse(reportCardRow.lmsSnapshotJson);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+            parsedSnapshot = parsed as { scrapedAt?: string };
+          }
+        } catch {
+          parsedSnapshot = null;
+        }
+      }
+      const baselineScrapedAt =
+        parsedSnapshot?.scrapedAt ||
+        reportCardRow?.teachingSyncedAt ||
+        reportCardRow?.updatedAt ||
+        undefined;
+      const staleness = computeReportCardStaleness(
+        classId,
+        (baselineScrapedAt
+          ? { ...(parsedSnapshot || {}), scrapedAt: baselineScrapedAt }
+          : parsedSnapshot) as any
+      );
+      const wasReportCardVerified =
+        reportCardRow?.status === "VERIFIED" ||
+        reportCardRow?.teachingSyncStatus === "VERIFIED";
+      const reportCardStale =
+        !isFinishedClass &&
+        Boolean(
+          reportCardRow &&
+            (reportCardRow.teachingSyncStatus === "OUTDATED" ||
+              ((wasReportCardVerified ||
+                Boolean(reportCardRow.teachingSyncedAt) ||
+                Boolean(parsedSnapshot?.scrapedAt)) &&
+                staleness.isStale))
+        );
 
       const teachingProjRow = db
         .prepare(
@@ -487,14 +585,18 @@ export function getDashboardTodayTodoCards(options?: {
         currentSessionNumber: sessionNum,
         syllabusList,
         sessionCommentVerified,
-        reportCardVerified: reportCardRow?.status === "VERIFIED",
+        reportCardVerified:
+          isFinishedClass || (wasReportCardVerified && !reportCardStale),
+        reportCardStale,
         spckSessionVerified: {
-          12: checkSpckSessionVerified(12),
-          13: checkSpckSessionVerified(13),
-          14: checkSpckSessionVerified(14),
+          12: isFinishedClass || checkSpckSessionVerified(12),
+          13: isFinishedClass || checkSpckSessionVerified(13),
+          14: isFinishedClass || checkSpckSessionVerified(14),
         },
-        session14EvalVerified,
-        teachingProgressPercent,
+        session14EvalVerified: isFinishedClass || session14EvalVerified,
+        teachingProgressPercent: isFinishedClass
+          ? Math.max(100, teachingProgressPercent)
+          : teachingProgressPercent,
       });
     });
   } catch {

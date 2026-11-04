@@ -3339,17 +3339,20 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     max: number;
   }> = isRoboticsClass ? DEMO_SCORE_ITEMS_ROBOTICS_UI : DEMO_SCORE_ITEMS_UI;
 
-  const totalStepsCount = selectedSessionNumber === 14 ? 4 : 3;
+  const totalStepsCount = 3;
 
   const isWebClassOrProduct = useMemo(() => {
     const classText = `${selectedClassId} ${selectedClassMeta?.className || ""}`.toUpperCase();
     const hasWebClassCode = /\b(JSB|JSA|JSI|WEB|HTML)[A-Z0-9]*\b/.test(classText);
+    const hasNonWebTrackCode = /\b(PTA|PTI|CSI|CSA|GMA|GMI|SB|SA|SI)[A-Z0-9]*\b/.test(
+      classText
+    );
     const hasHtmlFiles = rows.some(
       (r) =>
-        (r.attachments || []).some((f) => /\.html?$/i.test(f)) ||
+        (r.attachments || []).some((f) => /(\.html?|_web_package\.zip)$/i.test(f)) ||
         /github\.io/i.test(r.relatedLinksText || "")
     );
-    return hasWebClassCode || hasHtmlFiles;
+    return hasWebClassCode || (!hasNonWebTrackCode && hasHtmlFiles);
   }, [selectedClassId, selectedClassMeta, rows]);
 
   const isAppOrGameProduct = useMemo(() => {
@@ -3359,7 +3362,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     );
     const hasAppFiles = rows.some((r) =>
       (r.attachments || []).some((f) =>
-        /\.(ui|py|sb3|apk|exe|gmx|yyz|rbxl|html?)$/i.test(f)
+        /(\.(ui|py|sb3|apk|exe|gmx|yyz|rbxl|html?)|_web_package\.zip)$/i.test(f)
       )
     );
     return hasAppClassCode || hasAppFiles || !isWebClassOrProduct;
@@ -3663,13 +3666,19 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       classText
     );
     const hasWebCode = /\b(JSB|JSA|JSI|WEB|HTML)[A-Z0-9]*\b/.test(classText);
-    const hasHtmlFiles = unapprovedRows.some((r) =>
-      (r.attachments || []).some((f) => /\.html?$/i.test(f))
+    const hasNonWebTrackCode = /\b(PTA|PTI|CSI|CSA|GMA|GMI|SB|SA|SI)[A-Z0-9]*\b/.test(
+      classText
     );
-    const isWeb = !isRobotics && !isCanvaOrDesign && (hasWebCode || hasHtmlFiles);
+    const hasHtmlFiles = unapprovedRows.some((r) =>
+      (r.attachments || []).some((f) => /(\.html?|_web_package\.zip)$/i.test(f))
+    );
+    const isWeb =
+      !isRobotics &&
+      !isCanvaOrDesign &&
+      (hasWebCode || (!hasNonWebTrackCode && hasHtmlFiles));
     const hasUiOrAppFiles = unapprovedRows.some((r) =>
       (r.attachments || []).some((f) =>
-        /\.(ui|py|sb3|apk|exe|gmx|yyz|rbxl|html?)$/i.test(f)
+        /(\.(ui|py|sb3|apk|exe|gmx|yyz|rbxl|html?)|_web_package\.zip)$/i.test(f)
       )
     );
     const hasAppCode = /\b(PTA|PTI|CSI|CSA|GMA|GMI|GAME|APP|PYTHON|SCRATCH)[A-Z0-9]*\b/.test(
@@ -3677,6 +3686,40 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     );
     const shouldCaptureScreenshots =
       !isRobotics && !isCanvaOrDesign && (isWeb || hasAppCode || hasUiOrAppFiles);
+
+    const hasRowFileDrift = (r: ScannedFolderUIItem): boolean =>
+      Boolean(
+        Object.values(r.sessionHistory?.sessions || {}).some((s) => s?.hasFileDrift)
+      );
+
+    const idsNeedingScreenshots = unapprovedRows
+      .filter(
+        (r) =>
+          hasRowFileDrift(r) ||
+          !(
+            /_spck_(?:app_shots|owner_media)/i.test(r.thumbnailPath || "") &&
+            (r.screenshots || []).length > 0
+          )
+      )
+      .map((r) => r.assignedStudentId)
+      .filter(Boolean);
+
+    const idsNeedingWebDeploy = unapprovedRows
+      .filter(
+        (r) =>
+          hasRowFileDrift(r) || !/Link Web Chạy Thử/i.test(r.relatedLinksText || "")
+      )
+      .map((r) => r.assignedStudentId)
+      .filter(Boolean);
+
+    const idsNeedingDriveUpload = unapprovedRows
+      .filter(
+        (r) =>
+          hasRowFileDrift(r) ||
+          !/Link Google Drive SPCK/i.test(r.relatedLinksText || "")
+      )
+      .map((r) => r.assignedStudentId)
+      .filter(Boolean);
 
     let currentRows = scannedItems;
     const steps: Array<{
@@ -3695,13 +3738,13 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       });
     }
 
-    if (shouldCaptureScreenshots) {
+    if (shouldCaptureScreenshots && idsNeedingScreenshots.length > 0) {
       steps.push({
         label: isWeb
           ? "Đang chụp giao diện Web & chọn Thumbnail 16:9..."
           : "Đang chụp giao diện App & chọn Thumbnail 16:9...",
         run: async () =>
-          await handleCaptureAppScreenshots(unapprovedIds, {
+          await handleCaptureAppScreenshots(idsNeedingScreenshots, {
             skipApprovalConfirm: true,
             sourceRows: currentRows,
             classIdOverride: scanClassId,
@@ -3710,11 +3753,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       });
     }
 
-    if (isWeb && webRepoUrl.trim()) {
+    if (isWeb && webRepoUrl.trim() && idsNeedingWebDeploy.length > 0) {
       steps.push({
         label: "Đang đẩy sản phẩm Web lên GitHub Pages...",
         run: async () =>
-          await handleDeployWebToGithubPages(unapprovedIds, {
+          await handleDeployWebToGithubPages(idsNeedingWebDeploy, {
             skipApprovalConfirm: true,
             sourceRows: currentRows,
             classIdOverride: scanClassId,
@@ -3723,11 +3766,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       });
     }
 
-    if (driveFolderUrl.trim()) {
+    if (driveFolderUrl.trim() && idsNeedingDriveUpload.length > 0) {
       steps.push({
         label: "Đang tải sản phẩm lên Google Drive & gắn link...",
         run: async () =>
-          await handleUploadToGoogleDrive(unapprovedIds, {
+          await handleUploadToGoogleDrive(idsNeedingDriveUpload, {
             skipApprovalConfirm: true,
             sourceRows: currentRows,
             classIdOverride: scanClassId,

@@ -9,49 +9,49 @@
         "label": "✅ Tiếp thu tốt",
         "sentiment": "positive",
         "role": "good",
-        "hint": "Chăm chú nghe giảng, tiếp thu tốt kiến thức lập trình của buổi học và nắm vững nguyên lý bài giảng"
+        "hint": "Nắm bắt tốt khái niệm và nguyên lý lập trình trọng tâm của buổi học; hiểu rõ luồng hoạt động của bài toán và vận dụng đúng vào phần thực hành trên lớp"
       },
       {
         "id": "code_btap_day_du",
         "label": "📝 Làm bài tập đầy đủ",
         "sentiment": "positive",
         "role": "good",
-        "hint": "Thực hành nghiêm túc tại lớp và hoàn thành đầy đủ các bài tập lập trình theo đúng yêu cầu của buổi học"
+        "hint": "Thực hành nghiêm túc và hoàn thiện trọn vẹn các yêu cầu lập trình trong buổi học; sản phẩm hoặc bài code chạy đúng chức năng đề ra"
       },
       {
         "id": "code_hang_hai",
         "label": "🙋 Hăng hái phát biểu",
         "sentiment": "positive",
         "role": "positive",
-        "hint": "Thái độ học tập tích cực, sôi nổi giơ tay phát biểu xây dựng bài và chủ động trao đổi với thầy"
+        "hint": "Tương tác sôi nổi, chủ động đặt câu hỏi, trả lời vấn đáp hoặc chia sẻ cách giải quyết bài toán lập trình cùng thầy và các bạn"
       },
       {
         "id": "code_van_dung_sang_tao",
         "label": "💡 Vận dụng & Sáng tạo tốt",
         "sentiment": "positive",
         "role": "excellent",
-        "hint": "Tư duy lập trình nhạy bén, hoàn thành bài nhanh và chủ động vận dụng sáng tạo thêm tính năng mở rộng cho sản phẩm"
+        "hint": "Tư duy thuật toán nhạy bén, hoàn thành nhanh phần cơ bản và chủ động thử nghiệm, mở rộng thêm tính năng hoặc biến tấu sáng tạo cho bài thực hành"
       },
       {
         "id": "code_tiep_thu_cham",
         "label": "🐢 Tiếp thu chậm",
         "sentiment": "constructive",
         "role": "slow",
-        "hint": "Có cố gắng trong giờ học nhưng tốc độ tiếp thu kiến thức lập trình mới còn chậm, cần thầy hướng dẫn từng bước để hoàn thiện bài"
+        "hint": "Có tinh thần cố gắng nhưng cần thêm thời gian và sự hướng dẫn từng bước để nắm bắt khái niệm mới hoặc chuyển hóa yêu cầu đề bài thành các bước lập trình"
       },
       {
         "id": "code_mat_tap_trung",
         "label": "👀 Mất tập trung",
         "sentiment": "constructive",
         "role": "distracted",
-        "hint": "Trong giờ học đôi lúc còn xao nhãng, mất tập trung khi nghe giảng lý thuyết nên cần sự nhắc nhở sát sao hơn"
+        "hint": "Đôi lúc còn phân tâm hoặc gián đoạn sự chú ý khi nghe giảng và thực hành, cần thầy nhắc nhở để giữ nhịp độ theo kịp các bước của bài học"
       },
       {
         "id": "code_thao_tac_cham",
         "label": "⌨️ Thao tác / Cú pháp còn chậm",
         "sentiment": "constructive",
         "role": "improve",
-        "hint": "Hiểu được ý tưởng bài học nhưng thao tác gõ phím, viết cú pháp câu lệnh hoặc ghép khối lệnh còn chậm, đôi lúc còn nhầm lệnh nhỏ"
+        "hint": "Hiểu được ý tưởng bài học nhưng thao tác triển khai câu lệnh, sắp xếp khối lệnh hoặc rà soát cú pháp chi tiết còn chậm, cần luyện thêm để quen tay hơn"
       }
     ]
   },
@@ -61,46 +61,53 @@
     "track": "robotics",
     "tags": [
       {
-        "id": "rob_lap_rap_code_tot",
-        "label": "🤖 Lắp ráp & Lập trình tốt",
+        "id": "rob_lap_rap_dung_mau",
+        "label": "🔧 Lắp ráp đúng mẫu",
         "sentiment": "positive",
         "role": "good",
-        "hint": "Tập trung học tập, lắp ráp hoàn chỉnh mô hình robot chắc chắn theo bản vẽ và lập trình điều khiển robot vận hành tốt"
+        "hint": "Đọc hiểu hướng dẫn lắp ráp và hoàn thiện kết cấu cơ khí của mô hình trong bài học đúng cấu trúc, các khớp nối và bộ phận liên kết vững vàng"
       },
       {
-        "id": "rob_hang_hai",
-        "label": "🙋 Hăng hái phát biểu",
+        "id": "rob_lap_trinh_chay_dung",
+        "label": "💻 Lập trình chạy đúng",
+        "sentiment": "positive",
+        "role": "good",
+        "hint": "Thiết lập chương trình điều khiển, kết nối phần cứng và cấu hình thông số phù hợp giúp mô hình robot vận hành đúng yêu cầu nhiệm vụ của buổi học"
+      },
+      {
+        "id": "rob_chu_dong_thu_sua_loi",
+        "label": "🧠 Chủ động thử & sửa lỗi",
+        "sentiment": "positive",
+        "role": "excellent",
+        "hint": "Chủ động cho robot chạy thử nghiệm, quan sát thực tế để tự phát hiện và tinh chỉnh lại cơ cấu lắp ráp hoặc thông số lệnh giúp mô hình hoạt động tối ưu hơn"
+      },
+      {
+        "id": "rob_hop_tac_nhom_tot",
+        "label": "🤝 Hợp tác nhóm tốt",
         "sentiment": "positive",
         "role": "positive",
-        "hint": "Hào hứng tham gia giờ học, sôi nổi giơ tay phát biểu tìm hiểu nguyên lý cơ khí và tự tin chia sẻ ý tưởng"
+        "hint": "Phối hợp nhịp nhàng cùng bạn trong quá trình phân chia công việc lắp ráp - lập trình và có ý thức sắp xếp, bảo quản bộ linh kiện gọn gàng"
       },
       {
-        "id": "rob_nhom_giu_kit_tot",
-        "label": "🤝 Phối hợp nhóm & Giữ Kit tốt",
-        "sentiment": "positive",
-        "role": "positive",
-        "hint": "Phối hợp làm việc nhóm ăn ý với bạn cùng bàn và có ý thức phân loại, cất giữ linh kiện bộ kit gọn gàng sau buổi học"
-      },
-      {
-        "id": "rob_mat_tap_trung",
-        "label": "👀 Mất tập trung",
-        "sentiment": "constructive",
-        "role": "distracted",
-        "hint": "Đôi lúc còn xao nhãng, mất tập trung khi thầy hướng dẫn nguyên lý hoặc nghịch linh kiện riêng, cần tập trung hơn"
-      },
-      {
-        "id": "rob_lap_cham_nham_chot",
-        "label": "🔩 Lắp ráp còn chậm / Nhầm chốt",
+        "id": "rob_lap_rap_can_ho_tro",
+        "label": "🔩 Lắp ráp cần hỗ trợ",
         "sentiment": "constructive",
         "role": "slow",
-        "hint": "Có cố gắng nhưng thao tác tìm linh kiện và lắp ráp cơ khí còn chậm, đôi khi gắn nhầm chốt hoặc ngược chiều chi tiết cần quan sát kỹ bản vẽ 3D hơn"
+        "hint": "Có cố gắng thực hành nhưng thao tác tìm chi tiết, định hướng vị trí gắn hoặc hoàn thiện kết cấu cơ khí còn cần thầy hỗ trợ và hướng dẫn từng chặng"
       },
       {
-        "id": "rob_code_mach_lung_tung",
-        "label": "🔌 Lập trình / Đấu mạch còn lúng túng",
+        "id": "rob_lap_trinh_can_ho_tro",
+        "label": "🧩 Lập trình cần hỗ trợ",
         "sentiment": "constructive",
         "role": "improve",
-        "hint": "Lắp ráp phần khung mô hình được nhưng còn lúng túng khi cắm dây cổng động cơ/cảm biến hoặc thiết lập khối lệnh điều khiển robot"
+        "hint": "Cần thầy gợi ý thêm khi thiết lập luồng lệnh điều khiển, chọn thông số hoạt động hoặc kiểm tra kết nối giữa bộ não, động cơ và cảm biến của mô hình"
+      },
+      {
+        "id": "rob_can_nhac_tap_trung",
+        "label": "👀 Cần nhắc tập trung",
+        "sentiment": "constructive",
+        "role": "distracted",
+        "hint": "Đôi lúc còn phân tâm trong lúc nghe hướng dẫn nguyên lý hoặc dễ bị cuốn vào việc thử linh kiện riêng, cần thầy nhắc nhở để bám sát tiến độ chung"
       }
     ]
   },

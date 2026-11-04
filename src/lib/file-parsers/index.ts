@@ -51,6 +51,7 @@ const CODE_EXTENSIONS = new Set([
   ".sql",
   ".txt",
   ".json",
+  ".csv",
   ".md",
 ]);
 

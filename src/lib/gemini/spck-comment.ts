@@ -30,6 +30,13 @@ import {
   deAnonymizeSpckText,
   formatSpckStudentCallName,
 } from "../ai/pii-anonymizer";
+import {
+  detectSpckCourseProfile,
+  isCanonicalSpckQuickTag,
+  isLimitationOrNextStepQuickTag,
+  isPresentationQuickTag,
+  type SpckCourseProfile,
+} from "../spck/spck-quick-tags";
 import { stripVietnameseDiacritics } from "../utils/vietnamese-match";
 import { getGeminiModel } from "./client";
 
@@ -37,6 +44,7 @@ export {
   anonymizeSpckText,
   deAnonymizeSpckText,
   formatSpckStudentCallName,
+  detectSpckCourseProfile,
 };
 
 export interface SpckStudentCommentInput {
@@ -181,11 +189,20 @@ export function detectPresentationEvidence(
   includePresentationFlag?: boolean
 ): boolean {
   if (includePresentationFlag === true) return true;
+  if ((quickTags || []).some((t) => isPresentationQuickTag(t))) return true;
   if (includePresentationFlag === false) return false;
 
+  const nonCanonicalTags = (quickTags || []).filter((t) => !isCanonicalSpckQuickTag(t));
   const combined = stripVietnameseDiacritics(
-    [...(quickTags || []), teacherNote || ""].join(" | ")
+    [...nonCanonicalTags, teacherNote || ""].join(" | ")
   );
+  if (
+    /(?:can\s+(?:hoan\s*thien|chuan\s*bi|bo\s*sung|luyen\s*tap).*slide|cho\s+buoi\s*14)/i.test(
+      combined
+    )
+  ) {
+    return false;
+  }
   return /(?:thuyet\s*trinh|trinh\s*bay|bao\s*ve|phan\s*bien|tra\s*loi\s*cau\s*hoi|noi\s*to|noi\s*ro|phong\s*thai|tu\s*tin\s*trinh\s*bay|slide|dien\s*dat|giai\s*thich\s*code|khi\s*duoc\s*hoi|tu\s*tin\s*hon\s*truoc\s*lop)/i.test(
     combined
   );
@@ -195,10 +212,14 @@ export function detectPresentationEvidence(
  * Checks whether the teacher's tags or notes mention limitations / things still needing improvement.
  */
 export function detectLimitationEvidence(quickTags: string[], teacherNote: string): boolean {
+  if ((quickTags || []).some((t) => isLimitationOrNextStepQuickTag(t))) {
+    return true;
+  }
+  const nonCanonicalTags = (quickTags || []).filter((t) => !isCanonicalSpckQuickTag(t));
   const combined = stripVietnameseDiacritics(
-    [...(quickTags || []), teacherNote || ""].join(" | ")
+    [...nonCanonicalTags, teacherNote || ""].join(" | ")
   );
-  return /(?:han\s*che|chua\s*hoan\s*thien|can\s*cai\s*thien|can\s*bo\s*sung|con\s*loi|chua\s*muot|can\s*sua|thieu|chua\s*kip|can\s*hoan\s*thien)/i.test(
+  return /(?:han\s*che|chua\s*hoan\s*thien|can\s*cai\s*thien|can\s*bo\s*sung|con\s*loi|chua\s*muot|can\s*sua|thieu|chua\s*kip|can\s*hoan\s*thien|can\s*tinh\s*chinh|can\s*toi\s*uu|can\s*ra\s*soat|can\s*kiem\s*tra|can\s*trau\s*chuot|tien\s*do.*cham)/i.test(
     combined
   );
 }
@@ -259,16 +280,128 @@ export function extractSession12PriorEvidence(
 }
 
 /**
- * Safely reads a brief technical summary from up to 2 attachment files in the student's SPCK package.
+ * Builds subject-specific prompt guidance for Sessions 12, 13, and 14 across all 6 MindX tracks:
+ * SCRATCH (SB/SA/SI), GAMEMAKER (GB/GA/GI), PYTHON_APP (PTB vs PTA/PTI),
+ * WEB (JSB/JSA/JSI), COMPUTER_SCIENCE (CSB vs CSA/CSI), and ROBOTICS (PRE/ARM/SEMI/ROB).
+ */
+export function buildSubjectSpecificSpckInstruction(
+  profile: SpckCourseProfile,
+  sessionNumber: SpckSessionSlotNumber,
+  anonymousToken: string
+): string {
+  const headerLine = `- ĐẶC THÙ CHUYÊN MÔN MÔN HỌC (${profile.trackBadgeLabel} — loại sản phẩm: ${profile.productNoun}):`;
+
+  if (sessionNumber === 12 || sessionNumber === 13) {
+    switch (profile.track) {
+      case "SCRATCH":
+        return `${headerLine}
+  + Tập trung nhận xét đúng đặc thù dự án Scratch (${profile.coursePrefix}): thiết kế nhân vật (Sprites), sân khấu/phông nền (Backdrops), trang phục (Costumes), âm thanh và các kịch bản khối lệnh (${profile.subTrack === "SCRATCH_MICROBIT" ? "kết nối mạch Micro:bit, cảm biến nghiêng/nút bấm A-B, đèn LED ma trận, truyền tin Broadcast" : profile.subTrack === "SCRATCH_ADVANCE" ? "bản sao Clone, tự định nghĩa khối lệnh My Blocks, danh sách Lists, truyền thông điệp Broadcast, biến số" : "khối lệnh sự kiện, chuyển động, vòng lặp, điều kiện va chạm và biến điểm số"}).
+  + TUYỆT ĐỐI KHÔNG dùng thuật ngữ của môn khác (như HTML, CSS, Flexbox, Website, PyQt6, Streamlit).`;
+
+      case "GAMEMAKER":
+        return `${headerLine}
+  + Tập trung nhận xét đúng đặc thù dự án Game 2D trên GameMaker (${profile.coursePrefix}): thiết kế Sprites, Objects, bố cục màn chơi (Rooms/Tilesets), xử lý sự kiện & va chạm (${profile.subTrack === "GAMEMAKER_FSM" ? "máy trạng thái hữu hạn FSM Idle/Move/Attack, Camera & Viewports, hệ thống chiến đấu/Boss bằng GML" : profile.subTrack === "GAMEMAKER_GML" ? "lập trình ngôn ngữ GML, trọng lực, cơ chế di chuyển/bắn đạn, bộ đếm Alarm sinh quái và giao diện HUD" : "các sự kiện Create/Step/Collision, điểm số Score, mạng sống Lives và hiệu ứng âm thanh"}).
+  + TUYỆT ĐỐI KHÔNG dùng thuật ngữ của môn khác (như HTML, CSS, Flexbox, Website, PyQt6).`;
+
+      case "PYTHON_APP":
+        return profile.subTrack === "PYTHON_CLI"
+          ? `${headerLine}
+  + Tập trung nhận xét đúng đặc thù khóa Python Basic (PTB): xây dựng chương trình ứng dụng Python, tổ chức luồng menu chức năng, vận dụng biến, kiểu dữ liệu, cấu trúc rẽ nhánh if-elif-else, vòng lặp for/while, danh sách List/Dictionary, tách hàm (def) và kiểm tra dữ liệu đầu vào.
+  + TUYỆT ĐỐI KHÔNG bịa đặt giao diện web HTML/CSS/Flexbox hay Qt Designer nếu bài làm chỉ là chương trình Python.`
+          : `${headerLine}
+  + Tập trung nhận xét đúng đặc thù dự án Python App PyQt6 (${profile.coursePrefix}): thiết kế các màn hình giao diện trên Qt Designer, trang trí màu sắc/bố cục QSS, lập trình hướng đối tượng (OOP class), kết nối sự kiện Signal & Slot, chuyển đổi màn hình QStackedWidget, thông báo QMessageBox và xử lý dữ liệu JSON (Thêm/Sửa/Xóa/Tìm kiếm).
+  + TUYỆT ĐỐI KHÔNG dùng thuật ngữ của môn Web (như HTML, CSS, Flexbox, Website).`;
+
+      case "COMPUTER_SCIENCE":
+        return profile.subTrack === "CS_ALGO"
+          ? `${headerLine}
+  + Tập trung nhận xét đúng đặc thù khóa Computer Science Basic (CSB): thiết kế kiến trúc Hướng đối tượng (OOP), vận dụng thuật toán Tìm kiếm (Linear/Binary Search), thuật toán Sắp xếp (Sort), cấu trúc dữ liệu Stack/Queue và tối ưu hiệu năng xử lý dữ liệu trong Python.
+  + TUYỆT ĐỐI KHÔNG dùng thuật ngữ của môn Web (như HTML, CSS, Flexbox, Website).`
+          : `${headerLine}
+  + Tập trung nhận xét đúng đặc thù dự án Khoa học Máy tính (${profile.coursePrefix}): ${profile.subTrack === "CS_AI_STREAMLIT" ? "chuẩn bị và tiền xử lý dữ liệu, huấn luyện & đánh giá mô hình Machine Learning / Deep Learning / AI (Accuracy, F1-score, Confusion Matrix, OpenCV hoặc LLM) và tích hợp lên ứng dụng giao diện Streamlit" : "thu thập và làm sạch bộ dữ liệu với Pandas, phân tích khám phá (EDA), trực quan hóa biểu đồ (Matplotlib/Seaborn), mô hình Scikit-learn và xây dựng Dashboard tương tác trên Streamlit"}.
+  + TUYỆT ĐỐI KHÔNG dùng thuật ngữ của môn Web thuần (như HTML, CSS, Flexbox).`;
+
+      case "ROBOTICS":
+        return `${headerLine}
+  + Tập trung nhận xét đúng đặc thù dự án Robotics (${profile.trackBadgeLabel}): lắp ráp kết cấu cơ khí mô hình robot (${profile.subTrack === "ROBOTICS_VEXIQ" ? "khung gầm Drivetrain, cơ cấu tay gắp/nâng hạ, tỷ số truyền bánh răng VEX IQ, kết nối Smart Motors & cảm biến Gyro/Distance/Optical và lập trình VEXcode IQ" : profile.subTrack === "ROBOTICS_VEXGO" ? "khung cơ khí VEX GO, chốt nối, truyền động bánh răng/đòn bẩy, kết nối Brain & cảm biến Eye Sensor/Bumper và lập trình khối lệnh VEXcode GO" : "lắp ráp phần cứng cơ khí - điện tử, kết nối động cơ và cảm biến, lập trình kịch bản điều khiển tự động"}) và chạy thử nghiệm thực tế trên sa bàn.
+  + TUYỆT ĐỐI KHÔNG dùng thuật ngữ của môn phần mềm/Web (như giao diện màn hình, HTML, CSS, Flexbox, Website, tối ưu mã nguồn web).`;
+
+      case "WEB":
+        return `${headerLine}
+  + Tập trung nhận xét đúng đặc thù dự án Web (${profile.coursePrefix}): thiết kế giao diện các trang web, bố cục HTML5, CSS Flexbox/Grid, Bootstrap/Responsive, thanh điều hướng (${profile.subTrack === "WEB_FIREBASE" ? "xác thực người dùng Firebase Authentication, cơ sở dữ liệu thời gian thực Cloud Firestore CRUD, phân chia module JavaScript và tích hợp API/Chatbot" : profile.subTrack === "WEB_JS" ? "lập trình JavaScript ES6, thao tác DOM, lưu trữ LocalStorage cho Đăng nhập/Giỏ hàng, gọi dữ liệu Fetch API và tìm kiếm/lọc sản phẩm" : "liên kết đa trang, trình bày nội dung/hình ảnh và tương tác JavaScript DOM cơ bản"}).`;
+
+      default:
+        return `${headerLine}
+  + Nhận xét bám sát đề tài sản phẩm, các thành phần giao diện/mô hình và kỹ thuật lập trình thực tế học viên đã sử dụng.`;
+    }
+  }
+
+  // Session 14 (Tổng kết cuối khóa) subject-specific instructions:
+  const aiDependencyReminder = `nếu giáo viên có tích chọn hoặc ghi chú học viên còn phụ thuộc AI hoặc chưa hiểu sâu code thì nhắc nhở khéo léo ("Tuy nhiên, em còn phụ thuộc khá nhiều vào AI và chưa thực sự hiểu sâu phần cốt lõi của chương trình. Nếu chủ động tự tìm hiểu, tự viết và nắm rõ nguyên lý hoạt động của từng phần hơn, em sẽ phát huy tốt hơn năng lực của mình.")`;
+
+  switch (profile.track) {
+    case "SCRATCH":
+      return `${headerLine}
+  + Về phần sản phẩm cuối khóa (${profile.trackBadgeLabel}): mở đầu nêu rõ "${anonymousToken} đã hoàn thiện ${profile.productNoun} [Tên đề tài] với hình ảnh nhân vật và sân khấu sinh động, kịch bản rõ ràng...", phân tích cách em vận dụng ${profile.coreSkillsSummary} để xây dựng luồng tương tác và luật chơi hoàn chỉnh, ghi nhận sự sáng tạo và cố gắng của em; ${aiDependencyReminder}.
+  + TUYỆT ĐỐI KHÔNG nhắc đến HTML, CSS, Flexbox hay Website khi nhận xét lớp Scratch.`;
+
+    case "GAMEMAKER":
+      return `${headerLine}
+  + Về phần sản phẩm cuối khóa (${profile.trackBadgeLabel}): mở đầu nêu rõ "${anonymousToken} đã xây dựng và hoàn thiện ${profile.productNoun} [Tên đề tài] với tạo hình Sprites, bố cục màn chơi (Rooms) hợp lý và cơ chế gameplay cuốn hút...", phân tích cách em vận dụng ${profile.coreSkillsSummary} để xử lý chuyển động, va chạm và thử thách trong game, ghi nhận tư duy làm game và sự đầu tư của em; ${aiDependencyReminder}.
+  + TUYỆT ĐỐI KHÔNG nhắc đến HTML, CSS, Flexbox hay Website khi nhận xét lớp GameMaker.`;
+
+    case "PYTHON_APP":
+      return profile.subTrack === "PYTHON_CLI"
+        ? `${headerLine}
+  + Về phần sản phẩm cuối khóa (${profile.trackBadgeLabel}): mở đầu nêu rõ "${anonymousToken} đã xây dựng và hoàn thiện ${profile.productNoun} [Tên đề tài] với luồng chức năng mạch lạc, xử lý đúng yêu cầu đề bài...", phân tích cách em vận dụng ${profile.coreSkillsSummary} vào bài toán thực tế, ghi nhận tư duy logic và sự nỗ lực của em; ${aiDependencyReminder}.
+  + TUYỆT ĐỐI KHÔNG nhắc đến HTML, CSS, Flexbox hay Website khi nhận xét lớp Python.`
+        : `${headerLine}
+  + Về phần sản phẩm cuối khóa (${profile.trackBadgeLabel}): mở đầu nêu rõ "${anonymousToken} đã thiết kế và hoàn thiện ${profile.productNoun} [Tên đề tài] với bố cục các màn hình giao diện trực quan, hiện đại...", phân tích cách em vận dụng ${profile.coreSkillsSummary} để liên kết các màn hình chức năng và quản lý dữ liệu mượt mà, ghi nhận sự sáng tạo và tiến bộ của em; ${aiDependencyReminder}.
+  + TUYỆT ĐỐI KHÔNG nhắc đến HTML, CSS, Flexbox hay Website khi nhận xét lớp Python App PyQt6.`;
+
+    case "COMPUTER_SCIENCE":
+      return profile.subTrack === "CS_ALGO"
+        ? `${headerLine}
+  + Về phần sản phẩm cuối khóa (${profile.trackBadgeLabel}): mở đầu nêu rõ "${anonymousToken} đã xây dựng và hoàn thiện ${profile.productNoun} [Tên đề tài] với cấu trúc chương trình chặt chẽ, giải quyết bài toán rõ ràng...", phân tích cách em vận dụng ${profile.coreSkillsSummary} để xử lý và truy xuất dữ liệu hiệu quả, ghi nhận tư duy thuật toán và tinh thần học tập của em; ${aiDependencyReminder}.
+  + TUYỆT ĐỐI KHÔNG nhắc đến HTML, CSS, Flexbox hay Website cơ bản khi nhận xét lớp Computer Science.`
+        : `${headerLine}
+  + Về phần sản phẩm cuối khóa (${profile.trackBadgeLabel}): mở đầu nêu rõ "${anonymousToken} đã hoàn thiện ${profile.productNoun} [Tên đề tài] có tính ứng dụng thực tiễn cao...", phân tích cách em thực hiện ${profile.coreSkillsSummary} để phân tích, dự đoán và hiển thị kết quả trực quan trên giao diện Streamlit, ghi nhận tư duy dữ liệu/AI và sự đầu tư của em; ${aiDependencyReminder}.
+  + TUYỆT ĐỐI KHÔNG nhắc đến HTML, CSS, Flexbox khi nhận xét dự án Khoa học dữ liệu / AI.`;
+
+    case "ROBOTICS":
+      return `${headerLine}
+  + Về phần sản phẩm cuối khóa (${profile.trackBadgeLabel}): mở đầu nêu rõ "${anonymousToken} đã lắp ráp và hoàn thiện ${profile.productNoun} [Tên đề tài] với kết cấu cơ khí vững chắc, ý tưởng thiết kế sáng tạo...", phân tích cách em vận dụng ${profile.coreSkillsSummary} giúp robot vận hành thực tế ổn định và thực hiện tốt nhiệm vụ đề ra, ghi nhận kỹ năng thực hành kỹ thuật và sự cố gắng của em.
+  + TUYỆT ĐỐI KHÔNG nhắc đến giao diện web, HTML, CSS, Flexbox, hay tối ưu mã nguồn website khi nhận xét lớp Robotics.`;
+
+    case "WEB":
+      return `${headerLine}
+  + Về phần sản phẩm cuối khóa (${profile.trackBadgeLabel}): mở đầu nêu rõ "${anonymousToken} đã xây dựng/hoàn thiện ${profile.productNoun} [Tên đề tài] với giao diện đẹp mắt, bố cục rõ ràng/hợp lý...", nêu rõ cách em vận dụng ${profile.coreSkillsSummary} để hoàn thiện các trang chức năng và trải nghiệm người dùng, ghi nhận sự sáng tạo/cố gắng/tiến bộ; ${aiDependencyReminder}.`;
+
+    default:
+      return `${headerLine}
+  + Về phần sản phẩm cuối khóa: mở đầu nêu rõ "${anonymousToken} đã xây dựng và hoàn thiện sản phẩm cuối khóa [Tên đề tài] với cấu trúc rõ ràng, bố cục hợp lý...", phân tích cách em vận dụng ${profile.coreSkillsSummary} để hoàn thiện các tính năng chính, ghi nhận sự sáng tạo và nỗ lực của em; ${aiDependencyReminder}.`;
+  }
+}
+
+/**
+ * Safely reads a brief technical summary from the student's folder and up to 2 attachment files
+ * across all 6 MindX subject tracks (SCRATCH, GAMEMAKER, PYTHON_APP, WEB, COMPUTER_SCIENCE, ROBOTICS).
  */
 function buildPreliminaryProjectSummary(
   attachments: string[],
   studentFullName: string,
   anonymousToken: string,
   peerNames: string[],
-  localFolderPath?: string
-): string {
+  localFolderPath?: string,
+  extraMediaInfo?: { youtubeCount?: number; screenshotCount?: number }
+): { summaryText: string; detectedExtensions: string[] } {
   const summaries: string[] = [];
+  const detectedExts = new Set<string>();
+
+  for (const att of attachments || []) {
+    const ext = path.extname(String(att || "")).toLowerCase();
+    if (ext) detectedExts.add(ext);
+  }
 
   if (localFolderPath && localFolderPath.trim()) {
     try {
@@ -278,11 +411,28 @@ function buildPreliminaryProjectSummary(
         const htmlFiles: string[] = [];
         const cssFiles: string[] = [];
         const jsFiles: string[] = [];
+        const uiFiles: string[] = [];
+        const qssFiles: string[] = [];
+        const pyFiles: string[] = [];
+        const ipynbFiles: string[] = [];
+        const csvFiles: string[] = [];
+        const jsonFiles: string[] = [];
+        const sb3Files: string[] = [];
+        const gmFiles: string[] = [];
+        const roboticsFiles: string[] = [];
+
         const walkDir = (dir: string, depth = 0) => {
           if (depth > 3) return;
           const entries = fs.readdirSync(dir, { withFileTypes: true });
           for (const entry of entries) {
-            if (entry.name.startsWith("_spck_") || entry.name === "node_modules" || entry.name.startsWith(".")) {
+            if (
+              entry.name.startsWith("_spck_") ||
+              entry.name === "node_modules" ||
+              entry.name === "__pycache__" ||
+              entry.name === ".venv" ||
+              entry.name === "venv" ||
+              entry.name.startsWith(".")
+            ) {
               continue;
             }
             if (entry.isSymbolicLink()) continue;
@@ -299,19 +449,43 @@ function buildPreliminaryProjectSummary(
               walkDir(full, depth + 1);
             } else {
               const ext = path.extname(entry.name).toLowerCase();
+              if (ext) detectedExts.add(ext);
               if (ext === ".html" || ext === ".htm") htmlFiles.push(full);
               else if (ext === ".css") cssFiles.push(full);
               else if (ext === ".js") jsFiles.push(full);
+              else if (ext === ".ui") uiFiles.push(full);
+              else if (ext === ".qss") qssFiles.push(full);
+              else if (ext === ".py") pyFiles.push(full);
+              else if (ext === ".ipynb") ipynbFiles.push(full);
+              else if (ext === ".csv") csvFiles.push(full);
+              else if (ext === ".json" && !/^package(-lock)?\.json$/i.test(entry.name)) {
+                jsonFiles.push(full);
+              } else if (ext === ".sb3") sb3Files.push(full);
+              else if (ext === ".yyz" || ext === ".yyp" || ext === ".gml" || ext === ".yy") {
+                gmFiles.push(full);
+              } else if (
+                ext === ".vexblocks" ||
+                ext === ".iqblocks" ||
+                ext === ".v5blocks" ||
+                ext === ".ino"
+              ) {
+                roboticsFiles.push(full);
+              }
             }
           }
         };
         walkDir(safeDir, 0);
 
+        // 1. Web project summary (.html / .css / .js)
         if (htmlFiles.length > 0 || cssFiles.length > 0) {
           const pageTitles: string[] = [];
           let usesFlexbox = false;
           let usesGrid = false;
           let usesResponsive = false;
+          let usesBootstrap = false;
+          let usesLocalStorage = false;
+          let usesFetchApi = false;
+          let usesFirebase = false;
 
           for (const hf of htmlFiles.slice(0, 6)) {
             const rawHtml = fs.readFileSync(hf, "utf-8").slice(0, 12000);
@@ -323,6 +497,7 @@ function buildPreliminaryProjectSummary(
             }
             if (/display\s*:\s*flex|\bflex\b/i.test(rawHtml)) usesFlexbox = true;
             if (/display\s*:\s*grid|\bgrid\b/i.test(rawHtml)) usesGrid = true;
+            if (/bootstrap/i.test(rawHtml)) usesBootstrap = true;
           }
 
           for (const cf of cssFiles.slice(0, 4)) {
@@ -332,16 +507,29 @@ function buildPreliminaryProjectSummary(
             if (/@media\b/i.test(rawCss)) usesResponsive = true;
           }
 
-          const layoutTechs = [
+          for (const jf of jsFiles.slice(0, 5)) {
+            const rawJs = fs.readFileSync(jf, "utf-8").slice(0, 20000);
+            if (/localStorage/i.test(rawJs)) usesLocalStorage = true;
+            if (/\bfetch\s*\(|\baxios\b|\basync\b/i.test(rawJs)) usesFetchApi = true;
+            if (/firebase|firestore|signInWithEmailAndPassword|onAuthStateChanged/i.test(rawJs)) {
+              usesFirebase = true;
+            }
+          }
+
+          const webTechs = [
             usesFlexbox ? "Flexbox" : "",
             usesGrid ? "CSS Grid" : "",
+            usesBootstrap ? "Bootstrap" : "",
             usesResponsive ? "Responsive" : "",
+            usesLocalStorage ? "LocalStorage" : "",
+            usesFetchApi ? "Fetch API / Async" : "",
+            usesFirebase ? "Firebase Auth / Firestore" : "",
           ].filter(Boolean);
 
           const webHighlight = [
             `- Đặc trưng dự án Web: gồm ${htmlFiles.length} trang HTML${pageTitles.length > 0 ? ` (tiêu đề trang: ${Array.from(new Set(pageTitles)).slice(0, 3).join(", ")})` : ""}, ${cssFiles.length} file CSS, ${jsFiles.length} file JavaScript.`,
-            layoutTechs.length > 0
-              ? `- Kỹ thuật dàn trang phát hiện trong code: ${layoutTechs.join(", ")}.`
+            webTechs.length > 0
+              ? `- Kỹ thuật dàn trang & lập trình phát hiện trong code: ${webTechs.join(", ")}.`
               : "",
           ]
             .filter(Boolean)
@@ -351,14 +539,101 @@ function buildPreliminaryProjectSummary(
             anonymizeSpckText(webHighlight, studentFullName, anonymousToken, peerNames)
           );
         }
+
+        // 2. Python App / Computer Science summary (.ui / .qss / .py / .ipynb / .csv)
+        if (
+          uiFiles.length > 0 ||
+          qssFiles.length > 0 ||
+          pyFiles.length > 0 ||
+          ipynbFiles.length > 0 ||
+          csvFiles.length > 0
+        ) {
+          const detectedPyTechs = new Set<string>();
+          if (uiFiles.length > 0) detectedPyTechs.add(`${uiFiles.length} màn hình giao diện Qt Designer`);
+          if (qssFiles.length > 0) detectedPyTechs.add("trang trí giao diện QSS");
+          if (jsonFiles.length > 0) detectedPyTechs.add("lưu trữ dữ liệu JSON");
+          if (csvFiles.length > 0) detectedPyTechs.add(`${csvFiles.length} tập dữ liệu CSV`);
+          if (ipynbFiles.length > 0) detectedPyTechs.add(`${ipynbFiles.length} sổ tay phân tích Jupyter Notebook`);
+
+          for (const pf of [...pyFiles.slice(0, 5), ...ipynbFiles.slice(0, 3)]) {
+            const rawPy = fs.readFileSync(pf, "utf-8").slice(0, 30000);
+            if (/PyQt6|PyQt5|loadUi/i.test(rawPy)) detectedPyTechs.add("PyQt6 GUI");
+            if (/\.connect\s*\(|pyqtSignal/i.test(rawPy)) detectedPyTechs.add("Signal & Slot");
+            if (/QStackedWidget/i.test(rawPy)) detectedPyTechs.add("chuyển trang QStackedWidget");
+            if (/QMessageBox/i.test(rawPy)) detectedPyTechs.add("hộp thoại QMessageBox");
+            if (/^\s*class\s+[A-Za-z_]/m.test(rawPy)) detectedPyTechs.add("lập trình hướng đối tượng (OOP)");
+            if (/\bpandas\b|\bread_csv\b/i.test(rawPy)) detectedPyTechs.add("xử lý dữ liệu Pandas");
+            if (/\bmatplotlib\b|\bseaborn\b|\bplotly\b/i.test(rawPy)) {
+              detectedPyTechs.add("biểu đồ trực quan hóa dữ liệu");
+            }
+            if (/\bstreamlit\b|\bst\.(?:title|sidebar|columns|dataframe|plotly_chart|pyplot)/i.test(rawPy)) {
+              detectedPyTechs.add("ứng dụng Dashboard Streamlit");
+            }
+            if (/\bsklearn\b|\btrain_test_split\b|\bRandomForest|\bLinearRegression|\bLogisticRegression|\bKMeans/i.test(rawPy)) {
+              detectedPyTechs.add("mô hình học máy Scikit-learn");
+            }
+            if (/\btensorflow\b|\bkeras\b|\btorch\b|\bcv2\b|\bOpenCV\b/i.test(rawPy)) {
+              detectedPyTechs.add("mô hình Deep Learning / Thị giác máy tính");
+            }
+            if (/binary_search|linear_search|bubble_sort|quick_sort|merge_sort|selection_sort|insertion_sort/i.test(rawPy)) {
+              detectedPyTechs.add("thuật toán Tìm kiếm & Sắp xếp");
+            }
+          }
+
+          if (detectedPyTechs.size > 0) {
+            summaries.push(
+              anonymizeSpckText(
+                `- Đặc trưng dự án Python / Khoa học máy tính phát hiện trong thư mục: ${Array.from(detectedPyTechs).join(", ")}.`,
+                studentFullName,
+                anonymousToken,
+                peerNames
+              )
+            );
+          }
+        }
+
+        // 3. Scratch (.sb3) or GameMaker (.yyz/.gml) in folder when not already in attachments
+        for (const extraGameFile of [...sb3Files.slice(0, 1), ...gmFiles.slice(0, 1)]) {
+          if (!(attachments || []).includes(extraGameFile)) {
+            try {
+              const parsedGame = parseSubmissionFile(extraGameFile);
+              if (parsedGame.parseStatus === "PARSED" && parsedGame.extractedText) {
+                summaries.push(
+                  `- Tóm tắt dự án ${parsedGame.subjectType}: ${anonymizeSpckText(
+                    parsedGame.extractedText.slice(0, 700),
+                    studentFullName,
+                    anonymousToken,
+                    peerNames
+                  )}`
+                );
+              }
+            } catch {}
+          }
+        }
+
+        if (roboticsFiles.length > 0) {
+          summaries.push(
+            `- Phát hiện ${roboticsFiles.length} tệp chương trình điều khiển robot trong thư mục dự án.`
+          );
+        }
       }
     } catch {
       // Ignore folder scan error
     }
   }
 
+  if ((extraMediaInfo?.youtubeCount || 0) > 0) {
+    summaries.push(
+      `- Minh chứng vận hành & thuyết trình: có ${extraMediaInfo?.youtubeCount} video demo YouTube và ${extraMediaInfo?.screenshotCount || 0} hình ảnh chụp mô hình/sản phẩm.`
+    );
+  }
+
   if (!Array.isArray(attachments) || attachments.length === 0) {
-    return summaries.length > 0 ? summaries.join("\n") : "Không có file mã nguồn đính kèm.";
+    return {
+      summaryText:
+        summaries.length > 0 ? summaries.join("\n") : "Không có file mã nguồn đính kèm.",
+      detectedExtensions: Array.from(detectedExts),
+    };
   }
 
   const maxFilesToInspect = Math.min(2, attachments.length);
@@ -369,6 +644,7 @@ function buildPreliminaryProjectSummary(
       const safePath = assertPathAllowed(filePath);
       const parsed = parseSubmissionFile(safePath);
       const ext = path.extname(safePath).toLowerCase() || "";
+      if (ext) detectedExts.add(ext);
       const fileLabel = `FILE_${String(i + 1).padStart(2, "0")}${ext}`;
       if (parsed.parseStatus === "PARSED" && parsed.extractedText) {
         const snippet = anonymizeSpckText(
@@ -386,7 +662,11 @@ function buildPreliminaryProjectSummary(
     }
   }
 
-  return summaries.length > 0 ? summaries.join("\n") : "Không có trích xuất mã nguồn chi tiết.";
+  return {
+    summaryText:
+      summaries.length > 0 ? summaries.join("\n") : "Không có trích xuất mã nguồn chi tiết.",
+    detectedExtensions: Array.from(detectedExts),
+  };
 }
 
 /**
@@ -524,9 +804,13 @@ export class SpckCommentGenerator {
       if (!item || !item.studentId) continue;
 
       const anonymousToken = `STUDENT_${String(i + 1).padStart(2, "0")}`;
-      const quickTags = Array.isArray(item.quickTags)
+      const rawQuickTags = Array.isArray(item.quickTags)
         ? item.quickTags.map((t) => String(t).trim()).filter(Boolean)
         : [];
+      const quickTags =
+        stageInfo.sessionNumber !== 14 && item.includePresentation === false
+          ? rawQuickTags.filter((t) => !isPresentationQuickTag(t))
+          : rawQuickTags;
       const teacherNote = (item.teacherNote || "").trim();
 
       // Capture initial session draft & shared DB state to prevent stale overwrite
@@ -541,8 +825,11 @@ export class SpckCommentGenerator {
         item.studentId
       );
       const initialSessionVersion =
-        item.expectedVersion !== undefined && Number.isFinite(item.expectedVersion)
-          ? Number(item.expectedVersion)
+        initialSessionRow.draftStatus === "APPROVED" ||
+        initialSessionRow.draftStatus === "VERIFIED"
+          ? item.expectedVersion !== undefined && Number.isFinite(item.expectedVersion)
+            ? Number(item.expectedVersion)
+            : initialSessionRow.draftVersion
           : initialSessionRow.draftVersion;
       const initialSessionComment = initialSessionRow.teacherComment ?? "";
       const initialSessionStatus = initialSessionRow.draftStatus ?? "";
@@ -616,12 +903,27 @@ export class SpckCommentGenerator {
           )
         : "";
 
-      const codeSummary = buildPreliminaryProjectSummary(
+      const prelimSummary = buildPreliminaryProjectSummary(
         item.attachments || [],
         item.fullName,
         anonymousToken,
         peerNames,
-        item.localFolderPath || initialSessionRow.localFolderPath
+        item.localFolderPath || initialSessionRow.localFolderPath,
+        {
+          youtubeCount: (item.youtubeUrls || []).length,
+          screenshotCount: (item.screenshots || []).length,
+        }
+      );
+      const codeSummary = prelimSummary.summaryText;
+      const courseProfile = detectSpckCourseProfile(
+        normalizedClassId,
+        context.courseName,
+        prelimSummary.detectedExtensions
+      );
+      const subjectSpecificGuidance = buildSubjectSpecificSpckInstruction(
+        courseProfile,
+        stageInfo.sessionNumber,
+        anonymousToken
       );
       const historySummary = buildStudentLearningHistorySummary(
         normalizedClassId,
@@ -633,7 +935,7 @@ export class SpckCommentGenerator {
 
       const presentationRuleInstruction = hasPresentationEvidence
         ? stageInfo.sessionNumber === 14
-          ? `- Giáo viên CÓ cung cấp dữ kiện về thuyết trình ở Buổi 14: hãy viết nhận xét "1. Về phần thuyết trình" (2–3 câu liền mạch) vào trường "presentationEvaluation" theo phong cách giáo viên thực tế: đánh giá sự chuẩn bị slide (mẫu thiết kế, bố cục rõ ràng, nội dung đầy đủ/sáng tạo), cách giới thiệu các nội dung chính & ý tưởng sản phẩm, và lời khuyên rèn luyện sự tự tin/diễn đạt hoặc tìm hiểu kỹ hơn về đoạn code trong sản phẩm để giải thích khi thuyết trình.`
+          ? `- Giáo viên CÓ cung cấp dữ kiện về thuyết trình ở Buổi 14: hãy viết nhận xét "1. Về phần thuyết trình" (2–3 câu liền mạch) vào trường "presentationEvaluation" theo phong cách giáo viên thực tế: đánh giá sự chuẩn bị slide (mẫu thiết kế, bố cục rõ ràng, nội dung đầy đủ/sáng tạo), cách giới thiệu các nội dung chính & ý tưởng ${courseProfile.productNoun}, và lời khuyên rèn luyện sự tự tin/diễn đạt hoặc tìm hiểu kỹ hơn về nguyên lý hoạt động/mã nguồn trong sản phẩm để giải thích khi thuyết trình.`
           : `- Giáo viên CÓ cung cấp dữ kiện về thuyết trình: hãy viết nhận xét kỹ năng thuyết trình tự nhiên vào trường "presentationEvaluation" dựa sát theo thẻ/ghi chú của giáo viên.`
         : `- NGHIÊM CẤM BỊA ĐẶT KỸ NĂNG THUYẾT TRÌNH: Giáo viên KHÔNG tích chọn hoặc ghi chú về kỹ năng thuyết trình. Trường "presentationEvaluation" BẮT BUỘC phải để chuỗi rỗng "" và tuyệt đối KHÔNG nhắc đến từ "thuyết trình", "trình bày trước lớp", "đám đông", "khán giả", "bảo vệ dự án" hay "phản biện" trong toàn bộ nhận xét.`;
 
@@ -641,7 +943,8 @@ export class SpckCommentGenerator {
       if (stageInfo.sessionNumber === 12) {
         stageSpecificInstruction = `YÊU CẦU RIÊNG CHO BUỔI 12 (${stageInfo.stageLabel} - ${stageInfo.stageCode}):
 - Sản phẩm hiện đang trong quá trình xây dựng bước đầu.
-- Nội dung nhận xét học bạ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện tại đã có những gì** (đề tài, màn hình giao diện, chức năng bước đầu); và (2) **Cần cải thiện / hoàn thiện tiếp những gì** ở các buổi tới.
+- Nội dung nhận xét học bạ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện tại đã có những gì** (đề tài, cấu trúc/giao diện/mô hình, chức năng bước đầu); và (2) **Cần cải thiện / hoàn thiện tiếp những gì** ở các buổi tới.
+${subjectSpecificGuidance}
 - TUYỆT ĐỐI KHÔNG viết như thể học sinh đã hoàn thành trọn vẹn sản phẩm cuối khóa, và KHÔNG ghi các nhãn nội bộ như "Buổi 12", "Giai đoạn 1", "GĐ1".`;
       } else if (stageInfo.sessionNumber === 13) {
         stageSpecificInstruction = `YÊU CẦU RIÊNG CHO BUỔI 13 (${stageInfo.stageLabel} - ${stageInfo.stageCode}):
@@ -649,17 +952,18 @@ export class SpckCommentGenerator {
 - Nội dung nhận xét học bạ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện có những gì và phần đã bổ sung/triển khai được (nêu tiến bộ so với Buổi 12 khi có dữ liệu)**; và (2) **Những điểm còn thiếu hoặc cần cải thiện, hoàn thiện thêm** trước khi tổng kết khóa học.
 ${
   session12Evidence.hasEvidence
-    ? `- Hệ thống CÓ dữ liệu buổi trước (${anonSession12Summary}): hãy nêu tiến bộ so với Buổi 12 và ghi nhận phần chức năng/giao diện đã bổ sung thêm so với bước đầu.`
+    ? `- Hệ thống CÓ dữ liệu buổi trước (${anonSession12Summary}): hãy nêu tiến bộ so với Buổi 12 và ghi nhận phần chức năng/giao diện/mô hình đã bổ sung thêm so với bước đầu.`
     : `- LƯU Ý QUAN TRỌNG: Hệ thống CHƯA CÓ dữ liệu buổi trước của học sinh này. TUYỆT ĐỐI KHÔNG tự bịa câu "so với buổi 12", "so với buổi trước" hay tự suy đoán sự thay đổi giữa hai buổi. Chỉ nhận xét hiện trạng sản phẩm và phần cần hoàn thiện.`
 }
+${subjectSpecificGuidance}
 - TUYỆT ĐỐI KHÔNG viết như thể sản phẩm đã tổng kết hoàn tất toàn khóa, và KHÔNG ghi các nhãn nội bộ như "Buổi 13", "Giai đoạn 1", "GĐ1".`;
       } else {
         stageSpecificInstruction = `YÊU CẦU RIÊNG CHO BUỔI 14 (${stageInfo.stageLabel} - ${stageInfo.stageCode}):
 - Đây là nhận xét chính thức ghi vào **Học bạ tổng kết Sản phẩm cuối khóa** để Phụ huynh theo dõi kết quả học tập.
 - Phong cách viết chuẩn mẫu giáo viên MindX ở Buổi 14:
   + Xưng là **"giáo viên"** (ví dụ: "giáo viên ghi nhận...", "giáo viên đánh giá cao..."), tuyệt đối KHÔNG xưng "thầy", "cô" hay "thầy/cô"; gọi học viên bằng tên gọi ("${anonymousToken}") kết hợp đại từ **"em"** (nhất quán dùng "em", hạn chế dùng "con" ở Buổi 14).
-  + Về phần sản phẩm cuối khóa (ghép từ attitudeSummary + productAndDesignEvaluation + technicalApplicationEvaluation): mở đầu nêu rõ "${anonymousToken} đã xây dựng/hoàn thiện sản phẩm/website [Tên đề tài] với giao diện đẹp mắt, bố cục rõ ràng/hợp lý...", nêu rõ cách sử dụng bố cục/kỹ thuật (như Flexbox, các trang chức năng, kiến thức HTML, CSS, JavaScript hoặc công cụ môn học đã vận dụng), ghi nhận sự sáng tạo/cố gắng/tiến bộ; nếu giáo viên có tích chọn hoặc ghi chú học viên còn phụ thuộc AI hoặc chưa hiểu sâu code thì nhắc nhở khéo léo ("Tuy nhiên, em còn phụ thuộc khá nhiều vào AI và chưa thực sự hiểu sâu phần cốt lõi của code. Nếu chủ động tự tìm hiểu, tự viết và nắm rõ cách hoạt động của các đoạn code hơn, em sẽ phát huy tốt hơn năng lực lập trình của mình.").
-- Nội dung bắt buộc thể hiện rõ ràng, mạch lạc: (1) **Đánh giá tổng quan & Sản phẩm của học viên có những gì** (đề tài dự án, các trang/màn hình giao diện, chức năng thực tế và kiến thức lập trình đã vận dụng); và (2) **Sản phẩm cần cải thiện những gì** (những điểm còn hạn chế, phần giao diện, tính năng hoặc mã nguồn cần trau chuốt, tối ưu thêm).
+${subjectSpecificGuidance}
+- Nội dung bắt buộc thể hiện rõ ràng, mạch lạc: (1) **Đánh giá tổng quan & Sản phẩm của học viên có những gì** (đề tài dự án, cấu trúc sản phẩm/giao diện/mô hình, chức năng thực tế và kiến thức chuyên môn của khóa ${courseProfile.trackBadgeLabel} đã vận dụng); và (2) **Sản phẩm cần cải thiện những gì** (những điểm còn hạn chế, phần giao diện/mô hình, tính năng hoặc kỹ thuật cần trau chuốt, tối ưu thêm).
 - TUYỆT ĐỐI KHÔNG ghi cụm từ "Giai đoạn 2", "GĐ2", "Buổi 14", "đợt nộp" vào trong lời nhận xét đầu ra.
 - TUYỆT ĐỐI KHÔNG tự bịa lỗi kỹ thuật cụ thể nếu giáo viên không ghi chú, và KHÔNG tự khẳng định "sản phẩm hoàn hảo không có bất kỳ hạn chế nào" hay "chạy hoàn chỉnh tuyệt đối" khi thiếu dữ kiện.`;
       }
@@ -747,9 +1051,9 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi 
 
         const sanitizeOutputText = (raw: string): string => {
           let cleaned = raw
-            .replace(/\(\s*(?:tệp|file)?\s*['"]?[a-zA-Z0-9_-]+\.(?:py|ui|qss|js|ts|html|css|sb3|json)['"]?\s*\)/gi, "")
-            .replace(/\b(?:tệp|file)\s+['"]?[a-zA-Z0-9_-]+\.(?:py|ui|qss|js|ts|html|css|sb3|json)['"]?/gi, "phần mã nguồn dự án")
-            .replace(/\b[a-zA-Z0-9_-]+\.(?:py|ui|qss|js|ts|html|css|sb3|json)\b/gi, "mã nguồn dự án")
+            .replace(/\(\s*(?:tệp|file)?\s*['"]?[a-zA-Z0-9_-]+\.(?:py|ui|qss|js|ts|html|css|sb3|json|yyz|yyp|yy|gml|ipynb|csv|vexblocks|iqblocks)['"]?\s*\)/gi, "")
+            .replace(/\b(?:tệp|file)\s+['"]?[a-zA-Z0-9_-]+\.(?:py|ui|qss|js|ts|html|css|sb3|json|yyz|yyp|yy|gml|ipynb|csv|vexblocks|iqblocks)['"]?/gi, "phần mã nguồn dự án")
+            .replace(/\b[a-zA-Z0-9_-]+\.(?:py|ui|qss|js|ts|html|css|sb3|json|yyz|yyp|yy|gml|ipynb|csv|vexblocks|iqblocks)\b/gi, "mã nguồn dự án")
             .replace(/\(\s*(?:phần\s+)?mã\s+nguồn\s+dự\s+án\s*\)/gi, "")
             .replace(/\[(?:Thái độ|Sản phẩm|Kỹ thuật|Thuyết trình|Giai đoạn 1|Giai đoạn 2)[^\]]*\]\s*:?\s*/gi, "")
             .replace(/\bbuổi\s+tổng\s+kết\s+giai\s+đoạn\s*2\b/gi, "buổi tổng kết cuối khóa")
@@ -799,6 +1103,24 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi 
               .replace(/\bthầy\s+cô\b/giu, (m) =>
                 m[0] === m[0].toUpperCase() ? "Giáo viên" : "giáo viên"
               );
+          }
+          if (courseProfile.track !== "WEB" && courseProfile.track !== "GENERAL") {
+            cleaned = cleaned
+              .replace(/\bwebsite\s+sản\s+phẩm\b/gi, courseProfile.productNoun)
+              .replace(/\bwebsite\b/gi, courseProfile.productNoun)
+              .replace(
+                /\bHTML5?\s*(?:,|\/|và|&|-|\s+)\s*CSS3?(?:\s*(?:,|\/|và|&|-|\s+)\s*(?:JavaScript|JS))?\b/gi,
+                "kiến thức chuyên môn đã học"
+              )
+              .replace(
+                /\bbố\s+cục\s+Flexbox\b/gi,
+                courseProfile.track === "ROBOTICS" ? "kết cấu cơ khí" : "bố cục sản phẩm"
+              )
+              .replace(
+                /\bFlexbox\b/gi,
+                courseProfile.track === "ROBOTICS" ? "kết cấu cơ khí" : "bố cục sản phẩm"
+              )
+              .replace(/\b(?:HTML5?|CSS3?)\b/gi, "kiến thức chuyên môn đã học");
           }
           return cleaned.replace(/\s+/g, " ").trim();
         };

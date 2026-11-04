@@ -85,7 +85,7 @@ Bao gồm 6 mục ngắn gọn, đủ ý theo đúng thứ tự sau:
 
 ## Mẫu Định Dạng Đầu Ra Chuẩn
 
-### Mẫu Phần 1: Nhận xét tổng kết buổi học
+### Mẫu Phần 1: Nhận xét tổng kết buổi học (Môn Lập trình: Web, GameMaker, Scratch, Python, C#, AI)
 
 @All Kính gửi quý phụ huynh học viên
 Em xin phép tổng kết sau buổi học số [N+1] – [Ngày + 7 ngày]
@@ -115,6 +115,28 @@ Làm bài tập về nhà trên Denise bao gồm:
 + 10 câu hỏi trắc nghiệm.
 + 2 bài thực hành (làm theo yêu cầu đề bài).
 ⏰ Hạn nộp: [Thứ], ngày [Ngày buổi học kế tiếp]
+
+### Mẫu Phần 1B: Nhận xét tổng kết buổi học (Môn Robotics: VT-ROB-..., PREB/PREA/PREI, ARMB/ARMA/ARMI, SEMIB/SEMIA/SEMII)
+
+📢 TỔNG KẾT BUỔI HỌC SỐ [NN] – [Mã lớp]
+@All Kính gửi Quý Phụ huynh,
+Giáo viên xin cập nhật tình hình học tập của các con sau buổi học số [NN] – ngày [Ngày buổi học].
+👥 Sĩ số: [SS] học viên | ✅ Hiện diện: [HD] học viên
+📝 NỘI DUNG BUỔI HỌC
+📚 Bài [N]: [Tên bài học]
+🔹 [Hoạt động tìm hiểu nguyên lý cơ khí / cảm biến 1].
+🔹 [Hoạt động lắp ráp mô hình theo mẫu 2].
+🔹 [Hoạt động sử dụng thẻ lệnh điều kiện / vòng lặp để lập trình mô hình 3].
+🔹 [Hoạt động kết hợp điều chỉnh cấu trúc vật lý với lập trình 4].
+🌟 TÌNH HÌNH HỌC TẬP
+Trong buổi học số [NN], các con tham gia học tập nghiêm túc, tích cực trao đổi với giáo viên và thực hành các nhiệm vụ được giao. Qua bài học, các con được rèn luyện kỹ năng lắp ráp, tư duy logic và vận dụng câu lệnh điều kiện, vòng lặp cùng cảm biến vào lập trình mô hình.
+🏡 BÀI TẬP VỀ NHÀ
+Ôn tập các câu lệnh đã học trong buổi học.
+Ghi nhớ cách sử dụng các thẻ lệnh và cấu trúc lập trình đã học để chuẩn bị cho buổi học tiếp theo.
+🗓 BUỔI HỌC TIẾP THEO – BUỔI [NN+1]
+📚 Nội dung: Bài [N+1] – [Tên bài học tiếp theo]
+⏰ [Giờ học] | [Thứ], ngày [Ngày buổi học kế tiếp]
+💖 Giáo viên chân thành cảm ơn Quý Phụ huynh đã luôn đồng hành và hỗ trợ các con trong quá trình học tập!
 
 ### Mẫu Phần 2: Nhận xét BTVN (CHỈ kèm theo khi người dùng có up hình BTVN)
 

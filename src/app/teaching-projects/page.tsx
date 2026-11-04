@@ -373,9 +373,163 @@ export default function TeachingProjectsPage() {
     };
   }, [loadClassProjectData]);
 
-  // F04: Switching class from dropdown uses forceRefresh=false so saved drafts are preserved
+  const persistDraftInternal = useCallback(
+    async (options?: { silent?: boolean }): Promise<boolean> => {
+      const reqClass = loadedClassCodeRef.current;
+      const reqSeq = activeLoadSeqRef.current;
+      const reqVersion = draftVersion;
+      const currentActiveCode = (selectedClassCode || customClassInput)
+        .trim()
+        .toUpperCase();
+      if (!reqClass || reqClass !== currentActiveCode || isLoadingClass) {
+        return false;
+      }
+
+      setIsSavingDraft(true);
+      if (!options?.silent) {
+        setBanner(null);
+      }
+      try {
+        const res = await fetch("/api/teaching-projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            classCode: reqClass,
+            action: "save_draft",
+            expectedVersion: reqVersion,
+            projectName,
+            startDate,
+            endDate,
+            description,
+            tasks: tasks.map((t) => ({
+              ...t,
+              assignedStudentIds,
+            })),
+          }),
+        });
+        const data = await res.json();
+        if (
+          activeLoadSeqRef.current !== reqSeq ||
+          loadedClassCodeRef.current !== reqClass
+        ) {
+          return false;
+        }
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Không thể lưu bản nháp dự án.");
+        }
+
+        if (
+          data.record &&
+          String(data.record.classId || "").toUpperCase() === reqClass
+        ) {
+          if (options?.silent) {
+            if (typeof data.record.draftVersion === "number") {
+              setDraftVersion(data.record.draftVersion);
+            }
+            if (data.record.status) {
+              setStatus(data.record.status);
+            }
+            setHasUnsavedLocalEdits(false);
+          } else {
+            applyRecordAndTasksState(data.record, data.tasks);
+          }
+        } else {
+          setHasUnsavedLocalEdits(false);
+        }
+
+        if (!options?.silent) {
+          setBanner({
+            type: "success",
+            text: "💾 Đã lưu bản nháp cấu hình dự án vào bộ nhớ cục bộ.",
+          });
+        }
+        return true;
+      } catch (err: unknown) {
+        if (
+          activeLoadSeqRef.current !== reqSeq ||
+          loadedClassCodeRef.current !== reqClass
+        ) {
+          return false;
+        }
+        const message = err instanceof Error ? err.message : String(err);
+        setBanner({ type: "error", text: message });
+        return false;
+      } finally {
+        if (activeLoadSeqRef.current === reqSeq) {
+          setIsSavingDraft(false);
+        }
+      }
+    },
+    [
+      applyRecordAndTasksState,
+      assignedStudentIds,
+      customClassInput,
+      description,
+      draftVersion,
+      endDate,
+      isLoadingClass,
+      projectName,
+      selectedClassCode,
+      startDate,
+      tasks,
+    ]
+  );
+
+  // Auto-save draft after 600ms debounce when teacher edits project/task fields
+  useEffect(() => {
+    const currentActiveCode = (selectedClassCode || customClassInput)
+      .trim()
+      .toUpperCase();
+    const ready =
+      Boolean(currentActiveCode) &&
+      loadedClassCode === currentActiveCode &&
+      !isLoadingClass;
+    if (!hasUnsavedLocalEdits || !ready || isSavingDraft || isSyncingTeaching) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void persistDraftInternal({ silent: true });
+    }, 600);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [
+    customClassInput,
+    hasUnsavedLocalEdits,
+    isLoadingClass,
+    isSavingDraft,
+    isSyncingTeaching,
+    loadedClassCode,
+    persistDraftInternal,
+    selectedClassCode,
+  ]);
+
+  // F04 + Point 4: Switching class from dropdown saves unsaved local edits first; if save fails, stays on current class
   const handleSelectClassChange = (code: string) => {
     const clean = code.trim().toUpperCase();
+    const currentCode = loadedClassCodeRef.current;
+    if (
+      hasUnsavedLocalEdits &&
+      currentCode &&
+      clean &&
+      clean !== currentCode &&
+      !isLoadingClass
+    ) {
+      void (async () => {
+        const savedOk = await persistDraftInternal({ silent: true });
+        if (!savedOk) {
+          return;
+        }
+        setSelectedClassCode(clean);
+        setCustomClassInput(clean);
+        try {
+          window.localStorage.setItem("mindx_last_class_code", clean);
+        } catch {}
+        loadClassProjectData(clean, false);
+      })();
+      return;
+    }
     setSelectedClassCode(clean);
     setCustomClassInput(clean);
     if (clean) {
@@ -391,6 +545,27 @@ export default function TeachingProjectsPage() {
     const clean = (customClassInput || selectedClassCode).trim().toUpperCase();
     if (!clean) {
       setBanner({ type: "warning", text: "Vui lòng nhập hoặc chọn mã lớp (VD: VT-C4K-GA38)." });
+      return;
+    }
+    const currentCode = loadedClassCodeRef.current;
+    if (
+      hasUnsavedLocalEdits &&
+      currentCode &&
+      clean !== currentCode &&
+      !isLoadingClass
+    ) {
+      void (async () => {
+        const savedOk = await persistDraftInternal({ silent: true });
+        if (!savedOk) {
+          return;
+        }
+        setSelectedClassCode(clean);
+        setCustomClassInput(clean);
+        try {
+          window.localStorage.setItem("mindx_last_class_code", clean);
+        } catch {}
+        loadClassProjectData(clean, forceRefresh);
+      })();
       return;
     }
     setSelectedClassCode(clean);
@@ -595,58 +770,7 @@ export default function TeachingProjectsPage() {
   };
 
   const handleSaveDraft = async () => {
-    const reqClass = loadedClassCodeRef.current;
-    const reqSeq = activeLoadSeqRef.current;
-    const reqVersion = draftVersion;
-    if (!reqClass || reqClass !== activeClassCode || isLoadingClass) return;
-
-    setIsSavingDraft(true);
-    setBanner(null);
-    try {
-      const res = await fetch("/api/teaching-projects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          classCode: reqClass,
-          action: "save_draft",
-          expectedVersion: reqVersion,
-          projectName,
-          startDate,
-          endDate,
-          description,
-          tasks: tasks.map((t) => ({
-            ...t,
-            assignedStudentIds,
-          })),
-        }),
-      });
-      const data = await res.json();
-      if (activeLoadSeqRef.current !== reqSeq || loadedClassCodeRef.current !== reqClass) {
-        return;
-      }
-
-      if (data.record && String(data.record.classId || "").toUpperCase() === reqClass) {
-        applyRecordAndTasksState(data.record, data.tasks);
-      }
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Không thể lưu bản nháp dự án.");
-      }
-
-      setBanner({
-        type: "success",
-        text: "💾 Đã lưu bản nháp cấu hình dự án vào bộ nhớ cục bộ.",
-      });
-    } catch (err: unknown) {
-      if (activeLoadSeqRef.current !== reqSeq || loadedClassCodeRef.current !== reqClass) {
-        return;
-      }
-      const message = err instanceof Error ? err.message : String(err);
-      setBanner({ type: "error", text: message });
-    } finally {
-      if (activeLoadSeqRef.current === reqSeq) {
-        setIsSavingDraft(false);
-      }
-    }
+    await persistDraftInternal({ silent: false });
   };
 
   const handleApproveAndSyncToTeaching = async () => {
@@ -706,10 +830,39 @@ export default function TeachingProjectsPage() {
     }
   };
 
-  const handleBulkMilestoneUpdate = async (completedTaskCount: number) => {
+  const handleBulkMilestoneUpdate = async (
+    completedTaskCount: number,
+    options?: { isQuickButton?: boolean }
+  ) => {
     const reqClass = loadedClassCodeRef.current;
     const reqSeq = activeLoadSeqRef.current;
     if (!reqClass || reqClass !== activeClassCode || isLoadingClass) return;
+
+    const isQuickButton = Boolean(options?.isQuickButton);
+    let resetOthers = !isQuickButton;
+    let allowDecrease = !isQuickButton;
+
+    if (!isQuickButton) {
+      const hasHigherExistingProgress = tasks.some((t, idx) => {
+        if (idx < completedTaskCount) return false;
+        const tid = Number(t.taskId);
+        if (!Number.isInteger(tid) || tid <= 0) return false;
+        return assignedStudentIds.some(
+          (sid) => Number(progressMap[`${tid}_${sid}`] ?? 0) > 0
+        );
+      });
+      if (hasHigherExistingProgress) {
+        const targetPct = completedTaskCount * 20;
+        const confirmed = window.confirm(
+          `Thao tác này sẽ GIẢM tiến độ đã đạt trên Teaching xuống ${targetPct}% (đặt lại các công việc sau mốc ${completedTaskCount}/5 về 0%). Bạn có chắc chắn muốn giảm tiến độ không?`
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
+      resetOthers = true;
+      allowDecrease = true;
+    }
 
     setIsUpdatingProgress(true);
     setBanner(null);
@@ -720,7 +873,8 @@ export default function TeachingProjectsPage() {
         body: JSON.stringify({
           classCode: reqClass,
           milestoneTaskCount: completedTaskCount,
-          resetOthers: true,
+          resetOthers,
+          allowDecrease,
         }),
       });
       const data = await res.json();
@@ -1461,6 +1615,29 @@ export default function TeachingProjectsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            {isSavingDraft ? (
+              <span
+                data-testid="tp-draft-status-badge"
+                className="mindx-dark-keep bg-blue-700 text-white text-xs font-bold px-2.5 py-0.5 rounded-full"
+              >
+                Đang lưu...
+              </span>
+            ) : hasUnsavedLocalEdits ? (
+              <span
+                data-testid="tp-draft-status-badge"
+                className="mindx-dark-keep bg-amber-800 text-white text-xs font-bold px-2.5 py-0.5 rounded-full"
+              >
+                Chưa lưu
+              </span>
+            ) : (
+              <span
+                data-testid="tp-draft-status-badge"
+                className="mindx-dark-keep bg-emerald-700 text-white text-xs font-bold px-2.5 py-0.5 rounded-full"
+              >
+                Đã lưu nháp
+              </span>
+            )}
+
             <button
               type="button"
               onClick={handleSaveDraft}
@@ -1546,7 +1723,11 @@ export default function TeachingProjectsPage() {
                   isAnyMutationBusy ||
                   !currentMilestone.isKnownSession
                 }
-                onClick={() => handleBulkMilestoneUpdate(currentMilestone.milestoneTaskCount)}
+                onClick={() =>
+                  handleBulkMilestoneUpdate(currentMilestone.milestoneTaskCount, {
+                    isQuickButton: true,
+                  })
+                }
                 className="mindx-dark-keep px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white flex items-center gap-2 cursor-pointer shadow-lg transition"
               >
                 {isUpdatingProgress ? (

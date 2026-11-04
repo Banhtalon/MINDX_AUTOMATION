@@ -5,6 +5,7 @@ import {
   canonicalizeSpckFolderPath,
   formatSpckSessionTitle,
   normalizeSpckFolderKey,
+  spckSessionRepo,
   spckUploadRepo,
   stripSpckSessionSuffix,
   studentRepo,
@@ -59,6 +60,7 @@ export async function POST(req: Request) {
 
     const scanResult = scanClassSpckDirectory(classId, safeFolderPath, students);
     const overLimitErrors: string[] = [];
+    let persistedCount = 0;
 
     // Persist matched records into SQLite; reset teacher confirmation if folder changed or match is ambiguous
     for (const item of scanResult.items) {
@@ -70,6 +72,10 @@ export async function POST(req: Request) {
       });
       if (!rawLimitCheck.valid) {
         overLimitErrors.push(`[${item.folderName}]: ${rawLimitCheck.reason}`);
+        item.packageData.warnings = [
+          ...(item.packageData.warnings || []),
+          rawLimitCheck.reason || "Tài nguyên vượt giới hạn LMS.",
+        ];
         continue;
       }
 
@@ -147,10 +153,16 @@ export async function POST(req: Request) {
       const ytFrameRe = /[\\/]_spck_youtube_frames[\\/]/i;
       const isBotGeneratedShot = (p: string) =>
         /[\\/](?:_spck_app_shots|_spck_youtube_frames)[\\/]/i.test(p);
+      const scannedScreenshots =
+        item.packageData.allScreenshots || item.packageData.screenshots || [];
+      const scannedScreenSet = new Set(scannedScreenshots);
+      const isPreservedExistingShot = (p: string) =>
+        /[\\/](?:_spck_app_shots|_spck_youtube_frames|_spck_owner_uploads)[\\/]/i.test(p) ||
+        scannedScreenSet.has(p);
       const existingScreensRaw = sameFolder
         ? parseSafeArray<string>(existing?.screenshotsJson).filter((p) => {
             try {
-              return Boolean(p) && fs.existsSync(p);
+              return Boolean(p) && fs.existsSync(p) && isPreservedExistingShot(p);
             } catch {
               return false;
             }
@@ -167,8 +179,6 @@ export async function POST(req: Request) {
       const existingScreenshots =
         hasExistingCapturedShots || existingHasYoutubeFrames ? existingScreensRaw : [];
 
-      const scannedScreenshots =
-        item.packageData.allScreenshots || item.packageData.screenshots || [];
       let finalScreenshots =
         existingScreenshots.length > 0 ? existingScreenshots : scannedScreenshots;
 
@@ -243,6 +253,10 @@ export async function POST(req: Request) {
         overLimitErrors.push(
           `[${item.folderName}]: ${limitCheck.reason}`
         );
+        item.packageData.warnings = [
+          ...(item.packageData.warnings || []),
+          limitCheck.reason || "Tài nguyên vượt giới hạn LMS.",
+        ];
         continue;
       }
 
@@ -260,6 +274,10 @@ export async function POST(req: Request) {
         overLimitErrors.push(
           `[${item.folderName}]: ${titleCheck.reason}`
         );
+        item.packageData.warnings = [
+          ...(item.packageData.warnings || []),
+          titleCheck.reason || "Tên sản phẩm vượt giới hạn LMS.",
+        ];
         continue;
       }
 
@@ -285,11 +303,44 @@ export async function POST(req: Request) {
         verifiedAt: sameFolder && isConfirmed === 1 ? existing?.verifiedAt ?? null : null,
         errorMessage: null,
       });
+
+      // If any session draft is still an untouched auto-init DRAFT (no teacher comment/note and not approved/verified),
+      // or if an unapproved/unverified session draft references a deleted/missing thumbnail or screenshot on disk,
+      // sync the newly scanned shared resources into it immediately so re-scanning a fixed folder updates the UI right away.
+      for (const slotNum of [12, 13, 14] as const) {
+        const existingSess = spckSessionRepo.findOne(classId, suggestedId, slotNum);
+        if (
+          !existingSess ||
+          existingSess.lastVerifiedAt ||
+          existingSess.draftStatus === "APPROVED" ||
+          existingSess.draftStatus === "VERIFIED"
+        ) {
+          continue;
+        }
+        const isUntouchedDraft =
+          existingSess.draftStatus === "DRAFT" &&
+          !existingSess.teacherComment?.trim() &&
+          !existingSess.teacherNote?.trim();
+        const hasMissingThumb =
+          Boolean(existingSess.thumbnailPath) && !fs.existsSync(existingSess.thumbnailPath);
+        const hasMissingScreens = parseSafeArray<string>(existingSess.screenshotsJson).some(
+          (p) => Boolean(p) && !fs.existsSync(p)
+        );
+        if (isUntouchedDraft || hasMissingThumb || hasMissingScreens) {
+          spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
+            classId,
+            suggestedId,
+            slotNum
+          );
+        }
+      }
+
+      persistedCount++;
     }
 
     const updatedRecords = buildEnrichedClassSpckRecords(classId, activeSessionNumber);
 
-    if (overLimitErrors.length > 0) {
+    if (overLimitErrors.length > 0 && persistedCount === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -303,6 +354,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
+      warning: overLimitErrors.length > 0 ? overLimitErrors.join(" | ") : undefined,
+      overLimitErrors: overLimitErrors.length > 0 ? overLimitErrors : undefined,
       scanResult,
       records: updatedRecords,
     });

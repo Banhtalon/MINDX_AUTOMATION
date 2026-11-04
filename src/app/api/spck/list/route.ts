@@ -17,6 +17,7 @@ import {
   classifySpckRelatedLink,
   inspectSpckThumbnail,
 } from "@/lib/local-files/spck-scanner";
+import { resolveValidAppShotResources } from "@/lib/local-files/spck-app-screenshotter";
 import {
   getDemoSheetTitleForClass,
   getSavedCourseTemplatePath,
@@ -97,13 +98,55 @@ export function buildEnrichedClassSpckRecords(
       classId,
       rec.studentId
     );
-    const activeThumb = sessRow.thumbnailPath || rec.thumbnailPath || "";
+    let activeThumb = sessRow.thumbnailPath || rec.thumbnailPath || "";
     const activeTitle = sessRow.projectTitle || rec.projectTitle || "";
     const activeComment = sessRow.teacherComment ?? "";
-    const activeScreensJson = sessRow.screenshotsJson || rec.screenshotsJson || "[]";
+    let activeScreensJson = sessRow.screenshotsJson || rec.screenshotsJson || "[]";
     const activeAttachJson = sessRow.attachmentsJson || rec.attachmentsJson || "[]";
     const activeYtJson = sessRow.youtubeUrlsJson || rec.youtubeUrlsJson || "[]";
     const activeLinksJson = sessRow.relatedLinksJson || rec.relatedLinksJson || "[]";
+
+    if (
+      sessRow.draftStatus !== "APPROVED" &&
+      sessRow.draftStatus !== "VERIFIED" &&
+      !sessRow.lastVerifiedAt
+    ) {
+      let parsedActiveScreens: string[] = [];
+      try {
+        const p = JSON.parse(activeScreensJson);
+        if (Array.isArray(p)) parsedActiveScreens = p;
+      } catch {}
+      const healedRes = resolveValidAppShotResources({
+        localFolderPath: sessRow.localFolderPath || rec.localFolderPath,
+        thumbnailPath: activeThumb,
+        screenshots: parsedActiveScreens,
+      });
+      if (healedRes.healed) {
+        activeThumb = healedRes.thumbnailPath;
+        activeScreensJson = JSON.stringify(healedRes.screenshots);
+        try {
+          const db = getDb();
+          db.prepare(
+            `UPDATE spck_session_submissions
+             SET thumbnailPath = ?, screenshotsJson = ?
+             WHERE classId = ? AND studentId = ? AND sessionNumber = ?`
+          ).run(
+            activeThumb,
+            activeScreensJson,
+            classId,
+            rec.studentId,
+            sessionNumber
+          );
+          if (rec.status !== "APPROVED" && rec.status !== "VERIFIED") {
+            db.prepare(
+              `UPDATE spck_uploads
+               SET thumbnailPath = ?, screenshotsJson = ?
+               WHERE classId = ? AND studentId = ?`
+            ).run(activeThumb, activeScreensJson, classId, rec.studentId);
+          }
+        } catch {}
+      }
+    }
 
     let classifiedLinks: Array<{
       name: string;

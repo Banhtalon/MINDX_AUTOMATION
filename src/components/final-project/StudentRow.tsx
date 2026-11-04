@@ -11,9 +11,12 @@ import {
 } from "lucide-react";
 import {
   COMPETENCY_ITEMS_UI,
-  DEFAULT_SPCK_TAGS,
   ScannedFolderUIItem,
 } from "./types";
+import {
+  getSpckQuickTagGroups,
+  isPresentationQuickTag,
+} from "@/lib/spck/spck-quick-tags";
 import {
   formatUiSessionTitle,
   getRowReadinessSummary,
@@ -817,66 +820,155 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
             {/* Right Column: Quick Tags, Presentation Guardrail & Teacher Comment */}
             <div className="lg:col-span-7 space-y-3">
               <div>
-                <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-                  <span className="font-semibold">
-                    Thẻ đánh giá nhanh (Quick Tags — hỗ trợ AI soạn bình luận)
-                  </span>
-                  <label className="inline-flex items-center space-x-1.5 text-emerald-400 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={row.includePresentation}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setRows((prev) =>
-                          prev.map((r, i) =>
-                            i === idx
-                              ? { ...r, includePresentation: checked }
-                              : r
-                          )
-                        );
-                      }}
-                      className="rounded border-slate-600"
-                    />
-                    <span>Có đánh giá kỹ năng thuyết trình</span>
-                  </label>
-                </div>
+                {(() => {
+                  const activeClassObj = workflow.classes.find(
+                    (c) => c.classId === selectedClassId
+                  );
+                  const rowExts = (row.attachments || [])
+                    .map((p) => {
+                      const m = String(p || "").match(/\.[a-z0-9]+$/i);
+                      return m ? m[0].toLowerCase() : "";
+                    })
+                    .filter(Boolean);
+                  const tagBundle = getSpckQuickTagGroups({
+                    classId: selectedClassId,
+                    courseName: activeClassObj?.className,
+                    sessionNumber: selectedSessionNumber,
+                    customSession14Tags: session14TagLabels,
+                    fileExtensions: rowExts,
+                  });
+                  const visibleGroups =
+                    selectedSessionNumber !== 14 &&
+                    row.includePresentation &&
+                    tagBundle.optionalPresentationGroup
+                      ? [...tagBundle.groups, tagBundle.optionalPresentationGroup]
+                      : tagBundle.groups;
+                  const visibleGroupTags = visibleGroups.flatMap((g) => g.tags);
+                  const extraSelectedTags = row.quickTags.filter(
+                    (t) => !visibleGroupTags.includes(t)
+                  );
 
-                <div className="flex flex-wrap gap-1.5">
-                  {(selectedSessionNumber === 14
-                    ? session14TagLabels
-                    : DEFAULT_SPCK_TAGS
-                  ).map((tag) => {
+                  const handleToggleQuickTag = (tag: string) => {
                     const active = row.quickTags.includes(tag);
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => {
-                          const nextTags = active
-                            ? row.quickTags.filter((t) => t !== tag)
-                            : [...row.quickTags, tag];
-                          const overrides = {
-                            quickTags: nextTags,
-                            isDirty: true,
-                          };
-                          setRows((prev) =>
-                            prev.map((r, i) =>
-                              i === idx ? { ...r, ...overrides } : r
-                            )
-                          );
-                          persistRowDraft(row, overrides);
-                        }}
-                        className={`px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
-                          active
-                            ? "bg-purple-600/30 border border-purple-500 text-purple-200"
-                            : "bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        {tag}
-                      </button>
+                    const nextTags = active
+                      ? row.quickTags.filter((t) => t !== tag)
+                      : [...row.quickTags, tag];
+                    const nextIncludePresentation =
+                      !active && isPresentationQuickTag(tag)
+                        ? true
+                        : row.includePresentation;
+                    const overrides = {
+                      quickTags: nextTags,
+                      includePresentation: nextIncludePresentation,
+                      isDirty: true,
+                    };
+                    setRows((prev) =>
+                      prev.map((r, i) => (i === idx ? { ...r, ...overrides } : r))
                     );
-                  })}
-                </div>
+                    persistRowDraft(row, overrides);
+                  };
+
+                  return (
+                    <>
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 mb-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-semibold text-slate-200">
+                            Thẻ đánh giá nhanh (Quick Tags — hỗ trợ AI soạn bình luận)
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-700/60 text-indigo-300 text-[10px] font-semibold">
+                            🏷️ {tagBundle.profile.trackBadgeLabel} • Buổi {selectedSessionNumber}
+                          </span>
+                        </div>
+                        <label className="inline-flex items-center space-x-1.5 text-emerald-400 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={row.includePresentation}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setRows((prev) =>
+                                prev.map((r, i) =>
+                                  i === idx
+                                    ? { ...r, includePresentation: checked }
+                                    : r
+                                )
+                              );
+                            }}
+                            className="rounded border-slate-600"
+                          />
+                          <span>Có đánh giá kỹ năng thuyết trình</span>
+                        </label>
+                      </div>
+
+                      <div className="space-y-2 rounded-lg bg-slate-950/60 border border-slate-800/80 p-2.5">
+                        {visibleGroups.map((group) => {
+                          const headerColor =
+                            group.tone === "emerald"
+                              ? "text-emerald-300"
+                              : group.tone === "amber"
+                              ? "text-amber-300"
+                              : group.tone === "violet"
+                              ? "text-violet-300"
+                              : "text-indigo-300";
+                          const activeBtnClass =
+                            group.tone === "emerald"
+                              ? "bg-emerald-600/30 border border-emerald-500 text-emerald-100"
+                              : group.tone === "amber"
+                              ? "bg-amber-600/30 border border-amber-500 text-amber-100"
+                              : group.tone === "violet"
+                              ? "bg-purple-600/30 border border-purple-500 text-purple-100"
+                              : "bg-indigo-600/30 border border-indigo-500 text-indigo-100";
+
+                          return (
+                            <div key={group.id} className="space-y-1">
+                              <div className={`text-[11px] font-semibold ${headerColor}`}>
+                                {group.title}
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {group.tags.map((tag) => {
+                                  const active = row.quickTags.includes(tag);
+                                  return (
+                                    <button
+                                      key={tag}
+                                      type="button"
+                                      onClick={() => handleToggleQuickTag(tag)}
+                                      className={`px-2 py-1 rounded text-xs transition-colors cursor-pointer text-left ${
+                                        active
+                                          ? activeBtnClass
+                                          : "bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200"
+                                      }`}
+                                    >
+                                      {tag}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {extraSelectedTags.length > 0 && (
+                          <div className="space-y-1 pt-1 border-t border-slate-800/70">
+                            <div className="text-[11px] font-semibold text-slate-400">
+                              📌 Thẻ đã chọn trước đó
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {extraSelectedTags.map((tag) => (
+                                <button
+                                  key={tag}
+                                  type="button"
+                                  onClick={() => handleToggleQuickTag(tag)}
+                                  className="px-2 py-1 rounded text-xs transition-colors cursor-pointer bg-purple-600/30 border border-purple-500 text-purple-200"
+                                >
+                                  {tag}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               <div>

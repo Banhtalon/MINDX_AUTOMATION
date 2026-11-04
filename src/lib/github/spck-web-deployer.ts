@@ -40,6 +40,9 @@ const IGNORED_WEB_DIRS = new Set([
   ".vscode",
   "dist",
   "build",
+  "_spck_app_shots",
+  "_spck_owner_uploads",
+  "_spck_youtube_frames",
 ]);
 
 const ALLOWED_WEB_ASSET_EXTENSIONS = new Set([
@@ -52,6 +55,7 @@ const ALLOWED_WEB_ASSET_EXTENSIONS = new Set([
   ".png",
   ".jpg",
   ".jpeg",
+  ".jfif",
   ".gif",
   ".webp",
   ".svg",
@@ -69,6 +73,7 @@ const ALLOWED_WEB_ASSET_EXTENSIONS = new Set([
   ".otf",
   ".eot",
   ".txt",
+  ".text",
   ".md",
   ".csv",
   ".xml",
@@ -304,17 +309,19 @@ export function findStudentWebRootAndEntryHtml(studentLocalFolder: string): {
     };
   }
 
-  // Check 1 level of subdirectories
-  const subDirs = fs
-    .readdirSync(safeRoot, { withFileTypes: true })
-    .filter(
-      (e) =>
-        e.isDirectory() &&
-        !e.name.startsWith(".") &&
-        !IGNORED_WEB_DIRS.has(e.name.toLowerCase())
-    )
-    .sort((a, b) => a.name.localeCompare(b.name, "en"));
+  // Check subdirectories up to 3 levels deep (preferring index.html / main.html / home.html)
+  const listSubDirs = (dir: string): fs.Dirent[] =>
+    fs
+      .readdirSync(dir, { withFileTypes: true })
+      .filter(
+        (e) =>
+          e.isDirectory() &&
+          !e.name.startsWith(".") &&
+          !IGNORED_WEB_DIRS.has(e.name.toLowerCase())
+      )
+      .sort((a, b) => a.name.localeCompare(b.name, "en"));
 
+  const subDirs = listSubDirs(safeRoot);
   for (const sub of subDirs) {
     const subPath = assertPathAllowed(path.join(safeRoot, sub.name));
     const subHtml = listHtmlFilesInDir(subPath);
@@ -326,6 +333,50 @@ export function findStudentWebRootAndEntryHtml(studentLocalFolder: string): {
         htmlFiles: subHtml,
       };
     }
+  }
+
+  // Check 2–3 levels deep when HTML files are organized inside nested folders (e.g. `html/main/index.html`)
+  const nestedCandidates: Array<{ relDir: string; htmlFiles: string[]; hasIndex: boolean; isMainDir: boolean }> = [];
+  const walkNestedDirs = (curDir: string, relPrefix: string, depth: number) => {
+    if (depth > 3) return;
+    let children: fs.Dirent[] = [];
+    try {
+      children = listSubDirs(curDir);
+    } catch {
+      return;
+    }
+    for (const child of children) {
+      const childPath = assertPathAllowed(path.join(curDir, child.name));
+      const childRel = `${relPrefix}/${child.name}`;
+      const htmlList = listHtmlFilesInDir(childPath);
+      if (htmlList.length > 0) {
+        nestedCandidates.push({
+          relDir: childRel,
+          htmlFiles: htmlList,
+          hasIndex: htmlList[0].toLowerCase() === "index.html",
+          isMainDir: /(?:^|\/)(?:main|home|index)(?:$|\/)/i.test(childRel),
+        });
+      }
+      walkNestedDirs(childPath, childRel, depth + 1);
+    }
+  };
+  for (const sub of subDirs) {
+    const subPath = assertPathAllowed(path.join(safeRoot, sub.name));
+    walkNestedDirs(subPath, sub.name, 2);
+  }
+  if (nestedCandidates.length > 0) {
+    nestedCandidates.sort((a, b) => {
+      if (a.hasIndex !== b.hasIndex) return a.hasIndex ? -1 : 1;
+      if (a.isMainDir !== b.isMainDir) return a.isMainDir ? -1 : 1;
+      return a.relDir.localeCompare(b.relDir, "en");
+    });
+    const best = nestedCandidates[0];
+    return {
+      projectRootDir: safeRoot,
+      webRootDir: safeRoot,
+      entryRelativePath: `${best.relDir}/${best.htmlFiles[0]}`,
+      htmlFiles: best.htmlFiles,
+    };
   }
 
   return null;

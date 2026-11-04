@@ -2919,12 +2919,16 @@ export class SpckUploader {
       ): boolean => {
         const base = path.basename(filePath);
         const stem = path.parse(filePath).name;
+        const collapsedStem = stem.replace(/\s+/g, " ");
         const encodedStem = encodeURIComponent(stem);
+        const normModalText = modalTextContent.replace(/\s+/g, " ");
         return (
           modalTextContent.includes(base) ||
+          normModalText.includes(base.replace(/\s+/g, " ")) ||
           modalHtmlContent.includes(base) ||
           (stem.length >= 1 &&
             (modalTextContent.includes(`${stem}-`) ||
+              normModalText.includes(`${collapsedStem}-`) ||
               modalHtmlContent.includes(`${stem}-`) ||
               modalHtmlContent.includes(`${encodedStem}-`)))
         );
@@ -3102,44 +3106,49 @@ export class SpckUploader {
           new Set(
             attachments
               .filter((p) => !hasVerifiedSameBytesOnLms(p))
-              .map((p) => path.parse(p).name.toLowerCase())
+              .flatMap((p) => {
+                const rawStem = path.parse(p).name.toLowerCase();
+                return [rawStem, rawStem.replace(/\s+/g, " ")];
+              })
           )
         );
-        // Remove duplicate or unverified/stale same-named attachment tiles on the modal
-        const dupAttRemoved = await modal
-          .evaluate((modalEl, staleStemsArr) => {
-            const staleStems = new Set(staleStemsArr);
-            const captions = Array.from(
-              modalEl.querySelectorAll("span.MuiTypography-caption")
-            );
-            const seenPrefixes = new Set<string>();
-            let removed = 0;
-            for (const cap of captions) {
-              const txt = (cap.textContent || "").trim().toLowerCase();
-              const dashIdx = txt.indexOf("-");
-              const dotIdx = txt.lastIndexOf(".");
-              const prefix =
-                dashIdx > 0
-                  ? txt.slice(0, dashIdx)
-                  : dotIdx > 0
-                  ? txt.slice(0, dotIdx)
-                  : txt;
-              const tile = cap.parentElement;
-              const delBtn = tile?.querySelector("button") as HTMLButtonElement | null;
-              if (!delBtn) continue;
-              if (seenPrefixes.has(prefix) || staleStems.has(prefix)) {
-                delBtn.click();
-                removed++;
-              } else {
+        // Remove duplicate or unverified/stale same-named attachment tiles on the modal (click one by one so React state updates cleanly)
+        for (let pass = 0; pass < 12; pass++) {
+          const clickedOne = await modal
+            .evaluate((modalEl, staleStemsArr) => {
+              const staleStems = new Set(staleStemsArr);
+              const captions = Array.from(
+                modalEl.querySelectorAll("span.MuiTypography-caption")
+              );
+              const seenPrefixes = new Set<string>();
+              for (const cap of captions) {
+                const txt = (cap.textContent || "").trim().toLowerCase();
+                const dotIdx = txt.lastIndexOf(".");
+                const nameWithoutExt = dotIdx > 0 ? txt.slice(0, dotIdx) : txt;
+                const lastDashIdx = nameWithoutExt.lastIndexOf("-");
+                const rawPrefix =
+                  lastDashIdx > 0
+                    ? nameWithoutExt.slice(0, lastDashIdx)
+                    : nameWithoutExt;
+                const prefix = rawPrefix.replace(/\s+/g, " ");
+                const tile = cap.parentElement;
+                const delBtn = tile?.querySelector("button") as HTMLButtonElement | null;
+                if (!delBtn) continue;
+                if (
+                  seenPrefixes.has(prefix) ||
+                  staleStems.has(rawPrefix) ||
+                  staleStems.has(prefix)
+                ) {
+                  delBtn.click();
+                  return true;
+                }
                 seenPrefixes.add(prefix);
               }
-            }
-            return removed;
-          }, unverifiedAttachmentStems)
-          .catch(() => 0);
-
-        if (dupAttRemoved > 0) {
-          await page.waitForTimeout(400);
+              return false;
+            }, unverifiedAttachmentStems)
+            .catch(() => false);
+          if (!clickedOne) break;
+          await page.waitForTimeout(200);
         }
 
         const modalText = (await modal.innerText().catch(() => "")) || "";
@@ -3154,7 +3163,9 @@ export class SpckUploader {
             expectedModalAttachmentFiles.push(p);
             const dig = computeSafeFileByteDigest(p);
             if (dig) {
-              alreadyVerifiedOnModalStemDigests.set(path.parse(p).name.toLowerCase(), dig);
+              const rawStem = path.parse(p).name.toLowerCase();
+              alreadyVerifiedOnModalStemDigests.set(rawStem, dig);
+              alreadyVerifiedOnModalStemDigests.set(rawStem.replace(/\s+/g, " "), dig);
             }
           }
         }
@@ -3218,38 +3229,13 @@ export class SpckUploader {
               .update(filesFingerprint)
               .digest("hex")
               .slice(0, 8);
-            const zipFileName = `spck_${safeStudentSlug}_${filesHashShort}.zip`;
+            const currentZipStem = `spck_${safeStudentSlug}_${filesHashShort}`;
+            const zipFileName = `${currentZipStem}.zip`;
             const zipBundlePath = path.resolve(
               process.cwd(),
               "temp_submissions",
               zipFileName
             );
-            // Remove any outdated zip bundle with the same student prefix but a different content hash
-            await modal
-              .evaluate(
-                (modalEl, args) => {
-                  const captions = Array.from(
-                    modalEl.querySelectorAll("span.MuiTypography-caption")
-                  );
-                  for (const cap of captions) {
-                    const txt = (cap.textContent || "").trim();
-                    if (
-                      txt.includes(args.slugPrefix) &&
-                      !txt.includes(args.currentZipStem)
-                    ) {
-                      const delBtn = cap.parentElement?.querySelector(
-                        "button"
-                      ) as HTMLButtonElement | null;
-                      if (delBtn) delBtn.click();
-                    }
-                  }
-                },
-                {
-                  slugPrefix: `spck_${safeStudentSlug}_`,
-                  currentZipStem: `spck_${safeStudentSlug}_${filesHashShort}`,
-                }
-              )
-              .catch(() => {});
 
             const zip = new AdmZip();
             for (const fPath of filesToBundleInZip) {
@@ -3258,9 +3244,73 @@ export class SpckUploader {
             fs.mkdirSync(path.dirname(zipBundlePath), { recursive: true });
             zip.writeZip(zipBundlePath);
             const safeZipPath = assertPathAllowed(zipBundlePath);
+            const zipDigest = computeSafeFileByteDigest(safeZipPath);
             expectedModalAttachmentFiles.push(safeZipPath);
 
-            if (!isFileAlreadyOnLmsModal(safeZipPath, modalText, modalHtml)) {
+            const allBundledFilesVerified = filesToBundleInZip.every((f) =>
+              hasVerifiedSameBytesOnLms(f)
+            );
+            const isCurrentZipOnModal = isFileNamePresentOnLmsModal(
+              safeZipPath,
+              modalText,
+              modalHtml
+            );
+            const canReuseExistingZipOnModal =
+              allBundledFilesVerified && isCurrentZipOnModal;
+
+            // Remove outdated/unverified zip bundles (or extra duplicate tiles when reusing)
+            for (let pass = 0; pass < 10; pass++) {
+              const removedZipTile = await modal
+                .evaluate(
+                  (modalEl, args) => {
+                    const captions = Array.from(
+                      modalEl.querySelectorAll("span.MuiTypography-caption")
+                    );
+                    let seenCurrentStemCount = 0;
+                    for (const cap of captions) {
+                      const txt = (cap.textContent || "").trim().toLowerCase();
+                      if (!txt.includes(args.slugPrefixLower)) continue;
+                      const isCurrent = txt.includes(args.currentZipStemLower);
+                      let shouldDelete = false;
+                      if (!args.canReuse) {
+                        shouldDelete = true;
+                      } else if (!isCurrent) {
+                        shouldDelete = true;
+                      } else {
+                        seenCurrentStemCount++;
+                        if (seenCurrentStemCount > 1) {
+                          shouldDelete = true;
+                        }
+                      }
+                      if (shouldDelete) {
+                        const delBtn = cap.parentElement?.querySelector(
+                          "button"
+                        ) as HTMLButtonElement | null;
+                        if (delBtn) {
+                          delBtn.click();
+                          return true;
+                        }
+                      }
+                    }
+                    return false;
+                  },
+                  {
+                    slugPrefixLower: `spck_${safeStudentSlug}_`.toLowerCase(),
+                    currentZipStemLower: currentZipStem.toLowerCase(),
+                    canReuse: canReuseExistingZipOnModal,
+                  }
+                )
+                .catch(() => false);
+              if (!removedZipTile) break;
+              await page.waitForTimeout(200);
+            }
+
+            if (canReuseExistingZipOnModal && zipDigest) {
+              alreadyVerifiedOnModalStemDigests.set(
+                currentZipStem.toLowerCase(),
+                zipDigest
+              );
+            } else {
               finalAttachmentsToUpload.push(safeZipPath);
             }
           }
@@ -3498,8 +3548,14 @@ export class SpckUploader {
             return v;
           }
         }
-        if (fallbackStemLower && alreadyVerifiedOnModalStemDigests.has(fallbackStemLower)) {
-          return alreadyVerifiedOnModalStemDigests.get(fallbackStemLower) || "";
+        if (fallbackStemLower) {
+          if (alreadyVerifiedOnModalStemDigests.has(fallbackStemLower)) {
+            return alreadyVerifiedOnModalStemDigests.get(fallbackStemLower) || "";
+          }
+          const collapsedFallback = fallbackStemLower.replace(/\s+/g, " ");
+          if (alreadyVerifiedOnModalStemDigests.has(collapsedFallback)) {
+            return alreadyVerifiedOnModalStemDigests.get(collapsedFallback) || "";
+          }
         }
         return "";
       };
@@ -3552,6 +3608,8 @@ export class SpckUploader {
         for (const localPath of localPaths) {
           const localBase = path.basename(localPath).toLowerCase();
           const localStem = path.parse(localPath).name.toLowerCase();
+          const collapsedLocalBase = localBase.replace(/\s+/g, " ");
+          const collapsedLocalStem = localStem.replace(/\s+/g, " ");
           const localDigest = computeSafeFileByteDigest(localPath);
           const expectedUploadedLink = (
             freshlyUploadedUrlByLocalPath.get(path.resolve(localPath)) || ""
@@ -3559,7 +3617,7 @@ export class SpckUploader {
           const expectedUploadedBase = expectedUploadedLink
             ? path.basename(expectedUploadedLink)
             : "";
-          const matchedServerItem = serverItems.find((item: any) => {
+          const candidateServerItems = serverItems.filter((item: any) => {
             const rawName = String(
               typeof item === "string"
                 ? item
@@ -3573,17 +3631,50 @@ export class SpckUploader {
               }
             })();
             const parsedBase = path.basename(decodedRawName);
+            const collapsedParsedBase = parsedBase.replace(/\s+/g, " ");
             return (
               (expectedUploadedLink &&
                 (rawName.includes(expectedUploadedLink) ||
                   parsedBase === expectedUploadedBase)) ||
               parsedBase === localBase ||
+              collapsedParsedBase === collapsedLocalBase ||
               decodedRawName.includes(localBase) ||
               (localStem.length >= 1 &&
                 (parsedBase.startsWith(`${localStem}-`) ||
-                  parsedBase.startsWith(`${localStem}.`)))
+                  parsedBase.startsWith(`${localStem}.`) ||
+                  collapsedParsedBase.startsWith(`${collapsedLocalStem}-`) ||
+                  collapsedParsedBase.startsWith(`${collapsedLocalStem}.`)))
             );
           });
+          const exactFreshServerItem = expectedUploadedLink
+            ? candidateServerItems.find((item: any) => {
+                const rawName = String(
+                  typeof item === "string"
+                    ? item
+                    : item?.name || item?.fileName || item?.url || item?.src || ""
+                ).toLowerCase();
+                const decodedRawName = (() => {
+                  try {
+                    return decodeURIComponent(rawName);
+                  } catch {
+                    return rawName;
+                  }
+                })();
+                const parsedBase = path.basename(decodedRawName);
+                return (
+                  rawName.includes(expectedUploadedLink) ||
+                  parsedBase === expectedUploadedBase
+                );
+              })
+            : undefined;
+          const digestMatchedServerItem = candidateServerItems.find(
+            (item: any) =>
+              Boolean(extractServerItemByteDigest(item, localStem))
+          );
+          const matchedServerItem =
+            exactFreshServerItem ||
+            digestMatchedServerItem ||
+            candidateServerItems[0];
           if (!matchedServerItem) {
             const errMsg = `[Read-after-Write] Phản hồi API sau lưu thiếu ${categoryLabel} '${path.basename(localPath)}'.`;
             spckUploadRepo.recordSessionFailure(

@@ -188,25 +188,33 @@ function resolveStudentSkillLevelLabel(
       continue;
     }
 
-    if (/xuất sắc|giỏi|vận dụng.*sáng tạo|sáng tạo|🌟|💡|lvl_.*xuat_sac|tier_1/i.test(lower)) {
+    if (
+      /xuất sắc|giỏi|vận dụng.*sáng tạo|sáng tạo|chủ động thử.*sửa lỗi|🌟|💡|🧠|lvl_.*xuat_sac|tier_1/i.test(
+        lower
+      )
+    ) {
       hasExcellent = true;
       positiveCount++;
       continue;
     }
     if (
-      /mất tập trung|xao nhãng|nói chuyện riêng|làm việc riêng|cần tập trung hơn|👀|tier_3/i.test(
+      /mất tập trung|cần nhắc tập trung|xao nhãng|nói chuyện riêng|làm việc riêng|cần tập trung hơn|👀|tier_3/i.test(
         lower
       )
     ) {
       hasDistracted = true;
       continue;
     }
-    if (/thao tác.*chậm|cú pháp còn chậm|lúng túng|hay nhầm lệnh|⌨️|🔌|🐛/i.test(lower)) {
+    if (
+      /thao tác.*chậm|cú pháp còn chậm|lập trình cần hỗ trợ|lúng túng|hay nhầm lệnh|⌨️|🔌|🧩|🐛/i.test(
+        lower
+      )
+    ) {
       hasImprove = true;
       continue;
     }
     if (
-      /tiếp thu chậm|lắp ráp còn chậm|nhầm chốt|cần kèm|trung bình|chưa kịp|🐢|🔩|🛠️|lvl_.*can_kem|tier_4|tier_5/i.test(
+      /tiếp thu chậm|lắp ráp còn chậm|lắp ráp cần hỗ trợ|nhầm chốt|cần kèm|trung bình|chưa kịp|🐢|🔩|🛠️|lvl_.*can_kem|tier_4|tier_5/i.test(
         lower
       )
     ) {
@@ -214,7 +222,7 @@ function resolveStudentSkillLevelLabel(
       continue;
     }
     if (
-      /tiếp thu tốt|làm bài tập đầy đủ|lắp ráp.*lập trình tốt|hăng hái|phối hợp nhóm|giữ kit tốt|đạt yêu cầu|khá|tốt|tích cực|hiểu bài nhanh|👍|✅|📝|🙋|🤖|🤝|lvl_.*dat|tier_2/i.test(
+      /tiếp thu tốt|làm bài tập đầy đủ|lắp ráp đúng mẫu|lập trình chạy đúng|lắp ráp.*lập trình tốt|hăng hái|phối hợp nhóm|hợp tác nhóm|giữ kit tốt|đạt yêu cầu|khá|tốt|tích cực|hiểu bài nhanh|👍|✅|📝|🙋|🤖|🔧|💻|🤝|lvl_.*dat|tier_2/i.test(
         lower
       )
     ) {
@@ -1088,6 +1096,88 @@ export default function SessionCommentsPage() {
     const deadlineLine = nextDateWithWeekday || "Trước buổi học kế tiếp";
     const rawKnowledgeItems =
       currentKeyKnowledge.length > 0 ? currentKeyKnowledge : [currentTopic];
+    const isRoboticsZalo =
+      /\b(ROB|ROBOTICS|PREB|PREA|PREI|ARMB|ARMA|ARMI|SEMIB|SEMIA|SEMII|VEX)\w*/i.test(upperCode) ||
+      /(?:-|_)ROB|[A-Z]*ROB\d/i.test(upperCode);
+    if (isRoboticsZalo) {
+      const sessionNumPad2 = String(sessionNum).padStart(2, "0");
+      const nextSessionNumPad2 = String(nextSessionNum).padStart(2, "0");
+      const totalPad2 = totalStudents > 0 ? String(totalStudents).padStart(2, "0") : "..";
+      const effectivePresent = hasUnconfirmedAttendance
+        ? Math.max(0, totalStudents - absentStudents.length)
+        : presentStudents;
+      const presentPad2 =
+        totalStudents > 0 ? String(effectivePresent).padStart(2, "0") : "..";
+      const absentSuffix =
+        !hasUnconfirmedAttendance && absentShortNames.length > 0
+          ? ` (Vắng: ${absentShortNames.join(", ")})`
+          : "";
+      const cleanTopicCasePreserved =
+        String(currentTopic || `Bài ${sessionNum}`)
+          .replace(/^(?:BÀI|BUỔI)\s+\d+\s*[-:–.]*\s*/i, "")
+          .trim() || `Bài học buổi ${sessionNum}`;
+      const roboticsKnowledgeLines = rawKnowledgeItems
+        .map((item) => {
+          const cleanItem = String(item || "")
+            .trim()
+            .replace(/^(?:[-•*🔹+]\s*)+/, "")
+            .trim();
+          return cleanItem ? `🔹 ${cleanItem}` : "";
+        })
+        .filter(Boolean)
+        .join("\n");
+      const joinedKnowledge = rawKnowledgeItems.join(" ");
+      const hasConditionLoopSensor =
+        /điều kiện|if\.\.\.else/i.test(joinedKnowledge) &&
+        /vòng lặp/i.test(joinedKnowledge) &&
+        /cảm biến/i.test(joinedKnowledge);
+      const roboticsGeneralFeedback = hasConditionLoopSensor
+        ? `Trong buổi học số ${sessionNumPad2}, các con tham gia học tập nghiêm túc, tích cực trao đổi với giáo viên và thực hành các nhiệm vụ được giao. Qua bài học, các con được rèn luyện kỹ năng lắp ráp, tư duy logic và vận dụng câu lệnh điều kiện, vòng lặp cùng cảm biến vào lập trình mô hình.`
+        : `Trong buổi học số ${sessionNumPad2}, các con tham gia học tập nghiêm túc, tích cực trao đổi với giáo viên và thực hành các nhiệm vụ được giao. Qua bài học, các con được rèn luyện kỹ năng lắp ráp, tư duy logic và vận dụng kiến thức đã học vào chế tạo, lập trình mô hình.`;
+      const trimmedHw = String(currentHomeworkBrief || "").trim();
+      const roboticsHwLines = trimmedHw
+        ? trimmedHw
+            .split(/\r?\n/)
+            .flatMap((line) =>
+              line
+                .replace(/^(?:[-•*🔹+]\s*)+/, "")
+                .trim()
+                .split(
+                  /(?<=[.!?])\s+(?=[A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ])/
+                )
+            )
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .join("\n")
+        : [
+            "Ôn tập các câu lệnh và nguyên lý lắp ráp đã học trong buổi học.",
+            "Chuẩn bị bài cho buổi học tiếp theo.",
+          ].join("\n");
+      const cleanNextTopicCasePreserved =
+        String(nextSyllabusSess?.topic || nextSess?.topic || `Nội dung buổi ${nextSessionNum}`)
+          .replace(/^(?:BÀI|BUỔI)\s+\d+\s*[-:–.]*\s*/i, "")
+          .trim() || `Nội dung buổi ${nextSessionNum}`;
+      const hasConfirmedDate =
+        Boolean(sessionDate) && sessionDate !== "chưa xác nhận ngày học";
+      const roboticsPart1 = `📢 TỔNG KẾT BUỔI HỌC SỐ ${sessionNumPad2} – ${upperCode}
+@All Kính gửi Quý Phụ huynh,
+Giáo viên xin cập nhật tình hình học tập của các con sau buổi học số ${sessionNumPad2}${
+        hasConfirmedDate ? ` – ngày ${sessionDate}` : ""
+      }.
+👥 Sĩ số: ${totalPad2} học viên | ✅ Hiện diện: ${presentPad2} học viên${absentSuffix}
+📝 NỘI DUNG BUỔI HỌC
+📚 Bài ${sessionNum}: ${cleanTopicCasePreserved}
+${roboticsKnowledgeLines}
+🌟 TÌNH HÌNH HỌC TẬP
+${roboticsGeneralFeedback}
+🏡 BÀI TẬP VỀ NHÀ
+${roboticsHwLines}
+🗓 BUỔI HỌC TIẾP THEO – BUỔI ${nextSessionNumPad2}
+📚 Nội dung: Bài ${nextSessionNum} – ${cleanNextTopicCasePreserved}
+⏰ ${nextTimeLine}
+💖 Giáo viên chân thành cảm ơn Quý Phụ huynh đã luôn đồng hành và hỗ trợ các con trong quá trình học tập!`;
+      return activePart2 ? `${roboticsPart1}\n\n${activePart2}` : roboticsPart1;
+    }
     const keyKnowledgeText = rawKnowledgeItems
       .map((item) => {
         const t = String(item || "").trim();
@@ -2322,7 +2412,7 @@ ${homeworkDetails}
 
     const defaultGoodLabel =
       quickTagTrack === "robotics" || detectTrackByClassCode(reqClassId) === "robotics"
-        ? "🤖 Lắp ráp & Lập trình tốt"
+        ? "🔧 Lắp ráp đúng mẫu"
         : "✅ Tiếp thu tốt";
 
     const initialAttendanceVersions = new Map<string, number>(

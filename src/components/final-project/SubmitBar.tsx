@@ -12,6 +12,7 @@ export interface SubmitBarProps {
 export function SubmitBar({ workflow }: SubmitBarProps) {
   const {
     rows,
+    students,
     session14Evals,
     totalStepsCount,
     lastSubmissionSummary,
@@ -105,8 +106,22 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
 
   const verifiedSpckCountForCurrentSession = verifiedRowsCountForCurrentSession;
 
+  const activeRosterStudents = (students || []).filter(
+    (s) => s.isActive !== 0
+  );
+  const verifiedStudentIdSet = new Set(
+    assignedRows
+      .filter(isRowVerifiedAndCleanForCurrentSession)
+      .map((r) => r.assignedStudentId)
+  );
+  const missingRosterSpckCount = activeRosterStudents.filter(
+    (s) => !verifiedStudentIdSet.has(s.studentId)
+  ).length;
+
   const pendingOrFailedSpckCountForCurrentSession =
-    unverifiedOrUnassignedRowsCountForCurrentSession + summaryRetryCount;
+    unverifiedOrUnassignedRowsCountForCurrentSession +
+    summaryRetryCount +
+    missingRosterSpckCount;
 
   const evalsForCurrentClass = (session14Evals || []).filter(
     (ev) => !ev.classId || ev.classId === selectedClassId
@@ -119,11 +134,15 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
   );
 
   const assignedStudentIds = assignedRows.map((r) => r.assignedStudentId);
+  const targetCheckStudentIds =
+    activeRosterStudents.length > 0
+      ? activeRosterStudents.map((s) => s.studentId)
+      : assignedStudentIds;
 
   const allAssignedStudentsHaveVerifiedEval =
-    assignedStudentIds.length > 0 &&
-    evalsForCurrentClass.length > 0 &&
-    assignedStudentIds.every(
+    targetCheckStudentIds.length > 0 &&
+    evalsForCurrentClass.length >= targetCheckStudentIds.length &&
+    targetCheckStudentIds.every(
       (sid) => evalByStudentId.get(sid)?.status === "VERIFIED"
     ) &&
     evalsForCurrentClass.every((ev) => ev.status === "VERIFIED");
@@ -137,6 +156,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
     sessionNumber: selectedSessionNumber,
     verifiedCount: verifiedSpckCountForCurrentSession,
     pendingOrFailedCount: pendingOrFailedSpckCountForCurrentSession,
+    totalRosterCount: activeRosterStudents.length,
   });
 
   const showSession14ReportCardHandoff =
@@ -171,7 +191,11 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
         body: JSON.stringify({
           classCode: reqClassId,
           milestoneTaskCount: reqMilestoneCount,
-          resetOthers: true,
+          resetOthers: false,
+          allowDecrease: false,
+          verifiedSpckCount: verifiedSpckCountForCurrentSession,
+          expectedRosterCount:
+            activeRosterStudents.length || verifiedSpckCountForCurrentSession,
         }),
       });
       const data = await res.json();

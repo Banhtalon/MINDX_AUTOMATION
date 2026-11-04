@@ -39,12 +39,39 @@ export const ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
   ".gml",
   ".yy",
   ".html",
+  ".htm",
   ".css",
   ".js",
+  ".mjs",
   ".pptx",
   ".pdf",
   ".docx",
   ".txt",
+  ".text",
+  ".md",
+  ".csv",
+  ".xml",
+  ".sql",
+  ".json",
+]);
+
+const TEXT_ATTACHMENT_EXTENSIONS = new Set([
+  ".py",
+  ".ipynb",
+  ".ui",
+  ".qss",
+  ".gml",
+  ".yy",
+  ".html",
+  ".htm",
+  ".css",
+  ".js",
+  ".mjs",
+  ".txt",
+  ".text",
+  ".md",
+  ".csv",
+  ".xml",
   ".sql",
   ".json",
 ]);
@@ -537,6 +564,21 @@ export function validateSpckAttachmentFile(fullEntryPath: string): {
   }
 
   const buf = fs.readFileSync(safePath);
+  if (TEXT_ATTACHMENT_EXTENSIONS.has(ext)) {
+    if (buf.includes(0x00)) {
+      return {
+        valid: false,
+        reason: `File mã nguồn '${fileName}' chứa dữ liệu nhị phân không hợp lệ (null byte) nên bị loại bỏ.`,
+      };
+    }
+    const textContent = buf.toString("utf8").replace(/^\uFEFF/, "");
+    if (textContent.trim().length === 0) {
+      return {
+        valid: false,
+        reason: `Tài liệu đính kèm '${fileName}' chỉ chứa khoảng trắng nên bị bỏ qua.`,
+      };
+    }
+  }
   if (ext === ".pdf") {
     const pdfCheck = parseMediaBuffer(buf, fileName, ext);
     if (!pdfCheck.success) {
@@ -1015,6 +1057,100 @@ export function scanStudentSpckFolder(
   let allRelatedLinks: SpckRelatedLink[] = [];
   let customTitleFromLinks: string | undefined;
 
+  // Detect Web project structure (.html/.htm in root or subfolders up to depth 3)
+  // so website asset images (icons, banners, product catalog photos in img/images/...) are not
+  // misclassified as LMS product screenshots, and multi-file/subfolder Web code can be bundled into a .zip.
+  const webHtmlFiles: string[] = [];
+  const webSourceFiles: Array<{ fullPath: string; relPosix: string }> = [];
+  let hasSubfolderWebCode = false;
+  const WEB_SOURCE_BUNDLE_EXTS = new Set([
+    ".html",
+    ".htm",
+    ".css",
+    ".js",
+    ".mjs",
+    ".json",
+    ".txt",
+    ".text",
+    ".md",
+    ".csv",
+    ".xml",
+  ]);
+  const walkWebProject = (curDir: string, depth: number) => {
+    if (depth > 3) return;
+    let dirItems: fs.Dirent[] = [];
+    try {
+      dirItems = fs
+        .readdirSync(curDir, { withFileTypes: true })
+        .sort((a, b) => a.name.localeCompare(b.name, "en"));
+    } catch {
+      return;
+    }
+    for (const item of dirItems) {
+      if (item.name.startsWith(".")) continue;
+      const lower = item.name.toLowerCase();
+      if (
+        lower.startsWith("_spck_") ||
+        lower === "__pycache__" ||
+        lower === "node_modules" ||
+        lower === ".git" ||
+        lower === ".venv" ||
+        lower === "venv" ||
+        lower === "build" ||
+        lower === "dist"
+      ) {
+        continue;
+      }
+      let fullItemPath: string;
+      try {
+        fullItemPath = assertPathAllowed(path.join(curDir, item.name));
+        const st = fs.lstatSync(fullItemPath);
+        if (st.isSymbolicLink()) continue;
+        if (st.isDirectory()) {
+          walkWebProject(fullItemPath, depth + 1);
+        } else if (st.isFile()) {
+          if (lower === "links.txt" || lower === "link.txt") continue;
+          const itemExt = path.extname(lower);
+          if (itemExt === ".html" || itemExt === ".htm") {
+            webHtmlFiles.push(fullItemPath);
+            if (depth >= 1) hasSubfolderWebCode = true;
+          } else if (depth >= 1 && WEB_SOURCE_BUNDLE_EXTS.has(itemExt)) {
+            hasSubfolderWebCode = true;
+          }
+          if (WEB_SOURCE_BUNDLE_EXTS.has(itemExt) && st.size > 0) {
+            if (st.size <= 15 * 1024 * 1024) {
+              const rawBuf = fs.readFileSync(fullItemPath);
+              if (!rawBuf.includes(0x00)) {
+                const textContent = rawBuf.toString("utf8").replace(/^\uFEFF/, "");
+                if (textContent.trim().length > 0) {
+                  const relPosix = path
+                    .relative(safeFolderPath, fullItemPath)
+                    .split(path.sep)
+                    .join("/");
+                  if (relPosix && !relPosix.startsWith("..")) {
+                    webSourceFiles.push({ fullPath: fullItemPath, relPosix });
+                  }
+                }
+              }
+            } else {
+              warnings.push(
+                `File mã nguồn '${item.name}' vượt quá giới hạn 15MB cho 1 tệp trong gói nén ZIP nên không tự động đóng gói.`
+              );
+            }
+          }
+        }
+      } catch {
+        continue;
+      }
+    }
+  };
+  walkWebProject(safeFolderPath, 0);
+  const hasWebProjectHtmlFiles = webHtmlFiles.length > 0;
+  const ownerRootPhotoPaths = findOwnerProvidedRootPhotos(safeFolderPath);
+  const ownerRootPhotoKeySet = new Set(
+    ownerRootPhotoPaths.map((p) => path.resolve(p).toLowerCase())
+  );
+
   const pushValidatedImage = (fileName: string, fullPath: string, buf: Buffer, ext: string) => {
     const dims = extractImageDimensionsFromBuffer(buf, ext);
     const ratio = dims && dims.height > 0 ? dims.width / dims.height : null;
@@ -1060,6 +1196,15 @@ export function scanStudentSpckFolder(
         lowerDir === "build" ||
         lowerDir === "dist"
       ) {
+        continue;
+      }
+      // In a Web project (.html/.htm), subfolders other than _spck_* (such as img/, images/,
+      // Articles/, LCourses/, printer accessories/) contain website resource assets, not LMS product screenshots.
+      const isSpckManagedImageDir =
+        lowerDir === "_spck_app_shots" ||
+        lowerDir === "_spck_owner_uploads" ||
+        lowerDir === "_spck_youtube_frames";
+      if (hasWebProjectHtmlFiles && !isSpckManagedImageDir) {
         continue;
       }
       try {
@@ -1118,9 +1263,10 @@ export function scanStudentSpckFolder(
     const lowerName = entry.name.toLowerCase();
     const ext = path.extname(lowerName);
 
-    // Skip previously auto-generated robotics bundle zip or IDE/OS metadata files during re-scan
+    // Skip previously auto-generated robotics/web bundle zip or IDE/OS metadata files during re-scan
     if (
       lowerName.endsWith("_robotics_package.zip") ||
+      lowerName.endsWith("_web_package.zip") ||
       lowerName.endsWith(".code-workspace") ||
       lowerName === "desktop.ini" ||
       lowerName === "thumbs.db"
@@ -1157,17 +1303,28 @@ export function scanStudentSpckFolder(
           parseMediaBuffer(buf, entry.name, ".webp").success ||
           parseMediaBuffer(buf, entry.name, ".jpg").success ||
           parseMediaBuffer(buf, entry.name, ".png").success;
-        const hasCapturedOrWebAppContext = entries.some(
-          (e) =>
-            e.name.toLowerCase() === "_spck_app_shots" ||
-            /\.(?:html?|ui)$/i.test(e.name)
-        );
+        const hasCapturedOrWebAppContext =
+          hasWebProjectHtmlFiles ||
+          entries.some(
+            (e) =>
+              e.name.toLowerCase() === "_spck_app_shots" ||
+              /\.(?:html?|ui)$/i.test(e.name)
+          );
         if (isOtherValidImageFormat && hasCapturedOrWebAppContext) {
           continue;
         }
         warnings.push(
           `Ảnh '${entry.name}' bị hỏng hoặc sai định dạng nên bị loại bỏ: ${mediaCheck.errorReason || "PARSE_ERROR"}`
         );
+        continue;
+      }
+      // In a Web project (.html/.htm), root images that are neither Owner-provided photos nor explicit
+      // thumbnails (e.g. Icon.png, Matrix.png, logo.png) are website assets and not LMS product screenshots.
+      if (
+        hasWebProjectHtmlFiles &&
+        !ownerRootPhotoKeySet.has(path.resolve(fullEntryPath).toLowerCase()) &&
+        !isThumbnailFilename(entry.name)
+      ) {
         continue;
       }
       pushValidatedImage(entry.name, fullEntryPath, buf, ext);
@@ -1201,7 +1358,59 @@ export function scanStudentSpckFolder(
       continue;
     }
 
+    if (
+      hasWebProjectHtmlFiles &&
+      /\.(?:jfif|svg|ico|gif|bmp|avif|woff2?|ttf|otf|eot|mp3|wav|ogg|mp4|webm)$/i.test(
+        lowerName
+      )
+    ) {
+      continue;
+    }
+
     warnings.push(`Đã bỏ qua file không thuộc danh mục hỗ trợ SPCK: '${entry.name}'`);
+  }
+
+  // Package multi-file / subfolder Web source files (.html/.htm/.css/.js/.mjs/...) into a single .zip attachment
+  // when the student's Web project exceeds the 10-file LMS attachment limit or organizes code in subfolders.
+  if (
+    hasWebProjectHtmlFiles &&
+    webSourceFiles.length > 0 &&
+    (validAttachments.length > MAX_SPCK_ATTACHMENTS ||
+      webSourceFiles.length > MAX_SPCK_ATTACHMENTS ||
+      hasSubfolderWebCode)
+  ) {
+    try {
+      const zip = new AdmZip();
+      for (const webFile of webSourceFiles) {
+        const fileBytes = fs.readFileSync(webFile.fullPath);
+        zip.addFile(webFile.relPosix, fileBytes);
+      }
+      const safeSlug =
+        stripVietnameseDiacritics(folderName)
+          .replace(/[^a-zA-Z0-9_-]+/g, "_")
+          .replace(/^_+|_+$/g, "") || "student";
+      const bundleZipPath = assertPathAllowed(
+        path.join(safeFolderPath, `${safeSlug}_web_package.zip`)
+      );
+      zip.writeZip(bundleZipPath);
+      const zipCheck = validateSpckAttachmentFile(bundleZipPath);
+      if (zipCheck.valid) {
+        const bundledPathKeys = new Set(
+          webSourceFiles.map((wf) => path.resolve(wf.fullPath).toLowerCase())
+        );
+        const unbundledAttachments = validAttachments.filter(
+          (attPath) => !bundledPathKeys.has(path.resolve(attPath).toLowerCase())
+        );
+        validAttachments.length = 0;
+        validAttachments.push(bundleZipPath, ...unbundledAttachments);
+      } else {
+        warnings.push(zipCheck.reason || "Không thể xác thực gói ZIP Web vừa đóng gói.");
+      }
+    } catch (err) {
+      warnings.push(
+        `Lỗi khi đóng gói ZIP cho mã nguồn Web: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
   }
 
   // Package valid raw Robotics files into a lossless .zip attachment if present (T14)
@@ -1287,7 +1496,7 @@ export function scanStudentSpckFolder(
   const ownerUploadImages = validImages.filter((img) =>
     /[\\/]_spck_owner_uploads[\\/]/i.test(img.fullPath)
   );
-  const ownerRootImages = findOwnerProvidedRootPhotos(safeFolderPath)
+  const ownerRootImages = ownerRootPhotoPaths
     .map((p) => validImages.find((img) => samePath(img.fullPath, p)))
     .filter((img): img is (typeof validImages)[number] => Boolean(img));
   const explicitOwnerUploadThumb = ownerUploadImages.find((img) =>

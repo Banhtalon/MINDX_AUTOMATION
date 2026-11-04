@@ -1,6 +1,8 @@
 # MINDX AUTOMATION BOT - AI AGENT RULES
 
-1. **Single Source of Truth:** Luôn đọc `@PROJECT_STATE.md` đầu tiên để nắm nhanh tổng quan, bản đồ file và các đặc thù thực tế của MindX LMS, sau đó đối chiếu `@MINDX_AUTOMATION_PLAN.md` và `@CHANGELOG.md` trước khi viết hoặc sửa code. Khi hoàn thành một task hoặc thay đổi kiến trúc/luồng nghiệp vụ, bắt buộc cập nhật cả `PROJECT_STATE.md`, `CHANGELOG.md` và `MINDX_AUTOMATION_PLAN.md`.
+1. **Single Source of Truth & GitHub Sync:** Luôn đọc `@PROJECT_STATE.md` đầu tiên để nắm nhanh tổng quan, bản đồ file và các đặc thù thực tế của MindX LMS, sau đó đối chiếu `@MINDX_AUTOMATION_PLAN.md` và `@CHANGELOG.md` trước khi viết hoặc sửa code. Khi hoàn thành một tính năng, bản sửa lỗi (fix) hoặc thay đổi kiến trúc/luồng nghiệp vụ, bắt buộc:
+   - Cập nhật đầy đủ cả 3 tài liệu `PROJECT_STATE.md`, `CHANGELOG.md` (ghi changelog rõ ràng, chi tiết theo ngày) và `MINDX_AUTOMATION_PLAN.md`.
+   - **Đồng bộ lên GitHub (GitHub là Source of Truth):** Sau khi kiểm thử đạt và cập nhật changelog xong, luôn thực hiện `git add`, `git commit` (message rõ ràng) và `git push` lên kho GitHub chính của dự án.
 2. **Local-Only Security:**
    - Server chính chỉ bind vào `127.0.0.1` (**Ngoại lệ có chủ đích duy nhất:** Máy chủ phụ *Cổng Thu Bài Học Sinh Trực Tuyến* `student-portal-server.ts` chỉ bật khi giáo viên chủ động bấm mở trong giờ học, bind `0.0.0.0` / Cloudflare Quick Tunnel và bắt buộc bảo vệ bằng khóa ngẫu nhiên `sessionToken` + giới hạn ghi vào đúng thư mục lớp trong Path Allowlist).
    - Không bao giờ import hoặc trả biến môi trường nhạy cảm (`TEACHING_PASSWORD`, `LMS_PASSWORD`, `GEMINI_API_KEY`) về Client Components (`'use client'`).

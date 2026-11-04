@@ -483,3 +483,286 @@ html[data-theme="light"] .mindx-main button[class*="bg-slate-900"]:not(.mindx-da
 html[data-theme="light"] .mindx-main button[class*="bg-slate-800"]:hover:not(.mindx-dark-btn) {
   background-color: #e2e8f0 !important;
 }
+
+
+/* ==========================================================================
+   NEO-BRUTALISM DASHBOARD PALETTE (v3.4.0)
+   ========================================================================== */
+.neo-title-text {
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .neo-title-text {
+  color: #f8fafc !important;
+}
+
+.neo-subtitle-text {
+  color: #475569 !important;
+}
+html[data-theme="dark"] .neo-subtitle-text {
+  color: #94a3b8 !important;
+}
+
+.neo-title-icon {
+  background-color: #bfdbfe !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #1e3a8a !important;
+}
+
+.neo-kpi-total {
+  background-color: #ffffff !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #0f172a !important;
+}
+
+.neo-kpi-pending {
+  background-color: #ffedd5 !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #9a3412 !important;
+}
+
+.neo-kpi-done {
+  background-color: #f0fdf4 !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #14532d !important;
+}
+
+.neo-btn-blue {
+  background-color: #2563eb !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #ffffff !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+}
+.neo-btn-blue:hover:not(:disabled) {
+  background-color: #1d4ed8 !important;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #0f172a !important;
+}
+.neo-btn-blue:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px #0f172a !important;
+}
+
+.neo-btn-yellow {
+  background-color: #facc15 !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #0f172a !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+}
+.neo-btn-yellow:hover {
+  background-color: #eab308 !important;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #0f172a !important;
+}
+
+.neo-btn-neutral {
+  background-color: #e2e8f0 !important;
+  border: 1.5px solid #334155 !important;
+  box-shadow: 1.5px 1.5px 0px #0f172a !important;
+  color: #0f172a !important;
+  transition: background-color 0.12s ease, transform 0.12s ease;
+}
+.neo-btn-neutral:hover {
+  background-color: #cbd5e1 !important;
+  transform: translate(-0.5px, -0.5px);
+}
+
+.neo-banner-success {
+  background-color: #bbf7d0 !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #064e3b !important;
+}
+
+.neo-banner-error {
+  background-color: #fecaca !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #7f1d1d !important;
+}
+
+.neo-search-box {
+  background-color: #ffffff !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #0f172a !important;
+}
+
+.neo-filter-active {
+  background-color: #2563eb !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #ffffff !important;
+}
+
+.neo-filter-inactive {
+  background-color: #e2e8f0 !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #0f172a !important;
+}
+.neo-filter-inactive:hover {
+  background-color: #cbd5e1 !important;
+}
+
+.neo-group-box {
+  background-color: #ffffff !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 3px 3px 0px #0f172a !important;
+  color: #0f172a !important;
+}
+
+.neo-group-header-pending {
+  background: linear-gradient(90deg, #fde68a 0%, #fef08a 100%) !important;
+  color: #0f172a !important;
+}
+
+.neo-group-header-done {
+  background: linear-gradient(90deg, #bbf7d0 0%, #dcfce7 100%) !important;
+  color: #0f172a !important;
+}
+
+.neo-row {
+  background-color: #ffffff !important;
+  border-top: 2px solid #0f172a !important;
+  color: #0f172a !important;
+}
+.neo-row:hover {
+  background-color: #f8fafc !important;
+}
+
+.neo-idx-pending {
+  background-color: #fde68a !important;
+  border: 1.5px solid #d97706 !important;
+  color: #92400e !important;
+}
+
+.neo-idx-done {
+  background-color: #e2e8f0 !important;
+  border: 1.5px solid #94a3b8 !important;
+  color: #1e293b !important;
+}
+
+.neo-session-blue {
+  background-color: #dbeafe !important;
+  border: 1.5px solid #60a5fa !important;
+  color: #1e40af !important;
+}
+.neo-session-amber {
+  background-color: #fef3c7 !important;
+  border: 1.5px solid #f59e0b !important;
+  color: #92400e !important;
+}
+.neo-session-green {
+  background-color: #dcfce7 !important;
+  border: 1.5px solid #4ade80 !important;
+  color: #166534 !important;
+}
+.neo-session-purple {
+  background-color: #ede9fe !important;
+  border: 1.5px solid #a78bfa !important;
+  color: #5b21b6 !important;
+}
+
+.neo-pill-pending {
+  background-color: #ffedd5 !important;
+  border: 1.5px solid #c2410c !important;
+  color: #7c2d12 !important;
+  transition: background-color 0.12s ease, transform 0.12s ease;
+}
+.neo-pill-pending:hover {
+  background-color: #fed7aa !important;
+  transform: translateY(-1px);
+}
+
+.neo-pill-done {
+  background-color: #bbf7d0 !important;
+  border: 1.5px solid #15803d !important;
+  color: #14532d !important;
+  transition: background-color 0.12s ease, transform 0.12s ease;
+}
+.neo-pill-done:hover {
+  background-color: #86efac !important;
+  transform: translateY(-1px);
+}
+
+.neo-pill-substatus {
+  background-color: #e2e8f0 !important;
+  border: 1.5px solid #94a3b8 !important;
+  color: #334155 !important;
+}
+
+.neo-ws-card {
+  border: 2px solid #0f172a !important;
+  box-shadow: 4px 4px 0px #0f172a !important;
+  color: #0f172a !important;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+.neo-ws-card:hover {
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 5.5px 5.5px 0px #0f172a !important;
+}
+
+.neo-ws-amber {
+  background-color: #fff7ed !important;
+  border-left: 7px solid #ea580c !important;
+}
+.neo-ws-blue {
+  background-color: #eff6ff !important;
+  border-left: 7px solid #2563eb !important;
+}
+.neo-ws-emerald {
+  background-color: #f0fdf4 !important;
+  border-left: 7px solid #16a34a !important;
+}
+.neo-ws-purple {
+  background-color: #faf5ff !important;
+  border-left: 7px solid #9333ea !important;
+}
+
+.neo-ws-num-amber {
+  background-color: #ffedd5 !important;
+  border: 2px solid #ea580c !important;
+  color: #c2410c !important;
+}
+.neo-ws-num-blue {
+  background-color: #dbeafe !important;
+  border: 2px solid #2563eb !important;
+  color: #1d4ed8 !important;
+}
+.neo-ws-num-emerald {
+  background-color: #dcfce7 !important;
+  border: 2px solid #16a34a !important;
+  color: #15803d !important;
+}
+.neo-ws-num-purple {
+  background-color: #f3e8ff !important;
+  border: 2px solid #9333ea !important;
+  color: #7e22ce !important;
+}
+
+.neo-ws-badge-amber {
+  background-color: #ea580c !important;
+  border: 1.5px solid #0f172a !important;
+  color: #ffffff !important;
+}
+.neo-ws-badge-blue {
+  background-color: #2563eb !important;
+  border: 1.5px solid #0f172a !important;
+  color: #ffffff !important;
+}
+.neo-ws-badge-emerald {
+  background-color: #16a34a !important;
+  border: 1.5px solid #0f172a !important;
+  color: #ffffff !important;
+}
+.neo-ws-badge-purple {
+  background-color: #7e22ce !important;
+  border: 1.5px solid #0f172a !important;
+  color: #ffffff !important;
+}

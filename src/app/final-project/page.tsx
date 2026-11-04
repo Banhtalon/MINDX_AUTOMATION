@@ -943,6 +943,8 @@ let activeUiClassId = "";
 let loadClassRequestSeq = 0;
 const pageSessionId = `UI_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 const latestRowSaveSequence = new Map<string, number>();
+const latestKnownDraftVersionByRow = new Map<string, number>();
+const inFlightRowSavePromises = new Map<string, Promise<any>>();
 
 export default function FinalProjectPage() {
   const [classes, setClasses] = useState<ClassOption[]>([]);
@@ -1083,6 +1085,14 @@ export default function FinalProjectPage() {
       const mapped: ScannedFolderUIItem[] = dbRecords.map((rec) =>
         buildRowFromDbRecord(rec, studentMap.get(rec.studentId), targetSess)
       );
+      for (const item of mapped) {
+        if (item.assignedStudentId && typeof item.draftVersion === "number") {
+          const rKey = `${(dbRecords[0]?.classId || activeUiClassId || "").toUpperCase()}::${
+            item.folderPath || item.assignedStudentId
+          }`;
+          latestKnownDraftVersionByRow.set(rKey, item.draftVersion);
+        }
+      }
       setRows(mapped);
       const assignedIds = mapped.map((r) => r.assignedStudentId).filter(Boolean);
       const unsubmittedForTargetIds = mapped
@@ -1416,6 +1426,9 @@ export default function FinalProjectPage() {
           const dbScreenshots = dbRec?.screenshotsJson
             ? parseJsonSafe<string[]>(dbRec.screenshotsJson, [])
             : [];
+          const dbAttachments = dbRec?.attachmentsJson
+            ? parseJsonSafe<string[]>(dbRec.attachmentsJson, [])
+            : [];
           const dbQuickTags = parseJsonSafe<string[]>(dbRec?.quickTagsJson, []);
           // V272-F04: values kept from the screen (not yet in DB) must stay marked as unsaved
           const keptUnsavedFromScreen = Boolean(
@@ -1445,11 +1458,11 @@ export default function FinalProjectPage() {
             projectTitle: formattedTitle,
             baseProjectTitle: stripUiSessionSuffix(formattedTitle),
             thumbnailPath: dbRec?.thumbnailPath || pkg.thumbnailPath || "",
-            screenshots: dbScreenshots.length > 0 ? dbScreenshots : pkg.screenshots || [],
-            attachments: pkg.attachments || [],
-            youtubeUrlsText: (dbYtUrls.length > 0 ? dbYtUrls : pkg.youtubeUrls || []).join("\n"),
+            screenshots: dbRec ? dbScreenshots : pkg.screenshots || [],
+            attachments: dbRec ? dbAttachments : pkg.attachments || [],
+            youtubeUrlsText: (dbRec ? dbYtUrls : pkg.youtubeUrls || []).join("\n"),
             relatedLinksText: serializeRelatedLinksToText(
-              dbRelLinks.length > 0 ? dbRelLinks : pkg.relatedLinks || []
+              dbRec ? dbRelLinks : pkg.relatedLinks || []
             ),
             quickTags:
               dbQuickTags.length > 0 ? dbQuickTags : prevRow?.quickTags || [],
@@ -1502,8 +1515,10 @@ export default function FinalProjectPage() {
           : assignedAfterScan
       );
       setBannerMessage({
-        type: "success",
-        text: `Đã quét thành công ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}'.`,
+        type: data.warning ? "warning" : "success",
+        text: data.warning
+          ? `Đã quét ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}' (Cảnh báo cần kiểm tra: ${data.warning})`
+          : `Đã quét thành công ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}'.`,
       });
       return {
         success: true,
@@ -1553,157 +1568,223 @@ export default function FinalProjectPage() {
     );
     const reassignFromStudentId =
       isStudentChanged && row.assignedStudentId ? row.assignedStudentId : undefined;
-    const effectiveExpectedVersion = isStudentChanged
-      ? overrides?.draftVersion ??
-        rows.find(
-          (r) =>
-            r.assignedStudentId === merged.assignedStudentId &&
-            r.folderPath !== merged.folderPath
-        )?.draftVersion
-      : merged.draftVersion;
 
-    try {
-      const res = await fetch("/api/spck/save-draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          classId: requestClassId,
-          studentId: merged.assignedStudentId,
-          sessionNumber: targetSessionNum,
-          expectedVersion: effectiveExpectedVersion,
-          localFolderPath: merged.folderPath,
-          matchScore: merged.matchScore,
-          isConfirmedByTeacher: merged.isConfirmedByTeacher,
-          projectTitle: merged.projectTitle,
-          thumbnailPath: merged.thumbnailPath,
-          screenshots: merged.screenshots,
-          attachments: merged.attachments,
-          youtubeUrls,
-          relatedLinks,
-          teacherComment: merged.teacherComment,
-          teacherNote: merged.teacherNote,
-          quickTags: merged.quickTags,
-          draftSeq: seq,
-          clientSessionId: pageSessionId,
-          reassignFromStudentId,
-          reassignFolder: Boolean(reassignFromStudentId),
-        }),
-      });
-      const data = await res.json();
-      const isLatestForRow =
-        latestRowSaveSequence.get(rowKey) === seq &&
-        (!activeUiClassId || activeUiClassId === requestClassId);
+    const _inFlightMap: Map<string, Promise<any>> =
+      typeof inFlightRowSavePromises !== "undefined"
+        ? inFlightRowSavePromises
+        : ((globalThis as any).__spckInFlightRowSavePromises ||= new Map());
+    const _knownVerMap: Map<string, number> =
+      typeof latestKnownDraftVersionByRow !== "undefined"
+        ? latestKnownDraftVersionByRow
+        : ((globalThis as any).__spckLatestKnownDraftVersionByRow ||= new Map());
+    const prevInFlight = _inFlightMap.get(rowKey);
+    const runRowSave = async (): Promise<any> => {
+      if (prevInFlight) {
+        await prevInFlight.catch(() => null);
+      }
+      const knownVer = prevInFlight ? _knownVerMap.get(rowKey) : undefined;
+      const effectiveExpectedVersion = isStudentChanged
+        ? overrides?.draftVersion ??
+          rows.find(
+            (r) =>
+              r.assignedStudentId === merged.assignedStudentId &&
+              r.folderPath !== merged.folderPath
+          )?.draftVersion
+        : typeof knownVer === "number" &&
+          typeof merged.draftVersion === "number" &&
+          knownVer > merged.draftVersion
+        ? knownVer
+        : merged.draftVersion;
 
-      if (res.ok && data?.success) {
-        if (data.staleIgnored && isLatestForRow) {
-          setBannerMessage({
-            type: "warning",
-            text: "Phiên bản bản nháp trên máy chủ mới hơn. Vui lòng tải lại dữ liệu trước khi lưu tiếp.",
-          });
-          return false;
-        }
-        const resolvedNextDraftVersion =
-          data.sessionDraft?.draftVersion ??
-          data.record?.draftVersion ??
-          merged.draftVersion ??
-          row.draftVersion;
-        const resolvedSavedRow: ScannedFolderUIItem = {
-          ...merged,
-          projectTitle: data.record?.projectTitle || merged.projectTitle,
-          baseProjectTitle:
-            data.record?.baseProjectTitle ||
-            stripUiSessionSuffix(data.record?.projectTitle || merged.projectTitle),
-          status: data.record?.status || merged.status,
-          contentHash: data.record?.contentHash || "",
-          errorMessage: data.record?.errorMessage || null,
-          draftVersion: resolvedNextDraftVersion,
-          isDirty: false,
-        };
-        if (isLatestForRow && data.record && !data.staleIgnored) {
-          setRows((prev) =>
-            prev.map((r) => {
-              if (r.folderPath !== merged.folderPath) return r;
-              const hasLocalEditSinceRequest =
-                r.assignedStudentId !== merged.assignedStudentId ||
-                r.isConfirmedByTeacher !== merged.isConfirmedByTeacher ||
-                r.projectTitle !== merged.projectTitle ||
-                r.thumbnailPath !== merged.thumbnailPath ||
-                r.youtubeUrlsText !== merged.youtubeUrlsText ||
-                r.relatedLinksText !== merged.relatedLinksText ||
-                r.teacherComment !== merged.teacherComment ||
-                (r.teacherNote || "") !== (merged.teacherNote || "") ||
-                JSON.stringify(r.quickTags || []) !==
-                  JSON.stringify(merged.quickTags || []) ||
-                Boolean(r.includePresentation) !==
-                  Boolean(merged.includePresentation) ||
-                JSON.stringify(r.screenshots) !== JSON.stringify(merged.screenshots) ||
-                JSON.stringify(r.attachments) !== JSON.stringify(merged.attachments);
-              const nextSessionResults =
-                parseSessionResultsMap(data.record.sessionResultsJson) ||
-                merged.sessionResults ||
-                r.sessionResults;
-              const nextSessionHistory =
-                data.record.sessionHistory || merged.sessionHistory || r.sessionHistory;
-              const nextDraftVersion = resolvedNextDraftVersion;
-              if (hasLocalEditSinceRequest) {
+      try {
+        const res = await fetch("/api/spck/save-draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            classId: requestClassId,
+            studentId: merged.assignedStudentId,
+            sessionNumber: targetSessionNum,
+            expectedVersion: effectiveExpectedVersion,
+            localFolderPath: merged.folderPath,
+            matchScore: merged.matchScore,
+            isConfirmedByTeacher: merged.isConfirmedByTeacher,
+            projectTitle: merged.projectTitle,
+            thumbnailPath: merged.thumbnailPath,
+            screenshots: merged.screenshots,
+            attachments: merged.attachments,
+            youtubeUrls,
+            relatedLinks,
+            teacherComment: merged.teacherComment,
+            teacherNote: merged.teacherNote,
+            quickTags: merged.quickTags,
+            draftSeq: seq,
+            clientSessionId: pageSessionId,
+            reassignFromStudentId,
+            reassignFolder: Boolean(reassignFromStudentId),
+          }),
+        });
+        const data = await res.json();
+        const isLatestForRow =
+          latestRowSaveSequence.get(rowKey) === seq &&
+          (!activeUiClassId || activeUiClassId === requestClassId);
+
+        if (res.ok && data?.success) {
+          if (data.staleIgnored && isLatestForRow) {
+            setBannerMessage({
+              type: "warning",
+              text: "Phiên bản bản nháp trên máy chủ mới hơn. Vui lòng tải lại dữ liệu trước khi lưu tiếp.",
+            });
+            return false;
+          }
+          const resolvedNextDraftVersion =
+            data.sessionDraft?.draftVersion ??
+            data.record?.draftVersion ??
+            effectiveExpectedVersion ??
+            merged.draftVersion ??
+            row.draftVersion;
+          if (typeof resolvedNextDraftVersion === "number") {
+            const prevKnown = _knownVerMap.get(rowKey) ?? 0;
+            if (resolvedNextDraftVersion >= prevKnown) {
+              _knownVerMap.set(rowKey, resolvedNextDraftVersion);
+            }
+          }
+          const resolvedSavedRow: ScannedFolderUIItem = {
+            ...merged,
+            projectTitle: data.record?.projectTitle || merged.projectTitle,
+            baseProjectTitle:
+              data.record?.baseProjectTitle ||
+              stripUiSessionSuffix(data.record?.projectTitle || merged.projectTitle),
+            status: data.record?.status || merged.status,
+            contentHash: data.record?.contentHash || "",
+            errorMessage: data.record?.errorMessage || null,
+            draftVersion: resolvedNextDraftVersion,
+            isDirty: false,
+          };
+          if (data.record && !data.staleIgnored) {
+            setRows((prev) =>
+              prev.map((r) => {
+                if (r.folderPath !== merged.folderPath) return r;
+                const nextDraftVersion =
+                  typeof resolvedNextDraftVersion === "number" &&
+                  typeof r.draftVersion === "number"
+                    ? Math.max(r.draftVersion, resolvedNextDraftVersion)
+                    : resolvedNextDraftVersion;
+                if (!isLatestForRow) {
+                  return {
+                    ...r,
+                    draftVersion: nextDraftVersion,
+                  };
+                }
+                const hasLocalEditSinceRequest =
+                  r.assignedStudentId !== merged.assignedStudentId ||
+                  r.isConfirmedByTeacher !== merged.isConfirmedByTeacher ||
+                  r.projectTitle !== merged.projectTitle ||
+                  r.thumbnailPath !== merged.thumbnailPath ||
+                  r.youtubeUrlsText !== merged.youtubeUrlsText ||
+                  r.relatedLinksText !== merged.relatedLinksText ||
+                  r.teacherComment !== merged.teacherComment ||
+                  (r.teacherNote || "") !== (merged.teacherNote || "") ||
+                  JSON.stringify(r.quickTags || []) !==
+                    JSON.stringify(merged.quickTags || []) ||
+                  Boolean(r.includePresentation) !==
+                    Boolean(merged.includePresentation) ||
+                  JSON.stringify(r.screenshots) !== JSON.stringify(merged.screenshots) ||
+                  JSON.stringify(r.attachments) !== JSON.stringify(merged.attachments);
+                const nextSessionResults =
+                  parseSessionResultsMap(data.record.sessionResultsJson) ||
+                  merged.sessionResults ||
+                  r.sessionResults;
+                const nextSessionHistory =
+                  data.record.sessionHistory || merged.sessionHistory || r.sessionHistory;
+                if (hasLocalEditSinceRequest) {
+                  return {
+                    ...r,
+                    sessionResults: nextSessionResults,
+                    sessionHistory: nextSessionHistory,
+                    draftVersion: nextDraftVersion,
+                  };
+                }
                 return {
                   ...r,
+                  projectTitle: data.record.projectTitle || merged.projectTitle,
+                  baseProjectTitle:
+                    data.record.baseProjectTitle ||
+                    stripUiSessionSuffix(data.record.projectTitle || merged.projectTitle),
+                  thumbnailPath: merged.thumbnailPath,
+                  screenshots: merged.screenshots,
+                  attachments: merged.attachments,
+                  youtubeUrlsText: merged.youtubeUrlsText,
+                  relatedLinksText: merged.relatedLinksText,
+                  teacherComment: merged.teacherComment,
+                  teacherNote: merged.teacherNote,
+                  quickTags: merged.quickTags,
+                  isConfirmedByTeacher: merged.isConfirmedByTeacher,
+                  assignedStudentId: merged.assignedStudentId,
+                  status: data.record.status,
+                  contentHash: data.record.contentHash || "",
+                  errorMessage: data.record.errorMessage || null,
                   sessionResults: nextSessionResults,
                   sessionHistory: nextSessionHistory,
                   draftVersion: nextDraftVersion,
+                  hasNewerSharedResources: Boolean(data.record.hasNewerSharedResources),
+                  isDefaultProductTitle:
+                    data.record.isDefaultProductTitle ??
+                    isDefaultUiProductTitle(
+                      data.record.projectTitle || merged.projectTitle
+                    ),
+                  thumbnailInspection:
+                    data.record.thumbnailInspection || r.thumbnailInspection,
+                  isDirty: false,
                 };
-              }
-              return {
-                ...r,
-                projectTitle: data.record.projectTitle || merged.projectTitle,
-                baseProjectTitle:
-                  data.record.baseProjectTitle ||
-                  stripUiSessionSuffix(data.record.projectTitle || merged.projectTitle),
-                thumbnailPath: merged.thumbnailPath,
-                screenshots: merged.screenshots,
-                attachments: merged.attachments,
-                youtubeUrlsText: merged.youtubeUrlsText,
-                relatedLinksText: merged.relatedLinksText,
-                teacherComment: merged.teacherComment,
-                teacherNote: merged.teacherNote,
-                quickTags: merged.quickTags,
-                isConfirmedByTeacher: merged.isConfirmedByTeacher,
-                assignedStudentId: merged.assignedStudentId,
-                status: data.record.status,
-                contentHash: data.record.contentHash || "",
-                errorMessage: data.record.errorMessage || null,
-                sessionResults: nextSessionResults,
-                sessionHistory: nextSessionHistory,
-                draftVersion: nextDraftVersion,
-                hasNewerSharedResources: Boolean(data.record.hasNewerSharedResources),
-                isDefaultProductTitle:
-                  data.record.isDefaultProductTitle ??
-                  isDefaultUiProductTitle(data.record.projectTitle || merged.projectTitle),
-                thumbnailInspection:
-                  data.record.thumbnailInspection || r.thumbnailInspection,
-                isDirty: false,
-              };
-            })
+              })
+            );
+          }
+          return {
+            ok: true,
+            draftVersion: resolvedNextDraftVersion,
+            row: resolvedSavedRow,
+          } as any;
+        }
+
+        if (typeof data?.currentDraftVersion === "number") {
+          _knownVerMap.set(rowKey, data.currentDraftVersion);
+          setRows((prev) =>
+            prev.map((r) =>
+              r.folderPath === merged.folderPath
+                ? {
+                    ...r,
+                    draftVersion: Math.max(
+                      r.draftVersion || 0,
+                      data.currentDraftVersion
+                    ),
+                  }
+                : r
+            )
           );
         }
-        return {
-          ok: true,
-          draftVersion: resolvedNextDraftVersion,
-          row: resolvedSavedRow,
-        } as any;
-      }
 
-      setBannerMessage({
-        type: "error",
-        text: data?.error || "Không thể lưu nháp SPCK.",
-      });
-      return false;
-    } catch (err) {
-      setBannerMessage({
-        type: "error",
-        text: err instanceof Error ? err.message : String(err),
-      });
-      return false;
+        setBannerMessage({
+          type: "error",
+          text: data?.error || "Không thể lưu nháp SPCK.",
+        });
+        return false;
+      } catch (err) {
+        setBannerMessage({
+          type: "error",
+          text: err instanceof Error ? err.message : String(err),
+        });
+        return false;
+      }
+    };
+
+    const savePromise = runRowSave();
+    _inFlightMap.set(rowKey, savePromise);
+    try {
+      return await savePromise;
+    } finally {
+      if (_inFlightMap.get(rowKey) === savePromise) {
+        _inFlightMap.delete(rowKey);
+      }
     }
   };
 
@@ -1806,23 +1887,46 @@ export default function FinalProjectPage() {
       ])
     );
 
+    const _inFlightMap: Map<string, Promise<any>> =
+      typeof inFlightRowSavePromises !== "undefined"
+        ? inFlightRowSavePromises
+        : ((globalThis as any).__spckInFlightRowSavePromises ||= new Map());
+    const _knownVerMap: Map<string, number> =
+      typeof latestKnownDraftVersionByRow !== "undefined"
+        ? latestKnownDraftVersionByRow
+        : ((globalThis as any).__spckLatestKnownDraftVersionByRow ||= new Map());
+
     setGeneratingAi(true);
     setBannerMessage(null);
     try {
-      const payloadStudents = targetRows.map((r) => ({
-        studentId: r.assignedStudentId,
-        expectedVersion: r.draftVersion,
-        projectTitle: r.projectTitle,
-        localFolderPath: r.folderPath,
-        thumbnailPath: r.thumbnailPath,
-        screenshots: r.screenshots,
-        attachments: r.attachments,
-        youtubeUrls: parseYoutubeUrlsFromText(r.youtubeUrlsText),
-        relatedLinks: parseRelatedLinksFromText(r.relatedLinksText),
-        quickTags: r.quickTags,
-        teacherNote: r.teacherNote,
-        includePresentation: r.includePresentation,
-      }));
+      const hadInFlightSaves = _inFlightMap.size > 0;
+      if (hadInFlightSaves) {
+        await Promise.allSettled(Array.from(_inFlightMap.values()));
+      }
+
+      const payloadStudents = targetRows.map((r) => {
+        const rKey = `${requestClassId}::${r.folderPath || r.assignedStudentId}`;
+        const knownVer = hadInFlightSaves ? _knownVerMap.get(rKey) : undefined;
+        return {
+          studentId: r.assignedStudentId,
+          expectedVersion:
+            typeof knownVer === "number" &&
+            typeof r.draftVersion === "number" &&
+            knownVer > r.draftVersion
+              ? knownVer
+              : r.draftVersion,
+          projectTitle: r.projectTitle,
+          localFolderPath: r.folderPath,
+          thumbnailPath: r.thumbnailPath,
+          screenshots: r.screenshots,
+          attachments: r.attachments,
+          youtubeUrls: parseYoutubeUrlsFromText(r.youtubeUrlsText),
+          relatedLinks: parseRelatedLinksFromText(r.relatedLinksText),
+          quickTags: r.quickTags,
+          teacherNote: r.teacherNote,
+          includePresentation: r.includePresentation,
+        };
+      });
 
       const res = await fetch("/api/spck/generate-ai", {
         method: "POST",
@@ -1860,6 +1964,13 @@ export default function FinalProjectPage() {
             (typeof gen?.draftVersion === "number" ? gen.draftVersion : undefined) ??
             updatedRec?.draftVersion ??
             row.draftVersion;
+          if (typeof resolvedDraftVersion === "number" && row.assignedStudentId) {
+            const rKey = `${requestClassId}::${row.folderPath || row.assignedStudentId}`;
+            const prevKnown = _knownVerMap.get(rKey) ?? 0;
+            if (resolvedDraftVersion >= prevKnown) {
+              _knownVerMap.set(rKey, resolvedDraftVersion);
+            }
+          }
           if (!gen || gen.staleIgnored) {
             return {
               ...row,
@@ -1920,8 +2031,16 @@ export default function FinalProjectPage() {
       const failedItems = generatedResults.filter(
         (item: any) => item.status === "FAILED"
       );
+      const staleItems = generatedResults.filter(
+        (item: any) => Boolean(item.staleIgnored)
+      );
 
-      if (insufficientItems.length === 0 && failedItems.length === 0 && successCount >= targetRows.length) {
+      if (
+        insufficientItems.length === 0 &&
+        failedItems.length === 0 &&
+        staleItems.length === 0 &&
+        successCount >= targetRows.length
+      ) {
         setBannerMessage({
           type: "success",
           text: `Đã hoàn tất AI soạn nhận xét Buổi ${requestSessionNum}${stageMeta.stageTitle ? ` (${stageMeta.stageTitle})` : ""} cho ${successCount}/${targetRows.length} học viên.`,
@@ -1940,6 +2059,13 @@ export default function FinalProjectPage() {
             `${failedItems.length} học viên lỗi AI (${failedItems
               .map((it: any) => `${it.fullName || it.studentId}: ${it.errorMessage || "Lỗi"}`)
               .join("; ")})`
+          );
+        }
+        if (staleItems.length > 0) {
+          detailParts.push(
+            `${staleItems.length} học viên đang có thao tác lưu khác (${staleItems
+              .map((it: any) => it.fullName || it.studentId)
+              .join(", ")})`
           );
         }
         setBannerMessage({

@@ -107,13 +107,24 @@ export function getSpckVerifiedTeachingProgressSuggestion(params: {
   sessionNumber: number;
   verifiedCount: number;
   pendingOrFailedCount?: number;
+  totalRosterCount?: number;
 }): SpckTeachingProgressSuggestion {
   const sess = Number(params.sessionNumber);
   const verified = Number(params.verifiedCount) || 0;
   const pendingOrFailed = Math.max(0, Number(params.pendingOrFailedCount) || 0);
+  const totalRoster =
+    typeof params.totalRosterCount === "number" && Number.isFinite(params.totalRosterCount)
+      ? Math.max(0, Math.floor(params.totalRosterCount))
+      : 0;
+  const hasIncompleteRoster = totalRoster > 0 && verified < totalRoster;
   const milestone = mapSessionToTeachingProgressMilestone(sess);
 
-  if (verified <= 0 || pendingOrFailed > 0 || ![12, 13, 14].includes(sess)) {
+  if (
+    verified <= 0 ||
+    pendingOrFailed > 0 ||
+    hasIncompleteRoster ||
+    ![12, 13, 14].includes(sess)
+  ) {
     return {
       shouldShow: false,
       sessionNumber: sess,
@@ -130,6 +141,6 @@ export function getSpckVerifiedTeachingProgressSuggestion(params: {
     milestoneTaskCount: milestone.milestoneTaskCount,
     targetPercent: milestone.targetPercent,
     buttonText: `📈 Cập nhật tiến độ Teaching lên ${milestone.targetPercent}%`,
-    description: `Đã nộp & xác minh ${verified} bài SPCK Buổi ${sess} trên LMS. Bấm 1 chạm để đẩy tiến độ cả lớp lên ${milestone.targetPercent}% (${milestone.milestoneTaskCount}/5 công việc) trên Teaching.`,
+    description: `Đã nộp & xác minh đủ ${verified} bài SPCK Buổi ${sess} của lớp trên LMS. Bấm 1 chạm để nâng tiến độ cả lớp lên ${milestone.targetPercent}% (${milestone.milestoneTaskCount}/5 công việc, giữ nguyên các mốc cao hơn nếu đã đạt) trên Teaching.`,
   };
 }

@@ -23,13 +23,14 @@ Kỹ năng này giúp soạn thảo các mẫu nhận xét tình hình học t�
   6. `👀 Mất tập trung` (`role: "distracted"`)
   7. `⌨️ Thao tác / Cú pháp còn chậm` (`role: "improve"`)
 
-- **Hướng Robotics (`regular_robotics` — 6 thẻ):**
-  1. `🤖 Lắp ráp & Lập trình tốt` (`role: "good"`)
-  2. `🙋 Hăng hái phát biểu` (`role: "positive"`)
-  3. `🤝 Phối hợp nhóm & Giữ Kit tốt` (`role: "positive"`)
-  4. `👀 Mất tập trung` (`role: "distracted"`)
-  5. `🔩 Lắp ráp còn chậm / Nhầm chốt` (`role: "slow"`)
-  6. `🔌 Lập trình / Đấu mạch còn lúng túng` (`role: "improve"`)
+- **Hướng Robotics (`regular_robotics` — 7 thẻ):**
+  1. `🔧 Lắp ráp đúng mẫu` (`role: "good"`)
+  2. `💻 Lập trình chạy đúng` (`role: "good"`)
+  3. `🧠 Chủ động thử & sửa lỗi` (`role: "excellent"`)
+  4. `🤝 Hợp tác nhóm tốt` (`role: "positive"`)
+  5. `🔩 Lắp ráp cần hỗ trợ` (`role: "slow"`)
+  6. `🧩 Lập trình cần hỗ trợ` (`role: "improve"`)
+  7. `👀 Cần nhắc tập trung` (`role: "distracted"`)
 
 - **Quy tắc Buổi Kiểm tra / Checkpoint (Lập trình: Buổi 5 & 9; Robotics: Buổi 4 & 8):**
   - Nhận xét văn bản vẫn giữ nguyên cấu trúc 3 gạch đầu dòng chuẩn mực bên dưới.
@@ -53,11 +54,12 @@ Kỹ năng này giúp soạn thảo các mẫu nhận xét tình hình học t�
    - `- **Điểm cần cải thiện:**` Nêu các vấn đề về kỹ năng thao tác, tư duy logic hoặc sự tập trung một cách khéo léo, nhẹ nhàng, tránh gây tâm lý nặng nề. In đậm các điểm mấu chốt cần lưu ý khắc phục.
    - `- **Lời khuyên:**` Gợi ý giải pháp cụ thể, thiết thực để phụ huynh dễ dàng đồng hành, khích lệ và nhắc nhở con ôn tập ở nhà. In đậm hành động cụ thể gợi ý cho con/ba mẹ.
 
-4. **Đảm bảo hình thức, độ dài và văn phong:**
+4. **Đảm bảo hình thức, độ dài, văn phong và chống trùng lặp:**
    - **Độ dài:** Khoảng 100 đến 300 từ cho mỗi mẫu nhận xét.
    - **Trình bày:** Bắt buộc có dấu gạch đầu dòng (`- `) cho 3 mục, **KHÔNG ghi tên học sinh ở đầu nhận xét**, in đậm 3 tiêu đề đầu mục (`**Điểm mạnh của học viên:**`, `**Điểm cần cải thiện:**`, `**Lời khuyên:**`) và các từ khóa quan trọng trong nội dung. Ngắt dòng tạo khoảng trống rõ ràng giữa 3 mục để dễ đọc và thuận tiện gửi qua LMS/Zalo.
    - **Xưng hô:** Xưng "thầy", gọi học sinh là "con", gọi phụ huynh là "ba mẹ" hoặc "gia đình" (không lặp lại tên học sinh ở đầu bài).
    - **Văn phong:** Chuyên nghiệp, lịch sự, tích cực, mang tính xây dựng cao để phụ huynh cảm thấy thoải mái, tin tưởng và sẵn sàng hợp tác cùng thầy.
+   - **Chống trùng lặp câu chữ (Anti-Duplication):** Khi nhận xét nhiều học sinh trong cùng một lớp có cùng cấp độ hoặc cùng Quick Tags, mỗi học sinh phải có góc tiếp cận, cấu trúc câu mở đầu và cách diễn đạt riêng gắn với nội dung bài học; tuyệt đối không sao chép nguyên văn câu chữ giữa hai học sinh.
 
 ## Định Dạng Đầu Ra Chuẩn
 

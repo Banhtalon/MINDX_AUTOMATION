@@ -2,7 +2,10 @@ import { getGeminiModel } from "./client";
 import { sessionFeedbackRepo, studentRepo, type SessionFeedbackRecord } from "../db/sqlite";
 import { getCoursesSyllabus, getQuickTags } from "../db/json-config";
 import { createRosterNameScrubber as _createRosterNameScrubber } from "../ai/pii-anonymizer";
-const sharedCreateRosterNameScrubber = typeof _createRosterNameScrubber === "function" ? _createRosterNameScrubber : (console as any).__mindxPiiAnonymizer?.createRosterNameScrubber;
+const sharedCreateRosterNameScrubber =
+  typeof _createRosterNameScrubber === "function"
+    ? _createRosterNameScrubber
+    : (console as any).__mindxPiiAnonymizer?.createRosterNameScrubber;
 
 export interface StudentCommentInput {
   studentId: string;
@@ -67,6 +70,72 @@ function parseVersionMetaSafe(raw?: string | null): { rowVer: number; fields: Re
     return { rowVer: 0, fields: {} };
   }
 }
+
+function normalizeWordsForSimilarity(raw: string): string[] {
+  const cleaned = String(raw || "")
+    .replace(/[-•*]\s*\*\*Điểm mạnh(?: của học viên)?:\*\*/gi, " ")
+    .replace(/[-•*]\s*\*\*Điểm cần cải thiện:\*\*/gi, " ")
+    .replace(/[-•*]\s*\*\*(?:Lời khuyên|Hướng rèn luyện):\*\*/gi, " ")
+    .replace(/\*+/g, " ")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) return [];
+  return cleaned.split(" ").filter((w) => w.length > 0);
+}
+
+/**
+ * Computes lexical & phrase similarity between two generated comments in [0, 1].
+ * Combines 2-word shingle Jaccard (60%) and token Jaccard (40%) after stripping standard 3-bullet headers.
+ */
+export function computeCommentSimilarity(textA: string, textB: string): number {
+  const wordsA = normalizeWordsForSimilarity(textA);
+  const wordsB = normalizeWordsForSimilarity(textB);
+  if (wordsA.length === 0 || wordsB.length === 0) return 0;
+  if (wordsA.join(" ") === wordsB.join(" ")) return 1;
+
+  const setA = new Set<string>(wordsA);
+  const setB = new Set<string>(wordsB);
+  let tokenInter = 0;
+  for (const w of setA) {
+    if (setB.has(w)) tokenInter++;
+  }
+  const tokenUnion = setA.size + setB.size - tokenInter;
+  const tokenJaccard = tokenUnion > 0 ? tokenInter / tokenUnion : 0;
+
+  if (wordsA.length < 2 || wordsB.length < 2) {
+    return tokenJaccard;
+  }
+
+  const bigramsA = new Set<string>();
+  for (let i = 0; i < wordsA.length - 1; i++) {
+    bigramsA.add(`${wordsA[i]} ${wordsA[i + 1]}`);
+  }
+  const bigramsB = new Set<string>();
+  for (let i = 0; i < wordsB.length - 1; i++) {
+    bigramsB.add(`${wordsB[i]} ${wordsB[i + 1]}`);
+  }
+  let biInter = 0;
+  for (const bg of bigramsA) {
+    if (bigramsB.has(bg)) biInter++;
+  }
+  const biUnion = bigramsA.size + bigramsB.size - biInter;
+  const biJaccard = biUnion > 0 ? biInter / biUnion : 0;
+
+  return biJaccard * 0.6 + tokenJaccard * 0.4;
+}
+
+const NARRATIVE_ANGLES: string[] = [
+  "Góc nhìn 1 (Trọng tâm Thao tác thực hành & Sản phẩm): Mở đầu từ quá trình con trực tiếp bắt tay vào thực hiện sản phẩm/mô hình của bài học hôm nay; phần cải thiện đi vào độ chính xác của thao tác thực tế; lời khuyên hướng dẫn cách tự kiểm tra lại sản phẩm từng bước.",
+  "Góc nhìn 2 (Trọng tâm Tư duy logic & Quy trình từng bước): Mở đầu từ cách con nắm bắt nguyên lý hoạt động và trình tự thực hiện bài học; phần cải thiện nhấn mạnh vào việc sắp xếp các bước hoặc kiểm soát luồng hoạt động; lời khuyên gợi ý ba mẹ hỏi lại con quy trình hoạt động của bài học tại nhà.",
+  "Góc nhìn 3 (Trọng tâm Thái độ học tập & Nhịp độ trên lớp): Mở đầu từ tinh thần tham gia giờ học và cách con bắt nhịp với yêu cầu của thầy; phần cải thiện tập trung vào cách phân bổ thời gian và duy trì sự tỉ mỉ ở từng chặng; lời khuyên khuyến khích thói quen rèn luyện ngắn đều đặn tại nhà.",
+  "Góc nhìn 4 (Trọng tâm Khả năng vận dụng kiến thức trọng tâm): Mở đầu từ việc con áp dụng khái niệm/cơ chế chính của buổi học vào bài thực hành; phần cải thiện nêu điểm cần rèn thêm để làm chủ hoàn toàn kiến thức mới; lời khuyên gợi ý con thử giải thích hoặc thực hành lại một phần nhỏ cho ba mẹ xem.",
+  "Góc nhìn 5 (Trọng tâm Kỹ năng quan sát & Tự kiểm thử/sửa lỗi): Mở đầu từ khả năng quan sát hướng dẫn/mẫu bài và thử nghiệm kết quả chạy thực tế; phần cải thiện tập trung vào thói quen rà soát chi tiết trước khi kết thúc bước làm; lời khuyên hướng dẫn cách bình tĩnh đối chiếu và tự tìm điểm sai khi thực hành.",
+  "Góc nhìn 6 (Trọng tâm Sự chủ động & Tương tác trong giờ học): Mở đầu từ sự tập trung theo dõi bài giảng và phản hồi khi thầy hướng dẫn thực hành; phần cải thiện góp ý nhẹ nhàng về việc giữ nhịp độ ổn định xuyên suốt buổi; lời khuyên gợi ý ba mẹ khích lệ con chia sẻ điều thú vị nhất học được trong buổi.",
+  "Góc nhìn 7 (Trọng tâm Độ hoàn thiện chi tiết & Tính chỉn chu): Mở đầu từ kết quả bước đầu con hoàn thành được trong chủ đề hôm nay; phần cải thiện đi sâu vào độ chuẩn xác và sự chắc chắn/gọn gàng trong từng chi tiết; lời khuyên gợi ý cách ôn lại từ phần cơ bản đến nâng cao.",
+  "Góc nhìn 8 (Trọng tâm Khả năng kết nối lý thuyết vào thực tế): Mở đầu từ việc con hiểu ý nghĩa ứng dụng của bài học hôm nay và chuyển hóa thành thao tác thực tế; phần cải thiện nêu khía cạnh cần luyện thêm để thao tác mượt mà hơn; lời khuyên gợi ý con liên hệ bài học với các tình huống hoặc bài tập tương tự ở nhà.",
+];
 
 export class CommentGenerator {
   private static latestBatchSeq = 0;
@@ -357,10 +426,28 @@ export class CommentGenerator {
 
     const isRoboticsClass = /(?:rob|pre[bai]|arm[bai]|semi[bai]|vex)/i.test(normalizedClassCode);
 
+    const legacyAliasMap: Record<string, string> = {
+      "🤖 lắp ráp & lập trình tốt": "🔧 lắp ráp đúng mẫu",
+      "rob_lap_rap_code_tot": "rob_lap_rap_dung_mau",
+      "🤝 phối hợp nhóm & giữ kit tốt": "🤝 hợp tác nhóm tốt",
+      "rob_nhom_giu_kit_tot": "rob_hop_tac_nhom_tot",
+      "🔩 lắp ráp còn chậm / nhầm chốt": "🔩 lắp ráp cần hỗ trợ",
+      "rob_lap_cham_nham_chot": "rob_lap_rap_can_ho_tro",
+      "🔌 lập trình / đấu mạch còn lúng túng": "🧩 lập trình cần hỗ trợ",
+      "rob_code_mach_lung_tung": "rob_lap_trinh_can_ho_tro",
+      "rob_mat_tap_trung": "rob_can_nhac_tap_trung",
+      "rob_hang_hai": "rob_hop_tac_nhom_tot",
+    };
+
     const resolveTagWithHint = (rawTag: string): string => {
       const cleanTag = String(rawTag || "").trim();
       if (!cleanTag || configuredCategories.length === 0) return cleanTag;
-      const cleanLower = cleanTag.toLowerCase();
+      const rawLower = cleanTag.toLowerCase();
+      const aliasedLower =
+        isRoboticsClass && rawLower === "👀 mất tập trung"
+          ? "👀 cần nhắc tập trung"
+          : legacyAliasMap[rawLower] || rawLower;
+
       let fallbackHint = "";
       let fallbackLabel = cleanTag;
       for (const cat of configuredCategories) {
@@ -381,13 +468,18 @@ export class CommentGenerator {
         for (const t of cat?.tags || []) {
           const tLabel = String(t?.label || "").trim();
           const tId = String(t?.id || "").trim();
+          const tLabelLower = tLabel.toLowerCase();
+          const tIdLower = tId.toLowerCase();
           if (
-            (tLabel.toLowerCase() === cleanLower || tId.toLowerCase() === cleanLower) &&
+            (tLabelLower === rawLower ||
+              tIdLower === rawLower ||
+              tLabelLower === aliasedLower ||
+              tIdLower === aliasedLower) &&
             t?.hint
           ) {
             const displayLabel = tLabel || cleanTag;
             if ((isRoboticsClass && isRobCat) || (!isRoboticsClass && isCodeCat)) {
-              return `${displayLabel} (Chi tiết: ${t.hint})`;
+              return `${displayLabel} (Ý nghĩa sư phạm: ${t.hint})`;
             }
             if (!fallbackHint) {
               fallbackHint = t.hint;
@@ -396,7 +488,7 @@ export class CommentGenerator {
           }
         }
       }
-      return fallbackHint ? `${fallbackLabel} (Chi tiết: ${fallbackHint})` : cleanTag;
+      return fallbackHint ? `${fallbackLabel} (Ý nghĩa sư phạm: ${fallbackHint})` : cleanTag;
     };
 
     const tagLookup = new Map<string, any>();
@@ -439,26 +531,32 @@ export class CommentGenerator {
         }
 
         if (
-          /xuất sắc|giỏi|vận dụng.*sáng tạo|sáng tạo|🌟|💡|lvl_.*xuat_sac|tier_1/i.test(lower)
+          /xuất sắc|giỏi|vận dụng.*sáng tạo|sáng tạo|chủ động thử.*sửa lỗi|🌟|💡|🧠|lvl_.*xuat_sac|tier_1/i.test(
+            lower
+          )
         ) {
           hasExcellent = true;
           positiveCount++;
           continue;
         }
         if (
-          /mất tập trung|xao nhãng|nói chuyện riêng|làm việc riêng|cần tập trung hơn|👀|tier_3/i.test(
+          /mất tập trung|cần nhắc tập trung|xao nhãng|nói chuyện riêng|làm việc riêng|cần tập trung hơn|👀|tier_3/i.test(
             lower
           )
         ) {
           hasDistracted = true;
           continue;
         }
-        if (/thao tác.*chậm|cú pháp còn chậm|lúng túng|hay nhầm lệnh|⌨️|🔌|🐛/i.test(lower)) {
+        if (
+          /thao tác.*chậm|cú pháp còn chậm|lập trình cần hỗ trợ|lúng túng|hay nhầm lệnh|⌨️|🔌|🧩|🐛/i.test(
+            lower
+          )
+        ) {
           hasImprove = true;
           continue;
         }
         if (
-          /tiếp thu chậm|lắp ráp còn chậm|nhầm chốt|cần kèm|trung bình|chưa kịp|🐢|🔩|🛠️|lvl_.*can_kem|tier_4|tier_5/i.test(
+          /tiếp thu chậm|lắp ráp còn chậm|lắp ráp cần hỗ trợ|nhầm chốt|cần kèm|trung bình|chưa kịp|🐢|🔩|🛠️|lvl_.*can_kem|tier_4|tier_5/i.test(
             lower
           )
         ) {
@@ -466,7 +564,7 @@ export class CommentGenerator {
           continue;
         }
         if (
-          /tiếp thu tốt|làm bài tập đầy đủ|lắp ráp.*lập trình tốt|hăng hái|phối hợp nhóm|giữ kit tốt|đạt yêu cầu|khá|tốt|tích cực|hiểu bài nhanh|👍|✅|📝|🙋|🤖|🤝|lvl_.*dat|tier_2/i.test(
+          /tiếp thu tốt|làm bài tập đầy đủ|lắp ráp đúng mẫu|lập trình chạy đúng|lắp ráp.*lập trình tốt|hăng hái|phối hợp nhóm|hợp tác nhóm|giữ kit tốt|đạt yêu cầu|khá|tốt|tích cực|hiểu bài nhanh|👍|✅|📝|🙋|🤖|🔧|💻|🤝|lvl_.*dat|tier_2/i.test(
             lower
           )
         ) {
@@ -482,21 +580,21 @@ export class CommentGenerator {
       const isNeedSupport = hasSlow || (hasImprove && !hasGood && !hasExcellent);
 
       if (isNeedSupport && hasDistracted) {
-        return "Cấp độ 5 - Trung bình, mất tập trung: Chưa nắm chắc kiến thức cơ bản của buổi học do chưa thực sự tập trung lắng nghe khi thầy giảng giải, cần sự sát sao nhiều hơn để theo kịp tiến độ.";
+        return "Cấp độ 5 - Trung bình, mất tập trung (Mức độ: Cần củng cố phần trọng tâm của bài học và rèn sự tập trung lắng nghe hướng dẫn để theo kịp tiến độ)";
       }
       if (isNeedSupport) {
-        return "Cấp độ 4 - Trung bình: Có sự cố gắng và thái độ hợp tác tốt nhưng tốc độ tiếp thu và thao tác thực hành còn chậm, cần thầy hướng dẫn từng bước để hoàn thành sản phẩm.";
+        return "Cấp độ 4 - Trung bình (Mức độ: Có tinh thần hợp tác và cố gắng nhưng nhịp độ thao tác thực hành còn chậm, cần thầy hướng dẫn từng bước)";
       }
       if (hasDistracted && (hasGood || hasExcellent)) {
-        return "Cấp độ 3 - Khá nhưng mất tập trung: Tư duy nhạy bén, hiểu bài nhanh nhưng đôi lúc còn xao nhãng, làm việc riêng hoặc thao tác vội vàng dẫn đến lỗi nhỏ không đáng có.";
+        return "Cấp độ 3 - Khá nhưng mất tập trung (Mức độ: Hiểu bài và làm được yêu cầu chính nhưng đôi lúc còn phân tâm hoặc thao tác vội)";
       }
       if (hasDistracted) {
-        return "Cấp độ 5 - Trung bình, mất tập trung: Chưa nắm chắc kiến thức cơ bản của buổi học do chưa thực sự tập trung lắng nghe khi thầy giảng giải, cần sự sát sao nhiều hơn để theo kịp tiến độ.";
+        return "Cấp độ 5 - Trung bình, mất tập trung (Mức độ: Cần củng cố phần trọng tâm của bài học và rèn sự tập trung lắng nghe hướng dẫn để theo kịp tiến độ)";
       }
       if (hasExcellent && !hasImprove) {
-        return "Cấp độ 1 - Giỏi: Tiếp thu nhanh, nắm vững tư duy thuật toán và công nghệ, chủ động hoàn thành tốt bài tập cơ bản lẫn nâng cao, có sự sáng tạo.";
+        return "Cấp độ 1 - Giỏi (Mức độ: Nắm vững nguyên lý, thực hành chủ động, tự kiểm thử và vận dụng mở rộng tốt)";
       }
-      return "Cấp độ 2 - Khá: Nắm được kiến thức trọng tâm, thái độ học tập nghiêm túc, hoàn thành đúng yêu cầu bài thực hành nhưng cần thêm thời gian hoặc gợi ý ở các phần mở rộng/tối ưu hóa.";
+      return "Cấp độ 2 - Khá (Mức độ: Nắm được kiến thức trọng tâm, hoàn thành yêu cầu thực hành của buổi học, có thể rèn thêm độ thuần thục hoặc phần nâng cao)";
     };
 
     const syllabusList =
@@ -523,27 +621,67 @@ export class CommentGenerator {
         ? session.isCheckpointSession
         : checkpointNums.includes(Number(session.sessionNumber));
 
-    const anonymousRoster = validCandidates.map((c) => ({
-      anonymousId: c.anonymousId,
-      matchedLevel: classifySkillLevel(c.regularQuickTags),
-      quickTags: c.regularQuickTags.map((t) =>
-        scrubStudentNames(resolveTagWithHint(t), c.input.fullName, c.anonymousId)
-      ),
-      teacherNote: scrubStudentNames(
-        c.input.teacherNote || "",
-        c.input.fullName,
-        c.anonymousId
-      ),
-      attendance: c.input.attendanceStatus || "PRESENT",
-    }));
-
     const sanitizedTopic = scrubStudentNames(session.topic || "", "", "STUDENT_PEER");
-    const keyKnowledgeText =
+    const sanitizedKnowledgeItems =
       session.keyKnowledge && session.keyKnowledge.length > 0
         ? session.keyKnowledge
-            .map((k) => scrubStudentNames(String(k || ""), "", "STUDENT_PEER"))
-            .join("; ")
-        : sanitizedTopic;
+            .map((k) => scrubStudentNames(String(k || "").trim(), "", "STUDENT_PEER"))
+            .filter((k) => k.length > 0)
+        : [sanitizedTopic];
+    const keyKnowledgeText = sanitizedKnowledgeItems.join("; ");
+
+    // Group candidates sharing the same level + sorted quickTags so each peer gets a distinct narrative angle
+    const peerGroupMembers = new Map<string, string[]>();
+    const candidateLevelAndKey: { matchedLevel: string; groupKey: string }[] = [];
+    for (const c of validCandidates) {
+      const matchedLevel = classifySkillLevel(c.regularQuickTags);
+      const sortedTagsKey = [...c.regularQuickTags]
+        .map((t) => t.trim().toLowerCase())
+        .sort()
+        .join("|");
+      const groupKey = `${matchedLevel}::${sortedTagsKey}`;
+      candidateLevelAndKey.push({ matchedLevel, groupKey });
+      const list = peerGroupMembers.get(groupKey) || [];
+      list.push(c.anonymousId);
+      peerGroupMembers.set(groupKey, list);
+    }
+
+    const peerGroupCounter = new Map<string, number>();
+    const anonymousRoster = validCandidates.map((c, idx) => {
+      const { matchedLevel, groupKey } = candidateLevelAndKey[idx];
+      const peers = peerGroupMembers.get(groupKey) || [c.anonymousId];
+      const posInGroup = peerGroupCounter.get(groupKey) || 0;
+      peerGroupCounter.set(groupKey, posInGroup + 1);
+
+      const angleIndex = (idx + posInGroup * 3) % NARRATIVE_ANGLES.length;
+      const narrativeAngle = NARRATIVE_ANGLES[angleIndex];
+      const primaryKnowledge =
+        sanitizedKnowledgeItems[(idx + posInGroup) % sanitizedKnowledgeItems.length] ||
+        sanitizedTopic;
+
+      const otherPeers = peers.filter((id) => id !== c.anonymousId);
+      const antiDuplicateDirective =
+        otherPeers.length > 0
+          ? `Học viên thứ ${posInGroup + 1}/${peers.length} trong nhóm cùng mức đánh giá (cùng nhóm với ${otherPeers.join(", ")}) — BẮT BUỘC dùng cấu trúc câu mở đầu, cách diễn đạt và từ vựng hoàn toàn khác với ${otherPeers.join(", ")}.`
+          : "Diễn đạt tự nhiên theo đúng góc nhìn riêng bên dưới.";
+
+      return {
+        anonymousId: c.anonymousId,
+        matchedLevel,
+        quickTags: c.regularQuickTags.map((t) =>
+          scrubStudentNames(resolveTagWithHint(t), c.input.fullName, c.anonymousId)
+        ),
+        teacherNote: scrubStudentNames(
+          c.input.teacherNote || "",
+          c.input.fullName,
+          c.anonymousId
+        ),
+        attendance: c.input.attendanceStatus || "PRESENT",
+        narrativeAngle,
+        focusKnowledgeAspect: primaryKnowledge,
+        antiDuplicateDirective,
+      };
+    });
 
     const checkpointNotice = isCheckpoint
       ? `\n- Loại buổi học: Buổi Kiểm tra Định kỳ (Checkpoint) — Phần điểm kiểm tra và đánh giá năng lực [ĐNL] do giáo viên chấm riêng trên LMS; bạn chỉ viết phần "Đánh giá chung" 3 gạch đầu dòng bên dưới để tổng kết mức độ nắm kiến thức, kỹ năng thực hành và lời khuyên ôn tập. TUYỆT ĐỐI KHÔNG tự bịa điểm số kiểm tra nếu giáo viên không ghi trong teacherNote.`
@@ -577,6 +715,9 @@ Nhiệm vụ của bạn là soạn nhận xét tình hình học tập của t�
 - **Điểm cần cải thiện:** {improvements}
 
 - **Lời khuyên:** {actionPlan}
+4. **QUY TẮC CHỐNG TRÙNG LẶP & ĐA DẠNG HÓA DIỄN ĐẠT (BẮT BUỘC TUYỆT ĐỐI):**
+   - **Cấm tuyệt đối copy-paste hoặc dùng chung khung câu mẫu (template) giữa các học sinh:** Kể cả khi nhiều học sinh có cùng \`matchedLevel\` và cùng \`quickTags\`, mỗi học sinh BẮT BUỘC phải có câu mở đầu, cấu trúc câu văn và cách chọn từ vựng khác nhau theo đúng \`narrativeAngle\`, \`focusKnowledgeAspect\` và \`antiDuplicateDirective\` riêng của học sinh đó.
+   - **Cấm chép nguyên văn cụm từ gợi ý trong \`quickTags\` hoặc \`matchedLevel\`:** Hãy chuyển hóa ý nghĩa sư phạm của thẻ thành câu nhận xét tự nhiên gắn chặt với mô hình/bài tập cụ thể của buổi học hôm nay (\`${sanitizedTopic}\`).
 
 ### DANH SÁCH DỮ LIỆU ĐÁNH GIÁ (ANONYMIZED STUDENTS):
 ${JSON.stringify(anonymousRoster, null, 2)}
@@ -614,6 +755,117 @@ Trả về duy nhất 1 JSON object chuẩn theo schema sau:
       if (parsed && Array.isArray(parsed.feedbacks)) {
         for (const fb of parsed.feedbacks) {
           feedbackMap.set(fb.anonymousId, fb);
+        }
+      }
+
+      // Layer 4: Post-generation similarity guard across validCandidates in the same batch
+      if (validCandidates.length > 1) {
+        const duplicateTargetIds = new Set<string>();
+        const referenceComments: { anonymousId: string; comment: string }[] = [];
+
+        for (let i = 0; i < validCandidates.length; i++) {
+          const idI = validCandidates[i].anonymousId;
+          const fbI = feedbackMap.get(idI);
+          if (!fbI || !fbI.formattedFullComment) continue;
+          const wordsI = normalizeWordsForSimilarity(fbI.formattedFullComment);
+          // Skip short unit-test stub strings (< 12 words) so test sandboxes with stub mocks do not trigger extra calls
+          if (wordsI.length < 12) continue;
+
+          for (let j = i + 1; j < validCandidates.length; j++) {
+            const idJ = validCandidates[j].anonymousId;
+            if (duplicateTargetIds.has(idJ)) continue;
+            const fbJ = feedbackMap.get(idJ);
+            if (!fbJ || !fbJ.formattedFullComment) continue;
+            const wordsJ = normalizeWordsForSimilarity(fbJ.formattedFullComment);
+            if (wordsJ.length < 12) continue;
+
+            const sim = computeCommentSimilarity(
+              fbI.formattedFullComment,
+              fbJ.formattedFullComment
+            );
+            const sameStrengths =
+              normalizeWordsForSimilarity(fbI.strengths || "").length >= 6 &&
+              normalizeWordsForSimilarity(fbI.strengths || "").join(" ") ===
+                normalizeWordsForSimilarity(fbJ.strengths || "").join(" ");
+            const sameImprovements =
+              normalizeWordsForSimilarity(fbI.improvements || "").length >= 6 &&
+              normalizeWordsForSimilarity(fbI.improvements || "").join(" ") ===
+                normalizeWordsForSimilarity(fbJ.improvements || "").join(" ");
+
+            if (sim >= 0.48 || sameStrengths || sameImprovements) {
+              duplicateTargetIds.add(idJ);
+              if (!referenceComments.some((r) => r.anonymousId === idI)) {
+                referenceComments.push({
+                  anonymousId: idI,
+                  comment: fbI.formattedFullComment,
+                });
+              }
+            }
+          }
+        }
+
+        if (duplicateTargetIds.size > 0) {
+          try {
+            const targetsToRewrite = anonymousRoster.filter((r) =>
+              duplicateTargetIds.has(r.anonymousId)
+            );
+            const diversifyPrompt = `
+Bạn là Giảng viên tại MindX Technology School. Một số nhận xét vừa tạo cho lớp ${session.classCode} (Buổi ${session.sessionNumber} — Chủ đề: ${sanitizedTopic}) đang bị trùng lặp câu chữ hoặc giống cấu trúc câu với học viên khác trong cùng buổi.
+Hãy VIẾT LẠI hoàn toàn mới nhận xét cho các học viên trong danh sách "HỌC VIÊN CẦN VIẾT LẠI" dưới đây sao cho:
+1. Giữ nguyên mức đánh giá (\`matchedLevel\`), ý nghĩa thẻ (\`quickTags\`), ghi chú (\`teacherNote\`), xưng "thầy" - gọi "con" - "ba mẹ", và bố cục 3 gạch đầu dòng in đậm (\`- **Điểm mạnh của học viên:**\`, \`- **Điểm cần cải thiện:**\`, \`- **Lời khuyên:**\`, không có tên học sinh ở đầu).
+2. TUYỆT ĐỐI KHÔNG lặp lại câu mở đầu, cấu trúc câu hoặc cụm từ của "CÁC NHẬN XÉT ĐÃ DÙNG" và phải khác hẳn nhau giữa từng học viên được viết lại (độ trùng lặp từ ngữ dưới 35%).
+
+### CÁC NHẬN XÉT ĐÃ DÙNG (CẤM LẶP LẠI CẤU TRÚC CÂU):
+${JSON.stringify(referenceComments, null, 2)}
+
+### HỌC VIÊN CẦN VIẾT LẠI:
+${JSON.stringify(targetsToRewrite, null, 2)}
+
+### ĐỊNH DẠNG ĐẦU RA BẮT BUỘC (JSON):
+{
+  "feedbacks": [
+    {
+      "anonymousId": "STUDENT_XX",
+      "strengths": "...",
+      "improvements": "...",
+      "actionPlan": "...",
+      "formattedFullComment": "- **Điểm mạnh của học viên:** ...\\n\\n- **Điểm cần cải thiện:** ...\\n\\n- **Lời khuyên:** ..."
+    }
+  ]
+}
+`.trim();
+
+            const rewriteRes = await model.generateContent(diversifyPrompt);
+            const rewriteText = rewriteRes?.response?.text?.() || "";
+            if (rewriteText) {
+              const rewriteParsed = JSON.parse(rewriteText) as {
+                feedbacks?: Array<{
+                  anonymousId: string;
+                  strengths: string;
+                  improvements: string;
+                  actionPlan: string;
+                  formattedFullComment: string;
+                }>;
+              };
+              if (rewriteParsed && Array.isArray(rewriteParsed.feedbacks)) {
+                for (const rw of rewriteParsed.feedbacks) {
+                  if (
+                    rw &&
+                    rw.anonymousId &&
+                    duplicateTargetIds.has(rw.anonymousId) &&
+                    rw.strengths?.trim() &&
+                    rw.improvements?.trim() &&
+                    rw.actionPlan?.trim() &&
+                    rw.formattedFullComment?.trim()
+                  ) {
+                    feedbackMap.set(rw.anonymousId, rw);
+                  }
+                }
+              }
+            }
+          } catch {
+            // Safe fallback: retain initial generation if rewrite call fails or returns non-JSON in mock environments
+          }
         }
       }
 

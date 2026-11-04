@@ -556,10 +556,16 @@ async function uploadFilesIntoDriveFolder(
   const targetLowerNames = new Set(
     localFilePaths.map((p) => path.basename(p).toLowerCase())
   );
+  let trashedAny = false;
   for (const item of existingItems) {
     if (!item.isFolder && targetLowerNames.has(item.name.toLowerCase())) {
       await moveDriveItemToTrash(page, item.id);
+      trashedAny = true;
     }
+  }
+  if (trashedAny) {
+    await page.keyboard.press("Escape").catch(() => {});
+    await page.waitForTimeout(300);
   }
 
   assertDriveNotStopped();
@@ -570,19 +576,28 @@ async function uploadFilesIntoDriveFolder(
     )
     .first();
 
-  const fcPromise = page.waitForEvent("filechooser", { timeout: 12000 });
-  await newBtn.click();
-  await page.waitForTimeout(500);
-
   const fileUploadMenuItem = page
     .locator(
       '[role="menuitem"]:has-text("Tải tệp lên"):visible, [role="menuitem"]:has-text("File upload"):visible'
     )
     .first();
-  await fileUploadMenuItem.waitFor({ state: "visible", timeout: 8000 });
-  await fileUploadMenuItem.click();
 
-  const fileChooser = await fcPromise;
+  await newBtn.click();
+  await page.waitForTimeout(450);
+
+  if (!(await fileUploadMenuItem.isVisible().catch(() => false))) {
+    await page.keyboard.press("Escape").catch(() => {});
+    await page.waitForTimeout(250);
+    await newBtn.click();
+    await page.waitForTimeout(450);
+  }
+
+  await fileUploadMenuItem.waitFor({ state: "visible", timeout: 8000 });
+
+  const [fileChooser] = await Promise.all([
+    page.waitForEvent("filechooser", { timeout: 12000 }),
+    fileUploadMenuItem.click(),
+  ]);
   await fileChooser.setFiles(localFilePaths);
 
   // Wait for all uploaded files to appear in the folder DOM (up to 45s)

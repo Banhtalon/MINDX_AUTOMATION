@@ -15,13 +15,14 @@ import {
   sanitizeSpckTitle,
   validateSpckResourceLimits,
 } from "@/lib/local-files/spck-scanner";
+import { resolveValidAppShotResources } from "@/lib/local-files/spck-app-screenshotter";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { assertPathAllowed } from "@/lib/security/path-allowlist";
 import { buildEnrichedClassSpckRecords } from "../list/route";
 
 const latestSessionDraftByStudent = new Map<
   string,
-  { clientSessionId: string; seq: number }
+  { clientSessionId: string; seq: number; lastSavedVersion?: number }
 >();
 
 export async function POST(req: Request) {
@@ -96,10 +97,55 @@ export async function POST(req: Request) {
       sessionNumber
     );
 
+    const incomingSeq =
+      typeof body.draftSeq === "number" && Number.isFinite(body.draftSeq)
+        ? Math.floor(body.draftSeq)
+        : null;
+    const clientSessionId =
+      typeof body.clientSessionId === "string" ? body.clientSessionId.trim() : "";
+    const currentSeq = existing?.draftSeq ?? 0;
+    const studentSessionKey = `${classId}::${studentId}::${sessionNumber}`;
+    const prevSession = latestSessionDraftByStudent.get(studentSessionKey);
+
+    if (clientSessionId && incomingSeq !== null) {
+      if (
+        prevSession &&
+        prevSession.clientSessionId === clientSessionId &&
+        incomingSeq < prevSession.seq
+      ) {
+        return NextResponse.json({
+          success: true,
+          staleIgnored: true,
+          record: existing,
+        });
+      }
+    } else if (existing && incomingSeq !== null && incomingSeq < currentSeq) {
+      return NextResponse.json({
+        success: true,
+        staleIgnored: true,
+        record: existing,
+      });
+    }
+
+    const isRapidSameClientSequentialSave = Boolean(
+      clientSessionId &&
+        incomingSeq !== null &&
+        prevSession &&
+        prevSession.clientSessionId === clientSessionId &&
+        incomingSeq > prevSession.seq &&
+        prevSession.lastSavedVersion === existingSessionDraft.draftVersion &&
+        expectedVersion !== undefined &&
+        expectedVersion < existingSessionDraft.draftVersion
+    );
+
+    const effectiveExpectedVersion = isRapidSameClientSequentialSave
+      ? existingSessionDraft.draftVersion
+      : expectedVersion;
+
     if (
-      expectedVersion !== undefined &&
-      Number.isFinite(expectedVersion) &&
-      expectedVersion !== existingSessionDraft.draftVersion
+      effectiveExpectedVersion !== undefined &&
+      Number.isFinite(effectiveExpectedVersion) &&
+      effectiveExpectedVersion !== existingSessionDraft.draftVersion
     ) {
       return NextResponse.json(
         {
@@ -112,37 +158,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const incomingSeq =
-      typeof body.draftSeq === "number" && Number.isFinite(body.draftSeq)
-        ? Math.floor(body.draftSeq)
-        : null;
-    const clientSessionId =
-      typeof body.clientSessionId === "string" ? body.clientSessionId.trim() : "";
-    const currentSeq = existing?.draftSeq ?? 0;
-    const studentSessionKey = `${classId}::${studentId}::${sessionNumber}`;
-
     if (clientSessionId && incomingSeq !== null) {
-      const prevSession = latestSessionDraftByStudent.get(studentSessionKey);
-      if (
-        prevSession &&
-        prevSession.clientSessionId === clientSessionId &&
-        incomingSeq < prevSession.seq
-      ) {
-        return NextResponse.json({
-          success: true,
-          staleIgnored: true,
-          record: existing,
-        });
-      }
       latestSessionDraftByStudent.set(studentSessionKey, {
         clientSessionId,
         seq: incomingSeq,
-      });
-    } else if (existing && incomingSeq !== null && incomingSeq < currentSeq) {
-      return NextResponse.json({
-        success: true,
-        staleIgnored: true,
-        record: existing,
+        lastSavedVersion: prevSession?.lastSavedVersion,
       });
     }
 
@@ -224,21 +244,43 @@ export async function POST(req: Request) {
       );
     }
 
-    const thumbnailPath =
+    const candidateThumbnailPath =
       body.thumbnailPath !== undefined
         ? String(body.thumbnailPath || "").trim()
         : existingSessionDraft.thumbnailPath || existing?.thumbnailPath || "";
-    if (thumbnailPath) {
-      assertPathAllowed(thumbnailPath);
+    if (candidateThumbnailPath) {
+      assertPathAllowed(candidateThumbnailPath);
     }
 
-    const rawScreenshots: string[] = Array.isArray(body.screenshots)
+    const candidateScreenshots: string[] = Array.isArray(body.screenshots)
       ? body.screenshots.map((p: string) => assertPathAllowed(String(p)))
       : existingSessionDraft.screenshotsJson
       ? JSON.parse(existingSessionDraft.screenshotsJson)
       : existing?.screenshotsJson
       ? JSON.parse(existing.screenshotsJson)
       : [];
+
+    const existingDbScreens: string[] = (() => {
+      try {
+        const p = existing?.screenshotsJson ? JSON.parse(existing.screenshotsJson) : [];
+        return Array.isArray(p) ? p : [];
+      } catch {
+        return [];
+      }
+    })();
+
+    const healedAppShots = resolveValidAppShotResources({
+      localFolderPath:
+        localFolderPath ||
+        existingSessionDraft.localFolderPath ||
+        existing?.localFolderPath,
+      thumbnailPath: candidateThumbnailPath,
+      screenshots: candidateScreenshots,
+      fallbackThumbnailPath: existing?.thumbnailPath || existingSessionDraft.thumbnailPath,
+      fallbackScreenshots: existingDbScreens,
+    });
+    const thumbnailPath = healedAppShots.thumbnailPath;
+    const rawScreenshots = healedAppShots.screenshots;
 
     const rawAttachments: string[] = Array.isArray(body.attachments)
       ? body.attachments.map((p: string) => assertPathAllowed(String(p)))
@@ -323,7 +365,7 @@ export async function POST(req: Request) {
         classId,
         studentId,
         sessionNumber,
-        expectedVersion,
+        expectedVersion: effectiveExpectedVersion,
         localFolderPath,
         isConfirmedByTeacher,
         projectTitle,
@@ -453,6 +495,14 @@ export async function POST(req: Request) {
         },
         { status: 409 }
       );
+    }
+
+    if (clientSessionId && incomingSeq !== null) {
+      latestSessionDraftByStudent.set(studentSessionKey, {
+        clientSessionId,
+        seq: incomingSeq,
+        lastSavedVersion: savedSessionRow.draftVersion,
+      });
     }
 
     const enrichedList = buildEnrichedClassSpckRecords(classId, sessionNumber);

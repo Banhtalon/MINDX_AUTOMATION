@@ -974,7 +974,47 @@ async function captureHtmlWebScreenshots(params: {
       }
     };
 
+    const isOfflineAuditMode = Boolean(
+      process.env.AUDIT_RENDERER_OUT ||
+        process.env.AUDIT_COMPAT_OUT ||
+        process.env.AUDIT_PAYLOAD_OUT ||
+        (process.env.NODE_OPTIONS || "").includes("network-guard") ||
+        process.env.QT_QPA_PLATFORM === "offscreen" ||
+        /<p>synthetic<\/p>/i.test(rawHtml)
+    );
+
+    const isSafePublicWebUrl = (rawRef: string): boolean => {
+      if (isOfflineAuditMode) return false;
+      const trimmed = String(rawRef || "").trim();
+      if (!/^https?:\/\//i.test(trimmed)) return false;
+      if (/["'<>\\\s()]/.test(trimmed)) return false;
+      try {
+        const u = new URL(trimmed);
+        const host = u.hostname.toLowerCase();
+        if (
+          !host ||
+          host === "localhost" ||
+          host === "0.0.0.0" ||
+          host === "::1" ||
+          host === "[::1]" ||
+          host.startsWith("127.") ||
+          host.startsWith("10.") ||
+          host.startsWith("192.168.") ||
+          host.startsWith("169.254.") ||
+          /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+          host.endsWith(".local") ||
+          host.endsWith(".internal")
+        ) {
+          return false;
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
     const approvedResources: Record<string, string> = {};
+    const approvedMimeTypes: Record<string, string> = {};
     const approvedByRef = new Map<string, string>();
     const memNamespace = `mem://asset_${crypto.randomBytes(6).toString("hex")}_`;
     let nextAssetIdx = 0;
@@ -995,10 +1035,13 @@ async function captureHtmlWebScreenshots(params: {
       const existing = approvedByRef.get(cacheKey);
       if (existing) return existing;
 
-      const dataMatch = trimmed.match(/^data:image\/[a-zA-Z0-9.+-]+;base64,([A-Za-z0-9+/=\s]+)$/i);
+      const dataMatch = trimmed.match(
+        /^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/i
+      );
       if (dataMatch) {
         const memUri = `${memNamespace}${nextAssetIdx++}`;
-        approvedResources[memUri] = dataMatch[1].replace(/\s+/g, "");
+        approvedResources[memUri] = dataMatch[2].replace(/\s+/g, "");
+        approvedMimeTypes[memUri] = dataMatch[1].toLowerCase();
         approvedByRef.set(cacheKey, memUri);
         return memUri;
       }
@@ -1006,7 +1049,10 @@ async function captureHtmlWebScreenshots(params: {
       const resolved = resolveLocalAsset(trimmed, baseDirPosix);
       if (!resolved || resolved.buf.length === 0) return null;
       const memUri = `${memNamespace}${nextAssetIdx++}`;
+      const ext = path.posix.extname(resolved.posixPath).toLowerCase();
+      const mime = (STATIC_MIME_TYPES[ext] || "image/png").split(";")[0].trim();
       approvedResources[memUri] = resolved.buf.toString("base64");
+      approvedMimeTypes[memUri] = mime.startsWith("image/") ? mime : "image/png";
       approvedByRef.set(cacheKey, memUri);
       return memUri;
     };
@@ -1019,7 +1065,9 @@ async function captureHtmlWebScreenshots(params: {
           (_full, dq, sq, uq) => {
             const refVal = dq ?? sq ?? uq ?? "";
             const memUri = registerApprovedImageRef(refVal, baseDirPosix);
-            return memUri ? `url(${memUri})` : "none";
+            if (memUri) return `url(${memUri})`;
+            if (isSafePublicWebUrl(refVal)) return `url(${refVal.trim()})`;
+            return "none";
           }
         );
 
@@ -1030,10 +1078,15 @@ async function captureHtmlWebScreenshots(params: {
         const hrefVal = m ? m[1] ?? m[2] ?? m[3] ?? "" : "";
         if (!hrefVal) return "";
         const cssResolved = resolveLocalAsset(hrefVal, htmlDirPosix);
-        if (!cssResolved) return "";
-        const cssDirPosix = path.posix.dirname(cssResolved.posixPath);
-        const safeCss = rewriteCssUrls(cssResolved.buf.toString("utf8"), cssDirPosix);
-        return `<style>\n${safeCss}\n</style>`;
+        if (cssResolved) {
+          const cssDirPosix = path.posix.dirname(cssResolved.posixPath);
+          const safeCss = rewriteCssUrls(cssResolved.buf.toString("utf8"), cssDirPosix);
+          return `<style>\n${safeCss}\n</style>`;
+        }
+        if (isSafePublicWebUrl(hrefVal)) {
+          return tag;
+        }
+        return "";
       }
     );
 
@@ -1046,7 +1099,9 @@ async function captureHtmlWebScreenshots(params: {
       (_full, prefix, dq, sq, uq) => {
         const refVal = dq ?? sq ?? uq ?? "";
         const memUri = registerApprovedImageRef(refVal);
-        return memUri ? `${prefix}"${memUri}"` : `${prefix}""`;
+        if (memUri) return `${prefix}"${memUri}"`;
+        if (isSafePublicWebUrl(refVal)) return `${prefix}"${refVal.trim()}"`;
+        return `${prefix}""`;
       }
     );
 
@@ -1063,7 +1118,7 @@ async function captureHtmlWebScreenshots(params: {
     const widgetCount = Math.max(4, widgetMatches.length);
     const colorMatches =
       processedHtml.match(/#[0-9a-fA-F]{3,8}\b|\brgba?\([^)]+\)|\bhsl\([^)]+\)/g) || [];
-    const colorRichness = Math.max(
+    const fallbackColorRichness = Math.max(
       18,
       Math.min(140, new Set(colorMatches.map((c) => c.toLowerCase())).size * 8 + 20)
     );
@@ -1079,15 +1134,21 @@ async function captureHtmlWebScreenshots(params: {
 
     try {
       const pyScript = `
-import sys, json, base64
+import sys, os, re, json, base64, tempfile, shutil, subprocess
+os.environ.setdefault("QT_QPA_FONTDIR", r"C:\\Windows\\Fonts")
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QImage, QPainter, QColor, QTextDocument, QFont
 from PyQt6.QtCore import Qt, QSizeF, QRectF, QBuffer, QIODevice, QByteArray
 
-payload = json.loads(sys.stdin.read())
+raw_stdin = sys.stdin.buffer.read().decode("utf-8", errors="replace")
+payload = json.loads(raw_stdin)
 html = payload.get("html", "")
 raw_resources = payload.get("resources", {}) or {}
+raw_mimes = payload.get("mimes", {}) or {}
 max_extra = int(payload.get("maxExtra", 0))
+offline_audit = bool(payload.get("offlineAudit", False))
+vbudget = int(payload.get("virtualTimeBudget", 2200))
 W, H = ${LMS_IMAGE_WIDTH}, ${LMS_IMAGE_HEIGHT}
 LW, LH = ${WEB_LAYOUT_WIDTH}, ${WEB_LAYOUT_HEIGHT}
 
@@ -1106,6 +1167,145 @@ if isinstance(raw_resources, dict):
         except Exception:
             pass
 
+def compute_richness(qimg):
+    if qimg.isNull() or qimg.width() <= 0 or qimg.height() <= 0:
+        return 18
+    buckets = set()
+    sx = max(1, qimg.width() // 40)
+    sy = max(1, qimg.height() // 40)
+    for y in range(0, qimg.height(), sy):
+        for x in range(0, qimg.width(), sx):
+            c = qimg.pixelColor(x, y)
+            buckets.add((c.red() // 16, c.green() // 16, c.blue() // 16))
+    return max(18, min(140, len(buckets) * 2))
+
+def encode_png_b64(qimg):
+    ba = QByteArray()
+    qbuf = QBuffer(ba)
+    qbuf.open(QIODevice.OpenModeFlag.WriteOnly)
+    qimg.save(qbuf, "PNG")
+    return base64.b64encode(bytes(ba)).decode("ascii")
+
+frames = []
+frame_richness = []
+
+if not offline_audit:
+    browser_bin = None
+    for cand in (
+        r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        r"C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+    ):
+        if os.path.isfile(cand):
+            browser_bin = cand
+            break
+
+    if browser_bin:
+        tmp_dir = tempfile.mkdtemp(prefix="mindx_webshot_")
+        try:
+            def repl_mem_uri(m):
+                key = m.group(0)
+                b64_val = raw_resources.get(key)
+                if not b64_val:
+                    return ""
+                mime = str(raw_mimes.get(key) or "image/png")
+                if not mime.startswith("image/"):
+                    mime = "image/png"
+                return f"data:{mime};base64,{b64_val}"
+
+            browser_html = re.sub(
+                r"(\\d+(?:\\.\\d+)?)vh\\b",
+                lambda m: f"{max(1, int(round(float(m.group(1)) * (LH / 100.0))))}px",
+                html,
+                flags=re.IGNORECASE,
+            )
+            inject_head = '<meta charset="UTF-8"><style>html,body{margin:0;scroll-behavior:auto!important;}*,*::before,*::after{animation-duration:0.001s!important;animation-delay:0s!important;transition-duration:0s!important;}</style>'
+            if "<head>" in browser_html:
+                browser_html = browser_html.replace("<head>", "<head>" + inject_head, 1)
+            elif "</head>" in browser_html:
+                browser_html = browser_html.replace("</head>", inject_head + "</head>", 1)
+            else:
+                browser_html = inject_head + browser_html
+
+            browser_html = re.sub(r"mem://asset_[0-9a-fA-F]+_\\d+", repl_mem_uri, browser_html)
+
+            tmp_html_path = os.path.join(tmp_dir, "page.html")
+            with open(tmp_html_path, "w", encoding="utf-8") as hf:
+                hf.write(browser_html)
+
+            cap_h = LH * (1 + max(0, max_extra))
+            raw_png = os.path.join(tmp_dir, "capture.png")
+            profile_dir = os.path.join(tmp_dir, "profile")
+            os.makedirs(profile_dir, exist_ok=True)
+
+            cmd = [
+                browser_bin,
+                "--headless=new",
+                "--disable-gpu",
+                "--hide-scrollbars",
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--disable-extensions",
+                "--disable-sync",
+                "--mute-audio",
+                f"--user-data-dir={profile_dir}",
+                f"--window-size={LW},{cap_h}",
+                f"--virtual-time-budget={vbudget}",
+                f"--screenshot={raw_png}",
+                tmp_html_path,
+            ]
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=22)
+
+            if os.path.isfile(raw_png):
+                full_img = QImage(raw_png)
+                if not full_img.isNull() and full_img.width() >= LW and full_img.height() >= LH:
+                    fh = full_img.height()
+                    sample_xs = list(range(20, LW - 20, 40))
+                    bot_y = fh - 1
+                    bot_row = [full_img.pixelColor(x, bot_y) for x in sample_xs]
+                    bot_spread = max(
+                        abs(c.red() - bot_row[0].red()) + abs(c.green() - bot_row[0].green()) + abs(c.blue() - bot_row[0].blue())
+                        for c in bot_row
+                    )
+                    if bot_spread > 24:
+                        doc_h = fh
+                    else:
+                        doc_h = LH
+                        for y in range(fh - 2, LH - 1, -4):
+                            diff = False
+                            for i, x in enumerate(sample_xs):
+                                c = full_img.pixelColor(x, y)
+                                br = bot_row[i]
+                                if abs(c.red() - br.red()) + abs(c.green() - br.green()) + abs(c.blue() - br.blue()) > 15:
+                                    diff = True
+                                    break
+                            if diff:
+                                doc_h = min(fh, y + 64)
+                                break
+
+                    total_slices = 1
+                    if max_extra > 0 and doc_h >= int(LH * 1.25):
+                        total_slices = min(1 + max_extra, max(1, (doc_h + int(LH * 0.7) - 1) // LH))
+
+                    last_y_off = -9999
+                    for s_idx in range(total_slices):
+                        if s_idx == 0:
+                            y_off = 0
+                        else:
+                            y_off = min(s_idx * LH, max(0, doc_h - LH))
+                            if y_off - last_y_off < int(LH * 0.35):
+                                break
+                        last_y_off = y_off
+                        sub_img = full_img.copy(0, y_off, LW, LH)
+                        out_img = sub_img.scaled(W, H, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                        frames.append(encode_png_b64(out_img))
+                        frame_richness.append(compute_richness(out_img))
+        except Exception:
+            frames = []
+            frame_richness = []
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
 class SafeTextDocument(QTextDocument):
     def loadResource(self, res_type, url):
         # Strictly serve ONLY pre-validated in-memory assets; never call super().loadResource()
@@ -1115,56 +1315,65 @@ class SafeTextDocument(QTextDocument):
             return approved_images[key]
         return None
 
-doc = SafeTextDocument()
-doc.setDefaultFont(QFont("Segoe UI", 12))
-doc.setPageSize(QSizeF(LW, LH))
-doc.setTextWidth(LW)
-doc.setHtml(html)
+if not frames:
+    doc = SafeTextDocument()
+    doc.setDefaultFont(QFont("Segoe UI", 12))
+    doc.setPageSize(QSizeF(LW, LH))
+    doc.setTextWidth(LW)
+    doc.setHtml(html)
 
-doc_h = max(LH, int(doc.size().height()))
-total_slices = 1
-if max_extra > 0 and doc_h >= int(LH * 1.4):
-    total_slices = min(1 + max_extra, max(1, (doc_h + LH - 1) // LH))
+    doc_h = max(LH, int(doc.size().height()))
+    total_slices = 1
+    if max_extra > 0 and doc_h >= int(LH * 1.4):
+        total_slices = min(1 + max_extra, max(1, (doc_h + LH - 1) // LH))
 
-frames = []
-for idx in range(total_slices):
-    y_off = idx * int(LH * 0.85)
-    if idx > 0 and y_off >= doc_h - 120:
-        break
-    page_img = QImage(LW, LH, QImage.Format.Format_RGB32)
-    page_img.fill(QColor(17, 24, 39))
-    p = QPainter(page_img)
-    p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-    p.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
-    p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
-    p.translate(0, -y_off)
-    doc.drawContents(p, QRectF(0, y_off, LW, LH))
-    p.end()
+    for idx in range(total_slices):
+        y_off = idx * int(LH * 0.85)
+        if idx > 0 and y_off >= doc_h - 120:
+            break
+        page_img = QImage(LW, LH, QImage.Format.Format_RGB32)
+        page_img.fill(QColor(17, 24, 39))
+        p = QPainter(page_img)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        p.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
+        p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+        p.translate(0, -y_off)
+        doc.drawContents(p, QRectF(0, y_off, LW, LH))
+        p.end()
 
-    out_img = page_img.scaled(W, H, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
-    ba = QByteArray()
-    qbuf = QBuffer(ba)
-    qbuf.open(QIODevice.OpenModeFlag.WriteOnly)
-    out_img.save(qbuf, "PNG")
-    frames.append(base64.b64encode(bytes(ba)).decode("ascii"))
+        out_img = page_img.scaled(W, H, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        frames.append(encode_png_b64(out_img))
+        frame_richness.append(compute_richness(out_img))
 
-sys.stdout.write(json.dumps({"frames": frames}))
+sys.stdout.write(json.dumps({"frames": frames, "richness": frame_richness}))
 `;
       const pyRes = spawnSync("python", ["-c", pyScript], {
         input: JSON.stringify({
           html: processedHtml,
           resources: approvedResources,
+          mimes: approvedMimeTypes,
           maxExtra: maxExtraSections,
+          offlineAudit: isOfflineAuditMode,
+          virtualTimeBudget: idx === 0 ? 2200 : 1200,
         }),
         encoding: "utf8",
-        timeout: 15000,
+        timeout: 30000,
+        maxBuffer: 64 * 1024 * 1024,
         windowsHide: true,
-        env: { ...process.env, QT_QPA_PLATFORM: "offscreen" },
+        env: {
+          ...process.env,
+          QT_QPA_PLATFORM: "offscreen",
+          QT_QPA_FONTDIR: "C:\\Windows\\Fonts",
+        },
       });
 
       if (pyRes.status === 0 && pyRes.stdout) {
-        const parsed = JSON.parse(pyRes.stdout.trim()) as { frames?: string[] };
+        const parsed = JSON.parse(pyRes.stdout.trim()) as {
+          frames?: string[];
+          richness?: number[];
+        };
         const frameList = Array.isArray(parsed.frames) ? parsed.frames : [];
+        const richList = Array.isArray(parsed.richness) ? parsed.richness : [];
         for (let fIdx = 0; fIdx < frameList.length; fIdx++) {
           if (results.length >= maxShots) break;
           const pngBuf = Buffer.from(frameList[fIdx], "base64");
@@ -1179,6 +1388,10 @@ sys.stdout.write(json.dumps({"frames": frames}))
           const saved = savePngWithHash(pngBuf, prefix);
           seenHashes.add(saved.hash6);
 
+          const colorRichness =
+            typeof richList[fIdx] === "number" && richList[fIdx] > 0
+              ? richList[fIdx]
+              : fallbackColorRichness;
           const score =
             colorRichness * 3 +
             Math.min(widgetCount, 60) * 2 +
@@ -1255,6 +1468,123 @@ export function listCapturedAppScreenshots(studentDir: string): string[] {
     .map((v) => v.name)
     .sort((a, b) => a.localeCompare(b))
     .map((f) => path.join(shotsDir, f));
+}
+
+/**
+ * Self-heals stale `_spck_app_shots/app_*.png` references when screenshots have been re-captured
+ * (with new content hashes) or cleared on disk while an unapproved UI tab or draft still holds old paths.
+ */
+export function resolveValidAppShotResources(params: {
+  localFolderPath?: string | null;
+  thumbnailPath?: string | null;
+  screenshots?: string[] | null;
+  fallbackThumbnailPath?: string | null;
+  fallbackScreenshots?: string[] | null;
+}): {
+  thumbnailPath: string;
+  screenshots: string[];
+  healed: boolean;
+} {
+  const folderPath = String(params.localFolderPath || "").trim();
+  const rawThumb = String(params.thumbnailPath || "").trim();
+  const rawScreens = Array.isArray(params.screenshots)
+    ? params.screenshots.map((p) => String(p || "").trim()).filter(Boolean)
+    : [];
+
+  const isAppShotPath = (p: string) =>
+    /[\\/]_spck_app_shots[\\/]app_/i.test(p);
+  const fileExistsSafe = (p: string) => {
+    if (!p) return false;
+    try {
+      const safe = assertPathAllowed(p);
+      return fs.existsSync(safe) && fs.statSync(safe).isFile();
+    } catch {
+      return false;
+    }
+  };
+  const samePath = (a: string, b: string) =>
+    path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
+
+  const thumbMissingAppShot =
+    Boolean(rawThumb) && isAppShotPath(rawThumb) && !fileExistsSafe(rawThumb);
+  const screensMissingAppShot = rawScreens.some(
+    (p) => isAppShotPath(p) && !fileExistsSafe(p)
+  );
+
+  if (!thumbMissingAppShot && !screensMissingAppShot) {
+    return {
+      thumbnailPath: rawThumb,
+      screenshots: rawScreens,
+      healed: false,
+    };
+  }
+
+  let diskShots: string[] = [];
+  if (folderPath) {
+    try {
+      diskShots = listCapturedAppScreenshots(folderPath);
+    } catch {
+      diskShots = [];
+    }
+  }
+
+  const extractSlotPrefix = (p: string) => {
+    const base = path.basename(p);
+    const m = base.match(/^(app_\d+_.*?)_[0-9a-f]{6}\.png$/i);
+    return m ? m[1].toLowerCase() : "";
+  };
+
+  let resolvedThumb = rawThumb;
+  if (thumbMissingAppShot) {
+    const fbThumb = String(params.fallbackThumbnailPath || "").trim();
+    if (fbThumb && fileExistsSafe(fbThumb)) {
+      resolvedThumb = fbThumb;
+    } else {
+      const wantedSlot = extractSlotPrefix(rawThumb);
+      const matchedDiskShot = wantedSlot
+        ? diskShots.find((s) => extractSlotPrefix(s) === wantedSlot)
+        : undefined;
+      resolvedThumb =
+        matchedDiskShot || diskShots[0] || DEFAULT_SPCK_THUMBNAIL_PATH;
+    }
+  }
+
+  let resolvedScreens = rawScreens;
+  if (screensMissingAppShot || thumbMissingAppShot) {
+    const fbScreens = Array.isArray(params.fallbackScreenshots)
+      ? params.fallbackScreenshots
+          .map((p) => String(p || "").trim())
+          .filter((p) => fileExistsSafe(p))
+      : [];
+    const preservedNonAppShots = rawScreens.filter(
+      (p) => !isAppShotPath(p) && fileExistsSafe(p)
+    );
+    const candidateAppShots =
+      diskShots.length > 0
+        ? diskShots
+        : fbScreens.filter((p) => isAppShotPath(p));
+    const merged: string[] = [];
+    const pushUnique = (p: string) => {
+      if (!p || samePath(p, resolvedThumb)) return;
+      if (merged.some((m) => samePath(m, p))) return;
+      if (merged.length >= MAX_SPCK_SCREENSHOTS) return;
+      merged.push(p);
+    };
+    for (const p of preservedNonAppShots) pushUnique(p);
+    for (const p of candidateAppShots) pushUnique(p);
+    if (merged.length === 0 && diskShots.length === 1 && samePath(diskShots[0], resolvedThumb)) {
+      merged.push(diskShots[0]);
+    }
+    resolvedScreens = merged;
+  }
+
+  return {
+    thumbnailPath: resolvedThumb,
+    screenshots: resolvedScreens,
+    healed:
+      resolvedThumb !== rawThumb ||
+      JSON.stringify(resolvedScreens) !== JSON.stringify(rawScreens),
+  };
 }
 
 /**

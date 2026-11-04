@@ -234,14 +234,18 @@ export function classifyStudentSkillLevel(
       continue;
     }
 
-    if (/xuất sắc|giỏi|vận dụng.*sáng tạo|sáng tạo|🌟|💡|lvl_.*xuat_sac|tier_1/i.test(lower)) {
+    if (
+      /xuất sắc|giỏi|vận dụng.*sáng tạo|sáng tạo|chủ động thử.*sửa lỗi|🌟|💡|🧠|lvl_.*xuat_sac|tier_1/i.test(
+        lower
+      )
+    ) {
       hasExcellent = true;
       positiveCount++;
       continue;
     }
 
     if (
-      /mất tập trung|xao nhãng|nói chuyện riêng|làm việc riêng|cần tập trung hơn|👀|tier_3/i.test(
+      /mất tập trung|cần nhắc tập trung|xao nhãng|nói chuyện riêng|làm việc riêng|cần tập trung hơn|👀|tier_3/i.test(
         lower
       )
     ) {
@@ -249,13 +253,17 @@ export function classifyStudentSkillLevel(
       continue;
     }
 
-    if (/thao tác.*chậm|cú pháp còn chậm|lúng túng|hay nhầm lệnh|⌨️|🔌|🐛/i.test(lower)) {
+    if (
+      /thao tác.*chậm|cú pháp còn chậm|lập trình cần hỗ trợ|lúng túng|hay nhầm lệnh|⌨️|🔌|🧩|🐛/i.test(
+        lower
+      )
+    ) {
       hasImprove = true;
       continue;
     }
 
     if (
-      /tiếp thu chậm|lắp ráp còn chậm|nhầm chốt|cần kèm|trung bình|chưa kịp|🐢|🔩|🛠️|lvl_.*can_kem|tier_4|tier_5/i.test(
+      /tiếp thu chậm|lắp ráp còn chậm|lắp ráp cần hỗ trợ|nhầm chốt|cần kèm|trung bình|chưa kịp|🐢|🔩|🛠️|lvl_.*can_kem|tier_4|tier_5/i.test(
         lower
       )
     ) {
@@ -264,7 +272,7 @@ export function classifyStudentSkillLevel(
     }
 
     if (
-      /tiếp thu tốt|làm bài tập đầy đủ|lắp ráp.*lập trình tốt|hăng hái|phối hợp nhóm|giữ kit tốt|đạt yêu cầu|khá|tốt|tích cực|hiểu bài nhanh|👍|✅|📝|🙋|🤖|🤝|lvl_.*dat|tier_2/i.test(
+      /tiếp thu tốt|làm bài tập đầy đủ|lắp ráp đúng mẫu|lập trình chạy đúng|lắp ráp.*lập trình tốt|hăng hái|phối hợp nhóm|hợp tác nhóm|giữ kit tốt|đạt yêu cầu|khá|tốt|tích cực|hiểu bài nhanh|👍|✅|📝|🙋|🤖|🔧|💻|🤝|lvl_.*dat|tier_2/i.test(
         lower
       )
     ) {
@@ -273,7 +281,7 @@ export function classifyStudentSkillLevel(
     }
   }
 
-  // Promote to Excellent if teacher ticked 3+ positive tags with zero constructive tags (e.g. all 3 Robotics positive tags)
+  // Promote to Excellent if teacher ticked 3+ positive tags with zero constructive tags
   if (positiveCount >= 3 && !hasSlow && !hasDistracted && !hasImprove) {
     hasExcellent = true;
   }
@@ -350,12 +358,13 @@ const CODING_VALID_LABELS = new Set<string>([
 ]);
 
 const ROBOTICS_VALID_LABELS = new Set<string>([
-  "🤖 Lắp ráp & Lập trình tốt",
-  "🙋 Hăng hái phát biểu",
-  "🤝 Phối hợp nhóm & Giữ Kit tốt",
-  "👀 Mất tập trung",
-  "🔩 Lắp ráp còn chậm / Nhầm chốt",
-  "🔌 Lập trình / Đấu mạch còn lúng túng",
+  "🔧 Lắp ráp đúng mẫu",
+  "💻 Lập trình chạy đúng",
+  "🧠 Chủ động thử & sửa lỗi",
+  "🤝 Hợp tác nhóm tốt",
+  "🔩 Lắp ráp cần hỗ trợ",
+  "🧩 Lập trình cần hỗ trợ",
+  "👀 Cần nhắc tập trung",
 ]);
 
 export function normalizeQuickTagsForTrack(
@@ -386,35 +395,35 @@ export function normalizeQuickTagsForTrack(
     ) {
       continue;
     }
-    if (/xuất sắc|sáng tạo|vận dụng tốt|🌟|💡/i.test(lower)) {
+    if (/xuất sắc|sáng tạo|vận dụng tốt|chủ động thử.*sửa lỗi|🌟|💡|🧠/i.test(lower)) {
       addUnique(
-        track === "robotics" ? "🤖 Lắp ráp & Lập trình tốt" : "💡 Vận dụng & Sáng tạo tốt"
+        track === "robotics" ? "🧠 Chủ động thử & sửa lỗi" : "💡 Vận dụng & Sáng tạo tốt"
       );
     } else if (/hăng hái|phát biểu|🙋/i.test(lower)) {
-      addUnique("🙋 Hăng hái phát biểu");
-    } else if (/làm bài tập đầy đủ|📝/i.test(lower)) {
+      addUnique(track === "robotics" ? "🤝 Hợp tác nhóm tốt" : "🙋 Hăng hái phát biểu");
+    } else if (/lập trình chạy đúng|làm bài tập đầy đủ|💻|📝/i.test(lower)) {
       addUnique(
-        track === "robotics" ? "🤖 Lắp ráp & Lập trình tốt" : "📝 Làm bài tập đầy đủ"
+        track === "robotics" ? "💻 Lập trình chạy đúng" : "📝 Làm bài tập đầy đủ"
       );
-    } else if (/phối hợp nhóm|giữ kit|🤝/i.test(lower)) {
+    } else if (/phối hợp nhóm|hợp tác nhóm|giữ kit|🤝/i.test(lower)) {
       addUnique(
-        track === "robotics" ? "🤝 Phối hợp nhóm & Giữ Kit tốt" : "✅ Tiếp thu tốt"
+        track === "robotics" ? "🤝 Hợp tác nhóm tốt" : "✅ Tiếp thu tốt"
       );
-    } else if (/mất tập trung|xao nhãng|nói chuyện|làm việc riêng|👀/i.test(lower)) {
-      addUnique("👀 Mất tập trung");
-    } else if (/tiếp thu chậm|nhầm chốt|lắp ráp còn chậm|cần kèm thêm|🐢|🔩|🛠️/i.test(lower)) {
+    } else if (/mất tập trung|cần nhắc tập trung|xao nhãng|nói chuyện|làm việc riêng|👀/i.test(lower)) {
+      addUnique(track === "robotics" ? "👀 Cần nhắc tập trung" : "👀 Mất tập trung");
+    } else if (/tiếp thu chậm|nhầm chốt|lắp ráp còn chậm|lắp ráp cần hỗ trợ|cần kèm thêm|🐢|🔩|🛠️/i.test(lower)) {
       addUnique(
-        track === "robotics" ? "🔩 Lắp ráp còn chậm / Nhầm chốt" : "🐢 Tiếp thu chậm"
+        track === "robotics" ? "🔩 Lắp ráp cần hỗ trợ" : "🐢 Tiếp thu chậm"
       );
-    } else if (/thao tác.*chậm|cú pháp.*chậm|đấu mạch|lúng túng|⌨️|🔌/i.test(lower)) {
+    } else if (/thao tác.*chậm|cú pháp.*chậm|đấu mạch|lúng túng|lập trình cần hỗ trợ|⌨️|🔌|🧩/i.test(lower)) {
       addUnique(
         track === "robotics"
-          ? "🔌 Lập trình / Đấu mạch còn lúng túng"
+          ? "🧩 Lập trình cần hỗ trợ"
           : "⌨️ Thao tác / Cú pháp còn chậm"
       );
-    } else if (/đạt yêu cầu|tiếp thu tốt|lắp ráp.*tốt|tập trung tốt|chăm chỉ|👍|✅|🤖/i.test(lower)) {
+    } else if (/đạt yêu cầu|tiếp thu tốt|lắp ráp đúng mẫu|lắp ráp.*tốt|tập trung tốt|chăm chỉ|👍|✅|🤖|🔧/i.test(lower)) {
       addUnique(
-        track === "robotics" ? "🤖 Lắp ráp & Lập trình tốt" : "✅ Tiếp thu tốt"
+        track === "robotics" ? "🔧 Lắp ráp đúng mẫu" : "✅ Tiếp thu tốt"
       );
     }
   }

@@ -119,6 +119,19 @@ async function runTests() {
     assert.equal(sug14.targetPercent, 100);
     assert.equal(sug14.milestoneTaskCount, 5);
 
+    // Point 1 regression: must NOT show whole-class suggestion if verifiedCount < totalRosterCount
+    const sugPartialRoster = getSpckVerifiedTeachingProgressSuggestion({
+      sessionNumber: 14,
+      verifiedCount: 1,
+      pendingOrFailedCount: 0,
+      totalRosterCount: 2,
+    });
+    assert.equal(
+      sugPartialRoster.shouldShow,
+      false,
+      "Point 1: Must not suggest whole-class 100% update when only 1/2 roster students verified SPCK"
+    );
+
     console.log("  -> PASS [S6-T1]: Ánh xạ buổi học -> % và điều kiện VERIFIED chính xác.\n");
   }
 
@@ -393,8 +406,38 @@ async function runTests() {
       "S6-05: 99.9% weighted average must not mark 100% progress step as done"
     );
 
+    // Point 3 regression: Report Card verified at T1 becomes stale when Session 14 evaluation is modified at T2 > T1
+    db.prepare(
+      `INSERT INTO class_report_cards (classId, classCode, status, teachingSyncStatus, lmsSnapshotJson, teachingSyncedAt, updatedAt)
+       VALUES ('VT-C4K-JSB14', 'VT-C4K-JSB14', 'VERIFIED', 'VERIFIED', ?, '2026-10-30 10:00:00', '2026-10-30 10:00:00')`
+    ).run(JSON.stringify({ scrapedAt: "2026-10-30T10:00:00.000Z" }));
+    db.prepare(
+      `UPDATE spck_session14_evaluations SET updatedAt = '2026-10-30T09:00:00.000Z' WHERE classId = 'VT-C4K-JSB14'`
+    ).run();
+    const cardsRcFresh = getDashboardTodayTodoCards({ limit: 10 });
+    assert.equal(
+      cardsRcFresh.find((c) => c.classId === "VT-C4K-JSB14")!.steps[2].isDone,
+      true,
+      "Point 3: Fresh VERIFIED report card must mark step 3 as done"
+    );
+    db.prepare(
+      `UPDATE spck_session14_evaluations SET updatedAt = '2026-10-30T12:00:00.000Z' WHERE classId = 'VT-C4K-JSB14'`
+    ).run();
+    const cardsRcStale = getDashboardTodayTodoCards({ limit: 10 });
+    const staleStep3 = cardsRcStale.find((c) => c.classId === "VT-C4K-JSB14")!.steps[2];
+    assert.equal(
+      staleStep3.isDone,
+      false,
+      "Point 3: Modifying Session 14 evaluation/Demo score after scrape must mark Report Card step as not done"
+    );
+    assert.equal(
+      staleStep3.statusText,
+      "Cần quét và đồng bộ lại",
+      "Point 3: Stale Report Card step on Dashboard must show 'Cần quét và đồng bộ lại'"
+    );
+
     console.log(
-      "  -> PASS [S6-T2]: Thẻ 'Việc cần làm hôm nay' (Buổi 1, 5, 7, 11, 12, 14 + S6-04/S6-05) hoạt động chính xác.\n"
+      "  -> PASS [S6-T2]: Thẻ 'Việc cần làm hôm nay' (Buổi 1, 5, 7, 11, 12, 14 + S6-04/S6-05 + Point 3) hoạt động chính xác.\n"
     );
   }
 
@@ -750,7 +793,26 @@ async function runTests() {
       );
       assert.equal(tpProgressCalls[0].classCode, "VT-C4K-JSB12");
       assert.equal(tpProgressCalls[0].milestoneTaskCount, 3);
-      assert.equal(tpProgressCalls[0].resetOthers, true);
+      assert.equal(
+        tpProgressCalls[0].resetOthers,
+        false,
+        "Point 2: Quick 1-click milestone button must be non-decreasing (resetOthers=false)"
+      );
+      assert.equal(
+        tpProgressCalls[0].allowDecrease,
+        false,
+        "Point 2: Quick 1-click milestone button must set allowDecrease=false"
+      );
+
+      // Point 4: Verify unified draft status badge renders "Đã lưu nháp"
+      const draftBadgeText = await pageTp
+        .locator('[data-testid="tp-draft-status-badge"]')
+        .textContent();
+      assert.equal(
+        (draftBadgeText || "").trim(),
+        "Đã lưu nháp",
+        "Point 4: Unified draft status badge must render 'Đã lưu nháp' when clean"
+      );
 
       // Open Advanced section -> manual buttons, LMS date button, and sliders appear
       await pageTp.click("button:has-text('⚙️ Nâng cao')");

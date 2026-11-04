@@ -1,0 +1,54 @@
+{
+  "time": "2026-11-03T04:46:48.353Z",
+  "checks": [
+    {
+      "id": "C01_F02_successful_zip_preserves_unbundled_over15MB",
+      "status": "PASS",
+      "evidence": {
+        "mediumBytes": 6291456,
+        "unbundledBytes": 15728641,
+        "entries": [
+          "CSS/style.css",
+          "index.html",
+          "medium.js"
+        ],
+        "attachments": [
+          "sourcesizes_web_package.zip",
+          "over15.js"
+        ],
+        "warnings": [
+          "File mã nguồn 'over15.js' vượt quá giới hạn 15MB cho 1 tệp trong gói nén ZIP nên không tự động đóng gói.",
+          "Chưa có ảnh sản phẩm trong thư mục (đã tự động lấy ảnh Logo MindX làm Thumbnail mặc định)."
+        ]
+      }
+    },
+    {
+      "id": "C02_F01_F04_text_extensions_consistent_validation",
+      "status": "PASS",
+      "evidence": {
+        "extensions": [
+          ".py",
+          ".ipynb",
+          ".ui",
+          ".qss",
+          ".gml",
+          ".yy",
+          ".html",
+          ".htm",
+          ".css",
+          ".js",
+          ".mjs",
+          ".txt",
+          ".text",
+          ".md",
+          ".csv",
+          ".xml",
+          ".sql",
+          ".json"
+        ],
+        "invalidCases": 36,
+        "readableZipFiles": 6
+      }
+    }
+  ]
+}

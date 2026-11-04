@@ -21,6 +21,7 @@ import {
   validateSpckResourceLimits,
   validateSpckYoutubeUrl,
 } from "@/lib/local-files/spck-scanner";
+import { resolveValidAppShotResources } from "@/lib/local-files/spck-app-screenshotter";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { assertPathAllowed } from "@/lib/security/path-allowlist";
 import { buildEnrichedClassSpckRecords } from "../list/route";
@@ -229,11 +230,44 @@ export async function POST(req: Request) {
         const commentMismatch =
           String(rev.teacherComment ?? "").trim() !==
           String(target.teacherComment ?? "").trim();
-        const thumbMismatch =
+        let thumbMismatch =
           String(rev.thumbnailPath ?? "").trim() !==
           String(target.thumbnailPath ?? "").trim();
-        const screenshotsMismatch =
+        let screenshotsMismatch =
           revScreenshotsJson !== String(target.screenshotsJson ?? "[]");
+        if (thumbMismatch || screenshotsMismatch) {
+          let parsedRevScreens: string[] = [];
+          let parsedTargetScreens: string[] = [];
+          try {
+            const pr = JSON.parse(revScreenshotsJson);
+            if (Array.isArray(pr)) parsedRevScreens = pr;
+          } catch {}
+          try {
+            const pt = JSON.parse(String(target.screenshotsJson ?? "[]"));
+            if (Array.isArray(pt)) parsedTargetScreens = pt;
+          } catch {}
+          const healedRev = resolveValidAppShotResources({
+            localFolderPath: target.localFolderPath || rev.localFolderPath,
+            thumbnailPath: String(rev.thumbnailPath ?? "").trim(),
+            screenshots: parsedRevScreens,
+          });
+          const healedTarget = resolveValidAppShotResources({
+            localFolderPath: target.localFolderPath || rev.localFolderPath,
+            thumbnailPath: String(target.thumbnailPath ?? "").trim(),
+            screenshots: parsedTargetScreens,
+          });
+          if (healedRev.healed || healedTarget.healed) {
+            if (healedRev.thumbnailPath === healedTarget.thumbnailPath) {
+              thumbMismatch = false;
+            }
+            if (
+              JSON.stringify(healedRev.screenshots) ===
+              JSON.stringify(healedTarget.screenshots)
+            ) {
+              screenshotsMismatch = false;
+            }
+          }
+        }
         const attachmentsMismatch =
           revAttachmentsJson !== String(target.attachmentsJson ?? "[]");
         const youtubeMismatch =
@@ -349,6 +383,51 @@ export async function POST(req: Request) {
           reason: "Bình luận của giáo viên* không được để trống.",
         });
         continue;
+      }
+
+      let rawParsedScreenshots: string[] = [];
+      try {
+        const ps = JSON.parse(sessionDraft.screenshotsJson || "[]");
+        if (Array.isArray(ps)) rawParsedScreenshots = ps;
+      } catch {}
+      const healedDraftShots = resolveValidAppShotResources({
+        localFolderPath: sessionDraft.localFolderPath || record.localFolderPath,
+        thumbnailPath: sessionDraft.thumbnailPath,
+        screenshots: rawParsedScreenshots,
+      });
+      if (healedDraftShots.healed) {
+        const nextScreensJson = JSON.stringify(healedDraftShots.screenshots);
+        sessionDraft = {
+          ...sessionDraft,
+          thumbnailPath: healedDraftShots.thumbnailPath,
+          screenshotsJson: nextScreensJson,
+        };
+        try {
+          const db = getDb();
+          db.prepare(
+            `UPDATE spck_session_submissions
+             SET thumbnailPath = ?, screenshotsJson = ?
+             WHERE classId = ? AND studentId = ? AND sessionNumber = ?`
+          ).run(
+            healedDraftShots.thumbnailPath,
+            nextScreensJson,
+            classId,
+            studentId,
+            sessionNumber
+          );
+          if (record.status !== "APPROVED" && record.status !== "VERIFIED") {
+            db.prepare(
+              `UPDATE spck_uploads
+               SET thumbnailPath = ?, screenshotsJson = ?
+               WHERE classId = ? AND studentId = ?`
+            ).run(
+              healedDraftShots.thumbnailPath,
+              nextScreensJson,
+              classId,
+              studentId
+            );
+          }
+        } catch {}
       }
 
       if (!sessionDraft.thumbnailPath || !sessionDraft.thumbnailPath.trim()) {

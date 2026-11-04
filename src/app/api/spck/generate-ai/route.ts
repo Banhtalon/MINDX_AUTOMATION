@@ -101,6 +101,21 @@ export async function POST(req: Request) {
           ? JSON.parse(dbSpck.relatedLinksJson)
           : []);
 
+      const dbQuickTags: string[] = (() => {
+        try {
+          const parsed = sessDraft.quickTagsJson ? JSON.parse(sessDraft.quickTagsJson) : [];
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      })();
+      const resolvedQuickTags =
+        Array.isArray(s?.quickTags) && s.quickTags.length > 0
+          ? s.quickTags
+          : dbQuickTags;
+      const resolvedTeacherNote =
+        String(s?.teacherNote || "").trim() || String(sessDraft.teacherNote || "").trim();
+
       inputs.push({
         studentId,
         fullName: dbStu.fullName,
@@ -112,8 +127,8 @@ export async function POST(req: Request) {
         attachments,
         youtubeUrls,
         relatedLinks,
-        quickTags: Array.isArray(s?.quickTags) ? s.quickTags : [],
-        teacherNote: String(s?.teacherNote || ""),
+        quickTags: resolvedQuickTags,
+        teacherNote: resolvedTeacherNote,
         includePresentation:
           typeof s?.includePresentation === "boolean" ? s.includePresentation : undefined,
         expectedVersion:
