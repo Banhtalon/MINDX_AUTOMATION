@@ -689,7 +689,85 @@ async function run() {
     assert.strictEqual(save2.status, 200, "Lần lưu tiếp theo phải đạt HTTP 200, không bị HTTP 409");
     console.log("  -> PASS V16.");
 
-    console.log("\n=== HOÀN TẤT: TẤT CẢ 16 KỊCH BẢN v2.7.2 (V01 -> V16) ĐỀU ĐẠT 100% ===");
+    // V17: GameMaker (.yyz) auto room screenshot rendering (960×540) during scan & capture
+    console.log("\n[V17] Tự động dựng hình màn chơi GameMaker (.yyz) chuẩn 960×540...");
+    const AdmZipMod = (await import("adm-zip")).default;
+    const gmDir = path.join(tempRoot, "Nguyen Manh Duc");
+    fs.mkdirSync(gmDir, { recursive: true });
+    const gmZip = new AdmZipMod();
+    gmZip.addFile(
+      "sprites/spr_hero/spr_hero.yy",
+      Buffer.from(
+        JSON.stringify({
+          resourceType: "GMSprite",
+          name: "spr_hero",
+          width: 64,
+          height: 64,
+          sequence: { xorigin: 0, yorigin: 0 },
+          frames: [{ name: "frame_hero_01" }],
+        }),
+        "utf8"
+      )
+    );
+    gmZip.addFile("sprites/spr_hero/frame_hero_01.png", makePng(64, 64, 120, true));
+    gmZip.addFile(
+      "objects/obj_hero/obj_hero.yy",
+      Buffer.from(
+        JSON.stringify({
+          resourceType: "GMObject",
+          name: "obj_hero",
+          visible: true,
+          spriteId: { name: "spr_hero" },
+          eventList: [{ eventType: 3, eventNum: 0 }],
+        }),
+        "utf8"
+      )
+    );
+    gmZip.addFile("objects/obj_hero/Step_0.gml", Buffer.from("x += 4;", "utf8"));
+    gmZip.addFile("objects/obj_door/Collision_obj_hero.gml", Buffer.alloc(0));
+    gmZip.addFile(
+      "rooms/rm_round1/rm_round1.yy",
+      Buffer.from(
+        JSON.stringify({
+          resourceType: "GMRoom",
+          name: "rm_round1",
+          roomSettings: { Width: 1366, Height: 768 },
+          layers: [
+            {
+              resourceType: "GMRInstanceLayer",
+              name: "Instances",
+              depth: 0,
+              visible: true,
+              instances: [
+                { objectId: { name: "obj_hero" }, x: 200, y: 300, scaleX: 1, scaleY: 1, rotation: 0 },
+                { objectId: { name: "obj_hero" }, x: 600, y: 400, scaleX: 1, scaleY: 1, rotation: 0 },
+              ],
+            },
+          ],
+        }),
+        "utf8"
+      )
+    );
+    gmZip.writeZip(path.join(gmDir, "Duc.yyz"));
+
+    const gmScanned = scanStudentSpckFolder(gmDir, "Nguyễn Mạnh Đức");
+    assert.strictEqual(gmScanned.attachments.length, 1, "File Duc.yyz có 1 file .gml rỗng vẫn phải hợp lệ");
+    assert.strictEqual(gmScanned.warnings.length, 0, "Không được còn cảnh báo hỏng cấu trúc .yyz hay thiếu ảnh");
+    assert.ok(gmScanned.thumbnailPath.includes("_spck_app_shots"), "Thumbnail phải lấy từ ảnh màn chơi GameMaker");
+    assert.deepStrictEqual(dimsOf(gmScanned.thumbnailPath), { width: 960, height: 540 });
+    assert.ok(gmScanned.screenshots.length >= 1, "Ảnh bổ sung phải có ảnh chụp màn chơi GameMaker");
+
+    const gmCaptured = await captureStudentAppScreenshots({
+      studentId: "STU_V272_GM",
+      folderPath: gmDir,
+      useAiVision: false,
+    });
+    assert.strictEqual(gmCaptured.thumbnailSource, "APP_SCREENSHOT");
+    assert.deepStrictEqual(dimsOf(gmCaptured.thumbnailPath), { width: 960, height: 540 });
+    assert.ok(gmCaptured.galleryScreenshots.length >= 1);
+    console.log("  -> PASS V17.");
+
+    console.log("\n=== HOÀN TẤT: TẤT CẢ 17 KỊCH BẢN v2.7.2 (V01 -> V17) ĐỀU ĐẠT 100% ===");
   } finally {
     globalThis.fetch = origFetch;
     cleanup();

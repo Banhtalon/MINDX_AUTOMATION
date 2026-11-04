@@ -13,6 +13,7 @@ import { parseZipArchiveBuffer } from "../file-parsers/archive-reader";
 import { parseGameMakerBuffer, parseScratchSb3Buffer } from "../file-parsers/game-reader";
 import { parseMediaBuffer } from "../file-parsers/media-reader";
 import { assertPathAllowed } from "../security/path-allowlist";
+import { renderGameArchiveScreenshotsSync } from "./spck-game-screenshotter";
 import {
   FolderStudentMatchResult,
   StudentCandidate,
@@ -1439,6 +1440,42 @@ export function scanStudentSpckFolder(
       warnings.push(
         `Lỗi khi đóng gói ZIP cho file Robotics: ${err instanceof Error ? err.message : String(err)}`
       );
+    }
+  }
+
+  // Auto-render GameMaker (.yyz) / Scratch (.sb3) room/stage screenshots into _spck_app_shots
+  // when the student folder has no existing product images yet.
+  if (validImages.length === 0 && validAttachments.length > 0) {
+    const yyzRelList = validAttachments
+      .filter((p) => /\.yyz$/i.test(p))
+      .map((p) => path.relative(safeFolderPath, p));
+    const sb3RelList = validAttachments
+      .filter((p) => /\.sb3$/i.test(p))
+      .map((p) => path.relative(safeFolderPath, p));
+    if (yyzRelList.length > 0 || sb3RelList.length > 0) {
+      try {
+        const autoOutDir = assertPathAllowed(path.join(safeFolderPath, "_spck_app_shots"));
+        const renderedShots = renderGameArchiveScreenshotsSync({
+          studentDir: safeFolderPath,
+          yyzFiles: yyzRelList,
+          sb3Files: sb3RelList,
+          outDir: autoOutDir,
+          maxShots: MAX_SPCK_SCREENSHOTS + 1,
+        });
+        for (const shot of renderedShots) {
+          if (!shot?.filePath || !fs.existsSync(shot.filePath)) continue;
+          const shotPath = assertPathAllowed(shot.filePath);
+          const shotName = path.basename(shotPath);
+          const shotExt = path.extname(shotName).toLowerCase();
+          const buf = fs.readFileSync(shotPath);
+          const mediaCheck = parseMediaBuffer(buf, shotName, shotExt);
+          if (mediaCheck.success) {
+            pushValidatedImage(shotName, shotPath, buf, shotExt);
+          }
+        }
+      } catch {
+        // Ignore auto-render errors during scan; teacher can still upload or capture manually
+      }
     }
   }
 

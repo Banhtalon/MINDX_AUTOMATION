@@ -683,6 +683,25 @@ async function runPhase5Tests() {
     assert.equal(badYyzParsed.parseStatus, "PARSE_ERROR", "R35-07: YYZ chứa GML hỏng phải trả PARSE_ERROR");
     assert(badYyzParsed.parseErrorReason?.includes("Step_0.gml"));
 
+    // Valid GameMaker .yyz containing a 0-byte .gml event stub (e.g. Collision placeholder) must pass
+    const stubYyz = new AdmZip();
+    stubYyz.addFile(
+      "objects/obj_player/obj_player.yy",
+      Buffer.from(
+        JSON.stringify({
+          resourceType: "GMObject",
+          name: "obj_player",
+          eventList: [{ eventType: 3, eventNum: 0 }],
+        }),
+        "utf8"
+      )
+    );
+    stubYyz.addFile("objects/obj_player/Step_0.gml", Buffer.from("x += 4;", "utf8"));
+    stubYyz.addFile("objects/obj_door/Collision_obj_player.gml", Buffer.alloc(0));
+    const stubYyzParsed = parseSubmissionBuffer(stubYyz.toBuffer(), "valid_stub.yyz");
+    assert.equal(stubYyzParsed.parseStatus, "PARSED", "YYZ chứa file .gml rỗng (stub sự kiện) vẫn phải PARSED");
+    assert(stubYyzParsed.extractedText.includes("(Trống)"));
+
     // R35-02 & R36-01: HomeworkAutoGraderTab (when present) or shared types in src/lib/types (after v3.4.0 S7.1 removal)
     {
       const tabPath = path.resolve(process.cwd(), "src/components/homework-auto-grader-tab.tsx");

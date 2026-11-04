@@ -544,10 +544,11 @@ export function parseGameMakerBuffer(
     };
   }
 
+  const GAMEMAKER_YYZ_MAX_UNCOMPRESSED_BYTES = 150 * 1024 * 1024;
   const inspection = inspectZipArchiveSafely(buffer, fileName, {
-    maxTotalBytes: ZIP_MAX_TOTAL_UNCOMPRESSED_BYTES,
-    maxFiles: 500,
-    maxDepth: 12,
+    maxTotalBytes: GAMEMAKER_YYZ_MAX_UNCOMPRESSED_BYTES,
+    maxFiles: 2500,
+    maxDepth: 16,
   });
 
   if (!inspection.valid) {
@@ -575,9 +576,18 @@ export function parseGameMakerBuffer(
   const gmlSections: string[] = [];
   const objectSummaries: string[] = [];
   const roomSummaries: string[] = [];
+  let nonEmptyGmlCount = 0;
   let actualUncompressedBytes = 0;
 
   for (const entry of inspection.entries) {
+    if (
+      entry.extension !== ".gml" &&
+      entry.extension !== ".yy" &&
+      entry.extension !== ".yyp"
+    ) {
+      continue;
+    }
+
     let dataBuf: Buffer;
     try {
       dataBuf = entry.getData();
@@ -600,7 +610,7 @@ export function parseGameMakerBuffer(
     }
 
     actualUncompressedBytes += dataBuf.length;
-    if (actualUncompressedBytes > ZIP_MAX_TOTAL_UNCOMPRESSED_BYTES) {
+    if (actualUncompressedBytes > GAMEMAKER_YYZ_MAX_UNCOMPRESSED_BYTES) {
       return {
         success: false,
         subjectType: "GAMEMAKER",
@@ -614,14 +624,16 @@ export function parseGameMakerBuffer(
           events: [],
           blocksOrScriptsCount: 0,
         },
-        errorReason: `[Zip Bomb Protection] Tổng dung lượng giải nén thực tế của '${fileName}' vượt quá 50MB.`,
+        errorReason: `[Zip Bomb Protection] Tổng dung lượng giải nén thực tế của '${fileName}' vượt quá 150MB.`,
       };
     }
 
     const normLower = entry.normalizedPath.toLowerCase();
 
     if (entry.extension === ".gml") {
-      if (dataBuf.length === 0 || isCorruptedBinaryBuffer(dataBuf)) {
+      // GameMaker Studio 2 / 2023+ exports a 0-byte .gml stub when an Object event is added without code
+      // (e.g. a Collision event placeholder). Only reject non-empty binary-corrupted buffers.
+      if (dataBuf.length > 0 && isCorruptedBinaryBuffer(dataBuf)) {
         return {
           success: false,
           subjectType: "GAMEMAKER",
@@ -639,6 +651,9 @@ export function parseGameMakerBuffer(
         };
       }
       const codeText = dataBuf.toString("utf8").replace(/^\uFEFF/, "").trim();
+      if (codeText.length > 0) {
+        nonEmptyGmlCount++;
+      }
       events.push(entry.normalizedPath);
       gmlSections.push(
         `--- [GML SCRIPT: ${entry.normalizedPath}] ---\n${codeText || "(Trống)"}`
@@ -738,7 +753,7 @@ export function parseGameMakerBuffer(
   }
 
   if (
-    gmlSections.length === 0 &&
+    nonEmptyGmlCount === 0 &&
     objects.length === 0 &&
     sprites.length === 0 &&
     rooms.length === 0

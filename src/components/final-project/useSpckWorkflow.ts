@@ -1731,15 +1731,25 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           const rec = dbByStu.get(row.assignedStudentId);
           if (!rec) return row;
           const screenshots = parseJsonSafe<string[]>(rec.screenshotsJson, []);
+          const nextThumbInspection = rec.thumbnailInspection || row.thumbnailInspection;
+          const hasRealProductImage =
+            Boolean(nextThumbInspection && !nextThumbInspection.isDefaultMindxLogo) ||
+            screenshots.length > 0;
+          const nextWarningReasons = hasRealProductImage
+            ? (row.warningReasons || []).filter(
+                (w) => !w.includes("Chưa có ảnh sản phẩm trong thư mục")
+              )
+            : row.warningReasons;
           return {
             ...row,
             thumbnailPath: rec.thumbnailPath || row.thumbnailPath,
             screenshots,
+            warningReasons: nextWarningReasons,
             status: rec.status || "WAITING_APPROVAL",
             contentHash: rec.contentHash || "",
             draftVersion: rec.draftVersion ?? row.draftVersion,
             hasNewerSharedResources: Boolean(rec.hasNewerSharedResources),
-            thumbnailInspection: rec.thumbnailInspection || row.thumbnailInspection,
+            thumbnailInspection: nextThumbInspection,
             sessionResults:
               parseSessionResultsMap(rec.sessionResultsJson) || row.sessionResults,
             sessionHistory: rec.sessionHistory || row.sessionHistory,
@@ -1856,15 +1866,25 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           const rec = dbByStu.get(row.assignedStudentId);
           if (!rec) return row;
           const screenshots = parseJsonSafe<string[]>(rec.screenshotsJson, []);
+          const nextThumbInspection = rec.thumbnailInspection || row.thumbnailInspection;
+          const hasRealProductImage =
+            Boolean(nextThumbInspection && !nextThumbInspection.isDefaultMindxLogo) ||
+            screenshots.length > 0;
+          const nextWarningReasons = hasRealProductImage
+            ? (row.warningReasons || []).filter(
+                (w) => !w.includes("Chưa có ảnh sản phẩm trong thư mục")
+              )
+            : row.warningReasons;
           return {
             ...row,
             thumbnailPath: rec.thumbnailPath || row.thumbnailPath,
             screenshots,
+            warningReasons: nextWarningReasons,
             status: rec.status || "WAITING_APPROVAL",
             contentHash: rec.contentHash || "",
             draftVersion: rec.draftVersion ?? row.draftVersion,
             hasNewerSharedResources: Boolean(rec.hasNewerSharedResources),
-            thumbnailInspection: rec.thumbnailInspection || row.thumbnailInspection,
+            thumbnailInspection: nextThumbInspection,
             sessionResults:
               parseSessionResultsMap(rec.sessionResultsJson) || row.sessionResults,
             sessionHistory: rec.sessionHistory || row.sessionHistory,
@@ -3344,7 +3364,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
   const isWebClassOrProduct = useMemo(() => {
     const classText = `${selectedClassId} ${selectedClassMeta?.className || ""}`.toUpperCase();
     const hasWebClassCode = /\b(JSB|JSA|JSI|WEB|HTML)[A-Z0-9]*\b/.test(classText);
-    const hasNonWebTrackCode = /\b(PTA|PTI|CSI|CSA|GMA|GMI|SB|SA|SI)[A-Z0-9]*\b/.test(
+    const hasNonWebTrackCode = /\b(PTA|PTI|PTB|CSI|CSA|CSB|GMA|GMI|GMB|GA|GB|GI|SB|SA|SI)[A-Z0-9]*\b/.test(
       classText
     );
     const hasHtmlFiles = rows.some(
@@ -3357,7 +3377,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
   const isAppOrGameProduct = useMemo(() => {
     const classText = `${selectedClassId} ${selectedClassMeta?.className || ""}`.toUpperCase();
-    const hasAppClassCode = /\b(PTA|PTI|CSI|CSA|GMA|GMI|GAME|APP|PYTHON|SCRATCH)[A-Z0-9]*\b/.test(
+    const hasAppClassCode = /\b(PTA|PTI|PTB|CSI|CSA|CSB|GMA|GMI|GMB|GA|GB|GI|SB|SA|SI|GAME|APP|PYTHON|SCRATCH)[A-Z0-9]*\b/.test(
       classText
     );
     const hasAppFiles = rows.some((r) =>
@@ -3666,7 +3686,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       classText
     );
     const hasWebCode = /\b(JSB|JSA|JSI|WEB|HTML)[A-Z0-9]*\b/.test(classText);
-    const hasNonWebTrackCode = /\b(PTA|PTI|CSI|CSA|GMA|GMI|SB|SA|SI)[A-Z0-9]*\b/.test(
+    const hasNonWebTrackCode = /\b(PTA|PTI|PTB|CSI|CSA|CSB|GMA|GMI|GMB|GA|GB|GI|SB|SA|SI)[A-Z0-9]*\b/.test(
       classText
     );
     const hasHtmlFiles = unapprovedRows.some((r) =>
@@ -3681,7 +3701,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         /(\.(ui|py|sb3|apk|exe|gmx|yyz|rbxl|html?)|_web_package\.zip)$/i.test(f)
       )
     );
-    const hasAppCode = /\b(PTA|PTI|CSI|CSA|GMA|GMI|GAME|APP|PYTHON|SCRATCH)[A-Z0-9]*\b/.test(
+    const hasAppCode = /\b(PTA|PTI|PTB|CSI|CSA|CSB|GMA|GMI|GMB|GA|GB|GI|SB|SA|SI|GAME|APP|PYTHON|SCRATCH)[A-Z0-9]*\b/.test(
       classText
     );
     const shouldCaptureScreenshots =

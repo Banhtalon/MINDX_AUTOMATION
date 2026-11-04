@@ -32,6 +32,10 @@ import {
   LMS_IMAGE_WIDTH,
   normalizeImagesToLms16x9,
 } from "./spck-image-normalizer";
+import {
+  findProjectGameFiles,
+  renderGameArchiveScreenshotsSync,
+} from "./spck-game-screenshotter";
 
 export const APP_SCREENSHOTS_SUBDIR = "_spck_app_shots";
 export const OWNER_UPLOADS_SUBDIR = "_spck_owner_uploads";
@@ -1792,6 +1796,24 @@ export async function captureStudentAppScreenshots(params: {
       outDir,
       maxShots: maxHtmlShots,
     });
+  } else {
+    const gameFiles = findProjectGameFiles(safeFolderPath);
+    if (gameFiles.yyzFiles.length > 0 || gameFiles.sb3Files.length > 0) {
+      const maxGameShots = Math.max(
+        1,
+        MAX_SPCK_SCREENSHOTS +
+          1 -
+          Math.min(ownerImages.length, MAX_SPCK_SCREENSHOTS) -
+          Math.min(ownerRootPhotos.length, 2)
+      );
+      capturedItems = renderGameArchiveScreenshotsSync({
+        studentDir: safeFolderPath,
+        yyzFiles: gameFiles.yyzFiles,
+        sb3Files: gameFiles.sb3Files,
+        outDir,
+        maxShots: maxGameShots,
+      });
+    }
   }
 
   // Select the best app screenshot via AI Vision (or heuristic fallback)
