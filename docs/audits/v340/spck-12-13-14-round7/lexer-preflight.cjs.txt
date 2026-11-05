@@ -1,0 +1,12 @@
+const acorn=require('next/dist/compiled/acorn'),vm=require('node:vm');
+for(const code of ['const n=010; initializeApp({});','var n=1; initializeApp({});']){
+ let calls=0;vm.runInNewContext(code,{initializeApp:()=>++calls});
+ const contexts={};
+ for(const sourceType of ['script','module']){
+  let tokens=[],error,parses=false;
+  try{acorn.parse(code,{ecmaVersion:'latest',sourceType});parses=true;}catch(e){error=e.message;}
+  try{tokens=[...acorn.tokenizer(code,{ecmaVersion:'latest',sourceType})].map(t=>t.type.label);}catch(e){error=e.message;}
+  contexts[sourceType]={parses,tokens,error};
+ }
+ console.log(JSON.stringify({code,calls,contexts}));
+}

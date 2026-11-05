@@ -1,0 +1,10 @@
+{
+  "gate": "round6",
+  "command": "npx tsx scratch/round6-focused-probe.ts",
+  "started": "2026-11-05T06:12:19.431Z",
+  "finished": "2026-11-05T06:12:22.694Z",
+  "exitCode": 1,
+  "signal": null,
+  "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-round6.db",
+  "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-round6-classes.json"
+}

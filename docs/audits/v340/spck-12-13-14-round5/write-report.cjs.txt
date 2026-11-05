@@ -1,0 +1,9 @@
+const fs=require('node:fs'),path=require('node:path');
+const root=__dirname,state=JSON.parse(fs.readFileSync(path.join(root,'state.json'),'utf8'));
+const reportPath=path.join(state.repo,'docs/audits/v340/CODEX_SPCK_12_13_14_AUDIT.md');
+const old=fs.readFileSync(path.join(root,'round4-report.md.txt'));
+if(!fs.readFileSync(reportPath).equals(old))throw Error('History changed before report write');
+const section=fs.readFileSync(path.join(root,'round5-section.md.txt'));
+if(!section.toString('utf8').includes('## VERDICT ROUND 5: NO-GO'))throw Error('Missing verdict');
+fs.writeFileSync(reportPath,Buffer.concat([section,old]));
+console.log('Round 5 section written; historical suffix byte-identical: '+fs.readFileSync(reportPath).subarray(section.length).equals(old));

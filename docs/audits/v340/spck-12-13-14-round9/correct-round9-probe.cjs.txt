@@ -1,0 +1,8 @@
+const fs=require('node:fs'),path=require('node:path');const root=__dirname;
+for(const n of ['round9-result.json','round9-context-results.json','round9.log','round9-network.jsonl','round9-wrapper.log'])if(fs.existsSync(path.join(root,n)))fs.copyFileSync(path.join(root,n),path.join(root,n.replace(/^round9/,'round9-harness-attempt1')));
+const file=path.join(root,'work/scratch/round9-context-probe.ts');let s=fs.readFileSync(file,'utf8');fs.copyFileSync(file,path.join(root,'round9-context-harness-attempt1.ts.txt'));
+s=s.replace(" for(const key of ['noBootstrap','noCart','noAuth','noLocalStorage','noFetchApi','noFirebase'])assert.equal(typeof flags[key],'boolean','Missing flag '+key);",'');
+s=s.replace("Object.entries(flags).filter(([key])=>key.startsWith('no')).map(([,value])=>value)","['noBootstrap','noCart','noAuth','noLocalStorage','noFetchApi','noFirebase'].map(key=>(flags as Record<string,unknown>)[key])");
+s=s.replace("expected==='unknown'?noFlags.every(v=>v===false)","expected==='unknown'?noFlags.every(v=>v!==true)&&!summary.summaryText.includes('CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB:')");
+if(s.includes('Missing flag')||!s.includes('v!==true'))throw Error('Probe assertion adaptation missing');
+fs.writeFileSync(file,s);fs.writeFileSync(path.join(root,'round9-harness-correction.json'),JSON.stringify({reason:'Auditor-only assertion incorrectly required optional absence flags to be boolean. Undefined is the intended unknown state; corrected assertion checks all six named flags are not true and no absence warning is emitted.',productSourceChanged:false,originalProbesChanged:false,attempt1:{passed:3,failed:0,errors:6},preservedAttempt1:true},null,2));

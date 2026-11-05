@@ -1,0 +1,112 @@
+const fs=require('node:fs'),path=require('node:path');
+const root=__dirname,state=JSON.parse(fs.readFileSync(path.join(root,'state.json'))),repo=state.repo;
+const reportPath=path.join(repo,'docs/audits/v340/CODEX_SPCK_12_13_14_AUDIT.md');
+const old=fs.readFileSync(path.join(root,'round6-report.md.txt'));
+if(!fs.readFileSync(reportPath).equals(old))throw Error('Historical report changed before prepend');
+const md=String.raw`# Kiểm định độc lập SPCK Buổi 12–13–14 — Round 7 Final Closure Audit
+
+## VERDICT ROUND 7: NO-GO
+
+**Ngày kiểm định:** 05/11/2026. **Phạm vi:** xác minh bản sửa Round 6 và đóng F01–F10 của luồng SPCK Buổi 12/13/14, Coding và Robotics. HEAD nền: `+'`'+String(state.head)+'`'+String.raw`; nguồn chưa commit được ràng buộc bằng manifest SHA-256 và bản chênh lệch Git, không chỉ bằng HEAD.
+
+**Kết quả: 8/10 CLOSED; 2/10 OPEN — F01, F08.** Bản sửa regex/phép chia Round 6 **đạt**: cả bốn ca từng FAIL và ba ca đối chứng đều PASS. **10/10 cổng bắt buộc PASS, 11/11 lệnh exit 0**, toàn bộ **91/91 ca probe Round 1–6 PASS** (42 + 10 + 2 callback + 7 + 15 + 8 + 7).
+
+Tuy nhiên, một ngữ cảnh JavaScript hợp lệ còn bị đọc sai: hai bộ đọc luôn dùng chế độ module cho cả `+'`<script>`'+String.raw` thường. Với `+'`const n=010; initializeApp({});`'+String.raw`, máy JavaScript thực thi đúng một lời gọi Firebase giả; tokenizer chế độ module lại dừng ở `+'`010`'+String.raw`, trả về phần mã đã đọc dở. Route quét không lưu thẻ Firebase, còn bộ tóm tắt khẳng định `+'`noFirebase=true`'+String.raw`. Bộ bổ sung Round 7 có **4 ca: 2 PASS, 2 FAIL, 0 ERROR, exit 1**. Đây là **một nguyên nhân thuộc F01/F08**, không phải hai phát hiện mới. Chưa đủ bằng chứng xác nhận 10/10 CLOSED dù các cổng bắt buộc đều xanh.
+
+**Bảo toàn dữ liệu: PASS.** Hai file dữ liệu thật khớp SHA-256 Owner trước/sau; **180/180 đầu vào**, gồm **149/149 tệp nguồn/bộ thử**, giữ nguyên và khớp snapshot. Lịch sử Round 1–6 giữ nguyên **119.538 byte**, SHA-256 `+'`173ED5E29E79DEBCCE81601A5F598F5E7E81E403C4233022A69D6DA8D9F3F89F`'+String.raw`, nằm nguyên byte bên dưới. Chỉ viết báo cáo và bằng chứng Round 7; không sửa mã ứng dụng/bộ thử gốc, không commit/push các thay đổi có sẵn của Owner.
+
+### R7.1. Cô lập và nội dung được kiểm định
+
+- Đọc `+'`PROJECT_STATE.md`'+String.raw` đầu tiên, đối chiếu kế hoạch, changelog, `+'`AGENTS.md`'+String.raw` và báo cáo Round 6. So với manifest Round 6, chỉ ba đầu vào đổi: `+'`src/app/api/spck/scan/route.ts`'+String.raw`, `+'`src/lib/gemini/spck-comment.ts`'+String.raw`, `+'`scripts/test-streamline-v340-s5.ts`'+String.raw`. [Thay đổi từ Round 6](spck-12-13-14-round7/source-changes-since-round6.json).
+- Tái sử dụng trực tiếp setup/guard/runner/preserve/finalize của Round 6; chỉ đổi đích Round 7, thêm G10 và ghi nhận kết quả mới. Bảy tệp probe gốc Round 1–6/callback được khóa hash trước/sau; không sửa điều kiện để làm xanh kết quả.
+- Bản sao riêng tại `+'`%TEMP%\codex-spck-121314-r7-b11d4193380f\work`'+String.raw`. Chỉ sao chép mã/bộ thử/cấu hình công khai; không sao chép DB thật, danh sách lớp thật, `+'`.env`'+String.raw` hoặc `+'`playwright-auth`'+String.raw`. Chạy toàn bộ kiểm thử từ bản sao này.
+- Từng lệnh có SQLite giả riêng qua `+'`MINDX_DB_PATH`'+String.raw`, danh sách lớp giả `+'`[]`'+String.raw` qua `+'`MINDX_RUNNING_CLASSES_PATH`'+String.raw`, khóa AI giả và thông tin đăng nhập rỗng. Guard chặn HTTP ngoài loopback, persistent browser và SQLite ngoài DB giả. Các sự kiện mở DB đều trong TEMP, **0 sự kiện bị chặn**; đây là giám sát trong tiến trình, không phải đo lưu lượng toàn hệ điều hành.
+- Kiểm tra nguồn và thực thi do auditor hiện tại thực hiện trực tiếp; không tuyên bố đã chạy reviewer/model không khả dụng. Quy mô giả định: công cụ cục bộ của một giáo viên; chưa đo tải lớn.
+- [state.json](spck-12-13-14-round7/state.json), [verification-summary.json](spck-12-13-14-round7/verification-summary.json), [working-tree.patch.txt](spck-12-13-14-round7/working-tree.patch.txt).
+
+### R7.2. Gate Execution Summary — Gates 1–10
+
+| Cổng | Lệnh chạy trong snapshot TEMP | Kết quả | Bằng chứng |
+|---|---|---|---|
+| G1 | `+'`npx tsc --noEmit --incremental false`'+String.raw` | **PASS**, exit 0 | [log](spck-12-13-14-round7/tsc.log.txt), [lần chạy](spck-12-13-14-round7/tsc-result.json) |
+| G2 | `+'`npx tsx scripts/test-spck-v270.ts`'+String.raw` | **PASS**, 16/16, exit 0 | [log](spck-12-13-14-round7/v270.log.txt), [lần chạy](spck-12-13-14-round7/v270-result.json) |
+| G3 | `+'`npx tsx scripts/test-spck-v272.ts`'+String.raw` | **PASS**, 17/17, exit 0 | [log](spck-12-13-14-round7/v272.log.txt), [lần chạy](spck-12-13-14-round7/v272-result.json) |
+| G4 | `+'`npx tsx scripts/test-streamline-v340-s5.ts`'+String.raw` | **PASS**, S5/S5b và UI giả lập, gồm hai assertion R6-F08, exit 0 | [log](spck-12-13-14-round7/s5.log.txt), [lần chạy](spck-12-13-14-round7/s5-result.json) |
+| G5 | `+'`npx tsx scratch/independent-probe.ts`'+String.raw` | **PASS**, 42/42, exit 0 | [log](spck-12-13-14-round7/probe.log.txt), [42 kết quả](spck-12-13-14-round7/probe-results.json), [lần chạy](spck-12-13-14-round7/probe-result.json) |
+| G6a | `+'`npx tsx scratch/supplementary-probe.ts`'+String.raw` | **PASS**, 10/10, exit 0 | [log](spck-12-13-14-round7/supplementary.log.txt), [10 kết quả](spck-12-13-14-round7/supplementary-results.json), [lần chạy](spck-12-13-14-round7/supplementary-result.json) |
+| G6b | `+'`node ../callback-probe.cjs`'+String.raw` | **PASS**, 2/2, exit 0 | [log](spck-12-13-14-round7/callback.log.txt), [2 kết quả](spck-12-13-14-round7/callback-results.json), [lần chạy](spck-12-13-14-round7/callback-result.json) |
+| G7 | `+'`npx tsx scratch/round3-focused-probe.ts`'+String.raw` | **PASS**, 7/7, exit 0 | [log](spck-12-13-14-round7/focused.log.txt), [7 kết quả](spck-12-13-14-round7/focused-results.json), [lần chạy](spck-12-13-14-round7/focused-result.json) |
+| G8 | `+'`npx tsx scratch/round4-closure-probe.ts`'+String.raw` | **PASS**, 15/15, exit 0 | [log](spck-12-13-14-round7/closure.log.txt), [15 kết quả](spck-12-13-14-round7/round4-closure-results.json), [lần chạy](spck-12-13-14-round7/closure-result.json) |
+| G9 | `+'`npx tsx scratch/round5-focused-probe.ts`'+String.raw` | **PASS**, 8/8, exit 0 | [log](spck-12-13-14-round7/review.log.txt), [8 kết quả](spck-12-13-14-round7/round5-focused-results.json), [lần chạy](spck-12-13-14-round7/review-result.json) |
+| G10 | `+'`npx tsx scratch/round6-focused-probe.ts`'+String.raw` | **PASS**, 7/7, exit 0 | [log](spck-12-13-14-round7/round6.log.txt), [7 kết quả](spck-12-13-14-round7/round6-focused-results.json), [lần chạy](spck-12-13-14-round7/round6-result.json) |
+| Bổ sung R7 | `+'`npx tsx scratch/round7-focused-probe.ts`'+String.raw` | **FAIL**, 2/4 PASS, 2 FAIL, 0 ERROR, exit 1 | [mã](spck-12-13-14-round7/round7-focused-probe.ts.txt), [log](spck-12-13-14-round7/round7.log.txt), [4 kết quả](spck-12-13-14-round7/round7-focused-results.json), [lần chạy](spck-12-13-14-round7/round7-result.json) |
+
+Mỗi lệnh bắt buộc chạy mới **một lần**, G10 chạy đầu tiên; không thay đổi sản phẩm giữa các lần chạy. Lệnh callback nằm tại TEMP cha. Kết quả G10 không còn được coi là bộ bổ sung như Round 6. Thời gian, lệnh đầy đủ, DB giả và mã thoát nằm trong từng `+'`*-result.json`'+String.raw`.
+
+### R7.3. Final Closure Verification Table — F01–F10
+
+| ID / mức độ gốc | Trạng thái Round 7 | Xác minh bằng nguồn và chạy mới |
+|---|---|---|
+| **F01 / P1** | **OPEN** | Các ca gốc và toàn bộ R5/R6-F01 PASS. Hai ngữ cảnh regex sau block và chia sau postfix đã sửa đúng. Nhưng **R7-F01-01 FAIL**: classic script chứa số `+'`010`'+String.raw` trước lời gọi Firebase thật khiến route không lưu thẻ; đọc lại SQLite giả xác nhận `+'`tags=[]`'+String.raw`. Đối chứng R7-F01-02 PASS. |
+| **F02 / P1** | **CLOSED** | HALLUCINATION-01/02/03 và các ca R2/R3/R4-F02 PASS; hậu kiểm loại nội dung thiếu bằng chứng vẫn ở `+'`spck-comment.ts:1845–1926`'+String.raw`. Lỗi nhận diện đầu vào quy riêng F01/F08; không mở lại hậu kiểm đã đạt. |
+| **F03 / P1** | **CLOSED** | ZIP-04 PASS: `+'`inspectZipArchiveSafely`'+String.raw` được gọi trước đọc entry tại `+'`spck-comment.ts:778`'+String.raw`; HTML giải nén 16 MB bị chặn. Chưa thử gây cạn tài nguyên. |
+| **F04 / P2** | **CLOSED** | DRIVE-01/02/03 PASS: dọn Coding khi local rỗng/đổi thư mục, giữ ảnh Robotics khác tên. Cây Drive giả; mã liên quan bất biến từ Round 6. |
+| **F05 / P2** | **CLOSED** | DRIVE-04/05 và S5 PASS: `+'`prepareStudentFilesForDriveUpload`'+String.raw` tại `+'`spck-drive-uploader.ts:222`'+String.raw` loại tệp/thư mục nội bộ, không lấy `+'`_spck_owner_uploads`'+String.raw` qua fallback. |
+| **F06 / P2** | **CLOSED** | ROB-01/02 PASS: chuẩn hóa tên rồi so bằng nhau tại `+'`scan/route.ts:94–106`'+String.raw`, tách đúng Lê An/Lê Anh và chạy lại không tạo trùng. |
+| **F07 / P2** | **CLOSED** | WEB-03/05 và các ca R2/R3/R4/R5-F07 PASS; R6-F07-01 vẫn PASS. `+'`spck-comment.ts:1025–1048`'+String.raw` giữ đường dẫn vượt gốc ở trạng thái chưa biết và tra tập entry theo đúng ZIP, ZIP B không che file thiếu của ZIP A. |
+| **F08 / P2** | **OPEN** | WEB-04 và các ca R2/R3/R4/R5/R6-F08 PASS, gồm template expression thật. **R7-F08-01 FAIL**: classic script hợp lệ có lời gọi Firebase thật nhưng tóm tắt đặt `+'`noFirebase=true`'+String.raw`. Đối chứng R7-F08-02 PASS. |
+| **F09 / P2** | **CLOSED** | LMS-01/02/03 và hai callback R2-F09 PASS; `+'`spck-uploader.ts:3168–3186`'+String.raw` phân biệt khóa có phần mở rộng, giữ hai tệp hợp lệ cùng stem khác loại. Phần tử LMS giả. |
+| **F10 / P2** | **CLOSED** | SYNC-05/06 PASS; `+'`scan/route.ts:191–205`'+String.raw` ưu tiên metadata link mới, cập nhật buổi đang sửa và giữ snapshot VERIFIED buổi trước. |
+
+[Trạng thái máy đọc được](spck-12-13-14-round7/closure-results.json). [Quan sát R6](spck-12-13-14-round7/round6-focused-observations.json) ghi rõ bốn ca cũ đã đạt; [quan sát R7](spck-12-13-14-round7/round7-focused-observations.json) chứa mã mẫu, lời gọi thực thi và kết quả đọc lại DB/tóm tắt.
+
+### R7.4. Điểm còn chặn đóng F01/F08: đọc classic script như module
+
+**Nguyên nhân:** `+'`analyzeJsCodeSyntax`'+String.raw` tại `+'`scan/route.ts:456–458`'+String.raw` và `+'`spck-comment.ts:897–899`'+String.raw` luôn gọi tokenizer với `+'`sourceType: "module"`'+String.raw`. Chế độ này áp dụng quy tắc chặt hơn, không chấp nhận số kiểu cũ `+'`010`'+String.raw`; classic script không bật strict mode vẫn hợp lệ. Hai nhánh `+'`catch`'+String.raw` tại `+'`scan/route.ts:525–526`'+String.raw` và `+'`spck-comment.ts:966–967`'+String.raw` trả về phần mã đã đọc dở, không báo việc chưa quét đầy đủ cho bộ nhận diện phía sau.
+
+**Mẫu tái hiện tối thiểu:**
+
+`+'```html'+String.raw`
+<script>const n=010; initializeApp({});</script>
+`+'```'+String.raw`
+
+**Kết quả thực tế:** VM JavaScript chạy thành công, ghi đúng **1 lời gọi** `+'`initializeApp({})`'+String.raw` giả; không truy cập Firebase. Bộ đọc Acorn hiện có trong dự án parse/tokenize được ở chế độ script, nhưng chế độ module báo `+'`Invalid number (1:8)`'+String.raw`. Route thật trả HTTP 200 nhưng SQLite giả không có thẻ Firebase; bộ tóm tắt thật đặt `+'`noFirebase=true`'+String.raw` và ghi Firebase vào danh sách công nghệ không có. Chỉ đổi `+'`010`'+String.raw` thành `+'`8`'+String.raw` thì cả hai đường đều PASS, VM vẫn gọi đúng một lần. [Đối chiếu tokenizer/VM](spck-12-13-14-round7/lexer-preflight.log.txt), [mã đối chiếu](spck-12-13-14-round7/lexer-preflight.cjs.txt).
+
+**Ảnh hưởng:** bỏ sót công nghệ có thật, có thể loại nội dung đúng khỏi nhận xét. Không có bằng chứng lỗi này đã được gửi lên LMS thật. F01 giữ mức gốc P1, F08 giữ mức gốc P2; không bổ sung mã phát hiện mới hoặc mặc định khẳng định là hồi quy mới khi chưa chạy so bản trước.
+
+**Cách sửa hẹp cần kiểm chứng:** chọn ngữ cảnh đọc phù hợp với classic script/module, hoặc xử lý dự phòng an toàn; khi tokenizer dừng giữa chừng, không dùng phần mã dở để kết luận chắc chắn rằng công nghệ không tồn tại. Giữ nguyên phân biệt regex/phép chia, chuỗi/comment, module specifier và biểu thức `+'`${...}`'+String.raw`. Không sửa probe để che lỗi.
+
+**Sau sửa:** R7-F01-01 và R7-F08-01 phải PASS; hai ca đối chứng R7 cũng PASS. Chạy lại đủ 10 cổng trên đúng snapshot mới, giữ 91 ca Round 1–6 PASS. Không cần dùng dữ liệu/lớp thật để kiểm chứng bản sửa này.
+
+### R7.5. Production Data Preservation Check
+
+| File dữ liệu thật | SHA-256 trước Round 7 | SHA-256 sau kiểm định và dọn TEMP | Kết quả |
+|---|---|---|---|
+| `+'`data/mindx_bot.db`'+String.raw` | `+'`91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A`'+String.raw` | `+'`91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A`'+String.raw` | **MATCH**, khớp Owner |
+| `+'`data/running_classes.json`'+String.raw` | `+'`F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9`'+String.raw` | `+'`F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9`'+String.raw` | **MATCH**, khớp Owner |
+
+Hai file thật chỉ được đọc để tính hash. **180/180** đầu vào nguồn/bộ thử/cấu hình công khai giữ nguyên cả ở workspace và snapshot; **149/149** tệp nguồn/bộ thử không bị sửa. Bản chênh lệch Git có sẵn, kể cả `+'`tsconfig.tsbuildinfo`'+String.raw`, giữ nguyên byte. Bảy probe gốc và toàn bộ bằng chứng Round 1–6 được đối chiếu bằng SHA-256. Không thay đổi `+'`.env`'+String.raw`, hồ sơ đăng nhập hoặc tài liệu trạng thái khác.
+
+- [source-manifest-before.json](spck-12-13-14-round7/source-manifest-before.json), [source-manifest-after.json](spck-12-13-14-round7/source-manifest-after.json): nội dung chính xác đã thử và bảo toàn.
+- [round6-report.md.txt](spck-12-13-14-round7/round6-report.md.txt), [prior-evidence-manifest.json](spck-12-13-14-round7/prior-evidence-manifest.json): toàn bộ lịch sử trước Round 7 và hash bằng chứng cũ.
+- [setup.cjs.txt](spck-12-13-14-round7/setup.cjs.txt), [guard.cjs.txt](spck-12-13-14-round7/guard.cjs.txt), [runner.cjs.txt](spck-12-13-14-round7/runner.cjs.txt), [run-all.cjs.txt](spck-12-13-14-round7/run-all.cjs.txt), [preserve.cjs.txt](spck-12-13-14-round7/preserve.cjs.txt), [write-report.cjs.txt](spck-12-13-14-round7/write-report.cjs.txt), [finalize.cjs.txt](spck-12-13-14-round7/finalize.cjs.txt): mã dựng/chạy/lưu/ghi báo cáo và kiểm chứng cuối thực tế, tái sử dụng khung Round 6.
+- [final-preservation.json](spck-12-13-14-round7/final-preservation.json): xác minh sau ghi báo cáo; tháo junction `+'`node_modules`'+String.raw` trước khi xóa đúng thư mục TEMP, giữ thư viện gốc và kiểm tra lại hai hash dữ liệu thật sau dọn.
+- [evidence-sha256.json](spck-12-13-14-round7/evidence-sha256.json): hash toàn bộ tệp bằng chứng. Bằng chứng mới chỉ có đuôi `+'`.txt`'+String.raw`/`+'`.json`'+String.raw`, không có tệp `+'`.ts`'+String.raw` thực thi trong `+'`docs/`'+String.raw`.
+
+### R7.6. Kết luận và bàn giao
+
+**Đã làm:** kiểm định Round 7, xác nhận bản sửa Round 6, chạy đủ 10 cổng và bốn ca bổ sung, cập nhật F01–F10, bảo toàn lịch sử/dữ liệu, dọn snapshot TEMP.
+
+**Kết quả:** **NO-GO — 8/10 CLOSED, F01/F08 OPEN**. Bốn ca từng FAIL của Round 6 đã được sửa đúng; còn một ngữ cảnh classic script hợp lệ khiến đọc thiếu mã thật. Không xác nhận 10/10 CLOSED khi hai ca này còn FAIL.
+
+**Chưa kiểm tra:** lớp/dữ liệu thật, LMS/Teaching/Drive/Gemini/GitHub thật, bản dựng production mới và tải lớn. Đây là bằng chứng nguồn cùng luồng giả lập cục bộ; không thay thế nghiệm thu dịch vụ thật.
+
+**Việc tiếp theo:** đội phát triển sửa hẹp ngữ cảnh script/module và xử lý đọc dở theo R7.4; sau đó chạy lại toàn bộ cổng/probe trong TEMP. Owner chưa cần thao tác dữ liệu thật.
+
+---
+
+# Lịch sử giữ nguyên — Round 6, Round 5, Round 4, Round 3, Round 2 và Round 1
+
+`;
+fs.writeFileSync(reportPath,Buffer.concat([Buffer.from(md,'utf8'),old]));
+console.log('Prepended Round 7; preserved '+old.length+' historical bytes.');

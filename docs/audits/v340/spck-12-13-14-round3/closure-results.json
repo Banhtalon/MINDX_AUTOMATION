@@ -1,0 +1,44 @@
+{
+  "verdict": "NO-GO",
+  "closed": 6,
+  "open": 4,
+  "statuses": {
+    "F01": "OPEN",
+    "F02": "OPEN",
+    "F03": "CLOSED",
+    "F04": "CLOSED",
+    "F05": "CLOSED",
+    "F06": "CLOSED",
+    "F07": "OPEN",
+    "F08": "OPEN",
+    "F09": "CLOSED",
+    "F10": "CLOSED"
+  },
+  "blockingProbes": [
+    {
+      "id": "R3-F01-01",
+      "finding": "F01",
+      "label": "A DOM text click handler cannot prove Array/Object data structures"
+    },
+    {
+      "id": "R3-F01-02",
+      "finding": "F01",
+      "label": "A Firebase-named constant cannot prove a connection or completed pages"
+    },
+    {
+      "id": "R3-F07-02",
+      "finding": "F07",
+      "label": "A valid loose JS attachment must be inspected alongside folder HTML"
+    },
+    {
+      "id": "R3-F08-01",
+      "finding": "F08",
+      "label": "A future-plan display string is not implemented Firebase/Auth/Cart/Storage"
+    },
+    {
+      "id": "R3-F02-01",
+      "finding": "F02",
+      "label": "Unsupported fetch call must remove the entire success claim"
+    }
+  ]
+}

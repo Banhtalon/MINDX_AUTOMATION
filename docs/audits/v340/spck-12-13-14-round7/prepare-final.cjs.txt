@@ -1,0 +1,22 @@
+const fs=require('node:fs'),path=require('node:path');
+const root=__dirname,repo=JSON.parse(fs.readFileSync(path.join(root,'state.json'))).repo;
+let s=fs.readFileSync(path.join(repo,'docs/audits/v340/spck-12-13-14-round6/finalize.cjs.txt'),'utf8');
+function rep(a,b){if(!s.includes(a))throw Error('Missing adaptation anchor: '+a);s=s.replaceAll(a,b);}
+rep("expectedRoot='C:\\\\Users\\\\QQ\\\\AppData\\\\Local\\\\Temp\\\\codex-spck-121314-r6-S3v47e'", 'expectedRoot='+JSON.stringify(root));
+rep('spck-12-13-14-round6','spck-12-13-14-round7');
+rep('round5-report.md.txt','round6-report.md.txt');
+rep('Round 1-5 historical bytes changed','Round 1-6 historical bytes changed');
+rep('VERDICT ROUND 6: NO-GO','VERDICT ROUND 7: NO-GO');
+rep('const expectedCounts={round1:42,round2:10,F09:2,round3:7,round4:15,round5:8}', 'const expectedCounts={round1:42,round2:10,F09:2,round3:7,round4:15,round5:8,round6:7}');
+rep('summary.gates.length!==11||summary.gates.slice(0,10).some(g=>g.exitCode!==0)||summary.gates[10].exitCode!==1', 'summary.gates.length!==12||summary.gates.slice(0,11).some(g=>g.exitCode!==0)||summary.gates[11].exitCode!==1');
+rep('summary.tests.round6.total!==7||summary.tests.round6.passed!==3||summary.tests.round6.failed!==4||summary.tests.round6.errors!==0', 'summary.tests.round7.total!==4||summary.tests.round7.passed!==2||summary.tests.round7.failed!==2||summary.tests.round7.errors!==0');
+rep('Round 6 results inconsistent','Round 7 results inconsistent');
+rep('const priorPaths=[1,2,3,4,5]', 'const priorPaths=[1,2,3,4,5,6]');
+rep("const outputName=n=>/\\.(?:cjs|log)$/.test(n)?n+'.txt':n;", "const outputName=n=>/\\.(?:txt|json)$/.test(n)?n:n+'.txt';");
+rep('round1ThroughRound5HistoryByteUnchanged','round1ThroughRound6HistoryByteUnchanged');
+rep('Round 6 evidence written','Round 7 evidence written');
+const marker='const beforeCleanup=Object.fromEntries';
+rep(marker,"if(fs.readdirSync(dest).some(n=>!n.endsWith('.txt')&&!n.endsWith('.json')))throw Error('Forbidden evidence suffix');\n"+marker);
+const probeCheck="if(sha(path.join(work,'scratch/round6-focused-probe.ts'))!==summary.round6ProbeSha256)throw Error('Round 6 probe changed');";
+rep(probeCheck,probeCheck+"\nif(sha(path.join(work,'scratch/round7-focused-probe.ts'))!==sha(path.join(dest,'round7-focused-probe.ts.txt')))throw Error('Round 7 probe changed');");
+fs.writeFileSync(path.join(root,'finalize.cjs'),s);

@@ -1,0 +1,31 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import AdmZip from 'adm-zip';
+import {buildPreliminaryProjectSummary} from '../src/lib/gemini/spck-comment';
+import {POST as scanPost} from '../src/app/api/spck/scan/route';
+import {classSessionRepo,studentRepo,spckSessionRepo,closeDb} from '../src/lib/db/sqlite';
+const root=path.resolve('temp_submissions/r6-focused');
+assert.ok(root.startsWith(path.resolve(process.env.AUDIT_WORK_ROOT!)+path.sep));
+const put=(rel:string,content:string|Buffer)=>{const p=path.join(root,rel);fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,content);return p;};
+const results:any[]=[];
+async function check(id:string,finding:string,label:string,fn:()=>any){try{const observation=await fn();results.push({id,finding,label,status:observation.pass?'PASS':'FAIL',...observation});}catch(e:any){results.push({id,finding,label,status:'ERROR',error:e.stack});}console.log(JSON.stringify(results.at(-1)));}
+const name='Audit Student';let serial=0;
+async function scanTags(relative:string,source:string){const c='VT-C4K-JSI'+(970+(serial++)),s=c+'_STUDENT';classSessionRepo.upsert({classId:c,sessionId:c+'_12',sessionNumber:12,className:c,topic:'Audit',date:'2026-11-05'});studentRepo.upsert({classId:c,studentId:s,fullName:name,isActive:1});put(relative+'/'+name+'/index.html',source);const res=await scanPost(new Request('http://127.0.0.1:3000/api/spck/scan',{method:'POST',headers:{host:'127.0.0.1:3000',origin:'http://127.0.0.1:3000','content-type':'application/json'},body:JSON.stringify({classId:c,sessionNumber:12,folderPath:path.join(root,relative),syncActiveSession:true,autoSuggestQuickTags:true})}));const body=await res.json();assert.equal(res.status,200,JSON.stringify(body));return {tags:JSON.parse(spckSessionRepo.findOne(c,s,12)!.quickTagsJson),dbReadBack:true};}
+function summarize(rel:string,source:string){const p=put(rel+'/index.html',source);return buildPreliminaryProjectSummary([],name,'STUDENT_01',[],path.dirname(p));}
+function witness(source:string){const calls:any[]=[],document={body:{textContent:''}};vm.runInNewContext(source.match(/<script>([\s\S]*?)<\/script>/)![1],{document,initializeApp:(...args:any[])=>calls.push({api:'initializeApp',args})});assert.equal(calls.length,0);return {runtimeCalls:calls,displayedText:document.body.textContent};}
+
+const afterBlock='<title>Regex after block</title><script>if (true) {} /initializeApp()/.test("x");</script>';
+const postfixDivide='<title>Division after increment</title><script>let n=4; n++ / initializeApp({}) / 2;</script>';
+function callsFor(source:string){const calls:any[]=[];vm.runInNewContext(source.match(/<script>([\s\S]*?)<\/script>/)![1],{initializeApp:(...args:any[])=>{calls.push({api:'initializeApp',args});return 2;}});return calls;}
+await check('R6-F01-01','F01','Regex after a block must not auto-save a Firebase tag',async()=>{const calls=callsFor(afterBlock);assert.equal(calls.length,0);const observed=await scanTags('block-regex-scan',afterBlock);return {pass:!observed.tags.some((t:string)=>/Firebase/i.test(t)),observed:{source:afterBlock,runtimeCalls:calls,...observed}};});
+await check('R6-F08-01','F08','Regex after a block is not Firebase implementation',()=>{const calls=callsFor(afterBlock);assert.equal(calls.length,0);const s=summarize('block-regex-summary',afterBlock);return {pass:s.absentWebFeatures.noFirebase===true,observed:{source:afterBlock,runtimeCalls:calls,...s}};});
+await check('R6-F01-02','F01','Division after postfix increment must preserve real Firebase syntax',async()=>{const calls=callsFor(postfixDivide);assert.equal(calls.length,1);const observed=await scanTags('postfix-divide-scan',postfixDivide);return {pass:observed.tags.some((t:string)=>/Firebase/i.test(t)),observed:{source:postfixDivide,runtimeCalls:calls,...observed}};});
+await check('R6-F08-02','F08','Real Firebase call in division after postfix increment must not be erased',()=>{const calls=callsFor(postfixDivide);assert.equal(calls.length,1);const s=summarize('postfix-divide-summary',postfixDivide);return {pass:s.absentWebFeatures.noFirebase===false,observed:{source:postfixDivide,runtimeCalls:calls,...s}};});
+await check('R6-F08-03','F08','Control: ordinary division retains a real Firebase call',()=>{const source='<title>Division control</title><script>let n=4; n / initializeApp({}) / 2;</script>';const calls=callsFor(source);assert.equal(calls.length,1);const s=summarize('ordinary-divide',source);return {pass:s.absentWebFeatures.noFirebase===false,observed:{source,runtimeCalls:calls,...s}};});
+await check('R6-F08-04','F08','Control: regex directly after an if condition remains inert',()=>{const source='<title>Regex control</title><script>if (true) /initializeApp()/.test("x");</script>';const calls=callsFor(source);assert.equal(calls.length,0);const s=summarize('if-regex',source);return {pass:s.absentWebFeatures.noFirebase===true,observed:{source,runtimeCalls:calls,...s}};});
+await check('R6-F07-01','F07','An unrelated second ZIP cannot satisfy the first ZIP script reference',()=>{const a=new AdmZip(),b=new AdmZip();a.addFile('index.html',Buffer.from('<title>Archive A</title><script src="shared/main.js"></script>'));b.addFile('shared/main.js',Buffer.from('console.log("archive B");'));const ap=put('cross-zip/a.zip',a.toBuffer()),bp=put('cross-zip/b.zip',b.toBuffer());const s=buildPreliminaryProjectSummary([ap,bp],name,'STUDENT_01',[]);const keys=['noBootstrap','noCart','noAuth','noLocalStorage','noFetchApi','noFirebase'];return {pass:keys.every(k=>(s.absentWebFeatures as any)[k]===undefined)&&!s.summaryText.includes('KH?NG c? ['),observed:{archiveA:'index.html -> shared/main.js (missing)',archiveB:'shared/main.js (different archive)',...s}};});
+closeDb();
+const output={total:results.length,passed:results.filter(r=>r.status==='PASS').length,failed:results.filter(r=>r.status==='FAIL').length,errors:results.filter(r=>r.status==='ERROR').length,results};
+fs.writeFileSync(path.resolve('..','round6-focused-results.json'),JSON.stringify(output,null,2));console.log('SUMMARY '+JSON.stringify({total:output.total,passed:output.passed,failed:output.failed,errors:output.errors}));process.exitCode=output.failed||output.errors?1:0;

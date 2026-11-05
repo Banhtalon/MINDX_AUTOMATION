@@ -3101,22 +3101,54 @@ export class SpckUploader {
 
       // 5. Upload Attachments (Max 10)
       const expectedModalAttachmentFiles: string[] = [];
-      if (attachments.length > 0) {
-        const unverifiedAttachmentStems = Array.from(
-          new Set(
-            attachments
-              .filter((p) => !hasVerifiedSameBytesOnLms(p))
-              .flatMap((p) => {
-                const rawStem = path.parse(p).name.toLowerCase();
-                return [rawStem, rawStem.replace(/\s+/g, " ")];
-              })
-          )
-        );
-        // Remove duplicate or unverified/stale same-named attachment tiles on the modal (click one by one so React state updates cleanly)
-        for (let pass = 0; pass < 12; pass++) {
-          const clickedOne = await modal
-            .evaluate((modalEl, staleStemsArr) => {
-              const staleStems = new Set(staleStemsArr);
+      const FORCE_ZIP_ATTACHMENT_EXTS = new Set([
+        ".html",
+        ".htm",
+        ".css",
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx",
+        ".json",
+        ".txt",
+        ".ui",
+        ".qss",
+        ".xml",
+        ".c",
+        ".cpp",
+        ".h",
+        ".hpp",
+        ".code-workspace",
+      ]);
+      const safeStudentSlugForZip = record.studentId.replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
+      const hasAnyBundledExtInAttachments = attachments.some((p) =>
+        FORCE_ZIP_ATTACHMENT_EXTS.has(path.extname(p).toLowerCase())
+      );
+      const verifiedKeepAttachmentStems = Array.from(
+        new Set(
+          attachments
+            .filter((p) => hasVerifiedSameBytesOnLms(p))
+            .flatMap((p) => {
+              const parsedPath = path.parse(p);
+              const rawStem = parsedPath.name.toLowerCase();
+              const normStem = rawStem.replace(/\s+/g, " ");
+              const ext = parsedPath.ext.toLowerCase();
+              return ext
+                ? [`${rawStem}${ext}`, `${normStem}${ext}`, rawStem, normStem]
+                : [rawStem, normStem];
+            })
+        )
+      );
+
+      // Remove duplicate, renamed, or unverified/stale attachment tiles on the modal (click one by one so React state updates cleanly)
+      for (let pass = 0; pass < 12; pass++) {
+        const clickedOne = await modal
+          .evaluate(
+            (modalEl, args) => {
+              const keepStems = new Set(args.keepStemsArr);
+              const hasExplicitExtKeys = args.keepStemsArr.some((k) =>
+                k.includes(".")
+              );
               const captions = Array.from(
                 modalEl.querySelectorAll("span.MuiTypography-caption")
               );
@@ -3124,6 +3156,7 @@ export class SpckUploader {
               for (const cap of captions) {
                 const txt = (cap.textContent || "").trim().toLowerCase();
                 const dotIdx = txt.lastIndexOf(".");
+                const ext = dotIdx > 0 ? txt.slice(dotIdx) : "";
                 const nameWithoutExt = dotIdx > 0 ? txt.slice(0, dotIdx) : txt;
                 const lastDashIdx = nameWithoutExt.lastIndexOf("-");
                 const rawPrefix =
@@ -3131,26 +3164,41 @@ export class SpckUploader {
                     ? nameWithoutExt.slice(0, lastDashIdx)
                     : nameWithoutExt;
                 const prefix = rawPrefix.replace(/\s+/g, " ");
+                const rawPrefixWithExt = `${rawPrefix}${ext}`;
+                const prefixWithExt = `${prefix}${ext}`;
                 const tile = cap.parentElement;
                 const delBtn = tile?.querySelector("button") as HTMLButtonElement | null;
                 if (!delBtn) continue;
+                // Auto-bundled spck_<studentId>_<hash>.zip tiles are cleaned by the dedicated zip loop below when bundled extensions exist
                 if (
-                  seenPrefixes.has(prefix) ||
-                  staleStems.has(rawPrefix) ||
-                  staleStems.has(prefix)
+                  args.hasBundledExts &&
+                  rawPrefix.startsWith(`spck_${args.studentSlug}_`)
                 ) {
+                  continue;
+                }
+                const isVerifiedKeep = hasExplicitExtKeys
+                  ? keepStems.has(rawPrefixWithExt) || keepStems.has(prefixWithExt)
+                  : keepStems.has(rawPrefix) || keepStems.has(prefix);
+                if (!isVerifiedKeep || seenPrefixes.has(prefixWithExt)) {
                   delBtn.click();
                   return true;
                 }
-                seenPrefixes.add(prefix);
+                seenPrefixes.add(prefixWithExt);
               }
               return false;
-            }, unverifiedAttachmentStems)
-            .catch(() => false);
-          if (!clickedOne) break;
-          await page.waitForTimeout(200);
-        }
+            },
+            {
+              keepStemsArr: verifiedKeepAttachmentStems,
+              studentSlug: safeStudentSlugForZip,
+              hasBundledExts: hasAnyBundledExtInAttachments,
+            }
+          )
+          .catch(() => false);
+        if (!clickedOne) break;
+        await page.waitForTimeout(200);
+      }
 
+      if (attachments.length > 0) {
         const modalText = (await modal.innerText().catch(() => "")) || "";
         const modalHtml = (await modal.innerHTML().catch(() => "")) || "";
         const safeAttachments = attachments.map((p) => assertPathAllowed(p));
@@ -3184,25 +3232,6 @@ export class SpckUploader {
           const acceptAttr = (
             (await attInput.getAttribute("accept").catch(() => "")) || ""
           ).toLowerCase();
-          const FORCE_ZIP_ATTACHMENT_EXTS = new Set([
-            ".html",
-            ".htm",
-            ".css",
-            ".js",
-            ".jsx",
-            ".ts",
-            ".tsx",
-            ".json",
-            ".txt",
-            ".ui",
-            ".qss",
-            ".xml",
-            ".c",
-            ".cpp",
-            ".h",
-            ".hpp",
-            ".code-workspace",
-          ]);
           const finalAttachmentsToUpload: string[] = [];
           const filesToBundleInZip: string[] = [];
 
@@ -3238,11 +3267,22 @@ export class SpckUploader {
             );
 
             const zip = new AdmZip();
-            for (const fPath of filesToBundleInZip) {
-              zip.addLocalFile(fPath);
+            const fixedZipDate = new Date("2026-01-01T00:00:00.000Z");
+            for (const fPath of [...filesToBundleInZip].sort()) {
+              zip.addFile(path.basename(fPath), fs.readFileSync(fPath));
+              const ze = zip.getEntry(path.basename(fPath));
+              if (ze) {
+                ze.header.time = fixedZipDate;
+              }
             }
             fs.mkdirSync(path.dirname(zipBundlePath), { recursive: true });
-            zip.writeZip(zipBundlePath);
+            const nextZipBuf = zip.toBuffer();
+            const existingZipBuf = fs.existsSync(zipBundlePath)
+              ? fs.readFileSync(zipBundlePath)
+              : null;
+            if (!existingZipBuf || !existingZipBuf.equals(nextZipBuf)) {
+              fs.writeFileSync(zipBundlePath, nextZipBuf);
+            }
             const safeZipPath = assertPathAllowed(zipBundlePath);
             const zipDigest = computeSafeFileByteDigest(safeZipPath);
             expectedModalAttachmentFiles.push(safeZipPath);

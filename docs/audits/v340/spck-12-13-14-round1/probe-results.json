@@ -1,0 +1,406 @@
+{
+  "total": 42,
+  "passed": 28,
+  "failed": 14,
+  "results": [
+    {
+      "id": "SYNC-01",
+      "group": 1,
+      "label": "Initial scan and active draft resource sync",
+      "status": "PASS",
+      "proof": {
+        "snapshotUnchanged": true,
+        "resources": [
+          "index.html",
+          "new.js",
+          "style.css"
+        ]
+      }
+    },
+    {
+      "id": "SYNC-02",
+      "group": 1,
+      "label": "Missing attachment refreshes unapproved draft without sync flag",
+      "status": "PASS",
+      "proof": {
+        "deletedAttachmentRemoved": true
+      }
+    },
+    {
+      "id": "SYNC-03",
+      "group": 1,
+      "label": "Approved active session and verified history stay frozen",
+      "status": "PASS",
+      "proof": {
+        "approvedUnchanged": true,
+        "verifiedUnchanged": true
+      }
+    },
+    {
+      "id": "SYNC-04",
+      "group": 1,
+      "label": "Changed bytes at same path visible in active unapproved session",
+      "status": "PASS",
+      "proof": {
+        "samePathNewDigest": "d90908b0983ef81c1100265650589e223c8fd785cad65de486e4c82386f66c0a"
+      }
+    },
+    {
+      "id": "SYNC-05",
+      "group": 1,
+      "label": "New photo and related link reach active draft while verified snapshot stays fixed",
+      "status": "PASS",
+      "proof": {
+        "newPhotoAndLinkSynced": true,
+        "verifiedSnapshotUnchanged": true
+      }
+    },
+    {
+      "id": "SYNC-06",
+      "group": 1,
+      "label": "Renamed link label replaces the previous scanned label",
+      "status": "FAIL",
+      "error": "Renamed link retains old label: [{\"name\":\"Plant map v1\",\"url\":\"https://example.invalid/plants\",\"category\":\"OTHER_DOC\",\"categoryLabel\":\"Tài liệu khác\"}]\n+ actual - expected\n\n+ 'Plant map v1'\n- 'Plant map v2'\n              ^\n"
+    },
+    {
+      "id": "ZIP-01",
+      "group": 2,
+      "label": "Sorted entries, fixed date and no identical rewrite",
+      "status": "PASS",
+      "proof": {
+        "sha256": "97ab119cd4a04442ac32d21aae2c5babdd7073e15135edae8fa74b42608d958b",
+        "mtimeUnchanged": true
+      }
+    },
+    {
+      "id": "ZIP-02",
+      "group": 2,
+      "label": "Multi-file web archive deterministic on actual scanner",
+      "status": "PASS",
+      "proof": {
+        "archive": "web-bundle_web_package.zip",
+        "sha256": "39cc85518b7686643d6d727b89af1d10e2e73144c1d8c964c32aba8ea67d651a"
+      }
+    },
+    {
+      "id": "DRIVE-01",
+      "group": 2,
+      "label": "Coding replaces stale files; Robotics retains differently named photos",
+      "status": "PASS",
+      "proof": {
+        "codingRemoved": [
+          "old"
+        ],
+        "roboticsRemoved": [
+          "same"
+        ]
+      }
+    },
+    {
+      "id": "DRIVE-02",
+      "group": 2,
+      "label": "Coding removes stale files when local root becomes empty",
+      "status": "FAIL",
+      "error": "Remote deleted.py remains when localFilePaths=[]: {\"root\":[{\"id\":\"old\",\"name\":\"deleted.py\",\"isFolder\":false}]}\n\n1 !== 0\n"
+    },
+    {
+      "id": "DRIVE-03",
+      "group": 2,
+      "label": "Coding directory rename does not leave old remote subtree",
+      "status": "FAIL",
+      "error": "old-name/main.py remains: {\"root\":[{\"id\":\"old-dir\",\"name\":\"old-name\",\"isFolder\":true},{\"id\":\"root/new-name\",\"name\":\"new-name\",\"isFolder\":true}],\"old-dir\":[{\"id\":\"old-code\",\"name\":\"main.py\",\"isFolder\":false}],\"root/new-name\":[{\"id\":\"root/new-name/main.py\",\"name\":\"main.py\",\"isFolder\":false}]}"
+    },
+    {
+      "id": "DRIVE-04",
+      "group": 2,
+      "label": "Internal directories and generated zip files excluded in tree upload",
+      "status": "PASS",
+      "proof": [
+        {
+          "id": "root/main.py",
+          "name": "main.py",
+          "isFolder": false
+        }
+      ]
+    },
+    {
+      "id": "DRIVE-05",
+      "group": 2,
+      "label": "Owner-only fallback also respects internal directory exclusion",
+      "status": "FAIL",
+      "error": "Internal owner-upload path returned: C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\temp_submissions\\independent-121314\\drive-owner-only\\_spck_owner_uploads\\private.png\n\n1 !== 0\n"
+    },
+    {
+      "id": "LMS-01",
+      "group": 2,
+      "label": "Actual modal deletion callback removes renamed and duplicate attachments",
+      "status": "PASS",
+      "proof": [
+        "main-234.py"
+      ]
+    },
+    {
+      "id": "LMS-02",
+      "group": 2,
+      "label": "No attachments clears old tiles",
+      "status": "PASS",
+      "proof": {
+        "empty": true
+      }
+    },
+    {
+      "id": "LMS-03",
+      "group": 2,
+      "label": "Different extensions with same stem both remain",
+      "status": "FAIL",
+      "error": "Valid main.py and main.sb3 collapsed by stem: [\"main-123.py\"]\n\n1 !== 2\n"
+    },
+    {
+      "id": "ZIP-03",
+      "group": 2,
+      "label": "Uploader zip block uses fixed dates and skips equal bytes (source block execution)",
+      "status": "PASS",
+      "proof": {
+        "sha256": "f380739abac23515d7549f82559e1ab2e8cd1a09db3ab70083ed52ea4549a217",
+        "mtimeUnchanged": true
+      }
+    },
+    {
+      "id": "ROB-01",
+      "group": 3,
+      "label": "Folder init creates roster folders and is idempotent",
+      "status": "PASS",
+      "proof": {
+        "created": 1,
+        "second": 0
+      }
+    },
+    {
+      "id": "ROB-02",
+      "group": 3,
+      "label": "Prefix-overlap names each receive their own folder",
+      "status": "FAIL",
+      "error": "Lê An folder not created; createdFoldersCount=0"
+    },
+    {
+      "id": "ROB-03",
+      "group": 3,
+      "label": "Landscape thumbnail with portrait gallery; photo-only produces no zip",
+      "status": "PASS",
+      "proof": {
+        "thumbnail": "02_model.png",
+        "gallery": [
+          "01_detail.png"
+        ]
+      }
+    },
+    {
+      "id": "ROB-04",
+      "group": 3,
+      "label": "Single Owner photo retained in scanner and screenshotter galleries",
+      "status": "PASS",
+      "proof": {
+        "scannerGallery": 1,
+        "captureGallery": 1
+      }
+    },
+    {
+      "id": "ROB-05",
+      "group": 3,
+      "label": "Raw robotics code creates stable zip; removing code deletes stale zip",
+      "status": "PASS",
+      "proof": {
+        "archiveSha": "d51b2180f186f3bdca2cdea9ef080db8d1725d3f342131978e33860c7505a3ae",
+        "staleRemoved": true
+      }
+    },
+    {
+      "id": "ROB-06",
+      "group": 3,
+      "label": "All 10 Robotics prefixes recognized",
+      "status": "PASS",
+      "proof": [
+        "PREB",
+        "PREA",
+        "PREI",
+        "ARMB",
+        "ARMA",
+        "ARMI",
+        "SEMIB",
+        "SEMIA",
+        "SEMII",
+        "ROB"
+      ]
+    },
+    {
+      "id": "WEB-01",
+      "group": 4,
+      "label": "Deep inspector reads real titles, headings, nav and absent features",
+      "status": "PASS",
+      "proof": {
+        "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Vườn cây xanh), 1 file CSS, 2 file JavaScript.\n- Các mục trên thanh điều hướng (Menu): Trang chủ, Chăm cây.\n- Các mục nội dung / tiêu đề chính trên trang: Vườn cây của em | Cách tưới nước.\n- Thành phần giao diện tương tác có trong bài: Nút bấm tương tác.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS Flexbox, CSS Grid, Responsive (@media), JavaScript DOM.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.\n- File 'FILE_01.html' (WEB): === WEB SOURCE (.HTML): index.html ===\nSố dòng: 1\nThẻ HTML sử dụng: html, title, nav, a, h1, h2, button, p\n\n  1 | <html><title>Vườn cây xanh</title><nav><a href=\"index.html\">Trang chủ</a><a href=\"#care\">Chăm cây</a></nav><h1>Vườn cây của em</h1><h2>Cách tưới nước</h2><button>Khám phá</button><p>Nội dung giới thiệu cây.</p></html><!--changed-->\n- File 'FILE_02.css' (WEB): === WEB SOURCE (.CSS): style.css ===\nSố dòng: 1\n\n  1 | body{display:flex} main{display:grid}@media(max-width:600px){body{display:block}}",
+        "detectedExtensions": [
+          ".html",
+          ".css",
+          ".png",
+          ".js",
+          ".txt"
+        ],
+        "absentWebFeatures": {
+          "inspectedWebCode": true,
+          "noBootstrap": true,
+          "noCart": true,
+          "noAuth": true,
+          "noLocalStorage": true,
+          "noFetchApi": true,
+          "noFirebase": true
+        }
+      }
+    },
+    {
+      "id": "WEB-02",
+      "group": 4,
+      "label": "Zip-only inspector extracts nested html/css/js",
+      "status": "PASS",
+      "proof": {
+        "summary": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Thư viện sách), 1 file CSS, 1 file JavaScript.\n- Các mục trên thanh điều hướng (Menu): Sách hay.\n- Các mục nội dung / tiêu đề chính trên trang: Khám phá sách.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, CSS Grid, JavaScript DOM, Fetch API.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.\n- File 'FILE_01.zip' (WEB): === PROJECT ARCHIVE (.ZIP): project_web_package.zip ===\nTổng số file hợp lệ: 3 (Đã đọc 3 file mã nguồn, bỏ qua 0 file rác/thư viện)\nTổng dung lượng giải nén: 0.1 KB\nCây thư mục dự án:\n  - app/css/main.css (18 bytes)\n  - app/index.html (84 bytes)\n  - app/js/main.js (20 bytes)\n\n=== WEB SOURCE (.CSS): app/css/main.css ===\nSố dòng: 1\n\n  1 | main{display:grid}\n\n=== WEB SOURCE (.HTML): app/index.html ===\nSố dòng: 1\nThẻ HTML sử dụng: title, nav, a, h2\n\n  1 | <title>Thư viện sách</title><nav><a>Sách hay</a></nav><h2>Khám phá sách</h2>\n\n=== WEB SOURCE (.JS): app/js/main.js ===\nSố dòng: 1\n\n  1 | fetch(\"/books.json\")",
+        "flags": {
+          "inspectedWebCode": true,
+          "noBootstrap": true,
+          "noCart": true,
+          "noAuth": true,
+          "noLocalStorage": true,
+          "noFetchApi": false,
+          "noFirebase": true
+        }
+      }
+    },
+    {
+      "id": "WEB-03",
+      "group": 4,
+      "label": "Loose attachment-only HTML is deeply inspected without folder",
+      "status": "FAIL",
+      "error": "Direct .html attachments are not scanned deeply: {\"summaryText\":\"- File 'FILE_01.html' (WEB): === WEB SOURCE (.HTML): index.html ===\\nSố dòng: 1\\nThẻ HTML sử dụng: html, title, nav, a, h1, h2, button, p\\n\\n  1 | <html><title>Vườn cây xanh</title><nav><a href=\\\"index.html\\\">Trang chủ</a><a href=\\\"#care\\\">Chăm cây</a></nav><h1>Vườn cây của em</h1><h2>Cách tưới nước</h2><button>Khám phá</button><p>Nội dung giới thiệu cây.</p></html><!--changed-->\\n- File 'FILE_02.css' (WEB): === WEB SOURCE (.CSS): style.css ===\\nSố dòng: 1\\n\\n  1 | body{display:flex} main{display:grid}@media(max-width:600px){body{display:block}}\",\"detectedExtensions\":[\".html\",\".css\"],\"absentWebFeatures\":{\"inspectedWebCode\":false}}\n\nfalse !== true\n"
+    },
+    {
+      "id": "WEB-04",
+      "group": 4,
+      "label": "HTML comments cannot fabricate positive feature evidence",
+      "status": "FAIL",
+      "error": "TODO comment treated as implemented code: {\"inspectedWebCode\":true,\"noBootstrap\":false,\"noCart\":false,\"noAuth\":false,\"noLocalStorage\":false,\"noFetchApi\":false,\"noFirebase\":false}\n\nfalse !== true\n"
+    },
+    {
+      "id": "WEB-05",
+      "group": 4,
+      "label": "Feature in seventh JS file is not declared absent",
+      "status": "FAIL",
+      "error": "Feature outside sample marked absent: {\"inspectedWebCode\":true,\"noBootstrap\":true,\"noCart\":true,\"noAuth\":true,\"noLocalStorage\":true,\"noFetchApi\":true,\"noFirebase\":true}\n\ntrue !== false\n"
+    },
+    {
+      "id": "ZIP-04",
+      "group": 2,
+      "label": "Deep inspector honors existing safe archive size/ratio guard",
+      "status": "FAIL",
+      "error": "Safe parser rejects archive but new inspector expands it: {\"compressed\":16490,\"expanded\":16777216,\"rejected\":\"[Zip Bomb Protection] File 'index.html' trong 'oversize_web_package.zip' có dung lượng giải nén (16MB) vượt ngưỡng an toàn cho 1 file.\",\"deepTitle\":\"- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Oversized file guard bypass), 0 file CSS, 0 file JavaScript.\\n- Các mục nội dung / tiêu\"}\n\ntrue !== false\n"
+    },
+    {
+      "id": "TAGS-01",
+      "group": 4,
+      "label": "No project evidence returns no tags",
+      "status": "PASS",
+      "proof": []
+    },
+    {
+      "id": "TAGS-02",
+      "group": 4,
+      "label": "Actual scan does not mark nonexistent functions complete",
+      "status": "FAIL",
+      "error": "Static HTML auto-saved as completed interactions: [\"✅ Đã hoàn thiện các chức năng tương tác cốt lõi và quản lý dữ liệu theo chủ đề dự án\",\"🌐 Đã tích hợp xử lý sự kiện, tìm kiếm / lọc nội dung hoặc kết nối dữ liệu mượt mà\",\"🔧 Cần rà soát lại các trường hợp dữ liệu rỗng / lỗi nhập liệu trên biểu mẫu\"]"
+    },
+    {
+      "id": "TAGS-03",
+      "group": 4,
+      "label": "A PDF alone cannot prove slide quality or robot construction",
+      "status": "FAIL",
+      "error": "PDF auto-asserts slide/model quality: [\"📊 Slide đẹp, bố cục rõ ràng, dễ nhìn\",\"🔩 Lắp ráp kết cấu cơ khí VEX GO vững chắc, vận dụng tốt truyền động bánh răng & đòn bẩy\",\"🤖 Kết hợp hiệu quả bộ não Brain, động cơ và cảm biến (Eye Sensor / Bumper / LED) trong mô hình\"]"
+    },
+    {
+      "id": "VISION-01",
+      "group": 4,
+      "label": "Gemini request carries 2 actual product images; deduplicates thumbnail",
+      "status": "PASS",
+      "proof": {
+        "count": 2,
+        "mimes": [
+          "image/png",
+          "image/png"
+        ]
+      }
+    },
+    {
+      "id": "VISION-02",
+      "group": 4,
+      "label": "Default logo excluded from Gemini image payload",
+      "status": "PASS",
+      "proof": {
+        "count": 1
+      }
+    },
+    {
+      "id": "GUARD-01",
+      "group": 4,
+      "label": "No teacher tags/note bypasses AI and keeps INSUFFICIENT_INFO",
+      "status": "PASS",
+      "proof": "INSUFFICIENT_INFO"
+    },
+    {
+      "id": "HALLUCINATION-01",
+      "group": 4,
+      "label": "Missing Bootstrap/Cart/Storage/Fetch removed from AI output",
+      "status": "PASS",
+      "proof": "Nguyễn Minh Hải đang xây dựng dự án với tinh thần nghiêm túc. Nguyễn Minh Hải đã xây dựng danh sách nội dung rất hiệu quả. Con đã kết nối xử lý dữ liệu động để tải dữ liệu động và trình bày nội dung."
+    },
+    {
+      "id": "HALLUCINATION-02",
+      "group": 4,
+      "label": "Absent Firebase and login cannot survive sanitizer",
+      "status": "FAIL",
+      "error": "Unsupported features survive in saved comment: Nguyễn Minh Hải đang xây dựng dự án với tinh thần nghiêm túc. Nguyễn Minh Hải đã xây dựng chức năng đăng nhập và đăng ký tài khoản bằng Firebase rất tốt. Con đã vận dụng Firebase Authentication và Cloud Firestore lưu dữ liệu hiệu quả."
+    },
+    {
+      "id": "HALLUCINATION-03",
+      "group": 4,
+      "label": "Teacher note negating Bootstrap must not permit Bootstrap praise",
+      "status": "FAIL",
+      "error": "Negation treated as evidence: Nguyễn Minh Hải đang xây dựng dự án với tinh thần nghiêm túc. Nguyễn Minh Hải đã áp dụng Bootstrap rất hiệu quả để hoàn thiện giao diện trang web. Con đã có bố cục trang nội dung và cần rà soát lại các đường dẫn."
+    },
+    {
+      "id": "TONE-01",
+      "group": 5,
+      "label": "Session 12 uses next progress check and final report phrasing",
+      "status": "PASS",
+      "proof": "Nguyễn Minh Hải đang xây dựng dự án với tinh thần nghiêm túc. So với buổi kiểm tra tiến độ trước, con đã có trang giới thiệu cây xanh và hướng dẫn chăm cây. Con cần kiểm tra đường dẫn ở buổi kiểm tra tiến độ tiếp theo trước buổi báo cáo sản phẩm cuối khóa."
+    },
+    {
+      "id": "TONE-02",
+      "group": 5,
+      "label": "Session 13 preserves comparison when real prior evidence exists",
+      "status": "PASS",
+      "proof": "Nguyễn Minh Hải đang xây dựng dự án với tinh thần nghiêm túc. So với buổi kiểm tra tiến độ trước, con đã có trang giới thiệu cây xanh và hướng dẫn chăm cây. Con cần kiểm tra đường dẫn trong đợt kiểm tra tiến độ này trước buổi báo cáo sản phẩm cuối khóa."
+    },
+    {
+      "id": "TONE-03",
+      "group": 5,
+      "label": "Session 13 removes made-up prior comparison when history absent",
+      "status": "PASS",
+      "proof": "Lý Thanh Mai đang xây dựng dự án với tinh thần nghiêm túc. con đã có trang giới thiệu cây xanh và hướng dẫn chăm cây. Con cần kiểm tra đường dẫn trong đợt kiểm tra tiến độ này trước buổi báo cáo sản phẩm cuối khóa."
+    },
+    {
+      "id": "TONE-04",
+      "group": 5,
+      "label": "Session 14 official report keeps 2 sections with teacher presentation evidence",
+      "status": "PASS",
+      "proof": "1. Về phần thuyết trình\nMinh Hải đã trình bày ý tưởng rõ ràng và cần luyện diễn đạt tự tin hơn.\n2. Về phần sản phẩm cuối khóa\nMinh Hải đã hoàn thành dự án với tinh thần nghiêm túc. Sản phẩm gồm trang giới thiệu cây xanh và các nội dung chăm sóc. Con vận dụng cấu trúc HTML và CSS để trình bày nội dung rõ ràng."
+    }
+  ]
+}

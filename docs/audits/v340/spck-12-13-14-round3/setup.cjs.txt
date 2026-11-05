@@ -1,0 +1,32 @@
+﻿const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),cp=require('node:child_process');
+const root=__dirname,repo=process.argv[2],work=path.join(root,'work');
+const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex').toUpperCase();
+const expected={'data/mindx_bot.db':'91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A','data/running_classes.json':'F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9'};
+const productionBefore=Object.fromEntries(Object.keys(expected).map(p=>[p,sha(path.join(repo,p))]));
+if(Object.keys(expected).some(p=>productionBefore[p]!==expected[p]))throw Error('Production hashes differ from Owner');
+fs.mkdirSync(work,{recursive:true});
+function copy(rel){const a=path.join(repo,rel),b=path.join(work,rel);fs.mkdirSync(path.dirname(b),{recursive:true});fs.cpSync(a,b,{recursive:true});}
+for(const p of ['src','scripts','public','data/config'])if(fs.existsSync(path.join(repo,p)))copy(p);
+const rootFiles=fs.readdirSync(repo,{withFileTypes:true}).filter(e=>e.isFile()&&!e.name.startsWith('.env')&&/\.(?:json|[cm]?js|[cm]?ts|tsx|css|md)$/.test(e.name)).map(e=>e.name);
+for(const p of rootFiles)copy(p);
+fs.mkdirSync(path.join(work,'scratch'),{recursive:true});
+const r1=path.join(repo,'docs/audits/v340/spck-12-13-14-round1'),r2=path.join(repo,'docs/audits/v340/spck-12-13-14-round2');
+fs.copyFileSync(path.join(r1,'independent-probe.ts.txt'),path.join(work,'scratch/independent-probe.ts'));
+fs.copyFileSync(path.join(r2,'supplementary-probe.ts.txt'),path.join(work,'scratch/supplementary-probe.ts'));
+for(const name of ['guard.cjs','runner.cjs','callback-probe.cjs'])fs.copyFileSync(path.join(r2,name+'.txt'),path.join(root,name));
+let runner=fs.readFileSync(path.join(root,'runner.cjs'),'utf8');runner=runner.replace("gate==='supplementary'?'npx tsx scratch/supplementary-probe.ts':", "gate==='callback'?'node ../callback-probe.cjs':gate==='supplementary'?'npx tsx scratch/supplementary-probe.ts':");fs.writeFileSync(path.join(root,'runner.cjs'),runner);
+if(!fs.existsSync(path.join(work,'node_modules')))fs.symlinkSync(path.join(repo,'node_modules'),path.join(work,'node_modules'),'junction');
+function walk(dir,rel=''){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name),rel+e.name+'/'):[rel+e.name]);}
+const paths=[...['src','scripts','public','data/config'].filter(d=>fs.existsSync(path.join(repo,d))).flatMap(d=>walk(path.join(repo,d)).map(p=>d+'/'+p)),...rootFiles].sort();
+const manifest=Object.fromEntries(paths.map(p=>[p,sha(path.join(repo,p))]));
+const mismatches=paths.filter(p=>manifest[p]!==sha(path.join(work,p)));if(mismatches.length)throw Error(JSON.stringify(mismatches));
+const old=JSON.parse(fs.readFileSync(path.join(r2,'source-manifest-before.json'),'utf8'));
+const changedSinceRound2=Object.keys(old).filter(p=>manifest[p]&&old[p]!==manifest[p]);
+const probeHashes=Object.fromEntries([['independent-probe.ts',path.join(r1,'independent-probe.ts.txt')],['supplementary-probe.ts',path.join(r2,'supplementary-probe.ts.txt')]].map(([name,source])=>[name,{source:sha(source),executed:sha(path.join(work,'scratch',name))}]));
+const state={repo,root,work,created:new Date().toISOString(),head:cp.execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),expected,productionBefore,sourceCount:paths.length,srcScriptsCount:paths.filter(p=>p.startsWith('src/')||p.startsWith('scripts/')).length,copiedSourceMatches:true,changedSinceRound2,probeHashes,node:process.version};
+fs.writeFileSync(path.join(root,'state.json'),JSON.stringify(state,null,2));fs.writeFileSync(path.join(root,'source-manifest-before.json'),JSON.stringify(manifest,null,2));
+fs.writeFileSync(path.join(root,'source-changes-since-round2.json'),JSON.stringify(changedSinceRound2.map(p=>({path:p,before:old[p],after:manifest[p]})),null,2));
+fs.writeFileSync(path.join(root,'git-status-before.txt'),cp.execFileSync('git',['status','--short'],{cwd:repo}));
+fs.writeFileSync(path.join(root,'working-tree.patch'),cp.execFileSync('git',['diff','--binary','HEAD'],{cwd:repo,maxBuffer:20*1024*1024}));
+fs.copyFileSync(path.join(repo,'docs/audits/v340/CODEX_SPCK_12_13_14_AUDIT.md'),path.join(root,'round2-report.md.txt'));
+console.log(JSON.stringify(state,null,2));

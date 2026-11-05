@@ -1,0 +1,173 @@
+# Kiểm định độc lập SPCK Buổi 12–13–14 — Round 1
+
+## VERDICT: NO-GO
+
+**Ngày kiểm định:** 05/11/2026, múi giờ Việt Nam.  
+**Bản được kiểm định:** nội dung thư mục làm việc, trên HEAD `00dd3e3f75961a1276379cad3212eaf74ec306b2`. Các thay đổi chưa commit của Owner được đưa nguyên trạng vào bản sao thử nghiệm.  
+**Kết quả:** bốn cổng chuẩn PASS; bộ thử độc lập **42 ca: 28 PASS, 14 FAIL**, tương ứng **10 phát hiện: 3 P1, 7 P2**.
+
+Chưa đủ điều kiện nghiệm thu đợt nâng cấp. Ba vấn đề cần xử lý trước là: tự lưu thẻ đánh giá khẳng định những việc học viên chưa làm; hậu kiểm nhận xét chưa chặn đủ thông tin bịa; và bộ phân tích Web mới đọc ZIP vượt qua giới hạn an toàn đang có.
+
+Đây là kết luận về mã nguồn và các tình huống giả lập cục bộ. Không phải kết quả nghiệm thu lớp học, LMS, Teaching, Gemini hoặc Google Drive thật.
+
+## 1. Phạm vi và cách cô lập
+
+Đã đối chiếu `PROJECT_STATE.md`, `MINDX_AUTOMATION_PLAN.md`, `CHANGELOG.md`, Git và 13 tệp được yêu cầu. Đọc thêm các phần liên quan của `sqlite.ts`, `spck/list`, `spck/generate-ai`, bộ kiểm tra đường dẫn và bộ đọc ZIP để lần theo dữ liệu từ quét → lưu nháp → AI → chuẩn bị nộp.
+
+Tại thời điểm bắt đầu, 13 tệp mã/kiểm thử trong phạm vi đã có thay đổi; `tsconfig.tsbuildinfo` cũng đã có thay đổi từ trước. Không sửa hoặc hoàn tác những thay đổi đó.
+
+- Thư mục thử nghiệm: `%TEMP%\codex-spck-121314-r1-DYj65E\work`.
+- Sao chép mã nguồn, các bộ kiểm thử, tài liệu và cấu hình cần thiết; không sao chép `.env`, hồ sơ trình duyệt, cơ sở dữ liệu thật hoặc danh sách lớp thật.
+- Tạo cơ sở dữ liệu giả từ cơ chế khởi tạo bảng của ứng dụng và tệp danh sách lớp giả `[]` trong TEMP. Mỗi cổng có đường dẫn riêng `data/audit-<gate>.db` và `data/audit-<gate>-classes.json`.
+- Mọi lần chạy cổng đều được truyền `MINDX_DB_PATH` và `MINDX_RUNNING_CLASSES_PATH` đến các tệp TEMP này. Không mở kết nối SQLite đến `data/mindx_bot.db` thật.
+- Chỉ đọc hai tệp dữ liệu thật để tính SHA-256 theo ngoại lệ Owner cho phép; không sao chép, sửa hoặc xóa chúng.
+- Dùng khóa Gemini giả, không nạp thông tin đăng nhập thật. Các ca AI thay phản hồi mạng bằng JSON giả và ghi lại yêu cầu gửi đi để kiểm tra `inlineData`.
+- Chặn kết nối HTTP ra ngoài trong tiến trình Node; trình duyệt kiểm thử dùng proxy loopback không có dịch vụ bên ngoài. Chặn khởi tạo hồ sơ trình duyệt persistent thật. Các log bảo vệ không ghi nhận yêu cầu HTTP bên ngoài bị thử gọi.
+- Các bộ v270/v272/S5 có thể ghi tệp thử nghiệm theo `process.cwd()`; vì vậy toàn bộ đều chạy trong bản sao TEMP, không chạy ở cây dự án gốc.
+- Bộ thử độc lập đặt trong `scratch/`, vốn đã bị loại khỏi phạm vi TypeScript của dự án. Bản lưu bằng chứng có đuôi `.ts.txt` để không làm ảnh hưởng các lần kiểm tra mã của Owner sau này.
+
+**Đối chiếu toàn vẹn:** 149/149 tệp `src/**` + `scripts/**`, cùng 16 tệp ở thư mục gốc, khớp từng SHA-256 giữa trước kiểm định, bản sao TEMP và cây gốc sau kiểm định: **165/165 khớp; 0 tệp thay đổi; 0 tệp lệch bản sao**.
+
+## 2. Gate Execution Summary
+
+Các kết quả dưới đây đều chạy mới trên bản sao của thư mục làm việc hiện tại, không dùng lại kết quả các vòng trước. Thời gian trong bằng chứng là UTC; cộng 7 giờ để đổi sang giờ Việt Nam.
+
+| Cổng | Lệnh đã chạy | Kết quả | Bằng chứng |
+|---|---|---|---|
+| G1 | `npx tsc --noEmit --incremental false` | **PASS**, exit 0 | [tsc.log](spck-12-13-14-round1/tsc.log), [thông tin lần chạy](spck-12-13-14-round1/tsc-result.json) |
+| G2 | `npx tsx scripts/test-spck-v270.ts` | **PASS**, exit 0; T01–T16 | [v270.log](spck-12-13-14-round1/v270.log), [thông tin lần chạy](spck-12-13-14-round1/v270-result.json) |
+| G3 | `npx tsx scripts/test-spck-v272.ts` | **PASS**, exit 0; V01–V17 | [v272.log](spck-12-13-14-round1/v272.log), [thông tin lần chạy](spck-12-13-14-round1/v272-result.json) |
+| G4 | `npx tsx scripts/test-streamline-v340-s5.ts` | **PASS**, exit 0; T1–T6 và kiểm thử giao diện | [s5.log](spck-12-13-14-round1/s5.log), [thông tin lần chạy](spck-12-13-14-round1/s5-result.json) |
+| G5 | `npx tsx scratch/independent-probe.ts` | **FAIL**, exit 1; **28/42 đạt, 14/42 trượt** | [probe.log](spck-12-13-14-round1/probe.log), [kết quả từng ca](spck-12-13-14-round1/probe-results.json), [thông tin lần chạy](spck-12-13-14-round1/probe-result.json) |
+
+Các lỗi thiết lập bộ thử của kiểm định viên đã được xử lý trong TEMP trước các kết quả cuối cùng ở bảng này: chuẩn hóa đường dẫn preload trên Windows, dùng công cụ biên dịch đang có trong dự án, và chuyển probe ra khỏi phạm vi TypeScript của ứng dụng. Không sửa mã sản phẩm hoặc bộ kiểm thử gốc để làm các cổng đạt.
+
+### Kết quả thử độc lập theo 5 hạng mục
+
+| Hạng mục | Tổng | PASS | FAIL | Phạm vi đã kiểm chứng |
+|---|---:|---:|---:|---|
+| 1. Đồng bộ tài nguyên giữa các buổi | 6 | 5 | 1 | File mới/đổi byte, file mất, ảnh và link mới, nháp đã duyệt, bảo toàn snapshot VERIFIED, đổi nhãn link |
+| 2. ZIP, Drive và LMS | 12 | 7 | 5 | ZIP ổn định và không ghi lại byte giống nhau; callback xóa thẻ đính kèm; Coding/Robotics; thư mục cũ; bộ lọc nội bộ; ZIP vượt giới hạn |
+| 3. Robotics | 6 | 5 | 1 | Khởi tạo thư mục, tên gần giống, ảnh ngang/dọc, một ảnh duy nhất, chỉ ảnh so với có mã, xóa ZIP cũ, đủ 10 tiền tố môn |
+| 4. Bộ phân tích, ảnh và Quick Tags | 14 | 7 | 7 | HTML/CSS/JS, ZIP, đầu vào thiếu thư mục, giới hạn lấy mẫu, chú thích TODO, thẻ suy diễn, ảnh thật, logo mặc định, thiếu dữ kiện, hậu kiểm thông tin bịa |
+| 5. Giọng văn theo buổi | 4 | 4 | 0 | Diễn đạt tiến độ, đổi nhãn buổi, so sánh khi có/không có bằng chứng trước đó, báo cáo Buổi 14 hai phần |
+| **Tổng** | **42** | **28** | **14** | |
+
+Probe gọi trực tiếp route quét, kho dữ liệu và bộ sinh nhận xét thực trên cơ sở dữ liệu giả. Với các hàm Drive không được xuất ra ngoài, probe biên dịch đúng mã hiện tại vào môi trường giả lập và thay các thao tác trang bằng một cây thư mục giả. Với LMS, probe chạy nguyên callback xóa thẻ lấy từ mã hiện tại trên các phần tử giả; không gọi LMS thật. Khối tạo ZIP trong uploader cũng được trích nguyên mã và chạy trên tệp TEMP. Các phép thử này chứng minh quyết định của chương trình; chưa chứng minh giao diện Google Drive/LMS thật hiện tại có cùng cấu trúc.
+
+## 3. Findings Table
+
+**P1:** lỗi cần ưu tiên sửa trước khi nghiệm thu do ảnh hưởng tính đúng đắn của đánh giá hoặc bảo vệ khi đọc dữ liệu. **P2:** lỗi chức năng hoặc không đáp ứng yêu cầu đã duyệt. Không có phát hiện P0.
+
+| ID | Mức độ | Vị trí `file:line` | Bằng chứng tái hiện và ảnh hưởng | Required fix |
+|---|---|---|---|---|
+| **F01** | **P1** | `src/lib/spck/spck-quick-tags.ts:1419`, `:1423`, `:1433`; `src/app/api/spck/scan/route.ts:404`, `:418` | **TAGS-02, TAGS-03 FAIL.** Lớp JSA Buổi 13 chỉ có HTML tĩnh, không JS, không form: route vẫn tự lưu thẻ “Đã hoàn thiện các chức năng tương tác cốt lõi…” và “…kết nối dữ liệu mượt mà”. Chỉ biết có một PDF cũng gợi ý “Slide đẹp…” cùng các khẳng định về lắp ráp, động cơ và cảm biến. Đây là thẻ đánh giá đã lưu trong nháp, sau đó được AI đọc như thông tin giáo viên xác nhận. | Tiếp tục hỗ trợ tự gợi ý, nhưng chỉ gợi ý sự kiện có bằng chứng thực. Các kết luận về chất lượng, tính năng hoạt động, thuyết trình và phần cứng phải chờ giáo viên chọn/xác nhận; không tự lưu thành thẻ đã chọn chỉ từ số lượng/đuôi tệp. |
+| **F02** | **P1** | `src/lib/gemini/spck-comment.ts:1403–1432` | **HALLUCINATION-02, HALLUCINATION-03 FAIL.** Bộ phân tích xác nhận `noAuth=true`, `noFirebase=true`, nhưng phản hồi giả “đăng nhập… bằng Firebase” và “Firebase Authentication… Cloud Firestore” vẫn đi qua, kết quả `WAITING_APPROVAL`. Ghi chú “Bài không dùng Bootstrap” lại làm điều kiện `noteAscii.includes('bootstrap')` bỏ qua hậu kiểm; câu khen Bootstrap vẫn còn. | Hậu kiểm đủ cả 6 nhóm tính năng, bao gồm đăng nhập/đăng ký và Firebase/Firestore. Ghi chú phủ định không được mở khóa lời khen. Loại bỏ hoặc yêu cầu soạn lại mệnh đề không có bằng chứng; tránh chỉ thay tên công nghệ bằng một khẳng định chung khác. |
+| **F03** | **P1** | `src/lib/gemini/spck-comment.ts:667–680`; đối chiếu `src/lib/file-parsers/archive-reader.ts:210` | **ZIP-04 FAIL.** ZIP chỉ **16.490 byte**, chứa HTML giải nén **16.777.216 byte**. `inspectZipArchiveSafely` từ chối đúng giới hạn 15 MB/tệp; bộ phân tích mới vẫn gọi `entry.getData()` và đọc được tiêu đề `Oversized file guard bypass`. Cắt chuỗi sau `getData()` không giới hạn lượng dữ liệu phải giải nén. Chỉ dùng mẫu 16 MB, không thử gây hết bộ nhớ. | Dùng lại `inspectZipArchiveSafely` và các entry đã được kiểm tra trước mọi lần giải nén; giữ giới hạn số tệp, dung lượng từng tệp/tổng và tỷ lệ nén. Không đọc song song bằng một nhánh `AdmZip` bỏ qua các chốt này. |
+| **F04** | **P2** | `src/lib/playwright/spck-drive-uploader.ts:611`, `:623`, `:731–756` | **DRIVE-02, DRIVE-03 FAIL.** Khi danh sách file cục bộ ở thư mục gốc rỗng, hàm thoát trước khi dọn `deleted.py` trên Drive. Khi đổi thư mục `old-name/` thành `new-name/`, hàm tạo và tải nhánh mới nhưng để nguyên `old-name/main.py`. Ví dụ thực tế: chuyển toàn bộ mã vào thư mục con hoặc đổi tên thư mục dự án giữa hai buổi vẫn để lại bài cũ. | Với Coding, đối chiếu cả cây tệp trong đúng thư mục học viên và xử lý tài nguyên cũ ở nhánh đã xóa/đổi tên, kể cả khi thư mục hiện tại không có file trực tiếp. Giữ nguyên cách tích lũy ảnh khác tên của Robotics. |
+| **F05** | **P2** | `src/lib/playwright/spck-drive-uploader.ts:274–287` | **DRIVE-05 FAIL.** Nếu không có file trực tiếp, fallback chủ động lấy `_spck_owner_uploads/private.png` để tải lên. Do đó quy tắc chặn `_spck_owner_uploads` bị vượt qua. Nhánh này không nhận biết lớp Robotics và không áp dụng lại bộ lọc tên/đuôi file của vòng chính. Ca có `main.py` bình thường lại PASS, nên dễ bỏ sót đường đi này. | Loại bỏ fallback đọc nội dung thư mục bị cấm; danh sách tải Drive phải tuân thủ cùng danh sách loại trừ ở mọi nhánh. Theo phạm vi Owner đã duyệt, không có ngoại lệ cho `_spck_owner_uploads`. |
+| **F06** | **P2** | `src/app/api/spck/scan/route.ts:84–85` | **ROB-02 FAIL.** Lớp có `Lê An` và `Lê Anh`, thư mục `Lê Anh` đã tồn tại: `includes()` coi đây cũng là thư mục của `Lê An`; API trả thành công với `createdFoldersCount=0` nhưng không tạo thư mục cho học viên còn lại. | So khớp tên đã chuẩn hóa bằng nhau hoặc dùng liên kết thư mục–mã học viên rõ ràng; không dùng quan hệ chứa chuỗi để kết luận một học viên đã có thư mục. |
+| **F07** | **P2** | `src/lib/gemini/spck-comment.ts:504–519`, `:660–663`, `:794–799`, `:878–884` | **WEB-03, WEB-05 FAIL.** Khi có attachment `.html/.css` hợp lệ nhưng không có thư mục dự án đọc được, hàm chỉ trả đoạn trích chung và `inspectedWebCode=false`: không có kết quả kiểm tra sâu/đặc tính vắng mặt. Ở trường hợp khác, HTML tham chiếu file JS thứ 7 chứa Firebase và LocalStorage, nhưng chỉ 6 JS đầu được đọc nên cả hai bị khẳng định là không có. Điều này còn làm hậu kiểm loại bỏ tính năng học viên thực sự làm. | Đưa file đính kèm rời vào cùng luồng kiểm tra sâu; phân biệt “chưa quan sát đủ” với “không có”. Giới hạn độ dài đoạn gửi AI có thể giữ, nhưng không được dùng một mẫu bị cắt để kết luận chắc chắn tính năng vắng mặt trong toàn dự án. |
+| **F08** | **P2** | `src/lib/gemini/spck-comment.ts:749–760`, `:774–799` | **WEB-04 FAIL.** Trang chỉ có tiêu đề/nội dung và chú thích `<!-- TODO: add bootstrap, shopping cart, login, firebase and localStorage, fetch('/api') later -->` làm cả 6 cờ `no*` thành `false`. Dự định chưa làm bị biến thành bằng chứng công nghệ/tính năng đã có, vô hiệu hóa cảnh báo và hậu kiểm tương ứng. | Không tính chú thích và nội dung mô tả kế hoạch là bằng chứng triển khai. Với phần không thể xác nhận chỉ từ mã tĩnh, giữ trạng thái chưa xác minh và tránh tự khen tính năng đang hoạt động. |
+| **F09** | **P2** | `src/lib/playwright/spck-uploader.ts:3150–3157`, `:3170–3174` | **LMS-03 FAIL.** Hai tệp hợp lệ `main.py` và `main.sb3`, có các caption giả theo dạng `main-123.py`, `main-234.sb3`, đều có stem được giữ, nhưng callback vẫn xóa tệp thứ hai vì `seenPrefixes` bỏ phần mở rộng. Có thể xóa nhầm tài liệu hợp lệ hoặc khiến lần nộp bị từ chối khi đọc lại. **Lỗi này đã có trong callback ở HEAD trước thay đổi, không kết luận là hồi quy mới.** | Nhận diện tệp trùng bằng tên đầy đủ có phần mở rộng và bằng chứng byte thích hợp; giữ được hai tệp khác loại cùng tên gốc. Không chỉ dùng stem làm khóa duy nhất khi quyết định xóa. |
+| **F10** | **P2** | `src/app/api/spck/scan/route.ts:175–179` | **SYNC-06 FAIL.** Quét link `[Plant map v1](https://example.invalid/plants)`, sau đó đổi nhãn trong `links.txt` thành `Plant map v2` và quét với `syncActiveSession=true`: nháp vẫn giữ `Plant map v1`. Vòng gộp đọc link cũ trước và từ chối thay entry đã có cùng URL. Link mới hoàn toàn và snapshot buổi trước vẫn được xử lý đúng trong SYNC-05. | Khi cùng URL xuất hiện lại trong dữ liệu quét mới, cho metadata mới ưu tiên. Tiếp tục giữ các link Drive/GitHub đã tạo mà không bị nội dung quét mới thay thế. |
+
+**Ranh giới quy kết:** F09 được đối chiếu trực tiếp với `git show HEAD:src/lib/playwright/spck-uploader.ts` và là lỗi cũ còn tồn tại trong đoạn đang sửa. F10 nằm trong phép gộp có sẵn, nay làm yêu cầu đồng bộ chủ động chưa hoàn chỉnh. F04 đánh giá mức hoàn thành quy tắc dọn dữ liệu Coding mới. Các mục này không được trình bày là tất cả đều là hồi quy do dòng mới gây ra. NO-GO vẫn có cơ sở độc lập từ F01–F03.
+
+### 3.1. Ví dụ về nội dung sai đã tái hiện
+
+**F01 — không có JavaScript nhưng tự lưu thẻ khẳng định đã hoàn thiện tương tác:**
+
+```text
+Đầu vào: lớp JSA, Buổi 13, chỉ index.html với h1 và p; không JS/form.
+Quick Tags lưu vào nháp:
+✅ Đã hoàn thiện các chức năng tương tác cốt lõi và quản lý dữ liệu theo chủ đề dự án
+🌐 Đã tích hợp xử lý sự kiện, tìm kiếm / lọc nội dung hoặc kết nối dữ liệu mượt mà
+```
+
+Không có thao tác chọn thẻ của giáo viên trong ca này. Ca `GUARD-01` xác nhận cơ chế `INSUFFICIENT_INFO` vẫn đúng nếu tags/note thực sự rỗng; vấn đề F01 là route quét tự điền các thẻ không được chứng minh trước khi AI kiểm tra điều kiện đó.
+
+**F02 — bộ phân tích biết thiếu tính năng nhưng bình luận cuối vẫn khẳng định có:**
+
+```text
+noAuth = true; noFirebase = true
+Kết quả: WAITING_APPROVAL
+“…đã xây dựng chức năng đăng nhập và đăng ký tài khoản bằng Firebase rất tốt.
+…đã vận dụng Firebase Authentication và Cloud Firestore lưu dữ liệu hiệu quả.”
+```
+
+Phản hồi trên được mô phỏng để cố tình kiểm tra lớp hậu kiểm. Không gọi Gemini thật, không kết luận Gemini thật chắc chắn sẽ viết câu đó. Điều được chứng minh là khi câu đó xuất hiện, chương trình hiện không chặn được nó.
+
+**F03 — hai bộ đọc ZIP trong cùng chương trình đưa ra quyết định trái nhau:**
+
+```text
+ZIP compressed bytes: 16490
+HTML expanded bytes: 16777216
+inspectZipArchiveSafely.valid: false
+Lý do: file index.html giải nén 16 MB vượt ngưỡng an toàn cho 1 file.
+buildPreliminaryProjectSummary.absentWebFeatures.inspectedWebCode: true
+Tiêu đề vẫn trích được: Oversized file guard bypass
+```
+
+Nguy cơ là tiêu thụ bộ nhớ/thời gian ngoài các giới hạn an toàn hiện có. Không có bằng chứng thực nghiệm về treo ứng dụng hoặc mất dữ liệu thật; kiểm định không thực hiện thử gây cạn tài nguyên.
+
+### 3.2. Vì sao S5 PASS vẫn chưa đủ
+
+Bộ kiểm thử S5 mới kiểm tra các đường đi thuận lợi, nhưng không phủ hết các trường hợp đối kháng:
+
+- `scripts/test-streamline-v340-s5.ts:782` gọi hàm chuẩn bị danh sách Drive với thư mục đã có file thường; không tái hiện cây thư mục Drive cũ hoặc nhánh chỉ có `_spck_owner_uploads`.
+- Phản hồi AI cố tình sai ở `:837–842` và điều kiện `:897–900` kiểm tra Bootstrap/LocalStorage/Fetch/giỏ hàng; không có trường hợp đăng nhập/Firebase hoặc ghi chú phủ định.
+- Có kiểm tra nhận được tags theo môn và theo buổi; chưa chứng minh từng thẻ được tự lưu là đúng với bài làm tối thiểu.
+- Các ca khởi tạo thư mục dùng tên học viên không chứa nhau, nên không bắt được `Lê An`/`Lê Anh`.
+
+Không sửa các kiểm thử này trong vòng kiểm định. Các ca độc lập được lưu riêng để người sửa có thể dùng làm bằng chứng hồi quy.
+
+## 4. Những phần đã chứng minh đạt trong phạm vi thử
+
+- Quét chủ động đưa file, ảnh và link mới vào nháp đang làm; file mất được thay khỏi nháp chưa duyệt. Snapshot VERIFIED Buổi 12 giữ nguyên khi làm Buổi 13/14. Nháp APPROVED không bị lần quét trực tiếp ghi đè trong ca đã thử.
+- ZIP do scanner tạo cho Web/Robotics và khối ZIP trong uploader có byte ổn định khi đổi thứ tự đầu vào; thời gian entry cố định; tệp byte giống nhau không bị ghi lại, thể hiện qua mốc sửa tệp không đổi.
+- Callback LMS loại được tài liệu tên cũ và bản trùng cùng loại trong các tình huống giả lập đã thử; danh sách attachment rỗng cũng dọn được thẻ cũ. Ngoại lệ cùng stem khác đuôi ở F09 chưa đạt.
+- Drive phân biệt được Coding dọn file cũ thông thường và Robotics chỉ thay file cùng tên; nhận biết đủ `PREB/PREA/PREI`, `ARMB/ARMA/ARMI`, `SEMIB/SEMIA/SEMII`, `ROB`.
+- Robotics chỉ có ảnh không tạo ZIP; có mã `.vexblocks` thì tạo ZIP ổn định; xóa mã thì xóa ZIP cũ. Hai ảnh thường ưu tiên ảnh ngang, ảnh còn lại vào gallery. Một ảnh Owner duy nhất vẫn có mặt trong gallery của cả scanner và screenshotter.
+- Bộ phân tích nhận được title, menu, heading và CSS/JS trong dự án nhỏ hoặc ZIP hợp lệ. Payload Gemini giả nhận đúng 2 ảnh thật khác nhau, bỏ ảnh thumbnail trùng và loại logo MindX mặc định.
+- Các phép thay cụm từ tiến độ Buổi 12/13 hoạt động trong ca đã thử; Buổi 13 bỏ so sánh nếu không có bằng chứng buổi trước; Buổi 14 giữ bố cục hai mục khi có dữ kiện thuyết trình.
+
+Các PASS này không bù trừ các lỗi trong bảng Findings và không chứng minh mọi biến thể tệp, ảnh, thuật ngữ hoặc giao diện dịch vụ thật đều đạt.
+
+## 5. Production Data Preservation Check
+
+**Kết quả: PASS — cả hai tệp khớp SHA-256 trước/sau và khớp giá trị Owner cung cấp.**
+
+| Tệp | Trước kiểm định | Sau kiểm định | Đối chiếu |
+|---|---|---|---|
+| `data/mindx_bot.db` | `91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A` | `91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A` | **MATCH**, khớp Owner |
+| `data/running_classes.json` | `F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9` | `F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9` | **MATCH**, khớp Owner |
+
+Tệp dữ liệu thật không được dùng làm dữ liệu đầu vào của cổng kiểm thử. Các kết nối SQLite chỉ trỏ đến cơ sở dữ liệu giả trong TEMP.
+
+Bằng chứng máy đọc được:
+
+- [verification-summary.json](spck-12-13-14-round1/verification-summary.json): HEAD, đường dẫn cô lập, thời gian/exit code từng cổng, tổng hợp probe, SHA-256 dữ liệu thật.
+- [source-manifest-before.json](spck-12-13-14-round1/source-manifest-before.json) và [source-manifest-after.json](spck-12-13-14-round1/source-manifest-after.json): 165 tệp so sánh, gồm toàn bộ 149 tệp nguồn/kiểm thử.
+- [evidence-sha256.json](spck-12-13-14-round1/evidence-sha256.json): mã kiểm tra các tệp bằng chứng.
+- Các tệp `*-network.jsonl`: ghi nhận bộ bảo vệ được nạp; không có sự kiện thử gọi HTTP bên ngoài trong các lần chạy được ghi.
+- [final-preservation.json](spck-12-13-14-round1/final-preservation.json): lần đối chiếu cuối sau ghi báo cáo và dọn TEMP.
+
+## 6. Hồ sơ tái hiện và điều kiện kiểm định lại
+
+Mã bộ thử độc lập: [independent-probe.ts.txt](spck-12-13-14-round1/independent-probe.ts.txt). Bộ chạy cô lập: [runner.cjs.txt](spck-12-13-14-round1/runner.cjs.txt). Bộ bảo vệ: [guard.cjs.txt](spck-12-13-14-round1/guard.cjs.txt).
+
+Để tái hiện, người sửa tạo lại snapshot TEMP cùng cấu trúc, đặt probe thành `work/scratch/independent-probe.ts`, phục hồi hai tệp runner/guard ở thư mục TEMP cha, liên kết thư viện đã cài và chạy các lệnh trong bảng Gate Execution Summary. Tạo dữ liệu giả mới, không sao chép cơ sở dữ liệu thật. Các đường dẫn tuyệt đối trong log chỉ nhận diện lần chạy đã kiểm định; thư mục TEMP sẽ được dọn bằng `fs.rmSync(..., { recursive: true, force: true })` sau khi lưu bằng chứng. Không cần Owner thao tác terminal để đọc kết quả.
+
+**Thứ tự sửa đề nghị:** F01 → F02 → F03, sau đó F04–F10. Chạy lại đủ bốn cổng chuẩn và các tình huống độc lập tương ứng trên đúng bản mã đã sửa; giữ nguyên yêu cầu bảo toàn dữ liệu thật. Không đánh dấu đóng lỗi chỉ vì bốn cổng cũ tiếp tục PASS.
+
+### Phạm vi chưa kiểm tra
+
+Không đăng nhập, không tải/xóa tài liệu trên Google Drive thật, không mở LMS/Teaching thật, không gọi Gemini thật, không thử dữ liệu lớp thật. Chưa chạy bản dựng production mới, chưa đo tải lớn, chưa xác nhận độ chính xác thị giác của Gemini hoặc toàn bộ cấu trúc DOM của các website thật. Không có cơ sở kết luận mất dữ liệu hay đã gửi sai nhận xét ở tài khoản thật.
+
+### Kết luận cho Owner
+
+**Đã làm:** hoàn tất kiểm định độc lập và lưu bộ bằng chứng có thể tái hiện.  
+**Kết quả:** **NO-GO**, 10 phát hiện; dữ liệu thật và mã nguồn gốc được bảo toàn.  
+**Chưa kiểm tra:** các dịch vụ/lớp thật và bản dựng production mới.  
+**Việc tiếp theo:** giao vòng sửa theo bảng Findings, ưu tiên ba lỗi P1, rồi kiểm định lại. Vòng này chỉ tạo báo cáo/bằng chứng, không triển khai bản sửa.

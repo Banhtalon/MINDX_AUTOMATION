@@ -1,0 +1,46 @@
+{
+  "verdict": "NO-GO",
+  "closed": 7,
+  "open": 3,
+  "statuses": {
+    "F01": "OPEN",
+    "F02": "CLOSED",
+    "F03": "CLOSED",
+    "F04": "CLOSED",
+    "F05": "CLOSED",
+    "F06": "CLOSED",
+    "F07": "OPEN",
+    "F08": "OPEN",
+    "F09": "CLOSED",
+    "F10": "CLOSED"
+  },
+  "mandatoryPassed": true,
+  "blockingProbes": [
+    {
+      "id": "R5-F01-01",
+      "finding": "F01",
+      "label": "Displayed style markup is text and must not auto-save a CSS layout observation"
+    },
+    {
+      "id": "R5-F08-01",
+      "finding": "F08",
+      "label": "Displayed style import must not prove Bootstrap or Flexbox implementation"
+    },
+    {
+      "id": "R5-F01-02",
+      "finding": "F01",
+      "label": "A regex literal displaying initializeApp() must not auto-save a Firebase observation"
+    },
+    {
+      "id": "R5-F08-02",
+      "finding": "F08",
+      "label": "Regex literal text with initializeApp() is not an executed Firebase call"
+    },
+    {
+      "id": "R5-F07-01",
+      "finding": "F07",
+      "label": "A ZIP entry cannot mask an unresolved script reference outside the ZIP root"
+    }
+  ],
+  "note": "All 76 original Round 1-4 probe cases pass. Five supplementary Round 5 failures are variants of F01/F07/F08; not five new findings. No product changes."
+}

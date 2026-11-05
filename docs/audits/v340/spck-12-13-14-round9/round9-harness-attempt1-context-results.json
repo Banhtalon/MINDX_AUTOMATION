@@ -1,0 +1,192 @@
+{
+  "total": 9,
+  "passed": 3,
+  "failed": 0,
+  "errors": 6,
+  "results": [
+    {
+      "id": "R9-F08-01",
+      "finding": "F08",
+      "label": ".mjs extension alone retains module context via folder",
+      "status": "ERROR",
+      "observed": {
+        "code": "const n=010;",
+        "sourceType": "module",
+        "oracle": {
+          "complete": false,
+          "count": 3,
+          "error": "Invalid number (1:8)"
+        }
+      },
+      "error": "AssertionError [ERR_ASSERTION]: Missing flag noBootstrap\n+ actual - expected\n\n+ 'undefined'\n- 'boolean'\n\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\scratch\\round9-context-probe.ts:17:185)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\scratch\\round9-context-probe.ts:35:2)\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at async node:internal/modules/esm/loader:647:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+    },
+    {
+      "id": "R9-F08-02",
+      "finding": "F08",
+      "label": ".js referenced by type=module retains module context via folder",
+      "status": "ERROR",
+      "observed": {
+        "code": "const n=010;",
+        "sourceType": "module",
+        "oracle": {
+          "complete": false,
+          "count": 3,
+          "error": "Invalid number (1:8)"
+        }
+      },
+      "error": "AssertionError [ERR_ASSERTION]: Missing flag noBootstrap\n+ actual - expected\n\n+ 'undefined'\n- 'boolean'\n\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\scratch\\round9-context-probe.ts:17:185)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\scratch\\round9-context-probe.ts:36:2)\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at async node:internal/modules/esm/loader:647:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+    },
+    {
+      "id": "R9-F08-03",
+      "finding": "F08",
+      "label": "Classic .js remains classic via folder",
+      "status": "PASS",
+      "expected": "absent",
+      "observed": {
+        "code": "const n=010;",
+        "sourceType": "script",
+        "oracle": {
+          "complete": true,
+          "count": 5
+        },
+        "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: External context STUDENT_01), 0 file CSS, 1 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+        "detectedExtensions": [
+          ".html",
+          ".js"
+        ],
+        "absentWebFeatures": {
+          "inspectedWebCode": true,
+          "noBootstrap": true,
+          "noCart": true,
+          "noAuth": true,
+          "noLocalStorage": true,
+          "noFetchApi": true,
+          "noFirebase": true
+        }
+      }
+    },
+    {
+      "id": "R9-F08-04",
+      "finding": "F08",
+      "label": ".mjs extension alone retains module context via attachment",
+      "status": "ERROR",
+      "observed": {
+        "code": "const n=010;",
+        "sourceType": "module",
+        "oracle": {
+          "complete": false,
+          "count": 3,
+          "error": "Invalid number (1:8)"
+        }
+      },
+      "error": "AssertionError [ERR_ASSERTION]: Missing flag noBootstrap\n+ actual - expected\n\n+ 'undefined'\n- 'boolean'\n\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\scratch\\round9-context-probe.ts:17:185)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\scratch\\round9-context-probe.ts:35:2)\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at async node:internal/modules/esm/loader:647:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+    },
+    {
+      "id": "R9-F08-05",
+      "finding": "F08",
+      "label": ".js referenced by type=module retains module context via attachment",
+      "status": "ERROR",
+      "observed": {
+        "code": "const n=010;",
+        "sourceType": "module",
+        "oracle": {
+          "complete": false,
+          "count": 3,
+          "error": "Invalid number (1:8)"
+        }
+      },
+      "error": "AssertionError [ERR_ASSERTION]: Missing flag noBootstrap\n+ actual - expected\n\n+ 'undefined'\n- 'boolean'\n\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\scratch\\round9-context-probe.ts:17:185)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\scratch\\round9-context-probe.ts:36:2)\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at async node:internal/modules/esm/loader:647:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+    },
+    {
+      "id": "R9-F08-06",
+      "finding": "F08",
+      "label": "Classic .js remains classic via attachment",
+      "status": "PASS",
+      "expected": "absent",
+      "observed": {
+        "code": "const n=010;",
+        "sourceType": "script",
+        "oracle": {
+          "complete": true,
+          "count": 5
+        },
+        "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: External context STUDENT_01), 0 file CSS, 1 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.\n- File 'FILE_01.html' (WEB): === WEB SOURCE (.HTML): index.html ===\nSố dòng: 1\nThẻ HTML sử dụng: title, script\n\n  1 | <title>External context STUDENT_01</title><script src=\"./main.js\"></script>\n- File 'FILE_02.js' (WEB): === WEB SOURCE (.JS): main.js ===\nSố dòng: 1\n\n  1 | const n=010;",
+        "detectedExtensions": [
+          ".html",
+          ".js"
+        ],
+        "absentWebFeatures": {
+          "inspectedWebCode": true,
+          "noBootstrap": true,
+          "noCart": true,
+          "noAuth": true,
+          "noLocalStorage": true,
+          "noFetchApi": true,
+          "noFirebase": true
+        }
+      }
+    },
+    {
+      "id": "R9-F08-07",
+      "finding": "F08",
+      "label": ".mjs extension alone retains module context via zip",
+      "status": "ERROR",
+      "observed": {
+        "code": "const n=010;",
+        "sourceType": "module",
+        "oracle": {
+          "complete": false,
+          "count": 3,
+          "error": "Invalid number (1:8)"
+        }
+      },
+      "error": "AssertionError [ERR_ASSERTION]: Missing flag noBootstrap\n+ actual - expected\n\n+ 'undefined'\n- 'boolean'\n\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\scratch\\round9-context-probe.ts:17:185)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\scratch\\round9-context-probe.ts:35:2)\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at async node:internal/modules/esm/loader:647:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+    },
+    {
+      "id": "R9-F08-08",
+      "finding": "F08",
+      "label": ".js referenced by type=module retains module context via zip",
+      "status": "ERROR",
+      "observed": {
+        "code": "const n=010;",
+        "sourceType": "module",
+        "oracle": {
+          "complete": false,
+          "count": 3,
+          "error": "Invalid number (1:8)"
+        }
+      },
+      "error": "AssertionError [ERR_ASSERTION]: Missing flag noBootstrap\n+ actual - expected\n\n+ 'undefined'\n- 'boolean'\n\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\scratch\\round9-context-probe.ts:17:185)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\scratch\\round9-context-probe.ts:36:2)\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at async node:internal/modules/esm/loader:647:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+    },
+    {
+      "id": "R9-F08-09",
+      "finding": "F08",
+      "label": "Classic .js remains classic via zip",
+      "status": "PASS",
+      "expected": "absent",
+      "observed": {
+        "code": "const n=010;",
+        "sourceType": "script",
+        "oracle": {
+          "complete": true,
+          "count": 5
+        },
+        "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: External context STUDENT_01), 0 file CSS, 1 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.\n- File 'FILE_01.zip' (WEB): === PROJECT ARCHIVE (.ZIP): project.zip ===\nTổng số file hợp lệ: 2 (Đã đọc 2 file mã nguồn, bỏ qua 0 file rác/thư viện)\nTổng dung lượng giải nén: 0.1 KB\nCây thư mục dự án:\n  - index.html (70 bytes)\n  - main.js (12 bytes)\n\n=== WEB SOURCE (.HTML): index.html ===\nSố dòng: 1\nThẻ HTML sử dụng: title, script\n\n  1 | <title>External context STUDENT_01</title><script src=\"./main.js\"></script>\n\n=== WEB SOURCE (.JS): main.js ===\nSố dòng: 1\n\n  1 | const n=010;",
+        "detectedExtensions": [
+          ".zip",
+          ".html",
+          ".js"
+        ],
+        "absentWebFeatures": {
+          "inspectedWebCode": true,
+          "noBootstrap": true,
+          "noCart": true,
+          "noAuth": true,
+          "noLocalStorage": true,
+          "noFetchApi": true,
+          "noFirebase": true
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "gate": "tsc",
+  "command": "npx tsc --noEmit --incremental false",
+  "started": "2026-11-05T02:49:46.208Z",
+  "finished": "2026-11-05T02:49:49.493Z",
+  "exitCode": 0,
+  "signal": null,
+  "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\data\\audit-tsc.db",
+  "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\data\\audit-tsc-classes.json"
+}

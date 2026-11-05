@@ -1,0 +1,51 @@
+{
+  "verdict": "NO-GO",
+  "closed": 6,
+  "open": 4,
+  "statuses": {
+    "F01": "OPEN",
+    "F02": "OPEN",
+    "F03": "CLOSED",
+    "F04": "CLOSED",
+    "F05": "CLOSED",
+    "F06": "CLOSED",
+    "F07": "OPEN",
+    "F08": "OPEN",
+    "F09": "CLOSED",
+    "F10": "CLOSED"
+  },
+  "mandatoryPassed": true,
+  "blockingProbes": [
+    {
+      "id": "R4-F01-01",
+      "finding": "F01",
+      "label": "A displayed module-import example must not auto-save a Firebase observation"
+    },
+    {
+      "id": "R4-F01-02",
+      "finding": "F01",
+      "label": "A displayed CSS example must not auto-save a layout observation"
+    },
+    {
+      "id": "R4-F07-01",
+      "finding": "F07",
+      "label": "An unrelated matching basename cannot prove the referenced sibling script was read"
+    },
+    {
+      "id": "R4-F08-01",
+      "finding": "F08",
+      "label": "An import example inside a JavaScript display string is not a Firebase import"
+    },
+    {
+      "id": "R4-F08-04",
+      "finding": "F08",
+      "label": "Actual API calls inside template expressions remain code evidence"
+    },
+    {
+      "id": "R4-F02-01",
+      "finding": "F02",
+      "label": "Unsupported Firestore syntax claims are removed as whole claims"
+    }
+  ],
+  "note": "All earlier Round 3 reproduction cases pass. Six additional cases across four existing findings still fail; no product changes were made."
+}

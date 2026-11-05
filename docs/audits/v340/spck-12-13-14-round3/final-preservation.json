@@ -1,0 +1,28 @@
+{
+  "verifiedAt": "2026-11-05T04:44:13.602Z",
+  "head": "00dd3e3f75961a1276379cad3212eaf74ec306b2",
+  "verdict": "NO-GO",
+  "productionBefore": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "productionAfter": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "productionMatchesOwner": true,
+  "sourceCount": 180,
+  "srcScriptsCount": 149,
+  "sourceChanged": [],
+  "snapshotChanged": [],
+  "trackedDiffUnchanged": true,
+  "reportSha256": "3A398869B9F9DF797C9289FEDB87EA77239300C6290D4B6490AFF062A08D4BD7",
+  "round1AndRound2HistoryByteUnchanged": true,
+  "originalHistoricalReportSha256": "168FDC5D8D9E2F6233EAA22B4527C15491CE2C242E40B99FEE6ACF2B549DA701",
+  "evidenceCopiesVerified": 51,
+  "missingLinks": [],
+  "tempPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2",
+  "tempRemoved": true,
+  "dependencyDirectoryStillExists": true,
+  "scope": "Only requested audit report and Round 3 evidence were written in original workspace; no product fixes, commit, push, or real-service actions."
+}

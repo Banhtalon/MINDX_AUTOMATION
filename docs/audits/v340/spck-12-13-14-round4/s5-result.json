@@ -1,0 +1,10 @@
+{
+  "gate": "s5",
+  "command": "npx tsx scripts/test-streamline-v340-s5.ts",
+  "started": "2026-11-05T05:29:25.319Z",
+  "finished": "2026-11-05T05:29:45.097Z",
+  "exitCode": 0,
+  "signal": null,
+  "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r4-c815414286f2\\work\\data\\audit-s5.db",
+  "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r4-c815414286f2\\work\\data\\audit-s5-classes.json"
+}

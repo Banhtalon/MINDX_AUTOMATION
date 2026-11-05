@@ -1,5 +1,20 @@
 import fs from "fs";
+import { createRequire } from "module";
+import path from "path";
 import { NextResponse } from "next/server";
+
+const nodeRequire = createRequire(import.meta.url);
+const acorn = nodeRequire("next/dist/compiled/acorn") as {
+  tokenizer: (
+    input: string,
+    options?: { ecmaVersion?: number | "latest"; sourceType?: "module" | "script" }
+  ) => Iterable<{
+    type: { label: string };
+    value?: unknown;
+    start: number;
+    end: number;
+  }>;
+};
 import {
   assertClassHasSpckSession,
   canonicalizeSpckFolderPath,
@@ -19,6 +34,8 @@ import {
   validateSpckResourceLimits,
 } from "@/lib/local-files/spck-scanner";
 import { validateLocalRequest } from "@/lib/security/local-guard";
+import { suggestSpckQuickTagsFromProject } from "@/lib/spck/spck-quick-tags";
+import { stripVietnameseDiacritics } from "@/lib/utils/vietnamese-match";
 import { buildEnrichedClassSpckRecords } from "../list/route";
 
 export async function POST(req: Request) {
@@ -56,6 +73,40 @@ export async function POST(req: Request) {
         },
         { status: 400 }
       );
+    }
+
+    let createdFoldersCount = 0;
+    if (body?.action === "init_student_folders") {
+      if (!fs.existsSync(safeFolderPath)) {
+        fs.mkdirSync(safeFolderPath, { recursive: true });
+      }
+      const existingSubdirs = fs
+        .readdirSync(safeFolderPath, { withFileTypes: true })
+        .filter((d) => d.isDirectory() && !d.name.startsWith(".") && !d.name.startsWith("_spck_"))
+        .map((d) => stripVietnameseDiacritics(d.name).toLowerCase().replace(/\s+/g, " ").trim());
+
+      for (const stu of students) {
+        const cleanDirName = String(stu.fullName || "")
+          .replace(/[<>:"/\\|?*\x00-\x1f]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (!cleanDirName) continue;
+        const normStuName = stripVietnameseDiacritics(cleanDirName)
+          .toLowerCase()
+          .replace(/\s+/g, " ")
+          .trim();
+        const alreadyExists = existingSubdirs.some(
+          (sub) => sub === normStuName
+        );
+        if (!alreadyExists) {
+          const targetStuDir = path.join(safeFolderPath, cleanDirName);
+          if (!fs.existsSync(targetStuDir)) {
+            fs.mkdirSync(targetStuDir, { recursive: true });
+            createdFoldersCount++;
+            existingSubdirs.push(normStuName);
+          }
+        }
+      }
     }
 
     const scanResult = scanClassSpckDirectory(classId, safeFolderPath, students);
@@ -131,13 +182,23 @@ export async function POST(req: Request) {
       };
 
       const existingLinks = sameFolder
-        ? parseSafeArray<{ name: string; url: string }>(existing?.relatedLinksJson)
+        ? parseSafeArray<{ name: string; url: string; category?: string }>(
+            existing?.relatedLinksJson
+          )
         : [];
       const scannedLinks =
         item.packageData.allRelatedLinks || item.packageData.relatedLinks || [];
-      const mergedLinksMap = new Map<string, { name: string; url: string }>();
-      for (const l of [...existingLinks, ...scannedLinks]) {
-        if (l && l.url && !mergedLinksMap.has(l.url)) {
+      const mergedLinksMap = new Map<
+        string,
+        { name: string; url: string; category?: string }
+      >();
+      for (const l of existingLinks) {
+        if (l && l.url) {
+          mergedLinksMap.set(l.url, l);
+        }
+      }
+      for (const l of scannedLinks) {
+        if (l && l.url) {
           mergedLinksMap.set(l.url, l);
         }
       }
@@ -305,8 +366,9 @@ export async function POST(req: Request) {
       });
 
       // If any session draft is still an untouched auto-init DRAFT (no teacher comment/note and not approved/verified),
-      // or if an unapproved/unverified session draft references a deleted/missing thumbnail or screenshot on disk,
-      // sync the newly scanned shared resources into it immediately so re-scanning a fixed folder updates the UI right away.
+      // or if an unapproved/unverified session draft references a deleted/missing thumbnail, screenshot, or attachment on disk,
+      // or if the UI explicitly requested syncing the active unverified session (`syncActiveSession: true`),
+      // sync the newly scanned shared resources into it immediately so re-scanning a folder across Sessions 12 -> 13 -> 14 updates the UI right away.
       for (const slotNum of [12, 13, 14] as const) {
         const existingSess = spckSessionRepo.findOne(classId, suggestedId, slotNum);
         if (
@@ -321,17 +383,300 @@ export async function POST(req: Request) {
           existingSess.draftStatus === "DRAFT" &&
           !existingSess.teacherComment?.trim() &&
           !existingSess.teacherNote?.trim();
+        const isRequestedActiveSessionSync =
+          body?.syncActiveSession === true &&
+          activeSessionNumber !== undefined &&
+          slotNum === activeSessionNumber;
         const hasMissingThumb =
           Boolean(existingSess.thumbnailPath) && !fs.existsSync(existingSess.thumbnailPath);
         const hasMissingScreens = parseSafeArray<string>(existingSess.screenshotsJson).some(
           (p) => Boolean(p) && !fs.existsSync(p)
         );
-        if (isUntouchedDraft || hasMissingThumb || hasMissingScreens) {
+        const hasMissingAtts = parseSafeArray<string>(existingSess.attachmentsJson).some(
+          (p) => Boolean(p) && !fs.existsSync(p)
+        );
+        if (
+          isUntouchedDraft ||
+          isRequestedActiveSessionSync ||
+          hasMissingThumb ||
+          hasMissingScreens ||
+          hasMissingAtts
+        ) {
           spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
             classId,
             suggestedId,
             slotNum
           );
+        }
+      }
+
+      if (body?.autoSuggestQuickTags === true && activeSessionNumber) {
+        const sessDraft = spckSessionRepo.getOrInitSessionDraft(
+          classId,
+          suggestedId,
+          activeSessionNumber,
+          item.match.suggestedStudentName || item.folderName
+        );
+        const currentTags = parseSafeArray<string>(sessDraft.quickTagsJson);
+        if (
+          currentTags.length === 0 &&
+          !sessDraft.lastVerifiedAt &&
+          sessDraft.draftStatus !== "APPROVED" &&
+          sessDraft.draftStatus !== "VERIFIED"
+        ) {
+          const fileExts = finalAttachments.map((p) => path.extname(p).toLowerCase()).filter(Boolean);
+          let hasFlexOrGridCss = false;
+          let hasNavLinks = false;
+          let hasEventBinding = false;
+          let hasDomUpdate = false;
+          let hasFirebaseCode = false;
+          const hasRoboticsCode = finalAttachments.some((p) =>
+            p.toLowerCase().endsWith("_robotics_package.zip")
+          );
+          const stripCssCommentsAndStrings = (cssCode: string) =>
+            cssCode
+              .replace(
+                /\/\*[\s\S]*?\*\/|("(?:\\[\s\S]|[^"\\\r\n])*"|'(?:\\[\s\S]|[^'\\\r\n])*')/g,
+                (match, strLiteral) => (strLiteral ? '""' : " ")
+              );
+
+          const analyzeJsCodeSyntax = (
+            code: string,
+            sourceType: "script" | "module" = "script"
+          ): { executableJs: string; importSpecifiers: string[]; lexComplete: boolean } => {
+            const importSpecifiers: string[] = [];
+            let out = "";
+            let prevEnd = 0;
+            let prevTok: { label: string; value?: unknown } | null = null;
+            let prevPrevTok: { label: string; value?: unknown } | null = null;
+            let prevPrevPrevTok: { label: string; value?: unknown } | null = null;
+            let inImportOrExportStmt = false;
+            let braceDepthInImport = 0;
+
+            try {
+              for (const tok of acorn.tokenizer(code, {
+                ecmaVersion: "latest",
+                sourceType,
+              })) {
+                if (tok.start > prevEnd) {
+                  out += code.slice(prevEnd, tok.start).includes("\n") ? "\n" : " ";
+                }
+                const label = tok.type.label;
+                if (
+                  (label === "import" || label === "export") &&
+                  prevTok?.label !== "."
+                ) {
+                  inImportOrExportStmt = true;
+                  braceDepthInImport = 0;
+                } else if (inImportOrExportStmt) {
+                  if (label === "{") {
+                    braceDepthInImport++;
+                    if (braceDepthInImport > 1) inImportOrExportStmt = false;
+                  } else if (label === "}") {
+                    braceDepthInImport = Math.max(0, braceDepthInImport - 1);
+                  } else if (braceDepthInImport === 0) {
+                    const isValidHeaderToken =
+                      label === "*" || label === "," || label === "name";
+                    if (!isValidHeaderToken && label !== "string") {
+                      inImportOrExportStmt = false;
+                    }
+                  }
+                }
+
+                if (label === "string") {
+                  const isStaticImport =
+                    (prevTok?.label === "import" && prevPrevTok?.label !== ".") ||
+                    (inImportOrExportStmt &&
+                      braceDepthInImport === 0 &&
+                      prevTok?.label === "name" &&
+                      prevTok?.value === "from");
+                  const isDynamicImportOrRequire =
+                    prevTok?.label === "(" &&
+                    prevPrevPrevTok?.label !== "." &&
+                    prevPrevPrevTok?.label !== "function" &&
+                    (prevPrevTok?.label === "import" ||
+                      (prevPrevTok?.label === "name" && prevPrevTok?.value === "require"));
+                  if (
+                    (isStaticImport || isDynamicImportOrRequire) &&
+                    typeof tok.value === "string" &&
+                    tok.value
+                  ) {
+                    importSpecifiers.push(tok.value);
+                  }
+                  if (braceDepthInImport === 0) {
+                    inImportOrExportStmt = false;
+                  }
+                  out += '""';
+                } else if (label === "template") {
+                  // Non-executable raw text inside template literal -> omit
+                } else if (label === "regexp") {
+                  out += "/_/";
+                } else if (label === "eof") {
+                  return { executableJs: out, importSpecifiers, lexComplete: true };
+                } else {
+                  out += code.slice(tok.start, tok.end);
+                }
+
+                prevEnd = tok.end;
+                prevPrevPrevTok = prevPrevTok;
+                prevPrevTok = prevTok;
+                prevTok = { label, value: tok.value };
+              }
+              return { executableJs: out, importSpecifiers, lexComplete: true };
+            } catch {
+              return { executableJs: out, importSpecifiers, lexComplete: false };
+            }
+          };
+
+          const inspectJsSyntax = (
+            jsSource: string,
+            sourceType: "script" | "module" = "script"
+          ) => {
+            const { executableJs: syntaxOnly, importSpecifiers } = analyzeJsCodeSyntax(
+              jsSource,
+              sourceType
+            );
+            if (/\baddEventListener\s*\(|\bon(?:click|submit|change|input)\s*=/i.test(syntaxOnly)) {
+              hasEventBinding = true;
+            }
+            if (
+              /\.(?:textContent|innerHTML|innerText)\s*=|\b(?:createElement|appendChild|removeChild|replaceChildren)\s*\(/i.test(
+                syntaxOnly
+              )
+            ) {
+              hasDomUpdate = true;
+            }
+            if (
+              importSpecifiers.some((spec) => /(?:firebase|firestore)/i.test(spec)) ||
+              /\b(?:initializeApp|getFirestore|getAuth|getDatabase|signInWithEmailAndPassword|createUserWithEmailAndPassword|signInWithPopup|onAuthStateChanged|collection|addDoc|getDocs|getDoc|setDoc|updateDoc|deleteDoc|onSnapshot)\s*\(|\bfirebase\s*\.\s*(?:initializeApp|auth|firestore|database)\s*\(/.test(
+                syntaxOnly
+              )
+            ) {
+              hasFirebaseCode = true;
+            }
+          };
+
+          for (const attPath of finalAttachments) {
+            const lowerAtt = attPath.toLowerCase();
+            if (lowerAtt.endsWith(".html") || lowerAtt.endsWith(".htm")) {
+              try {
+                const rawHtml = fs
+                  .readFileSync(attPath, "utf-8")
+                  .slice(0, 100000)
+                  .replace(/<!--[\s\S]*?-->/g, " ");
+                const htmlInlineStyles: string[] = [];
+                const htmlInlineScripts: Array<{
+                  body: string;
+                  sourceType: "script" | "module";
+                }> = [];
+                const htmlMarkupParts: string[] = [];
+                let lastHtmlIdx = 0;
+
+                for (const blockMatch of rawHtml.matchAll(
+                  /<script\b([^>]*)>([\s\S]*?)<\/script>|<style\b([^>]*)>([\s\S]*?)<\/style>/gi
+                )) {
+                  const matchStart = blockMatch.index ?? 0;
+                  if (matchStart > lastHtmlIdx) {
+                    htmlMarkupParts.push(rawHtml.slice(lastHtmlIdx, matchStart));
+                  }
+                  lastHtmlIdx = matchStart + blockMatch[0].length;
+                  if (blockMatch[1] !== undefined || blockMatch[2] !== undefined) {
+                    const scriptAttrs = blockMatch[1] || "";
+                    const scriptBody = blockMatch[2] || "";
+                    const isModuleScript = /\btype\s*=\s*(?:["']\s*module\s*["']|module\b)/i.test(
+                      scriptAttrs
+                    );
+                    if (/\bsrc\s*=\s*["'][^"']*(?:firebase|firestore)[^"']*["']/i.test(scriptAttrs)) {
+                      hasFirebaseCode = true;
+                    }
+                    if (scriptBody.trim()) {
+                      htmlInlineScripts.push({
+                        body: scriptBody,
+                        sourceType: isModuleScript ? "module" : "script",
+                      });
+                    }
+                  } else {
+                    const styleBody = blockMatch[4] || "";
+                    if (styleBody.trim()) {
+                      htmlInlineStyles.push(styleBody);
+                    }
+                  }
+                }
+                if (lastHtmlIdx < rawHtml.length) {
+                  htmlMarkupParts.push(rawHtml.slice(lastHtmlIdx));
+                }
+                const markupOnly = htmlMarkupParts.join(" ");
+
+                for (const styleBlock of htmlInlineStyles) {
+                  const cleanStyle = stripCssCommentsAndStrings(styleBlock);
+                  if (/display\s*:\s*(?:inline-)?(?:flex|grid)/i.test(cleanStyle)) {
+                    hasFlexOrGridCss = true;
+                  }
+                }
+                if (
+                  /<[a-z0-9]+\b[^>]*\bstyle\s*=\s*["'][^"']*display\s*:\s*(?:inline-)?(?:flex|grid)[^"']*["']/i.test(
+                    markupOnly
+                  ) ||
+                  /<[a-z0-9]+\b[^>]*\bclass\s*=\s*["'][^"']*\bd-(?:inline-)?(?:flex|grid)\b[^"']*["']/i.test(
+                    markupOnly
+                  )
+                ) {
+                  hasFlexOrGridCss = true;
+                }
+                if (/<nav\b[^>]*>(?:(?!<\/nav>)[\s\S])*?<a\b/i.test(markupOnly)) {
+                  hasNavLinks = true;
+                }
+                if (/<[a-z0-9]+\b[^>]*\bon(?:click|submit|change|input)\s*=/i.test(markupOnly)) {
+                  hasEventBinding = true;
+                }
+                for (const inlineScript of htmlInlineScripts) {
+                  inspectJsSyntax(inlineScript.body, inlineScript.sourceType);
+                }
+              } catch {}
+            } else if (lowerAtt.endsWith(".css")) {
+              try {
+                const rawCss = stripCssCommentsAndStrings(
+                  fs.readFileSync(attPath, "utf-8").slice(0, 100000)
+                );
+                if (/display\s*:\s*(?:inline-)?(?:flex|grid)/i.test(rawCss)) {
+                  hasFlexOrGridCss = true;
+                }
+              } catch {}
+            } else if (lowerAtt.endsWith(".js") || lowerAtt.endsWith(".mjs")) {
+              try {
+                inspectJsSyntax(
+                  fs.readFileSync(attPath, "utf-8").slice(0, 100000),
+                  lowerAtt.endsWith(".mjs") ? "module" : "script"
+                );
+              } catch {}
+            }
+          }
+          const hasJsInteraction = hasEventBinding && hasDomUpdate;
+          const suggestedTags = suggestSpckQuickTagsFromProject({
+            classId,
+            sessionNumber: activeSessionNumber,
+            fileExtensions: fileExts,
+            screenshotCount: finalScreenshots.length,
+            attachmentCount: finalAttachments.length,
+            youtubeCount: mergedYoutubeUrls.length,
+            slideCount: fileExts.filter((ext) => ext === ".pptx" || ext === ".pdf").length,
+            hasFlexOrGridCss,
+            hasNavLinks,
+            hasEventBinding,
+            hasDomUpdate,
+            hasJsInteraction,
+            hasFirebaseCode,
+            hasRoboticsCode,
+          });
+          if (suggestedTags.length > 0) {
+            spckSessionRepo.saveSessionDraft({
+              classId,
+              studentId: suggestedId,
+              sessionNumber: activeSessionNumber,
+              quickTagsJson: JSON.stringify(suggestedTags),
+              updateSharedPool: false,
+            });
+          }
         }
       }
 
@@ -345,6 +690,7 @@ export async function POST(req: Request) {
         {
           success: false,
           error: overLimitErrors.join(" | "),
+          createdFoldersCount,
           scanResult,
           records: updatedRecords,
         },
@@ -354,6 +700,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
+      createdFoldersCount,
       warning: overLimitErrors.length > 0 ? overLimitErrors.join(" | ") : undefined,
       overLimitErrors: overLimitErrors.length > 0 ? overLimitErrors : undefined,
       scanResult,

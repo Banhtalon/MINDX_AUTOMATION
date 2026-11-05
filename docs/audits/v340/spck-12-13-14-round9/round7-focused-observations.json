@@ -1,0 +1,100 @@
+[
+  {
+    "id": "R7-F01-01",
+    "finding": "F01",
+    "status": "PASS",
+    "label": "Valid classic script legacy octal must preserve a following real Firebase call",
+    "source": "<title>Classic script octal</title><script>const n=010; initializeApp({});</script>",
+    "scriptKind": "Classic inline script without type=module or use strict",
+    "runtimeCalls": [
+      {
+        "api": "initializeApp",
+        "args": [
+          {}
+        ]
+      }
+    ],
+    "tags": [
+      "🔥 Có khai báo thư viện / cấu hình Firebase trong mã nguồn"
+    ],
+    "dbReadBack": true
+  },
+  {
+    "id": "R7-F08-01",
+    "finding": "F08",
+    "status": "PASS",
+    "label": "Valid classic script must not conclude Firebase absent after module-only lexical error",
+    "source": "<title>Classic script octal</title><script>const n=010; initializeApp({});</script>",
+    "scriptKind": "Classic inline script without type=module or use strict",
+    "runtimeCalls": [
+      {
+        "api": "initializeApp",
+        "args": [
+          {}
+        ]
+      }
+    ],
+    "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Classic script octal), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, Firebase Auth / Firestore.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+    "detectedExtensions": [
+      ".html"
+    ],
+    "absentWebFeatures": {
+      "inspectedWebCode": true,
+      "noBootstrap": true,
+      "noCart": true,
+      "noAuth": true,
+      "noLocalStorage": true,
+      "noFetchApi": true,
+      "noFirebase": false
+    }
+  },
+  {
+    "id": "R7-F01-02",
+    "finding": "F01",
+    "status": "PASS",
+    "label": "Control: decimal classic script retains a real Firebase tag",
+    "source": "<title>Classic script decimal control</title><script>const n=8; initializeApp({});</script>",
+    "scriptKind": "Classic inline script without type=module or use strict",
+    "runtimeCalls": [
+      {
+        "api": "initializeApp",
+        "args": [
+          {}
+        ]
+      }
+    ],
+    "tags": [
+      "🔥 Có khai báo thư viện / cấu hình Firebase trong mã nguồn"
+    ],
+    "dbReadBack": true
+  },
+  {
+    "id": "R7-F08-02",
+    "finding": "F08",
+    "status": "PASS",
+    "label": "Control: decimal classic script keeps Firebase present",
+    "source": "<title>Classic script decimal control</title><script>const n=8; initializeApp({});</script>",
+    "scriptKind": "Classic inline script without type=module or use strict",
+    "runtimeCalls": [
+      {
+        "api": "initializeApp",
+        "args": [
+          {}
+        ]
+      }
+    ],
+    "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Classic script decimal control), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, Firebase Auth / Firestore.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+    "detectedExtensions": [
+      ".html"
+    ],
+    "absentWebFeatures": {
+      "inspectedWebCode": true,
+      "noBootstrap": true,
+      "noCart": true,
+      "noAuth": true,
+      "noLocalStorage": true,
+      "noFetchApi": true,
+      "noFirebase": false
+    }
+  }
+]

@@ -1,0 +1,5 @@
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":7724}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":17776}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":23860}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":24988}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":24988}

@@ -1,0 +1,10 @@
+{
+  "gate": "probe",
+  "command": "npx tsx scratch/independent-probe.ts",
+  "started": "2026-11-05T05:29:45.153Z",
+  "finished": "2026-11-05T05:29:50.835Z",
+  "exitCode": 0,
+  "signal": null,
+  "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r4-c815414286f2\\work\\data\\audit-probe.db",
+  "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r4-c815414286f2\\work\\data\\audit-probe-classes.json"
+}

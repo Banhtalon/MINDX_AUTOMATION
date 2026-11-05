@@ -1,0 +1,10 @@
+{
+  "gate": "supplementary",
+  "command": "npx tsx scratch/supplementary-probe.ts",
+  "started": "2026-11-05T06:27:49.613Z",
+  "finished": "2026-11-05T06:27:53.080Z",
+  "exitCode": 0,
+  "signal": null,
+  "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r7-b11d4193380f\\work\\data\\audit-supplementary.db",
+  "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r7-b11d4193380f\\work\\data\\audit-supplementary-classes.json"
+}

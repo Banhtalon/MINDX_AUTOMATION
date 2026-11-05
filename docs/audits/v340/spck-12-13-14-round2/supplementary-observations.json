@@ -1,0 +1,143 @@
+[
+  {
+    "id": "R2-F01-01",
+    "finding": "F01",
+    "status": "FAIL",
+    "pass": false,
+    "observed": {
+      "input": "Only .js extension, no code inspected",
+      "tags": [
+        "✅ Đã hoàn thiện các chức năng tương tác cốt lõi và quản lý dữ liệu theo chủ đề dự án",
+        "🔧 Cần rà soát lại các trường hợp dữ liệu rỗng / lỗi nhập liệu trên biểu mẫu"
+      ]
+    }
+  },
+  {
+    "id": "R2-F01-02",
+    "finding": "F01",
+    "status": "FAIL",
+    "pass": false,
+    "observed": {
+      "input": "HTML + querySelector only; no event, storage or data connection",
+      "tags": [
+        "✅ Đã hoàn thiện các chức năng tương tác cốt lõi và quản lý dữ liệu theo chủ đề dự án",
+        "🔧 Cần rà soát lại các trường hợp dữ liệu rỗng / lỗi nhập liệu trên biểu mẫu"
+      ]
+    }
+  },
+  {
+    "id": "R2-F01-03",
+    "finding": "F01",
+    "status": "FAIL",
+    "pass": false,
+    "observed": {
+      "input": "One image count only, no vision analysis or hardware observation",
+      "tags": [
+        "✅ Đã hoàn thiện mô hình cơ khí VEX GO chắc chắn và tích hợp đầy đủ cảm biến, động cơ",
+        "🔧 Cần kiểm tra lại pin, dây cáp kết nối và độ ổn định cảm biến trước buổi bảo vệ 14"
+      ]
+    }
+  },
+  {
+    "id": "R2-F07-01",
+    "finding": "F07",
+    "status": "FAIL",
+    "pass": false,
+    "observed": {
+      "flags": {
+        "inspectedWebCode": true,
+        "noBootstrap": true,
+        "noCart": true,
+        "noAuth": true,
+        "noLocalStorage": true,
+        "noFetchApi": true,
+        "noFirebase": true
+      },
+      "summary": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Project), 0 file CSS, 1 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét."
+    }
+  },
+  {
+    "id": "R2-F07-02",
+    "finding": "F07",
+    "status": "FAIL",
+    "pass": false,
+    "observed": {
+      "flags": {
+        "inspectedWebCode": true
+      },
+      "summary": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Project), 0 file CSS, 50 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét."
+    }
+  },
+  {
+    "id": "R2-F08-01",
+    "finding": "F08",
+    "status": "FAIL",
+    "pass": false,
+    "observed": {
+      "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Project), 0 file CSS, 0 file JavaScript.\n- Các mục nội dung / tiêu đề chính trên trang: Plants.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase Auth / Firestore.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+      "detectedExtensions": [
+        ".html"
+      ],
+      "absentWebFeatures": {
+        "inspectedWebCode": true,
+        "noBootstrap": true,
+        "noCart": true,
+        "noAuth": false,
+        "noLocalStorage": false,
+        "noFetchApi": false,
+        "noFirebase": false
+      }
+    }
+  },
+  {
+    "id": "R2-F08-02",
+    "finding": "F08",
+    "status": "FAIL",
+    "pass": false,
+    "observed": {
+      "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Project), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, Đăng nhập / Đăng ký, Giỏ hàng, LocalStorage, Fetch API, Firebase Auth / Firestore.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+      "detectedExtensions": [
+        ".html"
+      ],
+      "absentWebFeatures": {
+        "inspectedWebCode": true,
+        "noBootstrap": true,
+        "noCart": false,
+        "noAuth": false,
+        "noLocalStorage": false,
+        "noFetchApi": false,
+        "noFirebase": false
+      }
+    }
+  },
+  {
+    "id": "R2-F02-01",
+    "finding": "F02",
+    "status": "FAIL",
+    "pass": false,
+    "observed": {
+      "status": "WAITING_APPROVAL",
+      "formattedTeacherComment": "Audit Student có ý thức học tập. Audit Student đã dùng Axios và XMLHttpRequest để tải dữ liệu động thành công. Con đã triển khai login và register rất tốt."
+    }
+  },
+  {
+    "id": "R2-F02-02",
+    "finding": "F02",
+    "status": "FAIL",
+    "pass": false,
+    "observed": {
+      "status": "WAITING_APPROVAL",
+      "formattedTeacherComment": "Audit Student có ý thức học tập. Audit Student đã dùng xử lý dữ liệu động tải dữ liệu động thành công. Con đã xây dựng chức năng tương tác hoạt động rất tốt."
+    }
+  },
+  {
+    "id": "R2-F02-03",
+    "finding": "F02",
+    "status": "PASS",
+    "pass": true,
+    "observed": {
+      "status": "WAITING_APPROVAL",
+      "formattedTeacherComment": "Audit Student có ý thức học tập. Audit Student đã dùng CSS để tạo giao diện rất hiệu quả. Con đã có trang thông tin."
+    }
+  }
+]

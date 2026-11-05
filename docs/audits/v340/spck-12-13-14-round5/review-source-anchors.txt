@@ -1,0 +1,50 @@
+src/app/api/spck/scan/route.ts:80:        const normStuName = stripVietnameseDiacritics(cleanDirName)
+src/app/api/spck/scan/route.ts:85:          (sub) => sub === normStuName
+src/app/api/spck/scan/route.ts:92:            existingSubdirs.push(normStuName);
+src/app/api/spck/scan/route.ts:177:      const mergedLinksMap = new Map<
+src/app/api/spck/scan/route.ts:183:          mergedLinksMap.set(l.url, l);
+src/app/api/spck/scan/route.ts:188:          mergedLinksMap.set(l.url, l);
+src/app/api/spck/scan/route.ts:191:      const mergedRelatedLinks = Array.from(mergedLinksMap.values());
+src/app/api/spck/scan/route.ts:429:          const analyzeJsCodeSyntax = (
+src/app/api/spck/scan/route.ts:548:            const { executableJs: syntaxOnly, importSpecifiers } = analyzeJsCodeSyntax(jsSource);
+src/app/api/spck/scan/route.ts:561:              /\b(?:initializeApp|getFirestore|getAuth|getDatabase|signInWithEmailAndPassword|createUserWithEmailAndPassword|signInWithPopup|onAuthStateChanged|collection|addDoc|getDocs|getDoc|setDoc|updateDoc|deleteDoc|onSnapshot)\s*\(|\bfirebase\s*\.\s*(?:initializeApp|auth|firestore|database)\s*\(/.test(
+src/app/api/spck/scan/route.ts:583:                for (const styleMatch of rawHtml.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) {
+src/app/api/spck/scan/route.ts:584:                  const cleanStyle = stripCssCommentsAndStrings(styleMatch[1] || "");
+src/lib/gemini/spck-comment.ts:11:import { inspectZipArchiveSafely } from "../file-parsers/archive-reader";
+src/lib/gemini/spck-comment.ts:431:    zipEntryDir?: string;
+src/lib/gemini/spck-comment.ts:436:  const readFsJsPaths = new Set<string>();
+src/lib/gemini/spck-comment.ts:437:  const readZipMountedJsPaths = new Set<string>();
+src/lib/gemini/spck-comment.ts:438:  const readZipRelJsPaths = new Set<string>();
+src/lib/gemini/spck-comment.ts:552:            readFsJsPaths.add(normJf);
+src/lib/gemini/spck-comment.ts:749:            readFsJsPaths.add(normAtt);
+src/lib/gemini/spck-comment.ts:756:            readFsJsPaths.add(normAtt);
+src/lib/gemini/spck-comment.ts:763:          const inspection = inspectZipArchiveSafely(zipBuf, path.basename(safeAtt));
+src/lib/gemini/spck-comment.ts:786:                    zipEntryDir: path.posix.dirname(entryRelLower),
+src/lib/gemini/spck-comment.ts:803:                  readZipRelJsPaths.add(entryRelLower);
+src/lib/gemini/spck-comment.ts:804:                  readZipMountedJsPaths.add(path.resolve(zipDir, entryRel).toLowerCase());
+src/lib/gemini/spck-comment.ts:806:                    readZipMountedJsPaths.add(path.resolve(safeFolderRoot, entryRel).toLowerCase());
+src/lib/gemini/spck-comment.ts:863:    const analyzeJsCodeSyntax = (
+src/lib/gemini/spck-comment.ts:1000:              if (readFsJsPaths.has(resolvedTarget)) {
+src/lib/gemini/spck-comment.ts:1004:                readZipMountedJsPaths.has(resolvedTarget)
+src/lib/gemini/spck-comment.ts:1008:            } else if (hf.zipEntryDir !== undefined) {
+src/lib/gemini/spck-comment.ts:1010:                .normalize(path.posix.join(hf.zipEntryDir, cleanSrc.replace(/\\/g, "/")))
+src/lib/gemini/spck-comment.ts:1014:              if (readZipRelJsPaths.has(joinedPosix)) {
+src/lib/gemini/spck-comment.ts:1018:                readFsJsPaths.has(path.resolve(safeFolderRoot, joinedPosix).toLowerCase())
+src/lib/gemini/spck-comment.ts:1029:      for (const styleMatch of rawHtml.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) {
+src/lib/gemini/spck-comment.ts:1030:        if (styleMatch[1]) inlineCssBlocks.push(styleMatch[1]);
+src/lib/gemini/spck-comment.ts:1148:      const { executableJs: jsSyntaxOnly, importSpecifiers } = analyzeJsCodeSyntax(rawJsSample);
+src/lib/gemini/spck-comment.ts:1172:        /\b(?:initializeApp|getFirestore|getAuth|getDatabase|signInWithEmailAndPassword|createUserWithEmailAndPassword|signInWithPopup|onAuthStateChanged|collection|addDoc|getDocs|getDoc|setDoc|updateDoc|deleteDoc|onSnapshot)\s*\(|\bfirebase\s*\.\s*(?:initializeApp|auth|firestore|database)\s*\(/.test(
+src/lib/gemini/spck-comment.ts:1829:            const activeForbiddenPatterns: RegExp[] = [];
+src/lib/gemini/spck-comment.ts:1834:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1842:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1850:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1858:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1866:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1867:                /\b(?:Firebase(?:\s+Authentication|\s+Auth|\s+Storage|\s+Hosting)?|Cloud\s+Firestore|Firestore|Realtime\s+Database|initializeApp|getFirestore|getAuth|getDatabase|signInWithEmailAndPassword|createUserWithEmailAndPassword|signInWithPopup|onAuthStateChanged|collection|addDoc|getDocs|getDoc|setDoc|updateDoc|deleteDoc|onSnapshot)\b/i
+src/lib/gemini/spck-comment.ts:1874:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1879:            if (activeForbiddenPatterns.length > 0) {
+src/lib/gemini/spck-comment.ts:1887:                if (activeForbiddenPatterns.some((pat) => pat.test(sentence))) {
+src/lib/playwright/spck-uploader.ts:3168:                const prefixWithExt = `${prefix}${ext}`;
+src/lib/playwright/spck-uploader.ts:3180:                  ? keepStems.has(rawPrefixWithExt) || keepStems.has(prefixWithExt)
+src/lib/playwright/spck-uploader.ts:3182:                if (!isVerifiedKeep || seenPrefixes.has(prefixWithExt)) {
+src/lib/playwright/spck-uploader.ts:3186:                seenPrefixes.add(prefixWithExt);

@@ -7,7 +7,22 @@
  */
 
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
+import { inspectZipArchiveSafely } from "../file-parsers/archive-reader";
+
+const nodeRequire = createRequire(import.meta.url);
+const acorn = nodeRequire("next/dist/compiled/acorn") as {
+  tokenizer: (
+    input: string,
+    options?: { ecmaVersion?: number | "latest"; sourceType?: "module" | "script" }
+  ) => Iterable<{
+    type: { label: string };
+    value?: unknown;
+    start: number;
+    end: number;
+  }>;
+};
 import {
   assertClassHasSpckSession,
   computeSpckContentHash,
@@ -136,9 +151,12 @@ export function stripHallucinatedSession12Comparison(text: string): string {
   if (!text) return "";
   return text
     .replace(/\bso\s+với\s+buổi\s*(?:số\s*)?12\s*,?\s*/gi, "")
+    .replace(/\bso\s+với\s+buổi\s+kiểm\s+tra\s+tiến\s+độ\s+trước\s*,?\s*/gi, "")
+    .replace(/\bso\s+với\s+bước\s+đầu\s*,?\s*/gi, "")
     .replace(/\bso\s+với\s+buổi\s+trước\s*,?\s*/gi, "")
     .replace(/\bso\s+với\s+giai\s+đoạn\s+trước\s*,?\s*/gi, "")
     .replace(/\btừ\s+buổi\s*12\s+đến\s+nay\s*,?\s*/gi, "")
+    .replace(/\btừ\s+buổi\s+kiểm\s+tra\s+tiến\s+độ\s+đầu\s+tiên\s+đến\s+nay\s*,?\s*/gi, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -328,7 +346,8 @@ export function buildSubjectSpecificSpckInstruction(
 
       case "WEB":
         return `${headerLine}
-  + Tập trung nhận xét đúng đặc thù dự án Web (${profile.coursePrefix}): thiết kế giao diện các trang web, bố cục HTML5, CSS Flexbox/Grid, Bootstrap/Responsive, thanh điều hướng (${profile.subTrack === "WEB_FIREBASE" ? "xác thực người dùng Firebase Authentication, cơ sở dữ liệu thời gian thực Cloud Firestore CRUD, phân chia module JavaScript và tích hợp API/Chatbot" : profile.subTrack === "WEB_JS" ? "lập trình JavaScript ES6, thao tác DOM, lưu trữ LocalStorage cho Đăng nhập/Giỏ hàng, gọi dữ liệu Fetch API và tìm kiếm/lọc sản phẩm" : "liên kết đa trang, trình bày nội dung/hình ảnh và tương tác JavaScript DOM cơ bản"}).`;
+  + Tập trung nhận xét đúng đặc thù dự án Web (${profile.coursePrefix}): thiết kế giao diện các trang web theo đúng đề tài của học viên, bố cục HTML5, dàn trang CSS Flexbox/Grid, thanh điều hướng và các tính năng tương tác thực tế có trong mã nguồn (${profile.subTrack === "WEB_FIREBASE" ? "kiến trúc ứng dụng web, kết nối dịch vụ đám mây / cơ sở dữ liệu hoặc các tính năng thực tế trong bài" : profile.subTrack === "WEB_JS" ? "lập trình JavaScript ES6, hiển thị dữ liệu động trên DOM và xử lý sự kiện tương tác theo đúng chủ đề bài làm" : "liên kết đa trang, trình bày nội dung/hình ảnh và tương tác JavaScript DOM cơ bản"}).
+  + CẢNH BÁO CHỐNG RẬP KHUÔN: TUYỆT ĐỐI KHÔNG tự ý nhắc đến "Bootstrap", "Giỏ hàng", "Đăng nhập/Đăng ký", "LocalStorage", "Fetch API" hay "Firebase" nếu phần "Tóm tắt kỹ thuật sơ bộ từ file đính kèm" báo rằng mã nguồn của học viên KHÔNG có các thành phần đó.`;
 
       default:
         return `${headerLine}
@@ -375,7 +394,8 @@ export function buildSubjectSpecificSpckInstruction(
 
     case "WEB":
       return `${headerLine}
-  + Về phần sản phẩm cuối khóa (${profile.trackBadgeLabel}): mở đầu nêu rõ "${anonymousToken} đã xây dựng/hoàn thiện ${profile.productNoun} [Tên đề tài] với giao diện đẹp mắt, bố cục rõ ràng/hợp lý...", nêu rõ cách em vận dụng ${profile.coreSkillsSummary} để hoàn thiện các trang chức năng và trải nghiệm người dùng, ghi nhận sự sáng tạo/cố gắng/tiến bộ; ${aiDependencyReminder}.`;
+  + Về phần sản phẩm cuối khóa (${profile.trackBadgeLabel}): mở đầu nêu rõ "${anonymousToken} đã xây dựng/hoàn thiện ${profile.productNoun} [Tên đề tài] với giao diện đẹp mắt, bố cục rõ ràng/hợp lý...", nêu rõ các trang/mục nội dung thực tế và cách em vận dụng ${profile.coreSkillsSummary} để hoàn thiện các chức năng theo đúng chủ đề bài làm, ghi nhận sự sáng tạo/cố gắng/tiến bộ; ${aiDependencyReminder}.
+  + CẢNH BÁO CHỐNG RẬP KHUÔN: TUYỆT ĐỐI KHÔNG tự ý nhắc đến "Bootstrap", "Giỏ hàng", "Đăng nhập/Đăng ký", "LocalStorage", "Fetch API" hay "Firebase" nếu mã nguồn thực tế của học viên không sử dụng các thành phần đó.`;
 
     default:
       return `${headerLine}
@@ -383,30 +403,69 @@ export function buildSubjectSpecificSpckInstruction(
   }
 }
 
+export interface AbsentWebFeatureFlags {
+  inspectedWebCode: boolean;
+  noBootstrap?: boolean;
+  noCart?: boolean;
+  noAuth?: boolean;
+  noLocalStorage?: boolean;
+  noFetchApi?: boolean;
+  noFirebase?: boolean;
+}
+
 /**
- * Safely reads a brief technical summary from the student's folder and up to 2 attachment files
+ * Safely reads a deep technical summary from the student's folder and attachment files
  * across all 6 MindX subject tracks (SCRATCH, GAMEMAKER, PYTHON_APP, WEB, COMPUTER_SCIENCE, ROBOTICS).
  */
-function buildPreliminaryProjectSummary(
+export function buildPreliminaryProjectSummary(
   attachments: string[],
   studentFullName: string,
   anonymousToken: string,
   peerNames: string[],
   localFolderPath?: string,
   extraMediaInfo?: { youtubeCount?: number; screenshotCount?: number }
-): { summaryText: string; detectedExtensions: string[] } {
+): {
+  summaryText: string;
+  detectedExtensions: string[];
+  absentWebFeatures: AbsentWebFeatureFlags;
+} {
   const summaries: string[] = [];
   const detectedExts = new Set<string>();
+  const absentWebFeatures: AbsentWebFeatureFlags = { inspectedWebCode: false };
 
   for (const att of attachments || []) {
     const ext = path.extname(String(att || "")).toLowerCase();
     if (ext) detectedExts.add(ext);
   }
 
+  const rawHtmlSamples: Array<{
+    name: string;
+    content: string;
+    sourceDir?: string;
+    zipSource?: string;
+    zipEntryDir?: string;
+  }> = [];
+  const rawCssSamples: string[] = [];
+  const rawJsSamples: Array<{
+    code: string;
+    sourceType: "script" | "module";
+    fsPath?: string;
+    zipSource?: string;
+    zipEntryRel?: string;
+    zipMountedPaths?: string[];
+  }> = [];
+  const seenWebFilePaths = new Set<string>();
+  const readFsJsPaths = new Set<string>();
+  const readZipMountedJsPaths = new Set<string>();
+  const readZipRelJsPathsByZip = new Map<string, Set<string>>();
+  let safeFolderRoot = "";
+  let unscannedWebFilesExist = false;
+
   if (localFolderPath && localFolderPath.trim()) {
     try {
       const safeDir = assertPathAllowed(localFolderPath);
       if (fs.existsSync(safeDir) && !fs.lstatSync(safeDir).isSymbolicLink() && fs.statSync(safeDir).isDirectory()) {
+        safeFolderRoot = safeDir;
         const realSafeRoot = fs.realpathSync(safeDir);
         const htmlFiles: string[] = [];
         const cssFiles: string[] = [];
@@ -422,7 +481,10 @@ function buildPreliminaryProjectSummary(
         const roboticsFiles: string[] = [];
 
         const walkDir = (dir: string, depth = 0) => {
-          if (depth > 3) return;
+          if (depth > 3) {
+            unscannedWebFilesExist = true;
+            return;
+          }
           const entries = fs.readdirSync(dir, { withFileTypes: true });
           for (const entry of entries) {
             if (
@@ -452,7 +514,7 @@ function buildPreliminaryProjectSummary(
               if (ext) detectedExts.add(ext);
               if (ext === ".html" || ext === ".htm") htmlFiles.push(full);
               else if (ext === ".css") cssFiles.push(full);
-              else if (ext === ".js") jsFiles.push(full);
+              else if (ext === ".js" || ext === ".mjs") jsFiles.push(full);
               else if (ext === ".ui") uiFiles.push(full);
               else if (ext === ".qss") qssFiles.push(full);
               else if (ext === ".py") pyFiles.push(full);
@@ -476,68 +538,50 @@ function buildPreliminaryProjectSummary(
         };
         walkDir(safeDir, 0);
 
-        // 1. Web project summary (.html / .css / .js)
-        if (htmlFiles.length > 0 || cssFiles.length > 0) {
-          const pageTitles: string[] = [];
-          let usesFlexbox = false;
-          let usesGrid = false;
-          let usesResponsive = false;
-          let usesBootstrap = false;
-          let usesLocalStorage = false;
-          let usesFetchApi = false;
-          let usesFirebase = false;
-
-          for (const hf of htmlFiles.slice(0, 6)) {
-            const rawHtml = fs.readFileSync(hf, "utf-8").slice(0, 12000);
-            const titleMatch = rawHtml.match(/<title[^>]*>([^<]{1,80})<\/title>/i);
-            const h1Match = rawHtml.match(/<h1[^>]*>([^<]{1,80})<\/h1>/i);
-            const extracted = (titleMatch?.[1] || h1Match?.[1] || "").replace(/\s+/g, " ").trim();
-            if (extracted && !/^document$/i.test(extracted)) {
-              pageTitles.push(extracted);
-            }
-            if (/display\s*:\s*flex|\bflex\b/i.test(rawHtml)) usesFlexbox = true;
-            if (/display\s*:\s*grid|\bgrid\b/i.test(rawHtml)) usesGrid = true;
-            if (/bootstrap/i.test(rawHtml)) usesBootstrap = true;
+        const MAX_WEB_FILE_CHARS = 100000;
+        if (htmlFiles.length > 30 || cssFiles.length > 30 || jsFiles.length > 50) {
+          unscannedWebFilesExist = true;
+        }
+        for (const hf of htmlFiles.slice(0, 30)) {
+          try {
+            const normHf = path.resolve(hf).toLowerCase();
+            seenWebFilePaths.add(normHf);
+            const fullHtml = fs.readFileSync(hf, "utf-8");
+            if (fullHtml.length > MAX_WEB_FILE_CHARS) unscannedWebFilesExist = true;
+            rawHtmlSamples.push({
+              name: path.basename(hf, path.extname(hf)),
+              content: fullHtml.slice(0, MAX_WEB_FILE_CHARS),
+              sourceDir: path.dirname(path.resolve(hf)),
+            });
+          } catch {
+            unscannedWebFilesExist = true;
           }
-
-          for (const cf of cssFiles.slice(0, 4)) {
-            const rawCss = fs.readFileSync(cf, "utf-8").slice(0, 20000);
-            if (/display\s*:\s*(?:inline-)?flex/i.test(rawCss)) usesFlexbox = true;
-            if (/display\s*:\s*(?:inline-)?grid/i.test(rawCss)) usesGrid = true;
-            if (/@media\b/i.test(rawCss)) usesResponsive = true;
+        }
+        for (const cf of cssFiles.slice(0, 30)) {
+          try {
+            seenWebFilePaths.add(path.resolve(cf).toLowerCase());
+            const fullCss = fs.readFileSync(cf, "utf-8");
+            if (fullCss.length > MAX_WEB_FILE_CHARS) unscannedWebFilesExist = true;
+            rawCssSamples.push(fullCss.slice(0, MAX_WEB_FILE_CHARS));
+          } catch {
+            unscannedWebFilesExist = true;
           }
-
-          for (const jf of jsFiles.slice(0, 5)) {
-            const rawJs = fs.readFileSync(jf, "utf-8").slice(0, 20000);
-            if (/localStorage/i.test(rawJs)) usesLocalStorage = true;
-            if (/\bfetch\s*\(|\baxios\b|\basync\b/i.test(rawJs)) usesFetchApi = true;
-            if (/firebase|firestore|signInWithEmailAndPassword|onAuthStateChanged/i.test(rawJs)) {
-              usesFirebase = true;
-            }
+        }
+        for (const jf of jsFiles.slice(0, 50)) {
+          try {
+            const normJf = path.resolve(jf).toLowerCase();
+            seenWebFilePaths.add(normJf);
+            readFsJsPaths.add(normJf);
+            const fullJs = fs.readFileSync(jf, "utf-8");
+            if (fullJs.length > MAX_WEB_FILE_CHARS) unscannedWebFilesExist = true;
+            rawJsSamples.push({
+              code: fullJs.slice(0, MAX_WEB_FILE_CHARS),
+              sourceType: path.extname(jf).toLowerCase() === ".mjs" ? "module" : "script",
+              fsPath: normJf,
+            });
+          } catch {
+            unscannedWebFilesExist = true;
           }
-
-          const webTechs = [
-            usesFlexbox ? "Flexbox" : "",
-            usesGrid ? "CSS Grid" : "",
-            usesBootstrap ? "Bootstrap" : "",
-            usesResponsive ? "Responsive" : "",
-            usesLocalStorage ? "LocalStorage" : "",
-            usesFetchApi ? "Fetch API / Async" : "",
-            usesFirebase ? "Firebase Auth / Firestore" : "",
-          ].filter(Boolean);
-
-          const webHighlight = [
-            `- Đặc trưng dự án Web: gồm ${htmlFiles.length} trang HTML${pageTitles.length > 0 ? ` (tiêu đề trang: ${Array.from(new Set(pageTitles)).slice(0, 3).join(", ")})` : ""}, ${cssFiles.length} file CSS, ${jsFiles.length} file JavaScript.`,
-            webTechs.length > 0
-              ? `- Kỹ thuật dàn trang & lập trình phát hiện trong code: ${webTechs.join(", ")}.`
-              : "",
-          ]
-            .filter(Boolean)
-            .join("\n");
-
-          summaries.push(
-            anonymizeSpckText(webHighlight, studentFullName, anonymousToken, peerNames)
-          );
         }
 
         // 2. Python App / Computer Science summary (.ui / .qss / .py / .ipynb / .csv)
@@ -549,11 +593,47 @@ function buildPreliminaryProjectSummary(
           csvFiles.length > 0
         ) {
           const detectedPyTechs = new Set<string>();
-          if (uiFiles.length > 0) detectedPyTechs.add(`${uiFiles.length} màn hình giao diện Qt Designer`);
+          const uiScreenLabels: string[] = [];
+          const pyClassAndFuncNames: string[] = [];
+          const csvHeaders: string[] = [];
+
+          if (uiFiles.length > 0) {
+            detectedPyTechs.add(`${uiFiles.length} màn hình giao diện Qt Designer`);
+            for (const uf of uiFiles.slice(0, 6)) {
+              try {
+                const rawUi = fs.readFileSync(uf, "utf-8").slice(0, 20000);
+                const winTitleMatch = rawUi.match(
+                  /<property\s+name="windowTitle"[^>]*>\s*<string>([^<]{1,60})<\/string>/i
+                );
+                const screenBase = path.basename(uf, ".ui");
+                const winTitle = winTitleMatch?.[1]?.trim();
+                uiScreenLabels.push(
+                  winTitle && !/^MainWindow|Form|Dialog$/i.test(winTitle)
+                    ? `${screenBase} (${winTitle})`
+                    : screenBase
+                );
+              } catch {}
+            }
+          }
           if (qssFiles.length > 0) detectedPyTechs.add("trang trí giao diện QSS");
           if (jsonFiles.length > 0) detectedPyTechs.add("lưu trữ dữ liệu JSON");
-          if (csvFiles.length > 0) detectedPyTechs.add(`${csvFiles.length} tập dữ liệu CSV`);
-          if (ipynbFiles.length > 0) detectedPyTechs.add(`${ipynbFiles.length} sổ tay phân tích Jupyter Notebook`);
+          if (csvFiles.length > 0) {
+            detectedPyTechs.add(`${csvFiles.length} tập dữ liệu CSV`);
+            for (const csvPath of csvFiles.slice(0, 2)) {
+              try {
+                const firstLine = fs
+                  .readFileSync(csvPath, "utf-8")
+                  .slice(0, 500)
+                  .split(/\r?\n/)[0];
+                if (firstLine) {
+                  csvHeaders.push(firstLine.trim().slice(0, 120));
+                }
+              } catch {}
+            }
+          }
+          if (ipynbFiles.length > 0) {
+            detectedPyTechs.add(`${ipynbFiles.length} sổ tay phân tích Jupyter Notebook`);
+          }
 
           for (const pf of [...pyFiles.slice(0, 5), ...ipynbFiles.slice(0, 3)]) {
             const rawPy = fs.readFileSync(pf, "utf-8").slice(0, 30000);
@@ -561,7 +641,17 @@ function buildPreliminaryProjectSummary(
             if (/\.connect\s*\(|pyqtSignal/i.test(rawPy)) detectedPyTechs.add("Signal & Slot");
             if (/QStackedWidget/i.test(rawPy)) detectedPyTechs.add("chuyển trang QStackedWidget");
             if (/QMessageBox/i.test(rawPy)) detectedPyTechs.add("hộp thoại QMessageBox");
-            if (/^\s*class\s+[A-Za-z_]/m.test(rawPy)) detectedPyTechs.add("lập trình hướng đối tượng (OOP)");
+            if (/^\s*class\s+[A-Za-z_]/m.test(rawPy)) {
+              detectedPyTechs.add("lập trình hướng đối tượng (OOP)");
+            }
+            for (const m of rawPy.matchAll(/^\s*class\s+([A-Za-z_][A-Za-z0-9_]*)/gm)) {
+              if (pyClassAndFuncNames.length < 8) pyClassAndFuncNames.push(`Lớp ${m[1]}`);
+            }
+            for (const m of rawPy.matchAll(/^\s*def\s+([A-Za-z_][A-Za-z0-9_]*)/gm)) {
+              if (m[1] !== "__init__" && pyClassAndFuncNames.length < 10) {
+                pyClassAndFuncNames.push(m[1]);
+              }
+            }
             if (/\bpandas\b|\bread_csv\b/i.test(rawPy)) detectedPyTechs.add("xử lý dữ liệu Pandas");
             if (/\bmatplotlib\b|\bseaborn\b|\bplotly\b/i.test(rawPy)) {
               detectedPyTechs.add("biểu đồ trực quan hóa dữ liệu");
@@ -581,13 +671,22 @@ function buildPreliminaryProjectSummary(
           }
 
           if (detectedPyTechs.size > 0) {
+            const pyLines = [
+              `- Đặc trưng dự án Python / Khoa học máy tính phát hiện trong thư mục: ${Array.from(detectedPyTechs).join(", ")}.`,
+              uiScreenLabels.length > 0
+                ? `- Các màn hình giao diện trong dự án: ${uiScreenLabels.join(", ")}.`
+                : "",
+              pyClassAndFuncNames.length > 0
+                ? `- Các thành phần / chức năng chính trong mã nguồn: ${Array.from(new Set(pyClassAndFuncNames)).slice(0, 8).join(", ")}.`
+                : "",
+              csvHeaders.length > 0
+                ? `- Các cột dữ liệu CSV: ${csvHeaders.join(" | ")}.`
+                : "",
+            ]
+              .filter(Boolean)
+              .join("\n");
             summaries.push(
-              anonymizeSpckText(
-                `- Đặc trưng dự án Python / Khoa học máy tính phát hiện trong thư mục: ${Array.from(detectedPyTechs).join(", ")}.`,
-                studentFullName,
-                anonymousToken,
-                peerNames
-              )
+              anonymizeSpckText(pyLines, studentFullName, anonymousToken, peerNames)
             );
           }
         }
@@ -622,9 +721,644 @@ function buildPreliminaryProjectSummary(
     }
   }
 
-  if ((extraMediaInfo?.youtubeCount || 0) > 0) {
+  // Merge and deduplicate Web files from attachments (loose .html/.css/.js and safe .zip packages) alongside localFolderPath
+  if (Array.isArray(attachments)) {
+    for (const att of attachments) {
+      if (typeof att !== "string" || !att.trim()) continue;
+      const lowerAtt = att.toLowerCase();
+      const rawExt = path.extname(lowerAtt);
+      const isWebOrZipExt =
+        rawExt === ".html" ||
+        rawExt === ".htm" ||
+        rawExt === ".css" ||
+        rawExt === ".js" ||
+        rawExt === ".mjs" ||
+        rawExt === ".zip";
+      try {
+        const safeAtt = assertPathAllowed(att);
+        if (!fs.existsSync(safeAtt) || fs.lstatSync(safeAtt).isSymbolicLink()) {
+          if (isWebOrZipExt) unscannedWebFilesExist = true;
+          continue;
+        }
+        const MAX_ATT_WEB_CHARS = 100000;
+        const ext = path.extname(safeAtt).toLowerCase();
+        const normAtt = path.resolve(safeAtt).toLowerCase();
+        if (ext === ".html" || ext === ".htm") {
+          detectedExts.add(ext);
+          if (seenWebFilePaths.has(normAtt)) continue;
+          seenWebFilePaths.add(normAtt);
+          if (rawHtmlSamples.length < 30) {
+            const fullHtml = fs.readFileSync(safeAtt, "utf-8");
+            if (fullHtml.length > MAX_ATT_WEB_CHARS) unscannedWebFilesExist = true;
+            rawHtmlSamples.push({
+              name: path.basename(safeAtt, ext),
+              content: fullHtml.slice(0, MAX_ATT_WEB_CHARS),
+              sourceDir: path.dirname(path.resolve(safeAtt)),
+            });
+          } else {
+            unscannedWebFilesExist = true;
+          }
+        } else if (ext === ".css") {
+          detectedExts.add(ext);
+          if (seenWebFilePaths.has(normAtt)) continue;
+          seenWebFilePaths.add(normAtt);
+          if (rawCssSamples.length < 30) {
+            const fullCss = fs.readFileSync(safeAtt, "utf-8");
+            if (fullCss.length > MAX_ATT_WEB_CHARS) unscannedWebFilesExist = true;
+            rawCssSamples.push(fullCss.slice(0, MAX_ATT_WEB_CHARS));
+          } else {
+            unscannedWebFilesExist = true;
+          }
+        } else if (ext === ".js" || ext === ".mjs") {
+          detectedExts.add(ext);
+          if (seenWebFilePaths.has(normAtt)) {
+            readFsJsPaths.add(normAtt);
+            continue;
+          }
+          seenWebFilePaths.add(normAtt);
+          if (rawJsSamples.length < 50) {
+            const fullJs = fs.readFileSync(safeAtt, "utf-8");
+            if (fullJs.length > MAX_ATT_WEB_CHARS) unscannedWebFilesExist = true;
+            readFsJsPaths.add(normAtt);
+            rawJsSamples.push({
+              code: fullJs.slice(0, MAX_ATT_WEB_CHARS),
+              sourceType: ext === ".mjs" ? "module" : "script",
+              fsPath: normAtt,
+            });
+          } else {
+            unscannedWebFilesExist = true;
+          }
+        } else if (lowerAtt.endsWith(".zip")) {
+          const zipBuf = fs.readFileSync(safeAtt);
+          const inspection = inspectZipArchiveSafely(zipBuf, path.basename(safeAtt));
+          if (inspection.valid) {
+            const zipDir = path.dirname(path.resolve(safeAtt));
+            for (const entry of inspection.entries) {
+              const entryExt = entry.extension;
+              if (entryExt) detectedExts.add(entryExt);
+              const entryRel = path.posix
+                .normalize(entry.entryName.replace(/\\/g, "/"))
+                .replace(/^\/+/, "");
+              const entryRelLower = entryRel.toLowerCase();
+              if (
+                safeFolderRoot &&
+                seenWebFilePaths.has(path.resolve(safeFolderRoot, entryRel).toLowerCase())
+              ) {
+                continue;
+              }
+              if (entryExt === ".html" || entryExt === ".htm") {
+                if (rawHtmlSamples.length < 30) {
+                  const fullHtml = entry.getData().toString("utf-8");
+                  if (fullHtml.length > MAX_ATT_WEB_CHARS) unscannedWebFilesExist = true;
+                  rawHtmlSamples.push({
+                    name: path.basename(entry.entryName, entryExt),
+                    content: fullHtml.slice(0, MAX_ATT_WEB_CHARS),
+                    zipSource: normAtt,
+                    zipEntryDir: path.posix.dirname(entryRelLower),
+                  });
+                } else {
+                  unscannedWebFilesExist = true;
+                }
+              } else if (entryExt === ".css") {
+                if (rawCssSamples.length < 30) {
+                  const fullCss = entry.getData().toString("utf-8");
+                  if (fullCss.length > MAX_ATT_WEB_CHARS) unscannedWebFilesExist = true;
+                  rawCssSamples.push(fullCss.slice(0, MAX_ATT_WEB_CHARS));
+                } else {
+                  unscannedWebFilesExist = true;
+                }
+              } else if (entryExt === ".js" || entryExt === ".mjs") {
+                if (rawJsSamples.length < 50) {
+                  const fullJs = entry.getData().toString("utf-8");
+                  if (fullJs.length > MAX_ATT_WEB_CHARS) unscannedWebFilesExist = true;
+                  if (!readZipRelJsPathsByZip.has(normAtt)) {
+                    readZipRelJsPathsByZip.set(normAtt, new Set<string>());
+                  }
+                  readZipRelJsPathsByZip.get(normAtt)!.add(entryRelLower);
+                  const mountedPaths: string[] = [];
+                  if (!entryRel.startsWith("..")) {
+                    const zipDirResolved = path.resolve(zipDir, entryRel).toLowerCase();
+                    readZipMountedJsPaths.add(zipDirResolved);
+                    mountedPaths.push(zipDirResolved);
+                    if (safeFolderRoot) {
+                      const folderRootResolved = path.resolve(safeFolderRoot, entryRel).toLowerCase();
+                      readZipMountedJsPaths.add(folderRootResolved);
+                      mountedPaths.push(folderRootResolved);
+                    }
+                  }
+                  rawJsSamples.push({
+                    code: fullJs.slice(0, MAX_ATT_WEB_CHARS),
+                    sourceType: entryExt === ".mjs" ? "module" : "script",
+                    zipSource: normAtt,
+                    zipEntryRel: entryRelLower,
+                    zipMountedPaths: mountedPaths,
+                  });
+                } else {
+                  unscannedWebFilesExist = true;
+                }
+              }
+            }
+          } else {
+            unscannedWebFilesExist = true;
+          }
+        }
+      } catch {
+        if (isWebOrZipExt) unscannedWebFilesExist = true;
+      }
+    }
+  }
+
+  // Deep Web Project Inspector (.html / .css / .js)
+  if (rawHtmlSamples.length > 0 || rawCssSamples.length > 0) {
+    absentWebFeatures.inspectedWebCode = true;
+    const pageTitles: string[] = [];
+    const sectionHeadings: string[] = [];
+    const navItems: string[] = [];
+    const uiComponents = new Set<string>();
+
+    let usesFlexbox = false;
+    let usesGrid = false;
+    let usesResponsive = false;
+    let usesBootstrap = false;
+    let usesDomEvents = false;
+    let usesLocalStorage = false;
+    let usesFetchApi = false;
+    let usesFirebase = false;
+    let hasCartFeature = false;
+    let hasAuthFeature = false;
+    let hasSearchFilter = false;
+
+    const stripTags = (htmlFragment: string) =>
+      htmlFragment
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const stripJsCommentsOnly = (code: string) =>
+      code.replace(
+        /\/\*[\s\S]*?\*\/|\/\/[^\r\n]*|("(?:\\[\s\S]|[^"\\\r\n])*"|'(?:\\[\s\S]|[^'\\\r\n])*'|`(?:\\[\s\S]|[^`\\])*`)/g,
+        (match, strLiteral) => (strLiteral ? match : " ")
+      );
+
+    const stripJsStringLiterals = (commentFreeCode: string) =>
+      commentFreeCode.replace(
+        /"(?:\\[\s\S]|[^"\\\r\n])*"|'(?:\\[\s\S]|[^'\\\r\n])*'|`(?:\\[\s\S]|[^`\\])*`/g,
+        '""'
+      );
+
+    const analyzeJsCodeSyntax = (
+      code: string,
+      sourceType: "script" | "module" = "script"
+    ): { executableJs: string; importSpecifiers: string[]; lexComplete: boolean } => {
+      const importSpecifiers: string[] = [];
+      let out = "";
+      let prevEnd = 0;
+      let prevTok: { label: string; value?: unknown } | null = null;
+      let prevPrevTok: { label: string; value?: unknown } | null = null;
+      let prevPrevPrevTok: { label: string; value?: unknown } | null = null;
+      let inImportOrExportStmt = false;
+      let braceDepthInImport = 0;
+
+      try {
+        for (const tok of acorn.tokenizer(code, {
+          ecmaVersion: "latest",
+          sourceType,
+        })) {
+          if (tok.start > prevEnd) {
+            out += code.slice(prevEnd, tok.start).includes("\n") ? "\n" : " ";
+          }
+          const label = tok.type.label;
+          if (
+            (label === "import" || label === "export") &&
+            prevTok?.label !== "."
+          ) {
+            inImportOrExportStmt = true;
+            braceDepthInImport = 0;
+          } else if (inImportOrExportStmt) {
+            if (label === "{") {
+              braceDepthInImport++;
+              if (braceDepthInImport > 1) inImportOrExportStmt = false;
+            } else if (label === "}") {
+              braceDepthInImport = Math.max(0, braceDepthInImport - 1);
+            } else if (braceDepthInImport === 0) {
+              const isValidHeaderToken =
+                label === "*" || label === "," || label === "name";
+              if (!isValidHeaderToken && label !== "string") {
+                inImportOrExportStmt = false;
+              }
+            }
+          }
+
+          if (label === "string") {
+            const isStaticImport =
+              (prevTok?.label === "import" && prevPrevTok?.label !== ".") ||
+              (inImportOrExportStmt &&
+                braceDepthInImport === 0 &&
+                prevTok?.label === "name" &&
+                prevTok?.value === "from");
+            const isDynamicImportOrRequire =
+              prevTok?.label === "(" &&
+              prevPrevPrevTok?.label !== "." &&
+              prevPrevPrevTok?.label !== "function" &&
+              (prevPrevTok?.label === "import" ||
+                (prevPrevTok?.label === "name" && prevPrevTok?.value === "require"));
+            if (
+              (isStaticImport || isDynamicImportOrRequire) &&
+              typeof tok.value === "string" &&
+              tok.value
+            ) {
+              importSpecifiers.push(tok.value);
+            }
+            if (braceDepthInImport === 0) {
+              inImportOrExportStmt = false;
+            }
+            out += '""';
+          } else if (label === "template") {
+            // Non-executable raw text inside template literal -> omit
+          } else if (label === "regexp") {
+            out += "/_/";
+          } else if (label === "eof") {
+            return { executableJs: out, importSpecifiers, lexComplete: true };
+          } else {
+            out += code.slice(tok.start, tok.end);
+          }
+
+          prevEnd = tok.end;
+          prevPrevPrevTok = prevPrevTok;
+          prevPrevTok = prevTok;
+          prevTok = { label, value: tok.value };
+        }
+        return { executableJs: out, importSpecifiers, lexComplete: true };
+      } catch {
+        return { executableJs: out, importSpecifiers, lexComplete: false };
+      }
+    };
+
+    const inlineCssBlocks: string[] = [];
+    const inlineJsBlocks: Array<{ code: string; sourceType: "script" | "module" }> = [];
+
+    for (const hf of rawHtmlSamples) {
+      // Strip HTML comments before any feature inspection so commented-out TODOs never fabricate features
+      const rawHtml = hf.content.replace(/<!--[\s\S]*?-->/g, " ");
+      const htmlMarkupParts: string[] = [];
+      const htmlScriptAttrsList: string[] = [];
+      let lastHtmlIdx = 0;
+
+      for (const blockMatch of rawHtml.matchAll(
+        /<script\b([^>]*)>([\s\S]*?)<\/script>|<style\b([^>]*)>([\s\S]*?)<\/style>/gi
+      )) {
+        const matchStart = blockMatch.index ?? 0;
+        if (matchStart > lastHtmlIdx) {
+          htmlMarkupParts.push(rawHtml.slice(lastHtmlIdx, matchStart));
+        }
+        lastHtmlIdx = matchStart + blockMatch[0].length;
+        if (blockMatch[1] !== undefined || blockMatch[2] !== undefined) {
+          const scriptAttrs = blockMatch[1] || "";
+          const scriptBody = blockMatch[2] || "";
+          const isModuleScript = /\btype\s*=\s*(?:["']\s*module\s*["']|module\b)/i.test(
+            scriptAttrs
+          );
+          htmlScriptAttrsList.push(scriptAttrs);
+          if (scriptBody.trim()) {
+            inlineJsBlocks.push({
+              code: scriptBody,
+              sourceType: isModuleScript ? "module" : "script",
+            });
+          }
+        } else {
+          const styleBody = blockMatch[4] || "";
+          if (styleBody.trim()) {
+            inlineCssBlocks.push(styleBody);
+          }
+        }
+      }
+      if (lastHtmlIdx < rawHtml.length) {
+        htmlMarkupParts.push(rawHtml.slice(lastHtmlIdx));
+      }
+      const markupOnly = htmlMarkupParts.join(" ");
+
+      for (const scriptAttrs of htmlScriptAttrsList) {
+        const extScriptMatch = scriptAttrs.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
+        const rawSrc = (extScriptMatch?.[1] || "").trim();
+        const isExtModule = /\btype\s*=\s*(?:["']\s*module\s*["']|module\b)/i.test(
+          scriptAttrs
+        );
+        if (rawSrc && !/^(?:https?:|\/\/|data:|blob:)/i.test(rawSrc)) {
+          const cleanSrc = rawSrc.split(/[?#]/)[0].trim();
+          if (cleanSrc) {
+            let scriptWasRead = false;
+            if (hf.sourceDir) {
+              const resolvedTarget = path.resolve(hf.sourceDir, cleanSrc).toLowerCase();
+              if (readFsJsPaths.has(resolvedTarget)) {
+                scriptWasRead = true;
+                if (isExtModule) {
+                  for (const jsSample of rawJsSamples) {
+                    if (jsSample.fsPath === resolvedTarget) jsSample.sourceType = "module";
+                  }
+                }
+              } else if (
+                !fs.existsSync(resolvedTarget) &&
+                readZipMountedJsPaths.has(resolvedTarget)
+              ) {
+                scriptWasRead = true;
+                if (isExtModule) {
+                  for (const jsSample of rawJsSamples) {
+                    if (jsSample.zipMountedPaths?.includes(resolvedTarget)) {
+                      jsSample.sourceType = "module";
+                    }
+                  }
+                }
+              }
+            } else if (hf.zipEntryDir !== undefined) {
+              const joinedPosix = path.posix
+                .normalize(path.posix.join(hf.zipEntryDir, cleanSrc.replace(/\\/g, "/")))
+                .replace(/^\/+/, "")
+                .toLowerCase();
+              if (!joinedPosix.startsWith("..")) {
+                const sameZipEntries = hf.zipSource
+                  ? readZipRelJsPathsByZip.get(hf.zipSource)
+                  : undefined;
+                if (sameZipEntries?.has(joinedPosix)) {
+                  scriptWasRead = true;
+                  if (isExtModule) {
+                    for (const jsSample of rawJsSamples) {
+                      if (
+                        jsSample.zipSource === hf.zipSource &&
+                        jsSample.zipEntryRel === joinedPosix
+                      ) {
+                        jsSample.sourceType = "module";
+                      }
+                    }
+                  }
+                } else if (
+                  safeFolderRoot &&
+                  readFsJsPaths.has(path.resolve(safeFolderRoot, joinedPosix).toLowerCase())
+                ) {
+                  scriptWasRead = true;
+                  if (isExtModule) {
+                    const resolvedFolderTarget = path
+                      .resolve(safeFolderRoot, joinedPosix)
+                      .toLowerCase();
+                    for (const jsSample of rawJsSamples) {
+                      if (jsSample.fsPath === resolvedFolderTarget) {
+                        jsSample.sourceType = "module";
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            if (!scriptWasRead) {
+              unscannedWebFilesExist = true;
+            }
+          }
+        }
+      }
+
+      const nonTodoMarkup = markupOnly;
+
+      const titleMatch = markupOnly.match(/<title[^>]*>([\s\S]{1,100}?)<\/title>/i);
+      const extractedTitle = stripTags(titleMatch?.[1] || "");
+      if (extractedTitle && !/^document|untitled|home|index$/i.test(extractedTitle)) {
+        pageTitles.push(extractedTitle);
+      }
+
+      for (const hm of nonTodoMarkup.matchAll(/<h[1-3][^>]*>([\s\S]{1,120}?)<\/h[1-3]>/gi)) {
+        const headingText = stripTags(hm[1] || "");
+        if (headingText && headingText.length >= 2 && sectionHeadings.length < 10) {
+          sectionHeadings.push(headingText);
+        }
+      }
+
+      for (const navMatch of nonTodoMarkup.matchAll(/<(?:nav|header)[^>]*>([\s\S]{1,4000}?)<\/(?:nav|header)>/gi)) {
+        for (const aMatch of (navMatch[1] || "").matchAll(/<a[^>]*>([\s\S]{1,60}?)<\/a>/gi)) {
+          const linkText = stripTags(aMatch[1] || "");
+          if (linkText && linkText.length >= 2 && linkText.length <= 35 && navItems.length < 8) {
+            navItems.push(linkText);
+          }
+        }
+      }
+
+      if (/<form\b/i.test(nonTodoMarkup)) uiComponents.add("Biểu mẫu nhập liệu (Form)");
+      if (/<input\b|<textarea\b|<select\b/i.test(nonTodoMarkup)) uiComponents.add("Ô nhập liệu / chọn thông tin");
+      if (/<button\b/i.test(nonTodoMarkup)) uiComponents.add("Nút bấm tương tác");
+      if (/<table\b/i.test(nonTodoMarkup)) uiComponents.add("Bảng dữ liệu (Table)");
+      if (/<video\b|<audio\b|<iframe\b/i.test(nonTodoMarkup)) uiComponents.add("Đa phương tiện (Video/Audio/Iframe)");
+      if (/<canvas\b/i.test(nonTodoMarkup)) uiComponents.add("Đồ họa Canvas");
+
+      if (
+        /<[a-z0-9]+\b[^>]*\bstyle\s*=\s*["'][^"']*display\s*:\s*(?:inline-)?flex[^"']*["']/i.test(
+          nonTodoMarkup
+        ) ||
+        /<[a-z0-9]+\b[^>]*\bclass\s*=\s*["'][^"']*\bd-(?:inline-)?flex\b[^"']*["']/i.test(
+          nonTodoMarkup
+        )
+      ) {
+        usesFlexbox = true;
+      }
+      if (
+        /<[a-z0-9]+\b[^>]*\bstyle\s*=\s*["'][^"']*display\s*:\s*(?:inline-)?grid[^"']*["']/i.test(
+          nonTodoMarkup
+        ) ||
+        /<[a-z0-9]+\b[^>]*\bclass\s*=\s*["'][^"']*\bd-(?:inline-)?grid\b[^"']*["']/i.test(
+          nonTodoMarkup
+        )
+      ) {
+        usesGrid = true;
+      }
+      if (
+        /<link\b[^>]+\bhref\s*=\s*["'][^"']*bootstrap/i.test(nonTodoMarkup) ||
+        htmlScriptAttrsList.some((attrs) => /\bsrc\s*=\s*["'][^"']*bootstrap/i.test(attrs)) ||
+        /<[a-z0-9]+\b[^>]*\bclass\s*=\s*["'][^"']*\b(?:navbar-expand|container-fluid|col-(?:sm|md|lg|xl)-\d+)\b[^"']*["']/i.test(
+          nonTodoMarkup
+        )
+      ) {
+        usesBootstrap = true;
+      }
+      if (/<[a-z0-9]+\b[^>]*\bon(?:click|submit|change|input)\s*=/i.test(nonTodoMarkup)) {
+        usesDomEvents = true;
+      }
+      if (
+        htmlScriptAttrsList.some((attrs) =>
+          /\bsrc\s*=\s*["'][^"']*(?:firebase|firestore)[^"']*["']/i.test(attrs)
+        )
+      ) {
+        usesFirebase = true;
+      }
+      if (
+        /<(?:button|form|input|div|section|aside|table)\b[^>]*(?:id|class|name|onclick|data-action)\s*=\s*["'][^"']*(?:cart|checkout|gio[-_]?hang|add[-_]?to[-_]?cart)[^"']*["']/i.test(
+          nonTodoMarkup
+        ) ||
+        /<button\b[^>]*>[^<]*(?:thêm\s+vào\s+giỏ|mua\s+ngay|thanh\s+toán\s+đơn|add\s+to\s+cart|checkout)[^<]*<\/button>/i.test(
+          nonTodoMarkup
+        )
+      ) {
+        hasCartFeature = true;
+      }
+      if (
+        /<input\b[^>]*\btype\s*=\s*["']password["']|<(?:form|button|input)\b[^>]*(?:id|class|name|action|onsubmit|onclick)\s*=\s*["'][^"']*(?:login|signin|signup|register|auth|dang[-_]?nhap|dang[-_]?ky)[^"']*["']/i.test(
+          nonTodoMarkup
+        )
+      ) {
+        hasAuthFeature = true;
+      }
+      if (
+        /<input\b[^>]*\btype\s*=\s*["']search["']|<(?:input|button|form)\b[^>]*(?:id|class|name|placeholder)\s*=\s*["'][^"']*(?:search|filter|tim[-_\s]*kiem|bo[-_\s]*loc)[^"']*["']/i.test(
+          nonTodoMarkup
+        )
+      ) {
+        hasSearchFilter = true;
+      }
+    }
+
+    for (const rawCssSample of [...rawCssSamples, ...inlineCssBlocks]) {
+      const commentFreeCss = stripJsCommentsOnly(rawCssSample);
+      const cssSyntaxOnly = stripJsStringLiterals(commentFreeCss);
+      if (/display\s*:\s*(?:inline-)?flex/i.test(cssSyntaxOnly)) usesFlexbox = true;
+      if (/display\s*:\s*(?:inline-)?grid/i.test(cssSyntaxOnly)) usesGrid = true;
+      if (/@media\b/i.test(cssSyntaxOnly)) usesResponsive = true;
+      if (
+        /(?:^|[;}\r\n])\s*@import\s+(?:url\s*\(\s*)?["']?[^"');\r\n]*bootstrap/i.test(
+          commentFreeCss
+        ) ||
+        /\b(?:navbar-expand|container-fluid|col-(?:sm|md|lg|xl)-\d+)\b/i.test(cssSyntaxOnly)
+      ) {
+        usesBootstrap = true;
+      }
+    }
+
+    const allJsEntries: Array<{ code: string; sourceType: "script" | "module" }> = [
+      ...rawJsSamples,
+      ...inlineJsBlocks,
+    ];
+    for (const jsEntry of allJsEntries) {
+      const {
+        executableJs: jsSyntaxOnly,
+        importSpecifiers,
+        lexComplete,
+      } = analyzeJsCodeSyntax(jsEntry.code, jsEntry.sourceType);
+      if (!lexComplete) {
+        unscannedWebFilesExist = true;
+      }
+      if (
+        /\b(?:addEventListener|querySelector|querySelectorAll|getElementById|getElementsByClassName|createElement|appendChild|removeChild)\s*\(|\.(?:innerHTML|textContent|innerText)\s*=/i.test(
+          jsSyntaxOnly
+        )
+      ) {
+        usesDomEvents = true;
+      }
+      if (
+        /\b(?:window\.)?(?:localStorage|sessionStorage)\s*(?:\.\s*(?:getItem|setItem|removeItem|clear|key)\s*\(|\[)/.test(
+          jsSyntaxOnly
+        )
+      ) {
+        usesLocalStorage = true;
+      }
+      if (
+        /\b(?:window\.)?fetch\s*\(|\baxios\s*(?:\.\s*(?:get|post|put|delete|patch|request)\s*\(|\()|\bnew\s+XMLHttpRequest\s*\(/.test(
+          jsSyntaxOnly
+        )
+      ) {
+        usesFetchApi = true;
+      }
+      if (
+        importSpecifiers.some((spec) => /(?:firebase|firestore)/i.test(spec)) ||
+        /\b(?:initializeApp|getFirestore|getAuth|getDatabase|signInWithEmailAndPassword|createUserWithEmailAndPassword|signInWithPopup|onAuthStateChanged|collection|addDoc|getDocs|getDoc|setDoc|updateDoc|deleteDoc|onSnapshot)\s*\(|\bfirebase\s*\.\s*(?:initializeApp|auth|firestore|database)\s*\(/.test(
+          jsSyntaxOnly
+        )
+      ) {
+        usesFirebase = true;
+      }
+      if (
+        /\b(?:addToCart|removeFromCart|updateCart|renderCart|clearCart|checkout|handleCheckout|cartItems)\b/i.test(
+          jsSyntaxOnly
+        )
+      ) {
+        hasCartFeature = true;
+      }
+      if (
+        /\b(?:signInWithEmailAndPassword|createUserWithEmailAndPassword|signInWithPopup|signOut|onAuthStateChanged)\s*\(|\bfunction\s+(?:login|handleLogin|signIn|signUp|register|handleRegister|logout|checkAuth)\s*\(|\b(?:login|handleLogin|signIn|signUp|register|handleRegister|authenticateUser)\s*=\s*(?:async\s*)?\(|\.(?:signIn|signUp|login|register)\s*\(/i.test(
+          jsSyntaxOnly
+        )
+      ) {
+        hasAuthFeature = true;
+      }
+      if (
+        /\bfunction\s+(?:search\w*|filter\w*|handleSearch|handleFilter)\s*\(|\b(?:searchProducts|filterProducts|searchItems|filterItems)\b/i.test(
+          jsSyntaxOnly
+        )
+      ) {
+        hasSearchFilter = true;
+      }
+    }
+
+    if (!unscannedWebFilesExist) {
+      absentWebFeatures.noBootstrap = !usesBootstrap;
+      absentWebFeatures.noCart = !hasCartFeature;
+      absentWebFeatures.noAuth = !hasAuthFeature;
+      absentWebFeatures.noLocalStorage = !usesLocalStorage;
+      absentWebFeatures.noFetchApi = !usesFetchApi;
+      absentWebFeatures.noFirebase = !usesFirebase;
+    }
+
+    const webTechs = [
+      "HTML5",
+      usesFlexbox ? "CSS Flexbox" : "CSS3",
+      usesGrid ? "CSS Grid" : "",
+      usesBootstrap ? "Bootstrap" : "",
+      usesResponsive ? "Responsive (@media)" : "",
+      usesDomEvents || rawJsSamples.length > 0 ? "JavaScript DOM" : "",
+      hasSearchFilter ? "Tìm kiếm / Lọc nội dung" : "",
+      hasAuthFeature ? "Đăng nhập / Đăng ký" : "",
+      hasCartFeature ? "Giỏ hàng" : "",
+      usesLocalStorage ? "LocalStorage" : "",
+      usesFetchApi ? "Fetch API" : "",
+      usesFirebase ? "Firebase Auth / Firestore" : "",
+    ].filter(Boolean);
+
+    const absentList = unscannedWebFilesExist
+      ? []
+      : [
+          !usesBootstrap ? "Bootstrap" : "",
+          !hasCartFeature ? "Giỏ hàng / Thanh toán" : "",
+          !hasAuthFeature ? "Đăng nhập / Đăng ký" : "",
+          !usesLocalStorage ? "LocalStorage" : "",
+          !usesFetchApi ? "Fetch API" : "",
+          !usesFirebase ? "Firebase / Firestore" : "",
+        ].filter(Boolean);
+
+    const uniquePageTitles = Array.from(new Set(pageTitles)).slice(0, 4);
+    const uniqueHeadings = Array.from(new Set(sectionHeadings)).slice(0, 8);
+    const uniqueNavItems = Array.from(new Set(navItems)).slice(0, 6);
+
+    const webHighlight = [
+      `- Đặc trưng dự án Web thực tế: gồm ${rawHtmlSamples.length} trang HTML${uniquePageTitles.length > 0 ? ` (tiêu đề trang: ${uniquePageTitles.join(", ")})` : ""}, ${rawCssSamples.length} file CSS, ${rawJsSamples.length} file JavaScript.`,
+      uniqueNavItems.length > 0
+        ? `- Các mục trên thanh điều hướng (Menu): ${uniqueNavItems.join(", ")}.`
+        : "",
+      uniqueHeadings.length > 0
+        ? `- Các mục nội dung / tiêu đề chính trên trang: ${uniqueHeadings.join(" | ")}.`
+        : "",
+      uiComponents.size > 0
+        ? `- Thành phần giao diện tương tác có trong bài: ${Array.from(uiComponents).join(", ")}.`
+        : "",
+      `- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: ${webTechs.join(", ")}.`,
+      absentList.length > 0
+        ? `- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [${absentList.join(", ")}] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
     summaries.push(
-      `- Minh chứng vận hành & thuyết trình: có ${extraMediaInfo?.youtubeCount} video demo YouTube và ${extraMediaInfo?.screenshotCount || 0} hình ảnh chụp mô hình/sản phẩm.`
+      anonymizeSpckText(webHighlight, studentFullName, anonymousToken, peerNames)
+    );
+  }
+
+  if ((extraMediaInfo?.youtubeCount || 0) > 0 || (extraMediaInfo?.screenshotCount || 0) > 0) {
+    summaries.push(
+      `- Minh chứng hình ảnh & vận hành sản phẩm: có ${extraMediaInfo?.screenshotCount || 0} hình ảnh chụp sản phẩm/mô hình thực tế${(extraMediaInfo?.youtubeCount || 0) > 0 ? ` và ${extraMediaInfo?.youtubeCount} video demo YouTube` : ""}.`
     );
   }
 
@@ -633,6 +1367,7 @@ function buildPreliminaryProjectSummary(
       summaryText:
         summaries.length > 0 ? summaries.join("\n") : "Không có file mã nguồn đính kèm.",
       detectedExtensions: Array.from(detectedExts),
+      absentWebFeatures,
     };
   }
 
@@ -666,7 +1401,54 @@ function buildPreliminaryProjectSummary(
     summaryText:
       summaries.length > 0 ? summaries.join("\n") : "Không có trích xuất mã nguồn chi tiết.",
     detectedExtensions: Array.from(detectedExts),
+    absentWebFeatures,
   };
+}
+
+/**
+ * Prepares up to 2 valid product/model images (Thumbnail + 1 screenshot, excluding the default MindX logo)
+ * as Gemini multimodal `inlineData` parts so the AI can visually inspect Web UI, App screens, or Robotics models.
+ */
+function buildMultimodalImageParts(
+  thumbnailPath?: string,
+  screenshots?: string[]
+): Array<{ inlineData: { data: string; mimeType: string } }> {
+  const parts: Array<{ inlineData: { data: string; mimeType: string } }> = [];
+  const candidates = [thumbnailPath, ...(screenshots || [])].filter(
+    (p): p is string => typeof p === "string" && p.trim().length > 0
+  );
+  const seen = new Set<string>();
+
+  for (const rawPath of candidates) {
+    if (parts.length >= 2) break;
+    const norm = path.normalize(rawPath.trim());
+    if (seen.has(norm)) continue;
+    seen.add(norm);
+    if (/default-spck-thumbnail\.png$/i.test(norm)) continue;
+
+    try {
+      const safeImg = assertPathAllowed(norm);
+      if (!fs.existsSync(safeImg) || fs.lstatSync(safeImg).isSymbolicLink()) continue;
+      const stat = fs.statSync(safeImg);
+      if (!stat.isFile() || stat.size < 128 || stat.size > 4 * 1024 * 1024) continue;
+      const ext = path.extname(safeImg).toLowerCase();
+      const mimeType =
+        ext === ".png"
+          ? "image/png"
+          : ext === ".jpg" || ext === ".jpeg"
+            ? "image/jpeg"
+            : ext === ".webp"
+              ? "image/webp"
+              : "";
+      if (!mimeType) continue;
+      const base64 = fs.readFileSync(safeImg).toString("base64");
+      parts.push({ inlineData: { data: base64, mimeType } });
+    } catch {
+      continue;
+    }
+  }
+
+  return parts;
 }
 
 /**
@@ -779,10 +1561,10 @@ export class SpckCommentGenerator {
     const usedOpeningPhrases: string[] = [];
 
     const stage1Archetypes = [
-      `Cấu trúc GĐ1-1 (Đánh giá học bạ — Tiến độ dự án & Hạng mục cần hoàn thiện): Câu đầu nhận xét trang trọng về thái độ học tập và tiến độ thực hiện dự án hiện tại của STUDENT_XX; câu thứ hai nêu rõ sản phẩm hiện có những trang/màn hình giao diện và chức năng thực tế nào đã được xây dựng${stageInfo.sessionNumber === 13 ? " (kèm phần đã bổ sung nếu có dữ liệu)" : ""}; câu thứ ba chỉ rõ những tính năng, giao diện hoặc xử lý kỹ thuật cần cải thiện và hoàn thiện tiếp.`,
-      `Cấu trúc GĐ1-2 (Đánh giá học bạ — Năng lực vận dụng & Định hướng hoàn thiện): Câu đầu ghi nhận tinh thần tập trung, chủ động của STUDENT_XX trong quá trình xây dựng sản phẩm; câu thứ hai mô tả cụ thể cấu trúc sản phẩm hiện có những phần giao diện và chức năng nền tảng nào; câu thứ ba nêu rõ các điểm cần cải thiện, bổ sung để hoàn thiện dự án.`,
-      `Cấu trúc GĐ1-3 (Đánh giá học bạ — Hiện trạng sản phẩm & Điểm cần khắc phục): Câu đầu đánh giá tổng quan kết quả bước đầu thực hiện dự án của STUDENT_XX; câu thứ hai trình bày rõ sản phẩm đã có những màn hình và tính năng gì hoạt động được; câu thứ ba nhận xét khách quan những hạng mục còn thiếu hoặc cần cải thiện thêm.`,
-      `Cấu trúc GĐ1-4 (Đánh giá học bạ — Kỹ năng thực hành & Hạng mục cần trau chuốt): Câu đầu nhận xét khả năng vận dụng kiến thức lập trình vào đề tài thực tế của STUDENT_XX; câu thứ hai liệt kê rõ các thành phần giao diện và chức năng hiện có trong sản phẩm; câu thứ ba định hướng cụ thể những điểm cần cải thiện và tối ưu ở bước tiếp theo.`,
+      `Cấu trúc GĐ1-1 (Kiểm tra tiến độ dự án — Hiện trạng hoàn thành & Mục tiêu buổi tới): Câu đầu nhận xét trang trọng về thái độ làm việc và mức độ hoàn thành tiến độ dự án hiện tại của STUDENT_XX; câu thứ hai nêu rõ ở đợt kiểm tra tiến độ này sản phẩm đã dựng được những trang/màn hình giao diện hoặc mô hình và chức năng thực tế nào${stageInfo.sessionNumber === 13 ? " (kèm phần đã bổ sung nếu có dữ liệu)" : ""}; câu thứ ba chỉ rõ những tính năng, giao diện/mô hình hoặc xử lý kỹ thuật cần tiếp tục hoàn thiện ở buổi kiểm tra tiến độ tiếp theo.`,
+      `Cấu trúc GĐ1-2 (Kiểm tra tiến độ dự án — Phần đã xây dựng & Định hướng hoàn thiện): Câu đầu ghi nhận tinh thần tập trung, chủ động của STUDENT_XX trong quá trình triển khai dự án theo tiến độ; câu thứ hai mô tả cụ thể cấu trúc sản phẩm hiện đã có những phần giao diện/mô hình và chức năng nền tảng nào; câu thứ ba nêu rõ các hạng mục còn đang dang dở cần bổ sung để kịp tiến độ hoàn thiện sản phẩm.`,
+      `Cấu trúc GĐ1-3 (Kiểm tra tiến độ dự án — Kết quả thực hiện & Hạng mục cần bổ sung): Câu đầu đánh giá tổng quan tiến độ thực hiện dự án của STUDENT_XX; câu thứ hai trình bày rõ sản phẩm đã có những màn hình/cơ cấu và tính năng gì hoạt động được; câu thứ ba nhận xét khách quan những hạng mục còn thiếu cần đẩy nhanh hoàn thiện trước buổi báo cáo sản phẩm cuối khóa.`,
+      `Cấu trúc GĐ1-4 (Kiểm tra tiến độ dự án — Kỹ năng vận dụng & Kế hoạch hoàn thiện tiếp theo): Câu đầu nhận xét khả năng vận dụng kiến thức vào đề tài dự án đúng tiến độ của STUDENT_XX; câu thứ hai liệt kê rõ các thành phần giao diện/mô hình và chức năng hiện có trong sản phẩm; câu thứ ba định hướng cụ thể những điểm cần hoàn thiện và tối ưu ở bước tiếp theo.`,
     ];
 
     const stage2Archetypes = [
@@ -939,30 +1721,39 @@ export class SpckCommentGenerator {
           : `- Giáo viên CÓ cung cấp dữ kiện về thuyết trình: hãy viết nhận xét kỹ năng thuyết trình tự nhiên vào trường "presentationEvaluation" dựa sát theo thẻ/ghi chú của giáo viên.`
         : `- NGHIÊM CẤM BỊA ĐẶT KỸ NĂNG THUYẾT TRÌNH: Giáo viên KHÔNG tích chọn hoặc ghi chú về kỹ năng thuyết trình. Trường "presentationEvaluation" BẮT BUỘC phải để chuỗi rỗng "" và tuyệt đối KHÔNG nhắc đến từ "thuyết trình", "trình bày trước lớp", "đám đông", "khán giả", "bảo vệ dự án" hay "phản biện" trong toàn bộ nhận xét.`;
 
+      const imageParts = buildMultimodalImageParts(
+        item.thumbnailPath || initialSessionRow.thumbnailPath,
+        item.screenshots || []
+      );
+      const multimodalGuidance =
+        imageParts.length > 0
+          ? `\n- HÌNH ẢNH THỰC TẾ ĐÍNH KÈM (${imageParts.length} ảnh chụp giao diện sản phẩm / mô hình thực tế của học viên): Hãy quan sát kỹ các hình ảnh đính kèm để nhận xét chính xác chủ đề thực tế, bố cục giao diện hoặc kết cấu mô hình phần cứng của ${anonymousToken}.`
+          : "";
+
       let stageSpecificInstruction = "";
       if (stageInfo.sessionNumber === 12) {
         stageSpecificInstruction = `YÊU CẦU RIÊNG CHO BUỔI 12 (${stageInfo.stageLabel} - ${stageInfo.stageCode}):
-- Sản phẩm hiện đang trong quá trình xây dựng bước đầu.
-- Nội dung nhận xét học bạ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện tại đã có những gì** (đề tài, cấu trúc/giao diện/mô hình, chức năng bước đầu); và (2) **Cần cải thiện / hoàn thiện tiếp những gì** ở các buổi tới.
-${subjectSpecificGuidance}
+- Đây là buổi **kiểm tra tiến độ dự án lần 1**: sản phẩm hiện đang trong quá trình xây dựng khung nền tảng bước đầu.
+- Nội dung nhận xét tiến độ bắt buộc thể hiện rõ: (1) **Ở đợt kiểm tra tiến độ này, sản phẩm đã làm được những gì** (đề tài, cấu trúc/giao diện/mô hình, các phần bước đầu đã dựng xong); và (2) **Những hạng mục còn đang dang dở cần tiếp tục hoàn thiện ở buổi kiểm tra tiến độ tiếp theo**.
+${subjectSpecificGuidance}${multimodalGuidance}
 - TUYỆT ĐỐI KHÔNG viết như thể học sinh đã hoàn thành trọn vẹn sản phẩm cuối khóa, và KHÔNG ghi các nhãn nội bộ như "Buổi 12", "Giai đoạn 1", "GĐ1".`;
       } else if (stageInfo.sessionNumber === 13) {
         stageSpecificInstruction = `YÊU CẦU RIÊNG CHO BUỔI 13 (${stageInfo.stageLabel} - ${stageInfo.stageCode}):
-- Sản phẩm đang trong quá trình phát triển và hoàn thiện các tính năng chính.
-- Nội dung nhận xét học bạ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện có những gì và phần đã bổ sung/triển khai được (nêu tiến bộ so với Buổi 12 khi có dữ liệu)**; và (2) **Những điểm còn thiếu hoặc cần cải thiện, hoàn thiện thêm** trước khi tổng kết khóa học.
+- Đây là buổi **kiểm tra tiến độ dự án lần 2 (nước rút trước buổi bảo vệ cuối khóa)**: sản phẩm đang hoàn thiện các tính năng chính và kiểm thử.
+- Nội dung nhận xét tiến độ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện có những gì và phần đã bổ sung/triển khai được (nêu tiến bộ so với Buổi 12 khi có dữ liệu)**; và (2) **Những điểm còn thiếu hoặc cần rà soát, hoàn thiện nốt trước buổi báo cáo sản phẩm cuối khóa**.
 ${
   session12Evidence.hasEvidence
     ? `- Hệ thống CÓ dữ liệu buổi trước (${anonSession12Summary}): hãy nêu tiến bộ so với Buổi 12 và ghi nhận phần chức năng/giao diện/mô hình đã bổ sung thêm so với bước đầu.`
     : `- LƯU Ý QUAN TRỌNG: Hệ thống CHƯA CÓ dữ liệu buổi trước của học sinh này. TUYỆT ĐỐI KHÔNG tự bịa câu "so với buổi 12", "so với buổi trước" hay tự suy đoán sự thay đổi giữa hai buổi. Chỉ nhận xét hiện trạng sản phẩm và phần cần hoàn thiện.`
 }
-${subjectSpecificGuidance}
+${subjectSpecificGuidance}${multimodalGuidance}
 - TUYỆT ĐỐI KHÔNG viết như thể sản phẩm đã tổng kết hoàn tất toàn khóa, và KHÔNG ghi các nhãn nội bộ như "Buổi 13", "Giai đoạn 1", "GĐ1".`;
       } else {
         stageSpecificInstruction = `YÊU CẦU RIÊNG CHO BUỔI 14 (${stageInfo.stageLabel} - ${stageInfo.stageCode}):
 - Đây là nhận xét chính thức ghi vào **Học bạ tổng kết Sản phẩm cuối khóa** để Phụ huynh theo dõi kết quả học tập.
 - Phong cách viết chuẩn mẫu giáo viên MindX ở Buổi 14:
   + Xưng là **"giáo viên"** (ví dụ: "giáo viên ghi nhận...", "giáo viên đánh giá cao..."), tuyệt đối KHÔNG xưng "thầy", "cô" hay "thầy/cô"; gọi học viên bằng tên gọi ("${anonymousToken}") kết hợp đại từ **"em"** (nhất quán dùng "em", hạn chế dùng "con" ở Buổi 14).
-${subjectSpecificGuidance}
+${subjectSpecificGuidance}${multimodalGuidance}
 - Nội dung bắt buộc thể hiện rõ ràng, mạch lạc: (1) **Đánh giá tổng quan & Sản phẩm của học viên có những gì** (đề tài dự án, cấu trúc sản phẩm/giao diện/mô hình, chức năng thực tế và kiến thức chuyên môn của khóa ${courseProfile.trackBadgeLabel} đã vận dụng); và (2) **Sản phẩm cần cải thiện những gì** (những điểm còn hạn chế, phần giao diện/mô hình, tính năng hoặc kỹ thuật cần trau chuốt, tối ưu thêm).
 - TUYỆT ĐỐI KHÔNG ghi cụm từ "Giai đoạn 2", "GĐ2", "Buổi 14", "đợt nộp" vào trong lời nhận xét đầu ra.
 - TUYỆT ĐỐI KHÔNG tự bịa lỗi kỹ thuật cụ thể nếu giáo viên không ghi chú, và KHÔNG tự khẳng định "sản phẩm hoàn hảo không có bất kỳ hạn chế nào" hay "chạy hoàn chỉnh tuyệt đối" khi thiếu dữ kiện.`;
@@ -1037,7 +1828,9 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi 
 
       try {
         const model = getGeminiModel(undefined, 0.85);
-        const response = await model.generateContent(prompt);
+        const response = await model.generateContent(
+          imageParts.length > 0 ? [prompt, ...imageParts] : prompt
+        );
         const rawResponseText = response.response.text();
 
         const cleanedJson = rawResponseText
@@ -1056,20 +1849,29 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi 
             .replace(/\b[a-zA-Z0-9_-]+\.(?:py|ui|qss|js|ts|html|css|sb3|json|yyz|yyp|yy|gml|ipynb|csv|vexblocks|iqblocks)\b/gi, "mã nguồn dự án")
             .replace(/\(\s*(?:phần\s+)?mã\s+nguồn\s+dự\s+án\s*\)/gi, "")
             .replace(/\[(?:Thái độ|Sản phẩm|Kỹ thuật|Thuyết trình|Giai đoạn 1|Giai đoạn 2)[^\]]*\]\s*:?\s*/gi, "")
-            .replace(/\bbuổi\s+tổng\s+kết\s+giai\s+đoạn\s*2\b/gi, "buổi tổng kết cuối khóa")
-            .replace(/\bở\s+giai\s+đoạn\s*2\b/gi, "ở đợt tổng kết cuối khóa")
-            .replace(/\btrong\s+giai\s+đoạn\s*2\b/gi, "trong đợt tổng kết cuối khóa")
-            .replace(/\bgiai\s+đoạn\s*2\b/gi, "cuối khóa")
-            .replace(/\(\s*GĐ\s*[12]\s*\)/gi, "")
-            .replace(/\bGĐ\s*2\b/gi, "cuối khóa")
-            .replace(/\bGĐ\s*1\b/gi, "bước đầu")
-            .replace(/\bgiai\s+đoạn\s*1\b/gi, "giai đoạn đầu")
-            .replace(/\s*\(\s*Buổi\s*(?:12|13|14)\s*\)/gi, "")
-            .replace(/\b(?:ở|tại|trong)\s+buổi\s*14\b/gi, "trong dự án cuối khóa")
-            .replace(/\b(?:ở|tại|trong)\s+buổi\s*(?:12|13)\b/gi, "trong quá trình thực hiện dự án")
-            .replace(/\bso\s+với\s+buổi\s*(?:số\s*)?12\b/gi, "so với bước đầu")
-            .replace(/\btừ\s+buổi\s*(?:số\s*)?12\b/gi, "từ bước đầu")
-            .replace(/\bbuổi\s*(?:số\s*)?(?:12|13|14)\b/gi, "đợt thực hiện dự án")
+            .replace(/\bbuổi\s+tổng\s+kết\s+giai\s+đoạn\s*2\b/giu, "buổi tổng kết cuối khóa")
+            .replace(/(?:^|(?<=[\s.,;:!?("']))ở\s+giai\s+đoạn\s*2\b/giu, "ở đợt tổng kết cuối khóa")
+            .replace(/\btrong\s+giai\s+đoạn\s*2\b/giu, "trong đợt tổng kết cuối khóa")
+            .replace(/\bgiai\s+đoạn\s*2\b/giu, "cuối khóa")
+            .replace(/\(\s*GĐ\s*[12]\s*\)/giu, "")
+            .replace(/\bGĐ\s*2\b/giu, "cuối khóa")
+            .replace(/\bGĐ\s*1\b/giu, "bước đầu")
+            .replace(/\bgiai\s+đoạn\s*1\b/giu, "giai đoạn đầu")
+            .replace(/\s*\(\s*Buổi\s*(?:12|13|14)\s*\)/giu, "")
+            .replace(/\btrước\s+(?:khi\s+bước\s+vào\s+|buổi\s+bảo\s+vệ\s+)?buổi\s*(?:số\s*)?14\b/giu, "trước buổi báo cáo sản phẩm cuối khóa")
+            .replace(/\bcho\s+buổi\s*(?:số\s*)?14\b/giu, "cho buổi báo cáo sản phẩm cuối khóa")
+            .replace(
+              /(?:^|(?<=[\s.,;:!?("']))(?:ở|vào)\s+buổi\s*(?:số\s*)?13(?:\s+sắp\s+tới)?\b/giu,
+              stageInfo.sessionNumber === 12
+                ? "ở buổi kiểm tra tiến độ tiếp theo"
+                : "trong đợt kiểm tra tiến độ này"
+            )
+            .replace(/(?:^|(?<=[\s.,;:!?("']))(?:ở|tại|trong)\s+buổi\s*(?:số\s*)?14\b/giu, "trong đợt báo cáo sản phẩm cuối khóa")
+            .replace(/(?:^|(?<=[\s.,;:!?("']))(?:ở|tại|trong)\s+buổi\s*(?:số\s*)?(?:12|13)\b/giu, "trong đợt kiểm tra tiến độ dự án")
+            .replace(/\bso\s+với\s+buổi\s*(?:số\s*)?12\b/giu, "so với buổi kiểm tra tiến độ trước")
+            .replace(/(?:^|(?<=[\s.,;:!?("']))từ\s+buổi\s*(?:số\s*)?12\b/giu, "từ buổi kiểm tra tiến độ đầu tiên")
+            .replace(/\bbuổi\s*(?:số\s*)?14\b/giu, "buổi báo cáo sản phẩm cuối khóa")
+            .replace(/\bbuổi\s*(?:số\s*)?(?:12|13)\b/giu, "buổi kiểm tra tiến độ dự án")
             .replace(
               /^(?:kính\s+gửi|thân\s+gửi|gửi|chào|xin\s+chào|báo\s+cáo\s+cùng)\s+(?:quý\s+)?(?:ba\s+mẹ|gia\s+đình|phụ\s+huynh)(?:\s+học\s+viên|\s+của\s+con)?\s*[,.:;-]?\s*/gi,
               ""
@@ -1103,6 +1905,95 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi 
               .replace(/\bthầy\s+cô\b/giu, (m) =>
                 m[0] === m[0].toUpperCase() ? "Giáo viên" : "giáo viên"
               );
+          }
+          if (courseProfile.track === "WEB" && prelimSummary.absentWebFeatures.inspectedWebCode) {
+            const noteClauses = stripVietnameseDiacritics(teacherNote)
+              .toLowerCase()
+              .split(/[.,;!\n]+/)
+              .map((c) => c.trim())
+              .filter(Boolean);
+            const isAffirmedByTeacher = (kwRegex: RegExp): boolean =>
+              noteClauses.some(
+                (clause) =>
+                  kwRegex.test(clause) &&
+                  !/\b(?:khong|chua|thieu|bo|chang|ko|no|without|not|du\s*kien|se|can|buoi\s*toi|buoi\s*sau|tiep\s*theo)\b/.test(
+                    clause
+                  )
+              );
+
+            const activeForbiddenPatterns: RegExp[] = [];
+            if (
+              prelimSummary.absentWebFeatures.noBootstrap &&
+              !isAffirmedByTeacher(/\bbootstrap\b/)
+            ) {
+              activeForbiddenPatterns.push(
+                /\bBootstrap(?:\s*\d+(?:\.\d+)?)?\b|\b(?:navbar-expand|container-fluid|col-(?:sm|md|lg|xl)-\d+)\b/i
+              );
+            }
+            if (
+              prelimSummary.absentWebFeatures.noLocalStorage &&
+              !isAffirmedByTeacher(/\b(?:localstorage|sessionstorage)\b/)
+            ) {
+              activeForbiddenPatterns.push(
+                /\b(?:LocalStorage|SessionStorage|local\s+storage|session\s+storage)\b|\b(?:localStorage|sessionStorage)\s*(?:\.\s*(?:getItem|setItem|removeItem|clear|key)\b|\[)|\b(?:getItem|setItem|removeItem)\s*\(/i
+              );
+            }
+            if (
+              prelimSummary.absentWebFeatures.noFetchApi &&
+              !isAffirmedByTeacher(/\b(?:fetch|axios|xmlhttprequest|ajax)\b/)
+            ) {
+              activeForbiddenPatterns.push(
+                /\b(?:Fetch\s*API|Axios|XMLHttpRequest|AJAX|REST\s*API|RESTful\s*API)\b|\bfetch\s*\(|\baxios\s*(?:\.\s*(?:get|post|put|delete|patch|request)\b|\()|\bnew\s+XMLHttpRequest\b|(?:tải|gọi|lấy|kết\s+nối|đồng\s+bộ)\s+(?:dữ\s+liệu(?:\s+động|\s+từ\s+API|\s+từ\s+server|\s+bất\s+đồng\s+bộ|\s+thành\s+công)?|API(?:\s+bên\s+ngoài|\s+thành\s+công)?)/i
+              );
+            }
+            if (
+              prelimSummary.absentWebFeatures.noCart &&
+              !isAffirmedByTeacher(/\b(?:gio\s*hang|shopping\s*cart|checkout)\b/)
+            ) {
+              activeForbiddenPatterns.push(
+                /(?:giỏ\s*hàng|thêm\s+vào\s+giỏ|mua\s+ngay|\b(?:shopping\s*cart|add[_\s-]*to[_\s-]*cart|gio[-_]?hang|addToCart|removeFromCart|updateCart|renderCart|clearCart|checkout|handleCheckout|cartItems)\b|thanh\s*toán(?:\s*đơn(?:\s*hàng)?|\s*giỏ\s*hàng)?)/i
+              );
+            }
+            if (
+              prelimSummary.absentWebFeatures.noFirebase &&
+              !isAffirmedByTeacher(/\b(?:firebase|firestore)\b/)
+            ) {
+              activeForbiddenPatterns.push(
+                /\b(?:Firebase(?:\s+Authentication|\s+Auth|\s+Storage|\s+Hosting)?|Cloud\s+Firestore|Firestore|Realtime\s+Database|initializeApp|getFirestore|getAuth|getDatabase|signInWithEmailAndPassword|createUserWithEmailAndPassword|signInWithPopup|onAuthStateChanged|collection|addDoc|getDocs|getDoc|setDoc|updateDoc|deleteDoc|onSnapshot)\b/i
+              );
+            }
+            if (
+              prelimSummary.absentWebFeatures.noAuth &&
+              !isAffirmedByTeacher(/\b(?:dang\s*nhap|dang\s*ky|login|register|sign\s*in|sign\s*up)\b/)
+            ) {
+              activeForbiddenPatterns.push(
+                /(?:đăng\s*nhập|đăng\s*ký|\b(?:log\s*in|login|sign\s*in|signin|sign\s*up|signup|register|authentication|dang[-_]?nhap|dang[-_]?ky|signInWithEmailAndPassword|createUserWithEmailAndPassword|signInWithPopup|signOut|onAuthStateChanged|handleLogin|handleRegister|logout|checkAuth|authenticateUser)\b|xác\s*thực\s*(?:tài\s*khoản|người\s*dùng)|phân\s*quyền\s*(?:người\s*dùng|đăng\s*nhập))/i
+              );
+            }
+
+            if (activeForbiddenPatterns.length > 0) {
+              const sentences = cleaned
+                .split(/(?<=[.!?])\s+/)
+                .map((s) => s.trim())
+                .filter(Boolean);
+              const filteredSentences: string[] = [];
+              let replacedAnyUnsupportedSentence = false;
+              for (const sentence of sentences) {
+                if (activeForbiddenPatterns.some((pat) => pat.test(sentence))) {
+                  replacedAnyUnsupportedSentence = true;
+                } else {
+                  filteredSentences.push(sentence);
+                }
+              }
+              if (replacedAnyUnsupportedSentence) {
+                if (filteredSentences.length === 0) {
+                  filteredSentences.push(
+                    "Con đã trình bày các mục nội dung chính trên trang web theo chủ đề dự án."
+                  );
+                }
+                cleaned = filteredSentences.join(" ");
+              }
+            }
           }
           if (courseProfile.track !== "WEB" && courseProfile.track !== "GENERAL") {
             cleaned = cleaned

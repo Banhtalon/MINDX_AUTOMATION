@@ -1,0 +1,53 @@
+◇ injected env (0) from .env.local
+◇ injected env (0) from .env
+=== KIỂM THỬ CẬP NHẬT SPCK v2.7.2 (V01 -> V14) ===
+
+[V01] Chuẩn hóa ảnh về 960×540...
+  -> PASS V01.
+
+[V02 & V03] Nhận diện ảnh Owner để sẵn & ưu tiên làm Thumbnail...
+  -> PASS V02 & V03.
+
+[V04] Chụp giao diện Web 960×540 & Thumbnail ảnh Owner...
+  -> PASS V04.
+
+[V05] Đọc nội dung dán link YouTube...
+  -> PASS V05.
+
+[V06] Tách tên học viên từ tiêu đề video & khớp danh sách lớp...
+  -> PASS V06.
+
+[V07] Nhập Playlist YouTube trọn gói qua /api/spck/import-youtube...
+  -> PASS V07.
+
+[V08] Nhập lại không bị dồn ảnh cũ & giữ ảnh đại diện Owner...
+  -> PASS V08.
+
+[V09] (F01) Không cắt chữ 'Thế' khỏi tên — khớp đúng họ tên đầy đủ...
+  -> PASS V09.
+
+[V10] (F07 + R2-02) Ảnh dùng động trong code Python (kể cả ghép biến) không bị nhận nhầm là ảnh Owner...
+  -> PASS V10.
+
+[V11] (F06) Thư mục chỉ có ảnh YouTube: Thumbnail là Logo MindX, ảnh YouTube ở ảnh bổ sung...
+  -> PASS V11.
+
+[V12] (F05) Nhập YouTube: mọi ảnh Owner để sẵn đều vào ảnh bổ sung...
+  -> PASS V12.
+
+[V13] (F02) Nhập lại vượt giới hạn ảnh: báo lỗi và GIỮ NGUYÊN ảnh cũ...
+  -> PASS V13.
+
+[V14] (F09) Máy chủ xem trước Web chặn liên kết thư mục trỏ ra ngoài...
+  -> PASS V14.
+
+[V15] (R2-03) Lỗi ngoại lệ khi ghi DB trong lúc nhập YouTube phải dọn sạch ảnh mới tạo trên đĩa...
+  -> PASS V15.
+
+[V16] (R2-01) Phản hồi nhập YouTube đến muộn không kéo lùi draftVersion hay gây lỗi HTTP 409 khi lưu tiếp...
+  -> PASS V16.
+
+[V17] Tự động dựng hình màn chơi GameMaker (.yyz) chuẩn 960×540...
+  -> PASS V17.
+
+=== HOÀN TẤT: TẤT CẢ 17 KỊCH BẢN v2.7.2 (V01 -> V17) ĐỀU ĐẠT 100% ===

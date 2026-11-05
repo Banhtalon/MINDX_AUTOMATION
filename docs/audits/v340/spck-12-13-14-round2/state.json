@@ -1,0 +1,25 @@
+{
+  "repo": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "root": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8",
+  "work": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8\\work",
+  "created": "2026-11-05T04:17:58.587Z",
+  "head": "00dd3e3f75961a1276379cad3212eaf74ec306b2",
+  "expected": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "productionBefore": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "sourceCount": 161,
+  "copiedSourceMatches": true,
+  "changedSinceRound1": [
+    "scripts/test-streamline-v340-s5.ts",
+    "src/app/api/spck/scan/route.ts",
+    "src/lib/gemini/spck-comment.ts",
+    "src/lib/playwright/spck-drive-uploader.ts",
+    "src/lib/playwright/spck-uploader.ts",
+    "src/lib/spck/spck-quick-tags.ts"
+  ]
+}

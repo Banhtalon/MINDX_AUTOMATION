@@ -1,0 +1,175 @@
+{
+  "total": 8,
+  "passed": 8,
+  "failed": 0,
+  "errors": 0,
+  "results": [
+    {
+      "id": "R5-F01-01",
+      "finding": "F01",
+      "label": "Displayed style markup is text and must not auto-save a CSS layout observation",
+      "status": "PASS",
+      "pass": true,
+      "observed": {
+        "source": "<title>CSS guide</title><script>const helpText = '<style>@import \"bootstrap.css\";.demo{display:flex}</style>'; document.body.textContent = helpText;</script>",
+        "runtimeCalls": [],
+        "displayedText": "<style>@import \"bootstrap.css\";.demo{display:flex}</style>",
+        "tags": [
+          "🔄 Có thao tác cập nhật nội dung phần tử DOM"
+        ],
+        "dbReadBack": true
+      }
+    },
+    {
+      "id": "R5-F08-01",
+      "finding": "F08",
+      "label": "Displayed style import must not prove Bootstrap or Flexbox implementation",
+      "status": "PASS",
+      "pass": true,
+      "observed": {
+        "source": "<title>CSS guide</title><script>const helpText = '<style>@import \"bootstrap.css\";.demo{display:flex}</style>'; document.body.textContent = helpText;</script>",
+        "runtimeCalls": [],
+        "displayedText": "<style>@import \"bootstrap.css\";.demo{display:flex}</style>",
+        "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: CSS guide), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+        "detectedExtensions": [
+          ".html"
+        ],
+        "absentWebFeatures": {
+          "inspectedWebCode": true,
+          "noBootstrap": true,
+          "noCart": true,
+          "noAuth": true,
+          "noLocalStorage": true,
+          "noFetchApi": true,
+          "noFirebase": true
+        }
+      }
+    },
+    {
+      "id": "R5-F01-02",
+      "finding": "F01",
+      "label": "A regex literal displaying initializeApp() must not auto-save a Firebase observation",
+      "status": "PASS",
+      "pass": true,
+      "observed": {
+        "source": "<title>Regex guide</title><script>const pattern = /initializeApp()/; document.body.textContent = pattern.source;</script>",
+        "runtimeCalls": [],
+        "displayedText": "initializeApp()",
+        "tags": [
+          "🔄 Có thao tác cập nhật nội dung phần tử DOM"
+        ],
+        "dbReadBack": true
+      }
+    },
+    {
+      "id": "R5-F08-02",
+      "finding": "F08",
+      "label": "Regex literal text with initializeApp() is not an executed Firebase call",
+      "status": "PASS",
+      "pass": true,
+      "observed": {
+        "source": "<title>Regex guide</title><script>const pattern = /initializeApp()/; document.body.textContent = pattern.source;</script>",
+        "runtimeCalls": [],
+        "displayedText": "initializeApp()",
+        "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Regex guide), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+        "detectedExtensions": [
+          ".html"
+        ],
+        "absentWebFeatures": {
+          "inspectedWebCode": true,
+          "noBootstrap": true,
+          "noCart": true,
+          "noAuth": true,
+          "noLocalStorage": true,
+          "noFetchApi": true,
+          "noFirebase": true
+        }
+      }
+    },
+    {
+      "id": "R5-F01-03",
+      "finding": "F01",
+      "label": "Actual CSS and Firebase API syntax retain factual positive scan tags",
+      "status": "PASS",
+      "pass": true,
+      "observed": {
+        "source": "<title>Real layout</title><style>@import \"bootstrap.css\";.demo{display:flex}</style><div class=\"demo\">Plants</div><script>initializeApp({});</script>",
+        "tags": [
+          "📐 Có sử dụng bố cục CSS Flexbox/Grid",
+          "🔥 Có khai báo thư viện / cấu hình Firebase trong mã nguồn"
+        ],
+        "dbReadBack": true
+      }
+    },
+    {
+      "id": "R5-F08-03",
+      "finding": "F08",
+      "label": "Actual CSS Bootstrap import and Firebase call retain positive summary evidence",
+      "status": "PASS",
+      "pass": true,
+      "observed": {
+        "source": "<title>Real layout</title><style>@import \"bootstrap.css\";.demo{display:flex}</style><div class=\"demo\">Plants</div><script>initializeApp({});</script>",
+        "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Real layout), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS Flexbox, Bootstrap, Firebase Auth / Firestore.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+        "detectedExtensions": [
+          ".html"
+        ],
+        "absentWebFeatures": {
+          "inspectedWebCode": true,
+          "noBootstrap": false,
+          "noCart": true,
+          "noAuth": true,
+          "noLocalStorage": true,
+          "noFetchApi": true,
+          "noFirebase": false
+        }
+      }
+    },
+    {
+      "id": "R5-F07-01",
+      "finding": "F07",
+      "label": "A ZIP entry cannot mask an unresolved script reference outside the ZIP root",
+      "status": "PASS",
+      "pass": true,
+      "observed": {
+        "htmlEntry": "index.html",
+        "source": "<title>ZIP paths</title><script src=\"../shared/main.js\"></script>",
+        "readEntry": "shared/main.js",
+        "normalizedReferencedPath": "../shared/main.js",
+        "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: ZIP paths), 0 file CSS, 1 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.\n- File 'FILE_01.zip' (WEB): === PROJECT ARCHIVE (.ZIP): project.zip ===\nTổng số file hợp lệ: 2 (Đã đọc 2 file mã nguồn, bỏ qua 0 file rác/thư viện)\nTổng dung lượng giải nén: 0.1 KB\nCây thư mục dự án:\n  - index.html (65 bytes)\n  - shared/main.js (32 bytes)\n\n=== WEB SOURCE (.HTML): index.html ===\nSố dòng: 1\nThẻ HTML sử dụng: title, script\n\n  1 | <title>ZIP paths</title><script src=\"../shared/main.js\"></script>\n\n=== WEB SOURCE (.JS): shared/main.js ===\nSố dòng: 1\n\n  1 | console.log(\"unrelated script\");",
+        "detectedExtensions": [
+          ".zip",
+          ".html",
+          ".js"
+        ],
+        "absentWebFeatures": {
+          "inspectedWebCode": true
+        }
+      }
+    },
+    {
+      "id": "R5-F07-02",
+      "finding": "F07",
+      "label": "An exact local ZIP script reference remains fully inspected",
+      "status": "PASS",
+      "pass": true,
+      "observed": {
+        "source": "<title>ZIP paths</title><script src=\"shared/main.js\"></script>",
+        "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: ZIP paths), 0 file CSS, 1 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.\n- File 'FILE_01.zip' (WEB): === PROJECT ARCHIVE (.ZIP): project.zip ===\nTổng số file hợp lệ: 2 (Đã đọc 2 file mã nguồn, bỏ qua 0 file rác/thư viện)\nTổng dung lượng giải nén: 0.1 KB\nCây thư mục dự án:\n  - index.html (62 bytes)\n  - shared/main.js (29 bytes)\n\n=== WEB SOURCE (.HTML): index.html ===\nSố dòng: 1\nThẻ HTML sử dụng: title, script\n\n  1 | <title>ZIP paths</title><script src=\"shared/main.js\"></script>\n\n=== WEB SOURCE (.JS): shared/main.js ===\nSố dòng: 1\n\n  1 | console.log(\"static script\");",
+        "detectedExtensions": [
+          ".zip",
+          ".html",
+          ".js"
+        ],
+        "absentWebFeatures": {
+          "inspectedWebCode": true,
+          "noBootstrap": true,
+          "noCart": true,
+          "noAuth": true,
+          "noLocalStorage": true,
+          "noFetchApi": true,
+          "noFirebase": true
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "verdict": "NO-GO",
+  "closed": 8,
+  "open": 2,
+  "statuses": {
+    "F01": "OPEN",
+    "F02": "CLOSED",
+    "F03": "CLOSED",
+    "F04": "CLOSED",
+    "F05": "CLOSED",
+    "F06": "CLOSED",
+    "F07": "CLOSED",
+    "F08": "OPEN",
+    "F09": "CLOSED",
+    "F10": "CLOSED"
+  },
+  "mandatoryPassed": true,
+  "mandatoryGateCount": 9,
+  "mandatoryCommandCount": 10,
+  "blockingProbes": [
+    {
+      "id": "R6-F01-01",
+      "finding": "F01",
+      "label": "Regex after a block must not auto-save a Firebase tag"
+    },
+    {
+      "id": "R6-F08-01",
+      "finding": "F08",
+      "label": "Regex after a block is not Firebase implementation"
+    },
+    {
+      "id": "R6-F01-02",
+      "finding": "F01",
+      "label": "Division after postfix increment must preserve real Firebase syntax"
+    },
+    {
+      "id": "R6-F08-02",
+      "finding": "F08",
+      "label": "Real Firebase call in division after postfix increment must not be erased"
+    }
+  ],
+  "note": "All 84 original Round 1-5 probe cases pass. Four Round 6 failures reproduce two lexer causes in F01/F08. F07 closes. No product source edited."
+}

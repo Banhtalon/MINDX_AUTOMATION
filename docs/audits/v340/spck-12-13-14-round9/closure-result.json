@@ -1,0 +1,10 @@
+{
+  "gate": "closure",
+  "command": "npx tsx scratch/round4-closure-probe.ts",
+  "started": "2026-11-05T07:39:51.521Z",
+  "finished": "2026-11-05T07:39:54.996Z",
+  "exitCode": 0,
+  "signal": null,
+  "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\data\\audit-closure.db",
+  "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c\\work\\data\\audit-closure-classes.json"
+}

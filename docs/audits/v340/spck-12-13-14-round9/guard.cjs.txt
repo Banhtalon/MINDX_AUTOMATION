@@ -1,0 +1,26 @@
+
+const net=require('node:net'),fs=require('node:fs'),path=require('node:path');
+const connect=net.Socket.prototype.connect;
+net.Socket.prototype.connect=function(...args){let o=args[0],host=typeof o==='object'?o.host:typeof args[1]==='string'?args[1]:undefined;let pipe=typeof o==='string'&&!/^\d+$/.test(o);if(!pipe&&host&&!['127.0.0.1','localhost','::1'].includes(host)){throw new Error('AUDIT_BLOCKED_NETWORK '+host);}return connect.apply(this,args);};
+const fetch=globalThis.fetch;globalThis.fetch=async function(input,...args){const u=new URL(typeof input==='string'?input:input.url||String(input));if(!['127.0.0.1','localhost','[::1]'].includes(u.hostname))throw new Error('AUDIT_BLOCKED_FETCH '+u.hostname);return fetch.call(this,input,...args);};
+for(const m of ['readFileSync','openSync','copyFileSync','unlinkSync','rmSync','writeFileSync','appendFileSync']){const orig=fs[m];fs[m]=function(...args){const p=typeof args[0]==='string'?path.resolve(args[0]).toLowerCase():'';const banned=process.env.AUDIT_PRODUCTION_ROOT.toLowerCase();if(p===path.join(banned,'data','mindx_bot.db')||p===path.join(banned,'data','running_classes.json'))throw new Error('AUDIT_BLOCKED_PRODUCTION_ACCESS '+m);return orig.apply(this,args);};}
+
+const record=(kind,host)=>{if(process.env.AUDIT_NETWORK_LOG)fs.appendFileSync(process.env.AUDIT_NETWORK_LOG,JSON.stringify({kind,host,pid:process.pid})+'\n');};
+for(const name of ['node:http','node:https']){const mod=require(name);for(const method of ['request','get']){const orig=mod[method];mod[method]=function(...args){const i=args[0];let host=typeof i==='string'?new URL(i).hostname:i instanceof URL?i.hostname:i?.hostname||i?.host;if(host&&!['localhost','127.0.0.1','::1'].includes(String(host).split(':')[0])){record('blocked-request',host);throw new Error('AUDIT_BLOCKED_HTTP '+host);}return orig.apply(this,args);};}}
+if(process.env.AUDIT_WORK_ROOT){const pw=require(require('node:path').join(process.env.AUDIT_WORK_ROOT,'node_modules/playwright'));const launch=pw.chromium.launch.bind(pw.chromium);pw.chromium.launch=opts=>launch({...opts,args:[...(opts?.args||[]),'--proxy-server=127.0.0.1:9','--proxy-bypass-list=127.0.0.1;localhost']});pw.chromium.launchPersistentContext=()=>{record('blocked-persistent-context','production-browser');throw new Error('AUDIT_NO_PERSISTENT_BROWSER');};}
+record('guard-loaded','external-http-blocked;chromium-loopback-proxy');
+
+// Refuse native SQLite connections outside this gate's synthetic database.
+const Module=require('node:module'),load=Module._load,wrapped=new WeakMap();
+Module._load=function(request,parent,isMain){
+  const result=load.apply(this,arguments);
+  if(request!=='better-sqlite3')return result;
+  if(wrapped.has(result))return wrapped.get(result);
+  const proxy=new Proxy(result,{construct(target,args,newTarget){
+    const actual=path.resolve(String(args[0])).toLowerCase();
+    const allowed=path.resolve(process.env.MINDX_DB_PATH).toLowerCase();
+    if(actual!==allowed){record('blocked-sqlite',actual);throw Error('AUDIT_SQLITE_OUTSIDE_SYNTHETIC_DB');}
+    record('sqlite-open',actual);return Reflect.construct(target,args,newTarget);
+  }});
+  wrapped.set(result,proxy);return proxy;
+};

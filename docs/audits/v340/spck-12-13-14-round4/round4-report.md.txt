@@ -1,0 +1,128 @@
+# Kiểm định độc lập SPCK Buổi 12–13–14 — Round 4 Final Closure Audit
+
+## VERDICT ROUND 4: NO-GO
+
+**Ngày kiểm định:** 05/11/2026, múi giờ Việt Nam.  
+**Bản được kiểm định:** HEAD `00dd3e3f75961a1276379cad3212eaf74ec306b2` cùng các thay đổi chưa commit tại thời điểm dựng bản sao. Đúng **4 tệp** thay đổi so với snapshot Round 3: `scripts/test-streamline-v340-s5.ts`, `src/app/api/spck/scan/route.ts`, `src/lib/gemini/spck-comment.ts`, `src/lib/spck/spck-quick-tags.ts`. [Git status ban đầu](spck-12-13-14-round4/git-status-before.txt), [chênh lệch với HEAD](spck-12-13-14-round4/working-tree.patch), [SHA-256 so với Round 3](spck-12-13-14-round4/source-changes-since-round3.json).
+
+**Kết quả: 6/10 CLOSED; 4/10 OPEN — F01, F02, F07, F08.** Các bản sửa đã xử lý đúng **toàn bộ 7/7 ca Round 3**, kể cả 5 ca từng FAIL. Tuy nhiên, kiểm tra điều kiện đóng lỗi bằng các biến thể cùng phạm vi vẫn tái hiện **6 ca FAIL** trong bốn mục trên. Vì vậy chưa thể xác nhận đóng đợt nâng cấp.
+
+**7/7 cổng bắt buộc PASS, tương ứng 8/8 lệnh exit 0** (G6 gồm hai lệnh). Round 1 **42/42 PASS**, Round 2 **10/10 PASS**, callback F09 **2/2 PASS**, Round 3 **7/7 PASS**. Bộ đóng lỗi bổ sung Round 4: **15 ca, 9 PASS, 6 FAIL, 0 ERROR**, exit 1. Các ca FAIL là biến thể của bốn phát hiện đang mở, **không phải sáu phát hiện mới**. Không mặc định coi mọi biến thể là hồi quy mới so với bản trước.
+
+**Bảo toàn: PASS.** Hai tệp dữ liệu thật khớp SHA-256 Owner trước/sau; **180/180 tệp đầu vào giữ nguyên và khớp TEMP**, gồm **149/149 tệp `src/**` + `scripts/**`**. Lịch sử Round 1–3 được giữ nguyên byte bên dưới. Chỉ ghi báo cáo này và thư mục bằng chứng Round 4; không sửa mã sản phẩm hay bộ thử gốc.
+
+### R4.1. Cô lập và ràng buộc bằng chứng
+
+- Đọc `PROJECT_STATE.md`, đối chiếu `MINDX_AUTOMATION_PLAN.md`, `CHANGELOG.md`, `AGENTS.md`, lịch sử kiểm định, các bản sửa và nơi gọi. Tải các probe đã lưu từ Round 1/2/3 vào bản sao TEMP; kiểm tra SHA-256 bản nguồn và bản chạy, **không sửa điều kiện hoặc bỏ ca**. Callback F09 cũng khớp nguyên byte Round 2. [state.json](spck-12-13-14-round4/state.json).
+- Snapshot: `%TEMP%\codex-spck-121314-r4-c815414286f2\work`. Sao chép mã, bộ thử, cấu hình cần thiết và liên kết thư viện đã cài; **không sao chép `.env`, hồ sơ trình duyệt, DB thật hay danh sách lớp thật**. `scripts/test-streamline-v340-s5.ts` được sao chép từ đúng bản hiện tại, gồm các ca hồi quy mới của Owner.
+- Mỗi lần chạy nhận `MINDX_DB_PATH=...\work\data\audit-<gate>.db` và `MINDX_RUNNING_CLASSES_PATH=...\work\data\audit-<gate>-classes.json`, nội dung lớp giả `[]`. Dùng khóa AI giả; phản hồi Gemini, cây Drive và callback LMS đều giả lập. Không gọi dịch vụ thật.
+- Tái sử dụng bộ bảo vệ Round 3: chặn HTTP ngoài loopback, chặn tạo hồ sơ trình duyệt persistent, dùng proxy loopback cho Chromium và chỉ cho phép SQLite mở đúng DB giả của lần chạy. Các log không ghi nhận sự kiện bị chặn; các đường dẫn mở DB đều thuộc TEMP. Đây là giám sát trong tiến trình, **không phải đo lưu lượng toàn hệ điều hành**.
+- Hai ca F01 bổ sung gọi route quét thật rồi **đọc lại thẻ đã lưu trong SQLite giả**. Ca F02 gọi bộ sinh nhận xét thật với phản hồi AI cố tình sai và **đọc lại bản nháp đã lưu**. Các ca F07/F08 gọi bộ tóm tắt thật trên tệp TEMP. Ca template `${...}` còn thực thi JavaScript trong môi trường giả để xác nhận `localStorage.setItem` và `fetch` thực sự được gọi, không phát sinh yêu cầu mạng thật.
+- Bộ Round 4 chạy hai lần với DB riêng: lần đầu 9 PASS/6 FAIL; lần cuối bổ sung bằng chứng thực thi template và đọc lại nháp, vẫn **9 PASS/6 FAIL/0 ERROR**. Giữ cả [kết quả đầu](spck-12-13-14-round4/round4-closure-initial-results.json) và [kết quả cuối](spck-12-13-14-round4/round4-closure-results.json); không đổi mã sản phẩm giữa hai lần.
+
+### R4.2. Cổng kiểm tra bắt buộc và bộ đóng lỗi bổ sung
+
+| Cổng | Lệnh chạy trong `work` TEMP | Kết quả mới | Bằng chứng |
+|---|---|---|---|
+| G1 | `npx tsc --noEmit --incremental false` | **PASS**, exit 0 | [log](spck-12-13-14-round4/tsc.log.txt), [lần chạy](spck-12-13-14-round4/tsc-result.json) |
+| G2 | `npx tsx scripts/test-spck-v270.ts` | **PASS**, T01–T16, exit 0 | [log](spck-12-13-14-round4/v270.log.txt), [lần chạy](spck-12-13-14-round4/v270-result.json) |
+| G3 | `npx tsx scripts/test-spck-v272.ts` | **PASS**, V01–V17, exit 0 | [log](spck-12-13-14-round4/v272.log.txt), [lần chạy](spck-12-13-14-round4/v272-result.json) |
+| G4 | `npx tsx scripts/test-streamline-v340-s5.ts` | **PASS**, S5b và giao diện giả lập, exit 0 | [log](spck-12-13-14-round4/s5.log.txt), [lần chạy](spck-12-13-14-round4/s5-result.json) |
+| G5 | `npx tsx scratch/independent-probe.ts` | **PASS**, 42/42, exit 0 | [log](spck-12-13-14-round4/probe.log.txt), [kết quả](spck-12-13-14-round4/probe-results.json), [lần chạy](spck-12-13-14-round4/probe-result.json) |
+| G6a | `npx tsx scratch/supplementary-probe.ts` | **PASS**, 10/10, exit 0 | [log](spck-12-13-14-round4/supplementary.log.txt), [kết quả](spck-12-13-14-round4/supplementary-results.json), [lần chạy](spck-12-13-14-round4/supplementary-result.json) |
+| G6b | `node ../callback-probe.cjs` | **PASS**, F09 2/2, exit 0 | [log](spck-12-13-14-round4/callback.log.txt), [kết quả](spck-12-13-14-round4/callback-results.json), [lần chạy](spck-12-13-14-round4/callback-result.json) |
+| G7 | `npx tsx scratch/round3-focused-probe.ts` | **PASS**, 7/7, 0 ERROR, exit 0 | [log](spck-12-13-14-round4/focused.log.txt), [kết quả](spck-12-13-14-round4/focused-results.json), [lần chạy](spck-12-13-14-round4/focused-result.json) |
+| Bổ sung Round 4 | `npx tsx scratch/round4-closure-probe.ts` | **FAIL**, 9/15 PASS, 6 FAIL, 0 ERROR, exit 1 | [mã](spck-12-13-14-round4/round4-closure-probe.ts.txt), [log cuối](spck-12-13-14-round4/closure-final.log.txt), [kết quả](spck-12-13-14-round4/round4-closure-results.json), [lần chạy cuối](spck-12-13-14-round4/closure-final-result.json) |
+
+G6b chạy đúng callback gốc; `../` chỉ phản ánh tệp nằm ở thư mục TEMP cha. Tám lệnh bắt buộc chạy mới từ **05:28:44 đến 05:29:58 UTC**; bộ Round 4 cuối chạy **05:31:52–05:32:07 UTC**. Không dùng kết quả các vòng cũ để thay cho chạy lại.
+
+### R4.3. Final Closure verification — toàn bộ F01–F10
+
+| ID / mức độ gốc | Trạng thái Round 4 | Kết quả xác minh và ranh giới |
+|---|---|---|
+| **F01 / P1** | **OPEN** | R2-F01-01/02/03 và R3-F01-01/02 đều PASS: đã bỏ suy luận Array/Object, hoàn thành giao diện/kết nối Firebase và chất lượng robot từ tín hiệu chung. Nhưng **R4-F01-01/02 FAIL**: chuỗi hướng dẫn import Firebase vẫn tạo thẻ Firebase; chuỗi `Example: display: flex` vẫn tạo thẻ Flexbox. Hai thẻ sai được đọc lại từ DB giả sau quét. Ca có mã thật R4-F01-03 PASS. |
+| **F02 / P1** | **OPEN** | R2-F02-01/02/03, R3-F02-01/02 và HALLUCINATION-01/02/03 PASS. `fetch('/api/products')`, `axios.get(...)`, `localStorage.setItem(...)`, `initializeApp(...)` và lời khẳng định tải dữ liệu trong các ca đã thử được lọc đúng. Nhưng **R4-F02-01 FAIL**: HTML tĩnh vẫn lưu lời khen dùng `getDocs(collection(...))` thành công ở trạng thái `WAITING_APPROVAL`. Bộ dò Firebase có các hàm này, bộ lọc thiếu chúng. Ca khen tính năng có bằng chứng thật R4-F02-04 PASS. |
+| **F03 / P1** | **CLOSED** | `spck-comment.ts:749–753` vẫn kiểm tra `inspectZipArchiveSafely` trước khi đọc nội dung ZIP. **ZIP-04 PASS** trên nguồn hiện tại: HTML giải nén 16 MB bị từ chối và không được đưa vào tóm tắt. Không thử gây cạn tài nguyên. |
+| **F04 / P2** | **CLOSED** | Các tệp Drive giữ nguyên so với Round 3; **DRIVE-01/02/03 PASS** mới, gồm Coding xóa tài nguyên cũ khi local rỗng, đổi tên thư mục và Robotics giữ ảnh khác tên. Cây Drive giả, chưa xác minh dịch vụ thật. |
+| **F05 / P2** | **CLOSED** | **DRIVE-04/05 PASS** mới cùng S5: loại thư mục/tệp nội bộ; nhánh fallback chỉ có `_spck_owner_uploads` không trả tệp riêng để tải lên. |
+| **F06 / P2** | **CLOSED** | `scan/route.ts:84–86` vẫn so tên chuẩn hóa bằng nhau. **ROB-01/02 PASS** mới: tạo riêng `Lê An` và `Lê Anh`, chạy lại không tạo lặp. |
+| **F07 / P2** | **OPEN** | WEB-03/05, R2-F07-01/02 và R3-F07-01/02 PASS. Hợp nhất folder/attachment/ZIP, thiếu script thông thường, tệp quá dài và ZIP lỗi được xử lý đúng trong các ca đã thử. Nhưng **R4-F07-01 FAIL**: chỉ so `main.js` khiến tệp khác thư mục che mất việc `../shared/main.js` chưa được đọc; vẫn khẳng định không có Firebase/LocalStorage dù tệp được tham chiếu có cả hai. |
+| **F08 / P2** | **OPEN** | WEB-04, R2-F08-01/02 và R3-F08-01 PASS: các comment, văn bản kế hoạch cũ không còn được tính là triển khai. Ca đoạn văn thường R4-F08-02 và mã thật đủ sáu nhóm R4-F08-03 PASS. Nhưng **R4-F08-01 FAIL** vì import trong chuỗi hiển thị vẫn bị tính là Firebase; **R4-F08-04 FAIL** vì xóa toàn bộ template literal làm mất mã thật bên trong `${...}`, rồi báo không có LocalStorage/Fetch. |
+| **F09 / P2** | **CLOSED** | **LMS-01/02/03 và R2-F09-01/02 PASS** mới. Callback hiện tại giữ `.py` và `.sb3` khi cả hai hợp lệ, loại đúng `.sb3` khi chỉ giữ `.py`. Thử trên phần tử giả; chưa kiểm tra caption LMS thật. |
+| **F10 / P2** | **CLOSED** | `scan/route.ts:181–188` vẫn ưu tiên nhãn mới của URL quét lại. **SYNC-05/06 PASS** mới: cập nhật nhãn và tài nguyên buổi đang sửa, giữ snapshot VERIFIED của buổi trước. |
+
+Trạng thái máy đọc được: [closure-results.json](spck-12-13-14-round4/closure-results.json). Quan sát rút gọn của đủ 15 ca bổ sung: [round4-closure-observations.json](spck-12-13-14-round4/round4-closure-observations.json).
+
+### R4.4. Bốn mục chưa đủ điều kiện đóng — bằng chứng và cách sửa hẹp
+
+**F01 — thẻ đã đổi sang câu quan sát nhưng đầu vào vẫn có thể nhận nhầm.**
+
+- **Nguyên nhân/vị trí:** `scan/route.ts:442–449` dò import trên `commentFree` còn chứa chuỗi; `:468` dò `display:flex/grid` trên toàn HTML, gồm nội dung JavaScript. `spck-quick-tags.ts:1427–1447` sau đó tạo thẻ từ cờ nhận nhầm và `scan/route.ts:517–523` lưu chúng.
+- **Tái hiện:** `<script>const helpText = "import { initializeApp } from 'firebase/app'"; document.body.textContent = helpText;</script>` không import SDK nhưng tự lưu `🔥 Có khai báo thư viện / cấu hình Firebase trong mã nguồn`. Đổi chuỗi thành `"Example: display: flex"` lại tự lưu `📐 Có sử dụng bố cục CSS Flexbox/Grid` dù không có CSS áp dụng bố cục. Cập nhật DOM là có thật và thẻ DOM vẫn đúng.
+- **Cách sửa tối thiểu:** chỉ nhận import từ cấu trúc câu lệnh thực; chỉ nhận Flex/Grid từ CSS, thẻ style hoặc thuộc tính style thực. Không lấy nội dung chuỗi hiển thị hoặc đoạn văn làm bằng chứng. Giữ hành vi bảo vệ thẻ thủ công/APPROVED/VERIFIED đã đạt SYNC-01/03.
+- **Sau sửa:** R4-F01-01/02 phải đạt; giữ R4-F01-03 và toàn bộ các ca F01 cũ đạt. Không chỉ thêm danh sách từ `helpText` hay `Example` cần bỏ qua.
+
+**F02 — cách nhận tính năng Firebase và cách chặn lời khen vẫn chưa thống nhất.**
+
+- **Nguyên nhân/vị trí:** detector tại `spck-comment.ts:973–978` nhận `collection`, `addDoc`, `getDocs`, `setDoc`, `updateDoc`, `deleteDoc`, `onSnapshot`; mẫu hậu kiểm tại `:1666–1672` thiếu các tên hàm đó. Câu không có chữ Firebase/Firestore hoặc cụm tải dữ liệu trong danh sách chặn vẫn lọt.
+- **Tái hiện R4-F02-01:** HTML chỉ có tiêu đề, heading và đoạn văn. AI giả trả `Con đã dùng getDocs(collection(db, 'products')) để hiển thị danh sách sản phẩm thành công.`. Câu vẫn có trong `formattedTeacherComment` **và bản nháp DB đọc lại**, `draftStatus=WAITING_APPROVAL`, dù prompt cảnh báo không có Firebase/Firestore.
+- **Cách sửa tối thiểu:** dùng chung bộ nhận diện tên API/khẳng định cho detector và hậu kiểm, bao phủ các hàm Firebase detector đã coi là bằng chứng. Loại toàn mệnh đề không có bằng chứng hoặc yêu cầu viết lại; giữ câu có bằng chứng thật.
+- **Sau sửa:** R4-F02-01 phải đạt; giữ R4-F02-02/03/04, R3-F02 và ba ca HALLUCINATION đạt. Lỗi nằm ở bản nháp chờ giáo viên duyệt; chưa có bằng chứng câu sai được gửi lên LMS thật.
+
+**F07 — trùng tên tệp ở hai thư mục làm mất trạng thái “chưa biết”.**
+
+- **Nguyên nhân/vị trí:** `spck-comment.ts:431`, `:519–544`, `:714–759` lưu tên cuối của tệp trong `readWebBasenames`; `:849–857` chỉ đối chiếu basename, không đối chiếu đường dẫn mà HTML thật sự tham chiếu.
+- **Tái hiện R4-F07-01:** `project/index.html` tham chiếu `../shared/main.js`. Trong `project/` có một `main.js` khác chỉ `console.log`. Tệp `shared/main.js` nằm ngoài folder đang duyệt, chưa có trong attachments, chứa import/khởi tạo Firebase và `localStorage.setItem`. Tệp không được đọc nhưng kết quả vẫn `noFirebase=true`, `noLocalStorage=true` và cảnh báo `KHÔNG có [...]`. Ca thiếu script không trùng basename R4-F07-02 lại giữ unknown đúng.
+- **Cách sửa tối thiểu:** giữ danh tính/đường dẫn gốc của từng HTML và JS đã đọc; giải đường dẫn script tương đối theo đúng HTML (với ZIP theo đường dẫn entry trong gói), rồi đối chiếu đúng tệp. Nếu chưa đọc được đúng tệp, giữ `no*` chưa biết. Không tự đọc vượt Path Allowlist hay bỏ các giới hạn hiện có.
+- **Sau sửa:** R4-F07-01 phải đạt; giữ R4-F07-02/03/04 và các ca F07 cũ đạt. Không chỉ kiểm tra số lượng hay tên cuối của tệp.
+
+**F08 — lọc bằng biểu thức chuỗi chưa phân biệt đủ văn bản và mã thực.**
+
+- **Nguyên nhân/vị trí:** mẫu import tại `spck-comment.ts:973–975` chạy trên `commentFreeJs` còn chứa chuỗi; ngược lại `stripJsStringLiterals` tại `:838–842`, được gọi ở `:950`, xóa toàn bộ template literal, gồm các biểu thức thực thi `${...}`.
+- **Tái hiện R4-F08-01:** chuỗi hướng dẫn import ở F01 làm `noFirebase=false`, tóm tắt khẳng định `Firebase Auth / Firestore` dù không có import thực.
+- **Tái hiện R4-F08-04:** đoạn mã dưới đây bị kết luận `noLocalStorage=true`, `noFetchApi=true`. Bộ thử thực thi bằng hai hàm giả và ghi nhận **đúng hai lời gọi thực tế**, chứng minh đây là mã thực thi chứ không phải văn bản mô tả.
+
+```javascript
+const text = `${localStorage.setItem('x','y')} ${fetch('/api/products')}`;
+```
+- **Cách sửa tối thiểu:** phân tích cú pháp JavaScript để tách câu lệnh import, chuỗi thường và biểu thức trong template, thay vì chỉ dò/xóa chuỗi bằng regex. Có thể dùng bộ đọc cú pháp đã có trong dự án; không cần viết lại luồng AI hoặc mở rộng công nghệ hỗ trợ.
+- **Sau sửa:** R4-F08-01/04 phải đạt; giữ R4-F08-02/03, R2-F08 và R3-F08 đạt. Cả hai chiều nhận nhầm và bỏ sót đều thuộc yêu cầu phân biệt bằng chứng thực của F08.
+
+### R4.5. Bằng chứng bảo toàn, lịch sử và dọn TEMP
+
+| Tệp dữ liệu thật | SHA-256 trước Round 4 | SHA-256 sau kiểm định/dọn TEMP | Kết quả |
+|---|---|---|---|
+| `data/mindx_bot.db` | `91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A` | `91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A` | **MATCH**, khớp Owner |
+| `data/running_classes.json` | `F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9` | `F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9` | **MATCH**, khớp Owner |
+
+Hai tệp thật chỉ được đọc để tính SHA-256, không mở DB thật và không dùng làm fixture. **180/180 tệp đầu vào**, gồm **149/149 tệp nguồn/bộ thử**, giữ nguyên và khớp TEMP. Chênh lệch Git của toàn bộ tệp đã theo dõi giữ nguyên byte so với đầu vòng, kể cả các sửa đổi sẵn có của Owner.
+
+- [verification-summary.json](spck-12-13-14-round4/verification-summary.json): HEAD, công cụ, từng lệnh/thời gian/mã thoát, kết quả, trạng thái F01–F10, giám sát kết nối và đường dẫn DB giả.
+- [source-manifest-before.json](spck-12-13-14-round4/source-manifest-before.json), [source-manifest-after.json](spck-12-13-14-round4/source-manifest-after.json): mã SHA-256 đầu vào trước/sau; các nguồn bằng chứng là snapshot hiện tại, không chỉ HEAD đã commit.
+- [setup.cjs.txt](spck-12-13-14-round4/setup.cjs.txt), [guard.cjs.txt](spck-12-13-14-round4/guard.cjs.txt), [runner.cjs.txt](spck-12-13-14-round4/runner.cjs.txt), [run-all.cjs.txt](spck-12-13-14-round4/run-all.cjs.txt), [preserve.cjs.txt](spck-12-13-14-round4/preserve.cjs.txt): mã thực tế đã dùng để dựng snapshot, cô lập, chạy và lưu bằng chứng. Probe cũ được giữ nguyên; probe Round 4 nằm riêng trong scratch TEMP, không sửa `scripts/**`.
+- [round3-report.md.txt](spck-12-13-14-round4/round3-report.md.txt): toàn bộ báo cáo Round 1–3 trước cập nhật, được giữ **nguyên byte** ở cuối tài liệu này.
+- [final-preservation.json](spck-12-13-14-round4/final-preservation.json): đối chiếu sau khi ghi báo cáo, kiểm tra lịch sử/liên kết, xác nhận tháo liên kết thư viện trước khi xóa đúng thư mục TEMP, thư viện gốc vẫn còn và hai hash dữ liệu thật vẫn khớp sau dọn.
+- [evidence-sha256.json](spck-12-13-14-round4/evidence-sha256.json): SHA-256 các tệp bằng chứng đã lưu. Log dùng đuôi `.log.txt` để có thể được theo dõi trong Git.
+
+### R4.6. Kết luận và bàn giao
+
+**Đã làm:** hoàn tất Round 4, chạy mới đủ 8 lệnh bắt buộc và 15 ca đóng lỗi bổ sung, xác nhận các ca Round 3 đã được sửa; cập nhật bảng 10 phát hiện, bằng chứng và bảo toàn lịch sử.
+
+**Kết quả:** **VERDICT ROUND 4: NO-GO**. **CLOSED:** F03, F04, F05, F06, F09, F10. **OPEN:** F01, F02, F07, F08. Các trường hợp còn lỗi có thể làm bản nháp nhận xét ghi nhận sai tính năng hoặc bỏ qua bằng chứng thật. Không sửa mã sản phẩm, không commit/push phần việc chưa hoàn thành của Owner.
+
+**Chưa kiểm tra:** lớp/dữ liệu thật, LMS/Teaching/Drive/Gemini thật, bản dựng production mới, thử tải lớn. Kết quả này là kiểm định mã và các luồng giả lập cục bộ, không phải nghiệm thu dịch vụ thật.
+
+**Việc tiếp theo:** giao vòng sửa hẹp theo R4.4, ưu tiên F01/F02, sau đó chạy lại toàn bộ 8 lệnh và 15 ca Round 4 trên đúng bản mới. Chỉ đóng khi cả ca cũ và ca đối chứng có mã thật đều đạt.
+
+```text
+Chỉ sửa các khoảng trống F01/F02/F07/F08 tại R4.4; không mở rộng tính năng.
+F01: chỉ lấy bằng chứng từ import/CSS thực, không từ chuỗi hiển thị.
+F02: dùng cùng tập nhận diện API cho detector và hậu kiểm, gồm getDocs/collection và các hàm Firebase đang nhận.
+F07: đối chiếu đường dẫn script theo đúng HTML/ZIP, không dùng basename để xác nhận đã đọc.
+F08: phân biệt import/chuỗi/template expression; giữ mã thực thi bên trong ${...}.
+Giữ nguyên dữ liệu thật; kiểm thử trong TEMP và chạy lại đủ 8 lệnh cùng 15 ca Round 4.
+```
+
+---
+
+# Lịch sử giữ nguyên — Round 3, Round 2 và Round 1

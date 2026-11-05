@@ -1,0 +1,22 @@
+const fs=require('node:fs'),path=require('node:path');
+const root=__dirname;
+let s=fs.readFileSync(path.join(root,'work/scratch/round8-context-probe.ts'),'utf8');
+s=s.slice(0,s.indexOf("const broken="));
+s=s.replace("temp_submissions/r8-context","temp_submissions/r9-context");
+s=s.replace("const html='<title>External context audit</title><script'+(extension==='.mjs'?' type=\"module\"':'')+' src=\"./main'+extension+'\"></script>';", "const html='<title>External context audit</title>'+(name.startsWith('extension-only-')?'':'<script'+(name.startsWith('module-js-')?' type=\"module\"':'')+' src=\"./main'+extension+'\"></script>');");
+s=s.replace("const flags=summary.absentWebFeatures;", "const flags=summary.absentWebFeatures; assert.equal(flags.inspectedWebCode,true); for(const key of ['noBootstrap','noCart','noAuth','noLocalStorage','noFetchApi','noFirebase'])assert.equal(typeof flags[key],'boolean','Missing flag '+key);");
+s+=`
+const octal='const n=010;';
+let index=0;
+for(const mode of ['folder','attachment','zip'] as const){
+ check('R9-F08-'+String(++index).padStart(2,'0'),'.mjs extension alone retains module context via '+mode,octal,'module',()=>external('extension-only-'+mode,'.mjs',octal,mode),'unknown');
+ check('R9-F08-'+String(++index).padStart(2,'0'),'.js referenced by type=module retains module context via '+mode,octal,'module',()=>external('module-js-'+mode,'.js',octal,mode),'unknown');
+ check('R9-F08-'+String(++index).padStart(2,'0'),'Classic .js remains classic via '+mode,octal,'script',()=>external('classic-js-'+mode,'.js',octal,mode),'absent');
+}
+const output={total:results.length,passed:results.filter(r=>r.status==='PASS').length,failed:results.filter(r=>r.status==='FAIL').length,errors:results.filter(r=>r.status==='ERROR').length,results};
+fs.writeFileSync(path.resolve('..','round9-context-results.json'),JSON.stringify(output,null,2));console.log('SUMMARY '+JSON.stringify({total:output.total,passed:output.passed,failed:output.failed,errors:output.errors}));process.exitCode=output.failed||output.errors?1:0;
+`;
+if(!s.includes("name.startsWith('extension-only-')"))throw Error('Expected helper adaptation missing');
+fs.writeFileSync(path.join(root,'work/scratch/round9-context-probe.ts'),s);
+let runner=fs.readFileSync(path.join(root,'runner.cjs'),'utf8').replace("let command=gate==='context'", "let command=gate==='round9'?'npx tsx scratch/round9-context-probe.ts':gate==='context'");
+fs.writeFileSync(path.join(root,'round9-runner.cjs'),runner);

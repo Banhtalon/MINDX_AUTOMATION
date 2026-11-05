@@ -25,6 +25,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
     handleBrowseFolder,
     browsingFolder,
     handleScanFolder,
+    handleInitStudentFolders,
     scanning,
     autoRunToolsAfterScan,
     handleToggleAutoRunToolsAfterScan,
@@ -134,6 +135,16 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
                   <FolderOpen className="w-4 h-4 text-emerald-400" />
                 )}
                 <span>Chọn...</span>
+              </button>
+              <button
+                type="button"
+                data-testid="s5b-init-student-folders-btn"
+                onClick={() => handleInitStudentFolders()}
+                disabled={isAnyOperationBusy || !selectedClassId || !folderPathInput.trim()}
+                title="Tự động tạo sẵn thư mục con theo tên từng học viên trong lớp để thả ảnh mô hình / tệp sản phẩm vào"
+                className="shrink-0 flex items-center space-x-1 px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-emerald-500/40 disabled:opacity-50 text-emerald-300 font-semibold text-xs transition-colors cursor-pointer"
+              >
+                <span>📁 Tạo thư mục HV</span>
               </button>
               <button
                 type="button"

@@ -1,0 +1,22 @@
+{
+  "verdict": "GO",
+  "closed": 10,
+  "open": 0,
+  "statuses": {
+    "F01": "CLOSED",
+    "F02": "CLOSED",
+    "F03": "CLOSED",
+    "F04": "CLOSED",
+    "F05": "CLOSED",
+    "F06": "CLOSED",
+    "F07": "CLOSED",
+    "F08": "CLOSED",
+    "F09": "CLOSED",
+    "F10": "CLOSED"
+  },
+  "mandatoryPassed": true,
+  "mandatoryGateCount": 12,
+  "mandatoryCommandCount": 13,
+  "blockingProbes": [],
+  "note": "All 103 original Round 1-8 probes pass, including R8-F08-04/05/06. Nine supplementary context controls pass. All ten findings closed in local/synthetic audit scope. No product source edited."
+}

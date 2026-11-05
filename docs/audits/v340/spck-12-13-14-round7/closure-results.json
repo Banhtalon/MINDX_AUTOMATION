@@ -1,0 +1,33 @@
+{
+  "verdict": "NO-GO",
+  "closed": 8,
+  "open": 2,
+  "statuses": {
+    "F01": "OPEN",
+    "F02": "CLOSED",
+    "F03": "CLOSED",
+    "F04": "CLOSED",
+    "F05": "CLOSED",
+    "F06": "CLOSED",
+    "F07": "CLOSED",
+    "F08": "OPEN",
+    "F09": "CLOSED",
+    "F10": "CLOSED"
+  },
+  "mandatoryPassed": true,
+  "mandatoryGateCount": 10,
+  "mandatoryCommandCount": 11,
+  "blockingProbes": [
+    {
+      "id": "R7-F01-01",
+      "finding": "F01",
+      "label": "Valid classic script legacy octal must preserve a following real Firebase call"
+    },
+    {
+      "id": "R7-F08-01",
+      "finding": "F08",
+      "label": "Valid classic script must not conclude Firebase absent after module-only lexical error"
+    }
+  ],
+  "note": "All 91 original Round 1-6 probe cases pass, including four Round 6 failures now fixed. Two extra Round 7 failures reproduce one classic-script/module lexical mismatch in F01/F08. F07 remains closed. No product source edited."
+}

@@ -1,0 +1,23 @@
+const fs=require('node:fs'),path=require('node:path');
+const root=__dirname,state=JSON.parse(fs.readFileSync(path.join(root,'state.json'))),repo=state.repo,dest=path.join(repo,'docs/audits/v340/spck-12-13-14-round8');
+const profile=path.join(root,'work/playwright-auth');
+if(!fs.existsSync(profile)||fs.lstatSync(profile).isSymbolicLink()||fs.readdirSync(profile).length)throw Error('Unexpected synthetic browser profile contents');
+fs.writeFileSync(path.join(root,'snapshot-browser-profile.json'),JSON.stringify({path:profile,entries:fs.readdirSync(profile),empty:true,createdBy:'browser-manager constructor on import (lines 46-50)',productionProfileCopied:false,persistentBrowserLaunches:0,checkedAt:new Date().toISOString()},null,2));
+let s=fs.readFileSync(path.join(root,'finalize.cjs'),'utf8');
+s=s.replace("['.env','.env.local','playwright-auth','data/mindx_bot.db','data/running_classes.json']","['.env','.env.local','data/mindx_bot.db','data/running_classes.json']");
+s=s.replace("if(!fs.existsSync(path.join(work,'node_modules')))","if(fs.existsSync(path.join(work,'playwright-auth'))&&(fs.lstatSync(path.join(work,'playwright-auth')).isSymbolicLink()||fs.readdirSync(path.join(work,'playwright-auth')).length))throw Error('Unexpected contents in synthetic browser profile');\nif(!fs.existsSync(path.join(work,'node_modules')))");
+s=s.replace("dependencyJunctionDetachedBeforeCleanup:true","snapshotBrowserProfileEmptyBeforeCleanup:true,dependencyJunctionDetachedBeforeCleanup:true");
+fs.writeFileSync(path.join(root,'finalize.cjs'),s);
+fs.writeFileSync(path.join(root,'finalizer-adaptation-attempts.json'),JSON.stringify({attempt1:{stage:'pre-cleanup report heading assertion',error:'Round 7 uppercase heading left in reused assertion',mutation:false},attempt2:{stage:'pre-cleanup snapshot profile assertion',error:'Empty snapshot playwright-auth created by module import; profile was not copied',productionMutation:false,junctionDetached:false},resolution:'Correct heading; assert synthetic profile is empty and no real configuration/data files exist; rerun full finalizer from repository cwd'},null,2));
+const note='Mô-đun browser-manager tự tạo một thư mục `playwright-auth` **rỗng trong snapshot** khi được import; đã kiểm tra không có tệp/cookie, không mở persistent browser và không sao chép hồ sơ thật. [Bằng chứng](spck-12-13-14-round8/snapshot-browser-profile.json). Hai lần kiểm tra điều kiện trước dọn cần chỉnh lại khung Round 7 (tiêu đề vòng và thư mục rỗng này); chưa tháo junction hoặc xóa TEMP ở các lần đó. [Nhật ký điều chỉnh](spck-12-13-14-round8/finalizer-adaptation-attempts.json).\n\n';
+const reportPath=path.join(repo,'docs/audits/v340/CODEX_SPCK_12_13_14_AUDIT.md'),report=fs.readFileSync(reportPath),old=fs.readFileSync(path.join(root,'round7-report.md.txt'));
+if(!report.subarray(report.length-old.length).equals(old))throw Error('History changed');
+const section=report.subarray(0,report.length-old.length).toString('utf8').replace('### R8.6. Kết luận và bàn giao',note+'### R8.6. Kết luận và bàn giao');
+fs.writeFileSync(reportPath,Buffer.concat([Buffer.from(section),old]));
+let writer=fs.readFileSync(path.join(root,'write-report.cjs'),'utf8');writer=writer.replace("const section=", "const section=");
+const i=writer.indexOf('const section='),j=writer.indexOf('\nfs.writeFileSync(report,',i);
+writer=writer.slice(0,i)+'const section='+JSON.stringify(section)+';'+writer.slice(j);
+fs.writeFileSync(path.join(root,'write-report.cjs'),writer);
+fs.copyFileSync(path.join(root,'write-report.cjs'),path.join(dest,'write-report.cjs.txt'));
+console.log('Finalizer checks now distinguish empty synthetic profile from real credentials.');
+

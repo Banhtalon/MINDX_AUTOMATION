@@ -1,0 +1,2852 @@
+diff --git a/scripts/test-streamline-v340-s5.ts b/scripts/test-streamline-v340-s5.ts
+index 3608470..e0b238d 100644
+--- a/scripts/test-streamline-v340-s5.ts
++++ b/scripts/test-streamline-v340-s5.ts
+@@ -8,17 +8,23 @@
+  */
+ 
+ import assert from "node:assert/strict";
++import crypto from "node:crypto";
+ import fs from "node:fs";
+ import os from "node:os";
+ import path from "node:path";
++import zlib from "node:zlib";
+ import tailwindcssPostcss from "@tailwindcss/postcss";
+ import * as esbuild from "esbuild";
+ import { chromium } from "playwright";
+ import postcss from "postcss";
++import { POST as scanPost } from "../src/app/api/spck/scan/route";
+ import {
++  classSessionRepo,
+   formatSpckSessionTitle,
+   getDb,
+   isDefaultSpckProductTitle,
++  spckSessionRepo,
++  spckUploadRepo,
+   studentRepo,
+   stripSpckSessionSuffix,
+   validateSpckTitleLength,
+@@ -29,12 +35,22 @@ import {
+   SpckCommentGenerator,
+ } from "../src/lib/gemini/spck-comment";
+ import { parseCodeBuffer } from "../src/lib/file-parsers/code-reader";
+-import { DEFAULT_SPCK_THUMBNAIL_PATH } from "../src/lib/local-files/spck-scanner";
++import {
++  DEFAULT_SPCK_THUMBNAIL_PATH,
++  scanStudentSpckFolder,
++} from "../src/lib/local-files/spck-scanner";
++import {
++  detectCoursePrefixFromClassId,
++  isRoboticsCourseClassId,
++  prepareStudentFilesForDriveUpload,
++  resolveCourseSpecificFolderId,
++} from "../src/lib/playwright/spck-drive-uploader";
+ import {
+   detectSpckCourseProfile,
+   getSpckQuickTagGroups,
+   isLimitationOrNextStepQuickTag,
+   isPresentationQuickTag,
++  suggestSpckQuickTagsFromProject,
+ } from "../src/lib/spck/spck-quick-tags";
+ 
+ const ROOT = process.cwd();
+@@ -498,6 +514,486 @@ async function runTests() {
+       }
+     }
+     console.log("  -> PASS [S5b-T5]: Bộ Quick Tags & Nhận xét AI chuyên biệt cho cả 6 nhóm môn (25 mã khóa) ở Buổi 12, 13, 14 hoạt động chính xác.");
++
++    // =========================================================================
++    // [S5b-T6] Kiểm tra 5 hạng mục nâng cấp SPCK Buổi 12-13-14 (Coding & Robotics)
++    // =========================================================================
++    console.log("\n[S5b-T6] Kiểm tra 5 hạng mục nâng cấp: Đồng bộ 12->13->14, Chống trùng Drive/LMS, Luồng Robotics chuyên biệt, Deep Project Inspector + Multimodal Vision & Giọng văn kiểm tra tiến độ...");
++    const tmpT6Root = path.resolve(ROOT, "temp_submissions", `tmp_s5b_t6_${Date.now()}`);
++    fs.mkdirSync(tmpT6Root, { recursive: true });
++    const makeTestPng = (w: number, h: number, seed = 42): Buffer => {
++      const crcTable = new Uint32Array(256);
++      for (let n = 0; n < 256; n++) {
++        let c = n;
++        for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
++        crcTable[n] = c >>> 0;
++      }
++      const crc32 = (buf: Buffer) => {
++        let c = 0xffffffff;
++        for (let i = 0; i < buf.length; i++) c = crcTable[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
++        return (c ^ 0xffffffff) >>> 0;
++      };
++      const chunk = (type: string, data: Buffer) => {
++        const len = Buffer.alloc(4);
++        len.writeUInt32BE(data.length, 0);
++        const t = Buffer.from(type, "ascii");
++        const crc = Buffer.alloc(4);
++        crc.writeUInt32BE(crc32(Buffer.concat([t, data])), 0);
++        return Buffer.concat([len, t, data, crc]);
++      };
++      const ihdr = Buffer.alloc(13);
++      ihdr.writeUInt32BE(w, 0);
++      ihdr.writeUInt32BE(h, 4);
++      ihdr[8] = 8;
++      ihdr[9] = 2;
++      const stride = w * 3 + 1;
++      const raw = Buffer.alloc(stride * h);
++      for (let y = 0; y < h; y++) {
++        raw[y * stride] = 0;
++        for (let x = 0; x < w; x++) {
++          const idx = y * stride + 1 + x * 3;
++          raw[idx] = (x + y + seed) & 0xff;
++          raw[idx + 1] = ((x * 3) ^ (y + seed)) & 0xff;
++          raw[idx + 2] = ((x + y * 5 + seed * 7) & 0xff);
++        }
++      }
++      return Buffer.concat([
++        Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
++        chunk("IHDR", ihdr),
++        chunk("IDAT", zlib.deflateSync(raw)),
++        chunk("IEND", Buffer.alloc(0)),
++      ]);
++    };
++
++    try {
++      // 1. Kiểm tra khởi tạo thư mục học viên ("init_student_folders") & Luồng Robotics chỉ có ảnh
++      const robClassId = "VT-PREB99";
++      for (const sNum of [12, 13, 14] as const) {
++        classSessionRepo.upsert({
++          sessionId: `${robClassId}_S${sNum}`,
++          classId: robClassId,
++          className: "Lớp Robotics VEX GO",
++          sessionNumber: sNum,
++          topic: `Buổi ${sNum}`,
++          date: `2026-10-${10 + sNum}`,
++        });
++      }
++      studentRepo.upsert({
++        studentId: "S5B_ROB_01",
++        classId: robClassId,
++        fullName: "Lê Hoàng Bách",
++        isActive: 1,
++      });
++      const robClassDir = path.join(tmpT6Root, robClassId);
++      fs.mkdirSync(robClassDir, { recursive: true });
++
++      const initResp = await scanPost(
++        new Request("http://127.0.0.1:3000/api/spck/scan", {
++          method: "POST",
++          headers: {
++            "content-type": "application/json",
++            host: "127.0.0.1:3000",
++            origin: "http://127.0.0.1:3000",
++          },
++          body: JSON.stringify({
++            classId: robClassId,
++            folderPath: robClassDir,
++            sessionNumber: 12,
++            action: "init_student_folders",
++            syncActiveSession: true,
++            autoSuggestQuickTags: true,
++          }),
++        })
++      );
++      const initJson = await initResp.json();
++      assert.strictEqual(
++        initJson.success,
++        true,
++        `init_student_folders phải thành công (${initJson.error || ""})`
++      );
++      assert.strictEqual(initJson.createdFoldersCount, 1, "Phải tạo đúng 1 thư mục học viên mới");
++      const bachDir = path.join(robClassDir, "Lê Hoàng Bách");
++      assert.ok(fs.existsSync(bachDir), "Thư mục 'Lê Hoàng Bách' phải tồn tại trên ổ cứng");
++
++      // Thư mục rỗng vừa tạo chưa có bài -> không tự gợi ý Quick Tags
++      const emptyDraft12 = spckSessionRepo.getOrInitSessionDraft(
++        robClassId,
++        "S5B_ROB_01",
++        12,
++        "Lê Hoàng Bách"
++      );
++      assert.deepStrictEqual(
++        JSON.parse(emptyDraft12.quickTagsJson || "[]"),
++        [],
++        "Thư mục rỗng vừa tạo chưa có ảnh/file thì không được tự tích chọn Quick Tags"
++      );
++
++      // Thả 2 ảnh vào thư mục Robotics: 1 ảnh dọc (400x600) và 1 ảnh ngang toàn cảnh (800x450)
++      fs.writeFileSync(path.join(bachDir, "01_portrait_detail.png"), makeTestPng(400, 600, 10));
++      fs.writeFileSync(path.join(bachDir, "02_landscape_model.png"), makeTestPng(800, 450, 20));
++      const robScannedOnlyPhotos = scanStudentSpckFolder(bachDir, "Lê Hoàng Bách");
++      assert.strictEqual(
++        path.basename(robScannedOnlyPhotos.thumbnailPath),
++        "02_landscape_model.png",
++        "Khi có nhiều ảnh Owner chụp mô hình, phải ưu tiên ảnh ngang (landscape/16:9) làm Thumbnail"
++      );
++      assert.strictEqual(
++        robScannedOnlyPhotos.attachments.length,
++        0,
++        "Thư mục Robotics chỉ có ảnh chụp của Owner tuyệt đối KHÔNG được tạo file _robotics_package.zip"
++      );
++      assert.strictEqual(
++        fs.readdirSync(bachDir).some((f) => f.endsWith("_robotics_package.zip")),
++        false,
++        "Không được sinh file _robotics_package.zip trên đĩa khi chỉ có ảnh"
++      );
++
++      // Kiểm tra thư mục Robotics chỉ có 1 ảnh duy nhất của Owner -> vẫn giữ ảnh đó ở screenshots để LMS không trống
++      const singlePhotoDir = path.join(tmpT6Root, "SinglePhotoRobot");
++      fs.mkdirSync(singlePhotoDir, { recursive: true });
++      fs.writeFileSync(path.join(singlePhotoDir, "only_photo.png"), makeTestPng(800, 450, 33));
++      const singlePhotoPkg = scanStudentSpckFolder(singlePhotoDir, "Single Photo");
++      assert.strictEqual(path.basename(singlePhotoPkg.thumbnailPath), "only_photo.png");
++      assert.strictEqual(
++        singlePhotoPkg.screenshots.length,
++        1,
++        "Khi thư mục chỉ có 1 ảnh Owner duy nhất và 0 ảnh khác, phải giữ ảnh đó trong screenshots để không trống ô LMS"
++      );
++
++      // Thêm file code Robotics (.vexblocks) -> tạo _robotics_package.zip tất định (SHA-256 cố định qua nhiều lần quét)
++      fs.writeFileSync(path.join(bachDir, "robot_arm.vexblocks"), '{"blocks":["move_forward","claw_grab"]}');
++      const robScannedWithCode1 = scanStudentSpckFolder(bachDir, "Lê Hoàng Bách");
++      assert.strictEqual(robScannedWithCode1.attachments.length, 1);
++      const zipPath1 = robScannedWithCode1.attachments[0];
++      assert.ok(zipPath1.endsWith("_robotics_package.zip"));
++      const sha1 = crypto.createHash("sha256").update(fs.readFileSync(zipPath1)).digest("hex");
++      const robScannedWithCode2 = scanStudentSpckFolder(bachDir, "Lê Hoàng Bách");
++      const sha2 = crypto
++        .createHash("sha256")
++        .update(fs.readFileSync(robScannedWithCode2.attachments[0]))
++        .digest("hex");
++      assert.strictEqual(
++        sha1,
++        sha2,
++        "Gói nén _robotics_package.zip phải hoàn toàn tất định (deterministic SHA-256) khi quét lại"
++      );
++
++      // 2. Kiểm tra đồng bộ tài nguyên giữa các buổi (12 -> 13) & Auto-suggest Quick Tags
++      await scanPost(
++        new Request("http://127.0.0.1:3000/api/spck/scan", {
++          method: "POST",
++          headers: {
++            "content-type": "application/json",
++            host: "127.0.0.1:3000",
++            origin: "http://127.0.0.1:3000",
++          },
++          body: JSON.stringify({
++            classId: robClassId,
++            folderPath: robClassDir,
++            sessionNumber: 12,
++            syncActiveSession: true,
++            autoSuggestQuickTags: true,
++          }),
++        })
++      );
++      const draft12AfterScan = spckSessionRepo.getOrInitSessionDraft(
++        robClassId,
++        "S5B_ROB_01",
++        12,
++        "Lê Hoàng Bách"
++      );
++      const autoTags12 = JSON.parse(draft12AfterScan.quickTagsJson || "[]");
++      assert.ok(
++        autoTags12.length >= 2,
++        `Khi thư mục đã có ảnh/file sản phẩm, quét với autoSuggestQuickTags=true phải tự gợi ý Quick Tags: ${JSON.stringify(autoTags12)}`
++      );
++
++      // Giả lập Buổi 12 đã nộp thành công (VERIFIED)
++      spckSessionRepo.saveSessionDraft({
++        classId: robClassId,
++        studentId: "S5B_ROB_01",
++        sessionNumber: 12,
++        teacherComment: "Ở buổi kiểm tra tiến độ này, con đã lắp xong khung cơ khí.",
++        updateSharedPool: true,
++      });
++      spckSessionRepo.approveSessionDraft(robClassId, "S5B_ROB_01", 12);
++      spckUploadRepo.markVerified(robClassId, "S5B_ROB_01", undefined, 12);
++
++      // Sang Buổi 13: khởi tạo nháp Buổi 13 trước, sau đó Owner thêm ảnh mới 03_sensor_upgrade.png vào thư mục và bấm Quét
++      spckSessionRepo.getOrInitSessionDraft(robClassId, "S5B_ROB_01", 13, "Lê Hoàng Bách");
++      fs.writeFileSync(path.join(bachDir, "03_sensor_upgrade.png"), makeTestPng(800, 450, 99));
++      const scan13Resp = await scanPost(
++        new Request("http://127.0.0.1:3000/api/spck/scan", {
++          method: "POST",
++          headers: {
++            "content-type": "application/json",
++            host: "127.0.0.1:3000",
++            origin: "http://127.0.0.1:3000",
++          },
++          body: JSON.stringify({
++            classId: robClassId,
++            folderPath: robClassDir,
++            sessionNumber: 13,
++            syncActiveSession: true,
++            autoSuggestQuickTags: true,
++          }),
++        })
++      );
++      const scan13Json = await scan13Resp.json();
++      assert.strictEqual(scan13Json.success, true);
++      const draft13Synced = spckSessionRepo.getOrInitSessionDraft(
++        robClassId,
++        "S5B_ROB_01",
++        13,
++        "Lê Hoàng Bách"
++      );
++      const s13Shots: string[] = JSON.parse(draft13Synced.screenshotsJson || "[]");
++      assert.strictEqual(
++        s13Shots.length,
++        2,
++        "Khi quét ở Buổi 13 với syncActiveSession=true, bản nháp Buổi 13 phải tự nhận ngay ảnh mới vừa thêm"
++      );
++      const s12Preserved = spckSessionRepo.getOrInitSessionDraft(
++        robClassId,
++        "S5B_ROB_01",
++        12,
++        "Lê Hoàng Bách"
++      );
++      assert.strictEqual(
++        s12Preserved.draftStatus,
++        "VERIFIED",
++        "Bản ghi Buổi 12 đã VERIFIED phải giữ nguyên bất biến khi quét và đồng bộ ở Buổi 13"
++      );
++
++      // 3. Kiểm tra chuẩn bị file Google Drive (chặn thư mục nội bộ _spck_* và gói *_package.zip) & nhận diện khóa Robotics
++      assert.strictEqual(detectCoursePrefixFromClassId("VT-PREB14"), "PREB");
++      assert.strictEqual(detectCoursePrefixFromClassId("HN-ARMA02"), "ARMA");
++      assert.strictEqual(detectCoursePrefixFromClassId("HCM-SEMIB01"), "SEMIB");
++      assert.strictEqual(isRoboticsCourseClassId("VT-PREB14"), true);
++      assert.strictEqual(isRoboticsCourseClassId("VT-JSB15"), false);
++      assert.strictEqual(
++        resolveCourseSpecificFolderId("TEST_ROBO_UNCONFIGURED_01"),
++        null,
++        "Mã lớp không thuộc danh mục chuẩn phải trả về null"
++      );
++
++      fs.mkdirSync(path.join(bachDir, "_spck_app_shots"), { recursive: true });
++      fs.writeFileSync(path.join(bachDir, "_spck_app_shots", "shot.png"), makeTestPng(320, 180, 5));
++      const drivePrep = prepareStudentFilesForDriveUpload(
++        bachDir,
++        "S5B_ROB_01",
++        "Lê Hoàng Bách"
++      );
++      assert.strictEqual(
++        drivePrep.some((f) => f.endsWith("_robotics_package.zip")),
++        false,
++        "prepareStudentFilesForDriveUpload tuyệt đối không được đẩy gói nén nội bộ *_robotics_package.zip lên Google Drive"
++      );
++      assert.strictEqual(
++        drivePrep.some((f) => f.includes("_spck_app_shots")),
++        false,
++        "prepareStudentFilesForDriveUpload tuyệt đối không được đẩy các thư mục nội bộ _spck_* lên Google Drive"
++      );
++
++      // 4. Kiểm tra Deep Project Inspector + Chống bịa tính năng Web (Bootstrap/Giỏ hàng/LocalStorage/Fetch) + Multimodal Vision + Giọng văn kiểm tra tiến độ Buổi 12
++      const webStuDir = path.join(tmpT6Root, "WebStudent_Boba");
++      fs.mkdirSync(webStuDir, { recursive: true });
++      fs.writeFileSync(
++        path.join(webStuDir, "index.html"),
++        `<!DOCTYPE html>
++<html>
++<head><title>Tiệm Trà Sữa Mùa Hè</title><link rel="stylesheet" href="style.css"></head>
++<body>
++  <nav><a href="#home">Trang chủ</a><a href="#menu">Thực đơn trà sữa</a><a href="#contact">Liên hệ</a></nav>
++  <h1>Tiệm Trà Sữa Mùa Hè</h1>
++  <h2>Danh sách đồ uống nổi bật</h2>
++  <form><input type="text" placeholder="Tìm trà sữa..." /><button type="submit">Tìm kiếm</button></form>
++</body>
++</html>`,
++        "utf8"
++      );
++      fs.writeFileSync(
++        path.join(webStuDir, "style.css"),
++        `.menu-list { display: flex; gap: 16px; } @keyframes floatIn { from { opacity: 0; } to { opacity: 1; } }`,
++        "utf8"
++      );
++      const webThumbPath = path.join(webStuDir, "Demo_web.png");
++      fs.writeFileSync(webThumbPath, makeTestPng(800, 450, 77));
++
++      let capturedGeminiBody: any = null;
++      globalThis.fetch = async (_input: any, init?: any) => {
++        if (init && typeof init.body === "string") {
++          try {
++            capturedGeminiBody = JSON.parse(init.body);
++          } catch {}
++        }
++        return Response.json({
++          candidates: [
++            {
++              content: {
++                parts: [
++                  {
++                    text: JSON.stringify({
++                      attitudeSummary:
++                        "Trong Buổi 12 (Giai đoạn 1), STUDENT_01 đã hoàn thiện trang chủ Tiệm Trà Sữa Mùa Hè với thanh điều hướng Thực đơn trà sữa rõ ràng.",
++                      productAndDesignEvaluation:
++                        "Em đã sử dụng Bootstrap 5 để chia cột kết hợp chức năng giỏ hàng, LocalStorage và gọi Fetch API rất mượt mà.",
++                      technicalApplicationEvaluation:
++                        "Ở Buổi 13 sắp tới, em cần hoàn thiện thêm các trang con còn đang để trống để sản phẩm chỉn chu hơn.",
++                      presentationEvaluation: "",
++                    }),
++                  },
++                ],
++              },
++            },
++          ],
++        });
++      };
++
++      studentRepo.upsert({
++        studentId: "S5B_WEB_01",
++        classId: "VT-C4K-JSB15",
++        fullName: "Phạm Gia Hưng",
++        isActive: 1,
++      });
++      const deepWebRes = await SpckCommentGenerator.generateBatchSpckComments(
++        {
++          classId: "VT-C4K-JSB15",
++          sessionNumber: 12,
++        },
++        [
++          {
++            studentId: "S5B_WEB_01",
++            fullName: "Phạm Gia Hưng",
++            projectTitle: "Tiệm Trà Sữa Mùa Hè",
++            localFolderPath: webStuDir,
++            thumbnailPath: webThumbPath,
++            screenshots: [webThumbPath],
++            quickTags: [
++              "✅ Đã dựng xong khung giao diện các trang chính và thanh điều hướng",
++              "🔧 Cần hoàn thiện thêm nội dung các trang con/mục con còn đang để trống",
++            ],
++            teacherNote: "",
++            attachments: [path.join(webStuDir, "index.html"), path.join(webStuDir, "style.css")],
++          },
++        ]
++      );
++      assert.strictEqual(deepWebRes.length, 1);
++      const webCommentItem = deepWebRes[0];
++      assert.strictEqual(webCommentItem.status, "WAITING_APPROVAL");
++      const webPrompt = webCommentItem.outboundPromptSample || "";
++      assert.ok(
++        webPrompt.includes("Tiệm Trà Sữa Mùa Hè") &&
++          webPrompt.includes("Thực đơn trà sữa") &&
++          webPrompt.includes("CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB"),
++        "Deep Project Inspector phải trích xuất đúng tiêu đề trang, mục menu <nav> và danh sách kỹ thuật KHÔNG CÓ trong code của học sinh"
++      );
++      const sentParts = capturedGeminiBody?.contents?.[0]?.parts || [];
++      assert.ok(
++        sentParts.some((p: any) => p.inlineData && p.inlineData.mimeType === "image/png"),
++        "SpckCommentGenerator phải đính kèm ảnh chụp thực tế của sản phẩm (Multimodal inlineData) khi gọi Gemini API"
++      );
++      assert.ok(
++        !/\b(Bootstrap|LocalStorage|Fetch\s*API|giỏ\s*hàng|Buổi\s*12|Buổi\s*13|đợt\s*thực\s*hiện\s*dự\s*án)\b/i.test(
++          webCommentItem.formattedTeacherComment
++        ),
++        `Hậu kiểm phải lọc sạch các tính năng Web không có trong bài (Bootstrap/LocalStorage/Fetch API/giỏ hàng) và dùng giọng văn kiểm tra tiến độ tự nhiên: '${webCommentItem.formattedTeacherComment}'`
++      );
++      assert.ok(
++        /ở buổi kiểm tra tiến độ tiếp theo/i.test(webCommentItem.formattedTeacherComment),
++        `Nhận xét tiến độ phải chuyển tự nhiên sang 'ở buổi kiểm tra tiến độ tiếp theo': '${webCommentItem.formattedTeacherComment}'`
++      );
++
++      // 5. Kiểm tra hồi quy các trường hợp biên đối kháng (F01-F10):
++      // - F01: Chỉ có PDF không được tự suy diễn thẻ thuyết trình hoặc lắp ráp robot
++      assert.deepStrictEqual(
++        suggestSpckQuickTagsFromProject({
++          classId: robClassId,
++          sessionNumber: 14,
++          fileExtensions: [".pdf"],
++          attachmentCount: 1,
++          slideCount: 1,
++        }),
++        [],
++        "F01: Chỉ có 1 file PDF không được tự động gợi ý thẻ thuyết trình hoặc chất lượng mô hình"
++      );
++      // - F02: Ghi chú phủ định ('Bài không dùng Bootstrap') không được vô hiệu hóa bộ lọc hậu kiểm, và chặn cả Firebase/đăng nhập bịa đặt
++      globalThis.fetch = async () =>
++        new Response(
++          JSON.stringify({
++            candidates: [
++              {
++                content: {
++                  parts: [
++                    {
++                      text: JSON.stringify({
++                        attitudeSummary: "STUDENT_01 làm bài nghiêm túc.",
++                        productAndDesignEvaluation:
++                          "STUDENT_01 đã áp dụng Bootstrap và xây dựng chức năng đăng nhập và đăng ký tài khoản bằng Firebase rất tốt.",
++                        technicalApplicationEvaluation:
++                          "Con đã vận dụng Firebase Authentication và Cloud Firestore hiệu quả ở Buổi 13.",
++                        presentationEvaluation: "",
++                      }),
++                    },
++                  ],
++                },
++                finishReason: "STOP",
++              },
++            ],
++          }),
++          { status: 200, headers: { "Content-Type": "application/json" } }
++        );
++      const negNoteRes = await SpckCommentGenerator.generateBatchSpckComments(
++        { classId: "VT-C4K-JSB15", sessionNumber: 13 },
++        [
++          {
++            studentId: "S5B_WEB_01",
++            fullName: "Phạm Gia Hưng",
++            projectTitle: "Tiệm Trà Sữa Mùa Hè",
++            localFolderPath: webStuDir,
++            quickTags: ["✅ Đã dựng xong khung giao diện các trang chính và thanh điều hướng"],
++            teacherNote: "Bài không dùng Bootstrap, chỉ có HTML/CSS tự viết.",
++            attachments: [path.join(webStuDir, "index.html"), path.join(webStuDir, "style.css")],
++          },
++        ]
++      );
++      assert.ok(
++        !/\b(Bootstrap|Firebase|Firestore|đăng\s*nhập|đăng\s*ký)\b/i.test(
++          negNoteRes[0].formattedTeacherComment
++        ),
++        `F02: Ghi chú phủ định không được cho phép khen Bootstrap và phải lọc sạch Firebase/đăng nhập bịa đặt: '${negNoteRes[0].formattedTeacherComment}'`
++      );
++      // - F05: Thư mục chỉ có _spck_owner_uploads không được trả file nội bộ khi chuẩn bị tải lên Google Drive
++      const ownerOnlyDir = path.join(tmpT6Root, "OwnerOnlyDriveTest");
++      fs.mkdirSync(path.join(ownerOnlyDir, "_spck_owner_uploads"), { recursive: true });
++      fs.writeFileSync(
++        path.join(ownerOnlyDir, "_spck_owner_uploads", "private.png"),
++        makeTestPng(320, 180, 9)
++      );
++      assert.deepStrictEqual(
++        prepareStudentFilesForDriveUpload(ownerOnlyDir, "S5B_ROB_01", "Lê Hoàng Bách"),
++        [],
++        "F05: prepareStudentFilesForDriveUpload phải loại trừ hoàn toàn _spck_owner_uploads"
++      );
++    } finally {
++      try {
++        const dbConn = getDb();
++        dbConn
++          .prepare(
++            `DELETE FROM spck_session_submissions WHERE studentId IN ('S5B_ROB_01', 'S5B_WEB_01')`
++          )
++          .run();
++        dbConn
++          .prepare(`DELETE FROM spck_uploads WHERE studentId IN ('S5B_ROB_01', 'S5B_WEB_01')`)
++          .run();
++        dbConn
++          .prepare(`DELETE FROM students WHERE studentId IN ('S5B_ROB_01', 'S5B_WEB_01')`)
++          .run();
++        dbConn.prepare(`DELETE FROM classes_sessions WHERE classId = 'VT-PREB99'`).run();
++      } catch {}
++      fs.rmSync(tmpT6Root, { recursive: true, force: true });
++    }
++    console.log("  -> PASS [S5b-T6]: Cả 5 hạng mục nâng cấp SPCK Buổi 12-13-14 (Coding & Robotics) đều hoạt động chính xác.");
+   } finally {
+     try {
+       const dbConn = getDb();
+@@ -1230,6 +1726,51 @@ async function runTests() {
+       ],
+       "Lớp Web (JSB) khi bấm 'Quét & Khớp HV' phải tự chạy đúng thứ tự: Scan -> Chụp ảnh tự động -> Deploy GitHub -> Upload Drive (S5b.1)"
+     );
++    const jsbScanCallBody = await page.evaluate(() => {
++      const call = (window as any).__apiCalls.find((c: any) =>
++        c.url.includes("/api/spck/scan")
++      );
++      return call ? call.body : null;
++    });
++    assert.strictEqual(
++      jsbScanCallBody?.syncActiveSession,
++      true,
++      "Nút 'Quét & Khớp HV' phải truyền syncActiveSession: true để đồng bộ tài nguyên mới vào buổi đang chọn"
++    );
++    assert.strictEqual(
++      jsbScanCallBody?.autoSuggestQuickTags,
++      true,
++      "Nút 'Quét & Khớp HV' phải truyền autoSuggestQuickTags: true để tự gợi ý Quick Tags khi chưa chọn"
++    );
++
++    // Kiểm tra nút "📁 Tạo thư mục HV" (s5b-init-student-folders-btn): chỉ gọi /api/spck/scan với action="init_student_folders", không tự chạy công cụ chuẩn bị trên thư mục rỗng
++    await page.evaluate(() => {
++      (window as any).__apiCalls = [];
++    });
++    await page.locator('[data-testid="s5b-init-student-folders-btn"]').click();
++    await page.waitForFunction(
++      () =>
++        (window as any).__apiCalls.some(
++          (c: any) =>
++            c.url.includes("/api/spck/scan") &&
++            c.body &&
++            c.body.action === "init_student_folders"
++        ),
++      undefined,
++      { timeout: 5000 }
++    );
++    const initFolderUrls: string[] = await page.evaluate(() =>
++      (window as any).__apiCalls
++        .map((c: any) => c.url)
++        .filter((u: string) =>
++          /\/api\/spck\/(scan|upload-drive|deploy-web|capture-screenshots)$/.test(u)
++        )
++    );
++    assert.deepStrictEqual(
++      initFolderUrls,
++      ["/api/spck/scan"],
++      "Nút '📁 Tạo thư mục HV' chỉ tạo thư mục và khớp học viên, không chạy sớm công cụ chụp ảnh/up Drive khi thư mục vừa tạo"
++    );
+ 
+     // Kiểm tra S5B-07: Lớp App/Python (PTA08) -> tự chạy: Scan -> Chụp ảnh -> Upload Drive (bỏ qua GitHub Pages)
+     await page.locator("select").first().selectOption("VT-C4K-PTA08");
+diff --git a/src/app/api/spck/scan/route.ts b/src/app/api/spck/scan/route.ts
+index ee2f393..7fea4d9 100644
+--- a/src/app/api/spck/scan/route.ts
++++ b/src/app/api/spck/scan/route.ts
+@@ -1,4 +1,5 @@
+ import fs from "fs";
++import path from "path";
+ import { NextResponse } from "next/server";
+ import {
+   assertClassHasSpckSession,
+@@ -19,6 +20,8 @@ import {
+   validateSpckResourceLimits,
+ } from "@/lib/local-files/spck-scanner";
+ import { validateLocalRequest } from "@/lib/security/local-guard";
++import { suggestSpckQuickTagsFromProject } from "@/lib/spck/spck-quick-tags";
++import { stripVietnameseDiacritics } from "@/lib/utils/vietnamese-match";
+ import { buildEnrichedClassSpckRecords } from "../list/route";
+ 
+ export async function POST(req: Request) {
+@@ -58,6 +61,40 @@ export async function POST(req: Request) {
+       );
+     }
+ 
++    let createdFoldersCount = 0;
++    if (body?.action === "init_student_folders") {
++      if (!fs.existsSync(safeFolderPath)) {
++        fs.mkdirSync(safeFolderPath, { recursive: true });
++      }
++      const existingSubdirs = fs
++        .readdirSync(safeFolderPath, { withFileTypes: true })
++        .filter((d) => d.isDirectory() && !d.name.startsWith(".") && !d.name.startsWith("_spck_"))
++        .map((d) => stripVietnameseDiacritics(d.name).toLowerCase().replace(/\s+/g, " ").trim());
++
++      for (const stu of students) {
++        const cleanDirName = String(stu.fullName || "")
++          .replace(/[<>:"/\\|?*\x00-\x1f]/g, " ")
++          .replace(/\s+/g, " ")
++          .trim();
++        if (!cleanDirName) continue;
++        const normStuName = stripVietnameseDiacritics(cleanDirName)
++          .toLowerCase()
++          .replace(/\s+/g, " ")
++          .trim();
++        const alreadyExists = existingSubdirs.some(
++          (sub) => sub === normStuName
++        );
++        if (!alreadyExists) {
++          const targetStuDir = path.join(safeFolderPath, cleanDirName);
++          if (!fs.existsSync(targetStuDir)) {
++            fs.mkdirSync(targetStuDir, { recursive: true });
++            createdFoldersCount++;
++            existingSubdirs.push(normStuName);
++          }
++        }
++      }
++    }
++
+     const scanResult = scanClassSpckDirectory(classId, safeFolderPath, students);
+     const overLimitErrors: string[] = [];
+     let persistedCount = 0;
+@@ -131,13 +168,23 @@ export async function POST(req: Request) {
+       };
+ 
+       const existingLinks = sameFolder
+-        ? parseSafeArray<{ name: string; url: string }>(existing?.relatedLinksJson)
++        ? parseSafeArray<{ name: string; url: string; category?: string }>(
++            existing?.relatedLinksJson
++          )
+         : [];
+       const scannedLinks =
+         item.packageData.allRelatedLinks || item.packageData.relatedLinks || [];
+-      const mergedLinksMap = new Map<string, { name: string; url: string }>();
+-      for (const l of [...existingLinks, ...scannedLinks]) {
+-        if (l && l.url && !mergedLinksMap.has(l.url)) {
++      const mergedLinksMap = new Map<
++        string,
++        { name: string; url: string; category?: string }
++      >();
++      for (const l of existingLinks) {
++        if (l && l.url) {
++          mergedLinksMap.set(l.url, l);
++        }
++      }
++      for (const l of scannedLinks) {
++        if (l && l.url) {
+           mergedLinksMap.set(l.url, l);
+         }
+       }
+@@ -305,8 +352,9 @@ export async function POST(req: Request) {
+       });
+ 
+       // If any session draft is still an untouched auto-init DRAFT (no teacher comment/note and not approved/verified),
+-      // or if an unapproved/unverified session draft references a deleted/missing thumbnail or screenshot on disk,
+-      // sync the newly scanned shared resources into it immediately so re-scanning a fixed folder updates the UI right away.
++      // or if an unapproved/unverified session draft references a deleted/missing thumbnail, screenshot, or attachment on disk,
++      // or if the UI explicitly requested syncing the active unverified session (`syncActiveSession: true`),
++      // sync the newly scanned shared resources into it immediately so re-scanning a folder across Sessions 12 -> 13 -> 14 updates the UI right away.
+       for (const slotNum of [12, 13, 14] as const) {
+         const existingSess = spckSessionRepo.findOne(classId, suggestedId, slotNum);
+         if (
+@@ -321,12 +369,25 @@ export async function POST(req: Request) {
+           existingSess.draftStatus === "DRAFT" &&
+           !existingSess.teacherComment?.trim() &&
+           !existingSess.teacherNote?.trim();
++        const isRequestedActiveSessionSync =
++          body?.syncActiveSession === true &&
++          activeSessionNumber !== undefined &&
++          slotNum === activeSessionNumber;
+         const hasMissingThumb =
+           Boolean(existingSess.thumbnailPath) && !fs.existsSync(existingSess.thumbnailPath);
+         const hasMissingScreens = parseSafeArray<string>(existingSess.screenshotsJson).some(
+           (p) => Boolean(p) && !fs.existsSync(p)
+         );
+-        if (isUntouchedDraft || hasMissingThumb || hasMissingScreens) {
++        const hasMissingAtts = parseSafeArray<string>(existingSess.attachmentsJson).some(
++          (p) => Boolean(p) && !fs.existsSync(p)
++        );
++        if (
++          isUntouchedDraft ||
++          isRequestedActiveSessionSync ||
++          hasMissingThumb ||
++          hasMissingScreens ||
++          hasMissingAtts
++        ) {
+           spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
+             classId,
+             suggestedId,
+@@ -335,6 +396,85 @@ export async function POST(req: Request) {
+         }
+       }
+ 
++      if (body?.autoSuggestQuickTags === true && activeSessionNumber) {
++        const sessDraft = spckSessionRepo.getOrInitSessionDraft(
++          classId,
++          suggestedId,
++          activeSessionNumber,
++          item.match.suggestedStudentName || item.folderName
++        );
++        const currentTags = parseSafeArray<string>(sessDraft.quickTagsJson);
++        if (
++          currentTags.length === 0 &&
++          !sessDraft.lastVerifiedAt &&
++          sessDraft.draftStatus !== "APPROVED" &&
++          sessDraft.draftStatus !== "VERIFIED"
++        ) {
++          const fileExts = finalAttachments.map((p) => path.extname(p).toLowerCase()).filter(Boolean);
++          let hasFlexOrGridCss = false;
++          let hasNavLinks = false;
++          let hasJsInteraction = false;
++          let hasFirebaseCode = false;
++          let hasRoboticsCode = finalAttachments.some((p) =>
++            p.toLowerCase().endsWith("_robotics_package.zip")
++          );
++          for (const attPath of finalAttachments) {
++            const lowerAtt = attPath.toLowerCase();
++            if (lowerAtt.endsWith(".html") || lowerAtt.endsWith(".htm")) {
++              try {
++                const rawHtml = fs
++                  .readFileSync(attPath, "utf-8")
++                  .slice(0, 20000)
++                  .replace(/<!--[\s\S]*?-->/g, "");
++                if (/display\s*:\s*(?:inline-)?(?:flex|grid)/i.test(rawHtml)) {
++                  hasFlexOrGridCss = true;
++                }
++                if (/<(?:nav|header)\b[\s\S]*?<a\b/i.test(rawHtml)) {
++                  hasNavLinks = true;
++                }
++                if (
++                  /\b(?:addEventListener|querySelector|getElementById|onclick|onsubmit|onchange)\b/i.test(
++                    rawHtml
++                  )
++                ) {
++                  hasJsInteraction = true;
++                }
++                if (/\b(?:firebase|firestore|initializeApp)\b/i.test(rawHtml)) {
++                  hasFirebaseCode = true;
++                }
++              } catch {}
++            } else if (lowerAtt.endsWith(".css")) {
++              hasFlexOrGridCss = true;
++            } else if (lowerAtt.endsWith(".js") || lowerAtt.endsWith(".mjs")) {
++              hasJsInteraction = true;
++            }
++          }
++          const suggestedTags = suggestSpckQuickTagsFromProject({
++            classId,
++            sessionNumber: activeSessionNumber,
++            fileExtensions: fileExts,
++            screenshotCount: finalScreenshots.length,
++            attachmentCount: finalAttachments.length,
++            youtubeCount: mergedYoutubeUrls.length,
++            slideCount: fileExts.filter((ext) => ext === ".pptx" || ext === ".pdf").length,
++            hasFlexOrGridCss,
++            hasNavLinks,
++            hasJsInteraction,
++            hasFirebaseCode,
++            hasRoboticsCode,
++          });
++          if (suggestedTags.length > 0) {
++            spckSessionRepo.saveSessionDraft({
++              classId,
++              studentId: suggestedId,
++              sessionNumber: activeSessionNumber,
++              quickTagsJson: JSON.stringify(suggestedTags),
++              updateSharedPool: false,
++            });
++          }
++        }
++      }
++
+       persistedCount++;
+     }
+ 
+@@ -345,6 +485,7 @@ export async function POST(req: Request) {
+         {
+           success: false,
+           error: overLimitErrors.join(" | "),
++          createdFoldersCount,
+           scanResult,
+           records: updatedRecords,
+         },
+@@ -354,6 +495,7 @@ export async function POST(req: Request) {
+ 
+     return NextResponse.json({
+       success: true,
++      createdFoldersCount,
+       warning: overLimitErrors.length > 0 ? overLimitErrors.join(" | ") : undefined,
+       overLimitErrors: overLimitErrors.length > 0 ? overLimitErrors : undefined,
+       scanResult,
+diff --git a/src/app/api/spck/upload-drive/route.ts b/src/app/api/spck/upload-drive/route.ts
+index 9b39526..e640e58 100644
+--- a/src/app/api/spck/upload-drive/route.ts
++++ b/src/app/api/spck/upload-drive/route.ts
+@@ -48,7 +48,7 @@ export async function POST(req: Request) {
+         studentIds && studentIds.length > 0
+           ? studentIds
+           : (driveResult.results || [])
+-              .filter((r: any) => r.status === "UPLOADED")
++              .filter((r: any) => r.status === "SUCCESS" || r.status === "UPLOADED")
+               .map((r: any) => String(r.studentId || ""))
+               .filter(Boolean);
+       for (const sid of targetIds) {
+diff --git a/src/app/final-project/page.tsx b/src/app/final-project/page.tsx
+index b8bdd7e..29df7b7 100644
+--- a/src/app/final-project/page.tsx
++++ b/src/app/final-project/page.tsx
+@@ -1355,7 +1355,10 @@ export default function FinalProjectPage() {
+     return dupes;
+   }, [rows]);
+ 
+-  const handleScanFolder = async (overrideFolderPath?: string | React.MouseEvent) => {
++  const handleScanFolder = async (
++    overrideFolderPath?: string | React.MouseEvent,
++    options?: { action?: "init_student_folders" }
++  ) => {
+     const targetFolderPath =
+       typeof overrideFolderPath === "string"
+         ? overrideFolderPath.trim()
+@@ -1383,6 +1386,9 @@ export default function FinalProjectPage() {
+           classId: requestClassId,
+           folderPath: targetFolderPath,
+           sessionNumber: selectedSessionNumber,
++          syncActiveSession: true,
++          autoSuggestQuickTags: true,
++          ...(options?.action ? { action: options.action } : {}),
+         }),
+       });
+       const data = await res.json();
+@@ -1516,9 +1522,12 @@ export default function FinalProjectPage() {
+       );
+       setBannerMessage({
+         type: data.warning ? "warning" : "success",
+-        text: data.warning
+-          ? `Đã quét ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}' (Cảnh báo cần kiểm tra: ${data.warning})`
+-          : `Đã quét thành công ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}'.`,
++        text:
++          options?.action === "init_student_folders"
++            ? `Đã khởi tạo ${data.createdFoldersCount ?? 0} thư mục học viên mới và khớp ${scannedItems.length} thư mục trong '${data.scanResult?.rootFolderPath}'! Hãy thả ảnh/tệp mô hình vào từng thư mục rồi bấm "Quét & Khớp HV".`
++            : data.warning
++            ? `Đã quét ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}' (Cảnh báo cần kiểm tra: ${data.warning})`
++            : `Đã quét thành công ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}'.`,
+       });
+       return {
+         success: true,
+diff --git a/src/components/final-project/Step1Header.tsx b/src/components/final-project/Step1Header.tsx
+index 1c46675..48f4a6e 100644
+--- a/src/components/final-project/Step1Header.tsx
++++ b/src/components/final-project/Step1Header.tsx
+@@ -25,6 +25,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
+     handleBrowseFolder,
+     browsingFolder,
+     handleScanFolder,
++    handleInitStudentFolders,
+     scanning,
+     autoRunToolsAfterScan,
+     handleToggleAutoRunToolsAfterScan,
+@@ -135,6 +136,16 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
+                 )}
+                 <span>Chọn...</span>
+               </button>
++              <button
++                type="button"
++                data-testid="s5b-init-student-folders-btn"
++                onClick={() => handleInitStudentFolders()}
++                disabled={isAnyOperationBusy || !selectedClassId || !folderPathInput.trim()}
++                title="Tự động tạo sẵn thư mục con theo tên từng học viên trong lớp để thả ảnh mô hình / tệp sản phẩm vào"
++                className="shrink-0 flex items-center space-x-1 px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-emerald-500/40 disabled:opacity-50 text-emerald-300 font-semibold text-xs transition-colors cursor-pointer"
++              >
++                <span>📁 Tạo thư mục HV</span>
++              </button>
+               <button
+                 type="button"
+                 onClick={() => handleScanFolder()}
+diff --git a/src/components/final-project/useSpckWorkflow.ts b/src/components/final-project/useSpckWorkflow.ts
+index 2b82a55..1eda5e4 100644
+--- a/src/components/final-project/useSpckWorkflow.ts
++++ b/src/components/final-project/useSpckWorkflow.ts
+@@ -771,7 +771,8 @@ export interface SpckWorkflowHookParams {
+   handleClassChange: (newClassId: string) => Promise<void>;
+   handleScanTeacherClasses: () => Promise<void>;
+   handleScanFolder: (
+-    overrideFolderPath?: string | React.MouseEvent
++    overrideFolderPath?: string | React.MouseEvent,
++    options?: { action?: "init_student_folders" }
+   ) => Promise<
+     | void
+     | {
+@@ -3709,7 +3710,8 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+ 
+     const hasRowFileDrift = (r: ScannedFolderUIItem): boolean =>
+       Boolean(
+-        Object.values(r.sessionHistory?.sessions || {}).some((s) => s?.hasFileDrift)
++        r.hasNewerSharedResources ||
++          Object.values(r.sessionHistory?.sessions || {}).some((s) => s?.hasFileDrift)
+       );
+ 
+     const idsNeedingScreenshots = unapprovedRows
+@@ -3832,13 +3834,15 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+   };
+ 
+   const handleScanFolder = async (
+-    overrideFolderPath?: string | React.MouseEvent
++    overrideFolderPath?: string | React.MouseEvent,
++    options?: { action?: "init_student_folders" }
+   ) => {
+-    const res = await baseHandleScanFolder(overrideFolderPath);
++    const res = await baseHandleScanFolder(overrideFolderPath, options);
+     if (
+       res &&
+       typeof res === "object" &&
+       res.success &&
++      options?.action !== "init_student_folders" &&
+       autoRunToolsAfterScan &&
+       Array.isArray(res.scannedItems) &&
+       res.scannedItems.length > 0
+@@ -3852,6 +3856,12 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+     return res;
+   };
+ 
++  const handleInitStudentFolders = async () => {
++    return await handleScanFolder(undefined, {
++      action: "init_student_folders",
++    });
++  };
++
+   const toggleSelectStudent = (studentId: string) => {
+     if (!studentId) return;
+     setSelectedStudentIds((prev) => {
+@@ -3907,6 +3917,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
+     handleGenerateSession14AllAi,
+     handleSubmitSession14Combo,
+     handleScanFolder,
++    handleInitStudentFolders,
+     activeBusyDescription,
+     selectedClassMeta,
+     isRoboticsClass,
+diff --git a/src/lib/file-parsers/archive-reader.ts b/src/lib/file-parsers/archive-reader.ts
+index 92629d3..266dea7 100644
+--- a/src/lib/file-parsers/archive-reader.ts
++++ b/src/lib/file-parsers/archive-reader.ts
+@@ -45,6 +45,27 @@ const READABLE_CODE_EXTENSIONS = new Set([
+   ".xml",
+   ".gml",
+   ".yy",
++  ".ino",
++  ".hex",
++  ".ldr",
++  ".mpd",
++  ".vex",
++  ".vexblocks",
++  ".iqblocks",
++  ".v5python",
++  ".v5blocks",
++]);
++
++const ROBOTICS_BINARY_ARTIFACT_EXTENSIONS = new Set([
++  ".ev3",
++  ".llsp",
++  ".llsp3",
++  ".io",
++  ".lxf",
++  ".mblock",
++  ".uf2",
++  ".stl",
++  ".obj",
+ ]);
+ 
+ export interface SafeZipEntry {
+@@ -390,6 +411,11 @@ export function parseZipArchiveBuffer(
+       if (codeRes.subjectType === "PYTHON" || codeRes.subjectType === "JUPYTER") {
+         hasPythonFiles = true;
+       }
++    } else if (ROBOTICS_BINARY_ARTIFACT_EXTENSIONS.has(entry.extension) && dataBuf.length > 0) {
++      parsedCodeFiles++;
++      codeSections.push(
++        `=== ROBOTICS / 3D ARTIFACT (${entry.extension.toUpperCase()}): ${entry.normalizedPath} (${dataBuf.length} bytes) ===`
++      );
+     }
+   }
+ 
+diff --git a/src/lib/gemini/spck-comment.ts b/src/lib/gemini/spck-comment.ts
+index e6972a4..2be1b25 100644
+--- a/src/lib/gemini/spck-comment.ts
++++ b/src/lib/gemini/spck-comment.ts
+@@ -8,6 +8,7 @@
+ 
+ import fs from "node:fs";
+ import path from "node:path";
++import { inspectZipArchiveSafely } from "../file-parsers/archive-reader";
+ import {
+   assertClassHasSpckSession,
+   computeSpckContentHash,
+@@ -136,9 +137,12 @@ export function stripHallucinatedSession12Comparison(text: string): string {
+   if (!text) return "";
+   return text
+     .replace(/\bso\s+với\s+buổi\s*(?:số\s*)?12\s*,?\s*/gi, "")
++    .replace(/\bso\s+với\s+buổi\s+kiểm\s+tra\s+tiến\s+độ\s+trước\s*,?\s*/gi, "")
++    .replace(/\bso\s+với\s+bước\s+đầu\s*,?\s*/gi, "")
+     .replace(/\bso\s+với\s+buổi\s+trước\s*,?\s*/gi, "")
+     .replace(/\bso\s+với\s+giai\s+đoạn\s+trước\s*,?\s*/gi, "")
+     .replace(/\btừ\s+buổi\s*12\s+đến\s+nay\s*,?\s*/gi, "")
++    .replace(/\btừ\s+buổi\s+kiểm\s+tra\s+tiến\s+độ\s+đầu\s+tiên\s+đến\s+nay\s*,?\s*/gi, "")
+     .replace(/\s+/g, " ")
+     .trim();
+ }
+@@ -328,7 +332,8 @@ export function buildSubjectSpecificSpckInstruction(
+ 
+       case "WEB":
+         return `${headerLine}
+-  + Tập trung nhận xét đúng đặc thù dự án Web (${profile.coursePrefix}): thiết kế giao diện các trang web, bố cục HTML5, CSS Flexbox/Grid, Bootstrap/Responsive, thanh điều hướng (${profile.subTrack === "WEB_FIREBASE" ? "xác thực người dùng Firebase Authentication, cơ sở dữ liệu thời gian thực Cloud Firestore CRUD, phân chia module JavaScript và tích hợp API/Chatbot" : profile.subTrack === "WEB_JS" ? "lập trình JavaScript ES6, thao tác DOM, lưu trữ LocalStorage cho Đăng nhập/Giỏ hàng, gọi dữ liệu Fetch API và tìm kiếm/lọc sản phẩm" : "liên kết đa trang, trình bày nội dung/hình ảnh và tương tác JavaScript DOM cơ bản"}).`;
++  + Tập trung nhận xét đúng đặc thù dự án Web (${profile.coursePrefix}): thiết kế giao diện các trang web theo đúng đề tài của học viên, bố cục HTML5, dàn trang CSS Flexbox/Grid, thanh điều hướng và các tính năng tương tác thực tế có trong mã nguồn (${profile.subTrack === "WEB_FIREBASE" ? "kiến trúc ứng dụng web, kết nối dịch vụ đám mây / cơ sở dữ liệu hoặc các tính năng thực tế trong bài" : profile.subTrack === "WEB_JS" ? "lập trình JavaScript ES6, hiển thị dữ liệu động trên DOM và xử lý sự kiện tương tác theo đúng chủ đề bài làm" : "liên kết đa trang, trình bày nội dung/hình ảnh và tương tác JavaScript DOM cơ bản"}).
++  + CẢNH BÁO CHỐNG RẬP KHUÔN: TUYỆT ĐỐI KHÔNG tự ý nhắc đến "Bootstrap", "Giỏ hàng", "Đăng nhập/Đăng ký", "LocalStorage", "Fetch API" hay "Firebase" nếu phần "Tóm tắt kỹ thuật sơ bộ từ file đính kèm" báo rằng mã nguồn của học viên KHÔNG có các thành phần đó.`;
+ 
+       default:
+         return `${headerLine}
+@@ -375,7 +380,8 @@ export function buildSubjectSpecificSpckInstruction(
+ 
+     case "WEB":
+       return `${headerLine}
+-  + Về phần sản phẩm cuối khóa (${profile.trackBadgeLabel}): mở đầu nêu rõ "${anonymousToken} đã xây dựng/hoàn thiện ${profile.productNoun} [Tên đề tài] với giao diện đẹp mắt, bố cục rõ ràng/hợp lý...", nêu rõ cách em vận dụng ${profile.coreSkillsSummary} để hoàn thiện các trang chức năng và trải nghiệm người dùng, ghi nhận sự sáng tạo/cố gắng/tiến bộ; ${aiDependencyReminder}.`;
++  + Về phần sản phẩm cuối khóa (${profile.trackBadgeLabel}): mở đầu nêu rõ "${anonymousToken} đã xây dựng/hoàn thiện ${profile.productNoun} [Tên đề tài] với giao diện đẹp mắt, bố cục rõ ràng/hợp lý...", nêu rõ các trang/mục nội dung thực tế và cách em vận dụng ${profile.coreSkillsSummary} để hoàn thiện các chức năng theo đúng chủ đề bài làm, ghi nhận sự sáng tạo/cố gắng/tiến bộ; ${aiDependencyReminder}.
++  + CẢNH BÁO CHỐNG RẬP KHUÔN: TUYỆT ĐỐI KHÔNG tự ý nhắc đến "Bootstrap", "Giỏ hàng", "Đăng nhập/Đăng ký", "LocalStorage", "Fetch API" hay "Firebase" nếu mã nguồn thực tế của học viên không sử dụng các thành phần đó.`;
+ 
+     default:
+       return `${headerLine}
+@@ -383,26 +389,46 @@ export function buildSubjectSpecificSpckInstruction(
+   }
+ }
+ 
++export interface AbsentWebFeatureFlags {
++  inspectedWebCode: boolean;
++  noBootstrap?: boolean;
++  noCart?: boolean;
++  noAuth?: boolean;
++  noLocalStorage?: boolean;
++  noFetchApi?: boolean;
++  noFirebase?: boolean;
++}
++
+ /**
+- * Safely reads a brief technical summary from the student's folder and up to 2 attachment files
++ * Safely reads a deep technical summary from the student's folder and attachment files
+  * across all 6 MindX subject tracks (SCRATCH, GAMEMAKER, PYTHON_APP, WEB, COMPUTER_SCIENCE, ROBOTICS).
+  */
+-function buildPreliminaryProjectSummary(
++export function buildPreliminaryProjectSummary(
+   attachments: string[],
+   studentFullName: string,
+   anonymousToken: string,
+   peerNames: string[],
+   localFolderPath?: string,
+   extraMediaInfo?: { youtubeCount?: number; screenshotCount?: number }
+-): { summaryText: string; detectedExtensions: string[] } {
++): {
++  summaryText: string;
++  detectedExtensions: string[];
++  absentWebFeatures: AbsentWebFeatureFlags;
++} {
+   const summaries: string[] = [];
+   const detectedExts = new Set<string>();
++  const absentWebFeatures: AbsentWebFeatureFlags = { inspectedWebCode: false };
+ 
+   for (const att of attachments || []) {
+     const ext = path.extname(String(att || "")).toLowerCase();
+     if (ext) detectedExts.add(ext);
+   }
+ 
++  const rawHtmlSamples: Array<{ name: string; content: string }> = [];
++  const rawCssSamples: string[] = [];
++  const rawJsSamples: string[] = [];
++  let unscannedWebFilesExist = false;
++
+   if (localFolderPath && localFolderPath.trim()) {
+     try {
+       const safeDir = assertPathAllowed(localFolderPath);
+@@ -452,7 +478,7 @@ function buildPreliminaryProjectSummary(
+               if (ext) detectedExts.add(ext);
+               if (ext === ".html" || ext === ".htm") htmlFiles.push(full);
+               else if (ext === ".css") cssFiles.push(full);
+-              else if (ext === ".js") jsFiles.push(full);
++              else if (ext === ".js" || ext === ".mjs") jsFiles.push(full);
+               else if (ext === ".ui") uiFiles.push(full);
+               else if (ext === ".qss") qssFiles.push(full);
+               else if (ext === ".py") pyFiles.push(full);
+@@ -476,68 +502,26 @@ function buildPreliminaryProjectSummary(
+         };
+         walkDir(safeDir, 0);
+ 
+-        // 1. Web project summary (.html / .css / .js)
+-        if (htmlFiles.length > 0 || cssFiles.length > 0) {
+-          const pageTitles: string[] = [];
+-          let usesFlexbox = false;
+-          let usesGrid = false;
+-          let usesResponsive = false;
+-          let usesBootstrap = false;
+-          let usesLocalStorage = false;
+-          let usesFetchApi = false;
+-          let usesFirebase = false;
+-
+-          for (const hf of htmlFiles.slice(0, 6)) {
+-            const rawHtml = fs.readFileSync(hf, "utf-8").slice(0, 12000);
+-            const titleMatch = rawHtml.match(/<title[^>]*>([^<]{1,80})<\/title>/i);
+-            const h1Match = rawHtml.match(/<h1[^>]*>([^<]{1,80})<\/h1>/i);
+-            const extracted = (titleMatch?.[1] || h1Match?.[1] || "").replace(/\s+/g, " ").trim();
+-            if (extracted && !/^document$/i.test(extracted)) {
+-              pageTitles.push(extracted);
+-            }
+-            if (/display\s*:\s*flex|\bflex\b/i.test(rawHtml)) usesFlexbox = true;
+-            if (/display\s*:\s*grid|\bgrid\b/i.test(rawHtml)) usesGrid = true;
+-            if (/bootstrap/i.test(rawHtml)) usesBootstrap = true;
+-          }
+-
+-          for (const cf of cssFiles.slice(0, 4)) {
+-            const rawCss = fs.readFileSync(cf, "utf-8").slice(0, 20000);
+-            if (/display\s*:\s*(?:inline-)?flex/i.test(rawCss)) usesFlexbox = true;
+-            if (/display\s*:\s*(?:inline-)?grid/i.test(rawCss)) usesGrid = true;
+-            if (/@media\b/i.test(rawCss)) usesResponsive = true;
+-          }
+-
+-          for (const jf of jsFiles.slice(0, 5)) {
+-            const rawJs = fs.readFileSync(jf, "utf-8").slice(0, 20000);
+-            if (/localStorage/i.test(rawJs)) usesLocalStorage = true;
+-            if (/\bfetch\s*\(|\baxios\b|\basync\b/i.test(rawJs)) usesFetchApi = true;
+-            if (/firebase|firestore|signInWithEmailAndPassword|onAuthStateChanged/i.test(rawJs)) {
+-              usesFirebase = true;
+-            }
+-          }
+-
+-          const webTechs = [
+-            usesFlexbox ? "Flexbox" : "",
+-            usesGrid ? "CSS Grid" : "",
+-            usesBootstrap ? "Bootstrap" : "",
+-            usesResponsive ? "Responsive" : "",
+-            usesLocalStorage ? "LocalStorage" : "",
+-            usesFetchApi ? "Fetch API / Async" : "",
+-            usesFirebase ? "Firebase Auth / Firestore" : "",
+-          ].filter(Boolean);
+-
+-          const webHighlight = [
+-            `- Đặc trưng dự án Web: gồm ${htmlFiles.length} trang HTML${pageTitles.length > 0 ? ` (tiêu đề trang: ${Array.from(new Set(pageTitles)).slice(0, 3).join(", ")})` : ""}, ${cssFiles.length} file CSS, ${jsFiles.length} file JavaScript.`,
+-            webTechs.length > 0
+-              ? `- Kỹ thuật dàn trang & lập trình phát hiện trong code: ${webTechs.join(", ")}.`
+-              : "",
+-          ]
+-            .filter(Boolean)
+-            .join("\n");
+-
+-          summaries.push(
+-            anonymizeSpckText(webHighlight, studentFullName, anonymousToken, peerNames)
+-          );
++        if (htmlFiles.length > 30 || cssFiles.length > 30 || jsFiles.length > 50) {
++          unscannedWebFilesExist = true;
++        }
++        for (const hf of htmlFiles.slice(0, 30)) {
++          try {
++            rawHtmlSamples.push({
++              name: path.basename(hf, path.extname(hf)),
++              content: fs.readFileSync(hf, "utf-8").slice(0, 25000),
++            });
++          } catch {}
++        }
++        for (const cf of cssFiles.slice(0, 30)) {
++          try {
++            rawCssSamples.push(fs.readFileSync(cf, "utf-8").slice(0, 25000));
++          } catch {}
++        }
++        for (const jf of jsFiles.slice(0, 50)) {
++          try {
++            rawJsSamples.push(fs.readFileSync(jf, "utf-8").slice(0, 25000));
++          } catch {}
+         }
+ 
+         // 2. Python App / Computer Science summary (.ui / .qss / .py / .ipynb / .csv)
+@@ -549,11 +533,47 @@ function buildPreliminaryProjectSummary(
+           csvFiles.length > 0
+         ) {
+           const detectedPyTechs = new Set<string>();
+-          if (uiFiles.length > 0) detectedPyTechs.add(`${uiFiles.length} màn hình giao diện Qt Designer`);
++          const uiScreenLabels: string[] = [];
++          const pyClassAndFuncNames: string[] = [];
++          const csvHeaders: string[] = [];
++
++          if (uiFiles.length > 0) {
++            detectedPyTechs.add(`${uiFiles.length} màn hình giao diện Qt Designer`);
++            for (const uf of uiFiles.slice(0, 6)) {
++              try {
++                const rawUi = fs.readFileSync(uf, "utf-8").slice(0, 20000);
++                const winTitleMatch = rawUi.match(
++                  /<property\s+name="windowTitle"[^>]*>\s*<string>([^<]{1,60})<\/string>/i
++                );
++                const screenBase = path.basename(uf, ".ui");
++                const winTitle = winTitleMatch?.[1]?.trim();
++                uiScreenLabels.push(
++                  winTitle && !/^MainWindow|Form|Dialog$/i.test(winTitle)
++                    ? `${screenBase} (${winTitle})`
++                    : screenBase
++                );
++              } catch {}
++            }
++          }
+           if (qssFiles.length > 0) detectedPyTechs.add("trang trí giao diện QSS");
+           if (jsonFiles.length > 0) detectedPyTechs.add("lưu trữ dữ liệu JSON");
+-          if (csvFiles.length > 0) detectedPyTechs.add(`${csvFiles.length} tập dữ liệu CSV`);
+-          if (ipynbFiles.length > 0) detectedPyTechs.add(`${ipynbFiles.length} sổ tay phân tích Jupyter Notebook`);
++          if (csvFiles.length > 0) {
++            detectedPyTechs.add(`${csvFiles.length} tập dữ liệu CSV`);
++            for (const csvPath of csvFiles.slice(0, 2)) {
++              try {
++                const firstLine = fs
++                  .readFileSync(csvPath, "utf-8")
++                  .slice(0, 500)
++                  .split(/\r?\n/)[0];
++                if (firstLine) {
++                  csvHeaders.push(firstLine.trim().slice(0, 120));
++                }
++              } catch {}
++            }
++          }
++          if (ipynbFiles.length > 0) {
++            detectedPyTechs.add(`${ipynbFiles.length} sổ tay phân tích Jupyter Notebook`);
++          }
+ 
+           for (const pf of [...pyFiles.slice(0, 5), ...ipynbFiles.slice(0, 3)]) {
+             const rawPy = fs.readFileSync(pf, "utf-8").slice(0, 30000);
+@@ -561,7 +581,17 @@ function buildPreliminaryProjectSummary(
+             if (/\.connect\s*\(|pyqtSignal/i.test(rawPy)) detectedPyTechs.add("Signal & Slot");
+             if (/QStackedWidget/i.test(rawPy)) detectedPyTechs.add("chuyển trang QStackedWidget");
+             if (/QMessageBox/i.test(rawPy)) detectedPyTechs.add("hộp thoại QMessageBox");
+-            if (/^\s*class\s+[A-Za-z_]/m.test(rawPy)) detectedPyTechs.add("lập trình hướng đối tượng (OOP)");
++            if (/^\s*class\s+[A-Za-z_]/m.test(rawPy)) {
++              detectedPyTechs.add("lập trình hướng đối tượng (OOP)");
++            }
++            for (const m of rawPy.matchAll(/^\s*class\s+([A-Za-z_][A-Za-z0-9_]*)/gm)) {
++              if (pyClassAndFuncNames.length < 8) pyClassAndFuncNames.push(`Lớp ${m[1]}`);
++            }
++            for (const m of rawPy.matchAll(/^\s*def\s+([A-Za-z_][A-Za-z0-9_]*)/gm)) {
++              if (m[1] !== "__init__" && pyClassAndFuncNames.length < 10) {
++                pyClassAndFuncNames.push(m[1]);
++              }
++            }
+             if (/\bpandas\b|\bread_csv\b/i.test(rawPy)) detectedPyTechs.add("xử lý dữ liệu Pandas");
+             if (/\bmatplotlib\b|\bseaborn\b|\bplotly\b/i.test(rawPy)) {
+               detectedPyTechs.add("biểu đồ trực quan hóa dữ liệu");
+@@ -581,13 +611,22 @@ function buildPreliminaryProjectSummary(
+           }
+ 
+           if (detectedPyTechs.size > 0) {
++            const pyLines = [
++              `- Đặc trưng dự án Python / Khoa học máy tính phát hiện trong thư mục: ${Array.from(detectedPyTechs).join(", ")}.`,
++              uiScreenLabels.length > 0
++                ? `- Các màn hình giao diện trong dự án: ${uiScreenLabels.join(", ")}.`
++                : "",
++              pyClassAndFuncNames.length > 0
++                ? `- Các thành phần / chức năng chính trong mã nguồn: ${Array.from(new Set(pyClassAndFuncNames)).slice(0, 8).join(", ")}.`
++                : "",
++              csvHeaders.length > 0
++                ? `- Các cột dữ liệu CSV: ${csvHeaders.join(" | ")}.`
++                : "",
++            ]
++              .filter(Boolean)
++              .join("\n");
+             summaries.push(
+-              anonymizeSpckText(
+-                `- Đặc trưng dự án Python / Khoa học máy tính phát hiện trong thư mục: ${Array.from(detectedPyTechs).join(", ")}.`,
+-                studentFullName,
+-                anonymousToken,
+-                peerNames
+-              )
++              anonymizeSpckText(pyLines, studentFullName, anonymousToken, peerNames)
+             );
+           }
+         }
+@@ -622,9 +661,261 @@ function buildPreliminaryProjectSummary(
+     }
+   }
+ 
+-  if ((extraMediaInfo?.youtubeCount || 0) > 0) {
++  // If no Web files were read from localFolderPath, check loose .html/.css/.js attachments and safe .zip packages
++  if (
++    rawHtmlSamples.length === 0 &&
++    rawCssSamples.length === 0 &&
++    rawJsSamples.length === 0 &&
++    Array.isArray(attachments)
++  ) {
++    for (const att of attachments) {
++      if (typeof att !== "string" || !att.trim()) continue;
++      const lowerAtt = att.toLowerCase();
++      try {
++        const safeAtt = assertPathAllowed(att);
++        if (!fs.existsSync(safeAtt) || fs.lstatSync(safeAtt).isSymbolicLink()) {
++          continue;
++        }
++        const ext = path.extname(safeAtt).toLowerCase();
++        if (ext === ".html" || ext === ".htm") {
++          detectedExts.add(ext);
++          if (rawHtmlSamples.length < 30) {
++            rawHtmlSamples.push({
++              name: path.basename(safeAtt, ext),
++              content: fs.readFileSync(safeAtt, "utf-8").slice(0, 25000),
++            });
++          } else {
++            unscannedWebFilesExist = true;
++          }
++        } else if (ext === ".css") {
++          detectedExts.add(ext);
++          if (rawCssSamples.length < 30) {
++            rawCssSamples.push(fs.readFileSync(safeAtt, "utf-8").slice(0, 25000));
++          } else {
++            unscannedWebFilesExist = true;
++          }
++        } else if (ext === ".js" || ext === ".mjs") {
++          detectedExts.add(ext);
++          if (rawJsSamples.length < 50) {
++            rawJsSamples.push(fs.readFileSync(safeAtt, "utf-8").slice(0, 25000));
++          } else {
++            unscannedWebFilesExist = true;
++          }
++        } else if (lowerAtt.endsWith(".zip")) {
++          const zipBuf = fs.readFileSync(safeAtt);
++          const inspection = inspectZipArchiveSafely(zipBuf, path.basename(safeAtt));
++          if (inspection.valid) {
++            for (const entry of inspection.entries) {
++              const entryExt = entry.extension;
++              if (entryExt) detectedExts.add(entryExt);
++              if (entryExt === ".html" || entryExt === ".htm") {
++                if (rawHtmlSamples.length < 30) {
++                  rawHtmlSamples.push({
++                    name: path.basename(entry.entryName, entryExt),
++                    content: entry.getData().toString("utf-8").slice(0, 25000),
++                  });
++                } else {
++                  unscannedWebFilesExist = true;
++                }
++              } else if (entryExt === ".css") {
++                if (rawCssSamples.length < 30) {
++                  rawCssSamples.push(entry.getData().toString("utf-8").slice(0, 25000));
++                } else {
++                  unscannedWebFilesExist = true;
++                }
++              } else if (entryExt === ".js" || entryExt === ".mjs") {
++                if (rawJsSamples.length < 50) {
++                  rawJsSamples.push(entry.getData().toString("utf-8").slice(0, 25000));
++                } else {
++                  unscannedWebFilesExist = true;
++                }
++              }
++            }
++          }
++        }
++      } catch {}
++    }
++  }
++
++  // Deep Web Project Inspector (.html / .css / .js)
++  if (rawHtmlSamples.length > 0 || rawCssSamples.length > 0) {
++    absentWebFeatures.inspectedWebCode = true;
++    const pageTitles: string[] = [];
++    const sectionHeadings: string[] = [];
++    const navItems: string[] = [];
++    const uiComponents = new Set<string>();
++
++    let usesFlexbox = false;
++    let usesGrid = false;
++    let usesResponsive = false;
++    let usesBootstrap = false;
++    let usesDomEvents = false;
++    let usesLocalStorage = false;
++    let usesFetchApi = false;
++    let usesFirebase = false;
++    let hasCartFeature = false;
++    let hasAuthFeature = false;
++    let hasSearchFilter = false;
++
++    const stripTags = (htmlFragment: string) =>
++      htmlFragment
++        .replace(/<[^>]+>/g, " ")
++        .replace(/&nbsp;/gi, " ")
++        .replace(/\s+/g, " ")
++        .trim();
++
++    const stripCssOrJsComments = (code: string) =>
++      code
++        .replace(/\/\*[\s\S]*?\*\//g, " ")
++        .replace(/(?:^|(?<=[\s;(,{]))\/\/.*$/gm, " ");
++
++    for (const hf of rawHtmlSamples) {
++      // Strip HTML comments before any feature inspection so commented-out TODOs never fabricate features
++      const rawHtml = hf.content.replace(/<!--[\s\S]*?-->/g, " ");
++      const titleMatch = rawHtml.match(/<title[^>]*>([\s\S]{1,100}?)<\/title>/i);
++      const extractedTitle = stripTags(titleMatch?.[1] || "");
++      if (extractedTitle && !/^document|untitled|home|index$/i.test(extractedTitle)) {
++        pageTitles.push(extractedTitle);
++      }
++
++      for (const hm of rawHtml.matchAll(/<h[1-3][^>]*>([\s\S]{1,120}?)<\/h[1-3]>/gi)) {
++        const headingText = stripTags(hm[1] || "");
++        if (headingText && headingText.length >= 2 && sectionHeadings.length < 10) {
++          sectionHeadings.push(headingText);
++        }
++      }
++
++      for (const navMatch of rawHtml.matchAll(/<(?:nav|header)[^>]*>([\s\S]{1,4000}?)<\/(?:nav|header)>/gi)) {
++        for (const aMatch of (navMatch[1] || "").matchAll(/<a[^>]*>([\s\S]{1,60}?)<\/a>/gi)) {
++          const linkText = stripTags(aMatch[1] || "");
++          if (linkText && linkText.length >= 2 && linkText.length <= 35 && navItems.length < 8) {
++            navItems.push(linkText);
++          }
++        }
++      }
++
++      if (/<form\b/i.test(rawHtml)) uiComponents.add("Biểu mẫu nhập liệu (Form)");
++      if (/<input\b|<textarea\b|<select\b/i.test(rawHtml)) uiComponents.add("Ô nhập liệu / chọn thông tin");
++      if (/<button\b/i.test(rawHtml)) uiComponents.add("Nút bấm tương tác");
++      if (/<table\b/i.test(rawHtml)) uiComponents.add("Bảng dữ liệu (Table)");
++      if (/<video\b|<audio\b|<iframe\b/i.test(rawHtml)) uiComponents.add("Đa phương tiện (Video/Audio/Iframe)");
++      if (/<canvas\b/i.test(rawHtml)) uiComponents.add("Đồ họa Canvas");
++
++      if (/display\s*:\s*(?:inline-)?flex|\bd-flex\b/i.test(rawHtml)) usesFlexbox = true;
++      if (/display\s*:\s*(?:inline-)?grid/i.test(rawHtml)) usesGrid = true;
++      if (/<(?:link|script)[^>]+bootstrap|\b(?:navbar-expand|container-fluid|col-(?:sm|md|lg|xl)-\d+)\b/i.test(rawHtml)) {
++        usesBootstrap = true;
++      }
++      if (/onclick|onsubmit|onchange|addEventListener|querySelector|getElementById/i.test(rawHtml)) {
++        usesDomEvents = true;
++      }
++      if (/localStorage|sessionStorage/i.test(rawHtml)) usesLocalStorage = true;
++      if (/\bfetch\s*\(|\baxios\b/i.test(rawHtml)) usesFetchApi = true;
++      if (/firebase|firestore/i.test(rawHtml)) usesFirebase = true;
++      if (/giỏ\s*hàng|shopping\s*cart|add[-_]?to[-_]?cart|thanh\s*toán|checkout/i.test(rawHtml)) {
++        hasCartFeature = true;
++      }
++      if (/đăng\s*nhập|đăng\s*ký|sign\s*in|sign\s*up|log\s*in|register|mật\s*khẩu|type=["']password["']/i.test(rawHtml)) {
++        hasAuthFeature = true;
++      }
++      if (/tìm\s*kiếm|search|bộ\s*lọc|filter/i.test(rawHtml)) {
++        hasSearchFilter = true;
++      }
++    }
++
++    for (const rawCssSample of rawCssSamples) {
++      const rawCss = stripCssOrJsComments(rawCssSample);
++      if (/display\s*:\s*(?:inline-)?flex/i.test(rawCss)) usesFlexbox = true;
++      if (/display\s*:\s*(?:inline-)?grid/i.test(rawCss)) usesGrid = true;
++      if (/@media\b/i.test(rawCss)) usesResponsive = true;
++      if (/bootstrap/i.test(rawCss)) usesBootstrap = true;
++    }
++
++    for (const rawJsSample of rawJsSamples) {
++      const rawJs = stripCssOrJsComments(rawJsSample);
++      if (/addEventListener|querySelector|getElementById|createElement|innerHTML|textContent/i.test(rawJs)) {
++        usesDomEvents = true;
++      }
++      if (/localStorage|sessionStorage/i.test(rawJs)) usesLocalStorage = true;
++      if (/\bfetch\s*\(|\baxios\b|\bXMLHttpRequest\b/i.test(rawJs)) usesFetchApi = true;
++      if (/firebase|firestore|signInWithEmailAndPassword|onAuthStateChanged|initializeApp/i.test(rawJs)) {
++        usesFirebase = true;
++      }
++      if (/giỏ\s*hàng|cart|addToCart|checkout|thanh\s*toán/i.test(rawJs)) {
++        hasCartFeature = true;
++      }
++      if (/đăng\s*nhập|đăng\s*ký|login|register|signup|signin|password/i.test(rawJs)) {
++        hasAuthFeature = true;
++      }
++      if (/search|filter|tìm\s*kiếm/i.test(rawJs)) {
++        hasSearchFilter = true;
++      }
++    }
++
++    if (!unscannedWebFilesExist) {
++      absentWebFeatures.noBootstrap = !usesBootstrap;
++      absentWebFeatures.noCart = !hasCartFeature;
++      absentWebFeatures.noAuth = !hasAuthFeature;
++      absentWebFeatures.noLocalStorage = !usesLocalStorage;
++      absentWebFeatures.noFetchApi = !usesFetchApi;
++      absentWebFeatures.noFirebase = !usesFirebase;
++    }
++
++    const webTechs = [
++      "HTML5",
++      usesFlexbox ? "CSS Flexbox" : "CSS3",
++      usesGrid ? "CSS Grid" : "",
++      usesBootstrap ? "Bootstrap" : "",
++      usesResponsive ? "Responsive (@media)" : "",
++      usesDomEvents || rawJsSamples.length > 0 ? "JavaScript DOM" : "",
++      hasSearchFilter ? "Tìm kiếm / Lọc nội dung" : "",
++      hasAuthFeature ? "Đăng nhập / Đăng ký" : "",
++      hasCartFeature ? "Giỏ hàng" : "",
++      usesLocalStorage ? "LocalStorage" : "",
++      usesFetchApi ? "Fetch API" : "",
++      usesFirebase ? "Firebase Auth / Firestore" : "",
++    ].filter(Boolean);
++
++    const absentList = [
++      !usesBootstrap ? "Bootstrap" : "",
++      !hasCartFeature ? "Giỏ hàng / Thanh toán" : "",
++      !hasAuthFeature ? "Đăng nhập / Đăng ký" : "",
++      !usesLocalStorage ? "LocalStorage" : "",
++      !usesFetchApi ? "Fetch API" : "",
++      !usesFirebase ? "Firebase / Firestore" : "",
++    ].filter(Boolean);
++
++    const uniquePageTitles = Array.from(new Set(pageTitles)).slice(0, 4);
++    const uniqueHeadings = Array.from(new Set(sectionHeadings)).slice(0, 8);
++    const uniqueNavItems = Array.from(new Set(navItems)).slice(0, 6);
++
++    const webHighlight = [
++      `- Đặc trưng dự án Web thực tế: gồm ${rawHtmlSamples.length} trang HTML${uniquePageTitles.length > 0 ? ` (tiêu đề trang: ${uniquePageTitles.join(", ")})` : ""}, ${rawCssSamples.length} file CSS, ${rawJsSamples.length} file JavaScript.`,
++      uniqueNavItems.length > 0
++        ? `- Các mục trên thanh điều hướng (Menu): ${uniqueNavItems.join(", ")}.`
++        : "",
++      uniqueHeadings.length > 0
++        ? `- Các mục nội dung / tiêu đề chính trên trang: ${uniqueHeadings.join(" | ")}.`
++        : "",
++      uiComponents.size > 0
++        ? `- Thành phần giao diện tương tác có trong bài: ${Array.from(uiComponents).join(", ")}.`
++        : "",
++      `- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: ${webTechs.join(", ")}.`,
++      absentList.length > 0
++        ? `- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [${absentList.join(", ")}] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.`
++        : "",
++    ]
++      .filter(Boolean)
++      .join("\n");
++
++    summaries.push(
++      anonymizeSpckText(webHighlight, studentFullName, anonymousToken, peerNames)
++    );
++  }
++
++  if ((extraMediaInfo?.youtubeCount || 0) > 0 || (extraMediaInfo?.screenshotCount || 0) > 0) {
+     summaries.push(
+-      `- Minh chứng vận hành & thuyết trình: có ${extraMediaInfo?.youtubeCount} video demo YouTube và ${extraMediaInfo?.screenshotCount || 0} hình ảnh chụp mô hình/sản phẩm.`
++      `- Minh chứng hình ảnh & vận hành sản phẩm: có ${extraMediaInfo?.screenshotCount || 0} hình ảnh chụp sản phẩm/mô hình thực tế${(extraMediaInfo?.youtubeCount || 0) > 0 ? ` và ${extraMediaInfo?.youtubeCount} video demo YouTube` : ""}.`
+     );
+   }
+ 
+@@ -633,6 +924,7 @@ function buildPreliminaryProjectSummary(
+       summaryText:
+         summaries.length > 0 ? summaries.join("\n") : "Không có file mã nguồn đính kèm.",
+       detectedExtensions: Array.from(detectedExts),
++      absentWebFeatures,
+     };
+   }
+ 
+@@ -666,9 +958,56 @@ function buildPreliminaryProjectSummary(
+     summaryText:
+       summaries.length > 0 ? summaries.join("\n") : "Không có trích xuất mã nguồn chi tiết.",
+     detectedExtensions: Array.from(detectedExts),
++    absentWebFeatures,
+   };
+ }
+ 
++/**
++ * Prepares up to 2 valid product/model images (Thumbnail + 1 screenshot, excluding the default MindX logo)
++ * as Gemini multimodal `inlineData` parts so the AI can visually inspect Web UI, App screens, or Robotics models.
++ */
++function buildMultimodalImageParts(
++  thumbnailPath?: string,
++  screenshots?: string[]
++): Array<{ inlineData: { data: string; mimeType: string } }> {
++  const parts: Array<{ inlineData: { data: string; mimeType: string } }> = [];
++  const candidates = [thumbnailPath, ...(screenshots || [])].filter(
++    (p): p is string => typeof p === "string" && p.trim().length > 0
++  );
++  const seen = new Set<string>();
++
++  for (const rawPath of candidates) {
++    if (parts.length >= 2) break;
++    const norm = path.normalize(rawPath.trim());
++    if (seen.has(norm)) continue;
++    seen.add(norm);
++    if (/default-spck-thumbnail\.png$/i.test(norm)) continue;
++
++    try {
++      const safeImg = assertPathAllowed(norm);
++      if (!fs.existsSync(safeImg) || fs.lstatSync(safeImg).isSymbolicLink()) continue;
++      const stat = fs.statSync(safeImg);
++      if (!stat.isFile() || stat.size < 128 || stat.size > 4 * 1024 * 1024) continue;
++      const ext = path.extname(safeImg).toLowerCase();
++      const mimeType =
++        ext === ".png"
++          ? "image/png"
++          : ext === ".jpg" || ext === ".jpeg"
++            ? "image/jpeg"
++            : ext === ".webp"
++              ? "image/webp"
++              : "";
++      if (!mimeType) continue;
++      const base64 = fs.readFileSync(safeImg).toString("base64");
++      parts.push({ inlineData: { data: base64, mimeType } });
++    } catch {
++      continue;
++    }
++  }
++
++  return parts;
++}
++
+ /**
+  * Collects historical learning context for (classId, studentId) from SQLite.
+  */
+@@ -779,10 +1118,10 @@ export class SpckCommentGenerator {
+     const usedOpeningPhrases: string[] = [];
+ 
+     const stage1Archetypes = [
+-      `Cấu trúc GĐ1-1 (Đánh giá học bạ — Tiến độ dự án & Hạng mục cần hoàn thiện): Câu đầu nhận xét trang trọng về thái độ học tập và tiến độ thực hiện dự án hiện tại của STUDENT_XX; câu thứ hai nêu rõ sản phẩm hiện có những trang/màn hình giao diện và chức năng thực tế nào đã được xây dựng${stageInfo.sessionNumber === 13 ? " (kèm phần đã bổ sung nếu có dữ liệu)" : ""}; câu thứ ba chỉ rõ những tính năng, giao diện hoặc xử lý kỹ thuật cần cải thiện và hoàn thiện tiếp.`,
+-      `Cấu trúc GĐ1-2 (Đánh giá học bạ — Năng lực vận dụng & Định hướng hoàn thiện): Câu đầu ghi nhận tinh thần tập trung, chủ động của STUDENT_XX trong quá trình xây dựng sản phẩm; câu thứ hai mô tả cụ thể cấu trúc sản phẩm hiện có những phần giao diện và chức năng nền tảng nào; câu thứ ba nêu rõ các điểm cần cải thiện, bổ sung để hoàn thiện dự án.`,
+-      `Cấu trúc GĐ1-3 (Đánh giá học bạ — Hiện trạng sản phẩm & Điểm cần khắc phục): Câu đầu đánh giá tổng quan kết quả bước đầu thực hiện dự án của STUDENT_XX; câu thứ hai trình bày rõ sản phẩm đã có những màn hình và tính năng gì hoạt động được; câu thứ ba nhận xét khách quan những hạng mục còn thiếu hoặc cần cải thiện thêm.`,
+-      `Cấu trúc GĐ1-4 (Đánh giá học bạ — Kỹ năng thực hành & Hạng mục cần trau chuốt): Câu đầu nhận xét khả năng vận dụng kiến thức lập trình vào đề tài thực tế của STUDENT_XX; câu thứ hai liệt kê rõ các thành phần giao diện và chức năng hiện có trong sản phẩm; câu thứ ba định hướng cụ thể những điểm cần cải thiện và tối ưu ở bước tiếp theo.`,
++      `Cấu trúc GĐ1-1 (Kiểm tra tiến độ dự án — Hiện trạng hoàn thành & Mục tiêu buổi tới): Câu đầu nhận xét trang trọng về thái độ làm việc và mức độ hoàn thành tiến độ dự án hiện tại của STUDENT_XX; câu thứ hai nêu rõ ở đợt kiểm tra tiến độ này sản phẩm đã dựng được những trang/màn hình giao diện hoặc mô hình và chức năng thực tế nào${stageInfo.sessionNumber === 13 ? " (kèm phần đã bổ sung nếu có dữ liệu)" : ""}; câu thứ ba chỉ rõ những tính năng, giao diện/mô hình hoặc xử lý kỹ thuật cần tiếp tục hoàn thiện ở buổi kiểm tra tiến độ tiếp theo.`,
++      `Cấu trúc GĐ1-2 (Kiểm tra tiến độ dự án — Phần đã xây dựng & Định hướng hoàn thiện): Câu đầu ghi nhận tinh thần tập trung, chủ động của STUDENT_XX trong quá trình triển khai dự án theo tiến độ; câu thứ hai mô tả cụ thể cấu trúc sản phẩm hiện đã có những phần giao diện/mô hình và chức năng nền tảng nào; câu thứ ba nêu rõ các hạng mục còn đang dang dở cần bổ sung để kịp tiến độ hoàn thiện sản phẩm.`,
++      `Cấu trúc GĐ1-3 (Kiểm tra tiến độ dự án — Kết quả thực hiện & Hạng mục cần bổ sung): Câu đầu đánh giá tổng quan tiến độ thực hiện dự án của STUDENT_XX; câu thứ hai trình bày rõ sản phẩm đã có những màn hình/cơ cấu và tính năng gì hoạt động được; câu thứ ba nhận xét khách quan những hạng mục còn thiếu cần đẩy nhanh hoàn thiện trước buổi báo cáo sản phẩm cuối khóa.`,
++      `Cấu trúc GĐ1-4 (Kiểm tra tiến độ dự án — Kỹ năng vận dụng & Kế hoạch hoàn thiện tiếp theo): Câu đầu nhận xét khả năng vận dụng kiến thức vào đề tài dự án đúng tiến độ của STUDENT_XX; câu thứ hai liệt kê rõ các thành phần giao diện/mô hình và chức năng hiện có trong sản phẩm; câu thứ ba định hướng cụ thể những điểm cần hoàn thiện và tối ưu ở bước tiếp theo.`,
+     ];
+ 
+     const stage2Archetypes = [
+@@ -939,30 +1278,39 @@ export class SpckCommentGenerator {
+           : `- Giáo viên CÓ cung cấp dữ kiện về thuyết trình: hãy viết nhận xét kỹ năng thuyết trình tự nhiên vào trường "presentationEvaluation" dựa sát theo thẻ/ghi chú của giáo viên.`
+         : `- NGHIÊM CẤM BỊA ĐẶT KỸ NĂNG THUYẾT TRÌNH: Giáo viên KHÔNG tích chọn hoặc ghi chú về kỹ năng thuyết trình. Trường "presentationEvaluation" BẮT BUỘC phải để chuỗi rỗng "" và tuyệt đối KHÔNG nhắc đến từ "thuyết trình", "trình bày trước lớp", "đám đông", "khán giả", "bảo vệ dự án" hay "phản biện" trong toàn bộ nhận xét.`;
+ 
++      const imageParts = buildMultimodalImageParts(
++        item.thumbnailPath || initialSessionRow.thumbnailPath,
++        item.screenshots || []
++      );
++      const multimodalGuidance =
++        imageParts.length > 0
++          ? `\n- HÌNH ẢNH THỰC TẾ ĐÍNH KÈM (${imageParts.length} ảnh chụp giao diện sản phẩm / mô hình thực tế của học viên): Hãy quan sát kỹ các hình ảnh đính kèm để nhận xét chính xác chủ đề thực tế, bố cục giao diện hoặc kết cấu mô hình phần cứng của ${anonymousToken}.`
++          : "";
++
+       let stageSpecificInstruction = "";
+       if (stageInfo.sessionNumber === 12) {
+         stageSpecificInstruction = `YÊU CẦU RIÊNG CHO BUỔI 12 (${stageInfo.stageLabel} - ${stageInfo.stageCode}):
+-- Sản phẩm hiện đang trong quá trình xây dựng bước đầu.
+-- Nội dung nhận xét học bạ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện tại đã có những gì** (đề tài, cấu trúc/giao diện/mô hình, chức năng bước đầu); và (2) **Cần cải thiện / hoàn thiện tiếp những gì** ở các buổi tới.
+-${subjectSpecificGuidance}
++- Đây là buổi **kiểm tra tiến độ dự án lần 1**: sản phẩm hiện đang trong quá trình xây dựng khung nền tảng bước đầu.
++- Nội dung nhận xét tiến độ bắt buộc thể hiện rõ: (1) **Ở đợt kiểm tra tiến độ này, sản phẩm đã làm được những gì** (đề tài, cấu trúc/giao diện/mô hình, các phần bước đầu đã dựng xong); và (2) **Những hạng mục còn đang dang dở cần tiếp tục hoàn thiện ở buổi kiểm tra tiến độ tiếp theo**.
++${subjectSpecificGuidance}${multimodalGuidance}
+ - TUYỆT ĐỐI KHÔNG viết như thể học sinh đã hoàn thành trọn vẹn sản phẩm cuối khóa, và KHÔNG ghi các nhãn nội bộ như "Buổi 12", "Giai đoạn 1", "GĐ1".`;
+       } else if (stageInfo.sessionNumber === 13) {
+         stageSpecificInstruction = `YÊU CẦU RIÊNG CHO BUỔI 13 (${stageInfo.stageLabel} - ${stageInfo.stageCode}):
+-- Sản phẩm đang trong quá trình phát triển và hoàn thiện các tính năng chính.
+-- Nội dung nhận xét học bạ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện có những gì và phần đã bổ sung/triển khai được (nêu tiến bộ so với Buổi 12 khi có dữ liệu)**; và (2) **Những điểm còn thiếu hoặc cần cải thiện, hoàn thiện thêm** trước khi tổng kết khóa học.
++- Đây là buổi **kiểm tra tiến độ dự án lần 2 (nước rút trước buổi bảo vệ cuối khóa)**: sản phẩm đang hoàn thiện các tính năng chính và kiểm thử.
++- Nội dung nhận xét tiến độ bắt buộc thể hiện rõ: (1) **Sản phẩm hiện có những gì và phần đã bổ sung/triển khai được (nêu tiến bộ so với Buổi 12 khi có dữ liệu)**; và (2) **Những điểm còn thiếu hoặc cần rà soát, hoàn thiện nốt trước buổi báo cáo sản phẩm cuối khóa**.
+ ${
+   session12Evidence.hasEvidence
+     ? `- Hệ thống CÓ dữ liệu buổi trước (${anonSession12Summary}): hãy nêu tiến bộ so với Buổi 12 và ghi nhận phần chức năng/giao diện/mô hình đã bổ sung thêm so với bước đầu.`
+     : `- LƯU Ý QUAN TRỌNG: Hệ thống CHƯA CÓ dữ liệu buổi trước của học sinh này. TUYỆT ĐỐI KHÔNG tự bịa câu "so với buổi 12", "so với buổi trước" hay tự suy đoán sự thay đổi giữa hai buổi. Chỉ nhận xét hiện trạng sản phẩm và phần cần hoàn thiện.`
+ }
+-${subjectSpecificGuidance}
++${subjectSpecificGuidance}${multimodalGuidance}
+ - TUYỆT ĐỐI KHÔNG viết như thể sản phẩm đã tổng kết hoàn tất toàn khóa, và KHÔNG ghi các nhãn nội bộ như "Buổi 13", "Giai đoạn 1", "GĐ1".`;
+       } else {
+         stageSpecificInstruction = `YÊU CẦU RIÊNG CHO BUỔI 14 (${stageInfo.stageLabel} - ${stageInfo.stageCode}):
+ - Đây là nhận xét chính thức ghi vào **Học bạ tổng kết Sản phẩm cuối khóa** để Phụ huynh theo dõi kết quả học tập.
+ - Phong cách viết chuẩn mẫu giáo viên MindX ở Buổi 14:
+   + Xưng là **"giáo viên"** (ví dụ: "giáo viên ghi nhận...", "giáo viên đánh giá cao..."), tuyệt đối KHÔNG xưng "thầy", "cô" hay "thầy/cô"; gọi học viên bằng tên gọi ("${anonymousToken}") kết hợp đại từ **"em"** (nhất quán dùng "em", hạn chế dùng "con" ở Buổi 14).
+-${subjectSpecificGuidance}
++${subjectSpecificGuidance}${multimodalGuidance}
+ - Nội dung bắt buộc thể hiện rõ ràng, mạch lạc: (1) **Đánh giá tổng quan & Sản phẩm của học viên có những gì** (đề tài dự án, cấu trúc sản phẩm/giao diện/mô hình, chức năng thực tế và kiến thức chuyên môn của khóa ${courseProfile.trackBadgeLabel} đã vận dụng); và (2) **Sản phẩm cần cải thiện những gì** (những điểm còn hạn chế, phần giao diện/mô hình, tính năng hoặc kỹ thuật cần trau chuốt, tối ưu thêm).
+ - TUYỆT ĐỐI KHÔNG ghi cụm từ "Giai đoạn 2", "GĐ2", "Buổi 14", "đợt nộp" vào trong lời nhận xét đầu ra.
+ - TUYỆT ĐỐI KHÔNG tự bịa lỗi kỹ thuật cụ thể nếu giáo viên không ghi chú, và KHÔNG tự khẳng định "sản phẩm hoàn hảo không có bất kỳ hạn chế nào" hay "chạy hoàn chỉnh tuyệt đối" khi thiếu dữ kiện.`;
+@@ -1037,7 +1385,9 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi
+ 
+       try {
+         const model = getGeminiModel(undefined, 0.85);
+-        const response = await model.generateContent(prompt);
++        const response = await model.generateContent(
++          imageParts.length > 0 ? [prompt, ...imageParts] : prompt
++        );
+         const rawResponseText = response.response.text();
+ 
+         const cleanedJson = rawResponseText
+@@ -1056,20 +1406,29 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi
+             .replace(/\b[a-zA-Z0-9_-]+\.(?:py|ui|qss|js|ts|html|css|sb3|json|yyz|yyp|yy|gml|ipynb|csv|vexblocks|iqblocks)\b/gi, "mã nguồn dự án")
+             .replace(/\(\s*(?:phần\s+)?mã\s+nguồn\s+dự\s+án\s*\)/gi, "")
+             .replace(/\[(?:Thái độ|Sản phẩm|Kỹ thuật|Thuyết trình|Giai đoạn 1|Giai đoạn 2)[^\]]*\]\s*:?\s*/gi, "")
+-            .replace(/\bbuổi\s+tổng\s+kết\s+giai\s+đoạn\s*2\b/gi, "buổi tổng kết cuối khóa")
+-            .replace(/\bở\s+giai\s+đoạn\s*2\b/gi, "ở đợt tổng kết cuối khóa")
+-            .replace(/\btrong\s+giai\s+đoạn\s*2\b/gi, "trong đợt tổng kết cuối khóa")
+-            .replace(/\bgiai\s+đoạn\s*2\b/gi, "cuối khóa")
+-            .replace(/\(\s*GĐ\s*[12]\s*\)/gi, "")
+-            .replace(/\bGĐ\s*2\b/gi, "cuối khóa")
+-            .replace(/\bGĐ\s*1\b/gi, "bước đầu")
+-            .replace(/\bgiai\s+đoạn\s*1\b/gi, "giai đoạn đầu")
+-            .replace(/\s*\(\s*Buổi\s*(?:12|13|14)\s*\)/gi, "")
+-            .replace(/\b(?:ở|tại|trong)\s+buổi\s*14\b/gi, "trong dự án cuối khóa")
+-            .replace(/\b(?:ở|tại|trong)\s+buổi\s*(?:12|13)\b/gi, "trong quá trình thực hiện dự án")
+-            .replace(/\bso\s+với\s+buổi\s*(?:số\s*)?12\b/gi, "so với bước đầu")
+-            .replace(/\btừ\s+buổi\s*(?:số\s*)?12\b/gi, "từ bước đầu")
+-            .replace(/\bbuổi\s*(?:số\s*)?(?:12|13|14)\b/gi, "đợt thực hiện dự án")
++            .replace(/\bbuổi\s+tổng\s+kết\s+giai\s+đoạn\s*2\b/giu, "buổi tổng kết cuối khóa")
++            .replace(/(?:^|(?<=[\s.,;:!?("']))ở\s+giai\s+đoạn\s*2\b/giu, "ở đợt tổng kết cuối khóa")
++            .replace(/\btrong\s+giai\s+đoạn\s*2\b/giu, "trong đợt tổng kết cuối khóa")
++            .replace(/\bgiai\s+đoạn\s*2\b/giu, "cuối khóa")
++            .replace(/\(\s*GĐ\s*[12]\s*\)/giu, "")
++            .replace(/\bGĐ\s*2\b/giu, "cuối khóa")
++            .replace(/\bGĐ\s*1\b/giu, "bước đầu")
++            .replace(/\bgiai\s+đoạn\s*1\b/giu, "giai đoạn đầu")
++            .replace(/\s*\(\s*Buổi\s*(?:12|13|14)\s*\)/giu, "")
++            .replace(/\btrước\s+(?:khi\s+bước\s+vào\s+|buổi\s+bảo\s+vệ\s+)?buổi\s*(?:số\s*)?14\b/giu, "trước buổi báo cáo sản phẩm cuối khóa")
++            .replace(/\bcho\s+buổi\s*(?:số\s*)?14\b/giu, "cho buổi báo cáo sản phẩm cuối khóa")
++            .replace(
++              /(?:^|(?<=[\s.,;:!?("']))(?:ở|vào)\s+buổi\s*(?:số\s*)?13(?:\s+sắp\s+tới)?\b/giu,
++              stageInfo.sessionNumber === 12
++                ? "ở buổi kiểm tra tiến độ tiếp theo"
++                : "trong đợt kiểm tra tiến độ này"
++            )
++            .replace(/(?:^|(?<=[\s.,;:!?("']))(?:ở|tại|trong)\s+buổi\s*(?:số\s*)?14\b/giu, "trong đợt báo cáo sản phẩm cuối khóa")
++            .replace(/(?:^|(?<=[\s.,;:!?("']))(?:ở|tại|trong)\s+buổi\s*(?:số\s*)?(?:12|13)\b/giu, "trong đợt kiểm tra tiến độ dự án")
++            .replace(/\bso\s+với\s+buổi\s*(?:số\s*)?12\b/giu, "so với buổi kiểm tra tiến độ trước")
++            .replace(/(?:^|(?<=[\s.,;:!?("']))từ\s+buổi\s*(?:số\s*)?12\b/giu, "từ buổi kiểm tra tiến độ đầu tiên")
++            .replace(/\bbuổi\s*(?:số\s*)?14\b/giu, "buổi báo cáo sản phẩm cuối khóa")
++            .replace(/\bbuổi\s*(?:số\s*)?(?:12|13)\b/giu, "buổi kiểm tra tiến độ dự án")
+             .replace(
+               /^(?:kính\s+gửi|thân\s+gửi|gửi|chào|xin\s+chào|báo\s+cáo\s+cùng)\s+(?:quý\s+)?(?:ba\s+mẹ|gia\s+đình|phụ\s+huynh)(?:\s+học\s+viên|\s+của\s+con)?\s*[,.:;-]?\s*/gi,
+               ""
+@@ -1104,6 +1463,91 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi
+                 m[0] === m[0].toUpperCase() ? "Giáo viên" : "giáo viên"
+               );
+           }
++          if (courseProfile.track === "WEB" && prelimSummary.absentWebFeatures.inspectedWebCode) {
++            const noteClauses = stripVietnameseDiacritics(teacherNote)
++              .toLowerCase()
++              .split(/[.,;!\n]+/)
++              .map((c) => c.trim())
++              .filter(Boolean);
++            const isAffirmedByTeacher = (kwRegex: RegExp): boolean =>
++              noteClauses.some(
++                (clause) =>
++                  kwRegex.test(clause) &&
++                  !/\b(?:khong|chua|thieu|bo|chang|ko|no|without|not)\b/.test(clause)
++              );
++
++            if (
++              prelimSummary.absentWebFeatures.noBootstrap &&
++              !isAffirmedByTeacher(/\bbootstrap\b/)
++            ) {
++              cleaned = cleaned
++                .replace(/\s*(?:&|và|,|\/)\s*Bootstrap(?:\s*\d+(?:\.\d+)?)?\b/gi, "")
++                .replace(/\bBootstrap(?:\s*\d+(?:\.\d+)?)?\s*(?:&|và|,|\/)\s*/gi, "")
++                .replace(/\bBootstrap(?:\s*\d+(?:\.\d+)?)?\b/gi, "CSS");
++            }
++            if (
++              prelimSummary.absentWebFeatures.noLocalStorage &&
++              !isAffirmedByTeacher(/\b(?:localstorage|sessionstorage)\b/)
++            ) {
++              cleaned = cleaned
++                .replace(/\s*(?:với|bằng|qua|trong)\s+(?:LocalStorage|SessionStorage)\b/gi, "")
++                .replace(/\b(?:LocalStorage|SessionStorage)\s*(?:\/|&|và|,)\s*/gi, "")
++                .replace(/\b(?:LocalStorage|SessionStorage)\b/gi, "cấu trúc dữ liệu JavaScript");
++            }
++            if (
++              prelimSummary.absentWebFeatures.noFetchApi &&
++              !isAffirmedByTeacher(/\b(?:fetch|axios)\b/)
++            ) {
++              cleaned = cleaned
++                .replace(/\s*(?:\/|&|và|,)\s*Fetch\s*API\b/gi, "")
++                .replace(/\bFetch\s*API\s*(?:\/|&|và|,)\s*/gi, "")
++                .replace(/\bFetch\s*API\b/gi, "xử lý dữ liệu động");
++            }
++            if (
++              prelimSummary.absentWebFeatures.noCart &&
++              !isAffirmedByTeacher(/\b(?:gio\s*hang|shopping\s*cart|checkout)\b/)
++            ) {
++              cleaned = cleaned
++                .replace(/\btrang\s+giỏ\s+hàng\b/gi, "các trang nội dung")
++                .replace(/\bluồng\s+giỏ\s+hàng\b/gi, "luồng tương tác chính")
++                .replace(/\bchức\s+năng\s+giỏ\s+hàng\b/gi, "chức năng tương tác")
++                .replace(/\bgiỏ\s+hàng\s*(?:,|\/|&|và)\s*/gi, "")
++                .replace(/\s*(?:,|\/|&|và)\s*giỏ\s+hàng\b/gi, "")
++                .replace(/\bgiỏ\s+hàng\b/gi, "danh sách nội dung");
++            }
++            if (
++              prelimSummary.absentWebFeatures.noFirebase &&
++              !isAffirmedByTeacher(/\b(?:firebase|firestore)\b/)
++            ) {
++              cleaned = cleaned
++                .replace(
++                  /\s*(?:bằng|với|qua|trên|từ)\s+(?:Firebase\s+Authentication|Cloud\s+Firestore|Firebase\s+Auth|Firestore|Firebase)(?:\s*(?:\/|&|và|,)\s*(?:Firebase\s+Authentication|Cloud\s+Firestore|Firebase\s+Auth|Firestore|Firebase))*/gi,
++                  ""
++                )
++                .replace(
++                  /\b(?:Firebase\s+Authentication|Cloud\s+Firestore|Firebase\s+Auth|Firestore|Firebase)(?:\s*(?:\/|&|và|,)\s*(?:Firebase\s+Authentication|Cloud\s+Firestore|Firebase\s+Auth|Firestore|Firebase))*\b/gi,
++                  "cấu trúc trang web"
++                );
++            }
++            if (
++              prelimSummary.absentWebFeatures.noAuth &&
++              !isAffirmedByTeacher(/\b(?:dang\s*nhap|dang\s*ky|login|register|sign\s*in|sign\s*up)\b/)
++            ) {
++              cleaned = cleaned
++                .replace(
++                  /chức\s+năng\s+đăng\s+nhập(?:\s*(?:\/|&|và|,)\s*đăng\s+ký)?(?:\s+tài\s+khoản)?/gi,
++                  "các phần nội dung trên trang"
++                )
++                .replace(
++                  /đăng\s+nhập\s*(?:\/|&|và|,)\s*đăng\s+ký(?:\s+tài\s+khoản)?/gi,
++                  "tương tác trên trang"
++                )
++                .replace(
++                  /(?:đăng\s+nhập|đăng\s+ký)(?:\s+tài\s+khoản)?/gi,
++                  "hiển thị nội dung"
++                );
++            }
++          }
+           if (courseProfile.track !== "WEB" && courseProfile.track !== "GENERAL") {
+             cleaned = cleaned
+               .replace(/\bwebsite\s+sản\s+phẩm\b/gi, courseProfile.productNoun)
+diff --git a/src/lib/local-files/spck-app-screenshotter.ts b/src/lib/local-files/spck-app-screenshotter.ts
+index 63009d0..1f44e5c 100644
+--- a/src/lib/local-files/spck-app-screenshotter.ts
++++ b/src/lib/local-files/spck-app-screenshotter.ts
+@@ -1906,9 +1906,10 @@ export async function captureStudentAppScreenshots(params: {
+     }
+     pushUnique(shotPath);
+   }
+-  // Edge case: if there was only 1 captured screenshot total and 0 other images, keep it in gallery too so the bottom box isn't empty
+-  if (galleryCandidates.length === 0 && bestAppShotPath) {
+-    galleryCandidates.push(bestAppShotPath);
++  // Edge case: if there was only 1 image total (1 captured screenshot or 1 Owner photo) and 0 other gallery images,
++  // keep it in gallery too so the required LMS bottom box ("Ảnh chụp sản phẩm *") isn't empty
++  if (galleryCandidates.length === 0 && (bestAppShotPath || ownerThumbCandidate)) {
++    galleryCandidates.push(bestAppShotPath || ownerThumbCandidate);
+   }
+ 
+   const galleryScreenshots = [...galleryCandidates];
+diff --git a/src/lib/local-files/spck-scanner.ts b/src/lib/local-files/spck-scanner.ts
+index a49bf28..c9c45d2 100644
+--- a/src/lib/local-files/spck-scanner.ts
++++ b/src/lib/local-files/spck-scanner.ts
+@@ -95,10 +95,46 @@ export const ROBOTICS_RAW_EXTENSIONS = new Set([
+   ".uf2",
+   ".mblock",
+   ".vex",
++  ".vexblocks",
++  ".iqblocks",
+   ".v5python",
+   ".v5blocks",
+ ]);
+ 
++const DETERMINISTIC_ZIP_TIMESTAMP = new Date("2026-01-01T00:00:00.000Z");
++
++/**
++ * Writes a deterministic `.zip` archive (sorted entries + fixed entry header timestamp)
++ * so repeated folder scans do not change the `.zip` file's SHA-256 when source files are unchanged.
++ */
++export function writeDeterministicZipFile(
++  bundleZipPath: string,
++  entries: Array<{ entryName: string; data: Buffer }>
++): void {
++  const sortedEntries = [...entries].sort((a, b) =>
++    a.entryName.localeCompare(b.entryName, "en")
++  );
++  const zip = new AdmZip();
++  for (const item of sortedEntries) {
++    zip.addFile(item.entryName, item.data);
++  }
++  for (const zipEntry of zip.getEntries()) {
++    zipEntry.header.time = DETERMINISTIC_ZIP_TIMESTAMP;
++  }
++  const nextZipBuffer = zip.toBuffer();
++  if (fs.existsSync(bundleZipPath)) {
++    try {
++      const existingBuf = fs.readFileSync(bundleZipPath);
++      if (existingBuf.equals(nextZipBuffer)) {
++        return;
++      }
++    } catch {
++      // Rewrite below if unreadable
++    }
++  }
++  fs.writeFileSync(bundleZipPath, nextZipBuffer);
++}
++
+ export const ROBOTICS_ZIP_CONTAINER_EXTENSIONS = new Set([
+   ".ev3",
+   ".llsp",
+@@ -966,6 +1002,7 @@ export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
+     fullPath: string;
+     isExplicitThumb: boolean;
+     isOwnerLikeName: boolean;
++    isLandscape: boolean;
+     area: number;
+     name: string;
+   }> = [];
+@@ -1004,6 +1041,7 @@ export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
+         fullPath,
+         isExplicitThumb,
+         isOwnerLikeName,
++        isLandscape: Boolean(dims && dims.width >= dims.height),
+         area: dims ? dims.width * dims.height : 0,
+         name: imgEntry.name,
+       });
+@@ -1015,6 +1053,7 @@ export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
+   candidates.sort((a, b) => {
+     if (a.isExplicitThumb !== b.isExplicitThumb) return a.isExplicitThumb ? -1 : 1;
+     if (a.isOwnerLikeName !== b.isOwnerLikeName) return a.isOwnerLikeName ? -1 : 1;
++    if (a.isLandscape !== b.isLandscape) return a.isLandscape ? -1 : 1;
+     if (a.area !== b.area) return b.area - a.area;
+     return a.name.localeCompare(b.name, "en");
+   });
+@@ -1371,6 +1410,11 @@ export function scanStudentSpckFolder(
+     warnings.push(`Đã bỏ qua file không thuộc danh mục hỗ trợ SPCK: '${entry.name}'`);
+   }
+ 
++  const safeSlugForBundle =
++    stripVietnameseDiacritics(folderName)
++      .replace(/[^a-zA-Z0-9_-]+/g, "_")
++      .replace(/^_+|_+$/g, "") || "student";
++
+   // Package multi-file / subfolder Web source files (.html/.htm/.css/.js/.mjs/...) into a single .zip attachment
+   // when the student's Web project exceeds the 10-file LMS attachment limit or organizes code in subfolders.
+   if (
+@@ -1381,19 +1425,14 @@ export function scanStudentSpckFolder(
+       hasSubfolderWebCode)
+   ) {
+     try {
+-      const zip = new AdmZip();
+-      for (const webFile of webSourceFiles) {
+-        const fileBytes = fs.readFileSync(webFile.fullPath);
+-        zip.addFile(webFile.relPosix, fileBytes);
+-      }
+-      const safeSlug =
+-        stripVietnameseDiacritics(folderName)
+-          .replace(/[^a-zA-Z0-9_-]+/g, "_")
+-          .replace(/^_+|_+$/g, "") || "student";
++      const zipEntries = webSourceFiles.map((webFile) => ({
++        entryName: webFile.relPosix,
++        data: fs.readFileSync(webFile.fullPath),
++      }));
+       const bundleZipPath = assertPathAllowed(
+-        path.join(safeFolderPath, `${safeSlug}_web_package.zip`)
++        path.join(safeFolderPath, `${safeSlugForBundle}_web_package.zip`)
+       );
+-      zip.writeZip(bundleZipPath);
++      writeDeterministicZipFile(bundleZipPath, zipEntries);
+       const zipCheck = validateSpckAttachmentFile(bundleZipPath);
+       if (zipCheck.valid) {
+         const bundledPathKeys = new Set(
+@@ -1412,24 +1451,29 @@ export function scanStudentSpckFolder(
+         `Lỗi khi đóng gói ZIP cho mã nguồn Web: ${err instanceof Error ? err.message : String(err)}`
+       );
+     }
++  } else {
++    try {
++      const staleWebZip = assertPathAllowed(
++        path.join(safeFolderPath, `${safeSlugForBundle}_web_package.zip`)
++      );
++      if (fs.existsSync(staleWebZip) && !fs.lstatSync(staleWebZip).isSymbolicLink()) {
++        fs.unlinkSync(staleWebZip);
++      }
++    } catch {}
+   }
+ 
+-  // Package valid raw Robotics files into a lossless .zip attachment if present (T14)
++  // Package valid raw Robotics files into a lossless .zip attachment ONLY if raw Robotics code/model files exist (T14).
++  // When a Robotics student folder only contains photos provided by the Owner, do NOT create a .zip bundle.
+   if (validRoboticsRawFiles.length > 0) {
+     try {
+-      const zip = new AdmZip();
+-      for (const robPath of validRoboticsRawFiles) {
+-        const robBytes = fs.readFileSync(robPath);
+-        zip.addFile(path.basename(robPath), robBytes);
+-      }
+-      const safeSlug =
+-        stripVietnameseDiacritics(folderName)
+-          .replace(/[^a-zA-Z0-9_-]+/g, "_")
+-          .replace(/^_+|_+$/g, "") || "student";
++      const zipEntries = validRoboticsRawFiles.map((robPath) => ({
++        entryName: path.basename(robPath),
++        data: fs.readFileSync(robPath),
++      }));
+       const bundleZipPath = assertPathAllowed(
+-        path.join(safeFolderPath, `${safeSlug}_robotics_package.zip`)
++        path.join(safeFolderPath, `${safeSlugForBundle}_robotics_package.zip`)
+       );
+-      zip.writeZip(bundleZipPath);
++      writeDeterministicZipFile(bundleZipPath, zipEntries);
+       const zipCheck = validateSpckAttachmentFile(bundleZipPath);
+       if (zipCheck.valid) {
+         validAttachments.push(bundleZipPath);
+@@ -1441,6 +1485,15 @@ export function scanStudentSpckFolder(
+         `Lỗi khi đóng gói ZIP cho file Robotics: ${err instanceof Error ? err.message : String(err)}`
+       );
+     }
++  } else {
++    try {
++      const staleRobZip = assertPathAllowed(
++        path.join(safeFolderPath, `${safeSlugForBundle}_robotics_package.zip`)
++      );
++      if (fs.existsSync(staleRobZip) && !fs.lstatSync(staleRobZip).isSymbolicLink()) {
++        fs.unlinkSync(staleRobZip);
++      }
++    } catch {}
+   }
+ 
+   // Auto-render GameMaker (.yyz) / Scratch (.sb3) room/stage screenshots into _spck_app_shots
+@@ -1565,7 +1618,10 @@ export function scanStudentSpckFolder(
+       if (ordered.some((p) => samePath(p, img.fullPath))) continue;
+       ordered.push(img.fullPath);
+     }
+-    screenshotCandidates = ordered;
++    screenshotCandidates =
++      ordered.length > 0 || youtubeFrameImages.length > 0
++        ? ordered
++        : [chosenOwnerThumb.fullPath];
+   } else if (explicitThumb) {
+     thumbnailPath = explicitThumb.fullPath;
+     const poolForGallery =
+diff --git a/src/lib/playwright/spck-drive-uploader.ts b/src/lib/playwright/spck-drive-uploader.ts
+index 309856e..13484e2 100644
+--- a/src/lib/playwright/spck-drive-uploader.ts
++++ b/src/lib/playwright/spck-drive-uploader.ts
+@@ -63,6 +63,24 @@ const IGNORED_SUBFOLDER_NAMES = new Set([
+   "dist",
+   ".idea",
+   ".vscode",
++  "_spck_app_shots",
++  "_spck_owner_uploads",
++  "_spck_youtube_frames",
++  "_spck_temp",
++  "_synth_assets",
++]);
++
++const ROBOTICS_COURSE_PREFIXES = new Set([
++  "PREB",
++  "PREA",
++  "PREI",
++  "ARMB",
++  "ARMA",
++  "ARMI",
++  "SEMIB",
++  "SEMIA",
++  "SEMII",
++  "ROB",
+ ]);
+ 
+ export interface SpckDriveStudentResult {
+@@ -131,6 +149,15 @@ export function isCourseExemptFromSpck(_classIdOrPrefix: string): boolean {
+ export function detectCoursePrefixFromClassId(classId: string): string | null {
+   const upper = String(classId || "").toUpperCase();
+   const prefixes = [
++    "SEMII",
++    "SEMIA",
++    "SEMIB",
++    "ARMI",
++    "ARMA",
++    "ARMB",
++    "PREI",
++    "PREA",
++    "PREB",
+     "PTB",
+     "PTA",
+     "PTI",
+@@ -141,6 +168,7 @@ export function detectCoursePrefixFromClassId(classId: string): string | null {
+     "CSB",
+     "CSA",
+     "CSI",
++    "ROB",
+     "SB",
+     "SA",
+     "SI",
+@@ -149,7 +177,7 @@ export function detectCoursePrefixFromClassId(classId: string): string | null {
+     "GI",
+   ];
+   for (const prefix of prefixes) {
+-    const regex = new RegExp(`(?:^|[-_\\s])${prefix}\\d*`, "i");
++    const regex = new RegExp(`(?:^|[-_\\s])${prefix}(?:\\d|$|[-_\\s])`, "i");
+     if (regex.test(upper)) {
+       return prefix;
+     }
+@@ -157,6 +185,11 @@ export function detectCoursePrefixFromClassId(classId: string): string | null {
+   return null;
+ }
+ 
++export function isRoboticsCourseClassId(classId: string): boolean {
++  const prefix = detectCoursePrefixFromClassId(classId);
++  return Boolean(prefix && ROBOTICS_COURSE_PREFIXES.has(prefix));
++}
++
+ export function resolveCourseSpecificFolderId(classId: string): string | null {
+   const prefix = detectCoursePrefixFromClassId(classId);
+   if (prefix && CODING_SPCK_COURSE_FOLDER_MAP[prefix]) {
+@@ -214,7 +247,14 @@ export function prepareStudentFilesForDriveUpload(
+     if (st.isSymbolicLink() || !st.isFile()) continue;
+ 
+     const lower = entry.name.toLowerCase();
+-    if (lower === "links.txt" || lower === "link.txt" || lower.endsWith(".pyc")) {
++    if (
++      lower === "links.txt" ||
++      lower === "link.txt" ||
++      lower.endsWith(".pyc") ||
++      lower.endsWith("_web_package.zip") ||
++      lower.endsWith("_robotics_package.zip") ||
++      /^spck_.*_[a-f0-9]{8}\.zip$/i.test(lower)
++    ) {
+       continue;
+     }
+ 
+@@ -538,27 +578,32 @@ async function findOrCreateDriveSubfolder(
+ 
+ /**
+  * Uploads local files into an open Google Drive student folder via "+ Mới" -> "Tải tệp lên".
+- * Replaces any existing file with the same name so modified local files are never skipped.
++ * - For Coding classes (`replaceAllStaleFiles = true`), moves all existing files in this Drive folder
++ *   to trash first so renamed or removed code files from prior sessions never pile up.
++ * - For Robotics classes (`replaceAllStaleFiles = false`), only moves same-named files to trash
++ *   so differently-named model photos from Sessions 12–14 accumulate into a complete album.
+  */
+ async function uploadFilesIntoDriveFolder(
+   page: Page,
+   studentDriveFolderId: string,
+-  localFilePaths: string[]
++  localFilePaths: string[],
++  replaceAllStaleFiles = true
+ ): Promise<number> {
+-  if (localFilePaths.length === 0) return 0;
++  if (localFilePaths.length === 0 && !replaceAllStaleFiles) return 0;
+   assertDriveNotStopped();
+ 
+   await ensureGoogleDriveFolderReadyAndAuthenticated(page, studentDriveFolderId);
+   const existingItems = await listDriveItemsOnPage(page, studentDriveFolderId);
+ 
+-  // If a file with the same basename already exists in this Drive folder, move the old file to trash first
+-  // so that modified local files (same name, new content) are always uploaded fresh.
+   const targetLowerNames = new Set(
+     localFilePaths.map((p) => path.basename(p).toLowerCase())
+   );
+   let trashedAny = false;
+   for (const item of existingItems) {
+-    if (!item.isFolder && targetLowerNames.has(item.name.toLowerCase())) {
++    if (
++      !item.isFolder &&
++      (replaceAllStaleFiles || targetLowerNames.has(item.name.toLowerCase()))
++    ) {
+       await moveDriveItemToTrash(page, item.id);
+       trashedAny = true;
+     }
+@@ -568,6 +613,7 @@ async function uploadFilesIntoDriveFolder(
+     await page.waitForTimeout(300);
+   }
+ 
++  if (localFilePaths.length === 0) return 0;
+   assertDriveNotStopped();
+ 
+   const newBtn = page
+@@ -637,7 +683,8 @@ async function uploadStudentDirectoryTreeToDrive(
+   localDirPath: string,
+   studentId: string,
+   fullName: string,
+-  depth = 0
++  depth = 0,
++  replaceAllStaleFiles = true
+ ): Promise<number> {
+   assertDriveNotStopped();
+   if (depth > MAX_DRIVE_TREE_DEPTH) {
+@@ -653,7 +700,8 @@ async function uploadStudentDirectoryTreeToDrive(
+   let totalUploaded = await uploadFilesIntoDriveFolder(
+     page,
+     targetDriveFolderId,
+-    directFiles
++    directFiles,
++    replaceAllStaleFiles
+   );
+ 
+   // Recursively recreate non-ignored subdirectories (e.g. `gui`, `img`, `image`, `assets`, `src`)
+@@ -662,11 +710,16 @@ async function uploadStudentDirectoryTreeToDrive(
+     .filter((e) => !e.name.startsWith("."))
+     .sort((a, b) => a.name.localeCompare(b.name, "en"));
+ 
++  const validSubdirEntries: Array<{ name: string; subLocalPath: string }> = [];
+   for (const entry of entries) {
+-    assertDriveNotStopped();
+     if (!entry.isDirectory()) continue;
+-    if (IGNORED_SUBFOLDER_NAMES.has(entry.name.toLowerCase())) continue;
+-
++    const entryLower = entry.name.toLowerCase();
++    if (
++      IGNORED_SUBFOLDER_NAMES.has(entryLower) ||
++      entryLower.startsWith("_spck_")
++    ) {
++      continue;
++    }
+     const subLocalPath = assertPathAllowed(path.join(safeDir, entry.name));
+     let st: fs.Stats;
+     try {
+@@ -675,19 +728,42 @@ async function uploadStudentDirectoryTreeToDrive(
+       continue;
+     }
+     if (st.isSymbolicLink()) continue;
++    validSubdirEntries.push({ name: entry.name, subLocalPath });
++  }
+ 
++  // For Coding classes (`replaceAllStaleFiles = true`), also remove stale remote subfolders
++  // that were renamed or deleted locally so old directory trees do not remain on Drive.
++  if (replaceAllStaleFiles) {
++    await ensureGoogleDriveFolderReadyAndAuthenticated(page, targetDriveFolderId);
++    const existingRemoteItems = await listDriveItemsOnPage(page, targetDriveFolderId);
++    const localSubdirNormNames = new Set(
++      validSubdirEntries.map((d) => normalizeFolderTitle(d.name))
++    );
++    for (const remoteItem of existingRemoteItems) {
++      if (
++        remoteItem.isFolder &&
++        !localSubdirNormNames.has(normalizeFolderTitle(remoteItem.name))
++      ) {
++        await moveDriveItemToTrash(page, remoteItem.id);
++      }
++    }
++  }
++
++  for (const subEntry of validSubdirEntries) {
++    assertDriveNotStopped();
+     const subDriveFolderId = await findOrCreateDriveSubfolder(
+       page,
+       targetDriveFolderId,
+-      entry.name
++      subEntry.name
+     );
+     totalUploaded += await uploadStudentDirectoryTreeToDrive(
+       page,
+       subDriveFolderId,
+-      subLocalPath,
++      subEntry.subLocalPath,
+       studentId,
+       fullName,
+-      depth + 1
++      depth + 1,
++      replaceAllStaleFiles
+     );
+   }
+ 
+@@ -775,20 +851,31 @@ export class SpckDriveUploader {
+     }
+ 
+     // If teacher gave the root CODING - SPCK folder (1Xl8OZ7i1bOKf7000xbUBYLPcxVb2qvRD),
+-    // strictly resolve the course subfolder (e.g. 2. PTA for VT-C4K-PTA12)
++    // strictly resolve the course subfolder (e.g. 2. PTA for VT-C4K-PTA12, or find/create course folder for Robotics)
++    const coursePrefix = detectCoursePrefixFromClassId(normalizedClassId);
++    const isRoboticsClass = Boolean(coursePrefix && ROBOTICS_COURSE_PREFIXES.has(coursePrefix));
+     let courseOrParentFolderId = inputFolderId;
+     if (inputFolderId === CODING_SPCK_ROOT_FOLDER_ID) {
+-      const coursePrefix = detectCoursePrefixFromClassId(normalizedClassId);
+-      if (!coursePrefix || !CODING_SPCK_COURSE_FOLDER_MAP[coursePrefix]) {
++      if (coursePrefix && CODING_SPCK_COURSE_FOLDER_MAP[coursePrefix]) {
++        courseOrParentFolderId = CODING_SPCK_COURSE_FOLDER_MAP[coursePrefix];
++      } else if (!isRoboticsClass) {
+         throw new Error(
+           `Khóa học '${coursePrefix || normalizedClassId}' của lớp '${normalizedClassId}' chưa có thư mục khóa học cấu hình sẵn trong thư mục gốc Google Drive. Vui lòng dán trực tiếp link thư mục Google Drive riêng của lớp hoặc khóa học (hệ thống không tự chọn thư mục của môn khác để thay thế).`
+         );
+       }
+-      courseOrParentFolderId = CODING_SPCK_COURSE_FOLDER_MAP[coursePrefix];
+     }
+ 
+     const page = await BrowserManager.getInstance().getPage();
+ 
++    if (inputFolderId === CODING_SPCK_ROOT_FOLDER_ID && isRoboticsClass && coursePrefix) {
++      await ensureGoogleDriveFolderReadyAndAuthenticated(page, CODING_SPCK_ROOT_FOLDER_ID);
++      courseOrParentFolderId = await findOrCreateDriveSubfolder(
++        page,
++        CODING_SPCK_ROOT_FOLDER_ID,
++        coursePrefix
++      );
++    }
++
+     await ensureGoogleDriveFolderReadyAndAuthenticated(page, courseOrParentFolderId);
+ 
+     // Ensure class folder (e.g. VT-C4K-PTA12) exists inside the course folder
+@@ -843,7 +930,9 @@ export class SpckDriveUploader {
+           studentDriveFolderId,
+           record.localFolderPath,
+           record.studentId,
+-          fullName
++          fullName,
++          0,
++          !isRoboticsClass
+         );
+ 
+         const studentDriveUrl = `https://drive.google.com/drive/folders/${studentDriveFolderId}`;
+diff --git a/src/lib/playwright/spck-uploader.ts b/src/lib/playwright/spck-uploader.ts
+index a69366d..23fe398 100644
+--- a/src/lib/playwright/spck-uploader.ts
++++ b/src/lib/playwright/spck-uploader.ts
+@@ -3101,22 +3101,54 @@ export class SpckUploader {
+ 
+       // 5. Upload Attachments (Max 10)
+       const expectedModalAttachmentFiles: string[] = [];
+-      if (attachments.length > 0) {
+-        const unverifiedAttachmentStems = Array.from(
+-          new Set(
+-            attachments
+-              .filter((p) => !hasVerifiedSameBytesOnLms(p))
+-              .flatMap((p) => {
+-                const rawStem = path.parse(p).name.toLowerCase();
+-                return [rawStem, rawStem.replace(/\s+/g, " ")];
+-              })
+-          )
+-        );
+-        // Remove duplicate or unverified/stale same-named attachment tiles on the modal (click one by one so React state updates cleanly)
+-        for (let pass = 0; pass < 12; pass++) {
+-          const clickedOne = await modal
+-            .evaluate((modalEl, staleStemsArr) => {
+-              const staleStems = new Set(staleStemsArr);
++      const FORCE_ZIP_ATTACHMENT_EXTS = new Set([
++        ".html",
++        ".htm",
++        ".css",
++        ".js",
++        ".jsx",
++        ".ts",
++        ".tsx",
++        ".json",
++        ".txt",
++        ".ui",
++        ".qss",
++        ".xml",
++        ".c",
++        ".cpp",
++        ".h",
++        ".hpp",
++        ".code-workspace",
++      ]);
++      const safeStudentSlugForZip = record.studentId.replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
++      const hasAnyBundledExtInAttachments = attachments.some((p) =>
++        FORCE_ZIP_ATTACHMENT_EXTS.has(path.extname(p).toLowerCase())
++      );
++      const verifiedKeepAttachmentStems = Array.from(
++        new Set(
++          attachments
++            .filter((p) => hasVerifiedSameBytesOnLms(p))
++            .flatMap((p) => {
++              const parsedPath = path.parse(p);
++              const rawStem = parsedPath.name.toLowerCase();
++              const normStem = rawStem.replace(/\s+/g, " ");
++              const ext = parsedPath.ext.toLowerCase();
++              return ext
++                ? [`${rawStem}${ext}`, `${normStem}${ext}`, rawStem, normStem]
++                : [rawStem, normStem];
++            })
++        )
++      );
++
++      // Remove duplicate, renamed, or unverified/stale attachment tiles on the modal (click one by one so React state updates cleanly)
++      for (let pass = 0; pass < 12; pass++) {
++        const clickedOne = await modal
++          .evaluate(
++            (modalEl, args) => {
++              const keepStems = new Set(args.keepStemsArr);
++              const hasExplicitExtKeys = args.keepStemsArr.some((k) =>
++                k.includes(".")
++              );
+               const captions = Array.from(
+                 modalEl.querySelectorAll("span.MuiTypography-caption")
+               );
+@@ -3124,6 +3156,7 @@ export class SpckUploader {
+               for (const cap of captions) {
+                 const txt = (cap.textContent || "").trim().toLowerCase();
+                 const dotIdx = txt.lastIndexOf(".");
++                const ext = dotIdx > 0 ? txt.slice(dotIdx) : "";
+                 const nameWithoutExt = dotIdx > 0 ? txt.slice(0, dotIdx) : txt;
+                 const lastDashIdx = nameWithoutExt.lastIndexOf("-");
+                 const rawPrefix =
+@@ -3131,26 +3164,41 @@ export class SpckUploader {
+                     ? nameWithoutExt.slice(0, lastDashIdx)
+                     : nameWithoutExt;
+                 const prefix = rawPrefix.replace(/\s+/g, " ");
++                const rawPrefixWithExt = `${rawPrefix}${ext}`;
++                const prefixWithExt = `${prefix}${ext}`;
+                 const tile = cap.parentElement;
+                 const delBtn = tile?.querySelector("button") as HTMLButtonElement | null;
+                 if (!delBtn) continue;
++                // Auto-bundled spck_<studentId>_<hash>.zip tiles are cleaned by the dedicated zip loop below when bundled extensions exist
+                 if (
+-                  seenPrefixes.has(prefix) ||
+-                  staleStems.has(rawPrefix) ||
+-                  staleStems.has(prefix)
++                  args.hasBundledExts &&
++                  rawPrefix.startsWith(`spck_${args.studentSlug}_`)
+                 ) {
++                  continue;
++                }
++                const isVerifiedKeep = hasExplicitExtKeys
++                  ? keepStems.has(rawPrefixWithExt) || keepStems.has(prefixWithExt)
++                  : keepStems.has(rawPrefix) || keepStems.has(prefix);
++                if (!isVerifiedKeep || seenPrefixes.has(prefixWithExt)) {
+                   delBtn.click();
+                   return true;
+                 }
+-                seenPrefixes.add(prefix);
++                seenPrefixes.add(prefixWithExt);
+               }
+               return false;
+-            }, unverifiedAttachmentStems)
+-            .catch(() => false);
+-          if (!clickedOne) break;
+-          await page.waitForTimeout(200);
+-        }
++            },
++            {
++              keepStemsArr: verifiedKeepAttachmentStems,
++              studentSlug: safeStudentSlugForZip,
++              hasBundledExts: hasAnyBundledExtInAttachments,
++            }
++          )
++          .catch(() => false);
++        if (!clickedOne) break;
++        await page.waitForTimeout(200);
++      }
+ 
++      if (attachments.length > 0) {
+         const modalText = (await modal.innerText().catch(() => "")) || "";
+         const modalHtml = (await modal.innerHTML().catch(() => "")) || "";
+         const safeAttachments = attachments.map((p) => assertPathAllowed(p));
+@@ -3184,25 +3232,6 @@ export class SpckUploader {
+           const acceptAttr = (
+             (await attInput.getAttribute("accept").catch(() => "")) || ""
+           ).toLowerCase();
+-          const FORCE_ZIP_ATTACHMENT_EXTS = new Set([
+-            ".html",
+-            ".htm",
+-            ".css",
+-            ".js",
+-            ".jsx",
+-            ".ts",
+-            ".tsx",
+-            ".json",
+-            ".txt",
+-            ".ui",
+-            ".qss",
+-            ".xml",
+-            ".c",
+-            ".cpp",
+-            ".h",
+-            ".hpp",
+-            ".code-workspace",
+-          ]);
+           const finalAttachmentsToUpload: string[] = [];
+           const filesToBundleInZip: string[] = [];
+ 
+@@ -3238,11 +3267,22 @@ export class SpckUploader {
+             );
+ 
+             const zip = new AdmZip();
+-            for (const fPath of filesToBundleInZip) {
+-              zip.addLocalFile(fPath);
++            const fixedZipDate = new Date("2026-01-01T00:00:00.000Z");
++            for (const fPath of [...filesToBundleInZip].sort()) {
++              zip.addFile(path.basename(fPath), fs.readFileSync(fPath));
++              const ze = zip.getEntry(path.basename(fPath));
++              if (ze) {
++                ze.header.time = fixedZipDate;
++              }
+             }
+             fs.mkdirSync(path.dirname(zipBundlePath), { recursive: true });
+-            zip.writeZip(zipBundlePath);
++            const nextZipBuf = zip.toBuffer();
++            const existingZipBuf = fs.existsSync(zipBundlePath)
++              ? fs.readFileSync(zipBundlePath)
++              : null;
++            if (!existingZipBuf || !existingZipBuf.equals(nextZipBuf)) {
++              fs.writeFileSync(zipBundlePath, nextZipBuf);
++            }
+             const safeZipPath = assertPathAllowed(zipBundlePath);
+             const zipDigest = computeSafeFileByteDigest(safeZipPath);
+             expectedModalAttachmentFiles.push(safeZipPath);
+diff --git a/src/lib/spck/spck-quick-tags.ts b/src/lib/spck/spck-quick-tags.ts
+index c6f7e13..27ae6f0 100644
+--- a/src/lib/spck/spck-quick-tags.ts
++++ b/src/lib/spck/spck-quick-tags.ts
+@@ -181,7 +181,7 @@ const COURSE_PROFILES: Record<SpckCoursePrefix, SpckCourseProfile> = {
+     trackBadgeLabel: "Web Basic (JSB)",
+     productNoun: "website đa trang",
+     coreSkillsSummary:
+-      "cấu trúc HTML5 ngữ nghĩa, dàn trang CSS Flexbox/Grid, giao diện Bootstrap/Responsive, thanh điều hướng giữa các trang và tương tác JavaScript DOM cơ bản",
++      "cấu trúc HTML5 ngữ nghĩa, dàn trang CSS Flexbox/Grid, phong cách giao diện đồng bộ, thanh điều hướng giữa các trang và tương tác JavaScript DOM cơ bản",
+   },
+   JSA: {
+     coursePrefix: "JSA",
+@@ -190,7 +190,7 @@ const COURSE_PROFILES: Record<SpckCoursePrefix, SpckCourseProfile> = {
+     trackBadgeLabel: "Web Advance (JSA)",
+     productNoun: "ứng dụng Web tương tác JavaScript",
+     coreSkillsSummary:
+-      "HTML/CSS Flexbox & Grid, JavaScript ES6, lưu trữ LocalStorage (Đăng nhập/Đăng ký/Giỏ hàng), gọi dữ liệu bất đồng bộ Fetch API và tìm kiếm/lọc sản phẩm động",
++      "HTML/CSS Flexbox & Grid, JavaScript ES6, hiển thị dữ liệu động trên DOM và xử lý các tính năng tương tác theo đúng chủ đề dự án",
+   },
+   JSI: {
+     coursePrefix: "JSI",
+@@ -199,7 +199,7 @@ const COURSE_PROFILES: Record<SpckCoursePrefix, SpckCourseProfile> = {
+     trackBadgeLabel: "Web Intensive Firebase (JSI)",
+     productNoun: "ứng dụng Web kết nối Firebase & Cloud",
+     coreSkillsSummary:
+-      "xác thực người dùng Firebase Authentication, cơ sở dữ liệu Cloud Firestore (CRUD thời gian thực), kiến trúc module JavaScript, giao diện đồng bộ và tích hợp API/Chatbot AI",
++      "kiến trúc ứng dụng Web nâng cao, JavaScript Modules/bất đồng bộ, kết nối dịch vụ xác thực/cơ sở dữ liệu Cloud Firestore và đồng bộ dữ liệu theo chủ đề dự án",
+   },
+   CSB: {
+     coursePrefix: "CSB",
+@@ -752,7 +752,7 @@ function getSubTrackTagConfig(profile: SpckCourseProfile): TrackStageTagConfig {
+           progress: [
+             "✅ Đã dựng xong khung HTML5 ngữ nghĩa & bố cục CSS Flexbox/Grid cho trang chủ",
+             "🧭 Đã thiết kế thanh điều hướng (Navbar), Banner và liên kết giữa các trang",
+-            "🎨 Đã áp dụng Bootstrap / CSS tạo phong cách màu sắc, phông chữ hài hòa",
++            "🎨 Đã thiết kế CSS tạo phong cách màu sắc, bố cục và phông chữ hài hòa",
+             "💡 Chủ đề website rõ ràng, hình ảnh minh họa và bố cục các mục hợp lý",
+           ],
+           nextStep: [
+@@ -765,7 +765,7 @@ function getSubTrackTagConfig(profile: SpckCourseProfile): TrackStageTagConfig {
+           progress: [
+             "✅ Đã hoàn thiện đầy đủ các trang chức năng, liên kết điều hướng hoạt động mượt",
+             "⚡ Đã bổ sung tương tác JavaScript DOM (sự kiện click, form, hiệu ứng động)",
+-            "🎨 Giao diện Flexbox/Grid/Bootstrap đồng bộ, hình ảnh & hiệu ứng hover đẹp mắt",
++            "🎨 Giao diện CSS Flexbox/Grid đồng bộ, hình ảnh & hiệu ứng tương tác đẹp mắt",
+             "🐞 Chủ động kiểm tra trên trình duyệt và sửa lỗi vỡ khung / đường dẫn ảnh",
+           ],
+           nextStep: [
+@@ -775,7 +775,7 @@ function getSubTrackTagConfig(profile: SpckCourseProfile): TrackStageTagConfig {
+           ],
+         },
+         session14Product: [
+-          "🎨 Giao diện website đẹp mắt, bố cục CSS Flexbox/Grid & Bootstrap cân đối, hiện đại",
++          "🎨 Giao diện website đẹp mắt, bố cục CSS Flexbox/Grid cân đối, hiện đại",
+           "💻 Vận dụng tốt HTML5, CSS3 và JavaScript DOM để xây dựng các trang chức năng",
+           "🧭 Luồng điều hướng đa trang mượt mà, nội dung và hình ảnh trình bày chỉn chu",
+           "✨ Có hiệu ứng tương tác người dùng sinh động, thể hiện sự đầu tư nghiêm túc",
+@@ -788,35 +788,35 @@ function getSubTrackTagConfig(profile: SpckCourseProfile): TrackStageTagConfig {
+         session12: {
+           progress: [
+             "✅ Đã hoàn thành giao diện các trang chính (HTML/CSS Flexbox/Grid) rõ ràng",
+-            "⚡ Đã xây dựng cấu trúc dữ liệu JavaScript (Array/Object) & render danh sách động",
+-            "🔐 Đã bước đầu lập trình chức năng Đăng nhập / Đăng ký hoặc lưu LocalStorage",
+-            "💡 Ý tưởng ứng dụng web thực tế, bố cục sản phẩm và thanh công cụ trực quan",
++            "⚡ Đã xây dựng cấu trúc dữ liệu JavaScript (Array/Object) & hiển thị nội dung động",
++            "🔗 Đã bước đầu lập trình xử lý sự kiện tương tác, biểu mẫu (Form) hoặc lưu trữ dữ liệu",
++            "💡 Ý tưởng ứng dụng web thực tế, bố cục các mục và thanh điều hướng trực quan",
+           ],
+           nextStep: [
+-            "🔧 Cần hoàn thiện luồng Giỏ hàng / Tìm kiếm / Lọc dữ liệu & Fetch API ở buổi 13",
+-            "🛡️ Cần bổ sung kiểm tra dữ liệu Form (Validate) và đồng bộ trạng thái LocalStorage",
++            "🔧 Cần hoàn thiện các tính năng tương tác chính (Tìm kiếm / Lọc / Xử lý dữ liệu) ở buổi 13",
++            "🛡️ Cần bổ sung kiểm tra dữ liệu nhập (Validate) và đồng bộ trạng thái trên giao diện",
+             "⏳ Tiến độ viết hàm JavaScript xử lý sự kiện cần đẩy nhanh hơn ở buổi tới",
+           ],
+         },
+         session13: {
+           progress: [
+-            "✅ Đã hoàn thiện chức năng Đăng nhập/Đăng ký, Giỏ hàng / Quản lý dữ liệu với LocalStorage",
+-            "🌐 Đã tích hợp Fetch API / tìm kiếm & lọc danh sách sản phẩm theo từ khóa mượt mà",
+-            "🐞 Chủ động kiểm tra DevTools Console và sửa các lỗi logic JavaScript ES6",
+-            "🎨 Giao diện cập nhật dữ liệu tức thì trên DOM, thông báo trạng thái rõ ràng",
++            "✅ Đã hoàn thiện các chức năng tương tác cốt lõi và quản lý dữ liệu theo chủ đề dự án",
++            "🌐 Đã tích hợp xử lý sự kiện, tìm kiếm / lọc nội dung hoặc kết nối dữ liệu mượt mà",
++            "🐞 Chủ động kiểm tra trên trình duyệt và sửa các lỗi logic JavaScript ES6",
++            "🎨 Giao diện cập nhật dữ liệu tức thì trên DOM, phản hồi thao tác người dùng rõ ràng",
+           ],
+           nextStep: [
+-            "🔧 Cần rà soát lại các trường hợp dữ liệu rỗng trong LocalStorage / lỗi nhập Form",
+-            "📊 Cần hoàn thiện Slide giới thiệu luồng dữ liệu JS & chuẩn bị demo buổi 14",
+-            "🎨 Cần trau chuốt thêm giao diện trang chi tiết sản phẩm & hiệu ứng chuyển trạng thái",
++            "🔧 Cần rà soát lại các trường hợp dữ liệu rỗng / lỗi nhập liệu trên biểu mẫu",
++            "📊 Cần hoàn thiện Slide giới thiệu luồng hoạt động của web & chuẩn bị demo buổi 14",
++            "🎨 Cần trau chuốt thêm giao diện các trang con & hiệu ứng chuyển trạng thái",
+           ],
+         },
+         session14Product: [
+           "🎨 Thiết kế giao diện web hiện đại, bố cục Flexbox/Grid trực quan và đồng bộ",
+           "⚡ Vận dụng vững vàng JavaScript ES6, thao tác DOM và xử lý sự kiện linh hoạt",
+-          "💾 Tích hợp hiệu quả LocalStorage / Fetch API cho Đăng nhập, Giỏ hàng & Tìm kiếm",
+-          "🛡️ Luồng trải nghiệm người dùng mạch lạc, có kiểm tra hợp lệ dữ liệu Form đầy đủ",
+-          "🔧 Cần tối ưu thêm việc tách hàm JavaScript và xử lý ngoại lệ khi tải dữ liệu",
++          "💾 Xây dựng tốt luồng dữ liệu và các tính năng tương tác cốt lõi đúng chủ đề dự án",
++          "🛡️ Luồng trải nghiệm người dùng mạch lạc, có kiểm tra hợp lệ dữ liệu đầu vào đầy đủ",
++          "🔧 Cần tối ưu thêm việc tách hàm JavaScript và xử lý ngoại lệ khi thao tác dữ liệu",
+         ],
+       };
+ 
+@@ -1161,14 +1161,41 @@ const CANONICAL_PRESENTATION_TAGS_SET = new Set<string>([
+   ...OPTIONAL_SESSION_12_13_PRESENTATION_TAGS,
+ ]);
+ 
++const LEGACY_WEB_PROGRESS_AND_PRODUCT_TAGS: string[] = [
++  "🎨 Đã áp dụng Bootstrap / CSS tạo phong cách màu sắc, phông chữ hài hòa",
++  "🎨 Giao diện Flexbox/Grid/Bootstrap đồng bộ, hình ảnh & hiệu ứng hover đẹp mắt",
++  "🎨 Giao diện website đẹp mắt, bố cục CSS Flexbox/Grid & Bootstrap cân đối, hiện đại",
++  "⚡ Đã xây dựng cấu trúc dữ liệu JavaScript (Array/Object) & render danh sách động",
++  "🔐 Đã bước đầu lập trình chức năng Đăng nhập / Đăng ký hoặc lưu LocalStorage",
++  "💡 Ý tưởng ứng dụng web thực tế, bố cục sản phẩm và thanh công cụ trực quan",
++  "✅ Đã hoàn thiện chức năng Đăng nhập/Đăng ký, Giỏ hàng / Quản lý dữ liệu với LocalStorage",
++  "🌐 Đã tích hợp Fetch API / tìm kiếm & lọc danh sách sản phẩm theo từ khóa mượt mà",
++  "🐞 Chủ động kiểm tra DevTools Console và sửa các lỗi logic JavaScript ES6",
++  "🎨 Giao diện cập nhật dữ liệu tức thì trên DOM, thông báo trạng thái rõ ràng",
++  "💾 Tích hợp hiệu quả LocalStorage / Fetch API cho Đăng nhập, Giỏ hàng & Tìm kiếm",
++  "🛡️ Luồng trải nghiệm người dùng mạch lạc, có kiểm tra hợp lệ dữ liệu Form đầy đủ",
++];
++
++const LEGACY_WEB_LIMITATION_TAGS: string[] = [
++  "🔧 Cần hoàn thiện luồng Giỏ hàng / Tìm kiếm / Lọc dữ liệu & Fetch API ở buổi 13",
++  "🛡️ Cần bổ sung kiểm tra dữ liệu Form (Validate) và đồng bộ trạng thái LocalStorage",
++  "🔧 Cần rà soát lại các trường hợp dữ liệu rỗng trong LocalStorage / lỗi nhập Form",
++  "📊 Cần hoàn thiện Slide giới thiệu luồng dữ liệu JS & chuẩn bị demo buổi 14",
++  "🎨 Cần trau chuốt thêm giao diện trang chi tiết sản phẩm & hiệu ứng chuyển trạng thái",
++  "🔧 Cần tối ưu thêm việc tách hàm JavaScript và xử lý ngoại lệ khi tải dữ liệu",
++];
++
+ const CANONICAL_LIMITATION_TAGS_SET = new Set<string>([
+   "⚠️ Thuyết trình còn rụt rè, cần rèn thêm sự tự tin",
+   "⚠️ Phần trình bày thử còn ngập ngừng, cần luyện nói lưu loát hơn",
++  ...LEGACY_WEB_LIMITATION_TAGS,
+ ]);
+ 
+ const CANONICAL_ALL_TAGS_SET = new Set<string>([
+   ...SESSION_14_PRESENTATION_TAGS,
+   ...OPTIONAL_SESSION_12_13_PRESENTATION_TAGS,
++  ...LEGACY_WEB_PROGRESS_AND_PRODUCT_TAGS,
++  ...LEGACY_WEB_LIMITATION_TAGS,
+ ]);
+ 
+ for (const prefix of ALL_COURSE_PREFIXES_FOR_SETS) {
+@@ -1347,3 +1374,202 @@ export function getSpckQuickTagGroups(params: {
+     ],
+   };
+ }
++
++export interface SpckAutoSuggestInput {
++  classId?: string | null;
++  courseName?: string | null;
++  sessionNumber: 12 | 13 | 14;
++  fileExtensions?: string[];
++  screenshotCount?: number;
++  attachmentCount?: number;
++  youtubeCount?: number;
++  slideCount?: number;
++  hasFlexOrGridCss?: boolean;
++  hasNavLinks?: boolean;
++  hasJsInteraction?: boolean;
++  hasFirebaseCode?: boolean;
++  hasRoboticsCode?: boolean;
++}
++
++const DOC_OR_SLIDE_ONLY_EXTS = new Set([
++  ".pdf",
++  ".pptx",
++  ".ppt",
++  ".doc",
++  ".docx",
++  ".txt",
++  ".md",
++]);
++
++/**
++ * Automatically suggests evidence-backed Quick Tags when a student's project folder
++ * has verified code/model evidence. Never auto-suggests live presentation quality tags
++ * or unverified functional/hardware claims from mere document/slide file counts.
++ */
++export function suggestSpckQuickTagsFromProject(
++  input: SpckAutoSuggestInput
++): string[] {
++  const normalizedExts = Array.isArray(input.fileExtensions)
++    ? input.fileExtensions
++        .map((e) => String(e || "").trim().toLowerCase())
++        .filter(Boolean)
++    : [];
++  const nonDocExts = normalizedExts.filter((e) => !DOC_OR_SLIDE_ONLY_EXTS.has(e));
++  const hasPhotos = (input.screenshotCount || 0) > 0;
++  const hasVideos = (input.youtubeCount || 0) > 0;
++
++  if (
++    nonDocExts.length === 0 &&
++    !hasPhotos &&
++    !hasVideos &&
++    !input.hasFlexOrGridCss &&
++    !input.hasJsInteraction &&
++    !input.hasFirebaseCode &&
++    !input.hasRoboticsCode
++  ) {
++    return [];
++  }
++
++  const bundle = getSpckQuickTagGroups({
++    classId: input.classId,
++    courseName: input.courseName,
++    sessionNumber: input.sessionNumber,
++    fileExtensions: normalizedExts,
++  });
++
++  const progressGroup = bundle.groups.find((g) => g.id === "progress");
++  const nextStepGroup = bundle.groups.find((g) => g.id === "next_step");
++  const prodGroup = bundle.groups.find((g) => g.id === "product");
++  const suggested: string[] = [];
++
++  if (bundle.profile.track === "WEB") {
++    const hasCssEvidence =
++      Boolean(input.hasFlexOrGridCss) || nonDocExts.includes(".css");
++    const hasNavEvidence = Boolean(input.hasNavLinks);
++    const hasJsEvidence =
++      Boolean(input.hasJsInteraction) ||
++      nonDocExts.includes(".js") ||
++      nonDocExts.includes(".mjs");
++    const hasFirebaseEvidence = Boolean(input.hasFirebaseCode);
++
++    if (input.sessionNumber === 14) {
++      if (! prodGroup) return [];
++      if (bundle.profile.subTrack === "WEB_FIREBASE") {
++        if (hasFirebaseEvidence && prodGroup.tags[0]) suggested.push(prodGroup.tags[0]);
++        if (hasJsEvidence && prodGroup.tags[1]) suggested.push(prodGroup.tags[1]);
++      } else if (bundle.profile.subTrack === "WEB_JS") {
++        if (hasCssEvidence && prodGroup.tags[0]) suggested.push(prodGroup.tags[0]);
++        if (hasJsEvidence && prodGroup.tags[1]) suggested.push(prodGroup.tags[1]);
++      } else {
++        if (hasCssEvidence && prodGroup.tags[0]) suggested.push(prodGroup.tags[0]);
++        if (hasNavEvidence && prodGroup.tags[2]) suggested.push(prodGroup.tags[2]);
++      }
++      return suggested;
++    }
++
++    if (bundle.profile.subTrack === "WEB_FIREBASE") {
++      if (hasFirebaseEvidence && progressGroup?.tags[0]) {
++        suggested.push(progressGroup.tags[0]);
++      }
++      if (hasFirebaseEvidence && nextStepGroup?.tags[0]) {
++        suggested.push(nextStepGroup.tags[0]);
++      }
++      return suggested;
++    }
++
++    if (bundle.profile.subTrack === "WEB_JS") {
++      if (input.sessionNumber === 12) {
++        if (hasCssEvidence && progressGroup?.tags[0]) suggested.push(progressGroup.tags[0]);
++        if (hasJsEvidence && progressGroup?.tags[1]) suggested.push(progressGroup.tags[1]);
++        if ((hasCssEvidence || hasJsEvidence) && nextStepGroup?.tags[0]) {
++          suggested.push(nextStepGroup.tags[0]);
++        }
++      } else {
++        if (hasJsEvidence && progressGroup?.tags[0]) suggested.push(progressGroup.tags[0]);
++        if (hasJsEvidence && nextStepGroup?.tags[0]) suggested.push(nextStepGroup.tags[0]);
++      }
++      return suggested;
++    }
++
++    // WEB_BASIC
++    if (input.sessionNumber === 12) {
++      if (hasCssEvidence && progressGroup?.tags[0]) suggested.push(progressGroup.tags[0]);
++      if (hasNavEvidence && progressGroup?.tags[1]) suggested.push(progressGroup.tags[1]);
++      if ((hasCssEvidence || hasNavEvidence) && nextStepGroup?.tags[0]) {
++        suggested.push(nextStepGroup.tags[0]);
++      }
++    } else {
++      if (hasNavEvidence && progressGroup?.tags[0]) suggested.push(progressGroup.tags[0]);
++      if (hasJsEvidence && progressGroup?.tags[1]) suggested.push(progressGroup.tags[1]);
++      if (hasCssEvidence && progressGroup?.tags[2]) suggested.push(progressGroup.tags[2]);
++      if ((hasCssEvidence || hasJsEvidence || hasNavEvidence) && nextStepGroup?.tags[0]) {
++        suggested.push(nextStepGroup.tags[0]);
++      }
++    }
++    return suggested;
++  }
++
++  if (bundle.profile.track === "ROBOTICS") {
++    const hasRoboticsCode =
++      Boolean(input.hasRoboticsCode) ||
++      nonDocExts.some((e) =>
++        [
++          ".vexblocks",
++          ".iqblocks",
++          ".v5blocks",
++          ".v5python",
++          ".vex",
++          ".ino",
++          ".hex",
++          ".ev3",
++          ".llsp",
++          ".llsp3",
++          ".mblock",
++          ".uf2",
++          ".zip",
++        ].includes(e)
++      );
++
++    if (!hasPhotos && !hasRoboticsCode && !hasVideos) {
++      return [];
++    }
++
++    if (input.sessionNumber === 14) {
++      if (!prodGroup) return [];
++      if (hasPhotos && prodGroup.tags[0]) suggested.push(prodGroup.tags[0]);
++      if (hasRoboticsCode && prodGroup.tags[2]) suggested.push(prodGroup.tags[2]);
++      return suggested;
++    }
++
++    if (hasPhotos && progressGroup?.tags[0]) {
++      suggested.push(progressGroup.tags[0]);
++    }
++    if (
++      hasRoboticsCode &&
++      progressGroup?.tags[input.sessionNumber === 12 ? 2 : 1]
++    ) {
++      suggested.push(progressGroup.tags[input.sessionNumber === 12 ? 2 : 1]);
++    }
++    if (input.sessionNumber === 13 && hasVideos && progressGroup?.tags[2]) {
++      suggested.push(progressGroup.tags[2]);
++    }
++    if ((hasPhotos || hasRoboticsCode || hasVideos) && nextStepGroup?.tags[0]) {
++      suggested.push(nextStepGroup.tags[0]);
++    }
++    return suggested;
++  }
++
++  if (nonDocExts.length === 0) {
++    return [];
++  }
++
++  if (input.sessionNumber === 14) {
++    if (prodGroup?.tags[0]) suggested.push(prodGroup.tags[0]);
++    return suggested;
++  }
++
++  if (progressGroup?.tags[0]) suggested.push(progressGroup.tags[0]);
++  if (nextStepGroup?.tags[0]) suggested.push(nextStepGroup.tags[0]);
++  return suggested;
++}
++

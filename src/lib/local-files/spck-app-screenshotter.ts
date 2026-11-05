@@ -1906,9 +1906,10 @@ export async function captureStudentAppScreenshots(params: {
     }
     pushUnique(shotPath);
   }
-  // Edge case: if there was only 1 captured screenshot total and 0 other images, keep it in gallery too so the bottom box isn't empty
-  if (galleryCandidates.length === 0 && bestAppShotPath) {
-    galleryCandidates.push(bestAppShotPath);
+  // Edge case: if there was only 1 image total (1 captured screenshot or 1 Owner photo) and 0 other gallery images,
+  // keep it in gallery too so the required LMS bottom box ("Ảnh chụp sản phẩm *") isn't empty
+  if (galleryCandidates.length === 0 && (bestAppShotPath || ownerThumbCandidate)) {
+    galleryCandidates.push(bestAppShotPath || ownerThumbCandidate);
   }
 
   const galleryScreenshots = [...galleryCandidates];

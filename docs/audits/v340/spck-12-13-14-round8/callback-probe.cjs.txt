@@ -1,0 +1,9 @@
+﻿const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const esbuild=require('./work/node_modules/esbuild');
+const work=path.join(__dirname,'work');const src=fs.readFileSync(path.join(work,'src/lib/playwright/spck-uploader.ts'),'utf8');
+const start=src.indexOf('(modalEl, args) => {',src.indexOf('const verifiedKeepAttachmentStems'));const end=src.indexOf('\n            },',start)+'\n            }'.length;
+const ctx={};vm.runInNewContext(esbuild.transformSync('globalThis.callback=('+src.slice(start,end)+');',{loader:'ts',target:'es2022'}).code,ctx);
+function clean(names,keys){let live=[...names];const modal={querySelectorAll:()=>live.map(text=>({textContent:text,parentElement:{querySelector:()=>({click:()=>live.splice(live.indexOf(text),1)})}}))};for(let i=0;i<12;i++){if(!ctx.callback(modal,{keepStemsArr:keys,studentSlug:'audit',hasBundledExts:false}))break;}return live;}
+const cases=[{id:'R2-F09-01',names:['main-123.py','main-234.sb3'],keys:['main.py','main','main.sb3'],expected:['main-123.py','main-234.sb3']},{id:'R2-F09-02',names:['main-123.py','main-234.sb3'],keys:['main.py','main'],expected:['main-123.py']}];
+const results=cases.map(c=>{const observed=clean(c.names,c.keys);return {...c,observed,status:JSON.stringify(observed)===JSON.stringify(c.expected)?'PASS':'FAIL'};});
+const output={total:results.length,passed:results.filter(r=>r.status==='PASS').length,failed:results.filter(r=>r.status==='FAIL').length,results};fs.writeFileSync(path.join(__dirname,'callback-results.json'),JSON.stringify(output,null,2));console.log(JSON.stringify(output,null,2));process.exitCode=output.failed?1:0;

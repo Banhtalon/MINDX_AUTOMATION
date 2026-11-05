@@ -1,0 +1,11 @@
+{
+  "reason": "Auditor-only assertion incorrectly required optional absence flags to be boolean. Undefined is the intended unknown state; corrected assertion checks all six named flags are not true and no absence warning is emitted.",
+  "productSourceChanged": false,
+  "originalProbesChanged": false,
+  "attempt1": {
+    "passed": 3,
+    "failed": 0,
+    "errors": 6
+  },
+  "preservedAttempt1": true
+}

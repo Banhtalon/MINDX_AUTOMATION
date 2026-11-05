@@ -1,0 +1,105 @@
+{
+  "F01": {
+    "status": "OPEN",
+    "priority": "P1",
+    "originalCases": [
+      "TAGS-02",
+      "TAGS-03"
+    ],
+    "extraCases": [
+      "R2-F01-01",
+      "R2-F01-02",
+      "R2-F01-03"
+    ]
+  },
+  "F02": {
+    "status": "OPEN",
+    "priority": "P1",
+    "originalCases": [
+      "HALLUCINATION-01",
+      "HALLUCINATION-02",
+      "HALLUCINATION-03"
+    ],
+    "extraCases": [
+      "R2-F02-01",
+      "R2-F02-02",
+      "R2-F02-03"
+    ]
+  },
+  "F03": {
+    "status": "CLOSED",
+    "priority": "P1",
+    "originalCases": [
+      "ZIP-04"
+    ]
+  },
+  "F04": {
+    "status": "CLOSED",
+    "priority": "P2",
+    "originalCases": [
+      "DRIVE-01",
+      "DRIVE-02",
+      "DRIVE-03"
+    ]
+  },
+  "F05": {
+    "status": "CLOSED",
+    "priority": "P2",
+    "originalCases": [
+      "DRIVE-04",
+      "DRIVE-05"
+    ]
+  },
+  "F06": {
+    "status": "CLOSED",
+    "priority": "P2",
+    "originalCases": [
+      "ROB-01",
+      "ROB-02"
+    ]
+  },
+  "F07": {
+    "status": "OPEN",
+    "priority": "P2",
+    "originalCases": [
+      "WEB-03",
+      "WEB-05"
+    ],
+    "extraCases": [
+      "R2-F07-01",
+      "R2-F07-02"
+    ]
+  },
+  "F08": {
+    "status": "OPEN",
+    "priority": "P2",
+    "originalCases": [
+      "WEB-04"
+    ],
+    "extraCases": [
+      "R2-F08-01",
+      "R2-F08-02"
+    ]
+  },
+  "F09": {
+    "status": "CLOSED",
+    "priority": "P2",
+    "originalCases": [
+      "LMS-01",
+      "LMS-02",
+      "LMS-03"
+    ],
+    "extraCases": [
+      "R2-F09-01",
+      "R2-F09-02"
+    ]
+  },
+  "F10": {
+    "status": "CLOSED",
+    "priority": "P2",
+    "originalCases": [
+      "SYNC-05",
+      "SYNC-06"
+    ]
+  }
+}

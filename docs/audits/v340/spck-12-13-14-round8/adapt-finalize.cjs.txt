@@ -1,0 +1,37 @@
+const fs=require('node:fs'),path=require('node:path');
+const root=__dirname,state=JSON.parse(fs.readFileSync(path.join(root,'state.json'))),repo=state.repo,dest=path.join(repo,'docs/audits/v340/spck-12-13-14-round8'),r7=path.join(repo,'docs/audits/v340/spck-12-13-14-round7');
+const old=fs.readFileSync(path.join(root,'round7-report.md.txt')),reportPath=path.join(repo,'docs/audits/v340/CODEX_SPCK_12_13_14_AUDIT.md'),report=fs.readFileSync(reportPath);
+if(!report.subarray(report.length-old.length).equals(old))throw Error('History mismatch before timestamp correction');
+const section=report.subarray(0,report.length-old.length).toString('utf8').replace('07:24:55–07:24:58 UTC','07:24:37–07:24:40 UTC');
+fs.writeFileSync(reportPath,Buffer.concat([Buffer.from(section),old]));
+const writer=path.join(root,'write-report.cjs');fs.writeFileSync(writer,fs.readFileSync(writer,'utf8').replace('07:24:55–07:24:58 UTC','07:24:37–07:24:40 UTC'));fs.copyFileSync(writer,path.join(dest,'write-report.cjs.txt'));
+let s=fs.readFileSync(path.join(r7,'finalize.cjs.txt'),'utf8');
+s=s.replace(/expectedRoot="[^"]*"/,'expectedRoot='+JSON.stringify(root));
+s=s.replaceAll('spck-12-13-14-round7','spck-12-13-14-round8').replaceAll('Round 7','Round 8').replaceAll('round6-report.md.txt','round7-report.md.txt');
+s=s.replace("if(path.resolve(root)!==path.resolve(expectedRoot)||path.dirname(fs.realpathSync(root))!==fs.realpathSync(os.tmpdir()))", "if(path.resolve(root)!==path.resolve(expectedRoot)||path.dirname(fs.realpathSync(root))!==fs.realpathSync(os.tmpdir())||fs.lstatSync(root).isSymbolicLink()||path.resolve(process.cwd()).startsWith(path.resolve(root)))");
+s=s.replaceAll('[1,2,3,4,5,6]','[1,2,3,4,5,6,7]').replaceAll('Round 1-6','Round 1-7').replaceAll('round1ThroughRound6HistoryByteUnchanged','round1ThroughRound7HistoryByteUnchanged');
+s=s.replaceAll('8/10 CLOSED; 2/10 OPEN','9/10 CLOSED; 1/10 OPEN');
+s=s.replace('round5:8,round6:7','round5:8,round6:7,round7:4');
+s=s.replaceAll('summary.gates.length!==12','summary.gates.length!==13').replaceAll('summary.gates.slice(0,11)','summary.gates.slice(0,12)').replaceAll('summary.gates[11]','summary.gates[12]');
+s=s.replace("summary.tests.round7.total!==4||summary.tests.round7.passed!==2||summary.tests.round7.failed!==2||summary.tests.round7.errors!==0","summary.tests.round8.total!==8||summary.tests.round8.passed!==5||summary.tests.round8.failed!==3||summary.tests.round8.errors!==0");
+s=s.replace("length!==8","length!==9").replace("summary.statuses.F01!=='OPEN'","summary.statuses.F01!=='CLOSED'");
+const anchor="const beforeCleanup=Object.fromEntries";
+const extra=`const context=JSON.parse(fs.readFileSync(path.join(dest,'round8-context-results.json')));
+const noKeys=['noBootstrap','noCart','noAuth','noLocalStorage','noFetchApi','noFirebase'];
+for(const test of context.results){
+ const flags=test.observed.absentWebFeatures;
+ if(flags.inspectedWebCode!==true)throw Error('Context fixture was not inspected '+test.id);
+ const unknown=noKeys.every(k=>flags[k]!==true);
+ if(test.expected==='unknown'&&(test.status==='PASS')!==unknown)throw Error('Unknown-state assertion inconsistent '+test.id);
+ if(test.expected==='absent'&&!noKeys.every(k=>flags[k]===true))throw Error('Classic control flags inconsistent');
+ if(test.expected==='firebase'&&(flags.noFirebase!==false||!test.observed.summaryText.includes('Firebase Auth / Firestore')))throw Error('Valid module control inconsistent');
+}
+if(context.results.filter(t=>t.status==='FAIL').map(t=>t.id).join(',')!=='R8-F08-04,R8-F08-05,R8-F08-06')throw Error('Unexpected failing supplementary cases');
+if(!fs.existsSync(path.join(work,'node_modules')))throw Error('Dependency junction missing before cleanup');
+for(const item of ['.env','.env.local','playwright-auth','data/mindx_bot.db','data/running_classes.json'])if(fs.existsSync(path.join(work,item)))throw Error('Production input found in snapshot: '+item);
+`;
+s=s.replace(anchor,extra+anchor);
+if(!s.includes('summary.gates.length!==13')||!s.includes('9/10 CLOSED; 1/10 OPEN')||!s.includes('round7:4')||!s.includes('fs.lstatSync(root).isSymbolicLink()'))throw Error('Finalizer adaptation missed');
+fs.writeFileSync(path.join(root,'finalize.cjs'),s);
+console.log('Prepared finalizer; cleanup must run from repository cwd.');
+

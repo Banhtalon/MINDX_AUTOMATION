@@ -63,6 +63,24 @@ const IGNORED_SUBFOLDER_NAMES = new Set([
   "dist",
   ".idea",
   ".vscode",
+  "_spck_app_shots",
+  "_spck_owner_uploads",
+  "_spck_youtube_frames",
+  "_spck_temp",
+  "_synth_assets",
+]);
+
+const ROBOTICS_COURSE_PREFIXES = new Set([
+  "PREB",
+  "PREA",
+  "PREI",
+  "ARMB",
+  "ARMA",
+  "ARMI",
+  "SEMIB",
+  "SEMIA",
+  "SEMII",
+  "ROB",
 ]);
 
 export interface SpckDriveStudentResult {
@@ -131,6 +149,15 @@ export function isCourseExemptFromSpck(_classIdOrPrefix: string): boolean {
 export function detectCoursePrefixFromClassId(classId: string): string | null {
   const upper = String(classId || "").toUpperCase();
   const prefixes = [
+    "SEMII",
+    "SEMIA",
+    "SEMIB",
+    "ARMI",
+    "ARMA",
+    "ARMB",
+    "PREI",
+    "PREA",
+    "PREB",
     "PTB",
     "PTA",
     "PTI",
@@ -141,6 +168,7 @@ export function detectCoursePrefixFromClassId(classId: string): string | null {
     "CSB",
     "CSA",
     "CSI",
+    "ROB",
     "SB",
     "SA",
     "SI",
@@ -149,12 +177,17 @@ export function detectCoursePrefixFromClassId(classId: string): string | null {
     "GI",
   ];
   for (const prefix of prefixes) {
-    const regex = new RegExp(`(?:^|[-_\\s])${prefix}\\d*`, "i");
+    const regex = new RegExp(`(?:^|[-_\\s])${prefix}(?:\\d|$|[-_\\s])`, "i");
     if (regex.test(upper)) {
       return prefix;
     }
   }
   return null;
+}
+
+export function isRoboticsCourseClassId(classId: string): boolean {
+  const prefix = detectCoursePrefixFromClassId(classId);
+  return Boolean(prefix && ROBOTICS_COURSE_PREFIXES.has(prefix));
 }
 
 export function resolveCourseSpecificFolderId(classId: string): string | null {
@@ -214,7 +247,14 @@ export function prepareStudentFilesForDriveUpload(
     if (st.isSymbolicLink() || !st.isFile()) continue;
 
     const lower = entry.name.toLowerCase();
-    if (lower === "links.txt" || lower === "link.txt" || lower.endsWith(".pyc")) {
+    if (
+      lower === "links.txt" ||
+      lower === "link.txt" ||
+      lower.endsWith(".pyc") ||
+      lower.endsWith("_web_package.zip") ||
+      lower.endsWith("_robotics_package.zip") ||
+      /^spck_.*_[a-f0-9]{8}\.zip$/i.test(lower)
+    ) {
       continue;
     }
 
@@ -538,27 +578,32 @@ async function findOrCreateDriveSubfolder(
 
 /**
  * Uploads local files into an open Google Drive student folder via "+ Mới" -> "Tải tệp lên".
- * Replaces any existing file with the same name so modified local files are never skipped.
+ * - For Coding classes (`replaceAllStaleFiles = true`), moves all existing files in this Drive folder
+ *   to trash first so renamed or removed code files from prior sessions never pile up.
+ * - For Robotics classes (`replaceAllStaleFiles = false`), only moves same-named files to trash
+ *   so differently-named model photos from Sessions 12–14 accumulate into a complete album.
  */
 async function uploadFilesIntoDriveFolder(
   page: Page,
   studentDriveFolderId: string,
-  localFilePaths: string[]
+  localFilePaths: string[],
+  replaceAllStaleFiles = true
 ): Promise<number> {
-  if (localFilePaths.length === 0) return 0;
+  if (localFilePaths.length === 0 && !replaceAllStaleFiles) return 0;
   assertDriveNotStopped();
 
   await ensureGoogleDriveFolderReadyAndAuthenticated(page, studentDriveFolderId);
   const existingItems = await listDriveItemsOnPage(page, studentDriveFolderId);
 
-  // If a file with the same basename already exists in this Drive folder, move the old file to trash first
-  // so that modified local files (same name, new content) are always uploaded fresh.
   const targetLowerNames = new Set(
     localFilePaths.map((p) => path.basename(p).toLowerCase())
   );
   let trashedAny = false;
   for (const item of existingItems) {
-    if (!item.isFolder && targetLowerNames.has(item.name.toLowerCase())) {
+    if (
+      !item.isFolder &&
+      (replaceAllStaleFiles || targetLowerNames.has(item.name.toLowerCase()))
+    ) {
       await moveDriveItemToTrash(page, item.id);
       trashedAny = true;
     }
@@ -568,6 +613,7 @@ async function uploadFilesIntoDriveFolder(
     await page.waitForTimeout(300);
   }
 
+  if (localFilePaths.length === 0) return 0;
   assertDriveNotStopped();
 
   const newBtn = page
@@ -637,7 +683,8 @@ async function uploadStudentDirectoryTreeToDrive(
   localDirPath: string,
   studentId: string,
   fullName: string,
-  depth = 0
+  depth = 0,
+  replaceAllStaleFiles = true
 ): Promise<number> {
   assertDriveNotStopped();
   if (depth > MAX_DRIVE_TREE_DEPTH) {
@@ -653,7 +700,8 @@ async function uploadStudentDirectoryTreeToDrive(
   let totalUploaded = await uploadFilesIntoDriveFolder(
     page,
     targetDriveFolderId,
-    directFiles
+    directFiles,
+    replaceAllStaleFiles
   );
 
   // Recursively recreate non-ignored subdirectories (e.g. `gui`, `img`, `image`, `assets`, `src`)
@@ -662,11 +710,16 @@ async function uploadStudentDirectoryTreeToDrive(
     .filter((e) => !e.name.startsWith("."))
     .sort((a, b) => a.name.localeCompare(b.name, "en"));
 
+  const validSubdirEntries: Array<{ name: string; subLocalPath: string }> = [];
   for (const entry of entries) {
-    assertDriveNotStopped();
     if (!entry.isDirectory()) continue;
-    if (IGNORED_SUBFOLDER_NAMES.has(entry.name.toLowerCase())) continue;
-
+    const entryLower = entry.name.toLowerCase();
+    if (
+      IGNORED_SUBFOLDER_NAMES.has(entryLower) ||
+      entryLower.startsWith("_spck_")
+    ) {
+      continue;
+    }
     const subLocalPath = assertPathAllowed(path.join(safeDir, entry.name));
     let st: fs.Stats;
     try {
@@ -675,19 +728,42 @@ async function uploadStudentDirectoryTreeToDrive(
       continue;
     }
     if (st.isSymbolicLink()) continue;
+    validSubdirEntries.push({ name: entry.name, subLocalPath });
+  }
 
+  // For Coding classes (`replaceAllStaleFiles = true`), also remove stale remote subfolders
+  // that were renamed or deleted locally so old directory trees do not remain on Drive.
+  if (replaceAllStaleFiles) {
+    await ensureGoogleDriveFolderReadyAndAuthenticated(page, targetDriveFolderId);
+    const existingRemoteItems = await listDriveItemsOnPage(page, targetDriveFolderId);
+    const localSubdirNormNames = new Set(
+      validSubdirEntries.map((d) => normalizeFolderTitle(d.name))
+    );
+    for (const remoteItem of existingRemoteItems) {
+      if (
+        remoteItem.isFolder &&
+        !localSubdirNormNames.has(normalizeFolderTitle(remoteItem.name))
+      ) {
+        await moveDriveItemToTrash(page, remoteItem.id);
+      }
+    }
+  }
+
+  for (const subEntry of validSubdirEntries) {
+    assertDriveNotStopped();
     const subDriveFolderId = await findOrCreateDriveSubfolder(
       page,
       targetDriveFolderId,
-      entry.name
+      subEntry.name
     );
     totalUploaded += await uploadStudentDirectoryTreeToDrive(
       page,
       subDriveFolderId,
-      subLocalPath,
+      subEntry.subLocalPath,
       studentId,
       fullName,
-      depth + 1
+      depth + 1,
+      replaceAllStaleFiles
     );
   }
 
@@ -775,19 +851,30 @@ export class SpckDriveUploader {
     }
 
     // If teacher gave the root CODING - SPCK folder (1Xl8OZ7i1bOKf7000xbUBYLPcxVb2qvRD),
-    // strictly resolve the course subfolder (e.g. 2. PTA for VT-C4K-PTA12)
+    // strictly resolve the course subfolder (e.g. 2. PTA for VT-C4K-PTA12, or find/create course folder for Robotics)
+    const coursePrefix = detectCoursePrefixFromClassId(normalizedClassId);
+    const isRoboticsClass = Boolean(coursePrefix && ROBOTICS_COURSE_PREFIXES.has(coursePrefix));
     let courseOrParentFolderId = inputFolderId;
     if (inputFolderId === CODING_SPCK_ROOT_FOLDER_ID) {
-      const coursePrefix = detectCoursePrefixFromClassId(normalizedClassId);
-      if (!coursePrefix || !CODING_SPCK_COURSE_FOLDER_MAP[coursePrefix]) {
+      if (coursePrefix && CODING_SPCK_COURSE_FOLDER_MAP[coursePrefix]) {
+        courseOrParentFolderId = CODING_SPCK_COURSE_FOLDER_MAP[coursePrefix];
+      } else if (!isRoboticsClass) {
         throw new Error(
           `Khóa học '${coursePrefix || normalizedClassId}' của lớp '${normalizedClassId}' chưa có thư mục khóa học cấu hình sẵn trong thư mục gốc Google Drive. Vui lòng dán trực tiếp link thư mục Google Drive riêng của lớp hoặc khóa học (hệ thống không tự chọn thư mục của môn khác để thay thế).`
         );
       }
-      courseOrParentFolderId = CODING_SPCK_COURSE_FOLDER_MAP[coursePrefix];
     }
 
     const page = await BrowserManager.getInstance().getPage();
+
+    if (inputFolderId === CODING_SPCK_ROOT_FOLDER_ID && isRoboticsClass && coursePrefix) {
+      await ensureGoogleDriveFolderReadyAndAuthenticated(page, CODING_SPCK_ROOT_FOLDER_ID);
+      courseOrParentFolderId = await findOrCreateDriveSubfolder(
+        page,
+        CODING_SPCK_ROOT_FOLDER_ID,
+        coursePrefix
+      );
+    }
 
     await ensureGoogleDriveFolderReadyAndAuthenticated(page, courseOrParentFolderId);
 
@@ -843,7 +930,9 @@ export class SpckDriveUploader {
           studentDriveFolderId,
           record.localFolderPath,
           record.studentId,
-          fullName
+          fullName,
+          0,
+          !isRoboticsClass
         );
 
         const studentDriveUrl = `https://drive.google.com/drive/folders/${studentDriveFolderId}`;

@@ -1,0 +1,38 @@
+{
+  "verdict": "NO-GO",
+  "closed": 9,
+  "open": 1,
+  "statuses": {
+    "F01": "CLOSED",
+    "F02": "CLOSED",
+    "F03": "CLOSED",
+    "F04": "CLOSED",
+    "F05": "CLOSED",
+    "F06": "CLOSED",
+    "F07": "CLOSED",
+    "F08": "OPEN",
+    "F09": "CLOSED",
+    "F10": "CLOSED"
+  },
+  "mandatoryPassed": true,
+  "mandatoryGateCount": 11,
+  "mandatoryCommandCount": 12,
+  "blockingProbes": [
+    {
+      "id": "R8-F08-04",
+      "finding": "F08",
+      "label": "Module .mjs legacy octal keeps absence unknown via folder"
+    },
+    {
+      "id": "R8-F08-05",
+      "finding": "F08",
+      "label": "Module .mjs legacy octal keeps absence unknown via attachment"
+    },
+    {
+      "id": "R8-F08-06",
+      "finding": "F08",
+      "label": "Module .mjs legacy octal keeps absence unknown via zip"
+    }
+  ],
+  "note": "All 95 original Round 1-7 probe cases pass; R7 classic-script repair confirmed. F01 closed. Three supplementary failures reproduce loss of .mjs module context in summary readers (folder, attachment, ZIP); F08 remains open. No product source edited."
+}

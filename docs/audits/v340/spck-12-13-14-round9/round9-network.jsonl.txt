@@ -1,0 +1,10 @@
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":20296}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":24372}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":11484}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":26188}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":26188}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":8264}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":23880}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":14596}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":25376}
+{"kind":"guard-loaded","host":"external-http-blocked;chromium-loopback-proxy","pid":25376}

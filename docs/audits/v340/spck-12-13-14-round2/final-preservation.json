@@ -1,0 +1,24 @@
+{
+  "verifiedAt": "2026-11-05T04:25:06.322Z",
+  "head": "00dd3e3f75961a1276379cad3212eaf74ec306b2",
+  "productionBefore": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "productionAfter": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "productionMatchesOwner": true,
+  "sourceCount": 161,
+  "sourceChanged": [],
+  "sourceStillMatchesSnapshot": true,
+  "reportSha256": "168FDC5D8D9E2F6233EAA22B4527C15491CE2C242E40B99FEE6ACF2B549DA701",
+  "round1HistoryUnchanged": true,
+  "evidenceCopiesVerified": 37,
+  "missingLinks": [],
+  "tempPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8",
+  "tempRemoved": true,
+  "dependencyDirectoryStillExists": true,
+  "scope": "Only requested audit report and Round 2 evidence changed in original workspace"
+}

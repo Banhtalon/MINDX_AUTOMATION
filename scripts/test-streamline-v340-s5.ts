@@ -8,33 +8,51 @@
  */
 
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import zlib from "node:zlib";
+import AdmZip from "adm-zip";
 import tailwindcssPostcss from "@tailwindcss/postcss";
 import * as esbuild from "esbuild";
 import { chromium } from "playwright";
 import postcss from "postcss";
+import { POST as scanPost } from "../src/app/api/spck/scan/route";
 import {
+  classSessionRepo,
   formatSpckSessionTitle,
   getDb,
   isDefaultSpckProductTitle,
+  spckSessionRepo,
+  spckUploadRepo,
   studentRepo,
   stripSpckSessionSuffix,
   validateSpckTitleLength,
 } from "../src/lib/db/sqlite";
 import {
+  buildPreliminaryProjectSummary,
   detectLimitationEvidence,
   detectPresentationEvidence,
   SpckCommentGenerator,
 } from "../src/lib/gemini/spck-comment";
 import { parseCodeBuffer } from "../src/lib/file-parsers/code-reader";
-import { DEFAULT_SPCK_THUMBNAIL_PATH } from "../src/lib/local-files/spck-scanner";
+import {
+  DEFAULT_SPCK_THUMBNAIL_PATH,
+  scanStudentSpckFolder,
+} from "../src/lib/local-files/spck-scanner";
+import {
+  detectCoursePrefixFromClassId,
+  isRoboticsCourseClassId,
+  prepareStudentFilesForDriveUpload,
+  resolveCourseSpecificFolderId,
+} from "../src/lib/playwright/spck-drive-uploader";
 import {
   detectSpckCourseProfile,
   getSpckQuickTagGroups,
   isLimitationOrNextStepQuickTag,
   isPresentationQuickTag,
+  suggestSpckQuickTagsFromProject,
 } from "../src/lib/spck/spck-quick-tags";
 
 const ROOT = process.cwd();
@@ -498,6 +516,690 @@ async function runTests() {
       }
     }
     console.log("  -> PASS [S5b-T5]: Bộ Quick Tags & Nhận xét AI chuyên biệt cho cả 6 nhóm môn (25 mã khóa) ở Buổi 12, 13, 14 hoạt động chính xác.");
+
+    // =========================================================================
+    // [S5b-T6] Kiểm tra 5 hạng mục nâng cấp SPCK Buổi 12-13-14 (Coding & Robotics)
+    // =========================================================================
+    console.log("\n[S5b-T6] Kiểm tra 5 hạng mục nâng cấp: Đồng bộ 12->13->14, Chống trùng Drive/LMS, Luồng Robotics chuyên biệt, Deep Project Inspector + Multimodal Vision & Giọng văn kiểm tra tiến độ...");
+    const tmpT6Root = path.resolve(ROOT, "temp_submissions", `tmp_s5b_t6_${Date.now()}`);
+    fs.mkdirSync(tmpT6Root, { recursive: true });
+    const makeTestPng = (w: number, h: number, seed = 42): Buffer => {
+      const crcTable = new Uint32Array(256);
+      for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+        crcTable[n] = c >>> 0;
+      }
+      const crc32 = (buf: Buffer) => {
+        let c = 0xffffffff;
+        for (let i = 0; i < buf.length; i++) c = crcTable[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+        return (c ^ 0xffffffff) >>> 0;
+      };
+      const chunk = (type: string, data: Buffer) => {
+        const len = Buffer.alloc(4);
+        len.writeUInt32BE(data.length, 0);
+        const t = Buffer.from(type, "ascii");
+        const crc = Buffer.alloc(4);
+        crc.writeUInt32BE(crc32(Buffer.concat([t, data])), 0);
+        return Buffer.concat([len, t, data, crc]);
+      };
+      const ihdr = Buffer.alloc(13);
+      ihdr.writeUInt32BE(w, 0);
+      ihdr.writeUInt32BE(h, 4);
+      ihdr[8] = 8;
+      ihdr[9] = 2;
+      const stride = w * 3 + 1;
+      const raw = Buffer.alloc(stride * h);
+      for (let y = 0; y < h; y++) {
+        raw[y * stride] = 0;
+        for (let x = 0; x < w; x++) {
+          const idx = y * stride + 1 + x * 3;
+          raw[idx] = (x + y + seed) & 0xff;
+          raw[idx + 1] = ((x * 3) ^ (y + seed)) & 0xff;
+          raw[idx + 2] = ((x + y * 5 + seed * 7) & 0xff);
+        }
+      }
+      return Buffer.concat([
+        Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+        chunk("IHDR", ihdr),
+        chunk("IDAT", zlib.deflateSync(raw)),
+        chunk("IEND", Buffer.alloc(0)),
+      ]);
+    };
+
+    try {
+      // 1. Kiểm tra khởi tạo thư mục học viên ("init_student_folders") & Luồng Robotics chỉ có ảnh
+      const robClassId = "VT-PREB99";
+      for (const sNum of [12, 13, 14] as const) {
+        classSessionRepo.upsert({
+          sessionId: `${robClassId}_S${sNum}`,
+          classId: robClassId,
+          className: "Lớp Robotics VEX GO",
+          sessionNumber: sNum,
+          topic: `Buổi ${sNum}`,
+          date: `2026-10-${10 + sNum}`,
+        });
+      }
+      studentRepo.upsert({
+        studentId: "S5B_ROB_01",
+        classId: robClassId,
+        fullName: "Lê Hoàng Bách",
+        isActive: 1,
+      });
+      const robClassDir = path.join(tmpT6Root, robClassId);
+      fs.mkdirSync(robClassDir, { recursive: true });
+
+      const initResp = await scanPost(
+        new Request("http://127.0.0.1:3000/api/spck/scan", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            host: "127.0.0.1:3000",
+            origin: "http://127.0.0.1:3000",
+          },
+          body: JSON.stringify({
+            classId: robClassId,
+            folderPath: robClassDir,
+            sessionNumber: 12,
+            action: "init_student_folders",
+            syncActiveSession: true,
+            autoSuggestQuickTags: true,
+          }),
+        })
+      );
+      const initJson = await initResp.json();
+      assert.strictEqual(
+        initJson.success,
+        true,
+        `init_student_folders phải thành công (${initJson.error || ""})`
+      );
+      assert.strictEqual(initJson.createdFoldersCount, 1, "Phải tạo đúng 1 thư mục học viên mới");
+      const bachDir = path.join(robClassDir, "Lê Hoàng Bách");
+      assert.ok(fs.existsSync(bachDir), "Thư mục 'Lê Hoàng Bách' phải tồn tại trên ổ cứng");
+
+      // Thư mục rỗng vừa tạo chưa có bài -> không tự gợi ý Quick Tags
+      const emptyDraft12 = spckSessionRepo.getOrInitSessionDraft(
+        robClassId,
+        "S5B_ROB_01",
+        12,
+        "Lê Hoàng Bách"
+      );
+      assert.deepStrictEqual(
+        JSON.parse(emptyDraft12.quickTagsJson || "[]"),
+        [],
+        "Thư mục rỗng vừa tạo chưa có ảnh/file thì không được tự tích chọn Quick Tags"
+      );
+
+      // Thả 2 ảnh vào thư mục Robotics: 1 ảnh dọc (400x600) và 1 ảnh ngang toàn cảnh (800x450)
+      fs.writeFileSync(path.join(bachDir, "01_portrait_detail.png"), makeTestPng(400, 600, 10));
+      fs.writeFileSync(path.join(bachDir, "02_landscape_model.png"), makeTestPng(800, 450, 20));
+      const robScannedOnlyPhotos = scanStudentSpckFolder(bachDir, "Lê Hoàng Bách");
+      assert.strictEqual(
+        path.basename(robScannedOnlyPhotos.thumbnailPath),
+        "02_landscape_model.png",
+        "Khi có nhiều ảnh Owner chụp mô hình, phải ưu tiên ảnh ngang (landscape/16:9) làm Thumbnail"
+      );
+      assert.strictEqual(
+        robScannedOnlyPhotos.attachments.length,
+        0,
+        "Thư mục Robotics chỉ có ảnh chụp của Owner tuyệt đối KHÔNG được tạo file _robotics_package.zip"
+      );
+      assert.strictEqual(
+        fs.readdirSync(bachDir).some((f) => f.endsWith("_robotics_package.zip")),
+        false,
+        "Không được sinh file _robotics_package.zip trên đĩa khi chỉ có ảnh"
+      );
+
+      // Kiểm tra thư mục Robotics chỉ có 1 ảnh duy nhất của Owner -> vẫn giữ ảnh đó ở screenshots để LMS không trống
+      const singlePhotoDir = path.join(tmpT6Root, "SinglePhotoRobot");
+      fs.mkdirSync(singlePhotoDir, { recursive: true });
+      fs.writeFileSync(path.join(singlePhotoDir, "only_photo.png"), makeTestPng(800, 450, 33));
+      const singlePhotoPkg = scanStudentSpckFolder(singlePhotoDir, "Single Photo");
+      assert.strictEqual(path.basename(singlePhotoPkg.thumbnailPath), "only_photo.png");
+      assert.strictEqual(
+        singlePhotoPkg.screenshots.length,
+        1,
+        "Khi thư mục chỉ có 1 ảnh Owner duy nhất và 0 ảnh khác, phải giữ ảnh đó trong screenshots để không trống ô LMS"
+      );
+
+      // Thêm file code Robotics (.vexblocks) -> tạo _robotics_package.zip tất định (SHA-256 cố định qua nhiều lần quét)
+      fs.writeFileSync(path.join(bachDir, "robot_arm.vexblocks"), '{"blocks":["move_forward","claw_grab"]}');
+      const robScannedWithCode1 = scanStudentSpckFolder(bachDir, "Lê Hoàng Bách");
+      assert.strictEqual(robScannedWithCode1.attachments.length, 1);
+      const zipPath1 = robScannedWithCode1.attachments[0];
+      assert.ok(zipPath1.endsWith("_robotics_package.zip"));
+      const sha1 = crypto.createHash("sha256").update(fs.readFileSync(zipPath1)).digest("hex");
+      const robScannedWithCode2 = scanStudentSpckFolder(bachDir, "Lê Hoàng Bách");
+      const sha2 = crypto
+        .createHash("sha256")
+        .update(fs.readFileSync(robScannedWithCode2.attachments[0]))
+        .digest("hex");
+      assert.strictEqual(
+        sha1,
+        sha2,
+        "Gói nén _robotics_package.zip phải hoàn toàn tất định (deterministic SHA-256) khi quét lại"
+      );
+
+      // 2. Kiểm tra đồng bộ tài nguyên giữa các buổi (12 -> 13) & Auto-suggest Quick Tags
+      await scanPost(
+        new Request("http://127.0.0.1:3000/api/spck/scan", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            host: "127.0.0.1:3000",
+            origin: "http://127.0.0.1:3000",
+          },
+          body: JSON.stringify({
+            classId: robClassId,
+            folderPath: robClassDir,
+            sessionNumber: 12,
+            syncActiveSession: true,
+            autoSuggestQuickTags: true,
+          }),
+        })
+      );
+      const draft12AfterScan = spckSessionRepo.getOrInitSessionDraft(
+        robClassId,
+        "S5B_ROB_01",
+        12,
+        "Lê Hoàng Bách"
+      );
+      const autoTags12 = JSON.parse(draft12AfterScan.quickTagsJson || "[]");
+      assert.ok(
+        autoTags12.length >= 2,
+        `Khi thư mục đã có ảnh/file sản phẩm, quét với autoSuggestQuickTags=true phải tự gợi ý Quick Tags: ${JSON.stringify(autoTags12)}`
+      );
+
+      // Giả lập Buổi 12 đã nộp thành công (VERIFIED)
+      spckSessionRepo.saveSessionDraft({
+        classId: robClassId,
+        studentId: "S5B_ROB_01",
+        sessionNumber: 12,
+        teacherComment: "Ở buổi kiểm tra tiến độ này, con đã lắp xong khung cơ khí.",
+        updateSharedPool: true,
+      });
+      spckSessionRepo.approveSessionDraft(robClassId, "S5B_ROB_01", 12);
+      spckUploadRepo.markVerified(robClassId, "S5B_ROB_01", undefined, 12);
+
+      // Sang Buổi 13: khởi tạo nháp Buổi 13 trước, sau đó Owner thêm ảnh mới 03_sensor_upgrade.png vào thư mục và bấm Quét
+      spckSessionRepo.getOrInitSessionDraft(robClassId, "S5B_ROB_01", 13, "Lê Hoàng Bách");
+      fs.writeFileSync(path.join(bachDir, "03_sensor_upgrade.png"), makeTestPng(800, 450, 99));
+      const scan13Resp = await scanPost(
+        new Request("http://127.0.0.1:3000/api/spck/scan", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            host: "127.0.0.1:3000",
+            origin: "http://127.0.0.1:3000",
+          },
+          body: JSON.stringify({
+            classId: robClassId,
+            folderPath: robClassDir,
+            sessionNumber: 13,
+            syncActiveSession: true,
+            autoSuggestQuickTags: true,
+          }),
+        })
+      );
+      const scan13Json = await scan13Resp.json();
+      assert.strictEqual(scan13Json.success, true);
+      const draft13Synced = spckSessionRepo.getOrInitSessionDraft(
+        robClassId,
+        "S5B_ROB_01",
+        13,
+        "Lê Hoàng Bách"
+      );
+      const s13Shots: string[] = JSON.parse(draft13Synced.screenshotsJson || "[]");
+      assert.strictEqual(
+        s13Shots.length,
+        2,
+        "Khi quét ở Buổi 13 với syncActiveSession=true, bản nháp Buổi 13 phải tự nhận ngay ảnh mới vừa thêm"
+      );
+      const s12Preserved = spckSessionRepo.getOrInitSessionDraft(
+        robClassId,
+        "S5B_ROB_01",
+        12,
+        "Lê Hoàng Bách"
+      );
+      assert.strictEqual(
+        s12Preserved.draftStatus,
+        "VERIFIED",
+        "Bản ghi Buổi 12 đã VERIFIED phải giữ nguyên bất biến khi quét và đồng bộ ở Buổi 13"
+      );
+
+      // 3. Kiểm tra chuẩn bị file Google Drive (chặn thư mục nội bộ _spck_* và gói *_package.zip) & nhận diện khóa Robotics
+      assert.strictEqual(detectCoursePrefixFromClassId("VT-PREB14"), "PREB");
+      assert.strictEqual(detectCoursePrefixFromClassId("HN-ARMA02"), "ARMA");
+      assert.strictEqual(detectCoursePrefixFromClassId("HCM-SEMIB01"), "SEMIB");
+      assert.strictEqual(isRoboticsCourseClassId("VT-PREB14"), true);
+      assert.strictEqual(isRoboticsCourseClassId("VT-JSB15"), false);
+      assert.strictEqual(
+        resolveCourseSpecificFolderId("TEST_ROBO_UNCONFIGURED_01"),
+        null,
+        "Mã lớp không thuộc danh mục chuẩn phải trả về null"
+      );
+
+      fs.mkdirSync(path.join(bachDir, "_spck_app_shots"), { recursive: true });
+      fs.writeFileSync(path.join(bachDir, "_spck_app_shots", "shot.png"), makeTestPng(320, 180, 5));
+      const drivePrep = prepareStudentFilesForDriveUpload(
+        bachDir,
+        "S5B_ROB_01",
+        "Lê Hoàng Bách"
+      );
+      assert.strictEqual(
+        drivePrep.some((f) => f.endsWith("_robotics_package.zip")),
+        false,
+        "prepareStudentFilesForDriveUpload tuyệt đối không được đẩy gói nén nội bộ *_robotics_package.zip lên Google Drive"
+      );
+      assert.strictEqual(
+        drivePrep.some((f) => f.includes("_spck_app_shots")),
+        false,
+        "prepareStudentFilesForDriveUpload tuyệt đối không được đẩy các thư mục nội bộ _spck_* lên Google Drive"
+      );
+
+      // 4. Kiểm tra Deep Project Inspector + Chống bịa tính năng Web (Bootstrap/Giỏ hàng/LocalStorage/Fetch) + Multimodal Vision + Giọng văn kiểm tra tiến độ Buổi 12
+      const webStuDir = path.join(tmpT6Root, "WebStudent_Boba");
+      fs.mkdirSync(webStuDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(webStuDir, "index.html"),
+        `<!DOCTYPE html>
+<html>
+<head><title>Tiệm Trà Sữa Mùa Hè</title><link rel="stylesheet" href="style.css"></head>
+<body>
+  <nav><a href="#home">Trang chủ</a><a href="#menu">Thực đơn trà sữa</a><a href="#contact">Liên hệ</a></nav>
+  <h1>Tiệm Trà Sữa Mùa Hè</h1>
+  <h2>Danh sách đồ uống nổi bật</h2>
+  <form><input type="text" placeholder="Tìm trà sữa..." /><button type="submit">Tìm kiếm</button></form>
+</body>
+</html>`,
+        "utf8"
+      );
+      fs.writeFileSync(
+        path.join(webStuDir, "style.css"),
+        `.menu-list { display: flex; gap: 16px; } @keyframes floatIn { from { opacity: 0; } to { opacity: 1; } }`,
+        "utf8"
+      );
+      const webThumbPath = path.join(webStuDir, "Demo_web.png");
+      fs.writeFileSync(webThumbPath, makeTestPng(800, 450, 77));
+
+      let capturedGeminiBody: any = null;
+      globalThis.fetch = async (_input: any, init?: any) => {
+        if (init && typeof init.body === "string") {
+          try {
+            capturedGeminiBody = JSON.parse(init.body);
+          } catch {}
+        }
+        return Response.json({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      attitudeSummary:
+                        "Trong Buổi 12 (Giai đoạn 1), STUDENT_01 đã hoàn thiện trang chủ Tiệm Trà Sữa Mùa Hè với thanh điều hướng Thực đơn trà sữa rõ ràng.",
+                      productAndDesignEvaluation:
+                        "Em đã sử dụng Bootstrap 5 để chia cột kết hợp chức năng giỏ hàng, LocalStorage và gọi Fetch API rất mượt mà.",
+                      technicalApplicationEvaluation:
+                        "Ở Buổi 13 sắp tới, em cần hoàn thiện thêm các trang con còn đang để trống để sản phẩm chỉn chu hơn.",
+                      presentationEvaluation: "",
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        });
+      };
+
+      studentRepo.upsert({
+        studentId: "S5B_WEB_01",
+        classId: "VT-C4K-JSB15",
+        fullName: "Phạm Gia Hưng",
+        isActive: 1,
+      });
+      const deepWebRes = await SpckCommentGenerator.generateBatchSpckComments(
+        {
+          classId: "VT-C4K-JSB15",
+          sessionNumber: 12,
+        },
+        [
+          {
+            studentId: "S5B_WEB_01",
+            fullName: "Phạm Gia Hưng",
+            projectTitle: "Tiệm Trà Sữa Mùa Hè",
+            localFolderPath: webStuDir,
+            thumbnailPath: webThumbPath,
+            screenshots: [webThumbPath],
+            quickTags: [
+              "✅ Đã dựng xong khung giao diện các trang chính và thanh điều hướng",
+              "🔧 Cần hoàn thiện thêm nội dung các trang con/mục con còn đang để trống",
+            ],
+            teacherNote: "",
+            attachments: [path.join(webStuDir, "index.html"), path.join(webStuDir, "style.css")],
+          },
+        ]
+      );
+      assert.strictEqual(deepWebRes.length, 1);
+      const webCommentItem = deepWebRes[0];
+      assert.strictEqual(webCommentItem.status, "WAITING_APPROVAL");
+      const webPrompt = webCommentItem.outboundPromptSample || "";
+      assert.ok(
+        webPrompt.includes("Tiệm Trà Sữa Mùa Hè") &&
+          webPrompt.includes("Thực đơn trà sữa") &&
+          webPrompt.includes("CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB"),
+        "Deep Project Inspector phải trích xuất đúng tiêu đề trang, mục menu <nav> và danh sách kỹ thuật KHÔNG CÓ trong code của học sinh"
+      );
+      const sentParts = capturedGeminiBody?.contents?.[0]?.parts || [];
+      assert.ok(
+        sentParts.some((p: any) => p.inlineData && p.inlineData.mimeType === "image/png"),
+        "SpckCommentGenerator phải đính kèm ảnh chụp thực tế của sản phẩm (Multimodal inlineData) khi gọi Gemini API"
+      );
+      assert.ok(
+        !/\b(Bootstrap|LocalStorage|Fetch\s*API|giỏ\s*hàng|Buổi\s*12|Buổi\s*13|đợt\s*thực\s*hiện\s*dự\s*án)\b/i.test(
+          webCommentItem.formattedTeacherComment
+        ),
+        `Hậu kiểm phải lọc sạch các tính năng Web không có trong bài (Bootstrap/LocalStorage/Fetch API/giỏ hàng) và dùng giọng văn kiểm tra tiến độ tự nhiên: '${webCommentItem.formattedTeacherComment}'`
+      );
+      assert.ok(
+        /ở buổi kiểm tra tiến độ tiếp theo/i.test(webCommentItem.formattedTeacherComment),
+        `Nhận xét tiến độ phải chuyển tự nhiên sang 'ở buổi kiểm tra tiến độ tiếp theo': '${webCommentItem.formattedTeacherComment}'`
+      );
+
+      // 5. Kiểm tra hồi quy các trường hợp biên đối kháng (F01-F10):
+      // - F01: Chỉ có PDF không được tự suy diễn thẻ thuyết trình hoặc lắp ráp robot
+      assert.deepStrictEqual(
+        suggestSpckQuickTagsFromProject({
+          classId: robClassId,
+          sessionNumber: 14,
+          fileExtensions: [".pdf"],
+          attachmentCount: 1,
+          slideCount: 1,
+        }),
+        [],
+        "F01: Chỉ có 1 file PDF không được tự động gợi ý thẻ thuyết trình hoặc chất lượng mô hình"
+      );
+      assert.deepStrictEqual(
+        suggestSpckQuickTagsFromProject({
+          classId: "VT-C4K-JSA15",
+          sessionNumber: 13,
+          fileExtensions: [".js"],
+        }),
+        [],
+        "R2-F01-01: Chỉ có đuôi .js chưa kiểm chứng mã nguồn thì không được tự lưu thẻ hoàn thiện tương tác"
+      );
+      assert.deepStrictEqual(
+        suggestSpckQuickTagsFromProject({
+          classId: robClassId,
+          sessionNumber: 13,
+          screenshotCount: 1,
+        }),
+        [],
+        "R2-F01-03: Chỉ có số lượng 1 ảnh không được tự khẳng định robot hoàn thiện chắc chắn hay có cảm biến/động cơ"
+      );
+      const r3TagsClick = suggestSpckQuickTagsFromProject({
+        classId: "VT-C4K-JSA15",
+        sessionNumber: 12,
+        hasEventBinding: true,
+        hasDomUpdate: true,
+        hasJsInteraction: true,
+      });
+      assert.ok(
+        !r3TagsClick.some((t) => /Array\/Object|cấu trúc dữ liệu JavaScript|cần đẩy nhanh/i.test(t)),
+        `R3-F01-01: Chỉ gắn sự kiện click đổi textContent không được tự lưu thẻ Array/Object hay đánh giá tốc độ: ${JSON.stringify(r3TagsClick)}`
+      );
+      // - F07 & F08: Hợp nhất attachment JS ngoài thư mục HTML & phân biệt chuỗi hiển thị kế hoạch với mã thực thi thật
+      const r3MixDir = path.join(tmpT6Root, "R3MixedWeb");
+      const r3SubProj = path.join(r3MixDir, "project");
+      fs.mkdirSync(r3SubProj, { recursive: true });
+      const r3HtmlPath = path.join(r3SubProj, "index.html");
+      const r3LooseJsPath = path.join(r3MixDir, "feature.js");
+      fs.writeFileSync(r3HtmlPath, '<title>Plants</title><script src="../feature.js"></script>', "utf8");
+      fs.writeFileSync(
+        r3LooseJsPath,
+        'import { initializeApp } from "firebase/app"; initializeApp({}); localStorage.setItem("x", "y");',
+        "utf8"
+      );
+      const r3MixSummary = buildPreliminaryProjectSummary(
+        [r3HtmlPath, r3LooseJsPath],
+        "Phạm Gia Hưng",
+        "STUDENT_01",
+        [],
+        r3SubProj
+      );
+      assert.strictEqual(
+        r3MixSummary.absentWebFeatures.noFirebase,
+        false,
+        "R3-F07-02: File JS hợp lệ ở attachments ngoài thư mục con vẫn phải được hợp nhất vào phân tích sâu"
+      );
+      assert.strictEqual(
+        r3MixSummary.absentWebFeatures.noLocalStorage,
+        false,
+        "R3-F07-02: localStorage trong file JS đính kèm ngoài thư mục phải được ghi nhận"
+      );
+
+      const r3PlanStringDir = path.join(tmpT6Root, "R3PlanStringWeb");
+      fs.mkdirSync(r3PlanStringDir, { recursive: true });
+      const r3PlanHtml = path.join(r3PlanStringDir, "index.html");
+      fs.writeFileSync(
+        r3PlanHtml,
+        '<title>Plants</title><script>const helpText="Next session we will add Firebase Firestore localStorage login shopping cart"; document.body.textContent=helpText;</script>',
+        "utf8"
+      );
+      const r3PlanSummary = buildPreliminaryProjectSummary(
+        [],
+        "Phạm Gia Hưng",
+        "STUDENT_01",
+        [],
+        r3PlanStringDir
+      );
+      assert.strictEqual(r3PlanSummary.absentWebFeatures.noFirebase, true, "R3-F08-01: Chuỗi hiển thị kế hoạch không phải Firebase thật");
+      assert.strictEqual(r3PlanSummary.absentWebFeatures.noLocalStorage, true, "R3-F08-01: Chuỗi hiển thị kế hoạch không phải LocalStorage thật");
+      assert.strictEqual(r3PlanSummary.absentWebFeatures.noAuth, true, "R3-F08-01: Chuỗi hiển thị kế hoạch không phải Auth thật");
+      assert.strictEqual(r3PlanSummary.absentWebFeatures.noCart, true, "R3-F08-01: Chuỗi hiển thị kế hoạch không phải Cart thật");
+
+      // - R4-F07-01: Trùng basename (project/main.js vs ../shared/main.js chưa đọc) phải giữ trạng thái unknown
+      const r4BaseCollisionRoot = path.join(tmpT6Root, "R4BasenameCollision");
+      const r4ProjDir = path.join(r4BaseCollisionRoot, "project");
+      const r4SharedDir = path.join(r4BaseCollisionRoot, "shared");
+      fs.mkdirSync(r4ProjDir, { recursive: true });
+      fs.mkdirSync(r4SharedDir, { recursive: true });
+      fs.writeFileSync(path.join(r4ProjDir, "index.html"), '<title>Plants</title><script src="../shared/main.js"></script>', "utf8");
+      fs.writeFileSync(path.join(r4ProjDir, "main.js"), 'console.log("static");', "utf8");
+      fs.writeFileSync(path.join(r4SharedDir, "main.js"), 'import { initializeApp } from "firebase/app"; initializeApp({}); localStorage.setItem("x", "y");', "utf8");
+      const r4BaseCollisionSummary = buildPreliminaryProjectSummary([], "Phạm Gia Hưng", "STUDENT_01", [], r4ProjDir);
+      assert.notStrictEqual(r4BaseCollisionSummary.absentWebFeatures.noFirebase, true, "R4-F07-01: Không được kết luận noFirebase=true khi ../shared/main.js chưa được đọc");
+      assert.ok(!r4BaseCollisionSummary.summaryText.includes("KHÔNG có ["), "R4-F07-01: Không được phát cảnh báo KHÔNG có [...] khi script tham chiếu chưa đọc");
+
+      // - R4-F08-01 & R4-F08-04: Chuỗi ví dụ import không tính là Firebase, nhưng biểu thức ${...} trong template literal vẫn giữ mã thực thi
+      const r4ImportStrDir = path.join(tmpT6Root, "R4ImportStrWeb");
+      fs.mkdirSync(r4ImportStrDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(r4ImportStrDir, "index.html"),
+        `<title>Import guide</title><script>const helpText = "import { initializeApp } from 'firebase/app'"; document.body.textContent = helpText;</script>`,
+        "utf8"
+      );
+      const r4ImportStrSummary = buildPreliminaryProjectSummary([], "Phạm Gia Hưng", "STUDENT_01", [], r4ImportStrDir);
+      assert.strictEqual(r4ImportStrSummary.absentWebFeatures.noFirebase, true, "R4-F08-01: Chuỗi ví dụ import không phải câu lệnh import thật");
+
+      const r4TplExprDir = path.join(tmpT6Root, "R4TplExprWeb");
+      fs.mkdirSync(r4TplExprDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(r4TplExprDir, "index.html"),
+        "<title>Plants</title><script>const text = `${localStorage.setItem('x','y')} ${fetch('/api/products')}`;document.body.textContent=text;</script>",
+        "utf8"
+      );
+      const r4TplExprSummary = buildPreliminaryProjectSummary([], "Phạm Gia Hưng", "STUDENT_01", [], r4TplExprDir);
+      assert.strictEqual(r4TplExprSummary.absentWebFeatures.noLocalStorage, false, "R4-F08-04: Biểu thức ${localStorage.setItem(...)} phải được nhận diện");
+      assert.strictEqual(r4TplExprSummary.absentWebFeatures.noFetchApi, false, "R4-F08-04: Biểu thức ${fetch(...)} phải được nhận diện");
+
+      // - R5-F08-01 & R5-F08-02: Chuỗi <style> bên trong <script> không được tính là CSS/Bootstrap thật; regex literal /initializeApp()/ không được tính là lời gọi Firebase
+      const r5StyleInScriptDir = path.join(tmpT6Root, "R5StyleInScriptWeb");
+      fs.mkdirSync(r5StyleInScriptDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(r5StyleInScriptDir, "index.html"),
+        '<title>CSS guide</title><script>const helpText = \'<style>@import "bootstrap.css";.demo{display:flex}</style>\'; document.body.textContent = helpText;</script>',
+        "utf8"
+      );
+      const r5StyleInScriptSummary = buildPreliminaryProjectSummary([], "Phạm Gia Hưng", "STUDENT_01", [], r5StyleInScriptDir);
+      assert.strictEqual(r5StyleInScriptSummary.absentWebFeatures.noBootstrap, true, "R5-F08-01: Chuỗi <style> trong JS không phải Bootstrap thật");
+      assert.ok(!/CSS Flexbox/i.test(r5StyleInScriptSummary.summaryText), "R5-F08-01: Chuỗi <style> trong JS không phải CSS Flexbox thật");
+
+      const r5RegexLitDir = path.join(tmpT6Root, "R5RegexLitWeb");
+      fs.mkdirSync(r5RegexLitDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(r5RegexLitDir, "index.html"),
+        "<title>Regex guide</title><script>const pattern = /initializeApp()/; document.body.textContent = pattern.source;</script>",
+        "utf8"
+      );
+      const r5RegexLitSummary = buildPreliminaryProjectSummary([], "Phạm Gia Hưng", "STUDENT_01", [], r5RegexLitDir);
+      assert.strictEqual(r5RegexLitSummary.absentWebFeatures.noFirebase, true, "R5-F08-02: Regex literal /initializeApp()/ không phải lời gọi Firebase thật");
+
+      // - R6-F08-01 & R6-F08-02: Regex sau khối lệnh (if (true) {} /initializeApp()/) không phải Firebase; phép chia sau postfix ++ (n++ / initializeApp({}) / 2) giữ nguyên lời gọi thật
+      const r6BlockRegexDir = path.join(tmpT6Root, "R6BlockRegexWeb");
+      fs.mkdirSync(r6BlockRegexDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(r6BlockRegexDir, "index.html"),
+        '<title>Regex after block</title><script>if (true) {} /initializeApp()/.test("x");</script>',
+        "utf8"
+      );
+      const r6BlockRegexSummary = buildPreliminaryProjectSummary([], "Phạm Gia Hưng", "STUDENT_01", [], r6BlockRegexDir);
+      assert.strictEqual(r6BlockRegexSummary.absentWebFeatures.noFirebase, true, "R6-F08-01: Regex sau khối lệnh if (true) {} không phải lời gọi Firebase thật");
+
+      const r6PostfixDivDir = path.join(tmpT6Root, "R6PostfixDivWeb");
+      fs.mkdirSync(r6PostfixDivDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(r6PostfixDivDir, "index.html"),
+        "<title>Division after increment</title><script>let n=4; n++ / initializeApp({}) / 2;</script>",
+        "utf8"
+      );
+      const r6PostfixDivSummary = buildPreliminaryProjectSummary([], "Phạm Gia Hưng", "STUDENT_01", [], r6PostfixDivDir);
+      assert.strictEqual(r6PostfixDivSummary.absentWebFeatures.noFirebase, false, "R6-F08-02: Phép chia sau n++ vẫn phải giữ lời gọi initializeApp({}) thật");
+
+      // - R7-F08-01: Classic <script> với số kiểu cũ (010) không bật strict mode vẫn phải đọc trọn vẹn lời gọi initializeApp({}) phía sau
+      const r7ClassicOctalDir = path.join(tmpT6Root, "R7ClassicOctalWeb");
+      fs.mkdirSync(r7ClassicOctalDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(r7ClassicOctalDir, "index.html"),
+        "<title>Classic script octal</title><script>const n=010; initializeApp({});</script>",
+        "utf8"
+      );
+      const r7ClassicOctalSummary = buildPreliminaryProjectSummary([], "Phạm Gia Hưng", "STUDENT_01", [], r7ClassicOctalDir);
+      assert.strictEqual(r7ClassicOctalSummary.absentWebFeatures.noFirebase, false, "R7-F08-01: Classic script với số 010 vẫn phải giữ lời gọi initializeApp({}) thật");
+
+      // - R8-F08-04/05/06: Tệp module .mjs có lỗi từ vựng (010) qua 3 đường (folder, attachment, ZIP) phải giữ trạng thái no* chưa xác định (không khẳng định vắng mặt)
+      const r8MjsHtml = '<title>External context audit</title><script type="module" src="./main.mjs"></script>';
+      const r8MjsBadCode = "const n=010;";
+      const r8MjsFolderDir = path.join(tmpT6Root, "R8MjsFolderWeb");
+      fs.mkdirSync(r8MjsFolderDir, { recursive: true });
+      const r8MjsHtmlPath = path.join(r8MjsFolderDir, "index.html");
+      const r8MjsFilePath = path.join(r8MjsFolderDir, "main.mjs");
+      fs.writeFileSync(r8MjsHtmlPath, r8MjsHtml, "utf8");
+      fs.writeFileSync(r8MjsFilePath, r8MjsBadCode, "utf8");
+      const r8FolderSummary = buildPreliminaryProjectSummary([], "Phạm Gia Hưng", "STUDENT_01", [], r8MjsFolderDir);
+      assert.ok(
+        Object.entries(r8FolderSummary.absentWebFeatures)
+          .filter(([k]) => k.startsWith("no"))
+          .every(([, v]) => v === false),
+        "R8-F08-04: Tệp .mjs lỗi từ vựng trong thư mục phải giữ các cờ no* chưa xác định"
+      );
+      const r8AttSummary = buildPreliminaryProjectSummary([r8MjsHtmlPath, r8MjsFilePath], "Phạm Gia Hưng", "STUDENT_01", []);
+      assert.ok(
+        Object.entries(r8AttSummary.absentWebFeatures)
+          .filter(([k]) => k.startsWith("no"))
+          .every(([, v]) => v === false),
+        "R8-F08-05: Tệp .mjs lỗi từ vựng qua attachments phải giữ các cờ no* chưa xác định"
+      );
+      const r8Zip = new AdmZip();
+      r8Zip.addFile("index.html", Buffer.from(r8MjsHtml, "utf8"));
+      r8Zip.addFile("main.mjs", Buffer.from(r8MjsBadCode, "utf8"));
+      const r8ZipPath = path.join(tmpT6Root, "R8MjsZipWeb.zip");
+      fs.writeFileSync(r8ZipPath, r8Zip.toBuffer());
+      const r8ZipSummary = buildPreliminaryProjectSummary([r8ZipPath], "Phạm Gia Hưng", "STUDENT_01", []);
+      assert.ok(
+        Object.entries(r8ZipSummary.absentWebFeatures)
+          .filter(([k]) => k.startsWith("no"))
+          .every(([, v]) => v === false),
+        "R8-F08-06: Tệp .mjs lỗi từ vựng trong ZIP phải giữ các cờ no* chưa xác định"
+      );
+
+      // - F02: Ghi chú phủ định ('Bài không dùng Bootstrap') không được vô hiệu hóa bộ lọc hậu kiểm, và chặn cả Firebase/đăng nhập/fetch('/api/products')/getDocs(collection(...)) bịa đặt
+      globalThis.fetch = async () =>
+        new Response(
+          JSON.stringify({
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: JSON.stringify({
+                        attitudeSummary: "STUDENT_01 làm bài nghiêm túc.",
+                        productAndDesignEvaluation:
+                          "STUDENT_01 đã áp dụng Bootstrap và xây dựng chức năng đăng nhập và đăng ký tài khoản bằng Firebase rất tốt. Con đã dùng fetch('/api/products') để tải dữ liệu thành công. Con đã dùng getDocs(collection(db, 'products')) để hiển thị danh sách sản phẩm thành công.",
+                        technicalApplicationEvaluation:
+                          "Con đã vận dụng Firebase Authentication và Cloud Firestore hiệu quả ở Buổi 13.",
+                        presentationEvaluation: "",
+                      }),
+                    },
+                  ],
+                },
+                finishReason: "STOP",
+              },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      const negNoteRes = await SpckCommentGenerator.generateBatchSpckComments(
+        { classId: "VT-C4K-JSB15", sessionNumber: 13 },
+        [
+          {
+            studentId: "S5B_WEB_01",
+            fullName: "Phạm Gia Hưng",
+            projectTitle: "Tiệm Trà Sữa Mùa Hè",
+            localFolderPath: webStuDir,
+            quickTags: ["✅ Đã dựng xong khung giao diện các trang chính và thanh điều hướng"],
+            teacherNote: "Bài không dùng Bootstrap, chỉ có HTML/CSS tự viết.",
+            attachments: [path.join(webStuDir, "index.html"), path.join(webStuDir, "style.css")],
+          },
+        ]
+      );
+      assert.ok(
+        !/\b(Bootstrap|Firebase|Firestore|getDocs|collection|đăng\s*nhập|đăng\s*ký)\b|fetch\s*\(|tải dữ liệu thành công/i.test(
+          negNoteRes[0].formattedTeacherComment
+        ),
+        `F02: Ghi chú phủ định không được cho phép khen Bootstrap và phải lọc sạch Firebase/getDocs/collection/đăng nhập/fetch(...) bịa đặt: '${negNoteRes[0].formattedTeacherComment}'`
+      );
+      // - F05: Thư mục chỉ có _spck_owner_uploads không được trả file nội bộ khi chuẩn bị tải lên Google Drive
+      const ownerOnlyDir = path.join(tmpT6Root, "OwnerOnlyDriveTest");
+      fs.mkdirSync(path.join(ownerOnlyDir, "_spck_owner_uploads"), { recursive: true });
+      fs.writeFileSync(
+        path.join(ownerOnlyDir, "_spck_owner_uploads", "private.png"),
+        makeTestPng(320, 180, 9)
+      );
+      assert.deepStrictEqual(
+        prepareStudentFilesForDriveUpload(ownerOnlyDir, "S5B_ROB_01", "Lê Hoàng Bách"),
+        [],
+        "F05: prepareStudentFilesForDriveUpload phải loại trừ hoàn toàn _spck_owner_uploads"
+      );
+    } finally {
+      try {
+        const dbConn = getDb();
+        dbConn
+          .prepare(
+            `DELETE FROM spck_session_submissions WHERE studentId IN ('S5B_ROB_01', 'S5B_WEB_01')`
+          )
+          .run();
+        dbConn
+          .prepare(`DELETE FROM spck_uploads WHERE studentId IN ('S5B_ROB_01', 'S5B_WEB_01')`)
+          .run();
+        dbConn
+          .prepare(`DELETE FROM students WHERE studentId IN ('S5B_ROB_01', 'S5B_WEB_01')`)
+          .run();
+        dbConn.prepare(`DELETE FROM classes_sessions WHERE classId = 'VT-PREB99'`).run();
+      } catch {}
+      fs.rmSync(tmpT6Root, { recursive: true, force: true });
+    }
+    console.log("  -> PASS [S5b-T6]: Cả 5 hạng mục nâng cấp SPCK Buổi 12-13-14 (Coding & Robotics) đều hoạt động chính xác.");
   } finally {
     try {
       const dbConn = getDb();
@@ -1229,6 +1931,51 @@ async function runTests() {
         "/api/spck/upload-drive",
       ],
       "Lớp Web (JSB) khi bấm 'Quét & Khớp HV' phải tự chạy đúng thứ tự: Scan -> Chụp ảnh tự động -> Deploy GitHub -> Upload Drive (S5b.1)"
+    );
+    const jsbScanCallBody = await page.evaluate(() => {
+      const call = (window as any).__apiCalls.find((c: any) =>
+        c.url.includes("/api/spck/scan")
+      );
+      return call ? call.body : null;
+    });
+    assert.strictEqual(
+      jsbScanCallBody?.syncActiveSession,
+      true,
+      "Nút 'Quét & Khớp HV' phải truyền syncActiveSession: true để đồng bộ tài nguyên mới vào buổi đang chọn"
+    );
+    assert.strictEqual(
+      jsbScanCallBody?.autoSuggestQuickTags,
+      true,
+      "Nút 'Quét & Khớp HV' phải truyền autoSuggestQuickTags: true để tự gợi ý Quick Tags khi chưa chọn"
+    );
+
+    // Kiểm tra nút "📁 Tạo thư mục HV" (s5b-init-student-folders-btn): chỉ gọi /api/spck/scan với action="init_student_folders", không tự chạy công cụ chuẩn bị trên thư mục rỗng
+    await page.evaluate(() => {
+      (window as any).__apiCalls = [];
+    });
+    await page.locator('[data-testid="s5b-init-student-folders-btn"]').click();
+    await page.waitForFunction(
+      () =>
+        (window as any).__apiCalls.some(
+          (c: any) =>
+            c.url.includes("/api/spck/scan") &&
+            c.body &&
+            c.body.action === "init_student_folders"
+        ),
+      undefined,
+      { timeout: 5000 }
+    );
+    const initFolderUrls: string[] = await page.evaluate(() =>
+      (window as any).__apiCalls
+        .map((c: any) => c.url)
+        .filter((u: string) =>
+          /\/api\/spck\/(scan|upload-drive|deploy-web|capture-screenshots)$/.test(u)
+        )
+    );
+    assert.deepStrictEqual(
+      initFolderUrls,
+      ["/api/spck/scan"],
+      "Nút '📁 Tạo thư mục HV' chỉ tạo thư mục và khớp học viên, không chạy sớm công cụ chụp ảnh/up Drive khi thư mục vừa tạo"
     );
 
     // Kiểm tra S5B-07: Lớp App/Python (PTA08) -> tự chạy: Scan -> Chụp ảnh -> Upload Drive (bỏ qua GitHub Pages)

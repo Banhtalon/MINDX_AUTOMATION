@@ -1,0 +1,97 @@
+const fs=require('node:fs'),path=require('node:path');
+const root=__dirname,summary=JSON.parse(fs.readFileSync(path.join(root,'verification-summary.json'))),repo=summary.repo,dest=path.join(repo,'docs/audits/v340/spck-12-13-14-round9'),reportPath=path.join(repo,'docs/audits/v340/CODEX_SPCK_12_13_14_AUDIT.md'),old=fs.readFileSync(path.join(root,'round8-report.md.txt'));
+if(!fs.readFileSync(reportPath).equals(old))throw Error('Report changed since snapshot');
+const dir='spck-12-13-14-round9/',link=(name,label)=>'['+label+']('+dir+name+')';
+const gateOrder=[['G1','tsc','TypeScript'],['G2','v270','16/16'],['G3','v272','17/17'],['G4','s5','S5/S5b, UI giả lập, ba assertion R8-F08-04/05/06'],['G5','probe','42/42'],['G6a','supplementary','10/10'],['G6b','callback','2/2'],['G7','focused','7/7'],['G8','closure','15/15'],['G9','review','8/8'],['G10','round6','7/7'],['G11','round7','4/4'],['G12','context','8/8']];
+const table=gateOrder.map(([g,key,count])=>{const r=summary.gates.find(r=>r.gate===key);if(r.exitCode!==0)throw Error('Gate not passed '+key);return '| '+g+' | `'+r.command+'` | **PASS**, '+count+', exit 0 | '+link(key+'.log.txt','log')+', '+link(key+'-result.json','lần chạy')+' |';}).join('\n');
+const productionTable=Object.entries(summary.expected).map(([p,hash])=>'| `'+p+'` | `'+summary.productionBefore[p]+'` | `'+summary.productionAfter[p]+'` | **MATCH**, khớp Owner |').join('\n');
+const section=String.raw`# Kiểm định độc lập SPCK Buổi 12–13–14 — Round 9 Final Closure Audit
+
+## VERDICT ROUND 9: GO
+
+**Ngày kiểm định:** 05/11/2026. **Phạm vi:** xác minh bản sửa hẹp R8.4 và đóng F01–F10 của luồng SPCK Buổi 12/13/14, Coding và Robotics. HEAD nền: ${'`'+summary.head+'`'}; nội dung chưa commit được ràng buộc bằng manifest SHA-256 và bản chênh lệch Git. Kết luận áp dụng cho đúng snapshot đã kiểm định.
+
+**Kết quả: 10/10 CLOSED; 0/10 OPEN. F08 đã CLOSED.** Đủ **12/12 cổng bắt buộc PASS, 13/13 lệnh exit 0**. Toàn bộ **103/103 ca probe gốc Round 1–8 PASS** (95 ca Round 1–7 + 8 ca Round 8), gồm ba ca từng FAIL **R8-F08-04, R8-F08-05, R8-F08-06**. Bộ đối chứng bổ sung Round 9 đạt **9/9 PASS**, tổng cộng **112/112 ca probe cuối cùng PASS, 0 FAIL, 0 ERROR**; các suite v270/v272/S5 cũng PASS.
+
+**Bảo toàn: PASS.** Hai tệp dữ liệu thật khớp SHA-256 Owner trước, sau kiểm định và sau dọn TEMP. **180/180 đầu vào**, gồm **149/149 tệp nguồn/bộ thử**, giữ nguyên và khớp snapshot. Toàn bộ báo cáo Round 1–8 giữ nguyên **${summary.history.originalBytes.toLocaleString('vi-VN')} byte**, SHA-256 ${'`'+summary.history.originalSha256+'`'}, ở cuối tài liệu. Chỉ cập nhật báo cáo này và bằng chứng Round 9.
+
+### R9.1. Cô lập và nội dung được kiểm định
+
+- Đọc PROJECT_STATE.md đầu tiên, đối chiếu MINDX_AUTOMATION_PLAN.md, CHANGELOG.md, AGENTS.md và phần đầu báo cáo Round 8. Chỉ hai đầu vào khác manifest Round 8: **src/lib/gemini/spck-comment.ts** và **scripts/test-streamline-v340-s5.ts**. ${link('source-changes-since-round8.json','Danh sách và hash')}.
+- Tái sử dụng trực tiếp setup/guard/runner/run-all/preserve/finalize Round 8, đổi vòng/đích và điều kiện kết luận phù hợp kết quả mới; không viết lại khung cô lập. Tám probe TypeScript Round 1–8 và callback lấy nguyên byte từ Round 8, đối chiếu SHA-256 trước/sau; không đổi điều kiện PASS của probe gốc.
+- Snapshot riêng: ${'`'+summary.work+'`'}. Chỉ sao chép nguồn/bộ thử/cấu hình công khai, dùng junction node_modules tới thư viện đã cài; không sao chép .env, dữ liệu thật hoặc playwright-auth. Các lệnh kiểm thử đều chạy từ snapshot TEMP, không chạy trong workspace gốc.
+- Mỗi lệnh dùng MINDX_DB_PATH và MINDX_RUNNING_CLASSES_PATH riêng trong TEMP, danh sách lớp giả [], khóa AI giả, thông tin đăng nhập rỗng. Guard chặn HTTP ngoài loopback, mở persistent browser và SQLite ngoài DB giả. **0 sự kiện bị chặn**, các lần mở SQLite ghi nhận đều trong TEMP. Đây là giám sát trong tiến trình, không phải ghi lưu lượng toàn hệ điều hành.
+- Auditor hiện tại trực tiếp đọc nguồn và chạy các probe với dịch vụ giả lập; không tuyên bố đã gọi model/reviewer khác. Không sửa mã ứng dụng, bộ thử gốc, cấu hình, ba tài liệu trạng thái hoặc commit/push các thay đổi có sẵn của Owner. Quy định cập nhật ba tài liệu và đồng bộ khi hoàn thành tính năng/bản sửa không được kích hoạt bởi công việc chỉ kiểm định này.
+- ${link('state.json','state.json')}, ${link('verification-summary.json','verification-summary.json')}, ${link('working-tree.patch.txt','working-tree.patch.txt')}.
+
+### R9.2. Gate Execution Summary — Gates 1–12
+
+| Cổng | Lệnh chạy trong snapshot TEMP | Kết quả | Bằng chứng |
+|---|---|---|---|
+${table}
+
+Mười ba lệnh bắt buộc chạy mới **một lần**, từ **07:38:28 đến 07:39:58 UTC ngày 05/11/2026**. G12/G11/G10 chạy đầu để xác minh hẹp; không đổi sản phẩm giữa các lần chạy, không timeout. G6 gồm hai lệnh; callback nằm tại thư mục TEMP cha.
+
+Bộ bổ sung ${'`npx tsx scratch/round9-context-probe.ts`'} chạy hoàn chỉnh lúc **07:41:12–07:41:15 UTC**, **9/9 PASS, exit 0**. Đây là kiểm tra hẹp của phần vừa sửa, ngoài 12 cổng bắt buộc. ${link('round9.log.txt','Log')}, ${link('round9-result.json','lần chạy')}, ${link('round9-context-results.json','9 kết quả')}, ${link('round9-context-probe.ts.txt','mã probe')}.
+
+**Minh bạch về lần thử bổ sung đầu tiên:** assertion do auditor thêm đã nhầm yêu cầu sáu cờ no* tùy chọn phải luôn có kiểu boolean. Mã hiện tại cố ý để các cờ này không xác định khi chưa đọc hết mã, nên lần đầu có **3 PASS, 0 FAIL, 6 ERROR, exit 1** do assertion của khung thử. Auditor sửa riêng probe bổ sung để kiểm tra trực tiếp cả sáu tên cờ đều **khác true** và không phát cảnh báo “KHÔNG có”; giữ nguyên mã sản phẩm và probe Round 1–8. Lần chạy hoàn chỉnh sau sửa đạt 9/9. Giữ ${link('round9-harness-attempt1.log.txt','log lần đầu')}, ${link('round9-harness-attempt1-result.json','mã thoát')}, ${link('round9-harness-attempt1-context-results.json','kết quả lần đầu')}, ${link('round9-context-harness-attempt1.ts.txt','mã lần đầu')}, ${link('round9-harness-correction.json','giải thích điều chỉnh')}. Không tính ERROR khung thử này thành lỗi sản phẩm hoặc xóa khỏi bằng chứng.
+
+### R9.3. Final Closure Verification Table — F01–F10
+
+| ID / mức độ gốc | Trạng thái Round 9 | Xác minh bằng nguồn và chạy mới |
+|---|---|---|
+| **F01 / P1** | **CLOSED** | Các ca gốc và R5/R6-F01 PASS; R7-F01-01/02 PASS. Classic script chứa 010 giữ đúng lời gọi Firebase; đọc lại SQLite giả có thẻ Firebase. scan/route.ts giữ ngữ cảnh script/module cho inline và tệp rời. |
+| **F02 / P1** | **CLOSED** | HALLUCINATION-01/02/03 và các ca R2/R3/R4-F02 PASS. activeForbiddenPatterns tại spck-comment.ts:1927 trở đi loại khẳng định tính năng không có bằng chứng, giữ phần hợp lệ; ghi chú phủ định không cho phép lời khen bịa. |
+| **F03 / P1** | **CLOSED** | ZIP-04 PASS. inspectZipArchiveSafely tại spck-comment.ts:793 chạy trước khi đọc entry; HTML giải nén 16 MB bị chặn. Chưa thử gây cạn tài nguyên. |
+| **F04 / P2** | **CLOSED** | DRIVE-01/02/03 PASS: dọn Coding khi local rỗng/đổi tên thư mục, giữ ảnh Robotics khác tên. Cây Drive giả, không tác động Drive thật. |
+| **F05 / P2** | **CLOSED** | DRIVE-04/05 và S5 PASS. prepareStudentFilesForDriveUpload tại spck-drive-uploader.ts:222 và nhánh cây thư mục loại tệp/thư mục nội bộ, không lấy _spck_owner_uploads qua fallback. |
+| **F06 / P2** | **CLOSED** | ROB-01/02 PASS. scan/route.ts:94–106 chuẩn hóa rồi so tên bằng nhau, tách đúng Lê An/Lê Anh; chạy lại không tạo trùng. |
+| **F07 / P2** | **CLOSED** | WEB-03/05 và các ca R2/R3/R4/R5-F07, R6-F07-01 PASS. Nhánh tra tham chiếu tại spck-comment.ts:1048–1120 giữ trạng thái chưa xác định khi file thiếu/vượt gốc; kiểm tra cùng ZIP, ZIP B không che file thiếu của ZIP A. |
+| **F08 / P2** | **CLOSED** | WEB-04 và toàn bộ ca R2–R8-F08 PASS. **R8-F08-04/05/06 đều PASS mới** qua thư mục, đính kèm và ZIP; rawJsSamples giữ sourceType tại :449, :577, :783, :849 và được truyền nguyên sang allJsEntries :1231. Đọc dở tại :1241 giữ trạng thái chưa xác định. Thêm 9 đối chứng Round 9 PASS, chi tiết R9.4. |
+| **F09 / P2** | **CLOSED** | LMS-01/02/03 và hai callback R2-F09 PASS. spck-uploader.ts:3168–3186 phân biệt khóa có phần mở rộng, giữ hai tệp hợp lệ cùng stem khác loại. Phần tử LMS giả. |
+| **F10 / P2** | **CLOSED** | SYNC-05/06 PASS. scan/route.ts:191–205 ưu tiên nhãn link mới, cập nhật đúng buổi đang sửa, giữ snapshot VERIFIED buổi trước. |
+
+${link('closure-results.json','Trạng thái máy đọc được')}; ${link('review-source-anchors.txt','vị trí nguồn')}; ${link('probe-results.json','42 ca gốc')}; ${link('round8-context-results.json','8 ca Round 8')}; ${link('round9-context-results.json','9 ca Round 9')}.
+
+### R9.4. F08 Final Closure — giữ đúng ngữ cảnh và trạng thái chưa xác định
+
+1. **Ba đường nạp:** mẫu JavaScript lưu code cùng sourceType; .mjs nhận module, .js nhận script, kèm định danh tệp/ZIP để nâng cấp đúng mẫu khi HTML tham chiếu bằng type="module". allJsEntries lấy nguyên rawJsSamples, không ép tất cả về script.
+2. **Ba ca từng lỗi R8-F08-04/05/06:** cùng mã const n=010; trong main.mjs, đọc qua thư mục/đính kèm/ZIP. Acorn chế độ module báo Invalid number (1:8); hàm tóm tắt giữ inspectedWebCode=true nhưng không đặt sáu cờ no* thành true, không còn cảnh báo kết luận “KHÔNG có” khi đọc chưa đầy đủ. **Cả ba PASS**.
+3. **Đối chứng gốc:** R8-F08-01/02 giữ chưa xác định khi inline đọc lỗi; R8-F08-03 classic .js vẫn đọc hết 010 và được xác định vắng mặt; R8-F08-07/08 module hợp lệ vẫn giữ bằng chứng Firebase thật. R7 classic-script/regex/phép chia và các ca Round 1–7 vẫn PASS.
+4. **Đối chứng bổ sung Round 9:** .mjs không cần HTML khai báo module, .js được HTML tham chiếu bằng type="module", và .js classic; mỗi loại đi qua cả ba đường thư mục/đính kèm/ZIP. **9/9 PASS**; kiểm tra trực tiếp sáu cờ có tên cụ thể, không dựa vào danh sách cờ rỗng. Sáu ca module giữ chưa xác định; ba ca classic xác định vắng mặt.
+
+Mẫu 010 trong module là **đầu vào có lỗi từ vựng** để kiểm tra cơ chế không kết luận khi chưa đọc hết. Không khẳng định đây là module hợp lệ, không thực thi mã học viên và không gọi Firebase thật. Trong phạm vi đóng R8.4 và bộ kiểm định này, không còn bằng chứng chặn F08 hoặc F01–F10.
+
+### R9.5. Production Data Preservation Check
+
+| Tệp dữ liệu thật | SHA-256 trước Round 9 | SHA-256 sau kiểm định và dọn TEMP | Kết quả |
+|---|---|---|---|
+${productionTable}
+
+Hai tệp thật chỉ được đọc để tính hash, không mở SQLite vào DB thật. **180/180 đầu vào** giữ nguyên và khớp TEMP; **149/149 tệp nguồn/bộ thử** không thay đổi. Bản chênh lệch Git có sẵn, kể cả tsconfig.tsbuildinfo, giữ nguyên byte. Bằng chứng Round 1–8 và chín probe gốc được đối chiếu SHA-256; không chỉnh sửa .env hoặc hồ sơ đăng nhập thật.
+
+Đã chuyển vị trí chạy về workspace trước khi dọn, kiểm tra đích là đúng thư mục con trực tiếp của %TEMP%, tháo junction work/node_modules trước rồi mới xóa riêng thư mục Round 9. Kiểm tra lại hash hai tệp thật sau dọn; nguồn và thư viện gốc còn nguyên. Mô-đun browser-manager có thể tạo playwright-auth **rỗng trong snapshot** khi import; kiểm tra không có tệp/cookie và không mở persistent browser.
+
+- ${link('source-manifest-before.json','source-manifest-before.json')}, ${link('source-manifest-after.json','source-manifest-after.json')}: nội dung chính xác đã kiểm định và bảo toàn.
+- ${link('round8-report.md.txt','Báo cáo Round 1–8 nguyên byte')}, ${link('prior-evidence-manifest.json','hash bằng chứng Round 1–8')}.
+- ${link('bootstrap.cjs.txt','bootstrap')}, ${link('setup.cjs.txt','setup')}, ${link('guard.cjs.txt','guard')}, ${link('runner.cjs.txt','runner')}, ${link('run-all.cjs.txt','run-all')}, ${link('preserve.cjs.txt','preserve')}, ${link('write-report.cjs.txt','write-report')}, ${link('finalize.cjs.txt','finalize')}: khung dựng/chạy/lưu/ghi báo cáo và kiểm chứng dọn TEMP, tái sử dụng Round 8.
+- ${link('final-preservation.json','final-preservation.json')}: kiểm chứng cuối sau ghi báo cáo, dọn TEMP và đối chiếu dữ liệu.
+- ${link('evidence-sha256.json','evidence-sha256.json')}: hash bằng chứng. Chỉ dùng đuôi .txt/.json/.log.txt; không có tệp .ts thực thi trong docs/.
+
+### R9.6. Kết luận và bàn giao
+
+**Đã làm:** xác minh bản sửa hẹp R8.4, chạy mới đủ 12 cổng, xác nhận từng F01–F10, giữ lịch sử/bằng chứng/dữ liệu và dọn TEMP.
+
+**Kết quả:** **GO — F01–F10: 10/10 CLOSED** trong phạm vi kiểm định nguồn và dữ liệu/dịch vụ giả lập cục bộ. 103 ca gốc và 9 ca bổ sung PASS; không cần sửa thêm để đóng F08 trong phạm vi này.
+
+**Chưa kiểm tra:** lớp/dữ liệu thật, LMS/Teaching/Drive/Gemini/GitHub thật, bản dựng production mới và tải lớn. Kết quả này không thay thế nghiệm thu dịch vụ thật.
+
+**Việc tiếp theo:** có thể đóng đợt xử lý F01–F10 dựa trên snapshot này. Nếu triển khai sử dụng thật, bước tiếp theo là thử có kiểm soát với Owner; không tự ghi dữ liệu thật trong vòng kiểm định này.
+
+---
+
+# Lịch sử giữ nguyên — Round 8, Round 7, Round 6, Round 5, Round 4, Round 3, Round 2 và Round 1
+
+`;
+fs.writeFileSync(reportPath,Buffer.concat([Buffer.from(section,'utf8'),old]));
+console.log(JSON.stringify({report:reportPath,newSectionBytes:Buffer.byteLength(section),historyPreservedBytes:old.length,verdict:summary.verdict},null,2));

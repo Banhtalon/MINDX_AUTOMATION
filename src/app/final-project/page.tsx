@@ -1355,7 +1355,10 @@ export default function FinalProjectPage() {
     return dupes;
   }, [rows]);
 
-  const handleScanFolder = async (overrideFolderPath?: string | React.MouseEvent) => {
+  const handleScanFolder = async (
+    overrideFolderPath?: string | React.MouseEvent,
+    options?: { action?: "init_student_folders" }
+  ) => {
     const targetFolderPath =
       typeof overrideFolderPath === "string"
         ? overrideFolderPath.trim()
@@ -1383,6 +1386,9 @@ export default function FinalProjectPage() {
           classId: requestClassId,
           folderPath: targetFolderPath,
           sessionNumber: selectedSessionNumber,
+          syncActiveSession: true,
+          autoSuggestQuickTags: true,
+          ...(options?.action ? { action: options.action } : {}),
         }),
       });
       const data = await res.json();
@@ -1516,9 +1522,12 @@ export default function FinalProjectPage() {
       );
       setBannerMessage({
         type: data.warning ? "warning" : "success",
-        text: data.warning
-          ? `Đã quét ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}' (Cảnh báo cần kiểm tra: ${data.warning})`
-          : `Đã quét thành công ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}'.`,
+        text:
+          options?.action === "init_student_folders"
+            ? `Đã khởi tạo ${data.createdFoldersCount ?? 0} thư mục học viên mới và khớp ${scannedItems.length} thư mục trong '${data.scanResult?.rootFolderPath}'! Hãy thả ảnh/tệp mô hình vào từng thư mục rồi bấm "Quét & Khớp HV".`
+            : data.warning
+            ? `Đã quét ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}' (Cảnh báo cần kiểm tra: ${data.warning})`
+            : `Đã quét thành công ${scannedItems.length} thư mục học viên trong '${data.scanResult?.rootFolderPath}'.`,
       });
       return {
         success: true,

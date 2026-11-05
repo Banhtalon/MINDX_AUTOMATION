@@ -1,0 +1,21 @@
+﻿{
+    "attempt1":  {
+                     "stage":  "pre-cleanup report heading assertion",
+                     "error":  "Round 7 uppercase heading left in reused assertion",
+                     "mutation":  false
+                 },
+    "attempt2":  {
+                     "stage":  "pre-cleanup snapshot profile assertion",
+                     "error":  "Empty snapshot playwright-auth created by module import; profile was not copied",
+                     "productionMutation":  false,
+                     "junctionDetached":  false
+                 },
+    "resolution":  "Correct heading; assert synthetic profile is empty and no real configuration/data files exist; rerun full finalizer from repository cwd",
+    "attempt3":  {
+                     "stage":  "Evidence copy comparison before cleanup",
+                     "error":  "Stored finalizer evidence still contained earlier version",
+                     "productionMutation":  false,
+                     "junctionDetached":  false,
+                     "resolution":  "Synchronize final script evidence before full final verification"
+                 }
+}

@@ -1,0 +1,13 @@
+{
+  "first": {
+    "script": "finalize.cjs.txt",
+    "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r7-b11d4193380f\\work",
+    "error": "EPERM at fs.rmSync(root); all pre-cleanup assertions passed; node_modules junction detached"
+  },
+  "retry": {
+    "script": "finish-cleanup.cjs.txt",
+    "cwd": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+    "target": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r7-b11d4193380f",
+    "targetVerifiedImmediateTempChild": true
+  }
+}

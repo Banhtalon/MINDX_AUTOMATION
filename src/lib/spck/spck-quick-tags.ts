@@ -181,7 +181,7 @@ const COURSE_PROFILES: Record<SpckCoursePrefix, SpckCourseProfile> = {
     trackBadgeLabel: "Web Basic (JSB)",
     productNoun: "website đa trang",
     coreSkillsSummary:
-      "cấu trúc HTML5 ngữ nghĩa, dàn trang CSS Flexbox/Grid, giao diện Bootstrap/Responsive, thanh điều hướng giữa các trang và tương tác JavaScript DOM cơ bản",
+      "cấu trúc HTML5 ngữ nghĩa, dàn trang CSS Flexbox/Grid, phong cách giao diện đồng bộ, thanh điều hướng giữa các trang và tương tác JavaScript DOM cơ bản",
   },
   JSA: {
     coursePrefix: "JSA",
@@ -190,7 +190,7 @@ const COURSE_PROFILES: Record<SpckCoursePrefix, SpckCourseProfile> = {
     trackBadgeLabel: "Web Advance (JSA)",
     productNoun: "ứng dụng Web tương tác JavaScript",
     coreSkillsSummary:
-      "HTML/CSS Flexbox & Grid, JavaScript ES6, lưu trữ LocalStorage (Đăng nhập/Đăng ký/Giỏ hàng), gọi dữ liệu bất đồng bộ Fetch API và tìm kiếm/lọc sản phẩm động",
+      "HTML/CSS Flexbox & Grid, JavaScript ES6, hiển thị dữ liệu động trên DOM và xử lý các tính năng tương tác theo đúng chủ đề dự án",
   },
   JSI: {
     coursePrefix: "JSI",
@@ -199,7 +199,7 @@ const COURSE_PROFILES: Record<SpckCoursePrefix, SpckCourseProfile> = {
     trackBadgeLabel: "Web Intensive Firebase (JSI)",
     productNoun: "ứng dụng Web kết nối Firebase & Cloud",
     coreSkillsSummary:
-      "xác thực người dùng Firebase Authentication, cơ sở dữ liệu Cloud Firestore (CRUD thời gian thực), kiến trúc module JavaScript, giao diện đồng bộ và tích hợp API/Chatbot AI",
+      "kiến trúc ứng dụng Web nâng cao, JavaScript Modules/bất đồng bộ, kết nối dịch vụ xác thực/cơ sở dữ liệu Cloud Firestore và đồng bộ dữ liệu theo chủ đề dự án",
   },
   CSB: {
     coursePrefix: "CSB",
@@ -752,7 +752,7 @@ function getSubTrackTagConfig(profile: SpckCourseProfile): TrackStageTagConfig {
           progress: [
             "✅ Đã dựng xong khung HTML5 ngữ nghĩa & bố cục CSS Flexbox/Grid cho trang chủ",
             "🧭 Đã thiết kế thanh điều hướng (Navbar), Banner và liên kết giữa các trang",
-            "🎨 Đã áp dụng Bootstrap / CSS tạo phong cách màu sắc, phông chữ hài hòa",
+            "🎨 Đã thiết kế CSS tạo phong cách màu sắc, bố cục và phông chữ hài hòa",
             "💡 Chủ đề website rõ ràng, hình ảnh minh họa và bố cục các mục hợp lý",
           ],
           nextStep: [
@@ -765,7 +765,7 @@ function getSubTrackTagConfig(profile: SpckCourseProfile): TrackStageTagConfig {
           progress: [
             "✅ Đã hoàn thiện đầy đủ các trang chức năng, liên kết điều hướng hoạt động mượt",
             "⚡ Đã bổ sung tương tác JavaScript DOM (sự kiện click, form, hiệu ứng động)",
-            "🎨 Giao diện Flexbox/Grid/Bootstrap đồng bộ, hình ảnh & hiệu ứng hover đẹp mắt",
+            "🎨 Giao diện CSS Flexbox/Grid đồng bộ, hình ảnh & hiệu ứng tương tác đẹp mắt",
             "🐞 Chủ động kiểm tra trên trình duyệt và sửa lỗi vỡ khung / đường dẫn ảnh",
           ],
           nextStep: [
@@ -775,7 +775,7 @@ function getSubTrackTagConfig(profile: SpckCourseProfile): TrackStageTagConfig {
           ],
         },
         session14Product: [
-          "🎨 Giao diện website đẹp mắt, bố cục CSS Flexbox/Grid & Bootstrap cân đối, hiện đại",
+          "🎨 Giao diện website đẹp mắt, bố cục CSS Flexbox/Grid cân đối, hiện đại",
           "💻 Vận dụng tốt HTML5, CSS3 và JavaScript DOM để xây dựng các trang chức năng",
           "🧭 Luồng điều hướng đa trang mượt mà, nội dung và hình ảnh trình bày chỉn chu",
           "✨ Có hiệu ứng tương tác người dùng sinh động, thể hiện sự đầu tư nghiêm túc",
@@ -788,35 +788,35 @@ function getSubTrackTagConfig(profile: SpckCourseProfile): TrackStageTagConfig {
         session12: {
           progress: [
             "✅ Đã hoàn thành giao diện các trang chính (HTML/CSS Flexbox/Grid) rõ ràng",
-            "⚡ Đã xây dựng cấu trúc dữ liệu JavaScript (Array/Object) & render danh sách động",
-            "🔐 Đã bước đầu lập trình chức năng Đăng nhập / Đăng ký hoặc lưu LocalStorage",
-            "💡 Ý tưởng ứng dụng web thực tế, bố cục sản phẩm và thanh công cụ trực quan",
+            "⚡ Đã xây dựng cấu trúc dữ liệu JavaScript (Array/Object) & hiển thị nội dung động",
+            "🔗 Đã bước đầu lập trình xử lý sự kiện tương tác, biểu mẫu (Form) hoặc lưu trữ dữ liệu",
+            "💡 Ý tưởng ứng dụng web thực tế, bố cục các mục và thanh điều hướng trực quan",
           ],
           nextStep: [
-            "🔧 Cần hoàn thiện luồng Giỏ hàng / Tìm kiếm / Lọc dữ liệu & Fetch API ở buổi 13",
-            "🛡️ Cần bổ sung kiểm tra dữ liệu Form (Validate) và đồng bộ trạng thái LocalStorage",
+            "🔧 Cần hoàn thiện các tính năng tương tác chính (Tìm kiếm / Lọc / Xử lý dữ liệu) ở buổi 13",
+            "🛡️ Cần bổ sung kiểm tra dữ liệu nhập (Validate) và đồng bộ trạng thái trên giao diện",
             "⏳ Tiến độ viết hàm JavaScript xử lý sự kiện cần đẩy nhanh hơn ở buổi tới",
           ],
         },
         session13: {
           progress: [
-            "✅ Đã hoàn thiện chức năng Đăng nhập/Đăng ký, Giỏ hàng / Quản lý dữ liệu với LocalStorage",
-            "🌐 Đã tích hợp Fetch API / tìm kiếm & lọc danh sách sản phẩm theo từ khóa mượt mà",
-            "🐞 Chủ động kiểm tra DevTools Console và sửa các lỗi logic JavaScript ES6",
-            "🎨 Giao diện cập nhật dữ liệu tức thì trên DOM, thông báo trạng thái rõ ràng",
+            "✅ Đã hoàn thiện các chức năng tương tác cốt lõi và quản lý dữ liệu theo chủ đề dự án",
+            "🌐 Đã tích hợp xử lý sự kiện, tìm kiếm / lọc nội dung hoặc kết nối dữ liệu mượt mà",
+            "🐞 Chủ động kiểm tra trên trình duyệt và sửa các lỗi logic JavaScript ES6",
+            "🎨 Giao diện cập nhật dữ liệu tức thì trên DOM, phản hồi thao tác người dùng rõ ràng",
           ],
           nextStep: [
-            "🔧 Cần rà soát lại các trường hợp dữ liệu rỗng trong LocalStorage / lỗi nhập Form",
-            "📊 Cần hoàn thiện Slide giới thiệu luồng dữ liệu JS & chuẩn bị demo buổi 14",
-            "🎨 Cần trau chuốt thêm giao diện trang chi tiết sản phẩm & hiệu ứng chuyển trạng thái",
+            "🔧 Cần rà soát lại các trường hợp dữ liệu rỗng / lỗi nhập liệu trên biểu mẫu",
+            "📊 Cần hoàn thiện Slide giới thiệu luồng hoạt động của web & chuẩn bị demo buổi 14",
+            "🎨 Cần trau chuốt thêm giao diện các trang con & hiệu ứng chuyển trạng thái",
           ],
         },
         session14Product: [
           "🎨 Thiết kế giao diện web hiện đại, bố cục Flexbox/Grid trực quan và đồng bộ",
           "⚡ Vận dụng vững vàng JavaScript ES6, thao tác DOM và xử lý sự kiện linh hoạt",
-          "💾 Tích hợp hiệu quả LocalStorage / Fetch API cho Đăng nhập, Giỏ hàng & Tìm kiếm",
-          "🛡️ Luồng trải nghiệm người dùng mạch lạc, có kiểm tra hợp lệ dữ liệu Form đầy đủ",
-          "🔧 Cần tối ưu thêm việc tách hàm JavaScript và xử lý ngoại lệ khi tải dữ liệu",
+          "💾 Xây dựng tốt luồng dữ liệu và các tính năng tương tác cốt lõi đúng chủ đề dự án",
+          "🛡️ Luồng trải nghiệm người dùng mạch lạc, có kiểm tra hợp lệ dữ liệu đầu vào đầy đủ",
+          "🔧 Cần tối ưu thêm việc tách hàm JavaScript và xử lý ngoại lệ khi thao tác dữ liệu",
         ],
       };
 
@@ -1161,14 +1161,41 @@ const CANONICAL_PRESENTATION_TAGS_SET = new Set<string>([
   ...OPTIONAL_SESSION_12_13_PRESENTATION_TAGS,
 ]);
 
+const LEGACY_WEB_PROGRESS_AND_PRODUCT_TAGS: string[] = [
+  "🎨 Đã áp dụng Bootstrap / CSS tạo phong cách màu sắc, phông chữ hài hòa",
+  "🎨 Giao diện Flexbox/Grid/Bootstrap đồng bộ, hình ảnh & hiệu ứng hover đẹp mắt",
+  "🎨 Giao diện website đẹp mắt, bố cục CSS Flexbox/Grid & Bootstrap cân đối, hiện đại",
+  "⚡ Đã xây dựng cấu trúc dữ liệu JavaScript (Array/Object) & render danh sách động",
+  "🔐 Đã bước đầu lập trình chức năng Đăng nhập / Đăng ký hoặc lưu LocalStorage",
+  "💡 Ý tưởng ứng dụng web thực tế, bố cục sản phẩm và thanh công cụ trực quan",
+  "✅ Đã hoàn thiện chức năng Đăng nhập/Đăng ký, Giỏ hàng / Quản lý dữ liệu với LocalStorage",
+  "🌐 Đã tích hợp Fetch API / tìm kiếm & lọc danh sách sản phẩm theo từ khóa mượt mà",
+  "🐞 Chủ động kiểm tra DevTools Console và sửa các lỗi logic JavaScript ES6",
+  "🎨 Giao diện cập nhật dữ liệu tức thì trên DOM, thông báo trạng thái rõ ràng",
+  "💾 Tích hợp hiệu quả LocalStorage / Fetch API cho Đăng nhập, Giỏ hàng & Tìm kiếm",
+  "🛡️ Luồng trải nghiệm người dùng mạch lạc, có kiểm tra hợp lệ dữ liệu Form đầy đủ",
+];
+
+const LEGACY_WEB_LIMITATION_TAGS: string[] = [
+  "🔧 Cần hoàn thiện luồng Giỏ hàng / Tìm kiếm / Lọc dữ liệu & Fetch API ở buổi 13",
+  "🛡️ Cần bổ sung kiểm tra dữ liệu Form (Validate) và đồng bộ trạng thái LocalStorage",
+  "🔧 Cần rà soát lại các trường hợp dữ liệu rỗng trong LocalStorage / lỗi nhập Form",
+  "📊 Cần hoàn thiện Slide giới thiệu luồng dữ liệu JS & chuẩn bị demo buổi 14",
+  "🎨 Cần trau chuốt thêm giao diện trang chi tiết sản phẩm & hiệu ứng chuyển trạng thái",
+  "🔧 Cần tối ưu thêm việc tách hàm JavaScript và xử lý ngoại lệ khi tải dữ liệu",
+];
+
 const CANONICAL_LIMITATION_TAGS_SET = new Set<string>([
   "⚠️ Thuyết trình còn rụt rè, cần rèn thêm sự tự tin",
   "⚠️ Phần trình bày thử còn ngập ngừng, cần luyện nói lưu loát hơn",
+  ...LEGACY_WEB_LIMITATION_TAGS,
 ]);
 
 const CANONICAL_ALL_TAGS_SET = new Set<string>([
   ...SESSION_14_PRESENTATION_TAGS,
   ...OPTIONAL_SESSION_12_13_PRESENTATION_TAGS,
+  ...LEGACY_WEB_PROGRESS_AND_PRODUCT_TAGS,
+  ...LEGACY_WEB_LIMITATION_TAGS,
 ]);
 
 for (const prefix of ALL_COURSE_PREFIXES_FOR_SETS) {
@@ -1347,3 +1374,96 @@ export function getSpckQuickTagGroups(params: {
     ],
   };
 }
+
+export interface SpckAutoSuggestInput {
+  classId?: string | null;
+  courseName?: string | null;
+  sessionNumber: 12 | 13 | 14;
+  fileExtensions?: string[];
+  screenshotCount?: number;
+  attachmentCount?: number;
+  youtubeCount?: number;
+  slideCount?: number;
+  hasFlexOrGridCss?: boolean;
+  hasNavLinks?: boolean;
+  hasEventBinding?: boolean;
+  hasDomUpdate?: boolean;
+  hasJsInteraction?: boolean;
+  hasFirebaseCode?: boolean;
+  hasRoboticsCode?: boolean;
+}
+
+/**
+ * Automatically suggests strictly factual, single-claim observation tags when a student's
+ * project folder has verified code/media evidence. Never auto-suggests multi-conclusion
+ * evaluation tags, completion/quality judgments, working connection claims, or hardware quality.
+ */
+export function suggestSpckQuickTagsFromProject(
+  input: SpckAutoSuggestInput
+): string[] {
+  // Session 14 summative evaluation tags always require explicit teacher selection
+  if (input.sessionNumber === 14) {
+    return [];
+  }
+
+  const normalizedExts = Array.isArray(input.fileExtensions)
+    ? input.fileExtensions
+        .map((e) => String(e || "").trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+  const hasPhotos = (input.screenshotCount || 0) > 0;
+  const hasVideos = (input.youtubeCount || 0) > 0;
+
+  const bundle = getSpckQuickTagGroups({
+    classId: input.classId,
+    courseName: input.courseName,
+    sessionNumber: input.sessionNumber,
+    fileExtensions: normalizedExts,
+  });
+
+  const suggested: string[] = [];
+
+  if (bundle.profile.track === "WEB") {
+    if (input.hasFlexOrGridCss) {
+      suggested.push("📐 Có sử dụng bố cục CSS Flexbox/Grid");
+    }
+    if (input.hasNavLinks) {
+      suggested.push("🧭 Có phần tử điều hướng (<nav>) chứa liên kết");
+    }
+    if (input.hasEventBinding) {
+      suggested.push("🖱️ Có gắn sự kiện tương tác (Event Listener)");
+    }
+    if (input.hasDomUpdate) {
+      suggested.push("🔄 Có thao tác cập nhật nội dung phần tử DOM");
+    }
+    if (input.hasJsInteraction && !input.hasEventBinding && !input.hasDomUpdate) {
+      suggested.push("🖱️ Có gắn sự kiện tương tác và cập nhật phần tử DOM");
+    }
+    if (input.hasFirebaseCode) {
+      suggested.push("🔥 Có khai báo thư viện / cấu hình Firebase trong mã nguồn");
+    }
+    return suggested;
+  }
+
+  if (bundle.profile.track === "ROBOTICS") {
+    const hasRoboticsCode = Boolean(input.hasRoboticsCode);
+
+    if (!hasRoboticsCode && !hasVideos) {
+      return [];
+    }
+
+    if (hasRoboticsCode) {
+      suggested.push("🤖 Có tệp chương trình điều khiển robot trong thư mục dự án");
+      if (hasPhotos) {
+        suggested.push("📷 Có hình ảnh chụp mô hình sản phẩm trong thư mục");
+      }
+    }
+    if (hasVideos) {
+      suggested.push("🎥 Có đường dẫn video ghi hình sản phẩm");
+    }
+    return suggested;
+  }
+
+  return [];
+}
+

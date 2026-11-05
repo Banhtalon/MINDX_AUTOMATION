@@ -1,0 +1,10 @@
+{
+  "gate": "v270",
+  "command": "npx tsx scripts/test-spck-v270.ts",
+  "started": "2026-11-05T06:26:59.482Z",
+  "finished": "2026-11-05T06:27:11.761Z",
+  "exitCode": 0,
+  "signal": null,
+  "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r7-b11d4193380f\\work\\data\\audit-v270.db",
+  "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r7-b11d4193380f\\work\\data\\audit-v270-classes.json"
+}

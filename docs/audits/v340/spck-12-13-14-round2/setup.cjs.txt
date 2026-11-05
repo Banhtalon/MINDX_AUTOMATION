@@ -1,0 +1,28 @@
+﻿const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),cp=require('node:child_process');
+const root=__dirname,repo=process.argv[2],work=path.join(root,'work');
+const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex').toUpperCase();
+const expected={'data/mindx_bot.db':'91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A','data/running_classes.json':'F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9'};
+const productionBefore=Object.fromEntries(Object.keys(expected).map(p=>[p,sha(path.join(repo,p))]));
+if(Object.keys(expected).some(p=>productionBefore[p]!==expected[p]))throw Error('Production hashes differ from Owner');
+fs.mkdirSync(work,{recursive:true});
+function copy(rel){const a=path.join(repo,rel),b=path.join(work,rel);fs.mkdirSync(path.dirname(b),{recursive:true});fs.cpSync(a,b,{recursive:true});}
+for(const p of ['src','scripts','public','data/config'])if(fs.existsSync(path.join(repo,p)))copy(p);
+const rootFiles=fs.readdirSync(repo,{withFileTypes:true}).filter(e=>e.isFile()&&!e.name.startsWith('.env')&&/\.(?:json|[cm]?js|[cm]?ts|tsx|css|md)$/.test(e.name)).map(e=>e.name);
+for(const p of rootFiles)copy(p);
+fs.mkdirSync(path.join(work,'scratch'),{recursive:true});
+const evidence='docs/audits/v340/spck-12-13-14-round1';
+fs.copyFileSync(path.join(repo,evidence,'independent-probe.ts.txt'),path.join(work,'scratch/independent-probe.ts'));
+fs.copyFileSync(path.join(repo,evidence,'guard.cjs.txt'),path.join(root,'guard.cjs'));
+fs.copyFileSync(path.join(repo,evidence,'runner.cjs.txt'),path.join(root,'runner.cjs'));
+fs.symlinkSync(path.join(repo,'node_modules'),path.join(work,'node_modules'),'junction');
+function walk(dir,rel=''){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name),rel+e.name+'/'):[rel+e.name]);}
+const paths=[...walk(path.join(repo,'src')).map(p=>'src/'+p),...walk(path.join(repo,'scripts')).map(p=>'scripts/'+p),...rootFiles].sort();
+const manifest=Object.fromEntries(paths.map(p=>[p,sha(path.join(repo,p))]));
+const mismatches=paths.filter(p=>manifest[p]!==sha(path.join(work,p)));if(mismatches.length)throw Error(JSON.stringify(mismatches));
+const old=JSON.parse(fs.readFileSync(path.join(repo,evidence,'source-manifest-before.json'),'utf8'));
+const changedSinceRound1=paths.filter(p=>old[p]&&old[p]!==manifest[p]);
+const state={repo,root,work,created:new Date().toISOString(),head:cp.execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),expected,productionBefore,sourceCount:paths.length,copiedSourceMatches:true,changedSinceRound1};
+fs.writeFileSync(path.join(root,'state.json'),JSON.stringify(state,null,2));fs.writeFileSync(path.join(root,'source-manifest-before.json'),JSON.stringify(manifest,null,2));
+fs.writeFileSync(path.join(root,'git-status-before.txt'),cp.execFileSync('git',['status','--short'],{cwd:repo,encoding:'utf8'}));
+fs.copyFileSync(path.join(repo,'docs/audits/v340/CODEX_SPCK_12_13_14_AUDIT.md'),path.join(root,'round1-report.md'));
+console.log(JSON.stringify(state,null,2));

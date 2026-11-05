@@ -1,0 +1,17 @@
+ M scripts/test-streamline-v340-s5.ts
+ M src/app/api/spck/scan/route.ts
+ M src/app/api/spck/upload-drive/route.ts
+ M src/app/final-project/page.tsx
+ M src/components/final-project/Step1Header.tsx
+ M src/components/final-project/useSpckWorkflow.ts
+ M src/lib/file-parsers/archive-reader.ts
+ M src/lib/gemini/spck-comment.ts
+ M src/lib/local-files/spck-app-screenshotter.ts
+ M src/lib/local-files/spck-scanner.ts
+ M src/lib/playwright/spck-drive-uploader.ts
+ M src/lib/playwright/spck-uploader.ts
+ M src/lib/spck/spck-quick-tags.ts
+ M tsconfig.tsbuildinfo
+?? docs/audits/v340/CODEX_SPCK_12_13_14_AUDIT.md
+?? docs/audits/v340/spck-12-13-14-round1/
+?? docs/audits/v340/spck-12-13-14-round2/

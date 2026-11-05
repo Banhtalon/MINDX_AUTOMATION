@@ -1,0 +1,43 @@
+{
+  "repo": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "root": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r4-c815414286f2",
+  "work": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r4-c815414286f2\\work",
+  "created": "2026-11-05T05:28:36.193Z",
+  "head": "00dd3e3f75961a1276379cad3212eaf74ec306b2",
+  "expected": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "productionBefore": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "sourceCount": 180,
+  "srcScriptsCount": 149,
+  "copiedSourceMatches": true,
+  "changedSinceRound3": [
+    "scripts/test-streamline-v340-s5.ts",
+    "src/app/api/spck/scan/route.ts",
+    "src/lib/gemini/spck-comment.ts",
+    "src/lib/spck/spck-quick-tags.ts"
+  ],
+  "probeHashes": {
+    "independent-probe.ts": {
+      "source": "F7C40200180BB7D804AF8060F4BCDB2FF70D70378E1D3AC5129ADA4DCB20A1F2",
+      "executed": "F7C40200180BB7D804AF8060F4BCDB2FF70D70378E1D3AC5129ADA4DCB20A1F2"
+    },
+    "supplementary-probe.ts": {
+      "source": "8E3D2AD781B5F3F7A74C8B47AEC281463DF1966A84503C24D26316F4F6434554",
+      "executed": "8E3D2AD781B5F3F7A74C8B47AEC281463DF1966A84503C24D26316F4F6434554"
+    },
+    "round3-focused-probe.ts": {
+      "source": "9AF5A92727B7FFB6AC047F07BF3211D201D09B25332920EE134650CC261E23AA",
+      "executed": "9AF5A92727B7FFB6AC047F07BF3211D201D09B25332920EE134650CC261E23AA"
+    },
+    "callback-probe.cjs": {
+      "source": "6026FFAAFB162042CF35D84D7173391D61933B04243EEA0E81ED0DB91FB4BFBC",
+      "executed": "6026FFAAFB162042CF35D84D7173391D61933B04243EEA0E81ED0DB91FB4BFBC"
+    }
+  },
+  "node": "v24.21.0"
+}

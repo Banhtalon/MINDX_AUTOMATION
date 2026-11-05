@@ -771,7 +771,8 @@ export interface SpckWorkflowHookParams {
   handleClassChange: (newClassId: string) => Promise<void>;
   handleScanTeacherClasses: () => Promise<void>;
   handleScanFolder: (
-    overrideFolderPath?: string | React.MouseEvent
+    overrideFolderPath?: string | React.MouseEvent,
+    options?: { action?: "init_student_folders" }
   ) => Promise<
     | void
     | {
@@ -3709,7 +3710,8 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
     const hasRowFileDrift = (r: ScannedFolderUIItem): boolean =>
       Boolean(
-        Object.values(r.sessionHistory?.sessions || {}).some((s) => s?.hasFileDrift)
+        r.hasNewerSharedResources ||
+          Object.values(r.sessionHistory?.sessions || {}).some((s) => s?.hasFileDrift)
       );
 
     const idsNeedingScreenshots = unapprovedRows
@@ -3832,13 +3834,15 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
   };
 
   const handleScanFolder = async (
-    overrideFolderPath?: string | React.MouseEvent
+    overrideFolderPath?: string | React.MouseEvent,
+    options?: { action?: "init_student_folders" }
   ) => {
-    const res = await baseHandleScanFolder(overrideFolderPath);
+    const res = await baseHandleScanFolder(overrideFolderPath, options);
     if (
       res &&
       typeof res === "object" &&
       res.success &&
+      options?.action !== "init_student_folders" &&
       autoRunToolsAfterScan &&
       Array.isArray(res.scannedItems) &&
       res.scannedItems.length > 0
@@ -3850,6 +3854,12 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       );
     }
     return res;
+  };
+
+  const handleInitStudentFolders = async () => {
+    return await handleScanFolder(undefined, {
+      action: "init_student_folders",
+    });
   };
 
   const toggleSelectStudent = (studentId: string) => {
@@ -3907,6 +3917,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     handleGenerateSession14AllAi,
     handleSubmitSession14Combo,
     handleScanFolder,
+    handleInitStudentFolders,
     activeBusyDescription,
     selectedClassMeta,
     isRoboticsClass,

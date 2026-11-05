@@ -1,0 +1,46 @@
+{
+  "verifiedAt": "2026-11-05T07:44:35.362Z",
+  "head": "00dd3e3f75961a1276379cad3212eaf74ec306b2",
+  "verdict": "GO",
+  "productionBefore": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "productionAfter": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "productionMatchesOwner": true,
+  "sourceCount": 180,
+  "srcScriptsCount": 149,
+  "snapshotComparedCount": 180,
+  "sourcePathInventoryUnchanged": true,
+  "sourceChanged": [],
+  "snapshotChanged": [],
+  "sourceChangedAfterCleanup": [],
+  "trackedDiffUnchanged": true,
+  "gitPathsOutsideAllowedScopeUnchanged": true,
+  "reportSha256": "77E7B4B3B9FFE1A1AFFEDBCA18EBB3A8F3D2F1B8F217184A4FA32150C959ECDF",
+  "round1ThroughRound8HistoryByteUnchanged": true,
+  "originalHistoricalReportBytes": 154123,
+  "originalHistoricalReportSha256": "586C7256FC1D6683C32FBFDF8AC9B02C4B3B1E23D541F0A55E2D818FFFDFCA9B",
+  "originalProbesByteUnchanged": true,
+  "priorEvidenceFilesVerified": 511,
+  "priorEvidenceChanged": [],
+  "evidenceCopiesVerified": 99,
+  "missingLinks": [],
+  "tempPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r9-b267419f644c",
+  "tempRemoved": true,
+  "snapshotBrowserProfileEmptyBeforeCleanup": true,
+  "dependencyJunctionDetachedBeforeCleanup": true,
+  "dependencyDirectoryStillExists": true,
+  "dependencyPackageHashesPreserved": {
+    "typescript": "3722B30210616A13A3213DED11575BA6B2DBAB10C32A5EF67AFCA8513E27017E",
+    "tsx": "AB5F14C4251638844ADE3905D3CFC52FC1C833644694D655A05F6D0CA746B83C",
+    "next": "E84ADA0A68191FED192392BFB8EE35AD4ED8E7439F645A40DD48CF139588DDC5",
+    "better-sqlite3": "6C9EA355190DFCE3646AD4D2A31C9506DE36D884A6461B3655A2A0C4BA3D1695",
+    "esbuild": "9D0BC453F4E791553C4CC2298BA023B409241FD9801E494741666EB0F6051490",
+    "playwright": "313D23CE667D93962D3A1AB4BE80908CEFE840E4D9E48F1CD5863B91F65E8E39"
+  },
+  "scope": "Only requested audit report and Round 9 evidence written; no product fixes, commit, push or real-service actions."
+}

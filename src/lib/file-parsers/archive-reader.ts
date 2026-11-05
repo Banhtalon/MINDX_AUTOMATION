@@ -45,6 +45,27 @@ const READABLE_CODE_EXTENSIONS = new Set([
   ".xml",
   ".gml",
   ".yy",
+  ".ino",
+  ".hex",
+  ".ldr",
+  ".mpd",
+  ".vex",
+  ".vexblocks",
+  ".iqblocks",
+  ".v5python",
+  ".v5blocks",
+]);
+
+const ROBOTICS_BINARY_ARTIFACT_EXTENSIONS = new Set([
+  ".ev3",
+  ".llsp",
+  ".llsp3",
+  ".io",
+  ".lxf",
+  ".mblock",
+  ".uf2",
+  ".stl",
+  ".obj",
 ]);
 
 export interface SafeZipEntry {
@@ -390,6 +411,11 @@ export function parseZipArchiveBuffer(
       if (codeRes.subjectType === "PYTHON" || codeRes.subjectType === "JUPYTER") {
         hasPythonFiles = true;
       }
+    } else if (ROBOTICS_BINARY_ARTIFACT_EXTENSIONS.has(entry.extension) && dataBuf.length > 0) {
+      parsedCodeFiles++;
+      codeSections.push(
+        `=== ROBOTICS / 3D ARTIFACT (${entry.extension.toUpperCase()}): ${entry.normalizedPath} (${dataBuf.length} bytes) ===`
+      );
     }
   }
 

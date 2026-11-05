@@ -1,0 +1,113 @@
+{
+  "total": 7,
+  "passed": 1,
+  "failed": 4,
+  "errors": 2,
+  "results": [
+    {
+      "id": "R3-F01-01",
+      "finding": "F01",
+      "label": "A DOM text click handler cannot prove Array/Object data structures",
+      "status": "FAIL",
+      "pass": false,
+      "observed": {
+        "source": "<h1 id=\"status\">Plants</h1><button id=\"change\">Change</button><script>document.getElementById(\"change\").addEventListener(\"click\",function(){document.getElementById(\"status\").textContent=\"Hello\";});</script>",
+        "tags": [
+          "⚡ Đã xây dựng cấu trúc dữ liệu JavaScript (Array/Object) & hiển thị nội dung động",
+          "⏳ Tiến độ viết hàm JavaScript xử lý sự kiện cần đẩy nhanh hơn ở buổi tới"
+        ]
+      }
+    },
+    {
+      "id": "R3-F01-02",
+      "finding": "F01",
+      "label": "A Firebase-named constant cannot prove a connection or completed pages",
+      "status": "FAIL",
+      "pass": false,
+      "observed": {
+        "source": "<h1>Plants</h1><script>const firebase = false;</script>",
+        "tags": [
+          "✅ Đã dựng xong giao diện các trang chính & khởi tạo kết nối dự án Firebase",
+          "⏳ Tiến độ xử lý bất đồng bộ (async/await) với Firebase cần đẩy nhanh hơn"
+        ]
+      }
+    },
+    {
+      "id": "R3-F07-01",
+      "finding": "F07",
+      "label": "The new 100000-character boundary keeps unread code unknown",
+      "status": "PASS",
+      "pass": true,
+      "observed": {
+        "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Plants), 0 file CSS, 1 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.",
+        "detectedExtensions": [
+          ".html",
+          ".js"
+        ],
+        "absentWebFeatures": {
+          "inspectedWebCode": true
+        }
+      }
+    },
+    {
+      "id": "R3-F07-02",
+      "finding": "F07",
+      "label": "A valid loose JS attachment must be inspected alongside folder HTML",
+      "status": "FAIL",
+      "pass": false,
+      "observed": {
+        "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Plants), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.\n- File 'FILE_01.html' (WEB): === WEB SOURCE (.HTML): index.html ===\nSố dòng: 1\nThẻ HTML sử dụng: title, script\n\n  1 | <title>Plants</title><script src=\"../feature.js\"></script>\n- File 'FILE_02.js' (WEB): === WEB SOURCE (.JS): feature.js ===\nSố dòng: 1\n\n  1 | import {initializeApp} from \"firebase/app\"; initializeApp({});localStorage.setItem(\"x\",\"y\");",
+        "detectedExtensions": [
+          ".html",
+          ".js"
+        ],
+        "absentWebFeatures": {
+          "inspectedWebCode": true,
+          "noBootstrap": true,
+          "noCart": true,
+          "noAuth": true,
+          "noLocalStorage": true,
+          "noFetchApi": true,
+          "noFirebase": true
+        }
+      }
+    },
+    {
+      "id": "R3-F08-01",
+      "finding": "F08",
+      "label": "A JavaScript display string is not implemented Firebase/Auth/Cart/Storage",
+      "status": "FAIL",
+      "pass": false,
+      "observed": {
+        "source": "<title>Plants</title><script>const helpText=\"Firebase Firestore localStorage login shopping cart\"; document.body.textContent=helpText;</script>",
+        "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Plants), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM, Đăng nhập / Đăng ký, Giỏ hàng, LocalStorage, Firebase Auth / Firestore.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Fetch API] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+        "detectedExtensions": [
+          ".html"
+        ],
+        "absentWebFeatures": {
+          "inspectedWebCode": true,
+          "noBootstrap": true,
+          "noCart": false,
+          "noAuth": false,
+          "noLocalStorage": false,
+          "noFetchApi": true,
+          "noFirebase": false
+        }
+      }
+    },
+    {
+      "id": "R3-F02-01",
+      "finding": "F02",
+      "label": "Unsupported fetch call must remove the entire success claim",
+      "status": "ERROR",
+      "error": "Error: [SpckCommentGenerator] Lớp VT-C4K-JSA986 chưa có Buổi 13 trong danh sách buổi học đã đồng bộ.\n    at assertClassHasSpckSession (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2\\work\\src\\lib\\db\\sqlite.ts:1209:11)\n    at SpckCommentGenerator.generateBatchSpckComments (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2\\work\\src\\lib\\gemini\\spck-comment.ts:1176:23)\n    at generate (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2\\work\\scratch\\round3-focused-probe.ts:21:73)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2\\work\\scratch\\round3-focused-probe.ts:22:217)\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2\\work\\scratch\\round3-focused-probe.ts:10:100)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2\\work\\scratch\\round3-focused-probe.ts:22:7)"
+    },
+    {
+      "id": "R3-F02-02",
+      "finding": "F02",
+      "label": "A period after a negated technology name must not affirm the next clause",
+      "status": "ERROR",
+      "error": "Error: [SpckCommentGenerator] Lớp VT-C4K-JSA986 chưa có Buổi 13 trong danh sách buổi học đã đồng bộ.\n    at assertClassHasSpckSession (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2\\work\\src\\lib\\db\\sqlite.ts:1209:11)\n    at SpckCommentGenerator.generateBatchSpckComments (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2\\work\\src\\lib\\gemini\\spck-comment.ts:1176:23)\n    at generate (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2\\work\\scratch\\round3-focused-probe.ts:21:73)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2\\work\\scratch\\round3-focused-probe.ts:23:207)\n    at check (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2\\work\\scratch\\round3-focused-probe.ts:10:100)\n    at <anonymous> (C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r3-231b1c133ae2\\work\\scratch\\round3-focused-probe.ts:23:7)"
+    }
+  ]
+}

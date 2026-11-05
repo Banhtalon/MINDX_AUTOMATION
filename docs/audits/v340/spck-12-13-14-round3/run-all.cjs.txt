@@ -1,0 +1,10 @@
+const cp=require('node:child_process'),path=require('node:path'),fs=require('node:fs');
+const root=__dirname;
+for(const gate of ['tsc','v270','v272','s5','probe','supplementary','callback']){
+  console.log('START '+gate+' '+new Date().toISOString());
+  const p=cp.spawnSync(process.execPath,[path.join(root,'runner.cjs'),gate],{stdio:'inherit',windowsHide:true});
+  console.log('END '+gate+' wrapperExit='+p.status);
+}
+const results=['tsc','v270','v272','s5','probe','supplementary','callback'].map(g=>JSON.parse(fs.readFileSync(path.join(root,g+'-result.json'),'utf8')));
+console.log('ALL_GATES '+JSON.stringify(results.map(r=>({gate:r.gate,exitCode:r.exitCode}))));
+process.exitCode=results.every(r=>r.exitCode===0)?0:1;

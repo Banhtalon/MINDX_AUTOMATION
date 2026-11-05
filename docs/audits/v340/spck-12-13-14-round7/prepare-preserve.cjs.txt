@@ -1,0 +1,22 @@
+const fs=require('node:fs'),path=require('node:path');
+const root=__dirname,repo=JSON.parse(fs.readFileSync(path.join(root,'state.json'))).repo;
+let s=fs.readFileSync(path.join(repo,'docs/audits/v340/spck-12-13-14-round6/preserve.cjs.txt'),'utf8');
+function rep(a,b){if(!s.includes(a))throw Error('Missing adaptation anchor: '+a);s=s.replaceAll(a,b);}
+rep('spck-12-13-14-round6','spck-12-13-14-round7');
+rep('round5-report.md.txt','round6-report.md.txt');
+rep("'closure','review','round6'];","'closure','review','round6','round7'];");
+rep("['round6','round6-focused-results.json']].map", "['round6','round6-focused-results.json'],['round7','round7-focused-results.json']].map");
+rep('gates.slice(0,10)','gates.slice(0,11)');
+rep("const results=read('round6-focused-results.json').results", "const results=read('round7-focused-results.json').results");
+rep('mandatoryGateCount:9,mandatoryCommandCount:10','mandatoryGateCount:10,mandatoryCommandCount:11');
+rep('All 84 original Round 1-5 probe cases pass. Four Round 6 failures reproduce two lexer causes in F01/F08. F07 closes. No product source edited.','All 91 original Round 1-6 probe cases pass, including four Round 6 failures now fixed. Two extra Round 7 failures reproduce one classic-script/module lexical mismatch in F01/F08. F07 remains closed. No product source edited.');
+rep("[['round5','round5-focused-results.json'],['round6','round6-focused-results.json']]", "[['round5','round5-focused-results.json'],['round6','round6-focused-results.json'],['round7','round7-focused-results.json']]");
+const oldPrior="const priorEvidence=Object.fromEntries([1,2,3,4,5].flatMap(r=>{const rel='docs/audits/v340/spck-12-13-14-round'+r;return walk(path.join(repo,rel)).map(p=>[rel+'/'+p,sha(path.join(repo,rel,p))])}));";
+rep(oldPrior,"const priorEvidence=read('prior-evidence-manifest.json'); if(Object.keys(priorEvidence).some(p=>sha(path.join(repo,p))!==priorEvidence[p]))throw Error('Prior evidence changed');");
+rep("reviewer:{agent:'/root/closure_review',scope:'Independent source inspection only; runtime reproduction by primary auditor in TEMP',requestedModel:'claude-sonnet-5-5-high',requestedModelAvailable:false,actual:'Available collaboration agent; no claim to have run unavailable Claude model'}", "reviewer:{agent:'/root',scope:'Independent auditor: source review plus actual synthetic runtime probes in TEMP; no separate reviewer or unavailable model execution claimed'}");
+rep('Round 6 evidence written','Round 7 evidence written');
+rep("'round5-focused-probe.ts','round6-focused-probe.ts']", "'round5-focused-probe.ts','round6-focused-probe.ts','round7-focused-probe.ts']");
+rep('isRegexStart|readZipRelJsPathsByZip', 'sourceType|acorn|readZipRelJsPathsByZip');
+rep("const outputName=n=>/\\.(?:cjs|log)$/.test(n)?n+'.txt':n;", "const outputName=n=>/\\.(?:txt|json)$/.test(n)?n:n+'.txt';");
+s=s.replace("fs.mkdirSync(dest);", "fs.copyFileSync(path.join(work,'scratch/lexer-preflight.cjs'),path.join(root,'lexer-preflight.cjs.txt'));\nfs.mkdirSync(dest);");
+fs.writeFileSync(path.join(root,'preserve.cjs'),s);

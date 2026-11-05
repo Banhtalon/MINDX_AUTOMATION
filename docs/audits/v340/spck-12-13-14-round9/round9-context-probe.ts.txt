@@ -1,0 +1,40 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import AdmZip from 'adm-zip';
+import {buildPreliminaryProjectSummary} from '../src/lib/gemini/spck-comment';
+import {createRequire} from 'node:module';
+const acorn=createRequire(import.meta.url)('next/dist/compiled/acorn');
+const root=path.resolve('temp_submissions/r9-context');
+assert.ok(root.startsWith(path.resolve(process.env.AUDIT_WORK_ROOT!)+path.sep));
+const put=(rel:string,content:string|Buffer)=>{const p=path.join(root,rel);fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,content);return p;};
+const results:any[]=[];
+function lex(code:string,sourceType:'script'|'module'){let count=0;try {for(const token of acorn.tokenizer(code,{ecmaVersion:'latest',sourceType}))count++;return {complete:true,count};}catch(e:any){return {complete:false,count,error:e.message};}}
+function check(id:string,label:string,code:string,sourceType:'script'|'module',fn:()=>any,expected:'unknown'|'absent'|'firebase'){
+ const oracle=lex(code,sourceType);
+ try{if(expected==='unknown')assert.equal(oracle.complete,false,'Oracle must confirm lexical interruption');else assert.equal(oracle.complete,true,'Oracle must finish for control');
+ const summary=fn();
+ const flags=summary.absentWebFeatures; assert.equal(flags.inspectedWebCode,true);
+ const noFlags=['noBootstrap','noCart','noAuth','noLocalStorage','noFetchApi','noFirebase'].map(key=>(flags as Record<string,unknown>)[key]);
+ const pass=expected==='unknown'?noFlags.every(v=>v!==true)&&!summary.summaryText.includes('CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB:'):expected==='firebase'?flags.noFirebase===false&&/Firebase Auth \/ Firestore/.test(summary.summaryText):noFlags.every(v=>v===true);
+ results.push({id,finding:'F08',label,status:pass?'PASS':'FAIL',expected,observed:{code,sourceType,oracle,...summary}});
+ }catch(e:any){results.push({id,finding:'F08',label,status:'ERROR',observed:{code,sourceType,oracle},error:e.stack});}
+ console.log(JSON.stringify(results.at(-1)));
+}
+function inline(name:string,attrs:string,code:string){const file=put(name+'/index.html','<title>Context audit</title><script'+attrs+'>'+code+'</script>');return buildPreliminaryProjectSummary([],'Audit Student','STUDENT_01',[],path.dirname(file));}
+function external(name:string,extension:string,code:string,mode:'folder'|'attachment'|'zip'){
+ const html='<title>External context audit</title>'+(name.startsWith('extension-only-')?'':'<script'+(name.startsWith('module-js-')?' type="module"':'')+' src="./main'+extension+'"></script>');
+ if(mode==='zip'){const z=new AdmZip();z.addFile('index.html',Buffer.from(html));z.addFile('main'+extension,Buffer.from(code));const file=put(name+'/project.zip',z.toBuffer());return buildPreliminaryProjectSummary([file],'Audit Student','STUDENT_01',[]);}
+ const h=put(name+'/index.html',html),j=put(name+'/main'+extension,code);
+ return mode==='folder'?buildPreliminaryProjectSummary([],'Audit Student','STUDENT_01',[],path.dirname(h)):buildPreliminaryProjectSummary([h,j],'Audit Student','STUDENT_01',[]);
+}
+
+const octal='const n=010;';
+let index=0;
+for(const mode of ['folder','attachment','zip'] as const){
+ check('R9-F08-'+String(++index).padStart(2,'0'),'.mjs extension alone retains module context via '+mode,octal,'module',()=>external('extension-only-'+mode,'.mjs',octal,mode),'unknown');
+ check('R9-F08-'+String(++index).padStart(2,'0'),'.js referenced by type=module retains module context via '+mode,octal,'module',()=>external('module-js-'+mode,'.js',octal,mode),'unknown');
+ check('R9-F08-'+String(++index).padStart(2,'0'),'Classic .js remains classic via '+mode,octal,'script',()=>external('classic-js-'+mode,'.js',octal,mode),'absent');
+}
+const output={total:results.length,passed:results.filter(r=>r.status==='PASS').length,failed:results.filter(r=>r.status==='FAIL').length,errors:results.filter(r=>r.status==='ERROR').length,results};
+fs.writeFileSync(path.resolve('..','round9-context-results.json'),JSON.stringify(output,null,2));console.log('SUMMARY '+JSON.stringify({total:output.total,passed:output.passed,failed:output.failed,errors:output.errors}));process.exitCode=output.failed||output.errors?1:0;

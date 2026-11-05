@@ -1,0 +1,213 @@
+{
+  "repo": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "root": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8",
+  "work": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8\\work",
+  "created": "2026-11-05T04:17:58.587Z",
+  "head": "00dd3e3f75961a1276379cad3212eaf74ec306b2",
+  "expected": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "productionBefore": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "sourceCount": 161,
+  "copiedSourceMatches": true,
+  "changedSinceRound1": [
+    "scripts/test-streamline-v340-s5.ts",
+    "src/app/api/spck/scan/route.ts",
+    "src/lib/gemini/spck-comment.ts",
+    "src/lib/playwright/spck-drive-uploader.ts",
+    "src/lib/playwright/spck-uploader.ts",
+    "src/lib/spck/spck-quick-tags.ts"
+  ],
+  "verifiedAt": "2026-11-05T04:22:08.547Z",
+  "gates": [
+    {
+      "gate": "tsc",
+      "command": "npx tsc --noEmit --incremental false",
+      "started": "2026-11-05T04:18:12.089Z",
+      "finished": "2026-11-05T04:18:18.485Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8\\work\\data\\audit-tsc.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8\\work\\data\\audit-tsc-classes.json"
+    },
+    {
+      "gate": "v270",
+      "command": "npx tsx scripts/test-spck-v270.ts",
+      "started": "2026-11-05T04:18:18.573Z",
+      "finished": "2026-11-05T04:18:41.313Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8\\work\\data\\audit-v270.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8\\work\\data\\audit-v270-classes.json"
+    },
+    {
+      "gate": "v272",
+      "command": "npx tsx scripts/test-spck-v272.ts",
+      "started": "2026-11-05T04:18:41.389Z",
+      "finished": "2026-11-05T04:19:09.819Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8\\work\\data\\audit-v272.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8\\work\\data\\audit-v272-classes.json"
+    },
+    {
+      "gate": "s5",
+      "command": "npx tsx scripts/test-streamline-v340-s5.ts",
+      "started": "2026-11-05T04:19:09.918Z",
+      "finished": "2026-11-05T04:19:25.150Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8\\work\\data\\audit-s5.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8\\work\\data\\audit-s5-classes.json"
+    },
+    {
+      "gate": "probe",
+      "command": "npx tsx scratch/independent-probe.ts",
+      "started": "2026-11-05T04:19:25.274Z",
+      "finished": "2026-11-05T04:19:37.011Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8\\work\\data\\audit-probe.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r2-e3b883c4b8\\work\\data\\audit-probe-classes.json"
+    }
+  ],
+  "originalProbe": {
+    "total": 42,
+    "passed": 42,
+    "failed": 0,
+    "sourceByteIdenticalToRound1": true
+  },
+  "supplementary": {
+    "total": 10,
+    "passed": 1,
+    "failed": 9,
+    "errors": 0
+  },
+  "callback": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0
+  },
+  "sourcePreservation": {
+    "count": 161,
+    "applicationAndScriptsCount": 149,
+    "changed": [],
+    "copyDiff": []
+  },
+  "productionAfter": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "productionMatches": true,
+  "blockedEvents": [],
+  "findings": {
+    "F01": {
+      "status": "OPEN",
+      "priority": "P1",
+      "originalCases": [
+        "TAGS-02",
+        "TAGS-03"
+      ],
+      "extraCases": [
+        "R2-F01-01",
+        "R2-F01-02",
+        "R2-F01-03"
+      ]
+    },
+    "F02": {
+      "status": "OPEN",
+      "priority": "P1",
+      "originalCases": [
+        "HALLUCINATION-01",
+        "HALLUCINATION-02",
+        "HALLUCINATION-03"
+      ],
+      "extraCases": [
+        "R2-F02-01",
+        "R2-F02-02",
+        "R2-F02-03"
+      ]
+    },
+    "F03": {
+      "status": "CLOSED",
+      "priority": "P1",
+      "originalCases": [
+        "ZIP-04"
+      ]
+    },
+    "F04": {
+      "status": "CLOSED",
+      "priority": "P2",
+      "originalCases": [
+        "DRIVE-01",
+        "DRIVE-02",
+        "DRIVE-03"
+      ]
+    },
+    "F05": {
+      "status": "CLOSED",
+      "priority": "P2",
+      "originalCases": [
+        "DRIVE-04",
+        "DRIVE-05"
+      ]
+    },
+    "F06": {
+      "status": "CLOSED",
+      "priority": "P2",
+      "originalCases": [
+        "ROB-01",
+        "ROB-02"
+      ]
+    },
+    "F07": {
+      "status": "OPEN",
+      "priority": "P2",
+      "originalCases": [
+        "WEB-03",
+        "WEB-05"
+      ],
+      "extraCases": [
+        "R2-F07-01",
+        "R2-F07-02"
+      ]
+    },
+    "F08": {
+      "status": "OPEN",
+      "priority": "P2",
+      "originalCases": [
+        "WEB-04"
+      ],
+      "extraCases": [
+        "R2-F08-01",
+        "R2-F08-02"
+      ]
+    },
+    "F09": {
+      "status": "CLOSED",
+      "priority": "P2",
+      "originalCases": [
+        "LMS-01",
+        "LMS-02",
+        "LMS-03"
+      ],
+      "extraCases": [
+        "R2-F09-01",
+        "R2-F09-02"
+      ]
+    },
+    "F10": {
+      "status": "CLOSED",
+      "priority": "P2",
+      "originalCases": [
+        "SYNC-05",
+        "SYNC-06"
+      ]
+    }
+  },
+  "verdict": "NO-GO"
+}

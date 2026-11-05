@@ -1,0 +1,224 @@
+[
+  {
+    "id": "R4-F01-01",
+    "finding": "F01",
+    "status": "FAIL",
+    "label": "A displayed module-import example must not auto-save a Firebase observation",
+    "source": "<title>Import guide</title><script>const helpText = \"import { initializeApp } from 'firebase/app'\"; document.body.textContent = helpText;</script>",
+    "tags": [
+      "🔄 Có thao tác cập nhật nội dung phần tử DOM",
+      "🔥 Có khai báo thư viện / cấu hình Firebase trong mã nguồn"
+    ]
+  },
+  {
+    "id": "R4-F01-02",
+    "finding": "F01",
+    "status": "FAIL",
+    "label": "A displayed CSS example must not auto-save a layout observation",
+    "source": "<title>CSS guide</title><script>const helpText = \"Example: display: flex\"; document.body.textContent = helpText;</script>",
+    "tags": [
+      "📐 Có sử dụng bố cục CSS Flexbox/Grid",
+      "🔄 Có thao tác cập nhật nội dung phần tử DOM"
+    ]
+  },
+  {
+    "id": "R4-F01-03",
+    "finding": "F01",
+    "status": "PASS",
+    "label": "Real layout/nav/event/DOM/Firebase syntax keeps factual positive tags",
+    "source": "<title>Plants</title><style>body{display:flex}</style><nav><a href=\"#plants\">Plants</a></nav><button id=\"go\">Go</button><script type=\"module\">import { initializeApp } from 'firebase/app'; initializeApp({}); document.getElementById('go').addEventListener('click',()=>{document.body.textContent='Plants';});</script>",
+    "tags": [
+      "📐 Có sử dụng bố cục CSS Flexbox/Grid",
+      "🧭 Có phần tử điều hướng (<nav>) chứa liên kết",
+      "🖱️ Có gắn sự kiện tương tác (Event Listener)",
+      "🔄 Có thao tác cập nhật nội dung phần tử DOM",
+      "🔥 Có khai báo thư viện / cấu hình Firebase trong mã nguồn"
+    ]
+  },
+  {
+    "id": "R4-F07-01",
+    "finding": "F07",
+    "status": "FAIL",
+    "label": "An unrelated matching basename cannot prove the referenced sibling script was read",
+    "source": "<title>Plants</title><script src=\"../shared/main.js\"></script>",
+    "flags": {
+      "inspectedWebCode": true,
+      "noBootstrap": true,
+      "noCart": true,
+      "noAuth": true,
+      "noLocalStorage": true,
+      "noFetchApi": true,
+      "noFirebase": true
+    },
+    "summary": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Plants), 0 file CSS, 1 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+    "unreadPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r4-c815414286f2\\work\\temp_submissions\\r4-closure\\basename\\shared\\main.js",
+    "unrelatedReadPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r4-c815414286f2\\work\\temp_submissions\\r4-closure\\basename\\project\\main.js"
+  },
+  {
+    "id": "R4-F07-02",
+    "finding": "F07",
+    "status": "PASS",
+    "label": "An unresolved local script with no basename collision stays unknown",
+    "flags": {
+      "inspectedWebCode": true
+    },
+    "summary": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Plants), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3."
+  },
+  {
+    "id": "R4-F07-03",
+    "finding": "F07",
+    "status": "PASS",
+    "label": "Folder HTML and a valid attached ZIP are analyzed together",
+    "flags": {
+      "inspectedWebCode": true,
+      "noBootstrap": true,
+      "noCart": true,
+      "noAuth": true,
+      "noLocalStorage": false,
+      "noFetchApi": true,
+      "noFirebase": false
+    },
+    "summary": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Plants), 0 file CSS, 1 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM, LocalStorage, Firebase Auth / Firestore.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, Fetch API] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.\n- File 'FILE_01.zip' (WEB): === PROJECT ARCHIVE (.ZIP): feature.zip ===\nTổng số file hợp lệ: 1 (Đã đọc 1 file mã nguồn, bỏ qua 0 file rác/thư viện)\nTổng dung lượng giải nén: 0.1 KB\nCây thư mục dự án:\n  - feature.js (91 bytes)\n\n=== WEB SOURCE (.JS): feature.js ===\nSố dòng: 1\n\n  1 | import {initializeApp} from 'firebase/app';initializeApp({});localStorage.setItem('x','y');"
+  },
+  {
+    "id": "R4-F07-04",
+    "finding": "F07",
+    "status": "PASS",
+    "label": "An invalid attached ZIP prevents certain absence claims",
+    "flags": {
+      "inspectedWebCode": true
+    },
+    "summary": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Plants), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3.\n- File 'FILE_01.zip' (ARCHIVE)"
+  },
+  {
+    "id": "R4-F08-01",
+    "finding": "F08",
+    "status": "FAIL",
+    "label": "An import example inside a JavaScript display string is not a Firebase import",
+    "source": "<title>Import guide</title><script>const helpText = \"import { initializeApp } from 'firebase/app'\"; document.body.textContent = helpText;</script>",
+    "flags": {
+      "inspectedWebCode": true,
+      "noBootstrap": true,
+      "noCart": true,
+      "noAuth": true,
+      "noLocalStorage": true,
+      "noFetchApi": true,
+      "noFirebase": false
+    },
+    "summary": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Import guide), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM, Firebase Auth / Firestore.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét."
+  },
+  {
+    "id": "R4-F08-02",
+    "finding": "F08",
+    "status": "PASS",
+    "label": "Plain paragraph feature prose does not create Cart/Auth/Firebase/Storage features",
+    "source": "<title>Plans</title><p>Next session: Firebase Firestore localStorage login shopping cart.</p>",
+    "flags": {
+      "inspectedWebCode": true,
+      "noBootstrap": true,
+      "noCart": true,
+      "noAuth": true,
+      "noLocalStorage": true,
+      "noFetchApi": true,
+      "noFirebase": true
+    },
+    "summary": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Plans), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét."
+  },
+  {
+    "id": "R4-F08-03",
+    "finding": "F08",
+    "status": "PASS",
+    "label": "Real imports/API calls and interactive controls keep all six positive feature groups",
+    "source": "<title>Plants</title><link rel=\"stylesheet\" href=\"https://cdn.example.invalid/bootstrap.min.css\"><form id=\"login\"><input type=\"password\"></form><button id=\"add-to-cart\">Add to cart</button><script type=\"module\">import {initializeApp} from 'firebase/app';initializeApp({});localStorage.setItem('x','y');fetch('/api/products');</script>",
+    "flags": {
+      "inspectedWebCode": true,
+      "noBootstrap": false,
+      "noCart": false,
+      "noAuth": false,
+      "noLocalStorage": false,
+      "noFetchApi": false,
+      "noFirebase": false
+    },
+    "summary": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Plants), 0 file CSS, 0 file JavaScript.\n- Thành phần giao diện tương tác có trong bài: Biểu mẫu nhập liệu (Form), Ô nhập liệu / chọn thông tin, Nút bấm tương tác.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, Bootstrap, Đăng nhập / Đăng ký, Giỏ hàng, LocalStorage, Fetch API, Firebase Auth / Firestore."
+  },
+  {
+    "id": "R4-F08-04",
+    "finding": "F08",
+    "status": "FAIL",
+    "label": "Actual API calls inside template expressions remain code evidence",
+    "source": "<title>Plants</title><script>const text = `${localStorage.setItem('x','y')} ${fetch('/api/products')}`;document.body.textContent=text;</script>",
+    "flags": {
+      "inspectedWebCode": true,
+      "noBootstrap": true,
+      "noCart": true,
+      "noAuth": true,
+      "noLocalStorage": true,
+      "noFetchApi": true,
+      "noFirebase": true
+    },
+    "summary": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Plants), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+    "runtimeCalls": [
+      {
+        "api": "localStorage.setItem",
+        "args": [
+          "x",
+          "y"
+        ]
+      },
+      {
+        "api": "fetch",
+        "args": [
+          "/api/products"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "R4-F02-01",
+    "finding": "F02",
+    "status": "FAIL",
+    "label": "Unsupported Firestore syntax claims are removed as whole claims",
+    "comment": "Audit Student học tập nghiêm túc. Con đã dùng getDocs(collection(db, 'products')) để hiển thị danh sách sản phẩm thành công. Con cần rà soát nội dung.",
+    "commentStatus": "WAITING_APPROVAL",
+    "persistedDraft": {
+      "draftStatus": "WAITING_APPROVAL",
+      "teacherComment": "Audit Student học tập nghiêm túc. Con đã dùng getDocs(collection(db, 'products')) để hiển thị danh sách sản phẩm thành công. Con cần rà soát nội dung."
+    }
+  },
+  {
+    "id": "R4-F02-02",
+    "finding": "F02",
+    "status": "PASS",
+    "label": "Unsupported axios/storage/initializeApp syntax claims are removed",
+    "comment": "Audit Student học tập nghiêm túc. Con đã trình bày các mục nội dung chính trên trang web theo chủ đề dự án. Con cần rà soát nội dung.",
+    "commentStatus": "WAITING_APPROVAL",
+    "persistedDraft": {
+      "draftStatus": "WAITING_APPROVAL",
+      "teacherComment": "Audit Student học tập nghiêm túc. Con đã trình bày các mục nội dung chính trên trang web theo chủ đề dự án. Con cần rà soát nội dung."
+    }
+  },
+  {
+    "id": "R4-F02-03",
+    "finding": "F02",
+    "status": "PASS",
+    "label": "Unsupported generic successful data-loading claims are removed",
+    "comment": "Audit Student học tập nghiêm túc. Con đã trình bày các mục nội dung chính trên trang web theo chủ đề dự án. Con cần rà soát nội dung.",
+    "commentStatus": "WAITING_APPROVAL",
+    "persistedDraft": {
+      "draftStatus": "WAITING_APPROVAL",
+      "teacherComment": "Audit Student học tập nghiêm túc. Con đã trình bày các mục nội dung chính trên trang web theo chủ đề dự án. Con cần rà soát nội dung."
+    }
+  },
+  {
+    "id": "R4-F02-04",
+    "finding": "F02",
+    "status": "PASS",
+    "label": "Evidence-backed Firebase/Fetch/Storage/Cart/Auth/Bootstrap descriptions survive",
+    "comment": "Audit Student học tập nghiêm túc. Con đã dùng Bootstrap. Con đã dùng Firebase. Con đã dùng localStorage.setItem('x','y'). Con đã dùng fetch('/api/products'). Con có giao diện đăng nhập và giỏ hàng. Con cần rà soát nội dung.",
+    "commentStatus": "WAITING_APPROVAL",
+    "persistedDraft": {
+      "draftStatus": "WAITING_APPROVAL",
+      "teacherComment": "Audit Student học tập nghiêm túc. Con đã dùng Bootstrap. Con đã dùng Firebase. Con đã dùng localStorage.setItem('x','y'). Con đã dùng fetch('/api/products'). Con có giao diện đăng nhập và giỏ hàng. Con cần rà soát nội dung."
+    }
+  }
+]

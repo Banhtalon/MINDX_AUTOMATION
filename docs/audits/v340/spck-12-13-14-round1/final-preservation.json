@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-11-05T02:56:43.222Z",
+  "tempRoot": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E",
+  "tempRemoved": true,
+  "dependencyDirectoryPreserved": true,
+  "sourceFiles": 149,
+  "filesVerified": 165,
+  "sourceChanged": [],
+  "production": {
+    "data/mindx_bot.db": {
+      "before": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+      "after": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+      "expectedMatch": true
+    },
+    "data/running_classes.json": {
+      "before": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9",
+      "after": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9",
+      "expectedMatch": true
+    }
+  },
+  "reportSha256": "822942AEC9D9A034DEA20B6D1C2A658CFBC75FAF93244A37D065D62639FFBE21",
+  "applicationSourceEdited": false,
+  "existingTestsEdited": false,
+  "productionDatabaseOpened": false,
+  "productionFilesCopied": false,
+  "liveServicesUsed": false
+}

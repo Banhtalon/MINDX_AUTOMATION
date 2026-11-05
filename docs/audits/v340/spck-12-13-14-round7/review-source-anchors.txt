@@ -1,0 +1,58 @@
+src/app/api/spck/scan/route.ts:7:const acorn = nodeRequire("next/dist/compiled/acorn") as {
+src/app/api/spck/scan/route.ts:10:    options?: { ecmaVersion?: number | "latest"; sourceType?: "module" | "script" }
+src/app/api/spck/scan/route.ts:94:        const normStuName = stripVietnameseDiacritics(cleanDirName)
+src/app/api/spck/scan/route.ts:99:          (sub) => sub === normStuName
+src/app/api/spck/scan/route.ts:106:            existingSubdirs.push(normStuName);
+src/app/api/spck/scan/route.ts:191:      const mergedLinksMap = new Map<
+src/app/api/spck/scan/route.ts:197:          mergedLinksMap.set(l.url, l);
+src/app/api/spck/scan/route.ts:202:          mergedLinksMap.set(l.url, l);
+src/app/api/spck/scan/route.ts:205:      const mergedRelatedLinks = Array.from(mergedLinksMap.values());
+src/app/api/spck/scan/route.ts:443:          const analyzeJsCodeSyntax = (
+src/app/api/spck/scan/route.ts:456:              for (const tok of acorn.tokenizer(code, {
+src/app/api/spck/scan/route.ts:458:                sourceType: "module",
+src/app/api/spck/scan/route.ts:531:            const { executableJs: syntaxOnly, importSpecifiers } = analyzeJsCodeSyntax(jsSource);
+src/app/api/spck/scan/route.ts:560:                const htmlInlineStyles: string[] = [];
+src/app/api/spck/scan/route.ts:565:                for (const blockMatch of rawHtml.matchAll(
+src/app/api/spck/scan/route.ts:568:                  const matchStart = blockMatch.index ?? 0;
+src/app/api/spck/scan/route.ts:572:                  lastHtmlIdx = matchStart + blockMatch[0].length;
+src/app/api/spck/scan/route.ts:573:                  if (blockMatch[1] !== undefined || blockMatch[2] !== undefined) {
+src/app/api/spck/scan/route.ts:574:                    const scriptAttrs = blockMatch[1] || "";
+src/app/api/spck/scan/route.ts:575:                    const scriptBody = blockMatch[2] || "";
+src/app/api/spck/scan/route.ts:583:                    const styleBody = blockMatch[4] || "";
+src/app/api/spck/scan/route.ts:585:                      htmlInlineStyles.push(styleBody);
+src/app/api/spck/scan/route.ts:594:                for (const styleBlock of htmlInlineStyles) {
+src/lib/playwright/spck-uploader.ts:3168:                const prefixWithExt = `${prefix}${ext}`;
+src/lib/playwright/spck-uploader.ts:3180:                  ? keepStems.has(rawPrefixWithExt) || keepStems.has(prefixWithExt)
+src/lib/playwright/spck-uploader.ts:3182:                if (!isVerifiedKeep || seenPrefixes.has(prefixWithExt)) {
+src/lib/playwright/spck-uploader.ts:3186:                seenPrefixes.add(prefixWithExt);
+src/lib/gemini/spck-comment.ts:12:import { inspectZipArchiveSafely } from "../file-parsers/archive-reader";
+src/lib/gemini/spck-comment.ts:15:const acorn = nodeRequire("next/dist/compiled/acorn") as {
+src/lib/gemini/spck-comment.ts:18:    options?: { ecmaVersion?: number | "latest"; sourceType?: "module" | "script" }
+src/lib/gemini/spck-comment.ts:453:  const readZipRelJsPathsByZip = new Map<string, Set<string>>();
+src/lib/gemini/spck-comment.ts:778:          const inspection = inspectZipArchiveSafely(zipBuf, path.basename(safeAtt));
+src/lib/gemini/spck-comment.ts:819:                  if (!readZipRelJsPathsByZip.has(normAtt)) {
+src/lib/gemini/spck-comment.ts:820:                    readZipRelJsPathsByZip.set(normAtt, new Set<string>());
+src/lib/gemini/spck-comment.ts:822:                  readZipRelJsPathsByZip.get(normAtt)!.add(entryRelLower);
+src/lib/gemini/spck-comment.ts:884:    const analyzeJsCodeSyntax = (
+src/lib/gemini/spck-comment.ts:897:        for (const tok of acorn.tokenizer(code, {
+src/lib/gemini/spck-comment.ts:899:          sourceType: "module",
+src/lib/gemini/spck-comment.ts:981:      for (const blockMatch of rawHtml.matchAll(
+src/lib/gemini/spck-comment.ts:984:        const matchStart = blockMatch.index ?? 0;
+src/lib/gemini/spck-comment.ts:988:        lastHtmlIdx = matchStart + blockMatch[0].length;
+src/lib/gemini/spck-comment.ts:989:        if (blockMatch[1] !== undefined || blockMatch[2] !== undefined) {
+src/lib/gemini/spck-comment.ts:990:          const scriptAttrs = blockMatch[1] || "";
+src/lib/gemini/spck-comment.ts:991:          const scriptBody = blockMatch[2] || "";
+src/lib/gemini/spck-comment.ts:997:          const styleBody = blockMatch[4] || "";
+src/lib/gemini/spck-comment.ts:1031:                const sameZipEntries = hf.zipSource
+src/lib/gemini/spck-comment.ts:1032:                  ? readZipRelJsPathsByZip.get(hf.zipSource)
+src/lib/gemini/spck-comment.ts:1034:                if (sameZipEntries?.has(joinedPosix)) {
+src/lib/gemini/spck-comment.ts:1164:      const { executableJs: jsSyntaxOnly, importSpecifiers } = analyzeJsCodeSyntax(rawJsSample);
+src/lib/gemini/spck-comment.ts:1845:            const activeForbiddenPatterns: RegExp[] = [];
+src/lib/gemini/spck-comment.ts:1850:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1858:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1866:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1874:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1882:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1890:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1895:            if (activeForbiddenPatterns.length > 0) {
+src/lib/gemini/spck-comment.ts:1903:                if (activeForbiddenPatterns.some((pat) => pat.test(sentence))) {

@@ -1,0 +1,45 @@
+◇ injected env (0) from .env.local
+◇ injected env (0) from .env
+PASS SYNC-01 Initial scan and active draft resource sync {"snapshotUnchanged":true,"resources":["index.html","new.js","style.css"]}
+PASS SYNC-02 Missing attachment refreshes unapproved draft without sync flag {"deletedAttachmentRemoved":true}
+PASS SYNC-03 Approved active session and verified history stay frozen {"approvedUnchanged":true,"verifiedUnchanged":true}
+PASS SYNC-04 Changed bytes at same path visible in active unapproved session {"samePathNewDigest":"d90908b0983ef81c1100265650589e223c8fd785cad65de486e4c82386f66c0a"}
+PASS SYNC-05 New photo and related link reach active draft while verified snapshot stays fixed {"newPhotoAndLinkSynced":true,"verifiedSnapshotUnchanged":true}
+PASS SYNC-06 Renamed link label replaces the previous scanned label ""
+PASS ZIP-01 Sorted entries, fixed date and no identical rewrite {"sha256":"97ab119cd4a04442ac32d21aae2c5babdd7073e15135edae8fa74b42608d958b","mtimeUnchanged":true}
+PASS ZIP-02 Multi-file web archive deterministic on actual scanner {"archive":"web-bundle_web_package.zip","sha256":"39cc85518b7686643d6d727b89af1d10e2e73144c1d8c964c32aba8ea67d651a"}
+PASS DRIVE-01 Coding replaces stale files; Robotics retains differently named photos {"codingRemoved":["old"],"roboticsRemoved":["same"]}
+PASS DRIVE-02 Coding removes stale files when local root becomes empty ""
+PASS DRIVE-03 Coding directory rename does not leave old remote subtree ""
+PASS DRIVE-04 Internal directories and generated zip files excluded in tree upload [{"id":"root/main.py","name":"main.py","isFolder":false}]
+PASS DRIVE-05 Owner-only fallback also respects internal directory exclusion ""
+PASS LMS-01 Actual modal deletion callback removes renamed and duplicate attachments ["main-234.py"]
+PASS LMS-02 No attachments clears old tiles {"empty":true}
+PASS LMS-03 Different extensions with same stem both remain ""
+PASS ZIP-03 Uploader zip block uses fixed dates and skips equal bytes (source block execution) {"sha256":"f380739abac23515d7549f82559e1ab2e8cd1a09db3ab70083ed52ea4549a217","mtimeUnchanged":true}
+PASS ROB-01 Folder init creates roster folders and is idempotent {"created":1,"second":0}
+PASS ROB-02 Prefix-overlap names each receive their own folder ""
+PASS ROB-03 Landscape thumbnail with portrait gallery; photo-only produces no zip {"thumbnail":"02_model.png","gallery":["01_detail.png"]}
+PASS ROB-04 Single Owner photo retained in scanner and screenshotter galleries {"scannerGallery":1,"captureGallery":1}
+PASS ROB-05 Raw robotics code creates stable zip; removing code deletes stale zip {"archiveSha":"d51b2180f186f3bdca2cdea9ef080db8d1725d3f342131978e33860c7505a3ae","staleRemoved":true}
+PASS ROB-06 All 10 Robotics prefixes recognized ["PREB","PREA","PREI","ARMB","ARMA","ARMI","SEMIB","SEMIA","SEMII","ROB"]
+PASS WEB-01 Deep inspector reads real titles, headings, nav and absent features {"summaryText":"- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Vườn cây xanh), 1 file CSS, 2 file JavaScript.\n- Các mục trên thanh điều hướng (Menu): Trang chủ, Chăm cây.\n- Các mục nội dung / tiêu đề chính trên trang: Vườn cây của em | Cách tưới nước.\n- Thành phần giao diện tương tác có trong bài: Nút bấm tương tác.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS Flexbox, CSS Grid, Responsive (@media), JavaScript DOM.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.\n- File 'FILE_01.html' (WEB): === WEB SOURCE (.HTML): index.html ===\nSố dòng: 1\nThẻ HTML sử dụng: html, title, nav, a, h1, h2, button, p\n\n  1 | <html><title>Vườn cây xanh</title><nav><a href=\"index.html\">Trang chủ</a><a href=\"#care\">Chăm cây</a></nav><h1>Vườn cây của em</h1><h2>Cách tưới nước</h2><button>Khám phá</button><p>Nội dung giới thiệu cây.</p></html><!--changed-->\n- File 'FILE_02.css' (WEB): === WEB SOURCE (.CSS): style.css ===\nSố dòng: 1\n\n  1 | body{display:flex} main{display:grid}@media(max-width:600px){body{display:block}}","detectedExtensions":[".html",".css",".png",".js",".txt"],"absentWebFeatures":{"inspectedWebCode":true,"noBootstrap":true,"noCart":true,"noAuth":true,"noLocalStorage":true,"noFetchApi":true,"noFirebase":true}}
+PASS WEB-02 Zip-only inspector extracts nested html/css/js {"summary":"- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Thư viện sách), 1 file CSS, 1 file JavaScript.\n- Các mục trên thanh điều hướng (Menu): Sách hay.\n- Các mục nội dung / tiêu đề chính trên trang: Khám phá sách.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, CSS Grid, JavaScript DOM, Fetch API.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.\n- File 'FILE_01.zip' (WEB): === PROJECT ARCHIVE (.ZIP): project_web_package.zip ===\nTổng số file hợp lệ: 3 (Đã đọc 3 file mã nguồn, bỏ qua 0 file rác/thư viện)\nTổng dung lượng giải nén: 0.1 KB\nCây thư mục dự án:\n  - app/css/main.css (18 bytes)\n  - app/index.html (84 bytes)\n  - app/js/main.js (20 bytes)\n\n=== WEB SOURCE (.CSS): app/css/main.css ===\nSố dòng: 1\n\n  1 | main{display:grid}\n\n=== WEB SOURCE (.HTML): app/index.html ===\nSố dòng: 1\nThẻ HTML sử dụng: title, nav, a, h2\n\n  1 | <title>Thư viện sách</title><nav><a>Sách hay</a></nav><h2>Khám phá sách</h2>\n\n=== WEB SOURCE (.JS): app/js/main.js ===\nSố dòng: 1\n\n  1 | fetch(\"/books.json\")","flags":{"inspectedWebCode":true,"noBootstrap":true,"noCart":true,"noAuth":true,"noLocalStorage":true,"noFetchApi":false,"noFirebase":true}}
+PASS WEB-03 Loose attachment-only HTML is deeply inspected without folder ""
+PASS WEB-04 HTML comments cannot fabricate positive feature evidence ""
+PASS WEB-05 Feature in seventh JS file is not declared absent ""
+PASS ZIP-04 Deep inspector honors existing safe archive size/ratio guard ""
+PASS TAGS-01 No project evidence returns no tags []
+PASS TAGS-02 Actual scan does not mark nonexistent functions complete ""
+PASS TAGS-03 A PDF alone cannot prove slide quality or robot construction ""
+PASS VISION-01 Gemini request carries 2 actual product images; deduplicates thumbnail {"count":2,"mimes":["image/png","image/png"]}
+PASS VISION-02 Default logo excluded from Gemini image payload {"count":1}
+PASS GUARD-01 No teacher tags/note bypasses AI and keeps INSUFFICIENT_INFO "INSUFFICIENT_INFO"
+PASS HALLUCINATION-01 Missing Bootstrap/Cart/Storage/Fetch removed from AI output "Nguyễn Minh Hải đang xây dựng dự án với tinh thần nghiêm túc. Con đã trình bày các mục nội dung chính trên trang web theo chủ đề dự án. Con đã trình bày các mục nội dung chính trên trang web theo chủ đề dự án."
+PASS HALLUCINATION-02 Absent Firebase and login cannot survive sanitizer ""
+PASS HALLUCINATION-03 Teacher note negating Bootstrap must not permit Bootstrap praise ""
+PASS TONE-01 Session 12 uses next progress check and final report phrasing "Nguyễn Minh Hải đang xây dựng dự án với tinh thần nghiêm túc. So với buổi kiểm tra tiến độ trước, con đã có trang giới thiệu cây xanh và hướng dẫn chăm cây. Con cần kiểm tra đường dẫn ở buổi kiểm tra tiến độ tiếp theo trước buổi báo cáo sản phẩm cuối khóa."
+PASS TONE-02 Session 13 preserves comparison when real prior evidence exists "Nguyễn Minh Hải đang xây dựng dự án với tinh thần nghiêm túc. So với buổi kiểm tra tiến độ trước, con đã có trang giới thiệu cây xanh và hướng dẫn chăm cây. Con cần kiểm tra đường dẫn trong đợt kiểm tra tiến độ này trước buổi báo cáo sản phẩm cuối khóa."
+PASS TONE-03 Session 13 removes made-up prior comparison when history absent "Lý Thanh Mai đang xây dựng dự án với tinh thần nghiêm túc. con đã có trang giới thiệu cây xanh và hướng dẫn chăm cây. Con cần kiểm tra đường dẫn trong đợt kiểm tra tiến độ này trước buổi báo cáo sản phẩm cuối khóa."
+PASS TONE-04 Session 14 official report keeps 2 sections with teacher presentation evidence "1. Về phần thuyết trình\nMinh Hải đã trình bày ý tưởng rõ ràng và cần luyện diễn đạt tự tin hơn.\n2. Về phần sản phẩm cuối khóa\nMinh Hải đã hoàn thành dự án với tinh thần nghiêm túc. Sản phẩm gồm trang giới thiệu cây xanh và các nội dung chăm sóc. Con vận dụng cấu trúc HTML và CSS để trình bày nội dung rõ ràng."
+SUMMARY {"total":42,"passed":42,"failed":0}

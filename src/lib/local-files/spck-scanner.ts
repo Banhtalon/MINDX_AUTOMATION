@@ -95,9 +95,45 @@ export const ROBOTICS_RAW_EXTENSIONS = new Set([
   ".uf2",
   ".mblock",
   ".vex",
+  ".vexblocks",
+  ".iqblocks",
   ".v5python",
   ".v5blocks",
 ]);
+
+const DETERMINISTIC_ZIP_TIMESTAMP = new Date("2026-01-01T00:00:00.000Z");
+
+/**
+ * Writes a deterministic `.zip` archive (sorted entries + fixed entry header timestamp)
+ * so repeated folder scans do not change the `.zip` file's SHA-256 when source files are unchanged.
+ */
+export function writeDeterministicZipFile(
+  bundleZipPath: string,
+  entries: Array<{ entryName: string; data: Buffer }>
+): void {
+  const sortedEntries = [...entries].sort((a, b) =>
+    a.entryName.localeCompare(b.entryName, "en")
+  );
+  const zip = new AdmZip();
+  for (const item of sortedEntries) {
+    zip.addFile(item.entryName, item.data);
+  }
+  for (const zipEntry of zip.getEntries()) {
+    zipEntry.header.time = DETERMINISTIC_ZIP_TIMESTAMP;
+  }
+  const nextZipBuffer = zip.toBuffer();
+  if (fs.existsSync(bundleZipPath)) {
+    try {
+      const existingBuf = fs.readFileSync(bundleZipPath);
+      if (existingBuf.equals(nextZipBuffer)) {
+        return;
+      }
+    } catch {
+      // Rewrite below if unreadable
+    }
+  }
+  fs.writeFileSync(bundleZipPath, nextZipBuffer);
+}
 
 export const ROBOTICS_ZIP_CONTAINER_EXTENSIONS = new Set([
   ".ev3",
@@ -966,6 +1002,7 @@ export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
     fullPath: string;
     isExplicitThumb: boolean;
     isOwnerLikeName: boolean;
+    isLandscape: boolean;
     area: number;
     name: string;
   }> = [];
@@ -1004,6 +1041,7 @@ export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
         fullPath,
         isExplicitThumb,
         isOwnerLikeName,
+        isLandscape: Boolean(dims && dims.width >= dims.height),
         area: dims ? dims.width * dims.height : 0,
         name: imgEntry.name,
       });
@@ -1015,6 +1053,7 @@ export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
   candidates.sort((a, b) => {
     if (a.isExplicitThumb !== b.isExplicitThumb) return a.isExplicitThumb ? -1 : 1;
     if (a.isOwnerLikeName !== b.isOwnerLikeName) return a.isOwnerLikeName ? -1 : 1;
+    if (a.isLandscape !== b.isLandscape) return a.isLandscape ? -1 : 1;
     if (a.area !== b.area) return b.area - a.area;
     return a.name.localeCompare(b.name, "en");
   });
@@ -1371,6 +1410,11 @@ export function scanStudentSpckFolder(
     warnings.push(`Đã bỏ qua file không thuộc danh mục hỗ trợ SPCK: '${entry.name}'`);
   }
 
+  const safeSlugForBundle =
+    stripVietnameseDiacritics(folderName)
+      .replace(/[^a-zA-Z0-9_-]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "student";
+
   // Package multi-file / subfolder Web source files (.html/.htm/.css/.js/.mjs/...) into a single .zip attachment
   // when the student's Web project exceeds the 10-file LMS attachment limit or organizes code in subfolders.
   if (
@@ -1381,19 +1425,14 @@ export function scanStudentSpckFolder(
       hasSubfolderWebCode)
   ) {
     try {
-      const zip = new AdmZip();
-      for (const webFile of webSourceFiles) {
-        const fileBytes = fs.readFileSync(webFile.fullPath);
-        zip.addFile(webFile.relPosix, fileBytes);
-      }
-      const safeSlug =
-        stripVietnameseDiacritics(folderName)
-          .replace(/[^a-zA-Z0-9_-]+/g, "_")
-          .replace(/^_+|_+$/g, "") || "student";
+      const zipEntries = webSourceFiles.map((webFile) => ({
+        entryName: webFile.relPosix,
+        data: fs.readFileSync(webFile.fullPath),
+      }));
       const bundleZipPath = assertPathAllowed(
-        path.join(safeFolderPath, `${safeSlug}_web_package.zip`)
+        path.join(safeFolderPath, `${safeSlugForBundle}_web_package.zip`)
       );
-      zip.writeZip(bundleZipPath);
+      writeDeterministicZipFile(bundleZipPath, zipEntries);
       const zipCheck = validateSpckAttachmentFile(bundleZipPath);
       if (zipCheck.valid) {
         const bundledPathKeys = new Set(
@@ -1412,24 +1451,29 @@ export function scanStudentSpckFolder(
         `Lỗi khi đóng gói ZIP cho mã nguồn Web: ${err instanceof Error ? err.message : String(err)}`
       );
     }
+  } else {
+    try {
+      const staleWebZip = assertPathAllowed(
+        path.join(safeFolderPath, `${safeSlugForBundle}_web_package.zip`)
+      );
+      if (fs.existsSync(staleWebZip) && !fs.lstatSync(staleWebZip).isSymbolicLink()) {
+        fs.unlinkSync(staleWebZip);
+      }
+    } catch {}
   }
 
-  // Package valid raw Robotics files into a lossless .zip attachment if present (T14)
+  // Package valid raw Robotics files into a lossless .zip attachment ONLY if raw Robotics code/model files exist (T14).
+  // When a Robotics student folder only contains photos provided by the Owner, do NOT create a .zip bundle.
   if (validRoboticsRawFiles.length > 0) {
     try {
-      const zip = new AdmZip();
-      for (const robPath of validRoboticsRawFiles) {
-        const robBytes = fs.readFileSync(robPath);
-        zip.addFile(path.basename(robPath), robBytes);
-      }
-      const safeSlug =
-        stripVietnameseDiacritics(folderName)
-          .replace(/[^a-zA-Z0-9_-]+/g, "_")
-          .replace(/^_+|_+$/g, "") || "student";
+      const zipEntries = validRoboticsRawFiles.map((robPath) => ({
+        entryName: path.basename(robPath),
+        data: fs.readFileSync(robPath),
+      }));
       const bundleZipPath = assertPathAllowed(
-        path.join(safeFolderPath, `${safeSlug}_robotics_package.zip`)
+        path.join(safeFolderPath, `${safeSlugForBundle}_robotics_package.zip`)
       );
-      zip.writeZip(bundleZipPath);
+      writeDeterministicZipFile(bundleZipPath, zipEntries);
       const zipCheck = validateSpckAttachmentFile(bundleZipPath);
       if (zipCheck.valid) {
         validAttachments.push(bundleZipPath);
@@ -1441,6 +1485,15 @@ export function scanStudentSpckFolder(
         `Lỗi khi đóng gói ZIP cho file Robotics: ${err instanceof Error ? err.message : String(err)}`
       );
     }
+  } else {
+    try {
+      const staleRobZip = assertPathAllowed(
+        path.join(safeFolderPath, `${safeSlugForBundle}_robotics_package.zip`)
+      );
+      if (fs.existsSync(staleRobZip) && !fs.lstatSync(staleRobZip).isSymbolicLink()) {
+        fs.unlinkSync(staleRobZip);
+      }
+    } catch {}
   }
 
   // Auto-render GameMaker (.yyz) / Scratch (.sb3) room/stage screenshots into _spck_app_shots
@@ -1565,7 +1618,10 @@ export function scanStudentSpckFolder(
       if (ordered.some((p) => samePath(p, img.fullPath))) continue;
       ordered.push(img.fullPath);
     }
-    screenshotCandidates = ordered;
+    screenshotCandidates =
+      ordered.length > 0 || youtubeFrameImages.length > 0
+        ? ordered
+        : [chosenOwnerThumb.fullPath];
   } else if (explicitThumb) {
     thumbnailPath = explicitThumb.fullPath;
     const poolForGallery =

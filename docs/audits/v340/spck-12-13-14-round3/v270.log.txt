@@ -1,0 +1,47 @@
+◇ injected env (0) from .env.local
+◇ injected env (0) from .env
+=== BẮT ĐẦU KIỂM THỬ TOÀN DIỆN CẬP NHẬT SPCK v2.7.0 (KỊCH BẢN T01 -> T16) ===
+
+[T01] Kiểm tra lưu nội dung riêng biệt cho Buổi 12, 13, 14...
+  -> PASS T01.
+
+[T03] Kiểm tra chuyển buổi 12 -> 13 -> 14 và chặn tiêu đề > 100 ký tự...
+  -> PASS T03.
+
+[T02] Kiểm tra nộp Buổi 12 và bảo toàn lịch sử khi thao tác Buổi 13 & công cụ nền...
+  -> PASS T02.
+
+[T04 & T05] Kiểm tra AI Guardrails theo giai đoạn, bảo toàn nháp cũ & không bịa nội dung...
+  -> PASS T04 & T05.
+
+[T06 & T07] Kiểm tra cô lập buổi khi lưu trễ, xung đột expectedVersion (409) & 'Dùng tài nguyên mới nhất'...
+  -> PASS T06 & T07.
+
+[T08] Kiểm tra bảo toàn lịch sử cũ (Chưa xác định) và lịch sử lỗi JSON (Cần kiểm tra)...
+  -> PASS T08.
+
+[T09] Kiểm tra khóa duyệt đúng buổi & tự hạ trạng thái khi sửa sau duyệt...
+  -> PASS T09.
+
+[T10] Kiểm tra nộp lại thất bại vẫn giữ nguyên bằng chứng VERIFIED trước đó...
+  -> PASS T10.
+
+[T11] Kiểm tra phát hiện thay đổi file trên ổ cứng sau khi đã nộp...
+  -> PASS T11.
+
+[T12] Kiểm tra chỉ 3 trường bắt buộc (*) và kiểm tra giới hạn trường tùy chọn...
+  -> PASS T12.
+
+[T13] Kiểm tra phân loại Thumbnail (Logo MindX / 16:9 / Khác) và Đường dẫn...
+  -> PASS T13.
+
+[T14] Kiểm tra hỗ trợ đầy đủ lớp PTB và CSB (không miễn trừ, không mượn cấu hình PTA)...
+  -> PASS T14.
+
+[T15] Kiểm tra tổng hợp đầy đủ kết quả duyệt/nộp khi có bài bị bỏ qua...
+  -> PASS T15.
+
+[T16] Kiểm tra đổi gán học viên cho thư mục (A -> B): giữ lịch sử của A & chặn ghi đè nền...
+  -> PASS T16.
+
+=== HOÀN TẤT: TẤT CẢ 16 KỊCH BẢN (T01 -> T16) ĐỀU ĐẠT 100% ===

@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         studentIds && studentIds.length > 0
           ? studentIds
           : (driveResult.results || [])
-              .filter((r: any) => r.status === "UPLOADED")
+              .filter((r: any) => r.status === "SUCCESS" || r.status === "UPLOADED")
               .map((r: any) => String(r.studentId || ""))
               .filter(Boolean);
       for (const sid of targetIds) {

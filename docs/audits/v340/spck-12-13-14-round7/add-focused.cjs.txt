@@ -1,0 +1,21 @@
+const fs=require('node:fs'),path=require('node:path');
+const root=__dirname,work=path.join(root,'work');
+let s=fs.readFileSync(path.join(work,'scratch/round6-focused-probe.ts'),'utf8');
+s=s.slice(0,s.indexOf("const afterBlock="));
+s=s.replaceAll('r6-focused','r7-focused').replaceAll('970+','980+');
+s+=String.raw`
+const legacyOctal='<title>Classic script octal</title><script>const n=010; initializeApp({});</script>';
+const ordinaryNumber='<title>Classic script decimal control</title><script>const n=8; initializeApp({});</script>';
+function callsFor(source:string){const calls:any[]=[];vm.runInNewContext(source.match(/<script>([\s\S]*?)<\/script>/)![1],{initializeApp:(...args:any[])=>{calls.push({api:'initializeApp',args});return 2;}});assert.equal(calls.length,1);return calls;}
+for(const [key,source] of [['01',legacyOctal],['02',ordinaryNumber]]){
+ await check('R7-F01-'+key,'F01',key==='01'?'Valid classic script legacy octal must preserve a following real Firebase call':'Control: decimal classic script retains a real Firebase tag',async()=>{const calls=callsFor(source);const observed=await scanTags('number-'+key+'-scan',source);return {pass:observed.tags.some((t:string)=>/Firebase/i.test(t)),observed:{source,scriptKind:'Classic inline script without type=module or use strict',runtimeCalls:calls,...observed}};});
+ await check('R7-F08-'+key,'F08',key==='01'?'Valid classic script must not conclude Firebase absent after module-only lexical error':'Control: decimal classic script keeps Firebase present',()=>{const calls=callsFor(source);const s=summarize('number-'+key+'-summary',source);return {pass:s.absentWebFeatures.noFirebase===false,observed:{source,scriptKind:'Classic inline script without type=module or use strict',runtimeCalls:calls,...s}};});
+}
+closeDb();
+const output={total:results.length,passed:results.filter(r=>r.status==='PASS').length,failed:results.filter(r=>r.status==='FAIL').length,errors:results.filter(r=>r.status==='ERROR').length,results};
+fs.writeFileSync(path.resolve('..','round7-focused-results.json'),JSON.stringify(output,null,2));console.log('SUMMARY '+JSON.stringify({total:output.total,passed:output.passed,failed:output.failed,errors:output.errors}));process.exitCode=output.failed||output.errors?1:0;
+`;
+fs.writeFileSync(path.join(work,'scratch/round7-focused-probe.ts'),s);
+let runner=fs.readFileSync(path.join(root,'runner.cjs'),'utf8');
+runner=runner.replace("let command=gate==='round6'?", "let command=gate==='round7'?'npx tsx scratch/round7-focused-probe.ts':gate==='round6'?");
+fs.writeFileSync(path.join(root,'runner.cjs'),runner);

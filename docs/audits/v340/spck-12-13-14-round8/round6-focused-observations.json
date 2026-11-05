@@ -1,0 +1,146 @@
+[
+  {
+    "id": "R6-F01-01",
+    "finding": "F01",
+    "status": "PASS",
+    "label": "Regex after a block must not auto-save a Firebase tag",
+    "source": "<title>Regex after block</title><script>if (true) {} /initializeApp()/.test(\"x\");</script>",
+    "runtimeCalls": [],
+    "tags": [],
+    "dbReadBack": true
+  },
+  {
+    "id": "R6-F08-01",
+    "finding": "F08",
+    "status": "PASS",
+    "label": "Regex after a block is not Firebase implementation",
+    "source": "<title>Regex after block</title><script>if (true) {} /initializeApp()/.test(\"x\");</script>",
+    "runtimeCalls": [],
+    "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Regex after block), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+    "detectedExtensions": [
+      ".html"
+    ],
+    "absentWebFeatures": {
+      "inspectedWebCode": true,
+      "noBootstrap": true,
+      "noCart": true,
+      "noAuth": true,
+      "noLocalStorage": true,
+      "noFetchApi": true,
+      "noFirebase": true
+    }
+  },
+  {
+    "id": "R6-F01-02",
+    "finding": "F01",
+    "status": "PASS",
+    "label": "Division after postfix increment must preserve real Firebase syntax",
+    "source": "<title>Division after increment</title><script>let n=4; n++ / initializeApp({}) / 2;</script>",
+    "runtimeCalls": [
+      {
+        "api": "initializeApp",
+        "args": [
+          {}
+        ]
+      }
+    ],
+    "tags": [
+      "🔥 Có khai báo thư viện / cấu hình Firebase trong mã nguồn"
+    ],
+    "dbReadBack": true
+  },
+  {
+    "id": "R6-F08-02",
+    "finding": "F08",
+    "status": "PASS",
+    "label": "Real Firebase call in division after postfix increment must not be erased",
+    "source": "<title>Division after increment</title><script>let n=4; n++ / initializeApp({}) / 2;</script>",
+    "runtimeCalls": [
+      {
+        "api": "initializeApp",
+        "args": [
+          {}
+        ]
+      }
+    ],
+    "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Division after increment), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, Firebase Auth / Firestore.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+    "detectedExtensions": [
+      ".html"
+    ],
+    "absentWebFeatures": {
+      "inspectedWebCode": true,
+      "noBootstrap": true,
+      "noCart": true,
+      "noAuth": true,
+      "noLocalStorage": true,
+      "noFetchApi": true,
+      "noFirebase": false
+    }
+  },
+  {
+    "id": "R6-F08-03",
+    "finding": "F08",
+    "status": "PASS",
+    "label": "Control: ordinary division retains a real Firebase call",
+    "source": "<title>Division control</title><script>let n=4; n / initializeApp({}) / 2;</script>",
+    "runtimeCalls": [
+      {
+        "api": "initializeApp",
+        "args": [
+          {}
+        ]
+      }
+    ],
+    "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Division control), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, Firebase Auth / Firestore.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+    "detectedExtensions": [
+      ".html"
+    ],
+    "absentWebFeatures": {
+      "inspectedWebCode": true,
+      "noBootstrap": true,
+      "noCart": true,
+      "noAuth": true,
+      "noLocalStorage": true,
+      "noFetchApi": true,
+      "noFirebase": false
+    }
+  },
+  {
+    "id": "R6-F08-04",
+    "finding": "F08",
+    "status": "PASS",
+    "label": "Control: regex directly after an if condition remains inert",
+    "source": "<title>Regex control</title><script>if (true) /initializeApp()/.test(\"x\");</script>",
+    "runtimeCalls": [],
+    "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Regex control), 0 file CSS, 0 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3.\n- CẢNH BÁO CHỐNG BỊA ĐẶT TÍNH NĂNG WEB: Mã nguồn thực tế của học viên KHÔNG có [Bootstrap, Giỏ hàng / Thanh toán, Đăng nhập / Đăng ký, LocalStorage, Fetch API, Firebase / Firestore] -> TUYỆT ĐỐI KHÔNG nhắc đến hay khen các tính năng/công nghệ này trong nhận xét.",
+    "detectedExtensions": [
+      ".html"
+    ],
+    "absentWebFeatures": {
+      "inspectedWebCode": true,
+      "noBootstrap": true,
+      "noCart": true,
+      "noAuth": true,
+      "noLocalStorage": true,
+      "noFetchApi": true,
+      "noFirebase": true
+    }
+  },
+  {
+    "id": "R6-F07-01",
+    "finding": "F07",
+    "status": "PASS",
+    "label": "An unrelated second ZIP cannot satisfy the first ZIP script reference",
+    "archiveA": "index.html -> shared/main.js (missing)",
+    "archiveB": "shared/main.js (different archive)",
+    "summaryText": "- Đặc trưng dự án Web thực tế: gồm 1 trang HTML (tiêu đề trang: Archive A), 0 file CSS, 1 file JavaScript.\n- Kỹ thuật dàn trang & lập trình thực tế phát hiện trong code: HTML5, CSS3, JavaScript DOM.\n- File 'FILE_01.zip' (WEB): === PROJECT ARCHIVE (.ZIP): a.zip ===\nTổng số file hợp lệ: 1 (Đã đọc 1 file mã nguồn, bỏ qua 0 file rác/thư viện)\nTổng dung lượng giải nén: 0.1 KB\nCây thư mục dự án:\n  - index.html (62 bytes)\n\n=== WEB SOURCE (.HTML): index.html ===\nSố dòng: 1\nThẻ HTML sử dụng: title, script\n\n  1 | <title>Archive A</title><script src=\"shared/main.js\"></script>\n- File 'FILE_02.zip' (WEB): === PROJECT ARCHIVE (.ZIP): b.zip ===\nTổng số file hợp lệ: 1 (Đã đọc 1 file mã nguồn, bỏ qua 0 file rác/thư viện)\nTổng dung lượng giải nén: 0.0 KB\nCây thư mục dự án:\n  - shared/main.js (25 bytes)\n\n=== WEB SOURCE (.JS): shared/main.js ===\nSố dòng: 1\n\n  1 | console.log(\"archive B\");",
+    "detectedExtensions": [
+      ".zip",
+      ".html",
+      ".js"
+    ],
+    "absentWebFeatures": {
+      "inspectedWebCode": true
+    }
+  }
+]

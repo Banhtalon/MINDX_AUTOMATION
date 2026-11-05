@@ -1,0 +1,17 @@
+const fs=require('node:fs'),path=require('node:path');
+const root=__dirname,state=JSON.parse(fs.readFileSync(path.join(root,'state.json'))),r7=path.join(state.repo,'docs/audits/v340/spck-12-13-14-round7');
+let s=fs.readFileSync(path.join(r7,'preserve.cjs.txt'),'utf8');
+s=s.replaceAll('spck-12-13-14-round7','spck-12-13-14-round8').replaceAll('Round 7','Round 8').replaceAll('round6-report.md.txt','round7-report.md.txt');
+s=s.replace("'review','round6','round7'];","'review','round6','round7','context'];");
+s=s.replace("['round7','round7-focused-results.json']].map","['round7','round7-focused-results.json'],['round8','round8-context-results.json']].map");
+s=s.replace("['F01','F08'].includes(id)","['F08'].includes(id)").replaceAll('gates.slice(0,11)','gates.slice(0,12)').replaceAll("read('round7-focused-results.json').results","read('round8-context-results.json').results");
+s=s.replace('closed:8,open:2','closed:9,open:1').replaceAll('mandatoryGateCount:10,mandatoryCommandCount:11','mandatoryGateCount:11,mandatoryCommandCount:12');
+s=s.replace("note:'All 91 original Round 1-6 probe cases pass, including four Round 6 failures now fixed. Two extra Round 8 failures reproduce one classic-script/module lexical mismatch in F01/F08. F07 remains closed. No product source edited.'","note:'All 95 original Round 1-7 probe cases pass; R7 classic-script repair confirmed. F01 closed. Three supplementary failures reproduce loss of .mjs module context in summary readers (folder, attachment, ZIP); F08 remains open. No product source edited.'");
+s=s.replace("['round7','round7-focused-results.json']])","['round7','round7-focused-results.json'],['round8','round8-context-results.json']])");
+s=s.replace("'round6-focused-probe.ts','round7-focused-probe.ts']","'round6-focused-probe.ts','round7-focused-probe.ts','round8-context-probe.ts']");
+s=s.replace("fs.copyFileSync(path.join(work,'scratch/lexer-preflight.cjs'),path.join(root,'lexer-preflight.cjs.txt'));","");
+s=s.replace("console.log(JSON.stringify({dest,verdict,mandatoryPassed,tests,statuses,sourceCount:state.sourceCount,sourceChanged,snapshotChanged,blockedEvents:summary.network.blocked,versions,history:summary.history},null,2));","console.log(JSON.stringify({dest,verdict,mandatoryPassed,tests,statuses,sourceCount:state.sourceCount,sourceChanged,snapshotChanged,blockedEvents:summary.network.blocked,versions,history:summary.history},null,2));");
+if(!s.includes("closed:9,open:1")||!s.includes("read('round8-context-results.json').results")||!s.includes("mandatoryGateCount:11"))throw Error('Adaptation missed');
+fs.writeFileSync(path.join(root,'preserve.cjs'),s);
+require('./preserve.cjs');
+

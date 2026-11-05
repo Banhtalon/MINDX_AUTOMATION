@@ -1,0 +1,29 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import AdmZip from 'adm-zip';
+import {buildPreliminaryProjectSummary} from '../src/lib/gemini/spck-comment';
+import {POST as scanPost} from '../src/app/api/spck/scan/route';
+import {classSessionRepo,studentRepo,spckSessionRepo,closeDb} from '../src/lib/db/sqlite';
+const root=path.resolve('temp_submissions/r7-focused');
+assert.ok(root.startsWith(path.resolve(process.env.AUDIT_WORK_ROOT!)+path.sep));
+const put=(rel:string,content:string|Buffer)=>{const p=path.join(root,rel);fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,content);return p;};
+const results:any[]=[];
+async function check(id:string,finding:string,label:string,fn:()=>any){try{const observation=await fn();results.push({id,finding,label,status:observation.pass?'PASS':'FAIL',...observation});}catch(e:any){results.push({id,finding,label,status:'ERROR',error:e.stack});}console.log(JSON.stringify(results.at(-1)));}
+const name='Audit Student';let serial=0;
+async function scanTags(relative:string,source:string){const c='VT-C4K-JSI'+(980+(serial++)),s=c+'_STUDENT';classSessionRepo.upsert({classId:c,sessionId:c+'_12',sessionNumber:12,className:c,topic:'Audit',date:'2026-11-05'});studentRepo.upsert({classId:c,studentId:s,fullName:name,isActive:1});put(relative+'/'+name+'/index.html',source);const res=await scanPost(new Request('http://127.0.0.1:3000/api/spck/scan',{method:'POST',headers:{host:'127.0.0.1:3000',origin:'http://127.0.0.1:3000','content-type':'application/json'},body:JSON.stringify({classId:c,sessionNumber:12,folderPath:path.join(root,relative),syncActiveSession:true,autoSuggestQuickTags:true})}));const body=await res.json();assert.equal(res.status,200,JSON.stringify(body));return {tags:JSON.parse(spckSessionRepo.findOne(c,s,12)!.quickTagsJson),dbReadBack:true};}
+function summarize(rel:string,source:string){const p=put(rel+'/index.html',source);return buildPreliminaryProjectSummary([],name,'STUDENT_01',[],path.dirname(p));}
+function witness(source:string){const calls:any[]=[],document={body:{textContent:''}};vm.runInNewContext(source.match(/<script>([\s\S]*?)<\/script>/)![1],{document,initializeApp:(...args:any[])=>calls.push({api:'initializeApp',args})});assert.equal(calls.length,0);return {runtimeCalls:calls,displayedText:document.body.textContent};}
+
+
+const legacyOctal='<title>Classic script octal</title><script>const n=010; initializeApp({});</script>';
+const ordinaryNumber='<title>Classic script decimal control</title><script>const n=8; initializeApp({});</script>';
+function callsFor(source:string){const calls:any[]=[];vm.runInNewContext(source.match(/<script>([\s\S]*?)<\/script>/)![1],{initializeApp:(...args:any[])=>{calls.push({api:'initializeApp',args});return 2;}});assert.equal(calls.length,1);return calls;}
+for(const [key,source] of [['01',legacyOctal],['02',ordinaryNumber]]){
+ await check('R7-F01-'+key,'F01',key==='01'?'Valid classic script legacy octal must preserve a following real Firebase call':'Control: decimal classic script retains a real Firebase tag',async()=>{const calls=callsFor(source);const observed=await scanTags('number-'+key+'-scan',source);return {pass:observed.tags.some((t:string)=>/Firebase/i.test(t)),observed:{source,scriptKind:'Classic inline script without type=module or use strict',runtimeCalls:calls,...observed}};});
+ await check('R7-F08-'+key,'F08',key==='01'?'Valid classic script must not conclude Firebase absent after module-only lexical error':'Control: decimal classic script keeps Firebase present',()=>{const calls=callsFor(source);const s=summarize('number-'+key+'-summary',source);return {pass:s.absentWebFeatures.noFirebase===false,observed:{source,scriptKind:'Classic inline script without type=module or use strict',runtimeCalls:calls,...s}};});
+}
+closeDb();
+const output={total:results.length,passed:results.filter(r=>r.status==='PASS').length,failed:results.filter(r=>r.status==='FAIL').length,errors:results.filter(r=>r.status==='ERROR').length,results};
+fs.writeFileSync(path.resolve('..','round7-focused-results.json'),JSON.stringify(output,null,2));console.log('SUMMARY '+JSON.stringify({total:output.total,passed:output.passed,failed:output.failed,errors:output.errors}));process.exitCode=output.failed||output.errors?1:0;

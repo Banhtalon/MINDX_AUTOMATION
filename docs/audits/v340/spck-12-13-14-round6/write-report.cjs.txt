@@ -1,0 +1,8 @@
+﻿const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const root=__dirname,state=JSON.parse(fs.readFileSync(path.join(root,'state.json'))),dest=path.join(state.repo,'docs/audits/v340/spck-12-13-14-round6');
+const report=path.join(state.repo,'docs/audits/v340/CODEX_SPCK_12_13_14_AUDIT.md'),old=fs.readFileSync(path.join(root,'round5-report.md.txt'));
+if(!fs.readFileSync(report).equals(old))throw Error('Original report changed before append');
+const section=Buffer.from(fs.readFileSync(path.join(root,'round6-section.md.txt'),'utf8').replace(/^\uFEFF/,'')+'\n','utf8');
+fs.writeFileSync(report,Buffer.concat([section,old]));
+for(const n of ['write-report.cjs','round6-section.md.txt'])fs.copyFileSync(path.join(root,n),path.join(dest,n.endsWith('.cjs')?n+'.txt':n));
+console.log(JSON.stringify({historyBytes:old.length,sectionBytes:section.length,newReportBytes:fs.statSync(report).size,historyUnchanged:fs.readFileSync(report).subarray(section.length).equals(old),reportSha256:crypto.createHash('sha256').update(fs.readFileSync(report)).digest('hex').toUpperCase()}));

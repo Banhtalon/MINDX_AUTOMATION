@@ -1,0 +1,34 @@
+src/app/api/spck/scan/route.ts:422:          const stripJsCommentsOnly = (code: string) =>
+src/app/api/spck/scan/route.ts:427:          const stripJsStringLiterals = (commentFreeCode: string) =>
+src/app/api/spck/scan/route.ts:433:            const commentFree = stripJsCommentsOnly(jsSource);
+src/app/api/spck/scan/route.ts:434:            const syntaxOnly = stripJsStringLiterals(commentFree);
+src/app/api/spck/scan/route.ts:449:              /\b(?:initializeApp|getFirestore|getAuth|signInWithEmailAndPassword|createUserWithEmailAndPassword|onAuthStateChanged)\s*\(|\bfirebase\s*\.\s*(?:initializeApp|auth|firestore|database)\s*\(/.test(
+src/app/api/spck/scan/route.ts:486:                const rawCss = stripJsStringLiterals(
+src/app/api/spck/scan/route.ts:487:                  stripJsCommentsOnly(fs.readFileSync(attPath, "utf-8").slice(0, 100000))
+src/lib/gemini/spck-comment.ts:431:  const readWebBasenames = new Set<string>();
+src/lib/gemini/spck-comment.ts:519:            readWebBasenames.add(path.basename(hf).toLowerCase());
+src/lib/gemini/spck-comment.ts:533:            readWebBasenames.add(path.basename(cf).toLowerCase());
+src/lib/gemini/spck-comment.ts:544:            readWebBasenames.add(path.basename(jf).toLowerCase());
+src/lib/gemini/spck-comment.ts:714:          readWebBasenames.add(path.basename(safeAtt).toLowerCase());
+src/lib/gemini/spck-comment.ts:729:          readWebBasenames.add(path.basename(safeAtt).toLowerCase());
+src/lib/gemini/spck-comment.ts:741:          readWebBasenames.add(path.basename(safeAtt).toLowerCase());
+src/lib/gemini/spck-comment.ts:759:              if (entryBase) readWebBasenames.add(entryBase);
+src/lib/gemini/spck-comment.ts:832:    const stripJsCommentsOnly = (code: string) =>
+src/lib/gemini/spck-comment.ts:838:    const stripJsStringLiterals = (commentFreeCode: string) =>
+src/lib/gemini/spck-comment.ts:853:          const cleanSrcBase = path.basename(rawSrc.split(/[?#]/)[0]).toLowerCase();
+src/lib/gemini/spck-comment.ts:854:          if (cleanSrcBase && !readWebBasenames.has(cleanSrcBase)) {
+src/lib/gemini/spck-comment.ts:938:      const commentFreeCss = stripJsCommentsOnly(rawCssSample);
+src/lib/gemini/spck-comment.ts:939:      const cssSyntaxOnly = stripJsStringLiterals(commentFreeCss);
+src/lib/gemini/spck-comment.ts:949:      const commentFreeJs = stripJsCommentsOnly(rawJsSample);
+src/lib/gemini/spck-comment.ts:950:      const jsSyntaxOnly = stripJsStringLiterals(commentFreeJs);
+src/lib/gemini/spck-comment.ts:976:        /\b(?:initializeApp|getFirestore|getAuth|signInWithEmailAndPassword|createUserWithEmailAndPassword|onAuthStateChanged|collection|addDoc|getDocs|setDoc|updateDoc|deleteDoc|onSnapshot)\s*\(|\bfirebase\s*\.\s*(?:initializeApp|auth|firestore|database)\s*\(/.test(
+src/lib/gemini/spck-comment.ts:1633:            const activeForbiddenPatterns: RegExp[] = [];
+src/lib/gemini/spck-comment.ts:1638:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1646:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1654:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1662:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1670:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1671:                /\b(?:Firebase(?:\s+Authentication|\s+Auth|\s+Storage|\s+Hosting)?|Cloud\s+Firestore|Firestore|Realtime\s+Database|initializeApp|getFirestore|getAuth|signInWithEmailAndPassword|createUserWithEmailAndPassword|onAuthStateChanged)\b/i
+src/lib/gemini/spck-comment.ts:1678:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1683:            if (activeForbiddenPatterns.length > 0) {
+src/lib/gemini/spck-comment.ts:1691:                if (activeForbiddenPatterns.some((pat) => pat.test(sentence))) {

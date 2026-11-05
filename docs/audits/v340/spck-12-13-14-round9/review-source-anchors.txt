@@ -1,0 +1,100 @@
+src/app/api/spck/scan/route.ts:7:const acorn = nodeRequire("next/dist/compiled/acorn") as {
+src/app/api/spck/scan/route.ts:10:    options?: { ecmaVersion?: number | "latest"; sourceType?: "module" | "script" }
+src/app/api/spck/scan/route.ts:94:        const normStuName = stripVietnameseDiacritics(cleanDirName)
+src/app/api/spck/scan/route.ts:99:          (sub) => sub === normStuName
+src/app/api/spck/scan/route.ts:106:            existingSubdirs.push(normStuName);
+src/app/api/spck/scan/route.ts:191:      const mergedLinksMap = new Map<
+src/app/api/spck/scan/route.ts:197:          mergedLinksMap.set(l.url, l);
+src/app/api/spck/scan/route.ts:202:          mergedLinksMap.set(l.url, l);
+src/app/api/spck/scan/route.ts:205:      const mergedRelatedLinks = Array.from(mergedLinksMap.values());
+src/app/api/spck/scan/route.ts:443:          const analyzeJsCodeSyntax = (
+src/app/api/spck/scan/route.ts:445:            sourceType: "script" | "module" = "script"
+src/app/api/spck/scan/route.ts:446:          ): { executableJs: string; importSpecifiers: string[]; lexComplete: boolean } => {
+src/app/api/spck/scan/route.ts:457:              for (const tok of acorn.tokenizer(code, {
+src/app/api/spck/scan/route.ts:459:                sourceType,
+src/app/api/spck/scan/route.ts:515:                  return { executableJs: out, importSpecifiers, lexComplete: true };
+src/app/api/spck/scan/route.ts:525:              return { executableJs: out, importSpecifiers, lexComplete: true };
+src/app/api/spck/scan/route.ts:527:              return { executableJs: out, importSpecifiers, lexComplete: false };
+src/app/api/spck/scan/route.ts:533:            sourceType: "script" | "module" = "script"
+src/app/api/spck/scan/route.ts:535:            const { executableJs: syntaxOnly, importSpecifiers } = analyzeJsCodeSyntax(
+src/app/api/spck/scan/route.ts:537:              sourceType
+src/app/api/spck/scan/route.ts:567:                const htmlInlineStyles: string[] = [];
+src/app/api/spck/scan/route.ts:570:                  sourceType: "script" | "module";
+src/app/api/spck/scan/route.ts:575:                for (const blockMatch of rawHtml.matchAll(
+src/app/api/spck/scan/route.ts:578:                  const matchStart = blockMatch.index ?? 0;
+src/app/api/spck/scan/route.ts:582:                  lastHtmlIdx = matchStart + blockMatch[0].length;
+src/app/api/spck/scan/route.ts:583:                  if (blockMatch[1] !== undefined || blockMatch[2] !== undefined) {
+src/app/api/spck/scan/route.ts:584:                    const scriptAttrs = blockMatch[1] || "";
+src/app/api/spck/scan/route.ts:585:                    const scriptBody = blockMatch[2] || "";
+src/app/api/spck/scan/route.ts:595:                        sourceType: isModuleScript ? "module" : "script",
+src/app/api/spck/scan/route.ts:599:                    const styleBody = blockMatch[4] || "";
+src/app/api/spck/scan/route.ts:601:                      htmlInlineStyles.push(styleBody);
+src/app/api/spck/scan/route.ts:610:                for (const styleBlock of htmlInlineStyles) {
+src/app/api/spck/scan/route.ts:633:                  inspectJsSyntax(inlineScript.body, inlineScript.sourceType);
+src/lib/playwright/spck-uploader.ts:3168:                const prefixWithExt = `${prefix}${ext}`;
+src/lib/playwright/spck-uploader.ts:3180:                  ? keepStems.has(rawPrefixWithExt) || keepStems.has(prefixWithExt)
+src/lib/playwright/spck-uploader.ts:3182:                if (!isVerifiedKeep || seenPrefixes.has(prefixWithExt)) {
+src/lib/playwright/spck-uploader.ts:3186:                seenPrefixes.add(prefixWithExt);
+src/lib/gemini/spck-comment.ts:12:import { inspectZipArchiveSafely } from "../file-parsers/archive-reader";
+src/lib/gemini/spck-comment.ts:15:const acorn = nodeRequire("next/dist/compiled/acorn") as {
+src/lib/gemini/spck-comment.ts:18:    options?: { ecmaVersion?: number | "latest"; sourceType?: "module" | "script" }
+src/lib/gemini/spck-comment.ts:449:  const rawJsSamples: Array<{
+src/lib/gemini/spck-comment.ts:451:    sourceType: "script" | "module";
+src/lib/gemini/spck-comment.ts:460:  const readZipRelJsPathsByZip = new Map<string, Set<string>>();
+src/lib/gemini/spck-comment.ts:577:            rawJsSamples.push({
+src/lib/gemini/spck-comment.ts:579:              sourceType: path.extname(jf).toLowerCase() === ".mjs" ? "module" : "script",
+src/lib/gemini/spck-comment.ts:779:          if (rawJsSamples.length < 50) {
+src/lib/gemini/spck-comment.ts:783:            rawJsSamples.push({
+src/lib/gemini/spck-comment.ts:785:              sourceType: ext === ".mjs" ? "module" : "script",
+src/lib/gemini/spck-comment.ts:793:          const inspection = inspectZipArchiveSafely(zipBuf, path.basename(safeAtt));
+src/lib/gemini/spck-comment.ts:831:                if (rawJsSamples.length < 50) {
+src/lib/gemini/spck-comment.ts:834:                  if (!readZipRelJsPathsByZip.has(normAtt)) {
+src/lib/gemini/spck-comment.ts:835:                    readZipRelJsPathsByZip.set(normAtt, new Set<string>());
+src/lib/gemini/spck-comment.ts:837:                  readZipRelJsPathsByZip.get(normAtt)!.add(entryRelLower);
+src/lib/gemini/spck-comment.ts:849:                  rawJsSamples.push({
+src/lib/gemini/spck-comment.ts:851:                    sourceType: entryExt === ".mjs" ? "module" : "script",
+src/lib/gemini/spck-comment.ts:910:    const analyzeJsCodeSyntax = (
+src/lib/gemini/spck-comment.ts:912:      sourceType: "script" | "module" = "script"
+src/lib/gemini/spck-comment.ts:913:    ): { executableJs: string; importSpecifiers: string[]; lexComplete: boolean } => {
+src/lib/gemini/spck-comment.ts:924:        for (const tok of acorn.tokenizer(code, {
+src/lib/gemini/spck-comment.ts:926:          sourceType,
+src/lib/gemini/spck-comment.ts:982:            return { executableJs: out, importSpecifiers, lexComplete: true };
+src/lib/gemini/spck-comment.ts:992:        return { executableJs: out, importSpecifiers, lexComplete: true };
+src/lib/gemini/spck-comment.ts:994:        return { executableJs: out, importSpecifiers, lexComplete: false };
+src/lib/gemini/spck-comment.ts:999:    const inlineJsBlocks: Array<{ code: string; sourceType: "script" | "module" }> = [];
+src/lib/gemini/spck-comment.ts:1008:      for (const blockMatch of rawHtml.matchAll(
+src/lib/gemini/spck-comment.ts:1011:        const matchStart = blockMatch.index ?? 0;
+src/lib/gemini/spck-comment.ts:1015:        lastHtmlIdx = matchStart + blockMatch[0].length;
+src/lib/gemini/spck-comment.ts:1016:        if (blockMatch[1] !== undefined || blockMatch[2] !== undefined) {
+src/lib/gemini/spck-comment.ts:1017:          const scriptAttrs = blockMatch[1] || "";
+src/lib/gemini/spck-comment.ts:1018:          const scriptBody = blockMatch[2] || "";
+src/lib/gemini/spck-comment.ts:1026:              sourceType: isModuleScript ? "module" : "script",
+src/lib/gemini/spck-comment.ts:1030:          const styleBody = blockMatch[4] || "";
+src/lib/gemini/spck-comment.ts:1056:                  for (const jsSample of rawJsSamples) {
+src/lib/gemini/spck-comment.ts:1057:                    if (jsSample.fsPath === resolvedTarget) jsSample.sourceType = "module";
+src/lib/gemini/spck-comment.ts:1066:                  for (const jsSample of rawJsSamples) {
+src/lib/gemini/spck-comment.ts:1068:                      jsSample.sourceType = "module";
+src/lib/gemini/spck-comment.ts:1079:                const sameZipEntries = hf.zipSource
+src/lib/gemini/spck-comment.ts:1080:                  ? readZipRelJsPathsByZip.get(hf.zipSource)
+src/lib/gemini/spck-comment.ts:1082:                if (sameZipEntries?.has(joinedPosix)) {
+src/lib/gemini/spck-comment.ts:1085:                    for (const jsSample of rawJsSamples) {
+src/lib/gemini/spck-comment.ts:1090:                        jsSample.sourceType = "module";
+src/lib/gemini/spck-comment.ts:1103:                    for (const jsSample of rawJsSamples) {
+src/lib/gemini/spck-comment.ts:1105:                        jsSample.sourceType = "module";
+src/lib/gemini/spck-comment.ts:1231:    const allJsEntries: Array<{ code: string; sourceType: "script" | "module" }> = [
+src/lib/gemini/spck-comment.ts:1232:      ...rawJsSamples,
+src/lib/gemini/spck-comment.ts:1235:    for (const jsEntry of allJsEntries) {
+src/lib/gemini/spck-comment.ts:1239:        lexComplete,
+src/lib/gemini/spck-comment.ts:1240:      } = analyzeJsCodeSyntax(jsEntry.code, jsEntry.sourceType);
+src/lib/gemini/spck-comment.ts:1241:      if (!lexComplete) {
+src/lib/gemini/spck-comment.ts:1311:      usesDomEvents || rawJsSamples.length > 0 ? "JavaScript DOM" : "",
+src/lib/gemini/spck-comment.ts:1336:      `- Đặc trưng dự án Web thực tế: gồm ${rawHtmlSamples.length} trang HTML${uniquePageTitles.length > 0 ? ` (tiêu đề trang: ${uniquePageTitles.join(", ")})` : ""}, ${rawCssSamples.length} file CSS, ${rawJsSamples.length} file JavaScript.`,
+src/lib/gemini/spck-comment.ts:1924:            const activeForbiddenPatterns: RegExp[] = [];
+src/lib/gemini/spck-comment.ts:1929:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1937:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1945:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1953:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1961:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1969:              activeForbiddenPatterns.push(
+src/lib/gemini/spck-comment.ts:1974:            if (activeForbiddenPatterns.length > 0) {
+src/lib/gemini/spck-comment.ts:1982:                if (activeForbiddenPatterns.some((pat) => pat.test(sentence))) {

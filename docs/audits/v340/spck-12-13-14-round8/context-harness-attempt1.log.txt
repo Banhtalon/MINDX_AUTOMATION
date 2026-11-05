@@ -1,0 +1,13 @@
+◇ injected env (0) from .env.local
+◇ injected env (0) from .env
+C:\Users\QQ\AppData\Local\Temp\codex-spck-121314-r8-a5fdb45e31dd\work\scratch\round8-context-probe.ts:6
+const acorn=require('next/dist/compiled/acorn');
+            ^
+
+ReferenceError: require is not defined in ES module scope, you can use import instead
+    at <anonymous> (C:\Users\QQ\AppData\Local\Temp\codex-spck-121314-r8-a5fdb45e31dd\work\scratch\round8-context-probe.ts:6:13)
+    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)
+    at async node:internal/modules/esm/loader:647:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.21.0

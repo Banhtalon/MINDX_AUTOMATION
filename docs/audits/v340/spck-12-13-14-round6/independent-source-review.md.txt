@@ -1,0 +1,14 @@
+﻿# Independent source cross-check for Round 6
+
+Reviewer: collaboration agent `/root/closure_review`. The requested `claude-sonnet-5-5-high` model is unavailable; no claim of running it. Review was read-only, with no production database access, no file writes and no runtime tests by reviewer.
+
+The Round 5 examples are addressed by the current product source. F07 retains `../` and checks archive-specific entries; nested paths resolving within a ZIP remain valid.
+
+Two directly related lexer variants need runtime confirmation:
+
+1. `if (true) {} /initializeApp()/.test("x");` has zero initializeApp calls. `isRegexStart` does not recognize a regex after `}`. Source: scan route 450-476; spck-comment 891-917. A downstream API detector can read the regex text as a Firebase call.
+2. `let n=4; n++ / initializeApp({}) / 2;` calls initializeApp once. `isRegexStart` sees final `+` and treats the division operand as a regex. Source: scan route 454,518-545; spck-comment 895,959-986. The real API call can be erased.
+
+Primary auditor independently reproduced both with the real scan route / SQLite readback and the real summary function in isolated TEMP. A JavaScript VM with a fake initializeApp proves zero vs one actual call, without contacting Firebase. Results: R6-F01-01/R6-F08-01 and R6-F01-02/R6-F08-02 FAIL; ordinary-division and if-regex controls PASS. The independent two-ZIP identity control R6-F07-01 PASS.
+
+Verdict after runtime confirmation: NO-GO. F07 closes; F01/F08 remain open. Additional unexecuted suggestions from static review are not counted as confirmed findings.

@@ -1,0 +1,279 @@
+{
+  "repo": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "root": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e",
+  "work": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work",
+  "created": "2026-11-05T06:10:51.285Z",
+  "head": "00dd3e3f75961a1276379cad3212eaf74ec306b2",
+  "expected": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "productionBefore": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "sourceCount": 180,
+  "srcScriptsCount": 149,
+  "copiedSourceMatches": true,
+  "changedSinceRound5": [
+    "scripts/test-streamline-v340-s5.ts",
+    "src/app/api/spck/scan/route.ts",
+    "src/lib/gemini/spck-comment.ts"
+  ],
+  "probeHashes": {
+    "independent-probe.ts": {
+      "source": "F7C40200180BB7D804AF8060F4BCDB2FF70D70378E1D3AC5129ADA4DCB20A1F2",
+      "executed": "F7C40200180BB7D804AF8060F4BCDB2FF70D70378E1D3AC5129ADA4DCB20A1F2"
+    },
+    "supplementary-probe.ts": {
+      "source": "8E3D2AD781B5F3F7A74C8B47AEC281463DF1966A84503C24D26316F4F6434554",
+      "executed": "8E3D2AD781B5F3F7A74C8B47AEC281463DF1966A84503C24D26316F4F6434554"
+    },
+    "round3-focused-probe.ts": {
+      "source": "9AF5A92727B7FFB6AC047F07BF3211D201D09B25332920EE134650CC261E23AA",
+      "executed": "9AF5A92727B7FFB6AC047F07BF3211D201D09B25332920EE134650CC261E23AA"
+    },
+    "round4-closure-probe.ts": {
+      "source": "D254ED1461A4E29F768E1C4845FF1CE8EB8E0A92696A0D4ED0BA6043211AC74F",
+      "executed": "D254ED1461A4E29F768E1C4845FF1CE8EB8E0A92696A0D4ED0BA6043211AC74F"
+    },
+    "round5-focused-probe.ts": {
+      "source": "913EA85F14B88B9AF4664CCCAE038C74A600FD88E8B7443CD22CA9BFAA9F735F",
+      "executed": "913EA85F14B88B9AF4664CCCAE038C74A600FD88E8B7443CD22CA9BFAA9F735F"
+    },
+    "callback-probe.cjs": {
+      "source": "6026FFAAFB162042CF35D84D7173391D61933B04243EEA0E81ED0DB91FB4BFBC",
+      "executed": "6026FFAAFB162042CF35D84D7173391D61933B04243EEA0E81ED0DB91FB4BFBC"
+    }
+  },
+  "node": "v24.21.0",
+  "verdict": "NO-GO",
+  "mandatoryGateCount": 9,
+  "mandatoryCommandCount": 10,
+  "mandatoryPassed": true,
+  "gates": [
+    {
+      "gate": "tsc",
+      "command": "npx tsc --noEmit --incremental false",
+      "started": "2026-11-05T06:11:14.298Z",
+      "finished": "2026-11-05T06:11:17.166Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-tsc.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-tsc-classes.json"
+    },
+    {
+      "gate": "v270",
+      "command": "npx tsx scripts/test-spck-v270.ts",
+      "started": "2026-11-05T06:11:17.219Z",
+      "finished": "2026-11-05T06:11:29.838Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-v270.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-v270-classes.json"
+    },
+    {
+      "gate": "v272",
+      "command": "npx tsx scripts/test-spck-v272.ts",
+      "started": "2026-11-05T06:11:29.896Z",
+      "finished": "2026-11-05T06:11:47.810Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-v272.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-v272-classes.json"
+    },
+    {
+      "gate": "s5",
+      "command": "npx tsx scripts/test-streamline-v340-s5.ts",
+      "started": "2026-11-05T06:11:47.870Z",
+      "finished": "2026-11-05T06:12:00.003Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-s5.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-s5-classes.json"
+    },
+    {
+      "gate": "probe",
+      "command": "npx tsx scratch/independent-probe.ts",
+      "started": "2026-11-05T06:12:00.055Z",
+      "finished": "2026-11-05T06:12:05.751Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-probe.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-probe-classes.json"
+    },
+    {
+      "gate": "supplementary",
+      "command": "npx tsx scratch/supplementary-probe.ts",
+      "started": "2026-11-05T06:12:05.814Z",
+      "finished": "2026-11-05T06:12:09.462Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-supplementary.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-supplementary-classes.json"
+    },
+    {
+      "gate": "callback",
+      "command": "node ../callback-probe.cjs",
+      "started": "2026-11-05T06:12:09.523Z",
+      "finished": "2026-11-05T06:12:10.215Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-callback.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-callback-classes.json"
+    },
+    {
+      "gate": "focused",
+      "command": "npx tsx scratch/round3-focused-probe.ts",
+      "started": "2026-11-05T06:12:10.267Z",
+      "finished": "2026-11-05T06:12:13.558Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-focused.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-focused-classes.json"
+    },
+    {
+      "gate": "closure",
+      "command": "npx tsx scratch/round4-closure-probe.ts",
+      "started": "2026-11-05T06:12:13.617Z",
+      "finished": "2026-11-05T06:12:17.024Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-closure.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-closure-classes.json"
+    },
+    {
+      "gate": "review",
+      "command": "npx tsx scratch/round5-focused-probe.ts",
+      "started": "2026-11-05T06:10:57.832Z",
+      "finished": "2026-11-05T06:11:01.480Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-review.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-review-classes.json"
+    },
+    {
+      "gate": "round6",
+      "command": "npx tsx scratch/round6-focused-probe.ts",
+      "started": "2026-11-05T06:12:19.431Z",
+      "finished": "2026-11-05T06:12:22.694Z",
+      "exitCode": 1,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-round6.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r6-S3v47e\\work\\data\\audit-round6-classes.json"
+    }
+  ],
+  "tests": {
+    "round1": {
+      "total": 42,
+      "passed": 42,
+      "failed": 0,
+      "errors": 0
+    },
+    "round2": {
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "errors": 0
+    },
+    "F09": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "errors": 0
+    },
+    "round3": {
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "errors": 0
+    },
+    "round4": {
+      "total": 15,
+      "passed": 15,
+      "failed": 0,
+      "errors": 0
+    },
+    "round5": {
+      "total": 8,
+      "passed": 8,
+      "failed": 0,
+      "errors": 0
+    },
+    "round6": {
+      "total": 7,
+      "passed": 3,
+      "failed": 4,
+      "errors": 0
+    }
+  },
+  "statuses": {
+    "F01": "OPEN",
+    "F02": "CLOSED",
+    "F03": "CLOSED",
+    "F04": "CLOSED",
+    "F05": "CLOSED",
+    "F06": "CLOSED",
+    "F07": "CLOSED",
+    "F08": "OPEN",
+    "F09": "CLOSED",
+    "F10": "CLOSED"
+  },
+  "versions": {
+    "typescript": "7.0.2",
+    "tsx": "4.23.15",
+    "next": "16.4.2",
+    "better-sqlite3": "13.0.3",
+    "esbuild": "0.28.2",
+    "playwright": "1.64.1"
+  },
+  "productionAfter": {
+    "data/mindx_bot.db": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+    "data/running_classes.json": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+  },
+  "productionMatchesOwner": true,
+  "sourceChanged": [],
+  "snapshotChanged": [],
+  "trackedDiffUnchanged": true,
+  "probeHashesAfter": {
+    "independent-probe.ts": "F7C40200180BB7D804AF8060F4BCDB2FF70D70378E1D3AC5129ADA4DCB20A1F2",
+    "supplementary-probe.ts": "8E3D2AD781B5F3F7A74C8B47AEC281463DF1966A84503C24D26316F4F6434554",
+    "round3-focused-probe.ts": "9AF5A92727B7FFB6AC047F07BF3211D201D09B25332920EE134650CC261E23AA",
+    "round4-closure-probe.ts": "D254ED1461A4E29F768E1C4845FF1CE8EB8E0A92696A0D4ED0BA6043211AC74F",
+    "round5-focused-probe.ts": "913EA85F14B88B9AF4664CCCAE038C74A600FD88E8B7443CD22CA9BFAA9F735F",
+    "callback-probe.cjs": "6026FFAAFB162042CF35D84D7173391D61933B04243EEA0E81ED0DB91FB4BFBC"
+  },
+  "round6ProbeSha256": "37E04E914C489663D68AA9261A148C539AD6D001079D768430AB95276172883A",
+  "history": {
+    "originalBytes": 101417,
+    "originalSha256": "A94A3C04B8390C94796B02689E77A5A85CFA0ACC8838F468398134D92C60A1FB"
+  },
+  "priorEvidenceFiles": 255,
+  "network": {
+    "logs": [
+      "callback-network.jsonl",
+      "closure-network.jsonl",
+      "focused-network.jsonl",
+      "probe-network.jsonl",
+      "review-network.jsonl",
+      "round6-network.jsonl",
+      "s5-network.jsonl",
+      "supplementary-network.jsonl",
+      "tsc-network.jsonl",
+      "v270-network.jsonl",
+      "v272-network.jsonl"
+    ],
+    "events": 50,
+    "blocked": [],
+    "sqliteOpened": [],
+    "limitation": "In-process instrumentation only; not an operating-system packet capture"
+  },
+  "reviewer": {
+    "agent": "/root/closure_review",
+    "scope": "Independent source inspection only; runtime reproduction by primary auditor in TEMP",
+    "requestedModel": "claude-sonnet-5-5-high",
+    "requestedModelAvailable": false,
+    "actual": "Available collaboration agent; no claim to have run unavailable Claude model"
+  },
+  "scope": "Only requested audit report and Round 6 evidence written. Synthetic/mocked services; no source edits, commit, push or real-service acceptance."
+}

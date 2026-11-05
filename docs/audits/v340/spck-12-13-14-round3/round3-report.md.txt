@@ -1,0 +1,115 @@
+# Kiểm định độc lập SPCK Buổi 12–13–14 — Round 3 Final Closure Audit
+
+## VERDICT ROUND 3: NO-GO
+
+**Ngày kiểm định:** 05/11/2026, múi giờ Việt Nam.  
+**Bản được kiểm định:** HEAD `00dd3e3f75961a1276379cad3212eaf74ec306b2` cùng toàn bộ sửa đổi chưa commit trong thư mục làm việc. Đúng **4 tệp** thay đổi so với snapshot Round 2: `spck-quick-tags.ts`, `scan/route.ts`, `spck-comment.ts`, `scripts/test-streamline-v340-s5.ts`. [SHA-256 thay đổi](spck-12-13-14-round3/source-changes-since-round2.json), [Git status ban đầu](spck-12-13-14-round3/git-status-before.txt), [chênh lệch với HEAD](spck-12-13-14-round3/working-tree.patch).
+
+**Kết quả: 6/10 CLOSED; 4/10 OPEN — F01, F02, F07, F08.** Các ca Round 2 được yêu cầu kiểm tra lại đều đã đạt, gồm **R2-F01-01/02/03, R2-F02-01/02/03, R2-F07-01/02, R2-F08-01/02**. Tuy nhiên, đọc mã và thử thêm các biến thể trong chính bốn yêu cầu khắc phục này vẫn tái hiện **5 ca FAIL**, nên chưa đủ bằng chứng đóng toàn bộ lỗi.
+
+**6/6 cổng bắt buộc PASS** (7 lệnh vì G6 có hai bộ thử); probe Round 1 **42/42 PASS**, Round 2 **10/10 PASS**, callback F09 **2/2 PASS**. Probe tập trung Round 3: **7 ca, 2 PASS, 5 FAIL, 0 lỗi thiết lập**, exit 1. Không dùng kết quả bộ thử cũ thay thế việc kiểm tra đầy đủ điều kiện đóng lỗi.
+
+**Bảo toàn: PASS.** Hai tệp dữ liệu thật khớp SHA-256 trước/sau và khớp Owner; **180/180 tệp đầu vào giữ nguyên và khớp bản TEMP**, gồm **149/149 tệp `src/**` + `scripts/**`**. Chỉ ghi báo cáo và bằng chứng Round 3 trong dự án gốc. Không sửa mã ứng dụng hoặc bộ thử của Owner.
+
+### R3.1. Cô lập và ràng buộc bằng chứng
+
+- Đọc báo cáo Round 2, đặc biệt R2.3/R2.4, nguyên probe 42 ca Round 1, 10 ca Round 2, callback 2 ca F09, các tệp sửa và nơi gọi chúng. Nội dung báo cáo trước vòng này được giữ **nguyên byte** bên dưới và lưu riêng tại [round2-report.md.txt](spck-12-13-14-round3/round2-report.md.txt).
+- Snapshot tại `%TEMP%\codex-spck-121314-r3-231b1c133ae2\work`; sao chép mã/cấu hình, liên kết thư viện đã cài. Không sao chép `.env`, hồ sơ trình duyệt, DB thật hoặc danh sách lớp thật. Mỗi lần chạy dùng DB giả riêng `work/data/audit-<gate>.db`, JSON giả `audit-<gate>-classes.json` có nội dung `[]` qua `MINDX_DB_PATH` và `MINDX_RUNNING_CLASSES_PATH`.
+- Bộ bảo vệ chặn HTTP bên ngoài loopback và việc tạo hồ sơ trình duyệt persistent; bổ sung kiểm tra ngay tại hàm mở SQLite, chỉ cho phép đúng DB giả của lần chạy. Phản hồi Gemini, cây Drive và callback LMS được giả lập. Bộ bảo vệ không ghi nhận sự kiện bị chặn; nhật ký mở SQLite chỉ chứa đường dẫn DB giả. Đây là giám sát trong tiến trình, không phải phép đo toàn bộ lưu lượng hệ điều hành.
+- G5 và G6 chạy nguyên byte probe gốc, không nới điều kiện hoặc bỏ ca. SHA-256 bản nguồn/bản chạy nằm trong [state.json](spck-12-13-14-round3/state.json). Ca Round 3 nằm ở tệp riêng, dùng DB riêng và không làm thay đổi kết quả các cổng bắt buộc.
+- Lần thử đầu của probe Round 3 thiếu bản ghi Buổi 13 trong dữ liệu giả, gây **2 lỗi thiết lập**, không quy kết thành lỗi sản phẩm. Đã bổ sung dữ liệu giả và chạy lại trên DB mới; kết quả cuối có **0 lỗi thiết lập**. [Lần đầu](spck-12-13-14-round3/focused-initial-results.json), [kết quả cuối](spck-12-13-14-round3/focused-results.json).
+- Hai ca F01 mới gọi trực tiếp route quét rồi đọc lại thẻ **đã lưu trong SQLite giả**, không chỉ kiểm tra hàm gợi ý riêng. Ca F02 gọi bộ sinh nhận xét thật với phản hồi AI cố tình sai; F07/F08 gọi bộ phân tích thật trên tệp TEMP.
+
+### R3.2. Kết quả các cổng
+
+| Cổng | Lệnh chạy trong `work` TEMP | Kết quả | Bằng chứng |
+|---|---|---|---|
+| G1 | `npx tsc --noEmit --incremental false` | **PASS**, exit 0 | [log](spck-12-13-14-round3/tsc.log.txt), [lần chạy](spck-12-13-14-round3/tsc-result.json) |
+| G2 | `npx tsx scripts/test-spck-v270.ts` | **PASS**, T01–T16, exit 0 | [log](spck-12-13-14-round3/v270.log.txt), [lần chạy](spck-12-13-14-round3/v270-result.json) |
+| G3 | `npx tsx scripts/test-spck-v272.ts` | **PASS**, V01–V17, exit 0 | [log](spck-12-13-14-round3/v272.log.txt), [lần chạy](spck-12-13-14-round3/v272-result.json) |
+| G4 | `npx tsx scripts/test-streamline-v340-s5.ts` | **PASS**, các nhóm S5b và giao diện giả lập, exit 0 | [log](spck-12-13-14-round3/s5.log.txt), [lần chạy](spck-12-13-14-round3/s5-result.json) |
+| G5 | `npx tsx scratch/independent-probe.ts` | **PASS**, 42/42, exit 0 | [log](spck-12-13-14-round3/probe.log.txt), [42 kết quả](spck-12-13-14-round3/probe-results.json), [lần chạy](spck-12-13-14-round3/probe-result.json) |
+| G6a | `npx tsx scratch/supplementary-probe.ts` | **PASS**, 10/10, exit 0 | [log](spck-12-13-14-round3/supplementary.log.txt), [10 kết quả](spck-12-13-14-round3/supplementary-results.json), [lần chạy](spck-12-13-14-round3/supplementary-result.json) |
+| G6b | `node ../callback-probe.cjs` | **PASS**, F09 2/2, exit 0 | [log](spck-12-13-14-round3/callback.log.txt), [2 kết quả](spck-12-13-14-round3/callback-results.json), [lần chạy](spck-12-13-14-round3/callback-result.json) |
+| Bổ sung Round 3 | `npx tsx scratch/round3-focused-probe.ts` | **FAIL**, 2/7 PASS, 5 FAIL, 0 ERROR, exit 1 | [mã](spck-12-13-14-round3/round3-focused-probe.ts.txt), [log cuối](spck-12-13-14-round3/focused-final.log.txt), [kết quả](spck-12-13-14-round3/focused-results.json), [lần chạy cuối](spck-12-13-14-round3/focused-final-result.json) |
+
+G6b thực thi đúng `callback-probe.cjs` của Round 2; tiền tố `../` chỉ phản ánh vị trí tệp ở thư mục TEMP cha. Không gọi LMS thật.
+
+### R3.3. Trạng thái từng mục F01–F10
+
+| ID / mức độ gốc | Trạng thái | Kết quả kiểm định trên bản hiện tại |
+|---|---|---|
+| **F01 / P1** | **OPEN** | Ba ca R2-F01 đều PASS: không còn suy luận từ đuôi `.js`, `querySelector` đơn lẻ hoặc số ảnh. Nhưng **R3-F01-01/02 FAIL**: chỉ xử lý click đổi chữ đã tự lưu thẻ có Array/Object; chỉ `const firebase = false` đã tự lưu thẻ khởi tạo kết nối Firebase và hoàn thành giao diện. Vẫn có kết luận vượt bằng chứng. |
+| **F02 / P1** | **OPEN** | R2-F02-01/02/03 và HALLUCINATION-01/02/03 PASS. Đã loại nguyên câu thay vì thay danh từ ở các ca cũ. Nhưng **R3-F02-01 FAIL**: trang HTML tĩnh vẫn nhận `WAITING_APPROVAL` với lời khen `fetch('/api/products')` tải dữ liệu thành công. Ca phủ định Bootstrap R3-F02-02 PASS. |
+| **F03 / P1** | **CLOSED** | `spck-comment.ts:730–736` vẫn kiểm tra `inspectZipArchiveSafely` trước khi gọi `entry.getData()`. **ZIP-04 PASS**: HTML giải nén 16 MB bị từ chối, không trích được nội dung vượt ngưỡng. Không thử gây cạn tài nguyên. |
+| **F04 / P2** | **CLOSED** | Các tệp Drive không đổi so với Round 2. **DRIVE-01/02/03 PASS**, gồm local rỗng, đổi tên thư mục Coding và giữ ảnh Robotics khác tên. Giữ nguyên ranh giới cây Drive giả. |
+| **F05 / P2** | **CLOSED** | **DRIVE-04/05 PASS** và S5 PASS: không lấy fallback trong `_spck_owner_uploads`, vẫn loại thư mục/tệp nội bộ ở các nhánh đã thử. |
+| **F06 / P2** | **CLOSED** | `scan/route.ts:84–86` vẫn so tên chuẩn hóa bằng nhau. **ROB-01/02 PASS**: tạo riêng `Lê An`/`Lê Anh`, không tạo lặp. |
+| **F07 / P2** | **OPEN** | WEB-03/05, R2-F07-01/02 và ca vượt ngưỡng mới 100.000 ký tự **R3-F07-01 PASS**. Nhưng **R3-F07-02 FAIL**: có HTML trong thư mục và JS hợp lệ đính kèm ngoài thư mục đó, nhánh phân tích sâu bỏ qua JS rồi khẳng định không có Firebase/LocalStorage; ngay đoạn trích gửi AI lại chứa mã dùng cả hai. |
+| **F08 / P2** | **OPEN** | WEB-04 và R2-F08-01/02 PASS: comment nội tuyến và câu TODO cũ đã được xử lý. Nhưng **R3-F08-01 FAIL**: chuỗi hiển thị kế hoạch `Next session we will add ...` vẫn làm Firebase/LocalStorage/Auth/Cart được ghi nhận là tính năng có thật. |
+| **F09 / P2** | **CLOSED** | **LMS-01/02/03 và R2-F09-01/02 PASS**. Giữ cả `.py` và `.sb3` khi đều hợp lệ; loại `.sb3` khi chỉ `.py` được giữ bằng khóa có đuôi. Callback chạy trên phần tử giả, chưa xác minh caption LMS thật. |
+| **F10 / P2** | **CLOSED** | `scan/route.ts:181–188` giữ ưu tiên metadata quét mới cho URL đã có. **SYNC-05/06 PASS**, nhãn link mới cập nhật và snapshot VERIFIED buổi trước giữ nguyên. |
+
+Trạng thái máy đọc được: [closure-results.json](spck-12-13-14-round3/closure-results.json). Các biến thể Round 3 thuộc bốn điều kiện đóng lỗi cũ, không phải năm phát hiện mới; giữ mức độ gốc và không quy kết tất cả là hồi quy mới.
+
+### R3.4. Bốn mục còn OPEN — nguyên nhân, tái hiện, cách sửa
+
+**F01 — thẻ đã lưu vẫn khẳng định nhiều hơn mã nguồn chứng minh.**
+
+- **Vị trí/nguyên nhân:** `scan/route.ts:451–457`, `:491–511` chuyển dấu hiệu click/đổi chữ và từ khóa Firebase thành cờ xác nhận; `spck-quick-tags.ts:1456–1468` ánh xạ các cờ đó sang cả câu đánh giá gồm nhiều nội dung chưa được chứng minh.
+- **Tái hiện thực:** JSA Buổi 12 chỉ có nút click đổi `textContent`, không Array/Object, nhưng lưu `⚡ Đã xây dựng cấu trúc dữ liệu JavaScript (Array/Object) & hiển thị nội dung động`. JSI Buổi 12 chỉ có `<h1>Plants</h1><script>const firebase = false;</script>`, không import/khởi tạo Firebase, nhưng lưu `✅ Đã dựng xong giao diện các trang chính & khởi tạo kết nối dự án Firebase`.
+- **Cách sửa tối thiểu:** chỉ tự lưu quan sát đúng từng bằng chứng; không dùng một cờ chung để chọn thẻ có nhiều kết luận. Để giáo viên xác nhận chất lượng, hoàn thành và kết nối chạy được. Giữ nguyên thẻ thủ công/nháp đã duyệt.
+- **Kiểm tra lại:** R3-F01-01/02, ba ca R2-F01 và SYNC-01/03 phải đạt; không chỉ chặn thêm đúng hai chuỗi đầu vào này.
+
+**F02 — bộ phân tích và bộ lọc không nhận cùng các cách gọi Fetch.**
+
+- **Vị trí/nguyên nhân:** bộ phân tích `spck-comment.ts:915` nhận `fetch(...)`, nhưng mẫu chặn tại `:1571–1577` chỉ có `Fetch API`, một dạng `fetch()` rỗng và một số cụm từ; bỏ lọt cách gọi có đối số.
+- **Tái hiện:** nguồn chỉ `<title>Plants</title><h1>Plants</h1><p>Static information.</p>`, `noFetchApi=true`. Phản hồi AI giả `Con đã dùng fetch('/api/products') để tải dữ liệu thành công.` vẫn được giữ nguyên trong nhận xét `WAITING_APPROVAL`.
+- **Cách sửa tối thiểu:** thống nhất cách nhận diện tính năng giữa bước đọc mã và hậu kiểm, bao gồm tên hàm và lời khẳng định tải dữ liệu tương ứng. Khi không có bằng chứng, loại hoặc yêu cầu viết lại toàn mệnh đề sai; không chỉ đổi tên công nghệ.
+- **Kiểm tra lại:** R3-F02-01, ba ca R2-F02 và HALLUCINATION-01/02/03 phải đạt; ca phủ định đối chứng vẫn đạt.
+
+**F07 — chỉ một trong hai nguồn mã được đưa vào phân tích sâu.**
+
+- **Vị trí/nguyên nhân:** `spck-comment.ts:681–685` chỉ duyệt `attachments` khi chưa có HTML/CSS/JS từ thư mục. Khi thư mục đã cung cấp một HTML, JS đính kèm hợp lệ ngoài thư mục không được xét để tính các cờ `no*` tại `:930–936`.
+- **Tái hiện:** `project/index.html` tham chiếu `../feature.js`; cả hai tệp đều nằm trong TEMP allowlist và được truyền vào `attachments`. `feature.js` có `import {initializeApp} from "firebase/app"; initializeApp({}); localStorage.setItem("x","y");`. Kết quả vẫn `noFirebase=true`, `noLocalStorage=true` và cảnh báo `KHÔNG có [...]`, trong khi phần `FILE_02.js` cùng bản tóm tắt lại trích nguyên mã đó.
+- **Cách sửa tối thiểu:** hợp nhất các tệp hợp lệ từ thư mục và attachment, loại trùng theo đường dẫn rồi phân tích chung. Nếu chưa đọc được một phần liên quan, giữ trạng thái chưa biết và không phát cảnh báo chắc chắn vắng mặt. Giữ các giới hạn an toàn ZIP/độ dài/số lượng.
+- **Kiểm tra lại:** R3-F07-02, WEB-03/05, R2-F07-01/02 và R3-F07-01 phải đạt.
+
+**F08 — chuỗi mô tả kế hoạch vẫn được dò như mã thực thi tính năng.**
+
+- **Vị trí/nguyên nhân:** `spck-comment.ts:796–804` chỉ loại một số từ đánh dấu TODO/kế hoạch; `:910–926` sau đó dò tên công nghệ/tính năng trên toàn mã JS còn lại, gồm cả chuỗi văn bản hiển thị.
+- **Tái hiện:** HTML chỉ có `const helpText="Next session we will add Firebase Firestore localStorage login shopping cart"; document.body.textContent=helpText;`. Không import, API lưu trữ, luồng đăng nhập hoặc giỏ hàng; kết quả `noFirebase=false`, `noLocalStorage=false`, `noAuth=false`, `noCart=false`, và tóm tắt ghi những tính năng đó là kỹ thuật thực tế phát hiện trong code.
+- **Cách sửa tối thiểu:** phân biệt nội dung chuỗi hiển thị với cú pháp sử dụng API/import/hàm và cấu trúc giao diện thực. Chỉ tên tính năng trong văn bản không chứng minh triển khai; không mở rộng một danh sách từ TODO để thay cho việc phân biệt này.
+- **Kiểm tra lại:** R3-F08-01, R2-F08-01/02 và WEB-04 phải đạt; bổ sung ca có mã triển khai thật để tránh lọc nhầm bằng chứng thật.
+
+Mã tái hiện độc lập và đầu ra rút gọn: [round3-focused-probe.ts.txt](spck-12-13-14-round3/round3-focused-probe.ts.txt), [focused-observations.json](spck-12-13-14-round3/focused-observations.json). `scripts/test-streamline-v340-s5.ts:919–936` đã thêm hai ca về đuôi `.js` và một ảnh Robotics, nhưng không phủ các biến thể mới trên; S5 PASS chưa chứng minh đủ bốn điều kiện đóng lỗi.
+
+### R3.5. SHA-256 dữ liệu thật và bảo toàn nguồn
+
+| Tệp thật | Trước Round 3 | Sau các cổng | Kết quả |
+|---|---|---|---|
+| `data/mindx_bot.db` | `91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A` | `91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A` | **MATCH**, khớp Owner |
+| `data/running_classes.json` | `F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9` | `F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9` | **MATCH**, khớp Owner |
+
+Chỉ đọc hai tệp thật để tính SHA-256, không dùng làm fixture hoặc mở kết nối DB thật. Manifest nguồn/cấu hình trước/sau và bản TEMP khớp **180/180**; bao gồm đủ **149 tệp nguồn/kiểm thử**. Chênh lệch các tệp Git đã theo dõi cũng giữ nguyên byte so với đầu vòng, kể cả phần việc chưa commit của Owner.
+
+- [verification-summary.json](spck-12-13-14-round3/verification-summary.json): HEAD, phiên bản công cụ, lệnh/thời gian/mã thoát, số ca, trạng thái lỗi, mã SHA-256 và ranh giới bằng chứng.
+- [source-manifest-before.json](spck-12-13-14-round3/source-manifest-before.json), [source-manifest-after.json](spck-12-13-14-round3/source-manifest-after.json): dấu vân tay đầu vào và đối chiếu sau thử.
+- [setup.cjs.txt](spck-12-13-14-round3/setup.cjs.txt), [runner.cjs.txt](spck-12-13-14-round3/runner.cjs.txt), [guard.cjs.txt](spck-12-13-14-round3/guard.cjs.txt), [preserve.cjs.txt](spck-12-13-14-round3/preserve.cjs.txt): dựng môi trường, truyền DB/JSON giả, bảo vệ và lưu bằng chứng. Khi tái hiện, sau bước setup dùng runner/guard và probe đã lưu của Round 3; không dùng lại runner/guard Round 2 do setup ban đầu sao chép.
+- [final-preservation.json](spck-12-13-14-round3/final-preservation.json): lần kiểm tra cuối sau khi ghi báo cáo, xác nhận giữ nguyên lịch sử và đã dọn đúng thư mục TEMP của Round 3.
+- [evidence-sha256.json](spck-12-13-14-round3/evidence-sha256.json): mã kiểm tra các tệp bằng chứng; log được lưu đuôi `.log.txt` để không bị quy tắc bỏ qua `.log` của Git che khuất.
+
+### R3.6. Kết luận và bước tiếp theo
+
+**Đã làm:** hoàn tất kiểm định độc lập, chạy đủ G1–G6, xác minh các sửa Round 2, tái hiện năm ca chưa đạt và lưu hồ sơ Round 3. Giữ nguyên lịch sử Round 1/Round 2 và mã ứng dụng.
+
+**Kết quả:** **NO-GO**. **CLOSED:** F03, F04, F05, F06, F09, F10. **OPEN:** F01, F02, F07, F08. Các ca cũ đã đạt nhưng điều kiện đóng toàn bộ bốn mục vẫn chưa hoàn tất. Hai tệp dữ liệu thật bảo toàn theo SHA-256 Owner.
+
+**Chưa kiểm tra:** lớp/dữ liệu thật, LMS/Teaching/Drive/Gemini thật, bản dựng production mới và tải lớn. Không có bằng chứng rằng nhận xét sai đã được gửi tới tài khoản thật; phản hồi sai ở probe là đầu vào giả lập cố tình tạo.
+
+**Việc tiếp theo:** giao vòng sửa chỉ tập trung bốn mục tại R3.4, ưu tiên F01/F02, sau đó chạy lại G1–G6 cùng bảy ca Round 3 trên đúng bản mới. Vòng kiểm định này không triển khai bản sửa và không đưa phần mã đang sửa của Owner lên GitHub.
+
+---
+
+# Lịch sử giữ nguyên — Round 2 và Round 1
+

@@ -1,0 +1,18 @@
+Reviewer độc lập: /root/closure_source_review
+Phạm vi: đọc nguồn; không ghi tệp, không mở dữ liệu thật. Số liệu chạy TEMP do agent điều phối thực hiện.
+Model claude-sonnet-5-5-high không có trong danh sách công cụ; không tuyên bố đã dùng model đó.
+
+Kết luận reviewer: NO-GO. F01/F07/F08 OPEN; F02-F06/F09-F10 CLOSED.
+
+F01/F08:
+- scan/route.ts:583 và spck-comment.ts:1029 lấy style từ toàn HTML, gồm chuỗi trong script. Chuỗi hiển thị chứa <style> bị nhận thành CSS thật.
+- scan/route.ts:429-545,561 và spck-comment.ts:863-979,1172 chưa tách regex literal khỏi câu lệnh gọi hàm. /initializeApp()/ chỉ là mẫu tìm kiếm nhưng được nhận thành Firebase.
+
+F07:
+- spck-comment.ts:1009-1014 normalize ../shared/main.js rồi xóa ../, làm khớp sai entry shared/main.js trong ZIP. Tham chiếu vượt gốc ZIP phải giữ trạng thái chưa biết.
+
+F02:
+- spck-comment.ts:1829-1876 bao phủ sáu nhóm tính năng, gồm getDocs, collection, signInWithPopup; không có ca thất bại cụ thể còn lại trong phạm vi này.
+
+Primary auditor đã cung cấp kết quả: 9/9 lệnh bắt buộc exit 0; 76/76 probe cũ PASS. Round 5 bổ sung 8 ca: 3 PASS, 5 FAIL, 0 ERROR.
+Reviewer đồng ý NO-GO sau khi đối chiếu nguồn và các tái hiện này. Không kiểm tra LMS/Gemini/Drive thật.

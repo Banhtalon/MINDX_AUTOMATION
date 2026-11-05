@@ -1,0 +1,107 @@
+{
+  "head": "00dd3e3f75961a1276379cad3212eaf74ec306b2",
+  "scope": "working-tree",
+  "snapshotCreated": "2026-11-05T02:40:19.108Z",
+  "checkedAt": "2026-11-05T02:53:07.402Z",
+  "sourceFiles": 149,
+  "filesVerified": 165,
+  "changed": [],
+  "mismatch": [],
+  "production": {
+    "data/mindx_bot.db": {
+      "expected": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+      "before": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A",
+      "after": "91590E4D14C7C690B71848CE1DA58AEC6B45150ED7C04FB82E557EEE8BC8EE6A"
+    },
+    "data/running_classes.json": {
+      "expected": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9",
+      "before": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9",
+      "after": "F03A852729D2D75470991BD4B8BAE2D86AB0EE0A68ABBF7801FB7417C125CBE9"
+    }
+  },
+  "gates": [
+    {
+      "gate": "tsc",
+      "command": "npx tsc --noEmit --incremental false",
+      "started": "2026-11-05T02:49:46.208Z",
+      "finished": "2026-11-05T02:49:49.493Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\data\\audit-tsc.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\data\\audit-tsc-classes.json"
+    },
+    {
+      "gate": "v270",
+      "command": "npx tsx scripts/test-spck-v270.ts",
+      "started": "2026-11-05T02:49:22.053Z",
+      "finished": "2026-11-05T02:49:29.751Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\data\\audit-v270.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\data\\audit-v270-classes.json"
+    },
+    {
+      "gate": "v272",
+      "command": "npx tsx scripts/test-spck-v272.ts",
+      "started": "2026-11-05T02:49:49.560Z",
+      "finished": "2026-11-05T02:50:11.854Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\data\\audit-v272.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\data\\audit-v272-classes.json"
+    },
+    {
+      "gate": "s5",
+      "command": "npx tsx scripts/test-streamline-v340-s5.ts",
+      "started": "2026-11-05T02:50:36.922Z",
+      "finished": "2026-11-05T02:50:46.615Z",
+      "exitCode": 0,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\data\\audit-s5.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\data\\audit-s5-classes.json"
+    },
+    {
+      "gate": "probe",
+      "command": "npx tsx scratch/independent-probe.ts",
+      "started": "2026-11-05T02:51:53.617Z",
+      "finished": "2026-11-05T02:51:59.889Z",
+      "exitCode": 1,
+      "signal": null,
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\data\\audit-probe.db",
+      "runningClasses": "C:\\Users\\QQ\\AppData\\Local\\Temp\\codex-spck-121314-r1-DYj65E\\work\\data\\audit-probe-classes.json"
+    }
+  ],
+  "probe": {
+    "total": 42,
+    "passed": 28,
+    "failed": 14,
+    "groups": {
+      "1": {
+        "total": 6,
+        "pass": 5,
+        "fail": 1
+      },
+      "2": {
+        "total": 12,
+        "pass": 7,
+        "fail": 5
+      },
+      "3": {
+        "total": 6,
+        "pass": 5,
+        "fail": 1
+      },
+      "4": {
+        "total": 14,
+        "pass": 7,
+        "fail": 7
+      },
+      "5": {
+        "total": 4,
+        "pass": 4,
+        "fail": 0
+      }
+    }
+  },
+  "gitStatusBeforeReport": " M scripts/test-streamline-v340-s5.ts\n M src/app/api/spck/scan/route.ts\n M src/app/api/spck/upload-drive/route.ts\n M src/app/final-project/page.tsx\n M src/components/final-project/Step1Header.tsx\n M src/components/final-project/useSpckWorkflow.ts\n M src/lib/file-parsers/archive-reader.ts\n M src/lib/gemini/spck-comment.ts\n M src/lib/local-files/spck-app-screenshotter.ts\n M src/lib/local-files/spck-scanner.ts\n M src/lib/playwright/spck-drive-uploader.ts\n M src/lib/playwright/spck-uploader.ts\n M src/lib/spck/spck-quick-tags.ts\n M tsconfig.tsbuildinfo\n?? docs/audits/v340/spck-12-13-14-round1/\n"
+}

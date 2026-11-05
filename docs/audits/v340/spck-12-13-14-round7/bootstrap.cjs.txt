@@ -1,0 +1,18 @@
+const fs=require('node:fs'),path=require('node:path');
+const repo=process.argv[2],root=__dirname,r6=path.join(repo,'docs/audits/v340/spck-12-13-14-round6');
+let s=fs.readFileSync(path.join(r6,'setup.cjs.txt'),'utf8');
+s=s.replaceAll('spck-12-13-14-round6','spck-12-13-14-round7').replaceAll('Round 6','Round 7');
+s=s.replace("const r5=path.join(base,'spck-12-13-14-round5');","const r5=path.join(base,'spck-12-13-14-round5'),r6=path.join(base,'spck-12-13-14-round6');");
+s=s.replace("['round5-focused-probe.ts',path.join(r5,'round5-focused-probe.ts.txt')]]", "['round5-focused-probe.ts',path.join(r5,'round5-focused-probe.ts.txt')],['round6-focused-probe.ts',path.join(r6,'round6-focused-probe.ts.txt')]]");
+s=s.replace("path.join(r5,name+'.txt')","path.join(r6,name+'.txt')").replace("path.join(r5,'source-manifest-before.json')","path.join(r6,'source-manifest-before.json')");
+s=s.replaceAll('changedSinceRound5','changedSinceRound6').replaceAll('source-changes-since-round5','source-changes-since-round6').replaceAll('round5-report.md.txt','round6-report.md.txt');
+s=s.replace("'closure','review'];", "'closure','review','round6'];");
+fs.writeFileSync(path.join(root,'setup.cjs'),s);
+require('./setup.cjs');
+const sha=p=>require('node:crypto').createHash('sha256').update(fs.readFileSync(p)).digest('hex').toUpperCase();
+const walk=(d,r='')=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name),r+e.name+'/'):[r+e.name]);
+const prior=Object.fromEntries([1,2,3,4,5,6].flatMap(n=>{const rel='docs/audits/v340/spck-12-13-14-round'+n;return walk(path.join(repo,rel)).map(p=>[rel+'/'+p,sha(path.join(repo,rel,p))])}));
+fs.writeFileSync(path.join(root,'prior-evidence-manifest.json'),JSON.stringify(prior,null,2));
+let run=fs.readFileSync(path.join(root,'run-all.cjs'),'utf8');
+run=run.replace("['tsc','v270','v272','s5','probe','supplementary','callback','focused','closure','review','round6']", "['round6','tsc','v270','v272','s5','probe','supplementary','callback','focused','closure','review']");
+fs.writeFileSync(path.join(root,'run-all.cjs'),run);
