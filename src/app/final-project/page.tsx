@@ -3033,7 +3033,7 @@ export default function FinalProjectPage() {
       )}
 
       {/* BƯỚC 2: Chuẩn bị, xem lại bài & Công cụ tùy chọn thu gọn */}
-      <div className="mindx-card-blue p-5 rounded-xl space-y-4">
+      <div className="spck-clean-card p-4 rounded-2xl space-y-3.5">
         <ToolsDrawer workflow={workflow} />
         <StudentTable workflow={workflow} />
       </div>

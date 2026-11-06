@@ -227,15 +227,21 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
   };
 
   return (
-    <div className="mindx-card-emerald p-5 rounded-xl space-y-4">
+    <div className="spck-clean-sticky-submit sticky bottom-3 z-20 p-4 rounded-xl space-y-3">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="mindx-badge-emerald px-2.5 py-0.5 rounded-full text-xs font-bold">
+          <span className="spck-pill-primary px-2.5 py-0.5 rounded-full text-xs font-bold">
             Bước 3 / {totalStepsCount}
           </span>
-          <h2 className="text-sm font-bold text-white">
+          <h2 className="text-sm sm:text-base font-extrabold text-white">
             Nộp Các Bài Đã Chọn &amp; Đối Chiếu Kết Quả LMS
           </h2>
+          {assignedRows.length > 0 && (
+            <span className="spck-pill-success px-2 py-0.5 rounded-full text-[11px] font-semibold">
+              Đã xác minh B.{selectedSessionNumber}: {verifiedSpckCountForCurrentSession}/
+              {assignedRows.length} HV
+            </span>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -251,7 +257,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
                   )
                 }
                 disabled={isAnyOperationBusy}
-                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
+                className="spck-pill-warning flex items-center space-x-1.5 px-3.5 py-2 rounded-xl disabled:opacity-50 text-xs font-bold transition-colors cursor-pointer"
               >
                 <RefreshCw
                   className={`w-3.5 h-3.5 ${uploading ? "animate-spin" : ""}`}
@@ -274,7 +280,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
                   )
                 }
                 disabled={isAnyOperationBusy}
-                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
+                className="spck-pill-warning flex items-center space-x-1.5 px-3.5 py-2 rounded-xl disabled:opacity-50 text-xs font-bold transition-colors cursor-pointer"
               >
                 <RefreshCw
                   className={`w-3.5 h-3.5 ${
@@ -303,7 +309,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
                   )
                 }
                 disabled={isAnyOperationBusy}
-                className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
+                className="spck-pill-warning flex items-center space-x-1.5 px-4 py-2 rounded-xl disabled:opacity-50 text-xs font-bold transition-colors cursor-pointer"
               >
                 <RefreshCw
                   className={`w-4 h-4 ${uploading ? "animate-spin" : ""}`}
@@ -326,7 +332,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
                 !selectedClassId ||
                 effectiveSelectedStudentIds.length === 0
               }
-              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 disabled:opacity-50 text-white text-sm font-bold shadow-lg shadow-emerald-950/50 transition-colors cursor-pointer"
+              className="spck-btn-primary flex items-center space-x-2 px-5 py-2.5 rounded-xl disabled:opacity-50 text-sm font-bold transition-colors cursor-pointer"
             >
               {uploading || uploadingS14EvalLms || session14ComboStatus.running ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -353,7 +359,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
                 !selectedClassId ||
                 effectiveSelectedStudentIds.length === 0
               }
-              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-bold shadow-lg shadow-emerald-950/50 transition-colors cursor-pointer"
+              className="spck-btn-primary flex items-center space-x-2 px-5 py-2.5 rounded-xl disabled:opacity-50 text-sm font-bold transition-colors cursor-pointer"
             >
               {uploading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -369,8 +375,8 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
       </div>
 
       {isComboForCurrentClass && (
-          <div className="p-3.5 rounded-xl bg-slate-950 border border-indigo-700/60 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
+          <div className="spck-clean-subbar p-3 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
+            <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
               <div>
                 <div className="font-bold text-emerald-300">
                   Phần 1: Sản phẩm SPCK (Cột 3 LMS)
@@ -384,9 +390,9 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
                 </div>
               </div>
             </div>
-            <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
+            <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
               <div>
-                <div className="font-bold text-indigo-300">
+                <div className="font-bold text-blue-300">
                   Phần 2: Điểm Demo, ĐNL &amp; Thư 3 phần (Cột 2 LMS)
                 </div>
                 <div className="text-slate-300 mt-0.5">

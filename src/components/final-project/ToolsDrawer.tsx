@@ -102,13 +102,13 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
 
   return (
     <>
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 pb-3 border-b border-slate-800">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="mindx-badge-blue px-2.5 py-0.5 rounded-full text-xs font-bold">
+          <span className="spck-pill-primary px-2.5 py-0.5 rounded-full text-xs font-bold">
             Bước 2 / {totalStepsCount}
           </span>
-          <h2 className="text-sm font-bold text-white">
-            Chuẩn Bị &amp; Xem Lại Bài ({rows.length} học viên)
+          <h2 className="text-sm sm:text-base font-extrabold text-white">
+            Danh Sách Bài Làm &amp; Nhận Xét ({rows.length} học viên)
           </h2>
         </div>
 
@@ -119,7 +119,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
               type="button"
               onClick={() => handleGenerateSession14AllAi()}
               disabled={isAnyOperationBusy || rows.length === 0}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+              className="spck-btn-primary flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg disabled:opacity-50 text-xs font-bold transition-colors cursor-pointer"
             >
               {generatingAi || generatingS14EvalAi ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -133,7 +133,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
               type="button"
               onClick={() => handleGenerateAiComments()}
               disabled={isAnyOperationBusy || rows.length === 0}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-semibold transition-colors cursor-pointer"
+              className="spck-btn-primary flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg disabled:opacity-50 text-xs font-bold transition-colors cursor-pointer"
             >
               {generatingAi ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -150,7 +150,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
               onClick={() => handleCaptureAppScreenshots()}
               disabled={isAnyOperationBusy || rows.length === 0}
               title="Tự động mở giao diện App (.ui) hoặc Website (.html) của học viên để chụp hình 16:9 và AI chọn Thumbnail"
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white text-xs font-semibold transition-colors cursor-pointer"
+              className="spck-pill-neutral flex items-center space-x-1.5 px-3 py-1.5 rounded-lg disabled:opacity-50 text-xs font-semibold transition-colors cursor-pointer"
             >
               {capturingScreenshots ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -169,7 +169,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
               onClick={() => handleDeployWebToGithubPages()}
               disabled={isAnyOperationBusy || !selectedClassId || rows.length === 0}
               title="Đẩy sản phẩm Web (.html) lên GitHub Pages và gắn Link chạy thử"
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition-colors cursor-pointer"
+              className="spck-pill-neutral flex items-center space-x-1.5 px-3 py-1.5 rounded-lg disabled:opacity-50 text-xs font-semibold transition-colors cursor-pointer"
             >
               {deployingWeb ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -183,10 +183,10 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
           <button
             type="button"
             onClick={() => setShowOptionalTools((v) => !v)}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
               showOptionalTools || studentPortalRunning
-                ? "bg-sky-950/60 border-sky-500/60 text-sky-200"
-                : "bg-slate-950 border-slate-700 text-slate-300 hover:bg-slate-800"
+                ? "spck-pill-primary"
+                : "spck-pill-neutral"
             }`}
           >
             {showOptionalTools
@@ -197,10 +197,10 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
           <button
             type="button"
             onClick={() => setShowDemoPrepPanel((v) => !v)}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
               showDemoPrepPanel || Boolean(generatedDemoSheetUrl)
-                ? "bg-amber-950/60 border-amber-500/60 text-amber-200"
-                : "bg-slate-950 border-slate-700 text-slate-300 hover:bg-slate-800"
+                ? "spck-pill-primary"
+                : "spck-pill-neutral"
             }`}
           >
             {showDemoPrepPanel
@@ -212,19 +212,19 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
 
       {/* Collapsible Panel A: Optional Drive, Student Upload Portal & Web/App Tools */}
       {(showOptionalTools || studentPortalRunning) && (
-        <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-4">
+        <div className="spck-clean-subbar p-3.5 rounded-xl space-y-3.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-sky-300 uppercase">
+            <span className="text-xs font-bold text-slate-300 uppercase">
               Công cụ tùy chọn: Cổng thu bài học sinh, Google Drive &amp; Cấu hình chạy thử
             </span>
           </div>
 
           {/* Student Direct SPCK Upload Portal */}
-          <div className="p-3.5 rounded-xl bg-gradient-to-r from-rose-950/35 via-slate-950 to-emerald-950/35 border border-rose-500/35 space-y-3">
+          <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-700 space-y-3">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="mindx-dark-keep px-2 py-0.5 rounded-full bg-rose-700 text-white text-[10px] font-bold uppercase tracking-wider">
+                  <span className="spck-pill-primary px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
                     Cổng Thu Bài Học Sinh
                   </span>
                   <span className="text-xs font-bold text-white">
@@ -529,7 +529,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
 
       {/* Collapsible Panel B: Chuẩn bị Demo (Bảng chấm điểm Buổi 14 - cho phép tạo trước Buổi 14) */}
       {(showDemoPrepPanel || Boolean(generatedDemoSheetUrl)) && (
-        <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-700/50 space-y-3">
+        <div className="spck-clean-subbar p-3.5 rounded-xl space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             <div className="md:col-span-6">
               <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
@@ -541,7 +541,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
                 onChange={(e) => setTemplateSheetUrl(e.target.value)}
                 disabled={isAnyOperationBusy}
                 placeholder="Dán link Google Sheet mẫu hoặc để trống dùng mẫu chuẩn MindX"
-                className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-amber-500"
+                className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-blue-500"
               />
             </div>
 
@@ -555,7 +555,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
                 onChange={(e) => setDemoDateInput(e.target.value)}
                 disabled={isAnyOperationBusy}
                 placeholder="YYYY-MM-DD"
-                className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-amber-300 text-xs font-mono focus:outline-none focus:border-amber-500"
+                className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-blue-500"
               />
             </div>
 
@@ -564,7 +564,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
                 type="button"
                 onClick={handleCreateDemoScoringSheet}
                 disabled={isAnyOperationBusy || !selectedClassId}
-                className="w-full flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold text-xs transition-colors cursor-pointer"
+                className="spck-btn-primary w-full flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-lg disabled:opacity-50 font-semibold text-xs transition-colors cursor-pointer"
               >
                 {creatingDemoSheet ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -579,9 +579,9 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
           </div>
 
           {generatedDemoSheetUrl && (
-            <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-700/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="spck-pill-success p-2.5 rounded-lg flex flex-wrap items-center justify-between gap-2 text-xs">
               <div className="flex items-center space-x-2 truncate">
-                <span className="font-bold text-emerald-300">
+                <span className="font-bold">
                   📊 {demoSheetTitle}
                 </span>
               </div>
@@ -590,7 +590,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
                   href={generatedDemoSheetUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+                  className="spck-btn-success px-2.5 py-1 rounded font-semibold"
                 >
                   Mở Google Sheet
                 </a>
@@ -603,7 +603,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
                       text: `Đã sao chép link Bảng chấm điểm Demo để gửi Giám khảo: ${generatedDemoSheetUrl}`,
                     });
                   }}
-                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-semibold cursor-pointer"
+                  className="spck-pill-neutral px-2.5 py-1 rounded font-semibold cursor-pointer"
                 >
                   Copy Link Cho Giám Khảo
                 </button>
@@ -616,36 +616,33 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
       {selectedSessionNumber === 14 && selectedClassId && (
         <div
           data-testid="s14-step2-prep-bar"
-          className="mt-3 p-3.5 rounded-xl bg-slate-950/90 border border-indigo-500/40 space-y-2.5"
+          className="spck-clean-subbar px-3.5 py-2.5 rounded-xl flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 text-xs"
         >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="font-bold text-indigo-300">
-                🏅 Chuẩn bị Điểm Demo &amp; Đánh giá Buổi 14:
-              </span>
-              <span className="text-slate-300">
-                Đã soạn Thư 3 phần:{" "}
-                <strong className="text-indigo-300">{s14ReadyLetterCount}</strong>/
-                {(session14Evals || []).length} • Đã lưu LMS:{" "}
-                <strong className="text-emerald-300">{s14VerifiedCount}</strong>/
-                {(session14Evals || []).length}
-              </span>
-            </div>
-
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="spck-pill-primary px-2 py-0.5 rounded font-bold">
+              🏅 Buổi 14 • Điểm Demo &amp; Thư 3 phần
+            </span>
+            <span className="text-slate-300">
+              Đã soạn Thư 3 phần:{" "}
+              <strong className="text-white">{s14ReadyLetterCount}</strong>/
+              {(session14Evals || []).length} • Đã lưu LMS:{" "}
+              <strong className="text-emerald-400">{s14VerifiedCount}</strong>/
+              {(session14Evals || []).length}
+            </span>
             {rows.length > 0 && (
               <button
                 type="button"
                 onClick={handleOpenAllTab2}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-indigo-500/60 text-indigo-200 text-xs font-bold cursor-pointer"
+                className="spck-pill-neutral px-2.5 py-1 rounded-md text-xs font-semibold cursor-pointer"
               >
                 🏅 Mở Tab 2 (Điểm Demo &amp; Thư 3 phần) trên danh sách học viên
               </button>
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="text-xs font-semibold text-indigo-300 shrink-0">
-              📊 File chấm điểm BGK (.xlsx hoặc Link Google Sheet):
+          <div className="flex flex-wrap items-center gap-2 flex-1 xl:max-w-xl">
+            <span className="text-xs font-semibold text-slate-300 shrink-0">
+              📊 File BGK:
             </span>
             <input
               type="text"
@@ -654,15 +651,15 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
               disabled={isAnyOperationBusy}
               placeholder={
                 generatedDemoSheetUrl ||
-                "Để trống để tự tìm file 'Bảng chấm điểm buổi Demo.xlsx' trong thư mục lớp, hoặc dán đường dẫn/link Google Sheet..."
+                "Để trống tự tìm 'Bảng chấm điểm buổi Demo.xlsx' hoặc dán link Google Sheet..."
               }
-              className="flex-1 min-w-[260px] px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono disabled:opacity-60"
+              className="flex-1 min-w-[200px] px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-mono disabled:opacity-60"
             />
             <button
               type="button"
               disabled={isAnyOperationBusy}
               onClick={() => handleImportDemoScores()}
-              className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer"
+              className="spck-btn-primary px-3 py-1 rounded-lg disabled:opacity-50 text-xs font-semibold cursor-pointer shrink-0"
             >
               {importingDemoScores
                 ? "Đang đọc điểm..."

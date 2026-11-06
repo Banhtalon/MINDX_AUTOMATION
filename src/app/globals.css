@@ -766,3 +766,204 @@ html[data-theme="dark"] .neo-subtitle-text {
   border: 1.5px solid #0f172a !important;
   color: #ffffff !important;
 }
+
+/* ==========================================================================
+   STREAMLINED SPCK WORKSPACE (/final-project) — 4-COLOR SEMANTIC SYSTEM
+   1. Primary Blue (#2563eb): Main workflow CTA buttons (Scan, AI, Submit)
+   2. Success Green (#16a34a): Verified / Ready status
+   3. Warning Amber (#d97706): Unmatched student / Missing info / Needs attention
+   4. Error Red (#dc2626): Failed submission / Retry needed
+   5. Neutral Slate: All secondary metadata, resource counters, optional tools
+   ========================================================================== */
+.spck-clean-card {
+  background-color: #ffffff !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 3px 3px 0px #0f172a !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .spck-clean-card {
+  background-color: #111827 !important;
+  border: 1.5px solid #334155 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+  color: #f8fafc !important;
+}
+
+.spck-clean-header-bar {
+  background: linear-gradient(90deg, #eff6ff 0%, #f8fafc 100%) !important;
+  border-bottom: 2px solid #0f172a !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .spck-clean-header-bar {
+  background: #0f172a !important;
+  border-bottom: 1px solid #334155 !important;
+  color: #f8fafc !important;
+}
+
+.spck-clean-subbar {
+  background-color: #f8fafc !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+html[data-theme="dark"] .spck-clean-subbar {
+  background-color: #0b1120 !important;
+  border: 1px solid #1e293b !important;
+  color: #cbd5e1 !important;
+}
+
+.spck-clean-row {
+  background-color: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.spck-clean-row:hover {
+  border-color: #64748b !important;
+}
+html[data-theme="dark"] .spck-clean-row {
+  background-color: #0f172a !important;
+  border: 1px solid #1e293b !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] .spck-clean-row:hover {
+  border-color: #475569 !important;
+}
+
+.spck-clean-row-warning {
+  background-color: #fffbeb !important;
+  border: 2px solid #d97706 !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .spck-clean-row-warning {
+  background-color: rgba(120, 53, 15, 0.15) !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.65) !important;
+  color: #f8fafc !important;
+}
+
+.spck-clean-row-error {
+  background-color: #fef2f2 !important;
+  border: 2px solid #dc2626 !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .spck-clean-row-error {
+  background-color: rgba(127, 29, 29, 0.16) !important;
+  border: 1.5px solid rgba(239, 68, 68, 0.65) !important;
+  color: #f8fafc !important;
+}
+
+.spck-clean-comment-preview {
+  background-color: #f8fafc !important;
+  border-left: 3px solid #94a3b8 !important;
+  color: #334155 !important;
+}
+html[data-theme="dark"] .spck-clean-comment-preview {
+  background-color: #111827 !important;
+  border-left: 3px solid #475569 !important;
+  color: #cbd5e1 !important;
+}
+
+.spck-clean-sticky-submit {
+  background-color: #ffffff !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 4px 4px 0px #0f172a !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .spck-clean-sticky-submit {
+  background-color: #111827 !important;
+  border: 1.5px solid #334155 !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5) !important;
+  color: #f8fafc !important;
+}
+
+/* Semantic Status Pills (Strictly 4 Semantic Colors + 1 Neutral) */
+.spck-pill-neutral {
+  background-color: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+html[data-theme="dark"] .spck-pill-neutral {
+  background-color: #1e293b !important;
+  border: 1px solid #334155 !important;
+  color: #cbd5e1 !important;
+}
+
+.spck-pill-success {
+  background-color: #dcfce7 !important;
+  border: 1.5px solid #16a34a !important;
+  color: #14532d !important;
+}
+html[data-theme="dark"] .spck-pill-success {
+  background-color: rgba(22, 163, 74, 0.2) !important;
+  border: 1px solid rgba(74, 222, 128, 0.55) !important;
+  color: #86efac !important;
+}
+
+.spck-pill-warning {
+  background-color: #fef3c7 !important;
+  border: 1.5px solid #d97706 !important;
+  color: #92400e !important;
+}
+html[data-theme="dark"] .spck-pill-warning {
+  background-color: rgba(217, 119, 6, 0.2) !important;
+  border: 1px solid rgba(251, 191, 36, 0.55) !important;
+  color: #fde68a !important;
+}
+
+.spck-pill-error {
+  background-color: #fee2e2 !important;
+  border: 1.5px solid #dc2626 !important;
+  color: #991b1b !important;
+}
+html[data-theme="dark"] .spck-pill-error {
+  background-color: rgba(220, 38, 38, 0.22) !important;
+  border: 1px solid rgba(248, 113, 113, 0.6) !important;
+  color: #fca5a5 !important;
+}
+
+.spck-pill-primary {
+  background-color: #dbeafe !important;
+  border: 1.5px solid #2563eb !important;
+  color: #1e3a8a !important;
+}
+html[data-theme="dark"] .spck-pill-primary {
+  background-color: rgba(37, 99, 235, 0.22) !important;
+  border: 1px solid rgba(96, 165, 250, 0.6) !important;
+  color: #93c5fd !important;
+}
+
+.spck-btn-primary {
+  background-color: #2563eb !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #ffffff !important;
+}
+.spck-btn-primary:hover:not(:disabled) {
+  background-color: #1d4ed8 !important;
+}
+html[data-theme="dark"] .spck-btn-primary {
+  border: 1px solid #60a5fa !important;
+  box-shadow: none !important;
+}
+
+.spck-btn-success {
+  background-color: #16a34a !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #ffffff !important;
+}
+.spck-btn-success:hover:not(:disabled) {
+  background-color: #15803d !important;
+}
+html[data-theme="dark"] .spck-btn-success {
+  border: 1px solid #4ade80 !important;
+  box-shadow: none !important;
+}
+
+.backdrop-blur-sm {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.fixed.inset-0.z-50 .text-xs {
+  font-size: 11.95px !important;
+}
+

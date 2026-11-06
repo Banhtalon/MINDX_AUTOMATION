@@ -14,6 +14,21 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ## [v3.4.0] — 2026-10-30 / 2026-11-06 (Giai Đoạn 10: Tinh Gọn Luồng Nghiệp Vụ, Giảm Số Lần Bấm & Liên Thông 5 Màn Hình `S0` $\rightarrow$ `S8`)
 
+- **Tinh Gọn Giao Diện, Luồng Thao Tác & Hệ Bảng Màu 4 Tông Rõ Nghĩa Trang Nộp Sản Phẩm Cuối Khóa (`/final-project`: `src/app/globals.css`, `src/app/final-project/page.tsx`, `src/components/final-project/{Step1Header.tsx,ToolsDrawer.tsx,StudentTable.tsx,StudentRow.tsx,SubmitBar.tsx,Session14Panel.tsx}` — 2026-11-06):**
+  1. **Hệ thống 4 Màu Ngữ nghĩa + 1 Màu Trung tính đồng nhất cả Light Mode & Dark Mode (`src/app/globals.css`):**
+     - Loại bỏ 8–9 màu neon cạnh tranh trên màn hình `/final-project`, quy hoạch về 4 màu chức năng rõ nghĩa: **Xanh dương (`.spck-pill-primary`, `.spck-btn-primary`)** cho hành động chính & buổi đang chọn, **Xanh lá (`.spck-pill-success`, `.spck-btn-success`)** cho trạng thái sẵn sàng / đã nộp `VERIFIED`, **Vàng cam (`.spck-pill-warning`, `.spck-clean-row-warning`)** cho cảnh báo cần kiểm tra, **Đỏ (`.spck-pill-error`, `.spck-clean-row-error`)** cho lỗi nộp bài, và **Xám trung tính (`.spck-pill-neutral`, `.spck-clean-card`, `.spck-clean-subbar`, `.spck-clean-row`)** cho toàn bộ nhãn thông tin phụ.
+  2. **Làm gọn Bước 1 (`Step1Header.tsx`) & Thanh công cụ Bước 2 (`ToolsDrawer.tsx`, `StudentTable.tsx`):**
+     - Gom Bước 1 (`1A. Lớp học`, `1B. Buổi nộp LMS`, `1C. Thư mục SPCK trên máy tính`) vào 1 thanh ngang gọn gàng, đưa các tùy chọn phụ (`📁 Tạo thư mục HV`, `⚡ Tự chạy công cụ chuẩn bị sau khi Quét`, `🎬 Nhập Playlist YouTube`) xuống 1 thanh phụ trung tính mảnh ngay bên dưới.
+     - Làm nổi bật nút chính **`AI Soạn Nhận Xét Cả Lớp`** / **`✨ AI soạn tất cả (SPCK + Thư 3 phần)`**, chuyển 2 ngăn kéo công cụ phụ (*`Công cụ Drive & Cổng thu bài`*, *`Chuẩn bị Demo`*) và thanh đọc Điểm Demo Buổi 14 (`s14-step2-prep-bar`) về tông xám trung tính gọn nhẹ.
+  3. **Xem trước Nhận xét Giáo viên ngay trên dòng thu gọn & Gộp nhãn thông tin (`StudentRow.tsx`):**
+     - Thay thế 6–7 nhãn màu lòe loẹt ở cột trái bằng **1 dòng tóm tắt trung tính duy nhất** (`📁 thư mục • 🖼️ ảnh bìa • X/10 ảnh • Y/10 file • Mở dùng SP ✓ • Kho file/code ✓ • YouTube ✓`).
+     - **Hiển thị trực tiếp 2 dòng xem trước Lời nhận xét của giáo viên (`.spck-clean-comment-preview line-clamp-2`)** ngay ở cột giữa khi dòng học viên đang thu gọn để giáo viên đọc lướt toàn lớp mà không cần bấm mở từng học viên.
+     - Làm nổi bật ô buổi đang chọn (`B.12` / `B.13` / `B.14` có viền `ring-2` + nhãn `ĐANG CHỌN`), làm dịu 2 ô buổi còn lại; ẩn chuỗi mã kỹ thuật (`status • vX • #hash`) và đánh số lại các mục chi tiết theo đúng thứ tự `1 -> 6`.
+  4. **Thanh Nộp Bài cố định dưới đáy màn hình (`SubmitBar.tsx`) & Thu gọn khung nâng cao Buổi 14 (`Session14Panel.tsx`):**
+     - Chuyển `SubmitBar` thành thanh hành động nổi cố định ở đáy màn hình (`sticky bottom-3 z-20`) để giáo viên bấm **`Duyệt & Nộp N bài`** ngay khi đang kiểm tra danh sách học viên mà không phải cuộn xuống cuối trang.
+     - Thu gọn `Session14Panel` ở Buổi 14 thành một thanh tùy chọn nâng cao màu trung tính, mặc định đóng gọn trừ khi có học viên cần nộp lại riêng lẻ.
+  5. **Kiểm định độc lập (Independent UI & Code Reviewer Subagent — 2026-11-06):** Đạt **VERDICT: GO**, vượt qua 100% các bộ kiểm thử `tsc --noEmit`, `test-streamline-v340-s5a.ts` (9/9 kịch bản), `test-streamline-v340-s5.ts` (`S5b-T1..T6`), `test-streamline-v340-s6.ts` (`S6-T1..T4`) và kiểm chứng trực quan 4 ảnh chụp màn hình Chromium ở cả chế độ Sáng & Tối cho Buổi 13 và Buổi 14.
+
 - **Cập Nhật Biểu Tượng Logo Chữ X Đỏ Chuẩn MindX Cho Shortcut Desktop (`data/config/mindx-bot.ico`, `MindX Automation Bot.lnk` — 2026-11-06):**
   - Thay thế biểu tượng robot cũ bằng logo chữ `X` đỏ nền trong suốt chuẩn MindX (đa độ phân giải `16×16`, `24×24`, `32×32`, `48×48`, `64×64`, `128×128`, `256×256` RGBA căn giữa quang học) tại `data/config/mindx-bot.ico` và làm mới bộ nhớ đệm biểu tượng của Windows (`SHChangeNotify` + `ie4uinit.exe`) cho shortcut `MindX Automation Bot.lnk` ngoài màn hình Desktop.
 

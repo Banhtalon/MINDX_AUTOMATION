@@ -105,15 +105,13 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
   ) => {
     const isTarget = selectedSessionNumber === sessNum;
     const toneClass =
-      slot.tone === "emerald"
-        ? "bg-emerald-950/80 border-emerald-600/70 text-emerald-300"
-        : slot.tone === "teal"
-        ? "bg-teal-950/80 border-teal-500/70 text-teal-200"
+      slot.tone === "emerald" || slot.tone === "teal"
+        ? "spck-pill-success"
         : slot.tone === "rose"
-        ? "bg-rose-950/80 border-rose-600/70 text-rose-300"
+        ? "spck-pill-error"
         : slot.tone === "amber"
-        ? "bg-amber-950/80 border-amber-600/70 text-amber-300"
-        : "bg-slate-950 border-slate-800 text-slate-400";
+        ? "spck-pill-warning"
+        : "spck-pill-neutral";
     const canViewSnapshot =
       slot.hasVerifiedEvidence ||
       slot.state === "UNKNOWN_LEGACY" ||
@@ -126,14 +124,16 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
       <div
         key={sessNum}
         title={slot.detail}
-        className={`px-2 py-1 rounded-md border text-[11px] leading-tight ${toneClass} ${
-          isTarget ? "ring-1 ring-emerald-400/60" : ""
+        className={`px-2 py-1 rounded-md text-[11px] leading-tight transition-all ${toneClass} ${
+          isTarget
+            ? "ring-2 ring-blue-500/70 font-semibold"
+            : "opacity-75 hover:opacity-100"
         }`}
       >
         <div className="font-bold flex items-center justify-between gap-1">
           <span>B.{sessNum}</span>
           {isTarget && (
-            <span className="text-[9px] uppercase px-1 rounded bg-emerald-500/20 text-emerald-300">
+            <span className="text-[9px] uppercase px-1 rounded bg-blue-600/20 text-blue-300">
               Đang chọn
             </span>
           )}
@@ -150,7 +150,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 slot,
               })
             }
-            className="mt-1 inline-flex items-center text-[10px] underline text-sky-300 hover:text-sky-200 cursor-pointer"
+            className="mt-0.5 inline-flex items-center text-[10px] underline hover:opacity-80 cursor-pointer"
           >
             Xem bản đã nộp
           </button>
@@ -159,45 +159,28 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
     );
   };
 
+  const rowContainerClass = hasRowSubmissionError
+    ? "spck-clean-row-error"
+    : !readiness.ready && !row.isConfirmedByTeacher
+    ? "spck-clean-row-warning"
+    : "spck-clean-row";
+
   return (
-    <div
-      className={`rounded-xl border transition-all ${
-        !readiness.ready && !row.isConfirmedByTeacher
-          ? "bg-amber-950/15 border-amber-600/50"
-          : readiness.ready
-          ? "bg-slate-950/90 border-slate-800"
-          : "bg-slate-950/60 border-slate-800/80"
-      }`}
-    >
+    <div className={`rounded-xl overflow-hidden ${rowContainerClass}`}>
       {/* Compact Summary Row */}
-      <div className="p-3.5 grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
-        {/* Col 1-4: Checkbox + Folder & Student Mapping */}
+      <div className="p-3 grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
+        {/* Col 1-4: Checkbox + Student Mapping + Single-line Neutral Resource Metadata */}
         <div className="lg:col-span-4 flex items-start space-x-2.5">
           <input
             type="checkbox"
             checked={isSelected}
             disabled={!row.assignedStudentId || isAnyOperationBusy}
             onChange={() => toggleSelectStudent(row.assignedStudentId)}
-            className="mt-1 rounded border-slate-600 cursor-pointer"
+            className="mt-1.5 rounded border-slate-600 cursor-pointer"
             title="Chọn học viên này để nộp theo danh sách đã chọn"
           />
           <div className="flex-1 min-w-0 space-y-1.5">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-200 text-xs font-mono truncate max-w-[200px]">
-                📁 {row.folderName}
-              </span>
-              <span
-                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                  row.matchScore === 1.0
-                    ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                    : "bg-amber-950 text-amber-300 border border-amber-700"
-                }`}
-              >
-                Khớp {Math.round(row.matchScore * 100)}%
-              </span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
               <select
                 value={row.assignedStudentId}
                 disabled={isAnyOperationBusy}
@@ -224,7 +207,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   );
                   persistRowDraft(row, overrides);
                 }}
-                className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500 max-w-full"
+                className="px-2 py-1 rounded-md bg-slate-900 border border-slate-700 text-white text-xs font-semibold focus:outline-none focus:border-blue-500 max-w-[230px]"
               >
                 <option value="">-- Ghép học viên --</option>
                 {students.map((stu) => (
@@ -234,7 +217,19 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 ))}
               </select>
 
-              <label className="inline-flex items-center space-x-1 text-[11px] text-slate-300 cursor-pointer">
+              <span
+                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                  row.matchScore === 1.0
+                    ? "spck-pill-success"
+                    : "spck-pill-warning"
+                }`}
+              >
+                {row.matchScore === 1.0
+                  ? "✓ Khớp 100%"
+                  : `Khớp ${Math.round(row.matchScore * 100)}%`}
+              </span>
+
+              <label className="inline-flex items-center space-x-1 text-[11px] text-slate-300 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={row.isConfirmedByTeacher}
@@ -259,63 +254,47 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 <span>Đúng HV</span>
               </label>
             </div>
+
+            {/* Consolidated 1-Line Neutral Resource Summary (Replaces 6-7 competing neon badges) */}
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-slate-400">
+              <span className="font-mono text-slate-300 truncate max-w-[160px]" title={row.folderName}>
+                📁 {row.folderName}
+              </span>
+              <span>•</span>
+              <span title={readiness.thumbBadgeLabel}>
+                🖼️ {readiness.thumbBadgeLabel}
+              </span>
+              <span>• {row.screenshots.length}/10 ảnh</span>
+              <span>• {row.attachments.length}/10 file</span>
+              {readiness.hasDirectUseLink && <span>• Mở dùng SP ✓</span>}
+              {readiness.hasSourceStorageLink && <span>• Kho file/code ✓</span>}
+              {readiness.hasYoutubeLink && <span>• YouTube ✓</span>}
+            </div>
           </div>
         </div>
 
-        {/* Col 5-6: Thumbnail, Reusable Links & Readiness Status */}
-        <div className="lg:col-span-3 space-y-1 text-xs">
+        {/* Col 5-8: Readiness Badge + Direct Teacher Comment Preview (Key UX Upgrade) */}
+        <div className="lg:col-span-4 min-w-0 space-y-1.5 text-xs">
           <div className="flex flex-wrap items-center gap-1.5">
             <span
               className={`px-2 py-0.5 rounded font-semibold text-[11px] ${
-                readiness.ready
-                  ? "bg-emerald-500/15 text-emerald-300 border border-emerald-600/50"
-                  : "bg-amber-500/15 text-amber-300 border border-amber-600/50"
+                readiness.ready ? "spck-pill-success" : "spck-pill-warning"
               }`}
             >
               {readiness.ready
-                ? "Đủ điều kiện nộp (*)"
+                ? "✓ Đủ điều kiện nộp (*)"
                 : `Thiếu/Lỗi: ${readiness.missingItems.join(", ")}`}
             </span>
+
             {row.hasNewerSharedResources && (
               <span
                 title="Kho tài nguyên chung vừa có ảnh hoặc đường dẫn mới. Bấm 'Chi tiết ▾' để đồng bộ vào bản nháp buổi này."
-                className="px-2 py-0.5 rounded bg-sky-950/80 border border-sky-500/50 text-sky-300 font-semibold text-[10px]"
+                className="spck-pill-primary px-2 py-0.5 rounded font-semibold text-[10px]"
               >
                 🔄 Có tài nguyên mới
               </span>
             )}
-          </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
-            <span
-              title={readiness.thumbBadgeLabel}
-              className={
-                readiness.isDefaultThumb
-                  ? "text-amber-300"
-                  : readiness.thumbAspect === "16:9"
-                  ? "text-emerald-300"
-                  : "text-slate-300"
-              }
-            >
-              🖼️ {readiness.thumbBadgeLabel}
-            </span>
-            <span>• {row.screenshots.length}/10 ảnh</span>
-            <span>• {row.attachments.length}/10 file</span>
-            {readiness.hasDirectUseLink && (
-              <span className="px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-700/60">
-                Mở dùng SP ✓
-              </span>
-            )}
-            {readiness.hasSourceStorageLink && (
-              <span className="px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 border border-sky-700/60">
-                Kho file/code ✓
-              </span>
-            )}
-            {readiness.hasYoutubeLink && (
-              <span className="px-1.5 py-0.2 rounded bg-rose-950 text-rose-300 border border-rose-700/60">
-                YouTube ✓
-              </span>
-            )}
             {selectedSessionNumber === 14 && studentEval14 && (
               <button
                 type="button"
@@ -329,9 +308,10 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   }
                 }}
                 title="Bấm để mở Tab 2: Điểm Demo, ĐNL & Thư 3 phần (Cột 2)"
-                className="px-2 py-0.5 rounded bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/60 text-indigo-200 font-semibold text-[10px] cursor-pointer"
+                className="spck-pill-primary px-2 py-0.5 rounded font-semibold text-[10px] cursor-pointer"
               >
-                🏅 Demo: {studentEval14.demoTotalScore}/5.0 • ĐNL: {studentEval14.competencyTotalScore}/5.0 •{" "}
+                🏅 Demo: {studentEval14.demoTotalScore}/5.0 • ĐNL:{" "}
+                {studentEval14.competencyTotalScore}/5.0 •{" "}
                 {studentEval14.status === "VERIFIED"
                   ? "Đã lưu Cột 2 ✓"
                   : studentEval14.status === "APPROVED"
@@ -344,49 +324,67 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
               </button>
             )}
           </div>
+
+          {/* Direct 2-Line Teacher Comment Preview */}
+          <div
+            onClick={() => toggleExpandRow(rowKey)}
+            title={
+              row.teacherComment?.trim()
+                ? `${row.teacherComment} (Bấm để mở Chi tiết chỉnh sửa)`
+                : "Bấm để mở khung chỉnh sửa chi tiết nhận xét"
+            }
+            className="spck-clean-comment-preview px-2.5 py-1.5 rounded-md text-xs leading-snug line-clamp-2 cursor-pointer"
+          >
+            {row.teacherComment?.trim() ? (
+              <span>💬 {row.teacherComment}</span>
+            ) : (
+              <span className="italic text-slate-400">
+                Chưa có nhận xét Buổi {selectedSessionNumber} — bấm &ldquo;AI Soạn&rdquo; hoặc mở &ldquo;Chi tiết ▾&rdquo;
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Col 7-9: Separate Per-Session Status Columns (12, 13, 14) */}
-        <div className="lg:col-span-3 grid grid-cols-3 gap-1.5">
-          {renderSlotPill(12, slot12)}
-          {renderSlotPill(13, slot13)}
-          {renderSlotPill(14, slot14)}
-        </div>
+        {/* Col 9-12: Session Statuses (12, 13, 14) + Error Retry + Expand Toggle */}
+        <div className="lg:col-span-4 flex flex-wrap sm:flex-nowrap items-center justify-between lg:justify-end gap-2">
+          <div className="grid grid-cols-3 gap-1.5 flex-1">
+            {renderSlotPill(12, slot12)}
+            {renderSlotPill(13, slot13)}
+            {renderSlotPill(14, slot14)}
+          </div>
 
-        {/* Col 10-12: Error Retry Button (only on error) + "Chi tiết" Toggle */}
-        <div className="lg:col-span-2 flex items-center justify-end gap-1.5">
-          {hasRowSubmissionError && (
+          <div className="flex items-center gap-1.5 shrink-0">
+            {hasRowSubmissionError && (
+              <button
+                type="button"
+                onClick={() =>
+                  row.assignedStudentId &&
+                  handleApproveAndUpload(
+                    [row.assignedStudentId],
+                    true,
+                    selectedSessionNumber
+                  )
+                }
+                disabled={
+                  isAnyOperationBusy || !row.assignedStudentId || isDupeStudent
+                }
+                title={`Thử lại nộp học viên này cho Buổi ${selectedSessionNumber}`}
+                className="spck-pill-error px-2.5 py-1.5 rounded-lg disabled:opacity-40 text-xs font-bold cursor-pointer"
+              >
+                🔄 Thử lại B.{selectedSessionNumber}
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={() =>
-                row.assignedStudentId &&
-                handleApproveAndUpload(
-                  [row.assignedStudentId],
-                  true,
-                  selectedSessionNumber
-                )
-              }
-              disabled={
-                isAnyOperationBusy || !row.assignedStudentId || isDupeStudent
-              }
-              title={`Thử lại nộp học viên này cho Buổi ${selectedSessionNumber}`}
-              className="px-2.5 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 disabled:opacity-40 text-white text-xs font-semibold cursor-pointer"
+              onClick={() => toggleExpandRow(rowKey)}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                isExpanded ? "spck-pill-primary" : "spck-pill-neutral"
+              }`}
             >
-              🔄 Thử lại B.{selectedSessionNumber}
+              {isExpanded ? "Thu gọn ▴" : "Chi tiết ▾"}
             </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => toggleExpandRow(rowKey)}
-            className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors ${
-              isExpanded
-                ? "bg-slate-800 border-emerald-500/60 text-emerald-300"
-                : "bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200"
-            }`}
-          >
-            {isExpanded ? "Thu gọn ▴" : "Chi tiết ▾"}
-          </button>
+          </div>
         </div>
       </div>
 
@@ -404,7 +402,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
           return null;
         }
         return (
-          <div className="mx-3.5 mb-3 p-2.5 rounded-lg bg-amber-950/40 border border-amber-700/60 text-amber-200 text-xs space-y-1">
+          <div className="mx-3 mb-2.5 p-2 rounded-lg bg-amber-950/40 border border-amber-700/60 text-amber-200 text-xs space-y-1">
             {isDupeStudent && (
               <div className="flex items-center space-x-1.5 font-semibold text-rose-300">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -431,16 +429,12 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
 
       {/* Expandable Full Editor ("Chi tiết") */}
       {isExpanded && (
-        <div className="p-4 border-t border-slate-800 bg-slate-900/70 space-y-4 rounded-b-xl">
+        <div className="p-4 border-t border-slate-800 bg-slate-900/70 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800 text-xs">
-            <div className="flex flex-wrap items-center gap-2 text-slate-300">
+            <div className="flex flex-wrap items-center gap-2 text-slate-200">
               <span className="font-bold">
                 Chỉnh sửa chi tiết Buổi {selectedSessionNumber} (
-                {getStageMeta(selectedSessionNumber).stageTitle}):
-              </span>
-              <span className="font-mono text-slate-400">
-                {row.status} • v{row.draftVersion || 1}
-                {row.contentHash ? ` • #${row.contentHash.slice(0, 8)}` : ""}
+                {getStageMeta(selectedSessionNumber).stageTitle})
               </span>
               {selectedSessionNumber === 14 && (
                 <div className="inline-flex items-center rounded-lg bg-slate-950 p-1 border border-slate-700 gap-1">
@@ -451,7 +445,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                     }
                     className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors cursor-pointer ${
                       activeTab === "spck"
-                        ? "bg-emerald-600 text-white"
+                        ? "spck-btn-primary"
                         : "text-slate-300 hover:bg-slate-800"
                     }`}
                   >
@@ -464,7 +458,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                     }
                     className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors cursor-pointer ${
                       activeTab === "eval14"
-                        ? "bg-indigo-600 text-white"
+                        ? "spck-btn-primary"
                         : "text-slate-300 hover:bg-slate-800"
                     }`}
                   >
@@ -480,7 +474,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   type="button"
                   onClick={() => handleSyncLatestResources(row)}
                   disabled={isAnyOperationBusy}
-                  className="px-2.5 py-1 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold cursor-pointer"
+                  className="spck-btn-primary px-2.5 py-1 rounded text-xs font-semibold cursor-pointer"
                 >
                   🔄 Dùng tài nguyên mới nhất
                 </button>
@@ -493,7 +487,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   type="button"
                   onClick={() => handleGenerateAiComments([row.folderPath])}
                   disabled={isAnyOperationBusy || !row.assignedStudentId}
-                  className="px-2.5 py-1 rounded bg-purple-600/85 hover:bg-purple-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
+                  className="spck-pill-warning px-2.5 py-1 rounded disabled:opacity-40 text-xs font-semibold cursor-pointer"
                 >
                   🔄 Thử lại AI Nhận xét (B.{selectedSessionNumber})
                 </button>
@@ -511,7 +505,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                     !row.assignedStudentId ||
                     !row.folderPath
                   }
-                  className="px-2.5 py-1 rounded bg-sky-600/85 hover:bg-sky-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
+                  className="spck-pill-warning px-2.5 py-1 rounded disabled:opacity-40 text-xs font-semibold cursor-pointer"
                 >
                   {uploadingDrive
                     ? "Đang Up Drive..."
@@ -531,7 +525,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                     !row.assignedStudentId ||
                     !row.folderPath
                   }
-                  className="px-2.5 py-1 rounded bg-indigo-600/85 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-medium cursor-pointer"
+                  className="spck-pill-warning px-2.5 py-1 rounded disabled:opacity-40 text-xs font-semibold cursor-pointer"
                 >
                   {deployingWeb ? "Đang Up Web..." : "🔄 Thử lại Up Web Live"}
                 </button>
@@ -541,12 +535,12 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
 
           {activeTab === "spck" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            {/* Left Column: Title, Files Summary & Links */}
+            {/* Left Column: 1. Title, 2. Thumbnail & Attachments, 3. YouTube, 4. Related Links */}
             <div className="lg:col-span-5 space-y-3">
               <div>
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                   <span className="font-semibold text-white">
-                    1. Tiêu đề dự án * (Tự gắn nhãn buổi, tối đa 100 ký tự)
+                    1. Tiêu đề dự án * (Tối đa 100 ký tự)
                   </span>
                   <span
                     className={
@@ -610,115 +604,99 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 />
                 {row.projectTitle.length > 100 && (
                   <p className="mt-1 text-[11px] text-rose-400 font-medium">
-                    Tiêu đề đang vượt quá 100 ký tự ({row.projectTitle.length}/100). Vui lòng rút gọn tên sản phẩm trước khi duyệt.
-                  </p>
-                )}
-                {readiness.isDefaultTitle && (
-                  <p className="mt-1 text-[11px] text-amber-300/90">
-                    💡 Đang dùng tên mặc định (SPCK + tên học viên). Giáo viên có thể nhập tên sản phẩm cụ thể hơn (vẫn cho phép duyệt nộp).
+                    Tiêu đề đang vượt quá 100 ký tự ({row.projectTitle.length}/100). Vui lòng rút gọn trước khi duyệt.
                   </p>
                 )}
               </div>
 
-              {/* Resource Counters */}
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="p-2 rounded bg-slate-950 border border-slate-800">
-                  <div className="text-slate-400 flex items-center space-x-1">
-                    <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>3. Thumbnail *</span>
-                  </div>
-                  <div className="mt-1 font-semibold text-white truncate">
-                    {readiness.thumbBadgeLabel}
-                  </div>
-                </div>
-
-                <div className="p-2 rounded bg-slate-950 border border-slate-800">
-                  <div className="text-slate-400 flex items-center space-x-1">
-                    <ImageIcon className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>4. Ảnh bổ sung</span>
-                  </div>
-                  <div className="mt-1 font-semibold text-white">
-                    {row.screenshots.length}/10 ảnh
-                  </div>
-                </div>
-
-                <div className="p-2 rounded bg-slate-950 border border-slate-800">
-                  <div className="text-slate-400 flex items-center space-x-1">
-                    <Paperclip className="w-3.5 h-3.5 text-orange-400" />
-                    <span>5. Đính kèm</span>
-                  </div>
-                  <div className="mt-1 font-semibold text-white">
-                    {row.attachments.length}/10 files
-                  </div>
-                </div>
-              </div>
-
-              {/* App Screenshot Capture & Owner Image Upload Controls */}
+              {/* 2. Ảnh bìa & Tài liệu đính kèm */}
               <div className="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 space-y-2 text-xs">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {Boolean(rowToolErrors.screenshot) && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        row.assignedStudentId &&
-                        handleCaptureAppScreenshots([row.assignedStudentId])
-                      }
-                      disabled={
-                        isAnyOperationBusy ||
-                        !row.assignedStudentId ||
-                        !row.folderPath
-                      }
-                      className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-teal-600/85 hover:bg-teal-500 disabled:opacity-40 text-white font-semibold cursor-pointer"
-                    >
-                      <ImageIcon className="w-3.5 h-3.5" />
-                      <span>🔄 Thử lại Chụp App &amp; AI Chọn Thumb</span>
-                    </button>
-                  )}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-semibold text-white">
+                    2. Ảnh bìa (Thumbnail *) &amp; Tài liệu
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {Boolean(rowToolErrors.screenshot) && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          row.assignedStudentId &&
+                          handleCaptureAppScreenshots([row.assignedStudentId])
+                        }
+                        disabled={
+                          isAnyOperationBusy ||
+                          !row.assignedStudentId ||
+                          !row.folderPath
+                        }
+                        className="spck-pill-warning inline-flex items-center space-x-1 px-2 py-0.5 rounded disabled:opacity-40 font-semibold cursor-pointer"
+                      >
+                        <ImageIcon className="w-3 h-3" />
+                        <span>🔄 Thử lại Chụp App &amp; AI Chọn Thumb</span>
+                      </button>
+                    )}
 
-                  <label className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-amber-600/80 hover:bg-amber-500 text-white font-semibold cursor-pointer">
-                    <span>+ Owner Up Thumbnail</span>
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      className="hidden"
-                      onChange={(e) => {
-                        handleOwnerUploadImage(
-                          row.assignedStudentId,
-                          "thumbnail",
-                          e.target.files
-                        );
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
+                    <label className="spck-pill-neutral inline-flex items-center space-x-1 px-2 py-0.5 rounded font-semibold cursor-pointer">
+                      <span>+ Owner Up Thumbnail</span>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          handleOwnerUploadImage(
+                            row.assignedStudentId,
+                            "thumbnail",
+                            e.target.files
+                          );
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
 
-                  <label className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-cyan-700/80 hover:bg-cyan-600 text-white font-semibold cursor-pointer">
-                    <span>+ Owner Up Ô Dưới</span>
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => {
-                        handleOwnerUploadImage(
-                          row.assignedStudentId,
-                          "gallery",
-                          e.target.files
-                        );
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
+                    <label className="spck-pill-neutral inline-flex items-center space-x-1 px-2 py-0.5 rounded font-semibold cursor-pointer">
+                      <span>+ Owner Up Ô Dưới</span>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          handleOwnerUploadImage(
+                            row.assignedStudentId,
+                            "gallery",
+                            e.target.files
+                          );
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
 
-                <div className="text-[11px] text-slate-400">
-                  Ưu tiên Thumbnail tỉ lệ <strong>16:9</strong> thể hiện rõ sản phẩm (Logo MindX chỉ dùng dự phòng khi chưa có ảnh). Ô 4 dùng cho ảnh chi tiết sản phẩm, thuyết trình hoặc hoạt động.
+                <div className="grid grid-cols-3 gap-2 text-[11px]">
+                  <div className="p-1.5 rounded bg-slate-900 border border-slate-800">
+                    <div className="text-slate-400">Ảnh bìa *</div>
+                    <div className="font-semibold text-white truncate">
+                      {readiness.thumbBadgeLabel}
+                    </div>
+                  </div>
+                  <div className="p-1.5 rounded bg-slate-900 border border-slate-800">
+                    <div className="text-slate-400">Ảnh bổ sung</div>
+                    <div className="font-semibold text-white">
+                      {row.screenshots.length}/10 ảnh
+                    </div>
+                  </div>
+                  <div className="p-1.5 rounded bg-slate-900 border border-slate-800">
+                    <div className="text-slate-400">Đính kèm</div>
+                    <div className="font-semibold text-white">
+                      {row.attachments.length}/10 files
+                    </div>
+                  </div>
                 </div>
 
                 {row.screenshots.length > 0 && (
-                  <div className="text-[11px] text-slate-400 leading-relaxed">
-                    <span className="text-cyan-300 font-semibold">
-                      Hình ở ô dưới ({row.screenshots.length}):
+                  <div className="text-[11px] text-slate-400 truncate" title={row.screenshots.map((p) => p.split(/[\\/]/).pop()).join(", ")}>
+                    <span className="text-slate-300 font-semibold">
+                      Hình bổ sung ({row.screenshots.length}):
                     </span>{" "}
                     {row.screenshots
                       .map((p) => p.split(/[\\/]/).pop())
@@ -727,11 +705,11 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 )}
               </div>
 
-              {/* YouTube URLs */}
+              {/* 3. YouTube URLs */}
               <div>
-                <label className="flex items-center space-x-1 text-xs text-slate-400 mb-1">
-                  <Video className="w-3.5 h-3.5 text-rose-400" />
-                  <span>2. YouTube Video URLs (Tùy chọn, tối đa 5 link)</span>
+                <label className="flex items-center space-x-1 text-xs text-slate-300 font-semibold mb-1">
+                  <Video className="w-3.5 h-3.5 text-slate-400" />
+                  <span>3. YouTube Video URLs (Tùy chọn, tối đa 5 link)</span>
                 </label>
                 <textarea
                   rows={2}
@@ -761,13 +739,12 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 />
               </div>
 
-              {/* Related Links */}
+              {/* 4. Related Links */}
               <div>
-                <label className="flex items-center space-x-1 text-xs text-slate-400 mb-1">
-                  <Link2 className="w-3.5 h-3.5 text-cyan-400" />
+                <label className="flex items-center space-x-1 text-xs text-slate-300 font-semibold mb-1">
+                  <Link2 className="w-3.5 h-3.5 text-slate-400" />
                   <span>
-                    6. Đường dẫn liên quan (Tùy chọn, tối đa 5:{" "}
-                    <code>Tên | https://...</code>)
+                    4. Đường dẫn liên quan (Tối đa 5: <code>Tên | https://...</code>)
                   </span>
                 </label>
                 <textarea
@@ -801,13 +778,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                     {readiness.classifiedLinks.map((lnk, lIdx) => (
                       <span
                         key={lIdx}
-                        className={`px-2 py-0.5 rounded border ${
-                          lnk.category === "DIRECT_PRODUCT_USE"
-                            ? "bg-indigo-950/80 border-indigo-600/60 text-indigo-200"
-                            : lnk.category === "SOURCE_OR_FILE_STORAGE"
-                            ? "bg-sky-950/80 border-sky-600/60 text-sky-200"
-                            : "bg-slate-950 border-slate-700 text-slate-300"
-                        }`}
+                        className="spck-pill-neutral px-2 py-0.5 rounded"
                       >
                         {lnk.categoryLabel}: {lnk.name}
                       </span>
@@ -817,7 +788,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
               </div>
             </div>
 
-            {/* Right Column: Quick Tags, Presentation Guardrail & Teacher Comment */}
+            {/* Right Column: 5. Quick Tags & 6. Teacher Comment */}
             <div className="lg:col-span-7 space-y-3">
               <div>
                 {(() => {
@@ -872,14 +843,14 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                     <>
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 mb-2">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="font-semibold text-slate-200">
-                            Thẻ đánh giá nhanh (Quick Tags — hỗ trợ AI soạn bình luận)
+                          <span className="font-semibold text-white">
+                            5. Thẻ đánh giá nhanh (Quick Tags)
                           </span>
-                          <span className="px-2 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-700/60 text-indigo-300 text-[10px] font-semibold">
+                          <span className="spck-pill-neutral px-2 py-0.5 rounded-full text-[10px] font-semibold">
                             🏷️ {tagBundle.profile.trackBadgeLabel} • Buổi {selectedSessionNumber}
                           </span>
                         </div>
-                        <label className="inline-flex items-center space-x-1.5 text-emerald-400 cursor-pointer">
+                        <label className="inline-flex items-center space-x-1.5 text-slate-300 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={row.includePresentation}
@@ -906,17 +877,13 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                               ? "text-emerald-300"
                               : group.tone === "amber"
                               ? "text-amber-300"
-                              : group.tone === "violet"
-                              ? "text-violet-300"
-                              : "text-indigo-300";
+                              : "text-blue-300";
                           const activeBtnClass =
                             group.tone === "emerald"
-                              ? "bg-emerald-600/30 border border-emerald-500 text-emerald-100"
+                              ? "spck-pill-success"
                               : group.tone === "amber"
-                              ? "bg-amber-600/30 border border-amber-500 text-amber-100"
-                              : group.tone === "violet"
-                              ? "bg-purple-600/30 border border-purple-500 text-purple-100"
-                              : "bg-indigo-600/30 border border-indigo-500 text-indigo-100";
+                              ? "spck-pill-warning"
+                              : "spck-pill-primary";
 
                           return (
                             <div key={group.id} className="space-y-1">
@@ -957,7 +924,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                                   key={tag}
                                   type="button"
                                   onClick={() => handleToggleQuickTag(tag)}
-                                  className="px-2 py-1 rounded text-xs transition-colors cursor-pointer bg-purple-600/30 border border-purple-500 text-purple-200"
+                                  className="spck-pill-primary px-2 py-1 rounded text-xs transition-colors cursor-pointer"
                                 >
                                   {tag}
                                 </button>
@@ -972,8 +939,8 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">
-                  Ghi chú riêng của Giáo viên cho AI — Buổi {selectedSessionNumber} (Tùy chọn)
+                <label className="block text-xs text-slate-300 font-semibold mb-1">
+                  Ghi chú riêng cho AI — Buổi {selectedSessionNumber} (Tùy chọn)
                 </label>
                 <input
                   type="text"
@@ -1000,19 +967,16 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
               <div>
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                   <span className="font-semibold text-white">
-                    7. Bình luận của giáo viên * — Buổi {selectedSessionNumber} (
+                    6. Bình luận của giáo viên * — Buổi {selectedSessionNumber} (
                     {getStageMeta(selectedSessionNumber).stageTitle})
                   </span>
                   {row.verifiedAt && (
                     <span className="text-emerald-400 flex items-center space-x-1">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Đã đối chiếu LMS gần nhất: {row.verifiedAt}</span>
+                      <span>Đã đối chiếu LMS: {row.verifiedAt}</span>
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-400 mb-1.5">
-                  📌 Yêu cầu giai đoạn: {getStageMeta(selectedSessionNumber).commentHint}
-                </p>
                 <textarea
                   rows={4}
                   value={row.teacherComment}
