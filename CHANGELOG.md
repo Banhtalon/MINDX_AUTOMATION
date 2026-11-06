@@ -12,7 +12,10 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ---
 
-## [v3.4.0] — 2026-10-30 / 2026-11-05 (Giai Đoạn 10: Tinh Gọn Luồng Nghiệp Vụ, Giảm Số Lần Bấm & Liên Thông 5 Màn Hình `S0` $\rightarrow$ `S8`)
+## [v3.4.0] — 2026-10-30 / 2026-11-06 (Giai Đoạn 10: Tinh Gọn Luồng Nghiệp Vụ, Giảm Số Lần Bấm & Liên Thông 5 Màn Hình `S0` $\rightarrow$ `S8`)
+
+- **Cập Nhật Biểu Tượng Logo Chữ X Đỏ Chuẩn MindX Cho Shortcut Desktop (`data/config/mindx-bot.ico`, `MindX Automation Bot.lnk` — 2026-11-06):**
+  - Thay thế biểu tượng robot cũ bằng logo chữ `X` đỏ nền trong suốt chuẩn MindX (đa độ phân giải `16×16`, `24×24`, `32×32`, `48×48`, `64×64`, `128×128`, `256×256` RGBA căn giữa quang học) tại `data/config/mindx-bot.ico` và làm mới bộ nhớ đệm biểu tượng của Windows (`SHChangeNotify` + `ie4uinit.exe`) cho shortcut `MindX Automation Bot.lnk` ngoài màn hình Desktop.
 
 - **Đồng Bộ Tài Nguyên SPCK Giữa Buổi 12, 13, 14, Khử Trùng Lặp Drive/LMS, Luồng Robotics Chuyên Biệt & Deep Project Inspector AI (`src/app/api/spck/scan/route.ts`, `src/lib/playwright/spck-drive-uploader.ts`, `src/lib/playwright/spck-uploader.ts`, `src/lib/local-files/spck-scanner.ts`, `src/lib/gemini/spck-comment.ts`, `src/lib/spck/spck-quick-tags.ts`, `src/components/final-project/Step1Header.tsx`, `src/components/final-project/useSpckWorkflow.ts`, `scripts/test-streamline-v340-s5.ts`, `docs/audits/v340/CODEX_SPCK_12_13_14_AUDIT.md` — 2026-11-05):**
   1. **Đồng bộ tài nguyên xuyên suốt `Buổi 12 -> 13 -> 14` & bảo toàn lịch sử buổi đã nộp (`src/app/api/spck/scan/route.ts`, `src/components/final-project/useSpckWorkflow.ts`):**
