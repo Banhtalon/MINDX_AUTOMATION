@@ -1960,13 +1960,17 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       text: `Đang mở Cổng Thu Bài Trực Tuyến cho lớp ${selectedClassId} và khởi tạo đường dẫn gửi cho học sinh...`,
     });
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
       const res = await fetch("/api/spck/student-portal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           action: "start",
           classId: selectedClassId,
+          sessionNumber: selectedSessionNumber,
           folderPath: folderPathInput.trim(),
           driveFolderUrl: driveFolderUrl.trim(),
           autoUploadDrive: studentPortalAutoDrive,
@@ -1995,24 +1999,34 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         text: `Đã mở Cổng Cho Học Sinh Nộp Bài lớp ${selectedClassId}! Hãy bấm "Copy Link Nộp Bài" để gửi cho học sinh. Khi học sinh nộp bài, sản phẩm sẽ tự lưu vào máy Thầy và tự động tải lên Google Drive!`,
       });
     } catch (err) {
+      const isTimeout = err instanceof Error && err.name === "AbortError";
       setBannerMessage({
         type: "error",
-        text: err instanceof Error ? err.message : String(err),
+        text: isTimeout
+          ? "Quá thời gian khởi tạo Cổng Thu Bài (15s). Vui lòng thử lại."
+          : err instanceof Error
+          ? err.message
+          : String(err),
       });
     } finally {
+      clearTimeout(timeoutId);
       setTogglingStudentPortal(false);
     }
   };
 
   const handleStopStudentPortal = async () => {
     setTogglingStudentPortal(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
     try {
       const res = await fetch("/api/spck/student-portal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           action: "stop",
           classId: selectedClassId,
+          sessionNumber: selectedSessionNumber,
         }),
       });
       const data = await res.json();
@@ -2021,17 +2035,23 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       } else {
         setStudentPortalRunning(false);
       }
+      if (Array.isArray(data.records) && data.records.length > 0) {
+        hydrateRowsFromDb(data.records, students);
+      }
       setShowPortalQr(false);
       setBannerMessage({
         type: "warning",
         text: "Đã đóng Cổng Cho Học Sinh Nộp Bài.",
       });
-    } catch (err) {
+    } catch {
+      setStudentPortalRunning(false);
+      setShowPortalQr(false);
       setBannerMessage({
-        type: "error",
-        text: err instanceof Error ? err.message : String(err),
+        type: "warning",
+        text: "Đã đóng Cổng Cho Học Sinh Nộp Bài.",
       });
     } finally {
+      clearTimeout(timeoutId);
       setTogglingStudentPortal(false);
     }
   };
@@ -3179,7 +3199,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     const checkPortalOnce = async () => {
       try {
         const res = await fetch(
-          `/api/spck/student-portal?classId=${encodeURIComponent(selectedClassId)}`
+          `/api/spck/student-portal?classId=${encodeURIComponent(
+            selectedClassId
+          )}&sessionNumber=${selectedSessionNumber}`
         );
         const data = await res.json();
         if (cancelled || !data.success || !data.portalStatus) return;
@@ -3205,6 +3227,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
             const existingIds = new Set(prev.map((r) => r.assignedStudentId));
             const studentMap = new Map(students.map((s) => [s.studentId, s]));
+            let anyChanged = false;
             const updatedRows = prev.map((row) => {
               const rec = dbRecords.find(
                 (r) => r.studentId === row.assignedStudentId
@@ -3217,30 +3240,81 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
               const screenshots = parseJsonSafe<string[]>(rec.screenshotsJson, []);
               const attachments = parseJsonSafe<string[]>(rec.attachmentsJson, []);
               const youtubeUrls = parseJsonSafe<string[]>(rec.youtubeUrlsJson, []);
+
+              const nextFolderPath = rec.localFolderPath || row.folderPath;
+              const nextThumbnailPath = rec.thumbnailPath || row.thumbnailPath;
+              const nextScreenshots =
+                screenshots.length > 0 ? screenshots : row.screenshots;
+              const nextAttachments =
+                attachments.length > 0 ? attachments : row.attachments;
+              const nextYoutubeText =
+                youtubeUrls.length > 0
+                  ? youtubeUrls.join("\n")
+                  : row.youtubeUrlsText;
+              const nextRelatedLinksText =
+                relatedLinks.length > 0
+                  ? serializeRelatedLinksToText(relatedLinks)
+                  : row.relatedLinksText;
+              const nextSessionResults =
+                parseSessionResultsMap(rec.sessionResultsJson) ||
+                row.sessionResults;
+
+              const isNewerDraft =
+                typeof rec.draftVersion === "number" &&
+                rec.draftVersion > (row.draftVersion || 0);
+              const nextStatus = isNewerDraft
+                ? rec.status || row.status
+                : row.status;
+              const nextContentHash = isNewerDraft
+                ? rec.contentHash ?? row.contentHash
+                : row.contentHash;
+              const nextDraftVersion = isNewerDraft
+                ? rec.draftVersion
+                : row.draftVersion;
+
+              const rowChanged =
+                nextFolderPath !== row.folderPath ||
+                nextThumbnailPath !== row.thumbnailPath ||
+                nextYoutubeText !== row.youtubeUrlsText ||
+                nextRelatedLinksText !== row.relatedLinksText ||
+                nextStatus !== row.status ||
+                nextContentHash !== row.contentHash ||
+                nextDraftVersion !== row.draftVersion ||
+                Boolean(rec.hasNewerSharedResources) !==
+                  Boolean(row.hasNewerSharedResources) ||
+                JSON.stringify(nextScreenshots) !==
+                  JSON.stringify(row.screenshots) ||
+                JSON.stringify(nextAttachments) !==
+                  JSON.stringify(row.attachments) ||
+                JSON.stringify(nextSessionResults) !==
+                  JSON.stringify(row.sessionResults);
+
+              if (!rowChanged) {
+                return row;
+              }
+              anyChanged = true;
               return {
                 ...row,
-                folderPath: rec.localFolderPath || row.folderPath,
-                thumbnailPath: rec.thumbnailPath || row.thumbnailPath,
-                screenshots:
-                  screenshots.length > 0 ? screenshots : row.screenshots,
-                attachments:
-                  attachments.length > 0 ? attachments : row.attachments,
-                youtubeUrlsText:
-                  youtubeUrls.length > 0
-                    ? youtubeUrls.join("\n")
-                    : row.youtubeUrlsText,
-                relatedLinksText:
-                  relatedLinks.length > 0
-                    ? serializeRelatedLinksToText(relatedLinks)
-                    : row.relatedLinksText,
-                sessionResults:
-                  parseSessionResultsMap(rec.sessionResultsJson) ||
-                  row.sessionResults,
+                folderPath: nextFolderPath,
+                thumbnailPath: nextThumbnailPath,
+                screenshots: nextScreenshots,
+                attachments: nextAttachments,
+                youtubeUrlsText: nextYoutubeText,
+                relatedLinksText: nextRelatedLinksText,
+                thumbnailInspection:
+                  rec.thumbnailInspection || row.thumbnailInspection,
+                sessionResults: nextSessionResults,
+                sessionHistory: rec.sessionHistory || row.sessionHistory,
+                hasNewerSharedResources: Boolean(rec.hasNewerSharedResources),
+                status: nextStatus,
+                contentHash: nextContentHash,
+                draftVersion: nextDraftVersion,
               };
             });
 
             for (const rec of dbRecords) {
               if (!existingIds.has(rec.studentId)) {
+                anyChanged = true;
                 updatedRows.push(
                   buildRowFromDbRecord(
                     rec,
@@ -3250,7 +3324,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
                 );
               }
             }
-            return updatedRows;
+            return anyChanged ? updatedRows : prev;
           });
         }
       } catch {}

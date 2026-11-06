@@ -453,7 +453,7 @@ async function moveDriveItemToTrash(page: Page, itemId: string): Promise<void> {
   await page.waitForTimeout(350);
   const trashMenuItem = page
     .locator(
-      '[role="menuitem"]:has-text("Chuyển vào thùng rác"):visible, [role="menuitem"]:has-text("Move to trash"):visible'
+      '[role="menuitem"]:has-text("Chuyển vào thùng rác"):visible, [role="menuitem"]:has-text("Đưa vào thùng rác"):visible, [role="menuitem"]:has-text("Move to trash"):visible, [role="menuitem"]:has-text("Move to bin"):visible, [role="menuitem"]:has-text("Xóa"):visible, [role="menuitem"]:has-text("Remove"):visible'
     )
     .first();
   if (await trashMenuItem.isVisible().catch(() => false)) {
@@ -461,6 +461,11 @@ async function moveDriveItemToTrash(page: Page, itemId: string): Promise<void> {
     await page.waitForTimeout(700);
   } else {
     await page.keyboard.press("Escape").catch(() => {});
+    await page.waitForTimeout(150);
+    await row.click().catch(() => {});
+    await page.waitForTimeout(150);
+    await page.keyboard.press("Delete").catch(() => {});
+    await page.waitForTimeout(500);
   }
 }
 
@@ -654,8 +659,27 @@ async function uploadFilesIntoDriveFolder(
   while (Date.now() < uploadDeadline) {
     assertDriveNotStopped();
     await page.waitForTimeout(1200);
+
+    // If Google Drive shows a duplicate file confirmation modal on 2nd/3rd upload, confirm it automatically
+    const replaceConfirmBtn = page
+      .locator(
+        '[role="dialog"] button:has-text("Tải lên"):visible, [role="dialog"] button:has-text("Upload"):visible, [role="dialog"] button:has-text("Thay thế"):visible, [role="dialog"] button:has-text("Replace"):visible, [role="dialog"] button[data-id="EBS5u"]:visible'
+      )
+      .last();
+    if (await replaceConfirmBtn.isVisible().catch(() => false)) {
+      await replaceConfirmBtn.click().catch(() => {});
+      await page.waitForTimeout(600);
+    }
+
     const currentItems = await listDriveItemsOnPage(page, studentDriveFolderId);
-    const currentNames = new Set(currentItems.map((i) => i.name.toLowerCase()));
+    const currentNames = new Set<string>();
+    for (const i of currentItems) {
+      const lower = i.name.toLowerCase();
+      currentNames.add(lower);
+      // Also normalize duplicate suffix like "index (1).html" -> "index.html"
+      const strippedDup = lower.replace(/\s+\(\d+\)(\.[a-z0-9_-]+)?$/i, "$1");
+      currentNames.add(strippedDup);
+    }
     const allPresent = expectedBaseNames.every((name) => currentNames.has(name));
     if (allPresent) {
       verifiedAllPresent = true;

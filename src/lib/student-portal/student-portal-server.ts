@@ -13,6 +13,7 @@ import { type ChildProcess, spawn } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -20,6 +21,7 @@ import {
   classSessionRepo,
   jobLogRepo,
   normalizeSpckFolderKey,
+  spckSessionRepo,
   spckUploadRepo,
   studentRepo,
 } from "../db/sqlite";
@@ -248,8 +250,10 @@ function assertInsideDirectory(parentDir: string, targetPath: string): string {
 
 class StudentPortalManager {
   private server: http.Server | null = null;
+  private activeSockets = new Set<net.Socket>();
   private tunnelProcess: ChildProcess | null = null;
   private isRunning = false;
+  private portalGeneration = 0;
   private classId = "";
   private className = "";
   private rootFolderPath = "";
@@ -264,6 +268,10 @@ class StudentPortalManager {
   private tunnelProvider = "Mạng LAN / Máy Giáo Viên";
   private startedAt: string | null = null;
   private submissions = new Map<string, StudentPortalSubmissionItem>();
+  private driveUploadStateByStudent = new Map<
+    string,
+    { running: boolean; pendingRerun: boolean; driveFolderUrl: string }
+  >();
 
   public getStatus(filterClassId?: string): StudentPortalStatus {
     this.syncSubmissionsWithExistingRecords();
@@ -394,27 +402,57 @@ class StudentPortalManager {
   }
 
   public async stopPortal(): Promise<void> {
+    this.portalGeneration++;
     this.isRunning = false;
     this.tunnelStatus = "STOPPED";
     this.publicTunnelUrl = null;
 
+    for (const state of this.driveUploadStateByStudent.values()) {
+      state.pendingRerun = false;
+    }
+
     if (this.tunnelProcess) {
-      try {
-        this.tunnelProcess.kill();
-      } catch {}
+      const proc = this.tunnelProcess;
       this.tunnelProcess = null;
+      try {
+        proc.stdout?.removeAllListeners();
+        proc.stderr?.removeAllListeners();
+        proc.stdout?.destroy();
+        proc.stderr?.destroy();
+        proc.kill("SIGKILL");
+        if (process.platform === "win32" && proc.pid) {
+          const killer = spawn("taskkill", ["/PID", String(proc.pid), "/T", "/F"], {
+            windowsHide: true,
+            stdio: "ignore",
+          });
+          killer.unref();
+        }
+      } catch {}
     }
 
     if (this.server) {
       const srv = this.server;
       this.server = null;
-      await new Promise<void>((resolve) => {
+      try {
+        (srv as unknown as { closeIdleConnections?: () => void }).closeIdleConnections?.();
+        (srv as unknown as { closeAllConnections?: () => void }).closeAllConnections?.();
+      } catch {}
+      for (const socket of Array.from(this.activeSockets)) {
         try {
-          srv.close(() => resolve());
-        } catch {
-          resolve();
-        }
-      });
+          socket.destroy();
+        } catch {}
+      }
+      this.activeSockets.clear();
+      await Promise.race([
+        new Promise<void>((resolve) => {
+          try {
+            srv.close(() => resolve());
+          } catch {
+            resolve();
+          }
+        }),
+        new Promise<void>((resolve) => setTimeout(resolve, 600)),
+      ]);
     }
   }
 
@@ -486,6 +524,7 @@ class StudentPortalManager {
   }
 
   private async listenOnAvailablePort(startPort: number, maxPort: number): Promise<number> {
+    this.activeSockets.clear();
     for (let candidatePort = startPort; candidatePort <= maxPort; candidatePort++) {
       try {
         const srv = http.createServer((req, res) => {
@@ -499,6 +538,14 @@ class StudentPortalManager {
                 })
               );
             }
+          });
+        });
+        srv.keepAliveTimeout = 2000;
+        srv.headersTimeout = 10000;
+        srv.on("connection", (socket: net.Socket) => {
+          this.activeSockets.add(socket);
+          socket.once("close", () => {
+            this.activeSockets.delete(socket);
           });
         });
 
@@ -695,7 +742,10 @@ class StudentPortalManager {
     const expectedPrefix = `/s/${this.sessionToken}`;
 
     if (!this.isRunning || !this.sessionToken || !pathname.startsWith(expectedPrefix)) {
-      res.writeHead(403, { "Content-Type": "text/html; charset=utf-8" });
+      res.writeHead(403, {
+        "Content-Type": "text/html; charset=utf-8",
+        Connection: "close",
+      });
       res.end(
         `<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>Cổng nộp bài đã đóng</title></head><body style="background:#0f172a;color:#f8fafc;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="text-align:center;max-width:460px;padding:24px;border:1px solid #334155;border-radius:16px;background:#1e293b;"><h2>🔒 Đường dẫn nộp bài không hợp lệ hoặc đã đóng</h2><p style="color:#94a3b8;font-size:14px;">Vui lòng xin lại đường dẫn mới nhất từ Thầy giảng viên.</p></div></body></html>`
       );
@@ -1037,6 +1087,13 @@ class StudentPortalManager {
       errorMessage: null,
     });
 
+    // Keep unverified session drafts (12, 13, 14) in sync when a student uploads a 2nd or 3rd time
+    this.syncStudentUnverifiedSessionDrafts(
+      this.classId,
+      student.studentId,
+      rawTitle ? finalTitle : undefined
+    );
+
     const isExempt = isCourseExemptFromSpck(this.classId);
     const shouldQueueDrive = this.autoUploadDrive && !isExempt;
 
@@ -1080,43 +1137,115 @@ class StudentPortalManager {
     };
   }
 
+  private syncStudentUnverifiedSessionDrafts(
+    classId: string,
+    studentId: string,
+    explicitBaseTitle?: string
+  ): void {
+    for (const slotNum of [12, 13, 14] as const) {
+      try {
+        const sessRow = spckSessionRepo.findOne(classId, studentId, slotNum);
+        if (
+          !sessRow ||
+          sessRow.lastVerifiedAt ||
+          sessRow.draftStatus === "APPROVED" ||
+          sessRow.draftStatus === "VERIFIED"
+        ) {
+          continue;
+        }
+        spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
+          classId,
+          studentId,
+          slotNum
+        );
+        if (explicitBaseTitle) {
+          spckSessionRepo.saveSessionDraft({
+            classId,
+            studentId,
+            sessionNumber: slotNum,
+            projectTitle: explicitBaseTitle,
+            updateSharedPool: false,
+          });
+        }
+      } catch {}
+    }
+  }
+
   private async uploadSingleStudentToDriveInBackground(
     classId: string,
     studentId: string,
     driveFolderUrl: string
   ): Promise<void> {
-    const sub = this.submissions.get(studentId);
-    if (sub) {
-      sub.driveStatus = "UPLOADING";
-      sub.driveError = undefined;
+    const stateKey = `${classId}::${studentId}`;
+    const existingState = this.driveUploadStateByStudent.get(stateKey);
+    if (existingState?.running) {
+      existingState.pendingRerun = true;
+      existingState.driveFolderUrl = driveFolderUrl;
+      const sub = this.submissions.get(studentId);
+      if (sub) {
+        sub.driveStatus = "UPLOADING";
+        sub.driveError = undefined;
+      }
+      return;
     }
 
-    try {
-      const batchResult = await SpckDriveUploader.uploadClassSpckToGoogleDrive({
-        classId,
-        driveFolderUrl,
-        studentIds: [studentId],
-      });
+    const state = {
+      running: true,
+      pendingRerun: false,
+      driveFolderUrl,
+    };
+    this.driveUploadStateByStudent.set(stateKey, state);
+    const startGen = this.portalGeneration;
 
-      const stuRes = batchResult.results.find((r) => r.studentId === studentId);
-      const currentSub = this.submissions.get(studentId);
-      if (currentSub) {
-        if (stuRes && stuRes.status === "SUCCESS" && stuRes.driveFolderUrl) {
-          currentSub.driveStatus = "UPLOADED";
-          currentSub.driveFolderUrl = stuRes.driveFolderUrl;
-          currentSub.driveError = undefined;
-        } else {
-          currentSub.driveStatus = "FAILED";
-          currentSub.driveError =
-            stuRes?.errorMessage || "Không thể tải lên Google Drive.";
+    try {
+      while (true) {
+        state.pendingRerun = false;
+        const currentDriveFolderUrl = state.driveFolderUrl;
+
+        const sub = this.submissions.get(studentId);
+        if (sub) {
+          sub.driveStatus = "UPLOADING";
+          sub.driveError = undefined;
+        }
+
+        try {
+          const batchResult = await SpckDriveUploader.uploadClassSpckToGoogleDrive({
+            classId,
+            driveFolderUrl: currentDriveFolderUrl,
+            studentIds: [studentId],
+          });
+
+          this.syncStudentUnverifiedSessionDrafts(classId, studentId);
+
+          const stuRes = batchResult.results.find((r) => r.studentId === studentId);
+          const currentSub = this.submissions.get(studentId);
+          if (currentSub && !state.pendingRerun) {
+            if (stuRes && stuRes.status === "SUCCESS" && stuRes.driveFolderUrl) {
+              currentSub.driveStatus = "UPLOADED";
+              currentSub.driveFolderUrl = stuRes.driveFolderUrl;
+              currentSub.driveError = undefined;
+            } else {
+              currentSub.driveStatus = "FAILED";
+              currentSub.driveError =
+                stuRes?.errorMessage || "Không thể tải lên Google Drive.";
+            }
+          }
+        } catch (err) {
+          const currentSub = this.submissions.get(studentId);
+          if (currentSub && !state.pendingRerun) {
+            currentSub.driveStatus = "FAILED";
+            currentSub.driveError =
+              err instanceof Error ? err.message : String(err);
+          }
+        }
+
+        if (!state.pendingRerun || !this.isRunning || this.portalGeneration !== startGen) {
+          break;
         }
       }
-    } catch (err) {
-      const currentSub = this.submissions.get(studentId);
-      if (currentSub) {
-        currentSub.driveStatus = "FAILED";
-        currentSub.driveError = err instanceof Error ? err.message : String(err);
-      }
+    } finally {
+      state.running = false;
+      this.driveUploadStateByStudent.delete(stateKey);
     }
   }
 
@@ -1580,9 +1709,21 @@ class StudentPortalManager {
 
     async function pollDriveStatusForStudent(studentId) {
       if (pollTimer) clearInterval(pollTimer);
+      let pollAttempts = 0;
       pollTimer = setInterval(async () => {
+        pollAttempts++;
+        if (pollAttempts > 60) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          return;
+        }
         try {
           const res = await fetch(window.location.pathname.replace(/\\/+$/, '') + '/status');
+          if (!res.ok) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+            return;
+          }
           const data = await res.json();
           if (!data.success) return;
           const stu = (data.students || []).find(s => s.studentId === studentId);
@@ -1590,6 +1731,7 @@ class StudentPortalManager {
 
           if (stu.driveStatus === 'UPLOADED' && stu.driveFolderUrl) {
             clearInterval(pollTimer);
+            pollTimer = null;
             const safeDriveUrl = /^https:\/\/drive\.google\.com\//i.test(stu.driveFolderUrl) ? escapeHtml(stu.driveFolderUrl) : '#';
             showStatus(
               'success',
@@ -1600,6 +1742,7 @@ class StudentPortalManager {
             loadPortalStatus();
           } else if (stu.driveStatus === 'FAILED') {
             clearInterval(pollTimer);
+            pollTimer = null;
             showStatus(
               'warning',
               '<strong>✅ Đã lưu bài vào máy Thầy thành công (' + Number(stu.filesCount || 0) + ' file)!</strong><br/>' +

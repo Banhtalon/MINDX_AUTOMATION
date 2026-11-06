@@ -257,7 +257,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
                   <button
                     type="button"
                     onClick={handleStartStudentPortal}
-                    disabled={isAnyOperationBusy || !selectedClassId}
+                    disabled={togglingStudentPortal || isAnyOperationBusy || !selectedClassId}
                     className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold text-xs transition-colors cursor-pointer"
                   >
                     {togglingStudentPortal ? (

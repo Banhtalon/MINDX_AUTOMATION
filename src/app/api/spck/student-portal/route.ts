@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
-import { spckUploadRepo } from "@/lib/db/sqlite";
+import { type SpckSessionSlotNumber } from "@/lib/db/sqlite";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { studentPortalManager } from "@/lib/student-portal/student-portal-server";
+import { buildEnrichedClassSpckRecords } from "../list/route";
+
+function resolveSessionSlot(raw: unknown): SpckSessionSlotNumber {
+  const num = Number(raw);
+  return num === 12 || num === 13 || num === 14 ? num : 12;
+}
 
 export async function GET(req: Request) {
   const guard = validateLocalRequest(req);
@@ -12,10 +18,13 @@ export async function GET(req: Request) {
     const classId = String(url.searchParams.get("classId") || "")
       .trim()
       .toUpperCase();
+    const sessionSlot = resolveSessionSlot(url.searchParams.get("sessionNumber"));
 
     const portalStatus = studentPortalManager.getStatus(classId || undefined);
     const activeClassId = classId || portalStatus.classId;
-    const records = activeClassId ? spckUploadRepo.findByClass(activeClassId) : [];
+    const records = activeClassId
+      ? buildEnrichedClassSpckRecords(activeClassId, sessionSlot)
+      : [];
 
     return NextResponse.json({
       success: true,
@@ -41,12 +50,19 @@ export async function POST(req: Request) {
     const body = await req.json();
     const action = String(body?.action || "start").trim().toLowerCase();
     const classId = String(body?.classId || "").trim().toUpperCase();
+    const sessionSlot = resolveSessionSlot(body?.sessionNumber);
 
     if (action === "stop") {
       await studentPortalManager.stopPortal();
+      const portalStatus = studentPortalManager.getStatus();
+      const activeClassId = classId || portalStatus.classId;
+      const records = activeClassId
+        ? buildEnrichedClassSpckRecords(activeClassId, sessionSlot)
+        : [];
       return NextResponse.json({
         success: true,
-        portalStatus: studentPortalManager.getStatus(),
+        portalStatus,
+        records,
       });
     }
 
@@ -79,7 +95,7 @@ export async function POST(req: Request) {
         typeof body?.autoUploadDrive === "boolean" ? body.autoUploadDrive : true,
     });
 
-    const records = spckUploadRepo.findByClass(classId);
+    const records = buildEnrichedClassSpckRecords(classId, sessionSlot);
 
     return NextResponse.json({
       success: true,

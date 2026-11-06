@@ -2856,7 +2856,6 @@ export default function FinalProjectPage() {
     creatingDemoSheet ||
     capturingScreenshots ||
     importingYoutube ||
-    togglingStudentPortal ||
     importingDemoScores ||
     generatingS14EvalAi ||
     uploadingS14EvalLms;
