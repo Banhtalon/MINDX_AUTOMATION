@@ -27,6 +27,8 @@ import {
 } from "../db/sqlite";
 import {
   MAX_SPCK_TITLE_LENGTH,
+  resolveStudentFolderInsideClassRoot,
+  resolveTargetSpckClassFolder,
   sanitizeSpckTitle,
   scanStudentSpckFolder,
   validateSpckRelatedUrl,
@@ -328,12 +330,10 @@ class StudentPortalManager {
     }
 
     // Resolve and register the target class SPCK directory
-    let targetRootDir = String(options.folderPath || "").trim();
-    if (!targetRootDir) {
-      targetRootDir = path.resolve(process.cwd(), "data", "spck", normalizedClassId);
-    } else {
-      targetRootDir = path.resolve(targetRootDir);
-    }
+    const targetRootDir = resolveTargetSpckClassFolder(
+      normalizedClassId,
+      options.folderPath
+    );
 
     if (!fs.existsSync(targetRootDir)) {
       fs.mkdirSync(targetRootDir, { recursive: true });
@@ -931,28 +931,17 @@ class StudentPortalManager {
     ) {
       studentFolderPath = assertInsideDirectory(safeClassRoot, existingRecord.localFolderPath);
     } else {
-      const baseFolderName = sanitizeFolderDisplayName(student.fullName, student.studentId);
-      let candidatePath = assertInsideDirectory(
+      const otherRecords = spckUploadRepo.findByClass(this.classId);
+      const otherPaths = otherRecords
+        .filter((r) => r.studentId !== student.studentId && r.localFolderPath)
+        .map((r) => r.localFolderPath!);
+      const candidatePath = resolveStudentFolderInsideClassRoot(
         safeClassRoot,
-        path.join(safeClassRoot, baseFolderName)
+        student.fullName,
+        student.studentId,
+        otherPaths
       );
-      // Avoid collision if another student with the exact same fullName already uses this folder
-      const otherStudentUsingSameFolder = spckUploadRepo
-        .findByClass(this.classId)
-        .some(
-          (r) =>
-            r.studentId !== student.studentId &&
-            r.localFolderPath &&
-            normalizeSpckFolderKey(r.localFolderPath) ===
-              normalizeSpckFolderKey(candidatePath)
-        );
-      if (otherStudentUsingSameFolder) {
-        candidatePath = assertInsideDirectory(
-          safeClassRoot,
-          path.join(safeClassRoot, `${baseFolderName}_${student.studentId.slice(-4)}`)
-        );
-      }
-      studentFolderPath = candidatePath;
+      studentFolderPath = assertInsideDirectory(safeClassRoot, candidatePath);
     }
 
     if (!fs.existsSync(studentFolderPath)) {

@@ -1223,6 +1223,10 @@ export default function FinalProjectPage() {
             : 13);
         setSelectedSessionNumber(resolvedSession);
         setStudents(data.students || []);
+        const resolvedFolder = data.defaultFolderPath || data.savedFolderPath;
+        if (typeof resolvedFolder === "string" && resolvedFolder.trim()) {
+          setFolderPathInput(resolvedFolder.trim());
+        }
         if (Array.isArray(data.quickTags)) {
           setSession14TagLabels(extractSession14TagLabelsFromConfig(data.quickTags));
         }
@@ -1314,7 +1318,11 @@ export default function FinalProjectPage() {
           : selectedSessionNumber;
       setSelectedSessionNumber(resolvedSession);
       setStudents(data.students || []);
-        if (Array.isArray(data.quickTags)) {
+      const resolvedFolder = data.defaultFolderPath || data.savedFolderPath;
+      if (typeof resolvedFolder === "string" && resolvedFolder.trim()) {
+        setFolderPathInput(resolvedFolder.trim());
+      }
+      if (Array.isArray(data.quickTags)) {
           setSession14TagLabels(extractSession14TagLabelsFromConfig(data.quickTags));
         }
       if (data.demoSheetMeta) {
@@ -1401,6 +1409,10 @@ export default function FinalProjectPage() {
           text: data.error || "Lỗi khi quét thư mục SPCK.",
         });
         return;
+      }
+
+      if (typeof data.resolvedFolderPath === "string" && data.resolvedFolderPath.trim()) {
+        setFolderPathInput(data.resolvedFolderPath.trim());
       }
 
       const dbRecordMap = new Map<string, SpckRecordRow>(

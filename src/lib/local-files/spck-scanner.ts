@@ -6,13 +6,17 @@
  */
 
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import AdmZip from "adm-zip";
 import { normalizeSpckFolderKey, spckUploadRepo } from "../db/sqlite";
 import { parseZipArchiveBuffer } from "../file-parsers/archive-reader";
 import { parseGameMakerBuffer, parseScratchSb3Buffer } from "../file-parsers/game-reader";
 import { parseMediaBuffer } from "../file-parsers/media-reader";
-import { assertPathAllowed } from "../security/path-allowlist";
+import {
+  assertPathAllowed,
+  registerTeacherSelectedDirectory,
+} from "../security/path-allowlist";
 import { renderGameArchiveScreenshotsSync } from "./spck-game-screenshotter";
 import {
   FolderStudentMatchResult,
@@ -21,11 +25,283 @@ import {
   stripVietnameseDiacritics,
 } from "../utils/vietnamese-match";
 
+export const DEFAULT_SPCK_BASE_DIR = "F:\\MINDX_SPCK_FINAL";
 export const MAX_SPCK_TITLE_LENGTH = 100;
 export const MAX_SPCK_SCREENSHOTS = 10;
 export const MAX_SPCK_ATTACHMENTS = 10;
 export const MAX_SPCK_YOUTUBE_URLS = 5;
 export const MAX_SPCK_RELATED_LINKS = 5;
+
+const SPCK_PREFIX_TOKENS = new Set([
+  "VT",
+  "HN",
+  "HCM",
+  "SG",
+  "DN",
+  "HP",
+  "CT",
+  "BH",
+  "BD",
+  "NT",
+  "C4K",
+  "ROB",
+  "C4T",
+  "KID",
+  "KIDS",
+  "TEENS",
+  "ONLINE",
+  "ONL",
+]);
+
+/**
+ * Extracts normalized folder code candidates from an LMS classId.
+ * E.g. "VT-JSB16" -> { shortCode: "JSB16", tailCode: "JSB16", fullCode: "VT-JSB16" }
+ *      "VT-C4K-GA38" -> { shortCode: "GA38", tailCode: "GA38", fullCode: "VT-C4K-GA38" }
+ *      "VT-CSA04-HB" -> { shortCode: "CSA04", tailCode: "CSA04-HB", fullCode: "VT-CSA04-HB" }
+ */
+export function extractSpckClassFolderCode(classId: string): {
+  shortCode: string;
+  tailCode: string;
+  fullCode: string;
+} {
+  const fullCode = String(classId || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "-");
+  if (!fullCode) {
+    return { shortCode: "", tailCode: "", fullCode: "" };
+  }
+
+  const tokens = fullCode.split(/[-_\s]+/).filter(Boolean);
+  const courseIdx = tokens.findIndex(
+    (tok) => !SPCK_PREFIX_TOKENS.has(tok) && /^[A-Z]{2,8}\d{1,4}[A-Z]?$/i.test(tok)
+  );
+  if (courseIdx >= 0) {
+    const shortCode = tokens[courseIdx];
+    const tailCode = tokens.slice(courseIdx).join("-");
+    return { shortCode, tailCode, fullCode };
+  }
+
+  const lastToken = tokens[tokens.length - 1] || fullCode;
+  return { shortCode: lastToken, tailCode: lastToken, fullCode };
+}
+
+function isSyntheticTestClassCode(classId: string): boolean {
+  const upper = String(classId || "").trim().toUpperCase();
+  return /^(TEST|S5A|S5B|V270|V272)_/.test(upper);
+}
+
+/**
+ * Resolves the default SPCK folder for a class inside `F:\MINDX_SPCK_FINAL` (or isolated test root).
+ * - If a matching subfolder already exists in `F:\MINDX_SPCK_FINAL` (case-insensitive match on
+ *   shortCode like `JSB16`, `jsb15`, `GA38`, `PTA12` or fullCode like `VT-JSB16`), selects that exact folder.
+ * - If it does not exist yet and `createIfMissing !== false`, automatically creates `F:\MINDX_SPCK_FINAL\<shortCode>`
+ *   and registers it in the Path Allowlist.
+ */
+export function resolveDefaultSpckClassFolder(
+  classId: string,
+  options?: { createIfMissing?: boolean; baseDir?: string }
+): string {
+  const { shortCode, tailCode, fullCode } = extractSpckClassFolderCode(classId);
+  if (!fullCode) return "";
+
+  const createIfMissing = options?.createIfMissing !== false;
+  let baseRoot = options?.baseDir ? path.resolve(options.baseDir) : "";
+  if (!baseRoot) {
+    if (process.env.MINDX_DB_PATH || isSyntheticTestClassCode(fullCode)) {
+      baseRoot = process.env.MINDX_DB_PATH
+        ? path.join(path.dirname(path.resolve(process.env.MINDX_DB_PATH)), "spck_root")
+        : path.join(os.tmpdir(), "mindx_spck_test_root");
+    } else {
+      baseRoot = DEFAULT_SPCK_BASE_DIR;
+    }
+  }
+
+  try {
+    if (!fs.existsSync(baseRoot) && createIfMissing) {
+      fs.mkdirSync(baseRoot, { recursive: true });
+    }
+  } catch {
+    // Fallback if drive letter does not exist on non-F: environment
+    baseRoot = path.resolve(process.cwd(), "data", "spck_root");
+    if (!fs.existsSync(baseRoot) && createIfMissing) {
+      fs.mkdirSync(baseRoot, { recursive: true });
+    }
+  }
+
+  const candidateNames = Array.from(
+    new Set([shortCode, tailCode, fullCode].filter(Boolean))
+  );
+
+  let resolvedDir = "";
+  try {
+    if (fs.existsSync(baseRoot)) {
+      const entries = fs.readdirSync(baseRoot, { withFileTypes: true });
+      for (const cand of candidateNames) {
+        const match = entries.find(
+          (e) => e.isDirectory() && e.name.toLowerCase() === cand.toLowerCase()
+        );
+        if (match) {
+          resolvedDir = path.join(baseRoot, match.name);
+          break;
+        }
+      }
+    }
+  } catch {
+    // Ignore read error
+  }
+
+  if (!resolvedDir) {
+    resolvedDir = path.join(baseRoot, shortCode || fullCode);
+    if (createIfMissing && !fs.existsSync(resolvedDir)) {
+      try {
+        fs.mkdirSync(resolvedDir, { recursive: true });
+      } catch {
+        // Ignore mkdir error
+      }
+    }
+  }
+
+  if (fs.existsSync(resolvedDir)) {
+    try {
+      return registerTeacherSelectedDirectory(resolvedDir);
+    } catch {
+      return resolvedDir;
+    }
+  }
+  return resolvedDir;
+}
+
+/**
+ * Normalizes a teacher/UI supplied `candidateFolderPath` for `classId`:
+ * If `candidateFolderPath` is empty, points to `process.cwd()`, points to `F:\MINDX_SPCK_FINAL` root
+ * without a class subfolder, points to legacy `data/spck/...`, or points to another class's subfolder
+ * inside `F:\MINDX_SPCK_FINAL`, automatically resolves to `F:\MINDX_SPCK_FINAL\<Mã-Lớp>`.
+ */
+export function resolveTargetSpckClassFolder(
+  classId: string,
+  candidateFolderPath?: string,
+  options?: { baseDir?: string }
+): string {
+  const defaultClassDir = resolveDefaultSpckClassFolder(classId, {
+    createIfMissing: true,
+    baseDir: options?.baseDir,
+  });
+  const rawCandidate = String(candidateFolderPath || "").trim();
+  if (!rawCandidate) {
+    return defaultClassDir;
+  }
+
+  const resolvedCandidate = path.resolve(rawCandidate);
+  const normCandidate = normalizeSpckFolderKey(resolvedCandidate);
+  const normWorkspace = normalizeSpckFolderKey(process.cwd());
+  const normDefaultBase = normalizeSpckFolderKey(DEFAULT_SPCK_BASE_DIR);
+  const normActiveBase = defaultClassDir
+    ? normalizeSpckFolderKey(path.dirname(defaultClassDir))
+    : normDefaultBase;
+  const normLegacyDataSpck = normalizeSpckFolderKey(
+    path.resolve(process.cwd(), "data", "spck")
+  );
+
+  if (
+    normCandidate === normWorkspace ||
+    normCandidate === normDefaultBase ||
+    normCandidate === normActiveBase ||
+    normCandidate === normLegacyDataSpck ||
+    normCandidate.startsWith(normLegacyDataSpck + "/")
+  ) {
+    return defaultClassDir || resolvedCandidate;
+  }
+
+  // If candidate is a direct child of F:\MINDX_SPCK_FINAL (or active baseRoot) for a different class, switch to current class folder
+  const candidateParentNorm = normalizeSpckFolderKey(path.dirname(resolvedCandidate));
+  if (
+    defaultClassDir &&
+    (candidateParentNorm === normDefaultBase || candidateParentNorm === normActiveBase)
+  ) {
+    const { shortCode, tailCode, fullCode } = extractSpckClassFolderCode(classId);
+    const baseNameLower = path.basename(resolvedCandidate).toLowerCase();
+    const validClassNames = new Set(
+      [
+        shortCode.toLowerCase(),
+        tailCode.toLowerCase(),
+        fullCode.toLowerCase(),
+        path.basename(defaultClassDir).toLowerCase(),
+      ].filter(Boolean)
+    );
+    if (!validClassNames.has(baseNameLower)) {
+      return defaultClassDir;
+    }
+  }
+
+  return resolvedCandidate;
+}
+
+/**
+ * Resolves a student's subfolder inside `classRootDir` (`F:\MINDX_SPCK_FINAL\<Mã-Lớp>`):
+ * Reuses an existing subfolder if its diacritic-stripped normalized name matches `studentFullName`
+ * (e.g. `Duong Dang Khôi` matches `Dương Đăng Khôi`), or returns `<classRootDir>/<studentFullName>`.
+ */
+export function resolveStudentFolderInsideClassRoot(
+  classRootDir: string,
+  studentFullName: string,
+  fallbackStudentId: string,
+  otherStudentFolderPaths: string[] = []
+): string {
+  const resolvedRoot = path.resolve(classRootDir);
+  const otherNormSet = new Set(
+    otherStudentFolderPaths.filter(Boolean).map((p) => normalizeSpckFolderKey(p))
+  );
+  const normTargetName = stripVietnameseDiacritics(studentFullName || fallbackStudentId)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (normTargetName && fs.existsSync(resolvedRoot)) {
+    try {
+      const subdirs = fs
+        .readdirSync(resolvedRoot, { withFileTypes: true })
+        .filter(
+          (d) =>
+            d.isDirectory() &&
+            !d.name.startsWith(".") &&
+            !d.name.toLowerCase().startsWith("_spck_")
+        );
+      for (const sub of subdirs) {
+        const subPath = path.join(resolvedRoot, sub.name);
+        if (otherNormSet.has(normalizeSpckFolderKey(subPath))) continue;
+        const normSub = stripVietnameseDiacritics(sub.name)
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (normSub && normSub === normTargetName) {
+          return subPath;
+        }
+      }
+    } catch {
+      // Ignore read errors
+    }
+  }
+
+  const cleanName =
+    String(studentFullName || fallbackStudentId)
+      .replace(/[<>:"/\\|?*\x00-\x1F]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\.+$/, "")
+      .trim() || fallbackStudentId;
+
+  let candidatePath = path.join(resolvedRoot, cleanName);
+  if (otherNormSet.has(normalizeSpckFolderKey(candidatePath))) {
+    candidatePath = path.join(
+      resolvedRoot,
+      `${cleanName}_${String(fallbackStudentId).slice(-4)}`
+    );
+  }
+  return candidatePath;
+}
 
 export const ALLOWED_IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp"]);
 

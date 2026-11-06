@@ -16,6 +16,19 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ## [v3.4.0] — 2026-10-30 / 2026-11-06 (Giai Đoạn 10: Tinh Gọn Luồng Nghiệp Vụ, Giảm Số Lần Bấm & Liên Thông 5 Màn Hình `S0` $\rightarrow$ `S8`)
 
+- **Tự Động Nhận Diện & Tạo Thư Mục Lớp SPCK Mặc Định `F:\MINDX_SPCK_FINAL` Khi Chọn Lớp $\ge 12$ Buổi & Khớp Thư Mục Học Viên Nộp Qua Cổng Trực Tuyến (`src/lib/local-files/spck-scanner.ts`, `src/lib/security/path-allowlist.ts`, `src/app/api/spck/list/route.ts`, `src/app/api/spck/scan/route.ts`, `src/app/api/spck/browse-folder/route.ts`, `src/lib/student-portal/student-portal-server.ts`, `src/app/final-project/page.tsx`, `src/components/final-project/useSpckWorkflow.ts` — 2026-11-06):**
+  1. **Thiết lập `F:\MINDX_SPCK_FINAL` làm thư mục gốc mặc định cho toàn bộ các lớp SPCK trên hệ thống:**
+     - Tự động bổ sung `F:\MINDX_SPCK_FINAL` vào `getAllowedDirectories()` trong `path-allowlist.ts` và ghim làm lối tắt đầu tiên trong hộp thoại duyệt thư mục `browse-folder`.
+  2. **Tự động chọn đúng thư mục lớp hoặc tự tạo thư mục mới khi chọn lớp $\ge 12$ buổi (`resolveDefaultSpckClassFolder`):**
+     - Khi giáo viên chọn bất kỳ lớp nào $\ge 12$ buổi trên trang `/final-project`, hệ thống tự động tra cứu thư mục con trong `F:\MINDX_SPCK_FINAL`:
+       - Nếu đã có thư mục khớp mã ngắn (như `JSB16`, `jsb15`, `GA38`, `PTA12`, `CSI02`...) hoặc mã đầy đủ (như `VT-JSB16`), tự động điền đường dẫn thư mục đó vào ô `1C. THƯ MỤC SPCK TRÊN MÁY TÍNH`.
+       - Nếu chưa có, hệ thống tự động tạo mới thư mục `F:\MINDX_SPCK_FINAL\<Mã-Lớp>` (ví dụ `F:\MINDX_SPCK_FINAL\PTA13`) và tự động đăng ký vào danh sách thư mục được cấp phép (`registerTeacherSelectedDirectory`).
+  3. **Tự động lưu bài học sinh nộp qua Cổng Trực Tuyến vào đúng thư mục lớp và thư mục học sinh:**
+     - Khi bật Cổng Cho Học Sinh Nộp Bài (`student-portal-server.ts`), hệ thống tự động trỏ thư mục lưu bài về đúng thư mục lớp `F:\MINDX_SPCK_FINAL\<Mã-Lớp>`.
+     - Khi học sinh tải file lên, bài làm tự động lưu vào `F:\MINDX_SPCK_FINAL\<Mã-Lớp>\<Họ-Tên-Học-Sinh>\`. Nếu trong thư mục lớp đã có sẵn thư mục của học sinh (kể cả có khác biệt nhỏ về dấu tiếng Việt như `Duong Dang Khôi` và `Dương Đăng Khôi`), hệ thống thông minh nhận diện và tái sử dụng đúng thư mục đó, tuyệt đối không tạo thư mục trùng lặp.
+  4. **Kiểm thử tự động đạt 100%:**
+     - Viết mới bộ test `scripts/test-spck-default-dir.ts` và `scripts/test-portal-directory.ts`, kiểm chứng toàn bộ các trường hợp tra cứu, tạo thư mục và nộp bài đều PASS 100%. Toàn bộ bộ test hồi quy `scripts/test-streamline-v340-s5.ts` đạt PASS 100%. Dữ liệu thật của hệ thống bảo toàn 100% SHA-256.
+
 - **Sửa Lỗi Treo Giao Diện Khi Đóng Cổng Thu Bài Học Sinh Sau Khi Tải File Lần 2 / Lần 3 (`src/lib/student-portal/student-portal-server.ts`, `src/app/api/spck/student-portal/route.ts`, `src/lib/playwright/spck-drive-uploader.ts`, `src/components/final-project/useSpckWorkflow.ts`, `src/components/final-project/ToolsDrawer.tsx`, `src/app/final-project/page.tsx` — 2026-11-06):**
   1. **Triệt tiêu lỗi treo `srv.close()` do kết nối HTTP Keep-Alive khi đóng Cổng Thu Bài (`src/lib/student-portal/student-portal-server.ts`):**
      - Khi học sinh mở trang Cổng Thu Bài và nộp bài 2–3 lần, trình duyệt của học sinh giữ kết nối TCP `Keep-Alive` và tự động hỏi trạng thái `/status` mỗi 3 giây (nhỏ hơn `keepAliveTimeout` 5 giây mặc định của Node.js `http.Server`). Trước đây `stopPortal()` chỉ gọi `srv.close()` mà không ngắt các socket đang mở, khiến `srv.close()` chờ vô thời hạn và làm treo API `POST /api/spck/student-portal` (`action: "stop"`).

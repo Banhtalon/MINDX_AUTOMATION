@@ -142,27 +142,37 @@ export function registerTeacherSelectedDirectory(dirPath: string): string {
   }
 
   runtimeTeacherSelectedDirs.add(realResolved);
-  try {
-    const existing = loadPersistedTeacherDirs();
-    const merged = Array.from(new Set([...existing, ...runtimeTeacherSelectedDirs]));
-    const dir = path.dirname(TEACHER_BROWSED_DIRS_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+  if (!process.env.MINDX_DB_PATH) {
+    try {
+      const existing = loadPersistedTeacherDirs();
+      const alreadyPersisted = existing.some(
+        (d) => normalizePath(d) === normalizePath(realResolved)
+      );
+      if (!alreadyPersisted) {
+        const merged = Array.from(new Set([...existing, ...runtimeTeacherSelectedDirs]));
+        const dir = path.dirname(TEACHER_BROWSED_DIRS_FILE);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+        fs.writeFileSync(TEACHER_BROWSED_DIRS_FILE, JSON.stringify(merged, null, 2), "utf8");
+      }
+    } catch {
+      // Non-fatal if persistence write fails; runtimeTeacherSelectedDirs still holds it
     }
-    fs.writeFileSync(TEACHER_BROWSED_DIRS_FILE, JSON.stringify(merged, null, 2), "utf8");
-  } catch {
-    // Non-fatal if persistence write fails; runtimeTeacherSelectedDirs still holds it
   }
   return realResolved;
 }
 
 /**
  * Returns all currently allowed base directories.
- * Always includes the project workspace root, configured directories in ALLOWED_LOCAL_DIRS,
- * and directories explicitly selected by the teacher via the native folder picker.
+ * Always includes the project workspace root, default SPCK base directory (F:\MINDX_SPCK_FINAL),
+ * configured directories in ALLOWED_LOCAL_DIRS, and directories explicitly selected by the teacher.
  */
 export function getAllowedDirectories(): string[] {
-  const defaultAllowed = [process.cwd()];
+  const defaultAllowed =
+    process.platform === "win32"
+      ? [process.cwd(), "F:\\MINDX_SPCK_FINAL"]
+      : [process.cwd()];
   const configured = config.allowedLocalDirs || [];
   const persistedTeacherDirs = loadPersistedTeacherDirs();
   return [

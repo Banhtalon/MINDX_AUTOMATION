@@ -1926,12 +1926,17 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       if (Array.isArray(pStatus.submissions)) {
         setStudentPortalSubmissions(pStatus.submissions);
       }
-      if (pStatus.rootFolderPath && !folderPathInput) {
+      if (
+        pStatus.rootFolderPath &&
+        (!folderPathInput ||
+          (pStatus.isRunning && (!pStatus.classId || pStatus.classId === selectedClassId)))
+      ) {
         setFolderPathInput(pStatus.rootFolderPath);
       }
     },
     [
       folderPathInput,
+      selectedClassId,
       setFolderPathInput,
       setStudentPortalAutoDrive,
       setStudentPortalLanUrl,

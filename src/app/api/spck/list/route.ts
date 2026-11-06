@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { NextResponse } from "next/server";
 import { getQuickTags, getRunningClasses } from "@/lib/db/json-config";
 import { taskQueue } from "@/lib/queue/task-queue";
@@ -16,6 +18,8 @@ import {
 import {
   classifySpckRelatedLink,
   inspectSpckThumbnail,
+  resolveDefaultSpckClassFolder,
+  resolveStudentFolderInsideClassRoot,
 } from "@/lib/local-files/spck-scanner";
 import { resolveValidAppShotResources } from "@/lib/local-files/spck-app-screenshotter";
 import {
@@ -85,6 +89,9 @@ export function buildEnrichedClassSpckRecords(
   const rawRecords = spckUploadRepo.findByClass(classId);
   const students = listStudents(classId, { activeOnly: false });
   const studentMap = new Map(students.map((s) => [s.studentId, s]));
+  const defaultClassFolder = resolveDefaultSpckClassFolder(classId, {
+    createIfMissing: false,
+  });
 
   return rawRecords.map((rec) => {
     const stu = studentMap.get(rec.studentId);
@@ -98,6 +105,22 @@ export function buildEnrichedClassSpckRecords(
       classId,
       rec.studentId
     );
+    let effectiveLocalFolderPath = sessRow.localFolderPath || rec.localFolderPath || "";
+    if (
+      defaultClassFolder &&
+      effectiveLocalFolderPath &&
+      /[\\/]data[\\/]spck[\\/]/i.test(effectiveLocalFolderPath) &&
+      fs.existsSync(defaultClassFolder)
+    ) {
+      const candidateInDefault = resolveStudentFolderInsideClassRoot(
+        defaultClassFolder,
+        stu?.fullName || path.basename(effectiveLocalFolderPath),
+        rec.studentId
+      );
+      if (candidateInDefault && fs.existsSync(candidateInDefault)) {
+        effectiveLocalFolderPath = candidateInDefault;
+      }
+    }
     let activeThumb = sessRow.thumbnailPath || rec.thumbnailPath || "";
     const activeTitle = sessRow.projectTitle || rec.projectTitle || "";
     const activeComment = sessRow.teacherComment ?? "";
@@ -117,7 +140,7 @@ export function buildEnrichedClassSpckRecords(
         if (Array.isArray(p)) parsedActiveScreens = p;
       } catch {}
       const healedRes = resolveValidAppShotResources({
-        localFolderPath: sessRow.localFolderPath || rec.localFolderPath,
+        localFolderPath: effectiveLocalFolderPath,
         thumbnailPath: activeThumb,
         screenshots: parsedActiveScreens,
       });
@@ -177,6 +200,7 @@ export function buildEnrichedClassSpckRecords(
 
     return {
       ...rec,
+      localFolderPath: effectiveLocalFolderPath,
       sessionNumber,
       projectTitle: activeTitle,
       thumbnailPath: activeThumb,
@@ -275,6 +299,9 @@ export async function GET(req: Request) {
     const spckRecords = targetClassId
       ? buildEnrichedClassSpckRecords(targetClassId, activeSessionNumber)
       : [];
+    const defaultFolderPath = targetClassId
+      ? resolveDefaultSpckClassFolder(targetClassId, { createIfMissing: true })
+      : "";
     const quickTags = getQuickTags();
 
     return NextResponse.json({
@@ -282,6 +309,8 @@ export async function GET(req: Request) {
       classes: eligibleClasses,
       selectedClassId: targetClassId,
       selectedSessionNumber: activeSessionNumber,
+      defaultFolderPath,
+      savedFolderPath: defaultFolderPath,
       stageInfo,
       spckSessions: [12, 13, 14],
       students,
@@ -438,6 +467,9 @@ export async function POST(req: Request) {
     const spckRecords = targetClassId
       ? buildEnrichedClassSpckRecords(targetClassId, activeSessionNumber)
       : [];
+    const defaultFolderPath = targetClassId
+      ? resolveDefaultSpckClassFolder(targetClassId, { createIfMissing: true })
+      : "";
 
     return NextResponse.json({
       success: true,
@@ -446,6 +478,8 @@ export async function POST(req: Request) {
       classes: eligibleClasses,
       selectedClassId: targetClassId,
       selectedSessionNumber: activeSessionNumber,
+      defaultFolderPath,
+      savedFolderPath: defaultFolderPath,
       stageInfo,
       spckSessions: [12, 13, 14],
       students,

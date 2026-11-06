@@ -72,6 +72,7 @@ function detectAllowedDrivesOrRoots(): string[] {
 function getQuickLinks(): QuickLinkEntry[] {
   const home = os.homedir();
   const candidates: QuickLinkEntry[] = [
+    { label: "SPCK Mặc Định (F:\\MINDX_SPCK_FINAL)", path: "F:\\MINDX_SPCK_FINAL" },
     { label: "Desktop", path: path.join(home, "Desktop") },
     { label: "Downloads", path: path.join(home, "Downloads") },
     { label: "Documents", path: path.join(home, "Documents") },

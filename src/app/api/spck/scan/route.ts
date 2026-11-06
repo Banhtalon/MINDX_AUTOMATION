@@ -30,6 +30,7 @@ import {
 import {
   DEFAULT_SPCK_THUMBNAIL_PATH,
   MAX_SPCK_SCREENSHOTS,
+  resolveTargetSpckClassFolder,
   scanClassSpckDirectory,
   validateSpckResourceLimits,
 } from "@/lib/local-files/spck-scanner";
@@ -63,7 +64,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const safeFolderPath = canonicalizeSpckFolderPath(folderPath);
+    const effectiveFolderPath = resolveTargetSpckClassFolder(classId, folderPath);
+    const safeFolderPath = canonicalizeSpckFolderPath(effectiveFolderPath);
     const students = studentRepo.findByClass(classId, false);
     if (students.length === 0) {
       return NextResponse.json(
@@ -700,6 +702,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
+      resolvedFolderPath: safeFolderPath,
       createdFoldersCount,
       warning: overLimitErrors.length > 0 ? overLimitErrors.join(" | ") : undefined,
       overLimitErrors: overLimitErrors.length > 0 ? overLimitErrors : undefined,
