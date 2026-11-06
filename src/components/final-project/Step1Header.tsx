@@ -40,6 +40,16 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
     youtubeImportReport,
   } = workflow;
 
+  const [roboticsYoutubeHidden, setRoboticsYoutubeHidden] = React.useState(false);
+
+  React.useEffect(() => {
+    setRoboticsYoutubeHidden(false);
+  }, [selectedClassId, isRoboticsClass]);
+
+  const isYoutubePanelVisible = isRoboticsClass
+    ? !roboticsYoutubeHidden
+    : Boolean(showYoutubeImport);
+
   return (
     <div className="spck-clean-card rounded-2xl overflow-hidden">
       <div className="spck-clean-header-bar px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
@@ -199,12 +209,20 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
 
           <button
             type="button"
-            onClick={() => setShowYoutubeImport((v) => !v)}
+            onClick={() => {
+              if (isRoboticsClass) {
+                const nextVisible = !isYoutubePanelVisible;
+                setRoboticsYoutubeHidden(!nextVisible);
+                setShowYoutubeImport(nextVisible);
+              } else {
+                setShowYoutubeImport((v) => !v);
+              }
+            }}
             className="spck-pill-neutral inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer"
           >
             <Video className="w-3.5 h-3.5" />
             <span>
-              {showYoutubeImport || isRoboticsClass
+              {isYoutubePanelVisible
                 ? "🎬 Ẩn nhập Playlist YouTube ▴"
                 : "🎬 Nhập Playlist YouTube (Robotics / Video) ▾"}
             </span>
@@ -212,7 +230,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
         </div>
 
         {/* 1D. Khung nhập Playlist YouTube (Chỉ mở khi bấm hoặc lớp Robotics) */}
-        {(showYoutubeImport || isRoboticsClass) && (
+        {isYoutubePanelVisible && (
           <div className="spck-clean-subbar rounded-lg p-3 space-y-2">
             <div className="flex items-center justify-between gap-2 text-xs font-semibold text-slate-200">
               <span className="flex items-center gap-1.5">

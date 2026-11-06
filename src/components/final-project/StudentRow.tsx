@@ -440,6 +440,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 <div className="inline-flex items-center rounded-lg bg-slate-950 p-1 border border-slate-700 gap-1">
                   <button
                     type="button"
+                    data-testid={`s14-row-tab-spck-${row.assignedStudentId || idx}`}
                     onClick={() =>
                       setRowActiveTab(row.assignedStudentId, "spck")
                     }
@@ -453,6 +454,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   </button>
                   <button
                     type="button"
+                    data-testid={`s14-row-tab-eval14-${row.assignedStudentId || idx}`}
                     onClick={() =>
                       setRowActiveTab(row.assignedStudentId, "eval14")
                     }
@@ -871,7 +873,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                       </div>
 
                       <div className="space-y-2 rounded-lg bg-slate-950/60 border border-slate-800/80 p-2.5">
-                        {visibleGroups.map((group) => {
+                        {visibleGroups.map((group, gIdx) => {
                           const headerColor =
                             group.tone === "emerald"
                               ? "text-emerald-300"
@@ -886,7 +888,17 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                               : "spck-pill-primary";
 
                           return (
-                            <div key={group.id} className="space-y-1">
+                            <div
+                              key={group.id}
+                              data-testid={
+                                gIdx === 0
+                                  ? "s5b-quick-tags-group-1-row1"
+                                  : gIdx === 1
+                                  ? "s5b-quick-tags-group-2-row2"
+                                  : `s5b-quick-tags-group-${gIdx + 1}`
+                              }
+                              className="space-y-1"
+                            >
                               <div className={`text-[11px] font-semibold ${headerColor}`}>
                                 {group.title}
                               </div>

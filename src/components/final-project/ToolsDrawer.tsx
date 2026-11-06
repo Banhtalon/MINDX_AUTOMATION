@@ -632,6 +632,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
             {rows.length > 0 && (
               <button
                 type="button"
+                data-testid="s14-open-all-tab2-btn"
                 onClick={handleOpenAllTab2}
                 className="spck-pill-neutral px-2.5 py-1 rounded-md text-xs font-semibold cursor-pointer"
               >

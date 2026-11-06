@@ -945,17 +945,33 @@ html[data-theme="dark"] .spck-btn-primary {
 }
 
 .spck-btn-success {
-  background-color: #16a34a !important;
+  background-color: #15803d !important;
   border: 2px solid #0f172a !important;
   box-shadow: 2px 2px 0px #0f172a !important;
   color: #ffffff !important;
 }
 .spck-btn-success:hover:not(:disabled) {
-  background-color: #15803d !important;
+  background-color: #166534 !important;
 }
 html[data-theme="dark"] .spck-btn-success {
+  background-color: #15803d !important;
   border: 1px solid #4ade80 !important;
   box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+html,
+body {
+  scroll-padding-bottom: 140px;
+}
+
+.spck-clean-row,
+.spck-clean-row-warning,
+.spck-clean-row-error,
+.spck-clean-row :focus,
+.spck-clean-row-warning :focus,
+.spck-clean-row-error :focus {
+  scroll-margin-bottom: 140px;
 }
 
 .backdrop-blur-sm {

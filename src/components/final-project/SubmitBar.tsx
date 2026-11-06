@@ -226,6 +226,32 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
     }
   };
 
+  useEffect(() => {
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      const bar = document.querySelector(".spck-clean-sticky-submit");
+      if (!bar || bar.contains(target)) return;
+      const elRect = target.getBoundingClientRect();
+      const barRect = bar.getBoundingClientRect();
+      if (
+        elRect.width > 0 &&
+        elRect.height > 0 &&
+        elRect.bottom > barRect.top - 8 &&
+        elRect.top < barRect.bottom + 8
+      ) {
+        const delta = elRect.bottom - (barRect.top - 24);
+        if (delta > 0) {
+          window.scrollBy(0, delta);
+        }
+      }
+    };
+    document.addEventListener("focusin", handleFocusIn, true);
+    return () => {
+      document.removeEventListener("focusin", handleFocusIn, true);
+    };
+  }, []);
+
   return (
     <div className="spck-clean-sticky-submit sticky bottom-3 z-20 p-4 rounded-xl space-y-3">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -250,6 +276,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
             session14ComboStatus.spckSummary.retryStudentIds.length > 0 && (
               <button
                 type="button"
+                data-testid="s14-combo-retry-failed-btn"
                 onClick={() =>
                   handleSubmitSession14Combo(
                     session14ComboStatus.spckSummary!.retryStudentIds,
@@ -273,6 +300,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
             session14ComboStatus.evalRetryStudentIds.length > 0 && (
               <button
                 type="button"
+                data-testid="s14-combo-retry-failed-btn"
                 onClick={() =>
                   handleSubmitSession14Combo(
                     session14ComboStatus.evalRetryStudentIds,
@@ -519,7 +547,10 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
       {!uploading &&
         !session14ComboStatus.running &&
         (teachingSuggestion.shouldShow || showSession14ReportCardHandoff) && (
-          <div className="p-4 rounded-xl bg-indigo-950/35 border border-indigo-500/40 space-y-3 text-xs">
+          <div
+            data-testid="s6-post-spck-suggestion-banner"
+            className="p-4 rounded-xl bg-indigo-950/35 border border-indigo-500/40 space-y-3 text-xs"
+          >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="space-y-1">
                 <div className="font-bold text-indigo-200 flex items-center gap-1.5">
@@ -535,6 +566,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
                 {teachingSuggestion.shouldShow && (
                   <button
                     type="button"
+                    data-testid="s6-push-teaching-progress-btn"
                     onClick={handleQuickUpdateTeachingProgress}
                     disabled={teachingPushState.loading || isAnyOperationBusy}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold shadow transition-colors cursor-pointer"
@@ -550,6 +582,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
 
                 {showSession14ReportCardHandoff && (
                   <a
+                    data-testid="s6-open-report-card-link"
                     href={`/homework-grader?classId=${encodeURIComponent(
                       selectedClassId
                     )}&autoScan=1`}
