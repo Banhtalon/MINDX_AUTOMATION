@@ -352,72 +352,63 @@ export async function POST(req: Request) {
       );
     }
 
-    const { runningList, syncedClassCodes, allowedRunningSet } =
-      await taskQueue.enqueue({
-        id: `spck_list_sync_${Date.now()}`,
-        jobType: "SYNC_CLASS",
-        description:
-          "Quét và đồng bộ danh sách lớp đủ điều kiện nộp SPCK trên LMS",
-        execute: async () => {
+    const syncOutcome = await taskQueue.enqueue({
+      id: `spck_list_sync_${Date.now()}`,
+      jobType: "SYNC_CLASS",
+      description:
+        "Quét và đồng bộ danh sách lớp đủ điều kiện nộp SPCK trên LMS",
+      execute: async () => {
+        ensureQueueNotStopped();
+        const runningRes = await ClassSyncer.fetchRunningClasses({
+          persistToConfig: false,
+          includeFinishedDays: FINISHED_CLASS_GRACE_DAYS,
+        });
+        ensureQueueNotStopped();
+        if (!runningRes.success) {
+          return {
+            ok: false as const,
+            error:
+              runningRes.error ||
+              "Không thể lấy danh sách lớp đủ điều kiện nộp SPCK từ MindX LMS.",
+            runningList: [] as Array<{
+              classCode: string;
+              courseName?: string;
+              center?: string;
+              status?: "Running" | "Finished";
+              startDate?: string;
+              endDate?: string;
+              updatedAt?: string;
+            }>,
+            syncedClassCodes: [] as string[],
+            allowedRunningSet: new Set<string>(),
+          };
+        }
+        const list = Array.isArray(runningRes.classes)
+          ? runningRes.classes.map((c) => ({ ...c }))
+          : [];
+
+        const { allClassesMap: beforeMap } = queryEligibleSpckClasses(12);
+        const syncedCodes: string[] = [];
+        const allowedSet = new Set<string>();
+
+        for (const item of list) {
           ensureQueueNotStopped();
-          const runningRes = await ClassSyncer.fetchRunningClasses({
-            persistToConfig: false,
-          });
-          ensureQueueNotStopped();
-          const list =
-            runningRes.classes && runningRes.classes.length > 0
-              ? runningRes.classes.map((c) => ({ ...c }))
-              : getRunningClasses().map((c) => ({ ...c }));
+          const code = (item.classCode || "").trim().toUpperCase();
+          if (!code) continue;
+          const existingMeta = beforeMap.get(code);
+          const isFinished = item.status === "Finished";
 
-          const { allClassesMap: beforeMap } = queryEligibleSpckClasses(12);
-          const syncedCodes: string[] = [];
-          const allowedSet = new Set<string>();
-
-          for (const item of list) {
-            ensureQueueNotStopped();
-            const code = (item.classCode || "").trim().toUpperCase();
-            if (!code) continue;
-            const existingMeta = beforeMap.get(code);
-            const isFinished = item.status === "Finished";
-
-            if (isFinished) {
-              const s14InfoBefore = resolveClassSession14DateInfo(
-                code,
-                item.endDate
-              );
-              const hasStudents = studentRepo.findByClass(code, false).length > 0;
-              const needsFinishedSync =
-                !existingMeta ||
-                !s14InfoBefore.isExactSession14 ||
-                !hasStudents;
-              if (needsFinishedSync) {
-                ensureQueueNotStopped();
-                const syncRes = await ClassSyncer.syncClass(code);
-                ensureQueueNotStopped();
-                if (syncRes.success) {
-                  syncedCodes.push(code);
-                }
-              }
-              const postGrace = isFinishedClassWithinGraceWindow(
-                code,
-                item.endDate,
-                FINISHED_CLASS_GRACE_DAYS
-              );
-              if (postGrace.withinWindow) {
-                allowedSet.add(code);
-                item.endDate = postGrace.session14Date || item.endDate;
-              }
-              continue;
-            }
-
-            allowedSet.add(code);
-            const needsSync =
+          if (isFinished) {
+            const s14InfoBefore = resolveClassSession14DateInfo(
+              code,
+              item.endDate
+            );
+            const hasStudents = studentRepo.findByClass(code, false).length > 0;
+            const needsFinishedSync =
               !existingMeta ||
-              existingMeta.currentSessionNumber === 0 ||
-              existingMeta.currentSessionNumber >= 10 ||
-              (forceResyncAll &&
-                String(body?.classId || "").trim().toUpperCase() === code);
-            if (needsSync) {
+              !s14InfoBefore.isExactSession14 ||
+              !hasStudents;
+            if (needsFinishedSync) {
               ensureQueueNotStopped();
               const syncRes = await ClassSyncer.syncClass(code);
               ensureQueueNotStopped();
@@ -425,18 +416,57 @@ export async function POST(req: Request) {
                 syncedCodes.push(code);
               }
             }
+            const postGrace = isFinishedClassWithinGraceWindow(
+              code,
+              item.endDate,
+              FINISHED_CLASS_GRACE_DAYS
+            );
+            if (postGrace.withinWindow) {
+              allowedSet.add(code);
+              item.endDate = postGrace.session14Date || item.endDate;
+            }
+            continue;
           }
 
-          ensureQueueNotStopped();
-          return {
-            runningList: list,
-            syncedClassCodes: syncedCodes,
-            allowedRunningSet: allowedSet,
-          };
-        },
-      });
+          allowedSet.add(code);
+          const needsSync =
+            !existingMeta ||
+            existingMeta.currentSessionNumber === 0 ||
+            existingMeta.currentSessionNumber >= 10 ||
+            (forceResyncAll &&
+              String(body?.classId || "").trim().toUpperCase() === code);
+          if (needsSync) {
+            ensureQueueNotStopped();
+            const syncRes = await ClassSyncer.syncClass(code);
+            ensureQueueNotStopped();
+            if (syncRes.success) {
+              syncedCodes.push(code);
+            }
+          }
+        }
+
+        ensureQueueNotStopped();
+        return {
+          ok: true as const,
+          error: undefined,
+          runningList: list,
+          syncedClassCodes: syncedCodes,
+          allowedRunningSet: allowedSet,
+        };
+      },
+    });
 
     ensureQueueNotStopped();
+    if (!syncOutcome.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: syncOutcome.error,
+        },
+        { status: 500 }
+      );
+    }
+    const { runningList, syncedClassCodes, allowedRunningSet } = syncOutcome;
 
     const requestedClassId = String(body?.classId || "").trim().toUpperCase();
     const allowSynthetic =

@@ -85,6 +85,16 @@ export function isFinishedClassSupersededByRunningSuccessor(
 }
 
 /**
+ * Checks whether a class status string represents an actively running class (`Running` / `Active`).
+ */
+export function isConfirmedRunningStatus(rawStatus: unknown): boolean {
+  const normalized = String(rawStatus ?? "")
+    .trim()
+    .toUpperCase();
+  return normalized === "RUNNING" || normalized === "ACTIVE";
+}
+
+/**
  * Parses a date string (`DD/MM/YYYY`, `DD-MM-YYYY`, `YYYY-MM-DD`, `YYYY/MM/DD`, or `DD/MM/YY`)
  * into an end-of-day timestamp (`23:59:59.999` local time).
  */
@@ -1440,6 +1450,7 @@ export class ClassSyncer {
    */
   public static async fetchRunningClasses(options?: {
     persistToConfig?: boolean;
+    includeFinishedDays?: number;
   }): Promise<{
     success: boolean;
     classes: RunningClassItem[];
@@ -1460,6 +1471,56 @@ export class ClassSyncer {
         : (await browserManager.getContext()).pages()[0] ||
           (await (await browserManager.getContext()).newPage());
     const interceptor = createNetworkInterceptor(page);
+    let classListApiError: string | null = null;
+    const onClassListApiResponse = async (res: any) => {
+      try {
+        const req = typeof res.request === "function" ? res.request() : null;
+        const method = String(req?.method?.() || "").toUpperCase();
+        if (method === "OPTIONS") return;
+        const resourceType = String(req?.resourceType?.() || "").toLowerCase();
+        if (resourceType === "document") return;
+        const url = String(res.url?.() || "");
+        const isLmsApi =
+          url.includes("lms-api.mindx.edu.vn") ||
+          url.includes("graphql") ||
+          /\/api\/classes\b/i.test(url);
+        if (!isLmsApi) return;
+        const postData = String(req?.postData?.() || "");
+        if (
+          postData &&
+          /\b(getstudents|students|getcomments|comments|getslots|slots|attendance|submissions|homework|permission|notification)\b/i.test(
+            postData
+          ) &&
+          !/\b(getclasses|searchclasses|findclasses|classes|classlist)\b/i.test(
+            postData
+          )
+        ) {
+          return;
+        }
+        const status = typeof res.status === "function" ? res.status() : 200;
+        if (status >= 400) {
+          classListApiError = `API danh sách lớp LMS trả về mã lỗi HTTP ${status}.`;
+          return;
+        }
+        const bodyText =
+          typeof res.text === "function"
+            ? await res.text().catch(() => "")
+            : "";
+        if (bodyText && bodyText.trim().startsWith("{")) {
+          const parsed = JSON.parse(bodyText);
+          if (Array.isArray(parsed?.errors) && parsed.errors.length > 0) {
+            classListApiError =
+              parsed.errors[0]?.message ||
+              "API danh sách lớp LMS trả về lỗi GraphQL.";
+          }
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    };
+    if (typeof page.on === "function") {
+      page.on("response", onClassListApiResponse);
+    }
 
     try {
       await authService.ensureAuthenticated("LMS");
@@ -1576,6 +1637,17 @@ export class ClassSyncer {
       const maxPages = 5;
       const nowMs = Date.now();
       let unknownFinishedCandidatesCount = 0;
+      let totalScrapedClassRows = 0;
+      const tableFinishedGraceDays =
+        typeof options?.includeFinishedDays === "number" &&
+        Number.isFinite(options.includeFinishedDays)
+          ? Math.max(0, Math.floor(options.includeFinishedDays))
+          : DASHBOARD_FINISHED_CLASS_GRACE_DAYS;
+      const spckDbFinishedGraceDays =
+        typeof options?.includeFinishedDays === "number" &&
+        Number.isFinite(options.includeFinishedDays)
+          ? Math.max(0, Math.floor(options.includeFinishedDays))
+          : FINISHED_CLASS_GRACE_DAYS;
 
       for (let pageIdx = 0; pageIdx < maxPages; pageIdx++) {
         await interceptor.dismissForbiddenToast();
@@ -1649,6 +1721,7 @@ export class ClassSyncer {
         let foundActiveOrRecentOnThisPage = 0;
         let expiredFinishedOnThisPage = 0;
         const nowIso = new Date().toISOString();
+        totalScrapedClassRows += pageRows.length;
 
         for (const item of pageRows) {
           if (collectedMap.has(item.classCode)) continue;
@@ -1672,11 +1745,11 @@ export class ClassSyncer {
             continue;
           }
 
-          // Status === "Finished": only include if within DASHBOARD_FINISHED_CLASS_GRACE_DAYS (7 days = 1 week) after Buổi 14
+          // Status === "Finished": only include if within tableFinishedGraceDays (default 7 days = 1 week; 15 days when requested by SPCK) after Buổi 14
           const graceCheck = isFinishedClassWithinGraceWindow(
             item.classCode,
             item.rowEndDate,
-            DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
+            tableFinishedGraceDays,
             nowMs
           );
           if (graceCheck.isKnownDate) {
@@ -1747,6 +1820,48 @@ export class ClassSyncer {
         await page.waitForTimeout(1200);
       }
 
+      if (totalScrapedClassRows === 0) {
+        if (classListApiError) {
+          throw new Error(classListApiError);
+        }
+        const isConfirmedEmptyTable = await page
+          .evaluate(() => {
+            const table = document.querySelector("table");
+            if (!table) return false;
+            const bodyText = (
+              document.body?.innerText ||
+              document.body?.textContent ||
+              ""
+            )
+              .replace(/\s+/g, " ")
+              .trim();
+            const tableText = (table.innerText || table.textContent || "")
+              .replace(/\s+/g, " ")
+              .trim();
+            const hasLoadError =
+              /\b(unable to load|failed to load|error loading|try again|something went wrong|network error|bad gateway|service unavailable)\b/i.test(
+                bodyText
+              );
+            if (hasLoadError) return false;
+            const hasSpinner = Boolean(
+              document.querySelector(
+                '.MuiCircularProgress-root, .ant-spin-spinning, [role="progressbar"], [aria-busy="true"]'
+              )
+            );
+            if (hasSpinner) return false;
+            return /\b(no classes|no data|no results|no records|không có lớp|chưa có lớp|không có dữ liệu)\b/i.test(
+              tableText
+            );
+          })
+          .catch(() => false);
+
+        if (!isConfirmedEmptyTable) {
+          throw new Error(
+            "Không tải được bảng danh sách lớp trên MindX LMS (/admin/classes)."
+          );
+        }
+      }
+
       // Also include any previously synced SQLite classes that reached Buổi 12–14 and whose Buổi 14
       // is within FINISHED_CLASS_GRACE_DAYS (15 days), even if they were on a later page of /admin/classes
       try {
@@ -1768,7 +1883,7 @@ export class ClassSyncer {
             const graceCheck = isFinishedClassWithinGraceWindow(
               code,
               null,
-              DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
+              spckDbFinishedGraceDays,
               nowMs
             );
             if (graceCheck.isKnownDate && graceCheck.withinWindow) {
@@ -1788,7 +1903,7 @@ export class ClassSyncer {
 
       const activeRunningCodeSet = new Set(
         Array.from(collectedMap.values())
-          .filter((c) => c.status !== "Finished")
+          .filter((c) => isConfirmedRunningStatus(c.status))
           .map((c) => c.classCode)
       );
       const runningList = Array.from(collectedMap.values()).filter(
@@ -1797,12 +1912,12 @@ export class ClassSyncer {
           !isFinishedClassSupersededByRunningSuccessor(c.classCode, activeRunningCodeSet)
       );
       const shouldPersist = options?.persistToConfig !== false;
-      if (runningList.length > 0 && shouldPersist) {
+      if (shouldPersist) {
         saveRunningClasses(runningList);
       }
 
-      const finalClasses = runningList.length > 0 ? runningList : getRunningClasses();
-      const runningOnlyCount = finalClasses.filter((c) => c.status !== "Finished").length;
+      const finalClasses = runningList;
+      const runningOnlyCount = finalClasses.filter((c) => isConfirmedRunningStatus(c.status)).length;
       const recentFinishedCount = finalClasses.filter((c) => c.status === "Finished").length;
 
       jobLogRepo.add({
@@ -1831,6 +1946,10 @@ export class ClassSyncer {
         classes: getRunningClasses(),
         error: errMsg,
       };
+    } finally {
+      if (typeof page.off === "function") {
+        page.off("response", onClassListApiResponse);
+      }
     }
   }
 

@@ -2,6 +2,7 @@ import { getRunningClasses, type RunningClassItem } from "@/lib/db/json-config";
 import { getDb, studentRepo, type StudentRecord } from "@/lib/db/sqlite";
 import {
   FINISHED_CLASS_GRACE_DAYS,
+  isConfirmedRunningStatus,
   isFinishedClassSupersededByRunningSuccessor,
   isFinishedClassWithinGraceWindow,
   resolveClassDateRangeInfo,
@@ -153,7 +154,7 @@ export function queryClassDirectory(options?: ListClassesOptions): {
   const classes: ClassDirectoryItem[] = [];
   const activeRunningCodeSet = new Set<string>();
   for (const [cCode, cItem] of cachedRunningMap.entries()) {
-    if (cItem.status !== "Finished") {
+    if (isConfirmedRunningStatus(cItem.status)) {
       activeRunningCodeSet.add(cCode);
     }
   }
@@ -168,8 +169,7 @@ export function queryClassDirectory(options?: ListClassesOptions): {
     const dbRow = dbRowMap.get(code);
     const rawCachedStatus = String(cachedItem?.status || "").trim().toUpperCase();
     const isFinishedStatus = rawCachedStatus === "FINISHED";
-    const isExplicitRunningStatus =
-      rawCachedStatus === "RUNNING" || rawCachedStatus === "ACTIVE";
+    const isExplicitRunningStatus = isConfirmedRunningStatus(cachedItem?.status);
 
     const activeSess = Number(dbRow?.activeSessionNumber) || 0;
     const maxSess = Number(dbRow?.maxSessionNumber) || 0;
@@ -265,9 +265,7 @@ export function queryClassDirectory(options?: ListClassesOptions): {
     allClassesMap.set(code, entry);
 
     const isAllowed =
-      !allowedClassCodes ||
-      allowedClassCodes.size === 0 ||
-      allowedClassCodes.has(code);
+      !allowedClassCodes || allowedClassCodes.has(code);
     if (!isAllowed) {
       continue;
     }

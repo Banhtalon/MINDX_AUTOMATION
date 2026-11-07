@@ -7,6 +7,7 @@ import { getDb, normalizeTeachingProjectTasks } from "@/lib/db/sqlite";
 import { listClasses } from "@/lib/classes/class-directory";
 import {
   DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
+  isConfirmedRunningStatus,
   isFinishedClassSupersededByRunningSuccessor,
 } from "@/lib/playwright/sync-class";
 import { isCheckpointSession } from "@/lib/quick-tags";
@@ -344,7 +345,7 @@ export function getDashboardTodayTodoCards(options?: {
     );
     const activeRunningCodes = new Set(
       rawRunningList
-        .filter((r) => String(r.status || "").trim().toUpperCase() !== "FINISHED")
+        .filter((r) => isConfirmedRunningStatus(r.status))
         .map((r) => String(r.classCode || "").trim().toUpperCase())
         .filter(Boolean)
     );
@@ -469,7 +470,7 @@ export function getDashboardTodayTodoCards(options?: {
 
       const spckSessionRows = db
         .prepare(
-          `SELECT studentId, sessionNumber, draftStatus, lastVerifiedHash, lastVerifiedAt
+          `SELECT studentId, sessionNumber, draftStatus, lastAttemptStatus, lastVerifiedHash, lastVerifiedAt
            FROM spck_session_submissions
            WHERE classId = ?`
         )
@@ -477,6 +478,7 @@ export function getDashboardTodayTodoCards(options?: {
         studentId?: string;
         sessionNumber?: number;
         draftStatus?: string;
+        lastAttemptStatus?: string | null;
         lastVerifiedHash?: string | null;
         lastVerifiedAt?: string | null;
       }>;
@@ -500,6 +502,8 @@ export function getDashboardTodayTodoCards(options?: {
           const sessRec = sessByStudent.get(sid);
           const row = spckByStudent.get(sid);
           let hasVerifiedInResultsMap = false;
+          let hasFailedInResultsMap = false;
+          let hasAnySessionKeyInResultsMap = false;
           if (row?.sessionResultsJson) {
             try {
               const map = JSON.parse(row.sessionResultsJson || "{}") as Record<
@@ -511,34 +515,59 @@ export function getDashboardTodayTodoCards(options?: {
                   lastVerifiedContentHash?: string | null;
                 }
               >;
-              const entry = map[String(targetSess)];
-              hasVerifiedInResultsMap =
-                entry?.status === "VERIFIED" ||
-                Boolean(
-                  String(
-                    entry?.lastVerifiedAt ||
-                      entry?.verifiedAt ||
-                      entry?.lastVerifiedContentHash ||
-                      ""
-                  ).trim()
+              if (map && typeof map === "object") {
+                hasAnySessionKeyInResultsMap = ["12", "13", "14"].some((k) =>
+                  Object.prototype.hasOwnProperty.call(map, k)
                 );
+                const entry = map[String(targetSess)];
+                const entryStatus = String(entry?.status || "")
+                  .trim()
+                  .toUpperCase();
+                if (entryStatus === "FAILED") {
+                  hasFailedInResultsMap = true;
+                  hasVerifiedInResultsMap = false;
+                } else {
+                  hasVerifiedInResultsMap =
+                    entryStatus === "VERIFIED" ||
+                    Boolean(
+                      String(
+                        entry?.lastVerifiedAt ||
+                          entry?.verifiedAt ||
+                          entry?.lastVerifiedContentHash ||
+                          ""
+                      ).trim()
+                    );
+                }
+              }
             } catch {
-              hasVerifiedInResultsMap = targetSess === 13 && row.status === "VERIFIED";
+              hasVerifiedInResultsMap =
+                targetSess === 13 && row.status === "VERIFIED";
             }
           }
           if (sessRec) {
-            if (sessRec.draftStatus === "VERIFIED") return true;
-            if (sessRec.draftStatus === "FAILED") return false;
+            const draftStatus = String(sessRec.draftStatus || "")
+              .trim()
+              .toUpperCase();
+            const lastAttemptStatus = String(sessRec.lastAttemptStatus || "")
+              .trim()
+              .toUpperCase();
+            if (draftStatus === "FAILED" || lastAttemptStatus === "FAILED") {
+              return false;
+            }
+            if (draftStatus === "VERIFIED") return true;
+            if (hasFailedInResultsMap) return false;
             return (
               Boolean(String(sessRec.lastVerifiedAt || "").trim()) ||
               Boolean(String(sessRec.lastVerifiedHash || "").trim()) ||
               hasVerifiedInResultsMap
             );
           }
-          if (!row) return false;
+          if (!row || hasFailedInResultsMap) return false;
           return (
             hasVerifiedInResultsMap ||
-            (targetSess === 13 && row.status === "VERIFIED")
+            (targetSess === 13 &&
+              !hasAnySessionKeyInResultsMap &&
+              row.status === "VERIFIED")
           );
         });
       };

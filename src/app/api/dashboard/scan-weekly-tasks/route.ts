@@ -5,6 +5,7 @@ import { ensureQueueNotStopped } from "@/lib/teaching/teaching-http-client";
 import {
   ClassSyncer,
   DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
+  isConfirmedRunningStatus,
   isFinishedClassSupersededByRunningSuccessor,
   isFinishedClassWithinGraceWindow,
 } from "@/lib/playwright/sync-class";
@@ -65,16 +66,15 @@ export async function POST(req: Request) {
 
         const candidateCodes: string[] = [];
         const seen = new Set<string>();
-        const rawList =
-          Array.isArray(fetchRes.classes) && fetchRes.classes.length > 0
-            ? fetchRes.classes
-            : listClasses({
-                scope: "running",
-                includeFinishedDays: DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
-              });
+        const rawList = Array.isArray(fetchRes.classes)
+          ? fetchRes.classes
+          : listClasses({
+              scope: "running",
+              includeFinishedDays: DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
+            });
         const activeRunningCodes = new Set(
           rawList
-            .filter((item) => item?.status !== "Finished")
+            .filter((item) => isConfirmedRunningStatus(item?.status))
             .map((item) => String(item?.classCode || "").trim().toUpperCase())
             .filter(Boolean)
         );

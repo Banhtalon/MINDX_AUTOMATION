@@ -23,6 +23,7 @@ import {
   getDashboardTodayTodoCards,
 } from "../src/lib/dashboard/today-tasks";
 import { getDb } from "../src/lib/db/sqlite";
+import { queryClassDirectory } from "../src/lib/classes/class-directory";
 import {
   GET as getTeachingProjectRoute,
   POST as postTeachingProjectRoute,
@@ -470,10 +471,69 @@ async function runTests() {
     db.prepare(
       `UPDATE spck_session_submissions
        SET draftStatus = 'VERIFIED',
+           lastAttemptStatus = 'VERIFIED',
            lastVerifiedAt = '2026-11-06 20:50:42',
            lastVerifiedHash = 'hash_verified_12'
        WHERE classId = 'VT-C4K-JSB12' AND studentId = 'STU_1' AND sessionNumber = 12`
     ).run();
+
+    // F02 regression: if a re-submission attempt fails (lastAttemptStatus = 'FAILED') and then the teacher edits the draft (draftStatus = 'WAITING_APPROVAL'),
+    // Dashboard must NOT mark the SPCK step as Done even if old lastVerifiedAt/lastVerifiedHash exists.
+    db.prepare(
+      `UPDATE spck_session_submissions
+       SET draftStatus = 'WAITING_APPROVAL',
+           lastAttemptStatus = 'FAILED',
+           lastVerifiedAt = '2026-11-06 20:50:42',
+           lastVerifiedHash = 'hash_verified_12'
+       WHERE classId = 'VT-C4K-JSB12' AND studentId = 'STU_1' AND sessionNumber = 12`
+    ).run();
+    const cardsFailedThenDraft = getDashboardTodayTodoCards({ limit: 10 });
+    assert.equal(
+      cardsFailedThenDraft.find((c) => c.classId === "VT-C4K-JSB12")!.steps[1].isDone,
+      false,
+      "F02: Re-submission failure (lastAttemptStatus = FAILED) followed by draft edit must keep SPCK step not done"
+    );
+    // Restore STU_1 to VERIFIED
+    db.prepare(
+      `UPDATE spck_session_submissions
+       SET draftStatus = 'VERIFIED',
+           lastAttemptStatus = 'VERIFIED',
+           lastVerifiedAt = '2026-11-06 20:50:42',
+           lastVerifiedHash = 'hash_verified_12'
+       WHERE classId = 'VT-C4K-JSB12' AND studentId = 'STU_1' AND sessionNumber = 12`
+    ).run();
+
+    // F01 regression: when a class is on Session 13 and spck_uploads.sessionResultsJson only has Session 12 VERIFIED (no Session 13 entry),
+    // legacy row.status === 'VERIFIED' must NOT falsely mark Session 13 as Done.
+    db.prepare(
+      `INSERT INTO students (classId, studentId, fullName, isActive)
+       VALUES ('VT-C4K-JSB13', 'STU_1', 'Học viên 1', 1)`
+    ).run();
+    db.prepare(
+      `INSERT INTO spck_uploads (classId, studentId, status, sessionResultsJson)
+       VALUES ('VT-C4K-JSB13', 'STU_1', 'VERIFIED', ?)`
+    ).run(
+      JSON.stringify({
+        "12": { status: "VERIFIED", lastVerifiedAt: "2026-11-05T10:00:00.000Z" },
+      })
+    );
+    fs.writeFileSync(
+      testRunningClassesPath,
+      JSON.stringify(
+        [
+          { classCode: "VT-C4K-JSB13", className: "JSB 13", currentSessionNumber: 13, status: "Running" },
+        ],
+        null,
+        2
+      ),
+      "utf8"
+    );
+    const cardsF01 = getDashboardTodayTodoCards({ limit: 10 });
+    assert.equal(
+      cardsF01.find((c) => c.classId === "VT-C4K-JSB13")!.steps[1].isDone,
+      false,
+      "F01: Session 12 verified in sessionResultsJson must not falsely mark Session 13 as done"
+    );
 
     // 1-week (7-day) Finished class expiration & next-tier successor transition (e.g. VT-JSB15 -> VT-JSA15, VT-C4K-PTA12 -> VT-C4K-PTI12)
     const fmtDmy = (d: Date) =>
@@ -495,6 +555,8 @@ async function runTests() {
           { classCode: "VT-C4K-PTA12", className: "PTA 12", status: "Finished", endDate: d10DaysAgo },
           { classCode: "VT-C4K-GI99", className: "GI 99", status: "Finished", endDate: d10DaysAgo },
           { classCode: "VT-C4K-GI98", className: "GI 98", status: "Finished", endDate: d3DaysAgo },
+          { classCode: "VT-JSB20", className: "JSB 20", status: "Finished", endDate: d3DaysAgo },
+          { classCode: "VT-JSA20", className: "JSA 20", status: "FINISHED", endDate: d3DaysAgo },
         ],
         null,
         2
@@ -507,6 +569,11 @@ async function runTests() {
       cardIds.includes("VT-JSB15"),
       false,
       "Finished class VT-JSB15 must be excluded once successor VT-JSA15 is Running"
+    );
+    assert.equal(
+      cardIds.includes("VT-JSB20"),
+      true,
+      "F03: Finished class VT-JSB20 (<=7d) must NOT be excluded when successor VT-JSA20 has status 'FINISHED' (not Running/Active)"
     );
     assert.equal(
       cardIds.includes("VT-C4K-PTA12"),
@@ -522,6 +589,15 @@ async function runTests() {
       cardIds.includes("VT-C4K-GI98"),
       true,
       "Finished class VT-C4K-GI98 (<=7 days old and no successor) must still be tracked during the 1-week grace period"
+    );
+    assert.deepEqual(
+      queryClassDirectory({
+        scope: "spck",
+        minSessionNumber: 12,
+        allowedClassCodes: new Set<string>(),
+      }).classes,
+      [],
+      "F05: Passing an explicit empty allowedClassCodes set must return [] instead of falling back to cached classes"
     );
 
     console.log(
@@ -1295,6 +1371,94 @@ async function runTests() {
       );
 
       await pageSpck.close();
+
+      // F05 readiness regression checks inside [S6-T4] browser session:
+      // 1) Search input present but table failed to load -> success:false, preserve cache
+      // 2) Table shell present with empty tbody + load error -> success:false, preserve cache
+      // 3) Class-list GraphQL/API HTTP 500 error with "No classes" table -> success:false, preserve cache
+      // 4) Confirmed valid empty table ("No classes" and no load/API error) -> success:true, clear cache to []
+      const { ClassSyncer } = await import("../src/lib/playwright/sync-class");
+      const { BrowserManager } = await import("../src/lib/playwright/browser-manager");
+      const { authService } = await import("../src/lib/playwright/auth");
+      const { getRunningClasses } = await import("../src/lib/db/json-config");
+      const db = getDb();
+      db.prepare("DELETE FROM classes_sessions").run();
+
+      const pageReadiness = await browser.newPage();
+      let mockGraphqlError = false;
+      await pageReadiness.route("**/*", async (route) => {
+        const reqUrl = route.request().url();
+        if (reqUrl.includes("lms-api.mindx.edu.vn/graphql")) {
+          if (mockGraphqlError) {
+            await route.fulfill({
+              status: 500,
+              contentType: "application/json",
+              body: JSON.stringify({ errors: [{ message: "Upstream GraphQL 500" }] }),
+            });
+          } else {
+            await route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ data: { classes: [] } }),
+            });
+          }
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: '<html><body><input placeholder="Search classes" /><main>Unable to load classes. Try again.</main></body></html>',
+        });
+      });
+      await pageReadiness.goto("https://lms.mindx.edu.vn/admin/classes");
+
+      const bm = BrowserManager.getInstance();
+      const origGetPage = bm.getPage;
+      const origEnsureAuth = authService.ensureAuthenticated;
+      const origWait = pageReadiness.waitForTimeout;
+      (bm as any).getPage = async () => pageReadiness;
+      (authService as any).ensureAuthenticated = async () => true;
+      (pageReadiness as any).waitForTimeout = async () => {};
+
+      const priorCache = [{ classCode: "VT-JSB87", status: "Running" }];
+      try {
+        fs.writeFileSync(testRunningClassesPath, JSON.stringify(priorCache), "utf8");
+        const r1 = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+        assert.equal(r1.success, false, "F05-R3-1: Search input with load error must return success:false");
+        assert.deepEqual(getRunningClasses(), priorCache, "F05-R3-1: Cache must be preserved on load error");
+
+        fs.writeFileSync(testRunningClassesPath, JSON.stringify(priorCache), "utf8");
+        await pageReadiness.setContent(
+          "<html><body><table><thead><tr><th>Class</th></tr></thead><tbody></tbody></table><main>Unable to load classes. Try again.</main></body></html>"
+        );
+        const r2 = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+        assert.equal(r2.success, false, "F05-R3-2: Empty table shell with load error must return success:false");
+        assert.deepEqual(getRunningClasses(), priorCache, "F05-R3-2: Cache must be preserved on empty table shell error");
+
+        fs.writeFileSync(testRunningClassesPath, JSON.stringify(priorCache), "utf8");
+        mockGraphqlError = true;
+        await pageReadiness.setContent(
+          "<html><body><table><tbody><tr><td>No classes</td></tr></tbody></table><script>fetch('https://lms-api.mindx.edu.vn/graphql',{method:'POST',body:JSON.stringify({operationName:'getClasses'})});</script></body></html>"
+        );
+        const r3 = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+        assert.equal(r3.success, false, "F05-R3-3: Failed class-list API response must return success:false");
+        assert.deepEqual(getRunningClasses(), priorCache, "F05-R3-3: Cache must be preserved when class-list API fails");
+
+        mockGraphqlError = false;
+        fs.writeFileSync(testRunningClassesPath, JSON.stringify(priorCache), "utf8");
+        await pageReadiness.setContent(
+          "<html><body><table><tbody><tr><td>No classes</td></tr></tbody></table></body></html>"
+        );
+        const r4 = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+        assert.equal(r4.success, true, "F05-R3-4: Confirmed empty table must return success:true");
+        assert.deepEqual(r4.classes, [], "F05-R3-4: Confirmed empty table must return classes:[]");
+        assert.deepEqual(getRunningClasses(), [], "F05-R3-4: Confirmed empty table must clear cache to []");
+      } finally {
+        bm.getPage = origGetPage;
+        authService.ensureAuthenticated = origEnsureAuth;
+        pageReadiness.waitForTimeout = origWait;
+        await pageReadiness.close();
+      }
     } finally {
       await browser.close();
     }
