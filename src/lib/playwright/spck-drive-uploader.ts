@@ -252,7 +252,9 @@ export function prepareStudentFilesForDriveUpload(
       lower === "link.txt" ||
       lower.endsWith(".pyc") ||
       lower.endsWith("_web_package.zip") ||
+      lower.endsWith("_app_package.zip") ||
       lower.endsWith("_robotics_package.zip") ||
+      lower.endsWith("_gamemaker.yyz") ||
       /^spck_.*_[a-f0-9]{8}\.zip$/i.test(lower)
     ) {
       continue;

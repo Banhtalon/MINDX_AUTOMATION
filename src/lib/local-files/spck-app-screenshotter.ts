@@ -109,9 +109,9 @@ def strip_accents(text):
 
 def is_auth_screen_name_or_xml(base_stem, raw_xml_text=''):
     norm_name = re.sub(r'[\\s_-]+', ' ', strip_accents(base_stem or '').lower()).strip()
-    if re.search(r'\\b(login|register|signup|sign up|signin|sign in|dang nhap|dangnhap|dang ki|dangki|dang ky|dangky|xac thuc|xacthuc)\\b', norm_name):
+    if re.search(r'\\b(login|logon|register|regiter|reg|signup|sign up|signin|sign in|forgotpass|forgot pass|quen mat khau|dang nhap|dangnhap|dang ki|dangki|dang ky|dangky|xac thuc|xacthuc|dialognotcomplete|dialognotenough)\\b', norm_name):
         return True
-    if any(k in norm_name for k in ('login', 'register', 'signup', 'signin', 'dangnhap', 'dangki', 'dangky')):
+    if any(k in norm_name for k in ('login', 'logon', 'register', 'regiter', 'signup', 'signin', 'forgotpass', 'dangnhap', 'dangki', 'dangky', 'dialognot')):
         return True
     raw_lower = (raw_xml_text or '').lower()
     if (
@@ -696,11 +696,15 @@ def main():
                     is_main = (not is_auth) and any(
                         k in norm_stem
                         for k in (
-                            'main', 'home', 'menu', 'trang 1', 'trang1', 'trang chu', 'trangchu',
-                            'bang dieu khien', 'bangdieukhien', 'dashboard', 'chonpet', 'planets', 'danhsach', 'diary'
+                            'main', 'mainwin', 'home', 'menu', 'trang 1', 'trang1', 'trang chu', 'trangchu',
+                            'trang chinh', 'trangchinh', 'bang dieu khien', 'bangdieukhien', 'dashboard',
+                            'chonpet', 'planets', 'danhsach', 'diary'
                         )
                     )
-                    score = richness * 3 + min(widget_count, 60) * 2 + (150 if is_main else 0) - (600 if is_auth else 0)
+                    is_sub_dialog = (not is_main) and any(
+                        k in norm_stem for k in ('add dialog', 'edit dialog', 'delete dialog', 'confirm dialog')
+                    )
+                    score = richness * 3 + min(widget_count, 60) * 2 + (180 if is_main else 0) - (120 if is_sub_dialog else 0) - (600 if is_auth else 0)
                     raw_captures.append({
                         'pix': pix,
                         'safeStem': safe_stem,
@@ -816,13 +820,13 @@ export function findProjectUiFiles(studentDir: string): string[] {
 
         let priority = 50;
         if (
-          /(login|register|signup|sign[\s_-]*up|sign[\s_-]*in|signin|dang[\s_-]*nhap|dang[\s_-]*ki|dang[\s_-]*ky|đăng[\s_-]*nhập|đăng[\s_-]*kí|đăng[\s_-]*ký|xac[\s_-]*thuc|xác[\s_-]*thực)/i.test(
+          /(login|logon|register|regiter|\breg\.ui$|forgot[\s_-]*pass|dialognot|signup|sign[\s_-]*up|sign[\s_-]*in|signin|dang[\s_-]*nhap|dang[\s_-]*ki|dang[\s_-]*ky|đăng[\s_-]*nhập|đăng[\s_-]*kí|đăng[\s_-]*ký|xac[\s_-]*thuc|xác[\s_-]*thực)/i.test(
             lower
           )
         ) {
           priority = 90;
         } else if (
-          /(main|home|menu|chonpet|planets|danhsach|diary|trang[\s_-]*1|trang[\s_-]*chu|bang[\s_-]*dieu[\s_-]*khien|dashboard)/i.test(
+          /(main|mainwin|home|menu|chonpet|planets|danhsach|diary|trang[\s_-]*1|trang[\s_-]*chu|trang[\s_-]*chinh|bang[\s_-]*dieu[\s_-]*khien|dashboard)/i.test(
             lower
           )
         ) {
@@ -1041,8 +1045,14 @@ export function renderPyQtUiScreenshotsSync(params: {
     allowedRoots,
   });
 
-  const proc = spawnSync("python", ["-c", PYTHON_PYQT6_CAPTURE_SCRIPT], {
-    input: payload,
+  const runnerBootstrap =
+    'import io,json,sys; _d=json.loads(sys.stdin.buffer.read().decode("utf-8")); sys.stdin=io.TextIOWrapper(io.BytesIO(_d["payload"].encode("utf-8")),encoding="utf-8"); exec(_d["script"],{"__name__":"__main__"})';
+
+  const proc = spawnSync("python", ["-c", runnerBootstrap], {
+    input: JSON.stringify({
+      script: PYTHON_PYQT6_CAPTURE_SCRIPT,
+      payload,
+    }),
     encoding: "utf-8",
     timeout: 30_000,
     windowsHide: true,

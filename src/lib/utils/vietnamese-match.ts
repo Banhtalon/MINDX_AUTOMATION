@@ -257,6 +257,14 @@ export function calculateNameSimilarity(folderName: string, studentFullName: str
   ) {
     // Single-token given-name folder (e.g. "Khang" or "du_an_cuoi_khoa_Khang" -> "khang" vs "PHẠM THIỆN HOÀNG KHANG")
     combined = Math.max(combined, 0.72 + 0.08 * tokenRecall);
+  } else if (
+    folderTokens.length === 1 &&
+    folderTokens[0].length >= 4 &&
+    studentGivenName.length >= 3 &&
+    folderTokens[0].slice(0, -1) === studentGivenName
+  ) {
+    // Single-token given name with 1 trailing character typo (e.g. "Thaot" -> "thao" vs "Đặng Quang Thảo")
+    combined = Math.max(combined, 0.72);
   } else if (!givenNameMatches) {
     combined *= 0.6;
   }

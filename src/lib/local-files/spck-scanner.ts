@@ -21,10 +21,15 @@ import {
   findProjectUiFiles,
   renderPyQtUiScreenshotsSync,
 } from "./spck-app-screenshotter";
-import { renderGameArchiveScreenshotsSync } from "./spck-game-screenshotter";
+import {
+  findProjectGameFiles,
+  renderGameArchiveScreenshotsSync,
+} from "./spck-game-screenshotter";
+import { normalizeImagesToLms16x9Sync } from "./spck-image-normalizer";
 import {
   FolderStudentMatchResult,
   StudentCandidate,
+  calculateNameSimilarity,
   extractFolderNameVariants,
   matchFoldersToStudents,
   normalizeVietnameseName,
@@ -1160,6 +1165,11 @@ function isThumbnailFilename(fileName: string): boolean {
     baseName.includes("cover");
 }
 
+function isExplicitProductScreenshotFilename(fileName: string): boolean {
+  const baseName = stripVietnameseDiacritics(path.parse(fileName).name);
+  return /^(?:screenshots?|anh[\s_-]*chup|man[\s_-]*hinh)(?:$|[\s_-]*\d+)/i.test(baseName);
+}
+
 /** Filenames that typically belong to photos the Owner/teacher took (presentation, demo, class photos). */
 const OWNER_PHOTO_NAME_REGEX =
   /(thumb|thumbnail|bia|cover|demo|thuyet\s*trinh|trinh\s*bay|hoc\s*vien|hocvien|student|photo|img[_-]?\d|dsc|pxl|chup|poster|banner|san\s*pham|sanpham|spck)/i;
@@ -1170,6 +1180,10 @@ const OWNER_PHOTO_NAME_REGEX =
  */
 const STRONG_OWNER_PHOTO_NAME_REGEX =
   /(demo|presentation|thuyet[\s_-]*trinh|trinh[\s_-]*bay|hoc[\s_-]*vien|thumb|thumbnail|anh[\s_-]*bia|anh[\s_-]*lop|chup|img[_-]?\d{3,}|dsc[_-]?\d|pxl[_-]?\d)/i;
+const GENERIC_ROOT_ASSET_STEM_REGEX =
+  /^(?:images?|img|bg|background|banner|logo|icons?|avatar|buttons?|btn|cards?|items?|food|drinks?|games?|sprites?|tiles?|walls?|players?|enemy|enemies|bullets?|coins?|hearts?|stars?|menu|home|login|logon|register|regiter|signup|untitled|\d{1,6})$/i;
+const CAMERA_OR_PHONE_PHOTO_STEM_REGEX =
+  /^(?:\d{10,}[_-]\d+|z\d{8,}|20\d{6}[_-]\d{4,}|img[_-]?\d{3,}|dsc[_-]?\d+|pxl[_-]?\d+|screenshot)/i;
 
 const OWNER_PHOTO_CODE_REFERENCE_EXTS = new Set([
   ".html",
@@ -1289,17 +1303,26 @@ export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
     name: string;
   }> = [];
 
-  for (const imgEntry of rootImages) {
-    const baseLower = imgEntry.name.toLowerCase();
-    if (combinedSourceText && combinedSourceText.includes(baseLower)) continue;
-    // V272-F07: in Python / JavaScript code, also treat the bare file stem inside quotes as a
-    // reference (e.g. `QPixmap("banner" + ".png")`, `img.src = 'banner' + ext`). HTML/CSS class
-    // names are NOT checked here to avoid false matches like `class="demo"`.
-    const stemLower = path.parse(imgEntry.name).name.toLowerCase();
+  const isRootImageReferencedByCode = (imgName: string): boolean => {
+    const baseLower = imgName.toLowerCase();
+    if (combinedSourceText && combinedSourceText.includes(baseLower)) return true;
+    const stemLower = path.parse(imgName).name.toLowerCase();
     if (stemLower.length >= 2 && dynamicCodeText) {
       const escapedStem = stemLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      if (new RegExp(`["'\`/\\\\]${escapedStem}["'\`]`).test(dynamicCodeText)) continue;
+      if (new RegExp(`["'\`/\\\\]${escapedStem}["'\`]`).test(dynamicCodeText)) return true;
     }
+    return false;
+  };
+
+  let referencedRootImageCount = 0;
+  for (const imgEntry of rootImages) {
+    if (isRootImageReferencedByCode(imgEntry.name)) {
+      referencedRootImageCount++;
+    }
+  }
+
+  for (const imgEntry of rootImages) {
+    if (isRootImageReferencedByCode(imgEntry.name)) continue;
     const fullPath = path.join(safeStudentDir, imgEntry.name);
     try {
       const buf = fs.readFileSync(fullPath);
@@ -1307,18 +1330,22 @@ export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
       if (!parseMediaBuffer(buf, imgEntry.name, ext).success) continue;
       const dims = extractImageDimensionsFromBuffer(buf, ext);
       if (dims && (dims.width < 200 || dims.height < 200)) continue;
-      const asciiStem = stripVietnameseDiacritics(path.parse(imgEntry.name).name);
+      const asciiStem = stripVietnameseDiacritics(path.parse(imgEntry.name).name).trim();
+      if (GENERIC_ROOT_ASSET_STEM_REGEX.test(asciiStem)) continue;
       const isExplicitThumb = isThumbnailFilename(imgEntry.name);
       const isOwnerLikeName = OWNER_PHOTO_NAME_REGEX.test(asciiStem);
+      const isStrongOwnerName =
+        STRONG_OWNER_PHOTO_NAME_REGEX.test(asciiStem) ||
+        CAMERA_OR_PHONE_PHOTO_STEM_REGEX.test(asciiStem);
       const isCameraLikePhoto =
         (ext === ".jpg" || ext === ".jpeg") &&
-        Boolean(dims && dims.width >= 800 && dims.height >= 450);
-      // When the project has code that may load images dynamically (Python / JavaScript), an
-      // unreferenced root image needs STRONG evidence that it was added by the Owner: a class /
-      // presentation / camera file name, or a camera-like JPEG photo (V272-R2-02).
-      const hasStrongOwnerEvidence =
-        STRONG_OWNER_PHOTO_NAME_REGEX.test(asciiStem) || isCameraLikePhoto;
-      if (hasDynamicCode && !hasStrongOwnerEvidence) continue;
+        Boolean(dims && dims.width >= 800 && dims.height >= 450) &&
+        (referencedRootImageCount <= 1 || isStrongOwnerName);
+      // When the project has code that may load images dynamically (Python / JavaScript) or stores
+      // multiple referenced assets in the root directory, an unreferenced root image needs STRONG
+      // evidence that it was added by the Owner (V272-R2-02).
+      const hasStrongOwnerEvidence = isStrongOwnerName || isCameraLikePhoto;
+      if ((hasDynamicCode || referencedRootImageCount >= 2) && !hasStrongOwnerEvidence) continue;
       candidates.push({
         fullPath,
         isExplicitThumb,
@@ -1387,6 +1414,8 @@ export function scanStudentSpckFolder(
   const appCodePrimaryFiles: string[] = [];
   const appSourceFiles: Array<{ fullPath: string; relPosix: string }> = [];
   const appResourceAssets: Array<{ fullPath: string; relPosix: string; size: number; depth: number }> = [];
+  const gameMakerYypFiles: string[] = [];
+  let hasRawYyzArchive = false;
   let hasSubfolderWebCode = false;
   let hasSubfolderAppCode = false;
   const WEB_SOURCE_BUNDLE_EXTS = new Set([
@@ -1414,6 +1443,9 @@ export function scanStudentSpckFolder(
     ".lua",
     ".gmx",
     ".yyz",
+    ".yyp",
+    ".gml",
+    ".yy",
     ".sb3",
     ".rbxl",
   ]);
@@ -1429,6 +1461,9 @@ export function scanStudentSpckFolder(
     ".hpp",
     ".java",
     ".lua",
+    ".yyp",
+    ".gml",
+    ".yy",
     ".json",
     ".txt",
     ".text",
@@ -1496,8 +1531,22 @@ export function scanStudentSpckFolder(
         if (st.isDirectory()) {
           walkWebProject(fullItemPath, depth + 1);
         } else if (st.isFile()) {
-          if (lower === "links.txt" || lower === "link.txt") continue;
+          if (
+            lower === "links.txt" ||
+            lower === "link.txt" ||
+            lower.endsWith("_robotics_package.zip") ||
+            lower.endsWith("_web_package.zip") ||
+            lower.endsWith("_app_package.zip") ||
+            lower.endsWith("_gamemaker.yyz")
+          ) {
+            continue;
+          }
           const itemExt = path.extname(lower);
+          if (itemExt === ".yyp") {
+            gameMakerYypFiles.push(fullItemPath);
+          } else if (itemExt === ".yyz") {
+            hasRawYyzArchive = true;
+          }
           if (itemExt === ".html" || itemExt === ".htm") {
             webHtmlFiles.push(fullItemPath);
             if (depth >= 1) hasSubfolderWebCode = true;
@@ -1563,7 +1612,21 @@ export function scanStudentSpckFolder(
     }
   };
   walkWebProject(safeFolderPath, 0);
+  const sortBundleSources = (list: Array<{ fullPath: string; relPosix: string }>) => {
+    list.sort((a, b) => {
+      const aDepth = a.relPosix.split("/").length - 1;
+      const bDepth = b.relPosix.split("/").length - 1;
+      if (aDepth !== bDepth) return aDepth - bDepth;
+      const aPrimary = /\.(?:html?|css|js|mjs|py|ui|qss|ipynb)$/i.test(a.relPosix) ? 0 : 1;
+      const bPrimary = /\.(?:html?|css|js|mjs|py|ui|qss|ipynb)$/i.test(b.relPosix) ? 0 : 1;
+      if (aPrimary !== bPrimary) return aPrimary - bPrimary;
+      return a.relPosix.localeCompare(b.relPosix, "en");
+    });
+  };
+  sortBundleSources(webSourceFiles);
+  sortBundleSources(appSourceFiles);
   const hasWebProjectHtmlFiles = webHtmlFiles.length > 0;
+  const hasUnpackedGameMakerProject = !hasRawYyzArchive && gameMakerYypFiles.length > 0;
   const hasAppProjectCodeFiles = appCodePrimaryFiles.length > 0;
   const hasCodeOrUiProjectFiles = hasWebProjectHtmlFiles || hasAppProjectCodeFiles;
   const ownerRootPhotoPaths = findOwnerProvidedRootPhotos(safeFolderPath);
@@ -1655,6 +1718,69 @@ export function scanStudentSpckFolder(
           subEntries = Array.from(bySlotKey.values())
             .map((v) => v.entry)
             .sort((a, b) => a.name.localeCompare(b.name, "en"));
+          const non16x9ShotJobs: Array<{ path: string; ext: string; buffer: Buffer }> = [];
+          for (const subEntry of subEntries) {
+            if (subEntry.name.startsWith(".")) continue;
+            const subPath = assertPathAllowed(path.join(fullEntryPath, subEntry.name));
+            const subStat = fs.lstatSync(subPath);
+            if (subStat.isSymbolicLink() || !subStat.isFile()) continue;
+            const subExt = path.extname(subEntry.name).toLowerCase();
+            if (!ALLOWED_IMAGE_EXTENSIONS.has(subExt)) continue;
+            try {
+              const buf = fs.readFileSync(subPath);
+              const dims = extractImageDimensionsFromBuffer(buf, subExt);
+              if (
+                dims &&
+                dims.width > 0 &&
+                dims.height > 0 &&
+                Math.abs(dims.width / dims.height - 16 / 9) > 0.05
+              ) {
+                non16x9ShotJobs.push({ path: subPath, ext: subExt, buffer: buf });
+              }
+            } catch {}
+          }
+          if (non16x9ShotJobs.length > 0) {
+            const normBufs = normalizeImagesToLms16x9Sync(
+              non16x9ShotJobs.map((j) => ({ buffer: j.buffer, fit: "contain" }))
+            );
+            let renamedAny = false;
+            for (let i = 0; i < non16x9ShotJobs.length; i++) {
+              const nb = normBufs[i];
+              const job = non16x9ShotJobs[i];
+              if (nb && nb.length > 0) {
+                try {
+                  if (fs.lstatSync(job.path, { throwIfNoEntry: false })?.isSymbolicLink()) continue;
+                  const targetPngPath =
+                    job.ext === ".png"
+                      ? job.path
+                      : assertPathAllowed(
+                          path.join(
+                            fullEntryPath,
+                            `${path.basename(job.path, job.ext)}.png`
+                          )
+                        );
+                  if (fs.lstatSync(targetPngPath, { throwIfNoEntry: false })?.isSymbolicLink()) {
+                    continue;
+                  }
+                  const tmpPngPath = `${targetPngPath}.tmp`;
+                  if (fs.lstatSync(tmpPngPath, { throwIfNoEntry: false })) {
+                    fs.unlinkSync(tmpPngPath);
+                  }
+                  fs.writeFileSync(tmpPngPath, nb);
+                  fs.renameSync(tmpPngPath, targetPngPath);
+                  if (job.ext !== ".png" && targetPngPath !== job.path) {
+                    fs.unlinkSync(job.path);
+                    renamedAny = true;
+                  }
+                } catch {}
+              }
+            }
+            if (renamedAny) {
+              subEntries = fs
+                .readdirSync(fullEntryPath, { withFileTypes: true })
+                .sort((a, b) => a.name.localeCompare(b.name, "en"));
+            }
+          }
         }
         for (const subEntry of subEntries) {
           if (subEntry.name.startsWith(".")) continue;
@@ -1683,11 +1809,12 @@ export function scanStudentSpckFolder(
     const lowerName = entry.name.toLowerCase();
     const ext = path.extname(lowerName);
 
-    // Skip previously auto-generated robotics/web/app bundle zip or IDE/OS metadata files during re-scan
+    // Skip previously auto-generated robotics/web/app/gamemaker bundle or IDE/OS metadata files during re-scan
     if (
       lowerName.endsWith("_robotics_package.zip") ||
       lowerName.endsWith("_web_package.zip") ||
       lowerName.endsWith("_app_package.zip") ||
+      lowerName.endsWith("_gamemaker.yyz") ||
       lowerName.endsWith(".code-workspace") ||
       lowerName === "desktop.ini" ||
       lowerName === "thumbs.db"
@@ -1740,11 +1867,12 @@ export function scanStudentSpckFolder(
         continue;
       }
       // In a Web (.html/.htm) or App/Code (.py/.ui/...) project, root images that are neither Owner-provided photos
-      // nor explicit thumbnails (e.g. Icon.png, Matrix.png, logo.png) are project assets and not LMS product screenshots.
+      // nor explicit thumbnails/screenshots (e.g. Icon.png, Matrix.png, logo.png) are project assets and not LMS product screenshots.
       if (
         hasCodeOrUiProjectFiles &&
         !ownerRootPhotoKeySet.has(path.resolve(fullEntryPath).toLowerCase()) &&
-        !isThumbnailFilename(entry.name)
+        !isThumbnailFilename(entry.name) &&
+        !isExplicitProductScreenshotFilename(entry.name)
       ) {
         continue;
       }
@@ -1781,9 +1909,10 @@ export function scanStudentSpckFolder(
 
     if (
       hasCodeOrUiProjectFiles &&
-      /\.(?:jfif|svg|ico|gif|bmp|avif|qrc|db|sqlite3?|woff2?|ttf|otf|eot|mp3|wav|ogg|mp4|webm)$/i.test(
+      (/\.(?:jfif|svg|ico|gif|bmp|avif|qrc|db|sqlite3?|woff2?|ttf|otf|eot|mp3|wav|ogg|mp4|webm|yyp|resource_order|bat|cmd|sh|rules|lock)$/i.test(
         lowerName
-      )
+      ) ||
+        lowerName === "firestore.rules")
     ) {
       continue;
     }
@@ -1796,6 +1925,122 @@ export function scanStudentSpckFolder(
       .replace(/[^a-zA-Z0-9_-]+/g, "_")
       .replace(/^_+|_+$/g, "") || "student";
 
+  const isNonAssetRootPhoto = (fullPath: string, depth: number) =>
+    depth === 0 &&
+    (ownerRootPhotoKeySet.has(path.resolve(fullPath).toLowerCase()) ||
+      isThumbnailFilename(path.basename(fullPath)) ||
+      isExplicitProductScreenshotFilename(path.basename(fullPath)));
+
+  const nonOwnerAppAssets = appResourceAssets.filter(
+    (asset) => !isNonAssetRootPhoto(asset.fullPath, asset.depth)
+  );
+  const hasSubfolderAppAssets = nonOwnerAppAssets.some((asset) => asset.depth >= 1);
+  const hasUiWithRootAssets =
+    appSourceFiles.some((f) => f.fullPath.toLowerCase().endsWith(".ui")) &&
+    nonOwnerAppAssets.length > 0;
+
+  // Package unpacked GameMaker Studio 2 (.yyp) project into a standard <safeSlug>_gamemaker.yyz archive
+  if (hasUnpackedGameMakerProject) {
+    try {
+      const gmProjectRoot = path.dirname(gameMakerYypFiles[0]);
+      const gmZipEntries: Array<{ entryName: string; data: Buffer }> = [];
+      let totalGmBytes = 0;
+      const GM_BUNDLE_EXTS = new Set([
+        ".yyp",
+        ".yy",
+        ".gml",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".wav",
+        ".mp3",
+        ".ogg",
+        ".txt",
+        ".json",
+      ]);
+      const walkGmDir = (curDir: string, depth: number) => {
+        if (depth > 6 || gmZipEntries.length >= 1500) return;
+        let items: fs.Dirent[] = [];
+        try {
+          items = fs
+            .readdirSync(curDir, { withFileTypes: true })
+            .sort((a, b) => a.name.localeCompare(b.name, "en"));
+        } catch {
+          return;
+        }
+        for (const item of items) {
+          if (gmZipEntries.length >= 1500) break;
+          if (item.name.startsWith(".")) continue;
+          const lower = item.name.toLowerCase();
+          if (
+            lower.startsWith("_spck_") ||
+            lower === ".git" ||
+            lower === "node_modules" ||
+            lower === "__pycache__" ||
+            lower.endsWith("_gamemaker.yyz")
+          ) {
+            continue;
+          }
+          const fullItemPath = assertPathAllowed(path.join(curDir, item.name));
+          const st = fs.lstatSync(fullItemPath);
+          if (st.isSymbolicLink()) continue;
+          const relPosix = path
+            .relative(gmProjectRoot, fullItemPath)
+            .split(path.sep)
+            .join("/");
+          if (!relPosix || relPosix.startsWith("..")) continue;
+          if (st.isDirectory()) {
+            // Skip duplicate sprite layer PNG folders (sprites/<name>/layers/...)
+            if (relPosix.toLowerCase().startsWith("sprites/") && lower === "layers") {
+              continue;
+            }
+            walkGmDir(fullItemPath, depth + 1);
+          } else if (st.isFile()) {
+            const ext = path.extname(lower);
+            if (!GM_BUNDLE_EXTS.has(ext)) continue;
+            if (st.size > 15 * 1024 * 1024) continue;
+            if (st.size === 0 && ext !== ".gml") continue;
+            if (totalGmBytes + st.size > 45 * 1024 * 1024) continue;
+            const buf = fs.readFileSync(fullItemPath);
+            gmZipEntries.push({ entryName: relPosix, data: buf });
+            totalGmBytes += buf.length;
+          }
+        }
+      };
+      walkGmDir(gmProjectRoot, 0);
+      if (gmZipEntries.length > 0) {
+        const gmBundlePath = assertPathAllowed(
+          path.join(safeFolderPath, `${safeSlugForBundle}_gamemaker.yyz`)
+        );
+        writeDeterministicZipFile(gmBundlePath, gmZipEntries);
+        const yyzCheck = validateSpckAttachmentFile(gmBundlePath);
+        if (yyzCheck.valid) {
+          const filteredAttachments = validAttachments.filter(
+            (attPath) => !/\.(?:yy|gml)$/i.test(attPath)
+          );
+          validAttachments.length = 0;
+          validAttachments.push(gmBundlePath, ...filteredAttachments);
+        } else {
+          warnings.push(yyzCheck.reason || "Không thể xác thực gói GameMaker (.yyz) vừa đóng gói.");
+        }
+      }
+    } catch (err) {
+      warnings.push(
+        `Lỗi khi đóng gói dự án GameMaker (.yyp): ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  } else {
+    try {
+      const staleGmYyz = assertPathAllowed(
+        path.join(safeFolderPath, `${safeSlugForBundle}_gamemaker.yyz`)
+      );
+      if (fs.existsSync(staleGmYyz) && !fs.lstatSync(staleGmYyz).isSymbolicLink()) {
+        fs.unlinkSync(staleGmYyz);
+      }
+    } catch {}
+  }
+
   // Package multi-file / subfolder Web source files (.html/.htm/.css/.js/.mjs/...) into a single .zip attachment
   // when the student's Web project exceeds the 10-file LMS attachment limit or organizes code in subfolders.
   if (
@@ -1806,24 +2051,53 @@ export function scanStudentSpckFolder(
       hasSubfolderWebCode)
   ) {
     try {
-      const zipEntries = webSourceFiles.map((webFile) => ({
-        entryName: webFile.relPosix,
-        data: fs.readFileSync(webFile.fullPath),
-      }));
+      const zipEntries: Array<{ entryName: string; data: Buffer }> = [];
+      const bundledWebSourcePathKeys = new Set<string>();
+      const skippedWebBundleFileNames: string[] = [];
+      let totalWebZipBytes = 0;
+      for (const webFile of webSourceFiles) {
+        if (zipEntries.length >= 190) {
+          skippedWebBundleFileNames.push(webFile.relPosix);
+          continue;
+        }
+        const buf = fs.readFileSync(webFile.fullPath);
+        if (totalWebZipBytes + buf.length > 45 * 1024 * 1024) {
+          skippedWebBundleFileNames.push(webFile.relPosix);
+          continue;
+        }
+        zipEntries.push({ entryName: webFile.relPosix, data: buf });
+        bundledWebSourcePathKeys.add(path.resolve(webFile.fullPath).toLowerCase());
+        totalWebZipBytes += buf.length;
+      }
+      for (const assetFile of nonOwnerAppAssets) {
+        if (zipEntries.length >= 190) {
+          skippedWebBundleFileNames.push(assetFile.relPosix);
+          continue;
+        }
+        if (totalWebZipBytes + assetFile.size > 45 * 1024 * 1024) {
+          skippedWebBundleFileNames.push(assetFile.relPosix);
+          continue;
+        }
+        const buf = fs.readFileSync(assetFile.fullPath);
+        zipEntries.push({ entryName: assetFile.relPosix, data: buf });
+        totalWebZipBytes += buf.length;
+      }
       const bundleZipPath = assertPathAllowed(
         path.join(safeFolderPath, `${safeSlugForBundle}_web_package.zip`)
       );
       writeDeterministicZipFile(bundleZipPath, zipEntries);
       const zipCheck = validateSpckAttachmentFile(bundleZipPath);
       if (zipCheck.valid) {
-        const bundledPathKeys = new Set(
-          webSourceFiles.map((wf) => path.resolve(wf.fullPath).toLowerCase())
-        );
         const unbundledAttachments = validAttachments.filter(
-          (attPath) => !bundledPathKeys.has(path.resolve(attPath).toLowerCase())
+          (attPath) => !bundledWebSourcePathKeys.has(path.resolve(attPath).toLowerCase())
         );
         validAttachments.length = 0;
         validAttachments.push(bundleZipPath, ...unbundledAttachments);
+        if (skippedWebBundleFileNames.length > 0) {
+          warnings.push(
+            `Gói nén '${path.basename(bundleZipPath)}' đã đạt giới hạn an toàn (190 tệp / 45MB), không thể gộp thêm ${skippedWebBundleFileNames.length} tệp (${skippedWebBundleFileNames.slice(0, 5).join(", ")}${skippedWebBundleFileNames.length > 5 ? "..." : ""}).`
+          );
+        }
       } else {
         warnings.push(zipCheck.reason || "Không thể xác thực gói ZIP Web vừa đóng gói.");
       }
@@ -1844,14 +2118,18 @@ export function scanStudentSpckFolder(
   }
 
   // Package multi-file / subfolder App/Code source files (.py/.ui/.qss/.ipynb/...) and project assets (img/, Image/, Icon/...)
-  // into a single .zip attachment when the student's App/Code project exceeds the 10-file LMS attachment limit or organizes code/UI in subfolders.
+  // into a single .zip attachment when the student's App/Code project exceeds the 10-file LMS attachment limit or organizes code/UI/assets in subfolders.
   if (
     !hasWebProjectHtmlFiles &&
+    !hasUnpackedGameMakerProject &&
+    !hasRawYyzArchive &&
     hasAppProjectCodeFiles &&
     appSourceFiles.length > 0 &&
     (validAttachments.length > MAX_SPCK_ATTACHMENTS ||
       appSourceFiles.length > MAX_SPCK_ATTACHMENTS ||
-      hasSubfolderAppCode)
+      hasSubfolderAppCode ||
+      hasSubfolderAppAssets ||
+      hasUiWithRootAssets)
   ) {
     try {
       const zipEntries: Array<{ entryName: string; data: Buffer }> = [];
@@ -1872,14 +2150,7 @@ export function scanStudentSpckFolder(
         bundledSourcePathKeys.add(path.resolve(appFile.fullPath).toLowerCase());
         totalZipBytes += buf.length;
       }
-      for (const assetFile of appResourceAssets) {
-        if (
-          assetFile.depth === 0 &&
-          (ownerRootPhotoKeySet.has(path.resolve(assetFile.fullPath).toLowerCase()) ||
-            isThumbnailFilename(path.basename(assetFile.fullPath)))
-        ) {
-          continue;
-        }
+      for (const assetFile of nonOwnerAppAssets) {
         if (zipEntries.length >= 190) {
           skippedBundleFileNames.push(assetFile.relPosix);
           continue;
@@ -1961,8 +2232,8 @@ export function scanStudentSpckFolder(
     } catch {}
   }
 
-  // Auto-render PyQt6 (.ui) app windows or GameMaker (.yyz) / Scratch (.sb3) room/stage screenshots into _spck_app_shots
-  // when the student folder has no existing product images yet.
+  // Auto-render PyQt6 (.ui) app windows, GameMaker (.yyz/.yyp) / Scratch (.sb3) room/stage screenshots,
+  // or pure-Python GUI/Streamlit app preview into _spck_app_shots when the student folder has no existing product images yet.
   if (validImages.length === 0) {
     const uiRelList = findProjectUiFiles(safeFolderPath);
     if (uiRelList.length > 0) {
@@ -1990,13 +2261,25 @@ export function scanStudentSpckFolder(
       }
     }
   }
-  if (validImages.length === 0 && validAttachments.length > 0) {
-    const yyzRelList = validAttachments
-      .filter((p) => /\.yyz$/i.test(p))
-      .map((p) => path.relative(safeFolderPath, p));
-    const sb3RelList = validAttachments
-      .filter((p) => /\.sb3$/i.test(p))
-      .map((p) => path.relative(safeFolderPath, p));
+  if (validImages.length === 0) {
+    const allGameFiles = findProjectGameFiles(safeFolderPath);
+    const validAttKeySet = new Set(validAttachments.map((p) => path.resolve(p).toLowerCase()));
+    const isSafeValidatedGameSource = (rel: string): boolean => {
+      try {
+        const full = assertPathAllowed(path.join(safeFolderPath, rel));
+        if (rel.toLowerCase().endsWith(".yyp")) {
+          return hasUnpackedGameMakerProject;
+        }
+        if (validAttKeySet.has(path.resolve(full).toLowerCase())) {
+          return true;
+        }
+        return validateSpckAttachmentFile(full).valid;
+      } catch {
+        return false;
+      }
+    };
+    const yyzRelList = allGameFiles.yyzFiles.filter(isSafeValidatedGameSource);
+    const sb3RelList = allGameFiles.sb3Files.filter(isSafeValidatedGameSource);
     if (yyzRelList.length > 0 || sb3RelList.length > 0) {
       try {
         const autoOutDir = assertPathAllowed(path.join(safeFolderPath, "_spck_app_shots"));
@@ -2357,6 +2640,93 @@ function inferStudentFromFolderCodeHints(
   return null;
 }
 
+function isSampleOrTemplateFolderName(folderName: string): boolean {
+  const ascii = stripVietnameseDiacritics(folderName).toLowerCase();
+  return /(?:^|[^a-z0-9])(?:samples?|templates?|bai[\s_-]*mau|bo[\s_-]*khung|code[\s_-]*mau)(?:$|[^a-z0-9])/i.test(
+    ascii
+  );
+}
+
+const NON_STUDENT_SUBFOLDER_NAMES = new Set([
+  "node_modules",
+  "__pycache__",
+  "venv",
+  ".venv",
+  "build",
+  "dist",
+  "img",
+  "imgs",
+  "image",
+  "images",
+  "icon",
+  "icons",
+  "assets",
+  "asset",
+  "static",
+  "public",
+  "css",
+  "js",
+  "style",
+  "styles",
+  "scripts",
+  "script",
+  "src",
+  "gui",
+  "ui",
+  "data",
+  "db",
+  "fonts",
+  "font",
+  "audio",
+  "sound",
+  "sounds",
+  "media",
+  "sprites",
+  "objects",
+  "rooms",
+  "options",
+]);
+
+function inferStudentFromSingleNestedChildFolder(
+  folderPath: string,
+  unmatchedStudents: StudentCandidate[]
+): { student: StudentCandidate; childFolderName: string; score: number } | null {
+  if (unmatchedStudents.length === 0) return null;
+  let entries: fs.Dirent[] = [];
+  try {
+    entries = fs.readdirSync(folderPath, { withFileTypes: true });
+  } catch {
+    return null;
+  }
+  const childDirs = entries.filter((e) => {
+    if (!e.isDirectory() || e.name.startsWith(".")) return false;
+    const lower = e.name.toLowerCase();
+    if (lower.startsWith("_spck_") || NON_STUDENT_SUBFOLDER_NAMES.has(lower)) return false;
+    if (isSampleOrTemplateFolderName(e.name)) return false;
+    return true;
+  });
+  if (childDirs.length !== 1) return null;
+  const childName = childDirs[0].name;
+  const scored = unmatchedStudents
+    .map((stu) => ({
+      student: stu,
+      score: calculateNameSimilarity(childName, stu.fullName),
+    }))
+    .filter((item) => item.score >= 0.7)
+    .sort((a, b) => b.score - a.score);
+  if (
+    scored.length >= 1 &&
+    (scored.length === 1 || scored[0].score - scored[1].score >= 0.05)
+  ) {
+    return {
+      student: scored[0].student,
+      childFolderName: childName,
+      score: scored[0].score,
+    };
+  }
+  return null;
+}
+
 /**
  * Scans the entire class SPCK root directory, matches each student subfolder against LMS student records,
  * and returns a structured list ready for the Mapping Table and SQLite persistence.
@@ -2464,10 +2834,31 @@ export function scanClassSpckDirectory(
   }
 
   const afterCodeHintResults: FolderStudentMatchResult[] = preliminaryResults.map((match) => {
-    if (match.suggestedStudentId) return match;
+    if (match.suggestedStudentId || isSampleOrTemplateFolderName(match.folderName)) {
+      return match;
+    }
     const unmatchedCandidates = students.filter(
       (s) => !claimedStudentIds.has(s.studentId) && !detachedStudents.has(s.studentId)
     );
+    const nestedChildMatch = inferStudentFromSingleNestedChildFolder(
+      match.folderPath,
+      unmatchedCandidates
+    );
+    if (nestedChildMatch) {
+      claimedStudentIds.add(nestedChildMatch.student.studentId);
+      return {
+        ...match,
+        suggestedStudentId: nestedChildMatch.student.studentId,
+        suggestedStudentName: nestedChildMatch.student.fullName,
+        matchScore: nestedChildMatch.score,
+        autoConfirmed: false,
+        requiresManualConfirmation: true,
+        warningReasons: [
+          `Gợi ý học viên từ tên thư mục con bên trong ('${nestedChildMatch.childFolderName}')`,
+        ],
+      };
+    }
+
     const inferredStu = inferStudentFromFolderCodeHints(
       match.folderPath,
       unmatchedCandidates,
@@ -2489,7 +2880,9 @@ export function scanClassSpckDirectory(
     };
   });
 
-  const remainingUnmatchedFolders = afterCodeHintResults.filter((m) => !m.suggestedStudentId);
+  const remainingUnmatchedFolders = afterCodeHintResults.filter(
+    (m) => !m.suggestedStudentId && !isSampleOrTemplateFolderName(m.folderName)
+  );
   const remainingUnmatchedStudents = students.filter(
     (s) => !claimedStudentIds.has(s.studentId) && !detachedStudents.has(s.studentId)
   );
@@ -2498,7 +2891,9 @@ export function scanClassSpckDirectory(
     remainingUnmatchedStudents.length === 1 &&
     Boolean(extractFolderNameVariants(remainingUnmatchedFolders[0].folderName).isGenericOnly)
       ? afterCodeHintResults.map((match) => {
-          if (match.suggestedStudentId) return match;
+          if (match.suggestedStudentId || isSampleOrTemplateFolderName(match.folderName)) {
+            return match;
+          }
           const lastStu = remainingUnmatchedStudents[0];
           return {
             ...match,

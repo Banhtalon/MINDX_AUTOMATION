@@ -48,6 +48,7 @@ import {
   matchYoutubeVideosToStudents,
   parseYoutubeImportInput,
 } from "../src/lib/local-files/spck-youtube-import";
+import { prepareStudentFilesForDriveUpload } from "../src/lib/playwright/spck-drive-uploader";
 
 function crc32(buf: Buffer): number {
   let crc = 0xffffffff;
@@ -919,7 +920,150 @@ async function run() {
     );
     console.log("  -> PASS V18.");
 
-    console.log("\n=== HOÀN TẤT: TẤT CẢ 18 KỊCH BẢN v2.7.2 (V01 -> V18) ĐỀU ĐẠT 100% ===");
+    // =========================================================================
+    // V19: Unpacked GameMaker 2026 (.yyp), Pure-Python GUI preview, Stock Root Assets,
+    //      Sample Folder Exclusion, Nested Student Subfolder & 1-Char Trailing Typo
+    // =========================================================================
+    console.log("\n[V19] Unpacked GameMaker .yyp, Pure-Python GUI preview, Stock Root Assets & Matcher...");
+    const v19Root = path.join(tempRoot, "v19_classes");
+    fs.mkdirSync(v19Root, { recursive: true });
+
+    // 1. Unpacked GameMaker 2026 .yyp with nested `,},},` trailing commas
+    const gmUnpackedDir = path.join(v19Root, "plants vs zombie demo");
+    fs.mkdirSync(path.join(gmUnpackedDir, "sprites", "spr_peashooter"), { recursive: true });
+    fs.mkdirSync(path.join(gmUnpackedDir, "objects", "obj_peashooter"), { recursive: true });
+    fs.mkdirSync(path.join(gmUnpackedDir, "rooms", "Room1"), { recursive: true });
+    fs.writeFileSync(
+      path.join(gmUnpackedDir, "plants vs zombie demo.yyp"),
+      `{\n  "$GMProject":"v1",\n  "%Name":"pvz",\n  "resources":[\n    {"id":{"name":"obj_peashooter","path":"objects/obj_peashooter/obj_peashooter.yy",},},\n    {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},\n  ],\n  "RoomOrderNodes":[\n    {"roomId":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},\n  ],\n}`
+    );
+    fs.writeFileSync(
+      path.join(gmUnpackedDir, "sprites", "spr_peashooter", "spr_peashooter.yy"),
+      `{\n  "$GMSprite":"v2",\n  "%Name":"spr_peashooter",\n  "name":"spr_peashooter",\n  "frames":[{"%Name":"frame_1","name":"frame_1",},],\n  "sequence":{"xorigin":0,"yorigin":0,},\n}`
+    );
+    fs.writeFileSync(
+      path.join(gmUnpackedDir, "sprites", "spr_peashooter", "frame_1.png"),
+      makePng(64, 64, 11, true)
+    );
+    fs.writeFileSync(
+      path.join(gmUnpackedDir, "objects", "obj_peashooter", "obj_peashooter.yy"),
+      `{\n  "$GMObject":"",\n  "%Name":"obj_peashooter",\n  "name":"obj_peashooter",\n  "spriteId":{"name":"spr_peashooter","path":"sprites/spr_peashooter/spr_peashooter.yy",},\n  "visible":true,\n}`
+    );
+    fs.writeFileSync(
+      path.join(gmUnpackedDir, "rooms", "Room1", "Room1.yy"),
+      `{\n  "$GMRoom":"v1",\n  "%Name":"Room1",\n  "name":"Room1",\n  "roomSettings":{"Width":1366,"Height":768,},\n  "layers":[\n    {"$GMRInstanceLayer":"","%Name":"Instances","depth":0,"visible":true,"instances":[\n      {"name":"inst_1","objectId":{"name":"obj_peashooter","path":"objects/obj_peashooter/obj_peashooter.yy",},"x":320.0,"y":240.0,"scaleX":1.0,"scaleY":1.0,"rotation":0.0,},\n    ],},\n  ],\n}`
+    );
+
+    // 2. Pure-Python GUI (.py without .ui) vs CLI-only Python
+    const pureGuiDir = path.join(v19Root, "Tung_Anh_spck");
+    fs.mkdirSync(pureGuiDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pureGuiDir, "main.py"),
+      `import sys\nfrom PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLineEdit\nclass AppWindow(QMainWindow):\n    def __init__(self):\n        super().__init__()\n        self.setWindowTitle("Quản Lý Thư Viện Thông Minh")\n        self.btn = QPushButton("Mượn Sách")\n        self.search = QLineEdit()\n        self.search.setPlaceholderText("Tìm kiếm tên sách...")\n`
+    );
+
+    const cliOnlyDir = path.join(v19Root, "Thaot");
+    fs.mkdirSync(cliOnlyDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(cliOnlyDir, "quiz.py"),
+      `print("Chào mừng bạn đến với trò chơi đố vui CLI")\nscore = 0\n`
+    );
+
+    // 3. Root .ui project with unreferenced stock image `1247.jpg` + referenced assets
+    const myDir = path.join(v19Root, "SPCK Nguyễn Vũ Huyền My");
+    fs.mkdirSync(myDir, { recursive: true });
+    fs.writeFileSync(path.join(myDir, "logo_brand.png"), makePng(120, 80, 22, true));
+    fs.writeFileSync(path.join(myDir, "banner_shop.png"), makePng(300, 140, 33, true));
+    fs.writeFileSync(path.join(myDir, "1247.jpg"), makePng(400, 300, 44, true));
+    fs.writeFileSync(
+      path.join(myDir, "trang_1.ui"),
+      `<?xml version="1.0" encoding="UTF-8"?>\n<ui version="4.0">\n <class>MainWindow</class>\n <widget class="QMainWindow" name="MainWindow">\n  <property name="geometry"><rect><x>0</x><y>0</y><width>800</width><height>520</height></rect></property>\n  <property name="windowTitle"><string>Cửa Hàng Thời Trang</string></property>\n  <widget class="QWidget" name="centralwidget">\n   <widget class="QLabel" name="lbl1"><property name="pixmap"><pixmap>logo_brand.png</pixmap></property></widget>\n   <widget class="QLabel" name="lbl2"><property name="pixmap"><pixmap>banner_shop.png</pixmap></property></widget>\n  </widget>\n </widget>\n</ui>`
+    );
+
+    // 4. Sample folder + nested single-student child folder (`cakecraft-web/SPCK _Tai`)
+    const sampleDir = path.join(v19Root, "ls10_sample");
+    fs.mkdirSync(sampleDir, { recursive: true });
+    fs.writeFileSync(path.join(sampleDir, "app.py"), "print('sample')\n");
+
+    const nestedOuterDir = path.join(v19Root, "cakecraft-web");
+    fs.mkdirSync(path.join(nestedOuterDir, "SPCK _Tai"), { recursive: true });
+    fs.writeFileSync(
+      path.join(nestedOuterDir, "SPCK _Tai", "index.html"),
+      "<!doctype html><html><body><h1>CakeCraft Bakery</h1></body></html>"
+    );
+
+    const v19Roster = [
+      { studentId: "V19_S1", fullName: "Lê Tùng Anh" },
+      { studentId: "V19_S2", fullName: "Đặng Quang Thảo" },
+      { studentId: "V19_S3", fullName: "Nguyễn Vũ Huyền My" },
+      { studentId: "V19_S4", fullName: "Trương Tuấn Tài" },
+      { studentId: "V19_S5", fullName: "Phạm Minh Sơn" },
+    ];
+    const v19Scan = scanClassSpckDirectory("VT-C4K-V19", v19Root, v19Roster);
+
+    const gmItem = v19Scan.items.find((it) => it.folderName === "plants vs zombie demo")!;
+    assert.ok(
+      gmItem.packageData.thumbnailPath.includes("app_01_Room1"),
+      "Dự án GameMaker .yyp giải nén phải tự vẽ ảnh chụp màn chơi Room1 (16:9)"
+    );
+    assert.ok(
+      gmItem.packageData.attachments.some((a) => a.endsWith("_gamemaker.yyz")),
+      "Dự án GameMaker .yyp giải nén phải tự đóng gói thành _gamemaker.yyz"
+    );
+    const gmDriveFiles = prepareStudentFilesForDriveUpload(
+      gmUnpackedDir,
+      path.join(tempRoot, "gm_drive_staging"),
+      "PVZ"
+    );
+    assert.strictEqual(
+      gmDriveFiles.some((f: string) => f.endsWith("_gamemaker.yyz")),
+      false,
+      "Không được upload lặp gói tự sinh _gamemaker.yyz lên Google Drive"
+    );
+
+    const pureGuiItem = v19Scan.items.find((it) => it.folderName === "Tung_Anh_spck")!;
+    assert.strictEqual(pureGuiItem.match.suggestedStudentId, "V19_S1");
+    assert.ok(
+      pureGuiItem.packageData.thumbnailPath.endsWith("default-spck-thumbnail.png"),
+      "Dự án Python thuần .py không có .ui và không có ảnh riêng phải giữ nguyên ảnh bìa mặc định Logo MindX"
+    );
+
+    const cliItem = v19Scan.items.find((it) => it.folderName === "Thaot")!;
+    assert.strictEqual(
+      cliItem.match.suggestedStudentId,
+      "V19_S2",
+      "Tên thư mục gõ dư 1 ký tự đuôi 'Thaot' phải khớp về 'Đặng Quang Thảo' kèm cờ xác nhận tay"
+    );
+    assert.strictEqual(cliItem.match.requiresManualConfirmation, true);
+    assert.ok(
+      cliItem.packageData.thumbnailPath.endsWith("default-spck-thumbnail.png"),
+      "Dự án Python CLI thuần print() không có GUI phải giữ nguyên ảnh bìa mặc định Logo MindX"
+    );
+
+    const myItem = v19Scan.items.find((it) => it.folderName === "SPCK Nguyễn Vũ Huyền My")!;
+    assert.strictEqual(myItem.match.suggestedStudentId, "V19_S3");
+    assert.ok(
+      myItem.packageData.thumbnailPath.includes("app_01_trang_1"),
+      "Ảnh tài nguyên lẻ 1247.jpg không được nhận nhầm làm ảnh chụp Owner chiếm chỗ Thumbnail"
+    );
+
+    const sampleItem = v19Scan.items.find((it) => it.folderName === "ls10_sample")!;
+    assert.strictEqual(
+      sampleItem.match.suggestedStudentId,
+      "",
+      "Thư mục bài mẫu ls10_sample không được gán nhầm vào học viên"
+    );
+
+    const nestedItem = v19Scan.items.find((it) => it.folderName === "cakecraft-web")!;
+    assert.strictEqual(
+      nestedItem.match.suggestedStudentId,
+      "V19_S4",
+      "Thư mục bọc ngoài cakecraft-web/SPCK _Tai phải tự nhận diện học viên Trương Tuấn Tài từ thư mục con"
+    );
+    assert.strictEqual(nestedItem.match.requiresManualConfirmation, true);
+    console.log("  -> PASS V19.");
+
+    console.log("\n=== HOÀN TẤT: TẤT CẢ 19 KỊCH BẢN v2.7.2 (V01 -> V19) ĐỀU ĐẠT 100% ===");
   } finally {
     globalThis.fetch = origFetch;
     cleanup();

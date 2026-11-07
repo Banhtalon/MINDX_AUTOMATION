@@ -367,9 +367,12 @@ export function parseScratchSb3Buffer(
  * Safely parses GameMaker's relaxed JSON (.yy / .yyp) which often contains trailing commas.
  */
 function parseGameMakerJsonRelaxed(rawText: string): any {
-  const cleaned = rawText
-    .replace(/^\uFEFF/, "")
-    .replace(/,\s*([\]}])/g, "$1");
+  let cleaned = rawText.replace(/^\uFEFF/, "");
+  for (let i = 0; i < 6; i++) {
+    const next = cleaned.replace(/,\s*([\]}])/g, "$1");
+    if (next === cleaned) break;
+    cleaned = next;
+  }
   return JSON.parse(cleaned);
 }
 

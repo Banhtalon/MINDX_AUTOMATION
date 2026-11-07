@@ -426,7 +426,60 @@ export async function POST(req: Request) {
           sessDraft.draftStatus !== "APPROVED" &&
           sessDraft.draftStatus !== "VERIFIED"
         ) {
-          const fileExts = finalAttachments.map((p) => path.extname(p).toLowerCase()).filter(Boolean);
+          const inspectedSourcePaths: string[] = [...finalAttachments];
+          if (
+            canonicalItemFolder &&
+            finalAttachments.some((p) =>
+              /_(?:web_package\.zip|app_package\.zip|gamemaker\.yyz)$/i.test(p)
+            )
+          ) {
+            const walkFolderSources = (curDir: string, depth: number) => {
+              if (depth > 3 || inspectedSourcePaths.length >= 80) return;
+              let dirEntries: fs.Dirent[] = [];
+              try {
+                dirEntries = fs.readdirSync(curDir, { withFileTypes: true });
+              } catch {
+                return;
+              }
+              for (const de of dirEntries) {
+                if (inspectedSourcePaths.length >= 80) break;
+                if (de.name.startsWith(".")) continue;
+                const lowerDe = de.name.toLowerCase();
+                if (
+                  lowerDe.startsWith("_spck_") ||
+                  lowerDe === "node_modules" ||
+                  lowerDe === "__pycache__" ||
+                  lowerDe === "venv" ||
+                  lowerDe === ".venv" ||
+                  lowerDe.endsWith("_web_package.zip") ||
+                  lowerDe.endsWith("_app_package.zip") ||
+                  lowerDe.endsWith("_robotics_package.zip") ||
+                  lowerDe.endsWith("_gamemaker.yyz")
+                ) {
+                  continue;
+                }
+                const fullDe = path.join(curDir, de.name);
+                try {
+                  const st = fs.lstatSync(fullDe);
+                  if (st.isSymbolicLink()) continue;
+                  if (st.isDirectory()) {
+                    walkFolderSources(fullDe, depth + 1);
+                  } else if (
+                    st.isFile() &&
+                    /\.(?:html?|css|m?js|py|ui|qss|ipynb|gml|yy|yyp|csv)$/i.test(lowerDe)
+                  ) {
+                    inspectedSourcePaths.push(fullDe);
+                  }
+                } catch {}
+              }
+            };
+            walkFolderSources(canonicalItemFolder, 0);
+          }
+          const fileExts = Array.from(
+            new Set(
+              inspectedSourcePaths.map((p) => path.extname(p).toLowerCase()).filter(Boolean)
+            )
+          );
           let hasFlexOrGridCss = false;
           let hasNavLinks = false;
           let hasEventBinding = false;
@@ -558,7 +611,7 @@ export async function POST(req: Request) {
             }
           };
 
-          for (const attPath of finalAttachments) {
+          for (const attPath of inspectedSourcePaths) {
             const lowerAtt = attPath.toLowerCase();
             if (lowerAtt.endsWith(".html") || lowerAtt.endsWith(".htm")) {
               try {

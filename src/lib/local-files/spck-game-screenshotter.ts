@@ -47,6 +47,7 @@ export function findProjectGameFiles(studentDir: string): {
 } {
   const safeStudentDir = assertPathAllowed(studentDir);
   const yyzFound: Array<{ relPath: string; depth: number; inDraft: boolean }> = [];
+  const yypFound: Array<{ relPath: string; depth: number; inDraft: boolean }> = [];
   const sb3Found: Array<{ relPath: string; depth: number; inDraft: boolean }> = [];
 
   const walk = (currentDir: string, depth: number, inDraft: boolean) => {
@@ -74,8 +75,10 @@ export function findProjectGameFiles(studentDir: string): {
       } else if (lstat.isFile()) {
         const lower = entry.name.toLowerCase();
         const relPath = path.relative(safeStudentDir, fullPath);
-        if (lower.endsWith(".yyz")) {
+        if (lower.endsWith(".yyz") && !lower.endsWith("_gamemaker.yyz")) {
           yyzFound.push({ relPath, depth, inDraft });
+        } else if (lower.endsWith(".yyp")) {
+          yypFound.push({ relPath, depth, inDraft });
         } else if (lower.endsWith(".sb3")) {
           sb3Found.push({ relPath, depth, inDraft });
         }
@@ -96,8 +99,10 @@ export function findProjectGameFiles(studentDir: string): {
     return pool.map((item) => item.relPath);
   };
 
+  const activeYyz = pickActive(yyzFound);
+  const activeYyp = pickActive(yypFound);
   return {
-    yyzFiles: pickActive(yyzFound),
+    yyzFiles: activeYyz.length > 0 ? activeYyz : activeYyp,
     sb3Files: pickActive(sb3Found),
   };
 }
@@ -121,7 +126,11 @@ W, H = ${LMS_IMAGE_WIDTH}, ${LMS_IMAGE_HEIGHT}
 
 def parse_yy(raw_text):
     clean = (raw_text or "").lstrip("\\ufeff")
-    clean = re.sub(r",\\s*([\\]}])", r"\\1", clean)
+    for _ in range(6):
+        next_clean = re.sub(r",\\s*([\\]}])", r"\\1", clean)
+        if next_clean == clean:
+            break
+        clean = next_clean
     return json.loads(clean)
 
 def decode_gm_tiles(tiles_obj):
@@ -169,10 +178,108 @@ def encode_png_bytes(qimg):
     qimg.save(qbuf, "PNG")
     return bytes(ba)
 
+MAX_ARCHIVE_ENTRIES = 1500
+MAX_SINGLE_ENTRY_BYTES = 15 * 1024 * 1024
+MAX_TOTAL_ARCHIVE_BYTES = 80 * 1024 * 1024
+
+class SafeZipReader:
+    def __init__(self, zip_path):
+        self._zf = zipfile.ZipFile(zip_path, "r")
+        infos = self._zf.infolist()
+        if len(infos) > MAX_ARCHIVE_ENTRIES:
+            self._zf.close()
+            raise ValueError("Too many zip entries")
+        total_uncomp = sum(max(0, int(getattr(i, "file_size", 0))) for i in infos)
+        if total_uncomp > MAX_TOTAL_ARCHIVE_BYTES:
+            self._zf.close()
+            raise ValueError("Zip uncompressed size exceeds limit")
+        self._read_bytes = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self._zf.close()
+
+    def namelist(self):
+        return self._zf.namelist()
+
+    def read(self, name):
+        info = self._zf.getinfo(name)
+        fsize = max(0, int(getattr(info, "file_size", 0)))
+        if fsize > MAX_SINGLE_ENTRY_BYTES:
+            raise ValueError("Zip entry too large")
+        if self._read_bytes + fsize > MAX_TOTAL_ARCHIVE_BYTES:
+            raise ValueError("Total zip read bytes exceeded")
+        data = self._zf.read(name)
+        if len(data) > MAX_SINGLE_ENTRY_BYTES:
+            raise ValueError("Zip entry data too large")
+        self._read_bytes += len(data)
+        return data
+
+class DirArchiveReader:
+    def __init__(self, yyp_path):
+        self.root = os.path.realpath(os.path.dirname(yyp_path))
+        self.root_norm = os.path.normcase(self.root)
+        self._names = []
+        self._read_bytes = 0
+        for cur, dirs, files in os.walk(self.root, followlinks=False):
+            dirs[:] = [
+                d for d in dirs
+                if not d.startswith(".")
+                and d not in ("_spck_app_shots", "_spck_owner_uploads", "_spck_youtube_frames", "node_modules", "__pycache__")
+                and not os.path.islink(os.path.join(cur, d))
+            ]
+            for f in files:
+                if len(self._names) >= MAX_ARCHIVE_ENTRIES:
+                    break
+                fp = os.path.join(cur, f)
+                if os.path.islink(fp):
+                    continue
+                try:
+                    real_fp = os.path.normcase(os.path.realpath(fp))
+                    if os.path.commonpath([real_fp, self.root_norm]) != self.root_norm:
+                        continue
+                except Exception:
+                    continue
+                rel = os.path.relpath(fp, self.root).replace("\\\\", "/")
+                self._names.append(rel)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+    def namelist(self):
+        return self._names
+
+    def read(self, name):
+        cand = os.path.join(self.root, name)
+        if os.path.islink(cand):
+            raise ValueError("Symlink not allowed")
+        full = os.path.realpath(cand)
+        if os.path.commonpath([os.path.normcase(full), self.root_norm]) != self.root_norm:
+            raise ValueError("Path outside root")
+        fsize = os.path.getsize(full)
+        if fsize > MAX_SINGLE_ENTRY_BYTES or self._read_bytes + fsize > MAX_TOTAL_ARCHIVE_BYTES:
+            raise ValueError("File size exceeds limit")
+        with open(full, "rb") as f:
+            data = f.read(MAX_SINGLE_ENTRY_BYTES + 1)
+        if len(data) > MAX_SINGLE_ENTRY_BYTES:
+            raise ValueError("File size exceeds limit")
+        self._read_bytes += len(data)
+        return data
+
+def open_gm_source(path_str):
+    if str(path_str).lower().endswith(".yyp"):
+        return DirArchiveReader(path_str)
+    return SafeZipReader(path_str)
+
 def render_yyz_archive(yyz_path, rel_source):
     candidates = []
     try:
-        with zipfile.ZipFile(yyz_path, "r") as z:
+        with open_gm_source(yyz_path) as z:
             namelist = z.namelist()
             norm_map = {n.replace("\\\\", "/").lower(): n for n in namelist}
 
@@ -403,12 +510,12 @@ def render_yyz_archive(yyz_path, rel_source):
                                 rot90 = bool(raw_val & 0x40000000)
                                 if mirror or flip or rot90:
                                     tile_sub = simg.copy(sx, sy, tw, th)
+                                    tr = QTransform()
                                     if mirror or flip:
-                                        tile_sub = tile_sub.mirrored(mirror, flip)
+                                        tr.scale(-1.0 if mirror else 1.0, -1.0 if flip else 1.0)
                                     if rot90:
-                                        tr = QTransform()
                                         tr.rotate(90)
-                                        tile_sub = tile_sub.transformed(tr)
+                                    tile_sub = tile_sub.transformed(tr)
                                     p.drawImage(QRectF(dx, dy, tw, th), tile_sub)
                                 else:
                                     p.drawImage(QRectF(dx, dy, tw, th), simg, QRectF(sx, sy, tw, th))
@@ -556,7 +663,7 @@ def render_yyz_archive(yyz_path, rel_source):
 def render_sb3_archive(sb3_path, rel_source):
     candidates = []
     try:
-        with zipfile.ZipFile(sb3_path, "r") as z:
+        with SafeZipReader(sb3_path) as z:
             namelist = z.namelist()
             norm_map = {n.replace("\\\\", "/").lower(): n for n in namelist}
             proj_entry = norm_map.get("project.json")
@@ -702,18 +809,26 @@ def main():
     out_dir = payload.get("outDir") or ""
     max_shots = int(payload.get("maxShots") or 10)
 
+    if not student_dir or not out_dir or os.path.islink(out_dir):
+        sys.stdout.buffer.write(b"JSON_CAPTURE_RESULT:[]")
+        return
     os.makedirs(out_dir, exist_ok=True)
+    real_student = os.path.normcase(os.path.realpath(student_dir))
+    real_out = os.path.normcase(os.path.realpath(out_dir))
+    if os.path.commonpath([real_out, real_student]) != real_student:
+        sys.stdout.buffer.write(b"JSON_CAPTURE_RESULT:[]")
+        return
     app = QApplication.instance() or QApplication([])
 
     all_candidates = []
     for rel_yyz in yyz_files:
         full_yyz = os.path.join(student_dir, rel_yyz)
-        if os.path.isfile(full_yyz):
+        if not os.path.islink(full_yyz) and os.path.isfile(full_yyz):
             all_candidates.extend(render_yyz_archive(full_yyz, rel_yyz))
 
     for rel_sb3 in sb3_files:
         full_sb3 = os.path.join(student_dir, rel_sb3)
-        if os.path.isfile(full_sb3):
+        if not os.path.islink(full_sb3) and os.path.isfile(full_sb3):
             all_candidates.extend(render_sb3_archive(full_sb3, rel_sb3))
 
     # Sort so gameplay / main stage screens come first (app_01_ is always the best cover screen)
@@ -738,8 +853,14 @@ def main():
         idx_num = len(results) + 1
         out_name = f"app_{idx_num:02d}_{safe_screen}_{hash6}.png"
         out_path = os.path.join(out_dir, out_name)
-        with open(out_path, "wb") as f:
+        tmp_path = out_path + ".tmp"
+        if os.path.lexists(tmp_path):
+            os.unlink(tmp_path)
+        if os.path.lexists(out_path) and os.path.islink(out_path):
+            os.unlink(out_path)
+        with open(tmp_path, "wb") as f:
             f.write(png_bytes)
+        os.replace(tmp_path, out_path)
         results.append({
             "filePath": out_path,
             "screenName": str(cand["screenName"]),
@@ -803,8 +924,14 @@ export function renderGameArchiveScreenshotsSync(params: {
     maxShots: params.maxShots ?? 11,
   });
 
-  const proc = spawnSync("python", ["-c", PYTHON_GAME_ARCHIVE_CAPTURE_SCRIPT], {
-    input: payload,
+  const runnerBootstrap =
+    'import io,json,sys; _d=json.loads(sys.stdin.buffer.read().decode("utf-8")); sys.stdin=io.TextIOWrapper(io.BytesIO(_d["payload"].encode("utf-8")),encoding="utf-8"); exec(_d["script"],{"__name__":"__main__"})';
+
+  const proc = spawnSync("python", ["-c", runnerBootstrap], {
+    input: JSON.stringify({
+      script: PYTHON_GAME_ARCHIVE_CAPTURE_SCRIPT,
+      payload,
+    }),
     encoding: "utf-8",
     timeout: 35_000,
     windowsHide: true,
@@ -820,10 +947,16 @@ export function renderGameArchiveScreenshotsSync(params: {
   try {
     const parsed = JSON.parse(jsonText);
     if (Array.isArray(parsed)) {
-      return parsed.filter(
-        (item: CapturedGameScreenItem) =>
-          Boolean(item?.filePath) && fs.existsSync(item.filePath)
-      );
+      return parsed.filter((item: CapturedGameScreenItem) => {
+        if (!item?.filePath || !fs.existsSync(item.filePath)) return false;
+        try {
+          if (fs.lstatSync(item.filePath).isSymbolicLink()) return false;
+          assertPathAllowed(fs.realpathSync(item.filePath));
+          return true;
+        } catch {
+          return false;
+        }
+      });
     }
   } catch {
     // ignore JSON parse error
