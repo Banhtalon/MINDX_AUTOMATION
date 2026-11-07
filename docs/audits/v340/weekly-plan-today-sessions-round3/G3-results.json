@@ -1,0 +1,167 @@
+{
+  "pass": 40,
+  "fail": 0,
+  "total": 40,
+  "results": [
+    {
+      "id": "DB-preserve-",
+      "status": "PASS"
+    },
+    {
+      "id": "DB-preserve-   ",
+      "status": "PASS"
+    },
+    {
+      "id": "DB-preserve-undefined",
+      "status": "PASS"
+    },
+    {
+      "id": "DB-preserve-null",
+      "status": "PASS"
+    },
+    {
+      "id": "DB-replace-nonempty",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-weekly-anchor-age-6",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-weekly-anchor-age-7",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-weekly-anchor-age-8",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-weekly-anchor-age-13",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-weekly-anchor-age-14",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-slot-later-today-before-class-hour",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-explicit-next-slot-postponed",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-ISO-cross-midnight-Vietnam",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-empty-no-crash",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-weekly-age-6",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-weekly-age-7",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-weekly-age-8",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-weekly-age-13",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-no-advance-finished",
+      "status": "PASS"
+    },
+    {
+      "id": "PIPELINE-postponed-explicit-slot-must-not-advance",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-known-future-date-must-not-be-overridden",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-finished-S14-date-must-match-S14",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-all-future-must-not-pick-last-session",
+      "status": "PASS"
+    },
+    {
+      "id": "DASHBOARD-today-date-badge-and-sort",
+      "status": "PASS"
+    },
+    {
+      "id": "DASHBOARD-today-class-after-default-limit-24",
+      "status": "PASS"
+    },
+    {
+      "id": "API-fills-current-session-date-without-DB-write",
+      "status": "PASS"
+    },
+    {
+      "id": "UI-pending-today-icon-date-and-Vietnamese",
+      "status": "PASS"
+    },
+    {
+      "id": "UI-old-date-no-today-badge",
+      "status": "PASS"
+    },
+    {
+      "id": "UI-missing-date-no-placeholder-garbage",
+      "status": "PASS"
+    },
+    {
+      "id": "UI-search-date",
+      "status": "PASS"
+    },
+    {
+      "id": "UI-search-hom-nay",
+      "status": "PASS"
+    },
+    {
+      "id": "UI-done-today-date",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-fallback-Running-end-0",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-fallback-Running-end-1",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-fallback-Active-end-1",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-fallback-Running-end--1",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-fallback-Finished-end-0",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-clear-button-no-op-fill-fallback",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-wait-for-search-results-not-stale-row-count",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-failed-clear-must-preserve-cache",
+      "status": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+Round 5: VERDICT: NO-GO
+F01-F04 CLOSED trong các ca cục bộ/giả lập. 51/51 ca bắt buộc, 5/5 root-edge, 9/9 ca mới và 4/4 nhóm S6 PASS; TypeScript trước/sau báo cáo exit 0.
+Điểm chặn bàn giao: cả hai tệp dữ liệu thật đổi SHA-256 so với baseline sau khi các probe đã đạt; chưa xác định tiến trình ghi. Mã nguồn, cấu hình, kiểm thử gốc và probe gốc không đổi.
+Không sửa/khôi phục dữ liệu thật, không gọi dịch vụ thật, không gọi thêm reviewer, không commit/push.
+Báo cáo: docs/audits/v340/CODEX_WEEKLY_PLAN_TODAY_SESSIONS_AUDIT.md
+Bằng chứng: docs/audits/v340/weekly-plan-today-sessions-round5/
+Việc tiếp theo: parent xác định tiến trình ghi và kiểm định lại bảo toàn trên baseline được xác nhận trong khoảng ổn định; không đổi baseline cũ để che sai lệch.

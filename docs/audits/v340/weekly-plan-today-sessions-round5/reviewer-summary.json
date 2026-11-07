@@ -1,0 +1,239 @@
+{
+  "round": 5,
+  "at": "2026-11-07T11:40:59.726Z",
+  "verdict": "NO-GO",
+  "f02CodeVerdict": "GO",
+  "findings": {
+    "F01": "CLOSED",
+    "F02": "CLOSED",
+    "F03": "CLOSED",
+    "F04": "CLOSED"
+  },
+  "blockers": [
+    {
+      "id": "REAL_DATA_DRIFT",
+      "description": "Real data hashes changed after all behavioral probes had passed. The responsible writer is not identified.",
+      "scope": "Mandatory preservation proof and overall handoff, not a reproduced F02 code defect",
+      "affectedFiles": [
+        {
+          "file": "data/mindx_bot.db",
+          "expected": "f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c",
+          "actual": "789b44f3e3b7b0ef170d7c9d80002ecfd4283d873c157d4dcac769c111471a7c",
+          "pass": false
+        },
+        {
+          "file": "data/running_classes.json",
+          "expected": "d8c282a5917c735b4bd97ae739874b978a33270eb77a1767ab934bf196d83b4d",
+          "actual": "8e7e293a554398e97d11c220ada0423981889a1389d7006a71a300d3c6464997",
+          "pass": false
+        }
+      ],
+      "smallestNextStep": "Identify/control the writer, deliberately capture an approved stable baseline and repeat before/after preservation proof; do not overwrite real data or replace this baseline to mask drift."
+    }
+  ],
+  "mandatoryIndependentCases": {
+    "total": 51,
+    "pass": 51,
+    "fail": 0,
+    "error": 0
+  },
+  "rootEdgeCases": {
+    "total": 5,
+    "pass": 5,
+    "fail": 0,
+    "error": 0
+  },
+  "round5FocusedCases": {
+    "total": 9,
+    "pass": 9,
+    "fail": 0,
+    "error": 0
+  },
+  "s6Groups": {
+    "total": 4,
+    "pass": 4,
+    "countedSeparately": true
+  },
+  "suites": [
+    {
+      "file": "G3-results.json",
+      "category": "mandatory",
+      "pass": 40,
+      "fail": 0,
+      "total": 40
+    },
+    {
+      "file": "refresh-boundary-results.json",
+      "category": "mandatory",
+      "pass": 2,
+      "fail": 0,
+      "total": 2
+    },
+    {
+      "file": "f02-confirmation-results.json",
+      "category": "mandatory",
+      "pass": 3,
+      "fail": 0,
+      "total": 3
+    },
+    {
+      "file": "f02-round4-correspondence-results.json",
+      "category": "mandatory",
+      "pass": 5,
+      "fail": 0,
+      "total": 5
+    },
+    {
+      "file": "root-f02-stale-dom-results.json",
+      "category": "mandatory",
+      "pass": 1,
+      "fail": 0,
+      "total": 1
+    },
+    {
+      "file": "root-f02-edge-results.json",
+      "category": "root-edge",
+      "pass": 5,
+      "fail": 0,
+      "total": 5
+    },
+    {
+      "file": "f02-round5-focused-results.json",
+      "category": "focused",
+      "pass": 9,
+      "fail": 0,
+      "total": 9
+    }
+  ],
+  "mandatoryGateTypes": 9,
+  "additionalGateTypes": 1,
+  "gates": [
+    {
+      "gate": "G1",
+      "command": "npx --no-install tsc --noEmit",
+      "start": "2026-11-07T11:28:03.334Z",
+      "end": "2026-11-07T11:28:05.172Z",
+      "exitCode": 0
+    },
+    {
+      "gate": "G2",
+      "command": "npx --no-install tsx scripts/test-streamline-v340-s6.ts",
+      "start": "2026-11-07T11:28:09.736Z",
+      "end": "2026-11-07T11:28:52.940Z",
+      "exitCode": 0
+    },
+    {
+      "gate": "G3",
+      "command": "npx --no-install tsx audit-evidence/independent-probes.mts",
+      "start": "2026-11-07T11:29:27.969Z",
+      "end": "2026-11-07T11:29:34.851Z",
+      "exitCode": 0
+    },
+    {
+      "gate": "G3-boundary",
+      "command": "npx --no-install tsx audit-evidence/refresh-boundary-probes.mts",
+      "start": "2026-11-07T11:29:52.583Z",
+      "end": "2026-11-07T11:29:58.101Z",
+      "exitCode": 0
+    },
+    {
+      "gate": "F02-confirmation",
+      "command": "npx --no-install tsx audit-evidence/f02-confirmation-probes.mts",
+      "start": "2026-11-07T11:29:58.410Z",
+      "end": "2026-11-07T11:30:02.026Z",
+      "exitCode": 0
+    },
+    {
+      "gate": "F02-round4-correspondence",
+      "command": "npx --no-install tsx audit-evidence/f02-round4-correspondence-probes.mts",
+      "start": "2026-11-07T11:30:02.365Z",
+      "end": "2026-11-07T11:30:06.057Z",
+      "exitCode": 0
+    },
+    {
+      "gate": "root-F02-stale-dom",
+      "command": "npx --no-install tsx audit-evidence/root-f02-stale-dom-probe.mts",
+      "start": "2026-11-07T11:30:10.399Z",
+      "end": "2026-11-07T11:30:13.662Z",
+      "exitCode": 0
+    },
+    {
+      "gate": "root-F02-edges",
+      "command": "npx --no-install tsx audit-evidence/root-f02-edge-probes.mts",
+      "start": "2026-11-07T11:30:14.018Z",
+      "end": "2026-11-07T11:30:18.028Z",
+      "exitCode": 0
+    },
+    {
+      "gate": "F02-round5-focused",
+      "command": "npx --no-install tsx audit-evidence/f02-round5-focused-probes.mts",
+      "start": "2026-11-07T11:31:25.147Z",
+      "end": "2026-11-07T11:31:31.526Z",
+      "exitCode": 0
+    },
+    {
+      "gate": "G1-after-report",
+      "command": "npx --no-install tsc --noEmit",
+      "start": "2026-11-07T11:40:00.201Z",
+      "end": "2026-11-07T11:40:01.447Z",
+      "exitCode": 0
+    }
+  ],
+  "earlierAfterReportRunsRetained": [
+    "G1-after-report-initial",
+    "G1-after-report-second"
+  ],
+  "sourceIntegrity": {
+    "pass": true,
+    "head": "745b513b54c7dcc24d8bb1e6774c5db798685945",
+    "sourceFiles": 157,
+    "historicalTypecheckFiles": 22,
+    "originalProbes": 6,
+    "baselineFileCount": 3839,
+    "protectedTempFileCount": 3838,
+    "sourceDrift": false,
+    "productEdits": false,
+    "testEdits": false,
+    "configEdits": false
+  },
+  "realDataIntegrity": {
+    "pass": false,
+    "beforeAt": "2026-11-07T11:27:59.270Z",
+    "finalAt": "2026-11-07T11:40:05.406Z",
+    "files": [
+      {
+        "file": "data/mindx_bot.db",
+        "expected": "f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c",
+        "actual": "789b44f3e3b7b0ef170d7c9d80002ecfd4283d873c157d4dcac769c111471a7c",
+        "pass": false
+      },
+      {
+        "file": "data/running_classes.json",
+        "expected": "d8c282a5917c735b4bd97ae739874b978a33270eb77a1767ab934bf196d83b4d",
+        "actual": "8e7e293a554398e97d11c220ada0423981889a1389d7006a71a300d3c6464997",
+        "pass": false
+      }
+    ],
+    "responsibleWriter": "UNKNOWN"
+  },
+  "report": "docs/audits/v340/CODEX_WEEKLY_PLAN_TODAY_SESSIONS_AUDIT.md",
+  "reportSha256": "901fdfdd8fc614263650e20b8e5ee137f89c2504fddffccfda3a62118923e43d",
+  "evidence": "docs/audits/v340/weekly-plan-today-sessions-round5",
+  "boundaries": {
+    "localSyntheticOnly": true,
+    "liveAcceptance": false,
+    "noServers": true,
+    "noProductionBuild": true,
+    "noDependencyChanges": true,
+    "noRootTestsOrProductExecution": true,
+    "noGitCommitOrPush": true,
+    "spawnedAgents": 0,
+    "spawnedCodexProcesses": 0
+  },
+  "model": {
+    "requested": "gpt-6.1-sol",
+    "effortRequested": "xhigh",
+    "verifiedFromLocalCliOutput": false,
+    "parentCapturesInvocation": true
+  }
+}

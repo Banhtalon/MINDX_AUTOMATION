@@ -1,0 +1,86 @@
+# Kiểm định nhận diện buổi học hôm nay và hiển thị ngày — Round 2
+
+**VERDICT: NO-GO** — F02 còn mở: hết thời gian chờ tải bảng vẫn có thể ghi đè danh sách lớp bằng kết quả cũ.
+
+Ngày kiểm định: **07/11/2026**. Bản kiểm định là bảy tệp chưa commit trên HEAD `745b513b54c7dcc24d8bb1e6774c5db798685945`. SHA-256 của bản mã được chốt trong [baseline.json](weekly-plan-today-sessions-round2/baseline.json). Không sửa mã ứng dụng, bộ kiểm thử gốc hoặc cấu hình; không commit/push bản sửa đang được kiểm định.
+
+## Kết quả các cổng bắt buộc
+
+| Cổng | Kết quả | Bằng chứng |
+| --- | --- | --- |
+| G1 — `npx --no-install tsc --noEmit` | **PASS**, exit 0 | [G1-tsc.log](weekly-plan-today-sessions-round2/G1-tsc.log) |
+| G2 — `npx --no-install tsx scripts/test-streamline-v340-s6.ts` | **PASS**, exit 0; S6-T1 đến S6-T4 đạt | [G2-s6.log](weekly-plan-today-sessions-round2/G2-s6.log) |
+| G3 — chạy lại đúng bộ Round 1 | **PASS**, exit 0; **40/40 PASS, 0 FAIL, 0 ERROR** | [Kết quả từng ca](weekly-plan-today-sessions-round2/G3-results.json), [nhật ký](weekly-plan-today-sessions-round2/G3-independent.log) |
+| Kiểm tra bổ sung ranh giới chờ tải bảng | **FAIL**, exit 1; **0/2 PASS, 2 FAIL, 0 ERROR** | [Kết quả](weekly-plan-today-sessions-round2/refresh-boundary-results.json), [nhật ký](weekly-plan-today-sessions-round2/refresh-boundary.log) |
+
+G1 sau khi ghi báo cáo/bằng chứng: **PASS**, exit 0 — [G1-after-report.log](weekly-plan-today-sessions-round2/G1-after-report.log).
+
+Dùng `--no-install` để chỉ chạy công cụ có sẵn. Bộ G3 giữ nguyên từng byte so với mã Round 1 còn trong TEMP; SHA-256 khớp, không thay kỳ vọng hoặc bỏ ca thất bại. Chỉ đổi tên tệp thực thi thành `independent-probes.mts` để chương trình kiểm định không bị đưa vào phạm vi TypeScript `**/*.ts`. [Bản mã G3 dạng văn bản](weekly-plan-today-sessions-round2/independent-probes.mts.txt).
+
+Lượt G1 ban đầu bị ảnh hưởng do chương trình kiểm định `.ts` nằm trong chính cây TEMP; sau khi đổi đuôi tệp kiểm định sang `.mts`, G1 đạt, không thay mã/cấu hình dự án. [Nhật ký bố trí ban đầu](weekly-plan-today-sessions-round2/G1-initial-harness-placement.log). G2 được cấp phạm vi đọc/ghi thư mục TEMP qua `ALLOWED_LOCAL_DIRS` từ trước lúc nạp mã, vì bài kiểm thử tự tạo một thư mục TEMP con riêng.
+
+## Trạng thái từng phát hiện Round 1
+
+| Mục | Trạng thái Round 2 | Điều đã xác nhận |
+| --- | --- | --- |
+| F01 — lịch hoãn bị thay bằng suy đoán +7 ngày | **CLOSED trong các ca tái hiện** | Lịch Buổi 9 ngày 14/11 được giữ qua hàm bổ sung lịch → SQLite → danh sách lớp → Trang chủ; ngày 07/11 vẫn là Buổi 8, ngày 31/10. Cả ca lịch API và ngày tương lai có sẵn trong SQLite đều đạt. |
+| F02 — xóa/tải lại bộ lọc trước khi lưu danh sách | **OPEN — P1** | Đã chặn xóa ô thất bại và đã chờ đúng ca tải sau 2 giây của Round 1. Tuy nhiên bảng chưa đổi sau thời hạn chờ vẫn được phép lưu; hai ca bổ sung bên dưới thất bại. |
+| F03 — ưu tiên hôm nay sau khi đã cắt 24 lớp | **CLOSED** | Lớp thứ 25 học hôm nay được đưa lên đầu trước khi giới hạn còn 24 lớp. |
+| F04 — Buổi 14 mang ngày Buổi 13 | **CLOSED** | Lớp Finished với Buổi 13 ngày 30/10 và ngày kết thúc 06/11 trả ngày Buổi 14 là 06/11. |
+| Toàn bộ ngày buổi học đều trong tương lai | **CLOSED trong ca Round 1** | Buổi 1 ngày 08/11 và Buổi 14 ngày 07/02/2027 chọn Buổi 1, không nhảy lên Buổi 14. |
+
+Các vị trí đã đối chiếu: `sqlite.ts:400–409`; `sync-class.ts:278–289, 1764–1814`; `class-directory.ts:210–218, 261–277, 325–347`; `today-tasks.ts:723–728`. Mã bổ sung ngày trong route Nhận xét và hai nhóm thẻ trên component Trang chủ được kiểm tra bằng G3.
+
+## F02 còn mở — [P1] Hết thời gian chờ vẫn lưu bảng cũ
+
+**Nguyên nhân:** Vòng chờ tại [sync-class.ts](../../../src/lib/playwright/sync-class.ts) dòng **1794–1805** thoát sau tối đa 6 × 400 ms, nhưng không lưu hoặc kiểm tra điều kiện “đã xác nhận kết quả mới”. Khi hết lượt mà nội dung bảng chưa đổi, chương trình tiếp tục chờ 800 ms ở dòng **1814**, đọc bảng cũ và gọi `saveRunningClasses(runningList)` tại dòng **2111**.
+
+**Tái hiện độc lập:** Danh sách đang lưu có 3 lớp; bảng đang lọc còn 2 lớp. Ô tìm kiếm được xóa thành công. Chỉ mô phỏng các khoảng chờ, giữ nguyên mã đọc bảng và ghi danh sách thật trên dữ liệu TEMP.
+
+| Ca | Phản hồi làm mới | Quan sát |
+| --- | --- | --- |
+| `F02-R2-refresh-completes-at-4000ms` | Bảng đủ 3 lớp chỉ sẵn sàng sau 4.000 ms | Hàm trả `success:true` tại **3.200 ms**, lưu **2 lớp**, làm mất lớp thứ ba trong danh sách lưu. |
+| `F02-R2-refresh-never-completes` | Bảng không bao giờ cập nhật | Vẫn trả `success:true` tại **3.200 ms**, ghi đè danh sách **3 → 2 lớp**. |
+
+**Ảnh hưởng:** Khi LMS phản hồi chậm hoặc thao tác làm mới không hoàn tất, giáo viên vẫn có thể mất lớp khỏi kế hoạch tuần. G3 40/40 PASS chỉ xác nhận ca chờ 2 giây cũ, chưa đủ đóng F02.
+
+**Cách sửa nhỏ nhất:** Nếu hết thời hạn mà chưa xác nhận được danh sách mới đã tải xong, trả lỗi và giữ nguyên danh sách đã lưu. Chỉ lưu sau bằng chứng tải xong đáng tin cậy; nếu kết quả hợp lệ giống bảng cũ, cần xác nhận phản hồi thành công của đúng yêu cầu làm mới. Không chỉ tăng thời gian chờ.
+
+**Cách kiểm tra lại:** Hai ca trên phải đạt: hoặc chờ đủ và nhận 3 lớp, hoặc trả lỗi và giữ nguyên 3 lớp. Đồng thời giữ G1/G2 và 40 ca G3 đạt. [Chương trình bổ sung dạng văn bản](weekly-plan-today-sessions-round2/refresh-boundary-probes.mts.txt).
+
+## Phần đã xác nhận và giới hạn
+
+- Ngày cũ trong SQLite được giữ khi dữ liệu mới rỗng, khoảng trắng, `undefined` hoặc `null`; ngày mới có nội dung vẫn cập nhật.
+- Nhận diện buổi hôm nay trước giờ học, ngày mai, các mốc 6/7/8/13/14 ngày và ISO vượt nửa đêm theo giờ Việt Nam đều đạt trong G3.
+- Nhánh dự phòng từ SQLite giữ trạng thái Running/Active khi ngày kết thúc là hôm nay hoặc tương lai; Finished sau ngày kết thúc và lớp vốn Finished đều đạt.
+- Route Nhận xét bổ sung ngày trống cho buổi hiện tại trong phản hồi mà không ghi ngày suy ra vào SQLite trong ca đã thử.
+- **6/6 ca giao diện G3 đạt**: biểu tượng 📅, ngày, “Hôm nay”, nhóm cần làm/đã xong, không có ngày, tìm kiếm theo ngày/“hôm nay”. Dùng component thật trong Chromium, chỉ thay liên kết/điều hướng Next.js bằng phần mô phỏng; chưa đánh giá bố cục với toàn bộ CSS của ứng dụng.
+- Các ca G3 dùng ngày cố định **07/11/2026 lúc 08:00 giờ Việt Nam**; đặt `TZ=Asia/Ho_Chi_Minh`.
+- Chưa thử lớp/LMS/Teaching thật, chưa xây dựng bản phát hành mới. Kết quả không thay thế nghiệm thu trên dịch vụ thật.
+
+## Cô lập và bảo toàn dữ liệu
+
+Tất cả lệnh kiểm thử chạy từ:
+
+`C:\Users\QQ\AppData\Local\Temp\mindx-weekly-plan-audit-r2-MK6AKo`
+
+SQLite, JSON lớp, nhật ký và tệp phát sinh của kiểm thử đều nằm trong TEMP. Không sao chép hai tệp dữ liệu lớp thật, tệp môi trường chứa thông tin đăng nhập hoặc hồ sơ trình duyệt thật. Dùng junction `node_modules` để đọc thư viện có sẵn. Các ca G3 và bổ sung chặn yêu cầu mạng của trình duyệt; không điều khiển hồ sơ trình duyệt giáo viên.
+
+SHA-256 trước/sau được tính bằng **Node.js `fs.readFileSync` + `crypto.createHash('sha256')`**:
+
+| Tệp dữ liệu thật | SHA-256 trước = sau |
+| --- | --- |
+| `data/mindx_bot.db` | `f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c` |
+| `data/running_classes.json` | `e474272501e0b55fa9eb5604202ae2e0539eaea0889c3437e06c9b264b90a238` |
+
+**156/156 tệp mã nguồn/kiểm thử/cấu hình theo danh sách chốt giữ nguyên và khớp bản TEMP; HEAD giữ nguyên.** [Biên bản đối chiếu](weekly-plan-today-sessions-round2/post-run-integrity.json). Phạm vi bảo toàn dữ liệu là hai tệp được yêu cầu, không phải ảnh chụp toàn bộ trạng thái WAL của máy chủ đang chạy.
+
+Trong kho dự án chỉ cập nhật báo cáo `.md` này và bằng chứng `.json`/`.log`/`.txt`. Không đưa chương trình `.ts`, `.tsx` hay `.mts` thô mới vào `docs/audits/`. [Báo cáo Round 1 được bảo lưu](weekly-plan-today-sessions-round2/round1-report.md.txt), [kết quả Round 1](weekly-plan-today-sessions-round2/round1-results.json).
+
+## Việc tiếp theo
+
+Giao Agent triển khai sửa nhánh hết thời gian chờ của F02, thêm hai ca thất bại vào kiểm thử và kiểm định lại trong TEMP. Không cần Owner thao tác kỹ thuật.
+
+Prompt bàn giao: “Đóng phần còn lại của F02 trong báo cáo Round 2: `ClassSyncer.fetchRunningClasses` không được lưu bảng cũ khi hết 6 lượt chờ mà chưa xác nhận kết quả tải mới. Tái hiện bằng hai ca `F02-R2-refresh-completes-at-4000ms` và `F02-R2-refresh-never-completes`; hoặc nhận đủ 3 lớp, hoặc báo lỗi và giữ nguyên danh sách 3 lớp. Giữ nguyên phạm vi bản sửa; chạy lại G1/G2/G3 cùng hai ca bổ sung trong TEMP, kiểm tra SHA-256 hai tệp dữ liệu thật trước/sau.”
+
+**VERDICT: NO-GO — chưa đủ điều kiện đóng đợt sửa lỗi.**

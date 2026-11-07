@@ -1,0 +1,204 @@
+{
+  "count": 22,
+  "unchanged": true,
+  "files": [
+    {
+      "file": "docs/audits/round-31/evidence/baseline/media-reader.r30.ts",
+      "expected": "3d677823077a3c7eb36f7261f45970ca7b7903e9797b1568ce602f86109760ac",
+      "real": "3d677823077a3c7eb36f7261f45970ca7b7903e9797b1568ce602f86109760ac",
+      "copy": "3d677823077a3c7eb36f7261f45970ca7b7903e9797b1568ce602f86109760ac",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v311/dashboard-probe.tsx",
+      "expected": "854092a01c77eb102157040054b5c992d2114d6668643fd495951c9e72584402",
+      "real": "854092a01c77eb102157040054b5c992d2114d6668643fd495951c9e72584402",
+      "copy": "854092a01c77eb102157040054b5c992d2114d6668643fd495951c9e72584402",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v311/independent-probe.ts",
+      "expected": "1c98959872fd245e085b17b5d1a2a5f43da36d299e29f24d34a9c2488d67157b",
+      "real": "1c98959872fd245e085b17b5d1a2a5f43da36d299e29f24d34a9c2488d67157b",
+      "copy": "1c98959872fd245e085b17b5d1a2a5f43da36d299e29f24d34a9c2488d67157b",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v311/round2/baseline-probe.ts",
+      "expected": "78fb845362851f5492c98e56b7a82babf2f70bda039b756f5949892240432fc3",
+      "real": "78fb845362851f5492c98e56b7a82babf2f70bda039b756f5949892240432fc3",
+      "copy": "78fb845362851f5492c98e56b7a82babf2f70bda039b756f5949892240432fc3",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v311/round2/extended-probe.ts",
+      "expected": "d57a54c54888643fe15e3e2603d6d5146966068ffa358407145a0be753e619d5",
+      "real": "d57a54c54888643fe15e3e2603d6d5146966068ffa358407145a0be753e619d5",
+      "copy": "d57a54c54888643fe15e3e2603d6d5146966068ffa358407145a0be753e619d5",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v311/round3/supplemental-probe.ts",
+      "expected": "55a7df0ba5caf65671465d2c3da46aa5e079c1b6d69b32cee0f493b53a95d437",
+      "real": "55a7df0ba5caf65671465d2c3da46aa5e079c1b6d69b32cee0f493b53a95d437",
+      "copy": "55a7df0ba5caf65671465d2c3da46aa5e079c1b6d69b32cee0f493b53a95d437",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v330/stage2/probe.ts",
+      "expected": "2f4108af3697c3e55e5caa2b4b565c74e41dabaeaefc8e76a723b3d04a9289b1",
+      "real": "2f4108af3697c3e55e5caa2b4b565c74e41dabaeaefc8e76a723b3d04a9289b1",
+      "copy": "2f4108af3697c3e55e5caa2b4b565c74e41dabaeaefc8e76a723b3d04a9289b1",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v330/stage2-round2/probe.ts",
+      "expected": "3d4c7533800d46316bd662e73ea4b1450ee40fdc4435699ebf604f9bae41ccfb",
+      "real": "3d4c7533800d46316bd662e73ea4b1450ee40fdc4435699ebf604f9bae41ccfb",
+      "copy": "3d4c7533800d46316bd662e73ea4b1450ee40fdc4435699ebf604f9bae41ccfb",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v330/stage2-round3/probe.ts",
+      "expected": "d7275e121d0be71abfaede9216dd760db700f5b7115f1aa91c09a7d52e68ab63",
+      "real": "d7275e121d0be71abfaede9216dd760db700f5b7115f1aa91c09a7d52e68ab63",
+      "copy": "d7275e121d0be71abfaede9216dd760db700f5b7115f1aa91c09a7d52e68ab63",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v330/stage3/adversarial-probe.ts",
+      "expected": "762787d254c3c1a2444112d06d6cb6e0c28fabdd728a0c692dcc717049105413",
+      "real": "762787d254c3c1a2444112d06d6cb6e0c28fabdd728a0c692dcc717049105413",
+      "copy": "762787d254c3c1a2444112d06d6cb6e0c28fabdd728a0c692dcc717049105413",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v330/stage3-round2/closure-probe.ts",
+      "expected": "a4c198486cbda6fc1ddbbf91f47ee253aba9d7c0f0961f57da114c0089c25c89",
+      "real": "a4c198486cbda6fc1ddbbf91f47ee253aba9d7c0f0961f57da114c0089c25c89",
+      "copy": "a4c198486cbda6fc1ddbbf91f47ee253aba9d7c0f0961f57da114c0089c25c89",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v330/stage3-round3/closure-boundaries.ts",
+      "expected": "e92feb23b97e1a79c08546785ba400d0b7401c31fe88b9ef24706c7a63dfce20",
+      "real": "e92feb23b97e1a79c08546785ba400d0b7401c31fe88b9ef24706c7a63dfce20",
+      "copy": "e92feb23b97e1a79c08546785ba400d0b7401c31fe88b9ef24706c7a63dfce20",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v340/s5b-round1/independent-probe.ts",
+      "expected": "0328e9a15e22f22545bcce2fb95a47bdffec45715e4552b35f60652530bc27e1",
+      "real": "0328e9a15e22f22545bcce2fb95a47bdffec45715e4552b35f60652530bc27e1",
+      "copy": "0328e9a15e22f22545bcce2fb95a47bdffec45715e4552b35f60652530bc27e1",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v340/s5b-round1/repository-probe.ts",
+      "expected": "a86c5507b2dbbe5f974742ff29dd2fe84f232c1025397e88286c2993ac2ebfa7",
+      "real": "a86c5507b2dbbe5f974742ff29dd2fe84f232c1025397e88286c2993ac2ebfa7",
+      "copy": "a86c5507b2dbbe5f974742ff29dd2fe84f232c1025397e88286c2993ac2ebfa7",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v340/s5b-round2/independent-probe.ts",
+      "expected": "dad8a85ee4cb1b47bec9a510751c20a31d60797fdbf85bab710164453a6dde13",
+      "real": "dad8a85ee4cb1b47bec9a510751c20a31d60797fdbf85bab710164453a6dde13",
+      "copy": "dad8a85ee4cb1b47bec9a510751c20a31d60797fdbf85bab710164453a6dde13",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v340/s5b-round2/matrix-probe.ts",
+      "expected": "7460a782b42f6d1e0a66bb3a560ba70e0cd85f99261bab8da17a0360f61b2c70",
+      "real": "7460a782b42f6d1e0a66bb3a560ba70e0cd85f99261bab8da17a0360f61b2c70",
+      "copy": "7460a782b42f6d1e0a66bb3a560ba70e0cd85f99261bab8da17a0360f61b2c70",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v340/s5b-round2/repository-probe.ts",
+      "expected": "93207e2bdaa8bb26c89dd27aaf684d7ceb696dc121a4eb4e41a6f21816f7ace5",
+      "real": "93207e2bdaa8bb26c89dd27aaf684d7ceb696dc121a4eb4e41a6f21816f7ace5",
+      "copy": "93207e2bdaa8bb26c89dd27aaf684d7ceb696dc121a4eb4e41a6f21816f7ace5",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v340/s5b-round2/reset-probe.ts",
+      "expected": "07ef7e1305ae781048a14f5266401ea50be1d32538f076f692758abf9b244f0a",
+      "real": "07ef7e1305ae781048a14f5266401ea50be1d32538f076f692758abf9b244f0a",
+      "copy": "07ef7e1305ae781048a14f5266401ea50be1d32538f076f692758abf9b244f0a",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v340/s5b-round3/independent-probe.ts",
+      "expected": "cdeebda74fb8dca6e58423b612e32a04e97236b7a77453e00ee80a4453edf102",
+      "real": "cdeebda74fb8dca6e58423b612e32a04e97236b7a77453e00ee80a4453edf102",
+      "copy": "cdeebda74fb8dca6e58423b612e32a04e97236b7a77453e00ee80a4453edf102",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v340/s5b-round3/matrix-probe.ts",
+      "expected": "ece5fc663b9015746debaa0c96776b159bd016e036bfe6a9c8481776ef106a08",
+      "real": "ece5fc663b9015746debaa0c96776b159bd016e036bfe6a9c8481776ef106a08",
+      "copy": "ece5fc663b9015746debaa0c96776b159bd016e036bfe6a9c8481776ef106a08",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v340/s5b-round3/repository-probe.ts",
+      "expected": "60466582f39e305f8a3b33f81c28bf35ae735e7fe841aa16209d7eede69fb24f",
+      "real": "60466582f39e305f8a3b33f81c28bf35ae735e7fe841aa16209d7eede69fb24f",
+      "copy": "60466582f39e305f8a3b33f81c28bf35ae735e7fe841aa16209d7eede69fb24f",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    },
+    {
+      "file": "docs/audits/v340/s5b-round3/reset-probe.ts",
+      "expected": "cca491be50f80db1cf4ff61175d11ea6cfc27c58d356ed4492221a79d899948a",
+      "real": "cca491be50f80db1cf4ff61175d11ea6cfc27c58d356ed4492221a79d899948a",
+      "copy": "cca491be50f80db1cf4ff61175d11ea6cfc27c58d356ed4492221a79d899948a",
+      "realMatches": true,
+      "copyMatches": true,
+      "mutableReport": false
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const b = JSON.parse(fs.readFileSync('audit-evidence/baseline.json', 'utf8'));
+const hash = p => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+const sources = Object.entries(b.files).map(([file, expected]) => {
+  const original = hash(path.join(b.root, file));
+  const temp = hash(path.join(process.cwd(), file));
+  return { file, expected, original, temp, unchanged: original === expected && temp === expected };
+});
+const data = Object.entries(b.data).map(([file, expected]) => {
+  const actual = hash(path.join(b.root, file));
+  return { file, expected, actual, unchanged: actual === expected };
+});
+const probes = Object.entries(b.probeHashes).map(([name, expected]) => {
+  const actual = hash(`audit-evidence/${name}.mts`);
+  const artifact = `docs/audits/v340/weekly-plan-today-sessions-round3/${name}.mts.txt`;
+  const oldArtifactHash = hash(artifact);
+  return { name, expected, actual, oldArtifactHash, unchanged: actual === expected && oldArtifactHash === expected };
+});
+const result = { at: new Date().toISOString(), baselineHead: b.head, root: b.root, temp: process.cwd(), sourceCount: sources.length,
+  sources, data, probes, pass: sources.length === 157 && [...sources, ...data, ...probes].every(x => x.unchanged) };
+const output = process.argv[2] || 'post-run-integrity.json';
+fs.writeFileSync(path.join('audit-evidence', output), JSON.stringify(result, null, 2));
+console.log(JSON.stringify({ pass: result.pass, sourceCount: sources.length, sourceMismatch: sources.filter(x => !x.unchanged), data, probes }, null, 2));
+process.exitCode = result.pass ? 0 : 1;

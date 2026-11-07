@@ -1,0 +1,33 @@
+{
+  "gate": "F02-round5-focused",
+  "command": "npx --no-install tsx audit-evidence/f02-round5-focused-probes.mts",
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f",
+  "physicalCwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f",
+  "compatibility": null,
+  "start": "2026-11-07T11:31:25.147Z",
+  "end": "2026-11-07T11:31:31.526Z",
+  "durationMs": 6379,
+  "exitCode": 0,
+  "signal": null,
+  "env": {
+    "TZ": "Asia/Ho_Chi_Minh",
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f\\audit-evidence\\runtime\\F02-round5-focused\\mindx_bot.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f\\audit-evidence\\runtime\\F02-round5-focused\\running_classes.json",
+    "TEACHING_PASSWORD": "",
+    "LMS_PASSWORD": "",
+    "GEMINI_API_KEY": ""
+  },
+  "blankedKeys": [
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTIGRAVITY_CSRF_TOKEN",
+    "MWAPI_KEY"
+  ],
+  "stdout": "F02-round5-focused.stdout.log",
+  "stderr": "F02-round5-focused.stderr.log",
+  "combined": "F02-round5-focused.log"
+}

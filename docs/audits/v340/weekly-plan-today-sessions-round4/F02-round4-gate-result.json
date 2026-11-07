@@ -1,0 +1,17 @@
+{
+  "command": "npx --no-install tsx audit-evidence/f02-round4-correspondence-probes.mts",
+  "start": "2026-11-07T11:11:11.984Z",
+  "end": "2026-11-07T11:11:17.844Z",
+  "durationMs": 5860,
+  "exitCode": 1,
+  "signal": null,
+  "error": null,
+  "log": "audit-evidence/F02-round4-correspondence.log",
+  "isolation": {
+    "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\F02-round4-correspondence",
+    "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\F02-round4-correspondence\\synthetic.db",
+    "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\F02-round4-correspondence\\classes.json",
+    "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+    "TZ": "Asia/Ho_Chi_Minh"
+  }
+}

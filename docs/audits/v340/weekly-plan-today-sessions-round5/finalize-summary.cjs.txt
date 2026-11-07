@@ -1,0 +1,75 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const cwd = process.cwd(), evidence = path.join(cwd, 'audit-evidence');
+const read = name => JSON.parse(fs.readFileSync(path.join(evidence, name), 'utf8'));
+const baseline = read('baseline.json'), before = read('pre-run-integrity.json'), after = read('post-run-integrity.json');
+assert.equal(cwd, baseline.temp);
+assert.equal(before.bad.length, 0);
+assert.ok(after.source.every(x => x.copyMatches && x.realMatches));
+assert.ok(after.historical.every(x => x.copyMatches && x.realMatches));
+assert.ok(after.probes.every(x => x.actual === x.expected));
+const sets = [
+  ['G3-results.json', 40, 'mandatory'],
+  ['refresh-boundary-results.json', 2, 'mandatory'],
+  ['f02-confirmation-results.json', 3, 'mandatory'],
+  ['f02-round4-correspondence-results.json', 5, 'mandatory'],
+  ['root-f02-stale-dom-results.json', 1, 'mandatory'],
+  ['root-f02-edge-results.json', 5, 'root-edge'],
+  ['f02-round5-focused-results.json', 9, 'focused'],
+].map(([file, count, category]) => {
+  const result = read(file);
+  assert.equal(result.total, count); assert.equal(result.fail, 0); assert.equal(result.pass, count);
+  assert.equal(result.results.length, count); assert.ok(result.results.every(x => x.status === 'PASS'));
+  return {file, category, pass: result.pass, fail: result.fail, total: result.total};
+});
+const gateNames = ['G1', 'G2', 'G3', 'G3-boundary', 'F02-confirmation', 'F02-round4-correspondence', 'root-F02-stale-dom', 'root-F02-edges', 'F02-round5-focused', 'G1-after-report'];
+const gates = gateNames.map(gate => read(gate + '.metadata.json'));
+assert.ok(gates.every(x => x.exitCode === 0));
+assert.ok(gates.every((x, i) => !i || new Date(gates[i - 1].end) <= new Date(x.start)));
+const s6Log = fs.readFileSync(path.join(evidence, 'G2.log'), 'utf8');
+for (const group of ['T1', 'T2', 'T3', 'T4']) assert.ok(s6Log.includes('PASS [S6-' + group + ']'));
+const mandatoryCases = sets.filter(x => x.category === 'mandatory').reduce((a, x) => a + x.total, 0);
+assert.equal(mandatoryCases, 51);
+const report = 'docs/audits/v340/CODEX_WEEKLY_PLAN_TODAY_SESSIONS_AUDIT.md';
+const reportHash = crypto.createHash('sha256').update(fs.readFileSync(path.join(cwd, report))).digest('hex');
+const realData = after.data.map(x => ({...x, pass: x.actual === x.expected}));
+const integrityPass = after.bad.length === 0;
+const summary = {
+  round: 5, at: new Date().toISOString(), verdict: integrityPass ? 'GO' : 'NO-GO',
+  f02CodeVerdict: 'GO', findings: {F01: 'CLOSED', F02: 'CLOSED', F03: 'CLOSED', F04: 'CLOSED'},
+  blockers: integrityPass ? [] : [{id: 'REAL_DATA_DRIFT',
+    description: 'Real data hashes changed after all behavioral probes had passed. The responsible writer is not identified.',
+    scope: 'Mandatory preservation proof and overall handoff, not a reproduced F02 code defect',
+    affectedFiles: realData.filter(x => !x.pass),
+    smallestNextStep: 'Identify/control the writer, deliberately capture an approved stable baseline and repeat before/after preservation proof; do not overwrite real data or replace this baseline to mask drift.'}],
+  mandatoryIndependentCases: {total: 51, pass: 51, fail: 0, error: 0},
+  rootEdgeCases: {total: 5, pass: 5, fail: 0, error: 0},
+  round5FocusedCases: {total: 9, pass: 9, fail: 0, error: 0},
+  s6Groups: {total: 4, pass: 4, countedSeparately: true},
+  suites: sets, mandatoryGateTypes: 9, additionalGateTypes: 1,
+  gates: gates.map(x => ({gate: x.gate, command: x.command, start: x.start, end: x.end, exitCode: x.exitCode})),
+  earlierAfterReportRunsRetained: ['G1-after-report-initial', 'G1-after-report-second'],
+  sourceIntegrity: {pass: true, head: after.head, sourceFiles: 157, historicalTypecheckFiles: 22,
+    originalProbes: 6, baselineFileCount: 3839, protectedTempFileCount: 3838,
+    sourceDrift: false, productEdits: false, testEdits: false, configEdits: false},
+  realDataIntegrity: {pass: integrityPass, beforeAt: before.at, finalAt: after.at, files: realData, responsibleWriter: 'UNKNOWN'},
+  report, reportSha256: reportHash,
+  evidence: 'docs/audits/v340/weekly-plan-today-sessions-round5',
+  boundaries: {localSyntheticOnly: true, liveAcceptance: false, noServers: true, noProductionBuild: true,
+    noDependencyChanges: true, noRootTestsOrProductExecution: true, noGitCommitOrPush: true,
+    spawnedAgents: 0, spawnedCodexProcesses: 0},
+  model: {requested: 'gpt-6.1-sol', effortRequested: 'xhigh', verifiedFromLocalCliOutput: false, parentCapturesInvocation: true},
+};
+fs.writeFileSync(path.join(evidence, 'reviewer-summary.json'), JSON.stringify(summary, null, 2));
+fs.writeFileSync(path.join(evidence, 'reviewer-final.txt'),
+  'Round 5: VERDICT: ' + summary.verdict + '\n' +
+  'F01-F04 CLOSED trong các ca cục bộ/giả lập. 51/51 ca bắt buộc, 5/5 root-edge, 9/9 ca mới và 4/4 nhóm S6 PASS; TypeScript trước/sau báo cáo exit 0.\n' +
+  'Điểm chặn bàn giao: cả hai tệp dữ liệu thật đổi SHA-256 so với baseline sau khi các probe đã đạt; chưa xác định tiến trình ghi. Mã nguồn, cấu hình, kiểm thử gốc và probe gốc không đổi.\n' +
+  'Không sửa/khôi phục dữ liệu thật, không gọi dịch vụ thật, không gọi thêm reviewer, không commit/push.\n' +
+  'Báo cáo: ' + report + '\n' +
+  'Bằng chứng: docs/audits/v340/weekly-plan-today-sessions-round5/\n' +
+  'Việc tiếp theo: parent xác định tiến trình ghi và kiểm định lại bảo toàn trên baseline được xác nhận trong khoảng ổn định; không đổi baseline cũ để che sai lệch.\n');
+console.log(JSON.stringify({verdict: summary.verdict, f02CodeVerdict: summary.f02CodeVerdict,
+  mandatoryIndependentCases: summary.mandatoryIndependentCases, data: summary.realDataIntegrity, reportSha256: reportHash}, null, 2));

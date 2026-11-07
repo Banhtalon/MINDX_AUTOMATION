@@ -1,0 +1,72 @@
+# Kiểm định nhận diện buổi học hôm nay và hiển thị ngày
+
+**VERDICT: NO-GO** — còn 4 phát hiện cần sửa (F01–F04).
+
+Ngày kiểm định: **07/11/2026**. Đối tượng: bảy tệp được yêu cầu trong bản sửa chưa commit trên HEAD `745b513b54c7dcc24d8bb1e6774c5db798685945`. Kết quả gắn với mã SHA-256 trong [bộ bằng chứng](weekly-plan-today-sessions-2026-11-07/baseline.json), không áp dụng tự động cho bản sửa sau đó.
+
+## Kết quả các cổng bắt buộc
+
+| Cổng | Kết quả | Bằng chứng |
+| --- | --- | --- |
+| G1 — `npx tsc --noEmit` | **PASS**, exit 0 | [G1-tsc.log](weekly-plan-today-sessions-2026-11-07/G1-tsc.log) |
+| G2 — `npx tsx scripts/test-streamline-v340-s6.ts` | **PASS**, exit 0; S6-T1 đến S6-T4 đạt | [G2-s6.log](weekly-plan-today-sessions-2026-11-07/G2-s6.log) |
+| G3 — ca thử độc lập | **FAIL**, exit 1; **33/40 PASS, 7 FAIL, 0 ERROR** | [Kết quả từng ca](weekly-plan-today-sessions-2026-11-07/G3-results.json), [nhật ký](weekly-plan-today-sessions-2026-11-07/G3-independent.log), [mã tái hiện](weekly-plan-today-sessions-2026-11-07/independent-probes.ts) |
+
+G1/G2 dùng thêm `--no-install` để chỉ chạy công cụ đã có, tránh tải/cài thư viện. G2 được chạy lại sau khi chỉnh phạm vi cho phép của **môi trường kiểm định** sang thư mục TEMP trước lúc nạp mã; không sửa tệp kiểm thử gốc. Các ca G3 dùng ngày cố định **07/11/2026 lúc 08:00, giờ Việt Nam**. Bảy ca thất bại gồm: F01 hai ca, F02 hai ca, F03 một ca, F04 một ca và một lỗi có từ trước được tách riêng bên dưới.
+
+## Phát hiện cần sửa
+
+### F01 — [P1] Buổi đã hoãn vẫn bị nhận là hôm nay
+
+- **Nguyên nhân / vị trí:** `src/lib/classes/class-directory.ts:253–265` tự cộng 7 ngày mà không tôn trọng ngày của buổi kế tiếp. `src/lib/playwright/sync-class.ts:218–224` chỉ đưa lịch đã đến hạn vào ngày buổi, nên thông tin lịch tương lai từ `GetClassById.slots` không được truyền tiếp để ngăn suy đoán sai.
+- **Tái hiện:** Buổi 8 ngày **31/10**, LMS ghi Buổi 9 ngày **14/11**. Hàm bổ sung lịch giữ đúng Buổi 8; sau lưu vào SQLite, danh sách lớp và thẻ Trang chủ lại trả **Buổi 9, 07/11, `isTodaySession=true`**. Khi SQLite đã có ngày 14/11 ở Buổi 9, danh sách lớp vẫn tự suy ra 07/11.
+- **Ảnh hưởng:** Giáo viên thấy công việc và đường dẫn của buổi chưa diễn ra; màn Nhận xét cũng có thể nhận ngày suy đoán sai.
+- **Cách sửa / kiểm tra lại:** Giữ thông tin lịch xác định của buổi kế tiếp, ưu tiên lịch đó trước phép cộng 7 ngày, và dùng cùng quyết định ở khâu quét, danh sách lớp, Trang chủ. Hai ca `PIPELINE-postponed-explicit-slot-must-not-advance` và `DIRECTORY-known-future-date-must-not-be-overridden` phải đạt.
+
+### F02 — [P1] Xóa bộ lọc chưa thành công hoặc bảng chưa tải xong vẫn ghi đè danh sách lớp
+
+- **Nguyên nhân / vị trí:** `src/lib/playwright/sync-class.ts:1767–1779` bỏ qua lỗi `fill`/Enter, không đọc lại ô tìm kiếm sau cùng, và coi `rowCount > 1` là bảng mới đã sẵn sàng. Kết quả vẫn được lưu tại dòng 2087–2090.
+- **Tái hiện 1:** Nút Clear không làm gì, lệnh xóa ô bị lỗi. Ô vẫn chứa `old`, nhưng hàm trả `success:true` và lưu **1 lớp thay cho 2 lớp** đã có.
+- **Tái hiện 2:** Bảng cũ có 2 dòng, kết quả tìm kiếm mới có 3 lớp và cần 2 giây. Vòng chờ thoát sau 400 ms vì đã có 2 dòng; cộng 800 ms chờ sau đó, hàm đọc/lưu bảng cũ ở **1.200 ms**, bỏ mất lớp thứ ba.
+- **Cách sửa / kiểm tra lại:** Xác nhận ô đã rỗng và phản hồi/tải lại danh sách tương ứng đã hoàn tất; nếu không xác nhận được thì trả lỗi và giữ danh sách cũ. Hai ca `FETCH-failed-clear-must-preserve-cache` và `FETCH-wait-for-search-results-not-stale-row-count` phải đạt. Việc mô phỏng thời gian chỉ thay các khoảng chờ; mã xử lý bảng và lưu danh sách là mã thật trên dữ liệu TEMP.
+
+### F03 — [P2] Lớp học hôm nay bị bỏ trước bước ưu tiên sắp xếp
+
+- **Nguyên nhân / vị trí:** `src/lib/dashboard/today-tasks.ts:391` cắt danh sách trước khi sắp xếp tại dòng 724–727. Trang chủ dùng giới hạn 24 tại `src/app/page.tsx:18`.
+- **Tái hiện:** Có 25 lớp; 24 lớp đầu học hôm qua, lớp thứ 25 học hôm nay. Kết quả chỉ có 24 lớp cũ, hoàn toàn thiếu lớp hôm nay.
+- **Cách sửa / kiểm tra lại:** Xếp ưu tiên hôm nay trên danh sách đủ điều kiện trước khi cắt theo giới hạn. Ca `DASHBOARD-today-class-after-default-limit-24` phải đưa lớp thứ 25 lên đầu.
+
+### F04 — [P2] Buổi 14 hiển thị ngày của Buổi 13
+
+- **Nguyên nhân / vị trí:** `src/lib/classes/class-directory.ts:226–229` đổi số buổi thành 14 nhưng giữ ngày của buổi làm mốc. Nhánh dòng 315–317 chỉ lấy ngày kết thúc khi chưa có ngày, nên không sửa được ngày đã gán nhầm.
+- **Tái hiện:** Lớp `Finished`, Buổi 13 ngày **30/10**, Buổi 14 trống, ngày kết thúc xác định **06/11**. Cả danh sách lớp và thẻ Trang chủ trả **Buổi 14 — 30/10**.
+- **Cách sửa / kiểm tra lại:** Sau khi xác định số buổi cuối cùng, lấy ngày đúng của buổi đó; với Buổi 14 trống, dùng ngày Buổi 14/ngày kết thúc đã xác định. Ca `DIRECTORY-finished-S14-date-must-match-S14` phải trả 06/11.
+
+## Phần đã xác nhận đạt và giới hạn
+
+- `classSessionRepo.upsert` giữ ngày cũ khi giá trị mới là rỗng, khoảng trắng, `undefined` hoặc `null`; ngày mới có nội dung vẫn cập nhật được.
+- Hàm bổ sung lịch nhận đúng buổi hôm nay trước giờ học, không lên sớm khi buổi tiếp theo là ngày mai; qua mốc 6/7/8/13/14 ngày và thời gian ISO vượt nửa đêm theo giờ Việt Nam đều đạt trong các ca đã thử.
+- Nhánh dự phòng từ SQLite giữ `Running`/`Active` khi ngày kết thúc là hôm nay hoặc tương lai; chuyển sang `Finished` sau ngày kết thúc, giữ nguyên lớp vốn `Finished`.
+- Route Nhận xét điền ngày còn trống của buổi hiện tại vào phản hồi, không ghi ngày suy ra vào SQLite trong ca đã thử.
+- G3 gắn component `DashboardTodayTasksPanel` thật vào Chromium: **6/6 ca giao diện đạt** cho biểu tượng 📅, ngày, chữ **Hôm nay**, nhóm cần làm/đã xong, không có ngày và tìm kiếm theo ngày/“hôm nay”. Chỉ thay bộ điều hướng/liên kết Next.js bằng phần giả lập; không thay logic component. Đây là xác nhận nội dung và thao tác; chưa đánh giá bố cục với toàn bộ CSS của ứng dụng.
+- **Lỗi có từ trước, không quy thành lỗi mới của bản sửa:** Khi mọi ngày đều ở tương lai (Buổi 1 ngày 08/11, Buổi 14 ngày 07/02/2027), danh sách vẫn chọn Buổi 14. Ca `DIRECTORY-all-future-must-not-pick-last-session` thất bại; [đối chiếu mã HEAD trước bản sửa](weekly-plan-today-sessions-2026-11-07/baseline-probe.log) cũng trả Buổi 14.
+- Chưa chạy với lớp/LMS/Teaching thật, chưa kiểm chứng lịch nghỉ/đổi lịch ngoài các ca giả lập, chưa xây dựng bản phát hành mới. G2 đạt không thay thế các phản ví dụ G3.
+
+## Cô lập và bảo toàn dữ liệu
+
+Toàn bộ kiểm thử chạy từ `C:\Users\QQ\AppData\Local\Temp\mindx-weekly-plan-audit-7voIRb`; G2 tự tạo thêm thư mục TEMP cho dữ liệu giả. Không sao chép dữ liệu lớp, thông tin đăng nhập hay thư mục trình duyệt thật vào nơi kiểm định. Thư viện sẵn có được đọc qua junction `node_modules`; tệp phát sinh và SQLite kiểm thử đều nằm trong TEMP. Các ca G3 chặn toàn bộ yêu cầu mạng của trình duyệt và dùng một BrowserContext riêng cho mô phỏng.
+
+SHA-256 trước/sau được tính bằng **Node.js `fs.readFileSync` + `crypto.createHash('sha256')`**, không dùng `Get-FileHash` với tệp đang mở ở chế độ WAL:
+
+| Tệp dữ liệu thật | SHA-256 trước = sau |
+| --- | --- |
+| `data/mindx_bot.db` | `f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c` |
+| `data/running_classes.json` | `e474272501e0b55fa9eb5604202ae2e0539eaea0889c3437e06c9b264b90a238` |
+
+**155/155 tệp mã nguồn/kiểm thử/cấu hình theo danh sách kiểm định giữ nguyên và khớp bản TEMP; HEAD giữ nguyên.** [Biên bản đối chiếu](weekly-plan-today-sessions-2026-11-07/post-run-integrity.json). Phạm vi đối chiếu dữ liệu là hai tệp được yêu cầu, không phải ảnh chụp toàn bộ trạng thái WAL của máy chủ đang chạy.
+
+## Bước tiếp theo
+
+Giao Agent sửa đúng F01–F04, bổ sung các ca tái hiện vào bộ kiểm thử rồi chạy lại G1–G3 trong TEMP. Chưa chấp nhận bản sửa để phát hành. Đợt này chỉ tạo báo cáo và bằng chứng; không sửa mã sản phẩm, không commit/push các thay đổi đang được kiểm định.
+
+Prompt bàn giao: “Sửa F01–F04 trong `docs/audits/v340/CODEX_WEEKLY_PLAN_TODAY_SESSIONS_AUDIT.md`: tôn trọng lịch buổi kế tiếp, xác nhận xóa/tải lại bộ lọc trước khi lưu danh sách, ưu tiên hôm nay trước giới hạn 24, và ghép đúng ngày với số buổi cuối cùng. Giữ phạm vi hẹp; dùng các phản ví dụ trong bộ bằng chứng làm kiểm thử; chạy lại G1–G3 trong TEMP và xác nhận SHA-256 hai tệp dữ liệu thật trước/sau. Lỗi toàn bộ lịch ở tương lai đã tồn tại ở HEAD, cần ghi nhận riêng.”

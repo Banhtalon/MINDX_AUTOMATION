@@ -7,8 +7,10 @@ import { getDb, normalizeTeachingProjectTasks } from "@/lib/db/sqlite";
 import { listClasses } from "@/lib/classes/class-directory";
 import {
   DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
+  formatMsToDdMmYyyy,
   isConfirmedRunningStatus,
   isFinishedClassSupersededByRunningSuccessor,
+  parseClassDateToEndOfDayMs,
 } from "@/lib/playwright/sync-class";
 import { isCheckpointSession } from "@/lib/quick-tags";
 import { computeReportCardStaleness } from "@/lib/report-card/report-card-staleness";
@@ -27,6 +29,8 @@ export interface ClassTodayTodoInput {
   className?: string;
   courseName?: string;
   currentSessionNumber: number;
+  sessionDate?: string;
+  isTodaySession?: boolean;
   studentCount?: number;
   isCheckpointOverride?: boolean;
   syllabusList?: Array<Pick<CourseSyllabus, "courseCode" | "checkpointSessions">>;
@@ -42,6 +46,8 @@ export interface ClassTodayTodoCard {
   classId: string;
   className: string;
   currentSessionNumber: number;
+  sessionDate?: string;
+  isTodaySession?: boolean;
   sessionBadgeText: string;
   isCheckpoint: boolean;
   summaryText: string;
@@ -66,6 +72,21 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
   const className = String(input.className || input.courseName || classId).trim();
   const rawSession = Number(input.currentSessionNumber) || 0;
   const sessionNum = rawSession > 0 ? Math.min(14, Math.max(1, Math.floor(rawSession))) : 1;
+  const rawSessionDate = String(input.sessionDate || "").trim();
+  const parsedDateMs = rawSessionDate ? parseClassDateToEndOfDayMs(rawSessionDate) : null;
+  const sessionDate =
+    parsedDateMs !== null
+      ? formatMsToDdMmYyyy(parsedDateMs)
+      : rawSessionDate || undefined;
+  const todayDmy = formatMsToDdMmYyyy(Date.now());
+  const isTodaySession =
+    typeof input.isTodaySession === "boolean"
+      ? input.isTodaySession
+      : Boolean(sessionDate && sessionDate === todayDmy);
+  const dateProps = {
+    ...(sessionDate ? { sessionDate } : {}),
+    ...(isTodaySession ? { isTodaySession: true } : {}),
+  };
 
   const isCheckpoint =
     typeof input.isCheckpointOverride === "boolean"
@@ -128,6 +149,7 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
       classId,
       className,
       currentSessionNumber: 14,
+      ...dateProps,
       sessionBadgeText: "Buổi 14 • Tổng kết CK",
       isCheckpoint: false,
       summaryText: "① Nộp SPCK ② Đánh giá ③ Phiếu điểm ④ Tiến độ 100%",
@@ -173,6 +195,7 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
       classId,
       className,
       currentSessionNumber: sessionNum,
+      ...dateProps,
       sessionBadgeText: `Buổi ${sessionNum} • SPCK GĐ${sessionNum === 12 ? 1 : 2}`,
       isCheckpoint: false,
       summaryText: steps.map((s) => `${s.label} (${s.statusText})`).join(" • "),
@@ -206,6 +229,7 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
       classId,
       className,
       currentSessionNumber: 11,
+      ...dateProps,
       sessionBadgeText: "Buổi 11 • Mở dự án SPCK",
       isCheckpoint: false,
       summaryText: steps.map((s) => `${s.label} (${s.statusText})`).join(" • "),
@@ -242,6 +266,7 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
       classId,
       className,
       currentSessionNumber: sessionNum,
+      ...dateProps,
       sessionBadgeText: `Buổi ${sessionNum} • Checkpoint`,
       isCheckpoint: true,
       summaryText: `Nhận xét buổi ${sessionNum} (${
@@ -273,6 +298,7 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
     classId,
     className,
     currentSessionNumber: sessionNum,
+    ...dateProps,
     sessionBadgeText: `Buổi ${sessionNum}`,
     isCheckpoint: false,
     summaryText: `Nhận xét buổi ${sessionNum} (${singleStatusText})`,
@@ -353,18 +379,17 @@ export function getDashboardTodayTodoCards(options?: {
       scope: "running",
       includeFinishedDays,
       includeSynthetic: options?.includeSynthetic ?? false,
-    })
-      .filter(
-        (cls) =>
-          cls.status !== "Finished" ||
-          !isFinishedClassSupersededByRunningSuccessor(
-            cls.classCode,
-            activeRunningCodes
-          )
-      )
-      .slice(0, limit);
+    }).filter(
+      (cls) =>
+        cls.status !== "Finished" ||
+        !isFinishedClassSupersededByRunningSuccessor(
+          cls.classCode,
+          activeRunningCodes
+        )
+    );
 
-    return classes.map((cls) => {
+    return classes
+      .map((cls) => {
       const classId = cls.classCode;
       const fallbackSess = rawRunningMap.get(classId) || 1;
       const sessionNum =
@@ -384,14 +409,24 @@ export function getDashboardTodayTodoCards(options?: {
 
       const sessionRow = db
         .prepare(
-          `SELECT sessionId FROM classes_sessions
+          `SELECT sessionId, date FROM classes_sessions
            WHERE classId = ? AND sessionNumber = ?
            LIMIT 1`
         )
-        .get(classId, sessionNum) as { sessionId?: string } | undefined;
+        .get(classId, sessionNum) as { sessionId?: string; date?: string } | undefined;
       const paddedSessionId = `${classId}_SESS_${String(sessionNum).padStart(2, "0")}`;
       const unpaddedSessionId = `${classId}_SESS_${sessionNum}`;
       const resolvedSessionId = sessionRow?.sessionId || paddedSessionId;
+      const rawSessionDate =
+        String(sessionRow?.date || "").trim() ||
+        String(cls.currentSessionDate || "").trim();
+      const parsedSessionDateMs = rawSessionDate
+        ? parseClassDateToEndOfDayMs(rawSessionDate)
+        : null;
+      const resolvedSessionDate =
+        parsedSessionDateMs !== null
+          ? formatMsToDdMmYyyy(parsedSessionDateMs)
+          : rawSessionDate || undefined;
 
       const fbRows = db
         .prepare(
@@ -669,6 +704,7 @@ export function getDashboardTodayTodoCards(options?: {
         className: cls.className || cls.courseName || classId,
         courseName: cls.courseName,
         currentSessionNumber: sessionNum,
+        sessionDate: resolvedSessionDate,
         syllabusList,
         sessionCommentVerified,
         reportCardVerified:
@@ -684,7 +720,12 @@ export function getDashboardTodayTodoCards(options?: {
           ? Math.max(100, teachingProgressPercent)
           : teachingProgressPercent,
       });
-    });
+      }).sort((a, b) => {
+        const aToday = a.isTodaySession ? 1 : 0;
+        const bToday = b.isTodaySession ? 1 : 0;
+        return bToday - aToday;
+      })
+      .slice(0, limit);
   } catch {
     return [];
   }

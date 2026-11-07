@@ -1,0 +1,51 @@
+[
+  {
+    "status": " M",
+    "file": "scripts/test-streamline-v340-s6.ts",
+    "expected": "b4ee2d792f98c5b6131116e54d9b8cb027efcad631a7c0f3076ab9350b283d23",
+    "copy": "b4ee2d792f98c5b6131116e54d9b8cb027efcad631a7c0f3076ab9350b283d23",
+    "real": "b4ee2d792f98c5b6131116e54d9b8cb027efcad631a7c0f3076ab9350b283d23"
+  },
+  {
+    "status": " M",
+    "file": "src/app/api/session-comments/list/route.ts",
+    "expected": "0f2809f9bcad84ac60be33ea107e820d73fd446a4b385f6bf9033b765022d0af",
+    "copy": "0f2809f9bcad84ac60be33ea107e820d73fd446a4b385f6bf9033b765022d0af",
+    "real": "0f2809f9bcad84ac60be33ea107e820d73fd446a4b385f6bf9033b765022d0af"
+  },
+  {
+    "status": " M",
+    "file": "src/components/dashboard-today-tasks-panel.tsx",
+    "expected": "d2e092c806c150dbe1a932a3bf766dc95913aa74a95cb3e72395bf77595b9aae",
+    "copy": "d2e092c806c150dbe1a932a3bf766dc95913aa74a95cb3e72395bf77595b9aae",
+    "real": "d2e092c806c150dbe1a932a3bf766dc95913aa74a95cb3e72395bf77595b9aae"
+  },
+  {
+    "status": " M",
+    "file": "src/lib/classes/class-directory.ts",
+    "expected": "c94fb5e4a651289b04e4a30582d87149da1cce58be86e0352ba3f7014a27580f",
+    "copy": "c94fb5e4a651289b04e4a30582d87149da1cce58be86e0352ba3f7014a27580f",
+    "real": "c94fb5e4a651289b04e4a30582d87149da1cce58be86e0352ba3f7014a27580f"
+  },
+  {
+    "status": " M",
+    "file": "src/lib/dashboard/today-tasks.ts",
+    "expected": "3a1922f8f2c6a3b5dcfde44fa4362df9b149fa62f313dd211a58f992059ffb42",
+    "copy": "3a1922f8f2c6a3b5dcfde44fa4362df9b149fa62f313dd211a58f992059ffb42",
+    "real": "3a1922f8f2c6a3b5dcfde44fa4362df9b149fa62f313dd211a58f992059ffb42"
+  },
+  {
+    "status": " M",
+    "file": "src/lib/db/sqlite.ts",
+    "expected": "6e3f50c285c956e46af048ab84f1d3bd8460eb9fb87a855b17fb99d0c6564f9a",
+    "copy": "6e3f50c285c956e46af048ab84f1d3bd8460eb9fb87a855b17fb99d0c6564f9a",
+    "real": "6e3f50c285c956e46af048ab84f1d3bd8460eb9fb87a855b17fb99d0c6564f9a"
+  },
+  {
+    "status": " M",
+    "file": "src/lib/playwright/sync-class.ts",
+    "expected": "3925b1c4ae1eb250f932e1b2c3f5d26087e772ed062d97cf38958d497eabb3bb",
+    "copy": "3925b1c4ae1eb250f932e1b2c3f5d26087e772ed062d97cf38958d497eabb3bb",
+    "real": "3925b1c4ae1eb250f932e1b2c3f5d26087e772ed062d97cf38958d497eabb3bb"
+  }
+]

@@ -1,0 +1,468 @@
+{
+  "pass": 9,
+  "fail": 0,
+  "total": 9,
+  "results": [
+    {
+      "id": "F02-R5-valid-empty-changed",
+      "status": "PASS",
+      "observed": {
+        "result": {
+          "success": true,
+          "classes": []
+        },
+        "savedCodes": [],
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 0,
+        "unchangedBytes": false,
+        "simulatedWaits": true,
+        "elapsedMs": 1200,
+        "requests": [
+          {
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "",
+                "page": 1
+              }
+            },
+            "searchAtRequest": "",
+            "elapsedMs": 400
+          }
+        ],
+        "nextClicks": 0,
+        "inputCleared": true,
+        "requestListenerRemoved": true,
+        "responseListenerRemoved": true
+      }
+    },
+    {
+      "id": "F02-R5-valid-empty-unchanged",
+      "status": "PASS",
+      "observed": {
+        "result": {
+          "success": true,
+          "classes": []
+        },
+        "savedCodes": [],
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 0,
+        "unchangedBytes": false,
+        "simulatedWaits": true,
+        "elapsedMs": 1200,
+        "requests": [
+          {
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "",
+                "page": 1
+              }
+            },
+            "searchAtRequest": "",
+            "elapsedMs": 400
+          }
+        ],
+        "nextClicks": 0,
+        "inputCleared": true,
+        "requestListenerRemoved": true,
+        "responseListenerRemoved": true
+      }
+    },
+    {
+      "id": "F02-R5-empty-with-spinner",
+      "status": "PASS",
+      "observed": {
+        "result": {
+          "success": false,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB801",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB802",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB803",
+              "status": "Running"
+            }
+          ],
+          "error": "Không tải được bảng danh sách lớp trên MindX LMS (/admin/classes)."
+        },
+        "savedCodes": [
+          "VT-QA-JSB801",
+          "VT-QA-JSB802",
+          "VT-QA-JSB803"
+        ],
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "unchangedBytes": true,
+        "simulatedWaits": true,
+        "elapsedMs": 1200,
+        "requests": [
+          {
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "",
+                "page": 1
+              }
+            },
+            "searchAtRequest": "",
+            "elapsedMs": 400
+          }
+        ],
+        "nextClicks": 0,
+        "inputCleared": true,
+        "requestListenerRemoved": true,
+        "responseListenerRemoved": true
+      }
+    },
+    {
+      "id": "F02-R5-partially-invalid-array",
+      "status": "PASS",
+      "observed": {
+        "result": {
+          "success": false,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB801",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB802",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB803",
+              "status": "Running"
+            }
+          ],
+          "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+        },
+        "savedCodes": [
+          "VT-QA-JSB801",
+          "VT-QA-JSB802",
+          "VT-QA-JSB803"
+        ],
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "unchangedBytes": true,
+        "simulatedWaits": true,
+        "elapsedMs": 6000,
+        "requests": [
+          {
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "",
+                "page": 1
+              }
+            },
+            "searchAtRequest": "",
+            "elapsedMs": 400
+          }
+        ],
+        "nextClicks": 0,
+        "inputCleared": true,
+        "requestListenerRemoved": true,
+        "responseListenerRemoved": true
+      }
+    },
+    {
+      "id": "F02-R5-same-set-wrong-order",
+      "status": "PASS",
+      "observed": {
+        "result": {
+          "success": false,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB801",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB802",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB803",
+              "status": "Running"
+            }
+          ],
+          "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+        },
+        "savedCodes": [
+          "VT-QA-JSB801",
+          "VT-QA-JSB802",
+          "VT-QA-JSB803"
+        ],
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "unchangedBytes": true,
+        "simulatedWaits": true,
+        "elapsedMs": 6000,
+        "requests": [
+          {
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "",
+                "page": 1
+              }
+            },
+            "searchAtRequest": "",
+            "elapsedMs": 400
+          }
+        ],
+        "nextClicks": 0,
+        "inputCleared": true,
+        "requestListenerRemoved": true,
+        "responseListenerRemoved": true
+      }
+    },
+    {
+      "id": "F02-R5-valid-paginated-full-array-prefix",
+      "status": "PASS",
+      "observed": {
+        "result": {
+          "success": true,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB801",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T11:31:30.285Z"
+            },
+            {
+              "classCode": "VT-QA-JSB802",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T11:31:30.285Z"
+            },
+            {
+              "classCode": "VT-QA-JSB803",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T11:31:30.317Z"
+            }
+          ]
+        },
+        "savedCodes": [
+          "VT-QA-JSB801",
+          "VT-QA-JSB802",
+          "VT-QA-JSB803"
+        ],
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "unchangedBytes": false,
+        "simulatedWaits": true,
+        "elapsedMs": 2400,
+        "requests": [
+          {
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "",
+                "page": 1
+              }
+            },
+            "searchAtRequest": "",
+            "elapsedMs": 400
+          },
+          {
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "",
+                "page": 2
+              }
+            },
+            "searchAtRequest": "",
+            "elapsedMs": 2400
+          }
+        ],
+        "nextClicks": 1,
+        "inputCleared": true,
+        "requestListenerRemoved": true,
+        "responseListenerRemoved": true
+      }
+    },
+    {
+      "id": "F02-R5-valid-paginated-page-array",
+      "status": "PASS",
+      "observed": {
+        "result": {
+          "success": true,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB801",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T11:31:30.436Z"
+            },
+            {
+              "classCode": "VT-QA-JSB802",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T11:31:30.436Z"
+            },
+            {
+              "classCode": "VT-QA-JSB803",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T11:31:30.467Z"
+            }
+          ]
+        },
+        "savedCodes": [
+          "VT-QA-JSB801",
+          "VT-QA-JSB802",
+          "VT-QA-JSB803"
+        ],
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "unchangedBytes": false,
+        "simulatedWaits": true,
+        "elapsedMs": 2400,
+        "requests": [
+          {
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "",
+                "page": 1
+              }
+            },
+            "searchAtRequest": "",
+            "elapsedMs": 400
+          },
+          {
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "",
+                "page": 2
+              }
+            },
+            "searchAtRequest": "",
+            "elapsedMs": 2400
+          }
+        ],
+        "nextClicks": 1,
+        "inputCleared": true,
+        "requestListenerRemoved": true,
+        "responseListenerRemoved": true
+      }
+    },
+    {
+      "id": "F02-R5-paginated-non-prefix",
+      "status": "PASS",
+      "observed": {
+        "result": {
+          "success": false,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB801",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB802",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB803",
+              "status": "Running"
+            }
+          ],
+          "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+        },
+        "savedCodes": [
+          "VT-QA-JSB801",
+          "VT-QA-JSB802",
+          "VT-QA-JSB803"
+        ],
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "unchangedBytes": true,
+        "simulatedWaits": true,
+        "elapsedMs": 6000,
+        "requests": [
+          {
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "",
+                "page": 1
+              }
+            },
+            "searchAtRequest": "",
+            "elapsedMs": 400
+          }
+        ],
+        "nextClicks": 0,
+        "inputCleared": true,
+        "requestListenerRemoved": true,
+        "responseListenerRemoved": true
+      }
+    },
+    {
+      "id": "F02-R5-paginated-dom-longer-than-api",
+      "status": "PASS",
+      "observed": {
+        "result": {
+          "success": false,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB801",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB802",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB803",
+              "status": "Running"
+            }
+          ],
+          "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+        },
+        "savedCodes": [
+          "VT-QA-JSB801",
+          "VT-QA-JSB802",
+          "VT-QA-JSB803"
+        ],
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "unchangedBytes": true,
+        "simulatedWaits": true,
+        "elapsedMs": 6000,
+        "requests": [
+          {
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "",
+                "page": 1
+              }
+            },
+            "searchAtRequest": "",
+            "elapsedMs": 400
+          }
+        ],
+        "nextClicks": 0,
+        "inputCleared": true,
+        "requestListenerRemoved": true,
+        "responseListenerRemoved": true
+      }
+    }
+  ]
+}

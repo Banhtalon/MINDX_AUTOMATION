@@ -1,0 +1,138 @@
+{
+  "G1": {
+    "command": "npx --no-install tsc --noEmit",
+    "start": "2026-11-07T11:10:36.490Z",
+    "end": "2026-11-07T11:10:37.846Z",
+    "durationMs": 1356,
+    "exitCode": 0,
+    "signal": null,
+    "error": null,
+    "log": "audit-evidence/G1.log",
+    "isolation": {
+      "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1",
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1\\synthetic.db",
+      "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1\\classes.json",
+      "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+      "TZ": "Asia/Ho_Chi_Minh"
+    }
+  },
+  "root-F02-edges": {
+    "command": "npx --no-install tsx audit-evidence/root-f02-edge-probes.mts",
+    "start": "2026-11-07T11:08:55.207Z",
+    "end": "2026-11-07T11:09:01.578Z",
+    "durationMs": 6371,
+    "exitCode": 1,
+    "signal": null,
+    "error": null,
+    "log": "audit-evidence/root-F02-edges.log",
+    "isolation": {
+      "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\root-F02-edges",
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\root-F02-edges\\synthetic.db",
+      "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\root-F02-edges\\classes.json",
+      "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+      "TZ": "Asia/Ho_Chi_Minh"
+    }
+  },
+  "G2": {
+    "command": "npx --no-install tsx scripts/test-streamline-v340-s6.ts",
+    "start": "2026-11-07T11:09:03.097Z",
+    "end": "2026-11-07T11:09:42.147Z",
+    "durationMs": 39050,
+    "exitCode": 0,
+    "signal": null,
+    "error": null,
+    "log": "audit-evidence/G2.log",
+    "isolation": {
+      "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G2",
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G2\\synthetic.db",
+      "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G2\\classes.json",
+      "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+      "TZ": "Asia/Ho_Chi_Minh"
+    }
+  },
+  "root-F02-stale-dom": {
+    "command": "npx --no-install tsx audit-evidence/root-f02-stale-dom-probe.mts",
+    "start": "2026-11-07T11:09:42.881Z",
+    "end": "2026-11-07T11:09:45.921Z",
+    "durationMs": 3040,
+    "exitCode": 1,
+    "signal": null,
+    "error": null,
+    "log": "audit-evidence/root-F02-stale-dom.log",
+    "isolation": {
+      "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\root-F02-stale-dom",
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\root-F02-stale-dom\\synthetic.db",
+      "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\root-F02-stale-dom\\classes.json",
+      "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+      "TZ": "Asia/Ho_Chi_Minh"
+    }
+  },
+  "G3": {
+    "command": "npx --no-install tsx audit-evidence/independent-probes.mts",
+    "start": "2026-11-07T11:09:49.358Z",
+    "end": "2026-11-07T11:09:53.756Z",
+    "durationMs": 4398,
+    "exitCode": 0,
+    "signal": null,
+    "error": null,
+    "log": "audit-evidence/G3.log",
+    "isolation": {
+      "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G3",
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G3\\synthetic.db",
+      "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G3\\classes.json",
+      "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+      "TZ": "Asia/Ho_Chi_Minh"
+    }
+  },
+  "G3-boundary": {
+    "command": "npx --no-install tsx audit-evidence/refresh-boundary-probes.mts",
+    "start": "2026-11-07T11:09:57.941Z",
+    "end": "2026-11-07T11:10:00.690Z",
+    "durationMs": 2749,
+    "exitCode": 0,
+    "signal": null,
+    "error": null,
+    "log": "audit-evidence/G3-boundary.log",
+    "isolation": {
+      "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G3-boundary",
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G3-boundary\\synthetic.db",
+      "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G3-boundary\\classes.json",
+      "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+      "TZ": "Asia/Ho_Chi_Minh"
+    }
+  },
+  "F02-independent": {
+    "command": "npx --no-install tsx audit-evidence/f02-confirmation-probes.mts",
+    "start": "2026-11-07T11:10:00.947Z",
+    "end": "2026-11-07T11:10:03.932Z",
+    "durationMs": 2985,
+    "exitCode": 0,
+    "signal": null,
+    "error": null,
+    "log": "audit-evidence/F02-independent.log",
+    "isolation": {
+      "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\F02-independent",
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\F02-independent\\synthetic.db",
+      "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\F02-independent\\classes.json",
+      "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+      "TZ": "Asia/Ho_Chi_Minh"
+    }
+  },
+  "G1-after-report": {
+    "command": "npx --no-install tsc --noEmit",
+    "start": "2026-11-07T11:17:34.653Z",
+    "end": "2026-11-07T11:17:35.932Z",
+    "durationMs": 1279,
+    "exitCode": 0,
+    "signal": null,
+    "error": null,
+    "log": "audit-evidence/G1-after-report.log",
+    "isolation": {
+      "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1-after-report",
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1-after-report\\synthetic.db",
+      "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1-after-report\\classes.json",
+      "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+      "TZ": "Asia/Ho_Chi_Minh"
+    }
+  }
+}

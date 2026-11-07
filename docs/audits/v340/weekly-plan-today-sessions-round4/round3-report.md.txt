@@ -1,0 +1,128 @@
+# Kiểm định nhận diện buổi học hôm nay và hiển thị ngày — Round 3
+
+**VERDICT: NO-GO — F02 còn mở, mức P1: phản hồi mạng không đúng lượt làm mới vẫn cho phép lưu đè bảng cũ.**
+
+Ngày kiểm định: **07/11/2026**. Kiểm định độc lập, chỉ đọc mã và chạy dữ liệu giả trong TEMP. Không sửa mã ứng dụng, kiểm thử gốc, cấu hình hoặc dữ liệu thật; không commit/push. [Báo cáo Round 2 được giữ nguyên](weekly-plan-today-sessions-round3/round2-report.md.txt).
+
+## Kết quả chính
+
+- Hai ranh giới Round 2 đã đạt: tải xong ở 4.000 ms thì nhận đủ 3 lớp; không tải xong thì báo lỗi sau 6.000 ms và giữ 3 lớp.
+- **F02 chưa thể đóng:** hai ca độc lập dùng hàm `ClassSyncer.fetchRunningClasses` thật cùng Chromium giả lập phản hồi mạng đều ghi đè danh sách **3 → 2 lớp**, trả `success:true` sau **1.200 ms chờ mô phỏng**.
+- Một ca đối chứng xác nhận nhánh mới hoạt động khi đúng phản hồi danh sách lớp với tìm kiếm rỗng trả kết quả giống bảng hiện có. Lỗi nằm ở việc chấp nhận cả phản hồi không liên quan hoặc của lượt tìm kiếm trước.
+- **157/157** tệp nguồn/kiểm thử/cấu hình khớp SHA-256 ban đầu trong cả bản gốc lẫn TEMP. Hai tệp dữ liệu thật giữ nguyên.
+
+## Bản mã được kiểm định
+
+HEAD theo hồ sơ bàn giao: **`745b513b54c7dcc24d8bb1e6774c5db798685945`**. Bản kiểm định có **7 tệp nguồn/kiểm thử chưa commit**, nên HEAD riêng lẻ chưa đại diện đầy đủ cho mã được chạy. [Baseline 157 tệp](weekly-plan-today-sessions-round3/baseline.json), [danh sách thay đổi ban đầu](weekly-plan-today-sessions-round3/initial-git-status.txt), [dấu kiểm tra 7 tệp](weekly-plan-today-sessions-round3/dirty-source-snapshot.json).
+
+| Tệp chưa commit | SHA-256 của bản được kiểm định |
+| --- | --- |
+| `scripts/test-streamline-v340-s6.ts` | `d30a9f9a22357964b884b30b1a130f4203da114119f21c2552996fc4edb292a3` |
+| `src/app/api/session-comments/list/route.ts` | `0f2809f9bcad84ac60be33ea107e820d73fd446a4b385f6bf9033b765022d0af` |
+| `src/components/dashboard-today-tasks-panel.tsx` | `d2e092c806c150dbe1a932a3bf766dc95913aa74a95cb3e72395bf77595b9aae` |
+| `src/lib/classes/class-directory.ts` | `c94fb5e4a651289b04e4a30582d87149da1cce58be86e0352ba3f7014a27580f` |
+| `src/lib/dashboard/today-tasks.ts` | `3a1922f8f2c6a3b5dcfde44fa4362df9b149fa62f313dd211a58f992059ffb42` |
+| `src/lib/db/sqlite.ts` | `6e3f50c285c956e46af048ab84f1d3bd8460eb9fb87a855b17fb99d0c6564f9a` |
+| `src/lib/playwright/sync-class.ts` | `88d9fd4143f27f723ce0270af84dd547d9c8b0d22c34c0e54c4e0c7f8b951749` |
+
+TEMP không có `.git`; HEAD trên lấy từ baseline bàn giao, không phải khẳng định đã chạy lại Git trong kho gốc. Kho gốc chỉ được đọc để so dấu nguồn và tính dấu hai tệp dữ liệu thật, đúng giới hạn đề bài.
+
+## Các cổng bắt buộc và kiểm tra độc lập
+
+| Cổng / lệnh chính xác | Kết quả | Bằng chứng |
+| --- | --- | --- |
+| G1 — `npx --no-install tsc --noEmit` trước báo cáo | **PASS**, exit **0** | [G1.log](weekly-plan-today-sessions-round3/G1.log) |
+| G2 — `npx --no-install tsx scripts/test-streamline-v340-s6.ts` | **PASS**, exit **0**; S6-T1, T2, T3, T4 đạt | [G2.log](weekly-plan-today-sessions-round3/G2.log) |
+| G3 — `npx --no-install tsx audit-evidence/independent-probes.mts` | **PASS**, exit **0**; **40/40 PASS, 0 FAIL** | [Nhật ký](weekly-plan-today-sessions-round3/G3.log), [từng ca](weekly-plan-today-sessions-round3/G3-results.json) |
+| G3 ranh giới — `npx --no-install tsx audit-evidence/refresh-boundary-probes.mts` | **PASS**, exit **0**; **2/2 PASS, 0 FAIL** | [Nhật ký](weekly-plan-today-sessions-round3/G3-boundary.log), [kết quả](weekly-plan-today-sessions-round3/refresh-boundary-results.json) |
+| F02 độc lập — `npx --no-install tsx audit-evidence/f02-confirmation-probes.mts` | **FAIL**, exit **1**; **1 PASS, 2 FAIL / 3 ca** | [Nhật ký](weekly-plan-today-sessions-round3/F02-independent.log), [kết quả](weekly-plan-today-sessions-round3/f02-confirmation-results.json) |
+| G1 sau khi ghi báo cáo và đặt bằng chứng vào `docs/audits` | **PASS**, exit **0** | [G1-after-report.log](weekly-plan-today-sessions-round3/G1-after-report.log) |
+
+Mã thoát, thời điểm, thời lượng thực và đường dẫn cô lập từng tiến trình: [gate-results.json](weekly-plan-today-sessions-round3/gate-results.json). Không có lỗi môi trường trong các cổng đã chạy; cổng độc lập thất bại do hai kiểm tra bảo vệ danh sách lớp không đạt.
+
+Hai chương trình gốc giữ nguyên từng byte so với baseline **và** bản `.mts.txt` Round 2; không sửa kỳ vọng hoặc bỏ ca:
+
+| Chương trình | SHA-256 |
+| --- | --- |
+| [40 ca gốc](weekly-plan-today-sessions-round3/independent-probes.mts.txt) | `c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60` |
+| [2 ca ranh giới](weekly-plan-today-sessions-round3/refresh-boundary-probes.mts.txt) | `840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e` |
+
+## Trạng thái F01–F04
+
+| Phát hiện | Round 3 | Căn cứ |
+| --- | --- | --- |
+| F01 — lịch hoãn bị thay bằng suy đoán +7 ngày | **CLOSED trong các ca tái hiện** | G3: lịch hoãn Buổi 9 vẫn giữ Buổi 8 qua bổ sung lịch → SQLite → danh sách lớp → Trang chủ; ngày tương lai có sẵn cũng được giữ. |
+| F02 — làm mới sau xóa bộ lọc trước khi lưu lớp | **OPEN — P1** | Hai ranh giới cũ đạt, nhưng hai phản hồi bị nhận nhầm bên dưới vẫn làm mất lớp khỏi danh sách lưu. |
+| F03 — ưu tiên hôm nay sau khi cắt 24 lớp | **CLOSED** | G3: lớp thứ 25 học hôm nay vẫn được xếp đầu trước khi giới hạn 24 lớp. |
+| F04 — Buổi 14 mang ngày Buổi 13 | **CLOSED** | G3: lớp Finished nhận ngày kết thúc của Buổi 14; ca toàn bộ lịch tương lai cũng đạt. |
+
+F01/F03/F04 được xác nhận lại qua đúng bộ G3; không mở rộng thành kiểm toán mới ngoài phạm vi F02.
+
+## Hai ranh giới Round 2 sau bản sửa
+
+Danh sách lưu ban đầu có 3 lớp; bảng còn 2 lớp do tìm kiếm cũ. Chỉ mô phỏng các khoảng `waitForTimeout`; mã đọc bảng và ghi JSON là mã ứng dụng thật trên dữ liệu giả.
+
+| Ca | Bảng làm mới | Tổng thời gian chờ mô phỏng khi hàm trả | Kết quả / số lớp trả về | Danh sách lưu |
+| --- | --- | --- | --- | --- |
+| `F02-R2-refresh-completes-at-4000ms` | Đủ 3 lớp từ **4.000 ms** | **4.800 ms** = 4.000 ms chờ xác nhận + 800 ms trước đọc bảng | `success:true`, **3** lớp | **3 → 3**, cập nhật đủ |
+| `F02-R2-refresh-never-completes` | Không bao giờ đổi | **6.000 ms** = 15 × 400 ms | `success:false`, **3** lớp cũ | **3 → 3**, giữ nguyên |
+
+Thông báo tiếng Việt trong mã nguồn **và kết quả chạy của ca không tải xong** đều đúng dấu, không lỗi mã hóa:
+
+> Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có.
+
+Nhánh tại `sync-class.ts:1822–1828` đúng như mô tả: chưa xác nhận mà bật lưu mặc định, hoặc đã có lớp trong danh sách cũ, thì ném lỗi trước thao tác lưu. Hai ca S6 mới tại `scripts/test-streamline-v340-s6.ts:1721–1765` kiểm tra được hai ranh giới này. Chúng không phát phản hồi mạng đồng thời nên chưa bắt lỗi xác nhận nhầm bên dưới.
+
+## F02 còn mở — [P1] Nhận nhầm phản hồi thành xác nhận làm mới
+
+**Nguyên nhân:** Bộ nghe phản hồi tại [sync-class.ts](../../../src/lib/playwright/sync-class.ts) dòng **1638–1653** chấp nhận URL chung của LMS/GraphQL và chỉ loại trừ một số từ. Nó không yêu cầu đúng thao tác lấy danh sách lớp, không đối chiếu điều kiện tìm kiếm rỗng hoặc yêu cầu được khởi tạo sau xóa lọc. Sau khi chờ đọc thân phản hồi ở dòng **1660–1663**, chỉ cần cờ `awaitingSearchClearApiResponse` đang bật là đặt `searchClearApiConfirmed=true` tại **1673–1674**.
+
+**Vị trí dẫn tới ghi nhầm:** Điều kiện dòng **1812–1815** coi cờ đó cùng bất kỳ nội dung bảng không rỗng là đã làm mới, dù bảng vẫn giữ nguyên. Sau 800 ms chờ bổ sung, hàm đọc chính bảng 2 lớp và gọi `saveRunningClasses(runningList)` tại **2134–2136**. Lưu JSON ở `json-config.ts:242–250` thực sự thay tệp đích bằng danh sách mới. Nhánh bảo vệ hết thời gian không chạy vì đã bị đánh dấu xác nhận nhầm.
+
+**Tái hiện độc lập:** [Chương trình 3 ca](weekly-plan-today-sessions-round3/f02-confirmation-probes.mts.txt) dùng Chromium thật, một context giả lập, các phản hồi Playwright được chặn và trả tại máy; giữ nguyên hàm lấy lớp, bộ nghe phản hồi, đọc bảng và ghi JSON của ứng dụng. Chỉ thay xác thực, trang trình duyệt và thời gian chờ để không truy cập dịch vụ thật.
+
+| Ca độc lập | Phản hồi HTTP 200 được giả lập | Quan sát | Đánh giá |
+| --- | --- | --- | --- |
+| `F02-R3-valid-same-table` | `getClasses`, `search:""`, khởi tạo sau xóa lọc; trả đúng 2 lớp của bảng hiện có | **1.200 ms**, `success:true`, bảng không đổi, danh sách **2 → 2** | **PASS**, đối chứng cho nhánh xác nhận mới |
+| `F02-R3-non-class-response` | `getMe`, chỉ trả `data.me`; không có dữ liệu lớp và bảng không làm mới | **1.200 ms**, `success:true`, bảng không đổi, danh sách **3 → 2** | **FAIL**, phản hồi không liên quan bị coi là tải lớp xong |
+| `F02-R3-stale-filtered-response` | `getClasses`, `search:"old"`, khởi tạo khi ô còn `old` trước xóa; chỉ trả sau xóa, ở **400 ms** | **1.200 ms**, `success:true`, bảng không đổi, danh sách **3 → 2** | **FAIL**, phản hồi tìm kiếm cũ đến muộn bị coi là kết quả bỏ lọc |
+
+Đây là **hai cách tái hiện cùng một F02**, không phải phát hiện ngoài phạm vi. Kết quả ghi cả nội dung yêu cầu/phản hồi giả lập, giá trị ô tìm kiếm lúc phát yêu cầu/lúc trả phản hồi và số lớp trước/sau. Tất cả ca đều xác nhận bộ nghe của hàm được tháo trong `finally`; việc tháo bộ nghe không ngăn lần ghi nhầm đã xảy ra.
+
+**Ảnh hưởng:** Một lớp vẫn có thể biến mất khỏi kế hoạch tuần khi lượt tìm kiếm cũ trả muộn hoặc có phản hồi khác cùng kênh mạng. Các điểm gọi `scan-weekly-tasks/route.ts:51–66`, `classes/refresh/route.ts:152–166` và `session-comments/fetch-classes/route.ts:39–54` dựa trên `success`; trường hợp này trả thành công nên không được xử lý như lỗi. `spck/list/route.ts:362–377` gọi chế độ không lưu; đã đọc để đối chiếu đường gọi, chưa nghiệm thu trực tiếp route đó.
+
+**Cách sửa nhỏ nhất để Agent triển khai xử lý:** Chỉ chấp nhận thành công của đúng yêu cầu tải danh sách lớp sau xóa lọc, đối chiếu thao tác và điều kiện tìm kiếm, rồi xác nhận bảng đang đọc tương ứng kết quả đó. Không dùng phản hồi bất kỳ đến trong lúc chờ làm bằng chứng. Nếu chưa chứng minh được, giữ nhánh báo lỗi và giữ danh sách cũ. Không chỉ tăng số giây chờ. Reviewer **không thực hiện sửa**.
+
+**Kiểm tra lại sau sửa:** Giữ G1/G2, 40 ca G3 và hai ranh giới đạt; cả hai ca nhận nhầm phải giữ đủ 3 lớp và không báo thành công khi chưa có lượt bỏ lọc hợp lệ. Ca đối chứng vẫn phải thành công.
+
+## Cô lập và bảo toàn dữ liệu
+
+Mọi lệnh chạy từ bản sao:
+
+`C:\Users\QQ\AppData\Local\Temp\mindx-weekly-plan-audit-r2-r3-M1irl7`
+
+- Các tiến trình nhận `TZ=Asia/Ho_Chi_Minh`, `ALLOWED_LOCAL_DIRS` gồm OS TEMP **trước lúc nạp mã**, và SQLite/JSON giả riêng trong `audit-evidence/runtime/<tên cổng>/`. [Bộ chạy và thiết lập cô lập](weekly-plan-today-sessions-round3/run-gate.cjs.txt).
+- S6 tự thay đường dẫn sau import và tạo thư mục riêng: `C:\Users\QQ\AppData\Local\Temp\mindx-v340-s6-gRLWpQ`. Nó vẫn thuộc OS TEMP đã được cho phép từ đầu. Không sửa S6 để đổi đường dẫn này.
+- Dùng junction `node_modules` chỉ để chạy thư viện có sẵn; không cài thêm, không mở máy chủ phát triển, không build phát hành. Không đọc thông tin đăng nhập hay hồ sơ trình duyệt thật; không gọi LMS/Teaching/Gemini/Drive thật. Các phản hồi mới là dữ liệu giả do kiểm định viên tạo, không phải mẫu lấy từ dịch vụ thật.
+- Đã đọc `team-workflow`, `PROJECT_STATE.md`, các phần kế hoạch/changelog liên quan, báo cáo Round 2, mã nghe phản hồi, xóa lọc, đọc/lưu danh sách, `catch/finally`, các điểm gọi và kiểm thử S6 liên quan. Không sửa ba tài liệu trạng thái vì lần này chỉ được ghi báo cáo kiểm định trong TEMP.
+
+Đối chiếu bằng Node.js **`fs.readFileSync` + `crypto.createHash('sha256')`**, không dùng `Get-FileHash` cho cơ sở dữ liệu. [Trước chạy](weekly-plan-today-sessions-round3/pre-run-integrity.json), [sau chạy](weekly-plan-today-sessions-round3/post-run-integrity.json), [chương trình đối chiếu](weekly-plan-today-sessions-round3/check-integrity.cjs.txt).
+
+| Tệp dữ liệu thật | SHA-256 baseline = trước = sau |
+| --- | --- |
+| `data/mindx_bot.db` | `f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c` |
+| `data/running_classes.json` | `d8c282a5917c735b4bd97ae739874b978a33270eb77a1767ab934bf196d83b4d` |
+
+Dấu JSON lớp của **Round 3** khác số ghi trong Round 2; đây là baseline mới bàn giao, không dùng dấu cũ để kết luận cho lần này. **157/157 tệp baseline** ở kho gốc và TEMP giữ nguyên. Phạm vi bảo toàn dữ liệu là đúng hai tệp được giao, không phải ảnh chụp toàn bộ tệp WAL đang chạy.
+
+Bằng chứng được chép theo danh sách cho phép vào `weekly-plan-today-sessions-round3/`; chương trình có đuôi `.mts.txt` / `.cjs.txt`. Không thêm TypeScript thô vào `docs/audits`. [Danh mục bằng chứng và SHA-256](weekly-plan-today-sessions-round3/evidence-manifest.json), [trích mã có số dòng](weekly-plan-today-sessions-round3/F02-source-excerpts.txt). Không đóng gói đề bài, nhật ký hội thoại, thông tin đăng nhập hoặc hiện vật không liên quan.
+
+## Chưa kiểm tra và việc tiếp theo
+
+Chưa thử lớp thật, LMS/Teaching thật, toàn bộ CSS của ứng dụng hoặc bản phát hành mới. G3 có kiểm tra component thật trong Chromium với liên kết/điều hướng được giả lập; kết quả đó không thay thế nghiệm thu giao diện và dịch vụ thật. Các thời gian 1.200/4.800/6.000 ms là tổng thời gian chờ mô phỏng, không phải thời gian chạy thực của trình duyệt.
+
+**Đã làm:** Kiểm định độc lập F02, chạy đủ cổng và tái hiện hai cách nhận nhầm phản hồi. **Kết quả:** Hai ranh giới Round 2 đạt nhưng còn nguy cơ lưu thiếu lớp, nên **NO-GO**. **Việc tiếp theo:** Agent triển khai sửa F02 và kiểm định lại; Owner không cần thao tác kỹ thuật.
+
+Prompt bàn giao: “Chỉ sửa F02 nhận nhầm xác nhận làm mới trong `ClassSyncer.fetchRunningClasses`: `getMe` hoặc `getClasses(search:'old')` khởi tạo trước xóa lọc không được cho phép ghi đè bảng 2 lớp lên danh sách 3 lớp. Dùng đúng hai ca FAIL và ca đối chứng trong `f02-confirmation-probes.mts.txt`; giữ 40 ca gốc cùng hai ca ranh giới không thay đổi. Xác nhận đúng lượt bỏ lọc và bảng tương ứng trước khi lưu, hoặc báo lỗi và giữ nguyên danh sách. Chạy lại kiểm định trong TEMP và đối chiếu SHA-256 hai tệp dữ liệu thật.”
+
+**VERDICT: NO-GO — F01 CLOSED; F02 OPEN (P1); F03 CLOSED; F04 CLOSED.**

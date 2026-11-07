@@ -1,0 +1,38 @@
+{
+  "original": [
+    {
+      "file": "independent-probes.mts",
+      "expected": "c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60",
+      "actual": "c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60"
+    },
+    {
+      "file": "refresh-boundary-probes.mts",
+      "expected": "840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e",
+      "actual": "840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e"
+    },
+    {
+      "file": "f02-confirmation-probes.mts",
+      "expected": "31f2ab9f6abd74599e1c92457be9eea3023a8224ff52207b13cd299914f09992",
+      "actual": "31f2ab9f6abd74599e1c92457be9eea3023a8224ff52207b13cd299914f09992"
+    },
+    {
+      "file": "f02-round4-correspondence-probes.mts",
+      "expected": "73921a23bdb479241dc8658354f7264c72d538694e94562e2d3e74cd4f546225",
+      "actual": "73921a23bdb479241dc8658354f7264c72d538694e94562e2d3e74cd4f546225"
+    },
+    {
+      "file": "root-f02-stale-dom-probe.mts",
+      "expected": "8a830119e51eef574a9ffa900014b82d226273afa0748e3bd0a42d35db6871e5",
+      "actual": "8a830119e51eef574a9ffa900014b82d226273afa0748e3bd0a42d35db6871e5"
+    },
+    {
+      "file": "root-f02-edge-probes.mts",
+      "expected": "e490a7e027572a77c96ca04b5b555b2a729958f48bc0358c44fc48f0c83f4949",
+      "actual": "e490a7e027572a77c96ca04b5b555b2a729958f48bc0358c44fc48f0c83f4949"
+    }
+  ],
+  "focused": {
+    "file": "f02-round5-focused-probes.mts",
+    "actual": "87bbb1553085f6b702d22c9fb4227ffbda894fb19b2222566bd5c8baba360aa6"
+  }
+}

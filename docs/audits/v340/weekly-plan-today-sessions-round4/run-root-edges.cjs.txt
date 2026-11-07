@@ -1,0 +1,38 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
+const { spawnSync } = require('node:child_process');
+const key = process.argv[2];
+const commands = {
+  'root-F02-edges': 'npx --no-install tsx audit-evidence/root-f02-edge-probes.mts',
+  G1: 'npx --no-install tsc --noEmit',
+  G2: 'npx --no-install tsx scripts/test-streamline-v340-s6.ts',
+  G3: 'npx --no-install tsx audit-evidence/independent-probes.mts',
+  'G3-boundary': 'npx --no-install tsx audit-evidence/refresh-boundary-probes.mts',
+  'F02-independent': 'npx --no-install tsx audit-evidence/f02-confirmation-probes.mts',
+  'G1-after-report': 'npx --no-install tsc --noEmit',
+};
+if (!commands[key]) throw new Error('Unknown gate');
+const runtime = path.resolve('audit-evidence/runtime', key);
+fs.mkdirSync(runtime, { recursive: true });
+const classesPath = path.join(runtime, 'classes.json');
+if (!fs.existsSync(classesPath)) fs.writeFileSync(classesPath, '[]');
+const env = { ...process.env, TEACHING_PASSWORD: '', LMS_PASSWORD: '', GEMINI_API_KEY: '', MINDX_PASSWORD: '', TZ: 'Asia/Ho_Chi_Minh',
+  ALLOWED_LOCAL_DIRS: [os.tmpdir(), process.cwd()].join(','),
+  MINDX_DB_PATH: path.join(runtime, 'synthetic.db'), MINDX_RUNNING_CLASSES_PATH: classesPath };
+const log = `audit-evidence/${key}.log`;
+const fd = fs.openSync(log, 'w');
+const start = new Date();
+const r = spawnSync(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', commands[key]],
+  { env, cwd: process.cwd(), stdio: ['ignore', fd, fd], windowsHide: true, timeout: 300000 });
+fs.closeSync(fd);
+const item = { command: commands[key], start: start.toISOString(), end: new Date().toISOString(),
+  durationMs: Date.now() - start.getTime(), exitCode: r.status, signal: r.signal, error: r.error?.message || null,
+  log, isolation: { runtime, db: env.MINDX_DB_PATH, classes: classesPath, allowlist: env.ALLOWED_LOCAL_DIRS, TZ: env.TZ } };
+const output = 'audit-evidence/gate-results.json';
+const all = fs.existsSync(output) ? JSON.parse(fs.readFileSync(output, 'utf8')) : {};
+all[key] = item;
+fs.writeFileSync(output, JSON.stringify(all, null, 2));
+console.log(JSON.stringify({ gate: key, ...item }, null, 2));
+console.log(fs.readFileSync(log, 'utf8').slice(-18000));
+process.exitCode = r.status ?? 1;

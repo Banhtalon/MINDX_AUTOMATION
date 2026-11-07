@@ -1,0 +1,19 @@
+{
+  "baselineHead": "745b513b54c7dcc24d8bb1e6774c5db798685945",
+  "observedHead": "745b513b54c7dcc24d8bb1e6774c5db798685945",
+  "headMatches": true,
+  "method": "Node fs: .git/HEAD and its object reference only",
+  "root": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "temp": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+  "dirtySourceHashes": {
+    "scripts/test-streamline-v340-s6.ts": "4c881f17056eb0b91abc3a3d90dbc0efcb8584195ca08fcf2c22c4859ffac4af",
+    "src/app/api/session-comments/list/route.ts": "0f2809f9bcad84ac60be33ea107e820d73fd446a4b385f6bf9033b765022d0af",
+    "src/components/dashboard-today-tasks-panel.tsx": "d2e092c806c150dbe1a932a3bf766dc95913aa74a95cb3e72395bf77595b9aae",
+    "src/lib/classes/class-directory.ts": "c94fb5e4a651289b04e4a30582d87149da1cce58be86e0352ba3f7014a27580f",
+    "src/lib/dashboard/today-tasks.ts": "3a1922f8f2c6a3b5dcfde44fa4362df9b149fa62f313dd211a58f992059ffb42",
+    "src/lib/db/sqlite.ts": "6e3f50c285c956e46af048ab84f1d3bd8460eb9fb87a855b17fb99d0c6564f9a",
+    "src/lib/playwright/sync-class.ts": "138ba244cae159a29181fab8dc0ad3cf7caddd8fa95ab6e198fa9938fcac0290"
+  },
+  "warning": "Seven uncommitted source/test files; HEAD alone does not identify the audited bytes.",
+  "envFilesPresentInTemp": []
+}

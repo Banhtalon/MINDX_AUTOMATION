@@ -1,0 +1,104 @@
+{
+  "pass": 2,
+  "fail": 0,
+  "total": 2,
+  "results": [
+    {
+      "id": "F02-R2-refresh-completes-at-4000ms",
+      "status": "PASS",
+      "observed": {
+        "elapsed": 4800,
+        "readyAfterMs": 4000,
+        "result": {
+          "success": true,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB501",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T11:29:57.000Z"
+            },
+            {
+              "classCode": "VT-QA-JSB502",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T11:29:57.000Z"
+            },
+            {
+              "classCode": "VT-QA-JSB503",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T11:29:57.000Z"
+            }
+          ]
+        },
+        "cache": [
+          {
+            "classCode": "VT-QA-JSB501",
+            "courseName": "JSB",
+            "center": "VT",
+            "status": "Running",
+            "updatedAt": "2026-11-07T11:29:57.000Z"
+          },
+          {
+            "classCode": "VT-QA-JSB502",
+            "courseName": "JSB",
+            "center": "VT",
+            "status": "Running",
+            "updatedAt": "2026-11-07T11:29:57.000Z"
+          },
+          {
+            "classCode": "VT-QA-JSB503",
+            "courseName": "JSB",
+            "center": "VT",
+            "status": "Running",
+            "updatedAt": "2026-11-07T11:29:57.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F02-R2-refresh-never-completes",
+      "status": "PASS",
+      "observed": {
+        "elapsed": 6000,
+        "readyAfterMs": "never",
+        "result": {
+          "success": false,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB501",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB502",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB503",
+              "status": "Running"
+            }
+          ],
+          "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+        },
+        "cache": [
+          {
+            "classCode": "VT-QA-JSB501",
+            "status": "Running"
+          },
+          {
+            "classCode": "VT-QA-JSB502",
+            "status": "Running"
+          },
+          {
+            "classCode": "VT-QA-JSB503",
+            "status": "Running"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -74,7 +74,9 @@ export function DashboardTodayTasksPanel({
       (c) =>
         c.classId.toLowerCase().includes(normalizedQuery) ||
         (c.className && c.className.toLowerCase().includes(normalizedQuery)) ||
-        `buổi ${c.currentSessionNumber}`.includes(normalizedQuery)
+        `buổi ${c.currentSessionNumber}`.includes(normalizedQuery) ||
+        (c.sessionDate && c.sessionDate.toLowerCase().includes(normalizedQuery)) ||
+        (c.isTodaySession && "hôm nay".includes(normalizedQuery))
     );
   }, [cards, normalizedQuery]);
 
@@ -433,15 +435,31 @@ export function DashboardTodayTasksPanel({
                             |
                           </span>
 
-                          {/* Session badge */}
-                          <span
-                            className={`${getSessionBadgeClass(
-                              card,
-                              false
-                            )} px-2.5 py-0.5 rounded-md text-xs font-extrabold min-w-[68px] text-center`}
-                          >
-                            {getCompactSessionLabel(card)}
-                          </span>
+                          {/* Session badge & Session Date */}
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`${getSessionBadgeClass(
+                                card,
+                                false
+                              )} px-2.5 py-0.5 rounded-md text-xs font-extrabold min-w-[68px] text-center`}
+                            >
+                              {getCompactSessionLabel(card)}
+                            </span>
+                            {card.sessionDate && (
+                              <span
+                                data-testid={`session-date-${card.classId}`}
+                                className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold border ${
+                                  card.isTodaySession
+                                    ? "bg-[#dcfce7] text-[#15803d] border-[#16a34a]"
+                                    : "bg-slate-100 text-slate-700 border-slate-300"
+                                }`}
+                                title={`Ngày học Buổi ${card.currentSessionNumber}: ${card.sessionDate}`}
+                              >
+                                📅 {card.sessionDate}
+                                {card.isTodaySession ? " • Hôm nay" : ""}
+                              </span>
+                            )}
+                          </div>
 
                           <span className="hidden sm:inline-block text-slate-300 font-bold">
                             |
@@ -567,14 +585,30 @@ export function DashboardTodayTasksPanel({
                             |
                           </span>
 
-                          <span
-                            className={`${getSessionBadgeClass(
-                              card,
-                              true
-                            )} px-2.5 py-0.5 rounded-md text-xs font-extrabold min-w-[68px] text-center`}
-                          >
-                            {getCompactSessionLabel(card)}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`${getSessionBadgeClass(
+                                card,
+                                true
+                              )} px-2.5 py-0.5 rounded-md text-xs font-extrabold min-w-[68px] text-center`}
+                            >
+                              {getCompactSessionLabel(card)}
+                            </span>
+                            {card.sessionDate && (
+                              <span
+                                data-testid={`session-date-${card.classId}`}
+                                className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold border ${
+                                  card.isTodaySession
+                                    ? "bg-[#dcfce7] text-[#15803d] border-[#16a34a]"
+                                    : "bg-slate-100 text-slate-700 border-slate-300"
+                                }`}
+                                title={`Ngày học Buổi ${card.currentSessionNumber}: ${card.sessionDate}`}
+                              >
+                                📅 {card.sessionDate}
+                                {card.isTodaySession ? " • Hôm nay" : ""}
+                              </span>
+                            )}
+                          </div>
 
                           <span className="hidden sm:inline-block text-slate-300 font-bold">
                             |

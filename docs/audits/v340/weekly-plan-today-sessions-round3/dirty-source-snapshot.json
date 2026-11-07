@@ -1,0 +1,15 @@
+{
+  "head": "745b513b54c7dcc24d8bb1e6774c5db798685945",
+  "headProvenance": "Provided baseline; dedicated TEMP copy has no .git; original repository access limited to hash comparisons.",
+  "sourceCount": 157,
+  "dirtySourceCount": 7,
+  "files": {
+    "scripts/test-streamline-v340-s6.ts": "d30a9f9a22357964b884b30b1a130f4203da114119f21c2552996fc4edb292a3",
+    "src/app/api/session-comments/list/route.ts": "0f2809f9bcad84ac60be33ea107e820d73fd446a4b385f6bf9033b765022d0af",
+    "src/components/dashboard-today-tasks-panel.tsx": "d2e092c806c150dbe1a932a3bf766dc95913aa74a95cb3e72395bf77595b9aae",
+    "src/lib/classes/class-directory.ts": "c94fb5e4a651289b04e4a30582d87149da1cce58be86e0352ba3f7014a27580f",
+    "src/lib/dashboard/today-tasks.ts": "3a1922f8f2c6a3b5dcfde44fa4362df9b149fa62f313dd211a58f992059ffb42",
+    "src/lib/db/sqlite.ts": "6e3f50c285c956e46af048ab84f1d3bd8460eb9fb87a855b17fb99d0c6564f9a",
+    "src/lib/playwright/sync-class.ts": "88d9fd4143f27f723ce0270af84dd547d9c8b0d22c34c0e54c4e0c7f8b951749"
+  }
+}

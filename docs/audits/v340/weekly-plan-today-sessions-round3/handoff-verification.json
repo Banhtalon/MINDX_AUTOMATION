@@ -1,0 +1,46 @@
+{
+  "at": "2026-11-07T10:59:40.498Z",
+  "reviewer": {
+    "tool": "Codex CLI",
+    "version": "0.163.0",
+    "model": "gpt-6.1-sol",
+    "modelReasoningEffort": "xhigh",
+    "exitCode": 0
+  },
+  "headBefore": "745b513b54c7dcc24d8bb1e6774c5db798685945",
+  "headAfter": "745b513b54c7dcc24d8bb1e6774c5db798685945",
+  "sourceCount": 157,
+  "sourceUnchanged": true,
+  "dataBefore": {
+    "data/mindx_bot.db": "f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c",
+    "data/running_classes.json": "d8c282a5917c735b4bd97ae739874b978a33270eb77a1767ab934bf196d83b4d"
+  },
+  "dataAfter": {
+    "data/mindx_bot.db": "f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c",
+    "data/running_classes.json": "d8c282a5917c735b4bd97ae739874b978a33270eb77a1767ab934bf196d83b4d"
+  },
+  "reportSha256": "618b2161f7629a3bb52068ef82abe77cf7c2a0ea021728da29d21245b8f3fa8a",
+  "temp": "C:/Users/QQ/AppData/Local/Temp/mindx-weekly-plan-audit-r2-r3-M1irl7",
+  "realRoot": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "reportCopiedExactly": true,
+  "finalVerifiedAt": "2026-11-07T11:00:08.959Z",
+  "G1AfterOriginalReportUpdate": {
+    "command": "npx --no-install tsc --noEmit",
+    "start": "2026-11-07T10:59:40.890Z",
+    "end": "2026-11-07T10:59:42.334Z",
+    "durationMs": 1444,
+    "exitCode": 0,
+    "signal": null,
+    "error": null,
+    "log": "audit-evidence/G1-after-report.log",
+    "isolation": {
+      "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-M1irl7\\audit-evidence\\runtime\\G1-after-report",
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-M1irl7\\audit-evidence\\runtime\\G1-after-report\\synthetic.db",
+      "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-M1irl7\\audit-evidence\\runtime\\G1-after-report\\classes.json",
+      "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-M1irl7",
+      "TZ": "Asia/Ho_Chi_Minh"
+    }
+  },
+  "reportLinksValid": true,
+  "rawTypeScriptAdded": false
+}

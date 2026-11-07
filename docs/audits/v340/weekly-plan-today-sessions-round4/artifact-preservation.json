@@ -1,0 +1,282 @@
+{
+  "pass": true,
+  "count": 46,
+  "files": [
+    {
+      "file": "PROJECT_STATE.md",
+      "expected": "14ac3d5001a51b8af097484f5294baef857824f760ba514c20de7c495e6980e1",
+      "actual": "14ac3d5001a51b8af097484f5294baef857824f760ba514c20de7c495e6980e1",
+      "unchanged": true
+    },
+    {
+      "file": "MINDX_AUTOMATION_PLAN.md",
+      "expected": "99b13d0a1e2bb375699e82f6db0c1cf587419d509885d41729276ca196b0de2a",
+      "actual": "99b13d0a1e2bb375699e82f6db0c1cf587419d509885d41729276ca196b0de2a",
+      "unchanged": true
+    },
+    {
+      "file": "CHANGELOG.md",
+      "expected": "3838c9305685f7680ad50a0f6768b758786f2941c1cc715b846a0059ae86e293",
+      "actual": "3838c9305685f7680ad50a0f6768b758786f2941c1cc715b846a0059ae86e293",
+      "unchanged": true
+    },
+    {
+      "file": "audit-evidence/round3-report.md.txt",
+      "expected": "618b2161f7629a3bb52068ef82abe77cf7c2a0ea021728da29d21245b8f3fa8a",
+      "actual": "618b2161f7629a3bb52068ef82abe77cf7c2a0ea021728da29d21245b8f3fa8a",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\baseline.json",
+      "expected": "8793bcd699fc1636b9772aeba95601e0961031f29f9ac0aaac605a78fef085f8",
+      "actual": "8793bcd699fc1636b9772aeba95601e0961031f29f9ac0aaac605a78fef085f8",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\final-git-status.txt",
+      "expected": "ba05b3708627de7d414ba0ff9557d5285ac648ad1b7f22edc46ab40def46bd7d",
+      "actual": "ba05b3708627de7d414ba0ff9557d5285ac648ad1b7f22edc46ab40def46bd7d",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\G1-after-report.log",
+      "expected": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "actual": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\G1-initial-harness-placement.log",
+      "expected": "7e6557c51eb4789857cbcc1f628197b06d535d3d88f76461c908061ade0712e7",
+      "actual": "7e6557c51eb4789857cbcc1f628197b06d535d3d88f76461c908061ade0712e7",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\G1-tsc.log",
+      "expected": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "actual": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\G2-s6.log",
+      "expected": "1072daaaf7925ad83e99868909f9770aa06422a50087dd5339af2e22500af4b1",
+      "actual": "1072daaaf7925ad83e99868909f9770aa06422a50087dd5339af2e22500af4b1",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\G3-independent.log",
+      "expected": "4cb5278bcd1e92511c7ce4053b486493b6575371b2a99884de82fd0eb9a055ba",
+      "actual": "4cb5278bcd1e92511c7ce4053b486493b6575371b2a99884de82fd0eb9a055ba",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\G3-results.json",
+      "expected": "b22e3b26d539d0b9c6486a994ee1e600616e150a9df6836327381b8c313f8fd7",
+      "actual": "b22e3b26d539d0b9c6486a994ee1e600616e150a9df6836327381b8c313f8fd7",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\gate-results.json",
+      "expected": "f6c9bfe64c4cc536111d75208fd865a2d18b02e36fad518b6f1123797327c7ca",
+      "actual": "f6c9bfe64c4cc536111d75208fd865a2d18b02e36fad518b6f1123797327c7ca",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\independent-probes.mts.txt",
+      "expected": "c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60",
+      "actual": "c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\initial-git-status.txt",
+      "expected": "7b65c361e9e7d2ba07815e4fbe1da04aa56ac289cd0848b6aad609d2d018194d",
+      "actual": "7b65c361e9e7d2ba07815e4fbe1da04aa56ac289cd0848b6aad609d2d018194d",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\post-run-integrity.json",
+      "expected": "d11e61f4bbbbdab3e8a1b763299ff93c3863c0f16d1ac94ab96c66c6ea2f414a",
+      "actual": "d11e61f4bbbbdab3e8a1b763299ff93c3863c0f16d1ac94ab96c66c6ea2f414a",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\refresh-boundary-probes.mts.txt",
+      "expected": "840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e",
+      "actual": "840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\refresh-boundary-results.json",
+      "expected": "6eb1a0ec46c59d1ac217a5374c0343664a596b9f846f0ab7ad1c4f68e7a5c885",
+      "actual": "6eb1a0ec46c59d1ac217a5374c0343664a596b9f846f0ab7ad1c4f68e7a5c885",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\refresh-boundary.log",
+      "expected": "519fdab18df7e028bb4799d48178f96cd3be91c7bf5618cb89d3eac0d956d46d",
+      "actual": "519fdab18df7e028bb4799d48178f96cd3be91c7bf5618cb89d3eac0d956d46d",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\round1-report.md.txt",
+      "expected": "272e4df827ccf5207554841844d431db26863753cc2a7adf31c624ca1d7888fc",
+      "actual": "272e4df827ccf5207554841844d431db26863753cc2a7adf31c624ca1d7888fc",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round2\\round1-results.json",
+      "expected": "357408b0a69db831d83495feed2d7aa72d168649fe5c1fe17bca03d31498ab4a",
+      "actual": "357408b0a69db831d83495feed2d7aa72d168649fe5c1fe17bca03d31498ab4a",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\baseline.json",
+      "expected": "7a0203e5ca6e7fa93060160d660213eede127627f092cb35105e8292b8986315",
+      "actual": "7a0203e5ca6e7fa93060160d660213eede127627f092cb35105e8292b8986315",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\check-integrity.cjs.txt",
+      "expected": "1b29e2ce13631cbd6c6a9b6af5deb7e9cdec04d607c74ddc703c8ab09d0d0246",
+      "actual": "1b29e2ce13631cbd6c6a9b6af5deb7e9cdec04d607c74ddc703c8ab09d0d0246",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\dirty-source-snapshot.json",
+      "expected": "9e77d91e5c9bf28ff515bf929bda8e67a24574f8e03b2ae06183fc6b9361eb5c",
+      "actual": "9e77d91e5c9bf28ff515bf929bda8e67a24574f8e03b2ae06183fc6b9361eb5c",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\evidence-manifest.json",
+      "expected": "82c6bf34c5e0d6c94f416c1e39c4729f9d1c5148b76fb1459157fd1b38b91ba0",
+      "actual": "82c6bf34c5e0d6c94f416c1e39c4729f9d1c5148b76fb1459157fd1b38b91ba0",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\f02-confirmation-probes.mts.txt",
+      "expected": "31f2ab9f6abd74599e1c92457be9eea3023a8224ff52207b13cd299914f09992",
+      "actual": "31f2ab9f6abd74599e1c92457be9eea3023a8224ff52207b13cd299914f09992",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\f02-confirmation-results.json",
+      "expected": "7979fa843ea6590fffac21254780387cf6fa4dd4dbb892820da8322a8070a78f",
+      "actual": "7979fa843ea6590fffac21254780387cf6fa4dd4dbb892820da8322a8070a78f",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\F02-independent.log",
+      "expected": "b6867c4d87037fb2e090ff029c08851988583259ce36dc0d4c4e6c8a445ea03e",
+      "actual": "b6867c4d87037fb2e090ff029c08851988583259ce36dc0d4c4e6c8a445ea03e",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\F02-source-excerpts.txt",
+      "expected": "e3cf00d05d9d2dc8a813a2d7d16687b9649bd128fa420d2de4896974dd76c687",
+      "actual": "e3cf00d05d9d2dc8a813a2d7d16687b9649bd128fa420d2de4896974dd76c687",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\G1-after-report-first.log",
+      "expected": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "actual": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\G1-after-report.log",
+      "expected": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "actual": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\G1.log",
+      "expected": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "actual": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\G2.log",
+      "expected": "12ae2981834befcb279e35fbf8b60cb0e74faefca525b0e6b72a8b9ebbeb968d",
+      "actual": "12ae2981834befcb279e35fbf8b60cb0e74faefca525b0e6b72a8b9ebbeb968d",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\G3-boundary.log",
+      "expected": "d62e5affe98df77f187dab60a7d4e6f7b31f808dcc60cc7443a3e30e379980fc",
+      "actual": "d62e5affe98df77f187dab60a7d4e6f7b31f808dcc60cc7443a3e30e379980fc",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\G3-results.json",
+      "expected": "b22e3b26d539d0b9c6486a994ee1e600616e150a9df6836327381b8c313f8fd7",
+      "actual": "b22e3b26d539d0b9c6486a994ee1e600616e150a9df6836327381b8c313f8fd7",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\G3.log",
+      "expected": "8250dbceb7d2d166beba411a955e65ebfa1b3532f3d82f2c0ab60768ec5cf29e",
+      "actual": "8250dbceb7d2d166beba411a955e65ebfa1b3532f3d82f2c0ab60768ec5cf29e",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\gate-results.json",
+      "expected": "ee7d073d6dc251dbb0b4fb4782b146d8942f161afdd5ac6b03cf00577d7b4b06",
+      "actual": "ee7d073d6dc251dbb0b4fb4782b146d8942f161afdd5ac6b03cf00577d7b4b06",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\handoff-verification.json",
+      "expected": "7b72252ac9caec5e3b65e187adc251c00ead8891200a35eed8222ba4cf76ae2c",
+      "actual": "7b72252ac9caec5e3b65e187adc251c00ead8891200a35eed8222ba4cf76ae2c",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\independent-probes.mts.txt",
+      "expected": "c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60",
+      "actual": "c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\initial-git-status.txt",
+      "expected": "ba05b3708627de7d414ba0ff9557d5285ac648ad1b7f22edc46ab40def46bd7d",
+      "actual": "ba05b3708627de7d414ba0ff9557d5285ac648ad1b7f22edc46ab40def46bd7d",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\post-run-integrity.json",
+      "expected": "7849a203b02bd1b5885c9b7cff10804057f1a1b49788f21cfd2851b844ae9b20",
+      "actual": "7849a203b02bd1b5885c9b7cff10804057f1a1b49788f21cfd2851b844ae9b20",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\pre-run-integrity.json",
+      "expected": "b145e9f49a0dec2451a830884c79069c347cd07d424575769c74685c642be5a5",
+      "actual": "b145e9f49a0dec2451a830884c79069c347cd07d424575769c74685c642be5a5",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\refresh-boundary-probes.mts.txt",
+      "expected": "840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e",
+      "actual": "840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\refresh-boundary-results.json",
+      "expected": "cbff94ce72307d6c6bb9e55aa04a64f031a53a7a221d85b64d7fbdba669aec63",
+      "actual": "cbff94ce72307d6c6bb9e55aa04a64f031a53a7a221d85b64d7fbdba669aec63",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\round2-report.md.txt",
+      "expected": "26430b52db8eca0b6676ef41c434c881c7409dfad419d09c4f3ec9db99c28f8f",
+      "actual": "26430b52db8eca0b6676ef41c434c881c7409dfad419d09c4f3ec9db99c28f8f",
+      "unchanged": true
+    },
+    {
+      "file": "docs\\audits\\v340\\weekly-plan-today-sessions-round3\\run-gate.cjs.txt",
+      "expected": "2dd70f6df89ac3907acb35a4ab3ca9b916bcfb73f0e26c6d2295091a5e2829fc",
+      "actual": "2dd70f6df89ac3907acb35a4ab3ca9b916bcfb73f0e26c6d2295091a5e2829fc",
+      "unchanged": true
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const cwd = process.cwd(), evidence = path.join(cwd, 'audit-evidence');
+const dest = path.join(cwd, 'docs/audits/v340/weekly-plan-today-sessions-round5');
+const baseline = JSON.parse(fs.readFileSync(path.join(evidence, 'baseline.json'), 'utf8'));
+const before = JSON.parse(fs.readFileSync(path.join(evidence, 'pre-run-integrity.json'), 'utf8'));
+const hash = p => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+const write = (name, value) => fs.writeFileSync(path.join(evidence, name), JSON.stringify(value, null, 2));
+const copy = (from, to = from) => fs.copyFileSync(path.join(evidence, from), path.join(dest, to));
+fs.mkdirSync(dest, {recursive: true});
+const dirty = fs.readFileSync(path.join(evidence, 'initial-git-status.txt'), 'utf8').split(/\r?\n/)
+  .map(line => ({status: line.slice(0, 2), file: line.slice(3)})).filter(x => /^(src|scripts)\//.test(x.file))
+  .map(x => ({...x, expected: baseline.files[x.file], copy: hash(path.join(cwd, x.file)), real: hash(path.join(baseline.root, x.file))}));
+write('dirty-source-snapshot.json', dirty);
+write('source-identity.json', {at: new Date().toISOString(), head: before.head, expectedHead: baseline.head,
+  root: baseline.root, temp: cwd, dirtySourceCount: dirty.length, dirtySource: dirty,
+  sourceCount: before.source.length, source: before.source,
+  headReadFromGitFilesWithoutMutation: true,
+  note: 'HEAD alone does not identify this dirty tree. Per-file SHA-256 values bind the exact reviewed content.'});
+write('historical-typecheck-inputs.json', {count: before.historical.length, unchanged: true, files: before.historical});
+const reportPath = 'docs/audits/v340/CODEX_WEEKLY_PLAN_TODAY_SESSIONS_AUDIT.md';
+write('artifact-preservation.json', {at: new Date().toISOString(),
+  protectedFileCount: Object.keys(baseline.files).length - 1,
+  changedReport: reportPath,
+  priorReportHash: hash(path.join(evidence, 'round4-report.md.txt')),
+  expectedPriorReportHash: baseline.files[reportPath],
+  protectedMismatches: Object.entries(baseline.files).filter(([name]) => name !== reportPath).flatMap(([name, expected]) => {
+    const copyHash = hash(path.join(cwd, name)), real = hash(path.join(baseline.root, name));
+    return copyHash !== expected || real !== expected ? [{name, expected, copy: copyHash, real}] : [];
+  })});
+write('probe-hashes.json', {original: Object.entries(baseline.probes).map(([file, expected]) => ({file, expected, actual: hash(path.join(evidence, file))})),
+  focused: {file: 'f02-round5-focused-probes.mts', actual: hash(path.join(evidence, 'f02-round5-focused-probes.mts'))}});
+write('reviewer-runtime.json', {requestedModel: 'gpt-6.1-sol', requestedEffort: 'xhigh',
+  actualModelFromCliOutput: null, actualEffortFromCliOutput: null,
+  invocationEvidence: 'Parent captures the launch output. This reviewer session has no launch-output artifact to independently verify model/effort.',
+  spawnedAgents: 0, spawnedCodexProcesses: 0, liveServiceCalls: 0, productEdits: 0,
+  nodeVersion: process.version, platform: process.platform,
+  syntheticScope: true});
+const excerpts = [
+  ['src/lib/playwright/sync-class.ts', 1600, 1775],
+  ['src/lib/playwright/sync-class.ts', 1853, 1983],
+  ['src/lib/playwright/sync-class.ts', 2149, 2211],
+  ['src/lib/playwright/sync-class.ts', 2277, 2317],
+  ['src/lib/db/json-config.ts', 211, 250],
+  ['scripts/test-streamline-v340-s6.ts', 1885, 1992],
+  ['src/app/api/dashboard/scan-weekly-tasks/route.ts', 45, 66],
+  ['src/app/api/classes/refresh/route.ts', 145, 166],
+  ['src/app/api/session-comments/fetch-classes/route.ts', 33, 54],
+  ['src/app/api/spck/list/route.ts', 354, 381],
+].map(([file, start, end]) => {
+  const lines = fs.readFileSync(path.join(cwd, file), 'utf8').split(/\r?\n/);
+  return file + '\n' + lines.slice(start - 1, end).map((line, i) => `${start + i}: ${line}`).join('\n');
+}).join('\n\n');
+fs.writeFileSync(path.join(evidence, 'F02-source-excerpts.txt'), excerpts);
+const gates = ['G1', 'G2', 'G3', 'G3-boundary', 'F02-confirmation', 'F02-round4-correspondence', 'root-F02-stale-dom', 'root-F02-edges', 'F02-round5-focused', 'G1-after-report'];
+const metadata = gates.map(g => path.join(evidence, g + '.metadata.json')).filter(p => fs.existsSync(p)).map(p => JSON.parse(fs.readFileSync(p, 'utf8')));
+write('gate-results.json', {gates: metadata, expectedGateCount: gates.length, completedGateCount: metadata.length,
+  mandatoryGateCount: 9, additionalFocusedGateCount: 1, allCompletedExitZero: metadata.every(g => g.exitCode === 0),
+  integrityCheckIsSeparate: true,
+  integrityVerdict: fs.existsSync(path.join(evidence, 'post-run-integrity.json')) ? JSON.parse(fs.readFileSync(path.join(evidence, 'post-run-integrity.json'), 'utf8')).bad.length === 0 ? 'PASS' : 'FAIL' : 'PENDING',
+  retainedEarlierGateRuns: ['G1-after-report-initial', 'G1-after-report-second'].filter(g => fs.existsSync(path.join(evidence, g + '.metadata.json'))).map(g => JSON.parse(fs.readFileSync(path.join(evidence, g + '.metadata.json'), 'utf8')))});
+const originals = Object.keys(baseline.probes);
+for (const file of [...originals, 'f02-round5-focused-probes.mts']) copy(file, file + '.txt');
+for (const file of ['run-gate.cjs', 'check-integrity.cjs', 'stage-round5.cjs', 'finalize-summary.cjs']) if (fs.existsSync(path.join(evidence, file))) copy(file, file + '.txt');
+for (const gate of metadata) {
+  for (const suffix of ['.log', '.stdout.log', '.stderr.log', '.metadata.json']) copy(gate.gate + suffix);
+}
+for (const gate of ['G1-after-report-initial', 'G1-after-report-second']) {
+  if (fs.existsSync(path.join(evidence, gate + '.metadata.json'))) {
+    for (const suffix of ['.log', '.stdout.log', '.stderr.log', '.metadata.json']) copy(gate + suffix);
+  }
+}
+const ordinary = ['baseline.json', 'initial-git-status.txt', 'round4-report.md.txt', 'pre-run-integrity.json', 'post-tests-integrity.json',
+  'post-run-integrity.json', 'source-identity.json', 'dirty-source-snapshot.json', 'historical-typecheck-inputs.json',
+  'artifact-preservation.json', 'probe-hashes.json', 'reviewer-runtime.json', 'F02-source-excerpts.txt', 'gate-results.json',
+  'G3-results.json', 'refresh-boundary-results.json', 'f02-confirmation-results.json', 'f02-round4-correspondence-results.json',
+  'root-f02-stale-dom-results.json', 'root-f02-edge-results.json', 'f02-round5-focused-results.json',
+  'reviewer-summary.json', 'reviewer-final.txt', 'post-run-integrity-initial.json', 'real-data-drift-observation.json',
+  'post-run-integrity-second.json', 'real-data-drift-observation-second.json'];
+for (const file of ordinary) if (fs.existsSync(path.join(evidence, file))) copy(file);
+const files = fs.readdirSync(dest);
+for (const file of files) {
+  if (!fs.statSync(path.join(dest, file)).isFile() || !/\.(txt|json|log)$/.test(file)) throw new Error('Unexpected package entry: ' + file);
+  if (/\.(mts|ts|tsx|cjs)$/.test(file) || /\.db(?:-|$)|\.sqlite|\.env|transcript|reviewer-task|runtime\//i.test(file)) throw new Error('Forbidden package entry: ' + file);
+}
+const manifest = Object.fromEntries(files.filter(f => f !== 'evidence-manifest.json').sort().map(f => [f, hash(path.join(dest, f))]));
+fs.writeFileSync(path.join(dest, 'evidence-manifest.json'), JSON.stringify(manifest, null, 2));
+console.log(JSON.stringify({destination: dest, entries: Object.keys(manifest).length, gates: metadata.length, allCompletedExitZero: metadata.every(x => x.exitCode === 0)}, null, 2));

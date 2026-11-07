@@ -1,0 +1,31 @@
+{
+  "gate": "G2",
+  "command": "npx --no-install tsx scripts/test-streamline-v340-s6.ts",
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f",
+  "start": "2026-11-07T11:28:09.736Z",
+  "end": "2026-11-07T11:28:52.940Z",
+  "durationMs": 43204,
+  "exitCode": 0,
+  "signal": null,
+  "env": {
+    "TZ": "Asia/Ho_Chi_Minh",
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f\\audit-evidence\\runtime\\G2\\mindx_bot.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f\\audit-evidence\\runtime\\G2\\running_classes.json",
+    "TEACHING_PASSWORD": "",
+    "LMS_PASSWORD": "",
+    "GEMINI_API_KEY": ""
+  },
+  "blankedKeys": [
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTIGRAVITY_CSRF_TOKEN",
+    "MWAPI_KEY"
+  ],
+  "stdout": "G2.stdout.log",
+  "stderr": "G2.stderr.log",
+  "combined": "G2.log"
+}

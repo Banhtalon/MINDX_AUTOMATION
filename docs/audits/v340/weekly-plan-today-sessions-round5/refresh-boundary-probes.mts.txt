@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { chromium } from 'playwright';
+
+const cwd = process.cwd();
+assert.ok(cwd.includes('mindx-weekly-plan-audit-r2-'));
+const { getDb, closeDb } = await import('../src/lib/db/sqlite');
+const { ClassSyncer } = await import('../src/lib/playwright/sync-class');
+const { BrowserManager } = await import('../src/lib/playwright/browser-manager');
+const { authService } = await import('../src/lib/playwright/auth');
+assert.ok(getDb().name.startsWith(cwd));
+const browser = await chromium.launch({ headless: true });
+const context = await browser.newContext();
+await context.route('**/*', route => route.abort());
+const page = await context.newPage();
+await page.addInitScript('window.__name=(fn)=>fn');
+const bm = BrowserManager.getInstance();
+const origPage = bm.getPage, origAuth = authService.ensureAuthenticated;
+bm.getPage = async () => page;
+authService.ensureAuthenticated = async () => true;
+const results: any[] = [];
+try {
+  for (const [id, readyAfterMs] of [
+    ['F02-R2-refresh-completes-at-4000ms', 4000],
+    ['F02-R2-refresh-never-completes', Number.POSITIVE_INFINITY],
+  ] as const) {
+    const old = [
+      { classCode: 'VT-QA-JSB501', status: 'Running' },
+      { classCode: 'VT-QA-JSB502', status: 'Running' },
+      { classCode: 'VT-QA-JSB503', status: 'Running' },
+    ];
+    getDb().prepare('DELETE FROM classes_sessions').run();
+    fs.writeFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!, JSON.stringify(old));
+    const row = (code: string) => `<tr><td>1</td><td>${code}</td><td>JSB</td><td>VT</td><td>Running</td></tr>`;
+    await page.setContent(`<input placeholder="Search classes" value="old"/><table><tbody>${old.slice(0, 2).map(x => row(x.classCode)).join('')}</tbody></table>`);
+    let elapsed = 0;
+    page.waitForTimeout = async (ms: number) => {
+      elapsed += ms;
+      if (elapsed >= readyAfterMs) {
+        await page.locator('tbody').evaluate((el, html) => { el.innerHTML = html; }, old.map(x => row(x.classCode)).join(''));
+      }
+    };
+    const result = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+    const cache = JSON.parse(fs.readFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!, 'utf8'));
+    const observed = { elapsed, readyAfterMs: Number.isFinite(readyAfterMs) ? readyAfterMs : 'never', result, cache };
+    try {
+      // Either wait for the complete three-class result, or fail and retain the prior cache.
+      assert.equal(cache.length, 3, 'Unconfirmed stale two-row table must never replace the three-class cache');
+      if (elapsed < readyAfterMs) assert.equal(result.success, false, 'Unconfirmed refresh must report failure');
+      results.push({ id, status: 'PASS', observed });
+    } catch (error: any) {
+      results.push({ id, status: 'FAIL', error: error.message, observed });
+    }
+    console.log(JSON.stringify(results.at(-1)));
+  }
+} finally {
+  bm.getPage = origPage;
+  authService.ensureAuthenticated = origAuth;
+  await browser.close();
+  closeDb();
+}
+const summary = { pass: results.filter(x => x.status === 'PASS').length, fail: results.filter(x => x.status === 'FAIL').length, total: results.length, results };
+fs.writeFileSync(path.join(cwd, 'audit-evidence', 'refresh-boundary-results.json'), JSON.stringify(summary, null, 2));
+console.log('REFRESH BOUNDARY SUMMARY', JSON.stringify({ pass: summary.pass, fail: summary.fail, total: summary.total }));
+process.exitCode = summary.fail ? 1 : 0;

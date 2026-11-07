@@ -1,0 +1,116 @@
+{
+  "at": "2026-11-07T11:10:36.396Z",
+  "count": 22,
+  "files": [
+    {
+      "file": "docs\\audits\\v340\\s5b-round3\\reset-probe.ts",
+      "original": "cca491be50f80db1cf4ff61175d11ea6cfc27c58d356ed4492221a79d899948a",
+      "temp": "cca491be50f80db1cf4ff61175d11ea6cfc27c58d356ed4492221a79d899948a"
+    },
+    {
+      "file": "docs\\audits\\v340\\s5b-round3\\repository-probe.ts",
+      "original": "60466582f39e305f8a3b33f81c28bf35ae735e7fe841aa16209d7eede69fb24f",
+      "temp": "60466582f39e305f8a3b33f81c28bf35ae735e7fe841aa16209d7eede69fb24f"
+    },
+    {
+      "file": "docs\\audits\\v340\\s5b-round3\\matrix-probe.ts",
+      "original": "ece5fc663b9015746debaa0c96776b159bd016e036bfe6a9c8481776ef106a08",
+      "temp": "ece5fc663b9015746debaa0c96776b159bd016e036bfe6a9c8481776ef106a08"
+    },
+    {
+      "file": "docs\\audits\\v340\\s5b-round3\\independent-probe.ts",
+      "original": "cdeebda74fb8dca6e58423b612e32a04e97236b7a77453e00ee80a4453edf102",
+      "temp": "cdeebda74fb8dca6e58423b612e32a04e97236b7a77453e00ee80a4453edf102"
+    },
+    {
+      "file": "docs\\audits\\v340\\s5b-round2\\reset-probe.ts",
+      "original": "07ef7e1305ae781048a14f5266401ea50be1d32538f076f692758abf9b244f0a",
+      "temp": "07ef7e1305ae781048a14f5266401ea50be1d32538f076f692758abf9b244f0a"
+    },
+    {
+      "file": "docs\\audits\\v340\\s5b-round2\\repository-probe.ts",
+      "original": "93207e2bdaa8bb26c89dd27aaf684d7ceb696dc121a4eb4e41a6f21816f7ace5",
+      "temp": "93207e2bdaa8bb26c89dd27aaf684d7ceb696dc121a4eb4e41a6f21816f7ace5"
+    },
+    {
+      "file": "docs\\audits\\v340\\s5b-round2\\matrix-probe.ts",
+      "original": "7460a782b42f6d1e0a66bb3a560ba70e0cd85f99261bab8da17a0360f61b2c70",
+      "temp": "7460a782b42f6d1e0a66bb3a560ba70e0cd85f99261bab8da17a0360f61b2c70"
+    },
+    {
+      "file": "docs\\audits\\v340\\s5b-round2\\independent-probe.ts",
+      "original": "dad8a85ee4cb1b47bec9a510751c20a31d60797fdbf85bab710164453a6dde13",
+      "temp": "dad8a85ee4cb1b47bec9a510751c20a31d60797fdbf85bab710164453a6dde13"
+    },
+    {
+      "file": "docs\\audits\\v340\\s5b-round1\\repository-probe.ts",
+      "original": "a86c5507b2dbbe5f974742ff29dd2fe84f232c1025397e88286c2993ac2ebfa7",
+      "temp": "a86c5507b2dbbe5f974742ff29dd2fe84f232c1025397e88286c2993ac2ebfa7"
+    },
+    {
+      "file": "docs\\audits\\v340\\s5b-round1\\independent-probe.ts",
+      "original": "0328e9a15e22f22545bcce2fb95a47bdffec45715e4552b35f60652530bc27e1",
+      "temp": "0328e9a15e22f22545bcce2fb95a47bdffec45715e4552b35f60652530bc27e1"
+    },
+    {
+      "file": "docs\\audits\\v330\\stage3-round3\\closure-boundaries.ts",
+      "original": "e92feb23b97e1a79c08546785ba400d0b7401c31fe88b9ef24706c7a63dfce20",
+      "temp": "e92feb23b97e1a79c08546785ba400d0b7401c31fe88b9ef24706c7a63dfce20"
+    },
+    {
+      "file": "docs\\audits\\v330\\stage3-round2\\closure-probe.ts",
+      "original": "a4c198486cbda6fc1ddbbf91f47ee253aba9d7c0f0961f57da114c0089c25c89",
+      "temp": "a4c198486cbda6fc1ddbbf91f47ee253aba9d7c0f0961f57da114c0089c25c89"
+    },
+    {
+      "file": "docs\\audits\\v330\\stage2\\probe.ts",
+      "original": "2f4108af3697c3e55e5caa2b4b565c74e41dabaeaefc8e76a723b3d04a9289b1",
+      "temp": "2f4108af3697c3e55e5caa2b4b565c74e41dabaeaefc8e76a723b3d04a9289b1"
+    },
+    {
+      "file": "docs\\audits\\v330\\stage3\\adversarial-probe.ts",
+      "original": "762787d254c3c1a2444112d06d6cb6e0c28fabdd728a0c692dcc717049105413",
+      "temp": "762787d254c3c1a2444112d06d6cb6e0c28fabdd728a0c692dcc717049105413"
+    },
+    {
+      "file": "docs\\audits\\v330\\stage2-round3\\probe.ts",
+      "original": "d7275e121d0be71abfaede9216dd760db700f5b7115f1aa91c09a7d52e68ab63",
+      "temp": "d7275e121d0be71abfaede9216dd760db700f5b7115f1aa91c09a7d52e68ab63"
+    },
+    {
+      "file": "docs\\audits\\v311\\independent-probe.ts",
+      "original": "1c98959872fd245e085b17b5d1a2a5f43da36d299e29f24d34a9c2488d67157b",
+      "temp": "1c98959872fd245e085b17b5d1a2a5f43da36d299e29f24d34a9c2488d67157b"
+    },
+    {
+      "file": "docs\\audits\\v311\\dashboard-probe.tsx",
+      "original": "854092a01c77eb102157040054b5c992d2114d6668643fd495951c9e72584402",
+      "temp": "854092a01c77eb102157040054b5c992d2114d6668643fd495951c9e72584402"
+    },
+    {
+      "file": "docs\\audits\\v330\\stage2-round2\\probe.ts",
+      "original": "3d4c7533800d46316bd662e73ea4b1450ee40fdc4435699ebf604f9bae41ccfb",
+      "temp": "3d4c7533800d46316bd662e73ea4b1450ee40fdc4435699ebf604f9bae41ccfb"
+    },
+    {
+      "file": "docs\\audits\\v311\\round2\\baseline-probe.ts",
+      "original": "78fb845362851f5492c98e56b7a82babf2f70bda039b756f5949892240432fc3",
+      "temp": "78fb845362851f5492c98e56b7a82babf2f70bda039b756f5949892240432fc3"
+    },
+    {
+      "file": "docs\\audits\\v311\\round2\\extended-probe.ts",
+      "original": "d57a54c54888643fe15e3e2603d6d5146966068ffa358407145a0be753e619d5",
+      "temp": "d57a54c54888643fe15e3e2603d6d5146966068ffa358407145a0be753e619d5"
+    },
+    {
+      "file": "docs\\audits\\v311\\round3\\supplemental-probe.ts",
+      "original": "55a7df0ba5caf65671465d2c3da46aa5e079c1b6d69b32cee0f493b53a95d437",
+      "temp": "55a7df0ba5caf65671465d2c3da46aa5e079c1b6d69b32cee0f493b53a95d437"
+    },
+    {
+      "file": "docs\\audits\\round-31\\evidence\\baseline\\media-reader.r30.ts",
+      "original": "3d677823077a3c7eb36f7261f45970ca7b7903e9797b1568ce602f86109760ac",
+      "temp": "3d677823077a3c7eb36f7261f45970ca7b7903e9797b1568ce602f86109760ac"
+    }
+  ]
+}

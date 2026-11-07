@@ -1,0 +1,322 @@
+{
+  "verdict": "NO-GO",
+  "configuredReviewerIdentity": {
+    "role": "designated independent Reviewer",
+    "client": "Codex CLI",
+    "model": "gpt-6.1-sol",
+    "reasoningEffort": "xhigh",
+    "source": "reviewer task configuration",
+    "launchedAnotherAgentOrCodex": false
+  },
+  "round": 4,
+  "isolatedTempPath": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+  "head": "745b513b54c7dcc24d8bb1e6774c5db798685945",
+  "dirtySourceHashes": {
+    "scripts/test-streamline-v340-s6.ts": "4c881f17056eb0b91abc3a3d90dbc0efcb8584195ca08fcf2c22c4859ffac4af",
+    "src/app/api/session-comments/list/route.ts": "0f2809f9bcad84ac60be33ea107e820d73fd446a4b385f6bf9033b765022d0af",
+    "src/components/dashboard-today-tasks-panel.tsx": "d2e092c806c150dbe1a932a3bf766dc95913aa74a95cb3e72395bf77595b9aae",
+    "src/lib/classes/class-directory.ts": "c94fb5e4a651289b04e4a30582d87149da1cce58be86e0352ba3f7014a27580f",
+    "src/lib/dashboard/today-tasks.ts": "3a1922f8f2c6a3b5dcfde44fa4362df9b149fa62f313dd211a58f992059ffb42",
+    "src/lib/db/sqlite.ts": "6e3f50c285c956e46af048ab84f1d3bd8460eb9fb87a855b17fb99d0c6564f9a",
+    "src/lib/playwright/sync-class.ts": "138ba244cae159a29181fab8dc0ad3cf7caddd8fa95ab6e198fa9938fcac0290"
+  },
+  "statuses": {
+    "F01": "CLOSED",
+    "F02": "OPEN P1",
+    "F03": "CLOSED",
+    "F04": "CLOSED"
+  },
+  "gateResults": {
+    "G1": {
+      "command": "npx --no-install tsc --noEmit",
+      "start": "2026-11-07T11:10:36.490Z",
+      "end": "2026-11-07T11:10:37.846Z",
+      "durationMs": 1356,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "log": "audit-evidence/G1.log",
+      "isolation": {
+        "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1",
+        "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1\\synthetic.db",
+        "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1\\classes.json",
+        "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+        "TZ": "Asia/Ho_Chi_Minh"
+      }
+    },
+    "root-F02-edges": {
+      "command": "npx --no-install tsx audit-evidence/root-f02-edge-probes.mts",
+      "start": "2026-11-07T11:08:55.207Z",
+      "end": "2026-11-07T11:09:01.578Z",
+      "durationMs": 6371,
+      "exitCode": 1,
+      "signal": null,
+      "error": null,
+      "log": "audit-evidence/root-F02-edges.log",
+      "isolation": {
+        "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\root-F02-edges",
+        "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\root-F02-edges\\synthetic.db",
+        "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\root-F02-edges\\classes.json",
+        "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+        "TZ": "Asia/Ho_Chi_Minh"
+      }
+    },
+    "G2": {
+      "command": "npx --no-install tsx scripts/test-streamline-v340-s6.ts",
+      "start": "2026-11-07T11:09:03.097Z",
+      "end": "2026-11-07T11:09:42.147Z",
+      "durationMs": 39050,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "log": "audit-evidence/G2.log",
+      "isolation": {
+        "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G2",
+        "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G2\\synthetic.db",
+        "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G2\\classes.json",
+        "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+        "TZ": "Asia/Ho_Chi_Minh"
+      }
+    },
+    "root-F02-stale-dom": {
+      "command": "npx --no-install tsx audit-evidence/root-f02-stale-dom-probe.mts",
+      "start": "2026-11-07T11:09:42.881Z",
+      "end": "2026-11-07T11:09:45.921Z",
+      "durationMs": 3040,
+      "exitCode": 1,
+      "signal": null,
+      "error": null,
+      "log": "audit-evidence/root-F02-stale-dom.log",
+      "isolation": {
+        "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\root-F02-stale-dom",
+        "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\root-F02-stale-dom\\synthetic.db",
+        "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\root-F02-stale-dom\\classes.json",
+        "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+        "TZ": "Asia/Ho_Chi_Minh"
+      }
+    },
+    "G3": {
+      "command": "npx --no-install tsx audit-evidence/independent-probes.mts",
+      "start": "2026-11-07T11:09:49.358Z",
+      "end": "2026-11-07T11:09:53.756Z",
+      "durationMs": 4398,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "log": "audit-evidence/G3.log",
+      "isolation": {
+        "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G3",
+        "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G3\\synthetic.db",
+        "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G3\\classes.json",
+        "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+        "TZ": "Asia/Ho_Chi_Minh"
+      }
+    },
+    "G3-boundary": {
+      "command": "npx --no-install tsx audit-evidence/refresh-boundary-probes.mts",
+      "start": "2026-11-07T11:09:57.941Z",
+      "end": "2026-11-07T11:10:00.690Z",
+      "durationMs": 2749,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "log": "audit-evidence/G3-boundary.log",
+      "isolation": {
+        "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G3-boundary",
+        "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G3-boundary\\synthetic.db",
+        "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G3-boundary\\classes.json",
+        "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+        "TZ": "Asia/Ho_Chi_Minh"
+      }
+    },
+    "F02-independent": {
+      "command": "npx --no-install tsx audit-evidence/f02-confirmation-probes.mts",
+      "start": "2026-11-07T11:10:00.947Z",
+      "end": "2026-11-07T11:10:03.932Z",
+      "durationMs": 2985,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "log": "audit-evidence/F02-independent.log",
+      "isolation": {
+        "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\F02-independent",
+        "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\F02-independent\\synthetic.db",
+        "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\F02-independent\\classes.json",
+        "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+        "TZ": "Asia/Ho_Chi_Minh"
+      }
+    },
+    "G1-after-report": {
+      "command": "npx --no-install tsc --noEmit",
+      "start": "2026-11-07T11:15:26.456Z",
+      "end": "2026-11-07T11:15:27.904Z",
+      "durationMs": 1448,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "log": "audit-evidence/G1-after-report.log",
+      "isolation": {
+        "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1-after-report",
+        "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1-after-report\\synthetic.db",
+        "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1-after-report\\classes.json",
+        "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+        "TZ": "Asia/Ho_Chi_Minh"
+      }
+    },
+    "F02-round4-correspondence": {
+      "command": "npx --no-install tsx audit-evidence/f02-round4-correspondence-probes.mts",
+      "start": "2026-11-07T11:11:11.984Z",
+      "end": "2026-11-07T11:11:17.844Z",
+      "durationMs": 5860,
+      "exitCode": 1,
+      "signal": null,
+      "error": null,
+      "log": "audit-evidence/F02-round4-correspondence.log",
+      "isolation": {
+        "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\F02-round4-correspondence",
+        "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\F02-round4-correspondence\\synthetic.db",
+        "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\F02-round4-correspondence\\classes.json",
+        "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+        "TZ": "Asia/Ho_Chi_Minh"
+      }
+    }
+  },
+  "probeCounts": {
+    "G3": {
+      "pass": 40,
+      "fail": 0,
+      "total": 40
+    },
+    "boundary": {
+      "pass": 2,
+      "fail": 0,
+      "total": 2
+    },
+    "F02Original": {
+      "pass": 3,
+      "fail": 0,
+      "total": 3
+    },
+    "F02Round4": {
+      "pass": 2,
+      "fail": 3,
+      "total": 5
+    },
+    "totalIndependent": {
+      "pass": 47,
+      "fail": 3,
+      "total": 50
+    },
+    "S6Groups": {
+      "pass": 4,
+      "fail": 0,
+      "total": 4
+    }
+  },
+  "findings": [
+    {
+      "id": "F02",
+      "severity": "P1",
+      "status": "OPEN",
+      "title": "API-to-DOM correspondence accepts empty/subset/prefix results",
+      "locations": [
+        {
+          "file": "src/lib/playwright/sync-class.ts",
+          "startLine": 1885,
+          "endLine": 1889
+        },
+        {
+          "file": "src/lib/playwright/sync-class.ts",
+          "startLine": 1734,
+          "endLine": 1740
+        },
+        {
+          "file": "src/lib/playwright/sync-class.ts",
+          "startLine": 2210,
+          "endLine": 2212
+        }
+      ],
+      "reproductionIds": [
+        "F02-R4-empty-class-array",
+        "F02-R4-api-subset-of-stale-dom",
+        "F02-R4-api-codes-only-prefix-match"
+      ],
+      "impact": "Unchanged stale two-row DOM replaces three-class JSON cache, success:true at 1200 simulated ms.",
+      "minimalFix": "Require exact correspondence with the relevant API page, including an explicit empty-state check; otherwise preserve old bytes and report failure."
+    }
+  ],
+  "f02OriginalObservations": [
+    {
+      "id": "F02-R3-valid-same-table",
+      "status": "PASS",
+      "success": true,
+      "error": null,
+      "cacheUnchangedBytes": false,
+      "waitMs": 1200
+    },
+    {
+      "id": "F02-R3-non-class-response",
+      "status": "PASS",
+      "success": false,
+      "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có.",
+      "cacheUnchangedBytes": true,
+      "waitMs": 6000
+    },
+    {
+      "id": "F02-R3-stale-filtered-response",
+      "status": "PASS",
+      "success": false,
+      "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có.",
+      "cacheUnchangedBytes": true,
+      "waitMs": 6000
+    }
+  ],
+  "preservation": {
+    "pass": true,
+    "sourceFiles": 157,
+    "originalAndTempUnchanged": true,
+    "realData": [
+      {
+        "file": "data/mindx_bot.db",
+        "expected": "f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c",
+        "actual": "f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c",
+        "unchanged": true
+      },
+      {
+        "file": "data/running_classes.json",
+        "expected": "d8c282a5917c735b4bd97ae739874b978a33270eb77a1767ab934bf196d83b4d",
+        "actual": "d8c282a5917c735b4bd97ae739874b978a33270eb77a1767ab934bf196d83b4d",
+        "unchanged": true
+      }
+    ],
+    "originalProbes": [
+      {
+        "name": "independent-probes",
+        "expected": "c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60",
+        "actual": "c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60",
+        "oldArtifactHash": "c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60",
+        "unchanged": true
+      },
+      {
+        "name": "refresh-boundary-probes",
+        "expected": "840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e",
+        "actual": "840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e",
+        "oldArtifactHash": "840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e",
+        "unchanged": true
+      },
+      {
+        "name": "f02-confirmation-probes",
+        "expected": "31f2ab9f6abd74599e1c92457be9eea3023a8224ff52207b13cd299914f09992",
+        "actual": "31f2ab9f6abd74599e1c92457be9eea3023a8224ff52207b13cd299914f09992",
+        "oldArtifactHash": "31f2ab9f6abd74599e1c92457be9eea3023a8224ff52207b13cd299914f09992",
+        "unchanged": true
+      }
+    ],
+    "statusDocumentsAndPriorEvidence": true
+  },
+  "liveServiceAcceptance": false,
+  "productCodeModified": false,
+  "committedOrPushed": false,
+  "report": "docs/audits/v340/CODEX_WEEKLY_PLAN_TODAY_SESSIONS_AUDIT.md",
+  "evidence": "docs/audits/v340/weekly-plan-today-sessions-round4"
+}

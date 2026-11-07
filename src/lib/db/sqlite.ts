@@ -397,7 +397,7 @@ export const classSessionRepo = {
         className = excluded.className,
         sessionNumber = excluded.sessionNumber,
         topic = excluded.topic,
-        date = excluded.date,
+        date = CASE WHEN TRIM(COALESCE(excluded.date, '')) <> '' THEN excluded.date ELSE classes_sessions.date END,
         updatedAt = datetime('now', 'localtime')
     `);
     return stmt.run({
@@ -406,7 +406,7 @@ export const classSessionRepo = {
       sessionId: record.sessionId,
       sessionNumber: record.sessionNumber,
       topic: record.topic ?? "",
-      date: record.date ?? "",
+      date: String(record.date ?? "").trim() || String((record as any)?._scheduledFutureDate ?? "").trim(),
     });
   },
 

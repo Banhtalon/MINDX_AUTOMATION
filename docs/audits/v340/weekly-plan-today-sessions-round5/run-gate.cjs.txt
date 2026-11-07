@@ -1,0 +1,67 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
+const {spawn} = require('node:child_process');
+const cwd = process.cwd();
+const gate = process.argv[2];
+const commands = {
+  G1: 'npx --no-install tsc --noEmit',
+  G2: 'npx --no-install tsx scripts/test-streamline-v340-s6.ts',
+  G3: 'npx --no-install tsx audit-evidence/independent-probes.mts',
+  'G3-boundary': 'npx --no-install tsx audit-evidence/refresh-boundary-probes.mts',
+  'F02-confirmation': 'npx --no-install tsx audit-evidence/f02-confirmation-probes.mts',
+  'F02-round4-correspondence': 'npx --no-install tsx audit-evidence/f02-round4-correspondence-probes.mts',
+  'root-F02-stale-dom': 'npx --no-install tsx audit-evidence/root-f02-stale-dom-probe.mts',
+  'root-F02-edges': 'npx --no-install tsx audit-evidence/root-f02-edge-probes.mts',
+  'F02-round5-focused': 'npx --no-install tsx audit-evidence/f02-round5-focused-probes.mts',
+  'G1-after-report': 'npx --no-install tsc --noEmit',
+};
+const command = commands[gate];
+if (!command) throw new Error('Unknown gate');
+// The unchanged Round 4 probe guards its old directory name. A temporary junction
+// supplies that name while resolving to this same Round 5 tree; no probe is patched.
+let gateCwd = cwd;
+let compatibility = null;
+if (gate === 'F02-round4-correspondence') {
+  const alias = path.join(cwd, 'audit-evidence/runtime/mindx-weekly-plan-audit-r2-r3-round4-compat');
+  fs.mkdirSync(path.dirname(alias), {recursive: true});
+  fs.symlinkSync(cwd, alias, 'junction');
+  if (fs.realpathSync(alias) !== fs.realpathSync(cwd)) throw new Error('Wrong compatibility target');
+  gateCwd = alias;
+  compatibility = {reason: 'Unmodified Round 4 probe hardcodes a Round 4 cwd-name guard', alias, target: fs.realpathSync(alias), sourceAndProbeUnmodified: true};
+}
+const runtime = path.join(cwd, 'audit-evidence/runtime', gate);
+fs.mkdirSync(runtime, {recursive: true});
+const env = {...process.env};
+const blankedKeys = [];
+for (const key of Object.keys(env)) {
+  if (/PASSWORD|PASSWD|SECRET|TOKEN|API_KEY|CREDENTIAL|COOKIE|DATABASE_URL|SUPABASE|TEACHING|^LMS_|^GEMINI_|^OPENAI_|^ANTHROPIC_|^GOOGLE_/i.test(key)) { env[key] = ''; blankedKeys.push(key); }
+}
+Object.assign(env, {TZ: 'Asia/Ho_Chi_Minh', ALLOWED_LOCAL_DIRS: os.tmpdir() + ',' + gateCwd,
+  MINDX_DB_PATH: path.join(gateCwd, 'audit-evidence/runtime', gate, 'mindx_bot.db'), MINDX_RUNNING_CLASSES_PATH: path.join(gateCwd, 'audit-evidence/runtime', gate, 'running_classes.json'),
+  TEACHING_PASSWORD: '', LMS_PASSWORD: '', GEMINI_API_KEY: '', NEXT_TELEMETRY_DISABLED: '1', CI: '1'});
+if (!fs.existsSync(env.MINDX_RUNNING_CLASSES_PATH)) fs.writeFileSync(env.MINDX_RUNNING_CLASSES_PATH, '[]');
+const start = new Date();
+const stdout = fs.createWriteStream(path.join(cwd, 'audit-evidence', gate + '.stdout.log'));
+const stderr = fs.createWriteStream(path.join(cwd, 'audit-evidence', gate + '.stderr.log'));
+const combined = fs.createWriteStream(path.join(cwd, 'audit-evidence', gate + '.log'));
+console.log('START', gate, start.toISOString(), command);
+const child = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', command], {cwd: gateCwd, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe']});
+child.stdout.on('data', x => {stdout.write(x); combined.write(x); process.stdout.write(x);});
+child.stderr.on('data', x => {stderr.write(x); combined.write(x); process.stderr.write(x);});
+child.on('error', err => {stderr.write(String(err)); combined.write(String(err));});
+child.on('close', (exitCode, signal) => {
+  const end = new Date(); stdout.end(); stderr.end(); combined.end();
+  if (compatibility) {
+    if (!fs.lstatSync(gateCwd).isSymbolicLink() || fs.realpathSync(gateCwd) !== fs.realpathSync(cwd)) throw new Error('Refusing cleanup of unexpected junction');
+    fs.unlinkSync(gateCwd);
+    compatibility.removedAfterGate = !fs.existsSync(gateCwd);
+  }
+  const metadata = {gate, command, cwd: gateCwd, physicalCwd: cwd, compatibility, start: start.toISOString(), end: end.toISOString(), durationMs: end - start, exitCode, signal,
+    env: {TZ: env.TZ, ALLOWED_LOCAL_DIRS: env.ALLOWED_LOCAL_DIRS, MINDX_DB_PATH: env.MINDX_DB_PATH, MINDX_RUNNING_CLASSES_PATH: env.MINDX_RUNNING_CLASSES_PATH,
+      TEACHING_PASSWORD: '', LMS_PASSWORD: '', GEMINI_API_KEY: ''}, blankedKeys,
+    stdout: gate + '.stdout.log', stderr: gate + '.stderr.log', combined: gate + '.log'};
+  fs.writeFileSync(path.join(cwd, 'audit-evidence', gate + '.metadata.json'), JSON.stringify(metadata, null, 2));
+  console.log('END', gate, end.toISOString(), 'EXIT', exitCode);
+  process.exitCode = exitCode === 0 ? 0 : 1;
+});

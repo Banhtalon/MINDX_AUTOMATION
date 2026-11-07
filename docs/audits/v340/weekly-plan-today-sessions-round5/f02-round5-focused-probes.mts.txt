@@ -1,0 +1,133 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import {chromium, type Route} from 'playwright';
+
+const cwd = process.cwd();
+assert.ok(cwd.includes('mindx-weekly-plan-audit-r2-r3-round5-'));
+for (const key of ['MINDX_DB_PATH', 'MINDX_RUNNING_CLASSES_PATH']) {
+  assert.ok(process.env[key]?.startsWith(path.join(cwd, 'audit-evidence/runtime')));
+}
+const {getDb, closeDb} = await import('../src/lib/db/sqlite');
+const {ClassSyncer} = await import('../src/lib/playwright/sync-class');
+const {BrowserManager} = await import('../src/lib/playwright/browser-manager');
+const {authService} = await import('../src/lib/playwright/auth');
+assert.equal(getDb().name, process.env.MINDX_DB_PATH);
+const browser = await chromium.launch({headless: true});
+const context = await browser.newContext({serviceWorkers: 'block'});
+const page = await context.newPage();
+await page.addInitScript('window.__name=(fn)=>fn');
+const bm = BrowserManager.getInstance();
+const savedPage = bm.getPage, savedAuth = authService.ensureAuthenticated;
+bm.getPage = async () => page;
+authService.ensureAuthenticated = async () => true;
+const codes = ['VT-QA-JSB801', 'VT-QA-JSB802', 'VT-QA-JSB803'];
+const row = (code: string) => `<tr><td>1</td><td>${code}</td><td>JSB</td><td>VT</td><td>Running</td></tr>`;
+const rows = codes.slice(0, 2).map(row).join('');
+const empty = '<tr><td colspan="5">No data</td></tr>';
+const array = (items: string[]) => items.map(classCode => ({classCode, status: 'Running'}));
+const modes = [
+  {id: 'valid-empty-changed', initial: rows, refreshed: empty, api: [], expected: []},
+  {id: 'valid-empty-unchanged', initial: empty, refreshed: empty, api: [], expected: []},
+  {id: 'empty-with-spinner', initial: rows, refreshed: empty, api: [], spinner: true, expected: null},
+  {id: 'partially-invalid-array', initial: row(codes[0]), refreshed: row(codes[0]), api: [...array([codes[0]]), {id: 'SYNTHETIC_ID'}], expected: null},
+  {id: 'same-set-wrong-order', initial: rows, refreshed: rows, api: array([codes[1], codes[0]]), expected: null},
+  {id: 'valid-paginated-full-array-prefix', initial: rows, refreshed: rows, api: array(codes), pagination: 'ant', expected: codes},
+  {id: 'valid-paginated-page-array', initial: rows, refreshed: rows, api: array(codes.slice(0, 2)), pagination: 'mui', expected: codes},
+  {id: 'paginated-non-prefix', initial: rows, refreshed: rows, api: array([codes[1], codes[0], codes[2]]), pagination: 'ant', expected: null},
+  {id: 'paginated-dom-longer-than-api', initial: rows, refreshed: rows, api: array(codes.slice(0, 1)), pagination: 'mui', expected: null},
+] as const;
+const results: any[] = [];
+try {
+  for (const mode of modes) {
+    let elapsedMs = 0, pending: Route | undefined;
+    let markSeen!: () => void;
+    const seen = new Promise<void>(resolve => {markSeen = resolve;});
+    const requests: any[] = [];
+    const hasPagination = 'pagination' in mode;
+    await context.unrouteAll({behavior: 'wait'});
+    await context.route('**/*', async route => {
+      const req = route.request();
+      if (req.resourceType() === 'document') {
+        await route.fulfill({status: 200, contentType: 'text/html', body: '<meta charset="utf-8"><body></body>'});
+      } else if (req.url() === 'https://lms-api.mindx.edu.vn/graphql') {
+        const postData = req.postDataJSON();
+        requests.push({postData, searchAtRequest: await page.locator('input').inputValue(), elapsedMs});
+        if (postData.variables.page === 2) {
+          await route.fulfill({status: 200, contentType: 'application/json', headers: {'Access-Control-Allow-Origin': '*'}, body: JSON.stringify({data: {classes: array(codes.slice(2))}})});
+        } else { pending = route; markSeen(); }
+      } else await route.abort();
+    });
+    await page.goto('https://lms.mindx.edu.vn/admin/classes');
+    const button = hasPagination ? `<button id="next" ${mode.pagination === 'ant' ? 'class="ant-pagination-next"' : ''} aria-label="Go to next page">Next</button>` : '';
+    await page.setContent(`<input placeholder="Search classes" value="old"><table><tbody>${mode.initial}</tbody></table>${button}`);
+    await page.evaluate(({refreshed, spinner, lastRow}) => {
+      const state = window as any;
+      state.__firstDone = false; state.__secondDone = false; state.__clicks = 0;
+      const fetchPage = (page: number) => fetch('https://lms-api.mindx.edu.vn/graphql', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({operationName: 'getClasses', variables: {search: '', page}}),
+      }).then(r => r.json());
+      document.querySelector('input')!.addEventListener('keydown', e => {
+        if ((e as KeyboardEvent).key !== 'Enter') return;
+        void fetchPage(1).then(() => {
+          document.querySelector('tbody')!.innerHTML = refreshed;
+          if (spinner) document.body.insertAdjacentHTML('beforeend', '<div role="progressbar">Loading</div>');
+          state.__firstDone = true;
+        });
+      });
+      document.querySelector('#next')?.addEventListener('click', () => {
+        state.__clicks++;
+        void fetchPage(2).then(() => {
+          document.querySelector('tbody')!.innerHTML = lastRow;
+          document.querySelector('#next')!.remove();
+          state.__secondDone = true;
+        });
+      });
+    }, {refreshed: mode.refreshed, spinner: 'spinner' in mode, lastRow: row(codes[2])});
+    getDb().prepare('DELETE FROM classes_sessions').run();
+    fs.writeFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!, JSON.stringify(array(codes)));
+    const before = fs.readFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!);
+    const listeners = {request: page.listeners('request').length, response: page.listeners('response').length};
+    page.waitForTimeout = async (ms: number) => {
+      elapsedMs += ms;
+      if (elapsedMs === 400) {
+        await seen; assert.ok(pending);
+        await pending.fulfill({status: 200, contentType: 'application/json', headers: {'Access-Control-Allow-Origin': '*'}, body: JSON.stringify({data: {classes: mode.api}})});
+        await page.waitForFunction(() => (window as any).__firstDone);
+      }
+      if (ms === 1200 && hasPagination) await page.waitForFunction(() => (window as any).__secondDone);
+    };
+    const result = await ClassSyncer.fetchRunningClasses({persistToConfig: true});
+    const after = fs.readFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!);
+    const savedCodes = JSON.parse(after.toString()).map((x: any) => x.classCode);
+    const observed = {result, savedCodes, cacheBeforeLength: 3, cacheAfterLength: savedCodes.length,
+      unchangedBytes: before.equals(after), simulatedWaits: true, elapsedMs, requests,
+      nextClicks: await page.evaluate(() => (window as any).__clicks),
+      inputCleared: await page.locator('input').inputValue() === '',
+      requestListenerRemoved: page.listeners('request').length === listeners.request,
+      responseListenerRemoved: page.listeners('response').length === listeners.response};
+    let status = 'PASS', error: string | undefined;
+    try {
+      assert.equal(observed.inputCleared, true);
+      assert.ok(requests.every(x => x.searchAtRequest === ''));
+      assert.equal(observed.requestListenerRemoved, true); assert.equal(observed.responseListenerRemoved, true);
+      assert.equal(result.success, mode.expected !== null);
+      if (mode.expected === null) {
+        assert.equal(observed.unchangedBytes, true); assert.deepEqual(savedCodes, codes); assert.equal(observed.nextClicks, 0);
+      } else {
+        assert.deepEqual(savedCodes, mode.expected);
+        assert.equal(observed.nextClicks, hasPagination ? 1 : 0);
+      }
+    } catch (e: any) {status = 'FAIL'; error = e.message;}
+    const item = {id: `F02-R5-${mode.id}`, status, ...(error ? {error} : {}), observed};
+    results.push(item); console.log(JSON.stringify(item));
+  }
+} finally {
+  bm.getPage = savedPage; authService.ensureAuthenticated = savedAuth;
+  await browser.close(); closeDb();
+}
+const summary = {pass: results.filter(x => x.status === 'PASS').length, fail: results.filter(x => x.status === 'FAIL').length, total: results.length, results};
+fs.writeFileSync('audit-evidence/f02-round5-focused-results.json', JSON.stringify(summary, null, 2));
+console.log('F02 ROUND5 FOCUSED SUMMARY', JSON.stringify({pass: summary.pass, fail: summary.fail, total: summary.total}));
+process.exitCode = summary.fail ? 1 : 0;

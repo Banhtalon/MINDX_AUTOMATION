@@ -31,7 +31,7 @@ const toVietnameseUpperSlug =
 
 export const FINISHED_CLASS_GRACE_DAYS = 15;
 export const DASHBOARD_FINISHED_CLASS_GRACE_DAYS = 7;
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+export const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Checks whether a Finished class (e.g. `VT-JSB15`, `VT-C4K-PTA12`) has already
@@ -149,12 +149,176 @@ export function parseClassDateToEndOfDayMs(rawDate?: string | null): number | nu
   return null;
 }
 
-function formatMsToDdMmYyyy(ms: number): string {
+export function formatMsToDdMmYyyy(ms: number): string {
   const d = new Date(ms);
   const day = String(d.getDate()).padStart(2, "0");
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const year = String(d.getFullYear());
   return `${day}/${month}/${year}`;
+}
+
+/**
+ * Parses either an ISO datetime string (e.g. `2026-11-07T10:00:00.000Z` from `GetClassById.slots`)
+ * or a standard class date string (`DD/MM/YYYY`, `YYYY-MM-DD`, etc.) into local end-of-day (`23:59:59.999`).
+ */
+export function parseSlotOrClassDateToEndOfDayMs(rawDate?: string | null): number | null {
+  const text = String(rawDate || "").trim();
+  if (!text || text === "0000-00-00") return null;
+
+  if (/^\d{4}-\d{1,2}-\d{1,2}T/i.test(text)) {
+    const ts = Date.parse(text);
+    if (Number.isFinite(ts)) {
+      const dt = new Date(ts);
+      const year = dt.getFullYear();
+      if (year >= 2020 && year <= 2100) {
+        return new Date(year, dt.getMonth(), dt.getDate(), 23, 59, 59, 999).getTime();
+      }
+    }
+  }
+
+  return parseClassDateToEndOfDayMs(text);
+}
+
+/**
+ * Enriches scraped class sessions with dates from `GetClassById.slots` and weekly `+7 days` progression
+ * up to today (`<= todayEndOfDayMs`), advancing `latestActiveSessionId` when a session falls on today
+ * even if MindX LMS still keeps the slot `.disabled` before the class's scheduled hour starts.
+ */
+export function enrichClassSessionsWithScheduleDates(params: {
+  classCode: string;
+  sessions: ClassSessionRecord[];
+  latestActiveSessionId: string;
+  slots?: any[] | null;
+  nowMs?: number;
+}): { latestActiveSessionId: string } {
+  const { classCode, sessions, slots } = params;
+  let latestActiveSessionId = params.latestActiveSessionId;
+  if (!Array.isArray(sessions) || sessions.length === 0) {
+    return { latestActiveSessionId };
+  }
+
+  const nowMs = params.nowMs ?? Date.now();
+  const todayDmy = formatMsToDdMmYyyy(nowMs);
+  const todayEndOfDayMs = parseClassDateToEndOfDayMs(todayDmy) ?? nowMs;
+
+  const slotEndMsBySession = new Map<number, number>();
+  if (Array.isArray(slots)) {
+    for (let idx = 0; idx < slots.length; idx++) {
+      const sl = slots[idx];
+      if (!sl || typeof sl !== "object") continue;
+      const sessNum = typeof sl.index === "number" ? sl.index + 1 : idx + 1;
+      const rawSlotDate = sl.startTime || sl.date || sl.startDate;
+      if (!rawSlotDate) continue;
+      const ms = parseSlotOrClassDateToEndOfDayMs(String(rawSlotDate));
+      if (ms !== null) {
+        slotEndMsBySession.set(sessNum, ms);
+      }
+    }
+  }
+
+  // 1. Fill dates for any session where GetClassById.slots provides a date <= todayEndOfDayMs
+  for (const s of sessions) {
+    const sessNum = Number(s.sessionNumber) || 0;
+    const slotMs = slotEndMsBySession.get(sessNum);
+    if (slotMs !== undefined && slotMs <= todayEndOfDayMs && !s.date) {
+      s.date = formatMsToDdMmYyyy(slotMs);
+    }
+  }
+
+  // 2. Also ensure the DOM-selected active session has a date if GetClassById.slots or startDate provides it
+  const domActiveSession = sessions.find((s) => s.sessionId === latestActiveSessionId);
+  if (domActiveSession && !domActiveSession.date) {
+    const sessNum = Number(domActiveSession.sessionNumber) || 0;
+    const slotMs = slotEndMsBySession.get(sessNum);
+    if (slotMs !== undefined) {
+      domActiveSession.date = formatMsToDdMmYyyy(slotMs);
+    } else if (sessNum === 1) {
+      try {
+        const rangeInfo = resolveClassDateRangeInfo(classCode);
+        const startEndMs = parseClassDateToEndOfDayMs(rangeInfo.startDateDmy);
+        if (startEndMs !== null && startEndMs <= todayEndOfDayMs) {
+          domActiveSession.date = formatMsToDdMmYyyy(startEndMs);
+        }
+      } catch {}
+    }
+  }
+
+  // 3. Find the highest session currently having a valid date <= todayEndOfDayMs as our schedule anchor
+  let anchorSession: ClassSessionRecord | null = null;
+  let anchorEndMs: number | null = null;
+  for (const s of sessions) {
+    if (!s.date) continue;
+    const ms = parseClassDateToEndOfDayMs(s.date);
+    if (ms !== null && ms <= todayEndOfDayMs) {
+      if (
+        !anchorSession ||
+        Number(s.sessionNumber) >= Number(anchorSession.sessionNumber)
+      ) {
+        anchorSession = s;
+        anchorEndMs = ms;
+      }
+    }
+  }
+
+  // 4. From anchorSession, backfill past sessions (1..anchor-1) and advance to today's session (anchor+1..14)
+  // if its weekly +7 days schedule falls in the current week up to today (<= todayEndOfDayMs)
+  if (anchorSession && anchorEndMs !== null) {
+    const anchorNum = Number(anchorSession.sessionNumber) || 0;
+    for (const s of sessions) {
+      const sessNum = Number(s.sessionNumber) || 0;
+      if (sessNum < 1 || sessNum > 14 || sessNum === anchorNum) continue;
+
+      if (sessNum < anchorNum) {
+        if (!s.date) {
+          const prevMs = anchorEndMs - (anchorNum - sessNum) * 7 * ONE_DAY_MS;
+          s.date = formatMsToDdMmYyyy(prevMs);
+        }
+      } else if (sessNum > anchorNum) {
+        const explicitSlotMs = slotEndMsBySession.get(sessNum);
+        if (explicitSlotMs !== undefined) {
+          if (explicitSlotMs <= todayEndOfDayMs && !s.date) {
+            s.date = formatMsToDdMmYyyy(explicitSlotMs);
+          } else if (explicitSlotMs > todayEndOfDayMs) {
+            Object.defineProperty(s, "_scheduledFutureDate", {
+              value: formatMsToDdMmYyyy(explicitSlotMs),
+              enumerable: false,
+              configurable: true,
+              writable: true,
+            });
+          }
+          continue;
+        }
+        const projectedMs = anchorEndMs + (sessNum - anchorNum) * 7 * ONE_DAY_MS;
+        if (
+          projectedMs <= todayEndOfDayMs &&
+          todayEndOfDayMs - projectedMs < 7 * ONE_DAY_MS &&
+          !s.date
+        ) {
+          s.date = formatMsToDdMmYyyy(projectedMs);
+        }
+      }
+    }
+  }
+
+  // 5. Update latestActiveSessionId to the highest session whose date is <= todayEndOfDayMs
+  let highestDatedSession: ClassSessionRecord | null = null;
+  for (const s of sessions) {
+    if (!s.date) continue;
+    const ms = parseClassDateToEndOfDayMs(s.date);
+    if (ms !== null && ms <= todayEndOfDayMs) {
+      if (
+        !highestDatedSession ||
+        Number(s.sessionNumber) >= Number(highestDatedSession.sessionNumber)
+      ) {
+        highestDatedSession = s;
+      }
+    }
+  }
+  if (highestDatedSession) {
+    latestActiveSessionId = highestDatedSession.sessionId;
+  }
+
+  return { latestActiveSessionId };
 }
 
 /**
@@ -769,7 +933,9 @@ export class ClassSyncer {
       await page.waitForTimeout(1200);
       await interceptor.dismissForbiddenToast();
 
-      const { sessions, latestActiveSessionId } = await this.scrapeSessions(page, classId, classCode);
+      const scrapedSessionData = await this.scrapeSessions(page, classId, classCode);
+      const sessions = scrapedSessionData.sessions;
+      let latestActiveSessionId = scrapedSessionData.latestActiveSessionId;
 
       // 5. Scrape Students from "Học viên" tab
       jobLogRepo.add({
@@ -797,28 +963,15 @@ export class ClassSyncer {
         await Promise.allSettled(Array.from(pendingClassByIdTasks));
       }
 
-      // Enrich missing session date ONLY for the latest active session (never future disabled slots, because class-directory.ts uses MAX(sessionNumber WHERE date <> '') to identify currentSessionNumber!)
-      if (Array.isArray(classByIdGqlData?.slots) && latestActiveSessionId) {
-        const activeSession = sessions.find((s) => s.sessionId === latestActiveSessionId);
-        if (activeSession && !activeSession.date) {
-          const slot = classByIdGqlData.slots.find(
-            (sl: any, idx: number) =>
-              (typeof sl?.index === "number" ? sl.index + 1 : idx + 1) ===
-              Number(activeSession.sessionNumber)
-          );
-          const rawSlotDate = slot?.startTime || slot?.date || slot?.startDate;
-          if (rawSlotDate) {
-            const ms =
-              parseClassDateToEndOfDayMs(String(rawSlotDate)) ??
-              (Number.isFinite(Date.parse(String(rawSlotDate)))
-                ? Date.parse(String(rawSlotDate))
-                : null);
-            if (ms !== null) {
-              activeSession.date = formatMsToDdMmYyyy(ms);
-            }
-          }
-        }
-      }
+      // Enrich session dates from GetClassById.slots and weekly +7 days schedule up to today (<= todayEndOfDayMs),
+      // advancing latestActiveSessionId when a session falls on today even before the class hour unlocks the DOM slot.
+      const enrichedSchedule = enrichClassSessionsWithScheduleDates({
+        classCode,
+        sessions,
+        latestActiveSessionId,
+        slots: Array.isArray(classByIdGqlData?.slots) ? classByIdGqlData.slots : null,
+      });
+      latestActiveSessionId = enrichedSchedule.latestActiveSessionId;
 
       let lmsVerifiedSessionsCount = 0;
 
@@ -1472,6 +1625,27 @@ export class ClassSyncer {
           (await (await browserManager.getContext()).newPage());
     const interceptor = createNetworkInterceptor(page);
     let classListApiError: string | null = null;
+    let awaitingSearchClearApiResponse = false;
+    let staleSearchFilterValue = "";
+    let searchClearApiConfirmed = false;
+    let confirmedApiClassCodes: string[] | null = null;
+    let sawAnyClassListApiTraffic = false;
+    const postClearRequests = new Set<any>();
+    const onClassListApiRequest = (req: any) => {
+      if (!req) return;
+      const reqUrl = String(req.url?.() || "");
+      const reqPostData = String(req.postData?.() || "");
+      const isClassReq =
+        /\/api\/classes\b/i.test(reqUrl) ||
+        ((reqUrl.includes("lms-api.mindx.edu.vn") || reqUrl.includes("graphql")) &&
+          /\b(getclasses|searchclasses|findclasses|classes|classlist)\b/i.test(reqPostData));
+      if (isClassReq) {
+        sawAnyClassListApiTraffic = true;
+      }
+      if (awaitingSearchClearApiResponse) {
+        postClearRequests.add(req);
+      }
+    };
     const onClassListApiResponse = async (res: any) => {
       try {
         const req = typeof res.request === "function" ? res.request() : null;
@@ -1506,12 +1680,83 @@ export class ClassSyncer {
           typeof res.text === "function"
             ? await res.text().catch(() => "")
             : "";
+        let parsed: any = null;
         if (bodyText && bodyText.trim().startsWith("{")) {
-          const parsed = JSON.parse(bodyText);
+          parsed = JSON.parse(bodyText);
           if (Array.isArray(parsed?.errors) && parsed.errors.length > 0) {
             classListApiError =
               parsed.errors[0]?.message ||
               "API danh sách lớp LMS trả về lỗi GraphQL.";
+            return;
+          }
+        }
+        let parsedReq: any = null;
+        if (postData && postData.trim().startsWith("{")) {
+          try {
+            parsedReq = JSON.parse(postData);
+          } catch {
+            parsedReq = null;
+          }
+        }
+        const opTarget = `${String(parsedReq?.operationName || "")} ${String(parsedReq?.query || "")}`;
+        const isExplicitClassListRequest =
+          /\/api\/classes\b/i.test(url) ||
+          /\b(getclasses|searchclasses|findclasses|classes|classlist)\b/i.test(opTarget);
+        if (isExplicitClassListRequest) {
+          sawAnyClassListApiTraffic = true;
+        }
+        if (awaitingSearchClearApiResponse && req && postClearRequests.has(req)) {
+          let hasNonEmptySearchFilter = false;
+          try {
+            const uObj = new URL(url, "https://lms.mindx.edu.vn");
+            for (const key of ["search", "q", "keyword", "query", "classCode"]) {
+              const val = uObj.searchParams.get(key);
+              if (val && val.trim().length > 0) {
+                hasNonEmptySearchFilter = true;
+              }
+            }
+          } catch {
+            // Ignore URL parse error
+          }
+          const checkVarsObj = (obj: any) => {
+            if (!obj || typeof obj !== "object") return;
+            for (const key of ["search", "q", "keyword", "query", "classCode", "name"]) {
+              if (typeof obj[key] === "string" && obj[key].trim().length > 0) {
+                hasNonEmptySearchFilter = true;
+              }
+            }
+          };
+          checkVarsObj(parsedReq?.variables);
+          checkVarsObj(parsedReq?.variables?.filter);
+          checkVarsObj(parsedReq?.variables?.input);
+          checkVarsObj(parsedReq?.variables?.where);
+          if (
+            staleSearchFilterValue &&
+            postData.toLowerCase().includes(staleSearchFilterValue.toLowerCase())
+          ) {
+            hasNonEmptySearchFilter = true;
+          }
+          const rawClassArray = Array.isArray(parsed?.data?.classes)
+            ? parsed.data.classes
+            : Array.isArray(parsed?.data?.classes?.data)
+              ? parsed.data.classes.data
+              : Array.isArray(parsed?.data?.getClasses)
+                ? parsed.data.getClasses
+                : /\/api\/classes\b/i.test(url) && Array.isArray(parsed?.data || parsed)
+                  ? (parsed?.data || parsed)
+                  : null;
+          if (isExplicitClassListRequest && !hasNonEmptySearchFilter && Array.isArray(rawClassArray)) {
+            const extractedCodes = rawClassArray
+              .map((item: any) =>
+                String(item?.classCode || item?.code || item?.name || "")
+                  .trim()
+                  .toUpperCase()
+              )
+              .filter((code: string) => /^[A-Z0-9]+(?:-[A-Z0-9]+)+$/i.test(code));
+            if (extractedCodes.length === rawClassArray.length) {
+              confirmedApiClassCodes = extractedCodes;
+              searchClearApiConfirmed = true;
+            }
           }
         }
       } catch {
@@ -1519,6 +1764,7 @@ export class ClassSyncer {
       }
     };
     if (typeof page.on === "function") {
+      page.on("request", onClassListApiRequest);
       page.on("response", onClassListApiResponse);
     }
 
@@ -1611,17 +1857,119 @@ export class ClassSyncer {
       if (await searchInput.isVisible().catch(() => false)) {
         const currentSearchVal = await searchInput.inputValue().catch(() => "");
         if (currentSearchVal && currentSearchVal.trim().length > 0) {
+          const initialTbodySig = await page
+            .locator("table tbody")
+            .first()
+            .innerText()
+            .catch(() => "");
+          staleSearchFilterValue = currentSearchVal.trim();
+          postClearRequests.clear();
+          confirmedApiClassCodes = null;
+          awaitingSearchClearApiResponse = true;
+          searchClearApiConfirmed = false;
           const clearFilterBtn = page
             .locator('button:has-text("Clear"), .ant-input-clear-icon, [aria-label="close-circle"]')
             .first();
           if (await clearFilterBtn.isVisible().catch(() => false)) {
             await clearFilterBtn.click().catch(() => {});
+            await page.waitForTimeout(400);
+          }
+          const remainingVal = await searchInput.inputValue().catch(() => currentSearchVal);
+          if (remainingVal && remainingVal.trim().length > 0) {
+            await searchInput.click().catch(() => {});
+            await searchInput.fill("").catch(() => {});
+            await page.keyboard.press("Enter").catch(() => {});
           } else {
             await searchInput.click().catch(() => {});
-            await searchInput.fill("");
-            await page.keyboard.press("Enter");
+            await page.keyboard.press("Enter").catch(() => {});
           }
-          await page.waitForTimeout(1500);
+          const finalSearchVal = await searchInput.inputValue().catch(() => remainingVal);
+          if (finalSearchVal && finalSearchVal.trim().length > 0) {
+            awaitingSearchClearApiResponse = false;
+            throw new Error(
+              `Không thể xóa bộ lọc tìm kiếm lớp học ('${finalSearchVal.trim()}') trên MindX LMS. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có.`
+            );
+          }
+          let searchRefreshConfirmed = false;
+          for (let waitIdx = 0; waitIdx < 15; waitIdx++) {
+            await page.waitForTimeout(400);
+            const curTbodySig = await page
+              .locator("table tbody")
+              .first()
+              .innerText()
+              .catch(() => "");
+            const domSnapshot = await page
+              .evaluate(() => {
+                const codes: string[] = [];
+                const trs = Array.from(document.querySelectorAll("table tbody tr"));
+                for (const tr of trs) {
+                  if (
+                    tr.closest(
+                      '[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight'
+                    )
+                  ) {
+                    continue;
+                  }
+                  const tds = Array.from(tr.querySelectorAll("td")).map((td) =>
+                    (td.innerText || td.textContent || "").replace(/\s+/g, " ").trim()
+                  );
+                  if (tds.length < 2) continue;
+                  let code = tds[1] || "";
+                  if (!/^[A-Z0-9]+(?:-[A-Z0-9]+)+$/i.test(code)) {
+                    const found = tds.find((c) =>
+                      /^[A-Z0-9]+(?:-[A-Z0-9]+)+$/i.test(c)
+                    );
+                    if (found) code = found;
+                  }
+                  code = code.trim().toUpperCase();
+                  if (code) codes.push(code);
+                }
+                const nextBtn = document.querySelector(
+                  '.ant-pagination-next:not(.ant-pagination-disabled), button[aria-label*="next" i]:not(:disabled), li[title="Next Page"]:not([aria-disabled="true"])'
+                );
+                return { codes, hasNextPage: Boolean(nextBtn) };
+              })
+              .catch(() => ({ codes: [] as string[], hasNextPage: false }));
+            const curDomClassCodes = domSnapshot.codes;
+            const domChangedToNonEmpty =
+              !sawAnyClassListApiTraffic &&
+              curTbodySig !== initialTbodySig &&
+              curTbodySig.trim().length > 0;
+            const apiCodes = confirmedApiClassCodes as string[] | null;
+            let apiMatchesDom = false;
+            if (searchClearApiConfirmed && apiCodes !== null && curTbodySig.trim().length > 0) {
+              if (apiCodes.length === 0) {
+                apiMatchesDom =
+                  curDomClassCodes.length === 0 &&
+                  (curTbodySig !== initialTbodySig ||
+                    /no classes|no data|không có dữ liệu|trống/i.test(curTbodySig));
+              } else if (domSnapshot.hasNextPage) {
+                apiMatchesDom =
+                  curDomClassCodes.length > 0 &&
+                  curDomClassCodes.length <= apiCodes.length &&
+                  curDomClassCodes.every((code: string, idx: number) => apiCodes[idx] === code);
+              } else {
+                apiMatchesDom =
+                  curDomClassCodes.length === apiCodes.length &&
+                  curDomClassCodes.every((code: string, idx: number) => apiCodes[idx] === code);
+              }
+            }
+            if (domChangedToNonEmpty || apiMatchesDom) {
+              searchRefreshConfirmed = true;
+              break;
+            }
+          }
+          awaitingSearchClearApiResponse = false;
+          const priorCachedClasses =
+            typeof getRunningClasses === "function" ? getRunningClasses() || [] : [];
+          if (
+            !searchRefreshConfirmed &&
+            ((options?.persistToConfig ?? true) || priorCachedClasses.length > 0)
+          ) {
+            throw new Error(
+              "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+            );
+          }
         }
       }
 
@@ -1865,6 +2213,14 @@ export class ClassSyncer {
       // Also include any previously synced SQLite classes that reached Buổi 12–14 and whose Buổi 14
       // is within FINISHED_CLASS_GRACE_DAYS (15 days), even if they were on a later page of /admin/classes
       try {
+        const priorRunningList =
+          typeof getRunningClasses === "function" ? getRunningClasses() || [] : [];
+        const priorRunningMap = new Map<string, RunningClassItem>();
+        for (const item of priorRunningList) {
+          const c = String(item?.classCode || "").trim().toUpperCase();
+          if (c) priorRunningMap.set(c, item);
+        }
+
         const db = getDb();
         if (typeof (db as any)?.prepare === "function") {
           const dbClasses = (db as any)
@@ -1880,18 +2236,25 @@ export class ClassSyncer {
             const code = String(row.classId || "").trim().toUpperCase();
             if (!code || /^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(code)) continue;
             if (collectedMap.has(code)) continue;
+            const priorItem = priorRunningMap.get(code);
             const graceCheck = isFinishedClassWithinGraceWindow(
               code,
-              null,
+              priorItem?.endDate || null,
               spckDbFinishedGraceDays,
               nowMs
             );
             if (graceCheck.isKnownDate && graceCheck.withinWindow) {
+              const isStillRunningBeforeEndDate =
+                (graceCheck.daysSinceSession14 ?? 1) <= 0 &&
+                isConfirmedRunningStatus(priorItem?.status);
               collectedMap.set(code, {
+                ...(priorItem || {}),
                 classCode: code,
-                courseName: row.className && row.className !== code ? row.className : "",
-                status: "Finished",
-                endDate: graceCheck.session14Date,
+                courseName:
+                  priorItem?.courseName ||
+                  (row.className && row.className !== code ? row.className : ""),
+                status: isStillRunningBeforeEndDate ? "Running" : "Finished",
+                endDate: graceCheck.session14Date || priorItem?.endDate,
                 updatedAt: nowIso,
               });
             }
@@ -1948,6 +2311,7 @@ export class ClassSyncer {
       };
     } finally {
       if (typeof page.off === "function") {
+        page.off("request", onClassListApiRequest);
         page.off("response", onClassListApiResponse);
       }
     }

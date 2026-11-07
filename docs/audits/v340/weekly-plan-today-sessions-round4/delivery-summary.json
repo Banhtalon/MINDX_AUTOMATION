@@ -1,0 +1,59 @@
+{
+  "at": "2026-11-07T11:18:09.547Z",
+  "verdict": "NO-GO",
+  "reviewer": {
+    "client": "0.163.0",
+    "model": "gpt-6.1-sol",
+    "provider": "openai",
+    "reasoningEffort": "xhigh",
+    "sessionId": "01a1b5b1-9d73-7da1-8ad6-57eff5ec352c",
+    "exitCode": 0,
+    "source": "Actual codex exec startup header; full session log retained only in TEMP"
+  },
+  "mandatoryGateExitCodes": {
+    "G1": 0,
+    "G2": 0,
+    "G3": 0,
+    "G3-boundary": 0,
+    "F02-independent": 0,
+    "G1-after-report": 0
+  },
+  "mandatoryProbeCounts": {
+    "pass": 45,
+    "fail": 0,
+    "total": 45
+  },
+  "reviewerSupplement": {
+    "pass": 2,
+    "fail": 3,
+    "total": 5
+  },
+  "coordinatorSupplement": {
+    "pass": 2,
+    "fail": 4,
+    "total": 6
+  },
+  "finalTypecheck": {
+    "command": "npx --no-install tsc --noEmit",
+    "start": "2026-11-07T11:17:34.653Z",
+    "end": "2026-11-07T11:17:35.932Z",
+    "durationMs": 1279,
+    "exitCode": 0,
+    "signal": null,
+    "error": null,
+    "log": "audit-evidence/G1-after-report.log",
+    "isolation": {
+      "runtime": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1-after-report",
+      "db": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1-after-report\\synthetic.db",
+      "classes": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj\\audit-evidence\\runtime\\G1-after-report\\classes.json",
+      "allowlist": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj",
+      "TZ": "Asia/Ho_Chi_Minh"
+    }
+  },
+  "realDataPreserved": true,
+  "sourceFilesUnchanged": 157,
+  "historicalCompilerInputsUnchanged": 22,
+  "reportSha256": "a55aa503b00da7444cac08c89e8c1dcbee1de17fb12cc1ac10e01c4207024ee2",
+  "sourceChangesMade": false,
+  "liveServiceAcceptance": false
+}

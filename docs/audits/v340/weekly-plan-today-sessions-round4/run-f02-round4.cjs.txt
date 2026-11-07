@@ -1,0 +1,25 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
+const { spawnSync } = require('node:child_process');
+const runtime = path.resolve('audit-evidence/runtime/F02-round4-correspondence');
+fs.mkdirSync(runtime, { recursive: true });
+const classes = path.join(runtime, 'classes.json');
+fs.writeFileSync(classes, '[]');
+const env = { ...process.env, TEACHING_PASSWORD: '', LMS_PASSWORD: '', GEMINI_API_KEY: '', MINDX_PASSWORD: '',
+  TZ: 'Asia/Ho_Chi_Minh', ALLOWED_LOCAL_DIRS: [os.tmpdir(), process.cwd()].join(','),
+  MINDX_DB_PATH: path.join(runtime, 'synthetic.db'), MINDX_RUNNING_CLASSES_PATH: classes };
+const command = 'npx --no-install tsx audit-evidence/f02-round4-correspondence-probes.mts';
+const log = 'audit-evidence/F02-round4-correspondence.log';
+const fd = fs.openSync(log, 'w');
+const start = new Date();
+const result = spawnSync(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', command],
+  { cwd: process.cwd(), env, stdio: ['ignore', fd, fd], windowsHide: true, timeout: 60000 });
+fs.closeSync(fd);
+const gate = { command, start: start.toISOString(), end: new Date().toISOString(), durationMs: Date.now() - start.getTime(),
+  exitCode: result.status, signal: result.signal, error: result.error?.message || null, log,
+  isolation: { runtime, db: env.MINDX_DB_PATH, classes, allowlist: env.ALLOWED_LOCAL_DIRS, TZ: env.TZ } };
+fs.writeFileSync('audit-evidence/F02-round4-gate-result.json', JSON.stringify(gate, null, 2));
+console.log(JSON.stringify(gate, null, 2));
+console.log(fs.readFileSync(log, 'utf8'));
+process.exitCode = result.status ?? 1;

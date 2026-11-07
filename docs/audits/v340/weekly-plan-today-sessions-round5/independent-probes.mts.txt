@@ -1,0 +1,156 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { chromium } from 'playwright';
+import * as esbuild from 'esbuild';
+
+const cwd = process.cwd();
+assert.ok(cwd.includes('mindx-weekly-plan-audit-'));
+const now = new Date(2026, 10, 7, 8, 0).getTime();
+const realNow = Date.now;
+Date.now = () => now;
+const { getDb, classSessionRepo } = await import('../src/lib/db/sqlite');
+const { enrichClassSessionsWithScheduleDates: enrich, formatMsToDdMmYyyy: fmt, ONE_DAY_MS: DAY, ClassSyncer } = await import('../src/lib/playwright/sync-class');
+const { queryClassDirectory } = await import('../src/lib/classes/class-directory');
+const { getDashboardTodayTodoCards: cards, buildClassTodayTodoCard: card } = await import('../src/lib/dashboard/today-tasks');
+const { GET } = await import('../src/app/api/session-comments/list/route');
+const db = getDb();
+assert.ok(db.name.startsWith(cwd));
+const results: any[] = [];
+async function test(id: string, body: () => any) {
+  try { const detail = await body(); results.push({ id, status: 'PASS', detail }); console.log('PASS', id, JSON.stringify(detail ?? null)); }
+  catch (e: any) { results.push({ id, status: 'FAIL', error: e.message }); console.log('FAIL', id, e.message); }
+}
+const date = (days: number) => fmt(now + days * DAY);
+const sid = (c: string, n: number) => `${c}_SESS_${String(n).padStart(2, '0')}`;
+const sessions = (c: string, dates: Record<number, string> = {}) => Array.from({length: 14}, (_, i) => ({classId: c, className: c, sessionId: sid(c, i + 1), sessionNumber: i + 1, date: dates[i + 1] || ''}));
+function reset(list: any[] = []) { db.prepare('DELETE FROM classes_sessions').run(); fs.writeFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!, JSON.stringify(list)); }
+function seed(c: string, dates: Record<number, string>) { for (const s of sessions(c, dates)) classSessionRepo.upsert(s); }
+const directory = (c: string) => queryClassDirectory({scope: 'all', nowMs: now}).classes.find(x => x.classCode === c)!;
+
+for (const empty of ['', '   ', undefined, null]) await test(`DB-preserve-${String(empty)}`, () => {
+  const s = sessions('VT-QA-JSB200', {8: date(-7)})[7]; classSessionRepo.upsert(s);
+  classSessionRepo.upsert({...s, date: empty as any});
+  assert.equal(classSessionRepo.findByClass(s.classId)[0].date, date(-7));
+});
+await test('DB-replace-nonempty', () => {const s = sessions('VT-QA-JSB200', {8: date(0)})[7]; classSessionRepo.upsert(s); assert.equal(classSessionRepo.findByClass(s.classId)[0].date, date(0));});
+
+for (const age of [6, 7, 8, 13, 14]) await test(`ENRICH-weekly-anchor-age-${age}`, () => {
+  const ss = sessions('VT-QA-JSB201', {8: date(-age)});
+  const res = enrich({classCode: ss[0].classId, sessions: ss, latestActiveSessionId: ss[7].sessionId, nowMs: now});
+  const expected = 8 + Math.floor(age / 7);
+  assert.equal(res.latestActiveSessionId, sid(ss[0].classId, expected));
+  assert.equal(ss[expected].date, '');
+});
+await test('ENRICH-slot-later-today-before-class-hour', () => {
+  const ss = sessions('VT-QA-JSB202', {8: date(-7)});
+  const r = enrich({classCode: ss[0].classId, sessions: ss, latestActiveSessionId: ss[7].sessionId, slots:[{index:8,startTime:'2026-11-07T19:00:00+07:00'}],nowMs:now});
+  assert.equal(r.latestActiveSessionId, ss[8].sessionId); assert.equal(ss[8].date,date(0));
+});
+await test('ENRICH-explicit-next-slot-postponed', () => {
+  const ss = sessions('VT-QA-JSB203', {8:date(-7)});
+  const r = enrich({classCode:ss[0].classId,sessions:ss,latestActiveSessionId:ss[7].sessionId,slots:[{index:8,startTime:'2026-11-14T19:00:00+07:00'}],nowMs:now});
+  assert.equal(r.latestActiveSessionId, ss[7].sessionId); assert.equal(ss[8].date,'');
+});
+await test('ENRICH-ISO-cross-midnight-Vietnam', () => {
+  const ss=sessions('VT-QA-JSB204');
+  const r=enrich({classCode:ss[0].classId,sessions:ss,latestActiveSessionId:ss[0].sessionId,slots:[{index:8,startTime:'2026-11-06T18:00:00Z'}],nowMs:now});
+  assert.equal(r.latestActiveSessionId,ss[8].sessionId); assert.equal(ss[8].date,date(0));
+});
+await test('ENRICH-empty-no-crash', () => assert.deepEqual(enrich({classCode:'VT-QA-JSB205',sessions:[],latestActiveSessionId:'',nowMs:now}),{latestActiveSessionId:''}));
+
+for (const age of [6,7,8,13]) await test(`DIRECTORY-weekly-age-${age}`, () => {
+  const c='VT-QA-JSB206'; reset([{classCode:c,status:'Running'}]); seed(c,{8:date(-age)});
+  const row=directory(c); assert.equal(row.currentSessionNumber,age >= 7 ? 9 : 8); assert.equal(row.currentSessionDate,date(-age+(age>=7?7:0)));
+});
+await test('DIRECTORY-no-advance-finished', () => {
+  const c='VT-QA-JSB207'; reset([{classCode:c,status:'Finished',endDate:date(-1)}]); seed(c,{14:date(-1)});
+  assert.equal(directory(c).currentSessionNumber,14); assert.equal(directory(c).currentSessionDate,date(-1));
+});
+await test('PIPELINE-postponed-explicit-slot-must-not-advance', () => {
+  const c='VT-QA-JSB208'; reset([{classCode:c,status:'Running'}]); const ss=sessions(c,{8:date(-7)});
+  const synced=enrich({classCode:c,sessions:ss,latestActiveSessionId:sid(c,8),slots:[{index:8,startTime:'2026-11-14T19:00:00+07:00'}],nowMs:now});
+  ss.forEach(s=>classSessionRepo.upsert(s));
+  const row=directory(c), dashboard=cards()[0];
+  const actual={sync:synced.latestActiveSessionId,directory:row.currentSessionNumber,directoryDate:row.currentSessionDate,cardSession:dashboard.currentSessionNumber,cardDate:dashboard.sessionDate,isToday:dashboard.isTodaySession};
+  console.log('OBSERVED postponed pipeline',JSON.stringify(actual));
+  assert.equal(row.currentSessionNumber,8,JSON.stringify(actual));
+});
+await test('DIRECTORY-known-future-date-must-not-be-overridden', () => {
+  const c='VT-QA-JSB209';reset([{classCode:c,status:'Running'}]);seed(c,{8:date(-7),9:date(7)});
+  const row=directory(c);assert.equal(row.currentSessionNumber,8,JSON.stringify(row));
+});
+await test('DIRECTORY-finished-S14-date-must-match-S14', () => {
+  const c='VT-QA-JSB210';reset([{classCode:c,status:'Finished',endDate:date(-1)}]);seed(c,{13:date(-8)});
+  const row=directory(c),dashboard=cards()[0];
+  assert.equal(row.currentSessionDate,date(-1),JSON.stringify({row,card:dashboard}));
+});
+await test('DIRECTORY-all-future-must-not-pick-last-session', () => {
+  const c='VT-QA-JSB211';reset([{classCode:c,status:'Running'}]);seed(c,{1:date(1),14:date(92)});
+  const row=directory(c);assert.ok(row.currentSessionNumber<=1,JSON.stringify(row));
+});
+await test('DASHBOARD-today-date-badge-and-sort', () => {
+  const a='VT-QA-JSB212',b='VT-QA-JSB213'; reset([{classCode:a,status:'Running'},{classCode:b,status:'Running'}]);seed(a,{8:date(-1)});seed(b,{8:date(-7)});
+  const cs=cards();assert.equal(cs[0].classId,b);assert.equal(cs[0].isTodaySession,true);assert.equal(cs[0].sessionDate,date(0));
+});
+await test('DASHBOARD-today-class-after-default-limit-24', () => {
+  const codes=Array.from({length:25},(_,i)=>`VT-QA-JSB${300+i}`);reset(codes.map(classCode=>({classCode,status:'Running'})));codes.forEach((c,i)=>seed(c,{8:date(i===24?-7:-1)}));
+  const cs=cards({limit:24});console.log('OBSERVED default limit',JSON.stringify({count:cs.length,todayClass:codes[24],hasToday:cs.some(x=>x.classId===codes[24])}));assert.equal(cs[0].classId,codes[24]);
+});
+await test('API-fills-current-session-date-without-DB-write', async () => {
+  const c='VT-QA-JSB214';reset([{classCode:c,status:'Running'}]);seed(c,{11:date(-7)});
+  const before=db.prepare('SELECT date FROM classes_sessions WHERE classId=? AND sessionNumber=12').get(c);
+  const response=await GET(new Request(`http://127.0.0.1:3000/api/session-comments/list?classId=${c}`,{headers:{host:'127.0.0.1:3000'}}));const json=await response.json();
+  assert.equal(response.status,200);assert.equal(json.data.sessions.find((s:any)=>s.sessionNumber===12).date,date(0));
+  assert.deepEqual(db.prepare('SELECT date FROM classes_sessions WHERE classId=? AND sessionNumber=12').get(c),before);
+});
+
+const browser=await chromium.launch({headless:true});
+const context=await browser.newContext(); await context.route('**/*', r=>r.abort());
+const page=await context.newPage();await page.addInitScript('window.__name=(fn)=>fn');
+try {
+  const uiCards=[card({classId:'VT-TODAY',currentSessionNumber:9,sessionDate:date(0)}),card({classId:'VT-OLD',currentSessionNumber:8,sessionDate:date(-1)}),card({classId:'VT-DONE',currentSessionNumber:7,sessionDate:date(0),sessionCommentVerified:true}),card({classId:'VT-NODATE',currentSessionNumber:6})];
+  const bundle=await esbuild.build({stdin:{contents:`import React from 'react';import{createRoot}from'react-dom/client';import{DashboardTodayTasksPanel}from'./src/components/dashboard-today-tasks-panel';createRoot(document.getElementById('root')).render(<DashboardTodayTasksPanel initialCards={${JSON.stringify(uiCards)}}/>);`,resolveDir:cwd,loader:'tsx'},bundle:true,write:false,platform:'browser',format:'iife',jsx:'automatic',define:{'process.env.NODE_ENV':'"development"'},plugins:[{name:'next-stubs',setup(b){b.onResolve({filter:/^next\/(link|navigation)$/},a=>({path:a.path,namespace:'audit-next'}));b.onLoad({filter:/.*/,namespace:'audit-next'},a=>({loader:'jsx',resolveDir:cwd,contents:a.path.endsWith('link')?`import React from 'react';export default function Link(p){return <a {...p}/>} `:`export const useRouter=()=>({refresh(){}});`}));}}]});
+  await page.setContent('<meta charset="utf-8"><div id="root"></div>');await page.addScriptTag({content:bundle.outputFiles[0].text});
+  await page.locator('[data-testid="session-date-VT-TODAY"]').waitFor();
+  await test('UI-pending-today-icon-date-and-Vietnamese',async()=>{const text=await page.locator('[data-testid="session-date-VT-TODAY"]').innerText();assert.equal(text,`📅 ${date(0)} • Hôm nay`);});
+  await test('UI-old-date-no-today-badge',async()=>assert.equal(await page.locator('[data-testid="session-date-VT-OLD"]').innerText(),`📅 ${date(-1)}`));
+  await test('UI-missing-date-no-placeholder-garbage',async()=>assert.equal(await page.locator('[data-testid="session-date-VT-NODATE"]').count(),0));
+  await test('UI-search-date',async()=>{await page.getByPlaceholder('Tìm lớp...', {exact:false}).fill(date(-1));assert.equal(await page.locator('[data-testid="session-date-VT-OLD"]').count(),1);assert.equal(await page.locator('[data-testid="session-date-VT-TODAY"]').count(),0);});
+  await test('UI-search-hom-nay',async()=>{await page.getByPlaceholder('Tìm lớp...',{exact:false}).fill('hôm nay');assert.equal(await page.locator('[data-testid="session-date-VT-TODAY"]').count(),1);assert.equal(await page.locator('[data-testid="session-date-VT-OLD"]').count(),0);});
+  await test('UI-done-today-date',async()=>{await page.getByPlaceholder('Tìm lớp...',{exact:false}).fill('');await page.getByRole('button',{name:/Đã xong \(/}).click();assert.equal(await page.locator('[data-testid="session-date-VT-DONE"]').innerText(),`📅 ${date(0)} • Hôm nay`);});
+  await page.screenshot({path:path.join(cwd,'audit-evidence','panel-done.png'),fullPage:true});
+
+  const {BrowserManager}=await import('../src/lib/playwright/browser-manager');const {authService}=await import('../src/lib/playwright/auth');
+  const bm=BrowserManager.getInstance(),origPage=bm.getPage,origAuth=authService.ensureAuthenticated;
+  (bm as any).getPage=async()=>page;(authService as any).ensureAuthenticated=async()=>true;
+  const origWait=page.waitForTimeout;(page as any).waitForTimeout=async()=>{};
+  try {
+    for(const [status,offset,expected] of [['Running',0,'Running'],['Running',1,'Running'],['Active',1,'Running'],['Running',-1,'Finished'],['Finished',0,'Finished']] as const) await test(`FETCH-fallback-${status}-end-${offset}`,async()=>{
+      const c='VT-QA-JSB215';reset([{classCode:c,status,endDate:date(offset)}]);seed(c,{14:date(offset)});
+      await page.setContent('<table><tbody><tr><td>No classes</td></tr></tbody></table>');
+      const r=await ClassSyncer.fetchRunningClasses({persistToConfig:true});assert.equal(r.success,true,r.error);assert.equal(r.classes.find(x=>x.classCode===c)?.status,expected,JSON.stringify(r));
+    });
+    await test('FETCH-clear-button-no-op-fill-fallback',async()=>{
+      reset();await page.setContent('<input placeholder="Search classes" value="old"/><button>Clear</button><table><tbody><tr><td>1</td><td>VT-QA-JSB216</td><td>JSB</td><td>VT</td><td>Running</td></tr></tbody></table>');
+      const r=await ClassSyncer.fetchRunningClasses({persistToConfig:false});assert.equal(await page.locator('input').inputValue(),'');assert.equal(r.success,true);assert.equal(r.classes[0]?.classCode,'VT-QA-JSB216');
+    });
+    await test('FETCH-wait-for-search-results-not-stale-row-count',async()=>{
+      const old=[{classCode:'VT-QA-JSB219',status:'Running'},{classCode:'VT-QA-JSB220',status:'Running'},{classCode:'VT-QA-JSB221',status:'Running'}];reset(old);
+      const row=(c:string)=>`<tr><td>1</td><td>${c}</td><td>JSB</td><td>VT</td><td>Running</td></tr>`;
+      await page.setContent(`<input placeholder="Search classes" value="old"/><table><tbody>${row(old[0].classCode)}${row(old[1].classCode)}</tbody></table>`);
+      let elapsed=0;
+      (page as any).waitForTimeout=async(ms:number)=>{elapsed+=ms;if(elapsed>=2000)await page.locator('tbody').evaluate((el,html)=>{el.innerHTML=html;},old.map(x=>row(x.classCode)).join(''));};
+      try{const r=await ClassSyncer.fetchRunningClasses({persistToConfig:true});console.log('OBSERVED delayed refresh',JSON.stringify({elapsed,result:r}));assert.equal(r.classes.length,3,'Search succeeds after 2s; stale 2-row table must not be persisted');}finally{(page as any).waitForTimeout=async()=>{};}
+    });
+    await test('FETCH-failed-clear-must-preserve-cache',async()=>{
+      const old=[{classCode:'VT-QA-JSB217',status:'Running'},{classCode:'VT-QA-JSB218',status:'Running'}];reset(old);
+      await page.setContent('<input placeholder="Search classes" value="old"/><button>Clear</button><table><tbody><tr><td>1</td><td>VT-QA-JSB217</td><td>JSB</td><td>VT</td><td>Running</td></tr></tbody></table>');
+      const originalLocator=page.locator.bind(page);
+      (page as any).locator=(selector:any,...args:any[])=>{const loc=originalLocator(selector,...args);if(typeof selector==='string'&&selector.includes('input[placeholder')){const origFirst=loc.first.bind(loc);loc.first=()=>{const input=origFirst();(input as any).fill=async()=>{throw new Error('simulated fill failure')};return input;};}return loc;};
+      try {const r=await ClassSyncer.fetchRunningClasses({persistToConfig:true});console.log('OBSERVED failed clearing',JSON.stringify({result:r,input:await originalLocator('input').inputValue(),cache:JSON.parse(fs.readFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!,'utf8'))}));assert.equal(r.success,false,'Must fail instead of persisting filtered subset');assert.deepEqual(JSON.parse(fs.readFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!,'utf8')),old);} finally {(page as any).locator=originalLocator;}
+    });
+  } finally {bm.getPage=origPage;authService.ensureAuthenticated=origAuth;page.waitForTimeout=origWait;}
+} finally {await browser.close();Date.now=realNow;db.close();}
+const summary={pass:results.filter(r=>r.status==='PASS').length,fail:results.filter(r=>r.status==='FAIL').length,total:results.length,results};
+fs.writeFileSync(path.join(cwd,'audit-evidence','G3-results.json'),JSON.stringify(summary,null,2));console.log('G3 SUMMARY',JSON.stringify({pass:summary.pass,fail:summary.fail,total:summary.total}));process.exitCode=summary.fail?1:0;

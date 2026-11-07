@@ -1,0 +1,306 @@
+src/lib/playwright/sync-class.ts:1627-1679
+1627:     let classListApiError: string | null = null;
+1628:     let awaitingSearchClearApiResponse = false;
+1629:     let searchClearApiConfirmed = false;
+1630:     const onClassListApiResponse = async (res: any) => {
+1631:       try {
+1632:         const req = typeof res.request === "function" ? res.request() : null;
+1633:         const method = String(req?.method?.() || "").toUpperCase();
+1634:         if (method === "OPTIONS") return;
+1635:         const resourceType = String(req?.resourceType?.() || "").toLowerCase();
+1636:         if (resourceType === "document") return;
+1637:         const url = String(res.url?.() || "");
+1638:         const isLmsApi =
+1639:           url.includes("lms-api.mindx.edu.vn") ||
+1640:           url.includes("graphql") ||
+1641:           /\/api\/classes\b/i.test(url);
+1642:         if (!isLmsApi) return;
+1643:         const postData = String(req?.postData?.() || "");
+1644:         if (
+1645:           postData &&
+1646:           /\b(getstudents|students|getcomments|comments|getslots|slots|attendance|submissions|homework|permission|notification)\b/i.test(
+1647:             postData
+1648:           ) &&
+1649:           !/\b(getclasses|searchclasses|findclasses|classes|classlist)\b/i.test(
+1650:             postData
+1651:           )
+1652:         ) {
+1653:           return;
+1654:         }
+1655:         const status = typeof res.status === "function" ? res.status() : 200;
+1656:         if (status >= 400) {
+1657:           classListApiError = `API danh sách lớp LMS trả về mã lỗi HTTP ${status}.`;
+1658:           return;
+1659:         }
+1660:         const bodyText =
+1661:           typeof res.text === "function"
+1662:             ? await res.text().catch(() => "")
+1663:             : "";
+1664:         if (bodyText && bodyText.trim().startsWith("{")) {
+1665:           const parsed = JSON.parse(bodyText);
+1666:           if (Array.isArray(parsed?.errors) && parsed.errors.length > 0) {
+1667:             classListApiError =
+1668:               parsed.errors[0]?.message ||
+1669:               "API danh sách lớp LMS trả về lỗi GraphQL.";
+1670:             return;
+1671:           }
+1672:         }
+1673:         if (awaitingSearchClearApiResponse) {
+1674:           searchClearApiConfirmed = true;
+1675:         }
+1676:       } catch {
+1677:         // Ignore parse errors
+1678:       }
+1679:     };
+
+src/lib/playwright/sync-class.ts:1768-1839
+1768:       // Clear any previous class search filter so ALL classes are displayed
+1769:       const searchInput = page.locator(SELECTORS.classes.searchInput).first();
+1770:       if (await searchInput.isVisible().catch(() => false)) {
+1771:         const currentSearchVal = await searchInput.inputValue().catch(() => "");
+1772:         if (currentSearchVal && currentSearchVal.trim().length > 0) {
+1773:           const initialTbodySig = await page
+1774:             .locator("table tbody")
+1775:             .first()
+1776:             .innerText()
+1777:             .catch(() => "");
+1778:           awaitingSearchClearApiResponse = true;
+1779:           searchClearApiConfirmed = false;
+1780:           const clearFilterBtn = page
+1781:             .locator('button:has-text("Clear"), .ant-input-clear-icon, [aria-label="close-circle"]')
+1782:             .first();
+1783:           if (await clearFilterBtn.isVisible().catch(() => false)) {
+1784:             await clearFilterBtn.click().catch(() => {});
+1785:             await page.waitForTimeout(400);
+1786:           }
+1787:           const remainingVal = await searchInput.inputValue().catch(() => currentSearchVal);
+1788:           if (remainingVal && remainingVal.trim().length > 0) {
+1789:             await searchInput.click().catch(() => {});
+1790:             await searchInput.fill("").catch(() => {});
+1791:             await page.keyboard.press("Enter").catch(() => {});
+1792:           } else {
+1793:             await searchInput.click().catch(() => {});
+1794:             await page.keyboard.press("Enter").catch(() => {});
+1795:           }
+1796:           const finalSearchVal = await searchInput.inputValue().catch(() => remainingVal);
+1797:           if (finalSearchVal && finalSearchVal.trim().length > 0) {
+1798:             awaitingSearchClearApiResponse = false;
+1799:             throw new Error(
+1800:               `Không thể xóa bộ lọc tìm kiếm lớp học ('${finalSearchVal.trim()}') trên MindX LMS. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có.`
+1801:             );
+1802:           }
+1803:           let searchRefreshConfirmed = false;
+1804:           for (let waitIdx = 0; waitIdx < 15; waitIdx++) {
+1805:             await page.waitForTimeout(400);
+1806:             const curTbodySig = await page
+1807:               .locator("table tbody")
+1808:               .first()
+1809:               .innerText()
+1810:               .catch(() => "");
+1811:             if (
+1812:               (curTbodySig !== initialTbodySig && curTbodySig.trim().length > 0) ||
+1813:               (searchClearApiConfirmed && curTbodySig.trim().length > 0)
+1814:             ) {
+1815:               searchRefreshConfirmed = true;
+1816:               break;
+1817:             }
+1818:           }
+1819:           awaitingSearchClearApiResponse = false;
+1820:           const priorCachedClasses =
+1821:             typeof getRunningClasses === "function" ? getRunningClasses() || [] : [];
+1822:           if (
+1823:             !searchRefreshConfirmed &&
+1824:             ((options?.persistToConfig ?? true) || priorCachedClasses.length > 0)
+1825:           ) {
+1826:             throw new Error(
+1827:               "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+1828:             );
+1829:           }
+1830:         }
+1831:       }
+1832: 
+1833:       // Wait for class table rows
+1834:       await page
+1835:         .locator("table tbody tr")
+1836:         .first()
+1837:         .waitFor({ state: "visible", timeout: 15000 })
+1838:         .catch(() => {});
+1839:       await page.waitForTimeout(800);
+
+src/lib/playwright/sync-class.ts:2124-2173
+2124:       const activeRunningCodeSet = new Set(
+2125:         Array.from(collectedMap.values())
+2126:           .filter((c) => isConfirmedRunningStatus(c.status))
+2127:           .map((c) => c.classCode)
+2128:       );
+2129:       const runningList = Array.from(collectedMap.values()).filter(
+2130:         (c) =>
+2131:           c.status !== "Finished" ||
+2132:           !isFinishedClassSupersededByRunningSuccessor(c.classCode, activeRunningCodeSet)
+2133:       );
+2134:       const shouldPersist = options?.persistToConfig !== false;
+2135:       if (shouldPersist) {
+2136:         saveRunningClasses(runningList);
+2137:       }
+2138: 
+2139:       const finalClasses = runningList;
+2140:       const runningOnlyCount = finalClasses.filter((c) => isConfirmedRunningStatus(c.status)).length;
+2141:       const recentFinishedCount = finalClasses.filter((c) => c.status === "Finished").length;
+2142: 
+2143:       jobLogRepo.add({
+2144:         jobId,
+2145:         jobType: "SYNC_CLASS",
+2146:         level: "SUCCESS",
+2147:         message: `Đã lấy thành công ${finalClasses.length} lớp từ LMS (${runningOnlyCount} lớp Running + ${recentFinishedCount} lớp Finished trong vòng ${DASHBOARD_FINISHED_CLASS_GRACE_DAYS} ngày sau Buổi 14): ${finalClasses
+2148:           .map((c) => `${c.classCode}${c.status === "Finished" ? " [Finished]" : ""}`)
+2149:           .join(", ")}.`,
+2150:       });
+2151: 
+2152:       return {
+2153:         success: true,
+2154:         classes: finalClasses,
+2155:       };
+2156:     } catch (err: any) {
+2157:       const errMsg = err instanceof Error ? err.message : String(err);
+2158:       jobLogRepo.add({
+2159:         jobId,
+2160:         jobType: "SYNC_CLASS",
+2161:         level: "ERROR",
+2162:         message: `Lỗi lấy danh sách lớp đang học từ LMS: ${errMsg}`,
+2163:       });
+2164:       return {
+2165:         success: false,
+2166:         classes: getRunningClasses(),
+2167:         error: errMsg,
+2168:       };
+2169:     } finally {
+2170:       if (typeof page.off === "function") {
+2171:         page.off("response", onClassListApiResponse);
+2172:       }
+2173:     }
+
+scripts/test-streamline-v340-s6.ts:1721-1772
+1721:         // F02-R2: Delayed refresh (4000ms) & unconfirmed refresh (never completes)
+1722:         const threeClasses = [
+1723:           { classCode: "VT-QA-JSB501", status: "Running" },
+1724:           { classCode: "VT-QA-JSB502", status: "Running" },
+1725:           { classCode: "VT-QA-JSB503", status: "Running" },
+1726:         ];
+1727:         const rowHtml = (code: string) =>
+1728:           `<tr><td>1</td><td>${code}</td><td>JSB</td><td>VT</td><td>Running</td></tr>`;
+1729: 
+1730:         for (const [caseId, readyAfterMs] of [
+1731:           ["F02-R2-refresh-completes-at-4000ms", 4000],
+1732:           ["F02-R2-refresh-never-completes", Number.POSITIVE_INFINITY],
+1733:         ] as const) {
+1734:           fs.writeFileSync(testRunningClassesPath, JSON.stringify(threeClasses), "utf8");
+1735:           await pageReadiness.setContent(
+1736:             `<input placeholder="Search classes" value="old"/><table><tbody>${threeClasses
+1737:               .slice(0, 2)
+1738:               .map((x) => rowHtml(x.classCode))
+1739:               .join("")}</tbody></table>`
+1740:           );
+1741:           let elapsedMs = 0;
+1742:           (pageReadiness as any).waitForTimeout = async (ms: number) => {
+1743:             elapsedMs += ms;
+1744:             if (elapsedMs >= readyAfterMs) {
+1745:               await pageReadiness.locator("tbody").evaluate(
+1746:                 (el, html) => {
+1747:                   el.innerHTML = html;
+1748:                 },
+1749:                 threeClasses.map((x) => rowHtml(x.classCode)).join("")
+1750:               );
+1751:             }
+1752:           };
+1753:           const resBoundary = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+1754:           const cachedAfter = getRunningClasses();
+1755:           assert.equal(
+1756:             cachedAfter.length,
+1757:             3,
+1758:             `${caseId}: Unconfirmed stale 2-row table must never overwrite 3-class cache`
+1759:           );
+1760:           if (Number.isFinite(readyAfterMs)) {
+1761:             assert.equal(resBoundary.success, true, `${caseId}: Delayed 4000ms refresh must succeed`);
+1762:             assert.equal(resBoundary.classes.length, 3, `${caseId}: Must return all 3 classes`);
+1763:           } else {
+1764:             assert.equal(resBoundary.success, false, `${caseId}: Unconfirmed refresh must return success:false`);
+1765:           }
+1766:         }
+1767:         (pageReadiness as any).waitForTimeout = async () => {};
+1768:       } finally {
+1769:         bm.getPage = origGetPage;
+1770:         authService.ensureAuthenticated = origEnsureAuth;
+1771:         pageReadiness.waitForTimeout = origWait;
+1772:         await pageReadiness.close();
+
+src/lib/db/json-config.ts:211-252
+211: const RUNNING_CLASSES_FILE = path.resolve(process.cwd(), "data", "running_classes.json");
+212: 
+213: function resolveRunningClassesFilePath(): string {
+214:   const customPath = process.env.MINDX_RUNNING_CLASSES_PATH?.trim();
+215:   if (customPath) {
+216:     return assertPathAllowed(path.resolve(process.cwd(), customPath));
+217:   }
+218:   return assertPathAllowed(RUNNING_CLASSES_FILE);
+219: }
+220: 
+221: export function getRunningClasses(): RunningClassItem[] {
+222:   try {
+223:     const safePath = resolveRunningClassesFilePath();
+224:     if (!fs.existsSync(safePath)) {
+225:       return [];
+226:     }
+227:     const raw = fs.readFileSync(safePath, "utf-8");
+228:     const parsed = JSON.parse(raw);
+229:     if (!Array.isArray(parsed)) return [];
+230:     return parsed.filter(
+231:       (item): item is RunningClassItem =>
+232:         Boolean(item && typeof item === "object" && typeof item.classCode === "string" && item.classCode.trim())
+233:     );
+234:   } catch (err) {
+235:     if (err instanceof Error && err.message.includes("[Security Exception]")) {
+236:       throw err;
+237:     }
+238:     return [];
+239:   }
+240: }
+241: 
+242: export function saveRunningClasses(classes: RunningClassItem[]): void {
+243:   const dataDir = assertPathAllowed(path.resolve(process.cwd(), "data"));
+244:   if (!fs.existsSync(dataDir)) {
+245:     fs.mkdirSync(dataDir, { recursive: true });
+246:   }
+247:   const safePath = resolveRunningClassesFilePath();
+248:   const tempPath = assertPathAllowed(`${safePath}.tmp`);
+249:   fs.writeFileSync(tempPath, JSON.stringify(classes, null, 2), "utf-8");
+250:   fs.renameSync(tempPath, safePath);
+251: }
+252: 
+
+src/app/api/dashboard/scan-weekly-tasks/route.ts:45-70
+45:     const outcome = await taskQueue.enqueue({
+46:       id: `scan_weekly_tasks_${Date.now()}`,
+47:       jobType: "SYNC_CLASS",
+48:       description: "Quét công việc tuần này từ LMS & Teaching cho các lớp đang dạy",
+49:       execute: async () => {
+50:         ensureQueueNotStopped();
+51:         const fetchRes = await ClassSyncer.fetchRunningClasses({
+52:           persistToConfig: true,
+53:         });
+54:         ensureQueueNotStopped();
+55: 
+56:         if (!fetchRes.success) {
+57:           return {
+58:             ok: false as const,
+59:             error:
+60:               fetchRes.error ||
+61:               "Không thể lấy danh sách lớp đang dạy từ MindX LMS.",
+62:             syncedClassCodes: [] as string[],
+63:             failedClasses: [] as Array<{ classCode: string; error: string }>,
+64:           };
+65:         }
+66: 
+67:         const candidateCodes: string[] = [];
+68:         const seen = new Set<string>();
+69:         const rawList = Array.isArray(fetchRes.classes)
+70:           ? fetchRes.classes

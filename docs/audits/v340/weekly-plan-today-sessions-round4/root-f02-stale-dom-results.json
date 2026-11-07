@@ -1,0 +1,61 @@
+{
+  "pass": 0,
+  "fail": 1,
+  "total": 1,
+  "results": [
+    {
+      "id": "F02-R4-stale-response-changes-dom",
+      "status": "FAIL",
+      "error": "A non-class or pre-clear filtered response must not authorize stale 2-row persistence\n\n1 !== 3\n",
+      "observed": {
+        "elapsedMs": 1200,
+        "simulatedWaits": true,
+        "result": {
+          "success": true,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB601",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T11:09:45.696Z"
+            }
+          ]
+        },
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 1,
+        "cacheUnchangedBytes": false,
+        "inputAfter": "",
+        "tbodyTextUnchanged": false,
+        "requests": [
+          {
+            "url": "https://lms-api.mindx.edu.vn/graphql",
+            "method": "POST",
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "old"
+              }
+            },
+            "searchValueAtRequest": "old",
+            "elapsedAtRequest": 0,
+            "searchValueAtResponse": "",
+            "elapsedAtResponse": 400,
+            "responseStatus": 200,
+            "responseBody": {
+              "data": {
+                "classes": [
+                  {
+                    "classCode": "VT-QA-JSB601",
+                    "status": "Running"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "observerRemoved": true
+      }
+    }
+  ]
+}

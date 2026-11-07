@@ -2,9 +2,12 @@ import { getRunningClasses, type RunningClassItem } from "@/lib/db/json-config";
 import { getDb, studentRepo, type StudentRecord } from "@/lib/db/sqlite";
 import {
   FINISHED_CLASS_GRACE_DAYS,
+  ONE_DAY_MS,
+  formatMsToDdMmYyyy,
   isConfirmedRunningStatus,
   isFinishedClassSupersededByRunningSuccessor,
   isFinishedClassWithinGraceWindow,
+  parseClassDateToEndOfDayMs,
   resolveClassDateRangeInfo,
 } from "@/lib/playwright/sync-class";
 
@@ -39,6 +42,7 @@ export interface ClassDirectoryItem extends RunningClassItem {
   endDate?: string;
   session14Date?: string;
   currentSessionNumber: number;
+  currentSessionDate?: string;
   maxSessionNumber: number;
   spckSessions: number[];
 }
@@ -80,6 +84,8 @@ export function queryClassDirectory(options?: ListClassesOptions): {
   const includeSynthetic = Boolean(options?.includeSynthetic);
   const allowedClassCodes = options?.allowedClassCodes;
   const nowMs = options?.nowMs ?? Date.now();
+  const todayDmy = formatMsToDdMmYyyy(nowMs);
+  const todayEndMs = parseClassDateToEndOfDayMs(todayDmy) ?? nowMs;
 
   const cachedList =
     typeof getRunningClasses === "function" ? getRunningClasses() : [];
@@ -94,6 +100,10 @@ export function queryClassDirectory(options?: ListClassesOptions): {
   }
 
   let dbRows: DbAggregatedClassRow[] = [];
+  const datedSessionRowsByClass = new Map<
+    string,
+    Array<{ sessionNumber: number; dateDmy: string; endMs: number }>
+  >();
   try {
     const db = typeof getDb === "function" ? getDb() : null;
     if (typeof (db as any)?.prepare === "function") {
@@ -110,6 +120,30 @@ export function queryClassDirectory(options?: ListClassesOptions): {
            ORDER BY classId ASC`
         )
         .all() as DbAggregatedClassRow[];
+
+      const rawDatedRows = (db as any)
+        .prepare(
+          `SELECT classId, sessionNumber, date
+           FROM classes_sessions
+           WHERE TRIM(COALESCE(date, '')) <> ''
+           ORDER BY classId ASC, sessionNumber ASC`
+        )
+        .all() as Array<{ classId: string; sessionNumber: number; date: string }>;
+
+      for (const dr of rawDatedRows) {
+        const code = String(dr?.classId || "").trim().toUpperCase();
+        const sNum = Number(dr?.sessionNumber) || 0;
+        if (!code || sNum < 1) continue;
+        const endMs = parseClassDateToEndOfDayMs(dr.date);
+        if (endMs === null) continue;
+        const list = datedSessionRowsByClass.get(code) || [];
+        list.push({
+          sessionNumber: sNum,
+          dateDmy: formatMsToDdMmYyyy(endMs),
+          endMs,
+        });
+        datedSessionRowsByClass.set(code, list);
+      }
     }
   } catch {
     // Ignore DB errors when running in stripped / uninitialized environments
@@ -173,13 +207,24 @@ export function queryClassDirectory(options?: ListClassesOptions): {
 
     const activeSess = Number(dbRow?.activeSessionNumber) || 0;
     const maxSess = Number(dbRow?.maxSessionNumber) || 0;
+    const datedList = datedSessionRowsByClass.get(code) || [];
+    const datedUpToToday = datedList.filter((d) => d.endMs <= todayEndMs);
+    const anchorDated =
+      datedUpToToday.length > 0
+        ? datedUpToToday[datedUpToToday.length - 1]
+        : datedList.length > 0
+        ? datedList[0]
+        : undefined;
+
     let currentSessionNumber = dbRow
       ? hasAnySyncedDate
-        ? activeSess
+        ? anchorDated?.sessionNumber ?? activeSess
         : maxSess
       : isFinishedStatus
       ? 14
       : 0;
+    let currentSessionDate = anchorDated?.dateDmy || "";
+
     if (isFinishedStatus && currentSessionNumber < 14 && maxSess >= 14) {
       currentSessionNumber = 14;
     }
@@ -200,6 +245,36 @@ export function queryClassDirectory(options?: ListClassesOptions): {
         (graceCheck.daysSinceSession14 ?? -1) > 0
       ? "Finished"
       : "Running";
+
+    // Same-day / current-week advancement for Running classes:
+    // If MindX LMS still had today's slot `.disabled` before the class's scheduled hour (so SQLite only has last week's date on session N),
+    // and `anchorDated.endMs + 7 days` falls in the current week up to today (`<= todayEndMs` and within `< 7 days`),
+    // automatically advance `currentSessionNumber` to `N + 1` and resolve `currentSessionDate` to today's session date —
+    // UNLESS session `N + 1` already has an explicit future date (`endMs > todayEndMs`, e.g. postponed due to holiday).
+    if (
+      resolvedStatus === "Running" &&
+      anchorDated &&
+      anchorDated.endMs <= todayEndMs &&
+      currentSessionNumber >= 1 &&
+      currentSessionNumber < maxSess
+    ) {
+      const nextSessNum = anchorDated.sessionNumber + 1;
+      const explicitNextDated = datedList.find(
+        (d) => d.sessionNumber === nextSessNum
+      );
+      const isNextExplicitlyPostponed =
+        explicitNextDated !== undefined && explicitNextDated.endMs > todayEndMs;
+      if (!isNextExplicitlyPostponed) {
+        const nextSessEndMs = anchorDated.endMs + 7 * ONE_DAY_MS;
+        if (
+          nextSessEndMs <= todayEndMs &&
+          todayEndMs - nextSessEndMs < 7 * ONE_DAY_MS
+        ) {
+          currentSessionNumber = nextSessNum;
+          currentSessionDate = formatMsToDdMmYyyy(nextSessEndMs);
+        }
+      }
+    }
 
     // Unified grace rule for `running` and `spck` scopes:
     // Exclude classes that have finished Buổi 14 more than `includeFinishedDays` ago,
@@ -247,6 +322,30 @@ export function queryClassDirectory(options?: ListClassesOptions): {
     const session14Date =
       graceCheck.session14Date || endDate || undefined;
 
+    const exactEffectiveSessionDated = datedList.find(
+      (d) => d.sessionNumber === effectiveCurrentSession
+    );
+    if (exactEffectiveSessionDated) {
+      currentSessionDate = exactEffectiveSessionDated.dateDmy;
+    } else if (
+      anchorDated &&
+      effectiveCurrentSession !== anchorDated.sessionNumber &&
+      !(
+        resolvedStatus === "Running" &&
+        effectiveCurrentSession === anchorDated.sessionNumber + 1
+      )
+    ) {
+      currentSessionDate = "";
+    }
+
+    if (!currentSessionDate) {
+      if (effectiveCurrentSession === 14 && session14Date) {
+        currentSessionDate = session14Date;
+      } else if (effectiveCurrentSession === 1 && startDate) {
+        currentSessionDate = startDate;
+      }
+    }
+
     const entry: ClassDirectoryItem = {
       ...(cachedItem || {}),
       classId: code,
@@ -258,6 +357,7 @@ export function queryClassDirectory(options?: ListClassesOptions): {
       ...(endDate ? { endDate } : {}),
       ...(session14Date ? { session14Date } : {}),
       currentSessionNumber: effectiveCurrentSession,
+      ...(currentSessionDate ? { currentSessionDate } : {}),
       maxSessionNumber: effectiveMaxSession,
       spckSessions: [12, 13, 14],
     };

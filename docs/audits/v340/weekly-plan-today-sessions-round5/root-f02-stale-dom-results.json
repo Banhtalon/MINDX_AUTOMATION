@@ -1,0 +1,66 @@
+{
+  "pass": 1,
+  "fail": 0,
+  "total": 1,
+  "results": [
+    {
+      "id": "F02-R4-stale-response-changes-dom",
+      "status": "PASS",
+      "observed": {
+        "elapsedMs": 6000,
+        "simulatedWaits": true,
+        "result": {
+          "success": false,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB601",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB602",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB603",
+              "status": "Running"
+            }
+          ],
+          "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+        },
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "cacheUnchangedBytes": true,
+        "inputAfter": "",
+        "tbodyTextUnchanged": false,
+        "requests": [
+          {
+            "url": "https://lms-api.mindx.edu.vn/graphql",
+            "method": "POST",
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": "old"
+              }
+            },
+            "searchValueAtRequest": "old",
+            "elapsedAtRequest": 0,
+            "searchValueAtResponse": "",
+            "elapsedAtResponse": 400,
+            "responseStatus": 200,
+            "responseBody": {
+              "data": {
+                "classes": [
+                  {
+                    "classCode": "VT-QA-JSB601",
+                    "status": "Running"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "observerRemoved": true
+      }
+    }
+  ]
+}

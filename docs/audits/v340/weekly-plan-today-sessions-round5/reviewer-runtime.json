@@ -1,0 +1,14 @@
+{
+  "requestedModel": "gpt-6.1-sol",
+  "requestedEffort": "xhigh",
+  "actualModelFromCliOutput": null,
+  "actualEffortFromCliOutput": null,
+  "invocationEvidence": "Parent captures the launch output. This reviewer session has no launch-output artifact to independently verify model/effort.",
+  "spawnedAgents": 0,
+  "spawnedCodexProcesses": 0,
+  "liveServiceCalls": 0,
+  "productEdits": 0,
+  "nodeVersion": "v24.21.0",
+  "platform": "win32",
+  "syntheticScope": true
+}

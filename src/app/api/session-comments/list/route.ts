@@ -59,6 +59,19 @@ export async function GET(req: Request) {
 
     const includeInactive = url.searchParams.get("includeInactive") === "true";
     const allSessions = classId ? classSessionRepo.findByClass(classId) : [];
+    if (classId && allSessions.length > 0) {
+      const matchedRunning = runningClasses.find(
+        (c) => String(c?.classCode || "").trim().toUpperCase() === classId
+      ) as any;
+      const curNum = Number(matchedRunning?.currentSessionNumber) || 0;
+      const curDate = String(matchedRunning?.currentSessionDate || "").trim();
+      if (curNum >= 1 && curDate) {
+        const targetSess = allSessions.find((s) => Number(s.sessionNumber) === curNum);
+        if (targetSess && !String(targetSess.date || "").trim()) {
+          targetSess.date = curDate;
+        }
+      }
+    }
     const allStudents = classId
       ? typeof listStudents === "function"
         ? listStudents(classId, { activeOnly: !includeInactive })

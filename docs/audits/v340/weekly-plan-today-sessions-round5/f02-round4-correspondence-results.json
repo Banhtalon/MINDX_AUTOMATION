@@ -1,0 +1,351 @@
+{
+  "pass": 5,
+  "fail": 0,
+  "total": 5,
+  "results": [
+    {
+      "id": "F02-R4-empty-class-array",
+      "status": "PASS",
+      "violations": [],
+      "observed": {
+        "simulatedWaits": true,
+        "elapsedMs": 6000,
+        "result": {
+          "success": false,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB701",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB711",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB721",
+              "status": "Running"
+            }
+          ],
+          "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+        },
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "cacheCodes": [
+          "VT-QA-JSB701",
+          "VT-QA-JSB711",
+          "VT-QA-JSB721"
+        ],
+        "responseBody": {
+          "data": {
+            "classes": []
+          }
+        },
+        "requests": [
+          {
+            "url": "https://lms-api.mindx.edu.vn/graphql",
+            "method": "POST",
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": ""
+              }
+            },
+            "searchValueAtRequest": ""
+          }
+        ],
+        "checks": {
+          "inputCleared": true,
+          "requestStartedAfterClear": true,
+          "domUnchanged": true,
+          "requestListenerRemoved": true,
+          "responseListenerRemoved": true,
+          "successFalse": true,
+          "cacheStillThree": true,
+          "cacheUnchangedBytes": true
+        }
+      }
+    },
+    {
+      "id": "F02-R4-api-subset-of-stale-dom",
+      "status": "PASS",
+      "violations": [],
+      "observed": {
+        "simulatedWaits": true,
+        "elapsedMs": 6000,
+        "result": {
+          "success": false,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB701",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB711",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB721",
+              "status": "Running"
+            }
+          ],
+          "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+        },
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "cacheCodes": [
+          "VT-QA-JSB701",
+          "VT-QA-JSB711",
+          "VT-QA-JSB721"
+        ],
+        "responseBody": {
+          "data": {
+            "classes": [
+              {
+                "classCode": "VT-QA-JSB701",
+                "status": "Running"
+              }
+            ]
+          }
+        },
+        "requests": [
+          {
+            "url": "https://lms-api.mindx.edu.vn/graphql",
+            "method": "POST",
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": ""
+              }
+            },
+            "searchValueAtRequest": ""
+          }
+        ],
+        "checks": {
+          "inputCleared": true,
+          "requestStartedAfterClear": true,
+          "domUnchanged": true,
+          "requestListenerRemoved": true,
+          "responseListenerRemoved": true,
+          "successFalse": true,
+          "cacheStillThree": true,
+          "cacheUnchangedBytes": true
+        }
+      }
+    },
+    {
+      "id": "F02-R4-api-codes-only-prefix-match",
+      "status": "PASS",
+      "violations": [],
+      "observed": {
+        "simulatedWaits": true,
+        "elapsedMs": 6000,
+        "result": {
+          "success": false,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB701",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB711",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB721",
+              "status": "Running"
+            }
+          ],
+          "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+        },
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "cacheCodes": [
+          "VT-QA-JSB701",
+          "VT-QA-JSB711",
+          "VT-QA-JSB721"
+        ],
+        "responseBody": {
+          "data": {
+            "classes": [
+              {
+                "classCode": "VT-QA-JSB70",
+                "status": "Running"
+              },
+              {
+                "classCode": "VT-QA-JSB71",
+                "status": "Running"
+              }
+            ]
+          }
+        },
+        "requests": [
+          {
+            "url": "https://lms-api.mindx.edu.vn/graphql",
+            "method": "POST",
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": ""
+              }
+            },
+            "searchValueAtRequest": ""
+          }
+        ],
+        "checks": {
+          "inputCleared": true,
+          "requestStartedAfterClear": true,
+          "domUnchanged": true,
+          "requestListenerRemoved": true,
+          "responseListenerRemoved": true,
+          "successFalse": true,
+          "cacheStillThree": true,
+          "cacheUnchangedBytes": true
+        }
+      }
+    },
+    {
+      "id": "F02-R4-reject-nonempty-url-filter",
+      "status": "PASS",
+      "violations": [],
+      "observed": {
+        "simulatedWaits": true,
+        "elapsedMs": 6000,
+        "result": {
+          "success": false,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB701",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB711",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB721",
+              "status": "Running"
+            }
+          ],
+          "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+        },
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "cacheCodes": [
+          "VT-QA-JSB701",
+          "VT-QA-JSB711",
+          "VT-QA-JSB721"
+        ],
+        "responseBody": {
+          "data": {
+            "classes": [
+              {
+                "classCode": "VT-QA-JSB701",
+                "status": "Running"
+              },
+              {
+                "classCode": "VT-QA-JSB711",
+                "status": "Running"
+              }
+            ]
+          }
+        },
+        "requests": [
+          {
+            "url": "https://lms-api.mindx.edu.vn/graphql?search=other",
+            "method": "POST",
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "search": ""
+              }
+            },
+            "searchValueAtRequest": ""
+          }
+        ],
+        "checks": {
+          "inputCleared": true,
+          "requestStartedAfterClear": true,
+          "domUnchanged": true,
+          "requestListenerRemoved": true,
+          "responseListenerRemoved": true,
+          "successFalse": true,
+          "cacheStillThree": true,
+          "cacheUnchangedBytes": true
+        }
+      }
+    },
+    {
+      "id": "F02-R4-reject-nonempty-graphql-filter",
+      "status": "PASS",
+      "violations": [],
+      "observed": {
+        "simulatedWaits": true,
+        "elapsedMs": 6000,
+        "result": {
+          "success": false,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB701",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB711",
+              "status": "Running"
+            },
+            {
+              "classCode": "VT-QA-JSB721",
+              "status": "Running"
+            }
+          ],
+          "error": "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+        },
+        "cacheBeforeLength": 3,
+        "cacheAfterLength": 3,
+        "cacheCodes": [
+          "VT-QA-JSB701",
+          "VT-QA-JSB711",
+          "VT-QA-JSB721"
+        ],
+        "responseBody": {
+          "data": {
+            "classes": [
+              {
+                "classCode": "VT-QA-JSB701",
+                "status": "Running"
+              },
+              {
+                "classCode": "VT-QA-JSB711",
+                "status": "Running"
+              }
+            ]
+          }
+        },
+        "requests": [
+          {
+            "url": "https://lms-api.mindx.edu.vn/graphql",
+            "method": "POST",
+            "postData": {
+              "operationName": "getClasses",
+              "variables": {
+                "filter": {
+                  "search": "other"
+                }
+              }
+            },
+            "searchValueAtRequest": ""
+          }
+        ],
+        "checks": {
+          "inputCleared": true,
+          "requestStartedAfterClear": true,
+          "domUnchanged": true,
+          "requestListenerRemoved": true,
+          "responseListenerRemoved": true,
+          "successFalse": true,
+          "cacheStillThree": true,
+          "cacheUnchangedBytes": true
+        }
+      }
+    }
+  ]
+}

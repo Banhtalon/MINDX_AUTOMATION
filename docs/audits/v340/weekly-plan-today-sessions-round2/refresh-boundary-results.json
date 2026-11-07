@@ -1,0 +1,95 @@
+{
+  "pass": 0,
+  "fail": 2,
+  "total": 2,
+  "results": [
+    {
+      "id": "F02-R2-refresh-completes-at-4000ms",
+      "status": "FAIL",
+      "error": "Unconfirmed stale two-row table must never replace the three-class cache\n\n2 !== 3\n",
+      "observed": {
+        "elapsed": 3200,
+        "readyAfterMs": 4000,
+        "result": {
+          "success": true,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB501",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T10:36:53.981Z"
+            },
+            {
+              "classCode": "VT-QA-JSB502",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T10:36:53.981Z"
+            }
+          ]
+        },
+        "cache": [
+          {
+            "classCode": "VT-QA-JSB501",
+            "courseName": "JSB",
+            "center": "VT",
+            "status": "Running",
+            "updatedAt": "2026-11-07T10:36:53.981Z"
+          },
+          {
+            "classCode": "VT-QA-JSB502",
+            "courseName": "JSB",
+            "center": "VT",
+            "status": "Running",
+            "updatedAt": "2026-11-07T10:36:53.981Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F02-R2-refresh-never-completes",
+      "status": "FAIL",
+      "error": "Unconfirmed stale two-row table must never replace the three-class cache\n\n2 !== 3\n",
+      "observed": {
+        "elapsed": 3200,
+        "readyAfterMs": "never",
+        "result": {
+          "success": true,
+          "classes": [
+            {
+              "classCode": "VT-QA-JSB501",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T10:36:54.032Z"
+            },
+            {
+              "classCode": "VT-QA-JSB502",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T10:36:54.032Z"
+            }
+          ]
+        },
+        "cache": [
+          {
+            "classCode": "VT-QA-JSB501",
+            "courseName": "JSB",
+            "center": "VT",
+            "status": "Running",
+            "updatedAt": "2026-11-07T10:36:54.032Z"
+          },
+          {
+            "classCode": "VT-QA-JSB502",
+            "courseName": "JSB",
+            "center": "VT",
+            "status": "Running",
+            "updatedAt": "2026-11-07T10:36:54.032Z"
+          }
+        ]
+      }
+    }
+  ]
+}

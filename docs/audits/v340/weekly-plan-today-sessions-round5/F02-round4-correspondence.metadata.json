@@ -1,0 +1,39 @@
+{
+  "gate": "F02-round4-correspondence",
+  "command": "npx --no-install tsx audit-evidence/f02-round4-correspondence-probes.mts",
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f\\audit-evidence\\runtime\\mindx-weekly-plan-audit-r2-r3-round4-compat",
+  "physicalCwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f",
+  "compatibility": {
+    "reason": "Unmodified Round 4 probe hardcodes a Round 4 cwd-name guard",
+    "alias": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f\\audit-evidence\\runtime\\mindx-weekly-plan-audit-r2-r3-round4-compat",
+    "target": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f",
+    "sourceAndProbeUnmodified": true,
+    "removedAfterGate": true
+  },
+  "start": "2026-11-07T11:30:02.365Z",
+  "end": "2026-11-07T11:30:06.057Z",
+  "durationMs": 3692,
+  "exitCode": 0,
+  "signal": null,
+  "env": {
+    "TZ": "Asia/Ho_Chi_Minh",
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f\\audit-evidence\\runtime\\mindx-weekly-plan-audit-r2-r3-round4-compat",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f\\audit-evidence\\runtime\\mindx-weekly-plan-audit-r2-r3-round4-compat\\audit-evidence\\runtime\\F02-round4-correspondence\\mindx_bot.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f\\audit-evidence\\runtime\\mindx-weekly-plan-audit-r2-r3-round4-compat\\audit-evidence\\runtime\\F02-round4-correspondence\\running_classes.json",
+    "TEACHING_PASSWORD": "",
+    "LMS_PASSWORD": "",
+    "GEMINI_API_KEY": ""
+  },
+  "blankedKeys": [
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTIGRAVITY_CSRF_TOKEN",
+    "MWAPI_KEY"
+  ],
+  "stdout": "F02-round4-correspondence.stdout.log",
+  "stderr": "F02-round4-correspondence.stderr.log",
+  "combined": "F02-round4-correspondence.log"
+}

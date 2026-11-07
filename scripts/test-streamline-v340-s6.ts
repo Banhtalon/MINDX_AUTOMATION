@@ -22,8 +22,9 @@ import {
   buildClassTodayTodoCard,
   getDashboardTodayTodoCards,
 } from "../src/lib/dashboard/today-tasks";
-import { getDb } from "../src/lib/db/sqlite";
+import { getDb, classSessionRepo } from "../src/lib/db/sqlite";
 import { queryClassDirectory } from "../src/lib/classes/class-directory";
+import { enrichClassSessionsWithScheduleDates } from "../src/lib/playwright/sync-class";
 import {
   GET as getTeachingProjectRoute,
   POST as postTeachingProjectRoute,
@@ -598,6 +599,241 @@ async function runTests() {
       }).classes,
       [],
       "F05: Passing an explicit empty allowedClassCodes set must return [] instead of falling back to cached classes"
+    );
+
+    // Same-day session advancement & date display regression (VT-C4K-GI34 Buổi 9 & VT-C4K-PTA13 Buổi 12):
+    // When MindX LMS still keeps today's slot `.disabled` before the class's scheduled hour starts,
+    // both `enrichClassSessionsWithScheduleDates` and `queryClassDirectory` / `getDashboardTodayTodoCards`
+    // must advance from last week's session (`today - 7 days`) to today's session and expose `sessionDate` + `isTodaySession`.
+    const dToday = fmtDmy(nowRef);
+    const d7DaysAgo = fmtDmy(new Date(nowRef.getTime() - 7 * 24 * 60 * 60 * 1000));
+    const d6DaysAgo = fmtDmy(new Date(nowRef.getTime() - 6 * 24 * 60 * 60 * 1000));
+    const dTomorrow = fmtDmy(new Date(nowRef.getTime() + 1 * 24 * 60 * 60 * 1000));
+
+    const gi34Sessions = Array.from({ length: 14 }, (_, i) => ({
+      classId: "VT-C4K-GI34",
+      className: "VT-C4K-GI34",
+      sessionId: `VT-C4K-GI34_SESS_${String(i + 1).padStart(2, "0")}`,
+      sessionNumber: i + 1,
+      topic: `Buổi ${i + 1}`,
+      date: i + 1 === 8 ? d7DaysAgo : "",
+    }));
+    const gi34Enriched = enrichClassSessionsWithScheduleDates({
+      classCode: "VT-C4K-GI34",
+      sessions: gi34Sessions,
+      latestActiveSessionId: "VT-C4K-GI34_SESS_08",
+      nowMs: nowRef.getTime(),
+    });
+    assert.equal(
+      gi34Enriched.latestActiveSessionId,
+      "VT-C4K-GI34_SESS_09",
+      "Same-day sync: VT-C4K-GI34 must advance from SESS_08 (7 days ago) to SESS_09 (today) even when SESS_09 is still .disabled in DOM"
+    );
+    assert.equal(
+      gi34Sessions[8].date,
+      dToday,
+      "Same-day sync: VT-C4K-GI34 SESS_09 must receive today's date"
+    );
+    assert.equal(
+      gi34Sessions[9].date,
+      "",
+      "Same-day sync: Future session SESS_10 must keep empty date"
+    );
+
+    // Sunday class (last session 6 days ago, next session tomorrow) must NOT advance early
+    const ga38Sessions = Array.from({ length: 14 }, (_, i) => ({
+      classId: "VT-C4K-GA38",
+      className: "VT-C4K-GA38",
+      sessionId: `VT-C4K-GA38_SESS_${String(i + 1).padStart(2, "0")}`,
+      sessionNumber: i + 1,
+      topic: `Buổi ${i + 1}`,
+      date: i + 1 === 12 ? d6DaysAgo : "",
+    }));
+    const ga38Enriched = enrichClassSessionsWithScheduleDates({
+      classCode: "VT-C4K-GA38",
+      sessions: ga38Sessions,
+      latestActiveSessionId: "VT-C4K-GA38_SESS_12",
+      nowMs: nowRef.getTime(),
+    });
+    assert.equal(
+      ga38Enriched.latestActiveSessionId,
+      "VT-C4K-GA38_SESS_12",
+      "Sunday class (next session tomorrow) must remain on SESS_12 today"
+    );
+    assert.equal(
+      ga38Sessions[12].date,
+      "",
+      "Sunday class SESS_13 (tomorrow) must not receive date early"
+    );
+
+    // Seed VT-C4K-PTA13 in SQLite with SESS_11 dated 7 days ago and SESS_12..14 empty (simulating pre-class-hour state)
+    for (let sNum = 1; sNum <= 14; sNum++) {
+      insertSessStmt.run(
+        "VT-C4K-PTA13",
+        "PTA 13",
+        `VT-C4K-PTA13_SESS_${String(sNum).padStart(2, "0")}`,
+        sNum,
+        sNum === 11 ? d7DaysAgo : ""
+      );
+    }
+    fs.writeFileSync(
+      testRunningClassesPath,
+      JSON.stringify(
+        [
+          { classCode: "VT-C4K-JSB12", className: "JSB 12", currentSessionNumber: 12, status: "Running" },
+          { classCode: "VT-C4K-PTA13", className: "PTA 13", status: "Running" },
+        ],
+        null,
+        2
+      ),
+      "utf8"
+    );
+    const ptaCards = getDashboardTodayTodoCards({ limit: 10 });
+    const ptaCard = ptaCards.find((c) => c.classId === "VT-C4K-PTA13")!;
+    assert.ok(ptaCard, "VT-C4K-PTA13 must be returned in Dashboard cards");
+    assert.equal(
+      ptaCard.currentSessionNumber,
+      12,
+      "VT-C4K-PTA13 with SESS_11 dated 7 days ago must resolve to Buổi 12 today"
+    );
+    assert.equal(
+      ptaCard.sessionDate,
+      dToday,
+      "VT-C4K-PTA13 card must expose today's sessionDate (DD/MM/YYYY)"
+    );
+    assert.equal(
+      ptaCard.isTodaySession,
+      true,
+      "VT-C4K-PTA13 card must set isTodaySession=true"
+    );
+    assert.equal(
+      ptaCards[0].classId,
+      "VT-C4K-PTA13",
+      "Today's session card (isTodaySession=true) must be prioritized first on Dashboard"
+    );
+    assert.equal(dTomorrow.length, 10);
+
+    // F01 regression: Explicit postponed next slot (from GetClassById.slots or SQLite future date) must NOT be overridden by +7 days
+    const dNextWeek = fmtDmy(new Date(nowRef.getTime() + 7 * 24 * 60 * 60 * 1000));
+    const dNextWeekIso = `${dNextWeek.slice(6, 10)}-${dNextWeek.slice(3, 5)}-${dNextWeek.slice(0, 2)}T19:00:00+07:00`;
+    const postponedSessions = Array.from({ length: 14 }, (_, i) => ({
+      classId: "VT-C4K-POST01",
+      className: "VT-C4K-POST01",
+      sessionId: `VT-C4K-POST01_SESS_${String(i + 1).padStart(2, "0")}`,
+      sessionNumber: i + 1,
+      topic: `Buổi ${i + 1}`,
+      date: i + 1 === 8 ? d7DaysAgo : "",
+    }));
+    const postEnriched = enrichClassSessionsWithScheduleDates({
+      classCode: "VT-C4K-POST01",
+      sessions: postponedSessions,
+      latestActiveSessionId: "VT-C4K-POST01_SESS_08",
+      slots: [{ index: 8, startTime: dNextWeekIso }],
+      nowMs: nowRef.getTime(),
+    });
+    assert.equal(postEnriched.latestActiveSessionId, "VT-C4K-POST01_SESS_08");
+    assert.equal(postponedSessions[8].date, "");
+    for (const s of postponedSessions) {
+      classSessionRepo.upsert(s);
+    }
+    fs.writeFileSync(
+      testRunningClassesPath,
+      JSON.stringify(
+        [
+          { classCode: "VT-C4K-JSB12", className: "JSB 12", currentSessionNumber: 12, status: "Running" },
+          { classCode: "VT-C4K-POST01", className: "POST 01", status: "Running" },
+        ],
+        null,
+        2
+      ),
+      "utf8"
+    );
+    const postDir = queryClassDirectory({ scope: "all", nowMs: nowRef.getTime() }).classes.find(
+      (x) => x.classCode === "VT-C4K-POST01"
+    )!;
+    assert.equal(
+      postDir.currentSessionNumber,
+      8,
+      "F01: Postponed session from GetClassById.slots must remain on SESS_08 after SQLite upsert"
+    );
+    assert.equal(postDir.currentSessionDate, d7DaysAgo);
+
+    // F04 regression: Finished class at Session 14 with only SESS_13 dated in SQLite must use session14Date / endDate (not SESS_13 date)
+    const d1DayAgo = fmtDmy(new Date(nowRef.getTime() - 1 * 24 * 60 * 60 * 1000));
+    const d8DaysAgo = fmtDmy(new Date(nowRef.getTime() - 8 * 24 * 60 * 60 * 1000));
+    for (let sNum = 1; sNum <= 14; sNum++) {
+      insertSessStmt.run(
+        "VT-C4K-FIN14",
+        "FIN 14",
+        `VT-C4K-FIN14_SESS_${String(sNum).padStart(2, "0")}`,
+        sNum,
+        sNum === 13 ? d8DaysAgo : ""
+      );
+    }
+    fs.writeFileSync(
+      testRunningClassesPath,
+      JSON.stringify(
+        [
+          { classCode: "VT-C4K-JSB12", className: "JSB 12", currentSessionNumber: 12, status: "Running" },
+          { classCode: "VT-C4K-FIN14", className: "FIN 14", status: "Finished", endDate: d1DayAgo },
+        ],
+        null,
+        2
+      ),
+      "utf8"
+    );
+    const finDir = queryClassDirectory({ scope: "all", nowMs: nowRef.getTime() }).classes.find(
+      (x) => x.classCode === "VT-C4K-FIN14"
+    )!;
+    assert.equal(finDir.currentSessionNumber, 14);
+    assert.equal(
+      finDir.currentSessionDate,
+      d1DayAgo,
+      "F04: Finished S14 class must expose S14 endDate, never stale S13 date"
+    );
+
+    // F03 regression: Today's class at index 25 must be prioritized before applying limit=24
+    const manyCodes = Array.from({ length: 25 }, (_, i) => `VT-C4K-LIM${100 + i}`);
+    for (let idx = 0; idx < manyCodes.length; idx++) {
+      const code = manyCodes[idx];
+      for (let sNum = 1; sNum <= 14; sNum++) {
+        insertSessStmt.run(
+          code,
+          code,
+          `${code}_SESS_${String(sNum).padStart(2, "0")}`,
+          sNum,
+          sNum === 8 ? (idx === 24 ? d7DaysAgo : d1DayAgo) : ""
+        );
+      }
+    }
+    fs.writeFileSync(
+      testRunningClassesPath,
+      JSON.stringify(
+        manyCodes.map((classCode) => ({ classCode, status: "Running" })),
+        null,
+        2
+      ),
+      "utf8"
+    );
+    const limCards = getDashboardTodayTodoCards({ limit: 24 });
+    assert.equal(limCards.length, 24);
+    assert.equal(
+      limCards[0].classId,
+      manyCodes[24],
+      "F03: 25th class teaching today must be sorted to index 0 before slicing to limit=24"
+    );
+
+    // Restore VT-C4K-JSB12 in testRunningClassesPath for [S6-T3]
+    fs.writeFileSync(
+      testRunningClassesPath,
+      JSON.stringify(
+        [
+          { classCode: "VT-C4K-JSB12", className: "JSB 12", currentSessionNumber: 12, status: "Running" },
+        ],
+        null,
+        2
+      ),
+      "utf8"
     );
 
     console.log(
@@ -1453,6 +1689,307 @@ async function runTests() {
         assert.equal(r4.success, true, "F05-R3-4: Confirmed empty table must return success:true");
         assert.deepEqual(r4.classes, [], "F05-R3-4: Confirmed empty table must return classes:[]");
         assert.deepEqual(getRunningClasses(), [], "F05-R3-4: Confirmed empty table must clear cache to []");
+
+        // F02-1: Failed search input clear must return success:false and preserve cache
+        fs.writeFileSync(testRunningClassesPath, JSON.stringify(priorCache), "utf8");
+        await pageReadiness.setContent(
+          '<html><body><input placeholder="Search classes" value="old"/><button>Clear</button><table><tbody><tr><td>1</td><td>VT-JSB87</td><td>JSB</td><td>VT</td><td>Running</td></tr></tbody></table></body></html>'
+        );
+        const origLoc = pageReadiness.locator.bind(pageReadiness);
+        (pageReadiness as any).locator = (sel: any, ...args: any[]) => {
+          const loc = origLoc(sel, ...args);
+          if (typeof sel === "string" && sel.includes("input[placeholder")) {
+            const origFirst = loc.first.bind(loc);
+            loc.first = () => {
+              const inp = origFirst();
+              (inp as any).fill = async () => {
+                throw new Error("simulated fill error");
+              };
+              return inp;
+            };
+          }
+          return loc;
+        };
+        try {
+          const rFailClear = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+          assert.equal(rFailClear.success, false, "F02-1: Failed search input clearing must return success:false");
+          assert.deepEqual(getRunningClasses(), priorCache, "F02-1: Cache must be preserved when search input cannot be cleared");
+        } finally {
+          (pageReadiness as any).locator = origLoc;
+        }
+
+        // F02-R2: Delayed refresh (4000ms) & unconfirmed refresh (never completes)
+        const threeClasses = [
+          { classCode: "VT-QA-JSB501", status: "Running" },
+          { classCode: "VT-QA-JSB502", status: "Running" },
+          { classCode: "VT-QA-JSB503", status: "Running" },
+        ];
+        const rowHtml = (code: string) =>
+          `<tr><td>1</td><td>${code}</td><td>JSB</td><td>VT</td><td>Running</td></tr>`;
+
+        for (const [caseId, readyAfterMs] of [
+          ["F02-R2-refresh-completes-at-4000ms", 4000],
+          ["F02-R2-refresh-never-completes", Number.POSITIVE_INFINITY],
+        ] as const) {
+          fs.writeFileSync(testRunningClassesPath, JSON.stringify(threeClasses), "utf8");
+          await pageReadiness.setContent(
+            `<input placeholder="Search classes" value="old"/><table><tbody>${threeClasses
+              .slice(0, 2)
+              .map((x) => rowHtml(x.classCode))
+              .join("")}</tbody></table>`
+          );
+          let elapsedMs = 0;
+          (pageReadiness as any).waitForTimeout = async (ms: number) => {
+            elapsedMs += ms;
+            if (elapsedMs >= readyAfterMs) {
+              await pageReadiness.locator("tbody").evaluate(
+                (el, html) => {
+                  el.innerHTML = html;
+                },
+                threeClasses.map((x) => rowHtml(x.classCode)).join("")
+              );
+            }
+          };
+          const resBoundary = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+          const cachedAfter = getRunningClasses();
+          assert.equal(
+            cachedAfter.length,
+            3,
+            `${caseId}: Unconfirmed stale 2-row table must never overwrite 3-class cache`
+          );
+          if (Number.isFinite(readyAfterMs)) {
+            assert.equal(resBoundary.success, true, `${caseId}: Delayed 4000ms refresh must succeed`);
+            assert.equal(resBoundary.classes.length, 3, `${caseId}: Must return all 3 classes`);
+          } else {
+            assert.equal(resBoundary.success, false, `${caseId}: Unconfirmed refresh must return success:false`);
+          }
+        }
+        (pageReadiness as any).waitForTimeout = async () => {};
+
+        // F02-R3: Valid post-clear API confirmation vs non-class / pre-clear stale filtered API response
+        const r3Codes = ["VT-QA-JSB601", "VT-QA-JSB602", "VT-QA-JSB603"];
+        for (const mode of ["valid-same-table", "non-class-response", "stale-filtered-response"] as const) {
+          let elapsedR3 = 0;
+          let pendingRoute: any;
+          let markRouteSeen!: () => void;
+          const routeSeenP = new Promise<void>((resolve) => {
+            markRouteSeen = resolve;
+          });
+          const priorR3 = r3Codes
+            .slice(0, mode === "valid-same-table" ? 2 : 3)
+            .map((classCode) => ({ classCode, status: "Running" }));
+          const tableHtmlR3 = r3Codes.slice(0, 2).map(rowHtml).join("");
+          const opName = mode === "non-class-response" ? "getMe" : "getClasses";
+          const vars =
+            mode === "stale-filtered-response"
+              ? { search: "old" }
+              : mode === "valid-same-table"
+                ? { search: "" }
+                : {};
+          const respBody =
+            mode === "non-class-response"
+              ? { data: { me: { id: "SYNTHETIC_TEACHER" } } }
+              : {
+                  data: {
+                    classes: r3Codes
+                      .slice(0, 2)
+                      .map((classCode) => ({ classCode, status: "Running" })),
+                  },
+                };
+          await pageReadiness.unrouteAll({ behavior: "wait" });
+          await pageReadiness.route("**/*", async (route) => {
+            if (route.request().resourceType() === "document") {
+              await route.fulfill({
+                status: 200,
+                contentType: "text/html",
+                body: '<meta charset="utf-8"><body></body>',
+              });
+            } else if (route.request().url() === "https://lms-api.mindx.edu.vn/graphql") {
+              pendingRoute = route;
+              markRouteSeen();
+            } else {
+              await route.abort();
+            }
+          });
+          await pageReadiness.goto("https://lms.mindx.edu.vn/admin/classes");
+          await pageReadiness.setContent(
+            `<input placeholder="Search classes" value="old"><table><tbody>${tableHtmlR3}</tbody></table>`
+          );
+          await pageReadiness.evaluate(
+            ({ opName, vars, mode, tableHtmlR3 }) => {
+              (window as any).__done = false;
+              (window as any).__start = () => {
+                void fetch("https://lms-api.mindx.edu.vn/graphql", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ operationName: opName, variables: vars }),
+                })
+                  .then((r) => r.json())
+                  .then(() => {
+                    if (mode === "valid-same-table") {
+                      document.querySelector("tbody")!.innerHTML = tableHtmlR3;
+                    }
+                    (window as any).__done = true;
+                  });
+              };
+              if (mode !== "stale-filtered-response") {
+                document.querySelector("input")!.addEventListener("keydown", (e) => {
+                  if ((e as KeyboardEvent).key === "Enter") (window as any).__start();
+                });
+              }
+            },
+            { opName, vars, mode, tableHtmlR3 }
+          );
+          fs.writeFileSync(testRunningClassesPath, JSON.stringify(priorR3), "utf8");
+          (authService as any).ensureAuthenticated = async () => {
+            if (mode === "stale-filtered-response") {
+              await pageReadiness.evaluate(() => (window as any).__start());
+              await routeSeenP;
+            }
+            return true;
+          };
+          (pageReadiness as any).waitForTimeout = async (ms: number) => {
+            elapsedR3 += ms;
+            if (elapsedR3 === 400) {
+              await routeSeenP;
+              await pendingRoute.fulfill({
+                status: 200,
+                contentType: "application/json",
+                headers: { "Access-Control-Allow-Origin": "*" },
+                body: JSON.stringify(respBody),
+              });
+              await pageReadiness.waitForFunction(() => (window as any).__done === true);
+            }
+          };
+          const resR3 = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+          const cacheR3 = getRunningClasses();
+          if (mode === "valid-same-table") {
+            assert.equal(resR3.success, true, `F02-R3-${mode}: Valid post-clear response must succeed`);
+            assert.equal(cacheR3.length, 2, `F02-R3-${mode}: Cache must have 2 classes`);
+          } else {
+            assert.equal(
+              resR3.success,
+              false,
+              `F02-R3-${mode}: Non-class or pre-clear stale filtered response must fail`
+            );
+            assert.equal(
+              cacheR3.length,
+              3,
+              `F02-R3-${mode}: Cache must retain all 3 classes`
+            );
+          }
+        }
+        (authService as any).ensureAuthenticated = async () => true;
+        (pageReadiness as any).waitForTimeout = async () => {};
+
+        // F02-R4: Exact API-to-DOM correspondence & stale response mutating DOM
+        const r4Codes = ["VT-QA-JSB701", "VT-QA-JSB711", "VT-QA-JSB721"];
+        for (const r4Mode of [
+          "empty-class-array",
+          "id-only-array",
+          "api-subset-of-stale-dom",
+          "api-codes-only-prefix-match",
+          "stale-response-changes-dom",
+        ] as const) {
+          let elapsedR4 = 0;
+          let pendingR4: any;
+          let markR4Seen!: () => void;
+          const r4SeenP = new Promise<void>((resolve) => {
+            markR4Seen = resolve;
+          });
+          const priorR4 = r4Codes.map((classCode) => ({ classCode, status: "Running" }));
+          const tableHtmlR4 = r4Codes.slice(0, 2).map(rowHtml).join("");
+          const varsR4 =
+            r4Mode === "stale-response-changes-dom" ? { search: "old" } : { search: "" };
+          const classesPayload =
+            r4Mode === "empty-class-array"
+              ? []
+              : r4Mode === "id-only-array"
+                ? [{ id: "SYNTHETIC_CLASS" }]
+                : r4Mode === "api-subset-of-stale-dom" || r4Mode === "stale-response-changes-dom"
+                  ? [{ classCode: r4Codes[0], status: "Running" }]
+                  : [
+                      { classCode: "VT-QA-JSB70", status: "Running" },
+                      { classCode: "VT-QA-JSB71", status: "Running" },
+                    ];
+          const respBodyR4 = { data: { classes: classesPayload } };
+          await pageReadiness.unrouteAll({ behavior: "wait" });
+          await pageReadiness.route("**/*", async (route) => {
+            if (route.request().resourceType() === "document") {
+              await route.fulfill({
+                status: 200,
+                contentType: "text/html",
+                body: '<meta charset="utf-8"><body></body>',
+              });
+            } else if (route.request().url() === "https://lms-api.mindx.edu.vn/graphql") {
+              pendingR4 = route;
+              markR4Seen();
+            } else {
+              await route.abort();
+            }
+          });
+          await pageReadiness.goto("https://lms.mindx.edu.vn/admin/classes");
+          await pageReadiness.setContent(
+            `<input placeholder="Search classes" value="old"><table><tbody>${tableHtmlR4}</tbody></table>`
+          );
+          await pageReadiness.evaluate(
+            ({ varsR4, r4Mode }) => {
+              (window as any).__done = false;
+              (window as any).__start = () => {
+                void fetch("https://lms-api.mindx.edu.vn/graphql", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ operationName: "getClasses", variables: varsR4 }),
+                })
+                  .then((r) => r.json())
+                  .then(() => {
+                    if (r4Mode === "stale-response-changes-dom") {
+                      document.querySelector("tbody tr:last-child")?.remove();
+                    }
+                    (window as any).__done = true;
+                  });
+              };
+              if (r4Mode !== "stale-response-changes-dom") {
+                document.querySelector("input")!.addEventListener("keydown", (e) => {
+                  if ((e as KeyboardEvent).key === "Enter") (window as any).__start();
+                });
+              }
+            },
+            { varsR4, r4Mode }
+          );
+          fs.writeFileSync(testRunningClassesPath, JSON.stringify(priorR4), "utf8");
+          const beforeBytes = fs.readFileSync(testRunningClassesPath);
+          (authService as any).ensureAuthenticated = async () => {
+            if (r4Mode === "stale-response-changes-dom") {
+              await pageReadiness.evaluate(() => (window as any).__start());
+              await r4SeenP;
+            }
+            return true;
+          };
+          (pageReadiness as any).waitForTimeout = async (ms: number) => {
+            elapsedR4 += ms;
+            if (elapsedR4 === 400) {
+              await r4SeenP;
+              await pendingR4.fulfill({
+                status: 200,
+                contentType: "application/json",
+                headers: { "Access-Control-Allow-Origin": "*" },
+                body: JSON.stringify(respBodyR4),
+              });
+              await pageReadiness.waitForFunction(() => (window as any).__done === true);
+            }
+          };
+          const resR4 = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+          const afterBytes = fs.readFileSync(testRunningClassesPath);
+          assert.equal(resR4.success, false, `F02-R4-${r4Mode}: Must return success:false`);
+          assert.equal(
+            beforeBytes.equals(afterBytes),
+            true,
+            `F02-R4-${r4Mode}: Must preserve exact bytes of 3-class cache`
+          );
+        }
+        (authService as any).ensureAuthenticated = async () => true;
+        (pageReadiness as any).waitForTimeout = async () => {};
       } finally {
         bm.getPage = origGetPage;
         authService.ensureAuthenticated = origEnsureAuth;

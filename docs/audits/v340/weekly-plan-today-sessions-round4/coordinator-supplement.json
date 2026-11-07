@@ -1,0 +1,23 @@
+{
+  "actor": "coordinating agent, separate from designated CLI Reviewer",
+  "verdict": "NO-GO",
+  "sourceHash": "138ba244cae159a29181fab8dc0ad3cf7caddd8fa95ab6e198fa9938fcac0290",
+  "counts": {
+    "pass": 2,
+    "fail": 4,
+    "total": 6
+  },
+  "resultsFiles": [
+    "root-f02-edge-results.json",
+    "root-f02-stale-dom-results.json"
+  ],
+  "additionalF02Cause": {
+    "lines": [
+      1882,
+      1890
+    ],
+    "case": "F02-R4-stale-response-changes-dom",
+    "impact": "Pre-clear filtered request changes DOM; cache 3 -> 1; success:true at simulated 1200 ms."
+  },
+  "productCodeModified": false
+}

@@ -1,0 +1,112 @@
+# Kiểm định nhận diện buổi học hôm nay và hiển thị ngày — Round 4
+
+**VERDICT: NO-GO — F02 còn OPEN (P1): đối chiếu phản hồi với bảng lớp chưa đủ chặt, vẫn lưu đè danh sách 3 → 2 lớp.**
+
+Ngày: **07/11/2026**. Reviewer theo cấu hình được giao: **Codex CLI / gpt-6.1-sol / xhigh**; thực hiện trực tiếp, không tạo agent hay Codex khác. Chỉ kiểm định F02 và phần kiểm thử S6 liên quan. Không sửa mã ứng dụng, kiểm thử gốc hoặc cấu hình; không commit/push, không cập nhật ba tài liệu trạng thái. [Báo cáo Round 3 giữ nguyên từng byte](weekly-plan-today-sessions-round4/round3-report.md.txt).
+
+## Kết quả và trạng thái F01–F04
+
+| Mục | Round 4 | Căn cứ |
+| --- | --- | --- |
+| F01 — lịch hoãn bị thay bằng suy đoán +7 ngày | **CLOSED trong các ca tái hiện** | Chạy lại G3 nguyên bản: lịch hoãn và ngày tương lai được giữ. |
+| F02 — xác nhận làm mới sau xóa tìm kiếm | **OPEN — P1** | Ba ca Round 3 đã đạt; ba ca bổ sung chứng minh phản hồi và bảng không khớp vẫn được lưu. |
+| F03 — ưu tiên hôm nay trước giới hạn 24 lớp | **CLOSED** | G3: lớp thứ 25 học hôm nay vẫn đứng đầu. |
+| F04 — Buổi 14 mang ngày Buổi 13 | **CLOSED** | G3: lớp Finished giữ đúng ngày Buổi 14. |
+
+F01/F03/F04 chỉ được xác nhận lại bằng bộ G3 bắt buộc; không mở rộng kiểm toán ngoài F02. Tổng các probe độc lập: **47 PASS, 3 FAIL / 50 ca**; S6 có **4/4 nhóm T1–T4 PASS**, được tính riêng.
+
+## Các cổng và bằng chứng
+
+| Cổng / lệnh chính xác | Kết quả | Bằng chứng |
+| --- | --- | --- |
+| G1 — `npx --no-install tsc --noEmit` trước báo cáo | **PASS**, exit **0** | [G1.log](weekly-plan-today-sessions-round4/G1.log) |
+| G2 — `npx --no-install tsx scripts/test-streamline-v340-s6.ts` | **PASS**, exit **0**; T1–T4 đạt | [G2.log](weekly-plan-today-sessions-round4/G2.log) |
+| G3 — `npx --no-install tsx audit-evidence/independent-probes.mts` | **PASS**, exit **0**; **40/40** | [Log](weekly-plan-today-sessions-round4/G3.log), [kết quả](weekly-plan-today-sessions-round4/G3-results.json) |
+| G3-boundary — `npx --no-install tsx audit-evidence/refresh-boundary-probes.mts` | **PASS**, exit **0**; **2/2** | [Log](weekly-plan-today-sessions-round4/G3-boundary.log), [kết quả](weekly-plan-today-sessions-round4/refresh-boundary-results.json) |
+| F02-independent — `npx --no-install tsx audit-evidence/f02-confirmation-probes.mts` | **PASS**, exit **0**; **3/3** | [Log](weekly-plan-today-sessions-round4/F02-independent.log), [kết quả](weekly-plan-today-sessions-round4/f02-confirmation-results.json) |
+| F02 bổ sung — `npx --no-install tsx audit-evidence/f02-round4-correspondence-probes.mts` | **FAIL**, exit **1**; **2 PASS, 3 FAIL / 5** | [Log](weekly-plan-today-sessions-round4/F02-round4-correspondence.log), [kết quả](weekly-plan-today-sessions-round4/f02-round4-correspondence-results.json) |
+| G1-after-report — `npx --no-install tsc --noEmit` sau báo cáo/bằng chứng | **PASS**, exit **0** | [Log](weekly-plan-today-sessions-round4/G1-after-report.log) |
+
+[Mã thoát, thời điểm và cô lập các cổng bắt buộc](weekly-plan-today-sessions-round4/gate-results.json); [cổng bổ sung](weekly-plan-today-sessions-round4/F02-round4-gate-result.json). Cổng bổ sung thất bại do điều kiện bảo vệ không đạt, không phải lỗi môi trường.
+
+## Ba quan sát F02 Round 3 và hai ranh giới
+
+| Ca giữ nguyên | Thành công / lỗi | Danh sách lưu; byte giữ nguyên | Tổng chờ mô phỏng |
+| --- | --- | --- | --- |
+| `F02-R3-valid-same-table` | `success:true`, không lỗi | **2 → 2**; **false**, có ghi lại dữ liệu như dự kiến | **1.200 ms** |
+| `F02-R3-non-class-response` | `success:false`, báo chưa xác nhận tải lại | **3 → 3**; **true** | **6.000 ms** |
+| `F02-R3-stale-filtered-response` | `success:false`, báo chưa xác nhận tải lại | **3 → 3**; **true** | **6.000 ms** |
+
+Cả ba bảng giữ nguyên nội dung hiển thị và tháo bộ nghe phản hồi khi kết thúc. Hai ranh giới cũ vẫn đạt: tải đủ 3 lớp tại **4.000 ms** thì thành công sau **4.800 ms**; không bao giờ tải xong thì thất bại sau **6.000 ms**, giữ 3 lớp. Đây là tổng thời gian `waitForTimeout` được mô phỏng, không phải thời lượng thực.
+
+## F02 còn mở — [P1] Bảng chưa khớp phản hồi vẫn được lưu
+
+**Nguyên nhân và vị trí:** [sync-class.ts:1734](../../../src/lib/playwright/sync-class.ts#L1734) chấp nhận mảng lớp rồi rút danh sách mã; [dòng 1885–1889](../../../src/lib/playwright/sync-class.ts#L1885) chỉ kiểm tra `apiCodes.every(code => curTbodySig.includes(code))`. Mảng rỗng tự vượt qua điều kiện; danh sách chỉ có một phần các lớp cũng vượt qua; tìm chuỗi con coi mã `VT-QA-JSB70` là khớp dòng `VT-QA-JSB701`. Điều kiện không chứng minh bảng đang đọc tương ứng kết quả tải mới.
+
+**Tái hiện độc lập:** dùng chính `ClassSyncer.fetchRunningClasses`, Chromium thật với **một context giả lập**, chặn mọi yêu cầu tại máy; chỉ thay đăng nhập/trang trình duyệt và thời gian chờ. Trong mỗi ca: danh sách lưu có 3 lớp; bảng cũ có `VT-QA-JSB701` và `VT-QA-JSB711`, không có nút trang kế; yêu cầu `getClasses(search:"")` khởi tạo khi ô đã rỗng, HTTP 200. Bảng không đổi sau phản hồi. [Probe riêng](weekly-plan-today-sessions-round4/f02-round4-correspondence-probes.mts.txt).
+
+| Ca bổ sung | Kết quả API giả lập | Quan sát thực từ hàm | Đánh giá |
+| --- | --- | --- | --- |
+| `empty-class-array` | `classes:[]`, khác bảng 2 lớp | **1.200 ms**, `success:true`, **3 → 2**, byte thay đổi | **FAIL** |
+| `api-subset-of-stale-dom` | Chỉ `VT-QA-JSB701`; bảng còn thêm `VT-QA-JSB711` | **1.200 ms**, `success:true`, **3 → 2**, byte thay đổi | **FAIL** |
+| `api-codes-only-prefix-match` | `VT-QA-JSB70`, `VT-QA-JSB71`; không có mã nào bằng mã trên bảng | **1.200 ms**, `success:true`, **3 → 2**, byte thay đổi | **FAIL** |
+| `reject-nonempty-url-filter` | URL chứa `?search=other`, trả đúng hai mã trên bảng | **6.000 ms**, `success:false`, **3 → 3**, byte giữ nguyên | **PASS** |
+| `reject-nonempty-graphql-filter` | `variables.filter.search:"other"`, trả đúng hai mã trên bảng | **6.000 ms**, `success:false`, **3 → 3**, byte giữ nguyên | **PASS** |
+
+Tất cả 5 ca xác nhận ô tìm kiếm đã rỗng khi phát yêu cầu, bảng không đổi và **cả bộ nghe request/response được tháo** sau hàm. Ba ca FAIL là ba cách tái hiện cùng lỗi F02, không phải ba phát hiện ngoài phạm vi. Chưa có bằng chứng xác định tần suất các phản hồi này trên LMS thật.
+
+**Ảnh hưởng:** [sync-class.ts:2210–2212](../../../src/lib/playwright/sync-class.ts#L2210) ghi toàn bộ danh sách đọc từ bảng; [json-config.ts:242–250](../../../src/lib/db/json-config.ts#L242) thay tệp lớp bằng dữ liệu đó. Ca tái hiện mất `VT-QA-JSB721` khỏi danh sách lưu và vẫn giữ lớp cũ không được API trả về. Các điểm gọi quét tuần (`scan-weekly-tasks/route.ts:51–66`), làm mới lớp (`classes/refresh/route.ts:152–166`), lấy lớp nhận xét (`session-comments/fetch-classes/route.ts:39–54`) dựa vào `success`, nên không chặn trường hợp thành công nhầm này. `spck/list/route.ts:362–377` dùng chế độ không lưu; chỉ đọc đường gọi, chưa chạy route đó trong đợt này. [Trích mã có số dòng](weekly-plan-today-sessions-round4/F02-source-excerpts.txt).
+
+**Cách sửa nhỏ nhất cho Agent triển khai:** đối chiếu chính xác mã và số dòng của bảng/trang tương ứng với phản hồi; không lấy chuỗi con, tập con hoặc mảng rỗng làm bằng chứng cho bảng cũ có lớp. Với kết quả rỗng, phải xác nhận đúng trạng thái bảng rỗng; nếu chưa khớp thì chờ hoặc báo lỗi và giữ nguyên byte danh sách cũ. Giữ các trường hợp thành công hợp lệ và cơ chế phân trang hiện có. Reviewer không sửa mã.
+
+**Kiểm tra lại:** giữ nguyên 45 ca độc lập cũ và S6; ba ca FAIL mới phải `success:false` và giữ nguyên 3 lớp nếu bảng không cập nhật. Khi bảng thực sự hiển thị đúng kết quả mới, vẫn cho phép thành công.
+
+## Đối chiếu phần sửa và phạm vi bằng chứng
+
+- Theo dõi yêu cầu: dòng 1632–1636, 1682, 1847–1850 dùng tập yêu cầu phát trong lúc xóa lọc; ca yêu cầu khởi tạo trước xóa bị từ chối.
+- Đúng nghiệp vụ/mảng: dòng 1691–1694, 1725–1740 yêu cầu thao tác lớp và mảng lớp; `getMe` đã bị từ chối. Việc mảng rỗng vượt kiểm tra bảng là lỗi đã tái hiện bên trên.
+- Bộ lọc: dòng 1695–1723 kiểm tra các khóa URL và các tầng `variables/filter/input/where`; hai ca URL và `variables.filter.search` có giá trị được từ chối. Không khẳng định đã bao phủ mọi cấu trúc GraphQL.
+- Đối chiếu bảng: dòng 1882–1890 còn lỏng; ba ca FAIL tập trung vào nhánh API, bảng hoàn toàn không đổi.
+- Dọn bộ nghe: dòng 2245–2249 có `finally`; cả đường thành công nhầm và thất bại ở 5 ca mới đều trả về đúng số bộ nghe ban đầu.
+- S6 bổ sung tại dòng 1769–1881 bao phủ đúng ba ca Round 3 và đã chạy PASS; chúng không bao phủ ba tình huống bảng/API không khớp mới. Chỉ thêm probe riêng vào `audit-evidence`, không đổi S6 hay ba probe gốc.
+
+## Bản mã và bảo toàn dữ liệu
+
+HEAD: **`745b513b54c7dcc24d8bb1e6774c5db798685945`** — đã đọc lại `.git/HEAD` và tham chiếu đối tượng ở kho gốc, khớp baseline; không chạy chương trình/kiểm thử tại kho gốc. TEMP không có `.git`. **Có 7 tệp nguồn/kiểm thử chưa commit**, nên chỉ HEAD không đủ xác định mã đã chạy. [Danh tính nguồn](weekly-plan-today-sessions-round4/source-identity.json), [baseline 157 tệp](weekly-plan-today-sessions-round4/baseline.json), [trạng thái bàn giao](weekly-plan-today-sessions-round4/initial-git-status.txt).
+
+| Tệp chưa commit | SHA-256 hiện tại được kiểm định |
+| --- | --- |
+| `scripts/test-streamline-v340-s6.ts` | `4c881f17056eb0b91abc3a3d90dbc0efcb8584195ca08fcf2c22c4859ffac4af` |
+| `src/app/api/session-comments/list/route.ts` | `0f2809f9bcad84ac60be33ea107e820d73fd446a4b385f6bf9033b765022d0af` |
+| `src/components/dashboard-today-tasks-panel.tsx` | `d2e092c806c150dbe1a932a3bf766dc95913aa74a95cb3e72395bf77595b9aae` |
+| `src/lib/classes/class-directory.ts` | `c94fb5e4a651289b04e4a30582d87149da1cce58be86e0352ba3f7014a27580f` |
+| `src/lib/dashboard/today-tasks.ts` | `3a1922f8f2c6a3b5dcfde44fa4362df9b149fa62f313dd211a58f992059ffb42` |
+| `src/lib/db/sqlite.ts` | `6e3f50c285c956e46af048ab84f1d3bd8460eb9fb87a855b17fb99d0c6564f9a` |
+| `src/lib/playwright/sync-class.ts` | `138ba244cae159a29181fab8dc0ad3cf7caddd8fa95ab6e198fa9938fcac0290` |
+
+Ba probe gốc không thay đổi từng byte, khớp baseline **và** bản lịch sử Round 3:
+
+| Chương trình | SHA-256 |
+| --- | --- |
+| [independent-probes.mts.txt](weekly-plan-today-sessions-round4/independent-probes.mts.txt) | `c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60` |
+| [refresh-boundary-probes.mts.txt](weekly-plan-today-sessions-round4/refresh-boundary-probes.mts.txt) | `840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e` |
+| [f02-confirmation-probes.mts.txt](weekly-plan-today-sessions-round4/f02-confirmation-probes.mts.txt) | `31f2ab9f6abd74599e1c92457be9eea3023a8224ff52207b13cd299914f09992` |
+
+| Hai tệp dữ liệu thật | Baseline = trước = sau (SHA-256) |
+| --- | --- |
+| `data/mindx_bot.db` | `f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c` |
+| `data/running_classes.json` | `d8c282a5917c735b4bd97ae739874b978a33270eb77a1767ab934bf196d83b4d` |
+
+Tính bằng Node `fs.readFileSync` và `crypto.createHash('sha256')`. [Trước chạy](weekly-plan-today-sessions-round4/pre-run-integrity.json), [sau chạy](weekly-plan-today-sessions-round4/post-run-integrity.json): **157/157 tệp nguồn/kiểm thử/cấu hình ở cả gốc và TEMP giữ nguyên**, hai tệp dữ liệu thật giữ nguyên, ba probe gốc bất biến. [Bảo toàn ba tài liệu trạng thái và bằng chứng cũ](weekly-plan-today-sessions-round4/artifact-preservation.json). Phạm vi dữ liệu thật là đúng hai tệp được giao, không đại diện toàn bộ tệp WAL.
+
+Mọi lệnh chạy ở **`C:\Users\QQ\AppData\Local\Temp\mindx-weekly-plan-audit-r2-r3-round4-dbjLbj`**. Bộ chạy đặt `TZ=Asia/Ho_Chi_Minh`, cho phép OS TEMP trước import, dùng SQLite/JSON giả riêng cho mỗi cổng. S6 tự tạo thêm thư mục thử nghiệm trong OS TEMP. Dùng junction thư viện sẵn có, không cài gói, không mở máy chủ/build phát hành. TEMP không có `.env`/`.env.local`; không đọc bí mật/hồ sơ đăng nhập. Không gọi LMS, Teaching, Gemini hoặc Drive thật.
+
+Chỉ đóng gói log, kết quả, baseline, đối chiếu, chương trình kiểm định và báo cáo Round 3; chương trình trong thư mục bằng chứng có đuôi **`.txt`**. Không đóng gói đề bài, nhật ký hội thoại, hồ sơ đăng nhập hay DB giả. [Danh mục SHA-256](weekly-plan-today-sessions-round4/evidence-manifest.json), [tóm tắt có cấu trúc](weekly-plan-today-sessions-round4/reviewer-summary.json).
+
+## Bàn giao
+
+**Đã làm:** kiểm định độc lập F02, chạy cổng bắt buộc và probe bổ sung, giữ nguyên nguồn/dữ liệu thật. **Kết quả:** F01/F03/F04 CLOSED; F02 OPEN P1; **NO-GO**. **Chưa kiểm tra:** lớp/dịch vụ thật, toàn bộ giao diện hoặc bản phát hành mới. **Việc tiếp theo:** Agent triển khai sửa đúng điều kiện bảng/API của F02 rồi kiểm định lại; Owner không cần thao tác kỹ thuật.
+
+Prompt bàn giao: “Chỉ sửa F02 tại `ClassSyncer.fetchRunningClasses`: không dùng `every/includes` để xác nhận bảng lớp từ phản hồi rỗng, tập con hoặc mã gần giống. Tái hiện bằng `f02-round4-correspondence-probes.mts.txt`; với bảng cũ không đổi, ba ca FAIL phải báo lỗi và giữ nguyên byte danh sách 3 lớp. Giữ nguyên phân trang, ba ca F02 Round 3, hai ranh giới và 40 ca gốc. Kiểm định lại trong TEMP, không gọi dịch vụ thật; bảo toàn hai tệp dữ liệu thật.”
+
+**VERDICT: NO-GO — F01 CLOSED; F02 OPEN (P1); F03 CLOSED; F04 CLOSED.**

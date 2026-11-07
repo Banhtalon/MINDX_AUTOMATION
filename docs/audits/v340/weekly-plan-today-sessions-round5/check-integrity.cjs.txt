@@ -1,0 +1,32 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const cwd = process.cwd();
+const baseline = JSON.parse(fs.readFileSync(path.join(cwd, 'audit-evidence/baseline.json'), 'utf8'));
+if (path.resolve(cwd) !== path.resolve(baseline.temp)) throw new Error('Wrong audit workspace');
+const hash = p => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+const report = 'docs/audits/v340/CODEX_WEEKLY_PLAN_TODAY_SESSIONS_AUDIT.md';
+const data = Object.entries(baseline.realData).map(([file, expected]) => ({file, expected, actual: hash(path.join(baseline.root, file))}));
+const files = Object.entries(baseline.files).map(([file, expected]) => {
+  const real = hash(path.join(baseline.root, file));
+  const copy = hash(path.join(cwd, file));
+  return {file, expected, real, copy, realMatches: real === expected, copyMatches: copy === expected, mutableReport: file === report};
+});
+const probes = Object.entries(baseline.probes).map(([file, expected]) => ({file, expected, actual: hash(path.join(cwd, 'audit-evidence', file))}));
+const bad = [...data.filter(x => x.actual !== x.expected), ...files.filter(x => !x.realMatches || (!x.copyMatches && !x.mutableReport)), ...probes.filter(x => x.actual !== x.expected)];
+const gitDir = path.join(baseline.root, '.git');
+const headText = fs.readFileSync(path.join(gitDir, 'HEAD'), 'utf8').trim();
+let head = headText;
+if (headText.startsWith('ref: ')) {
+  const ref = headText.slice(5);
+  if (fs.existsSync(path.join(gitDir, ref))) head = fs.readFileSync(path.join(gitDir, ref), 'utf8').trim();
+  else head = fs.readFileSync(path.join(gitDir, 'packed-refs'), 'utf8').split(/\r?\n/).find(x => x.endsWith(' ' + ref))?.split(' ')[0];
+}
+if (head !== baseline.head) bad.push({head, expected: baseline.head});
+const historical = files.filter(x => /^docs\//.test(x.file) && /\.(ts|tsx|mts)$/.test(x.file));
+const source = files.filter(x => /^(src|scripts)\//.test(x.file) || /^(package(?:-lock)?\.json|tsconfig\.json|next(?:-env\.d|\.config)\.ts|postcss\.config\.mjs)$/.test(x.file));
+const out = {at: new Date().toISOString(), cwd, root: baseline.root, head, baselineHead: baseline.head, data, counts: {baselineFiles: files.length, source: source.length, historical: historical.length, probes: probes.length}, bad, probes, source, historical, files};
+const label = process.argv[2] || 'integrity';
+fs.writeFileSync(path.join(cwd, 'audit-evidence', label + '.json'), JSON.stringify(out, null, 2));
+console.log(JSON.stringify({label, at: out.at, head, counts: out.counts, data, mismatchCount: bad.length, mismatches: bad}, null, 2));
+process.exitCode = bad.length ? 1 : 0;

@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-07T11:37:07.799Z",
+  "files": [
+    {
+      "file": "data/mindx_bot.db",
+      "expected": "f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c",
+      "actual": "f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c",
+      "size": 4116480,
+      "mtime": "2026-11-07T08:59:51.271Z",
+      "ctime": "2026-11-07T08:59:51.271Z"
+    },
+    {
+      "file": "data/running_classes.json",
+      "expected": "d8c282a5917c735b4bd97ae739874b978a33270eb77a1767ab934bf196d83b4d",
+      "actual": "8e7e293a554398e97d11c220ada0423981889a1389d7006a71a300d3c6464997",
+      "size": 2394,
+      "mtime": "2026-11-07T11:36:03.244Z",
+      "ctime": "2026-11-07T11:36:03.244Z"
+    }
+  ]
+}

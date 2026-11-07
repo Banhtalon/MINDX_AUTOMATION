@@ -1,0 +1,33 @@
+{
+  "gate": "root-F02-edges",
+  "command": "npx --no-install tsx audit-evidence/root-f02-edge-probes.mts",
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f",
+  "physicalCwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f",
+  "compatibility": null,
+  "start": "2026-11-07T11:30:14.018Z",
+  "end": "2026-11-07T11:30:18.028Z",
+  "durationMs": 4010,
+  "exitCode": 0,
+  "signal": null,
+  "env": {
+    "TZ": "Asia/Ho_Chi_Minh",
+    "ALLOWED_LOCAL_DIRS": "C:\\Users\\QQ\\AppData\\Local\\Temp,C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f",
+    "MINDX_DB_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f\\audit-evidence\\runtime\\root-F02-edges\\mindx_bot.db",
+    "MINDX_RUNNING_CLASSES_PATH": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-round5-f62f342e1f\\audit-evidence\\runtime\\root-F02-edges\\running_classes.json",
+    "TEACHING_PASSWORD": "",
+    "LMS_PASSWORD": "",
+    "GEMINI_API_KEY": ""
+  },
+  "blankedKeys": [
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTIGRAVITY_CSRF_TOKEN",
+    "MWAPI_KEY"
+  ],
+  "stdout": "root-F02-edges.stdout.log",
+  "stderr": "root-F02-edges.stderr.log",
+  "combined": "root-F02-edges.log"
+}

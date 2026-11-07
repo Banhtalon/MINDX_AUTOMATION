@@ -1,0 +1,111 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { chromium, type Route } from 'playwright';
+
+const cwd = process.cwd();
+assert.ok(cwd.includes('mindx-weekly-plan-audit-r2-r3-round4-'));
+for (const key of ['MINDX_DB_PATH', 'MINDX_RUNNING_CLASSES_PATH']) {
+  assert.ok(process.env[key]?.startsWith(path.join(cwd, 'audit-evidence', 'runtime')));
+}
+const { getDb, closeDb } = await import('../src/lib/db/sqlite');
+const { ClassSyncer } = await import('../src/lib/playwright/sync-class');
+const { BrowserManager } = await import('../src/lib/playwright/browser-manager');
+const { authService } = await import('../src/lib/playwright/auth');
+assert.equal(getDb().name, process.env.MINDX_DB_PATH);
+const browser = await chromium.launch({ headless: true });
+const context = await browser.newContext({ serviceWorkers: 'block' });
+const page = await context.newPage();
+await page.addInitScript('window.__name=(fn)=>fn');
+const bm = BrowserManager.getInstance();
+const originalPage = bm.getPage, originalAuth = authService.ensureAuthenticated;
+bm.getPage = async () => page;
+authService.ensureAuthenticated = async () => true;
+const codes = ['VT-QA-JSB701', 'VT-QA-JSB711', 'VT-QA-JSB721'];
+const row = (code: string) => `<tr><td>1</td><td>${code}</td><td>JSB</td><td>VT</td><td>Running</td></tr>`;
+const modes = [
+  { id: 'empty-class-array', apiCodes: [], variables: { search: '' }, suffix: '' },
+  { id: 'api-subset-of-stale-dom', apiCodes: codes.slice(0, 1), variables: { search: '' }, suffix: '' },
+  { id: 'api-codes-only-prefix-match', apiCodes: ['VT-QA-JSB70', 'VT-QA-JSB71'], variables: { search: '' }, suffix: '' },
+  { id: 'reject-nonempty-url-filter', apiCodes: codes.slice(0, 2), variables: { search: '' }, suffix: '?search=other' },
+  { id: 'reject-nonempty-graphql-filter', apiCodes: codes.slice(0, 2), variables: { filter: { search: 'other' } }, suffix: '' },
+];
+const results: any[] = [];
+try {
+  for (const mode of modes) {
+    let elapsedMs = 0;
+    let pending: Route | undefined;
+    let requestSeen!: () => void;
+    const seen = new Promise<void>(resolve => { requestSeen = resolve; });
+    const requests: any[] = [];
+    const url = `https://lms-api.mindx.edu.vn/graphql${mode.suffix}`;
+    const responseBody = { data: { classes: mode.apiCodes.map(classCode => ({ classCode, status: 'Running' })) } };
+    await context.unrouteAll({ behavior: 'wait' });
+    await context.route('**/*', async route => {
+      if (route.request().resourceType() === 'document') {
+        await route.fulfill({ status: 200, contentType: 'text/html', body: '<meta charset="utf-8"><body></body>' });
+      } else if (route.request().url() === url) {
+        pending = route;
+        requests.push({ url, method: route.request().method(), postData: route.request().postDataJSON(),
+          searchValueAtRequest: await page.locator('input').inputValue() });
+        requestSeen();
+      } else {
+        await route.abort();
+      }
+    });
+    await page.goto('https://lms.mindx.edu.vn/admin/classes');
+    await page.setContent(`<input placeholder="Search classes" value="old"><table><tbody>${codes.slice(0, 2).map(row).join('')}</tbody></table>`);
+    await page.evaluate(({ url, variables }) => {
+      (window as any).__done = false;
+      document.querySelector('input')!.addEventListener('keydown', e => {
+        if ((e as KeyboardEvent).key !== 'Enter') return;
+        void fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operationName: 'getClasses', variables }) })
+          .then(r => r.json()).then(() => { (window as any).__done = true; });
+      });
+    }, { url, variables: mode.variables });
+    getDb().prepare('DELETE FROM classes_sessions').run();
+    fs.writeFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!, JSON.stringify(codes.map(classCode => ({ classCode, status: 'Running' }))));
+    const before = fs.readFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!);
+    const beforeText = await page.locator('tbody').innerText();
+    const listenerBefore = { request: page.listeners('request').length, response: page.listeners('response').length };
+    page.waitForTimeout = async (ms: number) => {
+      elapsedMs += ms;
+      if (elapsedMs !== 400) return;
+      await seen;
+      assert.ok(pending);
+      await pending.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify(responseBody) });
+      await page.waitForFunction(() => (window as any).__done === true);
+    };
+    const result = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+    const after = fs.readFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!);
+    const cache = JSON.parse(after.toString('utf8'));
+    const checks = {
+      inputCleared: await page.locator('input').inputValue() === '',
+      requestStartedAfterClear: requests.length === 1 && requests[0].searchValueAtRequest === '',
+      domUnchanged: beforeText === await page.locator('tbody').innerText(),
+      requestListenerRemoved: page.listeners('request').length === listenerBefore.request,
+      responseListenerRemoved: page.listeners('response').length === listenerBefore.response,
+      successFalse: result.success === false,
+      cacheStillThree: cache.length === 3,
+      cacheUnchangedBytes: before.equals(after),
+    };
+    const violations = Object.entries(checks).filter(([, passed]) => !passed).map(([key]) => key);
+    const item = { id: `F02-R4-${mode.id}`, status: violations.length ? 'FAIL' : 'PASS', violations,
+      observed: { simulatedWaits: true, elapsedMs, result, cacheBeforeLength: 3, cacheAfterLength: cache.length,
+        cacheCodes: cache.map((x: any) => x.classCode), responseBody, requests, checks } };
+    results.push(item);
+    console.log(JSON.stringify(item));
+  }
+} finally {
+  bm.getPage = originalPage;
+  authService.ensureAuthenticated = originalAuth;
+  await browser.close();
+  closeDb();
+}
+const summary = { pass: results.filter(x => x.status === 'PASS').length, fail: results.filter(x => x.status === 'FAIL').length,
+  total: results.length, results };
+fs.writeFileSync('audit-evidence/f02-round4-correspondence-results.json', JSON.stringify(summary, null, 2));
+console.log('F02 ROUND4 CORRESPONDENCE SUMMARY', JSON.stringify({ pass: summary.pass, fail: summary.fail, total: summary.total }));
+process.exitCode = summary.fail ? 1 : 0;

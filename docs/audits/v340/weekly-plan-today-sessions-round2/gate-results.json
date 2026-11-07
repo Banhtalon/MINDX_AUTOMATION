@@ -1,0 +1,282 @@
+{
+  "cwd": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-MK6AKo",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "G1": {
+    "command": "npx --no-install tsc --noEmit",
+    "exitCode": 0
+  },
+  "G2": {
+    "command": "npx --no-install tsx scripts/test-streamline-v340-s6.ts",
+    "exitCode": 0
+  },
+  "G3": {
+    "command": "npx --no-install tsx audit-evidence/independent-probes.mts",
+    "exitCode": 0,
+    "pass": 40,
+    "fail": 0,
+    "total": 40,
+    "results": [
+      {
+        "id": "DB-preserve-",
+        "status": "PASS"
+      },
+      {
+        "id": "DB-preserve-   ",
+        "status": "PASS"
+      },
+      {
+        "id": "DB-preserve-undefined",
+        "status": "PASS"
+      },
+      {
+        "id": "DB-preserve-null",
+        "status": "PASS"
+      },
+      {
+        "id": "DB-replace-nonempty",
+        "status": "PASS"
+      },
+      {
+        "id": "ENRICH-weekly-anchor-age-6",
+        "status": "PASS"
+      },
+      {
+        "id": "ENRICH-weekly-anchor-age-7",
+        "status": "PASS"
+      },
+      {
+        "id": "ENRICH-weekly-anchor-age-8",
+        "status": "PASS"
+      },
+      {
+        "id": "ENRICH-weekly-anchor-age-13",
+        "status": "PASS"
+      },
+      {
+        "id": "ENRICH-weekly-anchor-age-14",
+        "status": "PASS"
+      },
+      {
+        "id": "ENRICH-slot-later-today-before-class-hour",
+        "status": "PASS"
+      },
+      {
+        "id": "ENRICH-explicit-next-slot-postponed",
+        "status": "PASS"
+      },
+      {
+        "id": "ENRICH-ISO-cross-midnight-Vietnam",
+        "status": "PASS"
+      },
+      {
+        "id": "ENRICH-empty-no-crash",
+        "status": "PASS"
+      },
+      {
+        "id": "DIRECTORY-weekly-age-6",
+        "status": "PASS"
+      },
+      {
+        "id": "DIRECTORY-weekly-age-7",
+        "status": "PASS"
+      },
+      {
+        "id": "DIRECTORY-weekly-age-8",
+        "status": "PASS"
+      },
+      {
+        "id": "DIRECTORY-weekly-age-13",
+        "status": "PASS"
+      },
+      {
+        "id": "DIRECTORY-no-advance-finished",
+        "status": "PASS"
+      },
+      {
+        "id": "PIPELINE-postponed-explicit-slot-must-not-advance",
+        "status": "PASS"
+      },
+      {
+        "id": "DIRECTORY-known-future-date-must-not-be-overridden",
+        "status": "PASS"
+      },
+      {
+        "id": "DIRECTORY-finished-S14-date-must-match-S14",
+        "status": "PASS"
+      },
+      {
+        "id": "DIRECTORY-all-future-must-not-pick-last-session",
+        "status": "PASS"
+      },
+      {
+        "id": "DASHBOARD-today-date-badge-and-sort",
+        "status": "PASS"
+      },
+      {
+        "id": "DASHBOARD-today-class-after-default-limit-24",
+        "status": "PASS"
+      },
+      {
+        "id": "API-fills-current-session-date-without-DB-write",
+        "status": "PASS"
+      },
+      {
+        "id": "UI-pending-today-icon-date-and-Vietnamese",
+        "status": "PASS"
+      },
+      {
+        "id": "UI-old-date-no-today-badge",
+        "status": "PASS"
+      },
+      {
+        "id": "UI-missing-date-no-placeholder-garbage",
+        "status": "PASS"
+      },
+      {
+        "id": "UI-search-date",
+        "status": "PASS"
+      },
+      {
+        "id": "UI-search-hom-nay",
+        "status": "PASS"
+      },
+      {
+        "id": "UI-done-today-date",
+        "status": "PASS"
+      },
+      {
+        "id": "FETCH-fallback-Running-end-0",
+        "status": "PASS"
+      },
+      {
+        "id": "FETCH-fallback-Running-end-1",
+        "status": "PASS"
+      },
+      {
+        "id": "FETCH-fallback-Active-end-1",
+        "status": "PASS"
+      },
+      {
+        "id": "FETCH-fallback-Running-end--1",
+        "status": "PASS"
+      },
+      {
+        "id": "FETCH-fallback-Finished-end-0",
+        "status": "PASS"
+      },
+      {
+        "id": "FETCH-clear-button-no-op-fill-fallback",
+        "status": "PASS"
+      },
+      {
+        "id": "FETCH-wait-for-search-results-not-stale-row-count",
+        "status": "PASS"
+      },
+      {
+        "id": "FETCH-failed-clear-must-preserve-cache",
+        "status": "PASS"
+      }
+    ]
+  },
+  "supplemental": {
+    "command": "npx --no-install tsx audit-evidence/refresh-boundary-probes.mts",
+    "exitCode": 1,
+    "pass": 0,
+    "fail": 2,
+    "total": 2,
+    "results": [
+      {
+        "id": "F02-R2-refresh-completes-at-4000ms",
+        "status": "FAIL",
+        "error": "Unconfirmed stale two-row table must never replace the three-class cache\n\n2 !== 3\n",
+        "observed": {
+          "elapsed": 3200,
+          "readyAfterMs": 4000,
+          "result": {
+            "success": true,
+            "classes": [
+              {
+                "classCode": "VT-QA-JSB501",
+                "courseName": "JSB",
+                "center": "VT",
+                "status": "Running",
+                "updatedAt": "2026-11-07T10:36:53.981Z"
+              },
+              {
+                "classCode": "VT-QA-JSB502",
+                "courseName": "JSB",
+                "center": "VT",
+                "status": "Running",
+                "updatedAt": "2026-11-07T10:36:53.981Z"
+              }
+            ]
+          },
+          "cache": [
+            {
+              "classCode": "VT-QA-JSB501",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T10:36:53.981Z"
+            },
+            {
+              "classCode": "VT-QA-JSB502",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T10:36:53.981Z"
+            }
+          ]
+        }
+      },
+      {
+        "id": "F02-R2-refresh-never-completes",
+        "status": "FAIL",
+        "error": "Unconfirmed stale two-row table must never replace the three-class cache\n\n2 !== 3\n",
+        "observed": {
+          "elapsed": 3200,
+          "readyAfterMs": "never",
+          "result": {
+            "success": true,
+            "classes": [
+              {
+                "classCode": "VT-QA-JSB501",
+                "courseName": "JSB",
+                "center": "VT",
+                "status": "Running",
+                "updatedAt": "2026-11-07T10:36:54.032Z"
+              },
+              {
+                "classCode": "VT-QA-JSB502",
+                "courseName": "JSB",
+                "center": "VT",
+                "status": "Running",
+                "updatedAt": "2026-11-07T10:36:54.032Z"
+              }
+            ]
+          },
+          "cache": [
+            {
+              "classCode": "VT-QA-JSB501",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T10:36:54.032Z"
+            },
+            {
+              "classCode": "VT-QA-JSB502",
+              "courseName": "JSB",
+              "center": "VT",
+              "status": "Running",
+              "updatedAt": "2026-11-07T10:36:54.032Z"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "G1AfterReport": {
+    "command": "npx --no-install tsc --noEmit",
+    "exitCode": 0
+  }
+}

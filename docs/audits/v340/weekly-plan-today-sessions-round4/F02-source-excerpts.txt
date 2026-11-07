@@ -1,0 +1,623 @@
+
+src/lib/playwright/sync-class.ts:1604-1750
+1604:   public static async fetchRunningClasses(options?: {
+1605:     persistToConfig?: boolean;
+1606:     includeFinishedDays?: number;
+1607:   }): Promise<{
+1608:     success: boolean;
+1609:     classes: RunningClassItem[];
+1610:     error?: string;
+1611:   }> {
+1612:     const jobId = `fetch_running_classes_${Date.now()}`;
+1613:     jobLogRepo.add({
+1614:       jobId,
+1615:       jobType: "SYNC_CLASS",
+1616:       level: "INFO",
+1617:       message: "Đang vào trang Danh sách Lớp học LMS để lấy các lớp đang học (Running)...",
+1618:     });
+1619: 
+1620:     const browserManager = BrowserManager.getInstance();
+1621:     const page =
+1622:       typeof browserManager.getPage === "function"
+1623:         ? await browserManager.getPage()
+1624:         : (await browserManager.getContext()).pages()[0] ||
+1625:           (await (await browserManager.getContext()).newPage());
+1626:     const interceptor = createNetworkInterceptor(page);
+1627:     let classListApiError: string | null = null;
+1628:     let awaitingSearchClearApiResponse = false;
+1629:     let staleSearchFilterValue = "";
+1630:     let searchClearApiConfirmed = false;
+1631:     let confirmedApiClassCodes: string[] | null = null;
+1632:     const postClearRequests = new Set<any>();
+1633:     const onClassListApiRequest = (req: any) => {
+1634:       if (awaitingSearchClearApiResponse && req) {
+1635:         postClearRequests.add(req);
+1636:       }
+1637:     };
+1638:     const onClassListApiResponse = async (res: any) => {
+1639:       try {
+1640:         const req = typeof res.request === "function" ? res.request() : null;
+1641:         const method = String(req?.method?.() || "").toUpperCase();
+1642:         if (method === "OPTIONS") return;
+1643:         const resourceType = String(req?.resourceType?.() || "").toLowerCase();
+1644:         if (resourceType === "document") return;
+1645:         const url = String(res.url?.() || "");
+1646:         const isLmsApi =
+1647:           url.includes("lms-api.mindx.edu.vn") ||
+1648:           url.includes("graphql") ||
+1649:           /\/api\/classes\b/i.test(url);
+1650:         if (!isLmsApi) return;
+1651:         const postData = String(req?.postData?.() || "");
+1652:         if (
+1653:           postData &&
+1654:           /\b(getstudents|students|getcomments|comments|getslots|slots|attendance|submissions|homework|permission|notification)\b/i.test(
+1655:             postData
+1656:           ) &&
+1657:           !/\b(getclasses|searchclasses|findclasses|classes|classlist)\b/i.test(
+1658:             postData
+1659:           )
+1660:         ) {
+1661:           return;
+1662:         }
+1663:         const status = typeof res.status === "function" ? res.status() : 200;
+1664:         if (status >= 400) {
+1665:           classListApiError = `API danh sách lớp LMS trả về mã lỗi HTTP ${status}.`;
+1666:           return;
+1667:         }
+1668:         const bodyText =
+1669:           typeof res.text === "function"
+1670:             ? await res.text().catch(() => "")
+1671:             : "";
+1672:         let parsed: any = null;
+1673:         if (bodyText && bodyText.trim().startsWith("{")) {
+1674:           parsed = JSON.parse(bodyText);
+1675:           if (Array.isArray(parsed?.errors) && parsed.errors.length > 0) {
+1676:             classListApiError =
+1677:               parsed.errors[0]?.message ||
+1678:               "API danh sách lớp LMS trả về lỗi GraphQL.";
+1679:             return;
+1680:           }
+1681:         }
+1682:         if (awaitingSearchClearApiResponse && req && postClearRequests.has(req)) {
+1683:           let parsedReq: any = null;
+1684:           if (postData && postData.trim().startsWith("{")) {
+1685:             try {
+1686:               parsedReq = JSON.parse(postData);
+1687:             } catch {
+1688:               parsedReq = null;
+1689:             }
+1690:           }
+1691:           const opTarget = `${String(parsedReq?.operationName || "")} ${String(parsedReq?.query || "")}`;
+1692:           const isExplicitClassListRequest =
+1693:             /\/api\/classes\b/i.test(url) ||
+1694:             /\b(getclasses|searchclasses|findclasses|classes|classlist)\b/i.test(opTarget);
+1695:           let hasNonEmptySearchFilter = false;
+1696:           try {
+1697:             const uObj = new URL(url, "https://lms.mindx.edu.vn");
+1698:             for (const key of ["search", "q", "keyword", "query", "classCode"]) {
+1699:               const val = uObj.searchParams.get(key);
+1700:               if (val && val.trim().length > 0) {
+1701:                 hasNonEmptySearchFilter = true;
+1702:               }
+1703:             }
+1704:           } catch {
+1705:             // Ignore URL parse error
+1706:           }
+1707:           const checkVarsObj = (obj: any) => {
+1708:             if (!obj || typeof obj !== "object") return;
+1709:             for (const key of ["search", "q", "keyword", "query", "classCode", "name"]) {
+1710:               if (typeof obj[key] === "string" && obj[key].trim().length > 0) {
+1711:                 hasNonEmptySearchFilter = true;
+1712:               }
+1713:             }
+1714:           };
+1715:           checkVarsObj(parsedReq?.variables);
+1716:           checkVarsObj(parsedReq?.variables?.filter);
+1717:           checkVarsObj(parsedReq?.variables?.input);
+1718:           checkVarsObj(parsedReq?.variables?.where);
+1719:           if (
+1720:             staleSearchFilterValue &&
+1721:             postData.toLowerCase().includes(staleSearchFilterValue.toLowerCase())
+1722:           ) {
+1723:             hasNonEmptySearchFilter = true;
+1724:           }
+1725:           const rawClassArray = Array.isArray(parsed?.data?.classes)
+1726:             ? parsed.data.classes
+1727:             : Array.isArray(parsed?.data?.classes?.data)
+1728:               ? parsed.data.classes.data
+1729:               : Array.isArray(parsed?.data?.getClasses)
+1730:                 ? parsed.data.getClasses
+1731:                 : /\/api\/classes\b/i.test(url) && Array.isArray(parsed?.data || parsed)
+1732:                   ? (parsed?.data || parsed)
+1733:                   : null;
+1734:           if (isExplicitClassListRequest && !hasNonEmptySearchFilter && Array.isArray(rawClassArray)) {
+1735:             confirmedApiClassCodes = rawClassArray
+1736:               .map((item: any) =>
+1737:                 String(item?.classCode || item?.code || item?.name || "").trim()
+1738:               )
+1739:               .filter(Boolean);
+1740:             searchClearApiConfirmed = true;
+1741:           }
+1742:         }
+1743:       } catch {
+1744:         // Ignore parse errors
+1745:       }
+1746:     };
+1747:     if (typeof page.on === "function") {
+1748:       page.on("request", onClassListApiRequest);
+1749:       page.on("response", onClassListApiResponse);
+1750:     }
+
+src/lib/playwright/sync-class.ts:1836-1915
+1836:       // Clear any previous class search filter so ALL classes are displayed
+1837:       const searchInput = page.locator(SELECTORS.classes.searchInput).first();
+1838:       if (await searchInput.isVisible().catch(() => false)) {
+1839:         const currentSearchVal = await searchInput.inputValue().catch(() => "");
+1840:         if (currentSearchVal && currentSearchVal.trim().length > 0) {
+1841:           const initialTbodySig = await page
+1842:             .locator("table tbody")
+1843:             .first()
+1844:             .innerText()
+1845:             .catch(() => "");
+1846:           staleSearchFilterValue = currentSearchVal.trim();
+1847:           postClearRequests.clear();
+1848:           confirmedApiClassCodes = null;
+1849:           awaitingSearchClearApiResponse = true;
+1850:           searchClearApiConfirmed = false;
+1851:           const clearFilterBtn = page
+1852:             .locator('button:has-text("Clear"), .ant-input-clear-icon, [aria-label="close-circle"]')
+1853:             .first();
+1854:           if (await clearFilterBtn.isVisible().catch(() => false)) {
+1855:             await clearFilterBtn.click().catch(() => {});
+1856:             await page.waitForTimeout(400);
+1857:           }
+1858:           const remainingVal = await searchInput.inputValue().catch(() => currentSearchVal);
+1859:           if (remainingVal && remainingVal.trim().length > 0) {
+1860:             await searchInput.click().catch(() => {});
+1861:             await searchInput.fill("").catch(() => {});
+1862:             await page.keyboard.press("Enter").catch(() => {});
+1863:           } else {
+1864:             await searchInput.click().catch(() => {});
+1865:             await page.keyboard.press("Enter").catch(() => {});
+1866:           }
+1867:           const finalSearchVal = await searchInput.inputValue().catch(() => remainingVal);
+1868:           if (finalSearchVal && finalSearchVal.trim().length > 0) {
+1869:             awaitingSearchClearApiResponse = false;
+1870:             throw new Error(
+1871:               `Không thể xóa bộ lọc tìm kiếm lớp học ('${finalSearchVal.trim()}') trên MindX LMS. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có.`
+1872:             );
+1873:           }
+1874:           let searchRefreshConfirmed = false;
+1875:           for (let waitIdx = 0; waitIdx < 15; waitIdx++) {
+1876:             await page.waitForTimeout(400);
+1877:             const curTbodySig = await page
+1878:               .locator("table tbody")
+1879:               .first()
+1880:               .innerText()
+1881:               .catch(() => "");
+1882:             const domChangedToNonEmpty =
+1883:               curTbodySig !== initialTbodySig && curTbodySig.trim().length > 0;
+1884:             const apiCodes = confirmedApiClassCodes as string[] | null;
+1885:             const apiMatchesDom =
+1886:               searchClearApiConfirmed &&
+1887:               curTbodySig.trim().length > 0 &&
+1888:               (!apiCodes ||
+1889:                 apiCodes.every((code: string) => curTbodySig.includes(code)));
+1890:             if (domChangedToNonEmpty || apiMatchesDom) {
+1891:               searchRefreshConfirmed = true;
+1892:               break;
+1893:             }
+1894:           }
+1895:           awaitingSearchClearApiResponse = false;
+1896:           const priorCachedClasses =
+1897:             typeof getRunningClasses === "function" ? getRunningClasses() || [] : [];
+1898:           if (
+1899:             !searchRefreshConfirmed &&
+1900:             ((options?.persistToConfig ?? true) || priorCachedClasses.length > 0)
+1901:           ) {
+1902:             throw new Error(
+1903:               "Bảng danh sách lớp trên MindX LMS chưa xác nhận tải lại sau khi xóa bộ lọc tìm kiếm. Đã hủy cập nhật để bảo vệ danh sách lớp hiện có."
+1904:             );
+1905:           }
+1906:         }
+1907:       }
+1908: 
+1909:       // Wait for class table rows
+1910:       await page
+1911:         .locator("table tbody tr")
+1912:         .first()
+1913:         .waitFor({ state: "visible", timeout: 15000 })
+1914:         .catch(() => {});
+1915:       await page.waitForTimeout(800);
+
+src/lib/playwright/sync-class.ts:2205-2250
+2205:       const runningList = Array.from(collectedMap.values()).filter(
+2206:         (c) =>
+2207:           c.status !== "Finished" ||
+2208:           !isFinishedClassSupersededByRunningSuccessor(c.classCode, activeRunningCodeSet)
+2209:       );
+2210:       const shouldPersist = options?.persistToConfig !== false;
+2211:       if (shouldPersist) {
+2212:         saveRunningClasses(runningList);
+2213:       }
+2214: 
+2215:       const finalClasses = runningList;
+2216:       const runningOnlyCount = finalClasses.filter((c) => isConfirmedRunningStatus(c.status)).length;
+2217:       const recentFinishedCount = finalClasses.filter((c) => c.status === "Finished").length;
+2218: 
+2219:       jobLogRepo.add({
+2220:         jobId,
+2221:         jobType: "SYNC_CLASS",
+2222:         level: "SUCCESS",
+2223:         message: `Đã lấy thành công ${finalClasses.length} lớp từ LMS (${runningOnlyCount} lớp Running + ${recentFinishedCount} lớp Finished trong vòng ${DASHBOARD_FINISHED_CLASS_GRACE_DAYS} ngày sau Buổi 14): ${finalClasses
+2224:           .map((c) => `${c.classCode}${c.status === "Finished" ? " [Finished]" : ""}`)
+2225:           .join(", ")}.`,
+2226:       });
+2227: 
+2228:       return {
+2229:         success: true,
+2230:         classes: finalClasses,
+2231:       };
+2232:     } catch (err: any) {
+2233:       const errMsg = err instanceof Error ? err.message : String(err);
+2234:       jobLogRepo.add({
+2235:         jobId,
+2236:         jobType: "SYNC_CLASS",
+2237:         level: "ERROR",
+2238:         message: `Lỗi lấy danh sách lớp đang học từ LMS: ${errMsg}`,
+2239:       });
+2240:       return {
+2241:         success: false,
+2242:         classes: getRunningClasses(),
+2243:         error: errMsg,
+2244:       };
+2245:     } finally {
+2246:       if (typeof page.off === "function") {
+2247:         page.off("request", onClassListApiRequest);
+2248:         page.off("response", onClassListApiResponse);
+2249:       }
+2250:     }
+
+src/lib/db/json-config.ts:215-251
+215:   if (customPath) {
+216:     return assertPathAllowed(path.resolve(process.cwd(), customPath));
+217:   }
+218:   return assertPathAllowed(RUNNING_CLASSES_FILE);
+219: }
+220: 
+221: export function getRunningClasses(): RunningClassItem[] {
+222:   try {
+223:     const safePath = resolveRunningClassesFilePath();
+224:     if (!fs.existsSync(safePath)) {
+225:       return [];
+226:     }
+227:     const raw = fs.readFileSync(safePath, "utf-8");
+228:     const parsed = JSON.parse(raw);
+229:     if (!Array.isArray(parsed)) return [];
+230:     return parsed.filter(
+231:       (item): item is RunningClassItem =>
+232:         Boolean(item && typeof item === "object" && typeof item.classCode === "string" && item.classCode.trim())
+233:     );
+234:   } catch (err) {
+235:     if (err instanceof Error && err.message.includes("[Security Exception]")) {
+236:       throw err;
+237:     }
+238:     return [];
+239:   }
+240: }
+241: 
+242: export function saveRunningClasses(classes: RunningClassItem[]): void {
+243:   const dataDir = assertPathAllowed(path.resolve(process.cwd(), "data"));
+244:   if (!fs.existsSync(dataDir)) {
+245:     fs.mkdirSync(dataDir, { recursive: true });
+246:   }
+247:   const safePath = resolveRunningClassesFilePath();
+248:   const tempPath = assertPathAllowed(`${safePath}.tmp`);
+249:   fs.writeFileSync(tempPath, JSON.stringify(classes, null, 2), "utf-8");
+250:   fs.renameSync(tempPath, safePath);
+251: }
+
+scripts/test-streamline-v340-s6.ts:1721-1888
+1721:         // F02-R2: Delayed refresh (4000ms) & unconfirmed refresh (never completes)
+1722:         const threeClasses = [
+1723:           { classCode: "VT-QA-JSB501", status: "Running" },
+1724:           { classCode: "VT-QA-JSB502", status: "Running" },
+1725:           { classCode: "VT-QA-JSB503", status: "Running" },
+1726:         ];
+1727:         const rowHtml = (code: string) =>
+1728:           `<tr><td>1</td><td>${code}</td><td>JSB</td><td>VT</td><td>Running</td></tr>`;
+1729: 
+1730:         for (const [caseId, readyAfterMs] of [
+1731:           ["F02-R2-refresh-completes-at-4000ms", 4000],
+1732:           ["F02-R2-refresh-never-completes", Number.POSITIVE_INFINITY],
+1733:         ] as const) {
+1734:           fs.writeFileSync(testRunningClassesPath, JSON.stringify(threeClasses), "utf8");
+1735:           await pageReadiness.setContent(
+1736:             `<input placeholder="Search classes" value="old"/><table><tbody>${threeClasses
+1737:               .slice(0, 2)
+1738:               .map((x) => rowHtml(x.classCode))
+1739:               .join("")}</tbody></table>`
+1740:           );
+1741:           let elapsedMs = 0;
+1742:           (pageReadiness as any).waitForTimeout = async (ms: number) => {
+1743:             elapsedMs += ms;
+1744:             if (elapsedMs >= readyAfterMs) {
+1745:               await pageReadiness.locator("tbody").evaluate(
+1746:                 (el, html) => {
+1747:                   el.innerHTML = html;
+1748:                 },
+1749:                 threeClasses.map((x) => rowHtml(x.classCode)).join("")
+1750:               );
+1751:             }
+1752:           };
+1753:           const resBoundary = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+1754:           const cachedAfter = getRunningClasses();
+1755:           assert.equal(
+1756:             cachedAfter.length,
+1757:             3,
+1758:             `${caseId}: Unconfirmed stale 2-row table must never overwrite 3-class cache`
+1759:           );
+1760:           if (Number.isFinite(readyAfterMs)) {
+1761:             assert.equal(resBoundary.success, true, `${caseId}: Delayed 4000ms refresh must succeed`);
+1762:             assert.equal(resBoundary.classes.length, 3, `${caseId}: Must return all 3 classes`);
+1763:           } else {
+1764:             assert.equal(resBoundary.success, false, `${caseId}: Unconfirmed refresh must return success:false`);
+1765:           }
+1766:         }
+1767:         (pageReadiness as any).waitForTimeout = async () => {};
+1768: 
+1769:         // F02-R3: Valid post-clear API confirmation vs non-class / pre-clear stale filtered API response
+1770:         const r3Codes = ["VT-QA-JSB601", "VT-QA-JSB602", "VT-QA-JSB603"];
+1771:         for (const mode of ["valid-same-table", "non-class-response", "stale-filtered-response"] as const) {
+1772:           let elapsedR3 = 0;
+1773:           let pendingRoute: any;
+1774:           let markRouteSeen!: () => void;
+1775:           const routeSeenP = new Promise<void>((resolve) => {
+1776:             markRouteSeen = resolve;
+1777:           });
+1778:           const priorR3 = r3Codes
+1779:             .slice(0, mode === "valid-same-table" ? 2 : 3)
+1780:             .map((classCode) => ({ classCode, status: "Running" }));
+1781:           const tableHtmlR3 = r3Codes.slice(0, 2).map(rowHtml).join("");
+1782:           const opName = mode === "non-class-response" ? "getMe" : "getClasses";
+1783:           const vars =
+1784:             mode === "stale-filtered-response"
+1785:               ? { search: "old" }
+1786:               : mode === "valid-same-table"
+1787:                 ? { search: "" }
+1788:                 : {};
+1789:           const respBody =
+1790:             mode === "non-class-response"
+1791:               ? { data: { me: { id: "SYNTHETIC_TEACHER" } } }
+1792:               : {
+1793:                   data: {
+1794:                     classes: r3Codes
+1795:                       .slice(0, 2)
+1796:                       .map((classCode) => ({ classCode, status: "Running" })),
+1797:                   },
+1798:                 };
+1799:           await pageReadiness.unrouteAll({ behavior: "wait" });
+1800:           await pageReadiness.route("**/*", async (route) => {
+1801:             if (route.request().resourceType() === "document") {
+1802:               await route.fulfill({
+1803:                 status: 200,
+1804:                 contentType: "text/html",
+1805:                 body: '<meta charset="utf-8"><body></body>',
+1806:               });
+1807:             } else if (route.request().url() === "https://lms-api.mindx.edu.vn/graphql") {
+1808:               pendingRoute = route;
+1809:               markRouteSeen();
+1810:             } else {
+1811:               await route.abort();
+1812:             }
+1813:           });
+1814:           await pageReadiness.goto("https://lms.mindx.edu.vn/admin/classes");
+1815:           await pageReadiness.setContent(
+1816:             `<input placeholder="Search classes" value="old"><table><tbody>${tableHtmlR3}</tbody></table>`
+1817:           );
+1818:           await pageReadiness.evaluate(
+1819:             ({ opName, vars, mode, tableHtmlR3 }) => {
+1820:               (window as any).__done = false;
+1821:               (window as any).__start = () => {
+1822:                 void fetch("https://lms-api.mindx.edu.vn/graphql", {
+1823:                   method: "POST",
+1824:                   headers: { "Content-Type": "application/json" },
+1825:                   body: JSON.stringify({ operationName: opName, variables: vars }),
+1826:                 })
+1827:                   .then((r) => r.json())
+1828:                   .then(() => {
+1829:                     if (mode === "valid-same-table") {
+1830:                       document.querySelector("tbody")!.innerHTML = tableHtmlR3;
+1831:                     }
+1832:                     (window as any).__done = true;
+1833:                   });
+1834:               };
+1835:               if (mode !== "stale-filtered-response") {
+1836:                 document.querySelector("input")!.addEventListener("keydown", (e) => {
+1837:                   if ((e as KeyboardEvent).key === "Enter") (window as any).__start();
+1838:                 });
+1839:               }
+1840:             },
+1841:             { opName, vars, mode, tableHtmlR3 }
+1842:           );
+1843:           fs.writeFileSync(testRunningClassesPath, JSON.stringify(priorR3), "utf8");
+1844:           (authService as any).ensureAuthenticated = async () => {
+1845:             if (mode === "stale-filtered-response") {
+1846:               await pageReadiness.evaluate(() => (window as any).__start());
+1847:               await routeSeenP;
+1848:             }
+1849:             return true;
+1850:           };
+1851:           (pageReadiness as any).waitForTimeout = async (ms: number) => {
+1852:             elapsedR3 += ms;
+1853:             if (elapsedR3 === 400) {
+1854:               await routeSeenP;
+1855:               await pendingRoute.fulfill({
+1856:                 status: 200,
+1857:                 contentType: "application/json",
+1858:                 headers: { "Access-Control-Allow-Origin": "*" },
+1859:                 body: JSON.stringify(respBody),
+1860:               });
+1861:               await pageReadiness.waitForFunction(() => (window as any).__done === true);
+1862:             }
+1863:           };
+1864:           const resR3 = await ClassSyncer.fetchRunningClasses({ persistToConfig: true });
+1865:           const cacheR3 = getRunningClasses();
+1866:           if (mode === "valid-same-table") {
+1867:             assert.equal(resR3.success, true, `F02-R3-${mode}: Valid post-clear response must succeed`);
+1868:             assert.equal(cacheR3.length, 2, `F02-R3-${mode}: Cache must have 2 classes`);
+1869:           } else {
+1870:             assert.equal(
+1871:               resR3.success,
+1872:               false,
+1873:               `F02-R3-${mode}: Non-class or pre-clear stale filtered response must fail`
+1874:             );
+1875:             assert.equal(
+1876:               cacheR3.length,
+1877:               3,
+1878:               `F02-R3-${mode}: Cache must retain all 3 classes`
+1879:             );
+1880:           }
+1881:         }
+1882:         (authService as any).ensureAuthenticated = async () => true;
+1883:         (pageReadiness as any).waitForTimeout = async () => {};
+1884:       } finally {
+1885:         bm.getPage = origGetPage;
+1886:         authService.ensureAuthenticated = origEnsureAuth;
+1887:         pageReadiness.waitForTimeout = origWait;
+1888:         await pageReadiness.close();
+
+src/app/api/dashboard/scan-weekly-tasks/route.ts:44-80
+44:   try {
+45:     const outcome = await taskQueue.enqueue({
+46:       id: `scan_weekly_tasks_${Date.now()}`,
+47:       jobType: "SYNC_CLASS",
+48:       description: "Quét công việc tuần này từ LMS & Teaching cho các lớp đang dạy",
+49:       execute: async () => {
+50:         ensureQueueNotStopped();
+51:         const fetchRes = await ClassSyncer.fetchRunningClasses({
+52:           persistToConfig: true,
+53:         });
+54:         ensureQueueNotStopped();
+55: 
+56:         if (!fetchRes.success) {
+57:           return {
+58:             ok: false as const,
+59:             error:
+60:               fetchRes.error ||
+61:               "Không thể lấy danh sách lớp đang dạy từ MindX LMS.",
+62:             syncedClassCodes: [] as string[],
+63:             failedClasses: [] as Array<{ classCode: string; error: string }>,
+64:           };
+65:         }
+66: 
+67:         const candidateCodes: string[] = [];
+68:         const seen = new Set<string>();
+69:         const rawList = Array.isArray(fetchRes.classes)
+70:           ? fetchRes.classes
+71:           : listClasses({
+72:               scope: "running",
+73:               includeFinishedDays: DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
+74:             });
+75:         const activeRunningCodes = new Set(
+76:           rawList
+77:             .filter((item) => isConfirmedRunningStatus(item?.status))
+78:             .map((item) => String(item?.classCode || "").trim().toUpperCase())
+79:             .filter(Boolean)
+80:         );
+
+src/app/api/classes/refresh/route.ts:144-171
+144:       id: `refresh_classes_${rawClassCode || scope}_${Date.now()}`,
+145:       jobType: "SYNC_CLASS",
+146:       classId: rawClassCode || undefined,
+147:       description: rawClassCode
+148:         ? `Quét danh sách lớp từ LMS và đồng bộ lớp ${rawClassCode}`
+149:         : "Quét danh sách các lớp đang dạy từ LMS",
+150:       execute: async () => {
+151:         ensureQueueNotStopped();
+152:         const fetchRes = await ClassSyncer.fetchRunningClasses({
+153:           persistToConfig: true,
+154:         });
+155:         ensureQueueNotStopped();
+156: 
+157:         if (!fetchRes.success) {
+158:           return {
+159:             ok: false as const,
+160:             error:
+161:               fetchRes.error ||
+162:               "Không thể lấy danh sách lớp đang dạy từ MindX LMS.",
+163:             syncedClassCodes: [] as string[],
+164:             syncedClass: null as any,
+165:           };
+166:         }
+167: 
+168:         const syncedClassCodes: string[] = [];
+169:         const failedClasses: Array<{ classCode: string; error: string }> = [];
+170:         let syncedClass: any = null;
+171: 
+
+src/app/api/session-comments/fetch-classes/route.ts:29-64
+29: export async function POST(req: Request) {
+30:   const guard = validateLocalRequest(req);
+31:   if (guard) return guard;
+32: 
+33:   try {
+34:     const result = await taskQueue.enqueue({
+35:       id: `fetch_running_classes_${Date.now()}`,
+36:       jobType: "SYNC_CLASS",
+37:       description: "Lấy danh sách các lớp đang học (Running) từ LMS",
+38:       execute: async () => {
+39:         return ClassSyncer.fetchRunningClasses();
+40:       },
+41:     });
+42: 
+43:     if (!result.success) {
+44:       return NextResponse.json(
+45:         {
+46:           success: false,
+47:           classes: getMergedRunningClasses(),
+48:           error: result.error || "Không thể lấy danh sách lớp đang học từ LMS.",
+49:         },
+50:         { status: 500 }
+51:       );
+52:     }
+53: 
+54:     return NextResponse.json({
+55:       success: true,
+56:       classes: getMergedRunningClasses(),
+57:     });
+58:   } catch (err: any) {
+59:     return NextResponse.json(
+60:       {
+61:         success: false,
+62:         classes: getMergedRunningClasses(),
+63:         error: err instanceof Error ? err.message : String(err),
+64:       },
+
+src/app/api/spck/list/route.ts:355-380
+355:     const syncOutcome = await taskQueue.enqueue({
+356:       id: `spck_list_sync_${Date.now()}`,
+357:       jobType: "SYNC_CLASS",
+358:       description:
+359:         "Quét và đồng bộ danh sách lớp đủ điều kiện nộp SPCK trên LMS",
+360:       execute: async () => {
+361:         ensureQueueNotStopped();
+362:         const runningRes = await ClassSyncer.fetchRunningClasses({
+363:           persistToConfig: false,
+364:           includeFinishedDays: FINISHED_CLASS_GRACE_DAYS,
+365:         });
+366:         ensureQueueNotStopped();
+367:         if (!runningRes.success) {
+368:           return {
+369:             ok: false as const,
+370:             error:
+371:               runningRes.error ||
+372:               "Không thể lấy danh sách lớp đủ điều kiện nộp SPCK từ MindX LMS.",
+373:             runningList: [] as Array<{
+374:               classCode: string;
+375:               courseName?: string;
+376:               center?: string;
+377:               status?: "Running" | "Finished";
+378:               startDate?: string;
+379:               endDate?: string;
+380:               updatedAt?: string;

@@ -1,0 +1,174 @@
+{
+  "pass": 33,
+  "fail": 7,
+  "total": 40,
+  "results": [
+    {
+      "id": "DB-preserve-",
+      "status": "PASS"
+    },
+    {
+      "id": "DB-preserve-   ",
+      "status": "PASS"
+    },
+    {
+      "id": "DB-preserve-undefined",
+      "status": "PASS"
+    },
+    {
+      "id": "DB-preserve-null",
+      "status": "PASS"
+    },
+    {
+      "id": "DB-replace-nonempty",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-weekly-anchor-age-6",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-weekly-anchor-age-7",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-weekly-anchor-age-8",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-weekly-anchor-age-13",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-weekly-anchor-age-14",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-slot-later-today-before-class-hour",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-explicit-next-slot-postponed",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-ISO-cross-midnight-Vietnam",
+      "status": "PASS"
+    },
+    {
+      "id": "ENRICH-empty-no-crash",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-weekly-age-6",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-weekly-age-7",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-weekly-age-8",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-weekly-age-13",
+      "status": "PASS"
+    },
+    {
+      "id": "DIRECTORY-no-advance-finished",
+      "status": "PASS"
+    },
+    {
+      "id": "PIPELINE-postponed-explicit-slot-must-not-advance",
+      "status": "FAIL",
+      "error": "{\"sync\":\"VT-QA-JSB208_SESS_08\",\"directory\":9,\"directoryDate\":\"07/11/2026\",\"cardSession\":9,\"cardDate\":\"07/11/2026\",\"isToday\":true}\n\n9 !== 8\n"
+    },
+    {
+      "id": "DIRECTORY-known-future-date-must-not-be-overridden",
+      "status": "FAIL",
+      "error": "{\"classCode\":\"VT-QA-JSB209\",\"status\":\"Running\",\"classId\":\"VT-QA-JSB209\",\"className\":\"VT-QA-JSB209\",\"courseName\":\"\",\"startDate\":\"19/09/2026\",\"endDate\":\"19/12/2026\",\"session14Date\":\"19/12/2026\",\"currentSessionNumber\":9,\"currentSessionDate\":\"07/11/2026\",\"maxSessionNumber\":14,\"spckSessions\":[12,13,14]}\n\n9 !== 8\n"
+    },
+    {
+      "id": "DIRECTORY-finished-S14-date-must-match-S14",
+      "status": "FAIL",
+      "error": "{\"row\":{\"classCode\":\"VT-QA-JSB210\",\"status\":\"Finished\",\"endDate\":\"06/11/2026\",\"classId\":\"VT-QA-JSB210\",\"className\":\"VT-QA-JSB210\",\"courseName\":\"\",\"startDate\":\"07/08/2026\",\"session14Date\":\"06/11/2026\",\"currentSessionNumber\":14,\"currentSessionDate\":\"30/10/2026\",\"maxSessionNumber\":14,\"spckSessions\":[12,13,14]},\"card\":{\"classId\":\"VT-QA-JSB210\",\"className\":\"VT-QA-JSB210\",\"currentSessionNumber\":14,\"sessionDate\":\"30/10/2026\",\"sessionBadgeText\":\"Buổi 14 • Tổng kết CK\",\"isCheckpoint\":false,\"summaryText\":\"① Nộp SPCK ② Đánh giá ③ Phiếu điểm ④ Tiến độ 100%\",\"primaryHref\":\"/final-project?classId=VT-QA-JSB210&sessionNumber=14\",\"steps\":[{\"stepNumber\":1,\"label\":\"① Nộp SPCK\",\"statusText\":\"đã nộp LMS ✓\",\"href\":\"/final-project?classId=VT-QA-JSB210&sessionNumber=14\",\"isDone\":true},{\"stepNumber\":2,\"label\":\"② Đánh giá\",\"statusText\":\"đã đẩy LMS ✓\",\"href\":\"/final-project?classId=VT-QA-JSB210&sessionNumber=14\",\"isDone\":true},{\"stepNumber\":3,\"label\":\"③ Phiếu điểm\",\"statusText\":\"đã đồng bộ Teaching ✓\",\"href\":\"/homework-grader?classId=VT-QA-JSB210\",\"isDone\":true},{\"stepNumber\":4,\"label\":\"④ Tiến độ 100%\",\"statusText\":\"đã đạt 100% ✓\",\"href\":\"/teaching-projects?classId=VT-QA-JSB210\",\"isDone\":true}],\"allDone\":true}}\n+ actual - expected\n\n+ '30/10/2026'\n- '06/11/2026'\n"
+    },
+    {
+      "id": "DIRECTORY-all-future-must-not-pick-last-session",
+      "status": "FAIL",
+      "error": "{\"classCode\":\"VT-QA-JSB211\",\"status\":\"Running\",\"classId\":\"VT-QA-JSB211\",\"className\":\"VT-QA-JSB211\",\"courseName\":\"\",\"startDate\":\"08/11/2026\",\"endDate\":\"07/02/2027\",\"session14Date\":\"07/02/2027\",\"currentSessionNumber\":14,\"currentSessionDate\":\"07/02/2027\",\"maxSessionNumber\":14,\"spckSessions\":[12,13,14]}"
+    },
+    {
+      "id": "DASHBOARD-today-date-badge-and-sort",
+      "status": "PASS"
+    },
+    {
+      "id": "DASHBOARD-today-class-after-default-limit-24",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'VT-QA-JSB300'\n- 'VT-QA-JSB324'\n             ^\n"
+    },
+    {
+      "id": "API-fills-current-session-date-without-DB-write",
+      "status": "PASS"
+    },
+    {
+      "id": "UI-pending-today-icon-date-and-Vietnamese",
+      "status": "PASS"
+    },
+    {
+      "id": "UI-old-date-no-today-badge",
+      "status": "PASS"
+    },
+    {
+      "id": "UI-missing-date-no-placeholder-garbage",
+      "status": "PASS"
+    },
+    {
+      "id": "UI-search-date",
+      "status": "PASS"
+    },
+    {
+      "id": "UI-search-hom-nay",
+      "status": "PASS"
+    },
+    {
+      "id": "UI-done-today-date",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-fallback-Running-end-0",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-fallback-Running-end-1",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-fallback-Active-end-1",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-fallback-Running-end--1",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-fallback-Finished-end-0",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-clear-button-no-op-fill-fallback",
+      "status": "PASS"
+    },
+    {
+      "id": "FETCH-wait-for-search-results-not-stale-row-count",
+      "status": "FAIL",
+      "error": "Search succeeds after 2s; stale 2-row table must not be persisted\n\n2 !== 3\n"
+    },
+    {
+      "id": "FETCH-failed-clear-must-preserve-cache",
+      "status": "FAIL",
+      "error": "Must fail instead of persisting filtered subset\n\ntrue !== false\n"
+    }
+  ]
+}

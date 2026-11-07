@@ -1,0 +1,1139 @@
+{
+  "at": "2026-11-07T10:50:03.674Z",
+  "baselineHead": "745b513b54c7dcc24d8bb1e6774c5db798685945",
+  "root": "F:\\MINDX_project test\\MINDX-AUTOMATION",
+  "temp": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-weekly-plan-audit-r2-r3-M1irl7",
+  "sourceCount": 157,
+  "sources": [
+    {
+      "file": "next-env.d.ts",
+      "expected": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
+      "original": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
+      "temp": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
+      "unchanged": true
+    },
+    {
+      "file": "next.config.ts",
+      "expected": "05afb6509e7d89d8b7697360e94ee8a1ebb42fd00f583efe37de7e6a7e898866",
+      "original": "05afb6509e7d89d8b7697360e94ee8a1ebb42fd00f583efe37de7e6a7e898866",
+      "temp": "05afb6509e7d89d8b7697360e94ee8a1ebb42fd00f583efe37de7e6a7e898866",
+      "unchanged": true
+    },
+    {
+      "file": "package-lock.json",
+      "expected": "79da2b8368a1b59f7f56c7a80307ba754c1587fc4b5503d4efc96835481fdda4",
+      "original": "79da2b8368a1b59f7f56c7a80307ba754c1587fc4b5503d4efc96835481fdda4",
+      "temp": "79da2b8368a1b59f7f56c7a80307ba754c1587fc4b5503d4efc96835481fdda4",
+      "unchanged": true
+    },
+    {
+      "file": "package.json",
+      "expected": "1472c4e48d2ce7486cfb9c7debe373a96fcf0f72043661cda77f9e901b7415f9",
+      "original": "1472c4e48d2ce7486cfb9c7debe373a96fcf0f72043661cda77f9e901b7415f9",
+      "temp": "1472c4e48d2ce7486cfb9c7debe373a96fcf0f72043661cda77f9e901b7415f9",
+      "unchanged": true
+    },
+    {
+      "file": "postcss.config.mjs",
+      "expected": "dfac7ac2d86d326a0e5adb024e7943c181393ed17a5fcb8f0315b24c7da6ddde",
+      "original": "dfac7ac2d86d326a0e5adb024e7943c181393ed17a5fcb8f0315b24c7da6ddde",
+      "temp": "dfac7ac2d86d326a0e5adb024e7943c181393ed17a5fcb8f0315b24c7da6ddde",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/recon.ts",
+      "expected": "50a9cfffd20e1d043112852433070ea78fb084b919d85ad537f96f67b33ee5e2",
+      "original": "50a9cfffd20e1d043112852433070ea78fb084b919d85ad537f96f67b33ee5e2",
+      "temp": "50a9cfffd20e1d043112852433070ea78fb084b919d85ad537f96f67b33ee5e2",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-checkpoint-v300.ts",
+      "expected": "fe04cf1e08167ca2d23cf604e2b749824beb687d350788a7cf241dfb559c1969",
+      "original": "fe04cf1e08167ca2d23cf604e2b749824beb687d350788a7cf241dfb559c1969",
+      "temp": "fe04cf1e08167ca2d23cf604e2b749824beb687d350788a7cf241dfb559c1969",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-lms-reliability-v280.ts",
+      "expected": "bdd8ac582b370282c820de0c8a276562221dc3e2a2d90f2f93f26a4d4eaa4451",
+      "original": "bdd8ac582b370282c820de0c8a276562221dc3e2a2d90f2f93f26a4d4eaa4451",
+      "temp": "bdd8ac582b370282c820de0c8a276562221dc3e2a2d90f2f93f26a4d4eaa4451",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-patches-round2.ts",
+      "expected": "2e1b15a66ee4fe900f8f5580a19e40cca4fde9dc27cfaf59bb87c7c268275ba5",
+      "original": "2e1b15a66ee4fe900f8f5580a19e40cca4fde9dc27cfaf59bb87c7c268275ba5",
+      "temp": "2e1b15a66ee4fe900f8f5580a19e40cca4fde9dc27cfaf59bb87c7c268275ba5",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-phase3.ts",
+      "expected": "594ca880d6f149ad3f5e50ba0e7f583455d6a96a1426b8d777e74cd40290f8a1",
+      "original": "594ca880d6f149ad3f5e50ba0e7f583455d6a96a1426b8d777e74cd40290f8a1",
+      "temp": "594ca880d6f149ad3f5e50ba0e7f583455d6a96a1426b8d777e74cd40290f8a1",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-phase4-codex-repros.ts",
+      "expected": "ed31335fb5f17d154a02f3829833c3976cbcc7bc1f0d8e5d1f1afc59a30146b2",
+      "original": "ed31335fb5f17d154a02f3829833c3976cbcc7bc1f0d8e5d1f1afc59a30146b2",
+      "temp": "ed31335fb5f17d154a02f3829833c3976cbcc7bc1f0d8e5d1f1afc59a30146b2",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-phase5.ts",
+      "expected": "e054e154396f30e485ad6239296e16059e084829780cd2eb4bbe80a4cc38ff3e",
+      "original": "e054e154396f30e485ad6239296e16059e084829780cd2eb4bbe80a4cc38ff3e",
+      "temp": "e054e154396f30e485ad6239296e16059e084829780cd2eb4bbe80a4cc38ff3e",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-phase6.ts",
+      "expected": "39f2680da6a1bd3124f52cd82dd72490b8f8a203887cb1f476e2b2f90ba8a330",
+      "original": "39f2680da6a1bd3124f52cd82dd72490b8f8a203887cb1f476e2b2f90ba8a330",
+      "temp": "39f2680da6a1bd3124f52cd82dd72490b8f8a203887cb1f476e2b2f90ba8a330",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-phase7.ts",
+      "expected": "1621279bfc776bd6922ad36a3cfd1d9f997721357e0bb36245c499074edf5d62",
+      "original": "1621279bfc776bd6922ad36a3cfd1d9f997721357e0bb36245c499074edf5d62",
+      "temp": "1621279bfc776bd6922ad36a3cfd1d9f997721357e0bb36245c499074edf5d62",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-portal-directory.ts",
+      "expected": "439be99692e9de289a826f166cdbf93268beb14cc984e07548f48976f31ce597",
+      "original": "439be99692e9de289a826f166cdbf93268beb14cc984e07548f48976f31ce597",
+      "temp": "439be99692e9de289a826f166cdbf93268beb14cc984e07548f48976f31ce597",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-quick-tags-v300.ts",
+      "expected": "957b3257ee9ba8c8995c6cd5f282b815c69a5a602a46a676d9c0043435e7ab20",
+      "original": "957b3257ee9ba8c8995c6cd5f282b815c69a5a602a46a676d9c0043435e7ab20",
+      "temp": "957b3257ee9ba8c8995c6cd5f282b815c69a5a602a46a676d9c0043435e7ab20",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-report-card-v330.ts",
+      "expected": "81ebc15be21d78f5577a215b54f59e7792dfe0ec237bc5e37dbfab3d8ef5227f",
+      "original": "81ebc15be21d78f5577a215b54f59e7792dfe0ec237bc5e37dbfab3d8ef5227f",
+      "temp": "81ebc15be21d78f5577a215b54f59e7792dfe0ec237bc5e37dbfab3d8ef5227f",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-session14-v290.ts",
+      "expected": "83beb42b970f8e02213662cc2da3f35faf63093a5344c580ca4ddd4f678dd390",
+      "original": "83beb42b970f8e02213662cc2da3f35faf63093a5344c580ca4ddd4f678dd390",
+      "temp": "83beb42b970f8e02213662cc2da3f35faf63093a5344c580ca4ddd4f678dd390",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-spck-default-dir.ts",
+      "expected": "0d1acae8518f3cfa93257335adc2f2c1927209bca19650aee7183e25bcdd2440",
+      "original": "0d1acae8518f3cfa93257335adc2f2c1927209bca19650aee7183e25bcdd2440",
+      "temp": "0d1acae8518f3cfa93257335adc2f2c1927209bca19650aee7183e25bcdd2440",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-spck-v270.ts",
+      "expected": "15dcf25a0f6679509ffb7b623a48a6731c68a095be1b40d37e8ec2131c24c176",
+      "original": "15dcf25a0f6679509ffb7b623a48a6731c68a095be1b40d37e8ec2131c24c176",
+      "temp": "15dcf25a0f6679509ffb7b623a48a6731c68a095be1b40d37e8ec2131c24c176",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-spck-v272.ts",
+      "expected": "843fa9ff012cf071ce16ccce95bdbf950b7a97785c5e2599264ad922e0bc5348",
+      "original": "843fa9ff012cf071ce16ccce95bdbf950b7a97785c5e2599264ad922e0bc5348",
+      "temp": "843fa9ff012cf071ce16ccce95bdbf950b7a97785c5e2599264ad922e0bc5348",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-streamline-v340-s1.ts",
+      "expected": "4313230439831b955db32a6f8878d3d8f0ad8cc2abef486574ec40b93035204b",
+      "original": "4313230439831b955db32a6f8878d3d8f0ad8cc2abef486574ec40b93035204b",
+      "temp": "4313230439831b955db32a6f8878d3d8f0ad8cc2abef486574ec40b93035204b",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-streamline-v340-s2.ts",
+      "expected": "eb36a46084338910e32743f17a369482608192a17026e4851853118e3980d155",
+      "original": "eb36a46084338910e32743f17a369482608192a17026e4851853118e3980d155",
+      "temp": "eb36a46084338910e32743f17a369482608192a17026e4851853118e3980d155",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-streamline-v340-s3.ts",
+      "expected": "37931e125544ec284140c1ce45a8e246e9db56b96da436726c358b7f226c5ff9",
+      "original": "37931e125544ec284140c1ce45a8e246e9db56b96da436726c358b7f226c5ff9",
+      "temp": "37931e125544ec284140c1ce45a8e246e9db56b96da436726c358b7f226c5ff9",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-streamline-v340-s4.ts",
+      "expected": "681cadb98ecb6625e307fd7b3af02d4fee1b2c45f88bc02c0515257eb2fc86c9",
+      "original": "681cadb98ecb6625e307fd7b3af02d4fee1b2c45f88bc02c0515257eb2fc86c9",
+      "temp": "681cadb98ecb6625e307fd7b3af02d4fee1b2c45f88bc02c0515257eb2fc86c9",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-streamline-v340-s5.ts",
+      "expected": "39b91cc183a6652fcf4432c6ebfeb11ae1c09f7b63bdd3c55f9165df50c81e7f",
+      "original": "39b91cc183a6652fcf4432c6ebfeb11ae1c09f7b63bdd3c55f9165df50c81e7f",
+      "temp": "39b91cc183a6652fcf4432c6ebfeb11ae1c09f7b63bdd3c55f9165df50c81e7f",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-streamline-v340-s5a.ts",
+      "expected": "d33f5d03f7de5009328724699a8b7e679e025f210b5410d01bd5c336fa5ebf56",
+      "original": "d33f5d03f7de5009328724699a8b7e679e025f210b5410d01bd5c336fa5ebf56",
+      "temp": "d33f5d03f7de5009328724699a8b7e679e025f210b5410d01bd5c336fa5ebf56",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-streamline-v340-s6.ts",
+      "expected": "d30a9f9a22357964b884b30b1a130f4203da114119f21c2552996fc4edb292a3",
+      "original": "d30a9f9a22357964b884b30b1a130f4203da114119f21c2552996fc4edb292a3",
+      "temp": "d30a9f9a22357964b884b30b1a130f4203da114119f21c2552996fc4edb292a3",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-streamline-v340-s7.ts",
+      "expected": "d599580b279384d72244d2a46871a92f6e5d03b3a4fbf775dac60d7d440f4bd2",
+      "original": "d599580b279384d72244d2a46871a92f6e5d03b3a4fbf775dac60d7d440f4bd2",
+      "temp": "d599580b279384d72244d2a46871a92f6e5d03b3a4fbf775dac60d7d440f4bd2",
+      "unchanged": true
+    },
+    {
+      "file": "scripts/test-teaching-project-v320.ts",
+      "expected": "08e18f7e08ff08a8b8f739392c87a924aa8d51ba5c7fd0b1e7d88a5f606a580d",
+      "original": "08e18f7e08ff08a8b8f739392c87a924aa8d51ba5c7fd0b1e7d88a5f606a580d",
+      "temp": "08e18f7e08ff08a8b8f739392c87a924aa8d51ba5c7fd0b1e7d88a5f606a580d",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/auth/login/route.ts",
+      "expected": "6a1fbf964c9f8393459173317d5784d4cc6c07c34a7d0a1a822e144c5afe487a",
+      "original": "6a1fbf964c9f8393459173317d5784d4cc6c07c34a7d0a1a822e144c5afe487a",
+      "temp": "6a1fbf964c9f8393459173317d5784d4cc6c07c34a7d0a1a822e144c5afe487a",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/auth/status/route.ts",
+      "expected": "df3438881441ede00e32b3dda49ec1a11c704ed6a0d7fcd6103a069033e5156a",
+      "original": "df3438881441ede00e32b3dda49ec1a11c704ed6a0d7fcd6103a069033e5156a",
+      "temp": "df3438881441ede00e32b3dda49ec1a11c704ed6a0d7fcd6103a069033e5156a",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/classes/refresh/route.ts",
+      "expected": "d56d89d09617ad3a3cedb8f5dbae35e97bbad1b6afe73452012332decbf3ae30",
+      "original": "d56d89d09617ad3a3cedb8f5dbae35e97bbad1b6afe73452012332decbf3ae30",
+      "temp": "d56d89d09617ad3a3cedb8f5dbae35e97bbad1b6afe73452012332decbf3ae30",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/config/route.ts",
+      "expected": "4aa83217326ca219fa59838e5e976fa2319923a941e00d003a51de0eb3da7863",
+      "original": "4aa83217326ca219fa59838e5e976fa2319923a941e00d003a51de0eb3da7863",
+      "temp": "4aa83217326ca219fa59838e5e976fa2319923a941e00d003a51de0eb3da7863",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/dashboard/scan-weekly-tasks/route.ts",
+      "expected": "bda0e62c45cae255aeaa1c987d2ee1db5569fc83d44173b4889a4bba15d55477",
+      "original": "bda0e62c45cae255aeaa1c987d2ee1db5569fc83d44173b4889a4bba15d55477",
+      "temp": "bda0e62c45cae255aeaa1c987d2ee1db5569fc83d44173b4889a4bba15d55477",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/homework-grader/approve/route.ts",
+      "expected": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283",
+      "original": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283",
+      "temp": "60fb6f739f7854bc1d3642f8a8d5abf7eb60afe822d5af99051840a241255283",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/homework-grader/download-and-grade/route.ts",
+      "expected": "7328a9a1687417d8ad199db009152e2fcbe4cb23b34050677ea47ada135a79d3",
+      "original": "7328a9a1687417d8ad199db009152e2fcbe4cb23b34050677ea47ada135a79d3",
+      "temp": "7328a9a1687417d8ad199db009152e2fcbe4cb23b34050677ea47ada135a79d3",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/homework-grader/export/route.ts",
+      "expected": "7306b1465768708505769f7ff6c6fbeb90525a7b042be7ce3c79a6a2e32f0263",
+      "original": "7306b1465768708505769f7ff6c6fbeb90525a7b042be7ce3c79a6a2e32f0263",
+      "temp": "7306b1465768708505769f7ff6c6fbeb90525a7b042be7ce3c79a6a2e32f0263",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/homework-grader/save-lms/route.ts",
+      "expected": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791",
+      "original": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791",
+      "temp": "d81922813d50186fc0acfe290f9d74238028f764c93acb81153728b939643791",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/homework-grader/scores/route.ts",
+      "expected": "0bcef17e98e4afd93bcb131479d208df736c7cb32180dde0635e958afc33cabe",
+      "original": "0bcef17e98e4afd93bcb131479d208df736c7cb32180dde0635e958afc33cabe",
+      "temp": "0bcef17e98e4afd93bcb131479d208df736c7cb32180dde0635e958afc33cabe",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/homework-grader/submissions/route.ts",
+      "expected": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc",
+      "original": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc",
+      "temp": "e5df175b1f4244a312427241f8ab93037a5172feede325c07a163111c4bb7dbc",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/queue/control/route.ts",
+      "expected": "ba10880adeeb8e5de6807313f13ad01731ed28edebecf859d9687e362c8c2e70",
+      "original": "ba10880adeeb8e5de6807313f13ad01731ed28edebecf859d9687e362c8c2e70",
+      "temp": "ba10880adeeb8e5de6807313f13ad01731ed28edebecf859d9687e362c8c2e70",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/queue/stream/route.ts",
+      "expected": "67dd1fa2db111e18d5343bc8d3cfc7ee95d3818fa9ff8fecd9edaa47d071aca1",
+      "original": "67dd1fa2db111e18d5343bc8d3cfc7ee95d3818fa9ff8fecd9edaa47d071aca1",
+      "temp": "67dd1fa2db111e18d5343bc8d3cfc7ee95d3818fa9ff8fecd9edaa47d071aca1",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/report-card/route.ts",
+      "expected": "05bd6f5e9816b2bf1ccfa4b0e1b2c2f7152b53b69d7705bc2977d02992fcccf7",
+      "original": "05bd6f5e9816b2bf1ccfa4b0e1b2c2f7152b53b69d7705bc2977d02992fcccf7",
+      "temp": "05bd6f5e9816b2bf1ccfa4b0e1b2c2f7152b53b69d7705bc2977d02992fcccf7",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/report-card/sync-teaching/route.ts",
+      "expected": "a9e151f2582baf6eebcb2dff13c58c008dac954c71a11b042218f3c4e86ad9cd",
+      "original": "a9e151f2582baf6eebcb2dff13c58c008dac954c71a11b042218f3c4e86ad9cd",
+      "temp": "a9e151f2582baf6eebcb2dff13c58c008dac954c71a11b042218f3c4e86ad9cd",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/session-comments/approve/route.ts",
+      "expected": "456eb64636add416ac0f89390e059bebfdb6e79b4caacf23912f3cc23f9fd65f",
+      "original": "456eb64636add416ac0f89390e059bebfdb6e79b4caacf23912f3cc23f9fd65f",
+      "temp": "456eb64636add416ac0f89390e059bebfdb6e79b4caacf23912f3cc23f9fd65f",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/session-comments/fetch-classes/route.ts",
+      "expected": "f1a16f8bea3860cd16b1da4f1481f77e90c1c6c38f1c28a198a5210f89e56108",
+      "original": "f1a16f8bea3860cd16b1da4f1481f77e90c1c6c38f1c28a198a5210f89e56108",
+      "temp": "f1a16f8bea3860cd16b1da4f1481f77e90c1c6c38f1c28a198a5210f89e56108",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/session-comments/generate-ai/route.ts",
+      "expected": "325f6b1d9248f8907bd2bd4f2971d1155bcff6522ae05790d0572dc7c2e9cfd6",
+      "original": "325f6b1d9248f8907bd2bd4f2971d1155bcff6522ae05790d0572dc7c2e9cfd6",
+      "temp": "325f6b1d9248f8907bd2bd4f2971d1155bcff6522ae05790d0572dc7c2e9cfd6",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/session-comments/list/route.ts",
+      "expected": "0f2809f9bcad84ac60be33ea107e820d73fd446a4b385f6bf9033b765022d0af",
+      "original": "0f2809f9bcad84ac60be33ea107e820d73fd446a4b385f6bf9033b765022d0af",
+      "temp": "0f2809f9bcad84ac60be33ea107e820d73fd446a4b385f6bf9033b765022d0af",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/session-comments/save-draft/route.ts",
+      "expected": "94fb00b6773c45a6c0a56cec72d3847d127eb732f062773d5dc5c208196936ae",
+      "original": "94fb00b6773c45a6c0a56cec72d3847d127eb732f062773d5dc5c208196936ae",
+      "temp": "94fb00b6773c45a6c0a56cec72d3847d127eb732f062773d5dc5c208196936ae",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/session-comments/save-lms/route.ts",
+      "expected": "76a4e69bb6851e8252f5e8a0469f286cbe74631dd1afa64932a305f67b25b22a",
+      "original": "76a4e69bb6851e8252f5e8a0469f286cbe74631dd1afa64932a305f67b25b22a",
+      "temp": "76a4e69bb6851e8252f5e8a0469f286cbe74631dd1afa64932a305f67b25b22a",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/session-comments/sync/route.ts",
+      "expected": "89567e459fe7ba88ead3cccdd5b4db40aeed0ef67e869705d33b1234166fcf32",
+      "original": "89567e459fe7ba88ead3cccdd5b4db40aeed0ef67e869705d33b1234166fcf32",
+      "temp": "89567e459fe7ba88ead3cccdd5b4db40aeed0ef67e869705d33b1234166fcf32",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/session-comments/zalo-btvn-image/route.ts",
+      "expected": "a0999ba3bfd2c0572c1b5d4436b0c8405c7f6786b9c17d203db86b39de26bb0c",
+      "original": "a0999ba3bfd2c0572c1b5d4436b0c8405c7f6786b9c17d203db86b39de26bb0c",
+      "temp": "a0999ba3bfd2c0572c1b5d4436b0c8405c7f6786b9c17d203db86b39de26bb0c",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/approve/route.ts",
+      "expected": "5dca37c31709b0cbac609dbb5d1d782841e2a93fe8a455b37dae585658497911",
+      "original": "5dca37c31709b0cbac609dbb5d1d782841e2a93fe8a455b37dae585658497911",
+      "temp": "5dca37c31709b0cbac609dbb5d1d782841e2a93fe8a455b37dae585658497911",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/browse-folder/route.ts",
+      "expected": "4842e4c72dc33a5bd3a837ab32794ba97aa0e453afb7d759f67deb934176d5f4",
+      "original": "4842e4c72dc33a5bd3a837ab32794ba97aa0e453afb7d759f67deb934176d5f4",
+      "temp": "4842e4c72dc33a5bd3a837ab32794ba97aa0e453afb7d759f67deb934176d5f4",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/capture-screenshots/route.ts",
+      "expected": "74288490633e2fb29b83d3317868f06440886c68d022fa1f1d7e22c7ca287010",
+      "original": "74288490633e2fb29b83d3317868f06440886c68d022fa1f1d7e22c7ca287010",
+      "temp": "74288490633e2fb29b83d3317868f06440886c68d022fa1f1d7e22c7ca287010",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/create-demo-sheet/route.ts",
+      "expected": "2b37f408ec8d15b71bc8f3f357019ce69aae73290b72296cc7fa4164095251b7",
+      "original": "2b37f408ec8d15b71bc8f3f357019ce69aae73290b72296cc7fa4164095251b7",
+      "temp": "2b37f408ec8d15b71bc8f3f357019ce69aae73290b72296cc7fa4164095251b7",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/deploy-web/route.ts",
+      "expected": "b2cd2d567e98cb7ea9d6be32751a981287997b9c9dee8b2ebf1302e75468a436",
+      "original": "b2cd2d567e98cb7ea9d6be32751a981287997b9c9dee8b2ebf1302e75468a436",
+      "temp": "b2cd2d567e98cb7ea9d6be32751a981287997b9c9dee8b2ebf1302e75468a436",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/generate-ai/route.ts",
+      "expected": "5fda697fa2d52afe6d2cfa3be0439a9be25b1cf2f74077cd6f9e5c9464492f29",
+      "original": "5fda697fa2d52afe6d2cfa3be0439a9be25b1cf2f74077cd6f9e5c9464492f29",
+      "temp": "5fda697fa2d52afe6d2cfa3be0439a9be25b1cf2f74077cd6f9e5c9464492f29",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/import-youtube/route.ts",
+      "expected": "c524fbb1ae0bab8b3cf5f746f4fc7f280cfa300eba59eb27addd3386342ae046",
+      "original": "c524fbb1ae0bab8b3cf5f746f4fc7f280cfa300eba59eb27addd3386342ae046",
+      "temp": "c524fbb1ae0bab8b3cf5f746f4fc7f280cfa300eba59eb27addd3386342ae046",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/list/route.ts",
+      "expected": "d0467019e9d6d747cefe581e7380450c2781a0183051971829a52e0b641c13cf",
+      "original": "d0467019e9d6d747cefe581e7380450c2781a0183051971829a52e0b641c13cf",
+      "temp": "d0467019e9d6d747cefe581e7380450c2781a0183051971829a52e0b641c13cf",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/save-draft/route.ts",
+      "expected": "5c124c3a82ee417ce9d7b5cc371f9818195ec2e8f0b0a5aa56cdaa9737081703",
+      "original": "5c124c3a82ee417ce9d7b5cc371f9818195ec2e8f0b0a5aa56cdaa9737081703",
+      "temp": "5c124c3a82ee417ce9d7b5cc371f9818195ec2e8f0b0a5aa56cdaa9737081703",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/scan/route.ts",
+      "expected": "326905360762cf472b9ac7b71d45c7dabe05406a095b6106dc78629f860a802d",
+      "original": "326905360762cf472b9ac7b71d45c7dabe05406a095b6106dc78629f860a802d",
+      "temp": "326905360762cf472b9ac7b71d45c7dabe05406a095b6106dc78629f860a802d",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/session14-eval/generate-ai/route.ts",
+      "expected": "4cbc5201573699392e71731d1a3902bcbd99b225cd0fb8f1a29a17b6735b941b",
+      "original": "4cbc5201573699392e71731d1a3902bcbd99b225cd0fb8f1a29a17b6735b941b",
+      "temp": "4cbc5201573699392e71731d1a3902bcbd99b225cd0fb8f1a29a17b6735b941b",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/session14-eval/import-demo-scores/route.ts",
+      "expected": "b35b9e706eb365617cebf5338d8b6c43f67c9f4ab45aa53163a4f164b737ff25",
+      "original": "b35b9e706eb365617cebf5338d8b6c43f67c9f4ab45aa53163a4f164b737ff25",
+      "temp": "b35b9e706eb365617cebf5338d8b6c43f67c9f4ab45aa53163a4f164b737ff25",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/session14-eval/route.ts",
+      "expected": "0cc313655ab9d699da2df530e00a8f7aa8d49d5f9fba940b28676d468a07872c",
+      "original": "0cc313655ab9d699da2df530e00a8f7aa8d49d5f9fba940b28676d468a07872c",
+      "temp": "0cc313655ab9d699da2df530e00a8f7aa8d49d5f9fba940b28676d468a07872c",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/session14-eval/upload-lms/route.ts",
+      "expected": "888c29faafc3e82ca8302c63a70aa78fae2f2606fa25e7b05592b30a38159e94",
+      "original": "888c29faafc3e82ca8302c63a70aa78fae2f2606fa25e7b05592b30a38159e94",
+      "temp": "888c29faafc3e82ca8302c63a70aa78fae2f2606fa25e7b05592b30a38159e94",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/student-portal/route.ts",
+      "expected": "be1c6b96ab83ba4f23083da96ef09a6286b8387af127db6c6584c10db4b41386",
+      "original": "be1c6b96ab83ba4f23083da96ef09a6286b8387af127db6c6584c10db4b41386",
+      "temp": "be1c6b96ab83ba4f23083da96ef09a6286b8387af127db6c6584c10db4b41386",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/upload-drive/route.ts",
+      "expected": "a5910e2e8e88dc618eb51e64d083828143d6338811600382403a886f9e6d6579",
+      "original": "a5910e2e8e88dc618eb51e64d083828143d6338811600382403a886f9e6d6579",
+      "temp": "a5910e2e8e88dc618eb51e64d083828143d6338811600382403a886f9e6d6579",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/spck/upload-lms/route.ts",
+      "expected": "607a3edb3462dd876c321288f7ac4cd1ddf8ae9c8dabae3a4b9ccd9cd22f3201",
+      "original": "607a3edb3462dd876c321288f7ac4cd1ddf8ae9c8dabae3a4b9ccd9cd22f3201",
+      "temp": "607a3edb3462dd876c321288f7ac4cd1ddf8ae9c8dabae3a4b9ccd9cd22f3201",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/teaching-projects/fetch-lms-dates/route.ts",
+      "expected": "92ee00c861e2b55f11edfe3457c6620f2a0776987e7e31ef931f4699487fd43d",
+      "original": "92ee00c861e2b55f11edfe3457c6620f2a0776987e7e31ef931f4699487fd43d",
+      "temp": "92ee00c861e2b55f11edfe3457c6620f2a0776987e7e31ef931f4699487fd43d",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/teaching-projects/generate-ai/route.ts",
+      "expected": "8d4b7e357c24805f01e2998b32dddea769ed9e00a65c0f98cf9d3512b8924ce3",
+      "original": "8d4b7e357c24805f01e2998b32dddea769ed9e00a65c0f98cf9d3512b8924ce3",
+      "temp": "8d4b7e357c24805f01e2998b32dddea769ed9e00a65c0f98cf9d3512b8924ce3",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/teaching-projects/progress/route.ts",
+      "expected": "8a982dd7f08e84c440608760f1a603d4e051efd7911011affad13824259a2dc3",
+      "original": "8a982dd7f08e84c440608760f1a603d4e051efd7911011affad13824259a2dc3",
+      "temp": "8a982dd7f08e84c440608760f1a603d4e051efd7911011affad13824259a2dc3",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/teaching-projects/route.ts",
+      "expected": "c01df7520017c56ac498146b468a8ef96702bf54f9a81b2dce696faa700fa383",
+      "original": "c01df7520017c56ac498146b468a8ef96702bf54f9a81b2dce696faa700fa383",
+      "temp": "c01df7520017c56ac498146b468a8ef96702bf54f9a81b2dce696faa700fa383",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/api/teaching-projects/sync/route.ts",
+      "expected": "b87cffd2206ab4bd8172b1a4485e1c8ae9a6abfd7a370126dc781d970d235a32",
+      "original": "b87cffd2206ab4bd8172b1a4485e1c8ae9a6abfd7a370126dc781d970d235a32",
+      "temp": "b87cffd2206ab4bd8172b1a4485e1c8ae9a6abfd7a370126dc781d970d235a32",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/final-project/page.tsx",
+      "expected": "afe8c8ca6d51b1fff279e8cb552a14b337ac7294c015c8ed9dfe27d082a28c84",
+      "original": "afe8c8ca6d51b1fff279e8cb552a14b337ac7294c015c8ed9dfe27d082a28c84",
+      "temp": "afe8c8ca6d51b1fff279e8cb552a14b337ac7294c015c8ed9dfe27d082a28c84",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/globals.css",
+      "expected": "3f7e69973b9f77ddf93d5846c97853f20ec4bf4c6e904b4a0d4c1fb23e28f722",
+      "original": "3f7e69973b9f77ddf93d5846c97853f20ec4bf4c6e904b4a0d4c1fb23e28f722",
+      "temp": "3f7e69973b9f77ddf93d5846c97853f20ec4bf4c6e904b4a0d4c1fb23e28f722",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/homework-grader/page.tsx",
+      "expected": "dd4de142277ec78621874639f1842b652e776bb2342565c51fc2b0dc212925a1",
+      "original": "dd4de142277ec78621874639f1842b652e776bb2342565c51fc2b0dc212925a1",
+      "temp": "dd4de142277ec78621874639f1842b652e776bb2342565c51fc2b0dc212925a1",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/layout.tsx",
+      "expected": "ef8c128a21c1aa0dbf37651ae14beb4086ca6e3e33e0ab96511efea47da71d93",
+      "original": "ef8c128a21c1aa0dbf37651ae14beb4086ca6e3e33e0ab96511efea47da71d93",
+      "temp": "ef8c128a21c1aa0dbf37651ae14beb4086ca6e3e33e0ab96511efea47da71d93",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/page.tsx",
+      "expected": "ad38f7613741cceca78d0357f7fe2302c3d31a109c11ba7979a7d026d0ca0cbd",
+      "original": "ad38f7613741cceca78d0357f7fe2302c3d31a109c11ba7979a7d026d0ca0cbd",
+      "temp": "ad38f7613741cceca78d0357f7fe2302c3d31a109c11ba7979a7d026d0ca0cbd",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/session-comments/page.tsx",
+      "expected": "dddbbf26287d050b1c0beba52b415831f948b5228172c2461df76d37f3aed7b3",
+      "original": "dddbbf26287d050b1c0beba52b415831f948b5228172c2461df76d37f3aed7b3",
+      "temp": "dddbbf26287d050b1c0beba52b415831f948b5228172c2461df76d37f3aed7b3",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/syllabus-config/page.tsx",
+      "expected": "00ef18e0a26539e683de0da4a1945e0b163cf94383985bbe5d55a48a90de6e5b",
+      "original": "00ef18e0a26539e683de0da4a1945e0b163cf94383985bbe5d55a48a90de6e5b",
+      "temp": "00ef18e0a26539e683de0da4a1945e0b163cf94383985bbe5d55a48a90de6e5b",
+      "unchanged": true
+    },
+    {
+      "file": "src/app/teaching-projects/page.tsx",
+      "expected": "48049dbb8f22a8c0a6d4813c08459f198b2ba28e20d014e3594f57c80cc5d8e2",
+      "original": "48049dbb8f22a8c0a6d4813c08459f198b2ba28e20d014e3594f57c80cc5d8e2",
+      "temp": "48049dbb8f22a8c0a6d4813c08459f198b2ba28e20d014e3594f57c80cc5d8e2",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/class-picker.tsx",
+      "expected": "0aca50f0ca525b3101eb3a1dcfbd4aab082e961197ff2e1e990ab7998148e06f",
+      "original": "0aca50f0ca525b3101eb3a1dcfbd4aab082e961197ff2e1e990ab7998148e06f",
+      "temp": "0aca50f0ca525b3101eb3a1dcfbd4aab082e961197ff2e1e990ab7998148e06f",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/dashboard-today-tasks-panel.tsx",
+      "expected": "d2e092c806c150dbe1a932a3bf766dc95913aa74a95cb3e72395bf77595b9aae",
+      "original": "d2e092c806c150dbe1a932a3bf766dc95913aa74a95cb3e72395bf77595b9aae",
+      "temp": "d2e092c806c150dbe1a932a3bf766dc95913aa74a95cb3e72395bf77595b9aae",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/final-project/FolderBrowserModal.tsx",
+      "expected": "46ad11e39ca702e150b4a25af5bdca807795fb027be7d6265b7198050dd57973",
+      "original": "46ad11e39ca702e150b4a25af5bdca807795fb027be7d6265b7198050dd57973",
+      "temp": "46ad11e39ca702e150b4a25af5bdca807795fb027be7d6265b7198050dd57973",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/final-project/Session14Panel.tsx",
+      "expected": "aec5593672f2429d8dc94af2d2b267e0ce619b62c1fad9f2e70db0fdf11da0ed",
+      "original": "aec5593672f2429d8dc94af2d2b267e0ce619b62c1fad9f2e70db0fdf11da0ed",
+      "temp": "aec5593672f2429d8dc94af2d2b267e0ce619b62c1fad9f2e70db0fdf11da0ed",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/final-project/SnapshotModal.tsx",
+      "expected": "184578c5a5029e1501929996c8983560c6caf3ef961daa51776fdaaddf984660",
+      "original": "184578c5a5029e1501929996c8983560c6caf3ef961daa51776fdaaddf984660",
+      "temp": "184578c5a5029e1501929996c8983560c6caf3ef961daa51776fdaaddf984660",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/final-project/Step1Header.tsx",
+      "expected": "4878f0fa5c795197a2bc2af622ab1c54d8edac4bf4dab314cd15b2f0cfa9e388",
+      "original": "4878f0fa5c795197a2bc2af622ab1c54d8edac4bf4dab314cd15b2f0cfa9e388",
+      "temp": "4878f0fa5c795197a2bc2af622ab1c54d8edac4bf4dab314cd15b2f0cfa9e388",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/final-project/StudentRow.tsx",
+      "expected": "53d14b295c00ac05896fa7e892edf283b9841bdd2484d8aaa52c59f562d84780",
+      "original": "53d14b295c00ac05896fa7e892edf283b9841bdd2484d8aaa52c59f562d84780",
+      "temp": "53d14b295c00ac05896fa7e892edf283b9841bdd2484d8aaa52c59f562d84780",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/final-project/StudentTable.tsx",
+      "expected": "874c32941feb500ab79279d0e21ac613b3bb1bb17b5c500e5fd0a6799cb00308",
+      "original": "874c32941feb500ab79279d0e21ac613b3bb1bb17b5c500e5fd0a6799cb00308",
+      "temp": "874c32941feb500ab79279d0e21ac613b3bb1bb17b5c500e5fd0a6799cb00308",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/final-project/SubmitBar.tsx",
+      "expected": "c373a12a39377cb226c63f053a409690832c2bc400e0675c2d16ee702ee031d4",
+      "original": "c373a12a39377cb226c63f053a409690832c2bc400e0675c2d16ee702ee031d4",
+      "temp": "c373a12a39377cb226c63f053a409690832c2bc400e0675c2d16ee702ee031d4",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/final-project/ToolsDrawer.tsx",
+      "expected": "2c7ea9eb8990547f131b9ffdeb107ca227861b23c66d8882ae723513a9663e1e",
+      "original": "2c7ea9eb8990547f131b9ffdeb107ca227861b23c66d8882ae723513a9663e1e",
+      "temp": "2c7ea9eb8990547f131b9ffdeb107ca227861b23c66d8882ae723513a9663e1e",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/final-project/index.ts",
+      "expected": "0586456b922598ea0e16f64b2b71dac3e4569383befc93a12af9cb22f079d57b",
+      "original": "0586456b922598ea0e16f64b2b71dac3e4569383befc93a12af9cb22f079d57b",
+      "temp": "0586456b922598ea0e16f64b2b71dac3e4569383befc93a12af9cb22f079d57b",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/final-project/types.ts",
+      "expected": "042528710e5373005d616d692073aaab50b3c7c24bccf494033476f91b5611cb",
+      "original": "042528710e5373005d616d692073aaab50b3c7c24bccf494033476f91b5611cb",
+      "temp": "042528710e5373005d616d692073aaab50b3c7c24bccf494033476f91b5611cb",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/final-project/useSpckWorkflow.ts",
+      "expected": "195ad37ad9b1cc68ac061d7ffbec47a47f0d25af542531e6ba3ea0afa79c2683",
+      "original": "195ad37ad9b1cc68ac061d7ffbec47a47f0d25af542531e6ba3ea0afa79c2683",
+      "temp": "195ad37ad9b1cc68ac061d7ffbec47a47f0d25af542531e6ba3ea0afa79c2683",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/live-log-drawer.tsx",
+      "expected": "a3de262113445ec952bde59f351109de2c50d142fd51cabc2efd241949f972a6",
+      "original": "a3de262113445ec952bde59f351109de2c50d142fd51cabc2efd241949f972a6",
+      "temp": "a3de262113445ec952bde59f351109de2c50d142fd51cabc2efd241949f972a6",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/teaching-report-card-view.tsx",
+      "expected": "a7e4f356d1cc0c52ea500943d89a441a49b00716d03f33ab9a8c8133e598f0d7",
+      "original": "a7e4f356d1cc0c52ea500943d89a441a49b00716d03f33ab9a8c8133e598f0d7",
+      "temp": "a7e4f356d1cc0c52ea500943d89a441a49b00716d03f33ab9a8c8133e598f0d7",
+      "unchanged": true
+    },
+    {
+      "file": "src/components/top-navbar.tsx",
+      "expected": "5a6f78d40c21c2cc2b0d231d4b06b53b34f16ee649f420a13005abb1ae39e274",
+      "original": "5a6f78d40c21c2cc2b0d231d4b06b53b34f16ee649f420a13005abb1ae39e274",
+      "temp": "5a6f78d40c21c2cc2b0d231d4b06b53b34f16ee649f420a13005abb1ae39e274",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/ai/pii-anonymizer.ts",
+      "expected": "37ead20241e8ae5df3b39a862e69071ce468465e37fc0f042034d72f29c401b2",
+      "original": "37ead20241e8ae5df3b39a862e69071ce468465e37fc0f042034d72f29c401b2",
+      "temp": "37ead20241e8ae5df3b39a862e69071ce468465e37fc0f042034d72f29c401b2",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/classes/class-directory.ts",
+      "expected": "c94fb5e4a651289b04e4a30582d87149da1cce58be86e0352ba3f7014a27580f",
+      "original": "c94fb5e4a651289b04e4a30582d87149da1cce58be86e0352ba3f7014a27580f",
+      "temp": "c94fb5e4a651289b04e4a30582d87149da1cce58be86e0352ba3f7014a27580f",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/config.ts",
+      "expected": "4ac1332ab0becaaf212e5ac03944b077074572eb43375f7ce8f9b34d6ed3b309",
+      "original": "4ac1332ab0becaaf212e5ac03944b077074572eb43375f7ce8f9b34d6ed3b309",
+      "temp": "4ac1332ab0becaaf212e5ac03944b077074572eb43375f7ce8f9b34d6ed3b309",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/dashboard/today-tasks.ts",
+      "expected": "3a1922f8f2c6a3b5dcfde44fa4362df9b149fa62f313dd211a58f992059ffb42",
+      "original": "3a1922f8f2c6a3b5dcfde44fa4362df9b149fa62f313dd211a58f992059ffb42",
+      "temp": "3a1922f8f2c6a3b5dcfde44fa4362df9b149fa62f313dd211a58f992059ffb42",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/db/json-config.ts",
+      "expected": "f88863325bebdfd45d52504064f9d36ac62af27d67c491f0efbc1cde61025717",
+      "original": "f88863325bebdfd45d52504064f9d36ac62af27d67c491f0efbc1cde61025717",
+      "temp": "f88863325bebdfd45d52504064f9d36ac62af27d67c491f0efbc1cde61025717",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/db/sqlite.ts",
+      "expected": "6e3f50c285c956e46af048ab84f1d3bd8460eb9fb87a855b17fb99d0c6564f9a",
+      "original": "6e3f50c285c956e46af048ab84f1d3bd8460eb9fb87a855b17fb99d0c6564f9a",
+      "temp": "6e3f50c285c956e46af048ab84f1d3bd8460eb9fb87a855b17fb99d0c6564f9a",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/file-parsers/archive-reader.ts",
+      "expected": "12feb4b82185b36fbc394fdbe5e26ccb2cc677fb5f5eb9b8f5acabf6b4af8d88",
+      "original": "12feb4b82185b36fbc394fdbe5e26ccb2cc677fb5f5eb9b8f5acabf6b4af8d88",
+      "temp": "12feb4b82185b36fbc394fdbe5e26ccb2cc677fb5f5eb9b8f5acabf6b4af8d88",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/file-parsers/code-reader.ts",
+      "expected": "908ba9558018d2f4574eddd0b824e9ca9fda7f38650b502e92cce118b5a09360",
+      "original": "908ba9558018d2f4574eddd0b824e9ca9fda7f38650b502e92cce118b5a09360",
+      "temp": "908ba9558018d2f4574eddd0b824e9ca9fda7f38650b502e92cce118b5a09360",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/file-parsers/game-reader.ts",
+      "expected": "6bc6c56df6368fffd8d0d14fd19ec4ef18205e407f801bc894fe1eb6305c05b9",
+      "original": "6bc6c56df6368fffd8d0d14fd19ec4ef18205e407f801bc894fe1eb6305c05b9",
+      "temp": "6bc6c56df6368fffd8d0d14fd19ec4ef18205e407f801bc894fe1eb6305c05b9",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/file-parsers/index.ts",
+      "expected": "66b016244d43a1bb7d243ed777d98ea04088e7e1d47a1bd5500b249eaaafff9d",
+      "original": "66b016244d43a1bb7d243ed777d98ea04088e7e1d47a1bd5500b249eaaafff9d",
+      "temp": "66b016244d43a1bb7d243ed777d98ea04088e7e1d47a1bd5500b249eaaafff9d",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/file-parsers/media-reader.ts",
+      "expected": "2c42b5d4d3a6a3f0f09c9b86bc44f01fcbcb70fb22ee50a15c941b1bf640e3f0",
+      "original": "2c42b5d4d3a6a3f0f09c9b86bc44f01fcbcb70fb22ee50a15c941b1bf640e3f0",
+      "temp": "2c42b5d4d3a6a3f0f09c9b86bc44f01fcbcb70fb22ee50a15c941b1bf640e3f0",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/gemini/client.ts",
+      "expected": "b954f04d4c057fd3f8fc6440fa86e396a6fdc0cd40afd8e4748a7352fc0783f0",
+      "original": "b954f04d4c057fd3f8fc6440fa86e396a6fdc0cd40afd8e4748a7352fc0783f0",
+      "temp": "b954f04d4c057fd3f8fc6440fa86e396a6fdc0cd40afd8e4748a7352fc0783f0",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/gemini/comment-generator.ts",
+      "expected": "e534d2cac37dea2b9a5aee8c12448207e721b452052ae64a84c10dfbcc2d9bb2",
+      "original": "e534d2cac37dea2b9a5aee8c12448207e721b452052ae64a84c10dfbcc2d9bb2",
+      "temp": "e534d2cac37dea2b9a5aee8c12448207e721b452052ae64a84c10dfbcc2d9bb2",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/gemini/homework-grader.ts",
+      "expected": "cfe10ae9889e0b2e5f99f2b1698ce51be0927eb3907d3c477e56666c28a48c33",
+      "original": "cfe10ae9889e0b2e5f99f2b1698ce51be0927eb3907d3c477e56666c28a48c33",
+      "temp": "cfe10ae9889e0b2e5f99f2b1698ce51be0927eb3907d3c477e56666c28a48c33",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/gemini/score-auditor.ts",
+      "expected": "9db56d4461adf1273bbe99d87e1b11399b2b202d2786e2e1f73c45e9d5a0c875",
+      "original": "9db56d4461adf1273bbe99d87e1b11399b2b202d2786e2e1f73c45e9d5a0c875",
+      "temp": "9db56d4461adf1273bbe99d87e1b11399b2b202d2786e2e1f73c45e9d5a0c875",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/gemini/session14-course-summary.ts",
+      "expected": "efb11515c34e7f8ee8d64a6cfa02695bbba10fa1d0bb68ab19c75336c5c77c2e",
+      "original": "efb11515c34e7f8ee8d64a6cfa02695bbba10fa1d0bb68ab19c75336c5c77c2e",
+      "temp": "efb11515c34e7f8ee8d64a6cfa02695bbba10fa1d0bb68ab19c75336c5c77c2e",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/gemini/spck-comment.ts",
+      "expected": "6a92dc1d0b944e9e1d6e95927b9a9e52db7a2954613ab7bf685dd531208e9112",
+      "original": "6a92dc1d0b944e9e1d6e95927b9a9e52db7a2954613ab7bf685dd531208e9112",
+      "temp": "6a92dc1d0b944e9e1d6e95927b9a9e52db7a2954613ab7bf685dd531208e9112",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/gemini/teaching-project-generator.ts",
+      "expected": "089de625a0244313d64419ff738079b030c08ed73de4424251aed81505299d93",
+      "original": "089de625a0244313d64419ff738079b030c08ed73de4424251aed81505299d93",
+      "temp": "089de625a0244313d64419ff738079b030c08ed73de4424251aed81505299d93",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/github/spck-web-deployer.ts",
+      "expected": "f2192099eb1aadfd6865248498b57bfe9284b1aa99676488539c8d31d49e6ec2",
+      "original": "f2192099eb1aadfd6865248498b57bfe9284b1aa99676488539c8d31d49e6ec2",
+      "temp": "f2192099eb1aadfd6865248498b57bfe9284b1aa99676488539c8d31d49e6ec2",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/local-files/spck-app-screenshotter.ts",
+      "expected": "e5ffdabf363371f96845050db3551f3bef25f5912df3bc748427498c9f3c705e",
+      "original": "e5ffdabf363371f96845050db3551f3bef25f5912df3bc748427498c9f3c705e",
+      "temp": "e5ffdabf363371f96845050db3551f3bef25f5912df3bc748427498c9f3c705e",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/local-files/spck-demo-score-reader.ts",
+      "expected": "fde0f37636733109ea701bbdceeac82e781b8768cf31c1106322880a2ac6d7e8",
+      "original": "fde0f37636733109ea701bbdceeac82e781b8768cf31c1106322880a2ac6d7e8",
+      "temp": "fde0f37636733109ea701bbdceeac82e781b8768cf31c1106322880a2ac6d7e8",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/local-files/spck-game-screenshotter.ts",
+      "expected": "c153a79506a75e9b7670ab8c12d1358beef5244067698400c7765eb1f981bdbe",
+      "original": "c153a79506a75e9b7670ab8c12d1358beef5244067698400c7765eb1f981bdbe",
+      "temp": "c153a79506a75e9b7670ab8c12d1358beef5244067698400c7765eb1f981bdbe",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/local-files/spck-image-normalizer.ts",
+      "expected": "017fad7367627b5587df3295b4c4ef2a22763a99bd4a61e5ba25d7850e534fb3",
+      "original": "017fad7367627b5587df3295b4c4ef2a22763a99bd4a61e5ba25d7850e534fb3",
+      "temp": "017fad7367627b5587df3295b4c4ef2a22763a99bd4a61e5ba25d7850e534fb3",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/local-files/spck-scanner.ts",
+      "expected": "2f796db8098b76b73e91c80270b4017ca48494a96bc805e1c486454b1c35183e",
+      "original": "2f796db8098b76b73e91c80270b4017ca48494a96bc805e1c486454b1c35183e",
+      "temp": "2f796db8098b76b73e91c80270b4017ca48494a96bc805e1c486454b1c35183e",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/local-files/spck-youtube-import.ts",
+      "expected": "9c7d5e5a499b9d364ee41afd79750cc2b6afdf0056e86171618d70fdcf13c3a0",
+      "original": "9c7d5e5a499b9d364ee41afd79750cc2b6afdf0056e86171618d70fdcf13c3a0",
+      "temp": "9c7d5e5a499b9d364ee41afd79750cc2b6afdf0056e86171618d70fdcf13c3a0",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/auth.ts",
+      "expected": "99c3af292d62c67cb4c58ed7f43975ba0ae7b15689f28ced0c6232e910817a4f",
+      "original": "99c3af292d62c67cb4c58ed7f43975ba0ae7b15689f28ced0c6232e910817a4f",
+      "temp": "99c3af292d62c67cb4c58ed7f43975ba0ae7b15689f28ced0c6232e910817a4f",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/browser-manager.ts",
+      "expected": "92dd3bfcf598c9dbebe4cc5b55ebdfd053c46d556cfcc94098ee777aafaa376a",
+      "original": "92dd3bfcf598c9dbebe4cc5b55ebdfd053c46d556cfcc94098ee777aafaa376a",
+      "temp": "92dd3bfcf598c9dbebe4cc5b55ebdfd053c46d556cfcc94098ee777aafaa376a",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/download-submissions.ts",
+      "expected": "a26c2348f871e3d03f8e5f2511a67f4267dc9dff10aaf59d5d5a0633ba4b5abd",
+      "original": "a26c2348f871e3d03f8e5f2511a67f4267dc9dff10aaf59d5d5a0633ba4b5abd",
+      "temp": "a26c2348f871e3d03f8e5f2511a67f4267dc9dff10aaf59d5d5a0633ba4b5abd",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/grade-worker.ts",
+      "expected": "402836adde656b35f9e143daeaeee57e5eb0f74832ce78260f909d4969f4f13d",
+      "original": "402836adde656b35f9e143daeaeee57e5eb0f74832ce78260f909d4969f4f13d",
+      "temp": "402836adde656b35f9e143daeaeee57e5eb0f74832ce78260f909d4969f4f13d",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/lms-helpers.ts",
+      "expected": "388d1459de0b4c766a987d48016d805fd6ffe8fa1e963a987f3a6284df69a581",
+      "original": "388d1459de0b4c766a987d48016d805fd6ffe8fa1e963a987f3a6284df69a581",
+      "temp": "388d1459de0b4c766a987d48016d805fd6ffe8fa1e963a987f3a6284df69a581",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/network-interceptor.ts",
+      "expected": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad",
+      "original": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad",
+      "temp": "3dc9b0c6e015706175fd5f2ad77e2fa03566a7f2f10c0ef1161fd174f9553dad",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/save-comments.ts",
+      "expected": "0ceaeadcef625a0ba23f06cf7ed4326ebc2f20584560c9daae23115c41cdcd0f",
+      "original": "0ceaeadcef625a0ba23f06cf7ed4326ebc2f20584560c9daae23115c41cdcd0f",
+      "temp": "0ceaeadcef625a0ba23f06cf7ed4326ebc2f20584560c9daae23115c41cdcd0f",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/scrape-scores.ts",
+      "expected": "86268006646556f239e400d03ace11ea07f3eb3b132aa1206cc519af82912b3e",
+      "original": "86268006646556f239e400d03ace11ea07f3eb3b132aa1206cc519af82912b3e",
+      "temp": "86268006646556f239e400d03ace11ea07f3eb3b132aa1206cc519af82912b3e",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/selectors.ts",
+      "expected": "bbdcc949e56d382e563c5b96cf37a7a748a58b0b8ad283bcd817edda16f04c3a",
+      "original": "bbdcc949e56d382e563c5b96cf37a7a748a58b0b8ad283bcd817edda16f04c3a",
+      "temp": "bbdcc949e56d382e563c5b96cf37a7a748a58b0b8ad283bcd817edda16f04c3a",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/session14-eval-uploader.ts",
+      "expected": "92afd94ebc1d2a2742ec022e601b79ea252a17d306aaae1d40b7777146c26e46",
+      "original": "92afd94ebc1d2a2742ec022e601b79ea252a17d306aaae1d40b7777146c26e46",
+      "temp": "92afd94ebc1d2a2742ec022e601b79ea252a17d306aaae1d40b7777146c26e46",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/spck-demo-sheet.ts",
+      "expected": "1c8c2a1eb432362b585f09760d9acabf7bf85bf988109f0a791544cae2367656",
+      "original": "1c8c2a1eb432362b585f09760d9acabf7bf85bf988109f0a791544cae2367656",
+      "temp": "1c8c2a1eb432362b585f09760d9acabf7bf85bf988109f0a791544cae2367656",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/spck-drive-uploader.ts",
+      "expected": "6d01e52be2d8e63b34710f9cbd98685d0a0960622248991c8c738b7df6a720f9",
+      "original": "6d01e52be2d8e63b34710f9cbd98685d0a0960622248991c8c738b7df6a720f9",
+      "temp": "6d01e52be2d8e63b34710f9cbd98685d0a0960622248991c8c738b7df6a720f9",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/spck-uploader.ts",
+      "expected": "80d097ffa838a129cc71b260aca234252f1338bc6fc1e31e26d72f4d209ef3ef",
+      "original": "80d097ffa838a129cc71b260aca234252f1338bc6fc1e31e26d72f4d209ef3ef",
+      "temp": "80d097ffa838a129cc71b260aca234252f1338bc6fc1e31e26d72f4d209ef3ef",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/sync-class.ts",
+      "expected": "88d9fd4143f27f723ce0270af84dd547d9c8b0d22c34c0e54c4e0c7f8b951749",
+      "original": "88d9fd4143f27f723ce0270af84dd547d9c8b0d22c34c0e54c4e0c7f8b951749",
+      "temp": "88d9fd4143f27f723ce0270af84dd547d9c8b0d22c34c0e54c4e0c7f8b951749",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/teaching-project-service.ts",
+      "expected": "5345bf1ecf5df4efb2dcbe47e8c56d699059e71cca680e3ff952f971edaad701",
+      "original": "5345bf1ecf5df4efb2dcbe47e8c56d699059e71cca680e3ff952f971edaad701",
+      "temp": "5345bf1ecf5df4efb2dcbe47e8c56d699059e71cca680e3ff952f971edaad701",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/playwright/teaching-report-card-sync.ts",
+      "expected": "d34f2dd7efbfdf134871be4e98a2a1160286db428fef069152b51ed2134b740d",
+      "original": "d34f2dd7efbfdf134871be4e98a2a1160286db428fef069152b51ed2134b740d",
+      "temp": "d34f2dd7efbfdf134871be4e98a2a1160286db428fef069152b51ed2134b740d",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/queue/task-queue.ts",
+      "expected": "bcda7cb7ce608ed1bda52b77ac4c4480632b7c260304ca5296932d3252684ede",
+      "original": "bcda7cb7ce608ed1bda52b77ac4c4480632b7c260304ca5296932d3252684ede",
+      "temp": "bcda7cb7ce608ed1bda52b77ac4c4480632b7c260304ca5296932d3252684ede",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/quick-tags/index.ts",
+      "expected": "049bd6d60dd5022b384d68c56515eaeb2540325934d434523c234425f906ea25",
+      "original": "049bd6d60dd5022b384d68c56515eaeb2540325934d434523c234425f906ea25",
+      "temp": "049bd6d60dd5022b384d68c56515eaeb2540325934d434523c234425f906ea25",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/report-card/export-cell-formatter.ts",
+      "expected": "272ece8fedc2a9bbcfcf990b1e95069d357eacc34a5c315b059c5e2216716d76",
+      "original": "272ece8fedc2a9bbcfcf990b1e95069d357eacc34a5c315b059c5e2216716d76",
+      "temp": "272ece8fedc2a9bbcfcf990b1e95069d357eacc34a5c315b059c5e2216716d76",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/report-card/report-card-calculator.ts",
+      "expected": "e2542135b4218a034bebcee39c31f27f24e5cdc2eee4134b4e180201d6d64170",
+      "original": "e2542135b4218a034bebcee39c31f27f24e5cdc2eee4134b4e180201d6d64170",
+      "temp": "e2542135b4218a034bebcee39c31f27f24e5cdc2eee4134b4e180201d6d64170",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/report-card/report-card-staleness.ts",
+      "expected": "2b7be40ec6404dc464ebbf9c11f5237ef0612caa532a3a75247b82cccdc98c65",
+      "original": "2b7be40ec6404dc464ebbf9c11f5237ef0612caa532a3a75247b82cccdc98c65",
+      "temp": "2b7be40ec6404dc464ebbf9c11f5237ef0612caa532a3a75247b82cccdc98c65",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/security/local-guard.ts",
+      "expected": "205f8ec95b183b33cbf65add0fca169f4a4882a43236ad1a9e69f5d926baf470",
+      "original": "205f8ec95b183b33cbf65add0fca169f4a4882a43236ad1a9e69f5d926baf470",
+      "temp": "205f8ec95b183b33cbf65add0fca169f4a4882a43236ad1a9e69f5d926baf470",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/security/path-allowlist.ts",
+      "expected": "e784083a78424be6856a3d24dde4518a855556eb2219fa0697e6a4ea87bd6e37",
+      "original": "e784083a78424be6856a3d24dde4518a855556eb2219fa0697e6a4ea87bd6e37",
+      "temp": "e784083a78424be6856a3d24dde4518a855556eb2219fa0697e6a4ea87bd6e37",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/spck/spck-quick-tags.ts",
+      "expected": "895d1da067190f28c274b09fad81f72fa9ed8b88e5ffdcf27b89bbcd2aa72deb",
+      "original": "895d1da067190f28c274b09fad81f72fa9ed8b88e5ffdcf27b89bbcd2aa72deb",
+      "temp": "895d1da067190f28c274b09fad81f72fa9ed8b88e5ffdcf27b89bbcd2aa72deb",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/student-portal/student-portal-server.ts",
+      "expected": "adba824525cdfe2dec26d9120878c1dc554e79d9386a84acb22b829ca40a0495",
+      "original": "adba824525cdfe2dec26d9120878c1dc554e79d9386a84acb22b829ca40a0495",
+      "temp": "adba824525cdfe2dec26d9120878c1dc554e79d9386a84acb22b829ca40a0495",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/teaching/session-progress-mapper.ts",
+      "expected": "98d03ff11033b69b5a4311b7a28e6b7c2ff95d7e824d72d59edf815a1e8d529f",
+      "original": "98d03ff11033b69b5a4311b7a28e6b7c2ff95d7e824d72d59edf815a1e8d529f",
+      "temp": "98d03ff11033b69b5a4311b7a28e6b7c2ff95d7e824d72d59edf815a1e8d529f",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/teaching/teaching-http-client.ts",
+      "expected": "b1993a7fd260dfe5ea2a00ae85622d153319a71fc52b7cb9a50827d5c8d28c92",
+      "original": "b1993a7fd260dfe5ea2a00ae85622d153319a71fc52b7cb9a50827d5c8d28c92",
+      "temp": "b1993a7fd260dfe5ea2a00ae85622d153319a71fc52b7cb9a50827d5c8d28c92",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/types/index.ts",
+      "expected": "321c72c270644dab2c37a66b03090335d585458c473df114fcb4003a0c840d86",
+      "original": "321c72c270644dab2c37a66b03090335d585458c473df114fcb4003a0c840d86",
+      "temp": "321c72c270644dab2c37a66b03090335d585458c473df114fcb4003a0c840d86",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/utils.ts",
+      "expected": "ec94d82b9920dd7bde4a8d48a878d1a72c336a12101d411779877ab337eeb466",
+      "original": "ec94d82b9920dd7bde4a8d48a878d1a72c336a12101d411779877ab337eeb466",
+      "temp": "ec94d82b9920dd7bde4a8d48a878d1a72c336a12101d411779877ab337eeb466",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/utils/vietnamese-match.ts",
+      "expected": "bc4b2998e2f8d0e4639de2724c193113df20cfaff5e00920bf25c16c3e9474a0",
+      "original": "bc4b2998e2f8d0e4639de2724c193113df20cfaff5e00920bf25c16c3e9474a0",
+      "temp": "bc4b2998e2f8d0e4639de2724c193113df20cfaff5e00920bf25c16c3e9474a0",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/zalo/broadcast-generator.ts",
+      "expected": "9b466b23970a09d66ca45e880a6914aac394c8d0b52e659b9209825e8b36f1ed",
+      "original": "9b466b23970a09d66ca45e880a6914aac394c8d0b52e659b9209825e8b36f1ed",
+      "temp": "9b466b23970a09d66ca45e880a6914aac394c8d0b52e659b9209825e8b36f1ed",
+      "unchanged": true
+    },
+    {
+      "file": "src/lib/zalo/zalo-summary.ts",
+      "expected": "298212768de234b7c1501c7e7ff29768415b085e7121d4a13ca455840768c3a9",
+      "original": "298212768de234b7c1501c7e7ff29768415b085e7121d4a13ca455840768c3a9",
+      "temp": "298212768de234b7c1501c7e7ff29768415b085e7121d4a13ca455840768c3a9",
+      "unchanged": true
+    },
+    {
+      "file": "tsconfig.json",
+      "expected": "fde7de96e04c006d6d27769b63c5b1457d772a48504c2f2cec76fbe44c1c8f26",
+      "original": "fde7de96e04c006d6d27769b63c5b1457d772a48504c2f2cec76fbe44c1c8f26",
+      "temp": "fde7de96e04c006d6d27769b63c5b1457d772a48504c2f2cec76fbe44c1c8f26",
+      "unchanged": true
+    }
+  ],
+  "data": [
+    {
+      "file": "data/mindx_bot.db",
+      "expected": "f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c",
+      "actual": "f70f2d78bb2b33d489b81ee7806f72dc01f4c5fbd2aef36d7de75cfe1b79563c",
+      "unchanged": true
+    },
+    {
+      "file": "data/running_classes.json",
+      "expected": "d8c282a5917c735b4bd97ae739874b978a33270eb77a1767ab934bf196d83b4d",
+      "actual": "d8c282a5917c735b4bd97ae739874b978a33270eb77a1767ab934bf196d83b4d",
+      "unchanged": true
+    }
+  ],
+  "probes": [
+    {
+      "name": "independent-probes",
+      "expected": "c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60",
+      "actual": "c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60",
+      "oldArtifactHash": "c43bb0007ac962564c649562f13d7911d722f13c7318d0894fde2f2abc20db60",
+      "unchanged": true
+    },
+    {
+      "name": "refresh-boundary-probes",
+      "expected": "840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e",
+      "actual": "840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e",
+      "oldArtifactHash": "840ce093bc44073a52e8b896532e6ca2ba67aacd1990f502fc148cf6b035447e",
+      "unchanged": true
+    }
+  ],
+  "pass": true
+}

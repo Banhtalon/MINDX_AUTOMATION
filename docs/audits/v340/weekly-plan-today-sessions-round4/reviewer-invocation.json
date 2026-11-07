@@ -1,0 +1,9 @@
+{
+  "client": "0.163.0",
+  "model": "gpt-6.1-sol",
+  "provider": "openai",
+  "reasoningEffort": "xhigh",
+  "sessionId": "01a1b5b1-9d73-7da1-8ad6-57eff5ec352c",
+  "exitCode": 0,
+  "source": "Actual codex exec startup header; full session log retained only in TEMP"
+}
