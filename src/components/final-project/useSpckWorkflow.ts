@@ -3462,7 +3462,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     );
     const hasAppFiles = rows.some((r) =>
       (r.attachments || []).some((f) =>
-        /(\.(ui|py|sb3|apk|exe|gmx|yyz|rbxl|html?)|_web_package\.zip)$/i.test(f)
+        /(\.(ui|py|sb3|apk|exe|gmx|yyz|rbxl|html?)|_(web|app)_package\.zip)$/i.test(f)
       )
     );
     return hasAppClassCode || hasAppFiles || !isWebClassOrProduct;
@@ -3778,7 +3778,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       (hasWebCode || (!hasNonWebTrackCode && hasHtmlFiles));
     const hasUiOrAppFiles = unapprovedRows.some((r) =>
       (r.attachments || []).some((f) =>
-        /(\.(ui|py|sb3|apk|exe|gmx|yyz|rbxl|html?)|_web_package\.zip)$/i.test(f)
+        /(\.(ui|py|sb3|apk|exe|gmx|yyz|rbxl|html?)|_(web|app)_package\.zip)$/i.test(f)
       )
     );
     const hasAppCode = /\b(PTA|PTI|PTB|CSI|CSA|CSB|GMA|GMI|GMB|GA|GB|GI|SB|SA|SI|GAME|APP|PYTHON|SCRATCH)[A-Z0-9]*\b/.test(

@@ -39,7 +39,9 @@ import {
   DEFAULT_SPCK_THUMBNAIL_PATH,
   extractImageDimensionsFromBuffer,
   findOwnerProvidedRootPhotos,
+  scanClassSpckDirectory,
   scanStudentSpckFolder,
+  validateSpckResourceLimits,
 } from "../src/lib/local-files/spck-scanner";
 import {
   extractStudentNameFromVideoTitle,
@@ -767,7 +769,157 @@ async function run() {
     assert.ok(gmCaptured.galleryScreenshots.length >= 1);
     console.log("  -> PASS V17.");
 
-    console.log("\n=== HOÀN TẤT: TẤT CẢ 17 KỊCH BẢN v2.7.2 (V01 -> V17) ĐỀU ĐẠT 100% ===");
+    // V18: Python PyQt6 (.ui / .py) project with >10 UI assets in img/ & Image/ + Vietnamese folder prefix matching
+    console.log(
+      "\n[V18] Dự án Python PyQt6 (.ui/.py) có >10 ảnh tài nguyên trong img/ & Image/, tự dựng ảnh giao diện 960×540 và khớp tên thư mục..."
+    );
+    const ptaRoot = path.join(tempRoot, "PTA13_Mock");
+    const khangDir = path.join(ptaRoot, "du_an_cuoi_khoa_Khang");
+    const tuAnDir = path.join(ptaRoot, "Sản phảm cuối khóa Tú An");
+    const minhGenericDir = path.join(ptaRoot, "bai thuyet tring");
+    fs.mkdirSync(path.join(khangDir, "img"), { recursive: true });
+    fs.mkdirSync(path.join(tuAnDir, "Image"), { recursive: true });
+    fs.mkdirSync(path.join(minhGenericDir, "GUI"), { recursive: true });
+
+    for (let i = 1; i <= 15; i++) {
+      fs.writeFileSync(path.join(khangDir, "img", `asset_${i}.png`), makePng(200, 150, i, true));
+    }
+    for (let i = 1; i <= 14; i++) {
+      fs.writeFileSync(path.join(tuAnDir, "Image", `player_${i}.png`), makePng(220, 160, i + 20, true));
+    }
+
+    const buildSimpleUiXml = (className: string, windowTitle: string, headingText: string) => `<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>${className}</class>
+ <widget class="QMainWindow" name="${className}">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>800</width><height>520</height></rect></property>
+  <property name="windowTitle"><string>${windowTitle}</string></property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QLabel" name="lblHeading">
+    <property name="geometry"><rect><x>40</x><y>40</y><width>600</width><height>80</height></rect></property>
+    <property name="text"><string>${headingText}</string></property>
+   </widget>
+   <widget class="QPushButton" name="btnAction">
+    <property name="geometry"><rect><x>40</x><y>160</y><width>200</width><height>50</height></rect></property>
+    <property name="text"><string>Khám phá ngay</string></property>
+   </widget>
+  </widget>
+ </widget>
+</ui>`;
+
+    fs.writeFileSync(
+      path.join(khangDir, "bang_dieu_khien.ui"),
+      buildSimpleUiXml("DashboardWindow", "Lễ Hội Việt Nam", "BẢNG ĐIỀU KHIỂN LỄ HỘI BA MIỀN")
+    );
+    fs.writeFileSync(
+      path.join(khangDir, "login.ui"),
+      buildSimpleUiXml("LoginWindow", "Đăng nhập", "ĐĂNG NHẬP HỆ THỐNG")
+    );
+
+    fs.writeFileSync(path.join(tuAnDir, "main.py"), "from PyQt6.QtWidgets import QApplication\nprint('ok')\n");
+    fs.writeFileSync(
+      path.join(tuAnDir, "Menu cầu thủ.ui"),
+      buildSimpleUiXml("PlayerMenuWindow", "Danh sách cầu thủ", "THÔNG TIN CẦU THỦ NỔI BẬT")
+    );
+    fs.writeFileSync(
+      path.join(tuAnDir, "Menu dang nhap.ui"),
+      buildSimpleUiXml("AuthMenuWindow", "Menu dang nhap", "ĐĂNG NHẬP TÀI KHOẢN")
+    );
+
+    fs.mkdirSync(path.join(minhGenericDir, "img"), { recursive: true });
+    fs.writeFileSync(path.join(minhGenericDir, "img", "car_hero.png"), makePng(240, 140, 77, true));
+    const pwnMarkerPath = path.join(minhGenericDir, "pwned_marker.txt");
+    fs.writeFileSync(
+      path.join(minhGenericDir, "evil_widget.py"),
+      `import os\nopen(${JSON.stringify(pwnMarkerPath)}, "w").write("pwned")\n`
+    );
+    fs.writeFileSync(
+      path.join(minhGenericDir, "GUI", "sieu xe 1.ui"),
+      `<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MinhHypercarClubWindow</class>
+ <widget class="QMainWindow" name="MinhHypercarClubWindow">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>800</width><height>520</height></rect></property>
+  <property name="windowTitle"><string>MINH HYPERCAR CLUB</string></property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="EvilCustomWidget" name="lblHeading">
+    <property name="geometry"><rect><x>40</x><y>40</y><width>600</width><height>80</height></rect></property>
+    <property name="text"><string>SIÊU XE FERRARI SF90</string></property>
+   </widget>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>EvilCustomWidget</class>
+   <extends>QLabel</extends>
+   <header>evil_widget</header>
+  </customwidget>
+ </customwidgets>
+</ui>`
+    );
+    fs.writeFileSync(
+      path.join(minhGenericDir, "GUI", "login.ui"),
+      buildSimpleUiXml("MinhHypercarClubWindow", "MINH HYPERCAR CLUB - Đăng nhập", "XÁC THỰC THÀNH VIÊN")
+    );
+
+    const ptaRoster = [
+      { studentId: "PTA_S1", fullName: "Bùi Tú An" },
+      { studentId: "PTA_S2", fullName: "PHẠM THIỆN HOÀNG KHANG" },
+      { studentId: "PTA_S3", fullName: "Trần Nhật Minh" },
+      { studentId: "PTA_S4", fullName: "Phạm Gia Phúc" },
+    ];
+    const ptaScan = scanClassSpckDirectory("VT-C4K-PTA13", ptaRoot, ptaRoster);
+    assert.strictEqual(ptaScan.items.length, 3);
+    assert.strictEqual(
+      fs.existsSync(pwnMarkerPath),
+      false,
+      "uic.loadUi tuyệt đối không được import và thực thi module Python tự viết trong <customwidgets>"
+    );
+
+    const khangItem = ptaScan.items.find((it) => it.folderName === "du_an_cuoi_khoa_Khang")!;
+    assert.strictEqual(khangItem.match.suggestedStudentId, "PTA_S2");
+    assert.strictEqual(khangItem.match.requiresManualConfirmation, true);
+    assert.strictEqual(
+      validateSpckResourceLimits({
+        screenshots: khangItem.packageData.screenshots,
+        attachments: khangItem.packageData.attachments,
+      }).valid,
+      true,
+      "15 ảnh trong img/ của dự án PyQt6 không được gây lỗi vượt quá 10 ảnh sản phẩm"
+    );
+    assert.ok(
+      khangItem.packageData.thumbnailPath.includes("bang_dieu_khien"),
+      "Màn hình chính bang_dieu_khien phải được ưu tiên làm Thumbnail thay vì login"
+    );
+
+    const tuAnItem = ptaScan.items.find((it) => it.folderName === "Sản phảm cuối khóa Tú An")!;
+    assert.strictEqual(tuAnItem.match.suggestedStudentId, "PTA_S1");
+    assert.strictEqual(
+      validateSpckResourceLimits({
+        screenshots: tuAnItem.packageData.screenshots,
+        attachments: tuAnItem.packageData.attachments,
+      }).valid,
+      true,
+      "14 ảnh trong Image/ của dự án PyQt6 không được gây lỗi vượt quá 10 ảnh sản phẩm"
+    );
+    assert.ok(
+      !tuAnItem.packageData.thumbnailPath.toLowerCase().includes("dang_nhap"),
+      "Menu dang nhap không dấu không được chọn làm Thumbnail khi có Menu cầu thủ"
+    );
+
+    const minhItem = ptaScan.items.find((it) => it.folderName === "bai thuyet tring")!;
+    assert.strictEqual(minhItem.match.suggestedStudentId, "PTA_S3");
+    assert.strictEqual(minhItem.match.requiresManualConfirmation, true);
+    const minhZipPath = minhItem.packageData.attachments.find((a) => a.endsWith("_app_package.zip"))!;
+    assert.ok(minhZipPath, "Dự án có thư mục con GUI/*.ui phải được đóng gói thành _app_package.zip");
+    const minhZipEntries = new AdmZipMod(minhZipPath).getEntries().map((e) => e.entryName);
+    assert.ok(
+      minhZipEntries.includes("img/car_hero.png"),
+      "Gói _app_package.zip phải chứa cả tài nguyên ảnh trong thư mục con img/"
+    );
+    console.log("  -> PASS V18.");
+
+    console.log("\n=== HOÀN TẤT: TẤT CẢ 18 KỊCH BẢN v2.7.2 (V01 -> V18) ĐỀU ĐẠT 100% ===");
   } finally {
     globalThis.fetch = origFetch;
     cleanup();

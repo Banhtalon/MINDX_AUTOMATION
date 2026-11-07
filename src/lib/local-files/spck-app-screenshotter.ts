@@ -21,7 +21,7 @@ import {
 } from "../db/sqlite";
 import { getGeminiModel } from "../gemini/client";
 import { SequentialTaskQueue } from "../queue/task-queue";
-import { assertPathAllowed } from "../security/path-allowlist";
+import { assertPathAllowed, isPathAllowed } from "../security/path-allowlist";
 import {
   DEFAULT_SPCK_THUMBNAIL_PATH,
   MAX_SPCK_SCREENSHOTS,
@@ -31,6 +31,7 @@ import {
   LMS_IMAGE_HEIGHT,
   LMS_IMAGE_WIDTH,
   normalizeImagesToLms16x9,
+  normalizeImagesToLms16x9Sync,
 } from "./spck-image-normalizer";
 import {
   findProjectGameFiles,
@@ -77,9 +78,17 @@ import os
 import re
 import sys
 import json
+import builtins
 import hashlib
 import tempfile
+import unicodedata
 import xml.etree.ElementTree as ET
+
+# Strip CWD / relative entries from sys.path before importing anything else
+sys.path = [
+    p for p in sys.path
+    if p and p not in ('.', '') and os.path.isabs(p)
+]
 
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 
@@ -89,6 +98,59 @@ GENERIC_STEMS = {
     'download', 'downloads', 'tải xuống', 'tai xuong', 'r', '1', '2', '3', '4'
 }
 
+def strip_accents(text):
+    if not text:
+        return ''
+    s = (text or '').replace('đ', 'd').replace('Đ', 'D')
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', s)
+        if unicodedata.category(c) != 'Mn'
+    )
+
+def is_auth_screen_name_or_xml(base_stem, raw_xml_text=''):
+    norm_name = re.sub(r'[\\s_-]+', ' ', strip_accents(base_stem or '').lower()).strip()
+    if re.search(r'\\b(login|register|signup|sign up|signin|sign in|dang nhap|dangnhap|dang ki|dangki|dang ky|dangky|xac thuc|xacthuc)\\b', norm_name):
+        return True
+    if any(k in norm_name for k in ('login', 'register', 'signup', 'signin', 'dangnhap', 'dangki', 'dangky')):
+        return True
+    raw_lower = (raw_xml_text or '').lower()
+    if (
+        any(k in raw_lower for k in ('cardlogin', 'btnlogin', 'groupregister', 'nhập mật khẩu'))
+        and any(k in raw_lower for k in ('đăng nhập', 'xác thực thành viên', 'mật khẩu'))
+    ):
+        return True
+    return False
+
+def is_subpath_of(cand_path, root_path):
+    try:
+        rc = os.path.normcase(os.path.realpath(cand_path))
+        rr = os.path.normcase(os.path.realpath(root_path))
+        return os.path.commonpath([rc, rr]) == rr
+    except Exception:
+        return False
+
+def is_safe_within_roots(cand_path, allowed_roots):
+    if not cand_path or not allowed_roots:
+        return False
+    try:
+        abs_cand = os.path.abspath(cand_path)
+        if os.path.islink(abs_cand):
+            return False
+        for root in allowed_roots:
+            if is_subpath_of(abs_cand, root):
+                return True
+        return False
+    except Exception:
+        return False
+
+def is_safe_file(cand_path, allowed_roots):
+    if not is_safe_within_roots(cand_path, allowed_roots):
+        return False
+    try:
+        return os.path.isfile(os.path.realpath(cand_path))
+    except Exception:
+        return False
+
 def is_generic_stem(stem):
     s = re.sub(r'\\s*\\(\\d+\\)\\s*$', '', stem.strip().lower())
     if s in GENERIC_STEMS:
@@ -97,23 +159,28 @@ def is_generic_stem(stem):
         return True
     return False
 
-def build_image_index(root_dir):
+def build_image_index(root_dir, allowed_roots):
     by_rel = {}
     by_base = {}
     by_stem = {}
-    if not os.path.isdir(root_dir):
+    if not os.path.isdir(root_dir) or not is_safe_within_roots(root_dir, allowed_roots):
         return {'by_rel': by_rel, 'by_base': by_base, 'by_stem': by_stem}
-    for cur_root, dirs, files in os.walk(root_dir):
+    for cur_root, dirs, files in os.walk(root_dir, followlinks=False):
         dirs[:] = [
             d for d in dirs
             if not d.startswith('.')
             and d not in ('__pycache__', 'node_modules', '_spck_app_shots', '_spck_owner_uploads', '_synth_assets')
+            and is_safe_within_roots(os.path.join(cur_root, d), [root_dir])
+            and is_safe_within_roots(os.path.join(cur_root, d), allowed_roots)
         ]
         for f in files:
             ext = os.path.splitext(f)[1].lower()
             if ext in IMAGE_EXTS:
-                full = os.path.abspath(os.path.join(cur_root, f)).replace('\\\\', '/')
-                rel = os.path.relpath(full, root_dir).replace('\\\\', '/').lower()
+                raw_full = os.path.join(cur_root, f)
+                if not is_safe_file(raw_full, [root_dir]) or not is_safe_file(raw_full, allowed_roots):
+                    continue
+                full = os.path.realpath(raw_full).replace('\\\\', '/')
+                rel = os.path.relpath(full, os.path.realpath(root_dir)).replace('\\\\', '/').lower()
                 by_rel[rel] = full
                 base = f.lower()
                 stem = os.path.splitext(base)[0]
@@ -123,7 +190,7 @@ def build_image_index(root_dir):
                     by_stem[stem] = full
     return {'by_rel': by_rel, 'by_base': by_base, 'by_stem': by_stem}
 
-def lookup_in_index(raw_ref, ui_dir, root_dir, idx):
+def lookup_in_index(raw_ref, ui_dir, root_dir, idx, allowed_roots):
     ref = (raw_ref or '').strip().strip('"').strip("'")
     if not ref or ref.startswith('data:') or ref.startswith('http:') or ref.startswith('https:'):
         return None
@@ -133,26 +200,32 @@ def lookup_in_index(raw_ref, ui_dir, root_dir, idx):
         os.path.abspath(os.path.join(root_dir, ref)),
         os.path.abspath(os.path.join(root_dir, clean)),
     ):
-        if os.path.isfile(cand):
-            return cand.replace('\\\\', '/')
+        if is_safe_file(cand, [root_dir]) and is_safe_file(cand, allowed_roots):
+            return os.path.realpath(cand).replace('\\\\', '/')
     rel_norm = clean.replace('\\\\', '/').lstrip('./').lower()
     if rel_norm in idx['by_rel']:
-        return idx['by_rel'][rel_norm]
+        found_rel = idx['by_rel'][rel_norm]
+        if is_safe_file(found_rel, allowed_roots):
+            return found_rel
     base = os.path.basename(clean.replace('\\\\', '/')).lower()
     if base in idx['by_base']:
-        return idx['by_base'][base]
+        found_base = idx['by_base'][base]
+        if is_safe_file(found_base, allowed_roots):
+            return found_base
     stem = os.path.splitext(base)[0]
     if stem and stem in idx['by_stem']:
-        return idx['by_stem'][stem]
+        found_stem = idx['by_stem'][stem]
+        if is_safe_file(found_stem, allowed_roots):
+            return found_stem
     return None
 
-def build_class_recovery_index(student_dir):
-    abs_student = os.path.abspath(student_dir)
+def build_class_recovery_index(student_dir, allowed_roots):
+    abs_student = os.path.realpath(student_dir)
     class_dir = os.path.dirname(abs_student)
     sibling_widget_map = {}
     class_by_base = {}
     class_by_stem = {}
-    if not os.path.isdir(class_dir):
+    if not os.path.isdir(class_dir) or not is_safe_within_roots(class_dir, allowed_roots):
         return {
             'sibling_widget_map': sibling_widget_map,
             'by_base': class_by_base,
@@ -161,11 +234,15 @@ def build_class_recovery_index(student_dir):
 
     for entry in sorted(os.listdir(class_dir)):
         sib_dir = os.path.join(class_dir, entry)
-        if not os.path.isdir(sib_dir) or os.path.abspath(sib_dir) == abs_student:
+        if not os.path.isdir(sib_dir) or os.path.islink(sib_dir):
+            continue
+        if os.path.normcase(os.path.realpath(sib_dir)) == os.path.normcase(abs_student):
+            continue
+        if not is_safe_within_roots(sib_dir, allowed_roots):
             continue
         if entry.startswith('.') or entry.startswith('_spck'):
             continue
-        sib_idx = build_image_index(sib_dir)
+        sib_idx = build_image_index(sib_dir, allowed_roots)
         for b, full in sib_idx['by_base'].items():
             if b not in class_by_base:
                 class_by_base[b] = full
@@ -174,17 +251,21 @@ def build_class_recovery_index(student_dir):
                 class_by_stem[s] = full
 
         # Index sibling .ui widget -> resolved image mappings
-        for cur_root, dirs, files in os.walk(sib_dir):
+        for cur_root, dirs, files in os.walk(sib_dir, followlinks=False):
             dirs[:] = [
                 d for d in dirs
                 if not d.startswith('.')
                 and d not in ('__pycache__', 'node_modules', '_spck_app_shots', '_spck_owner_uploads', '_synth_assets')
+                and is_safe_within_roots(os.path.join(cur_root, d), [sib_dir])
+                and is_safe_within_roots(os.path.join(cur_root, d), allowed_roots)
             ]
             for f in files:
                 if not f.lower().endswith('.ui'):
                     continue
                 ui_file_lower = f.lower()
                 ui_full = os.path.join(cur_root, f)
+                if not is_safe_file(ui_full, [sib_dir]) or not is_safe_file(ui_full, allowed_roots):
+                    continue
                 ui_dir = os.path.dirname(ui_full)
                 try:
                     root = ET.parse(ui_full).getroot()
@@ -206,7 +287,7 @@ def build_class_recovery_index(student_dir):
                             if pname == 'pixmap':
                                 px = prop.find('pixmap')
                                 if px is not None and px.text:
-                                    found = lookup_in_index(px.text, ui_dir, sib_dir, sib_idx)
+                                    found = lookup_in_index(px.text, ui_dir, sib_dir, sib_idx, allowed_roots)
                                     if found:
                                         sibling_widget_map.setdefault((ui_file_lower, wname, 'pixmap'), []).append({
                                             'path': found,
@@ -217,7 +298,7 @@ def build_class_recovery_index(student_dir):
                             elif pname == 'icon':
                                 ic = prop.find('iconset/normaloff')
                                 if ic is not None and ic.text:
-                                    found = lookup_in_index(ic.text, ui_dir, sib_dir, sib_idx)
+                                    found = lookup_in_index(ic.text, ui_dir, sib_dir, sib_idx, allowed_roots)
                                     if found:
                                         sibling_widget_map.setdefault((ui_file_lower, wname, 'icon'), []).append({
                                             'path': found,
@@ -360,13 +441,15 @@ def synthesize_missing_asset(raw_ref, ui_file_lower, wname, prop_kind, width, he
     pix.save(out_path, 'PNG')
     return out_path
 
-def resolve_widget_asset(raw_ref, ui_file_lower, wname, prop_kind, width, height, cur_w_names, ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir):
+def resolve_widget_asset(raw_ref, ui_file_lower, wname, prop_kind, width, height, cur_w_names, ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir, allowed_roots):
     ref = (raw_ref or '').strip().strip('"').strip("'")
-    if not ref or ref.startswith('data:') or ref.startswith('http:') or ref.startswith('https:'):
-        return raw_ref
+    if not ref:
+        return ''
+    if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*://', ref) or ref.lower().startswith('data:') or ref.lower().startswith('file:'):
+        return synthesize_missing_asset(ref, ui_file_lower, wname, prop_kind, width, height, ui_text_blob, synth_dir)
 
-    # Layer 1: Local student folder (exact relative, basename, or stem)
-    found_local = lookup_in_index(ref, ui_dir, root_dir, local_idx)
+    # Layer 1: Local student folder (exact relative, basename, or stem — strictly inside allowed_roots)
+    found_local = lookup_in_index(ref, ui_dir, root_dir, local_idx, allowed_roots)
     if found_local:
         return found_local
 
@@ -377,85 +460,142 @@ def resolve_widget_asset(raw_ref, ui_file_lower, wname, prop_kind, width, height
         dw = abs(int(width or 160) - int(cand.get('width', 160)))
         dh = abs(int(height or 120) - int(cand.get('height', 120)))
         common_widgets = len(cur_w_names.intersection(cand.get('widget_names', set())))
-        if dw <= 60 and dh <= 60 and common_widgets >= 4:
+        if dw <= 60 and dh <= 60 and common_widgets >= 4 and is_safe_file(cand.get('path'), allowed_roots):
             return cand['path']
 
-    # Layer 3: Descriptive filename match in class folder or user Downloads
+    # Layer 3: Descriptive filename match in allowed class folder only (never outside allowed_roots)
     clean = re.sub(r'^:/+[^/]*/', '', ref)
     base = os.path.basename(clean.replace('\\\\', '/')).lower()
     stem = os.path.splitext(base)[0]
-    downloads_dir = os.path.join(os.path.expanduser('~'), 'Downloads')
-    dl_cand = os.path.join(downloads_dir, os.path.basename(clean.replace('\\\\', '/')))
-    if os.path.isfile(dl_cand):
-        return os.path.abspath(dl_cand).replace('\\\\', '/')
 
     if not is_generic_stem(stem):
         if base in class_idx.get('by_base', {}):
-            return class_idx['by_base'][base]
+            cand_base = class_idx['by_base'][base]
+            if is_safe_file(cand_base, allowed_roots):
+                return cand_base
         if stem in class_idx.get('by_stem', {}):
-            return class_idx['by_stem'][stem]
+            cand_stem = class_idx['by_stem'][stem]
+            if is_safe_file(cand_stem, allowed_roots):
+                return cand_stem
 
     # Layer 4: Synthesize contextual illustration / icon / banner PNG
     return synthesize_missing_asset(ref, ui_file_lower, wname, prop_kind, width, height, ui_text_blob, synth_dir)
 
-def patch_ui_xml(xml_text, ui_abs, root_dir, local_idx, class_idx, synth_dir):
+def is_safe_qt_widget_class(cls_name):
+    if not cls_name or not cls_name.startswith('Q'):
+        return False
+    attr = getattr(QtWidgets, cls_name, None)
+    return isinstance(attr, type) and issubclass(attr, QtWidgets.QWidget)
+
+def patch_ui_xml(xml_text, ui_abs, root_dir, local_idx, class_idx, synth_dir, allowed_roots):
     ui_dir = os.path.dirname(ui_abs)
     ui_file_lower = os.path.basename(ui_abs).lower()
+    tree = ET.fromstring(xml_text)
+
+    # Security: map and strip <customwidgets> and <resources> so uic.loadUi never imports student Python code
+    custom_class_map = {}
+    for cw_group in list(tree.findall('customwidgets')):
+        for cw in cw_group.findall('customwidget'):
+            cname = (cw.findtext('class') or '').strip()
+            ext_name = (cw.findtext('extends') or '').strip()
+            if cname:
+                custom_class_map[cname] = ext_name if is_safe_qt_widget_class(ext_name) else 'QWidget'
+        tree.remove(cw_group)
+    for res_group in list(tree.findall('resources')):
+        tree.remove(res_group)
+
+    for w in tree.iter('widget'):
+        wcls = (w.attrib.get('class') or '').strip()
+        if wcls in custom_class_map:
+            w.attrib['class'] = custom_class_map[wcls]
+        elif not is_safe_qt_widget_class(wcls):
+            w.attrib['class'] = 'QWidget'
+
+    cur_w_names = {w.attrib.get('name', '') for w in tree.iter('widget') if w.attrib.get('name')}
+    # Collect text blob for context
+    texts = []
+    for s in tree.iter('string'):
+        if s.text and len(s.text.strip()) < 80:
+            texts.append(s.text.strip())
+    ui_text_blob = ' '.join(texts)
+
+    # Map every XML element to its nearest enclosing widget's (wname, width, height)
+    elem_widget_ctx = {}
+    for w in tree.iter('widget'):
+        wname = w.attrib.get('name', '')
+        width, height = 160, 120
+        geom = w.find("./property[@name='geometry']/rect")
+        if geom is not None:
+            try:
+                width = int(geom.findtext('width') or 160)
+                height = int(geom.findtext('height') or 120)
+            except Exception:
+                pass
+        for desc in w.iter():
+            elem_widget_ctx[desc] = (wname, width, height)
+
+    # Sanitize every <pixmap> anywhere in the .ui XML tree
+    for px in tree.iter('pixmap'):
+        px.attrib.pop('resource', None)
+        if px.text and px.text.strip():
+            wname, width, height = elem_widget_ctx.get(px, ('', 160, 120))
+            px.text = resolve_widget_asset(
+                px.text, ui_file_lower, wname, 'pixmap', width, height, cur_w_names,
+                ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir, allowed_roots
+            )
+
+    # Sanitize every <iconset> anywhere in the .ui XML tree (windowIcon, widget icon, item/action icon, all states)
+    for ic_set in tree.iter('iconset'):
+        ic_set.attrib.pop('resource', None)
+        ic_set.attrib.pop('theme', None)
+        wname, _w, _h = elem_widget_ctx.get(ic_set, ('', 64, 64))
+        if ic_set.text and ic_set.text.strip():
+            ic_set.text = resolve_widget_asset(
+                ic_set.text, ui_file_lower, wname, 'icon', 64, 64, cur_w_names,
+                ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir, allowed_roots
+            )
+        for el in ic_set.iter():
+            if el is not ic_set and el.text and el.text.strip():
+                el.text = resolve_widget_asset(
+                    el.text, ui_file_lower, wname, 'icon', 64, 64, cur_w_names,
+                    ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir, allowed_roots
+                )
+
+    # Sanitize every url(...) reference inside any <string> (e.g., styleSheet properties) anywhere in the .ui XML tree
+    for st in tree.iter('string'):
+        if st.text and 'url(' in st.text:
+            wname, width, height = elem_widget_ctx.get(st, ('', 160, 120))
+            def repl_url(match, _wname=wname, _width=width, _height=height):
+                inner = match.group(1)
+                resolved = resolve_widget_asset(
+                    inner, ui_file_lower, _wname, 'pixmap', _width, _height, cur_w_names,
+                    ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir, allowed_roots
+                )
+                return f"url({resolved})"
+            st.text = re.sub(r'url\\(([^)]+)\\)', repl_url, st.text)
+
+    return ET.tostring(tree, encoding='unicode')
+
+SAFE_UIC_IMPORT_PREFIXES = (
+    'PyQt6', 'xml', 'io', '_io', 're', 'os', 'sys', 'logging', 'collections',
+    'functools', 'enum', 'typing', 'warnings', 'weakref', 'copy', 'types',
+    'abc', 'codecs', 'encodings', 'importlib', 'pathlib', 'posixpath',
+    'ntpath', 'genericpath', 'stat', 'sre_', 'math', 'operator', 'itertools',
+    'keyword', 'reprlib', 'linecache', 'traceback', 'string'
+)
+
+def load_ui_safely(tmp_ui_path):
+    orig_import = builtins.__import__
+    def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+        top_pkg = (name or '').split('.')[0]
+        if level == 0 and not any(name.startswith(pref) or top_pkg == pref for pref in SAFE_UIC_IMPORT_PREFIXES):
+            raise ImportError(f"Blocked untrusted module import during UI preview: {name}")
+        return orig_import(name, globals, locals, fromlist, level)
+    builtins.__import__ = guarded_import
     try:
-        tree = ET.fromstring(xml_text)
-        cur_w_names = {w.attrib.get('name', '') for w in tree.iter('widget') if w.attrib.get('name')}
-        # Collect text blob for context
-        texts = []
-        for s in tree.iter('string'):
-            if s.text and len(s.text.strip()) < 80:
-                texts.append(s.text.strip())
-        ui_text_blob = ' '.join(texts)
-
-        for w in tree.iter('widget'):
-            wname = w.attrib.get('name', '')
-            width, height = 160, 120
-            geom = w.find("./property[@name='geometry']/rect")
-            if geom is not None:
-                try:
-                    width = int(geom.findtext('width') or 160)
-                    height = int(geom.findtext('height') or 120)
-                except Exception:
-                    pass
-
-            for prop in w.findall('./property'):
-                pname = prop.attrib.get('name', '')
-                if pname == 'pixmap':
-                    px = prop.find('pixmap')
-                    if px is not None and px.text and px.text.strip():
-                        px.text = resolve_widget_asset(
-                            px.text, ui_file_lower, wname, 'pixmap', width, height, cur_w_names,
-                            ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir
-                        )
-                elif pname == 'icon':
-                    ic_set = prop.find('iconset')
-                    if ic_set is not None:
-                        for tag_name in ('normaloff', 'normalon', 'activeoff', 'activeon'):
-                            el = ic_set.find(tag_name)
-                            if el is not None and el.text and el.text.strip():
-                                el.text = resolve_widget_asset(
-                                    el.text, ui_file_lower, wname, 'icon', 64, 64, cur_w_names,
-                                    ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir
-                                )
-                elif pname == 'styleSheet':
-                    st = prop.find('string')
-                    if st is not None and st.text and 'url(' in st.text:
-                        def repl_url(match):
-                            inner = match.group(1)
-                            resolved = resolve_widget_asset(
-                                inner, ui_file_lower, wname, 'pixmap', width, height, cur_w_names,
-                                ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir
-                            )
-                            return f"url({resolved})"
-                        st.text = re.sub(r'url\\(([^)]+)\\)', repl_url, st.text)
-
-        return ET.tostring(tree, encoding='unicode')
-    except Exception:
-        return xml_text
+        return uic.loadUi(tmp_ui_path)
+    finally:
+        builtins.__import__ = orig_import
 
 def compute_color_richness(qimg):
     if qimg.isNull() or qimg.width() <= 0 or qimg.height() <= 0:
@@ -483,7 +623,7 @@ def save_pixmap_with_hash(pix, out_dir, prefix_name):
             pass
     else:
         os.replace(tmp_path, final_path)
-    return final_path
+    return final_path, h6
 
 def main():
     if hasattr(sys.stdin, 'reconfigure'):
@@ -491,28 +631,35 @@ def main():
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
     payload = json.loads(sys.stdin.buffer.read().decode('utf-8'))
-    student_dir = payload['studentDir']
+    student_dir = os.path.realpath(payload['studentDir'])
     ui_files = payload['uiFiles']
-    out_dir = payload['outDir']
+    out_dir = os.path.realpath(payload['outDir'])
     max_shots = int(payload.get('maxShots', 11))
+    allowed_roots = [os.path.realpath(r) for r in (payload.get('allowedRoots') or [student_dir]) if r]
+
+    # Ensure student_dir and its subdirectories are never on sys.path
+    sys.path = [
+        p for p in sys.path
+        if p and p not in ('.', '') and os.path.isabs(p)
+        and not is_subpath_of(p, student_dir)
+    ]
 
     os.makedirs(out_dir, exist_ok=True)
     synth_dir = os.path.join(out_dir, '_synth_assets')
-    local_idx = build_image_index(student_dir)
-    class_idx = build_class_recovery_index(student_dir)
+    os.makedirs(synth_dir, exist_ok=True)
+    local_idx = build_image_index(student_dir, allowed_roots)
+    class_idx = build_class_recovery_index(student_dir, allowed_roots)
 
     app = QtWidgets.QApplication(sys.argv)
-    results = []
-
-    os.chdir(student_dir)
+    raw_captures = []
+    seen_hashes = set()
 
     for idx, rel_ui in enumerate(ui_files):
-        if len(results) >= max_shots:
+        if len(raw_captures) >= max_shots:
             break
         ui_abs = os.path.abspath(os.path.join(student_dir, rel_ui))
-        if not os.path.isfile(ui_abs):
+        if not is_safe_file(ui_abs, [student_dir]) or not is_safe_file(ui_abs, allowed_roots):
             continue
-        ui_dir = os.path.dirname(ui_abs)
         base_stem = os.path.splitext(os.path.basename(ui_abs))[0]
         safe_stem = re.sub(r'[^a-zA-Z0-9_-]+', '_', base_stem).strip('_') or f"screen_{idx+1}"
 
@@ -520,12 +667,12 @@ def main():
         try:
             with open(ui_abs, 'r', encoding='utf-8', errors='ignore') as f:
                 raw_xml = f.read()
-            patched_xml = patch_ui_xml(raw_xml, ui_abs, student_dir, local_idx, class_idx, synth_dir)
-            fd, tmp_ui_path = tempfile.mkstemp(suffix='.ui', dir=ui_dir)
+            patched_xml = patch_ui_xml(raw_xml, ui_abs, student_dir, local_idx, class_idx, synth_dir, allowed_roots)
+            fd, tmp_ui_path = tempfile.mkstemp(suffix='.ui', dir=synth_dir)
             with os.fdopen(fd, 'w', encoding='utf-8') as tf:
                 tf.write(patched_xml)
 
-            w = uic.loadUi(tmp_ui_path)
+            w = load_ui_safely(tmp_ui_path)
             w.setAttribute(QtCore.Qt.WidgetAttribute.WA_DontShowOnScreen, True)
             if w.width() < 200 or w.height() < 150:
                 w.resize(max(w.width(), 800), max(w.height(), 550))
@@ -534,25 +681,38 @@ def main():
 
             pix = w.grab()
             if not pix.isNull() and pix.width() >= 100 and pix.height() >= 100:
-                out_path = save_pixmap_with_hash(pix, out_dir, f"app_{len(results)+1:02d}_{safe_stem}")
                 qimg = pix.toImage()
-                richness = compute_color_richness(qimg)
-                widget_count = len(w.findChildren(QtWidgets.QWidget))
-                lower_name = base_stem.lower()
-                is_auth = any(k in lower_name for k in ('login', 'register', 'signup', 'sign_up', 'sign in', 'signin', 'dangnhap', 'dangky'))
-                is_main = any(k in lower_name for k in ('main', 'home', 'menu', 'trang_1', 'trang1', 'chonpet', 'planets', 'danhsach', 'diary'))
-                score = richness * 3 + min(widget_count, 60) * 2 + (150 if is_main else 0) - (600 if is_auth else 0)
-                results.append({
-                    'filePath': out_path,
-                    'screenName': base_stem,
-                    'sourceFile': rel_ui,
-                    'width': pix.width(),
-                    'height': pix.height(),
-                    'widgetCount': widget_count,
-                    'colorRichness': richness,
-                    'isAuthScreen': is_auth,
-                    'heuristicScore': score
-                })
+                ba = QtCore.QByteArray()
+                qbuf = QtCore.QBuffer(ba)
+                qbuf.open(QtCore.QIODevice.OpenModeFlag.WriteOnly)
+                qimg.save(qbuf, 'PNG')
+                img_hash6 = hashlib.md5(bytes(ba)).hexdigest()[:6]
+                if img_hash6 not in seen_hashes:
+                    seen_hashes.add(img_hash6)
+                    richness = compute_color_richness(qimg)
+                    widget_count = len(w.findChildren(QtWidgets.QWidget))
+                    norm_stem = re.sub(r'[\\s_-]+', ' ', strip_accents(base_stem).lower()).strip()
+                    is_auth = is_auth_screen_name_or_xml(base_stem, raw_xml)
+                    is_main = (not is_auth) and any(
+                        k in norm_stem
+                        for k in (
+                            'main', 'home', 'menu', 'trang 1', 'trang1', 'trang chu', 'trangchu',
+                            'bang dieu khien', 'bangdieukhien', 'dashboard', 'chonpet', 'planets', 'danhsach', 'diary'
+                        )
+                    )
+                    score = richness * 3 + min(widget_count, 60) * 2 + (150 if is_main else 0) - (600 if is_auth else 0)
+                    raw_captures.append({
+                        'pix': pix,
+                        'safeStem': safe_stem,
+                        'screenName': base_stem,
+                        'sourceFile': rel_ui,
+                        'width': pix.width(),
+                        'height': pix.height(),
+                        'widgetCount': widget_count,
+                        'colorRichness': richness,
+                        'isAuthScreen': is_auth,
+                        'heuristicScore': score
+                    })
 
                 # If this .ui has a QStackedWidget with multiple pages and total ui_files <= 4, also capture pages
                 if len(ui_files) <= 4:
@@ -560,17 +720,25 @@ def main():
                     for st in stacks:
                         if st.count() > 1:
                             for p_idx in range(1, min(st.count(), 5)):
-                                if len(results) >= max_shots:
+                                if len(raw_captures) >= max_shots:
                                     break
                                 st.setCurrentIndex(p_idx)
                                 app.processEvents()
                                 pix_p = w.grab()
                                 if not pix_p.isNull():
-                                    out_p_path = save_pixmap_with_hash(pix_p, out_dir, f"app_{len(results)+1:02d}_{safe_stem}_p{p_idx+1}")
                                     qimg_p = pix_p.toImage()
+                                    ba_p = QtCore.QByteArray()
+                                    qbuf_p = QtCore.QBuffer(ba_p)
+                                    qbuf_p.open(QtCore.QIODevice.OpenModeFlag.WriteOnly)
+                                    qimg_p.save(qbuf_p, 'PNG')
+                                    p_hash6 = hashlib.md5(bytes(ba_p)).hexdigest()[:6]
+                                    if p_hash6 in seen_hashes:
+                                        continue
+                                    seen_hashes.add(p_hash6)
                                     rich_p = compute_color_richness(qimg_p)
-                                    results.append({
-                                        'filePath': out_p_path,
+                                    raw_captures.append({
+                                        'pix': pix_p,
+                                        'safeStem': f"{safe_stem}_p{p_idx+1}",
                                         'screenName': f"{base_stem}_page{p_idx+1}",
                                         'sourceFile': rel_ui,
                                         'width': pix_p.width(),
@@ -590,16 +758,35 @@ def main():
                 except Exception:
                     pass
 
+    raw_captures.sort(key=lambda item: (1 if item['isAuthScreen'] else 0, -item['heuristicScore']))
+    results = []
+    for slot_idx, cap in enumerate(raw_captures):
+        out_path, _ = save_pixmap_with_hash(cap['pix'], out_dir, f"app_{slot_idx+1:02d}_{cap['safeStem']}")
+        results.append({
+            'filePath': out_path,
+            'screenName': cap['screenName'],
+            'sourceFile': cap['sourceFile'],
+            'width': cap['width'],
+            'height': cap['height'],
+            'widgetCount': cap['widgetCount'],
+            'colorRichness': cap['colorRichness'],
+            'isAuthScreen': cap['isAuthScreen'],
+            'heuristicScore': cap['heuristicScore']
+        })
+
     print("JSON_CAPTURE_RESULT:" + json.dumps(results, ensure_ascii=True))
 
 if __name__ == '__main__':
     main()
 `;
 
-function findProjectUiFiles(studentDir: string): string[] {
-  const found: Array<{ relPath: string; priority: number }> = [];
+const DRAFT_OR_BACKUP_DIR_REGEX =
+  /^(draf|draft|drafts|backup|backups|backup[_-]?ui|old|temp|tmp|archive)$/i;
 
-  const walk = (currentDir: string, depth: number) => {
+export function findProjectUiFiles(studentDir: string): string[] {
+  const found: Array<{ relPath: string; priority: number; inDraftDir: boolean }> = [];
+
+  const walk = (currentDir: string, depth: number, inDraftDir: boolean) => {
     if (depth > 3) return;
     let entries: fs.Dirent[] = [];
     try {
@@ -620,33 +807,42 @@ function findProjectUiFiles(studentDir: string): string[] {
       }
       const fullPath = path.join(currentDir, entry.name);
       if (entry.isDirectory()) {
-        walk(fullPath, depth + 1);
+        const nextInDraft = inDraftDir || DRAFT_OR_BACKUP_DIR_REGEX.test(entry.name);
+        walk(fullPath, depth + 1, nextInDraft);
       } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".ui")) {
         const relPath = path.relative(studentDir, fullPath);
         const lower = entry.name.toLowerCase();
         if (lower === "untitled.ui") continue;
 
         let priority = 50;
-        if (/(main|home|menu|chonpet|planets|danhsach|diary|trang_1|trang1)/i.test(lower)) {
-          priority = 10;
-        } else if (/(login|register|signup|sign_up|sign in|signin)/i.test(lower)) {
+        if (
+          /(login|register|signup|sign[\s_-]*up|sign[\s_-]*in|signin|dang[\s_-]*nhap|dang[\s_-]*ki|dang[\s_-]*ky|đăng[\s_-]*nhập|đăng[\s_-]*kí|đăng[\s_-]*ký|xac[\s_-]*thuc|xác[\s_-]*thực)/i.test(
+            lower
+          )
+        ) {
           priority = 90;
-        } else if (depth === 0 || /^gui[\\/][^\\/]+\.ui$/i.test(relPath)) {
+        } else if (
+          /(main|home|menu|chonpet|planets|danhsach|diary|trang[\s_-]*1|trang[\s_-]*chu|bang[\s_-]*dieu[\s_-]*khien|dashboard)/i.test(
+            lower
+          )
+        ) {
+          priority = 10;
+        } else if (depth === 0 || /^(gui|ui)[\\/][^\\/]+\.ui$/i.test(relPath)) {
           priority = 30;
         } else {
           priority = 60;
         }
-        found.push({ relPath, priority });
+        found.push({ relPath, priority, inDraftDir });
       }
     }
   };
 
-  walk(studentDir, 0);
-  found.sort((a, b) => a.priority - b.priority || a.relPath.localeCompare(b.relPath));
-  return found.map((f) => f.relPath);
+  walk(studentDir, 0, false);
+  const nonDraft = found.filter((f) => !f.inDraftDir);
+  const effective = nonDraft.length > 0 ? nonDraft : found;
+  effective.sort((a, b) => a.priority - b.priority || a.relPath.localeCompare(b.relPath));
+  return effective.map((f) => f.relPath);
 }
-
-const DRAFT_OR_BACKUP_DIR_REGEX = /^(draf|draft|drafts|backup|backups|old|temp|tmp|archive)$/i;
 
 /**
  * Finds all Website `.html` / `.htm` files in a student's project folder,
@@ -719,22 +915,15 @@ function findProjectHtmlFiles(studentDir: string): string[] {
   return activeList.map((f) => f.relPath);
 }
 
-/**
- * Fits every captured PyQt App window (any size / aspect ratio) completely inside the LMS-safe
- * 960×540 (16:9) frame (contain mode on a soft blurred backdrop) so no button or edge of the App
- * is cut off by the MindX LMS viewer. The normalized file gets a NEW content-hash name, and the raw
- * window capture is removed only if it is not referenced by any saved/verified session snapshot
- * (protects file-drift detection on already submitted files).
- */
-async function normalizeCapturedAppWindowsToLms(
+function normalizeCapturedAppWindowsToLmsSync(
   items: CapturedScreenItem[],
   outDir: string,
-  referencedFiles: Set<string>
-): Promise<CapturedScreenItem[]> {
+  referencedFiles: Set<string> = new Set()
+): CapturedScreenItem[] {
   if (items.length === 0) return items;
   let normalized: Array<Buffer | null> = [];
   try {
-    normalized = await normalizeImagesToLms16x9(
+    normalized = normalizeImagesToLms16x9Sync(
       items.map((it) => ({ buffer: fs.readFileSync(it.filePath), fit: "contain" as const }))
     );
   } catch {
@@ -774,6 +963,124 @@ async function normalizeCapturedAppWindowsToLms(
     }
   }
   return out;
+}
+
+/**
+ * Fits every captured PyQt App window (any size / aspect ratio) completely inside the LMS-safe
+ * 960×540 (16:9) frame (contain mode on a soft blurred backdrop) so no button or edge of the App
+ * is cut off by the MindX LMS viewer. The normalized file gets a NEW content-hash name, and the raw
+ * window capture is removed only if it is not referenced by any saved/verified session snapshot
+ * (protects file-drift detection on already submitted files).
+ */
+async function normalizeCapturedAppWindowsToLms(
+  items: CapturedScreenItem[],
+  outDir: string,
+  referencedFiles: Set<string>
+): Promise<CapturedScreenItem[]> {
+  return normalizeCapturedAppWindowsToLmsSync(items, outDir, referencedFiles);
+}
+
+/**
+ * Synchronously renders PyQt6 `.ui` files inside `studentDir` into `outDir` (`_spck_app_shots`)
+ * and normalizes every captured window into the LMS-safe `960×540` (16:9) frame.
+ * Used during `scanStudentSpckFolder` when a Python/PyQt project has `.ui` screens and no existing product screenshots yet.
+ */
+export function renderPyQtUiScreenshotsSync(params: {
+  studentDir: string;
+  uiFiles?: string[];
+  outDir: string;
+  maxShots?: number;
+  referencedFiles?: Set<string>;
+}): CapturedScreenItem[] {
+  const safeStudentDir = assertPathAllowed(params.studentDir);
+  const safeOutDir = assertPathAllowed(params.outDir);
+  let realStudentDir = safeStudentDir;
+  try {
+    realStudentDir = assertPathAllowed(fs.realpathSync(safeStudentDir));
+  } catch {
+    return [];
+  }
+
+  const rawUiList =
+    params.uiFiles && params.uiFiles.length > 0
+      ? params.uiFiles
+      : findProjectUiFiles(realStudentDir);
+  const realStudentPrefix = (
+    realStudentDir.endsWith(path.sep) ? realStudentDir : realStudentDir + path.sep
+  ).toLowerCase();
+  const uiList = rawUiList.filter((rel) => {
+    try {
+      const candidate = assertPathAllowed(path.resolve(realStudentDir, rel));
+      if (fs.lstatSync(candidate).isSymbolicLink()) return false;
+      const realUi = assertPathAllowed(fs.realpathSync(candidate));
+      return realUi.toLowerCase().startsWith(realStudentPrefix) && fs.statSync(realUi).isFile();
+    } catch {
+      return false;
+    }
+  });
+  if (uiList.length === 0) return [];
+
+  const allowedRoots = [realStudentDir];
+  const parentClassDir = path.dirname(realStudentDir);
+  if (isPathAllowed(parentClassDir)) {
+    try {
+      const realParent = assertPathAllowed(fs.realpathSync(parentClassDir));
+      if (!allowedRoots.includes(realParent)) {
+        allowedRoots.push(realParent);
+      }
+    } catch {}
+  }
+
+  fs.mkdirSync(safeOutDir, { recursive: true });
+  const maxShots = params.maxShots ?? Math.max(uiList.length, MAX_SPCK_SCREENSHOTS + 1);
+  const payload = JSON.stringify({
+    studentDir: realStudentDir,
+    uiFiles: uiList,
+    outDir: safeOutDir,
+    maxShots,
+    allowedRoots,
+  });
+
+  const proc = spawnSync("python", ["-c", PYTHON_PYQT6_CAPTURE_SCRIPT], {
+    input: payload,
+    encoding: "utf-8",
+    timeout: 30_000,
+    windowsHide: true,
+    env: {
+      ...process.env,
+      QT_QPA_PLATFORM: "offscreen",
+      QT_QPA_FONTDIR: "C:\\Windows\\Fonts",
+    },
+  });
+
+  let capturedItems: CapturedScreenItem[] = [];
+  const stdout = String(proc.stdout || "");
+  const markerIdx = stdout.indexOf("JSON_CAPTURE_RESULT:");
+  if (markerIdx !== -1) {
+    const jsonText = stdout.slice(markerIdx + "JSON_CAPTURE_RESULT:".length).trim();
+    try {
+      const parsed = JSON.parse(jsonText);
+      if (Array.isArray(parsed)) {
+        capturedItems = parsed.filter((item: CapturedScreenItem) => {
+          if (!item?.filePath || !fs.existsSync(item.filePath)) return false;
+          try {
+            assertPathAllowed(item.filePath);
+            return true;
+          } catch {
+            return false;
+          }
+        });
+      }
+    } catch {
+      // ignore JSON parse error
+    }
+  }
+
+  return normalizeCapturedAppWindowsToLmsSync(
+    capturedItems,
+    safeOutDir,
+    params.referencedFiles || new Set()
+  );
 }
 
 function samePathLoose(a: string, b: string): boolean {
@@ -1748,40 +2055,13 @@ export async function captureStudentAppScreenshots(params: {
   let capturedItems: CapturedScreenItem[] = [];
 
   if (uiFiles.length > 0) {
-    // Capture screens without silently slicing over-limit UI lists
-    const payload = JSON.stringify({
+    capturedItems = renderPyQtUiScreenshotsSync({
       studentDir: safeFolderPath,
       uiFiles,
       outDir,
       maxShots: Math.max(uiFiles.length, MAX_SPCK_SCREENSHOTS + 5),
+      referencedFiles,
     });
-
-    const proc = spawnSync("python", ["-c", PYTHON_PYQT6_CAPTURE_SCRIPT], {
-      input: payload,
-      encoding: "utf-8",
-      timeout: 30_000,
-      windowsHide: true,
-    });
-
-    const stdout = String(proc.stdout || "");
-    const markerIdx = stdout.indexOf("JSON_CAPTURE_RESULT:");
-    if (markerIdx !== -1) {
-      const jsonText = stdout.slice(markerIdx + "JSON_CAPTURE_RESULT:".length).trim();
-      try {
-        const parsed = JSON.parse(jsonText);
-        if (Array.isArray(parsed)) {
-          capturedItems = parsed.filter(
-            (item: CapturedScreenItem) => item?.filePath && fs.existsSync(item.filePath)
-          );
-        }
-      } catch {
-        // ignore JSON parse error
-      }
-    }
-
-    // Fit every App window (any size / ratio) completely inside the LMS-safe 960×540 (16:9) frame,
-    // so no button or edge of the App is cut off when the LMS viewer shows the image.
-    capturedItems = await normalizeCapturedAppWindowsToLms(capturedItems, outDir, referencedFiles);
   } else if (htmlFiles.length > 0) {
     const maxHtmlShots = Math.max(
       1,

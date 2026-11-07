@@ -125,24 +125,38 @@ export function normalizeVietnameseName(input: string): string {
     .trim();
 }
 
+const GENERIC_SPCK_FOLDER_AFFIX_REGEX =
+  /^(?:spck|san\s*pham\s*cuoi\s*khoa|du\s*an\s*cuoi\s*khoa|bai\s*tap\s*cuoi\s*khoa|bai\s*lam\s*cuoi\s*khoa|bai\s*cuoi\s*khoa|sp\s*cuoi\s*khoa|da\s*cuoi\s*khoa|bai\s*thuyet\s*trinh|bai\s*thuyet\s*tring|thuyet\s*trinh|thuyet\s*tring|final\s*project|project|san\s*pham|du\s*an|hoc\s*vien|hoc\s*sinh|hs|hv|st|stu|ls\s*\d{0,3}|lesson\s*\d{0,3}|buoi\s*\d{0,3}|bai\s*\d{1,3}|session\s*\d{0,3})(?:\s+|$)|(?:\s+|^)(?:spck|san\s*pham\s*cuoi\s*khoa|du\s*an\s*cuoi\s*khoa|bai\s*tap\s*cuoi\s*khoa|bai\s*lam\s*cuoi\s*khoa|bai\s*cuoi\s*khoa|sp\s*cuoi\s*khoa|da\s*cuoi\s*khoa|bai\s*thuyet\s*trinh|bai\s*thuyet\s*tring|thuyet\s*trinh|thuyet\s*tring|final\s*project)$|(?:^(?:[a-z]{2,4}\s+c4k\s+)?(?:pta|ptb|pti|csa|csb|csi|jsa|jsb|jsi|gma|gmb|gmi|ga|gb|gi|sa|sb|si|rob|preb|prea|prei|arm|arma|armb|armi|sem|sema|semb|semi)\d{1,4}\b|\b(?:[a-z]{2,4}\s+c4k\s+)?(?:pta|ptb|pti|csa|csb|csi|jsa|jsb|jsi|gma|gmb|gmi|ga|gb|gi|sa|sb|si|rob|preb|prea|prei|arm|arma|armb|armi|sem|sema|semb|semi)\d{1,4}$)/i;
+
 /**
  * Extracts candidate name variants from a folder name.
  * E.g. "01_Ngo_Khoi_Nguyen" -> exact normalized "01 ngo khoi nguyen", stripped prefix "ngo khoi nguyen".
+ * E.g. "du_an_cuoi_khoa_Khang" -> stripped prefix "khang".
+ * E.g. "Sản phẩm cuối khóa Tú An" -> stripped prefix "tu an".
+ * E.g. "bai thuyet tring" -> stripped to "" (`isGenericOnly: true`).
  */
 export function extractFolderNameVariants(folderName: string): {
   strictNormalized: string;
   cleanedVariant: string;
+  isGenericOnly?: boolean;
 } {
   const strictNormalized = normalizeVietnameseName(folderName);
-  const cleanedVariant = strictNormalized
-    .replace(/^(?:spck|bai\s*cuoi\s*khoa|final\s*project|project|hs|hv|st|stu)\s+/i, "")
-    .replace(/^\d{1,3}\s+/, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  let cleaned = strictNormalized.replace(/^\d{1,3}(?:\s+|$)/, "").trim();
+  for (let i = 0; i < 4 && cleaned; i++) {
+    const next = cleaned
+      .replace(GENERIC_SPCK_FOLDER_AFFIX_REGEX, " ")
+      .replace(/^\d{1,3}(?:\s+|$)/, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (next === cleaned) break;
+    cleaned = next;
+  }
 
+  const isGenericOnly = Boolean(strictNormalized) && cleaned.length === 0;
   return {
     strictNormalized,
-    cleanedVariant: cleanedVariant || strictNormalized,
+    cleanedVariant: cleaned,
+    isGenericOnly,
   };
 }
 
@@ -183,9 +197,9 @@ export function levenshteinDistance(a: string, b: string): number {
  */
 export function calculateNameSimilarity(folderName: string, studentFullName: string): number {
   const normStudent = normalizeVietnameseName(studentFullName);
-  const { strictNormalized, cleanedVariant } = extractFolderNameVariants(folderName);
+  const { strictNormalized, cleanedVariant, isGenericOnly } = extractFolderNameVariants(folderName);
 
-  if (!normStudent || !strictNormalized) {
+  if (!normStudent || !strictNormalized || isGenericOnly || !cleanedVariant) {
     return 0;
   }
 
@@ -206,7 +220,7 @@ export function calculateNameSimilarity(folderName: string, studentFullName: str
     return 0;
   }
 
-  // Check if all student tokens appear in order inside folderTokens
+  // Check if all student tokens appear inside folderTokens
   let matchedStudentTokens = 0;
   for (const st of studentTokens) {
     if (folderTokens.includes(st)) {
@@ -233,6 +247,16 @@ export function calculateNameSimilarity(folderName: string, studentFullName: str
   let combined = tokenF1 * 0.65 + editSimilarity * 0.35;
   if (givenNameMatches && matchedStudentTokens >= Math.min(2, studentTokens.length)) {
     combined = Math.max(combined, 0.75 * tokenRecall + 0.2 * editSimilarity);
+    if (tokenPrecision === 1 && folderTokens.length >= 2) {
+      combined = Math.max(combined, 0.85);
+    }
+  } else if (
+    givenNameMatches &&
+    folderTokens.length === 1 &&
+    folderTokens[0] === studentGivenName
+  ) {
+    // Single-token given-name folder (e.g. "Khang" or "du_an_cuoi_khoa_Khang" -> "khang" vs "PHẠM THIỆN HOÀNG KHANG")
+    combined = Math.max(combined, 0.72 + 0.08 * tokenRecall);
   } else if (!givenNameMatches) {
     combined *= 0.6;
   }
@@ -300,7 +324,9 @@ export function matchFoldersToStudents(
     const hasDuplicateFullName = Boolean(
       suggestedNorm && (normNameCount.get(suggestedNorm) || 0) > 1
     );
-    const folderTokenCount = normalizedFolderName.split(" ").filter(Boolean).length;
+    const { cleanedVariant } = extractFolderNameVariants(folder.folderName);
+    const effectiveTokenSource = cleanedVariant || normalizedFolderName;
+    const folderTokenCount = effectiveTokenSource.split(" ").filter(Boolean).length;
     const hasDuplicateShortName = Boolean(
       folderTokenCount <= 2 && suggestedGiven && (givenNameCount.get(suggestedGiven) || 0) > 1
     );

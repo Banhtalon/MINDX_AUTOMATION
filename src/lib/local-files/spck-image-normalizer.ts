@@ -379,12 +379,12 @@ sys.stdout.write(base64.b64encode(bytes(ba)).decode("ascii"))
 }
 
 /**
- * Normalizes a batch of images into PNG buffers of exactly `960×540`.
+ * Synchronously normalizes a batch of images into PNG buffers of exactly `960×540`.
  * Returns `null` for any job whose source image cannot be decoded (caller keeps the original).
  */
-export async function normalizeImagesToLms16x9(
+export function normalizeImagesToLms16x9Sync(
   jobs: NormalizeImageJob[]
-): Promise<Array<Buffer | null>> {
+): Array<Buffer | null> {
   if (jobs.length === 0) return [];
   const results: Array<Buffer | null> = jobs.map(() => null);
 
@@ -407,4 +407,14 @@ export async function normalizeImagesToLms16x9(
   }
 
   return results;
+}
+
+/**
+ * Normalizes a batch of images into PNG buffers of exactly `960×540`.
+ * Returns `null` for any job whose source image cannot be decoded (caller keeps the original).
+ */
+export async function normalizeImagesToLms16x9(
+  jobs: NormalizeImageJob[]
+): Promise<Array<Buffer | null>> {
+  return normalizeImagesToLms16x9Sync(jobs);
 }
