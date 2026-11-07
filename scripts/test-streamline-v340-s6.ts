@@ -436,6 +436,94 @@ async function runTests() {
       "Point 3: Stale Report Card step on Dashboard must show 'Cần quét và đồng bộ lại'"
     );
 
+    // SPCK Dashboard rule (Cách 2): Once a session has been verified on LMS (`lastVerifiedAt` / `lastVerifiedHash`),
+    // subsequent local draft edits (`WAITING_APPROVAL` / `DRAFT`) must still keep `Nộp SPCK Buổi 12` marked as Done on Dashboard.
+    db.prepare(
+      `UPDATE spck_session_submissions
+       SET draftStatus = 'WAITING_APPROVAL',
+           lastVerifiedAt = '2026-11-05 08:14:07',
+           lastVerifiedHash = 'hash_verified_12'
+       WHERE classId = 'VT-C4K-JSB12' AND studentId = 'STU_1' AND sessionNumber = 12`
+    ).run();
+    const cardsEditedAfterVerify = getDashboardTodayTodoCards({ limit: 10 });
+    assert.equal(
+      cardsEditedAfterVerify.find((c) => c.classId === "VT-C4K-JSB12")!.steps[1].isDone,
+      true,
+      "Once SPCK Session 12 has been verified on LMS (lastVerifiedAt present), local draft edits (WAITING_APPROVAL) must still count as Done on Dashboard"
+    );
+
+    // Conversely, if never verified on LMS (no lastVerifiedAt / lastVerifiedHash) and draftStatus is WAITING_APPROVAL, it must be pending
+    db.prepare(
+      `UPDATE spck_session_submissions
+       SET draftStatus = 'WAITING_APPROVAL',
+           lastVerifiedAt = NULL,
+           lastVerifiedHash = ''
+       WHERE classId = 'VT-C4K-JSB12' AND studentId = 'STU_1' AND sessionNumber = 12`
+    ).run();
+    const cardsNeverVerified = getDashboardTodayTodoCards({ limit: 10 });
+    assert.equal(
+      cardsNeverVerified.find((c) => c.classId === "VT-C4K-JSB12")!.steps[1].isDone,
+      false,
+      "Unverified SPCK Session 12 (no lastVerifiedAt/lastVerifiedHash) must remain not done on Dashboard"
+    );
+    // Restore STU_1 to VERIFIED
+    db.prepare(
+      `UPDATE spck_session_submissions
+       SET draftStatus = 'VERIFIED',
+           lastVerifiedAt = '2026-11-06 20:50:42',
+           lastVerifiedHash = 'hash_verified_12'
+       WHERE classId = 'VT-C4K-JSB12' AND studentId = 'STU_1' AND sessionNumber = 12`
+    ).run();
+
+    // 1-week (7-day) Finished class expiration & next-tier successor transition (e.g. VT-JSB15 -> VT-JSA15, VT-C4K-PTA12 -> VT-C4K-PTI12)
+    const fmtDmy = (d: Date) =>
+      `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+    const nowRef = new Date();
+    const d3DaysAgo = fmtDmy(new Date(nowRef.getTime() - 3 * 24 * 60 * 60 * 1000));
+    const d10DaysAgo = fmtDmy(new Date(nowRef.getTime() - 10 * 24 * 60 * 60 * 1000));
+    fs.writeFileSync(
+      testRunningClassesPath,
+      JSON.stringify(
+        [
+          { classCode: "VT-C4K-JSB01", className: "JSB 01", currentSessionNumber: 1, status: "Running" },
+          { classCode: "VT-C4K-JSB05", className: "JSB 05", currentSessionNumber: 5, status: "Running" },
+          { classCode: "VT-C4K-JSB12", className: "JSB 12", currentSessionNumber: 12, status: "Running" },
+          { classCode: "VT-C4K-JSB14", className: "JSB 14", currentSessionNumber: 14, status: "Running" },
+          { classCode: "VT-JSA15", className: "JSA 15", currentSessionNumber: 1, status: "Running" },
+          { classCode: "VT-C4K-PTI12", className: "PTI 12", currentSessionNumber: 1, status: "Running" },
+          { classCode: "VT-JSB15", className: "JSB 15", status: "Finished", endDate: d3DaysAgo },
+          { classCode: "VT-C4K-PTA12", className: "PTA 12", status: "Finished", endDate: d10DaysAgo },
+          { classCode: "VT-C4K-GI99", className: "GI 99", status: "Finished", endDate: d10DaysAgo },
+          { classCode: "VT-C4K-GI98", className: "GI 98", status: "Finished", endDate: d3DaysAgo },
+        ],
+        null,
+        2
+      ),
+      "utf8"
+    );
+    const cardsWithFinishedFilter = getDashboardTodayTodoCards({ limit: 20 });
+    const cardIds = cardsWithFinishedFilter.map((c) => c.classId);
+    assert.equal(
+      cardIds.includes("VT-JSB15"),
+      false,
+      "Finished class VT-JSB15 must be excluded once successor VT-JSA15 is Running"
+    );
+    assert.equal(
+      cardIds.includes("VT-C4K-PTA12"),
+      false,
+      "Finished class VT-C4K-PTA12 (>7d and superseded by VT-C4K-PTI12) must be excluded"
+    );
+    assert.equal(
+      cardIds.includes("VT-C4K-GI99"),
+      false,
+      "Finished class VT-C4K-GI99 (>7 days old) must be excluded on Dashboard"
+    );
+    assert.equal(
+      cardIds.includes("VT-C4K-GI98"),
+      true,
+      "Finished class VT-C4K-GI98 (<=7 days old and no successor) must still be tracked during the 1-week grace period"
+    );
+
     console.log(
       "  -> PASS [S6-T2]: Thẻ 'Việc cần làm hôm nay' (Buổi 1, 5, 7, 11, 12, 14 + S6-04/S6-05 + Point 3) hoạt động chính xác.\n"
     );

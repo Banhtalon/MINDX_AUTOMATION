@@ -5,6 +5,10 @@ import {
 } from "@/lib/db/json-config";
 import { getDb, normalizeTeachingProjectTasks } from "@/lib/db/sqlite";
 import { listClasses } from "@/lib/classes/class-directory";
+import {
+  DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
+  isFinishedClassSupersededByRunningSuccessor,
+} from "@/lib/playwright/sync-class";
 import { isCheckpointSession } from "@/lib/quick-tags";
 import { computeReportCardStaleness } from "@/lib/report-card/report-card-staleness";
 import { mapSessionToTeachingProgressMilestone } from "@/lib/teaching/session-progress-mapper";
@@ -314,8 +318,14 @@ function computeAverageTeachingProgressPercent(
 export function getDashboardTodayTodoCards(options?: {
   limit?: number;
   includeSynthetic?: boolean;
+  includeFinishedDays?: number;
 }): ClassTodayTodoCard[] {
-  const limit = options?.limit ?? 12;
+  const limit = options?.limit ?? 24;
+  const includeFinishedDays =
+    typeof options?.includeFinishedDays === "number" &&
+    Number.isFinite(options.includeFinishedDays)
+      ? Math.max(0, options.includeFinishedDays)
+      : DASHBOARD_FINISHED_CLASS_GRACE_DAYS;
   try {
     const db = getDb();
     const syllabusList = getCoursesSyllabus();
@@ -332,10 +342,26 @@ export function getDashboardTodayTodoCards(options?: {
         String(r.status || "").trim().toUpperCase(),
       ])
     );
+    const activeRunningCodes = new Set(
+      rawRunningList
+        .filter((r) => String(r.status || "").trim().toUpperCase() !== "FINISHED")
+        .map((r) => String(r.classCode || "").trim().toUpperCase())
+        .filter(Boolean)
+    );
     const classes = listClasses({
       scope: "running",
+      includeFinishedDays,
       includeSynthetic: options?.includeSynthetic ?? false,
-    }).slice(0, limit);
+    })
+      .filter(
+        (cls) =>
+          cls.status !== "Finished" ||
+          !isFinishedClassSupersededByRunningSuccessor(
+            cls.classCode,
+            activeRunningCodes
+          )
+      )
+      .slice(0, limit);
 
     return classes.map((cls) => {
       const classId = cls.classCode;
@@ -443,13 +469,16 @@ export function getDashboardTodayTodoCards(options?: {
 
       const spckSessionRows = db
         .prepare(
-          `SELECT studentId, sessionNumber, draftStatus FROM spck_session_submissions
+          `SELECT studentId, sessionNumber, draftStatus, lastVerifiedHash, lastVerifiedAt
+           FROM spck_session_submissions
            WHERE classId = ?`
         )
         .all(classId) as Array<{
         studentId?: string;
         sessionNumber?: number;
         draftStatus?: string;
+        lastVerifiedHash?: string | null;
+        lastVerifiedAt?: string | null;
       }>;
 
       const checkSpckSessionVerified = (targetSess: 12 | 13 | 14): boolean => {
@@ -469,20 +498,48 @@ export function getDashboardTodayTodoCards(options?: {
         if (requiredSpckStudentIds.length === 0) return false;
         return requiredSpckStudentIds.every((sid) => {
           const sessRec = sessByStudent.get(sid);
-          if (sessRec) {
-            return sessRec.draftStatus === "VERIFIED";
-          }
           const row = spckByStudent.get(sid);
-          if (!row) return false;
-          try {
-            const map = JSON.parse(row.sessionResultsJson || "{}") as Record<
-              string,
-              { status?: string }
-            >;
-            return map[String(targetSess)]?.status === "VERIFIED";
-          } catch {
-            return targetSess === 13 && row.status === "VERIFIED";
+          let hasVerifiedInResultsMap = false;
+          if (row?.sessionResultsJson) {
+            try {
+              const map = JSON.parse(row.sessionResultsJson || "{}") as Record<
+                string,
+                {
+                  status?: string;
+                  lastVerifiedAt?: string | null;
+                  verifiedAt?: string | null;
+                  lastVerifiedContentHash?: string | null;
+                }
+              >;
+              const entry = map[String(targetSess)];
+              hasVerifiedInResultsMap =
+                entry?.status === "VERIFIED" ||
+                Boolean(
+                  String(
+                    entry?.lastVerifiedAt ||
+                      entry?.verifiedAt ||
+                      entry?.lastVerifiedContentHash ||
+                      ""
+                  ).trim()
+                );
+            } catch {
+              hasVerifiedInResultsMap = targetSess === 13 && row.status === "VERIFIED";
+            }
           }
+          if (sessRec) {
+            if (sessRec.draftStatus === "VERIFIED") return true;
+            if (sessRec.draftStatus === "FAILED") return false;
+            return (
+              Boolean(String(sessRec.lastVerifiedAt || "").trim()) ||
+              Boolean(String(sessRec.lastVerifiedHash || "").trim()) ||
+              hasVerifiedInResultsMap
+            );
+          }
+          if (!row) return false;
+          return (
+            hasVerifiedInResultsMap ||
+            (targetSess === 13 && row.status === "VERIFIED")
+          );
         });
       };
 

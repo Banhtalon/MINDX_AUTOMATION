@@ -4,7 +4,8 @@ import { taskQueue } from "@/lib/queue/task-queue";
 import { ensureQueueNotStopped } from "@/lib/teaching/teaching-http-client";
 import {
   ClassSyncer,
-  FINISHED_CLASS_GRACE_DAYS,
+  DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
+  isFinishedClassSupersededByRunningSuccessor,
   isFinishedClassWithinGraceWindow,
 } from "@/lib/playwright/sync-class";
 import { TeachingProjectService } from "@/lib/playwright/teaching-project-service";
@@ -19,7 +20,7 @@ export async function GET(req: Request) {
   if (guard) return guard;
 
   try {
-    const cards = getDashboardTodayTodoCards({ limit: 12 });
+    const cards = getDashboardTodayTodoCards({ limit: 24 });
     return NextResponse.json({
       success: true,
       cards,
@@ -67,16 +68,28 @@ export async function POST(req: Request) {
         const rawList =
           Array.isArray(fetchRes.classes) && fetchRes.classes.length > 0
             ? fetchRes.classes
-            : listClasses({ scope: "running" });
+            : listClasses({
+                scope: "running",
+                includeFinishedDays: DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
+              });
+        const activeRunningCodes = new Set(
+          rawList
+            .filter((item) => item?.status !== "Finished")
+            .map((item) => String(item?.classCode || "").trim().toUpperCase())
+            .filter(Boolean)
+        );
 
         for (const item of rawList) {
           const code = String(item?.classCode || "").trim().toUpperCase();
           if (!code || seen.has(code) || isSyntheticClassCode(code)) continue;
           if (item.status === "Finished") {
+            if (isFinishedClassSupersededByRunningSuccessor(code, activeRunningCodes)) {
+              continue;
+            }
             const grace = isFinishedClassWithinGraceWindow(
               code,
               item.endDate,
-              FINISHED_CLASS_GRACE_DAYS
+              DASHBOARD_FINISHED_CLASS_GRACE_DAYS
             );
             if (
               grace.isKnownDate &&
@@ -130,7 +143,7 @@ export async function POST(req: Request) {
       },
     });
 
-    const cards = getDashboardTodayTodoCards({ limit: 12 });
+    const cards = getDashboardTodayTodoCards({ limit: 24 });
 
     if (!outcome.ok) {
       return NextResponse.json(
@@ -156,7 +169,7 @@ export async function POST(req: Request) {
       {
         success: false,
         error: err instanceof Error ? err.message : String(err),
-        cards: getDashboardTodayTodoCards({ limit: 12 }),
+        cards: getDashboardTodayTodoCards({ limit: 24 }),
       },
       { status: 500 }
     );

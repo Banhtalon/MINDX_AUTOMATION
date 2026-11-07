@@ -30,7 +30,59 @@ const toVietnameseUpperSlug =
     : (console as any).__mindxVietnameseMatch?.toVietnameseUpperSlug;
 
 export const FINISHED_CLASS_GRACE_DAYS = 15;
+export const DASHBOARD_FINISHED_CLASS_GRACE_DAYS = 7;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Checks whether a Finished class (e.g. `VT-JSB15`, `VT-C4K-PTA12`) has already
+ * transitioned to its next-tier Running class (`B -> A/I` or `A -> I`, e.g. `VT-JSA15`, `VT-C4K-PTI12`).
+ */
+export function isFinishedClassSupersededByRunningSuccessor(
+  finishedClassCode: string,
+  activeRunningCodes: Iterable<string>
+): boolean {
+  const code = String(finishedClassCode || "").trim().toUpperCase();
+  if (!code) return false;
+
+  const match = code.match(
+    /^(.*?(?:^|[-_])(?:JS|PT|CS|S|G|GM|PRE|ARM|SEMI))([BAI])(\d+)((?:[-_].*)?)$/i
+  );
+  if (!match) return false;
+
+  const prefixTrack = match[1].toUpperCase();
+  const tier = match[2].toUpperCase();
+  const cohortRaw = match[3];
+  const suffix = (match[4] || "").toUpperCase();
+
+  const nextTiers =
+    tier === "B" ? ["A", "I"] : tier === "A" ? ["I"] : [];
+  if (nextTiers.length === 0) return false;
+
+  const runningSet = new Set<string>();
+  for (const r of activeRunningCodes) {
+    const norm = String(r || "").trim().toUpperCase();
+    if (norm) runningSet.add(norm);
+  }
+  if (runningSet.size === 0) return false;
+
+  const cohortVariants = Array.from(
+    new Set([
+      cohortRaw,
+      String(Number(cohortRaw)),
+      String(Number(cohortRaw)).padStart(2, "0"),
+    ])
+  );
+
+  for (const nextTier of nextTiers) {
+    for (const cNum of cohortVariants) {
+      const candidate = `${prefixTrack}${nextTier}${cNum}${suffix}`;
+      if (runningSet.has(candidate)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 /**
  * Parses a date string (`DD/MM/YYYY`, `DD-MM-YYYY`, `YYYY-MM-DD`, `YYYY/MM/DD`, or `DD/MM/YY`)
@@ -1620,11 +1672,11 @@ export class ClassSyncer {
             continue;
           }
 
-          // Status === "Finished": only include if within FINISHED_CLASS_GRACE_DAYS (15 days) after Buổi 14
+          // Status === "Finished": only include if within DASHBOARD_FINISHED_CLASS_GRACE_DAYS (7 days = 1 week) after Buổi 14
           const graceCheck = isFinishedClassWithinGraceWindow(
             item.classCode,
             item.rowEndDate,
-            FINISHED_CLASS_GRACE_DAYS,
+            DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
             nowMs
           );
           if (graceCheck.isKnownDate) {
@@ -1716,7 +1768,7 @@ export class ClassSyncer {
             const graceCheck = isFinishedClassWithinGraceWindow(
               code,
               null,
-              FINISHED_CLASS_GRACE_DAYS,
+              DASHBOARD_FINISHED_CLASS_GRACE_DAYS,
               nowMs
             );
             if (graceCheck.isKnownDate && graceCheck.withinWindow) {
@@ -1734,7 +1786,16 @@ export class ClassSyncer {
         // Ignore DB fallback errors
       }
 
-      const runningList = Array.from(collectedMap.values());
+      const activeRunningCodeSet = new Set(
+        Array.from(collectedMap.values())
+          .filter((c) => c.status !== "Finished")
+          .map((c) => c.classCode)
+      );
+      const runningList = Array.from(collectedMap.values()).filter(
+        (c) =>
+          c.status !== "Finished" ||
+          !isFinishedClassSupersededByRunningSuccessor(c.classCode, activeRunningCodeSet)
+      );
       const shouldPersist = options?.persistToConfig !== false;
       if (runningList.length > 0 && shouldPersist) {
         saveRunningClasses(runningList);
@@ -1748,7 +1809,7 @@ export class ClassSyncer {
         jobId,
         jobType: "SYNC_CLASS",
         level: "SUCCESS",
-        message: `Đã lấy thành công ${finalClasses.length} lớp từ LMS (${runningOnlyCount} lớp Running + ${recentFinishedCount} lớp Finished trong vòng ${FINISHED_CLASS_GRACE_DAYS} ngày sau Buổi 14): ${finalClasses
+        message: `Đã lấy thành công ${finalClasses.length} lớp từ LMS (${runningOnlyCount} lớp Running + ${recentFinishedCount} lớp Finished trong vòng ${DASHBOARD_FINISHED_CLASS_GRACE_DAYS} ngày sau Buổi 14): ${finalClasses
           .map((c) => `${c.classCode}${c.status === "Finished" ? " [Finished]" : ""}`)
           .join(", ")}.`,
       });

@@ -2,6 +2,7 @@ import { getRunningClasses, type RunningClassItem } from "@/lib/db/json-config";
 import { getDb, studentRepo, type StudentRecord } from "@/lib/db/sqlite";
 import {
   FINISHED_CLASS_GRACE_DAYS,
+  isFinishedClassSupersededByRunningSuccessor,
   isFinishedClassWithinGraceWindow,
   resolveClassDateRangeInfo,
 } from "@/lib/playwright/sync-class";
@@ -150,6 +151,12 @@ export function queryClassDirectory(options?: ListClassesOptions): {
 
   const allClassesMap = new Map<string, ClassDirectoryItem>();
   const classes: ClassDirectoryItem[] = [];
+  const activeRunningCodeSet = new Set<string>();
+  for (const [cCode, cItem] of cachedRunningMap.entries()) {
+    if (cItem.status !== "Finished") {
+      activeRunningCodeSet.add(cCode);
+    }
+  }
 
   for (const code of orderedCodes) {
     const isSynth = isSyntheticClassCode(code);
@@ -159,7 +166,10 @@ export function queryClassDirectory(options?: ListClassesOptions): {
 
     const cachedItem = cachedRunningMap.get(code);
     const dbRow = dbRowMap.get(code);
-    const isFinishedStatus = cachedItem?.status === "Finished";
+    const rawCachedStatus = String(cachedItem?.status || "").trim().toUpperCase();
+    const isFinishedStatus = rawCachedStatus === "FINISHED";
+    const isExplicitRunningStatus =
+      rawCachedStatus === "RUNNING" || rawCachedStatus === "ACTIVE";
 
     const activeSess = Number(dbRow?.activeSessionNumber) || 0;
     const maxSess = Number(dbRow?.maxSessionNumber) || 0;
@@ -183,7 +193,7 @@ export function queryClassDirectory(options?: ListClassesOptions): {
 
     const resolvedStatus: "Running" | "Finished" = isFinishedStatus
       ? "Finished"
-      : cachedItem?.status === "Running"
+      : isExplicitRunningStatus
       ? "Running"
       : !isSynth &&
         graceCheck.isKnownDate &&
@@ -191,14 +201,15 @@ export function queryClassDirectory(options?: ListClassesOptions): {
       ? "Finished"
       : "Running";
 
-    // Unified 15-day grace rule for `running` and `spck` scopes:
-    // Exclude classes that have finished Buổi 14 more than `includeFinishedDays` ago.
+    // Unified grace rule for `running` and `spck` scopes:
+    // Exclude classes that have finished Buổi 14 more than `includeFinishedDays` ago,
+    // or have already transitioned to their next-tier Running class (e.g. JSB15 -> JSA15, PTA12 -> PTI12).
     if (
       scope !== "all" &&
       resolvedStatus === "Finished" &&
-      graceCheck.isKnownDate &&
-      !graceCheck.withinWindow &&
-      (!isSynth || isFinishedStatus)
+      (!isSynth || isFinishedStatus) &&
+      ((graceCheck.isKnownDate && !graceCheck.withinWindow) ||
+        isFinishedClassSupersededByRunningSuccessor(code, activeRunningCodeSet))
     ) {
       continue;
     }

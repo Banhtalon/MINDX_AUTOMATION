@@ -14,7 +14,14 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ---
 
-## [v3.4.0] — 2026-10-30 / 2026-11-06 (Giai Đoạn 10: Tinh Gọn Luồng Nghiệp Vụ, Giảm Số Lần Bấm & Liên Thông 5 Màn Hình `S0` $\rightarrow$ `S8`)
+## [v3.4.0] — 2026-10-30 / 2026-11-07 (Giai Đoạn 10: Tinh Gọn Luồng Nghiệp Vụ, Giảm Số Lần Bấm & Liên Thông 5 Màn Hình `S0` $\rightarrow$ `S8`)
+
+- **Cập Nhật Quy Tắc Đánh Dấu Hoàn Thành SPCK Trên Trang Chủ & Tự Động Ngừng Theo Dõi Lớp Đã Kết Thúc Sau 1 Tuần Hoặc Đã Lên Lớp Kế Tiếp (`src/lib/dashboard/today-tasks.ts`, `src/lib/playwright/sync-class.ts`, `src/lib/classes/class-directory.ts`, `src/app/api/dashboard/scan-weekly-tasks/route.ts`, `scripts/test-streamline-v340-s6.ts` — 2026-11-07):**
+  1. **Quy tắc hoàn thành bước `Nộp SPCK Buổi 12 / 13 / 14` trên Trang chủ (`checkSpckSessionVerified` trong `src/lib/dashboard/today-tasks.ts`):**
+     - Khi toàn bộ học viên đang học (`isActive = 1`) đã nộp và được xác thực (`VERIFIED`) buổi SPCK đó trên LMS ít nhất 1 lần (`draftStatus === "VERIFIED"` hoặc đã có bằng chứng `lastVerifiedAt` / `lastVerifiedHash` trong `spck_session_submissions` hoặc `sessionResultsJson[targetSess]` trong `spck_uploads`, và không ở trạng thái lỗi `FAILED`), Trang chủ tự động đánh dấu hoàn thành **`✓ Nộp SPCK Buổi X`**, kể cả khi trên máy tính có bản nháp chỉnh sửa mới (`Đã nộp ✓ (Có bản sửa mới)`) hoặc tệp gốc thay đổi (`Đã nộp ✓ (Tệp gốc đã đổi)`).
+  2. **Tự động ngừng theo dõi các lớp đã kết thúc quá 1 tuần (`7 ngày`) hoặc đã chuyển sang lớp cấp độ kế tiếp (`DASHBOARD_FINISHED_CLASS_GRACE_DAYS = 7` & `isFinishedClassSupersededByRunningSuccessor`):**
+     - Thiết lập thời hạn theo dõi lớp đã kết thúc (`Finished`) trên Trang chủ và khi quét công việc tuần là **7 ngày (1 tuần)** sau Buổi 14 (`DASHBOARD_FINISHED_CLASS_GRACE_DAYS = 7`).
+     - Bổ sung hàm `isFinishedClassSupersededByRunningSuccessor` tự động nhận diện các lớp `Finished` đã chuyển tiếp lên lớp `Running` khóa sau cùng mã số lớp (`B -> A -> I`, ví dụ `VT-JSB15 -> VT-JSA15`, `VT-C4K-PTA12 -> VT-C4K-PTI12`) để loại bỏ ngay khỏi danh sách theo dõi trên Trang chủ và danh sách lớp đang hoạt động (`queryClassDirectory`, `fetchRunningClasses`, `scan-weekly-tasks`).
 
 - **Tự Động Nhận Diện & Tạo Thư Mục Lớp SPCK Mặc Định `F:\MINDX_SPCK_FINAL` Khi Chọn Lớp $\ge 12$ Buổi & Khớp Thư Mục Học Viên Nộp Qua Cổng Trực Tuyến (`src/lib/local-files/spck-scanner.ts`, `src/lib/security/path-allowlist.ts`, `src/app/api/spck/list/route.ts`, `src/app/api/spck/scan/route.ts`, `src/app/api/spck/browse-folder/route.ts`, `src/lib/student-portal/student-portal-server.ts`, `src/app/final-project/page.tsx`, `src/components/final-project/useSpckWorkflow.ts` — 2026-11-06):**
   1. **Thiết lập `F:\MINDX_SPCK_FINAL` làm thư mục gốc mặc định cho toàn bộ các lớp SPCK trên hệ thống:**
