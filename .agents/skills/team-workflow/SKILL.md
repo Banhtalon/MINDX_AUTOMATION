@@ -2,7 +2,7 @@
 name: team-workflow
 description: >-
   Quy trình phối hợp đội ngũ AI cho dự án MINDX-AUTOMATION: Agent chính điều phối và code chính,
-  claude-sonnet-5-5-high làm Reviewer kiểm định độc lập, opus-5-5-high xử lý các tác vụ quá khó,
+  Codex CLI (gpt-6.1-sol xhigh) làm Reviewer kiểm định độc lập, Subagent Argon High xử lý các tác vụ quá khó,
   và báo cáo cho Owner ngắn gọn, dễ hiểu (không dùng thuật ngữ code phức tạp).
 ---
 
@@ -14,27 +14,27 @@ description: >-
    - Trực tiếp nhận yêu cầu từ Owner, lập kế hoạch, điều phối luồng công việc và trực tiếp viết/sửa phần lớn mã nguồn.
    - Chịu trách nhiệm tổng hợp kết quả và báo cáo lại cho Owner.
 
-2. **Kiểm định viên Độc lập — Reviewer (`claude-sonnet-5-5-high`):**
-   - Sau khi Agent chính hoàn thành một tính năng hoặc giai đoạn, ủy quyền cho Subagent Reviewer (`claude-sonnet-5-5-high`) để:
-     - Kiểm tra chéo chất lượng, độ an toàn và chạy bộ kiểm thử trong môi trường cô lập (`TEMP`).
-     - Đưa ra kết luận **ĐẠT (GO)** hoặc danh sách điểm cần chỉnh sửa trước khi bàn giao cho Owner.
+2. **Kiểm định viên Độc lập — Reviewer (`Codex CLI` — `gpt-6.1-sol` `xhigh`):**
+   - Sau khi Agent chính hoàn thành một tính năng hoặc giai đoạn, gọi **Codex CLI (`gpt-6.1-sol` `xhigh` qua `codex exec`)** để:
+     - Kiểm tra chéo chất lượng, độ an toàn và chạy bộ kiểm thử trong môi trường cô lập (`TEMP`), bảo toàn 100% SHA-256 của 2 tệp dữ liệu thật (`data/mindx_bot.db`, `data/running_classes.json`).
+     - Đưa ra kết luận **ĐẠT (`VERDICT: GO`)** hoặc danh sách điểm cần chỉnh sửa (`NO-GO`) trước khi bàn giao cho Owner.
 
-3. **Chuyên gia Giải quyết Bài toán Khó (`opus-5-5-high` / `Model: "pro"`):**
-   - Chỉ triệu tập khi gặp lỗi kiến trúc phức tạp, xung đột dữ liệu đa luồng khó xử lý, hoặc khi sửa quá 2 lần vẫn chưa triệt để.
+3. **Chuyên gia Giải quyết Bài toán Khó (Subagent `Argon High` — `Model: "pro"` / `"inherit"`):**
+   - Chỉ triệu tập Subagent `Argon High` khi gặp lỗi kiến trúc phức tạp, xung đột dữ liệu đa luồng khó xử lý, hoặc khi sửa quá 2 lần vẫn chưa triệt để (không sử dụng các mô hình Claude).
 
 ---
 
 ## 2. Các Bước Thực Hiện Chuẩn (Standard Operating Steps)
 
 1. **Bước 1 — Tiếp nhận & Triển khai (Main Agent):**
-   - Đọc `MINDX_AUTOMATION_PLAN.md` và `AGENTS.md`.
+   - Đọc `PROJECT_STATE.md`, `MINDX_AUTOMATION_PLAN.md`, `CHANGELOG.md` và `AGENTS.md`.
    - Viết hoặc sửa code, tự chạy kiểm tra nhanh để đảm bảo tính năng hoạt động.
-2. **Bước 2 — Nếu gặp việc quá khó (Escalation -> `opus-5-5-high`):**
-   - Khởi tạo subagent với `Model: "pro"` (vai trò `Opus 5.5 High Escalation Architect`) để phân tích nguyên nhân gốc rễ hoặc thiết kế giải pháp tối ưu.
-3. **Bước 3 — Kiểm định chất lượng (Review -> `claude-sonnet-5-5-high`):**
-   - Khởi tạo subagent Reviewer (`claude-sonnet-5-5-high`) để kiểm tra độc lập toàn bộ phần việc vừa làm.
-   - **Quy tắc chống treo cứng (`stdin`):** Khi giao việc cho bất kỳ Subagent nào, bắt buộc dặn rõ trong Prompt: *"Tuyệt đối KHÔNG dùng `manage_task(Action: 'send_input')` (Thêm dữ liệu từ bàn phím / stdin) vì sẽ làm treo cứng Subagent mà không hiện nút bấm cho Owner; nếu lệnh bị treo chỉ được dùng `Action: 'kill'`."*
-   - Nếu Reviewer phát hiện lỗi: Agent chính sửa ngay và nhờ Reviewer kiểm tra lại cho đến khi đạt 100%.
+2. **Bước 2 — Nếu gặp việc quá khó (Escalation -> Subagent `Argon High`):**
+   - Khởi tạo subagent với `Model: "pro"` / `"inherit"` (vai trò `Argon High Escalation Architect`) để phân tích nguyên nhân gốc rễ hoặc thiết kế giải pháp tối ưu.
+3. **Bước 3 — Kiểm định chất lượng Độc lập (Review -> `Codex CLI` `gpt-6.1-sol` `xhigh`):**
+   - Chạy kiểm định độc lập bằng **Codex CLI (`gpt-6.1-sol` `xhigh`)** để kiểm tra toàn bộ phần việc vừa làm trên bản sao cô lập `TEMP`.
+   - **Quy tắc chống treo cứng (`stdin`):** Cả Agent chính lẫn mọi Subagent tuyệt đối KHÔNG dùng `manage_task(Action: 'send_input')` (Thêm dữ liệu từ bàn phím / stdin) vì sẽ làm treo cứng tiến trình mà không hiện nút bấm cho Owner; nếu lệnh bị treo chỉ được dùng `Action: 'kill'`.
+   - Nếu Reviewer phát hiện lỗi: Agent chính sửa ngay và chạy kiểm định lại cho đến khi đạt `VERDICT: GO` 100%.
 4. **Bước 4 — Báo cáo cho Owner (Ngắn gọn, Dễ hiểu, Không thuật ngữ code):**
    - Luôn trình bày theo ngôn ngữ đời thường, tập trung vào **ý nghĩa sử dụng thực tế** cho giáo viên/chủ dự án.
 

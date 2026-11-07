@@ -30,8 +30,8 @@
    - **Quy tắc Ảnh bìa SPCK (Thumbnail):** Khi quét hoặc nộp Sản phẩm cuối khóa (SPCK), nếu thư mục dự án của học sinh không có hình ảnh riêng, bắt buộc tự động lấy ảnh **Logo MindX (`data/config/default-spck-thumbnail.png`)** làm ảnh bìa (Thumbnail) mặc định.
 6. **Team Workflow & Owner Communication:**
    - **Điều phối & Code chính:** Agent hiện tại điều phối công việc và trực tiếp viết/sửa code chính.
-   - **Reviewer (`claude-sonnet-5-5-high`):** Phụ trách kiểm định độc lập (code review & chạy kiểm thử/kiểm toán chất lượng).
-   - **Escalation (`opus-5-5-high` / `pro`):** Nhờ hỗ trợ khi gặp bài toán hoặc lỗi kỹ thuật quá khó.
+   - **Reviewer (`Codex CLI` — `gpt-6.1-sol` `xhigh`):** Phụ trách kiểm định độc lập qua `codex exec` (code review & chạy kiểm thử/kiểm toán chất lượng trong môi trường cô lập `TEMP`, bảo toàn 100% SHA-256 dữ liệu thật).
+   - **Escalation (Subagent `Argon High` — `Model: "pro"` / `"inherit"`):** Gọi Subagent `Argon High` hỗ trợ khi gặp bài toán hoặc lỗi kỹ thuật quá khó (không sử dụng các mô hình Claude).
    - **Báo cáo cho Owner:** Luôn báo cáo **ngắn gọn, dễ hiểu bằng ngôn ngữ đời thường** vì Owner không biết code (hạn chế tối đa thuật ngữ lập trình phức tạp).
    - **Cấm tuyệt đối `send_input` (`Thêm dữ liệu từ bàn phím (stdin)`):** Cả Agent chính lẫn mọi Subagent **tuyệt đối KHÔNG BAO GIỜ** gọi `manage_task` với `Action: "send_input"`, vì trên giao diện Antigravity khi chạy ngầm hoặc trong Subagent, hộp thoại này không hiện nút bấm ra màn hình chính mà sẽ làm kẹt cứng tiến trình vô thời hạn. Nếu một lệnh chạy nền bị treo, chỉ được dùng `manage_task(Action: "kill")` để tắt đi. Mọi lệnh `run_command` phải chạy ở chế độ tự động thoát (không tương tác bàn phím, đặt `WaitMsBeforeAsync: 10000` cho lệnh kiểm tra nhanh).
 
