@@ -166,7 +166,7 @@ export function parseScratchSb3Buffer(
 ): GameParseResult {
   const inspection = inspectZipArchiveSafely(sb3Buffer, fileName, {
     maxTotalBytes: ZIP_MAX_TOTAL_UNCOMPRESSED_BYTES,
-    maxFiles: 500,
+    maxFiles: 600,
     maxDepth: 10,
   });
 

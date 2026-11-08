@@ -100,7 +100,7 @@ interface IncomingStudentUploadBody {
 
 const MAX_UPLOAD_BODY_BYTES = 180 * 1024 * 1024; // 180 MB JSON payload limit
 const MAX_TOTAL_RAW_BYTES = 130 * 1024 * 1024; // 130 MB raw files limit per student submission
-const MAX_FILES_PER_SUBMISSION = 250;
+const MAX_FILES_PER_SUBMISSION = 600;
 
 const IGNORED_PATH_SEGMENTS = new Set([
   "__pycache__",

@@ -4,7 +4,7 @@ import { parseCodeBuffer } from "./code-reader";
 
 export const ZIP_MAX_TOTAL_UNCOMPRESSED_BYTES = 50 * 1024 * 1024; // 50 MB
 export const ZIP_MAX_SINGLE_FILE_BYTES = 15 * 1024 * 1024; // 15 MB per single file
-export const ZIP_MAX_FILE_COUNT = 200;
+export const ZIP_MAX_FILE_COUNT = 600;
 export const ZIP_MAX_DIRECTORY_DEPTH = 10;
 export const ZIP_MAX_COMPRESSION_RATIO = 200; // Guard against extreme compression ratio bombs
 
@@ -88,7 +88,7 @@ export interface SafeZipInspectionResult {
  * Inspects a ZIP archive buffer (for .zip, .sb3, .yyz) with strict security guards:
  * - Path traversal detection (`..`, absolute paths, Windows drive prefixes)
  * - Directory depth limit (max 10 levels)
- * - Total file count limit (max 200 active files)
+ * - Total file count limit (max 600 active files)
  * - Total uncompressed size limit (max 50 MB) + suspicious compression ratio check
  * - Filters out `node_modules/`, `.git/`, `__pycache__/`, etc.
  */

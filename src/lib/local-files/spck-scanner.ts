@@ -40,6 +40,7 @@ export const DEFAULT_SPCK_BASE_DIR = "F:\\MINDX_SPCK_FINAL";
 export const MAX_SPCK_TITLE_LENGTH = 100;
 export const MAX_SPCK_SCREENSHOTS = 10;
 export const MAX_SPCK_ATTACHMENTS = 10;
+export const MAX_SPCK_BUNDLE_ZIP_FILES = 600;
 export const MAX_SPCK_YOUTUBE_URLS = 5;
 export const MAX_SPCK_RELATED_LINKS = 5;
 
@@ -2056,7 +2057,7 @@ export function scanStudentSpckFolder(
       const skippedWebBundleFileNames: string[] = [];
       let totalWebZipBytes = 0;
       for (const webFile of webSourceFiles) {
-        if (zipEntries.length >= 190) {
+        if (zipEntries.length >= MAX_SPCK_BUNDLE_ZIP_FILES) {
           skippedWebBundleFileNames.push(webFile.relPosix);
           continue;
         }
@@ -2070,7 +2071,7 @@ export function scanStudentSpckFolder(
         totalWebZipBytes += buf.length;
       }
       for (const assetFile of nonOwnerAppAssets) {
-        if (zipEntries.length >= 190) {
+        if (zipEntries.length >= MAX_SPCK_BUNDLE_ZIP_FILES) {
           skippedWebBundleFileNames.push(assetFile.relPosix);
           continue;
         }
@@ -2095,7 +2096,7 @@ export function scanStudentSpckFolder(
         validAttachments.push(bundleZipPath, ...unbundledAttachments);
         if (skippedWebBundleFileNames.length > 0) {
           warnings.push(
-            `Gói nén '${path.basename(bundleZipPath)}' đã đạt giới hạn an toàn (190 tệp / 45MB), không thể gộp thêm ${skippedWebBundleFileNames.length} tệp (${skippedWebBundleFileNames.slice(0, 5).join(", ")}${skippedWebBundleFileNames.length > 5 ? "..." : ""}).`
+            `Gói nén '${path.basename(bundleZipPath)}' đã đạt giới hạn an toàn (${MAX_SPCK_BUNDLE_ZIP_FILES} tệp / 45MB), không thể gộp thêm ${skippedWebBundleFileNames.length} tệp (${skippedWebBundleFileNames.slice(0, 5).join(", ")}${skippedWebBundleFileNames.length > 5 ? "..." : ""}).`
           );
         }
       } else {
@@ -2119,14 +2120,16 @@ export function scanStudentSpckFolder(
 
   // Package multi-file / subfolder App/Code source files (.py/.ui/.qss/.ipynb/...) and project assets (img/, Image/, Icon/...)
   // into a single .zip attachment when the student's App/Code project exceeds the 10-file LMS attachment limit or organizes code/UI/assets in subfolders.
+  const hasAppUiOrQssFiles = appSourceFiles.some((f) => /\.(?:ui|qss)$/i.test(f.fullPath));
   if (
     !hasWebProjectHtmlFiles &&
     !hasUnpackedGameMakerProject &&
     !hasRawYyzArchive &&
     hasAppProjectCodeFiles &&
     appSourceFiles.length > 0 &&
-    (validAttachments.length > MAX_SPCK_ATTACHMENTS ||
-      appSourceFiles.length > MAX_SPCK_ATTACHMENTS ||
+    ((hasAppUiOrQssFiles &&
+      (validAttachments.length > MAX_SPCK_ATTACHMENTS ||
+        appSourceFiles.length > MAX_SPCK_ATTACHMENTS)) ||
       hasSubfolderAppCode ||
       hasSubfolderAppAssets ||
       hasUiWithRootAssets)
@@ -2137,7 +2140,7 @@ export function scanStudentSpckFolder(
       const skippedBundleFileNames: string[] = [];
       let totalZipBytes = 0;
       for (const appFile of appSourceFiles) {
-        if (zipEntries.length >= 190) {
+        if (zipEntries.length >= MAX_SPCK_BUNDLE_ZIP_FILES) {
           skippedBundleFileNames.push(appFile.relPosix);
           continue;
         }
@@ -2151,7 +2154,7 @@ export function scanStudentSpckFolder(
         totalZipBytes += buf.length;
       }
       for (const assetFile of nonOwnerAppAssets) {
-        if (zipEntries.length >= 190) {
+        if (zipEntries.length >= MAX_SPCK_BUNDLE_ZIP_FILES) {
           skippedBundleFileNames.push(assetFile.relPosix);
           continue;
         }
@@ -2176,7 +2179,7 @@ export function scanStudentSpckFolder(
         validAttachments.push(bundleZipPath, ...unbundledAttachments);
         if (skippedBundleFileNames.length > 0) {
           warnings.push(
-            `Gói nén '${path.basename(bundleZipPath)}' đã đạt giới hạn an toàn (190 tệp / 45MB), không thể gộp thêm ${skippedBundleFileNames.length} tệp (${skippedBundleFileNames.slice(0, 5).join(", ")}${skippedBundleFileNames.length > 5 ? "..." : ""}).`
+            `Gói nén '${path.basename(bundleZipPath)}' đã đạt giới hạn an toàn (${MAX_SPCK_BUNDLE_ZIP_FILES} tệp / 45MB), không thể gộp thêm ${skippedBundleFileNames.length} tệp (${skippedBundleFileNames.slice(0, 5).join(", ")}${skippedBundleFileNames.length > 5 ? "..." : ""}).`
           );
         }
       } else {
