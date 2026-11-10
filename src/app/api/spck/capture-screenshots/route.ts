@@ -167,6 +167,17 @@ export async function POST(req: Request) {
       newScreenshots = newScreenshots.filter((p) => p !== newThumbnailPath);
 
       if (newScreenshots.length > MAX_SPCK_SCREENSHOTS) {
+        const isBotGeneratedShot = (p: string) =>
+          /[\\/](?:_spck_app_shots|_spck_youtube_frames)[\\/]/i.test(p);
+        const nonBotShots = newScreenshots.filter((p) => !isBotGeneratedShot(p));
+        const botShots = newScreenshots.filter((p) => isBotGeneratedShot(p));
+        if (botShots.length > 0 && nonBotShots.length <= MAX_SPCK_SCREENSHOTS) {
+          const remainingSlots = Math.max(0, MAX_SPCK_SCREENSHOTS - nonBotShots.length);
+          newScreenshots = [...nonBotShots, ...botShots.slice(0, remainingSlots)];
+        }
+      }
+
+      if (newScreenshots.length > MAX_SPCK_SCREENSHOTS) {
         return NextResponse.json(
           {
             success: false,
