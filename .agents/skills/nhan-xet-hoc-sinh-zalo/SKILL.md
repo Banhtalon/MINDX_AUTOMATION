@@ -43,40 +43,49 @@ Khi xử lý yêu cầu, hãy xác định mã khóa học trong dữ liệu đ�
   - Đường dẫn (link) nếu có phải để nguyên dạng URL trần (ví dụ: `https://...`) để Zalo tự nhận diện.
   - Kết quả cuối cùng chỉ xuất ra duy nhất nội dung thông báo có thể copy trực tiếp vào Zalo, tuyệt đối không giải thích hay trò chuyện thêm ở đầu hoặc cuối câu trả lời.
 
-### 3. Quy Tắc 2 Phần Đầu Ra (Bắt Buộc Tuân Thủ)
+### 3. Quy Tắc Bố Cục 3 Đoạn Đầu Ra (Bắt Buộc Tuân Thủ)
 
-#### PHẦN 1: Mẫu Nhận Xét Tổng Kết Buổi Học
+#### ĐOẠN 1: Tổng Kết Trọng Tâm Sau Buổi Học
 
-Bao gồm 6 mục ngắn gọn, đủ ý theo đúng thứ tự sau:
+Bao gồm các mục ngắn gọn, đủ ý theo đúng thứ tự sau:
 
-1. **Chào hỏi, buổi số, ngày tháng & Mã lớp:**
-   - `@All Kính gửi quý phụ huynh học viên`
-   - `Em xin phép tổng kết sau buổi học số [N+1] – [Ngày + 7 ngày]`
+1. **Câu mở đầu chuẩn (Buổi số, ngày tháng & Mã lớp):**
+   - `@All Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số [N+1] ngày [Ngày + 7 ngày]`
    - `Mã lớp: [Mã lớp]`
-2. **Chuyên cần, tình hình chung:**
+2. **a. Tình hình điểm danh, chuyên cần:**
    - `- Lớp sĩ số [Sĩ số] (vắng bạn [Tên] có phép/không phép - nếu đủ thì ghi đi học đầy đủ) ổn định đầu giờ tốt.`
-   - `- Các con nhớ bài tốt, tự giác trong quá trình học và năng nổ phát biểu, xây dựng bài trong buổi học.` (Nếu giáo viên có ghi chú riêng về tình hình lớp hoặc từng bạn, biên tập lại thật ngắn gọn, súc tích nhưng đủ ý ngay tại đây).
-3. **📘 NỘI DUNG BUỔI HỌC:**
+   - `- Các con nhớ bài tốt, tự giác trong quá trình học và năng nổ phát biểu, xây dựng bài trong buổi học.`
+3. **b. Nội dung bài học & Những điểm cần lưu ý:**
+   - `📘 NỘI DUNG BUỔI HỌC:`
    - Dòng tiêu đề bài học: `BÀI [N+1]: [TÊN BÀI HỌC IN HOA]`
    - 3-4 gạch đầu dòng (`-`) tóm tắt ngắn gọn trong 1 câu các hoạt động tìm hiểu và thực hành lập trình trọng tâm của buổi học.
-4. **📍 NHỮNG ĐIỂM CẦN LƯU Ý:**
+   - `📍 NHỮNG ĐIỂM CẦN LƯU Ý:`
    - 2-3 gạch đầu dòng (`-`) cô đọng các kiến thức, kỹ năng hoặc cơ chế lập trình cốt lõi học viên cần nắm vững và thực hiện được sau buổi học.
-5. **📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:**
-   - `Thời gian: [Giờ học] [Thứ], ngày [Ngày + 7 ngày tiếp theo]`
-   - `Nội dung bài học: BUỔI [N+2]: [TÊN BÀI HỌC KẾ TIẾP IN HOA]`
-6. **📝 NHIỆM VỤ KHI VỀ NHÀ:**
+4. **c. Yêu cầu / dặn dò sau buổi học (`📝 NHIỆM VỤ KHI VỀ NHÀ`):**
+   - *(Đặt trước lịch học buổi kế tiếp theo đúng quy chuẩn mới)*
    - `Làm bài tập về nhà trên Denise bao gồm:`
    - `+ 10 câu hỏi trắc nghiệm.`
    - `+ 2 bài thực hành (làm theo yêu cầu đề bài).`
    - `⏰ Hạn nộp: [Thứ], ngày [Ngày buổi học kế tiếp]` *(Lưu ý: Nếu lớp học có yêu cầu BTVN khác trong dữ liệu đầu vào thì điều chỉnh ngắn gọn, sát thực tế).*
+5. **d. Thời gian buổi học kế tiếp (`📌 NỘI DUNG BUỔI HỌC KẾ TIẾP`):**
+   - `Thời gian: [Giờ học] [Thứ], ngày [Ngày + 7 ngày tiếp theo]`
+   - `Nội dung bài học: BUỔI [N+2]: [TÊN BÀI HỌC KẾ TIẾP IN HOA]`
 
-#### PHẦN 2: Mẫu Nhận Xét Tình Trạng Làm BTVN (Chỉ Xuất Khi Có Hình Ảnh BTVN)
+#### ĐOẠN 2: Cập Nhật Tình Hình Chung, BTVN & Tiến Độ SPCK
 
-- **Điều kiện bắt buộc:** **CHỈ tạo Phần 2 khi người dùng có tải lên hình ảnh chụp kết quả làm BTVN** (ví dụ ảnh chụp trạng thái `Submitted` / `Not submitted`). Nếu người dùng KHÔNG tải lên hình BTVN, tuyệt đối không xuất Phần 2.
-- **Cách trích xuất từ hình ảnh:**
-  - Đọc danh sách học sinh trong ảnh và lọc ra tất cả những bạn có trạng thái **`Not submitted`** (chưa nộp) hoặc nộp chưa đủ bài.
-  - Ghi tên học sinh ngắn gọn theo dạng **Tên đệm + Tên** (bỏ họ đầu nếu tên có từ 3 chữ trở lên; ví dụ: `Nguyễn Thành Phong` -> `Thành Phong`, `Nguyễn Tuấn Long` -> `Tuấn Long`, `Đức Tuấn` -> `Đức Tuấn`).
-  - Nếu tất cả học sinh trong ảnh đều đã `Submitted` đầy đủ, thay câu nhắc nhở danh sách chưa làm bằng lời khen ngắn gọn cả lớp đã hoàn thành 100% BTVN.
+1. **a. Cập nhật tình hình chung (`🌟 CẬP NHẬT TÌNH HÌNH CHUNG` - tùy chọn):**
+   - Ghi nhận sự tiến bộ hoặc các điểm cần cải thiện kèm phương án hỗ trợ tại lớp (ví dụ: bạn nào thao tác còn chậm giáo viên đã kèm sát từng bước).
+2. **b. Tình trạng bài tập về nhà (`📊 TÌNH TRẠNG BÀI TẬP VỀ NHÀ` - xuất khi có hình ảnh BTVN):**
+   - Đọc danh sách học sinh trong ảnh và lọc ra tất cả những bạn có trạng thái **`Not submitted`** (chưa nộp) hoặc nộp chưa đủ bài.
+   - Ghi tên học sinh ngắn gọn theo dạng **Tên đệm + Tên** (bỏ họ đầu nếu tên có từ 3 chữ trở lên; ví dụ: `Nguyễn Thành Phong` -> `Thành Phong`, `Nguyễn Tuấn Long` -> `Tuấn Long`, `Đức Tuấn` -> `Đức Tuấn`).
+   - Nếu tất cả học sinh trong ảnh đều đã `Submitted` đầy đủ, thay câu nhắc nhở danh sách chưa làm bằng lời khen ngắn gọn cả lớp đã hoàn thành 100% BTVN.
+3. **c. Tiến độ sản phẩm cuối khóa (`🚀 TIẾN ĐỘ SẢN PHẨM CUỐI KHÓA (SPCK)` - tự động ở Buổi 11–14):**
+   - Cập nhật tiến độ làm dự án cuối khóa của lớp (lên ý tưởng ở Buổi 11, hoàn thiện GĐ1 ở Buổi 12, hoàn thiện GĐ2 & chuẩn bị thuyết trình ở Buổi 13, tổng kết bảo vệ dự án ở Buổi 14).
+
+#### ĐOẠN 3: Gửi Hình Ảnh & Tài Liệu / Học Liệu (`📸 HÌNH ẢNH & TÀI LIỆU BUỔI HỌC` - tùy chọn)
+
+- **a. Gửi hình ảnh:** Mô hình lắp ráp, các hoạt động tích cực, hình ảnh Thầy/Cô đang giúp đỡ học sinh.
+- **b. Gửi tài liệu / học liệu:** Đính kèm tài liệu tóm tắt kiến thức hoặc học liệu buổi học để phụ huynh và học sinh ôn tập.
 
 ### 4. Nguyên Tắc Tránh Nhiễu Loạn Ngữ Cảnh
 
@@ -85,10 +94,9 @@ Bao gồm 6 mục ngắn gọn, đủ ý theo đúng thứ tự sau:
 
 ## Mẫu Định Dạng Đầu Ra Chuẩn
 
-### Mẫu Phần 1: Nhận xét tổng kết buổi học (Môn Lập trình: Web, GameMaker, Scratch, Python, C#, AI)
+### Mẫu Đoạn 1: Nhận xét tổng kết buổi học (Môn Lập trình: Web, GameMaker, Scratch, Python, C#, AI)
 
-@All Kính gửi quý phụ huynh học viên
-Em xin phép tổng kết sau buổi học số [N+1] – [Ngày + 7 ngày]
+@All Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số [N+1] ngày [Ngày + 7 ngày]
 Mã lớp: [Mã lớp]
 
 - Lớp sĩ số [Sĩ số] ([thông tin vắng mặt nếu có]) ổn định đầu giờ tốt.
@@ -106,21 +114,20 @@ BÀI [N+1]: [TÊN CHỦ ĐỀ BUỔI N+1]
 - Thực hiện xử lý [Cơ chế / kỹ thuật lập trình trọng tâm 2].
 - Thực hiện tạo [Tính năng / hiệu ứng trọng tâm 3].
 
-📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:
-Thời gian: [Giờ học] [Thứ], ngày [Ngày + 14 ngày so với mốc cũ / + 7 ngày so với buổi hiện tại]
-Nội dung bài học: BUỔI [N+2]: [TÊN CHỦ ĐỀ BUỔI N+2]
-
 📝 NHIỆM VỤ KHI VỀ NHÀ:
 Làm bài tập về nhà trên Denise bao gồm:
 + 10 câu hỏi trắc nghiệm.
 + 2 bài thực hành (làm theo yêu cầu đề bài).
 ⏰ Hạn nộp: [Thứ], ngày [Ngày buổi học kế tiếp]
 
-### Mẫu Phần 1B: Nhận xét tổng kết buổi học (Môn Robotics: VT-ROB-..., PREB/PREA/PREI, ARMB/ARMA/ARMI, SEMIB/SEMIA/SEMII)
+📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:
+Thời gian: [Giờ học] [Thứ], ngày [Ngày + 14 ngày so với mốc cũ / + 7 ngày so với buổi hiện tại]
+Nội dung bài học: BUỔI [N+2]: [TÊN CHỦ ĐỀ BUỔI N+2]
+
+### Mẫu Đoạn 1B: Nhận xét tổng kết buổi học (Môn Robotics: VT-ROB-..., PREB/PREA/PREI, ARMB/ARMA/ARMI, SEMIB/SEMIA/SEMII)
 
 📢 TỔNG KẾT BUỔI HỌC SỐ [NN] – [Mã lớp]
-@All Kính gửi Quý Phụ huynh,
-Giáo viên xin cập nhật tình hình học tập của các con sau buổi học số [NN] – ngày [Ngày buổi học].
+@All Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số [NN] ngày [Ngày buổi học].
 👥 Sĩ số: [SS] học viên | ✅ Hiện diện: [HD] học viên
 📝 NỘI DUNG BUỔI HỌC
 📚 Bài [N]: [Tên bài học]
@@ -134,12 +141,14 @@ Trong buổi học số [NN], các con tham gia học tập nghiêm túc, tích 
 Ôn tập các câu lệnh đã học trong buổi học.
 Ghi nhớ cách sử dụng các thẻ lệnh và cấu trúc lập trình đã học để chuẩn bị cho buổi học tiếp theo.
 🗓 BUỔI HỌC TIẾP THEO – BUỔI [NN+1]
-📚 Nội dung: Bài [N+1] – [Tên bài học tiếp theo]
 ⏰ [Giờ học] | [Thứ], ngày [Ngày buổi học kế tiếp]
+📚 Nội dung: Bài [N+1] – [Tên bài học tiếp theo]
 💖 Giáo viên chân thành cảm ơn Quý Phụ huynh đã luôn đồng hành và hỗ trợ các con trong quá trình học tập!
 
-### Mẫu Phần 2: Nhận xét BTVN (CHỈ kèm theo khi người dùng có up hình BTVN)
+### Mẫu Đoạn 2: Tình hình chung, Tình trạng BTVN & Tiến độ SPCK
 
+📊 TÌNH TRẠNG BÀI TẬP VỀ NHÀ:
 Em xin phép cập nhật tình trạng làm bài của các con. Những bạn sau **chưa hoàn thành** bài cần bổ sung gấp: *[Tên học sinh 1], [Tên học sinh 2], ...*
 Phụ huynh nhắc nhở các con hoàn thành đầy đủ bài tập và ôn tập bài cũ thật kỹ để củng cố kiến thức, chuẩn bị tốt cho các nội dung học tập ở buổi tiếp theo.
 Em xin cảm ơn Quý phụ huynh!
+

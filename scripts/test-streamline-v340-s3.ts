@@ -656,18 +656,55 @@ async function main() {
     ],
   });
 
-  assert.equal(zaloPart1Only.includes("Em xin phép tổng kết sau buổi học số 2 – 12/04/2026"), true);
+  assert.equal(
+    zaloPart1Only.includes(
+      "Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số 2 ngày 12/04/2026"
+    ),
+    true
+  );
   assert.equal(zaloPart1Only.includes("Lớp sĩ số 2/3 (vắng bạn Bảo Ngọc) ổn định đầu giờ tốt."), true);
   assert.equal(zaloPart1Only.includes("📘 NỘI DUNG BUỔI HỌC:"), true);
   assert.equal(zaloPart1Only.includes("📍 NHỮNG ĐIỂM CẦN LƯU Ý:"), true);
-  assert.equal(zaloPart1Only.includes("📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:"), true);
-  assert.equal(zaloPart1Only.includes("Thời gian: Chủ nhật, ngày 19/04/2026"), true);
-  assert.equal(zaloPart1Only.includes("Nội dung bài học: BUỔI 3: VA CHẠM VÀ TÍNH ĐIỂM"), true);
   assert.equal(zaloPart1Only.includes("📝 NHIỆM VỤ KHI VỀ NHÀ:"), true);
   assert.equal(zaloPart1Only.includes("+ 10 câu hỏi trắc nghiệm."), true);
   assert.equal(zaloPart1Only.includes("+ 2 bài thực hành (làm theo yêu cầu đề bài)."), true);
   assert.equal(zaloPart1Only.includes("⏰ Hạn nộp: Chủ nhật, ngày 19/04/2026"), true);
+  assert.equal(zaloPart1Only.includes("📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:"), true);
+  assert.equal(zaloPart1Only.includes("Thời gian: Chủ nhật, ngày 19/04/2026"), true);
+  assert.equal(zaloPart1Only.includes("Nội dung bài học: BUỔI 3: VA CHẠM VÀ TÍNH ĐIỂM"), true);
+  // Kiểm tra thứ tự Đoạn 1: Yêu cầu/Dặn dò BTVN đứng trước Thời gian buổi học kế tiếp
+  assert.equal(
+    zaloPart1Only.indexOf("📝 NHIỆM VỤ KHI VỀ NHÀ:") <
+      zaloPart1Only.indexOf("📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:"),
+    true,
+    "Thứ tự Đoạn 1 phải đặt Yêu cầu/Dặn dò BTVN trước Thời gian buổi học kế tiếp"
+  );
   assert.equal(zaloPart1Only.includes("Em xin phép cập nhật tình trạng làm bài"), false);
+
+  // Kiểm tra Đoạn 2 (2a. Tình hình chung, 2b. BTVN, 2c. Tiến độ SPCK ở Buổi 12) & Đoạn 3 (Hình ảnh & Học liệu)
+  const zaloFull3Sections = buildAutoZaloBroadcastText({
+    classCode: classId,
+    sessionNumber: 12,
+    sessionDate: "21/06/2026",
+    students: [
+      {
+        studentId: "STU_01",
+        fullName: "Nguyễn Thành Phong",
+        isActive: true,
+        attendanceStatus: "PRESENT",
+        quickTags: ["🐢 Tiếp thu chậm / Cần kèm sát"],
+      },
+    ],
+    currentTopic: "Xây dựng Sản phẩm cuối khóa GĐ1",
+    includeGeneralUpdate: true,
+    includePart3MediaReminder: true,
+    part2Text: buildBtvnPart2(["Nguyễn Thành Phong"]),
+  });
+  assert.equal(zaloFull3Sections.includes("🌟 CẬP NHẬT TÌNH HÌNH CHUNG:"), true);
+  assert.equal(zaloFull3Sections.includes("Thành Phong"), true);
+  assert.equal(zaloFull3Sections.includes("🚀 TIẾN ĐỘ SẢN PHẨM CUỐI KHÓA (SPCK):"), true);
+  assert.equal(zaloFull3Sections.includes("📊 TÌNH TRẠNG BÀI TẬP VỀ NHÀ:"), true);
+  assert.equal(zaloFull3Sections.includes("📸 HÌNH ẢNH & TÀI LIỆU BUỔI HỌC:"), true);
 
   const part2Text = buildBtvnPart2(["Nguyễn Thành Phong", "Lê Hoàng Bách"]);
   assert.equal(part2Text.includes("*Thành Phong, Hoàng Bách*"), true);
@@ -680,7 +717,7 @@ async function main() {
     btvnUnsubmittedNames: ["Nguyễn Thành Phong"],
   });
   assert.equal(genViaWrapper.renderedText.includes("*Thành Phong*"), true);
-  console.log("   [PASS] S3.6: Zalo Summary Engine thống nhất 1 nguồn duy nhất đạt chuẩn 6 mục + Phần 2 BTVN.");
+  console.log("   [PASS] S3.6: Zalo Summary Engine thống nhất 1 nguồn duy nhất đạt chuẩn 3 đoạn mới + Phần 2 BTVN.");
 
   // ---------------------------------------------------------------------------
   // 5. S3.1 - S3.7 Source & Component Contract Verification on page.tsx

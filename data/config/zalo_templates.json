@@ -2,12 +2,12 @@
   {
     "id": "standard_session_broadcast",
     "name": "Mẫu Tổng Kết Buổi Học Tiêu Chuẩn (MindX - Lập trình)",
-    "template": "@All Kính gửi quý phụ huynh học viên\nEm xin phép tổng kết sau buổi học số {{sessionNumber}} – {{sessionDate}}\nMã lớp: {{className}}\n\n- Lớp sĩ số {{attendanceCount}}\n- {{generalFeedback}}\n\n📘 NỘI DUNG BUỔI HỌC:\nBÀI {{sessionNumber}}: {{lessonTopic}}\n{{keyKnowledge}}\n\n📍 NHỮNG ĐIỂM CẦN LƯU Ý:\n{{keyNotes}}\n\n📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:\nThời gian: {{nextSessionTime}}\nNội dung bài học: BUỔI {{nextSessionNumber}}: {{nextSessionTopic}}\n\n📝 NHIỆM VỤ KHI VỀ NHÀ:\nLàm bài tập về nhà trên Denise bao gồm:\n{{homeworkSummary}}\n⏰ Hạn nộp: {{homeworkDeadline}}"
+    "template": "@All Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số {{sessionNumber}} ngày {{sessionDate}}\nMã lớp: {{className}}\n\n- Lớp sĩ số {{attendanceCount}}\n- {{generalFeedback}}\n\n📘 NỘI DUNG BUỔI HỌC:\nBÀI {{sessionNumber}}: {{lessonTopic}}\n{{keyKnowledge}}\n\n📍 NHỮNG ĐIỂM CẦN LƯU Ý:\n{{keyNotes}}\n\n📝 NHIỆM VỤ KHI VỀ NHÀ:\nLàm bài tập về nhà trên Denise bao gồm:\n{{homeworkSummary}}\n⏰ Hạn nộp: {{homeworkDeadline}}\n\n📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:\nThời gian: {{nextSessionTime}}\nNội dung bài học: BUỔI {{nextSessionNumber}}: {{nextSessionTopic}}"
   },
   {
     "id": "robotics_session_broadcast",
     "name": "Mẫu Tổng Kết Buổi Học Robotics (VEX GO / VEX IQ)",
-    "template": "📢 TỔNG KẾT BUỔI HỌC SỐ {{sessionNumberPad}} – {{className}}\n@All Kính gửi Quý Phụ huynh,\nGiáo viên xin cập nhật tình hình học tập của các con sau buổi học số {{sessionNumberPad}} – ngày {{sessionDate}}.\n👥 Sĩ số: {{totalStudentsPad}} học viên | ✅ Hiện diện: {{presentCountPad}} học viên\n📝 NỘI DUNG BUỔI HỌC\n📚 Bài {{sessionNumber}}: {{lessonTopic}}\n{{roboticsKnowledge}}\n🌟 TÌNH HÌNH HỌC TẬP\n{{roboticsLearningStatus}}\n🏡 BÀI TẬP VỀ NHÀ\n{{roboticsHomework}}\n🗓 BUỔI HỌC TIẾP THEO – BUỔI {{nextSessionNumberPad}}\n📚 Nội dung: Bài {{nextSessionNumber}} – {{nextSessionTopic}}\n⏰ {{nextSessionSchedule}}\n💖 Giáo viên chân thành cảm ơn Quý Phụ huynh đã luôn đồng hành và hỗ trợ các con trong quá trình học tập!"
+    "template": "📢 TỔNG KẾT BUỔI HỌC SỐ {{sessionNumberPad}} – {{className}}\n@All Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số {{sessionNumberPad}} ngày {{sessionDate}}.\n👥 Sĩ số: {{totalStudentsPad}} học viên | ✅ Hiện diện: {{presentCountPad}} học viên\n📝 NỘI DUNG BUỔI HỌC\n📚 Bài {{sessionNumber}}: {{lessonTopic}}\n{{roboticsKnowledge}}\n🌟 TÌNH HÌNH HỌC TẬP\n{{roboticsLearningStatus}}\n🏡 BÀI TẬP VỀ NHÀ\n{{roboticsHomework}}\n🗓 BUỔI HỌC TIẾP THEO – BUỔI {{nextSessionNumberPad}}\n⏰ {{nextSessionSchedule}}\n📚 Nội dung: Bài {{nextSessionNumber}} – {{nextSessionTopic}}\n💖 Giáo viên chân thành cảm ơn Quý Phụ huynh đã luôn đồng hành và hỗ trợ các con trong quá trình học tập!"
   },
   {
     "id": "checkpoint_broadcast",

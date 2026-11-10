@@ -24,6 +24,17 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ## [v3.4.0] — 2026-10-30 / 2026-11-10 (Giai Đoạn 10: Tinh Gọn Luồng Nghiệp Vụ, Giảm Số Lần Bấm & Liên Thông 5 Màn Hình `S0` $\rightarrow$ `S8`)
 
+- **Nâng Cấp Mẫu Thông Báo Zalo Tổng Kết Buổi Học Theo Quy Chuẩn Bố Cục 3 Đoạn Mới (`src/lib/zalo/zalo-summary.ts`, `src/app/session-comments/page.tsx`, `data/config/zalo_templates.json`, `.agents/skills/nhan-xet-hoc-sinh-zalo/SKILL.md`, `scripts/test-streamline-v340-s3.ts` — 2026-11-10):**
+  1. **Đoạn 1 (Tổng kết trọng tâm sau buổi học — tự động 100%):**
+     - Chuẩn hóa câu mở đầu: `"@All Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số [X] ngày [dd/mm/yyyy]"`.
+     - Sắp xếp lại thứ tự các mục đúng chuẩn: **(a) Tình hình điểm danh, chuyên cần** $\rightarrow$ **(b) Nội dung bài học & Những điểm cần lưu ý** $\rightarrow$ **(c) Yêu cầu/dặn dò sau buổi học (`📝 NHIỆM VỤ KHI VỀ NHÀ` / `🏡 BÀI TẬP VỀ NHÀ`)** $\rightarrow$ **(d) Thời gian & tiêu đề chính buổi học kế tiếp (`📌 NỘI DUNG BUỔI HỌC KẾ TIẾP` / `🗓 BUỔI HỌC TIẾP THEO`, tự động tịnh tiến +7 ngày)**.
+  2. **Đoạn 2 (Cập nhật nâng cao, Tình trạng BTVN & Tiến độ SPCK):**
+     - **2a. Cập nhật tình hình chung (`🌟 CẬP NHẬT TÌNH HÌNH CHUNG`):** Bổ sung nút bật/tắt 1 chạm `+ 2a. Tình hình chung` trên khung Zalo tại `/session-comments`, tự động tổng hợp từ các Quick Tags đã chọn để ghi nhận sự tiến bộ của lớp hoặc nêu phương án kèm sát đối với các học sinh thao tác chậm / mất tập trung.
+     - **2b. Tình trạng bài tập về nhà (`📊 TÌNH TRẠNG BÀI TẬP VỀ NHÀ`):** Tải ảnh chụp BTVN để lọc danh sách học sinh `Not submitted` (dạng Tên đệm + Tên) hoặc khen ngợi cả lớp hoàn thành 100% BTVN.
+     - **2c. Tiến độ sản phẩm cuối khóa (`🚀 TIẾN ĐỘ SẢN PHẨM CUỐI KHÓA (SPCK)`):** Tự động kích hoạt khi lớp bước vào giai đoạn làm dự án cuối khóa (Buổi 11 $\rightarrow$ 14) kèm nút bật/tắt nhanh `+ 2c. Tiến độ SPCK`.
+  3. **Đoạn 3 (Gửi hình ảnh & Tài liệu/học liệu — `📸 HÌNH ẢNH & TÀI LIỆU BUỔI HỌC`):**
+     - Bổ sung nút bật/tắt 1 chạm `+ 3. Gửi ảnh & Học liệu` để chèn lời nhắn gửi kèm hình ảnh hoạt động tích cực / mô hình lắp ráp trên lớp và tài liệu ôn tập.
+
 - **Tự Động Nhường Chỗ Trong Danh Sách Ảnh Bổ Sung (`MAX_SPCK_SCREENSHOTS = 10`) Khi Giáo Viên Tải Lên Ảnh Bìa (`upload_owner_image`) & Nghiệm Thu Thực Tế `8/8 VERIFIED` Lớp `VT-JSB16` Buổi 13 (`src/app/api/spck/capture-screenshots/route.ts` — 2026-11-10):**
   1. Khi giáo viên tải lên ảnh bìa mới (`role: "thumbnail"` qua `/api/spck/capture-screenshots` `action: "upload_owner_image"`) cho học viên đã có sẵn `10/10` ảnh chụp giao diện tự động (`_spck_app_shots` / `_spck_youtube_frames`), ảnh bìa cũ được đẩy xuống đầu danh sách ảnh bổ sung và hệ thống tự động cắt bớt ảnh chụp tự động ở cuối danh sách để giữ đúng giới hạn `10/10` ảnh của MindX LMS (thay vì báo lỗi `11/10`), đồng thời vẫn bảo toàn 100% mọi ảnh do giáo viên tự cung cấp.
   2. Đã cập nhật 8 ảnh thuyết trình (`1024×576`, chuẩn 16:9) làm Thumbnail cho 8 học viên lớp **`VT-JSB16` — Buổi 13** (*Phạm Bùi Quang Minh, Nguyễn Trần Gia Kiệt, Nguyễn Hữu Phước, Nguyễn Hoàng Bách, Thái Xuân Nguyên, Hoàng Sỹ Tùng, Dương Đăng Khôi, Lê Xuân Thế Anh*) và đẩy tự động lên MindX LMS đạt **`8/8 VERIFIED`** (`Read-after-Write`).

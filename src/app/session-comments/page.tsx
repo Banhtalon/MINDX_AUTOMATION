@@ -359,6 +359,11 @@ export default function SessionCommentsPage() {
   // Zalo Broadcast
   const [zaloBroadcastText, setZaloBroadcastText] = useState("");
   const [zaloBtvnPart2Text, setZaloBtvnPart2Text] = useState("");
+  const [zaloIncludeGeneralUpdate, setZaloIncludeGeneralUpdate] = useState(false);
+  const [zaloIncludeSpckProgress, setZaloIncludeSpckProgress] = useState<boolean | undefined>(
+    undefined
+  );
+  const [zaloIncludePart3Media, setZaloIncludePart3Media] = useState(false);
   const [isAnalyzingBtvnImage, setIsAnalyzingBtvnImage] = useState(false);
   const [isZaloManuallyEdited, setIsZaloManuallyEdited] = useState(false);
   const [copiedZalo, setCopiedZalo] = useState(false);
@@ -1032,8 +1037,28 @@ export default function SessionCommentsPage() {
     return `${weekdays[d.getDay()] || ""}, ngày ${dd}/${mm}/${yyyy}`;
   };
 
-  const buildAutoZaloBroadcastText = (part2Override?: string) => {
+  const buildAutoZaloBroadcastText = (
+    part2Override?: string,
+    optionsOverride?: {
+      includeGeneralUpdate?: boolean;
+      includeSpckProgress?: boolean;
+      includePart3MediaReminder?: boolean;
+    }
+  ) => {
     const activePart2 = part2Override !== undefined ? part2Override : zaloBtvnPart2Text;
+    const effGeneralUpdate =
+      optionsOverride?.includeGeneralUpdate !== undefined
+        ? optionsOverride.includeGeneralUpdate
+        : zaloIncludeGeneralUpdate;
+    const effSpckProgress =
+      optionsOverride?.includeSpckProgress !== undefined
+        ? optionsOverride.includeSpckProgress
+        : zaloIncludeSpckProgress;
+    const effPart3Media =
+      optionsOverride?.includePart3MediaReminder !== undefined
+        ? optionsOverride.includePart3MediaReminder
+        : zaloIncludePart3Media;
+
     if (typeof sharedBuildAutoZaloBroadcastText === "function") {
       return sharedBuildAutoZaloBroadcastText({
         classCode,
@@ -1045,11 +1070,16 @@ export default function SessionCommentsPage() {
         currentHomeworkBrief,
         syllabusList,
         part2Text: activePart2,
+        includeGeneralUpdate: effGeneralUpdate,
+        includeSpckProgress: effSpckProgress,
+        includePart3MediaReminder: effPart3Media,
       });
     }
     const sess = sessions.find((s) => s.sessionId === selectedSessionId);
     const sessionNum = sess?.sessionNumber || 1;
     const sessionDate = sess?.date || sess?.sessionDate || "chưa xác nhận ngày học";
+    const hasConfirmedDate =
+      Boolean(sessionDate) && sessionDate !== "chưa xác nhận ngày học";
     const activeStudents = students.filter((s) => s.isActive !== false);
     const totalStudents = activeStudents.length;
     const hasUnconfirmedAttendance =
@@ -1157,12 +1187,9 @@ export default function SessionCommentsPage() {
         String(nextSyllabusSess?.topic || nextSess?.topic || `Nội dung buổi ${nextSessionNum}`)
           .replace(/^(?:BÀI|BUỔI)\s+\d+\s*[-:–.]*\s*/i, "")
           .trim() || `Nội dung buổi ${nextSessionNum}`;
-      const hasConfirmedDate =
-        Boolean(sessionDate) && sessionDate !== "chưa xác nhận ngày học";
       const roboticsPart1 = `📢 TỔNG KẾT BUỔI HỌC SỐ ${sessionNumPad2} – ${upperCode}
-@All Kính gửi Quý Phụ huynh,
-Giáo viên xin cập nhật tình hình học tập của các con sau buổi học số ${sessionNumPad2}${
-        hasConfirmedDate ? ` – ngày ${sessionDate}` : ""
+@All Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số ${sessionNumPad2}${
+        hasConfirmedDate ? ` ngày ${sessionDate}` : ""
       }.
 👥 Sĩ số: ${totalPad2} học viên | ✅ Hiện diện: ${presentPad2} học viên${absentSuffix}
 📝 NỘI DUNG BUỔI HỌC
@@ -1173,8 +1200,8 @@ ${roboticsGeneralFeedback}
 🏡 BÀI TẬP VỀ NHÀ
 ${roboticsHwLines}
 🗓 BUỔI HỌC TIẾP THEO – BUỔI ${nextSessionNumPad2}
-📚 Nội dung: Bài ${nextSessionNum} – ${cleanNextTopicCasePreserved}
 ⏰ ${nextTimeLine}
+📚 Nội dung: Bài ${nextSessionNum} – ${cleanNextTopicCasePreserved}
 💖 Giáo viên chân thành cảm ơn Quý Phụ huynh đã luôn đồng hành và hỗ trợ các con trong quá trình học tập!`;
       return activePart2 ? `${roboticsPart1}\n\n${activePart2}` : roboticsPart1;
     }
@@ -1218,8 +1245,9 @@ ${roboticsHwLines}
       .replace(/^(?:BÀI|BUỔI)\s+\d+\s*:\s*/i, "")
       .trim()
       .toUpperCase();
-    const part1 = `@All Kính gửi quý phụ huynh học viên
-Em xin phép tổng kết sau buổi học số ${sessionNum}${sessionDate ? ` – ${sessionDate}` : ""}
+    const part1 = `@All Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số ${sessionNum}${
+      hasConfirmedDate ? ` ngày ${sessionDate}` : sessionDate ? ` – ${sessionDate}` : ""
+    }
 Mã lớp: ${upperCode}
 
 - Lớp sĩ số ${attendanceStr}
@@ -1232,14 +1260,14 @@ ${keyKnowledgeText}
 📍 NHỮNG ĐIỂM CẦN LƯU Ý:
 ${keyNotesText}
 
-📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:
-Thời gian: ${nextTimeLine}
-Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}
-
 📝 NHIỆM VỤ KHI VỀ NHÀ:
 Làm bài tập về nhà trên Denise bao gồm:
 ${homeworkDetails}
-⏰ Hạn nộp: ${deadlineLine}`;
+⏰ Hạn nộp: ${deadlineLine}
+
+📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:
+Thời gian: ${nextTimeLine}
+Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
     return activePart2 ? `${part1}\n\n${activePart2}` : part1;
   };
 
@@ -1315,6 +1343,9 @@ ${homeworkDetails}
     currentHomeworkBrief,
     syllabusList,
     zaloBtvnPart2Text,
+    zaloIncludeGeneralUpdate,
+    zaloIncludeSpckProgress,
+    zaloIncludePart3Media,
   ]);
 
   // Handle Quick Tag Toggle (1-click radio swap for Level tags + multi-select for Note tags)
@@ -4179,12 +4210,83 @@ ${homeworkDetails}
             <div>
               <h2 className="text-base font-bold text-white">Thông báo chung gửi Nhóm Zalo</h2>
               <p className="text-xs text-slate-400">
-                Chuẩn quy tắc 6 mục ngắn gọn (tịnh tiến +7 ngày) • Chỉ thêm Phần 2 nhắc BTVN khi tải ảnh BTVN
+                Chuẩn bố cục 3 đoạn mới (Điểm danh → Bài học → Dặn dò BTVN → Lịch buổi kế tiếp +7 ngày)
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Các nút bật/tắt nhanh Đoạn 2 (Tình hình chung, Tiến độ SPCK) & Đoạn 3 (Ảnh + Học liệu) */}
+            <button
+              type="button"
+              onClick={() => {
+                const nextVal = !zaloIncludeGeneralUpdate;
+                setZaloIncludeGeneralUpdate(nextVal);
+                setIsZaloManuallyEdited(false);
+                setZaloBroadcastText(
+                  buildAutoZaloBroadcastText(undefined, { includeGeneralUpdate: nextVal })
+                );
+              }}
+              className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+                zaloIncludeGeneralUpdate
+                  ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300"
+                  : "bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200"
+              }`}
+              title="Bật/tắt mục 2a: Cập nhật tình hình chung (ghi nhận sự tiến bộ hoặc các bạn cần kèm thêm)"
+            >
+              {zaloIncludeGeneralUpdate ? "✓ 2a. Tình hình chung" : "+ 2a. Tình hình chung"}
+            </button>
+
+            {(() => {
+              const currentSessNum =
+                sessions.find((s) => s.sessionId === selectedSessionId)?.sessionNumber || 1;
+              const isSpckActive =
+                zaloIncludeSpckProgress !== undefined
+                  ? zaloIncludeSpckProgress
+                  : currentSessNum >= 11;
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextVal = !isSpckActive;
+                    setZaloIncludeSpckProgress(nextVal);
+                    setIsZaloManuallyEdited(false);
+                    setZaloBroadcastText(
+                      buildAutoZaloBroadcastText(undefined, { includeSpckProgress: nextVal })
+                    );
+                  }}
+                  className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+                    isSpckActive
+                      ? "bg-purple-500/20 border-purple-500/50 text-purple-300"
+                      : "bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200"
+                  }`}
+                  title="Bật/tắt mục 2c: Tiến độ sản phẩm cuối khóa (Tự động bật từ Buổi 11 - 14)"
+                >
+                  {isSpckActive ? "✓ 2c. Tiến độ SPCK" : "+ 2c. Tiến độ SPCK"}
+                </button>
+              );
+            })()}
+
+            <button
+              type="button"
+              onClick={() => {
+                const nextVal = !zaloIncludePart3Media;
+                setZaloIncludePart3Media(nextVal);
+                setIsZaloManuallyEdited(false);
+                setZaloBroadcastText(
+                  buildAutoZaloBroadcastText(undefined, { includePart3MediaReminder: nextVal })
+                );
+              }}
+              className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+                zaloIncludePart3Media
+                  ? "bg-sky-500/20 border-sky-500/50 text-sky-300"
+                  : "bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200"
+              }`}
+              title="Bật/tắt Đoạn 3: Lời nhắn gửi kèm hình ảnh hoạt động lớp học & tài liệu/học liệu"
+            >
+              {zaloIncludePart3Media ? "✓ 3. Gửi ảnh & Học liệu" : "+ 3. Gửi ảnh & Học liệu"}
+            </button>
+
             <input
               ref={btvnImageInputRef}
               type="file"
@@ -4200,7 +4302,7 @@ ${homeworkDetails}
               onClick={() => btvnImageInputRef.current?.click()}
               disabled={isAnalyzingBtvnImage}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-semibold shadow-sm transition cursor-pointer"
-              title="Tải ảnh chụp danh sách nộp BTVN (Denise/LMS) để AI lọc các bạn 'Not submitted' (Tên đệm + Tên) và tự động nối Phần 2 vào cuối tin nhắn Zalo"
+              title="Tải ảnh chụp danh sách nộp BTVN (Denise/LMS) để AI lọc các bạn 'Not submitted' (Tên đệm + Tên) và tự động nối mục 2b Tình trạng BTVN vào tin nhắn Zalo"
             >
               {isAnalyzingBtvnImage ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -4209,7 +4311,7 @@ ${homeworkDetails}
               )}
               {isAnalyzingBtvnImage
                 ? "Đang đọc ảnh BTVN..."
-                : "Tải ảnh BTVN"}
+                : "2b. Tải ảnh BTVN"}
             </button>
 
             {(zaloBtvnPart2Text || isZaloManuallyEdited) && (

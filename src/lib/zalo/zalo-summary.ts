@@ -11,6 +11,8 @@ export interface ZaloStudentItemInput {
   fullName: string;
   isActive?: boolean;
   attendanceStatus?: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED" | "UNKNOWN" | string;
+  quickTags?: string[];
+  teacherNote?: string;
 }
 
 export interface ZaloSyllabusSessionInput {
@@ -44,6 +46,15 @@ export interface BuildAutoZaloBroadcastParams {
   homeworkDeadlineOverride?: string;
   syllabusList?: ZaloSyllabusCourseInput[];
   part2Text?: string;
+  /** Bật/tắt mục 2c: Tiến độ sản phẩm cuối khóa (Mặc định tự động bật khi buổi >= 11) */
+  includeSpckProgress?: boolean;
+  spckProgressOverride?: string;
+  /** Bật/tắt mục 2a: Cập nhật tình hình chung nâng cao */
+  includeGeneralUpdate?: boolean;
+  generalUpdateOverride?: string;
+  /** Bật/tắt Đoạn 3: Lời nhắc gửi hình ảnh hoạt động & tài liệu học tập (Mặc định bật) */
+  includePart3MediaReminder?: boolean;
+  part3TextOverride?: string;
 }
 
 /**
@@ -137,7 +148,7 @@ export function buildCourseKeyNotes(
 }
 
 /**
- * Xây dựng Phần 2 (Nhận xét tình trạng làm BTVN) - CHỈ xuất khi có tải ảnh BTVN.
+ * Xây dựng Phần 2b (Nhận xét tình trạng làm BTVN) - xuất khi có tải ảnh BTVN hoặc danh sách học sinh chưa nộp.
  */
 export function buildBtvnPart2(unsubmittedRawNames: string[]): string {
   const shortNames = (unsubmittedRawNames || [])
@@ -146,6 +157,7 @@ export function buildBtvnPart2(unsubmittedRawNames: string[]): string {
 
   if (shortNames.length === 0) {
     return [
+      "📊 TÌNH TRẠNG BÀI TẬP VỀ NHÀ:",
       "Em xin phép cập nhật tình trạng làm bài của các con: Cả lớp đã hoàn thành **100% bài tập về nhà** đầy đủ và đúng hạn, rất đáng khen ngợi!",
       "Phụ huynh tiếp tục khích lệ các con duy trì tinh thần tự giác ôn tập bài cũ để chuẩn bị tốt cho các nội dung học tập ở buổi tiếp theo.",
       "Em xin cảm ơn Quý phụ huynh!",
@@ -153,14 +165,140 @@ export function buildBtvnPart2(unsubmittedRawNames: string[]): string {
   }
 
   return [
+    "📊 TÌNH TRẠNG BÀI TẬP VỀ NHÀ:",
     `Em xin phép cập nhật tình trạng làm bài của các con. Những bạn sau **chưa hoàn thành** bài cần bổ sung gấp: *${shortNames.join(", ")}*`,
     "Phụ huynh nhắc nhở các con hoàn thành đầy đủ bài tập và ôn tập bài cũ thật kỹ để củng cố kiến thức, chuẩn bị tốt cho các nội dung học tập ở buổi tiếp theo.",
     "Em xin cảm ơn Quý phụ huynh!",
   ].join("\n");
 }
 
-export const DEFAULT_STANDARD_ZALO_TEMPLATE = `@All Kính gửi quý phụ huynh học viên
-Em xin phép tổng kết sau buổi học số {{sessionNumber}} – {{sessionDate}}
+/**
+ * Xây dựng mục 2a: Cập nhật tình hình chung (ghi nhận sự tiến bộ / cần hỗ trợ kèm phương án xử lý).
+ */
+export function buildGeneralClassUpdateSection(
+  students: ZaloStudentItemInput[],
+  sessionNumber: number,
+  overrideText?: string
+): string {
+  const custom = String(overrideText || "").trim();
+  if (custom) {
+    return `🌟 CẬP NHẬT TÌNH HÌNH CHUNG:\n- ${custom.replace(/^[-•*]\s*/, "")}`;
+  }
+
+  const activePresent = (students || []).filter(
+    (s) => s.isActive !== false && s.attendanceStatus !== "ABSENT"
+  );
+  const supportNames: string[] = [];
+  const distractedNames: string[] = [];
+
+  for (const st of activePresent) {
+    const tagsJoined = Array.isArray(st.quickTags) ? st.quickTags.join(" ").toLowerCase() : "";
+    const shortName = formatShortZaloName(st.fullName);
+    if (!shortName) continue;
+    if (/tiếp thu chậm|thao tác.*chậm|cần hỗ trợ|lúng túng|cần kèm|trung bình|chưa kịp/i.test(tagsJoined)) {
+      supportNames.push(shortName);
+    } else if (/mất tập trung|xao nhãng|nói chuyện riêng|cần nhắc tập trung/i.test(tagsJoined)) {
+      distractedNames.push(shortName);
+    }
+  }
+
+  const lines: string[] = [
+    "- Đa số các con nắm bắt tốt kiến thức trọng tâm, chủ động thực hành và hoàn thành nhiệm vụ học tập trên lớp.",
+  ];
+
+  if (supportNames.length > 0) {
+    lines.push(
+      `- Một số bạn thao tác còn hơi chậm (*${supportNames.join(", ")}*), giáo viên đã trực tiếp kèm sát tại lớp và hướng dẫn chia nhỏ từng bước để các con theo kịp tiến độ.`
+    );
+  }
+  if (distractedNames.length > 0) {
+    lines.push(
+      `- Một số bạn đôi lúc còn xao nhãng (*${distractedNames.join(", ")}*), giáo viên đã kịp thời nhắc nhở và đặt câu hỏi tương tác để giúp các con tập trung hơn vào bài học.`
+    );
+  }
+  if (supportNames.length === 0 && distractedNames.length === 0 && sessionNumber >= 5) {
+    lines.push(
+      "- Các con có sự tiến bộ rõ rệt về kỹ năng thao tác cũng như khả năng tự kiểm tra và xử lý lỗi trong quá trình làm bài."
+    );
+  }
+
+  return `🌟 CẬP NHẬT TÌNH HÌNH CHUNG:\n${lines.join("\n")}`;
+}
+
+/**
+ * Xây dựng mục 2c: Tiến độ sản phẩm cuối khóa (SPCK) dành cho lớp trong giai đoạn dự án (Buổi 11 - 14).
+ */
+export function buildSpckProgressSection(
+  sessionNumber: number,
+  overrideText?: string
+): string {
+  const custom = String(overrideText || "").trim();
+  if (custom) {
+    return `🚀 TIẾN ĐỘ SẢN PHẨM CUỐI KHÓA (SPCK):\n- ${custom.replace(/^[-•*]\s*/, "")}`;
+  }
+
+  if (sessionNumber === 11) {
+    return [
+      "🚀 TIẾN ĐỘ SẢN PHẨM CUỐI KHÓA (SPCK):",
+      "- Lớp đang bắt đầu giai đoạn lên ý tưởng, xác định chủ đề và chuẩn bị tài nguyên cho Sản phẩm cuối khóa (đạt khoảng 20% tiến độ).",
+      "- Ba mẹ nhắc các con suy nghĩ thêm ý tưởng và chuẩn bị đầy đủ hình ảnh/nội dung cho dự án của mình.",
+    ].join("\n");
+  }
+  if (sessionNumber === 12) {
+    return [
+      "🚀 TIẾN ĐỘ SẢN PHẨM CUỐI KHÓA (SPCK):",
+      "- Các con đang triển khai xây dựng giao diện và lập trình các chức năng cốt lõi Giai đoạn 1 của Sản phẩm cuối khóa (đạt khoảng 50% - 60% tiến độ).",
+      "- Về nhà các con tiếp tục hoàn thiện thêm các tính năng chính để chuẩn bị ghép nối và chạy thử ở buổi tiếp theo.",
+    ].join("\n");
+  }
+  if (sessionNumber === 13) {
+    return [
+      "🚀 TIẾN ĐỘ SẢN PHẨM CUỐI KHÓA (SPCK):",
+      "- Lớp đang hoàn thiện Giai đoạn 2 của Sản phẩm cuối khóa, kiểm thử lỗi sản phẩm và chuẩn bị slide/kịch bản thuyết trình (đạt khoảng 80% - 90% tiến độ).",
+      "- Ba mẹ khích lệ các con luyện tập trước phần trình bày ở nhà để thật tự tin trong buổi Bảo vệ dự án cuối khóa (Demo Day) tuần tới.",
+    ].join("\n");
+  }
+  if (sessionNumber >= 14) {
+    return [
+      "🚀 TIẾN ĐỘ SẢN PHẨM CUỐI KHÓA (SPCK):",
+      "- Các con đã hoàn thành 100% Sản phẩm cuối khóa và tham gia thuyết trình bảo vệ dự án trong buổi tổng kết khóa học.",
+    ].join("\n");
+  }
+
+  return [
+    "🚀 TIẾN ĐỘ SẢN PHẨM CUỐI KHÓA (SPCK):",
+    `- Các con đang tích cực thực hiện và hoàn thiện dần các hạng mục của Sản phẩm cuối khóa theo lộ trình buổi ${sessionNumber}.`,
+  ].join("\n");
+}
+
+/**
+ * Xây dựng Đoạn 3: Lời nhắc gửi hình ảnh hoạt động lớp học & tài liệu/học liệu.
+ */
+export function buildPart3MediaAndMaterialsSection(
+  isRobotics: boolean,
+  overrideText?: string
+): string {
+  const custom = String(overrideText || "").trim();
+  if (custom) {
+    return custom;
+  }
+
+  if (isRobotics) {
+    return [
+      "📸 HÌNH ẢNH & TÀI LIỆU BUỔI HỌC:",
+      "- Hình ảnh mô hình lắp ráp, các hoạt động tích cực và khoảnh khắc giáo viên hỗ trợ các con trong giờ học được gửi kèm ngay bên dưới.",
+      "- Tài liệu / học liệu tóm tắt kiến thức buổi học được đính kèm để Quý Phụ huynh và các con tiện ôn tập tại nhà.",
+    ].join("\n");
+  }
+
+  return [
+    "📸 HÌNH ẢNH & TÀI LIỆU BUỔI HỌC:",
+    "- Giáo viên xin gửi kèm bên dưới một số hình ảnh hoạt động học tập tích cực, khoảnh khắc thầy trò cùng trao đổi và hỗ trợ các con thực hành trên lớp.",
+    "- Tài liệu / học liệu và nội dung trọng tâm của buổi học được gửi kèm để ba mẹ và các con tiện theo dõi, ôn tập tại nhà.",
+  ].join("\n");
+}
+
+export const DEFAULT_STANDARD_ZALO_TEMPLATE = `@All Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số {{sessionNumber}} ngày {{sessionDate}}
 Mã lớp: {{className}}
 
 - Lớp sĩ số {{attendanceCount}}
@@ -173,18 +311,17 @@ BÀI {{sessionNumber}}: {{lessonTopic}}
 📍 NHỮNG ĐIỂM CẦN LƯU Ý:
 {{keyNotes}}
 
-📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:
-Thời gian: {{nextSessionTime}}
-Nội dung bài học: BUỔI {{nextSessionNumber}}: {{nextSessionTopic}}
-
 📝 NHIỆM VỤ KHI VỀ NHÀ:
 Làm bài tập về nhà trên Denise bao gồm:
 {{homeworkSummary}}
-⏰ Hạn nộp: {{homeworkDeadline}}`;
+⏰ Hạn nộp: {{homeworkDeadline}}
+
+📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:
+Thời gian: {{nextSessionTime}}
+Nội dung bài học: BUỔI {{nextSessionNumber}}: {{nextSessionTopic}}`;
 
 export const DEFAULT_ROBOTICS_ZALO_TEMPLATE = `📢 TỔNG KẾT BUỔI HỌC SỐ {{sessionNumberPad2}} – {{className}}
-@All Kính gửi Quý Phụ huynh,
-Giáo viên xin cập nhật tình hình học tập của các con sau buổi học số {{sessionNumberPad2}} – ngày {{sessionDate}}.
+@All Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số {{sessionNumberPad2}} ngày {{sessionDate}}.
 👥 Sĩ số: {{totalStudentsPad2}} học viên | ✅ Hiện diện: {{presentStudentsPad2}} học viên
 📝 NỘI DUNG BUỔI HỌC
 📚 Bài {{sessionNumber}}: {{lessonTopicCasePreserved}}
@@ -194,8 +331,8 @@ Giáo viên xin cập nhật tình hình học tập của các con sau buổi h
 🏡 BÀI TẬP VỀ NHÀ
 {{roboticsHomeworkLines}}
 🗓 BUỔI HỌC TIẾP THEO – BUỔI {{nextSessionNumberPad2}}
-📚 Nội dung: Bài {{nextSessionNumber}} – {{nextSessionTopicCasePreserved}}
 ⏰ {{roboticsNextSessionTime}}
+📚 Nội dung: Bài {{nextSessionNumber}} – {{nextSessionTopicCasePreserved}}
 💖 Giáo viên chân thành cảm ơn Quý Phụ huynh đã luôn đồng hành và hỗ trợ các con trong quá trình học tập!`;
 
 /**
@@ -236,7 +373,10 @@ function formatRoboticsHomeworkLines(rawHomework: string): string {
 }
 
 /**
- * Xây dựng nội dung Thông báo Zalo Tổng kết Buổi học (Hỗ trợ cả mẫu Lập trình 6 mục & mẫu Robotics chuyên biệt + Phần 2 BTVN tùy chọn).
+ * Xây dựng nội dung Thông báo Zalo Tổng kết Buổi học theo quy chuẩn 3 đoạn mới:
+ * - Đoạn 1: Câu mở đầu chuẩn + (a) Điểm danh, chuyên cần + (b) Nội dung bài học + (c) Yêu cầu/dặn dò sau buổi học + (d) Thời gian & tiêu đề buổi học kế tiếp.
+ * - Đoạn 2: (a) Cập nhật tình hình chung (tùy chọn) + (b) Tình trạng BTVN (khi có ảnh BTVN) + (c) Tiến độ SPCK (tự động ở buổi >= 11 hoặc khi bật).
+ * - Đoạn 3: Gửi hình ảnh hoạt động & tài liệu/học liệu (tùy chọn).
  */
 export function buildAutoZaloBroadcastText(params: BuildAutoZaloBroadcastParams): string {
   const sessions = Array.isArray(params.sessions) ? params.sessions : [];
@@ -255,6 +395,8 @@ export function buildAutoZaloBroadcastText(params: BuildAutoZaloBroadcastParams)
       : sess?.sessionNumber || 1;
   const sessionDate =
     params.sessionDate || sess?.date || sess?.sessionDate || "chưa xác nhận ngày học";
+  const hasConfirmedDate =
+    Boolean(sessionDate) && sessionDate !== "chưa xác nhận ngày học";
 
   const activeStudents = students.filter((s) => s.isActive !== false);
   const totalStudents = activeStudents.length;
@@ -299,8 +441,36 @@ export function buildAutoZaloBroadcastText(params: BuildAutoZaloBroadcastParams)
       ? params.currentHomeworkBrief
       : currentSyllabusSess?.homeworkBrief || "";
 
+  const isRobotics = isRoboticsClassForZalo(upperCode);
+
+  // Xây dựng các mục của Đoạn 2 (nếu có) và Đoạn 3 (nếu bật)
+  const section2Blocks: string[] = [];
+  if (params.includeGeneralUpdate) {
+    section2Blocks.push(
+      buildGeneralClassUpdateSection(students, sessionNum, params.generalUpdateOverride)
+    );
+  }
+  const shouldIncludeSpck =
+    params.includeSpckProgress !== undefined
+      ? Boolean(params.includeSpckProgress)
+      : sessionNum >= 11;
+  if (shouldIncludeSpck) {
+    section2Blocks.push(
+      buildSpckProgressSection(sessionNum, params.spckProgressOverride)
+    );
+  }
+  const activePart2 = String(params.part2Text || "").trim();
+  if (activePart2) {
+    section2Blocks.push(activePart2);
+  }
+
+  const section3Block =
+    params.includePart3MediaReminder === true
+      ? buildPart3MediaAndMaterialsSection(isRobotics, params.part3TextOverride)
+      : "";
+
   // Nhánh 1: Mẫu Thông báo Zalo chuyên biệt cho lớp Robotics (VT-ROB-..., PREB/PREA/PREI, ARMB/ARMA/ARMI, SEMIB/SEMIA/SEMII)
-  if (isRoboticsClassForZalo(upperCode)) {
+  if (isRobotics) {
     const sessionNumPad2 = String(sessionNum).padStart(2, "0");
     const nextSessionNumPad2 = String(nextSessionNum).padStart(2, "0");
     const totalPad2 = totalStudents > 0 ? String(totalStudents).padStart(2, "0") : "..";
@@ -363,13 +533,9 @@ export function buildAutoZaloBroadcastText(params: BuildAutoZaloBroadcastParams)
         ? nextDateWithWeekday
         : "Theo lịch học cố định của lớp (chưa xác nhận ngày cụ thể)");
 
-    const hasConfirmedDate =
-      Boolean(sessionDate) && sessionDate !== "chưa xác nhận ngày học";
-
     const roboticsPart1 = `📢 TỔNG KẾT BUỔI HỌC SỐ ${sessionNumPad2} – ${upperCode}
-@All Kính gửi Quý Phụ huynh,
-Giáo viên xin cập nhật tình hình học tập của các con sau buổi học số ${sessionNumPad2}${
-      hasConfirmedDate ? ` – ngày ${sessionDate}` : ""
+@All Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số ${sessionNumPad2}${
+      hasConfirmedDate ? ` ngày ${sessionDate}` : ""
     }.
 ${roboticsAttendanceLine}
 📝 NỘI DUNG BUỔI HỌC
@@ -380,15 +546,17 @@ ${roboticsGeneralFeedback}
 🏡 BÀI TẬP VỀ NHÀ
 ${roboticsHomeworkBlock}
 🗓 BUỔI HỌC TIẾP THEO – BUỔI ${nextSessionNumPad2}
-📚 Nội dung: Bài ${nextSessionNum} – ${cleanNextTopicCasePreserved}
 ⏰ ${roboticsNextTimeLine}
+📚 Nội dung: Bài ${nextSessionNum} – ${cleanNextTopicCasePreserved}
 💖 Giáo viên chân thành cảm ơn Quý Phụ huynh đã luôn đồng hành và hỗ trợ các con trong quá trình học tập!`;
 
-    const activePart2 = String(params.part2Text || "").trim();
-    return activePart2 ? `${roboticsPart1}\n\n${activePart2}` : roboticsPart1;
+    return [roboticsPart1, ...section2Blocks, section3Block]
+      .filter(Boolean)
+      .join("\n\n");
   }
 
-  // Nhánh 2: Mẫu Thông báo Zalo chuẩn 6 mục cho lớp Lập trình (Coding)
+  // Nhánh 2: Mẫu Thông báo Zalo chuẩn mới cho lớp Lập trình (Coding)
+  // Thứ tự Đoạn 1: Câu mở đầu chuẩn -> (a) Điểm danh -> (b) Nội dung bài học & Lưu ý -> (c) Yêu cầu/Dặn dò BTVN -> (d) Thời gian & Tiêu đề buổi học kế tiếp
   const attendanceStr = params.attendanceCountOverride
     ? params.attendanceCountOverride
     : hasUnconfirmedAttendance
@@ -458,8 +626,9 @@ ${roboticsHomeworkBlock}
     .trim()
     .toUpperCase();
 
-  const part1 = `@All Kính gửi quý phụ huynh học viên
-Em xin phép tổng kết sau buổi học số ${sessionNum}${sessionDate ? ` – ${sessionDate}` : ""}
+  const part1 = `@All Kính gửi quý phụ huynh, giáo viên xin phép tổng kết sau buổi học số ${sessionNum}${
+    hasConfirmedDate ? ` ngày ${sessionDate}` : sessionDate ? ` – ${sessionDate}` : ""
+  }
 Mã lớp: ${upperCode}
 
 - Lớp sĩ số ${attendanceStr}
@@ -472,15 +641,17 @@ ${keyKnowledgeText}
 📍 NHỮNG ĐIỂM CẦN LƯU Ý:
 ${keyNotesText}
 
-📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:
-Thời gian: ${nextTimeLine}
-Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}
-
 📝 NHIỆM VỤ KHI VỀ NHÀ:
 Làm bài tập về nhà trên Denise bao gồm:
 ${homeworkDetails}
-⏰ Hạn nộp: ${deadlineLine}`;
+⏰ Hạn nộp: ${deadlineLine}
 
-  const activePart2 = String(params.part2Text || "").trim();
-  return activePart2 ? `${part1}\n\n${activePart2}` : part1;
+📌 NỘI DUNG BUỔI HỌC KẾ TIẾP:
+Thời gian: ${nextTimeLine}
+Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
+
+  return [part1, ...section2Blocks, section3Block]
+    .filter(Boolean)
+    .join("\n\n");
 }
+
