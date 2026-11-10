@@ -20,7 +20,9 @@ import {
 } from "../src/lib/teaching/session-progress-mapper";
 import {
   buildClassTodayTodoCard,
+  computeAverageTeachingProgressPercent,
   getDashboardTodayTodoCards,
+  hasClassUpdatedTeachingProgressForSession,
 } from "../src/lib/dashboard/today-tasks";
 import { getDb, classSessionRepo, spckSessionRepo } from "../src/lib/db/sqlite";
 import { buildEnrichedClassSpckRecords } from "../src/app/api/spck/list/route";
@@ -386,7 +388,8 @@ async function runTests() {
       "S6-04 (R2-DB14): Inactive student with DRAFT Session 14 evaluation must not block active roster"
     );
 
-    // S6-05 regression: 99.9% weighted average must floor to 99% (not round to 100%)
+    // S6-05 regression: 99.9% weighted average must floor to 99% (not round to 100%),
+    // and Dashboard Teaching progress step (Cách 2) checks whether the session's milestone tasks have been updated (> 0%)
     const tasks99 = [1, 2, 3, 4, 5].map((n) => ({
       slotIndex: n,
       taskId: 100 + n,
@@ -398,15 +401,126 @@ async function runTests() {
       tasks99.flatMap((t) => [1, 2].map((s) => [`${t.taskId}_${s}`, 100]))
     );
     prog99["105_2"] = 99;
+    assert.equal(
+      computeAverageTeachingProgressPercent(
+        JSON.stringify(tasks99),
+        JSON.stringify(prog99)
+      ),
+      99,
+      "S6-05: 99.9% weighted average must floor to 99%"
+    );
+    // When only Tasks 1..4 are updated (Task 5 is 0% for all students), Session 14 progress step must be false
+    const progOnly4Tasks = {
+      ...prog99,
+      "105_1": 0,
+      "105_2": 0,
+    };
     db.prepare(
       `INSERT INTO teaching_final_projects (classId, tasksJson, progressJson, status)
        VALUES ('VT-C4K-JSB14', ?, ?, 'VERIFIED')`
-    ).run(JSON.stringify(tasks99), JSON.stringify(prog99));
+    ).run(JSON.stringify(tasks99), JSON.stringify(progOnly4Tasks));
+    const cardsOnly4 = getDashboardTodayTodoCards({ limit: 10 });
+    assert.equal(
+      cardsOnly4.find((c) => c.classId === "VT-C4K-JSB14")!.steps[3].isDone,
+      false,
+      "S6-05: Session 14 with Task 5 still 0% must keep Teaching progress step not done"
+    );
+    // Once Task 5 is updated (> 0%) on Teaching (even if student 2 is at 99% or 60% because they haven't finished 100%),
+    // Cách 2 marks the Teaching parent-report progress step as Done!
+    db.prepare(
+      `UPDATE teaching_final_projects SET progressJson = ? WHERE classId = 'VT-C4K-JSB14'`
+    ).run(JSON.stringify(prog99));
     const cards99 = getDashboardTodayTodoCards({ limit: 10 });
     assert.equal(
       cards99.find((c) => c.classId === "VT-C4K-JSB14")!.steps[3].isDone,
+      true,
+      "Cách 2: Once Session 14's 5th task is updated on Teaching, Step 4 is Done even when individual students have < 100%"
+    );
+    // Verify VT-C4K-PTA13 (Session 12, 3 tasks updated with mixed 34%-52% student totals) and VT-C4K-GA38 (Session 13, 4+ tasks updated with 75% average)
+    assert.equal(
+      hasClassUpdatedTeachingProgressForSession({
+        sessionNumber: 12,
+        tasksJson: JSON.stringify(tasks99),
+        progressJson: JSON.stringify({
+          "101_1": 100,
+          "102_1": 70,
+          "105_1": 60,
+        }),
+      }),
+      true,
+      "Cách 2: VT-C4K-PTA13 pattern (3 tasks updated with > 0% at Session 12) must be marked as Done"
+    );
+    assert.equal(
+      hasClassUpdatedTeachingProgressForSession({
+        sessionNumber: 13,
+        tasksJson: JSON.stringify(tasks99),
+        progressJson: JSON.stringify({
+          "101_1": 100,
+          "102_1": 100,
+          "105_1": 60,
+        }),
+      }),
       false,
-      "S6-05: 99.9% weighted average must not mark 100% progress step as done"
+      "Cách 2: Only 3 tasks updated must remain NOT Done when class advances to Session 13 (requires 4 tasks)"
+    );
+    assert.equal(
+      hasClassUpdatedTeachingProgressForSession({
+        sessionNumber: 13,
+        tasksJson: JSON.stringify(tasks99),
+        progressJson: JSON.stringify({
+          "101_1": 100,
+          "102_1": 100,
+          "103_1": 100,
+          "104_1": 50,
+          "104_2": 0,
+        }),
+      }),
+      true,
+      "Cách 2: VT-C4K-GA38 pattern (Task 4 updated for finished students while unfinished students stay 0%) must be marked as Done at Session 13"
+    );
+    // F01 regression: When a task has assignedStudentIds: [] (deselected all students), stale progressMap entries for that task must NOT count
+    assert.equal(
+      hasClassUpdatedTeachingProgressForSession({
+        sessionNumber: 11,
+        tasksJson: JSON.stringify([
+          {
+            slotIndex: 1,
+            taskId: 101,
+            taskName: "Việc 1",
+            weightPercent: 20,
+            assignedStudentIds: [],
+          },
+        ]),
+        progressJson: JSON.stringify({ "101_1": 100, "101_2": 80 }),
+        studentsJson: JSON.stringify([
+          { id: 1, status: "Đang học" },
+          { id: 2, status: "Đang học" },
+        ]),
+      }),
+      false,
+      "Cách 2 (F01): Task with empty assignedStudentIds must not fall back to stale progressMap entries"
+    );
+    // F02 regression: Student IDs removed from studentsJson roster (or marked inactive) must not satisfy positive progress
+    assert.equal(
+      hasClassUpdatedTeachingProgressForSession({
+        sessionNumber: 11,
+        tasksJson: JSON.stringify([
+          {
+            slotIndex: 1,
+            taskId: 101,
+            taskName: "Việc 1",
+            weightPercent: 20,
+            assignedStudentIds: [1, 99],
+          },
+        ]),
+        progressJson: JSON.stringify({ "101_1": 0, "101_99": 100 }),
+        studentsJson: JSON.stringify([
+          { id: 1, status: "Đang học" },
+          { id: 2, status: "Đang học" },
+        ]),
+      }),
+      false,
+      "Cách 2 (F02): Student ID not present in active studentsJson roster must not satisfy positive progress"
     );
 
     // Point 3 regression: Report Card verified at T1 becomes stale when Session 14 evaluation is modified at T2 > T1

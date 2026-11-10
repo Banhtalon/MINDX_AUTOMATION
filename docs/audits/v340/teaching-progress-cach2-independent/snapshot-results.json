@@ -1,0 +1,161 @@
+{
+  "mode": "read-only-source-backup",
+  "sandbox": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-cach2-independent-l56gWe",
+  "counts": {
+    "PASS": 3,
+    "FAIL": 0,
+    "ERROR": 0
+  },
+  "protectedHashes": {
+    "before": {
+      "data/mindx_bot.db": "3f996294025a94b7dd19fc4db8368babd7d24f437b49bfc834e0ef901ee1416c",
+      "data/running_classes.json": "171f75d944fb37c604d6c6ee31bc53b23786d5240f03c20e4252b22260c8c2b4"
+    },
+    "after": {
+      "data/mindx_bot.db": "3f996294025a94b7dd19fc4db8368babd7d24f437b49bfc834e0ef901ee1416c",
+      "data/running_classes.json": "171f75d944fb37c604d6c6ee31bc53b23786d5240f03c20e4252b22260c8c2b4"
+    }
+  },
+  "results": [
+    {
+      "id": "SNAPSHOT-VT-C4K-PTA13-session-and-progress",
+      "status": "PASS",
+      "observed": {
+        "classId": "VT-C4K-PTA13",
+        "session": 12,
+        "tasks": [
+          {
+            "taskId": 1039,
+            "assignees": 6,
+            "positiveAssigneeCount": 5
+          },
+          {
+            "taskId": 1040,
+            "assignees": 6,
+            "positiveAssigneeCount": 5
+          },
+          {
+            "taskId": 1041,
+            "assignees": 6,
+            "positiveAssigneeCount": 0
+          },
+          {
+            "taskId": 1042,
+            "assignees": 6,
+            "positiveAssigneeCount": 0
+          },
+          {
+            "taskId": 1043,
+            "assignees": 6,
+            "positiveAssigneeCount": 3
+          }
+        ],
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "đã cập nhật (38%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA13",
+          "isDone": true
+        },
+        "allDone": true,
+        "steps": [
+          {
+            "stepNumber": 1,
+            "label": "① Nhận xét buổi 12",
+            "statusText": "đã đẩy LMS ✓",
+            "href": "/session-comments?classId=VT-C4K-PTA13&sessionNumber=12",
+            "isDone": true
+          },
+          {
+            "stepNumber": 2,
+            "label": "② Nộp SPCK Buổi 12",
+            "statusText": "đã nộp LMS ✓",
+            "href": "/final-project?classId=VT-C4K-PTA13&sessionNumber=12",
+            "isDone": true
+          },
+          {
+            "stepNumber": 3,
+            "label": "③ Tiến độ 60%",
+            "statusText": "đã cập nhật (38%) ✓",
+            "href": "/teaching-projects?classId=VT-C4K-PTA13",
+            "isDone": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "SNAPSHOT-VT-C4K-GA38-session-and-progress",
+      "status": "PASS",
+      "observed": {
+        "classId": "VT-C4K-GA38",
+        "session": 13,
+        "tasks": [
+          {
+            "taskId": 1024,
+            "assignees": 8,
+            "positiveAssigneeCount": 8
+          },
+          {
+            "taskId": 1025,
+            "assignees": 8,
+            "positiveAssigneeCount": 8
+          },
+          {
+            "taskId": 1026,
+            "assignees": 8,
+            "positiveAssigneeCount": 8
+          },
+          {
+            "taskId": 1027,
+            "assignees": 8,
+            "positiveAssigneeCount": 5
+          },
+          {
+            "taskId": 1028,
+            "assignees": 8,
+            "positiveAssigneeCount": 2
+          }
+        ],
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "đã cập nhật (75%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-GA38",
+          "isDone": true
+        },
+        "allDone": true,
+        "steps": [
+          {
+            "stepNumber": 1,
+            "label": "① Nhận xét buổi 13",
+            "statusText": "đã đẩy LMS ✓",
+            "href": "/session-comments?classId=VT-C4K-GA38&sessionNumber=13",
+            "isDone": true
+          },
+          {
+            "stepNumber": 2,
+            "label": "② Nộp SPCK Buổi 13",
+            "statusText": "đã nộp LMS ✓",
+            "href": "/final-project?classId=VT-C4K-GA38&sessionNumber=13",
+            "isDone": true
+          },
+          {
+            "stepNumber": 3,
+            "label": "③ Tiến độ 80%",
+            "statusText": "đã cập nhật (75%) ✓",
+            "href": "/teaching-projects?classId=VT-C4K-GA38",
+            "isDone": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "PROTECTED-DATA-SHA256-UNCHANGED",
+      "status": "PASS",
+      "observed": {
+        "data/mindx_bot.db": "3f996294025a94b7dd19fc4db8368babd7d24f437b49bfc834e0ef901ee1416c",
+        "data/running_classes.json": "171f75d944fb37c604d6c6ee31bc53b23786d5240f03c20e4252b22260c8c2b4"
+      }
+    }
+  ]
+}

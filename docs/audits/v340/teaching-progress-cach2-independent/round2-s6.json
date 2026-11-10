@@ -1,0 +1,6 @@
+﻿{
+    "command":  "npx tsx scripts/test-streamline-v340-s6.ts",
+    "startedAt":  "2026-11-10T13:19:57.7528249+07:00",
+    "finishedAt":  "2026-11-10T13:20:41.1858287+07:00",
+    "exitCode":  0
+}

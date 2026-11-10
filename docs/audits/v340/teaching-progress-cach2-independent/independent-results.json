@@ -1,0 +1,1177 @@
+{
+  "mode": "synthetic",
+  "sandbox": "C:\\Users\\QQ\\AppData\\Local\\Temp\\mindx-cach2-independent-zjCsqG",
+  "counts": {
+    "PASS": 119,
+    "FAIL": 0,
+    "ERROR": 0
+  },
+  "protectedHashes": {
+    "before": {
+      "data/mindx_bot.db": "3f996294025a94b7dd19fc4db8368babd7d24f437b49bfc834e0ef901ee1416c",
+      "data/running_classes.json": "171f75d944fb37c604d6c6ee31bc53b23786d5240f03c20e4252b22260c8c2b4"
+    },
+    "after": {
+      "data/mindx_bot.db": "3f996294025a94b7dd19fc4db8368babd7d24f437b49bfc834e0ef901ee1416c",
+      "data/running_classes.json": "171f75d944fb37c604d6c6ee31bc53b23786d5240f03c20e4252b22260c8c2b4"
+    }
+  },
+  "results": [
+    {
+      "id": "HELPER-S11-none",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S11-none",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 2,
+          "label": "② Tiến độ 20%",
+          "statusText": "khởi tạo dự án & 20%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9811",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S11-insufficient-updated-tasks",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S11-insufficient-updated-tasks",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 2,
+          "label": "② Tiến độ 20%",
+          "statusText": "khởi tạo dự án & 20%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9811",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S11-enough-at-1-percent-other-active-at-zero",
+      "status": "PASS",
+      "observed": {
+        "actual": true,
+        "expected": true
+      }
+    },
+    {
+      "id": "DASH-S11-enough-at-1-percent-other-active-at-zero",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 2,
+          "label": "② Tiến độ 20%",
+          "statusText": "đã cập nhật (0%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9811",
+          "isDone": true
+        },
+        "allDone": true
+      }
+    },
+    {
+      "id": "HELPER-S11-enough-mixed-below-100",
+      "status": "PASS",
+      "observed": {
+        "actual": true,
+        "expected": true
+      }
+    },
+    {
+      "id": "DASH-S11-enough-mixed-below-100",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 2,
+          "label": "② Tiến độ 20%",
+          "statusText": "đã cập nhật (3%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9811",
+          "isDone": true
+        },
+        "allDone": true
+      }
+    },
+    {
+      "id": "HELPER-S11-only-reserved-student",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S11-only-reserved-student",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 2,
+          "label": "② Tiến độ 20%",
+          "statusText": "khởi tạo dự án & 20%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9811",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S11-only-withdrawn-student",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S11-only-withdrawn-student",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 2,
+          "label": "② Tiến độ 20%",
+          "statusText": "khởi tạo dự án & 20%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9811",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S11-only-inactive-student",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S11-only-inactive-student",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 2,
+          "label": "② Tiến độ 20%",
+          "statusText": "khởi tạo dự án & 20%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9811",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S11-active-not-assigned",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S11-active-not-assigned",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 2,
+          "label": "② Tiến độ 20%",
+          "statusText": "khởi tạo dự án & 20%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9811",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S11-explicit-no-assignees-with-stale-progress",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S11-explicit-no-assignees-with-stale-progress",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 2,
+          "label": "② Tiến độ 20%",
+          "statusText": "khởi tạo dự án & 20%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9811",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S11-assignee-no-longer-in-current-roster",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S11-assignee-no-longer-in-current-roster",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 2,
+          "label": "② Tiến độ 20%",
+          "statusText": "khởi tạo dự án & 20%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9811",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S11-too-few-real-task-ids",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S11-too-few-real-task-ids",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 2,
+          "label": "② Tiến độ 20%",
+          "statusText": "khởi tạo dự án & 20%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9811",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S11-non-first-tasks-count-too",
+      "status": "PASS",
+      "observed": {
+        "actual": true,
+        "expected": true
+      }
+    },
+    {
+      "id": "DASH-S11-non-first-tasks-count-too",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 2,
+          "label": "② Tiến độ 20%",
+          "statusText": "đã cập nhật (0%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9811",
+          "isDone": true
+        },
+        "allDone": true
+      }
+    },
+    {
+      "id": "HELPER-S11-broken-json",
+      "status": "PASS"
+    },
+    {
+      "id": "HELPER-S11-array",
+      "status": "PASS"
+    },
+    {
+      "id": "HELPER-S11-null",
+      "status": "PASS"
+    },
+    {
+      "id": "CARD-S11-explicit-true-overrides-percent",
+      "status": "PASS"
+    },
+    {
+      "id": "CARD-S11-explicit-false-overrides-percent",
+      "status": "PASS"
+    },
+    {
+      "id": "HELPER-S12-none",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S12-none",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "cập nhật lên 60%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9812",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S12-insufficient-updated-tasks",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S12-insufficient-updated-tasks",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "cập nhật lên 60%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9812",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S12-enough-at-1-percent-other-active-at-zero",
+      "status": "PASS",
+      "observed": {
+        "actual": true,
+        "expected": true
+      }
+    },
+    {
+      "id": "DASH-S12-enough-at-1-percent-other-active-at-zero",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "đã cập nhật (0%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9812",
+          "isDone": true
+        },
+        "allDone": true
+      }
+    },
+    {
+      "id": "HELPER-S12-enough-mixed-below-100",
+      "status": "PASS",
+      "observed": {
+        "actual": true,
+        "expected": true
+      }
+    },
+    {
+      "id": "DASH-S12-enough-mixed-below-100",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "đã cập nhật (10%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9812",
+          "isDone": true
+        },
+        "allDone": true
+      }
+    },
+    {
+      "id": "HELPER-S12-only-reserved-student",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S12-only-reserved-student",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "cập nhật lên 60%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9812",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S12-only-withdrawn-student",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S12-only-withdrawn-student",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "cập nhật lên 60%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9812",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S12-only-inactive-student",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S12-only-inactive-student",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "cập nhật lên 60%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9812",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S12-active-not-assigned",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S12-active-not-assigned",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "cập nhật lên 60%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9812",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S12-explicit-no-assignees-with-stale-progress",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S12-explicit-no-assignees-with-stale-progress",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "cập nhật lên 60%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9812",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S12-assignee-no-longer-in-current-roster",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S12-assignee-no-longer-in-current-roster",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "cập nhật lên 60%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9812",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S12-too-few-real-task-ids",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S12-too-few-real-task-ids",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "cập nhật lên 60%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9812",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S12-non-first-tasks-count-too",
+      "status": "PASS",
+      "observed": {
+        "actual": true,
+        "expected": true
+      }
+    },
+    {
+      "id": "DASH-S12-non-first-tasks-count-too",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 60%",
+          "statusText": "đã cập nhật (0%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9812",
+          "isDone": true
+        },
+        "allDone": true
+      }
+    },
+    {
+      "id": "HELPER-S12-broken-json",
+      "status": "PASS"
+    },
+    {
+      "id": "HELPER-S12-array",
+      "status": "PASS"
+    },
+    {
+      "id": "HELPER-S12-null",
+      "status": "PASS"
+    },
+    {
+      "id": "CARD-S12-explicit-true-overrides-percent",
+      "status": "PASS"
+    },
+    {
+      "id": "CARD-S12-explicit-false-overrides-percent",
+      "status": "PASS"
+    },
+    {
+      "id": "HELPER-S13-none",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S13-none",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "cập nhật lên 80%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9813",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S13-insufficient-updated-tasks",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S13-insufficient-updated-tasks",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "cập nhật lên 80%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9813",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S13-enough-at-1-percent-other-active-at-zero",
+      "status": "PASS",
+      "observed": {
+        "actual": true,
+        "expected": true
+      }
+    },
+    {
+      "id": "DASH-S13-enough-at-1-percent-other-active-at-zero",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "đã cập nhật (0%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9813",
+          "isDone": true
+        },
+        "allDone": true
+      }
+    },
+    {
+      "id": "HELPER-S13-enough-mixed-below-100",
+      "status": "PASS",
+      "observed": {
+        "actual": true,
+        "expected": true
+      }
+    },
+    {
+      "id": "DASH-S13-enough-mixed-below-100",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "đã cập nhật (13%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9813",
+          "isDone": true
+        },
+        "allDone": true
+      }
+    },
+    {
+      "id": "HELPER-S13-only-reserved-student",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S13-only-reserved-student",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "cập nhật lên 80%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9813",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S13-only-withdrawn-student",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S13-only-withdrawn-student",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "cập nhật lên 80%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9813",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S13-only-inactive-student",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S13-only-inactive-student",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "cập nhật lên 80%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9813",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S13-active-not-assigned",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S13-active-not-assigned",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "cập nhật lên 80%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9813",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S13-explicit-no-assignees-with-stale-progress",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S13-explicit-no-assignees-with-stale-progress",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "cập nhật lên 80%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9813",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S13-assignee-no-longer-in-current-roster",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S13-assignee-no-longer-in-current-roster",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "cập nhật lên 80%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9813",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S13-too-few-real-task-ids",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S13-too-few-real-task-ids",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "cập nhật lên 80%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9813",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S13-non-first-tasks-count-too",
+      "status": "PASS",
+      "observed": {
+        "actual": true,
+        "expected": true
+      }
+    },
+    {
+      "id": "DASH-S13-non-first-tasks-count-too",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 3,
+          "label": "③ Tiến độ 80%",
+          "statusText": "đã cập nhật (0%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9813",
+          "isDone": true
+        },
+        "allDone": true
+      }
+    },
+    {
+      "id": "HELPER-S13-broken-json",
+      "status": "PASS"
+    },
+    {
+      "id": "HELPER-S13-array",
+      "status": "PASS"
+    },
+    {
+      "id": "HELPER-S13-null",
+      "status": "PASS"
+    },
+    {
+      "id": "CARD-S13-explicit-true-overrides-percent",
+      "status": "PASS"
+    },
+    {
+      "id": "CARD-S13-explicit-false-overrides-percent",
+      "status": "PASS"
+    },
+    {
+      "id": "HELPER-S14-none",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S14-none",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 4,
+          "label": "④ Tiến độ 100%",
+          "statusText": "đang 0%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9814",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S14-insufficient-updated-tasks",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S14-insufficient-updated-tasks",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 4,
+          "label": "④ Tiến độ 100%",
+          "statusText": "đang 0%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9814",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S14-enough-at-1-percent-other-active-at-zero",
+      "status": "PASS",
+      "observed": {
+        "actual": true,
+        "expected": true
+      }
+    },
+    {
+      "id": "DASH-S14-enough-at-1-percent-other-active-at-zero",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 4,
+          "label": "④ Tiến độ 100%",
+          "statusText": "đã cập nhật (0%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9814",
+          "isDone": true
+        },
+        "allDone": true
+      }
+    },
+    {
+      "id": "HELPER-S14-enough-mixed-below-100",
+      "status": "PASS",
+      "observed": {
+        "actual": true,
+        "expected": true
+      }
+    },
+    {
+      "id": "DASH-S14-enough-mixed-below-100",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 4,
+          "label": "④ Tiến độ 100%",
+          "statusText": "đã cập nhật (17%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9814",
+          "isDone": true
+        },
+        "allDone": true
+      }
+    },
+    {
+      "id": "HELPER-S14-only-reserved-student",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S14-only-reserved-student",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 4,
+          "label": "④ Tiến độ 100%",
+          "statusText": "đang 20%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9814",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S14-only-withdrawn-student",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S14-only-withdrawn-student",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 4,
+          "label": "④ Tiến độ 100%",
+          "statusText": "đang 20%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9814",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S14-only-inactive-student",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S14-only-inactive-student",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 4,
+          "label": "④ Tiến độ 100%",
+          "statusText": "đang 20%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9814",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S14-active-not-assigned",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S14-active-not-assigned",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 4,
+          "label": "④ Tiến độ 100%",
+          "statusText": "đang 0%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9814",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S14-explicit-no-assignees-with-stale-progress",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S14-explicit-no-assignees-with-stale-progress",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 4,
+          "label": "④ Tiến độ 100%",
+          "statusText": "đang 0%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9814",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S14-assignee-no-longer-in-current-roster",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S14-assignee-no-longer-in-current-roster",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 4,
+          "label": "④ Tiến độ 100%",
+          "statusText": "đang 100%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9814",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S14-too-few-real-task-ids",
+      "status": "PASS",
+      "observed": {
+        "actual": false,
+        "expected": false
+      }
+    },
+    {
+      "id": "DASH-S14-too-few-real-task-ids",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 4,
+          "label": "④ Tiến độ 100%",
+          "statusText": "đang 0%",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9814",
+          "isDone": false
+        },
+        "allDone": false
+      }
+    },
+    {
+      "id": "HELPER-S14-non-first-tasks-count-too",
+      "status": "PASS",
+      "observed": {
+        "actual": true,
+        "expected": true
+      }
+    },
+    {
+      "id": "DASH-S14-non-first-tasks-count-too",
+      "status": "PASS",
+      "observed": {
+        "step": {
+          "stepNumber": 4,
+          "label": "④ Tiến độ 100%",
+          "statusText": "đã cập nhật (0%) ✓",
+          "href": "/teaching-projects?classId=VT-C4K-PTA9814",
+          "isDone": true
+        },
+        "allDone": true
+      }
+    },
+    {
+      "id": "HELPER-S14-broken-json",
+      "status": "PASS"
+    },
+    {
+      "id": "HELPER-S14-array",
+      "status": "PASS"
+    },
+    {
+      "id": "HELPER-S14-null",
+      "status": "PASS"
+    },
+    {
+      "id": "CARD-S14-explicit-true-overrides-percent",
+      "status": "PASS"
+    },
+    {
+      "id": "CARD-S14-explicit-false-overrides-percent",
+      "status": "PASS"
+    },
+    {
+      "id": "REPO-explicit-deselection-preserves-stale-progress-but-must-not-complete",
+      "status": "PASS",
+      "observed": {
+        "priorVersion": 1,
+        "savedVersion": 2
+      }
+    },
+    {
+      "id": "SERVICE-roster-refresh-removes-learner-but-historical-progress-must-not-complete",
+      "status": "PASS"
+    },
+    {
+      "id": "PROTECTED-DATA-SHA256-UNCHANGED",
+      "status": "PASS",
+      "observed": {
+        "data/mindx_bot.db": "3f996294025a94b7dd19fc4db8368babd7d24f437b49bfc834e0ef901ee1416c",
+        "data/running_classes.json": "171f75d944fb37c604d6c6ee31bc53b23786d5240f03c20e4252b22260c8c2b4"
+      }
+    }
+  ]
+}

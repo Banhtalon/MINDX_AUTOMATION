@@ -40,6 +40,7 @@ export interface ClassTodayTodoInput {
   spckSessionVerified?: Partial<Record<12 | 13 | 14, boolean>>;
   session14EvalVerified?: boolean;
   teachingProgressPercent?: number;
+  teachingSessionProgressUpdated?: boolean;
 }
 
 export interface ClassTodayTodoCard {
@@ -109,6 +110,10 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
   const steps: TodayActionStep[] = [];
 
   if (sessionNum >= 14) {
+    const progress14Done =
+      typeof input.teachingSessionProgressUpdated === "boolean"
+        ? input.teachingSessionProgressUpdated
+        : progressPct >= 100;
     steps.push(
       {
         stepNumber: 1,
@@ -138,9 +143,13 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
       {
         stepNumber: 4,
         label: "④ Tiến độ 100%",
-        statusText: progressPct >= 100 ? "đã đạt 100% ✓" : `đang ${progressPct}%`,
+        statusText: progress14Done
+          ? progressPct >= 100
+            ? "đã đạt 100% ✓"
+            : `đã cập nhật (${progressPct}%) ✓`
+          : `đang ${progressPct}%`,
         href: `/teaching-projects?classId=${encodedClass}`,
-        isDone: progressPct >= 100,
+        isDone: progress14Done,
       }
     );
 
@@ -162,7 +171,10 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
   if (sessionNum === 12 || sessionNum === 13) {
     const milestone = mapSessionToTeachingProgressMilestone(sessionNum);
     const spckDone = sessionNum === 12 ? spck12Done : spck13Done;
-    const progressDone = progressPct >= milestone.targetPercent;
+    const progressDone =
+      typeof input.teachingSessionProgressUpdated === "boolean"
+        ? input.teachingSessionProgressUpdated
+        : progressPct >= milestone.targetPercent;
 
     steps.push(
       {
@@ -183,7 +195,9 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
         stepNumber: 3,
         label: `③ Tiến độ ${milestone.targetPercent}%`,
         statusText: progressDone
-          ? `đã đạt ${milestone.targetPercent}% ✓`
+          ? progressPct >= milestone.targetPercent
+            ? `đã đạt ${milestone.targetPercent}% ✓`
+            : `đã cập nhật (${progressPct}%) ✓`
           : `cập nhật lên ${milestone.targetPercent}%`,
         href: `/teaching-projects?classId=${encodedClass}`,
         isDone: progressDone,
@@ -206,7 +220,10 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
   }
 
   if (sessionNum === 11) {
-    const progressDone = progressPct >= 20;
+    const progressDone =
+      typeof input.teachingSessionProgressUpdated === "boolean"
+        ? input.teachingSessionProgressUpdated
+        : progressPct >= 20;
     steps.push(
       {
         stepNumber: 1,
@@ -218,7 +235,11 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
       {
         stepNumber: 2,
         label: "② Tiến độ 20%",
-        statusText: progressDone ? "đã đạt 20% ✓" : "khởi tạo dự án & 20%",
+        statusText: progressDone
+          ? progressPct >= 20
+            ? "đã đạt 20% ✓"
+            : `đã cập nhật (${progressPct}%) ✓`
+          : "khởi tạo dự án & 20%",
         href: `/teaching-projects?classId=${encodedClass}`,
         isDone: progressDone,
       }
@@ -308,7 +329,7 @@ export function buildClassTodayTodoCard(input: ClassTodayTodoInput): ClassTodayT
   };
 }
 
-function computeAverageTeachingProgressPercent(
+export function computeAverageTeachingProgressPercent(
   tasksJson?: string | null,
   progressJson?: string | null,
   endDate?: string | null
@@ -339,6 +360,112 @@ function computeAverageTeachingProgressPercent(
     return Math.floor(totalWeighted / studentIds.length);
   } catch {
     return 0;
+  }
+}
+
+/**
+ * Kiểm tra lớp đã được giáo viên cập nhật tiến độ báo cáo phụ huynh trên Teaching
+ * cho phần công việc của buổi học hiện tại hay chưa:
+ * - Buổi 11 (mốc 1/5 việc - 20%): ít nhất 1/5 công việc đã có tiến độ > 0%
+ * - Buổi 12 (mốc 3/5 việc - 60%): ít nhất 3/5 công việc đã có tiến độ > 0%
+ * - Buổi 13 (mốc 4/5 việc - 80%): ít nhất 4/5 công việc đã có tiến độ > 0%
+ * - Buổi 14 (mốc 5/5 việc - 100%): đủ 5/5 công việc đã có tiến độ > 0%
+ * (Không ép toàn bộ học viên phải đạt 100% ở mọi ô vì có học viên làm chậm/vắng không thể tự nâng điểm khống).
+ */
+export function hasClassUpdatedTeachingProgressForSession(params: {
+  sessionNumber: number;
+  tasksJson?: string | null;
+  progressJson?: string | null;
+  studentsJson?: string | null;
+  endDate?: string | null;
+}): boolean {
+  const milestone = mapSessionToTeachingProgressMilestone(params.sessionNumber);
+  const requiredTaskCount = milestone.milestoneTaskCount;
+  if (requiredTaskCount <= 0) return true;
+  if (!params.progressJson) return false;
+
+  try {
+    const progressMap = JSON.parse(params.progressJson) as Record<string, number>;
+    if (
+      !progressMap ||
+      typeof progressMap !== "object" ||
+      Array.isArray(progressMap)
+    ) {
+      return false;
+    }
+    const tasks = normalizeTeachingProjectTasks(
+      params.tasksJson || "[]",
+      params.endDate || ""
+    );
+    const validTasks = tasks
+      .filter((t) => Number.isInteger(Number(t.taskId)) && Number(t.taskId) > 0)
+      .sort((a, b) => Number(a.slotIndex || 0) - Number(b.slotIndex || 0));
+
+    if (validTasks.length < requiredTaskCount) {
+      return false;
+    }
+
+    let hasStudentsRoster = false;
+    const activeStudentIds = new Set<number>();
+    if (params.studentsJson) {
+      try {
+        const parsedStudents = JSON.parse(params.studentsJson);
+        if (Array.isArray(parsedStudents) && parsedStudents.length > 0) {
+          hasStudentsRoster = true;
+          for (const s of parsedStudents) {
+            const sid = Number(s?.id);
+            const st = String(s?.status || "").trim().toLowerCase();
+            const isInactive =
+              st.includes("bảo lưu") ||
+              st.includes("nghỉ học") ||
+              st.includes("inactive");
+            if (Number.isInteger(sid) && sid > 0 && !isInactive) {
+              activeStudentIds.add(sid);
+            }
+          }
+        }
+      } catch {
+        // ignore malformed studentsJson
+      }
+    }
+
+    if (hasStudentsRoster && activeStudentIds.size === 0) {
+      return false;
+    }
+
+    const hasTaskPositiveProgress = (
+      task: (typeof validTasks)[number]
+    ): boolean => {
+      const tid = Number(task.taskId);
+      if (!Number.isInteger(tid) || tid <= 0) return false;
+      const assigned = Array.isArray(task.assignedStudentIds)
+        ? task.assignedStudentIds
+            .map((id) => Number(id))
+            .filter((id) => Number.isInteger(id) && id > 0)
+        : [];
+      if (assigned.length === 0) {
+        return false;
+      }
+      const eligibleAssigned = hasStudentsRoster
+        ? assigned.filter((sid) => activeStudentIds.has(sid))
+        : assigned;
+      if (eligibleAssigned.length === 0) {
+        return false;
+      }
+      return eligibleAssigned.some((sid) => {
+        const val = Number(progressMap[`${tid}_${sid}`] ?? 0);
+        return Number.isFinite(val) && val > 0;
+      });
+    };
+
+    const updatedTaskIds = new Set(
+      validTasks
+        .filter(hasTaskPositiveProgress)
+        .map((t) => Number(t.taskId))
+    );
+    return updatedTaskIds.size >= requiredTaskCount;
+  } catch {
+    return false;
   }
 }
 
@@ -721,7 +848,7 @@ export function getDashboardTodayTodoCards(options?: {
 
       const teachingProjRow = db
         .prepare(
-          `SELECT status, tasksJson, progressJson, endDate FROM teaching_final_projects
+          `SELECT status, tasksJson, progressJson, studentsJson, endDate FROM teaching_final_projects
            WHERE classId = ?
            LIMIT 1`
         )
@@ -730,6 +857,7 @@ export function getDashboardTodayTodoCards(options?: {
             status?: string;
             tasksJson?: string;
             progressJson?: string;
+            studentsJson?: string;
             endDate?: string;
           }
         | undefined;
@@ -739,6 +867,14 @@ export function getDashboardTodayTodoCards(options?: {
         teachingProjRow?.progressJson,
         teachingProjRow?.endDate
       );
+      const teachingSessionProgressUpdated =
+        hasClassUpdatedTeachingProgressForSession({
+          sessionNumber: sessionNum,
+          tasksJson: teachingProjRow?.tasksJson,
+          progressJson: teachingProjRow?.progressJson,
+          studentsJson: teachingProjRow?.studentsJson,
+          endDate: teachingProjRow?.endDate,
+        });
 
       return buildClassTodayTodoCard({
         classId,
@@ -757,6 +893,7 @@ export function getDashboardTodayTodoCards(options?: {
         },
         session14EvalVerified,
         teachingProgressPercent,
+        teachingSessionProgressUpdated,
       });
       }).sort((a, b) => {
         const aToday = a.isTodaySession ? 1 : 0;

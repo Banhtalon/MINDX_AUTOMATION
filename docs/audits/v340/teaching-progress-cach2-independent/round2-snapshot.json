@@ -1,0 +1,6 @@
+﻿{
+    "command":  "npx tsx docs/audits/v340/teaching-progress-cach2-independent/probe.mjs --real",
+    "startedAt":  "2026-11-10T13:21:21.7323838+07:00",
+    "finishedAt":  "2026-11-10T13:21:23.4685466+07:00",
+    "exitCode":  0
+}
