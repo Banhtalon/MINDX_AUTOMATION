@@ -3610,8 +3610,11 @@ export const spckSessionRepo = {
       rawSessionNumber,
       "spckSessionRepo.markStudentAbsentInSession"
     );
-    const db = getDb();
     const slot = stageInfo.sessionNumber;
+    if (slot === 14) {
+      return;
+    }
+    const db = getDb();
     const sessRow = db
       .prepare(
         `SELECT sessionId FROM classes_sessions
@@ -3664,6 +3667,9 @@ export const spckSessionRepo = {
       "spckSessionRepo.clearAbsentStudentSessionFailure"
     );
     const slot = stageInfo.sessionNumber;
+    if (slot === 14) {
+      return false;
+    }
     const db = getDb();
     let changed = false;
 
@@ -3723,49 +3729,111 @@ export const spckSessionRepo = {
         shared.status === "FAILED" ||
         shared.approvedSessionNumber === slot
       ) {
-        const verifiedEntries = (["14", "13", "12"] as const)
-          .map((k) => sessionMap[k])
-          .filter(
-            (e) =>
-              e &&
-              (e.status === "VERIFIED" ||
-                Boolean(e.lastVerifiedAt || e.verifiedAt || e.lastVerifiedContentHash))
+        const attendanceMap = this.getStudentSessionAttendanceMap(classId, studentId);
+        const remainingFailedSlots = ([14, 13, 12] as const).filter((candSlot) => {
+          if (candSlot === slot) return false;
+          if (
+            (candSlot === 12 || candSlot === 13) &&
+            attendanceMap[String(candSlot) as "12" | "13"] === "ABSENT"
+          ) {
+            return false;
+          }
+          const candEntry = sessionMap[String(candSlot) as "12" | "13" | "14"];
+          const candRow = this.findOne(classId, studentId, candSlot);
+          return Boolean(
+            candEntry?.status === "FAILED" ||
+              candRow?.draftStatus === "FAILED" ||
+              candRow?.lastAttemptStatus === "FAILED"
           );
-        const latestVer = verifiedEntries[0];
-        const nextSharedStatus = latestVer
-          ? "VERIFIED"
-          : String(shared.teacherComment || "").trim()
-          ? "WAITING_APPROVAL"
-          : "DRAFT";
-        const nextVerifiedAt = latestVer
-          ? latestVer.verifiedAt || latestVer.lastVerifiedAt || shared.verifiedAt || null
-          : shared.verifiedAt || null;
-        const nextContentHash = latestVer
-          ? latestVer.submittedContentHash ||
-            latestVer.lastVerifiedContentHash ||
-            shared.contentHash ||
-            ""
-          : "";
-        db.prepare(
-          `UPDATE spck_uploads
-           SET status = ?,
-               contentHash = ?,
-               verifiedAt = ?,
-               errorMessage = NULL,
-               sessionResultsJson = ?,
-               approvedSessionNumber = CASE WHEN approvedSessionNumber = ? THEN NULL ELSE approvedSessionNumber END,
-               updatedAt = datetime('now', 'localtime')
-           WHERE classId = ? AND studentId = ?`
-        ).run(
-          nextSharedStatus,
-          nextContentHash,
-          nextVerifiedAt,
-          JSON.stringify(sessionMap),
-          slot,
-          classId,
-          studentId
-        );
-        changed = true;
+        });
+
+        if (remainingFailedSlots.length > 0) {
+          const primaryFailedSlot = remainingFailedSlots[0];
+          const primaryFailedEntry =
+            sessionMap[String(primaryFailedSlot) as "12" | "13" | "14"];
+          const primaryFailedRow = this.findOne(
+            classId,
+            studentId,
+            primaryFailedSlot
+          );
+          const preservedError =
+            primaryFailedEntry?.errorMessage ||
+            primaryFailedRow?.lastErrorMessage ||
+            (shared.approvedSessionNumber !== slot ? shared.errorMessage : null) ||
+            shared.errorMessage ||
+            null;
+          const preservedApprovedSlot =
+            shared.approvedSessionNumber && shared.approvedSessionNumber !== slot
+              ? shared.approvedSessionNumber
+              : primaryFailedSlot;
+          if (entryNeverVerified || shared.approvedSessionNumber === slot) {
+            db.prepare(
+              `UPDATE spck_uploads
+               SET status = 'FAILED',
+                   errorMessage = ?,
+                   sessionResultsJson = ?,
+                   approvedSessionNumber = ?,
+                   updatedAt = datetime('now', 'localtime')
+               WHERE classId = ? AND studentId = ?`
+            ).run(
+              preservedError,
+              JSON.stringify(sessionMap),
+              preservedApprovedSlot,
+              classId,
+              studentId
+            );
+            changed = true;
+          }
+        } else {
+          const verifiedEntries = (["14", "13", "12"] as const)
+            .map((k) => sessionMap[k])
+            .filter(
+              (e) =>
+                e &&
+                (e.status === "VERIFIED" ||
+                  Boolean(
+                    e.lastVerifiedAt || e.verifiedAt || e.lastVerifiedContentHash
+                  ))
+            );
+          const latestVer = verifiedEntries[0];
+          const nextSharedStatus = latestVer
+            ? "VERIFIED"
+            : String(shared.teacherComment || "").trim()
+            ? "WAITING_APPROVAL"
+            : "DRAFT";
+          const nextVerifiedAt = latestVer
+            ? latestVer.verifiedAt ||
+              latestVer.lastVerifiedAt ||
+              shared.verifiedAt ||
+              null
+            : shared.verifiedAt || null;
+          const nextContentHash = latestVer
+            ? latestVer.submittedContentHash ||
+              latestVer.lastVerifiedContentHash ||
+              shared.contentHash ||
+              ""
+            : "";
+          db.prepare(
+            `UPDATE spck_uploads
+             SET status = ?,
+                 contentHash = ?,
+                 verifiedAt = ?,
+                 errorMessage = NULL,
+                 sessionResultsJson = ?,
+                 approvedSessionNumber = CASE WHEN approvedSessionNumber = ? THEN NULL ELSE approvedSessionNumber END,
+                 updatedAt = datetime('now', 'localtime')
+             WHERE classId = ? AND studentId = ?`
+          ).run(
+            nextSharedStatus,
+            nextContentHash,
+            nextVerifiedAt,
+            JSON.stringify(sessionMap),
+            slot,
+            classId,
+            studentId
+          );
+          changed = true;
+        }
       }
     }
 
@@ -3792,8 +3860,8 @@ export const spckSessionRepo = {
 
     let healedAbsentFailure = false;
     if (!initialHistoryCorrupted) {
-      for (const slot of [12, 13, 14] as const) {
-        const key = String(slot) as "12" | "13" | "14";
+      for (const slot of [12, 13] as const) {
+        const key = String(slot) as "12" | "13";
         if (attendanceMap[key] !== "ABSENT") continue;
         const sRow = sessionRowsMap[key];
         const legEntry = legacyResultsMap[key];
@@ -3892,6 +3960,7 @@ export const spckSessionRepo = {
         displayState = "FAILED_AFTER_VERIFIED";
         badgeLabel = `Lỗi nộp lại (đã nộp ${lastVerifiedAt.slice(0, 10)})`;
       } else if (
+        (slot === 12 || slot === 13) &&
         attendanceMap[key] === "ABSENT" &&
         !historyCorrupted &&
         !lastVerifiedAt &&

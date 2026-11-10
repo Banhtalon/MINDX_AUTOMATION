@@ -1557,41 +1557,43 @@ export class SpckUploader {
       }
 
       if (resolvedSessionNumber) {
-        const attendanceInSess =
-          spckSessionRepo.getStudentSessionAttendanceMap(
-            normalizedClassId,
-            rec.studentId
-          )[String(resolvedSessionNumber) as "12" | "13" | "14"];
-        if (attendanceInSess === "ABSENT") {
-          spckSessionRepo.clearAbsentStudentSessionFailure(
-            normalizedClassId,
-            rec.studentId,
-            resolvedSessionNumber
-          );
-          const absentMsg = `Học viên '${fullName}' vắng mặt tại Buổi ${resolvedSessionNumber} trên LMS (không có ô nộp sản phẩm) — đã tự động bỏ qua và miễn nộp buổi này.`;
-          jobLogRepo.add({
-            jobId: `SPCK_${normalizedClassId}`,
-            jobType: "UPLOAD_SPCK",
-            classId: normalizedClassId,
-            sessionId: `SESSION_${resolvedSessionNumber}`,
-            studentId: rec.studentId,
-            level: "WARN",
-            message: absentMsg,
-          });
-          demotedCount++;
-          results.push({
-            studentId: rec.studentId,
-            fullName,
-            status: "WAITING_APPROVAL",
-            reusedExistingItem01: false,
-            clickedAddSpckButton: false,
-            youtubeAddedCount: 0,
-            relatedLinksAddedCount: 0,
-            screenshotsUploadedCount: 0,
-            attachmentsUploadedCount: 0,
-            errorMessage: absentMsg,
-          });
-          continue;
+        if (resolvedSessionNumber === 12 || resolvedSessionNumber === 13) {
+          const attendanceInSess =
+            spckSessionRepo.getStudentSessionAttendanceMap(
+              normalizedClassId,
+              rec.studentId
+            )[String(resolvedSessionNumber) as "12" | "13"];
+          if (attendanceInSess === "ABSENT") {
+            spckSessionRepo.clearAbsentStudentSessionFailure(
+              normalizedClassId,
+              rec.studentId,
+              resolvedSessionNumber
+            );
+            const absentMsg = `Học viên '${fullName}' vắng mặt tại Buổi ${resolvedSessionNumber} trên LMS (không có ô nộp sản phẩm) — đã tự động bỏ qua và miễn nộp buổi này.`;
+            jobLogRepo.add({
+              jobId: `SPCK_${normalizedClassId}`,
+              jobType: "UPLOAD_SPCK",
+              classId: normalizedClassId,
+              sessionId: `SESSION_${resolvedSessionNumber}`,
+              studentId: rec.studentId,
+              level: "WARN",
+              message: absentMsg,
+            });
+            demotedCount++;
+            results.push({
+              studentId: rec.studentId,
+              fullName,
+              status: "WAITING_APPROVAL",
+              reusedExistingItem01: false,
+              clickedAddSpckButton: false,
+              youtubeAddedCount: 0,
+              relatedLinksAddedCount: 0,
+              screenshotsUploadedCount: 0,
+              attachmentsUploadedCount: 0,
+              errorMessage: absentMsg,
+            });
+            continue;
+          }
         }
 
         const sessRow = spckSessionRepo.findOne(
@@ -2686,11 +2688,14 @@ export class SpckUploader {
       .first();
 
     if ((await spckBtn.count()) === 0) {
+      const isIntermediateSpckSession =
+        targetSessionNumber === 12 || targetSessionNumber === 13;
       const isKnownAbsentInDb =
+        isIntermediateSpckSession &&
         spckSessionRepo.getStudentSessionAttendanceMap(
           normalizedClassId,
           record.studentId
-        )[String(targetSessionNumber) as "12" | "13" | "14"] === "ABSENT";
+        )[String(targetSessionNumber) as "12" | "13"] === "ABSENT";
       const anySpckBtnInTable = await drawer
         .locator(
           'button:has-text("Sản phẩm của học sinh"), button:has-text("Sản phẩm học viên")'
@@ -2711,9 +2716,10 @@ export class SpckUploader {
         commentBtnInStudentRow === 0 &&
         (anySpckBtnInTable > 0 || anyCommentBtnInTable > 0);
       const isAbsentOnLmsDom =
-        isKnownAbsentInDb ||
-        hasExplicitAbsentMarkerInRow ||
-        (isValidSpckSessionSlot(targetSessionNumber) && hasPeerActionButtonsInTable);
+        isIntermediateSpckSession &&
+        (isKnownAbsentInDb ||
+          hasExplicitAbsentMarkerInRow ||
+          hasPeerActionButtonsInTable);
 
       if (isAbsentOnLmsDom) {
         spckSessionRepo.markStudentAbsentInSession(

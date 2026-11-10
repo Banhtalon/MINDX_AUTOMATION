@@ -654,6 +654,180 @@ async function runTests() {
       .get();
     assert.equal(noRecDbRow, undefined, "Synthetic absent student representation must not insert into spck_uploads");
 
+    // Session 14 Final Course Rule regression:
+    // At Session 14 (final session of the course), even if a student is marked ABSENT in session_feedbacks,
+    // they CAN and MUST submit SPCK (and Session 14 Evaluation) because LMS does not lock SPCK at Session 14.
+    // Therefore, Session 14 must NEVER be classified as ABSENT_EXEMPT, must NOT auto-clear failures, and must block Dashboard step 2 until submitted.
+    db.prepare(
+      `INSERT INTO students (classId, studentId, fullName, isActive)
+       VALUES ('VT-C4K-JSB14', 'STU_2_S14', 'Học viên Vắng Buổi 14', 1)`
+    ).run();
+    db.prepare(
+      `INSERT INTO session_feedbacks (classId, sessionId, studentId, status, attendanceStatus)
+       VALUES ('VT-C4K-JSB14', 'VT-C4K-JSB14_SESS_14', 'STU_1', 'VERIFIED', 'PRESENT'),
+              ('VT-C4K-JSB14', 'VT-C4K-JSB14_SESS_14', 'STU_2_S14', 'DRAFT', 'ABSENT')`
+    ).run();
+    db.prepare(
+      `INSERT INTO spck_session_submissions (
+         classId, studentId, sessionNumber, draftStatus,
+         lastAttemptStatus, lastVerifiedAt, lastVerifiedHash
+       ) VALUES
+         ('VT-C4K-JSB14', 'STU_1', 14, 'VERIFIED', 'VERIFIED', '2026-11-10 10:00:00', 'hash_s14_1'),
+         ('VT-C4K-JSB14', 'STU_2_S14', 14, 'FAILED', 'FAILED', NULL, '')`
+    ).run();
+    db.prepare(
+      `INSERT INTO spck_uploads (classId, studentId, status, errorMessage, sessionResultsJson)
+       VALUES ('VT-C4K-JSB14', 'STU_2_S14', 'FAILED', 'Lỗi mạng khi nộp B14', ?)`
+    ).run(JSON.stringify({ "14": { status: "FAILED", errorMessage: "Lỗi mạng khi nộp B14" } }));
+    assert.equal(
+      spckSessionRepo.clearAbsentStudentSessionFailure("VT-C4K-JSB14", "STU_2_S14", 14),
+      false,
+      "Session 14 must never clear SPCK failure for an absent student"
+    );
+    const s14AbsentHist = spckSessionRepo.buildStudentSessionHistorySummary("VT-C4K-JSB14", "STU_2_S14");
+    assert.equal(
+      s14AbsentHist.sessions["14"].displayState,
+      "FAILED",
+      "Absent student at Session 14 must remain FAILED (not ABSENT_EXEMPT)"
+    );
+    assert.equal(s14AbsentHist.sessions["14"].attendanceStatus, "ABSENT");
+    fs.writeFileSync(
+      testRunningClassesPath,
+      JSON.stringify(
+        [
+          { classCode: "VT-C4K-JSB14", className: "JSB 14", currentSessionNumber: 14, status: "Running" },
+        ],
+        null,
+        2
+      ),
+      "utf8"
+    );
+    const cardsS14AbsentPending = getDashboardTodayTodoCards({ limit: 10 });
+    const cardS14Pending = cardsS14AbsentPending.find((c) => c.classId === "VT-C4K-JSB14")!;
+    assert.equal(
+      cardS14Pending.steps[0].isDone,
+      false,
+      "At Session 14, an absent student who has not submitted SPCK must keep Dashboard Step 1 (Nộp SPCK) not done"
+    );
+    assert.equal(
+      cardS14Pending.steps[1].isDone,
+      false,
+      "At Session 14, an absent student who has not submitted Evaluation must keep Dashboard Step 2 (Đánh giá) not done"
+    );
+    // F02 regression: even if the class status in running_classes.json is 'Finished' (within 7-day grace window),
+    // Dashboard must NOT mark SPCK or Evaluation as Done while an active student (including absent STU_2_S14) is unsubmitted
+    const todayIsoForFin = new Date().toISOString().slice(0, 10);
+    db.prepare(
+      `UPDATE classes_sessions SET date = ? WHERE classId = 'VT-C4K-JSB14' AND sessionNumber = 14`
+    ).run(todayIsoForFin);
+    fs.writeFileSync(
+      testRunningClassesPath,
+      JSON.stringify(
+        [
+          {
+            classCode: "VT-C4K-JSB14",
+            className: "JSB 14",
+            currentSessionNumber: 14,
+            status: "Finished",
+            endDate: todayIsoForFin,
+          },
+        ],
+        null,
+        2
+      ),
+      "utf8"
+    );
+    const cardsS14FinishedPending = getDashboardTodayTodoCards({ limit: 10 });
+    const cardS14FinPending = cardsS14FinishedPending.find((c) => c.classId === "VT-C4K-JSB14")!;
+    assert.equal(
+      cardS14FinPending.steps[0].isDone,
+      false,
+      "F02: Finished class at Session 14 must still require all active students to have VERIFIED SPCK"
+    );
+    assert.equal(
+      cardS14FinPending.steps[1].isDone,
+      false,
+      "F02: Finished class at Session 14 must still require all active students to have VERIFIED Evaluation"
+    );
+    fs.writeFileSync(
+      testRunningClassesPath,
+      JSON.stringify(
+        [
+          { classCode: "VT-C4K-JSB14", className: "JSB 14", currentSessionNumber: 14, status: "Running" },
+        ],
+        null,
+        2
+      ),
+      "utf8"
+    );
+    // F03 regression: if STU_2_S14 was also ABSENT in Session 13 with a stale failure, cleaning Session 13 must preserve Session 14's shared FAILED state
+    db.prepare(
+      `INSERT INTO classes_sessions (classId, className, sessionId, sessionNumber, date)
+       VALUES ('VT-C4K-JSB14', 'JSB 14', 'VT-C4K-JSB14_SESS_13', 13, '2026-10-23')`
+    ).run();
+    db.prepare(
+      `INSERT INTO session_feedbacks (classId, sessionId, studentId, status, attendanceStatus)
+       VALUES ('VT-C4K-JSB14', 'VT-C4K-JSB14_SESS_13', 'STU_2_S14', 'DRAFT', 'ABSENT')`
+    ).run();
+    db.prepare(
+      `INSERT INTO spck_session_submissions (classId, studentId, sessionNumber, draftStatus, lastAttemptStatus)
+       VALUES ('VT-C4K-JSB14', 'STU_2_S14', 13, 'FAILED', 'FAILED')`
+    ).run();
+    db.prepare(
+      `UPDATE spck_uploads
+       SET status = 'FAILED', approvedSessionNumber = 14, errorMessage = 'Lỗi mạng khi nộp B14', sessionResultsJson = ?
+       WHERE classId = 'VT-C4K-JSB14' AND studentId = 'STU_2_S14'`
+    ).run(
+      JSON.stringify({
+        "13": { status: "FAILED", errorMessage: "Lỗi vắng B13 cũ" },
+        "14": { status: "FAILED", errorMessage: "Lỗi mạng khi nộp B14" },
+      })
+    );
+    spckSessionRepo.buildStudentSessionHistorySummary("VT-C4K-JSB14", "STU_2_S14");
+    const preservedS14FailRow = db
+      .prepare(`SELECT status, errorMessage, approvedSessionNumber FROM spck_uploads WHERE classId = 'VT-C4K-JSB14' AND studentId = 'STU_2_S14'`)
+      .get() as { status: string; errorMessage: string | null; approvedSessionNumber: number | null };
+    assert.equal(
+      preservedS14FailRow.status,
+      "FAILED",
+      "F03: Auto-cleaning absent Session 13 must preserve shared FAILED status when Session 14 is still FAILED"
+    );
+    assert.equal(
+      preservedS14FailRow.errorMessage,
+      "Lỗi mạng khi nộp B14",
+      "F03: Auto-cleaning absent Session 13 must preserve Session 14's errorMessage"
+    );
+    // Once STU_2_S14 submits SPCK & Eval at Session 14 (even while still ABSENT), Step 2 becomes Done
+    db.prepare(
+      `UPDATE spck_session_submissions
+       SET draftStatus = 'VERIFIED', lastAttemptStatus = 'VERIFIED', lastVerifiedAt = '2026-11-10 10:30:00', lastVerifiedHash = 'hash_s14_2'
+       WHERE classId = 'VT-C4K-JSB14' AND studentId = 'STU_2_S14' AND sessionNumber = 14`
+    ).run();
+    db.prepare(
+      `UPDATE spck_uploads
+       SET status = 'VERIFIED', errorMessage = NULL, sessionResultsJson = ?
+       WHERE classId = 'VT-C4K-JSB14' AND studentId = 'STU_2_S14'`
+    ).run(JSON.stringify({ "14": { status: "VERIFIED", lastVerifiedAt: "2026-11-10T10:30:00.000Z" } }));
+    db.prepare(
+      `INSERT INTO spck_session14_evaluations (classId, studentId, status, updatedAt)
+       VALUES ('VT-C4K-JSB14', 'STU_2_S14', 'VERIFIED', '2026-10-30T09:00:00.000Z')`
+    ).run();
+    const cardsS14AbsentSubmitted = getDashboardTodayTodoCards({ limit: 10 });
+    const cardS14Submitted = cardsS14AbsentSubmitted.find((c) => c.classId === "VT-C4K-JSB14")!;
+    assert.equal(
+      cardS14Submitted.steps[1].isDone,
+      true,
+      "At Session 14, once all active students (including absent student STU_2_S14) have VERIFIED SPCK & Eval, Step 2 is Done"
+    );
+    // Clean up STU_2_S14 before continuing
+    db.prepare(`DELETE FROM spck_session14_evaluations WHERE classId = 'VT-C4K-JSB14' AND studentId = 'STU_2_S14'`).run();
+    db.prepare(`DELETE FROM spck_uploads WHERE classId = 'VT-C4K-JSB14' AND studentId = 'STU_2_S14'`).run();
+    db.prepare(`DELETE FROM spck_session_submissions WHERE classId = 'VT-C4K-JSB14' AND studentId = 'STU_2_S14'`).run();
+    db.prepare(`DELETE FROM session_feedbacks WHERE classId = 'VT-C4K-JSB14' AND studentId = 'STU_2_S14'`).run();
+    db.prepare(`DELETE FROM students WHERE classId = 'VT-C4K-JSB14' AND studentId = 'STU_2_S14'`).run();
+    db.prepare(`DELETE FROM classes_sessions WHERE classId = 'VT-C4K-JSB14' AND sessionNumber = 13`).run();
+    db.prepare(`UPDATE classes_sessions SET date = '2026-10-30' WHERE classId = 'VT-C4K-JSB14' AND sessionNumber = 14`).run();
+
     // 1-week (7-day) Finished class expiration & next-tier successor transition (e.g. VT-JSB15 -> VT-JSA15, VT-C4K-PTA12 -> VT-C4K-PTI12)
     const fmtDmy = (d: Date) =>
       `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;

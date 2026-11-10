@@ -71,11 +71,13 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
     );
 
   const activeSessionKey = String(selectedSessionNumber) as "12" | "13" | "14";
+  const isSessionAbsentExemptEligible =
+    selectedSessionNumber === 12 || selectedSessionNumber === 13;
 
   const isRowAbsentExemptForCurrentSession = (
     r: (typeof allRows)[number]
   ): boolean => {
-    if (!r.assignedStudentId) return false;
+    if (!isSessionAbsentExemptEligible || !r.assignedStudentId) return false;
     if (r.sessionHistory?.sessions?.[activeSessionKey]?.attendanceStatus === "ABSENT") {
       return true;
     }
@@ -91,24 +93,26 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
   const absentExemptStudentIdSet = new Set(
     absentExemptRowsForCurrentSession.map((r) => r.assignedStudentId)
   );
-  for (const s of students || []) {
-    if (!s?.studentId || s.isActive === 0) continue;
-    const stuAny = s as any;
-    if (
-      stuAny.sessionAttendance?.[activeSessionKey] === "ABSENT" ||
-      stuAny.attendanceStatus === "ABSENT"
-    ) {
-      absentExemptStudentIdSet.add(s.studentId);
-      continue;
-    }
-    if (!assignedRowStudentIdSet.has(s.studentId)) {
-      const attCache: Map<string, any> | undefined = (globalThis as any)
-        ?.__mindxSpckAttendanceCache;
-      if (attCache instanceof Map) {
-        const classKey = `${String(selectedClassId || "").trim().toUpperCase()}::${s.studentId}`;
-        const cached = attCache.get(classKey) || attCache.get(`*::${s.studentId}`);
-        if (cached?.[activeSessionKey] === "ABSENT") {
-          absentExemptStudentIdSet.add(s.studentId);
+  if (isSessionAbsentExemptEligible) {
+    for (const s of students || []) {
+      if (!s?.studentId || s.isActive === 0) continue;
+      const stuAny = s as any;
+      if (
+        stuAny.sessionAttendance?.[activeSessionKey] === "ABSENT" ||
+        stuAny.attendanceStatus === "ABSENT"
+      ) {
+        absentExemptStudentIdSet.add(s.studentId);
+        continue;
+      }
+      if (!assignedRowStudentIdSet.has(s.studentId)) {
+        const attCache: Map<string, any> | undefined = (globalThis as any)
+          ?.__mindxSpckAttendanceCache;
+        if (attCache instanceof Map) {
+          const classKey = `${String(selectedClassId || "").trim().toUpperCase()}::${s.studentId}`;
+          const cached = attCache.get(classKey) || attCache.get(`*::${s.studentId}`);
+          if (cached?.[activeSessionKey] === "ABSENT") {
+            absentExemptStudentIdSet.add(s.studentId);
+          }
         }
       }
     }
@@ -214,7 +218,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
           assignedRows.length - absentExemptRowsForCurrentSession.length
         );
 
-  const teachingSuggestion = getSpckVerifiedTeachingProgressSuggestion({
+  const rawTeachingSuggestion = getSpckVerifiedTeachingProgressSuggestion({
     sessionNumber: selectedSessionNumber,
     verifiedCount:
       expectedPresentRosterCount === 0 ? 0 : verifiedSpckCountForCurrentSession,
@@ -222,18 +226,34 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
     totalRosterCount: expectedPresentRosterCount,
   });
 
-  const showSession14ReportCardHandoff =
-    selectedSessionNumber === 14 &&
+  const session14EvalReadyForHandoff =
     !session14ComboStatus.running &&
     !uploading &&
     !uploadingS14EvalLms &&
-    verifiedSpckCountForCurrentSession > 0 &&
-    pendingOrFailedSpckCountForCurrentSession === 0 &&
     allAssignedStudentsHaveVerifiedEval &&
     !comboHasPendingEvalFailures;
 
+  const teachingSuggestion =
+    selectedSessionNumber === 14 && !session14EvalReadyForHandoff
+      ? {
+          ...rawTeachingSuggestion,
+          shouldShow: false,
+          description: "",
+        }
+      : rawTeachingSuggestion;
+
+  const showSession14ReportCardHandoff =
+    selectedSessionNumber === 14 &&
+    session14EvalReadyForHandoff &&
+    rawTeachingSuggestion.shouldShow;
+
   const handleQuickUpdateTeachingProgress = async () => {
-    if (!selectedClassId || !teachingSuggestion.shouldShow || teachingPushState.loading) {
+    if (
+      !selectedClassId ||
+      !teachingSuggestion.shouldShow ||
+      (selectedSessionNumber === 14 && !session14EvalReadyForHandoff) ||
+      teachingPushState.loading
+    ) {
       return;
     }
     const reqSeq = ++pushReqSeqRef.current;

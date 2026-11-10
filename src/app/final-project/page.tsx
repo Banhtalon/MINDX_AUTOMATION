@@ -1109,19 +1109,21 @@ export default function FinalProjectPage() {
       const assignedIds = mapped.map((r) => r.assignedStudentId).filter(Boolean);
       const targetSessKey = String(targetSess) as "12" | "13" | "14";
       const absentForTargetSet = new Set(
-        mapped
-          .filter((r) => {
-            if (!r.assignedStudentId) return false;
-            if (
-              r.sessionHistory?.sessions?.[targetSessKey]?.attendanceStatus ===
-              "ABSENT"
-            ) {
-              return true;
-            }
-            const slot = getSessionSlotDisplay(r, targetSess);
-            return slot.state === "ABSENT_EXEMPT";
-          })
-          .map((r) => r.assignedStudentId)
+        targetSess === 14
+          ? []
+          : mapped
+              .filter((r) => {
+                if (!r.assignedStudentId) return false;
+                if (
+                  r.sessionHistory?.sessions?.[targetSessKey]?.attendanceStatus ===
+                  "ABSENT"
+                ) {
+                  return true;
+                }
+                const slot = getSessionSlotDisplay(r, targetSess);
+                return slot.state === "ABSENT_EXEMPT";
+              })
+              .map((r) => r.assignedStudentId)
       );
       const unsubmittedForTargetIds = mapped
         .filter((r) => {
@@ -2706,24 +2708,21 @@ export default function FinalProjectPage() {
       return summaryObj;
     } catch (err) {
       const errReason = err instanceof Error ? err.message : String(err);
-      const targetSessKey =
-        targetSessionNum === 12
-          ? "12"
-          : targetSessionNum === 14
-          ? "14"
-          : "13";
-      for (const sid of normalizedTargetIds) {
-        if (approveSkippedMap.has(sid) || approvedIds.includes(sid)) continue;
-        const r = rows.find((row) => row.assignedStudentId === sid);
-        const slotMeta = r?.sessionHistory?.sessions?.[targetSessKey];
-        if (
-          slotMeta?.attendanceStatus === "ABSENT" ||
-          slotMeta?.displayState === "ABSENT_EXEMPT"
-        ) {
-          approveSkippedMap.set(
-            sid,
-            `Học viên vắng mặt tại Buổi ${targetSessionNum} trên LMS — đã tự động bỏ qua và miễn nộp buổi này.`
-          );
+      if (targetSessionNum === 12 || targetSessionNum === 13) {
+        const targetSessKey = targetSessionNum === 12 ? "12" : "13";
+        for (const sid of normalizedTargetIds) {
+          if (approveSkippedMap.has(sid) || approvedIds.includes(sid)) continue;
+          const r = rows.find((row) => row.assignedStudentId === sid);
+          const slotMeta = r?.sessionHistory?.sessions?.[targetSessKey];
+          if (
+            slotMeta?.attendanceStatus === "ABSENT" ||
+            slotMeta?.displayState === "ABSENT_EXEMPT"
+          ) {
+            approveSkippedMap.set(
+              sid,
+              `Học viên vắng mặt tại Buổi ${targetSessionNum} trên LMS — đã tự động bỏ qua và miễn nộp buổi này.`
+            );
+          }
         }
       }
       const catchFailedIds =
@@ -2969,17 +2968,14 @@ export default function FinalProjectPage() {
       rows
         .filter((r) => {
           if (!r.assignedStudentId) return false;
-          const activeSessKey =
-            selectedSessionNumber === 12
-              ? "12"
-              : selectedSessionNumber === 14
-              ? "14"
-              : "13";
-          if (
-            r.sessionHistory?.sessions?.[activeSessKey]?.attendanceStatus ===
-            "ABSENT"
-          ) {
-            return false;
+          if (selectedSessionNumber === 12 || selectedSessionNumber === 13) {
+            const activeSessKey = selectedSessionNumber === 12 ? "12" : "13";
+            if (
+              r.sessionHistory?.sessions?.[activeSessKey]?.attendanceStatus ===
+              "ABSENT"
+            ) {
+              return false;
+            }
           }
           const slot = getSessionSlotDisplay(r, selectedSessionNumber);
           return (
@@ -2996,23 +2992,20 @@ export default function FinalProjectPage() {
       if (selectedSessionNumber === 13) {
         return unsubmittedForActiveSessionStudentIds;
       }
-      const activeSessKey =
-        selectedSessionNumber === 12
-          ? "12"
-          : selectedSessionNumber === 14
-          ? "14"
-          : "13";
       const absentInActiveSet = new Set(
-        rows
-          .filter(
-            (r) =>
-              r.assignedStudentId &&
-              (r.sessionHistory?.sessions?.[activeSessKey]?.attendanceStatus ===
-                "ABSENT" ||
-                getSessionSlotDisplay(r, selectedSessionNumber).state ===
-                  "ABSENT_EXEMPT")
-          )
-          .map((r) => r.assignedStudentId)
+        selectedSessionNumber === 14
+          ? []
+          : rows
+              .filter(
+                (r) =>
+                  r.assignedStudentId &&
+                  (r.sessionHistory?.sessions?.[
+                    selectedSessionNumber === 12 ? "12" : "13"
+                  ]?.attendanceStatus === "ABSENT" ||
+                    getSessionSlotDisplay(r, selectedSessionNumber).state ===
+                      "ABSENT_EXEMPT")
+              )
+              .map((r) => r.assignedStudentId)
       );
       const presentReadyIds = confirmedReadyStudentIds.filter(
         (id) => !absentInActiveSet.has(id)

@@ -90,18 +90,17 @@ export function buildEnrichedClassSpckRecords(
   const existingStudentIdSet = new Set(rawRecords.map((r) => r.studentId));
   const students = listStudents(classId, { activeOnly: false });
   const studentMap = new Map(students.map((s) => [s.studentId, s]));
-  const syntheticAbsentStudents = students.filter((s) => {
-    if (s.isActive === 0 || existingStudentIdSet.has(s.studentId)) return false;
-    const attMap = spckSessionRepo.getStudentSessionAttendanceMap(
-      classId,
-      s.studentId
-    );
-    return (
-      attMap["12"] === "ABSENT" ||
-      attMap["13"] === "ABSENT" ||
-      attMap["14"] === "ABSENT"
-    );
-  });
+  const syntheticAbsentStudents =
+    sessionNumber === 14
+      ? []
+      : students.filter((s) => {
+          if (s.isActive === 0 || existingStudentIdSet.has(s.studentId)) return false;
+          const attMap = spckSessionRepo.getStudentSessionAttendanceMap(
+            classId,
+            s.studentId
+          );
+          return attMap["12"] === "ABSENT" || attMap["13"] === "ABSENT";
+        });
   const combinedRecords = [
     ...rawRecords.map((r) => ({ rawRec: r, isSyntheticAbsent: false })),
     ...syntheticAbsentStudents.map((s) => ({

@@ -363,12 +363,6 @@ export function getDashboardTodayTodoCards(options?: {
         Number((r as any).currentSessionNumber) || 0,
       ])
     );
-    const rawRunningStatusMap = new Map(
-      rawRunningList.map((r) => [
-        String(r.classCode || "").trim().toUpperCase(),
-        String(r.status || "").trim().toUpperCase(),
-      ])
-    );
     const activeRunningCodes = new Set(
       rawRunningList
         .filter((r) => isConfirmedRunningStatus(r.status))
@@ -480,10 +474,7 @@ export function getDashboardTodayTodoCards(options?: {
             String(r.finalText || "").trim().length === 0
           );
         });
-      const isFinishedClass =
-        rawRunningStatusMap.get(classId) === "FINISHED";
       const sessionCommentVerified =
-        isFinishedClass ||
         hasAllStrictVerified ||
         hasVerifiedWithRealTextAndOnlyEmptyDrafts;
 
@@ -531,7 +522,7 @@ export function getDashboardTodayTodoCards(options?: {
         }
       }
       const getAbsentStudentIdsForSession = (
-        targetSessNum: 12 | 13 | 14
+        targetSessNum: 12 | 13
       ): Set<string> => {
         const paddedId = `${classId}_SESS_${String(targetSessNum).padStart(2, "0")}`;
         const unpaddedId = `${classId}_SESS_${targetSessNum}`;
@@ -572,7 +563,10 @@ export function getDashboardTodayTodoCards(options?: {
             .map((r) => [String(r.studentId || "").trim(), r] as const)
             .filter(([sid]) => Boolean(sid))
         );
-        const absentStudentIdsInTargetSess = getAbsentStudentIdsForSession(targetSess);
+        const absentStudentIdsInTargetSess =
+          targetSess === 14
+            ? new Set<string>()
+            : getAbsentStudentIdsForSession(targetSess);
         const candidateSpckStudentIds = hasRosterInDb
           ? activeStudentIds
           : Array.from(
@@ -667,16 +661,12 @@ export function getDashboardTodayTodoCards(options?: {
           .map((r) => [String(r.studentId || "").trim(), r.status] as const)
           .filter(([sid]) => Boolean(sid))
       );
-      const absentStudentIdsInSess14 = getAbsentStudentIdsForSession(14);
       const candidateEvalStudentIds = hasRosterInDb
         ? activeStudentIds
         : Array.from(evalByStudent.keys());
-      const requiredEvalStudentIds = candidateEvalStudentIds.filter(
-        (sid) => !absentStudentIdsInSess14.has(sid)
-      );
       const session14EvalVerified =
-        requiredEvalStudentIds.length > 0 &&
-        requiredEvalStudentIds.every((sid) => evalByStudent.get(sid) === "VERIFIED");
+        candidateEvalStudentIds.length > 0 &&
+        candidateEvalStudentIds.every((sid) => evalByStudent.get(sid) === "VERIFIED");
 
       const reportCardRow = db
         .prepare(
@@ -720,16 +710,14 @@ export function getDashboardTodayTodoCards(options?: {
       const wasReportCardVerified =
         reportCardRow?.status === "VERIFIED" ||
         reportCardRow?.teachingSyncStatus === "VERIFIED";
-      const reportCardStale =
-        !isFinishedClass &&
-        Boolean(
-          reportCardRow &&
-            (reportCardRow.teachingSyncStatus === "OUTDATED" ||
-              ((wasReportCardVerified ||
-                Boolean(reportCardRow.teachingSyncedAt) ||
-                Boolean(parsedSnapshot?.scrapedAt)) &&
-                staleness.isStale))
-        );
+      const reportCardStale = Boolean(
+        reportCardRow &&
+          (reportCardRow.teachingSyncStatus === "OUTDATED" ||
+            ((wasReportCardVerified ||
+              Boolean(reportCardRow.teachingSyncedAt) ||
+              Boolean(parsedSnapshot?.scrapedAt)) &&
+              staleness.isStale))
+      );
 
       const teachingProjRow = db
         .prepare(
@@ -760,18 +748,15 @@ export function getDashboardTodayTodoCards(options?: {
         sessionDate: resolvedSessionDate,
         syllabusList,
         sessionCommentVerified,
-        reportCardVerified:
-          isFinishedClass || (wasReportCardVerified && !reportCardStale),
+        reportCardVerified: wasReportCardVerified && !reportCardStale,
         reportCardStale,
         spckSessionVerified: {
-          12: isFinishedClass || checkSpckSessionVerified(12),
-          13: isFinishedClass || checkSpckSessionVerified(13),
-          14: isFinishedClass || checkSpckSessionVerified(14),
+          12: checkSpckSessionVerified(12),
+          13: checkSpckSessionVerified(13),
+          14: checkSpckSessionVerified(14),
         },
-        session14EvalVerified: isFinishedClass || session14EvalVerified,
-        teachingProgressPercent: isFinishedClass
-          ? Math.max(100, teachingProgressPercent)
-          : teachingProgressPercent,
+        session14EvalVerified,
+        teachingProgressPercent,
       });
       }).sort((a, b) => {
         const aToday = a.isTodaySession ? 1 : 0;
