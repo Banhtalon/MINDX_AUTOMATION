@@ -317,6 +317,15 @@ export function getSessionSlotDisplay(
         snapshot: histSlot.lastVerifiedSnapshot,
       };
     }
+    if (histSlot.displayState === "ABSENT_EXEMPT") {
+      return {
+        state: "ABSENT_EXEMPT",
+        tone: "slate",
+        label: "Vắng mặt (Miễn nộp)",
+        detail: `Buổi ${sessionNum}: Học viên vắng mặt trên LMS nên không có ô nộp sản phẩm (được miễn nộp buổi này).`,
+        subLabel: "Vắng mặt trên LMS",
+      };
+    }
     if (histSlot.displayState === "FAILED") {
       return {
         state: "FAILED",
@@ -3634,7 +3643,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           const mergedRetryIds = Array.from(
             new Set([
               ...mergedFailed.map((f) => f.studentId),
-              ...mergedSkipped.map((s) => s.studentId),
+              ...mergedSkipped
+                .filter(
+                  (s) => !/vắng mặt.*miễn nộp/i.test(String(s.reason || ""))
+                )
+                .map((s) => s.studentId),
             ])
           );
           nextSpckSummary = {

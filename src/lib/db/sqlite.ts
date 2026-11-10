@@ -2765,10 +2765,12 @@ export interface SpckSessionHistoryCellSummary {
     | "VERIFIED_FILE_DRIFT"
     | "FAILED_AFTER_VERIFIED"
     | "FAILED"
+    | "ABSENT_EXEMPT"
     | "UNKNOWN_LEGACY"
     | "CORRUPTED"
     | "NOT_SUBMITTED";
   badgeLabel: string;
+  attendanceStatus?: "PRESENT" | "ABSENT" | null;
   draftStatus: SpckSessionSubmissionRecord["draftStatus"];
   draftVersion: number;
   isDraftInitialized: boolean;
@@ -3540,6 +3542,236 @@ export const spckSessionRepo = {
     }
   },
 
+  getStudentSessionAttendanceMap(
+    classId: string,
+    studentId: string
+  ): Record<"12" | "13" | "14", "PRESENT" | "ABSENT" | null> {
+    const db = getDb();
+    const result: Record<"12" | "13" | "14", "PRESENT" | "ABSENT" | null> = {
+      "12": null,
+      "13": null,
+      "14": null,
+    };
+    const sessRows = db
+      .prepare(
+        `SELECT sessionId, sessionNumber FROM classes_sessions
+         WHERE classId = ? AND sessionNumber IN (12, 13, 14)`
+      )
+      .all(classId) as Array<{ sessionId?: string; sessionNumber?: number }>;
+    const sessIdBySlot = new Map<number, string>();
+    for (const r of sessRows) {
+      if (r.sessionNumber && r.sessionId) {
+        sessIdBySlot.set(Number(r.sessionNumber), String(r.sessionId));
+      }
+    }
+    for (const slot of [12, 13, 14] as const) {
+      const paddedId = `${classId}_SESS_${String(slot).padStart(2, "0")}`;
+      const unpaddedId = `${classId}_SESS_${slot}`;
+      const resolvedId = sessIdBySlot.get(slot) || paddedId;
+      const fbRow = db
+        .prepare(
+          `SELECT attendanceStatus FROM session_feedbacks
+           WHERE classId = ? AND studentId = ? AND sessionId IN (?, ?, ?)
+           ORDER BY updatedAt DESC
+           LIMIT 1`
+        )
+        .get(classId, studentId, resolvedId, paddedId, unpaddedId) as
+        | { attendanceStatus?: string }
+        | undefined;
+      const att = String(fbRow?.attendanceStatus || "")
+        .trim()
+        .toUpperCase();
+      if (att === "ABSENT") {
+        result[String(slot) as "12" | "13" | "14"] = "ABSENT";
+      } else if (att === "PRESENT" || att === "LATE") {
+        result[String(slot) as "12" | "13" | "14"] = "PRESENT";
+      }
+    }
+    try {
+      const g = globalThis as any;
+      if (!(g.__mindxSpckAttendanceCache instanceof Map)) {
+        g.__mindxSpckAttendanceCache = new Map<
+          string,
+          Record<"12" | "13" | "14", "PRESENT" | "ABSENT" | null>
+        >();
+      }
+      g.__mindxSpckAttendanceCache.set(`${classId}::${studentId}`, { ...result });
+      g.__mindxSpckAttendanceCache.set(`*::${studentId}`, { ...result });
+    } catch {}
+    return result;
+  },
+
+  markStudentAbsentInSession(
+    classId: string,
+    studentId: string,
+    rawSessionNumber: unknown
+  ) {
+    const stageInfo = getSpckStageInfo(
+      rawSessionNumber,
+      "spckSessionRepo.markStudentAbsentInSession"
+    );
+    const db = getDb();
+    const slot = stageInfo.sessionNumber;
+    const sessRow = db
+      .prepare(
+        `SELECT sessionId FROM classes_sessions
+         WHERE classId = ? AND sessionNumber = ?
+         LIMIT 1`
+      )
+      .get(classId, slot) as { sessionId?: string } | undefined;
+    const paddedId = `${classId}_SESS_${String(slot).padStart(2, "0")}`;
+    const unpaddedId = `${classId}_SESS_${slot}`;
+    const resolvedId = sessRow?.sessionId || paddedId;
+    const existingFb = db
+      .prepare(
+        `SELECT sessionId FROM session_feedbacks
+         WHERE classId = ? AND studentId = ? AND sessionId IN (?, ?, ?)
+         LIMIT 1`
+      )
+      .get(classId, studentId, resolvedId, paddedId, unpaddedId) as
+      | { sessionId?: string }
+      | undefined;
+    if (existingFb?.sessionId) {
+      db.prepare(
+        `UPDATE session_feedbacks
+         SET attendanceStatus = 'ABSENT',
+             updatedAt = datetime('now', 'localtime')
+         WHERE classId = ? AND studentId = ? AND sessionId IN (?, ?, ?)`
+      ).run(classId, studentId, resolvedId, paddedId, unpaddedId);
+    } else {
+      sessionFeedbackRepo.upsert({
+        classId,
+        sessionId: resolvedId,
+        studentId,
+        attendanceStatus: "ABSENT",
+        quickTagsJson: "[]",
+        teacherNote: "",
+        finalText: "",
+        status: "DRAFT",
+        contentHash: "",
+      });
+    }
+    this.clearAbsentStudentSessionFailure(classId, studentId, slot);
+  },
+
+  clearAbsentStudentSessionFailure(
+    classId: string,
+    studentId: string,
+    rawSessionNumber: unknown
+  ): boolean {
+    const stageInfo = getSpckStageInfo(
+      rawSessionNumber,
+      "spckSessionRepo.clearAbsentStudentSessionFailure"
+    );
+    const slot = stageInfo.sessionNumber;
+    const db = getDb();
+    let changed = false;
+
+    const shared = spckUploadRepo.findOne(classId, studentId);
+    if (shared) {
+      const rawCheck = inspectSpckSessionResultsRaw(shared.sessionResultsJson);
+      if (Boolean(shared.historyCorrupted) || !rawCheck.valid) {
+        return false;
+      }
+    }
+
+    const sRow = this.findOne(classId, studentId, slot);
+    if (
+      sRow &&
+      !sRow.lastVerifiedAt &&
+      !sRow.lastVerifiedHash &&
+      (sRow.draftStatus === "FAILED" ||
+        sRow.lastAttemptStatus === "FAILED" ||
+        sRow.draftStatus === "APPROVED" ||
+        sRow.draftStatus === "SAVING")
+    ) {
+      const nextDraftStatus = String(sRow.teacherComment || "").trim()
+        ? "WAITING_APPROVAL"
+        : "DRAFT";
+      db.prepare(
+        `UPDATE spck_session_submissions
+         SET draftStatus = ?,
+             approvedContentHash = '',
+             approvedSnapshotJson = '{}',
+             approvedAt = NULL,
+             lastAttemptStatus = NULL,
+             lastAttemptHash = '',
+             lastAttemptAt = NULL,
+             lastErrorMessage = NULL,
+             updatedAt = datetime('now', 'localtime')
+         WHERE classId = ? AND studentId = ? AND sessionNumber = ?`
+      ).run(nextDraftStatus, classId, studentId, slot);
+      changed = true;
+    }
+
+    if (shared) {
+      const sessionMap = parseSpckSessionResults(shared.sessionResultsJson);
+      const key = String(slot) as "12" | "13" | "14";
+      const entry = sessionMap[key];
+      const entryNeverVerified = Boolean(
+        entry &&
+          entry.status === "FAILED" &&
+          !entry.lastVerifiedAt &&
+          !entry.verifiedAt &&
+          !entry.lastVerifiedContentHash
+      );
+      if (entryNeverVerified) {
+        delete sessionMap[key];
+      }
+      if (
+        entryNeverVerified ||
+        shared.status === "FAILED" ||
+        shared.approvedSessionNumber === slot
+      ) {
+        const verifiedEntries = (["14", "13", "12"] as const)
+          .map((k) => sessionMap[k])
+          .filter(
+            (e) =>
+              e &&
+              (e.status === "VERIFIED" ||
+                Boolean(e.lastVerifiedAt || e.verifiedAt || e.lastVerifiedContentHash))
+          );
+        const latestVer = verifiedEntries[0];
+        const nextSharedStatus = latestVer
+          ? "VERIFIED"
+          : String(shared.teacherComment || "").trim()
+          ? "WAITING_APPROVAL"
+          : "DRAFT";
+        const nextVerifiedAt = latestVer
+          ? latestVer.verifiedAt || latestVer.lastVerifiedAt || shared.verifiedAt || null
+          : shared.verifiedAt || null;
+        const nextContentHash = latestVer
+          ? latestVer.submittedContentHash ||
+            latestVer.lastVerifiedContentHash ||
+            shared.contentHash ||
+            ""
+          : "";
+        db.prepare(
+          `UPDATE spck_uploads
+           SET status = ?,
+               contentHash = ?,
+               verifiedAt = ?,
+               errorMessage = NULL,
+               sessionResultsJson = ?,
+               approvedSessionNumber = CASE WHEN approvedSessionNumber = ? THEN NULL ELSE approvedSessionNumber END,
+               updatedAt = datetime('now', 'localtime')
+           WHERE classId = ? AND studentId = ?`
+        ).run(
+          nextSharedStatus,
+          nextContentHash,
+          nextVerifiedAt,
+          JSON.stringify(sessionMap),
+          slot,
+          classId,
+          studentId
+        );
+        changed = true;
+      }
+    }
+
+    return changed;
+  },
+
   buildStudentSessionHistorySummary(
     classId: string,
     studentId: string
@@ -3550,9 +3782,47 @@ export const spckSessionRepo = {
     legacyHistoryMeta: Record<string, any> | null;
     sessions: Record<"12" | "13" | "14", SpckSessionHistoryCellSummary>;
   } {
-    const shared = spckUploadRepo.findOne(classId, studentId);
-    const sessionRowsMap = this.findByStudent(classId, studentId);
-    const legacyResultsMap = parseSpckSessionResults(shared?.sessionResultsJson);
+    const attendanceMap = this.getStudentSessionAttendanceMap(classId, studentId);
+    let shared = spckUploadRepo.findOne(classId, studentId);
+    let sessionRowsMap = this.findByStudent(classId, studentId);
+    const initialRawInspection = inspectSpckSessionResultsRaw(shared?.sessionResultsJson);
+    const initialHistoryCorrupted =
+      Boolean(shared?.historyCorrupted) || !initialRawInspection.valid;
+    let legacyResultsMap = parseSpckSessionResults(shared?.sessionResultsJson);
+
+    let healedAbsentFailure = false;
+    if (!initialHistoryCorrupted) {
+      for (const slot of [12, 13, 14] as const) {
+        const key = String(slot) as "12" | "13" | "14";
+        if (attendanceMap[key] !== "ABSENT") continue;
+        const sRow = sessionRowsMap[key];
+        const legEntry = legacyResultsMap[key];
+        const hasPriorVerified = Boolean(
+          sRow?.lastVerifiedAt ||
+            sRow?.lastVerifiedHash ||
+            legEntry?.verifiedAt ||
+            legEntry?.lastVerifiedAt ||
+            legEntry?.lastVerifiedContentHash ||
+            legEntry?.status === "VERIFIED"
+        );
+        if (
+          !hasPriorVerified &&
+          (sRow?.draftStatus === "FAILED" ||
+            sRow?.lastAttemptStatus === "FAILED" ||
+            legEntry?.status === "FAILED")
+        ) {
+          if (this.clearAbsentStudentSessionFailure(classId, studentId, slot)) {
+            healedAbsentFailure = true;
+          }
+        }
+      }
+    }
+    if (healedAbsentFailure) {
+      shared = spckUploadRepo.findOne(classId, studentId);
+      sessionRowsMap = this.findByStudent(classId, studentId);
+      legacyResultsMap = parseSpckSessionResults(shared?.sessionResultsJson);
+    }
+
     const rawInspection = inspectSpckSessionResultsRaw(shared?.sessionResultsJson);
 
     const historyCorrupted =
@@ -3621,6 +3891,14 @@ export const spckSessionRepo = {
       } else if (lastAttemptStatus === "FAILED" && lastVerifiedAt) {
         displayState = "FAILED_AFTER_VERIFIED";
         badgeLabel = `Lỗi nộp lại (đã nộp ${lastVerifiedAt.slice(0, 10)})`;
+      } else if (
+        attendanceMap[key] === "ABSENT" &&
+        !historyCorrupted &&
+        !lastVerifiedAt &&
+        lastAttemptStatus !== "VERIFIED"
+      ) {
+        displayState = "ABSENT_EXEMPT";
+        badgeLabel = "Vắng mặt (Miễn nộp)";
       } else if (lastAttemptStatus === "FAILED") {
         displayState = "FAILED";
         badgeLabel = "Lỗi";
@@ -3646,6 +3924,7 @@ export const spckSessionRepo = {
         stageCode: stageInfo.stageCode,
         displayState,
         badgeLabel,
+        attendanceStatus: attendanceMap[key],
         draftStatus: sRow?.draftStatus || "DRAFT",
         draftVersion: sRow?.draftVersion ?? 0,
         isDraftInitialized: Boolean(sRow?.isDraftInitialized),

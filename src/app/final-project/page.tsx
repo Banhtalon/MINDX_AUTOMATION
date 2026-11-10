@@ -64,10 +64,12 @@ interface SpckSessionSlotSummaryUI {
     | "VERIFIED_FILE_DRIFT"
     | "FAILED_AFTER_VERIFIED"
     | "FAILED"
+    | "ABSENT_EXEMPT"
     | "UNKNOWN_LEGACY"
     | "CORRUPTED"
     | "NOT_SUBMITTED";
   badgeLabel: string;
+  attendanceStatus?: "PRESENT" | "ABSENT" | null;
   draftVersion: number;
   hasUnsubmittedDraftChanges: boolean;
   hasFileDrift: boolean;
@@ -496,6 +498,7 @@ function getSessionSlotDisplay(
     | "VERIFIED_DRAFT_CHANGED"
     | "VERIFIED_FILE_DRIFT"
     | "FAILED"
+    | "ABSENT_EXEMPT"
     | "UNKNOWN_LEGACY"
     | "CORRUPTED"
     | "NOT_SUBMITTED";
@@ -592,6 +595,15 @@ function getSessionSlotDisplay(
         errorMessage: histSlot.lastErrorMessage,
         hasVerifiedEvidence: true,
         snapshot: histSlot.lastVerifiedSnapshot,
+      };
+    }
+    if (histSlot.displayState === "ABSENT_EXEMPT") {
+      return {
+        state: "ABSENT_EXEMPT",
+        tone: "slate",
+        label: "Vắng mặt (Miễn nộp)",
+        detail: `Buổi ${sessionNum}: Học viên vắng mặt trên LMS nên không có ô nộp sản phẩm (được miễn nộp buổi này).`,
+        subLabel: "Vắng mặt trên LMS",
       };
     }
     if (histSlot.displayState === "FAILED") {
@@ -1095,9 +1107,27 @@ export default function FinalProjectPage() {
       }
       setRows(mapped);
       const assignedIds = mapped.map((r) => r.assignedStudentId).filter(Boolean);
+      const targetSessKey = String(targetSess) as "12" | "13" | "14";
+      const absentForTargetSet = new Set(
+        mapped
+          .filter((r) => {
+            if (!r.assignedStudentId) return false;
+            if (
+              r.sessionHistory?.sessions?.[targetSessKey]?.attendanceStatus ===
+              "ABSENT"
+            ) {
+              return true;
+            }
+            const slot = getSessionSlotDisplay(r, targetSess);
+            return slot.state === "ABSENT_EXEMPT";
+          })
+          .map((r) => r.assignedStudentId)
+      );
       const unsubmittedForTargetIds = mapped
         .filter((r) => {
-          if (!r.assignedStudentId) return false;
+          if (!r.assignedStudentId || absentForTargetSet.has(r.assignedStudentId)) {
+            return false;
+          }
           const slot = getSessionSlotDisplay(r, targetSess);
           return !slot.label.startsWith("Đã nộp ✓");
         })
@@ -1106,6 +1136,7 @@ export default function FinalProjectPage() {
         .filter(
           (r) =>
             r.assignedStudentId &&
+            !absentForTargetSet.has(r.assignedStudentId) &&
             r.isConfirmedByTeacher &&
             (r.projectTitle || "").trim().length > 0 &&
             (r.projectTitle || "").trim().length <= 100 &&
@@ -1113,13 +1144,16 @@ export default function FinalProjectPage() {
             r.status !== "INSUFFICIENT_INFO"
         )
         .map((r) => r.assignedStudentId);
+      const nonAbsentAssignedIds = assignedIds.filter(
+        (id) => !absentForTargetSet.has(id)
+      );
       setSelectedStudentIds((prev) =>
         prev.includes("__AUTO_SELECT__")
           ? targetSess === 13
             ? unsubmittedForTargetIds
             : readyIds.length > 0
             ? readyIds
-            : assignedIds
+            : nonAbsentAssignedIds
           : prev.filter((id) => assignedIds.includes(id))
       );
     },
@@ -2174,6 +2208,8 @@ export default function FinalProjectPage() {
       `Đang kiểm tra & nộp ${normalizedTargetIds.length} bài — Buổi ${targetSessionNum} (Lớp ${requestClassId})...`
     );
     setBannerMessage(null);
+    let approvedIds: string[] = [];
+    const approveSkippedMap = new Map<string, string>();
     try {
       const savedRowsByStudent = new Map<string, ScannedFolderUIItem>();
       // Save latest drafts first; abort immediately if any draft save fails
@@ -2254,6 +2290,32 @@ export default function FinalProjectPage() {
       }
 
       if (!approveData.success) {
+        if (Array.isArray(approveData.records) && approveData.records.length > 0) {
+          const errDbByStu = new Map<string, SpckRecordRow>(
+            approveData.records
+              .filter((r: SpckRecordRow) => !r.classId || r.classId === requestClassId)
+              .map((r: SpckRecordRow) => [r.studentId, r])
+          );
+          setRows((prev) =>
+            prev.map((row) => {
+              const rec = errDbByStu.get(row.assignedStudentId);
+              if (!rec) return row;
+              return {
+                ...row,
+                projectTitle: rec.projectTitle || row.projectTitle,
+                status: rec.status,
+                contentHash: rec.contentHash || "",
+                verifiedAt: rec.verifiedAt,
+                errorMessage: rec.errorMessage,
+                draftVersion: rec.draftVersion ?? row.draftVersion,
+                sessionResults:
+                  parseSessionResultsMap(rec.sessionResultsJson) || row.sessionResults,
+                sessionHistory: rec.sessionHistory || row.sessionHistory,
+                isDirty: false,
+              };
+            })
+          );
+        }
         const approveSkippedList: Array<{
           studentId: string;
           studentName: string;
@@ -2265,6 +2327,14 @@ export default function FinalProjectPage() {
               reason: String(item.reason || approveData.error || "Chưa đủ điều kiện nộp."),
             }))
           : [];
+        const approveRetryIds =
+          approveSkippedList.length > 0
+            ? approveSkippedList
+                .filter((s) => !/vắng\s+mặt.*miễn\s+nộp/i.test(s.reason))
+                .map((s) => s.studentId)
+            : normalizedTargetIds;
+        const allApproveSkippedAreAbsent =
+          approveSkippedList.length > 0 && approveRetryIds.length === 0;
         const approveErrReason =
           approveData.error || "Không thể chuẩn bị gói SPCK trước khi nộp.";
         const approveFailSummary: SpckBatchSubmissionSummaryUI = {
@@ -2280,13 +2350,16 @@ export default function FinalProjectPage() {
                   reason: approveErrReason,
                 })),
           skippedItems: approveSkippedList,
-          retryStudentIds: normalizedTargetIds,
+          retryStudentIds: approveRetryIds,
           completedAt: new Date().toLocaleTimeString("vi-VN"),
         };
         setLastSubmissionSummary(approveFailSummary);
+        if (allApproveSkippedAreAbsent) {
+          setSelectedStudentIds([]);
+        }
         if (approveSkippedList.length > 0) {
           setBannerMessage({
-            type: "error",
+            type: allApproveSkippedAreAbsent ? "warning" : "error",
             text: `Đã nộp 0/${normalizedTargetIds.length} bài (Buổi ${targetSessionNum}) — ${approveSkippedList.length} bài bị bỏ qua: ${approveSkippedList
               .map((s) => `${s.studentName} (${s.reason})`)
               .join("; ")}`,
@@ -2325,10 +2398,9 @@ export default function FinalProjectPage() {
         })
       );
 
-      const approvedIds: string[] = Array.isArray(approveData.approvedStudentIds)
+      approvedIds = Array.isArray(approveData.approvedStudentIds)
         ? approveData.approvedStudentIds
         : [];
-      const approveSkippedMap = new Map<string, string>();
       if (Array.isArray(approveData.skipped)) {
         for (const sk of approveData.skipped) {
           if (sk?.studentId) {
@@ -2356,18 +2428,21 @@ export default function FinalProjectPage() {
             reason,
           })
         );
+        const retryOnly = skippedOnly
+          .filter((s) => !/vắng\s+mặt.*miễn\s+nộp/i.test(String(s.reason || "")))
+          .map((s) => s.studentId);
         const skippedSummary: SpckBatchSubmissionSummaryUI = {
           sessionNumber: targetSessionNum,
           totalSelected: normalizedTargetIds.length,
           verifiedItems: [],
           failedItems: [],
           skippedItems: skippedOnly,
-          retryStudentIds: normalizedTargetIds,
+          retryStudentIds: retryOnly,
           completedAt: new Date().toLocaleTimeString("vi-VN"),
         };
         setLastSubmissionSummary(skippedSummary);
         setBannerMessage({
-          type: "error",
+          type: retryOnly.length === 0 && skippedOnly.length > 0 ? "warning" : "error",
           text: `Đã nộp 0/${normalizedTargetIds.length} bài (Buổi ${targetSessionNum}) — ${skippedOnly.length} bài bị bỏ qua: ${skippedOnly
             .map((s) => `${s.studentName} (${s.reason})`)
             .join("; ")}`,
@@ -2391,6 +2466,12 @@ export default function FinalProjectPage() {
       if (!uploadData.success) {
         const uploadErrReason =
           uploadData.error || "Lỗi khi Auto-Upload SPCK lên LMS.";
+        const retryableSkippedIds = Array.from(approveSkippedMap.entries())
+          .filter(
+            ([, reason]) =>
+              !/vắng mặt.*miễn nộp/i.test(String(reason || ""))
+          )
+          .map(([studentId]) => studentId);
         const uploadFailSummary: SpckBatchSubmissionSummaryUI = {
           sessionNumber: targetSessionNum,
           totalSelected: normalizedTargetIds.length,
@@ -2407,7 +2488,9 @@ export default function FinalProjectPage() {
               reason,
             })
           ),
-          retryStudentIds: normalizedTargetIds,
+          retryStudentIds: Array.from(
+            new Set([...approvedIds, ...retryableSkippedIds])
+          ),
           completedAt: new Date().toLocaleTimeString("vi-VN"),
         };
         setLastSubmissionSummary(uploadFailSummary);
@@ -2550,11 +2633,20 @@ export default function FinalProjectPage() {
           ? failedItems.length
           : Number(uSummary?.failedCount || 0);
       const skippedCount = skippedItems.length;
-      const unsubmittedCount = Math.max(0, totalSelected - verifiedCount);
+      const absentExemptSkippedCount = skippedItems.filter((s) =>
+        /vắng\s+mặt.*miễn\s+nộp/i.test(String(s.reason || ""))
+      ).length;
+      const nonExemptSkippedItems = skippedItems.filter(
+        (s) => !/vắng\s+mặt.*miễn\s+nộp/i.test(String(s.reason || ""))
+      );
+      const unsubmittedCount = Math.max(
+        0,
+        totalSelected - verifiedCount - absentExemptSkippedCount
+      );
       const retryStudentIds = Array.from(
         new Set([
           ...failedItems.map((f) => f.studentId),
-          ...skippedItems.map((s) => s.studentId),
+          ...nonExemptSkippedItems.map((s) => s.studentId),
         ])
       );
 
@@ -2572,12 +2664,21 @@ export default function FinalProjectPage() {
 
       if (retryStudentIds.length > 0) {
         setSelectedStudentIds(retryStudentIds);
+      } else if (absentExemptSkippedCount > 0) {
+        setSelectedStudentIds([]);
       }
 
-      if (unsubmittedCount === 0 && failedCount === 0 && skippedCount === 0) {
+      if (
+        unsubmittedCount === 0 &&
+        failedCount === 0 &&
+        nonExemptSkippedItems.length === 0
+      ) {
         setBannerMessage({
           type: "success",
-          text: `Đã nộp ${verifiedCount}/${totalSelected} bài — Buổi ${targetSessionNum} (Đã đối chiếu VERIFIED đầy đủ trên LMS, lỗi 0, bỏ qua 0).`,
+          text:
+            absentExemptSkippedCount > 0
+              ? `Đã nộp ${verifiedCount}/${Math.max(0, totalSelected - absentExemptSkippedCount)} bài học viên có mặt — Buổi ${targetSessionNum} (Đã miễn nộp ${absentExemptSkippedCount} học viên vắng mặt).`
+              : `Đã nộp ${verifiedCount}/${totalSelected} bài — Buổi ${targetSessionNum} (Đã đối chiếu VERIFIED đầy đủ trên LMS, lỗi 0, bỏ qua 0).`,
         });
       } else {
         const detailParts: string[] = [];
@@ -2605,17 +2706,55 @@ export default function FinalProjectPage() {
       return summaryObj;
     } catch (err) {
       const errReason = err instanceof Error ? err.message : String(err);
+      const targetSessKey =
+        targetSessionNum === 12
+          ? "12"
+          : targetSessionNum === 14
+          ? "14"
+          : "13";
+      for (const sid of normalizedTargetIds) {
+        if (approveSkippedMap.has(sid) || approvedIds.includes(sid)) continue;
+        const r = rows.find((row) => row.assignedStudentId === sid);
+        const slotMeta = r?.sessionHistory?.sessions?.[targetSessKey];
+        if (
+          slotMeta?.attendanceStatus === "ABSENT" ||
+          slotMeta?.displayState === "ABSENT_EXEMPT"
+        ) {
+          approveSkippedMap.set(
+            sid,
+            `Học viên vắng mặt tại Buổi ${targetSessionNum} trên LMS — đã tự động bỏ qua và miễn nộp buổi này.`
+          );
+        }
+      }
+      const catchFailedIds =
+        approvedIds.length > 0
+          ? approvedIds
+          : normalizedTargetIds.filter((sid) => !approveSkippedMap.has(sid));
+      const catchSkippedItems = Array.from(approveSkippedMap.entries()).map(
+        ([studentId, reason]) => ({
+          studentId,
+          studentName: resolveStudentLabel(studentId),
+          reason,
+        })
+      );
+      const catchRetryableSkippedIds = catchSkippedItems
+        .filter(
+          (s) => !/vắng\s+mặt.*miễn\s+nộp/i.test(String(s.reason || ""))
+        )
+        .map((s) => s.studentId);
       const catchSummary: SpckBatchSubmissionSummaryUI = {
         sessionNumber: targetSessionNum,
         totalSelected: normalizedTargetIds.length,
         verifiedItems: [],
-        failedItems: normalizedTargetIds.map((id) => ({
+        failedItems: catchFailedIds.map((id) => ({
           studentId: id,
           studentName: resolveStudentLabel(id),
           reason: errReason,
         })),
-        skippedItems: [],
-        retryStudentIds: normalizedTargetIds,
+        skippedItems: catchSkippedItems,
+        retryStudentIds: Array.from(
+          new Set([...catchFailedIds, ...catchRetryableSkippedIds])
+        ),
         completedAt: new Date().toLocaleTimeString("vi-VN"),
       };
       if (!activeUiClassId || activeUiClassId === requestClassId) {
@@ -2830,8 +2969,22 @@ export default function FinalProjectPage() {
       rows
         .filter((r) => {
           if (!r.assignedStudentId) return false;
+          const activeSessKey =
+            selectedSessionNumber === 12
+              ? "12"
+              : selectedSessionNumber === 14
+              ? "14"
+              : "13";
+          if (
+            r.sessionHistory?.sessions?.[activeSessKey]?.attendanceStatus ===
+            "ABSENT"
+          ) {
+            return false;
+          }
           const slot = getSessionSlotDisplay(r, selectedSessionNumber);
-          return !slot.label.startsWith("Đã nộp ✓");
+          return (
+            slot.state !== "ABSENT_EXEMPT" && !slot.label.startsWith("Đã nộp ✓")
+          );
         })
         .map((r) => r.assignedStudentId),
     [rows, selectedSessionNumber]
@@ -2843,9 +2996,31 @@ export default function FinalProjectPage() {
       if (selectedSessionNumber === 13) {
         return unsubmittedForActiveSessionStudentIds;
       }
-      return confirmedReadyStudentIds.length > 0
-        ? confirmedReadyStudentIds
-        : assignableStudentIds;
+      const activeSessKey =
+        selectedSessionNumber === 12
+          ? "12"
+          : selectedSessionNumber === 14
+          ? "14"
+          : "13";
+      const absentInActiveSet = new Set(
+        rows
+          .filter(
+            (r) =>
+              r.assignedStudentId &&
+              (r.sessionHistory?.sessions?.[activeSessKey]?.attendanceStatus ===
+                "ABSENT" ||
+                getSessionSlotDisplay(r, selectedSessionNumber).state ===
+                  "ABSENT_EXEMPT")
+          )
+          .map((r) => r.assignedStudentId)
+      );
+      const presentReadyIds = confirmedReadyStudentIds.filter(
+        (id) => !absentInActiveSet.has(id)
+      );
+      const presentAssignableIds = assignableStudentIds.filter(
+        (id) => !absentInActiveSet.has(id)
+      );
+      return presentReadyIds.length > 0 ? presentReadyIds : presentAssignableIds;
     }
     return selectedStudentIds.filter((id) => validSet.has(id));
   }, [
@@ -2854,6 +3029,7 @@ export default function FinalProjectPage() {
     confirmedReadyStudentIds,
     selectedSessionNumber,
     unsubmittedForActiveSessionStudentIds,
+    rows,
   ]);
 
   const isAnyOperationBusy =

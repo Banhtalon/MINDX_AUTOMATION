@@ -106,6 +106,23 @@ export async function POST(req: Request) {
         sessionNumber
       );
 
+      const attendanceInSess =
+        spckSessionRepo.getStudentSessionAttendanceMap(classId, studentId)[
+          String(sessionNumber) as "12" | "13" | "14"
+        ];
+      if (attendanceInSess === "ABSENT") {
+        spckSessionRepo.clearAbsentStudentSessionFailure(
+          classId,
+          studentId,
+          sessionNumber
+        );
+        skipped.push({
+          studentId,
+          reason: `Học viên vắng mặt tại Buổi ${sessionNumber} trên LMS (không có ô nộp sản phẩm) — đã tự động bỏ qua và miễn nộp buổi này.`,
+        });
+        continue;
+      }
+
       if (
         record.status === "INSUFFICIENT_INFO" ||
         sessionDraft.draftStatus === "INSUFFICIENT_INFO"

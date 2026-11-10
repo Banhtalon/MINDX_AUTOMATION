@@ -70,12 +70,61 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
         getSessionSlotDisplay(r, selectedSessionNumber).state === "VERIFIED_CURRENT"
     );
 
+  const activeSessionKey = String(selectedSessionNumber) as "12" | "13" | "14";
+
+  const isRowAbsentExemptForCurrentSession = (
+    r: (typeof allRows)[number]
+  ): boolean => {
+    if (!r.assignedStudentId) return false;
+    if (r.sessionHistory?.sessions?.[activeSessionKey]?.attendanceStatus === "ABSENT") {
+      return true;
+    }
+    return getSessionSlotDisplay(r, selectedSessionNumber).state === "ABSENT_EXEMPT";
+  };
+
+  const absentExemptRowsForCurrentSession = assignedRows.filter(
+    isRowAbsentExemptForCurrentSession
+  );
+  const assignedRowStudentIdSet = new Set(
+    assignedRows.map((r) => r.assignedStudentId)
+  );
+  const absentExemptStudentIdSet = new Set(
+    absentExemptRowsForCurrentSession.map((r) => r.assignedStudentId)
+  );
+  for (const s of students || []) {
+    if (!s?.studentId || s.isActive === 0) continue;
+    const stuAny = s as any;
+    if (
+      stuAny.sessionAttendance?.[activeSessionKey] === "ABSENT" ||
+      stuAny.attendanceStatus === "ABSENT"
+    ) {
+      absentExemptStudentIdSet.add(s.studentId);
+      continue;
+    }
+    if (!assignedRowStudentIdSet.has(s.studentId)) {
+      const attCache: Map<string, any> | undefined = (globalThis as any)
+        ?.__mindxSpckAttendanceCache;
+      if (attCache instanceof Map) {
+        const classKey = `${String(selectedClassId || "").trim().toUpperCase()}::${s.studentId}`;
+        const cached = attCache.get(classKey) || attCache.get(`*::${s.studentId}`);
+        if (cached?.[activeSessionKey] === "ABSENT") {
+          absentExemptStudentIdSet.add(s.studentId);
+        }
+      }
+    }
+  }
+
   const verifiedRowsCountForCurrentSession = assignedRows.filter(
-    isRowVerifiedAndCleanForCurrentSession
+    (r) =>
+      !isRowAbsentExemptForCurrentSession(r) &&
+      !absentExemptStudentIdSet.has(r.assignedStudentId) &&
+      isRowVerifiedAndCleanForCurrentSession(r)
   ).length;
 
   const unverifiedOrUnassignedRowsCountForCurrentSession = allRows.filter(
-    (r) => !isRowVerifiedAndCleanForCurrentSession(r)
+    (r) =>
+      !isRowVerifiedAndCleanForCurrentSession(r) &&
+      !isRowAbsentExemptForCurrentSession(r)
   ).length;
 
   const isComboForCurrentClass =
@@ -109,12 +158,15 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
   const activeRosterStudents = (students || []).filter(
     (s) => s.isActive !== 0
   );
+  const presentActiveRosterStudents = activeRosterStudents.filter(
+    (s) => !absentExemptStudentIdSet.has(s.studentId)
+  );
   const verifiedStudentIdSet = new Set(
     assignedRows
       .filter(isRowVerifiedAndCleanForCurrentSession)
       .map((r) => r.assignedStudentId)
   );
-  const missingRosterSpckCount = activeRosterStudents.filter(
+  const missingRosterSpckCount = presentActiveRosterStudents.filter(
     (s) => !verifiedStudentIdSet.has(s.studentId)
   ).length;
 
@@ -135,9 +187,9 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
 
   const assignedStudentIds = assignedRows.map((r) => r.assignedStudentId);
   const targetCheckStudentIds =
-    activeRosterStudents.length > 0
-      ? activeRosterStudents.map((s) => s.studentId)
-      : assignedStudentIds;
+    presentActiveRosterStudents.length > 0
+      ? presentActiveRosterStudents.map((s) => s.studentId)
+      : assignedStudentIds.filter((sid) => !absentExemptStudentIdSet.has(sid));
 
   const allAssignedStudentsHaveVerifiedEval =
     targetCheckStudentIds.length > 0 &&
@@ -145,18 +197,29 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
     targetCheckStudentIds.every(
       (sid) => evalByStudentId.get(sid)?.status === "VERIFIED"
     ) &&
-    evalsForCurrentClass.every((ev) => ev.status === "VERIFIED");
+    evalsForCurrentClass
+      .filter((ev) => !absentExemptStudentIdSet.has(ev.studentId))
+      .every((ev) => ev.status === "VERIFIED");
 
   const comboHasPendingEvalFailures =
     isComboForCurrentClass &&
     (session14ComboStatus.evalRetryStudentIds.length > 0 ||
       (session14ComboStatus.evalFailedCount || 0) > 0);
 
+  const expectedPresentRosterCount =
+    activeRosterStudents.length > 0
+      ? presentActiveRosterStudents.length
+      : Math.max(
+          0,
+          assignedRows.length - absentExemptRowsForCurrentSession.length
+        );
+
   const teachingSuggestion = getSpckVerifiedTeachingProgressSuggestion({
     sessionNumber: selectedSessionNumber,
-    verifiedCount: verifiedSpckCountForCurrentSession,
+    verifiedCount:
+      expectedPresentRosterCount === 0 ? 0 : verifiedSpckCountForCurrentSession,
     pendingOrFailedCount: pendingOrFailedSpckCountForCurrentSession,
-    totalRosterCount: activeRosterStudents.length,
+    totalRosterCount: expectedPresentRosterCount,
   });
 
   const showSession14ReportCardHandoff =
@@ -195,7 +258,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
           allowDecrease: false,
           verifiedSpckCount: verifiedSpckCountForCurrentSession,
           expectedRosterCount:
-            activeRosterStudents.length || verifiedSpckCountForCurrentSession,
+            expectedPresentRosterCount || verifiedSpckCountForCurrentSession,
         }),
       });
       const data = await res.json();
@@ -265,7 +328,14 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
           {assignedRows.length > 0 && (
             <span className="spck-pill-success px-2 py-0.5 rounded-full text-[11px] font-semibold">
               Đã xác minh B.{selectedSessionNumber}: {verifiedSpckCountForCurrentSession}/
-              {assignedRows.length} HV
+              {Math.max(
+                0,
+                assignedRows.length - absentExemptRowsForCurrentSession.length
+              )}{" "}
+              HV
+              {absentExemptRowsForCurrentSession.length > 0
+                ? ` (Miễn nộp ${absentExemptRowsForCurrentSession.length} vắng)`
+                : ""}
             </span>
           )}
         </div>

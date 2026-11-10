@@ -22,7 +22,8 @@ import {
   buildClassTodayTodoCard,
   getDashboardTodayTodoCards,
 } from "../src/lib/dashboard/today-tasks";
-import { getDb, classSessionRepo } from "../src/lib/db/sqlite";
+import { getDb, classSessionRepo, spckSessionRepo } from "../src/lib/db/sqlite";
+import { buildEnrichedClassSpckRecords } from "../src/app/api/spck/list/route";
 import { queryClassDirectory } from "../src/lib/classes/class-directory";
 import { enrichClassSessionsWithScheduleDates } from "../src/lib/playwright/sync-class";
 import {
@@ -535,6 +536,123 @@ async function runTests() {
       false,
       "F01: Session 12 verified in sessionResultsJson must not falsely mark Session 13 as done"
     );
+
+    // Absent student SPCK exemption regression (VT-C4K-GA38 Session 13 scenario):
+    // When STU_1 is PRESENT and VERIFIED in Session 13, and STU_2 is ABSENT in session_feedbacks for Session 13
+    // (even if STU_2 previously got a stale FAILED attempt because LMS hides 'Sản phẩm của học sinh' on absent rows),
+    // Dashboard must mark SPCK Session 13 as Done, and buildStudentSessionHistorySummary must auto-heal STU_2 to ABSENT_EXEMPT.
+    db.prepare(
+      `INSERT INTO students (classId, studentId, fullName, isActive)
+       VALUES ('VT-C4K-JSB13', 'STU_2', 'Phạm Hà Thanh Nguyên', 1)`
+    ).run();
+    db.prepare(
+      `INSERT INTO session_feedbacks (classId, sessionId, studentId, status, attendanceStatus)
+       VALUES ('VT-C4K-JSB13', 'VT-C4K-JSB13_SESS_13', 'STU_1', 'VERIFIED', 'PRESENT'),
+              ('VT-C4K-JSB13', 'VT-C4K-JSB13_SESS_13', 'STU_2', 'VERIFIED', 'ABSENT')`
+    ).run();
+    db.prepare(
+      `INSERT INTO spck_session_submissions (
+         classId, studentId, sessionNumber, draftStatus,
+         lastAttemptStatus, lastVerifiedAt, lastVerifiedHash
+       ) VALUES
+         ('VT-C4K-JSB13', 'STU_1', 13, 'VERIFIED', 'VERIFIED', '2026-11-10 09:00:00', 'hash_stu1_13'),
+         ('VT-C4K-JSB13', 'STU_2', 12, 'VERIFIED', 'VERIFIED', '2026-11-03 09:00:00', 'hash_stu2_12'),
+         ('VT-C4K-JSB13', 'STU_2', 13, 'FAILED', 'FAILED', NULL, NULL)`
+    ).run();
+    db.prepare(
+      `INSERT INTO spck_uploads (classId, studentId, status, errorMessage, sessionResultsJson)
+       VALUES ('VT-C4K-JSB13', 'STU_2', 'FAILED', 'Tại Buổi 13 không có nút Sản phẩm của học sinh', ?)`
+    ).run(
+      JSON.stringify({
+        "12": { status: "VERIFIED", lastVerifiedAt: "2026-11-03T09:00:00.000Z" },
+        "13": { status: "FAILED", errorMessage: "Tại Buổi 13 không có nút Sản phẩm của học sinh" },
+      })
+    );
+    const cardsAbsentExempt = getDashboardTodayTodoCards({ limit: 10 });
+    const jsb13CardAbsentExempt = cardsAbsentExempt.find((c) => c.classId === "VT-C4K-JSB13")!;
+    assert.equal(
+      jsb13CardAbsentExempt.steps[0].isDone,
+      true,
+      "Absent student in Session 13: Step 1 (Nhận xét buổi 13) must be Done"
+    );
+    assert.equal(
+      jsb13CardAbsentExempt.steps[1].isDone,
+      true,
+      "Absent student in Session 13: Step 2 (Nộp SPCK Buổi 13) must be Done when all present students are VERIFIED"
+    );
+    assert.match(jsb13CardAbsentExempt.summaryText, /② Nộp SPCK Buổi 13 \(đã nộp LMS ✓\)/);
+    assert.equal(jsb13CardAbsentExempt.steps[1].statusText, "đã nộp LMS ✓");
+
+    const stu2History = spckSessionRepo.buildStudentSessionHistorySummary("VT-C4K-JSB13", "STU_2");
+    assert.equal(
+      stu2History.sessions["13"].displayState,
+      "ABSENT_EXEMPT",
+      "buildStudentSessionHistorySummary must classify absent student in Session 13 as ABSENT_EXEMPT"
+    );
+    assert.equal(stu2History.sessions["13"].badgeLabel, "Vắng mặt (Miễn nộp)");
+    assert.equal(stu2History.sessions["13"].attendanceStatus, "ABSENT");
+    assert.equal(
+      stu2History.sessions["13"].lastAttemptStatus,
+      null,
+      "Stale FAILED attempt on absent student session must be auto-healed to null"
+    );
+    const healedUploadRow = db
+      .prepare(`SELECT status, errorMessage FROM spck_uploads WHERE classId = 'VT-C4K-JSB13' AND studentId = 'STU_2'`)
+      .get() as { status: string; errorMessage: string | null };
+    assert.equal(
+      healedUploadRow.status,
+      "VERIFIED",
+      "spck_uploads.status must restore to VERIFIED (from Session 12) after clearing Session 13 absent failure"
+    );
+    assert.equal(healedUploadRow.errorMessage, null);
+
+    // F02 regression: if sessionResultsJson is corrupted on an absent student, auto-heal must NOT overwrite the corrupted JSON with '{}'
+    const corruptRaw = '{"12":{"status":"VERIFIED","lastVerifiedAt":"2026-11-03"},"13":';
+    db.prepare(
+      `INSERT INTO students (classId, studentId, fullName, isActive)
+       VALUES ('VT-C4K-JSB13', 'STU_CORRUPT', 'Học viên Lỗi JSON', 1),
+              ('VT-C4K-JSB13', 'STU_ABSENT_NO_REC', 'Học viên Vắng Chưa Có SPCK', 1)`
+    ).run();
+    db.prepare(
+      `INSERT INTO session_feedbacks (classId, sessionId, studentId, status, attendanceStatus)
+       VALUES ('VT-C4K-JSB13', 'VT-C4K-JSB13_SESS_13', 'STU_CORRUPT', 'VERIFIED', 'ABSENT'),
+              ('VT-C4K-JSB13', 'VT-C4K-JSB13_SESS_13', 'STU_ABSENT_NO_REC', 'VERIFIED', 'ABSENT')`
+    ).run();
+    db.prepare(
+      `INSERT INTO spck_session_submissions (classId, studentId, sessionNumber, draftStatus, lastAttemptStatus)
+       VALUES ('VT-C4K-JSB13', 'STU_CORRUPT', 13, 'FAILED', 'FAILED')`
+    ).run();
+    db.prepare(
+      `INSERT INTO spck_uploads (classId, studentId, status, errorMessage, sessionResultsJson)
+       VALUES ('VT-C4K-JSB13', 'STU_CORRUPT', 'FAILED', 'Upload failed', ?)`
+    ).run(corruptRaw);
+    const directCleanRes = spckSessionRepo.clearAbsentStudentSessionFailure("VT-C4K-JSB13", "STU_CORRUPT", 13);
+    assert.equal(directCleanRes, false, "Direct cleanup API must fail closed when history is corrupted");
+    const corruptHist = spckSessionRepo.buildStudentSessionHistorySummary("VT-C4K-JSB13", "STU_CORRUPT");
+    assert.equal(corruptHist.historyCorrupted, true, "Corrupted history flag must be preserved on absent student");
+    const corruptRowAfter = db
+      .prepare(`SELECT sessionResultsJson FROM spck_uploads WHERE classId = 'VT-C4K-JSB13' AND studentId = 'STU_CORRUPT'`)
+      .get() as { sessionResultsJson: string };
+    assert.equal(
+      corruptRowAfter.sessionResultsJson,
+      corruptRaw,
+      "Corrupted sessionResultsJson bytes must be preserved without overwriting to {}"
+    );
+    // Clean up STU_CORRUPT so it doesn't affect subsequent VT-C4K-JSB13 checks
+    db.prepare(`DELETE FROM spck_uploads WHERE classId = 'VT-C4K-JSB13' AND studentId = 'STU_CORRUPT'`).run();
+    db.prepare(`DELETE FROM spck_session_submissions WHERE classId = 'VT-C4K-JSB13' AND studentId = 'STU_CORRUPT'`).run();
+    db.prepare(`DELETE FROM session_feedbacks WHERE classId = 'VT-C4K-JSB13' AND studentId = 'STU_CORRUPT'`).run();
+    db.prepare(`DELETE FROM students WHERE classId = 'VT-C4K-JSB13' AND studentId = 'STU_CORRUPT'`).run();
+
+    // F04 regression: absent student without an spck_uploads row must still appear in buildEnrichedClassSpckRecords with ABSENT_EXEMPT without mutating spck_uploads
+    const enrichedJsb13 = buildEnrichedClassSpckRecords("VT-C4K-JSB13", 13);
+    const absentNoRecEntry = enrichedJsb13.find((r) => r.studentId === "STU_ABSENT_NO_REC");
+    assert.ok(absentNoRecEntry, "Absent student without spck_uploads row must be represented in buildEnrichedClassSpckRecords");
+    assert.equal(absentNoRecEntry!.sessionHistory.sessions["13"].displayState, "ABSENT_EXEMPT");
+    const noRecDbRow = db
+      .prepare(`SELECT studentId FROM spck_uploads WHERE classId = 'VT-C4K-JSB13' AND studentId = 'STU_ABSENT_NO_REC'`)
+      .get();
+    assert.equal(noRecDbRow, undefined, "Synthetic absent student representation must not insert into spck_uploads");
 
     // 1-week (7-day) Finished class expiration & next-tier successor transition (e.g. VT-JSB15 -> VT-JSA15, VT-C4K-PTA12 -> VT-C4K-PTI12)
     const fmtDmy = (d: Date) =>

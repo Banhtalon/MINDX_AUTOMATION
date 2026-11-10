@@ -1557,6 +1557,43 @@ export class SpckUploader {
       }
 
       if (resolvedSessionNumber) {
+        const attendanceInSess =
+          spckSessionRepo.getStudentSessionAttendanceMap(
+            normalizedClassId,
+            rec.studentId
+          )[String(resolvedSessionNumber) as "12" | "13" | "14"];
+        if (attendanceInSess === "ABSENT") {
+          spckSessionRepo.clearAbsentStudentSessionFailure(
+            normalizedClassId,
+            rec.studentId,
+            resolvedSessionNumber
+          );
+          const absentMsg = `Học viên '${fullName}' vắng mặt tại Buổi ${resolvedSessionNumber} trên LMS (không có ô nộp sản phẩm) — đã tự động bỏ qua và miễn nộp buổi này.`;
+          jobLogRepo.add({
+            jobId: `SPCK_${normalizedClassId}`,
+            jobType: "UPLOAD_SPCK",
+            classId: normalizedClassId,
+            sessionId: `SESSION_${resolvedSessionNumber}`,
+            studentId: rec.studentId,
+            level: "WARN",
+            message: absentMsg,
+          });
+          demotedCount++;
+          results.push({
+            studentId: rec.studentId,
+            fullName,
+            status: "WAITING_APPROVAL",
+            reusedExistingItem01: false,
+            clickedAddSpckButton: false,
+            youtubeAddedCount: 0,
+            relatedLinksAddedCount: 0,
+            screenshotsUploadedCount: 0,
+            attachmentsUploadedCount: 0,
+            errorMessage: absentMsg,
+          });
+          continue;
+        }
+
         const sessRow = spckSessionRepo.findOne(
           normalizedClassId,
           rec.studentId,
@@ -2649,6 +2686,63 @@ export class SpckUploader {
       .first();
 
     if ((await spckBtn.count()) === 0) {
+      const isKnownAbsentInDb =
+        spckSessionRepo.getStudentSessionAttendanceMap(
+          normalizedClassId,
+          record.studentId
+        )[String(targetSessionNumber) as "12" | "13" | "14"] === "ABSENT";
+      const anySpckBtnInTable = await drawer
+        .locator(
+          'button:has-text("Sản phẩm của học sinh"), button:has-text("Sản phẩm học viên")'
+        )
+        .count()
+        .catch(() => 0);
+      const anyCommentBtnInTable = await drawer
+        .locator('button:has-text("Nhận xét học sinh"), button:has-text("Nhận xét")')
+        .count()
+        .catch(() => 0);
+      const commentBtnInStudentRow = await studentRow
+        .locator('button:has-text("Nhận xét học sinh"), button:has-text("Nhận xét")')
+        .count()
+        .catch(() => 0);
+      const studentRowRawText = (await studentRow.innerText().catch(() => "")) || "";
+      const hasExplicitAbsentMarkerInRow = /\b(vắng|absent|nghỉ)\b/i.test(studentRowRawText);
+      const hasPeerActionButtonsInTable =
+        commentBtnInStudentRow === 0 &&
+        (anySpckBtnInTable > 0 || anyCommentBtnInTable > 0);
+      const isAbsentOnLmsDom =
+        isKnownAbsentInDb ||
+        hasExplicitAbsentMarkerInRow ||
+        (isValidSpckSessionSlot(targetSessionNumber) && hasPeerActionButtonsInTable);
+
+      if (isAbsentOnLmsDom) {
+        spckSessionRepo.markStudentAbsentInSession(
+          normalizedClassId,
+          record.studentId,
+          targetSessionNumber
+        );
+        const absentSkipMsg = `Học viên '${fullName}' vắng mặt tại Buổi ${targetSessionNumber} trên LMS (không có nút 'Sản phẩm của học sinh') — đã tự động bỏ qua và miễn nộp buổi này.`;
+        jobLogRepo.add({
+          jobId: `SPCK_${normalizedClassId}`,
+          jobType: "UPLOAD_SPCK",
+          classId: normalizedClassId,
+          sessionId: `SESSION_${targetSessionNumber}`,
+          studentId: record.studentId,
+          level: "WARN",
+          message: absentSkipMsg,
+        });
+        return {
+          demotedToWaitingApproval: true,
+          errorMessage: absentSkipMsg,
+          reusedExistingItem01: false,
+          clickedAddSpckButton: false,
+          youtubeAddedCount: 0,
+          relatedLinksAddedCount: 0,
+          screenshotsUploadedCount: 0,
+          attachmentsUploadedCount: 0,
+        };
+      }
+
       throw new Error(
         `Tại Buổi ${targetSessionNumber} của lớp ${normalizedClassId}, dòng của học viên '${fullName}' không có nút 'Sản phẩm của học sinh'. Vui lòng chọn đúng buổi nộp SPCK (Buổi 12, 13 hoặc 14).`
       );

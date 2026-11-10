@@ -1,5 +1,10 @@
 import { getRunningClasses, type RunningClassItem } from "@/lib/db/json-config";
-import { getDb, studentRepo, type StudentRecord } from "@/lib/db/sqlite";
+import {
+  getDb,
+  spckSessionRepo,
+  studentRepo,
+  type StudentRecord,
+} from "@/lib/db/sqlite";
 import {
   FINISHED_CLASS_GRACE_DAYS,
   ONE_DAY_MS,
@@ -396,12 +401,23 @@ export function listClasses(options?: ListClassesOptions): ClassDirectoryItem[] 
 export function listStudents(
   classId: string,
   options?: { activeOnly?: boolean }
-): StudentRecord[] {
+): Array<
+  StudentRecord & {
+    sessionAttendance?: Record<"12" | "13" | "14", "PRESENT" | "ABSENT" | null>;
+  }
+> {
   const normalizedClassId = String(classId || "").trim().toUpperCase();
   if (!normalizedClassId) return [];
   const activeOnly = options?.activeOnly ?? true;
   try {
-    return studentRepo.findByClass(normalizedClassId, activeOnly);
+    const rows = studentRepo.findByClass(normalizedClassId, activeOnly);
+    return rows.map((s) => ({
+      ...s,
+      sessionAttendance: spckSessionRepo.getStudentSessionAttendanceMap(
+        normalizedClassId,
+        s.studentId
+      ),
+    }));
   } catch {
     return [];
   }

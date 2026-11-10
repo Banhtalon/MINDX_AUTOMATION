@@ -518,6 +518,51 @@ export function getDashboardTodayTodoCards(options?: {
         lastVerifiedAt?: string | null;
       }>;
 
+      const spckClassSessRows = db
+        .prepare(
+          `SELECT sessionId, sessionNumber FROM classes_sessions
+           WHERE classId = ? AND sessionNumber IN (12, 13, 14)`
+        )
+        .all(classId) as Array<{ sessionId?: string; sessionNumber?: number }>;
+      const spckSessIdByNumber = new Map<number, string>();
+      for (const r of spckClassSessRows) {
+        if (r.sessionNumber && r.sessionId) {
+          spckSessIdByNumber.set(Number(r.sessionNumber), String(r.sessionId));
+        }
+      }
+      const getAbsentStudentIdsForSession = (
+        targetSessNum: 12 | 13 | 14
+      ): Set<string> => {
+        const paddedId = `${classId}_SESS_${String(targetSessNum).padStart(2, "0")}`;
+        const unpaddedId = `${classId}_SESS_${targetSessNum}`;
+        const resolvedId = spckSessIdByNumber.get(targetSessNum) || paddedId;
+        const attRows = db
+          .prepare(
+            `SELECT studentId, attendanceStatus FROM session_feedbacks
+             WHERE classId = ? AND sessionId IN (?, ?, ?)
+             ORDER BY updatedAt ASC`
+          )
+          .all(classId, resolvedId, paddedId, unpaddedId) as Array<{
+          studentId?: string;
+          attendanceStatus?: string;
+        }>;
+        const latestAttByStudent = new Map<string, string>();
+        for (const r of attRows) {
+          const sid = String(r.studentId || "").trim();
+          const att = String(r.attendanceStatus || "").trim().toUpperCase();
+          if (sid && att) {
+            latestAttByStudent.set(sid, att);
+          }
+        }
+        const absentSet = new Set<string>();
+        for (const [sid, att] of latestAttByStudent.entries()) {
+          if (att === "ABSENT") {
+            absentSet.add(sid);
+          }
+        }
+        return absentSet;
+      };
+
       const checkSpckSessionVerified = (targetSess: 12 | 13 | 14): boolean => {
         const sessRows = spckSessionRows.filter(
           (r) => Number(r.sessionNumber) === targetSess
@@ -527,11 +572,15 @@ export function getDashboardTodayTodoCards(options?: {
             .map((r) => [String(r.studentId || "").trim(), r] as const)
             .filter(([sid]) => Boolean(sid))
         );
-        const requiredSpckStudentIds = hasRosterInDb
+        const absentStudentIdsInTargetSess = getAbsentStudentIdsForSession(targetSess);
+        const candidateSpckStudentIds = hasRosterInDb
           ? activeStudentIds
           : Array.from(
               new Set([...sessByStudent.keys(), ...spckByStudent.keys()])
             );
+        const requiredSpckStudentIds = candidateSpckStudentIds.filter(
+          (sid) => !absentStudentIdsInTargetSess.has(sid)
+        );
         if (requiredSpckStudentIds.length === 0) return false;
         return requiredSpckStudentIds.every((sid) => {
           const sessRec = sessByStudent.get(sid);
@@ -618,9 +667,13 @@ export function getDashboardTodayTodoCards(options?: {
           .map((r) => [String(r.studentId || "").trim(), r.status] as const)
           .filter(([sid]) => Boolean(sid))
       );
-      const requiredEvalStudentIds = hasRosterInDb
+      const absentStudentIdsInSess14 = getAbsentStudentIdsForSession(14);
+      const candidateEvalStudentIds = hasRosterInDb
         ? activeStudentIds
         : Array.from(evalByStudent.keys());
+      const requiredEvalStudentIds = candidateEvalStudentIds.filter(
+        (sid) => !absentStudentIdsInSess14.has(sid)
+      );
       const session14EvalVerified =
         requiredEvalStudentIds.length > 0 &&
         requiredEvalStudentIds.every((sid) => evalByStudent.get(sid) === "VERIFIED");

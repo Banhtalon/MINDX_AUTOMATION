@@ -87,24 +87,100 @@ export function buildEnrichedClassSpckRecords(
 ) {
   if (!classId) return [];
   const rawRecords = spckUploadRepo.findByClass(classId);
+  const existingStudentIdSet = new Set(rawRecords.map((r) => r.studentId));
   const students = listStudents(classId, { activeOnly: false });
   const studentMap = new Map(students.map((s) => [s.studentId, s]));
+  const syntheticAbsentStudents = students.filter((s) => {
+    if (s.isActive === 0 || existingStudentIdSet.has(s.studentId)) return false;
+    const attMap = spckSessionRepo.getStudentSessionAttendanceMap(
+      classId,
+      s.studentId
+    );
+    return (
+      attMap["12"] === "ABSENT" ||
+      attMap["13"] === "ABSENT" ||
+      attMap["14"] === "ABSENT"
+    );
+  });
+  const combinedRecords = [
+    ...rawRecords.map((r) => ({ rawRec: r, isSyntheticAbsent: false })),
+    ...syntheticAbsentStudents.map((s) => ({
+      rawRec: {
+        classId,
+        studentId: s.studentId,
+        localFolderPath: "",
+        matchScore: 1,
+        isConfirmedByTeacher: 1,
+        projectTitle: "",
+        thumbnailPath: "",
+        screenshotsJson: "[]",
+        attachmentsJson: "[]",
+        youtubeUrlsJson: "[]",
+        relatedLinksJson: "[]",
+        quickTagsJson: "[]",
+        teacherNote: "",
+        teacherComment: "",
+        status: "DRAFT" as const,
+        contentHash: "",
+        errorMessage: null,
+        approvedSessionNumber: null,
+      },
+      isSyntheticAbsent: true,
+    })),
+  ];
   const defaultClassFolder = resolveDefaultSpckClassFolder(classId, {
     createIfMissing: false,
   });
 
-  return rawRecords.map((rec) => {
-    const stu = studentMap.get(rec.studentId);
-    const sessRow = spckSessionRepo.getOrInitSessionDraft(
-      classId,
-      rec.studentId,
-      sessionNumber,
-      stu?.fullName
-    );
+  return combinedRecords.map(({ rawRec, isSyntheticAbsent }) => {
+    const stu = studentMap.get(rawRec.studentId);
     const sessionHistory = spckSessionRepo.buildStudentSessionHistorySummary(
       classId,
-      rec.studentId
+      rawRec.studentId
     );
+    const rec = isSyntheticAbsent
+      ? rawRec
+      : spckUploadRepo.findOne(classId, rawRec.studentId) || rawRec;
+    const sessRow = isSyntheticAbsent
+      ? spckSessionRepo.findOne(classId, rec.studentId, sessionNumber) || {
+          classId,
+          studentId: rec.studentId,
+          sessionNumber,
+          stageNumber: (sessionNumber === 14 ? 2 : 1) as 1 | 2,
+          stageCode: (sessionNumber === 14 ? "GD2" : "GD1") as "GD1" | "GD2",
+          localFolderPath: "",
+          isConfirmedByTeacher: 1,
+          projectTitle: "",
+          thumbnailPath: "",
+          screenshotsJson: "[]",
+          attachmentsJson: "[]",
+          youtubeUrlsJson: "[]",
+          relatedLinksJson: "[]",
+          quickTagsJson: "[]",
+          teacherNote: "",
+          teacherComment: "",
+          draftStatus: "DRAFT" as const,
+          draftVersion: 0,
+          isDraftInitialized: 0,
+          approvedContentHash: "",
+          approvedSnapshotJson: "{}",
+          approvedAt: null,
+          lastAttemptStatus: null,
+          lastAttemptHash: "",
+          lastAttemptAt: null,
+          lastErrorMessage: null,
+          lastVerifiedHash: "",
+          lastVerifiedAt: null,
+          lastVerifiedSnapshotJson: "{}",
+          lastVerifiedLmsWorkId: null,
+          missingLegacySnapshot: 0,
+        }
+      : spckSessionRepo.getOrInitSessionDraft(
+          classId,
+          rec.studentId,
+          sessionNumber,
+          stu?.fullName
+        );
     let effectiveLocalFolderPath = sessRow.localFolderPath || rec.localFolderPath || "";
     if (
       defaultClassFolder &&
@@ -130,6 +206,7 @@ export function buildEnrichedClassSpckRecords(
     const activeLinksJson = sessRow.relatedLinksJson || rec.relatedLinksJson || "[]";
 
     if (
+      !isSyntheticAbsent &&
       sessRow.draftStatus !== "APPROVED" &&
       sessRow.draftStatus !== "VERIFIED" &&
       !sessRow.lastVerifiedAt
@@ -213,6 +290,11 @@ export function buildEnrichedClassSpckRecords(
       quickTagsJson: sessRow.quickTagsJson || "[]",
       draftVersion: sessRow.draftVersion,
       status: sessRow.draftStatus,
+      errorMessage:
+        sessionHistory.sessions[String(sessionNumber) as "12" | "13" | "14"]
+          ?.displayState === "ABSENT_EXEMPT"
+          ? null
+          : sessRow.lastErrorMessage ?? rec.errorMessage ?? null,
       contentHash: sessRow.approvedContentHash || (rec.approvedSessionNumber === sessionNumber ? rec.contentHash : "") || "",
       hasNewerSharedResources: spckSessionRepo.hasNewerSharedResources(rec, sessRow),
       thumbnailInspection: thumbInspection,

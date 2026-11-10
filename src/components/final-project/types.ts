@@ -51,10 +51,12 @@ export interface SpckSessionSlotSummaryUI {
     | "VERIFIED_FILE_DRIFT"
     | "FAILED_AFTER_VERIFIED"
     | "FAILED"
+    | "ABSENT_EXEMPT"
     | "UNKNOWN_LEGACY"
     | "CORRUPTED"
     | "NOT_SUBMITTED";
   badgeLabel: string;
+  attendanceStatus?: "PRESENT" | "ABSENT" | null;
   draftVersion: number;
   hasUnsubmittedDraftChanges: boolean;
   hasFileDrift: boolean;
@@ -275,6 +277,7 @@ export interface SpckSlotDisplayUI {
     | "VERIFIED_DRAFT_CHANGED"
     | "VERIFIED_FILE_DRIFT"
     | "FAILED"
+    | "ABSENT_EXEMPT"
     | "UNKNOWN_LEGACY"
     | "CORRUPTED"
     | "NOT_SUBMITTED";
