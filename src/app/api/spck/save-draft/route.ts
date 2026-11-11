@@ -18,6 +18,7 @@ import {
 import { resolveValidAppShotResources } from "@/lib/local-files/spck-app-screenshotter";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { assertPathAllowed } from "@/lib/security/path-allowlist";
+import { studentPortalManager } from "@/lib/student-portal/student-portal-server";
 import { buildEnrichedClassSpckRecords } from "../list/route";
 
 const latestSessionDraftByStudent = new Map<
@@ -210,12 +211,23 @@ export async function POST(req: Request) {
       }
     }
 
-    const isConfirmedByTeacher =
-      body.isConfirmedByTeacher !== undefined
-        ? body.isConfirmedByTeacher
-          ? 1
-          : 0
-        : existingSessionDraft.isConfirmedByTeacher ?? existing?.isConfirmedByTeacher ?? 0;
+    const hasPendingPortalConfirmation = studentPortalManager.hasUnconfirmedSubmission(
+      classId,
+      studentId,
+      localFolderPath
+    );
+    const explicitTeacherConfirmation =
+      body.confirmTeacherAssignment === true && Boolean(body.isConfirmedByTeacher);
+
+    const isConfirmedByTeacher = hasPendingPortalConfirmation
+      ? explicitTeacherConfirmation
+        ? 1
+        : 0
+      : body.isConfirmedByTeacher !== undefined
+      ? body.isConfirmedByTeacher
+        ? 1
+        : 0
+      : existingSessionDraft.isConfirmedByTeacher ?? existing?.isConfirmedByTeacher ?? 0;
 
     const rawTitleInput =
       body.projectTitle !== undefined
@@ -428,6 +440,11 @@ export async function POST(req: Request) {
         localFolderPath,
         matchScore,
         isConfirmedByTeacher,
+        pendingPortalConfirmation: hasPendingPortalConfirmation
+          ? explicitTeacherConfirmation
+            ? 0
+            : 1
+          : 0,
         projectTitle: preserveOtherApprovedSession
           ? existing!.projectTitle
           : projectTitle,
@@ -503,6 +520,15 @@ export async function POST(req: Request) {
         seq: incomingSeq,
         lastSavedVersion: savedSessionRow.draftVersion,
       });
+    }
+
+    if (
+      (explicitTeacherConfirmation || !hasPendingPortalConfirmation) &&
+      (existing?.isConfirmedByTeacher ?? 0) === 0 &&
+      savedSessionRow.isConfirmedByTeacher === 1
+    ) {
+      studentPortalManager.clearUnconfirmedSubmission(classId, studentId, localFolderPath);
+      studentPortalManager.queueDriveUploadForConfirmedStudent(classId, studentId);
     }
 
     const enrichedList = buildEnrichedClassSpckRecords(classId, sessionNumber);

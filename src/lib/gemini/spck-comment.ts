@@ -1727,7 +1727,7 @@ export class SpckCommentGenerator {
       );
       const multimodalGuidance =
         imageParts.length > 0
-          ? `\n- HÌNH ẢNH THỰC TẾ ĐÍNH KÈM (${imageParts.length} ảnh chụp giao diện sản phẩm / mô hình thực tế của học viên): Hãy quan sát kỹ các hình ảnh đính kèm để nhận xét chính xác chủ đề thực tế, bố cục giao diện hoặc kết cấu mô hình phần cứng của ${anonymousToken}.`
+          ? `\n- HÌNH ẢNH ĐÍNH KÈM (${imageParts.length} ảnh chụp sản phẩm / mô hình hoặc bản dựng xem trước giao diện từ mã nguồn của học viên): Hãy quan sát kỹ để nhận xét chính xác chủ đề thực tế, bố cục giao diện hoặc kết cấu mô hình phần cứng của ${anonymousToken} (lưu ý: nếu trên bản xem trước giao diện có khung viền nét đứt giữ chỗ trung tính do thiếu tệp ảnh tài nguyên thì tuyệt đối không suy diễn khung trống đó là đồ họa học sinh tự thiết kế).`
           : "";
 
       let stageSpecificInstruction = "";

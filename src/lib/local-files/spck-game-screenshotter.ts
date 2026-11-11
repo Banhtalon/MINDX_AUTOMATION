@@ -5,9 +5,10 @@
  * any extra browser context (preserving single-BrowserContext rule S8-02).
  */
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { SequentialTaskQueue } from "../queue/task-queue";
 import { assertPathAllowed } from "../security/path-allowlist";
 import { LMS_IMAGE_HEIGHT, LMS_IMAGE_WIDTH } from "./spck-image-normalizer";
 
@@ -59,7 +60,12 @@ export function findProjectGameFiles(studentDir: string): {
       return;
     }
     for (const entry of entries) {
-      if (entry.name.startsWith(".") || SKIP_SUBDIRS.has(entry.name.toLowerCase())) {
+      const lowerEntry = entry.name.toLowerCase();
+      if (
+        entry.name.startsWith(".") ||
+        lowerEntry.startsWith("_spck_") ||
+        SKIP_SUBDIRS.has(lowerEntry)
+      ) {
         continue;
       }
       const fullPath = path.join(currentDir, entry.name);
@@ -227,7 +233,8 @@ class DirArchiveReader:
             dirs[:] = [
                 d for d in dirs
                 if not d.startswith(".")
-                and d not in ("_spck_app_shots", "_spck_owner_uploads", "_spck_youtube_frames", "node_modules", "__pycache__")
+                and not d.lower().startswith("_spck_")
+                and d not in ("node_modules", "__pycache__")
                 and not os.path.islink(os.path.join(cur, d))
             ]
             for f in files:
@@ -881,17 +888,16 @@ if __name__ == "__main__":
     main()
 `;
 
-/**
- * Renders GameMaker `.yyz` rooms and Scratch `.sb3` stages into `960×540` (16:9) PNG screenshots
- * inside `outDir` (`_spck_app_shots/app_NN_<name>_<hash6>.png`).
- */
-export function renderGameArchiveScreenshotsSync(params: {
+const GAME_CAPTURE_RUNNER_BOOTSTRAP =
+  'import io,json,sys; _d=json.loads(sys.stdin.buffer.read().decode("utf-8")); sys.stdin=io.TextIOWrapper(io.BytesIO(_d["payload"].encode("utf-8")),encoding="utf-8"); exec(_d["script"],{"__name__":"__main__"})';
+
+function prepareGameArchiveCaptureInput(params: {
   studentDir: string;
   yyzFiles?: string[];
   sb3Files?: string[];
   outDir: string;
   maxShots?: number;
-}): CapturedGameScreenItem[] {
+}): string | null {
   const safeStudentDir = assertPathAllowed(params.studentDir);
   const safeOutDir = assertPathAllowed(params.outDir);
   const yyzFiles = (params.yyzFiles || []).filter((rel) => {
@@ -912,7 +918,7 @@ export function renderGameArchiveScreenshotsSync(params: {
   });
 
   if (yyzFiles.length === 0 && sb3Files.length === 0) {
-    return [];
+    return null;
   }
 
   fs.mkdirSync(safeOutDir, { recursive: true });
@@ -924,20 +930,13 @@ export function renderGameArchiveScreenshotsSync(params: {
     maxShots: params.maxShots ?? 11,
   });
 
-  const runnerBootstrap =
-    'import io,json,sys; _d=json.loads(sys.stdin.buffer.read().decode("utf-8")); sys.stdin=io.TextIOWrapper(io.BytesIO(_d["payload"].encode("utf-8")),encoding="utf-8"); exec(_d["script"],{"__name__":"__main__"})';
-
-  const proc = spawnSync("python", ["-c", runnerBootstrap], {
-    input: JSON.stringify({
-      script: PYTHON_GAME_ARCHIVE_CAPTURE_SCRIPT,
-      payload,
-    }),
-    encoding: "utf-8",
-    timeout: 35_000,
-    windowsHide: true,
+  return JSON.stringify({
+    script: PYTHON_GAME_ARCHIVE_CAPTURE_SCRIPT,
+    payload,
   });
+}
 
-  const stdout = String(proc.stdout || "");
+function parseGameArchiveCaptureStdout(stdout: string): CapturedGameScreenItem[] {
   const markerIdx = stdout.indexOf("JSON_CAPTURE_RESULT:");
   if (markerIdx === -1) {
     return [];
@@ -962,4 +961,153 @@ export function renderGameArchiveScreenshotsSync(params: {
     // ignore JSON parse error
   }
   return [];
+}
+
+function killChildProcessTree(pid: number | undefined, childKill: () => void): void {
+  try {
+    childKill();
+  } catch {
+    // ignore
+  }
+  if (process.platform === "win32" && pid && pid > 0) {
+    try {
+      const killer = spawn("taskkill", ["/PID", String(pid), "/T", "/F"], {
+        windowsHide: true,
+        stdio: "ignore",
+      });
+      killer.unref();
+    } catch {
+      // ignore
+    }
+  }
+}
+
+/**
+ * Renders GameMaker `.yyz` rooms and Scratch `.sb3` stages into `960×540` (16:9) PNG screenshots
+ * inside `outDir` (`_spck_app_shots/app_NN_<name>_<hash6>.png`).
+ */
+export function renderGameArchiveScreenshotsSync(params: {
+  studentDir: string;
+  yyzFiles?: string[];
+  sb3Files?: string[];
+  outDir: string;
+  maxShots?: number;
+}): CapturedGameScreenItem[] {
+  const stdinInput = prepareGameArchiveCaptureInput(params);
+  if (!stdinInput) return [];
+
+  const proc = spawnSync("python", ["-c", GAME_CAPTURE_RUNNER_BOOTSTRAP], {
+    input: stdinInput,
+    encoding: "utf-8",
+    timeout: 35_000,
+    windowsHide: true,
+  });
+
+  return parseGameArchiveCaptureStdout(String(proc.stdout || ""));
+}
+
+/**
+ * Non-blocking async variant of `renderGameArchiveScreenshotsSync` using `child_process.spawn`
+ * so the Node.js Event Loop stays responsive while Python renders GameMaker / Scratch archives.
+ */
+export async function renderGameArchiveScreenshotsAsync(params: {
+  studentDir: string;
+  yyzFiles?: string[];
+  sb3Files?: string[];
+  outDir: string;
+  maxShots?: number;
+}): Promise<CapturedGameScreenItem[]> {
+  const stdinInput = prepareGameArchiveCaptureInput(params);
+  if (!stdinInput) return [];
+
+  const isQueueStopped = () =>
+    SequentialTaskQueue.getInstance().getStatus().isStopped ||
+    Boolean((process as any).__mindxQueueStopped);
+  if (isQueueStopped()) {
+    throw new Error(
+      "TASK_CANCELLED: Hàng đợi đã bị tạm dừng bởi giáo viên (Stop Bot)."
+    );
+  }
+
+  const stdout = await new Promise<string>((resolve, reject) => {
+    const child = spawn("python", ["-c", GAME_CAPTURE_RUNNER_BOOTSTRAP], {
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true,
+    });
+
+    const chunks: Buffer[] = [];
+    let totalBytes = 0;
+    const maxBuffer = 32 * 1024 * 1024;
+    let settled = false;
+    let cancelledByStop = false;
+
+    const cleanupTimers = () => {
+      clearTimeout(timeoutHandle);
+      clearInterval(stopPollHandle);
+    };
+
+    const timeoutHandle = setTimeout(() => {
+      if (settled) return;
+      killChildProcessTree(child.pid, () => child.kill("SIGKILL"));
+    }, 30_000);
+    timeoutHandle.unref?.();
+
+    const stopPollHandle = setInterval(() => {
+      if (settled) return;
+      if (isQueueStopped()) {
+        cancelledByStop = true;
+        killChildProcessTree(child.pid, () => child.kill("SIGKILL"));
+      }
+    }, 200);
+    stopPollHandle.unref?.();
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      totalBytes += chunk.length;
+      if (totalBytes <= maxBuffer) {
+        chunks.push(chunk);
+      } else {
+        killChildProcessTree(child.pid, () => child.kill("SIGKILL"));
+      }
+    });
+    child.stderr.on("data", () => {
+      // Drain stderr to avoid pipe backpressure
+    });
+    child.stdin.on("error", () => {
+      // Ignore EPIPE if child exits early
+    });
+
+    child.on("error", () => {
+      if (settled) return;
+      settled = true;
+      cleanupTimers();
+      if (cancelledByStop) {
+        reject(
+          new Error(
+            "TASK_CANCELLED: Hàng đợi đã bị tạm dừng bởi giáo viên (Stop Bot)."
+          )
+        );
+      } else {
+        resolve("");
+      }
+    });
+
+    child.on("close", () => {
+      if (settled) return;
+      settled = true;
+      cleanupTimers();
+      if (cancelledByStop) {
+        reject(
+          new Error(
+            "TASK_CANCELLED: Hàng đợi đã bị tạm dừng bởi giáo viên (Stop Bot)."
+          )
+        );
+      } else {
+        resolve(Buffer.concat(chunks).toString("utf-8"));
+      }
+    });
+
+    child.stdin.end(stdinInput, "utf-8");
+  });
+
+  return parseGameArchiveCaptureStdout(stdout);
 }

@@ -29,7 +29,6 @@ async function main() {
     buildBtvnPart2,
     buildAutoZaloBroadcastText,
   } = await import("../src/lib/zalo/zalo-summary");
-  const { ZaloBroadcastGenerator } = await import("../src/lib/zalo/broadcast-generator");
   const quickTagHelpers = await import("../src/lib/quick-tags");
 
   const classId = "VT-C4K-GA38";
@@ -708,15 +707,8 @@ async function main() {
 
   const part2Text = buildBtvnPart2(["Nguyễn Thành Phong", "Lê Hoàng Bách"]);
   assert.equal(part2Text.includes("*Thành Phong, Hoàng Bách*"), true);
-
-  const genViaWrapper = ZaloBroadcastGenerator.generate({
-    classCode: classId,
-    sessionNumber: 2,
-    sessionDate: "12/04/2026",
-    hasBtvnImage: true,
-    btvnUnsubmittedNames: ["Nguyễn Thành Phong"],
-  });
-  assert.equal(genViaWrapper.renderedText.includes("*Thành Phong*"), true);
+  assert.equal(formatShortZaloName("Nguyễn Thành Phong"), "Thành Phong");
+  assert.equal(addDaysToDdMmYyyy("12/04/2026", 7), "Chủ nhật, ngày 19/04/2026");
   console.log("   [PASS] S3.6: Zalo Summary Engine thống nhất 1 nguồn duy nhất đạt chuẩn 3 đoạn mới + Phần 2 BTVN.");
 
   // ---------------------------------------------------------------------------

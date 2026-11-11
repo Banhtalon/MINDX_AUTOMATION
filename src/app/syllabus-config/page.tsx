@@ -54,6 +54,14 @@ export default function SyllabusConfigPage() {
     quickTags: 0,
   });
 
+  const serverRevisionRef = React.useRef<{
+    courses: string;
+    quickTags: string;
+  }>({
+    courses: "",
+    quickTags: "",
+  });
+
   const setCourses = useCallback((updater: React.SetStateAction<CourseSyllabusItem[]>) => {
     editVersionRef.current.courses += 1;
     rawSetCourses(updater);
@@ -85,6 +93,14 @@ export default function SyllabusConfigPage() {
       }
       rawSetCourses(data.courses || []);
       rawSetQuickTags(data.quickTags || []);
+      if (data.revisions && typeof data.revisions === "object") {
+        if (typeof data.revisions.courses === "string") {
+          serverRevisionRef.current.courses = data.revisions.courses;
+        }
+        if (typeof data.revisions.quickTags === "string") {
+          serverRevisionRef.current.quickTags = data.revisions.quickTags;
+        }
+      }
     } catch (err) {
       setBanner({
         type: "error",
@@ -105,6 +121,9 @@ export default function SyllabusConfigPage() {
     const versionAtSubmit = editVersionRef.current[section];
     try {
       const payload: Record<string, unknown> = { section };
+      if (serverRevisionRef.current[section]) {
+        payload.expectedRevision = serverRevisionRef.current[section];
+      }
       if (section === "courses") payload.courses = courses;
       if (section === "quickTags") payload.quickTags = quickTags;
 
@@ -120,6 +139,12 @@ export default function SyllabusConfigPage() {
           text: data.error || "Không thể lưu cấu hình.",
         });
         return false;
+      }
+
+      if (typeof data.revision === "string" && data.revision) {
+        serverRevisionRef.current[section] = data.revision;
+      } else if (data.revisions && typeof data.revisions[section] === "string") {
+        serverRevisionRef.current[section] = data.revisions[section];
       }
 
       if (data.courses && editVersionRef.current.courses === versionAtSubmit) {

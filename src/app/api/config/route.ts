@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import {
   getCoursesSyllabus,
@@ -21,9 +22,89 @@ import { validateLocalRequest } from "@/lib/security/local-guard";
 
 export const dynamic = "force-dynamic";
 
-let lastServedCoursesSnapshot: CourseSyllabus[] | null = null;
-let preWriteCoursesBaseline: CourseSyllabus[] | null = null;
-let writesSinceLastGetCourses = 0;
+const MAX_RECENT_COURSES_SNAPSHOTS = 32;
+const recentCoursesSnapshots: Array<{
+  revision: string;
+  courses: CourseSyllabus[];
+}> = [];
+
+function computeConfigSectionRevision(data: unknown): string {
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify(data ?? null))
+    .digest("hex");
+}
+
+function recordObservedCoursesSnapshot(courses: CourseSyllabus[]): string {
+  const revision = computeConfigSectionRevision(courses);
+  const existingIdx = recentCoursesSnapshots.findIndex(
+    (entry) => entry.revision === revision
+  );
+  if (existingIdx >= 0) {
+    const [item] = recentCoursesSnapshots.splice(existingIdx, 1);
+    recentCoursesSnapshots.push(item);
+    return revision;
+  }
+  recentCoursesSnapshots.push({
+    revision,
+    courses: structuredClone(courses),
+  });
+  while (recentCoursesSnapshots.length > MAX_RECENT_COURSES_SNAPSHOTS) {
+    recentCoursesSnapshots.shift();
+  }
+  return revision;
+}
+
+const sectionUpdatedAtByRev = new Map<string, string>();
+const lastIssuedMsBySection = new Map<string, number>();
+
+function getOrAssignUpdatedAtForRevision(sectionKey: string, revision: string): string {
+  const mapKey = `${sectionKey}::${revision}`;
+  const existing = sectionUpdatedAtByRev.get(mapKey);
+  if (existing) return existing;
+  const prevMs = lastIssuedMsBySection.get(sectionKey) ?? 0;
+  const nextMs = Math.max(Date.now(), prevMs + 1);
+  lastIssuedMsBySection.set(sectionKey, nextMs);
+  const iso = new Date(nextMs).toISOString();
+  sectionUpdatedAtByRev.set(mapKey, iso);
+  if (sectionUpdatedAtByRev.size > 128) {
+    const oldestKey = sectionUpdatedAtByRev.keys().next().value;
+    if (oldestKey) sectionUpdatedAtByRev.delete(oldestKey);
+  }
+  return iso;
+}
+
+function matchesExpectedToken(
+  body: Record<string, unknown>,
+  sectionKey: string,
+  currentRevision: string
+): { hasToken: boolean; matches: boolean; currentUpdatedAt: string } {
+  const currentUpdatedAt = getOrAssignUpdatedAtForRevision(sectionKey, currentRevision);
+  const rawExpectedRev =
+    typeof body.expectedRevision === "string" && body.expectedRevision.trim().length > 0
+      ? body.expectedRevision.trim()
+      : null;
+  if (rawExpectedRev !== null) {
+    return {
+      hasToken: true,
+      matches: rawExpectedRev === currentRevision,
+      currentUpdatedAt,
+    };
+  }
+  const rawPrevUpdatedAt =
+    typeof body.previousUpdatedAt === "string" && body.previousUpdatedAt.trim().length > 0
+      ? body.previousUpdatedAt.trim()
+      : null;
+  if (rawPrevUpdatedAt !== null) {
+    return {
+      hasToken: true,
+      matches:
+        rawPrevUpdatedAt === currentUpdatedAt || rawPrevUpdatedAt === currentRevision,
+      currentUpdatedAt,
+    };
+  }
+  return { hasToken: false, matches: true, currentUpdatedAt };
+}
 
 export async function GET(req: Request) {
   const guard = validateLocalRequest(req);
@@ -35,9 +116,19 @@ export async function GET(req: Request) {
     const quickTags = getQuickTags();
     const zaloTemplates = getZaloTemplates();
 
-    lastServedCoursesSnapshot = structuredClone(courses);
-    preWriteCoursesBaseline = null;
-    writesSinceLastGetCourses = 0;
+    const coursesRev = recordObservedCoursesSnapshot(courses);
+    const revisions = {
+      courses: coursesRev,
+      rubrics: computeConfigSectionRevision(rubrics),
+      quickTags: computeConfigSectionRevision(quickTags),
+      zaloTemplates: computeConfigSectionRevision(zaloTemplates),
+    };
+    const updatedAtBySection = {
+      courses: getOrAssignUpdatedAtForRevision("courses", revisions.courses),
+      rubrics: getOrAssignUpdatedAtForRevision("rubrics", revisions.rubrics),
+      quickTags: getOrAssignUpdatedAtForRevision("quickTags", revisions.quickTags),
+      zaloTemplates: getOrAssignUpdatedAtForRevision("zaloTemplates", revisions.zaloTemplates),
+    };
 
     return NextResponse.json({
       success: true,
@@ -45,6 +136,9 @@ export async function GET(req: Request) {
       rubrics,
       quickTags,
       zaloTemplates,
+      revisions,
+      updatedAt: updatedAtBySection.courses,
+      updatedAtBySection,
     });
   } catch (err) {
     return NextResponse.json(
@@ -255,47 +349,73 @@ export async function POST(req: Request) {
       }
 
       const currentStored = getCoursesSyllabus();
-      if (writesSinceLastGetCourses === 0) {
-        preWriteCoursesBaseline = lastServedCoursesSnapshot ?? structuredClone(currentStored);
-      } else if (preWriteCoursesBaseline) {
-        for (const inc of normalizedCourses) {
-          const base = preWriteCoursesBaseline.find((c) => c.courseCode === inc.courseCode);
-          const curr = currentStored.find((c) => c.courseCode === inc.courseCode);
-          if (base && curr) {
-            const revertedName =
-              curr.courseName !== base.courseName && inc.courseName === base.courseName;
-            const revertedDesc =
-              curr.description !== base.description && inc.description === base.description;
-            const revertedSessions =
-              JSON.stringify(curr.sessions) !== JSON.stringify(base.sessions) &&
-              JSON.stringify(inc.sessions) === JSON.stringify(base.sessions);
-            const revertedCheckpoints =
-              JSON.stringify(curr.checkpointSessions ?? []) !==
-                JSON.stringify(base.checkpointSessions ?? []) &&
-              JSON.stringify(inc.checkpointSessions ?? []) ===
-                JSON.stringify(base.checkpointSessions ?? []);
+      const currentRevision = recordObservedCoursesSnapshot(currentStored);
+      const tokenCheck = matchesExpectedToken(body, "courses", currentRevision);
 
-            if (revertedName || revertedDesc || revertedSessions || revertedCheckpoints) {
-              return NextResponse.json(
-                {
-                  success: false,
-                  error:
-                    "Phát hiện xung đột cập nhật đồng thời (409 Conflict): dữ liệu khóa học đã được phiên khác thay đổi. Vui lòng tải lại trước khi lưu.",
-                },
-                { status: 409 }
-              );
+      if (tokenCheck.hasToken) {
+        if (!tokenCheck.matches) {
+          return NextResponse.json(
+            {
+              success: false,
+              conflict: true,
+              currentRevision,
+              currentUpdatedAt: tokenCheck.currentUpdatedAt,
+              error:
+                "Phát hiện xung đột cập nhật đồng thời (409 Conflict): dữ liệu khóa học đã được phiên khác thay đổi. Vui lòng tải lại trước khi lưu.",
+            },
+            { status: 409 }
+          );
+        }
+      } else {
+        for (const snapshotEntry of recentCoursesSnapshots) {
+          if (snapshotEntry.revision === currentRevision) continue;
+          const baseList = snapshotEntry.courses;
+          for (const inc of normalizedCourses) {
+            const base = baseList.find((c) => c.courseCode === inc.courseCode);
+            const curr = currentStored.find((c) => c.courseCode === inc.courseCode);
+            if (base && curr) {
+              const revertedName =
+                curr.courseName !== base.courseName && inc.courseName === base.courseName;
+              const revertedDesc =
+                curr.description !== base.description && inc.description === base.description;
+              const revertedSessions =
+                JSON.stringify(curr.sessions) !== JSON.stringify(base.sessions) &&
+                JSON.stringify(inc.sessions) === JSON.stringify(base.sessions);
+              const revertedCheckpoints =
+                JSON.stringify(curr.checkpointSessions ?? []) !==
+                  JSON.stringify(base.checkpointSessions ?? []) &&
+                JSON.stringify(inc.checkpointSessions ?? []) ===
+                  JSON.stringify(base.checkpointSessions ?? []);
+
+              if (revertedName || revertedDesc || revertedSessions || revertedCheckpoints) {
+                return NextResponse.json(
+                  {
+                    success: false,
+                    conflict: true,
+                    currentRevision,
+                    error:
+                      "Phát hiện xung đột cập nhật đồng thời (409 Conflict): dữ liệu khóa học đã được phiên khác thay đổi. Vui lòng tải lại trước khi lưu.",
+                  },
+                  { status: 409 }
+                );
+              }
             }
           }
         }
       }
 
       saveCoursesSyllabus(normalizedCourses);
-      writesSinceLastGetCourses++;
+      const savedCourses = getCoursesSyllabus();
+      const newRevision = recordObservedCoursesSnapshot(savedCourses);
 
       return NextResponse.json({
         success: true,
         message: `Đã lưu thành công ${normalizedCourses.length} khóa học vào giáo trình.`,
-        courses: getCoursesSyllabus(),
+        courses: savedCourses,
+        revision: newRevision,
+        revisions: {
+          courses: newRevision,
+        },
       });
     }
 
@@ -483,11 +603,31 @@ export async function POST(req: Request) {
         });
       }
 
+      const currRubricsRev = computeConfigSectionRevision(getGradingRubrics());
+      const rubricsTokenCheck = matchesExpectedToken(body, "rubrics", currRubricsRev);
+      if (rubricsTokenCheck.hasToken && !rubricsTokenCheck.matches) {
+        return NextResponse.json(
+          {
+            success: false,
+            conflict: true,
+            currentRevision: currRubricsRev,
+            currentUpdatedAt: rubricsTokenCheck.currentUpdatedAt,
+            error:
+              "Phát hiện xung đột cập nhật đồng thời (409 Conflict): dữ liệu Barem đã được phiên khác thay đổi. Vui lòng tải lại trước khi lưu.",
+          },
+          { status: 409 }
+        );
+      }
+
       saveGradingRubrics(normalizedRubrics);
+      const savedRubrics = getGradingRubrics();
+      const rubricsRev = computeConfigSectionRevision(savedRubrics);
       return NextResponse.json({
         success: true,
         message: `Đã lưu thành công ${normalizedRubrics.length} Barem chấm điểm.`,
-        rubrics: getGradingRubrics(),
+        rubrics: savedRubrics,
+        revision: rubricsRev,
+        revisions: { rubrics: rubricsRev },
       });
     }
 
@@ -599,11 +739,31 @@ export async function POST(req: Request) {
         normalizedCategories.push(catObj);
       }
 
+      const currTagsRev = computeConfigSectionRevision(getQuickTags());
+      const tagsTokenCheck = matchesExpectedToken(body, "quickTags", currTagsRev);
+      if (tagsTokenCheck.hasToken && !tagsTokenCheck.matches) {
+        return NextResponse.json(
+          {
+            success: false,
+            conflict: true,
+            currentRevision: currTagsRev,
+            currentUpdatedAt: tagsTokenCheck.currentUpdatedAt,
+            error:
+              "Phát hiện xung đột cập nhật đồng thời (409 Conflict): dữ liệu Quick Tags đã được phiên khác thay đổi. Vui lòng tải lại trước khi lưu.",
+          },
+          { status: 409 }
+        );
+      }
+
       saveQuickTags(normalizedCategories);
+      const savedQuickTags = getQuickTags();
+      const quickTagsRev = computeConfigSectionRevision(savedQuickTags);
       return NextResponse.json({
         success: true,
         message: `Đã lưu thành công ${normalizedCategories.length} nhóm thẻ Quick Tags.`,
-        quickTags: getQuickTags(),
+        quickTags: savedQuickTags,
+        revision: quickTagsRev,
+        revisions: { quickTags: quickTagsRev },
       });
     }
 
@@ -662,11 +822,31 @@ export async function POST(req: Request) {
         });
       }
 
+      const currZaloRev = computeConfigSectionRevision(getZaloTemplates());
+      const zaloTokenCheck = matchesExpectedToken(body, "zaloTemplates", currZaloRev);
+      if (zaloTokenCheck.hasToken && !zaloTokenCheck.matches) {
+        return NextResponse.json(
+          {
+            success: false,
+            conflict: true,
+            currentRevision: currZaloRev,
+            currentUpdatedAt: zaloTokenCheck.currentUpdatedAt,
+            error:
+              "Phát hiện xung đột cập nhật đồng thời (409 Conflict): dữ liệu Mẫu Zalo đã được phiên khác thay đổi. Vui lòng tải lại trước khi lưu.",
+          },
+          { status: 409 }
+        );
+      }
+
       saveZaloTemplates(normalizedTemplates);
+      const savedZaloTemplates = getZaloTemplates();
+      const zaloRev = computeConfigSectionRevision(savedZaloTemplates);
       return NextResponse.json({
         success: true,
         message: `Đã lưu thành công ${normalizedTemplates.length} mẫu thông báo Zalo.`,
-        zaloTemplates: getZaloTemplates(),
+        zaloTemplates: savedZaloTemplates,
+        revision: zaloRev,
+        revisions: { zaloTemplates: zaloRev },
       });
     }
 

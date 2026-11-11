@@ -4,14 +4,22 @@ import { assertPathAllowed } from "../security/path-allowlist";
 import type { GradingCriterion, GradingRubric } from "../types";
 export type { GradingCriterion, GradingRubric };
 
-const CONFIG_DIR = path.resolve(process.cwd(), "data", "config");
+const DEFAULT_CONFIG_DIR = path.resolve(process.cwd(), "data", "config");
+
+function resolveConfigDir(): string {
+  const customDir = process.env.MINDX_CONFIG_DIR?.trim();
+  if (customDir) {
+    return path.resolve(process.cwd(), customDir);
+  }
+  return DEFAULT_CONFIG_DIR;
+}
 
 function resolveSafeConfigFilePath(fileName: string): string {
   const safeBaseName = path.basename(fileName);
   if (!safeBaseName || safeBaseName !== fileName || fileName.includes("..")) {
     throw new Error(`[Security Exception] Invalid config file name: '${fileName}'`);
   }
-  const allowedDir = assertPathAllowed(CONFIG_DIR);
+  const allowedDir = assertPathAllowed(resolveConfigDir());
   if (!fs.existsSync(allowedDir)) {
     fs.mkdirSync(allowedDir, { recursive: true });
   }
@@ -81,14 +89,28 @@ export function getSyllabusByCourse(courseCode: string): CourseSyllabus | undefi
   return all.find((c) => c.courseCode.toUpperCase() === courseCode.toUpperCase());
 }
 
+export function doesClassCodeMatchCourseCode(
+  classCode: string,
+  courseCode: string
+): boolean {
+  const cleanClass = String(classCode || "").trim().toUpperCase();
+  const cleanCourse = String(courseCode || "").trim().toUpperCase();
+  if (!cleanClass || !cleanCourse) return false;
+  if (cleanClass === cleanCourse) return true;
+
+  const escapedCourse = cleanCourse.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const exactTokenOrNumberedRegex = new RegExp(`^${escapedCourse}(?:$|\\d+$)`);
+  const segments = cleanClass.split(/[^A-Z0-9]+/).filter(Boolean);
+  return segments.some((seg) => exactTokenOrNumberedRegex.test(seg));
+}
+
 export function findLessonInSyllabus(
   classCode: string,
   sessionNumber: number
 ): CourseSession | undefined {
   const allCourses = getCoursesSyllabus();
-  const upperCode = classCode.toUpperCase();
   const sorted = [...allCourses].sort((a, b) => b.courseCode.length - a.courseCode.length);
-  const matched = sorted.find((c) => upperCode.includes(c.courseCode.toUpperCase()));
+  const matched = sorted.find((c) => doesClassCodeMatchCourseCode(classCode, c.courseCode));
   if (!matched) return undefined;
   return matched.sessions.find((s) => s.sessionNumber === sessionNumber);
 }

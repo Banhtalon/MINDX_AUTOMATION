@@ -19,6 +19,27 @@ export async function GET(req: Request) {
       .trim()
       .toUpperCase();
     const sessionSlot = resolveSessionSlot(url.searchParams.get("sessionNumber"));
+    const rawKnownStateVersion = url.searchParams.get("knownStateVersion");
+    const knownStateVersion =
+      rawKnownStateVersion !== null &&
+      rawKnownStateVersion.trim() !== "" &&
+      Number.isFinite(Number(rawKnownStateVersion))
+        ? Math.floor(Number(rawKnownStateVersion))
+        : null;
+
+    const fastPortalStatus = studentPortalManager.getStatus(classId || undefined, {
+      skipDiskSync: true,
+    });
+    if (
+      knownStateVersion !== null &&
+      fastPortalStatus.stateVersion === knownStateVersion
+    ) {
+      return NextResponse.json({
+        success: true,
+        unchanged: true,
+        portalStatus: fastPortalStatus,
+      });
+    }
 
     const portalStatus = studentPortalManager.getStatus(classId || undefined);
     const activeClassId = classId || portalStatus.classId;
@@ -28,6 +49,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
+      unchanged: false,
       portalStatus,
       records,
     });

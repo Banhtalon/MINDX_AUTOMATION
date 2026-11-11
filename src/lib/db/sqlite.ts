@@ -1,8 +1,10 @@
 import Database from "better-sqlite3";
+import { AsyncLocalStorage } from "node:async_hooks";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { assertPathAllowed } from "../security/path-allowlist";
+import "../spck/spck-ui-helpers";
 import { normalizeVietnameseName as _normalizeVietnameseName, stripVietnameseDiacritics as _stripVietnameseDiacritics } from "../utils/vietnamese-match";
 const sharedStripDiacritics = typeof _stripVietnameseDiacritics === "function" ? _stripVietnameseDiacritics : (console as any).__mindxVietnameseMatch?.stripVietnameseDiacritics;
 const sharedNormViName = typeof _normalizeVietnameseName === "function" ? _normalizeVietnameseName : (console as any).__mindxVietnameseMatch?.normalizeVietnameseName;
@@ -179,6 +181,7 @@ function initSchema(db: Database.Database) {
       historyCorrupted INTEGER NOT NULL DEFAULT 0,
       historyCorruptedReason TEXT DEFAULT NULL,
       approvedSessionNumber INTEGER DEFAULT NULL,
+      pendingPortalConfirmation INTEGER NOT NULL DEFAULT 0,
       createdAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       UNIQUE(classId, studentId)
@@ -361,6 +364,11 @@ function initSchema(db: Database.Database) {
     }
     if (spckCols.length > 0 && !spckCols.some((c) => c.name === "approvedSessionNumber")) {
       db.exec(`ALTER TABLE spck_uploads ADD COLUMN approvedSessionNumber INTEGER DEFAULT NULL`);
+    }
+    if (spckCols.length > 0 && !spckCols.some((c) => c.name === "pendingPortalConfirmation")) {
+      db.exec(
+        `ALTER TABLE spck_uploads ADD COLUMN pendingPortalConfirmation INTEGER NOT NULL DEFAULT 0`
+      );
     }
     migrateSpckSessionSubmissions(db);
   } catch {}
@@ -1507,6 +1515,7 @@ export interface SpckUploadRecord {
   historyCorrupted?: number;
   historyCorruptedReason?: string | null;
   approvedSessionNumber?: number | null;
+  pendingPortalConfirmation?: number;
 }
 
 export interface SpckSubmissionSnapshot {
@@ -1630,15 +1639,37 @@ function parseSpckRelatedLinksArraySafe(raw?: string | null): Array<{ name: stri
   }
 }
 
+const requestFileDigestCacheStorage = new AsyncLocalStorage<Map<string, string>>();
+
+export function withRequestScopedFileSha256Cache<T>(fn: () => T): T {
+  const existing = requestFileDigestCacheStorage.getStore();
+  if (existing) {
+    return fn();
+  }
+  return requestFileDigestCacheStorage.run(new Map<string, string>(), fn);
+}
+
 export function computeSafeFileByteDigest(filePath?: string | null): string {
   const trimmed = String(filePath ?? "").trim();
   if (!trimmed) return "";
   try {
     const safe = assertPathAllowed(trimmed);
-    if (fs.existsSync(safe) && fs.statSync(safe).isFile()) {
-      return calculateSha256(fs.readFileSync(safe));
+    const activeCache = requestFileDigestCacheStorage.getStore();
+    if (!fs.existsSync(safe)) {
+      return "MISSING";
     }
-    return "MISSING";
+    const st = fs.statSync(safe);
+    if (!st.isFile()) {
+      return "MISSING";
+    }
+    const normSafe = process.platform === "win32" ? safe.toLowerCase() : safe;
+    const cacheKey = `${normSafe}|${st.size}|${st.mtimeMs}`;
+    if (activeCache?.has(cacheKey)) {
+      return activeCache.get(cacheKey)!;
+    }
+    const digest = calculateSha256(fs.readFileSync(safe));
+    activeCache?.set(cacheKey, digest);
+    return digest;
   } catch {
     return "DISALLOWED";
   }
@@ -2154,7 +2185,7 @@ export const spckUploadRepo = {
     const db = getDb();
     const existing = db
       .prepare(
-        `SELECT localFolderPath, isConfirmedByTeacher, projectTitle, baseProjectTitle, thumbnailPath, screenshotsJson, attachmentsJson, youtubeUrlsJson, relatedLinksJson, teacherComment, contentHash, status, verifiedAt, draftSeq, sessionResultsJson, hasLegacyUnknownSessionHistory, legacyHistoryMetaJson, historyCorrupted, historyCorruptedReason, approvedSessionNumber FROM spck_uploads WHERE classId = ? AND studentId = ?`
+        `SELECT localFolderPath, isConfirmedByTeacher, projectTitle, baseProjectTitle, thumbnailPath, screenshotsJson, attachmentsJson, youtubeUrlsJson, relatedLinksJson, teacherComment, contentHash, status, verifiedAt, draftSeq, sessionResultsJson, hasLegacyUnknownSessionHistory, legacyHistoryMetaJson, historyCorrupted, historyCorruptedReason, approvedSessionNumber, pendingPortalConfirmation FROM spck_uploads WHERE classId = ? AND studentId = ?`
       )
       .get(record.classId, record.studentId) as
       | {
@@ -2178,6 +2209,7 @@ export const spckUploadRepo = {
           historyCorrupted?: number;
           historyCorruptedReason?: string | null;
           approvedSessionNumber?: number | null;
+          pendingPortalConfirmation?: number;
         }
       | undefined;
 
@@ -2293,6 +2325,13 @@ export const spckUploadRepo = {
       stripSpckSessionSuffix(record.baseProjectTitle || record.projectTitle || "") ||
       stripSpckSessionSuffix(existing?.baseProjectTitle || existing?.projectTitle || "");
 
+    const nextPendingPortalConfirmation =
+      record.pendingPortalConfirmation !== undefined
+        ? record.pendingPortalConfirmation
+          ? 1
+          : 0
+        : existing?.pendingPortalConfirmation ?? 0;
+
     const stmt = db.prepare(`
       INSERT INTO spck_uploads (
         classId, studentId, localFolderPath, matchScore, isConfirmedByTeacher,
@@ -2300,7 +2339,8 @@ export const spckUploadRepo = {
         youtubeUrlsJson, relatedLinksJson, teacherComment, contentHash,
         status, verifiedAt, errorMessage, draftSeq, sessionResultsJson,
         hasLegacyUnknownSessionHistory, legacyHistoryMetaJson,
-        historyCorrupted, historyCorruptedReason, approvedSessionNumber, updatedAt
+        historyCorrupted, historyCorruptedReason, approvedSessionNumber,
+        pendingPortalConfirmation, updatedAt
       )
       VALUES (
         @classId, @studentId, @localFolderPath, @matchScore, @isConfirmedByTeacher,
@@ -2308,7 +2348,8 @@ export const spckUploadRepo = {
         @youtubeUrlsJson, @relatedLinksJson, @teacherComment, @contentHash,
         @status, @verifiedAt, @errorMessage, @draftSeq, @sessionResultsJson,
         @hasLegacyUnknownSessionHistory, @legacyHistoryMetaJson,
-        @historyCorrupted, @historyCorruptedReason, @approvedSessionNumber, datetime('now', 'localtime')
+        @historyCorrupted, @historyCorruptedReason, @approvedSessionNumber,
+        @pendingPortalConfirmation, datetime('now', 'localtime')
       )
       ON CONFLICT(classId, studentId) DO UPDATE SET
         localFolderPath = excluded.localFolderPath,
@@ -2333,6 +2374,7 @@ export const spckUploadRepo = {
         historyCorrupted = excluded.historyCorrupted,
         historyCorruptedReason = excluded.historyCorruptedReason,
         approvedSessionNumber = excluded.approvedSessionNumber,
+        pendingPortalConfirmation = excluded.pendingPortalConfirmation,
         updatedAt = datetime('now', 'localtime')
     `);
     const res = stmt.run({
@@ -2360,6 +2402,7 @@ export const spckUploadRepo = {
       historyCorrupted: nextHistoryCorrupted,
       historyCorruptedReason: nextHistoryCorruptedReason,
       approvedSessionNumber: targetApprovedSessionNumber,
+      pendingPortalConfirmation: nextPendingPortalConfirmation,
     });
 
     return res;
@@ -3929,7 +3972,7 @@ export const spckSessionRepo = {
 
       let currentSessionHash = "";
       let currentRawHash = "";
-      if (sRow) {
+      if (lastVerifiedHash && sRow && sRow.lastAttemptHash) {
         currentSessionHash = computeSpckSessionContentHash(sRow, slot);
         currentRawHash = computeSpckContentHash(sRow);
       }

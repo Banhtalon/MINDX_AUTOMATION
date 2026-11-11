@@ -66,6 +66,7 @@ const IGNORED_SUBFOLDER_NAMES = new Set([
   "_spck_app_shots",
   "_spck_owner_uploads",
   "_spck_youtube_frames",
+  "_spck_prev_backup",
   "_spck_temp",
   "_synth_assets",
 ]);
@@ -231,7 +232,7 @@ export function prepareStudentFilesForDriveUpload(
 
   const entries = fs
     .readdirSync(safeFolder, { withFileTypes: true })
-    .filter((e) => !e.name.startsWith("."))
+    .filter((e) => !e.name.startsWith(".") && !e.name.toLowerCase().startsWith("_spck_"))
     .sort((a, b) => a.name.localeCompare(b.name, "en"));
 
   const filesToUpload: string[] = [];
@@ -583,44 +584,107 @@ async function findOrCreateDriveSubfolder(
   );
 }
 
+const DRIVE_UPLOAD_ERROR_SELECTOR =
+  '[aria-label*="Tải lên không thành công"]:visible, [aria-label*="Upload failed"]:visible, [role="alert"]:has-text("Tải lên không thành công"):visible, [role="alert"]:has-text("Upload failed"):visible';
+
+const DRIVE_UPLOAD_PROGRESS_SELECTOR =
+  '[role="progressbar"]:visible, [aria-label*="Đang tải lên"]:visible, [aria-label*="Uploading"]:visible';
+
+const DRIVE_ACTIVE_DIALOG_SELECTOR = '[role="dialog"]:visible';
+
+/**
+ * Checks whether ANY visible element matches `selector` (which already filters by `:visible`),
+ * safely handling 0, 1, or multiple simultaneous elements without Playwright strict-mode errors.
+ * Fails closed (`inspectionFailed: true`) if locator inspection throws for any reason.
+ */
+async function hasAnyVisibleDriveElement(
+  page: Page,
+  selector: string
+): Promise<{ visible: boolean; inspectionFailed: boolean }> {
+  try {
+    const rawLoc = page.locator(selector);
+    const firstLoc = typeof rawLoc.first === "function" ? rawLoc.first() : rawLoc;
+    const visible = Boolean(await firstLoc.isVisible());
+    return { visible, inspectionFailed: false };
+  } catch {
+    return { visible: false, inspectionFailed: true };
+  }
+}
+
+async function inspectDriveUploadIndicators(
+  page: Page
+): Promise<{ hasError: boolean; isBusy: boolean }> {
+  const errState = await hasAnyVisibleDriveElement(page, DRIVE_UPLOAD_ERROR_SELECTOR);
+  if (errState.visible) {
+    return { hasError: true, isBusy: false };
+  }
+  const progressState = await hasAnyVisibleDriveElement(page, DRIVE_UPLOAD_PROGRESS_SELECTOR);
+  const dialogState = await hasAnyVisibleDriveElement(page, DRIVE_ACTIVE_DIALOG_SELECTOR);
+  const isBusy =
+    errState.inspectionFailed ||
+    progressState.visible ||
+    progressState.inspectionFailed ||
+    dialogState.visible ||
+    dialogState.inspectionFailed;
+  return { hasError: false, isBusy };
+}
+
+function stripDriveDuplicateSuffix(fileNameLower: string): string {
+  return fileNameLower.replace(/\s+\(\d+\)(\.[a-z0-9_-]+)?$/i, "$1");
+}
+
 /**
  * Uploads local files into an open Google Drive student folder via "+ Mới" -> "Tải tệp lên".
- * - For Coding classes (`replaceAllStaleFiles = true`), moves all existing files in this Drive folder
- *   to trash first so renamed or removed code files from prior sessions never pile up.
- * - For Robotics classes (`replaceAllStaleFiles = false`), only moves same-named files to trash
- *   so differently-named model photos from Sessions 12–14 accumulate into a complete album.
+ * Safety invariant (v3.4.1):
+ *   1. NEVER moves any pre-existing file to trash BEFORE new files are uploaded and verified.
+ *   2. Pre-existing files (`preExistingFileIds`) are recorded up-front and NEVER mistaken for newly
+ *      uploaded files unless either a distinct new Drive item ID appears (`!preExistingFileIds.has(id)`)
+ *      or Google Drive's duplicate-replacement dialog was explicitly confirmed and finished uploading.
+ *   3. Stale files are trashed ONLY after the upload succeeds (or deferred until the entire directory tree succeeds).
  */
-async function uploadFilesIntoDriveFolder(
+export async function uploadFilesIntoDriveFolder(
   page: Page,
   studentDriveFolderId: string,
   localFilePaths: string[],
-  replaceAllStaleFiles = true
+  replaceAllStaleFiles = true,
+  deferredCleanupOut?: Array<{ folderId: string; itemIds: string[] }>
 ): Promise<number> {
   if (localFilePaths.length === 0 && !replaceAllStaleFiles) return 0;
   assertDriveNotStopped();
 
   await ensureGoogleDriveFolderReadyAndAuthenticated(page, studentDriveFolderId);
   const existingItems = await listDriveItemsOnPage(page, studentDriveFolderId);
+  const preExistingFiles = existingItems.filter((item) => !item.isFolder);
+  const preExistingFileIds = new Set(preExistingFiles.map((item) => item.id));
+  const preExistingNamesLower = new Set(
+    preExistingFiles.map((item) => item.name.toLowerCase())
+  );
 
   const targetLowerNames = new Set(
     localFilePaths.map((p) => path.basename(p).toLowerCase())
   );
-  let trashedAny = false;
-  for (const item of existingItems) {
-    if (
-      !item.isFolder &&
-      (replaceAllStaleFiles || targetLowerNames.has(item.name.toLowerCase()))
-    ) {
-      await moveDriveItemToTrash(page, item.id);
-      trashedAny = true;
+
+  if (localFilePaths.length === 0) {
+    const staleIdsWhenEmpty = replaceAllStaleFiles
+      ? preExistingFiles.map((item) => item.id)
+      : [];
+    if (staleIdsWhenEmpty.length > 0) {
+      if (deferredCleanupOut) {
+        deferredCleanupOut.push({
+          folderId: studentDriveFolderId,
+          itemIds: staleIdsWhenEmpty,
+        });
+      } else {
+        for (const oldId of staleIdsWhenEmpty) {
+          await moveDriveItemToTrash(page, oldId);
+        }
+        await page.keyboard.press("Escape").catch(() => {});
+        await page.waitForTimeout(300);
+      }
     }
-  }
-  if (trashedAny) {
-    await page.keyboard.press("Escape").catch(() => {});
-    await page.waitForTimeout(300);
+    return 0;
   }
 
-  if (localFilePaths.length === 0) return 0;
   assertDriveNotStopped();
 
   const newBtn = page
@@ -653,46 +717,134 @@ async function uploadFilesIntoDriveFolder(
   ]);
   await fileChooser.setFiles(localFilePaths);
 
-  // Wait for all uploaded files to appear in the folder DOM (up to 45s)
+  // Wait for all uploaded files to appear AND finish uploading (no active progressbar/dialog/error)
+  // before ever moving pre-existing items to Trash.
   const expectedBaseNames = localFilePaths.map((p) => path.basename(p).toLowerCase());
   const uploadDeadline = Date.now() + 45_000;
+  const maxPollIterations = 40;
+  let pollIterations = 0;
   let verifiedAllPresent = false;
+  let sawIncompleteUploadProgress = false;
+  let latestItemsAfterUpload = existingItems;
 
-  while (Date.now() < uploadDeadline) {
+  while (Date.now() < uploadDeadline && pollIterations < maxPollIterations) {
+    pollIterations += 1;
     assertDriveNotStopped();
     await page.waitForTimeout(1200);
 
-    // If Google Drive shows a duplicate file confirmation modal on 2nd/3rd upload, confirm it automatically
-    const replaceConfirmBtn = page
+    // If Google Drive shows a duplicate file modal, strictly select "Keep both" ("Giữ cả hai")
+    // so the new file gets a distinct item ID and never overwrites the existing copy in-place
+    // before the entire directory tree succeeds.
+    const keepBothRadio = page
       .locator(
-        '[role="dialog"] button:has-text("Tải lên"):visible, [role="dialog"] button:has-text("Upload"):visible, [role="dialog"] button:has-text("Thay thế"):visible, [role="dialog"] button:has-text("Replace"):visible, [role="dialog"] button[data-id="EBS5u"]:visible'
+        '[role="dialog"] [role="radio"]:has-text("Giữ cả hai"):visible, [role="dialog"] [role="radio"]:has-text("Keep both"):visible, [role="dialog"] label:has-text("Giữ cả hai"):visible, [role="dialog"] label:has-text("Keep both"):visible'
       )
-      .last();
-    if (await replaceConfirmBtn.isVisible().catch(() => false)) {
-      await replaceConfirmBtn.click().catch(() => {});
-      await page.waitForTimeout(600);
+      .first();
+    const sawKeepBoth = await keepBothRadio.isVisible().catch(() => false);
+    if (sawKeepBoth) {
+      await keepBothRadio.click().catch(() => {});
+      await page.waitForTimeout(200);
+      const keepBothConfirmBtn = page
+        .locator(
+          '[role="dialog"] button:has-text("Tải lên"):visible, [role="dialog"] button:has-text("Upload"):visible, [role="dialog"] button[data-id="EBS5u"]:visible'
+        )
+        .last();
+      if (await keepBothConfirmBtn.isVisible().catch(() => false)) {
+        await keepBothConfirmBtn.click().catch(() => {});
+        await page.waitForTimeout(600);
+      }
+    }
+
+    const preDomIndicators = await inspectDriveUploadIndicators(page);
+    if (preDomIndicators.hasError) {
+      throw new Error(
+        "Google Drive báo lỗi tải tệp lên (Upload failed). Đã hủy dọn dẹp để giữ nguyên 100% bài cũ trên Drive."
+      );
+    }
+    if (preDomIndicators.isBusy) {
+      sawIncompleteUploadProgress = true;
+      continue;
     }
 
     const currentItems = await listDriveItemsOnPage(page, studentDriveFolderId);
-    const currentNames = new Set<string>();
-    for (const i of currentItems) {
-      const lower = i.name.toLowerCase();
-      currentNames.add(lower);
-      // Also normalize duplicate suffix like "index (1).html" -> "index.html"
-      const strippedDup = lower.replace(/\s+\(\d+\)(\.[a-z0-9_-]+)?$/i, "$1");
-      currentNames.add(strippedDup);
+    latestItemsAfterUpload = currentItems;
+
+    const newItemNormalizedNames = new Set<string>();
+
+    for (const item of currentItems) {
+      if (item.isFolder) continue;
+      const lower = item.name.toLowerCase();
+      const strippedDup = stripDriveDuplicateSuffix(lower);
+      if (!preExistingFileIds.has(item.id)) {
+        newItemNormalizedNames.add(lower);
+        newItemNormalizedNames.add(strippedDup);
+      }
     }
-    const allPresent = expectedBaseNames.every((name) => currentNames.has(name));
+
+    const allPresent = expectedBaseNames.every((name) => newItemNormalizedNames.has(name));
+
     if (allPresent) {
-      verifiedAllPresent = true;
-      break;
+      // Re-check progress bar, error alerts, AND dialogs once more after reading DOM entries
+      // to prevent TOCTOU races and fail closed if multiple elements or inspection errors occur.
+      const postDomIndicators = await inspectDriveUploadIndicators(page);
+      if (postDomIndicators.hasError) {
+        throw new Error(
+          "Google Drive báo lỗi tải tệp lên (Upload failed). Đã hủy dọn dẹp để giữ nguyên 100% bài cũ trên Drive."
+        );
+      }
+      if (!postDomIndicators.isBusy) {
+        verifiedAllPresent = true;
+        break;
+      }
+      sawIncompleteUploadProgress = true;
     }
   }
 
   if (!verifiedAllPresent) {
     throw new Error(
-      `Không thể xác nhận đủ ${localFilePaths.length} tệp đã tải lên thư mục Google Drive sau 45 giây.`
+      sawIncompleteUploadProgress
+        ? `Không thể xác nhận hoàn tất tải ${localFilePaths.length} tệp mới lên Google Drive (thanh tiến trình vẫn đang chạy hoặc hộp thoại chưa đóng). Bài cũ được giữ nguyên.`
+        : `Không thể xác nhận đủ ${localFilePaths.length} tệp mới đã tải lên thư mục Google Drive sau 45 giây.`
     );
+  }
+
+  // Determine which pre-existing files are now superseded and safe to move to trash
+  const newItemsWithDistinctIds = new Set<string>();
+  for (const item of latestItemsAfterUpload) {
+    if (!item.isFolder && !preExistingFileIds.has(item.id)) {
+      const lower = item.name.toLowerCase();
+      newItemsWithDistinctIds.add(lower);
+      newItemsWithDistinctIds.add(stripDriveDuplicateSuffix(lower));
+    }
+  }
+
+  const staleOldIds: string[] = [];
+  for (const oldFile of preExistingFiles) {
+    const oldLower = oldFile.name.toLowerCase();
+    const isTargetSameName = targetLowerNames.has(oldLower);
+    if (!isTargetSameName) {
+      if (replaceAllStaleFiles) {
+        staleOldIds.push(oldFile.id);
+      }
+    } else if (newItemsWithDistinctIds.has(oldLower)) {
+      // Only trash the older copy when a distinct new item ID was created alongside it
+      staleOldIds.push(oldFile.id);
+    }
+  }
+
+  if (staleOldIds.length > 0) {
+    if (deferredCleanupOut) {
+      deferredCleanupOut.push({
+        folderId: studentDriveFolderId,
+        itemIds: staleOldIds,
+      });
+    } else {
+      for (const oldId of staleOldIds) {
+        await moveDriveItemToTrash(page, oldId);
+      }
+      await page.keyboard.press("Escape").catch(() => {});
+      await page.waitForTimeout(300);
+    }
   }
 
   await page.waitForTimeout(800);
@@ -702,15 +854,17 @@ async function uploadFilesIntoDriveFolder(
 /**
  * Uploads a student's local directory (including subdirectories like `gui/`, `img/`, `image/`, `src/`)
  * into `targetDriveFolderId` preserving the exact folder structure without creating any synthetic `.zip`.
+ * Stale remote files and stale remote subfolders are trashed ONLY at `depth === 0` after the entire tree succeeds.
  */
-async function uploadStudentDirectoryTreeToDrive(
+export async function uploadStudentDirectoryTreeToDrive(
   page: Page,
   targetDriveFolderId: string,
   localDirPath: string,
   studentId: string,
   fullName: string,
   depth = 0,
-  replaceAllStaleFiles = true
+  replaceAllStaleFiles = true,
+  deferredCleanupAccumulator?: Array<{ folderId: string; itemIds: string[] }>
 ): Promise<number> {
   assertDriveNotStopped();
   if (depth > MAX_DRIVE_TREE_DEPTH) {
@@ -720,6 +874,8 @@ async function uploadStudentDirectoryTreeToDrive(
   }
   const safeDir = assertPathAllowed(localDirPath);
   const directFiles = prepareStudentFilesForDriveUpload(safeDir, studentId, fullName);
+  const cleanupQueue =
+    deferredCleanupAccumulator || ([] as Array<{ folderId: string; itemIds: string[] }>);
 
   await ensureGoogleDriveFolderReadyAndAuthenticated(page, targetDriveFolderId);
 
@@ -727,7 +883,8 @@ async function uploadStudentDirectoryTreeToDrive(
     page,
     targetDriveFolderId,
     directFiles,
-    replaceAllStaleFiles
+    replaceAllStaleFiles,
+    cleanupQueue
   );
 
   // Recursively recreate non-ignored subdirectories (e.g. `gui`, `img`, `image`, `assets`, `src`)
@@ -757,21 +914,24 @@ async function uploadStudentDirectoryTreeToDrive(
     validSubdirEntries.push({ name: entry.name, subLocalPath });
   }
 
-  // For Coding classes (`replaceAllStaleFiles = true`), also remove stale remote subfolders
-  // that were renamed or deleted locally so old directory trees do not remain on Drive.
   if (replaceAllStaleFiles) {
     await ensureGoogleDriveFolderReadyAndAuthenticated(page, targetDriveFolderId);
     const existingRemoteItems = await listDriveItemsOnPage(page, targetDriveFolderId);
     const localSubdirNormNames = new Set(
       validSubdirEntries.map((d) => normalizeFolderTitle(d.name))
     );
-    for (const remoteItem of existingRemoteItems) {
-      if (
-        remoteItem.isFolder &&
-        !localSubdirNormNames.has(normalizeFolderTitle(remoteItem.name))
-      ) {
-        await moveDriveItemToTrash(page, remoteItem.id);
-      }
+    const staleSubfolderIds = existingRemoteItems
+      .filter(
+        (remoteItem) =>
+          remoteItem.isFolder &&
+          !localSubdirNormNames.has(normalizeFolderTitle(remoteItem.name))
+      )
+      .map((remoteItem) => remoteItem.id);
+    if (staleSubfolderIds.length > 0) {
+      cleanupQueue.push({
+        folderId: targetDriveFolderId,
+        itemIds: staleSubfolderIds,
+      });
     }
   }
 
@@ -789,7 +949,8 @@ async function uploadStudentDirectoryTreeToDrive(
       studentId,
       fullName,
       depth + 1,
-      replaceAllStaleFiles
+      replaceAllStaleFiles,
+      cleanupQueue
     );
   }
 
@@ -797,6 +958,19 @@ async function uploadStudentDirectoryTreeToDrive(
     throw new Error(
       `Thư mục SPCK của '${fullName}' không có tệp hợp lệ nào để tải lên Google Drive.`
     );
+  }
+
+  if (depth === 0 && cleanupQueue.length > 0) {
+    for (const batch of cleanupQueue) {
+      if (batch.itemIds.length === 0) continue;
+      await ensureGoogleDriveFolderReadyAndAuthenticated(page, batch.folderId);
+      for (const staleId of batch.itemIds) {
+        assertDriveNotStopped();
+        await moveDriveItemToTrash(page, staleId);
+      }
+      await page.keyboard.press("Escape").catch(() => {});
+      await page.waitForTimeout(250);
+    }
   }
 
   return totalUploaded;

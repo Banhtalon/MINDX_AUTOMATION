@@ -324,65 +324,13 @@ export interface SnapshotModalDataUI {
   slot: SpckSlotDisplayUI;
 }
 
-export const DEFAULT_SPCK_TAGS = [
-  "Hoàn thành tốt sản phẩm cuối khóa",
-  "Ý tưởng sáng tạo, giao diện trực quan",
-  "Vận dụng vững kiến thức lập trình đã học",
-  "Chủ động tìm tòi, xử lý lỗi tốt",
-  "Cần trau chuốt thêm phần giao diện và tối ưu code",
-  "Thuyết trình tự tin, trình bày rõ ràng mạch lạc",
-];
-
-export const SESSION14_SPCK_TAGS = [
-  "📊 Slide đẹp, bố cục rõ ràng, dễ nhìn",
-  "🗣️ Trình bày tốt, giới thiệu rõ nội dung chính",
-  "😳 Cần luyện diễn đạt & tự tin hơn trước lớp",
-  "🔍 Cần tìm hiểu kỹ code hơn để tự tin giải thích khi hỏi",
-  "🎨 Thiết kế rất đẹp, màu sắc hài hòa và bắt mắt",
-  "📐 Dùng Flexbox / Layout đa dạng, đủ các trang chức năng",
-  "🌐 Chủ động tìm hiểu, học hỏi thêm từ sản phẩm thực tế",
-  "💪 Tự giác tìm hiểu và tự viết code, không phụ thuộc AI",
-  "🤖 Còn phụ thuộc khá nhiều vào AI, chưa hiểu sâu phần cốt lõi của code",
-];
-
-export const COMPETENCY_ITEMS_UI: Array<{
-  key: keyof Session14CompetencyScoresUI;
-  label: string;
-}> = [
-  { key: "knowledgeInClass", label: "1. [ĐNL] Kiến thức học tại lớp" },
-  { key: "knowledgeSelfStudy", label: "2. [ĐNL] Kiến thức tự học" },
-  { key: "skillCommunication", label: "3. [ĐNL] Giao tiếp, hợp tác" },
-  { key: "skillComputerUse", label: "4. [ĐNL] Sử dụng máy tính" },
-  { key: "skillProblemSolving", label: "5. [ĐNL] Giải quyết vấn đề" },
-  { key: "skillCreativity", label: "6. [ĐNL] Tư duy sáng tạo" },
-  { key: "skillComputational", label: "7. [ĐNL] Tư duy máy tính" },
-  { key: "attitudeHomework", label: "8. [ĐNL] Thái độ BTVN" },
-  { key: "attitudeInClass", label: "9. [ĐNL] Thái độ trên lớp" },
-];
-
-export const DEMO_SCORE_ITEMS_UI: Array<{
-  key: keyof Session14DemoScoresUI;
-  label: string;
-  max: number;
-}> = [
-  { key: "algorithm", label: "Tư duy máy tính, thuật toán", max: 1.5 },
-  { key: "creativity", label: "Tư duy sáng tạo", max: 1.0 },
-  { key: "communication", label: "Kỹ năng giao tiếp, hợp tác", max: 0.5 },
-  { key: "problemSolving", label: "Giải quyết vấn đề", max: 1.0 },
-  { key: "computerSkills", label: "Kỹ năng sử dụng máy tính", max: 1.0 },
-];
-
-export const DEMO_SCORE_ITEMS_ROBOTICS_UI: Array<{
-  key: keyof Session14DemoScoresUI;
-  label: string;
-  max: number;
-}> = [
-  { key: "creativity", label: "Tư duy sáng tạo", max: 1.25 },
-  { key: "communication", label: "Kỹ năng giao tiếp, hợp tác", max: 0.75 },
-  { key: "problemSolving", label: "Giải quyết vấn đề", max: 1.0 },
-  { key: "computerSkills", label: "Kỹ năng sử dụng máy tính", max: 0.5 },
-  { key: "algorithm", label: "Tư duy máy tính, thuật toán", max: 1.0 },
-];
+export {
+  COMPETENCY_ITEMS_UI,
+  DEFAULT_SPCK_TAGS,
+  DEMO_SCORE_ITEMS_ROBOTICS_UI,
+  DEMO_SCORE_ITEMS_UI,
+  SESSION14_SPCK_TAGS,
+} from "@/lib/spck/spck-ui-helpers";
 
 export type SpckToolErrorKey =
   | "ai"

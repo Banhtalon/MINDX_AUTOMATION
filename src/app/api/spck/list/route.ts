@@ -13,6 +13,7 @@ import {
   spckUploadRepo,
   studentRepo,
   validateSpckTitleLength,
+  withRequestScopedFileSha256Cache,
   type SpckSessionSlotNumber,
 } from "@/lib/db/sqlite";
 import {
@@ -86,7 +87,8 @@ export function buildEnrichedClassSpckRecords(
   sessionNumber: SpckSessionSlotNumber = 12
 ) {
   if (!classId) return [];
-  const rawRecords = spckUploadRepo.findByClass(classId);
+  return withRequestScopedFileSha256Cache(() => {
+    const rawRecords = spckUploadRepo.findByClass(classId);
   const existingStudentIdSet = new Set(rawRecords.map((r) => r.studentId));
   const students = listStudents(classId, { activeOnly: false });
   const studentMap = new Map(students.map((s) => [s.studentId, s]));
@@ -304,6 +306,7 @@ export function buildEnrichedClassSpckRecords(
       },
       sessionHistory,
     };
+  });
   });
 }
 

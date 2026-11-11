@@ -31,11 +31,12 @@ import {
   DEFAULT_SPCK_THUMBNAIL_PATH,
   MAX_SPCK_SCREENSHOTS,
   resolveTargetSpckClassFolder,
-  scanClassSpckDirectory,
+  scanClassSpckDirectoryAsync,
   validateSpckResourceLimits,
 } from "@/lib/local-files/spck-scanner";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { suggestSpckQuickTagsFromProject } from "@/lib/spck/spck-quick-tags";
+import { studentPortalManager } from "@/lib/student-portal/student-portal-server";
 import { stripVietnameseDiacritics } from "@/lib/utils/vietnamese-match";
 import { buildEnrichedClassSpckRecords } from "../list/route";
 
@@ -111,7 +112,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const scanResult = scanClassSpckDirectory(classId, safeFolderPath, students);
+    const scanResult = await scanClassSpckDirectoryAsync(classId, safeFolderPath, students);
     const overLimitErrors: string[] = [];
     let persistedCount = 0;
 
@@ -167,7 +168,15 @@ export async function POST(req: Request) {
         continue;
       }
 
-      const isConfirmed = item.match.autoConfirmed
+      const hasPendingPortalConfirmation = studentPortalManager.hasUnconfirmedSubmission(
+        classId,
+        suggestedId,
+        canonicalItemFolder
+      );
+
+      const isConfirmed = hasPendingPortalConfirmation
+        ? 0
+        : item.match.autoConfirmed
         ? 1
         : sameFolder && !item.match.requiresManualConfirmation
         ? existing?.isConfirmedByTeacher ?? 0
@@ -350,6 +359,7 @@ export async function POST(req: Request) {
         localFolderPath: canonicalItemFolder,
         matchScore: item.match.matchScore,
         isConfirmedByTeacher: isConfirmed,
+        pendingPortalConfirmation: hasPendingPortalConfirmation ? 1 : 0,
         projectTitle: resolvedProjectTitle,
         baseProjectTitle:
           sameFolder && existing?.baseProjectTitle

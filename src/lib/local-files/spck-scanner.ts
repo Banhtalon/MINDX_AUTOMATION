@@ -19,13 +19,19 @@ import {
 } from "../security/path-allowlist";
 import {
   findProjectUiFiles,
+  renderPyQtUiScreenshotsAsync,
   renderPyQtUiScreenshotsSync,
 } from "./spck-app-screenshotter";
 import {
   findProjectGameFiles,
+  renderGameArchiveScreenshotsAsync,
   renderGameArchiveScreenshotsSync,
 } from "./spck-game-screenshotter";
-import { normalizeImagesToLms16x9Sync } from "./spck-image-normalizer";
+import { taskQueue } from "../queue/task-queue";
+import {
+  normalizeImagesToLms16x9,
+  normalizeImagesToLms16x9Sync,
+} from "./spck-image-normalizer";
 import {
   FolderStudentMatchResult,
   StudentCandidate,
@@ -1376,7 +1382,8 @@ export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
  */
 export function scanStudentSpckFolder(
   studentFolderPath: string,
-  preferredStudentName?: string
+  preferredStudentName?: string,
+  options?: { skipSyncAutoRender?: boolean; skipSyncImageNormalize?: boolean }
 ): StudentSpckPackage {
   const safeFolderPath = assertPathAllowed(studentFolderPath);
   const folderStat = fs.lstatSync(safeFolderPath);
@@ -1688,7 +1695,10 @@ export function scanStudentSpckFolder(
         lowerDir === "_spck_app_shots" ||
         lowerDir === "_spck_owner_uploads" ||
         lowerDir === "_spck_youtube_frames";
-      if (hasCodeOrUiProjectFiles && !isSpckManagedImageDir) {
+      if (
+        (lowerDir.startsWith("_spck_") && !isSpckManagedImageDir) ||
+        (hasCodeOrUiProjectFiles && !isSpckManagedImageDir)
+      ) {
         continue;
       }
       try {
@@ -1740,7 +1750,7 @@ export function scanStudentSpckFolder(
               }
             } catch {}
           }
-          if (non16x9ShotJobs.length > 0) {
+          if (!options?.skipSyncImageNormalize && non16x9ShotJobs.length > 0) {
             const normBufs = normalizeImagesToLms16x9Sync(
               non16x9ShotJobs.map((j) => ({ buffer: j.buffer, fit: "contain" }))
             );
@@ -2237,7 +2247,7 @@ export function scanStudentSpckFolder(
 
   // Auto-render PyQt6 (.ui) app windows, GameMaker (.yyz/.yyp) / Scratch (.sb3) room/stage screenshots,
   // or pure-Python GUI/Streamlit app preview into _spck_app_shots when the student folder has no existing product images yet.
-  if (validImages.length === 0) {
+  if (!options?.skipSyncAutoRender && validImages.length === 0) {
     const uiRelList = findProjectUiFiles(safeFolderPath);
     if (uiRelList.length > 0) {
       try {
@@ -2264,7 +2274,7 @@ export function scanStudentSpckFolder(
       }
     }
   }
-  if (validImages.length === 0) {
+  if (!options?.skipSyncAutoRender && validImages.length === 0) {
     const allGameFiles = findProjectGameFiles(safeFolderPath);
     const validAttKeySet = new Set(validAttachments.map((p) => path.resolve(p).toLowerCase()));
     const isSafeValidatedGameSource = (rel: string): boolean => {
@@ -2737,7 +2747,8 @@ function inferStudentFromSingleNestedChildFolder(
 export function scanClassSpckDirectory(
   classId: string,
   rootFolderPath: string,
-  students: StudentCandidate[]
+  students: StudentCandidate[],
+  options?: { skipSyncAutoRender?: boolean; skipSyncImageNormalize?: boolean }
 ): ScanClassSpckDirectoryResult {
   const normalizedClassId = (classId || "").trim().toUpperCase();
   if (!normalizedClassId) {
@@ -2918,7 +2929,8 @@ export function scanClassSpckDirectory(
       : undefined;
     const packageData = scanStudentSpckFolder(
       match.folderPath,
-      matchedStudent?.fullName || match.folderName
+      matchedStudent?.fullName || match.folderName,
+      options
     );
     return {
       folderName: match.folderName,
@@ -2935,4 +2947,277 @@ export function scanClassSpckDirectory(
     totalFolders: items.length,
     items,
   };
+}
+
+async function normalizeStudentAppShotsFolderAsync(safeFolderPath: string): Promise<void> {
+  if (taskQueue.getStatus().isStopped) return;
+  try {
+    const appShotsDir = assertPathAllowed(path.join(safeFolderPath, "_spck_app_shots"));
+    if (!fs.existsSync(appShotsDir)) return;
+    const dirStat = fs.lstatSync(appShotsDir);
+    if (dirStat.isSymbolicLink() || !dirStat.isDirectory()) return;
+
+    const rawSubEntries = fs
+      .readdirSync(appShotsDir, { withFileTypes: true })
+      .sort((a, b) => a.name.localeCompare(b.name, "en"));
+    const bySlotKey = new Map<string, { entry: fs.Dirent; mtimeMs: number }>();
+    for (const se of rawSubEntries) {
+      if (se.name.startsWith(".")) continue;
+      const slotMatch = se.name.match(/^(app_\d+_.*?)_[0-9a-f]{6}\.png$/i);
+      const slotKey = slotMatch ? slotMatch[1].toLowerCase() : se.name.toLowerCase();
+      let mtimeMs = 0;
+      try {
+        mtimeMs = fs.statSync(path.join(appShotsDir, se.name)).mtimeMs;
+      } catch {
+        mtimeMs = 0;
+      }
+      const prev = bySlotKey.get(slotKey);
+      if (
+        !prev ||
+        mtimeMs > prev.mtimeMs ||
+        (mtimeMs === prev.mtimeMs && se.name > prev.entry.name)
+      ) {
+        bySlotKey.set(slotKey, { entry: se, mtimeMs });
+      }
+    }
+
+    const subEntries = Array.from(bySlotKey.values())
+      .map((v) => v.entry)
+      .sort((a, b) => a.name.localeCompare(b.name, "en"));
+
+    const non16x9ShotJobs: Array<{ path: string; ext: string; buffer: Buffer }> = [];
+    for (const subEntry of subEntries) {
+      if (subEntry.name.startsWith(".")) continue;
+      const subPath = assertPathAllowed(path.join(appShotsDir, subEntry.name));
+      const subStat = fs.lstatSync(subPath);
+      if (subStat.isSymbolicLink() || !subStat.isFile()) continue;
+      const subExt = path.extname(subEntry.name).toLowerCase();
+      if (!ALLOWED_IMAGE_EXTENSIONS.has(subExt)) continue;
+      try {
+        const buf = fs.readFileSync(subPath);
+        const dims = extractImageDimensionsFromBuffer(buf, subExt);
+        if (
+          dims &&
+          dims.width > 0 &&
+          dims.height > 0 &&
+          Math.abs(dims.width / dims.height - 16 / 9) > 0.05
+        ) {
+          non16x9ShotJobs.push({ path: subPath, ext: subExt, buffer: buf });
+        }
+      } catch {}
+    }
+
+    if (non16x9ShotJobs.length === 0 || taskQueue.getStatus().isStopped) {
+      return;
+    }
+
+    const normBufs = await normalizeImagesToLms16x9(
+      non16x9ShotJobs.map((j) => ({ buffer: j.buffer, fit: "contain" }))
+    );
+
+    for (let i = 0; i < non16x9ShotJobs.length; i++) {
+      const nb = normBufs[i];
+      const job = non16x9ShotJobs[i];
+      if (!nb || nb.length === 0) continue;
+      try {
+        if (fs.lstatSync(job.path, { throwIfNoEntry: false })?.isSymbolicLink()) continue;
+        const targetPngPath =
+          job.ext === ".png"
+            ? job.path
+            : assertPathAllowed(
+                path.join(appShotsDir, `${path.basename(job.path, job.ext)}.png`)
+              );
+        if (fs.lstatSync(targetPngPath, { throwIfNoEntry: false })?.isSymbolicLink()) {
+          continue;
+        }
+        const tmpPngPath = `${targetPngPath}.tmp`;
+        if (fs.lstatSync(tmpPngPath, { throwIfNoEntry: false })) {
+          fs.unlinkSync(tmpPngPath);
+        }
+        fs.writeFileSync(tmpPngPath, nb);
+        fs.renameSync(tmpPngPath, targetPngPath);
+        if (job.ext !== ".png" && targetPngPath !== job.path) {
+          fs.unlinkSync(job.path);
+        }
+      } catch {}
+    }
+  } catch {
+    // Ignore non-fatal normalization errors during async scan
+  }
+}
+
+/**
+ * Non-blocking async variant of `scanStudentSpckFolder`: performs fast filesystem validation
+ * without blocking the Node.js Event Loop on Python subprocess rendering (`renderPyQtUiScreenshotsAsync`,
+ * `renderGameArchiveScreenshotsAsync`, or legacy `_spck_app_shots` JPEG normalization), supporting
+ * timeout and Emergency Stop.
+ */
+export async function scanStudentSpckFolderAsync(
+  studentFolderPath: string,
+  preferredStudentName?: string
+): Promise<StudentSpckPackage> {
+  const safeFolderPath = assertPathAllowed(studentFolderPath);
+  await normalizeStudentAppShotsFolderAsync(safeFolderPath);
+
+  const initial = scanStudentSpckFolder(safeFolderPath, preferredStudentName, {
+    skipSyncAutoRender: true,
+    skipSyncImageNormalize: true,
+  });
+
+  const hasExistingRealOrRenderedShots =
+    (initial.allScreenshots?.length ?? initial.screenshots.length) > 0 ||
+    (Boolean(initial.thumbnailPath) &&
+      path.resolve(initial.thumbnailPath) !== path.resolve(DEFAULT_SPCK_THUMBNAIL_PATH));
+
+  if (hasExistingRealOrRenderedShots || taskQueue.getStatus().isStopped) {
+    return initial;
+  }
+
+  let renderedAny = false;
+  const uiRelList = findProjectUiFiles(safeFolderPath);
+  if (uiRelList.length > 0 && !taskQueue.getStatus().isStopped) {
+    try {
+      const autoOutDir = assertPathAllowed(path.join(safeFolderPath, "_spck_app_shots"));
+      const renderedUiShots = await renderPyQtUiScreenshotsAsync({
+        studentDir: safeFolderPath,
+        uiFiles: uiRelList,
+        outDir: autoOutDir,
+        maxShots: MAX_SPCK_SCREENSHOTS + 1,
+      });
+      if (renderedUiShots.some((s) => Boolean(s?.filePath) && fs.existsSync(s.filePath))) {
+        renderedAny = true;
+      }
+    } catch {
+      // Ignore auto-render errors during scan; teacher can still upload or capture manually
+    }
+  }
+
+  if (!renderedAny && !taskQueue.getStatus().isStopped) {
+    const allGameFiles = findProjectGameFiles(safeFolderPath);
+    const validAttKeySet = new Set(
+      (initial.allAttachments || initial.attachments).map((p) => path.resolve(p).toLowerCase())
+    );
+    let hasUnpackedYyp = false;
+    try {
+      const topEntries = fs.readdirSync(safeFolderPath, { withFileTypes: true });
+      hasUnpackedYyp = topEntries.some(
+        (d) => d.isFile() && d.name.toLowerCase().endsWith(".yyp")
+      );
+    } catch {}
+
+    const isSafeValidatedGameSource = (rel: string): boolean => {
+      try {
+        const full = assertPathAllowed(path.join(safeFolderPath, rel));
+        if (rel.toLowerCase().endsWith(".yyp")) {
+          return hasUnpackedYyp;
+        }
+        if (validAttKeySet.has(path.resolve(full).toLowerCase())) {
+          return true;
+        }
+        return validateSpckAttachmentFile(full).valid;
+      } catch {
+        return false;
+      }
+    };
+
+    const yyzRelList = allGameFiles.yyzFiles.filter(isSafeValidatedGameSource);
+    const sb3RelList = allGameFiles.sb3Files.filter(isSafeValidatedGameSource);
+    if (yyzRelList.length > 0 || sb3RelList.length > 0) {
+      try {
+        const autoOutDir = assertPathAllowed(path.join(safeFolderPath, "_spck_app_shots"));
+        const renderedGameShots = await renderGameArchiveScreenshotsAsync({
+          studentDir: safeFolderPath,
+          yyzFiles: yyzRelList,
+          sb3Files: sb3RelList,
+          outDir: autoOutDir,
+          maxShots: MAX_SPCK_SCREENSHOTS + 1,
+        });
+        if (renderedGameShots.some((s) => Boolean(s?.filePath) && fs.existsSync(s.filePath))) {
+          renderedAny = true;
+        }
+      } catch {
+        // Ignore auto-render errors during scan; teacher can still upload or capture manually
+      }
+    }
+  }
+
+  if (!renderedAny) {
+    return initial;
+  }
+
+  await normalizeStudentAppShotsFolderAsync(safeFolderPath);
+  return scanStudentSpckFolder(safeFolderPath, preferredStudentName, {
+    skipSyncAutoRender: true,
+    skipSyncImageNormalize: true,
+  });
+}
+
+/**
+ * Non-blocking async variant of `scanClassSpckDirectory` used by API routes so PyQt/GameMaker
+ * screenshot rendering and legacy `_spck_app_shots` JPEG normalization never block the Node.js Event Loop.
+ */
+export async function scanClassSpckDirectoryAsync(
+  classId: string,
+  rootFolderPath: string,
+  students: StudentCandidate[]
+): Promise<ScanClassSpckDirectoryResult> {
+  const safeRootPath = assertPathAllowed(rootFolderPath);
+  if (fs.existsSync(safeRootPath)) {
+    try {
+      const rootStat = fs.lstatSync(safeRootPath);
+      if (!rootStat.isSymbolicLink() && rootStat.isDirectory()) {
+        const subDirs = fs
+          .readdirSync(safeRootPath, { withFileTypes: true })
+          .filter((d) => {
+            if (d.name.startsWith(".")) return false;
+            const lower = d.name.toLowerCase();
+            if (lower.startsWith("_spck_") || NON_STUDENT_SUBFOLDER_NAMES.has(lower)) return false;
+            try {
+              const full = assertPathAllowed(path.join(safeRootPath, d.name));
+              const st = fs.lstatSync(full);
+              return !st.isSymbolicLink() && st.isDirectory();
+            } catch {
+              return false;
+            }
+          })
+          .sort((a, b) => a.name.localeCompare(b.name, "en"));
+
+        for (const sub of subDirs) {
+          if (taskQueue.getStatus().isStopped) break;
+          const fullSubPath = assertPathAllowed(path.join(safeRootPath, sub.name));
+          await normalizeStudentAppShotsFolderAsync(fullSubPath);
+        }
+      }
+    } catch {
+      // Let scanClassSpckDirectory throw structured validation errors if rootFolderPath is invalid
+    }
+  }
+
+  const fastResult = scanClassSpckDirectory(classId, rootFolderPath, students, {
+    skipSyncAutoRender: true,
+    skipSyncImageNormalize: true,
+  });
+
+  const studentMap = new Map(students.map((s) => [s.studentId, s]));
+  for (const item of fastResult.items) {
+    if (taskQueue.getStatus().isStopped) {
+      break;
+    }
+    const hasShots =
+      (item.packageData.allScreenshots?.length ?? item.packageData.screenshots.length) > 0 ||
+      (Boolean(item.packageData.thumbnailPath) &&
+        path.resolve(item.packageData.thumbnailPath) !==
+          path.resolve(DEFAULT_SPCK_THUMBNAIL_PATH));
+    if (!hasShots) {
+      const matchedStudent = item.match.suggestedStudentId
+        ? studentMap.get(item.match.suggestedStudentId)
+        : undefined;
+      item.packageData = await scanStudentSpckFolderAsync(
+        item.folderPath,
+        matchedStudent?.fullName || item.folderName
+      );
+    }
+  }
+
+  return fastResult;
 }

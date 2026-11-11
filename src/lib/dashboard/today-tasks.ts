@@ -580,30 +580,7 @@ export function getDashboardTodayTodoCards(options?: {
         requiredPresentCommentStudentIds.every(
           (sid) => fbByStudent.get(sid)?.status === "VERIFIED"
         );
-      const hasVerifiedWithRealTextAndOnlyEmptyDrafts =
-        requiredPresentCommentStudentIds.length > 0 &&
-        requiredPresentCommentStudentIds.every((sid) => fbByStudent.has(sid)) &&
-        requiredPresentCommentStudentIds.some((sid) => {
-          const r = fbByStudent.get(sid);
-          return (
-            r?.status === "VERIFIED" &&
-            String(r?.finalText || "").trim().length > 0
-          );
-        }) &&
-        requiredPresentCommentStudentIds.every((sid) => {
-          const r = fbByStudent.get(sid);
-          if (!r) return false;
-          if (r.status === "VERIFIED") {
-            return String(r.finalText || "").trim().length > 0;
-          }
-          return (
-            r.status === "DRAFT" &&
-            String(r.finalText || "").trim().length === 0
-          );
-        });
-      const sessionCommentVerified =
-        hasAllStrictVerified ||
-        hasVerifiedWithRealTextAndOnlyEmptyDrafts;
+      const sessionCommentVerified = hasAllStrictVerified;
 
       const spckRows = db
         .prepare(

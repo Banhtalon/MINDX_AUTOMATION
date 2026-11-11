@@ -43,6 +43,11 @@ export interface ZaloBroadcastResult {
   variables: Record<string, string>;
 }
 
+/**
+ * @deprecated Legacy compatibility wrapper retained for protected audit harnesses
+ * (`docs/audits/round-12`, `scripts/test-phase3.ts`, `scripts/test-phase4-codex-repros.ts`).
+ * All active production code uses `src/lib/zalo/zalo-summary.ts` directly.
+ */
 export class ZaloBroadcastGenerator {
   public static formatShortStudentName(fullName: string): string {
     return formatShortZaloName(fullName);

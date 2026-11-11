@@ -10,7 +10,7 @@
  *    `screenshotsJson` ("Tải hình ảnh lên" - bottom box, max 10 images).
  */
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -21,7 +21,7 @@ import {
 } from "../db/sqlite";
 import { getGeminiModel } from "../gemini/client";
 import { SequentialTaskQueue } from "../queue/task-queue";
-import { assertPathAllowed, isPathAllowed } from "../security/path-allowlist";
+import { assertPathAllowed } from "../security/path-allowlist";
 import {
   DEFAULT_SPCK_THUMBNAIL_PATH,
   MAX_SPCK_SCREENSHOTS,
@@ -35,6 +35,7 @@ import {
 } from "./spck-image-normalizer";
 import {
   findProjectGameFiles,
+  renderGameArchiveScreenshotsAsync,
   renderGameArchiveScreenshotsSync,
 } from "./spck-game-screenshotter";
 
@@ -77,11 +78,14 @@ const PYTHON_PYQT6_CAPTURE_SCRIPT = `
 import os
 import re
 import sys
+import html
 import json
 import builtins
 import hashlib
 import tempfile
 import unicodedata
+import urllib.parse
+import urllib.request
 import xml.etree.ElementTree as ET
 
 # Strip CWD / relative entries from sys.path before importing anything else
@@ -169,7 +173,8 @@ def build_image_index(root_dir, allowed_roots):
         dirs[:] = [
             d for d in dirs
             if not d.startswith('.')
-            and d not in ('__pycache__', 'node_modules', '_spck_app_shots', '_spck_owner_uploads', '_synth_assets')
+            and not d.lower().startswith('_spck_')
+            and d not in ('__pycache__', 'node_modules', '_synth_assets')
             and is_safe_within_roots(os.path.join(cur_root, d), [root_dir])
             and is_safe_within_roots(os.path.join(cur_root, d), allowed_roots)
         ]
@@ -219,267 +224,155 @@ def lookup_in_index(raw_ref, ui_dir, root_dir, idx, allowed_roots):
             return found_stem
     return None
 
-def build_class_recovery_index(student_dir, allowed_roots):
-    abs_student = os.path.realpath(student_dir)
-    class_dir = os.path.dirname(abs_student)
-    sibling_widget_map = {}
-    class_by_base = {}
-    class_by_stem = {}
-    if not os.path.isdir(class_dir) or not is_safe_within_roots(class_dir, allowed_roots):
-        return {
-            'sibling_widget_map': sibling_widget_map,
-            'by_base': class_by_base,
-            'by_stem': class_by_stem,
-        }
-
-    for entry in sorted(os.listdir(class_dir)):
-        sib_dir = os.path.join(class_dir, entry)
-        if not os.path.isdir(sib_dir) or os.path.islink(sib_dir):
-            continue
-        if os.path.normcase(os.path.realpath(sib_dir)) == os.path.normcase(abs_student):
-            continue
-        if not is_safe_within_roots(sib_dir, allowed_roots):
-            continue
-        if entry.startswith('.') or entry.startswith('_spck'):
-            continue
-        sib_idx = build_image_index(sib_dir, allowed_roots)
-        for b, full in sib_idx['by_base'].items():
-            if b not in class_by_base:
-                class_by_base[b] = full
-        for s, full in sib_idx['by_stem'].items():
-            if s not in class_by_stem:
-                class_by_stem[s] = full
-
-        # Index sibling .ui widget -> resolved image mappings
-        for cur_root, dirs, files in os.walk(sib_dir, followlinks=False):
-            dirs[:] = [
-                d for d in dirs
-                if not d.startswith('.')
-                and d not in ('__pycache__', 'node_modules', '_spck_app_shots', '_spck_owner_uploads', '_synth_assets')
-                and is_safe_within_roots(os.path.join(cur_root, d), [sib_dir])
-                and is_safe_within_roots(os.path.join(cur_root, d), allowed_roots)
-            ]
-            for f in files:
-                if not f.lower().endswith('.ui'):
-                    continue
-                ui_file_lower = f.lower()
-                ui_full = os.path.join(cur_root, f)
-                if not is_safe_file(ui_full, [sib_dir]) or not is_safe_file(ui_full, allowed_roots):
-                    continue
-                ui_dir = os.path.dirname(ui_full)
-                try:
-                    root = ET.parse(ui_full).getroot()
-                    sib_w_names = {w.attrib.get('name', '') for w in root.iter('widget') if w.attrib.get('name')}
-                    for w in root.iter('widget'):
-                        wname = w.attrib.get('name', '')
-                        if not wname:
-                            continue
-                        sw, sh = 160, 120
-                        geom = w.find("./property[@name='geometry']/rect")
-                        if geom is not None:
-                            try:
-                                sw = int(geom.findtext('width') or 160)
-                                sh = int(geom.findtext('height') or 120)
-                            except Exception:
-                                pass
-                        for prop in w.findall('./property'):
-                            pname = prop.attrib.get('name', '')
-                            if pname == 'pixmap':
-                                px = prop.find('pixmap')
-                                if px is not None and px.text:
-                                    found = lookup_in_index(px.text, ui_dir, sib_dir, sib_idx, allowed_roots)
-                                    if found:
-                                        sibling_widget_map.setdefault((ui_file_lower, wname, 'pixmap'), []).append({
-                                            'path': found,
-                                            'width': sw,
-                                            'height': sh,
-                                            'widget_names': sib_w_names,
-                                        })
-                            elif pname == 'icon':
-                                ic = prop.find('iconset/normaloff')
-                                if ic is not None and ic.text:
-                                    found = lookup_in_index(ic.text, ui_dir, sib_dir, sib_idx, allowed_roots)
-                                    if found:
-                                        sibling_widget_map.setdefault((ui_file_lower, wname, 'icon'), []).append({
-                                            'path': found,
-                                            'width': sw,
-                                            'height': sh,
-                                            'widget_names': sib_w_names,
-                                        })
-                except Exception:
-                    pass
-
-    return {
-        'sibling_widget_map': sibling_widget_map,
-        'by_base': class_by_base,
-        'by_stem': class_by_stem,
-    }
-
-def synthesize_missing_asset(raw_ref, ui_file_lower, wname, prop_kind, width, height, ui_text_blob, synth_dir):
+def render_neutral_placeholder_asset(raw_ref, ui_file_lower, wname, prop_kind, width, height, synth_dir):
+    """Renders a strictly neutral dashed wireframe placeholder when an image asset is missing from the student's own folder."""
     os.makedirs(synth_dir, exist_ok=True)
     key = f"{ui_file_lower}:{wname}:{prop_kind}:{width}x{height}:{raw_ref}"
     digest = hashlib.md5(key.encode('utf-8', errors='ignore')).hexdigest()[:10]
-    out_path = os.path.join(synth_dir, f"synth_{wname}_{digest}.png").replace('\\\\', '/')
+    safe_wname = re.sub(r'[^a-zA-Z0-9_-]+', '_', wname or 'widget')[:24]
+    out_path = os.path.join(synth_dir, f"placeholder_{safe_wname}_{digest}.png").replace('\\\\', '/')
     if os.path.isfile(out_path):
         return out_path
 
-    w = max(32, min(int(width or 120), 1200))
-    h = max(32, min(int(height or 120), 900))
-    ref_lower = (raw_ref or '').lower()
-    blob_lower = (ui_text_blob or '').lower()
+    w = max(24, min(int(width or 120), 1200))
+    h = max(24, min(int(height or 120), 900))
+    if prop_kind == 'icon':
+        sz = max(32, min(w, h, 64))
+        w, h = sz, sz
 
-    # Case 1: Small icon or button iconset
-    if prop_kind == 'icon' or (w <= 120 and h <= 120):
-        sz = max(64, min(w, h))
-        pix = QtGui.QPixmap(sz, sz)
-        pix.fill(QtCore.Qt.GlobalColor.transparent)
-        p = QtGui.QPainter(pix)
-        p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
-        pen = QtGui.QPen(QtGui.QColor(30, 41, 59), max(3, sz // 12))
-        pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
-        pen.setJoinStyle(QtCore.Qt.PenJoinStyle.RoundJoin)
-        p.setPen(pen)
-
-        m = sz // 6
-        if 'book' in ref_lower:
-            p.setBrush(QtGui.QColor(59, 130, 246, 40))
-            p.drawRoundedRect(m, m, sz - 2 * m, sz - 2 * m, 6, 6)
-            p.drawLine(sz // 2, m, sz // 2, sz - m)
-            p.drawLine(m + 6, m + 12, sz // 2 - 4, m + 12)
-            p.drawLine(m + 6, m + 22, sz // 2 - 4, m + 22)
-        elif 'pen' in ref_lower or 'edit' in ref_lower:
-            p.setBrush(QtGui.QColor(16, 185, 129, 40))
-            poly = QtGui.QPolygon([
-                QtCore.QPoint(m, sz - m),
-                QtCore.QPoint(m + 14, sz - m - 4),
-                QtCore.QPoint(sz - m, m + 10),
-                QtCore.QPoint(sz - m - 10, m),
-                QtCore.QPoint(m + 4, sz - m - 14),
-            ])
-            p.drawPolygon(poly)
-        elif 'house' in ref_lower or 'home' in ref_lower:
-            p.setBrush(QtGui.QColor(99, 102, 241, 40))
-            roof = QtGui.QPolygon([
-                QtCore.QPoint(sz // 2, m),
-                QtCore.QPoint(sz - m, sz // 2),
-                QtCore.QPoint(m, sz // 2),
-            ])
-            p.drawPolygon(roof)
-            p.drawRect(m + 8, sz // 2, sz - 2 * (m + 8), sz // 2 - m)
-        elif 'user' in ref_lower or 'avatar' in ref_lower:
-            p.setBrush(QtGui.QColor(139, 92, 246, 40))
-            p.drawEllipse(sz // 2 - sz // 6, m, sz // 3, sz // 3)
-            p.drawArc(m, sz // 2, sz - 2 * m, sz // 2, 0, 180 * 16)
-        else:
-            p.setBrush(QtGui.QColor(59, 130, 246, 50))
-            p.drawRoundedRect(m, m, sz - 2 * m, sz - 2 * m, 10, 10)
-            p.drawEllipse(sz // 3, sz // 3, sz // 3, sz // 3)
-        p.end()
-        pix.save(out_path, 'PNG')
-        return out_path
-
-    # Case 2: Large Background / World Map / Banner
     pix = QtGui.QPixmap(w, h)
+    pix.fill(QtCore.Qt.GlobalColor.transparent)
     p = QtGui.QPainter(pix)
     p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
-
-    is_world_map = any(k in blob_lower for k in ('north america', 'south america', 'africa', 'asian', 'europe'))
-    is_history = 'history' in ref_lower or 'history' in blob_lower or 'atlas' in blob_lower
-    is_math = 'math' in ref_lower or 'bình phương' in blob_lower or 'lập phương' in blob_lower
-    is_ocean = 'ocean' in blob_lower or 'deep sea' in blob_lower
-
-    grad = QtGui.QLinearGradient(0, 0, w, h)
-    if is_world_map:
-        grad.setColorAt(0.0, QtGui.QColor(14, 116, 144))
-        grad.setColorAt(0.5, QtGui.QColor(3, 105, 161))
-        grad.setColorAt(1.0, QtGui.QColor(15, 23, 42))
-    elif is_history:
-        grad.setColorAt(0.0, QtGui.QColor(30, 27, 75))
-        grad.setColorAt(0.5, QtGui.QColor(49, 46, 129))
-        grad.setColorAt(1.0, QtGui.QColor(15, 23, 42))
-    elif is_math:
-        grad.setColorAt(0.0, QtGui.QColor(30, 58, 138))
-        grad.setColorAt(1.0, QtGui.QColor(29, 78, 216))
-    elif is_ocean:
-        grad.setColorAt(0.0, QtGui.QColor(2, 132, 199))
-        grad.setColorAt(1.0, QtGui.QColor(12, 74, 110))
-    else:
-        grad.setColorAt(0.0, QtGui.QColor(30, 41, 59))
-        grad.setColorAt(0.5, QtGui.QColor(51, 65, 85))
-        grad.setColorAt(1.0, QtGui.QColor(15, 23, 42))
-    p.fillRect(0, 0, w, h, QtGui.QBrush(grad))
-
-    # Subtle grid lines
-    grid_pen = QtGui.QPen(QtGui.QColor(255, 255, 255, 22), 1)
-    p.setPen(grid_pen)
-    step = max(40, min(w, h) // 8)
-    for gx in range(0, w, step):
-        p.drawLine(gx, 0, gx, h)
-    for gy in range(0, h, step):
-        p.drawLine(0, gy, w, gy)
-
-    if is_world_map:
-        # Draw stylized continent landmasses matching typical button positions
-        p.setPen(QtGui.QPen(QtGui.QColor(134, 239, 172, 110), 2))
-        p.setBrush(QtGui.QColor(34, 197, 94, 85))
-        # North America (top-left)
-        p.drawEllipse(int(w * 0.10), int(h * 0.14), int(w * 0.24), int(h * 0.22))
-        # South America (bottom-left)
-        p.drawEllipse(int(w * 0.22), int(h * 0.42), int(w * 0.16), int(h * 0.28))
-        # Africa (center)
-        p.drawEllipse(int(w * 0.43), int(h * 0.28), int(w * 0.18), int(h * 0.26))
-        # Asia / Eurasia (top-right)
-        p.drawEllipse(int(w * 0.58), int(h * 0.12), int(w * 0.30), int(h * 0.28))
-    else:
-        # Decorative glowing circles
-        p.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255, 35), 2))
-        p.setBrush(QtGui.QColor(255, 255, 255, 18))
-        p.drawEllipse(int(w * 0.65), int(h * 0.12), int(min(w, h) * 0.45), int(min(w, h) * 0.45))
-        p.drawEllipse(int(w * 0.08), int(h * 0.55), int(min(w, h) * 0.32), int(min(w, h) * 0.32))
-
+    p.setBrush(QtGui.QColor(241, 245, 249, 140))
+    pen = QtGui.QPen(QtGui.QColor(148, 163, 184, 150), 1)
+    pen.setStyle(QtCore.Qt.PenStyle.DashLine)
+    p.setPen(pen)
+    p.drawRoundedRect(1, 1, max(1, w - 2), max(1, h - 2), 4, 4)
     p.end()
     pix.save(out_path, 'PNG')
     return out_path
 
-def resolve_widget_asset(raw_ref, ui_file_lower, wname, prop_kind, width, height, cur_w_names, ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir, allowed_roots):
-    ref = (raw_ref or '').strip().strip('"').strip("'")
+def resolve_widget_asset(raw_ref, ui_file_lower, wname, prop_kind, width, height, ui_dir, root_dir, local_idx, synth_dir, allowed_roots):
+    ref = html.unescape((raw_ref or '')).strip().strip('"').strip("'")
     if not ref:
         return ''
-    if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*://', ref) or ref.lower().startswith('data:') or ref.lower().startswith('file:'):
-        return synthesize_missing_asset(ref, ui_file_lower, wname, prop_kind, width, height, ui_text_blob, synth_dir)
 
-    # Layer 1: Local student folder (exact relative, basename, or stem — strictly inside allowed_roots)
+    if os.path.isabs(ref) and is_safe_file(ref, [synth_dir]):
+        return os.path.realpath(ref).replace('\\\\', '/')
+
+    if ref.lower().startswith('file:'):
+        try:
+            parsed_u = urllib.parse.urlparse(ref)
+            if parsed_u.netloc and parsed_u.netloc.lower() not in ('', 'localhost'):
+                return render_neutral_placeholder_asset(ref, ui_file_lower, wname, prop_kind, width, height, synth_dir)
+            local_from_url = urllib.request.url2pathname(parsed_u.path or '')
+            if local_from_url and is_safe_file(local_from_url, [root_dir]) and is_safe_file(local_from_url, allowed_roots):
+                return os.path.realpath(local_from_url).replace('\\\\', '/')
+        except Exception:
+            pass
+        return render_neutral_placeholder_asset(ref, ui_file_lower, wname, prop_kind, width, height, synth_dir)
+
+    if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:', ref) and not re.match(r'^[a-zA-Z]:[\\\\/]', ref):
+        if not ref.startswith(':/'):
+            return render_neutral_placeholder_asset(ref, ui_file_lower, wname, prop_kind, width, height, synth_dir)
+
+    # Layer 1 ONLY: Student's own folder (exact relative, basename, or stem — strictly inside student_dir & allowed_roots)
     found_local = lookup_in_index(ref, ui_dir, root_dir, local_idx, allowed_roots)
     if found_local:
         return found_local
 
-    # Layer 2: Sibling UI Widget Map (same .ui filename + same widget name + compatible geometry & widget set)
-    sib_map = class_idx.get('sibling_widget_map', {})
-    candidates = sib_map.get((ui_file_lower, wname, prop_kind), [])
-    for cand in candidates:
-        dw = abs(int(width or 160) - int(cand.get('width', 160)))
-        dh = abs(int(height or 120) - int(cand.get('height', 120)))
-        common_widgets = len(cur_w_names.intersection(cand.get('widget_names', set())))
-        if dw <= 60 and dh <= 60 and common_widgets >= 4 and is_safe_file(cand.get('path'), allowed_roots):
-            return cand['path']
+    # Missing in student's own folder -> neutral wireframe box (never borrow from sibling student folders)
+    return render_neutral_placeholder_asset(ref, ui_file_lower, wname, prop_kind, width, height, synth_dir)
 
-    # Layer 3: Descriptive filename match in allowed class folder only (never outside allowed_roots)
-    clean = re.sub(r'^:/+[^/]*/', '', ref)
-    base = os.path.basename(clean.replace('\\\\', '/')).lower()
-    stem = os.path.splitext(base)[0]
+def sanitize_rich_text_and_css_string(raw_text, ui_file_lower, wname, width, height, ui_dir, root_dir, local_idx, synth_dir, allowed_roots):
+    if not raw_text:
+        return raw_text
+    text = raw_text
 
-    if not is_generic_stem(stem):
-        if base in class_idx.get('by_base', {}):
-            cand_base = class_idx['by_base'][base]
-            if is_safe_file(cand_base, allowed_roots):
-                return cand_base
-        if stem in class_idx.get('by_stem', {}):
-            cand_stem = class_idx['by_stem'][stem]
-            if is_safe_file(cand_stem, allowed_roots):
-                return cand_stem
+    def rewrite_css_urls(css_str, url_quote='"'):
+        def repl_url(match):
+            inner = match.group(1) if match.group(1) is not None else (match.group(2) or '')
+            resolved = resolve_widget_asset(
+                inner, ui_file_lower, wname, 'pixmap', width, height,
+                ui_dir, root_dir, local_idx, synth_dir, allowed_roots
+            )
+            return f'url({url_quote}{resolved}{url_quote})'
+        return re.sub(
+            r'(?i)url\\s*\\(\\s*(?:[\\x22\\x27](.*?)[\\x22\\x27]|([^)\\x22\\x27]+?))\\s*\\)',
+            repl_url,
+            css_str,
+            flags=re.DOTALL
+        )
 
-    # Layer 4: Synthesize contextual illustration / icon / banner PNG
-    return synthesize_missing_asset(ref, ui_file_lower, wname, prop_kind, width, height, ui_text_blob, synth_dir)
+    # 1. Rewrite inline HTML style="..." / style='...' / style=... attributes (handling HTML-entity obfuscated url(...))
+    if 'style' in text.lower():
+        def repl_quoted_style(match):
+            quote_ch = match.group(1)
+            raw_style = html.unescape(match.group(2) or '')
+            inner_url_quote = "'" if quote_ch == '"' else '"'
+            cleaned_style = rewrite_css_urls(raw_style, inner_url_quote)
+            return f'style={quote_ch}{cleaned_style}{quote_ch}'
+
+        def repl_unquoted_style(match):
+            raw_style = html.unescape(match.group(1) or '')
+            cleaned_style = rewrite_css_urls(raw_style, "'")
+            return f'style="{cleaned_style}"'
+
+        text = re.sub(
+            r'(?i)\\bstyle\\s*=\\s*([\\x22\\x27])(.*?)\\1',
+            repl_quoted_style,
+            text,
+            flags=re.DOTALL
+        )
+        text = re.sub(
+            r'(?i)\\bstyle\\s*=\\s*([^\\s>\\x22\\x27]+)',
+            repl_unquoted_style,
+            text
+        )
+
+    # 2. Rewrite standalone CSS url(...) references (e.g. Qt styleSheet property)
+    if 'url' in text.lower() or '&#' in text or '&amp;' in text:
+        text = rewrite_css_urls(text, '"')
+
+    # 3. Rewrite HTML resource attributes (src, background, poster, data, href)
+    if '<' in text or '=' in text:
+        def repl_quoted_attr(match):
+            attr_name = match.group(1)
+            quote_ch = match.group(2)
+            raw_val = match.group(3)
+            if attr_name.lower() == 'href' and not re.search(r'\\.(?:png|jpe?g|webp|svg|bmp|gif|css)(?:$|[?#])', html.unescape(raw_val), re.I):
+                return f'{attr_name}={quote_ch}#{quote_ch}'
+            resolved = resolve_widget_asset(
+                raw_val, ui_file_lower, wname, 'pixmap', width, height,
+                ui_dir, root_dir, local_idx, synth_dir, allowed_roots
+            )
+            return f'{attr_name}={quote_ch}{resolved}{quote_ch}'
+
+        def repl_unquoted_attr(match):
+            attr_name = match.group(1)
+            raw_val = match.group(2)
+            if attr_name.lower() == 'href' and not re.search(r'\\.(?:png|jpe?g|webp|svg|bmp|gif|css)(?:$|[?#])', html.unescape(raw_val), re.I):
+                return f'{attr_name}="#"'
+            resolved = resolve_widget_asset(
+                raw_val, ui_file_lower, wname, 'pixmap', width, height,
+                ui_dir, root_dir, local_idx, synth_dir, allowed_roots
+            )
+            return f'{attr_name}="{resolved}"'
+
+        text = re.sub(
+            r'(?i)\\b(src|background|poster|data|href)\\s*=\\s*([\\x22\\x27])(.*?)\\2',
+            repl_quoted_attr,
+            text,
+            flags=re.DOTALL
+        )
+        text = re.sub(
+            r'(?i)\\b(src|background|poster|data|href)\\s*=\\s*([^\\s>\\x22\\x27]+)',
+            repl_unquoted_attr,
+            text
+        )
+
+    return text
 
 def is_safe_qt_widget_class(cls_name):
     if not cls_name or not cls_name.startswith('Q'):
@@ -487,7 +380,7 @@ def is_safe_qt_widget_class(cls_name):
     attr = getattr(QtWidgets, cls_name, None)
     return isinstance(attr, type) and issubclass(attr, QtWidgets.QWidget)
 
-def patch_ui_xml(xml_text, ui_abs, root_dir, local_idx, class_idx, synth_dir, allowed_roots):
+def patch_ui_xml(xml_text, ui_abs, root_dir, local_idx, synth_dir, allowed_roots):
     ui_dir = os.path.dirname(ui_abs)
     ui_file_lower = os.path.basename(ui_abs).lower()
     tree = ET.fromstring(xml_text)
@@ -511,14 +404,6 @@ def patch_ui_xml(xml_text, ui_abs, root_dir, local_idx, class_idx, synth_dir, al
         elif not is_safe_qt_widget_class(wcls):
             w.attrib['class'] = 'QWidget'
 
-    cur_w_names = {w.attrib.get('name', '') for w in tree.iter('widget') if w.attrib.get('name')}
-    # Collect text blob for context
-    texts = []
-    for s in tree.iter('string'):
-        if s.text and len(s.text.strip()) < 80:
-            texts.append(s.text.strip())
-    ui_text_blob = ' '.join(texts)
-
     # Map every XML element to its nearest enclosing widget's (wname, width, height)
     elem_widget_ctx = {}
     for w in tree.iter('widget'):
@@ -540,8 +425,8 @@ def patch_ui_xml(xml_text, ui_abs, root_dir, local_idx, class_idx, synth_dir, al
         if px.text and px.text.strip():
             wname, width, height = elem_widget_ctx.get(px, ('', 160, 120))
             px.text = resolve_widget_asset(
-                px.text, ui_file_lower, wname, 'pixmap', width, height, cur_w_names,
-                ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir, allowed_roots
+                px.text, ui_file_lower, wname, 'pixmap', width, height,
+                ui_dir, root_dir, local_idx, synth_dir, allowed_roots
             )
 
     # Sanitize every <iconset> anywhere in the .ui XML tree (windowIcon, widget icon, item/action icon, all states)
@@ -551,38 +436,77 @@ def patch_ui_xml(xml_text, ui_abs, root_dir, local_idx, class_idx, synth_dir, al
         wname, _w, _h = elem_widget_ctx.get(ic_set, ('', 64, 64))
         if ic_set.text and ic_set.text.strip():
             ic_set.text = resolve_widget_asset(
-                ic_set.text, ui_file_lower, wname, 'icon', 64, 64, cur_w_names,
-                ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir, allowed_roots
+                ic_set.text, ui_file_lower, wname, 'icon', 64, 64,
+                ui_dir, root_dir, local_idx, synth_dir, allowed_roots
             )
         for el in ic_set.iter():
             if el is not ic_set and el.text and el.text.strip():
                 el.text = resolve_widget_asset(
-                    el.text, ui_file_lower, wname, 'icon', 64, 64, cur_w_names,
-                    ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir, allowed_roots
+                    el.text, ui_file_lower, wname, 'icon', 64, 64,
+                    ui_dir, root_dir, local_idx, synth_dir, allowed_roots
                 )
 
-    # Sanitize every url(...) reference inside any <string> (e.g., styleSheet properties) anywhere in the .ui XML tree
+    # Sanitize every <string> (styleSheet url(...), rich-text HTML <img src=...>, background=..., etc.) anywhere in the .ui XML tree
     for st in tree.iter('string'):
-        if st.text and 'url(' in st.text:
+        if st.text:
             wname, width, height = elem_widget_ctx.get(st, ('', 160, 120))
-            def repl_url(match, _wname=wname, _width=width, _height=height):
-                inner = match.group(1)
-                resolved = resolve_widget_asset(
-                    inner, ui_file_lower, _wname, 'pixmap', _width, _height, cur_w_names,
-                    ui_dir, root_dir, local_idx, class_idx, ui_text_blob, synth_dir, allowed_roots
-                )
-                return f"url({resolved})"
-            st.text = re.sub(r'url\\(([^)]+)\\)', repl_url, st.text)
+            st.text = sanitize_rich_text_and_css_string(
+                st.text, ui_file_lower, wname, width, height,
+                ui_dir, root_dir, local_idx, synth_dir, allowed_roots
+            )
 
     return ET.tostring(tree, encoding='unicode')
 
 SAFE_UIC_IMPORT_PREFIXES = (
-    'PyQt6', 'xml', 'io', '_io', 're', 'os', 'sys', 'logging', 'collections',
+    'PyQt6', 'xml', 'io', '_io', 're', 'os', 'sys', 'html', 'urllib', 'logging', 'collections',
     'functools', 'enum', 'typing', 'warnings', 'weakref', 'copy', 'types',
     'abc', 'codecs', 'encodings', 'importlib', 'pathlib', 'posixpath',
     'ntpath', 'genericpath', 'stat', 'sre_', 'math', 'operator', 'itertools',
     'keyword', 'reprlib', 'linecache', 'traceback', 'string'
 )
+
+def harden_loaded_qt_widgets(root_widget, ui_abs, root_dir, local_idx, synth_dir, allowed_roots):
+    ui_dir = os.path.dirname(ui_abs)
+    ui_file_lower = os.path.basename(ui_abs).lower()
+    safe_render_roots = list(allowed_roots) + [os.path.realpath(synth_dir)]
+    all_widgets = [root_widget] + root_widget.findChildren(QtWidgets.QWidget)
+    for wdg in all_widgets:
+        wname = wdg.objectName() or 'widget'
+        ww = max(32, wdg.width() or 160)
+        wh = max(32, wdg.height() or 120)
+        try:
+            ss = wdg.styleSheet()
+            if ss and 'url(' in ss.lower():
+                wdg.setStyleSheet(
+                    sanitize_rich_text_and_css_string(
+                        ss, ui_file_lower, wname, ww, wh, ui_dir, root_dir, local_idx, synth_dir, safe_render_roots
+                    )
+                )
+        except Exception:
+            pass
+        if isinstance(wdg, QtWidgets.QLabel):
+            try:
+                txt = wdg.text()
+                if txt and ('<' in txt or 'src' in txt.lower() or 'url(' in txt.lower()):
+                    wdg.setOpenExternalLinks(False)
+                    wdg.setText(
+                        sanitize_rich_text_and_css_string(
+                            txt, ui_file_lower, wname, ww, wh, ui_dir, root_dir, local_idx, synth_dir, safe_render_roots
+                        )
+                    )
+            except Exception:
+                pass
+        if isinstance(wdg, QtWidgets.QTextEdit):
+            try:
+                html_doc = wdg.toHtml()
+                if html_doc:
+                    wdg.setHtml(
+                        sanitize_rich_text_and_css_string(
+                            html_doc, ui_file_lower, wname, ww, wh, ui_dir, root_dir, local_idx, synth_dir, safe_render_roots
+                        )
+                    )
+            except Exception:
+                pass
 
 def load_ui_safely(tmp_ui_path):
     orig_import = builtins.__import__
@@ -648,7 +572,6 @@ def main():
     synth_dir = os.path.join(out_dir, '_synth_assets')
     os.makedirs(synth_dir, exist_ok=True)
     local_idx = build_image_index(student_dir, allowed_roots)
-    class_idx = build_class_recovery_index(student_dir, allowed_roots)
 
     app = QtWidgets.QApplication(sys.argv)
     raw_captures = []
@@ -667,12 +590,13 @@ def main():
         try:
             with open(ui_abs, 'r', encoding='utf-8', errors='ignore') as f:
                 raw_xml = f.read()
-            patched_xml = patch_ui_xml(raw_xml, ui_abs, student_dir, local_idx, class_idx, synth_dir, allowed_roots)
+            patched_xml = patch_ui_xml(raw_xml, ui_abs, student_dir, local_idx, synth_dir, allowed_roots)
             fd, tmp_ui_path = tempfile.mkstemp(suffix='.ui', dir=synth_dir)
             with os.fdopen(fd, 'w', encoding='utf-8') as tf:
                 tf.write(patched_xml)
 
             w = load_ui_safely(tmp_ui_path)
+            harden_loaded_qt_widgets(w, ui_abs, student_dir, local_idx, synth_dir, allowed_roots)
             w.setAttribute(QtCore.Qt.WidgetAttribute.WA_DontShowOnScreen, True)
             if w.width() < 200 or w.height() < 150:
                 w.resize(max(w.width(), 800), max(w.height(), 550))
@@ -799,13 +723,12 @@ export function findProjectUiFiles(studentDir: string): string[] {
       return;
     }
     for (const entry of entries) {
+      const lowerEntry = entry.name.toLowerCase();
       if (
         entry.name.startsWith(".") ||
+        lowerEntry.startsWith("_spck_") ||
         entry.name === "__pycache__" ||
-        entry.name === "node_modules" ||
-        entry.name === APP_SCREENSHOTS_SUBDIR ||
-        entry.name === OWNER_UPLOADS_SUBDIR ||
-        entry.name === YOUTUBE_FRAMES_SUBDIR
+        entry.name === "node_modules"
       ) {
         continue;
       }
@@ -866,17 +789,16 @@ function findProjectHtmlFiles(studentDir: string): string[] {
       return;
     }
     for (const entry of entries) {
+      const lowerEntry = entry.name.toLowerCase();
       if (
         entry.name.startsWith(".") ||
+        lowerEntry.startsWith("_spck_") ||
         entry.name === "__pycache__" ||
         entry.name === "node_modules" ||
         entry.name === ".venv" ||
         entry.name === "venv" ||
         entry.name === "dist" ||
-        entry.name === "build" ||
-        entry.name === APP_SCREENSHOTS_SUBDIR ||
-        entry.name === OWNER_UPLOADS_SUBDIR ||
-        entry.name === YOUTUBE_FRAMES_SUBDIR
+        entry.name === "build"
       ) {
         continue;
       }
@@ -981,28 +903,187 @@ async function normalizeCapturedAppWindowsToLms(
   outDir: string,
   referencedFiles: Set<string>
 ): Promise<CapturedScreenItem[]> {
-  return normalizeCapturedAppWindowsToLmsSync(items, outDir, referencedFiles);
+  if (items.length === 0) return items;
+  let normalized: Array<Buffer | null> = [];
+  try {
+    normalized = await normalizeImagesToLms16x9(
+      items.map((it) => ({ buffer: fs.readFileSync(it.filePath), fit: "contain" as const }))
+    );
+  } catch {
+    return items;
+  }
+
+  const out: CapturedScreenItem[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const buf = normalized[i];
+    if (!buf) {
+      out.push(item);
+      continue;
+    }
+    const rawBase = path.basename(item.filePath, ".png");
+    const prefix = rawBase.replace(/_[0-9a-f]{6}$/i, "");
+    const hash6 = crypto.createHash("md5").update(buf).digest("hex").slice(0, 6);
+    const finalPath = path.join(outDir, `${prefix}_${hash6}.png`);
+    try {
+      if (!fs.existsSync(finalPath)) {
+        fs.writeFileSync(finalPath, buf);
+      }
+      if (
+        !samePathLoose(finalPath, item.filePath) &&
+        !referencedFiles.has(path.basename(item.filePath))
+      ) {
+        fs.unlinkSync(item.filePath);
+      }
+      out.push({
+        ...item,
+        filePath: finalPath,
+        width: LMS_IMAGE_WIDTH,
+        height: LMS_IMAGE_HEIGHT,
+      });
+    } catch {
+      out.push(item);
+    }
+  }
+  return out;
 }
 
-/**
- * Synchronously renders PyQt6 `.ui` files inside `studentDir` into `outDir` (`_spck_app_shots`)
- * and normalizes every captured window into the LMS-safe `960×540` (16:9) frame.
- * Used during `scanStudentSpckFolder` when a Python/PyQt project has `.ui` screens and no existing product screenshots yet.
- */
-export function renderPyQtUiScreenshotsSync(params: {
+const PYQT_RUNNER_BOOTSTRAP =
+  'import io,json,sys; _d=json.loads(sys.stdin.buffer.read().decode("utf-8")); sys.stdin=io.TextIOWrapper(io.BytesIO(_d["payload"].encode("utf-8")),encoding="utf-8"); exec(_d["script"],{"__name__":"__main__"})';
+
+function killPythonChildTree(pid: number | undefined, killSelf: () => void): void {
+  try {
+    killSelf();
+  } catch {
+    // ignore
+  }
+  if (process.platform === "win32" && pid && pid > 0) {
+    try {
+      const killer = spawn("taskkill", ["/PID", String(pid), "/T", "/F"], {
+        windowsHide: true,
+        stdio: "ignore",
+      });
+      killer.unref();
+    } catch {
+      // ignore
+    }
+  }
+}
+
+async function runPythonProcessAsync(params: {
+  code: string;
+  input: string;
+  timeoutMs?: number;
+  maxBuffer?: number;
+}): Promise<{ status: number | null; stdout: string }> {
+  ensureCaptureNotStopped();
+  const timeoutMs = params.timeoutMs ?? 30_000;
+  const maxBuffer = params.maxBuffer ?? 64 * 1024 * 1024;
+  const isQueueStopped = () =>
+    SequentialTaskQueue.getInstance().getStatus().isStopped ||
+    Boolean((process as any).__mindxQueueStopped);
+
+  return new Promise((resolve, reject) => {
+    const child = spawn("python", ["-c", params.code], {
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true,
+      env: {
+        ...process.env,
+        QT_QPA_PLATFORM: "offscreen",
+        QT_QPA_FONTDIR: "C:\\Windows\\Fonts",
+      },
+    });
+
+    const chunks: Buffer[] = [];
+    let totalBytes = 0;
+    let settled = false;
+    let cancelledByStop = false;
+
+    const cleanupTimers = () => {
+      clearTimeout(timeoutHandle);
+      clearInterval(stopPollHandle);
+    };
+
+    const timeoutHandle = setTimeout(() => {
+      if (settled) return;
+      killPythonChildTree(child.pid, () => child.kill("SIGKILL"));
+    }, timeoutMs);
+    timeoutHandle.unref?.();
+
+    const stopPollHandle = setInterval(() => {
+      if (settled) return;
+      if (isQueueStopped()) {
+        cancelledByStop = true;
+        killPythonChildTree(child.pid, () => child.kill("SIGKILL"));
+      }
+    }, 200);
+    stopPollHandle.unref?.();
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      totalBytes += chunk.length;
+      if (totalBytes <= maxBuffer) {
+        chunks.push(chunk);
+      } else {
+        killPythonChildTree(child.pid, () => child.kill("SIGKILL"));
+      }
+    });
+    child.stderr.on("data", () => {
+      // Drain stderr to prevent backpressure
+    });
+    child.stdin.on("error", () => {
+      // Ignore EPIPE on early exit
+    });
+
+    child.on("error", () => {
+      if (settled) return;
+      settled = true;
+      cleanupTimers();
+      if (cancelledByStop) {
+        reject(
+          new Error(
+            "TASK_CANCELLED: Hàng đợi đã bị tạm dừng bởi giáo viên (Stop Bot)."
+          )
+        );
+      } else {
+        resolve({ status: -1, stdout: "" });
+      }
+    });
+
+    child.on("close", (code) => {
+      if (settled) return;
+      settled = true;
+      cleanupTimers();
+      if (cancelledByStop) {
+        reject(
+          new Error(
+            "TASK_CANCELLED: Hàng đợi đã bị tạm dừng bởi giáo viên (Stop Bot)."
+          )
+        );
+      } else {
+        resolve({
+          status: code,
+          stdout: Buffer.concat(chunks).toString("utf-8"),
+        });
+      }
+    });
+
+    child.stdin.end(params.input, "utf-8");
+  });
+}
+
+function preparePyQtUiCaptureInput(params: {
   studentDir: string;
   uiFiles?: string[];
   outDir: string;
   maxShots?: number;
-  referencedFiles?: Set<string>;
-}): CapturedScreenItem[] {
+}): { stdinInput: string; safeOutDir: string } | null {
   const safeStudentDir = assertPathAllowed(params.studentDir);
   const safeOutDir = assertPathAllowed(params.outDir);
   let realStudentDir = safeStudentDir;
   try {
     realStudentDir = assertPathAllowed(fs.realpathSync(safeStudentDir));
   } catch {
-    return [];
+    return null;
   }
 
   const rawUiList =
@@ -1022,18 +1103,10 @@ export function renderPyQtUiScreenshotsSync(params: {
       return false;
     }
   });
-  if (uiList.length === 0) return [];
+  if (uiList.length === 0) return null;
 
+  // Strictly confine asset resolution to ONLY this student's own folder (never parentClassDir / sibling students)
   const allowedRoots = [realStudentDir];
-  const parentClassDir = path.dirname(realStudentDir);
-  if (isPathAllowed(parentClassDir)) {
-    try {
-      const realParent = assertPathAllowed(fs.realpathSync(parentClassDir));
-      if (!allowedRoots.includes(realParent)) {
-        allowedRoots.push(realParent);
-      }
-    } catch {}
-  }
 
   fs.mkdirSync(safeOutDir, { recursive: true });
   const maxShots = params.maxShots ?? Math.max(uiList.length, MAX_SPCK_SCREENSHOTS + 1);
@@ -1045,14 +1118,55 @@ export function renderPyQtUiScreenshotsSync(params: {
     allowedRoots,
   });
 
-  const runnerBootstrap =
-    'import io,json,sys; _d=json.loads(sys.stdin.buffer.read().decode("utf-8")); sys.stdin=io.TextIOWrapper(io.BytesIO(_d["payload"].encode("utf-8")),encoding="utf-8"); exec(_d["script"],{"__name__":"__main__"})';
-
-  const proc = spawnSync("python", ["-c", runnerBootstrap], {
-    input: JSON.stringify({
+  return {
+    safeOutDir,
+    stdinInput: JSON.stringify({
       script: PYTHON_PYQT6_CAPTURE_SCRIPT,
       payload,
     }),
+  };
+}
+
+function parsePyQtUiCaptureStdout(stdout: string): CapturedScreenItem[] {
+  const markerIdx = stdout.indexOf("JSON_CAPTURE_RESULT:");
+  if (markerIdx === -1) return [];
+  const jsonText = stdout.slice(markerIdx + "JSON_CAPTURE_RESULT:".length).trim();
+  try {
+    const parsed = JSON.parse(jsonText);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item: CapturedScreenItem) => {
+        if (!item?.filePath || !fs.existsSync(item.filePath)) return false;
+        try {
+          assertPathAllowed(item.filePath);
+          return true;
+        } catch {
+          return false;
+        }
+      });
+    }
+  } catch {
+    // ignore JSON parse error
+  }
+  return [];
+}
+
+/**
+ * Synchronously renders PyQt6 `.ui` files inside `studentDir` into `outDir` (`_spck_app_shots`)
+ * and normalizes every captured window into the LMS-safe `960×540` (16:9) frame.
+ * Used during `scanStudentSpckFolder` when a Python/PyQt project has `.ui` screens and no existing product screenshots yet.
+ */
+export function renderPyQtUiScreenshotsSync(params: {
+  studentDir: string;
+  uiFiles?: string[];
+  outDir: string;
+  maxShots?: number;
+  referencedFiles?: Set<string>;
+}): CapturedScreenItem[] {
+  const prepared = preparePyQtUiCaptureInput(params);
+  if (!prepared) return [];
+
+  const proc = spawnSync("python", ["-c", PYQT_RUNNER_BOOTSTRAP], {
+    input: prepared.stdinInput,
     encoding: "utf-8",
     timeout: 30_000,
     windowsHide: true,
@@ -1063,32 +1177,38 @@ export function renderPyQtUiScreenshotsSync(params: {
     },
   });
 
-  let capturedItems: CapturedScreenItem[] = [];
-  const stdout = String(proc.stdout || "");
-  const markerIdx = stdout.indexOf("JSON_CAPTURE_RESULT:");
-  if (markerIdx !== -1) {
-    const jsonText = stdout.slice(markerIdx + "JSON_CAPTURE_RESULT:".length).trim();
-    try {
-      const parsed = JSON.parse(jsonText);
-      if (Array.isArray(parsed)) {
-        capturedItems = parsed.filter((item: CapturedScreenItem) => {
-          if (!item?.filePath || !fs.existsSync(item.filePath)) return false;
-          try {
-            assertPathAllowed(item.filePath);
-            return true;
-          } catch {
-            return false;
-          }
-        });
-      }
-    } catch {
-      // ignore JSON parse error
-    }
-  }
-
+  const capturedItems = parsePyQtUiCaptureStdout(String(proc.stdout || ""));
   return normalizeCapturedAppWindowsToLmsSync(
     capturedItems,
-    safeOutDir,
+    prepared.safeOutDir,
+    params.referencedFiles || new Set()
+  );
+}
+
+/**
+ * Non-blocking async variant of `renderPyQtUiScreenshotsSync` using `child_process.spawn`
+ * so the Node.js Event Loop stays responsive while rendering `.ui` windows.
+ */
+export async function renderPyQtUiScreenshotsAsync(params: {
+  studentDir: string;
+  uiFiles?: string[];
+  outDir: string;
+  maxShots?: number;
+  referencedFiles?: Set<string>;
+}): Promise<CapturedScreenItem[]> {
+  const prepared = preparePyQtUiCaptureInput(params);
+  if (!prepared) return [];
+
+  const procRes = await runPythonProcessAsync({
+    code: PYQT_RUNNER_BOOTSTRAP,
+    input: prepared.stdinInput,
+    timeoutMs: 30_000,
+  });
+
+  const capturedItems = parsePyQtUiCaptureStdout(procRes.stdout);
+  return normalizeCapturedAppWindowsToLms(
+    capturedItems,
+    prepared.safeOutDir,
     params.referencedFiles || new Set()
   );
 }
@@ -1668,7 +1788,8 @@ if not frames:
 
 sys.stdout.write(json.dumps({"frames": frames, "richness": frame_richness}))
 `;
-      const pyRes = spawnSync("python", ["-c", pyScript], {
+      const pyRes = await runPythonProcessAsync({
+        code: pyScript,
         input: JSON.stringify({
           html: processedHtml,
           resources: approvedResources,
@@ -1677,15 +1798,8 @@ sys.stdout.write(json.dumps({"frames": frames, "richness": frame_richness}))
           offlineAudit: isOfflineAuditMode,
           virtualTimeBudget: idx === 0 ? 2200 : 1200,
         }),
-        encoding: "utf8",
-        timeout: 30000,
+        timeoutMs: 30_000,
         maxBuffer: 64 * 1024 * 1024,
-        windowsHide: true,
-        env: {
-          ...process.env,
-          QT_QPA_PLATFORM: "offscreen",
-          QT_QPA_FONTDIR: "C:\\Windows\\Fonts",
-        },
       });
 
       if (pyRes.status === 0 && pyRes.stdout) {
@@ -1732,7 +1846,10 @@ sys.stdout.write(json.dumps({"frames": frames, "richness": frame_richness}))
           });
         }
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("TASK_CANCELLED:")) {
+        throw err;
+      }
       // Ignore single broken HTML page and continue with next
     }
   }
@@ -2065,7 +2182,7 @@ export async function captureStudentAppScreenshots(params: {
   let capturedItems: CapturedScreenItem[] = [];
 
   if (uiFiles.length > 0) {
-    capturedItems = renderPyQtUiScreenshotsSync({
+    capturedItems = await renderPyQtUiScreenshotsAsync({
       studentDir: safeFolderPath,
       uiFiles,
       outDir,
@@ -2096,7 +2213,7 @@ export async function captureStudentAppScreenshots(params: {
           Math.min(ownerImages.length, MAX_SPCK_SCREENSHOTS) -
           Math.min(ownerRootPhotos.length, 2)
       );
-      capturedItems = renderGameArchiveScreenshotsSync({
+      capturedItems = await renderGameArchiveScreenshotsAsync({
         studentDir: safeFolderPath,
         yyzFiles: gameFiles.yyzFiles,
         sb3Files: gameFiles.sb3Files,

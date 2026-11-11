@@ -17,7 +17,7 @@
    - Khóa dữ liệu theo `classId`, `sessionId`, `studentId`, `submissionId`.
    - Khi giáo viên bấm Duyệt, lưu `contentHash` (SHA-256). Nếu nội dung bị chỉnh sửa sau khi duyệt (`newHash !== contentHash`), tự động hạ trạng thái về `DRAFT` / `WAITING_APPROVAL`.
 5. **AI Guardrails (`gemini-3.5-flash-lite`):**
-   - Ẩn danh tên học viên thành `STUDENT_01`, `STUDENT_02`... trước khi gọi Gemini API.
+   - Ẩn danh tên học viên thành `STUDENT_01`, `STUDENT_02`... trên toàn bộ dữ liệu văn bản/mã nguồn trước khi gọi Gemini API (**Ngoại lệ thị giác có chủ đích:** đọc ảnh chụp bảng BTVN `zalo-btvn-image` để lọc tên học sinh `Not submitted` xuất Phần 2 Zalo và gửi ảnh chụp giao diện sản phẩm SPCK cho Gemini Vision).
    - Không có Quick Tags và không có ghi chú của giáo viên -> trả về `INSUFFICIENT_INFO`, cấm AI tự suy diễn.
    - **Quy tắc Nhận xét Học sinh (`.agents/skills/nhan-xet-hoc-sinh/SKILL.md`):**
      - Phân loại học sinh vào 1 trong **5 cấp độ chuẩn** dựa theo Quick Tags đã tích chọn (*Cấp độ 1: Giỏi*, *Cấp độ 2: Khá*, *Cấp độ 3: Khá nhưng mất tập trung*, *Cấp độ 4: Trung bình*, *Cấp độ 5: Trung bình, mất tập trung*) kết hợp chủ đề buổi học (Lập trình / Robotics).

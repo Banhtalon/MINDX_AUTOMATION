@@ -16,6 +16,8 @@ async function runPortalUploadTest() {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "mindx-portal-test-"));
   const tempDb = path.join(tempRoot, "test.db");
   process.env.MINDX_DB_PATH = tempDb;
+  process.env.ALLOWED_LOCAL_DIRS = tempRoot;
+  process.env.MINDX_DISABLE_PORTAL_TUNNEL = "1";
 
   const testClassId = "S5B_DIR_TEST";
   const studentId = "STU_TEST_01";

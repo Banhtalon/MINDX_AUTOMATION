@@ -144,6 +144,25 @@ export default function TeachingProjectsPage() {
 
   const activeLoadSeqRef = useRef<number>(0);
   const loadedClassCodeRef = useRef<string>("");
+  const localEditSeqRef = useRef<number>(0);
+  const latestDraftFormRef = useRef({
+    projectName,
+    startDate,
+    endDate,
+    description,
+    tasks,
+    assignedStudentIds,
+    draftVersion,
+  });
+  latestDraftFormRef.current = {
+    projectName,
+    startDate,
+    endDate,
+    description,
+    tasks,
+    assignedStudentIds,
+    draftVersion,
+  };
 
   const applyRecordAndTasksState = useCallback(
     (
@@ -208,15 +227,19 @@ export default function TeachingProjectsPage() {
       setProgressMap(parsedProgress);
 
       setStatus(rec.status || "DRAFT");
-      setDraftVersion(rec.draftVersion || 1);
+      const nextDraftVer = rec.draftVersion || 1;
+      latestDraftFormRef.current.draftVersion = nextDraftVer;
+      setDraftVersion(nextDraftVer);
       setVerifiedAt(rec.verifiedAt || null);
       setErrorMessage(rec.errorMessage || null);
+      localEditSeqRef.current += 1;
       setHasUnsavedLocalEdits(false);
     },
     []
   );
 
   const markLocalEdit = useCallback(() => {
+    localEditSeqRef.current += 1;
     setHasUnsavedLocalEdits(true);
     setStatus((prev) =>
       prev === "VERIFIED" || prev === "APPROVED" ? "WAITING_APPROVAL" : prev
@@ -377,7 +400,9 @@ export default function TeachingProjectsPage() {
     async (options?: { silent?: boolean }): Promise<boolean> => {
       const reqClass = loadedClassCodeRef.current;
       const reqSeq = activeLoadSeqRef.current;
-      const reqVersion = draftVersion;
+      const requestEditSeq = localEditSeqRef.current;
+      const formSnapshot = latestDraftFormRef.current;
+      const reqVersion = formSnapshot.draftVersion;
       const currentActiveCode = (selectedClassCode || customClassInput)
         .trim()
         .toUpperCase();
@@ -397,13 +422,13 @@ export default function TeachingProjectsPage() {
             classCode: reqClass,
             action: "save_draft",
             expectedVersion: reqVersion,
-            projectName,
-            startDate,
-            endDate,
-            description,
-            tasks: tasks.map((t) => ({
+            projectName: formSnapshot.projectName,
+            startDate: formSnapshot.startDate,
+            endDate: formSnapshot.endDate,
+            description: formSnapshot.description,
+            tasks: formSnapshot.tasks.map((t) => ({
               ...t,
-              assignedStudentIds,
+              assignedStudentIds: formSnapshot.assignedStudentIds,
             })),
           }),
         });
@@ -419,14 +444,21 @@ export default function TeachingProjectsPage() {
           throw new Error(data.error || "Không thể lưu bản nháp dự án.");
         }
 
+        const hasNewerLocalEdits = localEditSeqRef.current !== requestEditSeq;
+
         if (
           data.record &&
           String(data.record.classId || "").toUpperCase() === reqClass
         ) {
-          if (options?.silent) {
-            if (typeof data.record.draftVersion === "number") {
-              setDraftVersion(data.record.draftVersion);
-            }
+          if (typeof data.record.draftVersion === "number") {
+            latestDraftFormRef.current.draftVersion = data.record.draftVersion;
+            setDraftVersion(data.record.draftVersion);
+          }
+          if (hasNewerLocalEdits) {
+            // Teacher continued editing while Draft A was in flight:
+            // keep local form values and keep `hasUnsavedLocalEdits = true` so Draft B auto-saves next.
+            setHasUnsavedLocalEdits(true);
+          } else if (options?.silent) {
             if (data.record.status) {
               setStatus(data.record.status);
             }
@@ -434,7 +466,7 @@ export default function TeachingProjectsPage() {
           } else {
             applyRecordAndTasksState(data.record, data.tasks);
           }
-        } else {
+        } else if (!hasNewerLocalEdits) {
           setHasUnsavedLocalEdits(false);
         }
 
@@ -475,6 +507,18 @@ export default function TeachingProjectsPage() {
       tasks,
     ]
   );
+
+  const flushAllUnsavedLocalEdits = useCallback(async (): Promise<boolean> => {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const seqBefore = localEditSeqRef.current;
+      const savedOk = await persistDraftInternal({ silent: true });
+      if (!savedOk) return false;
+      if (localEditSeqRef.current === seqBefore) {
+        return true;
+      }
+    }
+    return false;
+  }, [persistDraftInternal]);
 
   // Auto-save draft after 600ms debounce when teacher edits project/task fields
   useEffect(() => {
@@ -517,7 +561,7 @@ export default function TeachingProjectsPage() {
       !isLoadingClass
     ) {
       void (async () => {
-        const savedOk = await persistDraftInternal({ silent: true });
+        const savedOk = await flushAllUnsavedLocalEdits();
         if (!savedOk) {
           return;
         }
@@ -551,11 +595,11 @@ export default function TeachingProjectsPage() {
     if (
       hasUnsavedLocalEdits &&
       currentCode &&
-      clean !== currentCode &&
+      (clean !== currentCode || !forceRefresh) &&
       !isLoadingClass
     ) {
       void (async () => {
-        const savedOk = await persistDraftInternal({ silent: true });
+        const savedOk = await flushAllUnsavedLocalEdits();
         if (!savedOk) {
           return;
         }
@@ -777,6 +821,7 @@ export default function TeachingProjectsPage() {
     const reqClass = loadedClassCodeRef.current;
     const reqSeq = activeLoadSeqRef.current;
     const reqVersion = draftVersion;
+    const requestEditSeq = localEditSeqRef.current;
     if (!reqClass || reqClass !== activeClassCode || isLoadingClass) return;
 
     setIsSyncingTeaching(true);
@@ -804,8 +849,30 @@ export default function TeachingProjectsPage() {
         return;
       }
 
+      const hasNewerLocalEdits = localEditSeqRef.current !== requestEditSeq;
       if (data.record && String(data.record.classId || "").toUpperCase() === reqClass) {
-        applyRecordAndTasksState(data.record, data.tasks);
+        if (hasNewerLocalEdits) {
+          // Teacher typed newer edits while sync request was in flight: preserve all local
+          // form fields & unsaved flag, updating only remote project metadata & draftVersion.
+          if (typeof setRemoteProjectId === "function") {
+            setRemoteProjectId(data.record.teachingProjectId ?? null);
+          }
+          const nextVer = data.record.draftVersion || reqVersion;
+          if (typeof latestDraftFormRef !== "undefined" && latestDraftFormRef.current) {
+            latestDraftFormRef.current.draftVersion = nextVer;
+          }
+          if (typeof setDraftVersion === "function") {
+            setDraftVersion(nextVer);
+          }
+          if (typeof setStatus === "function") {
+            setStatus("WAITING_APPROVAL");
+          }
+          if (typeof setHasUnsavedLocalEdits === "function") {
+            setHasUnsavedLocalEdits(true);
+          }
+        } else {
+          applyRecordAndTasksState(data.record, data.tasks);
+        }
       }
       if (!res.ok || !data.success) {
         throw new Error(data.error || "Đồng bộ lên Teaching thất bại.");
@@ -813,9 +880,11 @@ export default function TeachingProjectsPage() {
 
       setBanner({
         type: "success",
-        text: `🎉 Đã tạo/cập nhật Dự án "${
-          data.record?.projectName || projectName
-        }" và đủ 5 Phần công việc lên Teaching thành công (Đã đối chiếu Read-after-Write VERIFIED)!`,
+        text: hasNewerLocalEdits
+          ? `🎉 Đã đồng bộ bản trước lên Teaching thành công! Nội dung bạn vừa gõ thêm vẫn đang được giữ nguyên trên màn hình — hãy bấm Lưu nháp / Duyệt lại để cập nhật tiếp.`
+          : `🎉 Đã tạo/cập nhật Dự án "${
+              data.record?.projectName || projectName
+            }" và đủ 5 Phần công việc lên Teaching thành công (Đã đối chiếu Read-after-Write VERIFIED)!`,
       });
     } catch (err: unknown) {
       if (activeLoadSeqRef.current !== reqSeq || loadedClassCodeRef.current !== reqClass) {

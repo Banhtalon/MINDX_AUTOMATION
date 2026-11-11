@@ -43,6 +43,7 @@ const IGNORED_WEB_DIRS = new Set([
   "_spck_app_shots",
   "_spck_owner_uploads",
   "_spck_youtube_frames",
+  "_spck_prev_backup",
 ]);
 
 const ALLOWED_WEB_ASSET_EXTENSIONS = new Set([
@@ -317,6 +318,7 @@ export function findStudentWebRootAndEntryHtml(studentLocalFolder: string): {
         (e) =>
           e.isDirectory() &&
           !e.name.startsWith(".") &&
+          !e.name.toLowerCase().startsWith("_spck_") &&
           !IGNORED_WEB_DIRS.has(e.name.toLowerCase())
       )
       .sort((a, b) => a.name.localeCompare(b.name, "en"));
@@ -414,7 +416,7 @@ function copyWebDirectoryRecursive(
     if (st.isSymbolicLink()) continue;
 
     if (st.isDirectory()) {
-      if (IGNORED_WEB_DIRS.has(lowerName)) continue;
+      if (lowerName.startsWith("_spck_") || IGNORED_WEB_DIRS.has(lowerName)) continue;
       copiedCount += copyWebDirectoryRecursive(srcPath, destPath, allowedDestBaseDir);
     } else if (st.isFile() && isSafeWebAssetFile(srcPath, entry.name, st.size)) {
       fs.copyFileSync(srcPath, destPath);

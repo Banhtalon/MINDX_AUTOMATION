@@ -19,8 +19,10 @@ import * as esbuild from "esbuild";
 import { chromium } from "playwright";
 import postcss from "postcss";
 import { POST as scanPost } from "../src/app/api/spck/scan/route";
+import { config as appConfig } from "../src/lib/config";
 import {
   classSessionRepo,
+  closeDb,
   formatSpckSessionTitle,
   getDb,
   isDefaultSpckProductTitle,
@@ -67,6 +69,12 @@ async function compileRealAppCss(): Promise<string> {
 }
 
 async function runTests() {
+  const isolatedDbDir = fs.mkdtempSync(path.join(os.tmpdir(), "mindx-v340-s5-db-"));
+  process.env.MINDX_DB_PATH = path.join(isolatedDbDir, "s5_test.db");
+  process.env.MINDX_RUNNING_CLASSES_PATH = path.join(isolatedDbDir, "running_classes_s5.json");
+  if (!appConfig.allowedLocalDirs.includes(isolatedDbDir)) {
+    appConfig.allowedLocalDirs.push(isolatedDbDir);
+  }
   console.log("=== BẮT ĐẦU KIỂM THỬ GIAI ĐOẠN S5b (TINH GỌN MÀN HÌNH 3 SPCK & HỢP NHẤT BUỔI 14) ===");
 
   // =========================================================================
@@ -132,6 +140,7 @@ async function runTests() {
   const originalFetch = globalThis.fetch;
   const originalApiKey = process.env.GEMINI_API_KEY;
   process.env.GEMINI_API_KEY = "test-s5b-dummy-key";
+  (appConfig as any).geminiApiKey ||= "test-s5b-dummy-key";
   try {
     studentRepo.upsert({
       studentId: "S5B_STU_01",
@@ -2311,7 +2320,9 @@ async function runTests() {
     await context.close();
   } finally {
     await browser.close();
+    closeDb();
     fs.rmSync(tempBuildDir, { recursive: true, force: true });
+    fs.rmSync(isolatedDbDir, { recursive: true, force: true });
   }
 
   console.log("\n🎉 TẤT CẢ CÁC BÀI KIỂM THỬ GIAI ĐOẠN S5b ĐỀU PASS 100%!");

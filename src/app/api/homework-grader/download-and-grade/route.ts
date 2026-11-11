@@ -16,6 +16,7 @@ import {
   classSessionRepo,
 } from "@/lib/db/sqlite";
 import {
+  doesClassCodeMatchCourseCode,
   getGradingRubrics,
   findLessonInSyllabus,
   type GradingRubric,
@@ -115,14 +116,16 @@ export async function POST(req: Request) {
         rubric = allRubrics.find((r) => r.rubricId === body.rubricId);
       }
       if (!rubric) {
-        rubric =
-          allRubrics.find(
-            (r) =>
-              classCode.includes(r.courseCode.toUpperCase()) &&
-              r.sessionNumber === sessionNumber
-          ) ||
-          allRubrics.find((r) => classCode.includes(r.courseCode.toUpperCase())) ||
-          allRubrics[0];
+        // An toàn (v3.4.1 F07): Khớp chính xác mã khóa học tách theo token từ mã lớp
+        // (ví dụ VT-JSB15 -> JSB, tuyệt đối không để SB khớp chuỗi con với JSB) VÀ đúng số buổi học.
+        const sortedRubrics = [...allRubrics].sort(
+          (a, b) => (b.courseCode?.length || 0) - (a.courseCode?.length || 0)
+        );
+        rubric = sortedRubrics.find(
+          (r) =>
+            doesClassCodeMatchCourseCode(classCode, r.courseCode) &&
+            r.sessionNumber === sessionNumber
+        );
       }
     }
 

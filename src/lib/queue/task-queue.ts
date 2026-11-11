@@ -50,6 +50,10 @@ export interface QueueStatus {
   tasks: QueuedTaskItem[];
 }
 
+const globalForTaskQueue = globalThis as unknown as {
+  __mindxSequentialTaskQueue?: SequentialTaskQueue;
+};
+
 export class SequentialTaskQueue {
   private static instance: SequentialTaskQueue | null = null;
   private queue: InternalQueuedTask[] = [];
@@ -67,9 +71,14 @@ export class SequentialTaskQueue {
   }
 
   public static getInstance(): SequentialTaskQueue {
+    if (globalForTaskQueue.__mindxSequentialTaskQueue) {
+      SequentialTaskQueue.instance = globalForTaskQueue.__mindxSequentialTaskQueue;
+      return globalForTaskQueue.__mindxSequentialTaskQueue;
+    }
     if (!SequentialTaskQueue.instance) {
       SequentialTaskQueue.instance = new SequentialTaskQueue();
     }
+    globalForTaskQueue.__mindxSequentialTaskQueue = SequentialTaskQueue.instance;
     return SequentialTaskQueue.instance;
   }
 

@@ -253,6 +253,31 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 />
                 <span>Đúng HV</span>
               </label>
+
+              {!row.isConfirmedByTeacher && row.matchScore === 1.0 && (
+                <button
+                  type="button"
+                  disabled={!row.assignedStudentId || isAnyOperationBusy}
+                  onClick={() => {
+                    const overrides: Partial<ScannedFolderUIItem> = {
+                      isConfirmedByTeacher: true,
+                      isDirty: true,
+                      status: "WAITING_APPROVAL",
+                      contentHash: "",
+                    };
+                    setRows((prev) =>
+                      prev.map((r, i) =>
+                        i === idx ? { ...r, ...overrides } : r
+                      )
+                    );
+                    persistRowDraft(row, overrides);
+                  }}
+                  className="px-2 py-0.5 rounded bg-amber-950/60 hover:bg-amber-900/70 border border-amber-500/50 text-[10px] font-bold text-amber-200 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Bài do học sinh tự chọn tên nộp qua Cổng trực tuyến — Bấm xác nhận đúng học viên trước khi Duyệt & Nộp"
+                >
+                  📥 Học sinh tự nộp — Bấm xác nhận
+                </button>
+              )}
             </div>
 
             {/* Consolidated 1-Line Neutral Resource Summary (Replaces 6-7 competing neon badges) */}

@@ -15,8 +15,9 @@
  * `Browser` or `BrowserContext`, strictly honoring the single-BrowserContext rule.
  */
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import zlib from "node:zlib";
+import { taskQueue } from "@/lib/queue/task-queue";
 
 export const LMS_IMAGE_WIDTH = 960;
 export const LMS_IMAGE_HEIGHT = 540;
@@ -322,9 +323,9 @@ function renderNormalizedRgbToLms16x9(src: DecodedRgbImage, fit: SpckImageFitMod
   return encodeRgbToPng(W, H, out);
 }
 
-function normalizeViaPyQtFallback(buf: Buffer, fit: SpckImageFitMode): Buffer | null {
-  try {
-    const pyScript = `
+function buildPyQtNormalizeScript(fit: SpckImageFitMode): string {
+  const safeFit = fit === "cover" ? "cover" : "contain";
+  return `
 import sys, base64
 from PyQt6.QtGui import QImage, QPainter, QColor
 from PyQt6.QtCore import Qt, QBuffer, QIODevice, QByteArray, QRect
@@ -335,7 +336,7 @@ if img.isNull() or img.width() <= 0 or img.height() <= 0:
     sys.exit(2)
 
 W, H = ${LMS_IMAGE_WIDTH}, ${LMS_IMAGE_HEIGHT}
-fit = "${fit}"
+fit = "${safeFit}"
 canvas = QImage(W, H, QImage.Format.Format_RGB32)
 canvas.fill(QColor(15, 23, 42))
 painter = QPainter(canvas)
@@ -364,6 +365,11 @@ qbuf.open(QIODevice.OpenModeFlag.WriteOnly)
 canvas.save(qbuf, "PNG")
 sys.stdout.write(base64.b64encode(bytes(ba)).decode("ascii"))
 `;
+}
+
+function normalizeViaPyQtFallback(buf: Buffer, fit: SpckImageFitMode): Buffer | null {
+  try {
+    const pyScript = buildPyQtNormalizeScript(fit);
     const res = spawnSync("python", ["-c", pyScript], {
       input: buf.toString("base64"),
       encoding: "utf8",
@@ -376,6 +382,106 @@ sys.stdout.write(base64.b64encode(bytes(ba)).decode("ascii"))
   } catch {
     return null;
   }
+}
+
+async function normalizeViaPyQtFallbackAsync(
+  buf: Buffer,
+  fit: SpckImageFitMode,
+  timeoutMs = 10_000
+): Promise<Buffer | null> {
+  if (taskQueue.getStatus().isStopped) {
+    return null;
+  }
+
+  return new Promise<Buffer | null>((resolve) => {
+    let settled = false;
+    let aborted = false;
+    const stdoutChunks: Buffer[] = [];
+    const pyScript = buildPyQtNormalizeScript(fit);
+
+    let child: ReturnType<typeof spawn>;
+    try {
+      child = spawn("python", ["-c", pyScript], {
+        windowsHide: true,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+    } catch {
+      resolve(null);
+      return;
+    }
+
+    const terminateChildTree = () => {
+      if (aborted) return;
+      aborted = true;
+      try {
+        child.kill("SIGKILL");
+      } catch {}
+      if (process.platform === "win32" && child.pid) {
+        try {
+          const killer = spawn("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
+            windowsHide: true,
+            stdio: "ignore",
+          });
+          killer.unref();
+        } catch {}
+      }
+    };
+
+    const finish = (val: Buffer | null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutTimer);
+      clearInterval(stopPollTimer);
+      resolve(val);
+    };
+
+    const timeoutTimer = setTimeout(() => {
+      terminateChildTree();
+      finish(null);
+    }, timeoutMs);
+
+    const stopPollTimer = setInterval(() => {
+      if (taskQueue.getStatus().isStopped) {
+        terminateChildTree();
+        finish(null);
+      }
+    }, 200);
+
+    child.stdout?.on("data", (chunk: Buffer | string) => {
+      stdoutChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+    child.stderr?.on("data", () => {
+      // Drain stderr to prevent pipe backpressure
+    });
+    child.on("error", () => {
+      finish(null);
+    });
+    child.on("close", (code) => {
+      if (aborted || code !== 0) {
+        finish(null);
+        return;
+      }
+      try {
+        const b64 = Buffer.concat(stdoutChunks).toString("utf8").trim();
+        if (!b64) {
+          finish(null);
+          return;
+        }
+        const outBuf = Buffer.from(b64, "base64");
+        finish(outBuf.length > 32 ? outBuf : null);
+      } catch {
+        finish(null);
+      }
+    });
+
+    try {
+      child.stdin?.on("error", () => {});
+      child.stdin?.end(buf.toString("base64"));
+    } catch {
+      terminateChildTree();
+      finish(null);
+    }
+  });
 }
 
 /**
@@ -410,11 +516,34 @@ export function normalizeImagesToLms16x9Sync(
 }
 
 /**
- * Normalizes a batch of images into PNG buffers of exactly `960×540`.
- * Returns `null` for any job whose source image cannot be decoded (caller keeps the original).
+ * Non-blocking async batch image normalizer (`960×540` PNG).
+ * Never calls `spawnSync` — uses pure-Node zlib for standard PNGs and async `spawn` for JPEG/WEBP/GIF.
  */
 export async function normalizeImagesToLms16x9(
   jobs: NormalizeImageJob[]
 ): Promise<Array<Buffer | null>> {
-  return normalizeImagesToLms16x9Sync(jobs);
+  if (jobs.length === 0) return [];
+  const results: Array<Buffer | null> = jobs.map(() => null);
+
+  for (let i = 0; i < jobs.length; i++) {
+    if (taskQueue.getStatus().isStopped) break;
+    const job = jobs[i];
+    try {
+      if (!job?.buffer || job.buffer.length === 0) continue;
+      if (!isSupportedImageMagic(job.buffer)) continue;
+
+      const decodedPng = decodeStandardPngToRgb(job.buffer);
+      if (decodedPng) {
+        results[i] = renderNormalizedRgbToLms16x9(decodedPng, job.fit);
+        await new Promise<void>((r) => setImmediate(r));
+        continue;
+      }
+
+      results[i] = await normalizeViaPyQtFallbackAsync(job.buffer, job.fit);
+    } catch {
+      results[i] = null;
+    }
+  }
+
+  return results;
 }

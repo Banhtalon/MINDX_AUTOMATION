@@ -19,6 +19,7 @@ import path from "node:path";
 import {
   canonicalizeSpckFolderPath,
   classSessionRepo,
+  getDb,
   jobLogRepo,
   normalizeSpckFolderKey,
   spckSessionRepo,
@@ -30,7 +31,8 @@ import {
   resolveStudentFolderInsideClassRoot,
   resolveTargetSpckClassFolder,
   sanitizeSpckTitle,
-  scanStudentSpckFolder,
+  scanStudentSpckFolderAsync,
+  type StudentSpckPackage,
   validateSpckRelatedUrl,
   validateSpckYoutubeUrl,
 } from "../local-files/spck-scanner";
@@ -45,6 +47,7 @@ import {
 } from "../security/path-allowlist";
 
 export interface StudentPortalSubmissionItem {
+  classId?: string;
   studentId: string;
   fullName: string;
   folderName: string;
@@ -53,6 +56,7 @@ export interface StudentPortalSubmissionItem {
   filesCount: number;
   totalBytes: number;
   submittedAt: string;
+  confirmedByTeacher?: boolean;
   driveStatus: "IDLE" | "QUEUED" | "UPLOADING" | "UPLOADED" | "EXEMPT" | "FAILED";
   driveFolderUrl?: string;
   driveError?: string;
@@ -60,6 +64,7 @@ export interface StudentPortalSubmissionItem {
 
 export interface StudentPortalStatus {
   isRunning: boolean;
+  stateVersion: number;
   classId: string;
   className: string;
   rootFolderPath: string;
@@ -101,6 +106,7 @@ interface IncomingStudentUploadBody {
 const MAX_UPLOAD_BODY_BYTES = 180 * 1024 * 1024; // 180 MB JSON payload limit
 const MAX_TOTAL_RAW_BYTES = 130 * 1024 * 1024; // 130 MB raw files limit per student submission
 const MAX_FILES_PER_SUBMISSION = 600;
+const MAX_RELATIVE_PATH_DEPTH = 10;
 
 const IGNORED_PATH_SEGMENTS = new Set([
   "__pycache__",
@@ -113,9 +119,11 @@ const IGNORED_PATH_SEGMENTS = new Set([
   ".vscode",
   "_spck_app_shots",
   "_spck_owner_uploads",
+  "_spck_youtube_frames",
+  "_spck_prev_backup",
 ]);
 
-const FORBIDDEN_EXECUTABLE_EXTENSIONS = new Set([
+export const FORBIDDEN_EXECUTABLE_EXTENSIONS = new Set([
   ".exe",
   ".dll",
   ".bat",
@@ -126,7 +134,42 @@ const FORBIDDEN_EXECUTABLE_EXTENSIONS = new Set([
   ".scr",
   ".com",
   ".pif",
+  ".lnk",
+  ".hta",
+  ".jar",
+  ".reg",
+  ".wsf",
 ]);
+
+const WINDOWS_RESERVED_BASENAMES = new Set([
+  "con",
+  "prn",
+  "aux",
+  "nul",
+  "com1",
+  "com2",
+  "com3",
+  "com4",
+  "com5",
+  "com6",
+  "com7",
+  "com8",
+  "com9",
+  "lpt1",
+  "lpt2",
+  "lpt3",
+  "lpt4",
+  "lpt5",
+  "lpt6",
+  "lpt7",
+  "lpt8",
+  "lpt9",
+]);
+
+export type RelativeUploadPathInspection =
+  | { status: "OK"; cleanRelPath: string }
+  | { status: "IGNORED" }
+  | { status: "REJECTED"; error: string };
 
 function getLanIpAddress(): string {
   try {
@@ -164,57 +207,108 @@ function sanitizeFolderDisplayName(fullName: string, fallbackId: string): string
   return cleaned || fallbackId;
 }
 
-function sanitizeRelativeUploadPath(rawRelPath: string): string | null {
+export function inspectRelativeUploadPath(rawRelPath: string): RelativeUploadPathInspection {
   const normalized = String(rawRelPath || "")
     .replace(/\\/g, "/")
     .replace(/^\/+/, "")
     .trim();
-  if (!normalized) return null;
+  if (!normalized) return { status: "IGNORED" };
 
-  const rawSegments = normalized.split("/").filter(Boolean);
-  if (rawSegments.length === 0) return null;
+  const rawSegments = normalized.split("/").filter((s) => s.length > 0);
+  if (rawSegments.length === 0) return { status: "IGNORED" };
+
+  for (const seg of rawSegments) {
+    if (seg.trim() === "..") {
+      return {
+        status: "REJECTED",
+        error: `Đường dẫn tệp chứa ký tự điều hướng không hợp lệ ('..'): '${rawRelPath}'.`,
+      };
+    }
+  }
+
+  // 1. Always enforce forbidden executable extension check FIRST at any folder depth
+  const lastRawSeg = rawSegments[rawSegments.length - 1].trim();
+  const rawLastExt = path.extname(lastRawSeg).toLowerCase();
+  const cleanLastCandidate = lastRawSeg
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+    .replace(/[\s.]+$/, "")
+    .trim();
+  const cleanLastExt = path.extname(cleanLastCandidate).toLowerCase();
+  if (
+    FORBIDDEN_EXECUTABLE_EXTENSIONS.has(rawLastExt) ||
+    FORBIDDEN_EXECUTABLE_EXTENSIONS.has(cleanLastExt)
+  ) {
+    return {
+      status: "REJECTED",
+      error: `Tệp thực thi bị cấm không được phép nộp qua cổng trực tuyến: '${lastRawSeg}'. Vui lòng bỏ tệp này ra khỏi thư mục dự án.`,
+    };
+  }
 
   const safeSegments: string[] = [];
-  for (const seg of rawSegments) {
-    const trimmed = seg.trim();
-    if (!trimmed || trimmed === "." || trimmed === "..") {
-      return null;
+  for (let idx = 0; idx < rawSegments.length; idx++) {
+    const trimmed = rawSegments[idx].trim();
+    if (!trimmed || trimmed === ".") {
+      return { status: "IGNORED" };
     }
-    if (trimmed.startsWith(".")) {
-      return null;
+    const isFinalGitkeep =
+      idx === rawSegments.length - 1 && trimmed.toLowerCase() === ".gitkeep";
+    if (trimmed.startsWith(".") && !isFinalGitkeep) {
+      return { status: "IGNORED" };
     }
-    if (IGNORED_PATH_SEGMENTS.has(trimmed.toLowerCase())) {
-      return null;
+    const lowerTrimmed = trimmed.toLowerCase();
+    if (
+      IGNORED_PATH_SEGMENTS.has(lowerTrimmed) ||
+      lowerTrimmed.startsWith("_spck_") ||
+      lowerTrimmed.startsWith(".spck_portal_")
+    ) {
+      return { status: "IGNORED" };
     }
-    const cleanSeg = trimmed
-      .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
-      .replace(/\.+$/, "")
-      .trim();
-    if (!cleanSeg) return null;
+    const cleanSeg = isFinalGitkeep
+      ? ".gitkeep"
+      : trimmed
+          .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+          .replace(/\.+$/, "")
+          .trim();
+    if (!cleanSeg) return { status: "IGNORED" };
+    const stemLower = cleanSeg.split(".")[0]?.toLowerCase() || "";
+    if (WINDOWS_RESERVED_BASENAMES.has(stemLower)) {
+      return {
+        status: "REJECTED",
+        error: `Tên tệp/thư mục trùng tên thiết bị hệ thống Windows không hợp lệ: '${cleanSeg}'.`,
+      };
+    }
     safeSegments.push(cleanSeg);
   }
 
-  // Cap subfolder depth to 5 levels
-  if (safeSegments.length > 5) {
-    const fileName = safeSegments[safeSegments.length - 1];
-    return [...safeSegments.slice(0, 4), fileName].join("/");
+  const finalExt = path.extname(safeSegments[safeSegments.length - 1]).toLowerCase();
+  if (FORBIDDEN_EXECUTABLE_EXTENSIONS.has(finalExt)) {
+    return {
+      status: "REJECTED",
+      error: `Tệp thực thi bị cấm không được phép nộp qua cổng trực tuyến: '${safeSegments[safeSegments.length - 1]}'.`,
+    };
   }
 
-  const ext = path.extname(safeSegments[safeSegments.length - 1]).toLowerCase();
-  if (FORBIDDEN_EXECUTABLE_EXTENSIONS.has(ext)) {
-    return null;
-  }
+  return {
+    status: "OK",
+    cleanRelPath: safeSegments.join("/"),
+  };
+}
 
-  return safeSegments.join("/");
+export function sanitizeRelativeUploadPath(rawRelPath: string): string | null {
+  const res = inspectRelativeUploadPath(rawRelPath);
+  if (res.status !== "OK") return null;
+  const depth = res.cleanRelPath.split("/").filter(Boolean).length;
+  if (depth > MAX_RELATIVE_PATH_DEPTH) return null;
+  return res.cleanRelPath;
 }
 
 /**
  * If all uploaded files share a single top-level directory (from `<input webkitdirectory>`),
  * strips that outer folder prefix so files sit directly inside `<ClassFolder>/<StudentFullName>/`.
  */
-function stripCommonTopLevelDirectory(
-  items: Array<{ cleanRelPath: string; base64Data: string }>
-): Array<{ cleanRelPath: string; base64Data: string }> {
+function stripCommonTopLevelDirectory<T extends { cleanRelPath: string }>(
+  items: T[]
+): T[] {
   if (items.length === 0) return items;
   const allHaveSubfolder = items.every((item) => item.cleanRelPath.includes("/"));
   if (!allHaveSubfolder) return items;
@@ -226,9 +320,112 @@ function stripCommonTopLevelDirectory(
   if (!sameTopFolder) return items;
 
   return items.map((item) => ({
+    ...item,
     cleanRelPath: item.cleanRelPath.split("/").slice(1).join("/"),
-    base64Data: item.base64Data,
   }));
+}
+
+function copyDirectoryTreeVerified(
+  srcDir: string,
+  destDir: string,
+  options?: {
+    skipTopLevelPred?: (entryName: string) => boolean;
+  }
+): { filesCopied: number; bytesCopied: number } {
+  if (!fs.existsSync(srcDir)) {
+    return { filesCopied: 0, bytesCopied: 0 };
+  }
+  const entries = fs.readdirSync(srcDir, { withFileTypes: true });
+  let filesCopied = 0;
+  let bytesCopied = 0;
+
+  for (const entry of entries) {
+    if (options?.skipTopLevelPred && options.skipTopLevelPred(entry.name)) {
+      continue;
+    }
+    const srcPath = path.join(srcDir, entry.name);
+    const st = fs.lstatSync(srcPath);
+    if (st.isSymbolicLink()) continue;
+
+    const dstPath = path.join(destDir, entry.name);
+    if (st.isDirectory()) {
+      fs.mkdirSync(dstPath, { recursive: true });
+      const subRes = copyDirectoryTreeVerified(srcPath, dstPath);
+      filesCopied += subRes.filesCopied;
+      bytesCopied += subRes.bytesCopied;
+    } else if (st.isFile()) {
+      const parent = path.dirname(dstPath);
+      if (!fs.existsSync(parent)) {
+        fs.mkdirSync(parent, { recursive: true });
+      }
+      fs.copyFileSync(srcPath, dstPath);
+      const dstStat = fs.statSync(dstPath);
+      if (dstStat.size !== st.size) {
+        throw new Error(
+          `Sao lưu không toàn vẹn cho tệp '${entry.name}' (${dstStat.size}/${st.size} bytes).`
+        );
+      }
+      filesCopied += 1;
+      bytesCopied += st.size;
+    }
+  }
+
+  return { filesCopied, bytesCopied };
+}
+
+function cleanupOrphanPortalTempDirs(safeClassRoot: string): void {
+  try {
+    if (!fs.existsSync(safeClassRoot)) return;
+    const entries = fs.readdirSync(safeClassRoot, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith(".spck_portal_staging_")) {
+        const tmpPath = assertInsideDirectory(
+          safeClassRoot,
+          path.join(safeClassRoot, entry.name)
+        );
+        try {
+          fs.rmSync(tmpPath, { recursive: true, force: true });
+        } catch {}
+        continue;
+      }
+
+      if (entry.name.startsWith(".spck_portal_rollback_")) {
+        // Never blindly delete `.spck_portal_rollback_*` because it may hold the sole recovery
+        // copy of a student's original work after an interrupted swap or failed restore.
+        // If encoded with `<hexFolderName>__<txToken>` and the target student folder is missing,
+        // automatically self-heal by restoring the rollback directory back into place.
+        const rollbackPath = assertInsideDirectory(
+          safeClassRoot,
+          path.join(safeClassRoot, entry.name)
+        );
+        const remainder = entry.name.slice(".spck_portal_rollback_".length);
+        const sepIdx = remainder.indexOf("__");
+        if (sepIdx > 0) {
+          const hexFolderName = remainder.slice(0, sepIdx);
+          if (/^[0-9a-f]+$/i.test(hexFolderName) && hexFolderName.length % 2 === 0) {
+            try {
+              const folderName = Buffer.from(hexFolderName, "hex").toString("utf8");
+              if (
+                folderName &&
+                !folderName.includes("/") &&
+                !folderName.includes("\\") &&
+                folderName !== "." &&
+                folderName !== ".."
+              ) {
+                const targetFolder = assertInsideDirectory(
+                  safeClassRoot,
+                  path.join(safeClassRoot, folderName)
+                );
+                if (!fs.existsSync(targetFolder)) {
+                  fs.renameSync(rollbackPath, targetFolder);
+                }
+              }
+            } catch {}
+          }
+        }
+      }
+    }
+  } catch {}
 }
 
 function assertInsideDirectory(parentDir: string, targetPath: string): string {
@@ -250,12 +447,125 @@ function assertInsideDirectory(parentDir: string, targetPath: string): string {
   return resolvedTarget;
 }
 
+const PORTAL_UNCONFIRMED_MARKER_REL = path.join("_spck_prev_backup", "portal_unconfirmed.json");
+
+function writeDiskPortalUnconfirmedMarker(
+  targetFolder: string,
+  classId: string,
+  studentId: string
+): void {
+  const markerPath = path.join(targetFolder, PORTAL_UNCONFIRMED_MARKER_REL);
+  const markerDir = path.dirname(markerPath);
+  if (!fs.existsSync(markerDir)) {
+    fs.mkdirSync(markerDir, { recursive: true });
+  }
+  fs.writeFileSync(
+    markerPath,
+    JSON.stringify(
+      {
+        classId: String(classId || "").trim().toUpperCase(),
+        studentId: String(studentId || "").trim(),
+        submittedAt: new Date().toISOString(),
+      },
+      null,
+      2
+    ),
+    "utf-8"
+  );
+}
+
+type DiskPortalMarkerState = "PRESENT" | "ABSENT" | "UNVERIFIABLE";
+
+function inspectDiskPortalUnconfirmedMarker(
+  folderPath: string | null | undefined,
+  classId?: string,
+  studentId?: string
+): DiskPortalMarkerState {
+  if (!folderPath || !String(folderPath).trim()) return "ABSENT";
+
+  let safeFolder: string;
+  try {
+    safeFolder = assertPathAllowed(folderPath);
+  } catch {
+    return "UNVERIFIABLE";
+  }
+
+  const markerPath = path.join(safeFolder, PORTAL_UNCONFIRMED_MARKER_REL);
+
+  let st: fs.Stats;
+  try {
+    // Call lstatSync directly (NEVER existsSync, which silently maps EACCES/EPERM to false!)
+    st = fs.lstatSync(markerPath);
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException | undefined)?.code;
+    if (code === "ENOENT" || code === "ENOTDIR") {
+      return "ABSENT";
+    }
+    return "UNVERIFIABLE";
+  }
+
+  if (st.isSymbolicLink() || !st.isFile()) {
+    return "UNVERIFIABLE";
+  }
+
+  try {
+    const raw = fs.readFileSync(markerPath, "utf-8");
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return "UNVERIFIABLE";
+    }
+    if (classId) {
+      if (typeof parsed.classId !== "string" || !parsed.classId.trim()) {
+        return "UNVERIFIABLE";
+      }
+      const expectedClass = String(classId).trim().toUpperCase();
+      if (parsed.classId.trim().toUpperCase() !== expectedClass) {
+        return "ABSENT";
+      }
+    }
+    if (studentId) {
+      if (typeof parsed.studentId !== "string" || !parsed.studentId.trim()) {
+        return "UNVERIFIABLE";
+      }
+      const expectedStu = String(studentId).trim();
+      if (parsed.studentId.trim() !== expectedStu) {
+        return "ABSENT";
+      }
+    }
+    return "PRESENT";
+  } catch {
+    return "UNVERIFIABLE";
+  }
+}
+
+function hasDiskPortalUnconfirmedMarker(
+  folderPath: string | null | undefined,
+  classId?: string,
+  studentId?: string
+): boolean {
+  const state = inspectDiskPortalUnconfirmedMarker(folderPath, classId, studentId);
+  // Fail closed: treat both PRESENT and UNVERIFIABLE (EACCES, corrupt JSON, symlink) as pending unconfirmed!
+  return state !== "ABSENT";
+}
+
+function removeDiskPortalUnconfirmedMarker(folderPath: string | null | undefined): void {
+  if (!folderPath || !String(folderPath).trim()) return;
+  try {
+    const safeFolder = assertPathAllowed(folderPath);
+    const markerPath = path.join(safeFolder, PORTAL_UNCONFIRMED_MARKER_REL);
+    if (fs.lstatSync(markerPath, { throwIfNoEntry: false })) {
+      fs.unlinkSync(markerPath);
+    }
+  } catch {}
+}
+
 class StudentPortalManager {
   private server: http.Server | null = null;
   private activeSockets = new Set<net.Socket>();
   private tunnelProcess: ChildProcess | null = null;
   private isRunning = false;
   private portalGeneration = 0;
+  private stateVersion = 1;
   private classId = "";
   private className = "";
   private rootFolderPath = "";
@@ -270,13 +580,29 @@ class StudentPortalManager {
   private tunnelProvider = "Mạng LAN / Máy Giáo Viên";
   private startedAt: string | null = null;
   private submissions = new Map<string, StudentPortalSubmissionItem>();
+  private unconfirmedPortalByClassStudent = new Set<string>();
+  private submissionLocksByStudent = new Map<string, Promise<unknown>>();
   private driveUploadStateByStudent = new Map<
     string,
     { running: boolean; pendingRerun: boolean; driveFolderUrl: string }
   >();
 
-  public getStatus(filterClassId?: string): StudentPortalStatus {
-    this.syncSubmissionsWithExistingRecords();
+  public getStateVersion(): number {
+    return this.stateVersion;
+  }
+
+  public bumpStateVersion(): number {
+    this.stateVersion += 1;
+    return this.stateVersion;
+  }
+
+  public getStatus(
+    filterClassId?: string,
+    options?: { skipDiskSync?: boolean }
+  ): StudentPortalStatus {
+    if (!options?.skipDiskSync) {
+      this.syncSubmissionsWithExistingRecords();
+    }
     const submissionsList = Array.from(this.submissions.values()).sort((a, b) =>
       b.submittedAt.localeCompare(a.submittedAt)
     );
@@ -290,6 +616,7 @@ class StudentPortalManager {
         (!filterClassId ||
           !this.classId ||
           this.classId.toUpperCase() === filterClassId.trim().toUpperCase()),
+      stateVersion: this.stateVersion,
       classId: this.classId,
       className: this.className,
       rootFolderPath: this.rootFolderPath,
@@ -313,6 +640,7 @@ class StudentPortalManager {
     if (driveFolderUrl && driveFolderUrl.trim()) {
       this.driveFolderUrl = driveFolderUrl.trim();
     }
+    this.bumpStateVersion();
     return this.getStatus();
   }
 
@@ -339,6 +667,7 @@ class StudentPortalManager {
       fs.mkdirSync(targetRootDir, { recursive: true });
     }
     const safeRootDir = registerTeacherSelectedDirectory(targetRootDir);
+    cleanupOrphanPortalTempDirs(safeRootDir);
 
     // If portal is already running for the exact same class & folder, return existing status
     if (
@@ -347,11 +676,20 @@ class StudentPortalManager {
       this.classId === normalizedClassId &&
       normalizeSpckFolderKey(this.rootFolderPath) === normalizeSpckFolderKey(safeRootDir)
     ) {
-      if (options.driveFolderUrl?.trim()) {
+      let changed = false;
+      if (options.driveFolderUrl?.trim() && this.driveFolderUrl !== options.driveFolderUrl.trim()) {
         this.driveFolderUrl = options.driveFolderUrl.trim();
+        changed = true;
       }
-      if (typeof options.autoUploadDrive === "boolean") {
+      if (
+        typeof options.autoUploadDrive === "boolean" &&
+        this.autoUploadDrive !== options.autoUploadDrive
+      ) {
         this.autoUploadDrive = options.autoUploadDrive;
+        changed = true;
+      }
+      if (changed) {
+        this.bumpStateVersion();
       }
       return this.getStatus();
     }
@@ -376,19 +714,26 @@ class StudentPortalManager {
     const lanIp = getLanIpAddress();
     this.localUrl = `http://127.0.0.1:${this.port}/s/${this.sessionToken}`;
     this.lanUrl = `http://${lanIp}:${this.port}/s/${this.sessionToken}`;
+    const disableTunnel = process.env.MINDX_DISABLE_PORTAL_TUNNEL === "1";
     this.publicTunnelUrl = null;
-    this.tunnelStatus = "STARTING";
-    this.tunnelProvider = "Đang khởi tạo Link Internet...";
+    this.tunnelStatus = disableTunnel ? "LAN_ONLY" : "STARTING";
+    this.tunnelProvider = disableTunnel
+      ? "Mạng LAN Phòng Học / Wi-Fi Chung"
+      : "Đang khởi tạo Link Internet...";
     this.startedAt = new Date().toISOString();
     this.isRunning = true;
+    this.bumpStateVersion();
 
-    // Launch Public Internet Tunnel in background so startPortal returns fast
-    this.startPublicTunnelInBackground(this.port, this.sessionToken).catch(() => {
-      if (this.isRunning && !this.publicTunnelUrl) {
-        this.tunnelStatus = "LAN_ONLY";
-        this.tunnelProvider = "Mạng LAN Phòng Học / Wi-Fi Chung";
-      }
-    });
+    // Launch Public Internet Tunnel in background so startPortal returns fast (unless disabled in offline/test mode)
+    if (!disableTunnel) {
+      this.startPublicTunnelInBackground(this.port, this.sessionToken).catch(() => {
+        if (this.isRunning && !this.publicTunnelUrl) {
+          this.tunnelStatus = "LAN_ONLY";
+          this.tunnelProvider = "Mạng LAN Phòng Học / Wi-Fi Chung";
+          this.bumpStateVersion();
+        }
+      });
+    }
 
     jobLogRepo.add({
       jobId: `PORTAL_${Date.now()}`,
@@ -402,10 +747,14 @@ class StudentPortalManager {
   }
 
   public async stopPortal(): Promise<void> {
+    const wasRunning = this.isRunning || Boolean(this.server);
     this.portalGeneration++;
     this.isRunning = false;
     this.tunnelStatus = "STOPPED";
     this.publicTunnelUrl = null;
+    if (wasRunning) {
+      this.bumpStateVersion();
+    }
 
     for (const state of this.driveUploadStateByStudent.values()) {
       state.pendingRerun = false;
@@ -477,7 +826,23 @@ class StudentPortalManager {
           /drive\.google\.com\/drive\/folders\//i.test(l.url || "")
         );
 
+        const diskUnconfirmed =
+          Number(rec.pendingPortalConfirmation) === 1 ||
+          hasDiskPortalUnconfirmedMarker(
+            rec.localFolderPath,
+            this.classId,
+            rec.studentId
+          );
+        const isConfirmed = Number(rec.isConfirmedByTeacher) === 1 && !diskUnconfirmed;
+        if (!isConfirmed && diskUnconfirmed) {
+          this.unconfirmedPortalByClassStudent.add(
+            `${this.classId.trim().toUpperCase()}::${rec.studentId}`
+          );
+        }
+
         if (existingItem) {
+          existingItem.classId = this.classId;
+          existingItem.confirmedByTeacher = isConfirmed;
           if (driveLinkObj?.url && existingItem.driveStatus !== "UPLOADING") {
             existingItem.driveFolderUrl = driveLinkObj.url;
             existingItem.driveStatus = "UPLOADED";
@@ -502,6 +867,7 @@ class StudentPortalManager {
         })();
 
         this.submissions.set(rec.studentId, {
+          classId: this.classId,
           studentId: rec.studentId,
           fullName: stu?.fullName || rec.studentId,
           folderName: path.basename(rec.localFolderPath),
@@ -510,6 +876,7 @@ class StudentPortalManager {
           filesCount: attachments.length + screenshots.length,
           totalBytes: 0,
           submittedAt: (rec as any).updatedAt || new Date().toISOString(),
+          confirmedByTeacher: isConfirmed,
           driveStatus: driveLinkObj?.url
             ? "UPLOADED"
             : isCourseExemptFromSpck(this.classId)
@@ -632,6 +999,7 @@ class StudentPortalManager {
         this.publicTunnelUrl = `${cfUrl.replace(/\/+$/, "")}/s/${token}`;
         this.tunnelStatus = "READY";
         this.tunnelProvider = "Cloudflare Internet Tunnel (Toàn cầu)";
+        this.bumpStateVersion();
         return;
       }
     }
@@ -662,6 +1030,7 @@ class StudentPortalManager {
         this.publicTunnelUrl = `${lhrUrl.replace(/\/+$/, "")}/s/${token}`;
         this.tunnelStatus = "READY";
         this.tunnelProvider = "Internet Tunnel (localhost.run)";
+        this.bumpStateVersion();
         return;
       }
     }
@@ -669,6 +1038,7 @@ class StudentPortalManager {
     if (this.isRunning && this.sessionToken === token && !this.publicTunnelUrl) {
       this.tunnelStatus = "LAN_ONLY";
       this.tunnelProvider = "Mạng LAN Phòng Học / Wi-Fi Chung";
+      this.bumpStateVersion();
     }
   }
 
@@ -857,12 +1227,37 @@ class StudentPortalManager {
     error?: string;
     submission?: StudentPortalSubmissionItem;
   }> {
+    const lockKey = `${this.classId || ""}::${String(body?.studentId || "").trim()}`;
+    const prev = this.submissionLocksByStudent.get(lockKey) || Promise.resolve();
+    const next = prev
+      .catch(() => {})
+      .then(() => this.processStudentSubmissionUnlocked(body));
+    this.submissionLocksByStudent.set(lockKey, next);
+    try {
+      return await next;
+    } finally {
+      if (this.submissionLocksByStudent.get(lockKey) === next) {
+        this.submissionLocksByStudent.delete(lockKey);
+      }
+    }
+  }
+
+  private async processStudentSubmissionUnlocked(
+    body: IncomingStudentUploadBody
+  ): Promise<{
+    success: boolean;
+    error?: string;
+    submission?: StudentPortalSubmissionItem;
+  }> {
     if (!this.isRunning || !this.classId || !this.rootFolderPath) {
       return {
         success: false,
         error: "Cổng thu bài hiện đang đóng. Vui lòng báo Thầy mở lại cổng thu bài.",
       };
     }
+
+    const activeClassId = this.classId;
+    const activeRootFolderPath = this.rootFolderPath;
 
     const studentId = String(body?.studentId || "").trim();
     if (!studentId) {
@@ -872,12 +1267,12 @@ class StudentPortalManager {
       };
     }
 
-    const students = studentRepo.findByClass(this.classId, false);
+    const students = studentRepo.findByClass(activeClassId, false);
     const student = students.find((s) => s.studentId === studentId);
     if (!student) {
       return {
         success: false,
-        error: `Không tìm thấy học viên (${studentId}) trong danh sách lớp ${this.classId}.`,
+        error: `Không tìm thấy học viên (${studentId}) trong danh sách lớp ${activeClassId}.`,
       };
     }
 
@@ -896,18 +1291,46 @@ class StudentPortalManager {
       };
     }
 
-    // Sanitize paths and strip common outer folder if uploaded via folder picker
-    const sanitizedEntries: Array<{ cleanRelPath: string; base64Data: string }> = [];
+    // Step 1 (In-memory validation before touching disk):
+    // Inspect all relative paths, reject forbidden extensions/invalid paths at any depth,
+    // strip common outer folder, enforce depth limit, prevent case-insensitive destination collisions,
+    // and decode Base64 payloads within the 130 MB raw byte budget.
+    const inspectedEntries: Array<{
+      rawRelPath: string;
+      cleanRelPath: string;
+      base64Data: string;
+    }> = [];
+
     for (const item of rawFiles) {
-      const cleanRelPath = sanitizeRelativeUploadPath(item?.relativePath || "");
-      if (!cleanRelPath || !item?.base64Data) continue;
-      sanitizedEntries.push({
-        cleanRelPath,
-        base64Data: String(item.base64Data),
+      const rawRelPath = String(item?.relativePath || "");
+      const inspection = inspectRelativeUploadPath(rawRelPath);
+      if (inspection.status === "REJECTED") {
+        return {
+          success: false,
+          error: inspection.error,
+        };
+      }
+      if (inspection.status === "IGNORED") {
+        continue;
+      }
+      if (
+        item?.base64Data === undefined ||
+        item?.base64Data === null ||
+        typeof item.base64Data !== "string"
+      ) {
+        return {
+          success: false,
+          error: `Dữ liệu nội dung tệp '${inspection.cleanRelPath}' không hợp lệ.`,
+        };
+      }
+      inspectedEntries.push({
+        rawRelPath,
+        cleanRelPath: inspection.cleanRelPath,
+        base64Data: item.base64Data,
       });
     }
 
-    const normalizedEntries = stripCommonTopLevelDirectory(sanitizedEntries).filter(
+    const normalizedEntries = stripCommonTopLevelDirectory(inspectedEntries).filter(
       (item) => Boolean(item.cleanRelPath)
     );
 
@@ -918,9 +1341,106 @@ class StudentPortalManager {
       };
     }
 
+    const seenFilePathsLower = new Map<string, string>();
+    const seenDirPrefixesLower = new Set<string>();
+    const decodedEntries: Array<{ cleanRelPath: string; buf: Buffer }> = [];
+    let totalRawBytes = 0;
+
+    for (const entry of normalizedEntries) {
+      const segments = entry.cleanRelPath.split("/").filter(Boolean);
+      if (segments.length === 0) continue;
+      if (segments.length > MAX_RELATIVE_PATH_DEPTH) {
+        return {
+          success: false,
+          error: `Đường dẫn thư mục quá sâu (${segments.length} tầng, tối đa ${MAX_RELATIVE_PATH_DEPTH} tầng): '${entry.cleanRelPath}'. Vui lòng đưa thư mục dự án ra ngoài hoặc nén thành .zip.`,
+        };
+      }
+
+      // Re-verify final extension after stripping common outer folder
+      const postStripCheck = inspectRelativeUploadPath(entry.cleanRelPath);
+      if (postStripCheck.status !== "OK") {
+        return {
+          success: false,
+          error:
+            postStripCheck.status === "REJECTED"
+              ? postStripCheck.error
+              : `Đường dẫn tệp không hợp lệ: '${entry.cleanRelPath}'.`,
+        };
+      }
+
+      const cleanRelPath = postStripCheck.cleanRelPath;
+      const lowerRelPath = cleanRelPath.toLowerCase();
+
+      if (seenFilePathsLower.has(lowerRelPath)) {
+        const prevOriginal = seenFilePathsLower.get(lowerRelPath)!;
+        return {
+          success: false,
+          error: `Phát hiện hai tệp trùng đường dẫn đích sau khi chuẩn hóa ('${prevOriginal}' và '${entry.rawRelPath}' -> '${cleanRelPath}'). Vui lòng đổi tên tệp bị trùng trước khi nộp.`,
+        };
+      }
+      if (seenDirPrefixesLower.has(lowerRelPath)) {
+        return {
+          success: false,
+          error: `Xung đột tên tệp và thư mục tại '${cleanRelPath}'. Vui lòng kiểm tra lại cấu trúc thư mục bài nộp.`,
+        };
+      }
+
+      let dirPrefixAccum = "";
+      const cleanParts = cleanRelPath.split("/");
+      for (let i = 0; i < cleanParts.length - 1; i++) {
+        dirPrefixAccum = dirPrefixAccum
+          ? `${dirPrefixAccum}/${cleanParts[i].toLowerCase()}`
+          : cleanParts[i].toLowerCase();
+        if (seenFilePathsLower.has(dirPrefixAccum)) {
+          return {
+            success: false,
+            error: `Xung đột tên tệp và thư mục tại '${cleanRelPath}'. Vui lòng kiểm tra lại cấu trúc thư mục bài nộp.`,
+          };
+        }
+        seenDirPrefixesLower.add(dirPrefixAccum);
+      }
+      seenFilePathsLower.set(lowerRelPath, entry.rawRelPath);
+
+      const hasDataUriPrefix = /^data:[^,]*,/i.test(entry.base64Data);
+      const base64Clean = hasDataUriPrefix
+        ? entry.base64Data.slice(entry.base64Data.indexOf(",") + 1)
+        : entry.base64Data;
+      const trimmedB64 = base64Clean.replace(/\s+/g, "");
+
+      if (trimmedB64.length > 0) {
+        if (
+          !/^[A-Za-z0-9+/_-]+={0,2}$/.test(trimmedB64) ||
+          trimmedB64.length % 4 === 1
+        ) {
+          return {
+            success: false,
+            error: `Dữ liệu mã hóa Base64 của tệp '${cleanRelPath}' bị hỏng hoặc không hợp lệ.`,
+          };
+        }
+      }
+
+      const buf = trimmedB64.length === 0 ? Buffer.alloc(0) : Buffer.from(trimmedB64, "base64");
+      totalRawBytes += buf.length;
+      if (totalRawBytes > MAX_TOTAL_RAW_BYTES) {
+        return {
+          success: false,
+          error: `Tổng dung lượng file vượt quá giới hạn 130MB. Vui lòng kiểm tra lại.`,
+        };
+      }
+
+      decodedEntries.push({ cleanRelPath, buf });
+    }
+
+    if (decodedEntries.length === 0 || totalRawBytes === 0) {
+      return {
+        success: false,
+        error: "Các tệp tải lên đều rỗng (0 byte). Vui lòng chọn lại tệp bài làm.",
+      };
+    }
+
     // Prepare student folder inside the allowlisted class SPCK directory
-    const safeClassRoot = assertPathAllowed(this.rootFolderPath);
-    const existingRecord = spckUploadRepo.findOne(this.classId, student.studentId);
+    const safeClassRoot = assertPathAllowed(activeRootFolderPath);
+    const existingRecord = spckUploadRepo.findOne(activeClassId, student.studentId);
 
     let studentFolderPath: string;
     if (
@@ -931,7 +1451,7 @@ class StudentPortalManager {
     ) {
       studentFolderPath = assertInsideDirectory(safeClassRoot, existingRecord.localFolderPath);
     } else {
-      const otherRecords = spckUploadRepo.findByClass(this.classId);
+      const otherRecords = spckUploadRepo.findByClass(activeClassId);
       const otherPaths = otherRecords
         .filter((r) => r.studentId !== student.studentId && r.localFolderPath)
         .map((r) => r.localFolderPath!);
@@ -944,54 +1464,9 @@ class StudentPortalManager {
       studentFolderPath = assertInsideDirectory(safeClassRoot, candidatePath);
     }
 
-    if (!fs.existsSync(studentFolderPath)) {
-      fs.mkdirSync(studentFolderPath, { recursive: true });
-    }
-
     const safeStudentFolder = assertPathAllowed(studentFolderPath);
 
-    // Write uploaded files into the student's folder
-    let totalWrittenBytes = 0;
-    let writtenFilesCount = 0;
-
-    for (const entry of normalizedEntries) {
-      const destFilePath = assertInsideDirectory(
-        safeStudentFolder,
-        path.join(safeStudentFolder, entry.cleanRelPath)
-      );
-      assertPathAllowed(destFilePath);
-
-      const base64Clean = entry.base64Data.includes(",")
-        ? entry.base64Data.split(",").pop() || ""
-        : entry.base64Data;
-      const buf = Buffer.from(base64Clean, "base64");
-      if (buf.length === 0) continue;
-
-      totalWrittenBytes += buf.length;
-      if (totalWrittenBytes > MAX_TOTAL_RAW_BYTES) {
-        return {
-          success: false,
-          error: `Tổng dung lượng file vượt quá giới hạn 130MB. Vui lòng kiểm tra lại.`,
-        };
-      }
-
-      const parentDir = path.dirname(destFilePath);
-      assertInsideDirectory(safeStudentFolder, parentDir);
-      if (!fs.existsSync(parentDir)) {
-        fs.mkdirSync(parentDir, { recursive: true });
-      }
-      fs.writeFileSync(destFilePath, buf);
-      writtenFilesCount++;
-    }
-
-    if (writtenFilesCount === 0) {
-      return {
-        success: false,
-        error: "Các tệp tải lên đều rỗng (0 byte). Vui lòng chọn lại tệp bài làm.",
-      };
-    }
-
-    // Handle optional projectTitle, youtubeUrl, and presentationUrl -> write/merge into links.txt
+    // Prepare optional links.txt content in memory before disk writes
     const rawTitle = String(body?.projectTitle || "")
       .replace(/\s+/g, " ")
       .trim()
@@ -1014,116 +1489,304 @@ class StudentPortalManager {
     if (presentationInput) {
       const relCheck = validateSpckRelatedUrl(presentationInput);
       if (relCheck.valid && relCheck.normalizedUrl) {
-        linksLines.push(`Slide / Link thuyết trình (${student.fullName}) | ${relCheck.normalizedUrl}`);
+        linksLines.push(
+          `Slide / Link thuyết trình (${student.fullName}) | ${relCheck.normalizedUrl}`
+        );
       }
     }
 
-    if (rawTitle || youtubeInput || presentationInput) {
-      const linksFilePath = assertInsideDirectory(
-        safeStudentFolder,
-        path.join(safeStudentFolder, "links.txt")
-      );
-      fs.writeFileSync(linksFilePath, linksLines.join("\n") + "\n", "utf8");
-    }
+    // Step 2 (Atomic staging on the same filesystem inside safeClassRoot):
+    const txToken = `${Date.now()}_${crypto.randomBytes(6).toString("hex")}`;
+    const folderHex = Buffer.from(path.basename(safeStudentFolder), "utf8").toString("hex");
+    const stagingDir = assertPathAllowed(
+      assertInsideDirectory(safeClassRoot, path.join(safeClassRoot, `.spck_portal_staging_${txToken}`))
+    );
+    const rollbackDir = assertPathAllowed(
+      assertInsideDirectory(
+        safeClassRoot,
+        path.join(safeClassRoot, `.spck_portal_rollback_${folderHex}__${txToken}`)
+      )
+    );
 
-    // Scan the student's folder and upsert into SQLite `spck_uploads` with 100% confirmed studentId mapping
-    const canonicalStudentFolder = canonicalizeSpckFolderPath(safeStudentFolder);
-    const packageData = scanStudentSpckFolder(canonicalStudentFolder, student.fullName);
+    let swappedToTarget = false;
+    let hadExistingFolder = false;
+    let canCleanupRollbackDir = true;
 
-    const parseSafeArray = <T>(raw?: string | null): T[] => {
-      if (!raw) return [];
+    try {
+      fs.mkdirSync(stagingDir, { recursive: true });
+
+      for (const entry of decodedEntries) {
+        const destFilePath = assertInsideDirectory(
+          stagingDir,
+          path.join(stagingDir, entry.cleanRelPath)
+        );
+        assertPathAllowed(destFilePath);
+        const parentDir = path.dirname(destFilePath);
+        assertInsideDirectory(stagingDir, parentDir);
+        if (!fs.existsSync(parentDir)) {
+          fs.mkdirSync(parentDir, { recursive: true });
+        }
+        fs.writeFileSync(destFilePath, entry.buf);
+      }
+
+      if (rawTitle || youtubeInput || presentationInput) {
+        const linksFilePath = assertInsideDirectory(
+          stagingDir,
+          path.join(stagingDir, "links.txt")
+        );
+        fs.writeFileSync(linksFilePath, linksLines.join("\n") + "\n", "utf8");
+      }
+
+      // Persist unconfirmed portal marker inside `stagingDir` BEFORE touching or renaming `safeStudentFolder`
+      // so any disk error (ENOSPC/EACCES) leaves `safeStudentFolder` 100% intact in place immediately!
+      writeDiskPortalUnconfirmedMarker(stagingDir, activeClassId, student.studentId);
+
+      hadExistingFolder = fs.existsSync(safeStudentFolder);
+      if (hadExistingFolder) {
+        // Preserve teacher-owned folders across student re-uploads (fail closed on read/copy error)
+        for (const teacherOwnedDirName of ["_spck_owner_uploads", "_spck_youtube_frames"]) {
+          const srcTeacherDir = path.join(safeStudentFolder, teacherOwnedDirName);
+          if (fs.existsSync(srcTeacherDir)) {
+            const dstTeacherDir = path.join(stagingDir, teacherOwnedDirName);
+            fs.mkdirSync(dstTeacherDir, { recursive: true });
+            copyDirectoryTreeVerified(srcTeacherDir, dstTeacherDir);
+          }
+        }
+
+        // Preserve 100% of previous student files in `_spck_prev_backup/{protected,latest}`
+        // BEFORE moving `safeStudentFolder`. If any directory/file read or copy fails, throw
+        // immediately so `safeStudentFolder` remains completely untouched.
+        const existingTopEntries = fs.readdirSync(safeStudentFolder);
+        const hasPriorStudentFiles = existingTopEntries.some((name) => {
+          const lower = name.toLowerCase();
+          return (
+            !lower.startsWith("_spck_") &&
+            lower !== ".ds_store" &&
+            lower !== "thumbs.db"
+          );
+        });
+
+        const existingProtectedBackup = path.join(
+          safeStudentFolder,
+          "_spck_prev_backup",
+          "protected"
+        );
+        const stagingProtectedBackup = path.join(stagingDir, "_spck_prev_backup", "protected");
+        const stagingLatestBackup = path.join(stagingDir, "_spck_prev_backup", "latest");
+
+        if (
+          fs.existsSync(existingProtectedBackup) &&
+          existingRecord?.isConfirmedByTeacher !== 1
+        ) {
+          fs.mkdirSync(stagingProtectedBackup, { recursive: true });
+          copyDirectoryTreeVerified(existingProtectedBackup, stagingProtectedBackup);
+        } else if (hasPriorStudentFiles) {
+          fs.mkdirSync(stagingProtectedBackup, { recursive: true });
+          copyDirectoryTreeVerified(safeStudentFolder, stagingProtectedBackup, {
+            skipTopLevelPred: (name) => name.toLowerCase().startsWith("_spck_"),
+          });
+        }
+
+        if (hasPriorStudentFiles) {
+          fs.mkdirSync(stagingLatestBackup, { recursive: true });
+          copyDirectoryTreeVerified(safeStudentFolder, stagingLatestBackup, {
+            skipTopLevelPred: (name) => name.toLowerCase().startsWith("_spck_"),
+          });
+        }
+
+        // Swap existing folder -> rollbackDir, then stagingDir -> safeStudentFolder.
+        // Mark `canCleanupRollbackDir = false` until either SQLite commits OR rollback restore succeeds.
+        fs.renameSync(safeStudentFolder, rollbackDir);
+        canCleanupRollbackDir = false;
+      }
+
       try {
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
+        fs.renameSync(stagingDir, safeStudentFolder);
+        swappedToTarget = true;
+      } catch (renameErr) {
+        if (hadExistingFolder && fs.existsSync(rollbackDir) && !fs.existsSync(safeStudentFolder)) {
+          try {
+            fs.renameSync(rollbackDir, safeStudentFolder);
+            if (fs.existsSync(safeStudentFolder)) {
+              canCleanupRollbackDir = true;
+            }
+          } catch (restoreErr) {
+            throw new Error(
+              `Không thể hoán đổi thư mục nộp bài và không thể tự động khôi phục thư mục gốc (${
+                restoreErr instanceof Error ? restoreErr.message : String(restoreErr)
+              }). Bản gốc đầy đủ đang được bảo toàn tại '${rollbackDir}'.`
+            );
+          }
+        }
+        throw renameErr;
       }
-    };
 
-    const existingLinks = parseSafeArray<{ name: string; url: string }>(
-      existingRecord?.relatedLinksJson
-    );
-    const mergedLinksMap = new Map<string, { name: string; url: string }>();
-    for (const l of [...existingLinks, ...(packageData.relatedLinks || [])]) {
-      if (l && l.url && !mergedLinksMap.has(l.url)) {
-        mergedLinksMap.set(l.url, l);
+      // Step 3 (Async non-blocking scan & atomic SQLite commit; restore rollbackDir on any failure):
+      let canonicalStudentFolder = "";
+      let packageData: StudentSpckPackage;
+      try {
+        canonicalStudentFolder = canonicalizeSpckFolderPath(safeStudentFolder);
+        packageData = await scanStudentSpckFolderAsync(canonicalStudentFolder, student.fullName);
+
+        const parseSafeArray = <T>(raw?: string | null): T[] => {
+          if (!raw) return [];
+          try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        };
+
+        const existingLinks = parseSafeArray<{ name: string; url: string }>(
+          existingRecord?.relatedLinksJson
+        );
+        const mergedLinksMap = new Map<string, { name: string; url: string }>();
+        for (const l of [...existingLinks, ...(packageData.relatedLinks || [])]) {
+          if (l && l.url && !mergedLinksMap.has(l.url)) {
+            mergedLinksMap.set(l.url, l);
+          }
+        }
+        const mergedRelatedLinks = Array.from(mergedLinksMap.values()).slice(0, 5);
+
+        const existingYt = parseSafeArray<string>(existingRecord?.youtubeUrlsJson);
+        const mergedYoutubeUrls = Array.from(
+          new Set([...existingYt, ...(packageData.youtubeUrls || [])])
+        ).slice(0, 5);
+
+        const commitDb = getDb().transaction(() => {
+          spckUploadRepo.upsert({
+            classId: activeClassId,
+            studentId: student.studentId,
+            localFolderPath: canonicalStudentFolder,
+            matchScore: 1.0,
+            // Student dropdown on portal is unauthenticated -> require teacher confirmation
+            // before LMS approval or automatic external Drive overwrite.
+            isConfirmedByTeacher: 0,
+            pendingPortalConfirmation: 1,
+            projectTitle: finalTitle || packageData.projectTitle,
+            thumbnailPath: packageData.thumbnailPath,
+            screenshotsJson: JSON.stringify(packageData.screenshots),
+            attachmentsJson: JSON.stringify(packageData.attachments),
+            youtubeUrlsJson: JSON.stringify(mergedYoutubeUrls),
+            relatedLinksJson: JSON.stringify(mergedRelatedLinks),
+            teacherComment: existingRecord?.teacherComment ?? "",
+            // Content changed -> reset contentHash & set status to WAITING_APPROVAL (Rule 4)
+            contentHash: "",
+            status: "WAITING_APPROVAL",
+            verifiedAt: null,
+            errorMessage: null,
+          });
+
+          // Keep unverified session drafts (12, 13, 14) in sync and reset confirmation
+          this.syncStudentUnverifiedSessionDrafts(
+            activeClassId,
+            student.studentId,
+            rawTitle ? finalTitle : undefined
+          );
+        });
+        commitDb();
+        this.unconfirmedPortalByClassStudent.add(
+          `${activeClassId.trim().toUpperCase()}::${student.studentId}`
+        );
+        canCleanupRollbackDir = true;
+      } catch (commitErr) {
+        let restoredOriginalOk = !hadExistingFolder;
+        if (swappedToTarget) {
+          try {
+            if (fs.existsSync(safeStudentFolder)) {
+              fs.rmSync(safeStudentFolder, { recursive: true, force: true });
+            }
+          } catch {}
+          if (hadExistingFolder && fs.existsSync(rollbackDir)) {
+            try {
+              fs.renameSync(rollbackDir, safeStudentFolder);
+              restoredOriginalOk = fs.existsSync(safeStudentFolder);
+            } catch {
+              restoredOriginalOk = false;
+            }
+          }
+          swappedToTarget = false;
+        }
+        canCleanupRollbackDir = restoredOriginalOk;
+        if (!restoredOriginalOk && fs.existsSync(rollbackDir)) {
+          const baseMsg =
+            commitErr instanceof Error ? commitErr.message : String(commitErr);
+          throw new Error(
+            `${baseMsg} (Bản sao khôi phục nguyên vẹn của bài cũ đang được giữ an toàn tại '${rollbackDir}')`
+          );
+        }
+        throw commitErr;
+      }
+
+      const writtenFilesCount = decodedEntries.length;
+      const isExempt = isCourseExemptFromSpck(activeClassId);
+      // Do not automatically push unconfirmed student-portal uploads to Google Drive;
+      // teacher confirms identity first on the SPCK screen.
+      const shouldQueueDrive = false;
+
+      const submissionItem: StudentPortalSubmissionItem = {
+        classId: activeClassId,
+        studentId: student.studentId,
+        fullName: student.fullName,
+        folderName: path.basename(canonicalStudentFolder),
+        folderPath: canonicalStudentFolder,
+        projectTitle: finalTitle || packageData.projectTitle,
+        filesCount: writtenFilesCount,
+        totalBytes: totalRawBytes,
+        submittedAt: new Date().toISOString(),
+        confirmedByTeacher: false,
+        driveStatus: isExempt ? "EXEMPT" : shouldQueueDrive ? "QUEUED" : "IDLE",
+      };
+
+      this.submissions.set(student.studentId, submissionItem);
+      this.bumpStateVersion();
+
+      jobLogRepo.add({
+        jobId: `STUDENT_SUBMIT_${Date.now()}`,
+        jobType: "SPCK_STUDENT_SUBMIT",
+        classId: activeClassId,
+        studentId: student.studentId,
+        level: "INFO",
+        message: `[StudentPortal] Học viên ${student.fullName} (${student.studentId}) đã nộp ${writtenFilesCount} file (${Math.round(
+          totalRawBytes / 1024
+        )} KB) vào ${canonicalStudentFolder} (chờ giáo viên xác nhận).`,
+      });
+
+      if (shouldQueueDrive) {
+        this.uploadSingleStudentToDriveInBackground(
+          activeClassId,
+          student.studentId,
+          this.driveFolderUrl
+        ).catch(() => {});
+      }
+
+      return {
+        success: true,
+        submission: submissionItem,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        error:
+          err instanceof Error
+            ? err.message
+            : "Không thể lưu bài nộp vào thư mục lớp. Bài cũ (nếu có) vẫn được giữ nguyên.",
+      };
+    } finally {
+      try {
+        if (fs.existsSync(stagingDir)) {
+          fs.rmSync(stagingDir, { recursive: true, force: true });
+        }
+      } catch {}
+      if (canCleanupRollbackDir) {
+        try {
+          if (fs.existsSync(rollbackDir)) {
+            fs.rmSync(rollbackDir, { recursive: true, force: true });
+          }
+        } catch {}
       }
     }
-    const mergedRelatedLinks = Array.from(mergedLinksMap.values()).slice(0, 5);
-
-    const existingYt = parseSafeArray<string>(existingRecord?.youtubeUrlsJson);
-    const mergedYoutubeUrls = Array.from(
-      new Set([...existingYt, ...(packageData.youtubeUrls || [])])
-    ).slice(0, 5);
-
-    spckUploadRepo.upsert({
-      classId: this.classId,
-      studentId: student.studentId,
-      localFolderPath: canonicalStudentFolder,
-      matchScore: 1.0,
-      isConfirmedByTeacher: 1,
-      projectTitle: finalTitle || packageData.projectTitle,
-      thumbnailPath: packageData.thumbnailPath,
-      screenshotsJson: JSON.stringify(packageData.screenshots),
-      attachmentsJson: JSON.stringify(packageData.attachments),
-      youtubeUrlsJson: JSON.stringify(mergedYoutubeUrls),
-      relatedLinksJson: JSON.stringify(mergedRelatedLinks),
-      teacherComment: existingRecord?.teacherComment ?? "",
-      // Content changed -> reset contentHash & set status to WAITING_APPROVAL (Rule 4)
-      contentHash: "",
-      status: "WAITING_APPROVAL",
-      verifiedAt: null,
-      errorMessage: null,
-    });
-
-    // Keep unverified session drafts (12, 13, 14) in sync when a student uploads a 2nd or 3rd time
-    this.syncStudentUnverifiedSessionDrafts(
-      this.classId,
-      student.studentId,
-      rawTitle ? finalTitle : undefined
-    );
-
-    const isExempt = isCourseExemptFromSpck(this.classId);
-    const shouldQueueDrive = this.autoUploadDrive && !isExempt;
-
-    const submissionItem: StudentPortalSubmissionItem = {
-      studentId: student.studentId,
-      fullName: student.fullName,
-      folderName: path.basename(canonicalStudentFolder),
-      folderPath: canonicalStudentFolder,
-      projectTitle: finalTitle || packageData.projectTitle,
-      filesCount: writtenFilesCount,
-      totalBytes: totalWrittenBytes,
-      submittedAt: new Date().toISOString(),
-      driveStatus: isExempt ? "EXEMPT" : shouldQueueDrive ? "QUEUED" : "IDLE",
-    };
-
-    this.submissions.set(student.studentId, submissionItem);
-
-    jobLogRepo.add({
-      jobId: `STUDENT_SUBMIT_${Date.now()}`,
-      jobType: "SPCK_STUDENT_SUBMIT",
-      classId: this.classId,
-      studentId: student.studentId,
-      level: "INFO",
-      message: `[StudentPortal] Học viên ${student.fullName} (${student.studentId}) đã nộp ${writtenFilesCount} file (${Math.round(
-        totalWrittenBytes / 1024
-      )} KB) vào ${canonicalStudentFolder}.`,
-    });
-
-    // Trigger automatic Google Drive upload in background via SequentialTaskQueue
-    if (shouldQueueDrive) {
-      this.uploadSingleStudentToDriveInBackground(
-        this.classId,
-        student.studentId,
-        this.driveFolderUrl
-      ).catch(() => {});
-    }
-
-    return {
-      success: true,
-      submission: submissionItem,
-    };
   }
 
   private syncStudentUnverifiedSessionDrafts(
@@ -1137,7 +1800,6 @@ class StudentPortalManager {
         if (
           !sessRow ||
           sessRow.lastVerifiedAt ||
-          sessRow.draftStatus === "APPROVED" ||
           sessRow.draftStatus === "VERIFIED"
         ) {
           continue;
@@ -1147,16 +1809,129 @@ class StudentPortalManager {
           studentId,
           slotNum
         );
-        if (explicitBaseTitle) {
-          spckSessionRepo.saveSessionDraft({
-            classId,
-            studentId,
-            sessionNumber: slotNum,
-            projectTitle: explicitBaseTitle,
-            updateSharedPool: false,
-          });
-        }
+        spckSessionRepo.saveSessionDraft({
+          classId,
+          studentId,
+          sessionNumber: slotNum,
+          isConfirmedByTeacher: 0,
+          ...(explicitBaseTitle ? { projectTitle: explicitBaseTitle } : {}),
+          updateSharedPool: false,
+        });
       } catch {}
+    }
+  }
+
+  public hasUnconfirmedSubmission(
+    classId: string,
+    studentId: string,
+    candidateFolderPath?: string | null
+  ): boolean {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    const normalizedStudentId = String(studentId || "").trim();
+    if (!normalizedClassId || !normalizedStudentId) return false;
+    if (this.unconfirmedPortalByClassStudent.has(`${normalizedClassId}::${normalizedStudentId}`)) {
+      return true;
+    }
+    const sub = this.submissions.get(normalizedStudentId);
+    if (sub) {
+      const subClass = String(sub.classId || this.classId || "").trim().toUpperCase();
+      if (subClass === normalizedClassId && sub.confirmedByTeacher === false) {
+        return true;
+      }
+    }
+    try {
+      const rec = spckUploadRepo.findOne(normalizedClassId, normalizedStudentId);
+      if (rec && Number(rec.isConfirmedByTeacher) === 0) {
+        if (
+          Number(rec.pendingPortalConfirmation) === 1 ||
+          hasDiskPortalUnconfirmedMarker(
+            rec.localFolderPath,
+            normalizedClassId,
+            normalizedStudentId
+          )
+        ) {
+          this.unconfirmedPortalByClassStudent.add(
+            `${normalizedClassId}::${normalizedStudentId}`
+          );
+          return true;
+        }
+      }
+      const sameAsConfirmedDbFolder =
+        Boolean(rec) &&
+        Number(rec?.isConfirmedByTeacher) === 1 &&
+        Number(rec?.pendingPortalConfirmation ?? 0) === 0 &&
+        Boolean(candidateFolderPath) &&
+        Boolean(rec?.localFolderPath) &&
+        path.resolve(String(candidateFolderPath)).toLowerCase() ===
+          path.resolve(String(rec?.localFolderPath)).toLowerCase();
+      if (
+        candidateFolderPath &&
+        !sameAsConfirmedDbFolder &&
+        hasDiskPortalUnconfirmedMarker(
+          candidateFolderPath,
+          normalizedClassId,
+          normalizedStudentId
+        )
+      ) {
+        return true;
+      }
+    } catch {
+      // Fail closed if SQLite lookup fails unexpectedly
+      return true;
+    }
+    return false;
+  }
+
+  public clearUnconfirmedSubmission(
+    classId: string,
+    studentId: string,
+    folderPath?: string | null
+  ): void {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    const normalizedStudentId = String(studentId || "").trim();
+    if (!normalizedClassId || !normalizedStudentId) return;
+    this.unconfirmedPortalByClassStudent.delete(`${normalizedClassId}::${normalizedStudentId}`);
+    const sub = this.submissions.get(normalizedStudentId);
+    if (sub) {
+      const subClass = String(sub.classId || this.classId || "").trim().toUpperCase();
+      if (subClass === normalizedClassId) {
+        sub.confirmedByTeacher = true;
+      }
+    }
+    if (folderPath) {
+      removeDiskPortalUnconfirmedMarker(folderPath);
+    }
+    try {
+      const rec = spckUploadRepo.findOne(normalizedClassId, normalizedStudentId);
+      if (rec?.localFolderPath) {
+        removeDiskPortalUnconfirmedMarker(rec.localFolderPath);
+      }
+    } catch {}
+  }
+
+  public queueDriveUploadForConfirmedStudent(classId: string, studentId: string): void {
+    const normalizedClassId = String(classId || "").trim().toUpperCase();
+    const normalizedStudentId = String(studentId || "").trim();
+    this.clearUnconfirmedSubmission(normalizedClassId, normalizedStudentId);
+    const sub = this.submissions.get(normalizedStudentId);
+    if (
+      !this.isRunning ||
+      !this.autoUploadDrive ||
+      !normalizedClassId ||
+      !normalizedStudentId ||
+      this.classId !== normalizedClassId ||
+      isCourseExemptFromSpck(normalizedClassId)
+    ) {
+      return;
+    }
+    if (sub && sub.driveStatus === "IDLE") {
+      sub.driveStatus = "QUEUED";
+      this.bumpStateVersion();
+      this.uploadSingleStudentToDriveInBackground(
+        normalizedClassId,
+        normalizedStudentId,
+        this.driveFolderUrl
+      ).catch(() => {});
     }
   }
 
@@ -1174,6 +1949,7 @@ class StudentPortalManager {
       if (sub) {
         sub.driveStatus = "UPLOADING";
         sub.driveError = undefined;
+        this.bumpStateVersion();
       }
       return;
     }
@@ -1195,6 +1971,7 @@ class StudentPortalManager {
         if (sub) {
           sub.driveStatus = "UPLOADING";
           sub.driveError = undefined;
+          this.bumpStateVersion();
         }
 
         try {
@@ -1219,6 +1996,7 @@ class StudentPortalManager {
                 stuRes?.errorMessage || "Không thể tải lên Google Drive.";
             }
           }
+          this.bumpStateVersion();
         } catch (err) {
           const currentSub = this.submissions.get(studentId);
           if (currentSub && !state.pendingRerun) {
@@ -1226,6 +2004,7 @@ class StudentPortalManager {
             currentSub.driveError =
               err instanceof Error ? err.message : String(err);
           }
+          this.bumpStateVersion();
         }
 
         if (!state.pendingRerun || !this.isRunning || this.portalGeneration !== startGen) {
@@ -1546,8 +2325,8 @@ class StudentPortalManager {
   </div>
 
   <script>
-    const IGNORED_DIRS = new Set(['node_modules', '__pycache__', '.git', '.venv', 'venv', 'env', '.idea', '.vscode']);
-    const FORBIDDEN_EXTS = new Set(['.exe', '.dll', '.bat', '.cmd', '.ps1', '.vbs', '.msi']);
+    const IGNORED_DIRS = new Set(['node_modules', '__pycache__', '.git', '.venv', 'venv', 'env', '.idea', '.vscode', '_spck_app_shots', '_spck_owner_uploads', '_spck_youtube_frames', '_spck_prev_backup']);
+    const FORBIDDEN_EXTS = new Set(['.exe', '.dll', '.bat', '.cmd', '.ps1', '.vbs', '.msi', '.scr', '.com', '.pif', '.lnk', '.hta', '.jar', '.reg', '.wsf']);
 
     const studentSelect = document.getElementById('studentSelect');
     const studentStatusHint = document.getElementById('studentStatusHint');
@@ -1591,7 +2370,8 @@ class StudentPortalManager {
     }
 
     function updateSubmitButtonState() {
-      submitBtn.disabled = !studentSelect.value || selectedFiles.length === 0;
+      const totalBytes = selectedFiles.reduce((acc, item) => acc + item.file.size, 0);
+      submitBtn.disabled = !studentSelect.value || selectedFiles.length === 0 || totalBytes === 0;
     }
 
     async function loadPortalStatus() {
@@ -1636,18 +2416,36 @@ class StudentPortalManager {
     });
 
     function addFilesFromInput(fileList) {
+      const blockedFiles = [];
       for (const file of Array.from(fileList || [])) {
         const relPath = (file.webkitRelativePath || file.name || '').replace(/\\\\/g, '/');
         const parts = relPath.split('/').filter(Boolean);
-        if (parts.some(p => p.startsWith('.') || IGNORED_DIRS.has(p.toLowerCase()))) {
+        if (parts.length === 0) continue;
+        const isDotOrIgnored = parts.some((p, idx) => {
+          const lower = p.toLowerCase();
+          const isFinalGitkeep = idx === parts.length - 1 && lower === '.gitkeep';
+          if (p.startsWith('.') && !isFinalGitkeep) return true;
+          if (IGNORED_DIRS.has(lower) || lower.startsWith('_spck_')) return true;
+          return false;
+        });
+        if (isDotOrIgnored) {
           continue;
         }
-        const ext = ('.' + (parts[parts.length - 1].split('.').pop() || '')).toLowerCase();
+        const lastSeg = parts[parts.length - 1];
+        const dotIdx = lastSeg.lastIndexOf('.');
+        const ext = dotIdx >= 0 ? lastSeg.slice(dotIdx).toLowerCase() : '';
         if (FORBIDDEN_EXTS.has(ext)) {
+          blockedFiles.push(relPath);
           continue;
         }
-        if (file.size === 0) continue;
         selectedFiles.push({ file, relativePath: relPath });
+      }
+      if (blockedFiles.length > 0) {
+        showStatus(
+          'error',
+          '⚠️ Đã tự động chặn ' + blockedFiles.length + ' tệp thực thi không được phép nộp: <strong>' +
+          escapeHtml(blockedFiles.slice(0, 3).join(', ')) + '</strong>'
+        );
       }
       renderSelectedFiles();
     }
