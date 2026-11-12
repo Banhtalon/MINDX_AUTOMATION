@@ -362,6 +362,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     setFolderPathInput,
     rows,
     setRows,
+    loadingInit,
     browsingFolder,
     setBrowsingFolder,
     setFolderModalOpen,
@@ -461,6 +462,57 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     sessionNumber: number;
     stateVersion: number;
   } | null>(null);
+  const portalLastCheckedTargetRef = useRef<{
+    classId: string;
+    sessionNumber: number;
+  } | null>(null);
+  const portalInFlightByTargetRef = useRef<
+    Map<
+      string,
+      {
+        promise: Promise<any>;
+        controller: AbortController;
+        subscribers: number;
+      }
+    >
+  >(new Map());
+  const portalMutationSeqRef = useRef<number>(0);
+  const portalActivePostControllerRef = useRef<AbortController | null>(null);
+  const latestSelectedClassIdRef = useRef<string>(selectedClassId);
+  latestSelectedClassIdRef.current = selectedClassId;
+  const latestSelectedSessionRef = useRef<12 | 13 | 14>(selectedSessionNumber);
+  latestSelectedSessionRef.current = selectedSessionNumber;
+  const latestStudentsRef = useRef<StudentOption[]>(students);
+  latestStudentsRef.current = students;
+  const latestGetActiveUiClassIdRef = useRef(getActiveUiClassId);
+  latestGetActiveUiClassIdRef.current = getActiveUiClassId;
+
+  const isCurrentPortalUiClassMatch = useCallback((expectedClassUpper: string): boolean => {
+    const activeUi = String(latestGetActiveUiClassIdRef.current() || "")
+      .trim()
+      .toUpperCase();
+    const renderedUi = String(latestSelectedClassIdRef.current || "")
+      .trim()
+      .toUpperCase();
+    if (activeUi && activeUi !== expectedClassUpper) return false;
+    if (renderedUi && renderedUi !== expectedClassUpper) return false;
+    return true;
+  }, []);
+
+  useEffect(() => {
+    if (portalActivePostControllerRef.current) {
+      portalActivePostControllerRef.current.abort();
+      portalActivePostControllerRef.current = null;
+    }
+    portalMutationSeqRef.current += 1;
+    setTogglingStudentPortal(false);
+    for (const [key, entry] of portalInFlightByTargetRef.current.entries()) {
+      if (!key.startsWith(`${String(selectedClassId || "").trim().toUpperCase()}::`)) {
+        entry.controller.abort();
+        portalInFlightByTargetRef.current.delete(key);
+      }
+    }
+  }, [selectedClassId, setTogglingStudentPortal]);
 
   useEffect(() => {
     setSession14ComboStatus({
@@ -1470,29 +1522,54 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
   const applyPortalStatusState = useCallback(
     (pStatus: any) => {
       if (!pStatus) return;
-      setStudentPortalRunning(Boolean(pStatus.isRunning));
-      setStudentPortalShareUrl(pStatus.primaryShareUrl || "");
-      setStudentPortalLanUrl(pStatus.lanUrl || "");
-      setStudentPortalLocalUrl(pStatus.localUrl || "");
-      setStudentPortalPublicUrl(pStatus.publicTunnelUrl || "");
-      setStudentPortalTunnelStatus(pStatus.tunnelStatus || "STOPPED");
-      setStudentPortalTunnelProvider(pStatus.tunnelProvider || "");
+      const nextRunning = Boolean(pStatus.isRunning);
+      const nextShareUrl = pStatus.primaryShareUrl || "";
+      const nextLanUrl = pStatus.lanUrl || "";
+      const nextLocalUrl = pStatus.localUrl || "";
+      const nextPublicUrl = pStatus.publicTunnelUrl || "";
+      const nextTunnelStatus = pStatus.tunnelStatus || "STOPPED";
+      const nextTunnelProvider = pStatus.tunnelProvider || "";
+
+      setStudentPortalRunning((prev) => (prev === nextRunning ? prev : nextRunning));
+      setStudentPortalShareUrl((prev) => (prev === nextShareUrl ? prev : nextShareUrl));
+      setStudentPortalLanUrl((prev) => (prev === nextLanUrl ? prev : nextLanUrl));
+      setStudentPortalLocalUrl((prev) => (prev === nextLocalUrl ? prev : nextLocalUrl));
+      setStudentPortalPublicUrl((prev) =>
+        prev === nextPublicUrl ? prev : nextPublicUrl
+      );
+      setStudentPortalTunnelStatus((prev) =>
+        prev === nextTunnelStatus ? prev : nextTunnelStatus
+      );
+      setStudentPortalTunnelProvider((prev) =>
+        prev === nextTunnelProvider ? prev : nextTunnelProvider
+      );
       if (typeof pStatus.autoUploadDrive === "boolean") {
-        setStudentPortalAutoDrive(pStatus.autoUploadDrive);
+        const nextAutoDrive = pStatus.autoUploadDrive;
+        setStudentPortalAutoDrive((prev) =>
+          prev === nextAutoDrive ? prev : nextAutoDrive
+        );
       }
       if (Array.isArray(pStatus.submissions)) {
-        setStudentPortalSubmissions(pStatus.submissions);
+        const nextSubmissions = pStatus.submissions;
+        setStudentPortalSubmissions((prev) =>
+          JSON.stringify(prev) === JSON.stringify(nextSubmissions)
+            ? prev
+            : nextSubmissions
+        );
       }
-      if (
-        pStatus.rootFolderPath &&
-        (!folderPathInput ||
-          (pStatus.isRunning && (!pStatus.classId || pStatus.classId === selectedClassId)))
-      ) {
-        setFolderPathInput(pStatus.rootFolderPath);
+      if (pStatus.rootFolderPath) {
+        const nextRoot = String(pStatus.rootFolderPath);
+        const canOverwriteExisting =
+          nextRunning && (!pStatus.classId || pStatus.classId === selectedClassId);
+        setFolderPathInput((prev) => {
+          if (!prev || canOverwriteExisting) {
+            return prev === nextRoot ? prev : nextRoot;
+          }
+          return prev;
+        });
       }
     },
     [
-      folderPathInput,
       selectedClassId,
       setFolderPathInput,
       setStudentPortalAutoDrive,
@@ -1507,6 +1584,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     ]
   );
 
+  const latestApplyPortalStatusRef = useRef(applyPortalStatusState);
+  latestApplyPortalStatusRef.current = applyPortalStatusState;
+
   const handleStartStudentPortal = async () => {
     if (!selectedClassId) {
       setBannerMessage({
@@ -1516,13 +1596,23 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       return;
     }
 
+    const reqClassId = selectedClassId;
+    const reqClassUpper = reqClassId.trim().toUpperCase();
+    const reqSessionNum = selectedSessionNumber;
+    const mutSeq = ++portalMutationSeqRef.current;
+
+    if (portalActivePostControllerRef.current) {
+      portalActivePostControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    portalActivePostControllerRef.current = controller;
+
     setTogglingStudentPortal(true);
     setBannerMessage({
       type: "warning",
-      text: `Đang mở Cổng Thu Bài Trực Tuyến cho lớp ${selectedClassId} và khởi tạo đường dẫn gửi cho học sinh...`,
+      text: `Đang mở Cổng Thu Bài Trực Tuyến cho lớp ${reqClassId} và khởi tạo đường dẫn gửi cho học sinh...`,
     });
 
-    const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
       const res = await fetch("/api/spck/student-portal", {
@@ -1531,43 +1621,66 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         signal: controller.signal,
         body: JSON.stringify({
           action: "start",
-          classId: selectedClassId,
-          sessionNumber: selectedSessionNumber,
+          classId: reqClassId,
+          sessionNumber: reqSessionNum,
           folderPath: folderPathInput.trim(),
           driveFolderUrl: driveFolderUrl.trim(),
           autoUploadDrive: studentPortalAutoDrive,
         }),
       });
       const data = await res.json();
-      if (!data.success) {
+      if (
+        mutSeq !== portalMutationSeqRef.current ||
+        !isCurrentPortalUiClassMatch(reqClassUpper)
+      ) {
+        return;
+      }
+
+      if (!res.ok || !data?.success || !data?.portalStatus) {
         setBannerMessage({
           type: "error",
-          text: data.error || "Không thể mở Cổng Cho Học Sinh Nộp Bài.",
+          text: data?.error || "Không thể mở Cổng Cho Học Sinh Nộp Bài.",
         });
         return;
       }
 
       const pStatus = data.portalStatus;
-      if (pStatus && typeof pStatus.stateVersion === "number") {
-        portalKnownStateVersionRef.current = {
-          classId: selectedClassId,
-          sessionNumber: selectedSessionNumber,
-          stateVersion: pStatus.stateVersion,
+      const isSameSession = latestSelectedSessionRef.current === reqSessionNum;
+      if (isSameSession) {
+        portalLastCheckedTargetRef.current = {
+          classId: reqClassId,
+          sessionNumber: reqSessionNum,
         };
+        if (typeof pStatus.stateVersion === "number") {
+          portalKnownStateVersionRef.current = {
+            classId: reqClassId,
+            sessionNumber: reqSessionNum,
+            stateVersion: pStatus.stateVersion,
+          };
+        }
+      } else {
+        portalLastCheckedTargetRef.current = null;
       }
-      applyPortalStatusState(pStatus);
+
+      latestApplyPortalStatusRef.current(pStatus);
       if (pStatus?.rootFolderPath) {
         setFolderPathInput(pStatus.rootFolderPath);
       }
-      if (Array.isArray(data.records) && data.records.length > 0) {
-        hydrateRowsFromDb(data.records, students);
+      if (isSameSession && Array.isArray(data.records) && data.records.length > 0) {
+        hydrateRowsFromDb(data.records, latestStudentsRef.current, reqSessionNum);
       }
 
       setBannerMessage({
         type: "success",
-        text: `Đã mở Cổng Cho Học Sinh Nộp Bài lớp ${selectedClassId}! Hãy bấm "Copy Link Nộp Bài" để gửi cho học sinh. Khi học sinh nộp bài, sản phẩm sẽ tự lưu vào máy Thầy và tự động tải lên Google Drive!`,
+        text: `Đã mở Cổng Cho Học Sinh Nộp Bài lớp ${reqClassId}! Hãy bấm "Copy Link Nộp Bài" để gửi cho học sinh. Khi học sinh nộp bài, sản phẩm sẽ tự lưu vào máy Thầy và tự động tải lên Google Drive!`,
       });
     } catch (err) {
+      if (
+        mutSeq !== portalMutationSeqRef.current ||
+        !isCurrentPortalUiClassMatch(reqClassUpper)
+      ) {
+        return;
+      }
       const isTimeout = err instanceof Error && err.name === "AbortError";
       setBannerMessage({
         type: "error",
@@ -1579,13 +1692,28 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       });
     } finally {
       clearTimeout(timeoutId);
-      setTogglingStudentPortal(false);
+      if (portalActivePostControllerRef.current === controller) {
+        portalActivePostControllerRef.current = null;
+      }
+      if (mutSeq === portalMutationSeqRef.current) {
+        setTogglingStudentPortal(false);
+      }
     }
   };
 
   const handleStopStudentPortal = async () => {
-    setTogglingStudentPortal(true);
+    const reqClassId = selectedClassId;
+    const reqClassUpper = String(reqClassId || "").trim().toUpperCase();
+    const reqSessionNum = selectedSessionNumber;
+    const mutSeq = ++portalMutationSeqRef.current;
+
+    if (portalActivePostControllerRef.current) {
+      portalActivePostControllerRef.current.abort();
+    }
     const controller = new AbortController();
+    portalActivePostControllerRef.current = controller;
+
+    setTogglingStudentPortal(true);
     const timeoutId = setTimeout(() => controller.abort(), 6000);
     try {
       const res = await fetch("/api/spck/student-portal", {
@@ -1594,38 +1722,92 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         signal: controller.signal,
         body: JSON.stringify({
           action: "stop",
-          classId: selectedClassId,
-          sessionNumber: selectedSessionNumber,
+          classId: reqClassId,
+          sessionNumber: reqSessionNum,
         }),
       });
-      const data = await res.json();
-      if (data.portalStatus) {
-        applyPortalStatusState(data.portalStatus);
-      } else {
-        setStudentPortalRunning(false);
+      const data = await res.json().catch(() => null);
+      if (
+        mutSeq !== portalMutationSeqRef.current ||
+        (reqClassUpper && !isCurrentPortalUiClassMatch(reqClassUpper))
+      ) {
+        return;
       }
-      if (Array.isArray(data.records) && data.records.length > 0) {
-        hydrateRowsFromDb(data.records, students);
+
+      const confirmedStopped =
+        res.ok &&
+        Boolean(data?.success) &&
+        Boolean(data?.portalStatus) &&
+        !Boolean(data.portalStatus.isRunning);
+
+      if (!confirmedStopped) {
+        portalLastCheckedTargetRef.current = null;
+        if (data?.portalStatus) {
+          latestApplyPortalStatusRef.current(data.portalStatus);
+        }
+        setBannerMessage({
+          type: "error",
+          text:
+            data?.error ||
+            "Chưa xác nhận đóng được Cổng Cho Học Sinh Nộp Bài (cổng có thể vẫn đang mở). Vui lòng bấm Đóng Cổng lại.",
+        });
+        return;
+      }
+
+      const isSameSession = latestSelectedSessionRef.current === reqSessionNum;
+      if (isSameSession) {
+        portalLastCheckedTargetRef.current = {
+          classId: reqClassId,
+          sessionNumber: reqSessionNum,
+        };
+        if (typeof data.portalStatus.stateVersion === "number") {
+          portalKnownStateVersionRef.current = {
+            classId: reqClassId,
+            sessionNumber: reqSessionNum,
+            stateVersion: data.portalStatus.stateVersion,
+          };
+        }
+      } else {
+        portalLastCheckedTargetRef.current = null;
+      }
+
+      latestApplyPortalStatusRef.current(data.portalStatus);
+      if (isSameSession && Array.isArray(data.records) && data.records.length > 0) {
+        hydrateRowsFromDb(data.records, latestStudentsRef.current, reqSessionNum);
       }
       setShowPortalQr(false);
       setBannerMessage({
         type: "warning",
         text: "Đã đóng Cổng Cho Học Sinh Nộp Bài.",
       });
-    } catch {
-      setStudentPortalRunning(false);
-      setShowPortalQr(false);
+    } catch (err) {
+      if (
+        mutSeq !== portalMutationSeqRef.current ||
+        (reqClassUpper && !isCurrentPortalUiClassMatch(reqClassUpper))
+      ) {
+        return;
+      }
+      portalLastCheckedTargetRef.current = null;
+      const isTimeout = err instanceof Error && err.name === "AbortError";
       setBannerMessage({
-        type: "warning",
-        text: "Đã đóng Cổng Cho Học Sinh Nộp Bài.",
+        type: "error",
+        text: isTimeout
+          ? "Quá thời gian phản hồi khi đóng Cổng Thu Bài — chưa xác nhận được cổng đã tắt, vui lòng thử lại."
+          : "Lỗi kết nối khi đóng Cổng Cho Học Sinh Nộp Bài — chưa xác nhận được cổng đã tắt, vui lòng thử lại.",
       });
     } finally {
       clearTimeout(timeoutId);
-      setTogglingStudentPortal(false);
+      if (portalActivePostControllerRef.current === controller) {
+        portalActivePostControllerRef.current = null;
+      }
+      if (mutSeq === portalMutationSeqRef.current) {
+        setTogglingStudentPortal(false);
+      }
     }
   };
 
   const handleTogglePortalAutoDrive = async (enabled: boolean) => {
+    const reqClassUpper = String(selectedClassId || "").trim().toUpperCase();
     setStudentPortalAutoDrive(enabled);
     if (!studentPortalRunning) return;
     try {
@@ -1639,8 +1821,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         }),
       });
       const data = await res.json();
-      if (data.portalStatus) {
-        applyPortalStatusState(data.portalStatus);
+      if (reqClassUpper && !isCurrentPortalUiClassMatch(reqClassUpper)) {
+        return;
+      }
+      if (res.ok && data?.success && data.portalStatus) {
+        latestApplyPortalStatusRef.current(data.portalStatus);
       }
     } catch {}
   };
@@ -2762,33 +2947,122 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
   };
 
   useEffect(() => {
-    if (!selectedClassId) return;
+    if (!selectedClassId || loadingInit) {
+      portalLastCheckedTargetRef.current = null;
+      return;
+    }
     let cancelled = false;
+    let effectSubscribedEntry: {
+      promise: Promise<any>;
+      controller: AbortController;
+      subscribers: number;
+    } | null = null;
+
     const reqClassId = selectedClassId;
+    const reqClassUpper = reqClassId.trim().toUpperCase();
     const reqSessionNum = selectedSessionNumber;
+    const targetKey = `${reqClassUpper}::${reqSessionNum}`;
+    const PORTAL_GET_TIMEOUT_MS = 3000;
+
+    const releaseEffectSubscription = () => {
+      if (!effectSubscribedEntry) return;
+      const entry = effectSubscribedEntry;
+      effectSubscribedEntry = null;
+      entry.subscribers = Math.max(0, entry.subscribers - 1);
+      if (entry.subscribers === 0) {
+        entry.controller.abort();
+      }
+    };
+
+    const fetchOrJoinPortalStatus = (): Promise<any> => {
+      const existing = portalInFlightByTargetRef.current.get(targetKey);
+      if (existing) {
+        if (effectSubscribedEntry === existing) {
+          return Promise.resolve(null);
+        }
+        releaseEffectSubscription();
+        existing.subscribers += 1;
+        effectSubscribedEntry = existing;
+        return existing.promise;
+      }
+
+      const knownEntry = portalKnownStateVersionRef.current;
+      const versionQuery =
+        knownEntry &&
+        knownEntry.classId === reqClassId &&
+        knownEntry.sessionNumber === reqSessionNum
+          ? `&knownStateVersion=${knownEntry.stateVersion}`
+          : "";
+
+      const controller = new AbortController();
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+      const rawPromise = fetch(
+        `/api/spck/student-portal?classId=${encodeURIComponent(
+          reqClassId
+        )}&sessionNumber=${reqSessionNum}${versionQuery}`,
+        { signal: controller.signal }
+      ).then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      });
+
+      const racedPromise = new Promise<any>((resolve, reject) => {
+        timeoutId = setTimeout(() => {
+          controller.abort();
+          if (portalInFlightByTargetRef.current.get(targetKey) === entry) {
+            portalInFlightByTargetRef.current.delete(targetKey);
+          }
+          reject(new Error("PORTAL_GET_TIMEOUT"));
+        }, PORTAL_GET_TIMEOUT_MS);
+
+        rawPromise.then(
+          (val) => {
+            if (timeoutId) clearTimeout(timeoutId);
+            if (portalInFlightByTargetRef.current.get(targetKey) === entry) {
+              portalInFlightByTargetRef.current.delete(targetKey);
+            }
+            resolve(val);
+          },
+          (err) => {
+            if (timeoutId) clearTimeout(timeoutId);
+            if (portalInFlightByTargetRef.current.get(targetKey) === entry) {
+              portalInFlightByTargetRef.current.delete(targetKey);
+            }
+            reject(err);
+          }
+        );
+      });
+
+      const entry = {
+        promise: racedPromise,
+        controller,
+        subscribers: 1,
+      };
+      portalInFlightByTargetRef.current.set(targetKey, entry);
+      releaseEffectSubscription();
+      effectSubscribedEntry = entry;
+      return racedPromise;
+    };
 
     const checkPortalOnce = async () => {
+      if (cancelled) return;
       try {
-        const knownEntry = portalKnownStateVersionRef.current;
-        const versionQuery =
-          knownEntry &&
-          knownEntry.classId === reqClassId &&
-          knownEntry.sessionNumber === reqSessionNum
-            ? `&knownStateVersion=${knownEntry.stateVersion}`
-            : "";
-
-        const res = await fetch(
-          `/api/spck/student-portal?classId=${encodeURIComponent(
-            reqClassId
-          )}&sessionNumber=${reqSessionNum}${versionQuery}`
-        );
-        const data = await res.json();
-        if (cancelled || !data.success || !data.portalStatus) return;
-        const activeClass = getActiveUiClassId();
-        if (activeClass && activeClass !== reqClassId.trim().toUpperCase()) {
+        const data = await fetchOrJoinPortalStatus();
+        if (!data || cancelled || !data.success || !data.portalStatus) return;
+        if (
+          !isCurrentPortalUiClassMatch(reqClassUpper) ||
+          latestSelectedSessionRef.current !== reqSessionNum
+        ) {
           return;
         }
 
+        portalLastCheckedTargetRef.current = {
+          classId: reqClassId,
+          sessionNumber: reqSessionNum,
+        };
         if (typeof data.portalStatus.stateVersion === "number") {
           portalKnownStateVersionRef.current = {
             classId: reqClassId,
@@ -2796,7 +3070,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
             stateVersion: data.portalStatus.stateVersion,
           };
         }
-        applyPortalStatusState(data.portalStatus);
+        latestApplyPortalStatusRef.current(data.portalStatus);
 
         if (data.unchanged === true) {
           return;
@@ -2808,9 +3082,16 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           data.records.length > 0
         ) {
           const dbRecords: SpckRecordRow[] = data.records;
+          const currentStudents = latestStudentsRef.current;
           setRows((prev) => {
+            if (
+              !isCurrentPortalUiClassMatch(reqClassUpper) ||
+              latestSelectedSessionRef.current !== reqSessionNum
+            ) {
+              return prev;
+            }
             if (prev.length === 0) {
-              const studentMap = new Map(students.map((s) => [s.studentId, s]));
+              const studentMap = new Map(currentStudents.map((s) => [s.studentId, s]));
               return dbRecords.map((rec) =>
                 buildRowFromDbRecord(
                   rec,
@@ -2821,7 +3102,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
             }
 
             const existingIds = new Set(prev.map((r) => r.assignedStudentId));
-            const studentMap = new Map(students.map((s) => [s.studentId, s]));
+            const studentMap = new Map(currentStudents.map((s) => [s.studentId, s]));
             let anyChanged = false;
             const updatedRows = prev.map((row) => {
               const rec = dbRecords.find(
@@ -2850,13 +3131,30 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
             return anyChanged ? updatedRows : prev;
           });
         }
-      } catch {}
+      } catch {
+      } finally {
+        if (
+          effectSubscribedEntry &&
+          portalInFlightByTargetRef.current.get(targetKey) !== effectSubscribedEntry
+        ) {
+          effectSubscribedEntry = null;
+        }
+      }
     };
 
-    checkPortalOnce();
+    const lastChecked = portalLastCheckedTargetRef.current;
+    const alreadyCheckedCurrentTarget =
+      lastChecked !== null &&
+      lastChecked.classId === reqClassId &&
+      lastChecked.sessionNumber === reqSessionNum;
+
+    if (!alreadyCheckedCurrentTarget) {
+      void checkPortalOnce();
+    }
     if (!studentPortalRunning) {
       return () => {
         cancelled = true;
+        releaseEffectSubscription();
       };
     }
 
@@ -2864,14 +3162,14 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     return () => {
       cancelled = true;
       clearInterval(interval);
+      releaseEffectSubscription();
     };
   }, [
     selectedClassId,
-    studentPortalRunning,
-    students,
     selectedSessionNumber,
-    applyPortalStatusState,
-    getActiveUiClassId,
+    loadingInit,
+    studentPortalRunning,
+    isCurrentPortalUiClassMatch,
     setRows,
   ]);
 

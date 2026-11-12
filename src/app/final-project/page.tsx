@@ -64,6 +64,10 @@ const pageSessionId = `UI_${Date.now()}_${Math.random().toString(36).slice(2, 8)
 const latestRowSaveSequence = new Map<string, number>();
 const latestKnownDraftVersionByRow = new Map<string, number>();
 const inFlightRowSavePromises = new Map<string, Promise<any>>();
+const getActiveUiClassIdStable = (): string => activeUiClassId;
+const bumpRowDraftSeqStable = (rowKey: string): void => {
+  latestRowSaveSequence.set(rowKey, ++clientDraftSequence);
+};
 
 export default function FinalProjectPage() {
   const [classes, setClasses] = useState<ClassOption[]>([]);
@@ -2279,10 +2283,8 @@ export default function FinalProjectPage() {
           handleGenerateAiComments,
           handleApproveAndUpload,
           handleImportYoutubeProducts,
-          getActiveUiClassId: () => activeUiClassId,
-          bumpRowDraftSeq: (rowKey: string) => {
-            latestRowSaveSequence.set(rowKey, ++clientDraftSequence);
-          },
+          getActiveUiClassId: getActiveUiClassIdStable,
+          bumpRowDraftSeq: bumpRowDraftSeqStable,
         })
       : (null as any);
 

@@ -23,6 +23,7 @@ import tailwindcssPostcss from "@tailwindcss/postcss";
 import * as esbuild from "esbuild";
 import { chromium } from "playwright";
 import postcss from "postcss";
+import "../src/lib/spck/spck-ui-helpers";
 
 const ROOT = process.cwd();
 
