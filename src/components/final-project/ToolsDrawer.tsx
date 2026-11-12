@@ -572,7 +572,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
                   <CheckCircle2 className="w-4 h-4" />
                 )}
                 <span>
-                  Tạo Bảng Chấm Điểm Demo ({students.length || rows.length} Tab HV) &amp; Lưu Drive
+                  Tạo Google Trang Tính Chấm Demo ({students.length || rows.length} Tab HV)
                 </span>
               </button>
             </div>
@@ -643,7 +643,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
 
           <div className="flex flex-wrap items-center gap-2 flex-1 xl:max-w-xl">
             <span className="text-xs font-semibold text-slate-300 shrink-0">
-              📊 File BGK:
+              📊 Google Sheet BGK:
             </span>
             <input
               type="text"
@@ -652,7 +652,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
               disabled={isAnyOperationBusy}
               placeholder={
                 generatedDemoSheetUrl ||
-                "Để trống tự tìm 'Bảng chấm điểm buổi Demo.xlsx' hoặc dán link Google Sheet..."
+                "Để trống tự nhận Google Trang tính đã tạo hoặc dán link Google Sheet..."
               }
               className="flex-1 min-w-[200px] px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-mono disabled:opacity-60"
             />
@@ -664,7 +664,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
             >
               {importingDemoScores
                 ? "Đang đọc điểm..."
-                : "📥 Đọc Điểm Demo từ File Chấm Điểm"}
+                : "📥 Đọc Điểm Demo từ Google Sheet"}
             </button>
           </div>
         </div>

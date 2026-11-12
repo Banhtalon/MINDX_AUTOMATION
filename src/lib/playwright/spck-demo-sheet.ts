@@ -1,19 +1,20 @@
 /**
- * MINDX AUTOMATION BOT - DEMO SCORING SHEET GENERATOR & GOOGLE DRIVE UPLOADER
- * Creates a multi-tab Google Sheet / Excel workbook ("Bảng chấm điểm buổi Demo ...")
- * for a class, with 1 tab per student, pre-filled with:
+ * MINDX AUTOMATION BOT - NATIVE GOOGLE SHEETS DEMO SCORING GENERATOR
+ * Creates a true native Google Spreadsheet ("Trang tính của Google",
+ * `application/vnd.google-apps.spreadsheet` — NEVER saving or leaving an Excel `.xlsx` file)
+ * directly inside the class's Google Drive folder (`CODING - SPCK -> <Course> -> <classId>`),
+ * with 1 tab per student + "Phân bổ điểm" tab, pre-filled with:
  * - Course Demo Title (e.g., "Bảng chấm điểm buổi Demo App Producer - Advanced")
  * - Student Full Name ("Họ và tên Học viên:")
  * - Demo Date ("Ngày Demo:" -> Session 14 date)
  * - Evaluation Date ("Ngày đánh giá:")
- * Saves the file into the class's local SPCK folder AND uploads it into the class's
- * Google Drive folder (shared for judges to grade).
  */
 
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import AdmZip from "adm-zip";
-import type { Page } from "playwright";
+import type { Frame, Page } from "playwright";
 import { getDb, jobLogRepo, spckUploadRepo, studentRepo } from "../db/sqlite";
 import { taskQueue } from "../queue/task-queue";
 import { assertPathAllowed } from "../security/path-allowlist";
@@ -58,12 +59,20 @@ export interface CreateDemoSheetOptions {
   localClassFolderPath?: string;
   customDemoDate?: string;
   customEvalDate?: string;
+  /** @internal Test-only Playwright Page & origin overrides for isolated DOM verification */
+  _testHarness?: {
+    page: Page;
+    driveBaseUrl?: string;
+    sheetsBaseUrl?: string;
+  };
 }
 
 export interface CreateDemoSheetResult {
   classId: string;
   sheetTitle: string;
   fileName: string;
+  isNativeGoogleSheet: boolean;
+  mimeType: "application/vnd.google-apps.spreadsheet";
   demoDate: string;
   evalDate: string;
   studentCount: number;
@@ -817,20 +826,99 @@ export const COURSE_DEMO_SHEET_TEMPLATES_DIR = path.resolve(
   "data/config/demo-sheet-templates"
 );
 
+function unescapeXmlEntities(raw: string): string {
+  return String(raw || "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&#(\d+);/g, (_m, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_m, hex) =>
+      String.fromCharCode(parseInt(hex, 16))
+    );
+}
+
+export function validateTemplateWorkbookBuffer(
+  buf: Buffer | null | undefined,
+  sourceLabel: string
+): Buffer {
+  if (
+    !buf ||
+    buf.length < 120 ||
+    buf[0] !== 0x50 ||
+    buf[1] !== 0x4b
+  ) {
+    throw new Error(
+      `Mẫu bảng chấm điểm Demo từ '${sourceLabel}' không hợp lệ hoặc không thể tải xuống (không phải gói bảng tính chuẩn).`
+    );
+  }
+  let zip: AdmZip;
+  try {
+    zip = new AdmZip(buf);
+  } catch {
+    throw new Error(
+      `Mẫu bảng chấm điểm Demo từ '${sourceLabel}' bị hỏng định dạng nén.`
+    );
+  }
+  const wbEntry = zip.getEntry("xl/workbook.xml");
+  const sheetEntry =
+    zip.getEntry("xl/worksheets/sheet1.xml") ||
+    zip
+      .getEntries()
+      .find((e) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(e.entryName));
+  if (!wbEntry || !sheetEntry) {
+    throw new Error(
+      `Mẫu bảng chấm điểm Demo từ '${sourceLabel}' thiếu cấu trúc xl/workbook.xml hoặc worksheet.`
+    );
+  }
+  const wbXml = wbEntry.getData().toString("utf8");
+  const sheetXml = sheetEntry.getData().toString("utf8");
+  if (!/<sheet\b/i.test(wbXml) || !/<worksheet\b/i.test(sheetXml)) {
+    throw new Error(
+      `Mẫu bảng chấm điểm Demo từ '${sourceLabel}' có nội dung XML bảng tính không hợp lệ.`
+    );
+  }
+  return buf;
+}
+
 export function getSavedCourseTemplatePath(classIdOrPrefix?: string): string | null {
   const prefix =
     detectCoursePrefixFromClassId(String(classIdOrPrefix || "")) ||
     String(classIdOrPrefix || "")
       .trim()
       .toUpperCase();
+
+  const candidateTemplateDirs: string[] = [];
+  if (process.env.MINDX_CONFIG_DIR) {
+    candidateTemplateDirs.push(
+      path.resolve(process.env.MINDX_CONFIG_DIR, "demo-sheet-templates")
+    );
+  }
+  candidateTemplateDirs.push(
+    path.resolve(process.cwd(), "data/config/demo-sheet-templates"),
+    COURSE_DEMO_SHEET_TEMPLATES_DIR
+  );
+
   if (prefix && /^[A-Z0-9]{2,6}$/.test(prefix)) {
-    const coursePath = path.join(COURSE_DEMO_SHEET_TEMPLATES_DIR, `${prefix}.xlsx`);
-    if (fs.existsSync(coursePath)) {
-      return coursePath;
+    for (const dir of candidateTemplateDirs) {
+      const coursePath = path.join(dir, `${prefix}.xlsx`);
+      if (fs.existsSync(coursePath)) {
+        return coursePath;
+      }
     }
     // Never substitute another course's template (default-demo-sheet-template.xlsx is PTA's template)
-    if (prefix === "PTA" && fs.existsSync(DEFAULT_DEMO_SHEET_TEMPLATE_PATH)) {
-      return DEFAULT_DEMO_SHEET_TEMPLATE_PATH;
+    if (prefix === "PTA") {
+      const candidateDefaults = [
+        ...(process.env.MINDX_CONFIG_DIR
+          ? [path.resolve(process.env.MINDX_CONFIG_DIR, "default-demo-sheet-template.xlsx")]
+          : []),
+        path.resolve(process.cwd(), "data/config/default-demo-sheet-template.xlsx"),
+        DEFAULT_DEMO_SHEET_TEMPLATE_PATH,
+      ];
+      for (const defPath of candidateDefaults) {
+        if (fs.existsSync(defPath)) return defPath;
+      }
     }
     return null;
   }
@@ -842,8 +930,8 @@ export function getSavedCourseTemplatePath(classIdOrPrefix?: string): string | n
 
 /**
  * Builds the complete `.xlsx` workbook Buffer for a class (1 tab per student).
- * Uses `templateBuffer` if provided, or `data/config/demo-sheet-templates/<COURSE>.xlsx` / `default-demo-sheet-template.xlsx` if available;
- * otherwise generates the standard styled MindX Demo Rubric workbook.
+ * Uses `templateBuffer` if provided, or `data/config/demo-sheet-templates/<COURSE>.xlsx` / `default-demo-sheet-template.xlsx` if available.
+ * Never silently substitutes PTA's built-in rubric when a non-PTA course lacks a valid template or when an explicit template is corrupt.
  */
 export function buildDemoScoringWorkbookBuffer(params: {
   classId?: string;
@@ -859,30 +947,40 @@ export function buildDemoScoringWorkbookBuffer(params: {
       ? studentTabs
       : [{ studentId: "STU_01", fullName: "Nguyễn Văn A", tabName: "Nguyễn Văn A" }];
 
-  let resolvedTemplateBuffer = templateBuffer;
-  if (!resolvedTemplateBuffer || resolvedTemplateBuffer.length === 0) {
-    const savedTemplatePath = getSavedCourseTemplatePath(classId || "PTA");
-    if (savedTemplatePath) {
-      try {
-        resolvedTemplateBuffer = fs.readFileSync(savedTemplatePath);
-      } catch {
-        resolvedTemplateBuffer = null;
-      }
-    }
+  const coursePrefix = detectCoursePrefixFromClassId(String(classId || ""));
+
+  if (templateBuffer !== undefined && templateBuffer !== null) {
+    const validated = validateTemplateWorkbookBuffer(templateBuffer, "templateBuffer");
+    return cloneTemplateXlsxBufferForStudents({
+      templateBuffer: validated,
+      sheetTitle,
+      demoDate,
+      evalDate,
+      studentTabs: effectiveTabs,
+    });
+  }
+
+  let resolvedTemplateBuffer: Buffer | null = null;
+  const savedTemplatePath = getSavedCourseTemplatePath(classId || "PTA");
+  if (savedTemplatePath) {
+    const rawSaved = fs.readFileSync(savedTemplatePath);
+    resolvedTemplateBuffer = validateTemplateWorkbookBuffer(rawSaved, savedTemplatePath);
   }
 
   if (resolvedTemplateBuffer && resolvedTemplateBuffer.length > 0) {
-    try {
-      return cloneTemplateXlsxBufferForStudents({
-        templateBuffer: resolvedTemplateBuffer,
-        sheetTitle,
-        demoDate,
-        evalDate,
-        studentTabs: effectiveTabs,
-      });
-    } catch {
-      // Fallback to built-in standard generator if template buffer is invalid
-    }
+    return cloneTemplateXlsxBufferForStudents({
+      templateBuffer: resolvedTemplateBuffer,
+      sheetTitle,
+      demoDate,
+      evalDate,
+      studentTabs: effectiveTabs,
+    });
+  }
+
+  if (coursePrefix && coursePrefix !== "PTA") {
+    throw new Error(
+      `Khóa học '${coursePrefix}' của lớp '${classId}' chưa có mẫu bảng chấm điểm Demo hợp lệ. Hệ thống dừng lại để không dùng nhầm tiêu chí của PTA.`
+    );
   }
 
   const zip = new AdmZip();
@@ -961,16 +1059,58 @@ export function buildDemoScoringWorkbookBuffer(params: {
   return zip.toBuffer();
 }
 
+function isDemoSheetStopped(): boolean {
+  return (
+    taskQueue.getStatus().isStopped ||
+    (process as any)?.__mindxQueueStopped === true
+  );
+}
+
+function assertDemoSheetNotStopped(): void {
+  if (isDemoSheetStopped()) {
+    throw new Error(
+      "Đã dừng tác vụ tạo Google Trang tính chấm điểm Demo theo lệnh Dừng khẩn cấp (Stop Bot)."
+    );
+  }
+}
+interface DriveFolderItemSummary {
+  id: string;
+  name: string;
+  isFolder: boolean;
+  isExcelFile: boolean;
+  isGoogleSheet: boolean;
+}
+
+interface InMemoryWorkbookPayload {
+  name: string;
+  mimeType: string;
+  buffer: Buffer;
+}
+
+function extractSheetTabNamesFromWorkbookBuffer(buf: Buffer): string[] {
+  try {
+    const zip = new AdmZip(buf);
+    const wbEntry = zip.getEntry("xl/workbook.xml");
+    if (!wbEntry) return [];
+    const wbXml = wbEntry.getData().toString("utf8");
+    return Array.from(wbXml.matchAll(/<sheet\b[^>]*?\bname="([^"]+)"/gi)).map((m) =>
+      unescapeXmlEntities(m[1]).trim()
+    );
+  } catch {
+    return [];
+  }
+}
+
 /**
- * Helper to list items in a Google Drive folder DOM.
+ * Lists items in a Google Drive folder DOM and distinguishes native Google Sheets from Excel `.xlsx` files.
  */
 async function listDriveFilesInFolder(
   page: Page,
   parentFolderId: string
-): Promise<Array<{ id: string; name: string }>> {
+): Promise<DriveFolderItemSummary[]> {
   try {
     return await page.evaluate((expectedParentId) => {
-      const mainEl = document.querySelector('[role="main"]');
+      const mainEl = document.querySelector('[role="main"]') as HTMLElement | null;
       if (!mainEl) return [];
       const exactLabelById = new Map<string, string>();
       for (const el of Array.from(mainEl.querySelectorAll("[data-id]"))) {
@@ -982,22 +1122,57 @@ async function listDriveFilesInFolder(
           exactLabelById.set(id, txt);
         }
       }
-      const out: Array<{ id: string; name: string }> = [];
-      for (const el of Array.from(
-        mainEl.querySelectorAll('[data-target="doc"][data-id]')
-      )) {
+      const out: DriveFolderItemSummary[] = [];
+      for (const el of Array.from(mainEl.querySelectorAll('[data-target="doc"][data-id]'))) {
         const id = el.getAttribute("data-id") || "";
-        if (!id || id.length < 15 || id === expectedParentId) continue;
-        const rawText =
-          (el as HTMLElement).innerText || el.getAttribute("aria-label") || "";
-        const firstLine =
+        if (!id || id.length < 15 || id === "EBS5u" || id === expectedParentId) continue;
+        const rawText = (el as HTMLElement).innerText || el.getAttribute("aria-label") || "";
+        const ariaLower = (el.getAttribute("aria-label") || "").toLowerCase();
+        const dataType = (el.getAttribute("data-type") || "").toLowerCase();
+        const dataMime = (
+          el.getAttribute("data-mime-type") ||
+          el.getAttribute("data-mimetype") ||
+          ""
+        ).toLowerCase();
+        const htmlLower = (el.innerHTML || "").toLowerCase();
+        const name =
           exactLabelById.get(id) ||
           rawText
             .split(/[\r\n\t]+/)
             .map((s) => s.trim())
-            .filter(Boolean)[0] ||
+            .filter(
+              (s) =>
+                Boolean(s) &&
+                s !== "Shared folder" &&
+                s !== "Thư mục được chia sẻ" &&
+                s !== "Thư mục" &&
+                s !== "Folder"
+            )[0] ||
           "";
-        if (firstLine) out.push({ id, name: firstLine });
+        if (!name) continue;
+
+        const isFolder =
+          dataType === "folder" ||
+          dataMime === "application/vnd.google-apps.folder" ||
+          ariaLower.startsWith("thư mục ") ||
+          ariaLower.startsWith("folder ") ||
+          ariaLower.includes("google drive folder");
+        const isExcelFile =
+          !isFolder &&
+          (/\.xls[xm]?$/i.test(name) ||
+            dataMime.includes("spreadsheetml") ||
+            dataMime.includes("ms-excel") ||
+            ariaLower.includes("microsoft excel"));
+        const isGoogleSheet =
+          !isFolder &&
+          !isExcelFile &&
+          (dataMime === "application/vnd.google-apps.spreadsheet" ||
+            dataType === "spreadsheet" ||
+            ariaLower.includes("google trang tính") ||
+            ariaLower.includes("google sheets") ||
+            htmlLower.includes("spreadsheet"));
+
+        out.push({ id, name, isFolder, isExcelFile, isGoogleSheet });
       }
       return out;
     }, parentFolderId);
@@ -1006,9 +1181,566 @@ async function listDriveFilesInFolder(
   }
 }
 
+async function ensureDriveFolderReady(
+  page: Page,
+  driveBaseUrl: string,
+  folderId: string
+): Promise<void> {
+  const targetUrl = `${driveBaseUrl}/drive/folders/${folderId}`;
+  if (!page.url().includes(`/folders/${folderId}`)) {
+    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+  }
+  const newBtn = page
+    .locator(
+      'button[guidedhelpid="new_menu_button"]:visible, button[aria-label="Mới"]:visible, button[aria-label="New"]:visible'
+    )
+    .first();
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    assertDemoSheetNotStopped();
+    if (await newBtn.isVisible().catch(() => false)) return;
+    await page.waitForTimeout(600);
+  }
+  throw new Error(
+    "Chưa phát hiện nút '+ Mới' trên Google Drive. Vui lòng kiểm tra đăng nhập Google trên trình duyệt của Bot."
+  );
+}
+
+async function moveDriveItemToTrash(
+  page: Page,
+  driveBaseUrl: string,
+  classDriveFolderId: string,
+  itemId: string
+): Promise<boolean> {
+  if (!itemId) return true;
+  if (!page.url().includes(`/folders/${classDriveFolderId}`)) {
+    await page
+      .goto(`${driveBaseUrl}/drive/folders/${classDriveFolderId}`, {
+        waitUntil: "domcontentloaded",
+        timeout: 20000,
+      })
+      .catch(() => {});
+    await page.waitForTimeout(900);
+  }
+
+  const row = page.locator(`[role="main"] [data-target="doc"][data-id="${itemId}"]`).first();
+  if (!(await row.isVisible().catch(() => false))) {
+    const listed = await listDriveFilesInFolder(page, classDriveFolderId);
+    return !listed.some((i) => i.id === itemId);
+  }
+
+  await row.click({ button: "right" }).catch(() => {});
+  await page.waitForTimeout(350);
+  const trashItem = page
+    .locator(
+      '[role="menuitem"]:has-text("Chuyển vào thùng rác"):visible, [role="menuitem"]:has-text("Đưa vào thùng rác"):visible, [role="menuitem"]:has-text("Move to trash"):visible, [role="menuitem"]:has-text("Move to bin"):visible'
+    )
+    .first();
+  if (await trashItem.isVisible().catch(() => false)) {
+    await trashItem.click().catch(() => {});
+  } else {
+    await page.keyboard.press("Escape").catch(() => {});
+    await row.click().catch(() => {});
+    await page.keyboard.press("Delete").catch(() => {});
+  }
+
+  await page.waitForTimeout(450);
+  const confirmBtn = page
+    .locator(
+      '[role="dialog"] button:has-text("Chuyển vào thùng rác"):visible, [role="dialog"] button:has-text("Move to trash"):visible, [role="dialog"] button:has-text("Xóa"):visible'
+    )
+    .first();
+  if (await confirmBtn.isVisible().catch(() => false)) {
+    await confirmBtn.click().catch(() => {});
+  }
+
+  const deadline = Date.now() + 8_000;
+  while (Date.now() < deadline) {
+    assertDemoSheetNotStopped();
+    await page.waitForTimeout(500);
+    const listed = await listDriveFilesInFolder(page, classDriveFolderId);
+    if (!listed.some((i) => i.id === itemId)) return true;
+  }
+  return false;
+}
+
+async function renameAndVerifyNativeGoogleSheetEditor(
+  sheetPage: Page,
+  expectedTitle: string,
+  expectedTabNames: string[]
+): Promise<void> {
+  const titleInput = sheetPage
+    .locator('input.docs-title-input, #docs-title-widget input')
+    .first();
+  await titleInput.waitFor({ state: "visible", timeout: 30000 });
+
+  const tabDeadline = Date.now() + 25_000;
+  let actualTabs: string[] = [];
+  while (Date.now() < tabDeadline) {
+    assertDemoSheetNotStopped();
+    const state = await sheetPage
+      .evaluate(() => {
+        const badges = Array.from(
+          document.querySelectorAll(
+            ".docs-CommonBadge, #docs-titlebar-badges [aria-label], .docs-title-outer [aria-label]"
+          )
+        );
+        const hasXlsxBadge = badges.some((el) => {
+          const txt = ((el as HTMLElement).innerText || "").trim().toLowerCase();
+          const aria = (el.getAttribute("aria-label") || "").trim().toLowerCase();
+          return txt === ".xlsx" || txt === "xlsx" || aria.includes("microsoft excel");
+        });
+        const tabs = Array.from(document.querySelectorAll(".docs-sheet-tab-name"))
+          .map((el) => ((el as HTMLElement).innerText || el.textContent || "").trim())
+          .filter(Boolean);
+        return { hasXlsxBadge, tabs };
+      })
+      .catch(() => ({ hasXlsxBadge: false, tabs: [] as string[] }));
+
+    if (state.hasXlsxBadge) {
+      throw new Error(
+        "Tệp đang mở ở chế độ tương thích Microsoft Excel (.XLSX), không phải Google Trang tính chuẩn."
+      );
+    }
+    actualTabs = state.tabs;
+    const actualLower = new Set(actualTabs.map((t) => t.toLowerCase()));
+    if (
+      expectedTabNames.length === 0 ||
+      expectedTabNames.every((t) => actualLower.has(t.trim().toLowerCase()))
+    ) {
+      break;
+    }
+    await sheetPage.waitForTimeout(500);
+  }
+
+  const actualLower = new Set(actualTabs.map((t) => t.toLowerCase()));
+  const missingTabs = expectedTabNames.filter(
+    (t) => !actualLower.has(t.trim().toLowerCase())
+  );
+  if (missingTabs.length > 0) {
+    throw new Error(
+      `Google Trang tính thiếu tab học viên sau khi nhập dữ liệu: ${missingTabs.join(", ")}.`
+    );
+  }
+
+  const cleanTitle = expectedTitle.replace(/\.xls[xm]?$/i, "").trim();
+  const curTitle = (await titleInput.inputValue().catch(() => "")).trim();
+  if (curTitle !== cleanTitle) {
+    await titleInput.click();
+    await sheetPage.waitForTimeout(150);
+    await titleInput.fill(cleanTitle);
+    await titleInput.press("Enter");
+    await sheetPage.waitForTimeout(600);
+  }
+
+  const finalTitle = (await titleInput.inputValue().catch(() => "")).trim();
+  if (finalTitle !== cleanTitle || /\.xls[xm]?$/i.test(finalTitle)) {
+    throw new Error(
+      `Tên Google Trang tính sau khi đổi ('${finalTitle}') không khớp '${cleanTitle}'.`
+    );
+  }
+
+  // Wait briefly if Google Sheets is still actively saving changes to Drive
+  const saveDeadline = Date.now() + 10_000;
+  while (Date.now() < saveDeadline) {
+    assertDemoSheetNotStopped();
+    const saveState = await sheetPage
+      .evaluate(() => {
+        const nodes = Array.from(
+          document.querySelectorAll(
+            '#docs-save-indicator-badge, .docs-save-indicator-caption, [aria-label*="Drive"], [aria-label*="Lưu"], [aria-label*="Save"]'
+          )
+        );
+        const text = nodes
+          .map(
+            (el) =>
+              `${(el as HTMLElement).innerText || ""} ${el.getAttribute("aria-label") || ""}`
+          )
+          .join(" ")
+          .toLowerCase();
+        if (text.includes("lỗi lưu") || text.includes("error saving") || text.includes("can't save")) {
+          return "error";
+        }
+        if (text.includes("đang lưu") || text.includes("saving")) {
+          return "saving";
+        }
+        return "settled";
+      })
+      .catch(() => "settled");
+    if (saveState === "error") {
+      throw new Error("Google Trang tính báo lỗi khi lưu dữ liệu lên Google Drive.");
+    }
+    if (saveState === "settled") break;
+    await sheetPage.waitForTimeout(400);
+  }
+}
+
+async function createNativeGoogleSheetViaDriveAndImport(params: {
+  page: Page;
+  driveBaseUrl: string;
+  classDriveFolderId: string;
+  sheetTitle: string;
+  stagingPayload: InMemoryWorkbookPayload;
+  expectedTabNames: string[];
+  ephemeralDriveIdsToTrash: Set<string>;
+}): Promise<string> {
+  const {
+    page,
+    driveBaseUrl,
+    classDriveFolderId,
+    sheetTitle,
+    stagingPayload,
+    expectedTabNames,
+    ephemeralDriveIdsToTrash,
+  } = params;
+
+  await ensureDriveFolderReady(page, driveBaseUrl, classDriveFolderId);
+  const newBtn = page
+    .locator(
+      'button[guidedhelpid="new_menu_button"]:visible, button[aria-label="Mới"]:visible, button[aria-label="New"]:visible'
+    )
+    .first();
+  await newBtn.click();
+  await page.waitForTimeout(400);
+
+  const sheetsMenuItem = page
+    .locator(
+      '[role="menuitem"]:has-text("Google Trang tính"):visible, [role="menuitem"]:has-text("Google Sheets"):visible'
+    )
+    .first();
+  await sheetsMenuItem.waitFor({ state: "visible", timeout: 8000 });
+
+  let openedPopupPage: Page | null = null;
+  const popupListener = (p: Page) => {
+    if (!openedPopupPage) openedPopupPage = p;
+  };
+  page.context().on("page", popupListener);
+
+  let sheetPage: Page | null = null;
+  let createdSheetId = "";
+  try {
+    await sheetsMenuItem.click({ position: { x: 28, y: 14 } });
+
+    const openDeadline = Date.now() + 15_000;
+    let clickedSharedConfirm = false;
+    while (Date.now() < openDeadline && !openedPopupPage) {
+      assertDemoSheetNotStopped();
+      if (extractGoogleSheetId(page.url())) {
+        sheetPage = page;
+        break;
+      }
+      if (!clickedSharedConfirm) {
+        const sharedConfirmBtn = page
+          .locator(
+            '[role="dialog"] button:has-text("Tạo và chia sẻ"):visible, [role="dialog"] button:has-text("Create and share"):visible'
+          )
+          .first();
+        if (await sharedConfirmBtn.isVisible().catch(() => false)) {
+          await sharedConfirmBtn.click();
+          clickedSharedConfirm = true;
+        }
+      }
+      await page.waitForTimeout(250);
+    }
+    if (openedPopupPage) sheetPage = openedPopupPage;
+  } finally {
+    page.context().off("page", popupListener);
+  }
+
+  if (!sheetPage) {
+    throw new Error("Không mở được trình chỉnh sửa Google Trang tính mới từ Google Drive.");
+  }
+
+  try {
+    await sheetPage.waitForLoadState("domcontentloaded", { timeout: 30000 }).catch(() => {});
+    const idDeadline = Date.now() + 20_000;
+    while (Date.now() < idDeadline) {
+      assertDemoSheetNotStopped();
+      createdSheetId = extractGoogleSheetId(sheetPage.url()) || "";
+      if (createdSheetId) break;
+      await sheetPage.waitForTimeout(350);
+    }
+    if (!createdSheetId) {
+      throw new Error("Không lấy được Spreadsheet ID của Google Trang tính mới.");
+    }
+
+    const fileMenu = sheetPage.locator("#docs-file-menu").first();
+    await fileMenu.waitFor({ state: "visible", timeout: 25000 });
+    await fileMenu.click();
+    await sheetPage.waitForTimeout(400);
+
+    const importItem = sheetPage
+      .locator('.goog-menuitem:visible, [role="menuitem"]:visible')
+      .filter({ hasText: /^Nhập$|^Import$/i })
+      .first();
+    await importItem.waitFor({ state: "visible", timeout: 8000 });
+    await importItem.click();
+
+    let pickerTarget: Frame | Page | null = null;
+    const pickerDeadline = Date.now() + 18_000;
+    while (Date.now() < pickerDeadline && !pickerTarget) {
+      assertDemoSheetNotStopped();
+      for (const frame of sheetPage.frames()) {
+        if (frame === sheetPage.mainFrame()) continue;
+        const tab = frame
+          .locator('[role="tab"]:has-text("Tải lên"), [role="tab"]:has-text("Upload")')
+          .first();
+        if (await tab.isVisible().catch(() => false)) {
+          pickerTarget = frame;
+          break;
+        }
+      }
+      if (!pickerTarget) {
+        const mainTab = sheetPage
+          .locator('[role="tab"]:has-text("Tải lên"):visible, [role="tab"]:has-text("Upload"):visible')
+          .first();
+        if (await mainTab.isVisible().catch(() => false)) pickerTarget = sheetPage;
+      }
+      if (!pickerTarget) await sheetPage.waitForTimeout(350);
+    }
+    if (!pickerTarget) {
+      throw new Error("Không tìm thấy hộp thoại Nhập tệp (Google Picker).");
+    }
+
+    const uploadTab = pickerTarget
+      .locator('[role="tab"]:has-text("Tải lên"), [role="tab"]:has-text("Upload")')
+      .first();
+    await uploadTab.click();
+    await sheetPage.waitForTimeout(400);
+
+    const fileInput = pickerTarget.locator('input[type="file"]').first();
+    if ((await fileInput.count().catch(() => 0)) > 0) {
+      await fileInput.setInputFiles([stagingPayload]);
+    } else {
+      const browseBtn = pickerTarget
+        .locator(
+          'button:has-text("Duyệt qua"), button:has-text("Browse"), [role="button"]:has-text("Duyệt qua"), [role="button"]:has-text("Browse")'
+        )
+        .first();
+      const fcPromise = sheetPage.waitForEvent("filechooser", { timeout: 10000 });
+      await browseBtn.click();
+      const fc = await fcPromise;
+      await fc.setFiles([stagingPayload]);
+    }
+
+    const importDialog = sheetPage
+      .locator('[role="dialog"]:visible, .modal-dialog:visible')
+      .filter({
+        hasText: /Nhập tệp|Import file|Vị trí nhập|Import location|Thay thế bảng tính|Replace spreadsheet/i,
+      })
+      .last();
+    await importDialog.waitFor({ state: "visible", timeout: 25000 });
+
+    const nativeSelect = importDialog.locator("select").first();
+    if (await nativeSelect.isVisible().catch(() => false)) {
+      const val = await nativeSelect
+        .evaluate((sel) => {
+          const s = sel as HTMLSelectElement;
+          const opt = Array.from(s.options).find((o) =>
+            /thay thế bảng tính|replace spreadsheet/i.test(o.textContent || "")
+          );
+          return opt ? opt.value : "";
+        })
+        .catch(() => "");
+      if (val) await nativeSelect.selectOption(val);
+    } else {
+      const replaceRadio = importDialog
+        .locator('[role="radio"], label')
+        .filter({ hasText: /Thay thế bảng tính|Replace spreadsheet/i })
+        .first();
+      if (await replaceRadio.isVisible().catch(() => false)) {
+        await replaceRadio.click();
+      } else {
+        const listbox = importDialog.locator('[role="listbox"], .goog-flat-menu-button').first();
+        if (await listbox.isVisible().catch(() => false)) {
+          const lbText = (await listbox.innerText().catch(() => "")).trim();
+          if (!/Thay thế bảng tính|Replace spreadsheet/i.test(lbText)) {
+            await listbox.click();
+            await sheetPage.waitForTimeout(250);
+            const opt = sheetPage
+              .locator('[role="option"]:visible, .goog-menuitem:visible')
+              .filter({ hasText: /Thay thế bảng tính|Replace spreadsheet/i })
+              .first();
+            await opt.waitFor({ state: "visible", timeout: 5000 });
+            await opt.click();
+          }
+        }
+      }
+    }
+
+    const confirmImportBtn = importDialog
+      .locator(
+        'button[name="import-data"], button:has-text("Nhập dữ liệu"), button:has-text("Import data"), [role="button"]:has-text("Nhập dữ liệu"), [role="button"]:has-text("Import data")'
+      )
+      .first();
+    await confirmImportBtn.waitFor({ state: "visible", timeout: 8000 });
+    await confirmImportBtn.click();
+
+    await renameAndVerifyNativeGoogleSheetEditor(sheetPage, sheetTitle, expectedTabNames);
+    return createdSheetId;
+  } catch (err) {
+    if (createdSheetId) ephemeralDriveIdsToTrash.add(createdSheetId);
+    throw err;
+  } finally {
+    if (sheetPage && sheetPage !== page) {
+      await sheetPage.close().catch(() => {});
+    }
+  }
+}
+
+async function createNativeGoogleSheetViaSaveAsFallback(params: {
+  page: Page;
+  driveBaseUrl: string;
+  sheetsBaseUrl: string;
+  classDriveFolderId: string;
+  sheetTitle: string;
+  stagingPayload: InMemoryWorkbookPayload;
+  expectedTabNames: string[];
+  preExistingIds: Set<string>;
+  ephemeralDriveIdsToTrash: Set<string>;
+}): Promise<string> {
+  const {
+    page,
+    driveBaseUrl,
+    sheetsBaseUrl,
+    classDriveFolderId,
+    sheetTitle,
+    stagingPayload,
+    expectedTabNames,
+    preExistingIds,
+    ephemeralDriveIdsToTrash,
+  } = params;
+
+  await ensureDriveFolderReady(page, driveBaseUrl, classDriveFolderId);
+  const newBtn = page
+    .locator(
+      'button[guidedhelpid="new_menu_button"]:visible, button[aria-label="Mới"]:visible, button[aria-label="New"]:visible'
+    )
+    .first();
+  await newBtn.click();
+  await page.waitForTimeout(400);
+
+  const fileUploadItem = page
+    .locator('[role="menuitem"]:has-text("Tải tệp lên"):visible, [role="menuitem"]:has-text("File upload"):visible')
+    .first();
+  await fileUploadItem.waitFor({ state: "visible", timeout: 8000 });
+  const fcPromise = page.waitForEvent("filechooser", { timeout: 12000 });
+  await fileUploadItem.click();
+  const fc = await fcPromise;
+  await fc.setFiles([stagingPayload]);
+
+  let stagingDriveId = "";
+  const stagingLower = stagingPayload.name.toLowerCase();
+  const uploadDeadline = Date.now() + 30_000;
+  while (Date.now() < uploadDeadline) {
+    assertDemoSheetNotStopped();
+    await page.waitForTimeout(900);
+    const items = await listDriveFilesInFolder(page, classDriveFolderId);
+    const found = items.find(
+      (i) => !preExistingIds.has(i.id) && i.name.toLowerCase() === stagingLower
+    );
+    if (found) {
+      stagingDriveId = found.id;
+      ephemeralDriveIdsToTrash.add(stagingDriveId);
+      break;
+    }
+  }
+  if (!stagingDriveId) {
+    throw new Error("Không tải được dữ liệu tạm để chuyển sang Google Trang tính.");
+  }
+
+  let xlsxPage: Page | null = null;
+  let convertedPage: Page | null = null;
+  let convertedSheetId = "";
+  try {
+    xlsxPage = await page.context().newPage();
+    await xlsxPage.goto(`${sheetsBaseUrl}/spreadsheets/d/${stagingDriveId}/edit`, {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
+    const fileMenu = xlsxPage.locator("#docs-file-menu").first();
+    await fileMenu.waitFor({ state: "visible", timeout: 25000 });
+    const popupPromise = page.context().waitForEvent("page", { timeout: 25000 });
+    await fileMenu.click();
+    await xlsxPage.waitForTimeout(400);
+    const saveAsItem = xlsxPage
+      .locator('.goog-menuitem:visible, [role="menuitem"]:visible')
+      .filter({ hasText: /Lưu dưới dạng Google Trang tính|Save as Google Sheets/i })
+      .first();
+    await saveAsItem.waitFor({ state: "visible", timeout: 8000 });
+    await saveAsItem.click();
+
+    convertedPage = await popupPromise;
+    await convertedPage.waitForLoadState("domcontentloaded", { timeout: 30000 }).catch(() => {});
+    const idDeadline = Date.now() + 15_000;
+    while (Date.now() < idDeadline) {
+      assertDemoSheetNotStopped();
+      const id = extractGoogleSheetId(convertedPage.url()) || "";
+      if (id && id !== stagingDriveId) {
+        convertedSheetId = id;
+        break;
+      }
+      await convertedPage.waitForTimeout(350);
+    }
+    if (!convertedSheetId) {
+      throw new Error("Không nhận được ID của Google Trang tính sau khi chuyển đổi.");
+    }
+
+    await renameAndVerifyNativeGoogleSheetEditor(convertedPage, sheetTitle, expectedTabNames);
+    return convertedSheetId;
+  } catch (err) {
+    if (convertedSheetId) ephemeralDriveIdsToTrash.add(convertedSheetId);
+    throw err;
+  } finally {
+    if (convertedPage) await convertedPage.close().catch(() => {});
+    if (xlsxPage) await xlsxPage.close().catch(() => {});
+  }
+}
+
 /**
- * Creates the multi-tab Demo Scoring Sheet for `classId`, saves it locally into the class SPCK folder,
- * and uploads it into the class's Google Drive folder (`CODING - SPCK -> <Course> -> <classId>`) so judges can open & grade via Google Sheets.
+ * Exports a native Google Spreadsheet in RAM via the authenticated Playwright BrowserContext
+ * when the sheet is restricted to signed-in MindX accounts. Zero files written to disk.
+ */
+export async function exportGoogleSheetBufferViaBrowser(
+  sheetId: string,
+  classId: string,
+  originOverride?: string
+): Promise<Buffer | null> {
+  const cleanSheetId = String(sheetId || "").trim();
+  if (!cleanSheetId) return null;
+  const normalizedClassId = String(classId || "").trim().toUpperCase() || "UNKNOWN";
+  const baseOrigin =
+    originOverride && /^https?:\/\//i.test(originOverride)
+      ? originOverride.replace(/\/+$/, "")
+      : "https://docs.google.com";
+
+  return await taskQueue.enqueue<Buffer | null>({
+    id: `DEMO_SHEET_EXPORT_${normalizedClassId}_${Date.now()}`,
+    jobType: "CUSTOM",
+    description: `Đọc điểm từ Google Trang tính Demo (${normalizedClassId})`,
+    classId: normalizedClassId,
+    sessionId: "SESSION_14",
+    execute: async () => {
+      assertDemoSheetNotStopped();
+      const page = await BrowserManager.getInstance().getPage();
+      const resp = await page
+        .context()
+        .request.get(`${baseOrigin}/spreadsheets/d/${cleanSheetId}/export?format=xlsx`, {
+          timeout: 25000,
+        });
+      if (!resp.ok()) return null;
+      const body = await resp.body();
+      return body && body.length > 4 && body[0] === 0x50 && body[1] === 0x4b
+        ? Buffer.from(body)
+        : null;
+    },
+  });
+}
+
+/**
+ * Creates a multi-tab **Native Google Spreadsheet ("Trang tính của Google")** for `classId`
+ * directly inside the class's Google Drive folder (`CODING - SPCK -> <Course> -> <classId>`),
+ * without creating any Excel `.xlsx` file locally or leaving `.xlsx` files on Google Drive.
  */
 export async function createAndUploadClassDemoSheetToDrive(
   options: CreateDemoSheetOptions
@@ -1016,6 +1748,14 @@ export async function createAndUploadClassDemoSheetToDrive(
   const normalizedClassId = String(options.classId || "").trim().toUpperCase();
   if (!normalizedClassId) {
     throw new Error("Thiếu mã lớp (classId) để tạo Bảng chấm điểm buổi Demo.");
+  }
+
+  if (options.localClassFolderPath && String(options.localClassFolderPath).trim()) {
+    const resolvedLocalClass = path.resolve(String(options.localClassFolderPath).trim());
+    assertPathAllowed(resolvedLocalClass);
+    if (fs.existsSync(resolvedLocalClass)) {
+      assertPathAllowed(fs.realpathSync(resolvedLocalClass));
+    }
   }
 
   const sheetTitle = getDemoSheetTitleForClass(normalizedClassId);
@@ -1031,13 +1771,24 @@ export async function createAndUploadClassDemoSheetToDrive(
   }
 
   const coursePrefixForGuard = detectCoursePrefixFromClassId(normalizedClassId);
-  const hasExplicitTemplateUrl = Boolean(extractGoogleSheetId(options.templateSheetUrl || ""));
-  const hasSavedCourseTemplate = Boolean(getSavedCourseTemplatePath(normalizedClassId));
-  if (!hasExplicitTemplateUrl && !hasSavedCourseTemplate) {
+  const rawTemplateUrl = String(options.templateSheetUrl || "").trim();
+  const explicitTemplateSheetId = rawTemplateUrl ? extractGoogleSheetId(rawTemplateUrl) : null;
+  if (rawTemplateUrl && !explicitTemplateSheetId) {
+    throw new Error(`Đường dẫn Google Sheet mẫu '${rawTemplateUrl}' không hợp lệ.`);
+  }
+
+  const savedCourseTemplatePath = getSavedCourseTemplatePath(normalizedClassId);
+  if (!explicitTemplateSheetId && !savedCourseTemplatePath) {
     throw new Error(
-      `Khóa học '${coursePrefixForGuard || normalizedClassId}' của lớp '${normalizedClassId}' chưa có mẫu bảng chấm điểm Demo riêng (file ${
-        coursePrefixForGuard || normalizedClassId
-      }.xlsx hoặc Link Google Sheet mẫu). Hệ thống không tự lấy mẫu của môn khác để thay thế; việc nộp SPCK lên LMS vẫn hoạt động bình thường.`
+      `Khóa học '${coursePrefixForGuard || normalizedClassId}' của lớp '${normalizedClassId}' chưa có mẫu bảng chấm điểm Demo riêng.`
+    );
+  }
+
+  let preloadedSavedTemplateBuf: Buffer | null = null;
+  if (!explicitTemplateSheetId && savedCourseTemplatePath) {
+    preloadedSavedTemplateBuf = validateTemplateWorkbookBuffer(
+      fs.readFileSync(savedCourseTemplatePath),
+      savedCourseTemplatePath
     );
   }
 
@@ -1049,274 +1800,258 @@ export async function createAndUploadClassDemoSheetToDrive(
     (!coursePrefixForGuard || !CODING_SPCK_COURSE_FOLDER_MAP[coursePrefixForGuard])
   ) {
     throw new Error(
-      `Khóa học '${coursePrefixForGuard || normalizedClassId}' của lớp '${normalizedClassId}' chưa có thư mục khóa học cấu hình sẵn trong thư mục gốc Google Drive. Vui lòng dán trực tiếp link thư mục Google Drive riêng của lớp (hệ thống không tự chọn thư mục của môn khác để thay thế).`
+      `Khóa học '${coursePrefixForGuard || normalizedClassId}' chưa có thư mục khóa học cấu hình sẵn trên Google Drive. Vui lòng dán trực tiếp link thư mục Drive của lớp.`
     );
   }
 
-  const fileName = `${sheetTitle}.xlsx`;
-  const tempDir = path.resolve(process.cwd(), "temp_submissions", "demo_sheets");
-  fs.mkdirSync(tempDir, { recursive: true });
-  const localFilePath = assertPathAllowed(path.join(tempDir, fileName));
+  const driveBaseUrl = (options._testHarness?.driveBaseUrl || "https://drive.google.com").replace(
+    /\/+$/,
+    ""
+  );
+  const sheetsBaseUrl = (options._testHarness?.sheetsBaseUrl || "https://docs.google.com").replace(
+    /\/+$/,
+    ""
+  );
 
-  // Determine if we can also save directly into the class's local SPCK root folder (and/or student folders)
-  let copiedToClassFolderPath: string | undefined;
-  const spckRows = spckUploadRepo.findByClass(normalizedClassId);
-  const inferredClassRoot =
-    (options.localClassFolderPath || "").trim() ||
-    (spckRows[0]?.localFolderPath
-      ? path.dirname(spckRows[0].localFolderPath)
-      : "");
-
-  const jobId = `DEMO_SHEET_${normalizedClassId}_${Date.now()}`;
   return await taskQueue.enqueue<CreateDemoSheetResult>({
-    id: jobId,
+    id: `DEMO_SHEET_${normalizedClassId}_${Date.now()}`,
     jobType: "SPCK_DEMO_SHEET",
-    description: `Tạo Bảng chấm điểm Demo (${normalizedClassId})`,
+    description: `Tạo Google Trang tính chấm điểm Demo (${normalizedClassId})`,
     classId: normalizedClassId,
     sessionId: "SESSION_14",
     execute: async () => {
-      const browserManager = BrowserManager.getInstance();
-      const page = await browserManager.getPage();
+      assertDemoSheetNotStopped();
+      const page = options._testHarness?.page || (await BrowserManager.getInstance().getPage());
+      const ephemeralDriveIdsToTrash = new Set<string>();
+      let classDriveFolderId = "";
 
-      // 1. If a template Google Sheet URL was provided, download its .xlsx export via the authenticated browser context
-      let templateBuffer: Buffer | null = null;
-      const templateSheetId = extractGoogleSheetId(options.templateSheetUrl || "");
-      if (templateSheetId) {
-        try {
-          const exportUrl = `https://docs.google.com/spreadsheets/d/${templateSheetId}/export?format=xlsx`;
+      try {
+        let templateBuffer: Buffer | null = preloadedSavedTemplateBuf;
+        if (explicitTemplateSheetId) {
+          const exportUrl = `${sheetsBaseUrl}/spreadsheets/d/${explicitTemplateSheetId}/export?format=xlsx`;
           const resp = await page.context().request.get(exportUrl, { timeout: 20000 });
-          if (resp.ok()) {
-            const body = await resp.body();
-            if (body && body.length > 500 && body[0] === 0x50 && body[1] === 0x4b) {
-              templateBuffer = body;
-              // Persist this course's template for future classes of the same course
-              const coursePrefix = detectCoursePrefixFromClassId(normalizedClassId);
-              if (coursePrefix) {
-                try {
-                  fs.mkdirSync(COURSE_DEMO_SHEET_TEMPLATES_DIR, { recursive: true });
-                  fs.writeFileSync(
-                    path.join(COURSE_DEMO_SHEET_TEMPLATES_DIR, `${coursePrefix}.xlsx`),
-                    body
-                  );
-                } catch {
-                  // Ignore write errors
-                }
-              }
-            }
+          if (!resp.ok()) {
+            throw new Error(
+              `Không thể tải mẫu bảng chấm điểm Demo từ '${rawTemplateUrl}' (HTTP ${resp.status()}).`
+            );
           }
-        } catch {
-          // Fallback to built-in standard rubric template
-        }
-      }
-
-      // 2. Build the multi-tab .xlsx workbook
-      const workbookBuf = buildDemoScoringWorkbookBuffer({
-        classId: normalizedClassId,
-        sheetTitle,
-        demoDate,
-        evalDate,
-        studentTabs,
-        templateBuffer,
-      });
-
-      fs.writeFileSync(localFilePath, workbookBuf);
-
-      // Copy into the local class SPCK folder if available and allowed
-      if (inferredClassRoot) {
-        try {
-          const safeClassRoot = assertPathAllowed(inferredClassRoot);
-          if (fs.existsSync(safeClassRoot) && fs.statSync(safeClassRoot).isDirectory()) {
-            const targetCopyPath = assertPathAllowed(path.join(safeClassRoot, fileName));
-            fs.writeFileSync(targetCopyPath, workbookBuf);
-            copiedToClassFolderPath = targetCopyPath;
-          }
-        } catch {
-          // Ignore if local class root is not in allowlist
-        }
-      }
-
-      // 3. Resolve the target Google Drive Class Folder (`CODING - SPCK -> <Course> -> <classId>`)
-      const rawDriveFolderId = extractDriveFolderId(
-        options.driveFolderUrl || DEFAULT_SPCK_DRIVE_FOLDER_URL
-      );
-      let courseParentFolderId = rawDriveFolderId;
-      if (rawDriveFolderId === CODING_SPCK_ROOT_FOLDER_ID) {
-        const coursePrefix = detectCoursePrefixFromClassId(normalizedClassId);
-        if (coursePrefix && CODING_SPCK_COURSE_FOLDER_MAP[coursePrefix]) {
-          courseParentFolderId = CODING_SPCK_COURSE_FOLDER_MAP[coursePrefix];
-        }
-      }
-
-      // Navigate to course folder to find/locate the class folder
-      await page.goto(
-        `https://drive.google.com/drive/folders/${courseParentFolderId}`,
-        { waitUntil: "domcontentloaded", timeout: 30000 }
-      );
-      await page.waitForTimeout(2200);
-
-      const courseItems = await listDriveFilesInFolder(page, courseParentFolderId);
-      const classFolderItem = courseItems.find(
-        (i) => i.name.trim().toUpperCase() === normalizedClassId
-      );
-
-      let classDriveFolderId = classFolderItem?.id || "";
-      if (!classDriveFolderId) {
-        // Create class folder if it doesn't exist yet
-        const newBtn = page
-          .locator(
-            'button[guidedhelpid="new_menu_button"]:visible, button[aria-label="Mới"]:visible, button[aria-label="New"]:visible'
-          )
-          .first();
-        await newBtn.click();
-        await page.waitForTimeout(450);
-        const newFolderItem = page
-          .locator(
-            '[role="menuitem"]:has-text("Thư mục mới"):visible, [role="menuitem"]:has-text("New folder"):visible'
-          )
-          .first();
-        await newFolderItem.click();
-        const dlg = page
-          .locator('[role="dialog"]')
-          .filter({ hasText: /Thư mục mới|New folder/i })
-          .last();
-        await dlg.waitFor({ state: "visible", timeout: 8000 });
-        const input = dlg.locator('input[type="text"]').first();
-        await input.fill(normalizedClassId);
-        await input.press("Enter");
-        await page.waitForTimeout(2500);
-        const updatedCourseItems = await listDriveFilesInFolder(
-          page,
-          courseParentFolderId
-        );
-        const created = updatedCourseItems.find(
-          (i) => i.name.trim().toUpperCase() === normalizedClassId
-        );
-        if (!created) {
-          throw new Error(
-            `Không tìm thấy thư mục lớp '${normalizedClassId}' trên Google Drive.`
+          templateBuffer = validateTemplateWorkbookBuffer(
+            Buffer.from(await resp.body()),
+            rawTemplateUrl
           );
         }
-        classDriveFolderId = created.id;
-      }
 
-      const classDriveFolderUrl = `https://drive.google.com/drive/folders/${classDriveFolderId}`;
-      await page.goto(classDriveFolderUrl, {
-        waitUntil: "domcontentloaded",
-        timeout: 30000,
-      });
-      await page.waitForTimeout(2200);
+        const workbookBuf = buildDemoScoringWorkbookBuffer({
+          classId: normalizedClassId,
+          sheetTitle,
+          demoDate,
+          evalDate,
+          studentTabs,
+          templateBuffer,
+        });
+        const expectedAllTabs = extractSheetTabNamesFromWorkbookBuffer(workbookBuf);
+        const stagingPayload: InMemoryWorkbookPayload = {
+          name: `_staging_gsheet_${normalizedClassId}_${Date.now()}_${crypto
+            .randomBytes(3)
+            .toString("hex")}.xlsx`,
+          mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          buffer: workbookBuf,
+        };
 
-      // Trash old file with the same name in the class folder so it's replaced cleanly
-      const existingInClass = await listDriveFilesInFolder(page, classDriveFolderId);
-      for (const item of existingInClass) {
-        if (
-          item.name.toLowerCase() === fileName.toLowerCase() ||
-          item.name.toLowerCase() === sheetTitle.toLowerCase()
-        ) {
-          const row = page
-            .locator(`[role="main"] [data-target="doc"][data-id="${item.id}"]`)
+        let courseParentFolderId = preCheckDriveFolderId;
+        if (preCheckDriveFolderId === CODING_SPCK_ROOT_FOLDER_ID && coursePrefixForGuard) {
+          courseParentFolderId = CODING_SPCK_COURSE_FOLDER_MAP[coursePrefixForGuard];
+        }
+
+        await ensureDriveFolderReady(page, driveBaseUrl, courseParentFolderId);
+        const courseItems = await listDriveFilesInFolder(page, courseParentFolderId);
+        classDriveFolderId =
+          courseItems.find((i) => i.isFolder && i.name.trim().toUpperCase() === normalizedClassId)
+            ?.id || "";
+
+        if (!classDriveFolderId) {
+          const newBtn = page
+            .locator(
+              'button[guidedhelpid="new_menu_button"]:visible, button[aria-label="Mới"]:visible, button[aria-label="New"]:visible'
+            )
             .first();
-          if (await row.isVisible().catch(() => false)) {
-            await row.click({ button: "right" }).catch(() => {});
-            await page.waitForTimeout(350);
-            const trashItem = page
-              .locator(
-                '[role="menuitem"]:has-text("Chuyển vào thùng rác"):visible, [role="menuitem"]:has-text("Move to trash"):visible'
-              )
-              .first();
-            if (await trashItem.isVisible().catch(() => false)) {
-              await trashItem.click().catch(() => {});
-              await page.waitForTimeout(700);
-            } else {
-              await page.keyboard.press("Escape").catch(() => {});
+          await newBtn.click();
+          await page.waitForTimeout(400);
+          await page
+            .locator(
+              '[role="menuitem"]:has-text("Thư mục mới"):visible, [role="menuitem"]:has-text("New folder"):visible'
+            )
+            .first()
+            .click();
+          const dlg = page
+            .locator('[role="dialog"]')
+            .filter({ hasText: /Thư mục mới|New folder/i })
+            .last();
+          await dlg.waitFor({ state: "visible", timeout: 8000 });
+          const input = dlg.locator('input[type="text"]').first();
+          await input.fill(normalizedClassId);
+          await input.press("Enter");
+          await page.waitForTimeout(2200);
+          const updatedItems = await listDriveFilesInFolder(page, courseParentFolderId);
+          classDriveFolderId =
+            updatedItems.find(
+              (i) => i.isFolder && i.name.trim().toUpperCase() === normalizedClassId
+            )?.id || "";
+          if (!classDriveFolderId) {
+            throw new Error(
+              `Không tìm thấy thư mục lớp '${normalizedClassId}' trên Google Drive.`
+            );
+          }
+        }
+
+        const classDriveFolderUrl = `${driveBaseUrl}/drive/folders/${classDriveFolderId}`;
+        await ensureDriveFolderReady(page, driveBaseUrl, classDriveFolderId);
+        const preExistingIds = new Set(
+          (await listDriveFilesInFolder(page, classDriveFolderId)).map((i) => i.id)
+        );
+
+        let nativeSpreadsheetId = "";
+        try {
+          nativeSpreadsheetId = await createNativeGoogleSheetViaDriveAndImport({
+            page,
+            driveBaseUrl,
+            classDriveFolderId,
+            sheetTitle,
+            stagingPayload,
+            expectedTabNames:
+              expectedAllTabs.length > 0 ? expectedAllTabs : studentTabs.map((s) => s.tabName),
+            ephemeralDriveIdsToTrash,
+          });
+        } catch (primaryErr) {
+          assertDemoSheetNotStopped();
+          nativeSpreadsheetId = await createNativeGoogleSheetViaSaveAsFallback({
+            page,
+            driveBaseUrl,
+            sheetsBaseUrl,
+            classDriveFolderId,
+            sheetTitle,
+            stagingPayload,
+            expectedTabNames:
+              expectedAllTabs.length > 0 ? expectedAllTabs : studentTabs.map((s) => s.tabName),
+            preExistingIds,
+            ephemeralDriveIdsToTrash,
+          }).catch((fallbackErr) => {
+            throw new Error(
+              `Không thể tạo Google Trang tính chấm điểm Demo cho lớp ${normalizedClassId}: ${
+                primaryErr instanceof Error ? primaryErr.message : String(primaryErr)
+              } | Dự phòng: ${
+                fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)
+              }`
+            );
+          });
+        }
+
+        // Read-after-Write Verification inside Google Drive Class Folder
+        await page.goto(classDriveFolderUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+        await page.waitForTimeout(1200);
+
+        const targetLower = sheetTitle.trim().toLowerCase();
+        let verifiedOnDrive = false;
+        const verifyDeadline = Date.now() + 20_000;
+        while (Date.now() < verifyDeadline) {
+          assertDemoSheetNotStopped();
+          const folderItems = await listDriveFilesInFolder(page, classDriveFolderId);
+          const item = folderItems.find((i) => i.id === nativeSpreadsheetId);
+          if (
+            item &&
+            !item.isFolder &&
+            !item.isExcelFile &&
+            item.isGoogleSheet &&
+            !preExistingIds.has(item.id) &&
+            item.name.trim().toLowerCase() === targetLower
+          ) {
+            verifiedOnDrive = true;
+            break;
+          }
+          await page.waitForTimeout(900);
+        }
+
+        if (!verifiedOnDrive) {
+          ephemeralDriveIdsToTrash.add(nativeSpreadsheetId);
+          throw new Error(
+            `Không thể xác nhận Google Trang tính '${sheetTitle}' trong thư mục Google Drive của lớp ${normalizedClassId}.`
+          );
+        }
+
+        // Clean up superseded Demo sheets / legacy .xlsx / staging items on Drive AFTER verification
+        const legacyXlsxLower = `${sheetTitle}.xlsx`.toLowerCase();
+        const currentItems = await listDriveFilesInFolder(page, classDriveFolderId);
+        for (const item of currentItems) {
+          if (item.id === nativeSpreadsheetId || item.isFolder) continue;
+          const lower = item.name.trim().toLowerCase();
+          if (
+            ephemeralDriveIdsToTrash.has(item.id) ||
+            lower === legacyXlsxLower ||
+            lower === targetLower ||
+            lower.startsWith("_staging_gsheet_")
+          ) {
+            const ok = await moveDriveItemToTrash(
+              page,
+              driveBaseUrl,
+              classDriveFolderId,
+              item.id
+            );
+            if (ok) ephemeralDriveIdsToTrash.delete(item.id);
+          }
+        }
+
+        // Clean up any legacy local <sheetTitle>.xlsx left by older versions in the class folder
+        const spckRows = spckUploadRepo.findByClass(normalizedClassId);
+        const inferredClassRoot =
+          (options.localClassFolderPath || "").trim() ||
+          (spckRows[0]?.localFolderPath ? path.dirname(spckRows[0].localFolderPath) : "");
+        if (inferredClassRoot) {
+          try {
+            const safeRoot = assertPathAllowed(path.resolve(inferredClassRoot));
+            const legacyLocalXlsx = assertPathAllowed(path.join(safeRoot, `${sheetTitle}.xlsx`));
+            if (fs.existsSync(legacyLocalXlsx) && fs.lstatSync(legacyLocalXlsx).isFile()) {
+              fs.rmSync(legacyLocalXlsx, { force: true });
             }
+          } catch {
+            // Ignore optional legacy local file cleanup outside allowlist
+          }
+        }
+
+        const googleSheetUrl = `${sheetsBaseUrl}/spreadsheets/d/${nativeSpreadsheetId}/edit?usp=sharing`;
+        jobLogRepo.add({
+          jobId: `DEMO_SHEET_${normalizedClassId}_${Date.now()}`,
+          jobType: "SPCK_DEMO_SHEET",
+          classId: normalizedClassId,
+          level: "SUCCESS",
+          message: `Đã tạo Google Trang tính '${sheetTitle}' (${studentTabs.length} tab học viên, Ngày Demo: ${demoDate}) trong thư mục Drive lớp ${normalizedClassId}: ${googleSheetUrl}`,
+        });
+
+        return {
+          classId: normalizedClassId,
+          sheetTitle,
+          fileName: sheetTitle,
+          isNativeGoogleSheet: true,
+          mimeType: "application/vnd.google-apps.spreadsheet",
+          demoDate,
+          evalDate,
+          studentCount: studentTabs.length,
+          studentTabNames: studentTabs.map((s) => s.tabName),
+          localFilePath: "",
+          copiedToClassFolderPath: undefined,
+          driveFileId: nativeSpreadsheetId,
+          googleSheetUrl,
+          classDriveFolderUrl,
+          usedTemplateUrl: explicitTemplateSheetId ? rawTemplateUrl : undefined,
+        };
+      } finally {
+        if (ephemeralDriveIdsToTrash.size > 0 && classDriveFolderId && !isDemoSheetStopped()) {
+          for (const trashId of Array.from(ephemeralDriveIdsToTrash)) {
+            await moveDriveItemToTrash(page, driveBaseUrl, classDriveFolderId, trashId).catch(
+              () => {}
+            );
           }
         }
       }
-
-      // Upload the .xlsx file into the class Drive folder
-      const newBtn = page
-        .locator(
-          'button[guidedhelpid="new_menu_button"]:visible, button[aria-label="Mới"]:visible, button[aria-label="New"]:visible'
-        )
-        .first();
-      const fcPromise = page.waitForEvent("filechooser", { timeout: 12000 });
-      await newBtn.click();
-      await page.waitForTimeout(450);
-
-      const fileUploadItem = page
-        .locator(
-          '[role="menuitem"]:has-text("Tải tệp lên"):visible, [role="menuitem"]:has-text("File upload"):visible'
-        )
-        .first();
-      await fileUploadItem.waitFor({ state: "visible", timeout: 8000 });
-      await fileUploadItem.click();
-
-      const fc = await fcPromise;
-      await fc.setFiles([localFilePath]);
-
-      // Poll up to 35s for the uploaded file to appear in the class Drive folder DOM
-      let driveFileId = "";
-      const deadline = Date.now() + 35_000;
-      while (Date.now() < deadline) {
-        await page.waitForTimeout(1200);
-        const afterItems = await listDriveFilesInFolder(page, classDriveFolderId);
-        const found = afterItems.find(
-          (i) =>
-            i.name.toLowerCase() === fileName.toLowerCase() ||
-            i.name.toLowerCase().startsWith(sheetTitle.toLowerCase())
-        );
-        if (found) {
-          driveFileId = found.id;
-          break;
-        }
-      }
-
-      if (!driveFileId) {
-        await page.reload({ waitUntil: "domcontentloaded", timeout: 20000 }).catch(() => {});
-        await page.waitForTimeout(2200);
-        const afterReload = await listDriveFilesInFolder(page, classDriveFolderId);
-        const found = afterReload.find(
-          (i) =>
-            i.name.toLowerCase() === fileName.toLowerCase() ||
-            i.name.toLowerCase().startsWith(sheetTitle.toLowerCase())
-        );
-        if (found) {
-          driveFileId = found.id;
-        }
-      }
-
-      if (!driveFileId) {
-        throw new Error(
-          `Không thể xác nhận tệp '${fileName}' sau khi tải lên thư mục Google Drive của lớp ${normalizedClassId}.`
-        );
-      }
-
-      const googleSheetUrl = `https://docs.google.com/spreadsheets/d/${driveFileId}/edit?usp=sharing`;
-
-      jobLogRepo.add({
-        jobId: `DEMO_SHEET_${normalizedClassId}_${Date.now()}`,
-        jobType: "SPCK_DEMO_SHEET",
-        classId: normalizedClassId,
-        level: "SUCCESS",
-        message: `Đã tạo và tải '${sheetTitle}' (${studentTabs.length} tab học viên, Ngày Demo: ${demoDate}) lên thư mục Drive lớp ${normalizedClassId}: ${googleSheetUrl}`,
-      });
-
-      return {
-        classId: normalizedClassId,
-        sheetTitle,
-        fileName,
-        demoDate,
-        evalDate,
-        studentCount: studentTabs.length,
-        studentTabNames: studentTabs.map((s) => s.tabName),
-        localFilePath,
-        copiedToClassFolderPath,
-        driveFileId,
-        googleSheetUrl,
-        classDriveFolderUrl,
-        usedTemplateUrl: templateBuffer ? options.templateSheetUrl : undefined,
-      };
     },
   });
 }

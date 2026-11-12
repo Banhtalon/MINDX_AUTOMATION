@@ -24,6 +24,14 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ---
 
+## [v3.4.2] — 2026-11-12 (Chuyển Đổi Gọn Nhẹ Bảng Chấm Điểm Buổi Demo SPCK Sang Google Trang Tính Gốc)
+
+- **Tạo trực tiếp Google Trang tính (`Trang tính của Google`, `application/vnd.google-apps.spreadsheet`) thay vì tạo tệp Excel `.xlsx` (`src/lib/playwright/spck-demo-sheet.ts`, `src/lib/local-files/spck-demo-score-reader.ts`, `src/components/final-project/ToolsDrawer.tsx`, `src/components/final-project/useSpckWorkflow.ts`):**
+  1. Dựng gói dữ liệu nhiều tab học viên + tab `Phân bổ điểm` hoàn toàn trong RAM (`0` tệp `.xlsx` lưu ra máy tính) và tạo trực tiếp **Google Trang tính gốc** ngay trong thư mục lớp trên Google Drive (`CODING - SPCK -> <Khóa học> -> <Mã lớp>`), kèm nhánh dự phòng `Lưu dưới dạng Google Trang tính`, đối chiếu `Read-after-Write` đủ tab học viên & không có nhãn `.XLSX`, sau đó tự động dọn tệp `.xlsx` cũ dư thừa.
+  2. Tự động nhận diện và đọc lại Điểm Demo + Nhận xét BGK ở **Buổi 14** trực tiếp từ liên kết Google Trang tính vừa tạo của lớp (`resolveDefaultDemoSheetUrlForClass` + `exportGoogleSheetBufferViaBrowser`), vượt qua toàn bộ kiểm thử tự động `scripts/test-native-demo-gsheet.ts` (`GS-01` $\rightarrow$ `GS-04`) và `scripts/test-session14-v290.ts` (`S14-01` $\rightarrow$ `S14-07`).
+
+---
+
 ## [v3.4.1] — 2026-11-11 (Giai Đoạn 11: Bản Vá Kiểm Toán Toàn Diện, Gia Cố An Toàn Dữ Liệu & Dọn Dẹp Mã Nguồn — `Stages A` $\rightarrow$ `E`, `Round 4 GO`)
 
 - **Stage A — Gia Cố An Toàn Tuyệt Đối Cho Cổng Thu Bài Trực Tuyến & Bộ Tải Lên Google Drive (`src/lib/student-portal/student-portal-server.ts`, `src/lib/db/sqlite.ts`, `src/app/api/spck/save-draft/route.ts`, `src/app/api/spck/scan/route.ts`, `src/lib/playwright/spck-drive-uploader.ts`):**

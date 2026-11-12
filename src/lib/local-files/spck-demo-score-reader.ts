@@ -12,6 +12,7 @@ import AdmZip from "adm-zip";
 import {
   calculateCompetencyAverageScore,
   calculateDemoTotalScore,
+  getDb,
   isRoboticsClassCode,
   parseSession14CompetencyScores,
   parseSession14DemoScores,
@@ -26,7 +27,11 @@ import {
   type SpckSession14DemoScores,
   type SpckSession14EvaluationRecord,
 } from "../db/sqlite";
-import { extractGoogleSheetId, getDemoSheetTitleForClass } from "../playwright/spck-demo-sheet";
+import {
+  exportGoogleSheetBufferViaBrowser,
+  extractGoogleSheetId,
+  getDemoSheetTitleForClass,
+} from "../playwright/spck-demo-sheet";
 import { assertPathAllowed } from "../security/path-allowlist";
 import { normalizeVietnameseName } from "../utils/vietnamese-match";
 
@@ -516,17 +521,58 @@ export function resolveDefaultDemoSheetPathForClass(classId: string): string | n
   return null;
 }
 
-async function loadXlsxBufferFromSource(
-  classId: string,
-  sourcePathOrUrl?: string
-): Promise<{ buffer: Buffer; sourceUsed: string }> {
-  const rawSource = String(sourcePathOrUrl || "").trim();
+/**
+ * Resolves the latest Native Google Spreadsheet URL created for `classId` from `job_logs`.
+ */
+export function resolveDefaultDemoSheetUrlForClass(classId: string): string | null {
+  const normalizedClassId = String(classId || "").trim().toUpperCase();
+  if (!normalizedClassId) return null;
+  try {
+    const row = getDb()
+      .prepare(
+        `SELECT message
+         FROM job_logs
+         WHERE classId = ? AND jobType = 'SPCK_DEMO_SHEET' AND level = 'SUCCESS'
+         ORDER BY id DESC
+         LIMIT 1`
+      )
+      .get(normalizedClassId) as { message?: string } | undefined;
+    const match = row?.message?.match(
+      /https?:\/\/[^\s]+\/spreadsheets\/d\/[a-zA-Z0-9_-]{15,80}[^\s]*/
+    );
+    return match ? match[0] : null;
+  } catch {
+    return null;
+  }
+}
 
-  // Case 1: Google Sheets URL
-  const sheetId = extractGoogleSheetId(rawSource);
-  if (sheetId) {
-    const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=xlsx`;
-    const resp = await fetch(exportUrl, { redirect: "follow" });
+function resolveGoogleSheetsOrigin(rawUrl?: string): string {
+  if (
+    process.env.MINDX_ALLOW_LOCAL_SHEET_ORIGIN_FOR_TEST === "1" &&
+    rawUrl &&
+    /^http:\/\/127\.0\.0\.1:\d+\//i.test(rawUrl)
+  ) {
+    try {
+      return new URL(rawUrl).origin;
+    } catch {
+      // fall through
+    }
+  }
+  return "https://docs.google.com";
+}
+
+async function fetchGoogleSheetAsWorkbookBuffer(
+  sheetId: string,
+  classId: string,
+  rawUrl?: string
+): Promise<{ buffer: Buffer; sourceUsed: string } | null> {
+  const origin = resolveGoogleSheetsOrigin(rawUrl);
+  const exportUrl = `${origin}/spreadsheets/d/${sheetId}/export?format=xlsx`;
+  try {
+    const resp = await fetch(exportUrl, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(20_000),
+    });
     if (resp.ok) {
       const arrBuf = await resp.arrayBuffer();
       const buf = Buffer.from(arrBuf);
@@ -534,8 +580,45 @@ async function loadXlsxBufferFromSource(
         return { buffer: buf, sourceUsed: exportUrl };
       }
     }
+  } catch {
+    // Fall through to authenticated browser context if available
+  }
+
+  if (process.env.MINDX_DISABLE_BROWSER_EXPORT_FALLBACK !== "1") {
+    try {
+      const browserBuf = await exportGoogleSheetBufferViaBrowser(
+        sheetId,
+        classId,
+        origin
+      );
+      if (browserBuf && browserBuf.length > 4 && browserBuf[0] === 0x50 && browserBuf[1] === 0x4b) {
+        return { buffer: browserBuf, sourceUsed: exportUrl };
+      }
+    } catch {
+      // Ignore fallback errors and surface clear message below
+    }
+  }
+
+  return null;
+}
+
+async function loadXlsxBufferFromSource(
+  classId: string,
+  sourcePathOrUrl?: string
+): Promise<{ buffer: Buffer; sourceUsed: string }> {
+  const rawSource = String(sourcePathOrUrl || "").trim();
+
+  // Case 1: Explicit Google Sheets URL
+  const explicitSheetId = extractGoogleSheetId(rawSource);
+  if (explicitSheetId) {
+    const loaded = await fetchGoogleSheetAsWorkbookBuffer(
+      explicitSheetId,
+      classId,
+      rawSource
+    );
+    if (loaded) return loaded;
     throw new Error(
-      `Không thể tải trực tiếp file .xlsx từ Google Sheet (${rawSource}). Hãy đảm bảo quyền chia sẻ "Bất kỳ ai có đường liên kết đều có thể xem" hoặc tải về file .xlsx trên máy.`
+      `Không thể đọc dữ liệu trực tiếp từ Google Trang tính (${rawSource}). Vui lòng kiểm tra quyền truy cập của tài khoản Google hoặc mở quyền xem đường liên kết.`
     );
   }
 
@@ -548,11 +631,28 @@ async function loadXlsxBufferFromSource(
     return { buffer: fs.readFileSync(safePath), sourceUsed: safePath };
   }
 
-  // Case 3: Auto-discover in class SPCK folder or data/demo_sheets
+  // Case 3: Auto-discover class's Native Google Sheet URL from job_logs first.
+  // CRITICAL (F08): If a Native Google Sheet exists in job_logs for this class, NEVER silently fall back
+  // to an older local `.xlsx` file if reading the cloud sheet fails (prevents overwriting fresh scores with stale Excel marks).
+  const autoSheetUrl = resolveDefaultDemoSheetUrlForClass(classId);
+  const autoSheetId = extractGoogleSheetId(autoSheetUrl || "");
+  if (autoSheetId) {
+    const loaded = await fetchGoogleSheetAsWorkbookBuffer(
+      autoSheetId,
+      classId,
+      autoSheetUrl || undefined
+    );
+    if (loaded) return loaded;
+    throw new Error(
+      `Không thể đọc dữ liệu từ Google Trang tính chấm điểm mới nhất của lớp ${classId} (${autoSheetUrl}). Vui lòng kiểm tra kết nối mạng hoặc quyền truy cập tài khoản Google (hệ thống dừng lại để không nhập nhầm tệp Excel cũ trên máy).`
+    );
+  }
+
+  // Case 4: Legacy fallback in local folder ONLY when no Native Google Sheet has ever been recorded for this class
   const discovered = resolveDefaultDemoSheetPathForClass(classId);
   if (!discovered) {
     throw new Error(
-      `Chưa tìm thấy file "Bảng chấm điểm buổi Demo (.xlsx)" cho lớp ${classId}. Vui lòng dán đường dẫn file .xlsx hoặc link Google Sheet chấm điểm.`
+      `Chưa tìm thấy Google Trang tính chấm điểm buổi Demo cho lớp ${classId}. Vui lòng bấm tạo Bảng chấm điểm Demo trên Google Drive hoặc dán link Google Sheet chấm điểm.`
     );
   }
   return { buffer: fs.readFileSync(discovered), sourceUsed: discovered };

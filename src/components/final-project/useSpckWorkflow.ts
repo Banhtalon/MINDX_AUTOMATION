@@ -1147,7 +1147,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     setCreatingDemoSheet(true);
     setBannerMessage({
       type: "warning",
-      text: `Đang tạo "${demoSheetTitle}" (${students.length || rows.length} tab học viên, Ngày Demo Buổi 14: ${demoDateInput || "tự động"}) và tải vào thư mục Google Drive của lớp ${requestClassId}...`,
+      text: `Đang tạo Google Trang tính "${demoSheetTitle}" (${students.length || rows.length} tab học viên, Ngày Demo Buổi 14: ${demoDateInput || "tự động"}) trực tiếp trong thư mục Google Drive của lớp ${requestClassId}...`,
     });
 
     try {
@@ -1189,7 +1189,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
       setBannerMessage({
         type: "success",
-        text: `Đã tạo "${dSheet?.sheetTitle}" gồm ${dSheet?.studentCount || 0} tab học viên (Ngày Demo Buổi 14: ${dSheet?.demoDate}), lưu vào thư mục bài của lớp và tải lên Google Drive để giám khảo chấm!`,
+        text: `Đã tạo Google Trang tính "${dSheet?.sheetTitle}" gồm ${dSheet?.studentCount || 0} tab học viên (Ngày Demo Buổi 14: ${dSheet?.demoDate}) trực tiếp trong thư mục Google Drive của lớp để giám khảo chấm!`,
       });
     } catch (err) {
       const activeClass = getActiveUiClassId();
