@@ -32,6 +32,19 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ---
 
+## [v3.4.7] — 2026-11-13 (Tích Hợp Bản Đồ Mã Nguồn Cục Bộ `Graphify` Offline `--code-only` Cho Antigravity & Codex CLI)
+
+### Hạ tầng AI & Hiệu năng điều hướng mã nguồn — `Graphify-Labs/graphify` (`graphifyy 0.9.108`)
+- **Cài đặt dùng chung toàn máy (`uv` + `graphifyy`):** Đăng ký kỹ năng Graphify toàn cục cho cả **Google Antigravity** (`~/.gemini/config/skills/graphify`), **Codex CLI** (`~/.codex/skills/graphify`) và chuẩn liên nền tảng **Agent Skills** (`~/.agents/skills/graphify`).
+- **Hàng rào bảo mật PII & cách ly Git (`.graphifyignore`, `.graphifyrc`, `.gitignore`):**
+  - Chặn tuyệt đối mọi thư mục/tệp chứa dữ liệu học sinh và cấu hình cục bộ (`data/`, `*.db*`, `temp_submissions/`), phiên đăng nhập trình duyệt (`playwright-auth/`), biến môi trường (`.env*`) và kho lịch sử kiểm định (`docs/`).
+  - Loại trừ `/graphify-out/` và `.graphify_*` trong `.gitignore` để giữ cây Git sạch sẽ.
+- **Đồ thị tri thức AST `100%` offline (`0` gọi API ngoài, `0` lộ PII) & Quy tắc điều hướng (`AGENTS.md`, `GEMINI.md`, `.agents/rules/graphify.md`, `.agents/workflows/graphify.md`):**
+  - Quét `166` tệp mã nguồn (`src/` + `scripts/`) ở chế độ `GRAPHIFY_BACKEND=none` + `--code-only` + `cluster-only . --no-label`, sinh `1.640` nodes, `5.840` edges, `67` cụm chức năng, sơ đồ tương tác `graphify-out/graph.html`, sơ đồ luồng gọi `graphify-out/MINDX-AUTOMATION-callflow.html` và giảm trung bình **`67,3x` lượng token** mỗi lượt tra cứu (`~109.333` $\rightarrow$ `~1.624` tokens).
+  - Bổ sung quy tắc bắt buộc luôn chạy chế độ offline `--code-only` và ưu tiên `graphify query` / `explain` / `path` cho cả Antigravity lẫn Codex Reviewer.
+
+---
+
 ## [v3.4.6] — 2026-11-13 (Bỏ Qua Học Viên Thiếu/Nghỉ Trên Teaching Khi Đồng Bộ Điểm `VT-JSB16` & Nút Mở Teaching Rõ Ràng — `Round 1 GO`)
 
 ### Sửa lỗi & Cải tiến — Cho phép bỏ qua 1+ học viên chưa khớp trên Teaching (`VT-JSB16`) và hiển thị nút mở Teaching rõ ràng

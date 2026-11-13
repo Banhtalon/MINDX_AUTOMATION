@@ -1,0 +1,66 @@
+# ============================================================================
+# MINDX AUTOMATION BOT — GRAPHIFY SAFETY & PRIVACY ALLOWLIST FENCE
+# Blocks all student PII, SQLite databases, browser sessions, local configs,
+# audit history archives, build artifacts, and non-code assets.
+# ============================================================================
+
+# Live student data, SQLite DBs, configs & local submissions (STRICT PII GUARD)
+data/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+temp_submissions/
+
+# Persistent browser sessions & auth profiles
+playwright-auth/
+.playwright-profile/
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# Documentation & immutable audit history (3,698+ files; SSoT is read directly)
+docs/
+PROJECT_STATE.md
+MINDX_AUTOMATION_PLAN.md
+CHANGELOG.md
+AGENTS.md
+GEMINI.md
+README.md
+
+# AI skills, rules & Graphify outputs/caches
+.agent/
+.agents/
+graphify-out/
+.graphify_*
+
+# Build outputs, dependencies & test artifacts
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Binary media, archives & spreadsheets
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.ico
+*.svg
+*.pdf
+*.xlsx
+*.xls
+*.csv
+*.zip
+*.yyz
+*.sb3
+*.lnk
+*.log
