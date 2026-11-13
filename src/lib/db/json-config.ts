@@ -222,6 +222,7 @@ export function renderZaloBroadcast(
 
 export interface RunningClassItem {
   classCode: string;
+  lmsClassId?: string;
   courseName?: string;
   center?: string;
   status: string;
@@ -270,4 +271,107 @@ export function saveRunningClasses(classes: RunningClassItem[]): void {
   const tempPath = assertPathAllowed(`${safePath}.tmp`);
   fs.writeFileSync(tempPath, JSON.stringify(classes, null, 2), "utf-8");
   fs.renameSync(tempPath, safePath);
+}
+
+// ==========================================
+// 6. LMS CLASS OBJECT ID CACHE (lms_class_ids.json)
+// ==========================================
+
+const LMS_CLASS_IDS_FILENAME = "lms_class_ids.json";
+
+function isSafeLmsConfigClassCode(raw: unknown): boolean {
+  const normalized = String(raw ?? "")
+    .trim()
+    .toUpperCase();
+  return Boolean(normalized && /^[A-Z0-9][A-Z0-9_-]{1,63}$/.test(normalized));
+}
+
+function isSafeLmsConfigObjectId(raw: unknown): boolean {
+  const normalized = String(raw ?? "").trim();
+  if (!normalized) return false;
+  const lower = normalized.toLowerCase();
+  if (
+    lower === "undefined" ||
+    lower === "null" ||
+    lower === "true" ||
+    lower === "false" ||
+    lower === "nan" ||
+    lower === "infinity"
+  ) {
+    return false;
+  }
+  return /^[a-zA-Z0-9_-]{8,64}$/.test(normalized);
+}
+
+/**
+ * Pure read-only loader for cached LMS class ObjectIds (`lms_class_ids.json`).
+ * Returns `{}` without creating any directories or files when absent.
+ */
+export function getLmsClassIdsMap(): Record<string, string> {
+  try {
+    const allowedDir = assertPathAllowed(resolveConfigDir());
+    const filePath = assertPathAllowed(path.join(allowedDir, LMS_CLASS_IDS_FILENAME));
+    if (!fs.existsSync(filePath)) {
+      return {};
+    }
+    const raw = fs.readFileSync(filePath, "utf-8");
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      const code = String(k || "").trim().toUpperCase();
+      const id = typeof v === "string" ? v.trim() : "";
+      if (isSafeLmsConfigClassCode(code) && isSafeLmsConfigObjectId(id)) {
+        out[code] = id;
+      }
+    }
+    return out;
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("[Security Exception]")) {
+      throw err;
+    }
+    return {};
+  }
+}
+
+/**
+ * Atomically merges and persists discovered `{ [CLASS_CODE]: lmsClassId }` mappings
+ * into `lms_class_ids.json` inside `resolveConfigDir()`.
+ */
+export function saveLmsClassIdMappingsBatch(entries: Record<string, string>): void {
+  if (!entries || typeof entries !== "object") return;
+  const cleanEntries: Record<string, string> = {};
+  for (const [k, v] of Object.entries(entries)) {
+    const code = String(k || "").trim().toUpperCase();
+    const id = typeof v === "string" ? v.trim() : "";
+    if (isSafeLmsConfigClassCode(code) && isSafeLmsConfigObjectId(id)) {
+      cleanEntries[code] = id;
+    }
+  }
+  if (Object.keys(cleanEntries).length === 0) return;
+
+  const existing = getLmsClassIdsMap();
+  let changed = false;
+  const merged: Record<string, string> = { ...existing };
+  for (const [code, id] of Object.entries(cleanEntries)) {
+    if (merged[code] !== id) {
+      merged[code] = id;
+      changed = true;
+    }
+  }
+  const allowedDir = assertPathAllowed(resolveConfigDir());
+  const existingPath = assertPathAllowed(path.join(allowedDir, LMS_CLASS_IDS_FILENAME));
+  if (!changed && fs.existsSync(existingPath)) {
+    return;
+  }
+  writeJsonFile(LMS_CLASS_IDS_FILENAME, merged);
+}
+
+/**
+ * Persists a single `{ classCode -> lmsClassId }` mapping atomically.
+ */
+export function saveLmsClassIdMapping(classCode: string, lmsClassId: string): void {
+  saveLmsClassIdMappingsBatch({ [classCode]: lmsClassId });
 }

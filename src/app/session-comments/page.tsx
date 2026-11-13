@@ -12,8 +12,12 @@ import {
   Check,
   ShieldCheck,
   UserCheck,
+  ExternalLink,
 } from "lucide-react";
 import { ClassPicker } from "@/components/class-picker";
+import {
+  buildLmsClassCommentsUrl as sharedBuildLmsClassCommentsUrl,
+} from "@/lib/lms/lms-class-url";
 import {
   formatShortZaloName as sharedFormatShortZaloName,
   addDaysToDdMmYyyy as sharedAddDaysToDdMmYyyy,
@@ -295,9 +299,65 @@ interface SyllabusCourse {
 
 interface RunningClassOption {
   classCode: string;
+  lmsClassId?: string;
   courseName?: string;
   center?: string;
   status?: string;
+}
+
+function isValidLmsClassObjectIdInline(raw: unknown): boolean {
+  const s = String(raw ?? "").trim();
+  if (!s) return false;
+  const lower = s.toLowerCase();
+  if (
+    lower === "undefined" ||
+    lower === "null" ||
+    lower === "true" ||
+    lower === "false" ||
+    lower === "nan"
+  ) {
+    return false;
+  }
+  return /^[a-zA-Z0-9_-]{8,64}$/.test(s);
+}
+
+function escapeHtmlInline(raw: string): string {
+  return String(raw || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function buildLmsClassCommentsUrlSafe(params: {
+  lmsBaseUrl?: string;
+  classCode: string;
+  lmsClassId?: string | null;
+  tab?: number;
+}): string {
+  if (typeof sharedBuildLmsClassCommentsUrl === "function") {
+    return sharedBuildLmsClassCommentsUrl(params);
+  }
+  const rawBase = String(params?.lmsBaseUrl || "").trim();
+  const originMatch = rawBase.match(/^(https?:\/\/[a-zA-Z0-9.-]+(?::\d+)?)(?:\/|$)/i);
+  const origin = originMatch ? originMatch[1].replace(/\/+$/, "") : "https://lms.mindx.edu.vn";
+  const code = String(params?.classCode || "").trim().toUpperCase();
+  if (!/^[A-Z0-9][A-Z0-9_-]{1,63}$/.test(code)) {
+    return `${origin}/admin/classes`;
+  }
+  const encodedSearch = encodeURIComponent(JSON.stringify(code));
+  const cleanId = String(params?.lmsClassId || "").trim();
+  const tabNum =
+    typeof params?.tab === "number" && Number.isInteger(params.tab) && params.tab >= 0
+      ? params.tab
+      : 10;
+  if (isValidLmsClassObjectIdInline(cleanId)) {
+    return `${origin}/admin/classes?search=${encodedSearch}&id=${encodeURIComponent(
+      JSON.stringify(cleanId)
+    )}&tab=${tabNum}`;
+  }
+  return `${origin}/admin/classes?search=${encodedSearch}`;
 }
 
 function findLatestActiveSessionId(sessionList: SessionItem[]): string {
@@ -375,6 +435,9 @@ export default function SessionCommentsPage() {
   const [isFetchingClasses, setIsFetchingClasses] = useState(false);
   const [isManualClassInput, setIsManualClassInput] = useState(false);
   const [runningClasses, setRunningClasses] = useState<RunningClassOption[]>([]);
+  const [lmsBaseUrl, setLmsBaseUrl] = useState("https://lms.mindx.edu.vn");
+  const [lmsClassIdsByCode, setLmsClassIdsByCode] = useState<Record<string, string>>({});
+  const [openingLmsClass, setOpeningLmsClass] = useState<string | null>(null);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [isSavingLms, setIsSavingLms] = useState(false);
   const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
@@ -385,6 +448,8 @@ export default function SessionCommentsPage() {
   } | null>(null);
 
   const DRAFT_SAVE_DEBOUNCE_MS = 600;
+  const openingLmsInFlightRef = useRef(false);
+  const openingLmsReqSeqRef = useRef(0);
   const latestLoadRequestIdRef = useRef(0);
   const latestAiRequestIdRef = useRef(0);
   const activeClassIdRef = useRef(initialSavedClass);
@@ -596,7 +661,34 @@ export default function SessionCommentsPage() {
         }
         if (json.data.quickTags) setQuickTags(json.data.quickTags);
         if (json.data.syllabusList) setSyllabusList(json.data.syllabusList);
+        if (typeof json.data.lmsBaseUrl === "string" && json.data.lmsBaseUrl.trim()) {
+          setLmsBaseUrl(json.data.lmsBaseUrl.trim());
+        }
+        const discoveredLmsIds: Record<string, string> = {};
+        if (json.data.lmsClassIds && typeof json.data.lmsClassIds === "object") {
+          for (const [k, v] of Object.entries(json.data.lmsClassIds)) {
+            const codeKey = String(k || "").trim().toUpperCase();
+            const idVal = typeof v === "string" ? v.trim() : "";
+            if (codeKey && isValidLmsClassObjectIdInline(idVal)) {
+              discoveredLmsIds[codeKey] = idVal;
+            }
+          }
+        }
+        if (
+          effectiveClassId &&
+          typeof json.data.lmsClassId === "string" &&
+          isValidLmsClassObjectIdInline(json.data.lmsClassId)
+        ) {
+          discoveredLmsIds[effectiveClassId] = json.data.lmsClassId.trim();
+        }
         if (Array.isArray(json.data.runningClasses) && json.data.runningClasses.length > 0) {
+          for (const item of json.data.runningClasses) {
+            const codeKey = String(item?.classCode || "").trim().toUpperCase();
+            const idVal = typeof item?.lmsClassId === "string" ? item.lmsClassId.trim() : "";
+            if (codeKey && isValidLmsClassObjectIdInline(idVal)) {
+              discoveredLmsIds[codeKey] = idVal;
+            }
+          }
           setRunningClasses((prev) => {
             const map = new Map<string, RunningClassOption>();
             for (const item of json.data.runningClasses) {
@@ -609,6 +701,9 @@ export default function SessionCommentsPage() {
             }
             return Array.from(map.values());
           });
+        }
+        if (Object.keys(discoveredLmsIds).length > 0) {
+          setLmsClassIdsByCode((prev) => ({ ...prev, ...discoveredLmsIds }));
         }
 
         if (!effectiveClassId) return;
@@ -831,13 +926,25 @@ export default function SessionCommentsPage() {
       const data = await res.json();
 
       if (res.ok !== false && data.success && Array.isArray(data.classes)) {
-        const fetched: RunningClassOption[] = data.classes.map((c: any) => ({
-          classCode: String(c.classCode || c.classId || "").trim().toUpperCase(),
-          courseName: c.courseName || c.className || "",
-          center: c.center || "",
-          status: c.status || "Running",
-        }));
+        const fetchedIds: Record<string, string> = {};
+        const fetched: RunningClassOption[] = data.classes.map((c: any) => {
+          const code = String(c.classCode || c.classId || "").trim().toUpperCase();
+          const lid = typeof c.lmsClassId === "string" ? c.lmsClassId.trim() : "";
+          if (code && isValidLmsClassObjectIdInline(lid)) {
+            fetchedIds[code] = lid;
+          }
+          return {
+            classCode: code,
+            ...(isValidLmsClassObjectIdInline(lid) ? { lmsClassId: lid } : {}),
+            courseName: c.courseName || c.className || "",
+            center: c.center || "",
+            status: c.status || "Running",
+          };
+        });
         setRunningClasses(fetched);
+        if (Object.keys(fetchedIds).length > 0) {
+          setLmsClassIdsByCode((prev) => ({ ...prev, ...fetchedIds }));
+        }
         setIsManualClassInput(false);
 
         if (fetched.length > 0) {
@@ -932,13 +1039,33 @@ export default function SessionCommentsPage() {
 
       if (data.success) {
         const syncedClassId = (data.classId || normalizedCode).trim().toUpperCase();
+        const syncedLmsObjId =
+          typeof data.lmsClassId === "string" && isValidLmsClassObjectIdInline(data.lmsClassId)
+            ? data.lmsClassId.trim()
+            : "";
+        if (syncedLmsObjId) {
+          setLmsClassIdsByCode((prev) => ({ ...prev, [syncedClassId]: syncedLmsObjId }));
+        }
         const targetSessId =
           data.latestActiveSessionId ||
           (data.sessions && data.sessions.length > 0 ? findLatestActiveSessionId(data.sessions) : "");
 
         setRunningClasses((prev) => {
-          if (prev.some((c) => c.classCode === syncedClassId)) return prev;
-          return [...prev, { classCode: syncedClassId, status: "Running" }];
+          if (prev.some((c) => c.classCode === syncedClassId)) {
+            return syncedLmsObjId
+              ? prev.map((c) =>
+                  c.classCode === syncedClassId ? { ...c, lmsClassId: syncedLmsObjId } : c
+                )
+              : prev;
+          }
+          return [
+            ...prev,
+            {
+              classCode: syncedClassId,
+              ...(syncedLmsObjId ? { lmsClassId: syncedLmsObjId } : {}),
+              status: "Running",
+            },
+          ];
         });
         setClassId(syncedClassId);
         if (targetSessId) {
@@ -961,6 +1088,144 @@ export default function SessionCommentsPage() {
       setStatusMessage({ type: "error", text: `Lỗi kết nối API: ${err.message}` });
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  // Open the selected class directly in the MindX LMS Drawer Comments tab (tab=10)
+  const handleOpenClassOnLms = async () => {
+    const targetCode = String(classCode || classId || "").trim().toUpperCase();
+    if (!targetCode) {
+      setStatusMessage({
+        type: "error",
+        text: "Vui lòng chọn hoặc nhập mã lớp trước khi mở trang LMS.",
+      });
+      return;
+    }
+
+    const matchedRunning = runningClasses.find(
+      (c) => String(c?.classCode || "").trim().toUpperCase() === targetCode
+    );
+    const cachedIdCandidate = String(
+      lmsClassIdsByCode[targetCode] || matchedRunning?.lmsClassId || ""
+    ).trim();
+    const cachedId = isValidLmsClassObjectIdInline(cachedIdCandidate)
+      ? cachedIdCandidate
+      : "";
+
+    if (typeof window === "undefined" || typeof window.open !== "function") {
+      return;
+    }
+
+    // Fast path: cached LMS class ObjectId -> open exact Drawer + Comments tab synchronously (0ms)
+    if (cachedId) {
+      const directUrl = buildLmsClassCommentsUrlSafe({
+        lmsBaseUrl,
+        classCode: targetCode,
+        lmsClassId: cachedId,
+        tab: 10,
+      });
+      const popup = window.open(directUrl, "_blank");
+      if (!popup) {
+        setStatusMessage({
+          type: "error",
+          text: "Trình duyệt đã chặn cửa sổ bật lên (Popup). Thầy vui lòng cho phép mở tab mới cho trang này rồi bấm lại nhé.",
+        });
+        return;
+      }
+      try {
+        popup.opener = null;
+      } catch {}
+      return;
+    }
+
+    // Uncached first-time path: claim popup synchronously inside click gesture, then redirect
+    if (openingLmsInFlightRef.current) return;
+    const fallbackSearchUrl = buildLmsClassCommentsUrlSafe({
+      lmsBaseUrl,
+      classCode: targetCode,
+    });
+    const popup = window.open("about:blank", "_blank");
+    if (!popup) {
+      setStatusMessage({
+        type: "error",
+        text: "Trình duyệt đã chặn cửa sổ bật lên (Popup). Thầy vui lòng cho phép mở tab mới cho trang này rồi bấm lại nhé.",
+      });
+      return;
+    }
+    try {
+      popup.opener = null;
+    } catch {}
+
+    try {
+      if (popup.document) {
+        const safeCodeHtml = escapeHtmlInline(targetCode);
+        popup.document.open();
+        popup.document.write(
+          `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Đang mở lớp ${safeCodeHtml}...</title><style>body{font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f8fafc;color:#1e293b}div{text-align:center;padding:24px;border-radius:12px;background:#fff;border:1px solid #cbd5e1;box-shadow:0 4px 12px rgba(15,23,42,.08);max-width:420px}h2{margin:0 0 8px;font-size:18px}p{margin:0;font-size:14px;color:#475569}</style></head><body><div><h2>Đang mở lớp ${safeCodeHtml} trên MindX LMS...</h2><p>Bot đang lấy đúng đường dẫn mục Nhận xét (Comments). Vui lòng đợi trong giây lát.</p></div></body></html>`
+        );
+        popup.document.close();
+      }
+    } catch {}
+
+    openingLmsInFlightRef.current = true;
+    setOpeningLmsClass(targetCode);
+    const reqSeq = ++openingLmsReqSeqRef.current;
+
+    try {
+      const res = await fetch("/api/classes/lms-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ classCode: targetCode, tab: 10 }),
+      });
+      const json = await res.json().catch(() => null);
+      if (json?.success && isValidLmsClassObjectIdInline(json?.lmsClassId)) {
+        const resolvedId = String(json.lmsClassId).trim();
+        setLmsClassIdsByCode((prev) => ({ ...prev, [targetCode]: resolvedId }));
+        const finalUrl =
+          typeof json.url === "string" && /^https?:\/\//i.test(json.url)
+            ? json.url
+            : buildLmsClassCommentsUrlSafe({
+                lmsBaseUrl,
+                classCode: targetCode,
+                lmsClassId: resolvedId,
+                tab: 10,
+              });
+        if (!popup.closed) {
+          popup.location.replace(finalUrl);
+        }
+      } else {
+        const fbUrl =
+          typeof json?.fallbackSearchUrl === "string" &&
+          /^https?:\/\//i.test(json.fallbackSearchUrl)
+            ? json.fallbackSearchUrl
+            : fallbackSearchUrl;
+        if (!popup.closed) {
+          popup.location.replace(fbUrl);
+        }
+        if (activeClassIdRef.current === targetCode) {
+          setStatusMessage({
+            type: "info",
+            text: `Chưa lấy được mã định danh Drawer của lớp ${targetCode} từ LMS nên đã mở sẵn ô tìm kiếm lớp ${targetCode} trên MindX LMS.`,
+          });
+        }
+      }
+    } catch {
+      try {
+        if (!popup.closed) {
+          popup.location.replace(fallbackSearchUrl);
+        }
+      } catch {}
+      if (activeClassIdRef.current === targetCode) {
+        setStatusMessage({
+          type: "info",
+          text: `Không kết nối được API tra cứu nhanh nên đã mở trang tìm kiếm lớp ${targetCode} trên MindX LMS.`,
+        });
+      }
+    } finally {
+      if (openingLmsReqSeqRef.current === reqSeq) {
+        openingLmsInFlightRef.current = false;
+        setOpeningLmsClass(null);
+      }
     }
   };
 
@@ -3834,6 +4099,32 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            data-testid="open-class-lms-btn"
+            onClick={() => {
+              void handleOpenClassOnLms();
+            }}
+            disabled={
+              (!classCode.trim() && !classId.trim()) || Boolean(openingLmsClass)
+            }
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold transition shadow-sm cursor-pointer"
+            title={
+              (classCode || classId).trim()
+                ? `Mở trực tiếp lớp ${(classCode || classId).trim().toUpperCase()} (tab Comments) trên MindX LMS trong tab mới`
+                : "Chọn lớp để mở trang MindX LMS"
+            }
+          >
+            <ExternalLink
+              className={`w-4 h-4 ${openingLmsClass ? "animate-pulse" : ""}`}
+            />
+            {openingLmsClass
+              ? `Đang mở LMS (${openingLmsClass})...`
+              : (classCode || classId).trim()
+                ? `Mở LMS (${(classCode || classId).trim().toUpperCase()})`
+                : "Mở trang LMS"}
+          </button>
+
           <button
             type="button"
             onClick={() => handleConfirmAllPresent(true)}

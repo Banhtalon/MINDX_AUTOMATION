@@ -32,6 +32,7 @@ package-lock.json.bak
 /data/debug_*
 /data/running_classes.json
 /data/config/teacher_browsed_dirs.json
+/data/config/lms_class_ids.json
 
 # Environment variables & secrets
 .env

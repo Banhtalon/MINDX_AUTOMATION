@@ -1639,9 +1639,15 @@ function parseSpckRelatedLinksArraySafe(raw?: string | null): Array<{ name: stri
   }
 }
 
-const requestFileDigestCacheStorage = new AsyncLocalStorage<Map<string, string>>();
+const requestFileDigestCacheStorage =
+  typeof AsyncLocalStorage === "function"
+    ? new AsyncLocalStorage<Map<string, string>>()
+    : null;
 
 export function withRequestScopedFileSha256Cache<T>(fn: () => T): T {
+  if (!requestFileDigestCacheStorage) {
+    return fn();
+  }
   const existing = requestFileDigestCacheStorage.getStore();
   if (existing) {
     return fn();
@@ -1654,7 +1660,9 @@ export function computeSafeFileByteDigest(filePath?: string | null): string {
   if (!trimmed) return "";
   try {
     const safe = assertPathAllowed(trimmed);
-    const activeCache = requestFileDigestCacheStorage.getStore();
+    const activeCache = requestFileDigestCacheStorage
+      ? requestFileDigestCacheStorage.getStore()
+      : undefined;
     if (!fs.existsSync(safe)) {
       return "MISSING";
     }

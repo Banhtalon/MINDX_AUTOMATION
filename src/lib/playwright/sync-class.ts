@@ -19,15 +19,46 @@ import {
   getCoursesSyllabus,
   getRunningClasses,
   saveRunningClasses,
+  saveLmsClassIdMapping as _saveLmsClassIdMapping,
+  saveLmsClassIdMappingsBatch as _saveLmsClassIdMappingsBatch,
   type RunningClassItem,
 } from "../db/json-config";
 import { config } from "../config";
+import {
+  extractLmsClassIdFromDrawerUrl as _extractLmsClassIdFromDrawerUrl,
+  isValidLmsClassCode as _isValidLmsClassCode,
+  isValidLmsClassObjectId as _isValidLmsClassObjectId,
+} from "../lms/lms-class-url";
+import { resolveKnownLmsClassId as _resolveKnownLmsClassId } from "../lms/lms-class-id-store";
 import { toVietnameseUpperSlug as _toVietnameseUpperSlug } from "../utils/vietnamese-match";
 
 const toVietnameseUpperSlug =
   typeof _toVietnameseUpperSlug === "function"
     ? _toVietnameseUpperSlug
     : (console as any).__mindxVietnameseMatch?.toVietnameseUpperSlug;
+
+const saveLmsClassIdMapping =
+  typeof _saveLmsClassIdMapping === "function" ? _saveLmsClassIdMapping : () => {};
+const saveLmsClassIdMappingsBatch =
+  typeof _saveLmsClassIdMappingsBatch === "function"
+    ? _saveLmsClassIdMappingsBatch
+    : () => {};
+const extractLmsClassIdFromDrawerUrl =
+  typeof _extractLmsClassIdFromDrawerUrl === "function"
+    ? _extractLmsClassIdFromDrawerUrl
+    : () => null;
+const isValidLmsClassCode =
+  typeof _isValidLmsClassCode === "function"
+    ? _isValidLmsClassCode
+    : (raw: unknown) => /^[A-Z0-9][A-Z0-9_-]{1,63}$/.test(String(raw ?? "").trim().toUpperCase());
+const isValidLmsClassObjectId =
+  typeof _isValidLmsClassObjectId === "function"
+    ? _isValidLmsClassObjectId
+    : (raw: unknown) => /^[a-zA-Z0-9_-]{8,64}$/.test(String(raw ?? "").trim());
+const resolveKnownLmsClassId =
+  typeof _resolveKnownLmsClassId === "function"
+    ? _resolveKnownLmsClassId
+    : () => ({ lmsClassId: null, source: "NONE" as const });
 
 export const FINISHED_CLASS_GRACE_DAYS = 15;
 export const DASHBOARD_FINISHED_CLASS_GRACE_DAYS = 7;
@@ -428,6 +459,83 @@ export function doesLmsClassSearchPayloadMatchCode(
 }
 
 /**
+ * Extracts the MindX LMS backend `lmsClassId` (e.g. 24-hex ObjectId) for an exact `targetClassCode`
+ * from a search/list API JSON payload, preferring an actively `Running` entry when duplicates exist.
+ */
+export function extractLmsClassIdFromSearchPayload(
+  payload: unknown,
+  targetClassCode: string
+): string | null {
+  const target = String(targetClassCode || "").trim().toUpperCase();
+  if (!target || !payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return null;
+  }
+
+  const obj = payload as Record<string, any>;
+  if (obj.success === false || (Array.isArray(obj.errors) && obj.errors.length > 0)) {
+    return null;
+  }
+
+  const candidates =
+    obj?.data?.classes?.data ??
+    obj?.data?.classes?.items ??
+    obj?.data?.classes?.docs ??
+    obj?.data?.classes ??
+    obj?.data?.getClasses?.data ??
+    obj?.data?.getClasses?.items ??
+    obj?.data?.getClasses ??
+    obj?.data?.searchClasses?.data ??
+    obj?.data?.searchClasses?.items ??
+    obj?.data?.searchClasses ??
+    obj?.data?.findClasses?.data ??
+    obj?.data?.findClasses?.items ??
+    obj?.data?.findClasses ??
+    obj?.classes?.data ??
+    obj?.classes?.items ??
+    obj?.classes?.docs ??
+    obj?.classes ??
+    (Array.isArray(obj?.data) ? obj.data : null);
+
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    return null;
+  }
+
+  const matches = candidates.filter((item: any) => {
+    if (!item || typeof item !== "object") return false;
+    const codes = [item.code, item.classCode, item.class_code, item.name]
+      .filter((v) => typeof v === "string")
+      .map((v: string) => v.trim().toUpperCase());
+    return codes.includes(target);
+  });
+
+  if (matches.length === 0) return null;
+
+  const preferred =
+    matches.find(
+      (item: any) =>
+        String(item?.status || "")
+          .trim()
+          .toLowerCase() === "running"
+    ) || matches[0];
+
+  const candidateId = String(
+    preferred?.id ??
+      preferred?._id ??
+      preferred?.classId ??
+      preferred?.lmsClassId ??
+      ""
+  ).trim();
+
+  if (
+    !isValidLmsClassObjectId(candidateId) ||
+    candidateId.toUpperCase() === target
+  ) {
+    return null;
+  }
+  return candidateId;
+}
+
+/**
  * Resolves the date of Session 14 (Buổi 14) for a class from SQLite `classes_sessions`
  * or an optional end-date string scraped from the LMS classes table row.
  * If SQLite only has an earlier session date (e.g. Session 12 or 13 from the previous week's sync),
@@ -695,6 +803,7 @@ export interface SyncClassResult {
   success: boolean;
   classId: string;
   classCode: string;
+  lmsClassId?: string;
   courseName?: string;
   sessionsCount: number;
   studentsCount: number;
@@ -754,7 +863,6 @@ export class ClassSyncer {
     const freshClassByIdRequests = new Set<any>();
     const pendingClassByIdTasks = new Set<Promise<void>>();
     const canListenNetwork =
-      shouldSyncCompletion &&
       typeof (page as any)?.on === "function" &&
       typeof (page as any)?.off === "function";
 
@@ -963,6 +1071,27 @@ export class ClassSyncer {
         await Promise.allSettled(Array.from(pendingClassByIdTasks));
       }
 
+      const rawGqlId = String(
+        classByIdGqlData?.id ?? classByIdGqlData?._id ?? ""
+      ).trim();
+      const drawerUrlId = extractLmsClassIdFromDrawerUrl(
+        typeof page.url === "function" ? page.url() : ""
+      );
+      const syncedLmsClassId =
+        isValidLmsClassObjectId(rawGqlId) && rawGqlId.toUpperCase() !== classCode
+          ? rawGqlId
+          : drawerUrlId && drawerUrlId.toUpperCase() !== classCode
+            ? drawerUrlId
+            : undefined;
+      if (
+        syncedLmsClassId &&
+        !/^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(classCode)
+      ) {
+        try {
+          saveLmsClassIdMapping(classCode, syncedLmsClassId);
+        } catch {}
+      }
+
       // Enrich session dates from GetClassById.slots and weekly +7 days schedule up to today (<= todayEndOfDayMs),
       // advancing latestActiveSessionId when a session falls on today even before the class hour unlocks the DOM slot.
       const enrichedSchedule = enrichClassSessionsWithScheduleDates({
@@ -1032,6 +1161,7 @@ export class ClassSyncer {
         success: true,
         classId,
         classCode,
+        ...(syncedLmsClassId ? { lmsClassId: syncedLmsClassId } : {}),
         sessionsCount: sessions.length,
         studentsCount: students.length,
         activeStudentsCount,
@@ -1630,6 +1760,7 @@ export class ClassSyncer {
     let searchClearApiConfirmed = false;
     let confirmedApiClassCodes: string[] | null = null;
     let sawAnyClassListApiTraffic = false;
+    const discoveredLmsClassIds: Record<string, string> = {};
     const postClearRequests = new Set<any>();
     const onClassListApiRequest = (req: any) => {
       if (!req) return;
@@ -1745,6 +1876,24 @@ export class ClassSyncer {
                 : /\/api\/classes\b/i.test(url) && Array.isArray(parsed?.data || parsed)
                   ? (parsed?.data || parsed)
                   : null;
+          if (Array.isArray(rawClassArray)) {
+            for (const item of rawClassArray) {
+              const code = String(
+                item?.classCode || item?.code || item?.name || ""
+              )
+                .trim()
+                .toUpperCase();
+              const id = String(item?.id ?? item?._id ?? "").trim();
+              if (
+                isValidLmsClassCode(code) &&
+                !/^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(code) &&
+                isValidLmsClassObjectId(id) &&
+                id.toUpperCase() !== code
+              ) {
+                discoveredLmsClassIds[code] = id;
+              }
+            }
+          }
           if (isExplicitClassListRequest && !hasNonEmptySearchFilter && Array.isArray(rawClassArray)) {
             const extractedCodes = rawClassArray
               .map((item: any) =>
@@ -2277,6 +2426,11 @@ export class ClassSyncer {
       const shouldPersist = options?.persistToConfig !== false;
       if (shouldPersist) {
         saveRunningClasses(runningList);
+        if (Object.keys(discoveredLmsClassIds).length > 0) {
+          try {
+            saveLmsClassIdMappingsBatch(discoveredLmsClassIds);
+          } catch {}
+        }
       }
 
       const finalClasses = runningList;
@@ -2603,6 +2757,335 @@ export class ClassSyncer {
         source: "NONE",
         error: errMsg,
       };
+    }
+  }
+
+  /**
+   * Resolves the MindX LMS backend `lmsClassId` (ObjectId) for a given `classCode`
+   * using local cache first, then live Playwright lookup:
+   *   Tier 0: Currently open class Drawer URL/payload matching `classCode`
+   *   Tier 1: `/admin/classes` table search input -> GraphQL/REST API JSON `id`
+   *   Tier 2: Open class Drawer via `LmsHelpers.openClassDrawer` -> `GetClassById` / URL `?id=`
+   */
+  public static async resolveLmsClassId(
+    rawClassCode: string,
+    options?: {
+      testPage?: Page;
+      skipAuth?: boolean;
+      searchTimeoutMs?: number;
+      persistToConfig?: boolean;
+    }
+  ): Promise<{
+    success: boolean;
+    classCode: string;
+    lmsClassId: string;
+    source: "CACHE" | "LMS_DRAWER_URL" | "LMS_SEARCH_API" | "LMS_DRAWER";
+    error?: string;
+  }> {
+    const classCode = String(rawClassCode || "").trim().toUpperCase();
+    if (!isValidLmsClassCode(classCode)) {
+      return {
+        success: false,
+        classCode,
+        lmsClassId: "",
+        source: "CACHE",
+        error: "Mã lớp (classCode) không hợp lệ.",
+      };
+    }
+
+    const cached = resolveKnownLmsClassId(classCode);
+    if (
+      cached.lmsClassId &&
+      isValidLmsClassObjectId(cached.lmsClassId) &&
+      cached.lmsClassId.toUpperCase() !== classCode
+    ) {
+      return {
+        success: true,
+        classCode,
+        lmsClassId: cached.lmsClassId,
+        source: "CACHE",
+      };
+    }
+
+    const jobId = `resolve_lms_id_${classCode}_${Date.now()}`;
+    jobLogRepo.add({
+      jobId,
+      jobType: "SYNC_CLASS",
+      classId: classCode,
+      level: "INFO",
+      message: `Đang lấy đường dẫn LMS trực tiếp của lớp ${classCode}...`,
+    });
+
+    const persistIfAllowed = (resolvedId: string) => {
+      if (
+        options?.persistToConfig !== false &&
+        !options?.testPage &&
+        !/^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(classCode)
+      ) {
+        try {
+          saveLmsClassIdMapping(classCode, resolvedId);
+        } catch {}
+      }
+    };
+
+    const page =
+      options?.testPage ??
+      (await (async () => {
+        const browserManager = BrowserManager.getInstance();
+        return typeof browserManager.getPage === "function"
+          ? await browserManager.getPage()
+          : (await browserManager.getContext()).pages()[0] ||
+              (await (await browserManager.getContext()).newPage());
+      })());
+    const interceptor = createNetworkInterceptor(page);
+
+    let capturedDrawerGqlId: string | null = null;
+    const pendingDrawerGqlTasks = new Set<Promise<void>>();
+    const onDrawerResponse = (res: any) => {
+      try {
+        const resUrl = typeof res?.url === "function" ? res.url() : "";
+        const reqObj = typeof res?.request === "function" ? res.request() : null;
+        if (!resUrl.includes("mindx.edu.vn") || !reqObj) return;
+        if (typeof reqObj.method === "function" && reqObj.method() !== "POST") return;
+        let reqBody: any;
+        try {
+          reqBody = reqObj.postDataJSON?.();
+        } catch {
+          return;
+        }
+        if (reqBody?.operationName !== "GetClassById") return;
+
+        const task = (async () => {
+          try {
+            const status = typeof res.status === "function" ? res.status() : 200;
+            if (status < 200 || status >= 300) return;
+            const resJson = await res.json();
+            if (resJson && Array.isArray(resJson.errors) && resJson.errors.length > 0) return;
+            const clsPayload =
+              resJson?.data?.classesById ||
+              resJson?.data?.class ||
+              resJson?.data?.getClassById;
+            if (!clsPayload || typeof clsPayload !== "object") return;
+            const payloadCode = String(
+              clsPayload.name || clsPayload.code || clsPayload.classCode || ""
+            )
+              .trim()
+              .toUpperCase();
+            if (payloadCode && payloadCode !== classCode) return;
+            const rawId = String(clsPayload.id ?? clsPayload._id ?? "").trim();
+            if (
+              isValidLmsClassObjectId(rawId) &&
+              rawId.toUpperCase() !== classCode
+            ) {
+              capturedDrawerGqlId = rawId;
+            }
+          } catch {}
+        })();
+        pendingDrawerGqlTasks.add(task);
+        task.finally(() => {
+          pendingDrawerGqlTasks.delete(task);
+        });
+      } catch {}
+    };
+
+    try {
+      if (!options?.skipAuth && !options?.testPage) {
+        await authService.ensureAuthenticated("LMS");
+      }
+
+      await interceptor.dismissForbiddenToast();
+
+      const escapedTarget = classCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const exactCodeBoundary = new RegExp(
+        `(^|[^a-zA-Z0-9_-])${escapedTarget}([^a-zA-Z0-9_-]|$)`,
+        "i"
+      );
+
+      // Tier 0: Check if the target class Drawer is already open with `?id=...` in URL
+      const existingDrawer = page
+        .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
+        .first();
+      if (await existingDrawer.isVisible().catch(() => false)) {
+        const existingText = await existingDrawer.innerText().catch(() => "");
+        if (exactCodeBoundary.test(existingText)) {
+          const urlId = extractLmsClassIdFromDrawerUrl(
+            typeof page.url === "function" ? page.url() : ""
+          );
+          if (urlId && urlId.toUpperCase() !== classCode) {
+            persistIfAllowed(urlId);
+            jobLogRepo.add({
+              jobId,
+              jobType: "SYNC_CLASS",
+              classId: classCode,
+              level: "SUCCESS",
+              message: `Đã lấy ID lớp ${classCode} từ Drawer LMS đang mở.`,
+            });
+            return {
+              success: true,
+              classCode,
+              lmsClassId: urlId,
+              source: "LMS_DRAWER_URL",
+            };
+          }
+        }
+
+        // Close open drawer so the `/admin/classes` search input is accessible
+        const backBtn = existingDrawer.locator('button:has-text("Back")').first();
+        if (await backBtn.isVisible().catch(() => false)) {
+          await backBtn.click({ force: true }).catch(() => {});
+        } else {
+          await page.keyboard.press("Escape").catch(() => {});
+          const closeBtn = page.locator(SELECTORS.classes.closeDrawerButton).first();
+          if (await closeBtn.isVisible().catch(() => false)) {
+            await closeBtn.click({ force: true }).catch(() => {});
+          }
+        }
+        await page.waitForTimeout(500);
+      }
+
+      const currentUrl = typeof page.url === "function" ? page.url() : "";
+      const { hostname, pathname } = parseUrlParts(currentUrl);
+      if (
+        !options?.testPage &&
+        (!hostname ||
+          isLoginHostOrPath(currentUrl, "lms.mindx.edu.vn") ||
+          pathname.includes("/dashboard") ||
+          (!pathname.includes("/class") && !pathname.includes("/classes")))
+      ) {
+        const baseLmsUrl = config.lmsUrl
+          .replace(/\/+$/, "")
+          .replace(/\/(admin\/)?(classes|class|dashboard)$/i, "");
+        await page
+          .goto(`${baseLmsUrl}/admin/classes`, {
+            waitUntil: "domcontentloaded",
+            timeout: 25000,
+          })
+          .catch(() => {});
+        await page
+          .locator(SELECTORS.classes.searchInput)
+          .first()
+          .waitFor({ state: "visible", timeout: 8000 })
+          .catch(() => {});
+      }
+
+      await interceptor.dismissForbiddenToast();
+
+      // Tier 1: Fast Search API lookup without needing to render full student/slot tabs
+      const searchInput = page.locator(SELECTORS.classes.searchInput).first();
+      const isSearchVisible = await searchInput.isVisible().catch(() => false);
+      if (isSearchVisible) {
+        const searchApiPromise = page
+          .waitForResponse(
+            (res) =>
+              isLmsClassSearchRequestForCode(
+                res.url(),
+                res.request().method(),
+                String(res.request().postData() || ""),
+                classCode
+              ),
+            { timeout: options?.searchTimeoutMs ?? 8000 }
+          )
+          .catch(() => null);
+
+        await searchInput.click({ force: true }).catch(() => {});
+        await searchInput.fill("");
+        await searchInput.fill(classCode);
+        await searchInput.press("Enter").catch(() => {});
+        await page.keyboard.press("Enter").catch(() => {});
+
+        const searchApiRes = await searchApiPromise;
+        if (
+          searchApiRes &&
+          searchApiRes.status() >= 200 &&
+          searchApiRes.status() < 300
+        ) {
+          const searchJson = await searchApiRes.json().catch(() => null);
+          const apiId = extractLmsClassIdFromSearchPayload(searchJson, classCode);
+          if (apiId && apiId.toUpperCase() !== classCode) {
+            persistIfAllowed(apiId);
+            jobLogRepo.add({
+              jobId,
+              jobType: "SYNC_CLASS",
+              classId: classCode,
+              level: "SUCCESS",
+              message: `Đã lấy ID lớp ${classCode} trực tiếp từ API tìm kiếm LMS.`,
+            });
+            return {
+              success: true,
+              classCode,
+              lmsClassId: apiId,
+              source: "LMS_SEARCH_API",
+            };
+          }
+        }
+      }
+
+      // Tier 2 Fallback: Open the class Drawer and capture GetClassById / URL `?id=`
+      if (typeof (page as any)?.on === "function") {
+        (page as any).on("response", onDrawerResponse);
+      }
+
+      await LmsHelpers.openClassDrawer(page, classCode);
+      if (pendingDrawerGqlTasks.size > 0) {
+        await Promise.allSettled(Array.from(pendingDrawerGqlTasks));
+      } else {
+        await page.waitForTimeout(400);
+        if (pendingDrawerGqlTasks.size > 0) {
+          await Promise.allSettled(Array.from(pendingDrawerGqlTasks));
+        }
+      }
+
+      const fallbackUrlId = extractLmsClassIdFromDrawerUrl(
+        typeof page.url === "function" ? page.url() : ""
+      );
+      const drawerId =
+        capturedDrawerGqlId ||
+        (fallbackUrlId && fallbackUrlId.toUpperCase() !== classCode
+          ? fallbackUrlId
+          : null);
+
+      if (drawerId) {
+        persistIfAllowed(drawerId);
+        jobLogRepo.add({
+          jobId,
+          jobType: "SYNC_CLASS",
+          classId: classCode,
+          level: "SUCCESS",
+          message: `Đã lấy ID lớp ${classCode} từ Drawer chi tiết trên LMS.`,
+        });
+        return {
+          success: true,
+          classCode,
+          lmsClassId: drawerId,
+          source: "LMS_DRAWER",
+        };
+      }
+
+      throw new Error(
+        `Không tìm thấy ID lớp ${classCode} từ phản hồi API hoặc Drawer của MindX LMS.`
+      );
+    } catch (err: any) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      jobLogRepo.add({
+        jobId,
+        jobType: "SYNC_CLASS",
+        classId: classCode,
+        level: "ERROR",
+        message: `Lỗi lấy đường dẫn LMS lớp ${classCode}: ${errMsg}`,
+      });
+      return {
+        success: false,
+        classCode,
+        lmsClassId: "",
+        source: "LMS_DRAWER",
+        error: errMsg,
+      };
+    } finally {
+      if (typeof (page as any)?.off === "function") {
+        try {
+          (page as any).off("response", onDrawerResponse);
+        } catch {}
+      }
     }
   }
 }

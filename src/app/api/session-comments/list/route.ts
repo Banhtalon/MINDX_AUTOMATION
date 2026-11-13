@@ -10,6 +10,9 @@ import {
 } from "@/lib/db/json-config";
 import { detectTrackByClassCode, normalizeQuickTagsForTrack } from "@/lib/quick-tags";
 import { listClasses, listStudents } from "@/lib/classes/class-directory";
+import { config } from "@/lib/config";
+import { normalizeLmsBaseOrigin } from "@/lib/lms/lms-class-url";
+import { resolveKnownLmsClassIdsMap } from "@/lib/lms/lms-class-id-store";
 
 function isSession14Category(cat: { category?: string; categoryName?: string; track?: string } | null | undefined): boolean {
   if (!cat) return false;
@@ -181,11 +184,22 @@ export async function GET(req: Request) {
     );
     const syllabusList = getCoursesSyllabus();
     const zaloTemplates = getZaloTemplates();
+    const lmsClassIds =
+      typeof resolveKnownLmsClassIdsMap === "function"
+        ? resolveKnownLmsClassIdsMap()
+        : {};
+    const lmsBaseUrl =
+      typeof normalizeLmsBaseOrigin === "function"
+        ? normalizeLmsBaseOrigin(typeof config !== "undefined" ? config?.lmsUrl : undefined)
+        : "https://lms.mindx.edu.vn";
 
     return NextResponse.json({
       success: true,
       data: {
         resolvedClassId: classId || undefined,
+        lmsBaseUrl,
+        lmsClassIds,
+        lmsClassId: classId ? lmsClassIds[classId] || undefined : undefined,
         sessions: allSessions,
         students: allStudents,
         feedbacks,

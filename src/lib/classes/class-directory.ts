@@ -15,6 +15,7 @@ import {
   parseClassDateToEndOfDayMs,
   resolveClassDateRangeInfo,
 } from "@/lib/playwright/sync-class";
+import { resolveKnownLmsClassIdsMap } from "@/lib/lms/lms-class-id-store";
 
 /**
  * Single canonical regex for filtering synthetic / test / audit class codes
@@ -191,6 +192,10 @@ export function queryClassDirectory(options?: ListClassesOptions): {
 
   const allClassesMap = new Map<string, ClassDirectoryItem>();
   const classes: ClassDirectoryItem[] = [];
+  const knownLmsClassIds =
+    typeof resolveKnownLmsClassIdsMap === "function"
+      ? resolveKnownLmsClassIdsMap()
+      : {};
   const activeRunningCodeSet = new Set<string>();
   for (const [cCode, cItem] of cachedRunningMap.entries()) {
     if (isConfirmedRunningStatus(cItem.status)) {
@@ -351,10 +356,14 @@ export function queryClassDirectory(options?: ListClassesOptions): {
       }
     }
 
+    const resolvedLmsClassId =
+      knownLmsClassIds[code] || cachedItem?.lmsClassId || undefined;
+
     const entry: ClassDirectoryItem = {
       ...(cachedItem || {}),
       classId: code,
       classCode: code,
+      ...(resolvedLmsClassId ? { lmsClassId: resolvedLmsClassId } : {}),
       className: dbRow?.className || courseName || code,
       courseName: courseName || "",
       status: resolvedStatus,
