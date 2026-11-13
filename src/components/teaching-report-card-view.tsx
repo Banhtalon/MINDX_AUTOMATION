@@ -30,6 +30,9 @@ export interface ReportCardDbRecordClient {
   contentHash: string;
   draftVersion: number;
   lastSyncedAt: string | null;
+  teachingSyncStatus?: string | null;
+  teachingSyncedAt?: string | null;
+  teachingVerifiedSnapshotJson?: string | null;
   errorMessage: string | null;
   updatedAt: string;
 }
@@ -732,10 +735,14 @@ export default function TeachingReportCardView({
       if (!accepted) {
         return;
       }
+      const extraWarn =
+        typeof data?.warning === "string" && data.warning.trim()
+          ? ` — ${data.warning.trim()}`
+          : "";
       setToastMsg(
         `Đồng bộ & Xác thực Read-after-Write thành công ${
           data.syncedScoreCount ?? 0
-        } đầu điểm lên trang Teaching cho lớp ${targetClassId}!`
+        } đầu điểm lên trang Teaching cho lớp ${targetClassId}!${extraWarn}`
       );
     } catch (err: any) {
       if (
@@ -851,10 +858,14 @@ export default function TeachingReportCardView({
         return;
       }
 
+      const extraWarn =
+        typeof syncData?.warning === "string" && syncData.warning.trim()
+          ? ` — ${syncData.warning.trim()}`
+          : "";
       setToastMsg(
         `Đã duyệt (SHA-256) & đồng bộ Read-after-Write thành công ${
           syncData.syncedScoreCount ?? 0
-        } đầu điểm lên trang Teaching cho lớp ${targetClassId}!`
+        } đầu điểm lên trang Teaching cho lớp ${targetClassId}!${extraWarn}`
       );
     } catch (err: any) {
       if (
@@ -1798,6 +1809,38 @@ export default function TeachingReportCardView({
 
   const statusBadge = getStatusBadgeInfo(isClassMatched ? record?.status : undefined);
   const overrideCount = isClassMatched ? Object.keys(overrides).length : 0;
+  const verifiedSkippedStudents = useMemo<
+    Array<{ localStudentId: string; localFullName: string; reason: string }>
+  >(() => {
+    if (!isClassMatched || !record?.teachingVerifiedSnapshotJson) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(record.teachingVerifiedSnapshotJson);
+      if (!parsed || typeof parsed !== "object") return [];
+      const rawList = Array.isArray((parsed as any).skippedStudents)
+        ? (parsed as any).skippedStudents
+        : [];
+      const list: Array<{
+        localStudentId: string;
+        localFullName: string;
+        reason: string;
+      }> = [];
+      for (const item of rawList) {
+        if (!item || typeof item !== "object") continue;
+        const name = String((item as any).localFullName || "").trim();
+        if (!name) continue;
+        list.push({
+          localStudentId: String((item as any).localStudentId || ""),
+          localFullName: name,
+          reason: String((item as any).reason || "NOT_FOUND_ON_TEACHING"),
+        });
+      }
+      return list;
+    } catch {
+      return [];
+    }
+  }, [isClassMatched, record?.teachingVerifiedSnapshotJson]);
   const activeSessions = useMemo(() => {
     if (!computedReportCard) return [];
     return computedReportCard.btvnSessions.filter((s) =>
@@ -1835,10 +1878,11 @@ export default function TeachingReportCardView({
                     effectiveClassId
                   )}`}
                   target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-sky-400 underline hover:text-sky-300 font-semibold"
+                  rel="noopener noreferrer"
+                  title={`Mở bảng điểm tổng kết lớp ${effectiveClassId} trên teachingmindx.top/diem-tong-ket.php`}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-sky-900/60 hover:bg-sky-800/80 text-sky-200 border border-sky-500/50 transition mindx-dark-keep"
                 >
-                  teachingmindx.top/diem-tong-ket.php ↗
+                  <span>🌐 Mở Teaching ({effectiveClassId}) ↗</span>
                 </a>
               )}
             </div>
@@ -2148,6 +2192,23 @@ export default function TeachingReportCardView({
           </button>
         </div>
       )}
+
+      {isClassMatched &&
+        record?.teachingSyncStatus === "VERIFIED" &&
+        verifiedSkippedStudents.length > 0 && (
+          <div
+            data-testid="report-card-skipped-students-banner"
+            className="bg-amber-950/55 border border-amber-700/80 text-amber-100 px-4 py-3 rounded-xl text-xs sm:text-sm space-y-1"
+          >
+            <div className="font-bold text-amber-300">
+              ℹ️ Đã bỏ qua {verifiedSkippedStudents.length} học viên chưa có hoặc đang nghỉ trên Teaching:{" "}
+              {verifiedSkippedStudents.map((s) => s.localFullName).join(", ")}
+            </div>
+            <div className="text-xs text-amber-200/90">
+              Các học viên còn lại của lớp {effectiveClassId} đã được đồng bộ đầy đủ lên Teaching. Sau khi danh sách học viên trên Teaching được cập nhật, bấm quét &amp; đồng bộ lại sẽ tự điền bổ sung cho học viên bị thiếu.
+            </div>
+          </div>
+        )}
 
       {/* Staleness Warning Banner (S4.3) */}
       {isClassMatched && staleness?.isStale && (

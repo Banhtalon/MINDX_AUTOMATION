@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
+  ExternalLink,
   Loader2,
   Play,
   RefreshCw,
@@ -27,6 +28,8 @@ interface BatchClassRowState {
   courseName?: string;
   status: BatchClassRowStatus;
   syncedScoreCount?: number;
+  skippedStudentCount?: number;
+  warning?: string;
   detail?: string;
 }
 
@@ -226,6 +229,12 @@ export function ReportCardBatchSyncPanel({
             ? outcome
             : "NEEDS_ATTENTION";
 
+        const skippedStudentCount = Number(data?.skippedStudentCount || 0);
+        const warningText =
+          typeof data?.warning === "string" && data.warning.trim()
+            ? data.warning.trim()
+            : undefined;
+
         setItems((prev) =>
           prev.map((row) =>
             row.classCode === target.classCode
@@ -233,6 +242,14 @@ export function ReportCardBatchSyncPanel({
                   ...row,
                   status: nextStatus,
                   syncedScoreCount: Number(data?.syncedScoreCount || 0),
+                  skippedStudentCount:
+                    nextStatus === "SYNCED" && skippedStudentCount > 0
+                      ? skippedStudentCount
+                      : 0,
+                  warning:
+                    nextStatus === "SYNCED" && warningText
+                      ? warningText
+                      : undefined,
                   detail:
                     nextStatus === "NEEDS_ATTENTION"
                       ? data?.error || "Cần kiểm tra lại lớp này."
@@ -591,11 +608,18 @@ export function ReportCardBatchSyncPanel({
               const isSelected =
                 activeClassCode.trim().toUpperCase() === item.classCode;
               return (
-                <button
+                <div
                   key={item.classCode}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   data-testid={`batch-row-${item.classCode}`}
                   onClick={() => onSelectClass(item.classCode)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelectClass(item.classCode);
+                    }
+                  }}
                   className={`w-full px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-left transition cursor-pointer ${
                     isSelected
                       ? "bg-sky-50/90 dark:bg-sky-900/25"
@@ -625,15 +649,43 @@ export function ReportCardBatchSyncPanel({
                     )}
                   </div>
 
-                  <span
-                    className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold border ${ui.badgeClass}`}
-                  >
-                    {item.status === "RUNNING" && (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    )}
-                    {ui.badgeText}
-                  </span>
-                </button>
+                  <div className="shrink-0 flex items-center gap-1.5 flex-wrap justify-end">
+                    {item.status === "SYNCED" &&
+                      Number(item.skippedStudentCount || 0) > 0 && (
+                        <span
+                          title={
+                            item.warning ||
+                            `Bỏ qua ${item.skippedStudentCount} học viên thiếu trên Teaching`
+                          }
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-500/40"
+                        >
+                          Bỏ qua {item.skippedStudentCount} HV thiếu trên Teaching
+                        </span>
+                      )}
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold border ${ui.badgeClass}`}
+                    >
+                      {item.status === "RUNNING" && (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      )}
+                      {ui.badgeText}
+                    </span>
+                    <a
+                      href={`https://teachingmindx.top/diem-tong-ket.php?from=hocsinh&class_code=${encodeURIComponent(
+                        item.classCode
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      title={`Mở bảng điểm tổng kết lớp ${item.classCode} trên Teaching`}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border border-sky-300 bg-sky-50 text-sky-800 hover:bg-sky-100 dark:border-sky-500/40 dark:bg-sky-500/15 dark:text-sky-200 dark:hover:bg-sky-500/25 transition"
+                    >
+                      <span>Teaching</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
               );
             })}
           </div>

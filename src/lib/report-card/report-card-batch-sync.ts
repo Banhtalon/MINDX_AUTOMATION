@@ -15,7 +15,10 @@ import {
   isFinishedClassSupersededByRunningSuccessor,
   isFinishedClassWithinGraceWindow,
 } from "@/lib/playwright/sync-class";
-import { TeachingReportCardSyncService } from "@/lib/playwright/teaching-report-card-sync";
+import {
+  TeachingReportCardSyncService,
+  type SkippedTeachingStudentInfo,
+} from "@/lib/playwright/teaching-report-card-sync";
 import { taskQueue } from "@/lib/queue/task-queue";
 import {
   computeClassReportCard,
@@ -56,6 +59,10 @@ export interface SingleClassBatchSyncResult {
   stage: SingleClassBatchSyncStage;
   syncedScoreCount: number;
   declaredExerciseCount: number;
+  matchedStudentCount?: number;
+  skippedStudentCount?: number;
+  skippedStudents?: SkippedTeachingStudentInfo[];
+  warning?: string;
   conflict?: boolean;
   cancelled?: boolean;
   message?: string;
@@ -111,8 +118,65 @@ export type SyncReportCardToTeachingFn = (
   success: boolean;
   syncedScoreCount: number;
   declaredExerciseCount: number;
+  matchedStudentCount?: number;
+  skippedStudentCount?: number;
+  skippedStudents?: SkippedTeachingStudentInfo[];
+  warning?: string;
   error?: string;
 }>;
+
+/**
+ * Safely extracts skipped Teaching student entries stored inside
+ * `teachingVerifiedSnapshotJson` from the previous sync.
+ */
+export function extractPriorSkippedTeachingStudents(
+  verifiedSnapshotJson: string | null | undefined
+): SkippedTeachingStudentInfo[] {
+  if (!verifiedSnapshotJson || typeof verifiedSnapshotJson !== "string") {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(verifiedSnapshotJson);
+    if (!parsed || typeof parsed !== "object") {
+      return [];
+    }
+    const rawList = Array.isArray((parsed as any).skippedStudents)
+      ? (parsed as any).skippedStudents
+      : [];
+    const normalized: SkippedTeachingStudentInfo[] = [];
+    for (const entry of rawList) {
+      if (!entry || typeof entry !== "object") continue;
+      const fullName = String((entry as any).localFullName || "").trim();
+      if (!fullName) continue;
+      normalized.push({
+        localStudentId: String((entry as any).localStudentId || ""),
+        localFullName: fullName,
+        reason:
+          (entry as any).reason === "INACTIVE_ON_TEACHING"
+            ? "INACTIVE_ON_TEACHING"
+            : "NOT_FOUND_ON_TEACHING",
+        detail: String((entry as any).detail || ""),
+      });
+    }
+    if (normalized.length > 0) {
+      return normalized;
+    }
+    const declaredCount = Number((parsed as any).skippedStudentCount || 0);
+    if (Number.isFinite(declaredCount) && declaredCount > 0) {
+      return [
+        {
+          localStudentId: "",
+          localFullName: `${declaredCount} học viên chưa khớp trên Teaching`,
+          reason: "NOT_FOUND_ON_TEACHING",
+          detail: "",
+        },
+      ];
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
 
 export interface DiscoverRunningClassesBatchOptions {
   refreshFromLms?: boolean;
@@ -622,8 +686,12 @@ export async function syncSingleClassReportCardFlow(
     }
 
     const liveHash = computeReportCardContentHash(snapshot, overrides);
+    const priorSkipped = extractPriorSkippedTeachingStudents(
+      afterScrape.teachingVerifiedSnapshotJson
+    );
     if (
       !options?.forceSyncUnchanged &&
+      priorSkipped.length === 0 &&
       afterScrape.status === "VERIFIED" &&
       afterScrape.teachingSyncStatus === "VERIFIED" &&
       Boolean(afterScrape.contentHash) &&
@@ -679,6 +747,10 @@ export async function syncSingleClassReportCardFlow(
       success: boolean;
       syncedScoreCount: number;
       declaredExerciseCount: number;
+      matchedStudentCount?: number;
+      skippedStudentCount?: number;
+      skippedStudents?: SkippedTeachingStudentInfo[];
+      warning?: string;
       error?: string;
     };
     try {
@@ -742,17 +814,37 @@ export async function syncSingleClassReportCardFlow(
       };
     }
 
+    const skippedCount = Number(
+      syncRes.skippedStudentCount ?? syncRes.skippedStudents?.length ?? 0
+    );
+    const syncedCount = Number(syncRes.syncedScoreCount || 0);
+    const skippedWarning =
+      syncRes.warning ||
+      (skippedCount > 0
+        ? `Đã bỏ qua ${skippedCount} học viên chưa khớp trên Teaching.`
+        : undefined);
+
     return {
       success: true,
       statusCode: 200,
       classCode: classId,
       outcome: "SYNCED",
       stage: "SYNC_TEACHING",
-      syncedScoreCount: Number(syncRes.syncedScoreCount || 0),
+      syncedScoreCount: syncedCount,
       declaredExerciseCount: Number(syncRes.declaredExerciseCount || 0),
-      message: `Đã đồng bộ & đối chiếu ${Number(
-        syncRes.syncedScoreCount || 0
-      )} đầu điểm lên Teaching.`,
+      ...(syncRes.matchedStudentCount !== undefined
+        ? { matchedStudentCount: syncRes.matchedStudentCount }
+        : {}),
+      ...(skippedCount > 0 ? { skippedStudentCount: skippedCount } : {}),
+      ...(Array.isArray(syncRes.skippedStudents) &&
+      syncRes.skippedStudents.length > 0
+        ? { skippedStudents: syncRes.skippedStudents }
+        : {}),
+      ...(skippedWarning ? { warning: skippedWarning } : {}),
+      message:
+        skippedCount > 0
+          ? `Đã đồng bộ & đối chiếu ${syncedCount} đầu điểm lên Teaching (${skippedWarning})`
+          : `Đã đồng bộ & đối chiếu ${syncedCount} đầu điểm lên Teaching.`,
     };
   } finally {
     locks.delete(classId);

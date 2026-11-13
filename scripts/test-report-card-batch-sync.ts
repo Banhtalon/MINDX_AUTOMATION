@@ -902,7 +902,17 @@ createRoot(document.getElementById("root")!).render(<HarnessApp />);
         /0 lớp/
       );
 
-      // Clicking a class row selects it for editing
+      // Clicking a class row selects it for editing & contains a direct Teaching link
+      const teachingHref = await page.getAttribute(
+        '[data-testid="batch-row-VT-C4K-GA38"] a',
+        "href"
+      );
+      assert.ok(
+        teachingHref &&
+          teachingHref.includes(
+            "teachingmindx.top/diem-tong-ket.php?from=hocsinh&class_code=VT-C4K-GA38"
+          )
+      );
       await page.click('[data-testid="batch-row-VT-C4K-GA38"]');
       assert.equal(
         await page.textContent('[data-testid="selected-class"]'),
@@ -913,7 +923,256 @@ createRoot(document.getElementById("root")!).render(<HarnessApp />);
       await new Promise<void>((resolve) => e2eServer.close(() => resolve()));
     }
 
-    console.log("ALL BS-01..BS-08 CHECKS PASSED.");
+    console.log("=== BS-09: Partial Teaching Roster Sync (VT-JSB16 Missing / Inactive Student) & Auto Backfill ===");
+    const jsb16Names = [
+      "Nguyễn Hữu Phước",
+      "Phạm Bùi Quang Minh",
+      "Trần Gia Vỹ",
+      "Nguyễn Hoàng Bách",
+      "Lê Xuân Thế Anh",
+      "Nguyễn Lê Minh",
+      "Thái Xuân Nguyên",
+      "Hoàng Sỹ Tùng",
+      "Nguyễn Trần Gia Kiệt",
+      "Dương Đăng Khôi",
+    ];
+    const makeJsb16Snapshot = () => ({
+      classId: "VT-JSB16",
+      classCode: "VT-JSB16",
+      isRobotics: false,
+      scrapedAt: "2026-11-13T18:05:00.000Z",
+      btvnSessions: [
+        {
+          sessionNumber: 1,
+          title: "Buổi 1",
+          hasTheory: true,
+          hasPractice: true,
+          practiceTaskCount: 1,
+          maxTheoryScore: 100,
+          maxPracticeScore: 100,
+        },
+      ],
+      students: jsb16Names.map((fullName, idx) => ({
+        studentId: `STU_VT-JSB16_${idx + 1}`,
+        fullName,
+        isActive: true,
+        btvnScores: {
+          1: {
+            sessionNumber: 1,
+            theoryRaw: 90,
+            theoryMax: 100,
+            practiceRaw: 85,
+            practiceMax: 100,
+          },
+        },
+        stageScores: {
+          cp1Theory: null,
+          cp1Practice: null,
+          cp1Competency: null,
+          cp2Theory: null,
+          cp2Practice: null,
+          cp2Competency: null,
+          finalProduct: null,
+          finalCompetency: null,
+        },
+      })),
+    });
+
+    const createPartialTransport = (
+      remoteStudents: Array<{
+        id: number;
+        student_name: string;
+        class_code: string;
+        status: string;
+      }>
+    ) => {
+      const savedRows: any[] = [];
+      const transport = {
+        async getStudents() {
+          return remoteStudents;
+        },
+        async getExercises() {
+          return [
+            { id: 1, class_code: "VT-JSB16", session_number: 1, exercise_type: "btvn", exercise_form: "theory", max_score: 100 },
+            { id: 2, class_code: "VT-JSB16", session_number: 1, exercise_type: "btvn", exercise_form: "practice", max_score: 100 },
+            { id: 3, class_code: "VT-JSB16", session_number: 5, exercise_type: "cp1", exercise_form: "theory", max_score: 5 },
+            { id: 4, class_code: "VT-JSB16", session_number: 5, exercise_type: "cp1", exercise_form: "practice", max_score: 5 },
+            { id: 5, class_code: "VT-JSB16", session_number: 5, exercise_type: "cp1", exercise_form: "nang_luc", max_score: 5 },
+            { id: 6, class_code: "VT-JSB16", session_number: 9, exercise_type: "cp2", exercise_form: "theory", max_score: 5 },
+            { id: 7, class_code: "VT-JSB16", session_number: 9, exercise_type: "cp2", exercise_form: "practice", max_score: 5 },
+            { id: 8, class_code: "VT-JSB16", session_number: 9, exercise_type: "cp2", exercise_form: "nang_luc", max_score: 5 },
+            { id: 9, class_code: "VT-JSB16", session_number: 14, exercise_type: "final", exercise_form: "practice", max_score: 5 },
+            { id: 10, class_code: "VT-JSB16", session_number: 14, exercise_type: "final", exercise_form: "nang_luc", max_score: 5 },
+          ];
+        },
+        async addMultiExercise() {
+          return { success: true };
+        },
+        async saveScores(scores: any[]) {
+          savedRows.length = 0;
+          for (const s of scores) {
+            savedRows.push({
+              ...s,
+              normalized_score: Math.round(((s.raw_score / s.max_score) * 5) * 100) / 100,
+            });
+          }
+          return { success: true };
+        },
+        async getScores() {
+          return savedRows;
+        },
+      };
+      return { transport, savedRows };
+    };
+
+    // 9A. Missing "Dương Đăng Khôi" on Teaching (9/10 match) -> VERIFIED + warning + persisted skippedStudents
+    const jsb16Snap = makeJsb16Snapshot();
+    reportCardRepo.saveLmsSnapshot("VT-JSB16", jsb16Snap);
+    const jsbRec0 = reportCardRepo.findOne("VT-JSB16")!;
+    const jsbApp0 = reportCardRepo.approveReportCard("VT-JSB16", jsbRec0.draftVersion);
+    assert.equal(jsbApp0.success, true);
+
+    const nineRemoteStudents = jsb16Names
+      .filter((name) => name !== "Dương Đăng Khôi")
+      .map((name, idx) => ({
+        id: 1690 + idx,
+        student_name: name,
+        class_code: "VT-JSB16",
+        status: "đang học",
+      }));
+    const tMissing1 = createPartialTransport(nineRemoteStudents);
+    const sync9of10 = await TeachingReportCardSyncService.syncReportCardToTeaching(
+      "VT-JSB16",
+      {
+        expectedVersion: jsbApp0.record.draftVersion,
+        transport: tMissing1.transport,
+      }
+    );
+    assert.equal(sync9of10.success, true, `BS-09A failed: ${sync9of10.error}`);
+    assert.equal(sync9of10.record?.status, "VERIFIED");
+    assert.equal(sync9of10.record?.teachingSyncStatus, "VERIFIED");
+    assert.equal(sync9of10.matchedStudentCount, 9);
+    assert.equal(sync9of10.skippedStudentCount, 1);
+    assert.equal(sync9of10.skippedStudents?.[0]?.localFullName, "Dương Đăng Khôi");
+    assert.equal(sync9of10.skippedStudents?.[0]?.reason, "NOT_FOUND_ON_TEACHING");
+    assert.match(sync9of10.warning || "", /Dương Đăng Khôi/);
+    assert.equal(tMissing1.savedRows.length, 18); // 9 students * (theory + practice)
+    const verifiedMeta = JSON.parse(sync9of10.record?.teachingVerifiedSnapshotJson || "{}");
+    assert.equal(verifiedMeta.skippedStudentCount, 1);
+    assert.equal(verifiedMeta.skippedStudents?.[0]?.localFullName, "Dương Đăng Khôi");
+
+    // 9B. INACTIVE_ON_TEACHING student is skipped cleanly while matched students sync
+    const inactiveRemoteStudents = jsb16Names.map((name, idx) => ({
+      id: 2690 + idx,
+      student_name: name,
+      class_code: "VT-JSB16",
+      status: name === "Dương Đăng Khôi" ? "nghi_hoc" : "đang học",
+    }));
+    const tInactive = createPartialTransport(inactiveRemoteStudents);
+    const syncWithInactive = await TeachingReportCardSyncService.syncReportCardToTeaching(
+      "VT-JSB16",
+      {
+        expectedVersion: sync9of10.record!.draftVersion,
+        transport: tInactive.transport,
+      }
+    );
+    assert.equal(syncWithInactive.success, true);
+    assert.equal(syncWithInactive.matchedStudentCount, 9);
+    assert.equal(syncWithInactive.skippedStudentCount, 1);
+    assert.equal(syncWithInactive.skippedStudents?.[0]?.reason, "INACTIVE_ON_TEACHING");
+    assert.equal(syncWithInactive.skippedStudents?.[0]?.localFullName, "Dương Đăng Khôi");
+
+    // 9C. Ambiguous duplicate active names & 0-match must STILL fail loudly even with allowPartialStudentMatch=true
+    const dupRemoteStudents = [
+      ...nineRemoteStudents,
+      { id: 9991, student_name: "Hoàng Sỹ Tùng", class_code: "VT-JSB16", status: "đang học" },
+    ];
+    const tDup = createPartialTransport(dupRemoteStudents);
+    const syncDupRes = await TeachingReportCardSyncService.syncReportCardToTeaching(
+      "VT-JSB16",
+      {
+        expectedVersion: syncWithInactive.record!.draftVersion,
+        transport: tDup.transport,
+      }
+    );
+    assert.equal(syncDupRes.success, false);
+    assert.match(syncDupRes.error || "", /Student Match Error.*trùng tên/i);
+
+    // Re-approve after FAILED so 0-match check runs cleanly
+    const jsbReApp = reportCardRepo.approveReportCard(
+      "VT-JSB16",
+      reportCardRepo.findOne("VT-JSB16")!.draftVersion
+    );
+    assert.equal(jsbReApp.success, true);
+    const tZeroMatch = createPartialTransport([
+      { id: 8881, student_name: "Người Hoàn Toàn Khác", class_code: "VT-JSB16", status: "đang học" },
+    ]);
+    const syncZeroRes = await TeachingReportCardSyncService.syncReportCardToTeaching(
+      "VT-JSB16",
+      {
+        expectedVersion: jsbReApp.record.draftVersion,
+        transport: tZeroMatch.transport,
+      }
+    );
+    assert.equal(syncZeroRes.success, false);
+    assert.match(syncZeroRes.error || "", /Student Match Error/);
+
+    // 9D. Re-seed VT-JSB16 as VERIFIED with skippedStudentCount=1, then verify batch re-sync auto-backfills all 10 when Khôi appears on Teaching, and only afterwards fast-skips
+    const jsbReApp2 = reportCardRepo.approveReportCard(
+      "VT-JSB16",
+      reportCardRepo.findOne("VT-JSB16")!.draftVersion
+    );
+    assert.equal(jsbReApp2.success, true);
+    const tPartialSeed = createPartialTransport(nineRemoteStudents);
+    const seededPartial = await TeachingReportCardSyncService.syncReportCardToTeaching(
+      "VT-JSB16",
+      {
+        expectedVersion: jsbReApp2.record.draftVersion,
+        transport: tPartialSeed.transport,
+      }
+    );
+    assert.equal(seededPartial.success, true);
+    assert.equal(seededPartial.skippedStudentCount, 1);
+
+    const allTenRemoteStudents = jsb16Names.map((name, idx) => ({
+      id: 3690 + idx,
+      student_name: name,
+      class_code: "VT-JSB16",
+      status: "đang học",
+    }));
+    const tAllTen = createPartialTransport(allTenRemoteStudents);
+    let batchSyncCalls = 0;
+    const backfillRes = await syncSingleClassReportCardFlow("VT-JSB16", {
+      allowSyntheticForTest: true,
+      scrapeFn: async () => ({ success: true }),
+      syncTeachingFn: async (id, opts) => {
+        batchSyncCalls++;
+        return await TeachingReportCardSyncService.syncReportCardToTeaching(id, {
+          ...opts,
+          transport: tAllTen.transport,
+        });
+      },
+    });
+    assert.equal(batchSyncCalls, 1, "Class with prior skippedStudentCount > 0 must NOT SKIPPED_UNCHANGED");
+    assert.equal(backfillRes.outcome, "SYNCED");
+    assert.equal(backfillRes.matchedStudentCount, 10);
+    assert.equal(backfillRes.skippedStudentCount ?? 0, 0);
+    assert.equal(tAllTen.savedRows.length, 20);
+
+    // Subsequent batch sync now fast-skips cleanly because all 10 students are verified
+    let secondCallCount = 0;
+    const fastSkipAfterBackfill = await syncSingleClassReportCardFlow("VT-JSB16", {
+      allowSyntheticForTest: true,
+      scrapeFn: async () => ({ success: true }),
+      syncTeachingFn: async () => {
+        secondCallCount++;
+        return { success: true, syncedScoreCount: 0, declaredExerciseCount: 0 };
+      },
+    });
+    assert.equal(fastSkipAfterBackfill.outcome, "SKIPPED_UNCHANGED");
+    assert.equal(secondCallCount, 0);
+
+    console.log("ALL BS-01..BS-09 CHECKS PASSED.");
   } finally {
     closeDb();
     try {

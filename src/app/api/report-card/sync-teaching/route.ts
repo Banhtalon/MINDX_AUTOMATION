@@ -101,6 +101,10 @@ export async function POST(request: NextRequest) {
       classCode: syncRes.classCode,
       syncedScoreCount: syncRes.syncedScoreCount,
       declaredExerciseCount: syncRes.declaredExerciseCount,
+      matchedStudentCount: syncRes.matchedStudentCount,
+      skippedStudentCount: syncRes.skippedStudentCount,
+      skippedStudents: syncRes.skippedStudents,
+      ...(syncRes.warning ? { warning: syncRes.warning } : {}),
       record: syncRes.record,
       reportCard: syncRes.reportCard,
     });

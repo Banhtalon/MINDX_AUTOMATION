@@ -166,20 +166,46 @@ export interface MatchedTeachingStudent {
   teachingStudentName: string;
 }
 
+export interface SkippedTeachingStudentInfo {
+  localStudentId: string;
+  localFullName: string;
+  reason: "NOT_FOUND_ON_TEACHING" | "INACTIVE_ON_TEACHING";
+  detail: string;
+}
+
+export interface MatchReportCardStudentsDetailedResult {
+  matchedMap: Map<string, MatchedTeachingStudent>;
+  skippedStudents: SkippedTeachingStudentInfo[];
+}
+
+export function formatSkippedTeachingStudentsWarning(
+  skippedStudents: SkippedTeachingStudentInfo[]
+): string | undefined {
+  if (!Array.isArray(skippedStudents) || skippedStudents.length === 0) {
+    return undefined;
+  }
+  const names = skippedStudents.map((s) => s.localFullName).join(", ");
+  return `Đã bỏ qua ${skippedStudents.length} học viên chưa có hoặc đang nghỉ trên Teaching: ${names}.`;
+}
+
 /**
  * Matches local Report Card students to remote Teaching students (`hocsinh.php`).
  * - Enforces Cross-Class Guard on `remoteStudents`.
  * - Enforces strict positive integer IDs and rejects duplicate remote IDs.
  * - Normalizes whitespace, casing, and Unicode NFC.
  * - Rejects ambiguous duplicate names so scores are never written to the wrong student.
- * - Requires every active or scored local student to match a remote student.
+ * - When `allowPartialMatch` is true, unmatched or inactive remote students are skipped
+ *   as long as at least one student matches unambiguously; ambiguous duplicate names and
+ *   0 total matches still fail loudly.
  */
-export function matchReportCardStudentsToTeaching(
+export function matchReportCardStudentsToTeachingDetailed(
   localStudents: ComputedStudentReportCardRow[],
   remoteStudents: RemoteTeachingStudent[],
   rawClassCode: string,
-  isRobotics: boolean = isRoboticsClassCode(rawClassCode)
-): Map<string, MatchedTeachingStudent> {
+  isRobotics: boolean = isRoboticsClassCode(rawClassCode),
+  options?: { allowPartialMatch?: boolean }
+): MatchReportCardStudentsDetailedResult {
+  const allowPartialMatch = Boolean(options?.allowPartialMatch);
   const classCode = String(rawClassCode || "").trim().toUpperCase();
   if (!Array.isArray(remoteStudents) || remoteStudents.length === 0) {
     throw new Error(
@@ -240,6 +266,7 @@ export function matchReportCardStudentsToTeaching(
   }
 
   const matchedMap = new Map<string, MatchedTeachingStudent>();
+  const skippedStudents: SkippedTeachingStudentInfo[] = [];
   const claimedRemoteIds = new Set<number>();
 
   // Pre-compute local name counts among active/scored students to detect local duplicate names
@@ -395,18 +422,57 @@ export function matchReportCardStudentsToTeaching(
     }
 
     if (isRequired) {
-      if (toneCandidatesAll.length > 0 || noToneCandidatesAll.length > 0) {
-        throw new Error(
-          `[Student Match Error] Học viên "${stu.fullName}" trên Teaching đang ở trạng thái nghỉ học / bảo lưu (inactive), không thể tự động ghi điểm.`
-        );
+      const isInactiveMatch =
+        toneCandidatesAll.length > 0 || noToneCandidatesAll.length > 0;
+      const detail = isInactiveMatch
+        ? `[Student Match Error] Học viên "${stu.fullName}" trên Teaching đang ở trạng thái nghỉ học / bảo lưu (inactive), không thể tự động ghi điểm.`
+        : `[Student Match Error] Không tìm thấy học viên "${stu.fullName}" trong danh sách lớp ${classCode} trên Teaching.`;
+
+      if (!allowPartialMatch) {
+        throw new Error(detail);
       }
-      throw new Error(
-        `[Student Match Error] Không tìm thấy học viên "${stu.fullName}" trong danh sách lớp ${classCode} trên Teaching.`
-      );
+
+      skippedStudents.push({
+        localStudentId: stu.studentId,
+        localFullName: stu.fullName,
+        reason: isInactiveMatch
+          ? "INACTIVE_ON_TEACHING"
+          : "NOT_FOUND_ON_TEACHING",
+        detail,
+      });
     }
   }
 
-  return matchedMap;
+  if (
+    allowPartialMatch &&
+    matchedMap.size === 0 &&
+    (skippedStudents.length > 0 || relevantLocals.length > 0)
+  ) {
+    throw new Error(
+      skippedStudents[0]?.detail ||
+        `[Student Match Error] Không tìm thấy học viên nào của lớp ${classCode} khớp trên Teaching.`
+    );
+  }
+
+  return { matchedMap, skippedStudents };
+}
+
+/**
+ * Strict student-matching wrapper preserving legacy behavior (`allowPartialMatch: false`).
+ */
+export function matchReportCardStudentsToTeaching(
+  localStudents: ComputedStudentReportCardRow[],
+  remoteStudents: RemoteTeachingStudent[],
+  rawClassCode: string,
+  isRobotics: boolean = isRoboticsClassCode(rawClassCode)
+): Map<string, MatchedTeachingStudent> {
+  return matchReportCardStudentsToTeachingDetailed(
+    localStudents,
+    remoteStudents,
+    rawClassCode,
+    isRobotics,
+    { allowPartialMatch: false }
+  ).matchedMap;
 }
 
 export class LiveTeachingReportCardHttpTransport
@@ -543,6 +609,10 @@ export interface SyncReportCardToTeachingResult {
   classCode: string;
   syncedScoreCount: number;
   declaredExerciseCount: number;
+  matchedStudentCount?: number;
+  skippedStudentCount?: number;
+  skippedStudents?: SkippedTeachingStudentInfo[];
+  warning?: string;
   record?: ClassReportCardRecord;
   reportCard?: ComputedClassReportCard;
   error?: string;
@@ -560,6 +630,7 @@ export class TeachingReportCardSyncService {
       classCode?: string;
       expectedVersion?: unknown;
       transport?: TeachingReportCardHttpTransport;
+      allowPartialStudentMatch?: boolean;
     }
   ): Promise<SyncReportCardToTeachingResult> {
     const classId = String(rawClassId || "").trim().toUpperCase();
@@ -752,16 +823,32 @@ export class TeachingReportCardSyncService {
             message: `Bắt đầu đồng bộ Phiếu Điểm lớp ${classId} (${isRobotics ? "Robotics" : "Lập trình"}) lên Teaching...`,
           });
 
-          // 1. Fetch remote students & match 1-to-1
+          const allowPartialStudentMatch =
+            options?.allowPartialStudentMatch !== false;
+
+          // 1. Fetch remote students & match (skipping missing/inactive Teaching students when partial match allowed)
           const remoteStudents = await runWithStopGuard(() =>
             transport.getStudents(classId)
           );
-          const studentMatches = matchReportCardStudentsToTeaching(
-            computed.students,
-            remoteStudents,
-            classId,
-            isRobotics
-          );
+          const { matchedMap: studentMatches, skippedStudents } =
+            matchReportCardStudentsToTeachingDetailed(
+              computed.students,
+              remoteStudents,
+              classId,
+              isRobotics,
+              { allowPartialMatch: allowPartialStudentMatch }
+            );
+          const skippedWarning =
+            formatSkippedTeachingStudentsWarning(skippedStudents);
+          if (skippedStudents.length > 0 && skippedWarning) {
+            jobLogRepo.add({
+              jobId,
+              jobType: "CUSTOM",
+              classId,
+              level: "WARN",
+              message: `⚠️ ${skippedWarning} Bot vẫn tiếp tục đồng bộ ${studentMatches.size}/${computed.students.length} học viên khớp trên Teaching.`,
+            });
+          }
 
           ensureQueueNotStopped();
 
@@ -1091,7 +1178,9 @@ export class TeachingReportCardSyncService {
 
           if (scoresToSave.length === 0) {
             throw new Error(
-              `Không có điểm số nào trong phiếu điểm của lớp ${classId} để đồng bộ lên Teaching.`
+              skippedWarning
+                ? `Không có điểm số nào của các học viên khớp trên Teaching cho lớp ${classId} để đồng bộ (${skippedWarning}).`
+                : `Không có điểm số nào trong phiếu điểm của lớp ${classId} để đồng bộ lên Teaching.`
             );
           }
 
@@ -1221,6 +1310,9 @@ export class TeachingReportCardSyncService {
               declaredExerciseCount,
               verifiedAt: new Date().toISOString(),
               studentCount: studentMatches.size,
+              totalLocalStudentCount: computed.students.length,
+              skippedStudentCount: skippedStudents.length,
+              skippedStudents,
               scores: scoresToSave,
             },
             parsedExpectedVersion
@@ -1231,7 +1323,10 @@ export class TeachingReportCardSyncService {
             jobType: "CUSTOM",
             classId,
             level: "SUCCESS",
-            message: `✅ VERIFIED: Đã đồng bộ và đối chiếu thành công ${scoresToSave.length} mục điểm của lớp ${classId} lên Teaching!`,
+            message:
+              skippedStudents.length > 0 && skippedWarning
+                ? `✅ VERIFIED (khớp ${studentMatches.size}/${computed.students.length} HV): Đã đồng bộ ${scoresToSave.length} mục điểm lớp ${classId} lên Teaching. ${skippedWarning}`
+                : `✅ VERIFIED: Đã đồng bộ và đối chiếu thành công ${scoresToSave.length} mục điểm của lớp ${classId} lên Teaching!`,
           });
 
           return {
@@ -1241,6 +1336,10 @@ export class TeachingReportCardSyncService {
             classCode: classId,
             syncedScoreCount: scoresToSave.length,
             declaredExerciseCount,
+            matchedStudentCount: studentMatches.size,
+            skippedStudentCount: skippedStudents.length,
+            skippedStudents,
+            ...(skippedWarning ? { warning: skippedWarning } : {}),
             record: verifiedRecord,
             reportCard: computed,
           };
