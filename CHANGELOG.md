@@ -1,5 +1,7 @@
 # CHANGELOG — LỊCH SỬ PHIÊN BẢN DỰ ÁN MINDX AUTOMATION BOT
 
+> **Kiểm định Nút Bấm 1-Chạm `"⚡ Quét & Đồng bộ tất cả lớp đang dạy"` Lên Teaching Trên `/homework-grader` (`v3.4.5`) — Argon Medium (`gemini-4-argon-medium`) Round 1 (13/11/2026): VERDICT: GO.** **Toàn bộ `0` lỗi P0/P1/P2 mở.** **7/7 cổng bắt buộc PASS** (`exit 0`, gồm `tsc --noEmit --incremental false`, `scripts/test-report-card-batch-sync.ts` `BS-01..BS-08` + Chromium headless E2E, `test-report-card-v330.ts` `RC-01..RC-06`, `test-streamline-v340-s4.ts` `S4-T1..S4-T5`, `test-streamline-v340-s1.ts` `S1.1..S1.7 + S1-R1`, `test-phase4-codex-repros.ts` `Round 1 -> Round 17`, `test-audit-remediation-v341.ts` `12/12`) kèm **probe đối kháng độc lập trong `$env:TEMP` (`(a)–(d)` PASS)**. **Hai tệp dữ liệu thật (`data/mindx_bot.db`, `data/running_classes.json`) bảo toàn 100% SHA-256.** [Báo cáo nghiệm thu Round 1](docs/audits/v345/ARGON_BATCH_BTVN_SYNC_REVIEW.md).
+
 > **Kiểm định Nút Bấm 1-Chạm `"Mở LMS (<Mã lớp>)"` Đi Thẳng Tới Ngăn `Comments` Của Lớp Trên `/session-comments` (`v3.4.4`) — Argon Medium (`gemini-4-argon-medium`) Round 1 (13/11/2026): VERDICT: GO.** **Toàn bộ `0` lỗi P0/P1/P2/P3 mở.** **5/5 cổng bắt buộc PASS** (`exit 0`, gồm `tsc --noEmit --incremental false`, `scripts/test-session-comments-open-lms.ts` `OL-01..OL-06` + Chromium headless E2E layout & popup redirect, `test-streamline-v340-s3.ts`, `test-phase4-codex-repros.ts` `Round 1 -> Round 17`, `test-spck-portal-idle-no-loop.ts` `PT-01..PT-09`) kèm **probe đối kháng độc lập trong `$env:TEMP` (`ADVERSARIAL_PROBE_PASS`)**. **Hai tệp dữ liệu thật (`data/mindx_bot.db`, `data/running_classes.json`) bảo toàn 100% SHA-256.** [Báo cáo nghiệm thu Round 1](docs/audits/v344/ARGON_OPEN_LMS_BUTTON_REVIEW.md).
 
 > **Kiểm định Sửa Dứt Điểm Vòng Lặp `GET /api/spck/student-portal` & Gia Cố An Toàn Mở/Đóng Cổng Thu Bài Trên `/final-project` (`v3.4.3`) — Codex CLI (`gpt-6.1-sol` `xhigh`) Round 2 (12/11/2026): VERDICT: GO.** **Toàn bộ 5/5 phát hiện Vòng 1 (`F01`–`F05`) đều CLOSED (`0` lỗi P0/P1/P2 mở).** **5/5 cổng bắt buộc PASS** (`exit 0`, gồm `tsc --noEmit --incremental false`, `scripts/test-spck-portal-idle-no-loop.ts` `9/9 nhóm PT-01..PT-09`, phát lại Vòng 1 `16/16 PASS`, bộ đối kháng mở rộng Vòng 2 **`30/30 PASS, 0 FAIL, 0 ERROR`**, và `S5a-T3` `node:vm` harness). **Hai tệp dữ liệu thật (`data/mindx_bot.db`, `data/running_classes.json`) và `183/183` tệp bản sao kiểm định bảo toàn 100% SHA-256.** [Báo cáo nghiệm thu Round 2](docs/audits/v343/CODEX_SPCK_PORTAL_NOLOOP_REVIEW.md).
@@ -25,6 +27,28 @@
 > **Trạng thái hiện tại — S8 Round 4 (30/10/2026): VERDICT: GO.** **S8-01: CLOSED; S8-02: CLOSED; S8-R2-01: CLOSED; S8-R3-01: CLOSED; S8-R3-02: CLOSED — toàn bộ 5/5 phát hiện đã đóng.** Probe ảnh hợp lệ/junction **14/14 PASS** (7/7 có ảnh hợp lệ, 7/7 chặn junction); tài nguyên **5/5 PASS**, path **403**, browser **0 context phụ**, edge **20/20 PASS**; TypeScript và ba suite SPCK/S5/S7 đều PASS, **10/10 lệnh exit 0**. **Hai tệp dữ liệu thật bảo toàn 100% SHA-256; 2.951/2.951 tệp bất biến giữ nguyên.** Đủ điều kiện đóng Stage S8 cho v3.4.0 trong phạm vi kiểm định cục bộ; chưa kiểm tra lớp/dịch vụ thật hoặc build production mới. Không sửa mã sản phẩm. [Báo cáo Round 4](docs/audits/v340/CODEX_V340_FINAL_ROUND4.md); bằng chứng: `docs/audits/v340/s8-round4/`. *(Lịch sử các vòng kiểm định trước đã được lưu trữ gọn tại [docs/audits/AUDIT_HISTORY_ARCHIVE.md](docs/audits/AUDIT_HISTORY_ARCHIVE.md)).*
 
 Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng mới, cải tiến giao diện và các bản vá lỗi thực tế trên hệ thống MindX LMS theo từng phiên bản.
+
+---
+
+## [v3.4.5] — 2026-11-13 (Nút Bấm 1-Chạm `"⚡ Quét & Đồng bộ tất cả lớp đang dạy"` Lên Teaching Trên `/homework-grader` — `Round 1 GO`)
+
+### Tính năng mới — Quét & Đồng bộ hàng loạt Phiếu điểm BTVN / Checkpoint của mọi lớp đang dạy lên Teaching (`1 chạm`)
+- **Bộ điều phối hàng loạt tuần tự an toàn (`src/lib/report-card/report-card-batch-sync.ts`):**
+  - `discoverRunningClassesForBatchSync`: Enqueue duy nhất một tác vụ cấp cao `SYNC_CLASS` qua `SequentialTaskQueue` gọi `ClassSyncer.fetchRunningClasses({ persistToConfig: true })` để lấy danh sách lớp đang dạy mới nhất (tuyệt đối không lồng `taskQueue.enqueue` bên trong tác vụ khác để tránh deadlock).
+  - `syncSingleClassReportCardFlow`: Thực thi trọn chu trình cho từng lớp:
+    1. Ghi nhận dấu vân tay chỉnh tay (`manualOverridesJson`) trước khi cào điểm LMS (`enqueueScrapeClassScores`).
+    2. Chống ghi đè đồng thời (`CONCURRENT_EDIT`): nếu giáo viên vừa chỉnh tay điểm trên lớp này trong lúc Bot đang cào, dừng tự duyệt/đồng bộ lớp đó và trả về `NEEDS_ATTENTION` để bảo toàn phần sửa tay.
+    3. Chống tụt điểm rỗng (`NEEDS_ATTENTION`): nếu lớp đã từng đồng bộ Teaching (`teachingSyncedAt` / `VERIFIED`) mà lần quét này trả về `0` học viên hoặc `0` đầu điểm hợp lệ (`countSyncableReportCardScores` tính đúng đặc thù lớp Robotics không tính BTVN riêng), chặn không bỏ qua im lặng.
+    4. Bỏ qua hợp lệ (`SKIPPED_NO_SCORES`, giữ trạng thái `DRAFT`) cho lớp mới mở hoặc lớp Robotics chưa tới Checkpoint 1.
+    5. Bỏ qua nhanh (`SKIPPED_UNCHANGED`) nếu lớp đã `VERIFIED` trước đó và `contentHash === liveHash` (còn lớp ở trạng thái `FAILED` / `OUT_OF_SYNC` vẫn tự động đồng bộ lại).
+    6. Tự động duyệt (`approveReportCard`, bảo toàn nguyên vẹn `manualOverridesJson`) và đẩy thẳng lên `teachingmindx.top/hocsinh.php` qua `TeachingReportCardSyncService.syncReportCardToTeaching` kèm đối chiếu Read-after-Write (`VERIFIED`).
+  - Khóa chống chạy đè `globalThis` (`__mindxReportCardSingleClassBatchLocks` & `__mindxReportCardBatchSyncInFlight`) trả `HTTP 409 Conflict` khi gọi trùng và luôn dọn khóa trong `finally`, kèm truyền thẳng tín hiệu `QUEUE_STOPPED` / `TASK_CANCELLED`.
+- **API & Bảng theo dõi trực tiếp (`src/app/api/report-card/batch-sync/route.ts`, `src/components/report-card-batch-sync-panel.tsx`, `src/app/homework-grader/page.tsx`):**
+  - `GET`/`POST /api/report-card/batch-sync`: Bảo vệ bằng `validateLocalRequest`, kiểm tra định dạng JSON & mã lớp `isSafeBatchClassCode` (`HTTP 400` nếu sai), hỗ trợ `discover_classes`, `sync_single_class`, `sync_all`.
+  - Nút **`⚡ Quét & Đồng bộ tất cả lớp đang dạy`** (`data-testid="batch-sync-running-classes-btn"`) ngay trên thanh đầu trang `/homework-grader`: hiện tiến độ trực tiếp từng lớp (`Đang đồng bộ X/Y`), hỗ trợ **Dừng an toàn** (`⏹ Dừng sau lớp này`), **Dừng khẩn cấp** (`🚨 Dừng ngay` + `▶ Mở khóa hàng đợi`), đếm 3 nhóm kết quả (`✅ Đã đồng bộ Teaching`, `⏭️ Không có điểm mới / Chưa có điểm`, `⚠️ Cần kiểm tra`), bấm **`🔄 Thử lại các lớp cần kiểm tra`**, hoặc bấm thẳng vào dòng một lớp để mở bảng điểm sửa tay tiếp (mọi chỉnh sửa tay về sau tự hạ về `WAITING_APPROVAL` để giáo viên sửa xong đồng bộ lại riêng lớp đó).
+- **Kiểm thử & Kiểm định độc lập (`Argon Medium` Round 1 — 13/11/2026: `VERDICT: GO`, `0` lỗi P0/P1/P2):**
+  - Thêm bộ kiểm thử cô lập `scripts/test-report-card-batch-sync.ts` (`BS-01..BS-08` + Playwright Chromium E2E trên `<ReportCardBatchSyncPanel>`).
+  - Toàn bộ **7/7 cổng kiểm thử + probe đối kháng `(a)–(d)` trong `$env:TEMP` đều PASS**; hai tệp dữ liệu thật (`data/mindx_bot.db`, `data/running_classes.json`) giữ nguyên 100% SHA-256. Báo cáo: [`docs/audits/v345/ARGON_BATCH_BTVN_SYNC_REVIEW.md`](docs/audits/v345/ARGON_BATCH_BTVN_SYNC_REVIEW.md).
 
 ---
 

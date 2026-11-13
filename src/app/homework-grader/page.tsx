@@ -15,9 +15,12 @@ import {
   Table2,
   ChevronDown,
   ChevronRight,
+  Zap,
+  Loader2,
 } from "lucide-react";
 import TeachingReportCardView from "@/components/teaching-report-card-view";
 import { ClassPicker } from "@/components/class-picker";
+import { ReportCardBatchSyncPanel } from "@/components/report-card-batch-sync-panel";
 import {
   formatCellForExport as _sharedFormatCellForExport,
   type ScoreExportMode,
@@ -134,6 +137,9 @@ export default function HomeworkGraderPage() {
   const [isScraping, setIsScraping] = useState(false);
   const [isLoadingCache, setIsLoadingCache] = useState(false);
   const [copiedSheets, setCopiedSheets] = useState(false);
+  const [batchTriggerSeq, setBatchTriggerSeq] = useState(0);
+  const [isBatchSyncRunning, setIsBatchSyncRunning] = useState(false);
+  const [batchProgressLabel, setBatchProgressLabel] = useState("");
   const [selectedDetail, setSelectedDetail] = useState<{
     studentName: string;
     studentId: string;
@@ -614,10 +620,30 @@ export default function HomeworkGraderPage() {
               }}
               onRefresh={handleFetchRunningClasses}
               isRefreshing={isFetchingClasses}
-              disabled={isScraping || isFetchingClasses}
+              disabled={isScraping || isFetchingClasses || isBatchSyncRunning}
               lastSyncedAt={updatedAt}
               showRefreshButton={false}
             />
+
+            <button
+              type="button"
+              data-testid="batch-sync-running-classes-btn"
+              onClick={() => setBatchTriggerSeq((prev) => prev + 1)}
+              disabled={isScraping || isFetchingClasses || isBatchSyncRunning}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:bg-slate-600 disabled:text-slate-300 text-slate-950 text-xs sm:text-sm font-bold transition shadow-md cursor-pointer disabled:cursor-not-allowed"
+              title="Tự động quét danh sách các lớp đang dạy trên LMS, lấy điểm mới nhất và đẩy thẳng lên Teaching"
+            >
+              {isBatchSyncRunning ? (
+                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+              ) : (
+                <Zap className="w-4 h-4 shrink-0" />
+              )}
+              <span>
+                {isBatchSyncRunning
+                  ? batchProgressLabel || "Đang đồng bộ các lớp..."
+                  : "Quét & Đồng bộ tất cả lớp đang dạy"}
+              </span>
+            </button>
           </div>
         </div>
 
@@ -652,6 +678,33 @@ export default function HomeworkGraderPage() {
         )}
       </div>
 
+      {/* Batch Report Card Sync Progress Panel */}
+      <ReportCardBatchSyncPanel
+        triggerSeq={batchTriggerSeq}
+        activeClassCode={classCode}
+        onRunningStateChange={(running, label) => {
+          setIsBatchSyncRunning(running);
+          setBatchProgressLabel(label);
+        }}
+        onClassesDiscovered={(codes) => {
+          if (codes.length > 0) {
+            setRunningClasses((prev) => Array.from(new Set([...codes, ...prev])));
+          }
+        }}
+        onClassProcessed={(doneCode) => {
+          if (doneCode.trim().toUpperCase() === activeClassIdRef.current) {
+            void loadCachedScores(activeClassIdRef.current);
+          }
+        }}
+        onSelectClass={(nextCode) => {
+          setRunningClasses((prev) =>
+            prev.includes(nextCode) ? prev : [nextCode, ...prev]
+          );
+          setClassCode(nextCode);
+          setClassId(nextCode);
+        }}
+      />
+
       {/* Primary View: Phiếu Điểm Tổng Kết (Chuẩn Teaching — BTVN, CP1, CP2 & DEMO) */}
       <TeachingReportCardView
         classId={classId}
@@ -662,7 +715,7 @@ export default function HomeworkGraderPage() {
         }}
         scrapeTrigger=""
         onRequestScrapeLms={handleScrapeScores}
-        isScrapingExternal={isScraping}
+        isScrapingExternal={isScraping || isBatchSyncRunning}
       />
 
       {/* Collapsible Secondary View: Chi tiết bài nộp BTVN trên LMS (Xuất Excel / Xem Nhận Xét) */}
