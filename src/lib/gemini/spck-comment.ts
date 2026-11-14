@@ -1409,7 +1409,7 @@ export function buildPreliminaryProjectSummary(
  * Prepares up to 2 valid product/model images (Thumbnail + 1 screenshot, excluding the default MindX logo)
  * as Gemini multimodal `inlineData` parts so the AI can visually inspect Web UI, App screens, or Robotics models.
  */
-function buildMultimodalImageParts(
+export function buildMultimodalImageParts(
   thumbnailPath?: string,
   screenshots?: string[]
 ): Array<{ inlineData: { data: string; mimeType: string } }> {

@@ -45,6 +45,7 @@ import {
   computeAdminClassAudits,
   evaluateTeachingSpckTasksCompliance,
   fetchSingleLmsClassGqlInAdminSession,
+  isAdminSpckExemptClass,
 } from "./admin-lms-scanner";
 import {
   fetchTeachingClassDetailsBatch,
@@ -647,6 +648,25 @@ function validateSpckTaskEligibility(
   | { ok: true; existing: AdminCenterClassRecord }
   | { ok: false; result: AdminSpckTasksProvisionResult } {
   const existing = adminCenterRepo.findClass(classCode);
+  if (isAdminSpckExemptClass(classCode, existing?.courseName)) {
+    return {
+      ok: false,
+      result: {
+        success: false,
+        statusCode: 400,
+        classCode,
+        status: "INCOMPLETE",
+        projectId: null,
+        projectName: buildDefaultTeachingProjectName(classCode),
+        taskCount: 0,
+        totalWeightPercent: 0,
+        assignedStudentCount: 0,
+        syncedProgressTasksCount: 0,
+        targetProgressPercent: 0,
+        error: `Lớp ${classCode} thuộc khóa PTB/CSB được miễn buổi Demo & SPCK cuối khóa — không tạo nhiệm vụ SPCK.`,
+      },
+    };
+  }
   if (
     existing &&
     isConfirmedRunningStatus(existing.status) &&
@@ -1067,11 +1087,15 @@ async function provisionSingleSpckTasksInsideQueue(
       avgPct = Math.round(stuTotal / activeStudentIds.length);
     }
 
+    const isExemptClass = isAdminSpckExemptClass(classCode, courseName || syllabus?.courseName);
+    const eligibleGt9Flag =
+      !isExemptClass && (existing ? existing.currentSessionNumber >= 10 : true);
+
     const compliance = evaluateTeachingSpckTasksCompliance({
       classCode,
       courseName: courseName || syllabus?.courseName,
       endDate,
-      eligibleGt9: existing ? existing.currentSessionNumber >= 10 : true,
+      eligibleGt9: eligibleGt9Flag,
       project: verifiedProject,
       tasks: verifiedTasks,
       activeStudentIds,
@@ -1080,7 +1104,7 @@ async function provisionSingleSpckTasksInsideQueue(
     const isCompliantReady = compliance.taskStatus === "READY";
 
     const updatedSpckSummary: AdminSpckTeachingTasksSummary = {
-      eligibleGt9: existing ? existing.currentSessionNumber >= 10 : true,
+      eligibleGt9: eligibleGt9Flag,
       hasProject: true,
       projectId,
       projectName: String(verifiedProject.project_name || defaultProjectName).trim(),
@@ -1257,6 +1281,7 @@ export async function provisionAdminBatchSpckTasksOnTeaching(
     });
     targetCodes = allCenterRows
       .filter((row) => {
+        if (isAdminSpckExemptClass(row.classCode, row.courseName)) return false;
         if (row.currentSessionNumber < 10) return false;
         if (!isConfirmedRunningStatus(row.status)) return false;
         const parsed = safeParseJson<AdminSpckTeachingTasksSummary | null>(

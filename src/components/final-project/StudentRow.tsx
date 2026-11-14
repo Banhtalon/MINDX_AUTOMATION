@@ -585,7 +585,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   onChange={(e) => {
                     const val = e.target.value;
                     bumpRowDraftSeq(
-                      `${selectedClassId}::${row.folderPath || row.assignedStudentId}`
+                      `${selectedClassId}::S${selectedSessionNumber}::${row.folderPath || row.assignedStudentId}`
                     );
                     setRows((prev) =>
                       prev.map((r, i) =>
@@ -744,7 +744,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   onChange={(e) => {
                     const val = e.target.value;
                     bumpRowDraftSeq(
-                      `${selectedClassId}::${row.folderPath || row.assignedStudentId}`
+                      `${selectedClassId}::S${selectedSessionNumber}::${row.folderPath || row.assignedStudentId}`
                     );
                     setRows((prev) =>
                       prev.map((r, i) =>
@@ -780,7 +780,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   onChange={(e) => {
                     const val = e.target.value;
                     bumpRowDraftSeq(
-                      `${selectedClassId}::${row.folderPath || row.assignedStudentId}`
+                      `${selectedClassId}::S${selectedSessionNumber}::${row.folderPath || row.assignedStudentId}`
                     );
                     setRows((prev) =>
                       prev.map((r, i) =>
@@ -985,7 +985,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   onChange={(e) => {
                     const val = e.target.value;
                     bumpRowDraftSeq(
-                      `${selectedClassId}::${row.folderPath || row.assignedStudentId}`
+                      `${selectedClassId}::S${selectedSessionNumber}::${row.folderPath || row.assignedStudentId}`
                     );
                     setRows((prev) =>
                       prev.map((r, i) =>
@@ -1020,7 +1020,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   onChange={(e) => {
                     const val = e.target.value;
                     bumpRowDraftSeq(
-                      `${selectedClassId}::${row.folderPath || row.assignedStudentId}`
+                      `${selectedClassId}::S${selectedSessionNumber}::${row.folderPath || row.assignedStudentId}`
                     );
                     setRows((prev) =>
                       prev.map((r, i) =>

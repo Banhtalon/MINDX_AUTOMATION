@@ -4453,6 +4453,90 @@ export function isRoboticsClassCode(classId?: string | null): boolean {
   );
 }
 
+export function getSession14DemoLimitsForClass(
+  classId?: string | null
+): Record<keyof SpckSession14DemoScores, number> {
+  if (isRoboticsClassCode(classId)) {
+    return SESSION14_DEMO_LIMITS_ROBOTICS;
+  }
+  const s = String(classId || "").trim().toUpperCase();
+  const match = s.match(
+    /(?:^|[-_\s])(GMB|GMA|GMI|PTA|PTI|PSI|PTB|SB|SA|SI|GB|GA|GI|JSB|JSA|JSI|CSB|CSA|CSI)(?:\d|$|[-_\s])/i
+  );
+  const token = match ? match[1].toUpperCase() : "";
+  if (
+    token === "GB" ||
+    token === "GA" ||
+    token === "GI" ||
+    token === "GMB" ||
+    token === "GMA" ||
+    token === "GMI"
+  ) {
+    return {
+      algorithm: 2.0,
+      creativity: 1.0,
+      communication: 0.5,
+      problemSolving: 0.5,
+      computerSkills: 1.0,
+    };
+  }
+  if (token === "SB") {
+    return {
+      algorithm: 2.5,
+      creativity: 1.0,
+      communication: 0.5,
+      problemSolving: 0.5,
+      computerSkills: 0.5,
+    };
+  }
+  if (token === "SA" || token === "SI") {
+    return {
+      algorithm: 2.5,
+      creativity: 0.5,
+      communication: 0.5,
+      problemSolving: 0.5,
+      computerSkills: 1.0,
+    };
+  }
+  if (token === "PTI" || token === "PSI") {
+    return {
+      algorithm: 2.0,
+      creativity: 1.0,
+      communication: 0.5,
+      problemSolving: 1.0,
+      computerSkills: 0.5,
+    };
+  }
+  if (token === "JSI") {
+    return {
+      algorithm: 1.75,
+      creativity: 1.0,
+      communication: 0.5,
+      problemSolving: 0.75,
+      computerSkills: 1.0,
+    };
+  }
+  if (token === "CSA") {
+    return {
+      algorithm: 2.0,
+      creativity: 0.5,
+      communication: 1.0,
+      problemSolving: 0.75,
+      computerSkills: 0.75,
+    };
+  }
+  if (token === "CSI") {
+    return {
+      algorithm: 1.5,
+      creativity: 1.0,
+      communication: 1.0,
+      problemSolving: 1.0,
+      computerSkills: 0.5,
+    };
+  }
+  return SESSION14_DEMO_LIMITS;
+}
+
 export function parseSession14CompetencyScores(
   raw?: string | Partial<SpckSession14CompetencyScores> | null
 ): SpckSession14CompetencyScores {
@@ -4514,9 +4598,7 @@ export function parseSession14DemoScores(
     obj = raw;
   }
 
-  const limits = isRoboticsClassCode(classId)
-    ? SESSION14_DEMO_LIMITS_ROBOTICS
-    : SESSION14_DEMO_LIMITS;
+  const limits = getSession14DemoLimitsForClass(classId);
 
   const normalizeScore = (val: unknown, max: number): number => {
     const n = Number(val);

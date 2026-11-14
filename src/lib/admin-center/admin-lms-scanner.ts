@@ -60,6 +60,18 @@ export type AdminScanScope =
   | "SINGLE_CLASS"
   | "TEACHING_ONLY";
 
+/**
+ * PTB & CSB courses are exempt from Demo / SPCK on MindX LHP curriculum.
+ */
+export function isAdminSpckExemptClass(
+  classCode?: string | null,
+  courseName?: string | null
+): boolean {
+  const combined = `${String(classCode || "")} ${String(courseName || "")}`.toUpperCase();
+  if (!combined.trim()) return false;
+  return /(?:^|[-_\s])(PTB|CSB)(?:\d|$|[-_\s])/i.test(combined);
+}
+
 const globalScanState = globalThis as unknown as {
   __mindxAdminScanProgress?: AdminScanProgressState;
 };
@@ -1251,7 +1263,8 @@ export function computeAdminClassAudits(
   // TAB 3: SPCK Audit (Buổi 12, 13, 14 & Finished)
   // ========================================================
   const isFinishedClass = /finish|completed|done/i.test(status);
-  const spckApplicable = currentSessionNumber >= 12 || isFinishedClass;
+  const spckExemptCourse = isAdminSpckExemptClass(classCode, courseName);
+  const spckApplicable = !spckExemptCourse && (currentSessionNumber >= 12 || isFinishedClass);
   const works = Array.isArray(input.studentWorks)
     ? input.studentWorks.filter(
         (w) => w?.isDeleted !== true && String(w?.isDeleted || "").toLowerCase() !== "true"
@@ -1393,7 +1406,7 @@ export function computeAdminClassAudits(
 
     // Session 14 final evaluation & 3-part MindX comment check
     const slot14 = slots[13];
-    if (currentSessionNumber >= 14 || isFinishedClass || Boolean(slot14)) {
+    if (!spckExemptCourse && (currentSessionNumber >= 14 || isFinishedClass || Boolean(slot14))) {
       session14FinalEval.applicable = currentSessionNumber >= 14 || isFinishedClass;
       if (session14FinalEval.applicable) {
         session14FinalEval.requiredCount = activeLmsStudents.length;
@@ -1474,7 +1487,10 @@ export function computeAdminClassAudits(
   // TAB 4: > Buổi 9 SPCK Tasks on Teaching
   // ========================================================
   const eligibleGt9 =
-    currentSessionNumber >= 10 && !isFinishedClass && isConfirmedRunningStatus(status);
+    !spckExemptCourse &&
+    currentSessionNumber >= 10 &&
+    !isFinishedClass &&
+    isConfirmedRunningStatus(status);
   const targetProgressPercent = mapSessionToTargetProgressPercent(currentSessionNumber);
 
   const remoteProject = teachingDetail?.project || null;
@@ -1799,8 +1815,10 @@ export function mapAdminClassRecordToDto(
     totalMissingMediaOrLinks: 0,
     totalMissingTeacherComments: 0,
   };
+  const rowSpckExempt = isAdminSpckExemptClass(row.classCode, row.courseName);
   const defaultTasks: AdminSpckTeachingTasksSummary = {
-    eligibleGt9: row.currentSessionNumber >= 10 && isConfirmedRunningStatus(row.status),
+    eligibleGt9:
+      !rowSpckExempt && row.currentSessionNumber >= 10 && isConfirmedRunningStatus(row.status),
     hasProject: false,
     projectId: null,
     projectName: "",
@@ -1812,7 +1830,7 @@ export function mapAdminClassRecordToDto(
     averageProgressPercent: 0,
     targetProgressPercent: mapSessionToTargetProgressPercent(row.currentSessionNumber),
     taskStatus:
-      row.currentSessionNumber >= 10 && isConfirmedRunningStatus(row.status)
+      !rowSpckExempt && row.currentSessionNumber >= 10 && isConfirmedRunningStatus(row.status)
         ? "MISSING_PROJECT"
         : "NOT_ELIGIBLE",
   };

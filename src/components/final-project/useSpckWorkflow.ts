@@ -1186,7 +1186,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     }
   };
 
-  const handleCreateDemoScoringSheet = async () => {
+  const handleCreateDemoScoringSheet = async (enableAiPreScore = true) => {
     if (!selectedClassId) {
       setBannerMessage({
         type: "warning",
@@ -1199,7 +1199,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     setCreatingDemoSheet(true);
     setBannerMessage({
       type: "warning",
-      text: `Đang tạo Google Trang tính "${demoSheetTitle}" (${students.length || rows.length} tab học viên, Ngày Demo Buổi 14: ${demoDateInput || "tự động"}) trực tiếp trong thư mục Google Drive của lớp ${requestClassId}...`,
+      text: enableAiPreScore
+        ? `Đang nhờ AI phân tích SPCK để chấm nháp phần sản phẩm & tạo câu hỏi BGK (Cột G), rồi tạo Google Trang tính "${demoSheetTitle}" (${students.length || rows.length} tab học viên) cho lớp ${requestClassId}...`
+        : `Đang tạo Google Trang tính "${demoSheetTitle}" (${students.length || rows.length} tab học viên, Ngày Demo Buổi 14: ${demoDateInput || "tự động"}) trực tiếp trong thư mục Google Drive của lớp ${requestClassId}...`,
     });
 
     try {
@@ -1212,6 +1214,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           driveFolderUrl: driveFolderUrl.trim(),
           localClassFolderPath: folderPathInput.trim(),
           demoDate: demoDateInput.trim(),
+          enableAiPreScore,
         }),
       });
       const data = await res.json();
@@ -1239,9 +1242,14 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         setDemoSheetTitle(dSheet.sheetTitle);
       }
 
+      const aiSummaryPart =
+        typeof dSheet?.aiPreScoredCount === "number" && dSheet.aiPreScoredCount > 0
+          ? ` — AI đã chấm nháp phần sản phẩm & gợi ý câu hỏi BGK (Cột G) cho ${dSheet.aiPreScoredCount}/${dSheet?.studentCount || 0} học viên`
+          : "";
+
       setBannerMessage({
         type: "success",
-        text: `Đã tạo Google Trang tính "${dSheet?.sheetTitle}" gồm ${dSheet?.studentCount || 0} tab học viên (Ngày Demo Buổi 14: ${dSheet?.demoDate}) trực tiếp trong thư mục Google Drive của lớp để giám khảo chấm!`,
+        text: `Đã tạo Google Trang tính "${dSheet?.sheetTitle}" gồm ${dSheet?.studentCount || 0} tab học viên (Ngày Demo Buổi 14: ${dSheet?.demoDate})${aiSummaryPart} trực tiếp trong thư mục Google Drive của lớp để giám khảo chấm!`,
       });
     } catch (err) {
       const activeClass = getActiveUiClassId();

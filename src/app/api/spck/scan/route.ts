@@ -241,18 +241,33 @@ export async function POST(req: Request) {
           })
         : [];
       const existingHasYoutubeFrames = existingScreensRaw.some((p) => ytFrameRe.test(p));
+      const existingHasOwnerUploads = existingScreensRaw.some((p) =>
+        /[\\/]_spck_owner_uploads[\\/]/i.test(p)
+      );
       const hasExistingCapturedShots =
         sameFolder &&
         Boolean(existing?.thumbnailPath) &&
         /[\\/](?:_spck_app_shots|_spck_owner_uploads)[\\/]/i.test(
           existing?.thumbnailPath || ""
         );
-      // Keep the existing gallery when it holds captured App/Web shots or Robotics YouTube frames
+      // Keep the existing gallery when it holds captured App/Web shots, owner uploads, or Robotics YouTube frames
       const existingScreenshots =
-        hasExistingCapturedShots || existingHasYoutubeFrames ? existingScreensRaw : [];
+        hasExistingCapturedShots || existingHasYoutubeFrames || existingHasOwnerUploads
+          ? existingScreensRaw
+          : [];
 
       let finalScreenshots =
-        existingScreenshots.length > 0 ? existingScreenshots : scannedScreenshots;
+        scannedScreenshots.length > 0
+          ? Array.from(
+              new Set([
+                ...existingScreenshots.filter((p) =>
+                  /[\\/](?:_spck_owner_uploads|_spck_youtube_frames)[\\/]/i.test(p)
+                ),
+                ...scannedScreenshots,
+                ...existingScreenshots,
+              ])
+            )
+          : existingScreenshots;
 
       // Owner priority rule: an Owner-provided photo (owner upload or unreferenced root photo such as
       // `Demo.png`) always wins the Thumbnail slot over a previously auto-captured App/Web screenshot.

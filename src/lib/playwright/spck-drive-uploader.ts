@@ -41,6 +41,9 @@ export const CODING_SPCK_COURSE_FOLDER_MAP: Record<string, string> = {
   GB: "1FhX-OQvpBA0l8rOGUfrLLkvJRfKukyiK",
   GA: "1w3fuW9EFFnWZKm3-JagiSrAGUTO7z3ss",
   GI: "1Of7xLsPbxQ11m2ACwJpOCs0i8oR44JDH",
+  GMB: "1FhX-OQvpBA0l8rOGUfrLLkvJRfKukyiK",
+  GMA: "1w3fuW9EFFnWZKm3-JagiSrAGUTO7z3ss",
+  GMI: "1Of7xLsPbxQ11m2ACwJpOCs0i8oR44JDH",
   PTB: "1Wl1NDkZi1oC7vk8x48c9thgFc2hyhaJQ",
   PTA: "1cGbHFR4WhEhp8p-mH1w9AxZGtY89Tzwe",
   PTI: "1nXdgx_aKh2xR7tG14xe25SX6sZtu_VRt",
@@ -170,6 +173,9 @@ export function detectCoursePrefixFromClassId(classId: string): string | null {
     "CSA",
     "CSI",
     "ROB",
+    "GMB",
+    "GMA",
+    "GMI",
     "SB",
     "SA",
     "SI",
@@ -288,73 +294,114 @@ async function listDriveItemsOnPage(
   const results = new Map<string, { id: string; name: string; isFolder: boolean }>();
 
   try {
-    const domItems = await page.evaluate((expectedParentId) => {
+    await page
+      .evaluate("window.__name = window.__name || function(f){ return f; }")
+      .catch(() => {});
+    const domItems = await page.evaluate(async (expectedParentId) => {
       const mainEl = document.querySelector('[role="main"]');
       if (!mainEl) return [];
 
-      // Scroll container slightly to ensure virtualized rows in medium-sized folders are rendered
       const scrollable =
-        mainEl.querySelector('[ role="grid" ]')?.parentElement || mainEl;
+        (mainEl.querySelector('[role="grid"]')?.parentElement as HTMLElement | null) ||
+        (mainEl as HTMLElement);
+      const canScrollGrid = Boolean(
+        scrollable &&
+          typeof scrollable.scrollTop === "number" &&
+          scrollable.clientHeight > 0 &&
+          scrollable.scrollHeight > scrollable.clientHeight + 20
+      );
       if (scrollable && typeof scrollable.scrollTop === "number") {
         scrollable.scrollTop = 0;
+        scrollable.dispatchEvent(new Event("scroll", { bubbles: true }));
       }
 
-      // Map exact label from inner `<div data-id="...">Name</div>` inside `[role="main"]`
-      const exactLabelById = new Map<string, string>();
-      const allMainDataIdEls = Array.from(mainEl.querySelectorAll("[data-id]"));
-      for (const el of allMainDataIdEls) {
-        const id = el.getAttribute("data-id") || "";
-        if (!id || id.length < 15 || id === expectedParentId) continue;
-        if (el.getAttribute("data-target") === "doc") continue;
-        const txt = ((el as HTMLElement).innerText || "").trim();
-        if (txt && !txt.includes("\n") && !txt.includes("\t")) {
-          exactLabelById.set(id, txt);
+      const collected = new Map<string, { id: string; name: string; isFolder: boolean }>();
+      const stepPx =
+        scrollable && scrollable.clientHeight > 0
+          ? Math.max(250, Math.floor(scrollable.clientHeight * 0.8))
+          : 250;
+      let prevScrollTop = -1;
+
+      for (let pass = 0; pass <= 15; pass++) {
+        // Map exact label from inner `<div data-id="...">Name</div>` inside `[role="main"]`
+        const exactLabelById = new Map<string, string>();
+        const allMainDataIdEls = Array.from(mainEl.querySelectorAll("[data-id]"));
+        for (const el of allMainDataIdEls) {
+          const id = el.getAttribute("data-id") || "";
+          if (!id || id.length < 15 || id === expectedParentId) continue;
+          if (el.getAttribute("data-target") === "doc") continue;
+          const txt = ((el as HTMLElement).innerText || "").trim();
+          if (txt && !txt.includes("\n") && !txt.includes("\t")) {
+            exactLabelById.set(id, txt);
+          }
         }
-      }
 
-      const rowNodes = Array.from(
-        mainEl.querySelectorAll('[data-target="doc"][data-id]')
-      );
-      const extracted: Array<{ id: string; name: string; isFolder: boolean }> = [];
-      for (const el of rowNodes) {
-        const id = el.getAttribute("data-id") || "";
-        if (!id || id.length < 15 || id === "EBS5u" || id === expectedParentId) continue;
+        const rowNodes = Array.from(
+          mainEl.querySelectorAll('[data-target="doc"][data-id]')
+        );
+        for (const el of rowNodes) {
+          const id = el.getAttribute("data-id") || "";
+          if (!id || id.length < 15 || id === "EBS5u" || id === expectedParentId) continue;
 
-        const rawText = (el as HTMLElement).innerText || el.getAttribute("aria-label") || "";
-        const tokens = rawText
-          .split(/[\r\n\t]+/)
-          .map((s) => s.trim())
-          .filter(
-            (s) =>
-              s.length > 0 &&
-              s !== "Shared folder" &&
-              s !== "Thư mục được chia sẻ" &&
-              s !== "Thư mục" &&
-              s !== "Folder"
-          );
-        const firstLine = exactLabelById.get(id) || tokens[0] || "";
+          const rawText = (el as HTMLElement).innerText || el.getAttribute("aria-label") || "";
+          const tokens = rawText
+            .split(/[\r\n\t]+/)
+            .map((s) => s.trim())
+            .filter(
+              (s) =>
+                s.length > 0 &&
+                s !== "Shared folder" &&
+                s !== "Thư mục được chia sẻ" &&
+                s !== "Thư mục" &&
+                s !== "Folder"
+            );
+          const firstLine = exactLabelById.get(id) || tokens[0] || "";
 
-        const html = (el.innerHTML || "").toLowerCase();
-        const dataType = (el.getAttribute("data-type") || "").toLowerCase();
-        const ariaLabel = (el.getAttribute("aria-label") || "").toLowerCase();
-        const hasExplicitFileLabel =
-          dataType === "file" ||
-          ariaLabel.includes("tệp") ||
-          ariaLabel.includes("file");
-        const isFolder =
-          !hasExplicitFileLabel &&
-          (dataType === "folder" ||
-            html.includes("folder") ||
-            rawText.includes("Shared folder") ||
-            rawText.includes("Thư mục") ||
-            ariaLabel.includes("folder") ||
-            ariaLabel.includes("thư mục") ||
-            (rawText.includes("—") && !/\.[a-z0-9]{1,8}$/i.test(firstLine)));
-        if (firstLine) {
-          extracted.push({ id, name: firstLine, isFolder });
+          const html = (el.innerHTML || "").toLowerCase();
+          const dataType = (el.getAttribute("data-type") || "").toLowerCase();
+          const ariaLabel = (el.getAttribute("aria-label") || "").toLowerCase();
+          const hasExplicitFileLabel =
+            dataType === "file" ||
+            ariaLabel.includes("tệp") ||
+            ariaLabel.includes("file");
+          const isFolder =
+            !hasExplicitFileLabel &&
+            (dataType === "folder" ||
+              html.includes("folder") ||
+              rawText.includes("Shared folder") ||
+              rawText.includes("Thư mục") ||
+              ariaLabel.includes("folder") ||
+              ariaLabel.includes("thư mục") ||
+              (rawText.includes("—") && !/\.[a-z0-9]{1,8}$/i.test(firstLine)));
+          if (firstLine && !collected.has(id)) {
+            collected.set(id, { id, name: firstLine, isFolder });
+          }
         }
+
+        if (
+          !canScrollGrid ||
+          !scrollable ||
+          pass === 15 ||
+          scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 4 ||
+          scrollable.scrollTop === prevScrollTop
+        ) {
+          break;
+        }
+        prevScrollTop = scrollable.scrollTop;
+        scrollable.scrollTop = Math.min(
+          scrollable.scrollHeight,
+          scrollable.scrollTop + stepPx
+        );
+        scrollable.dispatchEvent(new Event("scroll", { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 80));
       }
-      return extracted;
+
+      if (canScrollGrid && scrollable) {
+        scrollable.scrollTop = 0;
+        scrollable.dispatchEvent(new Event("scroll", { bubbles: true }));
+      }
+
+      return Array.from(collected.values());
     }, parentFolderId || "");
     for (const item of domItems) {
       results.set(item.id, item);
@@ -444,12 +491,65 @@ async function ensureGoogleDriveFolderReadyAndAuthenticated(
 }
 
 /**
+ * Scrolls the Google Drive `[role="main"]` virtualized list until a target `[data-id]` row is mounted in the DOM.
+ */
+async function scrollDriveItemIntoDom(page: Page, itemId: string): Promise<void> {
+  try {
+    await page
+      .evaluate("window.__name = window.__name || function(f){ return f; }")
+      .catch(() => {});
+    await page.evaluate(async (targetId) => {
+      const mainEl = document.querySelector('[role="main"]');
+      if (!mainEl) return;
+      const targetSel = `[data-target="doc"][data-id="${targetId}"]`;
+      if (mainEl.querySelector(targetSel)) return;
+
+      const scrollable =
+        (mainEl.querySelector('[role="grid"]')?.parentElement as HTMLElement | null) ||
+        (mainEl as HTMLElement);
+      if (!scrollable || typeof scrollable.scrollTop !== "number") return;
+      if (scrollable.scrollHeight <= scrollable.clientHeight + 20) return;
+
+      const stepPx = Math.max(200, Math.floor(scrollable.clientHeight * 0.75));
+      scrollable.scrollTop = 0;
+      scrollable.dispatchEvent(new Event("scroll", { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 60));
+      if (mainEl.querySelector(targetSel)) return;
+
+      let steps = 0;
+      let prevScrollTop = -1;
+      while (
+        steps < 25 &&
+        scrollable.scrollTop + scrollable.clientHeight < scrollable.scrollHeight - 4 &&
+        scrollable.scrollTop !== prevScrollTop
+      ) {
+        steps += 1;
+        prevScrollTop = scrollable.scrollTop;
+        scrollable.scrollTop = Math.min(
+          scrollable.scrollHeight,
+          scrollable.scrollTop + stepPx
+        );
+        scrollable.dispatchEvent(new Event("scroll", { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 80));
+        if (mainEl.querySelector(targetSel)) return;
+      }
+    }, itemId);
+  } catch {
+    // Ignore evaluation errors
+  }
+}
+
+/**
  * Moves an existing file item in the currently open Google Drive folder to trash so an updated local version can replace it cleanly.
  */
 async function moveDriveItemToTrash(page: Page, itemId: string): Promise<void> {
+  await scrollDriveItemIntoDom(page, itemId);
   const row = page
     .locator(`[role="main"] [data-target="doc"][data-id="${itemId}"]`)
     .first();
+  if (typeof (row as any).scrollIntoViewIfNeeded === "function") {
+    await row.scrollIntoViewIfNeeded().catch(() => {});
+  }
   if (!(await row.isVisible().catch(() => false))) return;
 
   await row.click({ button: "right" }).catch(() => {});
@@ -642,12 +742,65 @@ function stripDriveDuplicateSuffix(fileNameLower: string): string {
  *      or Google Drive's duplicate-replacement dialog was explicitly confirmed and finished uploading.
  *   3. Stale files are trashed ONLY after the upload succeeds (or deferred until the entire directory tree succeeds).
  */
+async function renameDriveItemIfNeeded(
+  page: Page,
+  itemId: string,
+  targetCleanName: string
+): Promise<void> {
+  await scrollDriveItemIntoDom(page, itemId);
+  const row = page
+    .locator(`[role="main"] [data-target="doc"][data-id="${itemId}"]`)
+    .first();
+  if (typeof (row as any).scrollIntoViewIfNeeded === "function") {
+    await row.scrollIntoViewIfNeeded().catch(() => {});
+  }
+  if (!(await row.isVisible().catch(() => false))) return;
+
+  await row.click({ button: "right" }).catch(() => {});
+  await page.waitForTimeout(350);
+  const renameMenuItem = page
+    .locator(
+      '[role="menuitem"]:has-text("Đổi tên"):visible, [role="menuitem"]:has-text("Rename"):visible'
+    )
+    .first();
+  if (!(await renameMenuItem.isVisible().catch(() => false))) {
+    await page.keyboard.press("Escape").catch(() => {});
+    return;
+  }
+  await renameMenuItem.click().catch(() => {});
+  await page.waitForTimeout(350);
+  const renameInput = page
+    .locator('[role="dialog"] input[type="text"]:visible, [role="dialog"] input:visible')
+    .first();
+  if (!(await renameInput.isVisible().catch(() => false))) {
+    await page.keyboard.press("Escape").catch(() => {});
+    return;
+  }
+  await renameInput.fill(targetCleanName);
+  await page.waitForTimeout(150);
+  const okBtn = page
+    .locator(
+      '[role="dialog"] button:has-text("OK"):visible, [role="dialog"] button:has-text("Lưu"):visible, [role="dialog"] button:has-text("Save"):visible'
+    )
+    .last();
+  if (await okBtn.isVisible().catch(() => false)) {
+    await okBtn.click().catch(() => {});
+  } else {
+    await renameInput.press("Enter").catch(() => {});
+  }
+  await page.waitForTimeout(700);
+}
+
 export async function uploadFilesIntoDriveFolder(
   page: Page,
   studentDriveFolderId: string,
   localFilePaths: string[],
   replaceAllStaleFiles = true,
-  deferredCleanupOut?: Array<{ folderId: string; itemIds: string[] }>
+  deferredCleanupOut?: Array<{ folderId: string; itemIds: string[] }>,
+  deferredRenameOut?: Array<{
+    folderId: string;
+    items: Array<{ id: string; cleanName: string }>;
+  }>
 ): Promise<number> {
   if (localFilePaths.length === 0 && !replaceAllStaleFiles) return 0;
   assertDriveNotStopped();
@@ -718,13 +871,18 @@ export async function uploadFilesIntoDriveFolder(
   await fileChooser.setFiles(localFilePaths);
 
   // Wait for all uploaded files to appear AND finish uploading (no active progressbar/dialog/error)
-  // before ever moving pre-existing items to Trash.
+  // before ever moving obsolete/duplicate items to Trash.
   const expectedBaseNames = localFilePaths.map((p) => path.basename(p).toLowerCase());
+  const exactExpectedByLower = new Map<string, string>(
+    localFilePaths.map((p) => [path.basename(p).toLowerCase(), path.basename(p)])
+  );
   const uploadDeadline = Date.now() + 45_000;
   const maxPollIterations = 40;
   let pollIterations = 0;
   let verifiedAllPresent = false;
   let sawIncompleteUploadProgress = false;
+  let confirmedInPlaceReplace = false;
+  let sawKeepBothFallbackModal = false;
   let latestItemsAfterUpload = existingItems;
 
   while (Date.now() < uploadDeadline && pollIterations < maxPollIterations) {
@@ -732,26 +890,57 @@ export async function uploadFilesIntoDriveFolder(
     assertDriveNotStopped();
     await page.waitForTimeout(1200);
 
-    // If Google Drive shows a duplicate file modal, strictly select "Keep both" ("Giữ cả hai")
-    // so the new file gets a distinct item ID and never overwrites the existing copy in-place
-    // before the entire directory tree succeeds.
-    const keepBothRadio = page
+    // Prefer "Replace existing file" ("Thay thế tệp hiện có") so re-uploading in Session 13/14
+    // replaces Session 12 files cleanly instead of creating `index (1).html` / `main (1).py`.
+    const replaceExistingOption = page
       .locator(
-        '[role="dialog"] [role="radio"]:has-text("Giữ cả hai"):visible, [role="dialog"] [role="radio"]:has-text("Keep both"):visible, [role="dialog"] label:has-text("Giữ cả hai"):visible, [role="dialog"] label:has-text("Keep both"):visible'
+        '[role="dialog"] [role="radio"]:has-text("Thay thế tệp hiện có"):visible, [role="dialog"] [role="radio"]:has-text("Thay thế tệp đã có"):visible, [role="dialog"] [role="radio"]:has-text("Cập nhật tệp hiện có"):visible, [role="dialog"] [role="radio"]:has-text("Replace existing"):visible, [role="dialog"] [role="radio"]:has-text("Update existing"):visible, [role="dialog"] label:has-text("Thay thế tệp hiện có"):visible, [role="dialog"] label:has-text("Thay thế tệp đã có"):visible, [role="dialog"] label:has-text("Cập nhật tệp hiện có"):visible, [role="dialog"] label:has-text("Replace existing"):visible, [role="dialog"] label:has-text("Update existing"):visible, [role="dialog"] button:has-text("Thay thế tệp hiện có"):visible, [role="dialog"] button:has-text("Thay thế tệp đã có"):visible, [role="dialog"] button:has-text("Replace existing"):visible'
       )
       .first();
-    const sawKeepBoth = await keepBothRadio.isVisible().catch(() => false);
-    if (sawKeepBoth) {
-      await keepBothRadio.click().catch(() => {});
+    const sawReplaceOption = await replaceExistingOption.isVisible().catch(() => false);
+    if (sawReplaceOption) {
+      await replaceExistingOption.click().catch(() => {});
+      confirmedInPlaceReplace = true;
       await page.waitForTimeout(200);
-      const keepBothConfirmBtn = page
+      const replaceConfirmBtn = page
         .locator(
-          '[role="dialog"] button:has-text("Tải lên"):visible, [role="dialog"] button:has-text("Upload"):visible, [role="dialog"] button[data-id="EBS5u"]:visible'
+          '[role="dialog"] button:has-text("Tải lên"):visible, [role="dialog"] button:has-text("Tiếp tục"):visible, [role="dialog"] button:has-text("Thay thế"):visible, [role="dialog"] button:has-text("Upload"):visible, [role="dialog"] button:has-text("Continue"):visible, [role="dialog"] button:has-text("Replace"):visible, [role="dialog"] button[data-id="EBS5u"]:visible'
         )
         .last();
-      if (await keepBothConfirmBtn.isVisible().catch(() => false)) {
-        await keepBothConfirmBtn.click().catch(() => {});
+      if (await replaceConfirmBtn.isVisible().catch(() => false)) {
+        await replaceConfirmBtn.click().catch(() => {});
         await page.waitForTimeout(600);
+      }
+    } else {
+      const keepBothRadio = page
+        .locator(
+          '[role="dialog"] [role="radio"]:has-text("Giữ cả hai"):visible, [role="dialog"] [role="radio"]:has-text("Keep both"):visible, [role="dialog"] [role="radio"]:has-text("Giữ tất cả"):visible, [role="dialog"] [role="radio"]:has-text("Keep separate"):visible, [role="dialog"] label:has-text("Giữ cả hai"):visible, [role="dialog"] label:has-text("Keep both"):visible'
+        )
+        .first();
+      if (await keepBothRadio.isVisible().catch(() => false)) {
+        sawKeepBothFallbackModal = true;
+        await keepBothRadio.click().catch(() => {});
+        await page.waitForTimeout(200);
+        const keepBothConfirmBtn = page
+          .locator(
+            '[role="dialog"] button:has-text("Tải lên"):visible, [role="dialog"] button:has-text("Tiếp tục"):visible, [role="dialog"] button:has-text("Upload"):visible, [role="dialog"] button:has-text("Continue"):visible, [role="dialog"] button[data-id="EBS5u"]:visible'
+          )
+          .last();
+        if (await keepBothConfirmBtn.isVisible().catch(() => false)) {
+          await keepBothConfirmBtn.click().catch(() => {});
+          await page.waitForTimeout(600);
+        }
+      } else {
+        const directReplaceConfirmBtn = page
+          .locator(
+            '[role="dialog"] button:has-text("Thay thế"):visible, [role="dialog"] button:has-text("Replace"):visible, [role="dialog"] button:has-text("Tiếp tục"):visible, [role="dialog"] button:has-text("Continue"):visible'
+          )
+          .last();
+        if (await directReplaceConfirmBtn.isVisible().catch(() => false)) {
+          confirmedInPlaceReplace = true;
+          await directReplaceConfirmBtn.click().catch(() => {});
+          await page.waitForTimeout(600);
+        }
       }
     }
 
@@ -770,10 +959,12 @@ export async function uploadFilesIntoDriveFolder(
     latestItemsAfterUpload = currentItems;
 
     const newItemNormalizedNames = new Set<string>();
+    const presentExactNames = new Set<string>();
 
     for (const item of currentItems) {
       if (item.isFolder) continue;
       const lower = item.name.toLowerCase();
+      presentExactNames.add(lower);
       const strippedDup = stripDriveDuplicateSuffix(lower);
       if (!preExistingFileIds.has(item.id)) {
         newItemNormalizedNames.add(lower);
@@ -781,7 +972,18 @@ export async function uploadFilesIntoDriveFolder(
       }
     }
 
-    const allPresent = expectedBaseNames.every((name) => newItemNormalizedNames.has(name));
+    const canTrustSameIdReplacement =
+      confirmedInPlaceReplace || (pollIterations >= 2 && !sawKeepBothFallbackModal);
+
+    const allPresent = expectedBaseNames.every((name) => {
+      if (newItemNormalizedNames.has(name)) {
+        return true;
+      }
+      if (preExistingNamesLower.has(name) && presentExactNames.has(name) && canTrustSameIdReplacement) {
+        return true;
+      }
+      return false;
+    });
 
     if (allPresent) {
       // Re-check progress bar, error alerts, AND dialogs once more after reading DOM entries
@@ -808,13 +1010,22 @@ export async function uploadFilesIntoDriveFolder(
     );
   }
 
-  // Determine which pre-existing files are now superseded and safe to move to trash
+  // Determine which pre-existing files are now superseded and safe to move to trash.
+  // Never trash an in-place replaced file keeping the same ID!
   const newItemsWithDistinctIds = new Set<string>();
+  const duplicateNewItemsToRename: Array<{ id: string; cleanName: string }> = [];
   for (const item of latestItemsAfterUpload) {
     if (!item.isFolder && !preExistingFileIds.has(item.id)) {
       const lower = item.name.toLowerCase();
+      const stripped = stripDriveDuplicateSuffix(lower);
       newItemsWithDistinctIds.add(lower);
-      newItemsWithDistinctIds.add(stripDriveDuplicateSuffix(lower));
+      newItemsWithDistinctIds.add(stripped);
+      if (stripped !== lower && exactExpectedByLower.has(stripped)) {
+        duplicateNewItemsToRename.push({
+          id: item.id,
+          cleanName: exactExpectedByLower.get(stripped)!,
+        });
+      }
     }
   }
 
@@ -822,8 +1033,11 @@ export async function uploadFilesIntoDriveFolder(
   for (const oldFile of preExistingFiles) {
     const oldLower = oldFile.name.toLowerCase();
     const isTargetSameName = targetLowerNames.has(oldLower);
+    const isOldDuplicateOfTarget =
+      stripDriveDuplicateSuffix(oldLower) !== oldLower &&
+      targetLowerNames.has(stripDriveDuplicateSuffix(oldLower));
     if (!isTargetSameName) {
-      if (replaceAllStaleFiles) {
+      if (replaceAllStaleFiles || isOldDuplicateOfTarget) {
         staleOldIds.push(oldFile.id);
       }
     } else if (newItemsWithDistinctIds.has(oldLower)) {
@@ -847,6 +1061,19 @@ export async function uploadFilesIntoDriveFolder(
     }
   }
 
+  if (duplicateNewItemsToRename.length > 0) {
+    if (deferredRenameOut) {
+      deferredRenameOut.push({
+        folderId: studentDriveFolderId,
+        items: duplicateNewItemsToRename,
+      });
+    } else if (!deferredCleanupOut) {
+      for (const dup of duplicateNewItemsToRename) {
+        await renameDriveItemIfNeeded(page, dup.id, dup.cleanName);
+      }
+    }
+  }
+
   await page.waitForTimeout(800);
   return localFilePaths.length;
 }
@@ -864,7 +1091,11 @@ export async function uploadStudentDirectoryTreeToDrive(
   fullName: string,
   depth = 0,
   replaceAllStaleFiles = true,
-  deferredCleanupAccumulator?: Array<{ folderId: string; itemIds: string[] }>
+  deferredCleanupAccumulator?: Array<{ folderId: string; itemIds: string[] }>,
+  deferredRenameAccumulator?: Array<{
+    folderId: string;
+    items: Array<{ id: string; cleanName: string }>;
+  }>
 ): Promise<number> {
   assertDriveNotStopped();
   if (depth > MAX_DRIVE_TREE_DEPTH) {
@@ -876,6 +1107,9 @@ export async function uploadStudentDirectoryTreeToDrive(
   const directFiles = prepareStudentFilesForDriveUpload(safeDir, studentId, fullName);
   const cleanupQueue =
     deferredCleanupAccumulator || ([] as Array<{ folderId: string; itemIds: string[] }>);
+  const renameQueue =
+    deferredRenameAccumulator ||
+    ([] as Array<{ folderId: string; items: Array<{ id: string; cleanName: string }> }>);
 
   await ensureGoogleDriveFolderReadyAndAuthenticated(page, targetDriveFolderId);
 
@@ -884,7 +1118,8 @@ export async function uploadStudentDirectoryTreeToDrive(
     targetDriveFolderId,
     directFiles,
     replaceAllStaleFiles,
-    cleanupQueue
+    cleanupQueue,
+    renameQueue
   );
 
   // Recursively recreate non-ignored subdirectories (e.g. `gui`, `img`, `image`, `assets`, `src`)
@@ -950,7 +1185,8 @@ export async function uploadStudentDirectoryTreeToDrive(
       fullName,
       depth + 1,
       replaceAllStaleFiles,
-      cleanupQueue
+      cleanupQueue,
+      renameQueue
     );
   }
 
@@ -967,6 +1203,19 @@ export async function uploadStudentDirectoryTreeToDrive(
       for (const staleId of batch.itemIds) {
         assertDriveNotStopped();
         await moveDriveItemToTrash(page, staleId);
+      }
+      await page.keyboard.press("Escape").catch(() => {});
+      await page.waitForTimeout(250);
+    }
+  }
+
+  if (depth === 0 && renameQueue.length > 0) {
+    for (const batch of renameQueue) {
+      if (batch.items.length === 0) continue;
+      await ensureGoogleDriveFolderReadyAndAuthenticated(page, batch.folderId);
+      for (const dup of batch.items) {
+        assertDriveNotStopped();
+        await renameDriveItemIfNeeded(page, dup.id, dup.cleanName);
       }
       await page.keyboard.press("Escape").catch(() => {});
       await page.waitForTimeout(250);
@@ -1065,29 +1314,44 @@ export class SpckDriveUploader {
       }
     }
 
-    const page = await BrowserManager.getInstance().getPage();
-
-    if (inputFolderId === CODING_SPCK_ROOT_FOLDER_ID && isRoboticsClass && coursePrefix) {
-      await ensureGoogleDriveFolderReadyAndAuthenticated(page, CODING_SPCK_ROOT_FOLDER_ID);
-      courseOrParentFolderId = await findOrCreateDriveSubfolder(
-        page,
-        CODING_SPCK_ROOT_FOLDER_ID,
-        coursePrefix
-      );
-    }
-
-    await ensureGoogleDriveFolderReadyAndAuthenticated(page, courseOrParentFolderId);
-
-    // Ensure class folder (e.g. VT-C4K-PTA12) exists inside the course folder
-    const pageTitle = (await page.title().catch(() => "")).toUpperCase();
     let classDriveFolderId = courseOrParentFolderId;
-    if (!pageTitle.includes(normalizedClassId)) {
-      classDriveFolderId = await findOrCreateDriveSubfolder(
-        page,
-        courseOrParentFolderId,
-        normalizedClassId
-      );
+    try {
+      const page = await BrowserManager.getInstance().getPage();
+
+      if (inputFolderId === CODING_SPCK_ROOT_FOLDER_ID && isRoboticsClass && coursePrefix) {
+        await ensureGoogleDriveFolderReadyAndAuthenticated(page, CODING_SPCK_ROOT_FOLDER_ID);
+        courseOrParentFolderId = await findOrCreateDriveSubfolder(
+          page,
+          CODING_SPCK_ROOT_FOLDER_ID,
+          coursePrefix
+        );
+      }
+
+      await ensureGoogleDriveFolderReadyAndAuthenticated(page, courseOrParentFolderId);
+
+      // Ensure class folder (e.g. VT-C4K-PTA12) exists inside the course folder
+      const pageTitle = (await page.title().catch(() => "")).toUpperCase();
+      classDriveFolderId = courseOrParentFolderId;
+      if (!pageTitle.includes(normalizedClassId)) {
+        classDriveFolderId = await findOrCreateDriveSubfolder(
+          page,
+          courseOrParentFolderId,
+          normalizedClassId
+        );
+      }
+    } catch (preErr) {
+      const preErrMsg = preErr instanceof Error ? preErr.message : String(preErr);
+      jobLogRepo.add({
+        jobId,
+        jobType: "SPCK_DRIVE_UPLOAD",
+        classId: normalizedClassId,
+        level: "ERROR",
+        message: `Lỗi chuẩn bị thư mục Google Drive cho lớp ${normalizedClassId}: ${preErrMsg}`,
+      });
+      throw preErr;
     }
+
+    const page = await BrowserManager.getInstance().getPage();
 
     const classDriveFolderUrl = `https://drive.google.com/drive/folders/${classDriveFolderId}`;
     const results: SpckDriveStudentResult[] = [];

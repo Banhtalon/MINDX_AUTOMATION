@@ -210,7 +210,7 @@ export default function FinalProjectPage() {
       );
       for (const item of mapped) {
         if (item.assignedStudentId && typeof item.draftVersion === "number") {
-          const rKey = `${(dbRecords[0]?.classId || activeUiClassId || "").toUpperCase()}::${
+          const rKey = `${(dbRecords[0]?.classId || activeUiClassId || "").toUpperCase()}::S${targetSess}::${
             item.folderPath || item.assignedStudentId
           }`;
           latestKnownDraftVersionByRow.set(rKey, item.draftVersion);
@@ -652,6 +652,14 @@ export default function FinalProjectPage() {
       );
 
       setRows(scannedItems);
+      for (const item of scannedItems) {
+        if (item.assignedStudentId && typeof item.draftVersion === "number") {
+          const rKey = `${requestClassId}::S${selectedSessionNumber}::${
+            item.folderPath || item.assignedStudentId
+          }`;
+          latestKnownDraftVersionByRow.set(rKey, item.draftVersion);
+        }
+      }
       const unsubmittedAfterScan = scannedItems
         .filter((r) => {
           if (!r.assignedStudentId) return false;
@@ -718,7 +726,7 @@ export default function FinalProjectPage() {
     if (!activeUiClassId) {
       activeUiClassId = selectedClassId;
     }
-    const rowKey = `${requestClassId}::${merged.folderPath || merged.assignedStudentId}`;
+    const rowKey = `${requestClassId}::S${targetSessionNum}::${merged.folderPath || merged.assignedStudentId}`;
     const seq = ++clientDraftSequence;
     latestRowSaveSequence.set(rowKey, seq);
 
@@ -1080,7 +1088,7 @@ export default function FinalProjectPage() {
       }
 
       const payloadStudents = targetRows.map((r) => {
-        const rKey = `${requestClassId}::${r.folderPath || r.assignedStudentId}`;
+        const rKey = `${requestClassId}::S${requestSessionNum}::${r.folderPath || r.assignedStudentId}`;
         const knownVer = hadInFlightSaves ? _knownVerMap.get(rKey) : undefined;
         return {
           studentId: r.assignedStudentId,
@@ -1140,7 +1148,7 @@ export default function FinalProjectPage() {
             updatedRec?.draftVersion ??
             row.draftVersion;
           if (typeof resolvedDraftVersion === "number" && row.assignedStudentId) {
-            const rKey = `${requestClassId}::${row.folderPath || row.assignedStudentId}`;
+            const rKey = `${requestClassId}::S${requestSessionNum}::${row.folderPath || row.assignedStudentId}`;
             const prevKnown = _knownVerMap.get(rKey) ?? 0;
             if (resolvedDraftVersion >= prevKnown) {
               _knownVerMap.set(rKey, resolvedDraftVersion);

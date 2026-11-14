@@ -3498,7 +3498,7 @@ export class SpckUploader {
           .count()
           .catch(() => 0);
         const modalText = (await modal.innerText().catch(() => "")) || "";
-        if (existingHrefCount > 0 || modalText.includes(rel.url) || modalText.includes(rel.name)) {
+        if (existingHrefCount > 0 || modalText.includes(rel.url)) {
           continue;
         }
         await relNameInput.scrollIntoViewIfNeeded().catch(() => {});

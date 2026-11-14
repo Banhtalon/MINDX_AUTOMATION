@@ -13,11 +13,10 @@ import {
   calculateCompetencyAverageScore,
   calculateDemoTotalScore,
   getDb,
+  getSession14DemoLimitsForClass,
   isRoboticsClassCode,
   parseSession14CompetencyScores,
   parseSession14DemoScores,
-  SESSION14_DEMO_LIMITS,
-  SESSION14_DEMO_LIMITS_ROBOTICS,
   session14EvalRepo,
   sessionFeedbackRepo,
   spckSessionRepo,
@@ -75,7 +74,7 @@ interface ParsedCell {
   numericValue: number | null;
 }
 
-function parseSharedStringsXml(xml: string): string[] {
+export function parseSharedStringsXml(xml: string): string[] {
   const strings: string[] = [];
   if (!xml) return strings;
   const siRegex = /<si\b[^>]*>([\s\S]*?)<\/si>/gi;
@@ -93,7 +92,7 @@ function parseSharedStringsXml(xml: string): string[] {
   return strings;
 }
 
-function parseWorksheetCells(xml: string, sharedStrings: string[]): Map<string, ParsedCell> {
+export function parseWorksheetCells(xml: string, sharedStrings: string[]): Map<string, ParsedCell> {
   const cells = new Map<string, ParsedCell>();
   const cellRegex = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/gi;
   let match: RegExpExecArray | null;
@@ -162,6 +161,43 @@ function parseWorksheetCells(xml: string, sharedStrings: string[]): Map<string, 
   return cells;
 }
 
+function parseCategorySpansFromSheetXml(
+  sheetXml: string | undefined,
+  classId?: string
+): Array<[number, number]> {
+  if (sheetXml) {
+    const spans: Array<[number, number]> = [];
+    const mergeRegex = /<mergeCell\b[^>]*?\bref="A(\d+):A(\d+)"/gi;
+    let m: RegExpExecArray | null;
+    while ((m = mergeRegex.exec(sheetXml)) !== null) {
+      const startRow = parseInt(m[1], 10);
+      const endRow = parseInt(m[2], 10);
+      if (Number.isFinite(startRow) && Number.isFinite(endRow) && startRow >= 8 && endRow >= startRow) {
+        spans.push([startRow, endRow]);
+      }
+    }
+    spans.sort((a, b) => a[0] - b[0]);
+    if (spans.length >= 5) {
+      return spans.slice(0, 5);
+    }
+  }
+  return isRoboticsClassCode(classId)
+    ? [
+        [8, 13],
+        [14, 17],
+        [18, 19],
+        [20, 22],
+        [23, 27],
+      ]
+    : [
+        [8, 13],
+        [14, 17],
+        [18, 19],
+        [20, 22],
+        [23, 27],
+      ];
+}
+
 function sumCellRange(
   cells: Map<string, ParsedCell>,
   col: string,
@@ -173,13 +209,28 @@ function sumCellRange(
   let hasInvalidCell = false;
   let sum = 0;
   for (let r = startRow; r <= endRow; r++) {
-    const c = cells.get(`${col}${r}`);
-    if (c && c.numericValue !== null && Number.isFinite(c.numericValue)) {
-      if (c.numericValue < 0 || c.numericValue > 1.5) {
+    const dNorm = normalizeVietnameseName(cells.get(`D${r}`)?.stringValue || "");
+    const cWeight = cells.get(`C${r}`)?.numericValue;
+    const eCell = cells.get(`${col}${r}`);
+    let rowVal: number | null = null;
+    if (
+      cWeight !== null &&
+      cWeight !== undefined &&
+      Number.isFinite(cWeight) &&
+      cWeight > 0 &&
+      (dNorm === "tot" || dNorm === "hoan thanh" || dNorm === "chua dat")
+    ) {
+      const mult = dNorm === "tot" ? 1 : dNorm === "hoan thanh" ? 0.5 : 0;
+      rowVal = Math.round(cWeight * mult * 1000) / 1000;
+    } else if (eCell && eCell.numericValue !== null && Number.isFinite(eCell.numericValue)) {
+      rowVal = eCell.numericValue;
+    }
+    if (rowVal !== null && Number.isFinite(rowVal)) {
+      if (rowVal < 0 || rowVal > 1.5) {
         hasInvalidCell = true;
       }
       numericCount++;
-      sum += c.numericValue;
+      sum += rowVal;
     }
   }
   return {
@@ -189,9 +240,10 @@ function sumCellRange(
   };
 }
 
-function extractDemoScoresFromWorksheet(
+export function extractDemoScoresFromWorksheet(
   cells: Map<string, ParsedCell>,
-  classId?: string
+  classId?: string,
+  sheetXml?: string
 ): {
   studentNameInCellB2: string;
   demoScores: SpckSession14DemoScores;
@@ -201,16 +253,16 @@ function extractDemoScoresFromWorksheet(
   scoredCriteriaCount: number;
 } {
   const b2 = cells.get("B2")?.stringValue || "";
-  const limits = isRoboticsClassCode(classId)
-    ? SESSION14_DEMO_LIMITS_ROBOTICS
-    : SESSION14_DEMO_LIMITS;
+  const limits = getSession14DemoLimitsForClass(classId);
+  const categorySpans = parseCategorySpansFromSheetXml(sheetXml, classId);
 
-  // Check if E8:E27 have numeric values
-  const eAlgo = sumCellRange(cells, "E", 8, 13);
-  const eCreative = sumCellRange(cells, "E", 14, 17);
-  const eComm = sumCellRange(cells, "E", 18, 19);
-  const eProb = sumCellRange(cells, "E", 20, 22);
-  const eComp = sumCellRange(cells, "E", 23, 27);
+  const eAlgo = sumCellRange(cells, "E", categorySpans[0][0], categorySpans[0][1]);
+  const eCreative = sumCellRange(cells, "E", categorySpans[1][0], categorySpans[1][1]);
+  const eComm = sumCellRange(cells, "E", categorySpans[2][0], categorySpans[2][1]);
+  const eProb = sumCellRange(cells, "E", categorySpans[3][0], categorySpans[3][1]);
+  const eComp = sumCellRange(cells, "E", categorySpans[4][0], categorySpans[4][1]);
+
+  const maxCritEndRow = Math.max(...categorySpans.map((s) => s[1]), 27);
 
   // Also check LOs summary rows (rows 32..36: A32..A36 labels, B32..B36 values)
   const b32 = cells.get("B32");
@@ -344,11 +396,31 @@ function extractDemoScoresFromWorksheet(
   const demoScores = parseSession14DemoScores(rawDemo, classId);
   const demoTotalScore = calculateDemoTotalScore(demoScores);
 
+  // Scan judge comments in Columns B..F below criteria rows (strictly ignoring Column G AI hints!)
   const bgkNotes: string[] = [];
-  for (const ref of ["B30", "C30", "D30"]) {
-    const val = (cells.get(ref)?.stringValue || "").trim();
-    if (val && !/^BGK\s*\d*$/i.test(val)) {
-      bgkNotes.push(val);
+  const noteStartRow = Math.max(25, maxCritEndRow + 1);
+  const noteEndRow = Math.max(33, maxCritEndRow + 5);
+  for (let r = noteStartRow; r <= noteEndRow; r++) {
+    const aNorm = normalizeVietnameseName(cells.get(`A${r}`)?.stringValue || "");
+    if (
+      aNorm.includes("thuat toan") ||
+      aNorm.includes("su dung may tinh") ||
+      aNorm.includes("sang tao") ||
+      aNorm.includes("giai quyet van de") ||
+      aNorm.includes("giao tiep")
+    ) {
+      continue;
+    }
+    const bFormula = cells.get(`B${r}`)?.formula || "";
+    if (/SUM\(/i.test(bFormula)) continue;
+
+    for (const colLetter of ["B", "C", "D", "E", "F"]) {
+      const val = (cells.get(`${colLetter}${r}`)?.stringValue || "").trim();
+      if (!val) continue;
+      if (/^(?:Nhận\s*xét|BGK\s*\d*|Tổng\s*Điểm)$/i.test(val)) continue;
+      if (!bgkNotes.includes(val)) {
+        bgkNotes.push(val);
+      }
     }
   }
 
@@ -438,9 +510,7 @@ export function suggestCompetencyScoresForStudent(params: {
     allTagsText.includes("phu thuoc ai") ||
     allTagsText.includes("chua hieu sau phan cot loi");
 
-  const limits = isRoboticsClassCode(classId)
-    ? SESSION14_DEMO_LIMITS_ROBOTICS
-    : SESSION14_DEMO_LIMITS;
+  const limits = getSession14DemoLimitsForClass(classId);
   const knowledgeInClass = ratioToRating(demoScores.algorithm, limits.algorithm, 4);
   const knowledgeSelfStudy = reliesOnAi
     ? 3
@@ -767,7 +837,7 @@ export function parseDemoWorkbookBufferForClass(
     if (!wsEntry) continue;
     const wsXml = wsEntry.getData().toString("utf8");
     const cells = parseWorksheetCells(wsXml, sharedStrings);
-    const extracted = extractDemoScoresFromWorksheet(cells, normalizedClassId);
+    const extracted = extractDemoScoresFromWorksheet(cells, normalizedClassId, wsXml);
 
     const normCellB2 = normalizeVietnameseName(extracted.studentNameInCellB2);
     const b2Candidates = findCandidatesByName(normCellB2);

@@ -77,6 +77,10 @@ function getClassDemoSheetMeta(classId: string) {
     evalDate,
     latestDemoSheetUrl,
     spckExempt: false,
+    demoExempt:
+      coursePrefix === "PTB" ||
+      coursePrefix === "CSB" ||
+      /(?:^|[-_\s])(PTB|CSB)(?:\d|$|[-_\s])/i.test(classId),
     hasCourseDemoTemplate,
     hasCourseDriveFolder,
   };

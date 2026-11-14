@@ -16,6 +16,13 @@ import path from "node:path";
 import AdmZip from "adm-zip";
 import type { Frame, Page } from "playwright";
 import { getDb, jobLogRepo, spckUploadRepo, studentRepo } from "../db/sqlite";
+import {
+  extractDemoTemplateRubricStructure,
+  generateDemoSheetAiPreScoresForClass,
+  type DemoSheetAiScorerOverride,
+  type DemoTemplateRubricStructure,
+  type StudentDemoAiPreScoreResult,
+} from "../gemini/spck-demo-sheet-scorer";
 import { taskQueue } from "../queue/task-queue";
 import { assertPathAllowed } from "../security/path-allowlist";
 import { BrowserManager } from "./browser-manager";
@@ -38,6 +45,9 @@ export const COURSE_DEMO_TITLE_MAP: Record<string, string> = {
   GB: "Bảng chấm điểm buổi demo Game Maker - Basic",
   GA: "Bảng chấm điểm buổi demo Game Maker - Advanced",
   GI: "Bảng chấm điểm buổi demo Game Maker - Intensive",
+  GMB: "Bảng chấm điểm buổi demo Game Maker - Basic",
+  GMA: "Bảng chấm điểm buổi demo Game Maker - Advanced",
+  GMI: "Bảng chấm điểm buổi demo Game Maker - Intensive",
   JSB: "Bảng chấm điểm buổi Demo Web Developer - Basic",
   JSA: "Bảng chấm điểm buổi Demo Web Developer - Advanced",
   JSI: "Bảng chấm điểm buổi Demo Web Developer - Intensive",
@@ -45,6 +55,17 @@ export const COURSE_DEMO_TITLE_MAP: Record<string, string> = {
   CSA: "Bảng chấm điểm buổi demo Computer Scientist - Advanced",
   CSI: "Bảng chấm điểm buổi demo Computer Scientist - Intensive",
 };
+
+export const DEMO_EXEMPT_COURSES = new Set<string>(["PTB", "CSB"]);
+
+/**
+ * PTB & CSB are exempt from the final Demo / SPCK session per MindX LHP curriculum.
+ */
+export function isCourseExemptFromDemo(classIdOrCourseName?: string | null): boolean {
+  const upper = String(classIdOrCourseName || "").trim().toUpperCase();
+  if (!upper) return false;
+  return /(?:^|[-_\s])(PTB|CSB)(?:\d|$|[-_\s])/i.test(upper);
+}
 
 export interface DemoSheetStudentTab {
   studentId: string;
@@ -59,6 +80,9 @@ export interface CreateDemoSheetOptions {
   localClassFolderPath?: string;
   customDemoDate?: string;
   customEvalDate?: string;
+  enableAiPreScore?: boolean;
+  /** @internal Test-only AI scorer override to avoid live Gemini network calls in unit tests */
+  _testAiScorerOverride?: DemoSheetAiScorerOverride;
   /** @internal Test-only Playwright Page & origin overrides for isolated DOM verification */
   _testHarness?: {
     page: Page;
@@ -83,10 +107,18 @@ export interface CreateDemoSheetResult {
   googleSheetUrl?: string;
   classDriveFolderUrl?: string;
   usedTemplateUrl?: string;
+  aiPreScoredCount?: number;
+  aiSkippedCount?: number;
 }
 
 function escapeXml(str: string): string {
-  return String(str ?? "")
+  const sanitized = String(str ?? "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\uFFFE\uFFFF]/g, "")
+    .replace(
+      /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
+      ""
+    );
+  return sanitized
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -639,6 +671,274 @@ function replaceXmlCellWithInlineString(
   });
 }
 
+function widenColumnGInColsXml(sheetXml: string, width = 54): string {
+  const colsMatch = sheetXml.match(/<cols>([\s\S]*?)<\/cols>/i);
+  if (!colsMatch) {
+    return sheetXml.replace(
+      /<sheetData\b/i,
+      `<cols><col min="7" max="7" width="${width}" customWidth="1"/></cols><sheetData`
+    );
+  }
+  const innerCols = colsMatch[1];
+  const colTagRegex = /<col\b([^>]*?)\/>/gi;
+  const rebuiltCols: string[] = [];
+  let sawCol7 = false;
+  let m: RegExpExecArray | null;
+  while ((m = colTagRegex.exec(innerCols)) !== null) {
+    const attrs = m[1];
+    const minM = attrs.match(/\bmin="(\d+)"/i);
+    const maxM = attrs.match(/\bmax="(\d+)"/i);
+    const min = minM ? parseInt(minM[1], 10) : 0;
+    const max = maxM ? parseInt(maxM[1], 10) : 0;
+    if (!min || !max || max < 7 || min > 7) {
+      rebuiltCols.push(`<col${attrs}/>`);
+      continue;
+    }
+    sawCol7 = true;
+    const styleM = attrs.match(/\bstyle="(\d+)"/i);
+    const styleAttr = styleM ? ` style="${styleM[1]}"` : "";
+    const widthM = attrs.match(/\bwidth="([^"]+)"/i);
+    const origWidth = widthM ? widthM[1] : "12.5703125";
+    const origCustom = /\bcustomWidth="/i.test(attrs) ? ` customWidth="1"` : "";
+    if (min < 7) {
+      rebuiltCols.push(
+        `<col min="${min}" max="6" width="${origWidth}"${styleAttr}${origCustom}/>`
+      );
+    }
+    rebuiltCols.push(
+      `<col min="7" max="7" width="${width}"${styleAttr} customWidth="1"/>`
+    );
+    if (max > 7) {
+      rebuiltCols.push(
+        `<col min="8" max="${max}" width="${origWidth}"${styleAttr}${origCustom}/>`
+      );
+    }
+  }
+  if (!sawCol7) {
+    rebuiltCols.push(`<col min="7" max="7" width="${width}" customWidth="1"/>`);
+  }
+  return sheetXml.replace(/<cols>[\s\S]*?<\/cols>/i, `<cols>${rebuiltCols.join("")}</cols>`);
+}
+
+function updateCachedValueInCell(
+  sheetXml: string,
+  cellRef: string,
+  newCachedValue: string
+): string {
+  const cellRegex = new RegExp(
+    `(<c\\b[^>]*?\\br="${cellRef}"[^>]*?>)([\\s\\S]*?)(<\\/c>)|<c\\b([^>]*?\\br="${cellRef}"[^>]*?)\\/>`,
+    "i"
+  );
+  return sheetXml.replace(cellRegex, (_m, openTag, inner, closeTag, selfAttrs) => {
+    const escaped = escapeXml(newCachedValue);
+    if (selfAttrs !== undefined) {
+      return `<c${selfAttrs}><v>${escaped}</v></c>`;
+    }
+    let nextInner = String(inner || "");
+    if (/<v(?:\s+[^>]*)?>[\s\S]*?<\/v>/i.test(nextInner)) {
+      nextInner = nextInner.replace(/<v(?:\s+[^>]*)?>[\s\S]*?<\/v>/i, `<v>${escaped}</v>`);
+    } else {
+      nextInner += `<v>${escaped}</v>`;
+    }
+    return `${openTag}${nextInner}${closeTag}`;
+  });
+}
+
+function columnLettersToIndex(col: string): number {
+  let acc = 0;
+  for (const ch of col.toUpperCase()) {
+    acc = acc * 26 + (ch.charCodeAt(0) - 64);
+  }
+  return acc;
+}
+
+function upsertInlineCellInSheetXml(
+  sheetXml: string,
+  colLetter: string,
+  rowNum: number,
+  value: string,
+  fallbackStyle?: string
+): string {
+  const cellRef = `${colLetter.toUpperCase()}${rowNum}`;
+  const exactCellRegex = new RegExp(
+    `<c\\b[^>]*?\\br="${cellRef}"[^>]*?(?:\\/>|>[\\s\\S]*?<\\/c>)`,
+    "i"
+  );
+  const escaped = escapeXml(value);
+  if (exactCellRegex.test(sheetXml)) {
+    return sheetXml.replace(exactCellRegex, (matchedCell) => {
+      const styleM = matchedCell.match(/\bs="(\d+)"/i);
+      const sAttr = styleM ? ` s="${styleM[1]}"` : fallbackStyle ? ` s="${fallbackStyle}"` : "";
+      return `<c r="${cellRef}"${sAttr} t="inlineStr"><is><t>${escaped}</t></is></c>`;
+    });
+  }
+
+  const sAttr = fallbackStyle ? ` s="${fallbackStyle}"` : "";
+  const newCellXml = `<c r="${cellRef}"${sAttr} t="inlineStr"><is><t>${escaped}</t></is></c>`;
+  const targetColIdx = columnLettersToIndex(colLetter);
+
+  // Try inserting inside an existing <row r="${rowNum}" ...>...</row> or self-closing <row r="${rowNum}" .../>
+  const existingRowRegex = new RegExp(
+    `(<row\\b([^>]*?\\br="${rowNum}"[^>]*?))(?:\\/>|>([\\s\\S]*?)<\\/row>)`,
+    "i"
+  );
+  if (existingRowRegex.test(sheetXml)) {
+    return sheetXml.replace(existingRowRegex, (_m, openStart, rowAttrs, rowInner) => {
+      if (rowInner === undefined) {
+        return `<row${rowAttrs}>${newCellXml}</row>`;
+      }
+      const cellMatches = Array.from(
+        String(rowInner).matchAll(/<c\b[^>]*?\br="([A-Z]+)\d+"[^>]*?>/gi)
+      );
+      let insertBeforeIdx = String(rowInner).length;
+      for (const cm of cellMatches) {
+        if (columnLettersToIndex(cm[1]) > targetColIdx && typeof cm.index === "number") {
+          insertBeforeIdx = cm.index;
+          break;
+        }
+      }
+      const nextInner =
+        String(rowInner).slice(0, insertBeforeIdx) +
+        newCellXml +
+        String(rowInner).slice(insertBeforeIdx);
+      return `${openStart}>${nextInner}</row>`;
+    });
+  }
+
+  // Insert brand new <row r="${rowNum}"> in ascending row order inside <sheetData>
+  const newRowXml = `<row r="${rowNum}">${newCellXml}</row>`;
+  const sheetDataMatch = sheetXml.match(/<sheetData\b[^>]*>([\s\S]*?)<\/sheetData>/i);
+  if (!sheetDataMatch) return sheetXml;
+  const body = sheetDataMatch[1];
+  const rowPosMatches = Array.from(body.matchAll(/<row\b[^>]*?\br="(\d+)"/gi));
+  let insertOffset = body.length;
+  for (const rm of rowPosMatches) {
+    if (parseInt(rm[1], 10) > rowNum && typeof rm.index === "number") {
+      insertOffset = rm.index;
+      break;
+    }
+  }
+  const updatedBody = body.slice(0, insertOffset) + newRowXml + body.slice(insertOffset);
+  return sheetXml.replace(
+    /<sheetData\b[^>]*>[\s\S]*?<\/sheetData>/i,
+    `<sheetData>${updatedBody}</sheetData>`
+  );
+}
+
+function applyAiAnnotationsToStudentWorksheetXml(
+  rawXml: string,
+  structure: DemoTemplateRubricStructure,
+  annotation: StudentDemoAiPreScoreResult
+): string {
+  let xml = widenColumnGInColsXml(rawXml, 54);
+  // Pick wrapText style from an existing B criteria cell if available for cleaner display in Column G
+  const bSampleMatch = xml.match(
+    new RegExp(`<c\\b[^>]*?\\br="B${structure.criteriaRows[0]?.rowNumber || 8}"[^>]*?>`, "i")
+  );
+  const gCellStyle = bSampleMatch?.[0]?.match(/\bs="(\d+)"/i)?.[1];
+  const hSampleMatch = xml.match(
+    new RegExp(`<c\\b[^>]*?\\br="B${structure.headerRow}"[^>]*?>`, "i")
+  );
+  const gHeaderStyle = hSampleMatch?.[0]?.match(/\bs="(\d+)"/i)?.[1];
+
+  xml = upsertInlineCellInSheetXml(
+    xml,
+    "G",
+    structure.headerRow,
+    "Gợi ý nhanh của AI & Câu hỏi BGK",
+    gHeaderStyle
+  );
+
+  let totalEarned = 0;
+  const rowScoreByRowNum = new Map<number, number>();
+
+  for (const row of structure.criteriaRows) {
+    const ann = annotation.criteriaByRow[row.rowNumber];
+    const effectiveRating = ann ? ann.rating : row.defaultRating;
+    if (ann && ann.isAiScored && effectiveRating !== row.defaultRating) {
+      xml = replaceXmlCellWithInlineString(xml, `D${row.rowNumber}`, effectiveRating);
+    } else if (ann && ann.isAiScored) {
+      xml = replaceXmlCellWithInlineString(xml, `D${row.rowNumber}`, effectiveRating);
+    }
+
+    const mult = effectiveRating === "Tốt" ? 1 : effectiveRating === "Hoàn thành" ? 0.5 : 0;
+    const rowScore = Math.round(row.maxPoints * mult * 1000) / 1000;
+    rowScoreByRowNum.set(row.rowNumber, rowScore);
+    totalEarned += rowScore;
+
+    xml = updateCachedValueInCell(xml, `E${row.rowNumber}`, String(rowScore));
+
+    if (ann?.columnGNote) {
+      xml = upsertInlineCellInSheetXml(
+        xml,
+        "G",
+        row.rowNumber,
+        ann.columnGNote,
+        gCellStyle
+      );
+    }
+  }
+
+  const roundedTotal = Math.round(totalEarned * 1000) / 1000;
+  xml = updateCachedValueInCell(xml, structure.totalScoreCellRef, String(roundedTotal));
+  xml = updateCachedValueInCell(xml, structure.summaryCellRef, `${roundedTotal} / 5`);
+
+  for (const loCell of structure.loFormulaCells) {
+    let loSum = 0;
+    for (let r = loCell.startRow; r <= loCell.endRow; r++) {
+      loSum += rowScoreByRowNum.get(r) || 0;
+    }
+    xml = updateCachedValueInCell(
+      xml,
+      loCell.ref,
+      String(Math.round(loSum * 1000) / 1000)
+    );
+  }
+
+  if (annotation.bgkQuestions.length > 0) {
+    xml = upsertInlineCellInSheetXml(
+      xml,
+      "G",
+      structure.nhanXetRow,
+      "💡 GỢI Ý CÂU HỎI VẤN ĐÁP THỰC TẾ CHO BGK:",
+      gHeaderStyle || gCellStyle
+    );
+    annotation.bgkQuestions.slice(0, 3).forEach((q, qIdx) => {
+      xml = upsertInlineCellInSheetXml(
+        xml,
+        "G",
+        structure.nhanXetRow + 1 + qIdx,
+        `${qIdx + 1}. ${q}`,
+        gCellStyle
+      );
+    });
+  } else if (annotation.skippedReason) {
+    xml = upsertInlineCellInSheetXml(
+      xml,
+      "G",
+      structure.nhanXetRow,
+      `ℹ️ ${annotation.criteriaByRow[structure.criteriaRows[0]?.rowNumber || 8]?.columnGNote || "Giám khảo chấm trực tiếp toàn bộ bảng điểm."}`,
+      gCellStyle
+    );
+  }
+
+  const maxWrittenRow = Math.max(
+    structure.nhanXetRow + Math.max(0, annotation.bgkQuestions.length),
+    35
+  );
+  xml = xml.replace(
+    /<dimension\b[^>]*?\bref="A1:([A-Z]+)(\d+)"([^>]*)\/>/i,
+    (_m, colRef, rowRef, restAttrs) => {
+      const nextCol =
+        columnLettersToIndex(colRef) < columnLettersToIndex("G") ? "G" : colRef;
+      const nextRow = Math.max(parseInt(rowRef, 10) || 1, maxWrittenRow);
+      return `<dimension ref="A1:${nextCol}${nextRow}"${restAttrs}/>`;
+    }
+  );
+
+  return xml;
+}
+
 /**
  * Clones the first worksheet of an existing `.xlsx` template buffer into `studentTabs.length` tabs,
  * updating `A1` (Title), `B2` (Student Name), `B3` (Demo Date), and `B4` (Eval Date) in each tab
@@ -650,8 +950,20 @@ function cloneTemplateXlsxBufferForStudents(params: {
   demoDate: string;
   evalDate: string;
   studentTabs: DemoSheetStudentTab[];
+  aiTabAnnotations?: Record<string, StudentDemoAiPreScoreResult>;
 }): Buffer {
-  const { templateBuffer, sheetTitle, demoDate, evalDate, studentTabs } = params;
+  const {
+    templateBuffer,
+    sheetTitle,
+    demoDate,
+    evalDate,
+    studentTabs,
+    aiTabAnnotations,
+  } = params;
+  const rubricStructure =
+    aiTabAnnotations && Object.keys(aiTabAnnotations).length > 0
+      ? extractDemoTemplateRubricStructure(templateBuffer)
+      : null;
   const zip = new AdmZip(templateBuffer);
   const baseSheetEntry =
     zip.getEntry("xl/worksheets/sheet1.xml") ||
@@ -728,6 +1040,11 @@ function cloneTemplateXlsxBufferForStudents(params: {
     xml = replaceXmlCellWithInlineString(xml, "B2", stu.fullName);
     xml = replaceXmlCellWithInlineString(xml, "B3", demoDate);
     xml = replaceXmlCellWithInlineString(xml, "B4", evalDate);
+
+    const stuAnnotation = aiTabAnnotations?.[stu.tabName];
+    if (rubricStructure && stuAnnotation) {
+      xml = applyAiAnnotationsToStudentWorksheetXml(xml, rubricStructure, stuAnnotation);
+    }
 
     zip.addFile(`xl/worksheets/sheet${sheetNum}.xml`, Buffer.from(xml, "utf8"));
     if (baseSheetRelsXml && sheetNum > 1) {
@@ -883,11 +1200,13 @@ export function validateTemplateWorkbookBuffer(
 }
 
 export function getSavedCourseTemplatePath(classIdOrPrefix?: string): string | null {
-  const prefix =
+  const rawPrefix =
     detectCoursePrefixFromClassId(String(classIdOrPrefix || "")) ||
     String(classIdOrPrefix || "")
       .trim()
       .toUpperCase();
+  const gmAliasMap: Record<string, string> = { GMB: "GB", GMA: "GA", GMI: "GI" };
+  const prefix = gmAliasMap[rawPrefix] || rawPrefix;
 
   const candidateTemplateDirs: string[] = [];
   if (process.env.MINDX_CONFIG_DIR) {
@@ -940,8 +1259,17 @@ export function buildDemoScoringWorkbookBuffer(params: {
   evalDate: string;
   studentTabs: DemoSheetStudentTab[];
   templateBuffer?: Buffer | null;
+  aiTabAnnotations?: Record<string, StudentDemoAiPreScoreResult>;
 }): Buffer {
-  const { classId, sheetTitle, demoDate, evalDate, studentTabs, templateBuffer } = params;
+  const {
+    classId,
+    sheetTitle,
+    demoDate,
+    evalDate,
+    studentTabs,
+    templateBuffer,
+    aiTabAnnotations,
+  } = params;
   const effectiveTabs =
     studentTabs.length > 0
       ? studentTabs
@@ -957,6 +1285,7 @@ export function buildDemoScoringWorkbookBuffer(params: {
       demoDate,
       evalDate,
       studentTabs: effectiveTabs,
+      aiTabAnnotations,
     });
   }
 
@@ -974,6 +1303,7 @@ export function buildDemoScoringWorkbookBuffer(params: {
       demoDate,
       evalDate,
       studentTabs: effectiveTabs,
+      aiTabAnnotations,
     });
   }
 
@@ -1109,72 +1439,123 @@ async function listDriveFilesInFolder(
   parentFolderId: string
 ): Promise<DriveFolderItemSummary[]> {
   try {
-    return await page.evaluate((expectedParentId) => {
+    await page
+      .evaluate("window.__name = window.__name || function(f){ return f; }")
+      .catch(() => {});
+    return await page.evaluate(async (expectedParentId) => {
       const mainEl = document.querySelector('[role="main"]') as HTMLElement | null;
       if (!mainEl) return [];
-      const exactLabelById = new Map<string, string>();
-      for (const el of Array.from(mainEl.querySelectorAll("[data-id]"))) {
-        const id = el.getAttribute("data-id") || "";
-        if (!id || id.length < 15 || id === expectedParentId) continue;
-        if (el.getAttribute("data-target") === "doc") continue;
-        const txt = ((el as HTMLElement).innerText || "").trim();
-        if (txt && !txt.includes("\n") && !txt.includes("\t")) {
-          exactLabelById.set(id, txt);
+
+      const scrollable =
+        (mainEl.querySelector('[role="grid"]')?.parentElement as HTMLElement | null) ||
+        mainEl;
+      const canScrollGrid = Boolean(
+        scrollable &&
+          typeof scrollable.scrollTop === "number" &&
+          scrollable.clientHeight > 0 &&
+          scrollable.scrollHeight > scrollable.clientHeight + 20
+      );
+      if (scrollable && typeof scrollable.scrollTop === "number") {
+        scrollable.scrollTop = 0;
+        scrollable.dispatchEvent(new Event("scroll", { bubbles: true }));
+      }
+
+      const collected = new Map<string, DriveFolderItemSummary>();
+      const stepPx =
+        scrollable && scrollable.clientHeight > 0
+          ? Math.max(250, Math.floor(scrollable.clientHeight * 0.8))
+          : 250;
+      let prevScrollTop = -1;
+
+      for (let pass = 0; pass <= 15; pass++) {
+        const exactLabelById = new Map<string, string>();
+        for (const el of Array.from(mainEl.querySelectorAll("[data-id]"))) {
+          const id = el.getAttribute("data-id") || "";
+          if (!id || id.length < 15 || id === expectedParentId) continue;
+          if (el.getAttribute("data-target") === "doc") continue;
+          const txt = ((el as HTMLElement).innerText || "").trim();
+          if (txt && !txt.includes("\n") && !txt.includes("\t")) {
+            exactLabelById.set(id, txt);
+          }
         }
-      }
-      const out: DriveFolderItemSummary[] = [];
-      for (const el of Array.from(mainEl.querySelectorAll('[data-target="doc"][data-id]'))) {
-        const id = el.getAttribute("data-id") || "";
-        if (!id || id.length < 15 || id === "EBS5u" || id === expectedParentId) continue;
-        const rawText = (el as HTMLElement).innerText || el.getAttribute("aria-label") || "";
-        const ariaLower = (el.getAttribute("aria-label") || "").toLowerCase();
-        const dataType = (el.getAttribute("data-type") || "").toLowerCase();
-        const dataMime = (
-          el.getAttribute("data-mime-type") ||
-          el.getAttribute("data-mimetype") ||
-          ""
-        ).toLowerCase();
-        const htmlLower = (el.innerHTML || "").toLowerCase();
-        const name =
-          exactLabelById.get(id) ||
-          rawText
-            .split(/[\r\n\t]+/)
-            .map((s) => s.trim())
-            .filter(
-              (s) =>
-                Boolean(s) &&
-                s !== "Shared folder" &&
-                s !== "Thư mục được chia sẻ" &&
-                s !== "Thư mục" &&
-                s !== "Folder"
-            )[0] ||
-          "";
-        if (!name) continue;
+        for (const el of Array.from(mainEl.querySelectorAll('[data-target="doc"][data-id]'))) {
+          const id = el.getAttribute("data-id") || "";
+          if (!id || id.length < 15 || id === "EBS5u" || id === expectedParentId) continue;
+          const rawText = (el as HTMLElement).innerText || el.getAttribute("aria-label") || "";
+          const ariaLower = (el.getAttribute("aria-label") || "").toLowerCase();
+          const dataType = (el.getAttribute("data-type") || "").toLowerCase();
+          const dataMime = (
+            el.getAttribute("data-mime-type") ||
+            el.getAttribute("data-mimetype") ||
+            ""
+          ).toLowerCase();
+          const htmlLower = (el.innerHTML || "").toLowerCase();
+          const name =
+            exactLabelById.get(id) ||
+            rawText
+              .split(/[\r\n\t]+/)
+              .map((s) => s.trim())
+              .filter(
+                (s) =>
+                  Boolean(s) &&
+                  s !== "Shared folder" &&
+                  s !== "Thư mục được chia sẻ" &&
+                  s !== "Thư mục" &&
+                  s !== "Folder"
+              )[0] ||
+            "";
+          if (!name) continue;
 
-        const isFolder =
-          dataType === "folder" ||
-          dataMime === "application/vnd.google-apps.folder" ||
-          ariaLower.startsWith("thư mục ") ||
-          ariaLower.startsWith("folder ") ||
-          ariaLower.includes("google drive folder");
-        const isExcelFile =
-          !isFolder &&
-          (/\.xls[xm]?$/i.test(name) ||
-            dataMime.includes("spreadsheetml") ||
-            dataMime.includes("ms-excel") ||
-            ariaLower.includes("microsoft excel"));
-        const isGoogleSheet =
-          !isFolder &&
-          !isExcelFile &&
-          (dataMime === "application/vnd.google-apps.spreadsheet" ||
-            dataType === "spreadsheet" ||
-            ariaLower.includes("google trang tính") ||
-            ariaLower.includes("google sheets") ||
-            htmlLower.includes("spreadsheet"));
+          const isFolder =
+            dataType === "folder" ||
+            dataMime === "application/vnd.google-apps.folder" ||
+            ariaLower.startsWith("thư mục ") ||
+            ariaLower.startsWith("folder ") ||
+            ariaLower.includes("google drive folder");
+          const isExcelFile =
+            !isFolder &&
+            (/\.xls[xm]?$/i.test(name) ||
+              dataMime.includes("spreadsheetml") ||
+              dataMime.includes("ms-excel") ||
+              ariaLower.includes("microsoft excel"));
+          const isGoogleSheet =
+            !isFolder &&
+            !isExcelFile &&
+            (dataMime === "application/vnd.google-apps.spreadsheet" ||
+              dataType === "spreadsheet" ||
+              ariaLower.includes("google trang tính") ||
+              ariaLower.includes("google sheets") ||
+              htmlLower.includes("spreadsheet"));
 
-        out.push({ id, name, isFolder, isExcelFile, isGoogleSheet });
+          if (!collected.has(id)) {
+            collected.set(id, { id, name, isFolder, isExcelFile, isGoogleSheet });
+          }
+        }
+
+        if (
+          !canScrollGrid ||
+          !scrollable ||
+          pass === 15 ||
+          scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 4 ||
+          scrollable.scrollTop === prevScrollTop
+        ) {
+          break;
+        }
+        prevScrollTop = scrollable.scrollTop;
+        scrollable.scrollTop = Math.min(
+          scrollable.scrollHeight,
+          scrollable.scrollTop + stepPx
+        );
+        scrollable.dispatchEvent(new Event("scroll", { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 80));
       }
-      return out;
+
+      if (canScrollGrid && scrollable) {
+        scrollable.scrollTop = 0;
+        scrollable.dispatchEvent(new Event("scroll", { bubbles: true }));
+      }
+
+      return Array.from(collected.values());
     }, parentFolderId);
   } catch {
     return [];
@@ -1777,6 +2158,12 @@ export async function createAndUploadClassDemoSheetToDrive(
     throw new Error(`Đường dẫn Google Sheet mẫu '${rawTemplateUrl}' không hợp lệ.`);
   }
 
+  if (isCourseExemptFromDemo(normalizedClassId) && !explicitTemplateSheetId) {
+    throw new Error(
+      `Lớp ${normalizedClassId} thuộc khóa ${coursePrefixForGuard || "PTB/CSB"} được miễn buổi Demo cuối khóa (không có SPCK) nên không cần tạo bảng chấm điểm Demo.`
+    );
+  }
+
   const savedCourseTemplatePath = getSavedCourseTemplatePath(normalizedClassId);
   if (!explicitTemplateSheetId && !savedCourseTemplatePath) {
     throw new Error(
@@ -1790,6 +2177,34 @@ export async function createAndUploadClassDemoSheetToDrive(
       fs.readFileSync(savedCourseTemplatePath),
       savedCourseTemplatePath
     );
+  }
+
+  const shouldRunAiPreScore =
+    typeof options.enableAiPreScore === "boolean"
+      ? options.enableAiPreScore
+      : !options._testHarness || Boolean(options._testAiScorerOverride);
+
+  let aiAnnotationsResult: {
+    byTabName: Record<string, StudentDemoAiPreScoreResult>;
+    preScoredCount: number;
+    skippedCount: number;
+  } | null = null;
+
+  // Run AI pre-grading before entering SequentialTaskQueue so Playwright browser lock stays free during Gemini calls.
+  if (shouldRunAiPreScore && preloadedSavedTemplateBuf) {
+    aiAnnotationsResult = await generateDemoSheetAiPreScoresForClass({
+      classId: normalizedClassId,
+      studentTabs,
+      templateBuffer: preloadedSavedTemplateBuf,
+      localClassFolderPath: options.localClassFolderPath,
+      _testAiScorerOverride: options._testAiScorerOverride,
+    }).catch((err) => {
+      console.warn(
+        `[spck-demo-sheet] AI pre-score fallback for ${normalizedClassId}:`,
+        err instanceof Error ? err.message : String(err)
+      );
+      return null;
+    });
   }
 
   const preCheckDriveFolderId = extractDriveFolderId(
@@ -1841,6 +2256,22 @@ export async function createAndUploadClassDemoSheetToDrive(
           );
         }
 
+        if (!aiAnnotationsResult && shouldRunAiPreScore && templateBuffer) {
+          aiAnnotationsResult = await generateDemoSheetAiPreScoresForClass({
+            classId: normalizedClassId,
+            studentTabs,
+            templateBuffer,
+            localClassFolderPath: options.localClassFolderPath,
+            _testAiScorerOverride: options._testAiScorerOverride,
+          }).catch((err) => {
+            console.warn(
+              `[spck-demo-sheet] Custom template AI pre-score fallback for ${normalizedClassId}:`,
+              err instanceof Error ? err.message : String(err)
+            );
+            return null;
+          });
+        }
+
         const workbookBuf = buildDemoScoringWorkbookBuffer({
           classId: normalizedClassId,
           sheetTitle,
@@ -1848,6 +2279,7 @@ export async function createAndUploadClassDemoSheetToDrive(
           evalDate,
           studentTabs,
           templateBuffer,
+          aiTabAnnotations: aiAnnotationsResult?.byTabName,
         });
         const expectedAllTabs = extractSheetTabNamesFromWorkbookBuffer(workbookBuf);
         const stagingPayload: InMemoryWorkbookPayload = {
@@ -2018,12 +2450,16 @@ export async function createAndUploadClassDemoSheetToDrive(
         }
 
         const googleSheetUrl = `${sheetsBaseUrl}/spreadsheets/d/${nativeSpreadsheetId}/edit?usp=sharing`;
+        const aiSummaryText =
+          aiAnnotationsResult && aiAnnotationsResult.preScoredCount > 0
+            ? `, AI chấm nháp & gợi ý BGK: ${aiAnnotationsResult.preScoredCount}/${studentTabs.length} HV`
+            : "";
         jobLogRepo.add({
           jobId: `DEMO_SHEET_${normalizedClassId}_${Date.now()}`,
           jobType: "SPCK_DEMO_SHEET",
           classId: normalizedClassId,
           level: "SUCCESS",
-          message: `Đã tạo Google Trang tính '${sheetTitle}' (${studentTabs.length} tab học viên, Ngày Demo: ${demoDate}) trong thư mục Drive lớp ${normalizedClassId}: ${googleSheetUrl}`,
+          message: `Đã tạo Google Trang tính '${sheetTitle}' (${studentTabs.length} tab học viên, Ngày Demo: ${demoDate}${aiSummaryText}) trong thư mục Drive lớp ${normalizedClassId}: ${googleSheetUrl}`,
         });
 
         return {
@@ -2042,6 +2478,8 @@ export async function createAndUploadClassDemoSheetToDrive(
           googleSheetUrl,
           classDriveFolderUrl,
           usedTemplateUrl: explicitTemplateSheetId ? rawTemplateUrl : undefined,
+          aiPreScoredCount: aiAnnotationsResult?.preScoredCount ?? 0,
+          aiSkippedCount: aiAnnotationsResult?.skippedCount ?? 0,
         };
       } finally {
         if (ephemeralDriveIdsToTrash.size > 0 && classDriveFolderId && !isDemoSheetStopped()) {
