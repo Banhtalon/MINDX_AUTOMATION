@@ -166,14 +166,29 @@ export function requireTeachingMutationAck(
 export class TeachingHttpClient {
   public readonly baseOrigin: string;
   public readonly requestTimeoutMs: number;
+  private readonly customUsername?: string;
+  private readonly customPassword?: string;
 
-  constructor(baseOrigin?: string, requestTimeoutMs: number = 30000) {
+  constructor(
+    baseOrigin?: string,
+    requestTimeoutMs: number = 30000,
+    credentials?: { username?: string; password?: string }
+  ) {
     this.baseOrigin = (baseOrigin || resolveTeachingBaseOrigin()).replace(/\/+$/, "");
     this.requestTimeoutMs = requestTimeoutMs;
+    this.customUsername = credentials?.username?.trim() || undefined;
+    this.customPassword = credentials?.password || undefined;
+  }
+
+  private resolveAuthCredentials(): { username: string; password: string } {
+    return {
+      username: (this.customUsername || config.teachingUsername || "").trim(),
+      password: this.customPassword || config.teachingPassword || "",
+    };
   }
 
   private getSessionKey(): string {
-    const username = String(config.teachingUsername || "").trim();
+    const { username } = this.resolveAuthCredentials();
     return `${this.baseOrigin}::${username}`;
   }
 
@@ -288,8 +303,7 @@ export class TeachingHttpClient {
     }
 
     const doLogin = (async () => {
-      const username = config.teachingUsername;
-      const password = config.teachingPassword;
+      const { username, password } = this.resolveAuthCredentials();
       if (!username || !password) {
         throw new Error(
           "Chưa cấu hình tài khoản hoặc mật khẩu TEACHING trong file .env.local."
@@ -434,6 +448,68 @@ export class TeachingHttpClient {
     return firstAttempt.data;
   }
 
+  private static looksLikeLoginHtml(html: string): boolean {
+    const lower = String(html || "").toLowerCase();
+    return (
+      lower.includes('name="password"') &&
+      lower.includes('name="username"') &&
+      (lower.includes("login.php") || lower.includes("đăng nhập"))
+    );
+  }
+
+  public async getHtmlPage(
+    relativePathWithQuery: string,
+    errorContext: string = "đọc trang Teaching"
+  ): Promise<string> {
+    await this.ensureLoggedIn();
+    const normalizedPath = relativePathWithQuery.startsWith("/")
+      ? relativePathWithQuery
+      : `/${relativePathWithQuery}`;
+    const url = `${this.baseOrigin}${normalizedPath}`;
+
+    const attemptFetch = async (): Promise<{ redirected: boolean; html?: string }> => {
+      return await this.fetchWithStopAndTimeout(
+        url,
+        {
+          method: "GET",
+          headers: {
+            Cookie: this.getCookieHeader(),
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          },
+          redirect: "manual",
+        },
+        async (res) => {
+          if (TeachingHttpClient.isSessionExpiredStatus(res.status)) {
+            return { redirected: true };
+          }
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status} khi ${errorContext} (${normalizedPath}).`);
+          }
+          const html = await res.text();
+          if (TeachingHttpClient.looksLikeLoginHtml(html)) {
+            return { redirected: true };
+          }
+          return { redirected: false, html };
+        }
+      );
+    };
+
+    const first = await attemptFetch();
+    if (!first.redirected && typeof first.html === "string") {
+      return first.html;
+    }
+
+    this.invalidateSession();
+    await this.ensureLoggedIn();
+    const retry = await attemptFetch();
+    if (retry.redirected || typeof retry.html !== "string") {
+      throw new Error(
+        `[Teaching Auth Error] Phiên đăng nhập Teaching không hợp lệ hoặc bị chuyển hướng login khi ${errorContext}.`
+      );
+    }
+    return retry.html;
+  }
+
   public async postForm<T>(
     formParams: URLSearchParams,
     errorContext: string = "gửi dữ liệu lên Teaching"
@@ -528,7 +604,7 @@ export class TeachingHttpClient {
     }
   ): Promise<T[]> {
     const normCode = String(classCode || "").trim().toUpperCase();
-    const username = String(config.teachingUsername || "").trim();
+    const { username } = this.resolveAuthCredentials();
     const cacheKey = `${this.getSessionKey()}::${normCode}`;
     const ttlMs = options?.ttlMs ?? 15000;
     const useCache = options?.useCache !== false;

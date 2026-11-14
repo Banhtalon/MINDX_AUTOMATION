@@ -72,3 +72,62 @@ export function validateLocalRequest(req: Request): NextResponse | null {
   }
   return null;
 }
+
+/**
+ * Strictly parses a JSON plain-object request body (`{ ... }`).
+ * Rejects empty bodies, invalid JSON, arrays, null, and primitives with HTTP 400.
+ */
+export async function parseJsonPlainObjectBody(
+  req: Request
+): Promise<
+  | { ok: true; body: Record<string, unknown> }
+  | { ok: false; response: NextResponse }
+> {
+  let rawText = "";
+  try {
+    rawText = await req.text();
+  } catch {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, error: "Không đọc được nội dung yêu cầu JSON." },
+        { status: 400 }
+      ),
+    };
+  }
+
+  if (!rawText.trim()) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, error: "Body yêu cầu không được để trống." },
+        { status: 400 }
+      ),
+    };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawText);
+  } catch {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, error: "Payload JSON không hợp lệ." },
+        { status: 400 }
+      ),
+    };
+  }
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, error: "Payload phải là một JSON object (`{ ... }`)." },
+        { status: 400 }
+      ),
+    };
+  }
+
+  return { ok: true, body: parsed as Record<string, unknown> };
+}

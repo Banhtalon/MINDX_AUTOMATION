@@ -139,10 +139,15 @@ export function parseRemoteTeachingProgressPayload(data: unknown): Record<string
 export class LiveTeachingHttpTransport implements TeachingHttpTransport {
   private client: TeachingHttpClient;
 
-  constructor(baseOrigin?: string, requestTimeoutMs: number = 30000) {
+  constructor(
+    baseOrigin?: string,
+    requestTimeoutMs: number = 30000,
+    credentials?: { username?: string; password?: string }
+  ) {
     this.client = new TeachingHttpClient(
       baseOrigin || resolveTeachingBaseOrigin(),
-      requestTimeoutMs
+      requestTimeoutMs,
+      credentials
     );
   }
 

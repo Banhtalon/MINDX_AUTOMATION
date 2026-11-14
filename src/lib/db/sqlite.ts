@@ -330,6 +330,58 @@ function initSchema(db: Database.Database) {
       updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     );
     CREATE INDEX IF NOT EXISTS idx_class_report_cards_class ON class_report_cards(classId);
+
+    -- 11. admin_center_classes (v3.5.0 Admin Campus Operations Hub - strictly isolated from Teacher classes_sessions)
+    CREATE TABLE IF NOT EXISTS admin_center_classes (
+      classCode TEXT PRIMARY KEY,
+      centerCode TEXT NOT NULL DEFAULT '205ALHP',
+      lmsClassId TEXT NOT NULL DEFAULT '',
+      courseName TEXT NOT NULL DEFAULT '',
+      blockType TEXT NOT NULL DEFAULT 'CODING',
+      isMakeupClass INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'Running',
+      startDate TEXT NOT NULL DEFAULT '',
+      endDate TEXT NOT NULL DEFAULT '',
+      currentSessionNumber INTEGER NOT NULL DEFAULT 0,
+      currentSessionDate TEXT NOT NULL DEFAULT '',
+      timeSlot TEXT NOT NULL DEFAULT '',
+      mainTeacher TEXT NOT NULL DEFAULT '',
+      assistantTeacher TEXT NOT NULL DEFAULT '',
+      specialEvent TEXT NOT NULL DEFAULT '',
+      activeStudentCount INTEGER NOT NULL DEFAULT 0,
+      teachingStudentCount INTEGER NOT NULL DEFAULT 0,
+      weeklyOpsJson TEXT NOT NULL DEFAULT '{}',
+      btvnSummaryJson TEXT NOT NULL DEFAULT '{}',
+      spckAuditJson TEXT NOT NULL DEFAULT '{}',
+      spckTasksJson TEXT NOT NULL DEFAULT '{}',
+      earlyWarningsJson TEXT NOT NULL DEFAULT '[]',
+      lmsReportCardSnapshotJson TEXT NOT NULL DEFAULT '{}',
+      btvnSyncStatus TEXT NOT NULL DEFAULT 'IDLE',
+      btvnSyncedAt TEXT DEFAULT NULL,
+      btvnLastError TEXT DEFAULT NULL,
+      spckTasksSyncStatus TEXT NOT NULL DEFAULT 'IDLE',
+      spckTasksSyncedAt TEXT DEFAULT NULL,
+      spckTasksLastError TEXT DEFAULT NULL,
+      lastScannedAt TEXT DEFAULT NULL,
+      lastError TEXT DEFAULT NULL,
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_admin_center_classes_center ON admin_center_classes(centerCode, blockType, status);
+
+    -- 12. admin_center_scan_runs (v3.5.0 Admin Campus Scan Audit Runs)
+    CREATE TABLE IF NOT EXISTS admin_center_scan_runs (
+      runId TEXT PRIMARY KEY,
+      centerCode TEXT NOT NULL,
+      scanScope TEXT NOT NULL,
+      status TEXT NOT NULL,
+      totalClasses INTEGER NOT NULL DEFAULT 0,
+      scannedClasses INTEGER NOT NULL DEFAULT 0,
+      failedClassesJson TEXT NOT NULL DEFAULT '[]',
+      summaryJson TEXT NOT NULL DEFAULT '{}',
+      startedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      finishedAt TEXT DEFAULT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_admin_center_scan_runs_center ON admin_center_scan_runs(centerCode, startedAt);
   `);
 
   try {
@@ -5122,12 +5174,36 @@ export function isValidIsoDateYmd(rawDate?: string | null): boolean {
 }
 
 /**
- * Normalizes a date string (`DD/MM/YYYY`, `DD-MM-YYYY`, or `YYYY-MM-DD`) into `YYYY-MM-DD`, or returns `""` if invalid.
+ * Normalizes a date or ISO timestamp string (`DD/MM/YYYY`, `DD-MM-YYYY`, `YYYY-MM-DD`,
+ * or ISO datetime converted to Asia/Ho_Chi_Minh UTC+7 calendar date) into `YYYY-MM-DD`, or `""` if invalid.
  */
 export function normalizeDateToIsoYmd(rawDate?: string | null): string {
   const s = String(rawDate || "").trim();
   if (!s || s === "0000-00-00") return "";
   if (isValidIsoDateYmd(s)) return s;
+
+  const naiveDt = s.match(
+    /^(\d{4}-\d{2}-\d{2})[T\s]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/
+  );
+  if (naiveDt) {
+    return isValidIsoDateYmd(naiveDt[1]) ? naiveDt[1] : "";
+  }
+
+  const tzDt = s.match(
+    /^(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/i
+  );
+  if (tzDt && isValidIsoDateYmd(tzDt[1])) {
+    const normalizedIso = s.replace(/([+-]\d{2})(\d{2})$/, "$1:$2");
+    const ms = Date.parse(normalizedIso);
+    if (Number.isFinite(ms)) {
+      const vn = new Date(ms + 7 * 60 * 60 * 1000);
+      const y = String(vn.getUTCFullYear()).padStart(4, "0");
+      const m = String(vn.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(vn.getUTCDate()).padStart(2, "0");
+      const candidate = `${y}-${m}-${d}`;
+      return isValidIsoDateYmd(candidate) ? candidate : "";
+    }
+  }
 
   const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
   if (dmy) {
@@ -7034,3 +7110,370 @@ export function buildEnrichedSession14EvalList(classId: string) {
     };
   });
 }
+
+// ==========================================
+// ADMIN CENTER CAMPUS REPOSITORY (v3.5.0)
+// ==========================================
+
+export type AdminBtvnSyncStatus =
+  | "IDLE"
+  | "SYNCING"
+  | "VERIFIED"
+  | "OUT_OF_SYNC"
+  | "NEEDS_ATTENTION"
+  | "FAILED";
+
+export type AdminSpckTasksSyncStatus =
+  | "IDLE"
+  | "SYNCING"
+  | "VERIFIED"
+  | "MISSING"
+  | "INCOMPLETE"
+  | "FAILED";
+
+export interface AdminCenterClassRecord {
+  classCode: string;
+  centerCode: string;
+  lmsClassId: string;
+  courseName: string;
+  blockType: "CODING" | "ROBOTICS";
+  isMakeupClass: number;
+  status: string;
+  startDate: string;
+  endDate: string;
+  currentSessionNumber: number;
+  currentSessionDate: string;
+  timeSlot: string;
+  mainTeacher: string;
+  assistantTeacher: string;
+  specialEvent: string;
+  activeStudentCount: number;
+  teachingStudentCount: number;
+  weeklyOpsJson: string;
+  btvnSummaryJson: string;
+  spckAuditJson: string;
+  spckTasksJson: string;
+  earlyWarningsJson: string;
+  lmsReportCardSnapshotJson: string;
+  btvnSyncStatus: AdminBtvnSyncStatus;
+  btvnSyncedAt: string | null;
+  btvnLastError: string | null;
+  spckTasksSyncStatus: AdminSpckTasksSyncStatus;
+  spckTasksSyncedAt: string | null;
+  spckTasksLastError: string | null;
+  lastScannedAt: string | null;
+  lastError: string | null;
+  updatedAt?: string;
+}
+
+export interface AdminCenterScanRunRecord {
+  runId: string;
+  centerCode: string;
+  scanScope: "ALL" | "CODING_ONLY" | "SINGLE_CLASS" | "TEACHING_ONLY";
+  status: "RUNNING" | "COMPLETED" | "PARTIAL" | "STOPPED" | "FAILED";
+  totalClasses: number;
+  scannedClasses: number;
+  failedClassesJson: string;
+  summaryJson: string;
+  startedAt?: string;
+  finishedAt?: string | null;
+}
+
+export const adminCenterRepo = {
+  upsertClass(
+    record: Omit<AdminCenterClassRecord, "updatedAt"> & { updatedAt?: string }
+  ): AdminCenterClassRecord {
+    const db = getDb();
+    const classCode = String(record.classCode || "").trim().toUpperCase();
+    const centerCode = String(record.centerCode || "205ALHP").trim().toUpperCase();
+    if (!classCode) {
+      throw new Error("[adminCenterRepo.upsertClass] Thiếu classCode.");
+    }
+
+    db.prepare(`
+      INSERT INTO admin_center_classes (
+        classCode, centerCode, lmsClassId, courseName, blockType, isMakeupClass,
+        status, startDate, endDate, currentSessionNumber, currentSessionDate,
+        timeSlot, mainTeacher, assistantTeacher, specialEvent,
+        activeStudentCount, teachingStudentCount,
+        weeklyOpsJson, btvnSummaryJson, spckAuditJson, spckTasksJson,
+        earlyWarningsJson, lmsReportCardSnapshotJson,
+        btvnSyncStatus, btvnSyncedAt, btvnLastError,
+        spckTasksSyncStatus, spckTasksSyncedAt, spckTasksLastError,
+        lastScannedAt, lastError, updatedAt
+      )
+      VALUES (
+        @classCode, @centerCode, @lmsClassId, @courseName, @blockType, @isMakeupClass,
+        @status, @startDate, @endDate, @currentSessionNumber, @currentSessionDate,
+        @timeSlot, @mainTeacher, @assistantTeacher, @specialEvent,
+        @activeStudentCount, @teachingStudentCount,
+        @weeklyOpsJson, @btvnSummaryJson, @spckAuditJson, @spckTasksJson,
+        @earlyWarningsJson, @lmsReportCardSnapshotJson,
+        @btvnSyncStatus, @btvnSyncedAt, @btvnLastError,
+        @spckTasksSyncStatus, @spckTasksSyncedAt, @spckTasksLastError,
+        @lastScannedAt, @lastError, datetime('now', 'localtime')
+      )
+      ON CONFLICT(classCode) DO UPDATE SET
+        centerCode = excluded.centerCode,
+        lmsClassId = excluded.lmsClassId,
+        courseName = excluded.courseName,
+        blockType = excluded.blockType,
+        isMakeupClass = excluded.isMakeupClass,
+        status = excluded.status,
+        startDate = excluded.startDate,
+        endDate = excluded.endDate,
+        currentSessionNumber = excluded.currentSessionNumber,
+        currentSessionDate = excluded.currentSessionDate,
+        timeSlot = excluded.timeSlot,
+        mainTeacher = excluded.mainTeacher,
+        assistantTeacher = excluded.assistantTeacher,
+        specialEvent = excluded.specialEvent,
+        activeStudentCount = excluded.activeStudentCount,
+        teachingStudentCount = excluded.teachingStudentCount,
+        weeklyOpsJson = excluded.weeklyOpsJson,
+        btvnSummaryJson = excluded.btvnSummaryJson,
+        spckAuditJson = excluded.spckAuditJson,
+        spckTasksJson = excluded.spckTasksJson,
+        earlyWarningsJson = excluded.earlyWarningsJson,
+        lmsReportCardSnapshotJson = CASE
+          WHEN excluded.lmsReportCardSnapshotJson = '{}' AND admin_center_classes.lmsReportCardSnapshotJson != '{}'
+            THEN admin_center_classes.lmsReportCardSnapshotJson
+          ELSE excluded.lmsReportCardSnapshotJson
+        END,
+        btvnSyncStatus = excluded.btvnSyncStatus,
+        btvnSyncedAt = COALESCE(excluded.btvnSyncedAt, admin_center_classes.btvnSyncedAt),
+        btvnLastError = excluded.btvnLastError,
+        spckTasksSyncStatus = excluded.spckTasksSyncStatus,
+        spckTasksSyncedAt = COALESCE(excluded.spckTasksSyncedAt, admin_center_classes.spckTasksSyncedAt),
+        spckTasksLastError = excluded.spckTasksLastError,
+        lastScannedAt = excluded.lastScannedAt,
+        lastError = excluded.lastError,
+        updatedAt = datetime('now', 'localtime')
+    `).run({
+      classCode,
+      centerCode,
+      lmsClassId: String(record.lmsClassId || ""),
+      courseName: String(record.courseName || ""),
+      blockType: record.blockType === "ROBOTICS" ? "ROBOTICS" : "CODING",
+      isMakeupClass: record.isMakeupClass ? 1 : 0,
+      status: String(record.status || "Running"),
+      startDate: String(record.startDate || ""),
+      endDate: String(record.endDate || ""),
+      currentSessionNumber: Number(record.currentSessionNumber || 0),
+      currentSessionDate: String(record.currentSessionDate || ""),
+      timeSlot: String(record.timeSlot || ""),
+      mainTeacher: String(record.mainTeacher || ""),
+      assistantTeacher: String(record.assistantTeacher || ""),
+      specialEvent: String(record.specialEvent || ""),
+      activeStudentCount: Number(record.activeStudentCount || 0),
+      teachingStudentCount: Number(record.teachingStudentCount || 0),
+      weeklyOpsJson: String(record.weeklyOpsJson || "{}"),
+      btvnSummaryJson: String(record.btvnSummaryJson || "{}"),
+      spckAuditJson: String(record.spckAuditJson || "{}"),
+      spckTasksJson: String(record.spckTasksJson || "{}"),
+      earlyWarningsJson: String(record.earlyWarningsJson || "[]"),
+      lmsReportCardSnapshotJson: String(record.lmsReportCardSnapshotJson || "{}"),
+      btvnSyncStatus: record.btvnSyncStatus || "IDLE",
+      btvnSyncedAt: record.btvnSyncedAt ?? null,
+      btvnLastError: record.btvnLastError ?? null,
+      spckTasksSyncStatus: record.spckTasksSyncStatus || "IDLE",
+      spckTasksSyncedAt: record.spckTasksSyncedAt ?? null,
+      spckTasksLastError: record.spckTasksLastError ?? null,
+      lastScannedAt: record.lastScannedAt ?? null,
+      lastError: record.lastError ?? null,
+    });
+
+    return this.findClass(classCode)!;
+  },
+
+  findClass(rawClassCode: string): AdminCenterClassRecord | undefined {
+    const db = getDb();
+    const classCode = String(rawClassCode || "").trim().toUpperCase();
+    if (!classCode) return undefined;
+    return db
+      .prepare(`SELECT * FROM admin_center_classes WHERE classCode = ?`)
+      .get(classCode) as AdminCenterClassRecord | undefined;
+  },
+
+  listClasses(filter?: {
+    centerCode?: string;
+    includeMakeup?: boolean;
+  }): AdminCenterClassRecord[] {
+    const db = getDb();
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (filter?.centerCode) {
+      conditions.push(`centerCode = ?`);
+      params.push(String(filter.centerCode).trim().toUpperCase());
+    }
+    if (filter?.includeMakeup === false) {
+      conditions.push(`isMakeupClass = 0`);
+    }
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    return db
+      .prepare(
+        `SELECT * FROM admin_center_classes ${whereClause} ORDER BY blockType ASC, currentSessionNumber DESC, classCode ASC`
+      )
+      .all(...params) as AdminCenterClassRecord[];
+  },
+
+  updateBtvnSyncState(
+    rawClassCode: string,
+    patch: {
+      btvnSyncStatus: AdminBtvnSyncStatus;
+      btvnSyncedAt?: string | null;
+      btvnLastError?: string | null;
+      btvnSummaryJson?: string;
+      lmsReportCardSnapshotJson?: string;
+    }
+  ): AdminCenterClassRecord | undefined {
+    const db = getDb();
+    const classCode = String(rawClassCode || "").trim().toUpperCase();
+    const existing = this.findClass(classCode);
+    if (!existing) return undefined;
+
+    db.prepare(`
+      UPDATE admin_center_classes
+      SET btvnSyncStatus = ?,
+          btvnSyncedAt = ?,
+          btvnLastError = ?,
+          btvnSummaryJson = COALESCE(?, btvnSummaryJson),
+          lmsReportCardSnapshotJson = COALESCE(?, lmsReportCardSnapshotJson),
+          updatedAt = datetime('now', 'localtime')
+      WHERE classCode = ?
+    `).run(
+      patch.btvnSyncStatus,
+      patch.btvnSyncedAt !== undefined ? patch.btvnSyncedAt : existing.btvnSyncedAt,
+      patch.btvnLastError !== undefined ? patch.btvnLastError : null,
+      patch.btvnSummaryJson ?? null,
+      patch.lmsReportCardSnapshotJson ?? null,
+      classCode
+    );
+    return this.findClass(classCode);
+  },
+
+  updateSpckTasksSyncState(
+    rawClassCode: string,
+    patch: {
+      spckTasksSyncStatus: AdminSpckTasksSyncStatus;
+      spckTasksSyncedAt?: string | null;
+      spckTasksLastError?: string | null;
+      spckTasksJson?: string;
+    }
+  ): AdminCenterClassRecord | undefined {
+    const db = getDb();
+    const classCode = String(rawClassCode || "").trim().toUpperCase();
+    const existing = this.findClass(classCode);
+    if (!existing) return undefined;
+
+    db.prepare(`
+      UPDATE admin_center_classes
+      SET spckTasksSyncStatus = ?,
+          spckTasksSyncedAt = ?,
+          spckTasksLastError = ?,
+          spckTasksJson = COALESCE(?, spckTasksJson),
+          updatedAt = datetime('now', 'localtime')
+      WHERE classCode = ?
+    `).run(
+      patch.spckTasksSyncStatus,
+      patch.spckTasksSyncedAt !== undefined
+        ? patch.spckTasksSyncedAt
+        : existing.spckTasksSyncedAt,
+      patch.spckTasksLastError !== undefined ? patch.spckTasksLastError : null,
+      patch.spckTasksJson ?? null,
+      classCode
+    );
+    return this.findClass(classCode);
+  },
+
+  clearCenterClassesNotIn(rawCenterCode: string, activeClassCodes: string[]): number {
+    const db = getDb();
+    const centerCode = String(rawCenterCode || "").trim().toUpperCase();
+    const normalized = Array.from(
+      new Set(
+        activeClassCodes
+          .map((c) => String(c || "").trim().toUpperCase())
+          .filter(Boolean)
+      )
+    );
+    if (!centerCode || normalized.length === 0) return 0;
+    const placeholders = normalized.map(() => "?").join(", ");
+    const res = db
+      .prepare(
+        `DELETE FROM admin_center_classes WHERE centerCode = ? AND classCode NOT IN (${placeholders})`
+      )
+      .run(centerCode, ...normalized);
+    return res.changes;
+  },
+
+  createScanRun(record: AdminCenterScanRunRecord): AdminCenterScanRunRecord {
+    const db = getDb();
+    db.prepare(`
+      INSERT INTO admin_center_scan_runs (
+        runId, centerCode, scanScope, status, totalClasses, scannedClasses,
+        failedClassesJson, summaryJson, startedAt, finishedAt
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), ?)
+    `).run(
+      record.runId,
+      record.centerCode.trim().toUpperCase(),
+      record.scanScope,
+      record.status,
+      Number(record.totalClasses || 0),
+      Number(record.scannedClasses || 0),
+      record.failedClassesJson || "[]",
+      record.summaryJson || "{}",
+      record.finishedAt ?? null
+    );
+    return db
+      .prepare(`SELECT * FROM admin_center_scan_runs WHERE runId = ?`)
+      .get(record.runId) as AdminCenterScanRunRecord;
+  },
+
+  updateScanRun(
+    runId: string,
+    patch: Partial<
+      Pick<
+        AdminCenterScanRunRecord,
+        "status" | "totalClasses" | "scannedClasses" | "failedClassesJson" | "summaryJson" | "finishedAt"
+      >
+    >
+  ): void {
+    const db = getDb();
+    const current = db
+      .prepare(`SELECT * FROM admin_center_scan_runs WHERE runId = ?`)
+      .get(runId) as AdminCenterScanRunRecord | undefined;
+    if (!current) return;
+    db.prepare(`
+      UPDATE admin_center_scan_runs
+      SET status = ?,
+          totalClasses = ?,
+          scannedClasses = ?,
+          failedClassesJson = ?,
+          summaryJson = ?,
+          finishedAt = ?
+      WHERE runId = ?
+    `).run(
+      patch.status ?? current.status,
+      patch.totalClasses ?? current.totalClasses,
+      patch.scannedClasses ?? current.scannedClasses,
+      patch.failedClassesJson ?? current.failedClassesJson,
+      patch.summaryJson ?? current.summaryJson,
+      patch.finishedAt !== undefined ? patch.finishedAt : current.finishedAt ?? null,
+      runId
+    );
+  },
+
+  getLatestScanRun(rawCenterCode: string): AdminCenterScanRunRecord | undefined {
+    const db = getDb();
+    const centerCode = String(rawCenterCode || "").trim().toUpperCase();
+    return db
+      .prepare(
+        `SELECT * FROM admin_center_scan_runs WHERE centerCode = ? ORDER BY rowid DESC LIMIT 1`
+      )
+      .get(centerCode) as AdminCenterScanRunRecord | undefined;
+  },
+};

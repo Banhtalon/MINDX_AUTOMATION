@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/homework-grader", label: "Phiếu điểm & BTVN" },
   { href: "/final-project", label: "Upload SPCK" },
   { href: "/teaching-projects", label: "Dự án Teaching" },
+  { href: "/admin-center", label: "🛡️ Quản lý Cơ sở" },
 ];
 
 export function TopNavbar() {
@@ -58,7 +59,7 @@ export function TopNavbar() {
         <Link href="/" className="flex items-center space-x-2 group">
           <span className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-1.5 text-white">
             <span className="text-amber-400">⚡</span>
-            <span className="mindx-brand-text">MindX Bot v3.4.0</span>
+            <span className="mindx-brand-text">MindX Bot v3.5.0</span>
           </span>
         </Link>
 

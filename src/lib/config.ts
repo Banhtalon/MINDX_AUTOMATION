@@ -12,6 +12,11 @@ export interface AppConfig {
   lmsUrl: string;
   lmsUsername: string;
   lmsPassword: string;
+  adminLmsUsername: string;
+  adminLmsPassword: string;
+  adminTeachingUsername: string;
+  adminTeachingPassword: string;
+  adminCenterCode: string;
   geminiApiKey: string;
   geminiModel: string;
   headlessMode: boolean;
@@ -31,6 +36,22 @@ export const config: AppConfig = {
   lmsPassword:
     process.env.LMS_PASSWORD || process.env.MINDX_PASSWORD || "",
 
+  adminLmsUsername: process.env.ADMIN_LMS_USERNAME || "",
+  adminLmsPassword: process.env.ADMIN_LMS_PASSWORD || "",
+  adminTeachingUsername:
+    process.env.ADMIN_TEACHING_USERNAME ||
+    process.env.TEACHING_USERNAME ||
+    process.env.MINDX_USERNAME ||
+    "",
+  adminTeachingPassword:
+    process.env.ADMIN_TEACHING_PASSWORD ||
+    process.env.TEACHING_PASSWORD ||
+    process.env.MINDX_PASSWORD ||
+    "",
+  adminCenterCode: (process.env.ADMIN_CENTER_CODE || "205ALHP")
+    .trim()
+    .toUpperCase(),
+
   geminiApiKey: process.env.GEMINI_API_KEY || "",
   geminiModel: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
   headlessMode: process.env.HEADLESS_MODE === "true",
@@ -39,6 +60,44 @@ export const config: AppConfig = {
     .map((dir) => dir.trim())
     .filter(Boolean),
 };
+
+export function getDynamicAdminConfig() {
+  const adminLmsUsername = (
+    process.env.ADMIN_LMS_USERNAME ?? config.adminLmsUsername
+  ).trim();
+  const adminLmsPassword =
+    process.env.ADMIN_LMS_PASSWORD ?? config.adminLmsPassword;
+  const adminTeachingUsername = (
+    process.env.ADMIN_TEACHING_USERNAME ||
+    process.env.TEACHING_USERNAME ||
+    process.env.MINDX_USERNAME ||
+    config.adminTeachingUsername ||
+    config.teachingUsername ||
+    ""
+  ).trim();
+  const adminTeachingPassword =
+    process.env.ADMIN_TEACHING_PASSWORD ||
+    process.env.TEACHING_PASSWORD ||
+    process.env.MINDX_PASSWORD ||
+    config.adminTeachingPassword ||
+    config.teachingPassword ||
+    "";
+  const adminCenterCode = (
+    process.env.ADMIN_CENTER_CODE ||
+    config.adminCenterCode ||
+    "205ALHP"
+  )
+    .trim()
+    .toUpperCase();
+
+  return {
+    adminLmsUsername,
+    adminLmsPassword,
+    adminTeachingUsername,
+    adminTeachingPassword,
+    adminCenterCode,
+  };
+}
 
 function maskUsername(u: string): string {
   if (!u) return "";
@@ -52,13 +111,23 @@ function maskUsername(u: string): string {
  * Returns safe environment settings for client display (never leaks passwords or API keys)
  */
 export function getSafePublicConfig() {
+  const adminCfg = getDynamicAdminConfig();
   return {
     teachingUrl: config.teachingUrl,
     teachingUsernameMasked: maskUsername(config.teachingUsername),
     lmsUrl: config.lmsUrl,
     lmsUsernameMasked: maskUsername(config.lmsUsername),
+    adminCenterCode: adminCfg.adminCenterCode,
+    adminLmsUsernameMasked: maskUsername(adminCfg.adminLmsUsername),
+    adminTeachingUsernameMasked: maskUsername(adminCfg.adminTeachingUsername),
     hasTeachingAuth: Boolean(config.teachingUsername && config.teachingPassword),
     hasLmsAuth: Boolean(config.lmsUsername && config.lmsPassword),
+    hasAdminLmsAuth: Boolean(
+      adminCfg.adminLmsUsername && adminCfg.adminLmsPassword
+    ),
+    hasAdminTeachingAuth: Boolean(
+      adminCfg.adminTeachingUsername && adminCfg.adminTeachingPassword
+    ),
     hasGeminiKey: Boolean(config.geminiApiKey),
     geminiModel: config.geminiModel,
     headlessMode: config.headlessMode,

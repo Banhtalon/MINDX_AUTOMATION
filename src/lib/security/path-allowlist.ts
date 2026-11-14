@@ -174,13 +174,20 @@ export function getAllowedDirectories(): string[] {
       ? [process.cwd(), "F:\\MINDX_SPCK_FINAL"]
       : [process.cwd()];
   const configured = config.allowedLocalDirs || [];
+  const runtimeEnvDirs = (process.env.ALLOWED_LOCAL_DIRS || "")
+    .split(/[;,]/)
+    .map((dir) => dir.trim())
+    .filter((dir) => dir.length > 0 && !isForbiddenSystemOrRootDirectory(dir));
   const persistedTeacherDirs = loadPersistedTeacherDirs();
-  return [
-    ...defaultAllowed,
-    ...configured,
-    ...persistedTeacherDirs,
-    ...runtimeTeacherSelectedDirs,
-  ].map((dir) => path.resolve(dir));
+  return Array.from(
+    new Set([
+      ...defaultAllowed,
+      ...configured,
+      ...runtimeEnvDirs,
+      ...persistedTeacherDirs,
+      ...runtimeTeacherSelectedDirs,
+    ].map((dir) => path.resolve(dir)))
+  );
 }
 
 /**

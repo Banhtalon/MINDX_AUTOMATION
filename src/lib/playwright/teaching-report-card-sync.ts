@@ -480,10 +480,15 @@ export class LiveTeachingReportCardHttpTransport
 {
   private client: TeachingHttpClient;
 
-  constructor(baseOrigin?: string, requestTimeoutMs: number = 30000) {
+  constructor(
+    baseOrigin?: string,
+    requestTimeoutMs: number = 30000,
+    credentials?: { username?: string; password?: string }
+  ) {
     this.client = new TeachingHttpClient(
       baseOrigin || resolveTeachingBaseOrigin(),
-      requestTimeoutMs
+      requestTimeoutMs,
+      credentials
     );
   }
 
@@ -616,6 +621,466 @@ export interface SyncReportCardToTeachingResult {
   record?: ClassReportCardRecord;
   reportCard?: ComputedClassReportCard;
   error?: string;
+}
+
+export interface ExecuteReportCardTransportSyncOptions {
+  classId: string;
+  computed: ComputedClassReportCard;
+  isRobotics: boolean;
+  transport: TeachingReportCardHttpTransport;
+  allowPartialStudentMatch?: boolean;
+  btvnOnly?: boolean;
+  skipNullSlotVerification?: boolean;
+  jobId: string;
+}
+
+export interface ExecuteReportCardTransportSyncResult {
+  scoresToSave: TeachingScoreInputItem[];
+  declaredExerciseCount: number;
+  studentMatches: Map<string, MatchedTeachingStudent>;
+  skippedStudents: SkippedTeachingStudentInfo[];
+  skippedWarning?: string;
+}
+
+/**
+ * Shared stateless core that declares missing Teaching exercises, saves scores,
+ * and enforces strict Read-after-Write Verification via `get_scores`.
+ * Used by both Report Card Sync (`btvnOnly=false`) and Admin Center Coding BTVN Sync (`btvnOnly=true`).
+ */
+export async function executeReportCardTeachingTransportSync(
+  opts: ExecuteReportCardTransportSyncOptions
+): Promise<ExecuteReportCardTransportSyncResult> {
+  const {
+    classId,
+    computed,
+    isRobotics,
+    transport,
+    jobId,
+    btvnOnly = false,
+    skipNullSlotVerification = false,
+  } = opts;
+  const allowPartialStudentMatch = opts.allowPartialStudentMatch !== false;
+
+  if (btvnOnly && isRobotics) {
+    throw new Error(
+      `[BTVN Sync Guard] Lớp Robotics (${classId}) không có bài tập BTVN trên LMS/Teaching.`
+    );
+  }
+
+  // 1. Fetch remote students & match
+  const remoteStudents = await runWithStopGuard(() =>
+    transport.getStudents(classId)
+  );
+  const { matchedMap: studentMatches, skippedStudents } =
+    matchReportCardStudentsToTeachingDetailed(
+      computed.students,
+      remoteStudents,
+      classId,
+      isRobotics,
+      { allowPartialMatch: allowPartialStudentMatch }
+    );
+  const skippedWarning =
+    formatSkippedTeachingStudentsWarning(skippedStudents);
+  if (skippedStudents.length > 0 && skippedWarning) {
+    jobLogRepo.add({
+      jobId,
+      jobType: "CUSTOM",
+      classId,
+      level: "WARN",
+      message: `⚠️ ${skippedWarning} Bot vẫn tiếp tục đồng bộ ${studentMatches.size}/${computed.students.length} học viên khớp trên Teaching.`,
+    });
+  }
+
+  ensureQueueNotStopped();
+
+  // 2. Fetch existing exercises & declare any missing ones
+  const initialExercises = await runWithStopGuard(() =>
+    transport.getExercises(classId)
+  );
+  let exerciseMap = validateRemoteExerciseList(initialExercises, classId);
+
+  const cp1Session = isRobotics ? 4 : 5;
+  const cp2Session = isRobotics ? 8 : 9;
+  const finalSession = 14;
+
+  let declaredExerciseCount = 0;
+
+  // 2a. BTVN exercises (ONLY for Coding classes, NEVER for Robotics)
+  if (!isRobotics && computed.btvnSessions.length > 0) {
+    const missingBtvnSessions: number[] = [];
+    for (const sess of computed.btvnSessions) {
+      const sn = sess.sessionNumber;
+      const hasTheory = exerciseMap.has(`${sn}-btvn-theory`);
+      const hasPractice = exerciseMap.has(`${sn}-btvn-practice`);
+      if (!hasTheory || !hasPractice) {
+        missingBtvnSessions.push(sn);
+      }
+    }
+
+    if (missingBtvnSessions.length > 0) {
+      const addRes = await runWithStopGuard(() =>
+        transport.addMultiExercise({
+          classCode: classId,
+          exerciseType: "btvn",
+          exerciseForms: ["theory", "practice"],
+          sessions: missingBtvnSessions,
+          exerciseTitle: "",
+          maxScore: 100,
+          maxScoreNangLuc: 5,
+        })
+      );
+      if (!addRes || !addRes.success) {
+        throw new Error(
+          addRes?.message ||
+            `Lỗi khi khai báo đầu bài BTVN (buổi ${missingBtvnSessions.join(", ")}) trên Teaching.`
+        );
+      }
+      declaredExerciseCount += missingBtvnSessions.length * 2;
+    }
+  }
+
+  const cp1Forms: TeachingExerciseForm[] = ["theory", "practice", "nang_luc"];
+  const cp2Forms: TeachingExerciseForm[] = ["theory", "practice", "nang_luc"];
+  const finalForms: TeachingExerciseForm[] = ["practice", "nang_luc"];
+
+  if (!btvnOnly) {
+    // 2b. Check-point 1 (Buổi 5 for Coding, Buổi 4 for Robotics)
+    const isCp1Missing = cp1Forms.some(
+      (f) => !exerciseMap.has(`${cp1Session}-cp1-${f}`)
+    );
+    if (isCp1Missing) {
+      const addRes = await runWithStopGuard(() =>
+        transport.addMultiExercise({
+          classCode: classId,
+          exerciseType: "cp1",
+          exerciseForms: cp1Forms,
+          sessions: [cp1Session],
+          exerciseTitle: "",
+          maxScore: 5,
+          maxScoreNangLuc: 5,
+        })
+      );
+      if (!addRes || !addRes.success) {
+        throw new Error(
+          addRes?.message ||
+            `Lỗi khi khai báo đầu bài Check-point 1 (Buổi ${cp1Session}) trên Teaching.`
+        );
+      }
+      declaredExerciseCount += cp1Forms.length;
+    }
+
+    // 2c. Check-point 2 (Buổi 9 for Coding, Buổi 8 for Robotics)
+    const isCp2Missing = cp2Forms.some(
+      (f) => !exerciseMap.has(`${cp2Session}-cp2-${f}`)
+    );
+    if (isCp2Missing) {
+      const addRes = await runWithStopGuard(() =>
+        transport.addMultiExercise({
+          classCode: classId,
+          exerciseType: "cp2",
+          exerciseForms: cp2Forms,
+          sessions: [cp2Session],
+          exerciseTitle: "",
+          maxScore: 5,
+          maxScoreNangLuc: 5,
+        })
+      );
+      if (!addRes || !addRes.success) {
+        throw new Error(
+          addRes?.message ||
+            `Lỗi khi khai báo đầu bài Check-point 2 (Buổi ${cp2Session}) trên Teaching.`
+        );
+      }
+      declaredExerciseCount += cp2Forms.length;
+    }
+
+    // 2d. Final DEMO (Buổi 14: practice = Sản phẩm, nang_luc = Năng lực)
+    const isFinalMissing = finalForms.some(
+      (f) => !exerciseMap.has(`${finalSession}-final-${f}`)
+    );
+    if (isFinalMissing) {
+      const addRes = await runWithStopGuard(() =>
+        transport.addMultiExercise({
+          classCode: classId,
+          exerciseType: "final",
+          exerciseForms: finalForms,
+          sessions: [finalSession],
+          exerciseTitle: "",
+          maxScore: 5,
+          maxScoreNangLuc: 5,
+        })
+      );
+      if (!addRes || !addRes.success) {
+        throw new Error(
+          addRes?.message ||
+            `Lỗi khi khai báo đầu bài Final DEMO (Buổi ${finalSession}) trên Teaching.`
+        );
+      }
+      declaredExerciseCount += finalForms.length;
+    }
+  }
+
+  // Refresh exercise list after declarations and verify all required exercises exist
+  if (declaredExerciseCount > 0) {
+    const refreshedExercises = await runWithStopGuard(() =>
+      transport.getExercises(classId)
+    );
+    exerciseMap = validateRemoteExerciseList(refreshedExercises, classId);
+  }
+
+  const requireExercise = (
+    sn: number,
+    exType: TeachingExerciseType,
+    exForm: TeachingExerciseForm
+  ): RemoteTeachingExercise => {
+    const key = `${sn}-${exType}-${exForm}`;
+    const found = exerciseMap.get(key);
+    if (!found) {
+      throw new Error(
+        `[Exercise Declaration Error] Không tìm thấy đầu bài (${key}) của lớp ${classId} trên Teaching sau khi khai báo.`
+      );
+    }
+    return found;
+  };
+
+  if (!isRobotics) {
+    for (const sess of computed.btvnSessions) {
+      requireExercise(sess.sessionNumber, "btvn", "theory");
+      requireExercise(sess.sessionNumber, "btvn", "practice");
+    }
+  }
+  if (!btvnOnly) {
+    for (const f of cp1Forms) requireExercise(cp1Session, "cp1", f);
+    for (const f of cp2Forms) requireExercise(cp2Session, "cp2", f);
+    for (const f of finalForms) requireExercise(finalSession, "final", f);
+  }
+
+  // 3. Build score items to save & track expected null slots for Read-after-Write
+  const scoresToSave: TeachingScoreInputItem[] = [];
+  const expectedNullSlotKeys = new Set<string>();
+
+  const pushOrTrackSlot = (
+    teachingStudentId: number,
+    sn: number,
+    exType: TeachingExerciseType,
+    exForm: TeachingExerciseForm,
+    localVal: number | null | undefined,
+    localMax: number,
+    noteText: string = ""
+  ) => {
+    const ex = requireExercise(sn, exType, exForm);
+    const remoteMax = Number(ex.max_score) > 0 ? Number(ex.max_score) : localMax;
+    const slotKey = `${teachingStudentId}-${sn}-${exType}-${exForm}`;
+
+    if (localVal === null || localVal === undefined || !Number.isFinite(localVal)) {
+      expectedNullSlotKeys.add(slotKey);
+      return;
+    }
+
+    const scaledRaw =
+      remoteMax === localMax
+        ? round2(localVal)
+        : round2((localVal / localMax) * remoteMax);
+
+    if (!Number.isFinite(scaledRaw) || scaledRaw < 0 || scaledRaw > remoteMax) {
+      throw new Error(
+        `[Score Validation Error] Điểm (${scaledRaw}/${remoteMax}) tại (${slotKey}) nằm ngoài phạm vi hợp lệ.`
+      );
+    }
+
+    scoresToSave.push({
+      student_id: teachingStudentId,
+      class_code: classId,
+      session_number: sn,
+      exercise_type: exType,
+      exercise_form: exForm,
+      raw_score: scaledRaw,
+      max_score: remoteMax,
+      note: noteText,
+    });
+  };
+
+  for (const stu of computed.students) {
+    const match = studentMatches.get(stu.studentId);
+    if (!match) continue;
+    const tStuId = match.teachingStudentId;
+
+    if (!isRobotics) {
+      for (const sess of computed.btvnSessions) {
+        const sn = sess.sessionNumber;
+        const cell = stu.btvnCells?.[sn];
+        const theoryMax =
+          cell && Number(cell.theoryMax) > 0
+            ? Number(cell.theoryMax)
+            : sess.maxTheoryScore > 0
+            ? sess.maxTheoryScore
+            : 100;
+        const practiceMax =
+          cell && Number(cell.practiceMax) > 0
+            ? Number(cell.practiceMax)
+            : sess.maxPracticeScore > 0
+            ? sess.maxPracticeScore
+            : 100;
+
+        pushOrTrackSlot(
+          tStuId,
+          sn,
+          "btvn",
+          "theory",
+          cell?.theoryRaw ?? null,
+          theoryMax,
+          cell?.theoryNote || ""
+        );
+        pushOrTrackSlot(
+          tStuId,
+          sn,
+          "btvn",
+          "practice",
+          cell?.practiceRaw ?? null,
+          practiceMax,
+          cell?.practiceNote || ""
+        );
+      }
+    }
+
+    if (!btvnOnly) {
+      pushOrTrackSlot(tStuId, cp1Session, "cp1", "theory", stu.cp1.theory.value, 5, stu.cp1.theory.note);
+      pushOrTrackSlot(tStuId, cp1Session, "cp1", "practice", stu.cp1.practice.value, 5, stu.cp1.practice.note);
+      pushOrTrackSlot(tStuId, cp1Session, "cp1", "nang_luc", stu.cp1.competency.value, 5, stu.cp1.competency.note);
+
+      pushOrTrackSlot(tStuId, cp2Session, "cp2", "theory", stu.cp2.theory.value, 5, stu.cp2.theory.note);
+      pushOrTrackSlot(tStuId, cp2Session, "cp2", "practice", stu.cp2.practice.value, 5, stu.cp2.practice.note);
+      pushOrTrackSlot(tStuId, cp2Session, "cp2", "nang_luc", stu.cp2.competency.value, 5, stu.cp2.competency.note);
+
+      pushOrTrackSlot(tStuId, finalSession, "final", "practice", stu.final.product.value, 5, stu.final.product.note);
+      pushOrTrackSlot(tStuId, finalSession, "final", "nang_luc", stu.final.competency.value, 5, stu.final.competency.note);
+    }
+  }
+
+  if (scoresToSave.length === 0) {
+    throw new Error(
+      skippedWarning
+        ? `Không có điểm số nào của các học viên khớp trên Teaching cho lớp ${classId} để đồng bộ (${skippedWarning}).`
+        : `Không có điểm số nào trong phiếu điểm của lớp ${classId} để đồng bộ lên Teaching.`
+    );
+  }
+
+  ensureQueueNotStopped();
+
+  // 4. Push scores to Teaching
+  const saveRes = await runWithStopGuard(() =>
+    transport.saveScores(scoresToSave)
+  );
+  if (!saveRes || !saveRes.success) {
+    throw new Error(
+      saveRes?.message ||
+        `Lỗi khi lưu ${scoresToSave.length} mục điểm của lớp ${classId} lên Teaching.`
+    );
+  }
+
+  // 5. Read-after-Write Verification via get_scores
+  const remoteScores = await runWithStopGuard(() =>
+    transport.getScores(classId)
+  );
+  if (!Array.isArray(remoteScores)) {
+    throw new Error(
+      `[Read-after-Write Error] Dữ liệu điểm đọc lại từ Teaching không phải mảng hợp lệ.`
+    );
+  }
+
+  const verifiedScoreMap = new Map<string, RemoteTeachingScoreRow>();
+  for (const sc of remoteScores) {
+    if (
+      sc?.class_code !== undefined &&
+      sc?.class_code !== null &&
+      String(sc.class_code).trim() !== "" &&
+      String(sc.class_code).trim().toUpperCase() !== classId
+    ) {
+      throw new Error(
+        `[Cross-Class Guard Error] Điểm đọc lại từ Teaching thuộc lớp "${sc.class_code}" (không khớp "${classId}").`
+      );
+    }
+    const stuId = parseStrictPositiveIntInput(sc?.student_id);
+    const sn = parseStrictPositiveIntInput(sc?.session_number);
+    const exType = String(sc?.exercise_type || "").trim();
+    const exForm = String(sc?.exercise_form || "").trim();
+    if (stuId === null || sn === null || !exType || !exForm) {
+      continue;
+    }
+    const key = `${stuId}-${sn}-${exType}-${exForm}`;
+    if (verifiedScoreMap.has(key)) {
+      throw new Error(
+        `[Read-after-Write Error] Teaching trả về bản ghi điểm trùng lặp tại khóa (${key}).`
+      );
+    }
+    verifiedScoreMap.set(key, sc);
+  }
+
+  // 5a. Verify every saved score matches 100%
+  for (const expected of scoresToSave) {
+    const key = `${expected.student_id}-${expected.session_number}-${expected.exercise_type}-${expected.exercise_form}`;
+    const actualRow = verifiedScoreMap.get(key);
+    if (!actualRow) {
+      throw new Error(
+        `[Read-after-Write Error] Không tìm thấy điểm tại (${key}) khi đọc lại từ Teaching sau khi lưu.`
+      );
+    }
+
+    const actualRaw = parseStrictFiniteScore(actualRow.raw_score);
+    if (actualRaw === null) {
+      throw new Error(
+        `[Read-after-Write Error] Điểm raw_score tại (${key}) trên Teaching trống hoặc không hợp lệ (${JSON.stringify(actualRow.raw_score)}).`
+      );
+    }
+
+    if (Math.abs(round2(actualRaw) - round2(expected.raw_score)) > 1e-6) {
+      throw new Error(
+        `[Read-after-Write Error] Điểm raw_score tại (${key}) trên Teaching (${actualRaw}) không khớp với giá trị đã lưu (${expected.raw_score}).`
+      );
+    }
+
+    const actualNorm = parseStrictFiniteScore(actualRow.normalized_score);
+    const expectedNorm = round2((expected.raw_score / expected.max_score) * 5);
+    if (actualNorm === null) {
+      throw new Error(
+        `[Read-after-Write Error] Điểm quy đổi thang 5 (normalized_score) tại (${key}) trên Teaching bị thiếu hoặc không hợp lệ (${JSON.stringify(actualRow.normalized_score)}).`
+      );
+    }
+    if (Math.abs(round2(actualNorm) - expectedNorm) > 1e-6) {
+      throw new Error(
+        `[Read-after-Write Error] Điểm quy đổi thang 5 tại (${key}) trên Teaching (${actualRow.normalized_score}) không khớp mức kỳ vọng (${expectedNorm}).`
+      );
+    }
+  }
+
+  // 5b. Verify no expected-null slot still holds a stale numeric or malformed score on Teaching
+  if (!skipNullSlotVerification) {
+    for (const nullKey of expectedNullSlotKeys) {
+      const staleRow = verifiedScoreMap.get(nullKey);
+      if (staleRow) {
+        const staleRaw = parseStrictFiniteScore(staleRow.raw_score);
+        const staleNorm = parseStrictFiniteScore(staleRow.normalized_score);
+        if (staleRaw !== null || !isLegitimateEmptyScoreField(staleRow.raw_score)) {
+          throw new Error(
+            `[Read-after-Write Error] Phát hiện điểm raw_score cũ hoặc không hợp lệ trên Teaching tại (${nullKey}) = ${JSON.stringify(staleRow.raw_score)} trong khi bản duyệt hiện tại để trống (null).`
+          );
+        }
+        if (staleNorm !== null || !isLegitimateEmptyScoreField(staleRow.normalized_score)) {
+          throw new Error(
+            `[Read-after-Write Error] Phát hiện điểm normalized_score cũ hoặc không hợp lệ trên Teaching tại (${nullKey}) = ${JSON.stringify(staleRow.normalized_score)} trong khi bản duyệt hiện tại để trống (null).`
+          );
+        }
+      }
+    }
+  }
+
+  return {
+    scoresToSave,
+    declaredExerciseCount,
+    studentMatches,
+    skippedStudents,
+    skippedWarning,
+  };
 }
 
 export class TeachingReportCardSyncService {
@@ -823,481 +1288,22 @@ export class TeachingReportCardSyncService {
             message: `Bắt đầu đồng bộ Phiếu Điểm lớp ${classId} (${isRobotics ? "Robotics" : "Lập trình"}) lên Teaching...`,
           });
 
-          const allowPartialStudentMatch =
-            options?.allowPartialStudentMatch !== false;
-
-          // 1. Fetch remote students & match (skipping missing/inactive Teaching students when partial match allowed)
-          const remoteStudents = await runWithStopGuard(() =>
-            transport.getStudents(classId)
-          );
-          const { matchedMap: studentMatches, skippedStudents } =
-            matchReportCardStudentsToTeachingDetailed(
-              computed.students,
-              remoteStudents,
-              classId,
-              isRobotics,
-              { allowPartialMatch: allowPartialStudentMatch }
-            );
-          const skippedWarning =
-            formatSkippedTeachingStudentsWarning(skippedStudents);
-          if (skippedStudents.length > 0 && skippedWarning) {
-            jobLogRepo.add({
-              jobId,
-              jobType: "CUSTOM",
-              classId,
-              level: "WARN",
-              message: `⚠️ ${skippedWarning} Bot vẫn tiếp tục đồng bộ ${studentMatches.size}/${computed.students.length} học viên khớp trên Teaching.`,
-            });
-          }
-
-          ensureQueueNotStopped();
-
-          // 2. Fetch existing exercises & declare any missing ones
-          const initialExercises = await runWithStopGuard(() =>
-            transport.getExercises(classId)
-          );
-          let exerciseMap = validateRemoteExerciseList(initialExercises, classId);
-
-          const cp1Session = isRobotics ? 4 : 5;
-          const cp2Session = isRobotics ? 8 : 9;
-          const finalSession = 14;
-
-          let declaredExerciseCount = 0;
-
-          // 2a. BTVN exercises (ONLY for Coding classes, NEVER for Robotics)
-          if (!isRobotics && computed.btvnSessions.length > 0) {
-            const missingBtvnSessions: number[] = [];
-            for (const sess of computed.btvnSessions) {
-              const sn = sess.sessionNumber;
-              const hasTheory = exerciseMap.has(`${sn}-btvn-theory`);
-              const hasPractice = exerciseMap.has(`${sn}-btvn-practice`);
-              if (!hasTheory || !hasPractice) {
-                missingBtvnSessions.push(sn);
-              }
-            }
-
-            if (missingBtvnSessions.length > 0) {
-              const addRes = await runWithStopGuard(() =>
-                transport.addMultiExercise({
-                  classCode: classId,
-                  exerciseType: "btvn",
-                  exerciseForms: ["theory", "practice"],
-                  sessions: missingBtvnSessions,
-                  exerciseTitle: "",
-                  maxScore: 100,
-                  maxScoreNangLuc: 5,
-                })
-              );
-              if (!addRes || !addRes.success) {
-                throw new Error(
-                  addRes?.message ||
-                    `Lỗi khi khai báo đầu bài BTVN (buổi ${missingBtvnSessions.join(", ")}) trên Teaching.`
-                );
-              }
-              declaredExerciseCount += missingBtvnSessions.length * 2;
-            }
-          }
-
-          // 2b. Check-point 1 (Buổi 5 for Coding, Buổi 4 for Robotics)
-          const cp1Forms: TeachingExerciseForm[] = ["theory", "practice", "nang_luc"];
-          const isCp1Missing = cp1Forms.some(
-            (f) => !exerciseMap.has(`${cp1Session}-cp1-${f}`)
-          );
-          if (isCp1Missing) {
-            const addRes = await runWithStopGuard(() =>
-              transport.addMultiExercise({
-                classCode: classId,
-                exerciseType: "cp1",
-                exerciseForms: cp1Forms,
-                sessions: [cp1Session],
-                exerciseTitle: "",
-                maxScore: 5,
-                maxScoreNangLuc: 5,
-              })
-            );
-            if (!addRes || !addRes.success) {
-              throw new Error(
-                addRes?.message ||
-                  `Lỗi khi khai báo đầu bài Check-point 1 (Buổi ${cp1Session}) trên Teaching.`
-              );
-            }
-            declaredExerciseCount += cp1Forms.length;
-          }
-
-          // 2c. Check-point 2 (Buổi 9 for Coding, Buổi 8 for Robotics)
-          const cp2Forms: TeachingExerciseForm[] = ["theory", "practice", "nang_luc"];
-          const isCp2Missing = cp2Forms.some(
-            (f) => !exerciseMap.has(`${cp2Session}-cp2-${f}`)
-          );
-          if (isCp2Missing) {
-            const addRes = await runWithStopGuard(() =>
-              transport.addMultiExercise({
-                classCode: classId,
-                exerciseType: "cp2",
-                exerciseForms: cp2Forms,
-                sessions: [cp2Session],
-                exerciseTitle: "",
-                maxScore: 5,
-                maxScoreNangLuc: 5,
-              })
-            );
-            if (!addRes || !addRes.success) {
-              throw new Error(
-                addRes?.message ||
-                  `Lỗi khi khai báo đầu bài Check-point 2 (Buổi ${cp2Session}) trên Teaching.`
-              );
-            }
-            declaredExerciseCount += cp2Forms.length;
-          }
-
-          // 2d. Final DEMO (Buổi 14: practice = Sản phẩm, nang_luc = Năng lực)
-          const finalForms: TeachingExerciseForm[] = ["practice", "nang_luc"];
-          const isFinalMissing = finalForms.some(
-            (f) => !exerciseMap.has(`${finalSession}-final-${f}`)
-          );
-          if (isFinalMissing) {
-            const addRes = await runWithStopGuard(() =>
-              transport.addMultiExercise({
-                classCode: classId,
-                exerciseType: "final",
-                exerciseForms: finalForms,
-                sessions: [finalSession],
-                exerciseTitle: "",
-                maxScore: 5,
-                maxScoreNangLuc: 5,
-              })
-            );
-            if (!addRes || !addRes.success) {
-              throw new Error(
-                addRes?.message ||
-                  `Lỗi khi khai báo đầu bài Final DEMO (Buổi ${finalSession}) trên Teaching.`
-              );
-            }
-            declaredExerciseCount += finalForms.length;
-          }
-
-          // Refresh exercise list after declarations and verify all required exercises exist
-          if (declaredExerciseCount > 0) {
-            const refreshedExercises = await runWithStopGuard(() =>
-              transport.getExercises(classId)
-            );
-            exerciseMap = validateRemoteExerciseList(refreshedExercises, classId);
-          }
-
-          const requireExercise = (
-            sn: number,
-            exType: TeachingExerciseType,
-            exForm: TeachingExerciseForm
-          ): RemoteTeachingExercise => {
-            const key = `${sn}-${exType}-${exForm}`;
-            const found = exerciseMap.get(key);
-            if (!found) {
-              throw new Error(
-                `[Exercise Declaration Error] Không tìm thấy đầu bài (${key}) của lớp ${classId} trên Teaching sau khi khai báo.`
-              );
-            }
-            return found;
-          };
-
-          if (!isRobotics) {
-            for (const sess of computed.btvnSessions) {
-              requireExercise(sess.sessionNumber, "btvn", "theory");
-              requireExercise(sess.sessionNumber, "btvn", "practice");
-            }
-          }
-          for (const f of cp1Forms) requireExercise(cp1Session, "cp1", f);
-          for (const f of cp2Forms) requireExercise(cp2Session, "cp2", f);
-          for (const f of finalForms) requireExercise(finalSession, "final", f);
-
-          // 3. Build score items to save & track expected null slots for Read-after-Write
-          const scoresToSave: TeachingScoreInputItem[] = [];
-          const expectedNullSlotKeys = new Set<string>();
-
-          const pushOrTrackSlot = (
-            teachingStudentId: number,
-            sn: number,
-            exType: TeachingExerciseType,
-            exForm: TeachingExerciseForm,
-            localVal: number | null | undefined,
-            localMax: number,
-            noteText: string = ""
-          ) => {
-            const ex = requireExercise(sn, exType, exForm);
-            const remoteMax = Number(ex.max_score) > 0 ? Number(ex.max_score) : localMax;
-            const slotKey = `${teachingStudentId}-${sn}-${exType}-${exForm}`;
-
-            if (localVal === null || localVal === undefined || !Number.isFinite(localVal)) {
-              expectedNullSlotKeys.add(slotKey);
-              return;
-            }
-
-            const scaledRaw =
-              remoteMax === localMax
-                ? round2(localVal)
-                : round2((localVal / localMax) * remoteMax);
-
-            if (!Number.isFinite(scaledRaw) || scaledRaw < 0 || scaledRaw > remoteMax) {
-              throw new Error(
-                `[Score Validation Error] Điểm (${scaledRaw}/${remoteMax}) tại (${slotKey}) nằm ngoài phạm vi hợp lệ.`
-              );
-            }
-
-            scoresToSave.push({
-              student_id: teachingStudentId,
-              class_code: classId,
-              session_number: sn,
-              exercise_type: exType,
-              exercise_form: exForm,
-              raw_score: scaledRaw,
-              max_score: remoteMax,
-              note: noteText,
-            });
-          };
-
-          for (const stu of computed.students) {
-            const match = studentMatches.get(stu.studentId);
-            if (!match) continue;
-            const tStuId = match.teachingStudentId;
-
-            if (!isRobotics) {
-              for (const sess of computed.btvnSessions) {
-                const sn = sess.sessionNumber;
-                const cell = stu.btvnCells?.[sn];
-                const theoryMax =
-                  cell && Number(cell.theoryMax) > 0
-                    ? Number(cell.theoryMax)
-                    : sess.maxTheoryScore > 0
-                    ? sess.maxTheoryScore
-                    : 100;
-                const practiceMax =
-                  cell && Number(cell.practiceMax) > 0
-                    ? Number(cell.practiceMax)
-                    : sess.maxPracticeScore > 0
-                    ? sess.maxPracticeScore
-                    : 100;
-
-                pushOrTrackSlot(
-                  tStuId,
-                  sn,
-                  "btvn",
-                  "theory",
-                  cell?.theoryRaw ?? null,
-                  theoryMax,
-                  cell?.theoryNote || ""
-                );
-                pushOrTrackSlot(
-                  tStuId,
-                  sn,
-                  "btvn",
-                  "practice",
-                  cell?.practiceRaw ?? null,
-                  practiceMax,
-                  cell?.practiceNote || ""
-                );
-              }
-            }
-
-            // CP1
-            pushOrTrackSlot(
-              tStuId,
-              cp1Session,
-              "cp1",
-              "theory",
-              stu.cp1.theory.value,
-              5,
-              stu.cp1.theory.note
-            );
-            pushOrTrackSlot(
-              tStuId,
-              cp1Session,
-              "cp1",
-              "practice",
-              stu.cp1.practice.value,
-              5,
-              stu.cp1.practice.note
-            );
-            pushOrTrackSlot(
-              tStuId,
-              cp1Session,
-              "cp1",
-              "nang_luc",
-              stu.cp1.competency.value,
-              5,
-              stu.cp1.competency.note
-            );
-
-            // CP2
-            pushOrTrackSlot(
-              tStuId,
-              cp2Session,
-              "cp2",
-              "theory",
-              stu.cp2.theory.value,
-              5,
-              stu.cp2.theory.note
-            );
-            pushOrTrackSlot(
-              tStuId,
-              cp2Session,
-              "cp2",
-              "practice",
-              stu.cp2.practice.value,
-              5,
-              stu.cp2.practice.note
-            );
-            pushOrTrackSlot(
-              tStuId,
-              cp2Session,
-              "cp2",
-              "nang_luc",
-              stu.cp2.competency.value,
-              5,
-              stu.cp2.competency.note
-            );
-
-            // Final DEMO
-            pushOrTrackSlot(
-              tStuId,
-              finalSession,
-              "final",
-              "practice",
-              stu.final.product.value,
-              5,
-              stu.final.product.note
-            );
-            pushOrTrackSlot(
-              tStuId,
-              finalSession,
-              "final",
-              "nang_luc",
-              stu.final.competency.value,
-              5,
-              stu.final.competency.note
-            );
-          }
-
-          if (scoresToSave.length === 0) {
-            throw new Error(
-              skippedWarning
-                ? `Không có điểm số nào của các học viên khớp trên Teaching cho lớp ${classId} để đồng bộ (${skippedWarning}).`
-                : `Không có điểm số nào trong phiếu điểm của lớp ${classId} để đồng bộ lên Teaching.`
-            );
-          }
-
-          ensureQueueNotStopped();
-
-          // 4. Push scores to Teaching
-          const saveRes = await runWithStopGuard(() =>
-            transport.saveScores(scoresToSave)
-          );
-          if (!saveRes || !saveRes.success) {
-            throw new Error(
-              saveRes?.message ||
-                `Lỗi khi lưu ${scoresToSave.length} mục điểm của lớp ${classId} lên Teaching.`
-            );
-          }
-
-          // 5. Read-after-Write Verification via get_scores
-          const remoteScores = await runWithStopGuard(() =>
-            transport.getScores(classId)
-          );
-          if (!Array.isArray(remoteScores)) {
-            throw new Error(
-              `[Read-after-Write Error] Dữ liệu điểm đọc lại từ Teaching không phải mảng hợp lệ.`
-            );
-          }
-
-          const verifiedScoreMap = new Map<string, RemoteTeachingScoreRow>();
-          for (const sc of remoteScores) {
-            if (
-              sc?.class_code !== undefined &&
-              sc?.class_code !== null &&
-              String(sc.class_code).trim() !== "" &&
-              String(sc.class_code).trim().toUpperCase() !== classId
-            ) {
-              throw new Error(
-                `[Cross-Class Guard Error] Điểm đọc lại từ Teaching thuộc lớp "${sc.class_code}" (không khớp "${classId}").`
-              );
-            }
-            const stuId = parseStrictPositiveIntInput(sc?.student_id);
-            const sn = parseStrictPositiveIntInput(sc?.session_number);
-            const exType = String(sc?.exercise_type || "").trim();
-            const exForm = String(sc?.exercise_form || "").trim();
-            if (stuId === null || sn === null || !exType || !exForm) {
-              continue;
-            }
-            const key = `${stuId}-${sn}-${exType}-${exForm}`;
-            if (verifiedScoreMap.has(key)) {
-              throw new Error(
-                `[Read-after-Write Error] Teaching trả về bản ghi điểm trùng lặp tại khóa (${key}).`
-              );
-            }
-            verifiedScoreMap.set(key, sc);
-          }
-
-          // 5a. Verify every saved score matches 100% (both raw_score and authoritative normalized_score)
-          for (const expected of scoresToSave) {
-            const key = `${expected.student_id}-${expected.session_number}-${expected.exercise_type}-${expected.exercise_form}`;
-            const actualRow = verifiedScoreMap.get(key);
-            if (!actualRow) {
-              throw new Error(
-                `[Read-after-Write Error] Không tìm thấy điểm tại (${key}) khi đọc lại từ Teaching sau khi lưu.`
-              );
-            }
-
-            const actualRaw = parseStrictFiniteScore(actualRow.raw_score);
-            if (actualRaw === null) {
-              throw new Error(
-                `[Read-after-Write Error] Điểm raw_score tại (${key}) trên Teaching trống hoặc không hợp lệ (${JSON.stringify(actualRow.raw_score)}).`
-              );
-            }
-
-            if (Math.abs(round2(actualRaw) - round2(expected.raw_score)) > 1e-6) {
-              throw new Error(
-                `[Read-after-Write Error] Điểm raw_score tại (${key}) trên Teaching (${actualRaw}) không khớp với giá trị đã lưu (${expected.raw_score}).`
-              );
-            }
-
-            const actualNorm = parseStrictFiniteScore(actualRow.normalized_score);
-            const expectedNorm = round2(
-              (expected.raw_score / expected.max_score) * 5
-            );
-            if (actualNorm === null) {
-              throw new Error(
-                `[Read-after-Write Error] Điểm quy đổi thang 5 (normalized_score) tại (${key}) trên Teaching bị thiếu hoặc không hợp lệ (${JSON.stringify(actualRow.normalized_score)}).`
-              );
-            }
-            if (Math.abs(round2(actualNorm) - expectedNorm) > 1e-6) {
-              throw new Error(
-                `[Read-after-Write Error] Điểm quy đổi thang 5 tại (${key}) trên Teaching (${actualRow.normalized_score}) không khớp mức kỳ vọng (${expectedNorm}).`
-              );
-            }
-          }
-
-          // 5b. Verify no expected-null slot still holds a stale numeric or malformed score on Teaching
-          for (const nullKey of expectedNullSlotKeys) {
-            const staleRow = verifiedScoreMap.get(nullKey);
-            if (staleRow) {
-              const staleRaw = parseStrictFiniteScore(staleRow.raw_score);
-              const staleNorm = parseStrictFiniteScore(staleRow.normalized_score);
-              if (
-                staleRaw !== null ||
-                !isLegitimateEmptyScoreField(staleRow.raw_score)
-              ) {
-                throw new Error(
-                  `[Read-after-Write Error] Phát hiện điểm raw_score cũ hoặc không hợp lệ trên Teaching tại (${nullKey}) = ${JSON.stringify(staleRow.raw_score)} trong khi bản duyệt hiện tại để trống (null).`
-                );
-              }
-              if (
-                staleNorm !== null ||
-                !isLegitimateEmptyScoreField(staleRow.normalized_score)
-              ) {
-                throw new Error(
-                  `[Read-after-Write Error] Phát hiện điểm normalized_score cũ hoặc không hợp lệ trên Teaching tại (${nullKey}) = ${JSON.stringify(staleRow.normalized_score)} trong khi bản duyệt hiện tại để trống (null).`
-                );
-              }
-            }
-          }
+          const {
+            scoresToSave,
+            declaredExerciseCount,
+            studentMatches,
+            skippedStudents,
+            skippedWarning,
+          } = await executeReportCardTeachingTransportSync({
+            classId,
+            computed,
+            isRobotics,
+            transport,
+            allowPartialStudentMatch: options?.allowPartialStudentMatch !== false,
+            btvnOnly: false,
+            skipNullSlotVerification: false,
+            jobId,
+          });
 
           // 6. Mark VERIFIED in SQLite (with atomic liveHash, expectedVersion & SAVING/SYNCING ownership check)
           const verifiedRecord = reportCardRepo.markTeachingVerified(
