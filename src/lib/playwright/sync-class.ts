@@ -1003,6 +1003,12 @@ export class ClassSyncer {
 
       // If forceFreshDrawer is requested on a real browser page, close any pre-existing drawer so GetClassById fires fresh
       if (options?.forceFreshDrawer && typeof (page as any).keyboard?.press === "function") {
+        // Close any open modal dialog first so Escape closes the Drawer rather than only a dialog
+        const openDialog = page.locator('[role="dialog"]').first();
+        if (await openDialog.isVisible().catch(() => false)) {
+          await (page as any).keyboard.press("Escape").catch(() => {});
+          await page.waitForTimeout(300);
+        }
         const preExistingDrawer = page
           .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
           .first();
@@ -1014,6 +1020,13 @@ export class ClassSyncer {
             await (page as any).keyboard.press("Escape").catch(() => {});
           }
           await page.waitForTimeout(450);
+          if (await preExistingDrawer.isVisible().catch(() => false)) {
+            const backdrop = page.locator(".MuiBackdrop-root").first();
+            if (await backdrop.isVisible().catch(() => false)) {
+              await backdrop.click({ position: { x: 10, y: 10 }, force: true }).catch(() => {});
+              await page.waitForTimeout(450);
+            }
+          }
         }
       }
 
@@ -1329,10 +1342,34 @@ export class ClassSyncer {
           | undefined;
 
         if (lmsComment.length > 0) {
+          const normalizeSyncCompare = (val?: string | null): string =>
+            String(val || "")
+              .replace(/^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i, "")
+              .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+              .normalize("NFC")
+              .replace(/\s+/g, " ")
+              .trim()
+              .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
+              .trim();
+          const normExistingPlain = normalizeSyncCompare(existingFb?.finalText);
+          const normExistingRaw = String(existingFb?.finalText || "")
+            .replace(/^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i, "")
+            .normalize("NFC")
+            .replace(/\s+/g, " ")
+            .trim();
+          const normLmsPlain = normalizeSyncCompare(lmsComment);
+          const isExactMatchFailedOrApproved =
+            Boolean(existingFb) &&
+            (existingFb?.status === "FAILED" || existingFb?.status === "APPROVED") &&
+            normExistingPlain.length > 0 &&
+            normLmsPlain.length > 0 &&
+            (normExistingPlain === normLmsPlain || normExistingRaw === normLmsPlain);
+
           const canMarkVerified =
             !existingFb ||
             existingFb.status === "VERIFIED" ||
             !String(existingFb.finalText || "").trim() ||
+            isExactMatchFailedOrApproved ||
             (preferLmsVerified &&
               existingFb.status !== "APPROVED" &&
               existingFb.status !== "SAVING");

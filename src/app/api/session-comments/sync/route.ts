@@ -25,7 +25,11 @@ export async function POST(req: Request) {
       description: `Đồng bộ lớp học ${trimmedCode} từ LMS`,
       classId: trimmedCode,
       execute: async () => {
-        return ClassSyncer.syncClass(trimmedCode);
+        return ClassSyncer.syncClass(trimmedCode, {
+          forceFreshDrawer: true,
+          syncLmsCompletionStatus: true,
+          preferLmsVerified: false,
+        });
       },
     });
 

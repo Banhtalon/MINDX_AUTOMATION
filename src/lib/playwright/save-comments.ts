@@ -464,6 +464,47 @@ export class CommentSaver {
           : [];
 
       const preSaveRetryEligibleIds = new Set<string>();
+      const postSaveTimeoutReconcileIds = new Set<string>();
+
+      const isWaitForResponseTimeoutError = (msg?: string): boolean => {
+        if (!msg) return false;
+        return /waitForResponse:\s*Timeout\b/i.test(msg);
+      };
+
+      const decodeHtmlEntitiesAndNormalizeComment = (rawStr: string): string =>
+        String(rawStr || "")
+          .replace(/<\/?(?:p|div|br|li|ul|ol|tr|h[1-6])\s*\/?>/gi, " ")
+          .replace(/<\/?(?:strong|b|em|i|u|span|a)\b[^>]*>/gi, "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/&nbsp;|&#160;|&#xa0;/gi, " ")
+          .replace(/&amp;|&#38;|&#x26;/gi, "&")
+          .replace(/&lt;|&#60;|&#x3c;/gi, "<")
+          .replace(/&gt;|&#62;|&#x3e;/gi, ">")
+          .replace(/&quot;|&#34;|&#x22;/gi, '"')
+          .replace(/&#39;|&apos;|&#x27;/gi, "'")
+          .replace(/&#(\d+);/g, (_m, dec) => {
+            const code = parseInt(dec, 10);
+            return Number.isFinite(code) && code > 0 ? String.fromCodePoint(code) : _m;
+          })
+          .replace(/&#x([0-9a-f]+);/gi, (_m, hex) => {
+            const code = parseInt(hex, 16);
+            return Number.isFinite(code) && code > 0 ? String.fromCodePoint(code) : _m;
+          })
+          .normalize("NFC")
+          .replace(/\s+/g, " ")
+          .trim()
+          .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
+          .trim();
+
+      const toStudentLookupSlug = (rawName: string): string =>
+        String(rawName || "")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/đ/g, "d")
+          .replace(/Đ/g, "D")
+          .toUpperCase()
+          .replace(/[^A-Z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "");
 
       const isRetryablePreSaveUiError = (msg?: string): boolean => {
         if (!msg) return false;
@@ -765,9 +806,10 @@ export class CommentSaver {
             /^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i,
             ""
           );
-          const normalizedExpectedRaw = commentText.replace(/\s+/g, " ").trim();
+          const normalizedExpectedRaw = commentText.normalize("NFC").replace(/\s+/g, " ").trim();
           const normalizedExpectedPlain = commentText
             .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+            .normalize("NFC")
             .replace(/\s+/g, " ")
             .trim();
 
@@ -857,6 +899,7 @@ export class CommentSaver {
               const normExisting = existingCandidates
                 .map((c) =>
                   c
+                    .normalize("NFC")
                     .replace(/\s+/g, " ")
                     .trim()
                     .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
@@ -1060,211 +1103,213 @@ export class CommentSaver {
                 : -1;
           }
 
-          let apiResponse: any = null;
-          try {
-            // Wait strictly for the business API mutation response upon clicking save (no unrelated fallback)
-            [apiResponse] = await Promise.all([
-              interceptor.waitForApiResponse(
-                /lms-api\.mindx\.edu\.vn/i,
-                {
-                  method: "POST",
-                  timeoutMs: 15000,
-                  operationName: /^(UpdateSlotComment|CreateSlotComment|SaveSlotComment|CommentMakeup)$/i,
-                  requestPredicate: (postData: string) => {
-                    if (!postData) return false;
-                    try {
-                      const parsed = JSON.parse(postData);
-                      const op = String(parsed?.operationName || "").trim();
-                      if (!/^(UpdateSlotComment|CreateSlotComment|SaveSlotComment|CommentMakeup)$/i.test(op)) {
-                        return false;
-                      }
-                      const rawVars = parsed?.variables;
-                      if (!rawVars || typeof rawVars !== "object" || Array.isArray(rawVars)) {
-                        return false;
-                      }
-                      if (
-                        Object.prototype.hasOwnProperty.call(rawVars, "payload") &&
-                        (!rawVars.payload || typeof rawVars.payload !== "object" || Array.isArray(rawVars.payload))
-                      ) {
-                        return false;
-                      }
-                      if (
-                        Object.prototype.hasOwnProperty.call(rawVars, "input") &&
-                        (!rawVars.input || typeof rawVars.input !== "object" || Array.isArray(rawVars.input))
-                      ) {
-                        return false;
-                      }
+          const saveMutationPredicate = (postData: string) => {
+            if (!postData) return false;
+            try {
+              const parsed = JSON.parse(postData);
+              const op = String(parsed?.operationName || "").trim();
+              if (!/^(UpdateSlotComment|CreateSlotComment|SaveSlotComment|CommentMakeup)$/i.test(op)) {
+                return false;
+              }
+              const rawVars = parsed?.variables;
+              if (!rawVars || typeof rawVars !== "object" || Array.isArray(rawVars)) {
+                return false;
+              }
+              if (
+                Object.prototype.hasOwnProperty.call(rawVars, "payload") &&
+                (!rawVars.payload || typeof rawVars.payload !== "object" || Array.isArray(rawVars.payload))
+              ) {
+                return false;
+              }
+              if (
+                Object.prototype.hasOwnProperty.call(rawVars, "input") &&
+                (!rawVars.input || typeof rawVars.input !== "object" || Array.isArray(rawVars.input))
+              ) {
+                return false;
+              }
 
-                      const scopes = [
-                        rawVars,
-                        rawVars.payload,
-                        rawVars.input,
-                      ].filter((o) => o && typeof o === "object" && !Array.isArray(o));
+              const scopes = [
+                rawVars,
+                rawVars.payload,
+                rawVars.input,
+              ].filter((o) => o && typeof o === "object" && !Array.isArray(o));
 
-                      let hasClassIdentifier = false;
-                      let hasSessionIdentifier = false;
-                      let hasStudentIdentifier = false;
-                      const expectedCommentRawNorm = commentText.replace(/\s+/g, " ").trim();
-                      const expectedCommentPlainNorm = commentText
-                        .replace(/\*\*([^*\n]+)\*\*/g, "$1")
-                        .replace(/\s+/g, " ")
-                        .trim();
-                      const normalizeCommentPayloadText = (rawStr: string) =>
-                        rawStr
-                          .replace(/<\/?(?:p|div|br|li|ul|ol)\s*\/?>/gi, " ")
-                          .replace(/<\/?(?:strong|b|em|i|u|span)\b[^>]*>/gi, "")
-                          .replace(/&nbsp;/gi, " ")
-                          .replace(/&amp;/gi, "&")
-                          .replace(/&lt;/gi, "<")
-                          .replace(/&gt;/gi, ">")
-                          .replace(/&quot;/gi, '"')
-                          .replace(/&#39;|&apos;/gi, "'")
-                          .replace(/\s+/g, " ")
-                          .trim()
-                          .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
-                          .trim();
-                      const isMongoObjectId = (v: string) => /^[a-f0-9]{24}$/i.test(v);
+              let hasClassIdentifier = false;
+              let hasSessionIdentifier = false;
+              let hasStudentIdentifier = false;
+              const expectedCommentRawNorm = commentText.normalize("NFC").replace(/\s+/g, " ").trim();
+              const expectedCommentPlainNorm = commentText
+                .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+                .normalize("NFC")
+                .replace(/\s+/g, " ")
+                .trim();
+              const normalizeCommentPayloadText = (rawStr: string) =>
+                rawStr
+                  .replace(/<\/?(?:p|div|br|li|ul|ol)\s*\/?>/gi, " ")
+                  .replace(/<\/?(?:strong|b|em|i|u|span)\b[^>]*>/gi, "")
+                  .replace(/&nbsp;|&#160;|&#xa0;/gi, " ")
+                  .replace(/&amp;|&#38;|&#x26;/gi, "&")
+                  .replace(/&lt;|&#60;|&#x3c;/gi, "<")
+                  .replace(/&gt;|&#62;|&#x3e;/gi, ">")
+                  .replace(/&quot;|&#34;|&#x22;/gi, '"')
+                  .replace(/&#39;|&apos;|&#x27;/gi, "'")
+                  .normalize("NFC")
+                  .replace(/\s+/g, " ")
+                  .trim()
+                  .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
+                  .trim();
+              const isMongoObjectId = (v: string) => /^[a-f0-9]{24}$/i.test(v);
 
-                      const studentCommentObj =
-                        rawVars.payload?.studentComment || rawVars.input?.studentComment;
-                      if (studentCommentObj && typeof studentCommentObj === "object") {
-                        if (typeof studentCommentObj.studentId === "string" && studentCommentObj.studentId.trim()) {
-                          hasStudentIdentifier = true;
-                        }
-                        const byAreasList = Array.isArray(studentCommentObj.byAreas)
-                          ? studentCommentObj.byAreas
-                          : [];
-                        const byAreasNormalizedContents = byAreasList
-                          .map((area: any) =>
-                            typeof area?.content === "string"
-                              ? normalizeCommentPayloadText(area.content)
-                              : ""
-                          )
-                          .filter(Boolean);
-                        if (typeof studentCommentObj.content === "string" || byAreasNormalizedContents.length > 0) {
-                          const cleanedHtmlContent =
-                            typeof studentCommentObj.content === "string"
-                              ? normalizeCommentPayloadText(studentCommentObj.content)
-                              : "";
-                          const matchesByAreasContent =
-                            isCheckpointModal &&
-                            byAreasNormalizedContents.some(
-                              (c: string) =>
-                                c === expectedCommentRawNorm ||
-                                c === expectedCommentPlainNorm ||
-                                c.includes(expectedCommentPlainNorm) ||
-                                c.includes(expectedCommentRawNorm)
-                            );
-                          const matchesExpectedContent =
-                            cleanedHtmlContent === expectedCommentRawNorm ||
-                            cleanedHtmlContent === expectedCommentPlainNorm ||
-                            (isCheckpointModal &&
-                              (cleanedHtmlContent.includes(expectedCommentPlainNorm) ||
-                                cleanedHtmlContent.includes(expectedCommentRawNorm) ||
-                                matchesByAreasContent));
-                          if ((!cleanedHtmlContent && !matchesByAreasContent) || !matchesExpectedContent) {
-                            return false;
-                          }
-                        }
-                      }
+              const studentCommentObj =
+                rawVars.payload?.studentComment || rawVars.input?.studentComment;
+              if (studentCommentObj && typeof studentCommentObj === "object") {
+                if (typeof studentCommentObj.studentId === "string" && studentCommentObj.studentId.trim()) {
+                  hasStudentIdentifier = true;
+                }
+                const byAreasList = Array.isArray(studentCommentObj.byAreas)
+                  ? studentCommentObj.byAreas
+                  : [];
+                const byAreasNormalizedContents = byAreasList
+                  .map((area: any) =>
+                    typeof area?.content === "string"
+                      ? normalizeCommentPayloadText(area.content)
+                      : ""
+                  )
+                  .filter(Boolean);
+                if (typeof studentCommentObj.content === "string" || byAreasNormalizedContents.length > 0) {
+                  const cleanedHtmlContent =
+                    typeof studentCommentObj.content === "string"
+                      ? normalizeCommentPayloadText(studentCommentObj.content)
+                      : "";
+                  const matchesByAreasContent =
+                    isCheckpointModal &&
+                    byAreasNormalizedContents.some(
+                      (c: string) =>
+                        c === expectedCommentRawNorm ||
+                        c === expectedCommentPlainNorm ||
+                        c.includes(expectedCommentPlainNorm) ||
+                        c.includes(expectedCommentRawNorm)
+                    );
+                  const matchesExpectedContent =
+                    cleanedHtmlContent === expectedCommentRawNorm ||
+                    cleanedHtmlContent === expectedCommentPlainNorm ||
+                    (isCheckpointModal &&
+                      (cleanedHtmlContent.includes(expectedCommentPlainNorm) ||
+                        cleanedHtmlContent.includes(expectedCommentRawNorm) ||
+                        matchesByAreasContent));
+                  if ((!cleanedHtmlContent && !matchesByAreasContent) || !matchesExpectedContent) {
+                    return false;
+                  }
+                }
+              }
 
-                      for (const scope of scopes) {
-                        for (const k of ["classCode", "classId", "className"]) {
-                          if (Object.prototype.hasOwnProperty.call(scope, k)) {
-                            const raw = scope[k];
-                            if (typeof raw !== "string") return false;
-                            const val = raw.trim().toUpperCase();
-                            const isRealLmsClassId =
-                              k === "classId" &&
-                              isMongoObjectId(val) &&
-                              !Object.prototype.hasOwnProperty.call(scope, "classCode");
-                            if (!val || (!isRealLmsClassId && val !== classCode && val !== classId)) {
-                              return false;
-                            }
-                            hasClassIdentifier = true;
-                          }
-                        }
-
-                        for (const k of ["sessionId", "slotId"]) {
-                          if (Object.prototype.hasOwnProperty.call(scope, k)) {
-                            const raw = scope[k];
-                            if (typeof raw !== "string") return false;
-                            const val = raw.trim().toUpperCase();
-                            const isRealLmsSlotId = k === "slotId" && isMongoObjectId(val);
-                            if (!val || (!isRealLmsSlotId && val !== sessionId.toUpperCase())) {
-                              return false;
-                            }
-                            hasSessionIdentifier = true;
-                          }
-                        }
-
-                        for (const k of ["slotNumber", "sessionNumber"]) {
-                          if (Object.prototype.hasOwnProperty.call(scope, k)) {
-                            const raw = scope[k];
-                            if (typeof raw !== "number" && typeof raw !== "string") return false;
-                            const rawVal = String(raw).trim();
-                            const num = Number(rawVal);
-                            if (!rawVal || !Number.isFinite(num) || num !== slotNumber) {
-                              return false;
-                            }
-                            hasSessionIdentifier = true;
-                          }
-                        }
-
-                        if (Object.prototype.hasOwnProperty.call(scope, "slotIndex")) {
-                          const raw = scope.slotIndex;
-                          if (typeof raw !== "number" && typeof raw !== "string") return false;
-                          const rawVal = String(raw).trim();
-                          const idx = Number(rawVal);
-                          if (!rawVal || !Number.isFinite(idx) || idx + 1 !== slotNumber) {
-                            return false;
-                          }
-                          hasSessionIdentifier = true;
-                        }
-
-                        for (const k of ["studentId", "studentUid", "userId"]) {
-                          if (Object.prototype.hasOwnProperty.call(scope, k)) {
-                            const raw = scope[k];
-                            if (typeof raw !== "string") return false;
-                            const val = raw.trim();
-                            const isRealLmsStudentId =
-                              (k === "studentId" || k === "studentUid") && isMongoObjectId(val);
-                            if (!val || (!isRealLmsStudentId && val !== record.studentId)) {
-                              return false;
-                            }
-                            hasStudentIdentifier = true;
-                          }
-                        }
-
-                        for (const k of ["comment", "content", "note", "feedback"]) {
-                          if (Object.prototype.hasOwnProperty.call(scope, k)) {
-                            const raw = scope[k];
-                            if (typeof raw !== "string") return false;
-                            const val = normalizeCommentPayloadText(raw);
-                            const matchesVal =
-                              val === expectedCommentRawNorm ||
-                              val === expectedCommentPlainNorm ||
-                              (isCheckpointModal &&
-                                (val.includes(expectedCommentPlainNorm) ||
-                                  val.includes(expectedCommentRawNorm)));
-                            if (!val || !matchesVal) {
-                              return false;
-                            }
-                          }
-                        }
-                      }
-
-                      // Must carry at least one concrete target entity identifier (never accept comment-only or empty payload)
-                      if (!hasClassIdentifier && !hasSessionIdentifier && !hasStudentIdentifier) {
-                        return false;
-                      }
-                      return true;
-                    } catch {
+              for (const scope of scopes) {
+                for (const k of ["classCode", "classId", "className"]) {
+                  if (Object.prototype.hasOwnProperty.call(scope, k)) {
+                    const raw = scope[k];
+                    if (typeof raw !== "string") return false;
+                    const val = raw.trim().toUpperCase();
+                    const isRealLmsClassId =
+                      k === "classId" &&
+                      isMongoObjectId(val) &&
+                      !Object.prototype.hasOwnProperty.call(scope, "classCode");
+                    if (!val || (!isRealLmsClassId && val !== classCode && val !== classId)) {
                       return false;
                     }
-                  },
+                    hasClassIdentifier = true;
+                  }
                 }
-              ),
+
+                for (const k of ["sessionId", "slotId"]) {
+                  if (Object.prototype.hasOwnProperty.call(scope, k)) {
+                    const raw = scope[k];
+                    if (typeof raw !== "string") return false;
+                    const val = raw.trim().toUpperCase();
+                    const isRealLmsSlotId = k === "slotId" && isMongoObjectId(val);
+                    if (!val || (!isRealLmsSlotId && val !== sessionId.toUpperCase())) {
+                      return false;
+                    }
+                    hasSessionIdentifier = true;
+                  }
+                }
+
+                for (const k of ["slotNumber", "sessionNumber"]) {
+                  if (Object.prototype.hasOwnProperty.call(scope, k)) {
+                    const raw = scope[k];
+                    if (typeof raw !== "number" && typeof raw !== "string") return false;
+                    const rawVal = String(raw).trim();
+                    const num = Number(rawVal);
+                    if (!rawVal || !Number.isFinite(num) || num !== slotNumber) {
+                      return false;
+                    }
+                    hasSessionIdentifier = true;
+                  }
+                }
+
+                if (Object.prototype.hasOwnProperty.call(scope, "slotIndex")) {
+                  const raw = scope.slotIndex;
+                  if (typeof raw !== "number" && typeof raw !== "string") return false;
+                  const rawVal = String(raw).trim();
+                  const idx = Number(rawVal);
+                  if (!rawVal || !Number.isFinite(idx) || idx + 1 !== slotNumber) {
+                    return false;
+                  }
+                  hasSessionIdentifier = true;
+                }
+
+                for (const k of ["studentId", "studentUid", "userId"]) {
+                  if (Object.prototype.hasOwnProperty.call(scope, k)) {
+                    const raw = scope[k];
+                    if (typeof raw !== "string") return false;
+                    const val = raw.trim();
+                    const isRealLmsStudentId =
+                      (k === "studentId" || k === "studentUid") && isMongoObjectId(val);
+                    if (!val || (!isRealLmsStudentId && val !== record.studentId)) {
+                      return false;
+                    }
+                    hasStudentIdentifier = true;
+                  }
+                }
+
+                for (const k of ["comment", "content", "note", "feedback"]) {
+                  if (Object.prototype.hasOwnProperty.call(scope, k)) {
+                    const raw = scope[k];
+                    if (typeof raw !== "string") return false;
+                    const val = normalizeCommentPayloadText(raw);
+                    const matchesVal =
+                      val === expectedCommentRawNorm ||
+                      val === expectedCommentPlainNorm ||
+                      (isCheckpointModal &&
+                        (val.includes(expectedCommentPlainNorm) ||
+                          val.includes(expectedCommentRawNorm)));
+                    if (!val || !matchesVal) {
+                      return false;
+                    }
+                  }
+                }
+              }
+
+              // Must carry at least one concrete target entity identifier (never accept comment-only or empty payload)
+              if (!hasClassIdentifier && !hasSessionIdentifier && !hasStudentIdentifier) {
+                return false;
+              }
+              return true;
+            } catch {
+              return false;
+            }
+          };
+
+          const saveMutationOpRegex = /^(UpdateSlotComment|CreateSlotComment|SaveSlotComment|CommentMakeup)$/i;
+          let apiResponse: any = null;
+          try {
+            // Wait strictly for the business API mutation response upon clicking save (45s to absorb MindX LMS peak GraphQL latency)
+            [apiResponse] = await Promise.all([
+              interceptor.waitForApiResponse(/lms-api\.mindx\.edu\.vn/i, {
+                method: "POST",
+                timeoutMs: 45000,
+                operationName: saveMutationOpRegex,
+                requestPredicate: saveMutationPredicate,
+              }),
               saveBtn.click({ force: true }),
             ]);
           } catch (saveWaitErr) {
@@ -1281,7 +1326,50 @@ export class CommentSaver {
                 `CHECKPOINT_COMPETENCY_REQUIRED: Buổi Kiểm tra (Checkpoint): Vui lòng tích Điểm Năng lực [ĐNL] & Điểm kiểm tra cho học viên '${studentName}' trên LMS trước khi bấm Đẩy nhận xét.`
               );
             }
-            throw saveWaitErr;
+
+            // If waitForResponse timed out while MUI's Save CircularProgress spinner is STILL actively spinning in place of the Save button
+            // (exact ARMI13 Session 3 peak-latency condition), wait one extra 20s grace window WITHOUT clicking Save a second time.
+            let recoveredDuringSpinnerGrace = false;
+            if (isWaitForResponseTimeoutError(saveWaitMsg)) {
+              const isDialogStillOpen = await dialog.isVisible().catch(() => false);
+              const isSaveBtnHiddenNow = !(await saveBtn.isVisible().catch(() => false));
+              const spinnerLoc = dialog
+                .locator('[role="progressbar"], .MuiCircularProgress-root')
+                .first();
+              const isSpinnerVisible =
+                isDialogStillOpen &&
+                isSaveBtnHiddenNow &&
+                (await spinnerLoc.isVisible().catch(() => false));
+              if (isSpinnerVisible) {
+                jobLogRepo.add({
+                  jobId,
+                  jobType: "SAVE_COMMENTS",
+                  classId,
+                  sessionId,
+                  studentId: record.studentId,
+                  level: "INFO",
+                  message: `Máy chủ LMS đang xử lý lưu nhận xét của '${studentName}' chậm hơn bình thường (biểu tượng xoay vẫn đang chạy), chờ thêm tối đa 20 giây...`,
+                });
+                try {
+                  apiResponse = await interceptor.waitForApiResponse(
+                    /lms-api\.mindx\.edu\.vn/i,
+                    {
+                      method: "POST",
+                      timeoutMs: 20000,
+                      operationName: saveMutationOpRegex,
+                      requestPredicate: saveMutationPredicate,
+                    }
+                  );
+                  recoveredDuringSpinnerGrace = true;
+                } catch {
+                  recoveredDuringSpinnerGrace = false;
+                }
+              }
+            }
+
+            if (!recoveredDuringSpinnerGrace) {
+              throw saveWaitErr;
+            }
           }
 
           // Check HTTP status AND ensure no GraphQL errors inside HTTP 200 payload
@@ -1449,6 +1537,7 @@ export class CommentSaver {
           const normalizedCandidates = candidates
             .map((c) =>
               c
+                .normalize("NFC")
                 .replace(/\s+/g, " ")
                 .trim()
                 .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
@@ -1608,6 +1697,15 @@ export class CommentSaver {
             preSaveRetryEligibleIds.delete(record.studentId);
           }
 
+          if (
+            saveMutationDispatched &&
+            !isCheckpointMissingCompetency &&
+            !wasEditedDuringSave &&
+            isWaitForResponseTimeoutError(rawErrMsg)
+          ) {
+            postSaveTimeoutReconcileIds.add(record.studentId);
+          }
+
           return {
             studentId: record.studentId,
             fullName: studentName,
@@ -1659,6 +1757,451 @@ export class CommentSaver {
           if (idx >= 0) {
             results[idx] = retryRes;
           }
+        }
+      }
+
+      // Pass 2B (Post-Timeout Server Reconciliation — 0 extra Save clicks):
+      // When Save was already clicked and waitForResponse timed out during an LMS peak spike, the mutation often lands on LMS
+      // a few seconds later. Re-open the Class Drawer to fetch a fresh GetClassById HTTP 200 payload from lms-api.mindx.edu.vn
+      // AND perform full View-Mode DOM Read-after-Write verification (never clicking Save again and never trusting optimistic DOM cache).
+      const postTimeoutCandidates = validRecords.filter((rec) => {
+        const resItem = results.find((r) => r.studentId === rec.studentId);
+        return Boolean(
+          resItem && !resItem.success && postSaveTimeoutReconcileIds.has(rec.studentId)
+        );
+      });
+
+      if (
+        postTimeoutCandidates.length > 0 &&
+        typeof LmsHelpers?.openClassDrawer === "function" &&
+        typeof interceptor?.waitForApiResponse === "function"
+      ) {
+        try {
+          if (typeof LmsHelpers?.ensureCleanDialogAndToast === "function") {
+            await LmsHelpers.ensureCleanDialogAndToast(page, interceptor).catch(() => {});
+          }
+
+          const freshGetClassPromise = interceptor
+            .waitForApiResponse(/lms-api\.mindx\.edu\.vn/i, {
+              method: "POST",
+              timeoutMs: 15000,
+              operationName: /^GetClassById$/i,
+            })
+            .catch(() => null);
+
+          // Close the open Class Drawer so openClassDrawer triggers a fresh GetClassById network call
+          const existingDrawer = page
+            .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
+            .first();
+          if (await existingDrawer.isVisible().catch(() => false)) {
+            const backBtn = existingDrawer.locator('button:has-text("Back")').first();
+            if (await backBtn.isVisible().catch(() => false)) {
+              await backBtn.click({ force: true }).catch(() => {});
+            } else if (typeof page.keyboard?.press === "function") {
+              await page.keyboard.press("Escape").catch(() => {});
+            }
+            await page.waitForTimeout(400);
+            if (await existingDrawer.isVisible().catch(() => false)) {
+              const backdrop = page.locator(".MuiBackdrop-root").first();
+              if (await backdrop.isVisible().catch(() => false)) {
+                await backdrop.click({ position: { x: 10, y: 10 }, force: true }).catch(() => {});
+                await page.waitForTimeout(450);
+              }
+            }
+          }
+
+          await LmsHelpers.openClassDrawer(page, classCode);
+          const freshClassResponse = await freshGetClassPromise;
+          const freshStatus =
+            freshClassResponse && typeof freshClassResponse.status === "function"
+              ? freshClassResponse.status()
+              : 0;
+          const freshJson =
+            (freshStatus === 200 || freshStatus === 201) &&
+            freshClassResponse &&
+            typeof (freshClassResponse as any).json === "function"
+              ? await (freshClassResponse as any).json().catch(() => null)
+              : null;
+
+          const hasNoGqlErrors =
+            Boolean(freshJson) &&
+            (!Array.isArray(freshJson.errors) || freshJson.errors.length === 0);
+          const clsPayload = hasNoGqlErrors
+            ? freshJson?.data?.classesById ||
+              freshJson?.data?.class ||
+              freshJson?.data?.getClassById
+            : null;
+          const payloadClassCode = String(
+            clsPayload?.name || clsPayload?.code || clsPayload?.classCode || ""
+          )
+            .trim()
+            .toUpperCase();
+          const isValidServerClassPayload =
+            Boolean(clsPayload && typeof clsPayload === "object") &&
+            (!payloadClassCode || payloadClassCode === classCode || payloadClassCode === classId);
+
+          if (isValidServerClassPayload) {
+            const slotsArr = Array.isArray(clsPayload.slots) ? clsPayload.slots : [];
+            const matchedServerSlot =
+              slotsArr.find(
+                (s: any) => s && typeof s.index === "number" && s.index + 1 === slotNumber
+              ) ||
+              (slotsArr.length > slotIndex &&
+              slotsArr.every((s: any) => !s || typeof s.index !== "number")
+                ? slotsArr[slotIndex]
+                : null);
+            const serverAttendances: any[] = Array.isArray(matchedServerSlot?.studentAttendance)
+              ? matchedServerSlot.studentAttendance
+              : [];
+
+            if (serverAttendances.length > 0) {
+              await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.comments);
+              await page.waitForTimeout(800);
+              if (typeof LmsHelpers?.ensureCommentsSlotReady === "function") {
+                await LmsHelpers.ensureCommentsSlotReady(page, classCode, slotNumber, {
+                  reopenDrawerIfClosed: true,
+                  waitForTableMs: 5000,
+                });
+              }
+
+              const rosterSlugCounts = new Map<string, number>();
+              for (const st of classRoster) {
+                const slug = toStudentLookupSlug(st.fullName || "");
+                if (slug) {
+                  rosterSlugCounts.set(slug, (rosterSlugCounts.get(slug) || 0) + 1);
+                }
+              }
+
+              const hasStudentRepoCheck = typeof studentRepo.findOne === "function";
+
+              for (const rec of postTimeoutCandidates) {
+                try {
+                  const student = hasStudentRepoCheck
+                    ? studentRepo.findOne(rec.studentId, classId)
+                    : undefined;
+                  const studentName = student?.fullName || rec.studentId;
+                  const latestRec = getLatestFeedbackRecord(rec.studentId);
+                  const approvedText = rec.finalText || "";
+                  const approvedHash = rec.contentHash || "";
+
+                  const rosterOk =
+                    !hasStudentRepoCheck ||
+                    (Boolean(student) &&
+                      (!student?.classId || student.classId === classId) &&
+                      student?.isActive === 1);
+                  const attStatus = latestRec?.attendanceStatus;
+                  const attendanceOk =
+                    attStatus === undefined ||
+                    attStatus === null ||
+                    attStatus === "PRESENT" ||
+                    attStatus === "LATE";
+
+                  if (
+                    !latestRec ||
+                    !rosterOk ||
+                    !attendanceOk ||
+                    latestRec.status === "DRAFT" ||
+                    latestRec.contentHash !== approvedHash ||
+                    (latestRec.finalText || "") !== approvedText ||
+                    !verifyContentIntegrity(approvedText, approvedHash)
+                  ) {
+                    continue;
+                  }
+
+                  const targetSlug = toStudentLookupSlug(studentName);
+                  const isUniqueSlug =
+                    Boolean(targetSlug) && (rosterSlugCounts.get(targetSlug) || 0) <= 1;
+
+                  const matchedServerAtts = serverAttendances.filter((att: any) => {
+                    if (!att || typeof att !== "object") return false;
+                    const crmId = String(att?.student?.id || att?.studentId || "").trim();
+                    if (crmId && crmId === rec.studentId) return true;
+                    const crmName = String(att?.student?.fullName || att?.fullName || "").trim();
+                    const crmSlug = toStudentLookupSlug(crmName);
+                    return Boolean(isUniqueSlug && crmSlug && crmSlug === targetSlug);
+                  });
+
+                  if (matchedServerAtts.length !== 1) {
+                    continue;
+                  }
+
+                  const serverAtt = matchedServerAtts[0];
+                  const commentText = approvedText.replace(
+                    /^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i,
+                    ""
+                  );
+                  const expectedRawNorm = commentText.normalize("NFC").replace(/\s+/g, " ").trim();
+                  const expectedPlainNorm = commentText
+                    .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+                    .normalize("NFC")
+                    .replace(/\s+/g, " ")
+                    .trim();
+
+                  const rawAreas: any[] = Array.isArray(serverAtt.commentByAreas)
+                    ? serverAtt.commentByAreas
+                    : [];
+                  const serverAreaTexts = rawAreas
+                    .filter(
+                      (a: any) =>
+                        a &&
+                        typeof a.content === "string" &&
+                        (!a.type || String(a.type).toUpperCase() === "CONTENT")
+                    )
+                    .map((a: any) => decodeHtmlEntitiesAndNormalizeComment(a.content))
+                    .filter(Boolean);
+                  const directServerText =
+                    typeof serverAtt.comment === "string"
+                      ? decodeHtmlEntitiesAndNormalizeComment(serverAtt.comment)
+                      : "";
+                  const combinedServerText = serverAreaTexts.join(" ").replace(/\s+/g, " ").trim();
+
+                  const serverExactMatch =
+                    expectedPlainNorm.length > 0 &&
+                    (directServerText === expectedPlainNorm ||
+                      directServerText === expectedRawNorm ||
+                      combinedServerText === expectedPlainNorm ||
+                      combinedServerText === expectedRawNorm ||
+                      serverAreaTexts.some(
+                        (t: string) => t === expectedPlainNorm || t === expectedRawNorm
+                      ));
+
+                  if (!serverExactMatch) {
+                    continue;
+                  }
+
+                  // Server GetClassById confirmed exact match -> now perform full DOM Read-after-Write (0 Save clicks)
+                  const escapedStudentId = rec.studentId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                  const escapedName = studentName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                  const exactNameLineRegex = new RegExp(
+                    `(?:^|[\\r\\n\\t|]|\\b${escapedStudentId}[ \\t]+)${escapedName}(?:$|[\\r\\n\\t|])`,
+                    "i"
+                  );
+
+                  const reconcileDrawer = page
+                    .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
+                    .first();
+                  const idRow = reconcileDrawer
+                    .locator(
+                      `tr[data-student-id="${rec.studentId}"], tr[data-id="${rec.studentId}"], [data-student-id="${rec.studentId}"]`
+                    )
+                    .first();
+                  const idRowCount =
+                    typeof (idRow as any).count === "function"
+                      ? await (idRow as any).count().catch(() => 0)
+                      : 0;
+                  const explicitAttr =
+                    idRowCount > 0
+                      ? (await idRow
+                          .getAttribute("data-student-id", { timeout: 500 } as any)
+                          .catch(() => null)) ||
+                        (await idRow
+                          .getAttribute("data-id", { timeout: 500 } as any)
+                          .catch(() => null))
+                      : null;
+
+                  let targetRow: any = explicitAttr === rec.studentId ? idRow : null;
+                  if (!targetRow) {
+                    if (!isUniqueSlug && classRoster.length > 1) {
+                      continue;
+                    }
+                    const bodyRows = reconcileDrawer.locator(
+                      ".comment-list-table table tbody tr, table tbody tr"
+                    );
+                    const rowCount =
+                      typeof (bodyRows as any).count === "function"
+                        ? await (bodyRows as any).count().catch(() => 0)
+                        : 0;
+                    const matchedIndices: number[] = [];
+                    for (let rIdx = 0; rIdx < rowCount; rIdx++) {
+                      const candidateRow = bodyRows.nth(rIdx);
+                      const rawRowText = (
+                        await candidateRow.innerText().catch(() => "")
+                      ).normalize("NFC");
+                      const cleanedMultiline = rawRowText
+                        .split(/[\r\n\t|]+/)
+                        .map((line: string) => line.replace(/\s+/g, " ").trim())
+                        .filter(Boolean)
+                        .join("\n");
+                      if (exactNameLineRegex.test(cleanedMultiline)) {
+                        matchedIndices.push(rIdx);
+                      }
+                    }
+                    if (matchedIndices.length === 1) {
+                      targetRow = bodyRows.nth(matchedIndices[0]);
+                    }
+                  }
+
+                  if (!targetRow) {
+                    continue;
+                  }
+
+                  await targetRow.scrollIntoViewIfNeeded().catch(() => {});
+                  await page.waitForTimeout(250);
+                  const verifyBtn = targetRow
+                    .locator('button:has-text("Nhận xét học sinh"), button:has-text("Nhận xét")')
+                    .first();
+                  const dialog = page.locator('[role="dialog"]').first();
+                  await verifyBtn.click({ force: true });
+                  await dialog.waitFor({ state: "visible", timeout: 5000 });
+                  await page.waitForTimeout(500);
+
+                  const domCandidates: string[] = [];
+                  const cell2 = dialog.locator("table tbody tr td:nth-child(2)").first();
+                  const cell2Text = (await cell2.isVisible().catch(() => false))
+                    ? await cell2.innerText().catch(() => "")
+                    : "";
+                  const cell1 = dialog.locator("table tbody tr td").first();
+                  const cell1Text = (await cell1.isVisible().catch(() => false))
+                    ? await cell1.innerText().catch(() => "")
+                    : "";
+
+                  const isCpTable =
+                    /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[ĐNL\]/i.test(
+                      `${cell2Text} ${cell1Text}`
+                    );
+                  if (isCpTable) {
+                    const cpRow = dialog.locator("table tbody tr").first();
+                    if (await cpRow.isVisible().catch(() => false)) {
+                      await cpRow.hover().catch(() => {});
+                      await page.waitForTimeout(250);
+                      const editBtn = dialog
+                        .locator(
+                          'button:has([data-testid="EditIcon"]), [aria-label="Edit"] button, button:has-text("Edit")'
+                        )
+                        .first();
+                      if (await editBtn.isVisible().catch(() => false)) {
+                        await editBtn.click({ force: true });
+                      } else {
+                        await cpRow.click({ force: true });
+                      }
+                      await page.waitForTimeout(700);
+                      const richEd = dialog
+                        .locator(
+                          'div:has(> p:has-text("Đánh giá chung")) .ql-editor[contenteditable="true"], div:has(> label:has-text("Đánh giá chung")) .ql-editor[contenteditable="true"], .ql-editor[contenteditable="true"], .ql-editor'
+                        )
+                        .first();
+                      if (await richEd.isVisible().catch(() => false)) {
+                        const edText = await richEd.innerText().catch(() => "");
+                        if (edText) domCandidates.push(edText);
+                      }
+                    }
+                  } else {
+                    const directViewLoc = dialog
+                      .locator('.ql-editor[contenteditable="true"], .comment-content')
+                      .first();
+                    if (await directViewLoc.isVisible().catch(() => false)) {
+                      const directTxt = await directViewLoc.innerText().catch(() => "");
+                      if (directTxt) domCandidates.push(directTxt);
+                    }
+                    if (cell2Text) domCandidates.push(cell2Text);
+                    if (domCandidates.length === 0 && cell1Text) {
+                      domCandidates.push(cell1Text);
+                    }
+                  }
+
+                  await page.keyboard.press("Escape").catch(() => {});
+                  await dialog.waitFor({ state: "hidden", timeout: 4000 }).catch(async () => {
+                    const backdrop = page
+                      .locator('.MuiBackdrop-root, [role="presentation"] > div')
+                      .first();
+                    if (await backdrop.isVisible().catch(() => false)) {
+                      await backdrop
+                        .click({ force: true, position: { x: 20, y: 20 } })
+                        .catch(() => {});
+                    }
+                  });
+                  await page.waitForTimeout(400);
+
+                  const normDomCandidates = domCandidates
+                    .map((c) =>
+                      c
+                        .normalize("NFC")
+                        .replace(/\s+/g, " ")
+                        .trim()
+                        .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
+                        .trim()
+                    )
+                    .filter(Boolean);
+
+                  const domExactMatch =
+                    expectedPlainNorm.length > 0 &&
+                    normDomCandidates.length > 0 &&
+                    normDomCandidates.every(
+                      (actual) => actual === expectedPlainNorm || actual === expectedRawNorm
+                    );
+
+                  if (!domExactMatch) {
+                    continue;
+                  }
+
+                  // Final post-readback CAS check before promoting FAILED -> VERIFIED
+                  const postCheckRec = getLatestFeedbackRecord(rec.studentId);
+                  const postCheckStu = hasStudentRepoCheck
+                    ? studentRepo.findOne(rec.studentId, classId)
+                    : student;
+                  const postCheckRosterOk =
+                    !hasStudentRepoCheck ||
+                    (Boolean(postCheckStu) &&
+                      (!postCheckStu?.classId || postCheckStu.classId === classId) &&
+                      postCheckStu?.isActive === 1);
+                  const postCheckAtt = postCheckRec?.attendanceStatus;
+                  const postCheckAttOk =
+                    postCheckAtt === undefined ||
+                    postCheckAtt === null ||
+                    postCheckAtt === "PRESENT" ||
+                    postCheckAtt === "LATE";
+
+                  if (
+                    !postCheckRec ||
+                    !postCheckRosterOk ||
+                    !postCheckAttOk ||
+                    postCheckRec.status === "DRAFT" ||
+                    postCheckRec.contentHash !== approvedHash ||
+                    (postCheckRec.finalText || "") !== approvedText
+                  ) {
+                    continue;
+                  }
+
+                  const verifiedAt = new Date().toISOString();
+                  sessionFeedbackRepo.updateStatus(
+                    classId,
+                    sessionId,
+                    rec.studentId,
+                    "VERIFIED",
+                    verifiedAt,
+                    null,
+                    approvedHash
+                  );
+
+                  jobLogRepo.add({
+                    jobId,
+                    jobType: "SAVE_COMMENTS",
+                    classId,
+                    sessionId,
+                    studentId: rec.studentId,
+                    level: "SUCCESS",
+                    message: `Đã đối chiếu máy chủ LMS (GetClassById + DOM Read-after-Write) sau khi phản hồi chậm: nhận xét của học viên '${studentName}' đã lưu đầy đủ VERIFIED.`,
+                  });
+
+                  const resIdx = results.findIndex((r) => r.studentId === rec.studentId);
+                  if (resIdx >= 0) {
+                    results[resIdx] = {
+                      studentId: rec.studentId,
+                      fullName: studentName,
+                      success: true,
+                      verified: true,
+                    };
+                  }
+                } catch {
+                  if (typeof LmsHelpers?.ensureCleanDialogAndToast === "function") {
+                    await LmsHelpers.ensureCleanDialogAndToast(page, interceptor).catch(() => {});
+                  }
+                }
+              }
+            }
+          }
+        } catch {
+          // Best-effort post-timeout server reconciliation; preserve original FAILED status if LMS cannot be re-queried
         }
       }
     } catch (err: any) {
