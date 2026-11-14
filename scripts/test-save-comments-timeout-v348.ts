@@ -1,7 +1,8 @@
 /**
- * MINDX AUTOMATION BOT — v3.4.8 REGRESSION & E2E SUITE
+ * MINDX AUTOMATION BOT — v3.4.8 / v3.4.9 REGRESSION & E2E SUITE
  * Verifies the 3-layer fix for false `page.waitForResponse: Timeout ... exceeded` errors
- * during Session Comment submission (live reproduction: `VT-ROB-ARMI13` Session 3 `Nguyễn Chấn Lâm`):
+ * during Session Comment submission (live reproduction: `VT-ROB-ARMI13` Session 3 `Nguyễn Chấn Lâm`)
+ * and v3.4.9 fast sequential save + 1-shot batch `GetClassById` verification:
  *
  * - SCT-01: Active MUI CircularProgress spinner grace window recovers slow (> first timeout) Save mutation
  *           with 0 extra Save clicks and full DOM Read-after-Write -> VERIFIED.
@@ -15,6 +16,9 @@
  * - SCT-07: `ClassSyncer.syncLmsSlotCompletionToSqlite` (`preferLmsVerified: false`, used by `🔄 Đồng bộ buổi học`)
  *           heals exact-matching `FAILED` timeout records to `VERIFIED` (`errorMessage = null`) while preserving
  *           mismatched `FAILED` rows and unsubmitted teacher `DRAFT` edits.
+ * - SCT-08A: Fast sequential 10-student batch (`VT-C4K-PTI12`) -> 10 Save clicks, 10 modal opens (no per-student
+ *            re-open), 1 In-Drawer Refresh `GetClassById`, 10/10 VERIFIED.
+ * - SCT-08B: Batch verification mismatch fail-closed (`STU_MM_03` server comment altered) -> 2 VERIFIED, 1 FAILED.
  */
 
 import assert from "node:assert/strict";
@@ -84,18 +88,18 @@ async function main() {
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    // Override long Playwright response timeouts so tests execute in < 4 seconds while preserving exact semantics:
-    // - 45000ms primary Save wait -> 350ms
-    // - 20000ms active spinner grace wait -> 900ms
+    // Override long Playwright response timeouts so tests execute in < 5 seconds while preserving exact semantics:
+    // - 16000ms primary Save wait -> 350ms
+    // - 5000ms active spinner grace wait -> 900ms
     // - 15000ms fresh GetClassById wait -> 600ms
     const origWaitForResponse = page.waitForResponse.bind(page);
     (page as any).waitForResponse = (predicate: any, options?: any) => {
       const rawTimeout = options?.timeout;
       let mappedTimeout = rawTimeout;
       if (typeof rawTimeout === "number") {
-        if (rawTimeout >= 40000) mappedTimeout = 350;
-        else if (rawTimeout >= 20000) mappedTimeout = 900;
-        else if (rawTimeout >= 15000) mappedTimeout = 600;
+        if (rawTimeout >= 16000) mappedTimeout = 350;
+        else if (rawTimeout >= 14000) mappedTimeout = 600;
+        else if (rawTimeout >= 4500 && rawTimeout <= 5500) mappedTimeout = 900;
       }
       return origWaitForResponse(
         predicate,
@@ -109,7 +113,9 @@ async function main() {
       | "optimistic-only-no-server"
       | "server-partial-mismatch"
       | "concurrent-draft-edit"
-      | "duplicate-name-ambiguous";
+      | "duplicate-name-ambiguous"
+      | "fast-batch-10"
+      | "batch-server-mismatch";
 
     let currentMode: ServerScenarioMode = "spinner-grace-recovers";
     let activeClassCode = "VT-ROB-ARMI13";
@@ -235,6 +241,32 @@ async function main() {
           return;
         }
 
+        if (currentMode === "fast-batch-10") {
+          serverSavedCommentsByStudent[stuId] = html;
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            headers: { "Access-Control-Allow-Origin": "*" },
+            body: JSON.stringify({ data: { updateSlotComment: { ok: true } } }),
+          });
+          return;
+        }
+
+        if (currentMode === "batch-server-mismatch") {
+          if (stuId.includes("MISMATCH") || stuId.endsWith("_03")) {
+            serverSavedCommentsByStudent[stuId] = "<p>NOI DUNG BI CAT BOT TREN SERVER</p>";
+          } else {
+            serverSavedCommentsByStudent[stuId] = html;
+          }
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            headers: { "Access-Control-Allow-Origin": "*" },
+            body: JSON.stringify({ data: { updateSlotComment: { ok: true } } }),
+          });
+          return;
+        }
+
         if (currentMode === "optimistic-only-no-server") {
           await route.abort("timedout");
           return;
@@ -280,6 +312,7 @@ async function main() {
       optimisticDomWithoutServer?: boolean;
       triggerDraftEditAfterTimeoutFor?: string;
       sessionIdForDraftEdit?: string;
+      enableDrawerRefreshBtn?: boolean;
     }) => {
       await page.goto("https://lms.mindx.edu.vn/admin/classes");
       const rowsHtml = opts.students
@@ -336,7 +369,36 @@ async function main() {
       await page.evaluate(
         (cfg) => {
           (window as any).saveClicksByStu = {};
+          (window as any).modalOpensByStu = {};
           (window as any).domCommentsByStu = {};
+
+          const drawerEl = document.getElementById("class-drawer");
+          if (drawerEl && cfg.enableDrawerRefreshBtn && !document.getElementById("drawer-refresh-btn")) {
+            const refreshBtn = document.createElement("button");
+            refreshBtn.type = "button";
+            refreshBtn.id = "drawer-refresh-btn";
+            refreshBtn.setAttribute("aria-label", "refresh");
+            refreshBtn.innerHTML = '<svg data-testid="RefreshIcon"></svg>';
+            refreshBtn.onclick = async () => {
+              const resp = await fetch("https://lms-api.mindx.edu.vn/graphql", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  operationName: "GetClassById",
+                  variables: { id: "66f000000000000000000013" },
+                }),
+              });
+              const payload = await resp.json().catch(() => null);
+              const atts = payload?.data?.classesById?.slots?.[2]?.studentAttendance || [];
+              for (const att of atts) {
+                const stuId = att?.student?.id;
+                if (stuId && att?.comment) {
+                  (window as any).domCommentsByStu[stuId] = att.comment;
+                }
+              }
+            };
+            drawerEl.prepend(refreshBtn);
+          }
 
           [0, 1, 2].forEach((idx) => {
             const el = document.getElementById("class-comments-slot-carousel-" + idx);
@@ -384,6 +446,8 @@ async function main() {
           document.querySelectorAll(".open-comment-btn").forEach((btnEl) => {
             (btnEl as HTMLButtonElement).onclick = () => {
               const stuId = btnEl.getAttribute("data-stu") || "";
+              (window as any).modalOpensByStu[stuId] =
+                ((window as any).modalOpensByStu[stuId] || 0) + 1;
               const modalRoot = document.getElementById("modal-root")!;
               const existingHtml = (window as any).domCommentsByStu[stuId];
               if (existingHtml) {
@@ -874,6 +938,112 @@ async function main() {
     assert.equal(afterC?.finalText, teacherNewDraft);
     console.log("  -> PASS SCT-07.");
 
+    // =========================================================================
+    // SCT-08A: Fast Sequential + 1-Shot Batch Verify (10 học viên = 10 lần mở modal + 1 GetClassById)
+    // =========================================================================
+    console.log("\n[SCT-08A] Kiểm thử lưu nối tiếp 10 học viên & đối chiếu gộp 1 lần cuối lớp (10 lần mở modal, 1 GetClassById)...");
+    currentMode = "fast-batch-10";
+    activeClassCode = "VT-C4K-PTI12";
+    serverSavedCommentsByStudent = {};
+    getClassByIdCallCount = 0;
+    updateSlotCommentCallCount = 0;
+
+    const batch10Students = Array.from({ length: 10 }, (_, idx) => {
+      const num = String(idx + 1).padStart(2, "0");
+      return {
+        id: `STU_VT-C4K-PTI12_${num}`,
+        name: `Học Viên Kiểm Thử ${num}`,
+        text: `- **Điểm mạnh của học viên:** Trong buổi học hôm nay, con Học Viên ${num} hoàn thành tốt bài thực hành số ${num} và nắm chắc cấu trúc lặp.\n- **Điểm cần cải thiện:** Con cần kiểm tra kỹ hơn điều kiện dừng khi viết hàm để tránh sai sót nhỏ.\n- **Lời khuyên:** Thầy khuyến khích con tiếp tục duy trì tinh thần học tập tích cực và hoàn thành đầy đủ bài tập về nhà buổi ${num} nhé.`,
+      };
+    });
+
+    const sct08ASess = seedClassSession(activeClassCode, batch10Students);
+    await mountLmsCommentsDom({
+      classCode: activeClassCode,
+      students: batch10Students.map((s) => ({ studentId: s.id, fullName: s.name })),
+      enableDrawerRefreshBtn: true,
+    });
+
+    const res08A = await CommentSaver.saveComments({
+      classId: activeClassCode,
+      classCode: activeClassCode,
+      sessionId: sct08ASess,
+    });
+
+    const clicks08A = await page.evaluate(() => (window as any).saveClicksByStu);
+    const modalOpens08A = await page.evaluate(() => (window as any).modalOpensByStu);
+    assert.equal(res08A.verifiedCount, 10, "SCT-08A: Cả 10/10 học viên phải đạt VERIFIED");
+    assert.equal(res08A.failedCount, 0, "SCT-08A: Không có học viên thất bại");
+    assert.equal(updateSlotCommentCallCount, 10, "SCT-08A: Phải gọi API Save đúng 10 lần");
+    assert.equal(getClassByIdCallCount, 1, "SCT-08A: Chỉ gọi GetClassById đối chiếu gộp đúng 1 lần cuối lớp");
+    for (const st of batch10Students) {
+      assert.equal(clicks08A[st.id], 1, `SCT-08A: ${st.id} chỉ bấm Save 1 lần`);
+      assert.equal(modalOpens08A[st.id], 1, `SCT-08A: ${st.id} chỉ mở modal đúng 1 lần (không mở lại lần 2)`);
+      const rowDb = sessionFeedbackRepo.findOne(activeClassCode, sct08ASess, st.id);
+      assert.equal(rowDb?.status, "VERIFIED", `SCT-08A: ${st.id} trong SQLite phải là VERIFIED`);
+      assert.equal(rowDb?.errorMessage ?? null, null);
+    }
+    console.log("  -> PASS SCT-08A.");
+
+    // =========================================================================
+    // SCT-08B: Batch Verification Mismatch Fail-Closed (2 VERIFIED, 1 FAILED khi server lưu sai)
+    // =========================================================================
+    console.log("\n[SCT-08B] Kiểm thử Fail-Closed khi đối chiếu gộp 1 lần phát hiện 1 học viên lệch nội dung trên LMS...");
+    currentMode = "batch-server-mismatch";
+    activeClassCode = "VT-C4K-PTI12_MM";
+    serverSavedCommentsByStudent = {};
+    getClassByIdCallCount = 0;
+    updateSlotCommentCallCount = 0;
+
+    const batchMismatchStudents = [
+      {
+        id: "STU_MM_01",
+        name: "Nguyễn Minh Anh",
+        text: "- **Điểm mạnh của học viên:** Con nắm bài rất nhanh và chủ động xây dựng hàm xử lý.\n- **Điểm cần cải thiện:** Chú ý đặt tên biến rõ ràng hơn.\n- **Lời khuyên:** Tiếp tục phát huy ba mẹ nhé.",
+      },
+      {
+        id: "STU_MM_02",
+        name: "Trần Gia Bảo",
+        text: "- **Điểm mạnh của học viên:** Con hoàn thành đủ bài thực hành và tích cực giơ tay phát biểu.\n- **Điểm cần cải thiện:** Cần rèn thêm tốc độ gõ phím khi code.\n- **Lời khuyên:** Thầy tin con sẽ tiến bộ nhanh ở buổi sau.",
+      },
+      {
+        id: "STU_MM_03",
+        name: "Lê Hoàng Nam",
+        text: "- **Điểm mạnh của học viên:** Con hiểu được ý tưởng thuật toán cơ bản của buổi học.\n- **Điểm cần cải thiện:** Con cần hoàn thiện nốt phần xử lý điều kiện biên.\n- **Lời khuyên:** Con cố gắng làm thêm bài tập thực hành ở nhà nhé.",
+      },
+    ];
+
+    const sct08BSess = seedClassSession(activeClassCode, batchMismatchStudents);
+    await mountLmsCommentsDom({
+      classCode: activeClassCode,
+      students: batchMismatchStudents.map((s) => ({ studentId: s.id, fullName: s.name })),
+      enableDrawerRefreshBtn: true,
+    });
+
+    const res08B = await CommentSaver.saveComments({
+      classId: activeClassCode,
+      classCode: activeClassCode,
+      sessionId: sct08BSess,
+    });
+
+    assert.equal(getClassByIdCallCount, 1, "SCT-08B: Gọi GetClassById đối chiếu gộp đúng 1 lần");
+    assert.equal(res08B.verifiedCount, 2, "SCT-08B: 2 học viên khớp phải đạt VERIFIED");
+    assert.equal(res08B.failedCount, 1, "SCT-08B: 1 học viên lệch nội dung trên server phải fail-closed");
+    assert.equal(
+      sessionFeedbackRepo.findOne(activeClassCode, sct08BSess, "STU_MM_01")?.status,
+      "VERIFIED"
+    );
+    assert.equal(
+      sessionFeedbackRepo.findOne(activeClassCode, sct08BSess, "STU_MM_02")?.status,
+      "VERIFIED"
+    );
+    assert.equal(
+      sessionFeedbackRepo.findOne(activeClassCode, sct08BSess, "STU_MM_03")?.status,
+      "FAILED",
+      "SCT-08B: Học viên lệch nội dung trên LMS bắt buộc giữ trạng thái FAILED"
+    );
+    console.log("  -> PASS SCT-08B.");
+
     await context.close();
   } finally {
     bm.getPage = origGetPage;
@@ -899,10 +1069,10 @@ async function main() {
     "Bảo toàn SHA-256 tuyệt đối cho data/running_classes.json"
   );
 
-  console.log("\n✅ HOÀN TẤT 7/7 KỊCH BẢN KIỂM THỬ v3.4.8 (SCT-01 -> SCT-07) & BẢO TOÀN 100% SHA-256 DỮ LIỆU THẬT!");
+  console.log("\n✅ HOÀN TẤT 9/9 KỊCH BẢN KIỂM THỬ v3.4.8 + v3.4.9 (SCT-01 -> SCT-08B) & BẢO TOÀN 100% SHA-256 DỮ LIỆU THẬT!");
 }
 
 main().catch((err) => {
-  console.error("❌ LỖI KIỂM THỬ v3.4.8:", err);
+  console.error("❌ LỖI KIỂM THỬ v3.4.8/v3.4.9:", err);
   process.exit(1);
 });

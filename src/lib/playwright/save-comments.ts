@@ -161,7 +161,7 @@ export class CommentSaver {
 
       // 4. Navigate to Comments tab in drawer
       await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.comments);
-      await page.waitForTimeout(1200);
+      await page.waitForTimeout(700);
       await interceptor.dismissForbiddenToast();
 
       const drawer = page
@@ -228,7 +228,7 @@ export class CommentSaver {
       // Wait for student table to be loaded
       const studentTable = drawer.locator('.comment-list-table table, table').first();
       await studentTable.waitFor({ state: "visible", timeout: 10000 }).catch(() => {});
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(250);
 
       // 5.5. Automatically fill Slot Summary (Title + Key Knowledge) and Slot Homework (Homework Brief)
       try {
@@ -465,10 +465,198 @@ export class CommentSaver {
 
       const preSaveRetryEligibleIds = new Set<string>();
       const postSaveTimeoutReconcileIds = new Set<string>();
+      const pendingBatchVerifyIds = new Set<string>();
+      let lastProcessedWasTimeout = false;
+      let detectedAnyCheckpointSession = false;
 
       const isWaitForResponseTimeoutError = (msg?: string): boolean => {
         if (!msg) return false;
         return /waitForResponse:\s*Timeout\b/i.test(msg);
+      };
+
+      const normalizeDomCandidateText = (rawStr: string): string =>
+        String(rawStr || "")
+          .normalize("NFC")
+          .replace(/\s+/g, " ")
+          .trim()
+          .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
+          .trim();
+
+      const normalizeExpectedComment = (approvedTextVal: string) => {
+        const commentText = approvedTextVal.replace(
+          /^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i,
+          ""
+        );
+        const expectedRawNorm = commentText.normalize("NFC").replace(/\s+/g, " ").trim();
+        const expectedPlainNorm = commentText
+          .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+          .normalize("NFC")
+          .replace(/\s+/g, " ")
+          .trim();
+        return { commentText, expectedRawNorm, expectedPlainNorm };
+      };
+
+      const hasStudentRepoCheck = typeof studentRepo.findOne === "function";
+
+      const checkEligibilityAndCas = (params: {
+        targetStudentId: string;
+        targetStudentName: string;
+        approvedTextVal: string;
+        approvedHashVal: string;
+        fallbackStudent?: any;
+        requireNonDraft: boolean;
+      }):
+        | { ok: true; latestRec?: SessionFeedbackRecord }
+        | { ok: false; reason: string; demoteToDraft: boolean; latestRec?: SessionFeedbackRecord } => {
+        const latestRec = getLatestFeedbackRecord(params.targetStudentId);
+        const latestStu = hasStudentRepoCheck
+          ? studentRepo.findOne(params.targetStudentId, classId)
+          : params.fallbackStudent;
+        const rosterOk =
+          !hasStudentRepoCheck ||
+          (Boolean(latestStu) &&
+            (!latestStu?.classId || latestStu.classId === classId) &&
+            latestStu?.isActive === 1);
+        const att = latestRec?.attendanceStatus;
+        const attOk =
+          att === undefined || att === null || att === "PRESENT" || att === "LATE";
+
+        if (!rosterOk || !attOk) {
+          return {
+            ok: false,
+            demoteToDraft: Boolean(latestRec && latestRec.status !== "DRAFT"),
+            latestRec,
+            reason:
+              "Học viên đã ngừng hoạt động hoặc chuyển sang vắng mặt trong lúc đang lưu.",
+          };
+        }
+
+        if (
+          latestRec &&
+          (latestRec.contentHash !== params.approvedHashVal ||
+            (latestRec.finalText || "") !== params.approvedTextVal ||
+            (params.requireNonDraft && latestRec.status === "DRAFT") ||
+            !verifyContentIntegrity(params.approvedTextVal, params.approvedHashVal))
+        ) {
+          return {
+            ok: false,
+            demoteToDraft: false,
+            latestRec,
+            reason:
+              "Nhận xét đã bị giáo viên chỉnh sửa thành bản nháp mới trong lúc đang lưu. Giữ nguyên trạng thái DRAFT.",
+          };
+        }
+
+        return { ok: true, latestRec };
+      };
+
+      const closeModalSafely = async (modalLoc: any, settleWaitMs = 250) => {
+        if (typeof page.keyboard?.press === "function") {
+          await page.keyboard.press("Escape").catch(() => {});
+        }
+        await modalLoc.waitFor({ state: "hidden", timeout: 4000 }).catch(async () => {
+          const backdrop = page.locator('.MuiBackdrop-root, [role="presentation"] > div').first();
+          if (await backdrop.isVisible().catch(() => false)) {
+            await backdrop.click({ force: true, position: { x: 20, y: 20 } }).catch(() => {});
+          }
+        });
+        if (settleWaitMs > 0) {
+          await page.waitForTimeout(settleWaitMs);
+        }
+      };
+
+      const resolveRichEditorInDialog = async (dialogLoc: any, isCheckpointHint: boolean) => {
+        const allRichEditors = dialogLoc.locator(
+          '.ql-editor[contenteditable="true"], .ql-editor, .ck-content, [contenteditable="true"]'
+        );
+        let target = allRichEditors.first();
+        if (isCheckpointHint && typeof (allRichEditors as any).count === "function") {
+          const qlCount = await (allRichEditors as any).count().catch(() => 1);
+          if (qlCount > 1) {
+            const generalEditor = dialogLoc
+              .locator(
+                'div:has(> p:has-text("Đánh giá chung")) .ql-editor[contenteditable="true"], div:has(> label:has-text("Đánh giá chung")) .ql-editor[contenteditable="true"]'
+              )
+              .first();
+            if (await generalEditor.isVisible().catch(() => false)) {
+              target = generalEditor;
+            } else if (typeof (allRichEditors as any).last === "function") {
+              target = (allRichEditors as any).last();
+            }
+          }
+        }
+        return target;
+      };
+
+      const readDialogCommentCandidates = async (dialogLoc: any, isCheckpointHint: boolean) => {
+        const candidates: string[] = [];
+        let detectedCheckpoint = isCheckpointHint;
+        let editorLoc = detectedCheckpoint
+          ? await resolveRichEditorInDialog(dialogLoc, true)
+          : dialogLoc.locator('.ql-editor[contenteditable="true"], .comment-content').first();
+        let isVerifyEditorVisible = await editorLoc.isVisible().catch(() => false);
+        if (isVerifyEditorVisible) {
+          const editorReadback = await editorLoc.innerText().catch(() => "");
+          if (editorReadback) candidates.push(editorReadback);
+        }
+
+        const cell2Loc = dialogLoc.locator("table tbody tr td:nth-child(2)").first();
+        const cell2Visible = await cell2Loc.isVisible().catch(() => false);
+        const cell2Readback = cell2Visible ? await cell2Loc.innerText().catch(() => "") : "";
+
+        const cell1Loc = dialogLoc.locator("table tbody tr td").first();
+        const cell1Visible = await cell1Loc.isVisible().catch(() => false);
+        const rawCell1 = cell1Visible ? await cell1Loc.innerText().catch(() => "") : "";
+
+        const isCheckpointSummaryTable =
+          detectedCheckpoint ||
+          /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[ĐNL\]/i.test(
+            `${cell2Readback} ${rawCell1}`
+          );
+
+        if (isCheckpointSummaryTable) {
+          detectedCheckpoint = true;
+          if (!isVerifyEditorVisible) {
+            const verifySavedRow = dialogLoc.locator("table tbody tr").first();
+            if (await verifySavedRow.isVisible().catch(() => false)) {
+              await verifySavedRow.hover().catch(() => {});
+              await page.waitForTimeout(200);
+              const verifyEditBtn = dialogLoc
+                .locator(
+                  'button:has([data-testid="EditIcon"]), [aria-label="Edit"] button, button:has-text("Edit")'
+                )
+                .first();
+              if (await verifyEditBtn.isVisible().catch(() => false)) {
+                await verifyEditBtn.click({ force: true });
+              } else {
+                await verifySavedRow.click({ force: true });
+              }
+              await page.waitForTimeout(700);
+              editorLoc = await resolveRichEditorInDialog(dialogLoc, true);
+              isVerifyEditorVisible = await editorLoc.isVisible().catch(() => false);
+              if (isVerifyEditorVisible) {
+                const expandedEditorReadback = await editorLoc.innerText().catch(() => "");
+                if (expandedEditorReadback) candidates.push(expandedEditorReadback);
+              }
+            }
+          }
+        } else {
+          if (cell2Readback) {
+            candidates.push(cell2Readback);
+          }
+          if (candidates.length === 0 && rawCell1) {
+            const strippedCell1 = rawCell1
+              .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
+              .trim();
+            if (strippedCell1) candidates.push(strippedCell1);
+          }
+        }
+
+        const normalizedCandidates = candidates
+          .map((c) => normalizeDomCandidateText(c))
+          .filter(Boolean);
+
+        return { normalizedCandidates, detectedCheckpoint };
       };
 
       const decodeHtmlEntitiesAndNormalizeComment = (rawStr: string): string =>
@@ -755,7 +943,9 @@ export class CommentSaver {
             : fallbackMatchedRow || filteredRows.first();
 
           await studentRow.scrollIntoViewIfNeeded().catch(() => {});
-          await page.waitForTimeout(300);
+          const prevTimedOut = lastProcessedWasTimeout;
+          lastProcessedWasTimeout = false;
+          await page.waitForTimeout(prevTimedOut ? 400 : 120);
 
           const openCommentBtn = studentRow
             .locator('button:has-text("Nhận xét học sinh"), button:has-text("Nhận xét")')
@@ -768,10 +958,10 @@ export class CommentSaver {
             try {
               if (openAttempt > 1) {
                 await interceptor.dismissForbiddenToast();
-                await page.waitForTimeout(500);
+                await page.waitForTimeout(300);
               }
               await openCommentBtn.scrollIntoViewIfNeeded().catch(() => {});
-              await page.waitForTimeout(200);
+              await page.waitForTimeout(100);
               await openCommentBtn.waitFor({ state: "visible", timeout: 8000 });
               await openCommentBtn.click({ force: true });
               await dialog.waitFor({ state: "visible", timeout: 5000 });
@@ -800,7 +990,7 @@ export class CommentSaver {
           if (openDialogErr) {
             throw openDialogErr;
           }
-          await page.waitForTimeout(600);
+          await page.waitForTimeout(250);
 
           const commentText = approvedText.replace(
             /^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i,
@@ -968,14 +1158,7 @@ export class CommentSaver {
           }
 
           if (alreadySavedAndVerifiedInViewMode) {
-            await page.keyboard.press("Escape");
-            await dialog.waitFor({ state: "hidden", timeout: 4000 }).catch(async () => {
-              const backdrop = page.locator('.MuiBackdrop-root, [role="presentation"] > div').first();
-              if (await backdrop.isVisible().catch(() => false)) {
-                await backdrop.click({ force: true, position: { x: 20, y: 20 } }).catch(() => {});
-              }
-            });
-            await page.waitForTimeout(600);
+            await closeModalSafely(dialog, 250);
           } else {
           try {
             await editor.waitFor({ state: "visible", timeout: 8000 });
@@ -1023,7 +1206,7 @@ export class CommentSaver {
             await page.keyboard.press("Backspace").catch(() => {});
           }
 
-          await page.waitForTimeout(600);
+          await page.waitForTimeout(250);
 
           // Find save button
           const saveBtn = dialog.locator('button:has-text("Save"), button:has-text("Lưu")').first();
@@ -1302,11 +1485,11 @@ export class CommentSaver {
           const saveMutationOpRegex = /^(UpdateSlotComment|CreateSlotComment|SaveSlotComment|CommentMakeup)$/i;
           let apiResponse: any = null;
           try {
-            // Wait strictly for the business API mutation response upon clicking save (45s to absorb MindX LMS peak GraphQL latency)
+            // Wait strictly for the business API mutation response upon clicking save (16s primary + 5s spinner grace; timeout triggers end-of-batch GetClassById reconciliation with 0 duplicate Save clicks)
             [apiResponse] = await Promise.all([
               interceptor.waitForApiResponse(/lms-api\.mindx\.edu\.vn/i, {
                 method: "POST",
-                timeoutMs: 45000,
+                timeoutMs: 16000,
                 operationName: saveMutationOpRegex,
                 requestPredicate: saveMutationPredicate,
               }),
@@ -1348,14 +1531,14 @@ export class CommentSaver {
                   sessionId,
                   studentId: record.studentId,
                   level: "INFO",
-                  message: `Máy chủ LMS đang xử lý lưu nhận xét của '${studentName}' chậm hơn bình thường (biểu tượng xoay vẫn đang chạy), chờ thêm tối đa 20 giây...`,
+                  message: `Máy chủ LMS đang xử lý lưu nhận xét của '${studentName}' chậm hơn bình thường (biểu tượng xoay vẫn đang chạy), chờ thêm tối đa 5 giây...`,
                 });
                 try {
                   apiResponse = await interceptor.waitForApiResponse(
                     /lms-api\.mindx\.edu\.vn/i,
                     {
                       method: "POST",
-                      timeoutMs: 20000,
+                      timeoutMs: 5000,
                       operationName: saveMutationOpRegex,
                       requestPredicate: saveMutationPredicate,
                     }
@@ -1395,14 +1578,74 @@ export class CommentSaver {
             );
           }
 
-          await page.waitForTimeout(1000);
+          if (isCheckpointModal) {
+            detectedAnyCheckpointSession = true;
+          }
+          const useDeferredBatchVerify = validRecords.length >= 2 && !isCheckpointModal;
 
-          // 7. READ-AFTER-WRITE VERIFICATION (Iron Rule 3)
+          if (useDeferredBatchVerify) {
+            if (!apiSuccess) {
+              throw new Error(
+                `Không thể xác minh nội dung sau khi lưu (Read-after-Write check failed: apiSuccess=${apiSuccess}, deferredBatch=true).`
+              );
+            }
+
+            await dialog.waitFor({ state: "hidden", timeout: 3000 }).catch(async () => {
+              await closeModalSafely(dialog, 0);
+            });
+            await interceptor.dismissForbiddenToast();
+            await page.waitForTimeout(300);
+
+            const preDeferCas = checkEligibilityAndCas({
+              targetStudentId: record.studentId,
+              targetStudentName: studentName,
+              approvedTextVal: approvedText,
+              approvedHashVal: approvedHash,
+              fallbackStudent: student,
+              requireNonDraft: true,
+            });
+            if (!preDeferCas.ok) {
+              if (preDeferCas.demoteToDraft && preDeferCas.latestRec && preDeferCas.latestRec.status !== "DRAFT") {
+                sessionFeedbackRepo.updateStatus(
+                  classId,
+                  sessionId,
+                  record.studentId,
+                  "DRAFT",
+                  null,
+                  preDeferCas.reason,
+                  approvedHash
+                );
+              }
+              throw new Error(`IN_FLIGHT_DRIFT: ${preDeferCas.reason}`);
+            }
+
+            pendingBatchVerifyIds.add(record.studentId);
+            jobLogRepo.add({
+              jobId,
+              jobType: "SAVE_COMMENTS",
+              classId,
+              sessionId,
+              studentId: record.studentId,
+              level: "INFO",
+              message: `Đã bấm Lưu nhận xét của '${studentName}' (LMS phản hồi thành công). Chờ đối chiếu gộp cuối lớp.`,
+            });
+
+            return {
+              studentId: record.studentId,
+              fullName: studentName,
+              success: true,
+              verified: false,
+            };
+          }
+
+          await page.waitForTimeout(300);
+
+          // 7. READ-AFTER-WRITE VERIFICATION (Iron Rule 3) — inline mode for single student or Checkpoint
           // Re-open the comment modal, read back the rendered comment from the LMS DOM,
           // and strictly verify the ENTIRE normalized content equals approvedText (exact equality, never substring/includes or partial line split).
           await dialog.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
           await interceptor.dismissForbiddenToast();
-          await page.waitForTimeout(500);
+          await page.waitForTimeout(250);
 
           const resolveVerifyOpenBtn = async () => {
             if (fallbackMatchedRow !== null) {
@@ -1434,11 +1677,11 @@ export class CommentSaver {
             try {
               if (verifyAttempt > 1) {
                 await interceptor.dismissForbiddenToast();
-                await page.waitForTimeout(600);
+                await page.waitForTimeout(350);
               }
               const verifyOpenBtn = await resolveVerifyOpenBtn();
               await verifyOpenBtn.scrollIntoViewIfNeeded().catch(() => {});
-              await page.waitForTimeout(250);
+              await page.waitForTimeout(150);
               await verifyOpenBtn.click({ force: true });
               await dialog.waitFor({ state: "visible", timeout: 5000 });
               verifyDialogErr = null;
@@ -1467,83 +1710,11 @@ export class CommentSaver {
           if (verifyDialogErr) {
             throw verifyDialogErr;
           }
-          await page.waitForTimeout(600);
+          await page.waitForTimeout(250);
 
-          const candidates: string[] = [];
-          let editorLoc = isCheckpointModal
-            ? await resolveRichEditor()
-            : dialog.locator('.ql-editor[contenteditable="true"], .comment-content').first();
-          let isVerifyEditorVisible = await editorLoc.isVisible().catch(() => false);
-          if (isVerifyEditorVisible) {
-            const editorReadback = await editorLoc.innerText().catch(() => "");
-            if (editorReadback) candidates.push(editorReadback);
-          }
-
-          const cell2Loc = dialog.locator("table tbody tr td:nth-child(2)").first();
-          const cell2Visible = await cell2Loc.isVisible().catch(() => false);
-          const cell2Readback = cell2Visible ? await cell2Loc.innerText().catch(() => "") : "";
-
-          const cell1Loc = dialog.locator("table tbody tr td").first();
-          const cell1Visible = await cell1Loc.isVisible().catch(() => false);
-          const rawCell1 = cell1Visible ? await cell1Loc.innerText().catch(() => "") : "";
-
-          const isCheckpointSummaryTable =
-            isCheckpointModal ||
-            /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[ĐNL\]/i.test(
-              `${cell2Readback} ${rawCell1}`
-            );
-
-          if (isCheckpointSummaryTable) {
-            isCheckpointModal = true;
-            // On Checkpoint sessions, View Mode only shows Competency/Theory/Practice scores ("Điểm lý thuyết... Điểm năng lực...").
-            // Expand into Edit Mode so we can read back and verify the ".ql-editor" ("Đánh giá chung *") content directly.
-            if (!isVerifyEditorVisible) {
-              const verifySavedRow = dialog.locator("table tbody tr").first();
-              if (await verifySavedRow.isVisible().catch(() => false)) {
-                await verifySavedRow.hover().catch(() => {});
-                await page.waitForTimeout(250);
-                const verifyEditBtn = dialog
-                  .locator(
-                    'button:has([data-testid="EditIcon"]), [aria-label="Edit"] button, button:has-text("Edit")'
-                  )
-                  .first();
-                if (await verifyEditBtn.isVisible().catch(() => false)) {
-                  await verifyEditBtn.click({ force: true });
-                } else {
-                  await verifySavedRow.click({ force: true });
-                }
-                await page.waitForTimeout(800);
-                editorLoc = await resolveRichEditor();
-                isVerifyEditorVisible = await editorLoc.isVisible().catch(() => false);
-                if (isVerifyEditorVisible) {
-                  const expandedEditorReadback = await editorLoc.innerText().catch(() => "");
-                  if (expandedEditorReadback) candidates.push(expandedEditorReadback);
-                }
-              }
-            }
-          } else {
-            if (cell2Readback) {
-              candidates.push(cell2Readback);
-            }
-            // Real MindX LMS view-mode modal renders a single-column table (`table tbody tr td`) prefixed with "- Đánh giá chung: "
-            if (candidates.length === 0 && rawCell1) {
-              const strippedCell1 = rawCell1
-                .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
-                .trim();
-              if (strippedCell1) candidates.push(strippedCell1);
-            }
-          }
-
-          const normalizedCandidates = candidates
-            .map((c) =>
-              c
-                .normalize("NFC")
-                .replace(/\s+/g, " ")
-                .trim()
-                .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
-                .trim()
-            )
-            .filter(Boolean);
+          const domReadRes = await readDialogCommentCandidates(dialog, isCheckpointModal);
+          isCheckpointModal = domReadRes.detectedCheckpoint;
+          const normalizedCandidates = domReadRes.normalizedCandidates;
 
           const isMatch =
             normalizedExpectedPlain.length > 0 &&
@@ -1553,15 +1724,7 @@ export class CommentSaver {
                 actual === normalizedExpectedPlain || actual === normalizedExpectedRaw
             );
 
-          // Close modal by pressing Escape
-          await page.keyboard.press("Escape");
-          await dialog.waitFor({ state: "hidden", timeout: 4000 }).catch(async () => {
-            const backdrop = page.locator('.MuiBackdrop-root, [role="presentation"] > div').first();
-            if (await backdrop.isVisible().catch(() => false)) {
-              await backdrop.click({ force: true, position: { x: 20, y: 20 } }).catch(() => {});
-            }
-          });
-          await page.waitForTimeout(600);
+          await closeModalSafely(dialog, 250);
 
           // BOTH business API response AND full DOM readback must succeed
           if (!apiSuccess || !isMatch) {
@@ -1572,48 +1735,27 @@ export class CommentSaver {
           }
 
           // Re-verify in-flight CAS hash lock and roster/attendance eligibility before marking VERIFIED
-          const postSaveRecord = getLatestFeedbackRecord(record.studentId);
-          const postSaveStudent = hasStudentRepoCheck
-            ? studentRepo.findOne(record.studentId, classId)
-            : student;
-          const postRosterEligible =
-            !hasStudentRepoCheck ||
-            (Boolean(postSaveStudent) &&
-              (!postSaveStudent?.classId || postSaveStudent.classId === classId) &&
-              postSaveStudent?.isActive === 1);
-          const postAttendance = postSaveRecord?.attendanceStatus;
-          const postAttendanceEligible =
-            postAttendance === undefined ||
-            postAttendance === null ||
-            postAttendance === "PRESENT" ||
-            postAttendance === "LATE";
-
-          if (!postRosterEligible || !postAttendanceEligible) {
-            if (postSaveRecord && postSaveRecord.status !== "DRAFT") {
+          const postCas = checkEligibilityAndCas({
+            targetStudentId: record.studentId,
+            targetStudentName: studentName,
+            approvedTextVal: approvedText,
+            approvedHashVal: approvedHash,
+            fallbackStudent: student,
+            requireNonDraft: true,
+          });
+          if (!postCas.ok) {
+            if (postCas.demoteToDraft && postCas.latestRec && postCas.latestRec.status !== "DRAFT") {
               sessionFeedbackRepo.updateStatus(
                 classId,
                 sessionId,
                 record.studentId,
                 "DRAFT",
                 null,
-                "Học viên đã ngừng hoạt động hoặc chuyển sang vắng mặt trong lúc đang lưu.",
+                postCas.reason,
                 approvedHash
               );
             }
-            throw new Error(
-              "IN_FLIGHT_DRIFT: Học viên đã ngừng hoạt động hoặc chuyển sang vắng mặt trong lúc đang lưu. Hạ trạng thái về DRAFT."
-            );
-          }
-
-          if (
-            postSaveRecord &&
-            (postSaveRecord.contentHash !== approvedHash ||
-              (postSaveRecord.finalText || "") !== approvedText ||
-              postSaveRecord.status === "DRAFT")
-          ) {
-            throw new Error(
-              "IN_FLIGHT_DRIFT: Nhận xét đã bị giáo viên chỉnh sửa thành bản nháp mới trong lúc đang lưu. Giữ nguyên trạng thái DRAFT."
-            );
+            throw new Error(`IN_FLIGHT_DRIFT: ${postCas.reason}`);
           }
 
           // Mark as VERIFIED in SQLite locked by approvedHash
@@ -1645,6 +1787,9 @@ export class CommentSaver {
             verified: true,
           };
         } catch (itemErr: any) {
+          if (saveMutationDispatched) {
+            await page.waitForTimeout(350);
+          }
           await page.screenshot({ path: "data/debug_save_comment_error.png" }).catch(() => {});
           // Only press Escape if a comment modal dialog is actually open (pressing Escape when no modal is open closes the MUI Class Drawer!)
           if (typeof LmsHelpers?.ensureCleanDialogAndToast === "function") {
@@ -1704,6 +1849,9 @@ export class CommentSaver {
             isWaitForResponseTimeoutError(rawErrMsg)
           ) {
             postSaveTimeoutReconcileIds.add(record.studentId);
+            lastProcessedWasTimeout = true;
+          } else {
+            lastProcessedWasTimeout = false;
           }
 
           return {
@@ -1760,10 +1908,18 @@ export class CommentSaver {
         }
       }
 
-      // Pass 2B (Post-Timeout Server Reconciliation — 0 extra Save clicks):
-      // When Save was already clicked and waitForResponse timed out during an LMS peak spike, the mutation often lands on LMS
-      // a few seconds later. Re-open the Class Drawer to fetch a fresh GetClassById HTTP 200 payload from lms-api.mindx.edu.vn
-      // AND perform full View-Mode DOM Read-after-Write verification (never clicking Save again and never trusting optimistic DOM cache).
+      // Unified End-of-Batch 1-Shot Verification + Post-Timeout Server Reconciliation (0 extra Save clicks):
+      // 1) Multi-student fast-sequential batches verify all pending students with ONE GetClassById call
+      //    (trying In-Drawer Refresh first, then Drawer close/re-open if needed) instead of re-opening N modals.
+      // 2) Lazy View-Mode DOM Read-after-Write is invoked ONLY for fallback cases:
+      //    - GetClassById unavailable/invalid, replica-lag empty server comment, or ambiguous duplicate-name match
+      //    - Post-timeout reconciliation candidates (which always require BOTH GetClassById + View-Mode DOM Read-after-Write).
+      const batchVerifyCandidates = validRecords.filter((rec) => {
+        const resItem = results.find((r) => r.studentId === rec.studentId);
+        return Boolean(
+          resItem && resItem.success && !resItem.verified && pendingBatchVerifyIds.has(rec.studentId)
+        );
+      });
       const postTimeoutCandidates = validRecords.filter((rec) => {
         const resItem = results.find((r) => r.studentId === rec.studentId);
         return Boolean(
@@ -1771,437 +1927,723 @@ export class CommentSaver {
         );
       });
 
-      if (
-        postTimeoutCandidates.length > 0 &&
-        typeof LmsHelpers?.openClassDrawer === "function" &&
-        typeof interceptor?.waitForApiResponse === "function"
-      ) {
+      if (batchVerifyCandidates.length > 0 || postTimeoutCandidates.length > 0) {
         try {
           if (typeof LmsHelpers?.ensureCleanDialogAndToast === "function") {
             await LmsHelpers.ensureCleanDialogAndToast(page, interceptor).catch(() => {});
           }
 
-          const freshGetClassPromise = interceptor
-            .waitForApiResponse(/lms-api\.mindx\.edu\.vn/i, {
-              method: "POST",
-              timeoutMs: 15000,
-              operationName: /^GetClassById$/i,
-            })
-            .catch(() => null);
+          const parseValidClassPayload = async (freshClassResponse: any) => {
+            const freshStatus =
+              freshClassResponse && typeof freshClassResponse.status === "function"
+                ? freshClassResponse.status()
+                : 0;
+            const freshJson =
+              (freshStatus === 200 || freshStatus === 201) &&
+              freshClassResponse &&
+              typeof (freshClassResponse as any).json === "function"
+                ? await (freshClassResponse as any).json().catch(() => null)
+                : null;
+            const hasNoGqlErrors =
+              Boolean(freshJson) &&
+              (!Array.isArray(freshJson.errors) || freshJson.errors.length === 0);
+            const clsPayload = hasNoGqlErrors
+              ? freshJson?.data?.classesById ||
+                freshJson?.data?.class ||
+                freshJson?.data?.getClassById
+              : null;
+            const payloadClassCode = String(
+              clsPayload?.name || clsPayload?.code || clsPayload?.classCode || ""
+            )
+              .trim()
+              .toUpperCase();
+            const isValid =
+              Boolean(clsPayload && typeof clsPayload === "object") &&
+              (!payloadClassCode || payloadClassCode === classCode || payloadClassCode === classId);
+            return isValid ? clsPayload : null;
+          };
 
-          // Close the open Class Drawer so openClassDrawer triggers a fresh GetClassById network call
-          const existingDrawer = page
+          const waitForDispatchedGetClassResponse = async (
+            triggerFn: () => Promise<void>,
+            dispatchWaitMs = 600,
+            responseTimeoutMs = 15000
+          ): Promise<any | null> => {
+            if (typeof interceptor?.waitForApiResponse !== "function") {
+              await triggerFn();
+              return null;
+            }
+            const dispatchedReqs = new Set<any>();
+            const onReq = (req: any) => {
+              try {
+                const url = typeof req?.url === "function" ? String(req.url()) : "";
+                const method = typeof req?.method === "function" ? String(req.method()) : "";
+                if (!/lms-api\.mindx\.edu\.vn/i.test(url) || method.toUpperCase() !== "POST") return;
+                const postData = typeof req?.postData === "function" ? req.postData() : "";
+                if (
+                  typeof postData === "string" &&
+                  /operationName["']?\s*:\s*["']GetClassById["']/i.test(postData)
+                ) {
+                  dispatchedReqs.add(req);
+                }
+              } catch {
+                // ignore malformed request in listener
+              }
+            };
+            const canListenReq = typeof (page as any).on === "function";
+            if (canListenReq) {
+              (page as any).on("request", onReq);
+            }
+            const respPromise = interceptor
+              .waitForApiResponse(/lms-api\.mindx\.edu\.vn/i, {
+                method: "POST",
+                timeoutMs: responseTimeoutMs,
+                operationName: /^GetClassById$/i,
+              })
+              .catch(() => null);
+            try {
+              await triggerFn();
+              if (canListenReq) {
+                const startWait = Date.now();
+                while (dispatchedReqs.size === 0 && Date.now() - startWait < dispatchWaitMs) {
+                  const raceRes = await Promise.race([
+                    respPromise.then((r) => ({ tag: "resp" as const, r })),
+                    page.waitForTimeout(80).then(() => ({ tag: "tick" as const })),
+                  ]);
+                  if (raceRes.tag === "resp") {
+                    return raceRes.r;
+                  }
+                }
+                if (dispatchedReqs.size === 0) {
+                  return null;
+                }
+              }
+              return await respPromise;
+            } finally {
+              if (canListenReq && typeof (page as any).off === "function") {
+                (page as any).off("request", onReq);
+              }
+            }
+          };
+
+          let clsPayload: any = null;
+          let didReopenDrawer = false;
+
+          // Attempt 1: In-Drawer Refresh button (fastest, 0 Drawer teardown)
+          const currentDrawer = page
             .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
             .first();
-          if (await existingDrawer.isVisible().catch(() => false)) {
-            const backBtn = existingDrawer.locator('button:has-text("Back")').first();
-            if (await backBtn.isVisible().catch(() => false)) {
-              await backBtn.click({ force: true }).catch(() => {});
-            } else if (typeof page.keyboard?.press === "function") {
-              await page.keyboard.press("Escape").catch(() => {});
-            }
-            await page.waitForTimeout(400);
-            if (await existingDrawer.isVisible().catch(() => false)) {
-              const backdrop = page.locator(".MuiBackdrop-root").first();
-              if (await backdrop.isVisible().catch(() => false)) {
-                await backdrop.click({ position: { x: 10, y: 10 }, force: true }).catch(() => {});
-                await page.waitForTimeout(450);
-              }
+          if (await currentDrawer.isVisible().catch(() => false)) {
+            const refreshBtn = currentDrawer
+              .locator(
+                'button:has([data-testid="RefreshIcon"]), button[aria-label*="refresh" i], button[aria-label*="làm mới" i], button[title*="Làm mới" i]'
+              )
+              .first();
+            if (await refreshBtn.isVisible().catch(() => false)) {
+              const refreshResp = await waitForDispatchedGetClassResponse(
+                async () => {
+                  await refreshBtn.click({ force: true }).catch(() => {});
+                  await page.waitForTimeout(120);
+                },
+                600,
+                15000
+              );
+              clsPayload = await parseValidClassPayload(refreshResp);
             }
           }
 
-          await LmsHelpers.openClassDrawer(page, classCode);
-          const freshClassResponse = await freshGetClassPromise;
-          const freshStatus =
-            freshClassResponse && typeof freshClassResponse.status === "function"
-              ? freshClassResponse.status()
-              : 0;
-          const freshJson =
-            (freshStatus === 200 || freshStatus === 201) &&
-            freshClassResponse &&
-            typeof (freshClassResponse as any).json === "function"
-              ? await (freshClassResponse as any).json().catch(() => null)
-              : null;
+          // Attempt 2: Close existing Drawer and re-open via LmsHelpers.openClassDrawer to trigger fresh GetClassById
+          if (!clsPayload && typeof LmsHelpers?.openClassDrawer === "function") {
+            const existingDrawer = page
+              .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
+              .first();
+            if (await existingDrawer.isVisible().catch(() => false)) {
+              const backBtn = existingDrawer.locator('button:has-text("Back")').first();
+              if (await backBtn.isVisible().catch(() => false)) {
+                await backBtn.click({ force: true }).catch(() => {});
+              } else if (typeof page.keyboard?.press === "function") {
+                await page.keyboard.press("Escape").catch(() => {});
+              }
+              await page.waitForTimeout(300);
+              if (await existingDrawer.isVisible().catch(() => false)) {
+                const backdrop = page.locator(".MuiBackdrop-root").first();
+                if (await backdrop.isVisible().catch(() => false)) {
+                  await backdrop.click({ position: { x: 10, y: 10 }, force: true }).catch(() => {});
+                  await page.waitForTimeout(350);
+                }
+              }
+            }
+            const reopenResp = await waitForDispatchedGetClassResponse(
+              async () => {
+                await LmsHelpers.openClassDrawer(page, classCode);
+              },
+              600,
+              15000
+            );
+            didReopenDrawer = true;
+            clsPayload = await parseValidClassPayload(reopenResp);
+          }
 
-          const hasNoGqlErrors =
-            Boolean(freshJson) &&
-            (!Array.isArray(freshJson.errors) || freshJson.errors.length === 0);
-          const clsPayload = hasNoGqlErrors
-            ? freshJson?.data?.classesById ||
-              freshJson?.data?.class ||
-              freshJson?.data?.getClassById
-            : null;
-          const payloadClassCode = String(
-            clsPayload?.name || clsPayload?.code || clsPayload?.classCode || ""
-          )
-            .trim()
-            .toUpperCase();
-          const isValidServerClassPayload =
-            Boolean(clsPayload && typeof clsPayload === "object") &&
-            (!payloadClassCode || payloadClassCode === classCode || payloadClassCode === classId);
-
-          if (isValidServerClassPayload) {
-            const slotsArr = Array.isArray(clsPayload.slots) ? clsPayload.slots : [];
-            const matchedServerSlot =
-              slotsArr.find(
+          const slotsArr = Array.isArray(clsPayload?.slots) ? clsPayload.slots : [];
+          const matchedServerSlot = clsPayload
+            ? slotsArr.find(
                 (s: any) => s && typeof s.index === "number" && s.index + 1 === slotNumber
               ) ||
               (slotsArr.length > slotIndex &&
               slotsArr.every((s: any) => !s || typeof s.index !== "number")
                 ? slotsArr[slotIndex]
-                : null);
-            const serverAttendances: any[] = Array.isArray(matchedServerSlot?.studentAttendance)
-              ? matchedServerSlot.studentAttendance
-              : [];
+                : null)
+            : null;
+          const serverAttendances: any[] = Array.isArray(matchedServerSlot?.studentAttendance)
+            ? matchedServerSlot.studentAttendance
+            : [];
+          const isValidServerClassPayload =
+            Boolean(clsPayload && typeof clsPayload === "object") && serverAttendances.length > 0;
 
-            if (serverAttendances.length > 0) {
-              await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.comments);
-              await page.waitForTimeout(800);
+          const rosterSlugCounts = new Map<string, number>();
+          for (const st of classRoster) {
+            const slug = toStudentLookupSlug(st.fullName || "");
+            if (slug) {
+              rosterSlugCounts.set(slug, (rosterSlugCounts.get(slug) || 0) + 1);
+            }
+          }
+
+          let commentsTablePrepared = false;
+          const ensureCommentsTableReadyOnce = async () => {
+            if (commentsTablePrepared) return;
+            commentsTablePrepared = true;
+            const reconcileDrawer = page
+              .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
+              .first();
+            const existingRowsCount =
+              typeof (reconcileDrawer.locator(".comment-list-table table tbody tr, table tbody tr") as any)
+                .count === "function"
+                ? await reconcileDrawer
+                    .locator(".comment-list-table table tbody tr, table tbody tr")
+                    .count()
+                    .catch(() => 0)
+                : 0;
+            if (didReopenDrawer || existingRowsCount === 0) {
+              if (typeof LmsHelpers?.switchDrawerTab === "function") {
+                await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.comments).catch(() => {});
+                await page.waitForTimeout(350);
+              }
               if (typeof LmsHelpers?.ensureCommentsSlotReady === "function") {
                 await LmsHelpers.ensureCommentsSlotReady(page, classCode, slotNumber, {
                   reopenDrawerIfClosed: true,
                   waitForTableMs: 5000,
                 });
               }
+            }
+          };
 
-              const rosterSlugCounts = new Map<string, number>();
-              for (const st of classRoster) {
-                const slug = toStudentLookupSlug(st.fullName || "");
-                if (slug) {
-                  rosterSlugCounts.set(slug, (rosterSlugCounts.get(slug) || 0) + 1);
+          const verifyStudentInViewModeDom = async (rec: SessionFeedbackRecord): Promise<{
+            matched: boolean;
+            errorMsg?: string;
+          }> => {
+            try {
+              await ensureCommentsTableReadyOnce();
+              const student = hasStudentRepoCheck
+                ? studentRepo.findOne(rec.studentId, classId)
+                : undefined;
+              const studentName = student?.fullName || rec.studentId;
+              const approvedText = rec.finalText || "";
+              const { expectedRawNorm, expectedPlainNorm } = normalizeExpectedComment(approvedText);
+
+              const targetSlug = toStudentLookupSlug(studentName);
+              const isUniqueSlug =
+                Boolean(targetSlug) && (rosterSlugCounts.get(targetSlug) || 0) <= 1;
+              const escapedStudentId = rec.studentId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              const escapedName = studentName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              const exactNameLineRegex = new RegExp(
+                `(?:^|[\\r\\n\\t|]|\\b${escapedStudentId}[ \\t]+)${escapedName}(?:$|[\\r\\n\\t|])`,
+                "i"
+              );
+
+              const reconcileDrawer = page
+                .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
+                .first();
+              const idRow = reconcileDrawer
+                .locator(
+                  `tr[data-student-id="${rec.studentId}"], tr[data-id="${rec.studentId}"], [data-student-id="${rec.studentId}"]`
+                )
+                .first();
+              const idRowCount =
+                typeof (idRow as any).count === "function"
+                  ? await (idRow as any).count().catch(() => 0)
+                  : 0;
+              const explicitAttr =
+                idRowCount > 0
+                  ? (await idRow
+                      .getAttribute("data-student-id", { timeout: 500 } as any)
+                      .catch(() => null)) ||
+                    (await idRow
+                      .getAttribute("data-id", { timeout: 500 } as any)
+                      .catch(() => null))
+                  : null;
+
+              let targetRow: any = explicitAttr === rec.studentId ? idRow : null;
+              if (!targetRow) {
+                if (!isUniqueSlug && classRoster.length > 1) {
+                  return {
+                    matched: false,
+                    errorMsg: `Không xác định được duy nhất dòng của học viên '${studentName}' (trùng tên không có ID rõ ràng).`,
+                  };
+                }
+                const bodyRows = reconcileDrawer.locator(
+                  ".comment-list-table table tbody tr, table tbody tr"
+                );
+                const rowCount =
+                  typeof (bodyRows as any).count === "function"
+                    ? await (bodyRows as any).count().catch(() => 0)
+                    : 0;
+                const matchedIndices: number[] = [];
+                for (let rIdx = 0; rIdx < rowCount; rIdx++) {
+                  const candidateRow = bodyRows.nth(rIdx);
+                  const rawRowText = (await candidateRow.innerText().catch(() => "")).normalize("NFC");
+                  const cleanedMultiline = rawRowText
+                    .split(/[\r\n\t|]+/)
+                    .map((line: string) => line.replace(/\s+/g, " ").trim())
+                    .filter(Boolean)
+                    .join("\n");
+                  if (exactNameLineRegex.test(cleanedMultiline)) {
+                    matchedIndices.push(rIdx);
+                  }
+                }
+                if (matchedIndices.length === 1) {
+                  targetRow = bodyRows.nth(matchedIndices[0]);
                 }
               }
 
-              const hasStudentRepoCheck = typeof studentRepo.findOne === "function";
+              if (!targetRow) {
+                return {
+                  matched: false,
+                  errorMsg: `Không tìm thấy dòng của học viên '${studentName}' khi đối chiếu lại DOM.`,
+                };
+              }
 
-              for (const rec of postTimeoutCandidates) {
+              await targetRow.scrollIntoViewIfNeeded().catch(() => {});
+              await page.waitForTimeout(120);
+              const verifyBtn = targetRow
+                .locator('button:has-text("Nhận xét học sinh"), button:has-text("Nhận xét")')
+                .first();
+              const dialog = page.locator('[role="dialog"]').first();
+
+              let openErr: unknown = null;
+              for (let attempt = 1; attempt <= 2; attempt++) {
                 try {
-                  const student = hasStudentRepoCheck
-                    ? studentRepo.findOne(rec.studentId, classId)
-                    : undefined;
-                  const studentName = student?.fullName || rec.studentId;
-                  const latestRec = getLatestFeedbackRecord(rec.studentId);
-                  const approvedText = rec.finalText || "";
-                  const approvedHash = rec.contentHash || "";
-
-                  const rosterOk =
-                    !hasStudentRepoCheck ||
-                    (Boolean(student) &&
-                      (!student?.classId || student.classId === classId) &&
-                      student?.isActive === 1);
-                  const attStatus = latestRec?.attendanceStatus;
-                  const attendanceOk =
-                    attStatus === undefined ||
-                    attStatus === null ||
-                    attStatus === "PRESENT" ||
-                    attStatus === "LATE";
-
-                  if (
-                    !latestRec ||
-                    !rosterOk ||
-                    !attendanceOk ||
-                    latestRec.status === "DRAFT" ||
-                    latestRec.contentHash !== approvedHash ||
-                    (latestRec.finalText || "") !== approvedText ||
-                    !verifyContentIntegrity(approvedText, approvedHash)
-                  ) {
-                    continue;
+                  if (attempt > 1) {
+                    await interceptor.dismissForbiddenToast();
+                    await page.waitForTimeout(300);
                   }
-
-                  const targetSlug = toStudentLookupSlug(studentName);
-                  const isUniqueSlug =
-                    Boolean(targetSlug) && (rosterSlugCounts.get(targetSlug) || 0) <= 1;
-
-                  const matchedServerAtts = serverAttendances.filter((att: any) => {
-                    if (!att || typeof att !== "object") return false;
-                    const crmId = String(att?.student?.id || att?.studentId || "").trim();
-                    if (crmId && crmId === rec.studentId) return true;
-                    const crmName = String(att?.student?.fullName || att?.fullName || "").trim();
-                    const crmSlug = toStudentLookupSlug(crmName);
-                    return Boolean(isUniqueSlug && crmSlug && crmSlug === targetSlug);
-                  });
-
-                  if (matchedServerAtts.length !== 1) {
-                    continue;
-                  }
-
-                  const serverAtt = matchedServerAtts[0];
-                  const commentText = approvedText.replace(
-                    /^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i,
-                    ""
-                  );
-                  const expectedRawNorm = commentText.normalize("NFC").replace(/\s+/g, " ").trim();
-                  const expectedPlainNorm = commentText
-                    .replace(/\*\*([^*\n]+)\*\*/g, "$1")
-                    .normalize("NFC")
-                    .replace(/\s+/g, " ")
-                    .trim();
-
-                  const rawAreas: any[] = Array.isArray(serverAtt.commentByAreas)
-                    ? serverAtt.commentByAreas
-                    : [];
-                  const serverAreaTexts = rawAreas
-                    .filter(
-                      (a: any) =>
-                        a &&
-                        typeof a.content === "string" &&
-                        (!a.type || String(a.type).toUpperCase() === "CONTENT")
-                    )
-                    .map((a: any) => decodeHtmlEntitiesAndNormalizeComment(a.content))
-                    .filter(Boolean);
-                  const directServerText =
-                    typeof serverAtt.comment === "string"
-                      ? decodeHtmlEntitiesAndNormalizeComment(serverAtt.comment)
-                      : "";
-                  const combinedServerText = serverAreaTexts.join(" ").replace(/\s+/g, " ").trim();
-
-                  const serverExactMatch =
-                    expectedPlainNorm.length > 0 &&
-                    (directServerText === expectedPlainNorm ||
-                      directServerText === expectedRawNorm ||
-                      combinedServerText === expectedPlainNorm ||
-                      combinedServerText === expectedRawNorm ||
-                      serverAreaTexts.some(
-                        (t: string) => t === expectedPlainNorm || t === expectedRawNorm
-                      ));
-
-                  if (!serverExactMatch) {
-                    continue;
-                  }
-
-                  // Server GetClassById confirmed exact match -> now perform full DOM Read-after-Write (0 Save clicks)
-                  const escapedStudentId = rec.studentId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                  const escapedName = studentName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                  const exactNameLineRegex = new RegExp(
-                    `(?:^|[\\r\\n\\t|]|\\b${escapedStudentId}[ \\t]+)${escapedName}(?:$|[\\r\\n\\t|])`,
-                    "i"
-                  );
-
-                  const reconcileDrawer = page
-                    .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
-                    .first();
-                  const idRow = reconcileDrawer
-                    .locator(
-                      `tr[data-student-id="${rec.studentId}"], tr[data-id="${rec.studentId}"], [data-student-id="${rec.studentId}"]`
-                    )
-                    .first();
-                  const idRowCount =
-                    typeof (idRow as any).count === "function"
-                      ? await (idRow as any).count().catch(() => 0)
-                      : 0;
-                  const explicitAttr =
-                    idRowCount > 0
-                      ? (await idRow
-                          .getAttribute("data-student-id", { timeout: 500 } as any)
-                          .catch(() => null)) ||
-                        (await idRow
-                          .getAttribute("data-id", { timeout: 500 } as any)
-                          .catch(() => null))
-                      : null;
-
-                  let targetRow: any = explicitAttr === rec.studentId ? idRow : null;
-                  if (!targetRow) {
-                    if (!isUniqueSlug && classRoster.length > 1) {
-                      continue;
-                    }
-                    const bodyRows = reconcileDrawer.locator(
-                      ".comment-list-table table tbody tr, table tbody tr"
-                    );
-                    const rowCount =
-                      typeof (bodyRows as any).count === "function"
-                        ? await (bodyRows as any).count().catch(() => 0)
-                        : 0;
-                    const matchedIndices: number[] = [];
-                    for (let rIdx = 0; rIdx < rowCount; rIdx++) {
-                      const candidateRow = bodyRows.nth(rIdx);
-                      const rawRowText = (
-                        await candidateRow.innerText().catch(() => "")
-                      ).normalize("NFC");
-                      const cleanedMultiline = rawRowText
-                        .split(/[\r\n\t|]+/)
-                        .map((line: string) => line.replace(/\s+/g, " ").trim())
-                        .filter(Boolean)
-                        .join("\n");
-                      if (exactNameLineRegex.test(cleanedMultiline)) {
-                        matchedIndices.push(rIdx);
-                      }
-                    }
-                    if (matchedIndices.length === 1) {
-                      targetRow = bodyRows.nth(matchedIndices[0]);
-                    }
-                  }
-
-                  if (!targetRow) {
-                    continue;
-                  }
-
-                  await targetRow.scrollIntoViewIfNeeded().catch(() => {});
-                  await page.waitForTimeout(250);
-                  const verifyBtn = targetRow
-                    .locator('button:has-text("Nhận xét học sinh"), button:has-text("Nhận xét")')
-                    .first();
-                  const dialog = page.locator('[role="dialog"]').first();
                   await verifyBtn.click({ force: true });
                   await dialog.waitFor({ state: "visible", timeout: 5000 });
-                  await page.waitForTimeout(500);
-
-                  const domCandidates: string[] = [];
-                  const cell2 = dialog.locator("table tbody tr td:nth-child(2)").first();
-                  const cell2Text = (await cell2.isVisible().catch(() => false))
-                    ? await cell2.innerText().catch(() => "")
-                    : "";
-                  const cell1 = dialog.locator("table tbody tr td").first();
-                  const cell1Text = (await cell1.isVisible().catch(() => false))
-                    ? await cell1.innerText().catch(() => "")
-                    : "";
-
-                  const isCpTable =
-                    /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[ĐNL\]/i.test(
-                      `${cell2Text} ${cell1Text}`
-                    );
-                  if (isCpTable) {
-                    const cpRow = dialog.locator("table tbody tr").first();
-                    if (await cpRow.isVisible().catch(() => false)) {
-                      await cpRow.hover().catch(() => {});
-                      await page.waitForTimeout(250);
-                      const editBtn = dialog
-                        .locator(
-                          'button:has([data-testid="EditIcon"]), [aria-label="Edit"] button, button:has-text("Edit")'
-                        )
-                        .first();
-                      if (await editBtn.isVisible().catch(() => false)) {
-                        await editBtn.click({ force: true });
-                      } else {
-                        await cpRow.click({ force: true });
-                      }
-                      await page.waitForTimeout(700);
-                      const richEd = dialog
-                        .locator(
-                          'div:has(> p:has-text("Đánh giá chung")) .ql-editor[contenteditable="true"], div:has(> label:has-text("Đánh giá chung")) .ql-editor[contenteditable="true"], .ql-editor[contenteditable="true"], .ql-editor'
-                        )
-                        .first();
-                      if (await richEd.isVisible().catch(() => false)) {
-                        const edText = await richEd.innerText().catch(() => "");
-                        if (edText) domCandidates.push(edText);
-                      }
-                    }
-                  } else {
-                    const directViewLoc = dialog
-                      .locator('.ql-editor[contenteditable="true"], .comment-content')
-                      .first();
-                    if (await directViewLoc.isVisible().catch(() => false)) {
-                      const directTxt = await directViewLoc.innerText().catch(() => "");
-                      if (directTxt) domCandidates.push(directTxt);
-                    }
-                    if (cell2Text) domCandidates.push(cell2Text);
-                    if (domCandidates.length === 0 && cell1Text) {
-                      domCandidates.push(cell1Text);
-                    }
-                  }
-
-                  await page.keyboard.press("Escape").catch(() => {});
-                  await dialog.waitFor({ state: "hidden", timeout: 4000 }).catch(async () => {
-                    const backdrop = page
-                      .locator('.MuiBackdrop-root, [role="presentation"] > div')
-                      .first();
-                    if (await backdrop.isVisible().catch(() => false)) {
-                      await backdrop
-                        .click({ force: true, position: { x: 20, y: 20 } })
-                        .catch(() => {});
-                    }
-                  });
-                  await page.waitForTimeout(400);
-
-                  const normDomCandidates = domCandidates
-                    .map((c) =>
-                      c
-                        .normalize("NFC")
-                        .replace(/\s+/g, " ")
-                        .trim()
-                        .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
-                        .trim()
-                    )
-                    .filter(Boolean);
-
-                  const domExactMatch =
-                    expectedPlainNorm.length > 0 &&
-                    normDomCandidates.length > 0 &&
-                    normDomCandidates.every(
-                      (actual) => actual === expectedPlainNorm || actual === expectedRawNorm
-                    );
-
-                  if (!domExactMatch) {
-                    continue;
-                  }
-
-                  // Final post-readback CAS check before promoting FAILED -> VERIFIED
-                  const postCheckRec = getLatestFeedbackRecord(rec.studentId);
-                  const postCheckStu = hasStudentRepoCheck
-                    ? studentRepo.findOne(rec.studentId, classId)
-                    : student;
-                  const postCheckRosterOk =
-                    !hasStudentRepoCheck ||
-                    (Boolean(postCheckStu) &&
-                      (!postCheckStu?.classId || postCheckStu.classId === classId) &&
-                      postCheckStu?.isActive === 1);
-                  const postCheckAtt = postCheckRec?.attendanceStatus;
-                  const postCheckAttOk =
-                    postCheckAtt === undefined ||
-                    postCheckAtt === null ||
-                    postCheckAtt === "PRESENT" ||
-                    postCheckAtt === "LATE";
-
-                  if (
-                    !postCheckRec ||
-                    !postCheckRosterOk ||
-                    !postCheckAttOk ||
-                    postCheckRec.status === "DRAFT" ||
-                    postCheckRec.contentHash !== approvedHash ||
-                    (postCheckRec.finalText || "") !== approvedText
-                  ) {
-                    continue;
-                  }
-
-                  const verifiedAt = new Date().toISOString();
-                  sessionFeedbackRepo.updateStatus(
-                    classId,
-                    sessionId,
-                    rec.studentId,
-                    "VERIFIED",
-                    verifiedAt,
-                    null,
-                    approvedHash
-                  );
-
-                  jobLogRepo.add({
-                    jobId,
-                    jobType: "SAVE_COMMENTS",
-                    classId,
-                    sessionId,
-                    studentId: rec.studentId,
-                    level: "SUCCESS",
-                    message: `Đã đối chiếu máy chủ LMS (GetClassById + DOM Read-after-Write) sau khi phản hồi chậm: nhận xét của học viên '${studentName}' đã lưu đầy đủ VERIFIED.`,
-                  });
-
-                  const resIdx = results.findIndex((r) => r.studentId === rec.studentId);
-                  if (resIdx >= 0) {
-                    results[resIdx] = {
-                      studentId: rec.studentId,
-                      fullName: studentName,
-                      success: true,
-                      verified: true,
-                    };
-                  }
-                } catch {
-                  if (typeof LmsHelpers?.ensureCleanDialogAndToast === "function") {
-                    await LmsHelpers.ensureCleanDialogAndToast(page, interceptor).catch(() => {});
-                  }
+                  openErr = null;
+                  break;
+                } catch (err) {
+                  openErr = err;
                 }
               }
+              if (openErr) {
+                return {
+                  matched: false,
+                  errorMsg: `Không mở được modal xem lại của '${studentName}': ${
+                    openErr instanceof Error ? openErr.message : String(openErr)
+                  }`,
+                };
+              }
+              await page.waitForTimeout(250);
+
+              const { normalizedCandidates: normDomCandidates } = await readDialogCommentCandidates(
+                dialog,
+                detectedAnyCheckpointSession
+              );
+              await closeModalSafely(dialog, 250);
+
+              const domExactMatch =
+                expectedPlainNorm.length > 0 &&
+                normDomCandidates.length > 0 &&
+                normDomCandidates.every(
+                  (actual) => actual === expectedPlainNorm || actual === expectedRawNorm
+                );
+
+              return domExactMatch
+                ? { matched: true }
+                : {
+                    matched: false,
+                    errorMsg: `Nội dung đọc lại trên LMS DOM của '${studentName}' không khớp với bản đã duyệt.`,
+                  };
+            } catch (domErr) {
+              if (typeof LmsHelpers?.ensureCleanDialogAndToast === "function") {
+                await LmsHelpers.ensureCleanDialogAndToast(page, interceptor).catch(() => {});
+              }
+              return {
+                matched: false,
+                errorMsg: domErr instanceof Error ? domErr.message : String(domErr),
+              };
+            }
+          };
+
+          const inspectServerAttendanceForRecord = (rec: SessionFeedbackRecord, studentName: string) => {
+            const approvedText = rec.finalText || "";
+            const { expectedRawNorm, expectedPlainNorm } = normalizeExpectedComment(approvedText);
+            const targetSlug = toStudentLookupSlug(studentName);
+            const isUniqueSlug =
+              Boolean(targetSlug) && (rosterSlugCounts.get(targetSlug) || 0) <= 1;
+
+            const matchedServerAtts = serverAttendances.filter((att: any) => {
+              if (!att || typeof att !== "object") return false;
+              const crmId = String(att?.student?.id || att?.studentId || "").trim();
+              if (crmId && crmId === rec.studentId) return true;
+              const crmName = String(att?.student?.fullName || att?.fullName || "").trim();
+              const crmSlug = toStudentLookupSlug(crmName);
+              return Boolean(isUniqueSlug && crmSlug && crmSlug === targetSlug);
+            });
+
+            if (matchedServerAtts.length !== 1) {
+              return { status: "AMBIGUOUS_OR_MISSING" as const };
+            }
+
+            const serverAtt = matchedServerAtts[0];
+            const rawAreas: any[] = Array.isArray(serverAtt.commentByAreas)
+              ? serverAtt.commentByAreas
+              : [];
+            const serverAreaTexts = rawAreas
+              .filter(
+                (a: any) =>
+                  a &&
+                  typeof a.content === "string" &&
+                  (!a.type || String(a.type).toUpperCase() === "CONTENT")
+              )
+              .map((a: any) => decodeHtmlEntitiesAndNormalizeComment(a.content))
+              .filter(Boolean);
+            const directServerText =
+              typeof serverAtt.comment === "string"
+                ? decodeHtmlEntitiesAndNormalizeComment(serverAtt.comment)
+                : "";
+            const combinedServerText = serverAreaTexts.join(" ").replace(/\s+/g, " ").trim();
+            const hasAnyServerText = Boolean(directServerText || combinedServerText);
+
+            const serverExactMatch =
+              expectedPlainNorm.length > 0 &&
+              (directServerText === expectedPlainNorm ||
+                directServerText === expectedRawNorm ||
+                combinedServerText === expectedPlainNorm ||
+                combinedServerText === expectedRawNorm ||
+                serverAreaTexts.some(
+                  (t: string) => t === expectedPlainNorm || t === expectedRawNorm
+                ));
+
+            if (serverExactMatch) {
+              return { status: "EXACT_MATCH" as const };
+            }
+            if (hasAnyServerText) {
+              return { status: "MISMATCH" as const };
+            }
+            return { status: "EMPTY_LAG" as const };
+          };
+
+          const markBatchCandidateVerified = (
+            rec: SessionFeedbackRecord,
+            studentName: string,
+            studentObj: any,
+            sourceLabel: string
+          ) => {
+            const approvedText = rec.finalText || "";
+            const approvedHash = rec.contentHash || "";
+            const postCas = checkEligibilityAndCas({
+              targetStudentId: rec.studentId,
+              targetStudentName: studentName,
+              approvedTextVal: approvedText,
+              approvedHashVal: approvedHash,
+              fallbackStudent: studentObj,
+              requireNonDraft: true,
+            });
+            const resIdx = results.findIndex((r) => r.studentId === rec.studentId);
+            if (!postCas.ok) {
+              if (postCas.demoteToDraft && postCas.latestRec && postCas.latestRec.status !== "DRAFT") {
+                sessionFeedbackRepo.updateStatus(
+                  classId,
+                  sessionId,
+                  rec.studentId,
+                  "DRAFT",
+                  null,
+                  postCas.reason,
+                  approvedHash
+                );
+              }
+              if (resIdx >= 0) {
+                results[resIdx] = {
+                  studentId: rec.studentId,
+                  fullName: studentName,
+                  success: false,
+                  verified: false,
+                  error: `IN_FLIGHT_DRIFT: ${postCas.reason}`,
+                };
+              }
+              return false;
+            }
+            const verifiedAt = new Date().toISOString();
+            sessionFeedbackRepo.updateStatus(
+              classId,
+              sessionId,
+              rec.studentId,
+              "VERIFIED",
+              verifiedAt,
+              null,
+              approvedHash
+            );
+            jobLogRepo.add({
+              jobId,
+              jobType: "SAVE_COMMENTS",
+              classId,
+              sessionId,
+              studentId: rec.studentId,
+              level: "SUCCESS",
+              message: `Đã lưu & đối chiếu (${sourceLabel}) VERIFIED nhận xét của học viên '${studentName}'.`,
+            });
+            if (resIdx >= 0) {
+              results[resIdx] = {
+                studentId: rec.studentId,
+                fullName: studentName,
+                success: true,
+                verified: true,
+              };
+            }
+            return true;
+          };
+
+          const markBatchCandidateFailed = (
+            rec: SessionFeedbackRecord,
+            studentName: string,
+            errMsg: string
+          ) => {
+            const approvedText = rec.finalText || "";
+            const approvedHash = rec.contentHash || "";
+            const latestOnError = getLatestFeedbackRecord(rec.studentId);
+            const wasEditedDuringSave =
+              latestOnError &&
+              (latestOnError.contentHash !== approvedHash ||
+                (latestOnError.finalText || "") !== approvedText ||
+                latestOnError.status === "DRAFT");
+            if (!wasEditedDuringSave) {
+              sessionFeedbackRepo.updateStatus(
+                classId,
+                sessionId,
+                rec.studentId,
+                "FAILED",
+                null,
+                errMsg,
+                approvedHash
+              );
+            }
+            jobLogRepo.add({
+              jobId,
+              jobType: "SAVE_COMMENTS",
+              classId,
+              sessionId,
+              studentId: rec.studentId,
+              level: "ERROR",
+              message: `Đối chiếu cuối lớp thất bại cho học viên '${studentName}': ${errMsg}`,
+            });
+            const resIdx = results.findIndex((r) => r.studentId === rec.studentId);
+            if (resIdx >= 0) {
+              results[resIdx] = {
+                studentId: rec.studentId,
+                fullName: studentName,
+                success: false,
+                verified: false,
+                error: errMsg,
+              };
+            }
+          };
+
+          // Step A: Reconcile fast-sequential deferred batch candidates (1-shot GetClassById first, lazy DOM fallback only if needed)
+          const fallbackDomQueue: Array<{
+            rec: SessionFeedbackRecord;
+            studentName: string;
+            studentObj: any;
+            reasonLabel: string;
+          }> = [];
+
+          for (const rec of batchVerifyCandidates) {
+            const studentObj = hasStudentRepoCheck
+              ? studentRepo.findOne(rec.studentId, classId)
+              : undefined;
+            const studentName = studentObj?.fullName || rec.studentId;
+            const approvedText = rec.finalText || "";
+            const approvedHash = rec.contentHash || "";
+
+            const preCas = checkEligibilityAndCas({
+              targetStudentId: rec.studentId,
+              targetStudentName: studentName,
+              approvedTextVal: approvedText,
+              approvedHashVal: approvedHash,
+              fallbackStudent: studentObj,
+              requireNonDraft: true,
+            });
+            if (!preCas.ok) {
+              if (preCas.demoteToDraft && preCas.latestRec && preCas.latestRec.status !== "DRAFT") {
+                sessionFeedbackRepo.updateStatus(
+                  classId,
+                  sessionId,
+                  rec.studentId,
+                  "DRAFT",
+                  null,
+                  preCas.reason,
+                  approvedHash
+                );
+              }
+              const resIdx = results.findIndex((r) => r.studentId === rec.studentId);
+              if (resIdx >= 0) {
+                results[resIdx] = {
+                  studentId: rec.studentId,
+                  fullName: studentName,
+                  success: false,
+                  verified: false,
+                  error: `IN_FLIGHT_DRIFT: ${preCas.reason}`,
+                };
+              }
+              continue;
+            }
+
+            if (!isValidServerClassPayload) {
+              fallbackDomQueue.push({
+                rec,
+                studentName,
+                studentObj,
+                reasonLabel: "DOM Read-after-Write dự phòng",
+              });
+              continue;
+            }
+
+            const serverCheck = inspectServerAttendanceForRecord(rec, studentName);
+            if (serverCheck.status === "EXACT_MATCH") {
+              markBatchCandidateVerified(
+                rec,
+                studentName,
+                studentObj,
+                "GetClassById đối chiếu gộp 1 lần"
+              );
+            } else if (serverCheck.status === "MISMATCH") {
+              markBatchCandidateFailed(
+                rec,
+                studentName,
+                "Đối chiếu gộp cuối lớp (GetClassById) phát hiện nội dung trên LMS không khớp với bản đã duyệt."
+              );
+            } else {
+              fallbackDomQueue.push({
+                rec,
+                studentName,
+                studentObj,
+                reasonLabel:
+                  serverCheck.status === "EMPTY_LAG"
+                    ? "DOM Read-after-Write bù trễ máy chủ"
+                    : "DOM Read-after-Write xác định ID dòng",
+              });
+            }
+          }
+
+          // Run lazy View-Mode DOM Read-after-Write ONLY for students needing fallback
+          for (const fbItem of fallbackDomQueue) {
+            const domRes = await verifyStudentInViewModeDom(fbItem.rec);
+            if (domRes.matched) {
+              markBatchCandidateVerified(
+                fbItem.rec,
+                fbItem.studentName,
+                fbItem.studentObj,
+                fbItem.reasonLabel
+              );
+            } else {
+              markBatchCandidateFailed(
+                fbItem.rec,
+                fbItem.studentName,
+                domRes.errorMsg ||
+                  `Không thể xác minh nội dung sau khi lưu cho '${fbItem.studentName}'.`
+              );
+            }
+          }
+
+          // Step B: Reconcile Pass 2B post-timeout candidates (MUST pass BOTH GetClassById EXACT_MATCH + View-Mode DOM Read-after-Write)
+          if (postTimeoutCandidates.length > 0 && isValidServerClassPayload) {
+            for (const rec of postTimeoutCandidates) {
+              const studentObj = hasStudentRepoCheck
+                ? studentRepo.findOne(rec.studentId, classId)
+                : undefined;
+              const studentName = studentObj?.fullName || rec.studentId;
+              const approvedText = rec.finalText || "";
+              const approvedHash = rec.contentHash || "";
+
+              const preCas = checkEligibilityAndCas({
+                targetStudentId: rec.studentId,
+                targetStudentName: studentName,
+                approvedTextVal: approvedText,
+                approvedHashVal: approvedHash,
+                fallbackStudent: studentObj,
+                requireNonDraft: true,
+              });
+              if (!preCas.ok) {
+                continue;
+              }
+
+              const serverCheck = inspectServerAttendanceForRecord(rec, studentName);
+              if (serverCheck.status !== "EXACT_MATCH") {
+                continue;
+              }
+
+              const domRes = await verifyStudentInViewModeDom(rec);
+              if (!domRes.matched) {
+                continue;
+              }
+
+              markBatchCandidateVerified(
+                rec,
+                studentName,
+                studentObj,
+                "GetClassById + DOM Read-after-Write sau phản hồi chậm"
+              );
             }
           }
         } catch {
-          // Best-effort post-timeout server reconciliation; preserve original FAILED status if LMS cannot be re-queried
+          // Best-effort end-of-batch verification & post-timeout reconciliation; preserve fail-closed statuses
+          for (const rec of batchVerifyCandidates) {
+            const resItem = results.find((r) => r.studentId === rec.studentId);
+            if (resItem && resItem.success && !resItem.verified) {
+              const studentObj = hasStudentRepoCheck
+                ? studentRepo.findOne(rec.studentId, classId)
+                : undefined;
+              const studentName = studentObj?.fullName || rec.studentId;
+              const approvedText = rec.finalText || "";
+              const approvedHash = rec.contentHash || "";
+              const latestOnErr = getLatestFeedbackRecord(rec.studentId);
+              const wasEdited =
+                latestOnErr &&
+                (latestOnErr.contentHash !== approvedHash ||
+                  (latestOnErr.finalText || "") !== approvedText ||
+                  latestOnErr.status === "DRAFT");
+              const errMsg = "Không thể đối chiếu cuối lớp với LMS sau khi bấm Lưu.";
+              if (!wasEdited) {
+                sessionFeedbackRepo.updateStatus(
+                  classId,
+                  sessionId,
+                  rec.studentId,
+                  "FAILED",
+                  null,
+                  errMsg,
+                  approvedHash
+                );
+              }
+              const resIdx = results.findIndex((r) => r.studentId === rec.studentId);
+              if (resIdx >= 0) {
+                results[resIdx] = {
+                  studentId: rec.studentId,
+                  fullName: studentName,
+                  success: false,
+                  verified: false,
+                  error: errMsg,
+                };
+              }
+            }
+          }
         }
       }
     } catch (err: any) {

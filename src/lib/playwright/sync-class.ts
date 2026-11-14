@@ -1001,30 +1001,53 @@ export class ClassSyncer {
 
       await interceptor.dismissForbiddenToast();
 
-      // If forceFreshDrawer is requested on a real browser page, close any pre-existing drawer so GetClassById fires fresh
+      // If forceFreshDrawer is requested on a real browser page, try in-drawer Refresh first when already on this class;
+      // otherwise close any pre-existing drawer so GetClassById fires fresh
       if (options?.forceFreshDrawer && typeof (page as any).keyboard?.press === "function") {
         // Close any open modal dialog first so Escape closes the Drawer rather than only a dialog
         const openDialog = page.locator('[role="dialog"]').first();
         if (await openDialog.isVisible().catch(() => false)) {
           await (page as any).keyboard.press("Escape").catch(() => {});
-          await page.waitForTimeout(300);
+          await page.waitForTimeout(250);
         }
         const preExistingDrawer = page
           .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
           .first();
         if (await preExistingDrawer.isVisible().catch(() => false)) {
-          const backBtn = preExistingDrawer.locator('button:has-text("Back")').first();
-          if (await backBtn.isVisible().catch(() => false)) {
-            await backBtn.click({ force: true }).catch(() => {});
-          } else {
-            await (page as any).keyboard.press("Escape").catch(() => {});
+          const preDrawerText = (await preExistingDrawer.innerText().catch(() => "")).toUpperCase();
+          const escapedCode = classCode.toUpperCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const sameClassDrawer =
+            preDrawerText.length > 0 &&
+            new RegExp(`(^|[^A-Z0-9])${escapedCode}([^A-Z0-9]|$)`).test(preDrawerText);
+
+          if (sameClassDrawer) {
+            const refreshBtn = preExistingDrawer
+              .locator(
+                'button:has([data-testid="RefreshIcon"]), button[aria-label*="refresh" i], button[aria-label*="làm mới" i], button[title*="Làm mới" i]'
+              )
+              .first();
+            if (await refreshBtn.isVisible().catch(() => false)) {
+              await refreshBtn.click({ force: true }).catch(() => {});
+              for (let w = 0; w < 5 && freshClassByIdRequests.size === 0; w++) {
+                await page.waitForTimeout(90);
+              }
+            }
           }
-          await page.waitForTimeout(450);
-          if (await preExistingDrawer.isVisible().catch(() => false)) {
-            const backdrop = page.locator(".MuiBackdrop-root").first();
-            if (await backdrop.isVisible().catch(() => false)) {
-              await backdrop.click({ position: { x: 10, y: 10 }, force: true }).catch(() => {});
-              await page.waitForTimeout(450);
+
+          if (freshClassByIdRequests.size === 0) {
+            const backBtn = preExistingDrawer.locator('button:has-text("Back")').first();
+            if (await backBtn.isVisible().catch(() => false)) {
+              await backBtn.click({ force: true }).catch(() => {});
+            } else {
+              await (page as any).keyboard.press("Escape").catch(() => {});
+            }
+            await page.waitForTimeout(350);
+            if (await preExistingDrawer.isVisible().catch(() => false)) {
+              const backdrop = page.locator(".MuiBackdrop-root").first();
+              if (await backdrop.isVisible().catch(() => false)) {
+                await backdrop.click({ position: { x: 10, y: 10 }, force: true }).catch(() => {});
+                await page.waitForTimeout(350);
+              }
             }
           }
         }

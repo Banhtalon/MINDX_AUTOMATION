@@ -311,7 +311,7 @@ export class LmsHelpers {
     let drawerText = "";
     let matchesDrawer = false;
     for (let attempt = 0; attempt < 50; attempt++) {
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(attempt === 0 ? 200 : 500);
       drawerText = await drawer.innerText().catch(() => "");
       if (regexPattern.test(drawerText)) {
         matchesDrawer = true;
@@ -326,9 +326,8 @@ export class LmsHelpers {
       (page as any).off("requestfailed", onFail);
     }
 
-    await page.screenshot({ path: "data/debug_drawer_content.png" }).catch(() => {});
-
     if (!matchesDrawer) {
+      await page.screenshot({ path: "data/debug_drawer_content.png" }).catch(() => {});
       if (apiTimedOut || drawerText.trim() === "Update Classes") {
         throw new Error(
           `[LmsHelpers Error] Máy chủ MindX LMS (lms-api.mindx.edu.vn) đang bị nghẽn hoặc mất kết nối mạng (ERR_CONNECTION_TIMED_OUT) khi tải dữ liệu lớp '${targetCode}' nên màn hình LMS bị treo ở vòng xoay tải. Vui lòng kiểm tra lại kết nối mạng (Wi-Fi/4G IPv4) hoặc thử lại sau ít phút.`
