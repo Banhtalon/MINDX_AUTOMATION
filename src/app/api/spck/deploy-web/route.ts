@@ -54,13 +54,15 @@ export async function POST(req: Request) {
     });
 
     if (body?.syncActiveSession === true && activeSessionNumber) {
-      const targetIds =
-        studentIds && studentIds.length > 0
-          ? studentIds
-          : (deployResult.results || [])
-              .filter((r: any) => r.status === "DEPLOYED")
-              .map((r: any) => String(r.studentId || ""))
-              .filter(Boolean);
+      const deployedIds: string[] = (deployResult.results || [])
+        .filter((r: any) => r.status === "DEPLOYED" || r.status === "SUCCESS")
+        .map((r: any) => String(r.studentId || ""))
+        .filter(Boolean);
+      const allowedSet =
+        studentIds && studentIds.length > 0 ? new Set(studentIds) : null;
+      const targetIds = allowedSet
+        ? deployedIds.filter((id) => allowedSet.has(id))
+        : deployedIds;
       for (const sid of targetIds) {
         try {
           spckSessionRepo.syncLatestSharedResourcesToSessionDraft(

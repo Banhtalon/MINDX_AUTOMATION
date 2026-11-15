@@ -22,6 +22,7 @@
 import assert from "node:assert";
 import fs from "node:fs";
 import { createRequire } from "node:module";
+import os from "node:os";
 import path from "node:path";
 import vm from "node:vm";
 import zlib from "node:zlib";
@@ -36,6 +37,7 @@ import { POST as generateAiPost } from "../src/app/api/spck/generate-ai/route";
 import { POST as captureScreenshotsPost } from "../src/app/api/spck/capture-screenshots/route";
 import {
   classSessionRepo,
+  closeDb,
   computeSafeFileByteDigest,
   formatSpckSessionTitle,
   getDb,
@@ -125,11 +127,19 @@ function makeLocalJsonRequest(url: string, body: unknown): Request {
 async function runV270Tests() {
   console.log("=== BẮT ĐẦU KIỂM THỬ TOÀN DIỆN CẬP NHẬT SPCK v2.7.0 (KỊCH BẢN T01 -> T16) ===");
 
+  const isolatedDbDir = fs.mkdtempSync(path.join(os.tmpdir(), "mindx-v270-test-"));
+  if (!process.env.MINDX_DB_PATH) {
+    process.env.MINDX_DB_PATH = path.join(isolatedDbDir, "mindx_v270_test.db");
+  }
+  const tempRoot = path.join(isolatedDbDir, "test_spck_v270");
+  process.env.ALLOWED_LOCAL_DIRS = [process.env.ALLOWED_LOCAL_DIRS, isolatedDbDir, tempRoot]
+    .filter(Boolean)
+    .join(";");
+
   const db = getDb();
   const testClassCoding = "TEST_V270_JSB15";
   const testClassPtb = "TEST_V270_PTB09";
   const testClassCsb = "TEST_V270_CSB04";
-  const tempRoot = path.resolve(process.cwd(), "temp_submissions", "test_spck_v270");
 
   const cleanupTestArtifacts = () => {
     for (const cid of [testClassCoding, testClassPtb, testClassCsb]) {
@@ -2216,6 +2226,10 @@ async function runV270Tests() {
     console.log("\n=== HOÀN TẤT: TẤT CẢ 16 KỊCH BẢN (T01 -> T16) ĐỀU ĐẠT 100% ===");
   } finally {
     cleanupTestArtifacts();
+    closeDb();
+    try {
+      fs.rmSync(isolatedDbDir, { recursive: true, force: true });
+    } catch {}
   }
 }
 

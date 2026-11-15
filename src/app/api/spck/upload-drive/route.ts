@@ -44,13 +44,15 @@ export async function POST(req: Request) {
     });
 
     if (body?.syncActiveSession === true && activeSessionNumber) {
-      const targetIds =
-        studentIds && studentIds.length > 0
-          ? studentIds
-          : (driveResult.results || [])
-              .filter((r: any) => r.status === "SUCCESS" || r.status === "UPLOADED")
-              .map((r: any) => String(r.studentId || ""))
-              .filter(Boolean);
+      const succeededIds: string[] = (driveResult.results || [])
+        .filter((r: any) => r.status === "SUCCESS" || r.status === "UPLOADED")
+        .map((r: any) => String(r.studentId || ""))
+        .filter(Boolean);
+      const allowedSet =
+        studentIds && studentIds.length > 0 ? new Set(studentIds) : null;
+      const targetIds = allowedSet
+        ? succeededIds.filter((id) => allowedSet.has(id))
+        : succeededIds;
       for (const sid of targetIds) {
         try {
           spckSessionRepo.syncLatestSharedResourcesToSessionDraft(

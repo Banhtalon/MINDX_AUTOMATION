@@ -1365,6 +1365,8 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
             warningReasons: nextWarningReasons,
             status: rec.status || "WAITING_APPROVAL",
             contentHash: rec.contentHash || "",
+            verifiedAt: rec.verifiedAt,
+            errorMessage: rec.errorMessage,
             draftVersion: rec.draftVersion ?? row.draftVersion,
             hasNewerSharedResources: Boolean(rec.hasNewerSharedResources),
             thumbnailInspection: nextThumbInspection,
@@ -1500,6 +1502,8 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
             warningReasons: nextWarningReasons,
             status: rec.status || "WAITING_APPROVAL",
             contentHash: rec.contentHash || "",
+            verifiedAt: rec.verifiedAt,
+            errorMessage: rec.errorMessage,
             draftVersion: rec.draftVersion ?? row.draftVersion,
             hasNewerSharedResources: Boolean(rec.hasNewerSharedResources),
             thumbnailInspection: nextThumbInspection,
@@ -3619,7 +3623,14 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     const hasRowFileDrift = (r: ScannedFolderUIItem): boolean =>
       Boolean(
         r.hasNewerSharedResources ||
-          Object.values(r.sessionHistory?.sessions || {}).some((s) => s?.hasFileDrift)
+          Object.values(r.sessionHistory?.sessions || {}).some(
+            (s) =>
+              Boolean(
+                s?.hasFileDriftAfterVerified ||
+                  s?.hasUnsubmittedChanges ||
+                  s?.hasNewerSharedResources
+              )
+          )
       );
 
     const idsNeedingScreenshots = unapprovedRows
@@ -3627,7 +3638,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         (r) =>
           hasRowFileDrift(r) ||
           !(
-            /_spck_(?:app_shots|owner_media)/i.test(r.thumbnailPath || "") &&
+            /_spck_(?:app_shots|owner_uploads)/i.test(r.thumbnailPath || "") &&
             (r.screenshots || []).length > 0
           )
       )

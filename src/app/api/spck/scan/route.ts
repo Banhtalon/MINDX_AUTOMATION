@@ -18,13 +18,18 @@ const acorn = nodeRequire("next/dist/compiled/acorn") as {
 import {
   assertClassHasSpckSession,
   canonicalizeSpckFolderPath,
+  checkSpckSnapshotFileDrift,
+  computeSpckContentHash,
+  computeSpckSessionContentHash,
   formatSpckSessionTitle,
   normalizeSpckFolderKey,
+  parseSpckSubmissionSnapshot,
   spckSessionRepo,
   spckUploadRepo,
   stripSpckSessionSuffix,
   studentRepo,
   validateSpckTitleLength,
+  verifySpckSessionIntegrity,
   type SpckSessionNumber,
 } from "@/lib/db/sqlite";
 import {
@@ -398,22 +403,48 @@ export async function POST(req: Request) {
       // sync the newly scanned shared resources into it immediately so re-scanning a folder across Sessions 12 -> 13 -> 14 updates the UI right away.
       for (const slotNum of [12, 13, 14] as const) {
         const existingSess = spckSessionRepo.findOne(classId, suggestedId, slotNum);
+        if (!existingSess) {
+          continue;
+        }
+        const isRequestedActiveSessionSync =
+          body?.syncActiveSession === true &&
+          activeSessionNumber !== undefined &&
+          slotNum === activeSessionNumber;
         if (
-          !existingSess ||
           existingSess.lastVerifiedAt ||
           existingSess.draftStatus === "APPROVED" ||
           existingSess.draftStatus === "VERIFIED"
         ) {
+          if (isRequestedActiveSessionSync) {
+            const latestSharedRow = spckUploadRepo.findOne(classId, suggestedId);
+            const hasResourceDiff = spckSessionRepo.hasNewerSharedResources(
+              latestSharedRow,
+              existingSess
+            );
+            const integrityOk = existingSess.approvedContentHash
+              ? verifySpckSessionIntegrity(existingSess, slotNum)
+              : existingSess.lastVerifiedHash
+              ? computeSpckSessionContentHash(existingSess, slotNum) ===
+                  existingSess.lastVerifiedHash ||
+                computeSpckContentHash(existingSess) === existingSess.lastVerifiedHash
+              : true;
+            const snapshotDrift = checkSpckSnapshotFileDrift(
+              parseSpckSubmissionSnapshot(existingSess.lastVerifiedSnapshotJson)
+            ).hasFileDrift;
+            if (hasResourceDiff || !integrityOk || snapshotDrift) {
+              spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
+                classId,
+                suggestedId,
+                slotNum
+              );
+            }
+          }
           continue;
         }
         const isUntouchedDraft =
           existingSess.draftStatus === "DRAFT" &&
           !existingSess.teacherComment?.trim() &&
           !existingSess.teacherNote?.trim();
-        const isRequestedActiveSessionSync =
-          body?.syncActiveSession === true &&
-          activeSessionNumber !== undefined &&
-          slotNum === activeSessionNumber;
         const hasMissingThumb =
           Boolean(existingSess.thumbnailPath) && !fs.existsSync(existingSess.thumbnailPath);
         const hasMissingScreens = parseSafeArray<string>(existingSess.screenshotsJson).some(

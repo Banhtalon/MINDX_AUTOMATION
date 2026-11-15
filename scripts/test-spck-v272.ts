@@ -19,12 +19,14 @@
 import assert from "node:assert";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import zlib from "node:zlib";
 import { POST as importYoutubePost } from "../src/app/api/spck/import-youtube/route";
 import { POST as saveDraftPost } from "../src/app/api/spck/save-draft/route";
 import {
   classSessionRepo,
+  closeDb,
   getDb,
   spckSessionRepo,
   spckUploadRepo,
@@ -92,9 +94,17 @@ function req(url: string, body: unknown): Request {
 
 async function run() {
   console.log("=== KIỂM THỬ CẬP NHẬT SPCK v2.7.2 (V01 -> V14) ===");
+  const isolatedDbDir = fs.mkdtempSync(path.join(os.tmpdir(), "mindx-v272-test-"));
+  if (!process.env.MINDX_DB_PATH) {
+    process.env.MINDX_DB_PATH = path.join(isolatedDbDir, "mindx_v272_test.db");
+  }
+  const tempRoot = path.join(isolatedDbDir, "test_spck_v272");
+  process.env.ALLOWED_LOCAL_DIRS = [process.env.ALLOWED_LOCAL_DIRS, isolatedDbDir, tempRoot]
+    .filter(Boolean)
+    .join(";");
+
   const db = getDb();
   const classId = "TEST_V272_SB28";
-  const tempRoot = path.resolve(process.cwd(), "temp_submissions", "test_spck_v272");
   const managedYtRoot = path.resolve(process.cwd(), "data", "spck_youtube", classId);
   const cleanup = () => {
     db.prepare(`DELETE FROM spck_session_submissions WHERE classId = ?`).run(classId);
@@ -1067,6 +1077,10 @@ async function run() {
   } finally {
     globalThis.fetch = origFetch;
     cleanup();
+    closeDb();
+    try {
+      fs.rmSync(isolatedDbDir, { recursive: true, force: true });
+    } catch {}
   }
 }
 

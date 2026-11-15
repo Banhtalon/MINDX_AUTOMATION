@@ -60,8 +60,10 @@ const IGNORED_SUBFOLDER_NAMES = new Set([
   "__pycache__",
   "node_modules",
   ".git",
+  ".next",
   ".venv",
   "venv",
+  "env",
   "build",
   "dist",
   ".idea",
@@ -72,7 +74,74 @@ const IGNORED_SUBFOLDER_NAMES = new Set([
   "_spck_prev_backup",
   "_spck_temp",
   "_synth_assets",
+  "_portal_backups",
 ]);
+
+/**
+ * Returns `true` when a subdirectory name belongs to Bot-generated caches/screenshots/staging
+ * or local IDE/build/VCS metadata that must NEVER be uploaded to Google Drive.
+ */
+export function isBotOrSystemIgnoredDriveDir(dirName: string): boolean {
+  const lower = String(dirName || "").trim().toLowerCase();
+  if (!lower) return true;
+  if (lower.startsWith(".")) return true;
+  if (IGNORED_SUBFOLDER_NAMES.has(lower)) return true;
+  return /^(?:_spck_|_portal_|\.spck_portal_)/i.test(lower);
+}
+
+/**
+ * Returns `true` when a file name is a Bot-generated artifact (auto-captured screenshots,
+ * auto-bundled ZIP/YYZ archives, temporary Demo sheets, portal markers) or OS/IDE junk.
+ * Genuine student-created `.zip` files are intentionally preserved.
+ */
+export function isBotOrSystemIgnoredDriveFile(fileName: string): boolean {
+  const lower = String(fileName || "").trim().toLowerCase();
+  if (!lower) return true;
+  if (lower.startsWith(".") || lower.startsWith("_spck_") || lower.startsWith("_portal_")) {
+    return true;
+  }
+  if (
+    lower === "links.txt" ||
+    lower === "link.txt" ||
+    lower === "desktop.ini" ||
+    lower === "thumbs.db" ||
+    lower === ".ds_store" ||
+    lower === "portal_unconfirmed.json" ||
+    lower === "default-spck-thumbnail.png"
+  ) {
+    return true;
+  }
+  if (
+    lower.endsWith(".pyc") ||
+    lower.endsWith(".pyo") ||
+    lower.endsWith(".code-workspace") ||
+    lower.endsWith(".tmp")
+  ) {
+    return true;
+  }
+  if (
+    lower.endsWith("_web_package.zip") ||
+    lower.endsWith("_app_package.zip") ||
+    lower.endsWith("_robotics_package.zip") ||
+    lower.endsWith("_gamemaker.yyz") ||
+    /^spck_.*_[a-f0-9]{8}\.zip$/i.test(lower)
+  ) {
+    return true;
+  }
+  if (
+    /^app_\d+_.*_[a-f0-9]{6}\.(?:png|jpe?g|webp)$/i.test(lower) ||
+    /^yt_frame_\d+.*\.(?:png|jpe?g|webp)$/i.test(lower)
+  ) {
+    return true;
+  }
+  if (
+    /^_staging_gsheet_.*\.xlsx$/i.test(lower) ||
+    /^bảng chấm điểm buổi demo.*\.xlsx$/i.test(lower)
+  ) {
+    return true;
+  }
+  return false;
+}
 
 const ROBOTICS_COURSE_PREFIXES = new Set([
   "PREB",
@@ -244,6 +313,9 @@ export function prepareStudentFilesForDriveUpload(
   const filesToUpload: string[] = [];
 
   for (const entry of entries) {
+    if (isBotOrSystemIgnoredDriveFile(entry.name)) {
+      continue;
+    }
     const fullEntryPath = assertPathAllowed(path.join(safeFolder, entry.name));
     let st: fs.Stats;
     try {
@@ -252,20 +324,6 @@ export function prepareStudentFilesForDriveUpload(
       continue;
     }
     if (st.isSymbolicLink() || !st.isFile()) continue;
-
-    const lower = entry.name.toLowerCase();
-    if (
-      lower === "links.txt" ||
-      lower === "link.txt" ||
-      lower.endsWith(".pyc") ||
-      lower.endsWith("_web_package.zip") ||
-      lower.endsWith("_app_package.zip") ||
-      lower.endsWith("_robotics_package.zip") ||
-      lower.endsWith("_gamemaker.yyz") ||
-      /^spck_.*_[a-f0-9]{8}\.zip$/i.test(lower)
-    ) {
-      continue;
-    }
 
     if (st.size > MAX_DRIVE_FILE_SIZE_BYTES) {
       throw new Error(
@@ -540,6 +598,111 @@ async function scrollDriveItemIntoDom(page: Page, itemId: string): Promise<void>
 }
 
 /**
+ * Dismisses/confirms Google Drive's Shared-Folder trash confirmation modal
+ * ("Chuyển vào thùng rác?" / "Move to trash?") if it appears after deleting an item.
+ */
+export async function confirmDriveTrashDialogIfPresent(page: Page): Promise<boolean> {
+  await page.waitForTimeout(350);
+  const confirmTrashBtn = page
+    .locator(
+      '[role="dialog"] button:has-text("Chuyển vào thùng rác"):visible, [role="dialog"] button:has-text("Đưa vào thùng rác"):visible, [role="dialog"] button:has-text("Move to trash"):visible, [role="dialog"] button:has-text("Move to bin"):visible, [role="dialog"] button:has-text("Delete forever"):visible, [role="dialog"] button:has-text("Xóa"):visible, [role="alertdialog"] button:has-text("Chuyển vào thùng rác"):visible, [role="alertdialog"] button:has-text("Move to trash"):visible'
+    )
+    .first();
+  if (await confirmTrashBtn.isVisible().catch(() => false)) {
+    await confirmTrashBtn.click().catch(() => {});
+    await page.waitForTimeout(500);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Safely opens Google Drive's "+ Mới" / "+ New" menu and returns the visible target menuitem.
+ * Handles the real-world Drive bug where `+ Mới` already has `aria-expanded="true"` and an open
+ * `<li role="menuitem">` subtree intercepts pointer clicks on `button[guidedhelpid="new_menu_button"]`.
+ * Compatible with minimal Playwright mock locators used in regression unit tests.
+ */
+export async function openDriveNewMenuAndGetItem(
+  page: Page,
+  menuItemSelector: string
+): Promise<{ menuItem: ReturnType<Page["locator"]>; openedDirectlyFromMenu: boolean }> {
+  const rawMenuItem = page.locator(menuItemSelector);
+  const menuItem =
+    typeof (rawMenuItem as any).first === "function" ? rawMenuItem.first() : rawMenuItem;
+
+  // Case 1: "+ Mới" menu is already open (`aria-expanded="true"`) with our target menuitem visible.
+  // Do NOT click `newBtn` again (which would hit pointer interception on `<li role="menuitem">`).
+  if (await menuItem.isVisible().catch(() => false)) {
+    return { menuItem, openedDirectlyFromMenu: true };
+  }
+
+  // Case 2: Another leftover menu (e.g. row context menu) is open — close it first.
+  const anyVisibleMenu = page.locator('[role="menu"]:visible, [role="menuitem"]:visible');
+  const anyMenuFirst =
+    typeof (anyVisibleMenu as any).first === "function"
+      ? anyVisibleMenu.first()
+      : anyVisibleMenu;
+  if (await anyMenuFirst.isVisible().catch(() => false)) {
+    await page.keyboard?.press("Escape").catch(() => {});
+    await page.waitForTimeout(250);
+  }
+
+  const rawNewBtn = page.locator(
+    'button[guidedhelpid="new_menu_button"]:visible, button[aria-label="Mới"]:visible, button[aria-label="New"]:visible, [guidedhelpid="new_menu_button"]:visible'
+  );
+  const newBtn =
+    typeof (rawNewBtn as any).first === "function" ? rawNewBtn.first() : rawNewBtn;
+
+  const tryClickNewBtn = async () => {
+    try {
+      await (newBtn as any).click({ timeout: 5000 });
+    } catch {
+      if (await menuItem.isVisible().catch(() => false)) {
+        return;
+      }
+      await page.keyboard?.press("Escape").catch(() => {});
+      await page.waitForTimeout(250);
+      if (await menuItem.isVisible().catch(() => false)) {
+        return;
+      }
+      try {
+        await (newBtn as any).click({ timeout: 5000 });
+      } catch {
+        if (typeof (newBtn as any).evaluate === "function") {
+          await (newBtn as any)
+            .evaluate((el: unknown) => (el as HTMLElement | null)?.click())
+            .catch(() => {});
+        }
+      }
+    }
+  };
+
+  await tryClickNewBtn();
+  await page.waitForTimeout(450);
+
+  if (!(await menuItem.isVisible().catch(() => false))) {
+    await page.keyboard?.press("Escape").catch(() => {});
+    await page.waitForTimeout(250);
+    await tryClickNewBtn();
+    await page.waitForTimeout(450);
+  }
+
+  try {
+    await menuItem.waitFor({ state: "visible", timeout: 8000 });
+  } catch (waitErr) {
+    // One last recovery attempt in case Google Drive closed the menu on focus change
+    await page.keyboard?.press("Escape").catch(() => {});
+    await page.waitForTimeout(250);
+    await tryClickNewBtn();
+    await menuItem.waitFor({ state: "visible", timeout: 8000 }).catch(() => {
+      throw waitErr;
+    });
+  }
+
+  return { menuItem, openedDirectlyFromMenu: false };
+}
+
+/**
  * Moves an existing file item in the currently open Google Drive folder to trash so an updated local version can replace it cleanly.
  */
 async function moveDriveItemToTrash(page: Page, itemId: string): Promise<void> {
@@ -561,14 +724,16 @@ async function moveDriveItemToTrash(page: Page, itemId: string): Promise<void> {
     .first();
   if (await trashMenuItem.isVisible().catch(() => false)) {
     await trashMenuItem.click().catch(() => {});
-    await page.waitForTimeout(700);
+    await confirmDriveTrashDialogIfPresent(page);
+    await page.waitForTimeout(550);
   } else {
     await page.keyboard.press("Escape").catch(() => {});
     await page.waitForTimeout(150);
     await row.click().catch(() => {});
     await page.waitForTimeout(150);
     await page.keyboard.press("Delete").catch(() => {});
-    await page.waitForTimeout(500);
+    await confirmDriveTrashDialogIfPresent(page);
+    await page.waitForTimeout(450);
   }
 }
 
@@ -602,24 +767,16 @@ async function findOrCreateDriveSubfolder(
     await page.waitForTimeout(400);
   }
 
-  // Click "+ Mới" / "+ New" -> "Thư mục mới" / "New folder" (or use Shift+F shortcut)
-  const newBtn = page
-    .locator(
-      'button[guidedhelpid="new_menu_button"]:visible, button[aria-label="Mới"]:visible, button[aria-label="New"]:visible, [guidedhelpid="new_menu_button"]:visible'
-    )
-    .first();
-  await newBtn.click();
-  await page.waitForTimeout(500);
-
-  const newFolderMenuItem = page
-    .locator(
-      '[role="menuitem"]:has-text("Thư mục mới"):visible, [role="menuitem"]:has-text("New folder"):visible'
-    )
-    .first();
-
-  if (await newFolderMenuItem.isVisible().catch(() => false)) {
+  // Safely open "+ Mới" / "+ New" -> "Thư mục mới" / "New folder" (or fall back to Shift+F shortcut)
+  const newFolderMenuSelector =
+    '[role="menuitem"]:has-text("Thư mục mới"):visible, [role="menuitem"]:has-text("New folder"):visible';
+  try {
+    const { menuItem: newFolderMenuItem } = await openDriveNewMenuAndGetItem(
+      page,
+      newFolderMenuSelector
+    );
     await newFolderMenuItem.click();
-  } else {
+  } catch {
     await page.keyboard.press("Escape").catch(() => {});
     await page.waitForTimeout(200);
     await page.keyboard.press("Shift+F");
@@ -840,29 +997,12 @@ export async function uploadFilesIntoDriveFolder(
 
   assertDriveNotStopped();
 
-  const newBtn = page
-    .locator(
-      'button[guidedhelpid="new_menu_button"]:visible, button[aria-label="Mới"]:visible, button[aria-label="New"]:visible, [guidedhelpid="new_menu_button"]:visible'
-    )
-    .first();
-
-  const fileUploadMenuItem = page
-    .locator(
-      '[role="menuitem"]:has-text("Tải tệp lên"):visible, [role="menuitem"]:has-text("File upload"):visible'
-    )
-    .first();
-
-  await newBtn.click();
-  await page.waitForTimeout(450);
-
-  if (!(await fileUploadMenuItem.isVisible().catch(() => false))) {
-    await page.keyboard.press("Escape").catch(() => {});
-    await page.waitForTimeout(250);
-    await newBtn.click();
-    await page.waitForTimeout(450);
-  }
-
-  await fileUploadMenuItem.waitFor({ state: "visible", timeout: 8000 });
+  const fileUploadMenuSelector =
+    '[role="menuitem"]:has-text("Tải tệp lên"):visible, [role="menuitem"]:has-text("File upload"):visible';
+  const { menuItem: fileUploadMenuItem } = await openDriveNewMenuAndGetItem(
+    page,
+    fileUploadMenuSelector
+  );
 
   const [fileChooser] = await Promise.all([
     page.waitForEvent("filechooser", { timeout: 12000 }),
@@ -904,7 +1044,7 @@ export async function uploadFilesIntoDriveFolder(
       await page.waitForTimeout(200);
       const replaceConfirmBtn = page
         .locator(
-          '[role="dialog"] button:has-text("Tải lên"):visible, [role="dialog"] button:has-text("Tiếp tục"):visible, [role="dialog"] button:has-text("Thay thế"):visible, [role="dialog"] button:has-text("Upload"):visible, [role="dialog"] button:has-text("Continue"):visible, [role="dialog"] button:has-text("Replace"):visible, [role="dialog"] button[data-id="EBS5u"]:visible'
+          '[role="dialog"] button:has-text("Tải lên"):visible, [role="dialog"] button:has-text("Tiếp tục"):visible, [role="dialog"] button:has-text("Thay thế"):visible, [role="dialog"] button:has-text("Cập nhật"):visible, [role="dialog"] button:has-text("Upload"):visible, [role="dialog"] button:has-text("Continue"):visible, [role="dialog"] button:has-text("Replace"):visible, [role="dialog"] button:has-text("Update"):visible, [role="dialog"] button:has-text("OK"):visible, [role="dialog"] button[data-id="EBS5u"]:visible'
         )
         .last();
       if (await replaceConfirmBtn.isVisible().catch(() => false)) {
@@ -923,7 +1063,7 @@ export async function uploadFilesIntoDriveFolder(
         await page.waitForTimeout(200);
         const keepBothConfirmBtn = page
           .locator(
-            '[role="dialog"] button:has-text("Tải lên"):visible, [role="dialog"] button:has-text("Tiếp tục"):visible, [role="dialog"] button:has-text("Upload"):visible, [role="dialog"] button:has-text("Continue"):visible, [role="dialog"] button[data-id="EBS5u"]:visible'
+            '[role="dialog"] button:has-text("Tải lên"):visible, [role="dialog"] button:has-text("Tiếp tục"):visible, [role="dialog"] button:has-text("Upload"):visible, [role="dialog"] button:has-text("Continue"):visible, [role="dialog"] button:has-text("OK"):visible, [role="dialog"] button[data-id="EBS5u"]:visible'
           )
           .last();
         if (await keepBothConfirmBtn.isVisible().catch(() => false)) {
@@ -933,7 +1073,7 @@ export async function uploadFilesIntoDriveFolder(
       } else {
         const directReplaceConfirmBtn = page
           .locator(
-            '[role="dialog"] button:has-text("Thay thế"):visible, [role="dialog"] button:has-text("Replace"):visible, [role="dialog"] button:has-text("Tiếp tục"):visible, [role="dialog"] button:has-text("Continue"):visible'
+            '[role="dialog"] button:has-text("Thay thế"):visible, [role="dialog"] button:has-text("Replace"):visible, [role="dialog"] button:has-text("Cập nhật"):visible, [role="dialog"] button:has-text("Update"):visible, [role="dialog"] button:has-text("Tiếp tục"):visible, [role="dialog"] button:has-text("Continue"):visible, [role="dialog"] button:has-text("OK"):visible'
           )
           .last();
         if (await directReplaceConfirmBtn.isVisible().catch(() => false)) {
@@ -1079,9 +1219,116 @@ export async function uploadFilesIntoDriveFolder(
 }
 
 /**
+ * Pre-validates the student's entire local directory tree (allowlist, depth, size, and >0 valid
+ * student files excluding Bot artifacts) BEFORE trashing any existing remote Drive contents.
+ */
+export function validateLocalDriveTreeBeforeUpload(
+  localDirPath: string,
+  studentId: string,
+  fullName: string,
+  depth = 0
+): number {
+  assertDriveNotStopped();
+  if (depth > MAX_DRIVE_TREE_DEPTH) {
+    throw new Error(
+      `Cấu trúc thư mục SPCK của '${fullName}' vượt quá độ sâu cho phép (${MAX_DRIVE_TREE_DEPTH} cấp): '${localDirPath}'.`
+    );
+  }
+  const safeDir = assertPathAllowed(localDirPath);
+  const directFiles = prepareStudentFilesForDriveUpload(safeDir, studentId, fullName);
+  let totalValid = directFiles.length;
+
+  const entries = fs
+    .readdirSync(safeDir, { withFileTypes: true })
+    .filter((e) => !e.name.startsWith("."))
+    .sort((a, b) => a.name.localeCompare(b.name, "en"));
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (isBotOrSystemIgnoredDriveDir(entry.name)) continue;
+    const subLocalPath = assertPathAllowed(path.join(safeDir, entry.name));
+    let st: fs.Stats;
+    try {
+      st = fs.lstatSync(subLocalPath);
+    } catch {
+      continue;
+    }
+    if (st.isSymbolicLink()) continue;
+    totalValid += validateLocalDriveTreeBeforeUpload(
+      subLocalPath,
+      studentId,
+      fullName,
+      depth + 1
+    );
+  }
+
+  if (depth === 0 && totalValid === 0) {
+    throw new Error(
+      `Thư mục SPCK của '${fullName}' không có tệp hợp lệ nào để tải lên Google Drive.`
+    );
+  }
+  return totalValid;
+}
+
+/**
+ * Moves every existing direct child item (files and old subfolders) inside `targetDriveFolderId`
+ * to Google Drive Trash, keeping `targetDriveFolderId` itself (and its share URL) intact.
+ */
+async function purgeAllItemsInsideDriveFolder(
+  page: Page,
+  targetDriveFolderId: string
+): Promise<number> {
+  await ensureGoogleDriveFolderReadyAndAuthenticated(page, targetDriveFolderId);
+  let trashedCount = 0;
+
+  for (let pass = 0; pass < 3; pass++) {
+    assertDriveNotStopped();
+    const items = await listDriveItemsOnPage(page, targetDriveFolderId);
+    if (items.length === 0) {
+      return trashedCount;
+    }
+    for (const item of items) {
+      assertDriveNotStopped();
+      await moveDriveItemToTrash(page, item.id);
+      trashedCount += 1;
+    }
+    await page.keyboard.press("Escape").catch(() => {});
+    await page.waitForTimeout(450);
+  }
+
+  let remaining = await listDriveItemsOnPage(page, targetDriveFolderId);
+  if (remaining.length > 0) {
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 20000 }).catch(() => {});
+    await ensureGoogleDriveFolderReadyAndAuthenticated(page, targetDriveFolderId);
+    remaining = await listDriveItemsOnPage(page, targetDriveFolderId);
+    for (const item of remaining) {
+      assertDriveNotStopped();
+      await moveDriveItemToTrash(page, item.id);
+      trashedCount += 1;
+    }
+    await page.keyboard.press("Escape").catch(() => {});
+    await page.waitForTimeout(450);
+    remaining = await listDriveItemsOnPage(page, targetDriveFolderId);
+  }
+
+  if (remaining.length > 0) {
+    throw new Error(
+      `Không thể dọn sạch ${remaining.length} tệp/thư mục cũ trong thư mục Google Drive trước khi tải lên (${remaining
+        .map((r) => r.name)
+        .slice(0, 3)
+        .join(", ")}). Đã dừng để tránh trộn lẫn bài cũ và mới.`
+    );
+  }
+
+  return trashedCount;
+}
+
+/**
  * Uploads a student's local directory (including subdirectories like `gui/`, `img/`, `image/`, `src/`)
  * into `targetDriveFolderId` preserving the exact folder structure without creating any synthetic `.zip`.
- * Stale remote files and stale remote subfolders are trashed ONLY at `depth === 0` after the entire tree succeeds.
+ * When `options.cleanDestinationBeforeUpload` is true, pre-validates the local tree and moves all old items
+ * inside `targetDriveFolderId` to Trash first (preserving `targetDriveFolderId` and its Drive URL).
+ * Otherwise preserves upload-first / cleanup-after behavior for direct low-level callers.
  */
 export async function uploadStudentDirectoryTreeToDrive(
   page: Page,
@@ -1095,7 +1342,8 @@ export async function uploadStudentDirectoryTreeToDrive(
   deferredRenameAccumulator?: Array<{
     folderId: string;
     items: Array<{ id: string; cleanName: string }>;
-  }>
+  }>,
+  options?: { cleanDestinationBeforeUpload?: boolean }
 ): Promise<number> {
   assertDriveNotStopped();
   if (depth > MAX_DRIVE_TREE_DEPTH) {
@@ -1104,6 +1352,13 @@ export async function uploadStudentDirectoryTreeToDrive(
     );
   }
   const safeDir = assertPathAllowed(localDirPath);
+  const cleanMode = depth === 0 && options?.cleanDestinationBeforeUpload === true;
+  if (cleanMode) {
+    validateLocalDriveTreeBeforeUpload(safeDir, studentId, fullName, 0);
+    await purgeAllItemsInsideDriveFolder(page, targetDriveFolderId);
+  }
+
+  const effectiveReplaceStale = cleanMode ? false : replaceAllStaleFiles;
   const directFiles = prepareStudentFilesForDriveUpload(safeDir, studentId, fullName);
   const cleanupQueue =
     deferredCleanupAccumulator || ([] as Array<{ folderId: string; itemIds: string[] }>);
@@ -1117,7 +1372,7 @@ export async function uploadStudentDirectoryTreeToDrive(
     page,
     targetDriveFolderId,
     directFiles,
-    replaceAllStaleFiles,
+    effectiveReplaceStale,
     cleanupQueue,
     renameQueue
   );
@@ -1131,11 +1386,7 @@ export async function uploadStudentDirectoryTreeToDrive(
   const validSubdirEntries: Array<{ name: string; subLocalPath: string }> = [];
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
-    const entryLower = entry.name.toLowerCase();
-    if (
-      IGNORED_SUBFOLDER_NAMES.has(entryLower) ||
-      entryLower.startsWith("_spck_")
-    ) {
+    if (isBotOrSystemIgnoredDriveDir(entry.name)) {
       continue;
     }
     const subLocalPath = assertPathAllowed(path.join(safeDir, entry.name));
@@ -1149,7 +1400,7 @@ export async function uploadStudentDirectoryTreeToDrive(
     validSubdirEntries.push({ name: entry.name, subLocalPath });
   }
 
-  if (replaceAllStaleFiles) {
+  if (effectiveReplaceStale) {
     await ensureGoogleDriveFolderReadyAndAuthenticated(page, targetDriveFolderId);
     const existingRemoteItems = await listDriveItemsOnPage(page, targetDriveFolderId);
     const localSubdirNormNames = new Set(
@@ -1184,7 +1435,7 @@ export async function uploadStudentDirectoryTreeToDrive(
       studentId,
       fullName,
       depth + 1,
-      replaceAllStaleFiles,
+      effectiveReplaceStale,
       cleanupQueue,
       renameQueue
     );
@@ -1396,7 +1647,10 @@ export class SpckDriveUploader {
           record.studentId,
           fullName,
           0,
-          !isRoboticsClass
+          true,
+          undefined,
+          undefined,
+          { cleanDestinationBeforeUpload: true }
         );
 
         const studentDriveUrl = `https://drive.google.com/drive/folders/${studentDriveFolderId}`;

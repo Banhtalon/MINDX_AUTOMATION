@@ -2437,6 +2437,7 @@ export async function captureClassAppScreenshotsAndSelectThumbnails(params: {
           thumbnailPath: cap.thumbnailPath,
           screenshotsJson: JSON.stringify(cap.galleryScreenshots),
           syncSessionNumber: params.sessionNumber,
+          forceSyncTargetSession: Boolean(params.sessionNumber),
         });
       }
     } catch (err) {

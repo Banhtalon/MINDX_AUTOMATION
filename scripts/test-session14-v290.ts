@@ -12,6 +12,7 @@
 import assert from "node:assert";
 import fs from "node:fs";
 import { createRequire } from "node:module";
+import os from "node:os";
 import path from "node:path";
 import vm from "node:vm";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -23,6 +24,7 @@ import { POST as s14EvalImportDemoPost } from "../src/app/api/spck/session14-eva
 import { GET as s14EvalGet, POST as s14EvalPost } from "../src/app/api/spck/session14-eval/route";
 import {
   classSessionRepo,
+  closeDb,
   getDb,
   SESSION14_COMPETENCY_KEYS,
   session14EvalRepo,
@@ -144,11 +146,19 @@ function buildTestDemoWorkbookBuffer(studentName: string): Buffer {
 async function runTests() {
   console.log("=== BẮT ĐẦU KIỂM THỬ BUỔI 14 TỔNG KẾT CUỐI KHÓA (v2.9.0) ===");
 
+  const isolatedDbDir = fs.mkdtempSync(path.join(os.tmpdir(), "mindx-v290-test-"));
+  if (!process.env.MINDX_DB_PATH) {
+    process.env.MINDX_DB_PATH = path.join(isolatedDbDir, "mindx_v290_test.db");
+  }
+  const tempDir = path.join(isolatedDbDir, "temp_v290_test");
+  process.env.ALLOWED_LOCAL_DIRS = [process.env.ALLOWED_LOCAL_DIRS, isolatedDbDir, tempDir]
+    .filter(Boolean)
+    .join(";");
+
   const db = getDb();
   const testClassId = "TEST-JSB15-V290";
   const stuDallasId = "STU_DALLAS_01";
   const stuEmptyId = "STU_EMPTY_02";
-  const tempDir = path.resolve(process.cwd(), "data", "temp_v290_test");
   fs.mkdirSync(tempDir, { recursive: true });
 
   const cleanup = () => {
@@ -1452,6 +1462,10 @@ async function runTests() {
     console.log("\n🎉 TẤT CẢ 7 HẠNG MỤC KIỂM THỬ BUỔI 14 (S14-01 -> S14-07) ĐỀU PASS 100%!");
   } finally {
     cleanup();
+    closeDb();
+    try {
+      fs.rmSync(isolatedDbDir, { recursive: true, force: true });
+    } catch {}
   }
 }
 

@@ -26,12 +26,21 @@ export function getGeminiClient(): GoogleGenerativeAI {
 /**
  * Returns the configured Gemini model instance with JSON response MIME type.
  */
-export function getGeminiModel(customModelName?: string, customTemperature?: number) {
+export function getGeminiModel(
+  customModelName?: string,
+  customTemperature?: number,
+  systemInstruction?: string
+) {
   const client = getGeminiClient();
   const modelName = customModelName || config.geminiModel || "gemini-3.5-flash-lite";
+  const cleanSystemInstruction =
+    typeof systemInstruction === "string" && systemInstruction.trim()
+      ? systemInstruction.trim()
+      : undefined;
 
   return client.getGenerativeModel({
     model: modelName,
+    ...(cleanSystemInstruction ? { systemInstruction: cleanSystemInstruction } : {}),
     generationConfig: {
       responseMimeType: "application/json",
       temperature: typeof customTemperature === "number" ? customTemperature : 0.3,

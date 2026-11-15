@@ -29,9 +29,11 @@ import { BrowserManager } from "./browser-manager";
 import {
   CODING_SPCK_COURSE_FOLDER_MAP,
   CODING_SPCK_ROOT_FOLDER_ID,
+  confirmDriveTrashDialogIfPresent,
   DEFAULT_SPCK_DRIVE_FOLDER_URL,
   detectCoursePrefixFromClassId,
   extractDriveFolderId,
+  openDriveNewMenuAndGetItem,
 } from "./spck-drive-uploader";
 
 export const COURSE_DEMO_TITLE_MAP: Record<string, string> = {
@@ -1625,15 +1627,7 @@ async function moveDriveItemToTrash(
     await page.keyboard.press("Delete").catch(() => {});
   }
 
-  await page.waitForTimeout(450);
-  const confirmBtn = page
-    .locator(
-      '[role="dialog"] button:has-text("Chuyển vào thùng rác"):visible, [role="dialog"] button:has-text("Move to trash"):visible, [role="dialog"] button:has-text("Xóa"):visible'
-    )
-    .first();
-  if (await confirmBtn.isVisible().catch(() => false)) {
-    await confirmBtn.click().catch(() => {});
-  }
+  await confirmDriveTrashDialogIfPresent(page);
 
   const deadline = Date.now() + 8_000;
   while (Date.now() < deadline) {
@@ -1776,20 +1770,10 @@ async function createNativeGoogleSheetViaDriveAndImport(params: {
   } = params;
 
   await ensureDriveFolderReady(page, driveBaseUrl, classDriveFolderId);
-  const newBtn = page
-    .locator(
-      'button[guidedhelpid="new_menu_button"]:visible, button[aria-label="Mới"]:visible, button[aria-label="New"]:visible'
-    )
-    .first();
-  await newBtn.click();
-  await page.waitForTimeout(400);
-
-  const sheetsMenuItem = page
-    .locator(
-      '[role="menuitem"]:has-text("Google Trang tính"):visible, [role="menuitem"]:has-text("Google Sheets"):visible'
-    )
-    .first();
-  await sheetsMenuItem.waitFor({ state: "visible", timeout: 8000 });
+  const { menuItem: sheetsMenuItem } = await openDriveNewMenuAndGetItem(
+    page,
+    '[role="menuitem"]:has-text("Google Trang tính"):visible, [role="menuitem"]:has-text("Google Sheets"):visible'
+  );
 
   let openedPopupPage: Page | null = null;
   const popupListener = (p: Page) => {
@@ -1993,18 +1977,10 @@ async function createNativeGoogleSheetViaSaveAsFallback(params: {
   } = params;
 
   await ensureDriveFolderReady(page, driveBaseUrl, classDriveFolderId);
-  const newBtn = page
-    .locator(
-      'button[guidedhelpid="new_menu_button"]:visible, button[aria-label="Mới"]:visible, button[aria-label="New"]:visible'
-    )
-    .first();
-  await newBtn.click();
-  await page.waitForTimeout(400);
-
-  const fileUploadItem = page
-    .locator('[role="menuitem"]:has-text("Tải tệp lên"):visible, [role="menuitem"]:has-text("File upload"):visible')
-    .first();
-  await fileUploadItem.waitFor({ state: "visible", timeout: 8000 });
+  const { menuItem: fileUploadItem } = await openDriveNewMenuAndGetItem(
+    page,
+    '[role="menuitem"]:has-text("Tải tệp lên"):visible, [role="menuitem"]:has-text("File upload"):visible'
+  );
   const fcPromise = page.waitForEvent("filechooser", { timeout: 12000 });
   await fileUploadItem.click();
   const fc = await fcPromise;
@@ -2302,19 +2278,11 @@ export async function createAndUploadClassDemoSheetToDrive(
             ?.id || "";
 
         if (!classDriveFolderId) {
-          const newBtn = page
-            .locator(
-              'button[guidedhelpid="new_menu_button"]:visible, button[aria-label="Mới"]:visible, button[aria-label="New"]:visible'
-            )
-            .first();
-          await newBtn.click();
-          await page.waitForTimeout(400);
-          await page
-            .locator(
-              '[role="menuitem"]:has-text("Thư mục mới"):visible, [role="menuitem"]:has-text("New folder"):visible'
-            )
-            .first()
-            .click();
+          const { menuItem: newFolderMenuItem } = await openDriveNewMenuAndGetItem(
+            page,
+            '[role="menuitem"]:has-text("Thư mục mới"):visible, [role="menuitem"]:has-text("New folder"):visible'
+          );
+          await newFolderMenuItem.click();
           const dlg = page
             .locator('[role="dialog"]')
             .filter({ hasText: /Thư mục mới|New folder/i })

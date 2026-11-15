@@ -3538,7 +3538,71 @@ export class SpckUploader {
         }
       }
 
-      // 6. Add Related Links with mandatory "+ Thêm" click
+      // 6. Add Related Links (remove stale/duplicate non-YouTube links on reused modals first)
+      if (reusedExistingItem01) {
+        const allowedUrlsLower = relatedLinks
+          .map((r) => r.url.trim().replace(/\/+$/, "").toLowerCase())
+          .filter(Boolean);
+        for (let pass = 0; pass < 10; pass++) {
+          const removedOne = await modal
+            .evaluate((modalEl, allowedArr) => {
+              const allowedSet = new Set(allowedArr);
+              const seenUrls = new Set<string>();
+              const anchors = Array.from(
+                modalEl.querySelectorAll('a[href^="http"]')
+              ) as HTMLAnchorElement[];
+              for (const anchor of anchors) {
+                const rawHref = (anchor.getAttribute("href") || anchor.href || "").trim();
+                const normHref = rawHref.replace(/\/+$/, "").toLowerCase();
+                if (!normHref) continue;
+                if (
+                  normHref.includes("youtube.com") ||
+                  normHref.includes("youtu.be") ||
+                  normHref.includes("resources.mindx.edu.vn")
+                ) {
+                  continue;
+                }
+                const isStaleOrDup = !allowedSet.has(normHref) || seenUrls.has(normHref);
+                seenUrls.add(normHref);
+                if (!isStaleOrDup) continue;
+
+                let container: HTMLElement | null = anchor.parentElement;
+                for (let depth = 0; depth < 4 && container && container !== modalEl; depth++) {
+                  const rowAnchors = container.querySelectorAll('a[href^="http"]');
+                  if (rowAnchors.length > 1) {
+                    break;
+                  }
+                  const btns = Array.from(
+                    container.querySelectorAll("button")
+                  ) as HTMLButtonElement[];
+                  const candidateBtns = btns.filter((btn) => {
+                    if (btn.disabled) return false;
+                    const txt = (btn.textContent || "").trim();
+                    if (/^(?:thêm|add|save|lưu|cancel|hủy|đóng|close|thay ảnh)$/i.test(txt)) {
+                      return false;
+                    }
+                    return true;
+                  });
+                  const delBtn =
+                    candidateBtns.find((btn) => {
+                      const label = `${btn.textContent || ""} ${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
+                      return /xóa|delete|remove|trash|clear|✕|×/i.test(label) || (btn.textContent || "").trim().length <= 2;
+                    }) || candidateBtns[0];
+                  if (delBtn) {
+                    delBtn.click();
+                    return true;
+                  }
+                  container = container.parentElement;
+                }
+              }
+              return false;
+            }, allowedUrlsLower)
+            .catch(() => false);
+          if (removedOne !== true) break;
+          await page.waitForTimeout(250);
+        }
+      }
+
       const relNameInput = modal
         .locator(
           'input#inputRelativeUrlName, input[placeholder="Đặt tên đường dẫn"], input[placeholder*="Đặt tên đường dẫn" i]'
@@ -4008,6 +4072,41 @@ export class SpckUploader {
             screenshots,
             "hình ảnh sản phẩm"
           );
+        }
+        const serverRelRaw = Array.isArray(savedWork.latestData.relativeUrls)
+          ? savedWork.latestData.relativeUrls
+          : Array.isArray(savedWork.latestData.relatedLinks)
+          ? savedWork.latestData.relatedLinks
+          : null;
+        if (serverRelRaw && relatedLinks.length > 0) {
+          const serverRelUrls = new Set(
+            serverRelRaw
+              .map((item: any) =>
+                String(
+                  typeof item === "string"
+                    ? item
+                    : item?.url || item?.relativeUrl || ""
+                )
+                  .trim()
+                  .replace(/\/+$/, "")
+                  .toLowerCase()
+              )
+              .filter(Boolean)
+          );
+          for (const rel of relatedLinks) {
+            const normExpected = rel.url.trim().replace(/\/+$/, "").toLowerCase();
+            if (!serverRelUrls.has(normExpected)) {
+              const errMsg = `[Read-after-Write] Phản hồi API sau lưu thiếu đường dẫn liên quan '${rel.name}' (${rel.url}).`;
+              spckUploadRepo.recordSessionFailure(
+                normalizedClassId,
+                record.studentId,
+                targetSessionNumber,
+                expectedHash,
+                errMsg
+              );
+              throw new Error(errMsg);
+            }
+          }
         }
       }
 

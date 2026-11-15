@@ -2490,6 +2490,7 @@ export const spckUploadRepo = {
           youtubeUrlsJson?: string;
           relatedLinksJson?: string;
           syncSessionNumber?: SpckSessionSlotNumber;
+          forceSyncTargetSession?: boolean;
         },
     studentIdArg?: string,
     patchArg?: {
@@ -2503,6 +2504,7 @@ export const spckUploadRepo = {
       youtubeUrlsJson?: string;
       relatedLinksJson?: string;
       syncSessionNumber?: SpckSessionSlotNumber;
+      forceSyncTargetSession?: boolean;
     },
     expectedFolderPathArg?: string
   ): { updated: boolean; reason?: string; record?: SpckUploadRecord } {
@@ -2601,10 +2603,20 @@ export const spckUploadRepo = {
           params.studentId,
           slotNum
         );
-        if (!sessRow || sessRow.lastVerifiedAt || sessRow.draftStatus === "APPROVED") {
+        if (!sessRow) {
           continue;
         }
         const isTargetSlot = slotNum === params.syncSessionNumber;
+        const allowForceTarget =
+          isTargetSlot && params.forceSyncTargetSession === true;
+        if (
+          !allowForceTarget &&
+          (sessRow.lastVerifiedAt ||
+            sessRow.draftStatus === "APPROVED" ||
+            sessRow.draftStatus === "VERIFIED")
+        ) {
+          continue;
+        }
         const hasMissingThumbOnDisk =
           Boolean(sessRow.thumbnailPath) && !fs.existsSync(sessRow.thumbnailPath);
         if (isTargetSlot || hasMissingThumbOnDisk) {
@@ -3186,8 +3198,31 @@ export const spckSessionRepo = {
       stageInfo.sessionNumber
     );
 
+    const candidateLegacyHash = computeSpckContentHash({
+      classId: params.classId,
+      studentId: params.studentId,
+      localFolderPath: nextFolder,
+      isConfirmedByTeacher: nextConfirmed,
+      projectTitle: nextTitle,
+      thumbnailPath: nextThumb,
+      screenshotsJson: nextScreens,
+      attachmentsJson: nextAttach,
+      youtubeUrlsJson: nextYt,
+      relatedLinksJson: nextLinks,
+      teacherComment: nextComment,
+    });
+
     const contentChangedFromApproved =
-      Boolean(current.approvedContentHash) && current.approvedContentHash !== candidateHash;
+      Boolean(current.approvedContentHash) &&
+      current.approvedContentHash !== candidateHash &&
+      current.approvedContentHash !== candidateLegacyHash;
+    const verifiedByteDrift =
+      (current.draftStatus === "VERIFIED" || Boolean(current.lastVerifiedAt)) &&
+      ((Boolean(current.lastVerifiedHash) &&
+        current.lastVerifiedHash !== candidateHash &&
+        current.lastVerifiedHash !== candidateLegacyHash) ||
+        checkSpckSnapshotFileDrift(parseSpckSubmissionSnapshot(current.lastVerifiedSnapshotJson))
+          .hasFileDrift);
     const contentChangedFromCurrent =
       normalizeSpckFolderKey(nextFolder) !== normalizeSpckFolderKey(current.localFolderPath) ||
       nextConfirmed !== current.isConfirmedByTeacher ||
@@ -3206,8 +3241,8 @@ export const spckSessionRepo = {
     let nextApprovedSnapshot = current.approvedSnapshotJson || "{}";
     let nextApprovedAt = current.approvedAt || null;
 
-    if (contentChangedFromApproved || contentChangedFromCurrent) {
-      if (nextApprovedHash && contentChangedFromApproved) {
+    if (contentChangedFromApproved || contentChangedFromCurrent || verifiedByteDrift) {
+      if (nextApprovedHash && (contentChangedFromApproved || verifiedByteDrift)) {
         nextDraftStatus = "WAITING_APPROVAL";
         nextApprovedHash = "";
         nextApprovedSnapshot = "{}";
@@ -3219,7 +3254,10 @@ export const spckSessionRepo = {
       }
     }
 
-    const nextVersion = contentChangedFromCurrent ? current.draftVersion + 1 : current.draftVersion;
+    const nextVersion =
+      contentChangedFromCurrent || contentChangedFromApproved || verifiedByteDrift
+        ? current.draftVersion + 1
+        : current.draftVersion;
 
     db.prepare(
       `UPDATE spck_session_submissions

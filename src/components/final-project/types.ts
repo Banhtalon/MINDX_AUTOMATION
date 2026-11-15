@@ -58,8 +58,11 @@ export interface SpckSessionSlotSummaryUI {
   badgeLabel: string;
   attendanceStatus?: "PRESENT" | "ABSENT" | null;
   draftVersion: number;
-  hasUnsubmittedDraftChanges: boolean;
-  hasFileDrift: boolean;
+  hasUnsubmittedChanges?: boolean;
+  hasUnsubmittedDraftChanges?: boolean;
+  hasNewerSharedResources?: boolean;
+  hasFileDriftAfterVerified?: boolean;
+  hasFileDrift?: boolean;
   driftedFiles: string[];
   lastAttemptStatus: string | null;
   lastAttemptAt: string | null;

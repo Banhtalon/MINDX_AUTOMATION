@@ -753,7 +753,7 @@ TRẢ VỀ DUY NHẤT JSON HỢP LỆ THEO ĐỊNH DẠNG:
           scorableCriteria,
         });
       } else {
-        const model = getGeminiModel(systemInstruction);
+        const model = getGeminiModel(undefined, 0.2, systemInstruction);
         const userParts: any[] = [{ text: promptSections }, ...imageParts];
         const result = await model.generateContent({
           contents: [{ role: "user", parts: userParts }],
