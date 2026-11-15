@@ -59,7 +59,7 @@ export function TopNavbar() {
         <Link href="/" className="flex items-center space-x-2 group">
           <span className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-1.5 text-white">
             <span className="text-amber-400">⚡</span>
-            <span className="mindx-brand-text">MindX Bot v3.5.0</span>
+            <span className="mindx-brand-text">MindX Bot v3.5.4</span>
           </span>
         </Link>
 

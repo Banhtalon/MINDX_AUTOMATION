@@ -1564,13 +1564,18 @@ async function listDriveFilesInFolder(
   }
 }
 
+function isExactDriveFolderUrl(currentUrl: string, folderId: string): boolean {
+  const m = String(currentUrl || "").match(/\/folders\/([^/?#]+)/i);
+  return Boolean(m && m[1] === folderId);
+}
+
 async function ensureDriveFolderReady(
   page: Page,
   driveBaseUrl: string,
   folderId: string
 ): Promise<void> {
   const targetUrl = `${driveBaseUrl}/drive/folders/${folderId}`;
-  if (!page.url().includes(`/folders/${folderId}`)) {
+  if (!isExactDriveFolderUrl(page.url(), folderId)) {
     await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
   }
   const newBtn = page
@@ -1596,7 +1601,7 @@ async function moveDriveItemToTrash(
   itemId: string
 ): Promise<boolean> {
   if (!itemId) return true;
-  if (!page.url().includes(`/folders/${classDriveFolderId}`)) {
+  if (!isExactDriveFolderUrl(page.url(), classDriveFolderId)) {
     await page
       .goto(`${driveBaseUrl}/drive/folders/${classDriveFolderId}`, {
         waitUntil: "domcontentloaded",
@@ -2272,31 +2277,80 @@ export async function createAndUploadClassDemoSheetToDrive(
         }
 
         await ensureDriveFolderReady(page, driveBaseUrl, courseParentFolderId);
-        const courseItems = await listDriveFilesInFolder(page, courseParentFolderId);
-        classDriveFolderId =
-          courseItems.find((i) => i.isFolder && i.name.trim().toUpperCase() === normalizedClassId)
-            ?.id || "";
+        const currentFolderTitle = (await page.title().catch(() => "")).toUpperCase();
+        if (currentFolderTitle.includes(normalizedClassId)) {
+          classDriveFolderId = courseParentFolderId;
+        } else {
+          const courseItems = await listDriveFilesInFolder(page, courseParentFolderId);
+          classDriveFolderId =
+            courseItems.find((i) => i.isFolder && i.name.trim().toUpperCase() === normalizedClassId)
+              ?.id || "";
+        }
 
         if (!classDriveFolderId) {
-          const { menuItem: newFolderMenuItem } = await openDriveNewMenuAndGetItem(
-            page,
-            '[role="menuitem"]:has-text("Thư mục mới"):visible, [role="menuitem"]:has-text("New folder"):visible'
-          );
-          await newFolderMenuItem.click();
+          const leftoverNewFolderDlg = page
+            .locator('[role="dialog"]')
+            .filter({ hasText: /Thư mục mới|New folder/i });
+          if ((await leftoverNewFolderDlg.count().catch(() => 0)) > 0) {
+            await page.keyboard.press("Escape").catch(() => {});
+            await page.waitForTimeout(350);
+          }
+
+          try {
+            const { menuItem: newFolderMenuItem } = await openDriveNewMenuAndGetItem(
+              page,
+              '[role="menuitem"]:has-text("Thư mục mới"):visible, [role="menuitem"]:has-text("New folder"):visible'
+            );
+            await newFolderMenuItem.click();
+          } catch {
+            await page.keyboard.press("Escape").catch(() => {});
+            await page.waitForTimeout(200);
+            await page.keyboard.press("Shift+F");
+          }
+
           const dlg = page
             .locator('[role="dialog"]')
             .filter({ hasText: /Thư mục mới|New folder/i })
             .last();
-          await dlg.waitFor({ state: "visible", timeout: 8000 });
+          await dlg.waitFor({ state: "visible", timeout: 10000 });
           const input = dlg.locator('input[type="text"]').first();
+          await input.waitFor({ state: "visible", timeout: 8000 });
+          await input.click().catch(() => {});
           await input.fill(normalizedClassId);
-          await input.press("Enter");
-          await page.waitForTimeout(2200);
-          const updatedItems = await listDriveFilesInFolder(page, courseParentFolderId);
-          classDriveFolderId =
-            updatedItems.find(
-              (i) => i.isFolder && i.name.trim().toUpperCase() === normalizedClassId
-            )?.id || "";
+          await page.waitForTimeout(200);
+
+          const createBtn = dlg
+            .locator(
+              'button:has-text("Tạo"), button:has-text("Create"), button[data-id="EBS5u"]'
+            )
+            .last();
+          if (await createBtn.isVisible().catch(() => false)) {
+            await createBtn.click();
+          } else {
+            await input.press("Enter");
+          }
+
+          const createDeadline = Date.now() + 15_000;
+          while (!classDriveFolderId && Date.now() < createDeadline) {
+            assertDemoSheetNotStopped();
+            await page.waitForTimeout(900);
+            const polledItems = await listDriveFilesInFolder(page, courseParentFolderId);
+            classDriveFolderId =
+              polledItems.find(
+                (i) => i.isFolder && i.name.trim().toUpperCase() === normalizedClassId
+              )?.id || "";
+          }
+
+          if (!classDriveFolderId) {
+            await page.reload({ waitUntil: "domcontentloaded", timeout: 20000 }).catch(() => {});
+            await ensureDriveFolderReady(page, driveBaseUrl, courseParentFolderId);
+            const reloadedItems = await listDriveFilesInFolder(page, courseParentFolderId);
+            classDriveFolderId =
+              reloadedItems.find(
+                (i) => i.isFolder && i.name.trim().toUpperCase() === normalizedClassId
+              )?.id || "";
+          }
+
           if (!classDriveFolderId) {
             throw new Error(
               `Không tìm thấy thư mục lớp '${normalizedClassId}' trên Google Drive.`

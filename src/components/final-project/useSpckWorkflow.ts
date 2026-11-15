@@ -348,9 +348,31 @@ export interface SpckWorkflowHookParams {
   ) => Promise<SpckBatchSubmissionSummaryUI | null | void>;
   handleImportYoutubeProducts: (
     sourceRows?: ScannedFolderUIItem[]
-  ) => Promise<{ success: boolean; updatedRows?: ScannedFolderUIItem[] } | void>;
+  ) => Promise<SpckToolStepResult | void>;
   getActiveUiClassId: () => string;
   bumpRowDraftSeq: (rowKey: string) => void;
+}
+
+export interface SpckToolStepResult {
+  success: boolean;
+  updatedRows?: ScannedFolderUIItem[];
+  errorSummary?: string;
+}
+
+export function formatAutoPrepStepFailure(
+  stepName: string,
+  errorSummary?: string
+): string {
+  const detail = String(errorSummary || "").trim();
+  return detail ? `${stepName} (${detail})` : stepName;
+}
+
+export function formatAutoPrepSummaryBanner(
+  totalSteps: number,
+  stepFailures: string[]
+): string {
+  const completedCount = Math.max(0, totalSteps - stepFailures.length);
+  return `Đã chạy công cụ tự động sau khi quét (${completedCount}/${totalSteps} bước hoàn tất • Chưa xong: ${stepFailures.join(" | ")}).`;
 }
 
 export function useSpckWorkflow(params: SpckWorkflowHookParams) {
@@ -795,7 +817,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       classIdOverride?: string;
       sessionOverride?: 12 | 13 | 14;
     }
-  ): Promise<{ success: boolean; updatedRows: ScannedFolderUIItem[] } | void> => {
+  ): Promise<{
+    success: boolean;
+    updatedRows: ScannedFolderUIItem[];
+    errorSummary?: string;
+  } | void> => {
     const requestClassId = options?.classIdOverride || selectedClassId;
     const requestSessionNum = options?.sessionOverride || selectedSessionNumber;
     const activeRows = options?.sourceRows || rows;
@@ -804,7 +830,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         type: "warning",
         text: "Vui lòng chọn Lớp học trước khi tải sản phẩm lên Google Drive.",
       });
-      return { success: false, updatedRows: activeRows };
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary: "Chưa chọn Lớp học",
+      };
     }
 
     const idsToUpload =
@@ -819,14 +849,22 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         type: "warning",
         text: "Chưa có học viên nào có thư mục sản phẩm trên máy tính để tải lên Google Drive.",
       });
-      return { success: false, updatedRows: activeRows };
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary: "Chưa có thư mục sản phẩm trên máy tính",
+      };
     }
 
     if (
       !options?.skipApprovalConfirm &&
       !confirmBeforeDemotingApprovedRows(idsToUpload, activeRows)
     ) {
-      return { success: false, updatedRows: activeRows };
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary: "Đã hủy xác nhận trước khi tải lên",
+      };
     }
 
     setUploadingDrive(true);
@@ -843,7 +881,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           const saved: any = await persistRowDraft(row, undefined, requestSessionNum);
           const activeClass = getActiveUiClassId();
           if (activeClass && activeClass !== requestClassId) {
-            return { success: false, updatedRows: flushedRows };
+            return {
+              success: false,
+              updatedRows: flushedRows,
+              errorSummary: "Đã chuyển sang lớp học khác",
+            };
           }
           if (!saved) {
             const errMsg = `Lưu bản nháp cho học viên '${row.folderName || row.assignedStudentId}' thất bại. Đã dừng tải lên Google Drive để tránh dùng dữ liệu cũ.`;
@@ -852,7 +894,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
               type: "error",
               text: errMsg,
             });
-            return { success: false, updatedRows: flushedRows };
+            return {
+              success: false,
+              updatedRows: flushedRows,
+              errorSummary: errMsg,
+            };
           }
           if (typeof saved === "object" && saved.row) {
             flushedRows[idx] = saved.row;
@@ -880,22 +926,28 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       const data = await res.json();
       const activeClass = getActiveUiClassId();
       if (activeClass && activeClass !== requestClassId) {
-        return { success: false, updatedRows: flushedRows };
+        return {
+          success: false,
+          updatedRows: flushedRows,
+          errorSummary: "Đã chuyển sang lớp học khác",
+        };
       }
 
       if (!data.success) {
+        const errSummary =
+          data.error || "Lỗi khi tải sản phẩm lên Google Drive.";
         for (const sid of idsToUpload) {
-          setStudentToolError(
-            sid,
-            "drive",
-            data.error || "Lỗi khi tải sản phẩm lên Google Drive."
-          );
+          setStudentToolError(sid, "drive", errSummary);
         }
         setBannerMessage({
           type: "error",
-          text: data.error || "Lỗi khi tải sản phẩm lên Google Drive.",
+          text: errSummary,
         });
-        return { success: false, updatedRows: flushedRows };
+        return {
+          success: false,
+          updatedRows: flushedRows,
+          errorSummary: errSummary,
+        };
       }
 
       const dbByStu = new Map<string, SpckRecordRow>(
@@ -965,11 +1017,19 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
                   : ""
               }`,
       });
-      return { success: failedCount === 0, updatedRows: nextRows };
+      const driveErrorSummary =
+        failedCount > 0
+          ? `${failedCount}/${dResult?.totalRequested || idsToUpload.length} học viên lỗi${firstErr ? `: ${firstErr}` : ""}`
+          : undefined;
+      return {
+        success: failedCount === 0,
+        updatedRows: nextRows,
+        ...(driveErrorSummary ? { errorSummary: driveErrorSummary } : {}),
+      };
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       const activeClass = getActiveUiClassId();
       if (!activeClass || activeClass === requestClassId) {
-        const msg = err instanceof Error ? err.message : String(err);
         for (const sid of idsToUpload) {
           setStudentToolError(sid, "drive", msg);
         }
@@ -978,7 +1038,14 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           text: msg,
         });
       }
-      return { success: false, updatedRows: flushedRows };
+      return {
+        success: false,
+        updatedRows: flushedRows,
+        errorSummary:
+          activeClass && activeClass !== requestClassId
+            ? "Đã chuyển sang lớp học khác"
+            : msg || "Lỗi không xác định khi tải Google Drive",
+      };
     } finally {
       setUploadingDrive(false);
     }
@@ -992,7 +1059,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       classIdOverride?: string;
       sessionOverride?: 12 | 13 | 14;
     }
-  ): Promise<{ success: boolean; updatedRows: ScannedFolderUIItem[] } | void> => {
+  ): Promise<{
+    success: boolean;
+    updatedRows: ScannedFolderUIItem[];
+    errorSummary?: string;
+  } | void> => {
     const requestClassId = options?.classIdOverride || selectedClassId;
     const requestSessionNum = options?.sessionOverride || selectedSessionNumber;
     const activeRows = options?.sourceRows || rows;
@@ -1001,7 +1072,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         type: "warning",
         text: "Vui lòng chọn Lớp học trước khi đẩy sản phẩm Web lên GitHub Pages.",
       });
-      return { success: false, updatedRows: activeRows };
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary: "Chưa chọn Lớp học",
+      };
     }
 
     const idsToDeploy =
@@ -1016,14 +1091,22 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         type: "warning",
         text: "Chưa có học viên nào có thư mục sản phẩm trên máy tính để đẩy lên GitHub Pages.",
       });
-      return { success: false, updatedRows: activeRows };
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary: "Chưa có thư mục sản phẩm trên máy tính",
+      };
     }
 
     if (
       !options?.skipApprovalConfirm &&
       !confirmBeforeDemotingApprovedRows(idsToDeploy, activeRows)
     ) {
-      return { success: false, updatedRows: activeRows };
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary: "Đã hủy xác nhận trước khi đẩy Web",
+      };
     }
 
     setDeployingWeb(true);
@@ -1040,7 +1123,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           const saved: any = await persistRowDraft(row, undefined, requestSessionNum);
           const activeClass = getActiveUiClassId();
           if (activeClass && activeClass !== requestClassId) {
-            return { success: false, updatedRows: flushedRows };
+            return {
+              success: false,
+              updatedRows: flushedRows,
+              errorSummary: "Đã chuyển sang lớp học khác",
+            };
           }
           if (!saved) {
             const errMsg = `Lưu bản nháp cho học viên '${row.folderName || row.assignedStudentId}' thất bại. Đã dừng triển khai GitHub Pages để tránh dùng dữ liệu cũ.`;
@@ -1049,7 +1136,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
               type: "error",
               text: errMsg,
             });
-            return { success: false, updatedRows: flushedRows };
+            return {
+              success: false,
+              updatedRows: flushedRows,
+              errorSummary: errMsg,
+            };
           }
           if (typeof saved === "object" && saved.row) {
             flushedRows[idx] = saved.row;
@@ -1077,22 +1168,28 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       const data = await res.json();
       const activeClass = getActiveUiClassId();
       if (activeClass && activeClass !== requestClassId) {
-        return { success: false, updatedRows: flushedRows };
+        return {
+          success: false,
+          updatedRows: flushedRows,
+          errorSummary: "Đã chuyển sang lớp học khác",
+        };
       }
 
       if (!data.success) {
+        const errSummary =
+          data.error || "Lỗi khi đẩy sản phẩm Web lên GitHub Pages.";
         for (const sid of idsToDeploy) {
-          setStudentToolError(
-            sid,
-            "web",
-            data.error || "Lỗi khi đẩy sản phẩm Web lên GitHub Pages."
-          );
+          setStudentToolError(sid, "web", errSummary);
         }
         setBannerMessage({
           type: "error",
-          text: data.error || "Lỗi khi đẩy sản phẩm Web lên GitHub Pages.",
+          text: errSummary,
         });
-        return { success: false, updatedRows: flushedRows };
+        return {
+          success: false,
+          updatedRows: flushedRows,
+          errorSummary: errSummary,
+        };
       }
 
       const dbByStu = new Map<string, SpckRecordRow>(
@@ -1148,6 +1245,8 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       const deployedCount = dRes?.deployedStudentsCount || 0;
       const skippedCount = dRes?.skippedNoHtmlCount || 0;
       const failedCount = dRes?.failedStudentsCount || 0;
+      const firstErr = dRes?.results?.find((r: any) => r.status === "FAILED")
+        ?.errorMessage;
       const hasNewerCount = (data.records || []).filter(
         (r: SpckRecordRow) => r.hasNewerSharedResources
       ).length;
@@ -1167,11 +1266,19 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           }`,
         });
       }
-      return { success: failedCount === 0, updatedRows: nextRows };
+      const webErrorSummary =
+        failedCount > 0
+          ? `${failedCount}/${dRes?.totalRequested || idsToDeploy.length} học viên lỗi${firstErr ? `: ${firstErr}` : ""}`
+          : undefined;
+      return {
+        success: failedCount === 0,
+        updatedRows: nextRows,
+        ...(webErrorSummary ? { errorSummary: webErrorSummary } : {}),
+      };
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       const activeClass = getActiveUiClassId();
       if (!activeClass || activeClass === requestClassId) {
-        const msg = err instanceof Error ? err.message : String(err);
         for (const sid of idsToDeploy) {
           setStudentToolError(sid, "web", msg);
         }
@@ -1180,7 +1287,14 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           text: msg,
         });
       }
-      return { success: false, updatedRows: flushedRows };
+      return {
+        success: false,
+        updatedRows: flushedRows,
+        errorSummary:
+          activeClass && activeClass !== requestClassId
+            ? "Đã chuyển sang lớp học khác"
+            : msg || "Lỗi không xác định khi đẩy GitHub Pages",
+      };
     } finally {
       setDeployingWeb(false);
     }
@@ -1272,7 +1386,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       classIdOverride?: string;
       sessionOverride?: 12 | 13 | 14;
     }
-  ): Promise<{ success: boolean; updatedRows: ScannedFolderUIItem[] } | void> => {
+  ): Promise<{
+    success: boolean;
+    updatedRows: ScannedFolderUIItem[];
+    errorSummary?: string;
+  } | void> => {
     const requestClassId = options?.classIdOverride || selectedClassId;
     const requestSessionNum = options?.sessionOverride || selectedSessionNumber;
     const activeRows = options?.sourceRows || rows;
@@ -1281,7 +1399,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         type: "warning",
         text: "Vui lòng chọn Lớp học trước khi chụp hình giao diện App.",
       });
-      return { success: false, updatedRows: activeRows };
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary: "Chưa chọn Lớp học",
+      };
     }
 
     const idsToCapture =
@@ -1295,7 +1417,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       !options?.skipApprovalConfirm &&
       !confirmBeforeDemotingApprovedRows(idsToCapture, activeRows)
     ) {
-      return { success: false, updatedRows: activeRows };
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary: "Đã hủy xác nhận trước khi chụp hình",
+      };
     }
 
     setCapturingScreenshots(true);
@@ -1319,21 +1445,27 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       const data = await res.json();
       const activeClass = getActiveUiClassId();
       if (activeClass && activeClass !== requestClassId) {
-        return { success: false, updatedRows: activeRows };
+        return {
+          success: false,
+          updatedRows: activeRows,
+          errorSummary: "Đã chuyển sang lớp học khác",
+        };
       }
       if (!data.success) {
+        const errSummary =
+          data.error || "Không thể chụp hình giao diện App.";
         for (const sid of idsToCapture) {
-          setStudentToolError(
-            sid,
-            "screenshot",
-            data.error || "Không thể chụp hình giao diện App."
-          );
+          setStudentToolError(sid, "screenshot", errSummary);
         }
         setBannerMessage({
           type: "error",
-          text: data.error || "Không thể chụp hình giao diện App.",
+          text: errSummary,
         });
-        return { success: false, updatedRows: activeRows };
+        return {
+          success: false,
+          updatedRows: activeRows,
+          errorSummary: errSummary,
+        };
       }
 
       const dbByStu = new Map<string, SpckRecordRow>(
@@ -1382,16 +1514,19 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
       const bRes = data.batchResult;
       let hasFailedScreenshot = false;
+      let failedShotCount = 0;
+      let firstShotErr: string | undefined;
       if (Array.isArray(bRes?.results)) {
         for (const item of bRes.results) {
           if (!item?.studentId) continue;
           if (item.status === "FAILED" || item.errorMessage) {
             hasFailedScreenshot = true;
-            setStudentToolError(
-              item.studentId,
-              "screenshot",
-              item.errorMessage || "Lỗi chụp hình giao diện."
-            );
+            failedShotCount += 1;
+            const shotErrMsg = item.errorMessage || "Lỗi chụp hình giao diện.";
+            if (!firstShotErr) {
+              firstShotErr = shotErrMsg;
+            }
+            setStudentToolError(item.studentId, "screenshot", shotErrMsg);
           } else {
             setStudentToolError(item.studentId, "screenshot", null);
           }
@@ -1405,18 +1540,25 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         (r: SpckRecordRow) => r.hasNewerSharedResources
       ).length;
       setBannerMessage({
-        type: "success",
+        type: hasFailedScreenshot ? "warning" : "success",
         text: `Đã chụp tổng cộng ${bRes?.totalScreenshotsCaptured || 0} màn hình giao diện App cho ${bRes?.totalProcessed || 0} học viên và gắn vào bản nháp!${
           hasNewerCount > 0
             ? ` Bấm "Dùng tài nguyên mới nhất" ở học viên cần áp dụng ảnh mới vào bản nháp Buổi ${requestSessionNum}.`
             : ""
         }`,
       });
-      return { success: !hasFailedScreenshot, updatedRows: nextRows };
+      const shotErrorSummary = hasFailedScreenshot
+        ? `${failedShotCount}/${bRes?.totalProcessed || idsToCapture.length} học viên lỗi${firstShotErr ? `: ${firstShotErr}` : ""}`
+        : undefined;
+      return {
+        success: !hasFailedScreenshot,
+        updatedRows: nextRows,
+        ...(shotErrorSummary ? { errorSummary: shotErrorSummary } : {}),
+      };
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       const activeClass = getActiveUiClassId();
       if (!activeClass || activeClass === requestClassId) {
-        const msg = err instanceof Error ? err.message : String(err);
         for (const sid of idsToCapture) {
           setStudentToolError(sid, "screenshot", msg);
         }
@@ -1425,7 +1567,14 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           text: msg,
         });
       }
-      return { success: false, updatedRows: activeRows };
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary:
+          activeClass && activeClass !== requestClassId
+            ? "Đã chuyển sang lớp học khác"
+            : msg || "Lỗi không xác định khi chụp hình giao diện",
+      };
     } finally {
       setCapturingScreenshots(false);
     }
@@ -3300,12 +3449,16 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
   const handleImportYoutubeProducts = async (options?: {
     skipApprovalConfirm?: boolean;
     sourceRows?: ScannedFolderUIItem[];
-  }): Promise<{ success: boolean; updatedRows?: ScannedFolderUIItem[] } | void> => {
+  }): Promise<SpckToolStepResult | void> => {
     if (
       !options?.skipApprovalConfirm &&
       !confirmBeforeDemotingApprovedRows(undefined, options?.sourceRows)
     ) {
-      return { success: false, updatedRows: options?.sourceRows || rows };
+      return {
+        success: false,
+        updatedRows: options?.sourceRows || rows,
+        errorSummary: "Đã hủy xác nhận trước khi nhập YouTube",
+      };
     }
     return await baseHandleImportYoutubeProducts(options?.sourceRows);
   };
@@ -3664,13 +3817,15 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
     let currentRows = scannedItems;
     const steps: Array<{
-      label: string;
-      run: () => Promise<{ success: boolean; updatedRows?: ScannedFolderUIItem[] } | void>;
+      stepName: string;
+      progressLabel: string;
+      run: () => Promise<SpckToolStepResult | void>;
     }> = [];
 
     if (isRobotics && youtubeImportInput.trim()) {
       steps.push({
-        label: "Đang nhập Playlist YouTube & lấy 2 ảnh thuyết trình...",
+        stepName: "Nhập Playlist YouTube",
+        progressLabel: "Đang nhập Playlist YouTube & lấy 2 ảnh thuyết trình...",
         run: async () =>
           await handleImportYoutubeProducts({
             skipApprovalConfirm: true,
@@ -3681,7 +3836,8 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
     if (shouldCaptureScreenshots && idsNeedingScreenshots.length > 0) {
       steps.push({
-        label: isWeb
+        stepName: isWeb ? "Chụp giao diện Web" : "Chụp giao diện App",
+        progressLabel: isWeb
           ? "Đang chụp giao diện Web & chọn Thumbnail 16:9..."
           : "Đang chụp giao diện App & chọn Thumbnail 16:9...",
         run: async () =>
@@ -3696,7 +3852,8 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
     if (isWeb && webRepoUrl.trim() && idsNeedingWebDeploy.length > 0) {
       steps.push({
-        label: "Đang đẩy sản phẩm Web lên GitHub Pages...",
+        stepName: "Đẩy Web GitHub Pages",
+        progressLabel: "Đang đẩy sản phẩm Web lên GitHub Pages...",
         run: async () =>
           await handleDeployWebToGithubPages(idsNeedingWebDeploy, {
             skipApprovalConfirm: true,
@@ -3709,7 +3866,8 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
     if (driveFolderUrl.trim() && idsNeedingDriveUpload.length > 0) {
       steps.push({
-        label: "Đang tải sản phẩm lên Google Drive & gắn link...",
+        stepName: "Tải Google Drive",
+        progressLabel: "Đang tải sản phẩm lên Google Drive & gắn link...",
         run: async () =>
           await handleUploadToGoogleDrive(idsNeedingDriveUpload, {
             skipApprovalConfirm: true,
@@ -3726,25 +3884,30 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     try {
       for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
-        setAutoPrepStepProgress(`[${i + 1}/${steps.length}] ${step.label}`);
+        setAutoPrepStepProgress(`[${i + 1}/${steps.length}] ${step.progressLabel}`);
         try {
           const stepRes = await step.run();
           if (stepRes && Array.isArray(stepRes.updatedRows)) {
             currentRows = stepRes.updatedRows;
           }
           if (stepRes && stepRes.success === false) {
-            stepFailures.push(step.label);
+            stepFailures.push(
+              formatAutoPrepStepFailure(step.stepName, stepRes.errorSummary)
+            );
           }
         } catch (err) {
           stepFailures.push(
-            `${step.label}: ${err instanceof Error ? err.message : String(err)}`
+            formatAutoPrepStepFailure(
+              step.stepName,
+              err instanceof Error ? err.message : String(err)
+            )
           );
         }
       }
       if (stepFailures.length > 0) {
         setBannerMessage({
           type: "warning",
-          text: `Đã chạy công cụ tự động sau khi quét (${steps.length - stepFailures.length}/${steps.length} bước hoàn tất; lỗi: ${stepFailures.join(" | ")}).`,
+          text: formatAutoPrepSummaryBanner(steps.length, stepFailures),
         });
       }
     } finally {

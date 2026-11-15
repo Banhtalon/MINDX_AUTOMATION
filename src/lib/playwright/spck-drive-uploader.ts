@@ -471,6 +471,11 @@ async function listDriveItemsOnPage(
   return Array.from(results.values());
 }
 
+function isExactDriveFolderUrl(currentUrl: string, folderId: string): boolean {
+  const m = String(currentUrl || "").match(/\/folders\/([^/?#]+)/i);
+  return Boolean(m && m[1] === folderId);
+}
+
 /**
  * Ensures the Playwright browser is on the exact target Google Drive folder (`folderId`)
  * and logged into a Google account with edit permission (`+ Mới` / `+ New` button visible).
@@ -481,7 +486,7 @@ async function ensureGoogleDriveFolderReadyAndAuthenticated(
 ): Promise<void> {
   assertDriveNotStopped();
   const folderUrl = `https://drive.google.com/drive/folders/${folderId}`;
-  if (!page.url().includes(`/folders/${folderId}`)) {
+  if (!isExactDriveFolderUrl(page.url(), folderId)) {
     await page.goto(folderUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForTimeout(2000);
   }
@@ -491,7 +496,7 @@ async function ensureGoogleDriveFolderReadyAndAuthenticated(
   const newBtn = page.locator(newBtnSelector).first();
 
   if (
-    page.url().includes(`/folders/${folderId}`) &&
+    isExactDriveFolderUrl(page.url(), folderId) &&
     (await newBtn.isVisible().catch(() => false))
   ) {
     return;
@@ -518,7 +523,8 @@ async function ensureGoogleDriveFolderReadyAndAuthenticated(
 
     const currentUrl = page.url();
     if (
-      currentUrl.includes(`drive.google.com/drive/folders/${folderId}`) &&
+      currentUrl.includes("drive.google.com/drive/") &&
+      isExactDriveFolderUrl(currentUrl, folderId) &&
       (await newBtn.isVisible().catch(() => false))
     ) {
       return;
@@ -527,13 +533,13 @@ async function ensureGoogleDriveFolderReadyAndAuthenticated(
     // If user finished sign-in and landed on My Drive or a different folder instead of `folderId`, redirect back to `folderUrl`
     if (
       currentUrl.includes("drive.google.com/drive/") &&
-      !currentUrl.includes(`/folders/${folderId}`) &&
+      !isExactDriveFolderUrl(currentUrl, folderId) &&
       (await newBtn.isVisible().catch(() => false))
     ) {
       await page.goto(folderUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
       await page.waitForTimeout(2000);
       if (
-        page.url().includes(`/folders/${folderId}`) &&
+        isExactDriveFolderUrl(page.url(), folderId) &&
         (await newBtn.isVisible().catch(() => false))
       ) {
         return;
@@ -849,6 +855,25 @@ const DRIVE_UPLOAD_PROGRESS_SELECTOR =
 
 const DRIVE_ACTIVE_DIALOG_SELECTOR = '[role="dialog"]:visible';
 
+const DRIVE_INDICATOR_REGEX_SOURCES = {
+  // Active upload state: exclude filename extensions like `uploading.py` via negative lookahead
+  activeUpload:
+    "(?:đang tải(?:\\s+\\d+\\s+mục)?\\s+lên|đang tải lên|đang bắt đầu(?:\\s+tải)?|đang chuẩn bị(?:\\s+tải)?|đang xử lý|đang hoàn tất(?:\\s+quá trình)?|starting upload|preparing upload|finishing upload|(?:^|[\\s:])uploading(?!\\.[a-z0-9]{1,8}\\b)(?:\\s+\\d+|\\s+item|\\s+file|\\.\\.\\.|\\s*$)|còn\\s+\\d+\\s*(?:giây|phút|giờ)|còn chưa đầy|seconds?\\s+left|minutes?\\s+left|hours?\\s+left|less than a minute)",
+  completedUpload:
+    "(?:đã hoàn tất.*tải lên|tải lên hoàn tất|tải lên xong|đã tải xong|đã tải lên\\s+\\d+|uploads?\\s+complete|upload\\s+complete|upload\\s+finished|uploaded\\s+\\d+)",
+  failedUpload: "(?:tải lên không thành công|upload failed)",
+  cancelButton:
+    "(?:hủy tải|huỷ tải|hủy tất cả|huỷ tất cả|cancel upload|cancel all|^(?:hủy|huỷ|cancel)$)",
+  duplicateOption:
+    "(?:tùy chọn tải lên|upload options|thay thế tệp|replace existing|update existing|cập nhật tệp|giữ cả hai|keep both|keep separate|giữ tất cả)",
+  storageQuota:
+    "(?:bộ nhớ|storage|đã sử dụng\\s+[\\d.,]+\\s*(?:kb|mb|gb|tb)|trong tổng số\\s+[\\d.,]+\\s*(?:kb|mb|gb|tb)|[\\d.,]+\\s*(?:gb|tb|mb)\\s+(?:đã dùng|used)|\\bof\\s+\\d+(?:[.,]\\d+)?\\s*(?:gb|tb|mb)\\b)",
+  promoCallout:
+    "(?:đã hiểu|got it|không phải bây giờ|not now|tìm hiểu thêm|learn more|dùng thử gemini|try gemini|chế độ ngoại tuyến|offline)",
+  modalActionGuard:
+    "(?:tải lên|upload|thay thế|replace|giữ cả hai|keep both|thư mục mới|new folder|đổi tên|rename|thùng rác|trash)",
+};
+
 /**
  * Checks whether ANY visible element matches `selector` (which already filters by `:visible`),
  * safely handling 0, 1, or multiple simultaneous elements without Playwright strict-mode errors.
@@ -868,7 +893,441 @@ async function hasAnyVisibleDriveElement(
   }
 }
 
-async function inspectDriveUploadIndicators(
+/**
+ * Filters `[role="progressbar"]` candidates in real Chromium DOM so Google Drive's persistent
+ * left-sidebar Storage quota bar, opacity:0/aria-hidden loaders, 100% completed bars, and bars
+ * inside completed bottom-right upload trays do not cause false 45s upload timeouts.
+ * Falls back to `true` (fail-closed) if `evaluateAll` is unavailable on lightweight unit-test mocks
+ * or throws at runtime.
+ */
+async function hasActiveDriveUploadProgress(page: Page): Promise<boolean> {
+  const loc = page.locator(DRIVE_UPLOAD_PROGRESS_SELECTOR);
+  if (typeof (loc as any).evaluateAll !== "function") {
+    return true;
+  }
+  try {
+    const active = await (loc as any).evaluateAll(
+      (els: Element[], rxSrc: typeof DRIVE_INDICATOR_REGEX_SOURCES) => {
+        const activeRe = new RegExp(rxSrc.activeUpload, "i");
+        const completedRe = new RegExp(rxSrc.completedUpload, "i");
+        const cancelRe = new RegExp(rxSrc.cancelButton, "i");
+        const quotaRe = new RegExp(rxSrc.storageQuota, "i");
+
+        for (let i = 0; i < els.length; i++) {
+          const el = els[i] as HTMLElement | null;
+          if (!el || !el.isConnected) continue;
+
+          const rect = el.getBoundingClientRect();
+          if (rect.width < 2 || rect.height < 2) continue;
+
+          let hiddenOrZeroOpacity = false;
+          let walk: HTMLElement | null = el;
+          while (walk && walk !== document.body) {
+            if (
+              walk.hasAttribute("hidden") ||
+              walk.getAttribute("aria-hidden") === "true"
+            ) {
+              hiddenOrZeroOpacity = true;
+              break;
+            }
+            const cs = window.getComputedStyle(walk);
+            if (
+              cs.display === "none" ||
+              cs.visibility === "hidden" ||
+              parseFloat(cs.opacity || "1") === 0
+            ) {
+              hiddenOrZeroOpacity = true;
+              break;
+            }
+            walk = walk.parentElement;
+          }
+          if (hiddenOrZeroOpacity) continue;
+
+          if (
+            el.closest(
+              'nav, [role="navigation"], aside, header, [guidedhelpid*="storage" i], a[href*="quota"], a[href*="storage"]'
+            )
+          ) {
+            continue;
+          }
+
+          const elLabel = (el.getAttribute("aria-label") || "").trim();
+          if (el.closest('[role="main"] [data-id]')) {
+            continue;
+          }
+          if ((el.getAttribute("role") || "").toLowerCase() !== "progressbar") {
+            if (!activeRe.test(elLabel) || completedRe.test(elLabel)) {
+              continue;
+            }
+          }
+          const insideDialog = el.closest('[role="dialog"]') as HTMLElement | null;
+
+          if (!insideDialog) {
+            let isSidebarQuotaBar = quotaRe.test(elLabel);
+            let qWalk: HTMLElement | null = el.parentElement;
+            let depth = 0;
+            while (
+              qWalk &&
+              qWalk !== document.body &&
+              !isSidebarQuotaBar &&
+              depth < 4
+            ) {
+              if (qWalk.getAttribute("role") === "main") break;
+              const qAria = qWalk.getAttribute("aria-label") || "";
+              const qText = (qWalk.innerText || "").trim();
+              const qCombined = (qAria + " " + qText).replace(/\s+/g, " ").trim();
+              if (qCombined.length > 0 && qCombined.length < 280 && quotaRe.test(qCombined)) {
+                isSidebarQuotaBar = true;
+                break;
+              }
+              qWalk = qWalk.parentElement;
+              depth += 1;
+            }
+            if (isSidebarQuotaBar) continue;
+          }
+
+          const rawNow = el.getAttribute("aria-valuenow");
+          const rawMax = el.getAttribute("aria-valuemax");
+          if (rawNow !== null && rawNow !== "" && rawMax !== null && rawMax !== "") {
+            const nowNum = Number(rawNow);
+            const maxNum = Number(rawMax);
+            if (Number.isFinite(nowNum) && Number.isFinite(maxNum) && maxNum > 0 && nowNum >= maxNum) {
+              continue;
+            }
+          }
+
+          if (insideDialog) {
+            const dlgText = (
+              (insideDialog.getAttribute("aria-label") || "") +
+              " " +
+              (insideDialog.innerText || insideDialog.textContent || "")
+            )
+              .replace(/\s+/g, " ")
+              .trim();
+
+            let dlgHasCancel = false;
+            const btns = insideDialog.querySelectorAll('button, [role="button"]');
+            for (let b = 0; b < btns.length; b++) {
+              const btn = btns[b] as HTMLElement;
+              const br = btn.getBoundingClientRect();
+              if (br.width < 2 || br.height < 2) continue;
+              const bcs = window.getComputedStyle(btn);
+              if (
+                bcs.display === "none" ||
+                bcs.visibility === "hidden" ||
+                parseFloat(bcs.opacity || "1") === 0
+              ) {
+                continue;
+              }
+              const bLabel = (
+                (btn.getAttribute("aria-label") || "") +
+                " " +
+                (btn.getAttribute("title") || "") +
+                " " +
+                (btn.innerText || btn.textContent || "")
+              )
+                .replace(/\s+/g, " ")
+                .trim();
+              if (bLabel && cancelRe.test(bLabel)) {
+                dlgHasCancel = true;
+                break;
+              }
+            }
+
+            if (completedRe.test(dlgText) && !activeRe.test(dlgText) && !dlgHasCancel) {
+              continue;
+            }
+          }
+
+          return true;
+        }
+
+        return false;
+      },
+      DRIVE_INDICATOR_REGEX_SOURCES
+    );
+    return Boolean(active);
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Classifies visible `[role="dialog"]` elements in real Chromium DOM so finished bottom-right
+ * upload trays ("Đã hoàn tất 1 lần tải lên" / "1 upload complete") and non-modal promo callouts
+ * do not stall uploads, while overwrite/duplicate dialogs and active upload trays remain blocking.
+ * Falls back to `true` (fail-closed) for mock locators or evaluation errors.
+ */
+async function hasBlockingDriveDialog(page: Page): Promise<boolean> {
+  const loc = page.locator(DRIVE_ACTIVE_DIALOG_SELECTOR);
+  if (typeof (loc as any).evaluateAll !== "function") {
+    return true;
+  }
+  try {
+    const blocking = await (loc as any).evaluateAll(
+      (dialogs: Element[], rxSrc: typeof DRIVE_INDICATOR_REGEX_SOURCES) => {
+        const dupRe = new RegExp(rxSrc.duplicateOption, "i");
+        const activeRe = new RegExp(rxSrc.activeUpload, "i");
+        const completedRe = new RegExp(rxSrc.completedUpload, "i");
+        const cancelRe = new RegExp(rxSrc.cancelButton, "i");
+        const promoRe = new RegExp(rxSrc.promoCallout, "i");
+        const actionGuardRe = new RegExp(rxSrc.modalActionGuard, "i");
+
+        for (let i = 0; i < dialogs.length; i++) {
+          const dlg = dialogs[i] as HTMLElement | null;
+          if (!dlg || !dlg.isConnected) continue;
+
+          const rect = dlg.getBoundingClientRect();
+          if (rect.width < 4 || rect.height < 4) continue;
+
+          let hiddenOrZeroOpacity = false;
+          let walk: HTMLElement | null = dlg;
+          while (walk && walk !== document.body) {
+            if (
+              walk.hasAttribute("hidden") ||
+              walk.getAttribute("aria-hidden") === "true"
+            ) {
+              hiddenOrZeroOpacity = true;
+              break;
+            }
+            const cs = window.getComputedStyle(walk);
+            if (
+              cs.display === "none" ||
+              cs.visibility === "hidden" ||
+              parseFloat(cs.opacity || "1") === 0
+            ) {
+              hiddenOrZeroOpacity = true;
+              break;
+            }
+            walk = walk.parentElement;
+          }
+          if (hiddenOrZeroOpacity) continue;
+
+          const combined = (
+            (dlg.getAttribute("aria-label") || "") +
+            " " +
+            (dlg.getAttribute("data-tooltip") || "") +
+            " " +
+            (dlg.innerText || dlg.textContent || "")
+          )
+            .replace(/\s+/g, " ")
+            .trim();
+
+          // Priority 1: Duplicate/overwrite resolution dialog must always block completion
+          if (dupRe.test(combined)) {
+            return true;
+          }
+
+          // Priority 2: Upload manager tray in bottom-right corner
+          const hasActiveText = activeRe.test(combined);
+          const isCompletedTrayText = completedRe.test(combined);
+
+          let hasCancelBtn = false;
+          const btns = dlg.querySelectorAll('button, [role="button"]');
+          for (let b = 0; b < btns.length; b++) {
+            const btn = btns[b] as HTMLElement;
+            const br = btn.getBoundingClientRect();
+            if (br.width < 2 || br.height < 2) continue;
+            const bcs = window.getComputedStyle(btn);
+            if (
+              bcs.display === "none" ||
+              bcs.visibility === "hidden" ||
+              parseFloat(bcs.opacity || "1") === 0
+            ) {
+              continue;
+            }
+            const bLabel = (
+              (btn.getAttribute("aria-label") || "") +
+              " " +
+              (btn.getAttribute("title") || "") +
+              " " +
+              (btn.innerText || btn.textContent || "")
+            )
+              .replace(/\s+/g, " ")
+              .trim();
+            if (bLabel && cancelRe.test(bLabel)) {
+              hasCancelBtn = true;
+              break;
+            }
+          }
+
+          let hasUnfinishedBar = false;
+          const bars = dlg.querySelectorAll('[role="progressbar"]');
+          for (let p = 0; p < bars.length; p++) {
+            const bar = bars[p] as HTMLElement;
+            const pr = bar.getBoundingClientRect();
+            if (pr.width < 2 || pr.height < 2) continue;
+            const pcs = window.getComputedStyle(bar);
+            if (
+              pcs.display === "none" ||
+              pcs.visibility === "hidden" ||
+              parseFloat(pcs.opacity || "1") === 0
+            ) {
+              continue;
+            }
+            const rawNow = bar.getAttribute("aria-valuenow");
+            const rawMax = bar.getAttribute("aria-valuemax");
+            const isComplete100 =
+              rawNow !== null &&
+              rawNow !== "" &&
+              rawMax !== null &&
+              rawMax !== "" &&
+              Number.isFinite(Number(rawNow)) &&
+              Number.isFinite(Number(rawMax)) &&
+              Number(rawMax) > 0 &&
+              Number(rawNow) >= Number(rawMax);
+            if (!isComplete100 && !isCompletedTrayText) {
+              hasUnfinishedBar = true;
+              break;
+            }
+          }
+
+          if (hasActiveText || hasCancelBtn || hasUnfinishedBar) {
+            return true;
+          }
+          if (isCompletedTrayText) {
+            continue;
+          }
+
+          // Priority 3: Skip non-modal Drive feature tips / promo callouts
+          const isModal = dlg.getAttribute("aria-modal") === "true";
+          const hasGuidedHelp =
+            dlg.hasAttribute("guidedhelpid") || dlg.querySelector("[guidedhelpid]") !== null;
+          if (!isModal && (hasGuidedHelp || (promoRe.test(combined) && !actionGuardRe.test(combined)))) {
+            continue;
+          }
+
+          // Fail-closed for any other visible dialog
+          return true;
+        }
+
+        return false;
+      },
+      DRIVE_INDICATOR_REGEX_SOURCES
+    );
+    return Boolean(blocking);
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Clicks the close ("Đóng" / "Close") button on any idle bottom-right Google Drive upload tray
+ * so it neither obscures lower file rows nor leaves stale failure trays from an earlier student.
+ */
+export async function dismissIdleDriveUploadTray(
+  page: Page,
+  includeFailedIdleTray = false
+): Promise<void> {
+  try {
+    const loc = page.locator(DRIVE_ACTIVE_DIALOG_SELECTOR);
+    if (typeof (loc as any).evaluateAll !== "function") {
+      return;
+    }
+    const clickedCount = await (loc as any).evaluateAll(
+      (
+        dialogs: Element[],
+        arg: { rx: typeof DRIVE_INDICATOR_REGEX_SOURCES; includeFailed: boolean }
+      ) => {
+        const dupRe = new RegExp(arg.rx.duplicateOption, "i");
+        const activeRe = new RegExp(arg.rx.activeUpload, "i");
+        const completedRe = new RegExp(arg.rx.completedUpload, "i");
+        const failedRe = new RegExp(arg.rx.failedUpload, "i");
+        const cancelRe = new RegExp(arg.rx.cancelButton, "i");
+        const closeRe = /(?:đóng|close|dismiss)/i;
+        const nonCloseRe = /(?:thu gọn|minimize|mở rộng|expand|chi tiết|details|hủy|huỷ|cancel)/i;
+        let closed = 0;
+
+        for (let i = 0; i < dialogs.length; i++) {
+          const dlg = dialogs[i] as HTMLElement | null;
+          if (!dlg || !dlg.isConnected) continue;
+          if (dlg.getAttribute("aria-modal") === "true") continue;
+
+          const dlgRect = dlg.getBoundingClientRect();
+          if (dlgRect.width < 4 || dlgRect.height < 4) continue;
+
+          const combined = (
+            (dlg.getAttribute("aria-label") || "") +
+            " " +
+            (dlg.innerText || dlg.textContent || "")
+          )
+            .replace(/\s+/g, " ")
+            .trim();
+
+          if (!combined || dupRe.test(combined) || activeRe.test(combined)) continue;
+
+          let hasCancelBtn = false;
+          const allBtns = dlg.querySelectorAll('button, [role="button"]');
+          for (let b = 0; b < allBtns.length; b++) {
+            const btn = allBtns[b] as HTMLElement;
+            const bLabel = (
+              (btn.getAttribute("aria-label") || "") +
+              " " +
+              (btn.getAttribute("title") || "") +
+              " " +
+              (btn.getAttribute("data-tooltip") || "") +
+              " " +
+              (btn.innerText || btn.textContent || "")
+            )
+              .replace(/\s+/g, " ")
+              .trim();
+            if (bLabel && cancelRe.test(bLabel)) {
+              hasCancelBtn = true;
+              break;
+            }
+          }
+          if (hasCancelBtn) continue;
+
+          const matchesIdleTray =
+            completedRe.test(combined) || (arg.includeFailed && failedRe.test(combined));
+          if (!matchesIdleTray) continue;
+
+          for (let c = 0; c < allBtns.length; c++) {
+            const closeBtn = allBtns[c] as HTMLElement;
+            const closeAttrLabel = (
+              (closeBtn.getAttribute("aria-label") || "") +
+              " " +
+              (closeBtn.getAttribute("title") || "") +
+              " " +
+              (closeBtn.getAttribute("data-tooltip") || "")
+            )
+              .replace(/\s+/g, " ")
+              .trim();
+            if (
+              !closeAttrLabel ||
+              nonCloseRe.test(closeAttrLabel) ||
+              !closeRe.test(closeAttrLabel)
+            ) {
+              continue;
+            }
+            const cr = closeBtn.getBoundingClientRect();
+            const ccs = window.getComputedStyle(closeBtn);
+            if (
+              cr.width >= 2 &&
+              cr.height >= 2 &&
+              ccs.display !== "none" &&
+              ccs.visibility !== "hidden" &&
+              parseFloat(ccs.opacity || "1") > 0
+            ) {
+              closeBtn.click();
+              closed += 1;
+              break;
+            }
+          }
+        }
+        return closed;
+      },
+      { rx: DRIVE_INDICATOR_REGEX_SOURCES, includeFailed: includeFailedIdleTray }
+    );
+    if (Number(clickedCount) > 0) {
+      await page.waitForTimeout(250).catch(() => {});
+    }
+  } catch {
+    // Non-fatal tray dismissal
+  }
+}
+
+export async function inspectDriveUploadIndicators(
   page: Page
 ): Promise<{ hasError: boolean; isBusy: boolean }> {
   const errState = await hasAnyVisibleDriveElement(page, DRIVE_UPLOAD_ERROR_SELECTOR);
@@ -877,12 +1336,20 @@ async function inspectDriveUploadIndicators(
   }
   const progressState = await hasAnyVisibleDriveElement(page, DRIVE_UPLOAD_PROGRESS_SELECTOR);
   const dialogState = await hasAnyVisibleDriveElement(page, DRIVE_ACTIVE_DIALOG_SELECTOR);
+  const hasRealProgress =
+    progressState.visible && !progressState.inspectionFailed
+      ? await hasActiveDriveUploadProgress(page)
+      : false;
+  const hasRealDialog =
+    dialogState.visible && !dialogState.inspectionFailed
+      ? await hasBlockingDriveDialog(page)
+      : false;
   const isBusy =
     errState.inspectionFailed ||
-    progressState.visible ||
     progressState.inspectionFailed ||
-    dialogState.visible ||
-    dialogState.inspectionFailed;
+    dialogState.inspectionFailed ||
+    hasRealProgress ||
+    hasRealDialog;
   return { hasError: false, isBusy };
 }
 
@@ -996,6 +1463,7 @@ export async function uploadFilesIntoDriveFolder(
   }
 
   assertDriveNotStopped();
+  await dismissIdleDriveUploadTray(page, true);
 
   const fileUploadMenuSelector =
     '[role="menuitem"]:has-text("Tải tệp lên"):visible, [role="menuitem"]:has-text("File upload"):visible';
@@ -1016,8 +1484,12 @@ export async function uploadFilesIntoDriveFolder(
   const exactExpectedByLower = new Map<string, string>(
     localFilePaths.map((p) => [path.basename(p).toLowerCase(), path.basename(p)])
   );
-  const uploadDeadline = Date.now() + 45_000;
-  const maxPollIterations = 40;
+  const uploadTimeoutMs = Math.min(
+    180_000,
+    Math.max(45_000, 30_000 + localFilePaths.length * 2_000)
+  );
+  const uploadDeadline = Date.now() + uploadTimeoutMs;
+  const maxPollIterations = Math.max(40, Math.floor(uploadTimeoutMs / 1125));
   let pollIterations = 0;
   let verifiedAllPresent = false;
   let sawIncompleteUploadProgress = false;
@@ -1108,7 +1580,10 @@ export async function uploadFilesIntoDriveFolder(
       const strippedDup = stripDriveDuplicateSuffix(lower);
       if (!preExistingFileIds.has(item.id)) {
         newItemNormalizedNames.add(lower);
-        newItemNormalizedNames.add(strippedDup);
+        // Only treat "(1)" as a synthetic Drive duplicate when the student doesn't genuinely have a file named "... (1).ext"
+        if (!exactExpectedByLower.has(lower)) {
+          newItemNormalizedNames.add(strippedDup);
+        }
       }
     }
 
@@ -1143,12 +1618,19 @@ export async function uploadFilesIntoDriveFolder(
   }
 
   if (!verifiedAllPresent) {
+    const integrityNote =
+      preExistingFiles.length > 0
+        ? "Bài cũ được giữ nguyên."
+        : "Vui lòng bấm tải lại Google Drive.";
+    const timeoutSec = Math.round(uploadTimeoutMs / 1000);
     throw new Error(
       sawIncompleteUploadProgress
-        ? `Không thể xác nhận hoàn tất tải ${localFilePaths.length} tệp mới lên Google Drive (thanh tiến trình vẫn đang chạy hoặc hộp thoại chưa đóng). Bài cũ được giữ nguyên.`
-        : `Không thể xác nhận đủ ${localFilePaths.length} tệp mới đã tải lên thư mục Google Drive sau 45 giây.`
+        ? `Không thể xác nhận hoàn tất tải ${localFilePaths.length} tệp mới lên Google Drive (thanh tiến trình vẫn đang chạy hoặc hộp thoại chưa đóng). ${integrityNote}`
+        : `Không thể xác nhận đủ ${localFilePaths.length} tệp mới đã tải lên thư mục Google Drive sau ${timeoutSec} giây. ${integrityNote}`
     );
   }
+
+  await dismissIdleDriveUploadTray(page, false);
 
   // Determine which pre-existing files are now superseded and safe to move to trash.
   // Never trash an in-place replaced file keeping the same ID!
@@ -1159,12 +1641,14 @@ export async function uploadFilesIntoDriveFolder(
       const lower = item.name.toLowerCase();
       const stripped = stripDriveDuplicateSuffix(lower);
       newItemsWithDistinctIds.add(lower);
-      newItemsWithDistinctIds.add(stripped);
-      if (stripped !== lower && exactExpectedByLower.has(stripped)) {
-        duplicateNewItemsToRename.push({
-          id: item.id,
-          cleanName: exactExpectedByLower.get(stripped)!,
-        });
+      if (!exactExpectedByLower.has(lower)) {
+        newItemsWithDistinctIds.add(stripped);
+        if (stripped !== lower && exactExpectedByLower.has(stripped)) {
+          duplicateNewItemsToRename.push({
+            id: item.id,
+            cleanName: exactExpectedByLower.get(stripped)!,
+          });
+        }
       }
     }
   }
@@ -1174,6 +1658,7 @@ export async function uploadFilesIntoDriveFolder(
     const oldLower = oldFile.name.toLowerCase();
     const isTargetSameName = targetLowerNames.has(oldLower);
     const isOldDuplicateOfTarget =
+      !targetLowerNames.has(oldLower) &&
       stripDriveDuplicateSuffix(oldLower) !== oldLower &&
       targetLowerNames.has(stripDriveDuplicateSuffix(oldLower));
     if (!isTargetSameName) {
