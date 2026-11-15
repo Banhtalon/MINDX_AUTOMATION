@@ -50,6 +50,7 @@ import {
   type SpckRelatedLink,
 } from "../local-files/spck-scanner";
 import { taskQueue } from "../queue/task-queue";
+import { resolveKnownLmsClassId } from "../lms/lms-class-id-store";
 import { assertPathAllowed } from "../security/path-allowlist";
 import { authService } from "./auth";
 import { browserManager } from "./browser-manager";
@@ -96,6 +97,90 @@ function parseJsonArraySafe<T>(raw?: string | null): T[] {
   } catch {
     return [];
   }
+}
+
+function normalizeUrlQueryClassToken(rawValue: string | null): string {
+  if (!rawValue) return "";
+  let cleaned = String(rawValue).trim();
+  if (
+    (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+    (cleaned.startsWith("'") && cleaned.endsWith("'"))
+  ) {
+    try {
+      cleaned = String(JSON.parse(cleaned));
+    } catch {
+      cleaned = cleaned.slice(1, -1);
+    }
+  }
+  return cleaned.trim().toUpperCase();
+}
+
+function isClassQueryStaleOrMismatched(
+  currentUrl: string,
+  baseClassesUrl: string,
+  normalizedClassId: string
+): boolean {
+  try {
+    const parsedUrl = new URL(currentUrl, baseClassesUrl);
+    const hasSearch = parsedUrl.searchParams.has("search");
+    const hasId = parsedUrl.searchParams.has("id");
+    if (!hasSearch && !hasId) return false;
+
+    const expectedCode = normalizedClassId.trim().toUpperCase();
+    const searchToken = normalizeUrlQueryClassToken(parsedUrl.searchParams.get("search"));
+    const idToken = normalizeUrlQueryClassToken(parsedUrl.searchParams.get("id"));
+
+    let knownId = "";
+    try {
+      knownId = (resolveKnownLmsClassId(expectedCode).lmsClassId || "").trim().toUpperCase();
+    } catch {
+      knownId = "";
+    }
+
+    const searchMatches = Boolean(searchToken && searchToken === expectedCode);
+    const idMatches = Boolean(idToken && knownId && idToken === knownId);
+
+    if (hasSearch && !searchMatches) return true;
+    if (hasId && !idMatches) return true;
+    return false;
+  } catch {
+    return currentUrl.includes("?");
+  }
+}
+
+async function openSpckCommentsDrawer(
+  page: Page,
+  normalizedClassId: string,
+  interceptor: ReturnType<typeof createNetworkInterceptor>,
+  allowLegacySpckTab: boolean
+): Promise<boolean> {
+  const classesUrl = `${config.lmsUrl.replace(/\/$/, "")}/admin/classes`;
+  const currentUrl = typeof page.url === "function" ? page.url() : "";
+  const isClassesPage = currentUrl.includes("/classes") || currentUrl.includes("/class");
+  const hasStaleClassQuery =
+    isClassesPage && isClassQueryStaleOrMismatched(currentUrl, classesUrl, normalizedClassId);
+
+  if (!isClassesPage || hasStaleClassQuery) {
+    await page.goto(classesUrl, { waitUntil: "domcontentloaded" });
+  }
+
+  await LmsHelpers.openClassDrawer(page, normalizedClassId, { preferredTab: 10 });
+  await interceptor.dismissForbiddenToast();
+
+  if (allowLegacySpckTab) {
+    const spckTab = page.locator(SELECTORS.tabs.spck).first();
+    if ((await spckTab.count()) > 0) {
+      await spckTab.click();
+      await page.waitForTimeout(400);
+      return true;
+    }
+  }
+
+  // Real MindX LMS: SPCK is inside the Comments tab (#tab-10) under Slot 12, 13, or 14
+  await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.comments);
+  await page.waitForTimeout(1000);
+  await interceptor.dismissForbiddenToast();
+  return false;
 }
 
 /**
@@ -558,15 +643,7 @@ export class SpckUploader {
         page.on("request", reqListener);
         try {
           if (!options.customPage) {
-            const classesUrl = `${config.lmsUrl.replace(/\/$/, "")}/admin/classes`;
-            if (!page.url().includes("/classes") && !page.url().includes("/class")) {
-              await page.goto(classesUrl, { waitUntil: "domcontentloaded" });
-            }
-            await LmsHelpers.openClassDrawer(page, normalizedClassId);
-            await interceptor.dismissForbiddenToast();
-            await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.comments);
-            await page.waitForTimeout(1000);
-            await interceptor.dismissForbiddenToast();
+            await openSpckCommentsDrawer(page, normalizedClassId, interceptor, false);
           }
 
           const drawer = page
@@ -1721,23 +1798,9 @@ export class SpckUploader {
 
     if (!options.skipNavigation && targetSessionNumber) {
       await authService.ensureAuthenticated("LMS");
-      const classesUrl = `${config.lmsUrl.replace(/\/$/, "")}/admin/classes`;
-      if (!page.url().includes("/classes") && !page.url().includes("/class")) {
-        await page.goto(classesUrl, { waitUntil: "domcontentloaded" });
-      }
-      await LmsHelpers.openClassDrawer(page, normalizedClassId);
-      await interceptor.dismissForbiddenToast();
+      const usedLegacySpckTab = await openSpckCommentsDrawer(page, normalizedClassId, interceptor, true);
 
-      const spckTab = page.locator(SELECTORS.tabs.spck).first();
-      if ((await spckTab.count()) > 0) {
-        await spckTab.click();
-        await page.waitForTimeout(400);
-      } else {
-        // Real MindX LMS: SPCK is inside the Comments tab (#tab-10) under Slot 12, 13, or 14
-        await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.comments);
-        await page.waitForTimeout(1000);
-        await interceptor.dismissForbiddenToast();
-
+      if (!usedLegacySpckTab) {
         const drawer = page
           .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
           .first();
