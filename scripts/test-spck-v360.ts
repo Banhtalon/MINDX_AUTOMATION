@@ -2354,8 +2354,11 @@ async function runTests() {
           waitUntil: "domcontentloaded",
         });
 
-        // Verify TopNavbar v3.6.0 & select class VT-C4K-JSB99
-        await uiPage.waitForSelector("text=MindX Bot v3.6.0", { timeout: 8000 });
+        // Verify TopNavbar v3.6.x & select class VT-C4K-JSB99
+        await uiPage
+          .locator(".mindx-brand-text")
+          .filter({ hasText: /^MindX Bot v3\.6\.\d+$/ })
+          .waitFor({ timeout: 8000 });
         const classBtn = uiPage.locator("button", { hasText: "VT-C4K-JSB99" }).first();
         if (await classBtn.isVisible().catch(() => false)) {
           await classBtn.click();

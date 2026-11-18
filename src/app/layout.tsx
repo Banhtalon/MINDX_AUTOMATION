@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { LiveLogDrawer } from "@/components/live-log-drawer";
 import { TopNavbar } from "@/components/top-navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MindX Automation Bot (v3.4.0)",
+  title: "MindX Automation Bot (v3.6.1)",
   description: "Hệ thống trợ lý tự động hóa toàn diện dành cho Giáo viên tại MindX",
 };
+
+const THEME_INIT_SNIPPET = `try{var t=localStorage.getItem("mindx_ui_theme");if(t==="dark"||t==="light"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}`;
 
 export default function RootLayout({
   children,
@@ -15,14 +18,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" data-theme="light" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem("mindx_ui_theme");if(t==="dark"||t==="light"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}`,
-          }}
-        />
-      </head>
       <body className="mindx-body min-h-screen flex flex-col transition-colors duration-200">
+        <Script id="mindx-theme-init" strategy="afterInteractive">
+          {THEME_INIT_SNIPPET}
+        </Script>
+
         {/* Top Navbar */}
         <TopNavbar />
 

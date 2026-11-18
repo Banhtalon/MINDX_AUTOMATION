@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -17,7 +17,7 @@ export function TopNavbar() {
   const pathname = usePathname();
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     try {
       const saved = window.localStorage.getItem("mindx_ui_theme");
       const initial = saved === "dark" || saved === "light" ? saved : "light";
@@ -59,8 +59,8 @@ export function TopNavbar() {
         <Link href="/" className="flex items-center space-x-2 group">
           <span className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-1.5 text-white">
             <span className="text-amber-400">⚡</span>
-            {/* Version history: upgraded from MindX Bot v3.5.5 to MindX Bot v3.6.0 */}
-            <span className="mindx-brand-text">MindX Bot v3.6.0</span>
+            {/* Version history: upgraded from MindX Bot v3.5.5 -> MindX Bot v3.6.0 -> MindX Bot v3.6.1 */}
+            <span className="mindx-brand-text">MindX Bot v3.6.1</span>
           </span>
         </Link>
 

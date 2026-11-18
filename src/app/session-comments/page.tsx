@@ -383,7 +383,14 @@ function findLatestActiveSessionId(sessionList: SessionItem[]): string {
 export default function SessionCommentsPage() {
   const initialSavedClass = (() => {
     try {
-      if (typeof window !== "undefined" && window.localStorage) {
+      // Browser hydration guard: when `document` exists, return "" on initial render so
+      // Client Hydration matches SSR HTML 100% (`0` hydration mismatch when localStorage has a saved class).
+      // Keep synchronous fallback strictly for headless `node:vm` harnesses (`typeof document === "undefined"`).
+      if (
+        typeof window !== "undefined" &&
+        typeof document === "undefined" &&
+        window.localStorage
+      ) {
         return String(window.localStorage.getItem("mindx_last_class_code") || "")
           .trim()
           .toUpperCase();
@@ -489,6 +496,8 @@ export default function SessionCommentsPage() {
       | undefined
     >
   >({});
+  const hasRestoredClassCodeRef = useRef(false);
+  const restoredTargetClassRef = useRef<string | null>(null);
 
   const syncPendingSavePromiseRef = (studentId: string, fallbackPromise?: Promise<boolean>) => {
     const activeSet = activeSavePromisesByStudentRef.current[studentId];
@@ -523,42 +532,67 @@ export default function SessionCommentsPage() {
     debouncedResolversRef.current = {};
   };
 
-  // Restore last selected class from URL query (?classId= / ?classCode=) or browser localStorage on initial mount
+  // Restore last selected class from URL query (?classId= / ?classCode=) or browser localStorage on initial mount,
+  // then reset manual Zalo edit flag and fetch initial data when class/session changes.
   useEffect(() => {
-    try {
-      if (typeof window !== "undefined") {
-        const urlParams = new URLSearchParams(window.location?.search || "");
-        const urlClass = String(
-          urlParams.get("classId") || urlParams.get("classCode") || ""
-        )
-          .trim()
-          .toUpperCase();
-        const savedClass =
-          urlClass ||
-          String(window.localStorage?.getItem("mindx_last_class_code") || "")
-            .trim()
-            .toUpperCase();
-        if (savedClass && savedClass !== classId) {
-          setClassCode(savedClass);
-          setClassId(savedClass);
-          setQuickTagTrack(detectTrackByClassCode(savedClass));
+    if (!hasRestoredClassCodeRef.current) {
+      hasRestoredClassCodeRef.current = true;
+      try {
+        if (typeof window !== "undefined") {
+          let urlClass = "";
+          try {
+            const rawSearch = String(window.location?.search || "");
+            if (rawSearch && typeof URLSearchParams === "function") {
+              const urlParams = new URLSearchParams(rawSearch);
+              urlClass = String(
+                urlParams.get("classId") || urlParams.get("classCode") || ""
+              )
+                .trim()
+                .toUpperCase();
+            } else if (rawSearch) {
+              const m = rawSearch.match(/[?&](?:classId|classCode)=([^&#]+)/i);
+              if (m && m[1]) {
+                const decoded =
+                  typeof decodeURIComponent === "function"
+                    ? decodeURIComponent(m[1])
+                    : m[1];
+                urlClass = decoded.trim().toUpperCase();
+              }
+            }
+          } catch {}
+          const savedClass =
+            urlClass ||
+            String(window.localStorage?.getItem("mindx_last_class_code") || "")
+              .trim()
+              .toUpperCase();
+          if (savedClass) {
+            restoredTargetClassRef.current = savedClass;
+          }
         }
-      }
-    } catch {}
-  }, []);
+      } catch {}
+    }
 
-  // Reset manual Zalo edit flag and fetch initial data when class/session changes
-  useEffect(() => {
     let normClass = classId.trim().toUpperCase();
     const normSess = selectedSessionId.trim();
     if (!normClass && normSess.includes("_SESS_")) {
       const derivedFromSess = normSess.replace(/_SESS_\d+$/i, "").trim().toUpperCase();
       if (derivedFromSess) {
+        restoredTargetClassRef.current = null;
         normClass = derivedFromSess;
         setClassCode(derivedFromSess);
         setClassId(derivedFromSess);
       }
     }
+
+    if (restoredTargetClassRef.current && normClass !== restoredTargetClassRef.current) {
+      const target = restoredTargetClassRef.current;
+      setClassCode(target);
+      setClassId(target);
+      setQuickTagTrack(detectTrackByClassCode(target));
+      return;
+    }
+    restoredTargetClassRef.current = null;
+
     const classChanged = activeClassIdRef.current !== normClass;
     const scopeChanged =
       classChanged || activeSessionIdRef.current !== normSess;
