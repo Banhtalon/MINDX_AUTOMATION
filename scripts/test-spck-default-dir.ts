@@ -1,6 +1,6 @@
 /**
  * MINDX AUTOMATION BOT - SPCK DEFAULT DIRECTORY TEST SUITE
- * Verifies F:\MINDX_SPCK_FINAL auto-resolution, class folder matching/creation,
+ * Verifies D:\MINDX DATA\MINDX_SPCK_FINAL auto-resolution, class folder matching/creation,
  * and Student Portal upload routing.
  */
 
@@ -37,8 +37,8 @@ async function runTests() {
   assert.strictEqual(c4.tailCode, "CSA04-HB");
   console.log("  ✓ extractSpckClassFolderCode parsed class tokens correctly.");
 
-  // 2. Real resolution on F:\MINDX_SPCK_FINAL for existing classes
-  console.log("[Test 2] Real resolution against existing F:\\MINDX_SPCK_FINAL folders...");
+  // 2. Real resolution on DEFAULT_SPCK_BASE_DIR (D:\MINDX DATA\MINDX_SPCK_FINAL) for existing classes
+  console.log(`[Test 2] Real resolution against existing ${DEFAULT_SPCK_BASE_DIR} folders...`);
   if (fs.existsSync(DEFAULT_SPCK_BASE_DIR)) {
     const jsb16Path = resolveDefaultSpckClassFolder("VT-JSB16", {
       createIfMissing: false,
@@ -70,10 +70,10 @@ async function runTests() {
       `Expected GA38 folder, got ${ga38Path}`
     );
 
-    assert.ok(isPathAllowed(jsb16Path), "F:\\MINDX_SPCK_FINAL\\JSB16 must be allowlisted.");
+    assert.ok(isPathAllowed(jsb16Path), `${jsb16Path} must be allowlisted.`);
     console.log("  ✓ Successfully matched existing folders JSB16, jsb15, GA38.");
   } else {
-    console.log("  (Skipping real F: drive check - drive not mounted in this container)");
+    console.log(`  (Skipping real ${DEFAULT_SPCK_BASE_DIR} check - folder not present in this environment)`);
   }
 
   // 3. Auto-creation of missing class folders in a mock baseDir

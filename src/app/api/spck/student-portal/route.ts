@@ -99,6 +99,32 @@ export async function POST(req: Request) {
       });
     }
 
+    if (action === "restore_backup") {
+      const studentId = String(body?.studentId || "").trim();
+      if (!classId || !studentId) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Thiếu mã lớp hoặc mã học viên cần khôi phục bản trước.",
+          },
+          { status: 400 }
+        );
+      }
+      const restored = await studentPortalManager.restoreStudentPreviousBackup(
+        classId,
+        studentId,
+        sessionSlot
+      );
+      const portalStatus = studentPortalManager.getStatus(classId);
+      const records = buildEnrichedClassSpckRecords(classId, sessionSlot);
+      return NextResponse.json({
+        success: true,
+        restored,
+        portalStatus,
+        records,
+      });
+    }
+
     if (!classId) {
       return NextResponse.json(
         {
@@ -115,6 +141,9 @@ export async function POST(req: Request) {
       driveFolderUrl: String(body?.driveFolderUrl || "").trim() || undefined,
       autoUploadDrive:
         typeof body?.autoUploadDrive === "boolean" ? body.autoUploadDrive : true,
+      sessionNumber: sessionSlot,
+      requireTeacherConfirmation:
+        body?.requireTeacherConfirmation === true ? true : false,
     });
 
     const records = buildEnrichedClassSpckRecords(classId, sessionSlot);

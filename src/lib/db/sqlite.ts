@@ -182,6 +182,7 @@ function initSchema(db: Database.Database) {
       historyCorruptedReason TEXT DEFAULT NULL,
       approvedSessionNumber INTEGER DEFAULT NULL,
       pendingPortalConfirmation INTEGER NOT NULL DEFAULT 0,
+      lastPreppedFolderDigest TEXT NOT NULL DEFAULT '',
       createdAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       UNIQUE(classId, studentId)
@@ -420,6 +421,11 @@ function initSchema(db: Database.Database) {
     if (spckCols.length > 0 && !spckCols.some((c) => c.name === "pendingPortalConfirmation")) {
       db.exec(
         `ALTER TABLE spck_uploads ADD COLUMN pendingPortalConfirmation INTEGER NOT NULL DEFAULT 0`
+      );
+    }
+    if (spckCols.length > 0 && !spckCols.some((c) => c.name === "lastPreppedFolderDigest")) {
+      db.exec(
+        `ALTER TABLE spck_uploads ADD COLUMN lastPreppedFolderDigest TEXT NOT NULL DEFAULT ''`
       );
     }
     migrateSpckSessionSubmissions(db);
@@ -1568,6 +1574,7 @@ export interface SpckUploadRecord {
   historyCorruptedReason?: string | null;
   approvedSessionNumber?: number | null;
   pendingPortalConfirmation?: number;
+  lastPreppedFolderDigest?: string;
 }
 
 export interface SpckSubmissionSnapshot {
@@ -1905,9 +1912,18 @@ export function checkSpckSnapshotFileDrift(snapshot: SpckSubmissionSnapshot | nu
   }
   const driftedFiles: string[] = [];
 
+  const isEphemeralBotArtifactMissing = (filePath: string, currentDigest: string) =>
+    currentDigest === "MISSING" &&
+    (/[\\/]_spck_app_shots[\\/]/i.test(filePath) ||
+      /_(?:web|app|robotics)_package\.zip$/i.test(filePath) ||
+      /_gamemaker\.yyz$/i.test(filePath));
+
   if (snapshot.thumbnailPath && snapshot.thumbnailByteSha256) {
     const currentDigest = computeSafeFileByteDigest(snapshot.thumbnailPath);
-    if (currentDigest !== snapshot.thumbnailByteSha256) {
+    if (
+      currentDigest !== snapshot.thumbnailByteSha256 &&
+      !isEphemeralBotArtifactMissing(snapshot.thumbnailPath, currentDigest)
+    ) {
       driftedFiles.push(path.basename(snapshot.thumbnailPath) || snapshot.thumbnailPath);
     }
   }
@@ -1915,7 +1931,10 @@ export function checkSpckSnapshotFileDrift(snapshot: SpckSubmissionSnapshot | nu
   for (const item of Array.isArray(snapshot.screenshots) ? snapshot.screenshots : []) {
     if (item?.path && item?.byteSha256) {
       const currentDigest = computeSafeFileByteDigest(item.path);
-      if (currentDigest !== item.byteSha256) {
+      if (
+        currentDigest !== item.byteSha256 &&
+        !isEphemeralBotArtifactMissing(item.path, currentDigest)
+      ) {
         driftedFiles.push(path.basename(item.path) || item.path);
       }
     }
@@ -1924,7 +1943,10 @@ export function checkSpckSnapshotFileDrift(snapshot: SpckSubmissionSnapshot | nu
   for (const item of Array.isArray(snapshot.attachments) ? snapshot.attachments : []) {
     if (item?.path && item?.byteSha256) {
       const currentDigest = computeSafeFileByteDigest(item.path);
-      if (currentDigest !== item.byteSha256) {
+      if (
+        currentDigest !== item.byteSha256 &&
+        !isEphemeralBotArtifactMissing(item.path, currentDigest)
+      ) {
         driftedFiles.push(path.basename(item.path) || item.path);
       }
     }
@@ -2245,7 +2267,7 @@ export const spckUploadRepo = {
     const db = getDb();
     const existing = db
       .prepare(
-        `SELECT localFolderPath, isConfirmedByTeacher, projectTitle, baseProjectTitle, thumbnailPath, screenshotsJson, attachmentsJson, youtubeUrlsJson, relatedLinksJson, teacherComment, contentHash, status, verifiedAt, draftSeq, sessionResultsJson, hasLegacyUnknownSessionHistory, legacyHistoryMetaJson, historyCorrupted, historyCorruptedReason, approvedSessionNumber, pendingPortalConfirmation FROM spck_uploads WHERE classId = ? AND studentId = ?`
+        `SELECT localFolderPath, isConfirmedByTeacher, projectTitle, baseProjectTitle, thumbnailPath, screenshotsJson, attachmentsJson, youtubeUrlsJson, relatedLinksJson, teacherComment, contentHash, status, verifiedAt, draftSeq, sessionResultsJson, hasLegacyUnknownSessionHistory, legacyHistoryMetaJson, historyCorrupted, historyCorruptedReason, approvedSessionNumber, pendingPortalConfirmation, lastPreppedFolderDigest FROM spck_uploads WHERE classId = ? AND studentId = ?`
       )
       .get(record.classId, record.studentId) as
       | {
@@ -2270,6 +2292,7 @@ export const spckUploadRepo = {
           historyCorruptedReason?: string | null;
           approvedSessionNumber?: number | null;
           pendingPortalConfirmation?: number;
+          lastPreppedFolderDigest?: string;
         }
       | undefined;
 
@@ -2392,6 +2415,17 @@ export const spckUploadRepo = {
           : 0
         : existing?.pendingPortalConfirmation ?? 0;
 
+    const folderKeyUnchanged =
+      !existing?.localFolderPath ||
+      normalizeSpckFolderKey(record.localFolderPath) ===
+        normalizeSpckFolderKey(existing.localFolderPath);
+    const nextLastPreppedFolderDigest =
+      record.lastPreppedFolderDigest !== undefined
+        ? String(record.lastPreppedFolderDigest || "")
+        : folderKeyUnchanged
+        ? existing?.lastPreppedFolderDigest ?? ""
+        : "";
+
     const stmt = db.prepare(`
       INSERT INTO spck_uploads (
         classId, studentId, localFolderPath, matchScore, isConfirmedByTeacher,
@@ -2400,7 +2434,7 @@ export const spckUploadRepo = {
         status, verifiedAt, errorMessage, draftSeq, sessionResultsJson,
         hasLegacyUnknownSessionHistory, legacyHistoryMetaJson,
         historyCorrupted, historyCorruptedReason, approvedSessionNumber,
-        pendingPortalConfirmation, updatedAt
+        pendingPortalConfirmation, lastPreppedFolderDigest, updatedAt
       )
       VALUES (
         @classId, @studentId, @localFolderPath, @matchScore, @isConfirmedByTeacher,
@@ -2409,7 +2443,7 @@ export const spckUploadRepo = {
         @status, @verifiedAt, @errorMessage, @draftSeq, @sessionResultsJson,
         @hasLegacyUnknownSessionHistory, @legacyHistoryMetaJson,
         @historyCorrupted, @historyCorruptedReason, @approvedSessionNumber,
-        @pendingPortalConfirmation, datetime('now', 'localtime')
+        @pendingPortalConfirmation, @lastPreppedFolderDigest, datetime('now', 'localtime')
       )
       ON CONFLICT(classId, studentId) DO UPDATE SET
         localFolderPath = excluded.localFolderPath,
@@ -2435,6 +2469,7 @@ export const spckUploadRepo = {
         historyCorruptedReason = excluded.historyCorruptedReason,
         approvedSessionNumber = excluded.approvedSessionNumber,
         pendingPortalConfirmation = excluded.pendingPortalConfirmation,
+        lastPreppedFolderDigest = excluded.lastPreppedFolderDigest,
         updatedAt = datetime('now', 'localtime')
     `);
     const res = stmt.run({
@@ -2463,6 +2498,7 @@ export const spckUploadRepo = {
       historyCorruptedReason: nextHistoryCorruptedReason,
       approvedSessionNumber: targetApprovedSessionNumber,
       pendingPortalConfirmation: nextPendingPortalConfirmation,
+      lastPreppedFolderDigest: nextLastPreppedFolderDigest,
     });
 
     return res;
@@ -2489,8 +2525,10 @@ export const spckUploadRepo = {
           attachmentsJson?: string;
           youtubeUrlsJson?: string;
           relatedLinksJson?: string;
+          lastPreppedFolderDigest?: string;
           syncSessionNumber?: SpckSessionSlotNumber;
           forceSyncTargetSession?: boolean;
+          syncAllUnverifiedSessions?: boolean;
         },
     studentIdArg?: string,
     patchArg?: {
@@ -2503,8 +2541,10 @@ export const spckUploadRepo = {
       attachmentsJson?: string;
       youtubeUrlsJson?: string;
       relatedLinksJson?: string;
+      lastPreppedFolderDigest?: string;
       syncSessionNumber?: SpckSessionSlotNumber;
       forceSyncTargetSession?: boolean;
+      syncAllUnverifiedSessions?: boolean;
     },
     expectedFolderPathArg?: string
   ): { updated: boolean; reason?: string; record?: SpckUploadRecord } {
@@ -2545,11 +2585,19 @@ export const spckUploadRepo = {
         ? stripSpckSessionSuffix(params.baseProjectTitle)
         : existing.baseProjectTitle || stripSpckSessionSuffix(existing.projectTitle);
     const nextMatchScore = params.matchScore !== undefined ? params.matchScore : existing.matchScore;
+    const nextDigest =
+      params.lastPreppedFolderDigest !== undefined
+        ? params.lastPreppedFolderDigest
+        : existing.lastPreppedFolderDigest ?? "";
 
     const db = getDb();
     const sessionRowsMap = spckSessionRepo.findByStudent(params.classId, params.studentId);
     const hasAnyApprovedSessionRow = Object.values(sessionRowsMap).some(
-      (r) => r && (r.draftStatus === "APPROVED" || r.draftStatus === "VERIFIED")
+      (r) =>
+        r &&
+        (r.draftStatus === "APPROVED" ||
+          r.draftStatus === "SAVING" ||
+          r.draftStatus === "VERIFIED")
     );
 
     if (hasAnyApprovedSessionRow) {
@@ -2565,6 +2613,7 @@ export const spckUploadRepo = {
              attachmentsJson = ?,
              youtubeUrlsJson = ?,
              relatedLinksJson = ?,
+             lastPreppedFolderDigest = ?,
              draftSeq = COALESCE(draftSeq, 0) + 1,
              updatedAt = datetime('now', 'localtime')
          WHERE classId = ? AND studentId = ?`
@@ -2578,6 +2627,7 @@ export const spckUploadRepo = {
         nextAttach ?? "[]",
         nextYt ?? "[]",
         nextLinks ?? "[]",
+        nextDigest ?? "",
         params.classId,
         params.studentId
       );
@@ -2593,10 +2643,14 @@ export const spckUploadRepo = {
         attachmentsJson: nextAttach,
         youtubeUrlsJson: nextYt,
         relatedLinksJson: nextLinks,
+        lastPreppedFolderDigest: nextDigest,
       });
     }
 
-    if (params.syncSessionNumber && isValidSpckSessionSlot(params.syncSessionNumber)) {
+    if (
+      (params.syncSessionNumber && isValidSpckSessionSlot(params.syncSessionNumber)) ||
+      params.syncAllUnverifiedSessions === true
+    ) {
       for (const slotNum of [12, 13, 14] as const) {
         const sessRow = spckSessionRepo.findOne(
           params.classId,
@@ -2606,20 +2660,30 @@ export const spckUploadRepo = {
         if (!sessRow) {
           continue;
         }
-        const isTargetSlot = slotNum === params.syncSessionNumber;
+        const isTargetSlot =
+          Boolean(params.syncSessionNumber) && slotNum === params.syncSessionNumber;
         const allowForceTarget =
           isTargetSlot && params.forceSyncTargetSession === true;
         if (
-          !allowForceTarget &&
-          (sessRow.lastVerifiedAt ||
-            sessRow.draftStatus === "APPROVED" ||
-            sessRow.draftStatus === "VERIFIED")
+          sessRow.draftStatus === "SAVING" ||
+          (!allowForceTarget &&
+            (sessRow.lastVerifiedAt ||
+              sessRow.draftStatus === "APPROVED" ||
+              sessRow.draftStatus === "VERIFIED"))
         ) {
           continue;
         }
         const hasMissingThumbOnDisk =
           Boolean(sessRow.thumbnailPath) && !fs.existsSync(sessRow.thumbnailPath);
-        if (isTargetSlot || hasMissingThumbOnDisk) {
+        const hasMissingScreenOnDisk = parseSpckPathArraySafe(sessRow.screenshotsJson).some(
+          (p) => Boolean(p) && !fs.existsSync(p)
+        );
+        if (
+          isTargetSlot ||
+          params.syncAllUnverifiedSessions === true ||
+          hasMissingThumbOnDisk ||
+          hasMissingScreenOnDisk
+        ) {
           spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
             params.classId,
             params.studentId,
@@ -2633,6 +2697,16 @@ export const spckUploadRepo = {
       updated: true,
       record: this.findOne(params.classId, params.studentId),
     };
+  },
+
+  markFolderPrepped(classId: string, studentId: string, folderDigest: string) {
+    if (!classId || !studentId) return;
+    const db = getDb();
+    db.prepare(
+      `UPDATE spck_uploads
+       SET lastPreppedFolderDigest = ?, updatedAt = datetime('now', 'localtime')
+       WHERE classId = ? AND studentId = ?`
+    ).run(String(folderDigest ?? ""), classId, studentId);
   },
 
   deleteOne(classId: string, studentId: string) {
@@ -2978,8 +3052,24 @@ export const spckSessionRepo = {
     const linksJson = shared?.relatedLinksJson || "[]";
 
     // Only reuse shared.teacherComment if no session rows exist at all and shared.teacherComment was already saved before v2.7.0
-    const anyExistingSessions = Object.keys(this.findByStudent(classId, studentId)).length > 0;
+    const existingSessionsBySlot = this.findByStudent(classId, studentId);
+    const anyExistingSessions = Object.keys(existingSessionsBySlot).length > 0;
     const initialComment = !anyExistingSessions && shared?.teacherComment ? shared.teacherComment : "";
+
+    // Inherit Quick Tags from the most recent prior SPCK session (13 inherits from 12; 14 inherits from 13 or 12)
+    let inheritedQuickTagsJson = "[]";
+    if (stageInfo.sessionNumber === 13 || stageInfo.sessionNumber === 14) {
+      const candidatePriorSlots: Array<"13" | "12"> =
+        stageInfo.sessionNumber === 14 ? ["13", "12"] : ["12"];
+      for (const priorKey of candidatePriorSlots) {
+        const priorRow = existingSessionsBySlot[priorKey];
+        const parsedTags = parseSpckPathArraySafe(priorRow?.quickTagsJson);
+        if (parsedTags.length > 0) {
+          inheritedQuickTagsJson = JSON.stringify(parsedTags);
+          break;
+        }
+      }
+    }
 
     db.prepare(
       `INSERT INTO spck_session_submissions (
@@ -2995,7 +3085,7 @@ export const spckSessionRepo = {
         ?, ?, ?, ?, ?,
         ?, ?, ?, ?,
         ?, ?, ?, ?,
-        '', '[]', 1, 1,
+        '', ?, 1, 1,
         ?, '', '{}', NULL,
         NULL, '', NULL, NULL,
         '', NULL, NULL,
@@ -3016,6 +3106,7 @@ export const spckSessionRepo = {
       ytJson,
       linksJson,
       initialComment,
+      inheritedQuickTagsJson,
       initialComment ? "WAITING_APPROVAL" : "DRAFT"
     );
 

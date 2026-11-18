@@ -5,6 +5,7 @@
  * Related Links (max 5), and enforces projectTitle <= 100 chars.
  */
 
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -42,7 +43,8 @@ import {
   stripVietnameseDiacritics,
 } from "../utils/vietnamese-match";
 
-export const DEFAULT_SPCK_BASE_DIR = "F:\\MINDX_SPCK_FINAL";
+export const DEFAULT_SPCK_BASE_DIR = "D:\\MINDX DATA\\MINDX_SPCK_FINAL";
+export const LEGACY_SPCK_BASE_DIRS = ["F:\\MINDX_SPCK_FINAL"];
 export const MAX_SPCK_TITLE_LENGTH = 100;
 export const MAX_SPCK_SCREENSHOTS = 10;
 export const MAX_SPCK_ATTACHMENTS = 10;
@@ -110,10 +112,221 @@ function isSyntheticTestClassCode(classId: string): boolean {
 }
 
 /**
- * Resolves the default SPCK folder for a class inside `F:\MINDX_SPCK_FINAL` (or isolated test root).
- * - If a matching subfolder already exists in `F:\MINDX_SPCK_FINAL` (case-insensitive match on
+ * Courses `PTB` and `CSB` do not have a Final Project (SPCK) exam or Demo session.
+ */
+export function isCourseExemptFromSpck(classId?: string | null): boolean {
+  const upper = String(classId || "").trim().toUpperCase();
+  if (!upper) return false;
+  return /(?:^|[-_\s])(PTB|CSB)(?:\d|$|[-_\s])/i.test(upper);
+}
+
+/**
+ * Tracks eligible for automatic GitHub Pages live Web deployment when `.html` files exist:
+ * Web (`JSB`, `JSA`, `JSI`) and Computer Science (`CSA`, `CSI`).
+ * Explicitly excludes `PTB`, `CSB`, `PTA`, `PTI`, GameMaker (`GB/GA/GI/GMB/GMA/GMI`), Scratch (`SB/SA/SI`), and Robotics.
+ */
+export function isWebOrCsGithubTrack(
+  classId?: string | null,
+  courseName?: string | null
+): boolean {
+  const upperId = String(classId || "").trim().toUpperCase();
+  if (isCourseExemptFromSpck(upperId)) return false;
+  if (/(?:^|[-_\s])(JSB|JSA|JSI|CSA|CSI)(?:\d|$|[-_\s])/i.test(upperId)) {
+    return true;
+  }
+  if (
+    /(?:^|[-_\s])(PTB|PTA|PTI|CSB|GB|GA|GI|GMB|GMA|GMI|SB|SA|SI|ROB|VEX|PREB|PREA|PREI|ARMB|ARMA|ARMI|SEMIB|SEMIA|SEMII)(?:\d|$|[-_\s])/i.test(
+      upperId
+    )
+  ) {
+    return false;
+  }
+  const cname = String(courseName || "").trim();
+  if (!cname) return false;
+  return /\b(?:web\b|html\b|javascript\b|jsb|jsa|jsi|csa|csi|computer\s+science\s*-\s*(?:advanced|intensive))\b/i.test(
+    cname
+  );
+}
+
+const DIGEST_EXCLUDED_DIR_NAMES = new Set([
+  ".git",
+  ".svn",
+  ".hg",
+  ".vscode",
+  ".idea",
+  "node_modules",
+  "__pycache__",
+  "venv",
+  ".venv",
+  "env",
+  ".next",
+  "dist",
+  "build",
+  "out",
+]);
+
+const DIGEST_EXCLUDED_FILE_NAMES = new Set([
+  "_spck_links.txt",
+  "links.txt",
+  "youtube.txt",
+  "thumbs.db",
+  "desktop.ini",
+  ".ds_store",
+]);
+
+const EMPTY_STUDENT_FOLDER_DIGEST = crypto
+  .createHash("sha256")
+  .update("__EMPTY_SPCK_STUDENT_FOLDER_V1__")
+  .digest("hex");
+
+/**
+ * Computes a deterministic SHA-256 fingerprint across all genuine student files inside `studentFolderPath`
+ * (excluding Bot `_spck_*` / `_portal_*` folders, bundled `*_package.zip`, `node_modules`, `.venv`, etc.)
+ * so Buổi 12 -> 13 -> 14 scans accurately detect when a student updated or deleted ANY file at ANY depth.
+ */
+export function computeStudentFolderContentDigest(studentFolderPath: string): {
+  digest: string;
+  filesCount: number;
+  latestFileMtimeMs: number;
+  hasHtmlFiles: boolean;
+  readableDirectory: boolean;
+} {
+  const trimmed = String(studentFolderPath || "").trim();
+  if (!trimmed) {
+    return {
+      digest: "",
+      filesCount: 0,
+      latestFileMtimeMs: 0,
+      hasHtmlFiles: false,
+      readableDirectory: false,
+    };
+  }
+  let safeRoot = "";
+  try {
+    safeRoot = assertPathAllowed(trimmed);
+    if (!fs.existsSync(safeRoot) || !fs.statSync(safeRoot).isDirectory()) {
+      return {
+        digest: "",
+        filesCount: 0,
+        latestFileMtimeMs: 0,
+        hasHtmlFiles: false,
+        readableDirectory: false,
+      };
+    }
+  } catch {
+    return {
+      digest: "",
+      filesCount: 0,
+      latestFileMtimeMs: 0,
+      hasHtmlFiles: false,
+      readableDirectory: false,
+    };
+  }
+
+  const fileFingerprints: string[] = [];
+  let latestFileMtimeMs = 0;
+  let hasHtmlFiles = false;
+
+  const walk = (dir: string, depth: number) => {
+    if (depth > 24 || fileFingerprints.length >= 2500) return;
+    let entries: fs.Dirent[] = [];
+    try {
+      entries = fs
+        .readdirSync(dir, { withFileTypes: true })
+        .sort((a, b) => a.name.localeCompare(b.name, "en"));
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (fileFingerprints.length >= 2500) break;
+      const name = entry.name;
+      if (!name || name.startsWith(".")) continue;
+      const lower = name.toLowerCase();
+      if (
+        lower.startsWith("_spck_") ||
+        lower.startsWith("_portal_") ||
+        DIGEST_EXCLUDED_DIR_NAMES.has(lower)
+      ) {
+        continue;
+      }
+      let fullPath = "";
+      try {
+        fullPath = assertPathAllowed(path.join(dir, name));
+      } catch {
+        continue;
+      }
+      let st: fs.Stats;
+      try {
+        st = fs.lstatSync(fullPath);
+      } catch {
+        continue;
+      }
+      if (st.isSymbolicLink()) continue;
+      if (st.isDirectory()) {
+        walk(fullPath, depth + 1);
+      } else if (st.isFile()) {
+        if (
+          DIGEST_EXCLUDED_FILE_NAMES.has(lower) ||
+          /_(?:web|app|robotics)_package\.zip$/i.test(lower) ||
+          /_gamemaker\.yyz$/i.test(lower)
+        ) {
+          continue;
+        }
+        const relPosix = path.relative(safeRoot, fullPath).split(path.sep).join("/");
+        if (!relPosix || relPosix.startsWith("..")) continue;
+        if (lower.endsWith(".html") || lower.endsWith(".htm")) {
+          hasHtmlFiles = true;
+        }
+        if (st.mtimeMs > latestFileMtimeMs) {
+          latestFileMtimeMs = st.mtimeMs;
+        }
+        let contentHash = "";
+        try {
+          if (st.size <= 25 * 1024 * 1024) {
+            contentHash = crypto
+              .createHash("sha256")
+              .update(fs.readFileSync(fullPath))
+              .digest("hex");
+          } else {
+            contentHash = `LARGE_${st.size}_${Math.trunc(st.mtimeMs)}`;
+          }
+        } catch {
+          contentHash = `ERR_${st.size}_${Math.trunc(st.mtimeMs)}`;
+        }
+        fileFingerprints.push(`${relPosix}|${st.size}|${contentHash}`);
+      }
+    }
+  };
+
+  walk(safeRoot, 0);
+  if (fileFingerprints.length === 0) {
+    return {
+      digest: EMPTY_STUDENT_FOLDER_DIGEST,
+      filesCount: 0,
+      latestFileMtimeMs: 0,
+      hasHtmlFiles: false,
+      readableDirectory: true,
+    };
+  }
+  fileFingerprints.sort((a, b) => a.localeCompare(b, "en"));
+  const digest = crypto
+    .createHash("sha256")
+    .update(fileFingerprints.join("\n"))
+    .digest("hex");
+  return {
+    digest,
+    filesCount: fileFingerprints.length,
+    latestFileMtimeMs,
+    hasHtmlFiles,
+    readableDirectory: true,
+  };
+}
+
+/**
+ * Resolves the default SPCK folder for a class inside `D:\MINDX DATA\MINDX_SPCK_FINAL` (or isolated test root).
+ * - If a matching subfolder already exists in `D:\MINDX DATA\MINDX_SPCK_FINAL` (case-insensitive match on
  *   shortCode like `JSB16`, `jsb15`, `GA38`, `PTA12` or fullCode like `VT-JSB16`), selects that exact folder.
- * - If it does not exist yet and `createIfMissing !== false`, automatically creates `F:\MINDX_SPCK_FINAL\<shortCode>`
+ * - If it does not exist yet and `createIfMissing !== false`, automatically creates `D:\MINDX DATA\MINDX_SPCK_FINAL\<shortCode>`
  *   and registers it in the Path Allowlist.
  */
 export function resolveDefaultSpckClassFolder(
@@ -192,9 +405,10 @@ export function resolveDefaultSpckClassFolder(
 
 /**
  * Normalizes a teacher/UI supplied `candidateFolderPath` for `classId`:
- * If `candidateFolderPath` is empty, points to `process.cwd()`, points to `F:\MINDX_SPCK_FINAL` root
- * without a class subfolder, points to legacy `data/spck/...`, or points to another class's subfolder
- * inside `F:\MINDX_SPCK_FINAL`, automatically resolves to `F:\MINDX_SPCK_FINAL\<Mã-Lớp>`.
+ * If `candidateFolderPath` is empty, points to `process.cwd()`, points to `D:\MINDX DATA\MINDX_SPCK_FINAL`
+ * (or legacy `F:\MINDX_SPCK_FINAL`) root without a class subfolder, points to legacy `data/spck/...`,
+ * or points to another class's subfolder inside `D:\MINDX DATA\MINDX_SPCK_FINAL`, automatically resolves to
+ * `D:\MINDX DATA\MINDX_SPCK_FINAL\<Mã-Lớp>`.
  */
 export function resolveTargetSpckClassFolder(
   classId: string,
@@ -214,6 +428,7 @@ export function resolveTargetSpckClassFolder(
   const normCandidate = normalizeSpckFolderKey(resolvedCandidate);
   const normWorkspace = normalizeSpckFolderKey(process.cwd());
   const normDefaultBase = normalizeSpckFolderKey(DEFAULT_SPCK_BASE_DIR);
+  const normLegacyBases = LEGACY_SPCK_BASE_DIRS.map((b) => normalizeSpckFolderKey(b));
   const normActiveBase = defaultClassDir
     ? normalizeSpckFolderKey(path.dirname(defaultClassDir))
     : normDefaultBase;
@@ -225,14 +440,24 @@ export function resolveTargetSpckClassFolder(
     normCandidate === normWorkspace ||
     normCandidate === normDefaultBase ||
     normCandidate === normActiveBase ||
+    normLegacyBases.includes(normCandidate) ||
     normCandidate === normLegacyDataSpck ||
     normCandidate.startsWith(normLegacyDataSpck + "/")
   ) {
     return defaultClassDir || resolvedCandidate;
   }
 
-  // If candidate is a direct child of F:\MINDX_SPCK_FINAL (or active baseRoot) for a different class, switch to current class folder
+  // If candidate points under a removed legacy root (e.g. F:\MINDX_SPCK_FINAL\CSI02), redirect to the active class folder
   const candidateParentNorm = normalizeSpckFolderKey(path.dirname(resolvedCandidate));
+  if (
+    defaultClassDir &&
+    normLegacyBases.includes(candidateParentNorm) &&
+    !fs.existsSync(resolvedCandidate)
+  ) {
+    return defaultClassDir;
+  }
+
+  // If candidate is a direct child of D:\MINDX DATA\MINDX_SPCK_FINAL (or active baseRoot) for a different class, switch to current class folder
   if (
     defaultClassDir &&
     (candidateParentNorm === normDefaultBase || candidateParentNorm === normActiveBase)
@@ -256,7 +481,7 @@ export function resolveTargetSpckClassFolder(
 }
 
 /**
- * Resolves a student's subfolder inside `classRootDir` (`F:\MINDX_SPCK_FINAL\<Mã-Lớp>`):
+ * Resolves a student's subfolder inside `classRootDir` (`D:\MINDX DATA\MINDX_SPCK_FINAL\<Mã-Lớp>`):
  * Reuses an existing subfolder if its diacritic-stripped normalized name matches `studentFullName`
  * (e.g. `Duong Dang Khôi` matches `Dương Đăng Khôi`), or returns `<classRootDir>/<studentFullName>`.
  */
@@ -1186,11 +1411,11 @@ const OWNER_PHOTO_NAME_REGEX =
  * has Python/JS code that may build asset names dynamically (V272-R2-02).
  */
 const STRONG_OWNER_PHOTO_NAME_REGEX =
-  /(demo|presentation|thuyet[\s_-]*trinh|trinh[\s_-]*bay|hoc[\s_-]*vien|thumb|thumbnail|anh[\s_-]*bia|anh[\s_-]*lop|chup|img[_-]?\d{3,}|dsc[_-]?\d|pxl[_-]?\d)/i;
+  /(demo|demo[\s_-]*day|presentation|thuyet[\s_-]*trinh|trinh[\s_-]*bay|hoc[\s_-]*vien|ca[\s_-]*nhan|chan[\s_-]*dung|thumb|thumbnail|anh[\s_-]*bia|anh[\s_-]*lop|chup|img[_-]?\d{3,}|dsc[_-]?\d|pxl[_-]?\d)/i;
 const GENERIC_ROOT_ASSET_STEM_REGEX =
   /^(?:images?|img|bg|background|banner|logo|icons?|avatar|buttons?|btn|cards?|items?|food|drinks?|games?|sprites?|tiles?|walls?|players?|enemy|enemies|bullets?|coins?|hearts?|stars?|menu|home|login|logon|register|regiter|signup|untitled|\d{1,6})$/i;
 const CAMERA_OR_PHONE_PHOTO_STEM_REGEX =
-  /^(?:\d{10,}[_-]\d+|z\d{8,}|20\d{6}[_-]\d{4,}|img[_-]?\d{3,}|dsc[_-]?\d+|pxl[_-]?\d+|screenshot)/i;
+  /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:[_-\s]*\(\d+\))?|\d{10,}[_-]\d+|z\d{8,}|20\d{6}[_-]\d{4,}|img[_-]?\d{3,}|dsc[_-]?\d+|pxl[_-]?\d+|whatsapp\s*image.*|screenshot)/i;
 
 const OWNER_PHOTO_CODE_REFERENCE_EXTS = new Set([
   ".html",
@@ -1208,15 +1433,21 @@ const OWNER_PHOTO_CODE_REFERENCE_EXTS = new Set([
   ".ipynb",
 ]);
 
-/**
- * Finds photos the Owner placed DIRECTLY in the root of a student's SPCK folder (e.g. a class
- * presentation photo `Demo.png`, a cover image, a photo of the student with the product) that are
- * NOT used as assets inside the student's own code (`.html/.css/.js/.py/.ui/.qss/...`).
- *
- * Sorted by priority: explicit thumbnail/cover names → owner-like photo names → larger images first.
- * Tiny icons (< 200px on any side) and corrupted images are ignored.
- */
-export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
+export function isExplicitOwnerPhotoFilename(fileName: string): boolean {
+  const asciiStem = stripVietnameseDiacritics(path.parse(String(fileName || "")).name).trim();
+  if (!asciiStem) return false;
+  return (
+    isThumbnailFilename(fileName) ||
+    /(demo|demo[\s_-]*day|presentation|thuyet[\s_-]*trinh|trinh[\s_-]*bay|hoc[\s_-]*vien|ca[\s_-]*nhan|chan[\s_-]*dung|anh[\s_-]*bia|anh[\s_-]*lop)/i.test(
+      asciiStem
+    )
+  );
+}
+
+function collectRootPhotoCandidates(
+  studentDir: string,
+  includeAiVisionLargeUnreferenced: boolean
+): string[] {
   let safeStudentDir: string;
   try {
     safeStudentDir = assertPathAllowed(studentDir);
@@ -1344,14 +1575,24 @@ export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
       const isStrongOwnerName =
         STRONG_OWNER_PHOTO_NAME_REGEX.test(asciiStem) ||
         CAMERA_OR_PHONE_PHOTO_STEM_REGEX.test(asciiStem);
+      const isLikelyAssetPrefix =
+        /^(?:bg|background|sprite|tile|icon|logo|banner|avatar|card|btn|button)[_-]/i.test(
+          asciiStem
+        );
       const isCameraLikePhoto =
-        (ext === ".jpg" || ext === ".jpeg") &&
+        (ext === ".jpg" || ext === ".jpeg" || ext === ".webp") &&
         Boolean(dims && dims.width >= 800 && dims.height >= 450) &&
-        (referencedRootImageCount <= 1 || isStrongOwnerName);
+        (referencedRootImageCount <= 1 || isStrongOwnerName) &&
+        !isLikelyAssetPrefix;
+      const isLargeAiVisionCandidate =
+        includeAiVisionLargeUnreferenced &&
+        Boolean(dims && dims.width >= 600 && dims.height >= 340) &&
+        !isLikelyAssetPrefix;
       // When the project has code that may load images dynamically (Python / JavaScript) or stores
       // multiple referenced assets in the root directory, an unreferenced root image needs STRONG
-      // evidence that it was added by the Owner (V272-R2-02).
-      const hasStrongOwnerEvidence = isStrongOwnerName || isCameraLikePhoto;
+      // evidence that it was added by the Owner (V272-R2-02) unless specifically inspected by AI Vision.
+      const hasStrongOwnerEvidence =
+        isStrongOwnerName || isCameraLikePhoto || isLargeAiVisionCandidate;
       if ((hasDynamicCode || referencedRootImageCount >= 2) && !hasStrongOwnerEvidence) continue;
       candidates.push({
         fullPath,
@@ -1375,6 +1616,207 @@ export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
   });
 
   return candidates.map((c) => c.fullPath);
+}
+
+/**
+ * Finds photos the Owner placed DIRECTLY in the root of a student's SPCK folder (e.g. a class
+ * presentation photo `Demo.png`, a cover image, a photo of the student with the product) that are
+ * NOT used as assets inside the student's own code (`.html/.css/.js/.py/.ui/.qss/...`).
+ *
+ * Sorted by priority: explicit thumbnail/cover names → owner-like photo names → larger images first.
+ * Tiny icons (< 200px on any side) and corrupted images are ignored.
+ */
+export function findOwnerProvidedRootPhotos(studentDir: string): string[] {
+  return collectRootPhotoCandidates(studentDir, false);
+}
+
+/**
+ * Lists unreferenced root photos suitable for AI Vision personal/Demo-Day verification.
+ */
+export function listPotentialPersonalRootPhotoCandidates(studentDir: string): string[] {
+  return collectRootPhotoCandidates(studentDir, true);
+}
+
+export function isOwnerPhotoTranscodeFilename(fileName: string): boolean {
+  return /^owner_photo_[a-f0-9]{6,16}\.png$/i.test(String(fileName || "").trim());
+}
+
+export function isSensitiveSecretFile(fileName: string, rawBuf?: Buffer): boolean {
+  const lower = String(fileName || "").trim().toLowerCase();
+  if (!lower) return false;
+  if (/^(?:credentials?|secrets?|service[-_]?account.*)\.json$/i.test(lower)) {
+    return true;
+  }
+  if (lower.endsWith(".json") && rawBuf && rawBuf.length > 0 && rawBuf.length <= 64 * 1024) {
+    try {
+      const txt = rawBuf.toString("utf8");
+      if (/"private_key"\s*:/i.test(txt) && /"client_email"\s*:/i.test(txt)) {
+        return true;
+      }
+    } catch {}
+  }
+  return false;
+}
+
+function registerOwnerPhotoInActiveManifest(shotsDir: string, fileName: string): void {
+  try {
+    const manifestPath = assertPathAllowed(path.join(shotsDir, ".active_shots.json"));
+    if (!fs.existsSync(manifestPath) || !fs.statSync(manifestPath).isFile()) {
+      return;
+    }
+    const parsed = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as {
+      version?: number;
+      updatedAt?: string;
+      files?: unknown[];
+    };
+    if (!Array.isArray(parsed?.files)) {
+      return;
+    }
+    const list = parsed.files.map((f) => String(f || "").trim()).filter(Boolean);
+    if (!list.some((f) => f.toLowerCase() === fileName.toLowerCase())) {
+      list.push(fileName);
+      list.sort((a, b) => a.localeCompare(b, "en"));
+      fs.writeFileSync(
+        manifestPath,
+        JSON.stringify(
+          {
+            version: parsed.version || 1,
+            updatedAt: new Date().toISOString(),
+            files: list,
+          },
+          null,
+          2
+        ),
+        "utf8"
+      );
+    }
+  } catch {
+    // Non-fatal
+  }
+}
+
+export function resolveWebpOwnerPhotoTargetPath(
+  webpPath: string,
+  studentFolderPath: string
+): { safeWebpPath: string; shotsDir: string; targetFileName: string; targetPngPath: string; buf: Buffer } {
+  const safeWebpPath = assertPathAllowed(webpPath);
+  const safeStudentDir = assertPathAllowed(studentFolderPath);
+  const buf = fs.readFileSync(safeWebpPath);
+  const hash8 = crypto.createHash("sha256").update(buf).digest("hex").slice(0, 8);
+  const shotsDir = assertPathAllowed(path.join(safeStudentDir, "_spck_app_shots"));
+  const targetFileName = `owner_photo_${hash8}.png`;
+  const targetPngPath = assertPathAllowed(path.join(shotsDir, targetFileName));
+  return { safeWebpPath, shotsDir, targetFileName, targetPngPath, buf };
+}
+
+export function transcodeWebpOwnerPhotoToPngSync(
+  imgPath: string,
+  studentFolderPath: string,
+  skipSyncNormalize = false
+): string {
+  if (!imgPath || path.extname(imgPath).toLowerCase() !== ".webp") {
+    return imgPath;
+  }
+  try {
+    const { shotsDir, targetFileName, targetPngPath, buf } = resolveWebpOwnerPhotoTargetPath(
+      imgPath,
+      studentFolderPath
+    );
+    if (
+      fs.existsSync(targetPngPath) &&
+      !fs.lstatSync(targetPngPath).isSymbolicLink() &&
+      fs.statSync(targetPngPath).size > 32
+    ) {
+      registerOwnerPhotoInActiveManifest(shotsDir, targetFileName);
+      return targetPngPath;
+    }
+    if (skipSyncNormalize) {
+      return imgPath;
+    }
+    const [normBuf] = normalizeImagesToLms16x9Sync([
+      { buffer: buf, mimeType: "image/webp", fit: "contain" },
+    ]);
+    if (normBuf && normBuf.length > 32) {
+      fs.mkdirSync(shotsDir, { recursive: true });
+      const tmpPath = `${targetPngPath}.tmp`;
+      if (fs.lstatSync(tmpPath, { throwIfNoEntry: false })) {
+        fs.unlinkSync(tmpPath);
+      }
+      fs.writeFileSync(tmpPath, normBuf);
+      fs.renameSync(tmpPath, targetPngPath);
+      registerOwnerPhotoInActiveManifest(shotsDir, targetFileName);
+      return targetPngPath;
+    }
+  } catch {
+    // Fallback to original path on non-fatal conversion error
+  }
+  return imgPath;
+}
+
+export async function transcodeWebpOwnerPhotoToPngAsync(
+  imgPath: string,
+  studentFolderPath: string
+): Promise<string> {
+  if (!imgPath || path.extname(imgPath).toLowerCase() !== ".webp") {
+    return imgPath;
+  }
+  try {
+    const { shotsDir, targetFileName, targetPngPath, buf } = resolveWebpOwnerPhotoTargetPath(
+      imgPath,
+      studentFolderPath
+    );
+    if (
+      fs.existsSync(targetPngPath) &&
+      !fs.lstatSync(targetPngPath).isSymbolicLink() &&
+      fs.statSync(targetPngPath).size > 32
+    ) {
+      registerOwnerPhotoInActiveManifest(shotsDir, targetFileName);
+      return targetPngPath;
+    }
+    const [normBuf] = await normalizeImagesToLms16x9([
+      { buffer: buf, mimeType: "image/webp", fit: "contain" },
+    ]);
+    if (normBuf && normBuf.length > 32) {
+      fs.mkdirSync(shotsDir, { recursive: true });
+      const tmpPath = `${targetPngPath}.tmp`;
+      if (fs.lstatSync(tmpPath, { throwIfNoEntry: false })) {
+        fs.unlinkSync(tmpPath);
+      }
+      fs.writeFileSync(tmpPath, normBuf);
+      fs.renameSync(tmpPath, targetPngPath);
+      registerOwnerPhotoInActiveManifest(shotsDir, targetFileName);
+      return targetPngPath;
+    }
+  } catch {
+    // Fallback to original path on non-fatal conversion error
+  }
+  return imgPath;
+}
+
+async function ensureWebpOwnerPhotosTranscodedAsync(safeFolderPath: string): Promise<void> {
+  if (taskQueue.getStatus().isStopped) return;
+  try {
+    const candidates = new Set<string>();
+    for (const rp of findOwnerProvidedRootPhotos(safeFolderPath)) {
+      if (path.extname(rp).toLowerCase() === ".webp") {
+        candidates.add(rp);
+      }
+    }
+    const ownerDir = path.join(safeFolderPath, "_spck_owner_uploads");
+    if (fs.existsSync(ownerDir) && fs.statSync(ownerDir).isDirectory()) {
+      for (const f of fs.readdirSync(ownerDir)) {
+        if (path.extname(f).toLowerCase() === ".webp") {
+          candidates.add(path.join(ownerDir, f));
+        }
+      }
+    }
+    for (const cand of candidates) {
+      if (taskQueue.getStatus().isStopped) break;
+      await transcodeWebpOwnerPhotoToPngAsync(cand, safeFolderPath);
+    }
+  } catch {
+    // Non-fatal
+  }
 }
 
 /**
@@ -1545,7 +1987,8 @@ export function scanStudentSpckFolder(
             lower.endsWith("_robotics_package.zip") ||
             lower.endsWith("_web_package.zip") ||
             lower.endsWith("_app_package.zip") ||
-            lower.endsWith("_gamemaker.yyz")
+            lower.endsWith("_gamemaker.yyz") ||
+            isSensitiveSecretFile(item.name)
           ) {
             continue;
           }
@@ -1571,6 +2014,12 @@ export function scanStudentSpckFolder(
           ) {
             if (st.size <= 15 * 1024 * 1024) {
               const rawBuf = fs.readFileSync(fullItemPath);
+              if (itemExt === ".json" && isSensitiveSecretFile(item.name, rawBuf)) {
+                warnings.push(
+                  `Đã loại bỏ tệp chứa khóa bí mật '${item.name}' khỏi gói đóng gói để đảm bảo bảo mật.`
+                );
+                continue;
+              }
               if (!rawBuf.includes(0x00)) {
                 const textContent = rawBuf.toString("utf8").replace(/^\uFEFF/, "");
                 if (textContent.trim().length > 0) {
@@ -1706,10 +2155,33 @@ export function scanStudentSpckFolder(
           .readdirSync(fullEntryPath, { withFileTypes: true })
           .sort((a, b) => a.name.localeCompare(b.name, "en"));
         if (lowerDir === "_spck_app_shots") {
+          let activeShotNamesLower: Set<string> | null = null;
+          try {
+            const manifestPath = assertPathAllowed(path.join(fullEntryPath, ".active_shots.json"));
+            if (fs.existsSync(manifestPath) && fs.statSync(manifestPath).isFile()) {
+              const parsedManifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as {
+                files?: unknown[];
+              };
+              if (Array.isArray(parsedManifest?.files)) {
+                activeShotNamesLower = new Set(
+                  parsedManifest.files
+                    .map((n) => String(n || "").trim().toLowerCase())
+                    .filter(Boolean)
+                );
+              }
+            }
+          } catch {
+            activeShotNamesLower = null;
+          }
+          if (activeShotNamesLower !== null) {
+            subEntries = subEntries.filter(
+              (se) => !se.name.startsWith(".") && activeShotNamesLower!.has(se.name.toLowerCase())
+            );
+          }
           const bySlotKey = new Map<string, { entry: fs.Dirent; mtimeMs: number }>();
           for (const se of subEntries) {
             if (se.name.startsWith(".")) continue;
-            const slotMatch = se.name.match(/^(app_\d+_.*?)_[0-9a-f]{6}\.png$/i);
+            const slotMatch = se.name.match(/^(app_\d+_.*?)_[0-9a-f]{6}(?:_[a-z0-9]{4,10})?\.png$/i);
             const slotKey = slotMatch ? slotMatch[1].toLowerCase() : se.name.toLowerCase();
             let mtimeMs = 0;
             try {
@@ -1795,6 +2267,9 @@ export function scanStudentSpckFolder(
         }
         for (const subEntry of subEntries) {
           if (subEntry.name.startsWith(".")) continue;
+          if (lowerDir === "_spck_app_shots" && isOwnerPhotoTranscodeFilename(subEntry.name)) {
+            continue;
+          }
           const subPath = assertPathAllowed(path.join(fullEntryPath, subEntry.name));
           const subStat = fs.lstatSync(subPath);
           if (subStat.isSymbolicLink() || !subStat.isFile()) continue;
@@ -1893,6 +2368,18 @@ export function scanStudentSpckFolder(
 
     // 3. Check if this is an allowed project attachment
     if (ALLOWED_ATTACHMENT_EXTENSIONS.has(ext)) {
+      let secretCheckBuf: Buffer | undefined;
+      if (ext === ".json" && lstat.size > 0 && lstat.size <= 64 * 1024) {
+        try {
+          secretCheckBuf = fs.readFileSync(fullEntryPath);
+        } catch {}
+      }
+      if (isSensitiveSecretFile(entry.name, secretCheckBuf)) {
+        warnings.push(
+          `Đã loại bỏ tệp chứa khóa bí mật '${entry.name}' khỏi danh sách đính kèm để đảm bảo bảo mật.`
+        );
+        continue;
+      }
       const attValidation = validateSpckAttachmentFile(fullEntryPath);
       if (!attValidation.valid) {
         warnings.push(
@@ -2466,7 +2953,27 @@ export function scanStudentSpckFolder(
       screenshotCandidates = [...nonBotShots, ...botShots.slice(0, remainingSlots)];
     }
   }
-  const ownerPhotos = [...ownerUploadImages, ...ownerRootImages].map((img) => img.fullPath);
+  const skipSyncNorm = Boolean(options?.skipSyncImageNormalize);
+  if (thumbnailPath && path.extname(thumbnailPath).toLowerCase() === ".webp") {
+    thumbnailPath = transcodeWebpOwnerPhotoToPngSync(thumbnailPath, safeFolderPath, skipSyncNorm);
+  }
+  const transcodedCandidates: string[] = [];
+  for (const cand of screenshotCandidates) {
+    const resolvedCand =
+      path.extname(cand).toLowerCase() === ".webp"
+        ? transcodeWebpOwnerPhotoToPngSync(cand, safeFolderPath, skipSyncNorm)
+        : cand;
+    if (!transcodedCandidates.some((p) => samePath(p, resolvedCand))) {
+      transcodedCandidates.push(resolvedCand);
+    }
+  }
+  screenshotCandidates = transcodedCandidates;
+
+  const ownerPhotos = [...ownerUploadImages, ...ownerRootImages].map((img) =>
+    path.extname(img.fullPath).toLowerCase() === ".webp"
+      ? transcodeWebpOwnerPhotoToPngSync(img.fullPath, safeFolderPath, skipSyncNorm)
+      : img.fullPath
+  );
 
   if (screenshotCandidates.length > MAX_SPCK_SCREENSHOTS) {
     warnings.push(
@@ -2794,7 +3301,22 @@ export function scanClassSpckDirectory(
 
   for (const rec of existingClassRecords) {
     const normFolder = normalizeSpckFolderKey(rec.localFolderPath);
-    if (Number(rec.isConfirmedByTeacher) === 1 && normFolder && rec.studentId) {
+    let existingDirStillExists = false;
+    if (rec.localFolderPath) {
+      try {
+        existingDirStillExists =
+          fs.existsSync(rec.localFolderPath) &&
+          fs.statSync(rec.localFolderPath).isDirectory();
+      } catch {
+        existingDirStillExists = false;
+      }
+    }
+    if (
+      Number(rec.isConfirmedByTeacher) === 1 &&
+      normFolder &&
+      existingDirStillExists &&
+      rec.studentId
+    ) {
       confirmedOwnerByFolder.set(normFolder, rec.studentId);
       confirmedFolderByStudent.set(rec.studentId, normFolder);
     } else if (!normFolder && Number(rec.isConfirmedByTeacher) === 0 && rec.studentId) {
@@ -2963,7 +3485,7 @@ async function normalizeStudentAppShotsFolderAsync(safeFolderPath: string): Prom
     const bySlotKey = new Map<string, { entry: fs.Dirent; mtimeMs: number }>();
     for (const se of rawSubEntries) {
       if (se.name.startsWith(".")) continue;
-      const slotMatch = se.name.match(/^(app_\d+_.*?)_[0-9a-f]{6}\.png$/i);
+      const slotMatch = se.name.match(/^(app_\d+_.*?)_[0-9a-f]{6}(?:_[a-z0-9]{4,10})?\.png$/i);
       const slotKey = slotMatch ? slotMatch[1].toLowerCase() : se.name.toLowerCase();
       let mtimeMs = 0;
       try {
@@ -3058,6 +3580,7 @@ export async function scanStudentSpckFolderAsync(
 ): Promise<StudentSpckPackage> {
   const safeFolderPath = assertPathAllowed(studentFolderPath);
   await normalizeStudentAppShotsFolderAsync(safeFolderPath);
+  await ensureWebpOwnerPhotosTranscodedAsync(safeFolderPath);
 
   const initial = scanStudentSpckFolder(safeFolderPath, preferredStudentName, {
     skipSyncAutoRender: true,
@@ -3186,6 +3709,7 @@ export async function scanClassSpckDirectoryAsync(
           if (taskQueue.getStatus().isStopped) break;
           const fullSubPath = assertPathAllowed(path.join(safeRootPath, sub.name));
           await normalizeStudentAppShotsFolderAsync(fullSubPath);
+          await ensureWebpOwnerPhotosTranscodedAsync(fullSubPath);
         }
       }
     } catch {

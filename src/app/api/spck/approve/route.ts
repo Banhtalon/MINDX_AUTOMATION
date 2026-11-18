@@ -51,6 +51,7 @@ export async function POST(req: Request) {
 
     const stageInfo = assertClassHasSpckSession(classId, body?.sessionNumber);
     const sessionNumber = stageInfo.sessionNumber;
+    const isolatePerStudent = body?.isolatePerStudent === true;
 
     if (!Array.isArray(body?.reviewedItems) || body.reviewedItems.length === 0) {
       return NextResponse.json(
@@ -139,10 +140,15 @@ export async function POST(req: Request) {
 
       const rev = reviewedMap.get(studentId);
       if (!rev) {
+        const missingRevMsg = `[Stale Conflict] Thiếu snapshot đã xem trên giao diện (reviewedItems) cho học viên '${studentId}'.`;
+        if (isolatePerStudent) {
+          skipped.push({ studentId, reason: missingRevMsg });
+          continue;
+        }
         return NextResponse.json(
           {
             success: false,
-            error: `[Stale Conflict] Thiếu snapshot đã xem trên giao diện (reviewedItems) cho học viên '${studentId}'.`,
+            error: missingRevMsg,
           },
           { status: 409 }
         );
@@ -153,11 +159,16 @@ export async function POST(req: Request) {
         rev.draftVersion !== null &&
         Number(rev.draftVersion) !== Number(sessionDraft.draftVersion)
       ) {
+        const verConflictMsg = `[Stale Conflict] Phiên bản nháp Buổi ${sessionNumber} của học viên '${studentId}' đã thay đổi (UI=${rev.draftVersion}, DB=${sessionDraft.draftVersion}). Vui lòng tải lại trước khi duyệt.`;
+        if (isolatePerStudent) {
+          skipped.push({ studentId, reason: verConflictMsg });
+          continue;
+        }
         return NextResponse.json(
           {
             success: false,
             conflict: true,
-            error: `[Stale Conflict] Phiên bản nháp Buổi ${sessionNumber} của học viên '${studentId}' đã thay đổi (UI=${rev.draftVersion}, DB=${sessionDraft.draftVersion}). Vui lòng tải lại trước khi duyệt.`,
+            error: verConflictMsg,
           },
           { status: 409 }
         );
@@ -337,11 +348,16 @@ export async function POST(req: Request) {
       }
 
       if (!isMatch) {
+        const mismatchMsg = `[Stale Conflict] Dữ liệu SPCK Buổi ${sessionNumber} của học viên '${studentId}' trong DB đã thay đổi so với bản hiển thị trên giao diện. Vui lòng tải lại trước khi duyệt.`;
+        if (isolatePerStudent) {
+          skipped.push({ studentId, reason: mismatchMsg });
+          continue;
+        }
         return NextResponse.json(
           {
             success: false,
             conflict: true,
-            error: `[Stale Conflict] Dữ liệu SPCK Buổi ${sessionNumber} của học viên '${studentId}' trong DB đã thay đổi so với bản hiển thị trên giao diện. Vui lòng tải lại trước khi duyệt.`,
+            error: mismatchMsg,
           },
           { status: 409 }
         );
@@ -589,7 +605,12 @@ export async function POST(req: Request) {
               projectTitle: item.formattedTitle,
             });
             if (updated.conflict) {
-              conflictErr = `[Stale Conflict] Bản nháp của học viên '${item.studentId}' đã thay đổi trong lúc duyệt.`;
+              const cMsg = `[Stale Conflict] Bản nháp của học viên '${item.studentId}' đã thay đổi trong lúc duyệt.`;
+              if (isolatePerStudent) {
+                skipped.push({ studentId: item.studentId, reason: cMsg });
+                continue;
+              }
+              conflictErr = cMsg;
               return;
             }
             item.expectedVersion = updated.record.draftVersion;
@@ -602,9 +623,14 @@ export async function POST(req: Request) {
             item.expectedVersion
           );
           if (appRes.conflict) {
-            conflictErr =
+            const cMsg =
               appRes.reason ||
               `[Stale Conflict] Bản nháp của học viên '${item.studentId}' đã thay đổi trong lúc duyệt.`;
+            if (isolatePerStudent) {
+              skipped.push({ studentId: item.studentId, reason: cMsg });
+              continue;
+            }
+            conflictErr = cMsg;
             return;
           }
           approvedStudentIds.push(item.studentId);

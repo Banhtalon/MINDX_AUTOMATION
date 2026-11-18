@@ -76,6 +76,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
     setExpandedRowKeys,
     setRowActiveTab,
     autoRunToolsAfterScan,
+    isSpckExemptClass,
   } = workflow;
 
   const s14VerifiedCount = (session14Evals || []).filter(
@@ -184,6 +185,105 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
             </button>
           )}
 
+          {!studentPortalRunning ? (
+            <button
+              type="button"
+              onClick={handleStartStudentPortal}
+              disabled={
+                togglingStudentPortal ||
+                isAnyOperationBusy ||
+                !selectedClassId ||
+                isSpckExemptClass
+              }
+              title={
+                isSpckExemptClass
+                  ? "Khóa PTB / CSB được miễn nộp SPCK"
+                  : "Mở link nộp bài cho học sinh (Tự lưu máy + Chụp 16:9 + GitHub Live + Đóng gói .zip lên Drive)"
+              }
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold text-xs transition-colors cursor-pointer"
+            >
+              {togglingStudentPortal ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Link2 className="w-3.5 h-3.5" />
+              )}
+              <span>Mở Link Cho Học Sinh Nộp Bài</span>
+            </button>
+          ) : (
+            <div className="inline-flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const urlToCopy =
+                    studentPortalPublicUrl ||
+                    studentPortalShareUrl ||
+                    studentPortalLanUrl ||
+                    studentPortalLocalUrl;
+                  navigator.clipboard?.writeText(urlToCopy);
+                  setBannerMessage({
+                    type: "success",
+                    text: `Đã copy Link nộp bài cho học sinh: ${urlToCopy}`,
+                  });
+                }}
+                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer"
+              >
+                📋 Copy Link HS
+              </button>
+              <button
+                type="button"
+                onClick={handleStopStudentPortal}
+                disabled={togglingStudentPortal}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/70 border border-rose-500/50 text-rose-200 font-semibold text-xs transition-colors cursor-pointer"
+              >
+                <span>Đóng Cổng Thu Bài</span>
+              </button>
+            </div>
+          )}
+
+          <div className="inline-flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => handleCreateDemoScoringSheet(enableAiDemoPreScore)}
+              disabled={
+                isAnyOperationBusy ||
+                !selectedClassId ||
+                (isDemoExemptClass && !templateSheetUrl.trim())
+              }
+              title={
+                isDemoExemptClass && !templateSheetUrl.trim()
+                  ? "Khóa PTB / CSB được miễn buổi Demo cuối khóa"
+                  : "Tạo mới hoặc làm mới Bảng chấm điểm Google Trang tính cho Ban Giám Khảo (Buổi 12/13/14)"
+              }
+              className="spck-pill-neutral flex items-center space-x-1.5 px-3 py-1.5 rounded-lg disabled:opacity-50 text-xs font-semibold transition-colors cursor-pointer"
+            >
+              {creatingDemoSheet ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              )}
+              <span>
+                {generatedDemoSheetUrl
+                  ? "📋 Làm mới Link Chấm Giám Khảo"
+                  : "📋 Tạo Link Chấm Giám Khảo"}
+              </span>
+            </button>
+            {generatedDemoSheetUrl && (
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard?.writeText(generatedDemoSheetUrl);
+                  setBannerMessage({
+                    type: "success",
+                    text: `Đã sao chép link Bảng chấm điểm Demo để gửi Giám khảo: ${generatedDemoSheetUrl}`,
+                  });
+                }}
+                className="spck-btn-success px-2.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer"
+              >
+                Copy Link BGK
+              </button>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={() => setShowOptionalTools((v) => !v)}
@@ -213,6 +313,12 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
           </button>
         </div>
       </div>
+
+      {isSpckExemptClass && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-950/35 px-3.5 py-2.5 text-xs text-amber-200">
+          ℹ️ Lớp <strong>{selectedClassId}</strong> thuộc khóa <strong>PTB / CSB</strong> không thi sản phẩm cuối khóa nên được <strong>miễn nộp SPCK &amp; miễn tạo bảng chấm Demo tự động</strong>. Ở Buổi 14, thầy vẫn sử dụng bình thường <strong>Tab 2 (Thư tổng kết 3 phần &amp; Điểm Năng lực)</strong>.
+        </div>
+      )}
 
       {/* Collapsible Panel A: Optional Drive, Student Upload Portal & Web/App Tools */}
       {(showOptionalTools || studentPortalRunning) && (

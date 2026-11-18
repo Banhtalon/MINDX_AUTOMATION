@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { NextResponse } from "next/server";
 import {
   assertClassHasSpckSession,
@@ -148,12 +149,18 @@ export async function POST(req: Request) {
       Number.isFinite(effectiveExpectedVersion) &&
       effectiveExpectedVersion !== existingSessionDraft.draftVersion
     ) {
+      const latestEnriched =
+        buildEnrichedClassSpckRecords(classId, sessionNumber).find(
+          (r) => r.studentId === studentId
+        ) || existing;
       return NextResponse.json(
         {
           success: false,
           conflict: true,
           error: `[Stale Conflict] Bản nháp Buổi ${sessionNumber} của học viên '${studentId}' đã được cập nhật ở tab/tác vụ khác (version hiện tại: ${existingSessionDraft.draftVersion}). Vui lòng tải lại trước khi lưu.`,
           currentDraftVersion: existingSessionDraft.draftVersion,
+          currentSessionDraft: existingSessionDraft,
+          currentRecord: latestEnriched,
         },
         { status: 409 }
       );
@@ -256,21 +263,27 @@ export async function POST(req: Request) {
       );
     }
 
+    const rawFallbackThumb =
+      existingSessionDraft.thumbnailPath || existing?.thumbnailPath || "";
     const candidateThumbnailPath =
       body.thumbnailPath !== undefined
         ? String(body.thumbnailPath || "").trim()
-        : existingSessionDraft.thumbnailPath || existing?.thumbnailPath || "";
+        : rawFallbackThumb && fs.existsSync(rawFallbackThumb)
+        ? rawFallbackThumb
+        : "";
     if (candidateThumbnailPath) {
       assertPathAllowed(candidateThumbnailPath);
     }
 
     const candidateScreenshots: string[] = Array.isArray(body.screenshots)
       ? body.screenshots.map((p: string) => assertPathAllowed(String(p)))
-      : existingSessionDraft.screenshotsJson
-      ? JSON.parse(existingSessionDraft.screenshotsJson)
-      : existing?.screenshotsJson
-      ? JSON.parse(existing.screenshotsJson)
-      : [];
+      : (
+          existingSessionDraft.screenshotsJson
+            ? JSON.parse(existingSessionDraft.screenshotsJson)
+            : existing?.screenshotsJson
+            ? JSON.parse(existing.screenshotsJson)
+            : []
+        ).filter((p: unknown) => typeof p === "string" && p.trim() && fs.existsSync(p));
 
     const existingDbScreens: string[] = (() => {
       try {
@@ -296,11 +309,13 @@ export async function POST(req: Request) {
 
     const rawAttachments: string[] = Array.isArray(body.attachments)
       ? body.attachments.map((p: string) => assertPathAllowed(String(p)))
-      : existingSessionDraft.attachmentsJson
-      ? JSON.parse(existingSessionDraft.attachmentsJson)
-      : existing?.attachmentsJson
-      ? JSON.parse(existing.attachmentsJson)
-      : [];
+      : (
+          existingSessionDraft.attachmentsJson
+            ? JSON.parse(existingSessionDraft.attachmentsJson)
+            : existing?.attachmentsJson
+            ? JSON.parse(existing.attachmentsJson)
+            : []
+        ).filter((p: unknown) => typeof p === "string" && p.trim() && fs.existsSync(p));
 
     const rawYoutubeUrls: string[] = Array.isArray(body.youtubeUrls)
       ? body.youtubeUrls

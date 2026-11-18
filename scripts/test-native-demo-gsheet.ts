@@ -48,7 +48,14 @@ async function main() {
   const items = new Map<string, MockDriveItem>();
   let seq = 1;
   const nextId = (p: string) => `${p}_1234567890123456_${seq++}`;
-  const behavior = { disablePicker: false, forceXlsxBadge: false };
+  const behavior = {
+    disablePicker: false,
+    forceXlsxBadge: false,
+    vietnameseListViewDom: false,
+    staleUntitledSheetId: "",
+    staleUntitledFirstLoadCount: 0,
+    oldSheetIdForImgAlt: "",
+  };
 
   const extractTabs = (buf: Buffer): string[] => {
     const wb = new AdmZip(buf).readAsText("xl/workbook.xml");
@@ -304,6 +311,27 @@ async function main() {
         <main role="main">
           ${children
             .map((c) => {
+              if (behavior.vietnameseListViewDom) {
+                if (c.isFolder) {
+                  return `<div data-target="doc" data-id="${c.id}" aria-label="${c.name} Thư mục được chia sẻ trên Google Drive" style="padding:8px;display:flex;gap:12px;"><span>${c.name}</span><span>tôi</span><span>8 thg 11</span><span>—</span></div>`;
+                }
+                if (c.mimeType === "application/vnd.google-apps.spreadsheet") {
+                  let shownName = c.name;
+                  if (
+                    behavior.staleUntitledFirstLoadCount > 0 &&
+                    c.id !== behavior.oldSheetIdForImgAlt &&
+                    (!behavior.staleUntitledSheetId || c.id === behavior.staleUntitledSheetId)
+                  ) {
+                    behavior.staleUntitledFirstLoadCount--;
+                    shownName = "Bảng tính không có tiêu đề";
+                  }
+                  const iconHtml =
+                    c.id === behavior.oldSheetIdForImgAlt
+                      ? `<img alt="Google Trang tính" />`
+                      : `<svg aria-hidden="true" width="16" height="16"></svg>`;
+                  return `<div data-target="doc" data-id="${c.id}" style="padding:8px;display:flex;gap:12px;">${iconHtml}<span>${shownName}</span><span>tôi</span><span>16:16</span><span>—</span></div>`;
+                }
+              }
               const t = c.isFolder
                 ? "folder"
                 : c.mimeType === "application/vnd.google-apps.spreadsheet"
@@ -475,7 +503,37 @@ async function main() {
     assert.equal(session14EvalRepo.findOne(classId, "STU_01")?.demoTotalScore, 5);
     console.log("  -> PASS [GS-04].");
 
-    console.log("\n✅ TẤT CẢ 4/4 KỊCH BẢN GOOGLE TRANG TÍNH GỌN NHẸ ĐỀU ĐẠT 100%!");
+    console.log(
+      "[GS-05] Xác nhận Google Trang tính trong DOM Danh sách Drive tiếng Việt ('—', SVG thuần, img[alt], trễ đổi tên tới reload)..."
+    );
+    behavior.vietnameseListViewDom = true;
+    behavior.oldSheetIdForImgAlt = res2.driveFileId!;
+    behavior.staleUntitledFirstLoadCount = 1;
+    const res5 = await createAndUploadClassDemoSheetToDrive({
+      classId,
+      localClassFolderPath: localClassSpckDir,
+      _testHarness: { page, driveBaseUrl: baseUrl, sheetsBaseUrl: baseUrl },
+    });
+    behavior.vietnameseListViewDom = false;
+    behavior.oldSheetIdForImgAlt = "";
+    behavior.staleUntitledFirstLoadCount = 0;
+
+    assert.equal(res5.isNativeGoogleSheet, true);
+    assert.equal(res5.mimeType, "application/vnd.google-apps.spreadsheet");
+    assert.notEqual(res5.driveFileId, res2.driveFileId);
+    assert.equal(
+      items.get(res2.driveFileId!)?.trashed,
+      true,
+      "Bảng chấm điểm cũ ở DOM tiếng Việt (— + img[alt]) phải được dọn vào thùng rác sau khi xác nhận bảng mới!"
+    );
+    const active5 = Array.from(items.values()).filter(
+      (i) => i.parentId === classFolderId && !i.trashed
+    );
+    assert.equal(active5.length, 1);
+    assert.equal(active5[0].id, res5.driveFileId);
+    console.log("  -> PASS [GS-05].");
+
+    console.log("\n✅ TẤT CẢ 5/5 KỊCH BẢN GOOGLE TRANG TÍNH GỌN NHẸ ĐỀU ĐẠT 100%!");
   } finally {
     await context.close().catch(() => {});
     await browser.close().catch(() => {});

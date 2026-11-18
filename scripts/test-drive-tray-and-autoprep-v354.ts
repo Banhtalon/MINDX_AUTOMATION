@@ -627,10 +627,11 @@ async function run(): Promise<void> {
       "Quota bar, hidden progressbar, promo callout, and completed upload tray must NOT cause isBusy: true"
     );
 
-    // 1c. Run full 4-student batch upload for VT-C4K-PTA13
+    // 1c. Run full 4-student batch upload for VT-C4K-PTA13 (recursive tree mode)
     const ptaBatch = await SpckDriveUploader.uploadClassSpckToGoogleDrive({
       classId: ptaClassId,
       driveFolderUrl: DEFAULT_SPCK_DRIVE_FOLDER_URL,
+      uploadMode: "tree",
     });
     assert.strictEqual(ptaBatch.uploadedStudentsCount, 4);
     assert.strictEqual(ptaBatch.failedStudentsCount, 0);
@@ -901,7 +902,7 @@ async function run(): Promise<void> {
       path.join(ROOT, "src", "components", "top-navbar.tsx"),
       "utf8"
     );
-    assert.ok(navbarSrc.includes("MindX Bot v3.5.4"));
+    assert.ok(/MindX Bot v3\.5\.\d+/.test(navbarSrc));
     console.log("  -> PASS R354-06.");
 
     console.log("\n=== TẤT CẢ 6 KỊCH BẢN KIỂM THỬ v3.5.4 (R354-01 → R354-06) ĐÃ ĐẠT 100% ===");

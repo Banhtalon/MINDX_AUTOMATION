@@ -12,9 +12,11 @@ import {
   jobLogRepo,
   spckUploadRepo,
   studentRepo,
+  type SpckSessionNumber,
   type SpckUploadRecord,
 } from "../db/sqlite";
 import {
+  isCourseExemptFromSpck,
   MAX_SPCK_RELATED_LINKS,
   type SpckRelatedLink,
 } from "../local-files/spck-scanner";
@@ -44,6 +46,8 @@ const IGNORED_WEB_DIRS = new Set([
   "_spck_owner_uploads",
   "_spck_youtube_frames",
   "_spck_prev_backup",
+  "_spck_temp",
+  "_portal_backups",
 ]);
 
 const ALLOWED_WEB_ASSET_EXTENSIONS = new Set([
@@ -116,6 +120,8 @@ export interface SpckWebDeployOptions {
   classId: string;
   repoUrl?: string;
   studentIds?: string[];
+  sessionNumber?: SpckSessionNumber;
+  syncAllUnverifiedSessions?: boolean;
 }
 
 function isEmergencyStopped(): boolean {
@@ -234,11 +240,23 @@ function parseJsonArraySafe<T>(raw?: string | null): T[] {
 }
 
 function isSafeWebAssetFile(filePath: string, fileName: string, size: number): boolean {
-  if (size <= 0 || size > 25 * 1024 * 1024) return false;
+  if (size < 0 || size > 25 * 1024 * 1024) return false;
   if (fileName.startsWith(".")) return false;
+  if (Buffer.byteLength(fileName, "utf8") > 240) return false;
 
   const lower = fileName.toLowerCase();
-  if (lower === "links.txt" || lower === "link.txt") return false;
+  if (
+    lower === "links.txt" ||
+    lower === "link.txt" ||
+    lower === "default-spck-thumbnail.png" ||
+    lower === "portal_unconfirmed.json" ||
+    lower.startsWith("_spck_") ||
+    lower.startsWith("_portal_") ||
+    /^app_\d+_.*_[a-f0-9]{6}(?:_[a-z0-9]+)?\.(?:png|jpe?g|webp)$/i.test(lower) ||
+    /^yt_frame_\d+.*\.(?:png|jpe?g|webp)$/i.test(lower)
+  ) {
+    return false;
+  }
 
   const parsed = path.parse(lower);
   const ext = parsed.ext.toLowerCase();
@@ -427,14 +445,25 @@ function copyWebDirectoryRecursive(
   return copiedCount;
 }
 
-function runGitCommand(args: string[], cwd: string): string {
+function runGitCommand(args: string[], cwd: string, timeoutMs = 60_000): string {
   assertEmergencyNotStopped();
-  return execFileSync("git", args, {
-    cwd,
-    encoding: "utf-8",
-    stdio: ["ignore", "pipe", "pipe"],
-    timeout: 60_000,
-  }).trim();
+  return execFileSync(
+    "git",
+    ["-c", "core.longpaths=true", "-c", "safe.directory=*", ...args],
+    {
+      cwd,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: timeoutMs,
+    }
+  ).trim();
+}
+
+function resolveWebDeployWorkParent(): string {
+  if (process.env.MINDX_DB_PATH) {
+    return path.join(path.dirname(path.resolve(process.env.MINDX_DB_PATH)), "_spck_web_work");
+  }
+  return path.resolve(process.cwd(), "temp_submissions");
 }
 
 /**
@@ -442,9 +471,36 @@ function runGitCommand(args: string[], cwd: string): string {
  */
 function ensureLocalGitRepoReady(repoUrl: string): string {
   assertEmergencyNotStopped();
-  const workParent = path.resolve(process.cwd(), "temp_submissions");
+  const workParent = resolveWebDeployWorkParent();
   fs.mkdirSync(workParent, { recursive: true });
   const repoDir = assertInsideDirectory(workParent, path.join(workParent, "_github_pages_repo"));
+
+  const cloneFreshRepo = () => {
+    assertEmergencyNotStopped();
+    if (fs.existsSync(repoDir)) {
+      fs.rmSync(repoDir, { recursive: true, force: true });
+    }
+    execFileSync(
+      "git",
+      [
+        "-c",
+        "core.longpaths=true",
+        "-c",
+        "safe.directory=*",
+        "clone",
+        "--config",
+        "core.longpaths=true",
+        repoUrl,
+        repoDir,
+      ],
+      {
+        cwd: workParent,
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 120_000,
+      }
+    );
+  };
 
   if (fs.existsSync(path.join(repoDir, ".git"))) {
     try {
@@ -458,20 +514,26 @@ function ensureLocalGitRepoReady(repoUrl: string): string {
   }
 
   if (!fs.existsSync(path.join(repoDir, ".git"))) {
-    if (fs.existsSync(repoDir)) {
-      fs.rmSync(repoDir, { recursive: true, force: true });
-    }
-    execFileSync("git", ["clone", repoUrl, repoDir], {
-      cwd: workParent,
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 60_000,
-    });
+    cloneFreshRepo();
   } else {
-    const lsRemote = runGitCommand(["ls-remote", "--heads", "origin", "main"], repoDir);
+    const indexLockPath = assertInsideDirectory(
+      repoDir,
+      path.join(repoDir, ".git", "index.lock")
+    );
+    if (fs.existsSync(indexLockPath)) {
+      fs.rmSync(indexLockPath, { force: true });
+    }
+    runGitCommand(["config", "core.longpaths", "true"], repoDir);
+
+    const lsRemote = runGitCommand(["ls-remote", "--heads", "origin", "main"], repoDir, 60_000);
     if (lsRemote.length > 0) {
-      runGitCommand(["fetch", "origin", "main"], repoDir);
-      runGitCommand(["reset", "--hard", "origin/main"], repoDir);
+      try {
+        runGitCommand(["fetch", "origin", "main"], repoDir, 120_000);
+        runGitCommand(["reset", "--hard", "origin/main"], repoDir, 60_000);
+        runGitCommand(["clean", "-fd"], repoDir, 60_000);
+      } catch {
+        cloneFreshRepo();
+      }
     }
   }
 
@@ -571,6 +633,11 @@ export class SpckWebDeployer {
         `[Security Exception] Mã lớp '${normalizedClassId}' chứa ký tự không hợp lệ.`
       );
     }
+    if (isCourseExemptFromSpck(normalizedClassId)) {
+      throw new Error(
+        `Khóa học của lớp '${normalizedClassId}' không thi cuối khóa nên được miễn triển khai Web SPCK.`
+      );
+    }
 
     const repoUrl = (options.repoUrl || DEFAULT_SPCK_WEB_REPO_URL).trim();
     const pagesBaseUrl = deriveGithubPagesBaseUrl(repoUrl);
@@ -597,6 +664,69 @@ export class SpckWebDeployer {
 
     const studentsInClass = studentRepo.findByClass(normalizedClassId);
     const studentMap = new Map(studentsInClass.map((s) => [s.studentId, s]));
+
+    const results: SpckWebDeployStudentResult[] = [];
+    let skippedNoHtmlCount = 0;
+    let failedStudentsCount = 0;
+
+    // Pre-validate & locate HTML entry points BEFORE touching Git so classes without HTML
+    // (e.g. pure Python CSA/CSI projects) skip cleanly in <5ms with zero network/git overhead.
+    const htmlReadyTargets: Array<{
+      record: SpckUploadRecord;
+      fullName: string;
+      webInfo: NonNullable<ReturnType<typeof findStudentWebRootAndEntryHtml>>;
+    }> = [];
+
+    for (const record of targetRecords) {
+      assertEmergencyNotStopped();
+      const stu = studentMap.get(record.studentId);
+      const fullName = stu?.fullName || record.studentId;
+      try {
+        if (!record.localFolderPath) {
+          throw new Error(`Học viên '${fullName}' chưa có đường dẫn thư mục SPCK trên máy.`);
+        }
+        if (Number(record.isConfirmedByTeacher) !== 1) {
+          throw new Error(
+            `Học viên '${fullName}' chưa được giáo viên xác nhận ghép thư mục SPCK.`
+          );
+        }
+        const webInfo = findStudentWebRootAndEntryHtml(record.localFolderPath);
+        if (!webInfo) {
+          skippedNoHtmlCount++;
+          results.push({
+            studentId: record.studentId,
+            fullName,
+            status: "SKIPPED_NO_HTML",
+            copiedFilesCount: 0,
+            errorMessage: "Thư mục dự án không có file .html để tạo Link Web Live.",
+          });
+          continue;
+        }
+        htmlReadyTargets.push({ record, fullName, webInfo });
+      } catch (err) {
+        failedStudentsCount++;
+        results.push({
+          studentId: record.studentId,
+          fullName,
+          status: "FAILED",
+          copiedFilesCount: 0,
+          errorMessage: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    if (htmlReadyTargets.length === 0) {
+      return {
+        classId: normalizedClassId,
+        repoUrl,
+        pagesBaseUrl,
+        totalRequested: targetRecords.length,
+        deployedStudentsCount: 0,
+        skippedNoHtmlCount,
+        failedStudentsCount,
+        results,
+      };
+    }
 
     // Detect duplicate base slugs across the class roster + records
     const baseSlugOwners = new Map<string, Set<string>>();
@@ -636,14 +766,14 @@ export class SpckWebDeployer {
       }
     }
 
-    const workParent = path.resolve(process.cwd(), "temp_submissions");
+    const workParent = resolveWebDeployWorkParent();
+    fs.mkdirSync(workParent, { recursive: true });
     const stagingBaseDir = assertInsideDirectory(
       workParent,
       path.join(workParent, `_web_stage_${Date.now()}`)
     );
     fs.mkdirSync(stagingBaseDir, { recursive: true });
 
-    const results: SpckWebDeployStudentResult[] = [];
     const deployedQueue: Array<{
       record: SpckUploadRecord;
       fullName: string;
@@ -653,38 +783,13 @@ export class SpckWebDeployer {
       entryHtmlFile: string;
       copiedFilesCount: number;
     }> = [];
-    let skippedNoHtmlCount = 0;
-    let failedStudentsCount = 0;
 
     try {
-      for (const record of targetRecords) {
+      for (const targetItem of htmlReadyTargets) {
         assertEmergencyNotStopped();
-        const stu = studentMap.get(record.studentId);
-        const fullName = stu?.fullName || record.studentId;
+        const { record, fullName, webInfo } = targetItem;
 
         try {
-          if (!record.localFolderPath) {
-            throw new Error(`Học viên '${fullName}' chưa có đường dẫn thư mục SPCK trên máy.`);
-          }
-          if (Number(record.isConfirmedByTeacher) !== 1) {
-            throw new Error(
-              `Học viên '${fullName}' chưa được giáo viên xác nhận ghép thư mục SPCK.`
-            );
-          }
-
-          const webInfo = findStudentWebRootAndEntryHtml(record.localFolderPath);
-          if (!webInfo) {
-            skippedNoHtmlCount++;
-            results.push({
-              studentId: record.studentId,
-              fullName,
-              status: "SKIPPED_NO_HTML",
-              copiedFilesCount: 0,
-              errorMessage: "Thư mục dự án không có file .html để tạo Link Web Live.",
-            });
-            continue;
-          }
-
           const baseSlug = buildStudentWebFolderSlug(fullName, record.studentId, false);
           const lowerBaseSlug = baseSlug.toLowerCase();
           const ownersSet = baseSlugOwners.get(lowerBaseSlug);
@@ -779,7 +884,7 @@ export class SpckWebDeployer {
         `${normalizedClassId}/.mindx-students.json`,
         ...deployedQueue.map((item) => item.relGitPath),
       ];
-      runGitCommand(["add", "--", ...pathsToStage], repoDir);
+      runGitCommand(["add", "-A", "--", ...pathsToStage], repoDir);
 
       const statusOut = runGitCommand(
         ["status", "--porcelain", "--", ...pathsToStage],
@@ -788,6 +893,10 @@ export class SpckWebDeployer {
       if (statusOut.length > 0) {
         runGitCommand(
           [
+            "-c",
+            "user.name=MindX Automation Bot",
+            "-c",
+            "user.email=bot@mindx.local",
             "commit",
             "-m",
             `Deploy SPCK Web class ${normalizedClassId} (${deployedQueue.length} students)`,
@@ -797,7 +906,26 @@ export class SpckWebDeployer {
       }
 
       assertEmergencyNotStopped();
-      runGitCommand(["push", "origin", "HEAD:main"], repoDir);
+      try {
+        runGitCommand(["push", "origin", "HEAD:main"], repoDir, 180_000);
+      } catch (pushErr) {
+        const pushMsg = pushErr instanceof Error ? pushErr.message : String(pushErr);
+        const lowerPush = pushMsg.toLowerCase();
+        if (
+          lowerPush.includes("authentication failed") ||
+          lowerPush.includes("could not read username") ||
+          lowerPush.includes("logon failed") ||
+          lowerPush.includes("permission to") ||
+          lowerPush.includes(" 403") ||
+          lowerPush.includes("requested url returned error: 403") ||
+          lowerPush.includes("credential")
+        ) {
+          throw new Error(
+            `Chưa đăng nhập GitHub để đẩy Web SPCK lên kho (${repoUrl}). Khi bấm đẩy lại, vui lòng bấm "Sign in with your browser" (tài khoản Banhtalon) trên cửa sổ GitHub Sign in rồi thử lại.`
+          );
+        }
+        throw pushErr;
+      }
 
       // Update SQLite relatedLinksJson for all deployed students
       for (const item of deployedQueue) {
@@ -852,6 +980,8 @@ export class SpckWebDeployer {
           item.record.studentId,
           {
             relatedLinksJson: JSON.stringify(updatedLinks),
+            syncSessionNumber: options.sessionNumber,
+            syncAllUnverifiedSessions: options.syncAllUnverifiedSessions,
           },
           item.record.localFolderPath
         );

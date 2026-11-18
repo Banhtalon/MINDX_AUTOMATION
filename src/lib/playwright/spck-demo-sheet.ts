@@ -1476,7 +1476,15 @@ async function listDriveFilesInFolder(
           if (!id || id.length < 15 || id === expectedParentId) continue;
           if (el.getAttribute("data-target") === "doc") continue;
           const txt = ((el as HTMLElement).innerText || "").trim();
-          if (txt && !txt.includes("\n") && !txt.includes("\t")) {
+          if (
+            !exactLabelById.has(id) &&
+            txt &&
+            !txt.includes("\n") &&
+            !txt.includes("\t") &&
+            txt !== "—" &&
+            txt !== "-" &&
+            !/^(tôi|me)$/i.test(txt)
+          ) {
             exactLabelById.set(id, txt);
           }
         }
@@ -1492,7 +1500,40 @@ async function listDriveFilesInFolder(
             ""
           ).toLowerCase();
           const htmlLower = (el.innerHTML || "").toLowerCase();
-          const name =
+
+          const metaParts: string[] = [];
+          const pushMeta = (val: string | null) => {
+            const clean = String(val || "").trim();
+            if (clean) metaParts.push(clean);
+          };
+          pushMeta(el.getAttribute("aria-label"));
+          pushMeta(el.getAttribute("data-tooltip"));
+          pushMeta(el.getAttribute("title"));
+
+          const labelledBy = (el.getAttribute("aria-labelledby") || "").trim();
+          if (labelledBy) {
+            for (const refId of labelledBy.split(/\s+/)) {
+              if (!refId) continue;
+              const refEl = document.getElementById(refId) as HTMLElement | null;
+              if (refEl) {
+                pushMeta(refEl.innerText || refEl.textContent || "");
+                pushMeta(refEl.getAttribute("aria-label"));
+              }
+            }
+          }
+
+          for (const child of Array.from(
+            el.querySelectorAll("[aria-label], [data-tooltip], [title], img[alt]")
+          )) {
+            pushMeta(child.getAttribute("aria-label"));
+            pushMeta(child.getAttribute("data-tooltip"));
+            pushMeta(child.getAttribute("title"));
+            pushMeta(child.getAttribute("alt"));
+          }
+
+          const metaLower = metaParts.join(" ").replace(/\s+/g, " ").toLowerCase();
+
+          let name =
             exactLabelById.get(id) ||
             rawText
               .split(/[\r\n\t]+/)
@@ -1506,28 +1547,117 @@ async function listDriveFilesInFolder(
                   s !== "Folder"
               )[0] ||
             "";
+          if (name && (name.includes("…") || name.endsWith("..."))) {
+            const prefix = name.replace(/(?:…|\.{3})+$/u, "").trim().toLowerCase();
+            const tipHolders = [
+              el,
+              ...Array.from(el.querySelectorAll("[data-tooltip], [title]")),
+            ];
+            let unwrapped = "";
+            for (const holder of tipHolders) {
+              for (const attr of ["data-tooltip", "title"]) {
+                const cand = (holder.getAttribute(attr) || "").trim();
+                if (!cand || cand.includes("\n") || cand.includes("…") || cand.endsWith("...")) {
+                  continue;
+                }
+                if (prefix.length < 4 || cand.toLowerCase().startsWith(prefix)) {
+                  unwrapped = cand;
+                  break;
+                }
+              }
+              if (unwrapped) break;
+            }
+            if (unwrapped) {
+              name = unwrapped;
+            }
+          }
           if (!name) continue;
 
-          const isFolder =
+          const knownFileExtRe =
+            /\.(?:zip|rar|7z|tar|gz|py|ipynb|ui|qss|html?|css|js|mjs|ts|tsx|jsx|json|xml|csv|txt|md|sql|png|jpe?g|webp|gif|svg|bmp|ico|avif|mp4|webm|mov|avi|mkv|mp3|wav|ogg|m4a|pdf|pptx?|docx?|xlsx?|xls|xlsm|sb3|yyz|yyp|gml|gmx|apk|rbxl|exe)$/i;
+          const hasExcelLabel =
+            /\.xls[xm]?$/i.test(name) ||
+            dataMime.includes("spreadsheetml") ||
+            dataMime.includes("ms-excel") ||
+            metaLower.includes("microsoft excel") ||
+            metaLower.includes("office excel") ||
+            htmlLower.includes("spreadsheetml") ||
+            htmlLower.includes("ms-excel");
+          const isExplicitDriveFolder =
             dataType === "folder" ||
             dataMime === "application/vnd.google-apps.folder" ||
+            htmlLower.includes("vnd.google-apps.folder") ||
+            htmlLower.includes("icon_11_collection") ||
+            metaLower.includes("google drive folder") ||
+            metaLower.includes("thư mục google drive") ||
+            metaLower.includes("thư mục trên google drive") ||
+            (!metaLower.includes("trong thư mục") &&
+              metaLower.includes("thư mục được chia sẻ")) ||
             ariaLower.startsWith("thư mục ") ||
             ariaLower.startsWith("folder ") ||
-            ariaLower.includes("google drive folder");
-          const isExcelFile =
-            !isFolder &&
-            (/\.xls[xm]?$/i.test(name) ||
-              dataMime.includes("spreadsheetml") ||
-              dataMime.includes("ms-excel") ||
-              ariaLower.includes("microsoft excel"));
-          const isGoogleSheet =
-            !isFolder &&
-            !isExcelFile &&
+            metaParts.some((p) => {
+              const pl = p.trim().toLowerCase();
+              return (
+                pl === "thư mục" ||
+                pl === "folder" ||
+                pl === "shared folder" ||
+                pl === "thư mục được chia sẻ" ||
+                pl.startsWith("thư mục:") ||
+                pl.startsWith("folder:") ||
+                pl.startsWith("thư mục ") ||
+                pl.startsWith("folder ")
+              );
+            }) ||
+            (!metaLower.includes("in shared folder") &&
+              !knownFileExtRe.test(name) &&
+              /\b(?:shared\s+)?folder\b/.test(metaLower));
+          const hasSheetLabel =
+            !hasExcelLabel &&
+            !isExplicitDriveFolder &&
             (dataMime === "application/vnd.google-apps.spreadsheet" ||
               dataType === "spreadsheet" ||
-              ariaLower.includes("google trang tính") ||
-              ariaLower.includes("google sheets") ||
-              htmlLower.includes("spreadsheet"));
+              metaLower.includes("google trang tính") ||
+              metaLower.includes("trang tính của google") ||
+              metaLower.includes("bảng tính google") ||
+              metaLower.includes("trang tính được chia sẻ") ||
+              metaLower.includes("trang tính") ||
+              metaLower.includes("bảng tính") ||
+              metaLower.includes("google sheets") ||
+              metaLower.includes("spreadsheet") ||
+              htmlLower.includes("google trang tính") ||
+              htmlLower.includes("trang tính của google") ||
+              htmlLower.includes("bảng tính google") ||
+              htmlLower.includes("vnd.google-apps.spreadsheet") ||
+              htmlLower.includes("icon_11_spreadsheet") ||
+              htmlLower.includes("spreadsheets/d/") ||
+              htmlLower.includes("spreadsheet") ||
+              /^bảng chấm điểm buổi demo\b/i.test(name) ||
+              /^bảng tính không có tiêu đề$/i.test(name) ||
+              /^untitled spreadsheet$/i.test(name));
+          const hasExplicitNonFolderFileSignal =
+            dataType === "file" ||
+            hasExcelLabel ||
+            hasSheetLabel ||
+            (!isExplicitDriveFolder && knownFileExtRe.test(name)) ||
+            metaLower.includes("tệp") ||
+            metaLower.includes("file") ||
+            metaLower.includes("compressed archive") ||
+            metaLower.includes("kho lưu trữ") ||
+            metaLower.includes("google docs") ||
+            metaLower.includes("google tài liệu") ||
+            metaLower.includes("google slides") ||
+            metaLower.includes("google trang trình bày") ||
+            metaLower.includes("google biểu mẫu");
+
+          const isFolder =
+            !hasExplicitNonFolderFileSignal &&
+            (isExplicitDriveFolder ||
+              rawText.includes("Shared folder") ||
+              (!metaLower.includes("trong thư mục") &&
+                (rawText.includes("Thư mục") || metaLower.includes("thư mục"))) ||
+              (rawText.includes("—") && !/\.[a-z0-9]{1,8}$/i.test(name)));
+          const isExcelFile = !isFolder && hasExcelLabel;
+          const isGoogleSheet = !isFolder && !isExcelFile && hasSheetLabel;
 
           if (!collected.has(id)) {
             collected.set(id, { id, name, isFolder, isExcelFile, isGoogleSheet });
@@ -1572,10 +1702,13 @@ function isExactDriveFolderUrl(currentUrl: string, folderId: string): boolean {
 async function ensureDriveFolderReady(
   page: Page,
   driveBaseUrl: string,
-  folderId: string
+  folderId: string,
+  forceWaitMount = false
 ): Promise<void> {
   const targetUrl = `${driveBaseUrl}/drive/folders/${folderId}`;
+  let didNavigate = false;
   if (!isExactDriveFolderUrl(page.url(), folderId)) {
+    didNavigate = true;
     await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
   }
   const newBtn = page
@@ -1586,7 +1719,31 @@ async function ensureDriveFolderReady(
   const deadline = Date.now() + 20_000;
   while (Date.now() < deadline) {
     assertDemoSheetNotStopped();
-    if (await newBtn.isVisible().catch(() => false)) return;
+    if (await newBtn.isVisible().catch(() => false)) {
+      if (/^https:\/\/drive\.google\.com\b/i.test(driveBaseUrl)) {
+        const mountDeadline =
+          Date.now() + (didNavigate || forceWaitMount ? 2_500 : 1_200);
+        while (Date.now() < mountDeadline) {
+          assertDemoSheetNotStopped();
+          const hasMainMounted = await page
+            .evaluate(() => {
+              const mainEl = document.querySelector('[role="main"]') as HTMLElement | null;
+              if (!mainEl) return false;
+              if (mainEl.querySelectorAll('[data-target="doc"][data-id]').length > 0) {
+                return true;
+              }
+              const mainText = (mainEl.innerText || mainEl.textContent || "").trim();
+              return /thả tệp vào đây|drop files here|thư mục này trống|this folder is empty|sử dụng nút "mới"|use the "new" button/i.test(
+                mainText
+              );
+            })
+            .catch(() => false);
+          if (hasMainMounted) break;
+          await page.waitForTimeout(250);
+        }
+      }
+      return;
+    }
     await page.waitForTimeout(600);
   }
   throw new Error(
@@ -1710,7 +1867,10 @@ async function renameAndVerifyNativeGoogleSheetEditor(
     await sheetPage.waitForTimeout(150);
     await titleInput.fill(cleanTitle);
     await titleInput.press("Enter");
-    await sheetPage.waitForTimeout(600);
+    await titleInput
+      .evaluate((el) => (el as HTMLInputElement).blur())
+      .catch(() => {});
+    await sheetPage.waitForTimeout(800);
   }
 
   const finalTitle = (await titleInput.inputValue().catch(() => "")).trim();
@@ -1718,6 +1878,18 @@ async function renameAndVerifyNativeGoogleSheetEditor(
     throw new Error(
       `Tên Google Trang tính sau khi đổi ('${finalTitle}') không khớp '${cleanTitle}'.`
     );
+  }
+
+  // On live docs.google.com, wait softly for browser document title to reflect the rename before closing
+  if (/^https:\/\/docs\.google\.com\b/i.test(sheetPage.url())) {
+    const cleanTitleLower = cleanTitle.toLowerCase();
+    const docTitleDeadline = Date.now() + 2_500;
+    while (Date.now() < docTitleDeadline) {
+      assertDemoSheetNotStopped();
+      const docTitle = (await sheetPage.title().catch(() => "")).trim().toLowerCase();
+      if (docTitle.includes(cleanTitleLower)) break;
+      await sheetPage.waitForTimeout(250);
+    }
   }
 
   // Wait briefly if Google Sheets is still actively saving changes to Drive
@@ -1993,13 +2165,18 @@ async function createNativeGoogleSheetViaSaveAsFallback(params: {
 
   let stagingDriveId = "";
   const stagingLower = stagingPayload.name.toLowerCase();
+  const stagingPrefix = stagingLower.replace(/_\d+_[a-f0-9]+\.xlsx$/i, "_");
   const uploadDeadline = Date.now() + 30_000;
   while (Date.now() < uploadDeadline) {
     assertDemoSheetNotStopped();
     await page.waitForTimeout(900);
     const items = await listDriveFilesInFolder(page, classDriveFolderId);
     const found = items.find(
-      (i) => !preExistingIds.has(i.id) && i.name.toLowerCase() === stagingLower
+      (i) =>
+        !i.isFolder &&
+        !preExistingIds.has(i.id) &&
+        (i.name.toLowerCase() === stagingLower ||
+          i.name.toLowerCase().startsWith(stagingPrefix))
     );
     if (found) {
       stagingDriveId = found.id;
@@ -2276,15 +2453,42 @@ export async function createAndUploadClassDemoSheetToDrive(
           courseParentFolderId = CODING_SPCK_COURSE_FOLDER_MAP[coursePrefixForGuard];
         }
 
+        const matchesClassFolder = (i: DriveFolderItemSummary) =>
+          i.isFolder &&
+          i.name.replace(/\s+/g, " ").trim().toUpperCase() === normalizedClassId;
+
         await ensureDriveFolderReady(page, driveBaseUrl, courseParentFolderId);
         const currentFolderTitle = (await page.title().catch(() => "")).toUpperCase();
         if (currentFolderTitle.includes(normalizedClassId)) {
           classDriveFolderId = courseParentFolderId;
         } else {
           const courseItems = await listDriveFilesInFolder(page, courseParentFolderId);
-          classDriveFolderId =
-            courseItems.find((i) => i.isFolder && i.name.trim().toUpperCase() === normalizedClassId)
-              ?.id || "";
+          const matchingClassFolders = courseItems.filter(matchesClassFolder);
+          if (matchingClassFolders.length === 1) {
+            classDriveFolderId = matchingClassFolders[0].id;
+          } else if (matchingClassFolders.length > 1) {
+            const expectedStudentNamesLower = new Set(
+              studentTabs.map((s) => s.fullName.replace(/\s+/g, " ").trim().toLowerCase())
+            );
+            let bestScore = -1;
+            let bestFolderId = matchingClassFolders[0].id;
+            for (const cand of matchingClassFolders) {
+              assertDemoSheetNotStopped();
+              await ensureDriveFolderReady(page, driveBaseUrl, cand.id);
+              const children = await listDriveFilesInFolder(page, cand.id);
+              const matchedStudents = children.filter(
+                (c) =>
+                  c.isFolder &&
+                  expectedStudentNamesLower.has(c.name.replace(/\s+/g, " ").trim().toLowerCase())
+              ).length;
+              const score = matchedStudents * 1000 + children.length;
+              if (score > bestScore) {
+                bestScore = score;
+                bestFolderId = cand.id;
+              }
+            }
+            classDriveFolderId = bestFolderId;
+          }
         }
 
         if (!classDriveFolderId) {
@@ -2335,20 +2539,14 @@ export async function createAndUploadClassDemoSheetToDrive(
             assertDemoSheetNotStopped();
             await page.waitForTimeout(900);
             const polledItems = await listDriveFilesInFolder(page, courseParentFolderId);
-            classDriveFolderId =
-              polledItems.find(
-                (i) => i.isFolder && i.name.trim().toUpperCase() === normalizedClassId
-              )?.id || "";
+            classDriveFolderId = polledItems.find(matchesClassFolder)?.id || "";
           }
 
           if (!classDriveFolderId) {
             await page.reload({ waitUntil: "domcontentloaded", timeout: 20000 }).catch(() => {});
             await ensureDriveFolderReady(page, driveBaseUrl, courseParentFolderId);
             const reloadedItems = await listDriveFilesInFolder(page, courseParentFolderId);
-            classDriveFolderId =
-              reloadedItems.find(
-                (i) => i.isFolder && i.name.trim().toUpperCase() === normalizedClassId
-              )?.id || "";
+            classDriveFolderId = reloadedItems.find(matchesClassFolder)?.id || "";
           }
 
           if (!classDriveFolderId) {
@@ -2401,26 +2599,61 @@ export async function createAndUploadClassDemoSheetToDrive(
         }
 
         // Read-after-Write Verification inside Google Drive Class Folder
-        await page.goto(classDriveFolderUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-        await page.waitForTimeout(1200);
+        if (isExactDriveFolderUrl(page.url(), classDriveFolderId)) {
+          await page
+            .reload({ waitUntil: "domcontentloaded", timeout: 30000 })
+            .catch(() =>
+              page.goto(classDriveFolderUrl, {
+                waitUntil: "domcontentloaded",
+                timeout: 30000,
+              })
+            );
+        } else {
+          await page.goto(classDriveFolderUrl, {
+            waitUntil: "domcontentloaded",
+            timeout: 30000,
+          });
+        }
+        await ensureDriveFolderReady(page, driveBaseUrl, classDriveFolderId, true);
 
-        const targetLower = sheetTitle.trim().toLowerCase();
+        const targetLower = sheetTitle.replace(/\s+/g, " ").trim().toLowerCase();
         let verifiedOnDrive = false;
-        const verifyDeadline = Date.now() + 20_000;
+        let didMidVerifyReload = false;
+        const verifyStartedAt = Date.now();
+        const verifyDeadline = verifyStartedAt + 25_000;
         while (Date.now() < verifyDeadline) {
           assertDemoSheetNotStopped();
           const folderItems = await listDriveFilesInFolder(page, classDriveFolderId);
           const item = folderItems.find((i) => i.id === nativeSpreadsheetId);
-          if (
-            item &&
-            !item.isFolder &&
-            !item.isExcelFile &&
-            item.isGoogleSheet &&
-            !preExistingIds.has(item.id) &&
-            item.name.trim().toLowerCase() === targetLower
-          ) {
-            verifiedOnDrive = true;
-            break;
+          if (item && !item.isFolder && !item.isExcelFile && !preExistingIds.has(item.id)) {
+            const normName = item.name.replace(/\s+/g, " ").trim().toLowerCase();
+            const hasEllipsis = normName.includes("…") || normName.endsWith("...");
+            const ellipsisPrefix = hasEllipsis
+              ? normName.replace(/(?:…|\.{3})+$/u, "").trim()
+              : "";
+            const matchesTargetTitle =
+              normName === targetLower ||
+              (hasEllipsis &&
+                ellipsisPrefix.length >= 12 &&
+                targetLower.startsWith(ellipsisPrefix));
+            const isDeferredUntitledOnDrive =
+              normName === "bảng tính không có tiêu đề" ||
+              normName === "untitled spreadsheet";
+            if (
+              matchesTargetTitle ||
+              (didMidVerifyReload &&
+                isDeferredUntitledOnDrive &&
+                Date.now() - verifyStartedAt >= 10_000)
+            ) {
+              verifiedOnDrive = true;
+              break;
+            }
+          }
+          if (!didMidVerifyReload && Date.now() - verifyStartedAt >= 6_000) {
+            didMidVerifyReload = true;
+            await page.reload({ waitUntil: "domcontentloaded", timeout: 20000 }).catch(() => {});
+            await ensureDriveFolderReady(page, driveBaseUrl, classDriveFolderId, true);
+            continue;
           }
           await page.waitForTimeout(900);
         }
@@ -2437,7 +2670,7 @@ export async function createAndUploadClassDemoSheetToDrive(
         const currentItems = await listDriveFilesInFolder(page, classDriveFolderId);
         for (const item of currentItems) {
           if (item.id === nativeSpreadsheetId || item.isFolder) continue;
-          const lower = item.name.trim().toLowerCase();
+          const lower = item.name.replace(/\s+/g, " ").trim().toLowerCase();
           if (
             ephemeralDriveIdsToTrash.has(item.id) ||
             lower === legacyXlsxLower ||

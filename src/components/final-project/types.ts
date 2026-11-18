@@ -155,6 +155,8 @@ export interface SpckRecordRow {
   isDefaultProductTitle?: boolean;
   thumbnailInspection?: ThumbnailInspectionUI;
   sessionHistory?: SpckStudentSessionHistorySummaryUI;
+  hasPortalBackup?: boolean;
+  lastPreppedFolderDigest?: string;
 }
 
 export interface ScannedFolderUIItem {
@@ -186,6 +188,10 @@ export interface ScannedFolderUIItem {
   hasNewerSharedResources?: boolean;
   isDefaultProductTitle?: boolean;
   thumbnailInspection?: ThumbnailInspectionUI;
+  folderContentDigest?: string;
+  folderContentChanged?: boolean;
+  hasHtmlFiles?: boolean;
+  hasPortalBackup?: boolean;
   isDirty?: boolean;
 }
 

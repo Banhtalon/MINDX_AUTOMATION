@@ -51,6 +51,8 @@ export async function POST(req: Request) {
       classId,
       repoUrl,
       studentIds,
+      sessionNumber: activeSessionNumber,
+      syncAllUnverifiedSessions: body?.syncActiveSession === true,
     });
 
     if (body?.syncActiveSession === true && activeSessionNumber) {
@@ -65,6 +67,15 @@ export async function POST(req: Request) {
         : deployedIds;
       for (const sid of targetIds) {
         try {
+          const sessRow = spckSessionRepo.findOne(classId, sid, activeSessionNumber);
+          if (
+            !sessRow ||
+            sessRow.lastVerifiedAt ||
+            sessRow.draftStatus === "VERIFIED" ||
+            sessRow.draftStatus === "SAVING"
+          ) {
+            continue;
+          }
           spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
             classId,
             sid,
@@ -82,12 +93,17 @@ export async function POST(req: Request) {
       records: updatedRecords,
     });
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const isClientError =
+      message.includes("được miễn") ||
+      message.includes("Thiếu mã lớp") ||
+      message.includes("không hợp lệ");
     return NextResponse.json(
       {
         success: false,
-        error: err instanceof Error ? err.message : String(err),
+        error: message,
       },
-      { status: 500 }
+      { status: isClientError ? 400 : 500 }
     );
   }
 }

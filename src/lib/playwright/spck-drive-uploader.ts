@@ -7,19 +7,23 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import AdmZip from "adm-zip";
 import type { Page } from "playwright";
 import {
   jobLogRepo,
+  spckSessionRepo,
   spckUploadRepo,
   studentRepo,
+  type SpckSessionNumber,
   type SpckUploadRecord,
 } from "../db/sqlite";
 import {
+  computeStudentFolderContentDigest,
   MAX_SPCK_RELATED_LINKS,
   type SpckRelatedLink,
 } from "../local-files/spck-scanner";
 import { taskQueue } from "../queue/task-queue";
-import { assertPathAllowed } from "../security/path-allowlist";
+import { assertPathAllowed, isPathAllowed } from "../security/path-allowlist";
 import { stripVietnameseDiacritics } from "../utils/vietnamese-match";
 import { BrowserManager } from "./browser-manager";
 
@@ -124,14 +128,19 @@ export function isBotOrSystemIgnoredDriveFile(fileName: string): boolean {
     lower.endsWith("_app_package.zip") ||
     lower.endsWith("_robotics_package.zip") ||
     lower.endsWith("_gamemaker.yyz") ||
-    /^spck_.*_[a-f0-9]{8}\.zip$/i.test(lower)
+    /^spck_.*_[a-f0-9]{8}\.zip$/i.test(lower) ||
+    /_spck_(?:b1[234]|spck)_\d{4}_\d{6}(?:_\d+)?\.zip$/i.test(lower)
   ) {
     return true;
   }
   if (
-    /^app_\d+_.*_[a-f0-9]{6}\.(?:png|jpe?g|webp)$/i.test(lower) ||
+    /^app_\d+_.*_[a-f0-9]{6}(?:_[a-z0-9]+)?\.(?:png|jpe?g|webp)$/i.test(lower) ||
+    /^owner_photo_[a-f0-9]{6,16}\.png$/i.test(lower) ||
     /^yt_frame_\d+.*\.(?:png|jpe?g|webp)$/i.test(lower)
   ) {
+    return true;
+  }
+  if (/^(?:service[-_]?account.*|credentials?|secrets?)\.json$/i.test(lower)) {
     return true;
   }
   if (
@@ -163,6 +172,8 @@ export interface SpckDriveStudentResult {
   driveFolderId?: string;
   driveFolderUrl?: string;
   uploadedFilesCount: number;
+  zipFileName?: string;
+  standaloneMediaCount?: number;
   errorMessage?: string;
 }
 
@@ -178,10 +189,16 @@ export interface SpckDriveBatchResult {
   results: SpckDriveStudentResult[];
 }
 
+export type SpckDriveUploadMode = "zip_bundle" | "tree";
+
 export interface SpckDriveUploadOptions {
   classId: string;
   driveFolderUrl?: string;
   studentIds?: string[];
+  uploadMode?: SpckDriveUploadMode;
+  sessionNumber?: SpckSessionNumber;
+  syncAllUnverifiedSessions?: boolean;
+  allowDemoteApprovedSession?: boolean;
 }
 
 function isEmergencyStopped(): boolean {
@@ -212,11 +229,15 @@ export function extractDriveFolderId(rawUrlOrId: string): string {
   );
 }
 
-// Owner confirmed in v2.7.0: SPCK applies to ALL classes, including PTB and CSB.
-export const SPCK_EXEMPT_COURSES = new Set<string>([]);
+// v3.5.5 Owner decision: PTB and CSB do not have final exams/Demo and are exempt from SPCK & Drive auto-prep.
+export const SPCK_EXEMPT_COURSES = new Set<string>(["PTB", "CSB"]);
 
-export function isCourseExemptFromSpck(_classIdOrPrefix: string): boolean {
-  return false;
+export function isCourseExemptFromSpck(classIdOrPrefix: string): boolean {
+  const raw = String(classIdOrPrefix || "").trim().toUpperCase();
+  if (!raw) return false;
+  if (SPCK_EXEMPT_COURSES.has(raw)) return true;
+  const prefix = detectCoursePrefixFromClassId(raw);
+  return Boolean(prefix && SPCK_EXEMPT_COURSES.has(prefix));
 }
 
 export function detectCoursePrefixFromClassId(classId: string): string | null {
@@ -413,22 +434,44 @@ async function listDriveItemsOnPage(
                 s !== "Thư mục" &&
                 s !== "Folder"
             );
-          const firstLine = exactLabelById.get(id) || tokens[0] || "";
+          let firstLine = exactLabelById.get(id) || tokens[0] || "";
+          if (firstLine && (firstLine.includes("…") || firstLine.endsWith("..."))) {
+            const fullTip = (
+              el.getAttribute("data-tooltip") ||
+              el.getAttribute("title") ||
+              ""
+            ).trim();
+            if (fullTip && !fullTip.includes("\n")) {
+              firstLine = fullTip;
+            }
+          }
 
           const html = (el.innerHTML || "").toLowerCase();
           const dataType = (el.getAttribute("data-type") || "").toLowerCase();
           const ariaLabel = (el.getAttribute("aria-label") || "").toLowerCase();
+          const knownFileExtRe =
+            /\.(?:zip|rar|7z|tar|gz|py|ipynb|ui|qss|html?|css|js|mjs|ts|tsx|jsx|json|xml|csv|txt|md|sql|png|jpe?g|webp|gif|svg|bmp|ico|avif|mp4|webm|mov|avi|mkv|mp3|wav|ogg|m4a|pdf|pptx?|docx?|xlsx?|sb3|yyz|yyp|gml|gmx|apk|rbxl|exe)$/i;
+          const isExplicitFolderLabel =
+            dataType === "folder" ||
+            ariaLabel.includes("google drive folder") ||
+            ariaLabel.includes("thư mục google drive") ||
+            ariaLabel.includes("thư mục được chia sẻ") ||
+            ariaLabel.startsWith("thư mục ") ||
+            /\bfolder\b/.test(ariaLabel);
           const hasExplicitFileLabel =
             dataType === "file" ||
+            (!isExplicitFolderLabel && knownFileExtRe.test(firstLine)) ||
             ariaLabel.includes("tệp") ||
-            ariaLabel.includes("file");
+            ariaLabel.includes("file") ||
+            ariaLabel.includes("compressed archive") ||
+            ariaLabel.includes("kho lưu trữ") ||
+            ariaLabel.includes("zip");
           const isFolder =
             !hasExplicitFileLabel &&
-            (dataType === "folder" ||
+            (isExplicitFolderLabel ||
               html.includes("folder") ||
               rawText.includes("Shared folder") ||
               rawText.includes("Thư mục") ||
-              ariaLabel.includes("folder") ||
               ariaLabel.includes("thư mục") ||
               (rawText.includes("—") && !/\.[a-z0-9]{1,8}$/i.test(firstLine)));
           if (firstLine && !collected.has(id)) {
@@ -757,11 +800,25 @@ async function findOrCreateDriveSubfolder(
   const existingItems = await listDriveItemsOnPage(page, parentFolderId);
   const normTarget = normalizeFolderTitle(targetFolderName);
 
-  const matchedExisting = existingItems.find(
+  const matchingExisting = existingItems.filter(
     (item) => item.isFolder && normalizeFolderTitle(item.name) === normTarget
   );
-  if (matchedExisting) {
-    return matchedExisting.id;
+  if (matchingExisting.length === 1) {
+    return matchingExisting[0].id;
+  }
+  if (matchingExisting.length > 1) {
+    let bestId = matchingExisting[0].id;
+    let bestCount = -1;
+    for (const cand of matchingExisting) {
+      assertDriveNotStopped();
+      await ensureGoogleDriveFolderReadyAndAuthenticated(page, cand.id);
+      const children = await listDriveItemsOnPage(page, cand.id);
+      if (children.length > bestCount) {
+        bestCount = children.length;
+        bestId = cand.id;
+      }
+    }
+    return bestId;
   }
 
   // Dismiss any leftover modal dialog ("Thư mục mới" / "New folder") before opening "+ Mới"
@@ -858,18 +915,18 @@ const DRIVE_ACTIVE_DIALOG_SELECTOR = '[role="dialog"]:visible';
 const DRIVE_INDICATOR_REGEX_SOURCES = {
   // Active upload state: exclude filename extensions like `uploading.py` via negative lookahead
   activeUpload:
-    "(?:đang tải(?:\\s+\\d+\\s+mục)?\\s+lên|đang tải lên|đang bắt đầu(?:\\s+tải)?|đang chuẩn bị(?:\\s+tải)?|đang xử lý|đang hoàn tất(?:\\s+quá trình)?|starting upload|preparing upload|finishing upload|(?:^|[\\s:])uploading(?!\\.[a-z0-9]{1,8}\\b)(?:\\s+\\d+|\\s+item|\\s+file|\\.\\.\\.|\\s*$)|còn\\s+\\d+\\s*(?:giây|phút|giờ)|còn chưa đầy|seconds?\\s+left|minutes?\\s+left|hours?\\s+left|less than a minute)",
+    "(?:đang tải(?:\\s+\\d+\\s*(?:mục|tệp|thư mục|lần)?)?\\s+lên|đang tải lên|đang bắt đầu(?:\\s+tải)?|đang chuẩn bị(?:\\s+tải)?|đang xử lý|đang hoàn tất(?:\\s+quá trình)?|starting upload|preparing upload|finishing upload|(?:^|[\\s:])uploading(?!\\.[a-z0-9]{1,8}\\b)(?:\\s+\\d+|\\s+item|\\s+file|\\.\\.\\.|\\s*$)|còn\\s+\\d+\\s*(?:giây|phút|giờ)|còn chưa đầy|seconds?\\s+left|minutes?\\s+left|hours?\\s+left|less than a minute)",
   completedUpload:
-    "(?:đã hoàn tất.*tải lên|tải lên hoàn tất|tải lên xong|đã tải xong|đã tải lên\\s+\\d+|uploads?\\s+complete|upload\\s+complete|upload\\s+finished|uploaded\\s+\\d+)",
+    "(?:đã hoàn tất.*tải lên|hoàn tất.*tải lên|tải lên hoàn tất|tải lên xong|đã tải xong|đã tải(?:\\s+\\d+\\s*(?:mục|tệp|thư mục|lần)?)?\\s+lên|đã tải lên(?:\\s+\\d+|\\s+xong)?|\\b\\d+\\s*(?:mục|tệp|thư mục|lần)\\s+đã\\s+(?:được\\s+)?tải\\s+lên|uploads?\\s+complete|upload\\s+complete|upload\\s+finished|uploaded\\s+\\d+|\\b\\d+\\s+(?:items?|files?|uploads?)\\s+(?:uploaded|complete))",
   failedUpload: "(?:tải lên không thành công|upload failed)",
   cancelButton:
     "(?:hủy tải|huỷ tải|hủy tất cả|huỷ tất cả|cancel upload|cancel all|^(?:hủy|huỷ|cancel)$)",
   duplicateOption:
     "(?:tùy chọn tải lên|upload options|thay thế tệp|replace existing|update existing|cập nhật tệp|giữ cả hai|keep both|keep separate|giữ tất cả)",
   storageQuota:
-    "(?:bộ nhớ|storage|đã sử dụng\\s+[\\d.,]+\\s*(?:kb|mb|gb|tb)|trong tổng số\\s+[\\d.,]+\\s*(?:kb|mb|gb|tb)|[\\d.,]+\\s*(?:gb|tb|mb)\\s+(?:đã dùng|used)|\\bof\\s+\\d+(?:[.,]\\d+)?\\s*(?:gb|tb|mb)\\b)",
+    "(?:bộ nhớ|storage|get more storage|mua thêm bộ nhớ|đã sử dụng\\s+[\\d.,]+\\s*(?:bytes?|b|kb|mb|gb|tb)|trong tổng số\\s+[\\d.,]+\\s*(?:bytes?|b|kb|mb|gb|tb)|[\\d.,]+\\s*(?:bytes?|b|kb|mb|gb|tb)\\s+(?:đã dùng|đã sử dụng|used)|\\bof\\s+[\\d.,]+\\s*(?:bytes?|b|kb|mb|gb|tb)\\s*used\\b|\\bof\\s+\\d+(?:[.,]\\d+)?\\s*(?:gb|tb|mb)\\b)",
   promoCallout:
-    "(?:đã hiểu|got it|không phải bây giờ|not now|tìm hiểu thêm|learn more|dùng thử gemini|try gemini|chế độ ngoại tuyến|offline)",
+    "(?:đã hiểu|got it|không phải bây giờ|not now|để sau|maybe later|bỏ qua|dismiss|tìm hiểu thêm|learn more|dùng thử gemini|try gemini|ask gemini|hỏi gemini|chế độ ngoại tuyến|offline|bật thông báo|desktop notifications|drive cho máy tính|drive for desktop|có gì mới|what's new)",
   modalActionGuard:
     "(?:tải lên|upload|thay thế|replace|giữ cả hai|keep both|thư mục mới|new folder|đổi tên|rename|thùng rác|trash)",
 };
@@ -945,7 +1002,7 @@ async function hasActiveDriveUploadProgress(page: Page): Promise<boolean> {
 
           if (
             el.closest(
-              'nav, [role="navigation"], aside, header, [guidedhelpid*="storage" i], a[href*="quota"], a[href*="storage"]'
+              'nav, [role="navigation"], [role="complementary"], [data-target="sidebar"], aside, header, [guidedhelpid*="storage" i], a[href*="quota"], a[href*="storage"], [aria-label*="Bộ nhớ" i], [aria-label*="Storage" i]'
             )
           ) {
             continue;
@@ -970,13 +1027,14 @@ async function hasActiveDriveUploadProgress(page: Page): Promise<boolean> {
               qWalk &&
               qWalk !== document.body &&
               !isSidebarQuotaBar &&
-              depth < 4
+              depth < 10
             ) {
-              if (qWalk.getAttribute("role") === "main") break;
+              const qRole = (qWalk.getAttribute("role") || "").toLowerCase();
+              if (qRole === "main" || qRole === "dialog") break;
               const qAria = qWalk.getAttribute("aria-label") || "";
               const qText = (qWalk.innerText || "").trim();
               const qCombined = (qAria + " " + qText).replace(/\s+/g, " ").trim();
-              if (qCombined.length > 0 && qCombined.length < 280 && quotaRe.test(qCombined)) {
+              if (qCombined.length > 0 && qCombined.length < 800 && quotaRe.test(qCombined)) {
                 isSidebarQuotaBar = true;
                 break;
               }
@@ -1067,6 +1125,7 @@ async function hasBlockingDriveDialog(page: Page): Promise<boolean> {
     const blocking = await (loc as any).evaluateAll(
       (dialogs: Element[], rxSrc: typeof DRIVE_INDICATOR_REGEX_SOURCES) => {
         const dupRe = new RegExp(rxSrc.duplicateOption, "i");
+        const failedRe = new RegExp(rxSrc.failedUpload, "i");
         const activeRe = new RegExp(rxSrc.activeUpload, "i");
         const completedRe = new RegExp(rxSrc.completedUpload, "i");
         const cancelRe = new RegExp(rxSrc.cancelButton, "i");
@@ -1113,8 +1172,8 @@ async function hasBlockingDriveDialog(page: Page): Promise<boolean> {
             .replace(/\s+/g, " ")
             .trim();
 
-          // Priority 1: Duplicate/overwrite resolution dialog must always block completion
-          if (dupRe.test(combined)) {
+          // Priority 1: Duplicate/overwrite resolution dialog or failure tray must always block completion
+          if (dupRe.test(combined) || failedRe.test(combined)) {
             return true;
           }
 
@@ -1189,15 +1248,18 @@ async function hasBlockingDriveDialog(page: Page): Promise<boolean> {
             continue;
           }
 
-          // Priority 3: Skip non-modal Drive feature tips / promo callouts
+          // Priority 3: Skip non-modal Drive feature tips / promo callouts / non-upload side panels
           const isModal = dlg.getAttribute("aria-modal") === "true";
           const hasGuidedHelp =
             dlg.hasAttribute("guidedhelpid") || dlg.querySelector("[guidedhelpid]") !== null;
-          if (!isModal && (hasGuidedHelp || (promoRe.test(combined) && !actionGuardRe.test(combined)))) {
+          if (
+            !isModal &&
+            (hasGuidedHelp || !actionGuardRe.test(combined) || promoRe.test(combined))
+          ) {
             continue;
           }
 
-          // Fail-closed for any other visible dialog
+          // Fail-closed for any modal or upload/action-related visible dialog
           return true;
         }
 
@@ -1284,12 +1346,23 @@ export async function dismissIdleDriveUploadTray(
 
           for (let c = 0; c < allBtns.length; c++) {
             const closeBtn = allBtns[c] as HTMLElement;
+            const labelledByIds = (closeBtn.getAttribute("aria-labelledby") || "")
+              .split(/\s+/)
+              .filter(Boolean);
+            let labelledByText = "";
+            for (let l = 0; l < labelledByIds.length; l++) {
+              const refEl = document.getElementById(labelledByIds[l]);
+              if (refEl) {
+                labelledByText += " " + (refEl.textContent || "");
+              }
+            }
             const closeAttrLabel = (
               (closeBtn.getAttribute("aria-label") || "") +
               " " +
               (closeBtn.getAttribute("title") || "") +
               " " +
-              (closeBtn.getAttribute("data-tooltip") || "")
+              (closeBtn.getAttribute("data-tooltip") || "") +
+              labelledByText
             )
               .replace(/\s+/g, " ")
               .trim();
@@ -1424,7 +1497,10 @@ export async function uploadFilesIntoDriveFolder(
   deferredRenameOut?: Array<{
     folderId: string;
     items: Array<{ id: string; cleanName: string }>;
-  }>
+  }>,
+  options?: {
+    avoidInPlaceReplace?: boolean;
+  }
 ): Promise<number> {
   if (localFilePaths.length === 0 && !replaceAllStaleFiles) return 0;
   assertDriveNotStopped();
@@ -1497,19 +1573,23 @@ export async function uploadFilesIntoDriveFolder(
   let sawKeepBothFallbackModal = false;
   let latestItemsAfterUpload = existingItems;
 
+  const avoidInPlaceReplace = Boolean(options?.avoidInPlaceReplace);
+
   while (Date.now() < uploadDeadline && pollIterations < maxPollIterations) {
     pollIterations += 1;
     assertDriveNotStopped();
     await page.waitForTimeout(1200);
 
-    // Prefer "Replace existing file" ("Thay thế tệp hiện có") so re-uploading in Session 13/14
-    // replaces Session 12 files cleanly instead of creating `index (1).html` / `main (1).py`.
+    // In atomic `zip_bundle` mode (`avoidInPlaceReplace: true`), NEVER overwrite an existing Drive file
+    // in place before the entire upload batch has completed and verified.
     const replaceExistingOption = page
       .locator(
         '[role="dialog"] [role="radio"]:has-text("Thay thế tệp hiện có"):visible, [role="dialog"] [role="radio"]:has-text("Thay thế tệp đã có"):visible, [role="dialog"] [role="radio"]:has-text("Cập nhật tệp hiện có"):visible, [role="dialog"] [role="radio"]:has-text("Replace existing"):visible, [role="dialog"] [role="radio"]:has-text("Update existing"):visible, [role="dialog"] label:has-text("Thay thế tệp hiện có"):visible, [role="dialog"] label:has-text("Thay thế tệp đã có"):visible, [role="dialog"] label:has-text("Cập nhật tệp hiện có"):visible, [role="dialog"] label:has-text("Replace existing"):visible, [role="dialog"] label:has-text("Update existing"):visible, [role="dialog"] button:has-text("Thay thế tệp hiện có"):visible, [role="dialog"] button:has-text("Thay thế tệp đã có"):visible, [role="dialog"] button:has-text("Replace existing"):visible'
       )
       .first();
-    const sawReplaceOption = await replaceExistingOption.isVisible().catch(() => false);
+    const sawReplaceOption = avoidInPlaceReplace
+      ? false
+      : await replaceExistingOption.isVisible().catch(() => false);
     if (sawReplaceOption) {
       await replaceExistingOption.click().catch(() => {});
       confirmedInPlaceReplace = true;
@@ -1542,7 +1622,7 @@ export async function uploadFilesIntoDriveFolder(
           await keepBothConfirmBtn.click().catch(() => {});
           await page.waitForTimeout(600);
         }
-      } else {
+      } else if (!avoidInPlaceReplace) {
         const directReplaceConfirmBtn = page
           .locator(
             '[role="dialog"] button:has-text("Thay thế"):visible, [role="dialog"] button:has-text("Replace"):visible, [role="dialog"] button:has-text("Cập nhật"):visible, [role="dialog"] button:has-text("Update"):visible, [role="dialog"] button:has-text("Tiếp tục"):visible, [role="dialog"] button:has-text("Continue"):visible, [role="dialog"] button:has-text("OK"):visible'
@@ -1566,6 +1646,7 @@ export async function uploadFilesIntoDriveFolder(
       sawIncompleteUploadProgress = true;
       continue;
     }
+    sawIncompleteUploadProgress = false;
 
     const currentItems = await listDriveItemsOnPage(page, studentDriveFolderId);
     latestItemsAfterUpload = currentItems;
@@ -1587,8 +1668,9 @@ export async function uploadFilesIntoDriveFolder(
       }
     }
 
-    const canTrustSameIdReplacement =
-      confirmedInPlaceReplace || (pollIterations >= 2 && !sawKeepBothFallbackModal);
+    const canTrustSameIdReplacement = avoidInPlaceReplace
+      ? false
+      : confirmedInPlaceReplace || (pollIterations >= 2 && !sawKeepBothFallbackModal);
 
     const allPresent = expectedBaseNames.every((name) => {
       if (newItemNormalizedNames.has(name)) {
@@ -1961,6 +2043,452 @@ export async function uploadStudentDirectoryTreeToDrive(
   return totalUploaded;
 }
 
+const STANDALONE_DRIVE_MEDIA_EXTENSIONS = new Set([
+  ".pptx",
+  ".ppt",
+  ".pdf",
+  ".mp4",
+  ".mov",
+  ".webm",
+]);
+
+const MAX_STANDALONE_DRIVE_MEDIA_FILES = 6;
+
+export interface PreparedDriveZipBundle {
+  zipFilePath: string;
+  zipFileName: string;
+  stageDirPath: string;
+  archivedFilesCount: number;
+  standaloneMediaPaths: string[];
+  uploadFilePaths: string[];
+  packagedDigest?: string;
+  stagedMediaTempRenames?: Array<{
+    tempUploadNameLower: string;
+    finalCleanName: string;
+  }>;
+  cleanup: () => void;
+}
+
+function formatDriveZipTimestamp(now = new Date()): string {
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mi = String(now.getMinutes()).padStart(2, "0");
+  const ss = String(now.getSeconds()).padStart(2, "0");
+  return `${mm}${dd}_${hh}${mi}${ss}`;
+}
+
+function resolveDriveZipStageBaseDir(safeStudentDir: string): string {
+  if (process.env.MINDX_DB_PATH) {
+    const dbDir = path.dirname(path.resolve(process.env.MINDX_DB_PATH));
+    if (isPathAllowed(dbDir)) {
+      return assertPathAllowed(path.join(dbDir, "_drive_zip_stage"));
+    }
+    return assertPathAllowed(path.join(safeStudentDir, "_spck_temp", "_drive_zip_stage"));
+  }
+  return assertPathAllowed(path.join(process.cwd(), "temp_submissions", "_drive_zip_stage"));
+}
+
+/**
+ * Packages a student's SPCK project directory into 1 versioned `.zip` archive
+ * (`<StudentSlug>_SPCK_B<Session>_<MMDD_HHmmss>.zip`) plus standalone Slide/Video files
+ * (`.pptx`, `.ppt`, `.pdf`, `.mp4`, `.mov`, `.webm`) so Demo judges can preview slides/videos
+ * directly on Google Drive without unzipping while keeping code/assets 100% clean and fast.
+ */
+export function prepareStudentZipBundleAndStandaloneMediaForDrive(
+  localDirPath: string,
+  studentId: string,
+  fullName: string,
+  options?: {
+    sessionNumber?: number;
+    avoidNamesLower?: Set<string>;
+  }
+): PreparedDriveZipBundle {
+  assertDriveNotStopped();
+  const safeRootDir = assertPathAllowed(localDirPath);
+  validateLocalDriveTreeBeforeUpload(safeRootDir, studentId, fullName, 0);
+  const digestBeforePack = computeStudentFolderContentDigest(safeRootDir);
+
+  interface CollectedGenuineFile {
+    absPath: string;
+    relPosixPath: string;
+    baseName: string;
+    extLower: string;
+    depth: number;
+    size: number;
+    mtimeMs: number;
+  }
+
+  const genuineFiles: CollectedGenuineFile[] = [];
+  let totalInputBytes = 0;
+
+  const walk = (dirPath: string, relPrefix: string, depth: number) => {
+    if (depth > MAX_DRIVE_TREE_DEPTH) return;
+    const entries = fs
+      .readdirSync(dirPath, { withFileTypes: true })
+      .filter((e) => !e.name.startsWith("."))
+      .sort((a, b) => a.name.localeCompare(b.name, "en"));
+
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        if (isBotOrSystemIgnoredDriveDir(entry.name)) continue;
+        const subAbs = assertPathAllowed(path.join(dirPath, entry.name));
+        let st: fs.Stats;
+        try {
+          st = fs.lstatSync(subAbs);
+        } catch {
+          continue;
+        }
+        if (st.isSymbolicLink()) continue;
+        const nextRel = relPrefix ? `${relPrefix}/${entry.name}` : entry.name;
+        walk(subAbs, nextRel, depth + 1);
+        continue;
+      }
+
+      if (isBotOrSystemIgnoredDriveFile(entry.name)) continue;
+      const fileAbs = assertPathAllowed(path.join(dirPath, entry.name));
+      let st: fs.Stats;
+      try {
+        st = fs.lstatSync(fileAbs);
+      } catch {
+        continue;
+      }
+      if (st.isSymbolicLink() || !st.isFile() || st.size <= 0) continue;
+      if (st.size > MAX_DRIVE_FILE_SIZE_BYTES) {
+        throw new Error(
+          `Tệp '${entry.name}' của '${fullName}' vượt quá giới hạn 150MB (${Math.round(
+            st.size / (1024 * 1024)
+          )}MB).`
+        );
+      }
+
+      totalInputBytes += st.size;
+      if (totalInputBytes > MAX_DRIVE_FILE_SIZE_BYTES * 2) {
+        throw new Error(
+          `Tổng dung lượng dự án SPCK của '${fullName}' vượt quá giới hạn đóng gói 300MB.`
+        );
+      }
+
+      const relPosixPath = relPrefix ? `${relPrefix}/${entry.name}` : entry.name;
+      genuineFiles.push({
+        absPath: fileAbs,
+        relPosixPath,
+        baseName: entry.name,
+        extLower: path.extname(entry.name).toLowerCase(),
+        depth,
+        size: st.size,
+        mtimeMs: st.mtimeMs || 0,
+      });
+    }
+  };
+
+  walk(safeRootDir, "", 0);
+
+  if (genuineFiles.length === 0) {
+    throw new Error(
+      `Thư mục SPCK của '${fullName}' không có tệp hợp lệ nào để tải lên Google Drive.`
+    );
+  }
+
+  // Select standalone Slide (.pptx/.ppt/.pdf) and Video (.mp4/.mov/.webm) files,
+  // preferring shallower depth first and newer mtime second, deduplicated by basename.
+  const mediaCandidates = genuineFiles
+    .filter((f) => STANDALONE_DRIVE_MEDIA_EXTENSIONS.has(f.extLower))
+    .sort((a, b) => {
+      if (a.depth !== b.depth) return a.depth - b.depth;
+      if (b.mtimeMs !== a.mtimeMs) return b.mtimeMs - a.mtimeMs;
+      return a.relPosixPath.localeCompare(b.relPosixPath, "en");
+    });
+
+  const standaloneMediaPaths: string[] = [];
+  const usedStandaloneNamesLower = new Set<string>();
+  for (const cand of mediaCandidates) {
+    if (standaloneMediaPaths.length >= MAX_STANDALONE_DRIVE_MEDIA_FILES) break;
+    const key = cand.baseName.toLowerCase();
+    if (usedStandaloneNamesLower.has(key)) continue;
+    usedStandaloneNamesLower.add(key);
+    standaloneMediaPaths.push(cand.absPath);
+  }
+
+  const rawSlug = stripVietnameseDiacritics(fullName || studentId)
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 40);
+  const studentSlug = rawSlug || String(studentId || "Student").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const sessionLabel =
+    options?.sessionNumber === 12 ||
+    options?.sessionNumber === 13 ||
+    options?.sessionNumber === 14
+      ? `B${options.sessionNumber}`
+      : "SPCK";
+  const tsTag = formatDriveZipTimestamp();
+  const avoidSet = new Set<string>([
+    ...(options?.avoidNamesLower ? Array.from(options.avoidNamesLower) : []),
+    ...Array.from(usedStandaloneNamesLower),
+  ]);
+
+  let zipFileName = `${studentSlug}_SPCK_${sessionLabel}_${tsTag}.zip`;
+  let collisionIdx = 2;
+  while (avoidSet.has(zipFileName.toLowerCase())) {
+    zipFileName = `${studentSlug}_SPCK_${sessionLabel}_${tsTag}_${collisionIdx}.zip`;
+    collisionIdx += 1;
+  }
+
+  const stageBaseDir = resolveDriveZipStageBaseDir(safeRootDir);
+  const stageRunId = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  const stageDirPath = assertPathAllowed(path.join(stageBaseDir, stageRunId));
+  fs.mkdirSync(stageDirPath, { recursive: true });
+  const zipFilePath = assertPathAllowed(path.join(stageDirPath, zipFileName));
+
+  const cleanup = () => {
+    try {
+      if (fs.existsSync(stageDirPath)) {
+        fs.rmSync(stageDirPath, { recursive: true, force: true });
+      }
+      const spckTempParent = path.join(safeRootDir, "_spck_temp");
+      if (fs.existsSync(spckTempParent)) {
+        const remStage = path.join(spckTempParent, "_drive_zip_stage");
+        if (fs.existsSync(remStage) && fs.readdirSync(remStage).length === 0) {
+          fs.rmdirSync(remStage);
+        }
+        if (fs.readdirSync(spckTempParent).length === 0) {
+          fs.rmdirSync(spckTempParent);
+        }
+      }
+    } catch {
+      // Ignore staging cleanup errors
+    }
+  };
+
+  try {
+    const zip = new AdmZip();
+    for (const item of genuineFiles) {
+      const zipFolder = path.posix.dirname(item.relPosixPath);
+      zip.addLocalFile(
+        item.absPath,
+        zipFolder === "." ? "" : zipFolder,
+        path.posix.basename(item.relPosixPath)
+      );
+    }
+    zip.writeZip(zipFilePath);
+
+    if (!fs.existsSync(zipFilePath)) {
+      throw new Error(`Không thể tạo gói nén .zip cho '${fullName}'.`);
+    }
+    const zipStat = fs.statSync(zipFilePath);
+    if (zipStat.size <= 0) {
+      throw new Error(`Gói nén .zip của '${fullName}' bị rỗng (0 byte).`);
+    }
+    if (zipStat.size > MAX_DRIVE_FILE_SIZE_BYTES) {
+      throw new Error(
+        `Gói nén .zip của '${fullName}' vượt quá giới hạn 150MB (${Math.round(
+          zipStat.size / (1024 * 1024)
+        )}MB).`
+      );
+    }
+
+    const preExistingAvoidLower = options?.avoidNamesLower || new Set<string>();
+    const stagedUploadMediaPaths: string[] = [];
+    const stagedMediaTempRenames: Array<{
+      tempUploadNameLower: string;
+      finalCleanName: string;
+    }> = [];
+    const reservedUploadNames = new Set<string>([
+      ...Array.from(preExistingAvoidLower),
+      zipFileName.toLowerCase(),
+    ]);
+
+    for (const mediaPath of standaloneMediaPaths) {
+      const origBase = path.basename(mediaPath);
+      const origLower = origBase.toLowerCase();
+      if (!preExistingAvoidLower.has(origLower)) {
+        reservedUploadNames.add(origLower);
+        stagedUploadMediaPaths.push(mediaPath);
+        continue;
+      }
+      // Pre-existing file with the same name exists on Drive: stage under a distinct temporary
+      // filename so Google Drive uploads a brand-new item ID without overwriting the old file!
+      const ext = path.extname(origBase);
+      const stem = path.basename(origBase, ext);
+      let tempName = `${stem}__spck_new_${tsTag}${ext}`;
+      let tempIdx = 2;
+      while (reservedUploadNames.has(tempName.toLowerCase())) {
+        tempName = `${stem}__spck_new_${tsTag}_${tempIdx}${ext}`;
+        tempIdx += 1;
+      }
+      reservedUploadNames.add(tempName.toLowerCase());
+      const tempDestPath = assertPathAllowed(path.join(stageDirPath, tempName));
+      fs.copyFileSync(mediaPath, tempDestPath);
+      stagedUploadMediaPaths.push(tempDestPath);
+      stagedMediaTempRenames.push({
+        tempUploadNameLower: tempName.toLowerCase(),
+        finalCleanName: origBase,
+      });
+    }
+
+    const digestAfterPack = computeStudentFolderContentDigest(safeRootDir);
+    const packagedDigest =
+      digestBeforePack.filesCount > 0 &&
+      digestBeforePack.digest &&
+      digestBeforePack.digest === digestAfterPack.digest
+        ? digestBeforePack.digest
+        : "";
+
+    return {
+      zipFilePath,
+      zipFileName,
+      stageDirPath,
+      archivedFilesCount: genuineFiles.length,
+      standaloneMediaPaths,
+      uploadFilePaths: [zipFilePath, ...stagedUploadMediaPaths],
+      packagedDigest,
+      stagedMediaTempRenames,
+      cleanup,
+    };
+  } catch (err) {
+    cleanup();
+    throw err;
+  }
+}
+
+/**
+ * "Cách 1" Upload-First Google Drive Bundle Uploader:
+ * 1. Validates local folder BEFORE touching Google Drive.
+ * 2. Uploads the new versioned `.zip` archive (+ standalone Slide/Video files using collision-free
+ *    temporary names when an older file shares the same name) FIRST into `targetDriveFolderId`.
+ * 3. Verifies 100% upload completion (no active progress bar, no error alert, all new IDs visible in DOM).
+ * 4. ONLY AFTER verified completion, moves all superseded older `.zip` files, raw files, and legacy subfolders
+ *    inside `targetDriveFolderId` to Trash and renames any temporary media items to their clean filenames,
+ *    preserving `targetDriveFolderId` and its share URL 100% intact.
+ */
+export async function uploadStudentZipBundleToDrive(
+  page: Page,
+  targetDriveFolderId: string,
+  localDirPath: string,
+  studentId: string,
+  fullName: string,
+  options?: {
+    sessionNumber?: number;
+  }
+): Promise<{
+  uploadedFilesCount: number;
+  zipFileName: string;
+  standaloneMediaCount: number;
+  packagedDigest?: string;
+}> {
+  assertDriveNotStopped();
+  const safeDir = assertPathAllowed(localDirPath);
+  validateLocalDriveTreeBeforeUpload(safeDir, studentId, fullName, 0);
+
+  await ensureGoogleDriveFolderReadyAndAuthenticated(page, targetDriveFolderId);
+  const preExistingItems = await listDriveItemsOnPage(page, targetDriveFolderId);
+  const preExistingItemIds = new Set(preExistingItems.map((item) => item.id));
+  const preExistingNamesLower = new Set(
+    preExistingItems.map((item) => item.name.toLowerCase())
+  );
+  const preExistingFolderIds = preExistingItems
+    .filter((item) => item.isFolder)
+    .map((item) => item.id);
+
+  const bundle = prepareStudentZipBundleAndStandaloneMediaForDrive(
+    safeDir,
+    studentId,
+    fullName,
+    {
+      sessionNumber: options?.sessionNumber,
+      avoidNamesLower: preExistingNamesLower,
+    }
+  );
+
+  const cleanupQueue: Array<{ folderId: string; itemIds: string[] }> = [];
+  const renameQueue: Array<{
+    folderId: string;
+    items: Array<{ id: string; cleanName: string }>;
+  }> = [];
+
+  try {
+    await uploadFilesIntoDriveFolder(
+      page,
+      targetDriveFolderId,
+      bundle.uploadFilePaths,
+      true,
+      cleanupQueue,
+      renameQueue,
+      { avoidInPlaceReplace: true }
+    );
+
+    if (preExistingFolderIds.length > 0) {
+      cleanupQueue.push({
+        folderId: targetDriveFolderId,
+        itemIds: preExistingFolderIds,
+      });
+    }
+
+    const trashedIds = new Set<string>();
+    for (const batch of cleanupQueue) {
+      if (batch.itemIds.length === 0) continue;
+      await ensureGoogleDriveFolderReadyAndAuthenticated(page, batch.folderId);
+      for (const staleId of batch.itemIds) {
+        if (trashedIds.has(staleId)) continue;
+        assertDriveNotStopped();
+        await moveDriveItemToTrash(page, staleId);
+        trashedIds.add(staleId);
+      }
+      await page.keyboard.press("Escape").catch(() => {});
+      await page.waitForTimeout(250);
+    }
+
+    if (bundle.stagedMediaTempRenames && bundle.stagedMediaTempRenames.length > 0) {
+      const postTrashItems = await listDriveItemsOnPage(page, targetDriveFolderId);
+      const stagedRenameItems: Array<{ id: string; cleanName: string }> = [];
+      for (const pendingRename of bundle.stagedMediaTempRenames) {
+        const matchedNew = postTrashItems.find((item) => {
+          if (item.isFolder || preExistingItemIds.has(item.id) || trashedIds.has(item.id)) {
+            return false;
+          }
+          const lower = item.name.toLowerCase();
+          return (
+            lower === pendingRename.tempUploadNameLower ||
+            stripDriveDuplicateSuffix(lower) === pendingRename.tempUploadNameLower
+          );
+        });
+        if (matchedNew) {
+          stagedRenameItems.push({
+            id: matchedNew.id,
+            cleanName: pendingRename.finalCleanName,
+          });
+        }
+      }
+      if (stagedRenameItems.length > 0) {
+        renameQueue.push({
+          folderId: targetDriveFolderId,
+          items: stagedRenameItems,
+        });
+      }
+    }
+
+    for (const batch of renameQueue) {
+      if (batch.items.length === 0) continue;
+      await ensureGoogleDriveFolderReadyAndAuthenticated(page, batch.folderId);
+      for (const dup of batch.items) {
+        assertDriveNotStopped();
+        await renameDriveItemIfNeeded(page, dup.id, dup.cleanName);
+      }
+      await page.keyboard.press("Escape").catch(() => {});
+      await page.waitForTimeout(250);
+    }
+
+    return {
+      uploadedFilesCount: bundle.archivedFilesCount,
+      zipFileName: bundle.zipFileName,
+      standaloneMediaCount: bundle.standaloneMediaPaths.length,
+      packagedDigest: bundle.packagedDigest,
+    };
+  } finally {
+    bundle.cleanup();
+  }
+}
+
 export class SpckDriveUploader {
   /**
    * Enqueues the Google Drive SPCK folder creation & upload job on SequentialTaskQueue.
@@ -1995,6 +2523,16 @@ export class SpckDriveUploader {
     const normalizedClassId = options.classId.trim().toUpperCase();
     const rawDriveUrl = (options.driveFolderUrl || DEFAULT_SPCK_DRIVE_FOLDER_URL).trim();
     const inputFolderId = extractDriveFolderId(rawDriveUrl);
+    const coursePrefix = detectCoursePrefixFromClassId(normalizedClassId);
+
+    if (
+      isCourseExemptFromSpck(normalizedClassId) &&
+      inputFolderId === CODING_SPCK_ROOT_FOLDER_ID
+    ) {
+      throw new Error(
+        `Khóa ${coursePrefix || normalizedClassId} (${normalizedClassId}) không thi cuối khóa nên được miễn nộp SPCK & Google Drive.`
+      );
+    }
 
     const allClassRecords = spckUploadRepo.findByClass(normalizedClassId);
     const targetRecords =
@@ -2037,7 +2575,6 @@ export class SpckDriveUploader {
 
     // If teacher gave the root CODING - SPCK folder (1Xl8OZ7i1bOKf7000xbUBYLPcxVb2qvRD),
     // strictly resolve the course subfolder (e.g. 2. PTA for VT-C4K-PTA12, or find/create course folder for Robotics)
-    const coursePrefix = detectCoursePrefixFromClassId(normalizedClassId);
     const isRoboticsClass = Boolean(coursePrefix && ROBOTICS_COURSE_PREFIXES.has(coursePrefix));
     let courseOrParentFolderId = inputFolderId;
     if (inputFolderId === CODING_SPCK_ROOT_FOLDER_ID) {
@@ -2088,6 +2625,8 @@ export class SpckDriveUploader {
     }
 
     const page = await BrowserManager.getInstance().getPage();
+    const effectiveUploadMode: SpckDriveUploadMode =
+      options.uploadMode === "tree" ? "tree" : "zip_bundle";
 
     const classDriveFolderUrl = `https://drive.google.com/drive/folders/${classDriveFolderId}`;
     const results: SpckDriveStudentResult[] = [];
@@ -2125,18 +2664,41 @@ export class SpckDriveUploader {
           targetStudentFolderName
         );
 
-        const uploadedFilesCount = await uploadStudentDirectoryTreeToDrive(
-          page,
-          studentDriveFolderId,
-          record.localFolderPath,
-          record.studentId,
-          fullName,
-          0,
-          true,
-          undefined,
-          undefined,
-          { cleanDestinationBeforeUpload: true }
+        const preUploadDigestInfo = computeStudentFolderContentDigest(
+          record.localFolderPath
         );
+        let uploadedFilesCount = 0;
+        let zipFileName: string | undefined;
+        let standaloneMediaCount: number | undefined;
+        let packagedDigestFromUpload: string | undefined;
+
+        if (effectiveUploadMode === "tree") {
+          uploadedFilesCount = await uploadStudentDirectoryTreeToDrive(
+            page,
+            studentDriveFolderId,
+            record.localFolderPath,
+            record.studentId,
+            fullName,
+            0,
+            true,
+            undefined,
+            undefined,
+            { cleanDestinationBeforeUpload: true }
+          );
+        } else {
+          const zipUploadRes = await uploadStudentZipBundleToDrive(
+            page,
+            studentDriveFolderId,
+            record.localFolderPath,
+            record.studentId,
+            fullName,
+            { sessionNumber: options.sessionNumber }
+          );
+          uploadedFilesCount = zipUploadRes.uploadedFilesCount;
+          zipFileName = zipUploadRes.zipFileName;
+          standaloneMediaCount = zipUploadRes.standaloneMediaCount;
+          packagedDigestFromUpload = zipUploadRes.packagedDigest;
+        }
 
         const studentDriveUrl = `https://drive.google.com/drive/folders/${studentDriveFolderId}`;
 
@@ -2170,14 +2732,82 @@ export class SpckDriveUploader {
           );
         }
 
+        const postUploadDigestInfo = computeStudentFolderContentDigest(
+          record.localFolderPath
+        );
+        const expectedUploadedDigest =
+          packagedDigestFromUpload !== undefined
+            ? packagedDigestFromUpload
+            : (preUploadDigestInfo.filesCount ?? 1) > 0
+            ? preUploadDigestInfo.digest
+            : "";
+        const verifiedPreppedDigest =
+          expectedUploadedDigest &&
+          (postUploadDigestInfo.filesCount ?? 1) > 0 &&
+          postUploadDigestInfo.digest === expectedUploadedDigest
+            ? expectedUploadedDigest
+            : "";
+
         const nextRecord: SpckUploadRecord = {
           ...latestDbRecord,
           relatedLinksJson: JSON.stringify(updatedLinks),
+          lastPreppedFolderDigest: verifiedPreppedDigest,
         };
 
         // Rule 4: Do NOT recompute contentHash here; if relatedLinksJson changed,
         // spckUploadRepo.upsert automatically downgrades APPROVED/VERIFIED -> WAITING_APPROVAL
         spckUploadRepo.upsert(nextRecord);
+
+        if (options.syncAllUnverifiedSessions) {
+          for (const slot of [12, 13, 14] as const) {
+            try {
+              const sessRow = spckSessionRepo.findOne(
+                normalizedClassId,
+                record.studentId,
+                slot
+              );
+              const allowForceTargetApproved =
+                options.allowDemoteApprovedSession === true &&
+                Boolean(options.sessionNumber) &&
+                slot === options.sessionNumber;
+              if (
+                !sessRow ||
+                sessRow.lastVerifiedAt ||
+                sessRow.draftStatus === "VERIFIED" ||
+                sessRow.draftStatus === "SAVING" ||
+                (!allowForceTargetApproved && sessRow.draftStatus === "APPROVED")
+              ) {
+                continue;
+              }
+              spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
+                normalizedClassId,
+                record.studentId,
+                slot
+              );
+            } catch {}
+          }
+        } else if (options.sessionNumber) {
+          try {
+            const sessRow = spckSessionRepo.findOne(
+              normalizedClassId,
+              record.studentId,
+              options.sessionNumber
+            );
+            if (
+              sessRow &&
+              !sessRow.lastVerifiedAt &&
+              sessRow.draftStatus !== "VERIFIED" &&
+              sessRow.draftStatus !== "SAVING" &&
+              !(options.allowDemoteApprovedSession === false && sessRow.draftStatus === "APPROVED")
+            ) {
+              spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
+                normalizedClassId,
+                record.studentId,
+                options.sessionNumber
+              );
+            }
+          } catch {}
+        }
 
         jobLogRepo.add({
           jobId,
@@ -2185,11 +2815,19 @@ export class SpckDriveUploader {
           classId: normalizedClassId,
           studentId: record.studentId,
           level: "SUCCESS",
-          message: `Đã tải ${uploadedFilesCount} file SPCK của '${fullName}' lên Google Drive (${studentDriveUrl}) và gắn vào Đường dẫn liên quan.`,
+          message:
+            effectiveUploadMode === "zip_bundle" && zipFileName
+              ? `Đã đóng gói '${zipFileName}' (${uploadedFilesCount} file${
+                  standaloneMediaCount ? ` + ${standaloneMediaCount} Slide/Video lẻ` : ""
+                }) của '${fullName}' lên Google Drive (${studentDriveUrl}) và gắn vào Đường dẫn liên quan.`
+              : `Đã tải ${uploadedFilesCount} file SPCK của '${fullName}' lên Google Drive (${studentDriveUrl}) và gắn vào Đường dẫn liên quan.`,
           detailsJson: JSON.stringify({
             studentDriveFolderId,
             studentDriveUrl,
             uploadedFilesCount,
+            uploadMode: effectiveUploadMode,
+            zipFileName,
+            standaloneMediaCount,
           }),
         });
 
@@ -2201,6 +2839,8 @@ export class SpckDriveUploader {
           driveFolderId: studentDriveFolderId,
           driveFolderUrl: studentDriveUrl,
           uploadedFilesCount,
+          zipFileName,
+          standaloneMediaCount,
         });
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);

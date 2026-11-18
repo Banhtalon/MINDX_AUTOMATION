@@ -689,6 +689,7 @@ export function buildRowFromDbRecord(
         ? rec.isDefaultProductTitle
         : isDefaultUiProductTitle(formattedTitle, stu?.fullName),
     thumbnailInspection: rec.thumbnailInspection,
+    hasPortalBackup: Boolean(rec.hasPortalBackup),
     isDirty: false,
   };
 }

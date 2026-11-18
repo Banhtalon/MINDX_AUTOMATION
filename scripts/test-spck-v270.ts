@@ -1862,7 +1862,7 @@ async function runV270Tests() {
       classIdsInList.includes(testClassPtb) && classIdsInList.includes(testClassCsb),
       "Danh sách lớp đủ điều kiện nộp SPCK bắt buộc bao gồm cả PTB và CSB"
     );
-    assert.strictEqual(listJson.demoSheetMeta?.spckExempt, false);
+    assert.strictEqual(listJson.demoSheetMeta?.spckExempt, true);
 
     // Optional Drive folder & Demo sheet template for PTB/CSB must NOT borrow PTA's configuration
     assert.notStrictEqual(

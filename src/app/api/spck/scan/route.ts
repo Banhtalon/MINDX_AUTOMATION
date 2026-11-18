@@ -35,6 +35,7 @@ import {
 import {
   DEFAULT_SPCK_THUMBNAIL_PATH,
   MAX_SPCK_SCREENSHOTS,
+  computeStudentFolderContentDigest,
   resolveTargetSpckClassFolder,
   scanClassSpckDirectoryAsync,
   validateSpckResourceLimits,
@@ -163,11 +164,92 @@ export async function POST(req: Request) {
         normalizeSpckFolderKey(existing?.localFolderPath) ===
           normalizeSpckFolderKey(canonicalItemFolder);
 
+      const parseSafeArray = <T>(raw?: string | null): T[] => {
+        if (!raw) return [];
+        try {
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      };
+
+      let existingFolderExistsOnDisk = false;
+      if (existing?.localFolderPath) {
+        try {
+          existingFolderExistsOnDisk =
+            fs.existsSync(existing.localFolderPath) &&
+            fs.statSync(existing.localFolderPath).isDirectory();
+        } catch {
+          existingFolderExistsOnDisk = false;
+        }
+      }
+
+      const existingHasMissingAssetsOnDisk = Boolean(
+        existing &&
+          ((existing.thumbnailPath && !fs.existsSync(existing.thumbnailPath)) ||
+            parseSafeArray<string>(existing.attachmentsJson).some(
+              (p) => Boolean(p) && !fs.existsSync(p)
+            ) ||
+            parseSafeArray<string>(existing.screenshotsJson).some(
+              (p) => Boolean(p) && !fs.existsSync(p)
+            ))
+      );
+
+      const folderDigestInfo = computeStudentFolderContentDigest(canonicalItemFolder);
+      let folderContentChanged = false;
+      if (folderDigestInfo.digest) {
+        if (existingHasMissingAssetsOnDisk && folderDigestInfo.filesCount > 0) {
+          folderContentChanged = true;
+        } else if (sameFolder && existing?.lastPreppedFolderDigest) {
+          folderContentChanged =
+            existing.lastPreppedFolderDigest !== folderDigestInfo.digest;
+        } else if (!existing || !sameFolder) {
+          folderContentChanged = folderDigestInfo.filesCount > 0;
+        } else if (existing.status !== "VERIFIED") {
+          folderContentChanged = true;
+        } else {
+          if (
+            folderDigestInfo.readableDirectory &&
+            folderDigestInfo.filesCount === 0 &&
+            (Boolean(existing.attachmentsJson && existing.attachmentsJson !== "[]") ||
+              Boolean(existing.screenshotsJson && existing.screenshotsJson !== "[]"))
+          ) {
+            folderContentChanged = true;
+          } else {
+            const appShotsDir = path.join(canonicalItemFolder, "_spck_app_shots");
+            let latestAppShotMtimeMs = 0;
+            try {
+              if (fs.existsSync(appShotsDir)) {
+                for (const fn of fs.readdirSync(appShotsDir)) {
+                  if (fn.startsWith(".")) continue;
+                  const st = fs.statSync(path.join(appShotsDir, fn));
+                  if (st.isFile() && st.mtimeMs > latestAppShotMtimeMs) {
+                    latestAppShotMtimeMs = st.mtimeMs;
+                  }
+                }
+              }
+            } catch {}
+            if (
+              latestAppShotMtimeMs > 0 &&
+              folderDigestInfo.latestFileMtimeMs > latestAppShotMtimeMs + 500
+            ) {
+              folderContentChanged = true;
+            }
+          }
+        }
+      }
+      (item as any).folderContentDigest = folderDigestInfo.digest;
+      (item as any).folderContentChanged = folderContentChanged;
+      (item as any).hasHtmlFiles = folderDigestInfo.hasHtmlFiles;
+
       // Do not overwrite an existing teacher-confirmed binding to a different folder
+      // UNLESS the previously bound folder no longer exists on disk (e.g. drive/PC relocation F:\ -> D:\)
       if (
         existing &&
         Number(existing.isConfirmedByTeacher) === 1 &&
         Boolean(existing.localFolderPath) &&
+        existingFolderExistsOnDisk &&
         !sameFolder
       ) {
         continue;
@@ -179,25 +261,26 @@ export async function POST(req: Request) {
         canonicalItemFolder
       );
 
+      const isRelocatedExistingFolder = Boolean(
+        existing?.localFolderPath &&
+          !sameFolder &&
+          !existingFolderExistsOnDisk &&
+          !hasPendingPortalConfirmation &&
+          (item.match.autoConfirmed ||
+            (!item.match.requiresManualConfirmation &&
+              Number(existing.isConfirmedByTeacher) === 1))
+      );
+      const preserveStudentMetadata = sameFolder || isRelocatedExistingFolder;
+
       const isConfirmed = hasPendingPortalConfirmation
         ? 0
         : item.match.autoConfirmed
         ? 1
-        : sameFolder && !item.match.requiresManualConfirmation
+        : preserveStudentMetadata && !item.match.requiresManualConfirmation
         ? existing?.isConfirmedByTeacher ?? 0
         : 0;
 
-      const parseSafeArray = <T>(raw?: string | null): T[] => {
-        if (!raw) return [];
-        try {
-          const parsed = JSON.parse(raw);
-          return Array.isArray(parsed) ? parsed : [];
-        } catch {
-          return [];
-        }
-      };
-
-      const existingLinks = sameFolder
+      const existingLinks = preserveStudentMetadata
         ? parseSafeArray<{ name: string; url: string; category?: string }>(
             existing?.relatedLinksJson
           )
@@ -220,7 +303,7 @@ export async function POST(req: Request) {
       }
       const mergedRelatedLinks = Array.from(mergedLinksMap.values());
 
-      const existingYt = sameFolder
+      const existingYt = preserveStudentMetadata
         ? parseSafeArray<string>(existing?.youtubeUrlsJson)
         : [];
       const scannedYt =
@@ -249,9 +332,12 @@ export async function POST(req: Request) {
       const existingHasOwnerUploads = existingScreensRaw.some((p) =>
         /[\\/]_spck_owner_uploads[\\/]/i.test(p)
       );
+      const existingThumbExistsOnDisk = Boolean(
+        existing?.thumbnailPath && fs.existsSync(existing.thumbnailPath)
+      );
       const hasExistingCapturedShots =
         sameFolder &&
-        Boolean(existing?.thumbnailPath) &&
+        existingThumbExistsOnDisk &&
         /[\\/](?:_spck_app_shots|_spck_owner_uploads)[\\/]/i.test(
           existing?.thumbnailPath || ""
         );
@@ -279,13 +365,13 @@ export async function POST(req: Request) {
       const scannedThumbIsOwnerPhoto =
         item.packageData.thumbnailSource === "OWNER_UPLOAD" ||
         item.packageData.thumbnailSource === "OWNER_ROOT_PHOTO";
-      const existingThumbIsOwnerUpload = /[\\/]_spck_owner_uploads[\\/]/i.test(
-        existing?.thumbnailPath || ""
-      );
+      const existingThumbIsOwnerUpload =
+        existingThumbExistsOnDisk &&
+        /[\\/]_spck_owner_uploads[\\/]/i.test(existing?.thumbnailPath || "");
       let resolvedThumbnailPath =
         hasExistingCapturedShots &&
         existing?.thumbnailPath &&
-        fs.existsSync(existing.thumbnailPath)
+        existingThumbExistsOnDisk
           ? existing.thumbnailPath
           : item.packageData.thumbnailPath;
       if (
@@ -331,7 +417,7 @@ export async function POST(req: Request) {
         item.packageData.allAttachments || item.packageData.attachments || [];
 
       const resolvedProjectTitle =
-        sameFolder && existing?.projectTitle
+        preserveStudentMetadata && existing?.projectTitle
           ? existing.projectTitle
           : item.packageData.rawProjectTitle || item.packageData.projectTitle;
 
@@ -382,7 +468,7 @@ export async function POST(req: Request) {
         pendingPortalConfirmation: hasPendingPortalConfirmation ? 1 : 0,
         projectTitle: resolvedProjectTitle,
         baseProjectTitle:
-          sameFolder && existing?.baseProjectTitle
+          preserveStudentMetadata && existing?.baseProjectTitle
             ? existing.baseProjectTitle
             : stripSpckSessionSuffix(resolvedProjectTitle),
         thumbnailPath: resolvedThumbnailPath,
@@ -390,7 +476,7 @@ export async function POST(req: Request) {
         attachmentsJson: JSON.stringify(finalAttachments),
         youtubeUrlsJson: JSON.stringify(mergedYoutubeUrls),
         relatedLinksJson: JSON.stringify(mergedRelatedLinks),
-        teacherComment: sameFolder ? existing?.teacherComment ?? "" : "",
+        teacherComment: preserveStudentMetadata ? existing?.teacherComment ?? "" : "",
         contentHash: sameFolder && isConfirmed === 1 ? existing?.contentHash ?? "" : "",
         status: sameFolder && isConfirmed === 1 ? existing?.status || "DRAFT" : "DRAFT",
         verifiedAt: sameFolder && isConfirmed === 1 ? existing?.verifiedAt ?? null : null,

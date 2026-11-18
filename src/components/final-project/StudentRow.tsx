@@ -64,10 +64,15 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
     session14Evals,
     setSession14Evals,
     isRoboticsClass,
+    isSpckExemptClass,
     activeDemoScoreItems,
     handleSaveSession14EvalDraft,
     handleGenerateSession14EvalAi,
     handleApproveAndUploadSession14Eval,
+    refreshingStudentId,
+    restoringBackupStudentId,
+    handleRefreshSingleStudentAllInOne,
+    handleRestorePortalBackup,
   } = workflow;
 
   const rowKey = row.folderPath || row.assignedStudentId || String(idx);
@@ -379,6 +384,38 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {row.assignedStudentId && row.folderPath && !isSpckExemptClass && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleRefreshSingleStudentAllInOne(row.assignedStudentId)
+                }
+                disabled={isAnyOperationBusy || isDupeStudent}
+                title="Xóa cũ – Thêm mới trọn gói cho học viên này (Chụp lại hình 16:9 • Đẩy GitHub Live • Đóng gói .zip lên Drive)"
+                className="spck-pill-neutral px-2 py-1.5 rounded-lg disabled:opacity-40 text-[11px] font-semibold cursor-pointer"
+              >
+                {refreshingStudentId === row.assignedStudentId
+                  ? "⏳ Đang làm mới..."
+                  : "🔄 Làm mới trọn gói"}
+              </button>
+            )}
+
+            {row.assignedStudentId && row.hasPortalBackup && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleRestorePortalBackup(row.assignedStudentId)
+                }
+                disabled={isAnyOperationBusy}
+                title="Khôi phục lại bản nộp trước đó từ kho dự phòng trên máy thầy"
+                className="spck-pill-warning px-2 py-1.5 rounded-lg disabled:opacity-40 text-[11px] font-semibold cursor-pointer"
+              >
+                {restoringBackupStudentId === row.assignedStudentId
+                  ? "⏳ Đang khôi phục..."
+                  : "⏪ Khôi phục bản trước"}
+              </button>
+            )}
+
             {hasRowSubmissionError && (
               <button
                 type="button"

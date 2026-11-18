@@ -19,6 +19,7 @@ import {
 import {
   classifySpckRelatedLink,
   inspectSpckThumbnail,
+  isCourseExemptFromSpck,
   resolveDefaultSpckClassFolder,
   resolveStudentFolderInsideClassRoot,
 } from "@/lib/local-files/spck-scanner";
@@ -70,17 +71,18 @@ function getClassDemoSheetMeta(classId: string) {
   } catch {
     // ignore
   }
+  const exempt =
+    coursePrefix === "PTB" ||
+    coursePrefix === "CSB" ||
+    isCourseExemptFromSpck(classId);
   return {
     coursePrefix,
     sheetTitle,
     demoDate,
     evalDate,
     latestDemoSheetUrl,
-    spckExempt: false,
-    demoExempt:
-      coursePrefix === "PTB" ||
-      coursePrefix === "CSB" ||
-      /(?:^|[-_\s])(PTB|CSB)(?:\d|$|[-_\s])/i.test(classId),
+    spckExempt: exempt,
+    demoExempt: exempt,
     hasCourseDemoTemplate,
     hasCourseDriveFolder,
   };
@@ -190,7 +192,9 @@ export function buildEnrichedClassSpckRecords(
     if (
       defaultClassFolder &&
       effectiveLocalFolderPath &&
-      /[\\/]data[\\/]spck[\\/]/i.test(effectiveLocalFolderPath) &&
+      (/[\\/]data[\\/]spck[\\/]/i.test(effectiveLocalFolderPath) ||
+        (/^f:[\\/]mindx_spck_final(?:[\\/]|$)/i.test(effectiveLocalFolderPath) &&
+          !fs.existsSync(effectiveLocalFolderPath))) &&
       fs.existsSync(defaultClassFolder)
     ) {
       const candidateInDefault = resolveStudentFolderInsideClassRoot(
@@ -279,10 +283,22 @@ export function buildEnrichedClassSpckRecords(
     const titleCheck = validateSpckTitleLength(activeTitle, sessionNumber);
     const isDefaultTitle = isDefaultSpckProductTitle(activeTitle, stu?.fullName);
     const thumbInspection = inspectSpckThumbnail(activeThumb);
+    let hasPortalBackup = false;
+    if (effectiveLocalFolderPath) {
+      try {
+        const prevBackupRoot = path.join(effectiveLocalFolderPath, "_spck_prev_backup");
+        hasPortalBackup =
+          fs.existsSync(path.join(prevBackupRoot, "latest")) ||
+          fs.existsSync(path.join(prevBackupRoot, "protected"));
+      } catch {
+        hasPortalBackup = false;
+      }
+    }
 
     return {
       ...rec,
       localFolderPath: effectiveLocalFolderPath,
+      hasPortalBackup,
       sessionNumber,
       projectTitle: activeTitle,
       thumbnailPath: activeThumb,

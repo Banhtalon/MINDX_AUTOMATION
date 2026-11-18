@@ -766,6 +766,7 @@ async function run() {
         sessionNumber: 13,
         syncActiveSession: true,
         studentIds: ["JSB_TUAN", "JSB_EMPTY"],
+        uploadMode: "tree",
       })
     );
     assert.strictEqual(uploadDriveHttpRes.status, 200);

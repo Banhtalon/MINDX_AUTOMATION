@@ -10,6 +10,7 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import AdmZip from "adm-zip";
 import type { Page, Response } from "playwright";
@@ -37,6 +38,7 @@ import {
   type SpckUploadRecord,
 } from "../db/sqlite";
 import { parseMediaBuffer } from "../file-parsers/media-reader";
+import { normalizeImagesToLms16x9 } from "../local-files/spck-image-normalizer";
 import {
   ALLOWED_IMAGE_EXTENSIONS,
   MAX_SPCK_ATTACHMENTS,
@@ -2965,6 +2967,32 @@ export class SpckUploader {
             break;
           }
 
+          const collectModalResourceUrls = async (): Promise<string[]> => {
+            if (typeof (modal as any).evaluate !== "function") return [];
+            const resArr = await modal
+              .evaluate((modalEl) => {
+                if (!modalEl || typeof modalEl.querySelectorAll !== "function") return [];
+                const urls: string[] = [];
+                const nodes = Array.from(
+                  modalEl.querySelectorAll("img[src], a[href], [data-url]")
+                );
+                for (const node of nodes) {
+                  const candidate =
+                    node.getAttribute("src") ||
+                    node.getAttribute("data-url") ||
+                    node.getAttribute("href") ||
+                    "";
+                  if (candidate && candidate.toLowerCase().includes("resources.mindx.edu.vn")) {
+                    urls.push(candidate.trim());
+                  }
+                }
+                return urls;
+              })
+              .catch(() => []);
+            return Array.isArray(resArr) ? resArr : [];
+          };
+
+          const beforeResourceUrls = new Set(await collectModalResourceUrls());
           let res: Response | null = null;
           let lastUploadErr: unknown = null;
           for (let attempt = 0; attempt < 2 && !res; attempt++) {
@@ -2995,9 +3023,36 @@ export class SpckUploader {
               `Tải ${label} ('${path.basename(singleFile)}') lên resources.mindx.edu.vn thất bại với HTTP ${res.status()}.`
             );
           }
-          try {
-            const resUrl = typeof res.url === "function" ? String(res.url()).toLowerCase() : "";
-            if (resUrl.includes("resources.mindx.edu.vn") && typeof res.json === "function") {
+          const registerUploadedResourceUrl = (uploadedUrl: string, fileDigest: string) => {
+            if (!uploadedUrl || !fileDigest) return;
+            freshlyUploadedResourceUrlDigests.set(uploadedUrl, fileDigest);
+            freshlyUploadedResourceUrlDigests.set(uploadedUrl.toLowerCase(), fileDigest);
+            if (uploadedUrl.startsWith("/")) {
+              const fullResourceUrl = `https://resources.mindx.edu.vn${uploadedUrl}`;
+              freshlyUploadedResourceUrlDigests.set(fullResourceUrl, fileDigest);
+              freshlyUploadedResourceUrlDigests.set(fullResourceUrl.toLowerCase(), fileDigest);
+            }
+            const cleanUrlNoQuery = uploadedUrl.split(/[?#]/)[0] || uploadedUrl;
+            const uploadedBase = path.basename(cleanUrlNoQuery).toLowerCase();
+            if (uploadedBase) {
+              freshlyUploadedResourceUrlDigests.set(uploadedBase, fileDigest);
+              try {
+                freshlyUploadedResourceUrlDigests.set(
+                  decodeURIComponent(uploadedBase).toLowerCase(),
+                  fileDigest
+                );
+              } catch {
+                // ignore malformed URI escape
+              }
+            }
+            freshlyUploadedUrlByLocalPath.set(path.resolve(singleFile), uploadedUrl);
+          };
+
+          const resUrl = typeof res.url === "function" ? String(res.url()).toLowerCase() : "";
+          const fileDigest = computeSafeFileByteDigest(singleFile);
+          let recordedFromJson = false;
+          if (resUrl.includes("resources.mindx.edu.vn") && typeof res.json === "function") {
+            try {
               const resJson = await res.json();
               const uploadedUrl = String(
                 resJson?.url ||
@@ -3007,27 +3062,23 @@ export class SpckUploader {
                   resJson?.data?.link ||
                   ""
               ).trim();
-              const fileDigest = computeSafeFileByteDigest(singleFile);
               if (uploadedUrl && fileDigest) {
-                freshlyUploadedResourceUrlDigests.set(uploadedUrl, fileDigest);
-                if (uploadedUrl.startsWith("/")) {
-                  freshlyUploadedResourceUrlDigests.set(
-                    `https://resources.mindx.edu.vn${uploadedUrl}`,
-                    fileDigest
-                  );
-                }
-                const uploadedBase = path.basename(uploadedUrl).toLowerCase();
-                if (uploadedBase) {
-                  freshlyUploadedResourceUrlDigests.set(uploadedBase, fileDigest);
-                }
-                freshlyUploadedUrlByLocalPath.set(path.resolve(singleFile), uploadedUrl);
+                registerUploadedResourceUrl(uploadedUrl, fileDigest);
+                recordedFromJson = true;
               }
+            } catch {
+              // Chromium DevTools inspector cache may evict large/streaming upload responses
             }
-          } catch {
-            // Non-JSON or synthetic response without resource URL
           }
           uploadedCount++;
           await page.waitForTimeout(600);
+          if (!recordedFromJson && resUrl.includes("resources.mindx.edu.vn") && fileDigest) {
+            const afterResourceUrls = await collectModalResourceUrls();
+            const newlyRenderedUrls = afterResourceUrls.filter((u) => !beforeResourceUrls.has(u));
+            if (newlyRenderedUrls.length === 1) {
+              registerUploadedResourceUrl(newlyRenderedUrls[0], fileDigest);
+            }
+          }
         }
         return uploadedCount;
       };
@@ -3108,6 +3159,48 @@ export class SpckUploader {
         );
       };
 
+      const ensureLmsCompatibleImageFile = async (rawImgPath: string): Promise<string> => {
+        const trimmed = String(rawImgPath || "").trim();
+        if (!trimmed) return "";
+        const safeImg = assertPathAllowed(trimmed);
+        if (path.extname(safeImg).toLowerCase() !== ".webp") {
+          return safeImg;
+        }
+        const rawBuf = fs.readFileSync(safeImg);
+        const hash8 = crypto.createHash("sha256").update(rawBuf).digest("hex").slice(0, 8);
+        const targetFileName = `spck_webp_${hash8}.png`;
+        let stageDir = path.resolve(process.cwd(), "temp_submissions");
+        const envDb = (process.env.MINDX_DB_PATH || "").trim();
+        const tmpRootNorm = path.resolve(os.tmpdir()).toLowerCase();
+        if (envDb && path.resolve(envDb).toLowerCase().startsWith(tmpRootNorm)) {
+          const tmpCandidate = path.join(path.dirname(path.resolve(envDb)), "temp_submissions");
+          try {
+            assertPathAllowed(path.dirname(path.resolve(envDb)));
+            stageDir = tmpCandidate;
+          } catch {
+            // fallback to workspace temp_submissions
+          }
+        }
+        const outPngPath = path.join(stageDir, targetFileName);
+        if (!fs.existsSync(outPngPath) || fs.statSync(outPngPath).size <= 32) {
+          const [normBuf] = await normalizeImagesToLms16x9([
+            { buffer: rawBuf, mimeType: "image/webp", fit: "contain" },
+          ]);
+          if (normBuf && normBuf.length > 32) {
+            fs.mkdirSync(stageDir, { recursive: true });
+            const tmpPath = `${outPngPath}.tmp`;
+            if (fs.existsSync(tmpPath)) {
+              fs.unlinkSync(tmpPath);
+            }
+            fs.writeFileSync(tmpPath, normBuf);
+            fs.renameSync(tmpPath, outPngPath);
+          } else {
+            return safeImg;
+          }
+        }
+        return assertPathAllowed(outPngPath);
+      };
+
       // 3. Upload Thumbnail (always upload or replace via thumbInput if current thumbnail is missing, broken, or different from effectiveThumbPath)
       const defaultThumbCandidate = path.resolve(
         process.cwd(),
@@ -3115,10 +3208,13 @@ export class SpckUploader {
         "config",
         "default-spck-thumbnail.png"
       );
-      const effectiveThumbPath =
+      const rawThumbPath =
         record.thumbnailPath ||
         (screenshots.length > 0 ? screenshots[0] : "") ||
         (fs.existsSync(defaultThumbCandidate) ? defaultThumbCandidate : "");
+      const effectiveThumbPath = rawThumbPath
+        ? await ensureLmsCompatibleImageFile(rawThumbPath)
+        : "";
 
       const replaceThumbBtn = modal.locator('button:has-text("Thay ảnh")').first();
       const hasExistingThumbnailBtn = await replaceThumbBtn.isVisible().catch(() => false);
@@ -3152,7 +3248,8 @@ export class SpckUploader {
 
         const isSameThumbAlreadyLoaded =
           isStaticDefaultLogoAlreadyLoaded ||
-          (firstImgInfo.naturalWidth > 0 &&
+          (!reusedExistingItem01 &&
+            firstImgInfo.naturalWidth > 0 &&
             isFileAlreadyOnLmsModal(safeThumb, firstImgInfo.src, firstImgInfo.src));
 
         if (!isSameThumbAlreadyLoaded) {
@@ -3165,50 +3262,61 @@ export class SpckUploader {
         }
       }
 
-      // 4. Upload Screenshots (Max 10 total on LMS dropzone)
-      if (screenshots.length > 0) {
-        // Only keep gallery images whose stem AND SHA-256 byte digest match the previously verified snapshot
-        const verifiedKeepStems = Array.from(
-          new Set(
-            screenshots
-              .filter((p) => hasVerifiedSameBytesOnLms(p))
-              .map((p) => path.parse(p).name.toLowerCase())
-          )
-        );
-        for (let pass = 0; pass < 12; pass++) {
+      // 4. Upload Screenshots (Max 10 total on LMS dropzone — Clean "Xóa cũ – Thêm mới 100%" on reused modal)
+      const rawCappedScreenshots = screenshots.slice(0, MAX_SPCK_SCREENSHOTS);
+      const cappedScreenshots: string[] = [];
+      for (const scPath of rawCappedScreenshots) {
+        cappedScreenshots.push(await ensureLmsCompatibleImageFile(scPath));
+      }
+      if (reusedExistingItem01) {
+        for (let pass = 0; pass < 20; pass++) {
           const clickedOne = await modal
-            .evaluate((modalEl, stemsArr) => {
-              const keepStems = new Set(stemsArr);
-              const seenStems = new Set<string>();
+            .evaluate((modalEl) => {
               const imgs = Array.from(modalEl.querySelectorAll("img"));
-              // Skip index 0 (which is the Thumbnail image)
+              // Skip index 0 (Thumbnail image) and delete all existing gallery screenshot tiles down to 0
               for (let i = 1; i < imgs.length; i++) {
                 const img = imgs[i] as HTMLImageElement;
-                const src = decodeURIComponent(img.getAttribute("src") || "").toLowerCase();
-                const matchedStem = Array.from(keepStems).find(
-                  (st) => st && (src.includes(`/${st}-`) || src.includes(`/${st}.`))
-                );
-                if (!matchedStem || seenStems.has(matchedStem)) {
-                  const tile = img.parentElement;
-                  const delBtn = tile?.querySelector("button") as HTMLButtonElement | null;
+                let container: HTMLElement | null = img.parentElement;
+                for (
+                  let depth = 0;
+                  depth < 3 && container && container !== modalEl;
+                  depth++
+                ) {
+                  if (container.querySelectorAll("img").length > 1) {
+                    break;
+                  }
+                  const btns = Array.from(
+                    container.querySelectorAll("button")
+                  ) as HTMLButtonElement[];
+                  const delBtn = btns.find((btn) => {
+                    if (btn.disabled) return false;
+                    const txt = (btn.textContent || "").trim();
+                    if (
+                      /^(?:thay ảnh|save|lưu|thêm|add|cancel|hủy|đóng|close|xem chi tiết|xem chi tiết trang)$/i.test(
+                        txt
+                      )
+                    ) {
+                      return false;
+                    }
+                    return true;
+                  });
                   if (delBtn) {
                     delBtn.click();
                     return true;
                   }
-                } else {
-                  seenStems.add(matchedStem);
+                  container = container.parentElement;
                 }
               }
               return false;
-            }, verifiedKeepStems)
+            })
             .catch(() => false);
 
           if (!clickedOne) break;
           await page.waitForTimeout(180);
         }
+      }
 
-        const modalText = (await modal.innerText().catch(() => "")) || "";
-        const modalHtml = (await modal.innerHTML().catch(() => "")) || "";
+      if (cappedScreenshots.length > 0) {
         const totalResourceImgs = await modal
           .locator('img[src*="resources.mindx.edu.vn"]')
           .count()
@@ -3222,47 +3330,33 @@ export class SpckUploader {
           MAX_SPCK_SCREENSHOTS - existingScreenshotCount
         );
 
-        const safeScreenshots = screenshots.map((p) => assertPathAllowed(p));
-        for (const p of safeScreenshots) {
-          if (isFileAlreadyOnLmsModal(p, modalText, modalHtml)) {
-            const dig = computeSafeFileByteDigest(p);
-            if (dig) {
-              alreadyVerifiedOnModalStemDigests.set(path.parse(p).name.toLowerCase(), dig);
-            }
-          }
-        }
-        const newScreenshots = safeScreenshots.filter(
-          (p) => !isFileAlreadyOnLmsModal(p, modalText, modalHtml)
-        );
-
-        if (newScreenshots.length > 0) {
-          if (remainingScreenshotSlots < newScreenshots.length) {
-            throw new Error(
-              `[Read-after-Write] Không đủ chỗ trống trên Modal SPCK để tải ${newScreenshots.length} ảnh sản phẩm (còn trống ${remainingScreenshotSlots}/${MAX_SPCK_SCREENSHOTS}).`
-            );
-          }
-          const imgInput = modal
-            .locator('input[type="file"][accept*="image"][multiple]')
-            .first();
-          if ((await imgInput.count()) === 0) {
-            throw new Error(
-              "[Read-after-Write] Không tìm thấy ô tải Hình ảnh sản phẩm trong Modal SPCK."
-            );
-          }
-          screenshotsUploadedCount = await uploadToDropzoneAndWait(
-            imgInput,
-            newScreenshots,
-            "Hình ảnh sản phẩm"
+        const safeScreenshots = cappedScreenshots.map((p) => assertPathAllowed(p));
+        if (remainingScreenshotSlots < safeScreenshots.length) {
+          throw new Error(
+            `[Read-after-Write] Không đủ chỗ trống trên Modal SPCK để tải ${safeScreenshots.length} ảnh sản phẩm (còn trống ${remainingScreenshotSlots}/${MAX_SPCK_SCREENSHOTS}).`
           );
-          if (screenshotsUploadedCount < newScreenshots.length) {
-            throw new Error(
-              `[Read-after-Write] Chỉ tải lên được ${screenshotsUploadedCount}/${newScreenshots.length} ảnh sản phẩm trên Modal SPCK.`
-            );
-          }
+        }
+        const imgInput = modal
+          .locator('input[type="file"][accept*="image"][multiple]')
+          .first();
+        if ((await imgInput.count()) === 0) {
+          throw new Error(
+            "[Read-after-Write] Không tìm thấy ô tải Hình ảnh sản phẩm trong Modal SPCK."
+          );
+        }
+        screenshotsUploadedCount = await uploadToDropzoneAndWait(
+          imgInput,
+          safeScreenshots,
+          "Hình ảnh sản phẩm"
+        );
+        if (screenshotsUploadedCount < safeScreenshots.length) {
+          throw new Error(
+            `[Read-after-Write] Chỉ tải lên được ${screenshotsUploadedCount}/${safeScreenshots.length} ảnh sản phẩm trên Modal SPCK.`
+          );
         }
       }
 
-      // 5. Upload Attachments (Max 10)
+      // 5. Upload Attachments (Max 10 — Clean "Xóa cũ – Thêm mới 100%" on reused modal)
       const expectedModalAttachmentFiles: string[] = [];
       const FORCE_ZIP_ATTACHMENT_EXTS = new Set([
         ".html",
@@ -3283,257 +3377,154 @@ export class SpckUploader {
         ".hpp",
         ".code-workspace",
       ]);
-      const safeStudentSlugForZip = record.studentId.replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
-      const hasAnyBundledExtInAttachments = attachments.some((p) =>
-        FORCE_ZIP_ATTACHMENT_EXTS.has(path.extname(p).toLowerCase())
-      );
-      const verifiedKeepAttachmentStems = Array.from(
-        new Set(
-          attachments
-            .filter((p) => hasVerifiedSameBytesOnLms(p))
-            .flatMap((p) => {
-              const parsedPath = path.parse(p);
-              const rawStem = parsedPath.name.toLowerCase();
-              const normStem = rawStem.replace(/\s+/g, " ");
-              const ext = parsedPath.ext.toLowerCase();
-              return ext
-                ? [`${rawStem}${ext}`, `${normStem}${ext}`, rawStem, normStem]
-                : [rawStem, normStem];
-            })
-        )
-      );
 
-      // Remove duplicate, renamed, or unverified/stale attachment tiles on the modal (click one by one so React state updates cleanly)
-      for (let pass = 0; pass < 12; pass++) {
-        const clickedOne = await modal
-          .evaluate(
-            (modalEl, args) => {
-              const keepStems = new Set(args.keepStemsArr);
-              const hasExplicitExtKeys = args.keepStemsArr.some((k) =>
-                k.includes(".")
-              );
+      if (reusedExistingItem01) {
+        for (let pass = 0; pass < 20; pass++) {
+          const clickedOne = await modal
+            .evaluate((modalEl) => {
               const captions = Array.from(
                 modalEl.querySelectorAll("span.MuiTypography-caption")
               );
-              const seenPrefixes = new Set<string>();
               for (const cap of captions) {
-                const txt = (cap.textContent || "").trim().toLowerCase();
-                const dotIdx = txt.lastIndexOf(".");
-                const ext = dotIdx > 0 ? txt.slice(dotIdx) : "";
-                const nameWithoutExt = dotIdx > 0 ? txt.slice(0, dotIdx) : txt;
-                const lastDashIdx = nameWithoutExt.lastIndexOf("-");
-                const rawPrefix =
-                  lastDashIdx > 0
-                    ? nameWithoutExt.slice(0, lastDashIdx)
-                    : nameWithoutExt;
-                const prefix = rawPrefix.replace(/\s+/g, " ");
-                const rawPrefixWithExt = `${rawPrefix}${ext}`;
-                const prefixWithExt = `${prefix}${ext}`;
-                const tile = cap.parentElement;
-                const delBtn = tile?.querySelector("button") as HTMLButtonElement | null;
-                if (!delBtn) continue;
-                // Auto-bundled spck_<studentId>_<hash>.zip tiles are cleaned by the dedicated zip loop below when bundled extensions exist
-                if (
-                  args.hasBundledExts &&
-                  rawPrefix.startsWith(`spck_${args.studentSlug}_`)
+                let container: HTMLElement | null = cap.parentElement;
+                for (
+                  let depth = 0;
+                  depth < 3 && container && container !== modalEl;
+                  depth++
                 ) {
-                  continue;
+                  if (
+                    container.querySelectorAll("span.MuiTypography-caption").length > 1
+                  ) {
+                    break;
+                  }
+                  const btns = Array.from(
+                    container.querySelectorAll("button")
+                  ) as HTMLButtonElement[];
+                  const delBtn = btns.find((btn) => {
+                    if (btn.disabled) return false;
+                    const txt = (btn.textContent || "").trim();
+                    if (
+                      /^(?:thay ảnh|save|lưu|thêm|add|cancel|hủy|đóng|close|xem chi tiết|xem chi tiết trang)$/i.test(
+                        txt
+                      )
+                    ) {
+                      return false;
+                    }
+                    return true;
+                  });
+                  if (delBtn) {
+                    delBtn.click();
+                    return true;
+                  }
+                  container = container.parentElement;
                 }
-                const isVerifiedKeep = hasExplicitExtKeys
-                  ? keepStems.has(rawPrefixWithExt) || keepStems.has(prefixWithExt)
-                  : keepStems.has(rawPrefix) || keepStems.has(prefix);
-                if (!isVerifiedKeep || seenPrefixes.has(prefixWithExt)) {
-                  delBtn.click();
-                  return true;
-                }
-                seenPrefixes.add(prefixWithExt);
               }
               return false;
-            },
-            {
-              keepStemsArr: verifiedKeepAttachmentStems,
-              studentSlug: safeStudentSlugForZip,
-              hasBundledExts: hasAnyBundledExtInAttachments,
-            }
-          )
-          .catch(() => false);
-        if (!clickedOne) break;
-        await page.waitForTimeout(200);
+            })
+            .catch(() => false);
+          if (!clickedOne) break;
+          await page.waitForTimeout(180);
+        }
       }
 
       if (attachments.length > 0) {
-        const modalText = (await modal.innerText().catch(() => "")) || "";
-        const modalHtml = (await modal.innerHTML().catch(() => "")) || "";
         const safeAttachments = attachments.map((p) => assertPathAllowed(p));
-        const newAttachments = safeAttachments.filter(
-          (p) => !isFileAlreadyOnLmsModal(p, modalText, modalHtml)
-        );
+        const attInput = modal
+          .locator(
+            'input[type="file"][accept*=".py"], input[type="file"][multiple]:not([accept="image/jpeg, image/png, image/jpg, image/tiff"])'
+          )
+          .first();
+        if ((await attInput.count()) === 0) {
+          throw new Error("Không tìm thấy ô tải tài liệu đính kèm trong Modal SPCK.");
+        }
 
-        for (const p of safeAttachments) {
-          if (isFileAlreadyOnLmsModal(p, modalText, modalHtml)) {
-            expectedModalAttachmentFiles.push(p);
-            const dig = computeSafeFileByteDigest(p);
-            if (dig) {
-              const rawStem = path.parse(p).name.toLowerCase();
-              alreadyVerifiedOnModalStemDigests.set(rawStem, dig);
-              alreadyVerifiedOnModalStemDigests.set(rawStem.replace(/\s+/g, " "), dig);
-            }
+        // Check which extensions MindX LMS dropzone directly accepts; always bundle web/multi-file source extensions (.html, .css, .js, .txt, .ui, .qss, .json, etc.) into a single .zip archive
+        const acceptAttr = (
+          (await attInput.getAttribute("accept").catch(() => "")) || ""
+        ).toLowerCase();
+        const finalAttachmentsToUpload: string[] = [];
+        const filesToBundleInZip: string[] = [];
+
+        for (const attPath of safeAttachments) {
+          const ext = path.extname(attPath).toLowerCase();
+          if (!FORCE_ZIP_ATTACHMENT_EXTS.has(ext) && (!acceptAttr || acceptAttr.includes(ext))) {
+            finalAttachmentsToUpload.push(attPath);
+            expectedModalAttachmentFiles.push(attPath);
+          } else {
+            filesToBundleInZip.push(attPath);
           }
         }
 
-        if (newAttachments.length > 0) {
-          const attInput = modal
-            .locator(
-              'input[type="file"][accept*=".py"], input[type="file"][multiple]:not([accept="image/jpeg, image/png, image/jpg, image/tiff"])'
+        if (filesToBundleInZip.length > 0) {
+          const safeStudentSlug = record.studentId.replace(/[^a-zA-Z0-9_-]/g, "_");
+          const filesFingerprint = filesToBundleInZip
+            .map(
+              (f) => `${path.basename(f)}:${computeSafeFileByteDigest(f) || "missing"}`
             )
-            .first();
-          if ((await attInput.count()) === 0) {
-            throw new Error("Không tìm thấy ô tải tài liệu đính kèm trong Modal SPCK.");
-          }
+            .sort()
+            .join("|");
+          const filesHashShort = crypto
+            .createHash("sha256")
+            .update(filesFingerprint)
+            .digest("hex")
+            .slice(0, 8);
+          const currentZipStem = `spck_${safeStudentSlug}_${filesHashShort}`;
+          const zipFileName = `${currentZipStem}.zip`;
 
-          // Check which extensions MindX LMS dropzone directly accepts; always bundle web/multi-file source extensions (.html, .css, .js, .txt, .ui, .qss, .json, etc.) into a single .zip archive
-          const acceptAttr = (
-            (await attInput.getAttribute("accept").catch(() => "")) || ""
-          ).toLowerCase();
-          const finalAttachmentsToUpload: string[] = [];
-          const filesToBundleInZip: string[] = [];
-
-          for (const attPath of newAttachments) {
-            const ext = path.extname(attPath).toLowerCase();
-            if (!FORCE_ZIP_ATTACHMENT_EXTS.has(ext) && (!acceptAttr || acceptAttr.includes(ext))) {
-              finalAttachmentsToUpload.push(attPath);
-              expectedModalAttachmentFiles.push(attPath);
-            } else {
-              filesToBundleInZip.push(attPath);
+          let zipBundlePath = path.resolve(
+            process.cwd(),
+            "temp_submissions",
+            zipFileName
+          );
+          const envDb = (process.env.MINDX_DB_PATH || "").trim();
+          const tmpRootNorm = path.resolve(os.tmpdir()).toLowerCase();
+          if (envDb && path.resolve(envDb).toLowerCase().startsWith(tmpRootNorm)) {
+            const tmpCandidate = path.join(path.dirname(path.resolve(envDb)), "temp_submissions", zipFileName);
+            try {
+              assertPathAllowed(path.dirname(path.resolve(envDb)));
+              zipBundlePath = tmpCandidate;
+            } catch {
+              // fallback to workspace temp_submissions when tmpCandidate is outside custom allowlist
             }
           }
 
-          if (filesToBundleInZip.length > 0) {
-            const safeStudentSlug = record.studentId.replace(/[^a-zA-Z0-9_-]/g, "_");
-            const filesFingerprint = filesToBundleInZip
-              .map(
-                (f) => `${path.basename(f)}:${computeSafeFileByteDigest(f) || "missing"}`
-              )
-              .sort()
-              .join("|");
-            const filesHashShort = crypto
-              .createHash("sha256")
-              .update(filesFingerprint)
-              .digest("hex")
-              .slice(0, 8);
-            const currentZipStem = `spck_${safeStudentSlug}_${filesHashShort}`;
-            const zipFileName = `${currentZipStem}.zip`;
-            const zipBundlePath = path.resolve(
-              process.cwd(),
-              "temp_submissions",
-              zipFileName
-            );
-
-            const zip = new AdmZip();
-            const fixedZipDate = new Date("2026-01-01T00:00:00.000Z");
-            for (const fPath of [...filesToBundleInZip].sort()) {
-              zip.addFile(path.basename(fPath), fs.readFileSync(fPath));
-              const ze = zip.getEntry(path.basename(fPath));
-              if (ze) {
-                ze.header.time = fixedZipDate;
-              }
-            }
-            fs.mkdirSync(path.dirname(zipBundlePath), { recursive: true });
-            const nextZipBuf = zip.toBuffer();
-            const existingZipBuf = fs.existsSync(zipBundlePath)
-              ? fs.readFileSync(zipBundlePath)
-              : null;
-            if (!existingZipBuf || !existingZipBuf.equals(nextZipBuf)) {
-              fs.writeFileSync(zipBundlePath, nextZipBuf);
-            }
-            const safeZipPath = assertPathAllowed(zipBundlePath);
-            const zipDigest = computeSafeFileByteDigest(safeZipPath);
-            expectedModalAttachmentFiles.push(safeZipPath);
-
-            const allBundledFilesVerified = filesToBundleInZip.every((f) =>
-              hasVerifiedSameBytesOnLms(f)
-            );
-            const isCurrentZipOnModal = isFileNamePresentOnLmsModal(
-              safeZipPath,
-              modalText,
-              modalHtml
-            );
-            const canReuseExistingZipOnModal =
-              allBundledFilesVerified && isCurrentZipOnModal;
-
-            // Remove outdated/unverified zip bundles (or extra duplicate tiles when reusing)
-            for (let pass = 0; pass < 10; pass++) {
-              const removedZipTile = await modal
-                .evaluate(
-                  (modalEl, args) => {
-                    const captions = Array.from(
-                      modalEl.querySelectorAll("span.MuiTypography-caption")
-                    );
-                    let seenCurrentStemCount = 0;
-                    for (const cap of captions) {
-                      const txt = (cap.textContent || "").trim().toLowerCase();
-                      if (!txt.includes(args.slugPrefixLower)) continue;
-                      const isCurrent = txt.includes(args.currentZipStemLower);
-                      let shouldDelete = false;
-                      if (!args.canReuse) {
-                        shouldDelete = true;
-                      } else if (!isCurrent) {
-                        shouldDelete = true;
-                      } else {
-                        seenCurrentStemCount++;
-                        if (seenCurrentStemCount > 1) {
-                          shouldDelete = true;
-                        }
-                      }
-                      if (shouldDelete) {
-                        const delBtn = cap.parentElement?.querySelector(
-                          "button"
-                        ) as HTMLButtonElement | null;
-                        if (delBtn) {
-                          delBtn.click();
-                          return true;
-                        }
-                      }
-                    }
-                    return false;
-                  },
-                  {
-                    slugPrefixLower: `spck_${safeStudentSlug}_`.toLowerCase(),
-                    currentZipStemLower: currentZipStem.toLowerCase(),
-                    canReuse: canReuseExistingZipOnModal,
-                  }
-                )
-                .catch(() => false);
-              if (!removedZipTile) break;
-              await page.waitForTimeout(200);
-            }
-
-            if (canReuseExistingZipOnModal && zipDigest) {
-              alreadyVerifiedOnModalStemDigests.set(
-                currentZipStem.toLowerCase(),
-                zipDigest
-              );
-            } else {
-              finalAttachmentsToUpload.push(safeZipPath);
+          const zip = new AdmZip();
+          const fixedZipDate = new Date("2026-01-01T00:00:00.000Z");
+          for (const fPath of [...filesToBundleInZip].sort()) {
+            zip.addFile(path.basename(fPath), fs.readFileSync(fPath));
+            const ze = zip.getEntry(path.basename(fPath));
+            if (ze) {
+              ze.header.time = fixedZipDate;
             }
           }
+          fs.mkdirSync(path.dirname(zipBundlePath), { recursive: true });
+          const nextZipBuf = zip.toBuffer();
+          const existingZipBuf = fs.existsSync(zipBundlePath)
+            ? fs.readFileSync(zipBundlePath)
+            : null;
+          if (!existingZipBuf || !existingZipBuf.equals(nextZipBuf)) {
+            fs.writeFileSync(zipBundlePath, nextZipBuf);
+          }
+          const safeZipPath = assertPathAllowed(zipBundlePath);
+          expectedModalAttachmentFiles.push(safeZipPath);
+          finalAttachmentsToUpload.push(safeZipPath);
+        }
 
-          if (finalAttachmentsToUpload.length > 0) {
-            if (finalAttachmentsToUpload.length > MAX_SPCK_ATTACHMENTS) {
-              throw new Error(
-                `[Read-after-Write] Số lượng tài liệu đính kèm cần tải vượt giới hạn LMS (${finalAttachmentsToUpload.length}/${MAX_SPCK_ATTACHMENTS}).`
-              );
-            }
-            attachmentsUploadedCount = await uploadToDropzoneAndWait(
-              attInput,
-              finalAttachmentsToUpload,
-              "Tài liệu đính kèm"
+        if (finalAttachmentsToUpload.length > 0) {
+          if (finalAttachmentsToUpload.length > MAX_SPCK_ATTACHMENTS) {
+            throw new Error(
+              `[Read-after-Write] Số lượng tài liệu đính kèm cần tải vượt giới hạn LMS (${finalAttachmentsToUpload.length}/${MAX_SPCK_ATTACHMENTS}).`
             );
-            if (attachmentsUploadedCount < finalAttachmentsToUpload.length) {
-              throw new Error(
-                `[Read-after-Write] Chỉ tải lên được ${attachmentsUploadedCount}/${finalAttachmentsToUpload.length} tài liệu đính kèm trên Modal SPCK.`
-              );
-            }
+          }
+          attachmentsUploadedCount = await uploadToDropzoneAndWait(
+            attInput,
+            finalAttachmentsToUpload,
+            "Tài liệu đính kèm"
+          );
+          if (attachmentsUploadedCount < finalAttachmentsToUpload.length) {
+            throw new Error(
+              `[Read-after-Write] Chỉ tải lên được ${attachmentsUploadedCount}/${finalAttachmentsToUpload.length} tài liệu đính kèm trên Modal SPCK.`
+            );
           }
         }
       }
@@ -3806,12 +3797,27 @@ export class SpckUploader {
         if (freshlyUploadedResourceUrlDigests.has(trimmed)) {
           return freshlyUploadedResourceUrlDigests.get(trimmed) || "";
         }
-        const baseLower = path.basename(trimmed).toLowerCase();
+        const trimmedLower = trimmed.toLowerCase();
+        if (freshlyUploadedResourceUrlDigests.has(trimmedLower)) {
+          return freshlyUploadedResourceUrlDigests.get(trimmedLower) || "";
+        }
+        const cleanNoQuery = trimmed.split(/[?#]/)[0] || trimmed;
+        const baseLower = path.basename(cleanNoQuery).toLowerCase();
         if (baseLower && freshlyUploadedResourceUrlDigests.has(baseLower)) {
           return freshlyUploadedResourceUrlDigests.get(baseLower) || "";
         }
+        if (baseLower) {
+          try {
+            const decodedBaseLower = decodeURIComponent(baseLower).toLowerCase();
+            if (freshlyUploadedResourceUrlDigests.has(decodedBaseLower)) {
+              return freshlyUploadedResourceUrlDigests.get(decodedBaseLower) || "";
+            }
+          } catch {
+            // ignore malformed URI escape
+          }
+        }
         for (const [k, v] of freshlyUploadedResourceUrlDigests.entries()) {
-          if (k.startsWith("/") && trimmed.endsWith(k)) {
+          if (k.startsWith("/") && trimmedLower.endsWith(k.toLowerCase())) {
             return v;
           }
         }
@@ -4050,7 +4056,7 @@ export class SpckUploader {
             "tài liệu đính kèm"
           );
         }
-        if (screenshots.length > 0) {
+        if (cappedScreenshots.length > 0) {
           const serverScreenshotsList = Array.isArray(savedWork.latestData.screenshots)
             ? savedWork.latestData.screenshots
             : Array.isArray(savedWork.latestData.imageUrl)
@@ -4069,7 +4075,7 @@ export class SpckUploader {
           }
           verifyReturnedFileListMatch(
             serverScreenshotsList,
-            screenshots,
+            cappedScreenshots,
             "hình ảnh sản phẩm"
           );
         }

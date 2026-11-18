@@ -165,13 +165,14 @@ export function registerTeacherSelectedDirectory(dirPath: string): string {
 
 /**
  * Returns all currently allowed base directories.
- * Always includes the project workspace root, default SPCK base directory (F:\MINDX_SPCK_FINAL),
+ * Always includes the project workspace root, default SPCK base directory (D:\MINDX DATA\MINDX_SPCK_FINAL)
+ * plus legacy F:\MINDX_SPCK_FINAL for backward compatibility,
  * configured directories in ALLOWED_LOCAL_DIRS, and directories explicitly selected by the teacher.
  */
 export function getAllowedDirectories(): string[] {
   const defaultAllowed =
     process.platform === "win32"
-      ? [process.cwd(), "F:\\MINDX_SPCK_FINAL"]
+      ? [process.cwd(), "D:\\MINDX DATA\\MINDX_SPCK_FINAL", "F:\\MINDX_SPCK_FINAL"]
       : [process.cwd()];
   const configured = config.allowedLocalDirs || [];
   const runtimeEnvDirs = (process.env.ALLOWED_LOCAL_DIRS || "")

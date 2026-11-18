@@ -244,13 +244,30 @@ export async function POST(req: Request) {
     });
 
     const updatedRecords = buildEnrichedClassSpckRecords(classId, activeSessionNumber);
-    const failedItems = (batchResult.results || []).filter((r) => Boolean(r.error));
-    if (failedItems.length > 0) {
+    const dedupedByStudent = new Map<string, (typeof batchResult.results)[number]>();
+    for (const item of batchResult.results || []) {
+      const sid = String(item?.studentId || "").trim();
+      if (!sid) continue;
+      const existingItem = dedupedByStudent.get(sid);
+      if (!existingItem || Boolean(item.error)) {
+        dedupedByStudent.set(sid, item);
+      }
+    }
+    const allResults = Array.from(dedupedByStudent.values());
+    const normalizedBatchResult = {
+      ...batchResult,
+      totalProcessed: allResults.length,
+      results: allResults,
+    };
+    const failedItems = allResults.filter((r) => Boolean(r.error));
+    const succeededCount = allResults.length - failedItems.length;
+    if (failedItems.length > 0 && succeededCount === 0) {
       return NextResponse.json(
         {
           success: false,
           error: failedItems.map((r) => `[${r.studentId}]: ${r.error}`).join(" | "),
-          batchResult,
+          failedItems,
+          batchResult: normalizedBatchResult,
           records: updatedRecords,
         },
         { status: 400 }
@@ -259,7 +276,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      batchResult,
+      partialFailure: failedItems.length > 0,
+      failedItems: failedItems.length > 0 ? failedItems : undefined,
+      warning:
+        failedItems.length > 0
+          ? failedItems.map((r) => `[${r.studentId}]: ${r.error}`).join(" | ")
+          : undefined,
+      batchResult: normalizedBatchResult,
       records: updatedRecords,
     });
   } catch (err) {

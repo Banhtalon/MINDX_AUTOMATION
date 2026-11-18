@@ -26,6 +26,10 @@ import {
   DEFAULT_SPCK_THUMBNAIL_PATH,
   MAX_SPCK_SCREENSHOTS,
   findOwnerProvidedRootPhotos,
+  isExplicitOwnerPhotoFilename,
+  isOwnerPhotoTranscodeFilename,
+  listPotentialPersonalRootPhotoCandidates,
+  transcodeWebpOwnerPhotoToPngAsync,
 } from "./spck-scanner";
 import {
   LMS_IMAGE_HEIGHT,
@@ -1874,6 +1878,217 @@ export function listOwnerUploadedImages(studentDir: string): string[] {
     .map((f) => path.join(ownerDir, f));
 }
 
+const ACTIVE_APP_SHOTS_MANIFEST = ".active_shots.json";
+
+function readActiveAppShotsManifestSet(shotsDir: string): Set<string> | null {
+  try {
+    const manifestPath = assertPathAllowed(path.join(shotsDir, ACTIVE_APP_SHOTS_MANIFEST));
+    if (!fs.existsSync(manifestPath) || !fs.statSync(manifestPath).isFile()) {
+      return null;
+    }
+    const parsed = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as {
+      files?: unknown[];
+    };
+    if (!Array.isArray(parsed?.files)) {
+      return null;
+    }
+    return new Set(
+      parsed.files
+        .map((n) => String(n || "").trim().toLowerCase())
+        .filter(Boolean)
+    );
+  } catch {
+    return null;
+  }
+}
+
+function snapshotAppShotsDirectory(studentFolderPath: string): {
+  shotsDir: string;
+  existedBefore: boolean;
+  files: Map<string, Buffer>;
+} | null {
+  try {
+    const safeStudentDir = assertPathAllowed(studentFolderPath);
+    const shotsDir = assertPathAllowed(path.join(safeStudentDir, APP_SCREENSHOTS_SUBDIR));
+    if (!fs.existsSync(shotsDir) || !fs.statSync(shotsDir).isDirectory()) {
+      return { shotsDir, existedBefore: false, files: new Map() };
+    }
+    const files = new Map<string, Buffer>();
+    for (const entry of fs.readdirSync(shotsDir, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      const filePath = assertPathAllowed(path.join(shotsDir, entry.name));
+      files.set(entry.name, fs.readFileSync(filePath));
+    }
+    return { shotsDir, existedBefore: true, files };
+  } catch {
+    return null;
+  }
+}
+
+function restoreAppShotsDirectorySnapshot(
+  snapshot: {
+    shotsDir: string;
+    existedBefore: boolean;
+    files: Map<string, Buffer>;
+  } | null
+): void {
+  if (!snapshot) return;
+  try {
+    const safeShotsDir = assertPathAllowed(snapshot.shotsDir);
+    if (!snapshot.existedBefore) {
+      if (fs.existsSync(safeShotsDir)) {
+        fs.rmSync(safeShotsDir, { recursive: true, force: true });
+      }
+      return;
+    }
+    fs.mkdirSync(safeShotsDir, { recursive: true });
+    for (const entry of fs.readdirSync(safeShotsDir, { withFileTypes: true })) {
+      if (!snapshot.files.has(entry.name)) {
+        const extraPath = assertPathAllowed(path.join(safeShotsDir, entry.name));
+        try {
+          fs.rmSync(extraPath, { recursive: true, force: true });
+        } catch {}
+      }
+    }
+    for (const [name, buf] of snapshot.files.entries()) {
+      const filePath = assertPathAllowed(path.join(safeShotsDir, name));
+      fs.writeFileSync(filePath, buf);
+    }
+  } catch {
+    // Best-effort rollback
+  }
+}
+
+function collectProtectedAppShotPathsForStudent(params: {
+  studentId: string;
+  folderPath: string;
+  classId?: string;
+  forceOverwriteSessionNumber?: SpckSessionSlotNumber;
+}): Set<string> {
+  const protectedLower = new Set<string>();
+  const addPath = (rawPath: unknown) => {
+    let p = "";
+    if (typeof rawPath === "string") {
+      p = rawPath.trim();
+    } else if (
+      rawPath &&
+      typeof rawPath === "object" &&
+      typeof (rawPath as { path?: unknown }).path === "string"
+    ) {
+      p = (rawPath as { path: string }).path.trim();
+    }
+    if (!p) return;
+    try {
+      protectedLower.add(path.resolve(p).toLowerCase());
+    } catch {}
+  };
+  const addJsonPathList = (rawJson: unknown) => {
+    if (!rawJson || typeof rawJson !== "string") return;
+    try {
+      const arr = JSON.parse(rawJson);
+      if (Array.isArray(arr)) {
+        for (const item of arr) addPath(item);
+      }
+    } catch {}
+  };
+
+  try {
+    const db = getDb();
+    const normClassId = String(params.classId || "").trim().toUpperCase();
+    const normStuId = String(params.studentId || "").trim();
+    if (!normStuId) return protectedLower;
+
+    const sessRows = (
+      normClassId
+        ? db
+            .prepare(
+              `SELECT classId, sessionNumber, draftStatus, thumbnailPath, screenshotsJson, approvedSnapshotJson
+               FROM spck_session_submissions
+               WHERE classId = ? AND studentId = ?`
+            )
+            .all(normClassId, normStuId)
+        : db
+            .prepare(
+              `SELECT classId, sessionNumber, draftStatus, thumbnailPath, screenshotsJson, approvedSnapshotJson
+               FROM spck_session_submissions
+               WHERE studentId = ?`
+            )
+            .all(normStuId)
+    ) as Array<{
+      classId: string;
+      sessionNumber: number;
+      draftStatus: string;
+      thumbnailPath?: string | null;
+      screenshotsJson?: string | null;
+      approvedSnapshotJson?: string | null;
+    }>;
+
+    for (const sr of sessRows) {
+      const status = String(sr.draftStatus || "").toUpperCase();
+      if (status !== "APPROVED" && status !== "SAVING") continue;
+      if (
+        normClassId &&
+        params.forceOverwriteSessionNumber &&
+        String(sr.classId || "").toUpperCase() === normClassId &&
+        Number(sr.sessionNumber) === Number(params.forceOverwriteSessionNumber)
+      ) {
+        continue;
+      }
+      addPath(sr.thumbnailPath);
+      addJsonPathList(sr.screenshotsJson);
+      if (sr.approvedSnapshotJson) {
+        try {
+          const snap = JSON.parse(sr.approvedSnapshotJson) as {
+            thumbnailPath?: unknown;
+            screenshots?: unknown[];
+          };
+          addPath(snap?.thumbnailPath);
+          if (Array.isArray(snap?.screenshots)) {
+            for (const sp of snap.screenshots) addPath(sp);
+          }
+        } catch {}
+      }
+    }
+
+    if (!params.forceOverwriteSessionNumber) {
+      const uploadRows = (
+        normClassId
+          ? db
+              .prepare(
+                `SELECT status, thumbnailPath, screenshotsJson
+                 FROM spck_uploads
+                 WHERE classId = ? AND studentId = ?`
+              )
+              .all(normClassId, normStuId)
+          : db
+              .prepare(
+                `SELECT status, thumbnailPath, screenshotsJson
+                 FROM spck_uploads
+                 WHERE studentId = ?`
+              )
+              .all(normStuId)
+      ) as Array<{
+        status?: string | null;
+        thumbnailPath?: string | null;
+        screenshotsJson?: string | null;
+      }>;
+      for (const ur of uploadRows) {
+        const uStatus = String(ur.status || "").toUpperCase();
+        if (uStatus !== "APPROVED" && uStatus !== "SAVING") continue;
+        addPath(ur.thumbnailPath);
+        addJsonPathList(ur.screenshotsJson);
+      }
+    }
+  } catch (err) {
+    // When running for a tracked class (`classId` provided), fail closed so DB errors never skip protecting frozen images
+    if (String(params.classId || "").trim()) {
+      throw err;
+    }
+  }
+
+  return protectedLower;
+}
+
 /**
  * Lists already-captured app screenshots inside `<studentDir>/_spck_app_shots/`.
  */
@@ -1884,12 +2099,21 @@ export function listCapturedAppScreenshots(studentDir: string): string[] {
     return [];
   }
   const exts = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+  const activeManifestSet = readActiveAppShotsManifestSet(shotsDir);
   const rawFiles = fs
     .readdirSync(shotsDir)
-    .filter((f) => exts.has(path.extname(f).toLowerCase()));
+    .filter((f) => {
+      if (f.startsWith(".")) return false;
+      if (isOwnerPhotoTranscodeFilename(f)) return false;
+      if (!exts.has(path.extname(f).toLowerCase())) return false;
+      if (activeManifestSet !== null && !activeManifestSet.has(f.toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
   const bySlotKey = new Map<string, { name: string; mtimeMs: number }>();
   for (const f of rawFiles) {
-    const slotMatch = f.match(/^(app_\d+_.*?)_[0-9a-f]{6}\.png$/i);
+    const slotMatch = f.match(/^(app_\d+_.*?)_[0-9a-f]{6}(?:_[a-z0-9]{4,10})?\.png$/i);
     const slotKey = slotMatch ? slotMatch[1].toLowerCase() : f.toLowerCase();
     let mtimeMs = 0;
     try {
@@ -1968,7 +2192,7 @@ export function resolveValidAppShotResources(params: {
 
   const extractSlotPrefix = (p: string) => {
     const base = path.basename(p);
-    const m = base.match(/^(app_\d+_.*?)_[0-9a-f]{6}\.png$/i);
+    const m = base.match(/^(app_\d+_.*?)_[0-9a-f]{6}(?:_[a-z0-9]{4,10})?\.png$/i);
     return m ? m[1].toLowerCase() : "";
   };
 
@@ -2107,6 +2331,85 @@ async function selectBestScreenshotWithAi(
 }
 
 /**
+ * Uses Gemini Vision (`gemini-3.5-flash-lite`) to verify whether candidate root images
+ * (e.g. Zalo/Messenger `.webp` or camera photos) are genuine personal/Demo-Day presentation photos
+ * rather than software UI screenshots, wallpapers, or code assets.
+ * Sends ONLY image bytes (zero filenames or student names). Returns `null` if Gemini is offline/unavailable.
+ */
+export async function verifyRootPersonalPhotosWithAi(
+  candidatePaths: string[]
+): Promise<Map<string, { isPersonalPhoto: boolean; reason: string }> | null> {
+  if (!candidatePaths || candidatePaths.length === 0) return new Map();
+  const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+  if (!apiKey || /dummy|neverlive|your_gemini_api_key_here/i.test(apiKey)) {
+    return null;
+  }
+
+  const batch = candidatePaths.slice(0, 6);
+  try {
+    const rawJobItems = batch.map((p) => {
+      const safeP = assertPathAllowed(p);
+      const buf = fs.readFileSync(safeP);
+      return { path: p, buf, ext: path.extname(safeP).toLowerCase() };
+    });
+    const normalizedPngs = await normalizeImagesToLms16x9(
+      rawJobItems.map((j) => ({ buffer: j.buf, fit: "contain" as const }))
+    );
+
+    const mediaParts: Array<{ inlineData: { data: string; mimeType: string } }> = [];
+    const labels: string[] = [];
+    for (let i = 0; i < rawJobItems.length; i++) {
+      const photoId = `PHOTO_0${i + 1}`;
+      const normBuf = normalizedPngs[i];
+      if (normBuf && normBuf.length > 32) {
+        mediaParts.push({
+          inlineData: { data: normBuf.toString("base64"), mimeType: "image/png" },
+        });
+      } else {
+        const mime =
+          rawJobItems[i].ext === ".png"
+            ? "image/png"
+            : rawJobItems[i].ext === ".webp"
+            ? "image/webp"
+            : "image/jpeg";
+        mediaParts.push({
+          inlineData: { data: rawJobItems[i].buf.toString("base64"), mimeType: mime },
+        });
+      }
+      labels.push(photoId);
+    }
+
+    const model = getGeminiModel(undefined, 0.1);
+    const promptText =
+      `Bạn là trợ lý phân loại Ảnh Bìa (Thumbnail) Sản phẩm Cuối khóa tại MindX.\n` +
+      `Hãy quan sát các ảnh đính kèm (${labels.join(", ")}) và xác định từng ảnh có phải là **ảnh chụp cá nhân / ảnh thuyết trình / ảnh buổi Demo Day ngoài đời thực** của học viên (có người thật, học sinh đứng cạnh sản phẩm/màn hình/bảng tên/lớp học, hoặc ảnh chụp sản phẩm thực tế bằng camera) hay không.\n` +
+      `Trả về isPersonalPhoto = false nếu ảnh chỉ là ảnh chụp màn hình phần mềm/website, hình vẽ 2D/sprite game, icon, hình nền hoặc tài nguyên thiết kế.\n` +
+      `Trả về JSON chuẩn dạng: {"results": [{"photoId": "PHOTO_01", "isPersonalPhoto": true, "reason": "Mô tả ngắn bằng tiếng Việt"}]}`;
+
+    const resp = await model.generateContent([promptText, ...mediaParts]);
+    const parsed = JSON.parse(resp.response.text()) as
+      | { results?: Array<{ photoId?: string; isPersonalPhoto?: boolean; reason?: string }> }
+      | Array<{ photoId?: string; isPersonalPhoto?: boolean; reason?: string }>;
+    const items = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.results) ? parsed.results : [];
+    if (items.length === 0) return null;
+
+    const verdicts = new Map<string, { isPersonalPhoto: boolean; reason: string }>();
+    for (const item of items) {
+      const idx = Number(String(item?.photoId || "").replace(/[^0-9]/g, "")) - 1;
+      if (idx >= 0 && idx < batch.length) {
+        verdicts.set(batch[idx], {
+          isPersonalPhoto: Boolean(item.isPersonalPhoto),
+          reason: String(item.reason || "").trim(),
+        });
+      }
+    }
+    return verdicts.size > 0 ? verdicts : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Captures app interface screenshots for a single student's project folder,
  * runs AI evaluation to pick the best screenshot as Thumbnail, and places the
  * remaining screenshots (plus any Owner-uploaded images) into the bottom gallery (`screenshotsJson`).
@@ -2114,9 +2417,13 @@ async function selectBestScreenshotWithAi(
 export async function captureStudentAppScreenshots(params: {
   studentId: string;
   folderPath: string;
+  classId?: string;
+  forceOverwriteSessionNumber?: SpckSessionSlotNumber;
   useAiVision?: boolean;
   /** Existing YouTube presentation frames (`_spck_youtube_frames`) that must stay in the gallery. */
   preservedFrames?: string[];
+  /** Explicit screenshot file paths that must never be deleted (e.g., frozen APPROVED snapshots). */
+  protectedFilePaths?: string[];
 }): Promise<StudentAppCaptureResult> {
   const { studentId, folderPath, useAiVision = true } = params;
   const safeFolderPath = assertPathAllowed(folderPath);
@@ -2125,101 +2432,195 @@ export async function captureStudentAppScreenshots(params: {
     throw new Error(`Thư mục dự án của học viên không tồn tại: ${safeFolderPath}`);
   }
 
-  const outDir = path.join(safeFolderPath, APP_SCREENSHOTS_SUBDIR);
+  const outDir = assertPathAllowed(path.join(safeFolderPath, APP_SCREENSHOTS_SUBDIR));
+  const protectedShotPathsLower = collectProtectedAppShotPathsForStudent({
+    studentId,
+    folderPath: safeFolderPath,
+    classId: params.classId,
+    forceOverwriteSessionNumber: params.forceOverwriteSessionNumber,
+  });
+  for (const extraProt of params.protectedFilePaths || []) {
+    if (extraProt && String(extraProt).trim()) {
+      try {
+        protectedShotPathsLower.add(path.resolve(String(extraProt).trim()).toLowerCase());
+      } catch {}
+    }
+  }
   const ownerImages = listOwnerUploadedImages(safeFolderPath);
+  const runTag = `${Date.now().toString(36).slice(-4)}${Math.random()
+    .toString(36)
+    .slice(2, 4)}`;
+  const stageDir = assertPathAllowed(
+    path.join(safeFolderPath, `${APP_SCREENSHOTS_SUBDIR}_stage_${runTag}`)
+  );
 
-  // Clean only unreferenced previous auto-captured shots; only frozen (APPROVED / SUBMITTED_PENDING_VERIFY / VERIFIED)
-  // session snapshots lock old app_*.png files on disk, so unapproved DRAFT / WAITING_APPROVAL rows do not accumulate duplicates.
-  const referencedFiles = new Set<string>();
-  if (fs.existsSync(outDir)) {
-    try {
-      const db = getDb();
-      const sessRows = db
-        .prepare(
-          `SELECT draftStatus, thumbnailPath, screenshotsJson, approvedSnapshotJson, lastVerifiedSnapshotJson
-           FROM spck_session_submissions WHERE studentId = ?`
-        )
-        .all(studentId) as Array<Record<string, string | null>>;
-      const protectedChunks: string[] = [];
-      for (const sRow of sessRows) {
-        if (sRow.approvedSnapshotJson) protectedChunks.push(sRow.approvedSnapshotJson);
-        if (sRow.lastVerifiedSnapshotJson) protectedChunks.push(sRow.lastVerifiedSnapshotJson);
-        if (
-          sRow.draftStatus === "APPROVED" ||
-          sRow.draftStatus === "SUBMITTED_PENDING_VERIFY" ||
-          sRow.draftStatus === "VERIFIED"
-        ) {
-          if (sRow.thumbnailPath) protectedChunks.push(sRow.thumbnailPath);
-          if (sRow.screenshotsJson) protectedChunks.push(sRow.screenshotsJson);
-        }
-      }
-      const blob = protectedChunks.join("\n").toLowerCase();
-      for (const f of fs.readdirSync(outDir)) {
-        if (blob.includes(f.toLowerCase())) {
-          referencedFiles.add(f);
-        }
-      }
-    } catch {
-      // ignore
-    }
-    for (const f of fs.readdirSync(outDir)) {
-      if (f.startsWith("app_") && f.endsWith(".png") && !referencedFiles.has(f)) {
-        try {
-          fs.unlinkSync(path.join(outDir, f));
-        } catch {
-          // ignore
-        }
+  // Clean up any leftover interrupted `_spck_app_shots_stage_*` folders from previous crashed runs
+  try {
+    for (const d of fs.readdirSync(safeFolderPath, { withFileTypes: true })) {
+      if (
+        d.isDirectory() &&
+        d.name.toLowerCase().startsWith(`${APP_SCREENSHOTS_SUBDIR.toLowerCase()}_stage_`)
+      ) {
+        const staleStage = assertPathAllowed(path.join(safeFolderPath, d.name));
+        fs.rmSync(staleStage, { recursive: true, force: true });
       }
     }
-  } else {
-    fs.mkdirSync(outDir, { recursive: true });
+  } catch {
+    // ignore
   }
 
   const uiFiles = findProjectUiFiles(safeFolderPath);
   const htmlFiles = uiFiles.length === 0 ? findProjectHtmlFiles(safeFolderPath) : [];
-  // Photos the Owner placed directly in the student's root folder (not used by the student's code)
-  const ownerRootPhotos = findOwnerProvidedRootPhotos(safeFolderPath);
+  // Photos the Owner placed directly in the student's root folder (not used by the student's code),
+  // verified with AI Vision when enabled so personal Demo Day / presentation photos become the Thumbnail.
+  const heuristicOwnerRootPhotos = findOwnerProvidedRootPhotos(safeFolderPath);
+  const candidateRootPhotos = useAiVision
+    ? Array.from(
+        new Set([
+          ...heuristicOwnerRootPhotos,
+          ...listPotentialPersonalRootPhotoCandidates(safeFolderPath),
+        ])
+      )
+    : heuristicOwnerRootPhotos;
+  let ownerRootPhotos: string[] = [];
+  let aiPersonalPhotoReason = "";
+  if (candidateRootPhotos.length > 0) {
+    const explicitRootPhotos: string[] = [];
+    const nonExplicitRootPhotos: string[] = [];
+    for (const cand of candidateRootPhotos) {
+      if (isExplicitOwnerPhotoFilename(path.basename(cand))) {
+        explicitRootPhotos.push(cand);
+      } else {
+        nonExplicitRootPhotos.push(cand);
+      }
+    }
+    const verifiedNonExplicit: string[] = [];
+    if (nonExplicitRootPhotos.length > 0 && useAiVision) {
+      const aiPhotoVerdicts = await verifyRootPersonalPhotosWithAi(nonExplicitRootPhotos);
+      if (aiPhotoVerdicts) {
+        for (const cand of nonExplicitRootPhotos) {
+          const verdict = aiPhotoVerdicts.get(cand);
+          if (verdict?.isPersonalPhoto) {
+            verifiedNonExplicit.push(cand);
+            if (!aiPersonalPhotoReason && verdict.reason) {
+              aiPersonalPhotoReason = verdict.reason;
+            }
+          }
+        }
+      } else {
+        for (const cand of nonExplicitRootPhotos) {
+          if (heuristicOwnerRootPhotos.includes(cand)) {
+            verifiedNonExplicit.push(cand);
+          }
+        }
+      }
+    } else {
+      for (const cand of nonExplicitRootPhotos) {
+        if (heuristicOwnerRootPhotos.includes(cand)) {
+          verifiedNonExplicit.push(cand);
+        }
+      }
+    }
+    const keptSet = new Set([...explicitRootPhotos, ...verifiedNonExplicit]);
+    ownerRootPhotos = candidateRootPhotos.filter((p) => keptSet.has(p));
+  }
   let capturedItems: CapturedScreenItem[] = [];
+  const referencedFiles = new Set<string>();
 
-  if (uiFiles.length > 0) {
-    capturedItems = await renderPyQtUiScreenshotsAsync({
-      studentDir: safeFolderPath,
-      uiFiles,
-      outDir,
-      maxShots: Math.max(uiFiles.length, MAX_SPCK_SCREENSHOTS + 5),
-      referencedFiles,
-    });
-  } else if (htmlFiles.length > 0) {
-    const maxHtmlShots = Math.max(
-      1,
-      MAX_SPCK_SCREENSHOTS +
-        1 -
-        Math.min(ownerImages.length, MAX_SPCK_SCREENSHOTS) -
-        Math.min(ownerRootPhotos.length, 2)
-    );
-    capturedItems = await captureHtmlWebScreenshots({
-      studentDir: safeFolderPath,
-      htmlFiles,
-      outDir,
-      maxShots: maxHtmlShots,
-    });
-  } else {
-    const gameFiles = findProjectGameFiles(safeFolderPath);
-    if (gameFiles.yyzFiles.length > 0 || gameFiles.sb3Files.length > 0) {
-      const maxGameShots = Math.max(
+  fs.mkdirSync(stageDir, { recursive: true });
+  try {
+    if (uiFiles.length > 0) {
+      capturedItems = await renderPyQtUiScreenshotsAsync({
+        studentDir: safeFolderPath,
+        uiFiles,
+        outDir: stageDir,
+        maxShots: Math.max(uiFiles.length, MAX_SPCK_SCREENSHOTS + 5),
+        referencedFiles,
+      });
+    } else if (htmlFiles.length > 0) {
+      const maxHtmlShots = Math.max(
         1,
         MAX_SPCK_SCREENSHOTS +
           1 -
           Math.min(ownerImages.length, MAX_SPCK_SCREENSHOTS) -
           Math.min(ownerRootPhotos.length, 2)
       );
-      capturedItems = await renderGameArchiveScreenshotsAsync({
+      capturedItems = await captureHtmlWebScreenshots({
         studentDir: safeFolderPath,
-        yyzFiles: gameFiles.yyzFiles,
-        sb3Files: gameFiles.sb3Files,
-        outDir,
-        maxShots: maxGameShots,
+        htmlFiles,
+        outDir: stageDir,
+        maxShots: maxHtmlShots,
       });
+    } else {
+      const gameFiles = findProjectGameFiles(safeFolderPath);
+      if (gameFiles.yyzFiles.length > 0 || gameFiles.sb3Files.length > 0) {
+        const maxGameShots = Math.max(
+          1,
+          MAX_SPCK_SCREENSHOTS +
+            1 -
+            Math.min(ownerImages.length, MAX_SPCK_SCREENSHOTS) -
+            Math.min(ownerRootPhotos.length, 2)
+        );
+        capturedItems = await renderGameArchiveScreenshotsAsync({
+          studentDir: safeFolderPath,
+          yyzFiles: gameFiles.yyzFiles,
+          sb3Files: gameFiles.sb3Files,
+          outDir: stageDir,
+          maxShots: maxGameShots,
+        });
+      }
+    }
+
+    // Atomic "Xóa cũ – Thêm mới": wipe unreferenced old `_spck_app_shots` files only AFTER staging finishes,
+    // while strictly preserving any files referenced by frozen APPROVED/SAVING session snapshots,
+    // then move fresh cache-busted `<stem>_<hash6>_<runTag>.png` shots into `_spck_app_shots`.
+    fs.mkdirSync(outDir, { recursive: true });
+    for (const oldEntry of fs.readdirSync(outDir, { withFileTypes: true })) {
+      if (oldEntry.name === ACTIVE_APP_SHOTS_MANIFEST) continue;
+      const oldPath = assertPathAllowed(path.join(outDir, oldEntry.name));
+      const oldResolvedLower = path.resolve(oldPath).toLowerCase();
+      if (protectedShotPathsLower.has(oldResolvedLower)) {
+        continue;
+      }
+      try {
+        fs.rmSync(oldPath, { recursive: true, force: true });
+      } catch {
+        // ignore
+      }
+    }
+
+    const promotedItems: CapturedScreenItem[] = [];
+    for (const item of capturedItems) {
+      if (!item?.filePath || !fs.existsSync(item.filePath)) continue;
+      const ext = path.extname(item.filePath) || ".png";
+      const baseStem = path.basename(item.filePath, ext);
+      let targetName = `${baseStem}_${runTag}${ext}`;
+      let destPath = assertPathAllowed(path.join(outDir, targetName));
+      if (protectedShotPathsLower.has(path.resolve(destPath).toLowerCase())) {
+        targetName = `${baseStem}_${runTag}x${ext}`;
+        destPath = assertPathAllowed(path.join(outDir, targetName));
+      }
+      try {
+        fs.renameSync(item.filePath, destPath);
+      } catch {
+        fs.copyFileSync(item.filePath, destPath);
+        try {
+          fs.unlinkSync(item.filePath);
+        } catch {}
+      }
+      promotedItems.push({
+        ...item,
+        filePath: destPath,
+      });
+    }
+    capturedItems = promotedItems;
+  } finally {
+    try {
+      if (fs.existsSync(stageDir)) {
+        fs.rmSync(stageDir, { recursive: true, force: true });
+      }
+    } catch {
+      // ignore
     }
   }
 
@@ -2319,19 +2720,61 @@ export async function captureStudentAppScreenshots(params: {
     galleryCandidates.push(bestAppShotPath || ownerThumbCandidate);
   }
 
-  const galleryScreenshots = [...galleryCandidates];
-  // Remove any newly-captured or leftover `app_*.png` files in `_spck_app_shots` that were dropped
-  // due to the 10-image LMS cap and are not referenced by any frozen session snapshot.
+  if (finalThumbnailPath && path.extname(finalThumbnailPath).toLowerCase() === ".webp") {
+    finalThumbnailPath = await transcodeWebpOwnerPhotoToPngAsync(
+      finalThumbnailPath,
+      safeFolderPath
+    );
+  }
+  const transcodedGallery: string[] = [];
+  for (const gPath of galleryCandidates) {
+    const resolvedG =
+      path.extname(gPath).toLowerCase() === ".webp"
+        ? await transcodeWebpOwnerPhotoToPngAsync(gPath, safeFolderPath)
+        : gPath;
+    if (!transcodedGallery.some((existing) => samePath(existing, resolvedG))) {
+      transcodedGallery.push(resolvedG);
+    }
+  }
+  const galleryScreenshots = transcodedGallery;
+  const finalOwnerRootPhotos = await Promise.all(
+    ownerRootPhotos.map((p) =>
+      path.extname(p).toLowerCase() === ".webp"
+        ? transcodeWebpOwnerPhotoToPngAsync(p, safeFolderPath)
+        : Promise.resolve(p)
+    )
+  );
+  // Remove any newly-captured or leftover `app_*.png` / `owner_photo_*.png` files in `_spck_app_shots`
+  // that are not active and not referenced by any frozen session snapshot.
   if (fs.existsSync(outDir)) {
+    const outDirLower = path.resolve(outDir).toLowerCase();
     const activeChosenPaths = new Set(
       [finalThumbnailPath, ...galleryScreenshots]
         .filter(Boolean)
         .map((p) => path.resolve(p).toLowerCase())
     );
+    const activeManifestFiles: string[] = [];
+    for (const p of [finalThumbnailPath, ...galleryScreenshots]) {
+      if (!p) continue;
+      const resolvedP = path.resolve(p);
+      if (
+        path.dirname(resolvedP).toLowerCase() === outDirLower &&
+        fs.existsSync(resolvedP)
+      ) {
+        const bn = path.basename(resolvedP);
+        if (!activeManifestFiles.includes(bn)) {
+          activeManifestFiles.push(bn);
+        }
+      }
+    }
+    activeManifestFiles.sort((a, b) => a.localeCompare(b, "en"));
+
     for (const f of fs.readdirSync(outDir)) {
-      if (!f.startsWith("app_") || !f.endsWith(".png")) continue;
+      if (f === ACTIVE_APP_SHOTS_MANIFEST) continue;
+      if ((!f.startsWith("app_") && !f.startsWith("owner_photo_")) || !f.endsWith(".png")) continue;
       if (referencedFiles.has(f)) continue;
       const fullShotPath = path.resolve(outDir, f).toLowerCase();
+      if (protectedShotPathsLower.has(fullShotPath)) continue;
       if (!activeChosenPaths.has(fullShotPath)) {
         try {
           fs.unlinkSync(path.join(outDir, f));
@@ -2340,12 +2783,29 @@ export async function captureStudentAppScreenshots(params: {
         }
       }
     }
+
+    const manifestPath = assertPathAllowed(path.join(outDir, ACTIVE_APP_SHOTS_MANIFEST));
+    fs.writeFileSync(
+      manifestPath,
+      JSON.stringify(
+        {
+          version: 1,
+          updatedAt: new Date().toISOString(),
+          files: activeManifestFiles,
+        },
+        null,
+        2
+      ),
+      "utf8"
+    );
   }
   const reasonParts = [
     thumbnailSource === "OWNER_UPLOAD"
       ? "Ảnh đại diện: ảnh do Owner tải lên."
       : thumbnailSource === "OWNER_ROOT_PHOTO"
-      ? `Ảnh đại diện: ảnh Owner để sẵn trong thư mục (${path.basename(finalThumbnailPath)}).`
+      ? aiPersonalPhotoReason
+        ? `Ảnh đại diện: AI nhận diện ảnh chụp cá nhân học viên (${aiPersonalPhotoReason}).`
+        : `Ảnh đại diện: ảnh Owner để sẵn trong thư mục (${path.basename(finalThumbnailPath)}).`
       : thumbnailSource === "APP_SCREENSHOT"
       ? `Ảnh đại diện: ảnh giao diện đẹp nhất. ${aiReason}`.trim()
       : "Ảnh đại diện: Logo MindX mặc định.",
@@ -2365,7 +2825,7 @@ export async function captureStudentAppScreenshots(params: {
     galleryScreenshots,
     aiSelectedReason: reasonParts.join(" "),
     ownerUploadedImages: ownerImages,
-    ownerRootPhotos,
+    ownerRootPhotos: finalOwnerRootPhotos,
   };
 }
 
@@ -2380,6 +2840,8 @@ export async function captureClassAppScreenshotsAndSelectThumbnails(params: {
   studentIds?: string[];
   useAiVision?: boolean;
   sessionNumber?: SpckSessionSlotNumber;
+  /** Default true for explicit teacher UI actions; set false for background Portal Auto-Prep so APPROVED drafts are never demoted or stripped of files. */
+  allowDemoteApprovedSession?: boolean;
 }): Promise<{
   classId: string;
   totalProcessed: number;
@@ -2388,18 +2850,56 @@ export async function captureClassAppScreenshotsAndSelectThumbnails(params: {
 }> {
   ensureCaptureNotStopped();
   const normalizedClassId = String(params.classId || "").trim().toUpperCase();
+  const allowDemote = params.allowDemoteApprovedSession !== false;
   const rows = spckUploadRepo.findByClass(normalizedClassId);
-  const targetRows =
+  const rowsByStudentId = new Map(rows.map((r) => [r.studentId, r]));
+  const explicitIds =
     params.studentIds && params.studentIds.length > 0
-      ? rows.filter((r) => params.studentIds!.includes(r.studentId))
-      : rows.filter((r) => Boolean(r.localFolderPath));
+      ? Array.from(
+          new Set(
+            params.studentIds
+              .map((s) => String(s || "").trim())
+              .filter(Boolean)
+          )
+        )
+      : null;
 
+  const targetRows: Array<(typeof rows)[number]> = [];
   const results: StudentAppCaptureResult[] = [];
   let totalScreenshotsCaptured = 0;
+
+  if (explicitIds) {
+    for (const sid of explicitIds) {
+      const row = rowsByStudentId.get(sid);
+      if (!row || !row.localFolderPath) {
+        results.push({
+          studentId: sid,
+          folderPath: row?.localFolderPath || "",
+          capturedCount: 0,
+          thumbnailPath: row?.thumbnailPath || DEFAULT_SPCK_THUMBNAIL_PATH,
+          galleryScreenshots: [],
+          ownerUploadedImages: [],
+          ownerRootPhotos: [],
+          error: !row
+            ? "Không tìm thấy bản ghi SPCK của học viên."
+            : "Học viên chưa có thư mục dự án trên máy để chụp hình.",
+        });
+        continue;
+      }
+      targetRows.push(row);
+    }
+  } else {
+    for (const row of rows) {
+      if (row.localFolderPath) {
+        targetRows.push(row);
+      }
+    }
+  }
 
   for (const row of targetRows) {
     ensureCaptureNotStopped();
     if (!row.localFolderPath) continue;
+    const appShotsSnapshot = snapshotAppShotsDirectory(row.localFolderPath);
     try {
       let preservedFrames: string[] = [];
       try {
@@ -2417,30 +2917,47 @@ export async function captureClassAppScreenshotsAndSelectThumbnails(params: {
       }
       const cap = await captureStudentAppScreenshots({
         studentId: row.studentId,
+        classId: normalizedClassId,
+        forceOverwriteSessionNumber: allowDemote ? params.sessionNumber : undefined,
         folderPath: row.localFolderPath,
         useAiVision: params.useAiVision ?? true,
         preservedFrames,
       });
-      totalScreenshotsCaptured += cap.capturedCount;
-      results.push(cap);
 
-      // Only overwrite shared resources if we actually captured app/web screenshots or have Owner photos
+      const prevReferencedAppShots =
+        /[\\/]_spck_app_shots[\\/]/i.test(row.thumbnailPath || "") ||
+        /[\\/]_spck_app_shots[\\/]/i.test(row.screenshotsJson || "");
+      const hasMissingCurrentThumb =
+        Boolean(row.thumbnailPath) && !fs.existsSync(String(row.thumbnailPath));
       if (
         cap.capturedCount > 0 ||
         cap.ownerUploadedImages.length > 0 ||
-        (cap.ownerRootPhotos || []).length > 0
+        (cap.ownerRootPhotos || []).length > 0 ||
+        preservedFrames.length > 0 ||
+        prevReferencedAppShots ||
+        hasMissingCurrentThumb
       ) {
-        spckUploadRepo.updateSharedResources({
+        const upd = spckUploadRepo.updateSharedResources({
           classId: normalizedClassId,
           studentId: row.studentId,
           expectedFolderPath: row.localFolderPath,
           thumbnailPath: cap.thumbnailPath,
           screenshotsJson: JSON.stringify(cap.galleryScreenshots),
           syncSessionNumber: params.sessionNumber,
-          forceSyncTargetSession: Boolean(params.sessionNumber),
+          forceSyncTargetSession: allowDemote && Boolean(params.sessionNumber),
+          syncAllUnverifiedSessions: Boolean(params.sessionNumber),
         });
+        if (!upd.updated) {
+          throw new Error(
+            upd.reason || "Không thể cập nhật ảnh chụp giao diện vào cơ sở dữ liệu."
+          );
+        }
       }
+
+      totalScreenshotsCaptured += cap.capturedCount;
+      results.push(cap);
     } catch (err) {
+      restoreAppShotsDirectorySnapshot(appShotsSnapshot);
       if (err instanceof Error && err.message.startsWith("TASK_CANCELLED:")) {
         throw err;
       }

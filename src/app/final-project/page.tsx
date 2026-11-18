@@ -646,6 +646,21 @@ export default function FinalProjectPage() {
               dbRec?.isDefaultProductTitle ??
               isDefaultUiProductTitle(formattedTitle, item.folderName),
             thumbnailInspection: dbRec?.thumbnailInspection,
+            folderContentDigest:
+              typeof item.folderContentDigest === "string"
+                ? item.folderContentDigest
+                : undefined,
+            folderContentChanged:
+              item.folderContentChanged !== undefined
+                ? Boolean(item.folderContentChanged)
+                : undefined,
+            hasHtmlFiles:
+              item.hasHtmlFiles !== undefined
+                ? Boolean(item.hasHtmlFiles)
+                : undefined,
+            hasPortalBackup: Boolean(
+              dbRec?.hasPortalBackup ?? prevRow?.hasPortalBackup
+            ),
             isDirty: keptUnsavedFromScreen,
           };
         }
@@ -716,7 +731,8 @@ export default function FinalProjectPage() {
   const persistRowDraft = async (
     row: ScannedFolderUIItem,
     overrides?: Partial<ScannedFolderUIItem>,
-    overrideSessionNumber?: 12 | 13 | 14
+    overrideSessionNumber?: 12 | 13 | 14,
+    options?: { autoRetryOnConflict?: boolean; silentErrorBanner?: boolean }
   ): Promise<boolean> => {
     const merged = { ...row, ...overrides };
     if (!selectedClassId || !merged.assignedStudentId) return false;
@@ -736,8 +752,8 @@ export default function FinalProjectPage() {
       );
     }
 
-    const youtubeUrls = parseYoutubeUrlsFromText(merged.youtubeUrlsText);
-    const relatedLinks = parseRelatedLinksFromText(merged.relatedLinksText);
+    let youtubeUrls = parseYoutubeUrlsFromText(merged.youtubeUrlsText);
+    let relatedLinks = parseRelatedLinksFromText(merged.relatedLinksText);
     const isStudentChanged = Boolean(
       overrides?.assignedStudentId &&
         overrides.assignedStudentId !== row.assignedStudentId
@@ -776,7 +792,7 @@ export default function FinalProjectPage() {
         ? knownVer
         : merged.draftVersion;
 
-      try {
+      const postSaveDraft = async (expVer: number | undefined) => {
         const res = await fetch("/api/spck/save-draft", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -784,7 +800,7 @@ export default function FinalProjectPage() {
             classId: requestClassId,
             studentId: merged.assignedStudentId,
             sessionNumber: targetSessionNum,
-            expectedVersion: effectiveExpectedVersion,
+            expectedVersion: expVer,
             localFolderPath: merged.folderPath,
             matchScore: merged.matchScore,
             isConfirmedByTeacher: merged.isConfirmedByTeacher,
@@ -807,6 +823,67 @@ export default function FinalProjectPage() {
           }),
         });
         const data = await res.json();
+        return { res, data };
+      };
+
+      try {
+        const parseConflictJsonArr = (raw: unknown): any[] => {
+          if (Array.isArray(raw)) return raw;
+          if (typeof raw !== "string" || !raw.trim()) return [];
+          try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        };
+
+        let { res, data } = await postSaveDraft(effectiveExpectedVersion);
+        if (
+          !res.ok &&
+          res.status === 409 &&
+          !reassignFromStudentId &&
+          options?.autoRetryOnConflict &&
+          typeof data?.currentDraftVersion === "number"
+        ) {
+          _knownVerMap.set(rowKey, data.currentDraftVersion);
+          const srvDraft = data?.currentSessionDraft;
+          const normFolder = (p: unknown) =>
+            String(p || "")
+              .trim()
+              .replace(/[\\/]+$/, "")
+              .toLowerCase();
+          const canSafelyAutoRetry =
+            Boolean(srvDraft) &&
+            String(merged.teacherComment ?? "") === String(srvDraft.teacherComment ?? "") &&
+            String(merged.teacherNote ?? "") === String(srvDraft.teacherNote ?? "") &&
+            JSON.stringify(merged.quickTags || []) ===
+              JSON.stringify(parseConflictJsonArr(srvDraft.quickTagsJson)) &&
+            stripUiSessionSuffix(merged.projectTitle || "") ===
+              stripUiSessionSuffix(srvDraft.projectTitle || "") &&
+            normFolder(merged.folderPath) === normFolder(srvDraft.localFolderPath) &&
+            Boolean(merged.isConfirmedByTeacher) === Boolean(srvDraft.isConfirmedByTeacher) &&
+            JSON.stringify(youtubeUrls) ===
+              JSON.stringify(parseConflictJsonArr(srvDraft.youtubeUrlsJson));
+
+          if (canSafelyAutoRetry) {
+            if (!(overrides && "thumbnailPath" in overrides) && srvDraft.thumbnailPath) {
+              merged.thumbnailPath = srvDraft.thumbnailPath;
+            }
+            if (!(overrides && "screenshots" in overrides)) {
+              merged.screenshots = parseConflictJsonArr(srvDraft.screenshotsJson);
+            }
+            if (!(overrides && "attachments" in overrides)) {
+              merged.attachments = parseConflictJsonArr(srvDraft.attachmentsJson);
+            }
+            if (!(overrides && "relatedLinksText" in overrides)) {
+              const srvLinks = parseConflictJsonArr(srvDraft.relatedLinksJson);
+              relatedLinks = srvLinks;
+              merged.relatedLinksText = serializeRelatedLinksToText(srvLinks);
+            }
+            ({ res, data } = await postSaveDraft(data.currentDraftVersion));
+          }
+        }
         const isLatestForRow =
           latestRowSaveSequence.get(rowKey) === seq &&
           (!activeUiClassId || activeUiClassId === requestClassId);
@@ -931,31 +1008,54 @@ export default function FinalProjectPage() {
 
         if (typeof data?.currentDraftVersion === "number") {
           _knownVerMap.set(rowKey, data.currentDraftVersion);
+          const srvDraft = data?.currentSessionDraft;
           setRows((prev) =>
-            prev.map((r) =>
-              r.folderPath === merged.folderPath
-                ? {
-                    ...r,
-                    draftVersion: Math.max(
-                      r.draftVersion || 0,
-                      data.currentDraftVersion
-                    ),
-                  }
-                : r
-            )
+            prev.map((r) => {
+              if (r.folderPath !== merged.folderPath) return r;
+              const nextVer = Math.max(r.draftVersion || 0, data.currentDraftVersion);
+              if (!r.isDirty && srvDraft) {
+                const srvLinks = parseConflictJsonArr(srvDraft.relatedLinksJson);
+                const srvYt = parseConflictJsonArr(srvDraft.youtubeUrlsJson);
+                return {
+                  ...r,
+                  projectTitle: srvDraft.projectTitle || r.projectTitle,
+                  baseProjectTitle: stripUiSessionSuffix(
+                    srvDraft.projectTitle || r.projectTitle
+                  ),
+                  thumbnailPath: srvDraft.thumbnailPath || r.thumbnailPath,
+                  screenshots: parseConflictJsonArr(srvDraft.screenshotsJson),
+                  attachments: parseConflictJsonArr(srvDraft.attachmentsJson),
+                  youtubeUrlsText: srvYt.join("\n"),
+                  relatedLinksText: serializeRelatedLinksToText(srvLinks),
+                  teacherComment: srvDraft.teacherComment ?? r.teacherComment,
+                  teacherNote: srvDraft.teacherNote ?? r.teacherNote,
+                  quickTags: parseConflictJsonArr(srvDraft.quickTagsJson),
+                  draftVersion: nextVer,
+                  isDirty: false,
+                };
+              }
+              return {
+                ...r,
+                draftVersion: nextVer,
+              };
+            })
           );
         }
 
-        setBannerMessage({
-          type: "error",
-          text: data?.error || "Không thể lưu nháp SPCK.",
-        });
+        if (!options?.silentErrorBanner) {
+          setBannerMessage({
+            type: "error",
+            text: data?.error || "Không thể lưu nháp SPCK.",
+          });
+        }
         return false;
       } catch (err) {
-        setBannerMessage({
-          type: "error",
-          text: err instanceof Error ? err.message : String(err),
-        });
+        if (!options?.silentErrorBanner) {
+          setBannerMessage({
+            type: "error",
+            text: err instanceof Error ? err.message : String(err),
+          });
+        }
         return false;
       }
     };
@@ -1338,37 +1438,50 @@ export default function FinalProjectPage() {
     setBannerMessage(null);
     let approvedIds: string[] = [];
     const approveSkippedMap = new Map<string, string>();
+    const draftSaveFailedMap = new Map<string, string>();
     try {
       const savedRowsByStudent = new Map<string, ScannedFolderUIItem>();
-      // Save latest drafts first; abort immediately if any draft save fails
+      const idsForApprove: string[] = [];
+      // Save latest drafts first; isolate per-student failures in multi-student batches
       for (const sid of normalizedTargetIds) {
         const row = rows.find((r) => r.assignedStudentId === sid);
         if (row) {
-          const savedRes: any = await persistRowDraft(row, undefined, targetSessionNum);
+          const savedRes: any = await persistRowDraft(
+            row,
+            undefined,
+            targetSessionNum,
+            {
+              autoRetryOnConflict: true,
+              silentErrorBanner: normalizedTargetIds.length > 1,
+            }
+          );
           if (activeUiClassId && activeUiClassId !== requestClassId) {
             return;
           }
           if (!savedRes) {
             const failReason =
               "Không thể lưu bản nháp trước khi duyệt (xung đột phiên bản hoặc dữ liệu không hợp lệ).";
-            const failSummary: SpckBatchSubmissionSummaryUI = {
-              sessionNumber: targetSessionNum,
-              totalSelected: normalizedTargetIds.length,
-              verifiedItems: [],
-              failedItems: normalizedTargetIds.map((id) => ({
-                studentId: id,
-                studentName: resolveStudentLabel(id),
-                reason:
-                  id === sid
-                    ? failReason
-                    : "Đã dừng nộp hàng loạt do lỗi lưu nháp trước đó.",
-              })),
-              skippedItems: [],
-              retryStudentIds: normalizedTargetIds,
-              completedAt: new Date().toLocaleTimeString("vi-VN"),
-            };
-            setLastSubmissionSummary(failSummary);
-            return failSummary;
+            if (normalizedTargetIds.length === 1) {
+              const failSummary: SpckBatchSubmissionSummaryUI = {
+                sessionNumber: targetSessionNum,
+                totalSelected: 1,
+                verifiedItems: [],
+                failedItems: [
+                  {
+                    studentId: sid,
+                    studentName: resolveStudentLabel(sid),
+                    reason: failReason,
+                  },
+                ],
+                skippedItems: [],
+                retryStudentIds: [sid],
+                completedAt: new Date().toLocaleTimeString("vi-VN"),
+              };
+              setLastSubmissionSummary(failSummary);
+              return failSummary;
+            }
+            draftSaveFailedMap.set(sid, failReason);
+            continue;
           }
           if (typeof savedRes === "object" && savedRes.row) {
             savedRowsByStudent.set(sid, savedRes.row);
@@ -1379,13 +1492,41 @@ export default function FinalProjectPage() {
             });
           }
         }
+        idsForApprove.push(sid);
+      }
+
+      if (idsForApprove.length === 0) {
+        const draftFailedOnly = Array.from(draftSaveFailedMap.entries()).map(
+          ([studentId, reason]) => ({
+            studentId,
+            studentName: resolveStudentLabel(studentId),
+            reason,
+          })
+        );
+        const failSummary: SpckBatchSubmissionSummaryUI = {
+          sessionNumber: targetSessionNum,
+          totalSelected: normalizedTargetIds.length,
+          verifiedItems: [],
+          failedItems: draftFailedOnly,
+          skippedItems: [],
+          retryStudentIds: normalizedTargetIds,
+          completedAt: new Date().toLocaleTimeString("vi-VN"),
+        };
+        setLastSubmissionSummary(failSummary);
+        setBannerMessage({
+          type: "error",
+          text:
+            draftFailedOnly[0]?.reason ||
+            "Không thể lưu bản nháp trước khi duyệt.",
+        });
+        return failSummary;
       }
 
       if (activeUiClassId && activeUiClassId !== requestClassId) {
         return;
       }
 
-      const reviewedItems = normalizedTargetIds
+      const reviewedItems = idsForApprove
         .map((sid) => savedRowsByStudent.get(sid) || rows.find((r) => r.assignedStudentId === sid))
         .filter(Boolean)
         .map((r) => ({
@@ -1408,8 +1549,9 @@ export default function FinalProjectPage() {
         body: JSON.stringify({
           classId: requestClassId,
           sessionNumber: targetSessionNum,
-          studentIds: normalizedTargetIds,
+          studentIds: idsForApprove,
           reviewedItems,
+          isolatePerStudent: normalizedTargetIds.length > 1,
         }),
       });
       const approveData = await approveRes.json();
@@ -1444,6 +1586,13 @@ export default function FinalProjectPage() {
             })
           );
         }
+        const draftFailedList = Array.from(draftSaveFailedMap.entries()).map(
+          ([studentId, reason]) => ({
+            studentId,
+            studentName: resolveStudentLabel(studentId),
+            reason,
+          })
+        );
         const approveSkippedList: Array<{
           studentId: string;
           studentName: string;
@@ -1455,14 +1604,20 @@ export default function FinalProjectPage() {
               reason: String(item.reason || approveData.error || "Chưa đủ điều kiện nộp."),
             }))
           : [];
-        const approveRetryIds =
-          approveSkippedList.length > 0
-            ? approveSkippedList
-                .filter((s) => !/vắng\s+mặt.*miễn\s+nộp/i.test(s.reason))
-                .map((s) => s.studentId)
-            : normalizedTargetIds;
+        const approveRetryIds = Array.from(
+          new Set([
+            ...draftFailedList.map((f) => f.studentId),
+            ...(approveSkippedList.length > 0
+              ? approveSkippedList
+                  .filter((s) => !/vắng\s+mặt.*miễn\s+nộp/i.test(s.reason))
+                  .map((s) => s.studentId)
+              : idsForApprove),
+          ])
+        );
         const allApproveSkippedAreAbsent =
-          approveSkippedList.length > 0 && approveRetryIds.length === 0;
+          draftFailedList.length === 0 &&
+          approveSkippedList.length > 0 &&
+          approveRetryIds.length === 0;
         const approveErrReason =
           approveData.error || "Không thể chuẩn bị gói SPCK trước khi nộp.";
         const approveFailSummary: SpckBatchSubmissionSummaryUI = {
@@ -1471,12 +1626,15 @@ export default function FinalProjectPage() {
           verifiedItems: [],
           failedItems:
             approveSkippedList.length > 0
-              ? []
-              : normalizedTargetIds.map((id) => ({
-                  studentId: id,
-                  studentName: resolveStudentLabel(id),
-                  reason: approveErrReason,
-                })),
+              ? draftFailedList
+              : [
+                  ...draftFailedList,
+                  ...idsForApprove.map((id) => ({
+                    studentId: id,
+                    studentName: resolveStudentLabel(id),
+                    reason: approveErrReason,
+                  })),
+                ],
           skippedItems: approveSkippedList,
           retryStudentIds: approveRetryIds,
           completedAt: new Date().toLocaleTimeString("vi-VN"),
@@ -1539,7 +1697,7 @@ export default function FinalProjectPage() {
           }
         }
       }
-      for (const sid of normalizedTargetIds) {
+      for (const sid of idsForApprove) {
         if (!approvedIds.includes(sid) && !approveSkippedMap.has(sid)) {
           approveSkippedMap.set(
             sid,
@@ -1549,6 +1707,13 @@ export default function FinalProjectPage() {
       }
 
       if (approvedIds.length === 0) {
+        const draftFailedItems = Array.from(draftSaveFailedMap.entries()).map(
+          ([studentId, reason]) => ({
+            studentId,
+            studentName: resolveStudentLabel(studentId),
+            reason,
+          })
+        );
         const skippedOnly = Array.from(approveSkippedMap.entries()).map(
           ([studentId, reason]) => ({
             studentId,
@@ -1556,14 +1721,19 @@ export default function FinalProjectPage() {
             reason,
           })
         );
-        const retryOnly = skippedOnly
-          .filter((s) => !/vắng\s+mặt.*miễn\s+nộp/i.test(String(s.reason || "")))
-          .map((s) => s.studentId);
+        const retryOnly = Array.from(
+          new Set([
+            ...draftFailedItems.map((f) => f.studentId),
+            ...skippedOnly
+              .filter((s) => !/vắng\s+mặt.*miễn\s+nộp/i.test(String(s.reason || "")))
+              .map((s) => s.studentId),
+          ])
+        );
         const skippedSummary: SpckBatchSubmissionSummaryUI = {
           sessionNumber: targetSessionNum,
           totalSelected: normalizedTargetIds.length,
           verifiedItems: [],
-          failedItems: [],
+          failedItems: draftFailedItems,
           skippedItems: skippedOnly,
           retryStudentIds: retryOnly,
           completedAt: new Date().toLocaleTimeString("vi-VN"),
@@ -1600,15 +1770,25 @@ export default function FinalProjectPage() {
               !/vắng mặt.*miễn nộp/i.test(String(reason || ""))
           )
           .map(([studentId]) => studentId);
+        const draftFailedOnUploadErr = Array.from(
+          draftSaveFailedMap.entries()
+        ).map(([studentId, reason]) => ({
+          studentId,
+          studentName: resolveStudentLabel(studentId),
+          reason,
+        }));
         const uploadFailSummary: SpckBatchSubmissionSummaryUI = {
           sessionNumber: targetSessionNum,
           totalSelected: normalizedTargetIds.length,
           verifiedItems: [],
-          failedItems: approvedIds.map((id) => ({
-            studentId: id,
-            studentName: resolveStudentLabel(id),
-            reason: uploadErrReason,
-          })),
+          failedItems: [
+            ...draftFailedOnUploadErr,
+            ...approvedIds.map((id) => ({
+              studentId: id,
+              studentName: resolveStudentLabel(id),
+              reason: uploadErrReason,
+            })),
+          ],
           skippedItems: Array.from(approveSkippedMap.entries()).map(
             ([studentId, reason]) => ({
               studentId,
@@ -1617,7 +1797,11 @@ export default function FinalProjectPage() {
             })
           ),
           retryStudentIds: Array.from(
-            new Set([...approvedIds, ...retryableSkippedIds])
+            new Set([
+              ...draftFailedOnUploadErr.map((f) => f.studentId),
+              ...approvedIds,
+              ...retryableSkippedIds,
+            ])
           ),
           completedAt: new Date().toLocaleTimeString("vi-VN"),
         };
@@ -1650,6 +1834,7 @@ export default function FinalProjectPage() {
             sessionResults:
               parseSessionResultsMap(rec.sessionResultsJson) || row.sessionResults,
             sessionHistory: rec.sessionHistory || row.sessionHistory,
+            hasPortalBackup: Boolean(rec.hasPortalBackup ?? row.hasPortalBackup),
           };
         })
       );
@@ -1660,7 +1845,11 @@ export default function FinalProjectPage() {
         studentId: string;
         studentName: string;
         reason: string;
-      }> = [];
+      }> = Array.from(draftSaveFailedMap.entries()).map(([studentId, reason]) => ({
+        studentId,
+        studentName: resolveStudentLabel(studentId),
+        reason,
+      }));
       const skippedItems: Array<{
         studentId: string;
         studentName: string;
