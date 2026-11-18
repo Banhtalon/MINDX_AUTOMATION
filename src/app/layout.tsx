@@ -5,7 +5,7 @@ import { TopNavbar } from "@/components/top-navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MindX Automation Bot (v3.6.1)",
+  title: "MindX Automation Bot (v3.6.2)",
   description: "Hệ thống trợ lý tự động hóa toàn diện dành cho Giáo viên tại MindX",
 };
 
@@ -27,7 +27,7 @@ export default function RootLayout({
         <TopNavbar />
 
         {/* Main Content Area */}
-        <main className="mindx-main flex-1 flex flex-col max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-2">
+        <main className="mindx-main flex-1 flex flex-col max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-14">
           {children}
         </main>
 

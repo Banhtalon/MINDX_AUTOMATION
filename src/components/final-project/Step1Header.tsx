@@ -154,7 +154,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
             <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wide mb-1.5">
               Buổi nộp ({getStageMeta(selectedSessionNumber).stageShort})
             </label>
-            <div className="grid grid-cols-3 gap-1.5 p-1 rounded-lg bg-slate-950 border border-slate-700">
+            <div className="spck-clean-subbar grid grid-cols-3 gap-1.5 p-1 rounded-lg">
               {([12, 13, 14] as const).map((sessNum) => {
                 const isSelected = selectedSessionNumber === sessNum;
                 return (
@@ -166,7 +166,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
                     className={`py-2 px-2 rounded-md text-xs font-bold transition-all cursor-pointer disabled:opacity-50 ${
                       isSelected
                         ? "spck-btn-primary shadow-sm"
-                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                        : "spck-pill-neutral hover:opacity-90"
                     }`}
                   >
                     Buổi {sessNum}
@@ -180,13 +180,13 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
           {selectedSessionNumber === 14 && (
             <div className="lg:col-span-5">
               <div className="flex items-center justify-between gap-2 mb-1.5">
-                <label className="block text-[11px] font-bold text-amber-200 uppercase tracking-wide">
+                <label className="block text-[11px] font-bold text-amber-300 uppercase tracking-wide">
                   📊 Link Bảng chấm điểm Giám khảo (Buổi 14)
                 </label>
                 {generatedDemoSheetUrl &&
                   demoScoreSourceInput.trim() ===
                     generatedDemoSheetUrl.trim() && (
-                    <span className="text-[10px] text-emerald-300 font-medium">
+                    <span className="text-[10px] text-emerald-300 font-semibold">
                       ✓ Đã tự điền bảng của lớp
                     </span>
                   )}
@@ -203,7 +203,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
                       ? "Lớp PTB / CSB được miễn điểm Demo BGK"
                       : "Dán link Google Sheet chấm điểm BGK hoặc đường dẫn .xlsx..."
                   }
-                  className="flex-1 px-3 py-2 rounded-lg bg-slate-950 border border-amber-700/60 text-white text-xs focus:outline-none focus:border-amber-400 disabled:opacity-60"
+                  className="flex-1 px-3 py-2 rounded-lg bg-slate-950 border border-amber-600/60 text-white text-xs focus:outline-none focus:border-amber-500 disabled:opacity-60"
                 />
                 {isDemoUrlHttp && (
                   <a
@@ -211,7 +211,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
                     target="_blank"
                     rel="noreferrer"
                     title="Mở Bảng chấm điểm Giám khảo trong tab mới"
-                    className="spck-pill-neutral shrink-0 inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-semibold hover:text-white"
+                    className="spck-pill-neutral shrink-0 inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-semibold hover:opacity-90"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     <span>Mở</span>
@@ -223,17 +223,17 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
         </div>
 
         {/* Nhãn gọn hiển thị thư mục hiện tại + nút nhỏ "📁 Đổi thư mục" */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-slate-950/70 border border-slate-800 text-xs">
+        <div className="spck-clean-subbar flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-xs">
           <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <span className="text-slate-400 shrink-0">Thư mục bài làm:</span>
+            <span className="text-slate-400 shrink-0 font-medium">Thư mục bài làm:</span>
             <code
-              className="text-slate-200 font-mono text-[11px] truncate max-w-[460px]"
+              className="text-slate-200 font-mono text-[11px] font-semibold truncate max-w-[520px]"
               title={displayFolder}
             >
               {displayFolder}
             </code>
             {isSpckExemptClass && (
-              <span className="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-700/50 text-amber-200 text-[10px] font-semibold">
+              <span className="spck-pill-warning px-2 py-0.5 rounded text-[10px] font-semibold">
                 Khóa PTB / CSB (Miễn nộp SPCK &amp; Demo)
               </span>
             )}
@@ -251,7 +251,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
 
         {/* Ô nhập đường dẫn dài chỉ bung ra khi giáo viên bấm "📁 Đổi thư mục" */}
         {showFolderEditor && (
-          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-950/90 border border-slate-700">
+          <div className="spck-clean-subbar flex items-center gap-2 p-2.5 rounded-lg">
             <input
               type="text"
               value={folderPathInput}
@@ -278,7 +278,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
         )}
 
         {/* THANH HÀNH ĐỘNG CHÍNH CỐ ĐỊNH 3 NÚT LỚN (1 -> 2 -> 3) DÙNG CHUNG BUỔI 12, 13, 14 */}
-        <div className="pt-1 border-t border-slate-800/90 space-y-2.5">
+        <div className="pt-2 border-t border-slate-800/90 space-y-2.5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* NÚT 1: 1. Đồng bộ bài làm */}
             <button
@@ -286,24 +286,24 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
               data-testid="spck-main-step1-sync"
               onClick={() => void handleMainStep1Sync()}
               disabled={isAnyOperationBusy || !selectedClassId}
-              className="group relative flex flex-col items-start justify-between p-3.5 rounded-xl border border-blue-500/50 bg-gradient-to-br from-blue-950/70 via-slate-900 to-slate-900 hover:border-blue-400 hover:from-blue-900/60 transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="spck-step-card-blue group relative flex flex-col items-start justify-between p-3.5 rounded-xl transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between w-full gap-2">
-                <span className="inline-flex items-center gap-2 text-sm font-extrabold text-white">
+                <span className="spck-step-title inline-flex items-center gap-2 text-sm font-extrabold">
                   {isStep1Busy ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-300 shrink-0" />
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                   ) : (
-                    <RefreshCw className="w-4 h-4 text-blue-400 shrink-0" />
+                    <RefreshCw className="w-4 h-4 shrink-0" />
                   )}
                   <span>1. Đồng bộ bài làm</span>
                 </span>
                 {studentPortalRunning && (
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200 text-[10px] font-bold shrink-0">
+                  <span className="spck-pill-warning px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0">
                     Tự đóng Cổng
                   </span>
                 )}
               </div>
-              <span className="mt-1.5 text-[11px] text-slate-300 leading-snug">
+              <span className="spck-step-sub mt-1.5 text-[11px] leading-snug font-medium">
                 {step1SubLabel}
               </span>
             </button>
@@ -316,22 +316,22 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
               disabled={
                 isAnyOperationBusy || !selectedClassId || !hasDataForStep2
               }
-              className="group relative flex flex-col items-start justify-between p-3.5 rounded-xl border border-indigo-500/50 bg-gradient-to-br from-indigo-950/70 via-slate-900 to-slate-900 hover:border-indigo-400 hover:from-indigo-900/60 transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="spck-step-card-indigo group relative flex flex-col items-start justify-between p-3.5 rounded-xl transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between w-full gap-2">
-                <span className="inline-flex items-center gap-2 text-sm font-extrabold text-white">
+                <span className="spck-step-title inline-flex items-center gap-2 text-sm font-extrabold">
                   {isStep2Busy ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-indigo-300 shrink-0" />
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                   ) : (
-                    <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <Sparkles className="w-4 h-4 shrink-0" />
                   )}
                   <span>2. AI Soạn nhận xét</span>
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-indigo-200 text-[10px] font-semibold shrink-0">
+                <span className="spck-pill-primary px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0">
                   Buổi {selectedSessionNumber}
                 </span>
               </div>
-              <span className="mt-1.5 text-[11px] text-slate-300 leading-snug">
+              <span className="spck-step-sub mt-1.5 text-[11px] leading-snug font-medium">
                 {step2SubLabel}
               </span>
             </button>
@@ -344,36 +344,36 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
               disabled={
                 isAnyOperationBusy || !selectedClassId || !hasDataForStep3
               }
-              className="group relative flex flex-col items-start justify-between p-3.5 rounded-xl border border-emerald-500/60 bg-gradient-to-br from-emerald-950/75 via-slate-900 to-slate-900 hover:border-emerald-400 hover:from-emerald-900/60 transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="spck-step-card-emerald group relative flex flex-col items-start justify-between p-3.5 rounded-xl transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between w-full gap-2">
-                <span className="inline-flex items-center gap-2 text-sm font-extrabold text-white">
+                <span className="spck-step-title inline-flex items-center gap-2 text-sm font-extrabold">
                   {isStep3Busy ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-emerald-300 shrink-0" />
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                   ) : (
-                    <Send className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <Send className="w-4 h-4 shrink-0" />
                   )}
                   <span>3. Duyệt &amp; Nộp tất cả</span>
                 </span>
                 {effectiveSelectedStudentIds.length > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-[10px] font-bold shrink-0">
+                  <span className="spck-pill-success inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0">
                     <CheckCircle2 className="w-3 h-3" />
                     <span>{effectiveSelectedStudentIds.length} HV</span>
                   </span>
                 )}
               </div>
-              <span className="mt-1.5 text-[11px] text-slate-300 leading-snug">
+              <span className="spck-step-sub mt-1.5 text-[11px] leading-snug font-medium">
                 {step3SubLabel}
               </span>
             </button>
           </div>
 
           {autoPrepStepProgress && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-950/60 border border-amber-600/50">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-300 shrink-0" />
+            <div className="spck-pill-warning flex items-center gap-2 px-3 py-1.5 rounded-lg">
+              <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
               <span
                 data-testid="s5b-auto-prep-progress"
-                className="text-xs font-semibold text-amber-200"
+                className="text-xs font-semibold"
               >
                 {autoPrepStepProgress}
               </span>

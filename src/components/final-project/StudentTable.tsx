@@ -81,7 +81,17 @@ export function StudentTable({ workflow }: StudentTableProps) {
                   {ev.fullName || ev.studentId}
                 </span>
                 {awardBadge && (
-                  <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400/60 text-amber-200 font-extrabold text-[10px]">
+                  <span
+                    className={`px-2 py-0.5 rounded font-extrabold text-[10px] ${
+                      awardBadge.tone === "gold"
+                        ? "spck-award-gold"
+                        : awardBadge.tone === "silver"
+                        ? "spck-award-silver"
+                        : awardBadge.tone === "bronze"
+                        ? "spck-award-bronze"
+                        : "spck-award-indigo"
+                    }`}
+                  >
                     {awardBadge.icon} {awardBadge.shortText}
                   </span>
                 )}
@@ -94,20 +104,22 @@ export function StudentTable({ workflow }: StudentTableProps) {
                   🎯 ĐNL TB B5+9: {ev.competencyTotalScore}/5.0
                 </span>
                 {skippedMsg && (
-                  <span className="px-2 py-0.5 rounded bg-rose-950/85 border border-rose-500/70 text-rose-200 font-bold text-[11px]">
+                  <span className="spck-pill-error px-2 py-0.5 rounded font-bold text-[11px]">
                     🚨 {skippedMsg}
                   </span>
                 )}
               </div>
 
-              <div className="flex-1 lg:max-w-xl spck-clean-comment-preview px-2.5 py-1.5 rounded-md line-clamp-2">
-                {hasLetter ? (
-                  <span>💬 {ev.learnedFromMindx}</span>
-                ) : (
-                  <span className="italic text-slate-400">
-                    Chưa soạn Thư tổng kết 3 phần — bấm &ldquo;2. AI Soạn nhận xét&rdquo;
-                  </span>
-                )}
+              <div className="flex-1 lg:max-w-xl spck-clean-comment-preview px-2.5 py-1.5 rounded-md">
+                <div className="line-clamp-2 leading-snug">
+                  {hasLetter ? (
+                    <span>💬 {ev.learnedFromMindx}</span>
+                  ) : (
+                    <span className="italic text-slate-400">
+                      Chưa soạn Thư tổng kết 3 phần — bấm &ldquo;2. AI Soạn nhận xét&rdquo;
+                    </span>
+                  )}
+                </div>
               </div>
 
               <span

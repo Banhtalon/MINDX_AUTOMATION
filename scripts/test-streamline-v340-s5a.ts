@@ -149,7 +149,7 @@ async function runTests() {
     useEffect() {},
     useMemo: (f: any) => f(),
   });
-  vm.runInContext(stripTypeScriptTypes(clean(partial), { mode: "transform" } as any), ctx);
+  vm.runInContext(stripTypeScriptTypes(clean(partial), { mode: "strip" } as any), ctx);
   assert.strictEqual(typeof ctx.api.loadClassData, "function");
   assert.strictEqual(typeof ctx.api.handleClassChange, "function");
   assert.strictEqual(typeof ctx.api.persistRowDraft, "function");
@@ -166,7 +166,11 @@ async function runTests() {
   assert.ok(compiledAppCss.includes(".mindx-hero") && compiledAppCss.length > 10000, "Phải biên dịch được CSS thật của ứng dụng");
 
   const tempBuildDir = fs.mkdtempSync(path.join(os.tmpdir(), "mindx-s5a-compare-"));
-  const screenshotDir = path.join(ROOT, "docs", "audits", "v340", "s5a-screenshots");
+  const screenshotDir =
+    process.env.MINDX_S5A_SCREENSHOT_DIR ||
+    (process.env.MINDX_UPDATE_S5A_SNAPSHOTS === "1"
+      ? path.join(ROOT, "docs", "audits", "v340", "s5a-screenshots")
+      : path.join(tempBuildDir, "s5a-screenshots"));
   fs.mkdirSync(screenshotDir, { recursive: true });
 
   const preS5aSource = execSync("git show 93b77e0:src/app/final-project/page.tsx", {
@@ -475,7 +479,7 @@ async function runTests() {
 
   const browser = await chromium.launch({
     headless: true,
-    args: ["--disable-gpu", "--font-render-hinting=none"],
+    args: ["--disable-gpu", "--font-render-hinting=none", "--hide-scrollbars"],
   });
   const parityManifest: Record<string, any> = {
     baselineCommit: "93b77e0098d45becd38ac377e473534682e9d98c",
@@ -532,6 +536,7 @@ async function runTests() {
         }
 
         await page.evaluate(() => {
+          document.body.normalize();
           if (document.activeElement instanceof HTMLElement) {
             document.activeElement.blur();
           }

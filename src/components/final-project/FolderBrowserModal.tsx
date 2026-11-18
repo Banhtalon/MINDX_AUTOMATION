@@ -59,10 +59,10 @@ export function FolderBrowserModal({ workflow }: FolderBrowserModalProps) {
                 key={drv}
                 type="button"
                 onClick={() => loadBrowseDirectory(drv)}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                   browseCurrentPath.toUpperCase().startsWith(drv.toUpperCase())
-                    ? "bg-emerald-600/20 border-emerald-500 text-emerald-300"
-                    : "bg-slate-950 border-slate-700 text-slate-300 hover:bg-slate-800"
+                    ? "spck-pill-success"
+                    : "spck-pill-neutral hover:opacity-90"
                 }`}
               >
                 💽 {drv}
@@ -73,7 +73,7 @@ export function FolderBrowserModal({ workflow }: FolderBrowserModalProps) {
                 key={ql.path}
                 type="button"
                 onClick={() => loadBrowseDirectory(ql.path)}
-                className="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-colors cursor-pointer"
+                className="spck-pill-neutral px-2.5 py-1 rounded-md text-xs font-medium hover:opacity-90 transition-colors cursor-pointer"
               >
                 📁 {ql.label}
               </button>
@@ -161,23 +161,23 @@ export function FolderBrowserModal({ workflow }: FolderBrowserModalProps) {
                   <button
                     type="button"
                     onClick={() => loadBrowseDirectory(dir.path)}
-                    className="flex-1 flex items-center space-x-2.5 text-left text-sm text-slate-200 group-hover:text-emerald-300 truncate cursor-pointer"
+                    className="flex-1 flex items-center space-x-2.5 text-left text-sm text-slate-800 dark:text-slate-200 group-hover:text-emerald-700 dark:group-hover:text-emerald-300 truncate cursor-pointer"
                   >
-                    <FolderOpen className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span className="truncate font-medium">{dir.name}</span>
+                    <FolderOpen className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" />
+                    <span className="truncate font-semibold">{dir.name}</span>
                   </button>
                   <div className="flex items-center space-x-2 shrink-0 ml-2">
                     <button
                       type="button"
                       onClick={() => loadBrowseDirectory(dir.path)}
-                      className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs cursor-pointer"
+                      className="spck-pill-neutral px-2.5 py-1 rounded text-xs font-medium cursor-pointer"
                     >
                       Mở ra
                     </button>
                     <button
                       type="button"
                       onClick={() => handleConfirmBrowseSelection(dir.path)}
-                      className="px-2.5 py-1 rounded bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/40 text-emerald-300 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                      className="spck-pill-success px-2.5 py-1 rounded text-xs font-bold transition-colors cursor-pointer hover:opacity-90"
                     >
                       Chọn
                     </button>

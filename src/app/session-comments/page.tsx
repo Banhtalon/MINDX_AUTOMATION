@@ -4501,7 +4501,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                           <button
                             onClick={() => copyToClipboard(student.finalText || "", student.studentId)}
                             disabled={!student.finalText}
-                            className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition cursor-pointer"
+                            className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 transition cursor-pointer"
                           >
                             {copiedStudentId === student.studentId ? (
                               <Check className="w-3 h-3 text-emerald-500" />
@@ -4552,9 +4552,9 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                   buildAutoZaloBroadcastText(undefined, { includeGeneralUpdate: nextVal })
                 );
               }}
-              className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer ${
                 zaloIncludeGeneralUpdate
-                  ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300"
+                  ? "bg-indigo-100 border-indigo-400 text-indigo-900 dark:bg-indigo-500/20 dark:border-indigo-500/50 dark:text-indigo-300"
                   : "bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200"
               }`}
               title="Bật/tắt mục 2a: Cập nhật tình hình chung (ghi nhận sự tiến bộ hoặc các bạn cần kèm thêm)"
@@ -4580,9 +4580,9 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                       buildAutoZaloBroadcastText(undefined, { includeSpckProgress: nextVal })
                     );
                   }}
-                  className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+                  className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer ${
                     isSpckActive
-                      ? "bg-purple-500/20 border-purple-500/50 text-purple-300"
+                      ? "bg-purple-100 border-purple-400 text-purple-900 dark:bg-purple-500/20 dark:border-purple-500/50 dark:text-purple-300"
                       : "bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200"
                   }`}
                   title="Bật/tắt mục 2c: Tiến độ sản phẩm cuối khóa (Tự động bật từ Buổi 11 - 14)"
@@ -4602,9 +4602,9 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                   buildAutoZaloBroadcastText(undefined, { includePart3MediaReminder: nextVal })
                 );
               }}
-              className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer ${
                 zaloIncludePart3Media
-                  ? "bg-sky-500/20 border-sky-500/50 text-sky-300"
+                  ? "bg-sky-100 border-sky-400 text-sky-900 dark:bg-sky-500/20 dark:border-sky-500/50 dark:text-sky-300"
                   : "bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200"
               }`}
               title="Bật/tắt Đoạn 3: Lời nhắn gửi kèm hình ảnh hoạt động lớp học & tài liệu/học liệu"

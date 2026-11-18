@@ -384,9 +384,9 @@ html[data-theme="light"] .mindx-main textarea:focus {
 }
 
 /* Text contrast adaptation in Light Mode (preserving white text inside hero, thead, and colored buttons/badges) */
-html[data-theme="light"] .mindx-main .text-white:not(button):not(a[class*="bg-"]),
-html[data-theme="light"] .mindx-main .text-slate-100:not(button),
-html[data-theme="light"] .mindx-main .text-slate-200:not(button) {
+html[data-theme="light"] .mindx-main .text-white:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-hero):not(.mindx-hero *):not(.mindx-thead):not(.mindx-thead *):not(.mindx-dark-keep):not(.mindx-dark-keep *),
+html[data-theme="light"] .mindx-main .text-slate-100:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *),
+html[data-theme="light"] .mindx-main .text-slate-200:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
   color: #0f172a !important;
 }
 
@@ -402,12 +402,12 @@ html[data-theme="light"] body .mindx-main.mindx-main .mindx-thead .text-white:no
   color: #ffffff !important;
 }
 
-html[data-theme="light"] .mindx-main .text-slate-300:not(button):not(.mindx-hero *) {
+html[data-theme="light"] .mindx-main .text-slate-300:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
   color: #1e293b !important;
 }
 
-html[data-theme="light"] .mindx-main .text-slate-400:not(button):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main .text-slate-500:not(button):not(.mindx-hero *) {
+html[data-theme="light"] .mindx-main .text-slate-400:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *),
+html[data-theme="light"] .mindx-main .text-slate-500:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
   color: #475569 !important;
 }
 
@@ -438,50 +438,159 @@ html[data-theme="light"] .mindx-main table tbody tr:hover {
   background-color: #f8fafc !important;
 }
 
+/* Translucent dark alert panels & score cells adapted cleanly for Light Mode */
+html[data-theme="light"] .mindx-main [class*="bg-amber-950"]:not(button):not(.mindx-hero):not(.mindx-dark-keep),
+html[data-theme="light"] .mindx-main [class*="bg-amber-900"]:not(button):not(.mindx-hero):not(.mindx-dark-keep) {
+  background-color: #fffbeb !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+html[data-theme="light"] .mindx-main [class*="bg-rose-950"]:not(button):not(.mindx-hero):not(.mindx-dark-keep),
+html[data-theme="light"] .mindx-main [class*="bg-red-950"]:not(button):not(.mindx-hero):not(.mindx-dark-keep),
+html[data-theme="light"] .mindx-main [class*="bg-rose-900"]:not(button):not(.mindx-hero):not(.mindx-dark-keep) {
+  background-color: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+html[data-theme="light"] .mindx-main td[class*="bg-rose-"],
+html[data-theme="light"] .mindx-main td[class*="bg-red-"] {
+  background-color: #fee2e2 !important;
+  color: #991b1b !important;
+  font-weight: 700;
+}
+html[data-theme="light"] .mindx-main [class*="bg-emerald-950"]:not(button):not(.mindx-log-pill):not(.mindx-hero):not(.mindx-dark-keep),
+html[data-theme="light"] .mindx-main [class*="bg-teal-950"]:not(button):not(.mindx-hero):not(.mindx-dark-keep) {
+  background-color: #ecfdf5 !important;
+  border-color: #6ee7b7 !important;
+  color: #065f46 !important;
+}
+html[data-theme="light"] .mindx-main [class*="bg-indigo-950"]:not(button):not(.mindx-hero):not(.mindx-dark-keep),
+html[data-theme="light"] .mindx-main [class*="bg-sky-950"]:not(button):not(.mindx-hero):not(.mindx-dark-keep),
+html[data-theme="light"] .mindx-main [class*="bg-cyan-950"]:not(button):not(.mindx-hero):not(.mindx-dark-keep),
+html[data-theme="light"] .mindx-main [class*="bg-blue-950"]:not(button):not(.mindx-hero):not(.mindx-dark-keep) {
+  background-color: #eff6ff !important;
+  border-color: #93c5fd !important;
+  color: #1e3a8a !important;
+}
+
+/* Accessible dark-shade text counterparts for pastel utility classes in Light Mode */
+html[data-theme="light"] .mindx-main :is(.text-emerald-200, .text-emerald-300, .text-emerald-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+  color: #047857 !important;
+}
+html[data-theme="light"] .mindx-main :is(.text-amber-200, .text-amber-300, .text-amber-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+  color: #b45309 !important;
+}
+html[data-theme="light"] .mindx-main :is(.text-orange-200, .text-orange-300, .text-orange-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+  color: #c2410c !important;
+}
+html[data-theme="light"] .mindx-main :is(.text-sky-200, .text-sky-300, .text-sky-400, .text-cyan-200, .text-cyan-300, .text-cyan-400, .text-blue-200, .text-blue-300, .text-blue-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+  color: #0369a1 !important;
+}
+html[data-theme="light"] .mindx-main :is(.text-indigo-200, .text-indigo-300, .text-indigo-400, .text-violet-200, .text-violet-300, .text-purple-300, .text-fuchsia-300):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+  color: #4338ca !important;
+}
+html[data-theme="light"] .mindx-main :is(.text-rose-200, .text-rose-300, .text-rose-400, .text-red-200, .text-red-300, .text-red-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+  color: #be123c !important;
+}
+
 /* Pastel & Solid Badges readability in Light Mode */
-html[data-theme="light"] .mindx-main span[class*="text-emerald-300"],
-html[data-theme="light"] .mindx-main span[class*="text-emerald-200"] {
+html[data-theme="light"] .mindx-main span[class*="text-emerald-300"]:not(button *):not(.mindx-hero *),
+html[data-theme="light"] .mindx-main span[class*="text-emerald-200"]:not(button *):not(.mindx-hero *),
+html[data-theme="light"] .mindx-main span[class*="text-teal-300"]:not(button *):not(.mindx-hero *),
+html[data-theme="light"] .mindx-main span[class*="text-teal-200"]:not(button *):not(.mindx-hero *) {
   background-color: #d1fae5 !important;
   border-color: #6ee7b7 !important;
   color: #065f46 !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-amber-300"],
-html[data-theme="light"] .mindx-main span[class*="text-amber-200"] {
+html[data-theme="light"] .mindx-main span[class*="text-amber-300"]:not(button *):not(.mindx-hero *),
+html[data-theme="light"] .mindx-main span[class*="text-amber-200"]:not(button *):not(.mindx-hero *) {
   background-color: #fef3c7 !important;
   border-color: #fcd34d !important;
   color: #92400e !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-indigo-300"],
-html[data-theme="light"] .mindx-main span[class*="text-indigo-200"],
-html[data-theme="light"] .mindx-main span[class*="text-violet-200"],
-html[data-theme="light"] .mindx-main span[class*="text-fuchsia-300"] {
+html[data-theme="light"] .mindx-main span[class*="text-orange-300"]:not(button *):not(.mindx-hero *),
+html[data-theme="light"] .mindx-main span[class*="text-orange-200"]:not(button *):not(.mindx-hero *) {
+  background-color: #ffedd5 !important;
+  border-color: #fdba74 !important;
+  color: #9a3412 !important;
+}
+html[data-theme="light"] .mindx-main span[class*="text-indigo-300"]:not(button *):not(.mindx-hero *),
+html[data-theme="light"] .mindx-main span[class*="text-indigo-200"]:not(button *):not(.mindx-hero *),
+html[data-theme="light"] .mindx-main span[class*="text-violet-200"]:not(button *):not(.mindx-hero *),
+html[data-theme="light"] .mindx-main span[class*="text-fuchsia-300"]:not(button *):not(.mindx-hero *) {
   background-color: #ede9fe !important;
   border-color: #c4b5fd !important;
   color: #5b21b6 !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-cyan-300"],
-html[data-theme="light"] .mindx-main span[class*="text-sky-300"],
-html[data-theme="light"] .mindx-main span[class*="text-blue-300"] {
+html[data-theme="light"] .mindx-main span[class*="text-cyan-300"]:not(button *):not(.mindx-hero *),
+html[data-theme="light"] .mindx-main span[class*="text-sky-300"]:not(button *):not(.mindx-hero *),
+html[data-theme="light"] .mindx-main span[class*="text-blue-300"]:not(button *):not(.mindx-hero *) {
   background-color: #e0f2fe !important;
   border-color: #7dd3fc !important;
   color: #075985 !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-rose-300"],
-html[data-theme="light"] .mindx-main span[class*="text-red-300"] {
+html[data-theme="light"] .mindx-main span[class*="text-rose-300"]:not(button *):not(.mindx-hero *),
+html[data-theme="light"] .mindx-main span[class*="text-rose-200"]:not(button *):not(.mindx-hero *),
+html[data-theme="light"] .mindx-main span[class*="text-red-300"]:not(button *):not(.mindx-hero *) {
   background-color: #fee2e2 !important;
   border-color: #fca5a5 !important;
   color: #991b1b !important;
 }
 
-/* Neutral Slate buttons inside Light Mode */
+/* Neutral Slate, Backgroundless & Translucent-Tint buttons inside Light Mode */
 html[data-theme="light"] .mindx-main button[class*="bg-slate-800"]:not(.mindx-dark-btn),
-html[data-theme="light"] .mindx-main button[class*="bg-slate-900"]:not(.mindx-dark-btn) {
+html[data-theme="light"] .mindx-main button[class*="bg-slate-900"]:not(.mindx-dark-btn),
+html[data-theme="light"] .mindx-main button[class*="bg-slate-950"]:not(.mindx-dark-btn) {
   background-color: #f1f5f9 !important;
   border-color: #94a3b8 !important;
   color: #1e293b !important;
 }
-html[data-theme="light"] .mindx-main button[class*="bg-slate-800"]:hover:not(.mindx-dark-btn) {
+html[data-theme="light"] .mindx-main button[class*="bg-slate-800"]:not(.mindx-dark-btn) *:not([class*="bg-"]),
+html[data-theme="light"] .mindx-main button[class*="bg-slate-900"]:not(.mindx-dark-btn) *:not([class*="bg-"]),
+html[data-theme="light"] .mindx-main button[class*="bg-slate-950"]:not(.mindx-dark-btn) *:not([class*="bg-"]) {
+  color: #1e293b !important;
+}
+html[data-theme="light"] .mindx-main button[class*="bg-slate-800"]:hover:not(.mindx-dark-btn),
+html[data-theme="light"] .mindx-main button[class*="bg-slate-900"]:hover:not(.mindx-dark-btn),
+html[data-theme="light"] .mindx-main button[class*="bg-slate-950"]:hover:not(.mindx-dark-btn) {
   background-color: #e2e8f0 !important;
+}
+
+/* Backgroundless buttons (e.g., FolderBrowserModal row buttons, inline Copy buttons) */
+html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *):is(.text-white, .text-slate-100, .text-slate-200),
+html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *) :is(.text-white, .text-slate-100, .text-slate-200) {
+  color: #0f172a !important;
+}
+html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *):is(.text-slate-300, .text-slate-400, .text-slate-500),
+html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *) :is(.text-slate-300, .text-slate-400, .text-slate-500) {
+  color: #475569 !important;
+}
+
+/* Translucent /10..30 tint pill buttons in Light Mode */
+html[data-theme="light"] .mindx-main button:is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-emerald-300"], [class*="text-emerald-200"]) {
+  background-color: #d1fae5 !important;
+  border-color: #34d399 !important;
+  color: #065f46 !important;
+}
+html[data-theme="light"] .mindx-main button:is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-indigo-300"], [class*="text-indigo-200"], [class*="text-purple-300"], [class*="text-purple-200"], [class*="text-violet-300"], [class*="text-violet-200"]) {
+  background-color: #ede9fe !important;
+  border-color: #a78bfa !important;
+  color: #4c1d95 !important;
+}
+html[data-theme="light"] .mindx-main button:is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-sky-300"], [class*="text-sky-200"], [class*="text-cyan-300"], [class*="text-blue-300"]) {
+  background-color: #e0f2fe !important;
+  border-color: #38bdf8 !important;
+  color: #075985 !important;
+}
+html[data-theme="light"] .mindx-main button:is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-amber-300"], [class*="text-amber-200"]) {
+  background-color: #fef3c7 !important;
+  border-color: #fbbf24 !important;
+  color: #92400e !important;
+}
+html[data-theme="light"] .mindx-main button:is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-rose-300"], [class*="text-rose-200"], [class*="text-red-300"]) {
+  background-color: #fee2e2 !important;
+  border-color: #f87171 !important;
+  color: #991b1b !important;
 }
 
 
@@ -982,4 +1091,149 @@ body {
 .fixed.inset-0.z-50 .text-xs {
   font-size: 11.95px !important;
 }
+
+/* ==========================================================================
+   3-CLICK SPCK ACTION CARDS, HONOR SUMMARY & AWARD BADGES (v3.6.2)
+   ========================================================================== */
+.spck-step-card-blue {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+  border: 2px solid #2563eb !important;
+  box-shadow: 2px 2px 0px #1e3a8a !important;
+  color: #1e3a8a !important;
+}
+.spck-step-card-blue:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+}
+html[data-theme="dark"] .spck-step-card-blue {
+  background: linear-gradient(135deg, rgba(23, 37, 84, 0.78) 0%, #0f172a 100%) !important;
+  border: 1.5px solid rgba(59, 130, 246, 0.55) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] .spck-step-card-blue:hover:not(:disabled) {
+  border-color: #60a5fa !important;
+}
+
+.spck-step-card-indigo {
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%) !important;
+  border: 2px solid #4f46e5 !important;
+  box-shadow: 2px 2px 0px #312e81 !important;
+  color: #312e81 !important;
+}
+.spck-step-card-indigo:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%) !important;
+}
+html[data-theme="dark"] .spck-step-card-indigo {
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.8) 0%, #0f172a 100%) !important;
+  border: 1.5px solid rgba(99, 102, 241, 0.55) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] .spck-step-card-indigo:hover:not(:disabled) {
+  border-color: #818cf8 !important;
+}
+
+.spck-step-card-emerald {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
+  border: 2px solid #059669 !important;
+  box-shadow: 2px 2px 0px #064e3b !important;
+  color: #064e3b !important;
+}
+.spck-step-card-emerald:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%) !important;
+}
+html[data-theme="dark"] .spck-step-card-emerald {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.78) 0%, #0f172a 100%) !important;
+  border: 1.5px solid rgba(16, 185, 129, 0.58) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] .spck-step-card-emerald:hover:not(:disabled) {
+  border-color: #34d399 !important;
+}
+
+.spck-step-card-blue .spck-step-title { color: #1e3a8a !important; }
+.spck-step-card-indigo .spck-step-title { color: #312e81 !important; }
+.spck-step-card-emerald .spck-step-title { color: #064e3b !important; }
+.spck-step-card-blue .spck-step-sub,
+.spck-step-card-indigo .spck-step-sub,
+.spck-step-card-emerald .spck-step-sub { color: #334155 !important; }
+
+html[data-theme="dark"] .spck-step-card-blue .spck-step-title,
+html[data-theme="dark"] .spck-step-card-indigo .spck-step-title,
+html[data-theme="dark"] .spck-step-card-emerald .spck-step-title {
+  color: #ffffff !important;
+}
+html[data-theme="dark"] .spck-step-card-blue .spck-step-sub,
+html[data-theme="dark"] .spck-step-card-indigo .spck-step-sub,
+html[data-theme="dark"] .spck-step-card-emerald .spck-step-sub {
+  color: #cbd5e1 !important;
+}
+
+.spck-summary-honor-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+  border: 2px solid #d97706 !important;
+  color: #78350f !important;
+}
+html[data-theme="dark"] .spck-summary-honor-card {
+  background: linear-gradient(135deg, rgba(120, 53, 15, 0.32) 0%, #0f172a 90%) !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.5) !important;
+  color: #f8fafc !important;
+}
+
+.spck-handoff-strip {
+  background-color: #eef2ff !important;
+  border: 1.5px solid #a5b4fc !important;
+  color: #1e3a8a !important;
+}
+html[data-theme="dark"] .spck-handoff-strip {
+  background-color: rgba(30, 27, 75, 0.55) !important;
+  border: 1px solid rgba(99, 102, 241, 0.45) !important;
+  color: #e0e7ff !important;
+}
+
+.spck-award-gold {
+  background-color: #fef3c7 !important;
+  border: 1.5px solid #d97706 !important;
+  color: #92400e !important;
+}
+html[data-theme="dark"] .spck-award-gold {
+  background-color: rgba(245, 158, 11, 0.22) !important;
+  border: 1px solid rgba(251, 191, 36, 0.7) !important;
+  color: #fde68a !important;
+}
+
+.spck-award-silver {
+  background-color: #f1f5f9 !important;
+  border: 1.5px solid #64748b !important;
+  color: #1e293b !important;
+}
+html[data-theme="dark"] .spck-award-silver {
+  background-color: rgba(148, 163, 184, 0.22) !important;
+  border: 1px solid rgba(203, 213, 225, 0.65) !important;
+  color: #f1f5f9 !important;
+}
+
+.spck-award-bronze {
+  background-color: #ffedd5 !important;
+  border: 1.5px solid #ea580c !important;
+  color: #9a3412 !important;
+}
+html[data-theme="dark"] .spck-award-bronze {
+  background-color: rgba(249, 115, 22, 0.22) !important;
+  border: 1px solid rgba(251, 146, 60, 0.65) !important;
+  color: #fed7aa !important;
+}
+
+.spck-award-indigo {
+  background-color: #e0e7ff !important;
+  border: 1.5px solid #4f46e5 !important;
+  color: #312e81 !important;
+}
+html[data-theme="dark"] .spck-award-indigo {
+  background-color: rgba(99, 102, 241, 0.22) !important;
+  border: 1px solid rgba(129, 140, 248, 0.6) !important;
+  color: #c7d2fe !important;
+}
+
 

@@ -1369,7 +1369,7 @@ export default function TeachingProjectsPage() {
                 type="button"
                 disabled={!isClassReady}
                 onClick={handleSyncAllDeadlinesToEndDate}
-                className="text-[11px] font-bold underline text-sky-400 hover:text-sky-300 disabled:opacity-50 cursor-pointer"
+                className="text-[11px] font-bold underline text-sky-700 dark:text-sky-400 hover:text-sky-600 dark:hover:text-sky-300 disabled:opacity-50 cursor-pointer"
               >
                 Gán cho 5 Deadline
               </button>

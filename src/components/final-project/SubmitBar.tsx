@@ -347,13 +347,13 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
   }, []);
 
   return (
-    <div className="spck-clean-sticky-submit sticky bottom-3 z-20 p-4 rounded-xl space-y-3">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="spck-clean-sticky-submit sticky bottom-3 z-20 px-4 py-2.5 rounded-xl space-y-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="spck-pill-primary px-2.5 py-0.5 rounded-full text-xs font-bold">
             Bước 3 / 3
           </span>
-          <h2 className="text-sm sm:text-base font-extrabold text-white">
+          <h2 className="text-sm font-extrabold text-white">
             Duyệt &amp; Nộp Trọn Gói (MindX LMS + Teaching)
           </h2>
           {assignedRows.length > 0 && (
@@ -371,7 +371,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
             </span>
           )}
           {Object.keys(skippedUnreadyByStudent).length > 0 && (
-            <span className="px-2 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/60 text-rose-200 text-[11px] font-bold">
+            <span className="spck-pill-error px-2 py-0.5 rounded-full text-[11px] font-bold">
               🚨 {Object.keys(skippedUnreadyByStudent).length} HV chờ nộp bù sau
             </span>
           )}
@@ -700,33 +700,30 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
         </div>
       )}
 
-      {/* S6.2 & S6.3: Next-Action Handoff Card after VERIFIED SPCK / Session 14 Submission */}
+      {/* S6.2 & S6.3: Compact Next-Action Strip after VERIFIED SPCK / Session 14 Submission */}
       {!uploading &&
         !session14ComboStatus.running &&
         (teachingSuggestion.shouldShow || showSession14ReportCardHandoff) && (
           <div
             data-testid="s6-post-spck-suggestion-banner"
-            className="p-4 rounded-xl bg-indigo-950/35 border border-indigo-500/40 space-y-3 text-xs"
+            className="spck-handoff-strip px-3 py-2 rounded-lg space-y-2 text-xs"
           >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div className="space-y-1">
-                <div className="font-bold text-indigo-200 flex items-center gap-1.5">
-                  <TrendingUp className="w-4 h-4 text-indigo-400" />
-                  <span>Gợi ý bước tiếp theo sau khi đã xác minh LMS (VERIFIED):</span>
-                </div>
-                {teachingSuggestion.shouldShow && (
-                  <p className="text-slate-300">{teachingSuggestion.description}</p>
-                )}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                <span className="font-bold">
+                  Đã xác minh LMS đủ bài — Tiện ích đồng bộ lẻ:
+                </span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 {teachingSuggestion.shouldShow && (
                   <button
                     type="button"
                     data-testid="s6-push-teaching-progress-btn"
                     onClick={handleQuickUpdateTeachingProgress}
                     disabled={teachingPushState.loading || isAnyOperationBusy}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold shadow transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
                   >
                     {teachingPushState.loading ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -743,7 +740,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
                     href={`/homework-grader?classId=${encodeURIComponent(
                       selectedClassId
                     )}&autoScan=1`}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-xs transition-colors"
                   >
                     <span>📋 Mở Phiếu điểm → Quét</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -753,8 +750,8 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
             </div>
 
             {teachingPushState.verifiedPercent !== null && (
-              <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-600/60 text-emerald-200 font-semibold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div className="spck-pill-success px-2.5 py-1.5 rounded-md font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>
                   ✅ Đã cập nhật tiến độ Teaching lên {teachingPushState.verifiedPercent}% thành công (Đã đối chiếu Read-after-Write
                   {teachingPushState.updatedCount
@@ -766,11 +763,11 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
             )}
 
             {teachingPushState.error && (
-              <div className="p-2.5 rounded-lg bg-rose-950/40 border border-rose-600/60 text-rose-200 flex flex-wrap items-center justify-between gap-2">
+              <div className="spck-pill-error px-2.5 py-1.5 rounded-md flex flex-wrap items-center justify-between gap-2">
                 <span>⚠️ {teachingPushState.error}</span>
                 <a
                   href={`/teaching-projects?classId=${encodeURIComponent(selectedClassId)}`}
-                  className="underline font-bold text-rose-100 hover:text-white"
+                  className="underline font-bold hover:opacity-80"
                 >
                   Mở Màn 5 (Dự án Teaching) &rarr;
                 </a>

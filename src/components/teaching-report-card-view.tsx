@@ -1880,7 +1880,7 @@ export default function TeachingReportCardView({
                   target="_blank"
                   rel="noopener noreferrer"
                   title={`Mở bảng điểm tổng kết lớp ${effectiveClassId} trên teachingmindx.top/diem-tong-ket.php`}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-sky-900/60 hover:bg-sky-800/80 text-sky-200 border border-sky-500/50 transition mindx-dark-keep"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-sky-700 hover:bg-sky-600 text-white border border-sky-600 transition mindx-dark-keep"
                 >
                   <span>🌐 Mở Teaching ({effectiveClassId}) ↗</span>
                 </a>
@@ -2204,7 +2204,7 @@ export default function TeachingReportCardView({
               ℹ️ Đã bỏ qua {verifiedSkippedStudents.length} học viên chưa có hoặc đang nghỉ trên Teaching:{" "}
               {verifiedSkippedStudents.map((s) => s.localFullName).join(", ")}
             </div>
-            <div className="text-xs text-amber-200/90">
+            <div className="text-xs text-amber-200">
               Các học viên còn lại của lớp {effectiveClassId} đã được đồng bộ đầy đủ lên Teaching. Sau khi danh sách học viên trên Teaching được cập nhật, bấm quét &amp; đồng bộ lại sẽ tự điền bổ sung cho học viên bị thiếu.
             </div>
           </div>

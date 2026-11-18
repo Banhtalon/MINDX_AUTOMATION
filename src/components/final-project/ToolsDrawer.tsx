@@ -900,17 +900,17 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
       {shouldRenderSummaryBox && (
         <div
           data-testid="s14-class-summary-box"
-          className="rounded-xl border border-amber-500/45 bg-gradient-to-br from-amber-950/35 via-slate-950/90 to-slate-950 p-3.5 space-y-2.5"
+          className="spck-summary-honor-card rounded-xl p-3.5 space-y-2.5"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200 text-xs font-extrabold">
+              <span className="spck-award-gold inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-extrabold">
                 <Award className="w-3.5 h-3.5" />
                 <span>
                   Bài Tổng kết &amp; Vinh danh Nhất – Nhì – Ba (Ô Summary đầu trang Buổi 14)
                 </span>
               </span>
-              <span className="text-[11px] text-emerald-300 font-medium">
+              <span className="spck-pill-success px-2 py-0.5 rounded-full text-[11px] font-semibold">
                 ✓ Tự động điền lên LMS khi bấm &ldquo;3. Duyệt &amp; Nộp tất cả&rdquo;
               </span>
             </div>
@@ -932,16 +932,16 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
                 if (!badge) return null;
                 const pillTone =
                   badge.tone === "gold"
-                    ? "bg-amber-500/20 border-amber-400/60 text-amber-200"
+                    ? "spck-award-gold"
                     : badge.tone === "silver"
-                    ? "bg-slate-400/20 border-slate-300/50 text-slate-100"
+                    ? "spck-award-silver"
                     : badge.tone === "bronze"
-                    ? "bg-orange-500/20 border-orange-400/50 text-orange-200"
-                    : "bg-indigo-500/20 border-indigo-400/40 text-indigo-200";
+                    ? "spck-award-bronze"
+                    : "spck-award-indigo";
                 return (
                   <span
                     key={item.studentId}
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-semibold ${pillTone}`}
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${pillTone}`}
                   >
                     <span>{badge.icon}</span>
                     <span>{badge.shortText}:</span>
@@ -962,7 +962,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
             disabled={isAnyOperationBusy}
             rows={4}
             placeholder="Nội dung tổng kết buổi bảo vệ cuối khóa & vinh danh Giải Nhất / Nhì / Ba (tự động tạo từ bảng điểm BGK, thầy có thể sửa nhanh tại đây)..."
-            className="w-full px-3 py-2 rounded-lg bg-slate-950/90 border border-slate-700 text-slate-100 text-xs leading-relaxed focus:outline-none focus:border-amber-400 disabled:opacity-60"
+            className="w-full px-3 py-2 rounded-lg bg-slate-950/90 border border-slate-700 text-slate-100 text-xs leading-relaxed focus:outline-none focus:border-amber-500 disabled:opacity-60"
           />
         </div>
       )}
