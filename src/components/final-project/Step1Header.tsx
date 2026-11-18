@@ -1,7 +1,15 @@
 "use client";
 
 import React from "react";
-import { FolderOpen, FolderSearch, Loader2, Video } from "lucide-react";
+import {
+  CheckCircle2,
+  ExternalLink,
+  FolderOpen,
+  Loader2,
+  RefreshCw,
+  Send,
+  Sparkles,
+} from "lucide-react";
 import { ClassPicker } from "@/components/class-picker";
 import { getStageMeta, SpckWorkflowController } from "./useSpckWorkflow";
 
@@ -11,7 +19,6 @@ export interface Step1HeaderProps {
 
 export function Step1Header({ workflow }: Step1HeaderProps) {
   const {
-    totalStepsCount,
     selectedClassId,
     classes,
     handleClassChange,
@@ -22,59 +29,103 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
     handleSessionChange,
     folderPathInput,
     setFolderPathInput,
+    showFolderEditor,
+    setShowFolderEditor,
     handleBrowseFolder,
     browsingFolder,
-    handleScanFolder,
-    handleInitStudentFolders,
+    demoScoreSourceInput,
+    setDemoScoreSourceInput,
+    generatedDemoSheetUrl,
+    isSpckExemptClass,
+    studentPortalRunning,
+    mainSyncRunning,
     scanning,
-    autoRunToolsAfterScan,
-    handleToggleAutoRunToolsAfterScan,
+    generatingAi,
+    generatingS14EvalAi,
+    mainStep3Running,
+    uploading,
+    uploadingS14EvalLms,
+    session14ComboStatus,
     autoPrepStepProgress,
-    isRoboticsClass,
-    showYoutubeImport,
-    setShowYoutubeImport,
-    youtubeImportInput,
-    setYoutubeImportInput,
-    handleImportYoutubeProducts,
-    importingYoutube,
-    youtubeImportReport,
+    rows,
+    session14Evals,
+    effectiveSelectedStudentIds,
+    handleMainStep1Sync,
+    handleMainStep2Ai,
+    handleMainStep3SubmitAll,
   } = workflow;
 
-  const [roboticsYoutubeHidden, setRoboticsYoutubeHidden] = React.useState(false);
+  const displayFolder =
+    folderPathInput.trim() ||
+    (selectedClassId
+      ? `D:\\MINDX DATA\\MINDX_SPCK_FINAL\\${selectedClassId}`
+      : "Chưa chọn lớp");
 
-  React.useEffect(() => {
-    setRoboticsYoutubeHidden(false);
-  }, [selectedClassId, isRoboticsClass]);
+  const effectiveDemoUrl = (
+    demoScoreSourceInput ||
+    generatedDemoSheetUrl ||
+    ""
+  ).trim();
+  const isDemoUrlHttp = /^https?:\/\//i.test(effectiveDemoUrl);
 
-  const isYoutubePanelVisible = isRoboticsClass
-    ? !roboticsYoutubeHidden
-    : Boolean(showYoutubeImport);
+  const isStep1Busy =
+    mainSyncRunning || scanning || Boolean(autoPrepStepProgress);
+  const isStep2Busy = generatingAi || generatingS14EvalAi;
+  const isStep3Busy =
+    mainStep3Running ||
+    uploading ||
+    uploadingS14EvalLms ||
+    session14ComboStatus.running;
+
+  const hasDataForStep2 =
+    selectedSessionNumber === 14
+      ? rows.length > 0 || session14Evals.length > 0 || isSpckExemptClass
+      : rows.length > 0;
+
+  const hasDataForStep3 =
+    selectedSessionNumber === 14
+      ? rows.length > 0 || session14Evals.length > 0
+      : rows.length > 0;
+
+  const step1SubLabel = studentPortalRunning
+    ? "Tự ngắt link HS → Quét bài • Ảnh 16:9 • Web • Drive"
+    : selectedSessionNumber === 14
+    ? isSpckExemptClass
+      ? "Nạp Điểm Năng lực [ĐNL] trung bình Buổi 5+9"
+      : "Quét bài • Ảnh 16:9 • Drive • Điểm BGK & [ĐNL] B5+9"
+    : "Quét thư mục • Chụp 16:9 • GitHub Web • Up Drive";
+
+  const step2SubLabel =
+    selectedSessionNumber === 14
+      ? "Nhận xét SPCK + Thư MindX 3 phần + Summary Nhất/Nhì/Ba"
+      : "Đặt tên đề tài cụ thể • Chọn thẻ & viết nhận xét cả lớp";
+
+  const step3SubLabel =
+    selectedSessionNumber === 12
+      ? "Đẩy LMS Buổi 12 → Cập nhật Tiến độ Teaching 60%"
+      : selectedSessionNumber === 13
+      ? "Đẩy LMS Buổi 13 → Cập nhật Tiến độ Teaching 80%"
+      : "LMS (SPCK + Đánh giá + Summary) → Teaching 100% + Phiếu điểm";
 
   return (
     <div className="spck-clean-card rounded-2xl overflow-hidden">
-      <div className="spck-clean-header-bar px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center space-x-2">
-          <span className="spck-pill-primary px-2.5 py-0.5 rounded-full text-xs font-bold">
-            Bước 1 / {totalStepsCount}
-          </span>
-          <h2 className="text-sm sm:text-base font-extrabold text-white">
-            Chọn Lớp, Buổi &amp; Thư Mục Bài Làm
-          </h2>
-        </div>
-        <span className="text-[11px] text-slate-400">
-          Giai đoạn hiện tại:{" "}
-          <strong className="text-slate-200">
-            Buổi {selectedSessionNumber} ({getStageMeta(selectedSessionNumber).stageTitle})
-          </strong>
-        </span>
-      </div>
-
-      <div className="p-4 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-start">
-          {/* 1A. Chọn Lớp */}
-          <div className="md:col-span-4">
-            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
-              1A. Lớp học (Buổi ≥ 12)
+      {/* Thanh chọn Lớp + Buổi + Link BGK (khi Buổi 14) siêu gọn */}
+      <div className="p-4 space-y-3.5">
+        <div
+          className={`grid grid-cols-1 gap-3 items-start ${
+            selectedSessionNumber === 14
+              ? "lg:grid-cols-12"
+              : "lg:grid-cols-12"
+          }`}
+        >
+          {/* Chọn Lớp học */}
+          <div
+            className={
+              selectedSessionNumber === 14 ? "lg:col-span-4" : "lg:col-span-6"
+            }
+          >
+            <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wide mb-1.5">
+              Lớp học (Buổi ≥ 12)
             </label>
             <ClassPicker
               scope="spck"
@@ -94,242 +145,241 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
             />
           </div>
 
-          {/* 1B. Chọn Buổi nộp */}
-          <div className="md:col-span-3">
-            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
-              1B. Buổi nộp LMS ({getStageMeta(selectedSessionNumber).stageShort})
+          {/* Chọn Buổi 12 / 13 / 14 */}
+          <div
+            className={
+              selectedSessionNumber === 14 ? "lg:col-span-3" : "lg:col-span-6"
+            }
+          >
+            <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wide mb-1.5">
+              Buổi nộp ({getStageMeta(selectedSessionNumber).stageShort})
             </label>
             <div className="grid grid-cols-3 gap-1.5 p-1 rounded-lg bg-slate-950 border border-slate-700">
               {([12, 13, 14] as const).map((sessNum) => {
                 const isSelected = selectedSessionNumber === sessNum;
-                const stageMeta = getStageMeta(sessNum);
                 return (
                   <button
                     key={sessNum}
                     type="button"
                     disabled={isAnyOperationBusy}
                     onClick={() => handleSessionChange(sessNum)}
-                    className={`py-1.5 px-2 rounded-md text-xs font-bold transition-all cursor-pointer disabled:opacity-50 ${
+                    className={`py-2 px-2 rounded-md text-xs font-bold transition-all cursor-pointer disabled:opacity-50 ${
                       isSelected
-                        ? "spck-btn-primary"
+                        ? "spck-btn-primary shadow-sm"
                         : "text-slate-300 hover:bg-slate-800 hover:text-white"
                     }`}
                   >
-                    Buổi {sessNum} ({stageMeta.stageShort})
+                    Buổi {sessNum}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* 1C. Chọn Thư mục & Quét */}
-          <div className="md:col-span-5">
-            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
-              1C. Thư mục SPCK trên máy tính
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={folderPathInput}
-                onChange={(e) => setFolderPathInput(e.target.value)}
-                disabled={isAnyOperationBusy}
-                placeholder="VD: D:\SPCK_MindX\VT-C4K-PTA12"
-                className="flex-1 px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-60"
-              />
-              <button
-                type="button"
-                onClick={handleBrowseFolder}
-                disabled={isAnyOperationBusy}
-                title="Mở cửa sổ chọn thư mục trên máy tính"
-                className="spck-pill-neutral shrink-0 flex items-center space-x-1.5 px-3 py-2 rounded-lg disabled:opacity-50 font-medium text-xs transition-colors cursor-pointer"
-              >
-                {browsingFolder ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <FolderOpen className="w-4 h-4" />
+          {/* Khi chọn Buổi 14: Hiện ngay cạnh 1 ô Link Bảng chấm điểm Giám khảo */}
+          {selectedSessionNumber === 14 && (
+            <div className="lg:col-span-5">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <label className="block text-[11px] font-bold text-amber-200 uppercase tracking-wide">
+                  📊 Link Bảng chấm điểm Giám khảo (Buổi 14)
+                </label>
+                {generatedDemoSheetUrl &&
+                  demoScoreSourceInput.trim() ===
+                    generatedDemoSheetUrl.trim() && (
+                    <span className="text-[10px] text-emerald-300 font-medium">
+                      ✓ Đã tự điền bảng của lớp
+                    </span>
+                  )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  data-testid="s14-header-demo-sheet-input"
+                  value={demoScoreSourceInput}
+                  onChange={(e) => setDemoScoreSourceInput(e.target.value)}
+                  disabled={isAnyOperationBusy}
+                  placeholder={
+                    isSpckExemptClass
+                      ? "Lớp PTB / CSB được miễn điểm Demo BGK"
+                      : "Dán link Google Sheet chấm điểm BGK hoặc đường dẫn .xlsx..."
+                  }
+                  className="flex-1 px-3 py-2 rounded-lg bg-slate-950 border border-amber-700/60 text-white text-xs focus:outline-none focus:border-amber-400 disabled:opacity-60"
+                />
+                {isDemoUrlHttp && (
+                  <a
+                    href={effectiveDemoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Mở Bảng chấm điểm Giám khảo trong tab mới"
+                    className="spck-pill-neutral shrink-0 inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-semibold hover:text-white"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Mở</span>
+                  </a>
                 )}
-                <span>Chọn...</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleScanFolder()}
-                disabled={isAnyOperationBusy || !selectedClassId}
-                className="spck-btn-primary shrink-0 flex items-center space-x-1.5 px-3.5 py-2 rounded-lg disabled:opacity-50 font-bold text-xs transition-colors cursor-pointer"
-              >
-                {scanning ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <FolderSearch className="w-4 h-4" />
-                )}
-                <span>Quét &amp; Khớp HV</span>
-              </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Thanh tùy chọn phụ Bước 1 (Gom gọn màu trung tính) */}
-        <div className="spck-clean-subbar px-3 py-2 rounded-lg flex flex-wrap items-center justify-between gap-2.5 text-xs">
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              data-testid="s5b-init-student-folders-btn"
-              onClick={() => handleInitStudentFolders()}
-              disabled={isAnyOperationBusy || !selectedClassId || !folderPathInput.trim()}
-              title="Tự động tạo sẵn thư mục con theo tên từng học viên trong lớp để thả ảnh mô hình / tệp sản phẩm vào"
-              className="spck-pill-neutral shrink-0 inline-flex items-center space-x-1 px-2.5 py-1 rounded-md disabled:opacity-50 font-semibold text-xs transition-colors cursor-pointer"
+        {/* Nhãn gọn hiển thị thư mục hiện tại + nút nhỏ "📁 Đổi thư mục" */}
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-slate-950/70 border border-slate-800 text-xs">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <span className="text-slate-400 shrink-0">Thư mục bài làm:</span>
+            <code
+              className="text-slate-200 font-mono text-[11px] truncate max-w-[460px]"
+              title={displayFolder}
             >
-              <span>📁 Tạo thư mục HV</span>
-            </button>
-
-            <label className="inline-flex items-center space-x-1.5 text-xs text-slate-300 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                data-testid="s5b-auto-run-tools-checkbox"
-                checked={autoRunToolsAfterScan}
-                disabled={isAnyOperationBusy}
-                onChange={(e) =>
-                  handleToggleAutoRunToolsAfterScan(e.target.checked)
-                }
-                className="rounded border-slate-600 cursor-pointer"
-              />
-              <span>
-                ⚡ Tự chạy công cụ chuẩn bị sau khi Quét (Chụp ảnh / Up Web / Up Drive)
-              </span>
-            </label>
-
-            {autoPrepStepProgress && (
-              <span
-                data-testid="s5b-auto-prep-progress"
-                className="spck-pill-warning px-2.5 py-0.5 rounded-full text-[11px] font-semibold animate-pulse"
-              >
-                {autoPrepStepProgress}
+              {displayFolder}
+            </code>
+            {isSpckExemptClass && (
+              <span className="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-700/50 text-amber-200 text-[10px] font-semibold">
+                Khóa PTB / CSB (Miễn nộp SPCK &amp; Demo)
               </span>
             )}
           </div>
-
           <button
             type="button"
-            onClick={() => {
-              if (isRoboticsClass) {
-                const nextVisible = !isYoutubePanelVisible;
-                setRoboticsYoutubeHidden(!nextVisible);
-                setShowYoutubeImport(nextVisible);
-              } else {
-                setShowYoutubeImport((v) => !v);
-              }
-            }}
-            className="spck-pill-neutral inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer"
+            data-testid="spck-toggle-folder-editor-btn"
+            disabled={isAnyOperationBusy}
+            onClick={() => setShowFolderEditor((v) => !v)}
+            className="spck-pill-neutral shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer disabled:opacity-50"
           >
-            <Video className="w-3.5 h-3.5" />
-            <span>
-              {isYoutubePanelVisible
-                ? "🎬 Ẩn nhập Playlist YouTube ▴"
-                : "🎬 Nhập Playlist YouTube (Robotics / Video) ▾"}
-            </span>
+            <span>{showFolderEditor ? "Ẩn ô thư mục ▴" : "📁 Đổi thư mục"}</span>
           </button>
         </div>
 
-        {/* 1D. Khung nhập Playlist YouTube (Chỉ mở khi bấm hoặc lớp Robotics) */}
-        {isYoutubePanelVisible && (
-          <div className="spck-clean-subbar rounded-lg p-3 space-y-2">
-            <div className="flex items-center justify-between gap-2 text-xs font-semibold text-slate-200">
-              <span className="flex items-center gap-1.5">
-                <Video className="w-4 h-4 text-slate-400" />
-                <span>
-                  1D. Nhập link Playlist YouTube của lớp → tự gắn link &amp; trích 2 ảnh thuyết trình cho từng học viên
-                </span>
-              </span>
-            </div>
-            <textarea
-              value={youtubeImportInput}
-              onChange={(e) => setYoutubeImportInput(e.target.value)}
+        {/* Ô nhập đường dẫn dài chỉ bung ra khi giáo viên bấm "📁 Đổi thư mục" */}
+        {showFolderEditor && (
+          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-950/90 border border-slate-700">
+            <input
+              type="text"
+              value={folderPathInput}
+              onChange={(e) => setFolderPathInput(e.target.value)}
               disabled={isAnyOperationBusy}
-              rows={3}
-              placeholder={
-                "Dán 1 link Playlist của lớp, ví dụ:\nhttps://m.youtube.com/playlist?list=PL...\nHoặc mỗi dòng 1 học viên: Minh Khang - https://youtu.be/..."
-              }
-              className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-blue-500 disabled:opacity-60"
+              placeholder="VD: D:\MINDX DATA\MINDX_SPCK_FINAL\VT-C4K-PTA12"
+              className="flex-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-blue-500 disabled:opacity-60"
             />
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[11px] text-slate-400">
-                Bot tự nhận diện tên học viên trong tiêu đề video, gắn link YouTube và lấy <strong>2 ảnh thuyết trình</strong> cho <strong>Buổi {selectedSessionNumber}</strong>.
-              </p>
-              <button
-                type="button"
-                onClick={() => handleImportYoutubeProducts()}
-                disabled={isAnyOperationBusy || !selectedClassId || !youtubeImportInput.trim()}
-                className="spck-btn-primary shrink-0 flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg disabled:opacity-50 font-semibold text-xs transition-colors cursor-pointer"
-              >
-                {importingYoutube ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Video className="w-4 h-4" />
-                )}
-                <span>Nhập YouTube &amp; Lấy 2 Ảnh</span>
-              </button>
-            </div>
-
-            {youtubeImportReport && (
-              <div className="rounded-lg border border-slate-700 bg-slate-950/70 p-2 space-y-1.5">
-                {youtubeImportReport.playlists.map((pl, idx) => (
-                  <p key={idx} className="text-[11px] text-slate-300">
-                    Playlist <strong className="text-white">{pl.playlistTitle || "(không tên)"}</strong>:{" "}
-                    {pl.error ? (
-                      <span className="text-rose-300">{pl.error}</span>
-                    ) : (
-                      <span>{pl.videoCount} video</span>
-                    )}
-                  </p>
-                ))}
-                <div className="max-h-56 overflow-y-auto">
-                  <table className="w-full text-[11px]">
-                    <thead>
-                      <tr className="text-slate-400 text-left">
-                        <th className="py-1 pr-2">Tiêu đề video</th>
-                        <th className="py-1 pr-2">Học viên</th>
-                        <th className="py-1 pr-2">Kết quả</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {youtubeImportReport.results.map((r) => (
-                        <tr key={r.videoId} className="border-t border-slate-800 align-top">
-                          <td className="py-1 pr-2 text-slate-200">
-                            <a href={r.url} target="_blank" rel="noreferrer" className="underline hover:text-blue-300">
-                              {r.videoTitle || r.videoId}
-                            </a>
-                          </td>
-                          <td className="py-1 pr-2 text-slate-200">{r.fullName || "—"}</td>
-                          <td className="py-1 pr-2">
-                            {r.applied ? (
-                              <span className="text-emerald-300">
-                                ✓ Đã gắn link + {r.frames.length} ảnh
-                                {r.thumbnailIsOwnerPhoto ? " (giữ ảnh đại diện Owner)" : " (ảnh đại diện: Logo MindX)"}
-                                {r.message ? <span className="block text-amber-300">{r.message}</span> : null}
-                              </span>
-                            ) : (
-                              <span className="text-amber-300">{r.message || "Chưa khớp học viên"}</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {youtubeImportReport.studentsWithoutVideo.length > 0 && (
-                  <p className="text-[11px] text-amber-300">
-                    Học viên chưa có video:{" "}
-                    {youtubeImportReport.studentsWithoutVideo.map((s) => s.fullName).join(", ")}
-                  </p>
-                )}
-                {youtubeImportReport.invalidLines.length > 0 && (
-                  <p className="text-[11px] text-slate-400">
-                    Dòng không nhận ra link YouTube: {youtubeImportReport.invalidLines.join(" | ")}
-                  </p>
-                )}
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={handleBrowseFolder}
+              disabled={isAnyOperationBusy}
+              title="Mở cửa sổ chọn thư mục trên máy tính"
+              className="spck-pill-neutral shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg disabled:opacity-50 font-semibold text-xs cursor-pointer"
+            >
+              {browsingFolder ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <FolderOpen className="w-3.5 h-3.5" />
+              )}
+              <span>Chọn...</span>
+            </button>
           </div>
         )}
+
+        {/* THANH HÀNH ĐỘNG CHÍNH CỐ ĐỊNH 3 NÚT LỚN (1 -> 2 -> 3) DÙNG CHUNG BUỔI 12, 13, 14 */}
+        <div className="pt-1 border-t border-slate-800/90 space-y-2.5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* NÚT 1: 1. Đồng bộ bài làm */}
+            <button
+              type="button"
+              data-testid="spck-main-step1-sync"
+              onClick={() => void handleMainStep1Sync()}
+              disabled={isAnyOperationBusy || !selectedClassId}
+              className="group relative flex flex-col items-start justify-between p-3.5 rounded-xl border border-blue-500/50 bg-gradient-to-br from-blue-950/70 via-slate-900 to-slate-900 hover:border-blue-400 hover:from-blue-900/60 transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >
+              <div className="flex items-center justify-between w-full gap-2">
+                <span className="inline-flex items-center gap-2 text-sm font-extrabold text-white">
+                  {isStep1Busy ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-300 shrink-0" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4 text-blue-400 shrink-0" />
+                  )}
+                  <span>1. Đồng bộ bài làm</span>
+                </span>
+                {studentPortalRunning && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200 text-[10px] font-bold shrink-0">
+                    Tự đóng Cổng
+                  </span>
+                )}
+              </div>
+              <span className="mt-1.5 text-[11px] text-slate-300 leading-snug">
+                {step1SubLabel}
+              </span>
+            </button>
+
+            {/* NÚT 2: 2. AI Soạn nhận xét */}
+            <button
+              type="button"
+              data-testid="spck-main-step2-ai"
+              onClick={() => void handleMainStep2Ai()}
+              disabled={
+                isAnyOperationBusy || !selectedClassId || !hasDataForStep2
+              }
+              className="group relative flex flex-col items-start justify-between p-3.5 rounded-xl border border-indigo-500/50 bg-gradient-to-br from-indigo-950/70 via-slate-900 to-slate-900 hover:border-indigo-400 hover:from-indigo-900/60 transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >
+              <div className="flex items-center justify-between w-full gap-2">
+                <span className="inline-flex items-center gap-2 text-sm font-extrabold text-white">
+                  {isStep2Busy ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-300 shrink-0" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+                  )}
+                  <span>2. AI Soạn nhận xét</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-indigo-200 text-[10px] font-semibold shrink-0">
+                  Buổi {selectedSessionNumber}
+                </span>
+              </div>
+              <span className="mt-1.5 text-[11px] text-slate-300 leading-snug">
+                {step2SubLabel}
+              </span>
+            </button>
+
+            {/* NÚT 3: 3. Duyệt & Nộp tất cả */}
+            <button
+              type="button"
+              data-testid="spck-main-step3-submit"
+              onClick={() => void handleMainStep3SubmitAll()}
+              disabled={
+                isAnyOperationBusy || !selectedClassId || !hasDataForStep3
+              }
+              className="group relative flex flex-col items-start justify-between p-3.5 rounded-xl border border-emerald-500/60 bg-gradient-to-br from-emerald-950/75 via-slate-900 to-slate-900 hover:border-emerald-400 hover:from-emerald-900/60 transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >
+              <div className="flex items-center justify-between w-full gap-2">
+                <span className="inline-flex items-center gap-2 text-sm font-extrabold text-white">
+                  {isStep3Busy ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-emerald-300 shrink-0" />
+                  ) : (
+                    <Send className="w-4 h-4 text-emerald-400 shrink-0" />
+                  )}
+                  <span>3. Duyệt &amp; Nộp tất cả</span>
+                </span>
+                {effectiveSelectedStudentIds.length > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-[10px] font-bold shrink-0">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>{effectiveSelectedStudentIds.length} HV</span>
+                  </span>
+                )}
+              </div>
+              <span className="mt-1.5 text-[11px] text-slate-300 leading-snug">
+                {step3SubLabel}
+              </span>
+            </button>
+          </div>
+
+          {autoPrepStepProgress && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-950/60 border border-amber-600/50">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-300 shrink-0" />
+              <span
+                data-testid="s5b-auto-prep-progress"
+                className="text-xs font-semibold text-amber-200"
+              >
+                {autoPrepStepProgress}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

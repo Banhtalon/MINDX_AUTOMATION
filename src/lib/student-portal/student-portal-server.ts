@@ -1177,7 +1177,7 @@ class StudentPortalManager {
   private className = "";
   private rootFolderPath = "";
   private driveFolderUrl = DEFAULT_SPCK_DRIVE_FOLDER_URL;
-  private autoUploadDrive = true;
+  private autoUploadDrive = false;
   private requireTeacherConfirmation = true;
   private activeSessionNumber: SpckSessionNumber = 12;
   private sessionToken = "";
@@ -1339,7 +1339,7 @@ class StudentPortalManager {
     this.driveFolderUrl =
       options.driveFolderUrl?.trim() || DEFAULT_SPCK_DRIVE_FOLDER_URL;
     this.autoUploadDrive =
-      typeof options.autoUploadDrive === "boolean" ? options.autoUploadDrive : true;
+      typeof options.autoUploadDrive === "boolean" ? options.autoUploadDrive : false;
     this.requireTeacherConfirmation =
       typeof options.requireTeacherConfirmation === "boolean"
         ? options.requireTeacherConfirmation
@@ -2957,7 +2957,8 @@ class StudentPortalManager {
         }
 
         // 2. Auto-deploy to GitHub Pages for Web (JSB/JSA/JSI) and CS (CSA/CSI) when `.html` exists
-        if (runFullAutoPrep && isWebOrCsGithubTrack(classId)) {
+        //    (only when `autoUploadDrive` is enabled; in classroom fast-intake mode, batch sync runs on Close & Sync)
+        if (runFullAutoPrep && this.autoUploadDrive && isWebOrCsGithubTrack(classId)) {
           try {
             const webRes = await SequentialTaskQueue.getInstance().enqueue({
               id: `portal_web_${classId}_${studentId}_${Date.now()}`,

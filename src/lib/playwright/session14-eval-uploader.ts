@@ -10,16 +10,19 @@
 import type { Page } from "playwright";
 import {
   computeSession14EvalHash,
+  getSession14DemoLimitsForClass,
   isRoboticsClassCode,
   jobLogRepo,
   parseSession14CompetencyScores,
   parseSession14DemoScores,
   SESSION14_COMPETENCY_KEYS,
+  session14ClassSummaryRepo,
   session14EvalRepo,
   type SpckSession14CompetencyScores,
   studentRepo,
   verifySession14EvalIntegrity,
 } from "../db/sqlite";
+import { getEffectiveClassSession14Summary } from "../local-files/spck-demo-score-reader";
 import { taskQueue } from "../queue/task-queue";
 import { authService } from "./auth";
 import { browserManager } from "./browser-manager";
@@ -32,6 +35,9 @@ export interface UploadSession14EvalOptions {
   studentIds?: string[];
   customPage?: Page;
   skipNavigation?: boolean;
+  classSummaryHtml?: string;
+  uploadClassSummary?: boolean;
+  skipUnapproved?: boolean;
 }
 
 export interface Session14EvalStudentUploadResult {
@@ -48,7 +54,24 @@ export interface UploadSession14EvalSummary {
   verifiedCount: number;
   failedCount: number;
   demotedCount: number;
+  skippedCount: number;
+  classSummaryVerified?: boolean;
+  classSummaryStatus?: "VERIFIED" | "FAILED" | "SKIPPED";
+  classSummaryError?: string;
   results: Session14EvalStudentUploadResult[];
+}
+
+function stripHtmlTagsToPlainText(rawHtml: string): string {
+  return String(rawHtml || "")
+    .replace(/<\/(p|div|li|h[1-6]|br)\s*>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'");
 }
 
 function normalizePlainText(raw: string): string {
@@ -212,9 +235,8 @@ function verifyServerEvaluationPayload(
   const demoKeys = isRobotics
     ? (["creativity", "communication", "problemSolving", "computerSkills", "algorithm"] as const)
     : (["algorithm", "creativity", "communication", "problemSolving", "computerSkills"] as const);
-  const demoMaxByIndex = isRobotics
-    ? ([1.25, 0.75, 1.0, 0.5, 1.0] as const)
-    : ([1.5, 1.0, 0.5, 1.0, 1.0] as const);
+  const classDemoLimits = getSession14DemoLimitsForClass(classId);
+  const demoMaxByIndex = demoKeys.map((k) => classDemoLimits[k]);
   const demoContainer =
     payloadObj.demoScores &&
     typeof payloadObj.demoScores === "object" &&
@@ -295,9 +317,21 @@ export class Session14EvalUploader {
     const studentMap = new Map(roster.map((s) => [s.studentId, s]));
 
     const allEvalRows = session14EvalRepo.findByClass(normalizedClassId);
-    const targetRows = options.studentIds && options.studentIds.length > 0
+    const hasExplicitStudentIds = Boolean(options.studentIds && options.studentIds.length > 0);
+    const targetRows = hasExplicitStudentIds
       ? allEvalRows.filter((r) => options.studentIds!.includes(r.studentId))
-      : allEvalRows.filter((r) => r.status === "APPROVED");
+      : allEvalRows.filter((r) => {
+          const stu = studentMap.get(r.studentId);
+          return Number(stu?.isActive ?? 1) !== 0 && r.status === "APPROVED";
+        });
+
+    const isLiveLms = !options.customPage;
+    const explicitSummaryHtml =
+      typeof options.classSummaryHtml === "string" ? options.classSummaryHtml.trim() : "";
+    const shouldUploadClassSummary =
+      explicitSummaryHtml.length > 0 ||
+      options.uploadClassSummary === true ||
+      (isLiveLms && options.uploadClassSummary !== false);
 
     const summary: UploadSession14EvalSummary = {
       classId: normalizedClassId,
@@ -305,17 +339,17 @@ export class Session14EvalUploader {
       verifiedCount: 0,
       failedCount: 0,
       demotedCount: 0,
+      skippedCount: 0,
       results: [],
     };
 
-    if (targetRows.length === 0) {
+    if (targetRows.length === 0 && !shouldUploadClassSummary) {
       return summary;
     }
 
     const page = options.customPage || (await browserManager.getPage());
     const interceptor = createNetworkInterceptor(page);
 
-    const isLiveLms = !options.customPage;
     if (!options.skipNavigation && isLiveLms) {
       await authService.ensureAuthenticated("LMS");
       await LmsHelpers.openClassDrawer(page, normalizedClassId);
@@ -326,13 +360,95 @@ export class Session14EvalUploader {
       });
     }
 
+    // Step A: Upload & Verify Slot 14 Top Class Summary (`Summary` card on #tab-10, keeping checkbox id="13" unchecked)
+    if (shouldUploadClassSummary) {
+      let resolvedSummaryHtml = explicitSummaryHtml;
+      if (!resolvedSummaryHtml) {
+        const effective = getEffectiveClassSession14Summary(normalizedClassId);
+        if (
+          options.uploadClassSummary === true ||
+          effective.classSummary.status !== "VERIFIED"
+        ) {
+          resolvedSummaryHtml = String(effective.classSummary.summaryHtml || "").trim();
+        }
+      }
+
+      if (!resolvedSummaryHtml) {
+        summary.classSummaryVerified = false;
+        summary.classSummaryStatus = "SKIPPED";
+      } else {
+        try {
+          await this.uploadAndVerifySlot14ClassSummary({
+            page,
+            interceptor,
+            classId: normalizedClassId,
+            summaryHtml: resolvedSummaryHtml,
+            skipNavigation: Boolean(options.skipNavigation),
+            isLiveLms,
+          });
+          session14ClassSummaryRepo.markVerified(normalizedClassId, resolvedSummaryHtml);
+          summary.classSummaryVerified = true;
+          summary.classSummaryStatus = "VERIFIED";
+
+          jobLogRepo.add({
+            jobId,
+            jobType: "UPLOAD_SESSION14_EVAL",
+            classId: normalizedClassId,
+            sessionId: `${normalizedClassId}_SESS_14_EVAL`,
+            level: "SUCCESS",
+            message: `Đã điền & xác minh (Read-after-Write) ô Summary đầu trang Buổi 14 lớp ${normalizedClassId} (checkbox #14 giữ không tích).`,
+          });
+        } catch (sumErr) {
+          const sumErrMsg = sumErr instanceof Error ? sumErr.message : String(sumErr);
+          session14ClassSummaryRepo.markFailed(normalizedClassId, sumErrMsg);
+          summary.classSummaryVerified = false;
+          summary.classSummaryStatus = "FAILED";
+          summary.classSummaryError = sumErrMsg;
+
+          jobLogRepo.add({
+            jobId,
+            jobType: "UPLOAD_SESSION14_EVAL",
+            classId: normalizedClassId,
+            sessionId: `${normalizedClassId}_SESS_14_EVAL`,
+            level: "ERROR",
+            message: `Lỗi lưu ô Summary đầu trang Buổi 14 lớp ${normalizedClassId}: ${sumErrMsg}`,
+          });
+        }
+      }
+    }
+
+    // Step B: Upload & Verify eligible APPROVED student evaluations (safely skipping inactive/absent/unapproved when skipUnapproved=true)
     for (const row of targetRows) {
       const stu = studentMap.get(row.studentId);
       const fullName = stu?.fullName || row.studentId;
 
+      if (stu && Number(stu.isActive ?? 1) === 0) {
+        summary.skippedCount++;
+        summary.results.push({
+          studentId: row.studentId,
+          fullName,
+          status: "SKIPPED",
+          errorMessage: "Bỏ qua an toàn học viên đã nghỉ/bảo lưu (isActive = 0).",
+        });
+        continue;
+      }
+
       // Verify status & contentHash integrity before touching browser
       const freshRow = session14EvalRepo.findOne(normalizedClassId, row.studentId);
       if (!freshRow || freshRow.status !== "APPROVED") {
+        if (options.skipUnapproved || freshRow?.status === "VERIFIED") {
+          summary.skippedCount++;
+          summary.results.push({
+            studentId: row.studentId,
+            fullName,
+            status: "SKIPPED",
+            errorMessage:
+              freshRow?.status === "VERIFIED"
+                ? "Học viên đã nộp xác thực (VERIFIED) trước đó."
+                : "Bỏ qua học viên chưa đủ điều kiện / chưa bấm Duyệt (cho phép nộp trước các học viên đã APPROVED).",
+          });
+          continue;
+        }
         session14EvalRepo.demoteToWaitingApproval(
           normalizedClassId,
           row.studentId,
@@ -424,6 +540,219 @@ export class Session14EvalUploader {
     }
 
     return summary;
+  }
+
+  private static async uploadAndVerifySlot14ClassSummary(params: {
+    page: Page;
+    interceptor: NetworkInterceptor;
+    classId: string;
+    summaryHtml: string;
+    skipNavigation: boolean;
+    isLiveLms: boolean;
+  }): Promise<void> {
+    const { page, interceptor, classId, summaryHtml, skipNavigation, isLiveLms } = params;
+
+    if (!skipNavigation) {
+      await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+      await LmsHelpers.ensureCommentsSlotReady(page, classId, 14, {
+        reopenDrawerIfClosed: true,
+        waitForTableMs: 5000,
+      });
+    }
+
+    const classDetailDrawer = page
+      .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
+      .first();
+    const drawer =
+      (await classDetailDrawer.count().catch(() => 0)) > 0
+        ? classDetailDrawer
+        : page.locator('.MuiDrawer-root, [role="presentation"], body').first();
+
+    // 1. CRITICAL: Ensure top checkbox under Slot #14 (`input[type="checkbox"][id="13"]`) stays UNCHECKED (`checked === false`)
+    const cb13 = drawer.locator('input[type="checkbox"][id="13"]').first();
+    if ((await cb13.count().catch(() => 0)) > 0) {
+      if (await cb13.isChecked().catch(() => false)) {
+        await cb13.click({ force: true }).catch(() => {});
+        await page.waitForTimeout(isLiveLms ? 350 : 50);
+        if (await cb13.isChecked().catch(() => false)) {
+          await cb13
+            .evaluate((el: HTMLInputElement) => {
+              el.checked = false;
+              el.dispatchEvent(new Event("input", { bubbles: true }));
+              el.dispatchEvent(new Event("change", { bubbles: true }));
+            })
+            .catch(() => {});
+        }
+      }
+    }
+
+    // 2. Locate Summary card outside [role="dialog"] and expand if collapsed
+    const liveSummaryCard = drawer
+      .locator(
+        'div:has(> div > div > div > span:text-is("Summary")):not(:has([role="tablist"])):not(:has([role="tab"])):not([role="dialog"])'
+      )
+      .first();
+    const fallbackSummaryCard = drawer
+      .locator(
+        '[data-summary-card], #slot14-summary-card, .slot-summary-card, div:has(> span:text-is("Summary")):not([role="dialog"]), div:has(> label:text-is("Summary")):not([role="dialog"])'
+      )
+      .first();
+
+    const hasLiveCard = (await liveSummaryCard.count().catch(() => 0)) > 0;
+    const sectionCard = hasLiveCard ? liveSummaryCard : fallbackSummaryCard;
+    if ((await sectionCard.count().catch(() => 0)) === 0) {
+      throw new Error(
+        `Không tìm thấy khung "Summary" đầu trang Buổi 14 của lớp ${classId} trên tab Nhận xét.`
+      );
+    }
+
+    const expandIcon = sectionCard.locator('[data-testid="ExpandMoreIcon"]').first();
+    if (await expandIcon.isVisible().catch(() => false)) {
+      await expandIcon.click({ force: true }).catch(() => {});
+      await page.waitForTimeout(isLiveLms ? 400 : 80);
+    }
+
+    let inlineEditor = sectionCard.locator('.ql-editor[contenteditable="true"], .ql-editor').first();
+    if (!(await inlineEditor.isVisible().catch(() => false))) {
+      const sectionBody = sectionCard.locator("> div").nth(1);
+      const clickableArea =
+        (await sectionBody.count().catch(() => 0)) > 0
+          ? sectionBody.locator("> div > div").first()
+          : sectionCard;
+      await clickableArea.scrollIntoViewIfNeeded().catch(() => {});
+      await clickableArea.click({ force: true }).catch(() => {});
+      await page.waitForTimeout(isLiveLms ? 450 : 80);
+      inlineEditor = sectionCard.locator('.ql-editor[contenteditable="true"], .ql-editor').first();
+      if (!(await inlineEditor.isVisible().catch(() => false))) {
+        await sectionCard.click({ force: true }).catch(() => {});
+        await page.waitForTimeout(isLiveLms ? 450 : 80);
+      }
+    }
+    await inlineEditor.waitFor({ state: "visible", timeout: 5000 });
+
+    const isSummarySaveMutation = (res: any): boolean => {
+      try {
+        const url = String(res.url() || "").toLowerCase();
+        if (!url.includes("graphql") && !url.includes("lms-api.mindx.edu.vn")) return false;
+        if (String(res.request().method() || "").toUpperCase() !== "POST") return false;
+        const postData = res.request().postData() || "";
+        if (!postData) return false;
+        const parsed = JSON.parse(postData);
+        const candidates = Array.isArray(parsed) ? parsed : [parsed];
+        return candidates.some((item) => {
+          if (!item || typeof item !== "object") return false;
+          const opName = String(item.operationName || "").trim();
+          const queryStr = String(item.query || "").trim();
+          if (opName && /^(get|list|fetch|find|load|query)/i.test(opName)) return false;
+          if (/studentwork|studentEvaluation|updateStudentEvaluation/i.test(opName)) return false;
+          const isSlotMutation =
+            /^(UpdateSlotComment|CreateSlotComment|SaveSlotComment|UpdateSlotSummary|SaveSlotSummary)$/i.test(
+              opName
+            ) ||
+            (/\bmutation\b/i.test(queryStr) &&
+              /(UpdateSlotComment|CreateSlotComment|SaveSlotComment|UpdateSlotSummary|slotComment|summary)/i.test(
+                queryStr
+              ));
+          return isSlotMutation;
+        });
+      } catch {
+        return false;
+      }
+    };
+
+    const gqlSavePromise = skipNavigation
+      ? Promise.resolve(null)
+      : page
+          .waitForResponse((res) => isSummarySaveMutation(res), {
+            timeout: isLiveLms ? 18000 : 8000,
+          })
+          .catch(() => null);
+
+    await inlineEditor.click({ force: true });
+    await page.waitForTimeout(isLiveLms ? 200 : 40);
+    await page.keyboard.press("Control+A").catch(() => {});
+    await page.keyboard.press("Backspace").catch(() => {});
+    await page.waitForTimeout(isLiveLms ? 150 : 30);
+
+    await inlineEditor.evaluate((ed: HTMLElement, html: string) => {
+      ed.focus();
+      let inserted = false;
+      if (typeof document !== "undefined" && typeof document.execCommand === "function") {
+        try {
+          inserted = document.execCommand("insertHTML", false, html);
+        } catch {
+          inserted = false;
+        }
+      }
+      if (!inserted) {
+        ed.innerHTML = html;
+      }
+      ed.dispatchEvent(new Event("input", { bubbles: true }));
+      ed.dispatchEvent(new Event("change", { bubbles: true }));
+    }, summaryHtml);
+
+    // Trigger Quill text-change while keeping focus inside .ql-editor so longDebounceDelay (~3-4s) fires UpdateSlotComment!
+    if (typeof page.keyboard?.type === "function") {
+      await page.keyboard.type(" ").catch(() => {});
+      await page.keyboard.press("Backspace").catch(() => {});
+    }
+
+    const saveRes = await gqlSavePromise;
+    if (!skipNavigation) {
+      if (!saveRes) {
+        throw new Error(
+          `Không bắt được phản hồi mạng GraphQL UpdateSlotComment (HTTP 200) khi lưu ô Summary Buổi 14 lớp ${classId}.`
+        );
+      }
+      const status = saveRes.status();
+      if (status !== 200 && status !== 201) {
+        throw new Error(
+          `API UpdateSlotComment trả về HTTP ${status} khi lưu ô Summary Buổi 14 lớp ${classId}.`
+        );
+      }
+      const resJson = await saveRes.json().catch(() => null);
+      if (Array.isArray(resJson?.errors) && resJson.errors.length > 0) {
+        throw new Error(
+          `GraphQL trả về lỗi khi lưu ô Summary Buổi 14: ${
+            resJson.errors[0]?.message || "GraphQL Error"
+          }`
+        );
+      }
+    }
+
+    await page.waitForTimeout(isLiveLms ? 600 : 60);
+    // Blur safely onto table header (NEVER click active slot #14 or checkbox id="13")
+    const safeBlurTarget = drawer.locator('th:has-text("student"), th:has-text("Comment")').first();
+    if (await safeBlurTarget.isVisible().catch(() => false)) {
+      await safeBlurTarget.click({ force: true }).catch(() => {});
+      await page.waitForTimeout(isLiveLms ? 300 : 40);
+    }
+
+    // 3. Read-after-Write Verification: checkbox id="13" MUST remain false + Summary text MUST match
+    if ((await cb13.count().catch(() => 0)) > 0) {
+      const checkedAfter = await cb13.isChecked().catch(() => false);
+      if (checkedAfter) {
+        throw new Error(
+          `Checkbox đầu trang Buổi 14 (id="13") đang ở trạng thái tích chọn (yêu cầu bắt buộc checked === false).`
+        );
+      }
+    }
+
+    const readBackRaw = await sectionCard
+      .evaluate((el: HTMLElement) => {
+        const q = el.querySelector(".ql-editor") as HTMLElement | null;
+        if (q) return q.innerText || q.textContent || "";
+        return el.innerText || el.textContent || "";
+      })
+      .catch(() => "");
+
+    const expectedPlain = normalizePlainText(stripHtmlTagsToPlainText(summaryHtml));
+    const actualPlain = normalizePlainText(readBackRaw);
+    if (!expectedPlain || !actualPlain.includes(expectedPlain)) {
+      throw new Error(
+        `Đối chiếu Read-after-Write ô Summary Buổi 14 thất bại: Nội dung đọc lại trên DOM không khớp 100% với bản Summary đã lưu.`
+      );
+    }
   }
 
   private static async fillQuillEditor(
@@ -861,12 +1190,24 @@ export class Session14EvalUploader {
 
     const responsePromise = page
       .waitForResponse((res) => isMatchingSaveRequest(res), {
-        timeout: skipNavigation ? 500 : isLiveLms ? 15000 : 4000,
+        timeout: skipNavigation ? 500 : isLiveLms ? 45000 : 4000,
       })
       .catch(() => null);
 
     await saveBtn.click({ force: true });
-    const apiRes = await responsePromise;
+    let apiRes = await responsePromise;
+    if (!apiRes && isLiveLms && !skipNavigation) {
+      const spinnerVisible = await dialog
+        .locator(".MuiCircularProgress-root")
+        .first()
+        .isVisible()
+        .catch(() => false);
+      if (spinnerVisible) {
+        apiRes = await page
+          .waitForResponse((res) => isMatchingSaveRequest(res), { timeout: 20000 })
+          .catch(() => null);
+      }
+    }
     let savePayloadObj: Record<string, unknown> | null = null;
     let reopenPayloadObj: Record<string, unknown> | null = null;
     let reopenAttempted = false;

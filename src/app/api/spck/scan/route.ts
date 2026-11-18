@@ -1,20 +1,6 @@
 import fs from "fs";
-import { createRequire } from "module";
 import path from "path";
 import { NextResponse } from "next/server";
-
-const nodeRequire = createRequire(import.meta.url);
-const acorn = nodeRequire("next/dist/compiled/acorn") as {
-  tokenizer: (
-    input: string,
-    options?: { ecmaVersion?: number | "latest"; sourceType?: "module" | "script" }
-  ) => Iterable<{
-    type: { label: string };
-    value?: unknown;
-    start: number;
-    end: number;
-  }>;
-};
 import {
   assertClassHasSpckSession,
   canonicalizeSpckFolderPath,
@@ -22,8 +8,12 @@ import {
   computeSpckContentHash,
   computeSpckSessionContentHash,
   formatSpckSessionTitle,
+  getSession14DemoLimitsForClass,
+  isDefaultSpckProductTitle,
   normalizeSpckFolderKey,
+  parseSession14DemoScores,
   parseSpckSubmissionSnapshot,
+  session14EvalRepo,
   spckSessionRepo,
   spckUploadRepo,
   stripSpckSessionSuffix,
@@ -36,12 +26,16 @@ import {
   DEFAULT_SPCK_THUMBNAIL_PATH,
   MAX_SPCK_SCREENSHOTS,
   computeStudentFolderContentDigest,
+  inspectStudentProjectCodeSignals,
   resolveTargetSpckClassFolder,
   scanClassSpckDirectoryAsync,
   validateSpckResourceLimits,
 } from "@/lib/local-files/spck-scanner";
 import { validateLocalRequest } from "@/lib/security/local-guard";
-import { suggestSpckQuickTagsFromProject } from "@/lib/spck/spck-quick-tags";
+import {
+  isPresentationQuickTag,
+  suggestSpckQuickTagsFromProject,
+} from "@/lib/spck/spck-quick-tags";
 import { studentPortalManager } from "@/lib/student-portal/student-portal-server";
 import { stripVietnameseDiacritics } from "@/lib/utils/vietnamese-match";
 import { buildEnrichedClassSpckRecords } from "../list/route";
@@ -416,10 +410,14 @@ export async function POST(req: Request) {
       const finalAttachments =
         item.packageData.allAttachments || item.packageData.attachments || [];
 
-      const resolvedProjectTitle =
-        preserveStudentMetadata && existing?.projectTitle
-          ? existing.projectTitle
-          : item.packageData.rawProjectTitle || item.packageData.projectTitle;
+      const studentDisplayName = item.match.suggestedStudentName || item.folderName;
+      const keepExistingCustomTitle =
+        preserveStudentMetadata &&
+        Boolean(existing?.projectTitle?.trim()) &&
+        !isDefaultSpckProductTitle(existing?.projectTitle || "", studentDisplayName);
+      const resolvedProjectTitle = keepExistingCustomTitle
+        ? existing!.projectTitle
+        : item.packageData.rawProjectTitle || item.packageData.projectTitle;
 
       const limitCheck = validateSpckResourceLimits({
         screenshots: finalScreenshots,
@@ -442,7 +440,7 @@ export async function POST(req: Request) {
       const formattedTitleCandidate = formatSpckSessionTitle(
         stripSpckSessionSuffix(resolvedProjectTitle),
         checkSessionNum,
-        item.match.suggestedStudentName || item.folderName
+        studentDisplayName
       );
       const titleCheck = validateSpckTitleLength(
         formattedTitleCandidate,
@@ -468,7 +466,7 @@ export async function POST(req: Request) {
         pendingPortalConfirmation: hasPendingPortalConfirmation ? 1 : 0,
         projectTitle: resolvedProjectTitle,
         baseProjectTitle:
-          preserveStudentMetadata && existing?.baseProjectTitle
+          keepExistingCustomTitle && existing?.baseProjectTitle
             ? existing.baseProjectTitle
             : stripSpckSessionSuffix(resolvedProjectTitle),
         thumbnailPath: resolvedThumbnailPath,
@@ -559,318 +557,56 @@ export async function POST(req: Request) {
           classId,
           suggestedId,
           activeSessionNumber,
-          item.match.suggestedStudentName || item.folderName
+          studentDisplayName
         );
         const currentTags = parseSafeArray<string>(sessDraft.quickTagsJson);
+        const onlyHasPresentationTagAtS14 =
+          activeSessionNumber === 14 &&
+          currentTags.length > 0 &&
+          currentTags.every((t) => isPresentationQuickTag(t));
         if (
-          currentTags.length === 0 &&
+          (currentTags.length === 0 || onlyHasPresentationTagAtS14) &&
           !sessDraft.lastVerifiedAt &&
           sessDraft.draftStatus !== "APPROVED" &&
           sessDraft.draftStatus !== "VERIFIED"
         ) {
-          const inspectedSourcePaths: string[] = [...finalAttachments];
-          if (
-            canonicalItemFolder &&
-            finalAttachments.some((p) =>
-              /_(?:web_package\.zip|app_package\.zip|gamemaker\.yyz)$/i.test(p)
-            )
-          ) {
-            const walkFolderSources = (curDir: string, depth: number) => {
-              if (depth > 3 || inspectedSourcePaths.length >= 80) return;
-              let dirEntries: fs.Dirent[] = [];
-              try {
-                dirEntries = fs.readdirSync(curDir, { withFileTypes: true });
-              } catch {
-                return;
-              }
-              for (const de of dirEntries) {
-                if (inspectedSourcePaths.length >= 80) break;
-                if (de.name.startsWith(".")) continue;
-                const lowerDe = de.name.toLowerCase();
-                if (
-                  lowerDe.startsWith("_spck_") ||
-                  lowerDe === "node_modules" ||
-                  lowerDe === "__pycache__" ||
-                  lowerDe === "venv" ||
-                  lowerDe === ".venv" ||
-                  lowerDe.endsWith("_web_package.zip") ||
-                  lowerDe.endsWith("_app_package.zip") ||
-                  lowerDe.endsWith("_robotics_package.zip") ||
-                  lowerDe.endsWith("_gamemaker.yyz")
-                ) {
-                  continue;
-                }
-                const fullDe = path.join(curDir, de.name);
-                try {
-                  const st = fs.lstatSync(fullDe);
-                  if (st.isSymbolicLink()) continue;
-                  if (st.isDirectory()) {
-                    walkFolderSources(fullDe, depth + 1);
-                  } else if (
-                    st.isFile() &&
-                    /\.(?:html?|css|m?js|py|ui|qss|ipynb|gml|yy|yyp|csv)$/i.test(lowerDe)
-                  ) {
-                    inspectedSourcePaths.push(fullDe);
-                  }
-                } catch {}
-              }
-            };
-            walkFolderSources(canonicalItemFolder, 0);
-          }
-          const fileExts = Array.from(
-            new Set(
-              inspectedSourcePaths.map((p) => path.extname(p).toLowerCase()).filter(Boolean)
-            )
+          const signals = inspectStudentProjectCodeSignals(
+            canonicalItemFolder,
+            finalAttachments
           );
-          let hasFlexOrGridCss = false;
-          let hasNavLinks = false;
-          let hasEventBinding = false;
-          let hasDomUpdate = false;
-          let hasFirebaseCode = false;
-          const hasRoboticsCode = finalAttachments.some((p) =>
-            p.toLowerCase().endsWith("_robotics_package.zip")
-          );
-          const stripCssCommentsAndStrings = (cssCode: string) =>
-            cssCode
-              .replace(
-                /\/\*[\s\S]*?\*\/|("(?:\\[\s\S]|[^"\\\r\n])*"|'(?:\\[\s\S]|[^'\\\r\n])*')/g,
-                (match, strLiteral) => (strLiteral ? '""' : " ")
-              );
-
-          const analyzeJsCodeSyntax = (
-            code: string,
-            sourceType: "script" | "module" = "script"
-          ): { executableJs: string; importSpecifiers: string[]; lexComplete: boolean } => {
-            const importSpecifiers: string[] = [];
-            let out = "";
-            let prevEnd = 0;
-            let prevTok: { label: string; value?: unknown } | null = null;
-            let prevPrevTok: { label: string; value?: unknown } | null = null;
-            let prevPrevPrevTok: { label: string; value?: unknown } | null = null;
-            let inImportOrExportStmt = false;
-            let braceDepthInImport = 0;
-
-            try {
-              for (const tok of acorn.tokenizer(code, {
-                ecmaVersion: "latest",
-                sourceType,
-              })) {
-                if (tok.start > prevEnd) {
-                  out += code.slice(prevEnd, tok.start).includes("\n") ? "\n" : " ";
-                }
-                const label = tok.type.label;
-                if (
-                  (label === "import" || label === "export") &&
-                  prevTok?.label !== "."
-                ) {
-                  inImportOrExportStmt = true;
-                  braceDepthInImport = 0;
-                } else if (inImportOrExportStmt) {
-                  if (label === "{") {
-                    braceDepthInImport++;
-                    if (braceDepthInImport > 1) inImportOrExportStmt = false;
-                  } else if (label === "}") {
-                    braceDepthInImport = Math.max(0, braceDepthInImport - 1);
-                  } else if (braceDepthInImport === 0) {
-                    const isValidHeaderToken =
-                      label === "*" || label === "," || label === "name";
-                    if (!isValidHeaderToken && label !== "string") {
-                      inImportOrExportStmt = false;
-                    }
-                  }
-                }
-
-                if (label === "string") {
-                  const isStaticImport =
-                    (prevTok?.label === "import" && prevPrevTok?.label !== ".") ||
-                    (inImportOrExportStmt &&
-                      braceDepthInImport === 0 &&
-                      prevTok?.label === "name" &&
-                      prevTok?.value === "from");
-                  const isDynamicImportOrRequire =
-                    prevTok?.label === "(" &&
-                    prevPrevPrevTok?.label !== "." &&
-                    prevPrevPrevTok?.label !== "function" &&
-                    (prevPrevTok?.label === "import" ||
-                      (prevPrevTok?.label === "name" && prevPrevTok?.value === "require"));
-                  if (
-                    (isStaticImport || isDynamicImportOrRequire) &&
-                    typeof tok.value === "string" &&
-                    tok.value
-                  ) {
-                    importSpecifiers.push(tok.value);
-                  }
-                  if (braceDepthInImport === 0) {
-                    inImportOrExportStmt = false;
-                  }
-                  out += '""';
-                } else if (label === "template") {
-                  // Non-executable raw text inside template literal -> omit
-                } else if (label === "regexp") {
-                  out += "/_/";
-                } else if (label === "eof") {
-                  return { executableJs: out, importSpecifiers, lexComplete: true };
-                } else {
-                  out += code.slice(tok.start, tok.end);
-                }
-
-                prevEnd = tok.end;
-                prevPrevPrevTok = prevPrevTok;
-                prevPrevTok = prevTok;
-                prevTok = { label, value: tok.value };
-              }
-              return { executableJs: out, importSpecifiers, lexComplete: true };
-            } catch {
-              return { executableJs: out, importSpecifiers, lexComplete: false };
-            }
-          };
-
-          const inspectJsSyntax = (
-            jsSource: string,
-            sourceType: "script" | "module" = "script"
-          ) => {
-            const { executableJs: syntaxOnly, importSpecifiers } = analyzeJsCodeSyntax(
-              jsSource,
-              sourceType
-            );
-            if (/\baddEventListener\s*\(|\bon(?:click|submit|change|input)\s*=/i.test(syntaxOnly)) {
-              hasEventBinding = true;
-            }
-            if (
-              /\.(?:textContent|innerHTML|innerText)\s*=|\b(?:createElement|appendChild|removeChild|replaceChildren)\s*\(/i.test(
-                syntaxOnly
-              )
-            ) {
-              hasDomUpdate = true;
-            }
-            if (
-              importSpecifiers.some((spec) => /(?:firebase|firestore)/i.test(spec)) ||
-              /\b(?:initializeApp|getFirestore|getAuth|getDatabase|signInWithEmailAndPassword|createUserWithEmailAndPassword|signInWithPopup|onAuthStateChanged|collection|addDoc|getDocs|getDoc|setDoc|updateDoc|deleteDoc|onSnapshot)\s*\(|\bfirebase\s*\.\s*(?:initializeApp|auth|firestore|database)\s*\(/.test(
-                syntaxOnly
-              )
-            ) {
-              hasFirebaseCode = true;
-            }
-          };
-
-          for (const attPath of inspectedSourcePaths) {
-            const lowerAtt = attPath.toLowerCase();
-            if (lowerAtt.endsWith(".html") || lowerAtt.endsWith(".htm")) {
-              try {
-                const rawHtml = fs
-                  .readFileSync(attPath, "utf-8")
-                  .slice(0, 100000)
-                  .replace(/<!--[\s\S]*?-->/g, " ");
-                const htmlInlineStyles: string[] = [];
-                const htmlInlineScripts: Array<{
-                  body: string;
-                  sourceType: "script" | "module";
-                }> = [];
-                const htmlMarkupParts: string[] = [];
-                let lastHtmlIdx = 0;
-
-                for (const blockMatch of rawHtml.matchAll(
-                  /<script\b([^>]*)>([\s\S]*?)<\/script>|<style\b([^>]*)>([\s\S]*?)<\/style>/gi
-                )) {
-                  const matchStart = blockMatch.index ?? 0;
-                  if (matchStart > lastHtmlIdx) {
-                    htmlMarkupParts.push(rawHtml.slice(lastHtmlIdx, matchStart));
-                  }
-                  lastHtmlIdx = matchStart + blockMatch[0].length;
-                  if (blockMatch[1] !== undefined || blockMatch[2] !== undefined) {
-                    const scriptAttrs = blockMatch[1] || "";
-                    const scriptBody = blockMatch[2] || "";
-                    const isModuleScript = /\btype\s*=\s*(?:["']\s*module\s*["']|module\b)/i.test(
-                      scriptAttrs
-                    );
-                    if (/\bsrc\s*=\s*["'][^"']*(?:firebase|firestore)[^"']*["']/i.test(scriptAttrs)) {
-                      hasFirebaseCode = true;
-                    }
-                    if (scriptBody.trim()) {
-                      htmlInlineScripts.push({
-                        body: scriptBody,
-                        sourceType: isModuleScript ? "module" : "script",
-                      });
-                    }
-                  } else {
-                    const styleBody = blockMatch[4] || "";
-                    if (styleBody.trim()) {
-                      htmlInlineStyles.push(styleBody);
-                    }
-                  }
-                }
-                if (lastHtmlIdx < rawHtml.length) {
-                  htmlMarkupParts.push(rawHtml.slice(lastHtmlIdx));
-                }
-                const markupOnly = htmlMarkupParts.join(" ");
-
-                for (const styleBlock of htmlInlineStyles) {
-                  const cleanStyle = stripCssCommentsAndStrings(styleBlock);
-                  if (/display\s*:\s*(?:inline-)?(?:flex|grid)/i.test(cleanStyle)) {
-                    hasFlexOrGridCss = true;
-                  }
-                }
-                if (
-                  /<[a-z0-9]+\b[^>]*\bstyle\s*=\s*["'][^"']*display\s*:\s*(?:inline-)?(?:flex|grid)[^"']*["']/i.test(
-                    markupOnly
-                  ) ||
-                  /<[a-z0-9]+\b[^>]*\bclass\s*=\s*["'][^"']*\bd-(?:inline-)?(?:flex|grid)\b[^"']*["']/i.test(
-                    markupOnly
-                  )
-                ) {
-                  hasFlexOrGridCss = true;
-                }
-                if (/<nav\b[^>]*>(?:(?!<\/nav>)[\s\S])*?<a\b/i.test(markupOnly)) {
-                  hasNavLinks = true;
-                }
-                if (/<[a-z0-9]+\b[^>]*\bon(?:click|submit|change|input)\s*=/i.test(markupOnly)) {
-                  hasEventBinding = true;
-                }
-                for (const inlineScript of htmlInlineScripts) {
-                  inspectJsSyntax(inlineScript.body, inlineScript.sourceType);
-                }
-              } catch {}
-            } else if (lowerAtt.endsWith(".css")) {
-              try {
-                const rawCss = stripCssCommentsAndStrings(
-                  fs.readFileSync(attPath, "utf-8").slice(0, 100000)
-                );
-                if (/display\s*:\s*(?:inline-)?(?:flex|grid)/i.test(rawCss)) {
-                  hasFlexOrGridCss = true;
-                }
-              } catch {}
-            } else if (lowerAtt.endsWith(".js") || lowerAtt.endsWith(".mjs")) {
-              try {
-                inspectJsSyntax(
-                  fs.readFileSync(attPath, "utf-8").slice(0, 100000),
-                  lowerAtt.endsWith(".mjs") ? "module" : "script"
-                );
-              } catch {}
-            }
-          }
-          const hasJsInteraction = hasEventBinding && hasDomUpdate;
+          const s14Eval =
+            activeSessionNumber === 14
+              ? session14EvalRepo.findOne(classId, suggestedId)
+              : undefined;
+          const s14Limits =
+            activeSessionNumber === 14 ? getSession14DemoLimitsForClass(classId) : undefined;
+          const hasS14DemoScore = Boolean(s14Eval && Number(s14Eval.demoTotalScore) > 0);
+          const parsedS14Demo =
+            hasS14DemoScore && s14Eval
+              ? parseSession14DemoScores(s14Eval.demoScoresJson, classId)
+              : undefined;
           const suggestedTags = suggestSpckQuickTagsFromProject({
             classId,
             sessionNumber: activeSessionNumber,
-            fileExtensions: fileExts,
             screenshotCount: finalScreenshots.length,
             attachmentCount: finalAttachments.length,
             youtubeCount: mergedYoutubeUrls.length,
-            slideCount: fileExts.filter((ext) => ext === ".pptx" || ext === ".pdf").length,
-            hasFlexOrGridCss,
-            hasNavLinks,
-            hasEventBinding,
-            hasDomUpdate,
-            hasJsInteraction,
-            hasFirebaseCode,
-            hasRoboticsCode,
+            ...signals,
+            demoCommunicationScore: parsedS14Demo
+              ? Number(parsedS14Demo.communication || 0)
+              : undefined,
+            demoCommunicationMax: s14Limits?.communication,
+            includeSession14ProductEvidence: activeSessionNumber === 14 && hasS14DemoScore,
           });
-          if (suggestedTags.length > 0) {
+          const mergedSuggestedTags = Array.from(
+            new Set([...currentTags, ...suggestedTags])
+          ).slice(0, 4);
+          if (mergedSuggestedTags.length > currentTags.length) {
             spckSessionRepo.saveSessionDraft({
               classId,
               studentId: suggestedId,
               sessionNumber: activeSessionNumber,
-              quickTagsJson: JSON.stringify(suggestedTags),
+              quickTagsJson: JSON.stringify(mergedSuggestedTags),
               updateSharedPool: false,
             });
           }

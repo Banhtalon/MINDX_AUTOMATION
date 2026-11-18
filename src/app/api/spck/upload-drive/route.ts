@@ -46,6 +46,7 @@ export async function POST(req: Request) {
       uploadMode,
       sessionNumber: activeSessionNumber,
       syncAllUnverifiedSessions: body?.syncActiveSession === true,
+      forceReupload: body?.forceReupload === true,
     });
 
     if (body?.syncActiveSession === true && activeSessionNumber) {

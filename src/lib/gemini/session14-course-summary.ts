@@ -1,26 +1,31 @@
 /**
- * MINDX AUTOMATION BOT - SESSION 14 COURSE FINAL EVALUATION GENERATOR (v2.9.0)
+ * MINDX AUTOMATION BOT - SESSION 14 COURSE FINAL EVALUATION GENERATOR (v3.6.0)
  * Generates the 3-part "Thư từ MindX" (Nhận xét học sinh - Buổi 14 Tổng kết cuối khóa):
- * 1. Learned From Mindx (Opening greeting -> Về kiến thức chuyên môn -> Kết quả đánh giá [Điểm Demo + Điểm Năng lực] -> Về kỹ năng mềm -> Nhận xét cá nhân + Lời chúc MindX)
+ * 1. Learned From Mindx (Về kiến thức chuyên môn -> Kết quả đánh giá [Điểm Demo + Điểm Năng lực] -> Về kỹ năng mềm -> Nhận xét cá nhân)
  * 2. Suggestions From Mindx (2-3 sentences of actionable advice)
  * 3. Future Direction (3-4 sentences on subject potential & readiness for the next advanced course)
  *
  * Follows the exact real MindX teacher style (Mccully Mac Dallas sample),
- * with strict PII anonymization (`STUDENT_FULL_XX`, `STUDENT_SHORT_XX`) and TypeScript-injected scores.
+ * with strict PII anonymization (`STUDENT_FULL_XX`, `STUDENT_SHORT_XX`), dynamic course Demo limits,
+ * 3dp Demo Day award context, and TypeScript-injected scores.
  */
 
 import {
   calculateCompetencyAverageScore,
-  calculateDemoTotalScore, isRoboticsClassCode,
+  calculateDemoTotalScore,
+  computeSession14AwardRankingsPure,
+  formatRawDemoScore3dp,
+  getSession14DemoLimitsForClass,
+  isRoboticsClassCode,
   parseSession14CompetencyScores,
   parseSession14DemoScores,
   session14EvalRepo,
   sessionFeedbackRepo,
   spckSessionRepo,
-  studentRepo,
   type SpckSession14CompetencyScores,
   type SpckSession14DemoScores,
   type SpckSession14EvaluationRecord,
+  studentRepo,
 } from "../db/sqlite";
 import { detectCoursePrefixFromClassId } from "../playwright/spck-drive-uploader";
 import { getGeminiModel } from "./client";
@@ -133,12 +138,12 @@ const COURSE_PROGRESSION_MAP: Record<
   CSA: {
     currentCourseLabel: "Khoa học Máy tính nâng cao (Computer Scientist - Advanced / CSA)",
     nextCourseLabel: "khóa học Khoa học Máy tính chuyên sâu (CSI)",
-    domainKeywords: "cấu trúc dữ liệu, lập trình hướng đối tượng và giải quyết bài toán",
+    domainKeywords: "cấu trúc dữ liệu, phân tích dữ liệu, trực quan hóa và giải quyết bài toán",
   },
   CSI: {
     currentCourseLabel: "Khoa học Máy tính chuyên sâu (Computer Scientist - Intensive / CSI)",
-    nextCourseLabel: "các khóa học Công nghệ và Dự án phần mềm nâng cao tiếp theo",
-    domainKeywords: "thuật toán nâng cao, xử lý dữ liệu và phát triển dự án hoàn chỉnh",
+    nextCourseLabel: "các khóa học Công nghệ và Dự án AI/Phần mềm nâng cao tiếp theo",
+    domainKeywords: "thuật toán nâng cao, mô hình học máy / xử lý dữ liệu và phát triển dự án hoàn chỉnh",
   },
 };
 
@@ -153,7 +158,6 @@ function getCourseProgressionInfo(classId: string) {
     domainKeywords: "kiến thức lập trình, tư duy thuật toán và xây dựng sản phẩm thực tế",
   };
 }
-
 
 function formatScoreDisplay(score: number): string {
   const rounded = Math.round((Number(score) || 0) * 100) / 100;
@@ -433,7 +437,28 @@ export class Session14CourseSummaryGenerator {
     const normalizedClassId = String(classId || "").trim().toUpperCase();
     const classRoster = studentRepo.findByClass(normalizedClassId, false);
     const peerNames = classRoster.map((s) => s.fullName);
+    const activeRoster = classRoster.filter((s) => Number(s.isActive ?? 1) !== 0);
     const courseProg = getCourseProgressionInfo(normalizedClassId);
+    const isRobotics = isRoboticsClassCode(normalizedClassId);
+    const demoLimits = getSession14DemoLimitsForClass(normalizedClassId);
+    const maxDemoTotal = calculateDemoTotalScore(demoLimits);
+    const maxDemoStr = maxDemoTotal.toFixed(1);
+
+    const classRankings = computeSession14AwardRankingsPure(
+      activeRoster.map((stu) => {
+        const ev = session14EvalRepo.getOrInit(normalizedClassId, stu.studentId);
+        return {
+          studentId: stu.studentId,
+          fullName: stu.fullName,
+          rawTotalScore3dp:
+            typeof ev.demoRawTotalScore === "number" && ev.demoRawTotalScore > 0
+              ? ev.demoRawTotalScore
+              : ev.demoTotalScore,
+          demoTotalScore: ev.demoTotalScore,
+        };
+      })
+    );
+    const rankMap = new Map(classRankings.map((r) => [r.studentId, r]));
 
     const results: Session14EvalAiResultItem[] = [];
 
@@ -476,7 +501,10 @@ export class Session14CourseSummaryGenerator {
       );
       const compTotal = calculateCompetencyAverageScore(compScores);
 
-      const demoScores = parseSession14DemoScores(item.demoScores || evalRow.demoScoresJson, normalizedClassId);
+      const demoScores = parseSession14DemoScores(
+        item.demoScores || evalRow.demoScoresJson,
+        normalizedClassId
+      );
       const demoTotal = calculateDemoTotalScore(demoScores);
 
       let storedTags: string[] = [];
@@ -517,13 +545,16 @@ export class Session14CourseSummaryGenerator {
         allowFocusCritique
       );
 
-      // Guardrail: If there are NO quickTags, NO teacherNote, NO SPCK comment, NO judgeNote, and NO history -> INSUFFICIENT_INFO
+      const hasImportedDemoScore = demoTotal > 0;
+
+      // Guardrail: If there are NO quickTags, NO teacherNote, NO SPCK comment, NO judgeNote, NO Demo score, and NO history -> INSUFFICIENT_INFO
       if (
         quickTags.length === 0 &&
         teacherNote.length === 0 &&
         spckComment.length === 0 &&
         judgeNote.length === 0 &&
-        !history.hasHistory
+        !history.hasHistory &&
+        !hasImportedDemoScore
       ) {
         results.push({
           studentId: item.studentId,
@@ -541,7 +572,7 @@ export class Session14CourseSummaryGenerator {
           ),
           draftVersion: evalRow.draftVersion,
           errorMessage:
-            "Chưa đủ thông tin (INSUFFICIENT_INFO): Không có Quick Tags, ghi chú giáo viên hoặc dữ liệu quá trình học. Nội dung hiện có được giữ nguyên.",
+            "Chưa đủ thông tin (INSUFFICIENT_INFO): Không có Quick Tags, ghi chú giáo viên, bảng điểm Demo hoặc dữ liệu quá trình học. Nội dung hiện có được giữ nguyên.",
           record: evalRow,
         });
         continue;
@@ -575,6 +606,24 @@ export class Session14CourseSummaryGenerator {
         peerNames
       );
 
+      const rankInfo = rankMap.get(item.studentId);
+      const rawScore3dp =
+        typeof evalRow.demoRawTotalScore === "number" && evalRow.demoRawTotalScore > 0
+          ? evalRow.demoRawTotalScore
+          : demoTotal;
+      const awardContextLine =
+        rankInfo && rankInfo.awardTier !== "UNSCORED"
+          ? rankInfo.awardTier === "FIRST" ||
+            rankInfo.awardTier === "SECOND" ||
+            rankInfo.awardTier === "THIRD"
+            ? `\n- Danh hiệu vinh danh buổi Bảo vệ cuối khóa (Demo Day): Đạt ${rankInfo.awardLabel} của lớp (điểm gốc BGK: ${formatRawDemoScore3dp(rawScore3dp)}/${maxDemoStr})`
+            : `\n- Kết quả buổi Bảo vệ cuối khóa (Demo Day): Hoàn thành bảo vệ dự án (điểm gốc BGK: ${formatRawDemoScore3dp(rawScore3dp)}/${maxDemoStr})`
+          : "";
+
+      const demoDetailLabel = isRobotics
+        ? `Giải quyết vấn đề: ${demoScores.problemSolving}/${demoLimits.problemSolving}, Kỹ năng máy tính: ${demoScores.computerSkills}/${demoLimits.computerSkills}, Sáng tạo: ${demoScores.creativity}/${demoLimits.creativity}, Giao tiếp: ${demoScores.communication}/${demoLimits.communication}, Thuật toán: ${demoScores.algorithm}/${demoLimits.algorithm}`
+        : `Thuật toán: ${demoScores.algorithm}/${demoLimits.algorithm}, Sáng tạo: ${demoScores.creativity}/${demoLimits.creativity}, Giao tiếp: ${demoScores.communication}/${demoLimits.communication}, Giải quyết vấn đề: ${demoScores.problemSolving}/${demoLimits.problemSolving}, Kỹ năng máy tính: ${demoScores.computerSkills}/${demoLimits.computerSkills}`;
+
       const attitudeFocusRule = allowFocusCritique
         ? `- Lưu ý thái độ học tập (${compScores.attitudeInClass}/5): học viên đôi lúc còn phân tâm hoặc cần duy trì sự tập trung tốt hơn, hãy nhắc nhở nhẹ nhàng, mang tính xây dựng sư phạm.`
         : `- QUY TẮC BẮT BUỘC VỀ THÁI ĐỘ HỌC TẬP (${compScores.attitudeInClass}/5 điểm - Tốt/Xuất sắc): Học viên có thái độ học tập trên lớp rất nghiêm túc (${compScores.attitudeInClass}/5 điểm). TUYỆT ĐỐI KHÔNG ĐƯỢC viết học viên "mất tập trung", "chưa tập trung", "cần duy trì sự tập trung", "hạn chế việc phân tâm" hay "chú ý tập trung hơn trong giờ học" ở bất kỳ đoạn nào. Phần điểm cần lưu ý và lời khuyên chỉ được góp ý về khía cạnh chuyên môn lập trình (ví dụ: rèn luyện thói quen kiểm thử kỹ các trường hợp ngoại lệ, tối ưu cấu trúc mã nguồn gọn gàng hơn, chủ động tự viết và kiểm tra kỹ từng đoạn lệnh hoặc mở rộng thêm tính năng nâng cao).`;
@@ -595,21 +644,29 @@ export class Session14CourseSummaryGenerator {
         ? `3-4 câu hoàn chỉnh cho ô 'Future Direction': Đánh giá tiềm năng tốt của ${shortToken} với môn học qua khả năng tiếp thu và hoàn thiện sản phẩm cuối khóa. Giáo viên khuyến khích ${shortToken} tiếp tục theo học ${courseProg.nextCourseLabel} để mở rộng kiến thức chuyên môn, phát triển tư duy lập trình và rèn luyện kỹ năng xây dựng những sản phẩm có độ phức tạp cao hơn. Bên cạnh đó, em nên tiếp tục rèn luyện sự tập trung, tính cẩn thận khi làm bài và kỹ năng trình bày để chuẩn bị tốt hơn cho các dự án lớn ở những cấp độ học tiếp theo.`
         : `3-4 câu hoàn chỉnh cho ô 'Future Direction': Đánh giá tiềm năng tốt của ${shortToken} với môn học qua khả năng tiếp thu và hoàn thiện sản phẩm cuối khóa. Giáo viên khuyến khích ${shortToken} tiếp tục theo học ${courseProg.nextCourseLabel} để mở rộng kiến thức chuyên môn, phát triển tư duy lập trình và rèn luyện kỹ năng xây dựng những sản phẩm có độ phức tạp cao hơn. Bên cạnh đó, em nên tiếp tục rèn luyện tư duy thiết kế chương trình, tính cẩn thận khi kiểm thử code và kỹ năng trình bày để chuẩn bị tốt hơn cho các dự án lớn ở những cấp độ học tiếp theo.`;
 
+      const awardInstruction =
+        rankInfo &&
+        (rankInfo.awardTier === "FIRST" ||
+          rankInfo.awardTier === "SECOND" ||
+          rankInfo.awardTier === "THIRD")
+          ? `\n- Học viên đạt danh hiệu **${rankInfo.awardLabel}** trong buổi bảo vệ cuối khóa: hãy ghi nhận trang trọng thành tích đạt **${rankInfo.awardLabel}** này trong mục 'Nhận xét cá nhân' (tuyệt đối KHÔNG tự ghi con số điểm vào đoạn văn).`
+          : "";
+
       const prompt = `Bạn là giáo viên lập trình và công nghệ tại MindX. Hãy viết **Nhận xét tổng kết cuối khóa (Buổi 14 - Thư từ MindX)** cho học viên có tên gọi ngắn là "${shortToken}" (họ tên đầy đủ: "${fullToken}") tại lớp ${normalizedClassId} (${courseProg.currentCourseLabel}).
 
 PHONG CÁCH MẪU CHUẨN GIÁO VIÊN MINDX (BẮT BUỘC HỌC THEO 100% VỀ GIỌNG VĂN & CẤU TRÚC):
 - Xưng hô chuẩn mực: Xưng là **"giáo viên"** (ví dụ: "giáo viên đánh giá cao...", "giáo viên nhận thấy...", "giáo viên ghi nhận...", "giáo viên khuyến khích..."), gọi học viên bằng tên gọi ngắn **"${shortToken}"** kết hợp đại từ **"em"** (nhất quán dùng "em", không dùng "con"). **TUYỆT ĐỐI KHÔNG xưng là "thầy", "cô" hay "thầy/cô".**
 - TUYỆT ĐỐI KHÔNG viết lời chào mở đầu ("Kính gửi Quý Phụ huynh...", "MindX xin gửi đến...") và KHÔNG viết đoạn chúc cuối thư ("MindX ghi nhận sự nỗ lực...").
 - Khi nhắc đến sản phẩm cuối khóa, chỉ ghi gọn là **"Đối với dự án cuối khóa,"** hoặc **"Ở dự án cuối khóa,"** — TUYỆT ĐỐI KHÔNG tự đặt tên dự án hoặc ghi "mang tên ...".
-- Tuyệt đối KHÔNG tự ghi điểm số vào các đoạn văn (hệ thống TypeScript sẽ tự chèn mục "Kết quả đánh giá: Điểm Demo / Điểm Năng lực").
+- Tuyệt đối KHÔNG tự ghi điểm số vào các đoạn văn (hệ thống TypeScript sẽ tự chèn mục "Kết quả đánh giá: Điểm Demo / Điểm Năng lực").${awardInstruction}
 ${attitudeFocusRule}
 
 DỮ LIỆU ĐẦU VÀO CỦA HỌC VIÊN:
 - Mã học viên ẩn danh: ${shortToken} (họ tên đầy đủ: ${fullToken})
 - Khóa học hiện tại: ${courseProg.currentCourseLabel} (kiến thức trọng tâm: ${courseProg.domainKeywords})
 - Định hướng khóa kế tiếp: ${courseProg.nextCourseLabel}
-- Điểm Demo (thang 5.0): ${formatScoreDisplay(demoTotal)}/5.0 (${isRoboticsClassCode(normalizedClassId) ? `Giải quyết vấn đề: ${demoScores.problemSolving}/1.0, Kỹ năng máy tính: ${demoScores.computerSkills}/0.5, Sáng tạo: ${demoScores.creativity}/1.25, Giao tiếp: ${demoScores.communication}/0.75, Thuật toán: ${demoScores.algorithm}/1.0` : `Thuật toán: ${demoScores.algorithm}/1.5, Sáng tạo: ${demoScores.creativity}/1.0, Giao tiếp: ${demoScores.communication}/0.5, Giải quyết vấn đề: ${demoScores.problemSolving}/1.0, Kỹ năng máy tính: ${demoScores.computerSkills}/1.0`})
-- Điểm Năng lực [ĐNL] (thang 5.0): ${formatScoreDisplay(compTotal)}/5.0 (Kiến thức trên lớp: ${compScores.knowledgeInClass}/5, Tự học: ${compScores.knowledgeSelfStudy}/5, Giao tiếp & hợp tác: ${compScores.skillCommunication}/5, Sử dụng máy tính: ${compScores.skillComputerUse}/5, Giải quyết vấn đề: ${compScores.skillProblemSolving}/5, Sáng tạo: ${compScores.skillCreativity}/5, Tư duy máy tính: ${compScores.skillComputational}/5, Thái độ BTVN: ${compScores.attitudeHomework}/5, Thái độ học tập trên lớp: ${compScores.attitudeInClass}/5)
+- Điểm Demo (thang ${maxDemoStr}): ${formatScoreDisplay(demoTotal)}/${maxDemoStr} (${demoDetailLabel})${awardContextLine}
+- Điểm Năng lực [ĐNL] (thang 5.0): ${formatScoreDisplay(compTotal)}/5.0 (Kiến thức tự học: ${compScores.knowledgeSelfStudy}/5, Kiến thức trên lớp: ${compScores.knowledgeInClass}/5, Giao tiếp & hợp tác: ${compScores.skillCommunication}/5, Sử dụng máy tính: ${compScores.skillComputerUse}/5, Giải quyết vấn đề: ${compScores.skillProblemSolving}/5, Sáng tạo: ${compScores.skillCreativity}/5, Tư duy máy tính: ${compScores.skillComputational}/5, Thái độ BTVN: ${compScores.attitudeHomework}/5, Thái độ học tập trên lớp: ${compScores.attitudeInClass}/5)
 - Thẻ đánh giá nhanh (Quick Tags): ${JSON.stringify(anonTags)}
 - Ghi chú của giáo viên: ${anonNote || "(Không có ghi chú riêng)"}
 - Ghi chú Ban giám khảo Demo: ${anonJudgeNote || "(Không có)"}
@@ -737,6 +794,14 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence \`\`\
           personalParagraph2,
         });
 
+        // Non-Robotics classes MUST keep awardRanking = "" (only 3 Quill boxes on MindX LMS)
+        const nextAwardRanking = isRobotics
+          ? latestRowAfterAi.awardRanking ||
+            (rankInfo && rankInfo.awardTier !== "UNSCORED"
+              ? `${rankInfo.awardLabel} (${rankInfo.rawScoreText}/${maxDemoStr} điểm)`
+              : "")
+          : "";
+
         const saved = session14EvalRepo.saveDraft({
           classId: normalizedClassId,
           studentId: item.studentId,
@@ -746,6 +811,7 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence \`\`\
           learnedFromMindx,
           suggestionsFromMindx,
           futureDirection,
+          awardRanking: nextAwardRanking,
           ...(item.quickTags !== undefined ? { quickTags } : {}),
           ...(item.teacherNote !== undefined ? { teacherNote } : {}),
         });
@@ -800,7 +866,7 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence \`\`\
           competencyTotalScore: compTotal,
           anonymizedFullToken: fullToken,
           anonymizedShortToken: shortToken,
-          outboundPromptSample: prompt,
+          outboundPromptSample: safePrompt,
           preservedExisting: true,
           draftVersion: evalRow.draftVersion,
           errorMessage: message,

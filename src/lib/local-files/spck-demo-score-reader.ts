@@ -12,27 +12,816 @@ import AdmZip from "adm-zip";
 import {
   calculateCompetencyAverageScore,
   calculateDemoTotalScore,
+  computeSession14AwardRankingsPure,
+  formatRawDemoScore3dp,
   getDb,
   getSession14DemoLimitsForClass,
+  isDefaultSpckProductTitle,
   isRoboticsClassCode,
   parseSession14CompetencyScores,
   parseSession14DemoScores,
+  SESSION14_COMPETENCY_KEYS,
+  type Session14AwardRankItem,
+  type Session14ClassSummaryRecord,
+  session14ClassSummaryRepo,
   session14EvalRepo,
   sessionFeedbackRepo,
   spckSessionRepo,
-  spckUploadRepo,
-  studentRepo,
   type SpckSession14CompetencyScores,
   type SpckSession14DemoScores,
   type SpckSession14EvaluationRecord,
+  spckUploadRepo,
+  stripSpckSessionSuffix,
+  studentRepo,
 } from "../db/sqlite";
+import { authService } from "../playwright/auth";
+import { browserManager } from "../playwright/browser-manager";
+import { LmsHelpers } from "../playwright/lms-helpers";
+import { SELECTORS } from "../playwright/selectors";
 import {
   exportGoogleSheetBufferViaBrowser,
   extractGoogleSheetId,
   getDemoSheetTitleForClass,
 } from "../playwright/spck-demo-sheet";
+import { taskQueue } from "../queue/task-queue";
 import { assertPathAllowed } from "../security/path-allowlist";
+import {
+  detectSpckCourseProfile,
+  isPresentationQuickTag,
+  suggestSession14PresentationTagFromDemoScore,
+} from "../spck/spck-quick-tags";
 import { normalizeVietnameseName } from "../utils/vietnamese-match";
+
+export {
+  formatRawDemoScore3dp,
+  type Session14AwardRankItem,
+  type Session14ClassSummaryRecord,
+};
+
+export const computeClassDemoAwardRankings = computeSession14AwardRankingsPure;
+
+export interface Session14CompetencyAreaSpec {
+  domIndex: number;
+  key: keyof SpckSession14CompetencyScores;
+  commentAreaId: string;
+  commentAreaSuffix: string;
+  labelVi: string;
+  keywordsNorm: string[];
+}
+
+/**
+ * Exact 9 `[ĐNL]` Competency Criteria ordered strictly by MindX LMS Modal Cột 2 `DOM[0..8]`.
+ */
+export const SESSION14_COMPETENCY_AREA_SPECS: readonly Session14CompetencyAreaSpec[] = [
+  {
+    domIndex: 0,
+    key: "knowledgeSelfStudy",
+    commentAreaId: "665e7d33181e0e47f6c63768",
+    commentAreaSuffix: "3768",
+    labelVi: "[ĐNL] Kiến thức học viên tự học",
+    keywordsNorm: ["tu hoc"],
+  },
+  {
+    domIndex: 1,
+    key: "knowledgeInClass",
+    commentAreaId: "668d69d8e71f90e7630ce16c",
+    commentAreaSuffix: "e16c",
+    labelVi: "[ĐNL] Kiến thức học viên đã được học tại lớp",
+    keywordsNorm: ["da duoc hoc tai lop", "hoc tai lop"],
+  },
+  {
+    domIndex: 2,
+    key: "skillCommunication",
+    commentAreaId: "668e2e7de71f90e7630d4316",
+    commentAreaSuffix: "4316",
+    labelVi: "[ĐNL] Kỹ năng giao tiếp, hợp tác",
+    keywordsNorm: ["giao tiep"],
+  },
+  {
+    domIndex: 3,
+    key: "skillComputerUse",
+    commentAreaId: "668e2ce1e71f90e7630d406f",
+    commentAreaSuffix: "406f",
+    labelVi: "[ĐNL] Kỹ năng sử dụng máy tính",
+    keywordsNorm: ["su dung may tinh"],
+  },
+  {
+    domIndex: 4,
+    key: "skillProblemSolving",
+    commentAreaId: "668e0f48e71f90e7630d2db6",
+    commentAreaSuffix: "2db6",
+    labelVi: "[ĐNL] Kỹ năng giải quyết vấn đề",
+    keywordsNorm: ["giai quyet van de"],
+  },
+  {
+    domIndex: 5,
+    key: "skillCreativity",
+    commentAreaId: "668d6a69e71f90e7630ce198",
+    commentAreaSuffix: "e198",
+    labelVi: "[ĐNL] Tư duy sáng tạo",
+    keywordsNorm: ["sang tao"],
+  },
+  {
+    domIndex: 6,
+    key: "skillComputational",
+    commentAreaId: "668d6a25e71f90e7630ce187",
+    commentAreaSuffix: "e187",
+    labelVi: "[ĐNL] Tư duy máy tính",
+    keywordsNorm: ["tu duy may tinh", "tu duy thuat toan"],
+  },
+  {
+    domIndex: 7,
+    key: "attitudeHomework",
+    commentAreaId: "668e2f5be71f90e7630d44c1",
+    commentAreaSuffix: "44c1",
+    labelVi: "[ĐNL] Thái độ luyện tập về nhà",
+    keywordsNorm: ["luyen tap ve nha", "ve nha"],
+  },
+  {
+    domIndex: 8,
+    key: "attitudeInClass",
+    commentAreaId: "668e2eaee71f90e7630d434f",
+    commentAreaSuffix: "434f",
+    labelVi: "[ĐNL] Thái độ học tập trên lớp",
+    keywordsNorm: ["hoc tap tren lop", "tren lop"],
+  },
+];
+
+export interface StudentCheckpointCompetencyResult {
+  matchedFromCheckpoints: boolean;
+  sourceType:
+    | "CHECKPOINT_BOTH"
+    | "CHECKPOINT_CP1_ONLY"
+    | "CHECKPOINT_CP2_ONLY"
+    | "NO_CHECKPOINT_DATA";
+  cp1SlotNumber: number;
+  cp2SlotNumber: number;
+  cp1Avg: number | null;
+  cp2Avg: number | null;
+  targetAvg: number | null;
+  competencyScores: SpckSession14CompetencyScores;
+  competencyTotalScore: number;
+  ratingsInDomOrder: number[];
+  perCriterion: Array<{
+    domIndex: number;
+    key: keyof SpckSession14CompetencyScores;
+    commentAreaId: string;
+    cp1Grade: number | null;
+    cp2Grade: number | null;
+    rawAverage: number;
+    finalRating: number;
+  }>;
+}
+
+function matchCommentAreaSpecIndex(rawAreaItem: any): number {
+  if (!rawAreaItem || typeof rawAreaItem !== "object") return -1;
+  const rawType = String(rawAreaItem.type ?? rawAreaItem.commentArea?.type ?? "")
+    .trim()
+    .toUpperCase();
+  if (rawType && rawType !== "RATE") return -1;
+
+  const rawId = String(
+    rawAreaItem.commentAreaId ??
+      rawAreaItem.areaId ??
+      rawAreaItem.commentArea?.id ??
+      rawAreaItem.commentArea?._id ??
+      rawAreaItem.id ??
+      ""
+  )
+    .trim()
+    .toLowerCase();
+
+  if (rawId) {
+    const byId = SESSION14_COMPETENCY_AREA_SPECS.findIndex(
+      (spec) =>
+        rawId === spec.commentAreaId.toLowerCase() ||
+        rawId.endsWith(spec.commentAreaSuffix.toLowerCase())
+    );
+    if (byId >= 0) return byId;
+  }
+
+  const rawLabel = normalizeVietnameseName(
+    String(
+      rawAreaItem.name ??
+        rawAreaItem.title ??
+        rawAreaItem.label ??
+        rawAreaItem.commentArea?.name ??
+        rawAreaItem.commentArea?.title ??
+        ""
+    )
+  );
+  if (rawLabel) {
+    const byKeyword = SESSION14_COMPETENCY_AREA_SPECS.findIndex((spec) =>
+      spec.keywordsNorm.some((kw) => rawLabel.includes(kw))
+    );
+    if (byKeyword >= 0) return byKeyword;
+  }
+
+  return -1;
+}
+
+function extractGradesInDomOrder(commentByAreas: unknown): Array<number | null> {
+  const grades: Array<number | null> = Array(9).fill(null);
+  if (!Array.isArray(commentByAreas)) return grades;
+
+  for (const item of commentByAreas) {
+    const specIdx = matchCommentAreaSpecIndex(item);
+    if (specIdx < 0 || specIdx >= 9) continue;
+    const rawGrade = Number(
+      item?.grade ?? item?.score ?? item?.rating ?? item?.value ?? NaN
+    );
+    if (Number.isFinite(rawGrade) && rawGrade >= 1 && rawGrade <= 5) {
+      grades[specIdx] = Math.round(rawGrade);
+    }
+  }
+  return grades;
+}
+
+function findStudentAttendanceInSlot(
+  slotObj: any,
+  studentId?: string,
+  fullName?: string
+): any | null {
+  if (!slotObj || typeof slotObj !== "object") return null;
+  const list = Array.isArray(slotObj.studentAttendance)
+    ? slotObj.studentAttendance
+    : Array.isArray(slotObj.studentAttendances)
+    ? slotObj.studentAttendances
+    : Array.isArray(slotObj.attendances)
+    ? slotObj.attendances
+    : Array.isArray(slotObj.studentReviews)
+    ? slotObj.studentReviews
+    : Array.isArray(slotObj.reviews)
+    ? slotObj.reviews
+    : Array.isArray(slotObj.students)
+    ? slotObj.students
+    : [];
+  if (list.length === 0) return null;
+
+  const targetSid = String(studentId || "").trim();
+  if (targetSid) {
+    const byId = list.find((att: any) => {
+      const candId = String(
+        att?.student?.id ?? att?.student?._id ?? att?.studentId ?? att?.id ?? ""
+      ).trim();
+      return candId !== "" && candId === targetSid;
+    });
+    if (byId) return byId;
+  }
+
+  const normTargetName = normalizeVietnameseName(fullName || "");
+  if (normTargetName) {
+    const byName = list.filter((att: any) => {
+      const candName = normalizeVietnameseName(
+        String(att?.student?.fullName ?? att?.fullName ?? att?.studentName ?? "")
+      );
+      return candName !== "" && candName === normTargetName;
+    });
+    if (byName.length === 1) return byName[0];
+  }
+  return null;
+}
+
+function resolveCheckpointSlotFromArray(slots: any[] | undefined, slotNumber1Based: number): any | null {
+  if (!Array.isArray(slots) || slots.length === 0) return null;
+  const hasAnyExplicitNumber = slots.some(
+    (s) =>
+      s &&
+      typeof s === "object" &&
+      (s.slotNumber !== undefined ||
+        s.sessionNumber !== undefined ||
+        s.index !== undefined ||
+        s.slotIdx !== undefined)
+  );
+  const explicitByNumber = slots.find(
+    (s) =>
+      s &&
+      typeof s === "object" &&
+      (Number(s.slotNumber) === slotNumber1Based ||
+        Number(s.sessionNumber) === slotNumber1Based ||
+        Number(s.index) === slotNumber1Based - 1 ||
+        Number(s.slotIdx) === slotNumber1Based - 1)
+  );
+  if (explicitByNumber) return explicitByNumber;
+  if (hasAnyExplicitNumber) return null;
+  return slots[slotNumber1Based - 1] ?? null;
+}
+
+/**
+ * Pure deterministic calculator for Session 14's 9 `[ĐNL]` Competency radio ratings (`1..5`)
+ * from Checkpoint 1 & Checkpoint 2 (`B5 & B9` for Coding; `B4 & B8` for Robotics).
+ * Handles:
+ * - Reordered `commentByAreas` arrays (matched strictly by `commentAreaId` / normalized name to `DOM[0..8]`)
+ * - Missing/0/null single `RATE` cells in one checkpoint (inherits exact rating from the other checkpoint)
+ * - Student absent from an entire checkpoint (inherits full ratings from the attended checkpoint)
+ * - Smart alternating `.5` rounding (`bestK` minimizing `|sum/9 - targetAvg|`, prioritizing improved `CP2 > CP1` criteria)
+ */
+export function computeSession14CompetencyFromCheckpoints(params: {
+  classId?: string | null;
+  studentId?: string;
+  fullName?: string;
+  slots?: any[];
+  checkpointSlots?: any[];
+  cp1Slot?: any;
+  cp2Slot?: any;
+  cp1CommentByAreas?: any[];
+  cp2CommentByAreas?: any[];
+}): StudentCheckpointCompetencyResult {
+  const isRobotics = isRoboticsClassCode(params.classId);
+  const cp1SlotNumber = isRobotics ? 4 : 5;
+  const cp2SlotNumber = isRobotics ? 8 : 9;
+  const slotArray = params.slots ?? params.checkpointSlots;
+
+  const resolvedCp1Slot =
+    params.cp1Slot ?? resolveCheckpointSlotFromArray(slotArray, cp1SlotNumber);
+  const resolvedCp2Slot =
+    params.cp2Slot ?? resolveCheckpointSlotFromArray(slotArray, cp2SlotNumber);
+
+  let cp1Areas = params.cp1CommentByAreas;
+  if (!cp1Areas && resolvedCp1Slot) {
+    const att1 = findStudentAttendanceInSlot(
+      resolvedCp1Slot,
+      params.studentId,
+      params.fullName
+    );
+    const status1 = String(att1?.status ?? att1?.attendanceStatus ?? "").toUpperCase();
+    if (att1 && status1 !== "ABSENT" && status1 !== "UNEXCUSED_ABSENT") {
+      cp1Areas = att1.commentByAreas;
+    } else if (att1 && Array.isArray(att1.commentByAreas)) {
+      // Even if status string varies, extractGradesInDomOrder safely ignores empty/0 grades
+      cp1Areas = att1.commentByAreas;
+    }
+  }
+
+  let cp2Areas = params.cp2CommentByAreas;
+  if (!cp2Areas && resolvedCp2Slot) {
+    const att2 = findStudentAttendanceInSlot(
+      resolvedCp2Slot,
+      params.studentId,
+      params.fullName
+    );
+    const status2 = String(att2?.status ?? att2?.attendanceStatus ?? "").toUpperCase();
+    if (att2 && status2 !== "ABSENT" && status2 !== "UNEXCUSED_ABSENT") {
+      cp2Areas = att2.commentByAreas;
+    } else if (att2 && Array.isArray(att2.commentByAreas)) {
+      cp2Areas = att2.commentByAreas;
+    }
+  }
+
+  const g1 = extractGradesInDomOrder(cp1Areas);
+  const g2 = extractGradesInDomOrder(cp2Areas);
+
+  const valid1 = g1.filter((v): v is number => v !== null);
+  const valid2 = g2.filter((v): v is number => v !== null);
+
+  if (valid1.length === 0 && valid2.length === 0) {
+    const fallbackScores = parseSession14CompetencyScores(undefined);
+    return {
+      matchedFromCheckpoints: false,
+      sourceType: "NO_CHECKPOINT_DATA",
+      cp1SlotNumber,
+      cp2SlotNumber,
+      cp1Avg: null,
+      cp2Avg: null,
+      targetAvg: null,
+      competencyScores: fallbackScores,
+      competencyTotalScore: calculateCompetencyAverageScore(fallbackScores),
+      ratingsInDomOrder: SESSION14_COMPETENCY_KEYS.map((k) => fallbackScores[k]),
+      perCriterion: SESSION14_COMPETENCY_AREA_SPECS.map((spec) => ({
+        domIndex: spec.domIndex,
+        key: spec.key,
+        commentAreaId: spec.commentAreaId,
+        cp1Grade: null,
+        cp2Grade: null,
+        rawAverage: 4,
+        finalRating: 4,
+      })),
+    };
+  }
+
+  const cp1Avg =
+    valid1.length > 0
+      ? Math.round((valid1.reduce((acc, v) => acc + v, 0) / valid1.length) * 100) / 100
+      : null;
+  const cp2Avg =
+    valid2.length > 0
+      ? Math.round((valid2.reduce((acc, v) => acc + v, 0) / valid2.length) * 100) / 100
+      : null;
+  const targetAvg =
+    cp1Avg !== null && cp2Avg !== null
+      ? Math.round(((cp1Avg + cp2Avg) / 2) * 1000) / 1000
+      : (cp1Avg ?? cp2Avg)!;
+
+  const defaultMissingGrade = Math.min(5, Math.max(1, Math.round(targetAvg)));
+  const rawAvgs: number[] = Array(9).fill(defaultMissingGrade);
+  const baseRatings: number[] = Array(9).fill(defaultMissingGrade);
+  const halfCandidates: Array<{ domIndex: number; delta: number }> = [];
+
+  for (let i = 0; i < 9; i++) {
+    const v1 = g1[i];
+    const v2 = g2[i];
+    let raw: number;
+    if (v1 !== null && v2 !== null) {
+      raw = (v1 + v2) / 2;
+    } else if (v1 !== null) {
+      raw = v1;
+    } else if (v2 !== null) {
+      raw = v2;
+    } else {
+      raw = defaultMissingGrade;
+    }
+    rawAvgs[i] = raw;
+
+    const frac = raw - Math.floor(raw);
+    if (Math.abs(frac - 0.5) < 1e-6) {
+      baseRatings[i] = Math.min(5, Math.max(1, Math.floor(raw)));
+      const delta = v1 !== null && v2 !== null ? v2 - v1 : 0;
+      halfCandidates.push({ domIndex: i, delta });
+    } else {
+      baseRatings[i] = Math.min(5, Math.max(1, Math.round(raw)));
+    }
+  }
+
+  // Prioritize rounding UP criteria where CP2 > CP1 (improved in later checkpoint), then lower domIndex
+  halfCandidates.sort((a, b) => {
+    if (b.delta !== a.delta) return b.delta - a.delta;
+    return a.domIndex - b.domIndex;
+  });
+
+  const baseSum = baseRatings.reduce((acc, v) => acc + v, 0);
+  const halfUpMidpoint = Math.ceil(halfCandidates.length / 2);
+  let bestK = 0;
+  let bestDiff = Number.POSITIVE_INFINITY;
+
+  for (let k = 0; k <= halfCandidates.length; k++) {
+    const candidateAvg = (baseSum + k) / 9;
+    const diff = Math.abs(candidateAvg - targetAvg);
+    if (diff < bestDiff - 1e-9) {
+      bestDiff = diff;
+      bestK = k;
+    } else if (Math.abs(diff - bestDiff) <= 1e-9) {
+      if (Math.abs(k - halfUpMidpoint) < Math.abs(bestK - halfUpMidpoint)) {
+        bestK = k;
+      }
+    }
+  }
+
+  const finalRatings = [...baseRatings];
+  for (let idx = 0; idx < bestK; idx++) {
+    const targetDomIdx = halfCandidates[idx].domIndex;
+    finalRatings[targetDomIdx] = Math.min(5, finalRatings[targetDomIdx] + 1);
+  }
+
+  const scoreObj: Partial<SpckSession14CompetencyScores> = {};
+  for (let i = 0; i < 9; i++) {
+    const spec = SESSION14_COMPETENCY_AREA_SPECS[i];
+    scoreObj[spec.key] = finalRatings[i];
+  }
+  const competencyScores = parseSession14CompetencyScores(scoreObj);
+  const competencyTotalScore = calculateCompetencyAverageScore(competencyScores);
+
+  const sourceType: StudentCheckpointCompetencyResult["sourceType"] =
+    valid1.length > 0 && valid2.length > 0
+      ? "CHECKPOINT_BOTH"
+      : valid1.length > 0
+      ? "CHECKPOINT_CP1_ONLY"
+      : "CHECKPOINT_CP2_ONLY";
+
+  return {
+    matchedFromCheckpoints: true,
+    sourceType,
+    cp1SlotNumber,
+    cp2SlotNumber,
+    cp1Avg,
+    cp2Avg,
+    targetAvg,
+    competencyScores,
+    competencyTotalScore,
+    ratingsInDomOrder: SESSION14_COMPETENCY_AREA_SPECS.map((s) => competencyScores[s.key]),
+    perCriterion: SESSION14_COMPETENCY_AREA_SPECS.map((spec, i) => ({
+      domIndex: spec.domIndex,
+      key: spec.key,
+      commentAreaId: spec.commentAreaId,
+      cp1Grade: g1[i],
+      cp2Grade: g2[i],
+      rawAverage: rawAvgs[i],
+      finalRating: competencyScores[spec.key],
+    })),
+  };
+}
+
+function escapeHtmlText(raw: string): string {
+  return String(raw || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function resolveNextCourseWishLabel(classId: string): string {
+  const profile = detectSpckCourseProfile(classId);
+  switch (profile.coursePrefix) {
+    case "SB":
+      return "Scratch Advance (SA)";
+    case "SA":
+      return "Scratch Intensive (SI)";
+    case "SI":
+      return "GameMaker Basic (GB)";
+    case "GB":
+      return "GameMaker Advance (GA)";
+    case "GA":
+      return "GameMaker Intensive (GI)";
+    case "GI":
+      return "Python Basic (PTB) / Web Developer Basic (JSB)";
+    case "PTB":
+      return "Python App Advance (PTA)";
+    case "PTA":
+      return "Python App Intensive (PTI)";
+    case "PTI":
+      return "Web Developer Basic (JSB) / Computer Science Basic (CSB)";
+    case "JSB":
+      return "Web Developer Advance (JSA)";
+    case "JSA":
+      return "Web Developer Intensive (JSI)";
+    case "JSI":
+      return "các dự án Công nghệ & Khoa học máy tính chuyên sâu tiếp theo";
+    case "CSB":
+      return "Computer Science Advance (CSA)";
+    case "CSA":
+      return "Computer Science Intensive (CSI)";
+    case "CSI":
+      return "các dự án AI & Khoa học dữ liệu chuyên sâu tiếp theo";
+    case "PREB":
+      return "Robotics VEX GO Advance (PREA)";
+    case "PREA":
+      return "Robotics VEX GO Intensive (PREI)";
+    case "PREI":
+      return "Robotics VEX IQ Basic (ARMB)";
+    case "ARMB":
+      return "Robotics VEX IQ Advance (ARMA)";
+    case "ARMA":
+      return "Robotics VEX IQ Intensive (ARMI)";
+    default:
+      return "khóa học nâng cao tiếp theo tại MindX";
+  }
+}
+
+export function compileSession14SummaryHtml(title: string, bodyText: string): string {
+  const cleanTitle = String(title || "").trim();
+  const lines = String(bodyText || "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const htmlParts: string[] = [];
+  if (cleanTitle) {
+    htmlParts.push(`<p><strong>${escapeHtmlText(cleanTitle)}</strong></p>`);
+  }
+  for (const lineStr of lines) {
+    const esc = escapeHtmlText(lineStr);
+    if (lineStr.startsWith("KẾT QUẢ")) {
+      htmlParts.push(`<p><strong>${esc}</strong></p>`);
+    } else if (
+      lineStr.startsWith("🥇") ||
+      lineStr.startsWith("🥈") ||
+      lineStr.startsWith("🥉") ||
+      lineStr.startsWith("👏")
+    ) {
+      const colonIdx = esc.indexOf(":");
+      if (colonIdx > 0) {
+        htmlParts.push(
+          `<p><strong>${esc.slice(0, colonIdx + 1)}</strong>${esc.slice(colonIdx + 1)}</p>`
+        );
+      } else {
+        htmlParts.push(`<p><strong>${esc}</strong></p>`);
+      }
+    } else {
+      htmlParts.push(`<p>${esc}</p>`);
+    }
+  }
+  return htmlParts.join("");
+}
+
+export function buildClassSession14SummaryDraft(
+  classId: string,
+  customRankings?: Session14AwardRankItem[]
+): {
+  classId: string;
+  title: string;
+  bodyText: string;
+  summaryHtml: string;
+  rankings: Session14AwardRankItem[];
+} {
+  const normalizedClassId = String(classId || "").trim().toUpperCase();
+  const activeStudents = studentRepo
+    .findByClass(normalizedClassId, false)
+    .filter((s) => Number(s.isActive ?? 1) !== 0);
+
+  const rankings =
+    customRankings ??
+    computeClassDemoAwardRankings(
+      activeStudents.map((stu) => {
+        const ev = session14EvalRepo.getOrInit(normalizedClassId, stu.studentId);
+        const s14 = spckSessionRepo.findOne(normalizedClassId, stu.studentId, 14);
+        const shared = spckUploadRepo.findOne(normalizedClassId, stu.studentId);
+        const rawTitle =
+          s14?.projectTitle || shared?.baseProjectTitle || shared?.projectTitle || "";
+        const projectTitle = !isDefaultSpckProductTitle(rawTitle, stu.fullName)
+          ? stripSpckSessionSuffix(rawTitle)
+          : "";
+        return {
+          studentId: stu.studentId,
+          fullName: stu.fullName,
+          rawTotalScore3dp:
+            typeof ev.demoRawTotalScore === "number" && ev.demoRawTotalScore > 0
+              ? ev.demoRawTotalScore
+              : ev.demoTotalScore,
+          demoTotalScore: ev.demoTotalScore,
+          projectTitle,
+        };
+      })
+    );
+
+  const scored = rankings.filter((r) => r.awardTier !== "UNSCORED" && r.rawTotalScore3dp > 0);
+  const profile = detectSpckCourseProfile(normalizedClassId);
+  const maxDemoVal = calculateDemoTotalScore(getSession14DemoLimitsForClass(normalizedClassId));
+  const maxDemoStr = maxDemoVal.toFixed(1);
+
+  const title = `BUỔI 14: TỔNG KẾT CUỐI KHÓA & VINH DANH BẢO VỆ DỰ ÁN (DEMO DAY) — LỚP ${normalizedClassId}`;
+  const bodyLines: string[] = [];
+
+  if (scored.length > 0) {
+    bodyLines.push(
+      `Chúc mừng ${scored.length}/${Math.max(activeStudents.length, scored.length)} học viên lớp ${normalizedClassId} (khóa ${profile.trackBadgeLabel}) đã hoàn thành buổi thuyết trình và bảo vệ Sản phẩm cuối khóa (Demo Day) với tinh thần nghiêm túc, tự tin.`
+    );
+    bodyLines.push("KẾT QUẢ VINH DANH CHÍNH THỨC TỪ BAN GIÁM KHẢO:");
+
+    const formatAwardLine = (
+      icon: string,
+      tierItems: Session14AwardRankItem[],
+      singleLabel: string,
+      tiedLabel: string
+    ) => {
+      if (tierItems.length === 0) return;
+      const scoreLabel = `${tierItems[0].rawScoreText}/${maxDemoStr} điểm`;
+      if (tierItems.length === 1) {
+        const w = tierItems[0];
+        const projPart = w.projectTitle ? ` — Đề tài "${w.projectTitle}"` : "";
+        bodyLines.push(`${icon} ${singleLabel} (${scoreLabel}): ${w.fullName}${projPart}.`);
+      } else {
+        const listText = tierItems
+          .map((w) => (w.projectTitle ? `${w.fullName} ("${w.projectTitle}")` : w.fullName))
+          .join(", ");
+        bodyLines.push(`${icon} ${tiedLabel} (${scoreLabel}): ${listText}.`);
+      }
+    };
+
+    formatAwardLine(
+      "🥇",
+      scored.filter((r) => r.awardTier === "FIRST"),
+      "Giải Nhất",
+      "Đồng Giải Nhất"
+    );
+    formatAwardLine(
+      "🥈",
+      scored.filter((r) => r.awardTier === "SECOND"),
+      "Giải Nhì",
+      "Đồng Giải Nhì"
+    );
+    formatAwardLine(
+      "🥉",
+      scored.filter((r) => r.awardTier === "THIRD"),
+      "Giải Ba",
+      "Đồng Giải Ba"
+    );
+
+    const completed = scored.filter((r) => r.awardTier === "COMPLETED");
+    if (completed.length > 0) {
+      const compList = completed
+        .map((c) =>
+          c.projectTitle
+            ? `${c.fullName} (${c.rawScoreText}/${maxDemoStr} — "${c.projectTitle}")`
+            : `${c.fullName} (${c.rawScoreText}/${maxDemoStr})`
+        )
+        .join(", ");
+      bodyLines.push(`👏 Ghi nhận hoàn thành dự án cuối khóa: ${compList}.`);
+    }
+  } else {
+    bodyLines.push(
+      `Tổng kết cuối khóa & buổi bảo vệ Sản phẩm cuối khóa (Demo Day) lớp ${normalizedClassId} (khóa ${profile.trackBadgeLabel}).`
+    );
+  }
+
+  bodyLines.push(
+    `Trường học Công nghệ MindX chúc các con tiếp tục giữ vững đam mê sáng tạo và chinh phục khóa ${resolveNextCourseWishLabel(normalizedClassId)} sắp tới!`
+  );
+
+  const bodyText = bodyLines.join("\n");
+  const summaryHtml = compileSession14SummaryHtml(title, bodyText);
+  return {
+    classId: normalizedClassId,
+    title,
+    bodyText,
+    summaryHtml,
+    rankings,
+  };
+}
+
+export function getEffectiveClassSession14Summary(classId: string): {
+  classSummary: Session14ClassSummaryRecord;
+  rankings: Session14AwardRankItem[];
+} {
+  const normalizedClassId = String(classId || "").trim().toUpperCase();
+  const generated = buildClassSession14SummaryDraft(normalizedClassId);
+  const existing = session14ClassSummaryRepo.findOne(normalizedClassId);
+  if (
+    existing &&
+    existing.isEditedByTeacher === 1 &&
+    String(existing.summaryHtml || "").trim().length > 0
+  ) {
+    return {
+      classSummary: existing,
+      rankings: generated.rankings,
+    };
+  }
+  const saved = session14ClassSummaryRepo.saveAutoGenerated({
+    classId: normalizedClassId,
+    title: generated.title,
+    bodyText: generated.bodyText,
+    summaryHtml: generated.summaryHtml,
+  });
+  return {
+    classSummary: saved,
+    rankings: generated.rankings,
+  };
+}
+
+async function fetchLiveLmsCheckpointSlotsSafe(classId: string): Promise<any[] | null> {
+  const normalizedClassId = String(classId || "").trim().toUpperCase();
+  if (!normalizedClassId) return null;
+
+  try {
+    return await taskQueue.enqueue({
+      id: `FETCH_CP_SLOTS_S14_${normalizedClassId}_${Date.now()}`,
+      jobType: "SYNC_CLASS",
+      description: `Đọc điểm Năng lực [ĐNL] Buổi Kiểm tra trên LMS cho lớp ${normalizedClassId}`,
+      classId: normalizedClassId,
+      sessionId: `${normalizedClassId}_SESS_14_CP_READ`,
+      execute: async () => {
+        const page = await browserManager.getPage();
+        let capturedSlots: any[] | null = null;
+
+        const onRes = async (res: any) => {
+          try {
+            const url = String(res.url() || "").toLowerCase();
+            if (!url.includes("lms-api.mindx.edu.vn") && !url.includes("graphql")) return;
+            if (String(res.request().method() || "").toUpperCase() !== "POST") return;
+            const postData = res.request().postData() || "";
+            if (!postData) return;
+            const json = await res.json().catch(() => null);
+            const clsObj =
+              json?.data?.classesById ||
+              json?.data?.classById ||
+              json?.data?.getClassById ||
+              json?.data?.class;
+            if (clsObj && Array.isArray(clsObj.slots)) {
+              const code = String(clsObj.name || clsObj.code || "").trim().toUpperCase();
+              if (!code || code === normalizedClassId) {
+                capturedSlots = clsObj.slots;
+              }
+            }
+          } catch {
+            // ignore non-JSON
+          }
+        };
+
+        page.on("response", onRes);
+        try {
+          await authService.ensureAuthenticated("LMS");
+          await LmsHelpers.openClassDrawer(page, normalizedClassId, { preferredTab: 10 });
+          await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.comments);
+          await page.waitForTimeout(1200);
+          if (!capturedSlots) {
+            const refreshBtn = page
+              .locator(
+                'div[aria-labelledby="class-detail"] button:has([data-testid="RefreshIcon"]), .MuiDrawer-paperAnchorRight button:has([data-testid="RefreshIcon"])'
+              )
+              .first();
+            if (await refreshBtn.isVisible().catch(() => false)) {
+              await refreshBtn.click({ force: true }).catch(() => {});
+              await page.waitForTimeout(2200);
+            }
+          }
+          return capturedSlots;
+        } finally {
+          page.off("response", onRes);
+        }
+      },
+    });
+  } catch {
+    return null;
+  }
+}
 
 export interface StudentDemoScoreExtract {
   studentId: string;
@@ -40,18 +829,28 @@ export interface StudentDemoScoreExtract {
   matchedTabName: string;
   demoScores: SpckSession14DemoScores;
   demoTotalScore: number;
+  demoRawTotalScore: number;
+  rawScoreText: string;
+  awardRank: number | null;
+  awardTier: Session14AwardRankItem["awardTier"];
+  awardLabel: string;
+  awardBadge: string;
   judgeNote: string;
   competencyScores: SpckSession14CompetencyScores;
   competencyTotalScore: number;
+  competencySource: Record<string, unknown>;
   updatedRecord: SpckSession14EvaluationRecord;
 }
 
 export interface ImportDemoScoresResult {
   classId: string;
   sourceUsed: string;
+  checkpointSourceUsed: "LMS_CHECKPOINTS" | "CACHED_CHECKPOINTS" | "DEMO_FALLBACK";
   matchedCount: number;
   unmatchedTabs: string[];
   students: StudentDemoScoreExtract[];
+  rankings: Session14AwardRankItem[];
+  classSummary: Session14ClassSummaryRecord;
 }
 
 function decodeXmlEntities(raw: string): string {
@@ -248,6 +1047,7 @@ export function extractDemoScoresFromWorksheet(
   studentNameInCellB2: string;
   demoScores: SpckSession14DemoScores;
   demoTotalScore: number;
+  demoRawTotalScore: number;
   judgeNote: string;
   hasCompleteScores: boolean;
   scoredCriteriaCount: number;
@@ -393,6 +1193,21 @@ export function extractDemoScoresFromWorksheet(
   const hasCompleteScores =
     scoredCriteriaCount === 5 && Object.values(criterionValid).every(Boolean);
 
+  const clampRaw3dp = (val: number | undefined, max: number): number => {
+    const n = Number(val);
+    if (!Number.isFinite(n) || n < 0) return 0;
+    return Math.round(Math.min(n, max) * 1000) / 1000;
+  };
+  const demoRawTotalScore =
+    Math.round(
+      (clampRaw3dp(rawDemo.algorithm, limits.algorithm) +
+        clampRaw3dp(rawDemo.creativity, limits.creativity) +
+        clampRaw3dp(rawDemo.communication, limits.communication) +
+        clampRaw3dp(rawDemo.problemSolving, limits.problemSolving) +
+        clampRaw3dp(rawDemo.computerSkills, limits.computerSkills)) *
+        1000
+    ) / 1000;
+
   const demoScores = parseSession14DemoScores(rawDemo, classId);
   const demoTotalScore = calculateDemoTotalScore(demoScores);
 
@@ -428,6 +1243,7 @@ export function extractDemoScoresFromWorksheet(
     studentNameInCellB2: b2.trim(),
     demoScores,
     demoTotalScore,
+    demoRawTotalScore,
     judgeNote: bgkNotes.join(" | "),
     hasCompleteScores,
     scoredCriteriaCount,
@@ -728,6 +1544,16 @@ async function loadXlsxBufferFromSource(
   return { buffer: fs.readFileSync(discovered), sourceUsed: discovered };
 }
 
+export interface ParseDemoWorkbookOptions {
+  onlyMissingStudents?: boolean;
+  checkpointSlots?: any[];
+  cp1Slot?: any;
+  cp2Slot?: any;
+  classByIdGql?: any;
+  skipLiveLmsCheckpointFetch?: boolean;
+  forceLiveLmsCheckpointFetch?: boolean;
+}
+
 /**
  * Parses a workbook Buffer (.xlsx) and matches worksheets to class students.
  */
@@ -735,12 +1561,14 @@ export function parseDemoWorkbookBufferForClass(
   classId: string,
   buffer: Buffer,
   sourceUsed: string,
-  options?: { onlyMissingStudents?: boolean }
+  options?: ParseDemoWorkbookOptions
 ): ImportDemoScoresResult {
   const normalizedClassId = String(classId || "").trim().toUpperCase();
-  const students = studentRepo.findByClass(normalizedClassId, false);
+  const students = studentRepo
+    .findByClass(normalizedClassId, false)
+    .filter((stu) => Number(stu.isActive ?? 1) !== 0);
   if (students.length === 0) {
-    throw new Error(`Lớp ${normalizedClassId} chưa có danh sách học viên trong CSDL.`);
+    throw new Error(`Lớp ${normalizedClassId} chưa có danh sách học viên đang học trong CSDL.`);
   }
 
   const zip = new AdmZip(buffer);
@@ -876,6 +1704,14 @@ export function parseDemoWorkbookBufferForClass(
     stagedByStudentId.set(matchedStudent.studentId, list);
   }
 
+  const resolvedSlots =
+    options?.checkpointSlots ??
+    (Array.isArray(options?.classByIdGql?.slots) ? options.classByIdGql.slots : undefined);
+  const demoLimits = getSession14DemoLimitsForClass(normalizedClassId);
+  const isRobotics = isRoboticsClassCode(normalizedClassId);
+  let usedLiveCheckpointsCount = 0;
+  let usedCachedCheckpointsCount = 0;
+
   for (const [, entries] of stagedByStudentId.entries()) {
     // Reject duplicate tabs targeting the same studentId so neither overwrites the other
     if (entries.length !== 1) {
@@ -898,21 +1734,105 @@ export function parseDemoWorkbookBufferForClass(
       quickTags = [];
     }
 
-    const suggestedComp = suggestCompetencyScoresForStudent({
+    // 1. Compute 9 [ĐNL] Competency ratings from Checkpoint 1 & Checkpoint 2 if available
+    const cpResult = computeSession14CompetencyFromCheckpoints({
       classId: normalizedClassId,
       studentId: matchedStudent.studentId,
-      demoScores: extracted.demoScores,
-      quickTags,
-      teacherNote: existingEval.teacherNote || s14Draft?.teacherNote || "",
+      fullName: matchedStudent.fullName,
+      slots: resolvedSlots,
+      cp1Slot: options?.cp1Slot,
+      cp2Slot: options?.cp2Slot,
     });
+
+    let finalCompScores: SpckSession14CompetencyScores;
+    let finalCompTotal: number;
+    let competencySourceMeta: Record<string, unknown>;
+
+    let existingCompSrcObj: Record<string, unknown> | null = null;
+    if (existingEval.competencySourceJson && existingEval.competencySourceJson !== "{}") {
+      try {
+        existingCompSrcObj = JSON.parse(existingEval.competencySourceJson);
+      } catch {
+        existingCompSrcObj = null;
+      }
+    }
+
+    if (cpResult.matchedFromCheckpoints) {
+      usedLiveCheckpointsCount++;
+      finalCompScores = cpResult.competencyScores;
+      finalCompTotal = cpResult.competencyTotalScore;
+      competencySourceMeta = {
+        source: cpResult.sourceType,
+        cp1SlotNumber: cpResult.cp1SlotNumber,
+        cp2SlotNumber: cpResult.cp2SlotNumber,
+        cp1Avg: cpResult.cp1Avg,
+        cp2Avg: cpResult.cp2Avg,
+        targetAvg: cpResult.targetAvg,
+      };
+    } else if (
+      existingCompSrcObj &&
+      typeof existingCompSrcObj.source === "string" &&
+      existingCompSrcObj.source.startsWith("CHECKPOINT_")
+    ) {
+      usedCachedCheckpointsCount++;
+      finalCompScores = parseSession14CompetencyScores(existingEval.competencyJson);
+      finalCompTotal = calculateCompetencyAverageScore(finalCompScores);
+      competencySourceMeta = existingCompSrcObj;
+    } else {
+      const suggestedComp = suggestCompetencyScoresForStudent({
+        classId: normalizedClassId,
+        studentId: matchedStudent.studentId,
+        demoScores: extracted.demoScores,
+        quickTags,
+        teacherNote: existingEval.teacherNote || s14Draft?.teacherNote || "",
+      });
+      finalCompScores = suggestedComp.competencyScores;
+      finalCompTotal = suggestedComp.competencyTotalScore;
+      competencySourceMeta = { source: "FALLBACK_DEMO_HEURISTIC" };
+    }
+
+    // 2. Auto-suggest Session 14 presentation Quick Tag from BGK `communication` score onto Session 14 SPCK draft
+    const suggestedPresTag = suggestSession14PresentationTagFromDemoScore(
+      extracted.demoScores.communication,
+      demoLimits.communication
+    );
+    if (
+      suggestedPresTag &&
+      s14Draft &&
+      s14Draft.draftStatus !== "APPROVED" &&
+      s14Draft.draftStatus !== "SAVING" &&
+      s14Draft.draftStatus !== "VERIFIED" &&
+      !s14Draft.lastVerifiedAt
+    ) {
+      let s14Tags: string[] = [];
+      try {
+        const parsed = JSON.parse(s14Draft.quickTagsJson || "[]");
+        if (Array.isArray(parsed)) {
+          s14Tags = parsed.map((t) => String(t || "").trim()).filter(Boolean);
+        }
+      } catch {
+        s14Tags = [];
+      }
+      if (!s14Tags.some((t) => isPresentationQuickTag(t))) {
+        spckSessionRepo.saveSessionDraft({
+          classId: normalizedClassId,
+          studentId: matchedStudent.studentId,
+          sessionNumber: 14,
+          quickTagsJson: JSON.stringify([suggestedPresTag, ...s14Tags]),
+          updateSharedPool: false,
+        });
+      }
+    }
 
     const saved = session14EvalRepo.saveDraft({
       classId: normalizedClassId,
       studentId: matchedStudent.studentId,
       demoScores: extracted.demoScores,
+      demoRawTotalScore: extracted.demoRawTotalScore,
       demoSourcePath: sourceUsed,
       demoJudgeNote: extracted.judgeNote,
-      competencyScores: suggestedComp.competencyScores,
+      competencyScores: finalCompScores,
+      competencySource: competencySourceMeta,
     });
 
     extractedStudents.push({
@@ -921,30 +1841,115 @@ export function parseDemoWorkbookBufferForClass(
       matchedTabName: tabName,
       demoScores: extracted.demoScores,
       demoTotalScore: extracted.demoTotalScore,
+      demoRawTotalScore: extracted.demoRawTotalScore,
+      rawScoreText: formatRawDemoScore3dp(extracted.demoRawTotalScore),
+      awardRank: null,
+      awardTier: "UNSCORED",
+      awardLabel: "",
+      awardBadge: "",
       judgeNote: extracted.judgeNote,
-      competencyScores: suggestedComp.competencyScores,
-      competencyTotalScore: suggestedComp.competencyTotalScore,
+      competencyScores: finalCompScores,
+      competencyTotalScore: finalCompTotal,
+      competencySource: competencySourceMeta,
       updatedRecord: saved.record,
     });
   }
 
+  // 3. Compute class-wide 3dp Award Rankings & Slot 14 Summary Draft
+  const summaryBundle = buildClassSession14SummaryDraft(normalizedClassId);
+  const rankMap = new Map(summaryBundle.rankings.map((r) => [r.studentId, r]));
+  const maxDemoStr = calculateDemoTotalScore(demoLimits).toFixed(1);
+
+  for (const item of extractedStudents) {
+    const rankInfo = rankMap.get(item.studentId);
+    if (rankInfo) {
+      item.awardRank = rankInfo.awardRank;
+      item.awardTier = rankInfo.awardTier;
+      item.awardLabel = rankInfo.awardLabel;
+      item.awardBadge = rankInfo.awardBadge;
+      item.rawScoreText = rankInfo.rawScoreText;
+
+      // Only Robotics classes have the 4th Quill editor (`awardRanking`) on MindX LMS!
+      if (isRobotics && rankInfo.awardTier !== "UNSCORED") {
+        const autoRoboticsAward = `${rankInfo.awardLabel} (${rankInfo.rawScoreText}/${maxDemoStr} điểm)`;
+        const updated = session14EvalRepo.saveDraft({
+          classId: normalizedClassId,
+          studentId: item.studentId,
+          awardRanking: autoRoboticsAward,
+        });
+        item.updatedRecord = updated.record;
+      } else if (!isRobotics && item.updatedRecord.awardRanking) {
+        const updated = session14EvalRepo.saveDraft({
+          classId: normalizedClassId,
+          studentId: item.studentId,
+          awardRanking: "",
+        });
+        item.updatedRecord = updated.record;
+      }
+    }
+  }
+
+  const classSummary = session14ClassSummaryRepo.saveAutoGenerated({
+    classId: normalizedClassId,
+    title: summaryBundle.title,
+    bodyText: summaryBundle.bodyText,
+    summaryHtml: summaryBundle.summaryHtml,
+  });
+
+  const checkpointSourceUsed: ImportDemoScoresResult["checkpointSourceUsed"] =
+    usedLiveCheckpointsCount > 0
+      ? "LMS_CHECKPOINTS"
+      : usedCachedCheckpointsCount > 0
+      ? "CACHED_CHECKPOINTS"
+      : "DEMO_FALLBACK";
+
   return {
     classId: normalizedClassId,
     sourceUsed,
+    checkpointSourceUsed,
     matchedCount: extractedStudents.length,
     unmatchedTabs,
     students: extractedStudents,
+    rankings: summaryBundle.rankings,
+    classSummary,
   };
 }
 
 /**
- * High-level entry point to import Demo Scores from a local .xlsx path, Google Sheet URL, or auto-discovered class sheet.
+ * High-level entry point to import Demo Scores from a local .xlsx path, Google Sheet URL, or auto-discovered class sheet,
+ * automatically reading Checkpoint 1 & Checkpoint 2 `[ĐNL]` ratings from live MindX LMS when online.
  */
 export async function importClassDemoScores(
   classId: string,
   sourcePathOrUrl?: string,
-  options?: { onlyMissingStudents?: boolean }
+  options?: ParseDemoWorkbookOptions
 ): Promise<ImportDemoScoresResult> {
   const { buffer, sourceUsed } = await loadXlsxBufferFromSource(classId, sourcePathOrUrl);
-  return parseDemoWorkbookBufferForClass(classId, buffer, sourceUsed, options);
+
+  let checkpointSlots =
+    options?.checkpointSlots ??
+    (Array.isArray(options?.classByIdGql?.slots) ? options.classByIdGql.slots : undefined);
+
+  const isIsolatedTestEnv =
+    Boolean(process.env.MINDX_DB_PATH?.trim()) ||
+    process.env.MINDX_DISABLE_BROWSER_EXPORT_FALLBACK === "1";
+
+  const shouldFetchLiveCheckpoints =
+    !checkpointSlots &&
+    !options?.cp1Slot &&
+    !options?.cp2Slot &&
+    !options?.skipLiveLmsCheckpointFetch &&
+    (options?.forceLiveLmsCheckpointFetch === true || !isIsolatedTestEnv);
+
+  if (shouldFetchLiveCheckpoints) {
+    const liveSlots = await fetchLiveLmsCheckpointSlotsSafe(classId);
+    if (Array.isArray(liveSlots) && liveSlots.length > 0) {
+      checkpointSlots = liveSlots;
+    }
+  }
+
+  return parseDemoWorkbookBufferForClass(classId, buffer, sourceUsed, {
+    ...options,
+    checkpointSlots,
+  });
 }

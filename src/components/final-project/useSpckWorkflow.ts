@@ -15,9 +15,11 @@ import {
   SpckBannerMessageUI,
   SpckBatchSubmissionSummaryUI,
   SpckRecordRow,
+  SpckReportCardChainResultUI,
   SpckRowReadinessSummaryUI,
   SpckSessionResultsMapUI,
   SpckSlotDisplayUI,
+  SpckTeachingProgressPushResultUI,
   SpckToolErrorKey,
   SpckToolErrorMapUI,
   StudentOption,
@@ -26,35 +28,49 @@ import {
 } from "./types";
 
 import {
+  buildDefaultSession14ClassSummaryText,
   buildRowFromDbRecord,
   classifyUiLinkCategory,
+  computeClientFallbackAwardMap,
   extractSession14TagLabelsFromConfig,
+  formatAwardBadgeMeta,
   formatUiSessionTitle,
+  getDemoScoreItemsForClassUi,
   getRowReadinessSummary,
   getSessionSlotDisplay,
   getStageMeta,
+  htmlSummaryToPlainText,
   isDefaultUiProductTitle,
   parseJsonSafe,
   parseRelatedLinksFromText,
   parseSessionResultsMap,
   parseYoutubeUrlsFromText,
+  plainTextSummaryToHtml,
+  resolveStudentAwardLabel,
   serializeRelatedLinksToText,
   stripUiSessionSuffix,
 } from "@/lib/spck/spck-ui-helpers";
 
 export {
+  buildDefaultSession14ClassSummaryText,
   buildRowFromDbRecord,
   classifyUiLinkCategory,
+  computeClientFallbackAwardMap,
   extractSession14TagLabelsFromConfig,
+  formatAwardBadgeMeta,
   formatUiSessionTitle,
+  getDemoScoreItemsForClassUi,
   getRowReadinessSummary,
   getSessionSlotDisplay,
   getStageMeta,
+  htmlSummaryToPlainText,
   isDefaultUiProductTitle,
   parseJsonSafe,
   parseRelatedLinksFromText,
   parseSessionResultsMap,
   parseYoutubeUrlsFromText,
+  plainTextSummaryToHtml,
+  resolveStudentAwardLabel,
   serializeRelatedLinksToText,
   stripUiSessionSuffix,
 };
@@ -422,6 +438,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     setCreatingDemoSheet,
     capturingScreenshots,
     setCapturingScreenshots,
+    setShowYoutubeImport,
     youtubeImportInput,
     importingYoutube,
     studentPortalRunning,
@@ -440,17 +457,21 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     selectedSessionNumber,
     setSelectedStudentIds,
     setExpandedRowKeys,
+    setShowOptionalTools,
+    lastSubmissionSummary,
     setLastSubmissionSummary,
     activeActionLabel,
     session14Evals,
     setSession14Evals,
     demoScoreSourceInput,
+    setDemoScoreSourceInput,
     importingDemoScores,
     setImportingDemoScores,
     generatingS14EvalAi,
     setGeneratingS14EvalAi,
     uploadingS14EvalLms,
     setUploadingS14EvalLms,
+    duplicateStudentIds,
     effectiveSelectedStudentIds,
     isAnyOperationBusy: baseIsAnyOperationBusy,
     hydrateRowsFromDb,
@@ -477,6 +498,39 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
   const [expandedRowTabByStudent, setExpandedRowTabByStudent] = useState<
     Record<string, "spck" | "eval14">
   >({});
+  const [showAdvancedTools, setShowAdvancedTools] = useState<boolean>(false);
+  const [showFolderEditor, setShowFolderEditor] = useState<boolean>(false);
+  const [session14ClassSummaryText, setSession14ClassSummaryText] =
+    useState<string>("");
+  const [session14ClassSummaryRawHtml, setSession14ClassSummaryRawHtml] =
+    useState<string>("");
+  const [session14ClassSummaryDirty, setSession14ClassSummaryDirty] =
+    useState<boolean>(false);
+  const [showSession14SummaryBox, setShowSession14SummaryBox] =
+    useState<boolean>(false);
+  const [mainSyncRunning, setMainSyncRunning] = useState<boolean>(false);
+  const [mainStep3Running, setMainStep3Running] = useState<boolean>(false);
+  const [mainStep3PhaseLabel, setMainStep3PhaseLabel] = useState<string | null>(
+    null
+  );
+  const [teachingProgressPushState, setTeachingProgressPushState] =
+    useState<SpckTeachingProgressPushResultUI>({
+      status: "IDLE",
+      targetPercent: null,
+      updatedCount: null,
+      message: null,
+    });
+  const [reportCardChainState, setReportCardChainState] =
+    useState<SpckReportCardChainResultUI>({
+      status: "IDLE",
+      syncedScoreCount: null,
+      matchedStudentCount: null,
+      skippedStudentCount: null,
+      warningMessage: null,
+    });
+  const [skippedUnreadyByStudent, setSkippedUnreadyByStudent] = useState<
+    Record<string, string>
+  >({});
   const [session14ComboStatus, setSession14ComboStatus] =
     useState<Session14ComboStatusUI>({
       classId: selectedClassId,
@@ -488,6 +542,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       evalFailedCount: 0,
       evalRetryStudentIds: [],
       evalErrorMessage: null,
+      classSummaryVerified: false,
+      teachingProgressResult: null,
+      reportCardResult: null,
     });
   const autoImportedDemoClassKeysRef = useRef<Set<string>>(new Set());
   const portalKnownStateVersionRef = useRef<{
@@ -548,6 +605,29 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
   }, [selectedClassId, setTogglingStudentPortal]);
 
   useEffect(() => {
+    setSession14ClassSummaryText("");
+    setSession14ClassSummaryRawHtml("");
+    setSession14ClassSummaryDirty(false);
+    setShowSession14SummaryBox(false);
+    setShowFolderEditor(false);
+    setSkippedUnreadyByStudent({});
+  }, [selectedClassId]);
+
+  useEffect(() => {
+    setSkippedUnreadyByStudent({});
+    setTeachingProgressPushState({
+      status: "IDLE",
+      targetPercent: null,
+      updatedCount: null,
+      message: null,
+    });
+    setReportCardChainState({
+      status: "IDLE",
+      syncedScoreCount: null,
+      matchedStudentCount: null,
+      skippedStudentCount: null,
+      warningMessage: null,
+    });
     setSession14ComboStatus({
       classId: selectedClassId,
       running: false,
@@ -558,6 +638,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       evalFailedCount: 0,
       evalRetryStudentIds: [],
       evalErrorMessage: null,
+      classSummaryVerified: false,
+      teachingProgressResult: null,
+      reportCardResult: null,
     });
     setLastSubmissionSummary((prev) =>
       prev &&
@@ -658,10 +741,336 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
   const isAnyOperationBusy =
     baseIsAnyOperationBusy ||
+    mainSyncRunning ||
+    mainStep3Running ||
     Boolean(autoPrepStepProgress) ||
     Boolean(refreshingStudentId) ||
     Boolean(restoringBackupStudentId) ||
     session14ComboStatus.running;
+
+  const activeStudentIdSet = useMemo(() => {
+    const activeIds = (students || [])
+      .filter((s) => s && s.isActive !== 0 && Boolean(s.studentId))
+      .map((s) => s.studentId);
+    if (activeIds.length > 0) {
+      return new Set<string>(activeIds);
+    }
+    return new Set<string>(
+      (rows || []).map((r) => r.assignedStudentId).filter(Boolean)
+    );
+  }, [students, rows]);
+
+  const session14AwardMap = useMemo(
+    () => computeClientFallbackAwardMap(session14Evals, activeStudentIdSet),
+    [session14Evals, activeStudentIdSet]
+  );
+
+  const session14DirtyRef = useRef<boolean>(false);
+  session14DirtyRef.current = session14ClassSummaryDirty;
+
+  const hydrateClassSummaryFromPayload = useCallback(
+    (
+      payload: any,
+      targetClassId: string,
+      evalRecords?: Session14EvalItemUI[],
+      options?: { autoShowBox?: boolean; forceRefresh?: boolean }
+    ) => {
+      let srvHtml = "";
+      let srvText = "";
+      const rawSummary =
+        payload?.classSummary ??
+        payload?.importResult?.classSummary ??
+        payload?.summary;
+      if (typeof rawSummary === "string" && rawSummary.trim()) {
+        if (/<[a-z][\s\S]*>/i.test(rawSummary)) {
+          srvHtml = rawSummary.trim();
+          srvText = htmlSummaryToPlainText(srvHtml);
+        } else {
+          srvText = rawSummary.trim();
+        }
+      } else if (rawSummary && typeof rawSummary === "object") {
+        if (
+          typeof rawSummary.summaryHtml === "string" &&
+          rawSummary.summaryHtml.trim()
+        ) {
+          srvHtml = rawSummary.summaryHtml.trim();
+        } else if (
+          typeof rawSummary.html === "string" &&
+          rawSummary.html.trim()
+        ) {
+          srvHtml = rawSummary.html.trim();
+        } else if (
+          typeof rawSummary.classSummaryHtml === "string" &&
+          rawSummary.classSummaryHtml.trim()
+        ) {
+          srvHtml = rawSummary.classSummaryHtml.trim();
+        }
+        if (
+          typeof rawSummary.bodyText === "string" &&
+          rawSummary.bodyText.trim()
+        ) {
+          const titlePrefix =
+            typeof rawSummary.title === "string" &&
+            rawSummary.title.trim() &&
+            !rawSummary.bodyText.includes(rawSummary.title.trim())
+              ? `${rawSummary.title.trim()}\n`
+              : "";
+          srvText = `${titlePrefix}${rawSummary.bodyText.trim()}`;
+        } else if (
+          typeof rawSummary.text === "string" &&
+          rawSummary.text.trim()
+        ) {
+          srvText = rawSummary.text.trim();
+        } else if (
+          typeof rawSummary.plainText === "string" &&
+          rawSummary.plainText.trim()
+        ) {
+          srvText = rawSummary.plainText.trim();
+        }
+      }
+      if (!srvHtml && typeof payload?.classSummaryHtml === "string") {
+        srvHtml = payload.classSummaryHtml.trim();
+      }
+      if (
+        !srvHtml &&
+        typeof payload?.importResult?.classSummaryHtml === "string"
+      ) {
+        srvHtml = payload.importResult.classSummaryHtml.trim();
+      }
+      if (!srvText && typeof payload?.classSummaryText === "string") {
+        srvText = payload.classSummaryText.trim();
+      }
+      if (!srvText && srvHtml) {
+        srvText = htmlSummaryToPlainText(srvHtml);
+      }
+
+      if (!session14DirtyRef.current || options?.forceRefresh) {
+        if (srvText || srvHtml) {
+          const resolvedText = srvText || htmlSummaryToPlainText(srvHtml);
+          setSession14ClassSummaryText(resolvedText);
+          setSession14ClassSummaryRawHtml(
+            srvHtml || plainTextSummaryToHtml(resolvedText)
+          );
+          if (options?.forceRefresh) {
+            setSession14ClassSummaryDirty(false);
+          }
+        } else if (Array.isArray(evalRecords) && evalRecords.length > 0) {
+          const fallbackText = buildDefaultSession14ClassSummaryText(
+            targetClassId,
+            evalRecords,
+            activeStudentIdSet
+          );
+          if (fallbackText) {
+            setSession14ClassSummaryText((prev) => prev || fallbackText);
+            setSession14ClassSummaryRawHtml((prev) =>
+              prev || plainTextSummaryToHtml(fallbackText)
+            );
+          }
+        }
+      }
+      if (options?.autoShowBox) {
+        setShowSession14SummaryBox(true);
+      }
+    },
+    [activeStudentIdSet]
+  );
+
+  const enrichEvalRecordsWithAwards = useCallback(
+    (rawRecords: any[], payload?: any): Session14EvalItemUI[] => {
+      const awardByStudent = new Map<
+        string,
+        { awardLabel?: string; awardRank?: string | number | null; raw3dp?: number }
+      >();
+      const rankLists = [
+        payload?.rankings,
+        payload?.awardRankings,
+        payload?.importResult?.rankings,
+        payload?.importResult?.awardRankings,
+        payload?.classSummary?.awardRankings,
+      ];
+      for (const list of rankLists) {
+        if (Array.isArray(list)) {
+          for (const item of list) {
+            const sid = String(item?.studentId || "").trim();
+            const lbl = String(
+              item?.awardLabel ||
+                item?.rankLabel ||
+                (typeof item?.awardRank === "string" &&
+                !/^\d+$/.test(item.awardRank.trim())
+                  ? item.awardRank
+                  : "")
+            ).trim();
+            const rk = item?.awardRank ?? null;
+            const raw3 =
+              typeof item?.demoRawTotalScore === "number"
+                ? item.demoRawTotalScore
+                : typeof item?.rawScore3dp === "number"
+                ? item.rawScore3dp
+                : typeof item?.demoRawScore3dp === "number"
+                ? item.demoRawScore3dp
+                : undefined;
+            if (sid && (lbl || rk !== null || raw3 !== undefined)) {
+              awardByStudent.set(sid, {
+                awardLabel: lbl || undefined,
+                awardRank: rk,
+                raw3dp: raw3,
+              });
+            }
+          }
+        } else if (list && typeof list === "object") {
+          for (const [sid, val] of Object.entries(list)) {
+            if (typeof val === "string" && val.trim()) {
+              awardByStudent.set(sid, { awardLabel: val.trim() });
+            } else if (val && typeof val === "object") {
+              const obj = val as any;
+              awardByStudent.set(sid, {
+                awardLabel: String(
+                  obj.awardLabel || obj.label || obj.awardRank || ""
+                ).trim(),
+                raw3dp:
+                  typeof obj.demoRawTotalScore === "number"
+                    ? obj.demoRawTotalScore
+                    : typeof obj.rawScore3dp === "number"
+                    ? obj.rawScore3dp
+                    : undefined,
+              });
+            }
+          }
+        }
+      }
+
+      return rawRecords.map((rec: any) => {
+        const extra = awardByStudent.get(String(rec?.studentId || ""));
+        const resolvedLabel = String(
+          rec?.awardLabel ||
+            extra?.awardLabel ||
+            (typeof rec?.awardRank === "string" &&
+            !/^\d+$/.test(rec.awardRank.trim())
+              ? rec.awardRank
+              : "") ||
+            rec?.demoAwardRank ||
+            ""
+        ).trim();
+        const resolvedRank = rec?.awardRank ?? extra?.awardRank;
+        const resolvedRaw3dp =
+          typeof rec?.demoRawTotalScore === "number"
+            ? rec.demoRawTotalScore
+            : typeof rec?.demoRawScore3dp === "number"
+            ? rec.demoRawScore3dp
+            : typeof rec?.rawScore3dp === "number"
+            ? rec.rawScore3dp
+            : extra?.raw3dp;
+        return {
+          ...rec,
+          ...(resolvedLabel ? { awardLabel: resolvedLabel } : {}),
+          ...(resolvedRank !== undefined && resolvedRank !== null
+            ? { awardRank: resolvedRank }
+            : {}),
+          ...(resolvedRaw3dp !== undefined
+            ? {
+                demoRawTotalScore: resolvedRaw3dp,
+                demoRawScore3dp: resolvedRaw3dp,
+              }
+            : {}),
+        };
+      });
+    },
+    []
+  );
+
+  const handleUpdateSession14ClassSummaryText = useCallback((nextText: string) => {
+    setSession14ClassSummaryText(nextText);
+    setSession14ClassSummaryRawHtml(plainTextSummaryToHtml(nextText));
+    setSession14ClassSummaryDirty(true);
+  }, []);
+
+  const handlePersistSession14ClassSummary = useCallback(
+    async (overrideText?: string, approve = false) => {
+      const reqClassId = String(selectedClassId || "").trim().toUpperCase();
+      if (!reqClassId) return;
+      const textToSave =
+        overrideText !== undefined ? overrideText : session14ClassSummaryText;
+      try {
+        const res = await fetch("/api/spck/session14-eval", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "save_class_summary",
+            classId: reqClassId,
+            bodyText: textToSave,
+            summaryHtml: plainTextSummaryToHtml(textToSave),
+            approve,
+          }),
+        });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.success && data?.classSummary?.summaryHtml) {
+          setSession14ClassSummaryRawHtml(String(data.classSummary.summaryHtml));
+          setSession14ClassSummaryDirty(false);
+        }
+      } catch {}
+    },
+    [selectedClassId, session14ClassSummaryText]
+  );
+
+  const handleResetSession14ClassSummary = useCallback(async () => {
+    const reqClassId = String(selectedClassId || "").trim().toUpperCase();
+    if (!reqClassId) return;
+    try {
+      const res = await fetch("/api/spck/session14-eval", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reset_class_summary",
+          classId: reqClassId,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success && data?.classSummary) {
+        hydrateClassSummaryFromPayload(data, reqClassId, session14Evals, {
+          forceRefresh: true,
+          autoShowBox: true,
+        });
+        return;
+      }
+    } catch {}
+    const fallback = buildDefaultSession14ClassSummaryText(
+      selectedClassId,
+      session14Evals,
+      activeStudentIdSet
+    );
+    handleUpdateSession14ClassSummaryText(fallback);
+  }, [
+    selectedClassId,
+    session14Evals,
+    activeStudentIdSet,
+    hydrateClassSummaryFromPayload,
+    handleUpdateSession14ClassSummaryText,
+  ]);
+
+  const getEffectiveClassSummaryHtml = useCallback((): string => {
+    if (session14ClassSummaryDirty) {
+      return plainTextSummaryToHtml(session14ClassSummaryText);
+    }
+    if (session14ClassSummaryRawHtml.trim()) {
+      return session14ClassSummaryRawHtml.trim();
+    }
+    if (session14ClassSummaryText.trim()) {
+      return plainTextSummaryToHtml(session14ClassSummaryText);
+    }
+    const fallbackText = buildDefaultSession14ClassSummaryText(
+      selectedClassId,
+      session14Evals,
+      activeStudentIdSet
+    );
+    return plainTextSummaryToHtml(fallbackText);
+  }, [
+    session14ClassSummaryDirty,
+    session14ClassSummaryRawHtml,
+    session14ClassSummaryText,
+    selectedClassId,
+    session14Evals,
+    activeStudentIdSet,
+  ]);
 
   const loadBrowseDirectory = async (targetPath?: string) => {
     setBrowsingFolder(true);
@@ -1411,6 +1820,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       const dSheet = data.demoSheetResult;
       if (dSheet?.googleSheetUrl) {
         setGeneratedDemoSheetUrl(dSheet.googleSheetUrl);
+        setDemoScoreSourceInput((prev) => prev || dSheet.googleSheetUrl);
       }
       if (dSheet?.demoDate) {
         setDemoDateInput(dSheet.demoDate);
@@ -1832,7 +2242,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       setStudentPortalTunnelProvider((prev) =>
         prev === nextTunnelProvider ? prev : nextTunnelProvider
       );
-      if (typeof pStatus.autoUploadDrive === "boolean") {
+      if (nextRunning && typeof pStatus.autoUploadDrive === "boolean") {
         const nextAutoDrive = pStatus.autoUploadDrive;
         setStudentPortalAutoDrive((prev) =>
           prev === nextAutoDrive ? prev : nextAutoDrive
@@ -1990,7 +2400,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     }
   };
 
-  const handleStopStudentPortal = async () => {
+  const handleStopStudentPortalInternal = async (options?: {
+    silentSuccessBanner?: boolean;
+  }): Promise<boolean> => {
     const reqClassId = selectedClassId;
     const reqClassUpper = String(reqClassId || "").trim().toUpperCase();
     const reqSessionNum = selectedSessionNumber;
@@ -2020,7 +2432,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         mutSeq !== portalMutationSeqRef.current ||
         (reqClassUpper && !isCurrentPortalUiClassMatch(reqClassUpper))
       ) {
-        return;
+        return false;
       }
 
       const confirmedStopped =
@@ -2040,7 +2452,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
             data?.error ||
             "Chưa xác nhận đóng được Cổng Cho Học Sinh Nộp Bài (cổng có thể vẫn đang mở). Vui lòng bấm Đóng Cổng lại.",
         });
-        return;
+        return false;
       }
 
       const isSameSession = latestSelectedSessionRef.current === reqSessionNum;
@@ -2065,16 +2477,19 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         hydrateRowsFromDb(data.records, latestStudentsRef.current, reqSessionNum);
       }
       setShowPortalQr(false);
-      setBannerMessage({
-        type: "warning",
-        text: "Đã đóng Cổng Cho Học Sinh Nộp Bài.",
-      });
+      if (!options?.silentSuccessBanner) {
+        setBannerMessage({
+          type: "warning",
+          text: "Đã đóng Cổng Cho Học Sinh Nộp Bài.",
+        });
+      }
+      return true;
     } catch (err) {
       if (
         mutSeq !== portalMutationSeqRef.current ||
         (reqClassUpper && !isCurrentPortalUiClassMatch(reqClassUpper))
       ) {
-        return;
+        return false;
       }
       portalLastCheckedTargetRef.current = null;
       const isTimeout = err instanceof Error && err.name === "AbortError";
@@ -2084,6 +2499,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           ? "Quá thời gian phản hồi khi đóng Cổng Thu Bài — chưa xác nhận được cổng đã tắt, vui lòng thử lại."
           : "Lỗi kết nối khi đóng Cổng Cho Học Sinh Nộp Bài — chưa xác nhận được cổng đã tắt, vui lòng thử lại.",
       });
+      return false;
     } finally {
       clearTimeout(timeoutId);
       if (portalActivePostControllerRef.current === controller) {
@@ -2093,6 +2509,10 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         setTogglingStudentPortal(false);
       }
     }
+  };
+
+  const handleStopStudentPortal = async () => {
+    await handleStopStudentPortalInternal({ silentSuccessBanner: false });
   };
 
   const handleTogglePortalAutoDrive = async (enabled: boolean) => {
@@ -2118,6 +2538,42 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       }
     } catch {}
   };
+
+  const recordS14ServerSnapshots = useCallback(
+    (classCode: string, serverRecords: any[]) => {
+      if (!classCode || !Array.isArray(serverRecords)) return;
+      const normClass = String(classCode).trim().toUpperCase();
+      const g = globalThis as any;
+      if (!g.__s14EvalRuntime) {
+        g.__s14EvalRuntime = {
+          inFlightSaves: new Map<string, Promise<any>>(),
+          lastServerSnapshots: new Map<string, any>(),
+          loadSeq: 0,
+          latestAppliedLoadSeq: new Map<string, number>(),
+        };
+      }
+      if (!(g.__s14EvalRuntime.lastServerSnapshots instanceof Map)) {
+        g.__s14EvalRuntime.lastServerSnapshots = new Map<string, any>();
+      }
+      const snapMap: Map<string, any> = g.__s14EvalRuntime.lastServerSnapshots;
+      for (const srv of serverRecords) {
+        const sid = String(srv?.studentId || "").trim();
+        if (!sid) continue;
+        const key = `${normClass}:${sid}`;
+        const existing = snapMap.get(key);
+        if (
+          existing &&
+          typeof existing.draftVersion === "number" &&
+          typeof srv.draftVersion === "number" &&
+          existing.draftVersion > srv.draftVersion
+        ) {
+          continue;
+        }
+        snapMap.set(key, JSON.parse(JSON.stringify(srv)));
+      }
+    },
+    []
+  );
 
   const loadSession14Evals = useCallback(
     async (targetClassId: string) => {
@@ -2168,9 +2624,14 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           return;
         }
 
-        const validRecords = data.records.filter(
-          (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClass
+        const validRecords = enrichEvalRecordsWithAwards(
+          data.records.filter(
+            (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClass
+          ),
+          data
         );
+        recordS14ServerSnapshots(reqClass, validRecords);
+        hydrateClassSummaryFromPayload(data, reqClass, validRecords);
 
         const editableKeys = [
           "learnedFromMindx",
@@ -2451,8 +2912,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
   const handleImportDemoScores = async (options?: {
     isAutoImport?: boolean;
-  }) => {
-    if (!selectedClassId) return;
+    isMainSync?: boolean;
+  }): Promise<{ success: boolean; matchedCount?: number; errorSummary?: string }> => {
+    if (!selectedClassId) return { success: false, errorSummary: "Chưa chọn lớp" };
     const reqClassId = String(selectedClassId).trim().toUpperCase();
     const g = globalThis as any;
     const editableKeys = [
@@ -2482,7 +2944,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     });
 
     setImportingDemoScores(true);
-    if (!options?.isAutoImport) {
+    if (!options?.isAutoImport && !options?.isMainSync) {
       setBannerMessage(null);
     }
     try {
@@ -2497,26 +2959,42 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         }),
       });
       const data = await res.json();
-      if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) return;
+      if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) {
+        return { success: false, errorSummary: "Đã chuyển sang lớp khác" };
+      }
       if (
         g.__s14LatestRenderedClassId &&
         String(g.__s14LatestRenderedClassId).trim().toUpperCase() !== reqClassId
       ) {
-        return;
+        return { success: false, errorSummary: "Đã chuyển sang lớp khác" };
       }
       if (!data.success) {
-        if (!options?.isAutoImport) {
+        if (options?.isMainSync && /(?:^|[-_\s])(PTB|CSB)(?:\d|$|[-_\s])/i.test(reqClassId)) {
+          await loadSession14Evals(reqClassId);
+          return { success: true, matchedCount: 0 };
+        }
+        if (!options?.isAutoImport && !options?.isMainSync) {
           setBannerMessage({
             type: "error",
             text: data.error || "Không thể đọc điểm Demo từ file chấm điểm.",
           });
         }
-        return;
+        return {
+          success: false,
+          errorSummary: data.error || "Không thể đọc điểm Demo BGK",
+        };
       }
       if (Array.isArray(data.records)) {
-        const validRecords = data.records.filter(
-          (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClassId
+        const validRecords = enrichEvalRecordsWithAwards(
+          data.records.filter(
+            (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClassId
+          ),
+          data
         );
+        recordS14ServerSnapshots(reqClassId, validRecords);
+        hydrateClassSummaryFromPayload(data, reqClassId, validRecords, {
+          forceRefresh: !session14DirtyRef.current,
+        });
         setSession14Evals((prev: Session14EvalItemUI[]) => {
           if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) {
             return prev;
@@ -2573,20 +3051,43 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           });
         });
       }
+      if (Array.isArray(data.spckRecords) && data.spckRecords.length > 0) {
+        const spckByStu = new Map<string, SpckRecordRow>(
+          data.spckRecords.map((r: SpckRecordRow) => [r.studentId, r])
+        );
+        setRows((prev) =>
+          prev.map((row) => {
+            if (row.isDirty) return row;
+            const srvRec = spckByStu.get(row.assignedStudentId);
+            if (!srvRec) return row;
+            const nextTags = parseJsonSafe<string[]>(srvRec.quickTagsJson, []);
+            if (nextTags.length === 0) return row;
+            return {
+              ...row,
+              quickTags: nextTags,
+              includePresentation: true,
+              draftVersion: srvRec.draftVersion ?? row.draftVersion,
+            };
+          })
+        );
+      }
       const matched = data.importResult?.matchedCount || 0;
-      if (matched > 0 || !options?.isAutoImport) {
+      if ((matched > 0 || !options?.isAutoImport) && !options?.isMainSync) {
         setBannerMessage({
           type: "success",
-          text: `Đã đọc thành công Điểm Demo & gợi ý Điểm Năng lực [ĐNL] cho ${matched} học viên lớp ${reqClassId}!`,
+          text: `Đã đọc thành công Điểm Demo, xếp hạng Nhất/Nhì/Ba & tính Điểm Năng lực [ĐNL] cho ${matched} học viên lớp ${reqClassId}!`,
         });
       }
+      return { success: true, matchedCount: matched };
     } catch (err) {
-      if (!options?.isAutoImport) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (!options?.isAutoImport && !options?.isMainSync) {
         setBannerMessage({
           type: "error",
-          text: err instanceof Error ? err.message : String(err),
+          text: errMsg,
         });
       }
+      return { success: false, errorSummary: errMsg };
     } finally {
       setImportingDemoScores(false);
     }
@@ -2654,7 +3155,10 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     const listToGen =
       targetStudentIds && targetStudentIds.length > 0
         ? liveStartList.filter((e) => targetStudentIds.includes(e.studentId))
-        : liveStartList;
+        : liveStartList.filter(
+            (e) =>
+              activeStudentIdSet.size === 0 || activeStudentIdSet.has(e.studentId)
+          );
     if (listToGen.length === 0) return;
 
     setGeneratingS14EvalAi(true);
@@ -2707,9 +3211,16 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         return;
       }
       if (Array.isArray(data.records)) {
-        const validRecords = data.records.filter(
-          (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClassId
+        const validRecords = enrichEvalRecordsWithAwards(
+          data.records.filter(
+            (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClassId
+          ),
+          data
         );
+        recordS14ServerSnapshots(reqClassId, validRecords);
+        hydrateClassSummaryFromPayload(data, reqClassId, validRecords, {
+          autoShowBox: true,
+        });
         setSession14Evals((prev: Session14EvalItemUI[]) => {
           if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) {
             return prev;
@@ -2777,6 +3288,11 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           }
         }
       }
+      if (!Array.isArray(data.records)) {
+        hydrateClassSummaryFromPayload(data, reqClassId, liveStartList, {
+          autoShowBox: true,
+        });
+      }
       const okCount = (data.results || []).filter(
         (r: any) => r.status === "SUCCESS"
       ).length;
@@ -2799,13 +3315,19 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
   };
 
   const handleApproveAndUploadSession14Eval = async (
-    targetStudentIds?: string[]
+    targetStudentIds?: string[],
+    options?: {
+      classSummaryHtml?: string;
+      allowPartialApproval?: boolean;
+      silentBanner?: boolean;
+    }
   ): Promise<{
     verifiedCount: number;
     verifiedStudentIds: string[];
     failedCount: number;
     retryStudentIds: string[];
     errorMessage: string | null;
+    classSummarySaved?: boolean;
   }> => {
     if (!selectedClassId) {
       return {
@@ -2830,25 +3352,32 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     };
 
     const currentList = readLiveList();
-    const ids =
+    const rawIds =
       targetStudentIds && targetStudentIds.length > 0
         ? targetStudentIds
         : currentList
             .filter(
               (ev) =>
+                (activeStudentIdSet.size === 0 ||
+                  activeStudentIdSet.has(ev.studentId)) &&
                 ev.learnedFromMindx.trim() &&
                 ev.suggestionsFromMindx.trim() &&
                 ev.futureDirection.trim()
             )
             .map((ev) => ev.studentId);
+    const ids = rawIds.filter(
+      (sid) => activeStudentIdSet.size === 0 || activeStudentIdSet.has(sid)
+    );
 
     if (ids.length === 0) {
       const warnMsg =
         "Chưa có học viên nào đủ nội dung 3 phần Thư từ MindX để duyệt và đẩy lên LMS.";
-      setBannerMessage({
-        type: "warning",
-        text: warnMsg,
-      });
+      if (!options?.silentBanner) {
+        setBannerMessage({
+          type: "warning",
+          text: warnMsg,
+        });
+      }
       return {
         verifiedCount: 0,
         verifiedStudentIds: [],
@@ -2867,8 +3396,12 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       | undefined;
 
     setUploadingS14EvalLms(true);
-    setBannerMessage(null);
+    if (!options?.silentBanner) {
+      setBannerMessage(null);
+    }
+    const preApproveFailedIds: string[] = [];
     try {
+      const candidateApproveIds: string[] = [];
       if (runtime) {
         for (const sid of ids) {
           const saveKey = `${reqClassId}:${sid}`;
@@ -2877,10 +3410,14 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
             const raceRes = await Promise.race([
               pending,
               new Promise<{ timedOut: true }>((resolve) =>
-                setTimeout(() => resolve({ timedOut: true }), 150)
+                setTimeout(() => resolve({ timedOut: true }), 5000)
               ),
             ]);
             if (raceRes && (raceRes as any).timedOut) {
+              if (options?.allowPartialApproval && ids.length > 1) {
+                preApproveFailedIds.push(sid);
+                continue;
+              }
               const errMsg = `Thao tác lưu nháp của học viên ${sid} chưa hoàn tất. Đã dừng duyệt và đẩy LMS để tránh gửi bản cũ.`;
               setBannerMessage({
                 type: "error",
@@ -2895,6 +3432,10 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
               };
             }
             if (!raceRes || !raceRes.success) {
+              if (options?.allowPartialApproval && ids.length > 1) {
+                preApproveFailedIds.push(sid);
+                continue;
+              }
               return {
                 verifiedCount: 0,
                 verifiedStudentIds: [],
@@ -2904,15 +3445,22 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
               };
             }
           }
+          candidateApproveIds.push(sid);
         }
+      } else {
+        candidateApproveIds.push(...ids);
       }
 
       const latestBeforeApprove = readLiveList();
       const expectedVersions: Record<string, number> = {};
+      const flushedIds: string[] = [];
 
-      for (const sid of ids) {
+      for (const sid of candidateApproveIds) {
         const visibleItem = latestBeforeApprove.find((r) => r.studentId === sid);
-        if (!visibleItem) continue;
+        if (!visibleItem) {
+          flushedIds.push(sid);
+          continue;
+        }
         const saveKey = `${reqClassId}:${sid}`;
         const lastSrv = runtime?.lastServerSnapshots.get(saveKey);
         const needsFlush =
@@ -2939,7 +3487,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           const flushRes = await Promise.race([
             flushPromise,
             new Promise<{ timedOut: true }>((resolve) =>
-              setTimeout(() => resolve({ timedOut: true }), 150)
+              setTimeout(() => resolve({ timedOut: true }), 5000)
             ),
           ]);
           if (
@@ -2947,6 +3495,10 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
             (flushRes as any).timedOut ||
             !(flushRes as any).success
           ) {
+            if (options?.allowPartialApproval && candidateApproveIds.length > 1) {
+              preApproveFailedIds.push(sid);
+              continue;
+            }
             const errMsg = `Không thể lưu bản đang hiển thị của học viên ${sid} trước khi duyệt.`;
             setBannerMessage({
               type: "error",
@@ -2968,6 +3520,21 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         } else if (typeof visibleItem.draftVersion === "number") {
           expectedVersions[sid] = visibleItem.draftVersion;
         }
+        flushedIds.push(sid);
+      }
+
+      if (flushedIds.length === 0) {
+        const errMsg = "Không thể lưu bản nháp đánh giá Buổi 14 cho học viên nào trước khi duyệt.";
+        if (!options?.silentBanner) {
+          setBannerMessage({ type: "error", text: errMsg });
+        }
+        return {
+          verifiedCount: 0,
+          verifiedStudentIds: [],
+          failedCount: ids.length,
+          retryStudentIds: ids,
+          errorMessage: errMsg,
+        };
       }
 
       if (String(selectedClassId || "").trim().toUpperCase() !== reqClassId) {
@@ -3002,16 +3569,27 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         }
       }
 
+      if (session14ClassSummaryDirty && session14ClassSummaryText.trim()) {
+        await handlePersistSession14ClassSummary(
+          session14ClassSummaryText,
+          true
+        );
+      }
+
       const appRes = await fetch("/api/spck/session14-eval", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "approve",
           classId: reqClassId,
-          studentIds: ids,
+          studentIds: flushedIds,
           expectedVersions,
-          ...(ids.length === 1 && expectedVersions[ids[0]] !== undefined
-            ? { expectedVersion: expectedVersions[ids[0]] }
+          ...(options?.allowPartialApproval
+            ? { isolatePerStudent: true, allowPartial: true }
+            : {}),
+          ...(flushedIds.length === 1 &&
+          expectedVersions[flushedIds[0]] !== undefined
+            ? { expectedVersion: expectedVersions[flushedIds[0]] }
             : {}),
         }),
       });
@@ -3019,15 +3597,24 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       const approvedIds: string[] = Array.isArray(appData.approvedIds)
         ? appData.approvedIds
         : [];
-      if (!appRes.ok || !appData.success || approvedIds.length !== ids.length) {
+      const approvalRejectedIds = flushedIds.filter(
+        (sid) => !approvedIds.includes(sid)
+      );
+      if (
+        approvedIds.length === 0 ||
+        (!options?.allowPartialApproval &&
+          (!appRes.ok || !appData.success || approvedIds.length !== flushedIds.length))
+      ) {
         const errMsg =
           appData.errors?.[0]?.error ||
           appData.error ||
           "Không thể duyệt đánh giá Buổi 14 trước khi đẩy lên LMS.";
-        setBannerMessage({
-          type: "error",
-          text: errMsg,
-        });
+        if (!options?.silentBanner) {
+          setBannerMessage({
+            type: "error",
+            text: errMsg,
+          });
+        }
         return {
           verifiedCount: 0,
           verifiedStudentIds: [],
@@ -3037,12 +3624,23 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         };
       }
 
+      const resolvedSummaryHtml =
+        options?.classSummaryHtml !== undefined
+          ? options.classSummaryHtml
+          : getEffectiveClassSummaryHtml();
+
       const upRes = await fetch("/api/spck/session14-eval/upload-lms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           classId: reqClassId,
           studentIds: approvedIds,
+          ...(resolvedSummaryHtml
+            ? { classSummaryHtml: resolvedSummaryHtml, uploadClassSummary: true }
+            : {}),
+          ...(options?.allowPartialApproval
+            ? { skipUnapproved: true, allowPartial: true }
+            : {}),
         }),
       });
       const upData = await upRes.json();
@@ -3068,9 +3666,13 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         };
       }
       if (Array.isArray(upData.records) && upData.records.length > 0) {
-        const validRecords = upData.records.filter(
-          (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClassId
+        const validRecords = enrichEvalRecordsWithAwards(
+          upData.records.filter(
+            (r: any) => !r.classId || String(r.classId).trim().toUpperCase() === reqClassId
+          ),
+          upData
         );
+        recordS14ServerSnapshots(reqClassId, validRecords);
         const editableKeys = [
           "learnedFromMindx",
           "suggestionsFromMindx",
@@ -3159,54 +3761,77 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         const errMsg =
           upData?.error ||
           `Lỗi khi đẩy đánh giá Buổi 14 lên LMS (HTTP ${upRes.status}).`;
-        setBannerMessage({
-          type: "error",
-          text: errMsg,
-        });
+        if (!options?.silentBanner) {
+          setBannerMessage({
+            type: "error",
+            text: errMsg,
+          });
+        }
         return {
           verifiedCount: 0,
           verifiedStudentIds: [],
-          failedCount: approvedIds.length,
-          retryStudentIds: approvedIds,
+          failedCount: approvedIds.length + preApproveFailedIds.length + approvalRejectedIds.length,
+          retryStudentIds: Array.from(
+            new Set([...approvedIds, ...preApproveFailedIds, ...approvalRejectedIds])
+          ),
           errorMessage: errMsg,
         };
       }
       const verCount = upData.uploadResult?.verifiedCount || 0;
-      const failCount = upData.uploadResult?.failedCount || 0;
+      const uploadFailCount = upData.uploadResult?.failedCount || 0;
       const verifiedStudentIds = Array.isArray(upData.uploadResult?.results)
         ? upData.uploadResult.results
             .filter((r: any) => r.status === "VERIFIED")
             .map((r: any) => String(r.studentId || ""))
             .filter(Boolean)
-        : verCount > 0 && failCount === 0
+        : verCount > 0 && uploadFailCount === 0
         ? approvedIds
         : [];
-      const failedRetryIds = Array.isArray(upData.uploadResult?.results)
+      const uploadFailedRetryIds = Array.isArray(upData.uploadResult?.results)
         ? upData.uploadResult.results
             .filter((r: any) => r.status !== "VERIFIED")
             .map((r: any) => String(r.studentId || ""))
             .filter(Boolean)
-        : failCount > 0
+        : uploadFailCount > 0
         ? approvedIds
         : [];
+      const failedRetryIds = Array.from(
+        new Set([
+          ...uploadFailedRetryIds,
+          ...preApproveFailedIds,
+          ...approvalRejectedIds,
+        ])
+      );
+      const failCount = failedRetryIds.length;
       const firstFailedItem = Array.isArray(upData.uploadResult?.results)
         ? upData.uploadResult.results.find(
             (r: any) => r.status === "FAILED" && r.errorMessage
           )
         : null;
+      const firstApproveErr = appData.errors?.[0]?.error;
       const statusText =
-        failCount > 0 && firstFailedItem
-          ? `Đã đẩy & xác minh ${verCount}/${approvedIds.length} học viên lên LMS (${failCount} lỗi — ${firstFailedItem.fullName || firstFailedItem.studentId}: ${firstFailedItem.errorMessage})`
-          : `Đã đẩy & xác minh (Read-after-Write) đánh giá tổng kết + Điểm Demo Buổi 14 cho ${verCount}/${approvedIds.length} học viên lên LMS!`;
-      setBannerMessage({
-        type:
-          failCount === 0 && verCount > 0
-            ? "success"
-            : failCount > 0
-            ? "error"
-            : "warning",
-        text: statusText,
-      });
+        failCount > 0
+          ? `Đã đẩy & xác minh ${verCount}/${ids.length} học viên lên LMS (${failCount} cần kiểm tra${
+              firstFailedItem
+                ? ` — ${firstFailedItem.fullName || firstFailedItem.studentId}: ${firstFailedItem.errorMessage}`
+                : firstApproveErr
+                ? ` — ${firstApproveErr}`
+                : ""
+            })`
+          : `Đã đẩy & xác minh (Read-after-Write) đánh giá tổng kết + Điểm Demo + Summary Buổi 14 cho ${verCount}/${approvedIds.length} học viên lên LMS!`;
+      if (!options?.silentBanner) {
+        setBannerMessage({
+          type:
+            failCount === 0 && verCount > 0
+              ? "success"
+              : verCount > 0
+              ? "warning"
+              : failCount > 0
+              ? "error"
+              : "warning",
+          text: statusText,
+        });
+      }
       return {
         verifiedCount: verCount,
         verifiedStudentIds,
@@ -3214,15 +3839,26 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         retryStudentIds: failedRetryIds,
         errorMessage:
           failCount > 0
-            ? firstFailedItem?.errorMessage || "Một số học viên lỗi lưu Đánh giá Buổi 14."
+            ? firstFailedItem?.errorMessage ||
+              firstApproveErr ||
+              "Một số học viên lỗi lưu Đánh giá Buổi 14."
             : null,
+        classSummarySaved: Boolean(
+          upData.uploadResult?.classSummaryStatus === "VERIFIED" ||
+            upData.uploadResult?.classSummarySaved ||
+            upData.uploadResult?.summarySaved ||
+            (upData.uploadResult?.classSummaryStatus !== "FAILED" &&
+              Boolean(resolvedSummaryHtml))
+        ),
       };
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      setBannerMessage({
-        type: "error",
-        text: errMsg,
-      });
+      if (!options?.silentBanner) {
+        setBannerMessage({
+          type: "error",
+          text: errMsg,
+        });
+      }
       return {
         verifiedCount: 0,
         verifiedStudentIds: [],
@@ -3463,8 +4099,14 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
   ]);
 
   const activeBusyDescription = useMemo(() => {
+    if (mainStep3PhaseLabel) {
+      return mainStep3PhaseLabel;
+    }
     if (autoPrepStepProgress) {
       return autoPrepStepProgress;
+    }
+    if (mainSyncRunning) {
+      return "Đang đồng bộ bài làm trọn gói (Quét bài • Chụp ảnh 16:9 • GitHub Live • Google Drive)...";
     }
     if (restoringBackupStudentId) {
       return "Đang khôi phục bản nộp trước từ kho dự phòng cho học viên...";
@@ -3474,10 +4116,16 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     }
     if (session14ComboStatus.running) {
       if (session14ComboStatus.currentPhase === "spck") {
-        return "[1/2] Đang duyệt và nộp Sản phẩm SPCK (Cột 3) Buổi 14 lên LMS...";
+        return "[1/4] Đang duyệt và nộp Sản phẩm SPCK (Cột 3) Buổi 14 lên LMS...";
       }
       if (session14ComboStatus.currentPhase === "eval") {
-        return "[2/2] Đang duyệt và đẩy Đánh giá tổng kết & Điểm Demo (Cột 2) Buổi 14 lên LMS...";
+        return "[2/4] Đang duyệt và đẩy Đánh giá tổng kết, Điểm Demo & Summary (Cột 2) Buổi 14 lên LMS...";
+      }
+      if (session14ComboStatus.currentPhase === "teaching_progress") {
+        return "[3/4] Đang cập nhật Tiến độ dự án lên 100% trên Teaching...";
+      }
+      if (session14ComboStatus.currentPhase === "report_card") {
+        return "[4/4] Đang quét điểm LMS & đồng bộ Phiếu điểm cuối khóa sang Teaching...";
       }
     }
     if (uploading) {
@@ -3487,13 +4135,13 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       );
     }
     if (uploadingS14EvalLms) {
-      return "Đang duyệt và đẩy Đánh giá tổng kết Buổi 14 (Điểm Demo, ĐNL & Thư từ MindX) lên LMS...";
+      return "Đang duyệt và đẩy Đánh giá tổng kết Buổi 14 (Điểm Demo, ĐNL, Summary & Thư từ MindX) lên LMS...";
     }
     if (generatingS14EvalAi) {
       return "Đang gọi AI soạn Thư tổng kết 3 phần (Buổi 14) cho học viên...";
     }
     if (importingDemoScores) {
-      return "Đang đọc Điểm Demo từ file chấm điểm BGK (.xlsx / Google Sheet)...";
+      return "Đang đọc Điểm Demo BGK, xếp hạng Nhất/Nhì/Ba & tính Điểm Năng lực [ĐNL]...";
     }
     if (scanning)
       return "Đang quét thư mục sản phẩm trên máy và khớp danh sách học viên...";
@@ -3513,7 +4161,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       return "Đang quét danh sách lớp từ tài khoản giáo viên...";
     return "";
   }, [
+    mainStep3PhaseLabel,
     autoPrepStepProgress,
+    mainSyncRunning,
     restoringBackupStudentId,
     refreshingStudentId,
     session14ComboStatus.running,
@@ -3556,7 +4206,10 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     key: keyof Session14DemoScoresUI;
     label: string;
     max: number;
-  }> = isRoboticsClass ? DEMO_SCORE_ITEMS_ROBOTICS_UI : DEMO_SCORE_ITEMS_UI;
+  }> = useMemo(
+    () => getDemoScoreItemsForClassUi(selectedClassId, isRoboticsClass),
+    [selectedClassId, isRoboticsClass]
+  );
 
   const totalStepsCount = 3;
 
@@ -3593,6 +4246,259 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     return hasAppClassCode || hasAppFiles || !isWebClassOrProduct;
   }, [selectedClassId, selectedClassMeta, rows, isWebClassOrProduct]);
 
+  // Auto-open Ngăn 1 ("Công cụ trong lớp học") when Portal is running or Robotics class needs YouTube playlist
+  useEffect(() => {
+    if (studentPortalRunning) {
+      setShowOptionalTools(true);
+    }
+  }, [studentPortalRunning, setShowOptionalTools]);
+
+  useEffect(() => {
+    if (isRoboticsClass && !youtubeImportInput.trim()) {
+      const hasAnyYoutubeInRows = rows.some(
+        (r) => Boolean(r.youtubeUrlsText && r.youtubeUrlsText.trim())
+      );
+      if (!hasAnyYoutubeInRows) {
+        setShowOptionalTools(true);
+        setShowYoutubeImport(true);
+      }
+    }
+  }, [
+    selectedClassId,
+    isRoboticsClass,
+    youtubeImportInput,
+    rows,
+    setShowOptionalTools,
+    setShowYoutubeImport,
+  ]);
+
+  // Auto-open Ngăn 2 ("Tùy chọn nâng cao") only when partial errors require manual retry
+  useEffect(() => {
+    const hasToolErr = Object.values(toolErrorsByStudent).some(
+      (map) => map && Object.keys(map).length > 0
+    );
+    const hasFailedSpck = Boolean(
+      lastSubmissionSummary && lastSubmissionSummary.failedItems.length > 0
+    );
+    const hasFailedS14 = session14ComboStatus.evalFailedCount > 0;
+    if (hasToolErr || hasFailedSpck || hasFailedS14) {
+      setShowAdvancedTools(true);
+    }
+  }, [
+    toolErrorsByStudent,
+    lastSubmissionSummary,
+    session14ComboStatus.evalFailedCount,
+  ]);
+
+  const pushTeachingProgressInternal = useCallback(
+    async (
+      targetClassCode: string,
+      milestoneTaskCount: 3 | 4 | 5
+    ): Promise<SpckTeachingProgressPushResultUI> => {
+      const targetPercent: 60 | 80 | 100 =
+        milestoneTaskCount === 3 ? 60 : milestoneTaskCount === 4 ? 80 : 100;
+      setTeachingProgressPushState({
+        status: "RUNNING",
+        targetPercent,
+        updatedCount: null,
+        message: `Đang cập nhật Tiến độ dự án Teaching lên ${targetPercent}%...`,
+      });
+      try {
+        const res = await fetch("/api/teaching-projects/progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            classCode: targetClassCode,
+            milestoneTaskCount,
+            resetOthers: false,
+            allowDecrease: false,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data?.success === false) {
+          const warnMsg =
+            data?.error ||
+            `Cảnh báo Tiến độ dự án Teaching (${targetPercent}%): HTTP ${res.status}`;
+          const nextState: SpckTeachingProgressPushResultUI = {
+            status: "WARNING",
+            targetPercent,
+            updatedCount: null,
+            message: warnMsg,
+          };
+          setTeachingProgressPushState(nextState);
+          return nextState;
+        }
+        const updatedCount =
+          typeof data?.updatedCount === "number"
+            ? data.updatedCount
+            : typeof data?.result?.updatedCount === "number"
+            ? data.result.updatedCount
+            : null;
+        const warnText =
+          data?.warning ||
+          (Array.isArray(data?.warnings) && data.warnings.length > 0
+            ? data.warnings.join("; ")
+            : "");
+        const nextState: SpckTeachingProgressPushResultUI = {
+          status: warnText ? "WARNING" : "SUCCESS",
+          targetPercent,
+          updatedCount,
+          message:
+            warnText ||
+            data?.message ||
+            `Đã cập nhật Tiến độ dự án Teaching lên ${targetPercent}%!`,
+        };
+        setTeachingProgressPushState(nextState);
+        return nextState;
+      } catch (err) {
+        const warnMsg = `Cảnh báo Tiến độ dự án Teaching (${targetPercent}%): ${
+          err instanceof Error ? err.message : String(err)
+        }`;
+        const nextState: SpckTeachingProgressPushResultUI = {
+          status: "WARNING",
+          targetPercent,
+          updatedCount: null,
+          message: warnMsg,
+        };
+        setTeachingProgressPushState(nextState);
+        return nextState;
+      }
+    },
+    []
+  );
+
+  const runReportCardSyncChainInternal = useCallback(
+    async (targetClassId: string): Promise<SpckReportCardChainResultUI> => {
+      setReportCardChainState({
+        status: "RUNNING",
+        syncedScoreCount: null,
+        matchedStudentCount: null,
+        skippedStudentCount: null,
+        warningMessage: "Đang quét Phiếu điểm cuối khóa từ LMS...",
+      });
+      try {
+        const scrapeRes = await fetch("/api/report-card", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "scrape_lms",
+            classId: targetClassId,
+          }),
+        });
+        const scrapeData = await scrapeRes.json().catch(() => ({}));
+        if (!scrapeRes.ok || !scrapeData?.success) {
+          const nextState: SpckReportCardChainResultUI = {
+            status: "WARNING",
+            syncedScoreCount: null,
+            matchedStudentCount: null,
+            skippedStudentCount: null,
+            warningMessage:
+              scrapeData?.error ||
+              `Chưa thể quét Phiếu điểm cuối khóa từ LMS (HTTP ${scrapeRes.status}).`,
+          };
+          setReportCardChainState(nextState);
+          return nextState;
+        }
+
+        const scrapedVersion = scrapeData?.record?.draftVersion;
+        const approveRes = await fetch("/api/report-card", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "approve",
+            classId: targetClassId,
+            ...(typeof scrapedVersion === "number"
+              ? { expectedVersion: scrapedVersion }
+              : {}),
+          }),
+        });
+        const approveData = await approveRes.json().catch(() => ({}));
+        if (!approveRes.ok || !approveData?.success) {
+          const nextState: SpckReportCardChainResultUI = {
+            status: "WARNING",
+            syncedScoreCount: null,
+            matchedStudentCount: null,
+            skippedStudentCount: null,
+            warningMessage:
+              approveData?.error ||
+              `Chưa thể tự động duyệt Phiếu điểm cuối khóa (HTTP ${approveRes.status}).`,
+          };
+          setReportCardChainState(nextState);
+          return nextState;
+        }
+
+        const approvedVersion =
+          approveData?.record?.draftVersion ?? scrapedVersion;
+        const syncRes = await fetch("/api/report-card/sync-teaching", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            classId: targetClassId,
+            classCode: targetClassId,
+            ...(typeof approvedVersion === "number"
+              ? { expectedVersion: approvedVersion }
+              : {}),
+          }),
+        });
+        const syncData = await syncRes.json().catch(() => ({}));
+        if (!syncRes.ok || !syncData?.success) {
+          const nextState: SpckReportCardChainResultUI = {
+            status: "WARNING",
+            syncedScoreCount: null,
+            matchedStudentCount: null,
+            skippedStudentCount: null,
+            warningMessage:
+              syncData?.error ||
+              `Cảnh báo đồng bộ Phiếu điểm sang Teaching (HTTP ${syncRes.status}).`,
+          };
+          setReportCardChainState(nextState);
+          return nextState;
+        }
+
+        const syncedScoreCount =
+          typeof syncData.syncedScoreCount === "number"
+            ? syncData.syncedScoreCount
+            : null;
+        const matchedStudentCount =
+          typeof syncData.matchedStudentCount === "number"
+            ? syncData.matchedStudentCount
+            : null;
+        const skippedStudentCount =
+          typeof syncData.skippedStudentCount === "number"
+            ? syncData.skippedStudentCount
+            : 0;
+        const warnMsg =
+          syncData.warning ||
+          (skippedStudentCount > 0
+            ? `Đã đồng bộ ${matchedStudentCount ?? 0} HV sang Teaching (còn ${skippedStudentCount} HV thiếu/lệch trên Teaching).`
+            : null);
+
+        const nextState: SpckReportCardChainResultUI = {
+          status: warnMsg ? "WARNING" : "SUCCESS",
+          syncedScoreCount,
+          matchedStudentCount,
+          skippedStudentCount,
+          warningMessage: warnMsg,
+        };
+        setReportCardChainState(nextState);
+        return nextState;
+      } catch (err) {
+        const nextState: SpckReportCardChainResultUI = {
+          status: "WARNING",
+          syncedScoreCount: null,
+          matchedStudentCount: null,
+          skippedStudentCount: null,
+          warningMessage: `Cảnh báo đồng bộ Phiếu điểm Teaching: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        };
+        setReportCardChainState(nextState);
+        return nextState;
+      }
+    },
+    []
+  );
+
   const handleImportYoutubeProducts = async (options?: {
     skipApprovalConfirm?: boolean;
     sourceRows?: ScannedFolderUIItem[];
@@ -3628,260 +4534,39 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
   const handleGenerateSession14AllAi = async (targetStudentIds?: string[]) => {
     if (!selectedClassId) return;
-    const targetFolders =
-      targetStudentIds && targetStudentIds.length > 0
-        ? rows
-            .filter(
-              (r) =>
-                r.assignedStudentId &&
-                targetStudentIds.includes(r.assignedStudentId)
-            )
-            .map((r) => r.folderPath)
-            .filter(Boolean)
-        : undefined;
-    await handleGenerateAiComments(
-      targetFolders && targetFolders.length > 0 ? targetFolders : undefined
-    );
+    if (!isSpckExemptClass && rows.length > 0) {
+      const targetFolders =
+        targetStudentIds && targetStudentIds.length > 0
+          ? rows
+              .filter(
+                (r) =>
+                  r.assignedStudentId &&
+                  targetStudentIds.includes(r.assignedStudentId)
+              )
+              .map((r) => r.folderPath)
+              .filter(Boolean)
+          : undefined;
+      await handleGenerateAiComments(
+        targetFolders && targetFolders.length > 0 ? targetFolders : undefined
+      );
+    }
     await handleGenerateSession14EvalAi(targetStudentIds);
-  };
-
-  const handleSubmitSession14Combo = async (
-    targetStudentIds?: string[],
-    partToRun: "both" | "spck_only" | "eval_only" = "both"
-  ) => {
-    if (!selectedClassId) return;
-    const reqClassId = selectedClassId;
-    const isStaleClass = () => {
-      const currentActive = getActiveUiClassId?.();
-      return Boolean(currentActive && currentActive !== reqClassId);
-    };
-    const ids =
-      targetStudentIds && targetStudentIds.length > 0
-        ? targetStudentIds
-        : effectiveSelectedStudentIds;
-    if (ids.length === 0) {
-      setBannerMessage({
-        type: "warning",
-        text: "Vui lòng chọn ít nhất 1 học viên để nộp Buổi 14.",
-      });
-      return;
-    }
-
-    if (partToRun === "both") {
-      setLastSubmissionSummary(null);
-      setBannerMessage(null);
-    }
-
-    setSession14ComboStatus((prev) =>
-      partToRun === "both"
-        ? {
-            classId: reqClassId,
-            running: true,
-            currentPhase: "spck",
-            spckSummary: null,
-            evalVerifiedCount: 0,
-            evalVerifiedStudentIds: [],
-            evalFailedCount: 0,
-            evalRetryStudentIds: [],
-            evalErrorMessage: null,
-          }
-        : {
-            ...prev,
-            classId: reqClassId,
-            running: true,
-            currentPhase: partToRun === "eval_only" ? "eval" : "spck",
-          }
-    );
-
-    let nextSpckSummary =
-      partToRun === "both" ? null : session14ComboStatus.spckSummary;
-    let nextEvalVerified =
-      partToRun === "both" ? 0 : session14ComboStatus.evalVerifiedCount;
-    let nextEvalVerifiedIds =
-      partToRun === "both"
-        ? []
-        : [...(session14ComboStatus.evalVerifiedStudentIds || [])];
-    let nextEvalFailed =
-      partToRun === "both" ? 0 : session14ComboStatus.evalFailedCount;
-    let nextEvalRetryIds =
-      partToRun === "both" ? [] : [...session14ComboStatus.evalRetryStudentIds];
-    let nextEvalError =
-      partToRun === "both" ? null : session14ComboStatus.evalErrorMessage;
-
-    try {
-      if (partToRun === "both" || partToRun === "spck_only") {
-        setSession14ComboStatus((prev) => ({
-          ...prev,
-          classId: reqClassId,
-          running: true,
-          currentPhase: "spck",
-        }));
-        const spckRes = await baseHandleApproveAndUpload(ids, true, 14);
-        if (isStaleClass()) return;
-        const resolvedSpckSummary: SpckBatchSubmissionSummaryUI =
-          spckRes && typeof spckRes === "object"
-            ? { ...spckRes, classId: reqClassId }
-            : {
-                classId: reqClassId,
-                sessionNumber: 14,
-                totalSelected: ids.length,
-                verifiedItems: [],
-                failedItems: ids.map((sid) => ({
-                  studentId: sid,
-                  studentName: sid,
-                  reason: "Không thể hoàn tất nộp Sản phẩm SPCK (Buổi 14).",
-                })),
-                skippedItems: [],
-                retryStudentIds: ids,
-                completedAt: new Date().toLocaleTimeString("vi-VN"),
-              };
-
-        if (partToRun === "spck_only" && session14ComboStatus.spckSummary) {
-          const prevSpck = session14ComboStatus.spckSummary;
-          const retriedSet = new Set(ids);
-          const mergedVerifiedMap = new Map<
-            string,
-            { studentId: string; studentName: string }
-          >();
-          for (const it of prevSpck.verifiedItems) {
-            if (!retriedSet.has(it.studentId)) {
-              mergedVerifiedMap.set(it.studentId, it);
-            }
-          }
-          for (const it of resolvedSpckSummary.verifiedItems) {
-            mergedVerifiedMap.set(it.studentId, it);
-          }
-          const mergedVerified = Array.from(mergedVerifiedMap.values());
-          const mergedFailed = [
-            ...prevSpck.failedItems.filter((it) => !retriedSet.has(it.studentId)),
-            ...resolvedSpckSummary.failedItems,
-          ];
-          const mergedSkipped = [
-            ...prevSpck.skippedItems.filter((it) => !retriedSet.has(it.studentId)),
-            ...resolvedSpckSummary.skippedItems,
-          ];
-          const mergedRetryIds = Array.from(
-            new Set([
-              ...mergedFailed.map((f) => f.studentId),
-              ...mergedSkipped
-                .filter(
-                  (s) => !/vắng mặt.*miễn nộp/i.test(String(s.reason || ""))
-                )
-                .map((s) => s.studentId),
-            ])
-          );
-          nextSpckSummary = {
-            ...resolvedSpckSummary,
-            classId: reqClassId,
-            totalSelected: Math.max(
-              prevSpck.totalSelected,
-              mergedVerified.length + mergedRetryIds.length
-            ),
-            verifiedItems: mergedVerified,
-            failedItems: mergedFailed,
-            skippedItems: mergedSkipped,
-            retryStudentIds: mergedRetryIds,
-          };
-          setLastSubmissionSummary(nextSpckSummary);
-        } else {
-          nextSpckSummary = resolvedSpckSummary;
-        }
-      }
-
-      if (partToRun === "both" || partToRun === "eval_only") {
-        setSession14ComboStatus((prev) => ({
-          ...prev,
-          classId: reqClassId,
-          running: true,
-          currentPhase: "eval",
-          spckSummary: nextSpckSummary,
-        }));
-        const evalRes = await handleApproveAndUploadSession14Eval(ids);
-        if (isStaleClass()) return;
-        if (partToRun === "eval_only") {
-          const retriedSet = new Set(ids);
-          const prevVerifiedIds = (
-            session14ComboStatus.evalVerifiedStudentIds || []
-          ).filter((sid) => !retriedSet.has(sid));
-          const mergedVerifiedIds = Array.from(
-            new Set([...prevVerifiedIds, ...(evalRes.verifiedStudentIds || [])])
-          );
-          const prevRemainingRetryIds = (
-            session14ComboStatus.evalRetryStudentIds || []
-          ).filter(
-            (sid) => !retriedSet.has(sid) && !mergedVerifiedIds.includes(sid)
-          );
-          const mergedRetryIds = Array.from(
-            new Set([...prevRemainingRetryIds, ...(evalRes.retryStudentIds || [])])
-          );
-          nextEvalVerifiedIds = mergedVerifiedIds;
-          nextEvalVerified =
-            mergedVerifiedIds.length > 0
-              ? mergedVerifiedIds.length
-              : evalRes.verifiedCount;
-          nextEvalRetryIds = mergedRetryIds;
-          nextEvalFailed = mergedRetryIds.length;
-          nextEvalError = mergedRetryIds.length > 0 ? evalRes.errorMessage : null;
-        } else {
-          nextEvalVerifiedIds = evalRes.verifiedStudentIds || [];
-          nextEvalVerified = evalRes.verifiedCount;
-          nextEvalFailed = evalRes.failedCount;
-          nextEvalRetryIds = evalRes.retryStudentIds;
-          nextEvalError = evalRes.errorMessage;
-        }
-      }
-
-      setSession14ComboStatus({
-        classId: reqClassId,
-        running: false,
-        currentPhase: "done",
-        spckSummary: nextSpckSummary,
-        evalVerifiedCount: nextEvalVerified,
-        evalVerifiedStudentIds: nextEvalVerifiedIds,
-        evalFailedCount: nextEvalFailed,
-        evalRetryStudentIds: nextEvalRetryIds,
-        evalErrorMessage: nextEvalError,
-      });
-
-      const spckVerifiedCount = nextSpckSummary?.verifiedItems.length || 0;
-      const spckRetryCount = nextSpckSummary?.retryStudentIds.length || 0;
-      if (partToRun === "both") {
-        const hasAnyIssue =
-          spckRetryCount > 0 ||
-          nextEvalFailed > 0 ||
-          nextEvalRetryIds.length > 0;
-        setBannerMessage({
-          type: hasAnyIssue ? "warning" : "success",
-          text: `Hoàn tất nộp Buổi 14 đầy đủ: Phần Sản phẩm SPCK (Cột 3): ${spckVerifiedCount}/${ids.length} bài thành công${
-            spckRetryCount > 0 ? ` (${spckRetryCount} cần thử lại)` : ""
-          } • Phần Đánh giá tổng kết & Điểm Demo (Cột 2): ${nextEvalVerified}/${ids.length} bài thành công${
-            nextEvalRetryIds.length > 0
-              ? ` (${nextEvalRetryIds.length} cần thử lại)`
-              : ""
-          }.`,
-        });
-      }
-    } finally {
-      if (!isStaleClass()) {
-        setSession14ComboStatus((prev) => ({
-          ...prev,
-          classId: reqClassId,
-          running: false,
-          currentPhase: "done",
-        }));
-      }
-    }
+    setShowSession14SummaryBox(true);
   };
 
   const runAutoPrepAfterScan = async (
     scannedItems: ScannedFolderUIItem[],
     scanClassId: string,
     scanSessionNum: 12 | 13 | 14
-  ) => {
+  ): Promise<{
+    totalSteps: number;
+    stepFailures: string[];
+    updatedRows: ScannedFolderUIItem[];
+  }> => {
     const classMeta = classes.find((c) => c.classId === scanClassId);
     const classText = `${scanClassId} ${classMeta?.className || ""}`.toUpperCase();
     if (/(?:^|[-_\s])(PTB|CSB)(?:\d|$|[-_\s])/i.test(classText)) {
-      return;
+      return { totalSteps: 0, stepFailures: [], updatedRows: scannedItems };
     }
 
     const candidateRows = scannedItems.filter(
@@ -3895,7 +4580,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     const candidateIds = candidateRows
       .map((r) => r.assignedStudentId)
       .filter(Boolean);
-    if (candidateIds.length === 0) return;
+    if (candidateIds.length === 0) {
+      return { totalSteps: 0, stepFailures: [], updatedRows: scannedItems };
+    }
 
     const isRobotics = /\b(ROB|ROBO|ROBOT|ROBOTICS|PREB|PREA|PREI|ARM|ARMA|ARMB|ARMI|SEM|SEMA|SEMB|SEMI|EV3|VEX|SPIKE|WEDO|ARDUINO)[A-Z0-9]*\b/i.test(
       classText
@@ -3918,7 +4605,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     const isWeb =
       !isRobotics &&
       !isCanvaOrDesign &&
-      (hasWebOrCsGithubCode ? hasHtmlFiles || /\b(JSB|JSA|JSI|WEB|HTML)[A-Z0-9]*\b/.test(classText) : !hasNonWebTrackCode && hasHtmlFiles);
+      (hasWebOrCsGithubCode
+        ? hasHtmlFiles || /\b(JSB|JSA|JSI|WEB|HTML)[A-Z0-9]*\b/.test(classText)
+        : !hasNonWebTrackCode && hasHtmlFiles);
     const hasUiOrAppFiles = candidateRows.some((r) =>
       (r.attachments || []).some((f) =>
         /(\.(ui|py|sb3|apk|exe|gmx|yyz|rbxl|html?)|_(web|app)_package\.zip)$/i.test(f)
@@ -4039,7 +4728,9 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       });
     }
 
-    if (steps.length === 0) return;
+    if (steps.length === 0) {
+      return { totalSteps: 0, stepFailures: [], updatedRows: currentRows };
+    }
 
     const stepFailures: string[] = [];
     try {
@@ -4071,8 +4762,781 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           text: formatAutoPrepSummaryBanner(steps.length, stepFailures),
         });
       }
+      return {
+        totalSteps: steps.length,
+        stepFailures,
+        updatedRows: currentRows,
+      };
     } finally {
       setAutoPrepStepProgress(null);
+    }
+  };
+
+  // =========================================================================
+  // NÚT 1 CỐ ĐỊNH: "1. Đồng bộ bài làm" (Dùng chung cho Buổi 12, 13 & 14)
+  // =========================================================================
+  const handleMainStep1Sync = async () => {
+    if (!selectedClassId || isAnyOperationBusy) return;
+    const reqClassId = selectedClassId;
+    const reqSessionNum = selectedSessionNumber;
+    const isStaleClass = () => {
+      const currentActive = getActiveUiClassId?.();
+      return Boolean(currentActive && currentActive !== reqClassId);
+    };
+
+    setMainSyncRunning(true);
+    setSkippedUnreadyByStudent({});
+
+    try {
+      // (0) Nếu Cổng thu bài học sinh đang mở -> tự động đóng cổng trước
+      if (studentPortalRunning) {
+        setAutoPrepStepProgress("Đang đóng Cổng thu bài học sinh trước khi đồng bộ...");
+        const stoppedOk = await handleStopStudentPortalInternal({
+          silentSuccessBanner: true,
+        });
+        if (!stoppedOk || isStaleClass()) {
+          return;
+        }
+      }
+
+      const stepIssues: string[] = [];
+      let scannedCount = rows.length;
+
+      // (a)-(d) Quét thư mục + khớp HV + Chụp 16:9 + GitHub Live + Up Drive
+      if (!isSpckExemptClass) {
+        const effectiveFolder =
+          folderPathInput.trim() ||
+          `D:\\MINDX DATA\\MINDX_SPCK_FINAL\\${reqClassId}`;
+        setAutoPrepStepProgress(
+          "Đang quét thư mục bài làm & khớp danh sách học viên..."
+        );
+        const scanRes = await baseHandleScanFolder(effectiveFolder);
+        if (isStaleClass()) return;
+
+        if (scanRes && typeof scanRes === "object" && scanRes.success) {
+          scannedCount = Array.isArray(scanRes.scannedItems)
+            ? scanRes.scannedItems.length
+            : 0;
+          if (scannedCount > 0) {
+            const prepRes = await runAutoPrepAfterScan(
+              scanRes.scannedItems,
+              scanRes.classId || reqClassId,
+              scanRes.sessionNumber || reqSessionNum
+            );
+            if (isStaleClass()) return;
+            if (prepRes.stepFailures.length > 0) {
+              stepIssues.push(...prepRes.stepFailures);
+            }
+          }
+        } else if (reqSessionNum !== 14) {
+          return;
+        } else {
+          stepIssues.push("Chưa quét được thư mục bài làm SPCK");
+        }
+      }
+
+      // (e) Riêng ở Buổi 14: nạp Điểm Demo BGK + xếp hạng Nhất/Nhì/Ba + Summary + [ĐNL] TB B5+9
+      let demoMatchedCount = 0;
+      if (reqSessionNum === 14) {
+        setAutoPrepStepProgress(
+          isSpckExemptClass
+            ? "Đang tải Điểm Năng lực [ĐNL] trung bình Buổi 5+9..."
+            : "Đang nạp Điểm Demo BGK, xếp hạng Giải Nhất/Nhì/Ba & tính [ĐNL] trung bình B5+9..."
+        );
+        if (isSpckExemptClass) {
+          await loadSession14Evals(reqClassId);
+        } else {
+          const hasDemoSource = Boolean(
+            (demoScoreSourceInput || generatedDemoSheetUrl || "").trim()
+          );
+          const demoRes = await handleImportDemoScores({ isMainSync: true });
+          if (isStaleClass()) return;
+          if (demoRes.success) {
+            demoMatchedCount = demoRes.matchedCount || 0;
+          } else {
+            await loadSession14Evals(reqClassId);
+            if (hasDemoSource && demoRes.errorSummary) {
+              stepIssues.push(`Điểm BGK: ${demoRes.errorSummary}`);
+            }
+          }
+        }
+      }
+
+      if (isStaleClass()) return;
+
+      if (stepIssues.length > 0) {
+        setBannerMessage({
+          type: "warning",
+          text: `Đã đồng bộ bài làm Buổi ${reqSessionNum} nhưng có mục cần lưu ý: ${stepIssues.join(
+            " | "
+          )}. Bạn có thể sang Bước 2 (AI Soạn nhận xét) hoặc kiểm tra Tùy chọn nâng cao.`,
+        });
+      } else if (reqSessionNum === 14) {
+        setBannerMessage({
+          type: "success",
+          text: isSpckExemptClass
+            ? `Đã đồng bộ Điểm Năng lực [ĐNL] trung bình Buổi 5+9 cho lớp ${reqClassId} (miễn SPCK/Demo). Hãy bấm "2. AI Soạn nhận xét"!`
+            : `Đã đồng bộ trọn gói bài làm Buổi 14 (${scannedCount} bài SPCK${
+                demoMatchedCount > 0
+                  ? ` • ${demoMatchedCount} học viên có Điểm Demo BGK & xếp hạng Nhất/Nhì/Ba`
+                  : " • đã nạp [ĐNL] trung bình B5+9"
+              })! Tiếp theo hãy bấm "2. AI Soạn nhận xét".`,
+        });
+      } else {
+        setBannerMessage({
+          type: "success",
+          text: `Đã đồng bộ trọn gói bài làm Buổi ${reqSessionNum} (${scannedCount} bài làm đã quét, chụp ảnh 16:9 & đồng bộ tài nguyên)! Tiếp theo hãy bấm "2. AI Soạn nhận xét".`,
+        });
+      }
+    } finally {
+      setAutoPrepStepProgress(null);
+      setMainSyncRunning(false);
+    }
+  };
+
+  // =========================================================================
+  // NÚT 2 CỐ ĐỊNH: "2. AI Soạn nhận xét" (Dùng chung cho Buổi 12, 13 & 14)
+  // =========================================================================
+  const handleMainStep2Ai = async () => {
+    if (!selectedClassId || isAnyOperationBusy) return;
+    if (selectedSessionNumber === 14) {
+      await handleGenerateSession14AllAi();
+    } else {
+      await handleGenerateAiComments();
+    }
+  };
+
+  // =========================================================================
+  // NÚT 3 CỐ ĐỊNH: "3. Duyệt & Nộp tất cả" (Dùng chung cho Buổi 12, 13 & 14)
+  // Không chặn cả lớp vì 1–2 bạn thiếu bài/thiếu điểm + Chạy nối tiếp LMS -> Teaching!
+  // =========================================================================
+  const handleMainStep3SubmitAll = async (explicitStudentIds?: string[]) => {
+    if (!selectedClassId || isAnyOperationBusy) return;
+    const reqClassId = selectedClassId;
+    const reqSessionNum = selectedSessionNumber;
+    const isStaleClass = () => {
+      const currentActive = getActiveUiClassId?.();
+      return Boolean(currentActive && currentActive !== reqClassId);
+    };
+
+    const explicitSet =
+      explicitStudentIds && explicitStudentIds.length > 0
+        ? new Set(explicitStudentIds)
+        : null;
+    const selectedSet = new Set(effectiveSelectedStudentIds);
+
+    // Build active roster + matched rows candidate universe
+    const activeRosterStudents = (students || []).filter(
+      (s) => s && s.isActive !== 0 && Boolean(s.studentId)
+    );
+    const activeRosterMap = new Map(
+      activeRosterStudents.map((s) => [s.studentId, s])
+    );
+    const matchedRowByStudent = new Map<string, ScannedFolderUIItem>();
+    for (const r of rows) {
+      if (r.assignedStudentId && !duplicateStudentIds.has(r.assignedStudentId)) {
+        matchedRowByStudent.set(r.assignedStudentId, r);
+      }
+    }
+
+    const candidateUniverseIds = Array.from(
+      new Set([
+        ...activeRosterStudents.map((s) => s.studentId),
+        ...Array.from(matchedRowByStudent.keys()),
+      ])
+    ).filter((sid) => {
+      if (explicitSet) return explicitSet.has(sid);
+      // Include roster students without rows so we flag them clearly as missing/unready
+      if (!matchedRowByStudent.has(sid) && reqSessionNum !== 14) return true;
+      if (selectedSet.size > 0) {
+        return selectedSet.has(sid) || !matchedRowByStudent.has(sid);
+      }
+      return true;
+    });
+
+    const unreadyReasons: Record<string, string> = {};
+
+    // ---------------- BUỔI 12 & BUỔI 13 ----------------
+    if (reqSessionNum === 12 || reqSessionNum === 13) {
+      const readySpckIds: string[] = [];
+      let alreadyVerifiedCount = 0;
+
+      for (const sid of candidateUniverseIds) {
+        const row = matchedRowByStudent.get(sid);
+        const rosterStu = activeRosterMap.get(sid);
+        if (!row) {
+          const isAbsent =
+            String(rosterStu?.attendanceStatus || "")
+              .trim()
+              .toUpperCase() === "ABSENT";
+          unreadyReasons[sid] = isAbsent
+            ? "Vắng mặt — chưa có thư mục bài làm (nộp bù sau)"
+            : "Chưa có thư mục bài làm SPCK (nộp bù sau)";
+          continue;
+        }
+
+        const slot = getSessionSlotDisplay(row, reqSessionNum);
+        if (slot.state === "VERIFIED_CURRENT" && !explicitSet) {
+          alreadyVerifiedCount += 1;
+          continue;
+        }
+        if (slot.state === "ABSENT_EXEMPT" && !explicitSet) {
+          continue;
+        }
+        if (!explicitSet && selectedSet.size > 0 && !selectedSet.has(sid)) {
+          continue;
+        }
+
+        const readiness = getRowReadinessSummary(row, duplicateStudentIds);
+        if (readiness.ready) {
+          readySpckIds.push(sid);
+        } else {
+          unreadyReasons[sid] =
+            readiness.missingItems.length > 0
+              ? `Chưa đủ điều kiện nộp (${readiness.missingItems.join(", ")}) — nộp bù sau`
+              : "Chưa đủ điều kiện nộp — nộp bù sau";
+        }
+      }
+
+      setSkippedUnreadyByStudent(unreadyReasons);
+
+      if (readySpckIds.length === 0 && alreadyVerifiedCount === 0) {
+        setBannerMessage({
+          type: "warning",
+          text: `Chưa có học viên nào đủ điều kiện nộp Buổi ${reqSessionNum} (cần có sản phẩm + nhận xét AI). Hãy chạy "1. Đồng bộ bài làm" và "2. AI Soạn nhận xét" trước!`,
+        });
+        return;
+      }
+
+      setMainStep3Running(true);
+      try {
+        let verifiedNowCount = 0;
+        let failedNowCount = 0;
+
+        if (readySpckIds.length > 0) {
+          setMainStep3PhaseLabel(
+            `[1/2] Đang duyệt & nộp SPCK Buổi ${reqSessionNum} lên MindX LMS (${readySpckIds.length} HV sẵn sàng)...`
+          );
+          const spckRes = await baseHandleApproveAndUpload(
+            readySpckIds,
+            true,
+            reqSessionNum
+          );
+          if (isStaleClass()) return;
+          verifiedNowCount = spckRes?.verifiedItems?.length || 0;
+          failedNowCount = spckRes?.failedItems?.length || 0;
+        }
+
+        const totalVerifiedForSession = verifiedNowCount + alreadyVerifiedCount;
+        const targetMilestone: 3 | 4 = reqSessionNum === 12 ? 3 : 4;
+        const targetPct = reqSessionNum === 12 ? 60 : 80;
+
+        if (totalVerifiedForSession > 0) {
+          setMainStep3PhaseLabel(
+            `[2/2] Đang tự động cập nhật Tiến độ dự án Teaching lên ${targetPct}%...`
+          );
+          const tpRes = await pushTeachingProgressInternal(
+            reqClassId,
+            targetMilestone
+          );
+          if (isStaleClass()) return;
+
+          const skippedUnreadyCount = Object.keys(unreadyReasons).length;
+          const hasAnyWarning =
+            failedNowCount > 0 ||
+            tpRes.status === "WARNING" ||
+            skippedUnreadyCount > 0;
+
+          const summaryParts: string[] = [
+            `LMS Buổi ${reqSessionNum}: Đã xác minh ${totalVerifiedForSession} HV`,
+          ];
+          if (tpRes.status === "SUCCESS") {
+            summaryParts.push(`Teaching: Đã cập nhật tiến độ ${targetPct}%`);
+          } else {
+            summaryParts.push(`Teaching (${targetPct}%): ${tpRes.message}`);
+          }
+          if (skippedUnreadyCount > 0) {
+            summaryParts.push(
+              `Tạm bỏ qua ${skippedUnreadyCount} HV thiếu bài/nhận xét (đã gắn nhãn cảnh báo trên bảng để nộp bù sau)`
+            );
+          }
+          if (failedNowCount > 0) {
+            summaryParts.push(`${failedNowCount} HV lỗi LMS cần thử lại`);
+          }
+
+          setBannerMessage({
+            type: hasAnyWarning ? "warning" : "success",
+            text: summaryParts.join(" • "),
+          });
+        }
+      } finally {
+        setMainStep3PhaseLabel(null);
+        setMainStep3Running(false);
+      }
+      return;
+    }
+
+    // ---------------- BUỔI 14 (COMBO 4 BƯỚC LMS + TEACHING) ----------------
+    const evalMap = new Map(session14Evals.map((ev) => [ev.studentId, ev]));
+    const readySpckIds: string[] = [];
+    const readyEvalIds: string[] = [];
+    let alreadyVerifiedSpckCount = 0;
+    let alreadyVerifiedEvalCount = 0;
+
+    for (const sid of candidateUniverseIds) {
+      if (!explicitSet && selectedSet.size > 0 && !selectedSet.has(sid)) {
+        const hasRow = matchedRowByStudent.has(sid);
+        const ev = evalMap.get(sid);
+        if (hasRow || ev?.status === "VERIFIED") {
+          if (
+            hasRow &&
+            getSessionSlotDisplay(matchedRowByStudent.get(sid)!, 14).state ===
+              "VERIFIED_CURRENT"
+          ) {
+            alreadyVerifiedSpckCount += 1;
+          }
+          if (ev?.status === "VERIFIED") {
+            alreadyVerifiedEvalCount += 1;
+          }
+          continue;
+        }
+      }
+
+      const missingNotesForStu: string[] = [];
+
+      // Check Part 1: SPCK Column 3 readiness (unless PTB/CSB exempt)
+      if (!isSpckExemptClass) {
+        const row = matchedRowByStudent.get(sid);
+        if (!row) {
+          missingNotesForStu.push("thiếu thư mục SPCK");
+        } else {
+          const slot = getSessionSlotDisplay(row, 14);
+          if (slot.state === "VERIFIED_CURRENT" && !explicitSet) {
+            alreadyVerifiedSpckCount += 1;
+          } else {
+            const readiness = getRowReadinessSummary(row, duplicateStudentIds);
+            if (readiness.ready) {
+              readySpckIds.push(sid);
+            } else {
+              missingNotesForStu.push(
+                readiness.missingItems.length > 0
+                  ? `SPCK: ${readiness.missingItems.join(", ")}`
+                  : "SPCK chưa đủ điều kiện"
+              );
+            }
+          }
+        }
+      }
+
+      // Check Part 2: Session 14 Eval Column 2 readiness
+      const ev = evalMap.get(sid);
+      if (!ev) {
+        missingNotesForStu.push("chưa có dữ liệu Đánh giá B14");
+      } else if (ev.status === "VERIFIED" && !explicitSet) {
+        alreadyVerifiedEvalCount += 1;
+      } else {
+        const has3PartLetter = Boolean(
+          String(ev.learnedFromMindx || "").trim() &&
+            String(ev.suggestionsFromMindx || "").trim() &&
+            String(ev.futureDirection || "").trim()
+        );
+        const hasDemoScoreOk =
+          isSpckExemptClass || Number(ev.demoTotalScore || 0) > 0;
+        if (has3PartLetter && hasDemoScoreOk) {
+          readyEvalIds.push(sid);
+        } else {
+          if (!hasDemoScoreOk) {
+            missingNotesForStu.push("thiếu Điểm Demo BGK");
+          }
+          if (!has3PartLetter) {
+            missingNotesForStu.push("thiếu Thư 3 phần AI");
+          }
+        }
+      }
+
+      if (missingNotesForStu.length > 0) {
+        unreadyReasons[sid] = `Chưa đủ mục (${missingNotesForStu.join(
+          ", "
+        )}) — chờ nộp bù sau`;
+      }
+    }
+
+    setSkippedUnreadyByStudent(unreadyReasons);
+
+    const hasAnyReadyNow = readySpckIds.length > 0 || readyEvalIds.length > 0;
+    const hasAnyAlreadyVerified =
+      alreadyVerifiedSpckCount > 0 || alreadyVerifiedEvalCount > 0;
+
+    if (!hasAnyReadyNow && !hasAnyAlreadyVerified) {
+      setBannerMessage({
+        type: "warning",
+        text: "Chưa có học viên nào đủ điều kiện nộp Buổi 14 (cần Điểm Demo BGK + Nhận xét AI). Hãy chạy Bước 1 và Bước 2 trước!",
+      });
+      return;
+    }
+
+    setMainStep3Running(true);
+    setLastSubmissionSummary(null);
+    setBannerMessage(null);
+    setSession14ComboStatus({
+      classId: reqClassId,
+      running: true,
+      currentPhase: !isSpckExemptClass && readySpckIds.length > 0 ? "spck" : "eval",
+      spckSummary: null,
+      evalVerifiedCount: 0,
+      evalVerifiedStudentIds: [],
+      evalFailedCount: 0,
+      evalRetryStudentIds: [],
+      evalErrorMessage: null,
+      classSummaryVerified: false,
+      teachingProgressResult: null,
+      reportCardResult: null,
+    });
+
+    let nextSpckSummary: SpckBatchSubmissionSummaryUI | null = null;
+    let nextEvalVerified = 0;
+    let nextEvalVerifiedIds: string[] = [];
+    let nextEvalFailed = 0;
+    let nextEvalRetryIds: string[] = [];
+    let nextEvalError: string | null = null;
+    let nextClassSummarySaved = false;
+    let tpResult: SpckTeachingProgressPushResultUI | null = null;
+    let rcResult: SpckReportCardChainResultUI | null = null;
+
+    try {
+      // (1) Duyệt & Đẩy Sản phẩm SPCK Cột 3 (nếu lớp không miễn SPCK và có HV sẵn sàng)
+      if (!isSpckExemptClass && readySpckIds.length > 0) {
+        setMainStep3PhaseLabel(
+          `[1/4] Đang duyệt & đẩy Sản phẩm SPCK (Cột 3) cho ${readySpckIds.length} HV...`
+        );
+        setSession14ComboStatus((prev) => ({
+          ...prev,
+          classId: reqClassId,
+          running: true,
+          currentPhase: "spck",
+        }));
+        const spckRes = await baseHandleApproveAndUpload(readySpckIds, true, 14);
+        if (isStaleClass()) return;
+        nextSpckSummary =
+          spckRes && typeof spckRes === "object"
+            ? { ...spckRes, classId: reqClassId }
+            : null;
+      }
+
+      // (2) Duyệt & Đẩy Đánh giá Cột 2 + Summary vinh danh Nhất/Nhì/Ba đầu trang
+      if (readyEvalIds.length > 0) {
+        setMainStep3PhaseLabel(
+          `[2/4] Đang đẩy Đánh giá Cột 2 (9 ô [ĐNL] TB B5+9 + Điểm Demo + Thư 3 phần) & Summary vinh danh cho ${readyEvalIds.length} HV...`
+        );
+        setSession14ComboStatus((prev) => ({
+          ...prev,
+          classId: reqClassId,
+          running: true,
+          currentPhase: "eval",
+          spckSummary: nextSpckSummary,
+        }));
+        const classSummaryHtml = getEffectiveClassSummaryHtml();
+        const evalRes = await handleApproveAndUploadSession14Eval(readyEvalIds, {
+          classSummaryHtml,
+          allowPartialApproval: true,
+          silentBanner: true,
+        });
+        if (isStaleClass()) return;
+        nextEvalVerified = evalRes.verifiedCount;
+        nextEvalVerifiedIds = evalRes.verifiedStudentIds || [];
+        nextEvalFailed = evalRes.failedCount;
+        nextEvalRetryIds = evalRes.retryStudentIds || [];
+        nextEvalError = evalRes.errorMessage;
+        nextClassSummarySaved = Boolean(evalRes.classSummarySaved);
+      }
+
+      const spckVerifiedTotal =
+        (nextSpckSummary?.verifiedItems?.length || 0) + alreadyVerifiedSpckCount;
+      const evalVerifiedTotal = nextEvalVerified + alreadyVerifiedEvalCount;
+
+      // (3) & (4) Nếu có ít nhất >= 1 HV đạt VERIFIED trên LMS -> Chạy nối tiếp Teaching 100% + Phiếu điểm cuối khóa!
+      if (spckVerifiedTotal > 0 || evalVerifiedTotal > 0) {
+        setMainStep3PhaseLabel(
+          "[3/4] Đang tự động đẩy Tiến độ dự án Teaching lên 100%..."
+        );
+        setSession14ComboStatus((prev) => ({
+          ...prev,
+          classId: reqClassId,
+          running: true,
+          currentPhase: "teaching_progress",
+          spckSummary: nextSpckSummary,
+          evalVerifiedCount: nextEvalVerified,
+          evalVerifiedStudentIds: nextEvalVerifiedIds,
+          evalFailedCount: nextEvalFailed,
+          evalRetryStudentIds: nextEvalRetryIds,
+          evalErrorMessage: nextEvalError,
+          classSummaryVerified: nextClassSummarySaved,
+        }));
+        tpResult = await pushTeachingProgressInternal(reqClassId, 5);
+        if (isStaleClass()) return;
+
+        setMainStep3PhaseLabel(
+          "[4/4] Đang quét lại điểm LMS & đồng bộ Phiếu điểm cuối khóa sang Teaching..."
+        );
+        setSession14ComboStatus((prev) => ({
+          ...prev,
+          classId: reqClassId,
+          running: true,
+          currentPhase: "report_card",
+          teachingProgressResult: tpResult,
+        }));
+        rcResult = await runReportCardSyncChainInternal(reqClassId);
+        if (isStaleClass()) return;
+      }
+
+      setSession14ComboStatus({
+        classId: reqClassId,
+        running: false,
+        currentPhase: "done",
+        spckSummary: nextSpckSummary,
+        evalVerifiedCount: nextEvalVerified,
+        evalVerifiedStudentIds: nextEvalVerifiedIds,
+        evalFailedCount: nextEvalFailed,
+        evalRetryStudentIds: nextEvalRetryIds,
+        evalErrorMessage: nextEvalError,
+        classSummaryVerified: nextClassSummarySaved,
+        teachingProgressResult: tpResult,
+        reportCardResult: rcResult,
+      });
+
+      const spckRetryCount = nextSpckSummary?.retryStudentIds?.length || 0;
+      const skippedUnreadyCount = Object.keys(unreadyReasons).length;
+      const hasAnyIssue =
+        spckRetryCount > 0 ||
+        nextEvalFailed > 0 ||
+        skippedUnreadyCount > 0 ||
+        tpResult?.status === "WARNING" ||
+        rcResult?.status === "WARNING";
+
+      const msgParts: string[] = [];
+      if (!isSpckExemptClass) {
+        msgParts.push(
+          `LMS Cột 3 (SPCK): ${spckVerifiedTotal} HV đã xác minh${
+            spckRetryCount > 0 ? ` (${spckRetryCount} lỗi)` : ""
+          }`
+        );
+      }
+      msgParts.push(
+        `LMS Cột 2 (Đánh giá + Summary): ${evalVerifiedTotal} HV đã xác minh${
+          nextEvalFailed > 0 ? ` (${nextEvalFailed} lỗi)` : ""
+        }`
+      );
+      if (tpResult) {
+        msgParts.push(
+          tpResult.status === "SUCCESS"
+            ? "Teaching Tiến độ: 100% ✓"
+            : `Teaching Tiến độ: ${tpResult.message}`
+        );
+      }
+      if (rcResult) {
+        msgParts.push(
+          rcResult.status === "SUCCESS"
+            ? `Phiếu điểm Teaching: Đã đồng bộ ${
+                rcResult.matchedStudentCount ?? ""
+              } HV ✓`.trim()
+            : `Phiếu điểm Teaching: ${
+                rcResult.warningMessage || "Cần kiểm tra"
+              }`
+        );
+      }
+      if (skippedUnreadyCount > 0) {
+        msgParts.push(
+          `Còn ${skippedUnreadyCount} HV thiếu bài/điểm (đã gắn nhãn cảnh báo trên bảng để nộp bù sau)`
+        );
+      }
+
+      setBannerMessage({
+        type: hasAnyIssue ? "warning" : "success",
+        text: msgParts.join(" • "),
+      });
+    } finally {
+      setMainStep3PhaseLabel(null);
+      setMainStep3Running(false);
+      if (!isStaleClass()) {
+        setSession14ComboStatus((prev) => ({
+          ...prev,
+          classId: reqClassId,
+          running: false,
+          currentPhase: "done",
+        }));
+      }
+    }
+  };
+
+  const handleSubmitSession14Combo = async (
+    targetStudentIds?: string[],
+    partToRun: "both" | "spck_only" | "eval_only" = "both"
+  ) => {
+    if (!selectedClassId) return;
+    if (partToRun === "both") {
+      await handleMainStep3SubmitAll(targetStudentIds);
+      return;
+    }
+
+    const reqClassId = selectedClassId;
+    const isStaleClass = () => {
+      const currentActive = getActiveUiClassId?.();
+      return Boolean(currentActive && currentActive !== reqClassId);
+    };
+    const ids =
+      targetStudentIds && targetStudentIds.length > 0
+        ? targetStudentIds
+        : effectiveSelectedStudentIds;
+    if (ids.length === 0) {
+      setBannerMessage({
+        type: "warning",
+        text: "Vui lòng chọn ít nhất 1 học viên để thử lại Buổi 14.",
+      });
+      return;
+    }
+
+    setSession14ComboStatus((prev) => ({
+      ...prev,
+      classId: reqClassId,
+      running: true,
+      currentPhase: partToRun === "eval_only" ? "eval" : "spck",
+    }));
+
+    let nextSpckSummary = session14ComboStatus.spckSummary;
+    let nextEvalVerified = session14ComboStatus.evalVerifiedCount;
+    let nextEvalVerifiedIds = [
+      ...(session14ComboStatus.evalVerifiedStudentIds || []),
+    ];
+    let nextEvalFailed = session14ComboStatus.evalFailedCount;
+    let nextEvalRetryIds = [...session14ComboStatus.evalRetryStudentIds];
+    let nextEvalError = session14ComboStatus.evalErrorMessage;
+
+    try {
+      if (partToRun === "spck_only") {
+        const spckRes = await baseHandleApproveAndUpload(ids, true, 14);
+        if (isStaleClass()) return;
+        const resolvedSpckSummary: SpckBatchSubmissionSummaryUI =
+          spckRes && typeof spckRes === "object"
+            ? { ...spckRes, classId: reqClassId }
+            : {
+                classId: reqClassId,
+                sessionNumber: 14,
+                totalSelected: ids.length,
+                verifiedItems: [],
+                failedItems: ids.map((sid) => ({
+                  studentId: sid,
+                  studentName: sid,
+                  reason: "Không thể hoàn tất nộp Sản phẩm SPCK (Buổi 14).",
+                })),
+                skippedItems: [],
+                retryStudentIds: ids,
+                completedAt: new Date().toLocaleTimeString("vi-VN"),
+              };
+
+        if (session14ComboStatus.spckSummary) {
+          const prevSpck = session14ComboStatus.spckSummary;
+          const retriedSet = new Set(ids);
+          const mergedVerifiedMap = new Map<
+            string,
+            { studentId: string; studentName: string }
+          >();
+          for (const it of prevSpck.verifiedItems) {
+            if (!retriedSet.has(it.studentId)) {
+              mergedVerifiedMap.set(it.studentId, it);
+            }
+          }
+          for (const it of resolvedSpckSummary.verifiedItems) {
+            mergedVerifiedMap.set(it.studentId, it);
+          }
+          const mergedVerified = Array.from(mergedVerifiedMap.values());
+          const mergedFailed = [
+            ...prevSpck.failedItems.filter((it) => !retriedSet.has(it.studentId)),
+            ...resolvedSpckSummary.failedItems,
+          ];
+          const mergedSkipped = [
+            ...prevSpck.skippedItems.filter((it) => !retriedSet.has(it.studentId)),
+            ...resolvedSpckSummary.skippedItems,
+          ];
+          const mergedRetryIds = Array.from(
+            new Set([
+              ...mergedFailed.map((f) => f.studentId),
+              ...mergedSkipped
+                .filter(
+                  (s) => !/vắng mặt.*miễn nộp/i.test(String(s.reason || ""))
+                )
+                .map((s) => s.studentId),
+            ])
+          );
+          nextSpckSummary = {
+            ...resolvedSpckSummary,
+            classId: reqClassId,
+            totalSelected: Math.max(
+              prevSpck.totalSelected,
+              mergedVerified.length + mergedRetryIds.length
+            ),
+            verifiedItems: mergedVerified,
+            failedItems: mergedFailed,
+            skippedItems: mergedSkipped,
+            retryStudentIds: mergedRetryIds,
+          };
+          setLastSubmissionSummary(nextSpckSummary);
+        } else {
+          nextSpckSummary = resolvedSpckSummary;
+        }
+      }
+
+      if (partToRun === "eval_only") {
+        const evalRes = await handleApproveAndUploadSession14Eval(ids, {
+          classSummaryHtml: getEffectiveClassSummaryHtml(),
+          allowPartialApproval: true,
+        });
+        if (isStaleClass()) return;
+        const retriedSet = new Set(ids);
+        const prevVerifiedIds = (
+          session14ComboStatus.evalVerifiedStudentIds || []
+        ).filter((sid) => !retriedSet.has(sid));
+        const mergedVerifiedIds = Array.from(
+          new Set([...prevVerifiedIds, ...(evalRes.verifiedStudentIds || [])])
+        );
+        const prevRemainingRetryIds = (
+          session14ComboStatus.evalRetryStudentIds || []
+        ).filter(
+          (sid) => !retriedSet.has(sid) && !mergedVerifiedIds.includes(sid)
+        );
+        const mergedRetryIds = Array.from(
+          new Set([...prevRemainingRetryIds, ...(evalRes.retryStudentIds || [])])
+        );
+        nextEvalVerifiedIds = mergedVerifiedIds;
+        nextEvalVerified =
+          mergedVerifiedIds.length > 0
+            ? mergedVerifiedIds.length
+            : evalRes.verifiedCount;
+        nextEvalRetryIds = mergedRetryIds;
+        nextEvalFailed = mergedRetryIds.length;
+        nextEvalError = mergedRetryIds.length > 0 ? evalRes.errorMessage : null;
+      }
+
+      setSession14ComboStatus((prev) => ({
+        ...prev,
+        classId: reqClassId,
+        running: false,
+        currentPhase: "done",
+        spckSummary: nextSpckSummary,
+        evalVerifiedCount: nextEvalVerified,
+        evalVerifiedStudentIds: nextEvalVerifiedIds,
+        evalFailedCount: nextEvalFailed,
+        evalRetryStudentIds: nextEvalRetryIds,
+        evalErrorMessage: nextEvalError,
+      }));
+    } finally {
+      if (!isStaleClass()) {
+        setSession14ComboStatus((prev) => ({
+          ...prev,
+          classId: reqClassId,
+          running: false,
+          currentPhase: "done",
+        }));
+      }
     }
   };
 
@@ -4326,6 +5790,31 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     setStudentToolError,
     expandedRowTabByStudent,
     setRowActiveTab,
+    showAdvancedTools,
+    setShowAdvancedTools,
+    showFolderEditor,
+    setShowFolderEditor,
+    session14ClassSummaryText,
+    session14ClassSummaryDirty,
+    showSession14SummaryBox,
+    setShowSession14SummaryBox,
+    handleUpdateSession14ClassSummaryText,
+    handlePersistSession14ClassSummary,
+    handleResetSession14ClassSummary,
+    getEffectiveClassSummaryHtml,
+    session14AwardMap,
+    activeStudentIdSet,
+    mainSyncRunning,
+    mainStep3Running,
+    mainStep3PhaseLabel,
+    teachingProgressPushState,
+    reportCardChainState,
+    skippedUnreadyByStudent,
+    pushTeachingProgressInternal,
+    runReportCardSyncChainInternal,
+    handleMainStep1Sync,
+    handleMainStep2Ai,
+    handleMainStep3SubmitAll,
     session14ComboStatus,
     loadBrowseDirectory,
     handleBrowseFolder,

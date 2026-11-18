@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
   FolderBrowserModal,
-  Session14Panel,
   SnapshotModal,
   Step1Header,
   StudentTable,
@@ -149,7 +148,7 @@ export default function FinalProjectPage() {
     useState<string>("STOPPED");
   const [studentPortalTunnelProvider, setStudentPortalTunnelProvider] =
     useState<string>("");
-  const [studentPortalAutoDrive, setStudentPortalAutoDrive] = useState<boolean>(true);
+  const [studentPortalAutoDrive, setStudentPortalAutoDrive] = useState<boolean>(false);
   const [studentPortalSubmissions, setStudentPortalSubmissions] = useState<
     Array<{
       studentId: string;
@@ -373,17 +372,25 @@ export default function FinalProjectPage() {
         const resolvedFolder = data.defaultFolderPath || data.savedFolderPath;
         if (typeof resolvedFolder === "string" && resolvedFolder.trim()) {
           setFolderPathInput(resolvedFolder.trim());
+        } else if (resolvedClassId) {
+          setFolderPathInput(`D:\\MINDX DATA\\MINDX_SPCK_FINAL\\${resolvedClassId}`);
         }
         if (Array.isArray(data.quickTags)) {
           setSession14TagLabels(extractSession14TagLabelsFromConfig(data.quickTags));
         }
+        const latestDemoSheet = String(
+          data.demoSheetMeta?.latestDemoSheetUrl || data.latestDemoSheetUrl || ""
+        ).trim();
         if (data.demoSheetMeta) {
           setDemoSheetTitle(
             data.demoSheetMeta.sheetTitle ||
               "Bảng chấm điểm buổi Demo App Producer - Advanced"
           );
           setDemoDateInput(data.demoSheetMeta.demoDate || "");
-          setGeneratedDemoSheetUrl(data.demoSheetMeta.latestDemoSheetUrl || "");
+          setGeneratedDemoSheetUrl(latestDemoSheet);
+        }
+        if (latestDemoSheet) {
+          setDemoScoreSourceInput((prev) => (prev.trim() ? prev : latestDemoSheet));
         }
         setSelectedStudentIds(["__AUTO_SELECT__"]);
         hydrateRowsFromDb(data.records || [], data.students || [], resolvedSession);
@@ -423,6 +430,8 @@ export default function FinalProjectPage() {
     setLastSubmissionSummary(null);
     setRows([]);
     setSession14Evals([]);
+    setDemoScoreSourceInput("");
+    setGeneratedDemoSheetUrl("");
     setExpandedRowKeys({});
     await loadClassData(newClassId);
   };
@@ -468,17 +477,25 @@ export default function FinalProjectPage() {
       const resolvedFolder = data.defaultFolderPath || data.savedFolderPath;
       if (typeof resolvedFolder === "string" && resolvedFolder.trim()) {
         setFolderPathInput(resolvedFolder.trim());
+      } else if (resolvedClassId) {
+        setFolderPathInput(`D:\\MINDX DATA\\MINDX_SPCK_FINAL\\${resolvedClassId}`);
       }
       if (Array.isArray(data.quickTags)) {
           setSession14TagLabels(extractSession14TagLabelsFromConfig(data.quickTags));
         }
+      const latestDemoSheet = String(
+        data.demoSheetMeta?.latestDemoSheetUrl || data.latestDemoSheetUrl || ""
+      ).trim();
       if (data.demoSheetMeta) {
         setDemoSheetTitle(
           data.demoSheetMeta.sheetTitle ||
             "Bảng chấm điểm buổi Demo App Producer - Advanced"
         );
         setDemoDateInput(data.demoSheetMeta.demoDate || "");
-        setGeneratedDemoSheetUrl(data.demoSheetMeta.latestDemoSheetUrl || "");
+        setGeneratedDemoSheetUrl(latestDemoSheet);
+      }
+      if (latestDemoSheet) {
+        setDemoScoreSourceInput((prev) => (prev.trim() ? prev : latestDemoSheet));
       }
       hydrateRowsFromDb(data.records || [], data.students || [], resolvedSession);
       setBannerMessage({
@@ -2532,7 +2549,6 @@ export default function FinalProjectPage() {
       </div>
 
       <SubmitBar workflow={workflow} />
-      <Session14Panel workflow={workflow} />
       <FolderBrowserModal workflow={workflow} />
       <SnapshotModal workflow={workflow} />
     </div>

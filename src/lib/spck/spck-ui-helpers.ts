@@ -3,6 +3,7 @@ import type {
   ScannedFolderUIItem,
   Session14CompetencyScoresUI,
   Session14DemoScoresUI,
+  Session14EvalItemUI,
   SpckRecordRow,
   SpckRowReadinessSummaryUI,
   SpckSessionResultsMapUI,
@@ -35,8 +36,8 @@ export const COMPETENCY_ITEMS_UI: Array<{
   key: keyof Session14CompetencyScoresUI;
   label: string;
 }> = [
-  { key: "knowledgeInClass", label: "1. [ĐNL] Kiến thức học tại lớp" },
-  { key: "knowledgeSelfStudy", label: "2. [ĐNL] Kiến thức tự học" },
+  { key: "knowledgeSelfStudy", label: "1. [ĐNL] Kiến thức tự học" },
+  { key: "knowledgeInClass", label: "2. [ĐNL] Kiến thức học tại lớp" },
   { key: "skillCommunication", label: "3. [ĐNL] Giao tiếp, hợp tác" },
   { key: "skillComputerUse", label: "4. [ĐNL] Sử dụng máy tính" },
   { key: "skillProblemSolving", label: "5. [ĐNL] Giải quyết vấn đề" },
@@ -600,6 +601,14 @@ export function getRowReadinessSummary(
 
   const hasDriveLink = /drive\.google\.com/i.test(row.relatedLinksText || "");
   const hasLiveWebLink = /github\.io/i.test(row.relatedLinksText || "");
+  const hasSlideAttachment = (row.attachments || []).some((f) =>
+    /\.(pptx?|pdf|key)$/i.test(String(f || ""))
+  );
+  const hasSlideLink =
+    /canva\.com|canva\.link|docs\.google\.com\/presentation|slideshare|google\s*slides|\bslide\b/i.test(
+      row.relatedLinksText || ""
+    );
+  const hasSlideResource = hasSlideAttachment || hasSlideLink;
   const hasDirectUseLink = classifiedLinks.some(
     (l) => l.category === "DIRECT_PRODUCT_USE"
   );
@@ -612,6 +621,9 @@ export function getRowReadinessSummary(
   }
   if (hasLiveWebLink) {
     reusedAssetsNotes.push("Đã gắn link Web chạy thử");
+  }
+  if (hasSlideResource) {
+    reusedAssetsNotes.push("Có Slide thuyết trình");
   }
 
   return {
@@ -628,6 +640,7 @@ export function getRowReadinessSummary(
     thumbBadgeLabel,
     hasDriveLink,
     hasLiveWebLink,
+    hasSlideResource,
     hasDirectUseLink,
     hasSourceStorageLink,
     hasYoutubeLink,
@@ -694,6 +707,405 @@ export function buildRowFromDbRecord(
   };
 }
 
+export function getDemoScoreItemsForClassUi(
+  classId?: string | null,
+  isRobotics = false
+): Array<{
+  key: keyof Session14DemoScoresUI;
+  label: string;
+  max: number;
+}> {
+  if (isRobotics) {
+    return DEMO_SCORE_ITEMS_ROBOTICS_UI;
+  }
+  const s = String(classId || "").trim().toUpperCase();
+  const match = s.match(
+    /(?:^|[-_\s])(GMB|GMA|GMI|PTA|PTI|PSI|PTB|SB|SA|SI|GB|GA|GI|JSB|JSA|JSI|CSB|CSA|CSI)(?:\d|$|[-_\s])/i
+  );
+  const token = match ? match[1].toUpperCase() : "";
+  let limits: Record<keyof Session14DemoScoresUI, number> = {
+    algorithm: 1.5,
+    creativity: 1.0,
+    communication: 0.5,
+    problemSolving: 1.0,
+    computerSkills: 1.0,
+  };
+  if (["GB", "GA", "GI", "GMB", "GMA", "GMI"].includes(token)) {
+    limits = {
+      algorithm: 2.0,
+      creativity: 1.0,
+      communication: 0.5,
+      problemSolving: 0.5,
+      computerSkills: 1.0,
+    };
+  } else if (token === "SB") {
+    limits = {
+      algorithm: 2.5,
+      creativity: 1.0,
+      communication: 0.5,
+      problemSolving: 0.5,
+      computerSkills: 0.5,
+    };
+  } else if (token === "SA" || token === "SI") {
+    limits = {
+      algorithm: 2.5,
+      creativity: 0.5,
+      communication: 0.5,
+      problemSolving: 0.5,
+      computerSkills: 1.0,
+    };
+  } else if (token === "PTI" || token === "PSI") {
+    limits = {
+      algorithm: 2.0,
+      creativity: 1.0,
+      communication: 0.5,
+      problemSolving: 1.0,
+      computerSkills: 0.5,
+    };
+  } else if (token === "JSI") {
+    limits = {
+      algorithm: 1.75,
+      creativity: 1.0,
+      communication: 0.5,
+      problemSolving: 0.75,
+      computerSkills: 1.0,
+    };
+  } else if (token === "CSA") {
+    limits = {
+      algorithm: 2.0,
+      creativity: 0.5,
+      communication: 1.0,
+      problemSolving: 0.75,
+      computerSkills: 0.75,
+    };
+  } else if (token === "CSI") {
+    limits = {
+      algorithm: 1.5,
+      creativity: 1.0,
+      communication: 1.0,
+      problemSolving: 1.0,
+      computerSkills: 0.5,
+    };
+  }
+
+  return DEMO_SCORE_ITEMS_UI.map((item) => ({
+    ...item,
+    max: limits[item.key] ?? item.max,
+  }));
+}
+
+export function resolveStudentAwardLabel(
+  ev?: Session14EvalItemUI | null,
+  fallbackAwardMap?: Map<string, string>
+): string {
+  if (!ev) return "";
+  if (
+    ev.awardTier === "COMPLETED" ||
+    ev.awardTier === "PARTICIPANT" ||
+    ev.awardTier === "UNSCORED"
+  ) {
+    return "";
+  }
+  const isNonPodiumLabel = (s: string) =>
+    /^(hoàn\s*thành\b|tham\s*gia\b|completed\b|participant\b|unscored\b|none|-)/i.test(
+      s.trim()
+    );
+  if (
+    typeof ev.awardLabel === "string" &&
+    ev.awardLabel.trim() &&
+    !isNonPodiumLabel(ev.awardLabel)
+  ) {
+    return ev.awardLabel.trim();
+  }
+  if (
+    typeof ev.awardRank === "string" &&
+    ev.awardRank.trim() &&
+    !/^\d+$/.test(ev.awardRank.trim()) &&
+    !isNonPodiumLabel(ev.awardRank)
+  ) {
+    return ev.awardRank.trim();
+  }
+  if (
+    typeof ev.demoAwardRank === "string" &&
+    ev.demoAwardRank.trim() &&
+    !isNonPodiumLabel(ev.demoAwardRank)
+  ) {
+    return ev.demoAwardRank.trim();
+  }
+  if (typeof ev.awardRanking === "string" && ev.awardRanking.trim()) {
+    const cleaned = ev.awardRanking.replace(/\s*\([^)]*\)\s*$/, "").trim();
+    if (cleaned && !isNonPodiumLabel(cleaned)) return cleaned;
+  }
+  const fallback = fallbackAwardMap?.get(ev.studentId);
+  if (fallback && !isNonPodiumLabel(fallback)) return fallback;
+  const numRank =
+    typeof ev.awardRank === "number"
+      ? ev.awardRank
+      : typeof ev.awardRank === "string" && /^\d+$/.test(ev.awardRank.trim())
+      ? Number(ev.awardRank.trim())
+      : null;
+  if (numRank === 1) return "Giải Nhất";
+  if (numRank === 2) return "Giải Nhì";
+  if (numRank === 3) return "Giải Ba";
+  return "";
+}
+
+export function computeClientFallbackAwardMap(
+  evals: Session14EvalItemUI[],
+  activeStudentIds?: Set<string>
+): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!Array.isArray(evals) || evals.length === 0) return map;
+
+  const rawScoreOf = (ev: Session14EvalItemUI): number => {
+    if (
+      typeof ev.demoRawTotalScore === "number" &&
+      Number.isFinite(ev.demoRawTotalScore)
+    ) {
+      return ev.demoRawTotalScore;
+    }
+    if (
+      typeof ev.demoRawScore3dp === "number" &&
+      Number.isFinite(ev.demoRawScore3dp)
+    ) {
+      return ev.demoRawScore3dp;
+    }
+    return Number(ev.demoTotalScore) || 0;
+  };
+
+  const eligible = evals.filter((ev) => {
+    if (!ev?.studentId) return false;
+    if (activeStudentIds && activeStudentIds.size > 0 && !activeStudentIds.has(ev.studentId)) {
+      return false;
+    }
+    return rawScoreOf(ev) > 0;
+  });
+
+  if (eligible.length === 0) return map;
+
+  const scoreOf = (ev: Session14EvalItemUI): number =>
+    Math.round(rawScoreOf(ev) * 1000) / 1000;
+
+  const distinctScores = Array.from(new Set(eligible.map(scoreOf))).sort(
+    (a, b) => b - a
+  );
+  const rankLabels = ["Giải Nhất", "Giải Nhì", "Giải Ba"] as const;
+
+  for (let tierIdx = 0; tierIdx < Math.min(3, distinctScores.length); tierIdx++) {
+    const targetScore = distinctScores[tierIdx];
+    const tied = eligible.filter((ev) => Math.abs(scoreOf(ev) - targetScore) < 0.0005);
+    const label =
+      tied.length > 1 ? `Đồng ${rankLabels[tierIdx]}` : rankLabels[tierIdx];
+    for (const ev of tied) {
+      map.set(ev.studentId, label);
+    }
+  }
+  return map;
+}
+
+export function formatAwardBadgeMeta(awardText?: string | null): {
+  label: string;
+  shortText: string;
+  emoji: string;
+  icon: string;
+  tone: "gold" | "silver" | "bronze" | "other";
+  toneClass: string;
+} | null {
+  const clean = String(awardText || "").trim();
+  if (!clean) return null;
+  if (/nhất|top\s*1|hạng\s*1/i.test(clean)) {
+    return {
+      label: clean,
+      shortText: clean,
+      emoji: "🥇",
+      icon: "🥇",
+      tone: "gold",
+      toneClass:
+        "bg-amber-500/20 border border-amber-400/70 text-amber-200 font-bold",
+    };
+  }
+  if (/nhì|top\s*2|hạng\s*2/i.test(clean)) {
+    return {
+      label: clean,
+      shortText: clean,
+      emoji: "🥈",
+      icon: "🥈",
+      tone: "silver",
+      toneClass:
+        "bg-sky-500/20 border border-sky-400/60 text-sky-200 font-bold",
+    };
+  }
+  if (/ba|top\s*3|hạng\s*3/i.test(clean)) {
+    return {
+      label: clean,
+      shortText: clean,
+      emoji: "🥉",
+      icon: "🥉",
+      tone: "bronze",
+      toneClass:
+        "bg-orange-500/20 border border-orange-400/60 text-orange-200 font-bold",
+    };
+  }
+  return {
+    label: clean,
+    shortText: clean,
+    emoji: "🏅",
+    icon: "🏅",
+    tone: "other",
+    toneClass:
+      "bg-indigo-500/20 border border-indigo-400/60 text-indigo-200 font-semibold",
+  };
+}
+
+function escapeHtmlText(raw: string): string {
+  return String(raw || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export function htmlSummaryToPlainText(rawHtmlOrText?: string | null): string {
+  const src = String(rawHtmlOrText || "").trim();
+  if (!src) return "";
+  if (!/<[a-z][\s\S]*>/i.test(src)) return src;
+  return src
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\/\s*(?:p|div|li|h[1-6])\s*>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\r?\n{3,}/g, "\n\n")
+    .trim();
+}
+
+export function plainTextSummaryToHtml(plainText?: string | null): string {
+  const lines = String(plainText || "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return "";
+  return lines
+    .map((line, idx) => {
+      if (idx === 0 && /^BUỔI\s*14|^TỔNG\s*KẾT/i.test(line)) {
+        return `<p><strong>${escapeHtmlText(line)}</strong></p>`;
+      }
+      const colonIdx = line.indexOf(":");
+      if (
+        colonIdx > 0 &&
+        colonIdx <= 52 &&
+        /(?:Giải\s*(?:Nhất|Nhì|Ba)|Đồng\s*Giải|Hoàn\s*thành|Vinh\s*danh)/i.test(
+          line.slice(0, colonIdx)
+        )
+      ) {
+        const prefix = line.slice(0, colonIdx + 1);
+        const rest = line.slice(colonIdx + 1);
+        return `<p><strong>${escapeHtmlText(prefix)}</strong>${escapeHtmlText(rest)}</p>`;
+      }
+      return `<p>${escapeHtmlText(line)}</p>`;
+    })
+    .join("");
+}
+
+export function buildDefaultSession14ClassSummaryText(
+  classId: string,
+  evals: Session14EvalItemUI[],
+  activeStudentIds?: Set<string>
+): string {
+  const cid = String(classId || "").trim().toUpperCase();
+  if (!cid || !Array.isArray(evals) || evals.length === 0) return "";
+
+  const activeEvals = evals.filter((ev) => {
+    if (!ev?.studentId) return false;
+    if (activeStudentIds && activeStudentIds.size > 0 && !activeStudentIds.has(ev.studentId)) {
+      return false;
+    }
+    return true;
+  });
+  if (activeEvals.length === 0) return "";
+
+  const fallbackMap = computeClientFallbackAwardMap(activeEvals, activeStudentIds);
+  const scored = activeEvals.filter((ev) => {
+    const raw =
+      typeof ev.demoRawScore3dp === "number" && Number.isFinite(ev.demoRawScore3dp)
+        ? ev.demoRawScore3dp
+        : Number(ev.demoTotalScore) || 0;
+    return raw > 0;
+  });
+
+  if (scored.length === 0) {
+    return [
+      `BUỔI 14: TỔNG KẾT CUỐI KHÓA — LỚP ${cid}`,
+      `👏 Ghi nhận ${activeEvals.length} học viên đã nỗ lực hoàn thành chặng đường khóa học: ${activeEvals
+        .map((e) => e.fullName || e.studentId)
+        .join(", ")}.`,
+    ].join("\n");
+  }
+
+  const formatScore = (ev: Session14EvalItemUI): string => {
+    const raw =
+      typeof ev.demoRawScore3dp === "number" && Number.isFinite(ev.demoRawScore3dp)
+        ? Math.round(ev.demoRawScore3dp * 1000) / 1000
+        : Math.round((Number(ev.demoTotalScore) || 0) * 100) / 100;
+    const threeDp = raw.toFixed(3);
+    return threeDp.endsWith("0") ? raw.toFixed(2) : threeDp;
+  };
+
+  const firstGroup: Session14EvalItemUI[] = [];
+  const secondGroup: Session14EvalItemUI[] = [];
+  const thirdGroup: Session14EvalItemUI[] = [];
+  const restGroup: Session14EvalItemUI[] = [];
+
+  for (const ev of scored) {
+    const award = resolveStudentAwardLabel(ev, fallbackMap);
+    if (/nhất/i.test(award)) firstGroup.push(ev);
+    else if (/nhì/i.test(award)) secondGroup.push(ev);
+    else if (/ba/i.test(award)) thirdGroup.push(ev);
+    else restGroup.push(ev);
+  }
+
+  const lines: string[] = [
+    `BUỔI 14: TỔNG KẾT CUỐI KHÓA & VINH DANH BẢO VỆ DỰ ÁN (DEMO DAY) — LỚP ${cid}`,
+  ];
+  if (firstGroup.length > 0) {
+    const lbl = firstGroup.length > 1 ? "Đồng Giải Nhất" : "Giải Nhất";
+    lines.push(
+      `🥇 ${lbl} (${formatScore(firstGroup[0])}/5.0): ${firstGroup
+        .map((e) => e.fullName || e.studentId)
+        .join(", ")}`
+    );
+  }
+  if (secondGroup.length > 0) {
+    const lbl = secondGroup.length > 1 ? "Đồng Giải Nhì" : "Giải Nhì";
+    lines.push(
+      `🥈 ${lbl} (${formatScore(secondGroup[0])}/5.0): ${secondGroup
+        .map((e) => e.fullName || e.studentId)
+        .join(", ")}`
+    );
+  }
+  if (thirdGroup.length > 0) {
+    const lbl = thirdGroup.length > 1 ? "Đồng Giải Ba" : "Giải Ba";
+    lines.push(
+      `🥉 ${lbl} (${formatScore(thirdGroup[0])}/5.0): ${thirdGroup
+        .map((e) => e.fullName || e.studentId)
+        .join(", ")}`
+    );
+  }
+  if (restGroup.length > 0) {
+    lines.push(
+      `👏 Hoàn thành tốt sản phẩm & bảo vệ cuối khóa: ${restGroup
+        .map((e) => `${e.fullName || e.studentId} (${formatScore(e)}/5.0)`)
+        .join(", ")}.`
+    );
+  }
+  return lines.join("\n");
+}
+
 const spckUiHelpersBundle = {
   DEFAULT_SPCK_TAGS,
   SESSION14_SPCK_TAGS,
@@ -714,6 +1126,13 @@ const spckUiHelpersBundle = {
   parseYoutubeUrlsFromText,
   getRowReadinessSummary,
   buildRowFromDbRecord,
+  getDemoScoreItemsForClassUi,
+  resolveStudentAwardLabel,
+  computeClientFallbackAwardMap,
+  formatAwardBadgeMeta,
+  htmlSummaryToPlainText,
+  plainTextSummaryToHtml,
+  buildDefaultSession14ClassSummaryText,
 };
 
 if (typeof console !== "undefined" && console && typeof console === "object") {

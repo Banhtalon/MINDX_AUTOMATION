@@ -4,6 +4,7 @@ import {
   Session14CourseSummaryGenerator,
   type Session14EvalStudentInput,
 } from "@/lib/gemini/session14-course-summary";
+import { getEffectiveClassSession14Summary } from "@/lib/local-files/spck-demo-score-reader";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 
 export async function POST(req: Request) {
@@ -13,7 +14,14 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const classId = String(body?.classId || "").trim().toUpperCase();
-    const rawStudents: any[] = Array.isArray(body?.students) ? body.students : [];
+    const activeRoster = studentRepo
+      .findByClass(classId, false)
+      .filter((s) => Number(s.isActive ?? 1) !== 0);
+    const rawStudents: any[] = Array.isArray(body?.students)
+      ? body.students
+      : body?.generateAllActive === true
+      ? activeRoster.map((s) => ({ studentId: s.studentId }))
+      : [];
 
     if (!classId || rawStudents.length === 0) {
       return NextResponse.json(
@@ -42,6 +50,9 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+      if (Number(dbStu.isActive ?? 1) === 0) {
+        continue;
+      }
 
       inputs.push({
         studentId,
@@ -59,12 +70,15 @@ export async function POST(req: Request) {
 
     const results = await Session14CourseSummaryGenerator.generateBatch(classId, inputs);
     const records = buildEnrichedSession14EvalList(classId);
+    const { classSummary, rankings } = getEffectiveClassSession14Summary(classId);
 
     return NextResponse.json({
       success: true,
       classId,
       results,
       records,
+      rankings,
+      classSummary,
     });
   } catch (err) {
     return NextResponse.json(

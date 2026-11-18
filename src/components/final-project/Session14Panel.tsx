@@ -16,6 +16,7 @@ export function Session14Panel({ workflow }: Session14PanelProps) {
     handleGenerateSession14EvalAi,
     generatingS14EvalAi,
     handleApproveAndUploadSession14Eval,
+    getEffectiveClassSummaryHtml,
     uploadingS14EvalLms,
     session14Evals,
     session14ComboStatus,
@@ -95,7 +96,12 @@ export function Session14Panel({ workflow }: Session14PanelProps) {
             <button
               type="button"
               disabled={isAnyOperationBusy}
-              onClick={() => handleApproveAndUploadSession14Eval()}
+              onClick={() =>
+                void handleApproveAndUploadSession14Eval(undefined, {
+                  classSummaryHtml: getEffectiveClassSummaryHtml(),
+                  allowPartialApproval: true,
+                })
+              }
               className="spck-btn-success px-4 py-1.5 rounded-lg disabled:opacity-50 text-xs font-bold flex items-center space-x-1.5 cursor-pointer"
             >
               {uploadingS14EvalLms ? (

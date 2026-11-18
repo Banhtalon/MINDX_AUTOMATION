@@ -53,6 +53,7 @@ export async function POST(req: Request) {
       studentIds,
       sessionNumber: activeSessionNumber,
       syncAllUnverifiedSessions: body?.syncActiveSession === true,
+      forceReupload: body?.forceReupload === true || body?.forceRedeploy === true,
     });
 
     if (body?.syncActiveSession === true && activeSessionNumber) {

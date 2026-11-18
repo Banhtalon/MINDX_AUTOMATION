@@ -419,6 +419,7 @@ const OPTIONAL_SESSION_12_13_PRESENTATION_TAGS: string[] = [
 const SESSION_14_PRESENTATION_TAGS: string[] = [
   "📊 Slide đẹp, bố cục rõ ràng, dễ nhìn",
   "🗣️ Trình bày tự tin, to rõ, mạch lạc",
+  "🎤 Trình bày tròn vai, nêu được nội dung chính của sản phẩm",
   "💡 Giải thích tốt luồng hoạt động & ý tưởng sản phẩm",
   "❓ Phản biện tốt, trả lời đúng trọng tâm câu hỏi",
   "⚠️ Thuyết trình còn rụt rè, cần rèn thêm sự tự tin",
@@ -1391,39 +1392,60 @@ export interface SpckAutoSuggestInput {
   hasJsInteraction?: boolean;
   hasFirebaseCode?: boolean;
   hasRoboticsCode?: boolean;
+  // Computer Science (CSA / CSI / CSB) & Python / GameMaker / Scratch factual code flags
+  hasPandasOrCsvCode?: boolean;
+  hasDataVisualizationCode?: boolean;
+  hasMlOrAiModelCode?: boolean;
+  hasStreamlitCode?: boolean;
+  hasPythonOopOrFunctions?: boolean;
+  hasJupyterNotebook?: boolean;
+  hasPyQtUiCode?: boolean;
+  hasSignalSlotBinding?: boolean;
+  hasJsonStorageCode?: boolean;
+  hasGameMakerProject?: boolean;
+  hasGmlScripts?: boolean;
+  hasScratchProject?: boolean;
+  // Optional Session 14 BGK presentation score evidence
+  demoCommunicationScore?: number | null;
+  demoCommunicationMax?: number | null;
+  includeSession14ProductEvidence?: boolean;
 }
 
 /**
- * Automatically suggests strictly factual, single-claim observation tags when a student's
- * project folder has verified code/media evidence. Never auto-suggests multi-conclusion
- * evaluation tags, completion/quality judgments, working connection claims, or hardware quality.
+ * Maps a student's graded Demo Day `communication` score (`0..max`) to a canonical
+ * Session 14 presentation Quick Tag so `generate-ai` produces both Presentation & Product sections:
+ * - `>= 80%` max -> `"🗣️ Trình bày tự tin, to rõ, mạch lạc"`
+ * - `>= 50%` max -> `"🎤 Trình bày tròn vai, nêu được nội dung chính của sản phẩm"`
+ * - `< 50%` max  -> `"⚠️ Thuyết trình còn rụt rè, cần rèn thêm sự tự tin"`
  */
-export function suggestSpckQuickTagsFromProject(
-  input: SpckAutoSuggestInput
-): string[] {
-  // Session 14 summative evaluation tags always require explicit teacher selection
-  if (input.sessionNumber === 14) {
-    return [];
+export function suggestSession14PresentationTagFromDemoScore(
+  communicationScore?: number | null,
+  maxCommunicationScore?: number | null
+): string {
+  const maxVal = Number(maxCommunicationScore);
+  const scoreVal = Number(communicationScore);
+  if (!Number.isFinite(maxVal) || maxVal <= 0 || !Number.isFinite(scoreVal) || scoreVal < 0) {
+    return "";
   }
+  const ratio = scoreVal / maxVal;
+  if (ratio >= 0.8 - 1e-9) {
+    return "🗣️ Trình bày tự tin, to rõ, mạch lạc";
+  }
+  if (ratio >= 0.5 - 1e-9) {
+    return "🎤 Trình bày tròn vai, nêu được nội dung chính của sản phẩm";
+  }
+  return "⚠️ Thuyết trình còn rụt rè, cần rèn thêm sự tự tin";
+}
 
-  const normalizedExts = Array.isArray(input.fileExtensions)
-    ? input.fileExtensions
-        .map((e) => String(e || "").trim().toLowerCase())
-        .filter(Boolean)
-    : [];
-  const hasPhotos = (input.screenshotCount || 0) > 0;
-  const hasVideos = (input.youtubeCount || 0) > 0;
-
-  const bundle = getSpckQuickTagGroups({
-    classId: input.classId,
-    courseName: input.courseName,
-    sessionNumber: input.sessionNumber,
-    fileExtensions: normalizedExts,
-  });
-
+function collectVerifiedCodeObservationTags(
+  track: SpckSubjectTrack,
+  input: SpckAutoSuggestInput,
+  hasPhotos: boolean,
+  hasVideos: boolean
+): string[] {
   const suggested: string[] = [];
 
-  if (bundle.profile.track === "WEB") {
+  const appendWebObservationTags = () => {
     if (input.hasFlexOrGridCss) {
       suggested.push("📐 Có sử dụng bố cục CSS Flexbox/Grid");
     }
@@ -1442,10 +1464,71 @@ export function suggestSpckQuickTagsFromProject(
     if (input.hasFirebaseCode) {
       suggested.push("🔥 Có khai báo thư viện / cấu hình Firebase trong mã nguồn");
     }
+  };
+
+  if (track === "WEB") {
+    appendWebObservationTags();
     return suggested;
   }
 
-  if (bundle.profile.track === "ROBOTICS") {
+  if (track === "COMPUTER_SCIENCE") {
+    if (input.hasPandasOrCsvCode) {
+      suggested.push("🐼 Có sử dụng thư viện Pandas / xử lý dữ liệu bảng trong mã nguồn");
+    }
+    if (input.hasDataVisualizationCode) {
+      suggested.push("📊 Có sử dụng thư viện trực quan hóa biểu đồ (Matplotlib/Seaborn/Plotly)");
+    }
+    if (input.hasMlOrAiModelCode) {
+      suggested.push("🤖 Có khai báo mô hình Machine Learning / AI trong mã nguồn");
+    }
+    if (input.hasStreamlitCode) {
+      suggested.push("🌐 Có xây dựng giao diện ứng dụng tương tác với Streamlit");
+    }
+    if (input.hasJupyterNotebook) {
+      suggested.push("📓 Có tệp Jupyter Notebook (.ipynb) trình bày các bước thực nghiệm");
+    }
+    if (input.hasPythonOopOrFunctions) {
+      suggested.push("🐍 Có định nghĩa lớp (class) / hàm xử lý (def) trong mã nguồn Python");
+    }
+    // CSA/CSI students frequently build Web/HTML dashboards alongside or instead of Streamlit
+    appendWebObservationTags();
+    return Array.from(new Set(suggested));
+  }
+
+  if (track === "PYTHON_APP") {
+    if (input.hasPyQtUiCode) {
+      suggested.push("🖥️ Có thiết kế giao diện PyQt / Qt Designer (.ui) trong dự án");
+    }
+    if (input.hasSignalSlotBinding) {
+      suggested.push("🔗 Có gắn kết sự kiện Signal & Slot cho các thành phần giao diện");
+    }
+    if (input.hasJsonStorageCode) {
+      suggested.push("💾 Có thao tác đọc/ghi dữ liệu định dạng JSON trong mã nguồn");
+    }
+    if (input.hasPythonOopOrFunctions) {
+      suggested.push("🐍 Có định nghĩa lớp (class) / hàm xử lý (def) trong mã nguồn Python");
+    }
+    return suggested;
+  }
+
+  if (track === "GAMEMAKER") {
+    if (input.hasGameMakerProject) {
+      suggested.push("🕹️ Có cấu trúc dự án GameMaker (Sprites, Objects, Rooms)");
+    }
+    if (input.hasGmlScripts) {
+      suggested.push("💻 Có viết mã kịch bản GML xử lý sự kiện trong dự án");
+    }
+    return suggested;
+  }
+
+  if (track === "SCRATCH") {
+    if (input.hasScratchProject) {
+      suggested.push("🐱 Có tệp dự án Scratch (.sb3) chứa nhân vật và kịch bản khối lệnh");
+    }
+    return suggested;
+  }
+
+  if (track === "ROBOTICS") {
     const hasRoboticsCode = Boolean(input.hasRoboticsCode);
 
     if (!hasRoboticsCode && !hasVideos) {
@@ -1465,5 +1548,48 @@ export function suggestSpckQuickTagsFromProject(
   }
 
   return [];
+}
+
+/**
+ * Automatically suggests strictly factual, single-claim observation tags when a student's
+ * project folder has verified code/media evidence. Never auto-suggests multi-conclusion
+ * evaluation tags, completion/quality judgments, working connection claims, or hardware quality.
+ */
+export function suggestSpckQuickTagsFromProject(
+  input: SpckAutoSuggestInput
+): string[] {
+  const normalizedExts = Array.isArray(input.fileExtensions)
+    ? input.fileExtensions
+        .map((e) => String(e || "").trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+  const hasPhotos = (input.screenshotCount || 0) > 0;
+  const hasVideos = (input.youtubeCount || 0) > 0;
+
+  const bundle = getSpckQuickTagGroups({
+    classId: input.classId,
+    courseName: input.courseName,
+    sessionNumber: input.sessionNumber,
+    fileExtensions: normalizedExts,
+  });
+
+  if (input.sessionNumber === 14) {
+    const s14Tags: string[] = [];
+    const presTag = suggestSession14PresentationTagFromDemoScore(
+      input.demoCommunicationScore,
+      input.demoCommunicationMax
+    );
+    if (presTag) {
+      s14Tags.push(presTag);
+    }
+    if (input.includeSession14ProductEvidence) {
+      s14Tags.push(
+        ...collectVerifiedCodeObservationTags(bundle.profile.track, input, hasPhotos, hasVideos)
+      );
+    }
+    return Array.from(new Set(s14Tags));
+  }
+
+  return collectVerifiedCodeObservationTags(bundle.profile.track, input, hasPhotos, hasVideos);
 }
 

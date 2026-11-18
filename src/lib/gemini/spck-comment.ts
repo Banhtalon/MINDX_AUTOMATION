@@ -25,10 +25,15 @@ const acorn = nodeRequire("next/dist/compiled/acorn") as {
 };
 import {
   assertClassHasSpckSession,
+  calculateDemoTotalScore,
+  computeSession14AwardRankingsPure,
   computeSpckContentHash,
+  formatRawDemoScore3dp,
   getDb,
+  getSession14DemoLimitsForClass,
   getSpckStageInfo,
   homeworkSubmissionRepo,
+  session14EvalRepo,
   sessionFeedbackRepo,
   spckSessionRepo,
   spckUploadRepo,
@@ -1548,6 +1553,29 @@ export class SpckCommentGenerator {
     const classStudents = studentRepo.findByClass(normalizedClassId, false);
     const classStudentMap = new Map(classStudents.map((s) => [s.studentId, s]));
     const peerNames = classStudents.map((s) => s.fullName);
+    const activeRosterForRank = classStudents.filter((s) => Number(s.isActive ?? 1) !== 0);
+    const s14DemoMaxStr = calculateDemoTotalScore(
+      getSession14DemoLimitsForClass(normalizedClassId)
+    ).toFixed(1);
+    const s14RankMap =
+      stageInfo.sessionNumber === 14
+        ? new Map(
+            computeSession14AwardRankingsPure(
+              activeRosterForRank.map((stu) => {
+                const ev = session14EvalRepo.findOne(normalizedClassId, stu.studentId);
+                return {
+                  studentId: stu.studentId,
+                  fullName: stu.fullName,
+                  rawTotalScore3dp:
+                    ev && typeof ev.demoRawTotalScore === "number" && ev.demoRawTotalScore > 0
+                      ? ev.demoRawTotalScore
+                      : Number(ev?.demoTotalScore || 0),
+                  demoTotalScore: Number(ev?.demoTotalScore || 0),
+                };
+              })
+            ).map((r) => [r.studentId, r])
+          )
+        : new Map();
 
     for (const s of students) {
       if (s?.studentId && classStudents.length > 0 && !classStudentMap.has(s.studentId)) {
@@ -1768,6 +1796,34 @@ ${subjectSpecificGuidance}${multimodalGuidance}
             )}\n`
           : "";
 
+      let s14DemoAwardContext = "";
+      if (stageInfo.sessionNumber === 14) {
+        const s14EvalRow = session14EvalRepo.findOne(normalizedClassId, item.studentId);
+        const s14RankInfo = s14RankMap.get(item.studentId);
+        if (s14EvalRow && Number(s14EvalRow.demoTotalScore) > 0) {
+          const rawScore =
+            typeof s14EvalRow.demoRawTotalScore === "number" && s14EvalRow.demoRawTotalScore > 0
+              ? s14EvalRow.demoRawTotalScore
+              : s14EvalRow.demoTotalScore;
+          const rankPhrase =
+            s14RankInfo &&
+            (s14RankInfo.awardTier === "FIRST" ||
+              s14RankInfo.awardTier === "SECOND" ||
+              s14RankInfo.awardTier === "THIRD")
+              ? `Đạt ${s14RankInfo.awardLabel} buổi bảo vệ cuối khóa (${formatRawDemoScore3dp(rawScore)}/${s14DemoMaxStr} điểm gốc BGK)`
+              : `Hoàn thành bảo vệ dự án cuối khóa (${formatRawDemoScore3dp(rawScore)}/${s14DemoMaxStr} điểm BGK)`;
+          const anonJudge = s14EvalRow.demoJudgeNote
+            ? ` — Ghi chú BGK: ${anonymizeSpckText(
+                s14EvalRow.demoJudgeNote,
+                item.fullName,
+                anonymousToken,
+                peerNames
+              )}`
+            : "";
+          s14DemoAwardContext = `\n- Kết quả chấm điểm Demo Day từ Ban giám khảo: ${rankPhrase}${anonJudge}`;
+        }
+      }
+
       const prompt = `Bạn là giáo viên lập trình và công nghệ tại MindX. Hãy viết lời nhận xét ("Bình luận của giáo viên*") về Sản phẩm Cuối khóa (SPCK) của học viên có tên tạm gọi là "${anonymousToken}" **để ghi trực tiếp vào Học bạ (hồ sơ đánh giá kết quả học tập chính thức cho Phụ huynh xem)**.
 
 ${stageSpecificInstruction}
@@ -1792,7 +1848,7 @@ THÔNG TIN ĐẦU VÀO ĐÃ KIỂM CHỨNG CỦA GIÁO VIÊN:
 - Tên học viên (tạm thời): ${anonymousToken}
 - Khóa/Lớp: ${context.courseName || normalizedClassId}
 - Thẻ đánh giá nhanh (Quick Tags): ${JSON.stringify(anonTags)}
-- Ghi chú của giáo viên: ${anonNote || "(Không có ghi chú riêng)"}
+- Ghi chú của giáo viên: ${anonNote || "(Không có ghi chú riêng)"}${s14DemoAwardContext}
 - Dữ liệu tiến độ trước đó: ${anonSession12Summary || "(Chưa có dữ liệu trước đó)"}
 - Lịch sử học tập: ${historySummary}
 
@@ -1995,7 +2051,11 @@ Hãy trả về đúng định dạng JSON sau (không kèm markdown fence; khi 
               }
             }
           }
-          if (courseProfile.track !== "WEB" && courseProfile.track !== "GENERAL") {
+          if (
+            courseProfile.track !== "WEB" &&
+            courseProfile.track !== "GENERAL" &&
+            !prelimSummary.absentWebFeatures.inspectedWebCode
+          ) {
             cleaned = cleaned
               .replace(/\bwebsite\s+sản\s+phẩm\b/gi, courseProfile.productNoun)
               .replace(/\bwebsite\b/gi, courseProfile.productNoun)

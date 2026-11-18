@@ -7,17 +7,37 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import AdmZip from "adm-zip";
 import { normalizeSpckFolderKey, spckUploadRepo } from "../db/sqlite";
-import { parseZipArchiveBuffer } from "../file-parsers/archive-reader";
+import {
+  ZIP_MAX_FILE_COUNT,
+  ZIP_MAX_SINGLE_FILE_BYTES,
+  ZIP_MAX_TOTAL_UNCOMPRESSED_BYTES,
+  parseZipArchiveBuffer,
+} from "../file-parsers/archive-reader";
 import { parseGameMakerBuffer, parseScratchSb3Buffer } from "../file-parsers/game-reader";
 import { parseMediaBuffer } from "../file-parsers/media-reader";
 import {
   assertPathAllowed,
+  isPathAllowed,
   registerTeacherSelectedDirectory,
 } from "../security/path-allowlist";
+
+const scannerRequire = createRequire(import.meta.url);
+const acornScanner = scannerRequire("next/dist/compiled/acorn") as {
+  tokenizer: (
+    input: string,
+    options?: { ecmaVersion?: number | "latest"; sourceType?: "module" | "script" }
+  ) => Iterable<{
+    type: { label: string };
+    value?: unknown;
+    start: number;
+    end: number;
+  }>;
+};
 import {
   findProjectUiFiles,
   renderPyQtUiScreenshotsAsync,
@@ -1644,13 +1664,43 @@ export function isOwnerPhotoTranscodeFilename(fileName: string): boolean {
 export function isSensitiveSecretFile(fileName: string, rawBuf?: Buffer): boolean {
   const lower = String(fileName || "").trim().toLowerCase();
   if (!lower) return false;
-  if (/^(?:credentials?|secrets?|service[-_]?account.*)\.json$/i.test(lower)) {
+  if (
+    lower === ".env" ||
+    lower.startsWith(".env.") ||
+    lower === ".npmrc" ||
+    lower === ".netrc" ||
+    lower === ".pypirc" ||
+    lower === ".htpasswd" ||
+    lower === ".git-credentials"
+  ) {
     return true;
   }
-  if (lower.endsWith(".json") && rawBuf && rawBuf.length > 0 && rawBuf.length <= 64 * 1024) {
+  if (
+    /\.(?:pem|key|pfx|p12|jks|keystore|kdbx|ovpn)$/i.test(lower) ||
+    /^id_(?:rsa|dsa|ecdsa|ed25519)(?:\.pub)?$/i.test(lower)
+  ) {
+    return true;
+  }
+  if (
+    /^(?:credentials?|secrets?|tokens?|service[-_]?account.*|firebase[-_]?adminsdk.*)\.json$/i.test(
+      lower
+    )
+  ) {
+    return true;
+  }
+  if (rawBuf && rawBuf.length > 0 && rawBuf.length <= 64 * 1024) {
     try {
       const txt = rawBuf.toString("utf8");
-      if (/"private_key"\s*:/i.test(txt) && /"client_email"\s*:/i.test(txt)) {
+      if (/-----BEGIN (?:[A-Z0-9 ]+ )?PRIVATE KEY-----/.test(txt)) {
+        return true;
+      }
+      if (
+        lower.endsWith(".json") &&
+        ((/"private_key"\s*:/i.test(txt) && /"client_email"\s*:/i.test(txt)) ||
+          /"(?:client_secret|gemini_api_key|lms_password|teaching_password|refresh_token)"\s*:/i.test(
+            txt
+          ))
+      ) {
         return true;
       }
     } catch {}
@@ -1817,6 +1867,1032 @@ async function ensureWebpOwnerPhotosTranscodedAsync(safeFolderPath: string): Pro
   } catch {
     // Non-fatal
   }
+}
+
+const OVERSIZED_TRIM_MEDIA_EXTS = new Set([
+  ".mp3",
+  ".wav",
+  ".ogg",
+  ".flac",
+  ".m4a",
+  ".aac",
+  ".mp4",
+  ".webm",
+  ".mov",
+  ".avi",
+  ".mkv",
+]);
+
+const FORBIDDEN_ARCHIVE_EXECUTABLE_EXTS = new Set([
+  ".exe",
+  ".bat",
+  ".cmd",
+  ".msi",
+  ".ps1",
+  ".vbs",
+  ".scr",
+  ".com",
+  ".dll",
+  ".pif",
+  ".jar",
+]);
+
+function resolveTempSubmissionsTrimRoot(): string {
+  if (process.env.MINDX_DB_PATH?.trim()) {
+    const dbParent = path.dirname(path.resolve(process.env.MINDX_DB_PATH));
+    const isolatedTempSub = path.join(dbParent, "temp_submissions");
+    if (isPathAllowed(isolatedTempSub)) {
+      fs.mkdirSync(isolatedTempSub, { recursive: true });
+      return assertPathAllowed(isolatedTempSub);
+    }
+  }
+  const workspaceTempSub = path.resolve(process.cwd(), "temp_submissions");
+  fs.mkdirSync(workspaceTempSub, { recursive: true });
+  return assertPathAllowed(workspaceTempSub);
+}
+
+/**
+ * When a genuine GameMaker `.yyz` or `.zip` project fails `validateSpckAttachmentFile` ONLY because
+ * one or more audio/video assets exceed `ZIP_MAX_SINGLE_FILE_BYTES (15 MB)` or push total uncompressed
+ * size past `50 MB`, builds a trimmed LMS `.zip` at `temp_submissions/spck_lms_trim_<slug>_<hash8>.zip`
+ * keeping 100% of `.yyp`, `rooms/`, `objects/`, `scripts/*.gml`, `sprites/`, and files `< 15 MB` (total `< 50 MB`).
+ * The original `.yyz`/`.zip` in the student's folder stays 100% intact for Google Drive `zip_bundle`!
+ */
+export function buildTrimmedLmsZipForOversizedArchive(
+  archiveFullPath: string,
+  studentIdentifier: string
+): { zipPath: string; trimmedZipPath: string; droppedMediaEntries: string[] } | null {
+  try {
+    const safeArchivePath = assertPathAllowed(archiveFullPath);
+    const st = fs.lstatSync(safeArchivePath);
+    if (st.isSymbolicLink() || !st.isFile() || st.size === 0 || st.size > 512 * 1024 * 1024) {
+      return null;
+    }
+    const archiveExt = path.extname(safeArchivePath).toLowerCase();
+    if (archiveExt !== ".yyz" && archiveExt !== ".zip") {
+      return null;
+    }
+    const rawBuf = fs.readFileSync(safeArchivePath);
+    if (
+      rawBuf.length < 4 ||
+      rawBuf[0] !== 0x50 ||
+      rawBuf[1] !== 0x4b ||
+      rawBuf[2] !== 0x03 ||
+      rawBuf[3] !== 0x04
+    ) {
+      return null;
+    }
+
+    const zip = new AdmZip(rawBuf);
+    const rawEntries = zip.getEntries();
+    if (!rawEntries || rawEntries.length === 0 || rawEntries.length > 5000) {
+      return null;
+    }
+
+    const droppedMediaEntries: string[] = [];
+    const candidateFiles: Array<{
+      normPath: string;
+      ext: string;
+      isMedia: boolean;
+      isSpriteLayerDuplicate: boolean;
+      declaredSize: number;
+      entry: AdmZip.IZipEntry;
+    }> = [];
+    let hasYyp = false;
+
+    for (const entry of rawEntries) {
+      const rawName = String(entry.entryName || "");
+      const unified = rawName.replace(/\\/g, "/");
+      if (
+        unified.startsWith("/") ||
+        /^[a-zA-Z]:/.test(unified) ||
+        unified.includes("\0") ||
+        /(^|\/)\.\.(\/|$)/.test(unified)
+      ) {
+        return null;
+      }
+      const unixMode = (Number(entry.header?.attr ?? 0) >>> 16) & 0o170000;
+      if (unixMode === 0o120000) {
+        return null;
+      }
+      const parts = unified.split("/").filter(Boolean);
+      if (parts.length === 0 || parts.length > 10) {
+        if (parts.length > 10) return null;
+        continue;
+      }
+      if (entry.isDirectory) continue;
+
+      const baseLower = parts[parts.length - 1].toLowerCase();
+      if (
+        baseLower === ".ds_store" ||
+        baseLower === "thumbs.db" ||
+        baseLower === "desktop.ini" ||
+        isSensitiveSecretFile(baseLower) ||
+        parts.some((seg) => seg.startsWith("."))
+      ) {
+        continue;
+      }
+      const ext = path.extname(baseLower).toLowerCase();
+      if (FORBIDDEN_ARCHIVE_EXECUTABLE_EXTS.has(ext)) {
+        return null;
+      }
+      const declaredSize = Number(entry.header?.size ?? 0);
+      if (declaredSize < 0) return null;
+
+      const isMedia = OVERSIZED_TRIM_MEDIA_EXTS.has(ext);
+      if (declaredSize > ZIP_MAX_SINGLE_FILE_BYTES) {
+        if (isMedia) {
+          droppedMediaEntries.push(parts.join("/"));
+          continue;
+        }
+        return null;
+      }
+      if (ext === ".yyp") hasYyp = true;
+
+      const normPath = parts.join("/");
+      const lowerNorm = normPath.toLowerCase();
+      const isSpriteLayerDuplicate =
+        lowerNorm.startsWith("sprites/") && lowerNorm.includes("/layers/");
+
+      candidateFiles.push({
+        normPath,
+        ext,
+        isMedia,
+        isSpriteLayerDuplicate,
+        declaredSize,
+        entry,
+      });
+    }
+
+    if (archiveExt === ".yyz" && !hasYyp) {
+      return null;
+    }
+
+    // Drop duplicate sprite layer PNGs if file count exceeds ZIP_MAX_FILE_COUNT (600)
+    let filteredCandidates = candidateFiles;
+    if (filteredCandidates.length > ZIP_MAX_FILE_COUNT - 5) {
+      filteredCandidates = filteredCandidates.filter((c) => !c.isSpriteLayerDuplicate);
+    }
+    if (filteredCandidates.length > ZIP_MAX_FILE_COUNT) {
+      return null;
+    }
+
+    // Ensure total uncompressed bytes stay safely under 48 MB (< 50 MB limit) by dropping largest remaining media if needed
+    const SAFE_TOTAL_CAP = Math.min(48 * 1024 * 1024, ZIP_MAX_TOTAL_UNCOMPRESSED_BYTES - 1024 * 1024);
+    let projectedBytes = filteredCandidates.reduce((acc, c) => acc + c.declaredSize, 0);
+    if (projectedBytes > SAFE_TOTAL_CAP) {
+      const mediaDescending = filteredCandidates
+        .filter((c) => c.isMedia)
+        .sort((a, b) => b.declaredSize - a.declaredSize);
+      const dropSet = new Set<string>();
+      for (const m of mediaDescending) {
+        if (projectedBytes <= SAFE_TOTAL_CAP) break;
+        dropSet.add(m.normPath);
+        droppedMediaEntries.push(m.normPath);
+        projectedBytes -= m.declaredSize;
+      }
+      if (dropSet.size > 0) {
+        filteredCandidates = filteredCandidates.filter((c) => !dropSet.has(c.normPath));
+      }
+    }
+
+    if (droppedMediaEntries.length === 0) {
+      return null;
+    }
+
+    const outEntries: Array<{ entryName: string; data: Buffer }> = [];
+    let actualTotalBytes = 0;
+
+    for (const item of filteredCandidates) {
+      let data = item.entry.getData();
+      if (data.length > ZIP_MAX_SINGLE_FILE_BYTES) {
+        if (item.isMedia) {
+          droppedMediaEntries.push(item.normPath);
+          continue;
+        }
+        return null;
+      }
+      if (isSensitiveSecretFile(path.basename(item.normPath), data)) {
+        continue;
+      }
+      if (TEXT_ATTACHMENT_EXTENSIONS.has(item.ext) || item.ext === ".yyp") {
+        if (data.includes(0x00)) {
+          return null;
+        }
+        const trimmedTxt = data.toString("utf8").replace(/^\uFEFF/, "").trim();
+        if (trimmedTxt.length === 0) {
+          if (item.ext === ".gml") {
+            data = Buffer.from("// Empty GML script\n", "utf8");
+          } else {
+            continue;
+          }
+        }
+      }
+      if (actualTotalBytes + data.length > SAFE_TOTAL_CAP) {
+        if (item.isMedia) {
+          droppedMediaEntries.push(item.normPath);
+          continue;
+        }
+        return null;
+      }
+      outEntries.push({ entryName: item.normPath, data });
+      actualTotalBytes += data.length;
+    }
+
+    if (outEntries.length === 0) {
+      return null;
+    }
+
+    const hash8 = crypto
+      .createHash("sha256")
+      .update(`${path.basename(safeArchivePath)}|${st.size}|${Math.trunc(st.mtimeMs)}`)
+      .digest("hex")
+      .slice(0, 8);
+    const safeSlug =
+      stripVietnameseDiacritics(studentIdentifier || "student")
+        .replace(/[^a-zA-Z0-9_-]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 40) || "student";
+
+    const trimDir = resolveTempSubmissionsTrimRoot();
+    const outZipPath = assertPathAllowed(
+      path.join(trimDir, `spck_lms_trim_${safeSlug}_${hash8}.zip`)
+    );
+    writeDeterministicZipFile(outZipPath, outEntries);
+
+    const check = validateSpckAttachmentFile(outZipPath);
+    if (!check.valid) {
+      try {
+        if (fs.existsSync(outZipPath)) fs.unlinkSync(outZipPath);
+      } catch {}
+      return null;
+    }
+
+    return {
+      zipPath: outZipPath,
+      trimmedZipPath: outZipPath,
+      droppedMediaEntries: Array.from(new Set(droppedMediaEntries)),
+    };
+  } catch {
+    return null;
+  }
+}
+
+const GENERIC_TOPIC_TITLES_NORM = new Set([
+  "document",
+  "index",
+  "home",
+  "homepage",
+  "trang chu",
+  "website",
+  "web",
+  "my website",
+  "my app",
+  "untitled",
+  "vite app",
+  "vite react",
+  "react app",
+  "streamlit",
+  "mainwindow",
+  "form",
+  "dialog",
+  "widget",
+  "frame",
+  "project",
+  "project1",
+  "game",
+  "game1",
+  "blank project",
+  "scratch",
+  "scratch project",
+  "gamemaker",
+  "main",
+  "app",
+  "run",
+  "test",
+  "demo",
+  "bai lam",
+  "bai tap",
+  "bt1",
+  "bt2",
+  "spck",
+  "san pham cuoi khoa",
+  "du an cuoi khoa",
+  "final project",
+  "login",
+  "register",
+  "signup",
+  "signin",
+]);
+
+function cleanCandidateTopicTitle(rawTopic: string, studentDisplayName?: string): string {
+  let cleaned = String(rawTopic || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[_]+/g, " ")
+    .replace(/\b(?:giai\s*đoạn\s*[12]|gđ\s*[12]|buổi\s*(?:12|13|14))\b/giu, " ")
+    .replace(/^(?:spck|sản\s*phẩm\s*cuối\s*khóa|dự\s*án\s*cuối\s*khóa|final\s*project)\s*[-:–—|]?\s*/iu, "")
+    .replace(/\s*[-_–—|]?\s*(?:spck|final|v\d+|copy|\(\d+\))\s*$/iu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (studentDisplayName && studentDisplayName.trim()) {
+    const escapedStu = studentDisplayName.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    cleaned = cleaned
+      .replace(new RegExp(`\\s*[-–—|:]\\s*${escapedStu}\\s*$`, "iu"), "")
+      .replace(new RegExp(`^${escapedStu}\\s*[-–—|:]\\s*`, "iu"), "")
+      .trim();
+  }
+
+  if (cleaned.length < 3 || cleaned.length > 90) return "";
+  if (/^\d+$/.test(cleaned)) return "";
+
+  const norm = normalizeVietnameseName(cleaned);
+  if (!norm || GENERIC_TOPIC_TITLES_NORM.has(norm)) return "";
+  if (/^(?:room|rm|r|obj|o|spr|s|scr|bt|bai)\s*\d*$/i.test(norm)) return "";
+
+  if (studentDisplayName && studentDisplayName.trim()) {
+    const normStu = normalizeVietnameseName(studentDisplayName);
+    if (normStu && (norm === normStu || norm === `spck ${normStu}`)) {
+      return "";
+    }
+  }
+  return cleaned;
+}
+
+/**
+ * Extracts a meaningful real project topic title from a student's local SPCK folder:
+ * 1. HTML `<title>` or `<h1>` (preferring `index.html` / `home.html` / `trangchu.html`)
+ * 2. GameMaker `.yyp` project name (loose or inside `.yyz`), `.yyz` filename, or custom Room name
+ * 3. Python App / CS `.ui` `windowTitle`, Streamlit `page_title`/`st.title`, Pygame `set_caption`, Tkinter `title`, `.ipynb` `# Heading`, or descriptive `.py`/`.ipynb` filename
+ * 4. Scratch `.sb3` filename
+ * Returns `""` if only generic names (`index.html` `"Document"`, `main.py`, `app.py`, etc.) exist.
+ */
+export function extractRealProjectTopicTitle(
+  studentFolderPath: string,
+  studentDisplayName?: string
+): string {
+  const trimmed = String(studentFolderPath || "").trim();
+  if (!trimmed) return "";
+  let safeRoot = "";
+  try {
+    safeRoot = assertPathAllowed(trimmed);
+    if (!fs.existsSync(safeRoot) || !fs.statSync(safeRoot).isDirectory()) {
+      return "";
+    }
+  } catch {
+    return "";
+  }
+
+  const htmlFiles: string[] = [];
+  const yypFiles: string[] = [];
+  const yyzFiles: string[] = [];
+  const uiFiles: string[] = [];
+  const pyFiles: string[] = [];
+  const ipynbFiles: string[] = [];
+  const sb3Files: string[] = [];
+
+  const walk = (dir: string, depth: number) => {
+    if (depth > 3) return;
+    let items: fs.Dirent[] = [];
+    try {
+      items = fs
+        .readdirSync(dir, { withFileTypes: true })
+        .sort((a, b) => a.name.localeCompare(b.name, "en"));
+    } catch {
+      return;
+    }
+    for (const entry of items) {
+      if (entry.name.startsWith(".")) continue;
+      const lower = entry.name.toLowerCase();
+      if (
+        lower.startsWith("_spck_") ||
+        lower.startsWith("_portal_") ||
+        DIGEST_EXCLUDED_DIR_NAMES.has(lower)
+      ) {
+        continue;
+      }
+      let full = "";
+      try {
+        full = assertPathAllowed(path.join(dir, entry.name));
+        const st = fs.lstatSync(full);
+        if (st.isSymbolicLink()) continue;
+        if (st.isDirectory()) {
+          walk(full, depth + 1);
+        } else if (st.isFile()) {
+          const ext = path.extname(lower);
+          if (ext === ".html" || ext === ".htm") htmlFiles.push(full);
+          else if (ext === ".yyp") yypFiles.push(full);
+          else if (ext === ".yyz" && !lower.endsWith("_gamemaker.yyz")) yyzFiles.push(full);
+          else if (ext === ".ui") uiFiles.push(full);
+          else if (ext === ".py") pyFiles.push(full);
+          else if (ext === ".ipynb") ipynbFiles.push(full);
+          else if (ext === ".sb3") sb3Files.push(full);
+        }
+      } catch {
+        continue;
+      }
+    }
+  };
+  walk(safeRoot, 0);
+
+  // 1. HTML <title> / <h1>
+  if (htmlFiles.length > 0) {
+    htmlFiles.sort((a, b) => {
+      const rank = (p: string) => {
+        const bName = path.basename(p).toLowerCase();
+        if (bName === "index.html" || bName === "index.htm") return 0;
+        if (bName === "home.html" || bName === "trangchu.html") return 1;
+        return 2;
+      };
+      return rank(a) - rank(b);
+    });
+    for (const hf of htmlFiles.slice(0, 5)) {
+      try {
+        const html = fs.readFileSync(hf, "utf8").slice(0, 64000);
+        const titleMatch = html.match(/<title\b[^>]*>([\s\S]{1,150}?)<\/title>/i);
+        if (titleMatch) {
+          const cand = cleanCandidateTopicTitle(titleMatch[1], studentDisplayName);
+          if (cand) return cand;
+        }
+        const h1Match = html.match(/<h1\b[^>]*>([\s\S]{1,150}?)<\/h1>/i);
+        if (h1Match) {
+          const cand = cleanCandidateTopicTitle(h1Match[1], studentDisplayName);
+          if (cand) return cand;
+        }
+      } catch {}
+    }
+  }
+
+  // 2. GameMaker (.yyp / .yyz / room)
+  for (const yp of yypFiles) {
+    const cand = cleanCandidateTopicTitle(path.basename(yp, path.extname(yp)), studentDisplayName);
+    if (cand) return cand;
+  }
+  if (yyzFiles.length > 0) {
+    yyzFiles.sort((a, b) => {
+      try {
+        return fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs;
+      } catch {
+        return 0;
+      }
+    });
+    for (const yz of yyzFiles.slice(0, 2)) {
+      try {
+        const st = fs.statSync(yz);
+        if (st.size <= 512 * 1024 * 1024) {
+          const z = new AdmZip(fs.readFileSync(yz));
+          const entries = z.getEntries();
+          const yypEntry = entries.find((e) => e.entryName.toLowerCase().endsWith(".yyp"));
+          if (yypEntry) {
+            const stem = path.basename(yypEntry.entryName, path.extname(yypEntry.entryName));
+            const cand = cleanCandidateTopicTitle(stem, studentDisplayName);
+            if (cand) return cand;
+          }
+          for (const e of entries) {
+            const normE = e.entryName.replace(/\\/g, "/");
+            const rmMatch = normE.match(/^rooms\/([^/]+)\/\1\.yy$/i);
+            if (rmMatch) {
+              const roomCand = cleanCandidateTopicTitle(rmMatch[1], studentDisplayName);
+              if (roomCand) return roomCand;
+            }
+          }
+        }
+      } catch {}
+      const stemCand = cleanCandidateTopicTitle(
+        path.basename(yz, path.extname(yz)),
+        studentDisplayName
+      );
+      if (stemCand) return stemCand;
+    }
+  }
+
+  // 3. Python / PyQt / Streamlit / Pygame / Jupyter
+  for (const uf of uiFiles.slice(0, 6)) {
+    try {
+      const uiXml = fs.readFileSync(uf, "utf8").slice(0, 32000);
+      const wtMatch = uiXml.match(
+        /<property\s+name="windowTitle"[^>]*>\s*<string>([^<]{1,120})<\/string>/i
+      );
+      if (wtMatch) {
+        const cand = cleanCandidateTopicTitle(wtMatch[1], studentDisplayName);
+        if (cand) return cand;
+      }
+    } catch {}
+  }
+  for (const pf of pyFiles.slice(0, 6)) {
+    try {
+      const pyCode = fs.readFileSync(pf, "utf8").slice(0, 48000);
+      const patterns = [
+        /page_title\s*=\s*["']([^"'\r\n]{3,100})["']/i,
+        /\bst\.title\s*\(\s*["']([^"'\r\n]{3,100})["']/i,
+        /\bsetWindowTitle\s*\(\s*["']([^"'\r\n]{3,100})["']/i,
+        /\bset_caption\s*\(\s*["']([^"'\r\n]{3,100})["']/i,
+        /\.title\s*\(\s*["']([^"'\r\n]{3,100})["']\s*\)/i,
+      ];
+      for (const pat of patterns) {
+        const m = pyCode.match(pat);
+        if (m) {
+          const cand = cleanCandidateTopicTitle(m[1], studentDisplayName);
+          if (cand) return cand;
+        }
+      }
+    } catch {}
+  }
+  for (const nb of ipynbFiles.slice(0, 3)) {
+    try {
+      const nbObj = JSON.parse(fs.readFileSync(nb, "utf8"));
+      if (Array.isArray(nbObj?.cells)) {
+        for (const cell of nbObj.cells.slice(0, 5)) {
+          if (cell?.cell_type === "markdown") {
+            const src = Array.isArray(cell.source) ? cell.source.join("") : String(cell.source || "");
+            const hMatch = src.match(/^\s*#\s+([^\r\n]{3,100})/m);
+            if (hMatch) {
+              const cand = cleanCandidateTopicTitle(hMatch[1], studentDisplayName);
+              if (cand) return cand;
+            }
+          }
+        }
+      }
+    } catch {}
+    const nbStem = cleanCandidateTopicTitle(
+      path.basename(nb, path.extname(nb)),
+      studentDisplayName
+    );
+    if (nbStem) return nbStem;
+  }
+  for (const pf of pyFiles.slice(0, 4)) {
+    const pyStem = cleanCandidateTopicTitle(
+      path.basename(pf, path.extname(pf)),
+      studentDisplayName
+    );
+    if (pyStem) return pyStem;
+  }
+
+  // 4. Scratch (.sb3)
+  for (const sb of sb3Files.slice(0, 2)) {
+    const sbStem = cleanCandidateTopicTitle(
+      path.basename(sb, path.extname(sb)),
+      studentDisplayName
+    );
+    if (sbStem) return sbStem;
+  }
+
+  return "";
+}
+
+/**
+ * Formats `<Tên Đề Tài> - <Họ Tên>` safely within `<= 82` characters so that even when
+ * `formatSpckSessionTitle` appends `" — Buổi 12 (GĐ1)"` (`16` chars), the full title is `<= 98 <= 100` chars.
+ * Falls back to `SPCK <Họ Tên>` when no distinct project topic title is detected.
+ */
+export function buildAutoSuggestedSpckBaseTitle(
+  studentFolderPath: string,
+  studentDisplayName: string
+): string {
+  const cleanName = String(studentDisplayName || "").replace(/\s+/g, " ").trim() || "Học viên";
+  const topic = extractRealProjectTopicTitle(studentFolderPath, cleanName);
+  if (!topic) {
+    return sanitizeSpckTitle(`SPCK ${cleanName}`, cleanName);
+  }
+  const MAX_SAFE_BASE_LEN = 82;
+  const suffix = ` - ${cleanName}`;
+  const maxTopicLen = Math.max(12, MAX_SAFE_BASE_LEN - suffix.length);
+  let fittedTopic = topic;
+  if (fittedTopic.length > maxTopicLen) {
+    const sliced = fittedTopic.slice(0, maxTopicLen);
+    const lastSpace = sliced.lastIndexOf(" ");
+    fittedTopic = (lastSpace >= 10 ? sliced.slice(0, lastSpace) : sliced).trim();
+  }
+  return sanitizeSpckTitle(`${fittedTopic}${suffix}`, cleanName);
+}
+
+export interface InspectedProjectCodeSignals {
+  fileExtensions: string[];
+  slideCount: number;
+  hasFlexOrGridCss: boolean;
+  hasNavLinks: boolean;
+  hasEventBinding: boolean;
+  hasDomUpdate: boolean;
+  hasJsInteraction: boolean;
+  hasFirebaseCode: boolean;
+  hasRoboticsCode: boolean;
+  hasPandasOrCsvCode: boolean;
+  hasDataVisualizationCode: boolean;
+  hasMlOrAiModelCode: boolean;
+  hasStreamlitCode: boolean;
+  hasPythonOopOrFunctions: boolean;
+  hasJupyterNotebook: boolean;
+  hasPyQtUiCode: boolean;
+  hasSignalSlotBinding: boolean;
+  hasJsonStorageCode: boolean;
+  hasGameMakerProject: boolean;
+  hasGmlScripts: boolean;
+  hasScratchProject: boolean;
+}
+
+/**
+ * Inspects verified source files in `studentFolderPath` and `attachments` across all MindX tracks
+ * (`WEB`, `COMPUTER_SCIENCE` `CSA`/`CSI`/`CSB`, `PYTHON_APP`, `GAMEMAKER`, `SCRATCH`, `ROBOTICS`)
+ * to produce strictly factual code-evidence flags for `suggestSpckQuickTagsFromProject`.
+ */
+export function inspectStudentProjectCodeSignals(
+  studentFolderPath?: string | null,
+  attachments: string[] = []
+): InspectedProjectCodeSignals {
+  const inspectedSourcePaths: string[] = [...(attachments || [])].filter(Boolean);
+
+  if (studentFolderPath && String(studentFolderPath).trim()) {
+    try {
+      const safeDir = assertPathAllowed(studentFolderPath);
+      if (fs.existsSync(safeDir) && fs.statSync(safeDir).isDirectory()) {
+        const walkSources = (curDir: string, depth: number) => {
+          if (depth > 3 || inspectedSourcePaths.length >= 100) return;
+          let dirEntries: fs.Dirent[] = [];
+          try {
+            dirEntries = fs.readdirSync(curDir, { withFileTypes: true });
+          } catch {
+            return;
+          }
+          for (const de of dirEntries) {
+            if (inspectedSourcePaths.length >= 100) break;
+            if (de.name.startsWith(".")) continue;
+            const lowerDe = de.name.toLowerCase();
+            if (
+              lowerDe.startsWith("_spck_") ||
+              lowerDe.startsWith("_portal_") ||
+              DIGEST_EXCLUDED_DIR_NAMES.has(lowerDe) ||
+              lowerDe.endsWith("_web_package.zip") ||
+              lowerDe.endsWith("_app_package.zip") ||
+              lowerDe.endsWith("_robotics_package.zip") ||
+              lowerDe.endsWith("_gamemaker.yyz")
+            ) {
+              continue;
+            }
+            let fullDe = "";
+            try {
+              fullDe = assertPathAllowed(path.join(curDir, de.name));
+              const st = fs.lstatSync(fullDe);
+              if (st.isSymbolicLink()) continue;
+              if (st.isDirectory()) {
+                walkSources(fullDe, depth + 1);
+              } else if (
+                st.isFile() &&
+                /\.(?:html?|css|m?js|py|ui|qss|ipynb|json|csv|gml|yy|yyp|yyz|sb3|pptx|pdf)$/i.test(
+                  lowerDe
+                )
+              ) {
+                if (!inspectedSourcePaths.includes(fullDe)) {
+                  inspectedSourcePaths.push(fullDe);
+                }
+              }
+            } catch {}
+          }
+        };
+        walkSources(safeDir, 0);
+      }
+    } catch {}
+  }
+
+  const fileExts = Array.from(
+    new Set(inspectedSourcePaths.map((p) => path.extname(p).toLowerCase()).filter(Boolean))
+  );
+
+  let hasFlexOrGridCss = false;
+  let hasNavLinks = false;
+  let hasEventBinding = false;
+  let hasDomUpdate = false;
+  let hasFirebaseCode = false;
+  let hasPandasOrCsvCode = false;
+  let hasDataVisualizationCode = false;
+  let hasMlOrAiModelCode = false;
+  let hasStreamlitCode = false;
+  let hasPythonOopOrFunctions = false;
+  let hasJupyterNotebook = false;
+  let hasPyQtUiCode = false;
+  let hasSignalSlotBinding = false;
+  let hasJsonStorageCode = false;
+  let hasGameMakerProject = false;
+  let hasGmlScripts = false;
+  let hasScratchProject = false;
+
+  const hasRoboticsCode = (attachments || []).some((p) =>
+    String(p || "").toLowerCase().endsWith("_robotics_package.zip")
+  );
+
+  const stripCssCommentsAndStrings = (cssCode: string) =>
+    cssCode.replace(
+      /\/\*[\s\S]*?\*\/|("(?:\\[\s\S]|[^"\\\r\n])*"|'(?:\\[\s\S]|[^'\\\r\n])*')/g,
+      (_match, strLiteral) => (strLiteral ? '""' : " ")
+    );
+
+  const analyzeJsCodeSyntax = (
+    code: string,
+    sourceType: "script" | "module" = "script"
+  ): { executableJs: string; importSpecifiers: string[] } => {
+    const importSpecifiers: string[] = [];
+    let out = "";
+    let prevEnd = 0;
+    let prevTok: { label: string; value?: unknown } | null = null;
+    let prevPrevTok: { label: string; value?: unknown } | null = null;
+    let prevPrevPrevTok: { label: string; value?: unknown } | null = null;
+    let inImportOrExportStmt = false;
+    let braceDepthInImport = 0;
+
+    try {
+      for (const tok of acornScanner.tokenizer(code, {
+        ecmaVersion: "latest",
+        sourceType,
+      })) {
+        if (tok.start > prevEnd) {
+          out += code.slice(prevEnd, tok.start).includes("\n") ? "\n" : " ";
+        }
+        const label = tok.type.label;
+        if ((label === "import" || label === "export") && prevTok?.label !== ".") {
+          inImportOrExportStmt = true;
+          braceDepthInImport = 0;
+        } else if (inImportOrExportStmt) {
+          if (label === "{") {
+            braceDepthInImport++;
+            if (braceDepthInImport > 1) inImportOrExportStmt = false;
+          } else if (label === "}") {
+            braceDepthInImport = Math.max(0, braceDepthInImport - 1);
+          } else if (braceDepthInImport === 0) {
+            const isValidHeaderToken = label === "*" || label === "," || label === "name";
+            if (!isValidHeaderToken && label !== "string") {
+              inImportOrExportStmt = false;
+            }
+          }
+        }
+
+        if (label === "string") {
+          const isStaticImport =
+            (prevTok?.label === "import" && prevPrevTok?.label !== ".") ||
+            (inImportOrExportStmt &&
+              braceDepthInImport === 0 &&
+              prevTok?.label === "name" &&
+              prevTok?.value === "from");
+          const isDynamicImportOrRequire =
+            prevTok?.label === "(" &&
+            prevPrevPrevTok?.label !== "." &&
+            prevPrevPrevTok?.label !== "function" &&
+            (prevPrevTok?.label === "import" ||
+              (prevPrevTok?.label === "name" && prevPrevTok?.value === "require"));
+          if (
+            (isStaticImport || isDynamicImportOrRequire) &&
+            typeof tok.value === "string" &&
+            tok.value
+          ) {
+            importSpecifiers.push(tok.value);
+          }
+          if (braceDepthInImport === 0) {
+            inImportOrExportStmt = false;
+          }
+          out += '""';
+        } else if (label === "template") {
+          // omit raw template text
+        } else if (label === "regexp") {
+          out += "/_/";
+        } else if (label === "eof") {
+          return { executableJs: out, importSpecifiers };
+        } else {
+          out += code.slice(tok.start, tok.end);
+        }
+
+        prevEnd = tok.end;
+        prevPrevPrevTok = prevPrevTok;
+        prevPrevTok = prevTok;
+        prevTok = { label, value: tok.value };
+      }
+      return { executableJs: out, importSpecifiers };
+    } catch {
+      return { executableJs: out, importSpecifiers };
+    }
+  };
+
+  const inspectJsSyntax = (jsSource: string, sourceType: "script" | "module" = "script") => {
+    const { executableJs: syntaxOnly, importSpecifiers } = analyzeJsCodeSyntax(
+      jsSource,
+      sourceType
+    );
+    if (/\baddEventListener\s*\(|\bon(?:click|submit|change|input)\s*=/i.test(syntaxOnly)) {
+      hasEventBinding = true;
+    }
+    if (
+      /\.(?:textContent|innerHTML|innerText)\s*=|\b(?:createElement|appendChild|removeChild|replaceChildren)\s*\(/i.test(
+        syntaxOnly
+      )
+    ) {
+      hasDomUpdate = true;
+    }
+    if (
+      importSpecifiers.some((spec) => /(?:firebase|firestore)/i.test(spec)) ||
+      /\b(?:initializeApp|getFirestore|getAuth|getDatabase|signInWithEmailAndPassword|createUserWithEmailAndPassword|signInWithPopup|onAuthStateChanged|collection|addDoc|getDocs|getDoc|setDoc|updateDoc|deleteDoc|onSnapshot)\s*\(|\bfirebase\s*\.\s*(?:initializeApp|auth|firestore|database)\s*\(/.test(
+        syntaxOnly
+      )
+    ) {
+      hasFirebaseCode = true;
+    }
+  };
+
+  const inspectPythonSource = (pyCode: string) => {
+    if (/\bpandas\b|\bread_csv\s*\(|\bread_excel\s*\(|\bDataFrame\b/i.test(pyCode)) {
+      hasPandasOrCsvCode = true;
+    }
+    if (/\b(?:matplotlib|seaborn|plotly|pyplot|plt\.|sns\.|px\.)/i.test(pyCode)) {
+      hasDataVisualizationCode = true;
+    }
+    if (
+      /\b(?:sklearn|scikit|train_test_split|RandomForest|LinearRegression|LogisticRegression|DecisionTree|KNeighbors|KMeans|SVC|XGB|LGBM|tensorflow|keras|torch|cv2|mediapipe|ultralytics|YOLO|genai|openai)\b/i.test(
+        pyCode
+      )
+    ) {
+      hasMlOrAiModelCode = true;
+    }
+    if (/\bstreamlit\b|\bst\.(?:title|header|sidebar|columns|tabs|dataframe|plotly_chart|pyplot|button|selectbox|file_uploader)\b/i.test(pyCode)) {
+      hasStreamlitCode = true;
+    }
+    if (/^\s*(?:class|def)\s+[A-Za-z_][A-Za-z0-9_]*\s*[:(]/m.test(pyCode)) {
+      hasPythonOopOrFunctions = true;
+    }
+    if (/\b(?:PyQt6|PyQt5|PySide6|uic\.loadUi|QMainWindow|QWidget|QDialog)\b/i.test(pyCode)) {
+      hasPyQtUiCode = true;
+    }
+    if (/\.connect\s*\(|\bpyqtSignal\b/i.test(pyCode)) {
+      hasSignalSlotBinding = true;
+    }
+    if (/\bjson\.(?:load|loads|dump|dumps)\s*\(/i.test(pyCode)) {
+      hasJsonStorageCode = true;
+    }
+  };
+
+  for (const attPath of inspectedSourcePaths) {
+    const lowerAtt = String(attPath || "").toLowerCase();
+    try {
+      const safeAtt = assertPathAllowed(attPath);
+      if (!fs.existsSync(safeAtt) || fs.lstatSync(safeAtt).isSymbolicLink()) continue;
+
+      if (lowerAtt.endsWith(".html") || lowerAtt.endsWith(".htm")) {
+        const rawHtml = fs
+          .readFileSync(safeAtt, "utf-8")
+          .slice(0, 100000)
+          .replace(/<!--[\s\S]*?-->/g, " ");
+        const htmlInlineStyles: string[] = [];
+        const htmlInlineScripts: Array<{ body: string; sourceType: "script" | "module" }> = [];
+        const htmlMarkupParts: string[] = [];
+        let lastHtmlIdx = 0;
+
+        for (const blockMatch of rawHtml.matchAll(
+          /<script\b([^>]*)>([\s\S]*?)<\/script>|<style\b([^>]*)>([\s\S]*?)<\/style>/gi
+        )) {
+          const matchStart = blockMatch.index ?? 0;
+          if (matchStart > lastHtmlIdx) {
+            htmlMarkupParts.push(rawHtml.slice(lastHtmlIdx, matchStart));
+          }
+          lastHtmlIdx = matchStart + blockMatch[0].length;
+          if (blockMatch[1] !== undefined || blockMatch[2] !== undefined) {
+            const scriptAttrs = blockMatch[1] || "";
+            const scriptBody = blockMatch[2] || "";
+            const isModuleScript = /\btype\s*=\s*(?:["']\s*module\s*["']|module\b)/i.test(
+              scriptAttrs
+            );
+            if (/\bsrc\s*=\s*["'][^"']*(?:firebase|firestore)[^"']*["']/i.test(scriptAttrs)) {
+              hasFirebaseCode = true;
+            }
+            if (scriptBody.trim()) {
+              htmlInlineScripts.push({
+                body: scriptBody,
+                sourceType: isModuleScript ? "module" : "script",
+              });
+            }
+          } else {
+            const styleBody = blockMatch[4] || "";
+            if (styleBody.trim()) {
+              htmlInlineStyles.push(styleBody);
+            }
+          }
+        }
+        if (lastHtmlIdx < rawHtml.length) {
+          htmlMarkupParts.push(rawHtml.slice(lastHtmlIdx));
+        }
+        const markupOnly = htmlMarkupParts.join(" ");
+
+        for (const styleBlock of htmlInlineStyles) {
+          const cleanStyle = stripCssCommentsAndStrings(styleBlock);
+          if (/display\s*:\s*(?:inline-)?(?:flex|grid)/i.test(cleanStyle)) {
+            hasFlexOrGridCss = true;
+          }
+        }
+        if (
+          /<[a-z0-9]+\b[^>]*\bstyle\s*=\s*["'][^"']*display\s*:\s*(?:inline-)?(?:flex|grid)[^"']*["']/i.test(
+            markupOnly
+          ) ||
+          /<[a-z0-9]+\b[^>]*\bclass\s*=\s*["'][^"']*\bd-(?:inline-)?(?:flex|grid)\b[^"']*["']/i.test(
+            markupOnly
+          )
+        ) {
+          hasFlexOrGridCss = true;
+        }
+        if (/<nav\b[^>]*>(?:(?!<\/nav>)[\s\S])*?<a\b/i.test(markupOnly)) {
+          hasNavLinks = true;
+        }
+        if (/<[a-z0-9]+\b[^>]*\bon(?:click|submit|change|input)\s*=/i.test(markupOnly)) {
+          hasEventBinding = true;
+        }
+        for (const inlineScript of htmlInlineScripts) {
+          inspectJsSyntax(inlineScript.body, inlineScript.sourceType);
+        }
+      } else if (lowerAtt.endsWith(".css")) {
+        const rawCss = stripCssCommentsAndStrings(
+          fs.readFileSync(safeAtt, "utf-8").slice(0, 100000)
+        );
+        if (/display\s*:\s*(?:inline-)?(?:flex|grid)/i.test(rawCss)) {
+          hasFlexOrGridCss = true;
+        }
+      } else if (lowerAtt.endsWith(".js") || lowerAtt.endsWith(".mjs")) {
+        inspectJsSyntax(
+          fs.readFileSync(safeAtt, "utf-8").slice(0, 100000),
+          lowerAtt.endsWith(".mjs") ? "module" : "script"
+        );
+      } else if (lowerAtt.endsWith(".py")) {
+        inspectPythonSource(fs.readFileSync(safeAtt, "utf-8").slice(0, 100000));
+      } else if (lowerAtt.endsWith(".ipynb")) {
+        const rawNb = fs.readFileSync(safeAtt, "utf-8").slice(0, 300000);
+        const nbJson = JSON.parse(rawNb);
+        if (Array.isArray(nbJson?.cells) && nbJson.cells.length > 0) {
+          hasJupyterNotebook = true;
+          const codeCells = nbJson.cells
+            .filter((c: any) => c?.cell_type === "code")
+            .map((c: any) => (Array.isArray(c.source) ? c.source.join("") : String(c.source || "")))
+            .join("\n");
+          if (codeCells.trim()) {
+            inspectPythonSource(codeCells.slice(0, 120000));
+          }
+        }
+      } else if (lowerAtt.endsWith(".ui")) {
+        const rawUi = fs.readFileSync(safeAtt, "utf-8").slice(0, 64000);
+        if (/<ui\b/i.test(rawUi) && /<widget\b/i.test(rawUi)) {
+          hasPyQtUiCode = true;
+        }
+      } else if (lowerAtt.endsWith(".csv")) {
+        const st = fs.statSync(safeAtt);
+        if (st.size > 10) {
+          hasPandasOrCsvCode = true;
+        }
+      } else if (lowerAtt.endsWith(".yyp")) {
+        hasGameMakerProject = true;
+      } else if (lowerAtt.endsWith(".gml")) {
+        const gmlTxt = fs.readFileSync(safeAtt, "utf-8").trim();
+        if (gmlTxt.length > 0) {
+          hasGmlScripts = true;
+        }
+      } else if (lowerAtt.endsWith(".yyz") || /[\\/]spck_lms_trim_[^\\/]+\.zip$/i.test(lowerAtt)) {
+        const st = fs.statSync(safeAtt);
+        if (st.size > 0 && st.size <= 512 * 1024 * 1024) {
+          const z = new AdmZip(fs.readFileSync(safeAtt));
+          const entries = z.getEntries();
+          if (entries.some((e) => e.entryName.toLowerCase().endsWith(".yyp"))) {
+            hasGameMakerProject = true;
+          }
+          if (entries.some((e) => e.entryName.toLowerCase().endsWith(".gml") && (e.header?.size || 0) > 0)) {
+            hasGmlScripts = true;
+          }
+        }
+      } else if (lowerAtt.endsWith(".sb3")) {
+        const sbCheck = parseScratchSb3Buffer(fs.readFileSync(safeAtt), path.basename(safeAtt));
+        if (sbCheck.success) {
+          hasScratchProject = true;
+        }
+      }
+    } catch {}
+  }
+
+  return {
+    fileExtensions: fileExts,
+    slideCount: inspectedSourcePaths.filter((p) => /\.(?:pptx|pdf)$/i.test(p)).length,
+    hasFlexOrGridCss,
+    hasNavLinks,
+    hasEventBinding,
+    hasDomUpdate,
+    hasJsInteraction: hasEventBinding && hasDomUpdate,
+    hasFirebaseCode,
+    hasRoboticsCode,
+    hasPandasOrCsvCode,
+    hasDataVisualizationCode,
+    hasMlOrAiModelCode,
+    hasStreamlitCode,
+    hasPythonOopOrFunctions,
+    hasJupyterNotebook,
+    hasPyQtUiCode,
+    hasSignalSlotBinding,
+    hasJsonStorageCode,
+    hasGameMakerProject,
+    hasGmlScripts,
+    hasScratchProject,
+  };
 }
 
 /**
@@ -2086,6 +3162,21 @@ export function scanStudentSpckFolder(
   const hasUnpackedGameMakerProject = !hasRawYyzArchive && gameMakerYypFiles.length > 0;
   const hasAppProjectCodeFiles = appCodePrimaryFiles.length > 0;
   const hasCodeOrUiProjectFiles = hasWebProjectHtmlFiles || hasAppProjectCodeFiles;
+  const allRawYyzFiles = appCodePrimaryFiles
+    .filter((p) => p.toLowerCase().endsWith(".yyz"))
+    .sort((a, b) => {
+      try {
+        const diff = fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs;
+        if (Math.abs(diff) > 1) return diff;
+      } catch {}
+      return path.basename(b).localeCompare(path.basename(a), "en");
+    });
+  const primaryNewestYyzPath = allRawYyzFiles[0] || "";
+  const primaryNewestYyzKey = primaryNewestYyzPath
+    ? path.resolve(primaryNewestYyzPath).toLowerCase()
+    : "";
+  const trimmedSourceArchiveKeys = new Set<string>();
+  let processedPrimaryYyz = false;
   const ownerRootPhotoPaths = findOwnerProvidedRootPhotos(safeFolderPath);
   const ownerRootPhotoKeySet = new Set(
     ownerRootPhotoPaths.map((p) => path.resolve(p).toLowerCase())
@@ -2368,6 +3459,17 @@ export function scanStudentSpckFolder(
 
     // 3. Check if this is an allowed project attachment
     if (ALLOWED_ATTACHMENT_EXTENSIONS.has(ext)) {
+      if (ext === ".yyz") {
+        const entryKey = path.resolve(fullEntryPath).toLowerCase();
+        if (allRawYyzFiles.length > 1 && primaryNewestYyzKey && entryKey !== primaryNewestYyzKey) {
+          warnings.push(
+            `Đã ưu tiên giữ bản GameMaker mới nhất '${path.basename(primaryNewestYyzPath)}' và bỏ qua bản cũ trùng lặp '${entry.name}' cho LMS.`
+          );
+          continue;
+        }
+        processedPrimaryYyz = true;
+      }
+
       let secretCheckBuf: Buffer | undefined;
       if (ext === ".json" && lstat.size > 0 && lstat.size <= 64 * 1024) {
         try {
@@ -2382,6 +3484,20 @@ export function scanStudentSpckFolder(
       }
       const attValidation = validateSpckAttachmentFile(fullEntryPath);
       if (!attValidation.valid) {
+        if (ext === ".yyz" || ext === ".zip") {
+          const trimmedRes = buildTrimmedLmsZipForOversizedArchive(
+            fullEntryPath,
+            preferredStudentName || folderName
+          );
+          if (trimmedRes) {
+            validAttachments.push(trimmedRes.zipPath);
+            trimmedSourceArchiveKeys.add(path.resolve(fullEntryPath).toLowerCase());
+            warnings.push(
+              `Đã tự động tạo gói rút gọn cho LMS '${path.basename(trimmedRes.zipPath)}' (lược bỏ ${trimmedRes.droppedMediaEntries.length} tệp âm thanh/media > 15MB; bản gốc '${entry.name}' vẫn giữ 100% cho Google Drive).`
+            );
+            continue;
+          }
+        }
         warnings.push(
           attValidation.reason ||
             `Tài liệu đính kèm '${entry.name}' bị hỏng cấu trúc nên bị loại bỏ.`
@@ -2416,6 +3532,28 @@ export function scanStudentSpckFolder(
     }
 
     warnings.push(`Đã bỏ qua file không thuộc danh mục hỗ trợ SPCK: '${entry.name}'`);
+  }
+
+  // Handle `.yyz` located inside a subfolder when no root `.yyz` was processed yet
+  if (!processedPrimaryYyz && primaryNewestYyzPath) {
+    const subYyzCheck = validateSpckAttachmentFile(primaryNewestYyzPath);
+    if (subYyzCheck.valid) {
+      validAttachments.unshift(primaryNewestYyzPath);
+    } else {
+      const trimmedSub = buildTrimmedLmsZipForOversizedArchive(
+        primaryNewestYyzPath,
+        preferredStudentName || folderName
+      );
+      if (trimmedSub) {
+        validAttachments.unshift(trimmedSub.zipPath);
+        trimmedSourceArchiveKeys.add(path.resolve(primaryNewestYyzPath).toLowerCase());
+        warnings.push(
+          `Đã tự động tạo gói rút gọn cho LMS '${path.basename(trimmedSub.zipPath)}' từ '${path.basename(primaryNewestYyzPath)}' (lược bỏ ${trimmedSub.droppedMediaEntries.length} tệp âm thanh/media > 15MB).`
+        );
+      } else if (subYyzCheck.reason) {
+        warnings.push(subYyzCheck.reason);
+      }
+    }
   }
 
   const safeSlugForBundle =
@@ -2770,7 +3908,8 @@ export function scanStudentSpckFolder(
         if (rel.toLowerCase().endsWith(".yyp")) {
           return hasUnpackedGameMakerProject;
         }
-        if (validAttKeySet.has(path.resolve(full).toLowerCase())) {
+        const resolvedLower = path.resolve(full).toLowerCase();
+        if (validAttKeySet.has(resolvedLower) || trimmedSourceArchiveKeys.has(resolvedLower)) {
           return true;
         }
         return validateSpckAttachmentFile(full).valid;
@@ -2990,10 +4129,9 @@ export function scanStudentSpckFolder(
   const attachments = validAttachments.slice(0, MAX_SPCK_ATTACHMENTS);
 
   const displayName = (preferredStudentName || folderName).trim();
-  const rawProjectTitle = sanitizeSpckTitle(
-    customTitleFromLinks || `SPCK ${displayName}`,
-    displayName
-  );
+  const rawProjectTitle = customTitleFromLinks
+    ? sanitizeSpckTitle(customTitleFromLinks, displayName)
+    : buildAutoSuggestedSpckBaseTitle(safeFolderPath, displayName);
   const projectTitle = rawProjectTitle;
   const thumbnailInspection = inspectSpckThumbnail(thumbnailPath);
 
@@ -3620,6 +4758,9 @@ export async function scanStudentSpckFolderAsync(
     const validAttKeySet = new Set(
       (initial.allAttachments || initial.attachments).map((p) => path.resolve(p).toLowerCase())
     );
+    const hasTrimmedLmsArchive = (initial.allAttachments || initial.attachments).some((p) =>
+      /[\\/]spck_lms_trim_[^\\/]+\.zip$/i.test(p)
+    );
     let hasUnpackedYyp = false;
     try {
       const topEntries = fs.readdirSync(safeFolderPath, { withFileTypes: true });
@@ -3635,6 +4776,9 @@ export async function scanStudentSpckFolderAsync(
           return hasUnpackedYyp;
         }
         if (validAttKeySet.has(path.resolve(full).toLowerCase())) {
+          return true;
+        }
+        if (rel.toLowerCase().endsWith(".yyz") && hasTrimmedLmsArchive) {
           return true;
         }
         return validateSpckAttachmentFile(full).valid;

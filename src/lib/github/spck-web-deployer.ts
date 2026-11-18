@@ -10,12 +10,14 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   jobLogRepo,
+  spckSessionRepo,
   spckUploadRepo,
   studentRepo,
   type SpckSessionNumber,
   type SpckUploadRecord,
 } from "../db/sqlite";
 import {
+  computeStudentFolderContentDigest,
   isCourseExemptFromSpck,
   MAX_SPCK_RELATED_LINKS,
   type SpckRelatedLink,
@@ -99,6 +101,7 @@ export interface SpckWebDeployStudentResult {
   studentId: string;
   fullName: string;
   status: "SUCCESS" | "SKIPPED_NO_HTML" | "FAILED";
+  skippedUnchanged?: boolean;
   liveWebUrl?: string;
   entryHtmlFile?: string;
   copiedFilesCount: number;
@@ -110,7 +113,9 @@ export interface SpckWebDeployBatchResult {
   repoUrl: string;
   pagesBaseUrl: string;
   totalRequested: number;
+  successCount?: number;
   deployedStudentsCount: number;
+  skippedUnchangedCount?: number;
   skippedNoHtmlCount: number;
   failedStudentsCount: number;
   results: SpckWebDeployStudentResult[];
@@ -122,6 +127,8 @@ export interface SpckWebDeployOptions {
   studentIds?: string[];
   sessionNumber?: SpckSessionNumber;
   syncAllUnverifiedSessions?: boolean;
+  forceReupload?: boolean;
+  forceRedeploy?: boolean;
 }
 
 function isEmergencyStopped(): boolean {
@@ -445,6 +452,12 @@ function copyWebDirectoryRecursive(
   return copiedCount;
 }
 
+const NON_INTERACTIVE_GIT_ENV: NodeJS.ProcessEnv = {
+  ...process.env,
+  GCM_INTERACTIVE: "never",
+  GIT_TERMINAL_PROMPT: "0",
+};
+
 function runGitCommand(args: string[], cwd: string, timeoutMs = 60_000): string {
   assertEmergencyNotStopped();
   return execFileSync(
@@ -455,6 +468,7 @@ function runGitCommand(args: string[], cwd: string, timeoutMs = 60_000): string 
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "pipe"],
       timeout: timeoutMs,
+      env: NON_INTERACTIVE_GIT_ENV,
     }
   ).trim();
 }
@@ -498,6 +512,7 @@ function ensureLocalGitRepoReady(repoUrl: string): string {
         encoding: "utf-8",
         stdio: ["ignore", "pipe", "pipe"],
         timeout: 120_000,
+        env: NON_INTERACTIVE_GIT_ENV,
       }
     );
   };
@@ -655,7 +670,9 @@ export class SpckWebDeployer {
         repoUrl,
         pagesBaseUrl,
         totalRequested: 0,
+        successCount: 0,
         deployedStudentsCount: 0,
+        skippedUnchangedCount: 0,
         skippedNoHtmlCount: 0,
         failedStudentsCount: 0,
         results: [],
@@ -664,13 +681,70 @@ export class SpckWebDeployer {
 
     const studentsInClass = studentRepo.findByClass(normalizedClassId);
     const studentMap = new Map(studentsInClass.map((s) => [s.studentId, s]));
+    const forceDeploy = Boolean(options.forceReupload || options.forceRedeploy);
+
+    const syncWebLinkSessionsIfNeeded = (studentId: string) => {
+      if (options.syncAllUnverifiedSessions) {
+        for (const slot of [12, 13, 14] as const) {
+          try {
+            const sessRow = spckSessionRepo.findOne(normalizedClassId, studentId, slot);
+            if (
+              !sessRow ||
+              sessRow.lastVerifiedAt ||
+              sessRow.draftStatus === "VERIFIED" ||
+              sessRow.draftStatus === "SAVING" ||
+              sessRow.draftStatus === "APPROVED"
+            ) {
+              continue;
+            }
+            const sessLinks = parseJsonArraySafe<SpckRelatedLink>(sessRow.relatedLinksJson);
+            const hasPagesInSess = sessLinks.some((l) =>
+              String(l.url || "").includes(".github.io/")
+            );
+            if (!hasPagesInSess) {
+              spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
+                normalizedClassId,
+                studentId,
+                slot
+              );
+            }
+          } catch {}
+        }
+      } else if (options.sessionNumber) {
+        try {
+          const sessRow = spckSessionRepo.findOne(
+            normalizedClassId,
+            studentId,
+            options.sessionNumber
+          );
+          if (
+            sessRow &&
+            !sessRow.lastVerifiedAt &&
+            sessRow.draftStatus !== "VERIFIED" &&
+            sessRow.draftStatus !== "SAVING"
+          ) {
+            const sessLinks = parseJsonArraySafe<SpckRelatedLink>(sessRow.relatedLinksJson);
+            const hasPagesInSess = sessLinks.some((l) =>
+              String(l.url || "").includes(".github.io/")
+            );
+            if (!hasPagesInSess) {
+              spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
+                normalizedClassId,
+                studentId,
+                options.sessionNumber
+              );
+            }
+          }
+        } catch {}
+      }
+    };
 
     const results: SpckWebDeployStudentResult[] = [];
     let skippedNoHtmlCount = 0;
+    let skippedUnchangedCount = 0;
     let failedStudentsCount = 0;
 
-    // Pre-validate & locate HTML entry points BEFORE touching Git so classes without HTML
-    // (e.g. pure Python CSA/CSI projects) skip cleanly in <5ms with zero network/git overhead.
+    // Pre-validate, locate HTML entry points, and fast-skip unchanged students (< 10ms) BEFORE touching Git
     const htmlReadyTargets: Array<{
       record: SpckUploadRecord;
       fullName: string;
@@ -702,6 +776,36 @@ export class SpckWebDeployer {
           });
           continue;
         }
+
+        if (!forceDeploy) {
+          const existingLinks = parseJsonArraySafe<SpckRelatedLink>(record.relatedLinksJson);
+          const existingPagesLink = existingLinks.find((l) =>
+            String(l.url || "").includes(".github.io/")
+          );
+          if (existingPagesLink?.url && record.lastWebDeployedDigest) {
+            const digestInfo = computeStudentFolderContentDigest(record.localFolderPath);
+            if (
+              digestInfo.readableDirectory &&
+              digestInfo.filesCount > 0 &&
+              digestInfo.digest &&
+              digestInfo.digest === record.lastWebDeployedDigest
+            ) {
+              syncWebLinkSessionsIfNeeded(record.studentId);
+              skippedUnchangedCount++;
+              results.push({
+                studentId: record.studentId,
+                fullName,
+                status: "SUCCESS",
+                skippedUnchanged: true,
+                liveWebUrl: existingPagesLink.url,
+                entryHtmlFile: webInfo.entryRelativePath,
+                copiedFilesCount: 0,
+              });
+              continue;
+            }
+          }
+        }
+
         htmlReadyTargets.push({ record, fullName, webInfo });
       } catch (err) {
         failedStudentsCount++;
@@ -721,7 +825,9 @@ export class SpckWebDeployer {
         repoUrl,
         pagesBaseUrl,
         totalRequested: targetRecords.length,
+        successCount: skippedUnchangedCount,
         deployedStudentsCount: 0,
+        skippedUnchangedCount,
         skippedNoHtmlCount,
         failedStudentsCount,
         results,
@@ -890,7 +996,7 @@ export class SpckWebDeployer {
         ["status", "--porcelain", "--", ...pathsToStage],
         repoDir
       );
-      if (statusOut.length > 0) {
+      if (statusOut.trim().length > 0) {
         runGitCommand(
           [
             "-c",
@@ -903,31 +1009,31 @@ export class SpckWebDeployer {
           ],
           repoDir
         );
-      }
 
-      assertEmergencyNotStopped();
-      try {
-        runGitCommand(["push", "origin", "HEAD:main"], repoDir, 180_000);
-      } catch (pushErr) {
-        const pushMsg = pushErr instanceof Error ? pushErr.message : String(pushErr);
-        const lowerPush = pushMsg.toLowerCase();
-        if (
-          lowerPush.includes("authentication failed") ||
-          lowerPush.includes("could not read username") ||
-          lowerPush.includes("logon failed") ||
-          lowerPush.includes("permission to") ||
-          lowerPush.includes(" 403") ||
-          lowerPush.includes("requested url returned error: 403") ||
-          lowerPush.includes("credential")
-        ) {
-          throw new Error(
-            `Chưa đăng nhập GitHub để đẩy Web SPCK lên kho (${repoUrl}). Khi bấm đẩy lại, vui lòng bấm "Sign in with your browser" (tài khoản Banhtalon) trên cửa sổ GitHub Sign in rồi thử lại.`
-          );
+        assertEmergencyNotStopped();
+        try {
+          runGitCommand(["push", "origin", "HEAD:main"], repoDir, 180_000);
+        } catch (pushErr) {
+          const pushMsg = pushErr instanceof Error ? pushErr.message : String(pushErr);
+          const lowerPush = pushMsg.toLowerCase();
+          if (
+            lowerPush.includes("authentication failed") ||
+            lowerPush.includes("could not read username") ||
+            lowerPush.includes("logon failed") ||
+            lowerPush.includes("permission to") ||
+            lowerPush.includes(" 403") ||
+            lowerPush.includes("requested url returned error: 403") ||
+            lowerPush.includes("credential")
+          ) {
+            throw new Error(
+              `Chưa đăng nhập GitHub để đẩy Web SPCK lên kho (${repoUrl}). Khi bấm đẩy lại, vui lòng bấm "Sign in with your browser" (tài khoản Banhtalon) trên cửa sổ GitHub Sign in rồi thử lại.`
+            );
+          }
+          throw pushErr;
         }
-        throw pushErr;
       }
 
-      // Update SQLite relatedLinksJson for all deployed students
+      // Update SQLite relatedLinksJson + lastWebDeployedDigest for all deployed students
       for (const item of deployedQueue) {
         const latestDbRecord = spckUploadRepo.findOne(
           normalizedClassId,
@@ -974,12 +1080,20 @@ export class SpckWebDeployer {
           continue;
         }
 
+        const postDeployDigest = computeStudentFolderContentDigest(
+          item.record.localFolderPath || ""
+        );
+
         // Rule 4: Update shared resource pool without overwriting session submission history
         spckUploadRepo.updateSharedResources(
           normalizedClassId,
           item.record.studentId,
           {
             relatedLinksJson: JSON.stringify(updatedLinks),
+            lastWebDeployedDigest:
+              postDeployDigest.readableDirectory && postDeployDigest.filesCount > 0
+                ? postDeployDigest.digest
+                : "",
             syncSessionNumber: options.sessionNumber,
             syncAllUnverifiedSessions: options.syncAllUnverifiedSessions,
           },
@@ -1010,14 +1124,19 @@ export class SpckWebDeployer {
       }
     }
 
-    const actualSuccessCount = results.filter((r) => r.status === "SUCCESS").length;
+    const totalSuccessCount = results.filter((r) => r.status === "SUCCESS").length;
+    const newlyDeployedCount = results.filter(
+      (r) => r.status === "SUCCESS" && !r.skippedUnchanged
+    ).length;
 
     return {
       classId: normalizedClassId,
       repoUrl,
       pagesBaseUrl,
       totalRequested: targetRecords.length,
-      deployedStudentsCount: actualSuccessCount,
+      successCount: totalSuccessCount,
+      deployedStudentsCount: newlyDeployedCount,
+      skippedUnchangedCount,
       skippedNoHtmlCount,
       failedStudentsCount,
       results,

@@ -15,6 +15,8 @@ export interface StudentOption {
   classId: string;
   fullName: string;
   isActive: number;
+  attendanceStatus?: string | null;
+  sessionAttendance?: Partial<Record<"12" | "13" | "14", string>>;
 }
 
 export interface RelatedLinkItem {
@@ -93,6 +95,7 @@ export interface ThumbnailInspectionUI {
   is16By9: boolean;
   aspectRatioLabel: string;
   badgeLabel: string;
+  previewDataUrl?: string;
 }
 
 export interface SpckSessionSubmissionResultUI {
@@ -110,6 +113,21 @@ export type SpckSessionResultsMapUI = Partial<
   Record<"12" | "13" | "14", SpckSessionSubmissionResultUI>
 >;
 
+export interface SpckTeachingProgressPushResultUI {
+  status: "IDLE" | "RUNNING" | "SUCCESS" | "WARNING";
+  targetPercent: number | null;
+  updatedCount?: number | null;
+  message?: string | null;
+}
+
+export interface SpckReportCardChainResultUI {
+  status: "IDLE" | "RUNNING" | "SUCCESS" | "WARNING";
+  syncedScoreCount?: number | null;
+  matchedStudentCount?: number | null;
+  skippedStudentCount?: number | null;
+  warningMessage?: string | null;
+}
+
 export interface SpckBatchSubmissionSummaryUI {
   classId?: string;
   sessionNumber: 12 | 13 | 14;
@@ -119,6 +137,8 @@ export interface SpckBatchSubmissionSummaryUI {
   failedItems: Array<{ studentId: string; studentName: string; reason: string }>;
   skippedItems: Array<{ studentId: string; studentName: string; reason: string }>;
   retryStudentIds: string[];
+  teachingProgressResult?: SpckTeachingProgressPushResultUI | null;
+  reportCardResult?: SpckReportCardChainResultUI | null;
 }
 
 export interface SpckRecordRow {
@@ -223,12 +243,20 @@ export interface Session14EvalItemUI {
   competencyTotalScore: number;
   demoScores: Session14DemoScoresUI;
   demoTotalScore: number;
+  demoRawTotalScore?: number;
+  demoRawScore3dp?: number;
   demoSourcePath: string;
   demoJudgeNote: string;
   learnedFromMindx: string;
   suggestionsFromMindx: string;
   futureDirection: string;
   awardRanking?: string;
+  awardRank?: string | number | null;
+  awardLabel?: string;
+  awardBadge?: string;
+  awardTier?: string;
+  demoAwardRank?: string;
+  competencySource?: string;
   quickTags: string[];
   teacherNote: string;
   draftVersion: number;
@@ -315,6 +343,7 @@ export interface SpckRowReadinessSummaryUI {
   thumbBadgeLabel: string;
   hasDriveLink: boolean;
   hasLiveWebLink: boolean;
+  hasSlideResource: boolean;
   hasDirectUseLink: boolean;
   hasSourceStorageLink: boolean;
   hasYoutubeLink: boolean;
@@ -357,11 +386,20 @@ export type SpckToolErrorMapUI = Record<
 export interface Session14ComboStatusUI {
   classId?: string;
   running: boolean;
-  currentPhase: "idle" | "spck" | "eval" | "done";
+  currentPhase:
+    | "idle"
+    | "spck"
+    | "eval"
+    | "teaching_progress"
+    | "report_card"
+    | "done";
   spckSummary: SpckBatchSubmissionSummaryUI | null;
   evalVerifiedCount: number;
   evalVerifiedStudentIds?: string[];
   evalFailedCount: number;
   evalRetryStudentIds: string[];
   evalErrorMessage: string | null;
+  classSummaryVerified?: boolean;
+  teachingProgressResult?: SpckTeachingProgressPushResultUI | null;
+  reportCardResult?: SpckReportCardChainResultUI | null;
 }

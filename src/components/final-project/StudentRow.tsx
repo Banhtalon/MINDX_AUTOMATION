@@ -18,10 +18,12 @@ import {
   isPresentationQuickTag,
 } from "@/lib/spck/spck-quick-tags";
 import {
+  formatAwardBadgeMeta,
   formatUiSessionTitle,
   getRowReadinessSummary,
   getSessionSlotDisplay,
   getStageMeta,
+  resolveStudentAwardLabel,
   SpckWorkflowController,
 } from "./useSpckWorkflow";
 
@@ -73,6 +75,8 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
     restoringBackupStudentId,
     handleRefreshSingleStudentAllInOne,
     handleRestorePortalBackup,
+    session14AwardMap,
+    skippedUnreadyByStudent,
   } = workflow;
 
   const rowKey = row.folderPath || row.assignedStudentId || String(idx);
@@ -85,6 +89,20 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
     selectedSessionNumber === 14 && row.assignedStudentId
       ? session14Evals.find((ev) => ev.studentId === row.assignedStudentId)
       : undefined;
+  const assignedStudentMeta = row.assignedStudentId
+    ? students.find((s) => s.studentId === row.assignedStudentId)
+    : undefined;
+  const isAbsentStudent =
+    String(assignedStudentMeta?.attendanceStatus || "")
+      .trim()
+      .toUpperCase() === "ABSENT";
+  const skippedUnreadyReason = row.assignedStudentId
+    ? skippedUnreadyByStudent[row.assignedStudentId]
+    : undefined;
+  const awardLabel = studentEval14
+    ? resolveStudentAwardLabel(studentEval14, session14AwardMap)
+    : "";
+  const awardBadge = formatAwardBadgeMeta(awardLabel);
   const rowToolErrors = row.assignedStudentId
     ? toolErrorsByStudent[row.assignedStudentId] || {}
     : {};
@@ -99,10 +117,39 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
   const slot13 = getSessionSlotDisplay(row, 13);
   const slot14 = getSessionSlotDisplay(row, 14);
   const activeSlot = getSessionSlotDisplay(row, selectedSessionNumber);
+  const hasDriveResource =
+    /drive\.google\.com/i.test(row.relatedLinksText || "") ||
+    readiness.hasSourceStorageLink;
+  const hasWebLiveResource =
+    /github\.io|vercel\.app|netlify\.app|replit|scratch\.mit\.edu|Link Web Chạy Thử/i.test(
+      row.relatedLinksText || ""
+    ) ||
+    (isWebClassOrProduct && readiness.hasDirectUseLink);
+  const hasSlideResource = Boolean(readiness.hasSlideResource);
+  const hasMissingS14DemoScore =
+    selectedSessionNumber === 14 &&
+    !isSpckExemptClass &&
+    Boolean(studentEval14) &&
+    !(Number(studentEval14?.demoTotalScore || 0) > 0);
   const hasRowSubmissionError =
     activeSlot.tone === "rose" ||
     Boolean(row.errorMessage) ||
     (selectedSessionNumber === 14 && studentEval14?.status === "FAILED");
+  const hasValidThumbnail = Boolean((row.thumbnailPath || "").trim());
+  const hasRowResource = Boolean(
+    hasValidThumbnail ||
+      row.attachments.length > 0 ||
+      row.screenshots.length > 0 ||
+      hasDriveResource ||
+      hasWebLiveResource ||
+      hasSlideResource ||
+      readiness.hasYoutubeLink
+  );
+  const hasRedMissingAlert =
+    Boolean(skippedUnreadyReason) ||
+    (isAbsentStudent && !hasRowResource) ||
+    (!readiness.ready && activeSlot.state !== "VERIFIED_CURRENT") ||
+    hasMissingS14DemoScore;
 
   const renderSlotPill = (
     sessNum: 12 | 13 | 14,
@@ -164,27 +211,97 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
     );
   };
 
-  const rowContainerClass = hasRowSubmissionError
-    ? "spck-clean-row-error"
-    : !readiness.ready && !row.isConfirmedByTeacher
-    ? "spck-clean-row-warning"
-    : "spck-clean-row";
+  const rowContainerClass =
+    hasRowSubmissionError || Boolean(skippedUnreadyReason)
+      ? "spck-clean-row-error"
+      : !readiness.ready && !row.isConfirmedByTeacher
+      ? "spck-clean-row-warning"
+      : "spck-clean-row";
+
+  const thumbInsp = row.thumbnailInspection;
+  const thumbPreviewUrl = thumbInsp?.previewDataUrl;
+  const isMindxDefaultThumb =
+    Boolean(thumbInsp?.isDefaultMindxLogo) ||
+    /default-spck-thumbnail/i.test(row.thumbnailPath || "");
+  const isShotThumb =
+    Boolean(thumbInsp?.isAppGeneratedShot) ||
+    /_spck_app_shots/i.test(row.thumbnailPath || "");
+  const isOwnerThumb =
+    Boolean(thumbInsp?.isOwnerUploaded) ||
+    /_spck_owner_uploads/i.test(row.thumbnailPath || "");
+
+  const commentPreviewText =
+    row.teacherComment?.trim() ||
+    (selectedSessionNumber === 14 && studentEval14?.learnedFromMindx?.trim()
+      ? `[Thư B14] ${studentEval14.learnedFromMindx.trim()}`
+      : "");
 
   return (
     <div className={`rounded-xl overflow-hidden ${rowContainerClass}`}>
-      {/* Compact Summary Row */}
+      {/* Compact Summary Row — "Nhìn 3 giây là kiểm tra xong" */}
       <div className="p-3 grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
-        {/* Col 1-4: Checkbox + Student Mapping + Single-line Neutral Resource Metadata */}
+        {/* Col 1-4: Checkbox + Ảnh bìa thu nhỏ 16:9 + Học viên + Tên đề tài cụ thể + Nhãn tài nguyên */}
         <div className="lg:col-span-4 flex items-start space-x-2.5">
           <input
             type="checkbox"
             checked={isSelected}
             disabled={!row.assignedStudentId || isAnyOperationBusy}
             onChange={() => toggleSelectStudent(row.assignedStudentId)}
-            className="mt-1.5 rounded border-slate-600 cursor-pointer"
+            className="mt-2 rounded border-slate-600 cursor-pointer shrink-0"
             title="Chọn học viên này để nộp theo danh sách đã chọn"
           />
-          <div className="flex-1 min-w-0 space-y-1.5">
+
+          {/* Ảnh bìa thu nhỏ 16:9 */}
+          <div
+            onClick={() => toggleExpandRow(rowKey)}
+            title={readiness.thumbBadgeLabel}
+            className={`w-16 h-9 rounded-md border overflow-hidden shrink-0 flex flex-col items-center justify-center text-[9px] font-bold leading-none select-none cursor-pointer ${
+              !hasValidThumbnail
+                ? "bg-rose-950/80 border-rose-500/60 text-rose-200"
+                : isOwnerThumb
+                ? "bg-emerald-950/70 border-emerald-500/50 text-emerald-200"
+                : isShotThumb
+                ? "bg-sky-950/75 border-sky-500/50 text-sky-200"
+                : isMindxDefaultThumb
+                ? "bg-slate-900 border-slate-600 text-slate-200"
+                : "bg-indigo-950/70 border-indigo-500/50 text-indigo-200"
+            }`}
+          >
+            {thumbPreviewUrl ? (
+              <img
+                src={thumbPreviewUrl}
+                alt={row.projectTitle || "Thumbnail"}
+                className="w-full h-full object-cover"
+              />
+            ) : !hasValidThumbnail ? (
+              <>
+                <span>⚠️</span>
+                <span className="mt-0.5">Thiếu</span>
+              </>
+            ) : isOwnerThumb ? (
+              <>
+                <span>📸</span>
+                <span className="mt-0.5">Demo</span>
+              </>
+            ) : isShotThumb ? (
+              <>
+                <span>🖥️</span>
+                <span className="mt-0.5">16:9</span>
+              </>
+            ) : isMindxDefaultThumb ? (
+              <>
+                <span>🎯</span>
+                <span className="mt-0.5">MindX</span>
+              </>
+            ) : (
+              <>
+                <span>🖼️</span>
+                <span className="mt-0.5">Ảnh SP</span>
+              </>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-1.5">
               <select
                 value={row.assignedStudentId}
@@ -212,7 +329,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   );
                   persistRowDraft(row, overrides);
                 }}
-                className="px-2 py-1 rounded-md bg-slate-900 border border-slate-700 text-white text-xs font-semibold focus:outline-none focus:border-blue-500 max-w-[230px]"
+                className="px-2 py-1 rounded-md bg-slate-900 border border-slate-700 text-white text-xs font-semibold focus:outline-none focus:border-blue-500 max-w-[205px]"
               >
                 <option value="">-- Ghép học viên --</option>
                 {students.map((stu) => (
@@ -221,18 +338,6 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   </option>
                 ))}
               </select>
-
-              <span
-                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                  row.matchScore === 1.0
-                    ? "spck-pill-success"
-                    : "spck-pill-warning"
-                }`}
-              >
-                {row.matchScore === 1.0
-                  ? "✓ Khớp 100%"
-                  : `Khớp ${Math.round(row.matchScore * 100)}%`}
-              </span>
 
               <label className="inline-flex items-center space-x-1 text-[11px] text-slate-300 cursor-pointer select-none">
                 <input
@@ -278,98 +383,179 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                     persistRowDraft(row, overrides);
                   }}
                   className="px-2 py-0.5 rounded bg-amber-950/60 hover:bg-amber-900/70 border border-amber-500/50 text-[10px] font-bold text-amber-200 transition-colors cursor-pointer disabled:opacity-50"
-                  title="Bài do học sinh tự chọn tên nộp qua Cổng trực tuyến — Bấm xác nhận đúng học viên trước khi Duyệt & Nộp"
                 >
-                  📥 Học sinh tự nộp — Bấm xác nhận
+                  📥 Xác nhận HV
                 </button>
               )}
             </div>
 
-            {/* Consolidated 1-Line Neutral Resource Summary (Replaces 6-7 competing neon badges) */}
-            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-slate-400">
-              <span className="font-mono text-slate-300 truncate max-w-[160px]" title={row.folderName}>
-                📁 {row.folderName}
+            {/* Tên đề tài cụ thể hiển thị nổi bật */}
+            <div
+              data-testid="spck-row-project-title"
+              title={row.projectTitle || row.folderName}
+              className="text-xs font-bold text-slate-100 truncate"
+            >
+              📌 {row.projectTitle || row.folderName}
+            </div>
+
+            {/* Nhãn tài nguyên rõ ràng: Drive ✓ • Web ✓ • Slide ✓ */}
+            <div className="flex flex-wrap items-center gap-1 text-[10px]">
+              {hasDriveResource && (
+                <span className="px-1.5 py-0.5 rounded bg-emerald-950/70 border border-emerald-600/50 text-emerald-300 font-bold">
+                  Drive ✓
+                </span>
+              )}
+              {hasWebLiveResource && (
+                <span className="px-1.5 py-0.5 rounded bg-sky-950/70 border border-sky-600/50 text-sky-300 font-bold">
+                  Web ✓
+                </span>
+              )}
+              {hasSlideResource && (
+                <span className="px-1.5 py-0.5 rounded bg-indigo-950/70 border border-indigo-600/50 text-indigo-300 font-bold">
+                  Slide ✓
+                </span>
+              )}
+              {readiness.hasYoutubeLink && (
+                <span className="px-1.5 py-0.5 rounded bg-rose-950/60 border border-rose-600/40 text-rose-200 font-bold">
+                  YouTube ✓
+                </span>
+              )}
+              <span className="text-slate-400">
+                {row.screenshots.length} ảnh • {row.attachments.length} file
               </span>
-              <span>•</span>
-              <span title={readiness.thumbBadgeLabel}>
-                🖼️ {readiness.thumbBadgeLabel}
-              </span>
-              <span>• {row.screenshots.length}/10 ảnh</span>
-              <span>• {row.attachments.length}/10 file</span>
-              {readiness.hasDirectUseLink && <span>• Mở dùng SP ✓</span>}
-              {readiness.hasSourceStorageLink && <span>• Kho file/code ✓</span>}
-              {readiness.hasYoutubeLink && <span>• YouTube ✓</span>}
             </div>
           </div>
         </div>
 
-        {/* Col 5-8: Readiness Badge + Direct Teacher Comment Preview (Key UX Upgrade) */}
+        {/* Col 5-8: Nhãn báo đỏ nếu vắng/thiếu bài + Nhãn Buổi 14 (BGK, Giải Nhất/Nhì/Ba, ĐNL TB B5+9) + 2 dòng nhận xét */}
         <div className="lg:col-span-4 min-w-0 space-y-1.5 text-xs">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span
-              className={`px-2 py-0.5 rounded font-semibold text-[11px] ${
-                readiness.ready ? "spck-pill-success" : "spck-pill-warning"
-              }`}
-            >
-              {readiness.ready
-                ? "✓ Đủ điều kiện nộp (*)"
-                : `Thiếu/Lỗi: ${readiness.missingItems.join(", ")}`}
-            </span>
-
-            {row.hasNewerSharedResources && (
+            {hasRedMissingAlert ? (
               <span
-                title="Kho tài nguyên chung vừa có ảnh hoặc đường dẫn mới. Bấm 'Chi tiết ▾' để đồng bộ vào bản nháp buổi này."
-                className="spck-pill-primary px-2 py-0.5 rounded font-semibold text-[10px]"
+                data-testid="spck-row-missing-alert"
+                className="px-2 py-0.5 rounded bg-rose-950/85 border border-rose-500/70 text-rose-200 font-bold text-[11px]"
               >
-                🔄 Có tài nguyên mới
+                🚨{" "}
+                {skippedUnreadyReason ||
+                  (isAbsentStudent && !hasRowResource
+                    ? "Vắng mặt / Chưa có bài"
+                    : !readiness.ready
+                    ? `Thiếu: ${readiness.missingItems.join(", ")}`
+                    : "Thiếu Điểm Demo BGK")}
+              </span>
+            ) : (
+              <span className="spck-pill-success px-2 py-0.5 rounded font-semibold text-[11px]">
+                ✓ Đủ điều kiện nộp
               </span>
             )}
 
+            {/* Ở Buổi 14: Hiện Danh hiệu Giải Nhất/Nhì/Ba (🥇/🥈/🥉) + Điểm BGK + Điểm ĐNL TB B5+9 */}
             {selectedSessionNumber === 14 && studentEval14 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setRowActiveTab(row.assignedStudentId, "eval14");
-                  if (!isExpanded) {
-                    setExpandedRowKeys((prev) => ({
-                      ...prev,
-                      [rowKey]: true,
-                    }));
-                  }
-                }}
-                title="Bấm để mở Tab 2: Điểm Demo, ĐNL & Thư 3 phần (Cột 2)"
-                className="spck-pill-primary px-2 py-0.5 rounded font-semibold text-[10px] cursor-pointer"
+              <>
+                {awardBadge && (
+                  <span
+                    data-testid="s14-row-award-badge"
+                    className={`px-2 py-0.5 rounded border font-extrabold text-[10px] ${
+                      awardBadge.tone === "gold"
+                        ? "bg-amber-500/20 border-amber-400/70 text-amber-200"
+                        : awardBadge.tone === "silver"
+                        ? "bg-slate-400/20 border-slate-300/60 text-slate-100"
+                        : awardBadge.tone === "bronze"
+                        ? "bg-orange-500/20 border-orange-400/60 text-orange-200"
+                        : "bg-indigo-500/20 border-indigo-400/50 text-indigo-200"
+                    }`}
+                  >
+                    {awardBadge.icon} {awardBadge.shortText}
+                  </span>
+                )}
+
+                {!isSpckExemptClass && (
+                  <button
+                    type="button"
+                    data-testid="s14-row-bgk-badge"
+                    onClick={() => {
+                      setRowActiveTab(row.assignedStudentId, "eval14");
+                      if (!isExpanded) {
+                        setExpandedRowKeys((prev) => ({
+                          ...prev,
+                          [rowKey]: true,
+                        }));
+                      }
+                    }}
+                    className={`px-2 py-0.5 rounded font-bold text-[10px] cursor-pointer ${
+                      Number(studentEval14.demoTotalScore) > 0
+                        ? "spck-pill-primary"
+                        : "bg-rose-950/80 border border-rose-500/60 text-rose-200"
+                    }`}
+                    title="Bấm để xem/sửa Điểm BGK & Thư 3 phần (Cột 2)"
+                  >
+                    📊 BGK: {studentEval14.demoTotalScore}/5.0
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  data-testid="s14-row-dnl-badge"
+                  onClick={() => {
+                    setRowActiveTab(row.assignedStudentId, "eval14");
+                    if (!isExpanded) {
+                      setExpandedRowKeys((prev) => ({
+                        ...prev,
+                        [rowKey]: true,
+                      }));
+                    }
+                  }}
+                  className="spck-pill-neutral px-2 py-0.5 rounded font-semibold text-[10px] cursor-pointer"
+                  title="Điểm Năng lực [ĐNL] trung bình cộng từ Buổi 5 + Buổi 9"
+                >
+                  🎯 ĐNL TB B5+9: {studentEval14.competencyTotalScore}/5.0
+                </button>
+
+                <span
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                    studentEval14.status === "VERIFIED"
+                      ? "spck-pill-success"
+                      : studentEval14.status === "FAILED"
+                      ? "spck-pill-error"
+                      : "spck-pill-neutral"
+                  }`}
+                >
+                  {studentEval14.status === "VERIFIED"
+                    ? "Cột 2 ✓"
+                    : studentEval14.status === "FAILED"
+                    ? "Lỗi Cột 2"
+                    : studentEval14.learnedFromMindx
+                    ? "Thư B14 ✓"
+                    : "Chưa Thư B14"}
+                </span>
+              </>
+            )}
+
+            {row.hasNewerSharedResources && (
+              <span
+                title="Kho tài nguyên chung vừa có ảnh hoặc đường dẫn mới."
+                className="spck-pill-primary px-2 py-0.5 rounded font-semibold text-[10px]"
               >
-                🏅 Demo: {studentEval14.demoTotalScore}/5.0 • ĐNL:{" "}
-                {studentEval14.competencyTotalScore}/5.0 •{" "}
-                {studentEval14.status === "VERIFIED"
-                  ? "Đã lưu Cột 2 ✓"
-                  : studentEval14.status === "APPROVED"
-                  ? "Đã duyệt Cột 2"
-                  : studentEval14.status === "FAILED"
-                  ? "Lỗi Cột 2"
-                  : studentEval14.learnedFromMindx
-                  ? "Chờ duyệt Cột 2"
-                  : "Chưa soạn Thư"}
-              </button>
+                🔄 Tài nguyên mới
+              </span>
             )}
           </div>
 
-          {/* Direct 2-Line Teacher Comment Preview */}
+          {/* 2 dòng xem trước nhận xét */}
           <div
             onClick={() => toggleExpandRow(rowKey)}
             title={
-              row.teacherComment?.trim()
-                ? `${row.teacherComment} (Bấm để mở Chi tiết chỉnh sửa)`
+              commentPreviewText
+                ? `${commentPreviewText} (Bấm để mở Chi tiết chỉnh sửa)`
                 : "Bấm để mở khung chỉnh sửa chi tiết nhận xét"
             }
             className="spck-clean-comment-preview px-2.5 py-1.5 rounded-md text-xs leading-snug line-clamp-2 cursor-pointer"
           >
-            {row.teacherComment?.trim() ? (
-              <span>💬 {row.teacherComment}</span>
+            {commentPreviewText ? (
+              <span>💬 {commentPreviewText}</span>
             ) : (
               <span className="italic text-slate-400">
-                Chưa có nhận xét Buổi {selectedSessionNumber} — bấm &ldquo;AI Soạn&rdquo; hoặc mở &ldquo;Chi tiết ▾&rdquo;
+                Chưa có nhận xét Buổi {selectedSessionNumber} — bấm &ldquo;2. AI Soạn nhận xét&rdquo; hoặc mở &ldquo;Chi tiết ▾&rdquo;
               </span>
             )}
           </div>

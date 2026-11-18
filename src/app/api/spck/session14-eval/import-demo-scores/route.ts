@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { buildEnrichedSession14EvalList } from "@/lib/db/sqlite";
-import { importClassDemoScores } from "@/lib/local-files/spck-demo-score-reader";
+import {
+  getEffectiveClassSession14Summary,
+  importClassDemoScores,
+} from "@/lib/local-files/spck-demo-score-reader";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 
 export async function POST(req: Request) {
@@ -23,14 +26,27 @@ export async function POST(req: Request) {
     const importResult = await importClassDemoScores(
       classId,
       sourcePathOrUrl || undefined,
-      { onlyMissingStudents }
+      {
+        onlyMissingStudents,
+        checkpointSlots: Array.isArray(body?.checkpointSlots)
+          ? body.checkpointSlots
+          : undefined,
+        cp1Slot: body?.cp1Slot,
+        cp2Slot: body?.cp2Slot,
+        classByIdGql: body?.classByIdGql,
+        skipLiveLmsCheckpointFetch: Boolean(body?.skipLiveLmsCheckpointFetch),
+        forceLiveLmsCheckpointFetch: Boolean(body?.forceLiveLmsCheckpointFetch),
+      }
     );
     const records = buildEnrichedSession14EvalList(classId);
+    const { classSummary, rankings } = getEffectiveClassSession14Summary(classId);
 
     return NextResponse.json({
       success: true,
       importResult,
       records,
+      rankings,
+      classSummary,
     });
   } catch (err) {
     return NextResponse.json(

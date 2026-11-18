@@ -169,6 +169,7 @@ export interface SpckDriveStudentResult {
   studentId: string;
   fullName: string;
   status: "SUCCESS" | "FAILED";
+  skippedUnchanged?: boolean;
   driveFolderId?: string;
   driveFolderUrl?: string;
   uploadedFilesCount: number;
@@ -185,6 +186,7 @@ export interface SpckDriveBatchResult {
   successCount: number;
   failedCount: number;
   uploadedStudentsCount: number;
+  skippedUnchangedCount?: number;
   failedStudentsCount: number;
   results: SpckDriveStudentResult[];
 }
@@ -199,6 +201,7 @@ export interface SpckDriveUploadOptions {
   sessionNumber?: SpckSessionNumber;
   syncAllUnverifiedSessions?: boolean;
   allowDemoteApprovedSession?: boolean;
+  forceReupload?: boolean;
 }
 
 function isEmergencyStopped(): boolean {
@@ -2490,8 +2493,113 @@ export async function uploadStudentZipBundleToDrive(
 }
 
 export class SpckDriveUploader {
+  private static syncStudentDriveLinkSessionsIfNeeded(
+    classId: string,
+    studentId: string,
+    options: SpckDriveUploadOptions
+  ): void {
+    if (options.syncAllUnverifiedSessions) {
+      for (const slot of [12, 13, 14] as const) {
+        try {
+          const sessRow = spckSessionRepo.findOne(classId, studentId, slot);
+          const allowForceTargetApproved =
+            options.allowDemoteApprovedSession === true &&
+            Boolean(options.sessionNumber) &&
+            slot === options.sessionNumber;
+          if (
+            !sessRow ||
+            sessRow.lastVerifiedAt ||
+            sessRow.draftStatus === "VERIFIED" ||
+            sessRow.draftStatus === "SAVING" ||
+            (!allowForceTargetApproved && sessRow.draftStatus === "APPROVED")
+          ) {
+            continue;
+          }
+          const sessLinks = parseJsonArraySafe<SpckRelatedLink>(sessRow.relatedLinksJson);
+          const hasDriveInSess = sessLinks.some((l) =>
+            String(l.url || "").includes("drive.google.com/drive/folders/")
+          );
+          if (!hasDriveInSess) {
+            spckSessionRepo.syncLatestSharedResourcesToSessionDraft(classId, studentId, slot);
+          }
+        } catch {}
+      }
+    } else if (options.sessionNumber) {
+      try {
+        const sessRow = spckSessionRepo.findOne(classId, studentId, options.sessionNumber);
+        if (
+          sessRow &&
+          !sessRow.lastVerifiedAt &&
+          sessRow.draftStatus !== "VERIFIED" &&
+          sessRow.draftStatus !== "SAVING" &&
+          !(options.allowDemoteApprovedSession === false && sessRow.draftStatus === "APPROVED")
+        ) {
+          const sessLinks = parseJsonArraySafe<SpckRelatedLink>(sessRow.relatedLinksJson);
+          const hasDriveInSess = sessLinks.some((l) =>
+            String(l.url || "").includes("drive.google.com/drive/folders/")
+          );
+          if (!hasDriveInSess) {
+            spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
+              classId,
+              studentId,
+              options.sessionNumber
+            );
+          }
+        }
+      } catch {}
+    }
+  }
+
+  private static checkFastSkipEligible(
+    record: SpckUploadRecord,
+    fullName: string,
+    forceReupload?: boolean
+  ): SpckDriveStudentResult | null {
+    if (forceReupload === true) return null;
+    if (!record.localFolderPath || Number(record.isConfirmedByTeacher) !== 1) {
+      return null;
+    }
+    const existingLinks = parseJsonArraySafe<SpckRelatedLink>(record.relatedLinksJson);
+    const existingDriveLink = existingLinks.find((l) =>
+      String(l.url || "").includes("drive.google.com/drive/folders/")
+    );
+    if (!existingDriveLink?.url) return null;
+
+    let existingFolderId = "";
+    try {
+      existingFolderId = extractDriveFolderId(existingDriveLink.url);
+    } catch {
+      return null;
+    }
+    if (!existingFolderId) return null;
+
+    const digestInfo = computeStudentFolderContentDigest(record.localFolderPath);
+    if (!digestInfo.readableDirectory || digestInfo.filesCount <= 0 || !digestInfo.digest) {
+      return null;
+    }
+
+    const knownUploadedDigest =
+      String(record.lastDriveUploadedDigest || "").trim() ||
+      String(record.lastPreppedFolderDigest || "").trim();
+    if (!knownUploadedDigest || knownUploadedDigest !== digestInfo.digest) {
+      return null;
+    }
+
+    return {
+      studentId: record.studentId,
+      fullName,
+      status: "SUCCESS",
+      skippedUnchanged: true,
+      driveFolderId: existingFolderId,
+      driveFolderUrl: existingDriveLink.url,
+      uploadedFilesCount: 0,
+    };
+  }
+
   /**
    * Enqueues the Google Drive SPCK folder creation & upload job on SequentialTaskQueue.
+   * Fast-path (< 10ms): if every target student already has a valid Drive link and `!hasFileDrift`,
+   * returns immediately without touching Playwright or the browser queue.
    */
   public static async uploadClassSpckToGoogleDrive(
     options: SpckDriveUploadOptions
@@ -2499,6 +2607,79 @@ export class SpckDriveUploader {
     const normalizedClassId = (options.classId || "").trim().toUpperCase();
     if (!normalizedClassId) {
       throw new Error("[SpckDriveUploader] Thiếu mã lớp (classId).");
+    }
+
+    const rawDriveUrl = (options.driveFolderUrl || DEFAULT_SPCK_DRIVE_FOLDER_URL).trim();
+    const inputFolderId = extractDriveFolderId(rawDriveUrl);
+    const coursePrefix = detectCoursePrefixFromClassId(normalizedClassId);
+    if (
+      isCourseExemptFromSpck(normalizedClassId) &&
+      inputFolderId === CODING_SPCK_ROOT_FOLDER_ID
+    ) {
+      throw new Error(
+        `Khóa ${coursePrefix || normalizedClassId} (${normalizedClassId}) không thi cuối khóa nên được miễn nộp SPCK & Google Drive.`
+      );
+    }
+
+    if (options.forceReupload !== true) {
+      const allClassRecords = spckUploadRepo.findByClass(normalizedClassId);
+      const targetRecords =
+        options.studentIds && options.studentIds.length > 0
+          ? allClassRecords.filter((r) => options.studentIds!.includes(r.studentId))
+          : allClassRecords.filter((r) => Boolean(r.localFolderPath));
+
+      if (targetRecords.length === 0) {
+        return {
+          classId: normalizedClassId,
+          parentDriveFolderUrl: rawDriveUrl,
+          totalRequested: 0,
+          successCount: 0,
+          failedCount: 0,
+          uploadedStudentsCount: 0,
+          skippedUnchangedCount: 0,
+          failedStudentsCount: 0,
+          results: [],
+        };
+      }
+
+      const studentsInClass = studentRepo.findByClass(normalizedClassId);
+      const studentMap = new Map(studentsInClass.map((s) => [s.studentId, s]));
+      const fastSkippedResults: SpckDriveStudentResult[] = [];
+      let allEligible = true;
+      for (const rec of targetRecords) {
+        const fullName = studentMap.get(rec.studentId)?.fullName || rec.studentId;
+        const fastRes = SpckDriveUploader.checkFastSkipEligible(
+          rec,
+          fullName,
+          options.forceReupload
+        );
+        if (!fastRes) {
+          allEligible = false;
+          break;
+        }
+        fastSkippedResults.push(fastRes);
+      }
+
+      if (allEligible && fastSkippedResults.length === targetRecords.length) {
+        for (const rec of targetRecords) {
+          SpckDriveUploader.syncStudentDriveLinkSessionsIfNeeded(
+            normalizedClassId,
+            rec.studentId,
+            options
+          );
+        }
+        return {
+          classId: normalizedClassId,
+          parentDriveFolderUrl: rawDriveUrl,
+          totalRequested: targetRecords.length,
+          successCount: fastSkippedResults.length,
+          failedCount: 0,
+          uploadedStudentsCount: 0,
+          skippedUnchangedCount: fastSkippedResults.length,
+          failedStudentsCount: 0,
+          results: fastSkippedResults,
+        };
+      }
     }
 
     const jobId = `UPLOAD_SPCK_DRIVE_${normalizedClassId}_${Date.now()}`;
@@ -2631,6 +2812,8 @@ export class SpckDriveUploader {
     const classDriveFolderUrl = `https://drive.google.com/drive/folders/${classDriveFolderId}`;
     const results: SpckDriveStudentResult[] = [];
     let successCount = 0;
+    let uploadedStudentsCount = 0;
+    let skippedUnchangedCount = 0;
     let failedCount = 0;
 
     for (let i = 0; i < targetRecords.length; i++) {
@@ -2641,6 +2824,23 @@ export class SpckDriveUploader {
       const record = targetRecords[i];
       const stu = studentMap.get(record.studentId);
       const fullName = stu?.fullName || record.studentId;
+
+      const fastRes = SpckDriveUploader.checkFastSkipEligible(
+        record,
+        fullName,
+        options.forceReupload
+      );
+      if (fastRes) {
+        SpckDriveUploader.syncStudentDriveLinkSessionsIfNeeded(
+          normalizedClassId,
+          record.studentId,
+          options
+        );
+        successCount++;
+        skippedUnchangedCount++;
+        results.push(fastRes);
+        continue;
+      }
 
       try {
         if (!record.localFolderPath) {
@@ -2752,6 +2952,7 @@ export class SpckDriveUploader {
           ...latestDbRecord,
           relatedLinksJson: JSON.stringify(updatedLinks),
           lastPreppedFolderDigest: verifiedPreppedDigest,
+          lastDriveUploadedDigest: verifiedPreppedDigest,
         };
 
         // Rule 4: Do NOT recompute contentHash here; if relatedLinksJson changed,
@@ -2832,6 +3033,7 @@ export class SpckDriveUploader {
         });
 
         successCount++;
+        uploadedStudentsCount++;
         results.push({
           studentId: record.studentId,
           fullName,
@@ -2870,7 +3072,8 @@ export class SpckDriveUploader {
       totalRequested: targetRecords.length,
       successCount,
       failedCount,
-      uploadedStudentsCount: successCount,
+      uploadedStudentsCount,
+      skippedUnchangedCount,
       failedStudentsCount: failedCount,
       results,
     };

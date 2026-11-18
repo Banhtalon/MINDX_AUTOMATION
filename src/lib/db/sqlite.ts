@@ -183,6 +183,8 @@ function initSchema(db: Database.Database) {
       approvedSessionNumber INTEGER DEFAULT NULL,
       pendingPortalConfirmation INTEGER NOT NULL DEFAULT 0,
       lastPreppedFolderDigest TEXT NOT NULL DEFAULT '',
+      lastDriveUploadedDigest TEXT NOT NULL DEFAULT '',
+      lastWebDeployedDigest TEXT NOT NULL DEFAULT '',
       createdAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       UNIQUE(classId, studentId)
@@ -236,8 +238,10 @@ function initSchema(db: Database.Database) {
       studentId TEXT NOT NULL,
       competencyJson TEXT DEFAULT '{}',
       competencyTotalScore REAL DEFAULT 0.0,
+      competencySourceJson TEXT DEFAULT '{}',
       demoScoresJson TEXT DEFAULT '{}',
       demoTotalScore REAL DEFAULT 0.0,
+      demoRawTotalScore REAL DEFAULT 0.0,
       demoSourcePath TEXT DEFAULT '',
       demoJudgeNote TEXT DEFAULT '',
       learnedFromMindx TEXT DEFAULT '',
@@ -257,6 +261,20 @@ function initSchema(db: Database.Database) {
     );
     CREATE INDEX IF NOT EXISTS idx_spck_session14_evaluations_lookup
       ON spck_session14_evaluations(classId, studentId);
+
+    -- 5d. spck_session14_class_summaries (v3.6.0 Slot 14 Top Summary Draft & Verification)
+    CREATE TABLE IF NOT EXISTS spck_session14_class_summaries (
+      classId TEXT PRIMARY KEY,
+      title TEXT NOT NULL DEFAULT '',
+      bodyText TEXT NOT NULL DEFAULT '',
+      summaryHtml TEXT NOT NULL DEFAULT '',
+      isEditedByTeacher INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'DRAFT',
+      contentHash TEXT NOT NULL DEFAULT '',
+      verifiedAt TEXT DEFAULT NULL,
+      errorMessage TEXT DEFAULT NULL,
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
 
     -- 6. job_logs
     CREATE TABLE IF NOT EXISTS job_logs (
@@ -428,6 +446,16 @@ function initSchema(db: Database.Database) {
         `ALTER TABLE spck_uploads ADD COLUMN lastPreppedFolderDigest TEXT NOT NULL DEFAULT ''`
       );
     }
+    if (spckCols.length > 0 && !spckCols.some((c) => c.name === "lastDriveUploadedDigest")) {
+      db.exec(
+        `ALTER TABLE spck_uploads ADD COLUMN lastDriveUploadedDigest TEXT NOT NULL DEFAULT ''`
+      );
+    }
+    if (spckCols.length > 0 && !spckCols.some((c) => c.name === "lastWebDeployedDigest")) {
+      db.exec(
+        `ALTER TABLE spck_uploads ADD COLUMN lastWebDeployedDigest TEXT NOT NULL DEFAULT ''`
+      );
+    }
     migrateSpckSessionSubmissions(db);
   } catch {}
 
@@ -435,6 +463,12 @@ function initSchema(db: Database.Database) {
     const s14Cols = db.prepare(`PRAGMA table_info(spck_session14_evaluations)`).all() as Array<{ name: string }>;
     if (s14Cols.length > 0 && !s14Cols.some((c) => c.name === "awardRanking")) {
       db.exec(`ALTER TABLE spck_session14_evaluations ADD COLUMN awardRanking TEXT DEFAULT ''`);
+    }
+    if (s14Cols.length > 0 && !s14Cols.some((c) => c.name === "demoRawTotalScore")) {
+      db.exec(`ALTER TABLE spck_session14_evaluations ADD COLUMN demoRawTotalScore REAL DEFAULT 0.0`);
+    }
+    if (s14Cols.length > 0 && !s14Cols.some((c) => c.name === "competencySourceJson")) {
+      db.exec(`ALTER TABLE spck_session14_evaluations ADD COLUMN competencySourceJson TEXT DEFAULT '{}'`);
     }
   } catch {}
 }
@@ -1575,6 +1609,8 @@ export interface SpckUploadRecord {
   approvedSessionNumber?: number | null;
   pendingPortalConfirmation?: number;
   lastPreppedFolderDigest?: string;
+  lastDriveUploadedDigest?: string;
+  lastWebDeployedDigest?: string;
 }
 
 export interface SpckSubmissionSnapshot {
@@ -1916,7 +1952,8 @@ export function checkSpckSnapshotFileDrift(snapshot: SpckSubmissionSnapshot | nu
     currentDigest === "MISSING" &&
     (/[\\/]_spck_app_shots[\\/]/i.test(filePath) ||
       /_(?:web|app|robotics)_package\.zip$/i.test(filePath) ||
-      /_gamemaker\.yyz$/i.test(filePath));
+      /_gamemaker\.yyz$/i.test(filePath) ||
+      /[\\/]spck_lms_trim_[^\\/]+\.zip$/i.test(filePath));
 
   if (snapshot.thumbnailPath && snapshot.thumbnailByteSha256) {
     const currentDigest = computeSafeFileByteDigest(snapshot.thumbnailPath);
@@ -2267,7 +2304,7 @@ export const spckUploadRepo = {
     const db = getDb();
     const existing = db
       .prepare(
-        `SELECT localFolderPath, isConfirmedByTeacher, projectTitle, baseProjectTitle, thumbnailPath, screenshotsJson, attachmentsJson, youtubeUrlsJson, relatedLinksJson, teacherComment, contentHash, status, verifiedAt, draftSeq, sessionResultsJson, hasLegacyUnknownSessionHistory, legacyHistoryMetaJson, historyCorrupted, historyCorruptedReason, approvedSessionNumber, pendingPortalConfirmation, lastPreppedFolderDigest FROM spck_uploads WHERE classId = ? AND studentId = ?`
+        `SELECT localFolderPath, isConfirmedByTeacher, projectTitle, baseProjectTitle, thumbnailPath, screenshotsJson, attachmentsJson, youtubeUrlsJson, relatedLinksJson, teacherComment, contentHash, status, verifiedAt, draftSeq, sessionResultsJson, hasLegacyUnknownSessionHistory, legacyHistoryMetaJson, historyCorrupted, historyCorruptedReason, approvedSessionNumber, pendingPortalConfirmation, lastPreppedFolderDigest, lastDriveUploadedDigest, lastWebDeployedDigest FROM spck_uploads WHERE classId = ? AND studentId = ?`
       )
       .get(record.classId, record.studentId) as
       | {
@@ -2293,6 +2330,8 @@ export const spckUploadRepo = {
           approvedSessionNumber?: number | null;
           pendingPortalConfirmation?: number;
           lastPreppedFolderDigest?: string;
+          lastDriveUploadedDigest?: string;
+          lastWebDeployedDigest?: string;
         }
       | undefined;
 
@@ -2425,6 +2464,18 @@ export const spckUploadRepo = {
         : folderKeyUnchanged
         ? existing?.lastPreppedFolderDigest ?? ""
         : "";
+    const nextLastDriveUploadedDigest =
+      record.lastDriveUploadedDigest !== undefined
+        ? String(record.lastDriveUploadedDigest || "")
+        : folderKeyUnchanged
+        ? existing?.lastDriveUploadedDigest ?? ""
+        : "";
+    const nextLastWebDeployedDigest =
+      record.lastWebDeployedDigest !== undefined
+        ? String(record.lastWebDeployedDigest || "")
+        : folderKeyUnchanged
+        ? existing?.lastWebDeployedDigest ?? ""
+        : "";
 
     const stmt = db.prepare(`
       INSERT INTO spck_uploads (
@@ -2434,7 +2485,8 @@ export const spckUploadRepo = {
         status, verifiedAt, errorMessage, draftSeq, sessionResultsJson,
         hasLegacyUnknownSessionHistory, legacyHistoryMetaJson,
         historyCorrupted, historyCorruptedReason, approvedSessionNumber,
-        pendingPortalConfirmation, lastPreppedFolderDigest, updatedAt
+        pendingPortalConfirmation, lastPreppedFolderDigest,
+        lastDriveUploadedDigest, lastWebDeployedDigest, updatedAt
       )
       VALUES (
         @classId, @studentId, @localFolderPath, @matchScore, @isConfirmedByTeacher,
@@ -2443,7 +2495,8 @@ export const spckUploadRepo = {
         @status, @verifiedAt, @errorMessage, @draftSeq, @sessionResultsJson,
         @hasLegacyUnknownSessionHistory, @legacyHistoryMetaJson,
         @historyCorrupted, @historyCorruptedReason, @approvedSessionNumber,
-        @pendingPortalConfirmation, @lastPreppedFolderDigest, datetime('now', 'localtime')
+        @pendingPortalConfirmation, @lastPreppedFolderDigest,
+        @lastDriveUploadedDigest, @lastWebDeployedDigest, datetime('now', 'localtime')
       )
       ON CONFLICT(classId, studentId) DO UPDATE SET
         localFolderPath = excluded.localFolderPath,
@@ -2470,6 +2523,8 @@ export const spckUploadRepo = {
         approvedSessionNumber = excluded.approvedSessionNumber,
         pendingPortalConfirmation = excluded.pendingPortalConfirmation,
         lastPreppedFolderDigest = excluded.lastPreppedFolderDigest,
+        lastDriveUploadedDigest = excluded.lastDriveUploadedDigest,
+        lastWebDeployedDigest = excluded.lastWebDeployedDigest,
         updatedAt = datetime('now', 'localtime')
     `);
     const res = stmt.run({
@@ -2499,6 +2554,8 @@ export const spckUploadRepo = {
       approvedSessionNumber: targetApprovedSessionNumber,
       pendingPortalConfirmation: nextPendingPortalConfirmation,
       lastPreppedFolderDigest: nextLastPreppedFolderDigest,
+      lastDriveUploadedDigest: nextLastDriveUploadedDigest,
+      lastWebDeployedDigest: nextLastWebDeployedDigest,
     });
 
     return res;
@@ -2526,6 +2583,8 @@ export const spckUploadRepo = {
           youtubeUrlsJson?: string;
           relatedLinksJson?: string;
           lastPreppedFolderDigest?: string;
+          lastDriveUploadedDigest?: string;
+          lastWebDeployedDigest?: string;
           syncSessionNumber?: SpckSessionSlotNumber;
           forceSyncTargetSession?: boolean;
           syncAllUnverifiedSessions?: boolean;
@@ -2542,6 +2601,8 @@ export const spckUploadRepo = {
       youtubeUrlsJson?: string;
       relatedLinksJson?: string;
       lastPreppedFolderDigest?: string;
+      lastDriveUploadedDigest?: string;
+      lastWebDeployedDigest?: string;
       syncSessionNumber?: SpckSessionSlotNumber;
       forceSyncTargetSession?: boolean;
       syncAllUnverifiedSessions?: boolean;
@@ -2589,6 +2650,14 @@ export const spckUploadRepo = {
       params.lastPreppedFolderDigest !== undefined
         ? params.lastPreppedFolderDigest
         : existing.lastPreppedFolderDigest ?? "";
+    const nextDriveDigest =
+      params.lastDriveUploadedDigest !== undefined
+        ? params.lastDriveUploadedDigest
+        : existing.lastDriveUploadedDigest ?? "";
+    const nextWebDigest =
+      params.lastWebDeployedDigest !== undefined
+        ? params.lastWebDeployedDigest
+        : existing.lastWebDeployedDigest ?? "";
 
     const db = getDb();
     const sessionRowsMap = spckSessionRepo.findByStudent(params.classId, params.studentId);
@@ -2614,6 +2683,8 @@ export const spckUploadRepo = {
              youtubeUrlsJson = ?,
              relatedLinksJson = ?,
              lastPreppedFolderDigest = ?,
+             lastDriveUploadedDigest = ?,
+             lastWebDeployedDigest = ?,
              draftSeq = COALESCE(draftSeq, 0) + 1,
              updatedAt = datetime('now', 'localtime')
          WHERE classId = ? AND studentId = ?`
@@ -2628,6 +2699,8 @@ export const spckUploadRepo = {
         nextYt ?? "[]",
         nextLinks ?? "[]",
         nextDigest ?? "",
+        nextDriveDigest ?? "",
+        nextWebDigest ?? "",
         params.classId,
         params.studentId
       );
@@ -2644,6 +2717,8 @@ export const spckUploadRepo = {
         youtubeUrlsJson: nextYt,
         relatedLinksJson: nextLinks,
         lastPreppedFolderDigest: nextDigest,
+        lastDriveUploadedDigest: nextDriveDigest,
+        lastWebDeployedDigest: nextWebDigest,
       });
     }
 
@@ -3166,10 +3241,19 @@ export const spckSessionRepo = {
       return { success: true, record: current };
     }
 
+    const stu = studentRepo.findOne(classId, studentId);
+    const currentStripped = stripSpckSessionSuffix(current.projectTitle);
+    const sharedStripped = stripSpckSessionSuffix(shared.baseProjectTitle || shared.projectTitle);
     const baseTitle =
-      stripSpckSessionSuffix(current.projectTitle) ||
-      stripSpckSessionSuffix(shared.baseProjectTitle || shared.projectTitle);
-    const nextTitle = formatSpckSessionTitle(baseTitle, stageInfo.sessionNumber);
+      currentStripped &&
+      (!sharedStripped || !isDefaultSpckProductTitle(current.projectTitle, stu?.fullName || ""))
+        ? currentStripped
+        : sharedStripped || currentStripped;
+    const nextTitle = formatSpckSessionTitle(
+      baseTitle,
+      stageInfo.sessionNumber,
+      stu?.fullName || undefined
+    );
 
     return this.saveSessionDraft({
       classId,
@@ -4507,8 +4591,10 @@ export interface SpckSession14EvaluationRecord {
   studentId: string;
   competencyJson: string;
   competencyTotalScore: number;
+  competencySourceJson?: string;
   demoScoresJson: string;
   demoTotalScore: number;
+  demoRawTotalScore?: number;
   demoSourcePath: string;
   demoJudgeNote: string;
   learnedFromMindx: string;
@@ -4546,9 +4632,21 @@ export const DEFAULT_SESSION14_DEMO_SCORES: SpckSession14DemoScores = {
   computerSkills: 0,
 };
 
+/**
+ * Ordered strictly to match MindX LMS Modal Cột 2 DOM radio groups `DOM[0..8]`:
+ * - DOM[0]: `knowledgeSelfStudy` (`665e7d33181e0e47f6c63768` — Kiến thức học viên tự học)
+ * - DOM[1]: `knowledgeInClass` (`668d69d8e71f90e7630ce16c` — Kiến thức học viên đã được học tại lớp)
+ * - DOM[2]: `skillCommunication` (`668e2e7de71f90e7630d4316` — Kỹ năng giao tiếp, hợp tác)
+ * - DOM[3]: `skillComputerUse` (`668e2ce1e71f90e7630d406f` — Kỹ năng sử dụng máy tính)
+ * - DOM[4]: `skillProblemSolving` (`668e0f48e71f90e7630d2db6` — Kỹ năng giải quyết vấn đề)
+ * - DOM[5]: `skillCreativity` (`668d6a69e71f90e7630ce198` — Tư duy sáng tạo)
+ * - DOM[6]: `skillComputational` (`668d6a25e71f90e7630ce187` — Tư duy máy tính / thuật toán)
+ * - DOM[7]: `attitudeHomework` (`668e2f5be71f90e7630d44c1` — Thái độ luyện tập về nhà)
+ * - DOM[8]: `attitudeInClass` (`668e2eaee71f90e7630d434f` — Thái độ học tập trên lớp)
+ */
 export const SESSION14_COMPETENCY_KEYS: Array<keyof SpckSession14CompetencyScores> = [
-  "knowledgeInClass",
   "knowledgeSelfStudy",
+  "knowledgeInClass",
   "skillCommunication",
   "skillComputerUse",
   "skillProblemSolving",
@@ -4920,11 +5018,11 @@ export const session14EvalRepo = {
 
     db.prepare(
       `INSERT INTO spck_session14_evaluations (
-        classId, studentId, competencyJson, competencyTotalScore,
-        demoScoresJson, demoTotalScore, demoSourcePath, demoJudgeNote,
+        classId, studentId, competencyJson, competencyTotalScore, competencySourceJson,
+        demoScoresJson, demoTotalScore, demoRawTotalScore, demoSourcePath, demoJudgeNote,
         learnedFromMindx, suggestionsFromMindx, futureDirection,
         quickTagsJson, teacherNote, draftVersion, status, contentHash
-      ) VALUES (?, ?, ?, ?, ?, ?, '', '', '', '', '', '[]', '', 1, 'DRAFT', '')`
+      ) VALUES (?, ?, ?, ?, '{}', ?, ?, 0.0, '', '', '', '', '', '[]', '', 1, 'DRAFT', '')`
     ).run(
       normalizedClassId,
       normalizedStudentId,
@@ -4942,7 +5040,9 @@ export const session14EvalRepo = {
     studentId: string;
     expectedVersion?: number;
     competencyScores?: Partial<SpckSession14CompetencyScores> | string;
+    competencySource?: Record<string, unknown> | string;
     demoScores?: Partial<SpckSession14DemoScores> | string;
+    demoRawTotalScore?: number;
     demoSourcePath?: string;
     demoJudgeNote?: string;
     learnedFromMindx?: string;
@@ -4985,6 +5085,14 @@ export const session14EvalRepo = {
         : currentComp;
     const nextCompJson = JSON.stringify(nextComp);
     const nextCompTotal = calculateCompetencyAverageScore(nextComp);
+    const nextCompSourceJson =
+      params.competencySource !== undefined
+        ? typeof params.competencySource === "string"
+          ? params.competencySource
+          : JSON.stringify(params.competencySource || {})
+        : nextCompJson !== current.competencyJson
+        ? JSON.stringify({ source: "MANUAL_TEACHER_EDIT" })
+        : current.competencySourceJson || "{}";
 
     const currentDemo = parseSession14DemoScores(current.demoScoresJson, normalizedClassId);
     const nextDemo =
@@ -4998,6 +5106,15 @@ export const session14EvalRepo = {
         : currentDemo;
     const nextDemoJson = JSON.stringify(nextDemo);
     const nextDemoTotal = calculateDemoTotalScore(nextDemo);
+    const existingRawTotal = Number(current.demoRawTotalScore || 0);
+    const nextDemoRawTotal =
+      params.demoRawTotalScore !== undefined && Number.isFinite(Number(params.demoRawTotalScore))
+        ? Math.max(0, Math.round(Number(params.demoRawTotalScore) * 1000) / 1000)
+        : nextDemoJson !== current.demoScoresJson
+        ? nextDemoTotal
+        : existingRawTotal > 0
+        ? existingRawTotal
+        : nextDemoTotal;
 
     const nextSourcePath =
       params.demoSourcePath !== undefined ? params.demoSourcePath : current.demoSourcePath;
@@ -5048,7 +5165,9 @@ export const session14EvalRepo = {
       Boolean(current.contentHash) && current.contentHash !== candidateHash;
     const contentChangedFromCurrent =
       nextCompJson !== current.competencyJson ||
+      nextCompSourceJson !== (current.competencySourceJson || "{}") ||
       nextDemoJson !== current.demoScoresJson ||
+      Math.abs(nextDemoRawTotal - existingRawTotal) > 1e-6 ||
       nextSourcePath !== current.demoSourcePath ||
       nextJudgeNote !== current.demoJudgeNote ||
       nextLearned !== current.learnedFromMindx ||
@@ -5089,8 +5208,10 @@ export const session14EvalRepo = {
       `UPDATE spck_session14_evaluations
        SET competencyJson = ?,
            competencyTotalScore = ?,
+           competencySourceJson = ?,
            demoScoresJson = ?,
            demoTotalScore = ?,
+           demoRawTotalScore = ?,
            demoSourcePath = ?,
            demoJudgeNote = ?,
            learnedFromMindx = ?,
@@ -5109,8 +5230,10 @@ export const session14EvalRepo = {
     ).run(
       nextCompJson,
       nextCompTotal,
+      nextCompSourceJson,
       nextDemoJson,
       nextDemoTotal,
+      nextDemoRawTotal,
       nextSourcePath,
       nextJudgeNote,
       nextLearned,
@@ -5310,6 +5433,299 @@ export const session14EvalRepo = {
        WHERE classId = ? AND studentId = ?`
     ).run(reason, normalizedClassId, normalizedStudentId);
     return this.findOne(normalizedClassId, normalizedStudentId)!;
+  },
+};
+
+export interface Session14ClassSummaryRecord {
+  classId: string;
+  title: string;
+  bodyText: string;
+  summaryHtml: string;
+  isEditedByTeacher: number;
+  status: "DRAFT" | "APPROVED" | "VERIFIED" | "FAILED";
+  contentHash: string;
+  verifiedAt?: string | null;
+  errorMessage?: string | null;
+  updatedAt?: string;
+}
+
+export type Session14AwardTier = "FIRST" | "SECOND" | "THIRD" | "COMPLETED" | "UNSCORED";
+
+export interface Session14AwardRankItem {
+  studentId: string;
+  fullName: string;
+  rawTotalScore3dp: number;
+  displayTotalScore2dp: number;
+  rawScoreText: string;
+  awardRank: number | null;
+  awardTier: Session14AwardTier;
+  isTiedAward: boolean;
+  awardLabel: string;
+  awardBadge: string;
+  projectTitle: string;
+}
+
+export function formatRawDemoScore3dp(score: number): string {
+  const n = Number(score);
+  if (!Number.isFinite(n) || n <= 0) return "0.00";
+  const r3 = Math.round(n * 1000) / 1000;
+  const r2 = Math.round(r3 * 100) / 100;
+  if (Math.abs(r3 - r2) > 1e-6) {
+    return r3.toFixed(3);
+  }
+  return r2.toFixed(2);
+}
+
+export function computeSession14AwardRankingsPure(
+  students: Array<{
+    studentId: string;
+    fullName: string;
+    rawTotalScore3dp?: number | null;
+    demoRawTotalScore?: number | null;
+    demoTotalScore?: number | null;
+    projectTitle?: string | null;
+  }>
+): Session14AwardRankItem[] {
+  const normalizedInput = (students || []).map((stu) => {
+    const rawCandidate =
+      typeof stu.rawTotalScore3dp === "number" &&
+      Number.isFinite(stu.rawTotalScore3dp) &&
+      stu.rawTotalScore3dp > 0
+        ? stu.rawTotalScore3dp
+        : typeof stu.demoRawTotalScore === "number" &&
+          Number.isFinite(stu.demoRawTotalScore) &&
+          stu.demoRawTotalScore > 0
+        ? stu.demoRawTotalScore
+        : Number(stu.demoTotalScore || 0);
+    const scoreMillis =
+      Number.isFinite(rawCandidate) && rawCandidate > 0 ? Math.round(rawCandidate * 1000) : 0;
+    const raw3dp = scoreMillis / 1000;
+    const disp2dp = Math.round(raw3dp * 100) / 100;
+    return {
+      studentId: String(stu.studentId || "").trim(),
+      fullName: String(stu.fullName || "").trim(),
+      scoreMillis,
+      rawTotalScore3dp: raw3dp,
+      displayTotalScore2dp: disp2dp,
+      rawScoreText: formatRawDemoScore3dp(raw3dp),
+      projectTitle: stripSpckSessionSuffix(stu.projectTitle || ""),
+    };
+  });
+
+  // Group distinct positive 3dp score buckets descending (Dense Rank 1, 2, 3, >=4)
+  const distinctMillis = Array.from(
+    new Set(normalizedInput.filter((x) => x.scoreMillis > 0).map((x) => x.scoreMillis))
+  ).sort((a, b) => b - a);
+
+  const countByMillis = new Map<number, number>();
+  for (const item of normalizedInput) {
+    if (item.scoreMillis > 0) {
+      countByMillis.set(item.scoreMillis, (countByMillis.get(item.scoreMillis) || 0) + 1);
+    }
+  }
+  const rankByMillis = new Map<number, number>();
+  distinctMillis.forEach((ms, idx) => {
+    rankByMillis.set(ms, idx + 1);
+  });
+
+  return normalizedInput
+    .map((item) => {
+      if (item.scoreMillis <= 0) {
+        return {
+          studentId: item.studentId,
+          fullName: item.fullName,
+          rawTotalScore3dp: 0,
+          displayTotalScore2dp: 0,
+          rawScoreText: "0.00",
+          awardRank: null,
+          awardTier: "UNSCORED" as Session14AwardTier,
+          isTiedAward: false,
+          awardLabel: "",
+          awardBadge: "",
+          projectTitle: item.projectTitle,
+        };
+      }
+      const rank = rankByMillis.get(item.scoreMillis) || 4;
+      const count = countByMillis.get(item.scoreMillis) || 1;
+      const tied = count > 1 && rank <= 3;
+
+      let awardTier: Session14AwardTier = "COMPLETED";
+      let awardLabel = "Hoàn thành dự án cuối khóa";
+      let awardBadge = "👏 Hoàn thành";
+      if (rank === 1) {
+        awardTier = "FIRST";
+        awardLabel = tied ? "Đồng Giải Nhất" : "Giải Nhất";
+        awardBadge = `🥇 ${awardLabel}`;
+      } else if (rank === 2) {
+        awardTier = "SECOND";
+        awardLabel = tied ? "Đồng Giải Nhì" : "Giải Nhì";
+        awardBadge = `🥈 ${awardLabel}`;
+      } else if (rank === 3) {
+        awardTier = "THIRD";
+        awardLabel = tied ? "Đồng Giải Ba" : "Giải Ba";
+        awardBadge = `🥉 ${awardLabel}`;
+      }
+
+      return {
+        studentId: item.studentId,
+        fullName: item.fullName,
+        rawTotalScore3dp: item.rawTotalScore3dp,
+        displayTotalScore2dp: item.displayTotalScore2dp,
+        rawScoreText: item.rawScoreText,
+        awardRank: rank,
+        awardTier,
+        isTiedAward: tied,
+        awardLabel,
+        awardBadge,
+        projectTitle: item.projectTitle,
+      };
+    })
+    .sort((a, b) => {
+      if (a.awardRank === null && b.awardRank !== null) return 1;
+      if (a.awardRank !== null && b.awardRank === null) return -1;
+      if (b.rawTotalScore3dp !== a.rawTotalScore3dp) {
+        return b.rawTotalScore3dp - a.rawTotalScore3dp;
+      }
+      return a.fullName.localeCompare(b.fullName, "vi");
+    });
+}
+
+export const session14ClassSummaryRepo = {
+  findOne(classId: string): Session14ClassSummaryRecord | undefined {
+    const normalized = String(classId || "").trim().toUpperCase();
+    if (!normalized) return undefined;
+    const db = getDb();
+    return db
+      .prepare(`SELECT * FROM spck_session14_class_summaries WHERE classId = ?`)
+      .get(normalized) as Session14ClassSummaryRecord | undefined;
+  },
+
+  saveAutoGenerated(params: {
+    classId: string;
+    title: string;
+    bodyText: string;
+    summaryHtml: string;
+    forceOverwriteEdited?: boolean;
+  }): Session14ClassSummaryRecord {
+    const normalized = String(params.classId || "").trim().toUpperCase();
+    const existing = this.findOne(normalized);
+    if (
+      existing &&
+      existing.isEditedByTeacher === 1 &&
+      !params.forceOverwriteEdited &&
+      String(existing.summaryHtml || "").trim().length > 0
+    ) {
+      return existing;
+    }
+
+    const cleanTitle = String(params.title || "").trim();
+    const cleanBody = String(params.bodyText || "").trim();
+    const cleanHtml = String(params.summaryHtml || "").trim();
+    const hash = calculateSha256(cleanHtml);
+    const keepVerified =
+      existing &&
+      existing.status === "VERIFIED" &&
+      existing.contentHash === hash &&
+      Boolean(existing.verifiedAt);
+
+    const db = getDb();
+    db.prepare(
+      `INSERT INTO spck_session14_class_summaries (
+        classId, title, bodyText, summaryHtml, isEditedByTeacher, status, contentHash, verifiedAt, errorMessage, updatedAt
+      ) VALUES (?, ?, ?, ?, 0, ?, ?, ?, NULL, datetime('now', 'localtime'))
+      ON CONFLICT(classId) DO UPDATE SET
+        title = excluded.title,
+        bodyText = excluded.bodyText,
+        summaryHtml = excluded.summaryHtml,
+        isEditedByTeacher = 0,
+        status = excluded.status,
+        contentHash = excluded.contentHash,
+        verifiedAt = excluded.verifiedAt,
+        errorMessage = NULL,
+        updatedAt = datetime('now', 'localtime')`
+    ).run(
+      normalized,
+      cleanTitle,
+      cleanBody,
+      cleanHtml,
+      keepVerified ? "VERIFIED" : "DRAFT",
+      hash,
+      keepVerified ? existing?.verifiedAt ?? null : null
+    );
+    return this.findOne(normalized)!;
+  },
+
+  saveTeacherDraft(params: {
+    classId: string;
+    title: string;
+    bodyText: string;
+    summaryHtml: string;
+    approve?: boolean;
+  }): Session14ClassSummaryRecord {
+    const normalized = String(params.classId || "").trim().toUpperCase();
+    const cleanTitle = String(params.title || "").trim();
+    const cleanBody = String(params.bodyText || "").trim();
+    const cleanHtml = String(params.summaryHtml || "").trim();
+    const hash = calculateSha256(cleanHtml);
+    const nextStatus = params.approve ? "APPROVED" : "DRAFT";
+    const db = getDb();
+    db.prepare(
+      `INSERT INTO spck_session14_class_summaries (
+        classId, title, bodyText, summaryHtml, isEditedByTeacher, status, contentHash, verifiedAt, errorMessage, updatedAt
+      ) VALUES (?, ?, ?, ?, 1, ?, ?, NULL, NULL, datetime('now', 'localtime'))
+      ON CONFLICT(classId) DO UPDATE SET
+        title = excluded.title,
+        bodyText = excluded.bodyText,
+        summaryHtml = excluded.summaryHtml,
+        isEditedByTeacher = 1,
+        status = excluded.status,
+        contentHash = excluded.contentHash,
+        verifiedAt = CASE WHEN excluded.contentHash = spck_session14_class_summaries.contentHash AND spck_session14_class_summaries.status = 'VERIFIED' THEN spck_session14_class_summaries.verifiedAt ELSE NULL END,
+        errorMessage = NULL,
+        updatedAt = datetime('now', 'localtime')`
+    ).run(normalized, cleanTitle, cleanBody, cleanHtml, nextStatus, hash);
+    return this.findOne(normalized)!;
+  },
+
+  markVerified(classId: string, summaryHtml: string): Session14ClassSummaryRecord {
+    const normalized = String(classId || "").trim().toUpperCase();
+    const existing = this.findOne(normalized);
+    const cleanHtml = String(summaryHtml || existing?.summaryHtml || "").trim();
+    const hash = calculateSha256(cleanHtml);
+    const db = getDb();
+    db.prepare(
+      `INSERT INTO spck_session14_class_summaries (
+        classId, title, bodyText, summaryHtml, isEditedByTeacher, status, contentHash, verifiedAt, errorMessage, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, 'VERIFIED', ?, datetime('now', 'localtime'), NULL, datetime('now', 'localtime'))
+      ON CONFLICT(classId) DO UPDATE SET
+        summaryHtml = excluded.summaryHtml,
+        status = 'VERIFIED',
+        contentHash = excluded.contentHash,
+        verifiedAt = datetime('now', 'localtime'),
+        errorMessage = NULL,
+        updatedAt = datetime('now', 'localtime')`
+    ).run(
+      normalized,
+      existing?.title || "",
+      existing?.bodyText || "",
+      cleanHtml,
+      existing?.isEditedByTeacher ?? 0,
+      hash
+    );
+    return this.findOne(normalized)!;
+  },
+
+  markFailed(classId: string, errorMessage: string): Session14ClassSummaryRecord | undefined {
+    const normalized = String(classId || "").trim().toUpperCase();
+    const existing = this.findOne(normalized);
+    if (!existing) return undefined;
+    const db = getDb();
+    db.prepare(
+      `UPDATE spck_session14_class_summaries
+       SET status = 'FAILED', errorMessage = ?, updatedAt = datetime('now', 'localtime')
+       WHERE classId = ?`
+    ).run(errorMessage, normalized);
+    return this.findOne(normalized);
   },
 };
 
@@ -7302,8 +7718,11 @@ export const reportCardRepo = {
 
 export function buildEnrichedSession14EvalList(classId: string) {
   const normalizedClassId = String(classId || "").trim().toUpperCase();
-  const students = studentRepo.findByClass(normalizedClassId, false);
-  return students.map((stu) => {
+  const students = studentRepo
+    .findByClass(normalizedClassId, false)
+    .filter((stu) => Number(stu.isActive ?? 1) !== 0);
+
+  const baseItems = students.map((stu) => {
     const rec = session14EvalRepo.getOrInit(normalizedClassId, stu.studentId);
     let quickTags: string[] = [];
     try {
@@ -7311,13 +7730,67 @@ export function buildEnrichedSession14EvalList(classId: string) {
     } catch {
       quickTags = [];
     }
+    let competencySource: Record<string, unknown> | null = null;
+    if (rec.competencySourceJson && rec.competencySourceJson !== "{}") {
+      try {
+        const parsedSrc = JSON.parse(rec.competencySourceJson);
+        if (parsedSrc && typeof parsedSrc === "object" && !Array.isArray(parsedSrc)) {
+          competencySource = parsedSrc as Record<string, unknown>;
+        }
+      } catch {
+        competencySource = null;
+      }
+    }
+
+    const s14Work = spckSessionRepo.findOne(normalizedClassId, stu.studentId, 14);
+    const sharedWork = spckUploadRepo.findOne(normalizedClassId, stu.studentId);
+    const rawTitleCandidate =
+      s14Work?.projectTitle || sharedWork?.baseProjectTitle || sharedWork?.projectTitle || "";
+    const projectTitle = !isDefaultSpckProductTitle(rawTitleCandidate, stu.fullName)
+      ? stripSpckSessionSuffix(rawTitleCandidate)
+      : "";
+
+    const rawDemoScore =
+      typeof rec.demoRawTotalScore === "number" &&
+      Number.isFinite(rec.demoRawTotalScore) &&
+      rec.demoRawTotalScore > 0
+        ? Math.round(rec.demoRawTotalScore * 1000) / 1000
+        : rec.demoTotalScore;
+
     return {
       ...rec,
       fullName: stu.fullName,
       competencyScores: parseSession14CompetencyScores(rec.competencyJson),
+      competencySource,
       demoScores: parseSession14DemoScores(rec.demoScoresJson, normalizedClassId),
+      demoRawTotalScore: rawDemoScore,
+      projectTitle,
       awardRanking: rec.awardRanking || "",
       quickTags,
+    };
+  });
+
+  const rankItems = computeSession14AwardRankingsPure(
+    baseItems.map((it) => ({
+      studentId: it.studentId,
+      fullName: it.fullName,
+      rawTotalScore3dp: it.demoRawTotalScore,
+      demoTotalScore: it.demoTotalScore,
+      projectTitle: it.projectTitle,
+    }))
+  );
+  const rankMap = new Map(rankItems.map((r) => [r.studentId, r]));
+
+  return baseItems.map((item) => {
+    const rankInfo = rankMap.get(item.studentId);
+    return {
+      ...item,
+      rawScoreText: rankInfo?.rawScoreText || formatRawDemoScore3dp(item.demoRawTotalScore),
+      awardRank: rankInfo?.awardRank ?? null,
+      awardTier: rankInfo?.awardTier || "UNSCORED",
+      isTiedAward: Boolean(rankInfo?.isTiedAward),
+      awardLabel: rankInfo?.awardLabel || "",
+      awardBadge: rankInfo?.awardBadge || "",
     };
   });
 }

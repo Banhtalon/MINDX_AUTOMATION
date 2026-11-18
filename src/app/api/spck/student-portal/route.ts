@@ -140,7 +140,7 @@ export async function POST(req: Request) {
       folderPath: String(body?.folderPath || "").trim() || undefined,
       driveFolderUrl: String(body?.driveFolderUrl || "").trim() || undefined,
       autoUploadDrive:
-        typeof body?.autoUploadDrive === "boolean" ? body.autoUploadDrive : true,
+        typeof body?.autoUploadDrive === "boolean" ? body.autoUploadDrive : false,
       sessionNumber: sessionSlot,
       requireTeacherConfirmation:
         body?.requireTeacherConfirmation === true ? true : false,

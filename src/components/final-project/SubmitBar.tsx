@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, ExternalLink, Loader2, RefreshCw, TrendingUp, UploadCloud } from "lucide-react";
+import {
+  CheckCircle2,
+  ExternalLink,
+  Loader2,
+  RefreshCw,
+  Send,
+  TrendingUp,
+} from "lucide-react";
 import { getSpckVerifiedTeachingProgressSuggestion } from "@/lib/teaching/session-progress-mapper";
 import { getSessionSlotDisplay, SpckWorkflowController } from "./useSpckWorkflow";
 
@@ -14,10 +21,14 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
     rows,
     students,
     session14Evals,
-    totalStepsCount,
     lastSubmissionSummary,
     handleApproveAndUpload,
     handleSubmitSession14Combo,
+    handleMainStep3SubmitAll,
+    mainStep3Running,
+    teachingProgressPushState,
+    skippedUnreadyByStudent,
+    isSpckExemptClass,
     session14ComboStatus,
     uploadingS14EvalLms,
     isAnyOperationBusy,
@@ -340,14 +351,15 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="spck-pill-primary px-2.5 py-0.5 rounded-full text-xs font-bold">
-            Bước 3 / {totalStepsCount}
+            Bước 3 / 3
           </span>
           <h2 className="text-sm sm:text-base font-extrabold text-white">
-            Nộp Các Bài Đã Chọn &amp; Đối Chiếu Kết Quả LMS
+            Duyệt &amp; Nộp Trọn Gói (MindX LMS + Teaching)
           </h2>
           {assignedRows.length > 0 && (
             <span className="spck-pill-success px-2 py-0.5 rounded-full text-[11px] font-semibold">
-              Đã xác minh B.{selectedSessionNumber}: {verifiedSpckCountForCurrentSession}/
+              Đã xác minh LMS B.{selectedSessionNumber}:{" "}
+              {verifiedSpckCountForCurrentSession}/
               {Math.max(
                 0,
                 assignedRows.length - absentExemptRowsForCurrentSession.length
@@ -356,6 +368,11 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
               {absentExemptRowsForCurrentSession.length > 0
                 ? ` (Miễn nộp ${absentExemptRowsForCurrentSession.length} vắng)`
                 : ""}
+            </span>
+          )}
+          {Object.keys(skippedUnreadyByStudent).length > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/60 text-rose-200 text-[11px] font-bold">
+              🚨 {Object.keys(skippedUnreadyByStudent).length} HV chờ nộp bù sau
             </span>
           )}
         </div>
@@ -439,100 +456,150 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
               </button>
             )}
 
-          {selectedSessionNumber === 14 ? (
-            <button
-              type="button"
-              onClick={() =>
-                handleSubmitSession14Combo(effectiveSelectedStudentIds, "both")
-              }
-              disabled={
-                isAnyOperationBusy ||
-                !selectedClassId ||
-                effectiveSelectedStudentIds.length === 0
-              }
-              className="spck-btn-primary flex items-center space-x-2 px-5 py-2.5 rounded-xl disabled:opacity-50 text-sm font-bold transition-colors cursor-pointer"
-            >
-              {uploading || uploadingS14EvalLms || session14ComboStatus.running ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <UploadCloud className="w-4 h-4" />
-              )}
-              <span>
-                🚀 Nộp Buổi 14 đầy đủ (Sản phẩm + Đánh giá) —{" "}
-                {effectiveSelectedStudentIds.length} bài
-              </span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() =>
-                handleApproveAndUpload(
-                  effectiveSelectedStudentIds,
-                  true,
-                  selectedSessionNumber
-                )
-              }
-              disabled={
-                isAnyOperationBusy ||
-                !selectedClassId ||
-                effectiveSelectedStudentIds.length === 0
-              }
-              className="spck-btn-primary flex items-center space-x-2 px-5 py-2.5 rounded-xl disabled:opacity-50 text-sm font-bold transition-colors cursor-pointer"
-            >
-              {uploading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <UploadCloud className="w-4 h-4" />
-              )}
-              <span>
-                Nộp {effectiveSelectedStudentIds.length} bài — Buổi {selectedSessionNumber}
-              </span>
-            </button>
-          )}
+          <button
+            type="button"
+            data-testid="spck-submitbar-step3-submit"
+            onClick={() => void handleMainStep3SubmitAll()}
+            disabled={
+              isAnyOperationBusy ||
+              !selectedClassId ||
+              (rows.length === 0 &&
+                (selectedSessionNumber !== 14 || session14Evals.length === 0))
+            }
+            className="spck-btn-primary flex items-center space-x-2 px-5 py-2.5 rounded-xl disabled:opacity-50 text-sm font-extrabold transition-colors cursor-pointer shadow"
+          >
+            {mainStep3Running ||
+            uploading ||
+            uploadingS14EvalLms ||
+            session14ComboStatus.running ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+            <span>
+              3. Duyệt &amp; Nộp tất cả
+              {selectedSessionNumber === 12
+                ? ` (${effectiveSelectedStudentIds.length} HV → LMS + Teaching 60%)`
+                : selectedSessionNumber === 13
+                ? ` (${effectiveSelectedStudentIds.length} HV → LMS + Teaching 80%)`
+                : " (Buổi 14 → LMS + Teaching 100% + Phiếu điểm)"}
+            </span>
+          </button>
         </div>
       </div>
 
-      {isComboForCurrentClass && (
-          <div className="spck-clean-subbar p-3 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
-            <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
-              <div>
-                <div className="font-bold text-emerald-300">
-                  Phần 1: Sản phẩm SPCK (Cột 3 LMS)
-                </div>
-                <div className="text-slate-300 mt-0.5">
-                  {session14ComboStatus.currentPhase === "spck"
-                    ? "⏳ Đang duyệt & nộp Sản phẩm SPCK..."
-                    : session14ComboStatus.spckSummary
-                    ? `Đã nộp ${session14ComboStatus.spckSummary.verifiedItems.length}/${session14ComboStatus.spckSummary.totalSelected} bài (${session14ComboStatus.spckSummary.retryStudentIds.length} bài cần thử lại)`
-                    : "Chưa chạy trong đợt này"}
-                </div>
-              </div>
-            </div>
-            <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
-              <div>
-                <div className="font-bold text-blue-300">
-                  Phần 2: Điểm Demo, ĐNL &amp; Thư 3 phần (Cột 2 LMS)
-                </div>
-                <div className="text-slate-300 mt-0.5">
-                  {session14ComboStatus.currentPhase === "eval"
-                    ? "⏳ Đang duyệt & đẩy Đánh giá tổng kết..."
-                    : session14ComboStatus.currentPhase === "spck" &&
-                      session14ComboStatus.evalVerifiedCount === 0 &&
-                      session14ComboStatus.evalFailedCount === 0 &&
-                      session14ComboStatus.evalRetryStudentIds.length === 0 &&
-                      !session14ComboStatus.evalErrorMessage
-                    ? "Chưa chạy trong đợt này"
-                    : `Đã lưu & xác minh ${session14ComboStatus.evalVerifiedCount} học viên (${session14ComboStatus.evalRetryStudentIds.length} cần thử lại)`}
-                  {session14ComboStatus.evalErrorMessage && (
-                    <span className="block text-rose-300 mt-0.5">
-                      {session14ComboStatus.evalErrorMessage}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+      {/* Kết quả cập nhật Tiến độ Teaching tự động cho Buổi 12 & 13 */}
+      {selectedSessionNumber !== 14 &&
+        teachingProgressPushState.status !== "IDLE" && (
+          <div
+            className={`px-3 py-2 rounded-lg border text-xs flex items-center justify-between gap-2 ${
+              teachingProgressPushState.status === "SUCCESS"
+                ? "bg-emerald-950/40 border-emerald-700/60 text-emerald-200"
+                : teachingProgressPushState.status === "RUNNING"
+                ? "bg-amber-950/40 border-amber-600/50 text-amber-200"
+                : "bg-amber-950/50 border-amber-500/60 text-amber-200"
+            }`}
+          >
+            <span>
+              {teachingProgressPushState.status === "SUCCESS"
+                ? `✅ Teaching: ${teachingProgressPushState.message}`
+                : teachingProgressPushState.status === "RUNNING"
+                ? `⏳ ${teachingProgressPushState.message}`
+                : `⚠️ ${teachingProgressPushState.message}`}
+            </span>
           </div>
         )}
+
+      {/* Bảng 4 bước tiến trình liên hoàn Buổi 14 (SPCK -> Đánh giá + Summary -> Teaching 100% -> Phiếu điểm) */}
+      {isComboForCurrentClass && (
+        <div className="spck-clean-subbar p-3 rounded-xl grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2.5 text-xs">
+          <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+            <div className="font-bold text-emerald-300">
+              [1/4] Sản phẩm SPCK (Cột 3 LMS)
+            </div>
+            <div className="text-slate-300 mt-0.5">
+              {isSpckExemptClass
+                ? "Miễn SPCK (PTB / CSB)"
+                : session14ComboStatus.currentPhase === "spck"
+                ? "⏳ Đang duyệt & nộp Sản phẩm SPCK..."
+                : session14ComboStatus.spckSummary
+                ? `✓ Đã xác minh ${session14ComboStatus.spckSummary.verifiedItems.length}/${session14ComboStatus.spckSummary.totalSelected} HV${
+                    session14ComboStatus.spckSummary.retryStudentIds.length > 0
+                      ? ` (${session14ComboStatus.spckSummary.retryStudentIds.length} lỗi)`
+                      : ""
+                  }`
+                : "Đã bỏ qua / Đã nộp trước đó"}
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+            <div className="font-bold text-blue-300">
+              [2/4] Đánh giá + Summary (Cột 2 LMS)
+            </div>
+            <div className="text-slate-300 mt-0.5">
+              {session14ComboStatus.currentPhase === "eval"
+                ? "⏳ Đang đẩy Điểm Demo, ĐNL, Summary & Thư 3 phần..."
+                : session14ComboStatus.currentPhase === "spck"
+                ? "Chờ sau bước 1..."
+                : `✓ Đã xác minh ${session14ComboStatus.evalVerifiedCount} HV${
+                    session14ComboStatus.classSummaryVerified
+                      ? " + Summary ✓"
+                      : ""
+                  }${
+                    session14ComboStatus.evalRetryStudentIds.length > 0
+                      ? ` (${session14ComboStatus.evalRetryStudentIds.length} lỗi)`
+                      : ""
+                  }`}
+              {session14ComboStatus.evalErrorMessage && (
+                <span className="block text-rose-300 mt-0.5">
+                  {session14ComboStatus.evalErrorMessage}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+            <div className="font-bold text-indigo-300">
+              [3/4] Tiến độ dự án Teaching (100%)
+            </div>
+            <div className="text-slate-300 mt-0.5">
+              {session14ComboStatus.currentPhase === "teaching_progress"
+                ? "⏳ Đang đẩy tiến độ dự án 100%..."
+                : session14ComboStatus.teachingProgressResult
+                ? session14ComboStatus.teachingProgressResult.status ===
+                  "SUCCESS"
+                  ? "✓ Đã cập nhật 100% trên Teaching"
+                  : `⚠️ ${session14ComboStatus.teachingProgressResult.message}`
+                : session14ComboStatus.running
+                ? "Chờ sau bước LMS..."
+                : "Chưa chạy"}
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+            <div className="font-bold text-amber-300">
+              [4/4] Phiếu điểm cuối khóa Teaching
+            </div>
+            <div className="text-slate-300 mt-0.5">
+              {session14ComboStatus.currentPhase === "report_card"
+                ? "⏳ Đang quét điểm LMS & đồng bộ sang Teaching..."
+                : session14ComboStatus.reportCardResult
+                ? session14ComboStatus.reportCardResult.status === "SUCCESS"
+                  ? `✓ Đã đồng bộ ${
+                      session14ComboStatus.reportCardResult
+                        .matchedStudentCount ?? ""
+                    } HV sang Teaching`
+                  : `⚠️ ${
+                      session14ComboStatus.reportCardResult.warningMessage ||
+                      "Cần kiểm tra trên Teaching"
+                    }`
+                : session14ComboStatus.running
+                ? "Chờ sau bước 3..."
+                : "Chưa chạy"}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Detailed Batch Submission Result Card */}
       {lastSubmissionSummary &&
