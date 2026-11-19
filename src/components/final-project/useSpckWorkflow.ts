@@ -1856,9 +1856,31 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         setDemoSheetTitle(dSheet.sheetTitle);
       }
 
+      const skipReasons = dSheet?.aiSkipReasons as
+        | { noEvidenceCount?: number; parseErrorCount?: number; aiErrorCount?: number }
+        | undefined;
+      const fallbackReasons: string[] = [];
+      if ((skipReasons?.noEvidenceCount || 0) > 0) {
+        fallbackReasons.push("chưa có tệp/link bài nộp");
+      }
+      if ((skipReasons?.parseErrorCount || 0) > 0) {
+        fallbackReasons.push("tệp dự án lỗi đọc tự động");
+      }
+      if ((skipReasons?.aiErrorCount || 0) > 0) {
+        fallbackReasons.push("không gọi được AI chấm nháp lúc này");
+      }
+
       const aiSummaryPart =
         typeof dSheet?.aiPreScoredCount === "number" && dSheet.aiPreScoredCount > 0
           ? ` — AI đã chấm nháp phần sản phẩm & gợi ý câu hỏi BGK (Cột G) cho ${dSheet.aiPreScoredCount}/${dSheet?.studentCount || 0} học viên`
+          : enableAiPreScore &&
+            dSheet?.aiPreScoredCount === 0 &&
+            (dSheet?.aiSkippedCount || 0) > 0
+          ? ` — tạm giữ mức mặc định 'Tốt' cho các tiêu chí (${
+              fallbackReasons.length > 0
+                ? fallbackReasons.join(", ")
+                : "giám khảo chấm trực tiếp"
+            })`
           : "";
 
       setBannerMessage({

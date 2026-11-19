@@ -17,9 +17,14 @@ import AdmZip from "adm-zip";
 import type { Frame, Page } from "playwright";
 import { getDb, jobLogRepo, spckUploadRepo, studentRepo } from "../db/sqlite";
 import {
+  summarizeSafeGeminiErrorForLog,
+  type GeminiRetryOptions,
+} from "../gemini/client";
+import {
   extractDemoTemplateRubricStructure,
   generateDemoSheetAiPreScoresForClass,
   type DemoSheetAiScorerOverride,
+  type DemoSheetAiSkipReasons,
   type DemoTemplateRubricStructure,
   type StudentDemoAiPreScoreResult,
 } from "../gemini/spck-demo-sheet-scorer";
@@ -85,11 +90,14 @@ export interface CreateDemoSheetOptions {
   enableAiPreScore?: boolean;
   /** @internal Test-only AI scorer override to avoid live Gemini network calls in unit tests */
   _testAiScorerOverride?: DemoSheetAiScorerOverride;
+  /** @internal Test-only retry options for Gemini backoff verification */
+  _testRetryOptions?: GeminiRetryOptions & { interStudentDelayMs?: number };
   /** @internal Test-only Playwright Page & origin overrides for isolated DOM verification */
   _testHarness?: {
     page: Page;
     driveBaseUrl?: string;
     sheetsBaseUrl?: string;
+    fileMenuTimeoutMs?: number;
   };
 }
 
@@ -111,6 +119,7 @@ export interface CreateDemoSheetResult {
   usedTemplateUrl?: string;
   aiPreScoredCount?: number;
   aiSkippedCount?: number;
+  aiSkipReasons?: DemoSheetAiSkipReasons;
 }
 
 function escapeXml(str: string): string {
@@ -1927,6 +1936,95 @@ async function renameAndVerifyNativeGoogleSheetEditor(
   }
 }
 
+async function openGoogleSheetsFileMenuAndClickItem(params: {
+  sheetPage: Page;
+  itemPattern: RegExp;
+  itemLabel: string;
+  totalTimeoutMs?: number;
+  beforeItemClick?: () => void;
+}): Promise<void> {
+  const { sheetPage, itemPattern, itemLabel, totalTimeoutMs = 24_000, beforeItemClick } = params;
+  const fileMenu = sheetPage.locator("#docs-file-menu").first();
+  await fileMenu.waitFor({
+    state: "visible",
+    timeout: params.totalTimeoutMs !== undefined ? Math.max(1000, totalTimeoutMs) : 25_000,
+  });
+
+  const targetItem = sheetPage
+    .locator('.goog-menuitem:visible, [role="menuitem"]:visible')
+    .filter({ hasText: itemPattern })
+    .first();
+  const anyOpenMenuItem = sheetPage
+    .locator('.goog-menuitem:visible, [role="menuitem"]:visible')
+    .first();
+
+  const clickTarget = async () => {
+    beforeItemClick?.();
+    try {
+      await targetItem.click({ timeout: 5000 });
+    } catch {
+      await targetItem.evaluate((el) => (el as HTMLElement).click());
+    }
+  };
+
+  const deadline = Date.now() + totalTimeoutMs;
+  for (let attempt = 0; Date.now() < deadline; attempt++) {
+    assertDemoSheetNotStopped();
+
+    if (await targetItem.isVisible().catch(() => false)) {
+      await clickTarget();
+      return;
+    }
+
+    if (attempt > 0 && (await anyOpenMenuItem.isVisible().catch(() => false))) {
+      // Google Sheets (.xlsx compatibility) may populate menu items slightly after opening File menu
+      const populateDeadline = Math.min(deadline, Date.now() + 1_600);
+      while (Date.now() < populateDeadline) {
+        assertDemoSheetNotStopped();
+        if (await targetItem.isVisible().catch(() => false)) {
+          await clickTarget();
+          return;
+        }
+        await sheetPage.waitForTimeout(200);
+      }
+      await sheetPage.keyboard.press("Escape").catch(() => {});
+      await sheetPage.waitForTimeout(250);
+    }
+
+    if (Date.now() >= deadline) break;
+
+    await fileMenu.click({ timeout: 5000 }).catch(() => {});
+    if (attempt >= 1) {
+      await sheetPage.waitForTimeout(350);
+      if (!(await anyOpenMenuItem.isVisible().catch(() => false))) {
+        await fileMenu
+          .evaluate((el) => {
+            for (const type of ["mousedown", "mouseup", "click"] as const) {
+              el.dispatchEvent(
+                new MouseEvent(type, { bubbles: true, cancelable: true, view: window })
+              );
+            }
+          })
+          .catch(() => {});
+      }
+    }
+
+    const pollDeadline = Math.min(deadline, Date.now() + 2_400);
+    while (Date.now() < pollDeadline) {
+      assertDemoSheetNotStopped();
+      if (await targetItem.isVisible().catch(() => false)) {
+        await clickTarget();
+        return;
+      }
+      await sheetPage.waitForTimeout(200);
+    }
+  }
+
+  throw new Error(
+    `Không mở được mục '${itemLabel}' trong menu Tệp của Google Trang tính.`
+  );
+}
+
 async function createNativeGoogleSheetViaDriveAndImport(params: {
   page: Page;
   driveBaseUrl: string;
@@ -1935,6 +2033,7 @@ async function createNativeGoogleSheetViaDriveAndImport(params: {
   stagingPayload: InMemoryWorkbookPayload;
   expectedTabNames: string[];
   ephemeralDriveIdsToTrash: Set<string>;
+  fileMenuTimeoutMs?: number;
 }): Promise<string> {
   const {
     page,
@@ -1944,6 +2043,7 @@ async function createNativeGoogleSheetViaDriveAndImport(params: {
     stagingPayload,
     expectedTabNames,
     ephemeralDriveIdsToTrash,
+    fileMenuTimeoutMs,
   } = params;
 
   await ensureDriveFolderReady(page, driveBaseUrl, classDriveFolderId);
@@ -1954,17 +2054,24 @@ async function createNativeGoogleSheetViaDriveAndImport(params: {
 
   let openedPopupPage: Page | null = null;
   const popupListener = (p: Page) => {
-    if (!openedPopupPage) openedPopupPage = p;
+    if (!openedPopupPage && p !== page) openedPopupPage = p;
   };
   page.context().on("page", popupListener);
 
   let sheetPage: Page | null = null;
   let createdSheetId = "";
   try {
-    await sheetsMenuItem.click({ position: { x: 28, y: 14 } });
+    try {
+      await sheetsMenuItem.click({ position: { x: 28, y: 14 } });
+    } catch {
+      await sheetsMenuItem.click();
+    }
 
-    const openDeadline = Date.now() + 15_000;
+    const startedOpenWaitAt = Date.now();
+    let openDeadline = startedOpenWaitAt + 15_000;
     let clickedSharedConfirm = false;
+    let clickedBlankSubmenu = false;
+    let retriedMenuClick = false;
     while (Date.now() < openDeadline && !openedPopupPage) {
       assertDemoSheetNotStopped();
       if (extractGoogleSheetId(page.url())) {
@@ -1974,12 +2081,47 @@ async function createNativeGoogleSheetViaDriveAndImport(params: {
       if (!clickedSharedConfirm) {
         const sharedConfirmBtn = page
           .locator(
-            '[role="dialog"] button:has-text("Tạo và chia sẻ"):visible, [role="dialog"] button:has-text("Create and share"):visible'
+            '[role="dialog"] button:has-text("Tạo và chia sẻ"):visible, [role="dialog"] [role="button"]:has-text("Tạo và chia sẻ"):visible, [role="alertdialog"] button:has-text("Tạo và chia sẻ"):visible, [role="alertdialog"] [role="button"]:has-text("Tạo và chia sẻ"):visible, .modal-dialog button:has-text("Tạo và chia sẻ"):visible, .modal-dialog [role="button"]:has-text("Tạo và chia sẻ"):visible, [role="dialog"] button:has-text("Create and share"):visible, [role="dialog"] [role="button"]:has-text("Create and share"):visible, [role="alertdialog"] button:has-text("Create and share"):visible, [role="alertdialog"] [role="button"]:has-text("Create and share"):visible, .modal-dialog button:has-text("Create and share"):visible, .modal-dialog [role="button"]:has-text("Create and share"):visible'
           )
           .first();
         if (await sharedConfirmBtn.isVisible().catch(() => false)) {
           await sharedConfirmBtn.click();
           clickedSharedConfirm = true;
+          openDeadline = Math.max(openDeadline, Date.now() + 12_000);
+        }
+      }
+      if (!clickedBlankSubmenu) {
+        const blankSubmenu = page
+          .locator(
+            '[role="menuitem"]:has-text("Trang tính trống"):visible, [role="menuitem"]:has-text("Blank spreadsheet"):visible'
+          )
+          .first();
+        if (await blankSubmenu.isVisible().catch(() => false)) {
+          await blankSubmenu.click().catch(() => {});
+          clickedBlankSubmenu = true;
+          openDeadline = Math.max(openDeadline, Date.now() + 12_000);
+        }
+      }
+      if (
+        !retriedMenuClick &&
+        !clickedSharedConfirm &&
+        Date.now() - startedOpenWaitAt >= 5_500
+      ) {
+        const anyDialogVisible = await page
+          .locator('[role="dialog"]:visible, [role="alertdialog"]:visible')
+          .first()
+          .isVisible()
+          .catch(() => false);
+        if (!anyDialogVisible) {
+          retriedMenuClick = true;
+          const retryOpened = await openDriveNewMenuAndGetItem(
+            page,
+            '[role="menuitem"]:has-text("Google Trang tính"):visible, [role="menuitem"]:has-text("Google Sheets"):visible'
+          ).catch(() => null);
+          if (retryOpened) {
+            await retryOpened.menuItem.click().catch(() => {});
+            openDeadline = Math.max(openDeadline, Date.now() + 12_000);
+          }
         }
       }
       await page.waitForTimeout(250);
@@ -1987,6 +2129,9 @@ async function createNativeGoogleSheetViaDriveAndImport(params: {
     if (openedPopupPage) sheetPage = openedPopupPage;
   } finally {
     page.context().off("page", popupListener);
+    if (openedPopupPage && !sheetPage && openedPopupPage !== page) {
+      await (openedPopupPage as Page).close().catch(() => {});
+    }
   }
 
   if (!sheetPage) {
@@ -2006,17 +2151,12 @@ async function createNativeGoogleSheetViaDriveAndImport(params: {
       throw new Error("Không lấy được Spreadsheet ID của Google Trang tính mới.");
     }
 
-    const fileMenu = sheetPage.locator("#docs-file-menu").first();
-    await fileMenu.waitFor({ state: "visible", timeout: 25000 });
-    await fileMenu.click();
-    await sheetPage.waitForTimeout(400);
-
-    const importItem = sheetPage
-      .locator('.goog-menuitem:visible, [role="menuitem"]:visible')
-      .filter({ hasText: /^Nhập$|^Import$/i })
-      .first();
-    await importItem.waitFor({ state: "visible", timeout: 8000 });
-    await importItem.click();
+    await openGoogleSheetsFileMenuAndClickItem({
+      sheetPage,
+      itemPattern: /^Nhập$|^Import$/i,
+      itemLabel: "Nhập (Import)",
+      totalTimeoutMs: fileMenuTimeoutMs,
+    });
 
     let pickerTarget: Frame | Page | null = null;
     const pickerDeadline = Date.now() + 18_000;
@@ -2060,6 +2200,7 @@ async function createNativeGoogleSheetViaDriveAndImport(params: {
         )
         .first();
       const fcPromise = sheetPage.waitForEvent("filechooser", { timeout: 10000 });
+      fcPromise.catch(() => null);
       await browseBtn.click();
       const fc = await fcPromise;
       await fc.setFiles([stagingPayload]);
@@ -2140,6 +2281,7 @@ async function createNativeGoogleSheetViaSaveAsFallback(params: {
   expectedTabNames: string[];
   preExistingIds: Set<string>;
   ephemeralDriveIdsToTrash: Set<string>;
+  fileMenuTimeoutMs?: number;
 }): Promise<string> {
   const {
     page,
@@ -2151,6 +2293,7 @@ async function createNativeGoogleSheetViaSaveAsFallback(params: {
     expectedTabNames,
     preExistingIds,
     ephemeralDriveIdsToTrash,
+    fileMenuTimeoutMs,
   } = params;
 
   await ensureDriveFolderReady(page, driveBaseUrl, classDriveFolderId);
@@ -2159,6 +2302,7 @@ async function createNativeGoogleSheetViaSaveAsFallback(params: {
     '[role="menuitem"]:has-text("Tải tệp lên"):visible, [role="menuitem"]:has-text("File upload"):visible'
   );
   const fcPromise = page.waitForEvent("filechooser", { timeout: 12000 });
+  fcPromise.catch(() => null);
   await fileUploadItem.click();
   const fc = await fcPromise;
   await fc.setFiles([stagingPayload]);
@@ -2189,29 +2333,47 @@ async function createNativeGoogleSheetViaSaveAsFallback(params: {
   }
 
   let xlsxPage: Page | null = null;
+  let openedPopupPage: Page | null = null;
   let convertedPage: Page | null = null;
   let convertedSheetId = "";
+  let popupListener: ((p: Page) => void) | null = null;
   try {
     xlsxPage = await page.context().newPage();
     await xlsxPage.goto(`${sheetsBaseUrl}/spreadsheets/d/${stagingDriveId}/edit`, {
       waitUntil: "domcontentloaded",
       timeout: 30000,
     });
-    const fileMenu = xlsxPage.locator("#docs-file-menu").first();
-    await fileMenu.waitFor({ state: "visible", timeout: 25000 });
-    const popupPromise = page.context().waitForEvent("page", { timeout: 25000 });
-    await fileMenu.click();
-    await xlsxPage.waitForTimeout(400);
-    const saveAsItem = xlsxPage
-      .locator('.goog-menuitem:visible, [role="menuitem"]:visible')
-      .filter({ hasText: /Lưu dưới dạng Google Trang tính|Save as Google Sheets/i })
-      .first();
-    await saveAsItem.waitFor({ state: "visible", timeout: 8000 });
-    await saveAsItem.click();
 
-    convertedPage = await popupPromise;
+    popupListener = (p: Page) => {
+      if (!openedPopupPage && p !== xlsxPage) {
+        openedPopupPage = p;
+      }
+    };
+    page.context().on("page", popupListener);
+
+    await openGoogleSheetsFileMenuAndClickItem({
+      sheetPage: xlsxPage,
+      itemPattern: /Lưu dưới dạng Google Trang tính|Save as Google Sheets/i,
+      itemLabel: "Lưu dưới dạng Google Trang tính",
+      totalTimeoutMs: fileMenuTimeoutMs,
+    });
+
+    const convertOpenDeadline = Date.now() + 25_000;
+    while (Date.now() < convertOpenDeadline && !openedPopupPage) {
+      assertDemoSheetNotStopped();
+      const inPlaceId = extractGoogleSheetId(xlsxPage.url()) || "";
+      if (inPlaceId && inPlaceId !== stagingDriveId) {
+        break;
+      }
+      await xlsxPage.waitForTimeout(300);
+    }
+
+    page.context().off("page", popupListener);
+    popupListener = null;
+
+    convertedPage = openedPopupPage || xlsxPage;
     await convertedPage.waitForLoadState("domcontentloaded", { timeout: 30000 }).catch(() => {});
-    const idDeadline = Date.now() + 15_000;
+    const idDeadline = Date.now() + 25_000;
     while (Date.now() < idDeadline) {
       assertDemoSheetNotStopped();
       const id = extractGoogleSheetId(convertedPage.url()) || "";
@@ -2231,7 +2393,13 @@ async function createNativeGoogleSheetViaSaveAsFallback(params: {
     if (convertedSheetId) ephemeralDriveIdsToTrash.add(convertedSheetId);
     throw err;
   } finally {
-    if (convertedPage) await convertedPage.close().catch(() => {});
+    if (popupListener) {
+      page.context().off("page", popupListener);
+    }
+    const pageToClose = convertedPage || openedPopupPage;
+    if (pageToClose && pageToClose !== xlsxPage) {
+      await pageToClose.close().catch(() => {});
+    }
     if (xlsxPage) await xlsxPage.close().catch(() => {});
   }
 }
@@ -2346,7 +2514,9 @@ export async function createAndUploadClassDemoSheetToDrive(
     byTabName: Record<string, StudentDemoAiPreScoreResult>;
     preScoredCount: number;
     skippedCount: number;
+    skipReasons: DemoSheetAiSkipReasons;
   } | null = null;
+  let aiTopLevelFailed = false;
 
   // Run AI pre-grading before entering SequentialTaskQueue so Playwright browser lock stays free during Gemini calls.
   if (shouldRunAiPreScore && preloadedSavedTemplateBuf) {
@@ -2356,14 +2526,20 @@ export async function createAndUploadClassDemoSheetToDrive(
       templateBuffer: preloadedSavedTemplateBuf,
       localClassFolderPath: options.localClassFolderPath,
       _testAiScorerOverride: options._testAiScorerOverride,
+      _testRetryOptions: options._testRetryOptions,
     }).catch((err) => {
+      if (isDemoSheetStopped()) throw err;
+      aiTopLevelFailed = true;
       console.warn(
-        `[spck-demo-sheet] AI pre-score fallback for ${normalizedClassId}:`,
-        err instanceof Error ? err.message : String(err)
+        `[spck-demo-sheet] AI pre-score fallback for ${normalizedClassId}: ${summarizeSafeGeminiErrorForLog(
+          err
+        )}`
       );
       return null;
     });
   }
+
+  assertDemoSheetNotStopped();
 
   const preCheckDriveFolderId = extractDriveFolderId(
     options.driveFolderUrl || DEFAULT_SPCK_DRIVE_FOLDER_URL
@@ -2414,17 +2590,21 @@ export async function createAndUploadClassDemoSheetToDrive(
           );
         }
 
-        if (!aiAnnotationsResult && shouldRunAiPreScore && templateBuffer) {
+        if (!aiAnnotationsResult && !aiTopLevelFailed && shouldRunAiPreScore && templateBuffer) {
           aiAnnotationsResult = await generateDemoSheetAiPreScoresForClass({
             classId: normalizedClassId,
             studentTabs,
             templateBuffer,
             localClassFolderPath: options.localClassFolderPath,
             _testAiScorerOverride: options._testAiScorerOverride,
+            _testRetryOptions: options._testRetryOptions,
           }).catch((err) => {
+            if (isDemoSheetStopped()) throw err;
+            aiTopLevelFailed = true;
             console.warn(
-              `[spck-demo-sheet] Custom template AI pre-score fallback for ${normalizedClassId}:`,
-              err instanceof Error ? err.message : String(err)
+              `[spck-demo-sheet] Custom template AI pre-score fallback for ${normalizedClassId}: ${summarizeSafeGeminiErrorForLog(
+                err
+              )}`
             );
             return null;
           });
@@ -2573,6 +2753,7 @@ export async function createAndUploadClassDemoSheetToDrive(
             expectedTabNames:
               expectedAllTabs.length > 0 ? expectedAllTabs : studentTabs.map((s) => s.tabName),
             ephemeralDriveIdsToTrash,
+            fileMenuTimeoutMs: options._testHarness?.fileMenuTimeoutMs,
           });
         } catch (primaryErr) {
           assertDemoSheetNotStopped();
@@ -2587,6 +2768,7 @@ export async function createAndUploadClassDemoSheetToDrive(
               expectedAllTabs.length > 0 ? expectedAllTabs : studentTabs.map((s) => s.tabName),
             preExistingIds,
             ephemeralDriveIdsToTrash,
+            fileMenuTimeoutMs: options._testHarness?.fileMenuTimeoutMs,
           }).catch((fallbackErr) => {
             throw new Error(
               `Không thể tạo Google Trang tính chấm điểm Demo cho lớp ${normalizedClassId}: ${
@@ -2734,7 +2916,14 @@ export async function createAndUploadClassDemoSheetToDrive(
           classDriveFolderUrl,
           usedTemplateUrl: explicitTemplateSheetId ? rawTemplateUrl : undefined,
           aiPreScoredCount: aiAnnotationsResult?.preScoredCount ?? 0,
-          aiSkippedCount: aiAnnotationsResult?.skippedCount ?? 0,
+          aiSkippedCount:
+            aiAnnotationsResult?.skippedCount ??
+            (shouldRunAiPreScore && aiTopLevelFailed ? studentTabs.length : 0),
+          aiSkipReasons:
+            aiAnnotationsResult?.skipReasons ??
+            (shouldRunAiPreScore && aiTopLevelFailed
+              ? { noEvidenceCount: 0, parseErrorCount: 0, aiErrorCount: studentTabs.length }
+              : undefined),
         };
       } finally {
         if (ephemeralDriveIdsToTrash.size > 0 && classDriveFolderId && !isDemoSheetStopped()) {

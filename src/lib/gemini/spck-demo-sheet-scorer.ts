@@ -13,7 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import AdmZip from "adm-zip";
 import { anonymizeSpckText, deAnonymizeSpckText } from "../ai/pii-anonymizer";
-import { spckUploadRepo } from "../db/sqlite";
+import { spckUploadRepo, studentRepo } from "../db/sqlite";
 import { parseSubmissionFile } from "../file-parsers";
 import {
   parseSharedStringsXml,
@@ -21,8 +21,17 @@ import {
 } from "../local-files/spck-demo-score-reader";
 import { assertPathAllowed } from "../security/path-allowlist";
 import { detectSpckCourseProfile } from "../spck/spck-quick-tags";
-import { normalizeVietnameseName } from "../utils/vietnamese-match";
-import { getGeminiModel } from "./client";
+import {
+  normalizeVietnameseName,
+  stripVietnameseDiacritics,
+} from "../utils/vietnamese-match";
+import {
+  callGeminiWithRetry,
+  getGeminiModel,
+  sleepAbortable,
+  summarizeSafeGeminiErrorForLog,
+  type GeminiRetryOptions,
+} from "./client";
 import {
   buildMultimodalImageParts,
   buildPreliminaryProjectSummary,
@@ -74,6 +83,12 @@ export interface StudentDemoAiPreScoreResult {
   skippedReason?: string;
   criteriaByRow: Record<number, StudentDemoAiCriterionAnnotation>;
   bgkQuestions: string[];
+}
+
+export interface DemoSheetAiSkipReasons {
+  noEvidenceCount: number;
+  parseErrorCount: number;
+  aiErrorCount: number;
 }
 
 export type DemoSheetAiScorerOverride = (input: {
@@ -409,13 +424,143 @@ function resolveStudentLocalFolder(params: {
   }
 }
 
+function scrubContiguousNameSlugs(
+  rawText: string,
+  fullName: string,
+  anonymousToken: string,
+  peerNames: string[] = []
+): string {
+  if (!rawText) return "";
+  let output = String(rawText).normalize("NFC");
+
+  const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const cleanTarget = String(fullName || "")
+    .normalize("NFC")
+    .trim()
+    .toLowerCase();
+
+  const entries: Array<{ name: string; token: string }> = [];
+  if (cleanTarget) {
+    entries.push({ name: fullName, token: anonymousToken });
+  }
+  const seenPeers = new Set<string>();
+  for (const peer of peerNames) {
+    const cleanPeer = String(peer || "")
+      .normalize("NFC")
+      .trim();
+    if (!cleanPeer || cleanPeer.toLowerCase() === cleanTarget) continue;
+    if (seenPeers.has(cleanPeer.toLowerCase())) continue;
+    seenPeers.add(cleanPeer.toLowerCase());
+    entries.push({ name: cleanPeer, token: "STUDENT_PEER" });
+  }
+
+  const replacements: Array<{ pattern: string; token: string; allowSubstring: boolean }> = [];
+  const seenPatterns = new Set<string>();
+
+  const addPhraseVariants = (words: string[], token: string, allowConcatSubstr: boolean) => {
+    if (words.length < 2) return;
+    for (const sep of ["-", "_", ".", "+", " ", ""]) {
+      const joined = words.join(sep).trim();
+      if (joined.length < 4) continue;
+      const key = `${token}::${joined.toLowerCase()}`;
+      if (seenPatterns.has(key)) continue;
+      seenPatterns.add(key);
+      const allowSubstring =
+        sep === "" ? joined.length >= (allowConcatSubstr ? 5 : 6) : joined.length >= 6;
+      replacements.push({ pattern: joined, token, allowSubstring });
+    }
+  };
+
+  for (const entry of entries) {
+    const nfcWords = entry.name
+      .normalize("NFC")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    const asciiWords = stripVietnameseDiacritics(entry.name)
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    for (const words of [nfcWords, asciiWords]) {
+      if (words.length >= 2) {
+        addPhraseVariants(words, entry.token, true);
+        addPhraseVariants(words.slice(-2), entry.token, false);
+        addPhraseVariants(words.slice(0, 2), entry.token, false);
+        if (words.length >= 3) {
+          addPhraseVariants([words[0], words[words.length - 1]], entry.token, false);
+        }
+      }
+    }
+  }
+
+  replacements.sort((a, b) => b.pattern.length - a.pattern.length);
+  for (const item of replacements) {
+    const re = item.allowSubstring
+      ? new RegExp(escapeRe(item.pattern), "giu")
+      : new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(item.pattern)}(?![\\p{L}\\p{N}])`, "giu");
+    output = output.replace(re, item.token);
+  }
+
+  output = output
+    .replace(new RegExp(`(${escapeRe(anonymousToken)})(?:[-_+\\s]+${escapeRe(anonymousToken)})+`, "g"), anonymousToken)
+    .replace(/(STUDENT_PEER)(?:[-_+\s]+STUDENT_PEER)+/g, "STUDENT_PEER");
+
+  return output;
+}
+
+/**
+ * Redacts student/peer names (including percent-encoded, hyphenated, underscore, and concatenated slugs)
+ * and credential components from related link URLs before building any AI prompt.
+ */
+export function sanitizeRelatedLinkUrlForPrompt(
+  rawUrl: string,
+  fullName: string,
+  anonymousToken: string,
+  peerNames: string[] = []
+): string {
+  let candidate = String(rawUrl || "").trim();
+  if (!candidate) return "";
+
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.username || parsed.password) {
+      parsed.username = "";
+      parsed.password = "";
+      candidate = parsed.toString();
+    }
+  } catch {
+    // Strip embedded credentials even from malformed URLs (e.g. missing TLD or invalid port)
+    candidate = candidate.replace(/([a-z][a-z0-9+.-]*:\/\/)[^/\s@]+@/gi, "$1");
+  }
+
+  for (let pass = 0; pass < 2; pass++) {
+    candidate = candidate.replace(/(?:%[0-9A-Fa-f]{2})+/g, (seg) => {
+      try {
+        return decodeURIComponent(seg);
+      } catch {
+        return seg;
+      }
+    });
+  }
+
+  const slugScrubbed = scrubContiguousNameSlugs(
+    candidate,
+    fullName,
+    anonymousToken,
+    peerNames
+  );
+  return anonymizeSpckText(slugScrubbed, fullName, anonymousToken, peerNames);
+}
+
 function redactPathStudentName(
   filePath: string,
   fullName: string,
   anonymousToken: string,
   peerNames: string[] = []
 ): string {
-  const normalized = anonymizeSpckText(filePath, fullName, anonymousToken, peerNames);
+  const slugScrubbed = scrubContiguousNameSlugs(filePath, fullName, anonymousToken, peerNames);
+  const normalized = anonymizeSpckText(slugScrubbed, fullName, anonymousToken, peerNames);
   return normalized.length > 160 ? `...${normalized.slice(-150)}` : normalized;
 }
 
@@ -435,7 +580,11 @@ function parseJsonObjectFromModelText(rawText: string): any {
   if (firstBrace < 0 || lastBrace <= firstBrace) {
     throw new Error("Phản hồi AI không chứa JSON hợp lệ.");
   }
-  return JSON.parse(candidate.slice(firstBrace, lastBrace + 1));
+  const parsed = JSON.parse(candidate.slice(firstBrace, lastBrace + 1));
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Phản hồi JSON của AI không đúng cấu trúc object.");
+  }
+  return parsed;
 }
 
 function buildDefaultAnnotationsResult(
@@ -478,23 +627,48 @@ export async function generateDemoSheetAiPreScoresForClass(params: {
   templateBuffer: Buffer;
   localClassFolderPath?: string;
   _testAiScorerOverride?: DemoSheetAiScorerOverride;
+  _testRetryOptions?: GeminiRetryOptions & { interStudentDelayMs?: number };
 }): Promise<{
   byTabName: Record<string, StudentDemoAiPreScoreResult>;
   preScoredCount: number;
   skippedCount: number;
+  skipReasons: DemoSheetAiSkipReasons;
 }> {
   const normalizedClassId = String(params.classId || "").trim().toUpperCase();
   const structure = extractDemoTemplateRubricStructure(params.templateBuffer);
   const courseProfile = detectSpckCourseProfile(normalizedClassId);
   const dbRows = spckUploadRepo.findByClass(normalizedClassId);
   const dbByStudentId = new Map(dbRows.map((r) => [r.studentId, r]));
-  const peerNames = params.studentTabs.map((s) => s.fullName).filter(Boolean);
+  const allClassDbStudents = studentRepo.findByClass(normalizedClassId, false);
+  const peerNameSet = new Set<string>();
+  for (const s of params.studentTabs) {
+    if (s.fullName && s.fullName.trim()) peerNameSet.add(s.fullName.trim());
+  }
+  for (const s of allClassDbStudents) {
+    if (s.fullName && s.fullName.trim()) peerNameSet.add(s.fullName.trim());
+  }
+  const peerNames = Array.from(peerNameSet);
+
+  const checkAborted = () =>
+    (process as any)?.__mindxQueueStopped === true ||
+    Boolean(params._testRetryOptions?.shouldAbort?.());
 
   const byTabName: Record<string, StudentDemoAiPreScoreResult> = {};
   let preScoredCount = 0;
   let skippedCount = 0;
+  const skipReasons: DemoSheetAiSkipReasons = {
+    noEvidenceCount: 0,
+    parseErrorCount: 0,
+    aiErrorCount: 0,
+  };
+  let liveGeminiCallCount = 0;
 
   for (let idx = 0; idx < params.studentTabs.length; idx++) {
+    if (checkAborted()) {
+      throw new Error(
+        "Đã dừng tác vụ tạo Google Trang tính chấm điểm Demo theo lệnh Dừng khẩn cấp (Stop Bot)."
+      );
+    }
     const stu = params.studentTabs[idx];
     const anonymousToken = `STUDENT_${String(idx + 1).padStart(2, "0")}`;
     const dbRec = dbByStudentId.get(stu.studentId);
@@ -550,6 +724,7 @@ export async function generateDemoSheetAiPreScoresForClass(params: {
 
     if (allCandidateFiles.length === 0 && !hasLinksOrMedia) {
       skippedCount += 1;
+      skipReasons.noEvidenceCount += 1;
       byTabName[stu.tabName] = buildDefaultAnnotationsResult(
         stu.studentId,
         structure,
@@ -638,6 +813,7 @@ export async function generateDemoSheetAiPreScoresForClass(params: {
 
     if (parseSuccessCount === 0 && parseErrorCount > 0 && candidateScreenshots.length === 0) {
       skippedCount += 1;
+      skipReasons.parseErrorCount += 1;
       byTabName[stu.tabName] = buildDefaultAnnotationsResult(
         stu.studentId,
         structure,
@@ -676,7 +852,17 @@ export async function generateDemoSheetAiPreScoresForClass(params: {
     const linksSummary = relatedLinks
       .map(
         (l) =>
-          `- ${anonymizeSpckText(l.name, stu.fullName, anonymousToken, peerNames)}: ${l.url}`
+          `- ${anonymizeSpckText(
+            l.name,
+            stu.fullName,
+            anonymousToken,
+            peerNames
+          )}: ${sanitizeRelatedLinkUrlForPrompt(
+            l.url,
+            stu.fullName,
+            anonymousToken,
+            peerNames
+          )}`
       )
       .join("\n");
 
@@ -738,32 +924,72 @@ TRẢ VỀ DUY NHẤT JSON HỢP LỆ THEO ĐỊNH DẠNG:
     );
 
     try {
+      const interStudentDelayMs =
+        params._testRetryOptions?.interStudentDelayMs ??
+        (params._testAiScorerOverride ? 0 : 450);
+      if (liveGeminiCallCount > 0 && interStudentDelayMs > 0) {
+        await sleepAbortable(interStudentDelayMs, params._testRetryOptions?.shouldAbort);
+      }
+      liveGeminiCallCount += 1;
+
+      const retryConfig: GeminiRetryOptions = {
+        maxRetries: 3,
+        baseDelayMs: 1600,
+        maxDelayMs: 8000,
+        ...params._testRetryOptions,
+        label: `demo-scorer:${normalizedClassId}/${anonymousToken}`,
+      };
+
       let parsedOutput: {
         criteria: Array<{ rowNumber: number; rating: unknown; evidenceNote?: string }>;
         bgkQuestions: string[];
       };
 
       if (params._testAiScorerOverride) {
-        parsedOutput = await params._testAiScorerOverride({
-          classId: normalizedClassId,
-          anonymousToken,
-          courseProfile: String(courseProfile),
-          promptText: promptSections,
-          imagePartsCount: imageParts.length,
-          scorableCriteria,
-        });
+        parsedOutput = await callGeminiWithRetry(
+          () =>
+            params._testAiScorerOverride!({
+              classId: normalizedClassId,
+              anonymousToken,
+              courseProfile: String(courseProfile),
+              promptText: promptSections,
+              imagePartsCount: imageParts.length,
+              scorableCriteria,
+            }),
+          retryConfig
+        );
       } else {
         const model = getGeminiModel(undefined, 0.2, systemInstruction);
+        const rawGen = ((model as any).__rawGenerateContent ||
+          model.generateContent.bind(model)) as typeof model.generateContent;
         const userParts: any[] = [{ text: promptSections }, ...imageParts];
-        const result = await model.generateContent({
-          contents: [{ role: "user", parts: userParts }],
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: "application/json",
-          },
-        });
-        const responseText = result.response.text();
-        parsedOutput = parseJsonObjectFromModelText(responseText);
+
+        const invokeLiveRawText = async (temperature: number): Promise<string> => {
+          const result = await callGeminiWithRetry(
+            () =>
+              rawGen({
+                contents: [{ role: "user", parts: userParts }],
+                generationConfig: {
+                  temperature,
+                  responseMimeType: "application/json",
+                },
+              }),
+            retryConfig
+          );
+          return result.response.text();
+        };
+
+        const firstRawText = await invokeLiveRawText(0.2);
+        try {
+          parsedOutput = parseJsonObjectFromModelText(firstRawText);
+        } catch (jsonErr) {
+          if (checkAborted()) {
+            throw jsonErr;
+          }
+          await sleepAbortable(400, params._testRetryOptions?.shouldAbort);
+          const repairedRawText = await invokeLiveRawText(0.1);
+          parsedOutput = parseJsonObjectFromModelText(repairedRawText);
+        }
       }
 
       const scorableMap = new Map(scorableCriteria.map((c) => [c.rowNumber, c]));
@@ -856,11 +1082,19 @@ TRẢ VỀ DUY NHẤT JSON HỢP LỆ THEO ĐỊNH DẠNG:
       };
       preScoredCount += 1;
     } catch (err) {
+      if (
+        checkAborted() ||
+        /dừng khẩn cấp|đã dừng tác vụ/i.test(err instanceof Error ? err.message : String(err))
+      ) {
+        throw err;
+      }
       console.warn(
-        `[spck-demo-sheet-scorer] AI pre-score fallback for ${normalizedClassId}/${stu.studentId}:`,
-        err instanceof Error ? err.message : String(err)
+        `[spck-demo-sheet-scorer] AI pre-score fallback for ${normalizedClassId}/${anonymousToken}: ${summarizeSafeGeminiErrorForLog(
+          err
+        )}`
       );
       skippedCount += 1;
+      skipReasons.aiErrorCount += 1;
       byTabName[stu.tabName] = buildDefaultAnnotationsResult(
         stu.studentId,
         structure,
@@ -870,5 +1104,5 @@ TRẢ VỀ DUY NHẤT JSON HỢP LỆ THEO ĐỊNH DẠNG:
     }
   }
 
-  return { byTabName, preScoredCount, skippedCount };
+  return { byTabName, preScoredCount, skippedCount, skipReasons };
 }
