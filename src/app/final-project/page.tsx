@@ -560,6 +560,7 @@ export default function FinalProjectPage() {
           sessionNumber: selectedSessionNumber,
           syncActiveSession: true,
           autoSuggestQuickTags: true,
+          preferDefaultLogoWhenNoOwnerPhoto: true,
           ...(options?.action ? { action: options.action } : {}),
         }),
       });

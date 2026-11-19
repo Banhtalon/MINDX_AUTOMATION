@@ -88,12 +88,12 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
       : rows.length > 0;
 
   const step1SubLabel = studentPortalRunning
-    ? "Tự ngắt link HS → Quét bài • Ảnh 16:9 • Web • Drive"
+    ? "Tự ngắt link HS → Quét bài • Ảnh bìa Drive • Ảnh 16:9 • Web • Drive"
     : selectedSessionNumber === 14
     ? isSpckExemptClass
       ? "Nạp Điểm Năng lực [ĐNL] trung bình Buổi 5+9"
-      : "Quét bài • Ảnh 16:9 • Drive • Điểm BGK & [ĐNL] B5+9"
-    : "Quét thư mục • Chụp 16:9 • GitHub Web • Up Drive";
+      : "Quét bài • Ảnh bìa Drive • Ảnh 16:9 • Drive • Điểm BGK & [ĐNL] B5+9"
+    : "Quét thư mục • Ảnh bìa Drive • Chụp 16:9 • GitHub Web • Up Drive";
 
   const step2SubLabel =
     selectedSessionNumber === 14

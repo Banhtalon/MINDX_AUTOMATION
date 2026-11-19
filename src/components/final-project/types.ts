@@ -372,6 +372,7 @@ export {
 
 export type SpckToolErrorKey =
   | "ai"
+  | "thumb_drive"
   | "drive"
   | "web"
   | "screenshot"

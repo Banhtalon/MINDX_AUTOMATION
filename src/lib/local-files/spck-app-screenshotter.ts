@@ -1861,8 +1861,52 @@ sys.stdout.write(json.dumps({"frames": frames, "richness": frame_richness}))
   return results;
 }
 
+export const ACTIVE_GDRIVE_THUMB_MANIFEST_NAME = ".active_gdrive_thumb.json";
+
+export function readActiveGdriveThumbNameFromOwnerDir(ownerDir: string): string | null {
+  try {
+    const safeOwnerDir = assertPathAllowed(ownerDir);
+    const manifestPath = assertPathAllowed(
+      path.join(safeOwnerDir, ACTIVE_GDRIVE_THUMB_MANIFEST_NAME)
+    );
+    if (!fs.existsSync(manifestPath) || fs.lstatSync(manifestPath).isSymbolicLink()) {
+      return null;
+    }
+    const parsed = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as {
+      status?: string;
+      activeFileName?: string | null;
+    };
+    if (parsed?.status === "ACTIVE" && typeof parsed.activeFileName === "string") {
+      const clean = path.basename(parsed.activeFileName.trim());
+      return clean || null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function isOwnerUploadImageActive(
+  ownerDirOrFilePath: string,
+  fileName?: string
+): boolean {
+  const raw = String(ownerDirOrFilePath || "");
+  if (!raw) return false;
+  const ownerDir = fileName !== undefined ? raw : path.dirname(raw);
+  const cleanName = path.basename(
+    fileName !== undefined ? String(fileName || "") : raw
+  );
+  if (!cleanName || cleanName.startsWith(".")) return false;
+  if (!cleanName.toLowerCase().startsWith("thumb_gdrive_")) {
+    return true;
+  }
+  const activeGdriveName = readActiveGdriveThumbNameFromOwnerDir(ownerDir);
+  return Boolean(activeGdriveName && activeGdriveName.toLowerCase() === cleanName.toLowerCase());
+}
+
 /**
- * Lists any images explicitly uploaded by the Owner into `<studentDir>/_spck_owner_uploads/`.
+ * Lists any active images explicitly uploaded by the Owner (or synced from Google Drive) into `<studentDir>/_spck_owner_uploads/`.
+ * Obsolete `thumb_gdrive_*` files preserved solely for older VERIFIED snapshots are excluded.
  */
 export function listOwnerUploadedImages(studentDir: string): string[] {
   const safeStudentDir = assertPathAllowed(studentDir);
@@ -1871,10 +1915,22 @@ export function listOwnerUploadedImages(studentDir: string): string[] {
     return [];
   }
   const exts = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+  const activeGdriveName = readActiveGdriveThumbNameFromOwnerDir(ownerDir);
   return fs
     .readdirSync(ownerDir)
-    .filter((f) => exts.has(path.extname(f).toLowerCase()))
-    .sort((a, b) => a.localeCompare(b))
+    .filter(
+      (f) =>
+        exts.has(path.extname(f).toLowerCase()) &&
+        isOwnerUploadImageActive(ownerDir, f)
+    )
+    .sort((a, b) => {
+      if (activeGdriveName) {
+        const aActive = a.toLowerCase() === activeGdriveName.toLowerCase();
+        const bActive = b.toLowerCase() === activeGdriveName.toLowerCase();
+        if (aActive !== bActive) return aActive ? -1 : 1;
+      }
+      return a.localeCompare(b);
+    })
     .map((f) => path.join(ownerDir, f));
 }
 
@@ -2420,6 +2476,8 @@ export async function captureStudentAppScreenshots(params: {
   classId?: string;
   forceOverwriteSessionNumber?: SpckSessionSlotNumber;
   useAiVision?: boolean;
+  /** When true, fall back directly to MindX default logo instead of picking an app screenshot as Thumbnail. */
+  preferDefaultLogoWhenNoOwnerPhoto?: boolean;
   /** Existing YouTube presentation frames (`_spck_youtube_frames`) that must stay in the gallery. */
   preservedFrames?: string[];
   /** Explicit screenshot file paths that must never be deleted (e.g., frozen APPROVED snapshots). */
@@ -2671,7 +2729,7 @@ export async function captureStudentAppScreenshots(params: {
     thumbnailSource = ownerImages.some((p) => samePath(p, ownerThumbCandidate))
       ? "OWNER_UPLOAD"
       : "OWNER_ROOT_PHOTO";
-  } else if (bestAppShotPath) {
+  } else if (bestAppShotPath && !params.preferDefaultLogoWhenNoOwnerPhoto) {
     finalThumbnailPath = bestAppShotPath;
     thumbnailSource = "APP_SCREENSHOT";
   }
@@ -2839,6 +2897,7 @@ export async function captureClassAppScreenshotsAndSelectThumbnails(params: {
   classId: string;
   studentIds?: string[];
   useAiVision?: boolean;
+  preferDefaultLogoWhenNoOwnerPhoto?: boolean;
   sessionNumber?: SpckSessionSlotNumber;
   /** Default true for explicit teacher UI actions; set false for background Portal Auto-Prep so APPROVED drafts are never demoted or stripped of files. */
   allowDemoteApprovedSession?: boolean;
@@ -2921,6 +2980,7 @@ export async function captureClassAppScreenshotsAndSelectThumbnails(params: {
         forceOverwriteSessionNumber: allowDemote ? params.sessionNumber : undefined,
         folderPath: row.localFolderPath,
         useAiVision: params.useAiVision ?? true,
+        preferDefaultLogoWhenNoOwnerPhoto: params.preferDefaultLogoWhenNoOwnerPhoto,
         preservedFrames,
       });
 
@@ -2929,13 +2989,18 @@ export async function captureClassAppScreenshotsAndSelectThumbnails(params: {
         /[\\/]_spck_app_shots[\\/]/i.test(row.screenshotsJson || "");
       const hasMissingCurrentThumb =
         Boolean(row.thumbnailPath) && !fs.existsSync(String(row.thumbnailPath));
+      const forceLogoReset =
+        Boolean(params.preferDefaultLogoWhenNoOwnerPhoto) &&
+        Boolean(row.thumbnailPath) &&
+        !samePathLoose(String(row.thumbnailPath), cap.thumbnailPath);
       if (
         cap.capturedCount > 0 ||
         cap.ownerUploadedImages.length > 0 ||
         (cap.ownerRootPhotos || []).length > 0 ||
         preservedFrames.length > 0 ||
         prevReferencedAppShots ||
-        hasMissingCurrentThumb
+        hasMissingCurrentThumb ||
+        forceLogoReset
       ) {
         const upd = spckUploadRepo.updateSharedResources({
           classId: normalizedClassId,

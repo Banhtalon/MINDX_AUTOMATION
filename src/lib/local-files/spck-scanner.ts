@@ -40,6 +40,8 @@ const acornScanner = scannerRequire("next/dist/compiled/acorn") as {
 };
 import {
   findProjectUiFiles,
+  isOwnerUploadImageActive,
+  readActiveGdriveThumbNameFromOwnerDir,
   renderPyQtUiScreenshotsAsync,
   renderPyQtUiScreenshotsSync,
 } from "./spck-app-screenshotter";
@@ -865,6 +867,7 @@ export function inspectSpckThumbnail(rawThumbnailPath?: string | null): SpckThum
   }
 
   let sourceType: SpckThumbnailSourceType = "PRODUCT_IMAGE";
+  const isDriveStudentPhoto = /[\\/]_spck_owner_uploads[\\/]thumb_gdrive_/i.test(trimmed);
   if (/[\\/]_spck_owner_uploads[\\/]/i.test(trimmed)) {
     sourceType = "TEACHER_UPLOADED";
   } else if (/[\\/]_spck_app_shots[\\/]/i.test(trimmed)) {
@@ -901,6 +904,22 @@ export function inspectSpckThumbnail(rawThumbnailPath?: string | null): SpckThum
         ? `4:3 (${width}×${height})`
         : `${width}×${height}`
       : "Chưa rõ kích thước";
+
+  if (isDriveStudentPhoto) {
+    return {
+      thumbnailPath: trimmed,
+      sourceType,
+      isDefaultMindxLogo: false,
+      badgeLabel:
+        width && height ? `Ảnh HV từ Drive (${width}×${height})` : "Ảnh HV từ Drive",
+      width,
+      height,
+      aspectRatio,
+      is16By9,
+      aspectRatioLabel,
+      qualityWarning: null,
+    };
+  }
 
   const warnings: string[] = [];
   if (sourceType === "RECONSTRUCTED_APP_SHOT") {
@@ -2901,7 +2920,11 @@ export function inspectStudentProjectCodeSignals(
 export function scanStudentSpckFolder(
   studentFolderPath: string,
   preferredStudentName?: string,
-  options?: { skipSyncAutoRender?: boolean; skipSyncImageNormalize?: boolean }
+  options?: {
+    skipSyncAutoRender?: boolean;
+    skipSyncImageNormalize?: boolean;
+    preferDefaultLogoWhenNoOwnerPhoto?: boolean;
+  }
 ): StudentSpckPackage {
   const safeFolderPath = assertPathAllowed(studentFolderPath);
   const folderStat = fs.lstatSync(safeFolderPath);
@@ -3359,6 +3382,12 @@ export function scanStudentSpckFolder(
         for (const subEntry of subEntries) {
           if (subEntry.name.startsWith(".")) continue;
           if (lowerDir === "_spck_app_shots" && isOwnerPhotoTranscodeFilename(subEntry.name)) {
+            continue;
+          }
+          if (
+            lowerDir === "_spck_owner_uploads" &&
+            !isOwnerUploadImageActive(fullEntryPath, subEntry.name)
+          ) {
             continue;
           }
           const subPath = assertPathAllowed(path.join(fullEntryPath, subEntry.name));
@@ -4003,11 +4032,20 @@ export function scanStudentSpckFolder(
   const ownerRootImages = ownerRootPhotoPaths
     .map((p) => validImages.find((img) => samePath(img.fullPath, p)))
     .filter((img): img is (typeof validImages)[number] => Boolean(img));
+  const ownerUploadsDirPath = path.join(safeFolderPath, "_spck_owner_uploads");
+  const activeGdriveThumbName = fs.existsSync(ownerUploadsDirPath)
+    ? readActiveGdriveThumbNameFromOwnerDir(ownerUploadsDirPath)
+    : null;
+  const activeGdriveThumbImg = activeGdriveThumbName
+    ? ownerUploadImages.find(
+        (img) => img.fileName.toLowerCase() === activeGdriveThumbName.toLowerCase()
+      )
+    : undefined;
   const explicitOwnerUploadThumb = ownerUploadImages.find((img) =>
     /^thumb_/i.test(img.fileName)
   );
   const chosenOwnerThumb =
-    explicitOwnerUploadThumb || ownerUploadImages[0] || ownerRootImages[0];
+    activeGdriveThumbImg || explicitOwnerUploadThumb || ownerUploadImages[0] || ownerRootImages[0];
 
   const explicitThumbCandidates = sortBy16By9Preference(
     effectiveImages.filter((img) => img.isThumbCandidate)
@@ -4036,6 +4074,26 @@ export function scanStudentSpckFolder(
       ordered.length > 0 || youtubeFrameImages.length > 0
         ? ordered
         : [chosenOwnerThumb.fullPath];
+  } else if (options?.preferDefaultLogoWhenNoOwnerPhoto) {
+    const defaultMindxLogoPath = path.resolve(
+      process.cwd(),
+      "data",
+      "config",
+      "default-spck-thumbnail.png"
+    );
+    if (fs.existsSync(defaultMindxLogoPath)) {
+      thumbnailPath = defaultMindxLogoPath;
+    }
+    thumbnailSource = "DEFAULT_LOGO";
+    const poolForGallery = sortBy16By9Preference(
+      capturedOrOwnerImages.length > 0 ? effectiveImages : validImages
+    );
+    screenshotCandidates = poolForGallery.map((img) => img.fullPath);
+    if (screenshotCandidates.length === 0) {
+      warnings.push(
+        "Chưa có ảnh sản phẩm trong thư mục (đã tự động lấy ảnh Logo MindX làm Thumbnail mặc định)."
+      );
+    }
   } else if (explicitThumb) {
     thumbnailPath = explicitThumb.fullPath;
     const poolForGallery =
@@ -4393,7 +4451,11 @@ export function scanClassSpckDirectory(
   classId: string,
   rootFolderPath: string,
   students: StudentCandidate[],
-  options?: { skipSyncAutoRender?: boolean; skipSyncImageNormalize?: boolean }
+  options?: {
+    skipSyncAutoRender?: boolean;
+    skipSyncImageNormalize?: boolean;
+    preferDefaultLogoWhenNoOwnerPhoto?: boolean;
+  }
 ): ScanClassSpckDirectoryResult {
   const normalizedClassId = (classId || "").trim().toUpperCase();
   if (!normalizedClassId) {
@@ -4714,7 +4776,8 @@ async function normalizeStudentAppShotsFolderAsync(safeFolderPath: string): Prom
  */
 export async function scanStudentSpckFolderAsync(
   studentFolderPath: string,
-  preferredStudentName?: string
+  preferredStudentName?: string,
+  options?: { preferDefaultLogoWhenNoOwnerPhoto?: boolean }
 ): Promise<StudentSpckPackage> {
   const safeFolderPath = assertPathAllowed(studentFolderPath);
   await normalizeStudentAppShotsFolderAsync(safeFolderPath);
@@ -4723,6 +4786,7 @@ export async function scanStudentSpckFolderAsync(
   const initial = scanStudentSpckFolder(safeFolderPath, preferredStudentName, {
     skipSyncAutoRender: true,
     skipSyncImageNormalize: true,
+    preferDefaultLogoWhenNoOwnerPhoto: options?.preferDefaultLogoWhenNoOwnerPhoto,
   });
 
   const hasExistingRealOrRenderedShots =
@@ -4816,6 +4880,7 @@ export async function scanStudentSpckFolderAsync(
   return scanStudentSpckFolder(safeFolderPath, preferredStudentName, {
     skipSyncAutoRender: true,
     skipSyncImageNormalize: true,
+    preferDefaultLogoWhenNoOwnerPhoto: options?.preferDefaultLogoWhenNoOwnerPhoto,
   });
 }
 
@@ -4826,7 +4891,8 @@ export async function scanStudentSpckFolderAsync(
 export async function scanClassSpckDirectoryAsync(
   classId: string,
   rootFolderPath: string,
-  students: StudentCandidate[]
+  students: StudentCandidate[],
+  options?: { preferDefaultLogoWhenNoOwnerPhoto?: boolean }
 ): Promise<ScanClassSpckDirectoryResult> {
   const safeRootPath = assertPathAllowed(rootFolderPath);
   if (fs.existsSync(safeRootPath)) {
@@ -4864,6 +4930,7 @@ export async function scanClassSpckDirectoryAsync(
   const fastResult = scanClassSpckDirectory(classId, rootFolderPath, students, {
     skipSyncAutoRender: true,
     skipSyncImageNormalize: true,
+    preferDefaultLogoWhenNoOwnerPhoto: options?.preferDefaultLogoWhenNoOwnerPhoto,
   });
 
   const studentMap = new Map(students.map((s) => [s.studentId, s]));
@@ -4882,7 +4949,10 @@ export async function scanClassSpckDirectoryAsync(
         : undefined;
       item.packageData = await scanStudentSpckFolderAsync(
         item.folderPath,
-        matchedStudent?.fullName || item.folderName
+        matchedStudent?.fullName || item.folderName,
+        {
+          preferDefaultLogoWhenNoOwnerPhoto: options?.preferDefaultLogoWhenNoOwnerPhoto,
+        }
       );
     }
   }

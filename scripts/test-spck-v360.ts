@@ -2180,6 +2180,25 @@ async function runTests() {
                         records: makeSpckRecords(aiGenerated, 0)
                       });
                     }
+                    if (u.pathname === "/api/spck/sync-drive-thumbnails") {
+                      return json({
+                        success: true,
+                        syncResult: {
+                          classId: CLS,
+                          classSubfolderFound: true,
+                          totalProcessed: 2,
+                          matchedFromDriveCount: 2,
+                          downloadedCount: 2,
+                          reusedCachedCount: 0,
+                          fallbackLogoCount: 0,
+                          keptManualOwnerCount: 0,
+                          failedCount: 0,
+                          warnings: [],
+                          results: []
+                        },
+                        records: makeSpckRecords(aiGenerated, 0)
+                      });
+                    }
                     if (u.pathname === "/api/spck/deploy-web") {
                       return json({
                         success: true,

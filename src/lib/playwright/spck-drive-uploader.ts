@@ -3079,3 +3079,250 @@ export class SpckDriveUploader {
     };
   }
 }
+
+const MAX_READONLY_DRIVE_DOWNLOAD_BYTES = 20 * 1024 * 1024;
+
+/**
+ * Tier 2 fallback: Lists child folders/files inside a Google Drive folder using the
+ * shared Persistent BrowserContext (`./playwright-auth`) via `SequentialTaskQueue`.
+ * Does NOT require write permission (`+ Mới`), supporting read-only shared folders.
+ */
+export async function listDriveFolderItemsReadOnlyViaBrowser(
+  folderId: string,
+  classId?: string
+): Promise<Array<{ id: string; name: string; isFolder: boolean }>> {
+  const cleanFolderId = extractDriveFolderId(folderId);
+  const normalizedClassId = String(classId || "").trim().toUpperCase() || "SPCK";
+
+  return await taskQueue.enqueue<Array<{ id: string; name: string; isFolder: boolean }>>({
+    id: `READ_DRIVE_FOLDER_${cleanFolderId}_${Date.now()}`,
+    jobType: "CUSTOM",
+    classId: normalizedClassId,
+    description: `Đọc danh sách ảnh học viên trên Google Drive (${normalizedClassId})`,
+    execute: async () => {
+      assertDriveNotStopped();
+      const page = await BrowserManager.getInstance().getPage();
+      const folderUrl = `https://drive.google.com/drive/folders/${cleanFolderId}`;
+      if (!isExactDriveFolderUrl(page.url(), cleanFolderId)) {
+        await page.goto(folderUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+        await page.waitForTimeout(2000);
+      }
+
+      const mainLocator = page.locator('[role="main"]').first();
+      const signInLink = page
+        .locator(
+          'a[href*="ServiceLogin"], a:has-text("Đăng nhập"), a:has-text("Sign in"), button:has-text("Đăng nhập"), button:has-text("Sign in")'
+        )
+        .first();
+
+      const waitDeadline = Date.now() + 180_000;
+      let broughtToFront = false;
+      while (Date.now() < waitDeadline) {
+        assertDriveNotStopped();
+        const curUrl = page.url();
+        if (
+          curUrl.includes("drive.google.com/drive/") &&
+          isExactDriveFolderUrl(curUrl, cleanFolderId) &&
+          (await mainLocator.isVisible().catch(() => false))
+        ) {
+          // Wait briefly for Drive grid entries to mount
+          await page.waitForTimeout(1200);
+          return await listDriveItemsOnPage(page, cleanFolderId);
+        }
+
+        if (
+          curUrl.includes("drive.google.com/drive/") &&
+          !isExactDriveFolderUrl(curUrl, cleanFolderId) &&
+          (await mainLocator.isVisible().catch(() => false))
+        ) {
+          await page.goto(folderUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+          await page.waitForTimeout(2000);
+          continue;
+        }
+
+        const needsSignIn =
+          curUrl.includes("accounts.google.com") ||
+          (await signInLink.isVisible().catch(() => false));
+        if (needsSignIn && !broughtToFront) {
+          broughtToFront = true;
+          await page.bringToFront().catch(() => {});
+          if (await signInLink.isVisible().catch(() => false)) {
+            await signInLink.click().catch(() => {});
+          }
+        }
+
+        await page.waitForTimeout(1200);
+      }
+
+      throw new Error(
+        `Không thể mở thư mục Google Drive (${cleanFolderId}) trên trình duyệt Bot. Vui lòng kiểm tra quyền truy cập hoặc đăng nhập Google.`
+      );
+    },
+  });
+}
+
+function isAllowedGoogleDriveDownloadUrl(
+  rawUrl: string,
+  allowTestHttpLocalhost = false
+): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    if (allowTestHttpLocalhost) {
+      if (
+        (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+        (parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost")
+      ) {
+        return true;
+      }
+    }
+    if (parsed.protocol !== "https:") {
+      return false;
+    }
+    return /^(?:[a-z0-9-]+\.)*(?:google\.com|googleusercontent\.com|gvt1\.com)$/i.test(
+      parsed.hostname
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function fetchBoundedGoogleDriveBufferWithCookies(
+  initialUrl: string,
+  getCookiesForUrl: (url: string) => Promise<Array<{ name: string; value: string }>>,
+  options?: {
+    maxBytes?: number;
+    _allowTestHttpLocalhost?: boolean;
+  }
+): Promise<Buffer | null> {
+  const maxBytes = options?.maxBytes ?? MAX_READONLY_DRIVE_DOWNLOAD_BYTES;
+  const allowLocalTest = options?._allowTestHttpLocalhost === true;
+  let currentUrl = initialUrl;
+
+  for (let hop = 0; hop < 6; hop++) {
+    assertDriveNotStopped();
+    if (!isAllowedGoogleDriveDownloadUrl(currentUrl, allowLocalTest)) {
+      return null;
+    }
+    const cookies = await getCookiesForUrl(currentUrl).catch(() => []);
+    const cookieHeader = cookies
+      .filter((c) => c && c.name)
+      .map((c) => `${c.name}=${c.value}`)
+      .join("; ");
+
+    const resp = await fetch(currentUrl, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(25_000),
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      },
+    });
+
+    if (
+      resp.status === 301 ||
+      resp.status === 302 ||
+      resp.status === 303 ||
+      resp.status === 307 ||
+      resp.status === 308
+    ) {
+      const location = resp.headers.get("location");
+      await resp.body?.cancel().catch(() => {});
+      if (!location) return null;
+      currentUrl = new URL(location, currentUrl).toString();
+      continue;
+    }
+
+    if (!resp.ok) {
+      await resp.body?.cancel().catch(() => {});
+      return null;
+    }
+
+    const ctype = String(resp.headers.get("content-type") || "").toLowerCase();
+    if (ctype.includes("text/html") || ctype.includes("svg")) {
+      await resp.body?.cancel().catch(() => {});
+      return null;
+    }
+
+    const contentLen = Number(resp.headers.get("content-length") || 0);
+    if (Number.isFinite(contentLen) && contentLen > maxBytes) {
+      await resp.body?.cancel().catch(() => {});
+      return null;
+    }
+
+    if (resp.body && typeof resp.body.getReader === "function") {
+      const reader = resp.body.getReader();
+      const chunks: Buffer[] = [];
+      let totalBytes = 0;
+      while (true) {
+        assertDriveNotStopped();
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!value || value.byteLength === 0) continue;
+        totalBytes += value.byteLength;
+        if (totalBytes > maxBytes) {
+          await reader.cancel().catch(() => {});
+          return null;
+        }
+        chunks.push(Buffer.from(value));
+      }
+      const buf = Buffer.concat(chunks, totalBytes);
+      return buf.length > 32 && buf.length <= maxBytes ? buf : null;
+    }
+
+    const arr = await resp.arrayBuffer();
+    if (arr.byteLength <= 32 || arr.byteLength > maxBytes) {
+      return null;
+    }
+    return Buffer.from(arr);
+  }
+
+  return null;
+}
+
+/**
+ * Tier 2 fallback: Downloads a file buffer (`<= 20 MB`) from Google Drive using
+ * the authenticated Persistent BrowserContext (`./playwright-auth`) via `SequentialTaskQueue`
+ * with bounded chunked streaming (never buffers oversized unannounced responses).
+ */
+export async function downloadDriveFileBufferViaBrowser(
+  fileId: string,
+  classId?: string
+): Promise<Buffer | null> {
+  const cleanFileId = String(fileId || "").trim();
+  if (!cleanFileId || !/^[a-zA-Z0-9_-]{10,120}$/.test(cleanFileId)) {
+    return null;
+  }
+  const normalizedClassId = String(classId || "").trim().toUpperCase() || "SPCK";
+
+  return await taskQueue.enqueue<Buffer | null>({
+    id: `DOWNLOAD_DRIVE_FILE_${cleanFileId}_${Date.now()}`,
+    jobType: "CUSTOM",
+    classId: normalizedClassId,
+    description: `Tải ảnh học viên từ Google Drive (${normalizedClassId})`,
+    execute: async () => {
+      assertDriveNotStopped();
+      const page = await BrowserManager.getInstance().getPage();
+      const candidateUrls = [
+        `https://drive.google.com/uc?export=download&id=${encodeURIComponent(cleanFileId)}&confirm=t`,
+        `https://lh3.googleusercontent.com/d/${encodeURIComponent(cleanFileId)}=s0`,
+      ];
+      for (const targetUrl of candidateUrls) {
+        assertDriveNotStopped();
+        try {
+          const buf = await fetchBoundedGoogleDriveBufferWithCookies(
+            targetUrl,
+            (u) => page.context().cookies(u),
+            { maxBytes: MAX_READONLY_DRIVE_DOWNLOAD_BYTES }
+          );
+          if (buf) {
+            return buf;
+          }
+        } catch {
+          // Try next endpoint
+        }
+      }
+      return null;
+    },
+  });
+}

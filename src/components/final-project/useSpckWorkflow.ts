@@ -28,6 +28,7 @@ import {
 } from "./types";
 
 import {
+  DEFAULT_SPCK_THUMBNAIL_DRIVE_URL_UI,
   buildDefaultSession14ClassSummaryText,
   buildRowFromDbRecord,
   classifyUiLinkCategory,
@@ -52,6 +53,7 @@ import {
 } from "@/lib/spck/spck-ui-helpers";
 
 export {
+  DEFAULT_SPCK_THUMBNAIL_DRIVE_URL_UI,
   buildDefaultSession14ClassSummaryText,
   buildRowFromDbRecord,
   classifyUiLinkCategory,
@@ -487,6 +489,10 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
   const [autoPrepStepProgress, setAutoPrepStepProgress] = useState<string | null>(
     null
   );
+  const [thumbnailDriveFolderUrl, setThumbnailDriveFolderUrlState] =
+    useState<string>(DEFAULT_SPCK_THUMBNAIL_DRIVE_URL_UI);
+  const [syncingDriveThumbnails, setSyncingDriveThumbnails] =
+    useState<boolean>(false);
   const [refreshingStudentId, setRefreshingStudentId] = useState<string | null>(
     null
   );
@@ -662,6 +668,26 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         } else if (stored === "true") {
           setAutoRunToolsAfterScan(true);
         }
+        const storedThumbDrive = window.localStorage.getItem(
+          "mindx_spck_thumb_drive_url"
+        );
+        if (storedThumbDrive && storedThumbDrive.trim()) {
+          setThumbnailDriveFolderUrlState(storedThumbDrive.trim());
+        }
+      }
+    } catch {}
+  }, []);
+
+  const setThumbnailDriveFolderUrl = useCallback((nextUrl: string) => {
+    setThumbnailDriveFolderUrlState(nextUrl);
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const trimmed = nextUrl.trim();
+        if (trimmed) {
+          window.localStorage.setItem("mindx_spck_thumb_drive_url", trimmed);
+        } else {
+          window.localStorage.removeItem("mindx_spck_thumb_drive_url");
+        }
       }
     } catch {}
   }, []);
@@ -741,6 +767,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
 
   const isAnyOperationBusy =
     baseIsAnyOperationBusy ||
+    syncingDriveThumbnails ||
     mainSyncRunning ||
     mainStep3Running ||
     Boolean(autoPrepStepProgress) ||
@@ -1912,6 +1939,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           sessionNumber: requestSessionNum,
           studentIds: targetStudentIds,
           useAiVision: true,
+          preferDefaultLogoWhenNoOwnerPhoto: true,
           syncActiveSession: true,
         }),
       });
@@ -2118,12 +2146,296 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     }
   };
 
+  const handleSyncDriveThumbnails = async (
+    targetStudentIds?: string[],
+    options?: {
+      skipApprovalConfirm?: boolean;
+      sourceRows?: ScannedFolderUIItem[];
+      classIdOverride?: string;
+      sessionOverride?: 12 | 13 | 14;
+      forceRedownload?: boolean;
+      seedMissingActiveStudents?: boolean;
+      silentSuccessBanner?: boolean;
+    }
+  ): Promise<SpckToolStepResult> => {
+    const activeRows = options?.sourceRows || rows;
+    const requestClassId = options?.classIdOverride || selectedClassId;
+    const requestSessionNum = options?.sessionOverride || selectedSessionNumber;
+    if (!requestClassId) {
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary: "Chưa chọn Lớp học",
+      };
+    }
+    if (syncingDriveThumbnails) {
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary: "Đang đồng bộ ảnh bìa Google Drive.",
+      };
+    }
+
+    const idsToSync =
+      targetStudentIds && targetStudentIds.length > 0
+        ? targetStudentIds
+        : activeRows.map((r) => r.assignedStudentId).filter(Boolean);
+
+    if (
+      !options?.skipApprovalConfirm &&
+      idsToSync.length > 0 &&
+      !confirmBeforeDemotingApprovedRows(idsToSync, activeRows)
+    ) {
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary: "Đã hủy xác nhận trước khi đồng bộ ảnh bìa Drive",
+      };
+    }
+
+    setSyncingDriveThumbnails(true);
+    if (!options?.silentSuccessBanner) {
+      setBannerMessage({
+        type: "warning",
+        text: "Đang quét thư mục Google Drive ảnh học viên để tự động gắn Thumbnail (thiếu dùng Logo MindX)...",
+      });
+    }
+
+    try {
+      const res = await fetch("/api/spck/sync-drive-thumbnails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: requestClassId,
+          sessionNumber: requestSessionNum,
+          driveFolderUrl:
+            thumbnailDriveFolderUrl.trim() ||
+            DEFAULT_SPCK_THUMBNAIL_DRIVE_URL_UI,
+          studentIds:
+            targetStudentIds && targetStudentIds.length > 0
+              ? targetStudentIds
+              : undefined,
+          forceRedownload: options?.forceRedownload === true,
+          forceOverwriteVerifiedSession: !options?.skipApprovalConfirm,
+          seedMissingActiveStudents: options?.seedMissingActiveStudents === true,
+          syncActiveSession: true,
+        }),
+      });
+      const data = await res.json();
+      const activeClass = getActiveUiClassId();
+      if (activeClass && activeClass !== requestClassId) {
+        return {
+          success: false,
+          updatedRows: activeRows,
+          errorSummary: "Đã chuyển sang lớp học khác",
+        };
+      }
+
+      if (!res.ok || !data?.success) {
+        const errSummary =
+          data?.error || "Không thể đồng bộ ảnh bìa học viên từ Google Drive.";
+        for (const sid of idsToSync) {
+          setStudentToolError(sid, "thumb_drive", errSummary);
+        }
+        setBannerMessage({
+          type: "error",
+          text: errSummary,
+        });
+        return {
+          success: false,
+          updatedRows: activeRows,
+          errorSummary: errSummary,
+        };
+      }
+
+      const dbRecords: SpckRecordRow[] = Array.isArray(data.records)
+        ? data.records
+        : [];
+      const dbByStu = new Map<string, SpckRecordRow>(
+        dbRecords
+          .filter((r) => !r.classId || r.classId === requestClassId)
+          .map((r) => [r.studentId, r])
+      );
+
+      const sRes = data.syncResult;
+      const failedByStudentId = new Map<string, string>();
+      if (Array.isArray(sRes?.results)) {
+        for (const rItem of sRes.results) {
+          if (!rItem?.studentId) continue;
+          if (rItem.status === "FAILED" || rItem.errorMessage) {
+            const rMsg = String(
+              rItem.errorMessage || "Lỗi đồng bộ ảnh bìa Google Drive."
+            ).trim();
+            failedByStudentId.set(rItem.studentId, rMsg);
+          }
+        }
+      }
+
+      const mergeDriveThumbRecords = (
+        baseList: ScannedFolderUIItem[]
+      ): ScannedFolderUIItem[] => {
+        const stuMetaMap = new Map(
+          (latestStudentsRef.current || []).map((s) => [s.studentId, s])
+        );
+        const mapped = baseList.map((row) => {
+          const rec = dbByStu.get(row.assignedStudentId);
+          if (!rec) return row;
+          const screenshots = parseJsonSafe<string[]>(rec.screenshotsJson, []);
+          const nextThumbInspection =
+            rec.thumbnailInspection || row.thumbnailInspection;
+          const hasRealProductImage =
+            Boolean(
+              nextThumbInspection && !nextThumbInspection.isDefaultMindxLogo
+            ) || screenshots.length > 0;
+          const nextWarningReasons = hasRealProductImage
+            ? (row.warningReasons || []).filter(
+                (w) => !w.includes("Chưa có ảnh sản phẩm trong thư mục")
+              )
+            : row.warningReasons;
+          return {
+            ...row,
+            folderPath: rec.localFolderPath || row.folderPath,
+            thumbnailPath: rec.thumbnailPath || row.thumbnailPath,
+            screenshots,
+            warningReasons: nextWarningReasons,
+            status: rec.status || row.status,
+            contentHash: rec.contentHash || "",
+            verifiedAt: rec.verifiedAt,
+            errorMessage: rec.errorMessage,
+            draftVersion: rec.draftVersion ?? row.draftVersion,
+            hasNewerSharedResources: Boolean(rec.hasNewerSharedResources),
+            thumbnailInspection: nextThumbInspection,
+            sessionResults:
+              parseSessionResultsMap(rec.sessionResultsJson) || row.sessionResults,
+            sessionHistory: rec.sessionHistory || row.sessionHistory,
+            hasPortalBackup: Boolean(rec.hasPortalBackup ?? row.hasPortalBackup),
+            isDirty: false,
+          };
+        });
+        const existingIds = new Set(
+          mapped.map((r) => r.assignedStudentId).filter(Boolean)
+        );
+        for (const rec of dbByStu.values()) {
+          if (!rec.studentId || existingIds.has(rec.studentId)) continue;
+          mapped.push(
+            buildRowFromDbRecord(
+              rec,
+              stuMetaMap.get(rec.studentId),
+              requestSessionNum
+            )
+          );
+        }
+        return mapped;
+      };
+
+      const nextRows = mergeDriveThumbRecords(activeRows);
+      setRows((prev) => mergeDriveThumbRecords(prev));
+
+      const seenIds = new Set<string>();
+      if (Array.isArray(sRes?.results)) {
+        for (const item of sRes.results) {
+          if (!item?.studentId) continue;
+          seenIds.add(item.studentId);
+          if (failedByStudentId.has(item.studentId)) {
+            setStudentToolError(
+              item.studentId,
+              "thumb_drive",
+              failedByStudentId.get(item.studentId) ||
+                "Lỗi tải ảnh học viên từ Google Drive."
+            );
+          } else {
+            setStudentToolError(item.studentId, "thumb_drive", null);
+          }
+        }
+      }
+      for (const sid of idsToSync) {
+        if (!seenIds.has(sid) && !failedByStudentId.has(sid)) {
+          setStudentToolError(sid, "thumb_drive", null);
+        }
+      }
+
+      const failedCount = Number(
+        sRes?.failedCount ?? failedByStudentId.size ?? 0
+      );
+      const hasFailed = failedCount > 0 || Boolean(data.partialFailure);
+      const matchedCount = Number(sRes?.matchedFromDriveCount || 0);
+      const logoFallbackCount = Number(sRes?.fallbackLogoCount || 0);
+      const manualKeptCount = Number(sRes?.keptManualOwnerCount || 0);
+      const totalProcessed = Number(
+        sRes?.totalProcessed || idsToSync.length || 0
+      );
+      const firstErr =
+        failedByStudentId.values().next().value ||
+        (typeof data.warning === "string" && data.warning.trim()
+          ? data.warning.trim()
+          : undefined);
+
+      if (hasFailed || !options?.silentSuccessBanner) {
+        const warnNote =
+          typeof data.warning === "string" && data.warning.trim()
+            ? ` (${data.warning.trim()})`
+            : "";
+        setBannerMessage({
+          type: hasFailed || warnNote ? "warning" : "success",
+          text: hasFailed
+            ? `Đồng bộ ảnh bìa Drive hoàn tất một phần (${matchedCount}/${totalProcessed} bạn lấy từ Drive, ${logoFallbackCount} bạn dùng Logo MindX${
+                manualKeptCount > 0
+                  ? `, ${manualKeptCount} bạn giữ ảnh tải tay`
+                  : ""
+              }; ${failedCount} bạn lỗi${warnNote}).`
+            : `Đã gắn ảnh học viên từ Google Drive cho ${matchedCount}/${totalProcessed} bạn (${logoFallbackCount} bạn chưa có ảnh trên Drive → dùng Logo MindX${
+                manualKeptCount > 0
+                  ? `, ${manualKeptCount} bạn giữ ảnh tải tay`
+                  : ""
+              })${warnNote}.`,
+        });
+      }
+
+      const errorSummary = hasFailed
+        ? `${failedCount}/${totalProcessed || 1} ảnh Drive lỗi${
+            firstErr ? `: ${firstErr}` : ""
+          }`
+        : undefined;
+
+      return {
+        success: !hasFailed,
+        updatedRows: nextRows,
+        ...(errorSummary ? { errorSummary } : {}),
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const activeClass = getActiveUiClassId();
+      if (!activeClass || activeClass === requestClassId) {
+        for (const sid of idsToSync) {
+          setStudentToolError(sid, "thumb_drive", msg);
+        }
+        setBannerMessage({
+          type: "error",
+          text: msg,
+        });
+      }
+      return {
+        success: false,
+        updatedRows: activeRows,
+        errorSummary:
+          activeClass && activeClass !== requestClassId
+            ? "Đã chuyển sang lớp học khác"
+            : msg || "Lỗi không xác định khi đồng bộ ảnh bìa Drive",
+      };
+    } finally {
+      setSyncingDriveThumbnails(false);
+    }
+  };
+
   const handleOwnerUploadImage = async (
     studentId: string,
     role: "thumbnail" | "gallery",
     fileList: FileList | null
   ) => {
     if (!selectedClassId || !studentId || !fileList || fileList.length === 0) {
+      return;
+    }
+    if (!confirmBeforeDemotingApprovedRows([studentId])) {
       return;
     }
     const requestClassId = selectedClassId;
@@ -4513,7 +4825,26 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         errorSummary: "Đã hủy xác nhận trước khi nhập YouTube",
       };
     }
-    return await baseHandleImportYoutubeProducts(options?.sourceRows);
+    const ytRes = (await baseHandleImportYoutubeProducts(options?.sourceRows)) as
+      | SpckToolStepResult
+      | undefined;
+    if (
+      ytRes &&
+      ytRes.success !== false &&
+      thumbnailDriveFolderUrl.trim()
+    ) {
+      const thumbRes = await handleSyncDriveThumbnails(undefined, {
+        skipApprovalConfirm: true,
+        sourceRows: ytRes.updatedRows,
+        silentSuccessBanner: true,
+      });
+      return {
+        success: Boolean(thumbRes.success),
+        updatedRows: thumbRes.updatedRows || ytRes.updatedRows,
+        errorSummary: thumbRes.errorSummary || ytRes.errorSummary,
+      };
+    }
+    return ytRes;
   };
 
   const handleGenerateAiComments = async (targetFolderPaths?: string[]) => {
@@ -4638,7 +4969,8 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
         (r) =>
           hasRowFileDrift(r) ||
           !(
-            /_spck_(?:app_shots|owner_uploads)/i.test(r.thumbnailPath || "") &&
+            (/_spck_(?:app_shots|owner_uploads)/i.test(r.thumbnailPath || "") ||
+              (r.screenshots || []).some((s) => /_spck_app_shots/i.test(s))) &&
             (r.screenshots || []).length > 0
           )
       )
@@ -4680,6 +5012,22 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           await handleImportYoutubeProducts({
             skipApprovalConfirm: true,
             sourceRows: currentRows,
+          }),
+      });
+    }
+
+    if (thumbnailDriveFolderUrl.trim()) {
+      steps.push({
+        stepName: "Đồng bộ Ảnh Bìa Drive",
+        progressLabel:
+          "Đang quét ảnh học viên từ Google Drive làm Thumbnail (thiếu dùng Logo MindX)...",
+        run: async () =>
+          await handleSyncDriveThumbnails(candidateIds, {
+            skipApprovalConfirm: true,
+            sourceRows: currentRows,
+            classIdOverride: scanClassId,
+            sessionOverride: scanSessionNum,
+            silentSuccessBanner: true,
           }),
       });
     }
@@ -4827,6 +5175,40 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
             if (prepRes.stepFailures.length > 0) {
               stepIssues.push(...prepRes.stepFailures);
             }
+          } else if (isRoboticsClass && thumbnailDriveFolderUrl.trim()) {
+            setAutoPrepStepProgress(
+              "Đang quét ảnh học viên từ Google Drive làm Thumbnail (thiếu dùng Logo MindX)..."
+            );
+            const driveThumbRes = await handleSyncDriveThumbnails(undefined, {
+              skipApprovalConfirm: true,
+              seedMissingActiveStudents: true,
+              classIdOverride: reqClassId,
+              sessionOverride: reqSessionNum,
+              silentSuccessBanner: true,
+            });
+            if (isStaleClass()) return;
+            if (!driveThumbRes.success && driveThumbRes.errorSummary) {
+              stepIssues.push(`Ảnh bìa Drive: ${driveThumbRes.errorSummary}`);
+            } else if ((driveThumbRes.updatedRows?.length || 0) > 0) {
+              scannedCount = driveThumbRes.updatedRows!.length;
+            }
+          }
+        } else if (isRoboticsClass && thumbnailDriveFolderUrl.trim()) {
+          setAutoPrepStepProgress(
+            "Đang quét ảnh học viên từ Google Drive làm Thumbnail (thiếu dùng Logo MindX)..."
+          );
+          const driveThumbRes = await handleSyncDriveThumbnails(undefined, {
+            skipApprovalConfirm: true,
+            seedMissingActiveStudents: true,
+            classIdOverride: reqClassId,
+            sessionOverride: reqSessionNum,
+            silentSuccessBanner: true,
+          });
+          if (isStaleClass()) return;
+          if (!driveThumbRes.success && driveThumbRes.errorSummary) {
+            stepIssues.push(`Ảnh bìa Drive: ${driveThumbRes.errorSummary}`);
+          } else if ((driveThumbRes.updatedRows?.length || 0) > 0) {
+            scannedCount = driveThumbRes.updatedRows!.length;
           }
         } else if (reqSessionNum !== 14) {
           return;
@@ -5584,6 +5966,28 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       const targetRow = latestRows.find((r) => r.assignedStudentId === studentId);
       const stepFailures: string[] = [];
 
+      if (thumbnailDriveFolderUrl.trim()) {
+        setAutoPrepStepProgress(
+          `[Làm mới ${stuName}] Đang tải lại ảnh bìa học viên từ Google Drive...`
+        );
+        const thumbRes = await handleSyncDriveThumbnails([studentId], {
+          skipApprovalConfirm: true,
+          sourceRows: latestRows,
+          classIdOverride: reqClassId,
+          sessionOverride: reqSessionNum,
+          forceRedownload: true,
+          silentSuccessBanner: true,
+        });
+        if (thumbRes && Array.isArray(thumbRes.updatedRows)) {
+          latestRows = thumbRes.updatedRows;
+        }
+        if (thumbRes && thumbRes.success === false) {
+          stepFailures.push(
+            formatAutoPrepStepFailure("Ảnh bìa Drive", thumbRes.errorSummary)
+          );
+        }
+      }
+
       if (!isRoboticsClass && targetRow?.folderPath) {
         setAutoPrepStepProgress(`[Làm mới ${stuName}] Đang chụp mới giao diện 16:9...`);
         const shotRes = await handleCaptureAppScreenshots([studentId], {
@@ -5786,6 +6190,10 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     autoRunToolsAfterScan,
     handleToggleAutoRunToolsAfterScan,
     autoPrepStepProgress,
+    thumbnailDriveFolderUrl,
+    setThumbnailDriveFolderUrl,
+    syncingDriveThumbnails,
+    handleSyncDriveThumbnails,
     toolErrorsByStudent,
     setStudentToolError,
     expandedRowTabByStudent,

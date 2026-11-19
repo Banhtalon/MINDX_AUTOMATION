@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Session14Panel } from "./Session14Panel";
 import {
+  DEFAULT_SPCK_THUMBNAIL_DRIVE_URL_UI,
   buildDefaultSession14ClassSummaryText,
   formatAwardBadgeMeta,
   resolveStudentAwardLabel,
@@ -67,6 +68,10 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
     setDriveFolderUrl,
     handleUploadToGoogleDrive,
     uploadingDrive,
+    thumbnailDriveFolderUrl,
+    setThumbnailDriveFolderUrl,
+    syncingDriveThumbnails,
+    handleSyncDriveThumbnails,
     webRepoUrl,
     setWebRepoUrl,
     templateSheetUrl,
@@ -770,6 +775,62 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
                 </span>
               </button>
             )}
+          </div>
+
+          {/* Cấu hình & chạy lẻ Ảnh bìa Học viên từ Google Drive */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            <div className="md:col-span-8">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <label className="block text-[11px] font-semibold text-slate-400 uppercase">
+                  Link Google Drive Ảnh Học Viên (Tự ghép Thumbnail • Thiếu dùng Logo MindX)
+                </label>
+                <a
+                  href={
+                    (thumbnailDriveFolderUrl || "").trim() ||
+                    DEFAULT_SPCK_THUMBNAIL_DRIVE_URL_UI
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] font-semibold text-sky-400 hover:underline shrink-0"
+                >
+                  Mở folder ↗
+                </a>
+              </div>
+              <input
+                type="text"
+                data-testid="spck-thumb-drive-url-input"
+                value={thumbnailDriveFolderUrl}
+                onChange={(e) => setThumbnailDriveFolderUrl(e.target.value)}
+                disabled={isAnyOperationBusy}
+                placeholder="https://drive.google.com/drive/folders/..."
+                className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div className="md:col-span-4">
+              <button
+                type="button"
+                data-testid="spck-sync-drive-thumbs-btn"
+                onClick={() =>
+                  handleSyncDriveThumbnails(undefined, {
+                    forceRedownload: true,
+                    seedMissingActiveStudents: isRoboticsClass,
+                  })
+                }
+                disabled={
+                  isAnyOperationBusy ||
+                  !selectedClassId ||
+                  isSpckExemptClass
+                }
+                className="w-full flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white font-semibold text-xs transition-colors cursor-pointer"
+              >
+                {syncingDriveThumbnails ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <ImageIcon className="w-3.5 h-3.5" />
+                )}
+                <span>Quét Ảnh Thumbnail Drive lẻ</span>
+              </button>
+            </div>
           </div>
 
           {/* Cấu hình & chạy lẻ Google Drive + GitHub Pages */}

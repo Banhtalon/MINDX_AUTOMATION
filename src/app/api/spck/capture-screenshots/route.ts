@@ -8,8 +8,15 @@ import {
 } from "@/lib/db/sqlite";
 import {
   captureClassAppScreenshotsAndSelectThumbnails,
+  isOwnerUploadImageActive,
   OWNER_UPLOADS_SUBDIR,
 } from "@/lib/local-files/spck-app-screenshotter";
+import {
+  assertSafeRealDirectory,
+  deactivateGdriveThumbnailForStudent,
+  MAX_DRIVE_THUMBNAIL_BYTES,
+  validateDownloadedDriveImageBuffer,
+} from "@/lib/google-drive/spck-drive-thumbnails";
 import {
   DEFAULT_SPCK_THUMBNAIL_PATH,
   MAX_SPCK_SCREENSHOTS,
@@ -90,18 +97,68 @@ export async function POST(req: Request) {
       let currentScreenshots: string[] = [];
       try {
         const parsed = JSON.parse(existing.screenshotsJson || "[]");
-        if (Array.isArray(parsed)) currentScreenshots = parsed;
+        if (Array.isArray(parsed)) {
+          currentScreenshots = parsed.filter((p: unknown) => {
+            const str = String(p || "").trim();
+            if (!str) return false;
+            if (/[\\/]_spck_owner_uploads[\\/]/i.test(str)) {
+              return isOwnerUploadImageActive(str);
+            }
+            return true;
+          });
+        }
       } catch {
         currentScreenshots = [];
       }
 
       const validUploadPayloads: Array<{ outName: string; buf: Buffer }> = [];
+      const maxEncodedLen = Math.ceil(MAX_DRIVE_THUMBNAIL_BYTES * 1.4) + 512;
       for (let i = 0; i < files.length; i++) {
         const f = files[i];
         const rawName = String(f?.fileName || `owner_image_${i}.png`);
         const ext = path.extname(rawName).toLowerCase() || ".png";
         if (![".png", ".jpg", ".jpeg", ".webp"].includes(ext)) {
-          continue;
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Định dạng ảnh '${rawName}' không được hỗ trợ. Chỉ chấp nhận .png, .jpg, .jpeg, .webp.`,
+            },
+            { status: 400 }
+          );
+        }
+        const dataUrl = String(f?.dataUrl || "");
+        if (dataUrl.length > maxEncodedLen) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Tệp ảnh '${rawName}' vượt quá giới hạn dung lượng 20MB.`,
+            },
+            { status: 400 }
+          );
+        }
+        const commaIdx = dataUrl.indexOf(",");
+        const base64 = commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+        const buf = Buffer.from(base64, "base64");
+        if (buf.length > MAX_DRIVE_THUMBNAIL_BYTES) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Tệp ảnh '${rawName}' vượt quá giới hạn dung lượng 20MB.`,
+            },
+            { status: 400 }
+          );
+        }
+        const imgCheck = validateDownloadedDriveImageBuffer(buf, rawName);
+        if (!imgCheck.valid || !imgCheck.detectedExt) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                imgCheck.reason ||
+                `Tệp ảnh '${rawName}' không đúng cấu trúc ảnh hợp lệ (.png/.jpg/.webp).`,
+            },
+            { status: 400 }
+          );
         }
         const safeBase =
           path
@@ -109,14 +166,8 @@ export async function POST(req: Request) {
             .replace(/[^a-zA-Z0-9_-]+/g, "_")
             .slice(0, 40) || "owner_img";
         const prefix = role === "thumbnail" ? "thumb_" : "owner_";
-        const outName = `${prefix}${Date.now()}_${i}_${safeBase}${ext}`;
-        const dataUrl = String(f?.dataUrl || "");
-        const commaIdx = dataUrl.indexOf(",");
-        const base64 = commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
-        const buf = Buffer.from(base64, "base64");
-        if (buf.length > 0) {
-          validUploadPayloads.push({ outName, buf });
-        }
+        const outName = `${prefix}${Date.now()}_${i}_${safeBase}${imgCheck.detectedExt}`;
+        validUploadPayloads.push({ outName, buf });
       }
 
       if (validUploadPayloads.length === 0) {
@@ -129,9 +180,12 @@ export async function POST(req: Request) {
         );
       }
 
-      const safeStudentDir = assertPathAllowed(existing.localFolderPath);
-      const ownerDir = assertPathAllowed(
-        path.join(safeStudentDir, OWNER_UPLOADS_SUBDIR)
+      const safeStudentDir = assertSafeRealDirectory(
+        assertPathAllowed(existing.localFolderPath)
+      );
+      const ownerDir = assertSafeRealDirectory(
+        assertPathAllowed(path.join(safeStudentDir, OWNER_UPLOADS_SUBDIR)),
+        safeStudentDir
       );
       const candidatePaths = validUploadPayloads.map((item) =>
         assertPathAllowed(path.join(ownerDir, item.outName))
@@ -147,6 +201,7 @@ export async function POST(req: Request) {
           prevThumb &&
           prevThumb !== DEFAULT_SPCK_THUMBNAIL_PATH &&
           prevThumb !== newThumbnailPath &&
+          !/[\\/]_spck_owner_uploads[\\/]thumb_gdrive_/i.test(prevThumb) &&
           !newScreenshots.includes(prevThumb)
         ) {
           newScreenshots = [prevThumb, ...newScreenshots];
@@ -187,15 +242,21 @@ export async function POST(req: Request) {
         );
       }
 
-      fs.mkdirSync(ownerDir, { recursive: true });
+      if (!fs.existsSync(ownerDir)) {
+        fs.mkdirSync(ownerDir, { recursive: true });
+      }
+      assertSafeRealDirectory(ownerDir, safeStudentDir);
       const savedPaths: string[] = [];
       for (let i = 0; i < validUploadPayloads.length; i++) {
         const outPath = candidatePaths[i];
+        if (fs.lstatSync(outPath, { throwIfNoEntry: false })?.isSymbolicLink()) {
+          fs.unlinkSync(outPath);
+        }
         fs.writeFileSync(outPath, validUploadPayloads[i].buf);
         savedPaths.push(outPath);
       }
 
-      spckUploadRepo.updateSharedResources(
+      const upd = spckUploadRepo.updateSharedResources(
         classId,
         studentId,
         {
@@ -204,6 +265,32 @@ export async function POST(req: Request) {
         },
         existing.localFolderPath
       );
+      if (!upd.updated) {
+        for (const sp of savedPaths) {
+          try {
+            if (fs.existsSync(sp) && !fs.lstatSync(sp).isSymbolicLink()) {
+              fs.unlinkSync(sp);
+            }
+          } catch {}
+        }
+        return NextResponse.json(
+          {
+            success: false,
+            error: upd.reason || "Không thể cập nhật ảnh tải lên vào cơ sở dữ liệu.",
+          },
+          { status: 409 }
+        );
+      }
+
+      if (role === "thumbnail") {
+        deactivateGdriveThumbnailForStudent({
+          classId,
+          studentId,
+          ownerDir,
+          expectedParentRealDir: safeStudentDir,
+          forceOverwriteSessionNumber: activeSessionNumber,
+        });
+      }
 
       // If teacher explicitly uploaded an image while viewing a specific session, also sync into that active session draft if requested
       if (activeSessionNumber && body?.syncActiveSession !== false) {
@@ -239,6 +326,9 @@ export async function POST(req: Request) {
           classId,
           studentIds,
           useAiVision: body?.useAiVision !== false,
+          preferDefaultLogoWhenNoOwnerPhoto: Boolean(
+            body?.preferDefaultLogoWhenNoOwnerPhoto
+          ),
           sessionNumber: body?.syncActiveSession !== false ? activeSessionNumber : undefined,
         }),
     });
@@ -286,12 +376,14 @@ export async function POST(req: Request) {
       records: updatedRecords,
     });
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const status = message.includes("[Security]") ? 403 : 500;
     return NextResponse.json(
       {
         success: false,
-        error: err instanceof Error ? err.message : String(err),
+        error: message,
       },
-      { status: 500 }
+      { status }
     );
   }
 }

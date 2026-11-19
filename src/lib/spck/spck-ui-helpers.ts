@@ -11,6 +11,9 @@ import type {
   StudentOption,
 } from "../../components/final-project/types";
 
+export const DEFAULT_SPCK_THUMBNAIL_DRIVE_URL_UI =
+  "https://drive.google.com/drive/folders/1FmMyv6YkfeJ6mCgSs1_gDxZGyUI3pXvs";
+
 export const DEFAULT_SPCK_TAGS = [
   "Hoàn thành tốt sản phẩm cuối khóa",
   "Ý tưởng sáng tạo, giao diện trực quan",
@@ -568,7 +571,9 @@ export function getRowReadinessSummary(
   const thumbBadgeLabel =
     row.thumbnailInspection?.badgeLabel ||
     (isDefaultThumb
-      ? "Ảnh mặc định — nên bổ sung ảnh sản phẩm"
+      ? "Logo MindX dự phòng"
+      : /thumb_gdrive_/i.test(row.thumbnailPath || "")
+      ? "Ảnh HV từ Drive"
       : /_spck_app_shots/i.test(row.thumbnailPath || "")
       ? "Ảnh giao diện phục dựng"
       : "Có ảnh bìa riêng");

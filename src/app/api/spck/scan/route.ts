@@ -22,6 +22,7 @@ import {
   verifySpckSessionIntegrity,
   type SpckSessionNumber,
 } from "@/lib/db/sqlite";
+import { isOwnerUploadImageActive } from "@/lib/local-files/spck-app-screenshotter";
 import {
   DEFAULT_SPCK_THUMBNAIL_PATH,
   MAX_SPCK_SCREENSHOTS,
@@ -48,6 +49,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const classId = String(body?.classId || "").trim().toUpperCase();
     const folderPath = String(body?.folderPath || "").trim();
+    const preferDefaultLogoWhenNoOwnerPhoto = Boolean(
+      body?.preferDefaultLogoWhenNoOwnerPhoto
+    );
     const rawSessionNum = body?.sessionNumber !== undefined ? Number(body.sessionNumber) : null;
     let activeSessionNumber: SpckSessionNumber | undefined = undefined;
     if (rawSessionNum !== null && rawSessionNum !== 0 && !Number.isNaN(rawSessionNum)) {
@@ -112,7 +116,12 @@ export async function POST(req: Request) {
       }
     }
 
-    const scanResult = await scanClassSpckDirectoryAsync(classId, safeFolderPath, students);
+    const scanResult = await scanClassSpckDirectoryAsync(
+      classId,
+      safeFolderPath,
+      students,
+      { preferDefaultLogoWhenNoOwnerPhoto }
+    );
     const overLimitErrors: string[] = [];
     let persistedCount = 0;
 
@@ -307,11 +316,14 @@ export async function POST(req: Request) {
       const ytFrameRe = /[\\/]_spck_youtube_frames[\\/]/i;
       const isBotGeneratedShot = (p: string) =>
         /[\\/](?:_spck_app_shots|_spck_youtube_frames)[\\/]/i.test(p);
+      const isActivePreservedOwnerUpload = (p: string) =>
+        /[\\/]_spck_owner_uploads[\\/]/i.test(p) && isOwnerUploadImageActive(p);
       const scannedScreenshots =
         item.packageData.allScreenshots || item.packageData.screenshots || [];
       const scannedScreenSet = new Set(scannedScreenshots);
       const isPreservedExistingShot = (p: string) =>
-        /[\\/](?:_spck_app_shots|_spck_youtube_frames|_spck_owner_uploads)[\\/]/i.test(p) ||
+        isBotGeneratedShot(p) ||
+        isActivePreservedOwnerUpload(p) ||
         scannedScreenSet.has(p);
       const existingScreensRaw = sameFolder
         ? parseSafeArray<string>(existing?.screenshotsJson).filter((p) => {
@@ -324,20 +336,28 @@ export async function POST(req: Request) {
         : [];
       const existingHasYoutubeFrames = existingScreensRaw.some((p) => ytFrameRe.test(p));
       const existingHasOwnerUploads = existingScreensRaw.some((p) =>
-        /[\\/]_spck_owner_uploads[\\/]/i.test(p)
+        isActivePreservedOwnerUpload(p)
       );
       const existingThumbExistsOnDisk = Boolean(
         existing?.thumbnailPath && fs.existsSync(existing.thumbnailPath)
       );
+      const existingThumbIsAppShot =
+        existingThumbExistsOnDisk &&
+        /[\\/]_spck_app_shots[\\/]/i.test(existing?.thumbnailPath || "");
+      const existingThumbIsActiveOwnerUpload =
+        existingThumbExistsOnDisk &&
+        isActivePreservedOwnerUpload(existing?.thumbnailPath || "");
       const hasExistingCapturedShots =
         sameFolder &&
         existingThumbExistsOnDisk &&
-        /[\\/](?:_spck_app_shots|_spck_owner_uploads)[\\/]/i.test(
-          existing?.thumbnailPath || ""
-        );
-      // Keep the existing gallery when it holds captured App/Web shots, owner uploads, or Robotics YouTube frames
+        (existingThumbIsActiveOwnerUpload ||
+          (!preferDefaultLogoWhenNoOwnerPhoto && existingThumbIsAppShot));
+      // Keep the existing gallery when it holds captured App/Web shots, active owner uploads, or Robotics YouTube frames
       const existingScreenshots =
-        hasExistingCapturedShots || existingHasYoutubeFrames || existingHasOwnerUploads
+        hasExistingCapturedShots ||
+        (sameFolder && existingThumbIsAppShot) ||
+        existingHasYoutubeFrames ||
+        existingHasOwnerUploads
           ? existingScreensRaw
           : [];
 
@@ -346,7 +366,7 @@ export async function POST(req: Request) {
           ? Array.from(
               new Set([
                 ...existingScreenshots.filter((p) =>
-                  /[\\/](?:_spck_owner_uploads|_spck_youtube_frames)[\\/]/i.test(p)
+                  isActivePreservedOwnerUpload(p) || ytFrameRe.test(p)
                 ),
                 ...scannedScreenshots,
                 ...existingScreenshots,
@@ -359,15 +379,24 @@ export async function POST(req: Request) {
       const scannedThumbIsOwnerPhoto =
         item.packageData.thumbnailSource === "OWNER_UPLOAD" ||
         item.packageData.thumbnailSource === "OWNER_ROOT_PHOTO";
-      const existingThumbIsOwnerUpload =
-        existingThumbExistsOnDisk &&
-        /[\\/]_spck_owner_uploads[\\/]/i.test(existing?.thumbnailPath || "");
+      const existingThumbIsOwnerUpload = existingThumbIsActiveOwnerUpload;
       let resolvedThumbnailPath =
         hasExistingCapturedShots &&
         existing?.thumbnailPath &&
         existingThumbExistsOnDisk
           ? existing.thumbnailPath
           : item.packageData.thumbnailPath;
+      if (
+        preferDefaultLogoWhenNoOwnerPhoto &&
+        sameFolder &&
+        existingThumbIsAppShot &&
+        !existingThumbIsActiveOwnerUpload &&
+        existing?.thumbnailPath &&
+        existing.thumbnailPath !== resolvedThumbnailPath &&
+        !finalScreenshots.includes(existing.thumbnailPath)
+      ) {
+        finalScreenshots = [existing.thumbnailPath, ...finalScreenshots];
+      }
       if (
         scannedThumbIsOwnerPhoto &&
         item.packageData.thumbnailPath &&
@@ -515,6 +544,29 @@ export async function POST(req: Request) {
             const snapshotDrift = checkSpckSnapshotFileDrift(
               parseSpckSubmissionSnapshot(existingSess.lastVerifiedSnapshotJson)
             ).hasFileDrift;
+            const isVerifiedSession = Boolean(
+              existingSess.lastVerifiedAt || existingSess.draftStatus === "VERIFIED"
+            );
+            const attachmentsMatch =
+              (latestSharedRow?.attachmentsJson || "[]") ===
+              (existingSess.attachmentsJson || "[]");
+            const youtubeMatch =
+              (latestSharedRow?.youtubeUrlsJson || "[]") ===
+              (existingSess.youtubeUrlsJson || "[]");
+            const linksMatch =
+              (latestSharedRow?.relatedLinksJson || "[]") ===
+              (existingSess.relatedLinksJson || "[]");
+            const onlyAppShotResetToLogo =
+              preferDefaultLogoWhenNoOwnerPhoto &&
+              !folderContentChanged &&
+              /[\\/]_spck_app_shots[\\/]/i.test(existingSess.thumbnailPath || "") &&
+              latestSharedRow?.thumbnailPath === DEFAULT_SPCK_THUMBNAIL_PATH &&
+              attachmentsMatch &&
+              youtubeMatch &&
+              linksMatch;
+            if (isVerifiedSession && onlyAppShotResetToLogo && integrityOk && !snapshotDrift) {
+              continue;
+            }
             if (hasResourceDiff || !integrityOk || snapshotDrift) {
               spckSessionRepo.syncLatestSharedResourcesToSessionDraft(
                 classId,

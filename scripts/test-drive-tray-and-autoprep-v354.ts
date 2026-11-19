@@ -902,7 +902,7 @@ async function run(): Promise<void> {
       path.join(ROOT, "src", "components", "top-navbar.tsx"),
       "utf8"
     );
-    assert.ok(/MindX Bot v3\.5\.\d+/.test(navbarSrc));
+    assert.ok(/MindX Bot v3\.\d+\.\d+/.test(navbarSrc));
     console.log("  -> PASS R354-06.");
 
     console.log("\n=== TẤT CẢ 6 KỊCH BẢN KIỂM THỬ v3.5.4 (R354-01 → R354-06) ĐÃ ĐẠT 100% ===");

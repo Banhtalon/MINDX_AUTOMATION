@@ -52,6 +52,8 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
     handleGenerateAiComments,
     handleUploadToGoogleDrive,
     uploadingDrive,
+    handleSyncDriveThumbnails,
+    syncingDriveThumbnails,
     isWebClassOrProduct,
     handleDeployWebToGithubPages,
     deployingWeb,
@@ -273,6 +275,11 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
   const isOwnerThumb =
     Boolean(thumbInsp?.isOwnerUploaded) ||
     /_spck_owner_uploads/i.test(row.thumbnailPath || "");
+  const isDriveOwnerThumb = /thumb_gdrive_/i.test(row.thumbnailPath || "");
+  const thumbPreviewFitClass =
+    isOwnerThumb && thumbInsp && !thumbInsp.is16By9
+      ? "w-full h-full object-contain bg-slate-950"
+      : "w-full h-full object-cover";
 
   const commentPreviewText =
     row.teacherComment?.trim() ||
@@ -312,10 +319,12 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   alt={row.projectTitle || "Thumbnail"}
                   loading="lazy"
                   onError={() => setThumbLoadFailed(true)}
-                  className="w-full h-full object-cover"
+                  className={thumbPreviewFitClass}
                 />
                 <span className="mindx-dark-keep absolute bottom-0 right-0 px-1 py-0.5 bg-slate-950/80 text-white text-[8px] font-bold rounded-tl">
-                  {isOwnerThumb
+                  {isDriveOwnerThumb
+                    ? "Drive"
+                    : isOwnerThumb
                     ? "Demo"
                     : isShotThumb
                     ? "16:9"
@@ -332,7 +341,9 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
             ) : isOwnerThumb ? (
               <>
                 <span>📸</span>
-                <span className="mt-0.5">Demo</span>
+                <span className="mt-0.5">
+                  {isDriveOwnerThumb ? "Drive" : "Demo"}
+                </span>
               </>
             ) : isShotThumb ? (
               <>
@@ -803,6 +814,24 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 </button>
               )}
 
+              {Boolean(rowToolErrors.thumb_drive) && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    row.assignedStudentId &&
+                    handleSyncDriveThumbnails([row.assignedStudentId], {
+                      forceRedownload: true,
+                    })
+                  }
+                  disabled={isAnyOperationBusy || !row.assignedStudentId}
+                  className="spck-pill-warning px-2.5 py-1 rounded disabled:opacity-40 text-xs font-semibold cursor-pointer"
+                >
+                  {syncingDriveThumbnails
+                    ? "Đang tải Ảnh Drive..."
+                    : "🔄 Thử lại Ảnh bìa Drive"}
+                </button>
+              )}
+
               {Boolean(rowToolErrors.drive) && (
                 <button
                   type="button"
@@ -989,7 +1018,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                         src={thumbPreviewUrl}
                         alt={row.projectTitle || "Thumbnail preview"}
                         onError={() => setThumbLoadFailed(true)}
-                        className="w-full h-full object-cover"
+                        className={thumbPreviewFitClass}
                       />
                     </div>
                   )}
