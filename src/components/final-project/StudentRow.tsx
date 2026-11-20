@@ -620,7 +620,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
             }
             className="spck-clean-comment-preview px-2.5 py-1.5 rounded-md text-xs cursor-pointer"
           >
-            <div className="line-clamp-2 leading-snug">
+            <div className="line-clamp-2 leading-snug whitespace-pre-line">
               {commentPreviewText ? (
                 <span>💬 {commentPreviewText}</span>
               ) : (
@@ -1342,7 +1342,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   )}
                 </div>
                 <textarea
-                  rows={4}
+                  rows={9}
                   value={row.teacherComment}
                   onChange={(e) => {
                     const val = e.target.value;

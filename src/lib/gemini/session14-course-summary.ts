@@ -165,7 +165,7 @@ function formatScoreDisplay(score: number): string {
 }
 
 const COMPOUND_AFTER_THAY_CO_REGEX =
-  /^\s+(?:lập|đọng|đặc|tích|giản|ơn|đơn|gái|dâu|tiên|bé|chủ|nhân|vụ|tế|thuốc|bói|tu|chùa|đồ|cúng|lang|pháp|địa|công)\b/iu;
+  /^\s+(?:lập|đọng|đặc|tích|giản|ơn|đơn|gái|dâu|tiên|bé|chủ|nhân|vụ|tế|thuốc|bói|tu|chùa|đồ|cúng|lang|pháp|địa|công)(?![\p{L}\p{N}_])/iu;
 
 /**
  * Replaces teacher self-references ("thầy/cô", "thầy cô", "thầy", "cô") with "giáo viên" / "Giáo viên".
@@ -173,10 +173,10 @@ const COMPOUND_AFTER_THAY_CO_REGEX =
 export function normalizeTeacherSelfReferenceToGiaoVien(rawText: string): string {
   if (!rawText) return "";
   let text = rawText
-    .replace(/\bthầy\s*\/\s*cô\b/giu, (m) =>
+    .replace(/(?<![\p{L}\p{N}_])thầy\s*\/\s*cô(?![\p{L}\p{N}_])/giu, (m) =>
       m[0] === m[0].toUpperCase() ? "Giáo viên" : "giáo viên"
     )
-    .replace(/\bthầy\s+cô\b/giu, (m) =>
+    .replace(/(?<![\p{L}\p{N}_])thầy\s+cô(?![\p{L}\p{N}_])/giu, (m) =>
       m[0] === m[0].toUpperCase() ? "Giáo viên" : "giáo viên"
     );
 

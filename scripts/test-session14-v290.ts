@@ -323,9 +323,11 @@ async function runTests() {
 
       const formatted = spckBatchRes[0].formattedTeacherComment;
       assert.ok(
-        formatted.startsWith("1. Về phần thuyết trình\n") &&
-          formatted.includes("\n2. Về phần sản phẩm cuối khóa\n"),
-        "Bình luận SPCK Buổi 14 khi có thuyết trình phải có bố cục 2 mục đánh số: '1. Về phần thuyết trình' và '2. Về phần sản phẩm cuối khóa'"
+        formatted.startsWith("Mccully Mac Dallas — Dự án: Bubu House Bakery Shop.\n") &&
+          formatted.includes("\n\n[THUYẾT TRÌNH & SLIDE]\n+ ") &&
+          formatted.includes("\n\n[ĐIỂM NỔI BẬT CỦA SẢN PHẨM]\n+ ") &&
+          formatted.includes("\n\n[ĐIỂM CẦN HOÀN THIỆN THÊM]\n+ "),
+        "Bình luận SPCK Buổi 14 khi có thuyết trình phải có 2 dòng mở đầu (Tên — Dự án + Tổng kết) và 3 khối gạch đầu dòng '+': '[THUYẾT TRÌNH & SLIDE]', '[ĐIỂM NỔI BẬT CỦA SẢN PHẨM]', '[ĐIỂM CẦN HOÀN THIỆN THÊM]'"
       );
       assert.ok(
         formatted.includes("Dallas chuẩn bị slide") &&

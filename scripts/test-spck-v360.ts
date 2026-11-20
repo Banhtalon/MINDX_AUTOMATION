@@ -1869,8 +1869,13 @@ async function runTests() {
         "INSUFFICIENT_INFO",
         "Lớp VT-CSI02 có code + điểm BGK Buổi 14 không được rơi vào INSUFFICIENT_INFO!"
       );
-      assert.match(aiItem.formattedTeacherComment, /1\.\s*Về phần thuyết trình/i);
-      assert.match(aiItem.formattedTeacherComment, /2\.\s*Về phần sản phẩm cuối khóa/i);
+      assert.ok(
+        aiItem.formattedTeacherComment.startsWith("Nguyễn Khánh Linh — Dự án:"),
+        "Bình luận SPCK Buổi 14 phải mở đầu bằng 'Họ tên — Dự án: ...'"
+      );
+      assert.ok(aiItem.formattedTeacherComment.includes("[THUYẾT TRÌNH & SLIDE]\n+ "));
+      assert.ok(aiItem.formattedTeacherComment.includes("[ĐIỂM NỔI BẬT CỦA SẢN PHẨM]\n+ "));
+      assert.ok(aiItem.formattedTeacherComment.includes("[ĐIỂM CẦN HOÀN THIỆN THÊM]\n+ "));
       assert.ok(
         aiItem.formattedTeacherComment.includes("Khánh Linh") &&
           !aiItem.formattedTeacherComment.includes("STUDENT_01"),

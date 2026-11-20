@@ -513,9 +513,11 @@ async function runTests() {
         `Prompt Buổi 14 của lớp ${tc.classId} phải chứa hướng dẫn chuyên môn '${tc.expectPromptKeyword}'`
       );
       assert.ok(
-        item14.formattedTeacherComment.includes("1. Về phần thuyết trình") &&
-          item14.formattedTeacherComment.includes("2. Về phần sản phẩm cuối khóa"),
-        `Nhận xét Buổi 14 khi chọn thẻ thuyết trình phải xuất đúng cấu trúc 2 phần cho lớp ${tc.classId}`
+        item14.formattedTeacherComment.startsWith("Nguyễn Minh Khôi — Dự án: Dự Án Cuối Khóa Thông Minh.\n") &&
+          item14.formattedTeacherComment.includes("\n\n[THUYẾT TRÌNH & SLIDE]\n+ ") &&
+          item14.formattedTeacherComment.includes("\n\n[ĐIỂM NỔI BẬT CỦA SẢN PHẨM]\n+ ") &&
+          item14.formattedTeacherComment.includes("\n\n[ĐIỂM CẦN HOÀN THIỆN THÊM]\n+ "),
+        `Nhận xét Buổi 14 khi chọn thẻ thuyết trình phải xuất đúng cấu trúc 2 dòng mở đầu + 3 khối '[...]' cho lớp ${tc.classId}`
       );
       if (tc.forbidWebTerms) {
         assert.ok(
