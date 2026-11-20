@@ -66,7 +66,12 @@ Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng m
 
 ---
 
-## [v3.6.8] — 2026-11-20 (Nhận xét Thẳng thắn Mẫu 1 & Huy hiệu `🏅 Top 3` Cách A2)
+## [v3.6.8] — 2026-11-20 (Nhận xét Thẳng thắn Mẫu 1 & Huy hiệu `🏅 Top 3` Cách A2 + Nút Ẩn Điểm Số & Chụp Ảnh BTVN `/homework-grader`)
+
+### Bổ sung cuối ngày (`20/11/2026` — `/homework-grader`: Thu gọn bảng, `Ẩn điểm số` Cách A & `Chụp ảnh BTVN`)
+- `src/lib/report-card/homework-completion-helpers.ts`: Tách helper dùng chung `getHomeworkColumnShortLabel` (`Homework 1` $\rightarrow$ `HW 1`), `resolveHomeworkCompletionState` (`GRADED` & `SUBMITTED_UNGRADED` tính `Đã làm`), `getHomeworkCompletionItems` (tách 2 nhãn `TH: Đã làm/Chưa làm` & `Q: Đã làm/Chưa làm` ở chế độ `Thực hành + Quiz` theo Cách A).
+- `src/app/homework-grader/page.tsx`: Thu gọn bảng chi tiết bài nộp (`HW 1..N`, ẩn dòng mã `STU_...` vào tooltip), thêm nút **`Ẩn điểm số` / `Hiện điểm số`** (hiện ô màu xanh `Đã làm` / màu đỏ `Chưa làm` tương phản cao trên cả Light/Dark Mode và che `—` ở 2 cột `TB TH` / `TB Quiz`) và nút **`Chụp ảnh BTVN`** xuất ảnh PNG sắc nét copy thẳng Clipboard (hoặc tải file dự phòng) theo đúng chế độ đang bật.
+- Kiểm thử: `tsc --noEmit` (`exit 0`), `scripts/test-homework-hide-scores-v369.ts` (`PASS 100%`), `graphify update .` (`2.305` nodes, `8.379` edges, `90` communities).
 
 ### Thay đổi chính
 1. **Huy hiệu `🏅 Top 3` theo Cách A2 (Tối đa 3 bạn/buổi, bắt buộc `>= 1⭐`):**

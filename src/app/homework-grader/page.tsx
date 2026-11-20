@@ -11,6 +11,8 @@ import {
   RotateCcw,
   FileCode,
   Eye,
+  EyeOff,
+  Camera,
   X,
   Table2,
   ChevronDown,
@@ -25,6 +27,10 @@ import {
   formatCellForExport as _sharedFormatCellForExport,
   type ScoreExportMode,
 } from "@/lib/report-card/export-cell-formatter";
+import {
+  getHomeworkColumnShortLabel,
+  getHomeworkCompletionItems,
+} from "@/lib/report-card/homework-completion-helpers";
 
 const formatCellForExport: (
   cell?: StudentScoreCell | null,
@@ -133,10 +139,12 @@ export default function HomeworkGraderPage() {
   const [matrix, setMatrix] = useState<ClassScoreMatrixResult | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"practice" | "both" | "quiz">("both");
+  const [hideScores, setHideScores] = useState(false);
 
   const [isScraping, setIsScraping] = useState(false);
   const [isLoadingCache, setIsLoadingCache] = useState(false);
   const [copiedSheets, setCopiedSheets] = useState(false);
+  const [copiedImage, setCopiedImage] = useState(false);
   const [batchTriggerSeq, setBatchTriggerSeq] = useState(0);
   const [isBatchSyncRunning, setIsBatchSyncRunning] = useState(false);
   const [batchProgressLabel, setBatchProgressLabel] = useState("");
@@ -477,11 +485,283 @@ export default function HomeworkGraderPage() {
     }
   };
 
+  const handleCopyHomeworkImage = async () => {
+    if (!isMatrixMatchedWithSelection || !matrix || !matrix.rows.length) return;
+    const cols = matrix.columns || [];
+    const rows = matrix.rows || [];
+
+    const sttWidth = 40;
+    const nameWidth = 188;
+    const colWidth = hideScores && viewMode === "both" ? 94 : 78;
+    const avgWidth = hideScores ? 0 : 72;
+    const totalWidth =
+      sttWidth + nameWidth + cols.length * colWidth + (hideScores ? 0 : avgWidth * 2) + 32;
+    const headerHeight = 42;
+    const bannerHeight = 46;
+    const rowHeight = hideScores && viewMode === "both" ? 44 : 32;
+    const totalHeight = 16 + bannerHeight + headerHeight + rows.length * rowHeight + 18;
+
+    const canvas = document.createElement("canvas");
+    const dpr = 2;
+    canvas.width = totalWidth * dpr;
+    canvas.height = totalHeight * dpr;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+
+    // Background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, totalWidth, totalHeight);
+
+    // Banner
+    ctx.fillStyle = "#172554";
+    ctx.fillRect(16, 12, totalWidth - 32, bannerHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 14px Segoe UI, Arial, sans-serif";
+    const modeLabel =
+      viewMode === "both"
+        ? "Thực hành + Quiz"
+        : viewMode === "practice"
+        ? "Chỉ Thực hành"
+        : "Chỉ Điểm Quiz";
+    const titleSuffix = hideScores
+      ? "TRẠNG THÁI ĐÃ LÀM / CHƯA LÀM"
+      : "BẢNG ĐIỂM CHI TIẾT";
+    ctx.fillText(
+      `THEO DÕI BTVN — LỚP ${matrix.classCode || classCode} (${modeLabel} • ${titleSuffix})`,
+      28,
+      40
+    );
+
+    // Table Header
+    const tableTop = 12 + bannerHeight + 4;
+    ctx.fillStyle = "#1e3a8a";
+    ctx.fillRect(16, tableTop, totalWidth - 32, headerHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 11px Segoe UI, Arial, sans-serif";
+
+    let cx = 16;
+    ctx.fillText("STT", cx + 10, tableTop + 25);
+    cx += sttWidth;
+    ctx.fillText("Họ và tên", cx + 8, tableTop + 25);
+    cx += nameWidth;
+
+    cols.forEach((col) => {
+      const shortTitle = getHomeworkColumnShortLabel(col.title, col.sessionNumber);
+      const tw = ctx.measureText(shortTitle).width;
+      ctx.fillText(shortTitle, cx + Math.max(4, (colWidth - tw) / 2), tableTop + 25);
+      cx += colWidth;
+    });
+
+    if (!hideScores) {
+      ctx.fillText("TB TH", cx + 18, tableTop + 25);
+      cx += avgWidth;
+      ctx.fillText("TB Quiz", cx + 14, tableTop + 25);
+    }
+
+    const drawPill = (
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      bg: string,
+      fg: string,
+      text: string
+    ) => {
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, 4);
+      ctx.fill();
+      ctx.fillStyle = fg;
+      ctx.font = "bold 10px Segoe UI, Arial, sans-serif";
+      const tw = ctx.measureText(text).width;
+      ctx.fillText(text, x + (w - tw) / 2, y + h / 2 + 3.5);
+    };
+
+    // Rows
+    rows.forEach((student, rIdx) => {
+      const ry = tableTop + headerHeight + rIdx * rowHeight;
+      ctx.fillStyle = rIdx % 2 === 0 ? "#ffffff" : "#f8fafc";
+      ctx.fillRect(16, ry, totalWidth - 32, rowHeight);
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(16, ry, totalWidth - 32, rowHeight);
+
+      let rx = 16;
+      ctx.fillStyle = "#475569";
+      ctx.font = "11px Segoe UI, Arial, sans-serif";
+      ctx.fillText(String(rIdx + 1).padStart(2, "0"), rx + 12, ry + rowHeight / 2 + 4);
+      rx += sttWidth;
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "bold 11.5px Segoe UI, Arial, sans-serif";
+      ctx.fillText(student.fullName.slice(0, 26), rx + 8, ry + rowHeight / 2 + 4);
+      rx += nameWidth;
+
+      cols.forEach((col) => {
+        const cell = student.cells?.[col.columnId];
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.beginPath();
+        ctx.moveTo(rx, ry);
+        ctx.lineTo(rx, ry + rowHeight);
+        ctx.stroke();
+
+        if (hideScores) {
+          const items = getHomeworkCompletionItems(cell, viewMode);
+          if (items.length === 2) {
+            items.forEach((it, idx) => {
+              const py = ry + 4 + idx * 19;
+              const labelText = `${it.prefix}: ${it.label}`;
+              drawPill(
+                rx + 5,
+                py,
+                colWidth - 10,
+                16,
+                it.done ? "#16a34a" : "#dc2626",
+                "#ffffff",
+                labelText
+              );
+            });
+          } else {
+            const it = items[0];
+            drawPill(
+              rx + 6,
+              ry + 6,
+              colWidth - 12,
+              rowHeight - 12,
+              it.done ? "#16a34a" : "#dc2626",
+              "#ffffff",
+              it.label
+            );
+          }
+        } else {
+          let label = "Chưa làm";
+          let bg = "#f1f5f9";
+          let fg = "#64748b";
+
+          if (viewMode === "quiz") {
+            if (typeof cell?.quizScore === "number") {
+              label = `${cell.quizScore}/100`;
+              bg = "#e0f2fe";
+              fg = "#0369a1";
+            }
+          } else if (cell?.status === "GRADED") {
+            label = typeof cell.score === "number" ? `${cell.score}/100` : "Đã chấm";
+            if (cell.score === 0) {
+              bg = "#ffe4e6";
+              fg = "#be123c";
+            } else {
+              bg = "#dcfce7";
+              fg = "#15803d";
+            }
+          } else if (cell?.status === "SUBMITTED_UNGRADED") {
+            label = "Chờ chấm";
+            bg = "#fef3c7";
+            fg = "#b45309";
+          } else if (cell?.status === "REDO_REQUESTED") {
+            label = "Làm lại";
+            bg = "#f3e8ff";
+            fg = "#7e22ce";
+          } else {
+            label = "Chưa nộp";
+          }
+
+          drawPill(rx + 6, ry + 6, colWidth - 12, rowHeight - 12, bg, fg, label);
+        }
+        rx += colWidth;
+      });
+
+      if (!hideScores) {
+        ctx.fillStyle = "#15803d";
+        ctx.font = "bold 11px Segoe UI, Arial, sans-serif";
+        const avgPr = typeof student.averageScore === "number" ? String(student.averageScore) : "-";
+        ctx.fillText(avgPr, rx + 24, ry + rowHeight / 2 + 4);
+        rx += avgWidth;
+
+        ctx.fillStyle = "#0369a1";
+        const avgQz =
+          typeof student.averageQuizScore === "number" ? String(student.averageQuizScore) : "-";
+        ctx.fillText(avgQz, rx + 24, ry + rowHeight / 2 + 4);
+      }
+    });
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      try {
+        if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+          await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+          setCopiedImage(true);
+          setTimeout(() => setCopiedImage(false), 2500);
+          return;
+        }
+      } catch {
+        // Fallback to PNG file download below
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `btvn-${(matrix.classCode || classCode).toLowerCase()}-${
+        hideScores ? "trang-thai" : "diem"
+      }.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setCopiedImage(true);
+      setTimeout(() => setCopiedImage(false), 2500);
+    }, "image/png");
+  };
+
   const renderCellBadge = (student: StudentScoreRow, col: ScoreColumnInfo) => {
     const cell = student.cells?.[col.columnId];
+
+    if (hideScores) {
+      const items = getHomeworkCompletionItems(cell, viewMode);
+      const content = (
+        <div className="flex flex-col items-center gap-1">
+          {items.map((item) => (
+            <span
+              key={item.key}
+              className={`mindx-dark-keep inline-flex items-center justify-center rounded font-bold border whitespace-nowrap ${
+                items.length === 2
+                  ? "px-1.5 py-0.5 text-[10px] leading-tight min-w-[74px]"
+                  : "px-2 py-0.5 text-[11px] leading-tight min-w-[66px]"
+              } ${
+                item.done
+                  ? "bg-emerald-600 text-white border-emerald-500"
+                  : "bg-rose-600 text-white border-rose-500"
+              }`}
+            >
+              {item.prefix ? `${item.prefix}: ${item.label}` : item.label}
+            </span>
+          ))}
+        </div>
+      );
+
+      if (!cell) {
+        return content;
+      }
+
+      return (
+        <button
+          type="button"
+          onClick={() =>
+            setSelectedDetail({
+              studentName: student.fullName,
+              studentId: student.studentId,
+              colTitle: col.title,
+              cell,
+            })
+          }
+          className="hover:scale-105 transition transform focus:outline-none cursor-pointer"
+          title="Bấm để xem chi tiết bài nộp & nhận xét"
+        >
+          {content}
+        </button>
+      );
+    }
+
     if (!cell) {
       return (
-        <span className="px-2 py-0.5 rounded text-[11px] bg-slate-800/70 text-slate-500 border border-slate-700/50">
+        <span className="px-1.5 py-0.5 rounded text-[11px] bg-slate-800/70 text-slate-500 border border-slate-700/50 whitespace-nowrap">
           Chưa nộp
         </span>
       );
@@ -494,13 +774,13 @@ export default function HomeworkGraderPage() {
     if (viewMode === "quiz") {
       if (typeof cell.quizScore === "number") {
         badgeContent = (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30">
-            Quiz: {cell.quizScore}/100
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30 whitespace-nowrap">
+            {cell.quizScore}/100
           </span>
         );
       } else {
         badgeContent = (
-          <span className="px-2 py-0.5 rounded text-[11px] bg-slate-800/70 text-slate-500 border border-slate-700/50">
+          <span className="px-1.5 py-0.5 rounded text-[11px] bg-slate-800/70 text-slate-500 border border-slate-700/50 whitespace-nowrap">
             Chưa làm
           </span>
         );
@@ -510,7 +790,7 @@ export default function HomeworkGraderPage() {
       badgeContent = (
         <div className="flex flex-col items-center gap-0.5">
           <span
-            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold border ${
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border whitespace-nowrap ${
               isZero
                 ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
                 : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
@@ -520,8 +800,8 @@ export default function HomeworkGraderPage() {
             {hasDetail && <Eye className="w-3 h-3 opacity-70" />}
           </span>
           {viewMode === "both" && typeof cell.quizScore === "number" && (
-            <span className="text-[10px] font-medium text-sky-400">
-              Quiz: {cell.quizScore}đ
+            <span className="text-[10px] font-medium text-sky-400 whitespace-nowrap">
+              Q: {cell.quizScore}đ
             </span>
           )}
         </div>
@@ -529,12 +809,12 @@ export default function HomeworkGraderPage() {
     } else if (cell.status === "SUBMITTED_UNGRADED") {
       badgeContent = (
         <div className="flex flex-col items-center gap-0.5">
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-            <Clock className="w-3 h-3" /> Chưa chấm
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 whitespace-nowrap">
+            <Clock className="w-3 h-3" /> Chờ chấm
           </span>
           {viewMode === "both" && typeof cell.quizScore === "number" && (
-            <span className="text-[10px] font-medium text-sky-400">
-              Quiz: {cell.quizScore}đ
+            <span className="text-[10px] font-medium text-sky-400 whitespace-nowrap">
+              Q: {cell.quizScore}đ
             </span>
           )}
         </div>
@@ -542,12 +822,12 @@ export default function HomeworkGraderPage() {
     } else if (cell.status === "REDO_REQUESTED") {
       badgeContent = (
         <div className="flex flex-col items-center gap-0.5">
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap">
             <RotateCcw className="w-3 h-3" /> Làm lại
           </span>
           {viewMode === "both" && typeof cell.quizScore === "number" && (
-            <span className="text-[10px] font-medium text-sky-400">
-              Quiz: {cell.quizScore}đ
+            <span className="text-[10px] font-medium text-sky-400 whitespace-nowrap">
+              Q: {cell.quizScore}đ
             </span>
           )}
         </div>
@@ -555,12 +835,12 @@ export default function HomeworkGraderPage() {
     } else {
       badgeContent = (
         <div className="flex flex-col items-center gap-0.5">
-          <span className="px-2 py-0.5 rounded text-[11px] bg-slate-800/70 text-slate-500 border border-slate-700/50">
+          <span className="px-1.5 py-0.5 rounded text-[11px] bg-slate-800/70 text-slate-500 border border-slate-700/50 whitespace-nowrap">
             Chưa nộp
           </span>
           {viewMode === "both" && typeof cell.quizScore === "number" && (
-            <span className="text-[10px] font-medium text-sky-400">
-              Quiz: {cell.quizScore}đ
+            <span className="text-[10px] font-medium text-sky-400 whitespace-nowrap">
+              Q: {cell.quizScore}đ
             </span>
           )}
         </div>
@@ -749,8 +1029,8 @@ export default function HomeworkGraderPage() {
         {showSubmissionDetails && (
           <div className="border-t border-slate-800 p-4 space-y-4">
             {/* 2. Export & View Mode Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-slate-400 mr-1">Chế độ xem:</span>
                 <button
                   onClick={() => setViewMode("both")}
@@ -782,13 +1062,40 @@ export default function HomeworkGraderPage() {
                 >
                   Chỉ Điểm Quiz
                 </button>
+
+                <button
+                  type="button"
+                  data-testid="toggle-hide-scores-btn"
+                  onClick={() => setHideScores((prev) => !prev)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                    hideScores
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 mindx-dark-keep"
+                      : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700 hover:text-white"
+                  }`}
+                  title="Ẩn điểm số, chỉ hiển thị trạng thái Đã làm (màu xanh) / Chưa làm (màu đỏ)"
+                >
+                  {hideScores ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                  <span>{hideScores ? "Hiện điểm số" : "Ẩn điểm số"}</span>
+                </button>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 <button
+                  type="button"
+                  data-testid="copy-homework-image-btn"
+                  onClick={handleCopyHomeworkImage}
+                  disabled={!isMatrixMatchedWithSelection}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sky-700 hover:bg-sky-600 disabled:opacity-40 text-white border border-sky-500 text-xs font-bold transition cursor-pointer mindx-dark-keep"
+                  title="Chụp bảng BTVN thành ảnh PNG (giữ đúng chế độ Ẩn/Hiện điểm đang chọn) và copy để dán Zalo"
+                >
+                  {copiedImage ? <Check className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
+                  <span>{copiedImage ? "Đã copy ảnh BTVN!" : "Chụp ảnh BTVN"}</span>
+                </button>
+
+                <button
                   onClick={handleCopyForGoogleSheets}
                   disabled={!isMatrixMatchedWithSelection}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer"
                 >
                   {copiedSheets ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   {copiedSheets ? "Đã copy chuẩn Google Sheets!" : "Copy Bảng điểm (Chuẩn Google Sheets)"}
@@ -808,7 +1115,7 @@ export default function HomeworkGraderPage() {
                     type="button"
                     onClick={() => handleExportFile(exportFormat)}
                     disabled={!isMatrixMatchedWithSelection}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition cursor-pointer mindx-dark-btn"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition cursor-pointer mindx-dark-btn"
                   >
                     <FileSpreadsheet className="w-4 h-4" />
                     <span>Xuất file</span>
@@ -820,30 +1127,32 @@ export default function HomeworkGraderPage() {
             {/* 3. Score Matrix Table */}
             <div className="rounded-xl overflow-hidden border border-slate-800">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm text-slate-300">
-                  <thead className="mindx-thead text-xs uppercase font-bold tracking-wider">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="mindx-thead text-[11px] uppercase font-bold tracking-wider">
                     <tr>
-                      <th className="px-3 py-3.5 w-12 text-center sticky left-0 bg-[#172554] z-10">
+                      <th className="px-2 py-2.5 w-10 text-center sticky left-0 bg-[#172554] z-10">
                         STT
                       </th>
-                      <th className="px-4 py-3.5 min-w-[200px] sticky left-12 bg-[#172554] z-10 border-r border-slate-700/60">
+                      <th className="px-3 py-2.5 min-w-[165px] sticky left-10 bg-[#172554] z-10 border-r border-slate-700/60">
                         Học viên
                       </th>
                       {matrix?.columns?.map((col) => (
                         <th
                           key={col.columnId}
-                          className="px-3 py-3.5 min-w-[135px] text-center border-r border-slate-700/60"
+                          className={`px-1.5 py-2.5 text-center border-r border-slate-700/60 ${
+                            hideScores && viewMode === "both" ? "min-w-[84px]" : "min-w-[74px]"
+                          }`}
                           title={col.title}
                         >
-                          <div className="font-bold text-white truncate max-w-[150px] mx-auto">
-                            {col.title}
+                          <div className="font-bold text-white truncate max-w-[86px] mx-auto">
+                            {getHomeworkColumnShortLabel(col.title, col.sessionNumber)}
                           </div>
                         </th>
                       ))}
-                      <th className="px-3 py-3.5 w-28 text-center bg-[#172554] font-bold text-emerald-300">
-                        TB Thực hành
+                      <th className="px-2 py-2.5 w-20 text-center bg-[#172554] font-bold text-emerald-300">
+                        TB TH
                       </th>
-                      <th className="px-3 py-3.5 w-24 text-center bg-[#172554] font-bold text-sky-300">
+                      <th className="px-2 py-2.5 w-20 text-center bg-[#172554] font-bold text-sky-300">
                         TB Quiz
                       </th>
                     </tr>
@@ -852,30 +1161,34 @@ export default function HomeworkGraderPage() {
                     {matrix && matrix.rows.length > 0 ? (
                       matrix.rows.map((student, idx) => (
                         <tr key={student.studentId} className="hover:bg-slate-850/60 transition border-l-4 border-l-sky-500">
-                          <td className="px-3 py-3.5 text-center font-mono text-xs text-slate-500 sticky left-0 bg-slate-900">
+                          <td className="px-2 py-2 text-center font-mono text-xs text-slate-500 sticky left-0 bg-slate-900">
                             {String(idx + 1).padStart(2, "0")}
                           </td>
-                          <td className="px-4 py-3.5 sticky left-12 bg-slate-900 border-r border-slate-800">
-                            <div className="font-semibold text-white">{student.fullName}</div>
-                            <div className="text-[11px] font-mono text-slate-500">
-                              {student.studentId}
-                            </div>
+                          <td
+                            className="px-3 py-2 sticky left-10 bg-slate-900 border-r border-slate-800"
+                            title={student.studentId}
+                          >
+                            <div className="font-semibold text-white whitespace-nowrap">{student.fullName}</div>
                           </td>
                           {matrix.columns.map((col) => (
                             <td
                               key={col.columnId}
-                              className="px-2 py-3 text-center border-r border-slate-800/40"
+                              className="px-1.5 py-2 text-center border-r border-slate-800/40"
                             >
                               {renderCellBadge(student, col)}
                             </td>
                           ))}
-                          <td className="px-3 py-3.5 text-center font-bold text-emerald-400 bg-slate-950/30">
-                            {typeof student.averageScore === "number"
+                          <td className="px-2 py-2 text-center font-bold text-emerald-400 bg-slate-950/30">
+                            {hideScores
+                              ? "—"
+                              : typeof student.averageScore === "number"
                               ? `${student.averageScore}`
                               : "-"}
                           </td>
-                          <td className="px-3 py-3.5 text-center font-semibold text-sky-400 bg-slate-950/30">
-                            {typeof student.averageQuizScore === "number"
+                          <td className="px-2 py-2 text-center font-semibold text-sky-400 bg-slate-950/30">
+                            {hideScores
+                              ? "—"
+                              : typeof student.averageQuizScore === "number"
                               ? `${student.averageQuizScore}`
                               : "-"}
                           </td>

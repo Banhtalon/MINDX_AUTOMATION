@@ -853,6 +853,8 @@ D:\SPCK_MindX\VT-C4K-PTA13\
   * [x] Cô lập `MINDX_NEXT_DIST_DIR` / `MINDX_NEXT_TSCONFIG_PATH` bảo vệ `:3000`; chạy sạch `tsc --noEmit`, `test-classroom-and-candid-comments-v368.ts`, `test-classroom-manager-v367.ts`, `test-quick-tags-v300.ts`, `test-phase4-codex-repros.ts`, `test-save-comments-timeout-v348.ts`, `graphify update .` (`2.294` nodes, `8.360` edges, `88` communities).
 * [x] **V368-4 — Nghiệm thu Độc lập `Gemini 4 Neon (XHigh)` Round 3 (`VERDICT: GO`):**
   * [x] Đóng `6/6` phát hiện (`V368-F01`–`V368-F06`: khử PII/token `STUDENT_XX`/`STUDENT_PEER` đa học viên, bỏ trùng tag tổng hợp `Mất tập trung` khi có lỗi cụ thể, đồng bộ `courseTotalStars` trong `computeCourseAccumulationSummary`, `directStudentIds` giữ nguyên `rowVer` anh em, chặn dương tính giả ghi chú tích cực, tách inline `+ ` chữ thường & callback Buổi 14), `0` lỗi P0/P1/P2 mở ([docs/audits/v368/NEON_XHIGH_V368_REVIEW.md](docs/audits/v368/NEON_XHIGH_V368_REVIEW.md)).
+* [x] **V368-5 — Bổ sung Trang `/homework-grader` (Thu gọn bảng, `Ẩn điểm số` Xanh/Đỏ Cách A & `Chụp ảnh BTVN`):**
+  * [x] Bổ sung `src/lib/report-card/homework-completion-helpers.ts`, cập nhật `src/app/homework-grader/page.tsx` (rút gọn cột `HW 1..N`, nút `Ẩn điểm số` hiển thị `Đã làm` xanh / `Chưa làm` đỏ & che `TB TH`/`TB Quiz`, nút `Chụp ảnh BTVN` xuất PNG copy Clipboard), kiểm thử `tsc --noEmit`, `scripts/test-homework-hide-scores-v369.ts` và `graphify update .` (`2.305` nodes, `8.379` edges, `90` communities) đều PASS (`exit 0`).
 
 
 
