@@ -844,5 +844,16 @@ D:\SPCK_MindX\VT-C4K-PTA13\
 * [x] **CM-4 — Kiểm thử Cô lập Toàn diện & Nghiệm thu Độc lập `Gemini 4 Neon (XHigh)` Round 2 (`VERDICT: GO`):**
   * [x] Hoàn tất `scripts/test-classroom-manager-v367.ts` (`[CM-01..CM-05]`), chạy sạch `tsc --noEmit`, `test-spck-structured-comments-v366.ts` (`5/5`), `test-session-comments-open-lms.ts` (`6/6`), `9/9` probe đối kháng & đa tab Chromium thật Round 2 trong `os.tmpdir()`, `graphify update .` offline (`2.268` nodes, `8.276` edges, `99` communities), đạt **`VERDICT: GO`** ([docs/audits/v367/NEON_XHIGH_V367_REVIEW.md](docs/audits/v367/NEON_XHIGH_V367_REVIEW.md)) và bảo toàn `100%` SHA-256 trên cả `4/4` tệp dữ liệu thật.
 
+### GIAI ĐOẠN 15 (v3.6.8): NHẬN XÉT THẲNG THẮN MẪU 1 (`+ ` LIỆT KÊ ĐỦ LỖI) & HUY HIỆU `🏅 TOP 3` CÁCH A2
+* [x] **V368-1 — Quy tắc Huy hiệu `🏅 Top 3` Cách A2:**
+  * [x] Giới hạn tối đa `3` huy hiệu/buổi, bắt buộc `stars >= 1` kể cả khi giáo viên ghim tay; tự động phân bổ theo `stars` giảm dần -> tổng lỗi tăng dần -> `courseTotalStars` -> tên; hỗ trợ tắt (`huy_hieu_off`) để nhường suất kế tiếp và đồng bộ an toàn trong SQLite (`syncSessionTop3MedalsInDb`).
+* [x] **V368-2 — Nhận xét AI Mẫu 1 thẳng thắn & xuống dòng `  + `:**
+  * [x] Tách bạch Điểm mạnh đúng thực lực, không khen vống học viên `0` sao nhiều lỗi; trích xuất đủ `recordedIssues` từ ghi chú/Quick Tags/`LATE` và chuẩn hóa `normalizeCandidImprovementsWithPlusBullets` để không bỏ sót bất kỳ lỗi nào trên từng dòng `  + `; giữ nguyên định dạng đa dòng qua `/classroom-manager`, `/session-comments`, Copy Zalo, LMS `.ql-editor`, và làm phẳng cho `[Giờ học B14]`.
+* [x] **V368-3 — Cô lập E2E Next.js & Kiểm thử Tự động:**
+  * [x] Cô lập `MINDX_NEXT_DIST_DIR` / `MINDX_NEXT_TSCONFIG_PATH` bảo vệ `:3000`; chạy sạch `tsc --noEmit`, `test-classroom-and-candid-comments-v368.ts`, `test-classroom-manager-v367.ts`, `test-quick-tags-v300.ts`, `test-phase4-codex-repros.ts`, `test-save-comments-timeout-v348.ts`, `graphify update .` (`2.294` nodes, `8.360` edges, `88` communities).
+* [x] **V368-4 — Nghiệm thu Độc lập `Gemini 4 Neon (XHigh)` Round 3 (`VERDICT: GO`):**
+  * [x] Đóng `6/6` phát hiện (`V368-F01`–`V368-F06`: khử PII/token `STUDENT_XX`/`STUDENT_PEER` đa học viên, bỏ trùng tag tổng hợp `Mất tập trung` khi có lỗi cụ thể, đồng bộ `courseTotalStars` trong `computeCourseAccumulationSummary`, `directStudentIds` giữ nguyên `rowVer` anh em, chặn dương tính giả ghi chú tích cực, tách inline `+ ` chữ thường & callback Buổi 14), `0` lỗi P0/P1/P2 mở ([docs/audits/v368/NEON_XHIGH_V368_REVIEW.md](docs/audits/v368/NEON_XHIGH_V368_REVIEW.md)).
+
+
 
 

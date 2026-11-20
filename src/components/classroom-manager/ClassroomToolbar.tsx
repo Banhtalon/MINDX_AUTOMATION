@@ -107,7 +107,7 @@ export function ClassroomToolbar({
             data-testid="cm-kpi-medals"
             className="cm-stat-medal px-2.5 py-1 rounded-lg text-xs font-extrabold whitespace-nowrap"
           >
-            🏅 Huy hiệu: {totalMedals}
+            🏅 Top 3: {totalMedals}/3
           </span>
           <span
             data-testid="cm-kpi-issues"

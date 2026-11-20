@@ -17,14 +17,20 @@ import {
   buildClassroomToCommentMapping,
   computeCourseAccumulationSummary,
   parseClassroomCountsRecord,
+  reconcileTop3ClassMedals,
   type ClassroomAttendanceStatus,
   type ClassroomIssueKey,
-  type ClassroomPraiseKey,
+  type ClassroomStoredPraiseKey,
   type ClassroomStudentState,
 } from "./classroom-manager-helpers";
 
 const VALID_CLASS_ID_REGEX = /^[A-Z0-9_-]{2,64}$/;
-const PRAISE_KEYS = CLASSROOM_PRAISE_ITEMS.map((i) => i.key) as readonly ClassroomPraiseKey[];
+const STORED_PRAISE_KEYS: readonly ClassroomStoredPraiseKey[] = [
+  "phat_bieu",
+  "lam_tot",
+  "huy_hieu",
+  "huy_hieu_off",
+];
 const ISSUE_KEYS = CLASSROOM_ISSUE_ITEMS.map((i) => i.key) as readonly ClassroomIssueKey[];
 
 export function parseValidatedClassId(raw: unknown): string | null {
@@ -158,7 +164,7 @@ export function validateAndNormalizeSaveItems(params: {
 
     const praiseCounts = parseClassroomCountsRecord(
       item.praiseCounts ?? item.praiseCountsJson ?? {},
-      PRAISE_KEYS
+      STORED_PRAISE_KEYS
     );
     const issueCounts = parseClassroomCountsRecord(
       item.issueCounts ?? item.issueCountsJson ?? {},
@@ -210,6 +216,121 @@ export function validateAndNormalizeSaveItems(params: {
   }
 
   return { ok: true, upsertInputs, statesByStudent };
+}
+
+function hydrateSessionStudentRows(params: {
+  activeStudents: Array<{ studentId: string; fullName: string }>;
+  logByStudent: Map<string, ClassroomSessionLogRecord>;
+  feedbackMap?: Map<string, { attendanceStatus?: string; status?: string }>;
+  accByStudent?: Map<string, { totalStars: number; totalMedals: number }>;
+}): Array<ClassroomStudentState & { commentStatus: string }> {
+  const { activeStudents, logByStudent, feedbackMap, accByStudent } = params;
+  const rawRows: Array<ClassroomStudentState & { commentStatus: string }> = activeStudents.map(
+    (st) => {
+      const log = logByStudent.get(st.studentId);
+      const fb = feedbackMap?.get(st.studentId);
+      const acc = accByStudent?.get(st.studentId);
+      const rawAtt = log?.attendanceStatus
+        ? log.attendanceStatus
+        : fb && "attendanceStatus" in fb && fb.attendanceStatus === "ABSENT"
+        ? "ABSENT"
+        : fb && "attendanceStatus" in fb && fb.attendanceStatus === "LATE"
+        ? "LATE"
+        : "PRESENT";
+      const att: ClassroomAttendanceStatus =
+        rawAtt === "ABSENT" || rawAtt === "LATE" ? rawAtt : "PRESENT";
+
+      const baseRow: ClassroomStudentState = {
+        studentId: st.studentId,
+        fullName: st.fullName,
+        attendanceStatus: att,
+        stars: Math.max(0, Math.floor(Number(log?.stars || 0))),
+        medals: Math.max(0, Math.floor(Number(log?.medals || 0))),
+        praiseCounts: parseClassroomCountsRecord(log?.praiseCountsJson, STORED_PRAISE_KEYS),
+        issueCounts: parseClassroomCountsRecord(log?.issueCountsJson, ISSUE_KEYS),
+        teacherQuickNote: String(log?.teacherQuickNote ?? ""),
+        courseTotalStars: acc?.totalStars ?? 0,
+        courseTotalMedals: acc?.totalMedals ?? 0,
+        rowVer: Number(log?.rowVer || 0),
+        appliedToCommentAt: log?.appliedToCommentAt ?? null,
+      };
+
+      const synced = applyAttendanceToggle(baseRow, baseRow.attendanceStatus);
+      return {
+        ...synced,
+        commentStatus: (fb as any)?.status || "DRAFT",
+      };
+    }
+  );
+
+  const reconciled = reconcileTop3ClassMedals(rawRows);
+  return reconciled.map((r, idx) => ({
+    ...r,
+    commentStatus: rawRows[idx]?.commentStatus || "DRAFT",
+  }));
+}
+
+/**
+ * Reconciles and persists Top 3 A2 medals across saved logs in a session without bumping `rowVer`
+ * on derived sibling rows.
+ */
+export function syncSessionTop3MedalsInDb(classId: string, sessionNumber: number): void {
+  const db = getDb();
+  const activeStudents = listStudents(classId, { activeOnly: true });
+  if (activeStudents.length === 0) return;
+
+  const sessionLogs = classroomSessionLogRepo.findBySession(classId, sessionNumber);
+  if (sessionLogs.length === 0) return;
+
+  const logByStudent = new Map<string, ClassroomSessionLogRecord>(
+    sessionLogs.map((l) => [l.studentId, l])
+  );
+  const allLogs = classroomSessionLogRepo.findByClassAllSessions(classId);
+  const accSummary = computeCourseAccumulationSummary(
+    activeStudents.map((s) => ({ studentId: s.studentId, fullName: s.fullName })),
+    allLogs
+  );
+  const accByStudent = new Map(accSummary.map((c) => [c.studentId, c]));
+
+  const reconciled = hydrateSessionStudentRows({
+    activeStudents,
+    logByStudent,
+    accByStudent,
+  });
+
+  const updateStmt = db.prepare(`
+    UPDATE classroom_session_logs
+    SET medals = @medals,
+        praiseCountsJson = @praiseCountsJson,
+        updatedAt = datetime('now', 'localtime')
+    WHERE classId = @classId AND sessionNumber = @sessionNumber AND studentId = @studentId
+  `);
+
+  const runUpdates = () => {
+    for (const row of reconciled) {
+      const existing = logByStudent.get(row.studentId);
+      if (!existing) continue;
+      const nextPraiseJson = JSON.stringify(row.praiseCounts || {});
+      const prevPraiseNormalized = JSON.stringify(
+        parseClassroomCountsRecord(existing.praiseCountsJson, STORED_PRAISE_KEYS)
+      );
+      if (Number(existing.medals || 0) !== row.medals || prevPraiseNormalized !== nextPraiseJson) {
+        updateStmt.run({
+          classId,
+          sessionNumber,
+          studentId: row.studentId,
+          medals: row.medals,
+          praiseCountsJson: nextPraiseJson,
+        });
+      }
+    }
+  };
+
+  if (typeof (db as any).transaction === "function") {
+    (db as any).transaction(runUpdates)();
+  } else {
+    runUpdates();
+  }
 }
 
 export function buildClassroomStatePayload(params: {
@@ -294,40 +415,11 @@ export function buildClassroomStatePayload(params: {
           .map((e) => [e.studentId, { status: e.status }])
   );
 
-  const students = activeStudents.map((st) => {
-    const log = logByStudent.get(st.studentId);
-    const fb = feedbackMap.get(st.studentId);
-    const acc = accByStudent.get(st.studentId);
-    const rawAtt = log?.attendanceStatus
-      ? log.attendanceStatus
-      : fb && "attendanceStatus" in fb && fb.attendanceStatus === "ABSENT"
-      ? "ABSENT"
-      : fb && "attendanceStatus" in fb && fb.attendanceStatus === "LATE"
-      ? "LATE"
-      : "PRESENT";
-    const att: ClassroomAttendanceStatus =
-      rawAtt === "ABSENT" || rawAtt === "LATE" ? rawAtt : "PRESENT";
-
-    const baseRow: ClassroomStudentState = {
-      studentId: st.studentId,
-      fullName: st.fullName,
-      attendanceStatus: att,
-      stars: Math.max(0, Math.floor(Number(log?.stars || 0))),
-      medals: Math.max(0, Math.floor(Number(log?.medals || 0))),
-      praiseCounts: parseClassroomCountsRecord(log?.praiseCountsJson, PRAISE_KEYS),
-      issueCounts: parseClassroomCountsRecord(log?.issueCountsJson, ISSUE_KEYS),
-      teacherQuickNote: String(log?.teacherQuickNote ?? ""),
-      courseTotalStars: acc?.totalStars ?? 0,
-      courseTotalMedals: acc?.totalMedals ?? 0,
-      rowVer: Number(log?.rowVer || 0),
-      appliedToCommentAt: log?.appliedToCommentAt ?? null,
-    };
-
-    const synced = applyAttendanceToggle(baseRow, baseRow.attendanceStatus);
-    return {
-      ...synced,
-      commentStatus: (fb as any)?.status || "DRAFT",
-    };
+  const students = hydrateSessionStudentRows({
+    activeStudents,
+    logByStudent,
+    feedbackMap,
+    accByStudent,
   });
 
   return {
@@ -365,10 +457,22 @@ export function applyClassroomLogsToSessionComments(params: {
     if (upsertInputs && upsertInputs.length > 0) {
       classroomSessionLogRepo.upsertBatch(upsertInputs);
     }
+    syncSessionTop3MedalsInDb(classId, sessionNumber);
 
     const activeStudents = listStudents(classId, { activeOnly: true });
     const sessionLogs = classroomSessionLogRepo.findBySession(classId, sessionNumber);
-    const logMap = new Map(sessionLogs.map((l) => [l.studentId, l]));
+    const logByStudent = new Map(sessionLogs.map((l) => [l.studentId, l]));
+    const allLogs = classroomSessionLogRepo.findByClassAllSessions(classId);
+    const courseAcc = computeCourseAccumulationSummary(
+      activeStudents.map((s) => ({ studentId: s.studentId, fullName: s.fullName })),
+      allLogs
+    );
+    const accByStudent = new Map(courseAcc.map((c) => [c.studentId, c]));
+    const reconciledRows = hydrateSessionStudentRows({
+      activeStudents,
+      logByStudent,
+      accByStudent,
+    });
 
     const nowStamp = new Date().toISOString();
     let appliedCount = 0;
@@ -406,28 +510,8 @@ export function applyClassroomLogsToSessionComments(params: {
         });
       }
 
-      for (const st of activeStudents) {
-        const log = logMap.get(st.studentId);
-        const rowState: ClassroomStudentState = applyAttendanceToggle(
-          {
-            studentId: st.studentId,
-            fullName: st.fullName,
-            attendanceStatus:
-              log?.attendanceStatus === "ABSENT" || log?.attendanceStatus === "LATE"
-                ? log.attendanceStatus
-                : "PRESENT",
-            stars: Math.max(0, Math.floor(Number(log?.stars || 0))),
-            medals: Math.max(0, Math.floor(Number(log?.medals || 0))),
-            praiseCounts: parseClassroomCountsRecord(log?.praiseCountsJson, PRAISE_KEYS),
-            issueCounts: parseClassroomCountsRecord(log?.issueCountsJson, ISSUE_KEYS),
-            teacherQuickNote: String(log?.teacherQuickNote ?? ""),
-          },
-          log?.attendanceStatus === "ABSENT" || log?.attendanceStatus === "LATE"
-            ? log.attendanceStatus
-            : "PRESENT"
-        );
-
-        const existingFb = sessionFeedbackRepo.findOne(classId, targetSessionId, st.studentId);
+      for (const rowState of reconciledRows) {
+        const existingFb = sessionFeedbackRepo.findOne(classId, targetSessionId, rowState.studentId);
         if (existingFb?.status === "VERIFIED" || existingFb?.status === "SAVING") {
           skippedVerifiedCount += 1;
           continue;
@@ -469,7 +553,7 @@ export function applyClassroomLogsToSessionComments(params: {
         sessionFeedbackRepo.upsert({
           classId,
           sessionId: targetSessionId,
-          studentId: st.studentId,
+          studentId: rowState.studentId,
           attendanceStatus: mapped.attendanceStatus,
           quickTagsJson: JSON.stringify(mapped.quickTags),
           teacherNote: mapped.teacherNote,
@@ -489,7 +573,7 @@ export function applyClassroomLogsToSessionComments(params: {
           classId,
           sessionNumber,
           sessionId: targetSessionId,
-          studentId: st.studentId,
+          studentId: rowState.studentId,
           attendanceStatus: rowState.attendanceStatus,
           stars: rowState.stars,
           medals: rowState.medals,
@@ -509,28 +593,8 @@ export function applyClassroomLogsToSessionComments(params: {
     }
 
     // Session 14 routes to /final-project Session 14 evaluation notes
-    for (const st of activeStudents) {
-      const log = logMap.get(st.studentId);
-      const rowState: ClassroomStudentState = applyAttendanceToggle(
-        {
-          studentId: st.studentId,
-          fullName: st.fullName,
-          attendanceStatus:
-            log?.attendanceStatus === "ABSENT" || log?.attendanceStatus === "LATE"
-              ? log.attendanceStatus
-              : "PRESENT",
-          stars: Math.max(0, Math.floor(Number(log?.stars || 0))),
-          medals: Math.max(0, Math.floor(Number(log?.medals || 0))),
-          praiseCounts: parseClassroomCountsRecord(log?.praiseCountsJson, PRAISE_KEYS),
-          issueCounts: parseClassroomCountsRecord(log?.issueCountsJson, ISSUE_KEYS),
-          teacherQuickNote: String(log?.teacherQuickNote ?? ""),
-        },
-        log?.attendanceStatus === "ABSENT" || log?.attendanceStatus === "LATE"
-          ? log.attendanceStatus
-          : "PRESENT"
-      );
-
-      const existing14 = session14EvalRepo.findOne(classId, st.studentId);
+    for (const rowState of reconciledRows) {
+      const existing14 = session14EvalRepo.findOne(classId, rowState.studentId);
       if (existing14?.status === "VERIFIED" || (existing14?.status as string) === "SAVING") {
         skippedVerifiedCount += 1;
         continue;
@@ -544,12 +608,16 @@ export function applyClassroomLogsToSessionComments(params: {
 
       const prevNote = String(existing14?.teacherNote || "").trim();
       const classroomTag = "[Giờ học B14]";
-      const s14Summary = mapped.teacherNote.replace(/[\r\n]+/g, " ").trim();
+      const s14Summary = mapped.teacherNote
+        .replace(/:\s*\r?\n\+\s+/g, ": ")
+        .replace(/\r?\n\+\s+/g, "; ")
+        .replace(/[\r\n]+/g, " ")
+        .trim();
       const s14LineRegex = /^[ \t]*\[Giờ học B14\][^\r\n]*$/im;
       const replacementLine = `${classroomTag} ${s14Summary}`;
       const mergedNote = s14Summary
         ? s14LineRegex.test(prevNote)
-          ? prevNote.replace(s14LineRegex, replacementLine)
+          ? prevNote.replace(s14LineRegex, () => replacementLine)
           : prevNote
           ? `${prevNote}\n${replacementLine}`
           : replacementLine
@@ -557,7 +625,7 @@ export function applyClassroomLogsToSessionComments(params: {
 
       session14EvalRepo.saveDraft({
         classId,
-        studentId: st.studentId,
+        studentId: rowState.studentId,
         teacherNote: mergedNote,
       });
 
@@ -566,7 +634,7 @@ export function applyClassroomLogsToSessionComments(params: {
         classId,
         sessionNumber: 14,
         sessionId: targetSessionId,
-        studentId: st.studentId,
+        studentId: rowState.studentId,
         attendanceStatus: rowState.attendanceStatus,
         stars: rowState.stars,
         medals: rowState.medals,

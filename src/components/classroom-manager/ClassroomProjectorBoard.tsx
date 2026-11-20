@@ -12,7 +12,7 @@ interface ClassroomProjectorBoardProps {
   sessionNumber: number;
   students: ClassroomStudentState[];
   onQuickStar: (studentId: string) => void;
-  onQuickMedal: (studentId: string) => void;
+  onToggleTop3Medal: (studentId: string) => void;
   onOpenRandomPicker: () => void;
   onExitProjector: () => void;
 }
@@ -22,7 +22,7 @@ export function ClassroomProjectorBoard({
   sessionNumber,
   students,
   onQuickStar,
-  onQuickMedal,
+  onToggleTop3Medal,
   onOpenRandomPicker,
   onExitProjector,
 }: ClassroomProjectorBoardProps) {
@@ -46,7 +46,7 @@ export function ClassroomProjectorBoard({
               ⭐ Hôm nay: {totalTodayStars} sao
             </span>
             <span className="px-3 py-1 rounded-lg text-xs sm:text-sm font-extrabold bg-sky-500/20 border border-sky-400/50 text-sky-200">
-              🏅 Huy hiệu: {totalTodayMedals}
+              🏅 Xuất sắc: {totalTodayMedals}/3
             </span>
           </div>
         </div>
@@ -181,11 +181,11 @@ export function ClassroomProjectorBoard({
                   >
                     <span className={row.medals > 0 ? "text-lg" : "text-lg opacity-30"}>🏅</span>
                     <span
-                      className={`text-xs font-extrabold ${
-                        row.medals > 0 ? "text-amber-200" : "text-slate-400"
+                      className={`text-xs font-extrabold whitespace-nowrap ${
+                        row.medals > 0 ? "text-amber-200" : "text-slate-300"
                       }`}
                     >
-                      {row.medals > 0 ? `× ${row.medals}` : "0"}
+                      {row.medals > 0 ? "Top 3" : "—"}
                     </span>
                   </div>
                 </div>
@@ -211,10 +211,19 @@ export function ClassroomProjectorBoard({
                     <button
                       type="button"
                       disabled={row.isAbsent}
-                      onClick={() => onQuickMedal(row.studentId)}
-                      className="mindx-dark-btn h-10 rounded-lg bg-amber-600/35 hover:bg-amber-500/50 border border-amber-400/55 text-amber-100 text-xs font-extrabold disabled:opacity-35 cursor-pointer"
+                      title={
+                        row.medals > 0
+                          ? "Bấm để gỡ Huy hiệu Top 3"
+                          : "Bấm để trao Huy hiệu Top 3 (tối đa 3 bạn)"
+                      }
+                      onClick={() => onToggleTop3Medal(row.studentId)}
+                      className={`mindx-dark-btn h-10 rounded-lg border text-xs font-extrabold disabled:opacity-35 cursor-pointer whitespace-nowrap ${
+                        row.medals > 0
+                          ? "bg-amber-500/45 hover:bg-amber-500/60 border-amber-300/75 text-amber-100"
+                          : "bg-amber-600/35 hover:bg-amber-500/50 border-amber-400/55 text-amber-100"
+                      }`}
                     >
-                      +🏅
+                      {row.medals > 0 ? "✓ Top 3" : "🏅 Top 3"}
                     </button>
                   </div>
                 </div>

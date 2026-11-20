@@ -23,6 +23,8 @@ import {
   applyManualStarDelta,
   applyPraiseAction,
   computeClassroomSessionSummary,
+  reconcileTop3ClassMedals,
+  toggleStudentTop3Medal,
   type ClassroomCourseAccumulationRow,
   type ClassroomIssueKey,
   type ClassroomPraiseKey,
@@ -306,31 +308,59 @@ export default function ClassroomManagerPage() {
     };
   }, [fetchState]);
 
-  const mutateStudent = useCallback(
-    (studentId: string, updater: (prev: ClassroomStudentState) => ClassroomStudentState) => {
-      let didChange = false;
-      const nextList = studentsRef.current.map((stu) => {
-        if (stu.studentId !== studentId) return stu;
-        const updated = updater(stu);
-        if (updated === stu) return stu;
-        didChange = true;
-        const prevEffStars = stu.attendanceStatus === "ABSENT" ? 0 : stu.stars;
+  const commitRosterMutation = useCallback(
+    (draftedRows: ClassroomStudentState[], directStudentIds?: string[]) => {
+      const reconciledRows = reconcileTop3ClassMedals(draftedRows);
+      const prevById = new Map(studentsRef.current.map((s) => [s.studentId, s]));
+      const changedStudentIds: string[] = [];
+
+      const nextList = reconciledRows.map((updated) => {
+        const prev = prevById.get(updated.studentId);
+        if (!prev) return updated;
+        if (prev === updated) return prev;
+
+        const praiseChanged =
+          JSON.stringify(prev.praiseCounts || {}) !== JSON.stringify(updated.praiseCounts || {});
+        const issueChanged =
+          JSON.stringify(prev.issueCounts || {}) !== JSON.stringify(updated.issueCounts || {});
+        const didActuallyChange =
+          prev.attendanceStatus !== updated.attendanceStatus ||
+          prev.stars !== updated.stars ||
+          prev.medals !== updated.medals ||
+          prev.teacherQuickNote !== updated.teacherQuickNote ||
+          praiseChanged ||
+          issueChanged;
+
+        if (!didActuallyChange) return prev;
+
+        changedStudentIds.push(updated.studentId);
+        const prevEffStars = prev.attendanceStatus === "ABSENT" ? 0 : prev.stars;
         const nextEffStars = updated.attendanceStatus === "ABSENT" ? 0 : updated.stars;
-        const prevEffMedals = stu.attendanceStatus === "ABSENT" ? 0 : stu.medals;
+        const prevEffMedals = prev.attendanceStatus === "ABSENT" ? 0 : prev.medals;
         const nextEffMedals = updated.attendanceStatus === "ABSENT" ? 0 : updated.medals;
         const starDelta = nextEffStars - prevEffStars;
         const medalDelta = nextEffMedals - prevEffMedals;
+
         return {
           ...updated,
-          courseTotalStars: Math.max(0, (stu.courseTotalStars ?? prevEffStars) + starDelta),
-          courseTotalMedals: Math.max(0, (stu.courseTotalMedals ?? prevEffMedals) + medalDelta),
+          courseTotalStars: Math.max(0, (prev.courseTotalStars ?? prevEffStars) + starDelta),
+          courseTotalMedals: Math.max(0, (prev.courseTotalMedals ?? prevEffMedals) + medalDelta),
         };
       });
 
-      if (!didChange) return;
+      if (changedStudentIds.length === 0) return;
+
+      const directSet =
+        directStudentIds && directStudentIds.length > 0 ? new Set(directStudentIds) : null;
+      const dirtyTargetIds = directSet
+        ? changedStudentIds.filter((sid) => directSet.has(sid))
+        : changedStudentIds;
+      const idsToMarkDirty = dirtyTargetIds.length > 0 ? dirtyTargetIds : changedStudentIds;
 
       localEditSeqRef.current += 1;
-      dirtySeqByStudentRef.current.set(studentId, localEditSeqRef.current);
+      for (const sid of idsToMarkDirty) {
+        dirtySeqByStudentRef.current.set(sid, localEditSeqRef.current);
+      }
       setSaveIndicator("idle");
       studentsRef.current = nextList;
       setStudents(nextList);
@@ -343,6 +373,35 @@ export default function ClassroomManagerPage() {
       }, 350);
     },
     [flushPendingSaves]
+  );
+
+  const mutateStudent = useCallback(
+    (studentId: string, updater: (prev: ClassroomStudentState) => ClassroomStudentState) => {
+      let didUpdateTarget = false;
+      const draftedList = studentsRef.current.map((stu) => {
+        if (stu.studentId !== studentId) return stu;
+        const updated = updater(stu);
+        if (updated !== stu) didUpdateTarget = true;
+        return updated;
+      });
+      if (!didUpdateTarget) return;
+      commitRosterMutation(draftedList, [studentId]);
+    },
+    [commitRosterMutation]
+  );
+
+  const handleToggleTop3Medal = useCallback(
+    (studentId: string, mode: "toggle" | "remove" = "toggle") => {
+      const outcome = toggleStudentTop3Medal(studentsRef.current, studentId, mode);
+      if (outcome.limitReachedError) {
+        setErrorBanner(outcome.limitReachedError);
+        return;
+      }
+      if (!outcome.changed) return;
+      setErrorBanner(null);
+      commitRosterMutation(outcome.rows, [studentId]);
+    },
+    [commitRosterMutation]
   );
 
   const handleClassChange = async (nextCode: string) => {
@@ -497,7 +556,7 @@ export default function ClassroomManagerPage() {
           sessionNumber={sessionNumber}
           students={students}
           onQuickStar={(id) => mutateStudent(id, (s) => applyPraiseAction(s, "phat_bieu", 1))}
-          onQuickMedal={(id) => mutateStudent(id, (s) => applyPraiseAction(s, "huy_hieu", 1))}
+          onToggleTop3Medal={(id) => handleToggleTop3Medal(id, "toggle")}
           onOpenRandomPicker={spinRandomStudent}
           onExitProjector={() => setIsProjectorMode(false)}
         />
@@ -508,9 +567,13 @@ export default function ClassroomManagerPage() {
           onManualStarDelta={(id, delta) =>
             mutateStudent(id, (s) => applyManualStarDelta(s, delta))
           }
-          onPraise={(id, key: ClassroomPraiseKey, delta) =>
-            mutateStudent(id, (s) => applyPraiseAction(s, key, delta))
-          }
+          onPraise={(id, key: ClassroomPraiseKey, delta) => {
+            if (key === "huy_hieu") {
+              handleToggleTop3Medal(id, delta < 0 ? "remove" : "toggle");
+              return;
+            }
+            mutateStudent(id, (s) => applyPraiseAction(s, key, delta));
+          }}
           onIssue={(id, key: ClassroomIssueKey, delta) =>
             mutateStudent(id, (s) => applyIssueAction(s, key, delta))
           }

@@ -207,18 +207,27 @@ export function ClassroomTeacherTable({
                           className={`grid grid-cols-3 gap-1 ${isAbsent ? "opacity-45" : ""}`}
                         >
                           {CLASSROOM_PRAISE_ITEMS.map((item) => {
+                            const isMedalKey = item.key === "huy_hieu";
                             const count = isAbsent ? 0 : stu.praiseCounts?.[item.key] || 0;
-                            const activeCls =
-                              item.key === "huy_hieu"
-                                ? "cm-act-medal-hit"
-                                : "cm-act-praise-hit";
+                            const isActive = isMedalKey ? effectiveMedals > 0 : count > 0;
+                            const activeCls = isMedalKey
+                              ? "cm-act-medal-hit"
+                              : "cm-act-praise-hit";
+                            const badgeText = isMedalKey ? "✓" : String(count);
+                            const titleText = isMedalKey
+                              ? effectiveMedals > 0
+                                ? "Đang nhận Huy hiệu Top 3 xuất sắc (Bấm hoặc chuột phải để gỡ/nhường bạn khác)"
+                                : effectiveStars < 1
+                                ? "Cần đạt tối thiểu 1 ⭐ trong buổi học để trao Huy hiệu Top 3"
+                                : "Bấm để trao/ghim Huy hiệu Top 3 xuất sắc (tối đa 3 bạn/lớp)"
+                              : "Bấm +1 | Chuột phải hoặc Shift+Click để -1";
                             return (
                               <button
                                 key={item.key}
                                 type="button"
                                 disabled={isAbsent}
                                 data-testid={`cm-praise-${item.key}-${stu.studentId}`}
-                                title="Bấm +1 | Chuột phải hoặc Shift+Click để -1"
+                                title={titleText}
                                 onClick={(e) =>
                                   onPraise(stu.studentId, item.key, e.shiftKey ? -1 : 1)
                                 }
@@ -227,20 +236,18 @@ export function ClassroomTeacherTable({
                                   onPraise(stu.studentId, item.key, -1);
                                 }}
                                 className={`relative h-8 rounded-lg px-1 text-[11px] font-bold flex items-center justify-center gap-0.5 whitespace-nowrap cursor-pointer disabled:cursor-not-allowed transition ${
-                                  count > 0 ? activeCls : "cm-act-idle"
+                                  isActive ? activeCls : "cm-act-idle"
                                 }`}
                               >
                                 <span>{item.icon}</span>
                                 <span className="truncate">{item.label}</span>
-                                {count > 0 && (
+                                {isActive && (
                                   <span
                                     className={`cm-corner-badge ${
-                                      item.key === "huy_hieu"
-                                        ? "bg-amber-700"
-                                        : "bg-emerald-700"
+                                      isMedalKey ? "bg-amber-700" : "bg-emerald-700"
                                     }`}
                                   >
-                                    {count}
+                                    {badgeText}
                                   </span>
                                 )}
                               </button>
@@ -333,7 +340,7 @@ export function ClassroomTeacherTable({
       <div className="cm-shell-card px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
           <span>🟨 Khu Điểm: Giữ nguyên Sao khi ghi lỗi</span>
-          <span>🟩 Khu Khen: Cộng Sao / Huy hiệu</span>
+          <span>🟩 Khu Khen: Cộng Sao &amp; 🏅 Top 3 xuất sắc nhất lớp (tối đa 3 bạn)</span>
           <span>🟥 Khu Lỗi: Chỉ đếm số lần ⚠️ (Chuột phải để -1)</span>
         </div>
         <div className="flex items-center gap-2.5">

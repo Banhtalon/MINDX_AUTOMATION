@@ -6,6 +6,7 @@ import {
   buildClassroomStatePayload,
   parseValidatedClassId,
   parseValidatedSessionNumber,
+  syncSessionTop3MedalsInDb,
   validateAndNormalizeSaveItems,
 } from "@/lib/classroom/classroom-server-helpers";
 
@@ -53,6 +54,9 @@ export async function POST(req: Request) {
     }
 
     const savedResults = classroomSessionLogRepo.upsertBatch(validation.upsertInputs);
+    if (savedResults.some((r) => !r.staleIgnored)) {
+      syncSessionTop3MedalsInDb(classId, sessionNumber);
+    }
     const state = buildClassroomStatePayload({
       requestedClassId: classId,
       requestedSessionNumber: sessionNumber,

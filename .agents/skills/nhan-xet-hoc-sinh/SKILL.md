@@ -49,30 +49,34 @@ Kỹ năng này giúp soạn thảo các mẫu nhận xét tình hình học t�
    - **Cấp độ 4 - Trung bình:** Có sự cố gắng và thái độ hợp tác tốt nhưng tốc độ tiếp thu và thao tác thực hành còn chậm, cần thầy hướng dẫn từng bước để hoàn thành sản phẩm (có `slow` hoặc `improve`, không có `distracted`).
    - **Cấp độ 5 - Trung bình, mất tập trung:** Chưa nắm chắc kiến thức cơ bản của buổi học do chưa thực sự tập trung lắng nghe khi thầy giảng giải, cần sự sát sao nhiều hơn để theo kịp tiến độ (có cả `slow` và `distracted`, hoặc chỉ có `distracted`).
 
-3. **Áp dụng cấu trúc 3 gạch đầu dòng kèm in đậm bắt buộc cho mỗi nhận xét:**
-   - `- **Điểm mạnh của học viên:**` Nêu rõ kỹ năng đạt được, thái độ tích cực, sự hào hứng hoặc tiến bộ của con dựa trên nội dung bài học. In đậm các từ khóa kỹ năng, kiến thức hoặc sản phẩm trọng tâm con đã làm được.
-   - `- **Điểm cần cải thiện:**` Nêu các vấn đề về kỹ năng thao tác, tư duy logic hoặc sự tập trung một cách khéo léo, nhẹ nhàng, tránh gây tâm lý nặng nề. In đậm các điểm mấu chốt cần lưu ý khắc phục.
-   - `- **Lời khuyên:**` Gợi ý giải pháp cụ thể, thiết thực để phụ huynh dễ dàng đồng hành, khích lệ và nhắc nhở con ôn tập ở nhà. In đậm hành động cụ thể gợi ý cho con/ba mẹ.
+3. **Áp dụng cấu trúc 3 gạch đầu dòng kèm in đậm bắt buộc cho mỗi nhận xét (Mẫu 1 — Thẳng thắn & Tách dòng `+ `):**
+   - `- **Điểm mạnh của học viên:**` Ghi nhận trung thực kỹ năng đạt được, thái độ tích cực, số Sao hoặc danh hiệu **Huy hiệu Top 3 học viên xuất sắc nhất lớp** (nếu có). Tuyệt đối không khen vống với học sinh `0 sao` vi phạm nhiều lỗi, và không đưa lỗi vi phạm vào mục Điểm mạnh.
+   - `- **Điểm cần cải thiện:**`
+     + **Khi học sinh CÓ lỗi vi phạm / đi muộn / thiếu BTVN / cần khắc phục:** Sử dụng **văn phong thẳng thắn, trực diện, nghiêm túc** (cấm nói giảm nói tránh kiểu *"đôi lúc phân tâm"*, *"hơi vội vàng"*, *"gặp chút lúng túng"*). Mở đầu bằng 1 câu dẫn thẳng thắn kết thúc bằng dấu `:`, sau đó **xuống dòng (`\n`) liệt kê ĐẦY ĐỦ 100% từng vấn đề bằng dấu `+ `** (`\n  + **...**` kèm số lần `(X lần)` nếu có và hệ quả học tập).
+     + **Khi học sinh ngoan (`0` lỗi):** Góp ý ngắn gọn 1 câu phát triển kỹ năng nâng cao tự nhiên, không tự bịa dòng `+ ` vi phạm.
+   - `- **Lời khuyên:**` Đề nghị giải pháp phối hợp cụ thể, sát sao tương ứng trực tiếp với các lỗi hoặc mục tiêu của con cho ba mẹ tại nhà. In đậm hành động cụ thể gợi ý cho con/ba mẹ.
 
 4. **Đảm bảo hình thức, độ dài, văn phong và chống trùng lặp:**
    - **Độ dài:** Khoảng 100 đến 300 từ cho mỗi mẫu nhận xét.
-   - **Trình bày:** Bắt buộc có dấu gạch đầu dòng (`- `) cho 3 mục, **KHÔNG ghi tên học sinh ở đầu nhận xét**, in đậm 3 tiêu đề đầu mục (`**Điểm mạnh của học viên:**`, `**Điểm cần cải thiện:**`, `**Lời khuyên:**`) và các từ khóa quan trọng trong nội dung. Ngắt dòng tạo khoảng trống rõ ràng giữa 3 mục để dễ đọc và thuận tiện gửi qua LMS/Zalo.
+   - **Trình bày:** Bắt buộc có dấu gạch đầu dòng (`- `) cho 3 mục, **KHÔNG ghi tên học sinh ở đầu nhận xét**, in đậm 3 tiêu đề đầu mục (`**Điểm mạnh của học viên:**`, `**Điểm cần cải thiện:**`, `**Lời khuyên:**`) và các từ khóa quan trọng trong nội dung. Ngắt dòng tạo khoảng trống rõ ràng giữa 3 mục và xuống dòng `  + ` cho từng lỗi để dễ đọc và thuận tiện gửi qua LMS/Zalo.
    - **Xưng hô:** Xưng "thầy", gọi học sinh là "con", gọi phụ huynh là "ba mẹ" hoặc "gia đình" (không lặp lại tên học sinh ở đầu bài).
-   - **Văn phong:** Chuyên nghiệp, lịch sự, tích cực, mang tính xây dựng cao để phụ huynh cảm thấy thoải mái, tin tưởng và sẵn sàng hợp tác cùng thầy.
+   - **Văn phong:** Chuyên nghiệp, lịch sự, thẳng thắn đúng thực tế và có tính xây dựng rõ ràng để phụ huynh nắm đúng tình hình và phối hợp kịp thời cùng thầy.
    - **Chống trùng lặp câu chữ (Anti-Duplication):** Khi nhận xét nhiều học sinh trong cùng một lớp có cùng cấp độ hoặc cùng Quick Tags, mỗi học sinh phải có góc tiếp cận, cấu trúc câu mở đầu và cách diễn đạt riêng gắn với nội dung bài học; tuyệt đối không sao chép nguyên văn câu chữ giữa hai học sinh.
 
 ## Định Dạng Đầu Ra Chuẩn
 
 Mỗi mẫu nhận xét bắt buộc tuân thủ bố cục 3 gạch đầu dòng, in đậm và tách dòng rõ ràng như sau (không có dòng tên học sinh ở đầu):
 
-- **Điểm mạnh của học viên:** [Nội dung nhận xét điểm mạnh cụ thể của con trong buổi học, có **in đậm các kỹ năng/kiến thức trọng tâm**...]
+- **Điểm mạnh của học viên:** [Nội dung nhận xét điểm mạnh trung thực, đúng thực lực của con, có **in đậm các kỹ năng/kiến thức/thành tích Top 3 trọng tâm**...]
 
-- **Điểm cần cải thiện:** [Nội dung góp ý khéo léo, tích cực, có **in đậm điểm cần khắc phục**...]
+- **Điểm cần cải thiện:** [Nếu ngoan `0` lỗi: 1 câu gợi ý nâng cao. Nếu có lỗi: Câu dẫn thẳng thắn:]
+  + [**Lỗi 1 (kèm số lần nếu có)** và ảnh hưởng trực tiếp tới việc học...]
+  + [**Lỗi 2 (kèm số lần nếu có)** và ảnh hưởng trực tiếp tới việc học...]
 
-- **Lời khuyên:** [Gợi ý cụ thể để ba mẹ đồng hành cùng con tại nhà, có **in đậm hoạt động ôn tập chính**...]
+- **Lời khuyên:** [Gợi ý cụ thể để ba mẹ phối hợp cùng con tại nhà, có **in đậm hoạt động ôn tập/chấn chỉnh chính**...]
 
 ## Lưu Ý Quan Trọng
 
-- Luôn bắt đầu bằng sự ghi nhận tích cực, ngay cả với học sinh thuộc nhóm "Trung bình, mất tập trung" (khen ngợi sự có mặt, một thao tác làm được hoặc thái độ lễ phép của con).
-- Không dùng từ ngữ phán xét nặng nề (như "yếu kém", "lười biếng", "cá biệt"). Thay bằng các cụm từ mang tính hỗ trợ (như "cần rèn luyện thêm sự tỉ mỉ", "nếu con tập trung hơn sẽ phát huy rất tốt", "cần thêm thời gian thực hành để quen thao tác").
+- Tách bạch hoàn toàn phần ghi nhận ở `Điểm mạnh` khỏi phần phản ánh lỗi ở `Điểm cần cải thiện` (không bào chữa lỗi trong mục Điểm mạnh, không khen giả tạo khi học sinh `0 sao` và vi phạm nhiều).
+- Không dùng từ ngữ miệt thị nhân cách (như "yếu kém", "lười biếng", "cá biệt"), nhưng phải nêu **thẳng thắn, đầy đủ 100% các lỗi thực tế** (đi học muộn, chưa làm BTVN, nói chuyện riêng, mất tập trung, làm việc riêng, rời khỏi chỗ ngồi) bằng danh sách xuống dòng `+ `, không nói giảm nói tránh hay bỏ sót lỗi.
 - Tuyệt đối không bỏ sót bất kỳ cấp độ nào trong 5 cấp độ hoặc thiếu cấu trúc 3 gạch đầu dòng in đậm.

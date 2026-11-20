@@ -4373,7 +4373,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                       {/* Teacher Note */}
                       <td className="px-4 py-4">
                         <textarea
-                          rows={2}
+                          rows={3}
                           value={student.teacherNote || ""}
                           onChange={(e) =>
                             handleNoteChange(student.studentId, e.target.value, { debounceMs: 600 })
@@ -4382,7 +4382,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                             void flushPendingDraftSave(student.studentId);
                           }}
                           placeholder="Ghi chú thêm cho học sinh..."
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-blue-500 resize-none"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-blue-500 resize-y leading-relaxed"
                         />
                       </td>
 
@@ -4452,7 +4452,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                               {(student.status !== "INSUFFICIENT_INFO" ||
                                 Boolean(displayValue.trim())) && (
                                 <textarea
-                                  rows={5}
+                                  rows={6}
                                   value={displayValue}
                                   onChange={(e) =>
                                     handleTextEdit(
@@ -4465,7 +4465,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                                   onBlur={() => {
                                     void flushPendingDraftSave(student.studentId);
                                   }}
-                                  placeholder={`- **Điểm mạnh của học viên:** ...\n\n- **Điểm cần cải thiện:** ...\n\n- **Lời khuyên:** ...`}
+                                  placeholder={`- **Điểm mạnh của học viên:** ...\n\n- **Điểm cần cải thiện:** ...\n  + ...\n\n- **Lời khuyên:** ...`}
                                   className="w-full bg-slate-950/90 border border-slate-700/90 rounded-lg p-3 text-xs text-slate-100 leading-relaxed focus:outline-none focus:border-blue-500 resize-y font-sans"
                                 />
                               )}

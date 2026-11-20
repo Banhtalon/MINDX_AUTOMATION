@@ -1,6 +1,9 @@
 import { detectTrackByClassCode } from "@/lib/quick-tags";
 
+export const MAX_CLASS_MEDALS = 3;
+
 export type ClassroomPraiseKey = "phat_bieu" | "lam_tot" | "huy_hieu";
+export type ClassroomStoredPraiseKey = ClassroomPraiseKey | "huy_hieu_off";
 export type ClassroomIssueKey =
   | "di_muon"
   | "noi_chuyen"
@@ -47,11 +50,11 @@ export const CLASSROOM_PRAISE_ITEMS: readonly ClassroomPraiseItemDef[] = [
   },
   {
     key: "huy_hieu",
-    label: "Huy hiệu",
+    label: "Top 3",
     icon: "🏅",
     starDelta: 0,
     medalDelta: 1,
-    summaryPhrase: "nhận huy hiệu tuyên dương",
+    summaryPhrase: "nhận Huy hiệu Top 3 học viên xuất sắc nhất lớp",
   },
 ] as const;
 
@@ -96,6 +99,15 @@ export const CLASSROOM_ISSUE_ITEMS: readonly ClassroomIssueItemDef[] = [
   },
 ] as const;
 
+const ISSUE_DISPLAY_ORDER: readonly ClassroomIssueKey[] = [
+  "di_muon",
+  "chua_btvn",
+  "noi_chuyen",
+  "khong_chu_y",
+  "viec_rieng",
+  "roi_cho",
+];
+
 const PRAISE_MAP = new Map<ClassroomPraiseKey, ClassroomPraiseItemDef>(
   CLASSROOM_PRAISE_ITEMS.map((item) => [item.key, item])
 );
@@ -109,7 +121,7 @@ export interface ClassroomStudentState {
   attendanceStatus: ClassroomAttendanceStatus;
   stars: number;
   medals: number;
-  praiseCounts: Partial<Record<ClassroomPraiseKey, number>>;
+  praiseCounts: Partial<Record<ClassroomStoredPraiseKey, number>>;
   issueCounts: Partial<Record<ClassroomIssueKey, number>>;
   teacherQuickNote: string;
   courseTotalStars?: number;
@@ -224,6 +236,33 @@ export function applyPraiseAction(
   const def = PRAISE_MAP.get(key);
   if (!def) return state;
 
+  if (key === "huy_hieu") {
+    const nextPraiseCounts = { ...state.praiseCounts };
+    if (delta === 1) {
+      if (Math.max(0, Math.floor(state.stars || 0)) < 1) {
+        return state;
+      }
+      delete nextPraiseCounts.huy_hieu_off;
+      nextPraiseCounts.huy_hieu = 1;
+      return {
+        ...state,
+        praiseCounts: nextPraiseCounts,
+        medals: 1,
+      };
+    }
+    delete nextPraiseCounts.huy_hieu;
+    if (Math.max(0, Math.floor(state.stars || 0)) >= 1) {
+      nextPraiseCounts.huy_hieu_off = 1;
+    } else {
+      delete nextPraiseCounts.huy_hieu_off;
+    }
+    return {
+      ...state,
+      praiseCounts: nextPraiseCounts,
+      medals: 0,
+    };
+  }
+
   const currentCount = clampCount(state.praiseCounts?.[key] ?? 0, 0, 99);
   const nextCount = clampCount(currentCount + delta, 0, 99);
   const actualDelta = nextCount - currentCount;
@@ -240,10 +279,6 @@ export function applyPraiseAction(
     ...state,
     praiseCounts: nextPraiseCounts,
     stars: Math.max(0, Math.min(999, Math.floor(state.stars || 0) + def.starDelta * actualDelta)),
-    medals: Math.max(
-      0,
-      Math.min(999, Math.floor(state.medals || 0) + def.medalDelta * actualDelta)
-    ),
   };
 }
 
@@ -307,7 +342,7 @@ export function applyManualStarDelta(
 }
 
 /**
- * Toggles or sets attendance status and keeps `di_muon` counter synchronized.
+ * Toggles or sets attendance status and keeps `di_muon` and medal eligibility synchronized.
  */
 export function applyAttendanceToggle(
   state: ClassroomStudentState,
@@ -327,11 +362,213 @@ export function applyAttendanceToggle(
     delete nextIssueCounts.di_muon;
   }
 
+  let nextPraiseCounts = state.praiseCounts;
+  let nextMedals = Math.min(1, Math.max(0, Math.floor(state.medals || 0)));
+  if (nextStatus === "ABSENT") {
+    nextMedals = 0;
+    if (state.praiseCounts?.huy_hieu !== undefined || state.praiseCounts?.huy_hieu_off !== undefined) {
+      nextPraiseCounts = { ...state.praiseCounts };
+      delete nextPraiseCounts.huy_hieu;
+      delete nextPraiseCounts.huy_hieu_off;
+    }
+  }
+
   return {
     ...state,
     attendanceStatus: nextStatus,
+    medals: nextMedals,
+    praiseCounts: nextPraiseCounts,
     issueCounts: nextIssueCounts,
   };
+}
+
+function compareTop3MedalPriority(a: ClassroomStudentState, b: ClassroomStudentState): number {
+  const aStars = Math.max(0, Math.floor(a.stars || 0));
+  const bStars = Math.max(0, Math.floor(b.stars || 0));
+  if (bStars !== aStars) return bStars - aStars;
+
+  const aIssues = sumCountsRecord(a.issueCounts);
+  const bIssues = sumCountsRecord(b.issueCounts);
+  if (aIssues !== bIssues) return aIssues - bIssues;
+
+  const aCourse = Math.max(0, Math.floor(a.courseTotalStars ?? aStars));
+  const bCourse = Math.max(0, Math.floor(b.courseTotalStars ?? bStars));
+  if (bCourse !== aCourse) return bCourse - aCourse;
+
+  const byName = String(a.fullName || "").localeCompare(String(b.fullName || ""), "vi");
+  if (byName !== 0) return byName;
+  return String(a.studentId || "").localeCompare(String(b.studentId || ""));
+}
+
+/**
+ * Reconciles class-wide Top 3 medals per Session using rule A2:
+ * - Max 3 winners/session, each getting 0 or 1 medal; ABSENT always gets 0.
+ * - Manually pinned (`huy_hieu >= 1` without `huy_hieu_off`) take priority up to MAX_CLASS_MEDALS.
+ * - Remaining slots auto-award present/late students with `stars >= 1` and no `huy_hieu_off`,
+ *   ranked by Stars DESC -> Issues ASC -> CourseStars DESC -> Name ASC.
+ */
+export function reconcileTop3ClassMedals(
+  rows: ClassroomStudentState[]
+): ClassroomStudentState[] {
+  if (!Array.isArray(rows) || rows.length === 0) return rows;
+
+  const manualPinned = rows
+    .filter(
+      (r) =>
+        r.attendanceStatus !== "ABSENT" &&
+        Math.floor(r.stars || 0) >= 1 &&
+        clampCount(r.praiseCounts?.huy_hieu ?? 0, 0, 99) >= 1 &&
+        clampCount(r.praiseCounts?.huy_hieu_off ?? 0, 0, 99) === 0
+    )
+    .sort(compareTop3MedalPriority)
+    .slice(0, MAX_CLASS_MEDALS);
+
+  const winnerIds = new Set<string>(manualPinned.map((r) => r.studentId));
+  const remainingSlots = MAX_CLASS_MEDALS - winnerIds.size;
+
+  if (remainingSlots > 0) {
+    const autoCandidates = rows
+      .filter(
+        (r) =>
+          r.attendanceStatus !== "ABSENT" &&
+          !winnerIds.has(r.studentId) &&
+          clampCount(r.praiseCounts?.huy_hieu_off ?? 0, 0, 99) === 0 &&
+          Math.floor(r.stars || 0) >= 1
+      )
+      .sort(compareTop3MedalPriority)
+      .slice(0, remainingSlots);
+
+    for (const c of autoCandidates) {
+      winnerIds.add(c.studentId);
+    }
+  }
+
+  return rows.map((r) => {
+    const isAbsent = r.attendanceStatus === "ABSENT";
+    const nextMedals = !isAbsent && winnerIds.has(r.studentId) ? 1 : 0;
+    const curMedals = Math.floor(r.medals || 0);
+    const curPinned = clampCount(r.praiseCounts?.huy_hieu ?? 0, 0, 99);
+    const hasOff = clampCount(r.praiseCounts?.huy_hieu_off ?? 0, 0, 99) >= 1;
+
+    let nextPraiseCounts = r.praiseCounts;
+    let praiseChanged = false;
+
+    if (isAbsent) {
+      if (r.praiseCounts?.huy_hieu !== undefined || r.praiseCounts?.huy_hieu_off !== undefined) {
+        nextPraiseCounts = { ...r.praiseCounts };
+        delete nextPraiseCounts.huy_hieu;
+        delete nextPraiseCounts.huy_hieu_off;
+        praiseChanged = true;
+      }
+    } else if (curPinned > 1 || (curPinned >= 1 && (!winnerIds.has(r.studentId) || hasOff))) {
+      nextPraiseCounts = { ...r.praiseCounts };
+      if (winnerIds.has(r.studentId) && !hasOff) {
+        nextPraiseCounts.huy_hieu = 1;
+      } else {
+        delete nextPraiseCounts.huy_hieu;
+      }
+      praiseChanged = true;
+    }
+
+    if (curMedals === nextMedals && !praiseChanged) {
+      return r;
+    }
+
+    return {
+      ...r,
+      medals: nextMedals,
+      praiseCounts: nextPraiseCounts,
+    };
+  });
+}
+
+/**
+ * Toggles or removes a student's Top 3 medal while respecting the class-wide 3-medal cap.
+ */
+export function toggleStudentTop3Medal(
+  rows: ClassroomStudentState[],
+  studentId: string,
+  mode: "toggle" | "remove" = "toggle"
+): { rows: ClassroomStudentState[]; changed: boolean; limitReachedError?: string } {
+  const reconciled = reconcileTop3ClassMedals(rows);
+  const target = reconciled.find((r) => r.studentId === studentId);
+  if (!target || target.attendanceStatus === "ABSENT") {
+    return { rows: reconciled, changed: false };
+  }
+
+  if (target.medals > 0 || mode === "remove") {
+    if (target.medals === 0) {
+      return { rows: reconciled, changed: false };
+    }
+    const drafted = reconciled.map((r) => {
+      if (r.studentId !== studentId) return r;
+      const nextPraise = { ...r.praiseCounts };
+      delete nextPraise.huy_hieu;
+      if (Math.floor(r.stars || 0) >= 1) {
+        nextPraise.huy_hieu_off = 1;
+      } else {
+        delete nextPraise.huy_hieu_off;
+      }
+      return {
+        ...r,
+        medals: 0,
+        praiseCounts: nextPraise,
+      };
+    });
+    return { rows: reconcileTop3ClassMedals(drafted), changed: true };
+  }
+
+  // Attempting to award/pin a medal onto a student who currently has medals === 0
+  if (Math.floor(target.stars || 0) < 1) {
+    return {
+      rows: reconciled,
+      changed: false,
+      limitReachedError:
+        "Học viên cần đạt tối thiểu 1 ⭐ trong buổi học mới đủ điều kiện nhận Huy hiệu Top 3.",
+    };
+  }
+
+  const activeManualPins = reconciled.filter(
+    (r) =>
+      r.studentId !== studentId &&
+      r.attendanceStatus !== "ABSENT" &&
+      Math.floor(r.stars || 0) >= 1 &&
+      clampCount(r.praiseCounts?.huy_hieu ?? 0, 0, 99) >= 1 &&
+      clampCount(r.praiseCounts?.huy_hieu_off ?? 0, 0, 99) === 0
+  );
+  if (activeManualPins.length >= MAX_CLASS_MEDALS) {
+    return {
+      rows: reconciled,
+      changed: false,
+      limitReachedError:
+        "Mỗi buổi chỉ trao tối đa 3 Huy hiệu cho 3 bạn xuất sắc nhất lớp. Vui lòng gỡ 1 bạn trước khi đổi.",
+    };
+  }
+
+  const clearedOffRows = reconciled.map((r) => {
+    if (r.studentId !== studentId) return r;
+    const nextPraise = { ...r.praiseCounts };
+    delete nextPraise.huy_hieu_off;
+    return { ...r, praiseCounts: nextPraise };
+  });
+
+  const autoTest = reconcileTop3ClassMedals(clearedOffRows);
+  const autoTarget = autoTest.find((r) => r.studentId === studentId);
+  if (autoTarget && autoTarget.medals >= 1) {
+    return { rows: autoTest, changed: true };
+  }
+
+  const pinnedRows = clearedOffRows.map((r) => {
+    if (r.studentId !== studentId) return r;
+    return {
+      ...r,
+      praiseCounts: {
+        ...r.praiseCounts,
+        huy_hieu: 1,
+      },
+    };
+  });
+  return { rows: reconcileTop3ClassMedals(pinnedRows), changed: true };
 }
 
 /**
@@ -341,7 +578,8 @@ export function applyAttendanceToggle(
 export function rankStudentsForProjector(
   rows: ClassroomStudentState[]
 ): ClassroomProjectorRow[] {
-  const sorted = [...rows].sort((a, b) => {
+  const reconciled = reconcileTop3ClassMedals(rows);
+  const sorted = [...reconciled].sort((a, b) => {
     const aAbs = a.attendanceStatus === "ABSENT" ? 1 : 0;
     const bAbs = b.attendanceStatus === "ABSENT" ? 1 : 0;
     if (aAbs !== bAbs) return aAbs - bAbs;
@@ -357,6 +595,10 @@ export function rankStudentsForProjector(
     const aCourse = Math.max(0, Math.floor(a.courseTotalStars ?? aStars));
     const bCourse = Math.max(0, Math.floor(b.courseTotalStars ?? bStars));
     if (bCourse !== aCourse) return bCourse - aCourse;
+
+    const aCourseMedals = Math.max(0, Math.floor(a.courseTotalMedals ?? aMedals));
+    const bCourseMedals = Math.max(0, Math.floor(b.courseTotalMedals ?? bMedals));
+    if (bCourseMedals !== aCourseMedals) return bCourseMedals - aCourseMedals;
 
     const byName = String(a.fullName || "").localeCompare(String(b.fullName || ""), "vi");
     if (byName !== 0) return byName;
@@ -388,6 +630,7 @@ export function rankStudentsForProjector(
 
 /**
  * Computes 14-session course accumulation totals and encouragement tiers per student.
+ * Reconciles each session's Top 3 A2 medals before summing course totals.
  */
 export function computeCourseAccumulationSummary(
   students: Array<{ studentId: string; fullName: string }>,
@@ -397,6 +640,8 @@ export function computeCourseAccumulationSummary(
     attendanceStatus: string;
     stars: number;
     medals: number;
+    praiseCountsJson?: string | Partial<Record<ClassroomStoredPraiseKey, number>>;
+    issueCountsJson?: string | Partial<Record<ClassroomIssueKey, number>>;
   }>
 ): ClassroomCourseAccumulationRow[] {
   const byStudent = new Map<
@@ -410,30 +655,112 @@ export function computeCourseAccumulationSummary(
     }
   >();
 
+  const logsBySession = new Map<
+    number,
+    Map<
+      string,
+      {
+        attendanceStatus: ClassroomAttendanceStatus;
+        stars: number;
+        medals: number;
+        praiseCounts: Partial<Record<ClassroomStoredPraiseKey, number>>;
+        issueCounts: Partial<Record<ClassroomIssueKey, number>>;
+      }
+    >
+  >();
+
   for (const log of allLogs || []) {
     const sid = String(log.studentId || "").trim();
     const sessNum = Math.floor(Number(log.sessionNumber || 0));
     if (!sid || sessNum < 1 || sessNum > 14) continue;
-    let acc = byStudent.get(sid);
-    if (!acc) {
-      acc = {
-        totalStars: 0,
-        totalMedals: 0,
-        attendedSet: new Set(),
-        lateSet: new Set(),
-        absentSet: new Set(),
+    let sessMap = logsBySession.get(sessNum);
+    if (!sessMap) {
+      sessMap = new Map();
+      logsBySession.set(sessNum, sessMap);
+    }
+    const rawAtt = String(log.attendanceStatus || "PRESENT").trim().toUpperCase();
+    const att: ClassroomAttendanceStatus =
+      rawAtt === "ABSENT" || rawAtt === "LATE" ? rawAtt : "PRESENT";
+    const praiseKeys: readonly ClassroomStoredPraiseKey[] = [
+      "phat_bieu",
+      "lam_tot",
+      "huy_hieu",
+      "huy_hieu_off",
+    ];
+    const issueKeys = CLASSROOM_ISSUE_ITEMS.map((i) => i.key) as readonly ClassroomIssueKey[];
+    sessMap.set(sid, {
+      attendanceStatus: att,
+      stars: Math.max(0, Math.floor(Number(log.stars || 0))),
+      medals: Math.max(0, Math.floor(Number(log.medals || 0))),
+      praiseCounts: parseClassroomCountsRecord(log.praiseCountsJson ?? {}, praiseKeys),
+      issueCounts: parseClassroomCountsRecord(log.issueCountsJson ?? {}, issueKeys),
+    });
+  }
+
+  const courseStarsByStudent = new Map<string, number>();
+  for (const sessMap of logsBySession.values()) {
+    for (const [sid, entry] of sessMap.entries()) {
+      if (entry.attendanceStatus === "ABSENT") continue;
+      courseStarsByStudent.set(sid, (courseStarsByStudent.get(sid) ?? 0) + entry.stars);
+    }
+  }
+
+  for (const [sessNum, sessMap] of logsBySession.entries()) {
+    const rosterSeed = students.map((st) => {
+      const entry = sessMap.get(st.studentId);
+      return {
+        studentId: st.studentId,
+        fullName: st.fullName,
+        attendanceStatus: entry?.attendanceStatus ?? ("PRESENT" as ClassroomAttendanceStatus),
+        stars: entry?.stars ?? 0,
+        medals: entry?.medals ?? 0,
+        courseTotalStars: courseStarsByStudent.get(st.studentId) ?? 0,
+        praiseCounts: entry?.praiseCounts ?? {},
+        issueCounts: entry?.issueCounts ?? {},
+        teacherQuickNote: "",
       };
-      byStudent.set(sid, acc);
+    });
+    const extraSids = Array.from(sessMap.keys()).filter(
+      (sid) => !students.some((st) => st.studentId === sid)
+    );
+    for (const extraSid of extraSids) {
+      const entry = sessMap.get(extraSid)!;
+      rosterSeed.push({
+        studentId: extraSid,
+        fullName: extraSid,
+        attendanceStatus: entry.attendanceStatus,
+        stars: entry.stars,
+        medals: entry.medals,
+        courseTotalStars: courseStarsByStudent.get(extraSid) ?? 0,
+        praiseCounts: entry.praiseCounts,
+        issueCounts: entry.issueCounts,
+        teacherQuickNote: "",
+      });
     }
-    const status = String(log.attendanceStatus || "PRESENT").trim().toUpperCase();
-    if (status === "ABSENT") {
-      acc.absentSet.add(sessNum);
-      continue;
+
+    const reconciled = reconcileTop3ClassMedals(rosterSeed);
+    for (const row of reconciled) {
+      if (!sessMap.has(row.studentId)) continue;
+      let acc = byStudent.get(row.studentId);
+      if (!acc) {
+        acc = {
+          totalStars: 0,
+          totalMedals: 0,
+          attendedSet: new Set(),
+          lateSet: new Set(),
+          absentSet: new Set(),
+        };
+        byStudent.set(row.studentId, acc);
+      }
+      if (row.attendanceStatus === "ABSENT") {
+        acc.absentSet.add(sessNum);
+        continue;
+      }
+      acc.attendedSet.add(sessNum);
+      if (row.attendanceStatus === "LATE") acc.lateSet.add(sessNum);
+      acc.totalStars += Math.max(0, Math.floor(row.stars || 0));
+      acc.totalMedals += Math.max(0, Math.floor(row.medals || 0));
     }
-    acc.attendedSet.add(sessNum);
-    if (status === "LATE") acc.lateSet.add(sessNum);
-    acc.totalStars += Math.max(0, Math.floor(Number(log.stars || 0)));
-    acc.totalMedals += Math.max(0, Math.floor(Number(log.medals || 0)));
   }
 
   return students
@@ -468,6 +795,7 @@ export function computeCourseAccumulationSummary(
 export function computeClassroomSessionSummary(
   rows: ClassroomStudentState[]
 ): ClassroomSessionSummary {
+  const reconciled = reconcileTop3ClassMedals(rows);
   let presentOnTimeCount = 0;
   let lateCount = 0;
   let absentCount = 0;
@@ -479,7 +807,7 @@ export function computeClassroomSessionSummary(
   const absentNames: string[] = [];
   const missingHomeworkNames: string[] = [];
 
-  for (const row of rows) {
+  for (const row of reconciled) {
     const shortName = formatShortClassroomName(row.fullName) || row.fullName;
     if (row.attendanceStatus === "ABSENT") {
       absentCount += 1;
@@ -504,7 +832,7 @@ export function computeClassroomSessionSummary(
   }
 
   return {
-    totalStudents: rows.length,
+    totalStudents: reconciled.length,
     presentOnTimeCount,
     lateCount,
     absentCount,
@@ -524,9 +852,15 @@ function appendSentencePeriod(text: string): string {
   return /[.!?…]$/.test(trimmed) ? trimmed : `${trimmed}.`;
 }
 
+function capitalizeLeadingChar(text: string): string {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) return "";
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
 /**
  * Maps in-class behavior logs into `/session-comments` attendance, Quick Tags (Coding / Robotics),
- * and a clear, natural `teacherNote` string for the teacher's comment box.
+ * and a structured `teacherNote` string (line-by-line `+ ` issues & Top 3 medal mention).
  */
 export function buildClassroomToCommentMapping(params: {
   classCode: string;
@@ -572,7 +906,7 @@ export function buildClassroomToCommentMapping(params: {
     if (lamTot >= 2 || stars >= 4) {
       selectedTags.push("💻 Lập trình chạy đúng");
     }
-    if (medals >= 1 || stars >= 5) {
+    if (medals >= 1 || (stars >= 5 && !hasDistraction)) {
       selectedTags.push("🧠 Chủ động thử & sửa lỗi");
     }
     if (phatBieu >= 1) {
@@ -594,7 +928,7 @@ export function buildClassroomToCommentMapping(params: {
     if (phatBieu >= 1) {
       selectedTags.push("🙋 Hăng hái phát biểu");
     }
-    if (medals >= 1 || stars >= 5) {
+    if (medals >= 1 || (stars >= 5 && !hasDistraction)) {
       selectedTags.push("💡 Vận dụng & Sáng tạo tốt");
     }
     if (hasDistraction) {
@@ -609,34 +943,44 @@ export function buildClassroomToCommentMapping(params: {
   if (phatBieu > 0) praiseParts.push(`phát biểu xây dựng bài (${phatBieu} lần)`);
   if (lamTot > 0) praiseParts.push(`hoàn thành tốt bài thực hành (${lamTot} lần)`);
 
-  const rewardSummaryParts: string[] = [];
-  if (stars > 0) rewardSummaryParts.push(`${stars} sao`);
-  if (medals > 0) rewardSummaryParts.push(`${medals} huy hiệu`);
-
   const noteSegments: string[] = [];
   if (praiseParts.length > 0) {
-    const rewardSuffix =
-      rewardSummaryParts.length > 0 ? ` — đạt ${rewardSummaryParts.join(", ")}` : "";
+    let rewardSuffix = "";
+    if (stars > 0 && medals > 0) {
+      rewardSuffix = ` — đạt ${stars} sao (nhận Huy hiệu Top 3 học viên xuất sắc nhất lớp)`;
+    } else if (stars > 0) {
+      rewardSuffix = ` — đạt ${stars} sao`;
+    } else if (medals > 0) {
+      rewardSuffix = " — nhận Huy hiệu Top 3 học viên xuất sắc nhất lớp";
+    }
     noteSegments.push(`Trong giờ: ${praiseParts.join(", ")}${rewardSuffix}.`);
-  } else if (rewardSummaryParts.length > 0) {
-    noteSegments.push(`Đạt ${rewardSummaryParts.join(", ")} thưởng trong giờ.`);
+  } else if (stars > 0 && medals > 0) {
+    noteSegments.push(
+      `Trong giờ: đạt ${stars} sao (nhận Huy hiệu Top 3 học viên xuất sắc nhất lớp).`
+    );
+  } else if (stars > 0) {
+    noteSegments.push(`Trong giờ: đạt ${stars} sao thưởng tích cực.`);
+  } else if (medals > 0) {
+    noteSegments.push("Trong giờ: nhận Huy hiệu Top 3 học viên xuất sắc nhất lớp.");
   }
 
-  const issueParts: string[] = [];
-  for (const def of CLASSROOM_ISSUE_ITEMS) {
+  const issueLines: string[] = [];
+  for (const key of ISSUE_DISPLAY_ORDER) {
+    const def = ISSUE_MAP.get(key);
+    if (!def) continue;
     const cnt =
-      def.key === "di_muon"
+      key === "di_muon"
         ? diMuonCount
-        : clampCount(studentRow.issueCounts?.[def.key] ?? 0, 0, 99);
+        : clampCount(studentRow.issueCounts?.[key] ?? 0, 0, 99);
     if (cnt <= 0) continue;
-    if (def.singleOccurrenceOmitsCount && cnt === 1) {
-      issueParts.push(def.summaryPhrase);
-    } else {
-      issueParts.push(`${def.summaryPhrase} (${cnt} lần)`);
-    }
+    const lineText =
+      def.singleOccurrenceOmitsCount && cnt === 1
+        ? capitalizeLeadingChar(def.summaryPhrase)
+        : `${capitalizeLeadingChar(def.summaryPhrase)} (${cnt} lần)`;
+    issueLines.push(`+ ${lineText}`);
   }
-  if (issueParts.length > 0) {
-    noteSegments.push(`Cần lưu ý: ${issueParts.join(", ")}.`);
+  if (issueLines.length > 0) {
+    noteSegments.push(`Cần chấn chỉnh:\n${issueLines.join("\n")}`);
   }
 
   if (noteSegments.length === 0 && !customQuickNote) {
@@ -652,6 +996,6 @@ export function buildClassroomToCommentMapping(params: {
   return {
     attendanceStatus: studentRow.attendanceStatus === "LATE" ? "LATE" : "PRESENT",
     quickTags: Array.from(new Set(selectedTags)),
-    teacherNote: noteSegments.join(" "),
+    teacherNote: noteSegments.join("\n"),
   };
 }

@@ -106,6 +106,13 @@ async function main() {
   let nextServer: ChildProcess | null = null;
   let browser: Awaited<ReturnType<typeof chromium.launch>> | null = null;
   const serverLogs: string[] = [];
+  const nextEnvPath = path.join(process.cwd(), "next-env.d.ts");
+  const origNextEnvDts = fs.existsSync(nextEnvPath) ? fs.readFileSync(nextEnvPath) : null;
+  const testPort = 3097;
+  const e2eDistRel = `.next/e2e-test-${testPort}`;
+  const e2eDistAbs = path.join(process.cwd(), e2eDistRel);
+  const e2eTsconfigRel = `.next/e2e-tsconfig-${testPort}.json`;
+  const e2eTsconfigAbs = path.join(process.cwd(), e2eTsconfigRel);
 
   try {
     console.log("🚀 BẮT ĐẦU KIỂM THỬ v3.6.7 (Khu vực cô lập):", tmpRoot);
@@ -700,8 +707,8 @@ async function main() {
     const fb1 = sessionFeedbackRepo.findOne(codingClassId, `${codingClassId}_SESS_5`, "STU_PTA_01");
     assert.equal(fb1?.attendanceStatus, "LATE");
     assert.ok(fb1?.teacherNote?.includes("Trong giờ: phát biểu xây dựng bài (3 lần)"));
-    assert.ok(fb1?.teacherNote?.includes("đi học muộn"));
-    assert.ok(fb1?.teacherNote?.includes("nói chuyện riêng (2 lần)"));
+    assert.ok(fb1?.teacherNote?.includes("+ Đi học muộn"));
+    assert.ok(fb1?.teacherNote?.includes("+ Nói chuyện riêng (2 lần)"));
     assert.ok(fb1?.teacherNote?.includes("Cài đặt xong menu chính"));
     const meta1 = JSON.parse(fb1?.versionMetaJson || "{}");
     assert.ok((meta1?.fields?.quickTags?.ver || 0) >= 1, "[CM-04] versionMetaJson.fields.quickTags.ver phải được tăng để chống nhớ nhầm từ buổi trước");
@@ -809,7 +816,17 @@ async function main() {
     // [CM-05] Live Headless Chromium E2E (127.0.0.1:3097, Light & Dark)
     // =========================================================================
     console.log("\n[CM-05] Khởi chạy máy chủ thử nghiệm Next.js & trình duyệt Chromium thật...");
-    const testPort = 3097;
+    fs.rmSync(e2eDistAbs, { recursive: true, force: true });
+    fs.mkdirSync(e2eDistAbs, { recursive: true });
+    const rootTsconfig = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), "tsconfig.json"), "utf8")
+    );
+    rootTsconfig.compilerOptions = {
+      ...(rootTsconfig.compilerOptions || {}),
+      paths: { "@/*": ["../src/*"] },
+    };
+    fs.writeFileSync(e2eTsconfigAbs, JSON.stringify(rootTsconfig, null, 2), "utf8");
+
     const baseUrl = `http://127.0.0.1:${testPort}`;
     nextServer = spawn(
       process.execPath,
@@ -818,6 +835,8 @@ async function main() {
         cwd: process.cwd(),
         env: {
           ...process.env,
+          MINDX_NEXT_DIST_DIR: e2eDistRel,
+          MINDX_NEXT_TSCONFIG_PATH: e2eTsconfigRel,
           ALLOWED_LOCAL_DIRS: tmpRoot,
           MINDX_ALLOWED_EXTRA_PATHS: tmpRoot,
           MINDX_DB_PATH: tmpDbPath,
@@ -1016,9 +1035,18 @@ async function main() {
       await page.waitForSelector(`[data-testid="cm-note-btn-${s.studentId}"]`);
     }
 
-    // Interact on UI: Student 1 gets +2 Phát biểu, +1 Huy hiệu, +2 Nói chuyện, right-click -1 Nói chuyện, quick note
+    // Interact on UI: Student 1 gets +2 Phát biểu (auto-wins Top 3 medal under A2), test toggle OFF/ON Top 3, +2 Nói chuyện, right-click -1 Nói chuyện, quick note
     await page.click(`[data-testid="cm-praise-phat_bieu-STU_PTA_01"]`);
     await page.click(`[data-testid="cm-praise-phat_bieu-STU_PTA_01"]`);
+    assert.ok(
+      (await page.textContent(`[data-testid="cm-medal-box-STU_PTA_01"]`))?.includes("1"),
+      "[CM-05] Bạn >= 1 sao đứng đầu lớp tự động nhận Huy hiệu Top 3 (Cách A2)"
+    );
+    await page.click(`[data-testid="cm-praise-huy_hieu-STU_PTA_01"]`);
+    assert.ok(
+      (await page.textContent(`[data-testid="cm-medal-box-STU_PTA_01"]`))?.includes("0"),
+      "[CM-05] Bấm nút Top 3 lần 1 gỡ Huy hiệu"
+    );
     await page.click(`[data-testid="cm-praise-huy_hieu-STU_PTA_01"]`);
     await page.click(`[data-testid="cm-issue-noi_chuyen-STU_PTA_01"]`);
     await page.click(`[data-testid="cm-issue-noi_chuyen-STU_PTA_01"]`);
@@ -1030,7 +1058,7 @@ async function main() {
     );
     assert.ok(
       (await page.textContent(`[data-testid="cm-medal-box-STU_PTA_01"]`))?.includes("1"),
-      "[CM-05] Huy hiệu phải là 1"
+      "[CM-05] Bấm bật lại Top 3 Huy hiệu phải là 1"
     );
     assert.ok(
       (await page.textContent(`[data-testid="cm-issue-box-STU_PTA_01"]`))?.includes("1"),
@@ -1243,7 +1271,7 @@ async function main() {
       commentPageAudit.notes.some(
         (v) =>
           v.includes("phát biểu xây dựng bài (2 lần)") &&
-          v.includes("nói chuyện riêng") &&
+          v.includes("+ Nói chuyện riêng (1 lần)") &&
           v.includes("Lập trình thêm hiệu ứng nút bấm đẹp")
       ),
       `[CM-05] Ô Ghi chú của GV trên /session-comments phải có sẵn nội dung từ Quản lý Giờ học (nhận được: ${JSON.stringify(
@@ -1283,6 +1311,11 @@ async function main() {
     killProcessTree(nextServer);
     closeDb();
     try {
+      if (origNextEnvDts !== null) {
+        fs.writeFileSync(nextEnvPath, origNextEnvDts);
+      }
+      fs.rmSync(e2eDistAbs, { recursive: true, force: true });
+      fs.rmSync(e2eTsconfigAbs, { force: true });
       fs.rmSync(tmpRoot, { recursive: true, force: true });
     } catch {}
   }

@@ -130,11 +130,15 @@ export function ClassroomSummaryModal({
                   studentRow: stu,
                 });
 
-                const praiseChips = CLASSROOM_PRAISE_ITEMS.filter(
-                  (item) => (stu.praiseCounts?.[item.key] || 0) > 0
-                ).map((item) => ({
+                const praiseChips = CLASSROOM_PRAISE_ITEMS.filter((item) => {
+                  if (item.key === "huy_hieu") return effectiveMedals > 0;
+                  return (stu.praiseCounts?.[item.key] || 0) > 0;
+                }).map((item) => ({
                   key: item.key,
-                  label: `${item.icon} ${item.label} ×${stu.praiseCounts?.[item.key]}`,
+                  label:
+                    item.key === "huy_hieu"
+                      ? "🏅 Top 3 xuất sắc"
+                      : `${item.icon} ${item.label} ×${stu.praiseCounts?.[item.key]}`,
                 }));
 
                 const issueChips = CLASSROOM_ISSUE_ITEMS.filter(
@@ -249,7 +253,7 @@ export function ClassroomSummaryModal({
                               </span>
                             ))}
                           </div>
-                          <p className="text-[11px] leading-snug opacity-85">
+                          <p className="text-[11px] leading-snug opacity-85 whitespace-pre-line">
                             {mapped.teacherNote}
                           </p>
                         </>

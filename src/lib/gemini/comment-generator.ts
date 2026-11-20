@@ -137,6 +137,329 @@ const NARRATIVE_ANGLES: string[] = [
   "Góc nhìn 8 (Trọng tâm Khả năng kết nối lý thuyết vào thực tế): Mở đầu từ việc con hiểu ý nghĩa ứng dụng của bài học hôm nay và chuyển hóa thành thao tác thực tế; phần cải thiện nêu khía cạnh cần luyện thêm để thao tác mượt mà hơn; lời khuyên gợi ý con liên hệ bài học với các tình huống hoặc bài tập tương tự ở nhà.",
 ];
 
+export interface ExtractedStudentIssues {
+  explicitClassroomBullets: string[];
+  recordedIssues: string[];
+  hasIssuesToCorrect: boolean;
+}
+
+interface ClassroomIssueCategoryRule {
+  id: string;
+  matchRegex: RegExp;
+}
+
+const CLASSROOM_ISSUE_RULES: readonly ClassroomIssueCategoryRule[] = [
+  { id: "di_muon", matchRegex: /(?:đi\s*(?:học\s*)?muộn|đến\s*(?:lớp\s*)?muộn|trễ\s*giờ)/i },
+  {
+    id: "chua_btvn",
+    matchRegex: /(?:btvn|bài\s*tập\s*về\s*nhà|chưa\s*(?:hoàn\s*thành|làm)\s*bài\s*tập)/i,
+  },
+  { id: "noi_chuyen", matchRegex: /(?:nói\s*chuyện|trao\s*đổi\s*riêng|làm\s*ồn)/i },
+  {
+    id: "khong_chu_y",
+    matchRegex: /(?:mất\s*tập\s*trung|không\s*chú\s*ý|thiếu\s*tập\s*trung|cần\s*nhắc\s*tập\s*trung|xao\s*nhãng|phân\s*tâm)/i,
+  },
+  { id: "viec_rieng", matchRegex: /(?:làm\s*việc\s*riêng|việc\s*riêng|chơi\s*(?:game|riêng))/i },
+  { id: "roi_cho", matchRegex: /(?:rời\s*(?:khỏi\s*)?chỗ|đi\s*lại)/i },
+  {
+    id: "tiep_thu_cham",
+    matchRegex: /(?:tiếp\s*thu\s*chậm|nắm\s*bài\s*chậm|lắp\s*ráp\s*cần\s*hỗ\s*trợ|lắp\s*ráp\s*còn\s*chậm|theo\s*kịp\s*tiến\s*độ)/i,
+  },
+  {
+    id: "thao_tac_cham",
+    matchRegex: /(?:thao\s*tác.*chậm|cú\s*pháp.*chậm|lập\s*trình\s*cần\s*hỗ\s*trợ|cần\s*rèn.*tỉ\s*mỉ|lúng\s*túng)/i,
+  },
+  {
+    id: "toc_do_thai_do",
+    matchRegex: /(?:chưa\s*nghiêm\s*túc|thiếu\s*nghiêm\s*túc|chưa\s*chủ\s*động|thái\s*độ\s*thực\s*hành|lười|trì\s*hoãn)/i,
+  },
+];
+
+const FREE_NOTE_ISSUE_HINTS: ReadonlyArray<{ regex: RegExp; label: string; ignoreIfPrecededBy?: RegExp }> = [
+  { regex: /(?:chưa\s*(?:làm|hoàn\s*thành|nộp)?\s*btvn|thiếu\s*btvn|quên\s*btvn|chưa\s*làm\s*bài\s*tập\s*về\s*nhà)/i, label: "Chưa hoàn thành BTVN trước buổi học" },
+  { regex: /(?:đi\s*(?:học\s*)?muộn|đến\s*(?:lớp\s*)?muộn|trễ\s*giờ)/i, label: "Đi học muộn" },
+  { regex: /(?:nói\s*chuyện|trao\s*đổi\s*riêng)/i, label: "Nói chuyện riêng trong giờ" },
+  { regex: /(?:mất\s*tập\s*trung|không\s*chú\s*ý|xao\s*nhãng|thiếu\s*tập\s*trung)/i, label: "Mất tập trung khi nghe giảng" },
+  {
+    regex: /(?:làm\s*việc\s*riêng|việc\s*riêng|chơi\s*game)/i,
+    label: "Làm việc riêng trong giờ",
+    ignoreIfPrecededBy: /(?:trò|làm|tạo|thiết\s*kế|xây\s*dựng|lập\s*trình|viết)\s*$/i,
+  },
+  { regex: /(?:rời\s*(?:khỏi\s*)?chỗ|đi\s*lại\s*tự\s*do)/i, label: "Tự ý rời khỏi chỗ ngồi" },
+  { regex: /(?:lười|thiếu\s*nghiêm\s*túc|chưa\s*nghiêm\s*túc|chưa\s*chủ\s*động|làm\s*bài\s*chậm|lúng\s*túng)/i, label: "Tốc độ và thái độ thực hành chưa nghiêm túc" },
+];
+
+function matchesUnnegatedIssueHint(
+  text: string,
+  hint: { regex: RegExp; label: string; ignoreIfPrecededBy?: RegExp }
+): boolean {
+  const globalRegex = new RegExp(hint.regex.source, hint.regex.flags.includes("g") ? hint.regex.flags : `${hint.regex.flags}g`);
+  let match: RegExpExecArray | null;
+  while ((match = globalRegex.exec(text)) !== null) {
+    const beforeAll = text.slice(0, match.index);
+    const clauseStart = Math.max(
+      beforeAll.lastIndexOf("\n"),
+      beforeAll.lastIndexOf("."),
+      beforeAll.lastIndexOf(","),
+      beforeAll.lastIndexOf(";"),
+      beforeAll.lastIndexOf(":")
+    );
+    const beforeInClause = beforeAll.slice(clauseStart + 1);
+    const isNegated = /(?:^|\s)(?:không(?:\s+còn)?|chưa|đã\s+hết|hết|đỡ|bớt)\s*$/i.test(beforeInClause);
+    const isIgnoredContext = hint.ignoreIfPrecededBy ? hint.ignoreIfPrecededBy.test(beforeInClause) : false;
+    if (!isNegated && !isIgnoredContext) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function cleanIssuePhraseText(raw: string): string {
+  const cleaned = String(raw || "")
+    .replace(/^[+•*\-]\s*/, "")
+    .replace(/\.$/, "")
+    .trim();
+  if (!cleaned) return "";
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
+function stripLeadingEmojiAndSymbols(raw: string): string {
+  return String(raw || "")
+    .replace(/^[^\p{L}\p{N}]+/u, "")
+    .trim();
+}
+
+function isIssueAlreadyCovered(issueList: string[], candidateText: string): boolean {
+  const lowerCand = candidateText.toLowerCase();
+  const matchedRules = CLASSROOM_ISSUE_RULES.filter((r) => r.matchRegex.test(lowerCand));
+  if (matchedRules.length > 0) {
+    return issueList.some((existing) =>
+      matchedRules.some((r) => r.matchRegex.test(existing.toLowerCase()))
+    );
+  }
+  const candNorm = lowerCand.replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+  return issueList.some((existing) => {
+    const exNorm = existing.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+    return Boolean(candNorm && (exNorm.includes(candNorm) || candNorm.includes(exNorm)));
+  });
+}
+
+/**
+ * Extracts explicit classroom issues (both v3.6.8 multi-line `+ ` format and legacy `Cần lưu ý:` comma format),
+ * attendance LATE status, and constructive Quick Tags from scrubbed inputs.
+ */
+export function extractRecordedIssuesForPrompt(
+  sanitizedTeacherNote: string,
+  sanitizedQuickTags: string[],
+  attendanceStatus?: string
+): ExtractedStudentIssues {
+  const note = String(sanitizedTeacherNote || "").replace(/\r\n/g, "\n");
+  const explicitClassroomBullets: string[] = [];
+
+  // 1. Parse multi-line heading ("Cần chấn chỉnh:" or "Cần lưu ý:") followed by "+ ..." lines
+  const lines = note.split("\n");
+  let insideIssueBlock = false;
+  let insidePrivateNote = false;
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    if (/^(?:Cần\s+chấn\s+chỉnh|Cần\s+lưu\s+ý)\s*:/i.test(trimmed)) {
+      insideIssueBlock = true;
+      insidePrivateNote = false;
+      const afterColon = trimmed.replace(/^(?:Cần\s+chấn\s+chỉnh|Cần\s+lưu\s+ý)\s*:\s*/i, "").trim();
+      if (afterColon) {
+        // Legacy comma-separated line (e.g. "Cần lưu ý: đi học muộn, nói chuyện riêng (1 lần).")
+        if (/^[+•*\-]\s+/.test(afterColon)) {
+          const item = cleanIssuePhraseText(afterColon);
+          if (item && !isIssueAlreadyCovered(explicitClassroomBullets, item)) {
+            explicitClassroomBullets.push(item);
+          }
+        } else {
+          for (const part of afterColon.split(/,\s*(?![^()]*\))/)) {
+            const item = cleanIssuePhraseText(part);
+            if (item && !isIssueAlreadyCovered(explicitClassroomBullets, item)) {
+              explicitClassroomBullets.push(item);
+            }
+          }
+        }
+      }
+      continue;
+    }
+
+    if (/^Ghi\s+chú\s+riêng\s*:/i.test(trimmed)) {
+      insideIssueBlock = false;
+      insidePrivateNote = true;
+      continue;
+    }
+
+    if (/^Trong\s+giờ\s*:/i.test(trimmed)) {
+      insideIssueBlock = false;
+      insidePrivateNote = false;
+      continue;
+    }
+
+    if (insideIssueBlock) {
+      if (!trimmed) {
+        insideIssueBlock = false;
+        continue;
+      }
+      if (/^[+•*\-]\s+/.test(trimmed)) {
+        const item = cleanIssuePhraseText(trimmed);
+        if (item && !isIssueAlreadyCovered(explicitClassroomBullets, item)) {
+          explicitClassroomBullets.push(item);
+        }
+      }
+    } else if (!insidePrivateNote && /^\+\s+/.test(trimmed)) {
+      // Standalone "+ ..." line in teacher note (outside "Ghi chú riêng:")
+      const item = cleanIssuePhraseText(trimmed);
+      if (item && !isIssueAlreadyCovered(explicitClassroomBullets, item)) {
+        explicitClassroomBullets.push(item);
+      }
+    }
+  }
+
+  if (
+    attendanceStatus === "LATE" &&
+    !explicitClassroomBullets.some((b) => /(?:đi\s*(?:học\s*)?muộn|trễ\s*giờ)/i.test(b))
+  ) {
+    explicitClassroomBullets.unshift("Đi học muộn");
+  }
+
+  const recordedIssues: string[] = [...explicitClassroomBullets];
+  const hasSpecificDistractionBullet = explicitClassroomBullets.some((b) =>
+    /(?:nói\s*chuyện|không\s*chú\s*ý|mất\s*tập\s*trung|việc\s*riêng|rời\s*(?:khỏi\s*)?chỗ)/i.test(b)
+  );
+
+  // 2. Scan Quick Tags with constructive/improvement signals
+  for (const rawTag of sanitizedQuickTags || []) {
+    const cleanTag = stripLeadingEmojiAndSymbols(rawTag);
+    if (!cleanTag) continue;
+    const lower = cleanTag.toLowerCase();
+    const isAggregateDistractionTag = /^(?:mất\s*tập\s*trung|cần\s*nhắc\s*tập\s*trung)$/i.test(cleanTag);
+    if (isAggregateDistractionTag && hasSpecificDistractionBullet) {
+      continue;
+    }
+    const isIssueTag =
+      /tiếp thu chậm|mất tập trung|cần nhắc tập trung|thao tác.*chậm|cú pháp còn chậm|lắp ráp cần hỗ trợ|lập trình cần hỗ trợ|cần kèm|cần tập trung hơn|còn chậm/i.test(
+        lower
+      );
+    if (isIssueTag && !isIssueAlreadyCovered(recordedIssues, cleanTag)) {
+      recordedIssues.push(cleanTag);
+    }
+  }
+
+  // 3. Scan free-text private notes outside the structured bullets for additional concrete issues
+  const nonStructuredNote = lines
+    .filter((l) => {
+      const t = l.trim();
+      return (
+        !/^(?:Cần\s+chấn\s+chỉnh|Cần\s+lưu\s+ý|Trong\s+giờ)\s*:/i.test(t) &&
+        !/^[+•*\-]\s+/.test(t)
+      );
+    })
+    .join("\n");
+
+  for (const hint of FREE_NOTE_ISSUE_HINTS) {
+    if (matchesUnnegatedIssueHint(nonStructuredNote, hint) && !isIssueAlreadyCovered(recordedIssues, hint.label)) {
+      recordedIssues.push(hint.label);
+    }
+  }
+
+  return {
+    explicitClassroomBullets,
+    recordedIssues,
+    hasIssuesToCorrect: recordedIssues.length > 0,
+  };
+}
+
+/**
+ * Normalizes AI-generated `improvements` into Sample 1 format:
+ * - Candid lead sentence ending with `:` followed by separate `\n  + ` sub-bullet lines.
+ * - Guarantees 0 omitted recorded issues while leaving spotless (`hasIssuesToCorrect === false`) students untouched.
+ */
+export function normalizeCandidImprovementsWithPlusBullets(
+  rawImprovements: string,
+  extracted: ExtractedStudentIssues
+): string {
+  const cleaned = String(rawImprovements || "")
+    .replace(/^[-•*]\s*\*\*Điểm cần cải thiện:\*\*\s*/i, "")
+    .replace(/\r\n/g, "\n")
+    .trim();
+
+  if (!extracted.hasIssuesToCorrect) {
+    return cleaned;
+  }
+
+  // Split inline "+ ..." fragments onto their own indented sub-bullet lines
+  let working = cleaned
+    .replace(/([:.;?!])\s+\+\s+(?=\*\*|\p{L})/gu, "$1\n  + ")
+    .replace(/\s+\+\s+(?=\*\*)/g, "\n  + ");
+
+  const rawLines = working
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  let leadLine = "";
+  const bulletLines: string[] = [];
+
+  for (let idx = 0; idx < rawLines.length; idx++) {
+    const line = rawLines[idx];
+    const isSubBullet = /^(?:[+•*]|\d+\.)\s+/.test(line) || (idx > 0 && /^-\s+/.test(line));
+    if (isSubBullet) {
+      const body = line.replace(/^(?:[+•*\-]|\d+\.)\s+/, "").trim();
+      if (body) bulletLines.push(`  + ${body}`);
+    } else if (!leadLine) {
+      leadLine = line;
+    } else {
+      bulletLines.push(`  + ${line}`);
+    }
+  }
+
+  if (!leadLine) {
+    leadLine =
+      "Trong buổi học hôm nay, thái độ học tập và sự chuẩn bị bài của con còn các điểm cần chấn chỉnh ngay:";
+  }
+
+  const combinedBulletText = bulletLines.join("\n").toLowerCase();
+
+  // Zero-omission guarantee: check EVERY recordedIssues entry (explicit bullets + Quick Tags + free notes) against `+ ` sub-bullets
+  const requiredBullets = extracted.recordedIssues;
+
+  for (const requiredIssue of requiredBullets) {
+    const matchedRule = CLASSROOM_ISSUE_RULES.find((r) => r.matchRegex.test(requiredIssue));
+    const alreadyPresentInBullets = matchedRule
+      ? matchedRule.matchRegex.test(combinedBulletText)
+      : (() => {
+          const tokens = requiredIssue
+            .toLowerCase()
+            .replace(/[^\p{L}\p{N}\s]/gu, " ")
+            .split(/\s+/)
+            .filter((t) => t.length >= 2 && t !== "lần");
+          if (tokens.length === 0) return false;
+          const hitCount = tokens.filter((t) => combinedBulletText.includes(t)).length;
+          return hitCount >= Math.max(1, Math.ceil(tokens.length * 0.6));
+        })();
+
+    if (!alreadyPresentInBullets) {
+      const hasTimes = /\(\d+\s*lần\)/i.test(requiredIssue);
+      const suffix = hasTimes
+        ? " làm gián đoạn nhịp học và ảnh hưởng kết quả thực hành trên lớp."
+        : " ảnh hưởng trực tiếp đến tiến độ học tập trên lớp.";
+      bulletLines.push(`  + **${requiredIssue}**${suffix}`);
+    }
+  }
+
+  if (bulletLines.length === 0) {
+    return leadLine;
+  }
+
+  if (!leadLine.endsWith(":")) {
+    leadLine = leadLine.replace(/[.。!?;]+$/, "").trim() + ":";
+  }
+
+  return `${leadLine}\n${bulletLines.join("\n")}`;
+}
+
 export class CommentGenerator {
   private static latestBatchSeq = 0;
   private static latestStudentCallSeq = new Map<string, number>();
@@ -188,6 +511,7 @@ export class CommentGenerator {
       anonymousId: string;
       scopeKey: string;
       initialSnapshot: CandidateSnapshot;
+      extractedIssues?: ExtractedStudentIssues;
     }[] = [];
 
     const rawCategories = typeof getQuickTags === "function" ? getQuickTags() || [] : [];
@@ -665,18 +989,45 @@ export class CommentGenerator {
           ? `Học viên thứ ${posInGroup + 1}/${peers.length} trong nhóm cùng mức đánh giá (cùng nhóm với ${otherPeers.join(", ")}) — BẮT BUỘC dùng cấu trúc câu mở đầu, cách diễn đạt và từ vựng hoàn toàn khác với ${otherPeers.join(", ")}.`
           : "Diễn đạt tự nhiên theo đúng góc nhìn riêng bên dưới.";
 
+      const scrubbedTeacherNote = scrubStudentNames(
+        c.input.teacherNote || "",
+        c.input.fullName,
+        c.anonymousId
+      );
+      const scrubbedTagLabels = c.regularQuickTags.map((t) =>
+        scrubStudentNames(t, c.input.fullName, c.anonymousId)
+      );
+      const extracted = extractRecordedIssuesForPrompt(
+        scrubbedTeacherNote,
+        scrubbedTagLabels,
+        c.input.attendanceStatus
+      );
+      c.extractedIssues = extracted;
+
+      const hasTop3MedalInNote = /Huy hiệu Top 3/i.test(scrubbedTeacherNote);
+      const hasZeroPositiveWithViolations =
+        /đạt\s*0\s*sao/i.test(scrubbedTeacherNote) ||
+        (extracted.explicitClassroomBullets.length >= 3 &&
+          !/(phát biểu|hoàn thành tốt|đạt\s*[1-9]\d*\s*sao|Huy hiệu Top 3)/i.test(
+            scrubbedTeacherNote
+          ));
+      const strengthsFocusRule = hasTop3MedalInNote
+        ? "Khen xứng đáng tinh thần học tập nổi bật, nêu rõ thành tích Sao và danh hiệu Huy hiệu Top 3 học viên xuất sắc nhất lớp; KHÔNG trộn lỗi vào mục Điểm mạnh."
+        : hasZeroPositiveWithViolations
+        ? "Chỉ ghi nhận trung thực, ngắn gọn 1 thao tác cơ bản con thực hiện được khi có thầy hướng dẫn trực tiếp; CẤM khen vống ('rất nỗ lực', 'hào hứng') và CẤM đưa lỗi vi phạm ('mặc dù đi muộn/phân tâm...') vào mục Điểm mạnh."
+        : "Ghi nhận đúng thực lực các điểm tích cực và phần bài học con hoàn thành tốt trên lớp; KHÔNG trộn lỗi vi phạm vào mục Điểm mạnh.";
+
       return {
         anonymousId: c.anonymousId,
         matchedLevel,
         quickTags: c.regularQuickTags.map((t) =>
           scrubStudentNames(resolveTagWithHint(t), c.input.fullName, c.anonymousId)
         ),
-        teacherNote: scrubStudentNames(
-          c.input.teacherNote || "",
-          c.input.fullName,
-          c.anonymousId
-        ),
+        teacherNote: scrubbedTeacherNote,
         attendance: c.input.attendanceStatus || "PRESENT",
+        recordedIssues: extracted.recordedIssues,
+        hasIssuesToCorrect: extracted.hasIssuesToCorrect,
+        strengthsFocusRule,
         narrativeAngle,
         focusKnowledgeAspect: primaryKnowledge,
         antiDuplicateDirective,
@@ -688,50 +1039,53 @@ export class CommentGenerator {
       : "";
 
     const prompt = `
-Bạn là Giảng viên Công nghệ & Lập trình tại MindX Technology School (áp dụng kỹ năng chuẩn: nhan-xet-hoc-sinh).
-Nhiệm vụ của bạn là soạn nhận xét tình hình học tập của từng học sinh sau buổi học để gửi phụ huynh qua Zalo/LMS, dựa trên Cấp độ học sinh (matchedLevel), Quick Tags và Ghi chú thực tế.
+Bạn là Giảng viên Công nghệ & Lập trình tại MindX Technology School (áp dụng kỹ năng chuẩn: nhan-xet-hoc-sinh — Văn phong Mẫu 1 thẳng thắn & tách từng dòng lỗi bằng dấu "+ ").
+Nhiệm vụ của bạn là soạn nhận xét tình hình học tập của từng học sinh sau buổi học để gửi phụ huynh qua Zalo/LMS, dựa trên Cấp độ học sinh (matchedLevel), Quick Tags, Ghi chú thực tế (\`teacherNote\`) và danh sách \`recordedIssues\`.
 
 ### THÔNG TIN BUỔI HỌC:
 - Lớp: ${session.classCode} (Buổi ${session.sessionNumber}) — Hướng chuyên môn: ${isRoboticsClass ? "Lắp ráp & Lập trình Robotics" : "Lập trình & Công nghệ"}${checkpointNotice}
 - Chủ đề bài học: ${sanitizedTopic}
 - Kiến thức trọng tâm: ${keyKnowledgeText}
 
-### QUY TẮC BẮT BUỘC (SKILL: NHAN-XET-HOC-SINH):
-1. **Xác định ngữ cảnh & Cấp độ học sinh:**
+### QUY TẮC BẮT BUỘC (SKILL: NHAN-XET-HOC-SINH — MẪU 1):
+1. **Xác định ngữ cảnh & Đúng thực lực học sinh:**
    - Lồng ghép trực tiếp chủ đề bài học và kiến thức trọng tâm ở trên vào nhận xét.
-   - Bám sát \`matchedLevel\` (1 trong 5 cấp độ: Cấp độ 1 - Giỏi; Cấp độ 2 - Khá; Cấp độ 3 - Khá nhưng mất tập trung; Cấp độ 4 - Trung bình; Cấp độ 5 - Trung bình, mất tập trung) kết hợp với \`quickTags\` và \`teacherNote\` của từng học sinh. TUYỆT ĐỐI KHÔNG tự bịa đặt thông tin trái ngược với thẻ đã chọn.
-2. **Xưng hô & Văn phong:**
+   - Bám sát \`matchedLevel\`, \`quickTags\`, \`teacherNote\` và \`strengthsFocusRule\` của từng học sinh. TUYỆT ĐỐI KHÔNG bịa đặt thông tin trái ngược với thẻ/ghi chú đã chọn.
+   - **Điểm mạnh tách bạch hoàn toàn khỏi lỗi:** Tuyệt đối KHÔNG khen vống học sinh không có sao/vi phạm nhiều ("rất nỗ lực", "hào hứng"), và KHÔNG đưa lỗi ("mặc dù đi muộn...", "dù có lúc phân tâm...") vào mục Điểm mạnh.
+   - Nếu trong \`teacherNote\` có ghi nhận **Huy hiệu Top 3 học viên xuất sắc nhất lớp** và số sao, hãy nêu rõ thành tích xứng đáng này trong mục Điểm mạnh.
+2. **Xưng hô & Văn phong thẳng thắn (Mẫu 1):**
    - Xưng **"thầy"**, gọi học sinh là **"con"**, gọi phụ huynh là **"ba mẹ"** hoặc **"gia đình"**.
    - **TUYỆT ĐỐI KHÔNG ghi tên học sinh hoặc mã \`STUDENT_XX\` ở đầu nhận xét** (bắt đầu trực tiếp bằng gạch đầu dòng \`- **Điểm mạnh của học viên:**\`). Trong nội dung cũng gọi học sinh là **"con"**, không chèn mã \`STUDENT_XX\`.
-   - Văn phong chuyên nghiệp, lịch sự, tích cực, mang tính xây dựng cao.
-   - Luôn bắt đầu bằng sự ghi nhận tích cực (ngay cả với Cấp độ 4 và Cấp độ 5). Không dùng từ ngữ phán xét nặng nề (như "yếu kém", "lười biếng", "cá biệt"); thay bằng cụm từ mang tính hỗ trợ (như "cần rèn luyện thêm sự tỉ mỉ", "nếu con tập trung hơn sẽ phát huy rất tốt", "cần thêm thời gian thực hành để quen thao tác").
-3. **Cấu trúc 3 gạch đầu dòng kèm in đậm bắt buộc (Độ dài tổng 100 - 250 từ/học sinh):**
-   - \`strengths\` (Nội dung phần **Điểm mạnh của học viên**): Nêu rõ kỹ năng đạt được, thái độ tích cực, sự hào hứng hoặc tiến bộ của con dựa trên nội dung bài học. Có **in đậm** (\`**...**\`) các từ khóa kỹ năng, kiến thức hoặc sản phẩm trọng tâm con đã làm được.
-   - \`improvements\` (Nội dung phần **Điểm cần cải thiện**): Nêu các vấn đề về kỹ năng thao tác, tư duy logic hoặc sự tập trung một cách khéo léo, nhẹ nhàng. Có **in đậm** (\`**...**\`) các điểm mấu chốt cần lưu ý khắc phục.
-   - \`actionPlan\` (Nội dung phần **Lời khuyên**): Gợi ý giải pháp cụ thể, thiết thực để ba mẹ dễ dàng đồng hành, khích lệ và nhắc nhở con ôn tập ở nhà. Có **in đậm** (\`**...**\`) hành động cụ thể gợi ý cho con/ba mẹ.
-   - \`formattedFullComment\`: Trình bày trọn vẹn trong 1 khối chuẩn đúng bố cục sau (KHÔNG có dòng tên học sinh ở đầu, ngắt dòng rõ ràng giữa 3 mục):
+   - **Với học sinh CÓ lỗi hoặc vấn đề cần khắc phục (\`hasIssuesToCorrect = true\`):** Giọng văn phần \`Điểm cần cải thiện\` BẮT BUỘC **thẳng thắn, trực diện, nghiêm túc** để phụ huynh nắm rõ thực trạng; **CẤM nói giảm nói tránh** (cấm dùng: "hơi vội vàng", "đôi lúc bị phân tâm", "gặp chút lúng túng", "ảnh hưởng nhỏ"). Đồng thời giữ thái độ lịch sự sư phạm, không dùng từ miệt thị nhân cách ("yếu kém", "lười biếng", "cá biệt").
+3. **Cấu trúc 3 gạch đầu dòng & Liệt kê lỗi theo từng dòng \`+ \` (Độ dài 100 - 300 từ/học sinh):**
+   - \`strengths\` (Nội dung phần **Điểm mạnh của học viên**): Tuân theo đúng \`strengthsFocusRule\`. Có **in đậm** (\`**...**\`) kỹ năng, kiến thức trọng tâm hoặc thành tích Sao/Huy hiệu Top 3 con đạt được.
+   - \`improvements\` (Nội dung phần **Điểm cần cải thiện**):
+     + **Khi \`hasIssuesToCorrect = true\` (BẮT BUỘC THEO MẪU 1):** Mở đầu bằng **1 câu dẫn thẳng thắn** kết thúc bằng dấu \`:\` (ví dụ: *"Hôm nay ý thức kỷ luật và sự chuẩn bị bài của con chưa tốt, thầy xin phản ánh thẳng thắn để gia đình nắm rõ:"* hoặc *"Bên cạnh khả năng tiếp thu tốt, con vẫn còn các lỗi sau cần chấn chỉnh ngay:"*), sau đó **XUỐNG DÒNG (\`\\n\`) liệt kê ĐẦY ĐỦ 100% TỪNG MỤC trong \`recordedIssues\`**, mỗi vấn đề 1 dòng riêng bắt đầu bằng \`  + \`, có \`**in đậm**\` tên lỗi, giữ nguyên số lần \`(X lần)\` nếu có và nêu ngắn gọn hệ quả đối với việc học. **TUYỆT ĐỐI KHÔNG gộp trên 1 dòng và KHÔNG BỎ SÓT bất kỳ lỗi nào** (như lỗi làm việc riêng, rời chỗ, nói chuyện, đi muộn, chưa BTVN).
+     + **Khi \`hasIssuesToCorrect = false\` (học sinh ngoan, không có lỗi):** Viết 1 câu tự nhiên góp ý nâng cao kỹ năng code/lắp ráp tiếp theo, KHÔNG tự bịa gạch đầu dòng \`+ \` vi phạm.
+   - \`actionPlan\` (Nội dung phần **Lời khuyên**): Đề nghị cụ thể, thiết thực tương ứng trực tiếp với các vấn đề vừa nêu để ba mẹ phối hợp sát sao cùng con tại nhà. Có **in đậm** (\`**...**\`) hành động trọng tâm.
+   - \`formattedFullComment\`: Trình bày trọn vẹn đúng bố cục 3 phần cách nhau bởi 1 dòng trống (KHÔNG có tên học sinh ở đầu, giữ nguyên các dòng \`\\n  + \` trong \`{improvements}\` nếu có):
 - **Điểm mạnh của học viên:** {strengths}
 
 - **Điểm cần cải thiện:** {improvements}
 
 - **Lời khuyên:** {actionPlan}
 4. **QUY TẮC CHỐNG TRÙNG LẶP & ĐA DẠNG HÓA DIỄN ĐẠT (BẮT BUỘC TUYỆT ĐỐI):**
-   - **Cấm tuyệt đối copy-paste hoặc dùng chung khung câu mẫu (template) giữa các học sinh:** Kể cả khi nhiều học sinh có cùng \`matchedLevel\` và cùng \`quickTags\`, mỗi học sinh BẮT BUỘC phải có câu mở đầu, cấu trúc câu văn và cách chọn từ vựng khác nhau theo đúng \`narrativeAngle\`, \`focusKnowledgeAspect\` và \`antiDuplicateDirective\` riêng của học sinh đó.
-   - **Cấm chép nguyên văn cụm từ gợi ý trong \`quickTags\` hoặc \`matchedLevel\`:** Hãy chuyển hóa ý nghĩa sư phạm của thẻ thành câu nhận xét tự nhiên gắn chặt với mô hình/bài tập cụ thể của buổi học hôm nay (\`${sanitizedTopic}\`).
+   - **Cấm tuyệt đối copy-paste hoặc dùng chung khung câu mở đầu giữa các học sinh:** Kể cả khi nhiều học sinh cùng \`matchedLevel\` và cùng \`quickTags\`, mỗi học sinh BẮT BUỘC phải có câu mở đầu, cách diễn đạt khác nhau theo \`narrativeAngle\`, \`focusKnowledgeAspect\` và \`antiDuplicateDirective\`.
+   - **Cấm chép nguyên văn cụm gợi ý dài trong \`quickTags\` hoặc \`matchedLevel\`**; riêng phần \`recordedIssues\` (khi \`hasIssuesToCorrect = true\`) phải nêu đủ 100% từng lỗi theo dòng \`+ \`.
 
 ### DANH SÁCH DỮ LIỆU ĐÁNH GIÁ (ANONYMIZED STUDENTS):
 ${JSON.stringify(anonymousRoster, null, 2)}
 
 ### ĐỊNH DẠNG ĐẦU RA BẮT BUỘC:
-Trả về duy nhất 1 JSON object chuẩn theo schema sau:
+Trả về duy nhất 1 JSON object chuẩn theo schema sau (nếu \`hasIssuesToCorrect = true\`, trường \`improvements\` PHẢI chứa \`\\n  + ...\` cho từng lỗi):
 {
   "feedbacks": [
     {
       "anonymousId": "STUDENT_01",
       "strengths": "...",
-      "improvements": "...",
+      "improvements": "Câu dẫn thẳng thắn:\\n  + **Lỗi 1...**\\n  + **Lỗi 2...**",
       "actionPlan": "...",
-      "formattedFullComment": "- **Điểm mạnh của học viên:** ...\\n\\n- **Điểm cần cải thiện:** ...\\n\\n- **Lời khuyên:** ..."
+      "formattedFullComment": "- **Điểm mạnh của học viên:** ...\\n\\n- **Điểm cần cải thiện:** Câu dẫn thẳng thắn:\\n  + **Lỗi 1...**\\n  + **Lỗi 2...**\\n\\n- **Lời khuyên:** ..."
     }
   ]
 }
@@ -812,8 +1166,9 @@ Trả về duy nhất 1 JSON object chuẩn theo schema sau:
             const diversifyPrompt = `
 Bạn là Giảng viên tại MindX Technology School. Một số nhận xét vừa tạo cho lớp ${session.classCode} (Buổi ${session.sessionNumber} — Chủ đề: ${sanitizedTopic}) đang bị trùng lặp câu chữ hoặc giống cấu trúc câu với học viên khác trong cùng buổi.
 Hãy VIẾT LẠI hoàn toàn mới nhận xét cho các học viên trong danh sách "HỌC VIÊN CẦN VIẾT LẠI" dưới đây sao cho:
-1. Giữ nguyên mức đánh giá (\`matchedLevel\`), ý nghĩa thẻ (\`quickTags\`), ghi chú (\`teacherNote\`), xưng "thầy" - gọi "con" - "ba mẹ", và bố cục 3 gạch đầu dòng in đậm (\`- **Điểm mạnh của học viên:**\`, \`- **Điểm cần cải thiện:**\`, \`- **Lời khuyên:**\`, không có tên học sinh ở đầu).
-2. TUYỆT ĐỐI KHÔNG lặp lại câu mở đầu, cấu trúc câu hoặc cụm từ của "CÁC NHẬN XÉT ĐÃ DÙNG" và phải khác hẳn nhau giữa từng học viên được viết lại (độ trùng lặp từ ngữ dưới 35%).
+1. Giữ nguyên mức đánh giá (\`matchedLevel\`), ý nghĩa thẻ (\`quickTags\`), ghi chú (\`teacherNote\`), \`strengthsFocusRule\`, xưng "thầy" - gọi "con" - "ba mẹ", và bố cục 3 gạch đầu dòng in đậm (\`- **Điểm mạnh của học viên:**\`, \`- **Điểm cần cải thiện:**\`, \`- **Lời khuyên:**\`, không có tên học sinh ở đầu).
+2. Với học viên có \`hasIssuesToCorrect = true\`: giữ văn phong **thẳng thắn, trực diện** theo Mẫu 1 (1 câu dẫn kết thúc bằng \`:\`, xuống dòng \`\\n  + \` liệt kê ĐẦY ĐỦ 100% \`recordedIssues\`, KHÔNG nói giảm nói tránh và KHÔNG trộn lỗi vào mục Điểm mạnh).
+3. TUYỆT ĐỐI KHÔNG lặp lại câu mở đầu, cấu trúc câu của "CÁC NHẬN XÉT ĐÃ DÙNG" và phải khác hẳn nhau giữa từng học viên được viết lại (độ trùng lặp từ ngữ dưới 35%).
 
 ### CÁC NHẬN XÉT ĐÃ DÙNG (CẤM LẶP LẠI CẤU TRÚC CÂU):
 ${JSON.stringify(referenceComments, null, 2)}
@@ -911,12 +1266,42 @@ ${JSON.stringify(targetsToRewrite, null, 2)}
         const cleanStrengths = strengths
           .replace(/^[-•*]\s*\*\*Điểm mạnh(?: của học viên)?:\*\*\s*/i, "")
           .trim();
-        const cleanImprovements = improvements
+        const rawCleanImprovements = improvements
           .replace(/^[-•*]\s*\*\*Điểm cần cải thiện:\*\*\s*/i, "")
           .trim();
         const cleanActionPlan = actionPlan
           .replace(/^[-•*]\s*\*\*(?:Lời khuyên|Hướng rèn luyện):\*\*\s*/i, "")
           .trim();
+
+        const rawExtractedForStudent =
+          item.extractedIssues ||
+          extractRecordedIssuesForPrompt(
+            student.teacherNote || "",
+            item.regularQuickTags,
+            student.attendanceStatus
+          );
+        const deanonymizeIssueText = (issueText: string) => {
+          const out = issueText
+            .replace(new RegExp(`\\b${item.anonymousId}\\b`, "g"), "con")
+            .replace(/\bSTUDENT_(?:\d+|PEER)\b/g, "bạn cùng lớp");
+          return out ? out.charAt(0).toUpperCase() + out.slice(1) : out;
+        };
+        const extractedForStudent: ExtractedStudentIssues = {
+          explicitClassroomBullets: rawExtractedForStudent.explicitClassroomBullets.map(deanonymizeIssueText),
+          recordedIssues: rawExtractedForStudent.recordedIssues.map(deanonymizeIssueText),
+          hasIssuesToCorrect: rawExtractedForStudent.hasIssuesToCorrect,
+        };
+
+        const normalizedImprovements =
+          typeof getQuickTags === "function"
+            ? normalizeCandidImprovementsWithPlusBullets(rawCleanImprovements, extractedForStudent)
+            : rawCleanImprovements;
+
+        if (typeof getQuickTags === "function") {
+          strengths = cleanStrengths;
+          improvements = normalizedImprovements;
+          actionPlan = cleanActionPlan;
+        }
 
         // Strip any leading **[Tên học sinh]** line before the first bullet if AI included one
         fullComment = fullComment.replace(
@@ -926,12 +1311,13 @@ ${JSON.stringify(targetsToRewrite, null, 2)}
 
         if (
           typeof getQuickTags === "function" &&
-          !fullComment.includes("- **Điểm mạnh của học viên:**")
+          (!fullComment.includes("- **Điểm mạnh của học viên:**") ||
+            extractedForStudent.hasIssuesToCorrect)
         ) {
           fullComment = [
             `- **Điểm mạnh của học viên:** ${cleanStrengths}`,
             "",
-            `- **Điểm cần cải thiện:** ${cleanImprovements}`,
+            `- **Điểm cần cải thiện:** ${normalizedImprovements}`,
             "",
             `- **Lời khuyên:** ${cleanActionPlan}`,
           ].join("\n");
