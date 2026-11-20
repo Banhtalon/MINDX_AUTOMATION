@@ -31,6 +31,7 @@ import {
 } from "../lms/lms-class-url";
 import { resolveKnownLmsClassId as _resolveKnownLmsClassId } from "../lms/lms-class-id-store";
 import { toVietnameseUpperSlug as _toVietnameseUpperSlug } from "../utils/vietnamese-match";
+import { isSaveCommentsSessionRunning } from "../queue/task-queue";
 
 const toVietnameseUpperSlug =
   typeof _toVietnameseUpperSlug === "function"
@@ -1309,6 +1310,16 @@ export class ClassSyncer {
          updatedAt = datetime('now', 'localtime')`
     );
 
+    const clearOrphanedSavingStmt = db.prepare(
+      `UPDATE session_feedbacks
+       SET status = CASE WHEN TRIM(COALESCE(contentHash, '')) <> '' AND TRIM(COALESCE(finalText, '')) <> '' THEN 'FAILED' ELSE 'DRAFT' END,
+           errorMessage = CASE WHEN TRIM(COALESCE(contentHash, '')) <> '' AND TRIM(COALESCE(finalText, '')) <> ''
+             THEN 'Phiên lưu trước bị ngắt trước khi lưu xong lên LMS. Vui lòng bấm Thử lại hoặc Duyệt & Đẩy LMS.'
+             ELSE NULL END,
+           updatedAt = datetime('now', 'localtime')
+       WHERE classId = ? AND sessionId = ? AND status = 'SAVING'`
+    );
+
     let verifiedSessionsCount = 0;
 
     for (let idx = 0; idx < slots.length; idx++) {
@@ -1364,6 +1375,11 @@ export class ClassSyncer {
             }
           | undefined;
 
+        const isOrphanedSaving =
+          existingFb?.status === "SAVING" &&
+          (typeof isSaveCommentsSessionRunning !== "function" ||
+            !isSaveCommentsSessionRunning(classId, sessionId));
+
         if (lmsComment.length > 0) {
           const normalizeSyncCompare = (val?: string | null): string =>
             String(val || "")
@@ -1383,7 +1399,7 @@ export class ClassSyncer {
           const normLmsPlain = normalizeSyncCompare(lmsComment);
           const isExactMatchFailedOrApproved =
             Boolean(existingFb) &&
-            (existingFb?.status === "FAILED" || existingFb?.status === "APPROVED") &&
+            (existingFb?.status === "FAILED" || existingFb?.status === "APPROVED" || isOrphanedSaving) &&
             normExistingPlain.length > 0 &&
             normLmsPlain.length > 0 &&
             (normExistingPlain === normLmsPlain || normExistingRaw === normLmsPlain);
@@ -1395,7 +1411,7 @@ export class ClassSyncer {
             isExactMatchFailedOrApproved ||
             (preferLmsVerified &&
               existingFb.status !== "APPROVED" &&
-              existingFb.status !== "SAVING");
+              (existingFb.status !== "SAVING" || isOrphanedSaving));
 
           if (canMarkVerified) {
             const effectiveText = String(existingFb?.finalText || "").trim() || lmsComment;
@@ -1418,7 +1434,7 @@ export class ClassSyncer {
           if (
             !existingFb ||
             (existingFb.status !== "APPROVED" &&
-              existingFb.status !== "SAVING" &&
+              (existingFb.status !== "SAVING" || isOrphanedSaving) &&
               existingFb.status !== "VERIFIED")
           ) {
             upsertFbAbsentStmt.run({
@@ -1486,6 +1502,13 @@ export class ClassSyncer {
             }
           } catch {}
         }
+      }
+
+      if (
+        typeof isSaveCommentsSessionRunning !== "function" ||
+        !isSaveCommentsSessionRunning(classId, sessionId)
+      ) {
+        clearOrphanedSavingStmt.run(classId, sessionId);
       }
 
       if (slotHasVerifiedStudent) {

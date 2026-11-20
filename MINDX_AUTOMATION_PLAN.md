@@ -856,6 +856,14 @@ D:\SPCK_MindX\VT-C4K-PTA13\
 * [x] **V368-5 — Bổ sung Trang `/homework-grader` (Thu gọn bảng, `Ẩn điểm số` Xanh/Đỏ Cách A & `Chụp ảnh BTVN`):**
   * [x] Bổ sung `src/lib/report-card/homework-completion-helpers.ts`, cập nhật `src/app/homework-grader/page.tsx` (rút gọn cột `HW 1..N`, nút `Ẩn điểm số` hiển thị `Đã làm` xanh / `Chưa làm` đỏ & che `TB TH`/`TB Quiz`, nút `Chụp ảnh BTVN` xuất PNG copy Clipboard), kiểm thử `tsc --noEmit`, `scripts/test-homework-hide-scores-v369.ts` và `graphify update .` (`2.305` nodes, `8.379` edges, `90` communities) đều PASS (`exit 0`).
 
+### GIAI ĐOẠN 16 (v3.6.9): CHỐNG KẸT NHÃN `ĐANG LƯU...` (`SAVING`) TRÊN `/session-comments`
+* [x] **V369-1 — Theo dõi phiên lưu & Hoàn nguyên khi ngắt giữa chừng:**
+  * [x] Thêm `markSaveCommentsSessionRunning` / `isSaveCommentsSessionRunning` an toàn HMR trong `src/lib/queue/task-queue.ts` và hoàn nguyên `SAVING` -> `FAILED` trong `CommentSaver.saveComments` (bao gồm `.catch(() => {})` cho `page.waitForTimeout(350)`).
+* [x] **V369-2 — Tự dọn khi tải trang & Đối chiếu khi Đồng bộ LMS:**
+  * [x] `GET /api/session-comments/list` tự động phục hồi các dòng `SAVING` mồ côi khi hàng đợi rảnh; `ClassSyncer.syncLmsSlotCompletionToSqlite` nâng các dòng khớp LMS lên `VERIFIED` và hạ dòng chưa khớp xuống `FAILED`/`DRAFT`.
+* [x] **V369-3 — Kiểm thử Tự động & Bảo toàn Dữ liệu:**
+  * [x] Chạy sạch `tsc --noEmit` (`exit 0`), `scripts/test-stuck-saving-recovery-v369.ts` (`[SSR-01..SSR-03]`), `scripts/test-save-comments-timeout-v348.ts` (`9/9`), `scripts/test-phase4-codex-repros.ts` (`Round 1 -> Round 17`), `graphify update .` (`2.307` nodes, `8.431` edges, `82` communities).
+
 
 
 

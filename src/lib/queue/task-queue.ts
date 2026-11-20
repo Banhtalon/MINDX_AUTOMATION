@@ -323,3 +323,79 @@ export class SequentialTaskQueue {
 }
 
 export const taskQueue = SequentialTaskQueue.getInstance();
+
+const globalForActiveSaveComments = globalThis as unknown as {
+  __mindxActiveSaveCommentKeys?: Set<string>;
+};
+
+function getActiveSaveCommentKeySet(): Set<string> {
+  if (!globalForActiveSaveComments.__mindxActiveSaveCommentKeys) {
+    globalForActiveSaveComments.__mindxActiveSaveCommentKeys = new Set<string>();
+  }
+  return globalForActiveSaveComments.__mindxActiveSaveCommentKeys;
+}
+
+function buildSaveCommentSessionKey(classId: string, sessionId: string): string {
+  return `${String(classId || "").trim().toUpperCase()}::${String(sessionId || "").trim()}`;
+}
+
+/**
+ * Tracks active SAVE_COMMENTS execution per (classId, sessionId) in globalThis
+ * so HMR reloads on the live server stay consistent with SequentialTaskQueue.
+ */
+export function markSaveCommentsSessionRunning(
+  classId: string,
+  sessionId: string,
+  running: boolean
+): void {
+  const key = buildSaveCommentSessionKey(classId, sessionId);
+  const keySet = getActiveSaveCommentKeySet();
+  if (running) {
+    keySet.add(key);
+  } else {
+    keySet.delete(key);
+  }
+}
+
+/**
+ * Checks whether a SAVE_COMMENTS task for the given class/session is currently
+ * running or queued via both the globalThis marker and SequentialTaskQueue status.
+ */
+export function isSaveCommentsSessionRunning(classId: string, sessionId?: string): boolean {
+  const normClass = String(classId || "").trim().toUpperCase();
+  const normSess = typeof sessionId === "string" ? sessionId.trim() : "";
+  if (!normClass) return false;
+
+  const keySet = getActiveSaveCommentKeySet();
+  if (normSess) {
+    if (keySet.has(buildSaveCommentSessionKey(normClass, normSess))) {
+      return true;
+    }
+  } else {
+    const prefix = `${normClass}::`;
+    for (const k of keySet) {
+      if (k.startsWith(prefix)) return true;
+    }
+  }
+
+  try {
+    const status = taskQueue?.getStatus?.();
+    if (!status) return false;
+    const matchesTask = (item?: QueuedTaskItem | null): boolean => {
+      if (!item || item.jobType !== "SAVE_COMMENTS") return false;
+      if (item.status !== "RUNNING" && item.status !== "PENDING") return false;
+      const itemClass = String(item.classId || "").trim().toUpperCase();
+      if (itemClass !== normClass) return false;
+      if (normSess && String(item.sessionId || "").trim() !== normSess) return false;
+      return true;
+    };
+    if (matchesTask(status.currentTask)) return true;
+    if (Array.isArray(status.tasks) && status.tasks.some((t) => matchesTask(t))) {
+      return true;
+    }
+  } catch {
+    // Ignore status inspection errors in mocked environments
+  }
+
+  return false;
+}

@@ -13,6 +13,7 @@ import {
 } from "../db/sqlite";
 import { getCoursesSyllabus } from "../db/json-config";
 import { config } from "../config";
+import { markSaveCommentsSessionRunning } from "../queue/task-queue";
 
 export interface SaveCommentOptions {
   classId: string;
@@ -146,11 +147,27 @@ export class CommentSaver {
       };
     }
 
+    // Helper to fetch the freshest feedback record from DB (supports both findOne and findBySession mocks)
+    const getLatestFeedbackRecord = (targetStudentId: string): SessionFeedbackRecord | undefined => {
+      if (typeof sessionFeedbackRepo.findOne === "function") {
+        return sessionFeedbackRepo.findOne(classId, sessionId, targetStudentId);
+      }
+      if (typeof sessionFeedbackRepo.findBySession === "function") {
+        const allInSess = sessionFeedbackRepo.findBySession(classId, sessionId) || [];
+        return allInSess.find((r) => r.studentId === targetStudentId);
+      }
+      return undefined;
+    };
+
     const browserManager = BrowserManager.getInstance();
     const page = await browserManager.getPage();
     const interceptor = createNetworkInterceptor(page);
 
     const results: SaveCommentItemResult[] = [];
+
+    if (typeof markSaveCommentsSessionRunning === "function") {
+      markSaveCommentsSessionRunning(classId, sessionId, true);
+    }
 
     try {
       // 2. Ensure authenticated on LMS
@@ -445,18 +462,6 @@ export class CommentSaver {
         });
       }
       await studentTable.waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
-
-      // Helper to fetch the freshest feedback record from DB (supports both findOne and findBySession mocks)
-      const getLatestFeedbackRecord = (targetStudentId: string): SessionFeedbackRecord | undefined => {
-        if (typeof sessionFeedbackRepo.findOne === "function") {
-          return sessionFeedbackRepo.findOne(classId, sessionId, targetStudentId);
-        }
-        if (typeof sessionFeedbackRepo.findBySession === "function") {
-          const allInSess = sessionFeedbackRepo.findBySession(classId, sessionId) || [];
-          return allInSess.find((r) => r.studentId === targetStudentId);
-        }
-        return undefined;
-      };
 
       const classRoster =
         typeof studentRepo.findByClass === "function"
@@ -1788,7 +1793,7 @@ export class CommentSaver {
           };
         } catch (itemErr: any) {
           if (saveMutationDispatched) {
-            await page.waitForTimeout(350);
+            await page.waitForTimeout(350).catch(() => {});
           }
           await page.screenshot({ path: "data/debug_save_comment_error.png" }).catch(() => {});
           // Only press Escape if a comment modal dialog is actually open (pressing Escape when no modal is open closes the MUI Class Drawer!)
@@ -2648,6 +2653,30 @@ export class CommentSaver {
       }
     } catch (err: any) {
       const globalError = err instanceof Error ? err.message : String(err);
+      for (const rec of validRecords) {
+        try {
+          const latest = getLatestFeedbackRecord(rec.studentId);
+          if (latest && latest.status === "SAVING") {
+            const expectedHash = rec.contentHash || latest.contentHash || "";
+            const wasEdited =
+              Boolean(rec.contentHash && latest.contentHash !== rec.contentHash) ||
+              Boolean(rec.finalText && (latest.finalText || "") !== rec.finalText);
+            if (!wasEdited && typeof sessionFeedbackRepo?.updateStatus === "function") {
+              sessionFeedbackRepo.updateStatus(
+                classId,
+                sessionId,
+                rec.studentId,
+                "FAILED",
+                null,
+                `Quá trình lưu/đối chiếu bị gián đoạn (${globalError}). Bấm "Thử lại" hoặc "Đồng bộ buổi học" để kiểm tra lại.`,
+                expectedHash || undefined
+              );
+            }
+          }
+        } catch {
+          // Never mask globalError if a mock/DB call throws
+        }
+      }
       jobLogRepo.add({
         jobId,
         jobType: "SAVE_COMMENTS",
@@ -2657,6 +2686,10 @@ export class CommentSaver {
         message: `Lỗi toàn cục trong quá trình lưu nhận xét: ${globalError}`,
       });
       throw new Error(globalError);
+    } finally {
+      if (typeof markSaveCommentsSessionRunning === "function") {
+        markSaveCommentsSessionRunning(classId, sessionId, false);
+      }
     }
 
     const savedCount = results.filter((r) => r.success).length;

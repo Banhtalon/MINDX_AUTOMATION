@@ -13,6 +13,7 @@ import { listClasses, listStudents } from "@/lib/classes/class-directory";
 import { config } from "@/lib/config";
 import { normalizeLmsBaseOrigin } from "@/lib/lms/lms-class-url";
 import { resolveKnownLmsClassIdsMap } from "@/lib/lms/lms-class-id-store";
+import { isSaveCommentsSessionRunning } from "@/lib/queue/task-queue";
 
 function isSession14Category(cat: { category?: string; categoryName?: string; track?: string } | null | undefined): boolean {
   if (!cat) return false;
@@ -81,6 +82,41 @@ export async function GET(req: Request) {
         : studentRepo.findByClass(classId, !includeInactive)
       : [];
     const feedbacks = classId && sessionId ? sessionFeedbackRepo.findBySession(classId, sessionId) : [];
+
+    // Auto-heal orphaned "SAVING" records when no SAVE_COMMENTS task for this class/session is active
+    if (
+      classId &&
+      sessionId &&
+      feedbacks.some((f) => f.status === "SAVING") &&
+      (typeof isSaveCommentsSessionRunning !== "function" ||
+        !isSaveCommentsSessionRunning(classId, sessionId))
+    ) {
+      for (const fb of feedbacks) {
+        if (fb.status !== "SAVING") continue;
+        const hasApprovedPayload = Boolean(fb.contentHash && String(fb.finalText || "").trim());
+        const nextStatus = hasApprovedPayload ? "FAILED" : "DRAFT";
+        const nextError = hasApprovedPayload
+          ? "Phiên lưu trước bị ngắt giữa chừng (trình duyệt đã đóng). Bấm 'Đồng bộ buổi học' hoặc 'Thử lại' để xác nhận."
+          : null;
+        try {
+          if (typeof sessionFeedbackRepo?.updateStatus === "function") {
+            sessionFeedbackRepo.updateStatus(
+              classId,
+              sessionId,
+              fb.studentId,
+              nextStatus,
+              null,
+              nextError,
+              hasApprovedPayload ? fb.contentHash : undefined
+            );
+          }
+          fb.status = nextStatus;
+          fb.errorMessage = nextError ?? undefined;
+        } catch {
+          // Non-fatal fallback
+        }
+      }
+    }
 
     const previousQuickTagsByStudent: Record<
       string,
