@@ -451,7 +451,7 @@ export function ClassPicker({
           onClick={() => void handleTriggerRefresh()}
           disabled={effectiveBusy}
           title="Quét lại danh sách lớp đang dạy và đồng bộ lớp đang chọn từ LMS"
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:bg-slate-700 disabled:opacity-60 text-white text-xs sm:text-sm font-bold transition shadow-md cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 disabled:bg-slate-700 disabled:opacity-60 text-white text-xs sm:text-sm font-bold transition shadow-md cursor-pointer"
         >
           <RefreshCw
             className={`w-4 h-4 ${

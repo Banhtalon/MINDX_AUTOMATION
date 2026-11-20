@@ -401,6 +401,30 @@ function initSchema(db: Database.Database) {
       finishedAt TEXT DEFAULT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_admin_center_scan_runs_center ON admin_center_scan_runs(centerCode, startedAt);
+
+    -- 13. classroom_session_logs (v3.6.7 Interactive Classroom Manager: stars, medals & separate issue counts)
+    CREATE TABLE IF NOT EXISTS classroom_session_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      classId TEXT NOT NULL,
+      sessionNumber INTEGER NOT NULL,
+      sessionId TEXT NOT NULL DEFAULT '',
+      studentId TEXT NOT NULL,
+      attendanceStatus TEXT NOT NULL DEFAULT 'PRESENT',
+      stars INTEGER NOT NULL DEFAULT 0,
+      medals INTEGER NOT NULL DEFAULT 0,
+      praiseCountsJson TEXT NOT NULL DEFAULT '{}',
+      issueCountsJson TEXT NOT NULL DEFAULT '{}',
+      teacherQuickNote TEXT NOT NULL DEFAULT '',
+      appliedToCommentAt TEXT DEFAULT NULL,
+      rowVer INTEGER NOT NULL DEFAULT 1,
+      createdAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(classId, sessionNumber, studentId)
+    );
+    CREATE INDEX IF NOT EXISTS idx_classroom_session_logs_lookup
+      ON classroom_session_logs(classId, sessionNumber, studentId);
+    CREATE INDEX IF NOT EXISTS idx_classroom_session_logs_class
+      ON classroom_session_logs(classId);
   `);
 
   try {
@@ -8159,5 +8183,255 @@ export const adminCenterRepo = {
         `SELECT * FROM admin_center_scan_runs WHERE centerCode = ? ORDER BY rowid DESC LIMIT 1`
       )
       .get(centerCode) as AdminCenterScanRunRecord | undefined;
+  },
+};
+
+export interface ClassroomSessionLogRecord {
+  id?: number;
+  classId: string;
+  sessionNumber: number;
+  sessionId?: string;
+  studentId: string;
+  attendanceStatus: "PRESENT" | "LATE" | "ABSENT";
+  stars: number;
+  medals: number;
+  praiseCountsJson: string;
+  issueCountsJson: string;
+  teacherQuickNote: string;
+  appliedToCommentAt?: string | null;
+  rowVer?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ClassroomSessionLogUpsertInput {
+  classId: string;
+  sessionNumber: number;
+  sessionId?: string;
+  studentId: string;
+  attendanceStatus?: "PRESENT" | "LATE" | "ABSENT";
+  stars?: number;
+  medals?: number;
+  praiseCountsJson?: string;
+  issueCountsJson?: string;
+  teacherQuickNote?: string;
+  appliedToCommentAt?: string | null;
+  expectedRowVer?: number | null;
+}
+
+function clampClassroomInt(val: unknown, min: number, max: number, fallback = 0): number {
+  const n = Math.floor(Number(val));
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+function normalizeClassroomAttendance(raw: unknown): "PRESENT" | "LATE" | "ABSENT" {
+  const upper = String(raw || "PRESENT").trim().toUpperCase();
+  if (upper === "ABSENT" || upper === "LATE") return upper;
+  return "PRESENT";
+}
+
+function sanitizeClassroomCountsJson(raw: unknown): string {
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        const clean: Record<string, number> = {};
+        for (const [k, v] of Object.entries(parsed)) {
+          const safeKey = String(k || "").trim();
+          if (!safeKey) continue;
+          const cnt = clampClassroomInt(v, 0, 99, 0);
+          if (cnt > 0) clean[safeKey] = cnt;
+        }
+        return JSON.stringify(clean);
+      }
+    } catch {
+      return "{}";
+    }
+  } else if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const clean: Record<string, number> = {};
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+      const safeKey = String(k || "").trim();
+      if (!safeKey) continue;
+      const cnt = clampClassroomInt(v, 0, 99, 0);
+      if (cnt > 0) clean[safeKey] = cnt;
+    }
+    return JSON.stringify(clean);
+  }
+  return "{}";
+}
+
+export const classroomSessionLogRepo = {
+  findOne(
+    rawClassId: string,
+    rawSessionNumber: number,
+    rawStudentId: string
+  ): ClassroomSessionLogRecord | undefined {
+    const classId = String(rawClassId || "").trim().toUpperCase();
+    const sessionNumber = clampClassroomInt(rawSessionNumber, 1, 14, 0);
+    const studentId = String(rawStudentId || "").trim();
+    if (!classId || !sessionNumber || !studentId) return undefined;
+    const db = getDb();
+    return db
+      .prepare(
+        `SELECT * FROM classroom_session_logs WHERE classId = ? AND sessionNumber = ? AND studentId = ?`
+      )
+      .get(classId, sessionNumber, studentId) as ClassroomSessionLogRecord | undefined;
+  },
+
+  findBySession(rawClassId: string, rawSessionNumber: number): ClassroomSessionLogRecord[] {
+    const classId = String(rawClassId || "").trim().toUpperCase();
+    const sessionNumber = clampClassroomInt(rawSessionNumber, 1, 14, 0);
+    if (!classId || !sessionNumber) return [];
+    const db = getDb();
+    return db
+      .prepare(
+        `SELECT * FROM classroom_session_logs WHERE classId = ? AND sessionNumber = ? ORDER BY id ASC`
+      )
+      .all(classId, sessionNumber) as ClassroomSessionLogRecord[];
+  },
+
+  findByClassAllSessions(rawClassId: string): ClassroomSessionLogRecord[] {
+    const classId = String(rawClassId || "").trim().toUpperCase();
+    if (!classId) return [];
+    const db = getDb();
+    return db
+      .prepare(
+        `SELECT * FROM classroom_session_logs
+         WHERE classId = ? AND sessionNumber BETWEEN 1 AND 14
+         ORDER BY sessionNumber ASC, id ASC`
+      )
+      .all(classId) as ClassroomSessionLogRecord[];
+  },
+
+  upsertBatch(items: ClassroomSessionLogUpsertInput[]): Array<{
+    studentId: string;
+    staleIgnored: boolean;
+    record: ClassroomSessionLogRecord;
+  }> {
+    const db = getDb();
+    const runTx = () => {
+      const results: Array<{
+        studentId: string;
+        staleIgnored: boolean;
+        record: ClassroomSessionLogRecord;
+      }> = [];
+
+      const selectStmt = db.prepare(
+        `SELECT * FROM classroom_session_logs WHERE classId = ? AND sessionNumber = ? AND studentId = ?`
+      );
+      const upsertStmt = db.prepare(`
+        INSERT INTO classroom_session_logs (
+          classId, sessionNumber, sessionId, studentId,
+          attendanceStatus, stars, medals, praiseCountsJson, issueCountsJson,
+          teacherQuickNote, appliedToCommentAt, rowVer, updatedAt
+        )
+        VALUES (
+          @classId, @sessionNumber, @sessionId, @studentId,
+          @attendanceStatus, @stars, @medals, @praiseCountsJson, @issueCountsJson,
+          @teacherQuickNote, @appliedToCommentAt, @rowVer, datetime('now', 'localtime')
+        )
+        ON CONFLICT(classId, sessionNumber, studentId) DO UPDATE SET
+          sessionId = CASE WHEN TRIM(excluded.sessionId) <> '' THEN excluded.sessionId ELSE classroom_session_logs.sessionId END,
+          attendanceStatus = excluded.attendanceStatus,
+          stars = excluded.stars,
+          medals = excluded.medals,
+          praiseCountsJson = excluded.praiseCountsJson,
+          issueCountsJson = excluded.issueCountsJson,
+          teacherQuickNote = excluded.teacherQuickNote,
+          appliedToCommentAt = COALESCE(excluded.appliedToCommentAt, classroom_session_logs.appliedToCommentAt),
+          rowVer = excluded.rowVer,
+          updatedAt = datetime('now', 'localtime')
+      `);
+
+      for (const rawItem of items || []) {
+        const classId = String(rawItem?.classId || "").trim().toUpperCase();
+        const sessionNumber = clampClassroomInt(rawItem?.sessionNumber, 1, 14, 0);
+        const studentId = String(rawItem?.studentId || "").trim();
+        if (!classId || !sessionNumber || !studentId) {
+          throw new Error("[classroomSessionLogRepo] Thiếu classId, sessionNumber (1..14) hoặc studentId.");
+        }
+
+        const existing = selectStmt.get(classId, sessionNumber, studentId) as
+          | ClassroomSessionLogRecord
+          | undefined;
+
+        const expectedRowVer =
+          rawItem.expectedRowVer !== undefined &&
+          rawItem.expectedRowVer !== null &&
+          Number.isFinite(Number(rawItem.expectedRowVer))
+            ? Number(rawItem.expectedRowVer)
+            : null;
+
+        if (existing && expectedRowVer !== null && expectedRowVer !== Number(existing.rowVer || 1)) {
+          results.push({
+            studentId,
+            staleIgnored: true,
+            record: existing,
+          });
+          continue;
+        }
+
+        const nextRowVer = existing ? Number(existing.rowVer || 1) + 1 : 1;
+        const sessionId = String(rawItem.sessionId ?? existing?.sessionId ?? "").trim();
+        const attendanceStatus =
+          rawItem.attendanceStatus !== undefined
+            ? normalizeClassroomAttendance(rawItem.attendanceStatus)
+            : normalizeClassroomAttendance(existing?.attendanceStatus);
+        const stars =
+          rawItem.stars !== undefined
+            ? clampClassroomInt(rawItem.stars, 0, 999, 0)
+            : clampClassroomInt(existing?.stars, 0, 999, 0);
+        const medals =
+          rawItem.medals !== undefined
+            ? clampClassroomInt(rawItem.medals, 0, 999, 0)
+            : clampClassroomInt(existing?.medals, 0, 999, 0);
+        const praiseCountsJson =
+          rawItem.praiseCountsJson !== undefined
+            ? sanitizeClassroomCountsJson(rawItem.praiseCountsJson)
+            : sanitizeClassroomCountsJson(existing?.praiseCountsJson);
+        const issueCountsJson =
+          rawItem.issueCountsJson !== undefined
+            ? sanitizeClassroomCountsJson(rawItem.issueCountsJson)
+            : sanitizeClassroomCountsJson(existing?.issueCountsJson);
+        const teacherQuickNote =
+          rawItem.teacherQuickNote !== undefined
+            ? String(rawItem.teacherQuickNote ?? "").slice(0, 1000)
+            : String(existing?.teacherQuickNote ?? "");
+        const appliedToCommentAt =
+          rawItem.appliedToCommentAt !== undefined
+            ? rawItem.appliedToCommentAt
+            : existing?.appliedToCommentAt ?? null;
+
+        upsertStmt.run({
+          classId,
+          sessionNumber,
+          sessionId,
+          studentId,
+          attendanceStatus,
+          stars,
+          medals,
+          praiseCountsJson,
+          issueCountsJson,
+          teacherQuickNote,
+          appliedToCommentAt,
+          rowVer: nextRowVer,
+        });
+
+        const updated = selectStmt.get(classId, sessionNumber, studentId) as ClassroomSessionLogRecord;
+        results.push({
+          studentId,
+          staleIgnored: false,
+          record: updated,
+        });
+      }
+
+      return results;
+    };
+
+    if (typeof (db as any).transaction === "function") {
+      return (db as any).transaction(runTx)();
+    }
+    return runTx();
   },
 };

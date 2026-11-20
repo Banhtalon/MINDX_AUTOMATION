@@ -349,15 +349,15 @@ html[data-theme="dark"] .mindx-log-pill {
 /* ==========================================================================
    AUTOMATIC LIGHT MODE ADAPTATION FOR INNER PANELS, TABLES, INPUTS & BADGES
    ========================================================================== */
-html[data-theme="light"] .mindx-main [class*="bg-slate-900"]:not(.mindx-hero):not(.mindx-thead):not(.mindx-dark-keep),
-html[data-theme="light"] .mindx-main [class*="bg-slate-950"]:not(.mindx-hero):not(.mindx-thead):not(.mindx-dark-keep) {
+html[data-theme="light"] .mindx-main [class*="bg-slate-900"]:not(.mindx-hero):not(.mindx-thead):not(.mindx-dark-keep):not(.mindx-dark-keep *):not(.cm-projector-shell):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main [class*="bg-slate-950"]:not(.mindx-hero):not(.mindx-thead):not(.mindx-dark-keep):not(.mindx-dark-keep *):not(.cm-projector-shell):not(.cm-projector-shell *) {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
 }
 
-html[data-theme="light"] .mindx-main [class*="bg-slate-800"]:not(button):not(.mindx-hero):not(.mindx-thead):not(.mindx-dark-keep) {
+html[data-theme="light"] .mindx-main [class*="bg-slate-800"]:not(button):not(.mindx-hero):not(.mindx-thead):not(.mindx-dark-keep):not(.mindx-dark-keep *):not(.cm-projector-shell):not(.cm-projector-shell *) {
   background-color: #f1f5f9 !important;
   border-color: #cbd5e1 !important;
   color: #1e293b !important;
@@ -384,9 +384,9 @@ html[data-theme="light"] .mindx-main textarea:focus {
 }
 
 /* Text contrast adaptation in Light Mode (preserving white text inside hero, thead, and colored buttons/badges) */
-html[data-theme="light"] .mindx-main .text-white:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-hero):not(.mindx-hero *):not(.mindx-thead):not(.mindx-thead *):not(.mindx-dark-keep):not(.mindx-dark-keep *),
-html[data-theme="light"] .mindx-main .text-slate-100:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *),
-html[data-theme="light"] .mindx-main .text-slate-200:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+html[data-theme="light"] .mindx-main .text-white:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-hero):not(.mindx-hero *):not(.mindx-thead):not(.mindx-thead *):not(.mindx-dark-keep):not(.mindx-dark-keep *):not(.cm-projector-shell):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main .text-slate-100:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main .text-slate-200:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #0f172a !important;
 }
 
@@ -402,12 +402,12 @@ html[data-theme="light"] body .mindx-main.mindx-main .mindx-thead .text-white:no
   color: #ffffff !important;
 }
 
-html[data-theme="light"] .mindx-main .text-slate-300:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+html[data-theme="light"] .mindx-main .text-slate-300:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #1e293b !important;
 }
 
-html[data-theme="light"] .mindx-main .text-slate-400:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *),
-html[data-theme="light"] .mindx-main .text-slate-500:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+html[data-theme="light"] .mindx-main .text-slate-400:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main .text-slate-500:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #475569 !important;
 }
 
@@ -418,23 +418,23 @@ html[data-theme="light"] .mindx-main [class*="divide-slate-800"] > * + * {
 }
 
 /* Table headers in Light Mode default to Deep Navy (#172554) with crisp white text */
-html[data-theme="light"] .mindx-main table thead,
-html[data-theme="light"] .mindx-main table thead tr {
+html[data-theme="light"] .mindx-main table:not(.cm-table) thead,
+html[data-theme="light"] .mindx-main table:not(.cm-table) thead tr {
   background-color: #172554 !important;
   color: #ffffff !important;
 }
-html[data-theme="light"] .mindx-main table thead th {
+html[data-theme="light"] .mindx-main table:not(.cm-table) thead th {
   background-color: #172554 !important;
   color: #ffffff !important;
   border-color: #1e3a8a !important;
 }
 
 /* Table body rows in Light Mode */
-html[data-theme="light"] .mindx-main table tbody tr {
+html[data-theme="light"] .mindx-main table:not(.cm-table) tbody tr {
   background-color: #ffffff !important;
   border-bottom: 1px solid #e2e8f0 !important;
 }
-html[data-theme="light"] .mindx-main table tbody tr:hover {
+html[data-theme="light"] .mindx-main table:not(.cm-table) tbody tr:hover {
   background-color: #f8fafc !important;
 }
 
@@ -474,64 +474,64 @@ html[data-theme="light"] .mindx-main [class*="bg-blue-950"]:not(button):not(.min
 }
 
 /* Accessible dark-shade text counterparts for pastel utility classes in Light Mode */
-html[data-theme="light"] .mindx-main :is(.text-emerald-200, .text-emerald-300, .text-emerald-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+html[data-theme="light"] .mindx-main :is(.text-emerald-200, .text-emerald-300, .text-emerald-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #047857 !important;
 }
-html[data-theme="light"] .mindx-main :is(.text-amber-200, .text-amber-300, .text-amber-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+html[data-theme="light"] .mindx-main :is(.text-amber-200, .text-amber-300, .text-amber-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #b45309 !important;
 }
-html[data-theme="light"] .mindx-main :is(.text-orange-200, .text-orange-300, .text-orange-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+html[data-theme="light"] .mindx-main :is(.text-orange-200, .text-orange-300, .text-orange-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #c2410c !important;
 }
-html[data-theme="light"] .mindx-main :is(.text-sky-200, .text-sky-300, .text-sky-400, .text-cyan-200, .text-cyan-300, .text-cyan-400, .text-blue-200, .text-blue-300, .text-blue-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+html[data-theme="light"] .mindx-main :is(.text-sky-200, .text-sky-300, .text-sky-400, .text-cyan-200, .text-cyan-300, .text-cyan-400, .text-blue-200, .text-blue-300, .text-blue-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #0369a1 !important;
 }
-html[data-theme="light"] .mindx-main :is(.text-indigo-200, .text-indigo-300, .text-indigo-400, .text-violet-200, .text-violet-300, .text-purple-300, .text-fuchsia-300):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+html[data-theme="light"] .mindx-main :is(.text-indigo-200, .text-indigo-300, .text-indigo-400, .text-violet-200, .text-violet-300, .text-purple-300, .text-fuchsia-300):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #4338ca !important;
 }
-html[data-theme="light"] .mindx-main :is(.text-rose-200, .text-rose-300, .text-rose-400, .text-red-200, .text-red-300, .text-red-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *) {
+html[data-theme="light"] .mindx-main :is(.text-rose-200, .text-rose-300, .text-rose-400, .text-red-200, .text-red-300, .text-red-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #be123c !important;
 }
 
 /* Pastel & Solid Badges readability in Light Mode */
-html[data-theme="light"] .mindx-main span[class*="text-emerald-300"]:not(button *):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main span[class*="text-emerald-200"]:not(button *):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main span[class*="text-teal-300"]:not(button *):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main span[class*="text-teal-200"]:not(button *):not(.mindx-hero *) {
+html[data-theme="light"] .mindx-main span[class*="text-emerald-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-emerald-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-teal-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-teal-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   background-color: #d1fae5 !important;
   border-color: #6ee7b7 !important;
   color: #065f46 !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-amber-300"]:not(button *):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main span[class*="text-amber-200"]:not(button *):not(.mindx-hero *) {
+html[data-theme="light"] .mindx-main span[class*="text-amber-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-amber-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   background-color: #fef3c7 !important;
   border-color: #fcd34d !important;
   color: #92400e !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-orange-300"]:not(button *):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main span[class*="text-orange-200"]:not(button *):not(.mindx-hero *) {
+html[data-theme="light"] .mindx-main span[class*="text-orange-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-orange-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   background-color: #ffedd5 !important;
   border-color: #fdba74 !important;
   color: #9a3412 !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-indigo-300"]:not(button *):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main span[class*="text-indigo-200"]:not(button *):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main span[class*="text-violet-200"]:not(button *):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main span[class*="text-fuchsia-300"]:not(button *):not(.mindx-hero *) {
+html[data-theme="light"] .mindx-main span[class*="text-indigo-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-indigo-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-violet-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-fuchsia-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   background-color: #ede9fe !important;
   border-color: #c4b5fd !important;
   color: #5b21b6 !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-cyan-300"]:not(button *):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main span[class*="text-sky-300"]:not(button *):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main span[class*="text-blue-300"]:not(button *):not(.mindx-hero *) {
+html[data-theme="light"] .mindx-main span[class*="text-cyan-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-sky-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-blue-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   background-color: #e0f2fe !important;
   border-color: #7dd3fc !important;
   color: #075985 !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-rose-300"]:not(button *):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main span[class*="text-rose-200"]:not(button *):not(.mindx-hero *),
-html[data-theme="light"] .mindx-main span[class*="text-red-300"]:not(button *):not(.mindx-hero *) {
+html[data-theme="light"] .mindx-main span[class*="text-rose-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-rose-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-red-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   background-color: #fee2e2 !important;
   border-color: #fca5a5 !important;
   color: #991b1b !important;
@@ -557,37 +557,37 @@ html[data-theme="light"] .mindx-main button[class*="bg-slate-950"]:hover:not(.mi
 }
 
 /* Backgroundless buttons (e.g., FolderBrowserModal row buttons, inline Copy buttons) */
-html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *):is(.text-white, .text-slate-100, .text-slate-200),
-html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *) :is(.text-white, .text-slate-100, .text-slate-200) {
+html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *):is(.text-white, .text-slate-100, .text-slate-200),
+html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) :is(.text-white, .text-slate-100, .text-slate-200) {
   color: #0f172a !important;
 }
-html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *):is(.text-slate-300, .text-slate-400, .text-slate-500),
-html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *) :is(.text-slate-300, .text-slate-400, .text-slate-500) {
+html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *):is(.text-slate-300, .text-slate-400, .text-slate-500),
+html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) :is(.text-slate-300, .text-slate-400, .text-slate-500) {
   color: #475569 !important;
 }
 
 /* Translucent /10..30 tint pill buttons in Light Mode */
-html[data-theme="light"] .mindx-main button:is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-emerald-300"], [class*="text-emerald-200"]) {
+html[data-theme="light"] .mindx-main button:not(.mindx-dark-keep *):not(.cm-projector-shell *):is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-emerald-300"], [class*="text-emerald-200"]) {
   background-color: #d1fae5 !important;
   border-color: #34d399 !important;
   color: #065f46 !important;
 }
-html[data-theme="light"] .mindx-main button:is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-indigo-300"], [class*="text-indigo-200"], [class*="text-purple-300"], [class*="text-purple-200"], [class*="text-violet-300"], [class*="text-violet-200"]) {
+html[data-theme="light"] .mindx-main button:not(.mindx-dark-keep *):not(.cm-projector-shell *):is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-indigo-300"], [class*="text-indigo-200"], [class*="text-purple-300"], [class*="text-purple-200"], [class*="text-violet-300"], [class*="text-violet-200"]) {
   background-color: #ede9fe !important;
   border-color: #a78bfa !important;
   color: #4c1d95 !important;
 }
-html[data-theme="light"] .mindx-main button:is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-sky-300"], [class*="text-sky-200"], [class*="text-cyan-300"], [class*="text-blue-300"]) {
+html[data-theme="light"] .mindx-main button:not(.mindx-dark-keep *):not(.cm-projector-shell *):is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-sky-300"], [class*="text-sky-200"], [class*="text-cyan-300"], [class*="text-blue-300"]) {
   background-color: #e0f2fe !important;
   border-color: #38bdf8 !important;
   color: #075985 !important;
 }
-html[data-theme="light"] .mindx-main button:is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-amber-300"], [class*="text-amber-200"]) {
+html[data-theme="light"] .mindx-main button:not(.mindx-dark-keep *):not(.cm-projector-shell *):is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-amber-300"], [class*="text-amber-200"]) {
   background-color: #fef3c7 !important;
   border-color: #fbbf24 !important;
   color: #92400e !important;
 }
-html[data-theme="light"] .mindx-main button:is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-rose-300"], [class*="text-rose-200"], [class*="text-red-300"]) {
+html[data-theme="light"] .mindx-main button:not(.mindx-dark-keep *):not(.cm-projector-shell *):is([class*="/10"], [class*="/15"], [class*="/20"], [class*="/25"], [class*="/30"]):is([class*="text-rose-300"], [class*="text-rose-200"], [class*="text-red-300"]) {
   background-color: #fee2e2 !important;
   border-color: #f87171 !important;
   color: #991b1b !important;
@@ -833,6 +833,10 @@ html[data-theme="dark"] .neo-subtitle-text {
   background-color: #faf5ff !important;
   border-left: 7px solid #9333ea !important;
 }
+.neo-ws-indigo {
+  background-color: #eef2ff !important;
+  border-left: 7px solid #4f46e5 !important;
+}
 
 .neo-ws-num-amber {
   background-color: #ffedd5 !important;
@@ -872,6 +876,11 @@ html[data-theme="dark"] .neo-subtitle-text {
 }
 .neo-ws-badge-purple {
   background-color: #7e22ce !important;
+  border: 1.5px solid #0f172a !important;
+  color: #ffffff !important;
+}
+.neo-ws-badge-indigo {
+  background-color: #4f46e5 !important;
   border: 1.5px solid #0f172a !important;
   color: #ffffff !important;
 }
@@ -1235,5 +1244,425 @@ html[data-theme="dark"] .spck-award-indigo {
   border: 1px solid rgba(129, 140, 248, 0.6) !important;
   color: #c7d2fe !important;
 }
+
+/* ==========================================================================
+   CLASSROOM MANAGER (/classroom-manager - v3.6.7)
+   ========================================================================== */
+.cm-shell-card {
+  border-radius: 14px;
+  border: 1.5px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+html[data-theme="dark"] .cm-shell-card {
+  background-color: #111c34;
+  border-color: #263859;
+  color: #f8fafc;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.cm-select {
+  background-color: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  border-radius: 8px;
+}
+html[data-theme="dark"] .cm-select {
+  background-color: #0b1324;
+  border-color: #334a73;
+  color: #f8fafc;
+}
+
+.cm-stat-pill {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+html[data-theme="dark"] .cm-stat-pill {
+  background-color: #16223e;
+  border-color: #334a73;
+  color: #e2e8f0;
+}
+
+.cm-stat-star {
+  background-color: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+}
+html[data-theme="dark"] .cm-stat-star {
+  background-color: rgba(180, 83, 9, 0.26);
+  border-color: rgba(251, 191, 36, 0.55);
+  color: #fde68a;
+}
+
+.cm-stat-medal {
+  background-color: #fefce8;
+  border: 1px solid #eab308;
+  color: #854d0e;
+}
+html[data-theme="dark"] .cm-stat-medal {
+  background-color: rgba(202, 138, 4, 0.24);
+  border-color: rgba(250, 204, 21, 0.55);
+  color: #fef08a;
+}
+
+.cm-stat-err {
+  background-color: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+}
+html[data-theme="dark"] .cm-stat-err {
+  background-color: rgba(185, 28, 28, 0.28);
+  border-color: rgba(248, 113, 113, 0.55);
+  color: #fecaca;
+}
+
+/* Sectioned Table Headers & Vertical Walls */
+.cm-wall-right {
+  border-right: 2px solid #cbd5e1;
+}
+html[data-theme="dark"] .cm-wall-right {
+  border-right-color: #2b3f66;
+}
+
+.cm-th-base {
+  background-color: #f1f5f9;
+  color: #334155;
+  border-bottom: 2px solid #cbd5e1;
+}
+html[data-theme="dark"] .cm-th-base {
+  background-color: #16223d;
+  color: #e2e8f0;
+  border-bottom-color: #2b3f66;
+}
+
+.cm-th-score {
+  background-color: #fef9c3;
+  color: #713f12;
+  border-bottom: 2px solid #cbd5e1;
+}
+html[data-theme="dark"] .cm-th-score {
+  background-color: #362a10;
+  color: #fde68a;
+  border-bottom-color: #2b3f66;
+}
+
+.cm-th-praise {
+  background-color: #dcfce7;
+  color: #14532d;
+  border-bottom: 2px solid #cbd5e1;
+}
+html[data-theme="dark"] .cm-th-praise {
+  background-color: #0e3326;
+  color: #86efac;
+  border-bottom-color: #2b3f66;
+}
+
+.cm-th-issue {
+  background-color: #ffe4e6;
+  color: #881337;
+  border-bottom: 2px solid #cbd5e1;
+}
+html[data-theme="dark"] .cm-th-issue {
+  background-color: #3b1420;
+  color: #fecdd3;
+  border-bottom-color: #2b3f66;
+}
+
+.cm-th-tags {
+  background-color: #dbeafe;
+  color: #1e3a8a;
+  border-bottom: 2px solid #cbd5e1;
+}
+html[data-theme="dark"] .cm-th-tags {
+  background-color: #172a52;
+  color: #bfdbfe;
+  border-bottom-color: #2b3f66;
+}
+
+.cm-td-base { background-color: #ffffff; }
+.cm-td-score { background-color: #fffdf5; }
+.cm-td-praise { background-color: #fafffc; }
+.cm-td-issue { background-color: #fffbfc; }
+.cm-td-tags { background-color: #f8fafc; }
+
+html[data-theme="dark"] .cm-td-base { background-color: #111c34; }
+html[data-theme="dark"] .cm-td-score { background-color: #161f33; }
+html[data-theme="dark"] .cm-td-praise { background-color: #101e31; }
+html[data-theme="dark"] .cm-td-issue { background-color: #191c33; }
+html[data-theme="dark"] .cm-td-tags { background-color: #0e172c; }
+
+.cm-row-late td {
+  background-color: #fffbeb !important;
+}
+html[data-theme="dark"] .cm-row-late td {
+  background-color: rgba(180, 83, 9, 0.16) !important;
+}
+
+.cm-row-absent td {
+  background-color: #f8fafc !important;
+}
+html[data-theme="dark"] .cm-row-absent td {
+  background-color: rgba(15, 23, 42, 0.72) !important;
+}
+
+.cm-idx-badge {
+  background-color: #e2e8f0;
+  color: #334155;
+}
+html[data-theme="dark"] .cm-idx-badge {
+  background-color: #223254;
+  color: #e2e8f0;
+}
+
+.cm-idx-late {
+  background-color: #fde68a;
+  color: #78350f;
+}
+html[data-theme="dark"] .cm-idx-late {
+  background-color: rgba(245, 158, 11, 0.3);
+  color: #fde68a;
+}
+
+/* Fixed Attendance & Score Boxes */
+.cm-att-present {
+  background-color: #dcfce7;
+  border: 1px solid #86efac;
+  color: #14532d;
+}
+html[data-theme="dark"] .cm-att-present {
+  background-color: rgba(16, 185, 129, 0.22);
+  border-color: rgba(52, 211, 153, 0.55);
+  color: #6ee7b7;
+}
+
+.cm-att-late {
+  background-color: #fef3c7;
+  border: 1.5px solid #f59e0b;
+  color: #92400e;
+}
+html[data-theme="dark"] .cm-att-late {
+  background-color: rgba(245, 158, 11, 0.25);
+  border-color: rgba(251, 191, 36, 0.65);
+  color: #fde68a;
+}
+
+.cm-att-absent {
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+html[data-theme="dark"] .cm-att-absent {
+  background-color: rgba(239, 68, 68, 0.22);
+  border-color: rgba(248, 113, 113, 0.55);
+  color: #fecaca;
+}
+
+.cm-slot-star {
+  background-color: #fffbeb;
+  border: 1.5px solid #fcd34d;
+  color: #92400e;
+}
+html[data-theme="dark"] .cm-slot-star {
+  background-color: rgba(180, 83, 9, 0.25);
+  border-color: rgba(251, 191, 36, 0.55);
+  color: #fde68a;
+}
+
+.cm-slot-star-zero {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+html[data-theme="dark"] .cm-slot-star-zero {
+  background-color: #0e172c;
+  border-color: #334a73;
+  color: #cbd5e1;
+}
+
+.cm-slot-medal-active {
+  background-color: #fef9c3;
+  border: 1.5px solid #ca8a04;
+  color: #713f12;
+}
+html[data-theme="dark"] .cm-slot-medal-active {
+  background-color: rgba(202, 138, 4, 0.28);
+  border-color: rgba(250, 204, 21, 0.65);
+  color: #fef08a;
+}
+
+.cm-slot-err-active {
+  background-color: #fee2e2;
+  border: 1.5px solid #ef4444;
+  color: #991b1b;
+}
+html[data-theme="dark"] .cm-slot-err-active {
+  background-color: rgba(185, 28, 28, 0.32);
+  border-color: rgba(248, 113, 113, 0.7);
+  color: #fecaca;
+}
+
+.cm-slot-muted {
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+html[data-theme="dark"] .cm-slot-muted {
+  background-color: #0e172c;
+  border-color: #2b3f66;
+  color: #94a3b8;
+}
+
+.cm-adj-btn {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+.cm-adj-btn:hover:not(:disabled) {
+  background-color: #f1f5f9;
+}
+html[data-theme="dark"] .cm-adj-btn {
+  background-color: #16233f;
+  border-color: #38507d;
+  color: #f8fafc;
+}
+html[data-theme="dark"] .cm-adj-btn:hover:not(:disabled) {
+  background-color: #22355c;
+}
+
+/* Action Buttons (Neutral, Praise Hit, Medal Hit, Issue Hit, Late Hit) */
+.cm-act-idle {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+.cm-act-idle:hover:not(:disabled) {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+html[data-theme="dark"] .cm-act-idle {
+  background-color: #16223d;
+  border-color: #324970;
+  color: #e2e8f0;
+}
+html[data-theme="dark"] .cm-act-idle:hover:not(:disabled) {
+  background-color: #1e2f54;
+  border-color: #60a5fa;
+}
+
+.cm-act-praise-hit {
+  background-color: #dcfce7;
+  border: 1.5px solid #16a34a;
+  color: #14532d;
+}
+html[data-theme="dark"] .cm-act-praise-hit {
+  background-color: rgba(22, 163, 74, 0.28);
+  border-color: #4ade80;
+  color: #bbf7d0;
+}
+
+.cm-act-medal-hit {
+  background-color: #fef3c7;
+  border: 1.5px solid #d97706;
+  color: #78350f;
+}
+html[data-theme="dark"] .cm-act-medal-hit {
+  background-color: rgba(217, 119, 6, 0.3);
+  border-color: #fbbf24;
+  color: #fde68a;
+}
+
+.cm-act-issue-hit {
+  background-color: #fef2f2;
+  border: 1.5px solid #dc2626;
+  color: #991b1b;
+}
+html[data-theme="dark"] .cm-act-issue-hit {
+  background-color: rgba(220, 38, 38, 0.3);
+  border-color: #f87171;
+  color: #fecaca;
+}
+
+.cm-act-late-hit {
+  background-color: #fff7ed;
+  border: 1.5px solid #ea580c;
+  color: #9a3412;
+}
+html[data-theme="dark"] .cm-act-late-hit {
+  background-color: rgba(234, 88, 12, 0.3);
+  border-color: #fb923c;
+  color: #fed7aa;
+}
+
+.cm-note-filled {
+  background-color: #dbeafe;
+  border: 1.5px solid #2563eb;
+  color: #1e3a8a;
+}
+html[data-theme="dark"] .cm-note-filled {
+  background-color: rgba(37, 99, 235, 0.3);
+  border-color: #60a5fa;
+  color: #dbeafe;
+}
+
+.cm-corner-badge {
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+html[data-theme="dark"] .cm-corner-badge {
+  border-color: #0b1324;
+}
+
+/* Horizontal Projector Leaderboard Mode (Always high-contrast royal night display) */
+.cm-projector-shell {
+  background-color: #0f172a !important;
+  background-image: radial-gradient(ellipse at top, #1b2f6e 0%, #0f172a 58%, #070b14 100%) !important;
+  color: #f8fafc !important;
+  border: 1.5px solid rgba(148, 163, 184, 0.28);
+  border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.45);
+}
+
+.cm-projector-track {
+  background-color: rgba(2, 6, 23, 0.65) !important;
+}
+
+.cm-projector-row {
+  background-color: #162032;
+  background-image: linear-gradient(90deg, rgba(30, 41, 59, 0.96) 0%, rgba(15, 23, 42, 0.98) 100%);
+  border: 1.5px solid rgba(148, 163, 184, 0.28);
+}
+.cm-projector-row-top1 {
+  border: 2px solid #fbbf24;
+  background-color: #241c14;
+  background-image: linear-gradient(90deg, rgba(82, 54, 15, 0.65) 0%, rgba(15, 23, 42, 0.98) 48%);
+  box-shadow: 0 6px 24px rgba(251, 191, 36, 0.22);
+}
+.cm-projector-row-top2 {
+  border: 2px solid #cbd5e1;
+}
+.cm-projector-row-top3 {
+  border: 2px solid #d97706;
+}
+
+.cm-modal-backdrop {
+  background-color: rgba(2, 6, 23, 0.65) !important;
+}
+
 
 

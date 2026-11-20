@@ -5,7 +5,7 @@ import { TopNavbar } from "@/components/top-navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MindX Automation Bot (v3.6.6)",
+  title: "MindX Automation Bot (v3.6.7)",
   description: "Hệ thống trợ lý tự động hóa toàn diện dành cho Giáo viên tại MindX",
 };
 

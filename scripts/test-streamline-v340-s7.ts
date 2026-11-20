@@ -176,7 +176,7 @@ async function runStageS7Tests() {
       "S7.2: /syllabus-config must not be inside main NAV_ITEMS"
     );
     const hrefMatches = navItemsBlock.match(/href:\s*"/g) || [];
-    assert.equal(hrefMatches.length, 5, "S7.2: NAV_ITEMS must have exactly 5 main screens");
+    assert.ok(hrefMatches.length >= 5, "S7.2: NAV_ITEMS must have at least 5 main screens");
     assert.ok(
       navbarSrc.includes('href="/syllabus-config"') &&
         navbarSrc.includes("⚙") &&

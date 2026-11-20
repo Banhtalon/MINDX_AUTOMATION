@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
   RefreshCw,
   Sparkles,
@@ -498,6 +499,7 @@ export default function SessionCommentsPage() {
   >({});
   const hasRestoredClassCodeRef = useRef(false);
   const restoredTargetClassRef = useRef<string | null>(null);
+  const fromClassroomPendingRef = useRef(false);
 
   const syncPendingSavePromiseRef = (studentId: string, fallbackPromise?: Promise<boolean>) => {
     const activeSet = activeSavePromisesByStudentRef.current[studentId];
@@ -549,6 +551,9 @@ export default function SessionCommentsPage() {
               )
                 .trim()
                 .toUpperCase();
+              if (urlParams.get("fromClassroom") === "1") {
+                fromClassroomPendingRef.current = true;
+              }
             } else if (rawSearch) {
               const m = rawSearch.match(/[?&](?:classId|classCode)=([^&#]+)/i);
               if (m && m[1]) {
@@ -781,6 +786,21 @@ export default function SessionCommentsPage() {
               return; // useEffect will re-trigger loadClassData with the valid effectiveSessionId
             }
           }
+        }
+
+        if (fromClassroomPendingRef.current) {
+          fromClassroomPendingRef.current = false;
+          setStatusMessage({
+            type: "success",
+            text: "✨ Đã nạp tự động Điểm danh, Thẻ đánh giá nhanh và tóm tắt vào ô 'Ghi chú của GV' từ trang Quản lý Giờ học (giữ nguyên bạn đã lưu LMS). Kiểm tra lại rồi bấm '✨ AI Soạn Nhận Xét'!",
+          });
+          try {
+            if (typeof window !== "undefined" && typeof window.history?.replaceState === "function") {
+              const cleanedUrl = new URL(window.location.href);
+              cleanedUrl.searchParams.delete("fromClassroom");
+              window.history.replaceState({}, "", cleanedUrl.pathname + cleanedUrl.search + cleanedUrl.hash);
+            }
+          } catch {}
         }
 
         if (json.data.students) {
@@ -4133,6 +4153,19 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/classroom-manager${
+              (classCode || classId).trim()
+                ? `?classId=${encodeURIComponent((classCode || classId).trim().toUpperCase())}&sessionNumber=${activeSessionNumber || 1}`
+                : ""
+            }`}
+            data-testid="open-classroom-manager-link"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition shadow-sm"
+            title="Mở trang Quản lý Giờ học để chấm sao, đếm lỗi hoặc chiếu bảng thi đua trên lớp"
+          >
+            ⭐ Quản lý Giờ học
+          </Link>
+
           <button
             type="button"
             data-testid="open-class-lms-btn"

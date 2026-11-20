@@ -35,6 +35,25 @@ export default function DashboardPage() {
       {/* 1. Neo-Brutalism "Việc cần làm hôm nay" + Weekly Scan + Collapsible Groups */}
       <DashboardTodayTasksPanel initialCards={todayTodoCards} />
 
+      {/* 1b. Quick Shortcut to Live Classroom Manager (v3.6.7) */}
+      <Link
+        href="/classroom-manager"
+        className="neo-ws-card neo-ws-indigo rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3"
+      >
+        <div className="flex items-center gap-3">
+          <span className="neo-ws-badge-indigo px-2.5 py-1 rounded-lg text-xs font-black shrink-0 mindx-dark-keep">
+            ⭐ Trong giờ học
+          </span>
+          <span className="text-xs sm:text-sm font-extrabold text-[#0f172a]">
+            Quản lý Giờ học Trực tiếp: Cộng sao/Huy hiệu, Đếm riêng lỗi ⚠️, Chiếu bảng thi đua hàng ngang &amp; Đẩy thẳng sang Nhận xét
+          </span>
+        </div>
+        <span className="neo-btn-yellow px-3.5 py-1 rounded-lg text-xs font-black inline-flex items-center gap-1 shrink-0">
+          <span>Mở Quản lý Giờ học</span>
+          <span>&rarr;</span>
+        </span>
+      </Link>
+
       {/* 2. 4 Core Workspaces Grid (Neo-Brutalism Tinted Cards + Yellow CTA Buttons) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
         {/* Workspace 1 */}
