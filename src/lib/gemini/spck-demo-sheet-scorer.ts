@@ -571,6 +571,17 @@ function normalizeGeminiRating(raw: unknown): DemoCriterionGradeValue {
   return "Tốt";
 }
 
+export function stripLeadingAiSuggestionLabel(rawNote: string): string {
+  // Strip system badge prefixes (`[AI gợi ý: Tốt]`, `(Gợi ý của AI: ...)`, `Theo AI: ...`, `AI gợi ý: ...`)
+  // while preserving valid student project descriptions (e.g., "AI gợi ý món ăn...", "AI gợi ý tốt cho người dùng...").
+  return String(rawNote || "")
+    .replace(
+      /^(?:\s*(?:[\[(]\s*(?:Theo\s*AI(?![\p{L}\p{N}_])|(?:AI|Hệ\s*thống)\s*(?:gợi\s*ý|đánh\s*giá|chấm(?:\s*nháp)?|nhận\s*xét)(?![\p{L}\p{N}_])|Gợi\s*ý(?:\s*nhanh)?\s*(?:của|từ)\s*AI(?![\p{L}\p{N}_]))[^\])]*[\])]\s*(?:[:\-–—]\s*|\s+|$)|(?:Theo\s*AI(?![\p{L}\p{N}_])|(?:AI|Hệ\s*thống)\s*(?:gợi\s*ý|đánh\s*giá|chấm(?:\s*nháp)?|nhận\s*xét)(?![\p{L}\p{N}_])|Gợi\s*ý(?:\s*nhanh)?\s*(?:của|từ)\s*AI(?![\p{L}\p{N}_]))(?:\s*[:\-–—]\s*(?:(?:Tốt|Hoàn\s*thành|Chưa\s*đạt)(?![\p{L}\p{N}_])\s*(?:[:\-–—]\s*|\s+|$))?|\s+(?:Tốt|Hoàn\s*thành|Chưa\s*đạt)(?![\p{L}\p{N}_])\s*(?:[:\-–—]\s*|$))))+/iu,
+      ""
+    )
+    .trim();
+}
+
 function parseJsonObjectFromModelText(rawText: string): any {
   const cleaned = String(rawText || "").trim();
   const fenced = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -901,10 +912,10 @@ Nhiệm vụ của bạn gồm 2 việc:
 1. Chấm nháp các tiêu chí SẢN PHẨM/MÃ NGUỒN trong danh sách được giao (dựa strictly vào bằng chứng code, asset, giao diện, đường dẫn có thật của học viên ${anonymousToken}):
    - Chỉ chọn đúng 1 trong 3 giá trị: "Tốt", "Hoàn thành", hoặc "Chưa đạt".
    - Nguyên tắc công bằng & thận trọng: chỉ đánh "Chưa đạt" khi có bằng chứng rõ ràng tính năng/file hoàn toàn không tồn tại hoặc hỏng nặng; nếu đã có triển khai nhưng còn đơn giản/thiếu sâu sắc hoặc cần kiểm tra thêm khi chạy thật thì chọn "Hoàn thành"; đạt rõ yêu cầu thì chọn "Tốt".
-   - Mỗi tiêu chí viết evidenceNote thật ngắn gọn (1 câu <= 18 từ) chỉ rõ tên hàm/file/nhân vật/màn hình quan sát được.
+   - Mỗi tiêu chí viết evidenceNote thật ngắn gọn (1 câu <= 18 từ) chỉ rõ tên hàm/file/nhân vật/màn hình quan sát được (KHÔNG thêm nhãn "[AI gợi ý: ...]" hay "AI gợi ý:" ở đầu câu).
 2. Gợi ý 2 đến 3 CÂU HỎI VẤN ĐÁP THỰC TẾ, HAY & ĐÚNG TRỌNG TÂM DỰ ÁN cho Giám khảo hỏi trực tiếp học viên khi con demo:
    - Câu hỏi phải gắn cụ thể với đúng sản phẩm học viên làm (hỏi về cơ chế/luồng chạy, xử lý lỗi thực tế khi gặp tình huống bất ngờ, hoặc hướng nâng cấp tính năng cụ thể — KHÔNG hỏi lý thuyết suông).
-   - Mỗi mục ghi theo mẫu: "Hỏi: [Câu hỏi cụ thể gắn tên màn hình/hàm/luật chơi] -> Gợi ý đáp án mong đợi: [1 câu ngắn]".
+   - Mỗi mục ghi theo mẫu: "Hỏi: [Câu hỏi cụ thể gắn tên màn hình/hàm/luật chơi] -> Gợi ý đáp án mong đợi: [1 câu ngắn]" (KHÔNG thêm nhãn "[AI gợi ý]" hay "Gợi ý của AI:" ở đầu câu).
    - TUYỆT ĐỐI không nhắc tên thật học viên (chỉ gọi "con" hoặc "học viên").
 
 TRẢ VỀ DUY NHẤT JSON HỢP LỆ THEO ĐỊNH DẠNG:
@@ -1006,9 +1017,10 @@ TRẢ VỀ DUY NHẤT JSON HỢP LỆ THEO ĐỊNH DẠNG:
           anonymousToken,
           stu.fullName
         ).replace(/\r?\n+/g, " ");
+        const cleanNote = stripLeadingAiSuggestionLabel(noteRaw);
         aiCriterionMap.set(rowNum, {
           rating,
-          evidenceNote: noteRaw || `AI đối chiếu mã nguồn/tư liệu dự án.`,
+          evidenceNote: cleanNote || "Đã đối chiếu mã nguồn/tư liệu dự án.",
         });
       }
 
@@ -1051,7 +1063,7 @@ TRẢ VỀ DUY NHẤT JSON HỢP LỆ THEO ĐỊNH DẠNG:
             rowNumber: row.rowNumber,
             rating: aiPick.rating,
             isAiScored: true,
-            columnGNote: `[AI gợi ý: ${aiPick.rating}] ${aiPick.evidenceNote}`,
+            columnGNote: aiPick.evidenceNote,
           };
         } else {
           criteriaByRow[row.rowNumber] = {
@@ -1067,9 +1079,11 @@ TRẢ VỀ DUY NHẤT JSON HỢP LỆ THEO ĐỊNH DẠNG:
         Array.isArray(parsedOutput?.bgkQuestions) ? parsedOutput.bgkQuestions : []
       )
         .map((q) =>
-          deAnonymizeSpckText(String(q || "").trim(), anonymousToken, stu.fullName).replace(
-            /\r?\n+/g,
-            " "
+          stripLeadingAiSuggestionLabel(
+            deAnonymizeSpckText(String(q || "").trim(), anonymousToken, stu.fullName).replace(
+              /\r?\n+/g,
+              " "
+            )
           )
         )
         .filter(Boolean)
@@ -1099,7 +1113,7 @@ TRẢ VỀ DUY NHẤT JSON HỢP LỆ THEO ĐỊNH DẠNG:
         stu.studentId,
         structure,
         "AI_ERROR",
-        "Không thể gọi AI chấm nháp lúc này — giữ mặc định 'Tốt' để GK chấm trực tiếp."
+        "Chưa chấm nháp tự động — giữ mặc định 'Tốt' để GK chấm trực tiếp."
       );
     }
   }

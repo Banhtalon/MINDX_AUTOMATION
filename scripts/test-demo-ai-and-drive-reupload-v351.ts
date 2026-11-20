@@ -594,9 +594,14 @@ async function run() {
       ? parseSharedStringsXml(ptaZip.getEntry("xl/sharedStrings.xml")!.getData().toString("utf8"))
       : [];
 
-    // Check Column G header widened & populated
+    // Check Column G header widened & populated (without system "AI gợi ý" / "của AI" phrasing)
     assert(/<col\b[^>]*\bmin="7"[^>]*\bwidth="54"/i.test(ptaS1Xml), "Column G width=54 missing in sheet1.xml");
-    assert(getInlineOrSharedCellValue(ptaS1Xml, `G${ptaStruct.headerRow}`, ptaSst).includes("Gợi ý nhanh của AI"));
+    const ptaColGHeader = getInlineOrSharedCellValue(ptaS1Xml, `G${ptaStruct.headerRow}`, ptaSst).replace(
+      /&amp;/g,
+      "&"
+    );
+    assert.strictEqual(ptaColGHeader, "Ghi chú đối chiếu & Câu hỏi BGK");
+    assert(!/AI gợi ý|của AI/i.test(ptaColGHeader), `Column G header leaked AI phrasing: ${ptaColGHeader}`);
 
     // Verify expected recalculated points on Student 1
     let expectedS1Total = 0;

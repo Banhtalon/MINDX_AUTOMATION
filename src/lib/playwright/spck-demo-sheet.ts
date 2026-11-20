@@ -728,7 +728,7 @@ function widenColumnGInColsXml(sheetXml: string, width = 54): string {
   if (!sawCol7) {
     rebuiltCols.push(`<col min="7" max="7" width="${width}" customWidth="1"/>`);
   }
-  return sheetXml.replace(/<cols>[\s\S]*?<\/cols>/i, `<cols>${rebuiltCols.join("")}</cols>`);
+  return sheetXml.replace(/<cols>[\s\S]*?<\/cols>/i, () => `<cols>${rebuiltCols.join("")}</cols>`);
 }
 
 function updateCachedValueInCell(
@@ -831,8 +831,261 @@ function upsertInlineCellInSheetXml(
   }
   const updatedBody = body.slice(0, insertOffset) + newRowXml + body.slice(insertOffset);
   return sheetXml.replace(
-    /<sheetData\b[^>]*>[\s\S]*?<\/sheetData>/i,
-    `<sheetData>${updatedBody}</sheetData>`
+    /<sheetData\b([^>]*)>[\s\S]*?<\/sheetData>/i,
+    (_m, sheetDataAttrs) => `<sheetData${sheetDataAttrs || ""}>${updatedBody}</sheetData>`
+  );
+}
+
+export const JUDGE_SCORING_YELLOW_FILL_ARGB = "FFFFE599";
+const JUDGE_SCORING_COLUMNS = ["B", "C", "D", "E"] as const;
+
+export function collectCellStyleIdsForJudgeRows(
+  sheetXml: string,
+  rowNumbers: Iterable<number>
+): Set<number> {
+  const ids = new Set<number>([0]);
+  const targetRows = new Set<number>(
+    Array.from(rowNumbers).filter((n) => Number.isInteger(n) && n > 0)
+  );
+  if (targetRows.size === 0) return ids;
+
+  const sheetDataMatch = sheetXml.match(/<sheetData\b[^>]*>([\s\S]*?)<\/sheetData>/i);
+  const scanBody = sheetDataMatch ? sheetDataMatch[1] : sheetXml;
+  const cellOpenRegex = /<c(\s[^>]*)>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = cellOpenRegex.exec(scanBody)) !== null) {
+    const attrs = match[1];
+    const refMatch = attrs.match(/\br="([A-Z]+)(\d+)"/i);
+    if (!refMatch) continue;
+    const col = refMatch[1].toUpperCase();
+    const rowNum = parseInt(refMatch[2], 10);
+    if (
+      !targetRows.has(rowNum) ||
+      (col !== "B" && col !== "C" && col !== "D" && col !== "E")
+    ) {
+      continue;
+    }
+    const styleMatch = attrs.match(/\bs="(\d+)"/i);
+    if (styleMatch) {
+      ids.add(parseInt(styleMatch[1], 10));
+    }
+  }
+  return ids;
+}
+
+export function injectYellowHighlightStylesIntoStylesXml(
+  stylesXml: string,
+  sourceStyleIds: Iterable<number>,
+  fillArgb: string = JUDGE_SCORING_YELLOW_FILL_ARGB
+): {
+  updatedStylesXml: string;
+  styleMap: Map<number, number>;
+  yellowFillId: number;
+} {
+  const fillsMatch = stylesXml.match(/<fills\b([^>]*?)(?:\/>|>([\s\S]*?)<\/fills>)/i);
+  if (!fillsMatch) {
+    throw new Error("Tệp xl/styles.xml không chứa thẻ <fills> hợp lệ.");
+  }
+  const fillsAttrs = fillsMatch[1] || "";
+  const fillsInner = fillsMatch[2] || "";
+  const existingFills =
+    fillsInner.match(/<fill\b(?:\s[^>]*)?(?:\/>|>[\s\S]*?<\/fill>)/gi) || [];
+  // ECMA-376 OpenXML §18.8.21 reserves fillId=0 (none) and fillId=1 (gray125)
+  const padFills: string[] = [];
+  if (existingFills.length === 0) {
+    padFills.push(`<fill><patternFill patternType="none"/></fill>`);
+  }
+  if (existingFills.length + padFills.length === 1) {
+    padFills.push(`<fill><patternFill patternType="gray125"/></fill>`);
+  }
+  const yellowFillId = existingFills.length + padFills.length;
+  const nextFillsCount = yellowFillId + 1;
+  const safeArgb = /^[0-9A-Fa-f]{8}$/.test(fillArgb)
+    ? fillArgb.toUpperCase()
+    : JUDGE_SCORING_YELLOW_FILL_ARGB;
+  const nextFillsAttrs = /\bcount="\d+"/i.test(fillsAttrs)
+    ? fillsAttrs.replace(/\bcount="\d+"/i, `count="${nextFillsCount}"`)
+    : `${fillsAttrs} count="${nextFillsCount}"`;
+  const newFillXml = `<fill><patternFill patternType="solid"><fgColor rgb="${safeArgb}"/><bgColor indexed="64"/></patternFill></fill>`;
+
+  const withYellowFill = stylesXml.replace(
+    /<fills\b([^>]*?)(?:\/>|>([\s\S]*?)<\/fills>)/i,
+    () => `<fills${nextFillsAttrs}>${fillsInner}${padFills.join("")}${newFillXml}</fills>`
+  );
+
+  const cellXfsMatch = withYellowFill.match(
+    /<cellXfs\b([^>]*?)(?:\/>|>([\s\S]*?)<\/cellXfs>)/i
+  );
+  if (!cellXfsMatch) {
+    throw new Error("Tệp xl/styles.xml không chứa thẻ <cellXfs> hợp lệ.");
+  }
+  const cellXfsAttrs = cellXfsMatch[1] || "";
+  const cellXfsInner = cellXfsMatch[2] || "";
+  const existingXfs: Array<{ attrs: string; inner: string | null }> = [];
+  const xfRegex = /<xf\b([^>]*?)(?:\/>|>([\s\S]*?)<\/xf>)/gi;
+  let xfMatch: RegExpExecArray | null;
+  while ((xfMatch = xfRegex.exec(cellXfsInner)) !== null) {
+    existingXfs.push({
+      attrs: xfMatch[1] || "",
+      inner: xfMatch[2] !== undefined ? xfMatch[2] : null,
+    });
+  }
+
+  // Ensure cellXfs[0] stays the unstyled default (never tinted yellow) if input <cellXfs/> was empty
+  const padDefaultXfs: string[] = [];
+  if (existingXfs.length === 0) {
+    const defaultAttrs = ' numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"';
+    existingXfs.push({ attrs: defaultAttrs, inner: null });
+    padDefaultXfs.push(`<xf${defaultAttrs}/>`);
+  }
+
+  const uniqueIds = Array.from(
+    new Set([
+      0,
+      ...Array.from(sourceStyleIds).filter((id) => Number.isInteger(id) && id >= 0),
+    ])
+  ).sort((a, b) => a - b);
+
+  const styleMap = new Map<number, number>();
+  const appendedXfs: string[] = [];
+
+  for (const origId of uniqueIds) {
+    const baseXf = existingXfs[origId] || existingXfs[0];
+    let nextAttrs = baseXf.attrs.replace(/\/\s*$/, "");
+    if (/\bfillId="\d+"/i.test(nextAttrs)) {
+      nextAttrs = nextAttrs.replace(/\bfillId="\d+"/i, `fillId="${yellowFillId}"`);
+    } else {
+      nextAttrs = `${nextAttrs} fillId="${yellowFillId}"`;
+    }
+    if (/\bapplyFill="[^"]*"/i.test(nextAttrs)) {
+      nextAttrs = nextAttrs.replace(/\bapplyFill="[^"]*"/i, `applyFill="1"`);
+    } else {
+      nextAttrs = `${nextAttrs} applyFill="1"`;
+    }
+    const cleanAttrs = nextAttrs.replace(/\s+$/, "");
+    const clonedXfXml =
+      baseXf.inner !== null
+        ? `<xf${cleanAttrs}>${baseXf.inner}</xf>`
+        : `<xf${cleanAttrs}/>`;
+    const newStyleIdx = existingXfs.length + appendedXfs.length;
+    appendedXfs.push(clonedXfXml);
+    styleMap.set(origId, newStyleIdx);
+  }
+
+  const nextCellXfsCount = existingXfs.length + appendedXfs.length;
+  const nextCellXfsAttrs = /\bcount="\d+"/i.test(cellXfsAttrs)
+    ? cellXfsAttrs.replace(/\bcount="\d+"/i, `count="${nextCellXfsCount}"`)
+    : `${cellXfsAttrs} count="${nextCellXfsCount}"`;
+
+  const updatedStylesXml = withYellowFill.replace(
+    /<cellXfs\b([^>]*?)(?:\/>|>([\s\S]*?)<\/cellXfs>)/i,
+    () =>
+      `<cellXfs${nextCellXfsAttrs}>${cellXfsInner}${padDefaultXfs.join("")}${appendedXfs.join("")}</cellXfs>`
+  );
+
+  return { updatedStylesXml, styleMap, yellowFillId };
+}
+
+export function applyYellowStyleToJudgeScoringCellsInSheetXml(
+  sheetXml: string,
+  judgeRowNumbers: Iterable<number>,
+  styleMap: ReadonlyMap<number, number>
+): string {
+  const targetRows = new Set<number>(
+    Array.from(judgeRowNumbers).filter((n) => Number.isInteger(n) && n > 0)
+  );
+  if (targetRows.size === 0) return sheetXml;
+
+  const defaultYellowStyleId = styleMap.get(0);
+  if (defaultYellowStyleId === undefined) return sheetXml;
+
+  const sheetDataMatch = sheetXml.match(/<sheetData\b([^>]*)>([\s\S]*?)<\/sheetData>/i);
+  if (!sheetDataMatch) return sheetXml;
+
+  const sheetDataAttrs = sheetDataMatch[1] || "";
+  const sheetDataInner = sheetDataMatch[2] || "";
+  const seenColsByRow = new Map<number, Set<string>>();
+
+  let nextSheetDataInner = sheetDataInner.replace(
+    /<c(\s[^>]*)>/gi,
+    (fullTag, rawAttrPart) => {
+      const trimmedEnd = String(rawAttrPart || "").trimEnd();
+      const isSelfClosing = trimmedEnd.endsWith("/");
+      const attrOnly = isSelfClosing
+        ? trimmedEnd.slice(0, -1).trimEnd()
+        : trimmedEnd;
+      const refMatch = attrOnly.match(/\br="([A-Z]+)(\d+)"/i);
+      if (!refMatch) return fullTag;
+      const col = refMatch[1].toUpperCase();
+      const rowNum = parseInt(refMatch[2], 10);
+      if (
+        !targetRows.has(rowNum) ||
+        (col !== "B" && col !== "C" && col !== "D" && col !== "E")
+      ) {
+        return fullTag;
+      }
+
+      let seen = seenColsByRow.get(rowNum);
+      if (!seen) {
+        seen = new Set<string>();
+        seenColsByRow.set(rowNum, seen);
+      }
+      seen.add(col);
+
+      const origStyleMatch = attrOnly.match(/\bs="(\d+)"/i);
+      const origStyleId = origStyleMatch ? parseInt(origStyleMatch[1], 10) : 0;
+      const nextStyleId = styleMap.get(origStyleId) ?? defaultYellowStyleId;
+      const nextAttrOnly = /\bs="\d+"/i.test(attrOnly)
+        ? attrOnly.replace(/\bs="\d+"/i, `s="${nextStyleId}"`)
+        : `${attrOnly} s="${nextStyleId}"`;
+      return `<c${nextAttrOnly}${isSelfClosing ? "/>" : ">"}`;
+    }
+  );
+
+  // Backfill any missing B..E cells on sparse custom judge rows
+  for (const rowNum of targetRows) {
+    const seen = seenColsByRow.get(rowNum);
+    const missingCols = JUDGE_SCORING_COLUMNS.filter((col) => !seen?.has(col));
+    if (missingCols.length === 0) continue;
+
+    const rowRegex = new RegExp(
+      `(<row\\b[^>]*?\\br="${rowNum}"[^>]*?)(?:\\/>|>([\\s\\S]*?)<\\/row>)`,
+      "i"
+    );
+    nextSheetDataInner = nextSheetDataInner.replace(
+      rowRegex,
+      (_m, rowStart, existingInner) => {
+        let updatedInner = existingInner === undefined ? "" : String(existingInner);
+        for (const col of missingCols) {
+          const newCellXml = `<c r="${col}${rowNum}" s="${defaultYellowStyleId}"/>`;
+          const targetColIdx = columnLettersToIndex(col);
+          const cellPositions = Array.from(
+            updatedInner.matchAll(/<c\s[^>]*?\br="([A-Z]+)\d+"[^>]*?>/gi)
+          );
+          let insertAt = updatedInner.length;
+          for (const cp of cellPositions) {
+            if (
+              columnLettersToIndex(cp[1]) > targetColIdx &&
+              typeof cp.index === "number"
+            ) {
+              insertAt = cp.index;
+              break;
+            }
+          }
+          updatedInner =
+            updatedInner.slice(0, insertAt) +
+            newCellXml +
+            updatedInner.slice(insertAt);
+        }
+        const cleanRowStart = String(rowStart).replace(/\/\s*$/, "");
+        return `${cleanRowStart}>${updatedInner}</row>`;
+      }
+    );
+  }
+
+  return sheetXml.replace(
+    /<sheetData\b([^>]*)>[\s\S]*?<\/sheetData>/i,
+    () => `<sheetData${sheetDataAttrs}>${nextSheetDataInner}</sheetData>`
   );
 }
 
@@ -856,7 +1109,7 @@ function applyAiAnnotationsToStudentWorksheetXml(
     xml,
     "G",
     structure.headerRow,
-    "Gợi ý nhanh của AI & Câu hỏi BGK",
+    "Ghi chú đối chiếu & Câu hỏi BGK",
     gHeaderStyle
   );
 
@@ -971,10 +1224,12 @@ function cloneTemplateXlsxBufferForStudents(params: {
     studentTabs,
     aiTabAnnotations,
   } = params;
-  const rubricStructure =
-    aiTabAnnotations && Object.keys(aiTabAnnotations).length > 0
-      ? extractDemoTemplateRubricStructure(templateBuffer)
-      : null;
+  let rubricStructure: DemoTemplateRubricStructure | null = null;
+  try {
+    rubricStructure = extractDemoTemplateRubricStructure(templateBuffer);
+  } catch {
+    rubricStructure = null;
+  }
   const zip = new AdmZip(templateBuffer);
   const baseSheetEntry =
     zip.getEntry("xl/worksheets/sheet1.xml") ||
@@ -1037,6 +1292,13 @@ function cloneTemplateXlsxBufferForStudents(params: {
     ? baseSheetRelsEntry.getData().toString("utf8")
     : null;
 
+  const preparedStudentSheets: Array<{
+    sheetNum: number;
+    xml: string;
+    judgeRows: number[];
+  }> = [];
+  const collectedJudgeStyleIds = new Set<number>([0]);
+
   studentTabs.forEach((stu, idx) => {
     const sheetNum = idx + 1;
     let xml = baseSheetXml;
@@ -1057,14 +1319,55 @@ function cloneTemplateXlsxBufferForStudents(params: {
       xml = applyAiAnnotationsToStudentWorksheetXml(xml, rubricStructure, stuAnnotation);
     }
 
-    zip.addFile(`xl/worksheets/sheet${sheetNum}.xml`, Buffer.from(xml, "utf8"));
-    if (baseSheetRelsXml && sheetNum > 1) {
+    const judgeRows = rubricStructure
+      ? stuAnnotation
+        ? rubricStructure.criteriaRows
+            .filter((row) => !stuAnnotation.criteriaByRow[row.rowNumber]?.isAiScored)
+            .map((row) => row.rowNumber)
+        : rubricStructure.criteriaRows.map((row) => row.rowNumber)
+      : [];
+
+    if (judgeRows.length > 0) {
+      for (const sid of collectCellStyleIdsForJudgeRows(xml, judgeRows)) {
+        collectedJudgeStyleIds.add(sid);
+      }
+    }
+
+    preparedStudentSheets.push({ sheetNum, xml, judgeRows });
+  });
+
+  const stylesEntry = zip.getEntry("xl/styles.xml");
+  let yellowStyleMap: Map<number, number> | null = null;
+  if (stylesEntry && preparedStudentSheets.some((s) => s.judgeRows.length > 0)) {
+    const stylesXml = stylesEntry.getData().toString("utf8");
+    const injected = injectYellowHighlightStylesIntoStylesXml(
+      stylesXml,
+      collectedJudgeStyleIds
+    );
+    yellowStyleMap = injected.styleMap;
+    zip.updateFile("xl/styles.xml", Buffer.from(injected.updatedStylesXml, "utf8"));
+  }
+
+  for (const sheetInfo of preparedStudentSheets) {
+    const finalXml =
+      yellowStyleMap && sheetInfo.judgeRows.length > 0
+        ? applyYellowStyleToJudgeScoringCellsInSheetXml(
+            sheetInfo.xml,
+            sheetInfo.judgeRows,
+            yellowStyleMap
+          )
+        : sheetInfo.xml;
+    zip.addFile(
+      `xl/worksheets/sheet${sheetInfo.sheetNum}.xml`,
+      Buffer.from(finalXml, "utf8")
+    );
+    if (baseSheetRelsXml && sheetInfo.sheetNum > 1) {
       zip.addFile(
-        `xl/worksheets/_rels/sheet${sheetNum}.xml.rels`,
+        `xl/worksheets/_rels/sheet${sheetInfo.sheetNum}.xml.rels`,
         Buffer.from(baseSheetRelsXml, "utf8")
       );
     }
-  });
+  }
 
   extraSheets.forEach((extra, idx) => {
     const sheetNum = studentTabs.length + idx + 1;
@@ -1271,6 +1574,7 @@ export function buildDemoScoringWorkbookBuffer(params: {
   studentTabs: DemoSheetStudentTab[];
   templateBuffer?: Buffer | null;
   aiTabAnnotations?: Record<string, StudentDemoAiPreScoreResult>;
+  _forceSyntheticFallbackForTest?: boolean;
 }): Buffer {
   const {
     classId,
@@ -1280,6 +1584,7 @@ export function buildDemoScoringWorkbookBuffer(params: {
     studentTabs,
     templateBuffer,
     aiTabAnnotations,
+    _forceSyntheticFallbackForTest,
   } = params;
   const effectiveTabs =
     studentTabs.length > 0
@@ -1288,7 +1593,7 @@ export function buildDemoScoringWorkbookBuffer(params: {
 
   const coursePrefix = detectCoursePrefixFromClassId(String(classId || ""));
 
-  if (templateBuffer !== undefined && templateBuffer !== null) {
+  if (!_forceSyntheticFallbackForTest && templateBuffer !== undefined && templateBuffer !== null) {
     const validated = validateTemplateWorkbookBuffer(templateBuffer, "templateBuffer");
     return cloneTemplateXlsxBufferForStudents({
       templateBuffer: validated,
@@ -1301,7 +1606,9 @@ export function buildDemoScoringWorkbookBuffer(params: {
   }
 
   let resolvedTemplateBuffer: Buffer | null = null;
-  const savedTemplatePath = getSavedCourseTemplatePath(classId || "PTA");
+  const savedTemplatePath = _forceSyntheticFallbackForTest
+    ? null
+    : getSavedCourseTemplatePath(classId || "PTA");
   if (savedTemplatePath) {
     const rawSaved = fs.readFileSync(savedTemplatePath);
     resolvedTemplateBuffer = validateTemplateWorkbookBuffer(rawSaved, savedTemplatePath);
@@ -1318,7 +1625,7 @@ export function buildDemoScoringWorkbookBuffer(params: {
     });
   }
 
-  if (coursePrefix && coursePrefix !== "PTA") {
+  if (!_forceSyntheticFallbackForTest && coursePrefix && coursePrefix !== "PTA") {
     throw new Error(
       `Khóa học '${coursePrefix}' của lớp '${classId}' chưa có mẫu bảng chấm điểm Demo hợp lệ. Hệ thống dừng lại để không dùng nhầm tiêu chí của PTA.`
     );
@@ -1384,9 +1691,9 @@ export function buildDemoScoringWorkbookBuffer(params: {
   zip.addFile("_rels/.rels", Buffer.from(rootRelsXml, "utf8"));
   zip.addFile("xl/workbook.xml", Buffer.from(workbookXml, "utf8"));
   zip.addFile("xl/_rels/workbook.xml.rels", Buffer.from(workbookRelsXml, "utf8"));
-  zip.addFile("xl/styles.xml", Buffer.from(buildStylesXml(), "utf8"));
-
-  effectiveTabs.forEach((stu, idx) => {
+  const standardCriteriaRows = Array.from({ length: 20 }, (_, i) => 8 + i);
+  // Synthetic worksheet does not embed AI pre-scores or Column G notes, so every criteria row stays judge-graded (yellow B..E).
+  const preparedFallbackTabs = effectiveTabs.map((stu, idx) => {
     const sheetXml = buildStandardStudentWorksheetXml({
       sheetTitle,
       studentName: stu.fullName,
@@ -1394,8 +1701,42 @@ export function buildDemoScoringWorkbookBuffer(params: {
       evalDate,
       isFirstTab: idx === 0,
     });
-    zip.addFile(`xl/worksheets/sheet${idx + 1}.xml`, Buffer.from(sheetXml, "utf8"));
+    return { sheetNum: idx + 1, sheetXml, judgeRows: standardCriteriaRows };
   });
+
+  const fallbackStyleIds = new Set<number>([0]);
+  for (const tab of preparedFallbackTabs) {
+    if (tab.judgeRows.length > 0) {
+      for (const sid of collectCellStyleIdsForJudgeRows(tab.sheetXml, tab.judgeRows)) {
+        fallbackStyleIds.add(sid);
+      }
+    }
+  }
+  const baseFallbackStylesXml = buildStylesXml();
+  const hasAnyFallbackJudgeRows = preparedFallbackTabs.some((t) => t.judgeRows.length > 0);
+  const fallbackInjected = hasAnyFallbackJudgeRows
+    ? injectYellowHighlightStylesIntoStylesXml(baseFallbackStylesXml, fallbackStyleIds)
+    : null;
+
+  zip.addFile(
+    "xl/styles.xml",
+    Buffer.from(
+      fallbackInjected ? fallbackInjected.updatedStylesXml : baseFallbackStylesXml,
+      "utf8"
+    )
+  );
+
+  for (const tab of preparedFallbackTabs) {
+    const finalXml =
+      fallbackInjected && tab.judgeRows.length > 0
+        ? applyYellowStyleToJudgeScoringCellsInSheetXml(
+            tab.sheetXml,
+            tab.judgeRows,
+            fallbackInjected.styleMap
+          )
+        : tab.sheetXml;
+    zip.addFile(`xl/worksheets/sheet${tab.sheetNum}.xml`, Buffer.from(finalXml, "utf8"));
+  }
 
   return zip.toBuffer();
 }

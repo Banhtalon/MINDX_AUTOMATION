@@ -315,8 +315,12 @@ async function main() {
           return idx >= 0 && idx < sst.length ? sst[idx] : vMatch?.[1] || "";
         })
         .join(" ");
-      assert.ok(joinedG.includes("[AI gợi ý:"), `Tab ${sIdx} thiếu [AI gợi ý:] ở Cột G`);
+      assert.ok(joinedG.includes("AppController.run()"), `Tab ${sIdx} thiếu bằng chứng đối chiếu ở Cột G`);
       assert.ok(joinedG.includes("Hỏi:"), `Tab ${sIdx} thiếu câu hỏi BGK ở Cột G`);
+      assert.ok(
+        !/\[AI gợi ý:|Gợi ý nhanh của AI|của AI|Không thể gọi AI/i.test(joinedG),
+        `Tab ${sIdx} vẫn còn chữ 'AI gợi ý' / 'của AI' ở Cột G`
+      );
     }
 
     // Also verify graceful fallback if 1 student permanently fails all 4 attempts with 503
