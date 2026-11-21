@@ -28,6 +28,17 @@ import {
   resolveCheckpointSessionsForClass as sharedResolveCheckpointSessionsForClass,
   isCheckpointSession as sharedIsCheckpointSession,
 } from "@/lib/quick-tags";
+import {
+  COMPETENCY_AREA_SPECS,
+  calculateCompetencyAveragePure,
+  formatCheckpointScoreHeaderLine,
+  mergeCheckpointStudentData,
+  parseCheckpointDataJson,
+  parseCompetencyScoresPure,
+  upsertCheckpointHeaderIntoFinalText,
+  type CheckpointStudentData,
+  type CompetencyScores,
+} from "@/lib/checkpoint/checkpoint-competency";
 
 interface SessionItem {
   sessionId: string;
@@ -55,6 +66,7 @@ interface StudentItem {
   status?: "INSUFFICIENT_INFO" | "DRAFT" | "APPROVED" | "SAVING" | "VERIFIED" | "FAILED";
   verifiedAt?: string | null;
   errorMessage?: string | null;
+  checkpointData?: CheckpointStudentData | null;
 }
 
 interface QuickTagItem {
@@ -382,6 +394,31 @@ function findLatestActiveSessionId(sessionList: SessionItem[]): string {
 }
 
 export default function SessionCommentsPage() {
+  const safeCompetencyAreaSpecsUi =
+    typeof COMPETENCY_AREA_SPECS !== "undefined" ? COMPETENCY_AREA_SPECS : [];
+  const safeCalcCompAvgUi =
+    typeof calculateCompetencyAveragePure === "function"
+      ? calculateCompetencyAveragePure
+      : () => 4;
+  const safeFormatCpHeaderUi =
+    typeof formatCheckpointScoreHeaderLine === "function"
+      ? formatCheckpointScoreHeaderLine
+      : () => "";
+  const safeParseCpDataUi =
+    typeof parseCheckpointDataJson === "function" ? parseCheckpointDataJson : () => null;
+  const safeMergeCpDataUi =
+    typeof mergeCheckpointStudentData === "function"
+      ? mergeCheckpointStudentData
+      : (a: any, b: any) => a ?? b ?? null;
+  const safeParseCompScoresUi =
+    typeof parseCompetencyScoresPure === "function"
+      ? parseCompetencyScoresPure
+      : (x: any) => x;
+  const safeUpsertCpHeaderUi =
+    typeof upsertCheckpointHeaderIntoFinalText === "function"
+      ? upsertCheckpointHeaderIntoFinalText
+      : (t: string) => t;
+
   const initialSavedClass = (() => {
     try {
       // Browser hydration guard: when `document` exists, return "" on initial render so
@@ -427,6 +464,9 @@ export default function SessionCommentsPage() {
   // Zalo Broadcast
   const [zaloBroadcastText, setZaloBroadcastText] = useState("");
   const [zaloBtvnPart2Text, setZaloBtvnPart2Text] = useState("");
+  const [zaloIncludeCheckpointSummary, setZaloIncludeCheckpointSummary] = useState<boolean | undefined>(
+    undefined
+  );
   const [zaloIncludeGeneralUpdate, setZaloIncludeGeneralUpdate] = useState(false);
   const [zaloIncludeSpckProgress, setZaloIncludeSpckProgress] = useState<boolean | undefined>(
     undefined
@@ -437,6 +477,10 @@ export default function SessionCommentsPage() {
   const [copiedZalo, setCopiedZalo] = useState(false);
   const [copiedStudentId, setCopiedStudentId] = useState<string | null>(null);
   const btvnImageInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Checkpoint [ĐNL] Modal & Sync State
+  const [isSyncingCheckpoint, setIsSyncingCheckpoint] = useState(false);
+  const [editingCompetencyStudentId, setEditingCompetencyStudentId] = useState<string | null>(null);
 
   // Status & loading states
   const [isSyncing, setIsSyncing] = useState(false);
@@ -813,6 +857,8 @@ export default function SessionCommentsPage() {
           );
           const feedbacks = json.data.feedbacks || [];
           const feedbackMap = new Map<string, any>(feedbacks.map((f: any) => [f.studentId, f]));
+          const checkpointByStudent: Record<string, CheckpointStudentData> =
+            json.data.checkpointByStudent || {};
           const previousQuickTagsMap: Record<
             string,
             { tags: string[]; fromSessionNumber?: number }
@@ -907,6 +953,10 @@ export default function SessionCommentsPage() {
               status: fb?.status || "DRAFT",
               verifiedAt: fb?.verifiedAt,
               errorMessage: fb?.errorMessage,
+              checkpointData: safeMergeCpDataUi(
+                safeParseCpDataUi(fb?.checkpointDataJson),
+                checkpointByStudent[st.studentId] || null
+              ),
             };
           });
 
@@ -1359,12 +1409,17 @@ export default function SessionCommentsPage() {
   const buildAutoZaloBroadcastText = (
     part2Override?: string,
     optionsOverride?: {
+      includeCheckpointSummary?: boolean;
       includeGeneralUpdate?: boolean;
       includeSpckProgress?: boolean;
       includePart3MediaReminder?: boolean;
     }
   ) => {
     const activePart2 = part2Override !== undefined ? part2Override : zaloBtvnPart2Text;
+    const effCheckpointSummary =
+      optionsOverride?.includeCheckpointSummary !== undefined
+        ? optionsOverride.includeCheckpointSummary
+        : zaloIncludeCheckpointSummary;
     const effGeneralUpdate =
       optionsOverride?.includeGeneralUpdate !== undefined
         ? optionsOverride.includeGeneralUpdate
@@ -1389,6 +1444,7 @@ export default function SessionCommentsPage() {
         currentHomeworkBrief,
         syllabusList,
         part2Text: activePart2,
+        includeCheckpointSummary: effCheckpointSummary,
         includeGeneralUpdate: effGeneralUpdate,
         includeSpckProgress: effSpckProgress,
         includePart3MediaReminder: effPart3Media,
@@ -1662,6 +1718,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
     currentHomeworkBrief,
     syllabusList,
     zaloBtvnPart2Text,
+    zaloIncludeCheckpointSummary,
     zaloIncludeGeneralUpdate,
     zaloIncludeSpckProgress,
     zaloIncludePart3Media,
@@ -2254,6 +2311,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
           ...(patch.improvements !== undefined ? { improvements: patch.improvements } : {}),
           ...(patch.actionPlan !== undefined ? { actionPlan: patch.actionPlan } : {}),
           ...(patch.finalText !== undefined ? { finalText: patch.finalText } : {}),
+          ...(patch.checkpointData !== undefined ? { checkpointData: patch.checkpointData } : {}),
           status: wasApprovedOrVerified ? "DRAFT" : patch.status ? safeDraftStatus : s.status,
           contentHash: wasApprovedOrVerified ? undefined : s.contentHash,
         };
@@ -2288,6 +2346,9 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
       payload.finalText = patch.finalText;
     } else if (patch.teacherNote !== undefined && student.finalText) {
       payload.finalText = student.finalText;
+    }
+    if (patch.checkpointData !== undefined) {
+      payload.checkpointData = patch.checkpointData;
     }
 
     const serverMeta = studentServerMetaRef.current[targetStudentId];
@@ -3226,6 +3287,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             quickTags: s.quickTags || [],
             teacherNote: s.teacherNote || "",
             expectedRowVer: studentServerMetaRef.current[s.studentId]?.rowVer ?? 0,
+            ...(s.checkpointData ? { checkpointData: s.checkpointData } : {}),
           })),
         }),
       });
@@ -3281,6 +3343,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
               actionPlan: resItem.actionPlan,
               finalText: resItem.formattedFullComment,
               errorMessage: resItem.errorMessage,
+              ...(resItem.checkpointData ? { checkpointData: resItem.checkpointData } : {}),
             };
           })
         );
@@ -3372,6 +3435,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             studentId,
             approvedText: approvedTextSnapshot,
             expectedRowVer,
+            ...(student.checkpointData ? { checkpointData: student.checkpointData } : {}),
           }),
         }
       );
@@ -3514,6 +3578,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
       expectedRowVer: studentServerMetaRef.current[s.studentId]?.rowVer ?? 0,
       clientInstanceId: clientInstanceIdRef.current,
       clientRevision: studentEditVersionRef.current[s.studentId] || 0,
+      ...(s.checkpointData ? { checkpointData: s.checkpointData } : {}),
     }));
 
     let approvedCount = 0;
@@ -3727,6 +3792,96 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
       : activeSessionNumber >= 1 &&
         activeSessionNumber < 14 &&
         effectiveCheckpointSessions.includes(activeSessionNumber);
+
+  const handleCheckpointSync = async (syncFromLms = true) => {
+    const reqClassId = (classCode || classId).trim().toUpperCase();
+    const reqSessionId = selectedSessionId.trim();
+    if (!reqClassId || !reqSessionId || isSyncingCheckpoint) return;
+
+    const flushedOk = await flushAllPendingDraftSaves();
+    if (!flushedOk) return;
+
+    setIsSyncingCheckpoint(true);
+    setStatusMessage({
+      type: "info",
+      text: syncFromLms
+        ? `Đang kết nối LMS đọc điểm Lý thuyết & Thực hành rồi tự tính 9 ô [ĐNL] cho ${reqClassId}...`
+        : `Đang tính lại 9 ô [ĐNL] từ lịch sử các buổi trước cho ${reqClassId}...`,
+    });
+
+    try {
+      const res = await fetch("/api/session-comments/checkpoint-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classCode: reqClassId,
+          sessionId: reqSessionId,
+          syncFromLms,
+          forceRecalculate: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || "Không thể đồng bộ và tính [ĐNL] Checkpoint.");
+      }
+
+      await loadClassData(reqClassId, reqSessionId, { preserveLocalUnsavedEdits: false });
+
+      setStatusMessage({
+        type: "success",
+        text: `✅ Đã cập nhật điểm Kiểm tra & tự tính 9 ô [ĐNL] theo quá trình cho ${data.updatedCount || 0} học viên (Buổi ${activeSessionNumber}).`,
+      });
+    } catch (err: any) {
+      setStatusMessage({
+        type: "error",
+        text: `Lỗi cập nhật Checkpoint: ${err?.message || String(err)}`,
+      });
+    } finally {
+      setIsSyncingCheckpoint(false);
+    }
+  };
+
+  const handleUpdateStudentCompetency = (
+    studentId: string,
+    key: keyof CompetencyScores,
+    rating: number
+  ) => {
+    const stu = studentsRef.current.find((s) => s.studentId === studentId);
+    if (!stu || !stu.checkpointData) return;
+
+    const currentScores = safeParseCompScoresUi(stu.checkpointData.competencyScores || {});
+    const nextScores: CompetencyScores = {
+      ...currentScores,
+      [key]: Math.max(1, Math.min(5, Math.round(rating))),
+    };
+    const nextAvg = safeCalcCompAvgUi(nextScores);
+    const nextCp: CheckpointStudentData = {
+      ...stu.checkpointData,
+      competencyScores: nextScores,
+      competencyAverage: nextAvg,
+      source: "MANUAL_UI",
+      userEditedCompetency: true,
+    };
+
+    const nextPatch: Partial<StudentItem> = {
+      checkpointData: nextCp,
+    };
+    if (
+      stu.finalText &&
+      stu.finalText.trim().length > 0 &&
+      !stu.finalText.startsWith("Chưa đủ thông tin")
+    ) {
+      const headerLine = safeFormatCpHeaderUi({
+        cpStage: nextCp.cpStage,
+        theoryScore: nextCp.theoryScore,
+        practiceScore: nextCp.practiceScore,
+        competencyAverage: nextAvg,
+      });
+      nextPatch.finalText = safeUpsertCpHeaderUi(stu.finalText, headerLine);
+    }
+
+    void saveDraftToServer(studentId, nextPatch);
+  };
 
   // Push to LMS (Single or All)
   const handleSaveToLms = async (
@@ -4105,19 +4260,43 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
           </div>
         </div>
 
-        {/* Checkpoint Session Reminder Banner (3.3) */}
+        {/* Checkpoint Session Banner (3.3 & v3.7.0 Auto [ĐNL] + Process Comment) */}
         {isCurrentSessionCheckpoint && (
-          <div className="mindx-warm-box mt-4 p-3 rounded-xl text-xs flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+          <div className="mindx-warm-box mt-4 p-3 rounded-xl text-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-start md:items-center gap-2">
               <span className="text-base">📌</span>
               <span>
-                <strong>Buổi Kiểm tra Định kỳ (Checkpoint — Buổi {activeSessionNumber}):</strong> Bot{" "}
-                <strong>chỉ điền ô Nhận xét chung</strong> — thầy tự tích Điểm Năng lực [ĐNL] &amp; Điểm kiểm tra trên LMS.
+                <strong>Buổi Kiểm tra Định kỳ (Checkpoint — Buổi {activeSessionNumber}):</strong> Thầy chấm điểm Lý thuyết &amp; Thực hành trên LMS, rồi bấm nút bên cạnh để{" "}
+                <strong>Bot tự đọc điểm KT, tính &amp; tích sẵn 9 ô [ĐNL] theo quá trình</strong> và viết nhận xét kèm dòng điểm riêng.
               </span>
             </div>
-            <span className="mindx-badge-amber shrink-0 px-2.5 py-0.5 rounded-full font-semibold text-[11px]">
-              Chỉ điền Nhận xét
-            </span>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                data-testid="checkpoint-sync-btn"
+                onClick={() => {
+                  void handleCheckpointSync(true);
+                }}
+                disabled={isSyncingCheckpoint || isSyncing}
+                className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+                title="Kết nối LMS lấy điểm Lý thuyết/Thực hành mới nhất thầy vừa chấm và tự động tính 9 ô [ĐNL] từ lịch sử các buổi trước"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCheckpoint ? "animate-spin" : ""}`} />
+                {isSyncingCheckpoint ? "Đang đọc KT & Tính [ĐNL]..." : "📥 Đọc điểm KT & Tính [ĐNL]"}
+              </button>
+              <button
+                type="button"
+                data-testid="checkpoint-recalc-btn"
+                onClick={() => {
+                  void handleCheckpointSync(false);
+                }}
+                disabled={isSyncingCheckpoint || isSyncing}
+                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-amber-200 border border-amber-500/40 font-semibold text-[11px] transition cursor-pointer"
+                title="Tính lại nhanh 9 ô [ĐNL] từ lịch sử trên máy (không mở lại LMS)"
+              >
+                ↻ Tính lại [ĐNL]
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -4431,6 +4610,37 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                                       ↺ Nhớ từ Buổi {student.inheritedFromSession}
                                     </span>
                                   )}
+                                  {isCurrentSessionCheckpoint && student.checkpointData && (
+                                    <div className="inline-flex flex-wrap items-center gap-1.5">
+                                      <span
+                                        data-testid={`cp-score-badge-${student.studentId}`}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-500/40"
+                                        title="Điểm Lý thuyết / Thực hành (thầy chấm trên LMS) & Trung bình 9 ô [ĐNL] Bot tính theo quá trình"
+                                      >
+                                        📊 LT:{" "}
+                                        {student.checkpointData.theoryScore !== null
+                                          ? student.checkpointData.theoryScore.toFixed(1)
+                                          : "—"}{" "}
+                                        | TH:{" "}
+                                        {student.checkpointData.practiceScore !== null
+                                          ? student.checkpointData.practiceScore.toFixed(1)
+                                          : "—"}{" "}
+                                        | ĐNL:{" "}
+                                        {student.checkpointData.competencyAverage !== null
+                                          ? student.checkpointData.competencyAverage.toFixed(2)
+                                          : "—"}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        data-testid={`edit-dnl-btn-${student.studentId}`}
+                                        onClick={() => setEditingCompetencyStudentId(student.studentId)}
+                                        className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-900 border border-sky-300 hover:bg-sky-200 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40 dark:hover:bg-sky-500/30 transition cursor-pointer"
+                                        title="Xem chi tiết quá trình và chỉnh tay 9 tiêu chí [ĐNL] (1..5 sao) trước khi đẩy LMS"
+                                      >
+                                        ⚙️ 9 ô [ĐNL]
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                                 {student.errorMessage && student.status !== "INSUFFICIENT_INFO" && (
                                   <span className="text-[11px] text-amber-300 font-medium">
@@ -4502,7 +4712,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
 
                         {isCurrentSessionCheckpoint && student.status === "APPROVED" && (
                           <p className="text-[11px] text-amber-300 font-medium leading-snug">
-                            Thầy hãy tích Điểm Năng lực trên LMS rồi bấm Đẩy lại
+                            Kiểm tra 9 ô [ĐNL] hoặc bấm Đẩy lại để Bot tự tích &amp; lưu LMS
                           </p>
                         )}
 
@@ -4574,7 +4784,39 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Các nút bật/tắt nhanh Đoạn 2 (Tình hình chung, Tiến độ SPCK) & Đoạn 3 (Ảnh + Học liệu) */}
+            {/* Các nút bật/tắt nhanh Đoạn 2 (Tổng kết Checkpoint, Tình hình chung, Tiến độ SPCK) & Đoạn 3 (Ảnh + Học liệu) */}
+            {isCurrentSessionCheckpoint && (
+              (() => {
+                const isCpZaloActive =
+                  zaloIncludeCheckpointSummary !== undefined
+                    ? zaloIncludeCheckpointSummary
+                    : true;
+                return (
+                  <button
+                    type="button"
+                    data-testid="toggle-zalo-checkpoint-btn"
+                    onClick={() => {
+                      const nextVal = !isCpZaloActive;
+                      setZaloIncludeCheckpointSummary(nextVal);
+                      setIsZaloManuallyEdited(false);
+                      setZaloBroadcastText(
+                        buildAutoZaloBroadcastText(undefined, {
+                          includeCheckpointSummary: nextVal,
+                        })
+                      );
+                    }}
+                    className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer ${
+                      isCpZaloActive
+                        ? "bg-amber-100 border-amber-400 text-amber-900 dark:bg-amber-500/20 dark:border-amber-500/50 dark:text-amber-200"
+                        : "bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200"
+                    }`}
+                    title="Bật/tắt mục Tổng kết quá trình & Checkpoint trong thông báo Zalo (chỉ nêu tổng quan & tuyên dương, không liệt kê điểm từng bạn)"
+                  >
+                    {isCpZaloActive ? "✓ Tổng kết Checkpoint" : "+ Tổng kết Checkpoint"}
+                  </button>
+                );
+              })()
+            )}
             <button
               type="button"
               onClick={() => {
@@ -4732,6 +4974,132 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
           />
         </div>
       </div>
+
+      {/* Checkpoint 9-[ĐNL] Process & Competency Inspector Modal */}
+      {(() => {
+        if (!editingCompetencyStudentId) return null;
+        const targetStudent = students.find((s) => s.studentId === editingCompetencyStudentId);
+        const cp = targetStudent?.checkpointData;
+        if (!targetStudent || !cp) return null;
+        const compScores = safeParseCompScoresUi(cp.competencyScores || {});
+        const proc = cp.processSummary;
+
+        return (
+          <div
+            data-testid="checkpoint-dnl-modal"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4"
+            onClick={() => setEditingCompetencyStudentId(null)}
+          >
+            <div
+              className="w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-2xl p-5 space-y-4 text-slate-900 dark:text-slate-100 max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Bảng 9 ô Điểm Năng lực [ĐNL] — {targetStudent.fullName}
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                    Checkpoint {cp.cpStage} • Bot tự tính từ quá trình nhiều buổi &amp; tự tích lên LMS khi đẩy (không sửa điểm KT).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingCompetencyStudentId(null)}
+                  className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold cursor-pointer"
+                >
+                  Đóng ✕
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                  <div className="text-slate-600 dark:text-slate-400">Lý thuyết (LMS)</div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                    {cp.theoryScore !== null ? `${cp.theoryScore.toFixed(1)} / 5.0` : "Chưa chấm"}
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                  <div className="text-slate-600 dark:text-slate-400">Thực hành (LMS)</div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                    {cp.practiceScore !== null ? `${cp.practiceScore.toFixed(1)} / 5.0` : "Chưa chấm"}
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/40">
+                  <div className="text-amber-800 dark:text-amber-300">TB 9 ô [ĐNL]</div>
+                  <div className="text-sm font-bold text-amber-900 dark:text-amber-200 mt-0.5">
+                    {safeCalcCompAvgUi(compScores).toFixed(2)} / 5.0
+                  </div>
+                </div>
+              </div>
+
+              {proc && (
+                <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-xs space-y-1">
+                  <div className="font-semibold text-slate-800 dark:text-slate-200">
+                    📈 Dữ liệu quá trình (Buổi {proc.stageStartSession}–{proc.stageEndSession}):
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-slate-700 dark:text-slate-300">
+                    <span>Có mặt: <strong>{proc.presentCount}</strong> | Muộn: <strong>{proc.lateCount}</strong> | Vắng: <strong>{proc.absentCount}</strong></span>
+                    <span>⭐ Sao: <strong>{proc.totalStars}</strong> | 🏅 Top 3: <strong>{proc.totalMedals}</strong> | Lỗi giờ học: <strong>{proc.totalIssues}</strong></span>
+                    {proc.homeworkSummary && (
+                      <span>
+                        📝 BTVN Coding: <strong>{proc.homeworkSummary.completionRatePct}%</strong>
+                        {proc.homeworkSummary.avgScore100 !== null ? ` (TB ${proc.homeworkSummary.avgScore100}/100)` : ""}
+                      </span>
+                    )}
+                    {proc.previousCheckpoint && (
+                      <span>
+                        ⏮️ CP1 (B{proc.previousCheckpoint.sessionNumber}): LT {proc.previousCheckpoint.theoryScore ?? "—"} / TH {proc.previousCheckpoint.practiceScore ?? "—"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                {safeCompetencyAreaSpecsUi.map((spec) => {
+                  const curVal = compScores[spec.key];
+                  return (
+                    <div
+                      key={spec.key}
+                      className="flex items-center justify-between gap-3 p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60"
+                    >
+                      <span className="text-xs font-medium text-slate-800 dark:text-slate-200">
+                        {spec.domIndex + 1}. {spec.labelVi}
+                      </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {[1, 2, 3, 4, 5].map((rating) => {
+                          const active = curVal === rating;
+                          return (
+                            <button
+                              key={rating}
+                              type="button"
+                              onClick={() =>
+                                handleUpdateStudentCompetency(
+                                  targetStudent.studentId,
+                                  spec.key,
+                                  rating
+                                )
+                              }
+                              className={`w-7 h-7 rounded-md text-xs font-bold border transition cursor-pointer ${
+                                active
+                                  ? "bg-amber-600 border-amber-500 text-white shadow-sm"
+                                  : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-amber-400"
+                              }`}
+                            >
+                              {rating}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

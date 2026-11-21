@@ -1,6 +1,31 @@
 import { NextResponse } from "next/server";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { sessionFeedbackRepo, studentRepo } from "@/lib/db/sqlite";
+import {
+  calculateCompetencyAveragePure,
+  hasCompleteCompetencyScores,
+  normalizeScoreToScale5,
+  parseCheckpointDataJson,
+  parseCompetencyScoresPure,
+  resolveCheckpointStageForSession,
+} from "@/lib/checkpoint/checkpoint-competency";
+
+const safeHasCompleteCompSd =
+  typeof hasCompleteCompetencyScores === "function" ? hasCompleteCompetencyScores : () => true;
+const safeParseCpDataSd =
+  typeof parseCheckpointDataJson === "function" ? parseCheckpointDataJson : () => null;
+const safeParseCompScoresSd =
+  typeof parseCompetencyScoresPure === "function" ? parseCompetencyScoresPure : (x: any) => x;
+const safeCalcCompAvgSd =
+  typeof calculateCompetencyAveragePure === "function" ? calculateCompetencyAveragePure : () => 4;
+const safeNormalizeScoreSd =
+  typeof normalizeScoreToScale5 === "function"
+    ? normalizeScoreToScale5
+    : (v: any) => (v === null || v === undefined || v === "" ? null : Number(v));
+const safeResolveCpStageSd =
+  typeof resolveCheckpointStageForSession === "function"
+    ? resolveCheckpointStageForSession
+    : () => ({ isCheckpoint: false, isRobotics: false, cpStage: null });
 
 interface FieldVersionEntry {
   ver: number;
@@ -90,6 +115,7 @@ function saveSingleDraftItem(params: {
     actionPlan,
     finalText,
     status,
+    checkpointData,
   } = item || {};
 
   const classId = typeof rawClassId === "string" ? rawClassId.trim().toUpperCase() : "";
@@ -211,6 +237,70 @@ function saveSingleDraftItem(params: {
           error: `Trường 'quickTags' của học viên '${studentId}' phải là mảng chuỗi ký tự hợp lệ.`,
         },
       };
+    }
+  }
+
+  if (checkpointData !== undefined && checkpointData !== null) {
+    if (typeof checkpointData !== "object" || Array.isArray(checkpointData)) {
+      return {
+        statusHttp: 400,
+        studentId,
+        body: {
+          success: false,
+          studentId,
+          error: `Trường 'checkpointData' của học viên '${studentId}' không hợp lệ.`,
+        },
+      };
+    }
+    if (
+      checkpointData.competencyScores !== undefined &&
+      checkpointData.competencyScores !== null &&
+      !safeHasCompleteCompSd(checkpointData.competencyScores)
+    ) {
+      return {
+        statusHttp: 400,
+        studentId,
+        body: {
+          success: false,
+          studentId,
+          error: `Bảng điểm [ĐNL] của học viên '${studentId}' phải đủ 9 tiêu chí với giá trị nguyên từ 1 đến 5.`,
+        },
+      };
+    }
+    if (
+      checkpointData.cpStage !== undefined &&
+      checkpointData.cpStage !== null &&
+      checkpointData.cpStage !== 1 &&
+      checkpointData.cpStage !== 2
+    ) {
+      return {
+        statusHttp: 400,
+        studentId,
+        body: {
+          success: false,
+          studentId,
+          error: `Trường 'cpStage' của học viên '${studentId}' không hợp lệ (chỉ nhận 1 hoặc 2).`,
+        },
+      };
+    }
+    for (const [scoreKey, scoreVal] of [
+      ["theoryScore", checkpointData.theoryScore],
+      ["practiceScore", checkpointData.practiceScore],
+    ] as const) {
+      if (scoreVal !== undefined && scoreVal !== null && scoreVal !== "") {
+        const parsedScore = safeNormalizeScoreSd(scoreVal);
+        if (parsedScore === null || parsedScore < 0 || parsedScore > 5) {
+          return {
+            statusHttp: 400,
+            studentId,
+            body: {
+              success: false,
+              studentId,
+              error: `Điểm '${scoreKey}' của học viên '${studentId}' không hợp lệ.`,
+            },
+          };
+        }
+      }
     }
   }
 
@@ -356,6 +446,7 @@ function saveSingleDraftItem(params: {
   const freshImprovements = isFieldFresh("improvements", improvements);
   const freshActionPlan = isFieldFresh("actionPlan", actionPlan);
   const freshFinalText = isFieldFresh("finalText", finalText);
+  const freshCheckpointData = isFieldFresh("checkpointData", checkpointData);
 
   if (
     (clientRev > 0 || baseRowVer !== null || Object.keys(fieldBaseMap).length > 0) &&
@@ -380,6 +471,56 @@ function saveSingleDraftItem(params: {
 
   meta.rowVer = (meta.rowVer || 0) + 1;
   fallbackMetaByRow.set(rowScopeKey, meta);
+
+  let nextCheckpointDataJson: string | undefined = existing?.checkpointDataJson;
+  if (freshCheckpointData && checkpointData && typeof checkpointData === "object") {
+    const existingCp = safeParseCpDataSd(existing?.checkpointDataJson);
+    const sessMatch = sessionId.match(/(?:^|[_-])SESS(?:ION)?[_-]?0*(\d+)$/i);
+    const inferredStage = sessMatch
+      ? safeResolveCpStageSd(classId, Number(sessMatch[1])).cpStage
+      : null;
+    const resolvedStage =
+      checkpointData.cpStage === 1 || checkpointData.cpStage === 2
+        ? checkpointData.cpStage
+        : existingCp?.cpStage ?? inferredStage ?? 1;
+    const nextCompScores = checkpointData.competencyScores
+      ? safeParseCompScoresSd(checkpointData.competencyScores)
+      : existingCp?.competencyScores ?? null;
+    const nextCompAvg = nextCompScores
+      ? safeCalcCompAvgSd(nextCompScores)
+      : existingCp?.competencyAverage ?? null;
+    const mergedDraftCp = {
+      ...(existingCp || {}),
+      ...checkpointData,
+      cpStage: resolvedStage,
+      theoryScore:
+        checkpointData.theoryScore !== undefined
+          ? safeNormalizeScoreSd(checkpointData.theoryScore)
+          : existingCp?.theoryScore ?? null,
+      practiceScore:
+        checkpointData.practiceScore !== undefined
+          ? safeNormalizeScoreSd(checkpointData.practiceScore)
+          : existingCp?.practiceScore ?? null,
+      competencyScores: nextCompScores,
+      competencyAverage: nextCompAvg,
+      lmsCompetencyScores:
+        checkpointData.lmsCompetencyScores || existingCp?.lmsCompetencyScores || null,
+      processSummary: checkpointData.processSummary || existingCp?.processSummary || null,
+      lmsSyncedAt: checkpointData.lmsSyncedAt || existingCp?.lmsSyncedAt || null,
+      computedAt: checkpointData.computedAt || existingCp?.computedAt || null,
+      userEditedCompetency:
+        checkpointData.userEditedCompetency !== undefined
+          ? Boolean(checkpointData.userEditedCompetency)
+          : checkpointData.competencyScores
+          ? true
+          : existingCp?.userEditedCompetency ?? false,
+      source:
+        checkpointData.source ||
+        (checkpointData.competencyScores ? "MANUAL_UI" : existingCp?.source || "AUTO_PROCESS"),
+    };
+    const canonicalDraftCp = safeParseCpDataSd(JSON.stringify(mergedDraftCp)) || mergedDraftCp;
+    nextCheckpointDataJson = JSON.stringify(canonicalDraftCp);
+  }
 
   sessionFeedbackRepo.upsert({
     classId,
@@ -410,6 +551,7 @@ function saveSingleDraftItem(params: {
       : existing?.finalText ?? "",
     status: effectiveStatus as any,
     versionMetaJson: JSON.stringify(meta),
+    checkpointDataJson: nextCheckpointDataJson,
   });
 
   return {

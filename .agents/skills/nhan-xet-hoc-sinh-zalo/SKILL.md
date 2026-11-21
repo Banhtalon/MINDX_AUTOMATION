@@ -81,6 +81,9 @@ Bao gồm các mục ngắn gọn, đủ ý theo đúng thứ tự sau:
    - Nếu tất cả học sinh trong ảnh đều đã `Submitted` đầy đủ, thay câu nhắc nhở danh sách chưa làm bằng lời khen ngắn gọn cả lớp đã hoàn thành 100% BTVN.
 3. **c. Tiến độ sản phẩm cuối khóa (`🚀 TIẾN ĐỘ SẢN PHẨM CUỐI KHÓA (SPCK)` - tự động ở Buổi 11–14):**
    - Cập nhật tiến độ làm dự án cuối khóa của lớp (lên ý tưởng ở Buổi 11, hoàn thiện GĐ1 ở Buổi 12, hoàn thiện GĐ2 & chuẩn bị thuyết trình ở Buổi 13, tổng kết bảo vệ dự án ở Buổi 14).
+4. **d. Tổng kết quá trình & Checkpoint (`🎯 ĐÁNH GIÁ QUÁ TRÌNH & TỔNG KẾT CHECKPOINT [1/2]:` - tự động ở Buổi 4 & 8 Robotics; Buổi 5 & 9 Lập trình `v3.7.0`):**
+   - Nhận xét tổng quan tình hình học tập của lớp qua cả chặng và kết quả Checkpoint (chỉ thống kê trên nhóm học viên có điểm kiểm tra thực tế), kết hợp tuyên dương tên rút gọn (**Tên đệm + Tên**, khử trùng lặp) các học viên nổi bật hoặc tiến bộ đạt ngưỡng điểm kiểm tra (`LT/TH >= 3.5` và ngưỡng chung `>= 4.0`, tuyệt đối không tuyên dương học viên `ABSENT`/`EXCUSED` hay điểm thấp dù có huy hiệu cũ).
+   - **CẤM TUYỆT ĐỐI** liệt kê điểm số cá nhân (LT/TH/ĐNL) của từng học sinh lên nhóm Zalo phụ huynh.
 
 #### ĐOẠN 3: Gửi Hình Ảnh & Tài Liệu / Học Liệu (`📸 HÌNH ẢNH & TÀI LIỆU BUỔI HỌC` - tùy chọn)
 

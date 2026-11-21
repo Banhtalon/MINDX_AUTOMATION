@@ -1,3 +1,16 @@
+import {
+  buildCheckpointZaloSummaryBlock,
+  resolveCheckpointStageForSession,
+  type CheckpointStudentData,
+} from "../checkpoint/checkpoint-competency";
+
+const safeResolveCheckpointStageZalo =
+  typeof resolveCheckpointStageForSession === "function"
+    ? resolveCheckpointStageForSession
+    : () => ({ isCheckpoint: false, isRobotics: false, cpStage: null });
+const safeBuildCheckpointZaloBlock =
+  typeof buildCheckpointZaloSummaryBlock === "function" ? buildCheckpointZaloSummaryBlock : null;
+
 export interface ZaloSessionItemInput {
   sessionId: string;
   sessionNumber: number;
@@ -13,6 +26,7 @@ export interface ZaloStudentItemInput {
   attendanceStatus?: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED" | "UNKNOWN" | string;
   quickTags?: string[];
   teacherNote?: string;
+  checkpointData?: CheckpointStudentData | null;
 }
 
 export interface ZaloSyllabusSessionInput {
@@ -46,6 +60,9 @@ export interface BuildAutoZaloBroadcastParams {
   homeworkDeadlineOverride?: string;
   syllabusList?: ZaloSyllabusCourseInput[];
   part2Text?: string;
+  /** Bật/tắt mục Tổng kết quá trình & Checkpoint (Mặc định tự động bật ở B4/B8 Robotics và B5/B9 Coding; không liệt kê điểm từng bạn) */
+  includeCheckpointSummary?: boolean;
+  checkpointSummaryOverride?: string;
   /** Bật/tắt mục 2c: Tiến độ sản phẩm cuối khóa (Mặc định tự động bật khi buổi >= 11) */
   includeSpckProgress?: boolean;
   spckProgressOverride?: string;
@@ -442,9 +459,25 @@ export function buildAutoZaloBroadcastText(params: BuildAutoZaloBroadcastParams)
       : currentSyllabusSess?.homeworkBrief || "";
 
   const isRobotics = isRoboticsClassForZalo(upperCode);
+  const cpStageInfo = safeResolveCheckpointStageZalo(upperCode, sessionNum);
 
   // Xây dựng các mục của Đoạn 2 (nếu có) và Đoạn 3 (nếu bật)
   const section2Blocks: string[] = [];
+  const shouldIncludeCheckpointSummary =
+    params.includeCheckpointSummary !== undefined
+      ? Boolean(params.includeCheckpointSummary)
+      : cpStageInfo.isCheckpoint;
+  if (shouldIncludeCheckpointSummary && cpStageInfo.cpStage && safeBuildCheckpointZaloBlock) {
+    const customCp = String(params.checkpointSummaryOverride || "").trim();
+    section2Blocks.push(
+      customCp ||
+        safeBuildCheckpointZaloBlock({
+          cpStage: cpStageInfo.cpStage,
+          isRobotics,
+          students,
+        })
+    );
+  }
   if (params.includeGeneralUpdate) {
     section2Blocks.push(
       buildGeneralClassUpdateSection(students, sessionNum, params.generalUpdateOverride)

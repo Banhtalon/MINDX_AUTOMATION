@@ -32,9 +32,10 @@ Kỹ năng này giúp soạn thảo các mẫu nhận xét tình hình học t�
   6. `🧩 Lập trình cần hỗ trợ` (`role: "improve"`)
   7. `👀 Cần nhắc tập trung` (`role: "distracted"`)
 
-- **Quy tắc Buổi Kiểm tra / Checkpoint (Lập trình: Buổi 5 & 9; Robotics: Buổi 4 & 8):**
-  - Nhận xét văn bản vẫn giữ nguyên cấu trúc 3 gạch đầu dòng chuẩn mực bên dưới.
-  - Khi đẩy lên LMS, Bot **chỉ điền duy nhất ô `"Đánh giá chung *"` (`.ql-editor`)** và **tuyệt đối không tự động tích chọn hay sửa đổi các ô Điểm Năng lực `[ĐNL]`, nhận xét năng lực hoặc Điểm kiểm tra/thực hành** (việc tích ô năng lực và điểm kiểm tra do giáo viên tự thực hiện trên LMS).
+- **Quy tắc Buổi Kiểm tra / Checkpoint (Lập trình: Buổi 5 & 9; Robotics: Buổi 4 & 8 — `v3.7.0`):**
+  - Giáo viên vẫn trực tiếp chấm điểm Lý thuyết (LT) và Thực hành (TH) (thang `0..5.0`) trên MindX LMS. Bot tự động tổng hợp dữ liệu quá trình của từng giai đoạn (`prior session_feedbacks`, Sao/Huy hiệu/Lỗi từ `classroom_session_logs`, BTVN từ `score_matrix_cache`/`class_report_cards` đối với lớp Lập trình — tự bỏ qua sạch cho lớp Robotics, và điểm LT/TH trên LMS) để tự tính đủ `9` tiêu chí Điểm Năng lực `[ĐNL]` (`1..5`).
+  - Nhận xét văn bản vẫn giữ nguyên cấu trúc 3 gạch đầu dòng chuẩn mực bên dưới (lồng ghép đánh giá quá trình học tập của chặng + nhận định điểm LT/TH/9 `[ĐNL]` vào nhận xét buổi kiểm tra), và TypeScript tự gắn thêm **1 dòng điểm tổng kết Checkpoint riêng** ở đầu ô nhận xét (`📊 **Kết quả Checkpoint [1/2]:** Lý thuyết **X.X/5.0** | Thực hành **Y.Y/5.0** | Điểm năng lực **Z.ZZ/5.0**`).
+  - Khi đẩy lên LMS, Bot **CHỈ điền ô `"Đánh giá chung *"` (`.ql-editor`) và tự tích đúng `9` nhóm radio `[ĐNL]` (`1..5`)** kèm đối chiếu `Read-after-Write` (`DOM` + GraphQL); **tuyệt đối không chạm, click hay sửa đổi các ô số Điểm LT/TH (`<input type="number">`), các radio/checkbox câu hỏi bài kiểm tra, hay các ô `<textarea>` nhận xét năng lực**.
 
 ## Quy Trình Thực Hiện
 

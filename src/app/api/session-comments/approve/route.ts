@@ -1,6 +1,36 @@
 import { NextResponse } from "next/server";
 import { validateLocalRequest } from "@/lib/security/local-guard";
-import { sessionFeedbackRepo, studentRepo, calculateSha256 } from "@/lib/db/sqlite";
+import {
+  sessionFeedbackRepo,
+  studentRepo,
+  calculateSha256,
+  extractCheckpointCoreSnapshotHash,
+} from "@/lib/db/sqlite";
+import {
+  calculateCompetencyAveragePure,
+  hasCompleteCompetencyScores,
+  normalizeScoreToScale5,
+  parseCheckpointDataJson,
+  parseCompetencyScoresPure,
+  resolveCheckpointStageForSession,
+} from "@/lib/checkpoint/checkpoint-competency";
+
+const safeHasCompleteCompAp =
+  typeof hasCompleteCompetencyScores === "function" ? hasCompleteCompetencyScores : () => true;
+const safeParseCpDataAp =
+  typeof parseCheckpointDataJson === "function" ? parseCheckpointDataJson : () => null;
+const safeParseCompScoresAp =
+  typeof parseCompetencyScoresPure === "function" ? parseCompetencyScoresPure : (x: any) => x;
+const safeCalcCompAvgAp =
+  typeof calculateCompetencyAveragePure === "function" ? calculateCompetencyAveragePure : () => 4;
+const safeNormalizeScoreAp =
+  typeof normalizeScoreToScale5 === "function"
+    ? normalizeScoreToScale5
+    : (v: any) => (v === null || v === undefined || v === "" ? null : Number(v));
+const safeResolveCpStageAp =
+  typeof resolveCheckpointStageForSession === "function"
+    ? resolveCheckpointStageForSession
+    : () => ({ isCheckpoint: false, isRobotics: false, cpStage: null });
 
 function approveSingleItem(params: {
   defaultClassId: string;
@@ -29,6 +59,7 @@ function approveSingleItem(params: {
   const approvedText = item?.approvedText ?? item?.finalText;
   const rawAttendanceStatus = item?.attendanceStatus;
   const rawStatus = item?.status ? String(item.status).trim().toUpperCase() : "";
+  const rawCheckpointData = item?.checkpointData;
 
   const classId = typeof rawClassId === "string" ? rawClassId.trim().toUpperCase() : "";
   const sessionId = typeof rawSessionId === "string" ? rawSessionId.trim() : "";
@@ -149,6 +180,142 @@ function approveSingleItem(params: {
 
   const contentHash = calculateSha256(textToApprove);
 
+  let nextCheckpointDataJson: string | undefined = existing?.checkpointDataJson;
+  if (rawCheckpointData !== undefined && rawCheckpointData !== null) {
+    if (typeof rawCheckpointData !== "object" || Array.isArray(rawCheckpointData)) {
+      return {
+        statusHttp: 400,
+        studentId,
+        body: {
+          success: false,
+          studentId,
+          error: `Trường 'checkpointData' của học viên '${studentId}' không hợp lệ.`,
+        },
+      };
+    }
+    if (
+      rawCheckpointData.competencyScores !== undefined &&
+      rawCheckpointData.competencyScores !== null &&
+      !safeHasCompleteCompAp(rawCheckpointData.competencyScores)
+    ) {
+      return {
+        statusHttp: 400,
+        studentId,
+        body: {
+          success: false,
+          studentId,
+          error: `Bảng điểm [ĐNL] của học viên '${studentId}' phải đủ 9 tiêu chí từ 1 đến 5.`,
+        },
+      };
+    }
+    for (const [scoreKey, scoreVal] of [
+      ["theoryScore", rawCheckpointData.theoryScore],
+      ["practiceScore", rawCheckpointData.practiceScore],
+    ] as const) {
+      if (scoreVal !== undefined && scoreVal !== null && scoreVal !== "") {
+        const parsedScore = safeNormalizeScoreAp(scoreVal);
+        if (parsedScore === null || parsedScore < 0 || parsedScore > 5) {
+          return {
+            statusHttp: 400,
+            studentId,
+            body: {
+              success: false,
+              studentId,
+              error: `Điểm '${scoreKey}' của học viên '${studentId}' không hợp lệ.`,
+            },
+          };
+        }
+      }
+    }
+
+    const existingCp = safeParseCpDataAp(existing?.checkpointDataJson);
+    const sessMatch = sessionId.match(/(?:^|[_-])SESS(?:ION)?[_-]?0*(\d+)$/i);
+    const inferredStage = sessMatch
+      ? safeResolveCpStageAp(classId, Number(sessMatch[1])).cpStage
+      : null;
+    const resolvedStage =
+      rawCheckpointData.cpStage === 1 || rawCheckpointData.cpStage === 2
+        ? rawCheckpointData.cpStage
+        : existingCp?.cpStage ?? inferredStage;
+    if (
+      rawCheckpointData.cpStage !== undefined &&
+      rawCheckpointData.cpStage !== null &&
+      rawCheckpointData.cpStage !== 1 &&
+      rawCheckpointData.cpStage !== 2
+    ) {
+      return {
+        statusHttp: 400,
+        studentId,
+        body: {
+          success: false,
+          studentId,
+          error: `Trường 'cpStage' của học viên '${studentId}' không hợp lệ (chỉ nhận 1 hoặc 2).`,
+        },
+      };
+    }
+    if (!resolvedStage) {
+      return {
+        statusHttp: 400,
+        studentId,
+        body: {
+          success: false,
+          studentId,
+          error: `Thiếu 'cpStage' hợp lệ (1 hoặc 2) cho dữ liệu Checkpoint của học viên '${studentId}'.`,
+        },
+      };
+    }
+
+    const nextCompScores = rawCheckpointData.competencyScores
+      ? safeParseCompScoresAp(rawCheckpointData.competencyScores)
+      : existingCp?.competencyScores ?? null;
+    const nextCompAvg = nextCompScores
+      ? safeCalcCompAvgAp(nextCompScores)
+      : existingCp?.competencyAverage ?? null;
+    const nextTheoryScore =
+      rawCheckpointData.theoryScore !== undefined
+        ? safeNormalizeScoreAp(rawCheckpointData.theoryScore)
+        : existingCp?.theoryScore ?? null;
+    const nextPracticeScore =
+      rawCheckpointData.practiceScore !== undefined
+        ? safeNormalizeScoreAp(rawCheckpointData.practiceScore)
+        : existingCp?.practiceScore ?? null;
+    const mergedRaw = {
+      ...(existingCp || {}),
+      ...rawCheckpointData,
+      cpStage: resolvedStage,
+      theoryScore: nextTheoryScore,
+      practiceScore: nextPracticeScore,
+      competencyScores: nextCompScores,
+      competencyAverage: nextCompAvg,
+      lmsCompetencyScores:
+        rawCheckpointData.lmsCompetencyScores || existingCp?.lmsCompetencyScores || null,
+      processSummary: rawCheckpointData.processSummary || existingCp?.processSummary || null,
+      lmsSyncedAt: rawCheckpointData.lmsSyncedAt || existingCp?.lmsSyncedAt || null,
+      computedAt: rawCheckpointData.computedAt || existingCp?.computedAt || null,
+    };
+    const canonicalCp = safeParseCpDataAp(JSON.stringify(mergedRaw)) || mergedRaw;
+    const draftCpJson = JSON.stringify(canonicalCp);
+    nextCheckpointDataJson = JSON.stringify({
+      ...canonicalCp,
+      approvedSnapshotHash:
+        typeof extractCheckpointCoreSnapshotHash === "function"
+          ? extractCheckpointCoreSnapshotHash(draftCpJson)
+          : calculateSha256(draftCpJson),
+    });
+  } else if (existing?.checkpointDataJson && existing.checkpointDataJson !== "{}") {
+    const existingCp = safeParseCpDataAp(existing.checkpointDataJson);
+    if (existingCp) {
+      const normalizedJson = JSON.stringify(existingCp);
+      nextCheckpointDataJson = JSON.stringify({
+        ...existingCp,
+        approvedSnapshotHash:
+          typeof extractCheckpointCoreSnapshotHash === "function"
+            ? extractCheckpointCoreSnapshotHash(normalizedJson)
+            : calculateSha256(normalizedJson),
+      });
+    }
+  }
+
   const clientInstanceId =
     typeof item?.clientInstanceId === "string" && item.clientInstanceId.trim()
       ? item.clientInstanceId.trim()
@@ -178,6 +345,7 @@ function approveSingleItem(params: {
       attendanceStatus: effectiveAttendance,
       finalText: textToApprove,
       contentHash,
+      checkpointDataJson: nextCheckpointDataJson,
       expectedRowVer,
       clientInstanceId,
       clientRev,
@@ -252,6 +420,7 @@ function approveSingleItem(params: {
     actionPlan: existing?.actionPlan,
     finalText: textToApprove,
     contentHash,
+    checkpointDataJson: nextCheckpointDataJson,
     status: "APPROVED",
   });
 

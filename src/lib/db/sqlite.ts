@@ -121,6 +121,7 @@ function initSchema(db: Database.Database) {
       verifiedAt TEXT DEFAULT NULL,
       errorMessage TEXT DEFAULT NULL,
       versionMetaJson TEXT DEFAULT '{}',
+      checkpointDataJson TEXT DEFAULT '{}',
       createdAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       UNIQUE(classId, sessionId, studentId)
@@ -432,6 +433,9 @@ function initSchema(db: Database.Database) {
     if (cols.length > 0 && !cols.some((c) => c.name === "versionMetaJson")) {
       db.exec(`ALTER TABLE session_feedbacks ADD COLUMN versionMetaJson TEXT DEFAULT '{}'`);
     }
+    if (cols.length > 0 && !cols.some((c) => c.name === "checkpointDataJson")) {
+      db.exec(`ALTER TABLE session_feedbacks ADD COLUMN checkpointDataJson TEXT DEFAULT '{}'`);
+    }
   } catch {}
 
   try {
@@ -652,6 +656,76 @@ export interface SessionFeedbackRecord {
   verifiedAt?: string | null;
   errorMessage?: string | null;
   versionMetaJson?: string;
+  checkpointDataJson?: string;
+}
+
+function extractCheckpointCoreFields(raw?: string | null): {
+  cpStage: 1 | 2 | null;
+  theoryScore: number | null;
+  practiceScore: number | null;
+  competencyScores: Record<string, number> | null;
+} | null {
+  if (!raw || typeof raw !== "string") return null;
+  try {
+    const p = JSON.parse(raw);
+    if (!p || typeof p !== "object" || Array.isArray(p)) return null;
+    const cpStage = p.cpStage === 2 ? 2 : p.cpStage === 1 ? 1 : null;
+    const normScore = (v: unknown): number | null => {
+      if (v === null || v === undefined || v === "") return null;
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 0) return null;
+      const scaled = n > 10 && n <= 100 ? n / 20 : n > 5 && n <= 10 ? n / 2 : n;
+      if (scaled > 5) return null;
+      return Math.round(Math.max(0, Math.min(5, scaled)) * 10) / 10;
+    };
+    const theoryScore = normScore(p.theoryScore);
+    const practiceScore = normScore(p.practiceScore);
+    let competencyScores: Record<string, number> | null = null;
+    if (
+      p.competencyScores &&
+      typeof p.competencyScores === "object" &&
+      !Array.isArray(p.competencyScores)
+    ) {
+      const canonicalComp: Record<string, number> = {};
+      let allValid = true;
+      for (const k of SESSION14_COMPETENCY_KEYS) {
+        const val = Number((p.competencyScores as Record<string, unknown>)[k]);
+        if (!Number.isInteger(val) || val < 1 || val > 5) {
+          allValid = false;
+          break;
+        }
+        canonicalComp[k] = val;
+      }
+      if (allValid) competencyScores = canonicalComp;
+    }
+    if (
+      cpStage === null &&
+      theoryScore === null &&
+      practiceScore === null &&
+      competencyScores === null
+    ) {
+      return null;
+    }
+    return { cpStage, theoryScore, practiceScore, competencyScores };
+  } catch {
+    return null;
+  }
+}
+
+export function extractCheckpointCoreSnapshotHash(raw?: string | null): string {
+  const core = extractCheckpointCoreFields(raw);
+  if (!core) return "";
+  return calculateSha256(JSON.stringify(core));
+}
+
+function extractApprovedSnapshotHashField(raw?: string | null): string {
+  if (!raw || typeof raw !== "string") return "";
+  try {
+    const p = JSON.parse(raw);
+    return typeof p?.approvedSnapshotHash === "string" ? p.approvedSnapshotHash : "";
+  } catch {
+    return "";
+  }
 }
 
 export const sessionFeedbackRepo = {
@@ -661,7 +735,7 @@ export const sessionFeedbackRepo = {
     // Check for content modification on previously APPROVED / VERIFIED records
     const existing = db
       .prepare(
-        `SELECT status, contentHash, finalText, attendanceStatus, versionMetaJson FROM session_feedbacks WHERE classId = ? AND sessionId = ? AND studentId = ?`
+        `SELECT status, contentHash, finalText, attendanceStatus, versionMetaJson, checkpointDataJson FROM session_feedbacks WHERE classId = ? AND sessionId = ? AND studentId = ?`
       )
       .get(record.classId, record.sessionId, record.studentId) as
       | {
@@ -670,19 +744,35 @@ export const sessionFeedbackRepo = {
           finalText: string;
           attendanceStatus: string;
           versionMetaJson?: string;
+          checkpointDataJson?: string;
         }
       | undefined;
 
     let targetStatus = record.status || "DRAFT";
     let targetHash = record.contentHash ?? "";
+    const targetCheckpointDataJson =
+      record.checkpointDataJson !== undefined
+        ? record.checkpointDataJson
+        : existing?.checkpointDataJson ?? "{}";
 
     if (existing) {
       const textChanged = (record.finalText ?? "") !== existing.finalText;
-      if (textChanged) {
+      const prevCoreHash = extractCheckpointCoreSnapshotHash(existing.checkpointDataJson);
+      const nextCoreHash = extractCheckpointCoreSnapshotHash(targetCheckpointDataJson);
+      const cpChanged = record.checkpointDataJson !== undefined && nextCoreHash !== prevCoreHash;
+      if (textChanged || cpChanged) {
         const newHash = calculateSha256(record.finalText ?? "");
-        // If text was modified after approval, demote back to DRAFT unless explicitly re-approved with new hash
+        // If text or checkpoint scores/competency were modified after approval, demote back to DRAFT unless explicitly re-approved with new hashes
         if (targetStatus === "APPROVED" || targetStatus === "VERIFIED") {
-          if (record.contentHash !== newHash) {
+          const nextApprovedSnap = extractApprovedSnapshotHashField(targetCheckpointDataJson);
+          const prevApprovedSnap = extractApprovedSnapshotHashField(existing.checkpointDataJson);
+          const isExplicitCheckpointReapproval =
+            record.status === "APPROVED" &&
+            record.contentHash === newHash &&
+            (!nextCoreHash ||
+              (nextApprovedSnap === nextCoreHash &&
+                (nextApprovedSnap !== prevApprovedSnap || !cpChanged)));
+          if (record.contentHash !== newHash || (cpChanged && !isExplicitCheckpointReapproval)) {
             targetStatus = "DRAFT";
             targetHash = newHash;
           }
@@ -703,12 +793,12 @@ export const sessionFeedbackRepo = {
       INSERT INTO session_feedbacks (
         classId, sessionId, studentId, attendanceStatus,
         quickTagsJson, teacherNote, strengths, improvements, actionPlan,
-        finalText, contentHash, status, verifiedAt, errorMessage, versionMetaJson, updatedAt
+        finalText, contentHash, status, verifiedAt, errorMessage, versionMetaJson, checkpointDataJson, updatedAt
       )
       VALUES (
         @classId, @sessionId, @studentId, @attendanceStatus,
         @quickTagsJson, @teacherNote, @strengths, @improvements, @actionPlan,
-        @finalText, @contentHash, @status, @verifiedAt, @errorMessage, @versionMetaJson, datetime('now', 'localtime')
+        @finalText, @contentHash, @status, @verifiedAt, @errorMessage, @versionMetaJson, @checkpointDataJson, datetime('now', 'localtime')
       )
       ON CONFLICT(classId, sessionId, studentId) DO UPDATE SET
         attendanceStatus = excluded.attendanceStatus,
@@ -723,6 +813,7 @@ export const sessionFeedbackRepo = {
         verifiedAt = excluded.verifiedAt,
         errorMessage = excluded.errorMessage,
         versionMetaJson = excluded.versionMetaJson,
+        checkpointDataJson = excluded.checkpointDataJson,
         updatedAt = datetime('now', 'localtime')
     `);
     return stmt.run({
@@ -741,6 +832,7 @@ export const sessionFeedbackRepo = {
       verifiedAt: record.verifiedAt ?? null,
       errorMessage: record.errorMessage ?? null,
       versionMetaJson: targetVersionMetaJson,
+      checkpointDataJson: targetCheckpointDataJson,
     });
   },
 
@@ -751,6 +843,7 @@ export const sessionFeedbackRepo = {
     attendanceStatus: "PRESENT" | "LATE";
     finalText: string;
     contentHash: string;
+    checkpointDataJson?: string;
     expectedRowVer?: number | null;
     clientInstanceId?: string;
     clientRev?: number;
@@ -759,7 +852,7 @@ export const sessionFeedbackRepo = {
     const runTx = () => {
       const existing = db
         .prepare(
-          `SELECT status, contentHash, finalText, attendanceStatus, quickTagsJson, teacherNote, strengths, improvements, actionPlan, versionMetaJson
+          `SELECT status, contentHash, finalText, attendanceStatus, quickTagsJson, teacherNote, strengths, improvements, actionPlan, versionMetaJson, checkpointDataJson
            FROM session_feedbacks
            WHERE classId = ? AND sessionId = ? AND studentId = ?`
         )
@@ -802,6 +895,37 @@ export const sessionFeedbackRepo = {
         ) {
           return { approved: false, conflict: true, reason: "FINAL_TEXT_DRIFT", versionMeta: meta };
         }
+        const existingCore = extractCheckpointCoreFields(existing.checkpointDataJson);
+        const incomingCore =
+          params.checkpointDataJson !== undefined
+            ? extractCheckpointCoreFields(params.checkpointDataJson)
+            : existingCore;
+        const existingCpCoreHash = existingCore ? calculateSha256(JSON.stringify(existingCore)) : "";
+        const incomingCpCoreHash = incomingCore ? calculateSha256(JSON.stringify(incomingCore)) : "";
+        // Allow lazy first-time enrichment of computed 9 [ĐNL] scores when regular LMS sync only stored LT/TH (competencyScores === null)
+        const isFirstTimeCompetencyEnrichment = Boolean(
+          existingCore &&
+            incomingCore &&
+            existingCore.competencyScores === null &&
+            incomingCore.competencyScores !== null &&
+            existingCore.cpStage === incomingCore.cpStage &&
+            existingCore.theoryScore === incomingCore.theoryScore &&
+            existingCore.practiceScore === incomingCore.practiceScore
+        );
+        if (
+          params.checkpointDataJson !== undefined &&
+          existingCpCoreHash &&
+          (hasExpectedRowVer || hasClientCid || hasClientRev) &&
+          existingCpCoreHash !== incomingCpCoreHash &&
+          !isFirstTimeCompetencyEnrichment
+        ) {
+          return {
+            approved: false,
+            conflict: true,
+            reason: "CHECKPOINT_DATA_DRIFT",
+            versionMeta: meta,
+          };
+        }
       }
 
       const nextMeta: FeedbackVersionMeta = {
@@ -810,6 +934,11 @@ export const sessionFeedbackRepo = {
       };
       const nextVersionMetaJson = JSON.stringify(nextMeta);
 
+      const nextCheckpointDataJson =
+        params.checkpointDataJson !== undefined
+          ? params.checkpointDataJson
+          : existing?.checkpointDataJson ?? "{}";
+
       if (existing) {
         const res = db
           .prepare(`
@@ -817,6 +946,7 @@ export const sessionFeedbackRepo = {
             SET attendanceStatus = @attendanceStatus,
                 finalText = @finalText,
                 contentHash = @contentHash,
+                checkpointDataJson = @checkpointDataJson,
                 status = 'APPROVED',
                 errorMessage = NULL,
                 versionMetaJson = @versionMetaJson,
@@ -826,6 +956,7 @@ export const sessionFeedbackRepo = {
               AND studentId = @studentId
               AND COALESCE(versionMetaJson, '') = @expectedVersionMetaJson
               AND COALESCE(finalText, '') = @expectedExistingFinalText
+              AND COALESCE(checkpointDataJson, '') = @expectedExistingCheckpointDataJson
           `)
           .run({
             classId: params.classId,
@@ -834,9 +965,11 @@ export const sessionFeedbackRepo = {
             attendanceStatus: params.attendanceStatus,
             finalText: params.finalText,
             contentHash: params.contentHash,
+            checkpointDataJson: nextCheckpointDataJson,
             versionMetaJson: nextVersionMetaJson,
             expectedVersionMetaJson: existing.versionMetaJson ?? "",
             expectedExistingFinalText: existing.finalText ?? "",
+            expectedExistingCheckpointDataJson: existing.checkpointDataJson ?? "",
           });
         if (res.changes === 0) {
           return { approved: false, conflict: true, reason: "ATOMIC_CAS_FAILED", versionMeta: meta };
@@ -846,12 +979,12 @@ export const sessionFeedbackRepo = {
           INSERT INTO session_feedbacks (
             classId, sessionId, studentId, attendanceStatus,
             quickTagsJson, teacherNote, strengths, improvements, actionPlan,
-            finalText, contentHash, status, verifiedAt, errorMessage, versionMetaJson, updatedAt
+            finalText, contentHash, status, verifiedAt, errorMessage, versionMetaJson, checkpointDataJson, updatedAt
           )
           VALUES (
             @classId, @sessionId, @studentId, @attendanceStatus,
             '[]', '', '', '', '',
-            @finalText, @contentHash, 'APPROVED', NULL, NULL, @versionMetaJson, datetime('now', 'localtime')
+            @finalText, @contentHash, 'APPROVED', NULL, NULL, @versionMetaJson, @checkpointDataJson, datetime('now', 'localtime')
           )
         `).run({
           classId: params.classId,
@@ -861,6 +994,7 @@ export const sessionFeedbackRepo = {
           finalText: params.finalText,
           contentHash: params.contentHash,
           versionMetaJson: nextVersionMetaJson,
+          checkpointDataJson: nextCheckpointDataJson,
         });
       }
 

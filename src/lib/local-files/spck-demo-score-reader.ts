@@ -52,6 +52,11 @@ import {
 } from "../spck/spck-quick-tags";
 import { normalizeVietnameseName } from "../utils/vietnamese-match";
 
+import {
+  COMPETENCY_AREA_SPECS,
+  type CompetencyAreaSpec,
+} from "../checkpoint/competency-specs";
+
 export {
   formatRawDemoScore3dp,
   type Session14AwardRankItem,
@@ -60,92 +65,13 @@ export {
 
 export const computeClassDemoAwardRankings = computeSession14AwardRankingsPure;
 
-export interface Session14CompetencyAreaSpec {
-  domIndex: number;
-  key: keyof SpckSession14CompetencyScores;
-  commentAreaId: string;
-  commentAreaSuffix: string;
-  labelVi: string;
-  keywordsNorm: string[];
-}
+export type Session14CompetencyAreaSpec = CompetencyAreaSpec;
 
 /**
  * Exact 9 `[ĐNL]` Competency Criteria ordered strictly by MindX LMS Modal Cột 2 `DOM[0..8]`.
  */
-export const SESSION14_COMPETENCY_AREA_SPECS: readonly Session14CompetencyAreaSpec[] = [
-  {
-    domIndex: 0,
-    key: "knowledgeSelfStudy",
-    commentAreaId: "665e7d33181e0e47f6c63768",
-    commentAreaSuffix: "3768",
-    labelVi: "[ĐNL] Kiến thức học viên tự học",
-    keywordsNorm: ["tu hoc"],
-  },
-  {
-    domIndex: 1,
-    key: "knowledgeInClass",
-    commentAreaId: "668d69d8e71f90e7630ce16c",
-    commentAreaSuffix: "e16c",
-    labelVi: "[ĐNL] Kiến thức học viên đã được học tại lớp",
-    keywordsNorm: ["da duoc hoc tai lop", "hoc tai lop"],
-  },
-  {
-    domIndex: 2,
-    key: "skillCommunication",
-    commentAreaId: "668e2e7de71f90e7630d4316",
-    commentAreaSuffix: "4316",
-    labelVi: "[ĐNL] Kỹ năng giao tiếp, hợp tác",
-    keywordsNorm: ["giao tiep"],
-  },
-  {
-    domIndex: 3,
-    key: "skillComputerUse",
-    commentAreaId: "668e2ce1e71f90e7630d406f",
-    commentAreaSuffix: "406f",
-    labelVi: "[ĐNL] Kỹ năng sử dụng máy tính",
-    keywordsNorm: ["su dung may tinh"],
-  },
-  {
-    domIndex: 4,
-    key: "skillProblemSolving",
-    commentAreaId: "668e0f48e71f90e7630d2db6",
-    commentAreaSuffix: "2db6",
-    labelVi: "[ĐNL] Kỹ năng giải quyết vấn đề",
-    keywordsNorm: ["giai quyet van de"],
-  },
-  {
-    domIndex: 5,
-    key: "skillCreativity",
-    commentAreaId: "668d6a69e71f90e7630ce198",
-    commentAreaSuffix: "e198",
-    labelVi: "[ĐNL] Tư duy sáng tạo",
-    keywordsNorm: ["sang tao"],
-  },
-  {
-    domIndex: 6,
-    key: "skillComputational",
-    commentAreaId: "668d6a25e71f90e7630ce187",
-    commentAreaSuffix: "e187",
-    labelVi: "[ĐNL] Tư duy máy tính",
-    keywordsNorm: ["tu duy may tinh", "tu duy thuat toan"],
-  },
-  {
-    domIndex: 7,
-    key: "attitudeHomework",
-    commentAreaId: "668e2f5be71f90e7630d44c1",
-    commentAreaSuffix: "44c1",
-    labelVi: "[ĐNL] Thái độ luyện tập về nhà",
-    keywordsNorm: ["luyen tap ve nha", "ve nha"],
-  },
-  {
-    domIndex: 8,
-    key: "attitudeInClass",
-    commentAreaId: "668e2eaee71f90e7630d434f",
-    commentAreaSuffix: "434f",
-    labelVi: "[ĐNL] Thái độ học tập trên lớp",
-    keywordsNorm: ["hoc tap tren lop", "tren lop"],
-  },
-];
+export const SESSION14_COMPETENCY_AREA_SPECS: readonly Session14CompetencyAreaSpec[] =
+  COMPETENCY_AREA_SPECS;
 
 export interface StudentCheckpointCompetencyResult {
   matchedFromCheckpoints: boolean;

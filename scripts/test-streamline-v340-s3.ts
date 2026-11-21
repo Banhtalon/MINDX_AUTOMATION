@@ -746,7 +746,7 @@ async function main() {
     "Có nút 1-click 'Duyệt & Lưu riêng' trên từng dòng học sinh"
   );
   assert.equal(
-    pageSource.includes("Thầy hãy tích Điểm Năng lực trên LMS rồi bấm Đẩy lại"),
+    pageSource.includes("Kiểm tra 9 ô [ĐNL] hoặc bấm Đẩy lại"),
     true,
     "Có nhắc nhở rõ ràng trên dòng học sinh ở buổi Checkpoint"
   );

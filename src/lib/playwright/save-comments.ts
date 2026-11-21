@@ -9,11 +9,34 @@ import {
   studentRepo,
   jobLogRepo,
   verifyContentIntegrity,
+  extractCheckpointCoreSnapshotHash,
   type SessionFeedbackRecord,
 } from "../db/sqlite";
 import { getCoursesSyllabus } from "../db/json-config";
 import { config } from "../config";
 import { markSaveCommentsSessionRunning } from "../queue/task-queue";
+import {
+  COMPETENCY_AREA_SPECS,
+  clampCompetencyRating,
+  parseCheckpointDataJson,
+  type CompetencyScores,
+} from "../checkpoint/checkpoint-competency";
+
+const safeCompetencyAreaSpecs =
+  typeof COMPETENCY_AREA_SPECS !== "undefined" ? COMPETENCY_AREA_SPECS : [];
+const safeClampCompetencyRating =
+  typeof clampCompetencyRating === "function"
+    ? clampCompetencyRating
+    : (value: unknown, fallback = 4) => {
+        const num = Number(value);
+        return Number.isFinite(num) ? Math.max(1, Math.min(5, Math.round(num))) : fallback;
+      };
+const safeParseCheckpointDataJson =
+  typeof parseCheckpointDataJson === "function" ? parseCheckpointDataJson : () => null;
+const safeExtractCheckpointHash =
+  typeof extractCheckpointCoreSnapshotHash === "function"
+    ? extractCheckpointCoreSnapshotHash
+    : null;
 
 export interface SaveCommentOptions {
   classId: string;
@@ -41,6 +64,324 @@ export interface SaveCommentsBatchResult {
   verifiedCount: number;
   failedCount: number;
   results: SaveCommentItemResult[];
+}
+
+interface ResolvedCompetencyRadioGroup {
+  key: keyof CompetencyScores;
+  labelVi: string;
+  radioGlobalIndices: number[]; // length 5 ordered by rating 1..5
+}
+
+/**
+ * Resolves the 9 `[ĐNL]` radio button groups in a Checkpoint modal strictly by
+ * Vietnamese competency section labels (`COMPETENCY_AREA_SPECS`), falling back
+ * to flat 45-radio DOM indexing ONLY when total radios === 45 (never touching
+ * question checkboxes or LT/TH number inputs).
+ */
+async function resolveCheckpointCompetencyRadioGroups(
+  dialogLoc: any
+): Promise<{
+  method: "LABEL_GROUPED" | "FLAT_45" | "NONE";
+  totalRadios: number;
+  groups: ResolvedCompetencyRadioGroup[];
+}> {
+  const radios = dialogLoc.locator('input[type="radio"]');
+  const totalRadios =
+    typeof (radios as any).count === "function"
+      ? await (radios as any).count().catch(() => 0)
+      : 0;
+
+  if (totalRadios < 45) {
+    return { method: "NONE", totalRadios, groups: [] };
+  }
+
+  let labelMapped: ResolvedCompetencyRadioGroup[] | null = null;
+  const hasDomEvaluate = typeof (dialogLoc as any).evaluate === "function";
+  if (hasDomEvaluate && safeCompetencyAreaSpecs.length === 9) {
+    try {
+      const specsPayload = safeCompetencyAreaSpecs.map((s) => ({
+        key: s.key,
+        labelVi: s.labelVi,
+        keywordsNorm: s.keywordsNorm,
+      }));
+      labelMapped = await (dialogLoc as any).evaluate(
+        (rootEl: HTMLElement, specs: Array<{ key: string; labelVi: string; keywordsNorm: string[] }>) => {
+          const allRadios = Array.from(rootEl.querySelectorAll('input[type="radio"]')) as HTMLInputElement[];
+          if (allRadios.length < 45) return null;
+
+          const norm = (str: string) =>
+            String(str || "")
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "")
+              .replace(/đ/g, "d")
+              .replace(/Đ/g, "D")
+              .toLowerCase()
+              .replace(/\s+/g, " ")
+              .trim();
+
+          const getCleanElementText = (node: Node): string => {
+            if (node.nodeType === 3) return node.textContent || "";
+            if (node.nodeType !== 1) return "";
+            const elNode = node as HTMLElement;
+            const tag = elNode.tagName;
+            if (
+              tag === "TEXTAREA" ||
+              tag === "INPUT" ||
+              tag === "SELECT" ||
+              tag === "OPTION" ||
+              tag === "SCRIPT" ||
+              tag === "STYLE" ||
+              elNode.classList?.contains("ql-editor") ||
+              elNode.getAttribute?.("contenteditable") === "true"
+            ) {
+              return "";
+            }
+            let out = "";
+            for (const child of Array.from(elNode.childNodes)) {
+              out += " " + getCleanElementText(child);
+            }
+            return out;
+          };
+
+          const isValidFiveRadioGroup = (radios: HTMLInputElement[], containerEl: HTMLElement): boolean => {
+            if (radios.length !== 5) return false;
+            if (containerEl.querySelectorAll('input[type="number"]').length > 0) return false;
+            if (
+              radios.some(
+                (r) =>
+                  r.getAttribute("data-kind") === "question" ||
+                  /^(?:q_|question|cp_question)/i.test(String(r.name || ""))
+              )
+            ) {
+              return false;
+            }
+            const names = new Set(radios.map((r) => String(r.name || "").trim()).filter(Boolean));
+            if (names.size > 1) return false;
+            const hasNamedGroup = names.size === 1;
+            const explicitVals = radios
+              .map((r) => Number(r.value))
+              .filter((v) => Number.isInteger(v) && v >= 1 && v <= 5);
+            if (explicitVals.length > 0 && new Set(explicitVals).size !== 5) return false;
+            if (explicitVals.length === 0 && !hasNamedGroup) return false;
+            return true;
+          };
+
+          const allElements = Array.from(rootEl.querySelectorAll("*")) as HTMLElement[];
+          const anyDnlHeadingExists = allElements.some((el) => {
+            if (el.closest('textarea, input, select, option, .ql-editor, [contenteditable="true"], button, script, style')) {
+              return false;
+            }
+            const clean = norm(getCleanElementText(el));
+            return clean.length <= 260 && clean.includes("[dnl]");
+          });
+
+          const results: Array<{ key: string; labelVi: string; radioGlobalIndices: number[] }> = [];
+          const usedGroupRadioSets = new Set<string>();
+
+          for (const spec of specs) {
+            const specLabelNorm = norm(spec.labelVi);
+            const candidates: Array<{ el: HTMLElement; tier: number; textLen: number; depth: number }> = [];
+            for (const el of allElements) {
+              if (el.closest('textarea, input, select, option, .ql-editor, [contenteditable="true"], button, script, style')) {
+                continue;
+              }
+              if (el.querySelectorAll('input[type="radio"]').length > 5) continue;
+              const t = norm(getCleanElementText(el));
+              if (!t || t.length > 260) continue;
+              if (!spec.keywordsNorm.some((kw) => t.includes(kw))) continue;
+
+              const hasDnlPrefix = t.includes("[dnl]");
+              if (!hasDnlPrefix && anyDnlHeadingExists) continue;
+              if (/(?:^|\b)(?:cau hoi|trac nghiem|question)\b/i.test(t) && !hasDnlPrefix) continue;
+
+              const tier =
+                t === specLabelNorm
+                  ? 3
+                  : hasDnlPrefix
+                  ? 2
+                  : 1;
+
+              let depth = 0;
+              let cur: HTMLElement | null = el;
+              while (cur && cur !== rootEl) {
+                depth++;
+                cur = cur.parentElement;
+              }
+              candidates.push({ el, tier, textLen: t.length, depth });
+            }
+            candidates.sort(
+              (a, b) => b.tier - a.tier || b.depth - a.depth || a.textLen - b.textLen
+            );
+
+            let matchedRadios: HTMLInputElement[] | null = null;
+            for (const cand of candidates) {
+              let container: HTMLElement | null = cand.el;
+              while (container && container !== rootEl) {
+                const containerRadios = Array.from(
+                  container.querySelectorAll('input[type="radio"]')
+                ) as HTMLInputElement[];
+                if (containerRadios.length === 5 && isValidFiveRadioGroup(containerRadios, container)) {
+                  const sig = containerRadios.map((r) => allRadios.indexOf(r)).join(",");
+                  if (!usedGroupRadioSets.has(sig)) {
+                    matchedRadios = containerRadios;
+                    usedGroupRadioSets.add(sig);
+                    break;
+                  }
+                }
+                if (containerRadios.length > 5) {
+                  // Support flat sibling layout: inspect immediate following siblings up to next [ĐNL] heading
+                  let prevBranch: HTMLElement | null = cand.el;
+                  while (prevBranch && prevBranch.parentElement && prevBranch.parentElement !== container) {
+                    prevBranch = prevBranch.parentElement;
+                  }
+                  let sib = prevBranch?.nextElementSibling as HTMLElement | null;
+                  while (sib) {
+                    const sibText = norm(getCleanElementText(sib));
+                    if (sibText.includes("[dnl]")) break;
+                    const sibRadios = Array.from(
+                      sib.querySelectorAll('input[type="radio"]')
+                    ) as HTMLInputElement[];
+                    if (sibRadios.length === 5 && isValidFiveRadioGroup(sibRadios, sib)) {
+                      const sig = sibRadios.map((r) => allRadios.indexOf(r)).join(",");
+                      if (!usedGroupRadioSets.has(sig)) {
+                        matchedRadios = sibRadios;
+                        usedGroupRadioSets.add(sig);
+                        break;
+                      }
+                    }
+                    sib = sib.nextElementSibling as HTMLElement | null;
+                  }
+                  break;
+                }
+                container = container.parentElement;
+              }
+              if (matchedRadios) break;
+            }
+
+            if (!matchedRadios || matchedRadios.length !== 5) {
+              return null;
+            }
+
+            // Order options 1..5 by explicit value="1".."5" when present, else keep DOM order
+            const byVal = new Map<number, HTMLInputElement>();
+            for (const r of matchedRadios) {
+              const v = Number(r.value);
+              if (Number.isInteger(v) && v >= 1 && v <= 5 && !byVal.has(v)) {
+                byVal.set(v, r);
+              }
+            }
+            const ordered =
+              byVal.size === 5
+                ? [1, 2, 3, 4, 5].map((rating) => byVal.get(rating)!)
+                : matchedRadios;
+
+            const globalIndices = ordered.map((r) => allRadios.indexOf(r));
+            if (globalIndices.some((idx) => idx < 0)) return null;
+            results.push({
+              key: spec.key,
+              labelVi: spec.labelVi,
+              radioGlobalIndices: globalIndices,
+            });
+          }
+
+          return results.length === 9 ? results : null;
+        },
+        specsPayload
+      );
+    } catch {
+      labelMapped = null;
+    }
+  }
+
+  if (Array.isArray(labelMapped) && labelMapped.length === 9) {
+    return {
+      method: "LABEL_GROUPED",
+      totalRadios,
+      groups: labelMapped as ResolvedCompetencyRadioGroup[],
+    };
+  }
+
+  // Fallback FLAT_45 ONLY for pure non-DOM unit mocks without evaluate()
+  if (!hasDomEvaluate && totalRadios === 45 && safeCompetencyAreaSpecs.length === 9) {
+    return {
+      method: "FLAT_45",
+      totalRadios,
+      groups: safeCompetencyAreaSpecs.map((s, idx) => ({
+        key: s.key,
+        labelVi: s.labelVi,
+        radioGlobalIndices: [idx * 5, idx * 5 + 1, idx * 5 + 2, idx * 5 + 3, idx * 5 + 4],
+      })),
+    };
+  }
+
+  return { method: "NONE", totalRadios, groups: [] };
+}
+
+async function applyCheckpointCompetencyRadios(
+  dialogLoc: any,
+  desiredScores: CompetencyScores
+): Promise<{ appliedCount: number; clickedCount: number }> {
+  const resolved = await resolveCheckpointCompetencyRadioGroups(dialogLoc);
+  if (resolved.method === "NONE" || resolved.groups.length !== 9) {
+    throw new Error(
+      `CHECKPOINT_COMPETENCY_DOM_MISMATCH: Modal Checkpoint có ${resolved.totalRadios} radio nhưng không định vị an toàn được đủ 9 nhóm [ĐNL] để tích tự động (tuyệt đối không chạm các ô điểm/câu hỏi khác).`
+    );
+  }
+
+  const radios = dialogLoc.locator('input[type="radio"]');
+  let clickedCount = 0;
+
+  for (const group of resolved.groups) {
+    const rating = safeClampCompetencyRating(desiredScores[group.key], 4);
+    const targetIdx = group.radioGlobalIndices[rating - 1];
+    const targetRadio = radios.nth(targetIdx);
+    const alreadyChecked = await targetRadio.isChecked().catch(() => false);
+    if (!alreadyChecked) {
+      await targetRadio.scrollIntoViewIfNeeded().catch(() => {});
+      await targetRadio.click({ force: true });
+      clickedCount++;
+    }
+  }
+
+  return { appliedCount: 9, clickedCount };
+}
+
+async function verifyCheckpointCompetencyRadios(
+  dialogLoc: any,
+  desiredScores: CompetencyScores
+): Promise<{ matched: boolean; mismatches: string[] }> {
+  const resolved = await resolveCheckpointCompetencyRadioGroups(dialogLoc);
+  if (resolved.method === "NONE" || resolved.groups.length !== 9) {
+    return {
+      matched: false,
+      mismatches: ["Không đọc lại được đủ 9 nhóm radio [ĐNL] khi xác minh Read-after-Write."],
+    };
+  }
+
+  const radios = dialogLoc.locator('input[type="radio"]');
+  const mismatches: string[] = [];
+
+  for (const group of resolved.groups) {
+    const expectedRating = safeClampCompetencyRating(desiredScores[group.key], 4);
+    let actualRating: number | null = null;
+    for (let optIdx = 0; optIdx < 5; optIdx++) {
+      const checked = await radios
+        .nth(group.radioGlobalIndices[optIdx])
+        .isChecked()
+        .catch(() => false);
+      if (checked) {
+        actualRating = optIdx + 1;
+        break;
+      }
+    }
+    if (actualRating !== expectedRating) {
+      mismatches.push(
+        `${group.labelVi}: kỳ vọng=${expectedRating}, đọc lại=${actualRating ?? "chưa chọn"}`
+      );
+    }
+  }
+
+  return { matched: mismatches.length === 0, mismatches };
 }
 
 export class CommentSaver {
@@ -536,19 +877,29 @@ export class CommentSaver {
           };
         }
 
+        const latestCpParsed = safeParseCheckpointDataJson(latestRec?.checkpointDataJson);
+        const cpSnapshotDrift = Boolean(
+          latestCpParsed?.approvedSnapshotHash &&
+            safeExtractCheckpointHash &&
+            safeExtractCheckpointHash(latestRec?.checkpointDataJson) !==
+              latestCpParsed.approvedSnapshotHash
+        );
+
         if (
           latestRec &&
           (latestRec.contentHash !== params.approvedHashVal ||
             (latestRec.finalText || "") !== params.approvedTextVal ||
+            cpSnapshotDrift ||
             (params.requireNonDraft && latestRec.status === "DRAFT") ||
             !verifyContentIntegrity(params.approvedTextVal, params.approvedHashVal))
         ) {
           return {
             ok: false,
-            demoteToDraft: false,
+            demoteToDraft: cpSnapshotDrift && latestRec.status !== "DRAFT",
             latestRec,
-            reason:
-              "Nhận xét đã bị giáo viên chỉnh sửa thành bản nháp mới trong lúc đang lưu. Giữ nguyên trạng thái DRAFT.",
+            reason: cpSnapshotDrift
+              ? "Bảng điểm Checkpoint [ĐNL] đã bị thay đổi sau khi duyệt. Giữ nguyên trạng thái DRAFT."
+              : "Nhận xét đã bị giáo viên chỉnh sửa thành bản nháp mới trong lúc đang lưu. Giữ nguyên trạng thái DRAFT.",
           };
         }
 
@@ -784,13 +1135,21 @@ export class CommentSaver {
           };
         }
 
-        // IRON RULE 4: Hash Drift Protection
+        // IRON RULE 4: Hash Drift Protection (text + checkpointDataJson snapshot)
+        const desiredCpData = safeParseCheckpointDataJson(preSaveRecord.checkpointDataJson);
+        const desiredCompetencyScores = desiredCpData?.competencyScores ?? null;
+        const cpSnapshotMatches =
+          !desiredCpData?.approvedSnapshotHash ||
+          !safeExtractCheckpointHash ||
+          safeExtractCheckpointHash(preSaveRecord.checkpointDataJson) ===
+            desiredCpData.approvedSnapshotHash;
         const isHashIntact =
           (preSaveRecord.status === "APPROVED" ||
             preSaveRecord.status === "VERIFIED" ||
             ((preSaveRecord.status === "FAILED" || preSaveRecord.status === "SAVING") &&
               Boolean(approvedHash))) &&
-          verifyContentIntegrity(approvedText, approvedHash);
+          verifyContentIntegrity(approvedText, approvedHash) &&
+          cpSnapshotMatches;
 
         if (!isHashIntact) {
           // Demote to DRAFT only if not already edited into a new DRAFT
@@ -1172,6 +1531,11 @@ export class CommentSaver {
             throw new Error(`Không tìm thấy ô soạn thảo nhận xét cho học viên '${studentName}'. (Ảnh: data/debug_editor_not_found.png)`);
           }
 
+          if (isCheckpointModal && desiredCompetencyScores) {
+            await applyCheckpointCompetencyRadios(dialog, desiredCompetencyScores);
+            await page.waitForTimeout(150);
+          }
+
           // Fill comment into editor safely via DOM TextNodes + <strong> elements for **bold** (immune to HTML/XSS injection)
           await editor.click();
           await editor.evaluate((el, text) => {
@@ -1255,14 +1619,27 @@ export class CommentSaver {
             );
           }
 
+          const preClickCpParsed = safeParseCheckpointDataJson(preClickRecord?.checkpointDataJson);
+          const preClickCpDrift = Boolean(
+            desiredCpData?.approvedSnapshotHash &&
+              safeExtractCheckpointHash &&
+              preClickRecord &&
+              safeExtractCheckpointHash(preClickRecord.checkpointDataJson) !==
+                desiredCpData.approvedSnapshotHash
+          );
           if (
             preClickRecord &&
             (preClickRecord.contentHash !== approvedHash ||
               (preClickRecord.finalText || "") !== approvedText ||
+              preClickCpDrift ||
+              (preClickCpParsed?.approvedSnapshotHash &&
+                safeExtractCheckpointHash &&
+                safeExtractCheckpointHash(preClickRecord.checkpointDataJson) !==
+                  preClickCpParsed.approvedSnapshotHash) ||
               preClickRecord.status === "DRAFT")
           ) {
             throw new Error(
-              "IN_FLIGHT_DRIFT: Nhận xét đã bị chỉnh sửa hoặc hạ về bản nháp trước khi bấm Save LMS. Đã chặn gửi LMS."
+              "IN_FLIGHT_DRIFT: Nhận xét hoặc điểm [ĐNL] đã bị chỉnh sửa hoặc hạ về bản nháp trước khi bấm Save LMS. Đã chặn gửi LMS."
             );
           }
 
@@ -1503,13 +1880,17 @@ export class CommentSaver {
           } catch (saveWaitErr) {
             const saveWaitMsg =
               saveWaitErr instanceof Error ? saveWaitErr.message : String(saveWaitErr);
-            if (
-              isCheckpointModal &&
-              (checkpointCheckedRadios === 0 ||
-                /competency|năng\s+lực|required|bắt\s+buộc|score|điểm|validation|chưa\s+nhập|chưa\s+chọn|timeout/i.test(
-                  saveWaitMsg
-                ))
-            ) {
+            const isExplicitCompetencyError =
+              /competency|năng\s+lực|required|bắt\s+buộc|score|điểm|validation|chưa\s+nhập|chưa\s+chọn/i.test(
+                saveWaitMsg
+              );
+            const isPartialCompetencyTimeout =
+              checkpointCheckedRadios === 0 ||
+              (!desiredCompetencyScores &&
+                checkpointCheckedRadios > 0 &&
+                checkpointCheckedRadios < 9 &&
+                isWaitForResponseTimeoutError(saveWaitMsg));
+            if (isCheckpointModal && (isExplicitCompetencyError || isPartialCompetencyTimeout)) {
               throw new Error(
                 `CHECKPOINT_COMPETENCY_REQUIRED: Buổi Kiểm tra (Checkpoint): Vui lòng tích Điểm Năng lực [ĐNL] & Điểm kiểm tra cho học viên '${studentName}' trên LMS trước khi bấm Đẩy nhận xét.`
               );
@@ -1721,7 +2102,7 @@ export class CommentSaver {
           isCheckpointModal = domReadRes.detectedCheckpoint;
           const normalizedCandidates = domReadRes.normalizedCandidates;
 
-          const isMatch =
+          const isTextMatch =
             normalizedExpectedPlain.length > 0 &&
             normalizedCandidates.length > 0 &&
             normalizedCandidates.every(
@@ -1729,12 +2110,39 @@ export class CommentSaver {
                 actual === normalizedExpectedPlain || actual === normalizedExpectedRaw
             );
 
+          let isCompetencyMatch = true;
+          let competencyMismatches: string[] = [];
+          if (isCheckpointModal && desiredCompetencyScores) {
+            const verifyRadiosLoc = dialog.locator('input[type="radio"]');
+            const waitStart = Date.now();
+            while (Date.now() - waitStart < 2500) {
+              const rCount =
+                typeof (verifyRadiosLoc as any).count === "function"
+                  ? await (verifyRadiosLoc as any).count().catch(() => 0)
+                  : 45;
+              if (rCount >= 45) break;
+              await page.waitForTimeout(200);
+            }
+            const compVerifyRes = await verifyCheckpointCompetencyRadios(
+              dialog,
+              desiredCompetencyScores
+            );
+            isCompetencyMatch = compVerifyRes.matched;
+            competencyMismatches = compVerifyRes.mismatches;
+          }
+
+          const isMatch = isTextMatch && isCompetencyMatch;
+
           await closeModalSafely(dialog, 250);
 
           // BOTH business API response AND full DOM readback must succeed
           if (!apiSuccess || !isMatch) {
+            const compErrNote =
+              !isCompetencyMatch && competencyMismatches.length > 0
+                ? ` | Lệch [ĐNL]: ${competencyMismatches.slice(0, 3).join("; ")}`
+                : "";
             throw new Error(
-              `Không thể xác minh nội dung sau khi lưu (Read-after-Write check failed: apiSuccess=${apiSuccess}, isContentMatch=${isMatch}).`
+              `Không thể xác minh nội dung sau khi lưu (Read-after-Write check failed: apiSuccess=${apiSuccess}, isContentMatch=${isTextMatch}, isCompetencyMatch=${isCompetencyMatch}${compErrNote}).`
             );
           }
           }

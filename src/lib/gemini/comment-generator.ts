@@ -2,6 +2,40 @@ import { getGeminiModel } from "./client";
 import { sessionFeedbackRepo, studentRepo, type SessionFeedbackRecord } from "../db/sqlite";
 import { getCoursesSyllabus, getQuickTags } from "../db/json-config";
 import { createRosterNameScrubber as _createRosterNameScrubber } from "../ai/pii-anonymizer";
+import {
+  formatCheckpointScoreHeaderLine,
+  mergeCheckpointStudentData,
+  parseCheckpointDataJson,
+  resolveCheckpointStageForSession,
+  stripExistingCheckpointHeaderLine,
+  upsertCheckpointHeaderIntoFinalText,
+  type CheckpointStudentData,
+} from "../checkpoint/checkpoint-competency";
+import { computeCheckpointDataForSession } from "../checkpoint/checkpoint-history-loader";
+const safeResolveCheckpointStageCg =
+  typeof resolveCheckpointStageForSession === "function"
+    ? resolveCheckpointStageForSession
+    : () => ({ isCheckpoint: false, isRobotics: false, cpStage: null });
+const safeParseCheckpointDataCg =
+  typeof parseCheckpointDataJson === "function" ? parseCheckpointDataJson : () => null;
+const safeMergeCheckpointDataCg =
+  typeof mergeCheckpointStudentData === "function"
+    ? mergeCheckpointStudentData
+    : (a: any, b: any) => a ?? b ?? null;
+const safeComputeCheckpointSessionCg =
+  typeof computeCheckpointDataForSession === "function" ? computeCheckpointDataForSession : null;
+const safeFormatCheckpointHeaderCg =
+  typeof formatCheckpointScoreHeaderLine === "function"
+    ? formatCheckpointScoreHeaderLine
+    : () => "";
+const safeStripCheckpointHeaderCg =
+  typeof stripExistingCheckpointHeaderLine === "function"
+    ? stripExistingCheckpointHeaderLine
+    : (t: string) => t;
+const safeUpsertCheckpointHeaderCg =
+  typeof upsertCheckpointHeaderIntoFinalText === "function"
+    ? upsertCheckpointHeaderIntoFinalText
+    : (t: string) => t;
 const sharedCreateRosterNameScrubber =
   typeof _createRosterNameScrubber === "function"
     ? _createRosterNameScrubber
@@ -15,6 +49,7 @@ export interface StudentCommentInput {
   quickTags?: string[];
   teacherNote?: string;
   expectedRowVer?: number | null;
+  checkpointData?: CheckpointStudentData | null;
 }
 
 export interface SessionContext {
@@ -38,6 +73,7 @@ export interface GeneratedCommentResult {
   errorMessage?: string;
   staleIgnored?: boolean;
   versionMeta?: any;
+  checkpointData?: CheckpointStudentData | null;
 }
 
 interface CandidateSnapshot {
@@ -505,6 +541,29 @@ export class CommentGenerator {
 
     const callSeq = ++CommentGenerator.latestBatchSeq;
     const results: GeneratedCommentResult[] = [];
+    const cpStageInfo = safeResolveCheckpointStageCg(
+      normalizedClassCode,
+      session.sessionNumber
+    );
+    const isResolvedCheckpointSession =
+      typeof session.isCheckpointSession === "boolean"
+        ? session.isCheckpointSession
+        : cpStageInfo.isCheckpoint;
+    let computedCheckpointByStudent: Record<string, CheckpointStudentData> = {};
+    if (isResolvedCheckpointSession && safeComputeCheckpointSessionCg) {
+      try {
+        computedCheckpointByStudent = safeComputeCheckpointSessionCg({
+          classId: normalizedClassId,
+          sessionId: normalizedSessionId,
+          sessionNumber: session.sessionNumber,
+          forceRecalculate: false,
+          persist: false,
+        }).byStudent;
+      } catch {
+        computedCheckpointByStudent = {};
+      }
+    }
+
     const validCandidates: {
       input: StudentCommentInput;
       regularQuickTags: string[];
@@ -512,6 +571,7 @@ export class CommentGenerator {
       scopeKey: string;
       initialSnapshot: CandidateSnapshot;
       extractedIssues?: ExtractedStudentIssues;
+      checkpointData?: CheckpointStudentData | null;
     }[] = [];
 
     const rawCategories = typeof getQuickTags === "function" ? getQuickTags() || [] : [];
@@ -650,11 +710,25 @@ export class CommentGenerator {
       CommentGenerator.latestStudentCallSeq.set(scopeKey, callSeq);
 
       const regularQuickTags = filterRegularTags(student.quickTags);
+      const sanitizedClientCp = student.checkpointData
+        ? safeParseCheckpointDataCg(JSON.stringify(student.checkpointData))
+        : null;
+      const dbCpParsed = safeParseCheckpointDataCg(initialDbRecord?.checkpointDataJson);
+      const primaryCp = safeMergeCheckpointDataCg(sanitizedClientCp, dbCpParsed);
+      const resolvedCpData: CheckpointStudentData | null = isResolvedCheckpointSession
+        ? safeMergeCheckpointDataCg(primaryCp, computedCheckpointByStudent[student.studentId] ?? null)
+        : null;
       const hasTags = regularQuickTags.length > 0;
       const hasNote = Boolean(student.teacherNote && student.teacherNote.trim().length > 0);
+      const hasCpEvidence = Boolean(
+        resolvedCpData &&
+          (resolvedCpData.theoryScore !== null ||
+            resolvedCpData.practiceScore !== null ||
+            (resolvedCpData.processSummary?.priorSessionsObserved || 0) > 0)
+      );
 
-      // IRON RULE 5: Nếu học viên không có cả Quick Tags lẫn ghi chú -> INSUFFICIENT_INFO (CẤM AI BỊA)
-      if (!hasTags && !hasNote) {
+      // IRON RULE 5: Nếu học viên không có Quick Tags, không có ghi chú và không có dữ liệu điểm/quá trình Checkpoint -> INSUFFICIENT_INFO (CẤM AI BỊA)
+      if (!hasTags && !hasNote && !hasCpEvidence) {
         const defaultInsufficientNotice =
           "Chưa đủ thông tin để nhận xét. Vui lòng chọn ít nhất 1 Quick Tag hoặc nhập ghi chú của giáo viên.";
         const preservedStrengths = initialDbRecord?.strengths ?? "";
@@ -710,6 +784,7 @@ export class CommentGenerator {
         anonymousId,
         scopeKey,
         initialSnapshot: captureSnapshot(student, regularQuickTags, initialDbRecord),
+        checkpointData: resolvedCpData,
       });
     }
 
@@ -1017,6 +1092,46 @@ export class CommentGenerator {
         ? "Chỉ ghi nhận trung thực, ngắn gọn 1 thao tác cơ bản con thực hiện được khi có thầy hướng dẫn trực tiếp; CẤM khen vống ('rất nỗ lực', 'hào hứng') và CẤM đưa lỗi vi phạm ('mặc dù đi muộn/phân tâm...') vào mục Điểm mạnh."
         : "Ghi nhận đúng thực lực các điểm tích cực và phần bài học con hoàn thành tốt trên lớp; KHÔNG trộn lỗi vi phạm vào mục Điểm mạnh.";
 
+      const cpData = c.checkpointData;
+      const anonymizedCheckpoint =
+        isCheckpoint && cpData
+          ? {
+              cpStage: cpData.cpStage,
+              theoryScoreScale5: cpData.theoryScore,
+              practiceScoreScale5: cpData.practiceScore,
+              competencyAverageScale5: cpData.competencyAverage,
+              processStats: cpData.processSummary
+                ? {
+                    stageWindow: `Buổi ${cpData.processSummary.stageStartSession}–${cpData.processSummary.stageEndSession}`,
+                    presentCount: cpData.processSummary.presentCount,
+                    lateCount: cpData.processSummary.lateCount,
+                    absentCount: cpData.processSummary.absentCount,
+                    totalStars: cpData.processSummary.totalStars,
+                    totalMedals: cpData.processSummary.totalMedals,
+                    topStrengthTags: (cpData.processSummary.topStrengthTags || []).map((t) =>
+                      scrubStudentNames(t, c.input.fullName, c.anonymousId)
+                    ),
+                    topImprovementTags: (cpData.processSummary.topImprovementTags || []).map((t) =>
+                      scrubStudentNames(t, c.input.fullName, c.anonymousId)
+                    ),
+                    homeworkCompletionPct:
+                      cpData.processSummary.homeworkSummary?.completionRatePct ?? null,
+                    homeworkAvgScore100:
+                      cpData.processSummary.homeworkSummary?.avgScore100 ?? null,
+                    previousCheckpoint: cpData.processSummary.previousCheckpoint
+                      ? {
+                          sessionNumber: Number(cpData.processSummary.previousCheckpoint.sessionNumber || 0),
+                          theoryScore: cpData.processSummary.previousCheckpoint.theoryScore ?? null,
+                          practiceScore: cpData.processSummary.previousCheckpoint.practiceScore ?? null,
+                          competencyAverage:
+                            cpData.processSummary.previousCheckpoint.competencyAverage ?? null,
+                        }
+                      : null,
+                  }
+                : null,
+            }
+          : undefined;
+
       return {
         anonymousId: c.anonymousId,
         matchedLevel,
@@ -1031,11 +1146,12 @@ export class CommentGenerator {
         narrativeAngle,
         focusKnowledgeAspect: primaryKnowledge,
         antiDuplicateDirective,
+        ...(anonymizedCheckpoint ? { checkpointAssessment: anonymizedCheckpoint } : {}),
       };
     });
 
     const checkpointNotice = isCheckpoint
-      ? `\n- Loại buổi học: Buổi Kiểm tra Định kỳ (Checkpoint) — Phần điểm kiểm tra và đánh giá năng lực [ĐNL] do giáo viên chấm riêng trên LMS; bạn chỉ viết phần "Đánh giá chung" 3 gạch đầu dòng bên dưới để tổng kết mức độ nắm kiến thức, kỹ năng thực hành và lời khuyên ôn tập. TUYỆT ĐỐI KHÔNG tự bịa điểm số kiểm tra nếu giáo viên không ghi trong teacherNote.`
+      ? `\n- Loại buổi học: Buổi Kiểm tra Định kỳ (Checkpoint) — Hệ thống đã tự động ghép dòng tổng kết điểm \`📊 Kết quả Checkpoint ...\` ở ngay phía trên nhận xét. Bạn TUYỆT ĐỐI KHÔNG tự viết lại dòng tiêu đề \`📊 Kết quả Checkpoint...\` và KHÔNG tự bịa điểm số ngoài dữ liệu trong \`checkpointAssessment\`. Hãy kết hợp chặt chẽ cả: (1) kết quả làm bài Checkpoint hôm nay (Lý thuyết, Thực hành, Điểm năng lực trung bình trong \`checkpointAssessment\`) VÀ (2) đánh giá nhìn lại quá trình học nhiều buổi trước đó trong \`checkpointAssessment.processStats\` (chuyên cần, số sao/huy hiệu, thói quen làm bài nếu có, và so sánh tiến bộ so với Checkpoint trước nếu có) để viết 3 gạch đầu dòng vừa ghi nhận đúng thực lực vừa định hướng ôn tập rõ ràng.`
       : "";
 
     const prompt = `
@@ -1303,8 +1419,8 @@ ${JSON.stringify(targetsToRewrite, null, 2)}
           actionPlan = cleanActionPlan;
         }
 
-        // Strip any leading **[Tên học sinh]** line before the first bullet if AI included one
-        fullComment = fullComment.replace(
+        // Strip any leading **[Tên học sinh]** line or AI-hallucinated `📊 Kết quả Checkpoint` header before normalizing
+        fullComment = safeStripCheckpointHeaderCg(fullComment).replace(
           /^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i,
           ""
         );
@@ -1321,6 +1437,22 @@ ${JSON.stringify(targetsToRewrite, null, 2)}
             "",
             `- **Lời khuyên:** ${cleanActionPlan}`,
           ].join("\n");
+        }
+
+        if (
+          isCheckpoint &&
+          item.checkpointData &&
+          (item.checkpointData.theoryScore !== null ||
+            item.checkpointData.practiceScore !== null ||
+            item.checkpointData.competencyAverage !== null)
+        ) {
+          const scoreHeaderLine = safeFormatCheckpointHeaderCg({
+            cpStage: item.checkpointData.cpStage,
+            theoryScore: item.checkpointData.theoryScore,
+            practiceScore: item.checkpointData.practiceScore,
+            competencyAverage: item.checkpointData.competencyAverage,
+          });
+          fullComment = safeUpsertCheckpointHeaderCg(fullComment, scoreHeaderLine);
         }
 
         // R15-02 Guardrail: Re-verify student active status, attendance, and version/content snapshot in SQLite
@@ -1403,6 +1535,7 @@ ${JSON.stringify(targetsToRewrite, null, 2)}
           actionPlan,
           formattedFullComment: fullComment,
           versionMeta: nextMeta,
+          ...(item.checkpointData ? { checkpointData: item.checkpointData } : {}),
         };
 
         // Persist draft to SQLite without overwriting existing attendance, quickTags, or teacherNote with stale inputs
@@ -1424,6 +1557,7 @@ ${JSON.stringify(targetsToRewrite, null, 2)}
           finalText: fullComment,
           status: "DRAFT",
           versionMetaJson: JSON.stringify(nextMeta),
+          ...(item.checkpointData ? { checkpointDataJson: JSON.stringify(item.checkpointData) } : {}),
         });
 
         results.push(generated);

@@ -14,6 +14,22 @@ import { config } from "@/lib/config";
 import { normalizeLmsBaseOrigin } from "@/lib/lms/lms-class-url";
 import { resolveKnownLmsClassIdsMap } from "@/lib/lms/lms-class-id-store";
 import { isSaveCommentsSessionRunning } from "@/lib/queue/task-queue";
+import { resolveCheckpointStageForSession } from "@/lib/checkpoint/checkpoint-competency";
+import { computeCheckpointDataForSession } from "@/lib/checkpoint/checkpoint-history-loader";
+
+const safeResolveCheckpointStageList =
+  typeof resolveCheckpointStageForSession === "function"
+    ? resolveCheckpointStageForSession
+    : () => ({
+        isCheckpoint: false,
+        isRobotics: false,
+        cpStage: null,
+        stageStartSession: 1,
+        stageEndSession: 1,
+        previousCpSession: null,
+      });
+const safeComputeCheckpointList =
+  typeof computeCheckpointDataForSession === "function" ? computeCheckpointDataForSession : null;
 
 function isSession14Category(cat: { category?: string; categoryName?: string; track?: string } | null | undefined): boolean {
   if (!cat) return false;
@@ -229,6 +245,34 @@ export async function GET(req: Request) {
         ? normalizeLmsBaseOrigin(typeof config !== "undefined" ? config?.lmsUrl : undefined)
         : "https://lms.mindx.edu.vn";
 
+    let checkpointStageInfo = safeResolveCheckpointStageList(classId, 0);
+    let checkpointByStudent: Record<string, any> = {};
+    if (classId && sessionId) {
+      const selectedSess = allSessions.find((s) => s.sessionId === sessionId);
+      const sessMatch = String(sessionId).match(/(?:^|[_-])SESS(?:ION)?[_-]?0*(\d+)$/i);
+      const sessNum =
+        typeof selectedSess?.sessionNumber === "number" && selectedSess.sessionNumber > 0
+          ? selectedSess.sessionNumber
+          : sessMatch
+          ? Number(sessMatch[1])
+          : 0;
+      checkpointStageInfo = safeResolveCheckpointStageList(classId, sessNum);
+      if (checkpointStageInfo.isCheckpoint && safeComputeCheckpointList) {
+        try {
+          const cpResult = safeComputeCheckpointList({
+            classId,
+            sessionId,
+            sessionNumber: sessNum,
+            forceRecalculate: false,
+            persist: false,
+          });
+          checkpointByStudent = cpResult.byStudent;
+        } catch {
+          checkpointByStudent = {};
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -244,6 +288,8 @@ export async function GET(req: Request) {
         syllabusList,
         zaloTemplates,
         runningClasses,
+        checkpointStageInfo,
+        checkpointByStudent,
       },
     });
   } catch (err: any) {

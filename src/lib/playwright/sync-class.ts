@@ -32,6 +32,42 @@ import {
 import { resolveKnownLmsClassId as _resolveKnownLmsClassId } from "../lms/lms-class-id-store";
 import { toVietnameseUpperSlug as _toVietnameseUpperSlug } from "../utils/vietnamese-match";
 import { isSaveCommentsSessionRunning } from "../queue/task-queue";
+import {
+  extractLmsCheckpointFromCommentByAreas,
+  formatCheckpointScoreHeaderLine,
+  isPlaceholderLmsComment,
+  parseCheckpointDataJson,
+  resolveCheckpointStageForSession,
+  upsertCheckpointHeaderIntoFinalText,
+} from "../checkpoint/checkpoint-competency";
+
+const safeResolveCheckpointStage =
+  typeof resolveCheckpointStageForSession === "function"
+    ? resolveCheckpointStageForSession
+    : () => ({ isCheckpoint: false, isRobotics: false, cpStage: null });
+const safeExtractLmsCheckpoint =
+  typeof extractLmsCheckpointFromCommentByAreas === "function"
+    ? extractLmsCheckpointFromCommentByAreas
+    : () => ({
+        theoryScore: null,
+        practiceScore: null,
+        competencyScores: null,
+        competencyAverage: null,
+        hasAnyRate: false,
+        contentText: "",
+      });
+const safeIsPlaceholderLmsComment =
+  typeof isPlaceholderLmsComment === "function" ? isPlaceholderLmsComment : () => false;
+const safeParseCheckpointData =
+  typeof parseCheckpointDataJson === "function" ? parseCheckpointDataJson : () => null;
+const safeFormatCheckpointHeaderSync =
+  typeof formatCheckpointScoreHeaderLine === "function"
+    ? formatCheckpointScoreHeaderLine
+    : () => "";
+const safeUpsertCheckpointHeaderSync =
+  typeof upsertCheckpointHeaderIntoFinalText === "function"
+    ? upsertCheckpointHeaderIntoFinalText
+    : (t: string) => t;
 
 const toVietnameseUpperSlug =
   typeof _toVietnameseUpperSlug === "function"
@@ -1272,19 +1308,40 @@ export class ClassSyncer {
     };
 
     const selectFbStmt = db.prepare(
-      `SELECT status, finalText, attendanceStatus, verifiedAt
+      `SELECT status, finalText, attendanceStatus, verifiedAt, versionMetaJson, checkpointDataJson
        FROM session_feedbacks
        WHERE classId = ? AND sessionId = ? AND studentId = ?`
+    );
+    const upsertFbCheckpointDraftStmt = db.prepare(
+      `INSERT INTO session_feedbacks (
+         classId, sessionId, studentId, attendanceStatus,
+         quickTagsJson, teacherNote, strengths, improvements, actionPlan,
+         finalText, contentHash, status, verifiedAt, errorMessage, versionMetaJson, checkpointDataJson, updatedAt
+       ) VALUES (
+         @classId, @sessionId, @studentId, @attendanceStatus,
+         '[]', '', '', '', '',
+         '', '', 'DRAFT', NULL, NULL, @versionMetaJson, @checkpointDataJson, datetime('now', 'localtime')
+       )
+       ON CONFLICT(classId, sessionId, studentId) DO UPDATE SET
+         attendanceStatus = CASE WHEN excluded.attendanceStatus <> 'UNKNOWN' THEN excluded.attendanceStatus ELSE session_feedbacks.attendanceStatus END,
+         finalText = CASE WHEN @hasUpdatedFinalText = 1 THEN @finalText ELSE session_feedbacks.finalText END,
+         status = CASE
+           WHEN @demoteApproved = 1 AND session_feedbacks.status IN ('APPROVED', 'VERIFIED') THEN 'DRAFT'
+           ELSE session_feedbacks.status
+         END,
+         versionMetaJson = CASE WHEN @bumpRowVer = 1 THEN @versionMetaJson ELSE session_feedbacks.versionMetaJson END,
+         checkpointDataJson = @checkpointDataJson,
+         updatedAt = datetime('now', 'localtime')`
     );
     const upsertFbVerifiedStmt = db.prepare(
       `INSERT INTO session_feedbacks (
          classId, sessionId, studentId, attendanceStatus,
          quickTagsJson, teacherNote, strengths, improvements, actionPlan,
-         finalText, contentHash, status, verifiedAt, errorMessage, updatedAt
+         finalText, contentHash, status, verifiedAt, errorMessage, checkpointDataJson, updatedAt
        ) VALUES (
          @classId, @sessionId, @studentId, @attendanceStatus,
          '[]', '', '', '', '',
-         @finalText, @contentHash, 'VERIFIED', COALESCE(@verifiedAt, datetime('now', 'localtime')), NULL, datetime('now', 'localtime')
+         @finalText, @contentHash, 'VERIFIED', COALESCE(@verifiedAt, datetime('now', 'localtime')), NULL, @checkpointDataJson, datetime('now', 'localtime')
        )
        ON CONFLICT(classId, sessionId, studentId) DO UPDATE SET
          attendanceStatus = excluded.attendanceStatus,
@@ -1293,6 +1350,7 @@ export class ClassSyncer {
          status = 'VERIFIED',
          verifiedAt = COALESCE(session_feedbacks.verifiedAt, datetime('now', 'localtime')),
          errorMessage = NULL,
+         checkpointDataJson = CASE WHEN TRIM(COALESCE(excluded.checkpointDataJson, '')) NOT IN ('', '{}') THEN excluded.checkpointDataJson ELSE session_feedbacks.checkpointDataJson END,
          updatedAt = datetime('now', 'localtime')`
     );
     const upsertFbAbsentStmt = db.prepare(
@@ -1372,15 +1430,118 @@ export class ClassSyncer {
               finalText?: string;
               attendanceStatus?: string;
               verifiedAt?: string | null;
+              versionMetaJson?: string;
+              checkpointDataJson?: string;
             }
           | undefined;
+
+        const cpStageInfo = safeResolveCheckpointStage(classId, sessionNumber);
+        let mergedCheckpointDataJson = existingFb?.checkpointDataJson || "{}";
+        let cpScoresChangedFromApproved = false;
+        let cpUpdatedFinalText = existingFb?.finalText || "";
+        let hasUpdatedFinalText = 0;
+        let bumpedVersionMetaJson = existingFb?.versionMetaJson || JSON.stringify({ rowVer: 1, fields: {} });
+
+        if (cpStageInfo.isCheckpoint && cpStageInfo.cpStage) {
+          const extractedCp = safeExtractLmsCheckpoint(areas, att.comment);
+          const existingCp = safeParseCheckpointData(existingFb?.checkpointDataJson);
+          const nextTheory =
+            extractedCp.theoryScore !== null
+              ? extractedCp.theoryScore
+              : existingCp?.theoryScore ?? null;
+          const nextPractice =
+            extractedCp.practiceScore !== null
+              ? extractedCp.practiceScore
+              : existingCp?.practiceScore ?? null;
+          const nextCompetency =
+            existingCp?.competencyScores || extractedCp.competencyScores || null;
+          const nextCompAvg =
+            existingCp?.competencyScores
+              ? existingCp.competencyAverage
+              : extractedCp.competencyAverage ?? null;
+
+          if (
+            existingCp &&
+            ((extractedCp.theoryScore !== null &&
+              extractedCp.theoryScore !== existingCp.theoryScore) ||
+              (extractedCp.practiceScore !== null &&
+                extractedCp.practiceScore !== existingCp.practiceScore))
+          ) {
+            cpScoresChangedFromApproved = true;
+          }
+
+          if (
+            cpScoresChangedFromApproved &&
+            cpUpdatedFinalText &&
+            /📊\s*\*\*Kết quả Checkpoint/i.test(cpUpdatedFinalText)
+          ) {
+            const freshHeader = safeFormatCheckpointHeaderSync({
+              cpStage: cpStageInfo.cpStage as 1 | 2,
+              theoryScore: nextTheory,
+              practiceScore: nextPractice,
+              competencyAverage: nextCompAvg,
+            });
+            const refreshed = safeUpsertCheckpointHeaderSync(cpUpdatedFinalText, freshHeader);
+            if (refreshed && refreshed !== cpUpdatedFinalText) {
+              cpUpdatedFinalText = refreshed;
+              hasUpdatedFinalText = 1;
+            }
+          }
+
+          if (cpScoresChangedFromApproved || existingCp === null) {
+            try {
+              const prevMetaParsed = existingFb?.versionMetaJson
+                ? JSON.parse(existingFb.versionMetaJson)
+                : { rowVer: 0, fields: {} };
+              bumpedVersionMetaJson = JSON.stringify({
+                rowVer: (Number(prevMetaParsed?.rowVer) || 0) + 1,
+                fields:
+                  prevMetaParsed?.fields && typeof prevMetaParsed.fields === "object"
+                    ? prevMetaParsed.fields
+                    : {},
+              });
+            } catch {
+              bumpedVersionMetaJson = JSON.stringify({ rowVer: 1, fields: {} });
+            }
+          }
+
+          if (
+            nextTheory !== null ||
+            nextPractice !== null ||
+            extractedCp.hasAnyRate ||
+            extractedCp.competencyScores !== null ||
+            existingCp !== null
+          ) {
+            mergedCheckpointDataJson = JSON.stringify({
+              cpStage: cpStageInfo.cpStage,
+              isRobotics: cpStageInfo.isRobotics,
+              theoryScore: nextTheory,
+              practiceScore: nextPractice,
+              competencyScores: nextCompetency,
+              competencyAverage: nextCompAvg,
+              lmsCompetencyScores:
+                extractedCp.competencyScores || existingCp?.lmsCompetencyScores || null,
+              processSummary: existingCp?.processSummary || null,
+              source: existingCp?.source || (extractedCp.competencyScores ? "LMS_SYNC" : "AUTO_PROCESS"),
+              userEditedCompetency: existingCp?.userEditedCompetency || false,
+              lmsSyncedAt: new Date().toISOString(),
+              computedAt: existingCp?.computedAt || null,
+              approvedSnapshotHash: cpScoresChangedFromApproved
+                ? null
+                : existingCp?.approvedSnapshotHash ?? null,
+            });
+          }
+        }
 
         const isOrphanedSaving =
           existingFb?.status === "SAVING" &&
           (typeof isSaveCommentsSessionRunning !== "function" ||
             !isSaveCommentsSessionRunning(classId, sessionId));
 
-        if (lmsComment.length > 0) {
+        const lmsCommentIsPlaceholder =
+          cpStageInfo.isCheckpoint && safeIsPlaceholderLmsComment(lmsComment);
+
+        if (lmsComment.length > 0 && !lmsCommentIsPlaceholder) {
           const normalizeSyncCompare = (val?: string | null): string =>
             String(val || "")
               .replace(/^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i, "")
@@ -1426,10 +1587,40 @@ export class ClassSyncer {
               finalText: effectiveText,
               contentHash: computeHashSafe(effectiveText),
               verifiedAt: existingFb?.verifiedAt || null,
+              checkpointDataJson: mergedCheckpointDataJson,
             });
             slotHasVerifiedStudent = true;
             verifiedStudentIdsInSlot.add(studentId);
+          } else if (cpStageInfo.isCheckpoint && mergedCheckpointDataJson !== "{}") {
+            upsertFbCheckpointDraftStmt.run({
+              classId,
+              sessionId,
+              studentId,
+              attendanceStatus: lmsAttendance !== "UNKNOWN" ? lmsAttendance : "UNKNOWN",
+              finalText: cpUpdatedFinalText,
+              hasUpdatedFinalText,
+              versionMetaJson: bumpedVersionMetaJson,
+              bumpRowVer: cpScoresChangedFromApproved ? 1 : 0,
+              checkpointDataJson: mergedCheckpointDataJson,
+              demoteApproved: cpScoresChangedFromApproved ? 1 : 0,
+            });
           }
+        } else if (cpStageInfo.isCheckpoint && mergedCheckpointDataJson !== "{}") {
+          upsertFbCheckpointDraftStmt.run({
+            classId,
+            sessionId,
+            studentId,
+            attendanceStatus:
+              lmsAttendance !== "UNKNOWN"
+                ? lmsAttendance
+                : existingFb?.attendanceStatus || "UNKNOWN",
+            finalText: cpUpdatedFinalText,
+            hasUpdatedFinalText,
+            versionMetaJson: bumpedVersionMetaJson,
+            bumpRowVer: cpScoresChangedFromApproved ? 1 : 0,
+            checkpointDataJson: mergedCheckpointDataJson,
+            demoteApproved: cpScoresChangedFromApproved ? 1 : 0,
+          });
         } else if (lmsAttendance === "ABSENT") {
           if (
             !existingFb ||
