@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
@@ -263,7 +264,9 @@ function makeCodingClassByIdGql(params: {
 }
 
 async function main() {
-  const { getSafePublicConfig } = await import("../src/lib/config");
+  const { getDynamicAdminConfig, getSafePublicConfig, parseCentreIdsList } = await import(
+    "../src/lib/config"
+  );
   const {
     closeDb,
     adminCenterRepo,
@@ -275,7 +278,9 @@ async function main() {
   } = await import("../src/lib/db/sqlite");
   const {
     isMindxAuthDomain,
+    matchesExpectedLmsIdentity,
     filterMindxCookiesForBackup,
+    extractIdentityFromMindxCookies,
     AuthService,
     authService,
   } = await import("../src/lib/playwright/auth");
@@ -304,6 +309,9 @@ async function main() {
     fetchSingleLmsClassGqlInAdminSession,
     scanAdminCenterClasses,
     buildAdminOverviewResponse,
+    buildLmsClassSearchCandidates,
+    normalizeAdminDateToIsoYmd,
+    isAdminFinishedClassWithinGraceWindow,
     getAdminScanProgressState,
     resetAdminScanProgressForTest,
     assertMatchingLmsClassPayload,
@@ -2564,6 +2572,808 @@ async function main() {
     }
 
     console.log("PASS [AC-11] Codex Round 3 Closure (#8 Fractional Weight, R3-01 Strict JSON UI, R3-02 Unique RunId)");
+
+    // =========================================================================
+    // [AC-12] v3.8.1 .mindx.com.vn Auth Domain, Cookie JWT Identity & 205ALHP Centre Discovery
+    // =========================================================================
+    assert.equal(isMindxAuthDomain("mindx.com.vn"), true, "[AC-12] mindx.com.vn must be recognized");
+    assert.equal(isMindxAuthDomain(".lms.mindx.com.vn"), true, "[AC-12] subdomain mindx.com.vn must be recognized");
+    assert.equal(isMindxAuthDomain("evil-mindx.com.vn"), false, "[AC-12] lookalike prefix domain must be rejected");
+    assert.equal(isMindxAuthDomain("mindx.com.vn.evil.com"), false, "[AC-12] lookalike suffix domain must be rejected");
+    assert.deepEqual(
+      parseCentreIdsList("644346f794300678908f79bc  644346f794300678908f79bd, 644346f794300678908f79bc;644346f794300678908f79be\n644346f794300678908f79bf", "205ALHP"),
+      [
+        "644346f794300678908f79bc",
+        "644346f794300678908f79bd",
+        "644346f794300678908f79be",
+        "644346f794300678908f79bf",
+      ],
+      "[AC-12 F01] parseCentreIdsList must split cleanly on whitespace, commas, and semicolons with deduplication"
+    );
+    assert.deepEqual(parseCentreIdsList("NONE", "205ALHP"), [], "[AC-12] NONE must disable centre filtering");
+    assert.deepEqual(parseCentreIdsList(" - ", "205ALHP"), [], "[AC-12] - must disable centre filtering");
+    assert.deepEqual(
+      parseCentreIdsList(",  ;", "205ALHP"),
+      ["644346f794300678908f79bc"],
+      "[AC-12] separator-only input must fall back to default 205ALHP centre ID"
+    );
+    const comVnCookieSet = [
+      { name: "session", value: "tok_com", domain: ".mindx.com.vn", path: "/" },
+      { name: "sid", value: "tok_edu", domain: ".mindx.edu.vn", path: "/" },
+      { name: "ext", value: "skip", domain: ".example.com", path: "/" },
+    ];
+    const filteredComVn = filterMindxCookiesForBackup(comVnCookieSet as any);
+    assert.equal(filteredComVn.length, 2, "[AC-12] Both .mindx.com.vn and .mindx.edu.vn cookies must be preserved");
+
+    const makeJwtCookie = (email: string) => {
+      const hdr = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+      const pay = Buffer.from(JSON.stringify({ email, exp: 9999999999 })).toString("base64url");
+      return `${hdr}.${pay}.sig`;
+    };
+    const extractedComVn = extractIdentityFromMindxCookies([
+      { name: "session", value: makeJwtCookie("tuanpa@mindx.com.vn"), domain: ".mindx.edu.vn", path: "/" },
+    ] as any);
+    assert.equal(extractedComVn, "tuanpa@mindx.com.vn", "[AC-12] Must extract @mindx.com.vn identity from session JWT cookie");
+
+    let ac12TeacherRestored = "";
+    const ac12Res = await authSvc.withAdminLmsSession(async () => "AC12_OK", {
+      roleAdapter: {
+        getCredentials: (role: "TEACHER" | "ADMIN") =>
+          role === "ADMIN"
+            ? { username: "tuanpa@mindx.com.vn", password: "pw" }
+            : { username: "quangda@mindx.net.vn", password: "pw" },
+        captureCurrentSnapshot: async () => ({
+          role: "TEACHER" as const,
+          username: "quangda@mindx.net.vn",
+          cookies: filteredComVn as any,
+          localStorage: {},
+          savedAt: new Date().toISOString(),
+        }),
+        restoreSnapshot: async (snap: any) => {
+          ac12TeacherRestored = snap.username;
+        },
+        ensureRoleAuthenticated: async () => ({
+          page: {} as any,
+          detectedIdentity: "tuanpa@mindx.com.vn",
+        }),
+        verifyActiveIdentity: async (exp: string) =>
+          exp.includes("tuanpa") ? "tuanpa@mindx.com.vn" : "quangda@mindx.net.vn",
+      },
+    });
+    assert.equal(ac12Res, "AC12_OK");
+    assert.equal(ac12TeacherRestored, "quangda@mindx.net.vn");
+
+    const ac12Cands = buildLmsClassSearchCandidates("VT-CSA04-HB");
+    assert.deepEqual(
+      ac12Cands.slice(0, 4),
+      ["VT-CSA04-HB", "VT-CSA04", "CSA04-HB", "CSA04"],
+      "[AC-12] Must generate exact search candidates without HB/VT"
+    );
+    assert(!ac12Cands.includes("HB") && !ac12Cands.includes("VT"));
+
+    const dynCfg = getDynamicAdminConfig();
+    assert(
+      dynCfg.adminLmsCentreIds.includes("644346f794300678908f79bc"),
+      "[AC-12] Default 205ALHP centre ID must include 644346f794300678908f79bc"
+    );
+
+    const ac12Csi02Gql = makeCodingClassByIdGql({
+      lmsClassId: "lms_vt_csi02",
+      classCode: "VT-CSI02",
+      courseName: "Computer Science Intensive",
+      startDate: "2026-09-01",
+      endDate: "2026-12-20",
+      mainTeacher: "Nguyễn Minh An",
+      students: [{ id: "csi1", fullName: "Trần Gia Bảo" }],
+      currentSessionNumber: 12,
+      attendancePresentIndices: [0],
+    });
+    const ac12Csa04HbGql = makeCodingClassByIdGql({
+      lmsClassId: "lms_vt_csa04hb",
+      classCode: "VT-CSA04-HB",
+      courseName: "Computer Science Advanced",
+      startDate: "2026-09-10",
+      endDate: "2026-12-25",
+      mainTeacher: "Nguyễn Minh An",
+      students: [{ id: "csa1", fullName: "Lê Minh Khang" }],
+      currentSessionNumber: 6,
+      attendancePresentIndices: [0],
+    });
+    const ac12OldGql = makeCodingClassByIdGql({
+      lmsClassId: "lms_vt_old99",
+      classCode: "VT-OLD99",
+      courseName: "Python Basic",
+      startDate: "2025-01-01",
+      endDate: "2025-05-01",
+      mainTeacher: "Nguyễn Minh An",
+      students: [{ id: "old1", fullName: "Phạm Anh Tuấn" }],
+      currentSessionNumber: 14,
+      attendancePresentIndices: [0],
+    });
+    ac12OldGql.classByIdData.status = "FINISHED";
+
+    let oldClassSubCalls = 0;
+    let sawExpectedCentreId = false;
+    let sawClassFieldFallback = false;
+    const origAc12Auth = authService.withAdminLmsSession;
+    const origAc12Open = LmsHelpers.openClassDrawer;
+    const origAc12Switch = LmsHelpers.switchDrawerTab;
+    const ac12MockPage: any = {
+      on: () => {},
+      off: () => {},
+      goto: async () => {},
+      reload: async () => {},
+      waitForTimeout: async () => {},
+      locator: () => ({ first: () => ({ isVisible: async () => false, getAttribute: async () => "false", count: async () => 0 }) }),
+      evaluate: async (fn: any, args: any) => {
+        if (typeof fn === "string") return;
+        const mockFetch = async (_url: string, opts: any) => {
+          const parsed = JSON.parse(opts?.body || "{}");
+          const q = String(parsed?.query || "");
+          const vars = parsed?.variables || {};
+          const mkResp = (bodyObj: any, statusCode: number) => ({
+            ok: statusCode >= 200 && statusCode < 300,
+            status: statusCode,
+            json: async () => bodyObj,
+          });
+
+          // Simulate classes(centre_in) schema error to verify Tier 2 classesMissAttendOrComment
+          if (/AdminCampusClassesByCentre/.test(q)) {
+            return mkResp({ errors: [{ message: "Field centre_in unsupported on classes" }] }, 200);
+          }
+          if (/classesMissAttendOrComment/.test(q)) {
+            if (Array.isArray(vars.centres) && vars.centres.includes("644346f794300678908f79bc")) {
+              sawExpectedCentreId = true;
+            }
+            if (Array.isArray(vars.status) && vars.status.includes("RUNNING")) {
+              return mkResp(
+                {
+                  data: {
+                    classesMissAttendOrComment: {
+                      data: [
+                        { id: "lms_vt_csi02", name: "VT-CSI02" },
+                        { id: "lms_vt_csa04hb", name: "VT-CSA04-HB" },
+                      ],
+                    },
+                  },
+                },
+                200
+              );
+            }
+            return mkResp(
+              {
+                data: {
+                  classesMissAttendOrComment: {
+                    data: [{ id: "lms_vt_old99", name: "VT-OLD99" }],
+                  },
+                },
+              },
+              200
+            );
+          }
+          if (/classesById/.test(q)) {
+            return mkResp({ errors: [{ message: 'Cannot query field "classesById" on type "Query"' }] }, 200);
+          }
+          if (/query AdminGetClassFieldById/.test(q)) {
+            sawClassFieldFallback = true;
+            const byId: Record<string, any> = {
+              lms_vt_csi02: ac12Csi02Gql.classByIdData,
+              lms_vt_csa04hb: ac12Csa04HbGql.classByIdData,
+              lms_vt_old99: ac12OldGql.classByIdData,
+            };
+            return mkResp({ data: { class: byId[String(vars.id || "")] || null } }, 200);
+          }
+          if (/findStudentSubmissionByClass|studentSubmissions/.test(q)) {
+            if (vars.classId === "lms_vt_old99" || vars?.payload?.classId === "lms_vt_old99") {
+              oldClassSubCalls++;
+            }
+            const subMap: Record<string, any> = {
+              lms_vt_csi02: ac12Csi02Gql.submissionGqlData,
+              lms_vt_csa04hb: ac12Csa04HbGql.submissionGqlData,
+            };
+            const cid = String(vars?.payload?.classId || vars.classId || "");
+            return mkResp({ data: { findStudentSubmissionByClass: subMap[cid] || null } }, 200);
+          }
+          if (/findAllStudentWorks/.test(q)) {
+            return mkResp({ data: { findAllStudentWorks: { data: [] } } }, 200);
+          }
+          return mkResp({ data: { classes: { data: [], pagination: { total: 0 } } } }, 200);
+        };
+        return vm.runInNewContext(`(${fn.toString()})(args)`, {
+          args,
+          fetch: mockFetch,
+          __name: (v: any) => v,
+          Date,
+          Set,
+          Map,
+          JSON,
+          Array,
+          Object,
+          String,
+          Number,
+          Boolean,
+          Error,
+          Promise,
+        });
+      },
+    };
+    const ac12TeachingDeps = {
+      ...teachingDeps,
+      httpClient: {
+        getHtmlPage: async (rel: string) => {
+          if (rel.startsWith("/index.php")) return `<div class="regular-class"></div>`;
+          if (rel.startsWith("/check_nhanxet.php")) return `<table><thead><tr><th>Mã lớp</th></tr></thead><tbody></tbody></table>`;
+          if (rel.startsWith("/hocbu.php")) return `<table><thead><tr><th>Mã lớp</th></tr></thead><tbody></tbody></table>`;
+          return "";
+        },
+      },
+      reportCardTransport: {
+        ...teachingDeps.reportCardTransport,
+        getStudents: async (code: string) =>
+          code === "VT-CSI02"
+            ? [{ id: 301, student_name: "Trần Gia Bảo", class_code: code, status: "Đang học" }]
+            : [{ id: 302, student_name: "Lê Minh Khang", class_code: code, status: "Đang học" }],
+      },
+    };
+    try {
+      LmsHelpers.openClassDrawer = async () => {};
+      LmsHelpers.switchDrawerTab = async () => {};
+      authService.withAdminLmsSession = async (fn: any) => fn(ac12MockPage);
+      resetAdminScanProgressForTest();
+      const ac12Scan = await scanAdminCenterClasses({
+        scope: "ALL",
+        includeMakeup: true,
+        teachingDeps: ac12TeachingDeps as any,
+      });
+      assert.equal(ac12Scan.success, true, "[AC-12] Campus discovery via classesMissAttendOrComment + class(id) fallback must succeed");
+      assert.equal(sawExpectedCentreId, true, "[AC-12] Must pass 205ALHP centre ID 644346f794300678908f79bc");
+      assert.equal(sawClassFieldFallback, true, "[AC-12] Must fall back to class(id) when classesById fails schema");
+      assert.equal(oldClassSubCalls, 0, "[AC-12] Historical FINISHED >14d class must be skipped before submissions query");
+      assert.ok(adminCenterRepo.findClass("VT-CSI02"), "[AC-12] VT-CSI02 must be saved");
+      assert.ok(adminCenterRepo.findClass("VT-CSA04-HB"), "[AC-12] VT-CSA04-HB must be saved");
+      assert.equal(Boolean(adminCenterRepo.findClass("VT-OLD99")), false, "[AC-12] VT-OLD99 must NOT be saved");
+    } finally {
+      authService.withAdminLmsSession = origAc12Auth;
+      LmsHelpers.openClassDrawer = origAc12Open;
+      LmsHelpers.switchDrawerTab = origAc12Switch;
+      resetAdminScanProgressForTest();
+    }
+
+    console.log("PASS [AC-12] v3.8.1 .mindx.com.vn domain, cookie JWT & 205ALHP centre discovery");
+
+    // =========================================================================
+    // [AC-13] Neon XHigh Round 1 Remediation (F01..F09)
+    // =========================================================================
+    // F03: Cross-domain full-email mismatch must return false; bare username matches local-part
+    assert.equal(
+      matchesExpectedLmsIdentity("tuanpa@mindx.net.vn", "tuanpa@mindx.com.vn"),
+      false,
+      "[AC-13 F03] Cross-domain email tuanpa@mindx.net.vn must not match tuanpa@mindx.com.vn"
+    );
+    assert.equal(
+      matchesExpectedLmsIdentity("tuanpa@evil.example", "tuanpa@mindx.com.vn"),
+      false,
+      "[AC-13 F03] Spoofed domain with matching local-part must return false"
+    );
+    assert.equal(
+      matchesExpectedLmsIdentity("tuanpa@mindx.com.vn", "tuanpa"),
+      true,
+      "[AC-13 F03] Bare username without @ should match local-part"
+    );
+
+    // F09c: Cookie identity extraction prefers auth cookies & extracts JSON-wrapped JWT tokens
+    const jsonWrappedCookieVal = encodeURIComponent(
+      JSON.stringify({ token: makeJwtCookie("wrapped@mindx.com.vn") })
+    );
+    const extractedF09c = extractIdentityFromMindxCookies([
+      { name: "ga_misc", value: makeJwtCookie("other@mindx.net.vn"), domain: ".mindx.edu.vn", path: "/" },
+      { name: "session", value: jsonWrappedCookieVal, domain: ".mindx.edu.vn", path: "/" },
+    ] as any);
+    assert.equal(
+      extractedF09c,
+      "wrapped@mindx.com.vn",
+      "[AC-13 F09c] Preferred session JSON-wrapped JWT cookie must extract first"
+    );
+
+    // F07: captureMindxRoleSnapshot must ignore foreign-origin localStorage & email
+    const origGetPage = browserManager.getPage;
+    try {
+      browserManager.getPage = (async () => ({
+        url: () => "https://drive.google.com/drive/my-drive",
+        evaluate: async () => ({
+          localStorage: { drive_auth_email: "foreign_gmail@gmail.com" },
+          domIdentityHint: "foreign_gmail@gmail.com",
+        }),
+        context: () => ({
+          cookies: async () => [
+            {
+              name: "session",
+              value: makeJwtCookie("quangda@mindx.net.vn"),
+              domain: ".mindx.edu.vn",
+              path: "/",
+            },
+          ],
+        }),
+      })) as any;
+      const snapCrossOrigin = await authSvc.captureMindxRoleSnapshot("TEACHER");
+      assert.deepEqual(
+        snapCrossOrigin.localStorage,
+        {},
+        "[AC-13 F07] Foreign-origin localStorage must NOT be saved into MindX role snapshot"
+      );
+      assert.equal(
+        snapCrossOrigin.username,
+        "quangda@mindx.net.vn",
+        "[AC-13 F07] Snapshot username on foreign tab must fall back to MindX cookies"
+      );
+    } finally {
+      browserManager.getPage = origGetPage;
+    }
+
+    // F09b: clearCookies regex anchor check on applyMindxRoleSnapshot & clearMindxAuthState
+    const clearedDomainRegexes: string[] = [];
+    try {
+      browserManager.getPage = (async () => ({
+        url: () => "https://lms.mindx.edu.vn/admin/classes",
+        goto: async () => {},
+        waitForTimeout: async () => {},
+        evaluate: async () => {},
+        locator: () => ({ first: () => ({ isVisible: async () => false }) }),
+        context: () => ({
+          clearCookies: async (opts: any) => {
+            clearedDomainRegexes.push(String(opts?.domain || ""));
+          },
+          addCookies: async () => {},
+        }),
+      })) as any;
+      await authSvc.clearMindxAuthState();
+      assert(clearedDomainRegexes.length >= 1);
+      const clrRx = new RegExp(
+        clearedDomainRegexes[0].replace(/^\/|\/[a-z]*$/g, ""),
+        "i"
+      );
+      assert.equal(clrRx.test("evil-mindx.com.vn"), false, "[AC-13 F09b] Must not clear evil-mindx.com.vn");
+      assert.equal(clrRx.test(".lms.mindx.com.vn"), true, "[AC-13 F09b] Must clear .lms.mindx.com.vn");
+    } finally {
+      browserManager.getPage = origGetPage;
+    }
+
+    // F02: ISO-8601 & numeric/string epoch timestamps normalize cleanly without touching Teacher classes_sessions
+    const fiveDaysAgoMs = Date.now() - 5 * 24 * 60 * 60 * 1000;
+    const fiveDaysAgoIso = new Date(fiveDaysAgoMs).toISOString();
+    const twentyFiveDaysAgoIso = new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString();
+    assert(
+      /^\d{4}-\d{2}-\d{2}$/.test(normalizeAdminDateToIsoYmd(fiveDaysAgoIso)),
+      "[AC-13 F02] ISO-8601 datetime must normalize to YYYY-MM-DD"
+    );
+    assert(
+      /^\d{4}-\d{2}-\d{2}$/.test(normalizeAdminDateToIsoYmd(fiveDaysAgoMs)),
+      "[AC-13 F02] Epoch ms number must normalize to YYYY-MM-DD"
+    );
+    assert(
+      /^\d{4}-\d{2}-\d{2}$/.test(normalizeAdminDateToIsoYmd(String(Math.floor(fiveDaysAgoMs / 1000)))),
+      "[AC-13 F02] Epoch seconds string must normalize to YYYY-MM-DD"
+    );
+    assert.equal(
+      isAdminFinishedClassWithinGraceWindow(fiveDaysAgoIso, 14),
+      true,
+      "[AC-13 F02] ISO-8601 5d ago must be within 14d grace window"
+    );
+    assert.equal(
+      isAdminFinishedClassWithinGraceWindow(fiveDaysAgoMs, 14),
+      true,
+      "[AC-13 F02] Epoch ms 5d ago must be within 14d grace window"
+    );
+    assert.equal(
+      isAdminFinishedClassWithinGraceWindow(twentyFiveDaysAgoIso, 14),
+      false,
+      "[AC-13 F02] ISO-8601 25d ago must be outside 14d grace window"
+    );
+
+    // F04 & F08: Isolated child Next-@next/env simulation for .env.local mtimeMs hot-reload & NONE flag
+    const hotReloadTestDir = fs.mkdtempSync(path.join(tempDir, "cfg-hotreload-"));
+    const fakeEnvLocalPath = path.join(hotReloadTestDir, ".env.local");
+    fs.writeFileSync(
+      fakeEnvLocalPath,
+      "ADMIN_LMS_USERNAME=tuanpa@mindx.net.vn\nADMIN_LMS_CENTRE_IDS=NONE\n",
+      "utf8"
+    );
+    const cfgScriptPath = path.join(hotReloadTestDir, "probe_hot_reload.mts");
+    const configAbsUrl = new URL(
+      `file:///${path.resolve(ROOT, "src/lib/config.ts").replace(/\\/g, "/")}`
+    ).href;
+    fs.writeFileSync(
+      cfgScriptPath,
+      [
+        `import assert from "node:assert/strict";`,
+        `import fs from "node:fs";`,
+        `import path from "node:path";`,
+        `// Emulate Next.js @next/env pre-populating process.env from .env.local before importing config.ts`,
+        `process.env.ADMIN_LMS_USERNAME = "tuanpa@mindx.net.vn";`,
+        `process.env.ADMIN_LMS_CENTRE_IDS = "NONE";`,
+        `const cfgMod = await import(${JSON.stringify(configAbsUrl)});`,
+        `const first = cfgMod.getDynamicAdminConfig();`,
+        `assert.equal(first.adminLmsUsername, "tuanpa@mindx.net.vn");`,
+        `assert.deepEqual(first.adminLmsCentreIds, []);`,
+        `assert.equal(first.adminLmsCentreFilterDisabled, true);`,
+        `// Edit .env.local (change username & comment out ADMIN_LMS_CENTRE_IDS=NONE) and bump mtimeMs`,
+        `const p = path.resolve(process.cwd(), ".env.local");`,
+        `fs.writeFileSync(p, "ADMIN_LMS_USERNAME=tuanpa@mindx.com.vn\\n# ADMIN_LMS_CENTRE_IDS=NONE\\n", "utf8");`,
+        `const nextTime = new Date(Date.now() + 5000);`,
+        `fs.utimesSync(p, nextTime, nextTime);`,
+        `const second = cfgMod.getDynamicAdminConfig();`,
+        `assert.equal(second.adminLmsUsername, "tuanpa@mindx.com.vn");`,
+        `assert.equal(second.adminLmsCentreFilterDisabled, false);`,
+        `assert.deepEqual(second.adminLmsCentreIds, ["644346f794300678908f79bc"]);`,
+      ].join("\n"),
+      "utf8"
+    );
+    const tsxCliPath = path.join(ROOT, "node_modules", "tsx", "dist", "cli.mjs");
+    const childEnv = { ...process.env };
+    for (const k of [
+      "MINDX_DB_PATH",
+      "MINDX_CONFIG_DIR",
+      "MINDX_ROLE_STATE_DIR",
+      "MINDX_RUNNING_CLASSES_PATH",
+      "MINDX_LMS_CLASS_IDS_PATH",
+      "ALLOWED_LOCAL_DIRS",
+      "ADMIN_LMS_USERNAME",
+      "ADMIN_LMS_PASSWORD",
+      "ADMIN_TEACHING_USERNAME",
+      "ADMIN_TEACHING_PASSWORD",
+      "ADMIN_CENTER_CODE",
+      "ADMIN_LMS_CENTRE_IDS",
+      "NODE_ENV",
+    ]) {
+      delete childEnv[k];
+    }
+    execFileSync(process.execPath, [tsxCliPath, cfgScriptPath], {
+      cwd: hotReloadTestDir,
+      env: childEnv,
+      stdio: "pipe",
+    });
+
+    // F01, F02, F05, F06, F08, F09a, F09d scanner remediation tests
+    const origAc13Auth = authService.withAdminLmsSession;
+    const origAc13Open = LmsHelpers.openClassDrawer;
+    const origAc13Switch = LmsHelpers.switchDrawerTab;
+    const savedNoneFlagBeforeF08 = process.env.ADMIN_LMS_CENTRE_IDS;
+    try {
+      // Seed VT-KEEP-ME before partial Tier 1 + empty Tier 2 scan (F01)
+      const keepRec = computeAdminClassAudits({
+        centerCode: "205ALHP",
+        rawClassMeta: {
+          classCode: "VT-KEEP-ME",
+          lmsClassId: "lms_keep_me",
+          courseName: "Python",
+          status: "RUNNING",
+        },
+        classByIdData: makeCodingClassByIdGql({
+          lmsClassId: "lms_keep_me",
+          classCode: "VT-KEEP-ME",
+          courseName: "Python",
+          startDate: "2026-09-01",
+          endDate: "2026-12-20",
+          mainTeacher: "GV Test",
+          students: [{ id: "km1", fullName: "Nguyễn An" }],
+          currentSessionNumber: 4,
+        }).classByIdData,
+        submissionGqlData: null,
+        studentWorks: [],
+      });
+      adminCenterRepo.upsertClass(keepRec);
+
+      const vtIsoFinGql = makeCodingClassByIdGql({
+        lmsClassId: "lms_iso_fin",
+        classCode: "VT-ISO-FIN",
+        courseName: "Python",
+        startDate: "2026-08-01",
+        endDate: fiveDaysAgoIso,
+        mainTeacher: "GV Iso",
+        students: [{ id: "if1", fullName: "Lê Bình" }],
+        currentSessionNumber: 14,
+      });
+      vtIsoFinGql.classByIdData.status = "FINISHED";
+
+      const vtEpochFinGql = makeCodingClassByIdGql({
+        lmsClassId: "lms_epoch_fin",
+        classCode: "VT-EPOCH-FIN",
+        courseName: "Python",
+        startDate: "2026-08-01",
+        endDate: String(fiveDaysAgoMs),
+        mainTeacher: "GV Epoch",
+        students: [{ id: "ef1", fullName: "Trần Cúc" }],
+        currentSessionNumber: 14,
+      });
+      (vtEpochFinGql.classByIdData as any).endDate = fiveDaysAgoMs;
+      vtEpochFinGql.classByIdData.status = "FINISHED";
+
+      const vtMismatchOldGql = makeCodingClassByIdGql({
+        lmsClassId: "lms_wrong_old",
+        classCode: "VT-WRONG-OLD",
+        courseName: "Python",
+        startDate: "2023-01-01",
+        endDate: "2023-05-01",
+        mainTeacher: "GV Old",
+        students: [{ id: "wo1", fullName: "Phạm Dũng" }],
+        currentSessionNumber: 14,
+      });
+      vtMismatchOldGql.classByIdData.status = "FINISHED";
+
+      let ac13Scenario: "f01-partial" | "f02-f08-dates" | "f06-mismatch" | "f09a-401" | "f05-single" = "f01-partial";
+      let ac13SawCentreIn = false;
+
+      const makeAc13Page = () => ({
+        on: () => {},
+        off: () => {},
+        goto: async () => {},
+        reload: async () => {},
+        waitForTimeout: async () => {},
+        locator: () => ({ first: () => ({ isVisible: async () => false, getAttribute: async () => "false", count: async () => 0 }) }),
+        evaluate: async (fn: any, args: any) => {
+          if (typeof fn === "string") return;
+          const mockFetch = async (_url: string, opts: any) => {
+            const parsed = JSON.parse(opts?.body || "{}");
+            const q = String(parsed?.query || "");
+            const vars = parsed?.variables || {};
+            const mkResp = (bodyObj: any, statusCode: number) => ({
+              ok: statusCode >= 200 && statusCode < 300,
+              status: statusCode,
+              json: async () => bodyObj,
+            });
+
+            if (vars?.centres && Array.isArray(vars.centres) && vars.centres.length > 0) {
+              ac13SawCentreIn = true;
+            }
+
+            if (ac13Scenario === "f01-partial") {
+              if (/AdminCampusClassesByCentre/.test(q)) {
+                if (vars.status?.includes("RUNNING") && vars.pageIndex === 0) {
+                  return mkResp({
+                    data: {
+                      classes: {
+                        data: [{ id: "lms_iso_fin", name: "VT-ISO-FIN", status: "RUNNING" }],
+                        pagination: { total: 150 },
+                      },
+                    },
+                  }, 200);
+                }
+                if (vars.status?.includes("RUNNING") && vars.pageIndex === 1) {
+                  return mkResp({ errors: [{ message: "Page 1 HTTP 500 failure" }] }, 500);
+                }
+              }
+              if (/classesMissAttendOrComment/.test(q)) {
+                return mkResp({ data: { classesMissAttendOrComment: { data: [] } } }, 200);
+              }
+              if (/GetClassById|AdminGetClassFieldById/.test(q)) {
+                return mkResp({
+                  data: {
+                    classesById: {
+                      ...vtIsoFinGql.classByIdData,
+                      id: "lms_iso_fin",
+                      name: "VT-ISO-FIN",
+                      status: "RUNNING",
+                    },
+                  },
+                }, 200);
+              }
+              if (/findStudentSubmissionByClass|studentSubmissions/.test(q)) {
+                return mkResp({ data: { findStudentSubmissionByClass: vtIsoFinGql.submissionGqlData } }, 200);
+              }
+              if (/findAllStudentWorks/.test(q)) {
+                return mkResp({ data: { findAllStudentWorks: { data: [] } } }, 200);
+              }
+              return mkResp({ data: { classes: { data: [], pagination: { total: 0 } } } }, 200);
+            }
+
+            if (ac13Scenario === "f02-f08-dates") {
+              if (/classes\(payload:\s*\{\s*filter_textSearch/.test(q)) {
+                return mkResp({
+                  data: {
+                    classes: {
+                      data: [
+                        { id: "lms_iso_fin", name: "VT-ISO-FIN", status: "FINISHED", endDate: fiveDaysAgoIso },
+                        { id: "lms_epoch_fin", name: "VT-EPOCH-FIN", status: "FINISHED", endDate: fiveDaysAgoMs },
+                      ],
+                      pagination: { total: 2 },
+                    },
+                  },
+                }, 200);
+              }
+              if (/GetClassById/.test(q)) {
+                const target = vars.id === "lms_epoch_fin" ? vtEpochFinGql.classByIdData : vtIsoFinGql.classByIdData;
+                return mkResp({ data: { classesById: target } }, 200);
+              }
+              if (/findStudentSubmissionByClass|studentSubmissions/.test(q)) {
+                const sub = vars?.payload?.classId === "lms_epoch_fin" || vars.classId === "lms_epoch_fin"
+                  ? vtEpochFinGql.submissionGqlData
+                  : vtIsoFinGql.submissionGqlData;
+                return mkResp({ data: { findStudentSubmissionByClass: sub } }, 200);
+              }
+              if (/findAllStudentWorks/.test(q)) {
+                return mkResp({ data: { findAllStudentWorks: { data: [] } } }, 200);
+              }
+              return mkResp({ data: { classes: { data: [], pagination: { total: 0 } } } }, 200);
+            }
+
+            if (ac13Scenario === "f06-mismatch") {
+              if (/AdminCampusClassesByCentre/.test(q)) {
+                if (vars.status?.includes("RUNNING")) {
+                  return mkResp({
+                    data: {
+                      classes: {
+                        data: [{ id: "lms_active_mm", name: "VT-ACTIVE-MM", status: "RUNNING" }],
+                        pagination: { total: 1 },
+                      },
+                    },
+                  }, 200);
+                }
+                return mkResp({ data: { classes: { data: [], pagination: { total: 0 } } } }, 200);
+              }
+              if (/GetClassById/.test(q)) {
+                return mkResp({ data: { classesById: vtMismatchOldGql.classByIdData } }, 200);
+              }
+              return mkResp({ data: { findAllStudentWorks: { data: [] } } }, 200);
+            }
+
+            if (ac13Scenario === "f09a-401") {
+              if (/classes\(/.test(q)) {
+                return mkResp({
+                  errors: [],
+                  data: { classes: { data: [{ id: "lms_401_id", name: "VT-401" }] } },
+                }, 200);
+              }
+              if (/classesById/.test(q)) {
+                return mkResp({ errors: [{ message: 'Cannot query field "classesById"' }] }, 200);
+              }
+              if (/query AdminGetClassFieldById/.test(q)) {
+                return mkResp({ errors: [{ message: "Unauthorized JWT (401)" }] }, 401);
+              }
+              return mkResp({ data: {} }, 200);
+            }
+
+            // f05-single: drawer throws timeout, list has errors: [] & no classes match, knownLmsId resolves
+            if (/classes\(/.test(q)) {
+              return mkResp({ errors: [], data: { classes: { data: [] } } }, 200);
+            }
+            if (/classesMissAttendOrComment/.test(q)) {
+              return mkResp({ errors: [], data: { classesMissAttendOrComment: { data: [] } } }, 200);
+            }
+            if (/GetClassById/.test(q) && vars.id === "lms_gi36_known") {
+              return mkResp({
+                data: {
+                  classesById: makeCodingClassByIdGql({
+                    lmsClassId: "lms_gi36_known",
+                    classCode: "VT-C4K-GI36",
+                    courseName: "Game Intro",
+                    startDate: "2026-09-01",
+                    endDate: "2026-12-20",
+                    mainTeacher: "GV Test",
+                    students: [{ id: "gi1", fullName: "Đỗ Gia Huy" }],
+                    currentSessionNumber: 5,
+                  }).classByIdData,
+                },
+              }, 200);
+            }
+            if (/findStudentSubmissionByClass|studentSubmissions/.test(q)) {
+              return mkResp({ data: { findStudentSubmissionByClass: vtIsoFinGql.submissionGqlData } }, 200);
+            }
+            if (/findAllStudentWorks/.test(q)) {
+              return mkResp({ data: { findAllStudentWorks: { data: [] } } }, 200);
+            }
+            return mkResp({ data: {} }, 200);
+          };
+          return vm.runInNewContext(`(${fn.toString()})(args)`, {
+            args,
+            fetch: mockFetch,
+            __name: (v: any) => v,
+            Date,
+            Set,
+            Map,
+            JSON,
+            Array,
+            Object,
+            String,
+            Number,
+            Boolean,
+            Error,
+            Promise,
+          });
+        },
+      });
+
+      const emptyTeachingDeps = {
+        ...teachingDeps,
+        httpClient: {
+          getHtmlPage: async (rel: string) => {
+            if (rel.startsWith("/index.php")) return `<div class="regular-class"></div>`;
+            if (rel.startsWith("/check_nhanxet.php")) return `<table><thead><tr><th>Mã lớp</th></tr></thead><tbody></tbody></table>`;
+            if (rel.startsWith("/hocbu.php")) return `<table><thead><tr><th>Mã lớp</th></tr></thead><tbody></tbody></table>`;
+            return "";
+          },
+        },
+        reportCardTransport: {
+          ...teachingDeps.reportCardTransport,
+          getStudents: async () => [],
+        },
+      };
+
+      LmsHelpers.openClassDrawer = async () => {};
+      LmsHelpers.switchDrawerTab = async () => {};
+      authService.withAdminLmsSession = async (fn: any) => fn(makeAc13Page());
+
+      // (F01) Tier 1 Page 1 500 + empty Tier 2 must NOT prune VT-KEEP-ME or return COMPLETED
+      ac13Scenario = "f01-partial";
+      resetAdminScanProgressForTest();
+      const f01Res = await scanAdminCenterClasses({
+        scope: "ALL",
+        includeMakeup: true,
+        teachingDeps: emptyTeachingDeps as any,
+      });
+      assert.notEqual(f01Res.status, "COMPLETED", "[AC-13 F01] Partial Tier 1 + empty Tier 2 must not report COMPLETED");
+      assert.ok(adminCenterRepo.findClass("VT-KEEP-ME"), "[AC-13 F01] VT-KEEP-ME must NOT be pruned on incomplete discovery");
+
+      // (F02 + F08) ADMIN_LMS_CENTRE_IDS=NONE disables centre_in AND retains ISO/epoch FINISHED <=14d without Teacher DB
+      process.env.ADMIN_LMS_CENTRE_IDS = "NONE";
+      ac13Scenario = "f02-f08-dates";
+      ac13SawCentreIn = false;
+      resetAdminScanProgressForTest();
+      const f02Res = await scanAdminCenterClasses({
+        scope: "ALL",
+        includeMakeup: true,
+        teachingDeps: emptyTeachingDeps as any,
+      });
+      assert.equal(f02Res.success, true, "[AC-13 F02] Scan with ISO & epoch FINISHED <=14d must succeed");
+      assert.equal(ac13SawCentreIn, false, "[AC-13 F08] ADMIN_LMS_CENTRE_IDS=NONE must suppress centre_in");
+      assert.ok(adminCenterRepo.findClass("VT-ISO-FIN"), "[AC-13 F02] ISO-8601 FINISHED 5d class must be kept");
+      assert.ok(adminCenterRepo.findClass("VT-EPOCH-FIN"), "[AC-13 F02] Epoch ms FINISHED 5d class must be kept");
+
+      // Restore default centre id for F06
+      if (savedNoneFlagBeforeF08 === undefined) delete process.env.ADMIN_LMS_CENTRE_IDS;
+      else process.env.ADMIN_LMS_CENTRE_IDS = savedNoneFlagBeforeF08;
+
+      // (F06) Historical mismatch payload must NOT bypass assertMatchingLmsClassPayload
+      ac13Scenario = "f06-mismatch";
+      resetAdminScanProgressForTest();
+      const f06Res = await scanAdminCenterClasses({
+        scope: "ALL",
+        includeMakeup: true,
+        teachingDeps: emptyTeachingDeps as any,
+      });
+      assert.notEqual(f06Res.status, "COMPLETED", "[AC-13 F06] Mismatched old FINISHED payload must fail class");
+      assert(
+        f06Res.failedClasses.some((fc) => fc.classCode === "VT-ACTIVE-MM" && /Mismatch|sai lớp/i.test(fc.error)),
+        "[AC-13 F06] Expected LMS Class Mismatch failure recorded for VT-ACTIVE-MM"
+      );
+
+      // (F09a + F09d) errors: [] accepted in discovery; subsequent HTTP 401 on class(id) overwrites prior schema err
+      ac13Scenario = "f09a-401";
+      await assert.rejects(
+        fetchSingleLmsClassGqlInAdminSession(makeAc13Page() as any, "VT-401"),
+        /401|Unauthorized/i,
+        "[AC-13 F09a] HTTP 401 from class(id) must not be masked by prior classesById schema error"
+      );
+
+      // (F05) Single-class BTVN refresh falls through cleanly when drawer times out + resolves knownLmsClassId
+      ac13Scenario = "f05-single";
+      LmsHelpers.openClassDrawer = async () => {
+        throw new Error("[LmsHelpers Error] Timeout khi chờ Drawer chi tiết lớp VT-C4K-GI36");
+      };
+      const f05Single = await fetchSingleLmsClassGqlInAdminSession(makeAc13Page() as any, "VT-C4K-GI36", {
+        lmsClassId: "lms_gi36_known",
+      });
+      assert.equal(f05Single.lmsClassId, "lms_gi36_known", "[AC-13 F05] Must recover with knownLmsClassId when drawer times out");
+      assert.equal(f05Single.classByIdData?.name, "VT-C4K-GI36");
+    } finally {
+      if (savedNoneFlagBeforeF08 === undefined) delete process.env.ADMIN_LMS_CENTRE_IDS;
+      else process.env.ADMIN_LMS_CENTRE_IDS = savedNoneFlagBeforeF08;
+      authService.withAdminLmsSession = origAc13Auth;
+      LmsHelpers.openClassDrawer = origAc13Open;
+      LmsHelpers.switchDrawerTab = origAc13Switch;
+      resetAdminScanProgressForTest();
+    }
+
+    console.log("PASS [AC-13] Neon XHigh Round 1 remediation (F01..F09)");
     console.log("ALL ADMIN CENTER V3.5.0 TESTS PASSED");
   } finally {
     closeDb();

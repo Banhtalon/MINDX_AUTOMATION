@@ -10,7 +10,7 @@ import {
   type StudentRecord,
 } from "../db/sqlite";
 import { buildLmsClassCommentsUrl, isValidLmsClassCode } from "../lms/lms-class-url";
-import { authService } from "../playwright/auth";
+import { authService, extractIdentityFromMindxCookies } from "../playwright/auth";
 import { LmsHelpers } from "../playwright/lms-helpers";
 import { createNetworkInterceptor } from "../playwright/network-interceptor";
 import { ScoreScraper } from "../playwright/scrape-scores";
@@ -19,7 +19,6 @@ import type { RemoteTeachingScoreRow } from "../playwright/teaching-report-card-
 import { redactSecrets, sanitizeErrorMessage } from "../security/secret-redactor";
 import {
   isConfirmedRunningStatus,
-  isFinishedClassWithinGraceWindow,
   ONE_DAY_MS,
   parseClassDateToEndOfDayMs,
 } from "../playwright/sync-class";
@@ -59,6 +58,51 @@ export type AdminScanScope =
   | "CODING_ONLY"
   | "SINGLE_CLASS"
   | "TEACHING_ONLY";
+
+export function normalizeAdminDateToIsoYmd(rawDate: unknown): string {
+  if (typeof rawDate === "number" && Number.isFinite(rawDate) && rawDate > 0) {
+    const ms = rawDate > 1e12 ? rawDate : rawDate * 1000;
+    const vn = new Date(ms + 7 * 60 * 60 * 1000);
+    if (Number.isFinite(vn.getTime())) {
+      const y = String(vn.getUTCFullYear()).padStart(4, "0");
+      const m = String(vn.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(vn.getUTCDate()).padStart(2, "0");
+      return normalizeDateToIsoYmd(`${y}-${m}-${d}`);
+    }
+    return "";
+  }
+  const text = String(rawDate ?? "").trim();
+  if (!text || text === "0000-00-00") return "";
+  if (/^\d{10,13}$/.test(text)) {
+    return normalizeAdminDateToIsoYmd(Number(text));
+  }
+  const fromSqlite = normalizeDateToIsoYmd(text);
+  if (fromSqlite) return fromSqlite;
+  const parsedMs = Date.parse(text);
+  if (Number.isFinite(parsedMs)) {
+    const vn = new Date(parsedMs + 7 * 60 * 60 * 1000);
+    if (Number.isFinite(vn.getTime())) {
+      const y = String(vn.getUTCFullYear()).padStart(4, "0");
+      const m = String(vn.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(vn.getUTCDate()).padStart(2, "0");
+      return normalizeDateToIsoYmd(`${y}-${m}-${d}`);
+    }
+  }
+  return "";
+}
+
+export function isAdminFinishedClassWithinGraceWindow(
+  rawEndDate: unknown,
+  graceDays: number = 14,
+  nowMs: number = Date.now()
+): boolean {
+  const iso = normalizeAdminDateToIsoYmd(rawEndDate);
+  if (!iso) return false;
+  const endOfDayMs = parseClassDateToEndOfDayMs(iso);
+  if (endOfDayMs === null) return false;
+  const diffMs = nowMs - endOfDayMs;
+  return diffMs <= graceDays * ONE_DAY_MS && diffMs >= -14 * ONE_DAY_MS;
+}
 
 /**
  * PTB & CSB courses are exempt from Demo / SPCK on MindX LHP curriculum.
@@ -737,10 +781,10 @@ export function computeAdminClassAudits(
     clsData?.status || input.rawClassMeta.status || "Running"
   ).trim();
   const startDate =
-    normalizeDateToIsoYmd(clsData?.startDate || input.rawClassMeta.startDate) ||
+    normalizeAdminDateToIsoYmd(clsData?.startDate ?? input.rawClassMeta.startDate) ||
     String(clsData?.startDate || input.rawClassMeta.startDate || "").trim();
   const endDate =
-    normalizeDateToIsoYmd(clsData?.endDate || input.rawClassMeta.endDate) ||
+    normalizeAdminDateToIsoYmd(clsData?.endDate ?? input.rawClassMeta.endDate) ||
     String(clsData?.endDate || input.rawClassMeta.endDate || "").trim();
 
   const blockType: AdminBlockType =
@@ -2083,6 +2127,124 @@ const MINIMAL_CLASSES_QUERY = `
   }
 `;
 
+const CAMPUS_CLASSES_BY_CENTRE_QUERY = `
+  query AdminCampusClassesByCentre($centres: [String], $status: [String], $pageIndex: Int, $itemsPerPage: Int) {
+    classes(payload: { centre_in: $centres, status_in: $status, pageIndex: $pageIndex, itemsPerPage: $itemsPerPage }) {
+      data {
+        id
+        name
+        status
+        startDate
+        endDate
+        course {
+          id
+          name
+        }
+        teachers {
+          role {
+            name
+          }
+          teacher {
+            fullName
+            username
+          }
+        }
+      }
+      pagination {
+        total
+      }
+    }
+  }
+`;
+
+const CAMPUS_CLASSES_BY_CENTRE_NO_STATUS_QUERY = `
+  query AdminCampusClassesByCentreNoStatus($centres: [String], $pageIndex: Int, $itemsPerPage: Int) {
+    classes(payload: { centre_in: $centres, pageIndex: $pageIndex, itemsPerPage: $itemsPerPage }) {
+      data {
+        id
+        name
+        status
+        startDate
+        endDate
+        course {
+          id
+          name
+        }
+        teachers {
+          role {
+            name
+          }
+          teacher {
+            fullName
+            username
+          }
+        }
+      }
+      pagination {
+        total
+      }
+    }
+  }
+`;
+
+const CAMPUS_MISS_ATTEND_CLASSES_QUERY = `
+  query classesMissAttendOrComment($type: [String], $search: String, $centres: [String], $pageIndex: Int, $itemsPerPage: Int, $orderBy: String, $status: [String]) {
+    classesMissAttendOrComment(
+      payload: {
+        type: $type,
+        filter_textSearch: $search,
+        centre_in: $centres,
+        pageIndex: $pageIndex,
+        itemsPerPage: $itemsPerPage,
+        orderBy: $orderBy,
+        status_in: $status
+      }
+    ) {
+      data {
+        id
+        name
+        status
+        startDate
+        endDate
+        course {
+          id
+          name
+        }
+        teachers {
+          role {
+            name
+          }
+          teacher {
+            fullName
+            username
+          }
+        }
+      }
+    }
+  }
+`;
+
+const CAMPUS_MISS_ATTEND_MINIMAL_QUERY = `
+  query classesMissAttendOrCommentMinimal($type: [String], $search: String, $centres: [String], $pageIndex: Int, $itemsPerPage: Int, $orderBy: String, $status: [String]) {
+    classesMissAttendOrComment(
+      payload: {
+        type: $type,
+        filter_textSearch: $search,
+        centre_in: $centres,
+        pageIndex: $pageIndex,
+        itemsPerPage: $itemsPerPage,
+        orderBy: $orderBy,
+        status_in: $status
+      }
+    ) {
+      data {
+        id
+        name
+      }
+    }
+  }
+`;
+
 const FALLBACK_GET_CLASS_BY_ID_QUERY = `
   query GetClassById($id: ID!) {
     classesById(id: $id) {
@@ -2155,6 +2317,124 @@ const FALLBACK_GET_CLASS_BY_ID_QUERY = `
 const FALLBACK_GET_CLASS_BY_ID_MINIMAL_QUERY = `
   query GetClassByIdMinimal($id: ID!) {
     classesById(id: $id) {
+      id
+      name
+      status
+      startDate
+      endDate
+      course {
+        id
+        name
+      }
+      teachers {
+        role {
+          name
+        }
+        teacher {
+          fullName
+          username
+        }
+      }
+      students {
+        activeInClass
+        student {
+          id
+          fullName
+        }
+      }
+      slots {
+        _id
+        summary
+        homework
+        date
+        startTime
+        endTime
+        studentAttendance {
+          status
+          comment
+          sendCommentStatus
+          student {
+            id
+            fullName
+          }
+        }
+      }
+    }
+  }
+`;
+
+const FALLBACK_CLASS_FIELD_BY_ID_QUERY = `
+  query AdminGetClassFieldById($id: ID!) {
+    class(id: $id) {
+      id
+      name
+      status
+      startDate
+      endDate
+      course {
+        id
+        name
+      }
+      teachers {
+        role {
+          name
+        }
+        teacher {
+          fullName
+          username
+        }
+      }
+      students {
+        activeInClass
+        student {
+          id
+          fullName
+        }
+      }
+      slots {
+        _id
+        summary
+        homework
+        date
+        startTime
+        endTime
+        studentAttendance {
+          status
+          comment
+          sendCommentStatus
+          commentByAreas {
+            type
+            grade
+            content
+            courseProcessDemoId
+            checkpoint {
+              checkpointScore
+              practiceScore
+              checkpointQuestions {
+                result
+              }
+            }
+            demoQuestions {
+              courseProcessDemoDetailId
+              title
+              result
+              score
+              maxScore
+            }
+          }
+          student {
+            id
+            fullName
+          }
+        }
+      }
+    }
+  }
+`;
+
+const FALLBACK_CLASS_FIELD_BY_ID_MINIMAL_QUERY = `
+  query AdminGetClassFieldByIdMinimal($id: ID!) {
+    class(id: $id) {
       id
       name
       status
@@ -2308,11 +2588,33 @@ const FIND_ALL_STUDENT_WORKS_MINIMAL_QUERY = `
   }
 `;
 
+export function buildLmsClassSearchCandidates(classCode: string): string[] {
+  const code = String(classCode || "").trim().toUpperCase();
+  if (!code) return [];
+  const out: string[] = [];
+  const add = (candidate: string) => {
+    const clean = String(candidate || "").trim().toUpperCase();
+    if (!clean || clean === "HB" || clean === "VT" || clean.length < 4) return;
+    if (!out.includes(clean)) out.push(clean);
+  };
+  add(code);
+  const withoutHb = code.replace(/-HB$/i, "");
+  add(withoutHb);
+  for (const base of [code, withoutHb]) {
+    add(base.replace(/^VT-(?:C4K-|ROB-|KIND-)?/i, ""));
+    add(base.replace(/^VT-/i, ""));
+    const dashParts = base.split("-").filter(Boolean);
+    add(dashParts[dashParts.length - 1] || "");
+  }
+  return out;
+}
+
 function buildLmsGqlCaptureListener(state: {
   capturedHeaders: Record<string, string>;
   capturedGetClassQuery: string;
   capturedSubmissionQuery: string;
   capturedSubmissionVars: any;
+  capturedCentres?: string[];
 }) {
   return (req: any) => {
     try {
@@ -2323,8 +2625,8 @@ function buildLmsGqlCaptureListener(state: {
         req.method().toUpperCase() === "POST"
       ) {
         const h = req.headers();
-        if (h?.authorization || h?.Authorization) {
-          state.capturedHeaders = h;
+        if (h?.authorization || h?.Authorization || h?.token || h?.Token) {
+          state.capturedHeaders = { ...state.capturedHeaders, ...h };
         }
         const postBody = req.postDataJSON?.();
         if (postBody?.operationName === "GetClassById" && typeof postBody?.query === "string") {
@@ -2339,11 +2641,172 @@ function buildLmsGqlCaptureListener(state: {
             state.capturedSubmissionVars = postBody.variables;
           }
         }
+        const reqCentres = postBody?.variables?.centres;
+        if (Array.isArray(reqCentres) && state.capturedCentres) {
+          for (const cid of reqCentres) {
+            const s = String(cid || "").trim();
+            if (s && !state.capturedCentres.includes(s)) {
+              state.capturedCentres.push(s);
+            }
+          }
+        }
       }
     } catch {
       // ignore malformed request
     }
   };
+}
+
+function isLikelyJwtToken(raw: string): boolean {
+  const clean = String(raw || "")
+    .trim()
+    .replace(/^"+|"+$/g, "")
+    .replace(/^Bearer\s+/i, "")
+    .trim();
+  if (clean.length < 30) return false;
+  return clean.split(".").length === 3 && /^eyJ/i.test(clean);
+}
+
+async function resolveAdminPageAuthHeaders(
+  page: Page,
+  capturedHeaders: Record<string, string>
+): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  let authHeader = "";
+  let tokenHeader = "";
+
+  for (const [k, v] of Object.entries(capturedHeaders || {})) {
+    const kl = k.toLowerCase();
+    const val = String(v || "").trim();
+    if (!val) continue;
+    if (kl === "authorization") {
+      authHeader = val;
+      out[k] = val;
+    } else if (kl === "token") {
+      tokenHeader = val;
+      out[k] = val;
+    } else if (kl.startsWith("x-") || kl.startsWith("apollo-")) {
+      out[k] = val;
+    }
+  }
+
+  let rawJwt = "";
+  if (authHeader) {
+    rawJwt = authHeader.replace(/^Bearer\s+/i, "").trim();
+  } else if (tokenHeader) {
+    rawJwt = tokenHeader.replace(/^Bearer\s+/i, "").trim();
+  }
+
+  if ((!authHeader || !tokenHeader) && !rawJwt) {
+    if (typeof (page as any)?.context === "function") {
+      try {
+        const cookies = await page.context().cookies();
+        const preferredOrder = [
+          "session",
+          "id_token",
+          "access_token",
+          "lms_token",
+          "auth_token",
+          "token",
+        ];
+        const mindxCookies = cookies.filter((c) =>
+          /(^|\.)mindx\.(edu|net|com)\.vn$/i.test(String(c?.domain || "").replace(/^\.+/, ""))
+        );
+        mindxCookies.sort((a, b) => {
+          const ai = preferredOrder.indexOf(String(a?.name || "").toLowerCase());
+          const bi = preferredOrder.indexOf(String(b?.name || "").toLowerCase());
+          return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+        });
+        for (const c of mindxCookies) {
+          let decoded = String(c?.value || "").trim();
+          try {
+            decoded = decodeURIComponent(decoded).trim();
+          } catch {
+            // keep raw value
+          }
+          if (isLikelyJwtToken(decoded)) {
+            rawJwt = decoded.replace(/^"+|"+$/g, "").replace(/^Bearer\s+/i, "").trim();
+            break;
+          }
+          if (decoded.startsWith("{")) {
+            try {
+              const obj = JSON.parse(decoded);
+              for (const k of ["id_token", "access_token", "lms_token", "auth_token", "token", "idToken", "accessToken"]) {
+                const candidate = String(obj?.[k] || "").trim();
+                if (isLikelyJwtToken(candidate)) {
+                  rawJwt = candidate.replace(/^Bearer\s+/i, "").trim();
+                  break;
+                }
+              }
+              if (rawJwt) break;
+            } catch {
+              // ignore non-JSON cookie
+            }
+          }
+        }
+        // Validate identity hint is available without failing if omitted
+        void extractIdentityFromMindxCookies(cookies);
+      } catch {
+        // ignore cookie lookup failure
+      }
+    }
+
+    if (!rawJwt && typeof (page as any)?.evaluate === "function") {
+      try {
+        const lsToken = await page
+          .evaluate(() => {
+            try {
+              const keys = ["id_token", "access_token", "lms_token", "auth_token", "token"];
+              for (const k of keys) {
+                const raw = String(window.localStorage.getItem(k) || "").trim().replace(/^"+|"+$/g, "");
+                if (raw.split(".").length === 3 && /^eyJ/i.test(raw)) return raw;
+              }
+              for (let i = 0; i < window.localStorage.length; i++) {
+                const lk = window.localStorage.key(i);
+                if (!lk) continue;
+                const val = String(window.localStorage.getItem(lk) || "").trim();
+                const unquoted = val.replace(/^"+|"+$/g, "");
+                if (unquoted.split(".").length === 3 && /^eyJ/i.test(unquoted)) {
+                  return unquoted;
+                }
+                if (val.startsWith("{")) {
+                  try {
+                    const p = JSON.parse(val);
+                    const nested =
+                      p?.stsTokenManager?.accessToken || p?.idToken || p?.accessToken || p?.token || "";
+                    if (typeof nested === "string" && nested.split(".").length === 3 && /^eyJ/i.test(nested)) {
+                      return nested;
+                    }
+                  } catch {
+                    // ignore
+                  }
+                }
+              }
+            } catch {
+              // ignore
+            }
+            return "";
+          })
+          .catch(() => "");
+        if (lsToken && isLikelyJwtToken(lsToken)) {
+          rawJwt = lsToken.replace(/^Bearer\s+/i, "").trim();
+        }
+      } catch {
+        // ignore localStorage fallback errors
+      }
+    }
+  }
+
+  if (rawJwt) {
+    if (!authHeader) {
+      out.authorization = rawJwt.startsWith("Bearer ") ? rawJwt : `Bearer ${rawJwt}`;
+    }
+    if (!tokenHeader) {
+      out.token = rawJwt.replace(/^Bearer\s+/i, "").trim();
+    }
+  }
+
+  return out;
 }
 
 export interface AdminLmsFetchedBundle {
@@ -2376,18 +2839,22 @@ export interface AdminLmsFetchedBundle {
 
 export async function fetchSingleLmsClassGqlInAdminSession(
   page: Page,
-  classCode: string
+  classCode: string,
+  options?: { lmsClassId?: string }
 ): Promise<{
   lmsClassId: string;
   classByIdData: any | null;
   submissionGqlData: any | null;
   studentWorks: any[];
 }> {
+  const adminCfg = getDynamicAdminConfig();
+  const knownLmsClassId = String(options?.lmsClassId || "").trim();
   const captureState = {
     capturedHeaders: {} as Record<string, string>,
     capturedGetClassQuery: "",
     capturedSubmissionQuery: "",
     capturedSubmissionVars: null as any,
+    capturedCentres: [] as string[],
   };
   const reqListener = buildLmsGqlCaptureListener(captureState);
 
@@ -2396,28 +2863,50 @@ export async function fetchSingleLmsClassGqlInAdminSession(
     const targetUrl = buildLmsClassCommentsUrl({
       lmsBaseUrl: config.lmsUrl,
       classCode,
+      ...(knownLmsClassId ? { lmsClassId: knownLmsClassId } : {}),
       tab: 3,
     });
-    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
+    await page
+      .goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 25000 })
+      .catch(() => {});
     const interceptor = createNetworkInterceptor(page);
-    await interceptor.dismissForbiddenToast();
+    await interceptor.dismissForbiddenToast().catch(() => {});
 
-    await LmsHelpers.openClassDrawer(page, classCode);
-    await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.grading);
-    await page.waitForTimeout(1500);
+    try {
+      await LmsHelpers.openClassDrawer(page, classCode);
+      await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.grading);
+      await page.waitForTimeout(1500);
+    } catch {
+      // Fallback directly to cookie-JWT GraphQL queries when UI drawer times out (F05)
+    }
+
+    const resolvedHeaders = await resolveAdminPageAuthHeaders(page, captureState.capturedHeaders);
+    const activeCentreIds = adminCfg.adminLmsCentreFilterDisabled
+      ? []
+      : captureState.capturedCentres.length > 0
+        ? Array.from(new Set([...adminCfg.adminLmsCentreIds, ...captureState.capturedCentres]))
+        : adminCfg.adminLmsCentreIds;
+    const searchCandidates = buildLmsClassSearchCandidates(classCode);
 
     await page.evaluate("window.__name = window.__name || function(f){ return f; }").catch(() => {});
     const res = await page.evaluate(
       async ({
         clsCode,
+        knownLmsId,
         hdrs,
+        centreIds,
+        searchCandidates: candList,
         getClassQ,
         getClassMinQ,
+        classFieldQ,
+        classFieldMinQ,
         subQ,
         subLegacyQ,
         subVarsTemplate,
         classesQ,
         minClassesQ,
+        missAttendQ,
+        missAttendMinQ,
         worksQ,
         worksMinQ,
         isRobotics,
@@ -2427,7 +2916,12 @@ export async function fetchSingleLmsClassGqlInAdminSession(
         };
         for (const [k, v] of Object.entries(hdrs || {})) {
           const kl = k.toLowerCase();
-          if (kl === "authorization" || kl.startsWith("x-") || kl.startsWith("apollo-")) {
+          if (
+            kl === "authorization" ||
+            kl === "token" ||
+            kl.startsWith("x-") ||
+            kl.startsWith("apollo-")
+          ) {
             headers[k] = String(v);
           }
         }
@@ -2462,34 +2956,131 @@ export async function fetchSingleLmsClassGqlInAdminSession(
           return parsed;
         };
 
-        let listRes = await gql(classesQ, { text: clsCode, pageIndex: 0, itemsPerPage: 20 });
-        if (
-          ((Array.isArray(listRes?.errors) && listRes.errors.length > 0) ||
-            !Array.isArray(listRes?.data?.classes?.data)) &&
-          minClassesQ
-        ) {
-          listRes = await gql(minClassesQ, { text: clsCode });
+        const isTransportOrAuthErr = (resObj: any) =>
+          Boolean(resObj?.__httpError) &&
+          (Number(resObj?.status) === 401 ||
+            Number(resObj?.status) === 403 ||
+            Number(resObj?.status) >= 500);
+
+        const normalizedTarget = String(clsCode || "").trim().toUpperCase();
+        const candidates =
+          Array.isArray(candList) && candList.length > 0 ? candList : [normalizedTarget];
+        let matched: any = null;
+        let listErr = "";
+        let anyListCallOk = false;
+        let sawListTransportOrAuthErr = false;
+
+        for (const cand of candidates) {
+          let listRes = await gql(classesQ, { text: cand, pageIndex: 0, itemsPerPage: 20 });
+          if (
+            ((Array.isArray(listRes?.errors) && listRes.errors.length > 0) ||
+              !Array.isArray(listRes?.data?.classes?.data)) &&
+            minClassesQ &&
+            !isTransportOrAuthErr(listRes)
+          ) {
+            listRes = await gql(minClassesQ, { text: cand });
+          }
+          if (
+            (!Array.isArray(listRes?.errors) || listRes.errors.length === 0) &&
+            Array.isArray(listRes?.data?.classes?.data)
+          ) {
+            anyListCallOk = true;
+            const list = listRes.data.classes.data;
+            const found = list.find(
+              (c: any) => String(c?.name || "").trim().toUpperCase() === normalizedTarget
+            );
+            if (found?.id) {
+              matched = found;
+              break;
+            }
+          } else {
+            const errMsg =
+              (Array.isArray(listRes?.errors) && listRes.errors[0]?.message) ||
+              "Không đọc được danh sách lớp từ LMS GraphQL.";
+            if (isTransportOrAuthErr(listRes)) {
+              listErr = errMsg;
+              sawListTransportOrAuthErr = true;
+              break;
+            }
+            if (!listErr) {
+              listErr = errMsg;
+            }
+          }
         }
-        if (
-          (Array.isArray(listRes?.errors) && listRes.errors.length > 0) ||
-          !Array.isArray(listRes?.data?.classes?.data)
-        ) {
+
+        if (!matched && !sawListTransportOrAuthErr && Array.isArray(centreIds) && centreIds.length > 0 && missAttendQ) {
+          for (const cand of candidates) {
+            const missAttempts = [
+              {
+                type: [],
+                search: cand,
+                centres: centreIds,
+                status: ["RUNNING", "FINISHED"],
+                pageIndex: 0,
+                itemsPerPage: 50,
+                orderBy: "createdAt_desc",
+              },
+              {
+                type: [],
+                search: cand,
+                centres: centreIds,
+                pageIndex: 0,
+                itemsPerPage: 50,
+                orderBy: "createdAt_desc",
+              },
+            ];
+            for (const vars of missAttempts) {
+              let mRes = await gql(missAttendQ, vars, "classesMissAttendOrComment");
+              if (
+                ((Array.isArray(mRes?.errors) && mRes.errors.length > 0) ||
+                  !Array.isArray(mRes?.data?.classesMissAttendOrComment?.data)) &&
+                missAttendMinQ &&
+                !isTransportOrAuthErr(mRes)
+              ) {
+                mRes = await gql(missAttendMinQ, vars, "classesMissAttendOrComment");
+              }
+              const mData = mRes?.data?.classesMissAttendOrComment?.data;
+              if (
+                (!Array.isArray(mRes?.errors) || mRes.errors.length === 0) &&
+                Array.isArray(mData)
+              ) {
+                anyListCallOk = true;
+                const found = mData.find(
+                  (c: any) => String(c?.name || "").trim().toUpperCase() === normalizedTarget
+                );
+                if (found?.id) {
+                  matched = found;
+                  break;
+                }
+              } else {
+                const errMsg =
+                  (Array.isArray(mRes?.errors) && mRes.errors[0]?.message) || listErr;
+                if (isTransportOrAuthErr(mRes)) {
+                  listErr = errMsg;
+                  sawListTransportOrAuthErr = true;
+                  break;
+                }
+                if (!listErr) {
+                  listErr = errMsg;
+                }
+              }
+            }
+            if (matched || sawListTransportOrAuthErr) break;
+          }
+        }
+
+        const fallbackKnownId = String(knownLmsId || "").trim();
+        if (sawListTransportOrAuthErr || (!matched && !anyListCallOk && !fallbackKnownId)) {
           return {
             lmsClassId: "",
             classByIdData: null,
             submissionGqlData: null,
             studentWorks: [],
-            err:
-              (Array.isArray(listRes?.errors) && listRes.errors[0]?.message) ||
-              "Không đọc được danh sách lớp từ LMS GraphQL.",
+            err: listErr || "Không đọc được danh sách lớp từ LMS GraphQL.",
           };
         }
 
-        const list = listRes?.data?.classes?.data || [];
-        const matched = list.find(
-          (c: any) => String(c?.name || "").trim().toUpperCase() === clsCode
-        );
-        const lmsId = String(matched?.id || "").trim();
+        const lmsId = String(matched?.id || fallbackKnownId || "").trim();
         if (!lmsId) {
           return {
             lmsClassId: "",
@@ -2505,26 +3096,43 @@ export async function fetchSingleLmsClassGqlInAdminSession(
           obj?.data?.class ||
           obj?.data?.getClassById ||
           null;
-        let clsByIdRes = await gql(getClassQ, { id: lmsId }, "GetClassById");
-        if (
-          ((Array.isArray(clsByIdRes?.errors) && clsByIdRes.errors.length > 0) ||
-            !extractCls(clsByIdRes)) &&
-          getClassMinQ
-        ) {
-          clsByIdRes = await gql(getClassMinQ, { id: lmsId }, "GetClassByIdMinimal");
+
+        const clsQueries: Array<[string, string]> = [
+          [getClassQ, "GetClassById"],
+          ...(getClassMinQ ? [[getClassMinQ, "GetClassByIdMinimal"] as [string, string]] : []),
+          ...(classFieldQ ? [[classFieldQ, "AdminGetClassFieldById"] as [string, string]] : []),
+          ...(classFieldMinQ ? [[classFieldMinQ, "AdminGetClassFieldByIdMinimal"] as [string, string]] : []),
+        ];
+        let resolvedClsPayload: any = null;
+        let clsLastErr = "";
+        for (const [qText, opName] of clsQueries) {
+          const rCls = await gql(qText, { id: lmsId }, opName);
+          const candidatePayload = extractCls(rCls);
+          const hasErr = Array.isArray(rCls?.errors) && rCls.errors.length > 0;
+          if (!hasErr && candidatePayload) {
+            resolvedClsPayload = candidatePayload;
+            clsLastErr = "";
+            break;
+          }
+          if (isTransportOrAuthErr(rCls)) {
+            clsLastErr = String(
+              rCls?.errors?.[0]?.message || `LMS GraphQL HTTP ${rCls?.status || "ERR"}`
+            );
+            break;
+          }
+          if (hasErr && !clsLastErr) {
+            clsLastErr = String(rCls.errors[0]?.message || "GraphQL error");
+          }
         }
-        const resolvedClsPayload = extractCls(clsByIdRes);
-        if (
-          (Array.isArray(clsByIdRes?.errors) && clsByIdRes.errors.length > 0) ||
-          !resolvedClsPayload
-        ) {
+
+        if (!resolvedClsPayload || clsLastErr) {
           return {
             lmsClassId: lmsId,
             classByIdData: null,
             submissionGqlData: null,
             studentWorks: [],
             err:
-              (Array.isArray(clsByIdRes?.errors) && clsByIdRes.errors[0]?.message) ||
+              clsLastErr ||
               `Không đọc được chi tiết lớp ${clsCode} từ LMS GraphQL.`,
           };
         }
@@ -2596,14 +3204,21 @@ export async function fetchSingleLmsClassGqlInAdminSession(
       },
       {
         clsCode: classCode,
-        hdrs: captureState.capturedHeaders,
+        knownLmsId: knownLmsClassId,
+        hdrs: resolvedHeaders,
+        centreIds: activeCentreIds,
+        searchCandidates,
         getClassQ: captureState.capturedGetClassQuery || FALLBACK_GET_CLASS_BY_ID_QUERY,
         getClassMinQ: FALLBACK_GET_CLASS_BY_ID_MINIMAL_QUERY,
+        classFieldQ: FALLBACK_CLASS_FIELD_BY_ID_QUERY,
+        classFieldMinQ: FALLBACK_CLASS_FIELD_BY_ID_MINIMAL_QUERY,
         subQ: captureState.capturedSubmissionQuery || FALLBACK_SUBMISSION_QUERY,
         subLegacyQ: FALLBACK_SUBMISSION_LEGACY_QUERY,
         subVarsTemplate: captureState.capturedSubmissionVars,
         classesQ: FALLBACK_CLASSES_QUERY,
         minClassesQ: MINIMAL_CLASSES_QUERY,
+        missAttendQ: CAMPUS_MISS_ATTEND_CLASSES_QUERY,
+        missAttendMinQ: CAMPUS_MISS_ATTEND_MINIMAL_QUERY,
         worksQ: FIND_ALL_STUDENT_WORKS_QUERY,
         worksMinQ: FIND_ALL_STUDENT_WORKS_MINIMAL_QUERY,
         isRobotics: isRoboticsClassCode(classCode),
@@ -2903,17 +3518,27 @@ export async function scanAdminCenterClasses(options?: {
               capturedGetClassQuery: "",
               capturedSubmissionQuery: "",
               capturedSubmissionVars: null as any,
+              capturedCentres: [] as string[],
             };
             const reqListener = buildLmsGqlCaptureListener(captureState);
 
             page.on("request", reqListener);
             try {
-              const classesUrl = `${config.lmsUrl.replace(/\/$/, "")}/admin/classes`;
+              const initialCentreIds = adminCfg.adminLmsCentreIds;
+              const classesUrl =
+                initialCentreIds.length > 0
+                  ? `${config.lmsUrl.replace(/\/$/, "")}/admin/classes?centres=${encodeURIComponent(JSON.stringify(initialCentreIds))}`
+                  : `${config.lmsUrl.replace(/\/$/, "")}/admin/classes`;
               await page.goto(classesUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
               await page.waitForTimeout(1800);
               await interceptor.dismissForbiddenToast();
 
-              if (!captureState.capturedHeaders.authorization && !captureState.capturedHeaders.Authorization) {
+              if (
+                !captureState.capturedHeaders.authorization &&
+                !captureState.capturedHeaders.Authorization &&
+                !captureState.capturedHeaders.token &&
+                !captureState.capturedHeaders.Token
+              ) {
                 await page.reload({ waitUntil: "domcontentloaded", timeout: 25000 }).catch(() => {});
                 await page.waitForTimeout(2000);
               }
@@ -2922,9 +3547,52 @@ export async function scanAdminCenterClasses(options?: {
                 .evaluate("window.__name = window.__name || function(f){ return f; }")
                 .catch(() => {});
 
+              const activeCentreIds = adminCfg.adminLmsCentreFilterDisabled
+                ? []
+                : captureState.capturedCentres.length > 0 && initialCentreIds.length === 0
+                  ? [...captureState.capturedCentres]
+                  : initialCentreIds;
+              const discoveryHeaders = await resolveAdminPageAuthHeaders(
+                page,
+                captureState.capturedHeaders
+              );
+
+              const teachingScheduleCodeSet = new Set<string>();
+              const teachingScheduleTargets: Array<{ classCode: string; candidates: string[] }> = [];
+              if (!singleClassCode) {
+                for (const rawCode of teachingOverview.scheduleByClass.keys()) {
+                  const cleanCode = String(rawCode || "").trim().toUpperCase();
+                  if (!cleanCode) continue;
+                  if (scope === "CODING_ONLY" && isRoboticsClassCode(cleanCode)) {
+                    continue;
+                  }
+                  if (!teachingScheduleCodeSet.has(cleanCode)) {
+                    teachingScheduleCodeSet.add(cleanCode);
+                    teachingScheduleTargets.push({
+                      classCode: cleanCode,
+                      candidates: buildLmsClassSearchCandidates(cleanCode),
+                    });
+                  }
+                }
+              }
+
               // Step 2a: Discover campus classes via GraphQL pagination (strict completeness check)
               const discoveryResult = await page.evaluate(
-                async ({ hdrs, cCode, clsQuery, minClsQuery }: any) => {
+                async ({
+                  hdrs,
+                  cCode,
+                  centreIds,
+                  isSingleClass,
+                  singleCandidates,
+                  teachingTargets,
+                  recentFinishedCutoffMs,
+                  clsQuery,
+                  minClsQuery,
+                  campusClassesQ,
+                  campusClassesNoStatusQ,
+                  missAttendQ,
+                  missAttendMinQ,
+                }: any) => {
                   const headers: Record<string, string> = {
                     "content-type": "application/json",
                   };
@@ -2932,110 +3600,571 @@ export async function scanAdminCenterClasses(options?: {
                     const kl = k.toLowerCase();
                     if (
                       kl === "authorization" ||
+                      kl === "token" ||
                       kl.startsWith("x-") ||
                       kl.startsWith("apollo-")
                     ) {
                       headers[k] = String(v);
                     }
                   }
-                  const collected: any[] = [];
-                  let expectedTotal: number | null = null;
-                  let complete = true;
-                  let errorMsg = "";
-
-                  for (let pageIdx = 0; pageIdx < 25; pageIdx++) {
+                  const gql = async (query: string, variables?: any, operationName?: string) => {
                     const r = await fetch("https://lms-api.mindx.edu.vn/", {
                       method: "POST",
                       headers,
                       body: JSON.stringify({
-                        query: clsQuery,
-                        variables: {
-                          text: cCode,
-                          pageIndex: pageIdx,
-                          itemsPerPage: 100,
-                        },
+                        query,
+                        variables,
+                        ...(operationName ? { operationName } : {}),
                       }),
                     });
-                    if (!r.ok) {
-                      complete = false;
-                      errorMsg = `LMS GraphQL HTTP ${r.status} ở trang ${pageIdx + 1}`;
-                      break;
+                    const parsed =
+                      typeof r?.json === "function" ? await r.json().catch(() => null) : null;
+                    if (!r || !r.ok) {
+                      const gqlMsg =
+                        Array.isArray(parsed?.errors) && parsed.errors.length > 0
+                          ? String(parsed.errors[0]?.message || "")
+                          : "";
+                      return {
+                        __httpError: true,
+                        status: Number(r?.status || 0),
+                        errors: [{ message: gqlMsg || `LMS GraphQL HTTP ${r?.status ?? "ERR"}` }],
+                        data: null,
+                      };
                     }
-                    const json = await r.json().catch(() => null);
-                    if (!json || typeof json !== "object") {
-                      complete = false;
-                      errorMsg = `Phản hồi danh sách lớp trang ${pageIdx + 1} không hợp lệ.`;
-                      break;
+                    if (!parsed || typeof parsed !== "object") {
+                      return {
+                        __httpError: true,
+                        status: Number(r.status || 0),
+                        errors: [{ message: `LMS GraphQL phản hồi không hợp lệ (HTTP ${r.status})` }],
+                        data: null,
+                      };
                     }
-                    if (Array.isArray(json?.errors) && json.errors.length > 0) {
-                      if (pageIdx === 0 && minClsQuery) {
-                        const rMin = await fetch("https://lms-api.mindx.edu.vn/", {
-                          method: "POST",
-                          headers,
-                          body: JSON.stringify({
-                            query: minClsQuery,
-                            variables: { text: cCode },
-                          }),
+                    return parsed;
+                  };
+                  const isTransportOrAuthErr = (resObj: any) =>
+                    Boolean(resObj?.__httpError) &&
+                    (Number(resObj?.status) === 401 ||
+                      Number(resObj?.status) === 403 ||
+                      Number(resObj?.status) >= 500);
+
+                  const collected: any[] = [];
+                  const seenIds = new Set<string>();
+                  const seenNames = new Set<string>();
+                  const pushUnique = (items: any[]) => {
+                    for (const item of items || []) {
+                      if (!item || typeof item !== "object") continue;
+                      const id = String(item.id || "").trim();
+                      const nm = String(item.name || "").trim().toUpperCase();
+                      if (!id && !nm) continue;
+                      if ((id && seenIds.has(id)) || (nm && seenNames.has(nm))) continue;
+                      if (id) seenIds.add(id);
+                      if (nm) seenNames.add(nm);
+                      collected.push(item);
+                    }
+                  };
+
+                  const parseEndDateMs = (raw: any): number | null => {
+                    if (typeof raw === "number" && Number.isFinite(raw)) {
+                      return raw > 1e12 ? raw : raw * 1000;
+                    }
+                    const s = String(raw || "").trim();
+                    if (!s || s === "0000-00-00") return null;
+                    const iso = Date.parse(s);
+                    if (Number.isFinite(iso)) return iso;
+                    const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+                    if (dmy) {
+                      const d = Number(dmy[1]);
+                      const m = Number(dmy[2]);
+                      let y = Number(dmy[3]);
+                      if (y < 100) y += 2000;
+                      const dt = Date.UTC(y, m - 1, d);
+                      return Number.isFinite(dt) ? dt : null;
+                    }
+                    return null;
+                  };
+
+                  const isPageAllOlderFinished = (items: any[]): boolean => {
+                    if (!Array.isArray(items) || items.length === 0) return false;
+                    let hasValidDate = false;
+                    for (const item of items) {
+                      const ms = parseEndDateMs(item?.endDate);
+                      if (ms === null) return false;
+                      hasValidDate = true;
+                      if (ms >= recentFinishedCutoffMs) return false;
+                    }
+                    return hasValidDate;
+                  };
+
+                  let expectedTotal: number | null = null;
+                  let complete = true;
+                  let errorMsg = "";
+
+                  const searchSingleExact = async (targetCode: string, candidates: string[]) => {
+                    const normTarget = String(targetCode || "").trim().toUpperCase();
+                    let anyOk = false;
+                    let lastErr = "";
+                    let sawTransportErr = false;
+
+                    for (const cand of candidates) {
+                      let r = await gql(clsQuery, { text: cand, pageIndex: 0, itemsPerPage: 20 });
+                      if (
+                        ((Array.isArray(r?.errors) && r.errors.length > 0) ||
+                          !Array.isArray(r?.data?.classes?.data)) &&
+                        minClsQuery &&
+                        !isTransportOrAuthErr(r)
+                      ) {
+                        r = await gql(minClsQuery, { text: cand });
+                      }
+                      if (
+                        (!Array.isArray(r?.errors) || r.errors.length === 0) &&
+                        Array.isArray(r?.data?.classes?.data)
+                      ) {
+                        anyOk = true;
+                        const found = r.data.classes.data.find(
+                          (c: any) => String(c?.name || "").trim().toUpperCase() === normTarget
+                        );
+                        if (found) return { found, anyOk: true, error: "" };
+                      } else {
+                        const errMsg =
+                          (Array.isArray(r?.errors) && r.errors[0]?.message) ||
+                          `LMS GraphQL error (${normTarget})`;
+                        if (isTransportOrAuthErr(r)) {
+                          lastErr = errMsg;
+                          sawTransportErr = true;
+                          break;
+                        }
+                        if (!lastErr) {
+                          lastErr = errMsg;
+                        }
+                      }
+                    }
+
+                    if (!sawTransportErr && Array.isArray(centreIds) && centreIds.length > 0 && missAttendQ) {
+                      for (const cand of candidates) {
+                        const vars = {
+                          type: [],
+                          search: cand,
+                          centres: centreIds,
+                          status: ["RUNNING", "FINISHED"],
+                          pageIndex: 0,
+                          itemsPerPage: 50,
+                          orderBy: "createdAt_desc",
+                        };
+                        let mRes = await gql(missAttendQ, vars, "classesMissAttendOrComment");
+                        if (
+                          ((Array.isArray(mRes?.errors) && mRes.errors.length > 0) ||
+                            !Array.isArray(mRes?.data?.classesMissAttendOrComment?.data)) &&
+                          missAttendMinQ &&
+                          !isTransportOrAuthErr(mRes)
+                        ) {
+                          mRes = await gql(missAttendMinQ, vars, "classesMissAttendOrComment");
+                        }
+                        const mData = mRes?.data?.classesMissAttendOrComment?.data;
+                        if (
+                          (!Array.isArray(mRes?.errors) || mRes.errors.length === 0) &&
+                          Array.isArray(mData)
+                        ) {
+                          anyOk = true;
+                          const found = mData.find(
+                            (c: any) => String(c?.name || "").trim().toUpperCase() === normTarget
+                          );
+                          if (found) return { found, anyOk: true, error: "" };
+                        } else {
+                          const errMsg =
+                            (Array.isArray(mRes?.errors) && mRes.errors[0]?.message) || lastErr;
+                          if (isTransportOrAuthErr(mRes)) {
+                            lastErr = errMsg;
+                            break;
+                          }
+                          if (!lastErr) {
+                            lastErr = errMsg;
+                          }
+                        }
+                      }
+                    }
+
+                    return { found: null, anyOk, error: lastErr };
+                  };
+
+                  if (isSingleClass) {
+                    const candList =
+                      Array.isArray(singleCandidates) && singleCandidates.length > 0
+                        ? singleCandidates
+                        : [String(cCode || "").trim().toUpperCase()];
+                    const singleRes = await searchSingleExact(cCode, candList);
+                    if (singleRes.found) {
+                      pushUnique([singleRes.found]);
+                      expectedTotal = 1;
+                      complete = true;
+                    } else if (!singleRes.anyOk) {
+                      complete = false;
+                      errorMsg = singleRes.error || "Không đọc được danh sách lớp từ LMS GraphQL.";
+                    }
+                    return {
+                      collected,
+                      complete,
+                      expectedTotal,
+                      error: errorMsg,
+                    };
+                  }
+
+                  const hasCentres = Array.isArray(centreIds) && centreIds.length > 0;
+                  let tier1Complete = false;
+                  let tier1Err = "";
+                  let tier1ExpectedRunningTotal: number | null = null;
+
+                  // Tier 1: Query classes by centre_in for RUNNING and recent FINISHED
+                  if (hasCentres && campusClassesQ) {
+                    let schemaSupportsStatus = true;
+                    let runningComplete = true;
+                    let runningErr = "";
+                    let runningCollectedCount = 0;
+
+                    for (let pageIdx = 0; pageIdx < 25; pageIdx++) {
+                      const activeQ = schemaSupportsStatus
+                        ? campusClassesQ
+                        : campusClassesNoStatusQ;
+                      const vars = schemaSupportsStatus
+                        ? {
+                            centres: centreIds,
+                            status: ["RUNNING"],
+                            pageIndex: pageIdx,
+                            itemsPerPage: 100,
+                          }
+                        : {
+                            centres: centreIds,
+                            pageIndex: pageIdx,
+                            itemsPerPage: 100,
+                          };
+                      let r = await gql(activeQ, vars);
+                      if (
+                        pageIdx === 0 &&
+                        schemaSupportsStatus &&
+                        campusClassesNoStatusQ &&
+                        Array.isArray(r?.errors) &&
+                        r.errors.length > 0 &&
+                        !isTransportOrAuthErr(r)
+                      ) {
+                        schemaSupportsStatus = false;
+                        r = await gql(campusClassesNoStatusQ, {
+                          centres: centreIds,
+                          pageIndex: pageIdx,
+                          itemsPerPage: 100,
                         });
-                        if (!rMin.ok) {
-                          complete = false;
-                          errorMsg = `LMS GraphQL minimal HTTP ${rMin.status}`;
-                          break;
-                        }
-                        const jsonMin = await rMin.json().catch(() => null);
-                        if (Array.isArray(jsonMin?.errors) && jsonMin.errors.length > 0) {
-                          complete = false;
-                          errorMsg = String(jsonMin.errors[0]?.message || "GraphQL minimal error");
-                          break;
-                        }
-                        const minData = jsonMin?.data?.classes?.data;
-                        if (!Array.isArray(minData)) {
-                          complete = false;
-                          errorMsg = "GraphQL minimal không trả về mảng lớp.";
-                          break;
-                        }
-                        collected.push(...minData);
-                        if (minData.length >= 100) {
-                          complete = false;
-                          errorMsg = "Truy vấn tối giản chạm giới hạn 100 lớp nên chưa xác minh đủ.";
+                      }
+                      if (Array.isArray(r?.errors) && r.errors.length > 0) {
+                        runningComplete = false;
+                        runningErr = String(
+                          r.errors[0]?.message || `GraphQL classes error trang ${pageIdx + 1}`
+                        );
+                        break;
+                      }
+                      const conn = r?.data?.classes;
+                      const data = conn?.data;
+                      if (!Array.isArray(data)) {
+                        runningComplete = false;
+                        runningErr = `Dữ liệu classes.data trang ${pageIdx + 1} không hợp lệ.`;
+                        break;
+                      }
+                      const rawPageTotal = conn?.pagination?.total;
+                      const pageTotal =
+                        typeof rawPageTotal === "number"
+                          ? rawPageTotal
+                          : typeof rawPageTotal === "string" && rawPageTotal.trim() !== ""
+                            ? Number(rawPageTotal)
+                            : NaN;
+                      if (Number.isFinite(pageTotal) && pageTotal >= 0) {
+                        tier1ExpectedRunningTotal = pageTotal;
+                      }
+                      pushUnique(data);
+                      runningCollectedCount += data.length;
+                      if (data.length === 0) {
+                        if (
+                          Number.isFinite(pageTotal) &&
+                          pageTotal >= 0 &&
+                          runningCollectedCount < pageTotal
+                        ) {
+                          runningComplete = false;
+                          runningErr = `Danh sách lớp RUNNING thiếu: ${runningCollectedCount}/${pageTotal}`;
                         }
                         break;
                       }
-                      complete = false;
-                      errorMsg = String(json.errors[0]?.message || `GraphQL error ở trang ${pageIdx + 1}`);
-                      break;
+                      if (Number.isFinite(pageTotal) && pageTotal >= 0) {
+                        if (runningCollectedCount >= pageTotal) {
+                          break;
+                        }
+                      } else if (data.length < 100) {
+                        break;
+                      }
+                      if (pageIdx === 24) {
+                        runningComplete = false;
+                        runningErr = `Danh sách lớp RUNNING vượt quá 25 trang (${runningCollectedCount}).`;
+                      }
                     }
 
-                    const conn = json?.data?.classes;
-                    const data = conn?.data;
-                    if (!Array.isArray(data)) {
-                      complete = false;
-                      errorMsg = `Dữ liệu classes.data ở trang ${pageIdx + 1} không hợp lệ.`;
-                      break;
-                    }
-                    const pageTotal = Number(conn?.pagination?.total ?? NaN);
-                    if (Number.isFinite(pageTotal) && pageTotal >= 0) {
-                      expectedTotal = pageTotal;
-                    }
-                    collected.push(...data);
-                    if (data.length === 0) {
-                      if (expectedTotal !== null && collected.length < expectedTotal) {
-                        complete = false;
-                        errorMsg = `Danh sách lớp thiếu: ${collected.length}/${expectedTotal}`;
+                    let finishedComplete = true;
+                    let finishedErr = "";
+                    if (runningComplete && schemaSupportsStatus) {
+                      let finishedCollectedCount = 0;
+                      for (let pageIdx = 0; pageIdx < 3; pageIdx++) {
+                        const rFin = await gql(campusClassesQ, {
+                          centres: centreIds,
+                          status: ["FINISHED"],
+                          pageIndex: pageIdx,
+                          itemsPerPage: 100,
+                        });
+                        if (Array.isArray(rFin?.errors) && rFin.errors.length > 0) {
+                          finishedComplete = false;
+                          finishedErr = String(
+                            rFin.errors[0]?.message || `GraphQL FINISHED error trang ${pageIdx + 1}`
+                          );
+                          break;
+                        }
+                        const connFin = rFin?.data?.classes;
+                        const dataFin = connFin?.data;
+                        if (!Array.isArray(dataFin)) {
+                          finishedComplete = false;
+                          finishedErr = `Dữ liệu FINISHED classes.data trang ${pageIdx + 1} không hợp lệ.`;
+                          break;
+                        }
+                        const rawTotalFin = connFin?.pagination?.total;
+                        const pageTotalFin =
+                          typeof rawTotalFin === "number"
+                            ? rawTotalFin
+                            : typeof rawTotalFin === "string" && rawTotalFin.trim() !== ""
+                              ? Number(rawTotalFin)
+                              : NaN;
+                        pushUnique(dataFin);
+                        finishedCollectedCount += dataFin.length;
+                        if (dataFin.length === 0) break;
+                        if (isPageAllOlderFinished(dataFin)) break;
+                        if (Number.isFinite(pageTotalFin) && pageTotalFin >= 0) {
+                          if (finishedCollectedCount >= pageTotalFin) {
+                            break;
+                          }
+                        } else if (dataFin.length < 100) {
+                          break;
+                        }
                       }
-                      break;
                     }
-                    if (expectedTotal !== null && collected.length >= expectedTotal) {
-                      break;
-                    }
-                    if (expectedTotal === null && data.length < 100) {
-                      break;
-                    }
-                    if (pageIdx === 24 && (expectedTotal === null || collected.length < expectedTotal)) {
+
+                    tier1Complete = runningComplete && finishedComplete;
+                    tier1Err = runningErr || finishedErr;
+                    if (!tier1Complete) {
                       complete = false;
-                      errorMsg = `Danh sách lớp vượt quá 25 trang (${collected.length}/${expectedTotal ?? "?"}).`;
+                      errorMsg = tier1Err;
                     }
                   }
+
+                  // Tier 2: Proven classesMissAttendOrComment (type: [], centre_in) if Tier 1 failed or returned 0
+                  let tier2Complete = false;
+                  let tier2Err = "";
+                  let tier2RawCount = 0;
+                  if (hasCentres && missAttendQ && (!tier1Complete || collected.length === 0)) {
+                    let useMinimalMiss = false;
+                    let runOk = true;
+                    let runErr = "";
+
+                    for (let pageIdx = 0; pageIdx < 15; pageIdx++) {
+                      const vars = {
+                        type: [],
+                        centres: centreIds,
+                        status: ["RUNNING"],
+                        pageIndex: pageIdx,
+                        itemsPerPage: 100,
+                        orderBy: "createdAt_desc",
+                      };
+                      let r = await gql(
+                        useMinimalMiss && missAttendMinQ ? missAttendMinQ : missAttendQ,
+                        vars,
+                        "classesMissAttendOrComment"
+                      );
+                      if (
+                        pageIdx === 0 &&
+                        !useMinimalMiss &&
+                        missAttendMinQ &&
+                        ((Array.isArray(r?.errors) && r.errors.length > 0) ||
+                          !Array.isArray(r?.data?.classesMissAttendOrComment?.data)) &&
+                        !isTransportOrAuthErr(r)
+                      ) {
+                        useMinimalMiss = true;
+                        r = await gql(missAttendMinQ, vars, "classesMissAttendOrComment");
+                      }
+                      if (Array.isArray(r?.errors) && r.errors.length > 0) {
+                        runOk = false;
+                        runErr = String(
+                          r.errors[0]?.message || `classesMissAttendOrComment error trang ${pageIdx + 1}`
+                        );
+                        break;
+                      }
+                      const data = r?.data?.classesMissAttendOrComment?.data;
+                      if (!Array.isArray(data)) {
+                        runOk = false;
+                        runErr = `Dữ liệu classesMissAttendOrComment trang ${pageIdx + 1} không hợp lệ.`;
+                        break;
+                      }
+                      tier2RawCount += data.length;
+                      pushUnique(data);
+                      if (data.length < 100) break;
+                      if (pageIdx === 14) {
+                        runOk = false;
+                        runErr = "Danh sách lớp classesMissAttendOrComment vượt quá 15 trang.";
+                      }
+                    }
+
+                    let finOk = true;
+                    let finErr = "";
+                    if (runOk) {
+                      const finVars = {
+                        type: [],
+                        centres: centreIds,
+                        status: ["FINISHED"],
+                        pageIndex: 0,
+                        itemsPerPage: 60,
+                        orderBy: "createdAt_desc",
+                      };
+                      const rFin = await gql(
+                        useMinimalMiss && missAttendMinQ ? missAttendMinQ : missAttendQ,
+                        finVars,
+                        "classesMissAttendOrComment"
+                      );
+                      if (Array.isArray(rFin?.errors) && rFin.errors.length > 0) {
+                        finOk = false;
+                        finErr = String(
+                          rFin.errors[0]?.message || "classesMissAttendOrComment FINISHED error"
+                        );
+                      } else {
+                        const finData = rFin?.data?.classesMissAttendOrComment?.data;
+                        if (!Array.isArray(finData)) {
+                          finOk = false;
+                          finErr = "Dữ liệu classesMissAttendOrComment FINISHED không hợp lệ.";
+                        } else {
+                          tier2RawCount += finData.length;
+                          pushUnique(finData);
+                        }
+                      }
+                    }
+
+                    tier2Complete = runOk && finOk;
+                    tier2Err = runErr || finErr;
+                    if (
+                      tier2Complete &&
+                      (tier2RawCount > 0 || !tier1Err) &&
+                      (tier1ExpectedRunningTotal === null ||
+                        collected.length >= tier1ExpectedRunningTotal)
+                    ) {
+                      complete = true;
+                      errorMsg = "";
+                    } else if (!tier2Complete) {
+                      complete = false;
+                      errorMsg = tier2Err || tier1Err;
+                    }
+                  }
+
+                  // Tier 3: Legacy filter_textSearch fallback when centreIds is empty OR both Tier 1 & 2 yielded 0
+                  if (!hasCentres || (collected.length === 0 && !tier1Complete && !tier2Complete)) {
+                    let legacyComplete = true;
+                    let legacyErr = "";
+                    let legacyExpected: number | null = null;
+                    let legacyCount = 0;
+                    let tier3RawCount = 0;
+
+                    for (let pageIdx = 0; pageIdx < 25; pageIdx++) {
+                      const r = await gql(clsQuery, {
+                        text: cCode,
+                        pageIndex: pageIdx,
+                        itemsPerPage: 100,
+                      });
+                      if (Array.isArray(r?.errors) && r.errors.length > 0) {
+                        if (pageIdx === 0 && minClsQuery && !isTransportOrAuthErr(r)) {
+                          const rMin = await gql(minClsQuery, { text: cCode });
+                          const minData = rMin?.data?.classes?.data;
+                          if (
+                            (!Array.isArray(rMin?.errors) || rMin.errors.length === 0) &&
+                            Array.isArray(minData)
+                          ) {
+                            tier3RawCount += minData.length;
+                            pushUnique(minData);
+                            if (minData.length >= 100) {
+                              legacyComplete = false;
+                              legacyErr =
+                                "Truy vấn tối giản chạm giới hạn 100 lớp nên chưa xác minh đủ.";
+                            }
+                            break;
+                          }
+                          legacyComplete = false;
+                          legacyErr = String(
+                            rMin?.errors?.[0]?.message || "GraphQL minimal error"
+                          );
+                          break;
+                        }
+                        legacyComplete = false;
+                        legacyErr = String(
+                          r.errors[0]?.message || `GraphQL error ở trang ${pageIdx + 1}`
+                        );
+                        break;
+                      }
+
+                      const conn = r?.data?.classes;
+                      const data = conn?.data;
+                      if (!Array.isArray(data)) {
+                        legacyComplete = false;
+                        legacyErr = `Dữ liệu classes.data ở trang ${pageIdx + 1} không hợp lệ.`;
+                        break;
+                      }
+                      const pageTotal = Number(conn?.pagination?.total ?? NaN);
+                      if (Number.isFinite(pageTotal) && pageTotal >= 0) {
+                        legacyExpected = pageTotal;
+                      }
+                      tier3RawCount += data.length;
+                      pushUnique(data);
+                      legacyCount += data.length;
+                      if (data.length === 0) {
+                        if (legacyExpected !== null && legacyCount < legacyExpected) {
+                          legacyComplete = false;
+                          legacyErr = `Danh sách lớp thiếu: ${legacyCount}/${legacyExpected}`;
+                        }
+                        break;
+                      }
+                      if (legacyExpected !== null && legacyCount >= legacyExpected) {
+                        break;
+                      }
+                      if (legacyExpected === null && data.length < 100) {
+                        break;
+                      }
+                      if (pageIdx === 24 && (legacyExpected === null || legacyCount < legacyExpected)) {
+                        legacyComplete = false;
+                        legacyErr = `Danh sách lớp vượt quá 25 trang (${legacyCount}/${legacyExpected ?? "?"}).`;
+                      }
+                    }
+
+                    if (!hasCentres) {
+                      complete = legacyComplete;
+                      expectedTotal = legacyExpected;
+                      errorMsg = legacyErr;
+                    } else if (legacyComplete && (tier3RawCount > 0 || (!tier1Err && !tier2Err))) {
+                      complete = true;
+                      errorMsg = "";
+                    }
+                  }
+
+                  // Tier 4: Cross-check classes on Teaching weekly schedule missing from collected
+                  if (Array.isArray(teachingTargets) && teachingTargets.length > 0) {
+                    for (const t of teachingTargets) {
+                      const codeUpper = String(t?.classCode || "").trim().toUpperCase();
+                      if (!codeUpper || seenNames.has(codeUpper)) continue;
+                      const resT = await searchSingleExact(
+                        codeUpper,
+                        Array.isArray(t?.candidates) && t.candidates.length > 0
+                          ? t.candidates
+                          : [codeUpper]
+                      );
+                      if (resT.found) {
+                        pushUnique([resT.found]);
+                      }
+                    }
+                  }
+
                   return {
                     collected,
                     complete,
@@ -3044,10 +4173,21 @@ export async function scanAdminCenterClasses(options?: {
                   };
                 },
                 {
-                  hdrs: captureState.capturedHeaders,
+                  hdrs: discoveryHeaders,
                   cCode: singleClassCode || centerCode,
+                  centreIds: activeCentreIds,
+                  isSingleClass: Boolean(singleClassCode),
+                  singleCandidates: singleClassCode
+                    ? buildLmsClassSearchCandidates(singleClassCode)
+                    : [],
+                  teachingTargets: teachingScheduleTargets,
+                  recentFinishedCutoffMs: Date.now() - 21 * ONE_DAY_MS,
                   clsQuery: FALLBACK_CLASSES_QUERY,
                   minClsQuery: MINIMAL_CLASSES_QUERY,
+                  campusClassesQ: CAMPUS_CLASSES_BY_CENTRE_QUERY,
+                  campusClassesNoStatusQ: CAMPUS_CLASSES_BY_CENTRE_NO_STATUS_QUERY,
+                  missAttendQ: CAMPUS_MISS_ATTEND_CLASSES_QUERY,
+                  missAttendMinQ: CAMPUS_MISS_ATTEND_MINIMAL_QUERY,
                 }
               );
 
@@ -3074,8 +4214,14 @@ export async function scanAdminCenterClasses(options?: {
                     classCode,
                     courseName: String(c?.course?.name || "").trim(),
                     status: String(c?.status || "").trim(),
-                    startDate: String(c?.startDate || "").trim(),
-                    endDate: String(c?.endDate || "").trim(),
+                    startDate:
+                      c?.startDate !== undefined && c?.startDate !== null
+                        ? String(c.startDate).trim()
+                        : "",
+                    endDate:
+                      c?.endDate !== undefined && c?.endDate !== null
+                        ? String(c.endDate).trim()
+                        : "",
                     mainTeacher: mainT,
                     assistantTeacher: taT,
                   };
@@ -3083,16 +4229,22 @@ export async function scanAdminCenterClasses(options?: {
                 .filter((c: any) => {
                   if (!c.classCode || !c.lmsClassId) return false;
                   if (singleClassCode) return c.classCode === singleClassCode;
+                  const statusUp = String(c.status || "").trim().toUpperCase();
+                  if (/CANCEL|CLOSE|DROP/.test(statusUp)) return false;
                   const isRunning = isConfirmedRunningStatus(c.status);
                   const isRecentFinished =
-                    String(c.status || "").toUpperCase().includes("FINISH") &&
-                    isFinishedClassWithinGraceWindow(
-                      c.classCode,
-                      c.endDate,
-                      14,
-                      nowMs
-                    ).withinWindow;
-                  if (!isRunning && !isRecentFinished) return false;
+                    statusUp.includes("FINISH") &&
+                    isAdminFinishedClassWithinGraceWindow(c.endDate, 14, nowMs);
+                  const onTeachingSchedule = teachingScheduleCodeSet.has(c.classCode);
+                  const needsDetailCheck = statusUp === "";
+                  if (
+                    !isRunning &&
+                    !isRecentFinished &&
+                    !onTeachingSchedule &&
+                    !needsDetailCheck
+                  ) {
+                    return false;
+                  }
                   if (scope === "CODING_ONLY" && isRoboticsClassCode(c.classCode)) {
                     return false;
                   }
@@ -3126,12 +4278,38 @@ export async function scanAdminCenterClasses(options?: {
                   await page.waitForTimeout(1500);
                   await interceptor.dismissForbiddenToast();
                   await LmsHelpers.openClassDrawer(page, seedCodingClass.classCode).catch(() => {});
+                  if (
+                    !captureState.capturedSubmissionQuery &&
+                    typeof (page as any)?.locator === "function"
+                  ) {
+                    const tab3 = page
+                      .locator(
+                        '.MuiDrawer-root #tab-3, [role="dialog"] #tab-3, #tab-3, [role="tab"]:has-text("Submission"), [role="tab"]:has-text("Chấm bài")'
+                      )
+                      .first();
+                    const isAlreadyTab3 =
+                      (await tab3.getAttribute("aria-selected").catch(() => "false")) === "true";
+                    if (isAlreadyTab3) {
+                      const tab0 = page
+                        .locator('.MuiDrawer-root #tab-0, [role="dialog"] #tab-0, #tab-0')
+                        .first();
+                      if ((await tab0.count().catch(() => 0)) > 0) {
+                        await tab0.click({ force: true }).catch(() => {});
+                        await page.waitForTimeout(500);
+                      }
+                    }
+                  }
                   await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.grading).catch(() => {});
                   await page.waitForTimeout(1500);
                 } catch {
                   // ignore seed capture timeout; fallback GraphQL queries remain ready
                 }
               }
+
+              const detailHeaders = await resolveAdminPageAuthHeaders(
+                page,
+                captureState.capturedHeaders
+              );
 
               const perClass = new Map<
                 string,
@@ -3144,6 +4322,7 @@ export async function scanAdminCenterClasses(options?: {
                   worksError?: string;
                 }
               >();
+              const skippedHistoricalClasses = new Set<string>();
 
               let stoppedEarly = false;
               for (const item of targetList) {
@@ -3154,6 +4333,7 @@ export async function scanAdminCenterClasses(options?: {
                 }
                 progressState.currentClassCode = item.classCode;
                 const isRob = isRoboticsClassCode(item.classCode);
+                const onTeachingSchedule = teachingScheduleCodeSet.has(item.classCode);
 
                 try {
                   await page
@@ -3165,12 +4345,16 @@ export async function scanAdminCenterClasses(options?: {
                       hdrs,
                       getClassQ,
                       getClassMinQ,
+                      classFieldQ,
+                      classFieldMinQ,
                       subQ,
                       subLegacyQ,
                       subVarsTemplate,
                       worksQ,
                       worksMinQ,
                       includeSubmissions,
+                      checkActiveAfterDetail,
+                      recentGraceCutoffMs,
                     }: any) => {
                       const headers: Record<string, string> = {
                         "content-type": "application/json",
@@ -3179,6 +4363,7 @@ export async function scanAdminCenterClasses(options?: {
                         const kl = k.toLowerCase();
                         if (
                           kl === "authorization" ||
+                          kl === "token" ||
                           kl.startsWith("x-") ||
                           kl.startsWith("apollo-")
                         ) {
@@ -3235,38 +4420,109 @@ export async function scanAdminCenterClasses(options?: {
                         obj?.data?.class ||
                         obj?.data?.getClassById ||
                         null;
-                      let clsByIdRes = await gql(
-                        getClassQ,
-                        { id: lmsId },
-                        "GetClassById"
-                      );
-                      if (
-                        ((Array.isArray(clsByIdRes?.errors) && clsByIdRes.errors.length > 0) ||
-                          !extractCls(clsByIdRes)) &&
-                        getClassMinQ
-                      ) {
-                        clsByIdRes = await gql(
-                          getClassMinQ,
-                          { id: lmsId },
-                          "GetClassByIdMinimal"
-                        );
+                      const isTransportOrAuthErr = (resObj: any) =>
+                        Boolean(resObj?.__httpError) &&
+                        (Number(resObj?.status) === 401 ||
+                          Number(resObj?.status) === 403 ||
+                          Number(resObj?.status) >= 500);
+                      const clsQueries: Array<[string, string]> = [
+                        [getClassQ, "GetClassById"],
+                        ...(getClassMinQ
+                          ? [[getClassMinQ, "GetClassByIdMinimal"] as [string, string]]
+                          : []),
+                        ...(classFieldQ
+                          ? [[classFieldQ, "AdminGetClassFieldById"] as [string, string]]
+                          : []),
+                        ...(classFieldMinQ
+                          ? [[classFieldMinQ, "AdminGetClassFieldByIdMinimal"] as [string, string]]
+                          : []),
+                      ];
+                      let clsPayload: any = null;
+                      let clsLastErr = "";
+                      for (const [qText, opName] of clsQueries) {
+                        const rCls = await gql(qText, { id: lmsId }, opName);
+                        const candidatePayload = extractCls(rCls);
+                        const hasErr = Array.isArray(rCls?.errors) && rCls.errors.length > 0;
+                        if (!hasErr && candidatePayload) {
+                          clsPayload = candidatePayload;
+                          clsLastErr = "";
+                          break;
+                        }
+                        if (isTransportOrAuthErr(rCls)) {
+                          clsLastErr = String(
+                            rCls?.errors?.[0]?.message || `LMS GraphQL HTTP ${rCls?.status || "ERR"}`
+                          );
+                          break;
+                        }
+                        if (hasErr && !clsLastErr) {
+                          clsLastErr = String(rCls.errors[0]?.message || "GraphQL error");
+                        }
                       }
-                      const clsPayload = extractCls(clsByIdRes);
-                      const clsErr =
-                        Array.isArray(clsByIdRes?.errors) && clsByIdRes.errors.length > 0
-                          ? String(clsByIdRes.errors[0]?.message || "GraphQL error")
-                          : !clsPayload
-                          ? "Không đọc được chi tiết lớp từ LMS GraphQL."
-                          : "";
-                      if (clsErr) {
+                      if (!clsPayload || clsLastErr) {
                         return {
                           classByIdData: null,
                           submissionGqlData: null,
                           studentWorks: [],
-                          err: clsErr,
+                          err: clsLastErr || "Không đọc được chi tiết lớp từ LMS GraphQL.",
                           subError: "",
                           worksError: "",
                         };
+                      }
+
+                      if (checkActiveAfterDetail) {
+                        const stUp = String(clsPayload?.status || "").trim().toUpperCase();
+                        const isCancelled = /CANCEL|CLOSE|DROP/.test(stUp);
+                        const isRunningSt = stUp === "RUNNING" || stUp === "ACTIVE";
+                        if (isCancelled) {
+                          return {
+                            skippedHistoricalFinished: true,
+                            classByIdData: clsPayload,
+                            submissionGqlData: null,
+                            studentWorks: [],
+                            err: "",
+                            subError: "",
+                            worksError: "",
+                          };
+                        }
+                        if (!isRunningSt) {
+                          let endMs: number | null = null;
+                          const rawEnd = clsPayload?.endDate;
+                          if (typeof rawEnd === "number" && Number.isFinite(rawEnd)) {
+                            endMs = rawEnd > 1e12 ? rawEnd : rawEnd * 1000;
+                          } else if (typeof rawEnd === "string" && rawEnd.trim() && rawEnd.trim() !== "0000-00-00") {
+                            const rawTrim = rawEnd.trim();
+                            if (/^\d{10,13}$/.test(rawTrim)) {
+                              const num = Number(rawTrim);
+                              endMs = num > 1e12 ? num : num * 1000;
+                            } else {
+                              const parsedMs = Date.parse(rawTrim);
+                              if (Number.isFinite(parsedMs)) {
+                                endMs = parsedMs;
+                              } else {
+                                const dmy = rawTrim.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+                                if (dmy) {
+                                  let y = Number(dmy[3]);
+                                  if (y < 100) y += 2000;
+                                  endMs = Date.UTC(y, Number(dmy[2]) - 1, Number(dmy[1]));
+                                }
+                              }
+                            }
+                          }
+                          if (
+                            (stUp.includes("FINISH") && endMs !== null && endMs < recentGraceCutoffMs) ||
+                            (!stUp.includes("FINISH") && stUp !== "")
+                          ) {
+                            return {
+                              skippedHistoricalFinished: true,
+                              classByIdData: clsPayload,
+                              submissionGqlData: null,
+                              studentWorks: [],
+                              err: "",
+                              subError: "",
+                              worksError: "",
+                            };
+                          }
+                        }
                       }
 
                       let submissionGqlData: any = null;
@@ -3358,10 +4614,12 @@ export async function scanAdminCenterClasses(options?: {
                     },
                     {
                       lmsId: item.lmsClassId,
-                      hdrs: captureState.capturedHeaders,
+                      hdrs: detailHeaders,
                       getClassQ:
                         captureState.capturedGetClassQuery || FALLBACK_GET_CLASS_BY_ID_QUERY,
                       getClassMinQ: FALLBACK_GET_CLASS_BY_ID_MINIMAL_QUERY,
+                      classFieldQ: FALLBACK_CLASS_FIELD_BY_ID_QUERY,
+                      classFieldMinQ: FALLBACK_CLASS_FIELD_BY_ID_MINIMAL_QUERY,
                       subQ:
                         captureState.capturedSubmissionQuery || FALLBACK_SUBMISSION_QUERY,
                       subLegacyQ: FALLBACK_SUBMISSION_LEGACY_QUERY,
@@ -3369,18 +4627,66 @@ export async function scanAdminCenterClasses(options?: {
                       worksQ: FIND_ALL_STUDENT_WORKS_QUERY,
                       worksMinQ: FIND_ALL_STUDENT_WORKS_MINIMAL_QUERY,
                       includeSubmissions: !isRob,
+                      checkActiveAfterDetail: !singleClassCode && !onTeachingSchedule,
+                      recentGraceCutoffMs: nowMs - 14 * ONE_DAY_MS,
                     }
                   );
 
-                  if (fetched.err) {
-                    throw new Error(fetched.err);
-                  }
                   if (fetched.classByIdData) {
                     assertMatchingLmsClassPayload(
                       fetched.classByIdData,
                       item.classCode,
                       item.lmsClassId
                     );
+                  }
+
+                  if (fetched.skippedHistoricalFinished) {
+                    skippedHistoricalClasses.add(item.classCode);
+                    continue;
+                  }
+
+                  if (fetched.err) {
+                    throw new Error(fetched.err);
+                  }
+                  if (fetched.classByIdData) {
+                    const clsDetail = fetched.classByIdData;
+                    if (!singleClassCode && !onTeachingSchedule) {
+                      const detailStatus = String(clsDetail?.status || "").trim();
+                      const detailStatusUp = detailStatus.toUpperCase();
+                      const detailRunning = isConfirmedRunningStatus(detailStatus);
+                      const detailRecentFin =
+                        detailStatusUp.includes("FINISH") &&
+                        isAdminFinishedClassWithinGraceWindow(
+                          clsDetail?.endDate,
+                          14,
+                          nowMs
+                        );
+                      if (
+                        /CANCEL|CLOSE|DROP/.test(detailStatusUp) ||
+                        (!detailRunning && !detailRecentFin && detailStatusUp !== "")
+                      ) {
+                        skippedHistoricalClasses.add(item.classCode);
+                        continue;
+                      }
+                    }
+
+                    // Enrich item metadata from authoritative GetClassById payload
+                    if (clsDetail?.status) item.status = String(clsDetail.status).trim();
+                    if (clsDetail?.startDate) item.startDate = String(clsDetail.startDate).trim();
+                    if (clsDetail?.endDate) item.endDate = String(clsDetail.endDate).trim();
+                    if (clsDetail?.course?.name) item.courseName = String(clsDetail.course.name).trim();
+                    for (const t of clsDetail?.teachers || []) {
+                      const tn = String(
+                        t?.teacher?.fullName || t?.teacher?.username || ""
+                      ).trim();
+                      const rn = String(t?.role?.name || "").toLowerCase();
+                      if (!tn) continue;
+                      if (rn.includes("ta") || rn.includes("assistant")) {
+                        if (!item.assistantTeacher) item.assistantTeacher = tn;
+                      } else if (!item.mainTeacher) {
+                        item.mainTeacher = tn;
+                      }
+                    }
                   } else {
                     throw new Error(`LMS không trả về dữ liệu chi tiết lớp ${item.classCode}.`);
                   }
@@ -3406,7 +4712,9 @@ export async function scanAdminCenterClasses(options?: {
               }
 
               return {
-                discoveredClasses: targetList,
+                discoveredClasses: targetList.filter(
+                  (c) => !skippedHistoricalClasses.has(c.classCode)
+                ),
                 perClass,
                 stoppedEarly,
                 discoveryComplete: Boolean(discoveryResult?.complete),

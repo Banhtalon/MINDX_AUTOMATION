@@ -190,7 +190,9 @@ async function refreshSingleClassSnapshotInsideQueue(
   const lmsFetched = options?.fetchSingleLmsHook
     ? await options.fetchSingleLmsHook(classCode)
     : await authService.withAdminLmsSession((page) =>
-        fetchSingleLmsClassGqlInAdminSession(page, classCode)
+        fetchSingleLmsClassGqlInAdminSession(page, classCode, {
+          lmsClassId: existing?.lmsClassId,
+        })
       );
 
   if (!lmsFetched || !lmsFetched.classByIdData) {

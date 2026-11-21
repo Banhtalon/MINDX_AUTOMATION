@@ -54,7 +54,7 @@ export function isMindxAuthDomain(domainOrHost: string): boolean {
     .replace(/^\.+/, "")
     .toLowerCase();
   if (!clean) return false;
-  return /(^|\.)mindx\.(edu|net)\.vn$/i.test(clean);
+  return /(^|\.)mindx\.(edu|net|com)\.vn$/i.test(clean);
 }
 
 export function filterMindxCookiesForBackup(cookies: Cookie[]): Cookie[] {
@@ -87,6 +87,9 @@ export function matchesExpectedLmsIdentity(
   const exp = String(expectedUsername || "").trim().toLowerCase();
   if (!det || !exp) return false;
   if (det === exp) return true;
+  if (det.includes("@") && exp.includes("@")) {
+    return false;
+  }
 
   const detLocal = det.includes("@") ? det.split("@")[0] : det;
   const expLocal = exp.includes("@") ? exp.split("@")[0] : exp;
@@ -96,6 +99,8 @@ export function matchesExpectedLmsIdentity(
 
 function tryDecodeJwtPayload(token: string): Record<string, unknown> | null {
   const clean = String(token || "")
+    .trim()
+    .replace(/^"+|"+$/g, "")
     .replace(/^Bearer\s+/i, "")
     .trim();
   const parts = clean.split(".");
@@ -105,7 +110,9 @@ function tryDecodeJwtPayload(token: string): Record<string, unknown> | null {
     const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
     const json = Buffer.from(padded, "base64").toString("utf8");
     const parsed = JSON.parse(json);
-    return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
   } catch {
     return null;
   }
@@ -289,12 +296,43 @@ async function detectSsoLoginError(page: {
 
 function formatSsoLoginErrorMessage(code: SsoLoginErrorCode, username: string): string {
   if (code === "USER_DISABLED") {
-    return `Tài khoản LMS "${username}" đang bị vô hiệu hóa trên MindX SSO (USER_DISABLED). Vui lòng kiểm tra mã tài khoản đang hoạt động (ví dụ tuanpa1) trong .env.local.`;
+    return `Tài khoản LMS "${username}" đang bị vô hiệu hóa trên MindX SSO (USER_DISABLED). Vui lòng kiểm tra đúng tên miền tài khoản đang hoạt động (@mindx.com.vn / @mindx.edu.vn / @mindx.net.vn) trong .env.local.`;
   }
   if (code === "MFA_REQUIRED") {
     return `Tài khoản LMS "${username}" yêu cầu xác thực 2 lớp (TOTP MFA), không thể tự động đăng nhập ngầm.`;
   }
   return `Sai tài khoản hoặc mật khẩu đăng nhập LMS cho "${username}" (wrongLoginCredentials). Vui lòng kiểm tra lại trong .env.local.`;
+}
+
+const PREFERRED_LMS_AUTH_COOKIE_NAMES = [
+  "session",
+  "id_token",
+  "access_token",
+  "lms_token",
+  "auth_token",
+  "token",
+];
+
+export function extractIdentityFromMindxCookies(cookies: Cookie[]): string {
+  const mindxCookies = [...filterMindxCookiesForBackup(cookies)].sort((a, b) => {
+    const ai = PREFERRED_LMS_AUTH_COOKIE_NAMES.indexOf(String(a?.name || "").toLowerCase());
+    const bi = PREFERRED_LMS_AUTH_COOKIE_NAMES.indexOf(String(b?.name || "").toLowerCase());
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+  for (const c of mindxCookies) {
+    const raw = String(c?.value || "").trim();
+    if (!raw) continue;
+    let decoded = raw;
+    try {
+      decoded = decodeURIComponent(raw).trim();
+    } catch {
+      decoded = raw;
+    }
+    const cookieKey = String(c?.name || "cookie");
+    const hit = extractIdentityFromJwtOrStorageDump({ [cookieKey]: decoded }, decoded);
+    if (hit) return hit;
+  }
+  return "";
 }
 
 export class AuthService {
@@ -320,7 +358,7 @@ export class AuthService {
         let domHint = "";
         try {
           const bodyText = document.body?.innerText || "";
-          const emailMatch = bodyText.match(/[a-zA-Z0-9._%+-]+@mindx\.(?:edu|net)\.vn/i);
+          const emailMatch = bodyText.match(/[a-zA-Z0-9._%+-]+@mindx\.(?:edu|net|com)\.vn/i);
           if (emailMatch) domHint = emailMatch[0].toLowerCase();
         } catch {
           // ignore DOM read errors
@@ -341,12 +379,9 @@ export class AuthService {
     if (fromStorage) return fromStorage;
 
     try {
-      const cookies = filterMindxCookiesForBackup(await page.context().cookies());
-      for (const c of cookies) {
-        const val = decodeURIComponent(String(c?.value || "")).trim();
-        const hit = extractIdentityFromJwtOrStorageDump({}, val);
-        if (hit) return hit;
-      }
+      const cookies = await page.context().cookies();
+      const hit = extractIdentityFromMindxCookies(cookies);
+      if (hit) return hit;
     } catch {
       // ignore cookie read errors
     }
@@ -362,8 +397,15 @@ export class AuthService {
     const context = page.context();
     const allCookies = await context.cookies();
     const mindxCookies = filterMindxCookiesForBackup(allCookies);
-    const { localStorage } = await this.readLmsStorageDump(page);
-    const detected = extractIdentityFromJwtOrStorageDump(localStorage);
+    const { hostname } = parseUrlParts(page.url());
+    const lmsHost = parseUrlParts(config.lmsUrl).hostname;
+    const { localStorage } =
+      hostname === lmsHost
+        ? await this.readLmsStorageDump(page)
+        : { localStorage: {} as Record<string, string> };
+    const detected =
+      extractIdentityFromJwtOrStorageDump(localStorage) ||
+      extractIdentityFromMindxCookies(mindxCookies);
     return {
       role,
       username: (detected || expectedUsername || resolveLmsCredentialsForRole(role).username || "").trim(),
@@ -377,7 +419,7 @@ export class AuthService {
     const page = await browserManager.getPage();
     const context = page.context();
     // Selective MindX-only cookie wipe: leaves Google Drive & other domain sessions 100% intact
-    await context.clearCookies({ domain: /mindx\.(edu|net)\.vn$/i });
+    await context.clearCookies({ domain: /(^|\.)mindx\.(edu|net|com)\.vn$/i });
 
     const cookiesToRestore = filterMindxCookiesForBackup(snapshot.cookies);
     if (cookiesToRestore.length > 0) {
@@ -410,15 +452,29 @@ export class AuthService {
       waitUntil: "domcontentloaded",
       timeout: 25000,
     }).catch(() => {});
-    await page.waitForTimeout(800);
+    for (let waitAttempt = 0; waitAttempt < 8; waitAttempt++) {
+      await page.waitForTimeout(500);
+      const hasPwd = await page
+        .locator(SELECTORS.auth.lms.passwordInput)
+        .first()
+        .isVisible()
+        .catch(() => false);
+      if (hasPwd) {
+        break;
+      }
+      if (parseUrlParts(page.url()).hostname === targetHost) {
+        await page.waitForTimeout(500);
+        break;
+      }
+    }
   }
 
   public async clearMindxAuthState(): Promise<void> {
     const page = await browserManager.getPage();
     const context = page.context();
-    await context.clearCookies({ domain: /mindx\.(edu|net)\.vn$/i });
+    await context.clearCookies({ domain: /(^|\.)mindx\.(edu|net|com)\.vn$/i });
     const currentHost = parseUrlParts(page.url()).hostname;
-    if (currentHost.includes("mindx.edu.vn")) {
+    if (isMindxAuthDomain(currentHost)) {
       await page.evaluate("window.__name = window.__name || function(f){ return f; }").catch(() => {});
       await page
         .evaluate(() => {
@@ -472,7 +528,7 @@ export class AuthService {
       if (initialHasPwd && currentParts.hostname) {
         const isRelevantLoginHost =
           system === "LMS"
-            ? currentParts.hostname.includes("mindx.edu.vn")
+            ? isMindxAuthDomain(currentParts.hostname)
             : currentParts.hostname === targetHost;
         if (isRelevantLoginHost) {
           return { system, isAuthenticated: false, currentUrl, username, role };
@@ -636,7 +692,17 @@ export class AuthService {
 
         const roleState = readRoleStateFile();
         const cached = roleState[role];
-        if (cached && matchesExpectedLmsIdentity(cached.username, username)) {
+        const cachedMatches = Boolean(
+          cached &&
+            matchesExpectedLmsIdentity(cached.username, username) &&
+            (!cached.username.includes("@") ||
+              !username.includes("@") ||
+              cached.username.trim().toLowerCase() === username.trim().toLowerCase())
+        );
+        if (cached && !cachedMatches) {
+          invalidateRoleStateSnapshot(role);
+        }
+        if (cached && cachedMatches) {
           await this.applyMindxRoleSnapshot(cached);
           const restoredStatus = await this.checkAuthStatus("LMS", { role });
           if (restoredStatus.isAuthenticated) {
@@ -662,7 +728,7 @@ export class AuthService {
           .isVisible()
           .catch(() => false)) &&
         (system === "LMS"
-          ? currentHost.includes("mindx.edu.vn")
+          ? isMindxAuthDomain(currentHost)
           : currentHost === targetHost);
 
       if (!isAlreadyOnRelevantLoginForm) {
@@ -952,11 +1018,11 @@ export class AuthService {
     // Unconditionally restore Teacher MindX cookies & storage and verify identity
     let restoreFailure: Error | null = null;
     if (restoreTeacherSnapshot) {
+      const expectedTeacher = String(
+        restoreTeacherSnapshot.username || teacherCreds.username || ""
+      ).trim();
       try {
         await adapter.restoreSnapshot(restoreTeacherSnapshot);
-        const expectedTeacher = String(
-          restoreTeacherSnapshot.username || teacherCreds.username || ""
-        ).trim();
         const restoredIdentity = String(
           (await adapter.verifyActiveIdentity(expectedTeacher)) || ""
         ).trim();
@@ -971,20 +1037,86 @@ export class AuthService {
           );
         }
       } catch (restoreErr) {
-        invalidateRoleStateSnapshot("ADMIN");
-        if (!options?.roleAdapter) {
-          await this.clearMindxAuthState().catch(() => {});
+        const restoreErrMsg = String((restoreErr as any)?.message || restoreErr || "");
+        const canFallbackLogin =
+          !options?.roleAdapter &&
+          !restoreErrMsg.includes("QUEUE_STOPPED") &&
+          Boolean(teacherCreds.username && teacherCreds.password);
+
+        let recoveredByRelogin = false;
+        let activeFailureErr: unknown = restoreErr;
+
+        if (canFallbackLogin) {
+          try {
+            ensureQueueNotStopped();
+            invalidateRoleStateSnapshot("ADMIN");
+            invalidateRoleStateSnapshot("TEACHER");
+            await this.clearMindxAuthState().catch(() => {});
+            const reloginRes = await this.login("LMS", { role: "TEACHER" });
+            if (!reloginRes.success) {
+              throw new Error(reloginRes.message);
+            }
+            const targetTeacher = expectedTeacher || teacherCreds.username;
+            const reloginIdentity = String(
+              (await adapter.verifyActiveIdentity(targetTeacher)) || ""
+            ).trim();
+            if (
+              !reloginIdentity ||
+              !matchesExpectedLmsIdentity(reloginIdentity, targetTeacher)
+            ) {
+              throw new Error(
+                `Danh tính LMS sau đăng nhập lại là "${reloginIdentity || "<chưa xác định>"}", không khớp phiên Giáo viên ("${targetTeacher}").`
+              );
+            }
+            recoveredByRelogin = true;
+          } catch (reloginErr) {
+            activeFailureErr = reloginErr;
+          }
         }
-        const safeRestoreMsg = sanitizeErrorMessage(restoreErr, authSecrets);
-        restoreFailure = new Error(
-          `[Auth Restore Error] Khôi phục phiên LMS Giáo viên thất bại: ${safeRestoreMsg}`
-        );
-        console.error("[AuthService.withAdminLmsSession]", restoreFailure.message);
+
+        if (!recoveredByRelogin) {
+          invalidateRoleStateSnapshot("ADMIN");
+          if (!options?.roleAdapter) {
+            await this.clearMindxAuthState().catch(() => {});
+          }
+          const safeRestoreMsg = sanitizeErrorMessage(activeFailureErr, authSecrets);
+          restoreFailure = new Error(
+            `[Auth Restore Error] Khôi phục phiên LMS Giáo viên thất bại: ${safeRestoreMsg}`
+          );
+          console.error("[AuthService.withAdminLmsSession]", restoreFailure.message);
+        }
       }
     } else if (!options?.roleAdapter) {
       // Never leave Admin MindX credentials dangling as default if no Teacher snapshot existed
       invalidateRoleStateSnapshot("ADMIN");
       await this.clearMindxAuthState().catch(() => {});
+      if (teacherCreds.username && teacherCreds.password) {
+        try {
+          ensureQueueNotStopped();
+          const reloginRes = await this.login("LMS", { role: "TEACHER" });
+          if (!reloginRes.success) {
+            throw new Error(reloginRes.message);
+          }
+          const reloginIdentity = String(
+            (await adapter.verifyActiveIdentity(teacherCreds.username)) || ""
+          ).trim();
+          if (
+            !reloginIdentity ||
+            !matchesExpectedLmsIdentity(reloginIdentity, teacherCreds.username)
+          ) {
+            throw new Error(
+              `Danh tính LMS sau đăng nhập lại là "${reloginIdentity || "<chưa xác định>"}", không khớp phiên Giáo viên ("${teacherCreds.username}").`
+            );
+          }
+        } catch (reloginErr) {
+          await this.clearMindxAuthState().catch(() => {});
+          const safeRestoreMsg = sanitizeErrorMessage(reloginErr, authSecrets);
+          restoreFailure = new Error(
+            `[Auth Restore Error] Khôi phục phiên LMS Giáo viên thất bại: ${safeRestoreMsg}`
+          );
+          console.error("[AuthService.withAdminLmsSession]", restoreFailure.message);
+        }
+      }
     }
 
     if (primaryError !== null) {
