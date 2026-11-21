@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   CheckCircle2,
   ExternalLink,
@@ -238,15 +239,28 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
               </span>
             )}
           </div>
-          <button
-            type="button"
-            data-testid="spck-toggle-folder-editor-btn"
-            disabled={isAnyOperationBusy}
-            onClick={() => setShowFolderEditor((v) => !v)}
-            className="spck-pill-neutral shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer disabled:opacity-50"
-          >
-            <span>{showFolderEditor ? "Ẩn ô thư mục ▴" : "📁 Đổi thư mục"}</span>
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Link
+              href={
+                selectedClassId
+                  ? `/demo-day?classId=${encodeURIComponent(selectedClassId)}`
+                  : "/demo-day"
+              }
+              data-testid="spck-open-demo-day-link"
+              className="spck-pill-neutral shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer hover:opacity-90"
+            >
+              <span>🎤 Thi Demo</span>
+            </Link>
+            <button
+              type="button"
+              data-testid="spck-toggle-folder-editor-btn"
+              disabled={isAnyOperationBusy}
+              onClick={() => setShowFolderEditor((v) => !v)}
+              className="spck-pill-neutral shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer disabled:opacity-50"
+            >
+              <span>{showFolderEditor ? "Ẩn ô thư mục ▴" : "📁 Đổi thư mục"}</span>
+            </button>
+          </div>
         </div>
 
         {/* Ô nhập đường dẫn dài chỉ bung ra khi giáo viên bấm "📁 Đổi thư mục" */}

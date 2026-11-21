@@ -1664,5 +1664,200 @@ html[data-theme="dark"] .cm-corner-badge {
   background-color: rgba(2, 6, 23, 0.65) !important;
 }
 
+/* ==========================================================================
+   DEMO DAY STAGE & PREPARATION VIEW (/demo-day) — WCAG AA LIGHT & DARK
+   ========================================================================== */
+.dd-shell-card {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+html[data-theme="dark"] .dd-shell-card {
+  background-color: #141f38;
+  border-color: #26395c;
+  color: #f8fafc;
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.38);
+}
+
+.dd-subtle-box {
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+html[data-theme="dark"] .dd-subtle-box {
+  background-color: #0e172c;
+  border-color: #2b3f66;
+  color: #f8fafc;
+}
+
+.dd-title {
+  color: #0f172a;
+}
+html[data-theme="dark"] .dd-title {
+  color: #f8fafc;
+}
+
+.dd-muted {
+  color: #334155;
+}
+html[data-theme="dark"] .dd-muted {
+  color: #cbd5e1;
+}
+
+.dd-divider {
+  border-color: #cbd5e1;
+}
+html[data-theme="dark"] .dd-divider {
+  border-color: #26395c;
+}
+
+.dd-tab-active {
+  background-color: #1d4ed8;
+  color: #ffffff;
+}
+html[data-theme="dark"] .dd-tab-active {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.dd-tab-idle {
+  color: #334155;
+}
+.dd-tab-idle:hover {
+  color: #0f172a;
+}
+html[data-theme="dark"] .dd-tab-idle {
+  color: #cbd5e1;
+}
+html[data-theme="dark"] .dd-tab-idle:hover {
+  color: #ffffff;
+}
+
+.dd-btn-slide {
+  background-color: #f8fafc;
+  border: 1.5px solid #94a3b8;
+  color: #0f172a;
+}
+.dd-btn-slide:hover:not(:disabled) {
+  background-color: #eff6ff;
+  border-color: #2563eb;
+}
+html[data-theme="dark"] .dd-btn-slide {
+  background-color: #16233f;
+  border-color: #38507d;
+  color: #f8fafc;
+}
+html[data-theme="dark"] .dd-btn-slide:hover:not(:disabled) {
+  background-color: #1e2f54;
+  border-color: #60a5fa;
+}
+
+.dd-btn-product {
+  background-color: #1d4ed8;
+  border: 1.5px solid #1e40af;
+  color: #ffffff;
+}
+.dd-btn-product:hover:not(:disabled) {
+  background-color: #1e40af;
+}
+html[data-theme="dark"] .dd-btn-product {
+  background-color: #2563eb;
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+html[data-theme="dark"] .dd-btn-product:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.dd-queue-active {
+  background-color: #dbeafe;
+  border: 1.5px solid #2563eb;
+  color: #1e3a8a;
+}
+html[data-theme="dark"] .dd-queue-active {
+  background-color: rgba(37, 99, 235, 0.34);
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+
+.dd-queue-idle {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+.dd-queue-idle:hover {
+  border-color: #2563eb;
+}
+html[data-theme="dark"] .dd-queue-idle {
+  background-color: #0e172c;
+  border-color: #2b3f66;
+  color: #f8fafc;
+}
+html[data-theme="dark"] .dd-queue-idle:hover {
+  border-color: #60a5fa;
+}
+
+.dd-pill-success {
+  background-color: #dcfce7;
+  border: 1px solid #16a34a;
+  color: #14532d;
+}
+html[data-theme="dark"] .dd-pill-success {
+  background-color: rgba(22, 163, 74, 0.28);
+  border-color: #4ade80;
+  color: #dcfce7;
+}
+
+.dd-pill-primary {
+  background-color: #dbeafe;
+  border: 1px solid #2563eb;
+  color: #1e3a8a;
+}
+html[data-theme="dark"] .dd-pill-primary {
+  background-color: rgba(37, 99, 235, 0.28);
+  border-color: #60a5fa;
+  color: #dbeafe;
+}
+
+.dd-pill-warning {
+  background-color: #fef3c7;
+  border: 1px solid #d97706;
+  color: #78350f;
+}
+html[data-theme="dark"] .dd-pill-warning {
+  background-color: rgba(217, 119, 6, 0.28);
+  border-color: #fbbf24;
+  color: #fef3c7;
+}
+
+.dd-pill-error {
+  background-color: #fee2e2;
+  border: 1px solid #dc2626;
+  color: #991b1b;
+}
+html[data-theme="dark"] .dd-pill-error {
+  background-color: rgba(220, 38, 38, 0.32);
+  border-color: #f87171;
+  color: #fee2e2;
+}
+
+.dd-input {
+  background-color: #ffffff;
+  border: 1px solid #94a3b8;
+  color: #0f172a;
+}
+.dd-input::placeholder {
+  color: #64748b;
+}
+html[data-theme="dark"] .dd-input {
+  background-color: #0b1324;
+  border-color: #38507d;
+  color: #f8fafc;
+}
+html[data-theme="dark"] .dd-input::placeholder {
+  color: #94a3b8;
+}
+
 
 

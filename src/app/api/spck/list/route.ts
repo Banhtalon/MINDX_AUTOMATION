@@ -46,7 +46,7 @@ import {
   queryClassDirectory,
 } from "@/lib/classes/class-directory";
 
-function getClassDemoSheetMeta(classId: string) {
+export function getClassDemoSheetMeta(classId: string) {
   if (!classId) return null;
   const coursePrefix = detectCoursePrefixFromClassId(classId);
   const sheetTitle = getDemoSheetTitleForClass(classId);

@@ -426,6 +426,18 @@ function initSchema(db: Database.Database) {
       ON classroom_session_logs(classId, sessionNumber, studentId);
     CREATE INDEX IF NOT EXISTS idx_classroom_session_logs_class
       ON classroom_session_logs(classId);
+
+    -- 14. demo_day_sessions (v3.8.0 Demo Day Stage & Preparation State — isolated from spck_uploads)
+    CREATE TABLE IF NOT EXISTS demo_day_sessions (
+      classId TEXT PRIMARY KEY,
+      orderJson TEXT NOT NULL DEFAULT '[]',
+      currentStudentId TEXT NOT NULL DEFAULT '',
+      completedStudentIdsJson TEXT NOT NULL DEFAULT '[]',
+      overridesJson TEXT NOT NULL DEFAULT '{}',
+      rowVer INTEGER NOT NULL DEFAULT 1,
+      createdAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
   `);
 
   try {
@@ -8561,6 +8573,213 @@ export const classroomSessionLogRepo = {
       }
 
       return results;
+    };
+
+    if (typeof (db as any).transaction === "function") {
+      return (db as any).transaction(runTx)();
+    }
+    return runTx();
+  },
+};
+
+export interface DemoDayStudentOverride {
+  slideUrl?: string;
+  slideRelPath?: string;
+  productRelPath?: string;
+  productLiveUrl?: string;
+  customTitle?: string;
+  excluded?: boolean;
+}
+
+export interface DemoDaySessionRecord {
+  classId: string;
+  orderJson: string;
+  currentStudentId: string;
+  completedStudentIdsJson: string;
+  overridesJson: string;
+  rowVer: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DemoDayUpsertInput {
+  classId: string;
+  order?: string[];
+  currentStudentId?: string;
+  completedStudentIds?: string[];
+  overrides?: Record<string, DemoDayStudentOverride>;
+  expectedRowVer?: number;
+}
+
+function sanitizeDemoHttpUrl(raw: unknown): string | undefined {
+  const cleaned = String(raw ?? "").replace(/[\x00-\x1F\x7F]/g, "").trim().slice(0, 1000);
+  if (!cleaned) return undefined;
+  try {
+    const parsed = new URL(cleaned);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return undefined;
+    return parsed.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function sanitizeDemoRelPath(raw: unknown): string | undefined {
+  const str = String(raw ?? "");
+  if (!str || str.includes("\0")) return undefined;
+  const norm = str.replace(/\\/g, "/").replace(/^\/+/, "").trim().slice(0, 400);
+  if (!norm || /^[a-z]:/i.test(norm)) return undefined;
+  const segs = norm.split("/").filter(Boolean);
+  if (segs.length === 0 || segs.some((s) => s === "." || s === "..")) return undefined;
+  return segs.join("/");
+}
+
+function sanitizeDemoStringIdList(raw: unknown, maxItems = 200): string[] {
+  let list: unknown[] = [];
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) list = parsed;
+    } catch {
+      return [];
+    }
+  } else if (Array.isArray(raw)) {
+    list = raw;
+  }
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of list) {
+    const id = String(item ?? "").replace(/[\x00-\x1F]/g, "").trim().slice(0, 120);
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+    if (out.length >= maxItems) break;
+  }
+  return out;
+}
+
+function sanitizeDemoOverridesObject(raw: unknown): Record<string, DemoDayStudentOverride> {
+  let source: unknown = raw;
+  if (typeof raw === "string") {
+    try {
+      source = JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+  if (!source || typeof source !== "object" || Array.isArray(source)) return {};
+  const clean: Record<string, DemoDayStudentOverride> = {};
+  for (const [rawStuId, rawVal] of Object.entries(source as Record<string, unknown>)) {
+    const stuId = String(rawStuId || "").replace(/[\x00-\x1F]/g, "").trim().slice(0, 120);
+    if (!stuId || !rawVal || typeof rawVal !== "object" || Array.isArray(rawVal)) continue;
+    const obj = rawVal as Record<string, unknown>;
+    const entry: DemoDayStudentOverride = {};
+    const slideUrl = sanitizeDemoHttpUrl(obj.slideUrl);
+    if (slideUrl) entry.slideUrl = slideUrl;
+    const slideRelPath = sanitizeDemoRelPath(obj.slideRelPath);
+    if (slideRelPath) entry.slideRelPath = slideRelPath;
+    const productRelPath = sanitizeDemoRelPath(obj.productRelPath);
+    if (productRelPath) entry.productRelPath = productRelPath;
+    const productLiveUrl = sanitizeDemoHttpUrl(obj.productLiveUrl);
+    if (productLiveUrl) entry.productLiveUrl = productLiveUrl;
+    const customTitle = String(obj.customTitle ?? "")
+      .replace(/[\x00-\x1F]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 120);
+    if (customTitle) entry.customTitle = customTitle;
+    if (obj.excluded === true) entry.excluded = true;
+    if (Object.keys(entry).length > 0) {
+      clean[stuId] = entry;
+    }
+  }
+  return clean;
+}
+
+export const demoDayRepo = {
+  findByClass(rawClassId: string): DemoDaySessionRecord | undefined {
+    const classId = String(rawClassId || "").trim().toUpperCase();
+    if (!classId) return undefined;
+    const db = getDb();
+    return db
+      .prepare(`SELECT * FROM demo_day_sessions WHERE classId = ?`)
+      .get(classId) as DemoDaySessionRecord | undefined;
+  },
+
+  upsert(input: DemoDayUpsertInput): {
+    staleIgnored: boolean;
+    record: DemoDaySessionRecord;
+  } {
+    const classId = String(input?.classId || "").trim().toUpperCase();
+    if (!classId) {
+      throw new Error("[demoDayRepo] Thiếu classId.");
+    }
+    const db = getDb();
+    const runTx = () => {
+      const selectStmt = db.prepare(`SELECT * FROM demo_day_sessions WHERE classId = ?`);
+      const existing = selectStmt.get(classId) as DemoDaySessionRecord | undefined;
+      let expectedRowVer: number | undefined;
+      if (
+        Object.prototype.hasOwnProperty.call(input, "expectedRowVer") &&
+        input.expectedRowVer !== undefined
+      ) {
+        if (
+          typeof input.expectedRowVer !== "number" ||
+          !Number.isSafeInteger(input.expectedRowVer) ||
+          input.expectedRowVer < 1
+        ) {
+          throw new Error("[demoDayRepo] expectedRowVer phải là số nguyên dương (>= 1).");
+        }
+        expectedRowVer = input.expectedRowVer;
+      }
+
+      if (existing && expectedRowVer !== undefined && expectedRowVer !== Number(existing.rowVer || 1)) {
+        return { staleIgnored: true, record: existing };
+      }
+
+      const nextRowVer = existing ? Number(existing.rowVer || 1) + 1 : 1;
+      const orderJson = JSON.stringify(
+        input.order !== undefined
+          ? sanitizeDemoStringIdList(input.order)
+          : sanitizeDemoStringIdList(existing?.orderJson)
+      );
+      const currentStudentId =
+        input.currentStudentId !== undefined
+          ? String(input.currentStudentId || "").replace(/[\x00-\x1F]/g, "").trim().slice(0, 120)
+          : String(existing?.currentStudentId || "");
+      const completedStudentIdsJson = JSON.stringify(
+        input.completedStudentIds !== undefined
+          ? sanitizeDemoStringIdList(input.completedStudentIds)
+          : sanitizeDemoStringIdList(existing?.completedStudentIdsJson)
+      );
+      const overridesJson = JSON.stringify(
+        input.overrides !== undefined
+          ? sanitizeDemoOverridesObject(input.overrides)
+          : sanitizeDemoOverridesObject(existing?.overridesJson)
+      );
+
+      db.prepare(`
+        INSERT INTO demo_day_sessions (
+          classId, orderJson, currentStudentId, completedStudentIdsJson, overridesJson, rowVer, updatedAt
+        )
+        VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+        ON CONFLICT(classId) DO UPDATE SET
+          orderJson = excluded.orderJson,
+          currentStudentId = excluded.currentStudentId,
+          completedStudentIdsJson = excluded.completedStudentIdsJson,
+          overridesJson = excluded.overridesJson,
+          rowVer = excluded.rowVer,
+          updatedAt = datetime('now', 'localtime')
+      `).run(
+        classId,
+        orderJson,
+        currentStudentId,
+        completedStudentIdsJson,
+        overridesJson,
+        nextRowVer
+      );
+
+      const updated = selectStmt.get(classId) as DemoDaySessionRecord;
+      return { staleIgnored: false, record: updated };
     };
 
     if (typeof (db as any).transaction === "function") {
