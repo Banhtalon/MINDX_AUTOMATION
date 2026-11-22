@@ -7,7 +7,7 @@ export const SELECTORS = {
   // 1. Authentications
   auth: {
     teaching: {
-      emailInput: 'input[name="email"], input[type="email"], input[placeholder*="email" i], input[placeholder*="tài khoản" i]',
+      emailInput: 'input[name="username"]:visible, input[name="email"]:visible, input[type="email"]:visible, input[placeholder*="tên đăng nhập" i]:visible, input[placeholder*="tài khoản" i]:visible, input[placeholder*="username" i]:visible, input[placeholder*="email" i]:visible, input[id*="username" i]:visible, form:has(input[type="password"]) input[type="text"]:visible',
       passwordInput: 'input[name="password"], input[type="password"]',
       submitButton: 'button:has-text("Đăng nhập"), button:has-text("Login"), button:has-text("Sign in"), button[type="submit"]:has-text("Đăng nhập"), form button[type="submit"]',
       loggedInIndicator: '.user-avatar, .user-profile, button:has-text("Đăng xuất"), a[href*="logout"], nav, aside',

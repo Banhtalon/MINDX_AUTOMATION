@@ -2875,11 +2875,13 @@ export class SpckUploader {
       const expandDetailBtn = modal
         .locator('button:has-text("Xem chi tiết trang"), button:has-text("Xem chi tiết")')
         .first();
+      let clickedExpandDetail = false;
       if ((await expandDetailBtn.count()) > 0) {
         reusedExistingItem01 = true;
         clickedAddSpckButton = false;
         await expandDetailBtn.scrollIntoViewIfNeeded().catch(() => {});
         await expandDetailBtn.click({ force: true }).catch(() => {});
+        clickedExpandDetail = true;
         await page.waitForTimeout(700);
       }
 
@@ -2891,7 +2893,7 @@ export class SpckUploader {
       if (isFormAlreadyOpen) {
         reusedExistingItem01 = true;
         clickedAddSpckButton = false;
-        if ((await expandDetailBtn.count()) > 0) {
+        if (!clickedExpandDetail && (await expandDetailBtn.count()) > 0) {
           await expandDetailBtn.scrollIntoViewIfNeeded().catch(() => {});
           await expandDetailBtn.click({ force: true }).catch(() => {});
           await page.waitForTimeout(700);
@@ -3014,9 +3016,33 @@ export class SpckUploader {
             }
           }
           if (!res) {
-            throw lastUploadErr instanceof Error
-              ? lastUploadErr
-              : new Error(`Tải ${label} ('${path.basename(singleFile)}') lên resources.mindx.edu.vn quá thời gian chờ.`);
+            const shotDir = process.env.MINDX_DEBUG_SCREENSHOT_DIR?.trim();
+            const dropShotPath = shotDir
+              ? `${shotDir.replace(/[\\/]+$/, "")}/debug_spck_dropzone_timeout.png`
+              : "data/debug_spck_dropzone_timeout.png";
+            if (typeof page.screenshot === "function") {
+              await page.screenshot({ path: dropShotPath }).catch(() => {});
+            }
+            let diagSummary = "";
+            if (typeof (modal as any).evaluate === "function") {
+              diagSummary = await modal
+                .evaluate((modalEl) => {
+                  if (!modalEl || typeof modalEl.querySelectorAll !== "function") return "";
+                  const imgs = modalEl.querySelectorAll('img[src*="resources.mindx.edu.vn"]').length;
+                  const attLinks = modalEl.querySelectorAll('a[href*="resources.mindx.edu.vn"]').length;
+                  const captions = modalEl.querySelectorAll("span.MuiTypography-caption").length;
+                  const inputs = modalEl.querySelectorAll('input[type="file"]').length;
+                  return `imgs=${imgs}, attLinks=${attLinks}, captions=${captions}, fileInputs=${inputs}`;
+                })
+                .catch(() => "");
+            }
+            const rawReason =
+              lastUploadErr instanceof Error
+                ? lastUploadErr.message
+                : String(lastUploadErr || "timeout");
+            throw new Error(
+              `Tải ${label} ('${path.basename(singleFile)}') lên resources.mindx.edu.vn quá thời gian chờ${diagSummary ? ` (${diagSummary})` : ""}: ${rawReason}`
+            );
           }
           if (res.status() !== 200 && res.status() !== 201) {
             throw new Error(
@@ -3269,39 +3295,310 @@ export class SpckUploader {
         cappedScreenshots.push(await ensureLmsCompatibleImageFile(scPath));
       }
       if (reusedExistingItem01) {
-        for (let pass = 0; pass < 20; pass++) {
+        let stagnantShotPasses = 0;
+        for (let pass = 0; pass < 30; pass++) {
+          const beforeShotSig = await modal
+            .evaluate((el) => {
+              return `${el.querySelectorAll("button").length}:${el.querySelectorAll("img").length}:${el.querySelectorAll(".shot-tile").length}`;
+            })
+            .catch(() => "");
           const clickedOne = await modal
             .evaluate((modalEl) => {
-              const imgs = Array.from(modalEl.querySelectorAll("img"));
-              // Skip index 0 (Thumbnail image) and delete all existing gallery screenshot tiles down to 0
-              for (let i = 1; i < imgs.length; i++) {
-                const img = imgs[i] as HTMLImageElement;
+              const imgInputEl = modalEl.querySelector(
+                'input[type="file"][accept*="image"][multiple]'
+              );
+              const thumbInputEl = modalEl.querySelector(
+                'input[type="file"][accept*="image"]:not([multiple])'
+              );
+              let thayAnhBtnEl: Element | null = null;
+              const allModalBtns = Array.from(modalEl.querySelectorAll("button"));
+              for (const b of allModalBtns) {
+                if (/^thay ảnh$/i.test((b.textContent || "").replace(/\s+/g, " ").trim())) {
+                  thayAnhBtnEl = b;
+                  break;
+                }
+              }
+
+              const galleryForbiddenHeadingRe =
+                /^(?:sản phẩm học viên|ảnh thumbnail|tài liệu đính kèm|youtube video|đường dẫn liên quan)(?:\s*[:*(0-9].*)?$/i;
+
+              // Strategy A: anchor to multi-image gallery dropzone input
+              let gallerySectionA: HTMLElement | null = null;
+              if (imgInputEl) {
+                let cur: HTMLElement | null = imgInputEl.parentElement;
+                for (let depth = 0; depth < 6 && cur && cur !== modalEl; depth++) {
+                  const hasThumb = Boolean(
+                    (thumbInputEl && cur.contains(thumbInputEl)) ||
+                      (thayAnhBtnEl && cur.contains(thayAnhBtnEl)) ||
+                      cur.querySelector("#modal-thumb, #thumb-box")
+                  );
+                  const hasForbiddenEl = Boolean(
+                    cur.querySelector(
+                      'input#title, input[name="title"], input#inputYoutube, input#inputRelativeUrl, input#inputRelativeUrlName, textarea, #att-list, .att-tile, .lms-file-card, #yt-list, #rel-list'
+                    )
+                  );
+                  let hasForbiddenHeading = false;
+                  const hNodes = Array.from(
+                    cur.querySelectorAll("label, h1, h2, h3, h4, h5, h6, p, span, div")
+                  );
+                  for (const hEl of hNodes) {
+                    if (hEl.children.length > 1) continue;
+                    if (hEl.closest("a, .lms-file-card, .att-tile, .shot-tile")) continue;
+                    const lt = (hEl.textContent || "").replace(/\s+/g, " ").trim();
+                    if (!lt || lt.length > 60) continue;
+                    if (
+                      /\.(?:py|zip|pdf|pptx?|docx?|xlsx?|csv|png|jpe?g|webp|txt|html?|js|css|sb3|yyz|mp4|mov)$/i.test(
+                        lt
+                      )
+                    ) {
+                      continue;
+                    }
+                    if (galleryForbiddenHeadingRe.test(lt)) {
+                      hasForbiddenHeading = true;
+                      break;
+                    }
+                  }
+                  if (
+                    hasThumb ||
+                    hasForbiddenEl ||
+                    hasForbiddenHeading ||
+                    cur.querySelectorAll('input[type="file"]').length > 1
+                  ) {
+                    break;
+                  }
+                  gallerySectionA = cur;
+                  cur = cur.parentElement;
+                }
+              }
+
+              // Strategy B: anchor to innermost "Tải hình ảnh lên" / "Hình ảnh sản phẩm" heading
+              let galleryHeadingSection: HTMLElement | null = null;
+              const allGalleryHeadings = Array.from(
+                modalEl.querySelectorAll("p, span, div, label, h4, h5, h6")
+              );
+              const matchedGalleryHeadings: Element[] = [];
+              for (const hNode of allGalleryHeadings) {
+                if (hNode.children.length > 1) continue;
+                if (hNode.closest("a, .shot-tile, .att-tile, .lms-file-card")) continue;
+                const ht = (hNode.textContent || "").replace(/\s+/g, " ").trim();
+                if (!ht || ht.length > 48) continue;
+                if (/^(?:tải hình ảnh lên|hình ảnh sản phẩm)(?:\s*[:*(].*)?$/i.test(ht)) {
+                  matchedGalleryHeadings.push(hNode);
+                }
+              }
+              for (let hi = matchedGalleryHeadings.length - 1; hi >= 0; hi--) {
+                const hNode = matchedGalleryHeadings[hi];
+                let hasDescendantMatch = false;
+                for (let hj = 0; hj < matchedGalleryHeadings.length; hj++) {
+                  if (hj !== hi && hNode.contains(matchedGalleryHeadings[hj])) {
+                    hasDescendantMatch = true;
+                    break;
+                  }
+                }
+                if (hasDescendantMatch) continue;
+                let cur: HTMLElement | null = hNode.parentElement;
+                for (let depth = 0; depth < 5 && cur && cur !== modalEl; depth++) {
+                  const hasThumb = Boolean(
+                    (thumbInputEl && cur.contains(thumbInputEl)) ||
+                      (thayAnhBtnEl && cur.contains(thayAnhBtnEl)) ||
+                      cur.querySelector("#modal-thumb, #thumb-box")
+                  );
+                  const hasForbiddenEl = Boolean(
+                    cur.querySelector(
+                      'input#title, input[name="title"], input#inputYoutube, input#inputRelativeUrl, input#inputRelativeUrlName, textarea, #att-list, .att-tile, .lms-file-card, #yt-list, #rel-list'
+                    )
+                  );
+                  let hasForbiddenHeading = false;
+                  const hNodes = Array.from(
+                    cur.querySelectorAll("label, h1, h2, h3, h4, h5, h6, p, span, div")
+                  );
+                  for (const hEl of hNodes) {
+                    if (hEl.children.length > 1) continue;
+                    if (hEl.closest("a, .lms-file-card, .att-tile, .shot-tile")) continue;
+                    const lt = (hEl.textContent || "").replace(/\s+/g, " ").trim();
+                    if (!lt || lt.length > 60) continue;
+                    if (
+                      /\.(?:py|zip|pdf|pptx?|docx?|xlsx?|csv|png|jpe?g|webp|txt|html?|js|css|sb3|yyz|mp4|mov)$/i.test(
+                        lt
+                      )
+                    ) {
+                      continue;
+                    }
+                    if (galleryForbiddenHeadingRe.test(lt)) {
+                      hasForbiddenHeading = true;
+                      break;
+                    }
+                  }
+                  if (
+                    hasThumb ||
+                    hasForbiddenEl ||
+                    hasForbiddenHeading ||
+                    cur.querySelectorAll('input[type="file"]').length > 1
+                  ) {
+                    break;
+                  }
+                  galleryHeadingSection = cur;
+                  cur = cur.parentElement;
+                }
+                if (galleryHeadingSection) break;
+              }
+
+              const gallerySections: HTMLElement[] = [];
+              if (gallerySectionA) gallerySections.push(gallerySectionA);
+              if (galleryHeadingSection && galleryHeadingSection !== gallerySectionA) {
+                gallerySections.push(galleryHeadingSection);
+              }
+
+              const candidateImgs: HTMLImageElement[] = [];
+              if (gallerySections.length > 0) {
+                for (const gSec of gallerySections) {
+                  const secImgs = Array.from(gSec.querySelectorAll("img")) as HTMLImageElement[];
+                  for (const im of secImgs) {
+                    if (im.closest(".MuiDialogTitle-root, h2, h3")) continue;
+                    if (im.id === "modal-thumb" || im.closest("#thumb-box")) continue;
+                    if (!candidateImgs.includes(im)) candidateImgs.push(im);
+                  }
+                }
+              } else {
+                // Flat mock DOM fallback: detect Thumbnail box and exclude dialog header & attachments/yt/rel
+                let thumbBoxEl: HTMLElement | null =
+                  (modalEl.querySelector("#thumb-box") as HTMLElement | null) || null;
+                if (!thumbBoxEl) {
+                  const thumbAnchor =
+                    (thumbInputEl as HTMLElement | null) ||
+                    (thayAnhBtnEl as HTMLElement | null) ||
+                    (modalEl.querySelector("#modal-thumb") as HTMLElement | null);
+                  if (thumbAnchor) {
+                    let cur: HTMLElement | null = thumbAnchor.parentElement;
+                    for (let d = 0; d < 4 && cur && cur !== modalEl; d++) {
+                      if (
+                        cur.querySelectorAll("img").length <= 1 &&
+                        cur.querySelectorAll('input[type="file"]').length <= 1 &&
+                        (!imgInputEl || !cur.contains(imgInputEl))
+                      ) {
+                        thumbBoxEl = cur;
+                        cur = cur.parentElement;
+                      } else {
+                        break;
+                      }
+                    }
+                  }
+                }
+                const allImgs = Array.from(modalEl.querySelectorAll("img")) as HTMLImageElement[];
+                let skippedImplicitThumb = false;
+                for (const im of allImgs) {
+                  if (im.closest(".MuiDialogTitle-root, h2, h3")) continue;
+                  if (im.id === "modal-thumb") continue;
+                  if (thumbBoxEl && thumbBoxEl.contains(im)) continue;
+                  if (
+                    im.closest(
+                      ".lms-file-card, .att-tile, #att-list, .yt-row, #yt-list, .rel-row, #rel-list"
+                    )
+                  ) {
+                    continue;
+                  }
+                  if (!thumbBoxEl && !modalEl.querySelector("#modal-thumb") && !skippedImplicitThumb) {
+                    skippedImplicitThumb = true;
+                    continue;
+                  }
+                  candidateImgs.push(im);
+                }
+              }
+
+              const denyTextRe =
+                /^(?:\+?\s*)?(?:thêm files?|thêm file|thêm ảnh|chọn files?|chọn file|chọn ảnh|tải lên|upload|tải xuống|download|xem|preview|zoom|phóng to|thay ảnh|save|lưu|thêm|add|cancel|hủy|đóng|close|xem chi tiết|xem chi tiết trang)$/i;
+              const denyMetaRe =
+                /(?:download|preview|zoom|visibility|openinnew|open_in_new|cloudupload|cloud_upload|fileupload|file_upload|addphoto|add_photo|addcircle|add_circle|addicon|upload|tải xuống|xem trước|phóng to|thêm file|thêm ảnh|chọn file|chọn ảnh|thay ảnh)/i;
+              const delIntentRe = /delete|trash|remove|clear|closeicon|cancelicon|xóa|✕|×/i;
+
+              for (const img of candidateImgs) {
                 let container: HTMLElement | null = img.parentElement;
                 for (
                   let depth = 0;
-                  depth < 3 && container && container !== modalEl;
+                  depth < 5 && container && container !== modalEl;
                   depth++
                 ) {
+                  if (container.matches && container.matches(".MuiDialogTitle-root, h2, h3")) {
+                    break;
+                  }
                   if (container.querySelectorAll("img").length > 1) {
                     break;
                   }
+                  if (thumbInputEl && container.contains(thumbInputEl)) {
+                    break;
+                  }
+
+                  const explicitTriggers: Element[] = [];
+                  const fallbackTriggers: Element[] = [];
                   const btns = Array.from(
                     container.querySelectorAll("button")
                   ) as HTMLButtonElement[];
-                  const delBtn = btns.find((btn) => {
-                    if (btn.disabled) return false;
-                    const txt = (btn.textContent || "").trim();
-                    if (
-                      /^(?:thay ảnh|save|lưu|thêm|add|cancel|hủy|đóng|close|xem chi tiết|xem chi tiết trang)$/i.test(
-                        txt
-                      )
-                    ) {
-                      return false;
+                  for (const btn of btns) {
+                    if (btn.disabled) continue;
+                    if (btn.closest(".MuiDialogTitle-root, h2, h3")) continue;
+                    const bTxt = (btn.textContent || "").replace(/\s+/g, " ").trim();
+                    let svgMeta = "";
+                    const svgs = Array.from(btn.querySelectorAll("svg"));
+                    for (const s of svgs) {
+                      svgMeta += ` ${s.getAttribute("data-testid") || ""} ${s.getAttribute("aria-label") || ""} ${s.getAttribute("title") || ""}`;
                     }
-                    return true;
-                  });
-                  if (delBtn) {
-                    delBtn.click();
+                    const fullMeta = `${bTxt} ${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""} ${svgMeta}`.replace(
+                      /\s+/g,
+                      " "
+                    ).trim();
+                    const isDel = delIntentRe.test(fullMeta);
+                    if (denyTextRe.test(bTxt) || denyMetaRe.test(fullMeta)) {
+                      continue;
+                    }
+                    if (
+                      imgInputEl &&
+                      (btn.contains(imgInputEl) ||
+                        imgInputEl.closest("button") === btn ||
+                        (btn.parentElement &&
+                          btn.parentElement.contains(imgInputEl) &&
+                          !btn.closest(".lms-file-card, .att-tile, .shot-tile") &&
+                          !isDel))
+                    ) {
+                      continue;
+                    }
+                    if (isDel) {
+                      explicitTriggers.push(btn);
+                    } else if (bTxt.length <= 2) {
+                      fallbackTriggers.push(btn);
+                    }
+                  }
+
+                  const iconEls = Array.from(
+                    container.querySelectorAll('[role="button"], svg')
+                  );
+                  for (const el of iconEls) {
+                    if (el.closest(".MuiDialogTitle-root, h2, h3")) continue;
+                    const parentBtn = el.closest("button");
+                    if (parentBtn && container.contains(parentBtn)) continue;
+                    if (
+                      imgInputEl &&
+                      (el.contains(imgInputEl) ||
+                        Boolean(el.closest("label, button")?.contains(imgInputEl)))
+                    ) {
+                      continue;
+                    }
+                    const meta = `${(el.textContent || "").replace(/\s+/g, " ").trim()} ${el.getAttribute("data-testid") || ""} ${el.getAttribute("aria-label") || ""} ${el.getAttribute("title") || ""}`;
+                    if (denyMetaRe.test(meta)) continue;
+                    if (delIntentRe.test(meta)) {
+                      explicitTriggers.push(el);
+                    }
+                  }
+
+                  const chosen = explicitTriggers[0] || fallbackTriggers[0];
+                  if (chosen) {
+                    const target = chosen as any;
+                    if (typeof target.click === "function") {
+                      target.click();
+                    } else {
+                      target.dispatchEvent(
+                        new MouseEvent("click", { bubbles: true, cancelable: true })
+                      );
+                    }
                     return true;
                   }
                   container = container.parentElement;
@@ -3313,12 +3610,25 @@ export class SpckUploader {
 
           if (!clickedOne) break;
           await page.waitForTimeout(180);
+          const afterShotSig = await modal
+            .evaluate((el) => {
+              return `${el.querySelectorAll("button").length}:${el.querySelectorAll("img").length}:${el.querySelectorAll(".shot-tile").length}`;
+            })
+            .catch(() => "");
+          if (beforeShotSig && afterShotSig === beforeShotSig) {
+            stagnantShotPasses += 1;
+            if (stagnantShotPasses >= 2) break;
+          } else {
+            stagnantShotPasses = 0;
+          }
         }
       }
 
       if (cappedScreenshots.length > 0) {
         const totalResourceImgs = await modal
-          .locator('img[src*="resources.mindx.edu.vn"]')
+          .locator(
+            'img[src*="resources.mindx.edu.vn"]:not(.MuiDialogTitle-root img):not(h2 img):not(h3 img):not(.lms-file-card img):not(.att-tile img)'
+          )
           .count()
           .catch(() => 0);
         const existingScreenshotCount = Math.max(
@@ -3339,6 +3649,12 @@ export class SpckUploader {
         const imgInput = modal
           .locator('input[type="file"][accept*="image"][multiple]')
           .first();
+        if ((await imgInput.count()) === 0) {
+          for (let w = 0; w < 10; w++) {
+            await page.waitForTimeout(250);
+            if ((await imgInput.count().catch(() => 0)) > 0) break;
+          }
+        }
         if ((await imgInput.count()) === 0) {
           throw new Error(
             "[Read-after-Write] Không tìm thấy ô tải Hình ảnh sản phẩm trong Modal SPCK."
@@ -3379,41 +3695,363 @@ export class SpckUploader {
       ]);
 
       if (reusedExistingItem01) {
-        for (let pass = 0; pass < 20; pass++) {
+        let stagnantAttPasses = 0;
+        for (let pass = 0; pass < 30; pass++) {
+          const beforeAttSig = await modal
+            .evaluate((el) => {
+              return `${el.querySelectorAll("button").length}:${el.querySelectorAll(".lms-file-card, .att-tile, a, [data-url]").length}`;
+            })
+            .catch(() => "");
           const clickedOne = await modal
             .evaluate((modalEl) => {
-              const captions = Array.from(
-                modalEl.querySelectorAll("span.MuiTypography-caption")
+              const attInputEl = modalEl.querySelector(
+                'input[type="file"][accept*=".py"], input[type="file"][multiple]:not([accept="image/jpeg, image/png, image/jpg, image/tiff"])'
               );
-              for (const cap of captions) {
-                let container: HTMLElement | null = cap.parentElement;
-                for (
-                  let depth = 0;
-                  depth < 3 && container && container !== modalEl;
-                  depth++
-                ) {
+              const attForbiddenHeadingRe =
+                /^(?:sản phẩm học viên|tải hình ảnh lên|ảnh thumbnail|youtube video|đường dẫn liên quan)(?:\s*[:*(0-9].*)?$/i;
+              const denyTextRe =
+                /^(?:\+?\s*)?(?:thêm files?|thêm file|thêm ảnh|chọn files?|chọn file|chọn ảnh|tải lên|upload|tải xuống|download|xem|preview|zoom|phóng to|thay ảnh|save|lưu|thêm|add|cancel|hủy|đóng|close|xem chi tiết|xem chi tiết trang)$/i;
+              const denyMetaRe =
+                /(?:download|preview|zoom|visibility|openinnew|open_in_new|cloudupload|cloud_upload|fileupload|file_upload|addphoto|add_photo|addcircle|add_circle|addicon|upload|tải xuống|xem trước|phóng to|thêm file|thêm ảnh|chọn file|chọn ảnh|thay ảnh)/i;
+              const delIntentRe = /delete|trash|remove|clear|closeicon|cancelicon|xóa|✕|×/i;
+
+              // Strategy A: anchor to attachment dropzone input
+              let bestSection: HTMLElement | null = null;
+              if (attInputEl) {
+                let cur: HTMLElement | null = attInputEl.parentElement;
+                for (let depth = 0; depth < 6 && cur && cur !== modalEl; depth++) {
+                  const hasForbiddenInputs = Boolean(
+                    cur.querySelector(
+                      'input#title, input[name="title"], input#inputYoutube, input#inputRelativeUrl, input#inputRelativeUrlName, textarea, #gallery-list, #thumb-box, #yt-list, #rel-list'
+                    )
+                  );
+                  const hasPhotoImg =
+                    cur.querySelectorAll(
+                      'img[src*="resources.mindx.edu.vn"]:not(.lms-file-card img):not(.att-tile img), img#modal-thumb, #gallery-list img, #thumb-box img, .shot-tile img'
+                    ).length > 0;
+                  let hasForbiddenHeading = false;
+                  const hNodes = Array.from(
+                    cur.querySelectorAll("label, h1, h2, h3, h4, h5, h6, p, span, div")
+                  );
+                  for (const hEl of hNodes) {
+                    if (hEl.children.length > 1) continue;
+                    if (hEl.closest("a, .lms-file-card, .att-tile, .shot-tile")) continue;
+                    const lt = (hEl.textContent || "").replace(/\s+/g, " ").trim();
+                    if (!lt || lt.length > 60) continue;
+                    if (
+                      /\.(?:py|zip|pdf|pptx?|docx?|xlsx?|csv|png|jpe?g|webp|txt|html?|js|css|sb3|yyz|mp4|mov)$/i.test(
+                        lt
+                      )
+                    ) {
+                      continue;
+                    }
+                    if (attForbiddenHeadingRe.test(lt)) {
+                      hasForbiddenHeading = true;
+                      break;
+                    }
+                  }
                   if (
-                    container.querySelectorAll("span.MuiTypography-caption").length > 1
+                    hasPhotoImg ||
+                    cur.querySelectorAll('input[type="file"]').length > 1 ||
+                    hasForbiddenInputs ||
+                    hasForbiddenHeading
                   ) {
                     break;
                   }
+                  bestSection = cur;
+                  cur = cur.parentElement;
+                }
+              }
+
+              // Strategy B: anchor to innermost "Tài liệu đính kèm" heading (covers unmounted att-input at 10/10)
+              let headingSection: HTMLElement | null = null;
+              const headingNodes = Array.from(
+                modalEl.querySelectorAll("p, span, div, label, h4, h5, h6")
+              );
+              const matchedHeadings: Element[] = [];
+              for (const hNode of headingNodes) {
+                if (hNode.children.length > 1) continue;
+                if (hNode.closest("a, .lms-file-card, .att-tile, .shot-tile")) continue;
+                const hText = (hNode.textContent || "").replace(/\s+/g, " ").trim();
+                if (!hText || hText.length > 48) continue;
+                if (/^tài liệu đính kèm(?:\s*[:*(].*)?$/i.test(hText)) {
+                  matchedHeadings.push(hNode);
+                }
+              }
+              for (let hi = matchedHeadings.length - 1; hi >= 0; hi--) {
+                const hNode = matchedHeadings[hi];
+                let hasDescendant = false;
+                for (let hj = 0; hj < matchedHeadings.length; hj++) {
+                  if (hj !== hi && hNode.contains(matchedHeadings[hj])) {
+                    hasDescendant = true;
+                    break;
+                  }
+                }
+                if (hasDescendant) continue;
+                let cur: HTMLElement | null = hNode.parentElement;
+                for (let depth = 0; depth < 5 && cur && cur !== modalEl; depth++) {
+                  const hasForbiddenInputs = Boolean(
+                    cur.querySelector(
+                      'input#title, input[name="title"], input#inputYoutube, input#inputRelativeUrl, input#inputRelativeUrlName, textarea, #gallery-list, #thumb-box, #yt-list, #rel-list'
+                    )
+                  );
+                  const hasPhotoImg =
+                    cur.querySelectorAll(
+                      'img[src*="resources.mindx.edu.vn"]:not(.lms-file-card img):not(.att-tile img), img#modal-thumb, #gallery-list img, #thumb-box img, .shot-tile img'
+                    ).length > 0;
+                  let hasForbiddenHeading = false;
+                  const hNodes = Array.from(
+                    cur.querySelectorAll("label, h1, h2, h3, h4, h5, h6, p, span, div")
+                  );
+                  for (const hEl of hNodes) {
+                    if (hEl.children.length > 1) continue;
+                    if (hEl.closest("a, .lms-file-card, .att-tile, .shot-tile")) continue;
+                    const lt = (hEl.textContent || "").replace(/\s+/g, " ").trim();
+                    if (!lt || lt.length > 60) continue;
+                    if (
+                      /\.(?:py|zip|pdf|pptx?|docx?|xlsx?|csv|png|jpe?g|webp|txt|html?|js|css|sb3|yyz|mp4|mov)$/i.test(
+                        lt
+                      )
+                    ) {
+                      continue;
+                    }
+                    if (attForbiddenHeadingRe.test(lt)) {
+                      hasForbiddenHeading = true;
+                      break;
+                    }
+                  }
+                  if (
+                    hasPhotoImg ||
+                    cur.querySelectorAll('input[type="file"]').length > 1 ||
+                    hasForbiddenInputs ||
+                    hasForbiddenHeading
+                  ) {
+                    break;
+                  }
+                  headingSection = cur;
+                  cur = cur.parentElement;
+                }
+                if (headingSection) break;
+              }
+
+              const targetSections: HTMLElement[] = [];
+              if (bestSection) targetSections.push(bestSection);
+              if (headingSection && headingSection !== bestSection) {
+                targetSections.push(headingSection);
+              }
+
+              // CRITICAL (F01): Once section(s) are identified, search ONLY inside targetSections; NEVER fall through to Strategy C!
+              if (targetSections.length > 0) {
+                const explicitTriggers: Element[] = [];
+                const fallbackTriggers: Element[] = [];
+                for (const sec of targetSections) {
+                  const secBtns = Array.from(
+                    sec.querySelectorAll("button")
+                  ) as HTMLButtonElement[];
+                  for (const btn of secBtns) {
+                    if (btn.disabled) continue;
+                    if (btn.closest(".MuiDialogTitle-root, h2, h3")) continue;
+                    const bTxt = (btn.textContent || "").replace(/\s+/g, " ").trim();
+                    let svgMeta = "";
+                    const svgs = Array.from(btn.querySelectorAll("svg"));
+                    for (const s of svgs) {
+                      svgMeta += ` ${s.getAttribute("data-testid") || ""} ${s.getAttribute("aria-label") || ""} ${s.getAttribute("title") || ""}`;
+                    }
+                    const fullMeta = `${bTxt} ${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""} ${svgMeta}`.replace(
+                      /\s+/g,
+                      " "
+                    ).trim();
+                    const isDel = delIntentRe.test(fullMeta);
+                    if (denyTextRe.test(bTxt) || denyMetaRe.test(fullMeta)) {
+                      continue;
+                    }
+                    if (
+                      attInputEl &&
+                      (btn.contains(attInputEl) ||
+                        attInputEl.closest("button") === btn ||
+                        (btn.parentElement &&
+                          btn.parentElement.contains(attInputEl) &&
+                          !btn.closest(".lms-file-card, .att-tile") &&
+                          !isDel))
+                    ) {
+                      continue;
+                    }
+                    if (isDel) {
+                      explicitTriggers.push(btn);
+                    } else if (bTxt.length <= 2) {
+                      fallbackTriggers.push(btn);
+                    }
+                  }
+
+                  const secIcons = Array.from(
+                    sec.querySelectorAll('[role="button"], svg')
+                  );
+                  for (const el of secIcons) {
+                    if (el.closest(".MuiDialogTitle-root, h2, h3")) continue;
+                    const parentBtn = el.closest("button");
+                    if (parentBtn && sec.contains(parentBtn)) continue;
+                    if (
+                      attInputEl &&
+                      (el.contains(attInputEl) ||
+                        Boolean(el.closest("label, button")?.contains(attInputEl)))
+                    ) {
+                      continue;
+                    }
+                    const meta = `${(el.textContent || "").replace(/\s+/g, " ").trim()} ${el.getAttribute("data-testid") || ""} ${el.getAttribute("aria-label") || ""} ${el.getAttribute("title") || ""}`;
+                    if (denyMetaRe.test(meta)) continue;
+                    if (delIntentRe.test(meta)) {
+                      explicitTriggers.push(el);
+                    }
+                  }
+                }
+
+                const chosen = explicitTriggers[0] || fallbackTriggers[0];
+                if (chosen) {
+                  const target = chosen as any;
+                  if (typeof target.click === "function") {
+                    target.click();
+                  } else {
+                    target.dispatchEvent(
+                      new MouseEvent("click", { bubbles: true, cancelable: true })
+                    );
+                  }
+                  return true;
+                }
+                return false;
+              }
+
+              // Strategy C: Legacy flat mock DOM per-tile fallback ONLY when no safe section existed
+              const candidates = Array.from(
+                modalEl.querySelectorAll(
+                  'span.MuiTypography-caption, a[href*="resources.mindx.edu.vn"], [data-url*="resources.mindx.edu.vn"]'
+                )
+              );
+              for (const node of candidates) {
+                if (node.closest(".MuiDialogTitle-root, h2, h3, .card-header")) continue;
+                if (node.querySelector("img")) continue;
+                const parentAnchor = node.closest("a");
+                if (parentAnchor && parentAnchor.querySelector("img")) continue;
+                const isCaption =
+                  node.tagName === "SPAN" && node.classList.contains("MuiTypography-caption");
+                const capText = (node.textContent || "").replace(/\s+/g, " ").trim();
+                if (
+                  isCaption &&
+                  !/\.[a-z0-9]{1,8}$/i.test(capText) &&
+                  !node.closest('.att-tile, [data-url*="resources.mindx.edu.vn"]')
+                ) {
+                  continue;
+                }
+                const nodeMeta = `${node.getAttribute("href") || ""} ${node.getAttribute("data-url") || ""} ${capText}`;
+                if (/youtube\.com|youtu\.be|drive\.google\.com|github\.io/i.test(nodeMeta)) {
+                  continue;
+                }
+                let container: HTMLElement | null = node.parentElement;
+                for (
+                  let depth = 0;
+                  depth < 5 && container && container !== modalEl;
+                  depth++
+                ) {
+                  if (container.matches && container.matches(".MuiDialogTitle-root, h2, h3, .card-header")) {
+                    break;
+                  }
+                  if (
+                    container.querySelector('#btn-delete-card, button[aria-label*="Xóa sản phẩm" i]')
+                  ) {
+                    break;
+                  }
+                  if (
+                    container.querySelectorAll("img").length > 0 ||
+                    container.querySelectorAll("input").length > 0 ||
+                    container.querySelectorAll("textarea").length > 0 ||
+                    container.querySelectorAll('a[href*="resources.mindx.edu.vn"]').length > 1 ||
+                    container.querySelectorAll(".att-tile").length > 1 ||
+                    container.querySelectorAll('[data-url*="resources.mindx.edu.vn"]').length > 1
+                  ) {
+                    break;
+                  }
+                  const nonResLinks = Array.from(
+                    container.querySelectorAll('a[href^="http"]')
+                  ) as HTMLAnchorElement[];
+                  let hasForbiddenAnchor = false;
+                  for (const aEl of nonResLinks) {
+                    const href = aEl.getAttribute("href") || "";
+                    if (!href.toLowerCase().includes("resources.mindx.edu.vn")) {
+                      hasForbiddenAnchor = true;
+                      break;
+                    }
+                  }
+                  if (hasForbiddenAnchor) break;
+
+                  let hasForbiddenLeaf = false;
+                  const hNodes = Array.from(
+                    container.querySelectorAll("label, h1, h2, h3, h4, h5, h6, p, span, div")
+                  );
+                  for (const hEl of hNodes) {
+                    if (hEl.children.length > 1) continue;
+                    if (hEl.closest("a, .lms-file-card, .att-tile, .shot-tile")) continue;
+                    const lt = (hEl.textContent || "").replace(/\s+/g, " ").trim();
+                    if (!lt || lt.length > 60) continue;
+                    if (attForbiddenHeadingRe.test(lt)) {
+                      hasForbiddenLeaf = true;
+                      break;
+                    }
+                  }
+                  if (hasForbiddenLeaf) break;
+
+                  const explicitTriggers: Element[] = [];
+                  const fallbackTriggers: Element[] = [];
                   const btns = Array.from(
                     container.querySelectorAll("button")
                   ) as HTMLButtonElement[];
-                  const delBtn = btns.find((btn) => {
-                    if (btn.disabled) return false;
-                    const txt = (btn.textContent || "").trim();
-                    if (
-                      /^(?:thay ảnh|save|lưu|thêm|add|cancel|hủy|đóng|close|xem chi tiết|xem chi tiết trang)$/i.test(
-                        txt
-                      )
-                    ) {
-                      return false;
+                  for (const btn of btns) {
+                    if (btn.disabled) continue;
+                    if (btn.closest(".MuiDialogTitle-root, h2, h3")) continue;
+                    const bTxt = (btn.textContent || "").replace(/\s+/g, " ").trim();
+                    let svgMeta = "";
+                    const svgs = Array.from(btn.querySelectorAll("svg"));
+                    for (const s of svgs) {
+                      svgMeta += ` ${s.getAttribute("data-testid") || ""} ${s.getAttribute("aria-label") || ""} ${s.getAttribute("title") || ""}`;
                     }
-                    return true;
-                  });
-                  if (delBtn) {
-                    delBtn.click();
+                    const fullMeta = `${bTxt} ${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""} ${svgMeta}`.replace(
+                      /\s+/g,
+                      " "
+                    ).trim();
+                    if (denyTextRe.test(bTxt) || denyMetaRe.test(fullMeta)) {
+                      continue;
+                    }
+                    if (delIntentRe.test(fullMeta)) {
+                      explicitTriggers.push(btn);
+                    } else if (bTxt.length <= 2) {
+                      fallbackTriggers.push(btn);
+                    }
+                  }
+                  const iconEls = Array.from(
+                    container.querySelectorAll('[role="button"], svg')
+                  );
+                  for (const el of iconEls) {
+                    if (el.closest(".MuiDialogTitle-root, h2, h3")) continue;
+                    const parentBtn = el.closest("button");
+                    if (parentBtn && container.contains(parentBtn)) continue;
+                    const meta = `${(el.textContent || "").replace(/\s+/g, " ").trim()} ${el.getAttribute("data-testid") || ""} ${el.getAttribute("aria-label") || ""} ${el.getAttribute("title") || ""}`;
+                    if (denyMetaRe.test(meta)) continue;
+                    if (delIntentRe.test(meta)) {
+                      explicitTriggers.push(el);
+                    }
+                  }
+                  const totalTriggers = explicitTriggers.length + fallbackTriggers.length;
+                  if (totalTriggers > 1) {
+                    break;
+                  }
+                  const chosen = explicitTriggers[0] || fallbackTriggers[0];
+                  if (chosen) {
+                    const target = chosen as any;
+                    if (typeof target.click === "function") {
+                      target.click();
+                    } else {
+                      target.dispatchEvent(
+                        new MouseEvent("click", { bubbles: true, cancelable: true })
+                      );
+                    }
                     return true;
                   }
                   container = container.parentElement;
@@ -3424,6 +4062,17 @@ export class SpckUploader {
             .catch(() => false);
           if (!clickedOne) break;
           await page.waitForTimeout(180);
+          const afterAttSig = await modal
+            .evaluate((el) => {
+              return `${el.querySelectorAll("button").length}:${el.querySelectorAll(".lms-file-card, .att-tile, a, [data-url]").length}`;
+            })
+            .catch(() => "");
+          if (beforeAttSig && afterAttSig === beforeAttSig) {
+            stagnantAttPasses += 1;
+            if (stagnantAttPasses >= 2) break;
+          } else {
+            stagnantAttPasses = 0;
+          }
         }
       }
 
@@ -3434,6 +4083,12 @@ export class SpckUploader {
             'input[type="file"][accept*=".py"], input[type="file"][multiple]:not([accept="image/jpeg, image/png, image/jpg, image/tiff"])'
           )
           .first();
+        if ((await attInput.count()) === 0) {
+          for (let w = 0; w < 10; w++) {
+            await page.waitForTimeout(250);
+            if ((await attInput.count().catch(() => 0)) > 0) break;
+          }
+        }
         if ((await attInput.count()) === 0) {
           throw new Error("Không tìm thấy ô tải tài liệu đính kèm trong Modal SPCK.");
         }

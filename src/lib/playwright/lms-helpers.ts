@@ -583,7 +583,7 @@ export class LmsHelpers {
   public static async openClassDrawer(
     page: Page,
     classCode: string,
-    options?: { preferredTab?: number }
+    options?: { preferredTab?: number; _retriedAfterLogin?: boolean }
   ): Promise<void> {
     const interceptor = createNetworkInterceptor(page);
     await interceptor.dismissForbiddenToast();
@@ -1250,6 +1250,26 @@ export class LmsHelpers {
             beginAttemptEpoch
           );
           if (!drawerAlreadyOpened) {
+            if (await checkIsAtLogin()) {
+              if (!options?._retriedAfterLogin) {
+                await authService.ensureAuthenticated("LMS");
+                await page
+                  .goto(`${config.lmsUrl.replace(/\/$/, "")}/admin/classes`, {
+                    waitUntil: "domcontentloaded",
+                    timeout: 25000,
+                  })
+                  .catch(() => {});
+                await page.waitForTimeout(1000);
+                cleanupListeners();
+                return await LmsHelpers.openClassDrawer(page, classCode, {
+                  ...options,
+                  _retriedAfterLogin: true,
+                });
+              }
+              throw new Error(
+                "[LMS Error] Trình duyệt đang ở màn hình Đăng nhập LMS. Phiên đăng nhập chưa hoàn tất hoặc tài khoản chưa hợp lệ. Vui lòng kiểm tra lại cấu hình LMS_USERNAME / LMS_PASSWORD."
+              );
+            }
             const shotPath = LmsHelpers.getDebugScreenshotPath("debug_class_not_found.png");
             await page
               .screenshot({ path: shotPath })
@@ -1352,6 +1372,26 @@ export class LmsHelpers {
           await drawer.waitFor({ state: "visible", timeout: 1500 });
         }
       } catch (err) {
+        if (await checkIsAtLogin()) {
+          if (!options?._retriedAfterLogin) {
+            await authService.ensureAuthenticated("LMS");
+            await page
+              .goto(`${config.lmsUrl.replace(/\/$/, "")}/admin/classes`, {
+                waitUntil: "domcontentloaded",
+                timeout: 25000,
+              })
+              .catch(() => {});
+            await page.waitForTimeout(1000);
+            cleanupListeners();
+            return await LmsHelpers.openClassDrawer(page, classCode, {
+              ...options,
+              _retriedAfterLogin: true,
+            });
+          }
+          throw new Error(
+            "[LMS Error] Trình duyệt đang ở màn hình Đăng nhập LMS. Phiên đăng nhập chưa hoàn tất hoặc tài khoản chưa hợp lệ. Vui lòng kiểm tra lại cấu hình LMS_USERNAME / LMS_PASSWORD."
+          );
+        }
         const timeoutShotPath = LmsHelpers.getDebugScreenshotPath("debug_drawer_timeout.png");
         await page
           .screenshot({ path: timeoutShotPath })
