@@ -72,11 +72,299 @@ interface ResolvedCompetencyRadioGroup {
   radioGlobalIndices: number[]; // length 5 ordered by rating 1..5
 }
 
+const RESOLVE_CP_RADIOS_BROWSER_SCRIPT = `
+  var allRadios = Array.prototype.slice.call(rootEl.querySelectorAll('input[type="radio"]'));
+  if (allRadios.length < 45) return null;
+
+  function norm(str) {
+    return String(str || "")
+      .normalize("NFD")
+      .replace(/[\\u0300-\\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .toLowerCase()
+      .replace(/\\s+/g, " ")
+      .trim();
+  }
+
+  function hasDnlMarker(normText) {
+    var t = String(normText || "").trim();
+    if (!t) return false;
+    if (/^\\[?(?:[a-z0-9]+-)?dnl\\d*\\]?\\s*checkpoint$/i.test(t)) return false;
+    return /\\[(?:[a-z0-9]+-)?dnl\\d*\\]|\\.(?:rob\\.)?dnl\\d*/i.test(t);
+  }
+
+  function getCleanElementText(node) {
+    if (!node) return "";
+    if (node.nodeType === 3) return node.textContent || "";
+    if (node.nodeType !== 1) return "";
+    var tag = node.tagName;
+    if (
+      tag === "TEXTAREA" ||
+      tag === "INPUT" ||
+      tag === "SELECT" ||
+      tag === "OPTION" ||
+      tag === "BUTTON" ||
+      tag === "SCRIPT" ||
+      tag === "STYLE" ||
+      (node.classList && node.classList.contains("ql-editor")) ||
+      (node.getAttribute && node.getAttribute("contenteditable") === "true")
+    ) {
+      return "";
+    }
+    var out = "";
+    var children = node.childNodes;
+    for (var i = 0; i < children.length; i++) {
+      out += " " + getCleanElementText(children[i]);
+    }
+    return out;
+  }
+
+  function matchesSpecKeywords(normText, spec) {
+    if (!normText || !spec || !spec.keywordsNorm) return false;
+    for (var i = 0; i < spec.keywordsNorm.length; i++) {
+      if (normText.indexOf(spec.keywordsNorm[i]) !== -1) return true;
+    }
+    return false;
+  }
+
+  function countMatchingSpecs(normText, allSpecs) {
+    var count = 0;
+    for (var i = 0; i < allSpecs.length; i++) {
+      if (matchesSpecKeywords(normText, allSpecs[i])) count++;
+    }
+    return count;
+  }
+
+  function isValidFiveRadioGroup(radios, containerEl, candHasDnl, allSpecs, candNormText) {
+    if (!radios || radios.length !== 5) return false;
+    for (var i = 0; i < radios.length; i++) {
+      if (radios[i].disabled) return false;
+    }
+    if (containerEl.querySelectorAll('input[type="number"], input[type="checkbox"], .ql-editor').length > 0) {
+      return false;
+    }
+    for (var i = 0; i < radios.length; i++) {
+      var r = radios[i];
+      if (
+        r.getAttribute("data-kind") === "question" ||
+        /^(?:q_|question|cp_question)/i.test(String(r.name || ""))
+      ) {
+        return false;
+      }
+    }
+    var distinctNames = {};
+    var namesCount = 0;
+    for (var i = 0; i < radios.length; i++) {
+      var rName = String(radios[i].name || "").trim();
+      if (rName && !distinctNames[rName]) {
+        distinctNames[rName] = true;
+        namesCount++;
+      }
+    }
+    if (namesCount > 1) return false;
+
+    var rawAttrVals = [];
+    for (var i = 0; i < radios.length; i++) {
+      var av = radios[i].getAttribute("value");
+      var trimmedAv = String(av === null || av === undefined ? "" : av).trim();
+      if (trimmedAv !== "" && trimmedAv !== "on") {
+        rawAttrVals.push(trimmedAv);
+      }
+    }
+    if (rawAttrVals.length > 0) {
+      if (rawAttrVals.length !== 5) return false;
+      var seenNums = {};
+      var distinctValCount = 0;
+      for (var i = 0; i < rawAttrVals.length; i++) {
+        if (!/^[1-5]$/.test(rawAttrVals[i])) return false;
+        if (!seenNums[rawAttrVals[i]]) {
+          seenNums[rawAttrVals[i]] = true;
+          distinctValCount++;
+        }
+      }
+      if (distinctValCount !== 5) return false;
+      if (candNormText !== null && candNormText !== undefined) {
+        if (countMatchingSpecs(candNormText, allSpecs) !== 1) return false;
+        if (countMatchingSpecs(norm(getCleanElementText(containerEl)), allSpecs) > 1) {
+          return false;
+        }
+      } else if (countMatchingSpecs(norm(getCleanElementText(containerEl)), allSpecs) !== 1) {
+        return false;
+      }
+    } else {
+      var containerCleanNorm = norm(getCleanElementText(containerEl));
+      var hasNumericScale = /(?:^|\\D)1\\s*2\\s*3\\s*4\\s*5(?:\\D|$)/.test(containerCleanNorm);
+      if (!(namesCount === 1 || candHasDnl || hasNumericScale)) {
+        return false;
+      }
+      var containerSpecCount = countMatchingSpecs(containerCleanNorm, allSpecs);
+      if (candNormText !== null && candNormText !== undefined && containerSpecCount === 0) {
+        if (countMatchingSpecs(candNormText, allSpecs) !== 1) return false;
+      } else {
+        if (containerSpecCount !== 1) return false;
+      }
+    }
+    return true;
+  }
+
+  var allElements = Array.prototype.slice.call(rootEl.querySelectorAll("*"));
+  var anyDnlHeadingExists = false;
+  for (var eIdx = 0; eIdx < allElements.length; eIdx++) {
+    var elCheck = allElements[eIdx];
+    if (elCheck.closest('textarea, input, select, option, .ql-editor, [contenteditable="true"], button, script, style')) {
+      continue;
+    }
+    var cleanCheck = norm(getCleanElementText(elCheck));
+    if (cleanCheck.length > 0 && cleanCheck.length <= 260 && hasDnlMarker(cleanCheck) && countMatchingSpecs(cleanCheck, specs) > 0) {
+      anyDnlHeadingExists = true;
+      break;
+    }
+  }
+
+  var results = [];
+  var usedGroupRadioSets = {};
+
+  for (var sIdx = 0; sIdx < specs.length; sIdx++) {
+    var spec = specs[sIdx];
+    var specLabelNorm = norm(spec.labelVi);
+    var specRoboticsNorm = spec.roboticsLabelVi ? norm(spec.roboticsLabelVi) : "";
+    var candidates = [];
+
+    for (var i = 0; i < allElements.length; i++) {
+      var el = allElements[i];
+      if (el.closest('textarea, input, select, option, .ql-editor, [contenteditable="true"], button, script, style')) {
+        continue;
+      }
+      if (el.querySelectorAll('input[type="radio"]').length > 5) continue;
+      var t = norm(getCleanElementText(el));
+      if (!t || t.length > 260) continue;
+      if (!matchesSpecKeywords(t, spec)) continue;
+      if (countMatchingSpecs(t, specs) !== 1) continue;
+
+      var candHasDnl = hasDnlMarker(t);
+      if (!candHasDnl && anyDnlHeadingExists) continue;
+      if (/(?:^|\\b)(?:cau hoi|trac nghiem|question)\\b/i.test(t) && !candHasDnl) continue;
+
+      var tier =
+        (t === specLabelNorm || (specRoboticsNorm && t === specRoboticsNorm))
+          ? 3
+          : candHasDnl
+          ? 2
+          : 1;
+
+      var depth = 0;
+      var cur = el;
+      while (cur && cur !== rootEl) {
+        depth++;
+        cur = cur.parentElement;
+      }
+      candidates.push({ el: el, tier: tier, textLen: t.length, depth: depth, candHasDnl: candHasDnl, normText: t });
+    }
+
+    candidates.sort(function(a, b) {
+      return (b.tier - a.tier) || (b.depth - a.depth) || (a.textLen - b.textLen);
+    });
+
+    var matchedRadios = null;
+    for (var cIdx = 0; cIdx < candidates.length; cIdx++) {
+      var cand = candidates[cIdx];
+      var container = cand.el;
+      while (container && container !== rootEl) {
+        var containerRadios = Array.prototype.slice.call(container.querySelectorAll('input[type="radio"]'));
+        if (
+          containerRadios.length === 5 &&
+          isValidFiveRadioGroup(containerRadios, container, cand.candHasDnl, specs, null)
+        ) {
+          var sigIndices = [];
+          for (var rIdx = 0; rIdx < containerRadios.length; rIdx++) {
+            sigIndices.push(allRadios.indexOf(containerRadios[rIdx]));
+          }
+          var sig = sigIndices.join(",");
+          if (!usedGroupRadioSets[sig]) {
+            matchedRadios = containerRadios;
+            usedGroupRadioSets[sig] = true;
+            break;
+          }
+        }
+        if (containerRadios.length > 5) {
+          var prevBranch = cand.el;
+          while (prevBranch && prevBranch.parentElement && prevBranch.parentElement !== container) {
+            prevBranch = prevBranch.parentElement;
+          }
+          var sib = prevBranch ? prevBranch.nextElementSibling : null;
+          while (sib) {
+            var sibText = norm(getCleanElementText(sib));
+            if (hasDnlMarker(sibText) || countMatchingSpecs(sibText, specs) > 0) break;
+            var sibRadios = Array.prototype.slice.call(sib.querySelectorAll('input[type="radio"]'));
+            if (
+              sibRadios.length === 5 &&
+              isValidFiveRadioGroup(sibRadios, sib, cand.candHasDnl, specs, cand.normText)
+            ) {
+              var sibSigIndices = [];
+              for (var srIdx = 0; srIdx < sibRadios.length; srIdx++) {
+                sibSigIndices.push(allRadios.indexOf(sibRadios[srIdx]));
+              }
+              var sibSig = sibSigIndices.join(",");
+              if (!usedGroupRadioSets[sibSig]) {
+                matchedRadios = sibRadios;
+                usedGroupRadioSets[sibSig] = true;
+                break;
+              }
+            }
+            sib = sib.nextElementSibling;
+          }
+          break;
+        }
+        container = container.parentElement;
+      }
+      if (matchedRadios) break;
+    }
+
+    if (!matchedRadios || matchedRadios.length !== 5) {
+      return null;
+    }
+
+    var byVal = {};
+    var byValCount = 0;
+    for (var j = 0; j < matchedRadios.length; j++) {
+      var mr = matchedRadios[j];
+      var attrVal = mr.getAttribute("value");
+      var rawV = String(attrVal === null || attrVal === undefined ? "" : attrVal).trim();
+      if (/^[1-5]$/.test(rawV)) {
+        var numV = parseInt(rawV, 10);
+        if (!byVal[numV]) {
+          byVal[numV] = mr;
+          byValCount++;
+        }
+      }
+    }
+    var ordered = matchedRadios;
+    if (byValCount === 5) {
+      ordered = [byVal[1], byVal[2], byVal[3], byVal[4], byVal[5]];
+    }
+
+    var globalIndices = [];
+    for (var oIdx = 0; oIdx < ordered.length; oIdx++) {
+      var gIdx = allRadios.indexOf(ordered[oIdx]);
+      if (gIdx < 0) return null;
+      globalIndices.push(gIdx);
+    }
+    results.push({
+      key: spec.key,
+      labelVi: spec.labelVi,
+      radioGlobalIndices: globalIndices
+    });
+  }
+
+  return results.length === 9 ? results : null;
+`;
+
 /**
  * Resolves the 9 `[ĐNL]` radio button groups in a Checkpoint modal strictly by
  * Vietnamese competency section labels (`COMPETENCY_AREA_SPECS`), falling back
- * to flat 45-radio DOM indexing ONLY when total radios === 45 (never touching
- * question checkboxes or LT/TH number inputs).
+ * to flat 45-radio DOM indexing ONLY for pure non-DOM unit mocks without evaluate()
+ * (never touching question checkboxes or LT/TH number inputs).
  */
 async function resolveCheckpointCompetencyRadioGroups(
   dialogLoc: any
@@ -84,6 +372,7 @@ async function resolveCheckpointCompetencyRadioGroups(
   method: "LABEL_GROUPED" | "FLAT_45" | "NONE";
   totalRadios: number;
   groups: ResolvedCompetencyRadioGroup[];
+  evalError?: string;
 }> {
   const radios = dialogLoc.locator('input[type="radio"]');
   const totalRadios =
@@ -96,199 +385,23 @@ async function resolveCheckpointCompetencyRadioGroups(
   }
 
   let labelMapped: ResolvedCompetencyRadioGroup[] | null = null;
+  let evalError = "";
   const hasDomEvaluate = typeof (dialogLoc as any).evaluate === "function";
   if (hasDomEvaluate && safeCompetencyAreaSpecs.length === 9) {
     try {
       const specsPayload = safeCompetencyAreaSpecs.map((s) => ({
         key: s.key,
         labelVi: s.labelVi,
+        roboticsLabelVi: s.roboticsLabelVi || "",
         keywordsNorm: s.keywordsNorm,
       }));
       labelMapped = await (dialogLoc as any).evaluate(
-        (rootEl: HTMLElement, specs: Array<{ key: string; labelVi: string; keywordsNorm: string[] }>) => {
-          const allRadios = Array.from(rootEl.querySelectorAll('input[type="radio"]')) as HTMLInputElement[];
-          if (allRadios.length < 45) return null;
-
-          const norm = (str: string) =>
-            String(str || "")
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "")
-              .replace(/đ/g, "d")
-              .replace(/Đ/g, "D")
-              .toLowerCase()
-              .replace(/\s+/g, " ")
-              .trim();
-
-          const getCleanElementText = (node: Node): string => {
-            if (node.nodeType === 3) return node.textContent || "";
-            if (node.nodeType !== 1) return "";
-            const elNode = node as HTMLElement;
-            const tag = elNode.tagName;
-            if (
-              tag === "TEXTAREA" ||
-              tag === "INPUT" ||
-              tag === "SELECT" ||
-              tag === "OPTION" ||
-              tag === "SCRIPT" ||
-              tag === "STYLE" ||
-              elNode.classList?.contains("ql-editor") ||
-              elNode.getAttribute?.("contenteditable") === "true"
-            ) {
-              return "";
-            }
-            let out = "";
-            for (const child of Array.from(elNode.childNodes)) {
-              out += " " + getCleanElementText(child);
-            }
-            return out;
-          };
-
-          const isValidFiveRadioGroup = (radios: HTMLInputElement[], containerEl: HTMLElement): boolean => {
-            if (radios.length !== 5) return false;
-            if (containerEl.querySelectorAll('input[type="number"]').length > 0) return false;
-            if (
-              radios.some(
-                (r) =>
-                  r.getAttribute("data-kind") === "question" ||
-                  /^(?:q_|question|cp_question)/i.test(String(r.name || ""))
-              )
-            ) {
-              return false;
-            }
-            const names = new Set(radios.map((r) => String(r.name || "").trim()).filter(Boolean));
-            if (names.size > 1) return false;
-            const hasNamedGroup = names.size === 1;
-            const explicitVals = radios
-              .map((r) => Number(r.value))
-              .filter((v) => Number.isInteger(v) && v >= 1 && v <= 5);
-            if (explicitVals.length > 0 && new Set(explicitVals).size !== 5) return false;
-            if (explicitVals.length === 0 && !hasNamedGroup) return false;
-            return true;
-          };
-
-          const allElements = Array.from(rootEl.querySelectorAll("*")) as HTMLElement[];
-          const anyDnlHeadingExists = allElements.some((el) => {
-            if (el.closest('textarea, input, select, option, .ql-editor, [contenteditable="true"], button, script, style')) {
-              return false;
-            }
-            const clean = norm(getCleanElementText(el));
-            return clean.length <= 260 && clean.includes("[dnl]");
-          });
-
-          const results: Array<{ key: string; labelVi: string; radioGlobalIndices: number[] }> = [];
-          const usedGroupRadioSets = new Set<string>();
-
-          for (const spec of specs) {
-            const specLabelNorm = norm(spec.labelVi);
-            const candidates: Array<{ el: HTMLElement; tier: number; textLen: number; depth: number }> = [];
-            for (const el of allElements) {
-              if (el.closest('textarea, input, select, option, .ql-editor, [contenteditable="true"], button, script, style')) {
-                continue;
-              }
-              if (el.querySelectorAll('input[type="radio"]').length > 5) continue;
-              const t = norm(getCleanElementText(el));
-              if (!t || t.length > 260) continue;
-              if (!spec.keywordsNorm.some((kw) => t.includes(kw))) continue;
-
-              const hasDnlPrefix = t.includes("[dnl]");
-              if (!hasDnlPrefix && anyDnlHeadingExists) continue;
-              if (/(?:^|\b)(?:cau hoi|trac nghiem|question)\b/i.test(t) && !hasDnlPrefix) continue;
-
-              const tier =
-                t === specLabelNorm
-                  ? 3
-                  : hasDnlPrefix
-                  ? 2
-                  : 1;
-
-              let depth = 0;
-              let cur: HTMLElement | null = el;
-              while (cur && cur !== rootEl) {
-                depth++;
-                cur = cur.parentElement;
-              }
-              candidates.push({ el, tier, textLen: t.length, depth });
-            }
-            candidates.sort(
-              (a, b) => b.tier - a.tier || b.depth - a.depth || a.textLen - b.textLen
-            );
-
-            let matchedRadios: HTMLInputElement[] | null = null;
-            for (const cand of candidates) {
-              let container: HTMLElement | null = cand.el;
-              while (container && container !== rootEl) {
-                const containerRadios = Array.from(
-                  container.querySelectorAll('input[type="radio"]')
-                ) as HTMLInputElement[];
-                if (containerRadios.length === 5 && isValidFiveRadioGroup(containerRadios, container)) {
-                  const sig = containerRadios.map((r) => allRadios.indexOf(r)).join(",");
-                  if (!usedGroupRadioSets.has(sig)) {
-                    matchedRadios = containerRadios;
-                    usedGroupRadioSets.add(sig);
-                    break;
-                  }
-                }
-                if (containerRadios.length > 5) {
-                  // Support flat sibling layout: inspect immediate following siblings up to next [ĐNL] heading
-                  let prevBranch: HTMLElement | null = cand.el;
-                  while (prevBranch && prevBranch.parentElement && prevBranch.parentElement !== container) {
-                    prevBranch = prevBranch.parentElement;
-                  }
-                  let sib = prevBranch?.nextElementSibling as HTMLElement | null;
-                  while (sib) {
-                    const sibText = norm(getCleanElementText(sib));
-                    if (sibText.includes("[dnl]")) break;
-                    const sibRadios = Array.from(
-                      sib.querySelectorAll('input[type="radio"]')
-                    ) as HTMLInputElement[];
-                    if (sibRadios.length === 5 && isValidFiveRadioGroup(sibRadios, sib)) {
-                      const sig = sibRadios.map((r) => allRadios.indexOf(r)).join(",");
-                      if (!usedGroupRadioSets.has(sig)) {
-                        matchedRadios = sibRadios;
-                        usedGroupRadioSets.add(sig);
-                        break;
-                      }
-                    }
-                    sib = sib.nextElementSibling as HTMLElement | null;
-                  }
-                  break;
-                }
-                container = container.parentElement;
-              }
-              if (matchedRadios) break;
-            }
-
-            if (!matchedRadios || matchedRadios.length !== 5) {
-              return null;
-            }
-
-            // Order options 1..5 by explicit value="1".."5" when present, else keep DOM order
-            const byVal = new Map<number, HTMLInputElement>();
-            for (const r of matchedRadios) {
-              const v = Number(r.value);
-              if (Number.isInteger(v) && v >= 1 && v <= 5 && !byVal.has(v)) {
-                byVal.set(v, r);
-              }
-            }
-            const ordered =
-              byVal.size === 5
-                ? [1, 2, 3, 4, 5].map((rating) => byVal.get(rating)!)
-                : matchedRadios;
-
-            const globalIndices = ordered.map((r) => allRadios.indexOf(r));
-            if (globalIndices.some((idx) => idx < 0)) return null;
-            results.push({
-              key: spec.key,
-              labelVi: spec.labelVi,
-              radioGlobalIndices: globalIndices,
-            });
-          }
-
-          return results.length === 9 ? results : null;
-        },
-        specsPayload
+        (rootEl: HTMLElement, payload: { script: string; specs: typeof specsPayload }) =>
+          new Function("rootEl", "specs", payload.script)(rootEl, payload.specs),
+        { script: RESOLVE_CP_RADIOS_BROWSER_SCRIPT, specs: specsPayload }
       );
-    } catch {
+    } catch (err) {
+      evalError = err instanceof Error ? err.message : String(err);
       labelMapped = null;
     }
   }
@@ -314,7 +427,7 @@ async function resolveCheckpointCompetencyRadioGroups(
     };
   }
 
-  return { method: "NONE", totalRadios, groups: [] };
+  return { method: "NONE", totalRadios, groups: [], ...(evalError ? { evalError } : {}) };
 }
 
 async function applyCheckpointCompetencyRadios(
@@ -323,8 +436,9 @@ async function applyCheckpointCompetencyRadios(
 ): Promise<{ appliedCount: number; clickedCount: number }> {
   const resolved = await resolveCheckpointCompetencyRadioGroups(dialogLoc);
   if (resolved.method === "NONE" || resolved.groups.length !== 9) {
+    const evalDetail = resolved.evalError ? ` (evalError: ${resolved.evalError})` : "";
     throw new Error(
-      `CHECKPOINT_COMPETENCY_DOM_MISMATCH: Modal Checkpoint có ${resolved.totalRadios} radio nhưng không định vị an toàn được đủ 9 nhóm [ĐNL] để tích tự động (tuyệt đối không chạm các ô điểm/câu hỏi khác).`
+      `CHECKPOINT_COMPETENCY_DOM_MISMATCH: Modal Checkpoint có ${resolved.totalRadios} radio nhưng không định vị an toàn được đủ 9 nhóm [ĐNL] để tích tự động (tuyệt đối không chạm các ô điểm/câu hỏi khác).${evalDetail}`
     );
   }
 
@@ -966,7 +1080,7 @@ export class CommentSaver {
 
         const isCheckpointSummaryTable =
           detectedCheckpoint ||
-          /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[ĐNL\]/i.test(
+          /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[(?:[A-Z0-9]+-)?ĐNL\d*\]|\.(?:ROB\.)?ĐNL\d*/i.test(
             `${cell2Readback} ${rawCell1}`
           );
 
@@ -1383,7 +1497,7 @@ export class CommentSaver {
             if (await savedRowLoc.isVisible().catch(() => false)) {
               const rowTxt = await savedRowLoc.innerText().catch(() => "");
               if (
-                /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[ĐNL\]/i.test(
+                /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[(?:[A-Z0-9]+-)?ĐNL\d*\]|\.(?:ROB\.)?ĐNL\d*/i.test(
                   rowTxt
                 )
               ) {
@@ -1444,7 +1558,7 @@ export class CommentSaver {
               }
               const joinedExistingRaw = existingCandidates.join(" ");
               if (
-                /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[ĐNL\]/i.test(
+                /Điểm\s+năng\s+lực|Điểm\s+lý\s+thuyết|Điểm\s+thực\s+hành|Competency\s+Score|\[(?:[A-Z0-9]+-)?ĐNL\d*\]|\.(?:ROB\.)?ĐNL\d*/i.test(
                   joinedExistingRaw
                 )
               ) {
@@ -1463,6 +1577,7 @@ export class CommentSaver {
 
               if (
                 !isCheckpointModal &&
+                !desiredCompetencyScores &&
                 preSaveRecord.status === "VERIFIED" &&
                 !isRetryPass &&
                 normalizedExpectedPlain.length > 0 &&
@@ -2182,6 +2297,20 @@ export class CommentSaver {
             null,
             approvedHash
           );
+          if (
+            isCheckpointModal &&
+            desiredCompetencyScores &&
+            typeof (sessionFeedbackRepo as any).markCheckpointLmsCompetencyVerified === "function"
+          ) {
+            (sessionFeedbackRepo as any).markCheckpointLmsCompetencyVerified(
+              classId,
+              sessionId,
+              record.studentId,
+              desiredCompetencyScores,
+              verifiedAt,
+              approvedHash
+            );
+          }
 
           jobLogRepo.add({
             jobId,
@@ -2551,6 +2680,7 @@ export class CommentSaver {
 
           const verifyStudentInViewModeDom = async (rec: SessionFeedbackRecord): Promise<{
             matched: boolean;
+            competencyVerified?: boolean;
             errorMsg?: string;
           }> => {
             try {
@@ -2666,10 +2796,36 @@ export class CommentSaver {
               }
               await page.waitForTimeout(250);
 
-              const { normalizedCandidates: normDomCandidates } = await readDialogCommentCandidates(
-                dialog,
-                detectedAnyCheckpointSession
-              );
+              const recCpData = safeParseCheckpointDataJson(rec.checkpointDataJson);
+              const recDesiredComp = recCpData?.competencyScores ?? null;
+              const isCpHintForRec = detectedAnyCheckpointSession || Boolean(recDesiredComp);
+              const {
+                normalizedCandidates: normDomCandidates,
+                detectedCheckpoint: domDetectedCp,
+              } = await readDialogCommentCandidates(dialog, isCpHintForRec);
+
+              let isCompMatch = true;
+              let compMismatchNote = "";
+              let compVerifiedForRec = false;
+              if (domDetectedCp && recDesiredComp) {
+                const verifyRadiosLoc = dialog.locator('input[type="radio"]');
+                const waitStart = Date.now();
+                while (Date.now() - waitStart < 2500) {
+                  const rCount =
+                    typeof (verifyRadiosLoc as any).count === "function"
+                      ? await (verifyRadiosLoc as any).count().catch(() => 0)
+                      : 45;
+                  if (rCount >= 45) break;
+                  await page.waitForTimeout(200);
+                }
+                const compVerifyRes = await verifyCheckpointCompetencyRadios(dialog, recDesiredComp);
+                isCompMatch = compVerifyRes.matched;
+                compVerifiedForRec = compVerifyRes.matched;
+                if (!isCompMatch && compVerifyRes.mismatches.length > 0) {
+                  compMismatchNote = ` | Lệch [ĐNL]: ${compVerifyRes.mismatches.slice(0, 3).join("; ")}`;
+                }
+              }
+
               await closeModalSafely(dialog, 250);
 
               const domExactMatch =
@@ -2679,11 +2835,13 @@ export class CommentSaver {
                   (actual) => actual === expectedPlainNorm || actual === expectedRawNorm
                 );
 
-              return domExactMatch
-                ? { matched: true }
+              return domExactMatch && isCompMatch
+                ? { matched: true, competencyVerified: compVerifiedForRec }
                 : {
                     matched: false,
-                    errorMsg: `Nội dung đọc lại trên LMS DOM của '${studentName}' không khớp với bản đã duyệt.`,
+                    errorMsg: !isCompMatch
+                      ? `Nội dung hoặc 9 ô [ĐNL] đọc lại trên LMS DOM của '${studentName}' không khớp với bản đã duyệt${compMismatchNote}.`
+                      : `Nội dung đọc lại trên LMS DOM của '${studentName}' không khớp với bản đã duyệt.`,
                   };
             } catch (domErr) {
               if (typeof LmsHelpers?.ensureCleanDialogAndToast === "function") {
@@ -2759,7 +2917,8 @@ export class CommentSaver {
             rec: SessionFeedbackRecord,
             studentName: string,
             studentObj: any,
-            sourceLabel: string
+            sourceLabel: string,
+            competencyVerified = false
           ) => {
             const approvedText = rec.finalText || "";
             const approvedHash = rec.contentHash || "";
@@ -2805,6 +2964,22 @@ export class CommentSaver {
               null,
               approvedHash
             );
+            const recCpData = safeParseCheckpointDataJson(rec.checkpointDataJson);
+            const recDesiredComp = recCpData?.competencyScores ?? null;
+            if (
+              competencyVerified &&
+              recDesiredComp &&
+              typeof (sessionFeedbackRepo as any).markCheckpointLmsCompetencyVerified === "function"
+            ) {
+              (sessionFeedbackRepo as any).markCheckpointLmsCompetencyVerified(
+                classId,
+                sessionId,
+                rec.studentId,
+                recDesiredComp,
+                verifiedAt,
+                approvedHash
+              );
+            }
             jobLogRepo.add({
               jobId,
               jobType: "SAVE_COMMENTS",
@@ -2964,7 +3139,8 @@ export class CommentSaver {
                 fbItem.rec,
                 fbItem.studentName,
                 fbItem.studentObj,
-                fbItem.reasonLabel
+                fbItem.reasonLabel,
+                Boolean(domRes.competencyVerified)
               );
             } else {
               markBatchCandidateFailed(
@@ -3012,7 +3188,8 @@ export class CommentSaver {
                 rec,
                 studentName,
                 studentObj,
-                "GetClassById + DOM Read-after-Write sau phản hồi chậm"
+                "GetClassById + DOM Read-after-Write sau phản hồi chậm",
+                Boolean(domRes.competencyVerified)
               );
             }
           }

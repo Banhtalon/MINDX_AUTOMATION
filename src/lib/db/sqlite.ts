@@ -1095,6 +1095,87 @@ export const sessionFeedbackRepo = {
       `)
       .run(classId, sessionId, studentId);
   },
+
+  markCheckpointLmsCompetencyVerified(
+    classId: string,
+    sessionId: string,
+    studentId: string,
+    verifiedScores: Record<string, number>,
+    verifiedAt?: string | null,
+    expectedContentHash?: string | null
+  ): boolean {
+    if (!verifiedScores || typeof verifiedScores !== "object" || Array.isArray(verifiedScores)) {
+      return false;
+    }
+    const canonicalVerified: Record<string, number> = {};
+    for (const k of SESSION14_COMPETENCY_KEYS) {
+      const rawVal = (verifiedScores as Record<string, unknown>)[k];
+      if (typeof rawVal !== "number" || !Number.isInteger(rawVal) || rawVal < 1 || rawVal > 5) {
+        return false;
+      }
+      canonicalVerified[k] = rawVal;
+    }
+
+    const db = getDb();
+    const row = db
+      .prepare(
+        `SELECT status, contentHash, checkpointDataJson
+         FROM session_feedbacks
+         WHERE classId = ? AND sessionId = ? AND studentId = ?`
+      )
+      .get(classId, sessionId, studentId) as
+      | { status?: string; contentHash?: string; checkpointDataJson?: string }
+      | undefined;
+
+    if (!row || row.status !== "VERIFIED") {
+      return false;
+    }
+    if (
+      expectedContentHash !== undefined &&
+      expectedContentHash !== null &&
+      row.contentHash !== expectedContentHash
+    ) {
+      return false;
+    }
+
+    let parsedCp: Record<string, unknown> = {};
+    if (typeof row.checkpointDataJson === "string" && row.checkpointDataJson.trim()) {
+      try {
+        const parsed = JSON.parse(row.checkpointDataJson);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          parsedCp = parsed as Record<string, unknown>;
+        }
+      } catch {
+        parsedCp = {};
+      }
+    }
+
+    const nextCpJson = JSON.stringify({
+      ...parsedCp,
+      lmsCompetencyScores: canonicalVerified,
+      lmsSyncedAt: verifiedAt || new Date().toISOString(),
+    });
+
+    const res = db
+      .prepare(
+        `UPDATE session_feedbacks
+         SET checkpointDataJson = ?, updatedAt = datetime('now', 'localtime')
+         WHERE classId = ? AND sessionId = ? AND studentId = ?
+           AND status = 'VERIFIED'
+           AND COALESCE(contentHash, '') = ?
+           AND COALESCE(checkpointDataJson, '') = ?`
+      )
+      .run(
+        nextCpJson,
+        classId,
+        sessionId,
+        studentId,
+        row.contentHash ?? "",
+        row.checkpointDataJson ?? ""
+      );
+
+    return res.changes > 0;
+  },
 };
 
 export interface HomeworkSubmissionRecord {

@@ -55,6 +55,7 @@ import { normalizeVietnameseName } from "../utils/vietnamese-match";
 
 import {
   COMPETENCY_AREA_SPECS,
+  matchesCompetencyAreaIdPure,
   type CompetencyAreaSpec,
 } from "../checkpoint/competency-specs";
 
@@ -119,11 +120,27 @@ function matchCommentAreaSpecIndex(rawAreaItem: any): number {
     .toLowerCase();
 
   if (rawId) {
-    const byId = SESSION14_COMPETENCY_AREA_SPECS.findIndex(
-      (spec) =>
-        rawId === spec.commentAreaId.toLowerCase() ||
-        rawId.endsWith(spec.commentAreaSuffix.toLowerCase())
-    );
+    const safeMatchesId = (spec: CompetencyAreaSpec, id: string): boolean => {
+      if (typeof matchesCompetencyAreaIdPure === "function") {
+        return matchesCompetencyAreaIdPure(spec, id);
+      }
+      const normId = String(id || "").trim().toLowerCase();
+      if (!normId) return false;
+      if (normId.length >= 24) {
+        return (
+          normId === spec.commentAreaId.toLowerCase() ||
+          Boolean(spec.aliasCommentAreaIds?.some((a) => normId === a.toLowerCase()))
+        );
+      }
+      if (normId.length >= 4 && normId.length < 24) {
+        return (
+          normId.endsWith(spec.commentAreaSuffix.toLowerCase()) ||
+          Boolean(spec.aliasCommentAreaSuffixes?.some((s) => normId.endsWith(s.toLowerCase())))
+        );
+      }
+      return false;
+    };
+    const byId = SESSION14_COMPETENCY_AREA_SPECS.findIndex((spec) => safeMatchesId(spec, rawId));
     if (byId >= 0) return byId;
   }
 
@@ -138,6 +155,12 @@ function matchCommentAreaSpecIndex(rawAreaItem: any): number {
     )
   );
   if (rawLabel) {
+    const byExactLabel = SESSION14_COMPETENCY_AREA_SPECS.findIndex(
+      (spec) =>
+        normalizeVietnameseName(spec.labelVi) === rawLabel ||
+        (spec.roboticsLabelVi ? normalizeVietnameseName(spec.roboticsLabelVi) === rawLabel : false)
+    );
+    if (byExactLabel >= 0) return byExactLabel;
     const byKeyword = SESSION14_COMPETENCY_AREA_SPECS.findIndex((spec) =>
       spec.keywordsNorm.some((kw) => rawLabel.includes(kw))
     );

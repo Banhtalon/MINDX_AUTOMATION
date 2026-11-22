@@ -393,6 +393,38 @@ function findLatestActiveSessionId(sessionList: SessionItem[]): string {
   return latestByDate || candidates[0].sessionId;
 }
 
+function hasMatchingCheckpointLmsCompetency(
+  cp: CheckpointStudentData | null | undefined
+): boolean {
+  if (!cp?.lmsCompetencyScores) return false;
+  if (!cp?.competencyScores) return true;
+  const keys: ReadonlyArray<keyof CompetencyScores> = [
+    "knowledgeSelfStudy",
+    "knowledgeInClass",
+    "skillCommunication",
+    "skillComputerUse",
+    "skillProblemSolving",
+    "skillCreativity",
+    "skillComputational",
+    "attitudeHomework",
+    "attitudeInClass",
+  ];
+  return keys.every(
+    (k) => cp.competencyScores![k] === cp.lmsCompetencyScores![k]
+  );
+}
+
+function needsStudentCheckpointLmsTick(
+  isCheckpointSessionFlag: boolean,
+  student: Pick<StudentItem, "checkpointData"> | null | undefined
+): boolean {
+  return Boolean(
+    isCheckpointSessionFlag &&
+      student?.checkpointData?.competencyScores &&
+      !hasMatchingCheckpointLmsCompetency(student?.checkpointData)
+  );
+}
+
 export default function SessionCommentsPage() {
   const safeCompetencyAreaSpecsUi =
     typeof COMPETENCY_AREA_SPECS !== "undefined" ? COMPETENCY_AREA_SPECS : [];
@@ -3547,7 +3579,9 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
 
     const eligibleDrafts = presentOrLate.filter(
       (s) =>
-        s.status === "DRAFT" &&
+        (s.status === "DRAFT" ||
+          (s.status === "VERIFIED" &&
+            needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, s))) &&
         s.finalText &&
         s.finalText.trim().length > 0 &&
         !s.finalText.trim().startsWith("Chưa đủ thông tin")
@@ -4400,7 +4434,8 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                   (s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE") &&
                   Boolean(s.finalText && s.finalText.trim()) &&
                   s.status !== "INSUFFICIENT_INFO" &&
-                  s.status !== "VERIFIED"
+                  (s.status !== "VERIFIED" ||
+                    needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, s))
               ).length === 0
             }
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold shadow-md transition cursor-pointer"
@@ -4639,6 +4674,23 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                                       >
                                         ⚙️ 9 ô [ĐNL]
                                       </button>
+                                      {hasMatchingCheckpointLmsCompetency(student.checkpointData) ? (
+                                        <span
+                                          data-testid={`cp-lms-tick-status-${student.studentId}`}
+                                          className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-200 dark:border-emerald-500/40"
+                                          title="Đã tích đủ 9/9 [ĐNL] trên MindX LMS và xác minh thành công"
+                                        >
+                                          ✓ Đã tích LMS
+                                        </span>
+                                      ) : (
+                                        <span
+                                          data-testid={`cp-lms-tick-status-${student.studentId}`}
+                                          className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-500/40"
+                                          title="Chưa tích đủ 9/9 [ĐNL] trên MindX LMS"
+                                        >
+                                          ⏳ Chưa tích LMS
+                                        </span>
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -4717,8 +4769,10 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                         )}
 
                         <div className="flex flex-col gap-1 items-end">
-                          {student.status !== "VERIFIED" && (
+                          {(student.status !== "VERIFIED" ||
+                            needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, student)) && (
                             <button
+                              data-testid={`save-single-btn-${student.studentId}`}
                               onClick={() => handleApproveAndSaveSingle(student.studentId)}
                               disabled={
                                 isSavingThis ||
@@ -4726,14 +4780,28 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                                 !student.finalText ||
                                 student.status === "INSUFFICIENT_INFO"
                               }
-                              className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                              className={`px-2.5 py-1 rounded-md disabled:opacity-40 text-white text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${
+                                student.status === "VERIFIED" &&
+                                needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, student)
+                                  ? "bg-amber-600 hover:bg-amber-500"
+                                  : "bg-emerald-600 hover:bg-emerald-500"
+                              }`}
+                              title={
+                                student.status === "VERIFIED" &&
+                                needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, student)
+                                  ? "Nhận xét đã lưu LMS nhưng chưa ghi nhận đủ 9 ô [ĐNL] — bấm để Bot tích 9 ô [ĐNL] và lưu lại lên LMS"
+                                  : undefined
+                              }
                             >
                               {isSavingThis ? (
                                 <RefreshCw className="w-3 h-3 animate-spin" />
                               ) : (
                                 <Send className="w-3 h-3" />
                               )}
-                              {student.status === "FAILED"
+                              {student.status === "VERIFIED" &&
+                              needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, student)
+                                ? "Tích 9 ô [ĐNL] & Lưu"
+                                : student.status === "FAILED"
                                 ? "Thử lại"
                                 : student.status === "APPROVED"
                                 ? `Đẩy lại (Buổi ${activeSessionNumber})`

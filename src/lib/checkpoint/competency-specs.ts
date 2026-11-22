@@ -24,6 +24,9 @@ export interface CompetencyAreaSpec {
   labelVi: string;
   shortLabelVi: string;
   keywordsNorm: string[];
+  aliasCommentAreaIds?: readonly string[];
+  aliasCommentAreaSuffixes?: readonly string[];
+  roboticsLabelVi?: string;
 }
 
 export const COMPETENCY_AREA_SPECS: readonly CompetencyAreaSpec[] = [
@@ -62,6 +65,9 @@ export const COMPETENCY_AREA_SPECS: readonly CompetencyAreaSpec[] = [
     labelVi: "[ĐNL] Kỹ năng sử dụng máy tính",
     shortLabelVi: "Sử dụng máy tính",
     keywordsNorm: ["su dung may tinh"],
+    aliasCommentAreaIds: ["668e5146e71f90e7630da552"],
+    aliasCommentAreaSuffixes: ["a552"],
+    roboticsLabelVi: "[ROB-ĐNL] Kỹ năng sử dụng máy tính",
   },
   {
     domIndex: 4,
@@ -71,6 +77,9 @@ export const COMPETENCY_AREA_SPECS: readonly CompetencyAreaSpec[] = [
     labelVi: "[ĐNL] Kỹ năng giải quyết vấn đề",
     shortLabelVi: "Giải quyết vấn đề",
     keywordsNorm: ["giai quyet van de"],
+    aliasCommentAreaIds: ["668e5005e71f90e7630da316"],
+    aliasCommentAreaSuffixes: ["da316"],
+    roboticsLabelVi: "[ROB-ĐNL] Kỹ năng giải quyết vấn đề",
   },
   {
     domIndex: 5,
@@ -80,6 +89,9 @@ export const COMPETENCY_AREA_SPECS: readonly CompetencyAreaSpec[] = [
     labelVi: "[ĐNL] Tư duy sáng tạo",
     shortLabelVi: "Tư duy sáng tạo",
     keywordsNorm: ["sang tao"],
+    aliasCommentAreaIds: ["668e50ade71f90e7630da4b2"],
+    aliasCommentAreaSuffixes: ["a4b2"],
+    roboticsLabelVi: "[ROB-ĐNL] Tư duy sáng tạo mô hình",
   },
   {
     domIndex: 6,
@@ -89,6 +101,9 @@ export const COMPETENCY_AREA_SPECS: readonly CompetencyAreaSpec[] = [
     labelVi: "[ĐNL] Tư duy máy tính",
     shortLabelVi: "Tư duy máy tính",
     keywordsNorm: ["tu duy may tinh", "tu duy thuat toan"],
+    aliasCommentAreaIds: ["668e49ebe71f90e7630d9433"],
+    aliasCommentAreaSuffixes: ["9433"],
+    roboticsLabelVi: "Tư duy máy tính, tư duy thuật toán.ROB.ĐNL2024",
   },
   {
     domIndex: 7,
@@ -175,4 +190,21 @@ export function isRoboticsClassCodePure(classId?: string | null): boolean {
   return /(?:^|[-_\s])(ROB|ROBO|ROBOT|ROBOTICS|PREB|PREA|PREI|ARM|ARMA|ARMB|ARMI|SEM|SEMA|SEMB|SEMI|EV3|VEX|SPIKE|WEDO|ARDUINO)[A-Z0-9]*\b/i.test(
     s
   );
+}
+
+export function matchesCompetencyAreaIdPure(
+  spec: CompetencyAreaSpec,
+  rawAreaId: string
+): boolean {
+  const id = String(rawAreaId || "").trim().toLowerCase();
+  if (!id) return false;
+  if (id.length >= 24) {
+    if (id === spec.commentAreaId.toLowerCase()) return true;
+    return (spec.aliasCommentAreaIds || []).some((a) => id === a.toLowerCase());
+  }
+  if (id.length >= 4 && id.length < 24) {
+    if (id.endsWith(spec.commentAreaSuffix.toLowerCase())) return true;
+    return (spec.aliasCommentAreaSuffixes || []).some((s) => id.endsWith(s.toLowerCase()));
+  }
+  return false;
 }

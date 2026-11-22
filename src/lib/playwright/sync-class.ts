@@ -33,6 +33,7 @@ import { resolveKnownLmsClassId as _resolveKnownLmsClassId } from "../lms/lms-cl
 import { toVietnameseUpperSlug as _toVietnameseUpperSlug } from "../utils/vietnamese-match";
 import { isSaveCommentsSessionRunning } from "../queue/task-queue";
 import {
+  COMPETENCY_KEYS,
   extractLmsCheckpointFromCommentByAreas,
   formatCheckpointScoreHeaderLine,
   isPlaceholderLmsComment,
@@ -40,6 +41,21 @@ import {
   resolveCheckpointStageForSession,
   upsertCheckpointHeaderIntoFinalText,
 } from "../checkpoint/checkpoint-competency";
+
+const safeCompetencyKeysSync =
+  typeof COMPETENCY_KEYS !== "undefined" && Array.isArray(COMPETENCY_KEYS) && COMPETENCY_KEYS.length === 9
+    ? COMPETENCY_KEYS
+    : ([
+        "knowledgeSelfStudy",
+        "knowledgeInClass",
+        "skillCommunication",
+        "skillComputerUse",
+        "skillProblemSolving",
+        "skillCreativity",
+        "skillComputational",
+        "attitudeHomework",
+        "attitudeInClass",
+      ] as const);
 
 const safeResolveCheckpointStage =
   typeof resolveCheckpointStageForSession === "function"
@@ -1327,7 +1343,12 @@ export class ClassSyncer {
          finalText = CASE WHEN @hasUpdatedFinalText = 1 THEN @finalText ELSE session_feedbacks.finalText END,
          status = CASE
            WHEN @demoteApproved = 1 AND session_feedbacks.status IN ('APPROVED', 'VERIFIED') THEN 'DRAFT'
+           WHEN @demoteToApproved = 1 AND session_feedbacks.status = 'VERIFIED' THEN 'APPROVED'
            ELSE session_feedbacks.status
+         END,
+         verifiedAt = CASE
+           WHEN @demoteApproved = 1 OR @demoteToApproved = 1 THEN NULL
+           ELSE session_feedbacks.verifiedAt
          END,
          versionMetaJson = CASE WHEN @bumpRowVer = 1 THEN @versionMetaJson ELSE session_feedbacks.versionMetaJson END,
          checkpointDataJson = @checkpointDataJson,
@@ -1441,10 +1462,22 @@ export class ClassSyncer {
         let cpUpdatedFinalText = existingFb?.finalText || "";
         let hasUpdatedFinalText = 0;
         let bumpedVersionMetaJson = existingFb?.versionMetaJson || JSON.stringify({ rowVer: 1, fields: {} });
+        let localRequiresLmsCompetency = false;
+        let lmsHasMatchingCompetency = true;
 
         if (cpStageInfo.isCheckpoint && cpStageInfo.cpStage) {
           const extractedCp = safeExtractLmsCheckpoint(areas, att.comment);
           const existingCp = safeParseCheckpointData(existingFb?.checkpointDataJson);
+          localRequiresLmsCompetency = Boolean(
+            cpStageInfo.isCheckpoint && existingCp?.competencyScores && existingCp?.approvedSnapshotHash
+          );
+          lmsHasMatchingCompetency = Boolean(
+            !localRequiresLmsCompetency ||
+              (extractedCp.competencyScores &&
+                safeCompetencyKeysSync.every(
+                  (k) => extractedCp.competencyScores![k] === existingCp!.competencyScores![k]
+                ))
+          );
           const nextTheory =
             extractedCp.theoryScore !== null
               ? extractedCp.theoryScore
@@ -1520,7 +1553,8 @@ export class ClassSyncer {
               competencyScores: nextCompetency,
               competencyAverage: nextCompAvg,
               lmsCompetencyScores:
-                extractedCp.competencyScores || existingCp?.lmsCompetencyScores || null,
+                extractedCp.competencyScores ||
+                (localRequiresLmsCompetency ? null : existingCp?.lmsCompetencyScores || null),
               processSummary: existingCp?.processSummary || null,
               source: existingCp?.source || (extractedCp.competencyScores ? "LMS_SYNC" : "AUTO_PROCESS"),
               userEditedCompetency: existingCp?.userEditedCompetency || false,
@@ -1532,6 +1566,12 @@ export class ClassSyncer {
             });
           }
         }
+
+        const shouldDemoteVerifiedToApproved =
+          localRequiresLmsCompetency &&
+          !lmsHasMatchingCompetency &&
+          !cpScoresChangedFromApproved &&
+          existingFb?.status === "VERIFIED";
 
         const isOrphanedSaving =
           existingFb?.status === "SAVING" &&
@@ -1566,13 +1606,15 @@ export class ClassSyncer {
             (normExistingPlain === normLmsPlain || normExistingRaw === normLmsPlain);
 
           const canMarkVerified =
-            !existingFb ||
-            existingFb.status === "VERIFIED" ||
-            !String(existingFb.finalText || "").trim() ||
-            isExactMatchFailedOrApproved ||
-            (preferLmsVerified &&
-              existingFb.status !== "APPROVED" &&
-              (existingFb.status !== "SAVING" || isOrphanedSaving));
+            (!localRequiresLmsCompetency || lmsHasMatchingCompetency) &&
+            !cpScoresChangedFromApproved &&
+            (!existingFb ||
+              existingFb.status === "VERIFIED" ||
+              !String(existingFb.finalText || "").trim() ||
+              isExactMatchFailedOrApproved ||
+              (preferLmsVerified &&
+                existingFb.status !== "APPROVED" &&
+                (existingFb.status !== "SAVING" || isOrphanedSaving)));
 
           if (canMarkVerified) {
             const effectiveText = String(existingFb?.finalText || "").trim() || lmsComment;
@@ -1603,6 +1645,7 @@ export class ClassSyncer {
               bumpRowVer: cpScoresChangedFromApproved ? 1 : 0,
               checkpointDataJson: mergedCheckpointDataJson,
               demoteApproved: cpScoresChangedFromApproved ? 1 : 0,
+              demoteToApproved: shouldDemoteVerifiedToApproved ? 1 : 0,
             });
           }
         } else if (cpStageInfo.isCheckpoint && mergedCheckpointDataJson !== "{}") {
@@ -1620,6 +1663,7 @@ export class ClassSyncer {
             bumpRowVer: cpScoresChangedFromApproved ? 1 : 0,
             checkpointDataJson: mergedCheckpointDataJson,
             demoteApproved: cpScoresChangedFromApproved ? 1 : 0,
+            demoteToApproved: shouldDemoteVerifiedToApproved ? 1 : 0,
           });
         } else if (lmsAttendance === "ABSENT") {
           if (

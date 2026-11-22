@@ -16,6 +16,7 @@ import {
   clampCompetencyRating,
   hasCompleteCompetencyScores,
   isRoboticsClassCodePure,
+  matchesCompetencyAreaIdPure,
   parseCompetencyScoresPure,
   type CompetencyAreaSpec,
   type CompetencyScores,
@@ -36,6 +37,7 @@ export {
   clampCompetencyRating,
   hasCompleteCompetencyScores,
   isRoboticsClassCodePure,
+  matchesCompetencyAreaIdPure,
   parseCompetencyScoresPure,
   type CompetencyAreaSpec,
   type CompetencyScores,
@@ -241,20 +243,33 @@ function matchAreaSpecFromLmsItem(area: any): CompetencyAreaSpec | null {
   const rawType = String(area.type ?? area.commentArea?.type ?? "").trim().toUpperCase();
   if (rawType && rawType !== "RATE") return null;
 
-  const areaId = String(area.commentAreaId || area.commentArea?._id || area.id || "")
+  const areaId = String(
+    area.commentAreaId || area.areaId || area.commentArea?._id || area.commentArea?.id || area.id || ""
+  )
     .trim()
     .toLowerCase();
   if (areaId) {
-    const byId = COMPETENCY_AREA_SPECS.find(
-      (s) => s.commentAreaId === areaId || areaId.endsWith(s.commentAreaSuffix)
-    );
+    const byId = COMPETENCY_AREA_SPECS.find((s) => matchesCompetencyAreaIdPure(s, areaId));
     if (byId) return byId;
   }
 
   const labelNorm = normalizeAsciiVi(
-    String(area.commentArea?.name || area.commentArea?.title || area.name || area.title || "")
+    String(
+      area.commentArea?.name ||
+        area.commentArea?.title ||
+        area.name ||
+        area.title ||
+        area.label ||
+        ""
+    )
   );
   if (labelNorm) {
+    const byExactLabel = COMPETENCY_AREA_SPECS.find(
+      (s) =>
+        normalizeAsciiVi(s.labelVi) === labelNorm ||
+        (s.roboticsLabelVi ? normalizeAsciiVi(s.roboticsLabelVi) === labelNorm : false)
+    );
+    if (byExactLabel) return byExactLabel;
     const byLabel = COMPETENCY_AREA_SPECS.find((s) =>
       s.keywordsNorm.some((kw) => labelNorm.includes(kw))
     );
