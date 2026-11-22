@@ -1126,7 +1126,7 @@ function applyAiAnnotationsToStudentWorksheetXml(
     }
 
     const mult = effectiveRating === "Tốt" ? 1 : effectiveRating === "Hoàn thành" ? 0.5 : 0;
-    const rowScore = Math.round(row.maxPoints * mult * 1000) / 1000;
+    const rowScore = Math.round(row.maxPoints * mult * 10000) / 10000;
     rowScoreByRowNum.set(row.rowNumber, rowScore);
     totalEarned += rowScore;
 

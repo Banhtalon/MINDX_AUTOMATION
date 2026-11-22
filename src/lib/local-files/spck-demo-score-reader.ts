@@ -16,6 +16,7 @@ import {
   formatRawDemoScore3dp,
   getDb,
   getSession14DemoLimitsForClass,
+  isCsiClassCode,
   isDefaultSpckProductTitle,
   isRoboticsClassCode,
   parseSession14CompetencyScores,
@@ -946,7 +947,7 @@ function sumCellRange(
       (dNorm === "tot" || dNorm === "hoan thanh" || dNorm === "chua dat")
     ) {
       const mult = dNorm === "tot" ? 1 : dNorm === "hoan thanh" ? 0.5 : 0;
-      rowVal = Math.round(cWeight * mult * 1000) / 1000;
+      rowVal = cWeight * mult;
     } else if (eCell && eCell.numericValue !== null && Number.isFinite(eCell.numericValue)) {
       rowVal = eCell.numericValue;
     }
@@ -961,8 +962,23 @@ function sumCellRange(
   return {
     hasAnyNumeric: numericCount > 0,
     isCompleteRange: !hasInvalidCell && totalRows > 0 && numericCount === totalRows,
-    sum: Math.round(sum * 1000) / 1000,
+    sum: Math.round(sum * 10000) / 10000,
   };
+}
+
+function sumWeightColC(
+  cells: Map<string, ParsedCell>,
+  startRow: number,
+  endRow: number
+): number {
+  let sum = 0;
+  for (let r = startRow; r <= endRow; r++) {
+    const val = cells.get(`C${r}`)?.numericValue;
+    if (val !== null && val !== undefined && Number.isFinite(val) && val > 0) {
+      sum += val;
+    }
+  }
+  return Math.round(sum * 1000) / 1000;
 }
 
 export function extractDemoScoresFromWorksheet(
@@ -981,6 +997,15 @@ export function extractDemoScoresFromWorksheet(
   const b2 = cells.get("B2")?.stringValue || "";
   const limits = getSession14DemoLimitsForClass(classId);
   const categorySpans = parseCategorySpansFromSheetXml(sheetXml, classId);
+
+  const algoWeightSum = sumWeightColC(cells, categorySpans[0][0], categorySpans[0][1]);
+  const creaWeightSum = sumWeightColC(cells, categorySpans[1][0], categorySpans[1][1]);
+  const isLegacyCsiSplitSheet =
+    isCsiClassCode(classId) &&
+    Math.abs(algoWeightSum - 1.5) < 0.05 &&
+    Math.abs(creaWeightSum - 1.0) < 0.05;
+  const algoReadLimit = isLegacyCsiSplitSheet ? 1.5 : limits.algorithm;
+  const creaReadLimit = isLegacyCsiSplitSheet ? 1.0 : limits.creativity;
 
   const eAlgo = sumCellRange(cells, "E", categorySpans[0][0], categorySpans[0][1]);
   const eCreative = sumCellRange(cells, "E", categorySpans[1][0], categorySpans[1][1]);
@@ -1028,9 +1053,9 @@ export function extractDemoScoresFromWorksheet(
     return { hasScore: false, isValid: true, value: 0 };
   };
 
-  const resAlgo = resolveScore(b32, eAlgo, limits.algorithm);
+  const resAlgo = resolveScore(b32, eAlgo, algoReadLimit);
   const resComp = resolveScore(b33, eComp, limits.computerSkills);
-  const resCreative = resolveScore(b34, eCreative, limits.creativity);
+  const resCreative = resolveScore(b34, eCreative, creaReadLimit);
   const resProb = resolveScore(b35, eProb, limits.problemSolving);
   const resComm = resolveScore(b36, eComm, limits.communication);
 
@@ -1065,7 +1090,7 @@ export function extractDemoScoresFromWorksheet(
     if (!label || !bCell || bCell.numericValue === null) continue;
     if (!bCell.formula) {
       if (label.includes("thuat toan") || label.includes("tu duy may tinh")) {
-        if (isWithinMax(bCell.numericValue, limits.algorithm)) {
+        if (isWithinMax(bCell.numericValue, algoReadLimit)) {
           rawDemo.algorithm = bCell.numericValue;
           hasCriterionScore.algorithm = true;
           criterionValid.algorithm = true;
@@ -1083,7 +1108,7 @@ export function extractDemoScoresFromWorksheet(
           criterionValid.computerSkills = false;
         }
       } else if (label.includes("sang tao")) {
-        if (isWithinMax(bCell.numericValue, limits.creativity)) {
+        if (isWithinMax(bCell.numericValue, creaReadLimit)) {
           rawDemo.creativity = bCell.numericValue;
           hasCriterionScore.creativity = true;
           criterionValid.creativity = true;
@@ -1113,24 +1138,47 @@ export function extractDemoScoresFromWorksheet(
     }
   }
 
+  if (
+    isLegacyCsiSplitSheet &&
+    hasCriterionScore.creativity &&
+    criterionValid.creativity &&
+    typeof rawDemo.creativity === "number" &&
+    rawDemo.creativity > limits.creativity + 1e-6 &&
+    rawDemo.creativity <= 1.0 + 1e-6 &&
+    (typeof rawDemo.algorithm !== "number" ||
+      !Number.isFinite(rawDemo.algorithm) ||
+      rawDemo.algorithm <= 1.5 + 1e-6)
+  ) {
+    const overflow = Math.round((rawDemo.creativity - limits.creativity) * 1000) / 1000;
+    const baseAlgo =
+      typeof rawDemo.algorithm === "number" && Number.isFinite(rawDemo.algorithm)
+        ? rawDemo.algorithm
+        : 0;
+    rawDemo.algorithm = Math.min(
+      limits.algorithm,
+      Math.round((baseAlgo + overflow) * 1000) / 1000
+    );
+    rawDemo.creativity = limits.creativity;
+  }
+
   const scoredCriteriaCount = (
     Object.keys(hasCriterionScore) as Array<keyof typeof hasCriterionScore>
   ).filter((k) => hasCriterionScore[k] && criterionValid[k]).length;
   const hasCompleteScores =
     scoredCriteriaCount === 5 && Object.values(criterionValid).every(Boolean);
 
-  const clampRaw3dp = (val: number | undefined, max: number): number => {
+  const clampRaw4dp = (val: number | undefined, max: number): number => {
     const n = Number(val);
     if (!Number.isFinite(n) || n < 0) return 0;
-    return Math.round(Math.min(n, max) * 1000) / 1000;
+    return Math.round(Math.min(n, max) * 10000) / 10000;
   };
   const demoRawTotalScore =
     Math.round(
-      (clampRaw3dp(rawDemo.algorithm, limits.algorithm) +
-        clampRaw3dp(rawDemo.creativity, limits.creativity) +
-        clampRaw3dp(rawDemo.communication, limits.communication) +
-        clampRaw3dp(rawDemo.problemSolving, limits.problemSolving) +
-        clampRaw3dp(rawDemo.computerSkills, limits.computerSkills)) *
+      (clampRaw4dp(rawDemo.algorithm, limits.algorithm) +
+        clampRaw4dp(rawDemo.creativity, limits.creativity) +
+        clampRaw4dp(rawDemo.communication, limits.communication) +
+        clampRaw4dp(rawDemo.problemSolving, limits.problemSolving) +
+        clampRaw4dp(rawDemo.computerSkills, limits.computerSkills)) *
         1000
     ) / 1000;
 

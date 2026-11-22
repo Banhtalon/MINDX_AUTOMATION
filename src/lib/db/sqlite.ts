@@ -4850,6 +4850,13 @@ export function isRoboticsClassCode(classId?: string | null): boolean {
   );
 }
 
+export function isCsiClassCode(classId?: string | null): boolean {
+  if (isRoboticsClassCode(classId)) return false;
+  const s = String(classId || "").trim().toUpperCase();
+  if (!s) return false;
+  return /(?:^|[-_\s])CSI(?:\d|$|[-_\s])/i.test(s);
+}
+
 export function getSession14DemoLimitsForClass(
   classId?: string | null
 ): Record<keyof SpckSession14DemoScores, number> {
@@ -4924,8 +4931,8 @@ export function getSession14DemoLimitsForClass(
   }
   if (token === "CSI") {
     return {
-      algorithm: 1.5,
-      creativity: 1.0,
+      algorithm: 2.0,
+      creativity: 0.5,
       communication: 1.0,
       problemSolving: 1.0,
       computerSkills: 0.5,
@@ -4997,6 +5004,24 @@ export function parseSession14DemoScores(
 
   const limits = getSession14DemoLimitsForClass(classId);
 
+  let algoInput: unknown = obj.algorithm;
+  let creaInput: unknown = obj.creativity;
+  const rawAlgo = Number(obj.algorithm);
+  const rawCrea = Number(obj.creativity);
+  // Rebalance legacy CSI split (1.5 algorithm / 1.0 creativity) into MindX LMS CSI caps (2.0 / 0.5)
+  if (
+    isCsiClassCode(classId) &&
+    Number.isFinite(rawCrea) &&
+    rawCrea > limits.creativity + 1e-6 &&
+    rawCrea <= 1.0 + 1e-6 &&
+    (!Number.isFinite(rawAlgo) || (rawAlgo >= 0 && rawAlgo <= 1.5 + 1e-6))
+  ) {
+    const safeAlgo = Number.isFinite(rawAlgo) && rawAlgo >= 0 ? rawAlgo : 0;
+    const overflow = rawCrea - limits.creativity;
+    algoInput = Math.min(limits.algorithm, safeAlgo + overflow);
+    creaInput = limits.creativity;
+  }
+
   const normalizeScore = (val: unknown, max: number): number => {
     const n = Number(val);
     if (!Number.isFinite(n) || n < 0) return 0;
@@ -5005,8 +5030,8 @@ export function parseSession14DemoScores(
   };
 
   return {
-    algorithm: normalizeScore(obj.algorithm, limits.algorithm),
-    creativity: normalizeScore(obj.creativity, limits.creativity),
+    algorithm: normalizeScore(algoInput, limits.algorithm),
+    creativity: normalizeScore(creaInput, limits.creativity),
     communication: normalizeScore(obj.communication, limits.communication),
     problemSolving: normalizeScore(obj.problemSolving, limits.problemSolving),
     computerSkills: normalizeScore(obj.computerSkills, limits.computerSkills),
@@ -5280,7 +5305,7 @@ export const session14EvalRepo = {
     const nextDemoRawTotal =
       params.demoRawTotalScore !== undefined && Number.isFinite(Number(params.demoRawTotalScore))
         ? Math.max(0, Math.round(Number(params.demoRawTotalScore) * 1000) / 1000)
-        : nextDemoJson !== current.demoScoresJson
+        : nextDemoJson !== JSON.stringify(currentDemo)
         ? nextDemoTotal
         : existingRawTotal > 0
         ? existingRawTotal

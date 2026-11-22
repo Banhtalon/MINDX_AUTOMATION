@@ -1011,13 +1011,69 @@ export class Session14EvalUploader {
           demoScores.computerSkills,
         ];
 
+    const demoLabelsInDomOrder: string[] = isRobotics
+      ? [
+          "Tư duy sáng tạo",
+          "Kỹ năng giao tiếp, hợp tác",
+          "Giải quyết vấn đề",
+          "Kỹ năng sử dụng máy tính",
+          "Tư duy máy tính, tư duy thuật toán",
+        ]
+      : [
+          "Tư duy máy tính, tư duy thuật toán",
+          "Tư duy sáng tạo",
+          "Kỹ năng giao tiếp, hợp tác",
+          "Giải quyết vấn đề",
+          "Kỹ năng sử dụng máy tính",
+        ];
+
+    const closeDialogSafely = async () => {
+      const cancelBtn = dialog
+        .locator('button:has-text("Cancel"), button:has-text("Hủy"), button:has-text("Đóng")')
+        .first();
+      if ((await cancelBtn.count().catch(() => 0)) > 0) {
+        await cancelBtn.click({ force: true }).catch(() => {});
+        await page.waitForTimeout(isLiveLms ? 250 : 60);
+      }
+      if (await dialog.isVisible().catch(() => false)) {
+        const dialogCloseBtn = dialog
+          .locator('button[aria-label="close" i]:not(.MuiAlert-root button)')
+          .first();
+        if ((await dialogCloseBtn.count().catch(() => 0)) > 0) {
+          await dialogCloseBtn.click({ force: true }).catch(() => {});
+          await page.waitForTimeout(isLiveLms ? 250 : 60);
+        }
+      }
+      if (await dialog.isVisible().catch(() => false)) {
+        await page.keyboard.press("Escape").catch(() => {});
+        await page.waitForTimeout(isLiveLms ? 250 : 60);
+      }
+      if (await dialog.isVisible().catch(() => false)) {
+        await LmsHelpers.ensureCleanDialogAndToast(page, interceptor).catch(() => {});
+      }
+    };
+
     for (let idx = 0; idx < 5; idx++) {
       const inputLoc = numberInputs.nth(offset + idx);
-      const valStr = String(demoValuesInDomOrder[idx]);
+      const expectedVal = Number(demoValuesInDomOrder[idx]);
+      const valStr = String(expectedVal);
+      const criterionLabel = demoLabelsInDomOrder[idx];
+
+      const rawMaxAttr = await inputLoc.getAttribute("max").catch(() => null);
+      const parsedMax =
+        rawMaxAttr !== null && rawMaxAttr.trim() !== "" ? Number(rawMaxAttr) : Number.NaN;
+      if (Number.isFinite(parsedMax) && parsedMax > 0 && expectedVal > parsedMax + 1e-6) {
+        await closeDialogSafely();
+        throw new Error(
+          `Điểm Demo ô #${idx + 1} (${criterionLabel}) đã duyệt (${expectedVal}) vượt quá trần tối đa trên MindX LMS (${parsedMax}). Đã dừng trước khi bấm Lưu để tránh bị cắt hụt điểm của "${fullName}".`
+        );
+      }
+
       await inputLoc.scrollIntoViewIfNeeded().catch(() => {});
       await inputLoc.fill(valStr);
       await inputLoc
         .evaluate((el: HTMLInputElement, v: string) => {
+          const wasFocused = document.activeElement === el;
           const nativeSetter = Object.getOwnPropertyDescriptor(
             window.HTMLInputElement.prototype,
             "value"
@@ -1029,9 +1085,27 @@ export class Session14EvalUploader {
           }
           el.dispatchEvent(new Event("input", { bubbles: true }));
           el.dispatchEvent(new Event("change", { bubbles: true }));
+          if (typeof el.blur === "function") {
+            el.blur();
+          }
+          if (!wasFocused) {
+            el.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+          }
           el.dispatchEvent(new Event("blur", { bubbles: true }));
         }, valStr)
         .catch(() => {});
+      await inputLoc.blur().catch(() => {});
+
+      await page.waitForTimeout(isLiveLms ? 80 : 15);
+      const actualBeforeSave = Number(await inputLoc.inputValue().catch(() => "NaN"));
+      if (!Number.isFinite(actualBeforeSave) || Math.abs(actualBeforeSave - expectedVal) > 1e-6) {
+        await closeDialogSafely();
+        throw new Error(
+          `Điểm Demo ô #${idx + 1} (${criterionLabel}) bị MindX LMS tự điều chỉnh thành ${actualBeforeSave} (khác điểm đã duyệt ${expectedVal}${
+            Number.isFinite(parsedMax) ? `, trần LMS=${parsedMax}` : ""
+          }). Đã dừng trước khi bấm Lưu để tránh lưu sai điểm của "${fullName}".`
+        );
+      }
     }
 
     // 3. Fill 3 Quill Editors ("Learned From Mindx", "Suggestions From Mindx", "Future Direction") + 4th ("Xếp hạng giải") for Robotics
@@ -1085,6 +1159,23 @@ export class Session14EvalUploader {
     const saveBtn = dialog.locator('button:has-text("Save"), button:has-text("Lưu")').first();
     if ((await saveBtn.count().catch(() => 0)) === 0) {
       throw new Error(`Không tìm thấy nút "Save" trong modal đánh giá Buổi 14 của "${fullName}".`);
+    }
+
+    // Final pre-save check after Quill editors steal focus (guards against delegated React focusout/onBlur clamping)
+    for (let idx = 0; idx < 5; idx++) {
+      const expectedVal = Number(demoValuesInDomOrder[idx]);
+      const actualPreSave = Number(
+        await numberInputs
+          .nth(offset + idx)
+          .inputValue()
+          .catch(() => "NaN")
+      );
+      if (!Number.isFinite(actualPreSave) || Math.abs(actualPreSave - expectedVal) > 1e-6) {
+        await closeDialogSafely();
+        throw new Error(
+          `Điểm Demo ô #${idx + 1} (${demoLabelsInDomOrder[idx]}) bị MindX LMS tự điều chỉnh thành ${actualPreSave} trước khi bấm Lưu (khác điểm đã duyệt ${expectedVal}). Đã dừng trước khi bấm Lưu để tránh lưu sai điểm của "${fullName}".`
+        );
+      }
     }
 
     const saveEvalMutationPattern =
@@ -1602,7 +1693,7 @@ export class Session14EvalUploader {
       const expectedVal = Number(demoValuesInDomOrder[idx]);
       if (!Number.isFinite(actualVal) || Math.abs(actualVal - expectedVal) > 1e-6) {
         throw new Error(
-          `Đối chiếu Read-after-Write thất bại: Điểm Demo ô #${idx + 1} trên DOM (${actualVal}) không khớp với điểm đã duyệt (${expectedVal}).`
+          `Đối chiếu Read-after-Write thất bại: Điểm Demo ô #${idx + 1} (${demoLabelsInDomOrder[idx]}) trên DOM (${actualVal}) không khớp với điểm đã duyệt (${expectedVal}).`
         );
       }
     }

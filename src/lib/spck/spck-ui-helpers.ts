@@ -785,8 +785,8 @@ export function getDemoScoreItemsForClassUi(
     };
   } else if (token === "CSI") {
     limits = {
-      algorithm: 1.5,
-      creativity: 1.0,
+      algorithm: 2.0,
+      creativity: 0.5,
       communication: 1.0,
       problemSolving: 1.0,
       computerSkills: 0.5,
