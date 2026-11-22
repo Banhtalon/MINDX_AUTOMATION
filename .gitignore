@@ -29,6 +29,7 @@ package-lock.json.bak
 /data/spck/
 /data/spck_youtube/
 /data/downloads/
+/data/streamlit-venv/
 /data/debug_*
 /data/running_classes.json
 /data/config/teacher_browsed_dirs.json

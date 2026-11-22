@@ -39,6 +39,7 @@ const acornScanner = scannerRequire("next/dist/compiled/acorn") as {
   }>;
 };
 import {
+  findProjectHtmlFiles,
   findProjectUiFiles,
   isOwnerUploadImageActive,
   readActiveGdriveThumbNameFromOwnerDir,
@@ -50,6 +51,10 @@ import {
   renderGameArchiveScreenshotsAsync,
   renderGameArchiveScreenshotsSync,
 } from "./spck-game-screenshotter";
+import {
+  captureStreamlitAppScreenshotsAsync,
+  findProjectStreamlitFiles,
+} from "./spck-streamlit-screenshotter";
 import { taskQueue } from "../queue/task-queue";
 import {
   normalizeImagesToLms16x9,
@@ -4777,7 +4782,11 @@ async function normalizeStudentAppShotsFolderAsync(safeFolderPath: string): Prom
 export async function scanStudentSpckFolderAsync(
   studentFolderPath: string,
   preferredStudentName?: string,
-  options?: { preferDefaultLogoWhenNoOwnerPhoto?: boolean }
+  options?: {
+    preferDefaultLogoWhenNoOwnerPhoto?: boolean;
+    /** Explicit opt-in for executing Streamlit `app.py` during teacher scans (kept false on Student Portal uploads). */
+    allowStreamlitAutoRender?: boolean;
+  }
 ): Promise<StudentSpckPackage> {
   const safeFolderPath = assertPathAllowed(studentFolderPath);
   await normalizeStudentAppShotsFolderAsync(safeFolderPath);
@@ -4872,8 +4881,50 @@ export async function scanStudentSpckFolderAsync(
     }
   }
 
+  if (
+    options?.allowStreamlitAutoRender === true &&
+    !renderedAny &&
+    findProjectHtmlFiles(safeFolderPath).length === 0 &&
+    !taskQueue.getStatus().isStopped
+  ) {
+    const streamlitFiles = findProjectStreamlitFiles(safeFolderPath);
+    if (streamlitFiles.length > 0) {
+      try {
+        const autoOutDir = assertPathAllowed(path.join(safeFolderPath, "_spck_app_shots"));
+        const renderedStreamlitShots = await captureStreamlitAppScreenshotsAsync({
+          studentDir: safeFolderPath,
+          streamlitFiles,
+          outDir: autoOutDir,
+          maxShots: 4,
+        });
+        if (
+          renderedStreamlitShots.items.some(
+            (s) => Boolean(s?.filePath) && fs.existsSync(s.filePath)
+          )
+        ) {
+          renderedAny = true;
+        }
+      } catch {
+        // Ignore auto-render errors during scan; teacher can still upload or capture manually
+      }
+    }
+  }
+
   if (!renderedAny) {
     return initial;
+  }
+
+  // Clear stale empty/outdated `_spck_app_shots/.active_shots.json` so newly auto-rendered PNGs are discovered cleanly.
+  try {
+    const manifestPath = assertPathAllowed(
+      path.join(safeFolderPath, "_spck_app_shots", ".active_shots.json")
+    );
+    const lst = fs.lstatSync(manifestPath, { throwIfNoEntry: false });
+    if (lst && !lst.isSymbolicLink() && lst.isFile()) {
+      fs.unlinkSync(manifestPath);
+    }
+  } catch {
+    // ignore stale manifest cleanup failure
   }
 
   await normalizeStudentAppShotsFolderAsync(safeFolderPath);
@@ -4952,6 +5003,7 @@ export async function scanClassSpckDirectoryAsync(
         matchedStudent?.fullName || item.folderName,
         {
           preferDefaultLogoWhenNoOwnerPhoto: options?.preferDefaultLogoWhenNoOwnerPhoto,
+          allowStreamlitAutoRender: true,
         }
       );
     }

@@ -42,6 +42,10 @@ import {
   renderGameArchiveScreenshotsAsync,
   renderGameArchiveScreenshotsSync,
 } from "./spck-game-screenshotter";
+import {
+  captureStreamlitAppScreenshotsAsync,
+  findProjectStreamlitFiles,
+} from "./spck-streamlit-screenshotter";
 
 export const APP_SCREENSHOTS_SUBDIR = "_spck_app_shots";
 export const OWNER_UPLOADS_SUBDIR = "_spck_owner_uploads";
@@ -781,7 +785,7 @@ export function findProjectUiFiles(studentDir: string): string[] {
  * and placing login/register pages last. Automatically skips `draf`/`draft`/`backup`
  * subfolders when primary `.html` files exist outside draft folders.
  */
-function findProjectHtmlFiles(studentDir: string): string[] {
+export function findProjectHtmlFiles(studentDir: string): string[] {
   const found: Array<{ relPath: string; priority: number; inDraftDir: boolean }> = [];
 
   const walk = (currentDir: string, depth: number, inDraftDir: boolean) => {
@@ -2583,6 +2587,7 @@ export async function captureStudentAppScreenshots(params: {
     ownerRootPhotos = candidateRootPhotos.filter((p) => keptSet.has(p));
   }
   let capturedItems: CapturedScreenItem[] = [];
+  let streamlitWarning: string | undefined;
   const referencedFiles = new Set<string>();
 
   fs.mkdirSync(stageDir, { recursive: true });
@@ -2626,6 +2631,27 @@ export async function captureStudentAppScreenshots(params: {
           outDir: stageDir,
           maxShots: maxGameShots,
         });
+      }
+    }
+
+    if (capturedItems.length === 0) {
+      const streamlitFiles = findProjectStreamlitFiles(safeFolderPath);
+      if (streamlitFiles.length > 0) {
+        const maxAutoShots = Math.max(
+          1,
+          MAX_SPCK_SCREENSHOTS +
+            1 -
+            Math.min(ownerImages.length, MAX_SPCK_SCREENSHOTS) -
+            Math.min(ownerRootPhotos.length, 2)
+        );
+        const stRes = await captureStreamlitAppScreenshotsAsync({
+          studentDir: safeFolderPath,
+          streamlitFiles,
+          outDir: stageDir,
+          maxShots: Math.min(maxAutoShots, 4),
+        });
+        capturedItems = stRes.items;
+        streamlitWarning = stRes.warning;
       }
     }
 
@@ -2872,6 +2898,9 @@ export async function captureStudentAppScreenshots(params: {
     reasonParts.push(
       `Đã bỏ bớt ${droppedAutoShots} ảnh chụp tự động ít nổi bật để không vượt giới hạn ${MAX_SPCK_SCREENSHOTS} ảnh của LMS.`
     );
+  }
+  if (capturedItems.length === 0 && streamlitWarning) {
+    reasonParts.push(streamlitWarning);
   }
 
   return {
