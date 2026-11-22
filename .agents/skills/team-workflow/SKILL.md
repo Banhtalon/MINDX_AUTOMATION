@@ -2,7 +2,7 @@
 name: team-workflow
 description: >-
   Quy trình phối hợp đội ngũ AI cho dự án MINDX-AUTOMATION: Agent chính điều phối và code chính,
-  Codex CLI (gpt-6.1-sol xhigh) làm Reviewer kiểm định độc lập, Subagent Argon High xử lý các tác vụ quá khó,
+  Gemini 4 Neon (XHigh) (gemini-4-neon-xhigh) làm Reviewer kiểm định độc lập và xử lý các tác vụ quá khó,
   và báo cáo cho Owner ngắn gọn, dễ hiểu (không dùng thuật ngữ code phức tạp).
 ---
 
@@ -14,13 +14,13 @@ description: >-
    - Trực tiếp nhận yêu cầu từ Owner, lập kế hoạch, điều phối luồng công việc và trực tiếp viết/sửa phần lớn mã nguồn.
    - Chịu trách nhiệm tổng hợp kết quả và báo cáo lại cho Owner.
 
-2. **Kiểm định viên Độc lập — Reviewer (`Codex CLI` — `gpt-6.1-sol` `xhigh`):**
-   - Sau khi Agent chính hoàn thành một tính năng hoặc giai đoạn, gọi **Codex CLI (`gpt-6.1-sol` `xhigh` qua `codex exec`)** để:
-     - Kiểm tra chéo chất lượng, độ an toàn và chạy bộ kiểm thử trong môi trường cô lập (`TEMP`), bảo toàn 100% SHA-256 của 2 tệp dữ liệu thật (`data/mindx_bot.db`, `data/running_classes.json`).
+2. **Kiểm định viên Độc lập — Reviewer (`Gemini 4 Neon (XHigh)` — `gemini-4-neon-xhigh`):**
+   - Sau khi Agent chính hoàn thành một tính năng hoặc giai đoạn, triệu tập **Reviewer độc lập chạy `Gemini 4 Neon (XHigh)`** (khởi tạo worker `swarm` ghim `model: "gemini-4-neon-xhigh"` hoặc subagent độc lập chạy `Gemini 4 Neon (XHigh)`) để:
+     - Kiểm tra chéo chất lượng, độ an toàn và chạy bộ kiểm thử trong môi trường cô lập (`TEMP`), bảo toàn 100% SHA-256 của dữ liệu thật (`data/mindx_bot.db`, `data/running_classes.json`, `data/config/lms_class_ids.json`).
      - Đưa ra kết luận **ĐẠT (`VERDICT: GO`)** hoặc danh sách điểm cần chỉnh sửa (`NO-GO`) trước khi bàn giao cho Owner.
 
-3. **Chuyên gia Giải quyết Bài toán Khó (Subagent `Argon High` — `Model: "pro"` / `"inherit"`):**
-   - Chỉ triệu tập Subagent `Argon High` khi gặp lỗi kiến trúc phức tạp, xung đột dữ liệu đa luồng khó xử lý, hoặc khi sửa quá 2 lần vẫn chưa triệt để (không sử dụng các mô hình Claude).
+3. **Chuyên gia Giải quyết Bài toán Khó (`Gemini 4 Neon (XHigh)` — `gemini-4-neon-xhigh`):**
+   - Chỉ triệu tập chuyên gia độc lập chạy `Gemini 4 Neon (XHigh)` khi gặp lỗi kiến trúc phức tạp, xung đột dữ liệu đa luồng khó xử lý, hoặc khi sửa quá 2 lần vẫn chưa triệt để.
 
 ---
 
@@ -29,10 +29,10 @@ description: >-
 1. **Bước 1 — Tiếp nhận & Triển khai (Main Agent):**
    - Đọc `PROJECT_STATE.md`, `MINDX_AUTOMATION_PLAN.md`, `CHANGELOG.md` và `AGENTS.md`.
    - Viết hoặc sửa code, tự chạy kiểm tra nhanh để đảm bảo tính năng hoạt động.
-2. **Bước 2 — Nếu gặp việc quá khó (Escalation -> Subagent `Argon High`):**
-   - Khởi tạo subagent với `Model: "pro"` / `"inherit"` (vai trò `Argon High Escalation Architect`) để phân tích nguyên nhân gốc rễ hoặc thiết kế giải pháp tối ưu.
-3. **Bước 3 — Kiểm định chất lượng Độc lập (Review -> `Codex CLI` `gpt-6.1-sol` `xhigh`):**
-   - Chạy kiểm định độc lập bằng **Codex CLI (`gpt-6.1-sol` `xhigh`)** để kiểm tra toàn bộ phần việc vừa làm trên bản sao cô lập `TEMP`.
+2. **Bước 2 — Nếu gặp việc quá khó (Escalation -> `Gemini 4 Neon (XHigh)`):**
+   - Khởi tạo worker/subagent độc lập chạy `gemini-4-neon-xhigh` (vai trò `Neon XHigh Escalation Architect`) để phân tích nguyên nhân gốc rễ hoặc thiết kế giải pháp tối ưu.
+3. **Bước 3 — Kiểm định chất lượng Độc lập (Review -> `Gemini 4 Neon (XHigh)`):**
+   - Khởi tạo reviewer độc lập ghim `model: "gemini-4-neon-xhigh"` (vai trò `Neon XHigh Independent Auditor`) để kiểm tra toàn bộ phần việc vừa làm trên bản sao cô lập `TEMP`.
    - **Quy tắc chống treo cứng (`stdin`):** Cả Agent chính lẫn mọi Subagent tuyệt đối KHÔNG dùng `manage_task(Action: 'send_input')` (Thêm dữ liệu từ bàn phím / stdin) vì sẽ làm treo cứng tiến trình mà không hiện nút bấm cho Owner; nếu lệnh bị treo chỉ được dùng `Action: 'kill'`.
    - Nếu Reviewer phát hiện lỗi: Agent chính sửa ngay và chạy kiểm định lại cho đến khi đạt `VERDICT: GO` 100%.
 4. **Bước 4 — Báo cáo cho Owner (Ngắn gọn, Dễ hiểu, Không thuật ngữ code):**

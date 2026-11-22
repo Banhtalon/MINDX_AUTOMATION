@@ -1,5 +1,7 @@
 # CHANGELOG — LỊCH SỬ PHIÊN BẢN DỰ ÁN MINDX AUTOMATION BOT
 
+> **Cập Nhật Quy Trình Phối Hợp Đội Ngũ AI (`/team-workflow` — `22/11/2026`):** Đồng bộ toàn bộ `.agent/workflows/team-workflow.md`, `.agents/skills/team-workflow/SKILL.md`, `.agents/rules/team-workflow.md`, `AGENTS.md`, `GEMINI.md` và `README.md` chuyển sang dùng **`Gemini 4 Neon (XHigh)` (`gemini-4-neon-xhigh`)** cho cả vai trò Reviewer kiểm định độc lập (chạy trong `TEMP`, bảo toàn 100% SHA-256 dữ liệu thật) lẫn xử lý bài toán quá khó, gỡ bỏ hoàn toàn 2 tên model cũ không tồn tại (`claude-sonnet-5-5-high`, `opus-5-5-high`); không sửa `src/`, `scripts/` hay `data/`.
+
 > **Tích Hợp Bộ Kỹ Năng AI Ponytail — Cách 2 (`ponytail`, `ponytail-review`, `ponytail-audit` — `22/11/2026`):** Bổ sung 3 kỹ năng chuẩn `SKILL.md` vào `.agents/skills/` từ [`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail) (MIT) giúp Agent sửa gọn, tái sử dụng code có sẵn, rà lỗi thay đổi (`ponytail-review`) và kiểm tra tổng thể (`ponytail-audit`); gắn `## MindX Workspace Note` đảm bảo `AGENTS.md` luôn được ưu tiên và báo cáo tiếng Việt đời thường cho Owner. Không đụng `AGENTS.md`, `src/`, `scripts/` hay `data/` (`100%` SHA-256 dữ liệu thật giữ nguyên).
 
 > **Bản vá Khu Vực Quản Lý Cơ Sở Admin, Khôi Phục Phiên & Gia Cố Toàn Diện `205ALHP` (`46/46` Lớp `COMPLETED`, `v3.8.1` — `21/11/2026`): ĐÃ ĐẠT KIỂM ĐỊNH ĐỘC LẬP (`Gemini 4 Neon (XHigh)` Round 2: `VERDICT: GO`, đóng trọn `9/9` phát hiện `F01`–`F09`, `27/27` probe Round 2 PASS, `0` lỗi P0/P1/P2/P3 mở).** **Toàn bộ cổng kiểm thử & hồi quy sau bản vá cuối đều PASS (`exit 0`):** `node .\node_modules\typescript\bin\tsc --noEmit --incremental false`, `npx.cmd tsx scripts/test-admin-center-v350.ts` (`[AC-01]..[AC-13]`), `7/7` kiểm thử đọc trực tiếp UI/API `:3000` (Light/Dark `1280×800` & `1440×900`, `46` lớp trên đủ 5 tab, `0` console/page/HTTP error), quét thực tế `POST /api/admin-center/scan` (`ALL`) đạt `COMPLETED` **`46/46` lớp** (`0` lỗi, khôi phục sạch `quangda@mindx.net.vn`), và `graphify update .` offline (`2.512` nodes, `9.142` edges, `87` communities). **Bảo toàn `100%` SHA-256 trên cả `4/4` tệp dữ liệu thật.** Xem [Báo cáo kiểm định Neon XHigh Round 2 v3.8.1](docs/audits/v381/NEON_XHIGH_V381_REVIEW.md).
@@ -73,6 +75,17 @@
 > **Trạng thái hiện tại — S8 Round 4 (30/10/2026): VERDICT: GO.** **S8-01: CLOSED; S8-02: CLOSED; S8-R2-01: CLOSED; S8-R3-01: CLOSED; S8-R3-02: CLOSED — toàn bộ 5/5 phát hiện đã đóng.** Probe ảnh hợp lệ/junction **14/14 PASS** (7/7 có ảnh hợp lệ, 7/7 chặn junction); tài nguyên **5/5 PASS**, path **403**, browser **0 context phụ**, edge **20/20 PASS**; TypeScript và ba suite SPCK/S5/S7 đều PASS, **10/10 lệnh exit 0**. **Hai tệp dữ liệu thật bảo toàn 100% SHA-256; 2.951/2.951 tệp bất biến giữ nguyên.** Đủ điều kiện đóng Stage S8 cho v3.4.0 trong phạm vi kiểm định cục bộ; chưa kiểm tra lớp/dịch vụ thật hoặc build production mới. Không sửa mã sản phẩm. [Báo cáo Round 4](docs/audits/v340/CODEX_V340_FINAL_ROUND4.md); bằng chứng: `docs/audits/v340/s8-round4/`. *(Lịch sử các vòng kiểm định trước đã được lưu trữ gọn tại [docs/audits/AUDIT_HISTORY_ARCHIVE.md](docs/audits/AUDIT_HISTORY_ARCHIVE.md)).*
 
 Tài liệu này ghi nhận đầy đủ các mốc phát triển, tính năng mới, cải tiến giao diện và các bản vá lỗi thực tế trên hệ thống MindX LMS theo từng phiên bản.
+
+---
+
+## [2026-11-22] — Cập Nhật Quy Trình `/team-workflow` Sang Reviewer Độc Lập `Gemini 4 Neon (XHigh)`
+
+### Thay đổi chính
+1. **Đồng bộ cấu hình `/team-workflow` sang `Gemini 4 Neon (XHigh)` (`gemini-4-neon-xhigh`):**
+   - Cập nhật `.agent/workflows/team-workflow.md`, `.agents/skills/team-workflow/SKILL.md` và `.agents/rules/team-workflow.md`: thay thế 2 model cũ không có sẵn (`claude-sonnet-5-5-high`, `opus-5-5-high`) và đồng bộ bản cũ sang dùng **`Gemini 4 Neon (XHigh)` (`gemini-4-neon-xhigh`)** cho cả vai trò **Reviewer kiểm định độc lập** (kiểm tra chéo & chạy kiểm thử trong `TEMP`, bảo toàn 100% SHA-256 dữ liệu thật, kết luận `VERDICT: GO`) lẫn **xử lý bài toán quá khó (Escalation)**.
+2. **Đồng bộ quy tắc dự án (`AGENTS.md`, `GEMINI.md`, `README.md`):**
+   - Cập nhật Mục 6 & Mục 7 trong `AGENTS.md` và `GEMINI.md`, cùng mục Quy định Phối hợp Đội ngũ AI trong `README.md` sang dùng thống nhất `Gemini 4 Neon (XHigh)` (`gemini-4-neon-xhigh`), giữ nguyên toàn bộ quy tắc nghiệp vụ, bảo mật, Graphify, cấm `send_input` và chuẩn báo cáo tiếng Việt đời thường cho Owner.
+   - Không sửa `src/`, `scripts/` hay `data/` (`100%` SHA-256 dữ liệu thật giữ nguyên).
 
 ---
 

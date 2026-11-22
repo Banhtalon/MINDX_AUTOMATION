@@ -23,8 +23,8 @@ Hệ thống trợ lý tự động hóa toàn diện dành cho Giáo viên tạ
 ## 🤝 Quy định Phối hợp Đội ngũ AI & Kiểm định Độc lập (Team Workflow)
 
 - **Điều phối & Code chính:** Agent hiện tại trực tiếp điều phối công việc và viết/sửa mã nguồn chính.
-- **Review Độc lập (`Codex CLI` — `gpt-6.1-sol` `xhigh`):** Sử dụng **Codex CLI (`gpt-6.1-sol` `xhigh`)** để kiểm định độc lập (code review & chạy bộ kiểm thử trong môi trường cô lập `TEMP`, bảo toàn 100% SHA-256 của dữ liệu thật `data/mindx_bot.db` và `data/running_classes.json`).
-- **Xử lý Tác vụ Khó (Subagent `Argon High`):** Khi gặp bài toán kiến trúc hoặc lỗi kỹ thuật quá khó, gọi **Subagent `Argon High`** (`Model: "pro"` / `"inherit"`) hỗ trợ phân tích và giải quyết (không sử dụng các mô hình Claude).
+- **Review Độc lập (`Gemini 4 Neon (XHigh)` — `gemini-4-neon-xhigh`):** Sử dụng worker/subagent độc lập chạy **`Gemini 4 Neon (XHigh)` (`gemini-4-neon-xhigh`)** để kiểm định độc lập (code review & chạy bộ kiểm thử trong môi trường cô lập `TEMP`, bảo toàn 100% SHA-256 của dữ liệu thật `data/mindx_bot.db`, `data/running_classes.json`, `data/config/lms_class_ids.json`).
+- **Xử lý Tác vụ Khó (`Gemini 4 Neon (XHigh)` — `gemini-4-neon-xhigh`):** Khi gặp bài toán kiến trúc hoặc lỗi kỹ thuật quá khó, triệu tập chuyên gia độc lập chạy **`Gemini 4 Neon (XHigh)` (`gemini-4-neon-xhigh`)** hỗ trợ phân tích và giải quyết.
 - **Báo cáo cho Owner:** Luôn báo cáo ngắn gọn, dễ hiểu bằng ngôn ngữ đời thường.
 
 ## 🛠️ Công nghệ sử dụng
