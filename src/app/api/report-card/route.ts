@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { type RunningClassItem } from "@/lib/db/json-config";
 import {
+  computeReportCardContentHash,
   isRoboticsClassCode,
   parseManualOverridesMap,
   parseReportCardLmsSnapshot,
@@ -65,7 +66,7 @@ function buildReportCardResponsePayload(
     includeInactiveStudents?: boolean;
   }
 ) {
-  const record = reportCardRepo.getOrInit(classId);
+  let record = reportCardRepo.getOrInit(classId);
   const parsedSnapshot = parseReportCardLmsSnapshot(
     record.lmsSnapshotJson,
     classId
@@ -79,6 +80,18 @@ function buildReportCardResponsePayload(
     scrapedAt: "",
   };
   const overrides = parseManualOverridesMap(record.manualOverridesJson);
+  if (
+    parsedSnapshot &&
+    record.status !== "SAVING" &&
+    record.teachingSyncStatus !== "SYNCING" &&
+    Boolean(record.contentHash) &&
+    typeof computeReportCardContentHash === "function" &&
+    computeReportCardContentHash(parsedSnapshot, overrides) !== record.contentHash
+  ) {
+    try {
+      record = reportCardRepo.saveLmsSnapshot(classId, parsedSnapshot);
+    } catch {}
+  }
   const reportCard = computeClassReportCard(snapshot, overrides, options);
   const staleness = computeReportCardStaleness(classId, parsedSnapshot);
 

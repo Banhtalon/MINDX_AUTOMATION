@@ -11,12 +11,18 @@ import {
   jobLogRepo,
   scoreMatrixRepo,
   session14EvalRepo,
+  sessionFeedbackRepo,
   reportCardRepo,
   isRoboticsClassCode,
   getDb,
   type StudentRecord,
   type SpckSession14EvaluationRecord,
+  type SessionFeedbackRecord,
 } from "../db/sqlite";
+import {
+  parseCheckpointDataJson as _parseCheckpointDataJsonSc,
+  reconcileCheckpointTestScores as _reconcileCheckpointTestScoresSc,
+} from "../checkpoint/checkpoint-competency";
 import {
   round2,
   normalizeScoreToScale5,
@@ -106,6 +112,7 @@ export interface ExtractReportCardSnapshotParams {
   classByIdGqlData?: any;
   existingStudents?: StudentRecord[];
   session14Evals?: SpckSession14EvaluationRecord[];
+  checkpointFeedbacks?: SessionFeedbackRecord[];
   fallbackMatrix?: {
     columns: ScoreColumnInfo[];
     rows: StudentScoreRow[];
@@ -154,6 +161,63 @@ function safeCheckIsRobotics(classCode: string): boolean {
 function normalizeStudentNameKey(s: string): string {
   return sharedNormViName(String(s || ""));
 }
+
+const safeParseCpDataSc =
+  typeof _parseCheckpointDataJsonSc === "function"
+    ? _parseCheckpointDataJsonSc
+    : () => null;
+
+const safeReconcileCpScoresSc =
+  typeof _reconcileCheckpointTestScoresSc === "function"
+    ? _reconcileCheckpointTestScoresSc
+    : (params: {
+        slotTheory: number | null | undefined;
+        slotPractice: number | null | undefined;
+        subTheory: number | null | undefined;
+        subPractice: number | null | undefined;
+        subPracticeStatus?: string | null;
+        subPracticeHasAttachments?: boolean;
+        manualTheory?: number | null;
+        manualPractice?: number | null;
+        userEditedTheory?: boolean;
+        userEditedPractice?: boolean;
+      }) => {
+        const normOpt = (v: unknown): number | null => {
+          if (v === null || v === undefined || typeof v === "boolean" || v === "") return null;
+          const n = Number(v);
+          if (!Number.isFinite(n) || n < 0) return null;
+          return Math.round(Math.max(0, Math.min(5, n)) * 100) / 100;
+        };
+        const slotLt = normOpt(params.slotTheory);
+        const slotTh = normOpt(params.slotPractice);
+        const subLt = normOpt(params.subTheory);
+        const subTh = normOpt(params.subPractice);
+        const manualLt = normOpt(params.manualTheory);
+        const manualTh = normOpt(params.manualPractice);
+        let theoryScore: number | null = null;
+        if (params.userEditedTheory && manualLt !== null) theoryScore = manualLt;
+        else if (slotLt !== null && slotLt > 0) theoryScore = slotLt;
+        else if (subLt !== null && subLt > 0) theoryScore = subLt;
+        else if (slotLt === 0) theoryScore = 0;
+        else if (subLt === 0) theoryScore = 0;
+
+        const stUp = String(params.subPracticeStatus || "").trim().toUpperCase();
+        const waitingSub =
+          subTh === null &&
+          (stUp === "SUBMITTED_UNGRADED" || stUp === "REDO_REQUESTED") &&
+          Boolean(params.subPracticeHasAttachments);
+        let practiceScore: number | null = null;
+        let hasUngradedPractice = false;
+        if (params.userEditedPractice && manualTh !== null) practiceScore = manualTh;
+        else if (slotTh !== null && slotTh > 0) practiceScore = slotTh;
+        else if (subTh !== null && subTh > 0) practiceScore = subTh;
+        else if (waitingSub) {
+          practiceScore = null;
+          hasUngradedPractice = true;
+        } else if (slotTh === 0) practiceScore = 0;
+        else if (subTh === 0) practiceScore = 0;
+        return { theoryScore, practiceScore, hasUngradedPractice };
+      };
 
 function stripHtmlTagsClean(raw?: string | null): string {
   if (!raw) return "";
@@ -1538,7 +1602,7 @@ export class ScoreScraper {
           const lessonType = String(lesson.type || "").toUpperCase();
           const isCheckpoint =
             lessonType === "CHECKPOINT" ||
-            /bài\s*kiểm\s*tra|kiểm\s*tra\s*định\s*kỳ|checkpoint/i.test(sourceTitle);
+            /bài\s*kiểm\s*tra|kiểm\s*tra\s*định\s*kỳ|checkpoint|\bcp\s*0?[12]\b/i.test(sourceTitle);
 
           if (isCheckpoint) {
             // S2-07: Resolve CP1 vs CP2 explicitly by original source lesson/session identity ONLY (never generated Buổi ${idx + 1})!
@@ -1607,7 +1671,7 @@ export class ScoreScraper {
         for (const col of params.fallbackMatrix.columns) {
           const isCheckpoint =
             String(col.lessonType || "").toUpperCase() === "CHECKPOINT" ||
-            /bài\s*kiểm\s*tra|kiểm\s*tra\s*định\s*kỳ|checkpoint/i.test(col.title);
+            /bài\s*kiểm\s*tra|kiểm\s*tra\s*định\s*kỳ|checkpoint|\bcp\s*0?[12]\b/i.test(col.title);
           if (isCheckpoint) continue;
           // S2-09: Always exclude Checkpoint-session homeworks (Buổi 5 & Buổi 9) regardless of column count
           if (
@@ -1754,16 +1818,33 @@ export class ScoreScraper {
     const parseFallbackCheckpointFromSubmissions = (
       checkpointLessonId: string | undefined,
       studentUid: string
-    ): { theory: number | null; practice: number | null } => {
+    ): {
+      theory: number | null;
+      practice: number | null;
+      practiceStatus: string | null;
+      practiceHasAttachments: boolean;
+    } => {
       if (!checkpointLessonId || !studentUid || allSubmissions.length === 0) {
-        return { theory: null, practice: null };
+        return {
+          theory: null,
+          practice: null,
+          practiceStatus: null,
+          practiceHasAttachments: false,
+        };
       }
       const subs = allSubmissions.filter(
         (s) =>
           String(s?.lessonId || "") === checkpointLessonId &&
           String(s?.studentUid || "") === studentUid
       );
-      if (subs.length === 0) return { theory: null, practice: null };
+      if (subs.length === 0) {
+        return {
+          theory: null,
+          practice: null,
+          practiceStatus: null,
+          practiceHasAttachments: false,
+        };
+      }
 
       const quizSub = subs.find(
         (s) =>
@@ -1781,23 +1862,49 @@ export class ScoreScraper {
         theory = safeNormToScale5(quizSub.score, 100);
       }
 
-      const markedPractice = subs
-        .filter(isPracticeSubmissionItem)
-        .filter(
-          (s) =>
-            String(s?.status || "").toUpperCase() === "MARKED" &&
-            typeof s?.score === "number" &&
-            Number.isFinite(s.score)
-        );
+      const practiceSubs = sortPracticeSubmissions(subs.filter(isPracticeSubmissionItem));
+      const markedPractice = practiceSubs.filter(
+        (s) =>
+          String(s?.status || "").toUpperCase() === "MARKED" &&
+          typeof s?.score === "number" &&
+          Number.isFinite(s.score)
+      );
       let practice: number | null = null;
-      if (markedPractice.length > 0) {
-        const avgRaw =
-          markedPractice.reduce((acc, s) => acc + Number(s.score), 0) /
-          markedPractice.length;
-        practice = safeNormToScale5(avgRaw, 100);
+      let practiceStatus: string | null = null;
+      let practiceHasAttachments = false;
+      if (practiceSubs.length > 0) {
+        let hasRedo = false;
+        let hasSubmittedUngraded = false;
+        for (const pSub of practiceSubs) {
+          const pStatus = String(pSub?.status || "").toUpperCase();
+          const hasAtts =
+            Array.isArray(pSub?.content?.attachments) && pSub.content.attachments.length > 0;
+          const hasSubmittedTime = Boolean(String(pSub?.submittedAt || "").trim());
+          if (hasAtts || hasSubmittedTime) {
+            practiceHasAttachments = true;
+          }
+          const isSubmitted = (pSub?.submittedCount ?? 0) > 0 || hasSubmittedTime || hasAtts;
+          if (pStatus === "REDO") hasRedo = true;
+          else if (pStatus === "SUBMITTED" || (pStatus === "IN_PROGRESS" && isSubmitted)) {
+            hasSubmittedUngraded = true;
+          }
+        }
+        if (markedPractice.length > 0) {
+          const avgRaw =
+            markedPractice.reduce((acc, s) => acc + Number(s.score), 0) /
+            markedPractice.length;
+          practice = safeNormToScale5(avgRaw, 100);
+          practiceStatus = "GRADED";
+        } else if (hasRedo) {
+          practiceStatus = "REDO_REQUESTED";
+        } else if (hasSubmittedUngraded) {
+          practiceStatus = "SUBMITTED_UNGRADED";
+        } else {
+          practiceStatus = "NOT_SUBMITTED";
+        }
       }
 
-      return { theory, practice };
+      return { theory, practice, practiceStatus, practiceHasAttachments };
     };
 
     const parseSlotFinalDemoScores = (
@@ -2235,6 +2342,64 @@ export class ScoreScraper {
       return evalByStudentId.get(expectedSlugId);
     };
 
+    const cp1SessionNum = isRobotics ? 4 : 5;
+    const cp2SessionNum = isRobotics ? 8 : 9;
+    const cpManualByStudentStage = new Map<
+      string,
+      {
+        userEditedTheory: boolean;
+        userEditedPractice: boolean;
+        theoryScore: number | null;
+        practiceScore: number | null;
+      }
+    >();
+    try {
+      const fbRows = Array.isArray(params.checkpointFeedbacks)
+        ? params.checkpointFeedbacks
+        : typeof sessionFeedbackRepo !== "undefined" &&
+            sessionFeedbackRepo &&
+            typeof sessionFeedbackRepo.findByClass === "function"
+          ? sessionFeedbackRepo.findByClass(cleanClassId)
+          : [];
+      for (const fb of fbRows) {
+        const sMatch = String(fb?.sessionId || "").match(/(?:^|[_-])SESS(?:ION)?[_-]?0*(\d+)$/i);
+        const sNum = sMatch ? Number(sMatch[1]) : 0;
+        const cpStageNum = sNum === cp1SessionNum ? 1 : sNum === cp2SessionNum ? 2 : 0;
+        if (!cpStageNum) continue;
+        const parsedCp = safeParseCpDataSc(fb?.checkpointDataJson);
+        if (!parsedCp || (!parsedCp.userEditedTheory && !parsedCp.userEditedPractice)) continue;
+        const sid = String(fb?.studentId || "").trim();
+        if (!sid) continue;
+        cpManualByStudentStage.set(`${cpStageNum}:${sid}`, {
+          userEditedTheory: Boolean(parsedCp.userEditedTheory),
+          userEditedPractice: Boolean(parsedCp.userEditedPractice),
+          theoryScore: parsedCp.theoryScore ?? null,
+          practiceScore: parsedCp.practiceScore ?? null,
+        });
+      }
+    } catch {}
+
+    const findManualCheckpointForStudent = (
+      cpStageNum: 1 | 2,
+      cand: CandidateStudentIdentity
+    ) => {
+      const normName = normalizeStudentNameKey(cand.fullName);
+      const expectedSlugId = `STU_${cleanClassId}_${normName
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .toUpperCase()}`;
+      return (
+        cpManualByStudentStage.get(`${cpStageNum}:${cand.studentId}`) ||
+        (cand.crmStudentId
+          ? cpManualByStudentStage.get(`${cpStageNum}:${cand.crmStudentId}`)
+          : undefined) ||
+        (cand.studentUid
+          ? cpManualByStudentStage.get(`${cpStageNum}:${cand.studentUid}`)
+          : undefined) ||
+        cpManualByStudentStage.get(`${cpStageNum}:${expectedSlugId}`)
+      );
+    };
+
     // 7. Build each student's snapshot item
     const students: StudentReportCardSnapshotItem[] = candidates.map((cand) => {
       const btvnScores: Record<number, StudentBtvnSessionRaw> = {};
@@ -2364,14 +2529,50 @@ export class ScoreScraper {
       const cp1Fallback =
         !isRobotics && cand.studentUid
           ? parseFallbackCheckpointFromSubmissions(cp1FallbackLessonId, cand.studentUid)
-          : { theory: null, practice: null };
+          : {
+              theory: null,
+              practice: null,
+              practiceStatus: null,
+              practiceHasAttachments: false,
+            };
+      const cp1Manual = findManualCheckpointForStudent(1, cand);
+      const cp1Reconciled = safeReconcileCpScoresSc({
+        slotTheory: cp1SlotParsed.theory,
+        slotPractice: cp1SlotParsed.practice,
+        subTheory: cp1Fallback.theory,
+        subPractice: cp1Fallback.practice,
+        subPracticeStatus: cp1Fallback.practiceStatus,
+        subPracticeHasAttachments: cp1Fallback.practiceHasAttachments,
+        manualTheory: cp1Manual?.theoryScore ?? null,
+        manualPractice: cp1Manual?.practiceScore ?? null,
+        userEditedTheory: Boolean(cp1Manual?.userEditedTheory),
+        userEditedPractice: Boolean(cp1Manual?.userEditedPractice),
+      });
 
       const cp2Att = findAttendanceForStudent(cp2Slot, idsForSlotLookup, normFullName);
       const cp2SlotParsed = parseSlotCheckpointScores(cp2Att);
       const cp2Fallback =
         !isRobotics && cand.studentUid
           ? parseFallbackCheckpointFromSubmissions(cp2FallbackLessonId, cand.studentUid)
-          : { theory: null, practice: null };
+          : {
+              theory: null,
+              practice: null,
+              practiceStatus: null,
+              practiceHasAttachments: false,
+            };
+      const cp2Manual = findManualCheckpointForStudent(2, cand);
+      const cp2Reconciled = safeReconcileCpScoresSc({
+        slotTheory: cp2SlotParsed.theory,
+        slotPractice: cp2SlotParsed.practice,
+        subTheory: cp2Fallback.theory,
+        subPractice: cp2Fallback.practice,
+        subPracticeStatus: cp2Fallback.practiceStatus,
+        subPracticeHasAttachments: cp2Fallback.practiceHasAttachments,
+        manualTheory: cp2Manual?.theoryScore ?? null,
+        manualPractice: cp2Manual?.practiceScore ?? null,
+        userEditedTheory: Boolean(cp2Manual?.userEditedTheory),
+        userEditedPractice: Boolean(cp2Manual?.userEditedPractice),
+      });
 
       const finalAtt = findAttendanceForStudent(finalSlot, idsForSlotLookup, normFullName);
       const finalSlotParsed = parseSlotFinalDemoScores(finalAtt);
@@ -2412,12 +2613,12 @@ export class ScoreScraper {
       }
 
       const stageScores: StudentStageRawScores = {
-        cp1Theory: cp1SlotParsed.theory ?? cp1Fallback.theory,
-        cp1Practice: cp1SlotParsed.practice ?? cp1Fallback.practice,
+        cp1Theory: cp1Reconciled.theoryScore,
+        cp1Practice: cp1Reconciled.practiceScore,
         cp1Competency: cp1SlotParsed.competency,
         cp1Note: cp1SlotParsed.note,
-        cp2Theory: cp2SlotParsed.theory ?? cp2Fallback.theory,
-        cp2Practice: cp2SlotParsed.practice ?? cp2Fallback.practice,
+        cp2Theory: cp2Reconciled.theoryScore,
+        cp2Practice: cp2Reconciled.practiceScore,
         cp2Competency: cp2SlotParsed.competency,
         cp2Note: cp2SlotParsed.note,
         finalProduct,

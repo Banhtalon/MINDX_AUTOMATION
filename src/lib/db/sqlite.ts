@@ -859,6 +859,10 @@ export const sessionFeedbackRepo = {
     expectedRowVer?: number | null;
     clientInstanceId?: string;
     clientRev?: number;
+    allowServerReconciledCheckpoint?: {
+      cpCoreHash: string;
+      refreshedHeaderFinalText?: string;
+    };
   }): { approved: boolean; conflict?: boolean; reason?: string; versionMeta?: FeedbackVersionMeta } {
     const db = getDb();
     const runTx = () => {
@@ -901,9 +905,17 @@ export const sessionFeedbackRepo = {
         const finalTextEditedByUiClient = Boolean(
           meta.fields?.finalText && meta.fields.finalText.cid && meta.fields.finalText.rev > 0
         );
+        const allowedServerFinalText =
+          params.allowServerReconciledCheckpoint?.refreshedHeaderFinalText?.trim() || "";
+        const incomingFinalTextTrimmed = params.finalText.trim();
+        const existingFinalTextTrimmed = (existing.finalText || "").trim();
+        const matchesAllowedServerFinalText = Boolean(
+          allowedServerFinalText && incomingFinalTextTrimmed === allowedServerFinalText
+        );
         if (
           (hasExpectedRowVer || hasClientCid || hasClientRev || finalTextEditedByUiClient) &&
-          (existing.finalText || "").trim() !== params.finalText.trim()
+          existingFinalTextTrimmed !== incomingFinalTextTrimmed &&
+          !matchesAllowedServerFinalText
         ) {
           return { approved: false, conflict: true, reason: "FINAL_TEXT_DRIFT", versionMeta: meta };
         }
@@ -924,12 +936,18 @@ export const sessionFeedbackRepo = {
             existingCore.theoryScore === incomingCore.theoryScore &&
             existingCore.practiceScore === incomingCore.practiceScore
         );
+        const isVerifiedServerReconciledSync = Boolean(
+          params.allowServerReconciledCheckpoint?.cpCoreHash &&
+            incomingCpCoreHash &&
+            incomingCpCoreHash === params.allowServerReconciledCheckpoint.cpCoreHash
+        );
         if (
           params.checkpointDataJson !== undefined &&
           existingCpCoreHash &&
           (hasExpectedRowVer || hasClientCid || hasClientRev) &&
           existingCpCoreHash !== incomingCpCoreHash &&
-          !isFirstTimeCompetencyEnrichment
+          !isFirstTimeCompetencyEnrichment &&
+          !isVerifiedServerReconciledSync
         ) {
           return {
             approved: false,
@@ -6906,6 +6924,172 @@ export interface ClassReportCardRecord {
   updatedAt: string;
 }
 
+function normalizeManualCheckpointScore5(val: unknown): number | null {
+  if (val === null || val === undefined || typeof val === "boolean" || val === "") return null;
+  const num = typeof val === "string" ? Number(val.trim().replace(",", ".")) : Number(val);
+  if (!Number.isFinite(num) || num < 0 || num > 5) return null;
+  return round2(Math.max(0, Math.min(5, num)));
+}
+
+function buildNormalizedStudentSlugKey(classId: string, fullName?: string | null): string {
+  const norm =
+    typeof sharedStripDiacritics === "function"
+      ? String(sharedStripDiacritics(String(fullName || "")) || "")
+      : String(fullName || "")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/đ/gi, "d")
+          .toLowerCase();
+  const clean = norm
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return clean ? `STU_${classId}_${clean.toUpperCase()}` : "";
+}
+
+function collectManualCheckpointEditsByStage(
+  classId: string,
+  isRobotics: boolean
+): Map<
+  string,
+  {
+    userEditedTheory: boolean;
+    userEditedPractice: boolean;
+    theoryScore: number | null;
+    practiceScore: number | null;
+  }
+> {
+  const out = new Map<
+    string,
+    {
+      userEditedTheory: boolean;
+      userEditedPractice: boolean;
+      theoryScore: number | null;
+      practiceScore: number | null;
+    }
+  >();
+  if (!dbInstance || !classId) return out;
+  try {
+    const cp1Sess = isRobotics ? 4 : 5;
+    const cp2Sess = isRobotics ? 8 : 9;
+    const fbRows = dbInstance
+      .prepare(
+        `SELECT sessionId, studentId, checkpointDataJson
+         FROM session_feedbacks
+         WHERE classId = ? AND checkpointDataJson IS NOT NULL AND checkpointDataJson != '' AND checkpointDataJson != '{}'`
+      )
+      .all(classId) as Array<{
+      sessionId: string;
+      studentId: string;
+      checkpointDataJson: string;
+    }>;
+
+    const sessNumMap = new Map<string, number>();
+    try {
+      const sessRows = dbInstance
+        .prepare(`SELECT sessionId, sessionNumber FROM classes_sessions WHERE classId = ?`)
+        .all(classId) as Array<{ sessionId: string; sessionNumber: number }>;
+      for (const s of sessRows) {
+        if (s?.sessionId && typeof s.sessionNumber === "number") {
+          sessNumMap.set(s.sessionId, s.sessionNumber);
+        }
+      }
+    } catch {}
+
+    for (const row of fbRows) {
+      let sNum = sessNumMap.get(row.sessionId) || 0;
+      if (!sNum) {
+        const m = String(row.sessionId || "").match(/(?:^|[_-])SESS(?:ION)?[_-]?0*(\d+)$/i);
+        if (m) sNum = Number(m[1]);
+      }
+      const cpStage = sNum === cp1Sess ? 1 : sNum === cp2Sess ? 2 : 0;
+      if (!cpStage) continue;
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(row.checkpointDataJson);
+      } catch {
+        parsed = null;
+      }
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) continue;
+      if (!parsed.userEditedTheory && !parsed.userEditedPractice) continue;
+      const sid = String(row.studentId || "").trim();
+      if (!sid) continue;
+      out.set(`${cpStage}:${sid}`, {
+        userEditedTheory: Boolean(parsed.userEditedTheory),
+        userEditedPractice: Boolean(parsed.userEditedPractice),
+        theoryScore: normalizeManualCheckpointScore5(parsed.theoryScore),
+        practiceScore: normalizeManualCheckpointScore5(parsed.practiceScore),
+      });
+    }
+  } catch {}
+  return out;
+}
+
+function overlayManualCheckpointFeedbacksOntoSnapshot(
+  snapshot: ClassReportCardLmsSnapshot
+): ClassReportCardLmsSnapshot {
+  const normClassId = String(snapshot.classId || "").trim().toUpperCase();
+  if (!dbInstance || !normClassId || !Array.isArray(snapshot.students) || snapshot.students.length === 0) {
+    return snapshot;
+  }
+  const editsByStage = collectManualCheckpointEditsByStage(
+    normClassId,
+    Boolean(snapshot.isRobotics ?? isRoboticsClassCode(normClassId))
+  );
+  if (editsByStage.size === 0) return snapshot;
+
+  let anyChanged = false;
+  const nextStudents = snapshot.students.map((st: any) => {
+    if (!st || typeof st !== "object") return st;
+    const candidateIds = [
+      String(st.studentId || "").trim(),
+      String(st.crmStudentId || "").trim(),
+      String(st.studentUid || "").trim(),
+      String(st.lmsStudentUid || "").trim(),
+      buildNormalizedStudentSlugKey(normClassId, st.fullName),
+    ].filter(Boolean);
+
+    let cp1Edit: ReturnType<typeof editsByStage.get> = undefined;
+    let cp2Edit: ReturnType<typeof editsByStage.get> = undefined;
+    for (const cid of candidateIds) {
+      if (!cp1Edit) cp1Edit = editsByStage.get(`1:${cid}`);
+      if (!cp2Edit) cp2Edit = editsByStage.get(`2:${cid}`);
+      if (cp1Edit && cp2Edit) break;
+    }
+    if (!cp1Edit && !cp2Edit) return st;
+
+    const prevStage = st.stageScores && typeof st.stageScores === "object" ? st.stageScores : {};
+    const nextStage = { ...prevStage };
+    let stuChanged = false;
+
+    if (cp1Edit?.userEditedTheory && nextStage.cp1Theory !== cp1Edit.theoryScore) {
+      nextStage.cp1Theory = cp1Edit.theoryScore;
+      stuChanged = true;
+    }
+    if (cp1Edit?.userEditedPractice && nextStage.cp1Practice !== cp1Edit.practiceScore) {
+      nextStage.cp1Practice = cp1Edit.practiceScore;
+      stuChanged = true;
+    }
+    if (cp2Edit?.userEditedTheory && nextStage.cp2Theory !== cp2Edit.theoryScore) {
+      nextStage.cp2Theory = cp2Edit.theoryScore;
+      stuChanged = true;
+    }
+    if (cp2Edit?.userEditedPractice && nextStage.cp2Practice !== cp2Edit.practiceScore) {
+      nextStage.cp2Practice = cp2Edit.practiceScore;
+      stuChanged = true;
+    }
+    if (!stuChanged) return st;
+    anyChanged = true;
+    return {
+      ...st,
+      stageScores: nextStage,
+    };
+  });
+
+  return anyChanged ? { ...snapshot, students: nextStudents } : snapshot;
+}
+
 export function parseReportCardLmsSnapshot(
   rawJson: string | null | undefined,
   fallbackClassId = ""
@@ -6918,7 +7102,7 @@ export function parseReportCardLmsSnapshot(
     const normClassId = String(parsed.classId || fallbackClassId || "")
       .trim()
       .toUpperCase();
-    return {
+    const baseSnapshot: ClassReportCardLmsSnapshot = {
       classId: normClassId,
       classCode: String(parsed.classCode || normClassId).trim().toUpperCase(),
       lmsClassId: parsed.lmsClassId ? String(parsed.lmsClassId) : undefined,
@@ -6927,6 +7111,7 @@ export function parseReportCardLmsSnapshot(
       students: parsed.students,
       scrapedAt: String(parsed.scrapedAt || ""),
     };
+    return overlayManualCheckpointFeedbacksOntoSnapshot(baseSnapshot);
   } catch {
     return null;
   }
@@ -7990,6 +8175,250 @@ export const reportCardRepo = {
     return tx();
   },
 };
+
+/**
+ * Đồng bộ trực tiếp điểm LT/TH vừa lưu hoặc khôi phục (`↺ LMS`) ở trang Nhận xét buổi học
+ * sang `class_report_cards.lmsSnapshotJson` nếu lớp đó đã có bản quét Phiếu điểm,
+ * bảo đảm `draftVersion` tăng và trạng thái `APPROVED` tự hạ về `WAITING_APPROVAL` theo Rule 4.
+ */
+export function syncCheckpointScoresIntoExistingReportCard(
+  classId: string,
+  cpStage: 1 | 2,
+  scoresByStudentId: Record<
+    string,
+    {
+      theoryScore?: number | null;
+      practiceScore?: number | null;
+      syncTheory?: boolean;
+      syncPractice?: boolean;
+    }
+  >
+): boolean {
+  const normalizedClassId = String(classId || "").trim().toUpperCase();
+  if (!normalizedClassId || (cpStage !== 1 && cpStage !== 2)) return false;
+  const studentEntries = Object.entries(scoresByStudentId || {});
+  if (studentEntries.length === 0) return false;
+
+  const existingRc = reportCardRepo.findOne(normalizedClassId);
+  if (
+    !existingRc ||
+    !existingRc.lmsSnapshotJson ||
+    existingRc.lmsSnapshotJson.trim() === "{}" ||
+    existingRc.status === "SAVING" ||
+    existingRc.teachingSyncStatus === "SYNCING"
+  ) {
+    return false;
+  }
+
+  let rawSnap: any = null;
+  try {
+    rawSnap = JSON.parse(existingRc.lmsSnapshotJson);
+  } catch {
+    return false;
+  }
+  if (!rawSnap || typeof rawSnap !== "object" || !Array.isArray(rawSnap.students)) {
+    return false;
+  }
+
+  const updateMap = new Map(studentEntries);
+  let anyUpdated = false;
+  const nextStudents = rawSnap.students.map((st: any) => {
+    if (!st || typeof st !== "object") return st;
+    const candidateKeys = [
+      String(st.studentId || "").trim(),
+      String(st.crmStudentId || "").trim(),
+      String(st.studentUid || "").trim(),
+      String(st.lmsStudentUid || "").trim(),
+      buildNormalizedStudentSlugKey(normalizedClassId, st.fullName),
+    ].filter(Boolean);
+
+    let matchedUpdate:
+      | {
+          theoryScore?: number | null;
+          practiceScore?: number | null;
+          syncTheory?: boolean;
+          syncPractice?: boolean;
+        }
+      | undefined;
+    for (const k of candidateKeys) {
+      matchedUpdate = updateMap.get(k);
+      if (matchedUpdate) break;
+    }
+    if (!matchedUpdate) return st;
+
+    const prevStage = st.stageScores && typeof st.stageScores === "object" ? st.stageScores : {};
+    const nextStage = { ...prevStage };
+    const tKey = cpStage === 1 ? "cp1Theory" : "cp2Theory";
+    const pKey = cpStage === 1 ? "cp1Practice" : "cp2Practice";
+    let changed = false;
+
+    if (matchedUpdate.syncTheory !== false && matchedUpdate.theoryScore !== undefined) {
+      const targetT =
+        matchedUpdate.theoryScore === null
+          ? null
+          : normalizeManualCheckpointScore5(matchedUpdate.theoryScore);
+      if ((nextStage[tKey] ?? null) !== targetT) {
+        nextStage[tKey] = targetT;
+        changed = true;
+      }
+    }
+    if (matchedUpdate.syncPractice !== false && matchedUpdate.practiceScore !== undefined) {
+      const targetP =
+        matchedUpdate.practiceScore === null
+          ? null
+          : normalizeManualCheckpointScore5(matchedUpdate.practiceScore);
+      if ((nextStage[pKey] ?? null) !== targetP) {
+        nextStage[pKey] = targetP;
+        changed = true;
+      }
+    }
+
+    if (!changed) return st;
+    anyUpdated = true;
+    return {
+      ...st,
+      stageScores: nextStage,
+    };
+  });
+
+  if (!anyUpdated) return false;
+
+  reportCardRepo.saveLmsSnapshot(normalizedClassId, {
+    classId: normalizedClassId,
+    classCode: String(rawSnap.classCode || normalizedClassId).trim().toUpperCase(),
+    ...(rawSnap.lmsClassId ? { lmsClassId: String(rawSnap.lmsClassId) } : {}),
+    isRobotics: Boolean(rawSnap.isRobotics ?? isRoboticsClassCode(normalizedClassId)),
+    btvnSessions: Array.isArray(rawSnap.btvnSessions) ? rawSnap.btvnSessions : [],
+    students: nextStudents,
+    scrapedAt: String(rawSnap.scrapedAt || ""),
+  });
+  return true;
+}
+
+function resolveMatrixCheckpointColumnStageSqlite(col: {
+  id?: string | null;
+  title?: string | null;
+  lessonType?: string | null;
+}): 1 | 2 | null {
+  const titleStr = String(col?.title || "").trim();
+  const idStr = String(col?.id || "").trim();
+  const typeUpper = String(col?.lessonType || "").trim().toUpperCase();
+  const isCp =
+    typeUpper === "CHECKPOINT" ||
+    /bài\s*kiểm\s*tra|kiểm\s*tra\s*định\s*kỳ|checkpoint|\bcp\s*0?[12]\b/i.test(titleStr);
+  if (!isCp) return null;
+  const combined = `${titleStr} ${idStr}`.trim();
+  if (
+    /(?:checkpoint|check\s*[-_]?\s*point|cp|lần|định\s*kỳ(?:\s*lần)?)\s*[-_#]?\s*0?2\b/i.test(
+      combined
+    ) ||
+    /(?:buổi|bài|session|slot|lesson)\s*0?(?:8|9)\b/i.test(titleStr)
+  ) {
+    return 2;
+  }
+  if (
+    /(?:checkpoint|check\s*[-_]?\s*point|cp|lần|định\s*kỳ(?:\s*lần)?)\s*[-_#]?\s*0?1\b/i.test(
+      combined
+    ) ||
+    /(?:buổi|bài|session|slot|lesson)\s*0?(?:4|5)\b/i.test(titleStr)
+  ) {
+    return 1;
+  }
+  return null;
+}
+
+/**
+ * Khôi phục điểm LMS chuẩn 2 chữ số thập phân (2dp, vd `75/100 -> 3.75`) cho đúng học viên
+ * khi giáo viên bấm `↺ LMS` trên trang Nhận xét buổi học, giữ nguyên mọi ưu tiên 2 tầng (`#tab-10 > 0` > `#tab-3 > 0` > chờ chấm `null`).
+ */
+export function resolveRestoredLmsCheckpointScores2dp(params: {
+  classId: string;
+  cpStage: 1 | 2;
+  isRobotics: boolean;
+  studentId: string;
+  slotTheoryScore?: number | null;
+  slotPracticeScore?: number | null;
+}): { theoryScore: number | null; practiceScore: number | null } {
+  const normClassId = String(params.classId || "").trim().toUpperCase();
+  const targetStuId = String(params.studentId || "").trim();
+  const slotLt = normalizeManualCheckpointScore5(params.slotTheoryScore);
+  const slotTh = normalizeManualCheckpointScore5(params.slotPracticeScore);
+
+  let subLt: number | null = null;
+  let subTh: number | null = null;
+  let waitingSub = false;
+
+  if (!params.isRobotics && normClassId && targetStuId) {
+    try {
+      const cached = scoreMatrixRepo.findByClass(normClassId);
+      const matrix = cached?.matrix;
+      if (matrix && Array.isArray(matrix.columns) && Array.isArray(matrix.rows)) {
+        const cpCol = matrix.columns.find(
+          (col: any) =>
+            resolveMatrixCheckpointColumnStageSqlite({
+              id: col?.lessonId || col?.columnId,
+              title: col?.title,
+              lessonType: col?.lessonType,
+            }) === params.cpStage
+        );
+        if (cpCol?.columnId) {
+          const colKey = String(cpCol.columnId);
+          const matchedRow = matrix.rows.find((row: any) => {
+            const sid = String(row?.studentId || "").trim();
+            const uid = String(row?.studentUid || "").trim();
+            const slug = buildNormalizedStudentSlugKey(normClassId, row?.fullName);
+            return (
+              sid === targetStuId ||
+              (uid && uid === targetStuId) ||
+              (slug && slug === targetStuId)
+            );
+          });
+          const cell = matchedRow?.cells?.[colKey];
+          if (cell && typeof cell === "object") {
+            const maxScore =
+              typeof cell.maxScore === "number" && Number.isFinite(cell.maxScore) && cell.maxScore > 0
+                ? cell.maxScore
+                : 100;
+            if (typeof cell.quizScore === "number" && Number.isFinite(cell.quizScore) && cell.quizScore >= 0) {
+              subLt = round2(Math.max(0, Math.min(5, (cell.quizScore / maxScore) * 5)));
+            }
+            const statusUp = String(cell.status || "").trim().toUpperCase();
+            if (
+              statusUp === "GRADED" &&
+              typeof cell.score === "number" &&
+              Number.isFinite(cell.score) &&
+              cell.score >= 0
+            ) {
+              subTh = round2(Math.max(0, Math.min(5, (cell.score / maxScore) * 5)));
+            }
+            const hasAtts =
+              (Array.isArray(cell.attachments) && cell.attachments.length > 0) ||
+              Boolean(String(cell.submittedAt || "").trim());
+            waitingSub =
+              subTh === null &&
+              (statusUp === "SUBMITTED_UNGRADED" || statusUp === "REDO_REQUESTED") &&
+              hasAtts;
+          }
+        }
+      }
+    } catch {}
+  }
+
+  let theoryScore: number | null = null;
+  if (slotLt !== null && slotLt > 0) theoryScore = slotLt;
+  else if (subLt !== null && subLt > 0) theoryScore = subLt;
+  else if (slotLt === 0) theoryScore = 0;
+  else if (subLt === 0) theoryScore = 0;
+
+  let practiceScore: number | null = null;
+  if (slotTh !== null && slotTh > 0) practiceScore = slotTh;
+  else if (subTh !== null && subTh > 0) practiceScore = subTh;
+  else if (waitingSub) practiceScore = null;
+  else if (slotTh === 0) practiceScore = 0;
+  else if (subTh === 0) practiceScore = 0;
+
+  return { theoryScore, practiceScore };
+}
 
 
 export function buildEnrichedSession14EvalList(classId: string) {

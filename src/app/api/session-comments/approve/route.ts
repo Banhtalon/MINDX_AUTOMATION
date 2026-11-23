@@ -8,25 +8,46 @@ import {
 } from "@/lib/db/sqlite";
 import {
   calculateCompetencyAveragePure,
+  formatCheckpointScoreHeaderLine,
   hasCompleteCompetencyScores,
+  mergeCheckpointStudentData,
   normalizeScoreToScale5,
   parseCheckpointDataJson,
   parseCompetencyScoresPure,
   resolveCheckpointStageForSession,
+  upsertCheckpointHeaderIntoFinalText,
 } from "@/lib/checkpoint/checkpoint-competency";
+import { computeCheckpointDataForSession } from "@/lib/checkpoint/checkpoint-history-loader";
 
 const safeHasCompleteCompAp =
   typeof hasCompleteCompetencyScores === "function" ? hasCompleteCompetencyScores : () => true;
 const safeParseCpDataAp =
   typeof parseCheckpointDataJson === "function" ? parseCheckpointDataJson : () => null;
+const safeMergeCpDataAp =
+  typeof mergeCheckpointStudentData === "function"
+    ? mergeCheckpointStudentData
+    : (a: any, b: any) => a ?? b ?? null;
 const safeParseCompScoresAp =
   typeof parseCompetencyScoresPure === "function" ? parseCompetencyScoresPure : (x: any) => x;
 const safeCalcCompAvgAp =
   typeof calculateCompetencyAveragePure === "function" ? calculateCompetencyAveragePure : () => 4;
+const safeFormatCpHeaderAp =
+  typeof formatCheckpointScoreHeaderLine === "function"
+    ? formatCheckpointScoreHeaderLine
+    : () => "";
+const safeUpsertCpHeaderAp =
+  typeof upsertCheckpointHeaderIntoFinalText === "function"
+    ? upsertCheckpointHeaderIntoFinalText
+    : (t: string) => t;
+const safeComputeCheckpointAp =
+  typeof computeCheckpointDataForSession === "function" ? computeCheckpointDataForSession : null;
 const safeNormalizeScoreAp =
   typeof normalizeScoreToScale5 === "function"
     ? normalizeScoreToScale5
-    : (v: any) => (v === null || v === undefined || v === "" ? null : Number(v));
+    : (v: any) =>
+        v === null || v === undefined || v === "" || typeof v === "boolean"
+          ? null
+          : Number(v);
 const safeResolveCpStageAp =
   typeof resolveCheckpointStageForSession === "function"
     ? resolveCheckpointStageForSession
@@ -213,6 +234,17 @@ function approveSingleItem(params: {
       ["practiceScore", rawCheckpointData.practiceScore],
     ] as const) {
       if (scoreVal !== undefined && scoreVal !== null && scoreVal !== "") {
+        if (typeof scoreVal === "boolean") {
+          return {
+            statusHttp: 400,
+            studentId,
+            body: {
+              success: false,
+              studentId,
+              error: `Điểm '${scoreKey}' của học viên '${studentId}' không hợp lệ.`,
+            },
+          };
+        }
         const parsedScore = safeNormalizeScoreAp(scoreVal);
         if (parsedScore === null || parsedScore < 0 || parsedScore > 5) {
           return {
@@ -272,19 +304,55 @@ function approveSingleItem(params: {
       ? safeCalcCompAvgAp(nextCompScores)
       : existingCp?.competencyAverage ?? null;
     const nextTheoryScore =
-      rawCheckpointData.theoryScore !== undefined
-        ? safeNormalizeScoreAp(rawCheckpointData.theoryScore)
-        : existingCp?.theoryScore ?? null;
+      rawCheckpointData.theoryScore === null
+        ? null
+        : rawCheckpointData.theoryScore !== undefined
+          ? safeNormalizeScoreAp(rawCheckpointData.theoryScore)
+          : existingCp?.theoryScore ?? null;
     const nextPracticeScore =
-      rawCheckpointData.practiceScore !== undefined
-        ? safeNormalizeScoreAp(rawCheckpointData.practiceScore)
-        : existingCp?.practiceScore ?? null;
+      rawCheckpointData.practiceScore === null
+        ? null
+        : rawCheckpointData.practiceScore !== undefined
+          ? safeNormalizeScoreAp(rawCheckpointData.practiceScore)
+          : existingCp?.practiceScore ?? null;
     const mergedRaw = {
       ...(existingCp || {}),
       ...rawCheckpointData,
       cpStage: resolvedStage,
       theoryScore: nextTheoryScore,
       practiceScore: nextPracticeScore,
+      ...(rawCheckpointData.slotTheoryScore !== undefined
+        ? {
+            slotTheoryScore:
+              rawCheckpointData.slotTheoryScore === null
+                ? null
+                : safeNormalizeScoreAp(rawCheckpointData.slotTheoryScore),
+          }
+        : existingCp?.slotTheoryScore !== undefined
+          ? { slotTheoryScore: existingCp.slotTheoryScore }
+          : {}),
+      ...(rawCheckpointData.slotPracticeScore !== undefined
+        ? {
+            slotPracticeScore:
+              rawCheckpointData.slotPracticeScore === null
+                ? null
+                : safeNormalizeScoreAp(rawCheckpointData.slotPracticeScore),
+          }
+        : existingCp?.slotPracticeScore !== undefined
+          ? { slotPracticeScore: existingCp.slotPracticeScore }
+          : {}),
+      userEditedTheory:
+        rawCheckpointData.userEditedTheory !== undefined
+          ? Boolean(rawCheckpointData.userEditedTheory)
+          : Boolean(existingCp?.userEditedTheory),
+      userEditedPractice:
+        rawCheckpointData.userEditedPractice !== undefined
+          ? Boolean(rawCheckpointData.userEditedPractice)
+          : Boolean(existingCp?.userEditedPractice),
+      hasUngradedPractice:
+        rawCheckpointData.hasUngradedPractice !== undefined
+          ? Boolean(rawCheckpointData.hasUngradedPractice)
+          : Boolean(existingCp?.hasUngradedPractice),
       competencyScores: nextCompScores,
       competencyAverage: nextCompAvg,
       lmsCompetencyScores:
@@ -337,6 +405,65 @@ function approveSingleItem(params: {
       ? itemParsedBase
       : defaultExpectedRowVer;
 
+  let allowServerReconciledCheckpoint:
+    | { cpCoreHash: string; refreshedHeaderFinalText?: string }
+    | undefined = undefined;
+  if (
+    existing &&
+    nextCheckpointDataJson &&
+    safeComputeCheckpointAp &&
+    typeof extractCheckpointCoreSnapshotHash === "function"
+  ) {
+    const existingCpCoreHash = existing.checkpointDataJson
+      ? extractCheckpointCoreSnapshotHash(existing.checkpointDataJson)
+      : "";
+    const incomingCpCoreHash = extractCheckpointCoreSnapshotHash(nextCheckpointDataJson);
+    if (existingCpCoreHash && incomingCpCoreHash && existingCpCoreHash !== incomingCpCoreHash) {
+      try {
+        const liveCpRes = safeComputeCheckpointAp({
+          classId,
+          sessionId,
+          forceRecalculate: false,
+          persist: false,
+        });
+        const liveStudentCp = liveCpRes?.isCheckpoint ? liveCpRes.byStudent?.[studentId] || null : null;
+        if (liveStudentCp) {
+          const existingCpParsed = safeParseCpDataAp(existing.checkpointDataJson);
+          const liveMergedCp = safeMergeCpDataAp(existingCpParsed, liveStudentCp);
+          const liveMergedHash = liveMergedCp
+            ? extractCheckpointCoreSnapshotHash(JSON.stringify(liveMergedCp))
+            : "";
+          const liveDirectHash = extractCheckpointCoreSnapshotHash(JSON.stringify(liveStudentCp));
+          const matchedCp =
+            liveMergedHash === incomingCpCoreHash
+              ? liveMergedCp
+              : liveDirectHash === incomingCpCoreHash
+                ? liveStudentCp
+                : null;
+          if (matchedCp) {
+            const baseText = String(existing.finalText || "").trim();
+            let refreshedHeaderFinalText: string | undefined = undefined;
+            if (baseText && !baseText.startsWith("Chưa đủ thông tin")) {
+              const freshHeader = safeFormatCpHeaderAp({
+                cpStage: matchedCp.cpStage,
+                theoryScore: matchedCp.theoryScore,
+                practiceScore: matchedCp.practiceScore,
+                competencyAverage: matchedCp.competencyAverage ?? null,
+              });
+              if (freshHeader) {
+                refreshedHeaderFinalText = safeUpsertCpHeaderAp(String(existing.finalText || ""), freshHeader);
+              }
+            }
+            allowServerReconciledCheckpoint = {
+              cpCoreHash: incomingCpCoreHash,
+              ...(refreshedHeaderFinalText ? { refreshedHeaderFinalText } : {}),
+            };
+          }
+        }
+      } catch {}
+    }
+  }
+
   if (typeof (sessionFeedbackRepo as any).approveConditional === "function") {
     const condRes = (sessionFeedbackRepo as any).approveConditional({
       classId,
@@ -349,6 +476,7 @@ function approveSingleItem(params: {
       expectedRowVer,
       clientInstanceId,
       clientRev,
+      ...(allowServerReconciledCheckpoint ? { allowServerReconciledCheckpoint } : {}),
     });
 
     if (!condRes.approved) {

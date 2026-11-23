@@ -1,5 +1,8 @@
 import {
+  classSessionRepo,
+  isRoboticsClassCode,
   session14EvalRepo,
+  sessionFeedbackRepo,
   studentRepo,
   type SpckSession14EvaluationRecord,
 } from "@/lib/db/sqlite";
@@ -14,6 +17,7 @@ import { stripVietnameseDiacritics } from "@/lib/utils/vietnamese-match";
 export interface ReportCardStalenessInfo {
   isStale: boolean;
   hasNewerSession14: boolean;
+  hasNewerManualCheckpoint?: boolean;
   missingCheckpointScores: boolean;
   missingCp1: boolean;
   missingCp2: boolean;
@@ -215,6 +219,101 @@ export function computeReportCardStaleness(
     }
   }
 
+  let hasNewerManualCheckpoint = false;
+  try {
+    const fbRows =
+      typeof sessionFeedbackRepo?.findByClass === "function"
+        ? sessionFeedbackRepo.findByClass(cleanClassId)
+        : [];
+    const classSessRows =
+      typeof classSessionRepo?.findByClass === "function"
+        ? classSessionRepo.findByClass(cleanClassId)
+        : [];
+    const sessNumById = new Map<string, number>();
+    for (const s of classSessRows) {
+      if (s?.sessionId && typeof s.sessionNumber === "number") {
+        sessNumById.set(s.sessionId, s.sessionNumber);
+      }
+    }
+    const isRobotics =
+      typeof isRoboticsClassCode === "function"
+        ? Boolean(parsedSnapshot?.isRobotics ?? isRoboticsClassCode(cleanClassId))
+        : Boolean(parsedSnapshot?.isRobotics);
+    const cp1Sess = isRobotics ? 4 : 5;
+    const cp2Sess = isRobotics ? 8 : 9;
+
+    const snapStudents = parsedSnapshot?.students || [];
+    const findSnapStudentForFb = (fbStudentId: string) => {
+      for (const s of snapStudents) {
+        const sid = String(s.studentId || "").trim();
+        const crmId = String((s as any).crmStudentId || "").trim();
+        const suid = String(s.studentUid || "").trim();
+        const lmsUid = String((s as any).lmsStudentUid || "").trim();
+        const normName = normalizeStudentNameKey(s.fullName);
+        const slugId = normName
+          ? `STU_${cleanClassId}_${normName
+              .replace(/[^a-z0-9]+/g, "_")
+              .replace(/^_+|_+$/g, "")
+              .toUpperCase()}`
+          : "";
+        if (
+          fbStudentId === sid ||
+          (crmId && fbStudentId === crmId) ||
+          (suid && fbStudentId === suid) ||
+          (lmsUid && fbStudentId === lmsUid) ||
+          (slugId && fbStudentId === slugId)
+        ) {
+          return s;
+        }
+      }
+      return undefined;
+    };
+
+    for (const fb of fbRows) {
+      if (!fb?.checkpointDataJson || fb.checkpointDataJson === "{}") continue;
+      let sNum = sessNumById.get(fb.sessionId) || 0;
+      if (!sNum) {
+        const m = String(fb.sessionId || "").match(/(?:^|[_-])SESS(?:ION)?[_-]?0*(\d+)$/i);
+        if (m) sNum = Number(m[1]);
+      }
+      const cpStage = sNum === cp1Sess ? 1 : sNum === cp2Sess ? 2 : 0;
+      if (!cpStage) continue;
+      let cpParsed: any = null;
+      try {
+        cpParsed = JSON.parse(fb.checkpointDataJson);
+      } catch {
+        cpParsed = null;
+      }
+      if (!cpParsed || typeof cpParsed !== "object") continue;
+      if (!cpParsed.userEditedTheory && !cpParsed.userEditedPractice) continue;
+
+      if (!parsedSnapshot || snapStudents.length === 0) {
+        hasNewerManualCheckpoint = true;
+        break;
+      }
+      const matchedSnap = findSnapStudentForFb(String(fb.studentId || "").trim());
+      if (!matchedSnap) {
+        hasNewerManualCheckpoint = true;
+        break;
+      }
+      const tVal =
+        cpStage === 1
+          ? matchedSnap.stageScores?.cp1Theory ?? null
+          : matchedSnap.stageScores?.cp2Theory ?? null;
+      const pVal =
+        cpStage === 1
+          ? matchedSnap.stageScores?.cp1Practice ?? null
+          : matchedSnap.stageScores?.cp2Practice ?? null;
+      if (
+        (cpParsed.userEditedTheory && tVal !== (cpParsed.theoryScore ?? null)) ||
+        (cpParsed.userEditedPractice && pVal !== (cpParsed.practiceScore ?? null))
+      ) {
+        hasNewerManualCheckpoint = true;
+        break;
+      }
+    }
+  } catch {}
+
   const activeStudents = (parsedSnapshot?.students || []).filter(
     (s) => s.isActive !== false
   );
@@ -235,11 +334,14 @@ export function computeReportCardStaleness(
         s.stageScores?.cp2Competency == null
     );
   const missingCheckpointScores = missingCp1 || missingCp2;
-  const isStale = hasNewerSession14 || missingCheckpointScores;
+  const isStale = hasNewerSession14 || missingCheckpointScores || hasNewerManualCheckpoint;
 
   const reasons: string[] = [];
   if (hasNewerSession14) {
     reasons.push("Có dữ liệu Buổi 14 mới, bấm Quét lại");
+  }
+  if (hasNewerManualCheckpoint) {
+    reasons.push("Có điểm Check-point sửa tay mới từ trang Nhận xét buổi học");
   }
   if (missingCheckpointScores) {
     reasons.push(
@@ -254,6 +356,7 @@ export function computeReportCardStaleness(
   return {
     isStale,
     hasNewerSession14,
+    hasNewerManualCheckpoint,
     missingCheckpointScores,
     missingCp1,
     missingCp2,

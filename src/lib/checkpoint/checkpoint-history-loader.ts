@@ -1,8 +1,9 @@
 /**
- * MINDX AUTOMATION BOT - CHECKPOINT HISTORY LOADER & DB COMPUTATION SERVICE (v3.7.0)
+ * MINDX AUTOMATION BOT - CHECKPOINT HISTORY LOADER & DB COMPUTATION SERVICE (v3.8.6)
  * Server-side helper to load stage history (prior session_feedbacks, classroom_session_logs,
- * and Coding score_matrix_cache / class_report_cards BTVN) for a Checkpoint session,
- * compute the 9 [ĐNL] competency ratings + process summary, and optionally persist them.
+ * and Coding score_matrix_cache / class_report_cards BTVN + #tab-3 Checkpoint scores) for a Checkpoint session,
+ * reconcile #tab-10 slot vs #tab-3 submission scores, compute the 9 [ĐNL] competency ratings + process summary,
+ * and optionally persist them.
  */
 
 import {
@@ -21,7 +22,10 @@ import {
   computeStudentProcessCompetency,
   formatCheckpointScoreHeaderLine,
   parseCheckpointDataJson,
+  reconcileCheckpointTestScores,
+  resolveCheckpointColumnStagePure,
   resolveCheckpointStageForSession,
+  scaleSubmissionScoreTo5,
   upsertCheckpointHeaderIntoFinalText,
   type CheckpointStudentData,
   type HomeworkHistoryInput,
@@ -79,6 +83,15 @@ function extractHomeworkHistoryForClass(
     if (matrix && Array.isArray(matrix.columns) && Array.isArray(matrix.rows)) {
       const eligibleColIds = new Set<string>();
       for (const col of matrix.columns) {
+        const isCpCol =
+          String(col?.lessonType || "").toUpperCase() === "CHECKPOINT" ||
+          /bài\s*kiểm\s*tra|kiểm\s*tra\s*định\s*kỳ|checkpoint/i.test(String(col?.title || "")) ||
+          resolveCheckpointColumnStagePure({
+            id: col?.lessonId || col?.columnId,
+            title: col?.title,
+            lessonType: col?.lessonType,
+          }) !== null;
+        if (isCpCol) continue;
         const sNum = Number(col?.sessionNumber || 0);
         if (sNum >= stageStart && sNum < stageEnd) {
           eligibleColIds.add(String(col.columnId));
@@ -165,6 +178,89 @@ function extractHomeworkHistoryForClass(
   return result;
 }
 
+export interface SubmissionCheckpointScoreEntry {
+  subTheory: number | null;
+  subPractice: number | null;
+  subPracticeStatus: string | null;
+  subPracticeHasAttachments: boolean;
+}
+
+/**
+ * Trích xuất điểm Lý thuyết (Quiz) & Thực hành (Submission) của chặng Checkpoint từ `#tab-3 Chấm bài`
+ * (`score_matrix_cache`) cho các lớp Coding.
+ * Lớp Robotics bỏ qua ngay lập tức (trả Map rỗng).
+ */
+export function extractCheckpointSubmissionScoresForClass(
+  classId: string,
+  cpStage: 1 | 2,
+  isRobotics: boolean
+): Map<string, SubmissionCheckpointScoreEntry> {
+  const result = new Map<string, SubmissionCheckpointScoreEntry>();
+  if (isRobotics) return result;
+
+  // 1. Primary source: score_matrix_cache CHECKPOINT column
+  try {
+    const cached =
+      typeof scoreMatrixRepo?.findByClass === "function"
+        ? scoreMatrixRepo.findByClass(classId)
+        : null;
+    const matrix = cached?.matrix;
+    if (matrix && Array.isArray(matrix.columns) && Array.isArray(matrix.rows)) {
+      const cpCol = matrix.columns.find(
+        (col: any) =>
+          resolveCheckpointColumnStagePure({
+            id: col?.lessonId || col?.columnId,
+            title: col?.title,
+            lessonType: col?.lessonType,
+          }) === cpStage
+      );
+
+      if (cpCol?.columnId) {
+        const colKey = String(cpCol.columnId);
+        for (const row of matrix.rows) {
+          const sid = String(row?.studentId || "").trim();
+          const uid = String(row?.studentUid || "").trim();
+          const cell = row?.cells?.[colKey];
+          if (!cell || typeof cell !== "object") continue;
+
+          const maxScore =
+            typeof cell.maxScore === "number" && Number.isFinite(cell.maxScore) && cell.maxScore > 0
+              ? cell.maxScore
+              : 100;
+          const subTheory =
+            typeof cell.quizScore === "number" && Number.isFinite(cell.quizScore)
+              ? scaleSubmissionScoreTo5(cell.quizScore, maxScore)
+              : null;
+
+          const statusUpper = String(cell.status || "").trim().toUpperCase();
+          const subPractice =
+            statusUpper === "GRADED" &&
+            typeof cell.score === "number" &&
+            Number.isFinite(cell.score)
+              ? scaleSubmissionScoreTo5(cell.score, maxScore)
+              : null;
+          const subPracticeHasAttachments =
+            (Array.isArray(cell.attachments) && cell.attachments.length > 0) ||
+            Boolean(String(cell.submittedAt || "").trim());
+
+          const entry: SubmissionCheckpointScoreEntry = {
+            subTheory,
+            subPractice,
+            subPracticeStatus: statusUpper || null,
+            subPracticeHasAttachments,
+          };
+          if (sid) result.set(sid, entry);
+          if (uid && uid !== sid && !result.has(uid)) {
+            result.set(uid, entry);
+          }
+        }
+      }
+    }
+  } catch {}
+
+  return result;
+}
+
 export interface ComputeCheckpointForSessionOptions {
   classId: string;
   sessionId: string;
@@ -184,6 +280,7 @@ export function computeCheckpointDataForSession(
   cpStage: 1 | 2 | null;
   byStudent: Record<string, CheckpointStudentData>;
   updatedCount: number;
+  ungradedPracticeStudents: string[];
 } {
   const classId = String(opts.classId || "").trim().toUpperCase();
   const sessionId = String(opts.sessionId || "").trim();
@@ -198,7 +295,13 @@ export function computeCheckpointDataForSession(
 
   const stage = resolveCheckpointStageForSession(classId, sessionNumber);
   if (!stage.isCheckpoint || !stage.cpStage) {
-    return { isCheckpoint: false, cpStage: null, byStudent: {}, updatedCount: 0 };
+    return {
+      isCheckpoint: false,
+      cpStage: null,
+      byStudent: {},
+      updatedCount: 0,
+      ungradedPracticeStudents: [],
+    };
   }
 
   const sessNumBySessionId = new Map<string, number>();
@@ -221,6 +324,17 @@ export function computeCheckpointDataForSession(
     stage.stageEndSession,
     stage.isRobotics
   );
+  const subCpByStudent = extractCheckpointSubmissionScoresForClass(
+    classId,
+    stage.cpStage,
+    stage.isRobotics
+  );
+  const activeStudentNameById = new Map<string, string>();
+  for (const stu of students) {
+    if (stu?.studentId) {
+      activeStudentNameById.set(stu.studentId, stu.fullName || stu.studentId);
+    }
+  }
 
   const feedbacksByStudent = new Map<string, PriorSessionFeedbackInput[]>();
   const currentFeedbackByStudent = new Map<string, SessionFeedbackRecord>();
@@ -259,6 +373,7 @@ export function computeCheckpointDataForSession(
 
   const byStudent: Record<string, CheckpointStudentData> = {};
   let updatedCount = 0;
+  const ungradedPracticeStudents: string[] = [];
 
   const targetStudentIds = new Set<string>([
     ...students.map((s) => s.studentId),
@@ -279,12 +394,48 @@ export function computeCheckpointDataForSession(
     const currentFb = currentFeedbackByStudent.get(studentId);
     const existingCp = parseCheckpointDataJson(currentFb?.checkpointDataJson);
     const currentTags = parseStringArraySafe(currentFb?.quickTagsJson);
+    const subEntry = subCpByStudent.get(studentId);
+
+    const slotTheory =
+      existingCp?.slotTheoryScore !== undefined
+        ? existingCp.slotTheoryScore
+        : !existingCp?.userEditedTheory
+          ? existingCp?.theoryScore ?? null
+          : null;
+    const slotPractice =
+      existingCp?.slotPracticeScore !== undefined
+        ? existingCp.slotPracticeScore
+        : !existingCp?.userEditedPractice
+          ? existingCp?.practiceScore ?? null
+          : null;
+
+    const reconciled = reconcileCheckpointTestScores({
+      slotTheory,
+      slotPractice,
+      subTheory: subEntry?.subTheory ?? null,
+      subPractice: subEntry?.subPractice ?? null,
+      subPracticeStatus: subEntry?.subPracticeStatus ?? null,
+      subPracticeHasAttachments: subEntry?.subPracticeHasAttachments ?? false,
+      manualTheory: existingCp?.userEditedTheory ? existingCp.theoryScore ?? null : null,
+      manualPractice: existingCp?.userEditedPractice ? existingCp.practiceScore ?? null : null,
+      userEditedTheory: Boolean(existingCp?.userEditedTheory),
+      userEditedPractice: Boolean(existingCp?.userEditedPractice),
+    });
+
+    const attUpper = String(currentFb?.attendanceStatus || "UNKNOWN").trim().toUpperCase();
+    const isActiveForWarning =
+      (students.length === 0 || activeStudentNameById.has(studentId)) &&
+      attUpper !== "ABSENT" &&
+      attUpper !== "EXCUSED";
+    if (reconciled.hasUngradedPractice && isActiveForWarning) {
+      ungradedPracticeStudents.push(activeStudentNameById.get(studentId) || studentId);
+    }
 
     const computed = computeStudentProcessCompetency({
       classCode: classId,
       sessionNumber,
-      theoryScore: existingCp?.theoryScore ?? null,
-      practiceScore: existingCp?.practiceScore ?? null,
+      theoryScore: reconciled.theoryScore,
+      practiceScore: reconciled.practiceScore,
       priorFeedbacks: feedbacksByStudent.get(studentId) || [],
       classroomLogs: logsByStudent.get(studentId) || [],
       homeworkHistory: hwByStudent.get(studentId) || null,
@@ -298,9 +449,18 @@ export function computeCheckpointDataForSession(
       Boolean(existingCp?.userEditedCompetency) &&
       Boolean(existingCp?.competencyScores);
 
+    const extraCheckpointMeta = {
+      slotTheoryScore: slotTheory,
+      slotPracticeScore: slotPractice,
+      userEditedTheory: Boolean(existingCp?.userEditedTheory),
+      userEditedPractice: Boolean(existingCp?.userEditedPractice),
+      hasUngradedPractice: reconciled.hasUngradedPractice,
+    };
+
     const finalCp: CheckpointStudentData = preserveManualCompetency
       ? {
           ...computed,
+          ...extraCheckpointMeta,
           competencyScores: existingCp!.competencyScores,
           competencyAverage: existingCp!.competencyAverage,
           source: "MANUAL_UI",
@@ -310,6 +470,7 @@ export function computeCheckpointDataForSession(
         }
       : {
           ...computed,
+          ...extraCheckpointMeta,
           lmsSyncedAt: existingCp?.lmsSyncedAt ?? null,
           approvedSnapshotHash: existingCp?.approvedSnapshotHash ?? null,
         };
@@ -370,6 +531,8 @@ export function computeCheckpointDataForSession(
             !existingCp ||
             JSON.stringify(existingCp.processSummary || null) !==
               JSON.stringify(finalCp.processSummary || null) ||
+            Boolean(existingCp.hasUngradedPractice) !== Boolean(finalCp.hasUngradedPractice) ||
+            existingCp.slotTheoryScore === undefined ||
             !existingCp.competencyScores)
         ) {
           updateCpOnlyStmt.run(nextJson, classId, sessionId, studentId);
@@ -394,5 +557,6 @@ export function computeCheckpointDataForSession(
     cpStage: stage.cpStage,
     byStudent,
     updatedCount,
+    ungradedPracticeStudents,
   };
 }

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { validateLocalRequest } from "@/lib/security/local-guard";
-import { sessionFeedbackRepo, studentRepo } from "@/lib/db/sqlite";
+import {
+  resolveRestoredLmsCheckpointScores2dp,
+  sessionFeedbackRepo,
+  studentRepo,
+  syncCheckpointScoresIntoExistingReportCard,
+} from "@/lib/db/sqlite";
 import {
   calculateCompetencyAveragePure,
   hasCompleteCompetencyScores,
@@ -288,6 +293,17 @@ function saveSingleDraftItem(params: {
       ["practiceScore", checkpointData.practiceScore],
     ] as const) {
       if (scoreVal !== undefined && scoreVal !== null && scoreVal !== "") {
+        if (typeof scoreVal === "boolean") {
+          return {
+            statusHttp: 400,
+            studentId,
+            body: {
+              success: false,
+              studentId,
+              error: `Điểm '${scoreKey}' của học viên '${studentId}' không hợp lệ.`,
+            },
+          };
+        }
         const parsedScore = safeNormalizeScoreSd(scoreVal);
         if (parsedScore === null || parsedScore < 0 || parsedScore > 5) {
           return {
@@ -472,9 +488,10 @@ function saveSingleDraftItem(params: {
   meta.rowVer = (meta.rowVer || 0) + 1;
   fallbackMetaByRow.set(rowScopeKey, meta);
 
+  const prevCpBeforeSave = safeParseCpDataSd(existing?.checkpointDataJson);
   let nextCheckpointDataJson: string | undefined = existing?.checkpointDataJson;
   if (freshCheckpointData && checkpointData && typeof checkpointData === "object") {
-    const existingCp = safeParseCpDataSd(existing?.checkpointDataJson);
+    const existingCp = prevCpBeforeSave;
     const sessMatch = sessionId.match(/(?:^|[_-])SESS(?:ION)?[_-]?0*(\d+)$/i);
     const inferredStage = sessMatch
       ? safeResolveCpStageSd(classId, Number(sessMatch[1])).cpStage
@@ -494,13 +511,49 @@ function saveSingleDraftItem(params: {
       ...checkpointData,
       cpStage: resolvedStage,
       theoryScore:
-        checkpointData.theoryScore !== undefined
-          ? safeNormalizeScoreSd(checkpointData.theoryScore)
-          : existingCp?.theoryScore ?? null,
+        checkpointData.theoryScore === null
+          ? null
+          : checkpointData.theoryScore !== undefined
+            ? safeNormalizeScoreSd(checkpointData.theoryScore)
+            : existingCp?.theoryScore ?? null,
       practiceScore:
-        checkpointData.practiceScore !== undefined
-          ? safeNormalizeScoreSd(checkpointData.practiceScore)
-          : existingCp?.practiceScore ?? null,
+        checkpointData.practiceScore === null
+          ? null
+          : checkpointData.practiceScore !== undefined
+            ? safeNormalizeScoreSd(checkpointData.practiceScore)
+            : existingCp?.practiceScore ?? null,
+      ...(checkpointData.slotTheoryScore !== undefined
+        ? {
+            slotTheoryScore:
+              checkpointData.slotTheoryScore === null
+                ? null
+                : safeNormalizeScoreSd(checkpointData.slotTheoryScore),
+          }
+        : existingCp?.slotTheoryScore !== undefined
+          ? { slotTheoryScore: existingCp.slotTheoryScore }
+          : {}),
+      ...(checkpointData.slotPracticeScore !== undefined
+        ? {
+            slotPracticeScore:
+              checkpointData.slotPracticeScore === null
+                ? null
+                : safeNormalizeScoreSd(checkpointData.slotPracticeScore),
+          }
+        : existingCp?.slotPracticeScore !== undefined
+          ? { slotPracticeScore: existingCp.slotPracticeScore }
+          : {}),
+      userEditedTheory:
+        checkpointData.userEditedTheory !== undefined
+          ? Boolean(checkpointData.userEditedTheory)
+          : Boolean(existingCp?.userEditedTheory),
+      userEditedPractice:
+        checkpointData.userEditedPractice !== undefined
+          ? Boolean(checkpointData.userEditedPractice)
+          : Boolean(existingCp?.userEditedPractice),
+      hasUngradedPractice:
+        checkpointData.hasUngradedPractice !== undefined
+          ? Boolean(checkpointData.hasUngradedPractice)
+          : Boolean(existingCp?.hasUngradedPractice),
       competencyScores: nextCompScores,
       competencyAverage: nextCompAvg,
       lmsCompetencyScores:
@@ -553,6 +606,74 @@ function saveSingleDraftItem(params: {
     versionMetaJson: JSON.stringify(meta),
     checkpointDataJson: nextCheckpointDataJson,
   });
+
+  if (
+    freshCheckpointData &&
+    checkpointData &&
+    typeof checkpointData === "object" &&
+    typeof syncCheckpointScoresIntoExistingReportCard === "function"
+  ) {
+    try {
+      const savedCp = safeParseCpDataSd(nextCheckpointDataJson);
+      if (savedCp && (savedCp.cpStage === 1 || savedCp.cpStage === 2)) {
+        const prevEditedTheory = Boolean(prevCpBeforeSave?.userEditedTheory);
+        const nextEditedTheory = Boolean(savedCp.userEditedTheory);
+        const prevEditedPractice = Boolean(prevCpBeforeSave?.userEditedPractice);
+        const nextEditedPractice = Boolean(savedCp.userEditedPractice);
+
+        const syncTheory =
+          prevEditedTheory !== nextEditedTheory ||
+          (nextEditedTheory &&
+            (savedCp.theoryScore ?? null) !== (prevCpBeforeSave?.theoryScore ?? null));
+        const syncPractice =
+          prevEditedPractice !== nextEditedPractice ||
+          (nextEditedPractice &&
+            (savedCp.practiceScore ?? null) !== (prevCpBeforeSave?.practiceScore ?? null));
+
+        if (syncTheory || syncPractice) {
+          const needsLmsRestore2dp =
+            (syncTheory && !nextEditedTheory) || (syncPractice && !nextEditedPractice);
+          const restored2dp =
+            needsLmsRestore2dp && typeof resolveRestoredLmsCheckpointScores2dp === "function"
+              ? resolveRestoredLmsCheckpointScores2dp({
+                  classId,
+                  cpStage: savedCp.cpStage,
+                  isRobotics: Boolean(savedCp.isRobotics),
+                  studentId,
+                  slotTheoryScore:
+                    savedCp.slotTheoryScore !== undefined
+                      ? savedCp.slotTheoryScore
+                      : !nextEditedTheory
+                        ? savedCp.theoryScore ?? null
+                        : null,
+                  slotPracticeScore:
+                    savedCp.slotPracticeScore !== undefined
+                      ? savedCp.slotPracticeScore
+                      : !nextEditedPractice
+                        ? savedCp.practiceScore ?? null
+                        : null,
+                })
+              : {
+                  theoryScore: savedCp.theoryScore ?? null,
+                  practiceScore: savedCp.practiceScore ?? null,
+                };
+
+          syncCheckpointScoresIntoExistingReportCard(classId, savedCp.cpStage, {
+            [studentId]: {
+              theoryScore: nextEditedTheory
+                ? savedCp.theoryScore ?? null
+                : restored2dp.theoryScore,
+              practiceScore: nextEditedPractice
+                ? savedCp.practiceScore ?? null
+                : restored2dp.practiceScore,
+              syncTheory,
+              syncPractice,
+            },
+          });
+        }
+      }
+    } catch {}
+  }
 
   return {
     statusHttp: 200,

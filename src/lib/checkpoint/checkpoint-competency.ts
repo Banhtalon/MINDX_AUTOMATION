@@ -1,12 +1,13 @@
 /**
- * MINDX AUTOMATION BOT - CHECKPOINT STAGE PROCESS & [ĐNL] COMPETENCY ENGINE (v3.7.0)
+ * MINDX AUTOMATION BOT - CHECKPOINT STAGE PROCESS & [ĐNL] COMPETENCY ENGINE (v3.8.6)
  * Pure, deterministic helpers (browser + server safe) for:
  *  1. Resolving Checkpoint sessions (Robotics: Buổi 4 & 8; Coding: Buổi 5 & 9).
  *  2. Parsing MindX LMS `commentByAreas` Checkpoint scores (LT & TH scale 5) + 9 `[ĐNL]` ratings.
- *  3. Computing process-based 9 `[ĐNL]` competency ratings (1..5) from stage history
+ *  3. Reconciling #tab-10 slot manual LT/TH scores vs #tab-3 Submission Quiz/Practice scores + UI manual overrides.
+ *  4. Computing process-based 9 `[ĐNL]` competency ratings (1..5) from stage history
  *     (prior session_feedbacks + classroom_session_logs + Coding BTVN matrix + LMS LT/TH scores).
- *  4. Formatting the deterministic Checkpoint score line (`📊 Kết quả Checkpoint [1/2]: ...`).
- *  5. Building the Zalo Group Checkpoint overview & praise block WITHOUT exposing per-student numeric scores.
+ *  5. Formatting the deterministic Checkpoint score line (`📊 Kết quả Checkpoint [1/2]: ...`).
+ *  6. Building the Zalo Group Checkpoint overview & praise block WITHOUT exposing per-student numeric scores.
  */
 
 import {
@@ -83,10 +84,20 @@ export interface CheckpointProcessSummary {
 export interface CheckpointStudentData {
   cpStage: 1 | 2;
   isRobotics: boolean;
-  /** Lý thuyết trên LMS (thang 5.0) — do giáo viên chấm */
+  /** Lý thuyết trên LMS (thang 5.0) — hợp nhất giữa #tab-10 và #tab-3 */
   theoryScore: number | null;
-  /** Thực hành trên LMS (thang 5.0) — do giáo viên chấm */
+  /** Thực hành trên LMS (thang 5.0) — hợp nhất giữa #tab-10 và #tab-3 */
   practiceScore: number | null;
+  /** Điểm Lý thuyết thô đọc trực tiếp từ #tab-10 Nhận xét LMS (thang 5.0) */
+  slotTheoryScore?: number | null;
+  /** Điểm Thực hành thô đọc trực tiếp từ #tab-10 Nhận xét LMS (thang 5.0) */
+  slotPracticeScore?: number | null;
+  /** Giáo viên chỉnh tay điểm Lý thuyết ngay trong Bot UI */
+  userEditedTheory?: boolean;
+  /** Giáo viên chỉnh tay điểm Thực hành ngay trong Bot UI */
+  userEditedPractice?: boolean;
+  /** Học viên đã nộp bài Thực hành Checkpoint bên #tab-3 LMS nhưng chưa chấm (0/1) */
+  hasUngradedPractice?: boolean;
   /** 9 ô [ĐNL] (1..5) — Bot tự tính theo quá trình hoặc giáo viên chỉnh tay */
   competencyScores: CompetencyScores | null;
   competencyAverage: number | null;
@@ -184,8 +195,9 @@ export function resolveCheckpointStageForSession(
  * Chuẩn hóa điểm từ nhiều thang (100, 10, 5) về thang 5.0 (làm tròn 1 chữ số thập phân).
  */
 export function normalizeScoreToScale5(raw: unknown): number | null {
-  if (raw === null || raw === undefined || raw === "") return null;
+  if (raw === null || raw === undefined || typeof raw === "boolean" || raw === "") return null;
   const cleaned = typeof raw === "string" ? raw.replace(",", ".").trim() : raw;
+  if (cleaned === "") return null;
   const val = Number(cleaned);
   if (!Number.isFinite(val) || val < 0) return null;
   let scaled = val;
@@ -198,6 +210,152 @@ export function normalizeScoreToScale5(raw: unknown): number | null {
   }
   const clamped = Math.max(0, Math.min(5, scaled));
   return Math.round(clamped * 10) / 10;
+}
+
+/**
+ * Quy đổi điểm từ mục Chấm bài (`#tab-3 Submission`, mặc định thang 100) trực tiếp về thang 5.0 (1dp).
+ * Khác với `normalizeScoreToScale5` ở chỗ `10/100` phải thành `0.5/5.0` thay vì đoán nhầm thang 10 (`5.0`).
+ */
+export function scaleSubmissionScoreTo5(raw: unknown, maxScore = 100): number | null {
+  if (raw === null || raw === undefined || typeof raw === "boolean" || raw === "") return null;
+  const cleaned = typeof raw === "string" ? raw.replace(",", ".").trim() : raw;
+  if (cleaned === "") return null;
+  const val = Number(cleaned);
+  if (!Number.isFinite(val) || val < 0) return null;
+  const safeMax =
+    typeof maxScore === "number" && Number.isFinite(maxScore) && maxScore > 0 ? maxScore : 100;
+  const scaled = (val / safeMax) * 5;
+  const clamped = Math.max(0, Math.min(5, scaled));
+  return Math.round(clamped * 10) / 10;
+}
+
+/**
+ * Xác định chặng Checkpoint (1 hoặc 2) từ metadata cột/bài học trong `#tab-3 Chấm bài`.
+ */
+export function resolveCheckpointColumnStagePure(lesson: {
+  id?: string | null;
+  title?: string | null;
+  lessonType?: string | null;
+}): 1 | 2 | null {
+  const titleStr = String(lesson?.title || "").trim();
+  const idStr = String(lesson?.id || "").trim();
+  const typeUpper = String(lesson?.lessonType || "").trim().toUpperCase();
+  const isCheckpointTypeOrTitle =
+    typeUpper === "CHECKPOINT" ||
+    /bài\s*kiểm\s*tra|kiểm\s*tra\s*định\s*kỳ|checkpoint|\bcp\s*0?[12]\b/i.test(titleStr);
+  if (!isCheckpointTypeOrTitle) return null;
+
+  const combined = `${titleStr} ${idStr}`.trim();
+  if (
+    /(?:checkpoint|check\s*[-_]?\s*point|cp|lần|định\s*kỳ(?:\s*lần)?)\s*[-_#]?\s*0?2\b/i.test(
+      combined
+    ) ||
+    /(?:buổi|bài|session|slot|lesson)\s*0?(?:8|9)\b/i.test(titleStr)
+  ) {
+    return 2;
+  }
+  if (
+    /(?:checkpoint|check\s*[-_]?\s*point|cp|lần|định\s*kỳ(?:\s*lần)?)\s*[-_#]?\s*0?1\b/i.test(
+      combined
+    ) ||
+    /(?:buổi|bài|session|slot|lesson)\s*0?(?:4|5)\b/i.test(titleStr)
+  ) {
+    return 1;
+  }
+  return null;
+}
+
+export interface ReconcileCheckpointTestScoresInput {
+  slotTheory: number | null | undefined;
+  slotPractice: number | null | undefined;
+  subTheory: number | null | undefined;
+  subPractice: number | null | undefined;
+  subPracticeStatus?: string | null;
+  subPracticeHasAttachments?: boolean;
+  manualTheory?: number | null;
+  manualPractice?: number | null;
+  userEditedTheory?: boolean;
+  userEditedPractice?: boolean;
+}
+
+export interface ReconcileCheckpointTestScoresResult {
+  theoryScore: number | null;
+  practiceScore: number | null;
+  hasUngradedPractice: boolean;
+}
+
+/**
+ * Hợp nhất điểm Kiểm tra Lý thuyết / Thực hành theo thứ tự ưu tiên chuẩn:
+ * 1. Điểm sửa tay trực tiếp trong Bot UI (`userEditedTheory` / `userEditedPractice`) — nếu giáo viên đã nhập tay.
+ * 2. Điểm chấm tay ở trang Nhận xét LMS (`#tab-10`, > 0) — bảo vệ điểm tay như Đặng Trọng Khang khỏi Quiz=0 ở #tab-3.
+ * 3. Điểm hệ thống/chấm bài ở `#tab-3 Submission` (> 0) — tự lấy Quiz/TH của các lớp kiểu mới (`CSA04`).
+ * 4. Chốt chống 0 điểm oan: nếu bài TH ở `#tab-3` đang nộp file chờ chấm (`SUBMITTED_UNGRADED`/`REDO_REQUESTED` có file/ngày nộp) và chưa có điểm TH `> 0` ở `#tab-10`, trả `practiceScore = null` & `hasUngradedPractice = true`.
+ * 5. Cuối cùng mới nhận giá trị `0` tường minh từ `#tab-10` hoặc `#tab-3`; nếu đều trống trả `null`.
+ */
+export function reconcileCheckpointTestScores(
+  params: ReconcileCheckpointTestScoresInput
+): ReconcileCheckpointTestScoresResult {
+  const normOpt = (v: unknown): number | null => {
+    if (v === null || v === undefined || typeof v === "boolean" || v === "") return null;
+    const n = Number(v);
+    if (!Number.isFinite(n) || n < 0) return null;
+    return Math.round(Math.max(0, Math.min(5, n)) * 100) / 100;
+  };
+
+  const slotLt = normOpt(params.slotTheory);
+  const slotTh = normOpt(params.slotPractice);
+  const subLt = normOpt(params.subTheory);
+  const subTh = normOpt(params.subPractice);
+  const manualLt = normOpt(params.manualTheory);
+  const manualTh = normOpt(params.manualPractice);
+
+  let theoryScore: number | null = null;
+  if (params.userEditedTheory && manualLt !== null) {
+    theoryScore = manualLt;
+  } else if (slotLt !== null && slotLt > 0) {
+    theoryScore = slotLt;
+  } else if (subLt !== null && subLt > 0) {
+    theoryScore = subLt;
+  } else if (slotLt === 0) {
+    theoryScore = 0;
+  } else if (subLt === 0) {
+    theoryScore = 0;
+  }
+
+  const subStatusUpper = String(params.subPracticeStatus || "").trim().toUpperCase();
+  const isWaitingTeacherGradeOnSub =
+    subTh === null &&
+    (subStatusUpper === "SUBMITTED_UNGRADED" || subStatusUpper === "REDO_REQUESTED") &&
+    Boolean(params.subPracticeHasAttachments);
+
+  let practiceScore: number | null = null;
+  let hasUngradedPractice = false;
+
+  if (params.userEditedPractice && manualTh !== null) {
+    practiceScore = manualTh;
+    hasUngradedPractice = false;
+  } else if (slotTh !== null && slotTh > 0) {
+    practiceScore = slotTh;
+    hasUngradedPractice = false;
+  } else if (subTh !== null && subTh > 0) {
+    practiceScore = subTh;
+    hasUngradedPractice = false;
+  } else if (isWaitingTeacherGradeOnSub) {
+    practiceScore = null;
+    hasUngradedPractice = true;
+  } else if (slotTh === 0) {
+    practiceScore = 0;
+    hasUngradedPractice = false;
+  } else if (subTh === 0) {
+    practiceScore = 0;
+    hasUngradedPractice = false;
+  }
+
+  return {
+    theoryScore,
+    practiceScore,
+    hasUngradedPractice,
+  };
 }
 
 function stripHtmlPlain(raw: string): string {
@@ -485,11 +643,32 @@ export function parseCheckpointDataJson(raw?: string | null): CheckpointStudentD
       ? parseCompetencyScoresPure(parsed.lmsCompetencyScores)
       : null;
 
+    const normTheory = normalizeScoreToScale5(parsed.theoryScore);
+    const normPractice = normalizeScoreToScale5(parsed.practiceScore);
+    const userEditedTheory = Boolean(parsed.userEditedTheory);
+    const userEditedPractice = Boolean(parsed.userEditedPractice);
+
     return {
       cpStage,
       isRobotics: Boolean(parsed.isRobotics),
-      theoryScore: normalizeScoreToScale5(parsed.theoryScore),
-      practiceScore: normalizeScoreToScale5(parsed.practiceScore),
+      theoryScore: normTheory,
+      practiceScore: normPractice,
+      ...(parsed.slotTheoryScore !== undefined
+        ? {
+            slotTheoryScore:
+              parsed.slotTheoryScore === null ? null : normalizeScoreToScale5(parsed.slotTheoryScore),
+          }
+        : {}),
+      ...(parsed.slotPracticeScore !== undefined
+        ? {
+            slotPracticeScore:
+              parsed.slotPracticeScore === null ? null : normalizeScoreToScale5(parsed.slotPracticeScore),
+          }
+        : {}),
+      userEditedTheory,
+      userEditedPractice,
+      hasUngradedPractice:
+        Boolean(parsed.hasUngradedPractice) && normPractice === null && !userEditedPractice,
       competencyScores: compScores,
       competencyAverage: compAvg,
       lmsCompetencyScores: lmsComp,
@@ -526,12 +705,68 @@ export function mergeCheckpointStudentData(
     ? calculateCompetencyAveragePure(mergedCompScores)
     : primary.competencyAverage ?? fallbackComputed.competencyAverage ?? null;
 
+  const primaryEditedTheory = Boolean(primary.userEditedTheory);
+  const primaryEditedPractice = Boolean(primary.userEditedPractice);
+
+  const mergedTheory = primaryEditedTheory
+    ? primary.theoryScore ?? null
+    : primary.theoryScore !== null && primary.theoryScore !== undefined
+      ? primary.theoryScore === 0 &&
+        typeof fallbackComputed.theoryScore === "number" &&
+        fallbackComputed.theoryScore > 0
+        ? fallbackComputed.theoryScore
+        : primary.theoryScore
+      : fallbackComputed.theoryScore;
+
+  let mergedPractice: number | null;
+  let mergedHasUngradedPractice: boolean;
+  if (primaryEditedPractice) {
+    mergedPractice = primary.practiceScore ?? null;
+    mergedHasUngradedPractice = false;
+  } else if (
+    Boolean(fallbackComputed.hasUngradedPractice) &&
+    (primary.practiceScore === null ||
+      primary.practiceScore === undefined ||
+      primary.practiceScore === 0)
+  ) {
+    mergedPractice = fallbackComputed.practiceScore ?? null;
+    mergedHasUngradedPractice = true;
+  } else if (primary.practiceScore !== null && primary.practiceScore !== undefined) {
+    mergedPractice =
+      primary.practiceScore === 0 &&
+      typeof fallbackComputed.practiceScore === "number" &&
+      fallbackComputed.practiceScore > 0
+        ? fallbackComputed.practiceScore
+        : primary.practiceScore;
+    mergedHasUngradedPractice = Boolean(
+      primary.hasUngradedPractice ?? fallbackComputed.hasUngradedPractice
+    );
+  } else {
+    mergedPractice = fallbackComputed.practiceScore;
+    mergedHasUngradedPractice = Boolean(
+      fallbackComputed.hasUngradedPractice ?? primary.hasUngradedPractice
+    );
+  }
+  if (mergedPractice !== null || primaryEditedPractice || Boolean(fallbackComputed.userEditedPractice)) {
+    mergedHasUngradedPractice = false;
+  }
+
   return {
     ...fallbackComputed,
     ...primary,
-    theoryScore: primary.theoryScore !== null ? primary.theoryScore : fallbackComputed.theoryScore,
-    practiceScore:
-      primary.practiceScore !== null ? primary.practiceScore : fallbackComputed.practiceScore,
+    theoryScore: mergedTheory,
+    practiceScore: mergedPractice,
+    slotTheoryScore:
+      primary.slotTheoryScore !== undefined
+        ? primary.slotTheoryScore
+        : fallbackComputed.slotTheoryScore,
+    slotPracticeScore:
+      primary.slotPracticeScore !== undefined
+        ? primary.slotPracticeScore
+        : fallbackComputed.slotPracticeScore,
+    userEditedTheory: primaryEditedTheory || Boolean(fallbackComputed.userEditedTheory),
+    userEditedPractice: primaryEditedPractice || Boolean(fallbackComputed.userEditedPractice),
+    hasUngradedPractice: mergedHasUngradedPractice,
     competencyScores: mergedCompScores,
     competencyAverage: mergedCompAvg,
     lmsCompetencyScores: primary.lmsCompetencyScores || fallbackComputed.lmsCompetencyScores || null,

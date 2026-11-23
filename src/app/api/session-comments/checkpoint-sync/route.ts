@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { taskQueue } from "@/lib/queue/task-queue";
 import { ClassSyncer } from "@/lib/playwright/sync-class";
+import { ScoreScraper } from "@/lib/playwright/scrape-scores";
 import { classSessionRepo } from "@/lib/db/sqlite";
 import { resolveCheckpointStageForSession } from "@/lib/checkpoint/checkpoint-competency";
 import { computeCheckpointDataForSession } from "@/lib/checkpoint/checkpoint-history-loader";
@@ -98,6 +99,7 @@ export async function POST(req: Request) {
     }
 
     let lmsSyncResult: any = null;
+    let scoreScrapeWarning: string | null = null;
     if (syncFromLms) {
       lmsSyncResult = await taskQueue.enqueue({
         id: `cp_sync_${classCode}_${Date.now()}`,
@@ -105,11 +107,24 @@ export async function POST(req: Request) {
         description: `Đọc điểm KT & đồng bộ Checkpoint ${classCode}`,
         classId: classCode,
         execute: async () => {
-          return ClassSyncer.syncClass(classCode, {
+          const syncRes = await ClassSyncer.syncClass(classCode, {
             forceFreshDrawer: true,
             syncLmsCompletionStatus: true,
             preferLmsVerified: false,
           });
+          if (!stageInfo.isRobotics) {
+            try {
+              const scrapeRes = await ScoreScraper.scrapeClassScores(classCode);
+              if (scrapeRes && scrapeRes.success === false) {
+                scoreScrapeWarning =
+                  scrapeRes.error || "Không thu thập được dữ liệu mục Chấm bài (#tab-3).";
+              }
+            } catch (scrapeErr: any) {
+              scoreScrapeWarning =
+                scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr);
+            }
+          }
+          return syncRes;
         },
       });
     }
@@ -137,8 +152,10 @@ export async function POST(req: Request) {
       cpStage: computed.cpStage,
       updatedCount: computed.updatedCount,
       byStudent: computed.byStudent,
+      ungradedPracticeStudents: computed.ungradedPracticeStudents || [],
       lmsSynced: syncFromLms,
       lmsSyncResult,
+      ...(scoreScrapeWarning ? { scoreScrapeWarning } : {}),
     });
   } catch (err: any) {
     return NextResponse.json(

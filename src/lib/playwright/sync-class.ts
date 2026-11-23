@@ -1478,14 +1478,38 @@ export class ClassSyncer {
                   (k) => extractedCp.competencyScores![k] === existingCp!.competencyScores![k]
                 ))
           );
-          const nextTheory =
-            extractedCp.theoryScore !== null
-              ? extractedCp.theoryScore
-              : existingCp?.theoryScore ?? null;
-          const nextPractice =
-            extractedCp.practiceScore !== null
-              ? extractedCp.practiceScore
-              : existingCp?.practiceScore ?? null;
+          const keepSubTheoryOverSlotZero =
+            !cpStageInfo.isRobotics &&
+            extractedCp.theoryScore === 0 &&
+            (existingCp?.slotTheoryScore === null || existingCp?.slotTheoryScore === 0) &&
+            typeof existingCp?.theoryScore === "number" &&
+            existingCp.theoryScore > 0;
+          const nextTheory = existingCp?.userEditedTheory
+            ? existingCp.theoryScore ?? null
+            : keepSubTheoryOverSlotZero
+              ? existingCp!.theoryScore
+              : extractedCp.theoryScore !== null
+                ? extractedCp.theoryScore
+                : existingCp?.theoryScore ?? null;
+
+          const keepSubPracticeOverSlotZero =
+            !cpStageInfo.isRobotics &&
+            extractedCp.practiceScore === 0 &&
+            (((existingCp?.slotPracticeScore === null || existingCp?.slotPracticeScore === 0) &&
+              typeof existingCp?.practiceScore === "number" &&
+              existingCp.practiceScore > 0) ||
+              ((existingCp?.slotPracticeScore === null ||
+                existingCp?.slotPracticeScore === 0 ||
+                existingCp?.slotPracticeScore === undefined) &&
+                Boolean(existingCp?.hasUngradedPractice) &&
+                existingCp?.practiceScore === null));
+          const nextPractice = existingCp?.userEditedPractice
+            ? existingCp.practiceScore ?? null
+            : keepSubPracticeOverSlotZero
+              ? (existingCp!.practiceScore ?? null)
+              : extractedCp.practiceScore !== null
+                ? extractedCp.practiceScore
+                : existingCp?.practiceScore ?? null;
           const nextCompetency =
             existingCp?.competencyScores || extractedCp.competencyScores || null;
           const nextCompAvg =
@@ -1495,10 +1519,12 @@ export class ClassSyncer {
 
           if (
             existingCp &&
-            ((extractedCp.theoryScore !== null &&
-              extractedCp.theoryScore !== existingCp.theoryScore) ||
-              (extractedCp.practiceScore !== null &&
-                extractedCp.practiceScore !== existingCp.practiceScore))
+            ((!existingCp.userEditedTheory &&
+              nextTheory !== existingCp.theoryScore &&
+              extractedCp.theoryScore !== null) ||
+              (!existingCp.userEditedPractice &&
+                nextPractice !== existingCp.practiceScore &&
+                extractedCp.practiceScore !== null))
           ) {
             cpScoresChangedFromApproved = true;
           }
@@ -1550,6 +1576,14 @@ export class ClassSyncer {
               isRobotics: cpStageInfo.isRobotics,
               theoryScore: nextTheory,
               practiceScore: nextPractice,
+              slotTheoryScore: extractedCp.theoryScore,
+              slotPracticeScore: extractedCp.practiceScore,
+              userEditedTheory: Boolean(existingCp?.userEditedTheory),
+              userEditedPractice: Boolean(existingCp?.userEditedPractice),
+              hasUngradedPractice:
+                Boolean(existingCp?.hasUngradedPractice) &&
+                nextPractice === null &&
+                !existingCp?.userEditedPractice,
               competencyScores: nextCompetency,
               competencyAverage: nextCompAvg,
               lmsCompetencyScores:

@@ -513,6 +513,9 @@ export default function SessionCommentsPage() {
   // Checkpoint [ĐNL] Modal & Sync State
   const [isSyncingCheckpoint, setIsSyncingCheckpoint] = useState(false);
   const [editingCompetencyStudentId, setEditingCompetencyStudentId] = useState<string | null>(null);
+  const [manualTheoryInput, setManualTheoryInput] = useState<string>("");
+  const [manualPracticeInput, setManualPracticeInput] = useState<string>("");
+  const [isSavingManualCpScore, setIsSavingManualCpScore] = useState(false);
 
   // Status & loading states
   const [isSyncing, setIsSyncing] = useState(false);
@@ -968,6 +971,31 @@ export default function SessionCommentsPage() {
                 }
               }
             }
+            const mergedCp = safeMergeCpDataUi(
+              safeParseCpDataUi(fb?.checkpointDataJson),
+              checkpointByStudent[st.studentId] || null
+            );
+            let loadedFinalText = fb?.finalText || "";
+            const fbStatusUpper = String(fb?.status || "DRAFT").trim().toUpperCase();
+            if (
+              mergedCp &&
+              fbStatusUpper !== "APPROVED" &&
+              fbStatusUpper !== "VERIFIED" &&
+              fbStatusUpper !== "SAVING" &&
+              loadedFinalText.trim().length > 0 &&
+              !loadedFinalText.startsWith("Chưa đủ thông tin") &&
+              /📊\s*\*\*Kết quả Checkpoint/i.test(loadedFinalText)
+            ) {
+              const refreshedHeader = safeFormatCpHeaderUi({
+                cpStage: mergedCp.cpStage,
+                theoryScore: mergedCp.theoryScore,
+                practiceScore: mergedCp.practiceScore,
+                competencyAverage: mergedCp.competencyAverage ?? null,
+              });
+              if (refreshedHeader) {
+                loadedFinalText = safeUpsertCpHeaderUi(loadedFinalText, refreshedHeader);
+              }
+            }
             return {
               ...st,
               classId: effectiveClassId,
@@ -980,15 +1008,12 @@ export default function SessionCommentsPage() {
               strengths: fb?.strengths || "",
               improvements: fb?.improvements || "",
               actionPlan: fb?.actionPlan || "",
-              finalText: fb?.finalText || "",
+              finalText: loadedFinalText,
               contentHash: fb?.contentHash || "",
               status: fb?.status || "DRAFT",
               verifiedAt: fb?.verifiedAt,
               errorMessage: fb?.errorMessage,
-              checkpointData: safeMergeCpDataUi(
-                safeParseCpDataUi(fb?.checkpointDataJson),
-                checkpointByStudent[st.studentId] || null
-              ),
+              checkpointData: mergedCp,
             };
           });
 
@@ -3861,9 +3886,23 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
 
       await loadClassData(reqClassId, reqSessionId, { preserveLocalUnsavedEdits: false });
 
+      const ungradedList: string[] = Array.isArray(data.ungradedPracticeStudents)
+        ? data.ungradedPracticeStudents
+        : [];
+      const extraWarnParts: string[] = [];
+      if (ungradedList.length > 0) {
+        extraWarnParts.push(
+          `⚠️ Lưu ý: Còn ${ungradedList.length} học viên đã nộp bài Thực hành bên Chấm bài LMS nhưng chưa chấm (${ungradedList.join(", ")}) — Bot để trống TH để tránh nhầm 0 điểm.`
+        );
+      }
+      if (data.scoreScrapeWarning) {
+        extraWarnParts.push(`⚠️ Lưu ý đọc mục Chấm bài: ${data.scoreScrapeWarning}`);
+      }
+      const extraWarn = extraWarnParts.length > 0 ? ` ${extraWarnParts.join(" ")}` : "";
+
       setStatusMessage({
         type: "success",
-        text: `✅ Đã cập nhật điểm Kiểm tra & tự tính 9 ô [ĐNL] theo quá trình cho ${data.updatedCount || 0} học viên (Buổi ${activeSessionNumber}).`,
+        text: `✅ Đã cập nhật điểm Kiểm tra & tự tính 9 ô [ĐNL] theo quá trình cho ${data.updatedCount || 0} học viên (Buổi ${activeSessionNumber}).${extraWarn}`,
       });
     } catch (err: any) {
       setStatusMessage({
@@ -3915,6 +3954,283 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
     }
 
     void saveDraftToServer(studentId, nextPatch);
+  };
+
+  const modalTargetCp = editingCompetencyStudentId
+    ? students.find((s) => s.studentId === editingCompetencyStudentId)?.checkpointData
+    : undefined;
+  const modalSyncedTheory = modalTargetCp?.theoryScore ?? null;
+  const modalSyncedPractice = modalTargetCp?.practiceScore ?? null;
+
+  useEffect(() => {
+    if (!editingCompetencyStudentId) {
+      setManualTheoryInput("");
+      return;
+    }
+    setManualTheoryInput(
+      typeof modalSyncedTheory === "number" && Number.isFinite(modalSyncedTheory)
+        ? modalSyncedTheory.toFixed(1)
+        : ""
+    );
+  }, [editingCompetencyStudentId, modalSyncedTheory]);
+
+  useEffect(() => {
+    if (!editingCompetencyStudentId) {
+      setManualPracticeInput("");
+      return;
+    }
+    setManualPracticeInput(
+      typeof modalSyncedPractice === "number" && Number.isFinite(modalSyncedPractice)
+        ? modalSyncedPractice.toFixed(1)
+        : ""
+    );
+  }, [editingCompetencyStudentId, modalSyncedPractice]);
+
+  const handleResetManualCpScore = async (
+    studentId: string,
+    field: "theory" | "practice"
+  ) => {
+    const reqClassId = (classCode || classId).trim().toUpperCase();
+    const reqSessionId = selectedSessionId.trim();
+    if (!reqClassId || !reqSessionId || isSavingManualCpScore) {
+      return;
+    }
+
+    const flushedOk = await flushAllPendingDraftSaves();
+    if (
+      !flushedOk ||
+      activeClassIdRef.current !== reqClassId ||
+      activeSessionIdRef.current !== reqSessionId
+    ) {
+      return;
+    }
+
+    const stu = studentsRef.current.find((s) => s.studentId === studentId);
+    if (!stu || !stu.checkpointData) {
+      return;
+    }
+
+    const cp = stu.checkpointData;
+    const restoredScore =
+      field === "theory"
+        ? cp.slotTheoryScore !== undefined
+          ? cp.slotTheoryScore
+          : null
+        : cp.slotPracticeScore !== undefined
+          ? cp.slotPracticeScore
+          : null;
+
+    const nextCp: CheckpointStudentData = {
+      ...cp,
+      ...(field === "theory"
+        ? { theoryScore: restoredScore, userEditedTheory: false }
+        : { practiceScore: restoredScore, userEditedPractice: false }),
+      userEditedCompetency: Boolean(cp.userEditedCompetency),
+      source: cp.userEditedCompetency ? "MANUAL_UI" : "AUTO_PROCESS",
+    };
+
+    const nextPatch: Partial<StudentItem> = {
+      checkpointData: nextCp,
+    };
+    if (
+      stu.finalText &&
+      stu.finalText.trim().length > 0 &&
+      !stu.finalText.startsWith("Chưa đủ thông tin")
+    ) {
+      const headerLine = safeFormatCpHeaderUi({
+        cpStage: nextCp.cpStage,
+        theoryScore: nextCp.theoryScore,
+        practiceScore: nextCp.practiceScore,
+        competencyAverage: nextCp.competencyAverage ?? null,
+      });
+      nextPatch.finalText = safeUpsertCpHeaderUi(stu.finalText, headerLine);
+    }
+
+    setIsSavingManualCpScore(true);
+    try {
+      const ok = await saveDraftToServer(studentId, nextPatch);
+      if (ok) {
+        let syncWarning = "";
+        try {
+          const syncRes = await fetch("/api/session-comments/checkpoint-sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              classCode: reqClassId,
+              sessionId: reqSessionId,
+              syncFromLms: false,
+              forceRecalculate: false,
+            }),
+          });
+          const syncData = await syncRes.json().catch(() => null);
+          if (!syncRes.ok || !syncData?.success) {
+            syncWarning = syncData?.error || `HTTP ${syncRes.status}`;
+          }
+        } catch (syncErr: any) {
+          syncWarning = syncErr?.message || String(syncErr);
+        }
+        await loadClassData(reqClassId, reqSessionId, { preserveLocalUnsavedEdits: false });
+        if (syncWarning) {
+          setStatusMessage({
+            type: "error",
+            text: `Đã khôi phục điểm nhưng tính lại [ĐNL] thất bại: ${syncWarning}`,
+          });
+        } else {
+          setStatusMessage({
+            type: "success",
+            text: `↺ Đã khôi phục điểm ${field === "theory" ? "Lý thuyết" : "Thực hành"} của ${stu.fullName} về dữ liệu LMS.`,
+          });
+        }
+      }
+    } finally {
+      setIsSavingManualCpScore(false);
+    }
+  };
+
+  const handleCommitManualCpScore = async (
+    studentId: string,
+    field: "theory" | "practice",
+    rawVal: string
+  ) => {
+    const reqClassId = (classCode || classId).trim().toUpperCase();
+    const reqSessionId = selectedSessionId.trim();
+    if (!reqClassId || !reqSessionId || isSavingManualCpScore) {
+      return;
+    }
+
+    const flushedOk = await flushAllPendingDraftSaves();
+    if (
+      !flushedOk ||
+      activeClassIdRef.current !== reqClassId ||
+      activeSessionIdRef.current !== reqSessionId
+    ) {
+      return;
+    }
+
+    const stu = studentsRef.current.find((s) => s.studentId === studentId);
+    if (!stu || !stu.checkpointData) {
+      return;
+    }
+
+    const cp = stu.checkpointData;
+    const trimmed = String(rawVal || "").trim();
+    if (!trimmed) {
+      const hadManual =
+        field === "theory" ? Boolean(cp.userEditedTheory) : Boolean(cp.userEditedPractice);
+      if (hadManual) {
+        await handleResetManualCpScore(studentId, field);
+      } else {
+        const curScore = field === "theory" ? cp.theoryScore : cp.practiceScore;
+        const formattedCur =
+          typeof curScore === "number" && Number.isFinite(curScore) ? curScore.toFixed(1) : "";
+        if (field === "theory") setManualTheoryInput(formattedCur);
+        else setManualPracticeInput(formattedCur);
+      }
+      return;
+    }
+
+    const num = Number(trimmed.replace(",", "."));
+    if (!Number.isFinite(num) || num < 0 || num > 5) {
+      const curScore = field === "theory" ? cp.theoryScore : cp.practiceScore;
+      const formattedCur =
+        typeof curScore === "number" && Number.isFinite(curScore) ? curScore.toFixed(1) : "";
+      if (field === "theory") setManualTheoryInput(formattedCur);
+      else setManualPracticeInput(formattedCur);
+      setStatusMessage({
+        type: "error",
+        text: "Điểm Checkpoint sửa tay phải nằm trong khoảng 0.0 đến 5.0.",
+      });
+      return;
+    }
+
+    const rounded = Math.round(num * 10) / 10;
+    const curScore = field === "theory" ? cp.theoryScore : cp.practiceScore;
+    const curManualFlag =
+      field === "theory" ? Boolean(cp.userEditedTheory) : Boolean(cp.userEditedPractice);
+
+    if (curScore === rounded) {
+      const formattedCur = rounded.toFixed(1);
+      if (field === "theory") setManualTheoryInput(formattedCur);
+      else setManualPracticeInput(formattedCur);
+      if (curManualFlag || curScore !== null) {
+        return;
+      }
+    }
+
+    const nextTheoryScore = field === "theory" ? rounded : cp.theoryScore;
+    const nextPracticeScore = field === "practice" ? rounded : cp.practiceScore;
+    const nextCp: CheckpointStudentData = {
+      ...cp,
+      theoryScore: nextTheoryScore,
+      practiceScore: nextPracticeScore,
+      ...(field === "theory"
+        ? { userEditedTheory: true }
+        : { userEditedPractice: true, hasUngradedPractice: false }),
+      userEditedCompetency: Boolean(cp.userEditedCompetency),
+      source: cp.userEditedCompetency ? "MANUAL_UI" : cp.source || "AUTO_PROCESS",
+    };
+
+    const nextPatch: Partial<StudentItem> = {
+      checkpointData: nextCp,
+    };
+    if (
+      stu.finalText &&
+      stu.finalText.trim().length > 0 &&
+      !stu.finalText.startsWith("Chưa đủ thông tin")
+    ) {
+      const headerLine = safeFormatCpHeaderUi({
+        cpStage: nextCp.cpStage,
+        theoryScore: nextCp.theoryScore,
+        practiceScore: nextCp.practiceScore,
+        competencyAverage: nextCp.competencyAverage ?? null,
+      });
+      nextPatch.finalText = safeUpsertCpHeaderUi(stu.finalText, headerLine);
+    }
+
+    if (field === "theory") setManualTheoryInput(rounded.toFixed(1));
+    else setManualPracticeInput(rounded.toFixed(1));
+
+    setIsSavingManualCpScore(true);
+    try {
+      const ok = await saveDraftToServer(studentId, nextPatch);
+      if (ok) {
+        let syncWarning = "";
+        if (!cp.userEditedCompetency) {
+          try {
+            const syncRes = await fetch("/api/session-comments/checkpoint-sync", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                classCode: reqClassId,
+                sessionId: reqSessionId,
+                syncFromLms: false,
+                forceRecalculate: false,
+              }),
+            });
+            const syncData = await syncRes.json().catch(() => null);
+            if (!syncRes.ok || !syncData?.success) {
+              syncWarning = syncData?.error || `HTTP ${syncRes.status}`;
+            }
+          } catch (syncErr: any) {
+            syncWarning = syncErr?.message || String(syncErr);
+          }
+        }
+        await loadClassData(reqClassId, reqSessionId, { preserveLocalUnsavedEdits: false });
+        if (syncWarning) {
+          setStatusMessage({
+            type: "error",
+            text: `Đã lưu điểm ${field === "theory" ? "Lý thuyết" : "Thực hành"} (${rounded.toFixed(1)}/5.0) nhưng đồng bộ lại [ĐNL] thất bại: ${syncWarning}`,
+          });
+        } else {
+          setStatusMessage({
+            type: "success",
+            text: `✅ Đã lưu điểm ${field === "theory" ? "Lý thuyết" : "Thực hành"} sửa tay (${rounded.toFixed(1)}/5.0) cho ${stu.fullName}.`,
+          });
+        }
+      }
+    } finally {
+      setIsSavingManualCpScore(false);
+    }
   };
 
   // Push to LMS (Single or All)
@@ -4295,44 +4611,72 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
         </div>
 
         {/* Checkpoint Session Banner (3.3 & v3.7.0 Auto [ĐNL] + Process Comment) */}
-        {isCurrentSessionCheckpoint && (
-          <div className="mindx-warm-box mt-4 p-3 rounded-xl text-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="flex items-start md:items-center gap-2">
-              <span className="text-base">📌</span>
-              <span>
-                <strong>Buổi Kiểm tra Định kỳ (Checkpoint — Buổi {activeSessionNumber}):</strong> Thầy chấm điểm Lý thuyết &amp; Thực hành trên LMS, rồi bấm nút bên cạnh để{" "}
-                <strong>Bot tự đọc điểm KT, tính &amp; tích sẵn 9 ô [ĐNL] theo quá trình</strong> và viết nhận xét kèm dòng điểm riêng.
-              </span>
+        {isCurrentSessionCheckpoint && (() => {
+          const ungradedPracticeNames = students
+            .filter((s) => {
+              const att = String(s.attendanceStatus || "").toUpperCase();
+              return (
+                att !== "ABSENT" &&
+                att !== "EXCUSED" &&
+                Boolean(s.checkpointData?.hasUngradedPractice) &&
+                !s.checkpointData?.userEditedPractice
+              );
+            })
+            .map((s) => s.fullName);
+
+          return (
+            <div className="mt-4">
+              <div className="mindx-warm-box p-3 rounded-xl text-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="flex items-start md:items-center gap-2">
+                  <span className="text-base">📌</span>
+                  <span>
+                    <strong>Buổi Kiểm tra Định kỳ (Checkpoint — Buổi {activeSessionNumber}):</strong> Thầy chấm điểm Lý thuyết &amp; Thực hành trên LMS, rồi bấm nút bên cạnh để{" "}
+                    <strong>Bot tự đọc điểm KT, tính &amp; tích sẵn 9 ô [ĐNL] theo quá trình</strong> và viết nhận xét kèm dòng điểm riêng.
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    data-testid="checkpoint-sync-btn"
+                    onClick={() => {
+                      void handleCheckpointSync(true);
+                    }}
+                    disabled={isSyncingCheckpoint || isSyncing}
+                    className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    title="Kết nối LMS lấy điểm Lý thuyết/Thực hành mới nhất thầy vừa chấm (cả mục Nhận xét lẫn Chấm bài) và tự động tính 9 ô [ĐNL] từ lịch sử các buổi trước"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCheckpoint ? "animate-spin" : ""}`} />
+                    {isSyncingCheckpoint ? "Đang đọc KT & Tính [ĐNL]..." : "📥 Đọc điểm KT & Tính [ĐNL]"}
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="checkpoint-recalc-btn"
+                    onClick={() => {
+                      void handleCheckpointSync(false);
+                    }}
+                    disabled={isSyncingCheckpoint || isSyncing}
+                    className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-amber-200 border border-amber-500/40 font-semibold text-[11px] transition cursor-pointer"
+                    title="Tính lại nhanh 9 ô [ĐNL] từ lịch sử trên máy (không mở lại LMS)"
+                  >
+                    ↻ Tính lại [ĐNL]
+                  </button>
+                </div>
+              </div>
+              {ungradedPracticeNames.length > 0 && (
+                <div
+                  data-testid="checkpoint-ungraded-practice-warning"
+                  className="mt-2 p-2.5 rounded-xl bg-amber-100 text-amber-950 border border-amber-400 dark:bg-amber-950/60 dark:text-amber-100 dark:border-amber-500/60 text-xs font-medium flex items-start gap-2"
+                >
+                  <span className="shrink-0">⚠️</span>
+                  <span>
+                    Còn <strong>{ungradedPracticeNames.length}</strong> học viên đã nộp bài Thực hành bên mục{" "}
+                    <strong>Chấm bài LMS</strong> nhưng chưa chấm điểm ({ungradedPracticeNames.join(", ")}) — Bot đang để trống điểm TH để không tính nhầm 0 điểm.
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              <button
-                type="button"
-                data-testid="checkpoint-sync-btn"
-                onClick={() => {
-                  void handleCheckpointSync(true);
-                }}
-                disabled={isSyncingCheckpoint || isSyncing}
-                className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
-                title="Kết nối LMS lấy điểm Lý thuyết/Thực hành mới nhất thầy vừa chấm và tự động tính 9 ô [ĐNL] từ lịch sử các buổi trước"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCheckpoint ? "animate-spin" : ""}`} />
-                {isSyncingCheckpoint ? "Đang đọc KT & Tính [ĐNL]..." : "📥 Đọc điểm KT & Tính [ĐNL]"}
-              </button>
-              <button
-                type="button"
-                data-testid="checkpoint-recalc-btn"
-                onClick={() => {
-                  void handleCheckpointSync(false);
-                }}
-                disabled={isSyncingCheckpoint || isSyncing}
-                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-amber-200 border border-amber-500/40 font-semibold text-[11px] transition cursor-pointer"
-                title="Tính lại nhanh 9 ô [ĐNL] từ lịch sử trên máy (không mở lại LMS)"
-              >
-                ↻ Tính lại [ĐNL]
-              </button>
-            </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* 3. Action Toolbar */}
@@ -4650,7 +4994,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                                       <span
                                         data-testid={`cp-score-badge-${student.studentId}`}
                                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-500/40"
-                                        title="Điểm Lý thuyết / Thực hành (thầy chấm trên LMS) & Trung bình 9 ô [ĐNL] Bot tính theo quá trình"
+                                        title="Điểm Lý thuyết / Thực hành (từ LMS hoặc sửa tay) & Trung bình 9 ô [ĐNL] Bot tính theo quá trình"
                                       >
                                         📊 LT:{" "}
                                         {student.checkpointData.theoryScore !== null
@@ -4664,6 +5008,12 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                                         {student.checkpointData.competencyAverage !== null
                                           ? student.checkpointData.competencyAverage.toFixed(2)
                                           : "—"}
+                                        {(student.checkpointData.userEditedTheory ||
+                                          student.checkpointData.userEditedPractice) && (
+                                          <span className="ml-0.5 text-amber-800 dark:text-amber-300">
+                                            ✎
+                                          </span>
+                                        )}
                                       </span>
                                       <button
                                         type="button"
@@ -5082,15 +5432,130 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
 
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                  <div className="text-slate-600 dark:text-slate-400">Lý thuyết (LMS)</div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
-                    {cp.theoryScore !== null ? `${cp.theoryScore.toFixed(1)} / 5.0` : "Chưa chấm"}
+                  <div className="flex items-center justify-between gap-1 text-slate-700 dark:text-slate-300">
+                    <span>Lý thuyết</span>
+                    {cp.userEditedTheory && (
+                      <div className="flex items-center gap-1">
+                        <span
+                          data-testid="manual-lt-badge"
+                          className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 dark:bg-amber-500/30 dark:text-amber-200 text-[10px] font-semibold"
+                        >
+                          ✎ Sửa tay
+                        </span>
+                        <button
+                          type="button"
+                          data-testid="reset-manual-lt-btn"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            void handleResetManualCpScore(targetStudent.studentId, "theory");
+                          }}
+                          disabled={isSavingManualCpScore}
+                          className="px-1.5 py-0.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100 text-[10px] font-semibold cursor-pointer"
+                          title="Bỏ sửa tay và lấy lại điểm Lý thuyết từ LMS"
+                        >
+                          ↺ LMS
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min={0}
+                      max={5}
+                      step={0.1}
+                      placeholder="Chưa chấm"
+                      data-testid="manual-lt-input"
+                      value={manualTheoryInput}
+                      onChange={(e) => setManualTheoryInput(e.target.value)}
+                      onBlur={(e) => {
+                        void handleCommitManualCpScore(
+                          targetStudent.studentId,
+                          "theory",
+                          e.currentTarget.value
+                        );
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void handleCommitManualCpScore(
+                            targetStudent.studentId,
+                            "theory",
+                            e.currentTarget.value
+                          );
+                        }
+                      }}
+                      disabled={isSavingManualCpScore}
+                      className="w-24 px-2 py-1 rounded-lg bg-white text-slate-900 border border-slate-300 dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">/ 5.0</span>
                   </div>
                 </div>
                 <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                  <div className="text-slate-600 dark:text-slate-400">Thực hành (LMS)</div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
-                    {cp.practiceScore !== null ? `${cp.practiceScore.toFixed(1)} / 5.0` : "Chưa chấm"}
+                  <div className="flex items-center justify-between gap-1 text-slate-700 dark:text-slate-300">
+                    <span>Thực hành</span>
+                    {cp.userEditedPractice ? (
+                      <div className="flex items-center gap-1">
+                        <span
+                          data-testid="manual-th-badge"
+                          className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 dark:bg-amber-500/30 dark:text-amber-200 text-[10px] font-semibold"
+                        >
+                          ✎ Sửa tay
+                        </span>
+                        <button
+                          type="button"
+                          data-testid="reset-manual-th-btn"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            void handleResetManualCpScore(targetStudent.studentId, "practice");
+                          }}
+                          disabled={isSavingManualCpScore}
+                          className="px-1.5 py-0.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100 text-[10px] font-semibold cursor-pointer"
+                          title="Bỏ sửa tay và lấy lại điểm Thực hành từ LMS"
+                        >
+                          ↺ LMS
+                        </button>
+                      </div>
+                    ) : cp.hasUngradedPractice ? (
+                      <span
+                        data-testid="waiting-th-badge"
+                        className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200 text-[10px] font-semibold"
+                      >
+                        Chờ chấm (#tab-3)
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min={0}
+                      max={5}
+                      step={0.1}
+                      placeholder={cp.hasUngradedPractice ? "Chờ chấm" : "Chưa chấm"}
+                      data-testid="manual-th-input"
+                      value={manualPracticeInput}
+                      onChange={(e) => setManualPracticeInput(e.target.value)}
+                      onBlur={(e) => {
+                        void handleCommitManualCpScore(
+                          targetStudent.studentId,
+                          "practice",
+                          e.currentTarget.value
+                        );
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void handleCommitManualCpScore(
+                            targetStudent.studentId,
+                            "practice",
+                            e.currentTarget.value
+                          );
+                        }
+                      }}
+                      disabled={isSavingManualCpScore}
+                      className="w-24 px-2 py-1 rounded-lg bg-white text-slate-900 border border-slate-300 dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">/ 5.0</span>
                   </div>
                 </div>
                 <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/40">
