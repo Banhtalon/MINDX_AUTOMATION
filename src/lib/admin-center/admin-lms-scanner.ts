@@ -10,7 +10,17 @@ import {
   type StudentRecord,
 } from "../db/sqlite";
 import { buildLmsClassCommentsUrl, isValidLmsClassCode } from "../lms/lms-class-url";
-import { authService, extractIdentityFromMindxCookies } from "../playwright/auth";
+import {
+  isLmsApiReadEnabled,
+  isQueueStoppedError,
+  lmsHttpClient,
+  paceLmsBatchRequest,
+} from "../lms/lms-http-client";
+import {
+  AuthService,
+  authService,
+  extractIdentityFromMindxCookies,
+} from "../playwright/auth";
 import { LmsHelpers } from "../playwright/lms-helpers";
 import { createNetworkInterceptor } from "../playwright/network-interceptor";
 import { ScoreScraper } from "../playwright/scrape-scores";
@@ -21,6 +31,7 @@ import {
   isConfirmedRunningStatus,
   ONE_DAY_MS,
   parseClassDateToEndOfDayMs,
+  parseSlotOrClassDateToEndOfDayMs,
 } from "../playwright/sync-class";
 import { taskQueue } from "../queue/task-queue";
 import { getStandardFiveTasksForClass } from "../gemini/teaching-project-generator";
@@ -3241,6 +3252,712 @@ export async function fetchSingleLmsClassGqlInAdminSession(
   }
 }
 
+function parseAdminNodeDateMs(rawDate: unknown): number | null {
+  if (typeof rawDate === "number" && Number.isFinite(rawDate) && rawDate > 0) {
+    const ms = rawDate > 1e12 ? rawDate : rawDate * 1000;
+    return parseSlotOrClassDateToEndOfDayMs(normalizeAdminDateToIsoYmd(ms)) ?? ms;
+  }
+  const text = String(rawDate ?? "").trim();
+  if (!text || text === "0000-00-00") return null;
+  if (/^\d{10,13}$/.test(text)) {
+    const num = Number(text);
+    const ms = num > 1e12 ? num : num * 1000;
+    return parseSlotOrClassDateToEndOfDayMs(normalizeAdminDateToIsoYmd(ms)) ?? ms;
+  }
+  return (
+    parseSlotOrClassDateToEndOfDayMs(text) ??
+    parseSlotOrClassDateToEndOfDayMs(normalizeAdminDateToIsoYmd(text))
+  );
+}
+
+async function resolveAdminNodeCentreIds(
+  adminCfg: ReturnType<typeof getDynamicAdminConfig>
+): Promise<string[]> {
+  if (adminCfg.adminLmsCentreFilterDisabled) return [];
+  if (Array.isArray(adminCfg.adminLmsCentreIds) && adminCfg.adminLmsCentreIds.length > 0) {
+    return [...adminCfg.adminLmsCentreIds];
+  }
+  try {
+    const tokenRec = await lmsHttpClient.getValidTokenRecord("ADMIN");
+    if (tokenRec.userId) {
+      const teacherInfo = await lmsHttpClient.getTeacherByUserId("ADMIN", tokenRec.userId);
+      const mainId = String(teacherInfo?.mainCentre?.id || "").trim();
+      if (mainId) return [mainId];
+    }
+  } catch (err) {
+    if (isQueueStoppedError(err)) throw err;
+  }
+  return [];
+}
+
+async function findSingleClassViaAdminApi(
+  targetCode: string,
+  candidates: string[],
+  centreIds: string[]
+): Promise<{ found: any | null; anyOk: boolean; error: string }> {
+  const normTarget = String(targetCode || "").trim().toUpperCase();
+  const candList = Array.isArray(candidates) && candidates.length > 0 ? candidates : [normTarget];
+  let anyOk = false;
+  let lastErr = "";
+
+  for (const cand of candList) {
+    ensureQueueNotStopped();
+    const res = await lmsHttpClient.listClasses("ADMIN", {
+      filter_textSearch: cand,
+      pageIndex: 0,
+      itemsPerPage: 20,
+    });
+    if (!Array.isArray(res.errors) || res.errors.length === 0) {
+      anyOk = true;
+      const found = res.data.find(
+        (c: any) => String(c?.name || "").trim().toUpperCase() === normTarget
+      );
+      if (found?.id) {
+        return { found, anyOk: true, error: "" };
+      }
+    } else if (!lastErr) {
+      lastErr = String(res.errors[0]?.message || `GraphQL error (${normTarget})`);
+    }
+  }
+
+  if (Array.isArray(centreIds) && centreIds.length > 0) {
+    for (const cand of candList) {
+      const missAttempts = [
+        {
+          type: [],
+          search: cand,
+          centres: centreIds,
+          status: ["RUNNING", "FINISHED"],
+          pageIndex: 0,
+          itemsPerPage: 50,
+          orderBy: "createdAt_desc",
+        },
+        {
+          type: [],
+          search: cand,
+          centres: centreIds,
+          pageIndex: 0,
+          itemsPerPage: 50,
+          orderBy: "createdAt_desc",
+        },
+      ];
+      for (const vars of missAttempts) {
+        ensureQueueNotStopped();
+        const mRes = await lmsHttpClient.findClassesMissAttendOrComment("ADMIN", vars);
+        if (!mRes.error) {
+          anyOk = true;
+          const found = mRes.data.find(
+            (c: any) => String(c?.name || "").trim().toUpperCase() === normTarget
+          );
+          if (found?.id) {
+            return { found, anyOk: true, error: "" };
+          }
+        } else if (!lastErr) {
+          lastErr = mRes.error;
+        }
+      }
+    }
+  }
+
+  return { found: null, anyOk, error: lastErr };
+}
+
+export async function fetchSingleLmsClassViaAdminApi(
+  classCode: string,
+  options?: { lmsClassId?: string }
+): Promise<{
+  lmsClassId: string;
+  classByIdData: any | null;
+  submissionGqlData: any | null;
+  studentWorks: any[];
+}> {
+  ensureQueueNotStopped();
+  const normCode = String(classCode || "").trim().toUpperCase();
+  const knownLmsId = String(options?.lmsClassId || "").trim();
+  const adminCfg = getDynamicAdminConfig();
+  const isRob = isRoboticsClassCode(normCode);
+
+  let lmsId = knownLmsId;
+  let resolvedClsPayload: any = null;
+
+  if (lmsId) {
+    const byKnown = await lmsHttpClient.getClassById("ADMIN", lmsId, {
+      allowClassFieldFallback: true,
+    });
+    if (byKnown.clsPayload) {
+      try {
+        assertMatchingLmsClassPayload(byKnown.clsPayload, normCode, lmsId);
+        resolvedClsPayload = byKnown.clsPayload;
+      } catch {
+        resolvedClsPayload = null;
+        lmsId = "";
+      }
+    } else {
+      lmsId = "";
+    }
+  }
+
+  if (!resolvedClsPayload) {
+    const activeCentreIds = await resolveAdminNodeCentreIds(adminCfg);
+    const searchCandidates = buildLmsClassSearchCandidates(normCode);
+    const foundRes = await findSingleClassViaAdminApi(normCode, searchCandidates, activeCentreIds);
+    if (foundRes.found?.id) {
+      lmsId = String(foundRes.found.id).trim();
+    } else if (!lmsId) {
+      throw new Error(
+        redactSecrets(
+          foundRes.error || `Không tìm thấy lớp ${normCode} trong danh sách LMS (Admin API).`
+        )
+      );
+    }
+
+    const byFound = await lmsHttpClient.getClassById("ADMIN", lmsId, {
+      allowClassFieldFallback: true,
+    });
+    if (!byFound.clsPayload) {
+      throw new Error(
+        redactSecrets(
+          byFound.error || `Không đọc được chi tiết lớp ${normCode} từ LMS GraphQL.`
+        )
+      );
+    }
+    assertMatchingLmsClassPayload(byFound.clsPayload, normCode, lmsId);
+    resolvedClsPayload = byFound.clsPayload;
+  }
+
+  let submissionGqlData: any = null;
+  if (!isRob) {
+    const subRes = await lmsHttpClient.findStudentSubmissionByClass("ADMIN", lmsId);
+    if (subRes.error || !subRes.submissionGqlData) {
+      throw new Error(
+        redactSecrets(
+          subRes.error ||
+            `Không đọc được dữ liệu BTVN (submissions) của lớp ${normCode} từ LMS GraphQL.`
+        )
+      );
+    }
+    submissionGqlData = subRes.submissionGqlData;
+  }
+
+  const worksRes = await lmsHttpClient.findAllStudentWorks("ADMIN", lmsId);
+  if (worksRes.error) {
+    throw new Error(
+      redactSecrets(
+        worksRes.error ||
+          `Không đọc được danh sách sản phẩm SPCK của lớp ${normCode} từ LMS GraphQL.`
+      )
+    );
+  }
+
+  return {
+    lmsClassId: lmsId,
+    classByIdData: resolvedClsPayload,
+    submissionGqlData,
+    studentWorks: worksRes.works,
+  };
+}
+
+async function fetchAdminLmsBundleViaNodeApi(params: {
+  adminCfg: ReturnType<typeof getDynamicAdminConfig>;
+  centerCode: string;
+  scope: AdminScanScope;
+  singleClassCode: string;
+  teachingOverview: Awaited<ReturnType<typeof fetchAdminTeachingOverviewPages>>;
+  progressState: AdminScanProgressState;
+}): Promise<AdminLmsFetchedBundle> {
+  ensureQueueNotStopped();
+  const { adminCfg, centerCode, scope, singleClassCode, teachingOverview, progressState } = params;
+  const activeCentreIds = await resolveAdminNodeCentreIds(adminCfg);
+  const hasCentres = activeCentreIds.length > 0;
+  const nowMs = Date.now();
+  const recentFinishedCutoffMs = nowMs - 21 * ONE_DAY_MS;
+
+  const teachingScheduleCodeSet = new Set<string>();
+  const teachingScheduleTargets: Array<{ classCode: string; candidates: string[] }> = [];
+  if (!singleClassCode) {
+    for (const rawCode of teachingOverview.scheduleByClass.keys()) {
+      const cleanCode = String(rawCode || "").trim().toUpperCase();
+      if (!cleanCode) continue;
+      if (scope === "CODING_ONLY" && isRoboticsClassCode(cleanCode)) {
+        continue;
+      }
+      if (!teachingScheduleCodeSet.has(cleanCode)) {
+        teachingScheduleCodeSet.add(cleanCode);
+        teachingScheduleTargets.push({
+          classCode: cleanCode,
+          candidates: buildLmsClassSearchCandidates(cleanCode),
+        });
+      }
+    }
+  }
+
+  const collected: any[] = [];
+  const seenNames = new Set<string>();
+  const pushUnique = (items: any[]) => {
+    for (const c of items || []) {
+      const n = String(c?.name || "").trim().toUpperCase();
+      if (!n || seenNames.has(n)) continue;
+      seenNames.add(n);
+      collected.push(c);
+    }
+  };
+
+  const isPageAllOlderFinished = (items: any[]): boolean => {
+    if (!Array.isArray(items) || items.length === 0) return false;
+    let hasValidDate = false;
+    for (const item of items) {
+      const ms = parseAdminNodeDateMs(item?.endDate);
+      if (ms === null) return false;
+      hasValidDate = true;
+      if (ms >= recentFinishedCutoffMs) return false;
+    }
+    return hasValidDate;
+  };
+
+  let expectedTotal: number | null = null;
+  let discoveryComplete = true;
+  let discoveryError = "";
+
+  if (singleClassCode) {
+    const singleRes = await findSingleClassViaAdminApi(
+      singleClassCode,
+      buildLmsClassSearchCandidates(singleClassCode),
+      activeCentreIds
+    );
+    if (singleRes.found) {
+      pushUnique([singleRes.found]);
+      expectedTotal = 1;
+      discoveryComplete = true;
+    } else if (!singleRes.anyOk) {
+      discoveryComplete = false;
+      discoveryError = singleRes.error || "Không đọc được danh sách lớp từ LMS GraphQL.";
+    }
+  } else {
+    let tier1Complete = false;
+    let tier1Err = "";
+
+    // Tier 1: Query classes by centre_in for RUNNING and recent FINISHED
+    if (hasCentres) {
+      let schemaSupportsStatus = true;
+      let runningComplete = true;
+      let runningErr = "";
+      let runningCollectedCount = 0;
+
+      for (let pageIdx = 0; pageIdx < 25; pageIdx++) {
+        if (pageIdx > 0) await paceLmsBatchRequest(150);
+        ensureQueueNotStopped();
+        let res = await lmsHttpClient.listClasses("ADMIN", {
+          centre_in: activeCentreIds,
+          ...(schemaSupportsStatus ? { status_in: ["RUNNING"] } : {}),
+          pageIndex: pageIdx,
+          itemsPerPage: 100,
+        });
+        if (
+          pageIdx === 0 &&
+          schemaSupportsStatus &&
+          Array.isArray(res.errors) &&
+          res.errors.length > 0
+        ) {
+          schemaSupportsStatus = false;
+          res = await lmsHttpClient.listClasses("ADMIN", {
+            centre_in: activeCentreIds,
+            pageIndex: pageIdx,
+            itemsPerPage: 100,
+          });
+        }
+        if (Array.isArray(res.errors) && res.errors.length > 0) {
+          runningComplete = false;
+          runningErr = String(
+            res.errors[0]?.message || `GraphQL classes error trang ${pageIdx + 1}`
+          );
+          break;
+        }
+        pushUnique(res.data);
+        runningCollectedCount += res.data.length;
+        if (res.data.length === 0) {
+          if (res.total !== null && runningCollectedCount < res.total) {
+            runningComplete = false;
+            runningErr = `Danh sách lớp RUNNING thiếu: ${runningCollectedCount}/${res.total}`;
+          }
+          break;
+        }
+        if (res.total !== null) {
+          if (runningCollectedCount >= res.total) break;
+        } else if (res.data.length < 100) {
+          break;
+        }
+        if (pageIdx === 24) {
+          runningComplete = false;
+          runningErr = `Danh sách lớp RUNNING vượt quá 25 trang (${runningCollectedCount}).`;
+        }
+      }
+
+      let finishedComplete = true;
+      let finishedErr = "";
+      if (runningComplete && schemaSupportsStatus) {
+        let finishedCollectedCount = 0;
+        for (let pageIdx = 0; pageIdx < 3; pageIdx++) {
+          await paceLmsBatchRequest(150);
+          ensureQueueNotStopped();
+          const resFin = await lmsHttpClient.listClasses("ADMIN", {
+            centre_in: activeCentreIds,
+            status_in: ["FINISHED"],
+            pageIndex: pageIdx,
+            itemsPerPage: 100,
+          });
+          if (Array.isArray(resFin.errors) && resFin.errors.length > 0) {
+            finishedComplete = false;
+            finishedErr = String(
+              resFin.errors[0]?.message || `GraphQL FINISHED error trang ${pageIdx + 1}`
+            );
+            break;
+          }
+          pushUnique(resFin.data);
+          finishedCollectedCount += resFin.data.length;
+          if (resFin.data.length === 0) break;
+          if (isPageAllOlderFinished(resFin.data)) break;
+          if (resFin.total !== null) {
+            if (finishedCollectedCount >= resFin.total) break;
+          } else if (resFin.data.length < 100) {
+            break;
+          }
+        }
+      }
+
+      tier1Complete = runningComplete && finishedComplete;
+      tier1Err = runningErr || finishedErr;
+      if (!tier1Complete) {
+        discoveryComplete = false;
+        discoveryError = tier1Err;
+      }
+    }
+
+    // Tier 2: classesMissAttendOrComment fallback when Tier 1 failed or returned 0
+    let tier2Complete = false;
+    let tier2Err = "";
+    let tier2RawCount = 0;
+    if (hasCentres && (!tier1Complete || collected.length === 0)) {
+      let runOk = true;
+      let runErr = "";
+      for (let pageIdx = 0; pageIdx < 15; pageIdx++) {
+        if (pageIdx > 0) await paceLmsBatchRequest(150);
+        ensureQueueNotStopped();
+        const r = await lmsHttpClient.findClassesMissAttendOrComment("ADMIN", {
+          type: [],
+          centres: activeCentreIds,
+          status: ["RUNNING"],
+          pageIndex: pageIdx,
+          itemsPerPage: 100,
+          orderBy: "createdAt_desc",
+        });
+        if (r.error) {
+          runOk = false;
+          runErr = r.error;
+          break;
+        }
+        tier2RawCount += r.data.length;
+        pushUnique(r.data);
+        if (r.data.length < 100) break;
+        if (pageIdx === 14) {
+          runOk = false;
+          runErr = "Danh sách lớp classesMissAttendOrComment vượt quá 15 trang.";
+        }
+      }
+
+      let finOk = true;
+      let finErr = "";
+      if (runOk) {
+        for (let pageIdx = 0; pageIdx < 3; pageIdx++) {
+          await paceLmsBatchRequest(150);
+          ensureQueueNotStopped();
+          const rFin = await lmsHttpClient.findClassesMissAttendOrComment("ADMIN", {
+            type: [],
+            centres: activeCentreIds,
+            status: ["FINISHED"],
+            pageIndex: pageIdx,
+            itemsPerPage: 100,
+            orderBy: "createdAt_desc",
+          });
+          if (rFin.error) {
+            finOk = false;
+            finErr = rFin.error;
+            break;
+          }
+          tier2RawCount += rFin.data.length;
+          pushUnique(rFin.data);
+          if (rFin.data.length === 0 || isPageAllOlderFinished(rFin.data) || rFin.data.length < 100) {
+            break;
+          }
+        }
+      }
+
+      tier2Complete = runOk && finOk;
+      tier2Err = runErr || finErr;
+      if (tier2Complete && (tier2RawCount > 0 || !tier1Err)) {
+        discoveryComplete = true;
+        discoveryError = "";
+      } else if (!tier1Complete && !tier2Complete) {
+        discoveryError = tier1Err || tier2Err;
+      }
+    }
+
+    // Tier 3: search filter fallback by centerCode
+    if (!hasCentres || (collected.length === 0 && !tier1Complete && !tier2Complete)) {
+      let legacyComplete = true;
+      let legacyErr = "";
+      let legacyExpected: number | null = null;
+      let legacyCount = 0;
+      let tier3RawCount = 0;
+
+      for (let pageIdx = 0; pageIdx < 25; pageIdx++) {
+        if (pageIdx > 0) await paceLmsBatchRequest(150);
+        ensureQueueNotStopped();
+        const r = await lmsHttpClient.listClasses("ADMIN", {
+          filter_textSearch: centerCode,
+          pageIndex: pageIdx,
+          itemsPerPage: 100,
+        });
+        if (Array.isArray(r.errors) && r.errors.length > 0) {
+          legacyComplete = false;
+          legacyErr = String(r.errors[0]?.message || `GraphQL error ở trang ${pageIdx + 1}`);
+          break;
+        }
+        if (r.total !== null) legacyExpected = r.total;
+        tier3RawCount += r.data.length;
+        pushUnique(r.data);
+        legacyCount += r.data.length;
+        if (r.data.length === 0) {
+          if (legacyExpected !== null && legacyCount < legacyExpected) {
+            legacyComplete = false;
+            legacyErr = `Danh sách lớp thiếu: ${legacyCount}/${legacyExpected}`;
+          }
+          break;
+        }
+        if (legacyExpected !== null && legacyCount >= legacyExpected) break;
+        if (legacyExpected === null && r.data.length < 100) break;
+        if (pageIdx === 24 && (legacyExpected === null || legacyCount < legacyExpected)) {
+          legacyComplete = false;
+          legacyErr = `Danh sách lớp vượt quá 25 trang (${legacyCount}/${legacyExpected ?? "?"}).`;
+        }
+      }
+
+      if (!hasCentres) {
+        discoveryComplete = legacyComplete;
+        expectedTotal = legacyExpected;
+        discoveryError = legacyErr;
+      } else if (legacyComplete && (tier3RawCount > 0 || (!tier1Err && !tier2Err))) {
+        discoveryComplete = true;
+        discoveryError = "";
+      }
+    }
+
+    // Tier 4: Cross-check classes on Teaching weekly schedule
+    for (const t of teachingScheduleTargets) {
+      const codeUpper = String(t?.classCode || "").trim().toUpperCase();
+      if (!codeUpper || seenNames.has(codeUpper)) continue;
+      const resT = await findSingleClassViaAdminApi(codeUpper, t.candidates, activeCentreIds);
+      if (resT.found) {
+        pushUnique([resT.found]);
+      }
+    }
+  }
+
+  const filteredDiscovery = collected
+    .map((c: any) => {
+      const classCode = String(c?.name || "").trim().toUpperCase();
+      let mainT = "";
+      let taT = "";
+      for (const t of c?.teachers || []) {
+        const tn = String(t?.teacher?.fullName || t?.teacher?.username || "").trim();
+        const rn = String(t?.role?.name || "").toLowerCase();
+        if (!tn) continue;
+        if (rn.includes("ta") || rn.includes("assistant")) {
+          if (!taT) taT = tn;
+        } else if (!mainT) {
+          mainT = tn;
+        }
+      }
+      return {
+        lmsClassId: String(c?.id || "").trim(),
+        classCode,
+        courseName: String(c?.course?.name || "").trim(),
+        status: String(c?.status || "").trim(),
+        startDate:
+          c?.startDate !== undefined && c?.startDate !== null ? String(c.startDate).trim() : "",
+        endDate:
+          c?.endDate !== undefined && c?.endDate !== null ? String(c.endDate).trim() : "",
+        mainTeacher: mainT,
+        assistantTeacher: taT,
+      };
+    })
+    .filter((c) => {
+      if (!c.classCode || !c.lmsClassId) return false;
+      if (singleClassCode) return c.classCode === singleClassCode;
+      const statusUp = String(c.status || "").trim().toUpperCase();
+      if (/CANCEL|CLOSE|DROP/.test(statusUp)) return false;
+      const isRunning = isConfirmedRunningStatus(c.status);
+      const isRecentFinished =
+        statusUp.includes("FINISH") &&
+        isAdminFinishedClassWithinGraceWindow(c.endDate, 14, nowMs);
+      const onTeachingSchedule = teachingScheduleCodeSet.has(c.classCode);
+      const needsDetailCheck = statusUp === "";
+      if (!isRunning && !isRecentFinished && !onTeachingSchedule && !needsDetailCheck) {
+        return false;
+      }
+      if (scope === "CODING_ONLY" && isRoboticsClassCode(c.classCode)) {
+        return false;
+      }
+      return true;
+    });
+
+  const uniqueMap = new Map<string, (typeof filteredDiscovery)[number]>();
+  for (const c of filteredDiscovery) {
+    if (!uniqueMap.has(c.classCode)) uniqueMap.set(c.classCode, c);
+  }
+  const targetList = Array.from(uniqueMap.values());
+  progressState.totalClasses = targetList.length;
+
+  const perClass = new Map<
+    string,
+    {
+      classByIdData: any | null;
+      submissionGqlData: any | null;
+      studentWorks: any[];
+      error?: string;
+      subError?: string;
+      worksError?: string;
+    }
+  >();
+  const skippedHistoricalClasses = new Set<string>();
+  const recentGraceCutoffMs = nowMs - 14 * ONE_DAY_MS;
+  let stoppedEarly = false;
+
+  for (let idx = 0; idx < targetList.length; idx++) {
+    const item = targetList[idx];
+    ensureQueueNotStopped();
+    if (progressState.stopAfterCurrentRequested) {
+      stoppedEarly = true;
+      break;
+    }
+    if (idx > 0) {
+      await paceLmsBatchRequest(300);
+    }
+    progressState.currentClassCode = item.classCode;
+    const isRob = isRoboticsClassCode(item.classCode);
+    const onTeachingSchedule = teachingScheduleCodeSet.has(item.classCode);
+    const checkActiveAfterDetail = !singleClassCode && !onTeachingSchedule;
+
+    try {
+      const clsRes = await lmsHttpClient.getClassById("ADMIN", item.lmsClassId, {
+        allowClassFieldFallback: true,
+      });
+      if (!clsRes.clsPayload) {
+        throw new Error(clsRes.error || `Không đọc được chi tiết lớp ${item.classCode}.`);
+      }
+      const clsPayload = clsRes.clsPayload;
+      assertMatchingLmsClassPayload(clsPayload, item.classCode, item.lmsClassId);
+
+      if (checkActiveAfterDetail) {
+        const stUp = String(clsPayload?.status || "").trim().toUpperCase();
+        const isCancelled = /CANCEL|CLOSE|DROP/.test(stUp);
+        const isRunningSt = stUp === "RUNNING" || stUp === "ACTIVE";
+        if (isCancelled) {
+          skippedHistoricalClasses.add(item.classCode);
+          continue;
+        }
+        if (!isRunningSt) {
+          const endMs = parseAdminNodeDateMs(clsPayload?.endDate);
+          if (
+            (stUp.includes("FINISH") && endMs !== null && endMs < recentGraceCutoffMs) ||
+            (!stUp.includes("FINISH") && stUp !== "")
+          ) {
+            skippedHistoricalClasses.add(item.classCode);
+            continue;
+          }
+        }
+        const detailRunning = isConfirmedRunningStatus(String(clsPayload?.status || "").trim());
+        const detailRecentFin =
+          stUp.includes("FINISH") &&
+          isAdminFinishedClassWithinGraceWindow(clsPayload?.endDate, 14, nowMs);
+        if (!detailRunning && !detailRecentFin && stUp !== "") {
+          skippedHistoricalClasses.add(item.classCode);
+          continue;
+        }
+      }
+
+      if (clsPayload?.status) item.status = String(clsPayload.status).trim();
+      if (clsPayload?.startDate) item.startDate = String(clsPayload.startDate).trim();
+      if (clsPayload?.endDate) item.endDate = String(clsPayload.endDate).trim();
+      if (clsPayload?.course?.name) item.courseName = String(clsPayload.course.name).trim();
+      for (const t of clsPayload?.teachers || []) {
+        const tn = String(t?.teacher?.fullName || t?.teacher?.username || "").trim();
+        const rn = String(t?.role?.name || "").toLowerCase();
+        if (!tn) continue;
+        if (rn.includes("ta") || rn.includes("assistant")) {
+          if (!item.assistantTeacher) item.assistantTeacher = tn;
+        } else if (!item.mainTeacher) {
+          item.mainTeacher = tn;
+        }
+      }
+
+      let submissionGqlData: any = null;
+      let subError = "";
+      if (!isRob) {
+        const subRes = await lmsHttpClient.findStudentSubmissionByClass("ADMIN", item.lmsClassId);
+        if (subRes.error || !subRes.submissionGqlData) {
+          subError =
+            subRes.error || "Không đọc được dữ liệu BTVN (submissions) từ LMS GraphQL.";
+        } else {
+          submissionGqlData = subRes.submissionGqlData;
+        }
+      }
+
+      const slotsArr: any[] = Array.isArray(clsPayload?.slots) ? clsPayload.slots : [];
+      const stUp = String(clsPayload?.status || "").toUpperCase();
+      const needsWorks = stUp.includes("FINISH") || slotsArr.length >= 12;
+
+      let studentWorks: any[] = [];
+      let worksError = "";
+      if (needsWorks) {
+        const worksRes = await lmsHttpClient.findAllStudentWorks("ADMIN", item.lmsClassId);
+        if (worksRes.error) {
+          worksError =
+            worksRes.error || "Không đọc được danh sách sản phẩm SPCK (findAllStudentWorks) từ LMS GraphQL.";
+        } else {
+          studentWorks = worksRes.works;
+        }
+      }
+
+      perClass.set(item.classCode, {
+        classByIdData: clsPayload,
+        submissionGqlData,
+        studentWorks,
+        ...(subError ? { subError: sanitizeErrorMessage(subError) } : {}),
+        ...(worksError ? { worksError: sanitizeErrorMessage(worksError) } : {}),
+      });
+    } catch (clsErr: any) {
+      if (isQueueStoppedError(clsErr)) {
+        throw clsErr;
+      }
+      perClass.set(item.classCode, {
+        classByIdData: null,
+        submissionGqlData: null,
+        studentWorks: [],
+        error: sanitizeErrorMessage(clsErr),
+      });
+    }
+  }
+
+  return {
+    discoveredClasses: targetList.filter((c) => !skippedHistoricalClasses.has(c.classCode)),
+    perClass,
+    stoppedEarly,
+    discoveryComplete,
+    discoveryError: discoveryError || undefined,
+    expectedTotal,
+  };
+}
+
 export async function scanAdminCenterClasses(options?: {
   scope?: AdminScanScope;
   classCode?: string;
@@ -3506,12 +4223,13 @@ export async function scanAdminCenterClasses(options?: {
             };
           }
 
-        // 2. LMS GraphQL scan inside Single Persistent Context + Admin Role Swap (or injected mock bundle in tests)
+        // 2. LMS GraphQL scan via pure-Node ADMIN API first, with Single Persistent Context + Admin Role Swap fallback
         let lmsBundle: AdminLmsFetchedBundle;
         if (options?.lmsBundleOverride) {
           lmsBundle = options.lmsBundleOverride;
         } else {
-          lmsBundle = await authService.withAdminLmsSession(async (page) => {
+          const runPlaywrightAdminBundle = (): Promise<AdminLmsFetchedBundle> =>
+            authService.withAdminLmsSession(async (page) => {
             const interceptor = createNetworkInterceptor(page);
             const captureState = {
               capturedHeaders: {} as Record<string, string>,
@@ -4725,6 +5443,52 @@ export async function scanAdminCenterClasses(options?: {
               page.off("request", reqListener);
             }
           });
+          if (
+            isLmsApiReadEnabled() &&
+            authService.withAdminLmsSession === AuthService.prototype.withAdminLmsSession
+          ) {
+            let apiBundle: AdminLmsFetchedBundle | null = null;
+            try {
+              const candidate = await fetchAdminLmsBundleViaNodeApi({
+                adminCfg,
+                centerCode,
+                scope,
+                singleClassCode,
+                teachingOverview,
+                progressState,
+              });
+              if (
+                !candidate.stoppedEarly &&
+                candidate.discoveryComplete === false &&
+                candidate.discoveredClasses.length === 0
+              ) {
+                ensureQueueNotStopped();
+                runWarnings.push(
+                  redactSecrets(
+                    `Quét LMS Admin qua API thuần chưa thu thập được lớp nào (${
+                      candidate.discoveryError || "discoveryComplete=false"
+                    }), tự động lùi về Playwright Admin Session.`
+                  )
+                );
+              } else {
+                apiBundle = candidate;
+              }
+            } catch (apiErr: any) {
+              if (isQueueStoppedError(apiErr)) {
+                throw apiErr;
+              }
+              runWarnings.push(
+                redactSecrets(
+                  `Quét LMS Admin qua API thuần chưa hoàn tất (${sanitizeErrorMessage(
+                    apiErr
+                  )}), tự động lùi về Playwright Admin Session.`
+                )
+              );
+            }
+            lmsBundle = apiBundle ?? (await runPlaywrightAdminBundle());
+          } else {
+            lmsBundle = await runPlaywrightAdminBundle();
+          }
         }
 
         if (lmsBundle.discoveryComplete === false || lmsBundle.discoveryError) {

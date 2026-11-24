@@ -41,6 +41,7 @@ package-lock.json.bak
 .env.development.local
 .env.test.local
 .env.production.local
+lms_token_*.json
 
 # Debug & logs
 npm-debug.log*

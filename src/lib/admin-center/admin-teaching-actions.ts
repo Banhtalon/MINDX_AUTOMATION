@@ -19,7 +19,8 @@ import {
   mergeExistingTeachingTasksWithStandardFive,
 } from "../gemini/teaching-project-generator";
 import { isValidLmsClassCode } from "../lms/lms-class-url";
-import { authService } from "../playwright/auth";
+import { isLmsApiReadEnabled, isQueueStoppedError } from "../lms/lms-http-client";
+import { AuthService, authService } from "../playwright/auth";
 import {
   isConfirmedRunningStatus,
   resolveClassDateRangeInfo,
@@ -45,6 +46,7 @@ import {
   computeAdminClassAudits,
   evaluateTeachingSpckTasksCompliance,
   fetchSingleLmsClassGqlInAdminSession,
+  fetchSingleLmsClassViaAdminApi,
   isAdminSpckExemptClass,
 } from "./admin-lms-scanner";
 import {
@@ -187,13 +189,45 @@ async function refreshSingleClassSnapshotInsideQueue(
   }
 ): Promise<AdminCenterClassRecord | undefined> {
   const adminCfg = getDynamicAdminConfig();
-  const lmsFetched = options?.fetchSingleLmsHook
-    ? await options.fetchSingleLmsHook(classCode)
-    : await authService.withAdminLmsSession((page) =>
+  let lmsFetched: Awaited<ReturnType<typeof fetchSingleLmsClassGqlInAdminSession>>;
+  if (options?.fetchSingleLmsHook) {
+    lmsFetched = await options.fetchSingleLmsHook(classCode);
+  } else if (
+    isLmsApiReadEnabled() &&
+    authService.withAdminLmsSession === AuthService.prototype.withAdminLmsSession
+  ) {
+    try {
+      lmsFetched = await fetchSingleLmsClassViaAdminApi(classCode, {
+        lmsClassId: existing?.lmsClassId,
+      });
+    } catch (apiErr: any) {
+      if (isQueueStoppedError(apiErr)) {
+        throw apiErr;
+      }
+      jobLogRepo.add({
+        jobId: `admin_single_fallback_${classCode}_${Date.now()}`,
+        jobType: "CUSTOM",
+        classId: classCode,
+        level: "WARN",
+        message: redactSecrets(
+          `Đọc chi tiết lớp ${classCode} dưới quyền Admin qua API thất bại (${sanitizeErrorMessage(
+            apiErr
+          )}), lùi về Playwright Admin Session.`
+        ),
+      });
+      lmsFetched = await authService.withAdminLmsSession((page) =>
         fetchSingleLmsClassGqlInAdminSession(page, classCode, {
           lmsClassId: existing?.lmsClassId,
         })
       );
+    }
+  } else {
+    lmsFetched = await authService.withAdminLmsSession((page) =>
+      fetchSingleLmsClassGqlInAdminSession(page, classCode, {
+        lmsClassId: existing?.lmsClassId,
+      })
+    );
+  }
 
   if (!lmsFetched || !lmsFetched.classByIdData) {
     throw new Error(

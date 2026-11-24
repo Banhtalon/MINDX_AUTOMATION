@@ -29,7 +29,17 @@ import {
   isValidLmsClassCode as _isValidLmsClassCode,
   isValidLmsClassObjectId as _isValidLmsClassObjectId,
 } from "../lms/lms-class-url";
-import { resolveKnownLmsClassId as _resolveKnownLmsClassId } from "../lms/lms-class-id-store";
+import {
+  resolveKnownLmsClassId as _resolveKnownLmsClassId,
+} from "../lms/lms-class-id-store";
+import {
+  lmsHttpClient as _lmsHttpClient,
+  isLmsApiReadEnabled as _isLmsApiReadEnabled,
+  isQueueStoppedError as _isQueueStoppedErrorSync,
+  paceLmsBatchRequest as _paceLmsBatchRequestSync,
+} from "../lms/lms-http-client";
+import { redactSecrets as _redactSecretsSync } from "../security/secret-redactor";
+import { ensureQueueNotStopped as _ensureQueueNotStoppedSync } from "../teaching/teaching-http-client";
 import { toVietnameseUpperSlug as _toVietnameseUpperSlug } from "../utils/vietnamese-match";
 import { isSaveCommentsSessionRunning } from "../queue/task-queue";
 import {
@@ -112,6 +122,24 @@ const resolveKnownLmsClassId =
   typeof _resolveKnownLmsClassId === "function"
     ? _resolveKnownLmsClassId
     : () => ({ lmsClassId: null, source: "NONE" as const });
+const safeIsLmsApiReadEnabled =
+  typeof _isLmsApiReadEnabled === "function" ? _isLmsApiReadEnabled : () => false;
+const safeIsQueueStoppedErrorSync =
+  typeof _isQueueStoppedErrorSync === "function"
+    ? _isQueueStoppedErrorSync
+    : (e: unknown) => /QUEUE_STOPPED/i.test(e instanceof Error ? e.message : String(e ?? ""));
+const safePaceLmsBatchRequestSync =
+  typeof _paceLmsBatchRequestSync === "function"
+    ? _paceLmsBatchRequestSync
+    : async () => {};
+const safeEnsureQueueNotStoppedSync =
+  typeof _ensureQueueNotStoppedSync === "function"
+    ? _ensureQueueNotStoppedSync
+    : () => {};
+const safeRedactSecretsSync =
+  typeof _redactSecretsSync === "function"
+    ? _redactSecretsSync
+    : (v: unknown) => (v instanceof Error ? v.message : String(v ?? ""));
 
 export const FINISHED_CLASS_GRACE_DAYS = 15;
 export const DASHBOARD_FINISHED_CLASS_GRACE_DAYS = 7;
@@ -245,9 +273,30 @@ export function formatMsToDdMmYyyy(ms: number): string {
  * Parses either an ISO datetime string (e.g. `2026-11-07T10:00:00.000Z` from `GetClassById.slots`)
  * or a standard class date string (`DD/MM/YYYY`, `YYYY-MM-DD`, etc.) into local end-of-day (`23:59:59.999`).
  */
-export function parseSlotOrClassDateToEndOfDayMs(rawDate?: string | null): number | null {
-  const text = String(rawDate || "").trim();
+export function parseSlotOrClassDateToEndOfDayMs(rawDate?: string | number | null): number | null {
+  if (typeof rawDate === "number" && Number.isFinite(rawDate) && rawDate > 0) {
+    const ms = rawDate > 1e12 ? rawDate : rawDate * 1000;
+    const dt = new Date(ms);
+    const year = dt.getFullYear();
+    if (year >= 2020 && year <= 2100) {
+      return new Date(year, dt.getMonth(), dt.getDate(), 23, 59, 59, 999).getTime();
+    }
+    return null;
+  }
+
+  const text = String(rawDate ?? "").trim();
   if (!text || text === "0000-00-00") return null;
+
+  if (/^\d{10,13}$/.test(text)) {
+    const rawNum = Number(text);
+    const ms = rawNum > 1e12 ? rawNum : rawNum * 1000;
+    const dt = new Date(ms);
+    const year = dt.getFullYear();
+    if (year >= 2020 && year <= 2100) {
+      return new Date(year, dt.getMonth(), dt.getDate(), 23, 59, 59, 999).getTime();
+    }
+    return null;
+  }
 
   if (/^\d{4}-\d{1,2}-\d{1,2}T/i.test(text)) {
     const ts = Date.parse(text);
@@ -850,6 +899,7 @@ export interface SyncClassOptions {
   forceFreshDrawer?: boolean;
   syncLmsCompletionStatus?: boolean;
   preferLmsVerified?: boolean;
+  forcePlaywright?: boolean;
 }
 
 export interface SyncClassResult {
@@ -886,6 +936,376 @@ function stripLmsHtmlToPlainText(rawHtml?: string | null): string {
 
 export class ClassSyncer {
   /**
+   * Builds canonical `StudentRecord[]` from `GetClassById.students` while strictly preserving
+   * existing SQLite `STU_<CLASSID>_<SLUG>` IDs (and falling back to CRM ID only on duplicate names).
+   */
+  public static buildStudentsFromGetClassById(
+    clsPayload: any,
+    rawClassId: string
+  ): StudentRecord[] {
+    const classId = String(rawClassId || "").trim().toUpperCase();
+    const rawStudents: any[] = Array.isArray(clsPayload?.students) ? clsPayload.students : [];
+    const existingStudents =
+      typeof studentRepo?.findByClass === "function"
+        ? studentRepo.findByClass(classId, false) || []
+        : [];
+
+    const existingById = new Map<string, StudentRecord>();
+    const existingBySlug = new Map<string, StudentRecord>();
+    const existingSlugCounts = new Map<string, number>();
+
+    for (const ex of existingStudents) {
+      existingById.set(ex.studentId, ex);
+      const slug = typeof toVietnameseUpperSlug === "function" ? toVietnameseUpperSlug(ex.fullName) : "";
+      if (slug) {
+        existingSlugCounts.set(slug, (existingSlugCounts.get(slug) || 0) + 1);
+        existingBySlug.set(slug, ex);
+      }
+    }
+
+    const crmSlugCounts = new Map<string, number>();
+    for (const cs of rawStudents) {
+      const fullName = String(cs?.student?.fullName || "").trim();
+      if (!fullName) continue;
+      const slug = typeof toVietnameseUpperSlug === "function" ? toVietnameseUpperSlug(fullName) : "";
+      if (slug) {
+        crmSlugCounts.set(slug, (crmSlugCounts.get(slug) || 0) + 1);
+      }
+    }
+
+    const studentsMap = new Map<string, StudentRecord>();
+    let rowIdx = 0;
+
+    for (const cs of rawStudents) {
+      const crmId = String(cs?.student?.id || "").trim();
+      const fullName = String(cs?.student?.fullName || "").trim();
+      if (!fullName) continue;
+      rowIdx++;
+
+      const isActive = cs?.activeInClass === false ? 0 : 1;
+      const normSlug =
+        typeof toVietnameseUpperSlug === "function" ? toVietnameseUpperSlug(fullName) : "";
+      const canonicalSlugId = normSlug ? `STU_${classId}_${normSlug}` : "";
+
+      let resolvedStudentId = "";
+      if (crmId && existingById.has(crmId)) {
+        resolvedStudentId = crmId;
+      } else if (
+        canonicalSlugId &&
+        existingById.has(canonicalSlugId) &&
+        (crmSlugCounts.get(normSlug) || 0) <= 1
+      ) {
+        resolvedStudentId = canonicalSlugId;
+      } else if (
+        normSlug &&
+        existingSlugCounts.get(normSlug) === 1 &&
+        (crmSlugCounts.get(normSlug) || 0) <= 1
+      ) {
+        resolvedStudentId = existingBySlug.get(normSlug)!.studentId;
+      } else if (canonicalSlugId && (crmSlugCounts.get(normSlug) || 0) === 1) {
+        resolvedStudentId = canonicalSlugId;
+      } else if (crmId) {
+        resolvedStudentId = crmId;
+      } else {
+        throw new Error(
+          `Phát hiện học viên trùng tên '${fullName}' trong lớp ${classId} nhưng API thiếu mã student.id riêng biệt.`
+        );
+      }
+
+      if (studentsMap.has(resolvedStudentId)) {
+        if (crmId && !studentsMap.has(crmId)) {
+          resolvedStudentId = crmId;
+        } else {
+          throw new Error(
+            `Xung đột định danh học viên '${fullName}' (${resolvedStudentId}) trong lớp ${classId}.`
+          );
+        }
+      }
+
+      studentsMap.set(resolvedStudentId, {
+        studentId: resolvedStudentId,
+        classId,
+        fullName,
+        isActive,
+      });
+    }
+
+    return Array.from(studentsMap.values());
+  }
+
+  /**
+   * Builds canonical `ClassSessionRecord[]` from `GetClassById.slots` + `courses_syllabus.json`.
+   */
+  public static buildSessionsFromGetClassById(
+    clsPayload: any,
+    rawClassId: string,
+    rawClassCode: string
+  ): { sessions: ClassSessionRecord[]; latestActiveSessionId: string } {
+    const classId = String(rawClassId || "").trim().toUpperCase();
+    const classCode = String(rawClassCode || classId).trim().toUpperCase();
+    const rawSlots: any[] = Array.isArray(clsPayload?.slots) ? clsPayload.slots : [];
+
+    const syllabusList = typeof getCoursesSyllabus === "function" ? getCoursesSyllabus() : [];
+    const matchedCourse = syllabusList.find((c) => classCode.includes(c.courseCode));
+
+    const nowMs = Date.now();
+    const todayEndOfDayMs =
+      parseClassDateToEndOfDayMs(formatMsToDdMmYyyy(nowMs)) ?? nowMs;
+
+    const bySessionNum = new Map<number, ClassSessionRecord>();
+    for (let idx = 0; idx < rawSlots.length; idx++) {
+      const sl = rawSlots[idx];
+      if (!sl || typeof sl !== "object") continue;
+      const sessionNumber = typeof sl.index === "number" ? sl.index + 1 : idx + 1;
+      if (sessionNumber < 1 || sessionNumber > 20 || bySessionNum.has(sessionNumber)) continue;
+
+      const sessionId = `${classId}_SESS_${String(sessionNumber).padStart(2, "0")}`;
+      const rawDate = sl.date || sl.startTime || sl.startDate;
+      const slotMs = rawDate ? parseSlotOrClassDateToEndOfDayMs(String(rawDate)) : null;
+      const sessionDate =
+        slotMs !== null && slotMs <= todayEndOfDayMs ? formatMsToDdMmYyyy(slotMs) : "";
+
+      const syllabusSession = matchedCourse?.sessions.find(
+        (s) => s.sessionNumber === sessionNumber
+      );
+      const topic =
+        syllabusSession?.topic ||
+        `Buổi ${sessionNumber}: Bài học theo giáo trình ${classCode}`;
+
+      bySessionNum.set(sessionNumber, {
+        classId,
+        className: classCode,
+        sessionId,
+        sessionNumber,
+        topic,
+        date: sessionDate,
+      });
+    }
+
+    const sessions = Array.from(bySessionNum.values()).sort(
+      (a, b) => a.sessionNumber - b.sessionNumber
+    );
+    if (sessions.length === 0) {
+      return { sessions: [], latestActiveSessionId: "" };
+    }
+
+    let latestActiveSessionId = sessions[0].sessionId;
+    for (const s of sessions) {
+      if (s.date) {
+        latestActiveSessionId = s.sessionId;
+      }
+    }
+
+    const enriched = enrichClassSessionsWithScheduleDates({
+      classCode,
+      sessions,
+      latestActiveSessionId,
+      slots: rawSlots,
+      nowMs,
+    });
+
+    return {
+      sessions,
+      latestActiveSessionId: enriched.latestActiveSessionId,
+    };
+  }
+
+  private static persistSyncedClassData(params: {
+    jobId: string;
+    classId: string;
+    classCode: string;
+    sessions: ClassSessionRecord[];
+    students: StudentRecord[];
+    latestActiveSessionId: string;
+    classByIdGqlData: any;
+    syncedLmsClassId?: string;
+    shouldSyncCompletion: boolean;
+    preferLmsVerified: boolean;
+    sourceLabel?: string;
+  }): SyncClassResult {
+    const {
+      jobId,
+      classId,
+      classCode,
+      sessions,
+      students,
+      latestActiveSessionId,
+      classByIdGqlData,
+      syncedLmsClassId,
+      shouldSyncCompletion,
+      preferLmsVerified,
+      sourceLabel,
+    } = params;
+
+    if (
+      syncedLmsClassId &&
+      !/^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(classCode)
+    ) {
+      try {
+        saveLmsClassIdMapping(classCode, syncedLmsClassId);
+      } catch {}
+    }
+
+    let lmsVerifiedSessionsCount = 0;
+    const db = getDb();
+    const saveTransaction = () => {
+      for (const s of sessions) {
+        classSessionRepo.upsert(s);
+      }
+      if (typeof (db as any)?.prepare === "function") {
+        const validIds = new Set(students.map((st) => st.studentId));
+        const existing = studentRepo.findByClass(classId, false) || [];
+        const delStmt = (db as any).prepare(
+          "DELETE FROM students WHERE classId = ? AND studentId = ?"
+        );
+        for (const ex of existing) {
+          if (!validIds.has(ex.studentId) && /^STU_.*_\d+$/.test(ex.studentId)) {
+            delStmt.run(classId, ex.studentId);
+          }
+        }
+      }
+      for (const st of students) {
+        studentRepo.upsert(st);
+      }
+      if (
+        shouldSyncCompletion &&
+        typeof (db as any)?.prepare === "function" &&
+        Array.isArray(classByIdGqlData?.slots) &&
+        classByIdGqlData.slots.length > 0
+      ) {
+        lmsVerifiedSessionsCount = this.syncLmsSlotCompletionToSqlite({
+          db,
+          classId,
+          students,
+          slots: classByIdGqlData.slots,
+          preferLmsVerified,
+        });
+      }
+    };
+
+    if (typeof (db as any).transaction === "function") {
+      (db as any).transaction(saveTransaction)();
+    } else {
+      saveTransaction();
+    }
+
+    const activeStudentsCount = students.filter((s) => s.isActive).length;
+
+    jobLogRepo.add({
+      jobId,
+      jobType: "SYNC_CLASS",
+      classId,
+      level: "SUCCESS",
+      message: `Đồng bộ thành công lớp ${classCode}${sourceLabel ? ` (${sourceLabel})` : ""}: ${sessions.length} buổi học (Buổi hiện tại: ${latestActiveSessionId || "N/A"}), ${students.length} học viên (${activeStudentsCount} đang hoạt động).`,
+    });
+
+    return {
+      success: true,
+      classId,
+      classCode,
+      ...(syncedLmsClassId ? { lmsClassId: syncedLmsClassId } : {}),
+      sessionsCount: sessions.length,
+      studentsCount: students.length,
+      activeStudentsCount,
+      latestActiveSessionId,
+      lmsVerifiedSessionsCount,
+      sessions,
+      students,
+    };
+  }
+
+  private static async syncClassViaApi(
+    classCode: string,
+    options: SyncClassOptions | undefined,
+    jobId: string
+  ): Promise<SyncClassResult> {
+    safeEnsureQueueNotStoppedSync();
+    const classId = classCode;
+    const shouldSyncCompletion = options?.syncLmsCompletionStatus !== false;
+    const preferLmsVerified = options?.preferLmsVerified ?? Boolean(options?.forceFreshDrawer);
+
+    let targetLmsId = "";
+    const cached = resolveKnownLmsClassId(classCode);
+    if (
+      cached.lmsClassId &&
+      isValidLmsClassObjectId(cached.lmsClassId) &&
+      cached.lmsClassId.toUpperCase() !== classCode
+    ) {
+      targetLmsId = cached.lmsClassId;
+    }
+
+    let clsPayload: any = null;
+    if (targetLmsId) {
+      const byCached = await _lmsHttpClient.getClassById("TEACHER", targetLmsId);
+      const cachedCode = String(
+        byCached.clsPayload?.name || byCached.clsPayload?.code || ""
+      )
+        .trim()
+        .toUpperCase();
+      if (byCached.clsPayload && (!cachedCode || cachedCode === classCode)) {
+        clsPayload = byCached.clsPayload;
+      }
+    }
+
+    if (!clsPayload) {
+      const foundCls = await _lmsHttpClient.findClassByCode("TEACHER", classCode);
+      const foundId = String(foundCls?.id ?? foundCls?._id ?? "").trim();
+      if (!foundId) {
+        throw new Error(`Không tìm thấy lớp ${classCode} qua API LMS.`);
+      }
+      const byFound = await _lmsHttpClient.getClassById("TEACHER", foundId);
+      if (!byFound.clsPayload) {
+        throw new Error(byFound.error || `Không tải được chi tiết lớp ${classCode} qua API LMS.`);
+      }
+      clsPayload = byFound.clsPayload;
+    }
+
+    const payloadCode = String(
+      clsPayload?.name || clsPayload?.code || clsPayload?.classCode || ""
+    )
+      .trim()
+      .toUpperCase();
+    if (payloadCode && payloadCode !== classCode) {
+      throw new Error(
+        `API GetClassById trả về sai lớp ('${payloadCode}' !== '${classCode}').`
+      );
+    }
+
+    const { sessions, latestActiveSessionId } = this.buildSessionsFromGetClassById(
+      clsPayload,
+      classId,
+      classCode
+    );
+    const students = this.buildStudentsFromGetClassById(clsPayload, classId);
+
+    if (sessions.length === 0 || students.length === 0) {
+      throw new Error(
+        `Dữ liệu API lớp ${classCode} chưa đủ (${sessions.length} buổi học, ${students.length} học viên).`
+      );
+    }
+
+    const rawGqlId = String(clsPayload?.id ?? clsPayload?._id ?? targetLmsId ?? "").trim();
+    const syncedLmsClassId =
+      isValidLmsClassObjectId(rawGqlId) && rawGqlId.toUpperCase() !== classCode
+        ? rawGqlId
+        : undefined;
+
+    return this.persistSyncedClassData({
+      jobId,
+      classId,
+      classCode,
+      sessions,
+      students,
+      latestActiveSessionId,
+      classByIdGqlData: clsPayload,
+      syncedLmsClassId,
+      shouldSyncCompletion,
+      preferLmsVerified,
+      sourceLabel: "API thuần",
+    });
+  }
+
+  /**
    * Synchronizes class details, schedule/sessions, and student roster from LMS into SQLite.
    * Locked strictly by classCode / classId (normalized to UPPERCASE).
    */
@@ -903,6 +1323,40 @@ export class ClassSyncer {
       level: "INFO",
       message: `Bắt đầu đồng bộ dữ liệu lớp ${classCode} từ LMS...`,
     });
+
+    if (safeIsLmsApiReadEnabled({ forcePlaywright: options?.forcePlaywright })) {
+      try {
+        return await this.syncClassViaApi(classCode, options, jobId);
+      } catch (apiErr: any) {
+        if (safeIsQueueStoppedErrorSync(apiErr)) {
+          const stopMsg = safeRedactSecretsSync(apiErr);
+          jobLogRepo.add({
+            jobId,
+            jobType: "SYNC_CLASS",
+            level: "ERROR",
+            message: `Lỗi đồng bộ lớp ${classCode}: ${stopMsg}`,
+          });
+          return {
+            success: false,
+            classId: classCode,
+            classCode,
+            sessionsCount: 0,
+            studentsCount: 0,
+            activeStudentsCount: 0,
+            sessions: [],
+            students: [],
+            error: stopMsg,
+          };
+        }
+        jobLogRepo.add({
+          jobId,
+          jobType: "SYNC_CLASS",
+          classId: classCode,
+          level: "WARN",
+          message: `Đọc API lớp ${classCode} chưa xong (${safeRedactSecretsSync(apiErr)}). Chuyển sang Playwright dự phòng...`,
+        });
+      }
+    }
 
     const browserManager = BrowserManager.getInstance();
     const page =
@@ -1172,14 +1626,6 @@ export class ClassSyncer {
           : drawerUrlId && drawerUrlId.toUpperCase() !== classCode
             ? drawerUrlId
             : undefined;
-      if (
-        syncedLmsClassId &&
-        !/^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(classCode)
-      ) {
-        try {
-          saveLmsClassIdMapping(classCode, syncedLmsClassId);
-        } catch {}
-      }
 
       // Enrich session dates from GetClassById.slots and weekly +7 days schedule up to today (<= todayEndOfDayMs),
       // advancing latestActiveSessionId when a session falls on today even before the class hour unlocks the DOM slot.
@@ -1191,74 +1637,18 @@ export class ClassSyncer {
       });
       latestActiveSessionId = enrichedSchedule.latestActiveSessionId;
 
-      let lmsVerifiedSessionsCount = 0;
-
-      // 6. Save all verified scraped records to SQLite atomically without deleting historical feedbacks
-      const db = getDb();
-      const saveTransaction = () => {
-        for (const s of sessions) {
-          classSessionRepo.upsert(s);
-        }
-        if (typeof (db as any)?.prepare === "function") {
-          const validIds = new Set(students.map((st) => st.studentId));
-          const existing = studentRepo.findByClass(classId, false) || [];
-          const delStmt = (db as any).prepare(
-            "DELETE FROM students WHERE classId = ? AND studentId = ?"
-          );
-          for (const ex of existing) {
-            if (!validIds.has(ex.studentId) && /^STU_.*_\d+$/.test(ex.studentId)) {
-              delStmt.run(classId, ex.studentId);
-            }
-          }
-        }
-        for (const st of students) {
-          studentRepo.upsert(st);
-        }
-        if (
-          shouldSyncCompletion &&
-          typeof (db as any)?.prepare === "function" &&
-          Array.isArray(classByIdGqlData?.slots) &&
-          classByIdGqlData.slots.length > 0
-        ) {
-          lmsVerifiedSessionsCount = this.syncLmsSlotCompletionToSqlite({
-            db,
-            classId,
-            students,
-            slots: classByIdGqlData.slots,
-            preferLmsVerified,
-          });
-        }
-      };
-
-      if (typeof (db as any).transaction === "function") {
-        (db as any).transaction(saveTransaction)();
-      } else {
-        saveTransaction();
-      }
-
-      const activeStudentsCount = students.filter((s) => s.isActive).length;
-
-      jobLogRepo.add({
+      return this.persistSyncedClassData({
         jobId,
-        jobType: "SYNC_CLASS",
-        classId,
-        level: "SUCCESS",
-        message: `Đồng bộ thành công lớp ${classCode}: ${sessions.length} buổi học (Buổi hiện tại: ${latestActiveSessionId || "N/A"}), ${students.length} học viên (${activeStudentsCount} đang hoạt động).`,
-      });
-
-      return {
-        success: true,
         classId,
         classCode,
-        ...(syncedLmsClassId ? { lmsClassId: syncedLmsClassId } : {}),
-        sessionsCount: sessions.length,
-        studentsCount: students.length,
-        activeStudentsCount,
-        latestActiveSessionId,
-        lmsVerifiedSessionsCount,
         sessions,
         students,
-      };
+        latestActiveSessionId,
+        classByIdGqlData,
+        syncedLmsClassId,
+        shouldSyncCompletion,
+        preferLmsVerified,
+      });
     } catch (err: any) {
       const errMsg = err instanceof Error ? err.message : String(err);
       jobLogRepo.add({
@@ -2079,6 +2469,286 @@ export class ClassSyncer {
     return Array.from(studentsMap.values());
   }
 
+  private static finalizeRunningClassesResult(params: {
+    collectedMap: Map<string, RunningClassItem>;
+    discoveredLmsClassIds: Record<string, string>;
+    spckDbFinishedGraceDays: number;
+    nowMs: number;
+    persistToConfig?: boolean;
+    jobId: string;
+    sourceLabel?: string;
+  }): {
+    success: boolean;
+    classes: RunningClassItem[];
+  } {
+    const {
+      collectedMap,
+      discoveredLmsClassIds,
+      spckDbFinishedGraceDays,
+      nowMs,
+      persistToConfig,
+      jobId,
+      sourceLabel,
+    } = params;
+
+    // Also include any previously synced SQLite classes that reached Buổi 12–14 and whose Buổi 14
+    // is within FINISHED_CLASS_GRACE_DAYS (15 days), even if they were on a later page of /admin/classes
+    try {
+      const priorRunningList =
+        typeof getRunningClasses === "function" ? getRunningClasses() || [] : [];
+      const priorRunningMap = new Map<string, RunningClassItem>();
+      for (const item of priorRunningList) {
+        const c = String(item?.classCode || "").trim().toUpperCase();
+        if (c) priorRunningMap.set(c, item);
+      }
+
+      const db = getDb();
+      if (typeof (db as any)?.prepare === "function") {
+        const dbClasses = (db as any)
+          .prepare(
+            `SELECT classId, MAX(className) AS className, MAX(sessionNumber) AS maxSess
+             FROM classes_sessions
+             GROUP BY classId
+             HAVING MAX(sessionNumber) >= 12`
+          )
+          .all() as Array<{ classId: string; className?: string; maxSess: number }>;
+        const nowIso = new Date().toISOString();
+        for (const row of dbClasses) {
+          const code = String(row.classId || "").trim().toUpperCase();
+          if (!code || /^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(code)) continue;
+          if (collectedMap.has(code)) continue;
+          const priorItem = priorRunningMap.get(code);
+          const graceCheck = isFinishedClassWithinGraceWindow(
+            code,
+            priorItem?.endDate || null,
+            spckDbFinishedGraceDays,
+            nowMs
+          );
+          if (graceCheck.isKnownDate && graceCheck.withinWindow) {
+            const isStillRunningBeforeEndDate =
+              (graceCheck.daysSinceSession14 ?? 1) <= 0 &&
+              isConfirmedRunningStatus(priorItem?.status);
+            collectedMap.set(code, {
+              ...(priorItem || {}),
+              classCode: code,
+              courseName:
+                priorItem?.courseName ||
+                (row.className && row.className !== code ? row.className : ""),
+              status: isStillRunningBeforeEndDate ? "Running" : "Finished",
+              endDate: graceCheck.session14Date || priorItem?.endDate,
+              updatedAt: nowIso,
+            });
+          }
+        }
+      }
+    } catch {
+      // Ignore DB fallback errors
+    }
+
+    const activeRunningCodeSet = new Set(
+      Array.from(collectedMap.values())
+        .filter((c) => isConfirmedRunningStatus(c.status))
+        .map((c) => c.classCode)
+    );
+    const runningList = Array.from(collectedMap.values()).filter(
+      (c) =>
+        c.status !== "Finished" ||
+        !isFinishedClassSupersededByRunningSuccessor(c.classCode, activeRunningCodeSet)
+    );
+    const shouldPersist = persistToConfig !== false;
+    if (shouldPersist) {
+      saveRunningClasses(runningList);
+      if (Object.keys(discoveredLmsClassIds).length > 0) {
+        try {
+          saveLmsClassIdMappingsBatch(discoveredLmsClassIds);
+        } catch {}
+      }
+    }
+
+    const finalClasses = runningList;
+    const runningOnlyCount = finalClasses.filter((c) => isConfirmedRunningStatus(c.status)).length;
+    const recentFinishedCount = finalClasses.filter((c) => c.status === "Finished").length;
+
+    jobLogRepo.add({
+      jobId,
+      jobType: "SYNC_CLASS",
+      level: "SUCCESS",
+      message: `Đã lấy thành công ${finalClasses.length} lớp từ LMS${sourceLabel ? ` (${sourceLabel})` : ""} (${runningOnlyCount} lớp Running + ${recentFinishedCount} lớp Finished trong vòng ${DASHBOARD_FINISHED_CLASS_GRACE_DAYS} ngày sau Buổi 14): ${finalClasses
+        .map((c) => `${c.classCode}${c.status === "Finished" ? " [Finished]" : ""}`)
+        .join(", ")}.`,
+    });
+
+    return {
+      success: true,
+      classes: finalClasses,
+    };
+  }
+
+  private static async fetchRunningClassesViaApi(
+    options: {
+      persistToConfig?: boolean;
+      includeFinishedDays?: number;
+      forcePlaywright?: boolean;
+    } | undefined,
+    jobId: string
+  ): Promise<{
+    success: boolean;
+    classes: RunningClassItem[];
+  }> {
+    safeEnsureQueueNotStoppedSync();
+    const collectedMap = new Map<string, RunningClassItem>();
+    const discoveredLmsClassIds: Record<string, string> = {};
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
+    const tableFinishedGraceDays =
+      typeof options?.includeFinishedDays === "number" &&
+      Number.isFinite(options.includeFinishedDays)
+        ? Math.max(0, Math.floor(options.includeFinishedDays))
+        : DASHBOARD_FINISHED_CLASS_GRACE_DAYS;
+    const spckDbFinishedGraceDays =
+      typeof options?.includeFinishedDays === "number" &&
+      Number.isFinite(options.includeFinishedDays)
+        ? Math.max(0, Math.floor(options.includeFinishedDays))
+        : FINISHED_CLASS_GRACE_DAYS;
+
+    const recordClassItem = (raw: any, forcedStatus: "Running" | "Finished") => {
+      const classCode = String(raw?.name || raw?.code || "").trim().toUpperCase();
+      if (!classCode || !/^[A-Z0-9]+(?:-[A-Z0-9]+)+$/i.test(classCode)) return;
+      const rawId = String(raw?.id ?? raw?._id ?? "").trim();
+      if (
+        isValidLmsClassCode(classCode) &&
+        !/^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(classCode) &&
+        isValidLmsClassObjectId(rawId) &&
+        rawId.toUpperCase() !== classCode
+      ) {
+        discoveredLmsClassIds[classCode] = rawId;
+      }
+      if (collectedMap.has(classCode)) return;
+
+      const startMs = parseSlotOrClassDateToEndOfDayMs(
+        raw?.startDate !== undefined && raw?.startDate !== null ? String(raw.startDate) : ""
+      );
+      const endMs = parseSlotOrClassDateToEndOfDayMs(
+        raw?.endDate !== undefined && raw?.endDate !== null ? String(raw.endDate) : ""
+      );
+      const startDateFormatted = startMs !== null ? formatMsToDdMmYyyy(startMs) : undefined;
+      const endDateFormatted = endMs !== null ? formatMsToDdMmYyyy(endMs) : undefined;
+      const courseName = String(raw?.course?.name || raw?.course?.shortName || "").trim();
+      const center = String(
+        raw?.centre?.shortName || raw?.centre?.code || raw?.centre?.name || ""
+      ).trim();
+
+      if (forcedStatus === "Running") {
+        collectedMap.set(classCode, {
+          classCode,
+          courseName,
+          center,
+          status: "Running",
+          ...(rawId ? { lmsClassId: rawId } : {}),
+          ...(startDateFormatted ? { startDate: startDateFormatted } : {}),
+          ...(endDateFormatted ? { endDate: endDateFormatted } : {}),
+          updatedAt: nowIso,
+        });
+        return;
+      }
+
+      const graceCheck = isFinishedClassWithinGraceWindow(
+        classCode,
+        endDateFormatted || null,
+        tableFinishedGraceDays,
+        nowMs
+      );
+      if (graceCheck.isKnownDate && graceCheck.withinWindow) {
+        collectedMap.set(classCode, {
+          classCode,
+          courseName,
+          center,
+          status: "Finished",
+          ...(rawId ? { lmsClassId: rawId } : {}),
+          ...(startDateFormatted ? { startDate: startDateFormatted } : {}),
+          endDate: graceCheck.session14Date,
+          updatedAt: nowIso,
+        });
+        if (graceCheck.session14Date) {
+          try {
+            const db = getDb();
+            if (typeof (db as any)?.prepare === "function") {
+              (db as any)
+                .prepare(
+                  `UPDATE classes_sessions
+                   SET date = ?
+                   WHERE classId = ? AND sessionNumber = 14 AND TRIM(COALESCE(date, '')) = ''`
+                )
+                .run(graceCheck.session14Date, classCode);
+            }
+          } catch {}
+        }
+      }
+    };
+
+    let firstRunningTotal: number | null = null;
+    let runningTotalSeen = 0;
+    for (let pageIdx = 0; pageIdx < 5; pageIdx++) {
+      if (pageIdx > 0) await safePaceLmsBatchRequestSync(300);
+      const res = await _lmsHttpClient.listClasses("TEACHER", {
+        status_in: ["RUNNING"],
+        pageIndex: pageIdx,
+        itemsPerPage: 50,
+        orderBy: "createdAt_desc",
+      });
+      if (Array.isArray(res.errors) && res.errors.length > 0) {
+        throw new Error(String(res.errors[0]?.message || "GraphQL classes RUNNING error"));
+      }
+      if (pageIdx === 0) {
+        firstRunningTotal = res.total;
+      }
+      for (const item of res.data) {
+        recordClassItem(item, "Running");
+      }
+      runningTotalSeen += res.data.length;
+      if (res.data.length === 0) break;
+      if (res.total !== null && runningTotalSeen >= res.total) break;
+      if (res.total === null && res.data.length < 50) break;
+    }
+
+    await safePaceLmsBatchRequestSync(300);
+    const finRes = await _lmsHttpClient.listClasses("TEACHER", {
+      status_in: ["FINISHED"],
+      pageIndex: 0,
+      itemsPerPage: 50,
+      orderBy: "createdAt_desc",
+    });
+    if (Array.isArray(finRes.errors) && finRes.errors.length > 0) {
+      if (collectedMap.size === 0) {
+        throw new Error(String(finRes.errors[0]?.message || "GraphQL classes FINISHED error"));
+      }
+    } else {
+      for (const item of finRes.data) {
+        recordClassItem(item, "Finished");
+      }
+    }
+
+    if (collectedMap.size === 0 && firstRunningTotal !== 0) {
+      const priorRunningList =
+        typeof getRunningClasses === "function" ? getRunningClasses() || [] : [];
+      if (priorRunningList.length > 0) {
+        throw new Error(
+          "API danh sách lớp trả về rỗng (total không xác định) trong khi bộ nhớ đệm đang có lớp. Lùi về Playwright để xác nhận."
+        );
+      }
+    }
+
+    return this.finalizeRunningClassesResult({
+      collectedMap,
+      discoveredLmsClassIds,
+      spckDbFinishedGraceDays,
+      nowMs,
+      persistToConfig: options?.persistToConfig,
+      jobId,
+      sourceLabel: "API thuần",
+    });
+  }
+
   /**
    * Scrapes all classes with Status = "Running" (Đang học) from the MindX LMS Classes table
    * and caches them into data/running_classes.json for one-click selection.
@@ -2086,6 +2756,7 @@ export class ClassSyncer {
   public static async fetchRunningClasses(options?: {
     persistToConfig?: boolean;
     includeFinishedDays?: number;
+    forcePlaywright?: boolean;
   }): Promise<{
     success: boolean;
     classes: RunningClassItem[];
@@ -2098,6 +2769,33 @@ export class ClassSyncer {
       level: "INFO",
       message: "Đang vào trang Danh sách Lớp học LMS để lấy các lớp đang học (Running)...",
     });
+
+    if (safeIsLmsApiReadEnabled({ forcePlaywright: options?.forcePlaywright })) {
+      try {
+        return await this.fetchRunningClassesViaApi(options, jobId);
+      } catch (apiErr: any) {
+        if (safeIsQueueStoppedErrorSync(apiErr)) {
+          const stopMsg = safeRedactSecretsSync(apiErr);
+          jobLogRepo.add({
+            jobId,
+            jobType: "SYNC_CLASS",
+            level: "ERROR",
+            message: `Lỗi lấy danh sách lớp đang học từ LMS: ${stopMsg}`,
+          });
+          return {
+            success: false,
+            classes: getRunningClasses(),
+            error: stopMsg,
+          };
+        }
+        jobLogRepo.add({
+          jobId,
+          jobType: "SYNC_CLASS",
+          level: "WARN",
+          message: `Đọc danh sách lớp qua API chưa xong (${safeRedactSecretsSync(apiErr)}). Chuyển sang Playwright dự phòng...`,
+        });
+      }
+    }
 
     const browserManager = BrowserManager.getInstance();
     const page =
@@ -2711,97 +3409,14 @@ export class ClassSyncer {
         }
       }
 
-      // Also include any previously synced SQLite classes that reached Buổi 12–14 and whose Buổi 14
-      // is within FINISHED_CLASS_GRACE_DAYS (15 days), even if they were on a later page of /admin/classes
-      try {
-        const priorRunningList =
-          typeof getRunningClasses === "function" ? getRunningClasses() || [] : [];
-        const priorRunningMap = new Map<string, RunningClassItem>();
-        for (const item of priorRunningList) {
-          const c = String(item?.classCode || "").trim().toUpperCase();
-          if (c) priorRunningMap.set(c, item);
-        }
-
-        const db = getDb();
-        if (typeof (db as any)?.prepare === "function") {
-          const dbClasses = (db as any)
-            .prepare(
-              `SELECT classId, MAX(className) AS className, MAX(sessionNumber) AS maxSess
-               FROM classes_sessions
-               GROUP BY classId
-               HAVING MAX(sessionNumber) >= 12`
-            )
-            .all() as Array<{ classId: string; className?: string; maxSess: number }>;
-          const nowIso = new Date().toISOString();
-          for (const row of dbClasses) {
-            const code = String(row.classId || "").trim().toUpperCase();
-            if (!code || /^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(code)) continue;
-            if (collectedMap.has(code)) continue;
-            const priorItem = priorRunningMap.get(code);
-            const graceCheck = isFinishedClassWithinGraceWindow(
-              code,
-              priorItem?.endDate || null,
-              spckDbFinishedGraceDays,
-              nowMs
-            );
-            if (graceCheck.isKnownDate && graceCheck.withinWindow) {
-              const isStillRunningBeforeEndDate =
-                (graceCheck.daysSinceSession14 ?? 1) <= 0 &&
-                isConfirmedRunningStatus(priorItem?.status);
-              collectedMap.set(code, {
-                ...(priorItem || {}),
-                classCode: code,
-                courseName:
-                  priorItem?.courseName ||
-                  (row.className && row.className !== code ? row.className : ""),
-                status: isStillRunningBeforeEndDate ? "Running" : "Finished",
-                endDate: graceCheck.session14Date || priorItem?.endDate,
-                updatedAt: nowIso,
-              });
-            }
-          }
-        }
-      } catch {
-        // Ignore DB fallback errors
-      }
-
-      const activeRunningCodeSet = new Set(
-        Array.from(collectedMap.values())
-          .filter((c) => isConfirmedRunningStatus(c.status))
-          .map((c) => c.classCode)
-      );
-      const runningList = Array.from(collectedMap.values()).filter(
-        (c) =>
-          c.status !== "Finished" ||
-          !isFinishedClassSupersededByRunningSuccessor(c.classCode, activeRunningCodeSet)
-      );
-      const shouldPersist = options?.persistToConfig !== false;
-      if (shouldPersist) {
-        saveRunningClasses(runningList);
-        if (Object.keys(discoveredLmsClassIds).length > 0) {
-          try {
-            saveLmsClassIdMappingsBatch(discoveredLmsClassIds);
-          } catch {}
-        }
-      }
-
-      const finalClasses = runningList;
-      const runningOnlyCount = finalClasses.filter((c) => isConfirmedRunningStatus(c.status)).length;
-      const recentFinishedCount = finalClasses.filter((c) => c.status === "Finished").length;
-
-      jobLogRepo.add({
+      return this.finalizeRunningClassesResult({
+        collectedMap,
+        discoveredLmsClassIds,
+        spckDbFinishedGraceDays,
+        nowMs,
+        persistToConfig: options?.persistToConfig,
         jobId,
-        jobType: "SYNC_CLASS",
-        level: "SUCCESS",
-        message: `Đã lấy thành công ${finalClasses.length} lớp từ LMS (${runningOnlyCount} lớp Running + ${recentFinishedCount} lớp Finished trong vòng ${DASHBOARD_FINISHED_CLASS_GRACE_DAYS} ngày sau Buổi 14): ${finalClasses
-          .map((c) => `${c.classCode}${c.status === "Finished" ? " [Finished]" : ""}`)
-          .join(", ")}.`,
       });
-
-      return {
-        success: true,
-        classes: finalClasses,
-      };
     } catch (err: any) {
       const errMsg = err instanceof Error ? err.message : String(err);
       jobLogRepo.add({
@@ -2829,7 +3444,12 @@ export class ClassSyncer {
    */
   public static async fetchClassDatesFromLms(
     rawClassCode: string,
-    options?: { testPage?: Page; skipAuth?: boolean; searchTimeoutMs?: number }
+    options?: {
+      testPage?: Page;
+      skipAuth?: boolean;
+      searchTimeoutMs?: number;
+      forcePlaywright?: boolean;
+    }
   ): Promise<{
     success: boolean;
     classCode: string;
@@ -2850,6 +3470,137 @@ export class ClassSyncer {
       level: "INFO",
       message: `Đang lấy Ngày bắt đầu & Ngày kết thúc của lớp ${classCode} từ bảng Lớp học LMS...`,
     });
+
+    if (
+      safeIsLmsApiReadEnabled({
+        forcePlaywright: options?.forcePlaywright,
+        testPage: options?.testPage,
+      }) &&
+      typeof _lmsHttpClient?.findClassByCode === "function"
+    ) {
+      try {
+        safeEnsureQueueNotStoppedSync();
+        let clsItem = await _lmsHttpClient.findClassByCode("TEACHER", classCode);
+        const rawId = String(clsItem?.id ?? clsItem?._id ?? "").trim();
+        let startRaw = clsItem?.startDate !== undefined && clsItem?.startDate !== null ? String(clsItem.startDate) : "";
+        let endRaw = clsItem?.endDate !== undefined && clsItem?.endDate !== null ? String(clsItem.endDate) : "";
+        if ((!startRaw || !endRaw) && rawId && isValidLmsClassObjectId(rawId)) {
+          const detail = await _lmsHttpClient.getClassById("TEACHER", rawId);
+          if (detail?.clsPayload) {
+            clsItem = { ...clsItem, ...detail.clsPayload };
+            startRaw = clsItem?.startDate ? String(clsItem.startDate) : startRaw;
+            endRaw = clsItem?.endDate ? String(clsItem.endDate) : endRaw;
+          }
+        }
+        const startMs = parseSlotOrClassDateToEndOfDayMs(startRaw);
+        const endMs = parseSlotOrClassDateToEndOfDayMs(endRaw);
+        const startDateDmy = startMs !== null ? formatMsToDdMmYyyy(startMs) : "";
+        const endDateDmy = endMs !== null ? formatMsToDdMmYyyy(endMs) : "";
+        const startDateIso = startMs !== null ? formatMsToIsoYmd(startMs) : "";
+        const endDateIso = endMs !== null ? formatMsToIsoYmd(endMs) : "";
+        if (!startDateIso || !endDateIso) {
+          throw new Error(
+            `API lớp ${classCode} thiếu ngày Bắt đầu hoặc Kết thúc hợp lệ (${startRaw} - ${endRaw}).`
+          );
+        }
+
+        const courseName = String(clsItem?.course?.name || clsItem?.course?.shortName || "").trim();
+        const center = String(
+          clsItem?.centre?.shortName || clsItem?.centre?.code || clsItem?.centre?.name || ""
+        ).trim();
+
+        if (
+          rawId &&
+          isValidLmsClassCode(classCode) &&
+          !/^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(classCode) &&
+          isValidLmsClassObjectId(rawId) &&
+          rawId.toUpperCase() !== classCode
+        ) {
+          try {
+            saveLmsClassIdMapping(classCode, rawId);
+          } catch {}
+        }
+
+        const existingList = getRunningClasses();
+        const idx = existingList.findIndex(
+          (c) => String(c.classCode || "").trim().toUpperCase() === classCode
+        );
+        const nowIso = new Date().toISOString();
+        if (idx >= 0) {
+          existingList[idx] = {
+            ...existingList[idx],
+            courseName: courseName || existingList[idx].courseName,
+            center: center || existingList[idx].center,
+            ...(rawId ? { lmsClassId: rawId } : {}),
+            startDate: startDateDmy,
+            endDate: endDateDmy,
+            updatedAt: nowIso,
+          };
+        } else {
+          existingList.unshift({
+            classCode,
+            courseName,
+            center,
+            ...(rawId ? { lmsClassId: rawId } : {}),
+            status: "Running",
+            startDate: startDateDmy,
+            endDate: endDateDmy,
+            updatedAt: nowIso,
+          });
+        }
+        saveRunningClasses(existingList);
+
+        jobLogRepo.add({
+          jobId,
+          jobType: "SYNC_CLASS",
+          classId: classCode,
+          level: "SUCCESS",
+          message: `Đã lấy ngày khóa học lớp ${classCode} qua API thuần: Bắt đầu ${startDateDmy} - Kết thúc ${endDateDmy}.`,
+        });
+
+        return {
+          success: true,
+          classCode,
+          courseName,
+          startDateIso,
+          endDateIso,
+          startDateDmy,
+          endDateDmy,
+          source: "LMS_LIVE",
+        };
+      } catch (apiErr: unknown) {
+        if (safeIsQueueStoppedErrorSync(apiErr)) {
+          const stopMsg = safeRedactSecretsSync(apiErr);
+          jobLogRepo.add({
+            jobId,
+            jobType: "SYNC_CLASS",
+            classId: classCode,
+            level: "ERROR",
+            message: `Đã dừng lấy ngày lớp ${classCode} do Stop Bot: ${stopMsg}`,
+          });
+          return {
+            success: false,
+            classCode,
+            courseName: "",
+            startDateIso: "",
+            endDateIso: "",
+            startDateDmy: "",
+            endDateDmy: "",
+            source: "NONE",
+            error: stopMsg,
+          };
+        }
+        jobLogRepo.add({
+          jobId,
+          jobType: "SYNC_CLASS",
+          classId: classCode,
+          level: "WARN",
+          message: `Lấy ngày lớp ${classCode} qua API thuần thất bại (${safeRedactSecretsSync(
+            apiErr
+          )}), tự động lùi về Playwright.`,
+        });
+      }
+    }
 
     const page =
       options?.testPage ??
@@ -3126,6 +3877,7 @@ export class ClassSyncer {
       skipAuth?: boolean;
       searchTimeoutMs?: number;
       persistToConfig?: boolean;
+      forcePlaywright?: boolean;
     }
   ): Promise<{
     success: boolean;
@@ -3179,6 +3931,64 @@ export class ClassSyncer {
         } catch {}
       }
     };
+
+    if (
+      safeIsLmsApiReadEnabled({
+        forcePlaywright: options?.forcePlaywright,
+        testPage: options?.testPage,
+      }) &&
+      typeof _lmsHttpClient?.findClassByCode === "function"
+    ) {
+      try {
+        safeEnsureQueueNotStoppedSync();
+        const clsItem = await _lmsHttpClient.findClassByCode("TEACHER", classCode);
+        const apiId = String(clsItem?.id ?? clsItem?._id ?? "").trim();
+        if (apiId && isValidLmsClassObjectId(apiId) && apiId.toUpperCase() !== classCode) {
+          persistIfAllowed(apiId);
+          jobLogRepo.add({
+            jobId,
+            jobType: "SYNC_CLASS",
+            classId: classCode,
+            level: "SUCCESS",
+            message: `Đã lấy ID lớp ${classCode} qua API thuần (${apiId}).`,
+          });
+          return {
+            success: true,
+            classCode,
+            lmsClassId: apiId,
+            source: "LMS_SEARCH_API",
+          };
+        }
+        throw new Error(`Không tìm thấy ID lớp ${classCode} từ GraphQL classes.`);
+      } catch (apiErr: unknown) {
+        if (safeIsQueueStoppedErrorSync(apiErr)) {
+          const stopMsg = safeRedactSecretsSync(apiErr);
+          jobLogRepo.add({
+            jobId,
+            jobType: "SYNC_CLASS",
+            classId: classCode,
+            level: "ERROR",
+            message: `Đã dừng lấy ID lớp ${classCode} do Stop Bot: ${stopMsg}`,
+          });
+          return {
+            success: false,
+            classCode,
+            lmsClassId: "",
+            source: "LMS_SEARCH_API",
+            error: stopMsg,
+          };
+        }
+        jobLogRepo.add({
+          jobId,
+          jobType: "SYNC_CLASS",
+          classId: classCode,
+          level: "WARN",
+          message: `Lấy ID lớp ${classCode} qua API thuần thất bại (${safeRedactSecretsSync(
+            apiErr
+          )}), tự động lùi về Playwright.`,
+        });
+      }
+    }
 
     const page =
       options?.testPage ??

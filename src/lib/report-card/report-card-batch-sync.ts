@@ -26,6 +26,11 @@ import {
 } from "@/lib/report-card/report-card-calculator";
 import { enqueueScrapeClassScores } from "@/lib/report-card/report-card-staleness";
 import { ensureQueueNotStopped } from "@/lib/teaching/teaching-http-client";
+import {
+  isLmsApiReadEnabled,
+  isQueueStoppedError,
+  paceLmsBatchRequest,
+} from "@/lib/lms/lms-http-client";
 
 export type BatchSyncClassOutcome =
   | "SYNCED"
@@ -935,8 +940,22 @@ export async function runBatchReportCardSync(
 
     const results: SingleClassBatchSyncResult[] = [];
     let haltedByStop = false;
+    const shouldPaceApiRead =
+      typeof isLmsApiReadEnabled === "function" &&
+      isLmsApiReadEnabled() &&
+      !options?.scrapeFn;
 
-    for (const code of targetCodes) {
+    for (let idx = 0; idx < targetCodes.length; idx++) {
+      const code = targetCodes[idx];
+      if (idx > 0 && shouldPaceApiRead && !haltedByStop && !isQueueStoppedFn()) {
+        try {
+          await paceLmsBatchRequest(300);
+        } catch (paceErr) {
+          if (isQueueStoppedError(paceErr) || isQueueStoppedFn()) {
+            haltedByStop = true;
+          }
+        }
+      }
       if (haltedByStop || isQueueStoppedFn()) {
         haltedByStop = true;
         results.push({

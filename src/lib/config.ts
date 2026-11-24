@@ -28,6 +28,13 @@ const HOT_RELOAD_ADMIN_ENV_KEYS = [
   "ADMIN_LMS_CENTRE_IDS",
 ] as const;
 
+const HOT_RELOAD_RUNTIME_FLAG_KEYS = ["MINDX_LMS_API_READ"] as const;
+
+const ALL_HOT_RELOAD_ENV_KEYS = [
+  ...HOT_RELOAD_ADMIN_ENV_KEYS,
+  ...HOT_RELOAD_RUNTIME_FLAG_KEYS,
+] as const;
+
 function detectPreseededAdminTestEnv(): boolean {
   if (
     process.env.MINDX_ROLE_STATE_DIR !== undefined ||
@@ -35,13 +42,14 @@ function detectPreseededAdminTestEnv(): boolean {
     process.env.MINDX_DB_PATH !== undefined ||
     process.env.MINDX_RUNNING_CLASSES_PATH !== undefined ||
     process.env.MINDX_LMS_CLASS_IDS_PATH !== undefined ||
+    process.env.MINDX_LMS_TOKEN_DIR !== undefined ||
     process.env.NODE_ENV === "test"
   ) {
     return true;
   }
   // Note: Next.js (@next/env) injects .env.local/.env into process.env BEFORE this module loads.
   // Treat process.env keys as test-preseeded if they don't exist in .env.local/.env or have an explicit non-matching override.
-  for (const key of HOT_RELOAD_ADMIN_ENV_KEYS) {
+  for (const key of ALL_HOT_RELOAD_ENV_KEYS) {
     const currentVal = process.env[key];
     if (currentVal === undefined) continue;
     const inLocal = Object.prototype.hasOwnProperty.call(startupEnvLocalMap, key);
@@ -174,42 +182,53 @@ export const config: AppConfig = {
     .filter(Boolean),
 };
 
-export function getDynamicAdminConfig() {
-  if (!hasPreseededAdminTestEnv) {
-    try {
-      if (fs.existsSync(envLocalPath)) {
-        const currentMtimeMs = fs.statSync(envLocalPath).mtimeMs;
-        if (lastEnvLocalMtimeMs !== currentMtimeMs) {
-          const parsedLocal = readEnvFileMap(envLocalPath);
-          const parsedBase = readEnvFileMap(envBasePath);
-          for (const key of HOT_RELOAD_ADMIN_ENV_KEYS) {
-            if (Object.prototype.hasOwnProperty.call(parsedLocal, key)) {
-              process.env[key] = parsedLocal[key];
-            } else if (Object.prototype.hasOwnProperty.call(parsedBase, key)) {
-              process.env[key] = parsedBase[key];
-            } else {
-              delete process.env[key];
-            }
-          }
-          lastEnvLocalMtimeMs = currentMtimeMs;
-          didHotReloadEnvLocal = true;
-        }
-      } else if (lastEnvLocalMtimeMs !== null) {
+function hotReloadEnvIfNeeded(): void {
+  if (hasPreseededAdminTestEnv) return;
+  try {
+    if (fs.existsSync(envLocalPath)) {
+      const currentMtimeMs = fs.statSync(envLocalPath).mtimeMs;
+      if (lastEnvLocalMtimeMs !== currentMtimeMs) {
+        const parsedLocal = readEnvFileMap(envLocalPath);
         const parsedBase = readEnvFileMap(envBasePath);
-        for (const key of HOT_RELOAD_ADMIN_ENV_KEYS) {
-          if (Object.prototype.hasOwnProperty.call(parsedBase, key)) {
+        for (const key of ALL_HOT_RELOAD_ENV_KEYS) {
+          if (Object.prototype.hasOwnProperty.call(parsedLocal, key)) {
+            process.env[key] = parsedLocal[key];
+          } else if (Object.prototype.hasOwnProperty.call(parsedBase, key)) {
             process.env[key] = parsedBase[key];
           } else {
             delete process.env[key];
           }
         }
-        lastEnvLocalMtimeMs = null;
+        lastEnvLocalMtimeMs = currentMtimeMs;
         didHotReloadEnvLocal = true;
       }
-    } catch {
-      // ignore transient .env.local read errors
+    } else if (lastEnvLocalMtimeMs !== null) {
+      const parsedBase = readEnvFileMap(envBasePath);
+      for (const key of ALL_HOT_RELOAD_ENV_KEYS) {
+        if (Object.prototype.hasOwnProperty.call(parsedBase, key)) {
+          process.env[key] = parsedBase[key];
+        } else {
+          delete process.env[key];
+        }
+      }
+      lastEnvLocalMtimeMs = null;
+      didHotReloadEnvLocal = true;
     }
+  } catch {
+    // ignore transient .env.local read errors
   }
+}
+
+/**
+ * Returns the live value of `MINDX_LMS_API_READ` (supporting hot-reload from `.env.local`).
+ */
+export function getDynamicLmsApiReadEnvValue(): string | undefined {
+  hotReloadEnvIfNeeded();
+  return process.env.MINDX_LMS_API_READ;
+}
+
+export function getDynamicAdminConfig() {
+  hotReloadEnvIfNeeded();
 
   const useStartupFallback = !didHotReloadEnvLocal;
   const adminLmsUsername = (
@@ -267,6 +286,11 @@ function maskUsername(u: string): string {
  */
 export function getSafePublicConfig() {
   const adminCfg = getDynamicAdminConfig();
+  const rawApiRead = getDynamicLmsApiReadEnvValue();
+  const lmsApiReadFlag =
+    rawApiRead === undefined || rawApiRead.trim() === ""
+      ? true
+      : !/^(?:false|0|off|no)$/i.test(rawApiRead.trim());
   return {
     teachingUrl: config.teachingUrl,
     teachingUsernameMasked: maskUsername(config.teachingUsername),
@@ -286,5 +310,6 @@ export function getSafePublicConfig() {
     hasGeminiKey: Boolean(config.geminiApiKey),
     geminiModel: config.geminiModel,
     headlessMode: config.headlessMode,
+    lmsApiReadFlag,
   };
 }

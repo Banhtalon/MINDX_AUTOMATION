@@ -81,11 +81,13 @@ export function redactSecrets(input: unknown, extraSecrets?: string[]): string {
 
   text = text
     .replace(/AIza[0-9A-Za-z_-]{20,}/g, "[REDACTED]")
-    .replace(/(Authorization\s*:\s*(?:Bearer|Basic)\s+)[^\s"']+/gi, "$1[REDACTED]")
-    .replace(/([?&](?:password|passwd|pwd|token|api_?key|access_token|id_token|refresh_token)=)[^&\s"']+/gi, "$1[REDACTED]")
-    .replace(/(PHPSESSID\s*=\s*)[^;\s"']+/gi, "$1[REDACTED]")
+    .replace(/(Authorization\s*:\s*(?:(?:Bearer|Basic)\s+)?)[^\s"',;]+/gi, "$1[REDACTED]")
+    .replace(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, "[REDACTED_JWT]")
+    .replace(/([?&](?:password|passwd|pwd|token|api_?key|access_token|id_token|refresh_token|key)=)[^&\s"']+/gi, "$1[REDACTED]")
+    .replace(/(\b(?:refresh_token|id_token|access_token)=)[^&\s"']+/gi, "$1[REDACTED]")
+    .replace(/((?:PHPSESSID|\bsession)\s*=\s*)[^;\s"']+/gi, "$1[REDACTED]")
     .replace(
-      /("(?:password|adminLmsPassword|adminTeachingPassword|teachingPassword|lmsPassword|geminiApiKey|apiKey|accessToken|refreshToken|idToken)"\s*:\s*")[^"]*"/gi,
+      /("(?:password|adminLmsPassword|adminTeachingPassword|teachingPassword|lmsPassword|geminiApiKey|apiKey|firebaseApiKey|accessToken|refreshToken|idToken|customToken|authorization|id_token|refresh_token|access_token)"\s*:\s*")[^"]*"/gi,
       '$1[REDACTED]"'
     );
 

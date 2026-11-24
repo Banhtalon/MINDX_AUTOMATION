@@ -24,6 +24,19 @@ import {
   reconcileCheckpointTestScores as _reconcileCheckpointTestScoresSc,
 } from "../checkpoint/checkpoint-competency";
 import {
+  isLmsApiReadEnabled as _isLmsApiReadEnabledSc,
+  isQueueStoppedError as _isQueueStoppedErrorSc,
+  lmsHttpClient as _lmsHttpClientSc,
+} from "../lms/lms-http-client";
+import { redactSecrets as _redactSecretsSc } from "../security/secret-redactor";
+import { ensureQueueNotStopped as _ensureQueueNotStoppedSc } from "../teaching/teaching-http-client";
+import { resolveKnownLmsClassId as _resolveKnownLmsClassIdSc } from "../lms/lms-class-id-store";
+import { saveLmsClassIdMapping as _saveLmsClassIdMappingSc } from "../db/json-config";
+import {
+  isValidLmsClassCode as _isValidLmsClassCodeSc,
+  isValidLmsClassObjectId as _isValidLmsClassObjectIdSc,
+} from "../lms/lms-class-url";
+import {
   round2,
   normalizeScoreToScale5,
   computeCheckpointStage,
@@ -219,6 +232,33 @@ const safeReconcileCpScoresSc =
         return { theoryScore, practiceScore, hasUngradedPractice };
       };
 
+const safeIsLmsApiReadSc =
+  typeof _isLmsApiReadEnabledSc === "function" ? _isLmsApiReadEnabledSc : () => false;
+const safeIsQueueStoppedSc =
+  typeof _isQueueStoppedErrorSc === "function"
+    ? _isQueueStoppedErrorSc
+    : (e: unknown) => /QUEUE_STOPPED/i.test(e instanceof Error ? e.message : String(e ?? ""));
+const safeEnsureQueueNotStoppedSc =
+  typeof _ensureQueueNotStoppedSc === "function" ? _ensureQueueNotStoppedSc : () => {};
+const safeRedactSecretsSc =
+  typeof _redactSecretsSc === "function"
+    ? _redactSecretsSc
+    : (v: unknown) => (v instanceof Error ? v.message : String(v ?? ""));
+const safeResolveKnownLmsClassIdSc =
+  typeof _resolveKnownLmsClassIdSc === "function"
+    ? _resolveKnownLmsClassIdSc
+    : () => ({ lmsClassId: null, source: "NONE" as const });
+const safeSaveLmsClassIdMappingSc =
+  typeof _saveLmsClassIdMappingSc === "function" ? _saveLmsClassIdMappingSc : () => {};
+const safeIsValidLmsClassCodeSc =
+  typeof _isValidLmsClassCodeSc === "function"
+    ? _isValidLmsClassCodeSc
+    : (raw: unknown) => /^[A-Z0-9][A-Z0-9_-]{1,63}$/.test(String(raw ?? "").trim().toUpperCase());
+const safeIsValidLmsClassObjectIdSc =
+  typeof _isValidLmsClassObjectIdSc === "function"
+    ? _isValidLmsClassObjectIdSc
+    : (raw: unknown) => /^[a-zA-Z0-9_-]{8,64}$/.test(String(raw ?? "").trim());
+
 function stripHtmlTagsClean(raw?: string | null): string {
   if (!raw) return "";
   return String(raw)
@@ -295,13 +335,142 @@ function resolveCheckpointLessonStage(lesson: {
 }
 
 export class ScoreScraper {
+  private static async fetchScorePayloadsViaApi(
+    classCode: string,
+    isRobotics: boolean
+  ): Promise<{
+    lmsClassId: string;
+    classByIdGqlData: any;
+    submissionGqlData: any;
+  }> {
+    safeEnsureQueueNotStoppedSc();
+    if (
+      typeof _lmsHttpClientSc?.getClassById !== "function" ||
+      typeof _lmsHttpClientSc?.findClassByCode !== "function"
+    ) {
+      throw new Error("Bộ kết nối LMS API chưa sẵn sàng.");
+    }
+
+    let targetLmsId = "";
+    const cached = safeResolveKnownLmsClassIdSc(classCode);
+    if (
+      cached.lmsClassId &&
+      safeIsValidLmsClassObjectIdSc(cached.lmsClassId) &&
+      cached.lmsClassId.toUpperCase() !== classCode
+    ) {
+      targetLmsId = cached.lmsClassId;
+    }
+
+    let classByIdGqlData: any = null;
+    if (targetLmsId) {
+      const byCached = await _lmsHttpClientSc.getClassById("TEACHER", targetLmsId);
+      const cachedCode = String(
+        byCached.clsPayload?.name || byCached.clsPayload?.code || byCached.clsPayload?.classCode || ""
+      )
+        .trim()
+        .toUpperCase();
+      if (byCached.clsPayload && (!cachedCode || cachedCode === classCode)) {
+        classByIdGqlData = byCached.clsPayload;
+      }
+    }
+
+    if (!classByIdGqlData) {
+      const foundCls = await _lmsHttpClientSc.findClassByCode("TEACHER", classCode);
+      const foundId = String(foundCls?.id ?? foundCls?._id ?? "").trim();
+      if (!foundId) {
+        throw new Error(`Không tìm thấy lớp ${classCode} qua API LMS.`);
+      }
+      const byFound = await _lmsHttpClientSc.getClassById("TEACHER", foundId);
+      if (!byFound.clsPayload) {
+        throw new Error(byFound.error || `Không tải được GetClassById cho lớp ${classCode}.`);
+      }
+      classByIdGqlData = byFound.clsPayload;
+      targetLmsId = foundId;
+    }
+
+    const payloadCode = String(
+      classByIdGqlData?.name || classByIdGqlData?.code || classByIdGqlData?.classCode || ""
+    )
+      .trim()
+      .toUpperCase();
+    if (payloadCode && payloadCode !== classCode) {
+      throw new Error(
+        `Dữ liệu GetClassById trả về thuộc lớp khác ('${payloadCode}' !== '${classCode}').`
+      );
+    }
+
+    const resolvedId = String(
+      classByIdGqlData?.id ?? classByIdGqlData?._id ?? targetLmsId ?? ""
+    ).trim();
+    if (!resolvedId) {
+      throw new Error(`Thiếu ID lớp LMS cho ${classCode} từ GetClassById.`);
+    }
+
+    let submissionGqlData: any = null;
+    if (!isRobotics) {
+      const subRes = await _lmsHttpClientSc.findStudentSubmissionByClass("TEACHER", resolvedId);
+      if (!subRes.submissionGqlData) {
+        throw new Error(
+          subRes.error || `Không tải được FindStudentSubmissionByClass qua API cho lớp ${classCode}.`
+        );
+      }
+      const gqlPayload = subRes.submissionGqlData;
+      const subClassCode = String(
+        gqlPayload?.classCode || gqlPayload?.class?.code || gqlPayload?.class?.name || ""
+      )
+        .trim()
+        .toUpperCase();
+      const subClassId = String(gqlPayload?.classId || gqlPayload?.class?.id || "").trim();
+      if (
+        (subClassCode && subClassCode !== classCode) ||
+        (subClassId && subClassId !== resolvedId && subClassId.toUpperCase() !== classCode)
+      ) {
+        throw new Error(
+          `Dữ liệu FindStudentSubmissionByClass trả về thuộc lớp khác ('${subClassId || subClassCode}' !== '${resolvedId}').`
+        );
+      }
+      if (Array.isArray(gqlPayload?.submissions)) {
+        const mismatchSub = gqlPayload.submissions.find((s: any) => {
+          const cid = String(s?.classId || "").trim();
+          return Boolean(cid) && cid !== resolvedId && cid.toUpperCase() !== classCode;
+        });
+        if (mismatchSub) {
+          throw new Error(
+            `Phát hiện bài nộp thuộc lớp khác ('${mismatchSub.classId}' !== '${resolvedId}') trong FindStudentSubmissionByClass.`
+          );
+        }
+      }
+      submissionGqlData = gqlPayload;
+    }
+
+    if (
+      safeIsValidLmsClassCodeSc(classCode) &&
+      !/^(TEST|AUDIT|R\d+|CLASS_|SYNTH)/i.test(classCode) &&
+      safeIsValidLmsClassObjectIdSc(resolvedId) &&
+      resolvedId.toUpperCase() !== classCode
+    ) {
+      try {
+        safeSaveLmsClassIdMappingSc(classCode, resolvedId);
+      } catch {}
+    }
+
+    return {
+      lmsClassId: resolvedId,
+      classByIdGqlData,
+      submissionGqlData,
+    };
+  }
+
   /**
    * Scrapes the entire Homework / Submission score matrix AND the Teaching Report Card snapshot
    * (BTVN, Check-point 1, Check-point 2, Final DEMO) for a class on MindX LMS.
    * - Coding classes: Captures `GetClassById` + `FindStudentSubmissionByClass` (#tab-3), supporting dual practice tasks (`PRACTICE_TASK1` + `PRACTICE_TASK2`).
    * - Robotics classes (`VT-ROB-...`): Automatically skips `#tab-3 Chấm bài` (no BTVN) and extracts CP1 (Buổi 4), CP2 (Buổi 8), and Final DEMO (Buổi 14) from `GetClassById.slots` + `spck_session14_evaluations`.
    */
-  public static async scrapeClassScores(rawClassCode: string): Promise<ClassScoreMatrixResult> {
+  public static async scrapeClassScores(
+    rawClassCode: string,
+    options?: { forcePlaywright?: boolean }
+  ): Promise<ClassScoreMatrixResult> {
     const classCode = rawClassCode.trim().toUpperCase();
     const classId = classCode;
     const isRobotics = safeCheckIsRobotics(classCode);
@@ -317,21 +486,51 @@ export class ScoreScraper {
         : `Bắt đầu cào bảng điểm toàn khóa (BTVN, CP1, CP2, Final) cho lớp ${classCode} từ LMS...`,
     });
 
-    const browserManager = BrowserManager.getInstance();
-    const page = await browserManager.getPage();
-    const interceptor = createNetworkInterceptor(page);
-
     try {
-      // 1. Ensure authenticated on MindX LMS
-      await authService.ensureAuthenticated("LMS");
-
       let submissionGqlData: any = null;
       let classByIdGqlData: any = null;
       let lmsClassId: string | undefined;
-      let gqlInterceptError: string | null = null;
-      let classByIdInterceptError: string | null = null;
-      let classByIdResponseSeen = false;
       let isDrawerDomVerified = false;
+      let domPageForFallback: any = null;
+      let sourceLabel: string | undefined;
+      let usedApiFastPath = false;
+
+      if (safeIsLmsApiReadSc({ forcePlaywright: options?.forcePlaywright })) {
+        try {
+          const apiData = await this.fetchScorePayloadsViaApi(classCode, isRobotics);
+          lmsClassId = apiData.lmsClassId;
+          classByIdGqlData = apiData.classByIdGqlData;
+          submissionGqlData = apiData.submissionGqlData;
+          sourceLabel = "API thuần";
+          usedApiFastPath = true;
+        } catch (apiErr: any) {
+          if (safeIsQueueStoppedSc(apiErr)) {
+            throw apiErr;
+          }
+          jobLogRepo.add({
+            jobId,
+            jobType: "SCRAPE_SCORES",
+            classId,
+            level: "WARN",
+            message: `Đọc bảng điểm lớp ${classCode} qua API thuần chưa thành công (${safeRedactSecretsSc(
+              apiErr
+            )}). Chuyển sang Playwright dự phòng...`,
+          });
+        }
+      }
+
+      if (!usedApiFastPath) {
+        const browserManager = BrowserManager.getInstance();
+        const page = await browserManager.getPage();
+        const interceptor = createNetworkInterceptor(page);
+        domPageForFallback = page;
+
+        // 1. Ensure authenticated on MindX LMS
+        await authService.ensureAuthenticated("LMS");
+
+        let gqlInterceptError: string | null = null;
+        let classByIdInterceptError: string | null = null;
+        let classByIdResponseSeen = false;
       let capturePhase: "IDLE" | "DRAWER_OPENING" | "GRADING_TAB" = "IDLE";
       const freshClassByIdRequests = new Set<any>();
       const freshSubmissionRequests = new Set<any>();
@@ -709,10 +908,99 @@ export class ScoreScraper {
         }
       }
 
-      await interceptor.dismissForbiddenToast();
+        await interceptor.dismissForbiddenToast();
+      }
 
-      // Load existing students from SQLite for safe ID resolution
-      const existingStudents = studentRepo.findByClass(classId, false) || [];
+      return await this.processAndPersistScrapedGqlData({
+        jobId,
+        classId,
+        classCode,
+        isRobotics,
+        lmsClassId,
+        classByIdGqlData,
+        submissionGqlData,
+        isDrawerDomVerified,
+        page: domPageForFallback,
+        sourceLabel,
+      });
+    } catch (err: any) {
+      const errMsg = safeRedactSecretsSc(err instanceof Error ? err.message : String(err));
+      jobLogRepo.add({
+        jobId,
+        jobType: "SCRAPE_SCORES",
+        classId,
+        level: "ERROR",
+        message: `Lỗi khi cào bảng điểm lớp ${classCode}: ${errMsg}`,
+      });
+      return {
+        success: false,
+        classId,
+        classCode,
+        columns: [],
+        rows: [],
+        summary: {
+          totalStudents: 0,
+          totalColumns: 0,
+          gradedCells: 0,
+          submittedUngradedCells: 0,
+          notSubmittedCells: 0,
+          redoCells: 0,
+          zeroScoreCells: 0,
+        },
+        scrapedAt: new Date().toISOString(),
+        error: errMsg,
+      };
+    }
+  }
+
+  public static buildQuickMatrixFromSubmissionGql(params: {
+    classId: string;
+    classCode: string;
+    lmsClassId?: string;
+    submissionGqlData: any;
+  }): Promise<ClassScoreMatrixResult> {
+    return this.processAndPersistScrapedGqlData({
+      jobId: `quick_matrix_${params.classCode}_${Date.now()}`,
+      classId: params.classId,
+      classCode: params.classCode,
+      isRobotics: false,
+      lmsClassId: params.lmsClassId,
+      classByIdGqlData: null,
+      submissionGqlData: params.submissionGqlData,
+      isDrawerDomVerified: false,
+      skipPersistence: true,
+    });
+  }
+
+  private static async processAndPersistScrapedGqlData(params: {
+    jobId: string;
+    classId: string;
+    classCode: string;
+    isRobotics: boolean;
+    lmsClassId?: string;
+    classByIdGqlData: any;
+    submissionGqlData: any;
+    isDrawerDomVerified: boolean;
+    page?: any;
+    sourceLabel?: string;
+    skipPersistence?: boolean;
+  }): Promise<ClassScoreMatrixResult> {
+    const {
+      jobId,
+      classId,
+      classCode,
+      isRobotics,
+      lmsClassId,
+      classByIdGqlData,
+      submissionGqlData,
+      isDrawerDomVerified,
+      page,
+      sourceLabel,
+      skipPersistence,
+    } = params;
+
+    // Load existing students from SQLite for safe ID resolution
+    const existingStudents = studentRepo.findByClass(classId, false) || [];
       const normalizeName = normalizeStudentNameKey;
 
       const studentByIdMap = new Map<string, StudentRecord>();
@@ -1044,7 +1332,7 @@ export class ScoreScraper {
         }
 
         const expectedRosterCount = existingStudents.length;
-        if (expectedRosterCount > 0 && gqlStudents.length < expectedRosterCount) {
+        if (!skipPersistence && expectedRosterCount > 0 && gqlStudents.length < expectedRosterCount) {
           throw new Error(
             `Dữ liệu GraphQL trả về số học viên (${gqlStudents.length}) ít hơn danh sách học viên đã đồng bộ của lớp (${expectedRosterCount}).`
           );
@@ -1341,6 +1629,11 @@ export class ScoreScraper {
           };
         });
       } else {
+        if (!page) {
+          throw new Error(
+            `Không có dữ liệu bảng điểm API và không có trình duyệt DOM cho lớp ${classCode}.`
+          );
+        }
         // Fallback: Scrape from DOM grid inside #tabpanel-3 if GraphQL payload was not captured
         const drawer = page
           .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
@@ -1366,7 +1659,7 @@ export class ScoreScraper {
         );
       }
 
-      if (existingStudents.length > 0) {
+      if (!skipPersistence && existingStudents.length > 0) {
         const mappedIds = new Set(rows.map((r) => r.studentId));
         const missingStudents = existingStudents.filter((s) => !mappedIds.has(s.studentId));
         if (rows.length < existingStudents.length || missingStudents.length > 0) {
@@ -1399,18 +1692,20 @@ export class ScoreScraper {
       }
 
       const scrapedAt = new Date().toISOString();
-      const reportCardSnapshot = this.extractReportCardSnapshotFromGql({
-        classId,
-        classCode,
-        lmsClassId,
-        isRobotics,
-        submissionGqlData,
-        classByIdGqlData,
-        existingStudents,
-        session14Evals,
-        fallbackMatrix: { columns, rows },
-        scrapedAt,
-      });
+      const reportCardSnapshot = skipPersistence
+        ? undefined
+        : this.extractReportCardSnapshotFromGql({
+            classId,
+            classCode,
+            lmsClassId,
+            isRobotics,
+            submissionGqlData,
+            classByIdGqlData,
+            existingStudents,
+            session14Evals,
+            fallbackMatrix: { columns, rows },
+            scrapedAt,
+          });
 
       const result: ClassScoreMatrixResult = {
         success: true,
@@ -1428,83 +1723,60 @@ export class ScoreScraper {
           redoCells,
           zeroScoreCells,
         },
-        reportCardSnapshot,
+        ...(reportCardSnapshot ? { reportCardSnapshot } : {}),
         scrapedAt,
       };
 
-      // S2-03: Persist both the Teaching Report Card snapshot and Score Matrix cache atomically.
-      // Never swallow errors from reportCardRepo.saveLmsSnapshot!
-      const persistBoth = () => {
-        if (
-          typeof reportCardRepo !== "undefined" &&
-          reportCardRepo &&
-          typeof reportCardRepo.saveLmsSnapshot === "function"
-        ) {
-          reportCardRepo.saveLmsSnapshot(classId, reportCardSnapshot);
-        }
+      if (!skipPersistence) {
+        // S2-03: Persist both the Teaching Report Card snapshot and Score Matrix cache atomically.
+        // Never swallow errors from reportCardRepo.saveLmsSnapshot!
+        const persistBoth = () => {
+          if (
+            typeof reportCardRepo !== "undefined" &&
+            reportCardRepo &&
+            typeof reportCardRepo.saveLmsSnapshot === "function" &&
+            reportCardSnapshot
+          ) {
+            reportCardRepo.saveLmsSnapshot(classId, reportCardSnapshot);
+          }
 
-        if (scoreMatrixRepo && typeof scoreMatrixRepo.save === "function") {
-          scoreMatrixRepo.save(classId, result);
-        } else {
-          const db = getDb();
-          db.prepare(`
-            INSERT INTO score_matrix_cache (classId, matrixJson, updatedAt)
-            VALUES (?, ?, datetime('now', 'localtime'))
-            ON CONFLICT(classId) DO UPDATE SET
-              matrixJson = excluded.matrixJson,
-              updatedAt = datetime('now', 'localtime')
-          `).run(classId, JSON.stringify(result));
-        }
-      };
+          if (scoreMatrixRepo && typeof scoreMatrixRepo.save === "function") {
+            scoreMatrixRepo.save(classId, result);
+          } else {
+            const db = getDb();
+            db.prepare(`
+              INSERT INTO score_matrix_cache (classId, matrixJson, updatedAt)
+              VALUES (?, ?, datetime('now', 'localtime'))
+              ON CONFLICT(classId) DO UPDATE SET
+                matrixJson = excluded.matrixJson,
+                updatedAt = datetime('now', 'localtime')
+            `).run(classId, JSON.stringify(result));
+          }
+        };
 
-      if (typeof getDb === "function") {
-        const dbInstance = getDb();
-        if (dbInstance && typeof dbInstance.transaction === "function") {
-          dbInstance.transaction(persistBoth)();
+        if (typeof getDb === "function") {
+          const dbInstance = getDb();
+          if (dbInstance && typeof dbInstance.transaction === "function") {
+            dbInstance.transaction(persistBoth)();
+          } else {
+            persistBoth();
+          }
         } else {
           persistBoth();
         }
-      } else {
-        persistBoth();
+
+        jobLogRepo.add({
+          jobId,
+          jobType: "SCRAPE_SCORES",
+          classId,
+          level: "SUCCESS",
+          message: `Đã cào thành công bảng điểm lớp ${classCode}${
+            sourceLabel ? ` (${sourceLabel})` : ""
+          }: ${rows.length} học viên x ${columns.length} cột bài tập (${gradedCells} đã chấm, ${submittedUngradedCells} chờ chấm, ${redoCells} làm lại, ${notSubmittedCells} chưa nộp).`,
+        });
       }
 
-      jobLogRepo.add({
-        jobId,
-        jobType: "SCRAPE_SCORES",
-        classId,
-        level: "SUCCESS",
-        message: `Đã cào thành công bảng điểm lớp ${classCode}: ${rows.length} học viên x ${columns.length} cột bài tập (${gradedCells} đã chấm, ${submittedUngradedCells} chờ chấm, ${redoCells} làm lại, ${notSubmittedCells} chưa nộp).`,
-      });
-
       return result;
-    } catch (err: any) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      jobLogRepo.add({
-        jobId,
-        jobType: "SCRAPE_SCORES",
-        classId,
-        level: "ERROR",
-        message: `Lỗi khi cào bảng điểm lớp ${classCode}: ${errMsg}`,
-      });
-      return {
-        success: false,
-        classId,
-        classCode,
-        columns: [],
-        rows: [],
-        summary: {
-          totalStudents: 0,
-          totalColumns: 0,
-          gradedCells: 0,
-          submittedUngradedCells: 0,
-          notSubmittedCells: 0,
-          redoCells: 0,
-          zeroScoreCells: 0,
-        },
-        scrapedAt: new Date().toISOString(),
-        error: errMsg,
-      };
-    }
   }
 
   /**

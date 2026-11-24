@@ -1556,7 +1556,10 @@ async function main() {
     });
 
     const brandTitle = await page.textContent("header .mindx-brand-text");
-    assert.ok(brandTitle?.includes("v3.8.6"), `TopNavbar phải hiển thị MindX Bot v3.8.6 (actual=${brandTitle})`);
+    assert.ok(
+      /MindX Bot v3\.8\.(?:[6-9]|\d{2,})/.test(String(brandTitle || "")),
+      `TopNavbar phải hiển thị MindX Bot >= v3.8.6 (actual=${brandTitle})`
+    );
 
     const thienBadge = await page.textContent(`[data-testid="cp-score-badge-STU_VT-CSA04-HB_TRAN_HOANG_THIEN"]`);
     const khangBadge = await page.textContent(`[data-testid="cp-score-badge-STU_VT-CSA04-HB_DANG_TRONG_KHANG"]`);

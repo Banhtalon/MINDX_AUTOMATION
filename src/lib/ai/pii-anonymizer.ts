@@ -109,10 +109,22 @@ export function anonymize(
       /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
       "[REDACTED_EMAIL]"
     );
-    output = output.replace(
-      /(?:\+?84|0)(?:\d[\s.-]?){8,10}\d/g,
-      "[REDACTED_PHONE]"
-    );
+    const VN_PHONE_CANDIDATE_RE =
+      /(?:(?<![\p{L}\p{N}_/-]|\d\.)|(?<=(?:0\d|84)[\d\s().-]{7,18}[/-]\s*))(?:\(\+?84\)|\+?84|\(0[235789]\d{1,2}\)|0[235789]\d{0,2})(?:[\s.-]?\d{2,4}){2,4}(?:(?![\p{L}\p{N}_/-]|\.(?:[\p{L}\p{N}_]))|(?=\s*[/-]\s*(?:\(?\+?84\)?|\(?0)[235789]))/gu;
+    output = output.replace(VN_PHONE_CANDIDATE_RE, (match) => {
+      if (
+        /^\d{2}[./-]\d{2}[./-](?:19|20)\d{2}(?:\s|$)/.test(match) ||
+        /\b(?:19|20)\d{2}\s+\d{2}[.:]\d{2}\b/.test(match)
+      ) {
+        return match;
+      }
+      const digits = match.replace(/\D/g, "");
+      const isCountry84 = digits.startsWith("84");
+      const validLen = isCountry84
+        ? digits.length >= 11 && digits.length <= 12
+        : digits.length >= 10 && digits.length <= 11;
+      return validLen ? "[REDACTED_PHONE]" : match;
+    });
   }
 
   const peerToken = options.peerToken || "STUDENT_PEER";
@@ -497,6 +509,7 @@ export function createRosterNameScrubber(
       roster,
       peerNames: normalizedParams.peerNames || [],
       peerToken,
+      redactContactInfo: true,
       matchJoinedFileNames: true,
     }).text;
   };
@@ -520,6 +533,7 @@ export function anonymizeSession14Text(
     targetShortToken: shortToken,
     peerNames,
     peerToken: "PEER_STUDENT",
+    redactContactInfo: true,
     matchJoinedFileNames: true,
   }).text;
 }

@@ -19,6 +19,16 @@ import { assertPathAllowed } from "../security/path-allowlist";
 import { parseSubmissionFile, type ParsedSubmissionContent } from "../file-parsers";
 import { config } from "../config";
 import {
+  NATIVE_GLOBAL_FETCH,
+  fetchMindxResourceBuffer,
+  fetchMindxResourceJson,
+  isLmsApiReadEnabled,
+  isQueueStoppedError,
+  lmsHttpClient,
+} from "../lms/lms-http-client";
+import { resolveKnownLmsClassId } from "../lms/lms-class-id-store";
+import { isValidLmsClassObjectId } from "../lms/lms-class-url";
+import {
   classifySubmissionAttachments,
   resolveTargetMatrixColumn,
   stripMindxUploadTimestampPrefix,
@@ -223,6 +233,9 @@ export class SubmissionDownloader {
           matrix = await ScoreScraper.scrapeClassScores(classCode);
         } catch (scrapeErr: any) {
           const msg = scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr);
+          if (isQueueStoppedError(scrapeErr)) {
+            throw scrapeErr;
+          }
           if (!/Must use synthetic cache/i.test(msg)) {
             throw scrapeErr;
           }
@@ -233,6 +246,72 @@ export class SubmissionDownloader {
         const cached = scoreMatrixRepo.findByClass(classId);
         if (cached && cached.matrix && cached.matrix.rows?.length > 0) {
           matrix = cached.matrix as ClassScoreMatrixResult;
+        }
+      }
+
+      if (
+        !matrix &&
+        options.forceScrapeMatrix === false &&
+        isLmsApiReadEnabled() &&
+        !isRoboticsClassCode(classCode)
+      ) {
+        try {
+          const known = resolveKnownLmsClassId(classCode);
+          if (known.lmsClassId && isValidLmsClassObjectId(known.lmsClassId)) {
+            const subRes = await lmsHttpClient.findStudentSubmissionByClass(
+              "TEACHER",
+              known.lmsClassId
+            );
+            const gqlPayload = subRes.submissionGqlData;
+            if (gqlPayload) {
+              const subClassCode = String(
+                gqlPayload?.classCode || gqlPayload?.class?.code || gqlPayload?.class?.name || ""
+              )
+                .trim()
+                .toUpperCase();
+              const subClassId = String(
+                gqlPayload?.classId || gqlPayload?.class?.id || ""
+              ).trim();
+              if (
+                (subClassCode && subClassCode !== classCode) ||
+                (subClassId &&
+                  subClassId !== known.lmsClassId &&
+                  subClassId.toUpperCase() !== classCode)
+              ) {
+                throw new Error(
+                  `[Integrity Violation] FindStudentSubmissionByClass trả về dữ liệu thuộc lớp khác ('${
+                    subClassId || subClassCode
+                  }' !== '${known.lmsClassId}').`
+                );
+              }
+              if (Array.isArray(gqlPayload?.submissions)) {
+                const mismatchSub = gqlPayload.submissions.find((s: any) => {
+                  const cid = String(s?.classId || "").trim();
+                  return Boolean(cid) && cid !== known.lmsClassId && cid.toUpperCase() !== classCode;
+                });
+                if (mismatchSub) {
+                  throw new Error(
+                    `[Integrity Violation] Phát hiện bài nộp thuộc lớp khác ('${mismatchSub.classId}' !== '${known.lmsClassId}').`
+                  );
+                }
+              }
+              if (typeof (ScoreScraper as any)?.buildQuickMatrixFromSubmissionGql === "function") {
+                matrix = await (ScoreScraper as any).buildQuickMatrixFromSubmissionGql({
+                  classId,
+                  classCode,
+                  lmsClassId: known.lmsClassId,
+                  submissionGqlData: gqlPayload,
+                });
+              }
+            }
+          }
+        } catch (quickErr: any) {
+          if (
+            isQueueStoppedError(quickErr) ||
+            (quickErr instanceof Error && quickErr.message.includes("Integrity Violation"))
+          ) {
+            throw quickErr;
+          }
         }
       }
 
@@ -679,6 +758,9 @@ export class SubmissionDownloader {
             success: true,
           });
         } catch (itemErr: any) {
+          if (isQueueStoppedError(itemErr)) {
+            throw itemErr;
+          }
           failedCount++;
           const msg = itemErr instanceof Error ? itemErr.message : String(itemErr);
           jobLogRepo.add({
@@ -912,6 +994,50 @@ export class SubmissionDownloader {
     const label = path.basename(cleanRef);
 
     // Fast path: direct HTTPS fetch (no browser lock required)
+    if (!page && (typeof globalThis.fetch !== "function" || globalThis.fetch === NATIVE_GLOBAL_FETCH)) {
+      try {
+        let downloadUrl = "";
+        if (/^https:\/\//i.test(cleanRef)) {
+          if (this.isAllowedDownloadUrl(cleanRef)) downloadUrl = cleanRef;
+        } else {
+          const cleanKey = cleanRef.replace(/^\/+/, "");
+          const presignEndpoint = `https://resources.mindx.edu.vn/api/v1/get-presigned-url?key=${encodeURIComponent(
+            cleanKey
+          )}`;
+          const presignRes = await fetchMindxResourceJson<{ url?: string }>(presignEndpoint, {
+            timeoutMs: 12000,
+            isAllowedUrl: (candidate) => this.isAllowedDownloadUrl(candidate),
+          });
+          if (
+            presignRes.status >= 200 &&
+            presignRes.status < 300 &&
+            presignRes.data &&
+            typeof presignRes.data.url === "string" &&
+            this.isAllowedDownloadUrl(presignRes.data.url)
+          ) {
+            downloadUrl = presignRes.data.url;
+          }
+        }
+        if (downloadUrl) {
+          return await fetchMindxResourceBuffer(downloadUrl, {
+            label,
+            maxBytes: MAX_SINGLE_ATTACHMENT_DOWNLOAD_BYTES,
+            maxRedirects: 3,
+            timeoutMs: 20000,
+            isAllowedUrl: (candidate) => this.isAllowedDownloadUrl(candidate),
+          });
+        }
+      } catch (err: any) {
+        if (
+          isQueueStoppedError(err) ||
+          (err instanceof Error && err.message.includes("25MB"))
+        ) {
+          throw err;
+        }
+      }
+      return null;
+    }
+
     if (typeof globalThis.fetch === "function" && !page) {
       try {
         let downloadUrl = "";

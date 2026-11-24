@@ -20,6 +20,7 @@ playwright-auth/
 .env
 .env.*
 !.env.example
+lms_token_*.json
 
 # Documentation & immutable audit history (3,698+ files; SSoT is read directly)
 docs/
