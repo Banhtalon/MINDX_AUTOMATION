@@ -19,6 +19,22 @@ export interface HomeworkCompletionItem {
  */
 export function getHomeworkColumnShortLabel(title?: string, sessionNumber?: number): string {
   const clean = String(title || "").trim();
+  if (!/^(?:homework|bài\s*tập|btvn)\b/i.test(clean)) {
+    if (
+      /(?:checkpoint|check\s*[-_]?\s*point|cp|bài\s*kiểm\s*tra(?:\s*định\s*kỳ)?(?:\s*lần)?|kiểm\s*tra\s*định\s*kỳ(?:\s*lần)?)\s*[-_#]?\s*0?2\b/i.test(
+        clean
+      )
+    ) {
+      return "CP 2";
+    }
+    if (
+      /(?:checkpoint|check\s*[-_]?\s*point|cp|bài\s*kiểm\s*tra(?:\s*định\s*kỳ)?(?:\s*lần)?|kiểm\s*tra\s*định\s*kỳ(?:\s*lần)?)\s*[-_#]?\s*0?1\b/i.test(
+        clean
+      )
+    ) {
+      return "CP 1";
+    }
+  }
   const hwMatch = clean.match(/^homework\s*(\d+)$/i);
   if (hwMatch) {
     return `HW ${hwMatch[1]}`;

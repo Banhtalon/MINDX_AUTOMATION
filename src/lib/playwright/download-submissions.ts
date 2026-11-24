@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import AdmZip from "adm-zip";
 import { BrowserManager } from "./browser-manager";
 import { authService } from "./auth";
 import { LmsHelpers } from "./lms-helpers";
@@ -12,10 +13,18 @@ import {
   studentRepo,
   jobLogRepo,
   calculateSha256,
+  isRoboticsClassCode,
 } from "../db/sqlite";
 import { assertPathAllowed } from "../security/path-allowlist";
 import { parseSubmissionFile, type ParsedSubmissionContent } from "../file-parsers";
 import { config } from "../config";
+import {
+  classifySubmissionAttachments,
+  resolveTargetMatrixColumn,
+  stripMindxUploadTimestampPrefix,
+} from "../checkpoint/checkpoint-column-resolver";
+
+const MAX_SINGLE_ATTACHMENT_DOWNLOAD_BYTES = 25 * 1024 * 1024; // 25 MB safety cap
 
 export interface DownloadSubmissionsOptions {
   classId: string;
@@ -94,11 +103,53 @@ export function buildSubmissionFilePath(params: {
   return fullPath;
 }
 
+/**
+ * Builds the allowlisted companion directory where multi-file submissions store their clean extracted files
+ * (e.g. `main.ipynb` alongside `car-sales-data.csv` for isolated Python execution verification).
+ */
+export function buildSubmissionExtractedDir(params: {
+  classId: string;
+  lessonId: string;
+  submissionId: string;
+}): string {
+  const safeClass = sanitizePathSegment(params.classId.toUpperCase(), "CLASS");
+  const safeLesson = sanitizePathSegment(params.lessonId, "LESSON");
+  const safeSubId = sanitizePathSegment(params.submissionId, "SUB");
+
+  const tempRoot = path.join(process.cwd(), "temp_submissions");
+  assertPathAllowed(tempRoot);
+  const extractedDir = assertPathAllowed(
+    path.join(/*turbopackIgnore: true*/ tempRoot, safeClass, safeLesson, `${safeSubId}_files`)
+  );
+  return extractedDir;
+}
+
+/**
+ * Builds a deterministic ZIP buffer from downloaded files (fixed epoch date + sorted order)
+ * so identical student files always yield the exact same SHA-256 `fileHash`.
+ */
+export function buildDeterministicSubmissionZipBuffer(
+  files: Array<{ entryName: string; buffer: Buffer }>
+): Buffer {
+  const zip = new AdmZip();
+  const fixedDate = new Date(Date.UTC(2026, 0, 1, 0, 0, 0));
+  const sorted = [...files].sort((a, b) => a.entryName.localeCompare(b.entryName));
+  for (const item of sorted) {
+    zip.addFile(item.entryName, item.buffer);
+    const entry = zip.getEntry(item.entryName);
+    if (entry && entry.header) {
+      entry.header.time = fixedDate;
+    }
+  }
+  return zip.toBuffer();
+}
+
 export class SubmissionDownloader {
   /**
-   * Downloads valid homework submissions for a selected lesson/session on MindX LMS,
+   * Downloads valid homework or Checkpoint (CP1/CP2) submissions for a selected lesson/session on MindX LMS,
+   * supports multi-file attachments via MindX LMS `get-presigned-url`, detects dataset-only upload mistakes,
    * locks `submissionId -> studentId -> localFilePath -> fileHash` into SQLite immediately,
-   * and parses the downloaded file via Multi-Subject File Parser Engine.
+   * and parses the downloaded file(s) via Multi-Subject File Parser Engine.
    */
   public static async downloadLessonSubmissions(
     options: DownloadSubmissionsOptions
@@ -134,6 +185,24 @@ export class SubmissionDownloader {
     }
     const derivedSessionNumber = parsedSessionNumber;
 
+    if (typeof isRoboticsClassCode === "function" && isRoboticsClassCode(classCode)) {
+      const robMsg = `Lớp Robotics '${classCode}' kiểm tra trên giấy (giáo viên tự nhập điểm), không có bài nộp trực tuyến trên LMS.`;
+      return {
+        success: false,
+        classId,
+        classCode,
+        sessionId,
+        lessonId: options.lessonId || "",
+        totalCandidates: 0,
+        downloadedCount: 0,
+        parsedCount: 0,
+        parseErrorCount: 0,
+        failedCount: 0,
+        items: [],
+        error: robMsg,
+      };
+    }
+
     jobLogRepo.add({
       jobId,
       jobType: "DOWNLOAD_SUBMISSIONS",
@@ -144,7 +213,7 @@ export class SubmissionDownloader {
     });
 
     try {
-      // 1. Obtain fresh score matrix from LMS before filtering candidates so newly submitted homework is always discovered
+      // 1. Obtain fresh score matrix from LMS before filtering candidates so newly submitted work is always discovered
       let matrix: ClassScoreMatrixResult | null = null;
       if (
         options.forceScrapeMatrix !== false &&
@@ -173,44 +242,36 @@ export class SubmissionDownloader {
         );
       }
 
-      // 2. Match target lesson column strictly by authoritative sessionNumber and optional lessonId
-      let targetColumn = matrix.columns.find(
-        (c) => Number(c.sessionNumber) === derivedSessionNumber
+      // 2. Match target lesson column (handles both regular Homework and Coding Checkpoint CP1=Buổi 5 / CP2=Buổi 9)
+      const resolvedCol = resolveTargetMatrixColumn(
+        matrix.columns,
+        classCode,
+        derivedSessionNumber,
+        options.lessonId
       );
-
-      if (options.lessonId) {
-        const byLesson = matrix.columns.find(
-          (c) => c.columnId === options.lessonId || c.lessonId === options.lessonId
-        );
-        if (!byLesson) {
-          throw new Error(
-            `Không tìm thấy cột bài tập có lessonId='${options.lessonId}' trong lớp ${classCode}.`
-          );
-        }
-        if (Number(byLesson.sessionNumber) !== derivedSessionNumber) {
-          throw new Error(
-            `[Integrity Violation] lessonId '${options.lessonId}' thuộc Buổi ${byLesson.sessionNumber}, không khớp với session '${sessionId}' (Buổi ${derivedSessionNumber}).`
-          );
-        }
-        targetColumn = byLesson;
+      if (resolvedCol.mismatchError) {
+        throw new Error(resolvedCol.mismatchError);
       }
+      const targetColumn = resolvedCol.column;
 
       if (!targetColumn) {
         throw new Error(
-          `Không tìm thấy cột bài tập tương ứng với Buổi ${derivedSessionNumber} (${options.lessonId || sessionId}) trong lớp ${classCode}.`
+          `Không tìm thấy cột bài tập/Checkpoint tương ứng với Buổi ${derivedSessionNumber} (${options.lessonId || sessionId}) trong lớp ${classCode}.`
         );
       }
 
       const lessonId = String(targetColumn.lessonId || targetColumn.columnId);
 
-      // 3. Filter all valid submissions in the lesson (regardless of session attendance)
+      // 3. Filter all valid submissions in the lesson (skipping NOT_SUBMITTED / absent students)
       const candidates: Array<{
         studentId: string;
         fullName: string;
         cell: StudentScoreCell;
         submissionId: string;
-        attachmentRef: string;
-        fileName: string;
+        attachments: string[];
+        primaryFileName: string;
+        displayOriginalFileName: string;
+        isDatasetOnlyMistake: boolean;
       }> = [];
 
       const dbRoster =
@@ -237,21 +298,36 @@ export class SubmissionDownloader {
         }
 
         const submissionId = String(cell.submissionId).trim();
-        const attachmentRef =
-          Array.isArray(cell.attachments) && cell.attachments.length > 0
-            ? String(cell.attachments[0] || "").trim()
-            : "";
-        const rawFileName = attachmentRef
-          ? attachmentRef.split(/[\\/]/).pop() || `${submissionId}.txt`
+
+        // F11: In batch mode (no explicit studentId), preserve submissions already graded on LMS
+        // when no unverified local draft exists, so manual LMS grades are never overwritten.
+        if (!options.studentId && cell.status === "GRADED") {
+          const existingLocal = homeworkSubmissionRepo.findBySubmissionId(submissionId);
+          if (!existingLocal || existingLocal.status === "VERIFIED") {
+            continue;
+          }
+        }
+        const classified = classifySubmissionAttachments(cell.attachments);
+        const primaryRawName = classified.primaryFileName
+          ? stripMindxUploadTimestampPrefix(classified.primaryFileName)
           : `${submissionId}.txt`;
+        const cleanDisplayList = classified.cleanAttachments.map((a) =>
+          stripMindxUploadTimestampPrefix(a)
+        );
+        const displayOriginalFileName =
+          cleanDisplayList.length > 1
+            ? cleanDisplayList.join(", ")
+            : cleanDisplayList[0] || primaryRawName;
 
         candidates.push({
           studentId: row.studentId,
           fullName: row.fullName,
           cell,
           submissionId,
-          attachmentRef,
-          fileName: rawFileName,
+          attachments: classified.cleanAttachments,
+          primaryFileName: primaryRawName,
+          displayOriginalFileName,
+          isDatasetOnlyMistake: classified.isDatasetOnlyMistake,
         });
       }
 
@@ -280,27 +356,41 @@ export class SubmissionDownloader {
         };
       }
 
-      const browserManager = BrowserManager.getInstance();
-      const page = await browserManager.getPage();
-      const interceptor = createNetworkInterceptor(page);
-
-      await authService.ensureAuthenticated("LMS");
-      await LmsHelpers.openClassDrawer(page, classCode);
-      await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.grading);
-      await interceptor.dismissForbiddenToast();
+      let page: any = null;
+      let interceptor: any = null;
+      const ensureBrowserReady = async () => {
+        if (!page) {
+          const browserManager = BrowserManager.getInstance();
+          page = await browserManager.getPage();
+          interceptor = createNetworkInterceptor(page);
+          await authService.ensureAuthenticated("LMS");
+        }
+        return { page, interceptor };
+      };
 
       const items: DownloadedSubmissionItem[] = [];
       let downloadedCount = 0;
       let parsedCount = 0;
       let parseErrorCount = 0;
       let failedCount = 0;
+      let openedDrawerForFallback = false;
 
       for (const cand of candidates) {
+        const isMultiAttachment = cand.attachments.length > 1;
+        const targetBundleName = isMultiAttachment
+          ? `${sanitizePathSegment(path.parse(cand.primaryFileName).name, "submission")}_bundle.zip`
+          : cand.primaryFileName;
+
         const localFilePath = buildSubmissionFilePath({
           classId,
           lessonId,
           submissionId: cand.submissionId,
-          fileName: cand.fileName,
+          fileName: targetBundleName,
+        });
+        const companionDir = buildSubmissionExtractedDir({
+          classId,
+          lessonId,
+          submissionId: cand.submissionId,
         });
 
         try {
@@ -322,83 +412,233 @@ export class SubmissionDownloader {
             fs.mkdirSync(targetDir, { recursive: true });
           }
 
-          // If file already exists on disk and matches existing verified/approved record, reuse or re-verify hash
-          let fileDownloaded = false;
+          let fileReady = false;
+          if (cand.attachments.length === 0) {
+            // Submitted status without file attachments -> flag PARSE_ERROR so teacher inspects manually
+            const emptyReason = `[MISSING_CODE_FILE] Học viên bấm nộp bài trên LMS nhưng không có tệp đính kèm nào (${cand.submissionId}). Vui lòng kiểm tra thủ công.`;
+            homeworkSubmissionRepo.upsert({
+              classId,
+              sessionId,
+              studentId: cand.studentId,
+              submissionId: cand.submissionId,
+              originalFileName: "",
+              localFilePath: "",
+              fileHash: existingSub?.fileHash || "",
+              parseStatus: "PARSE_ERROR",
+              parseErrorReason: emptyReason,
+              criteriaGradesJson: "[]",
+              calculatedScore: 0,
+              teacherOverrideScore: null,
+              decision: "GRADE",
+              feedbackHtml: "",
+              contentHash: "",
+              status: "PENDING",
+              verifiedAt: null,
+              errorMessage: emptyReason,
+            });
+            parseErrorCount++;
+            items.push({
+              submissionId: cand.submissionId,
+              studentId: cand.studentId,
+              fullName: cand.fullName,
+              lessonId,
+              sessionId,
+              originalFileName: "",
+              localFilePath: "",
+              fileHash: existingSub?.fileHash || "",
+              parseStatus: "PARSE_ERROR",
+              parseErrorReason: emptyReason,
+              success: true,
+            });
+            continue;
+          }
 
-          if (
-            existingSub &&
-            existingSub.localFilePath &&
-            path.resolve(existingSub.localFilePath) === path.resolve(localFilePath) &&
-            fs.existsSync(assertPathAllowed(existingSub.localFilePath)) &&
-            existingSub.fileHash
-          ) {
-            const existingBuf = fs.readFileSync(assertPathAllowed(existingSub.localFilePath));
-            if (calculateSha256(existingBuf) === existingSub.fileHash) {
-              fileDownloaded = true;
+          // Download all attachments for this submission via MindX LMS Presigned URL API (or fallback modal)
+          const downloadedBuffers: Array<{ entryName: string; buffer: Buffer }> = [];
+          const usedEntryNames = new Set<string>();
+
+          for (let aIdx = 0; aIdx < cand.attachments.length; aIdx++) {
+            const attRef = cand.attachments[aIdx];
+            const cleanBase = sanitizePathSegment(
+              stripMindxUploadTimestampPrefix(attRef),
+              `file_${aIdx + 1}`
+            );
+            let entryName = cleanBase;
+            if (usedEntryNames.has(entryName.toLowerCase())) {
+              const parsedExt = path.parse(cleanBase);
+              entryName = `${parsedExt.name}_${aIdx + 1}${parsedExt.ext}`;
+            }
+            usedEntryNames.add(entryName.toLowerCase());
+
+            let buf = await this.downloadViaPresignedUrl(page, attRef);
+            if (!buf) {
+              const ready = await ensureBrowserReady();
+              buf = await this.downloadViaPresignedUrl(ready.page, attRef);
+            }
+            if (!buf) {
+              const ready = await ensureBrowserReady();
+              if (!openedDrawerForFallback) {
+                await LmsHelpers.openClassDrawer(ready.page, classCode);
+                await LmsHelpers.switchDrawerTab(ready.page, SELECTORS.tabs.grading);
+                await ready.interceptor.dismissForbiddenToast();
+                openedDrawerForFallback = true;
+              }
+              const tmpSinglePath = buildSubmissionFilePath({
+                classId,
+                lessonId,
+                submissionId: cand.submissionId,
+                fileName: entryName,
+              });
+              const okFallback = await this.downloadSingleAttachmentFromLms(
+                ready.page,
+                ready.interceptor,
+                {
+                  studentId: cand.studentId,
+                  fullName: cand.fullName,
+                  submissionId: cand.submissionId,
+                  attachmentRef: attRef,
+                  fileName: path.basename(attRef),
+                },
+                targetColumn.colIndex,
+                tmpSinglePath
+              );
+              if (okFallback && fs.existsSync(tmpSinglePath)) {
+                buf = fs.readFileSync(assertPathAllowed(tmpSinglePath));
+                if (isMultiAttachment && tmpSinglePath !== localFilePath) {
+                  try {
+                    fs.unlinkSync(assertPathAllowed(tmpSinglePath));
+                  } catch {}
+                }
+              }
+            }
+
+            if (!buf || buf.length === 0) {
+              throw new Error(
+                `Không thể tải tệp bài nộp '${path.basename(attRef)}' của học viên '${cand.fullName}' (${cand.submissionId}) từ LMS.`
+              );
+            }
+            downloadedBuffers.push({ entryName, buffer: buf });
+          }
+
+          // Write companion extracted files so Python sandbox verifier can run .ipynb alongside .csv
+          fs.mkdirSync(companionDir, { recursive: true });
+          for (const existingEntry of fs.readdirSync(companionDir)) {
+            const p = assertPathAllowed(path.join(companionDir, existingEntry));
+            if (fs.statSync(p).isFile()) {
+              fs.unlinkSync(p);
             }
           }
-
-          if (!fileDownloaded) {
-            fileDownloaded = await this.downloadSingleAttachmentFromLms(
-              page,
-              interceptor,
-              cand,
-              targetColumn.colIndex,
-              localFilePath
-            );
+          for (const item of downloadedBuffers) {
+            const dest = assertPathAllowed(path.join(companionDir, item.entryName));
+            fs.writeFileSync(dest, item.buffer);
           }
 
-          if (!fileDownloaded || !fs.existsSync(localFilePath)) {
+          if (isMultiAttachment) {
+            const zipBuf = buildDeterministicSubmissionZipBuffer(downloadedBuffers);
+            fs.writeFileSync(assertPathAllowed(localFilePath), zipBuf);
+            fileReady = true;
+          } else {
+            fs.writeFileSync(assertPathAllowed(localFilePath), downloadedBuffers[0].buffer);
+            fileReady = true;
+          }
+
+          if (!fileReady || !fs.existsSync(localFilePath)) {
             throw new Error(
-              `Không thể tải file bài nộp '${cand.fileName}' của học viên '${cand.fullName}' (submissionId: ${cand.submissionId}) từ LMS.`
+              `Không thể lưu tệp bài nộp '${cand.displayOriginalFileName}' của học viên '${cand.fullName}'.`
             );
           }
 
-          // Compute SHA-256 fileHash immediately
           const safeFilePath = assertPathAllowed(localFilePath);
           const fileBuf = fs.readFileSync(safeFilePath);
           const fileHash = calculateSha256(fileBuf);
 
-          // Parse downloaded file via Multi-Subject File Parser Engine
-          const parsedContent = parseSubmissionFile(safeFilePath);
+          // Detect dataset-only upload mistake BEFORE marking PARSED (including single .zip containing only .csv/.tsv)
+          let isZipDatasetOnly = false;
+          if (
+            !cand.isDatasetOnlyMistake &&
+            !isMultiAttachment &&
+            path.extname(safeFilePath).toLowerCase() === ".zip"
+          ) {
+            try {
+              const zInspect = new AdmZip(fileBuf);
+              const zEntries = zInspect
+                .getEntries()
+                .filter((e) => !e.isDirectory && !/(?:^|\/)__MACOSX\//i.test(e.entryName))
+                .map((e) => path.basename(e.entryName));
+              if (zEntries.length > 0 && classifySubmissionAttachments(zEntries).isDatasetOnlyMistake) {
+                isZipDatasetOnly = true;
+              }
+            } catch {}
+          }
+
+          let parsedContent: ParsedSubmissionContent;
+          if (cand.isDatasetOnlyMistake || isZipDatasetOnly) {
+            const wrongFileReason = `[MISSING_CODE_FILE] Học viên chỉ nộp tệp dữ liệu ('${cand.displayOriginalFileName}'), không tìm thấy tệp bài làm/mã nguồn (.ipynb, .py...). Vui lòng kiểm tra lại với học viên trước khi chấm điểm.`;
+            parsedContent = {
+              parseStatus: "PARSE_ERROR",
+              subjectType: "TEXT",
+              fileName: path.basename(safeFilePath),
+              extension: path.extname(safeFilePath).toLowerCase(),
+              fileHash,
+              byteSize: fileBuf.length,
+              extractedText: "",
+              inlineDataParts: [],
+              metadata: { missingCodeFile: true, uploadedFiles: cand.displayOriginalFileName },
+              parseErrorReason: wrongFileReason,
+            };
+          } else {
+            parsedContent = parseSubmissionFile(safeFilePath);
+          }
 
           // Preserve existing grading state if already APPROVED or VERIFIED with identical fileHash
           const preserveApproved =
             existingSub &&
             (existingSub.status === "APPROVED" || existingSub.status === "VERIFIED") &&
-            existingSub.fileHash === fileHash;
+            existingSub.fileHash === fileHash &&
+            parsedContent.parseStatus === "PARSED";
 
           homeworkSubmissionRepo.upsert({
             classId,
             sessionId,
             studentId: cand.studentId,
             submissionId: cand.submissionId,
-            originalFileName: cand.fileName,
+            originalFileName: cand.displayOriginalFileName,
             localFilePath: safeFilePath,
             fileHash,
             parseStatus: parsedContent.parseStatus,
             parseErrorReason: parsedContent.parseErrorReason,
             criteriaGradesJson: preserveApproved
               ? existingSub.criteriaGradesJson
-              : existingSub?.criteriaGradesJson || "[]",
+              : existingSub?.fileHash === fileHash
+              ? existingSub?.criteriaGradesJson || "[]"
+              : "[]",
             calculatedScore: preserveApproved
               ? existingSub.calculatedScore
-              : existingSub?.calculatedScore ?? 0,
+              : existingSub?.fileHash === fileHash
+              ? existingSub?.calculatedScore ?? 0
+              : 0,
             teacherOverrideScore: preserveApproved
               ? existingSub.teacherOverrideScore
-              : existingSub?.teacherOverrideScore ?? null,
+              : existingSub?.fileHash === fileHash
+              ? existingSub?.teacherOverrideScore ?? null
+              : null,
             decision: preserveApproved
               ? existingSub.decision
               : existingSub?.decision || "GRADE",
             feedbackHtml: preserveApproved
               ? existingSub.feedbackHtml
-              : existingSub?.feedbackHtml || "",
+              : existingSub?.fileHash === fileHash
+              ? existingSub?.feedbackHtml || ""
+              : "",
             contentHash: preserveApproved ? existingSub.contentHash : "",
-            status: preserveApproved
-              ? existingSub.status
-              : existingSub?.status === "WAITING_APPROVAL" && existingSub.fileHash === fileHash
-              ? "WAITING_APPROVAL"
-              : "PENDING",
+            status:
+              parsedContent.parseStatus === "PARSE_ERROR"
+                ? "PENDING"
+                : preserveApproved
+                ? existingSub.status
+                : existingSub?.status === "WAITING_APPROVAL" && existingSub.fileHash === fileHash
+                ? "WAITING_APPROVAL"
+                : "PENDING",
             verifiedAt: preserveApproved ? existingSub.verifiedAt : null,
             errorMessage: parsedContent.parseErrorReason,
           });
@@ -418,7 +658,7 @@ export class SubmissionDownloader {
             studentId: cand.studentId,
             submissionId: cand.submissionId,
             level: parsedContent.parseStatus === "PARSED" ? "SUCCESS" : "WARN",
-            message: `Đã khóa & tải bài của ${cand.fullName} (submissionId=${cand.submissionId}, file=${cand.fileName}, hash=${fileHash.slice(
+            message: `Đã khóa & tải bài của ${cand.fullName} (submissionId=${cand.submissionId}, files=${cand.displayOriginalFileName}, hash=${fileHash.slice(
               0,
               12
             )}..., parse=${parsedContent.parseStatus}).`,
@@ -430,7 +670,7 @@ export class SubmissionDownloader {
             fullName: cand.fullName,
             lessonId,
             sessionId,
-            originalFileName: cand.fileName,
+            originalFileName: cand.displayOriginalFileName,
             localFilePath: safeFilePath,
             fileHash,
             parseStatus: parsedContent.parseStatus,
@@ -458,7 +698,7 @@ export class SubmissionDownloader {
             fullName: cand.fullName,
             lessonId,
             sessionId,
-            originalFileName: cand.fileName,
+            originalFileName: cand.displayOriginalFileName,
             localFilePath,
             fileHash: "",
             parseStatus: "PARSE_ERROR",
@@ -509,8 +749,246 @@ export class SubmissionDownloader {
     }
   }
 
+  private static isAllowedDownloadUrl(rawUrl: string): boolean {
+    try {
+      const u = new URL(rawUrl);
+      if (u.protocol !== "https:") return false;
+      const h = u.hostname.toLowerCase();
+      if (
+        h === "localhost" ||
+        h === "127.0.0.1" ||
+        h === "0.0.0.0" ||
+        h === "::1" ||
+        h.startsWith("[") ||
+        /^(?:10\.|127\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(h)
+      ) {
+        return false;
+      }
+      if (h.endsWith(".mindx.local")) {
+        return process.env.MINDX_ALLOW_TEST_HOSTS === "1";
+      }
+      return (
+        h === "mindx.edu.vn" ||
+        h.endsWith(".mindx.edu.vn") ||
+        h.endsWith(".amazonaws.com") ||
+        h.endsWith(".cloudflarestorage.com") ||
+        h.endsWith(".googleapis.com") ||
+        h.endsWith(".digitaloceanspaces.com")
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  private static async readFetchBodyWithSizeCap(
+    resp: Response,
+    maxBytes: number,
+    label: string
+  ): Promise<Buffer> {
+    const declaredLen = Number(resp.headers.get("content-length") || 0);
+    if (declaredLen > maxBytes) {
+      throw new Error(
+        `Tệp '${label}' vượt quá dung lượng cho phép (${Math.round(
+          declaredLen / (1024 * 1024)
+        )}MB > 25MB).`
+      );
+    }
+    const reader = resp.body?.getReader();
+    if (!reader) {
+      const arr = await resp.arrayBuffer();
+      if (arr.byteLength > maxBytes) {
+        throw new Error(`Tệp '${label}' vượt quá dung lượng tối đa 25MB.`);
+      }
+      return Buffer.from(arr);
+    }
+    const chunks: Buffer[] = [];
+    let total = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value && value.byteLength > 0) {
+          total += value.byteLength;
+          if (total > maxBytes) {
+            await reader.cancel().catch(() => {});
+            throw new Error(`Tệp '${label}' vượt quá dung lượng tối đa 25MB.`);
+          }
+          chunks.push(Buffer.from(value));
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    return Buffer.concat(chunks, total);
+  }
+
+  private static async fetchAllowedWithManualRedirects(
+    initialUrl: string,
+    label: string
+  ): Promise<Buffer | null> {
+    let currentUrl = initialUrl;
+    for (let hop = 0; hop <= 3; hop++) {
+      if (!this.isAllowedDownloadUrl(currentUrl)) {
+        return null;
+      }
+      const resp = await globalThis.fetch(currentUrl, {
+        method: "GET",
+        redirect: "manual",
+        signal: AbortSignal.timeout(20000),
+      });
+      if (resp.status >= 300 && resp.status < 400) {
+        const loc = resp.headers.get("location");
+        if (!loc || hop === 3) return null;
+        currentUrl = new URL(loc, currentUrl).toString();
+        continue;
+      }
+      if (!resp.ok) return null;
+      const buf = await this.readFetchBodyWithSizeCap(
+        resp,
+        MAX_SINGLE_ATTACHMENT_DOWNLOAD_BYTES,
+        label
+      );
+      return buf.length > 0 ? buf : null;
+    }
+    return null;
+  }
+
+  private static async requestCtxGetAllowedWithManualRedirects(
+    requestCtx: any,
+    initialUrl: string,
+    label: string
+  ): Promise<Buffer | null> {
+    let currentUrl = initialUrl;
+    for (let hop = 0; hop <= 3; hop++) {
+      if (!this.isAllowedDownloadUrl(currentUrl)) {
+        return null;
+      }
+      const fileResp = await requestCtx.get(currentUrl, {
+        timeout: 20000,
+        maxRedirects: 0,
+      });
+      if (!fileResp) return null;
+      const status = typeof fileResp.status === "function" ? fileResp.status() : 200;
+      const headers = typeof fileResp.headers === "function" ? fileResp.headers() : {};
+      if (status >= 300 && status < 400) {
+        const loc = headers?.location || headers?.Location;
+        if (!loc || hop === 3) return null;
+        currentUrl = new URL(String(loc), currentUrl).toString();
+        continue;
+      }
+      if (typeof fileResp.ok === "function" && !fileResp.ok()) {
+        return null;
+      }
+      const declaredLen = Number(headers?.["content-length"] || 0);
+      if (declaredLen > MAX_SINGLE_ATTACHMENT_DOWNLOAD_BYTES) {
+        throw new Error(
+          `Tệp '${label}' vượt quá dung lượng cho phép (${Math.round(
+            declaredLen / (1024 * 1024)
+          )}MB > 25MB).`
+        );
+      }
+      const bodyBuf: Buffer = await fileResp.body();
+      if (!bodyBuf || bodyBuf.length === 0) return null;
+      if (bodyBuf.length > MAX_SINGLE_ATTACHMENT_DOWNLOAD_BYTES) {
+        throw new Error(`Tệp '${label}' vượt quá dung lượng tối đa 25MB.`);
+      }
+      return bodyBuf;
+    }
+    return null;
+  }
+
   /**
-   * Opens the student's submission modal on LMS or resolves the authenticated attachment URL
+   * Resolves MindX LMS attachment key via `https://resources.mindx.edu.vn/api/v1/get-presigned-url?key=...`
+   * and downloads the verified file buffer directly with size cap & HTTPS host allowlist protection.
+   */
+  private static async downloadViaPresignedUrl(
+    page: any,
+    attachmentRef: string
+  ): Promise<Buffer | null> {
+    const cleanRef = String(attachmentRef || "").trim();
+    if (!cleanRef || cleanRef.includes("..") || cleanRef.includes("./") || cleanRef.includes(".\\")) {
+      return null;
+    }
+    const label = path.basename(cleanRef);
+
+    // Fast path: direct HTTPS fetch (no browser lock required)
+    if (typeof globalThis.fetch === "function" && !page) {
+      try {
+        let downloadUrl = "";
+        if (/^https:\/\//i.test(cleanRef)) {
+          if (this.isAllowedDownloadUrl(cleanRef)) downloadUrl = cleanRef;
+        } else {
+          const cleanKey = cleanRef.replace(/^\/+/, "");
+          const presignEndpoint = `https://resources.mindx.edu.vn/api/v1/get-presigned-url?key=${encodeURIComponent(
+            cleanKey
+          )}`;
+          const presignResp = await globalThis.fetch(presignEndpoint, {
+            method: "GET",
+            headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+            redirect: "error",
+            signal: AbortSignal.timeout(12000),
+          });
+          if (presignResp.ok) {
+            const json: any = await presignResp.json().catch(() => null);
+            if (json && typeof json.url === "string" && this.isAllowedDownloadUrl(json.url)) {
+              downloadUrl = json.url;
+            }
+          }
+        }
+        if (downloadUrl) {
+          return await this.fetchAllowedWithManualRedirects(downloadUrl, label);
+        }
+      } catch (err: any) {
+        if (err instanceof Error && err.message.includes("25MB")) {
+          throw err;
+        }
+      }
+      return null;
+    }
+
+    const requestCtx =
+      (typeof page?.context === "function" && page.context()?.request) || page?.request;
+    if (!requestCtx || typeof requestCtx.get !== "function") {
+      return null;
+    }
+
+    try {
+      let downloadUrl = "";
+      if (/^https:\/\//i.test(cleanRef)) {
+        if (this.isAllowedDownloadUrl(cleanRef)) downloadUrl = cleanRef;
+      } else {
+        const cleanKey = cleanRef.replace(/^\/+/, "");
+        const presignEndpoint = `https://resources.mindx.edu.vn/api/v1/get-presigned-url?key=${encodeURIComponent(
+          cleanKey
+        )}`;
+        const presignResp = await requestCtx.get(presignEndpoint, {
+          timeout: 12000,
+          maxRedirects: 0,
+          headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+        });
+        if (presignResp && typeof presignResp.ok === "function" && presignResp.ok()) {
+          const json = await presignResp.json().catch(() => null);
+          if (json && typeof json.url === "string" && this.isAllowedDownloadUrl(json.url)) {
+            downloadUrl = json.url;
+          }
+        }
+      }
+
+      if (!downloadUrl) {
+        return null;
+      }
+
+      return await this.requestCtxGetAllowedWithManualRedirects(requestCtx, downloadUrl, label);
+    } catch (err: any) {
+      if (err instanceof Error && err.message.includes("25MB")) {
+        throw err;
+      }
+      return null;
+    }
+  }
+
+  /**
+   * Fallback: Opens the student's submission modal on LMS or resolves candidate attachment URLs
    * to download the file into `localFilePath`.
    */
   private static async downloadSingleAttachmentFromLms(
@@ -528,25 +1006,19 @@ export class SubmissionDownloader {
   ): Promise<boolean> {
     const safeTarget = assertPathAllowed(localFilePath);
 
-    // 1. Try opening the submission modal in #tabpanel-3 and clicking the download icon/link
     const drawer = page
       .locator('div[aria-labelledby="class-detail"], .MuiDrawer-paperAnchorRight')
       .first();
     const panel3 = drawer.locator("#tabpanel-3").first();
     const context = (await panel3.isVisible().catch(() => false)) ? panel3 : drawer;
 
-    const escapedName = cand.fullName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const escapedStuId = cand.studentId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const escapedSubId = cand.submissionId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const escapedFile = cand.fileName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const exactNameLineRegex = new RegExp(`(?<![\\p{L}\\p{N}_-])${escapedName}(?![\\p{L}\\p{N}_-])`, "iu");
     const exactStuIdRegex = new RegExp(`(?<![\\p{L}\\p{N}_-])${escapedStuId}(?![\\p{L}\\p{N}_-])`, "iu");
     const exactSubIdRegex = new RegExp(`(?<![\\p{L}\\p{N}_-])${escapedSubId}(?![\\p{L}\\p{N}_-])`, "iu");
-    const exactFileRegex = new RegExp(`(?<![\\p{L}\\p{N}_-])${escapedFile}(?![\\p{L}\\p{N}_-])`, "iu");
 
-    // Find student row in grid or table
     const rowItems = context.locator(
-      'div:has(> div > svg[data-testid="ExpandMoreIcon"]), table tbody tr'
+      'div:has(> div > svg[data-testid="ExpandMoreIcon"]), div:has(> div > svg[data-testid="ExpandLessIcon"]), table tbody tr'
     );
     const rowCount = await rowItems.count().catch(() => 0);
 
@@ -575,7 +1047,6 @@ export class SubmissionDownloader {
       const modal = page.locator(SELECTORS.grading.modal.container).first();
       if (await modal.isVisible().catch(() => false)) {
         const modalText = (await modal.innerText().catch(() => "")).trim();
-        // Verify modal strictly proves BOTH target studentId AND target submissionId (name alone is insufficient)
         if (
           modalText &&
           exactStuIdRegex.test(modalText) &&
@@ -583,10 +1054,10 @@ export class SubmissionDownloader {
         ) {
           openedModal = true;
 
-          // Extract href if a link is present inside the modal
+          const safeCssFileName = String(cand.fileName || "").replace(/["\\]/g, "\\$&");
           const linkLocator = modal
             .locator(
-              `${SELECTORS.grading.modal.submissionFileLink}, a[href*="uploads"], a[href*="${cand.fileName}"]`
+              `${SELECTORS.grading.modal.submissionFileLink}, a[href*="uploads"], a[href*="${safeCssFileName}"]`
             )
             .first();
           if ((await linkLocator.count().catch(() => 0)) > 0) {
@@ -594,7 +1065,6 @@ export class SubmissionDownloader {
               (await linkLocator.getAttribute("href").catch(() => "")) || "";
           }
 
-          // Try clicking the download button/link while listening for Playwright 'download' event
           const downloadBtn = modal
             .locator(
               `${SELECTORS.grading.modal.downloadButton}, ${SELECTORS.grading.modal.submissionFileLink}, button:has(svg[data-testid*="Download" i]), a[download]`
@@ -613,10 +1083,19 @@ export class SubmissionDownloader {
               if (download && typeof download.saveAs === "function") {
                 await download.saveAs(safeTarget);
                 await page.keyboard?.press?.("Escape").catch(() => {});
-                return true;
+                if (fs.existsSync(safeTarget)) {
+                  const sz = fs.statSync(safeTarget).size;
+                  if (sz > MAX_SINGLE_ATTACHMENT_DOWNLOAD_BYTES) {
+                    try {
+                      fs.unlinkSync(safeTarget);
+                    } catch {}
+                    throw new Error(`Tệp '${cand.fileName}' vượt quá dung lượng tối đa 25MB.`);
+                  }
+                  if (sz > 0) return true;
+                }
               }
             } catch {
-              // Fall through to direct authenticated fetch if click didn't trigger download event
+              // Fall through to direct authenticated fetch
             }
           }
         } else {
@@ -632,7 +1111,6 @@ export class SubmissionDownloader {
       return false;
     }
 
-    // 2. Fallback: Authenticated HTTP GET using attachment URL from modal or GraphQL payload
     const candidateUrls: string[] = [];
     if (downloadUrlFromDom) {
       candidateUrls.push(downloadUrlFromDom);
@@ -646,25 +1124,28 @@ export class SubmissionDownloader {
         candidateUrls.push(
           `https://lms-api.mindx.edu.vn/${cleanRel}`,
           `${baseOrigin}/${cleanRel}`,
-          `https://static.mindx.edu.vn/${cleanRel}`,
-          `https://s3.ap-southeast-1.amazonaws.com/mindx-lms/${cleanRel}`
+          `https://static.mindx.edu.vn/${cleanRel}`
         );
       }
     }
 
     if (page.request && typeof page.request.get === "function") {
       for (const url of candidateUrls) {
+        if (!this.isAllowedDownloadUrl(url)) continue;
         try {
-          const response = await page.request.get(url, { timeout: 8000 });
-          if (response && typeof response.ok === "function" && response.ok()) {
-            const bodyBuf = await response.body();
-            if (bodyBuf && bodyBuf.length > 0) {
-              fs.writeFileSync(safeTarget, bodyBuf);
-              return true;
-            }
+          const bodyBuf = await this.requestCtxGetAllowedWithManualRedirects(
+            page.request,
+            url,
+            cand.fileName
+          );
+          if (bodyBuf && bodyBuf.length > 0) {
+            fs.writeFileSync(safeTarget, bodyBuf);
+            return true;
           }
-        } catch {
-          // Try next candidate URL
+        } catch (err: any) {
+          if (err instanceof Error && err.message.includes("25MB")) {
+            throw err;
+          }
         }
       }
     }

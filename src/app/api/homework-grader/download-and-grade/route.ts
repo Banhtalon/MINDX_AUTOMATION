@@ -14,6 +14,7 @@ import {
   homeworkSubmissionRepo,
   studentRepo,
   classSessionRepo,
+  isRoboticsClassCode,
 } from "@/lib/db/sqlite";
 import {
   doesClassCodeMatchCourseCode,
@@ -41,6 +42,17 @@ export async function POST(req: Request) {
         {
           success: false,
           error: "Thiếu hoặc không khớp mã lớp (classId/classCode) và mã buổi học (sessionId).",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (isRoboticsClassCode(classCode)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Lớp Robotics kiểm tra trên giấy (không nộp/chấm bài trên Tab Chấm bài LMS). Giáo viên tự nhập điểm trực tiếp.",
         },
         { status: 400 }
       );
@@ -207,6 +219,7 @@ export async function POST(req: Request) {
 
     const targetRecords = dbRecords.filter((r) => {
       if (studentId && r.studentId !== studentId) return false;
+      if (!studentId && (r.status === "APPROVED" || r.status === "VERIFIED")) return false;
       if (downloadedSubIds && !downloadedSubIds.has(r.submissionId)) return false;
       return true;
     });

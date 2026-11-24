@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { validateLocalRequest } from "@/lib/security/local-guard";
 import { taskQueue } from "@/lib/queue/task-queue";
 import { HomeworkGradeWorker } from "@/lib/playwright/grade-worker";
+import { ScoreScraper } from "@/lib/playwright/scrape-scores";
+import { isRoboticsClassCode } from "@/lib/db/sqlite";
 
 export async function POST(req: Request) {
   const guard = validateLocalRequest(req);
@@ -25,6 +27,17 @@ export async function POST(req: Request) {
       );
     }
 
+    if (isRoboticsClassCode(classCode)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Lớp Robotics kiểm tra trên giấy (không đẩy điểm qua Tab Chấm bài LMS). Giáo viên tự nhập điểm trực tiếp.",
+        },
+        { status: 400 }
+      );
+    }
+
     const result = await taskQueue.enqueue({
       id: `save_homework_grades_${classCode}_${sessionId}_${Date.now()}`,
       jobType: "GRADE_HOMEWORK",
@@ -34,13 +47,17 @@ export async function POST(req: Request) {
       classId,
       sessionId,
       execute: async () => {
-        return HomeworkGradeWorker.saveApprovedGrades({
+        const gradeRes = await HomeworkGradeWorker.saveApprovedGrades({
           classId,
           classCode,
           sessionId,
           lessonId,
           submissionId,
         });
+        if (gradeRes.verifiedCount > 0 && body.refreshScores !== false) {
+          await ScoreScraper.scrapeClassScores(classCode).catch(() => null);
+        }
+        return gradeRes;
       },
     });
 

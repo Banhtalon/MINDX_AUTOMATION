@@ -73,6 +73,19 @@ export const SELECTORS = {
       cancelButton: 'button:has-text("Thoát"), button:has-text("Hủy")',
       saveButton: 'button:has-text("Lưu"), button[type="submit"]:has-text("Lưu")',
     },
+    lmsTabPanel3: {
+      cellActionBtn:
+        'button:not([disabled]):has-text("Mark"), button:not([disabled]):has-text("Update"), button:not([disabled]):has-text("Chấm bài"), button:not([disabled]):has-text("Chỉnh sửa")',
+      dialog:
+        '.MuiDialog-paper[role="dialog"], [role="dialog"][aria-labelledby="alert-dialog-title"]',
+      radioMark: 'input[type="radio"][value="MARK"]',
+      radioRedo: 'input[type="radio"][value="REDO"]',
+      scoreInput:
+        'input[placeholder="Input score"], input[placeholder="Nhập điểm số"], input.MuiOutlinedInput-input[type="text"]',
+      quillEditor: '.ql-editor[contenteditable="true"], .ql-editor',
+      saveButton: 'button:has-text("Save"), button:has-text("Lưu")',
+      exitButton: 'button:has-text("Exit"), button:has-text("Thoát")',
+    },
   },
 
   // 6. Session Feedback

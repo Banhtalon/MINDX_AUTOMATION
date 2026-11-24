@@ -10,6 +10,7 @@ import {
   calculateTotalScoreFromCriteria,
 } from "@/lib/gemini/score-auditor";
 import { sanitizeFeedbackHtml } from "@/lib/gemini/homework-grader";
+import { getCheckpointStageFromSessionNumber } from "@/lib/checkpoint/checkpoint-column-resolver";
 
 function buildLockedRubric(existingCriteria: any[], fallbackRubric?: any) {
   const sourceCriteria =
@@ -52,6 +53,12 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    const sessMatch = sessionId.match(/_SESS_0*(\d+)$/i);
+    const parsedSessionNumber = sessMatch ? parseInt(sessMatch[1], 10) : 0;
+    const isCheckpointSession =
+      parsedSessionNumber > 0 &&
+      getCheckpointStageFromSessionNumber(classId, parsedSessionNumber) !== null;
 
     // Mode 1: Approve all eligible WAITING_APPROVAL submissions in the session
     if (approveAllInSession && !submissionId) {
@@ -210,6 +217,21 @@ export async function POST(req: Request) {
           skippedIds.push({
             submissionId: rec.submissionId,
             reason: `Điểm số không hợp lệ (${effectiveScore}).`,
+          });
+          continue;
+        }
+        if (isCheckpointSession && (rec.decision || "GRADE") === "REDO") {
+          skippedIds.push({
+            submissionId: rec.submissionId,
+            reason:
+              "Bài kiểm tra Checkpoint trên MindX LMS không hỗ trợ chọn Yêu cầu làm lại (REDO).",
+          });
+          continue;
+        }
+        if (isCheckpointSession && !Number.isInteger(effectiveScore)) {
+          skippedIds.push({
+            submissionId: rec.submissionId,
+            reason: `Điểm chấm Checkpoint trên MindX LMS bắt buộc là số nguyên 0..100 (hiện tại: ${effectiveScore}).`,
           });
           continue;
         }
@@ -455,6 +477,25 @@ export async function POST(req: Request) {
 
     const decision: "GRADE" | "REDO" =
       existing.decision === "REDO" ? "REDO" : "GRADE";
+    if (isCheckpointSession && decision === "REDO") {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Bài kiểm tra Checkpoint trên MindX LMS khóa nút Yêu cầu làm lại (REDO). Vui lòng chọn Chấm điểm (GRADE).",
+        },
+        { status: 400 }
+      );
+    }
+    if (isCheckpointSession && !Number.isInteger(effectiveScore)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Điểm chấm trên MindX LMS bắt buộc là số nguyên từ 0 đến 100 (hiện tại: ${effectiveScore}).`,
+        },
+        { status: 400 }
+      );
+    }
     const feedbackHtml = existingCleanFeedback;
 
     if (!feedbackHtml) {

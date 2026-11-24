@@ -5,6 +5,7 @@ import {
   homeworkSubmissionRepo,
   studentRepo,
   scoreMatrixRepo,
+  isRoboticsClassCode,
   type HomeworkSubmissionRecord,
 } from "@/lib/db/sqlite";
 import { parseSubmissionFile } from "@/lib/file-parsers";
@@ -14,6 +15,13 @@ import {
 } from "@/lib/gemini/score-auditor";
 import { sanitizeFeedbackHtml } from "@/lib/gemini/homework-grader";
 import { assertPathAllowed } from "@/lib/security/path-allowlist";
+import {
+  classifySubmissionAttachments,
+  getCheckpointStageFromSessionNumber,
+  isDedicatedCheckpointColumn,
+  resolveTargetMatrixColumn,
+  stripMindxUploadTimestampPrefix,
+} from "@/lib/checkpoint/checkpoint-column-resolver";
 
 export async function GET(req: Request) {
   const guard = validateLocalRequest(req);
@@ -54,39 +62,81 @@ export async function GET(req: Request) {
       bySubId.set(rec.submissionId, rec);
     }
 
-    // Merge un-downloaded submissions from cached score matrix if present
+    // Merge un-downloaded submissions & full class roster status from cached score matrix if present
     const cachedMatrix = scoreMatrixRepo.findByClass(classId)?.matrix;
+    const quizScoreByStudentId = new Map<string, number | null>();
+    const lmsCellStatusByStudentId = new Map<string, string>();
+    const absentOrUnsubmittedStudents: Array<{
+      studentId: string;
+      fullName: string;
+      isActive: boolean;
+      quizScore: number | null;
+    }> = [];
+    let resolvedColumnInfo: {
+      columnId: string;
+      lessonId: string;
+      title: string;
+      isCheckpoint: boolean;
+    } | null = null;
+
     if (cachedMatrix && Array.isArray(cachedMatrix.columns) && Array.isArray(cachedMatrix.rows)) {
-      let targetCol = cachedMatrix.columns.find(
-        (c: any) => Number(c.sessionNumber) === sessionNumber
+      const colRes = resolveTargetMatrixColumn(
+        cachedMatrix.columns,
+        classId,
+        sessionNumber,
+        lessonIdParam || undefined
       );
-      if (lessonIdParam) {
-        const byLesson = cachedMatrix.columns.find(
-          (c: any) => c.columnId === lessonIdParam || c.lessonId === lessonIdParam
+      if (colRes.mismatchError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: colRes.mismatchError,
+          },
+          { status: 400 }
         );
-        if (!byLesson || Number(byLesson.sessionNumber) !== sessionNumber) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: `[Integrity Violation] lessonId '${lessonIdParam}' không thuộc buổi học '${sessionId}' (Buổi ${sessionNumber}).`,
-            },
-            { status: 400 }
-          );
-        }
-        targetCol = byLesson;
       }
+      const targetCol = colRes.column;
 
       if (targetCol) {
+        resolvedColumnInfo = {
+          columnId: String(targetCol.columnId),
+          lessonId: String(targetCol.lessonId || targetCol.columnId),
+          title: String(targetCol.title || `Buổi ${sessionNumber}`),
+          isCheckpoint: isDedicatedCheckpointColumn(targetCol),
+        };
         for (const row of cachedMatrix.rows) {
           const cell = row.cells?.[targetCol.columnId];
+          const qScore =
+            typeof cell?.quizScore === "number" && Number.isFinite(cell.quizScore)
+              ? cell.quizScore
+              : null;
+          quizScoreByStudentId.set(row.studentId, qScore);
+          lmsCellStatusByStudentId.set(row.studentId, cell?.status || "NOT_SUBMITTED");
+
+          if (!cell || cell.status === "NOT_SUBMITTED" || !cell.submissionId) {
+            const st = studentMap.get(row.studentId);
+            const isActive = st ? Boolean(st.isActive) : Boolean(row.isActive ?? true);
+            if (isActive) {
+              absentOrUnsubmittedStudents.push({
+                studentId: row.studentId,
+                fullName: st?.fullName || row.fullName || row.studentId,
+                isActive,
+                quizScore: qScore,
+              });
+            }
+            continue;
+          }
+
           if (cell && cell.submissionId && cell.status !== "NOT_SUBMITTED") {
             const subId = String(cell.submissionId);
             if (!bySubId.has(subId)) {
-              const att =
-                Array.isArray(cell.attachments) && cell.attachments.length > 0
-                  ? String(cell.attachments[0] || "")
+              const classified = classifySubmissionAttachments(cell.attachments);
+              const fName =
+                classified.cleanAttachments.length > 0
+                  ? classified.cleanAttachments
+                      .map((a) => stripMindxUploadTimestampPrefix(a))
+                      .join(", ")
                   : "";
-              const fName = att ? att.split(/[\\/]/).pop() || "" : "";
               bySubId.set(subId, {
                 classId,
                 sessionId,
@@ -95,15 +145,17 @@ export async function GET(req: Request) {
                 originalFileName: fName,
                 localFilePath: "",
                 fileHash: "",
-                parseStatus: "PENDING",
-                parseErrorReason: null,
+                parseStatus: classified.isDatasetOnlyMistake ? "PARSE_ERROR" : "PENDING",
+                parseErrorReason: classified.isDatasetOnlyMistake
+                  ? `[MISSING_CODE_FILE] Học viên chỉ nộp tệp dữ liệu ('${fName}'), thiếu tệp bài làm/mã nguồn (.ipynb, .py...). Vui lòng kiểm tra lại với học viên trước khi chấm điểm.`
+                  : null,
                 criteriaGradesJson: "[]",
                 calculatedScore: typeof cell.score === "number" ? cell.score : 0,
                 teacherOverrideScore: null,
                 decision: cell.status === "REDO_REQUESTED" ? "REDO" : "GRADE",
                 feedbackHtml: cell.teacherNote || "",
                 contentHash: "",
-                status: "PENDING",
+                status: cell.status === "GRADED" ? "VERIFIED" : "PENDING",
                 verifiedAt: null,
                 errorMessage: null,
               });
@@ -137,6 +189,8 @@ export async function GET(req: Request) {
         ...rec,
         fullName: st?.fullName || rec.studentId,
         isActive: st ? Boolean(st.isActive) : true,
+        quizScore: quizScoreByStudentId.get(rec.studentId) ?? null,
+        lmsCellStatus: lmsCellStatusByStudentId.get(rec.studentId) ?? null,
         criteriaGrades,
         codePreview,
         subjectType,
@@ -149,7 +203,9 @@ export async function GET(req: Request) {
         classId,
         sessionId,
         sessionNumber,
+        columnInfo: resolvedColumnInfo,
         submissions: items,
+        absentOrUnsubmittedStudents,
       },
     });
   } catch (err: any) {
@@ -176,6 +232,33 @@ export async function POST(req: Request) {
         {
           success: false,
           error: "Thiếu bộ định danh bắt buộc (classId, sessionId, studentId, submissionId).",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (isRoboticsClassCode(classId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Lớp Robotics kiểm tra trên giấy, không sử dụng luồng lưu nháp Tab Chấm bài LMS.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const postSessMatch = sessionId.match(/_SESS_0*(\d+)$/i);
+    const postSessNum = postSessMatch ? parseInt(postSessMatch[1], 10) : 0;
+    const isCheckpointSession =
+      postSessNum > 0 && getCheckpointStageFromSessionNumber(classId, postSessNum) !== null;
+
+    if (isCheckpointSession && body.decision === "REDO") {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Bài kiểm tra Checkpoint trên MindX LMS khóa tùy chọn Yêu cầu làm lại (REDO).",
         },
         { status: 400 }
       );
@@ -262,6 +345,15 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+      if (isCheckpointSession && !Number.isInteger(body.calculatedScore)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Điểm chấm Checkpoint trên MindX LMS bắt buộc là số nguyên từ 0 đến 100.",
+          },
+          { status: 400 }
+        );
+      }
       calculatedScore = body.calculatedScore;
     }
 
@@ -275,6 +367,15 @@ export async function POST(req: Request) {
         if (!Number.isFinite(num) || num < 0 || num > 100) {
           return NextResponse.json(
             { success: false, error: "Điểm chỉnh sửa phải nằm trong khoảng 0 - 100." },
+            { status: 400 }
+          );
+        }
+        if (isCheckpointSession && !Number.isInteger(num)) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Điểm chốt Checkpoint trên MindX LMS bắt buộc là số nguyên từ 0 đến 100.",
+            },
             { status: 400 }
           );
         }

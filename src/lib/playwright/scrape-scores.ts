@@ -892,17 +892,35 @@ export class ScoreScraper {
 
         columns = sortedLessons.map((lesson: any, idx: number) => {
           const rawTitle = String(lesson.name || `Buổi ${idx + 1}`).trim();
-          const numMatch =
-            rawTitle.match(/(?:homework|bài|buổi|session|slot|lần)\s*(\d+)/i) ||
-            rawTitle.match(/(\d+)/);
-          const sessionNumber = numMatch ? parseInt(numMatch[1], 10) : idx + 1;
+          const lessonType = String(lesson.type || "REVIEW_AND_PRACTICE").trim();
+          const isCpLesson =
+            lessonType.toUpperCase() === "CHECKPOINT" ||
+            (!/^homework\b/i.test(rawTitle) &&
+              /(?:bài\s*kiểm\s*tra|kiểm\s*tra\s*định\s*kỳ|^checkpoint\b|\bcp\s*[-_#]?\s*0?[12]\b)/i.test(
+                rawTitle
+              ));
+          let sessionNumber: number;
+          if (isCpLesson) {
+            const stage = resolveCheckpointLessonStage({
+              id: String(lesson.id || ""),
+              title: rawTitle,
+              displayOrder:
+                typeof lesson.displayOrder === "number" ? lesson.displayOrder : undefined,
+            });
+            sessionNumber = stage === 2 ? (isRobotics ? 8 : 9) : stage === 1 ? (isRobotics ? 4 : 5) : idx + 1;
+          } else {
+            const numMatch =
+              rawTitle.match(/(?:homework|bài|buổi|session|slot|lần)\s*(\d+)/i) ||
+              rawTitle.match(/(\d+)/);
+            sessionNumber = numMatch ? parseInt(numMatch[1], 10) : idx + 1;
+          }
           return {
             colIndex: idx,
             columnId: String(lesson.id),
             lessonId: String(lesson.id),
             title: rawTitle,
             sessionNumber,
-            lessonType: lesson.type || "REVIEW_AND_PRACTICE",
+            lessonType: isCpLesson ? "CHECKPOINT" : lessonType,
           };
         });
 

@@ -9,8 +9,17 @@ import {
   scoreMatrixRepo,
   jobLogRepo,
   verifyHomeworkContentIntegrity,
+  isRoboticsClassCode,
   type HomeworkSubmissionRecord,
 } from "../db/sqlite";
+import { getLmsClassIdsMap } from "../db/json-config";
+import { normalizeVietnameseName } from "../utils/vietnamese-match";
+import {
+  getCheckpointStageFromSessionNumber,
+  isDedicatedCheckpointColumn,
+  resolveTargetMatrixColumn,
+  stripMindxUploadTimestampPrefix,
+} from "../checkpoint/checkpoint-column-resolver";
 
 export interface GradeWorkerOptions {
   classId: string;
@@ -54,6 +63,95 @@ function stripHtmlToComparableText(raw?: string | null): string {
     .trim();
 }
 
+function decodeHtmlEntitiesPlain(raw: string): string {
+  return raw
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&amp;/gi, "&");
+}
+
+function normalizeComparableNoteText(raw?: string | null): string {
+  if (!raw) return "";
+  const decoded = decodeHtmlEntitiesPlain(
+    String(raw)
+      .replace(/<\s*br\s*\/?>/gi, "\n")
+      .replace(/<\/\s*(p|div|li|tr|h[1-6])\s*>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+  );
+  return decoded
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .filter((line) => line.length > 0)
+    .join("\n");
+}
+
+function normalizePlainEditorText(raw?: string | null): string {
+  if (!raw) return "";
+  return String(raw)
+    .replace(/\u00A0/g, " ")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .filter((line) => line.length > 0)
+    .join("\n");
+}
+
+interface SafeNoteRun {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  code?: boolean;
+}
+
+function parseFeedbackHtmlToSafeBlocks(rawHtml?: string | null): SafeNoteRun[][] {
+  const src = String(rawHtml || "").trim();
+  if (!src) return [];
+  const blockNormalized = src
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\s*(p|div|li)\b[^>]*>/gi, "\n")
+    .replace(/<\/\s*(p|div|li|ul|ol)\s*>/gi, "\n");
+  const rawLines = blockNormalized
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  const blocks: SafeNoteRun[][] = [];
+  for (const line of rawLines) {
+    const runs: SafeNoteRun[] = [];
+    let bold = false;
+    let italic = false;
+    let code = false;
+    const tokenRegex = /<(\/?)(strong|b|em|i|code)\b[^>]*>|([^<]+)|<[^>]+>/gi;
+    let m: RegExpExecArray | null;
+    while ((m = tokenRegex.exec(line)) !== null) {
+      if (m[2]) {
+        const closing = m[1] === "/";
+        const tag = m[2].toLowerCase();
+        if (tag === "strong" || tag === "b") bold = !closing;
+        else if (tag === "em" || tag === "i") italic = !closing;
+        else if (tag === "code") code = !closing;
+      } else if (m[3]) {
+        const txt = decodeHtmlEntitiesPlain(m[3]).replace(/[ \t]+/g, " ");
+        if (txt) {
+          runs.push({ text: txt, bold, italic, code });
+        }
+      }
+    }
+    const lineJoined = runs
+      .map((r) => r.text)
+      .join("")
+      .trim();
+    if (lineJoined.length > 0) {
+      blocks.push(runs);
+    }
+  }
+  return blocks;
+}
+
 export class HomeworkGradeWorker {
   /**
    * Pushes APPROVED homework grades & feedback to MindX LMS Submission Modal
@@ -69,6 +167,19 @@ export class HomeworkGradeWorker {
 
     if (!classId || !classCode || classId !== classCode) {
       const msg = `[HomeworkGradeWorker] Mã định danh lớp (classId='${classId}') không khớp với mã lớp LMS (classCode='${classCode}'). Đã chặn thao tác.`;
+      jobLogRepo.add({
+        jobId,
+        jobType: "SAVE_HOMEWORK_GRADES",
+        classId,
+        sessionId,
+        level: "ERROR",
+        message: msg,
+      });
+      throw new Error(msg);
+    }
+
+    if (isRoboticsClassCode(classCode)) {
+      const msg = `[HomeworkGradeWorker] Lớp Robotics (${classCode}) kiểm tra trên giấy, không đẩy điểm qua Tab Chấm bài (#tab-3) trên LMS.`;
       jobLogRepo.add({
         jobId,
         jobType: "SAVE_HOMEWORK_GRADES",
@@ -157,35 +268,69 @@ export class HomeworkGradeWorker {
       await page.waitForTimeout?.(800);
       await interceptor.dismissForbiddenToast();
 
-      // Determine column index from cached score matrix if available (strictly enforcing session <-> lesson mapping)
+      // Determine column index from cached score matrix if available (strictly enforcing session <-> lesson mapping, including CP1/CP2)
       let colIndex = Math.max(0, sessionNumber - 1);
       let hasVerifiedLessonMapping = !options.lessonId;
+      let expectedLessonId = options.lessonId ? String(options.lessonId).trim() : "";
+      let expectedTotalColumns = 0;
+      let expectedLmsClassId = "";
+      try {
+        expectedLmsClassId = String(getLmsClassIdsMap()?.[classCode] || "").trim();
+      } catch {}
+      let isCheckpointColumn =
+        getCheckpointStageFromSessionNumber(classCode, sessionNumber) !== null;
+      const matrixStudentUidById = new Map<string, string>();
+      const matrixNormNameCounts = new Map<string, number>();
+
       if (typeof scoreMatrixRepo?.findByClass === "function") {
         const cached = scoreMatrixRepo.findByClass(classId);
-        const cols = cached?.matrix?.columns;
-        if (Array.isArray(cols) && cols.length > 0) {
-          let matchedCol = cols.find((c: any) => Number(c.sessionNumber) === sessionNumber);
-          if (options.lessonId) {
-            const byLesson = cols.find(
-              (c: any) => c.columnId === options.lessonId || c.lessonId === options.lessonId
-            );
-            if (!byLesson) {
-              throw new Error(
-                `[HomeworkGradeWorker] Không tìm thấy cột bài tập lessonId='${options.lessonId}' trong lớp ${classCode}.`
-              );
+        if (cached?.matrix?.lmsClassId) {
+          expectedLmsClassId = String(cached.matrix.lmsClassId).trim() || expectedLmsClassId;
+        }
+        const rows = cached?.matrix?.rows;
+        if (Array.isArray(rows)) {
+          for (const r of rows) {
+            if (r?.studentId && r?.studentUid) {
+              matrixStudentUidById.set(String(r.studentId), String(r.studentUid));
             }
-            if (Number(byLesson.sessionNumber) !== sessionNumber) {
-              throw new Error(
-                `[Integrity Violation] lessonId '${options.lessonId}' thuộc Buổi ${byLesson.sessionNumber}, không khớp với session '${sessionId}' (Buổi ${sessionNumber}).`
-              );
+            if (r?.isActive !== false && r?.fullName) {
+              const nn = normalizeVietnameseName(String(r.fullName));
+              if (nn) matrixNormNameCounts.set(nn, (matrixNormNameCounts.get(nn) || 0) + 1);
             }
-            matchedCol = byLesson;
-            hasVerifiedLessonMapping = true;
-          }
-          if (matchedCol && typeof matchedCol.colIndex === "number") {
-            colIndex = matchedCol.colIndex;
           }
         }
+        const cols = cached?.matrix?.columns;
+        if (Array.isArray(cols) && cols.length > 0) {
+          expectedTotalColumns = cols.length;
+          const colRes = resolveTargetMatrixColumn(
+            cols,
+            classCode,
+            sessionNumber,
+            options.lessonId
+          );
+          if (colRes.mismatchError) {
+            throw new Error(`[Integrity Violation] ${colRes.mismatchError}`);
+          }
+          if (!colRes.column) {
+            throw new Error(
+              `[HomeworkGradeWorker] Không tìm thấy cột bài tập của Buổi ${sessionNumber} trên bảng điểm LMS lớp ${classCode}.`
+            );
+          }
+          colIndex = colRes.column.colIndex;
+          expectedLessonId = String(colRes.column.lessonId || colRes.column.columnId || "").trim();
+          isCheckpointColumn = isDedicatedCheckpointColumn(colRes.column);
+          hasVerifiedLessonMapping = true;
+        }
+      }
+
+      const activeDbStudents =
+        typeof studentRepo?.findByClass === "function"
+          ? studentRepo.findByClass(classId, true)
+          : [];
+      const dbNormNameCounts = new Map<string, number>();
+      for (const s of activeDbStudents) {
+        const nn = normalizeVietnameseName(String(s.fullName || ""));
+        if (nn) dbNormNameCounts.set(nn, (dbNormNameCounts.get(nn) || 0) + 1);
       }
 
       for (const initialRecord of actionable) {
@@ -255,6 +400,20 @@ export class HomeworkGradeWorker {
             );
           }
 
+          if (isCheckpointColumn && decision === "REDO") {
+            throw new Error(
+              `Bài kiểm tra Checkpoint của '${fullName}' trên MindX LMS khóa tùy chọn Yêu cầu làm lại (REDO). Chỉ hỗ trợ Chấm điểm (MARK).`
+            );
+          }
+
+          if (isCheckpointColumn && !Number.isInteger(effectiveScore)) {
+            throw new Error(
+              `Điểm chấm Checkpoint của '${fullName}' trên MindX LMS bắt buộc là số nguyên 0..100 (hiện tại: ${effectiveScore}).`
+            );
+          }
+
+          const intScore = Math.round(effectiveScore);
+
           // Ensure no leftover dialog or toast is open before locating student row & target cell on LMS #tabpanel-3
           await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
 
@@ -264,6 +423,722 @@ export class HomeworkGradeWorker {
           const panel3 = drawer.locator("#tabpanel-3").first();
           const context = (await panel3.isVisible().catch(() => false)) ? panel3 : drawer;
 
+          const hasLegacyTable =
+            (await context.locator("table tbody tr").count().catch(() => 0)) > 0;
+
+          if (!hasLegacyTable) {
+            // =========================================================================
+            // REAL MINDX LMS #tabpanel-3 DIV GRID + MarkStudentSubmission / RequestRedoSubmission
+            // =========================================================================
+            if (!Number.isInteger(effectiveScore)) {
+              throw new Error(
+                `Điểm chấm của '${fullName}' trên MindX LMS (#tabpanel-3) bắt buộc là số nguyên 0..100 (hiện tại: ${effectiveScore}).`
+              );
+            }
+            if (dbStudent && dbStudent.isActive === 0) {
+              throw new Error(
+                `Học viên '${fullName}' (${stuId}) không còn ở trạng thái active trong lớp ${classCode}.`
+              );
+            }
+
+            const targetNormName = normalizeVietnameseName(fullName);
+            if (!targetNormName) {
+              throw new Error(`Tên học viên '${fullName}' (${stuId}) không hợp lệ để đối chiếu trên LMS.`);
+            }
+
+            if (
+              (dbNormNameCounts.get(targetNormName) || 0) > 1 ||
+              (matrixNormNameCounts.get(targetNormName) || 0) > 1
+            ) {
+              throw new Error(
+                `Phát hiện nhiều học viên trùng tên '${fullName}' trong lớp ${classCode}. Đã chặn tự động chấm trên #tabpanel-3 để tránh nhầm người.`
+              );
+            }
+
+            const tagAndScanLmsRows = async (): Promise<
+              Array<{ idx: number; startText: string; cellCount: number }>
+            > => {
+              return context.evaluate((rootEl: Element) => {
+                rootEl
+                  .querySelectorAll("[data-mindx-sub-row-idx]")
+                  .forEach((el) => el.removeAttribute("data-mindx-sub-row-idx"));
+                const expandSel =
+                  'svg[data-testid="ExpandMoreIcon"], svg[data-testid="ExpandLessIcon"]';
+                const candidates = Array.from(rootEl.querySelectorAll("div"));
+                const out: Array<{ idx: number; startText: string; cellCount: number }> = [];
+                for (const el of candidates) {
+                  if (
+                    el.children.length >= 2 &&
+                    Boolean(el.children[0].querySelector(expandSel)) &&
+                    !el.children[1].querySelector(expandSel)
+                  ) {
+                    const idx = out.length;
+                    el.setAttribute("data-mindx-sub-row-idx", String(idx));
+                    out.push({
+                      idx,
+                      startText: (el.children[0].textContent || "").trim(),
+                      cellCount: el.children.length,
+                    });
+                  }
+                }
+                return out;
+              });
+            };
+
+            let scannedRows = await tagAndScanLmsRows().catch(() => []);
+            let matchingRows = scannedRows.filter(
+              (r) => normalizeVietnameseName(r.startText) === targetNormName
+            );
+            if (matchingRows.length === 0) {
+              await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+              await LmsHelpers.switchDrawerTab(page, SELECTORS.tabs.grading).catch(() => {});
+              await page.waitForTimeout?.(500);
+              scannedRows = await tagAndScanLmsRows().catch(() => []);
+              matchingRows = scannedRows.filter(
+                (r) => normalizeVietnameseName(r.startText) === targetNormName
+              );
+            }
+
+            if (matchingRows.length === 0) {
+              throw new Error(
+                `Không tìm thấy dòng của học viên '${fullName}' (${stuId}) trên bảng Chấm bài (#tabpanel-3) lớp ${classCode}.`
+              );
+            }
+            if (matchingRows.length > 1) {
+              throw new Error(
+                `Phát hiện ${matchingRows.length} dòng trùng tên '${fullName}' trên bảng Chấm bài (#tabpanel-3). Đã chặn thao tác để tránh chấm nhầm!`
+              );
+            }
+
+            const matchedRow = matchingRows[0];
+            if (
+              colIndex + 1 >= matchedRow.cellCount ||
+              (expectedTotalColumns > 0 && matchedRow.cellCount !== expectedTotalColumns + 1)
+            ) {
+              throw new Error(
+                `Số cột trên DOM #tabpanel-3 (${matchedRow.cellCount - 1} cột bài tập) không khớp với bảng điểm lớp ${classCode} (cần truy cập cột index=${colIndex}, tổng=${expectedTotalColumns}). Vui lòng bấm Quét lại điểm LMS.`
+              );
+            }
+
+            const lmsCell = context
+              .locator(`[data-mindx-sub-row-idx="${matchedRow.idx}"] > div`)
+              .nth(colIndex + 1);
+            await lmsCell.scrollIntoViewIfNeeded().catch(() => {});
+
+            const preExpandText = (await lmsCell.innerText().catch(() => ""))
+              .replace(/\s+/g, " ")
+              .trim();
+            if (
+              /not\s*submit|chưa\s*nộp|student\s*not\s*submitted|học\s*sinh\s*chưa\s*nộp|no\s*practice|không\s*có\s*bài\s*thực\s*hành/i.test(
+                preExpandText
+              )
+            ) {
+              throw new Error(
+                `Học viên '${fullName}' chưa nộp bài trên LMS ở cột này ('${preExpandText}').`
+              );
+            }
+
+            const actionBtnSelector = SELECTORS.grading.lmsTabPanel3.cellActionBtn;
+            if ((await lmsCell.locator(actionBtnSelector).count().catch(() => 0)) === 0) {
+              await lmsCell.click({ force: true });
+              await page.waitForTimeout?.(350);
+              if ((await lmsCell.locator(actionBtnSelector).count().catch(() => 0)) === 0) {
+                await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+                await lmsCell.scrollIntoViewIfNeeded().catch(() => {});
+                await lmsCell.click({ force: true });
+                await page.waitForTimeout?.(400);
+              }
+            }
+
+            const actionBtns = lmsCell.locator(actionBtnSelector);
+            const actionBtnCount = await actionBtns.count().catch(() => 0);
+            if (actionBtnCount === 0) {
+              const curCellTxt = (await lmsCell.innerText().catch(() => "")).replace(/\s+/g, " ").trim();
+              throw new Error(
+                `Không tìm thấy nút Chấm bài/Chỉnh sửa (Mark/Update) khả dụng cho '${fullName}' (ô hiện tại: '${curCellTxt}').`
+              );
+            }
+
+            const expectedFileTokens = Array.from(
+              new Set(
+                String(freshRecord.originalFileName || "")
+                  .split(",")
+                  .flatMap((f) => {
+                    const base = stripMindxUploadTimestampPrefix(f).trim().toLowerCase();
+                    if (!base) return [];
+                    try {
+                      return [base, decodeURIComponent(base)];
+                    } catch {
+                      return [base];
+                    }
+                  })
+                  .filter(Boolean)
+              )
+            );
+
+            const dialogMatchesExpectedAttachment = (txt: string): boolean => {
+              if (expectedFileTokens.length === 0) return true;
+              const lower = txt.toLowerCase();
+              let lowerDecoded = lower;
+              try {
+                lowerDecoded = decodeURIComponent(lower);
+              } catch {}
+              return expectedFileTokens.some(
+                (tok) => lower.includes(tok) || lowerDecoded.includes(tok)
+              );
+            };
+
+            const lmsDialogSelector = SELECTORS.grading.lmsTabPanel3.dialog;
+            let lmsDialog = page.locator(lmsDialogSelector).last();
+
+            const openTaskModalAt = async (btnIndex: number) => {
+              const btn = actionBtns.nth(btnIndex);
+              await btn.scrollIntoViewIfNeeded().catch(() => {});
+              await btn.click({ force: true });
+              await page.waitForTimeout?.(350);
+              lmsDialog = page.locator(lmsDialogSelector).last();
+              try {
+                await lmsDialog.waitFor({ state: "visible", timeout: 6000 });
+              } catch {
+                await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+                await btn.scrollIntoViewIfNeeded().catch(() => {});
+                await btn.click({ force: true });
+                await page.waitForTimeout?.(350);
+                lmsDialog = page.locator(lmsDialogSelector).last();
+                await lmsDialog.waitFor({ state: "visible", timeout: 6000 });
+              }
+            };
+
+            let selectedBtnIdx = 0;
+            await openTaskModalAt(0);
+            let lmsDialogText = (await lmsDialog.innerText().catch(() => "")).trim();
+
+            if (
+              actionBtnCount > 1 &&
+              expectedFileTokens.length > 0 &&
+              !dialogMatchesExpectedAttachment(lmsDialogText)
+            ) {
+              let matchedAlt = false;
+              await page.keyboard?.press?.("Escape").catch(() => {});
+              await page.waitForTimeout?.(250);
+              for (let altIdx = 1; altIdx < actionBtnCount; altIdx++) {
+                await openTaskModalAt(altIdx);
+                const altText = (await lmsDialog.innerText().catch(() => "")).trim();
+                if (dialogMatchesExpectedAttachment(altText)) {
+                  selectedBtnIdx = altIdx;
+                  lmsDialogText = altText;
+                  matchedAlt = true;
+                  break;
+                }
+                await page.keyboard?.press?.("Escape").catch(() => {});
+                await page.waitForTimeout?.(250);
+              }
+              if (!matchedAlt) {
+                throw new Error(
+                  `Không tìm thấy bài thực hành khớp tệp '${freshRecord.originalFileName}' của '${fullName}' trên LMS (#tabpanel-3). Đã hủy thao tác an toàn.`
+                );
+              }
+            }
+
+            if (
+              !lmsDialogText ||
+              !lmsDialogText.toUpperCase().includes(classCode) ||
+              !normalizeVietnameseName(lmsDialogText).includes(targetNormName)
+            ) {
+              await page.keyboard?.press?.("Escape").catch(() => {});
+              throw new Error(
+                `Modal chấm bài trên LMS không khớp định danh lớp '${classCode}' và học viên '${fullName}'. Đã đóng modal để tránh chấm nhầm!`
+              );
+            }
+
+            if (
+              expectedFileTokens.length > 0 &&
+              /\bsubmission\b|bài\s*nộp/i.test(lmsDialogText) &&
+              !/link\s*submission|link\s*bài\s*tập/i.test(lmsDialogText) &&
+              !dialogMatchesExpectedAttachment(lmsDialogText)
+            ) {
+              await page.keyboard?.press?.("Escape").catch(() => {});
+              throw new Error(
+                `Tệp đính kèm trên Modal LMS của '${fullName}' không khớp với tệp đã duyệt ('${freshRecord.originalFileName}'). Đã đóng modal an toàn.`
+              );
+            }
+
+            const plainNote = normalizeComparableNoteText(freshRecord.feedbackHtml);
+            const safeNoteBlocks = parseFeedbackHtmlToSafeBlocks(freshRecord.feedbackHtml);
+            if (!plainNote || safeNoteBlocks.length === 0) {
+              await page.keyboard?.press?.("Escape").catch(() => {});
+              throw new Error(
+                `Nội dung nhận xét của '${fullName}' (${subId}) đang trống, không thể lưu lên LMS.`
+              );
+            }
+
+            // 1. Select MARK vs REDO radio
+            const lmsRadioSelector =
+              decision === "REDO"
+                ? SELECTORS.grading.lmsTabPanel3.radioRedo
+                : SELECTORS.grading.lmsTabPanel3.radioMark;
+            const lmsRadio = lmsDialog.locator(lmsRadioSelector).first();
+            if ((await lmsRadio.count().catch(() => 0)) === 0) {
+              await page.keyboard?.press?.("Escape").catch(() => {});
+              throw new Error(
+                `Không tìm thấy tùy chọn '${decision === "REDO" ? "REDO" : "MARK"}' trên Modal LMS cho '${fullName}'.`
+              );
+            }
+            const isRadioDisabled =
+              typeof (lmsRadio as any).isDisabled === "function"
+                ? await (lmsRadio as any).isDisabled().catch(() => false)
+                : false;
+            if (isRadioDisabled) {
+              await page.keyboard?.press?.("Escape").catch(() => {});
+              throw new Error(
+                `Tùy chọn '${decision}' đang bị khóa (disabled) trên Modal LMS cho '${fullName}'.`
+              );
+            }
+            await lmsRadio.click({ force: true });
+
+            // 2. Fill integer score (0..100) when decision === "GRADE"
+            if (decision === "GRADE") {
+              const lmsScoreInput = lmsDialog
+                .locator(SELECTORS.grading.lmsTabPanel3.scoreInput)
+                .first();
+              if ((await lmsScoreInput.count().catch(() => 0)) === 0) {
+                await page.keyboard?.press?.("Escape").catch(() => {});
+                throw new Error(
+                  `Không tìm thấy ô nhập điểm (Input score) trên Modal LMS cho '${fullName}'.`
+                );
+              }
+              await lmsScoreInput.fill(String(intScore));
+              await lmsScoreInput.evaluate((el: HTMLInputElement) => {
+                el.dispatchEvent(new Event("blur", { bubbles: true }));
+              });
+              const currentTypedScore = String(
+                await lmsScoreInput.inputValue().catch(() => "")
+              ).trim();
+              if (currentTypedScore !== String(intScore)) {
+                await page.keyboard?.press?.("Escape").catch(() => {});
+                throw new Error(
+                  `Ô điểm trên Modal LMS ('${currentTypedScore}') không nhận đúng giá trị '${intScore}'.`
+                );
+              }
+            }
+
+            // 3. Populate ReactQuill .ql-editor via safe DOM nodes (zero innerHTML XSS sink)
+            const lmsQuill = lmsDialog.locator(SELECTORS.grading.lmsTabPanel3.quillEditor).first();
+            if ((await lmsQuill.count().catch(() => 0)) === 0) {
+              await page.keyboard?.press?.("Escape").catch(() => {});
+              throw new Error(
+                `Không tìm thấy ô nhận xét (.ql-editor) trên Modal LMS cho '${fullName}'.`
+              );
+            }
+            await lmsQuill.click({ force: true }).catch(() => {});
+            await lmsQuill.evaluate((el: HTMLElement, blocks: SafeNoteRun[][]) => {
+              el.replaceChildren();
+              el.classList.remove("ql-blank");
+              for (const runs of blocks) {
+                const pEl = document.createElement("p");
+                for (const run of runs) {
+                  if (!run.text) continue;
+                  let node: Node = document.createTextNode(run.text);
+                  if (run.code) {
+                    const codeEl = document.createElement("code");
+                    codeEl.appendChild(node);
+                    node = codeEl;
+                  }
+                  if (run.italic) {
+                    const emEl = document.createElement("em");
+                    emEl.appendChild(node);
+                    node = emEl;
+                  }
+                  if (run.bold) {
+                    const strongEl = document.createElement("strong");
+                    strongEl.appendChild(node);
+                    node = strongEl;
+                  }
+                  pEl.appendChild(node);
+                }
+                el.appendChild(pEl);
+              }
+              el.dispatchEvent(new Event("input", { bubbles: true }));
+              el.dispatchEvent(new Event("change", { bubbles: true }));
+            }, safeNoteBlocks);
+
+            if (typeof page.keyboard?.insertText === "function") {
+              await page.keyboard.press("End").catch(() => {});
+              await page.keyboard.insertText(" ").catch(() => {});
+              await page.keyboard.press("Backspace").catch(() => {});
+            }
+            await page.waitForTimeout?.(200);
+
+            const preSaveEditorText = normalizePlainEditorText(
+              await lmsQuill.innerText().catch(() => "")
+            );
+            if (preSaveEditorText !== plainNote) {
+              await page.keyboard?.press?.("Escape").catch(() => {});
+              throw new Error(
+                `Ô nhận xét (.ql-editor) trên Modal LMS của '${fullName}' không khớp nội dung chuẩn bị lưu.`
+              );
+            }
+
+            // 4. Pre-Save SQLite CAS Integrity Check immediately before clicking Save
+            const preClickRecord = homeworkSubmissionRepo.findBySubmissionId(subId);
+            if (
+              !preClickRecord ||
+              (preClickRecord.status !== "APPROVED" && preClickRecord.status !== "FAILED") ||
+              !verifyHomeworkContentIntegrity(preClickRecord) ||
+              preClickRecord.contentHash !== approvedHash ||
+              (preClickRecord.feedbackHtml ?? "") !== (freshRecord.feedbackHtml ?? "") ||
+              (preClickRecord.decision || "GRADE") !== decision ||
+              (preClickRecord.teacherOverrideScore ?? preClickRecord.calculatedScore ?? 0) !==
+                effectiveScore
+            ) {
+              await page.keyboard?.press?.("Escape").catch(() => {});
+              if (preClickRecord && !verifyHomeworkContentIntegrity(preClickRecord)) {
+                homeworkSubmissionRepo.upsert({
+                  ...preClickRecord,
+                  status: "WAITING_APPROVAL",
+                  verifiedAt: null,
+                });
+              }
+              throw new Error(
+                `Dữ liệu chấm bài '${subId}' đã bị thay đổi ngay trước khi bấm Save trên LMS. Đã hủy thao tác Lưu và hạ về WAITING_APPROVAL.`
+              );
+            }
+
+            const lmsSaveBtn = lmsDialog.locator(SELECTORS.grading.lmsTabPanel3.saveButton).first();
+            if ((await lmsSaveBtn.count().catch(() => 0)) === 0) {
+              await page.keyboard?.press?.("Escape").catch(() => {});
+              throw new Error(`Không tìm thấy nút Save trên Modal LMS cho '${fullName}'.`);
+            }
+
+            const expectedOpName =
+              decision === "REDO" ? "RequestRedoSubmission" : "MarkStudentSubmission";
+            const expectedRootField =
+              decision === "REDO" ? "requestRedoSubmission" : "markStudentSubmission";
+            const expectedStudentUid = matrixStudentUidById.get(stuId) || "";
+
+            const lmsRequestPredicate = (postData?: string | null): boolean => {
+              if (!postData) return false;
+              try {
+                const parsed = JSON.parse(postData);
+                const opName = String(parsed?.operationName || "").trim();
+                const queryStr = String(parsed?.query || "");
+                if (
+                  opName !== expectedOpName &&
+                  !new RegExp(`\\b${expectedRootField}\\b`).test(queryStr)
+                ) {
+                  return false;
+                }
+                const payload = parsed?.variables?.payload;
+                if (!payload || typeof payload !== "object") return false;
+                if (String(payload.id || "").trim() !== subId) return false;
+                if (decision === "GRADE") {
+                  if (String(payload.score ?? "").trim() !== String(intScore)) {
+                    return false;
+                  }
+                }
+                if (normalizeComparableNoteText(String(payload.note || "")) !== plainNote) {
+                  return false;
+                }
+                return true;
+              } catch {
+                return false;
+              }
+            };
+
+            const [lmsApiRes] = await Promise.all([
+              interceptor.waitForApiResponse("mindx.edu.vn", {
+                method: "POST",
+                timeoutMs: 15000,
+                requestPredicate: lmsRequestPredicate,
+              }),
+              lmsSaveBtn.click({ force: true }),
+            ]);
+
+            const lmsHttpStatus =
+              typeof lmsApiRes?.status === "function" ? lmsApiRes.status() : 200;
+            if (lmsHttpStatus !== 200 && lmsHttpStatus !== 201) {
+              throw new Error(`API ${expectedOpName} trả về HTTP status ${lmsHttpStatus}.`);
+            }
+
+            const lmsResJson =
+              typeof lmsApiRes?.json === "function"
+                ? await lmsApiRes.json().catch(() => ({}))
+                : {};
+            if (lmsResJson && Array.isArray(lmsResJson.errors) && lmsResJson.errors.length > 0) {
+              throw new Error(
+                `GraphQL ${expectedOpName} trả về lỗi: ${
+                  lmsResJson.errors[0]?.message || "Unknown GraphQL error"
+                }`
+              );
+            }
+
+            const returnedSub =
+              lmsResJson?.data?.studentHomework?.[expectedRootField] ??
+              lmsResJson?.data?.[expectedRootField];
+            if (!returnedSub || typeof returnedSub !== "object") {
+              throw new Error(
+                `GraphQL ${expectedOpName} thiếu dữ liệu xác nhận tại studentHomework.${expectedRootField}.`
+              );
+            }
+            if (String(returnedSub.id || "").trim() !== subId) {
+              throw new Error(
+                `GraphQL ${expectedOpName} trả về id '${String(returnedSub.id)}' không khớp với '${subId}'.`
+              );
+            }
+            if (returnedSub.studentUid) {
+              const retUid = String(returnedSub.studentUid).trim();
+              if (retUid !== stuId && (!expectedStudentUid || retUid !== expectedStudentUid)) {
+                throw new Error(
+                  `GraphQL ${expectedOpName} trả về studentUid '${retUid}' không khớp học viên '${fullName}'.`
+                );
+              }
+            }
+            if (returnedSub.classId && expectedLmsClassId) {
+              const retCid = String(returnedSub.classId).trim();
+              if (retCid !== expectedLmsClassId && retCid.toUpperCase() !== classId) {
+                throw new Error(
+                  `GraphQL ${expectedOpName} trả về classId '${retCid}' không khớp lớp '${classCode}'.`
+                );
+              }
+            }
+            if (returnedSub.lessonId && expectedLessonId) {
+              const retLid = String(returnedSub.lessonId).trim();
+              if (retLid !== expectedLessonId) {
+                throw new Error(
+                  `GraphQL ${expectedOpName} trả về lessonId '${retLid}' không khớp cột '${expectedLessonId}'.`
+                );
+              }
+            }
+            if (decision === "GRADE") {
+              if (Number(returnedSub.score) !== intScore) {
+                throw new Error(
+                  `GraphQL ${expectedOpName} trả về score '${String(returnedSub.score)}' không khớp với '${intScore}'.`
+                );
+              }
+              if (String(returnedSub.status || "").trim().toUpperCase() !== "MARKED") {
+                throw new Error(
+                  `GraphQL ${expectedOpName} trả về status '${String(returnedSub.status)}' (mong đợi MARKED).`
+                );
+              }
+            } else if (String(returnedSub.status || "").trim().toUpperCase() !== "REDO") {
+              throw new Error(
+                `GraphQL ${expectedOpName} trả về status '${String(returnedSub.status)}' (mong đợi REDO).`
+              );
+            }
+            if (
+              typeof returnedSub.note === "string" &&
+              normalizeComparableNoteText(returnedSub.note) !== plainNote
+            ) {
+              throw new Error(
+                `GraphQL ${expectedOpName} trả về note không khớp với bản nhận xét đã duyệt.`
+              );
+            }
+
+            savedCount++;
+
+            // 5. Post-Save SQLite Drift Check
+            const postSaveRecord = homeworkSubmissionRepo.findBySubmissionId(subId);
+            if (
+              !postSaveRecord ||
+              !verifyHomeworkContentIntegrity(postSaveRecord) ||
+              postSaveRecord.contentHash !== approvedHash ||
+              (postSaveRecord.feedbackHtml ?? "") !== (freshRecord.feedbackHtml ?? "") ||
+              (postSaveRecord.decision || "GRADE") !== decision ||
+              (postSaveRecord.teacherOverrideScore ?? postSaveRecord.calculatedScore ?? 0) !==
+                effectiveScore
+            ) {
+              if (postSaveRecord) {
+                homeworkSubmissionRepo.upsert({
+                  ...postSaveRecord,
+                  status: "WAITING_APPROVAL",
+                  verifiedAt: null,
+                });
+              }
+              throw new Error(
+                `Nội dung bài chấm '${subId}' bị chỉnh sửa trong lúc đang lưu lên LMS. Không đánh dấu VERIFIED.`
+              );
+            }
+
+            // 6. Read-after-Write DOM Verification (Expanded Cell + Re-opened Modal)
+            await lmsDialog.waitFor({ state: "hidden", timeout: 4000 }).catch(() => {});
+            await page.waitForTimeout?.(350);
+            await interceptor.dismissForbiddenToast();
+
+            const verifyRows = await tagAndScanLmsRows().catch(() => []);
+            const verifyRow = verifyRows.find(
+              (r) => normalizeVietnameseName(r.startText) === targetNormName
+            );
+            if (!verifyRow) {
+              throw new Error(
+                `Read-after-Write thất bại: Không tìm thấy lại dòng của '${fullName}' trên #tabpanel-3.`
+              );
+            }
+            const verifyCell = context
+              .locator(`[data-mindx-sub-row-idx="${verifyRow.idx}"] > div`)
+              .nth(colIndex + 1);
+            await verifyCell.scrollIntoViewIfNeeded().catch(() => {});
+
+            if ((await verifyCell.locator(actionBtnSelector).count().catch(() => 0)) === 0) {
+              await verifyCell.click({ force: true });
+              await page.waitForTimeout?.(350);
+            }
+
+            const verifyBtns = verifyCell.locator(actionBtnSelector);
+            const verifyBtnCount = await verifyBtns.count().catch(() => 0);
+            const verifyBtnIdx = selectedBtnIdx < verifyBtnCount ? selectedBtnIdx : 0;
+
+            let verifyItemScope: any = verifyCell;
+            if (verifyBtnCount > 1) {
+              const targetBtn = verifyBtns.nth(verifyBtnIdx);
+              for (const relUp of ["..", "../..", "../../.."]) {
+                const anc = targetBtn.locator(relUp);
+                if ((await anc.count().catch(() => 0)) === 0) continue;
+                const ancBtns = await anc.locator(actionBtnSelector).count().catch(() => 0);
+                const ancText = (await anc.innerText().catch(() => "")).replace(/\s+/g, " ").trim();
+                if (
+                  ancBtns === 1 &&
+                  /\d+\s*\/\s*100|--\s*\/\s*100|redo|làm\s*lại/i.test(ancText)
+                ) {
+                  verifyItemScope = anc;
+                  break;
+                }
+              }
+            }
+
+            const verifyCellText = (await verifyItemScope.innerText().catch(() => ""))
+              .replace(/\s+/g, " ")
+              .trim();
+            if (decision === "REDO") {
+              if (!/redo\s*requested|đã\s*yêu\s*cầu\s*làm\s*lại|làm\s*lại/i.test(verifyCellText)) {
+                throw new Error(
+                  `Read-after-Write thất bại cho '${fullName}': Ô bài nộp đọc lại là '${verifyCellText}' (mong đợi Redo Requested).`
+                );
+              }
+            } else {
+              const scoreRegex = new RegExp(`(^|[^0-9-])${intScore}\\s*\\/\\s*100([^0-9]|$)`, "i");
+              if (
+                !scoreRegex.test(verifyCellText) ||
+                /--\s*\/\s*100|not\s*submit|chưa\s*nộp/i.test(verifyCellText)
+              ) {
+                throw new Error(
+                  `Read-after-Write thất bại cho '${fullName}': Ô điểm trên #tabpanel-3 đọc lại là '${verifyCellText}', không khớp '${intScore}/100'.`
+                );
+              }
+            }
+
+            // Re-open Update modal to verify persisted radio, score, and ReactQuill note
+            await verifyBtns.nth(verifyBtnIdx).click({ force: true });
+            await page.waitForTimeout?.(350);
+            const readbackModal = page.locator(lmsDialogSelector).last();
+            await readbackModal.waitFor({ state: "visible", timeout: 6000 });
+
+            const readbackModalText = (await readbackModal.innerText().catch(() => "")).trim();
+            if (
+              !readbackModalText.toUpperCase().includes(classCode) ||
+              !normalizeVietnameseName(readbackModalText).includes(targetNormName)
+            ) {
+              await page.keyboard?.press?.("Escape").catch(() => {});
+              throw new Error(
+                `Read-after-Write thất bại: Modal đọc lại không khớp định danh '${classCode}' / '${fullName}'.`
+              );
+            }
+
+            const readbackRadio = readbackModal.locator(lmsRadioSelector).first();
+            if (typeof (readbackRadio as any).isChecked === "function") {
+              const checked = await (readbackRadio as any).isChecked().catch(() => false);
+              if (!checked) {
+                await page.keyboard?.press?.("Escape").catch(() => {});
+                throw new Error(
+                  `Read-after-Write thất bại: Trạng thái lựa chọn (${decision}) trên Modal LMS không được lưu.`
+                );
+              }
+            }
+
+            if (decision === "GRADE") {
+              const readbackScoreInput = readbackModal
+                .locator(SELECTORS.grading.lmsTabPanel3.scoreInput)
+                .first();
+              const persistedScore = String(
+                await readbackScoreInput.inputValue().catch(() => "")
+              ).trim();
+              if (persistedScore !== String(intScore)) {
+                await page.keyboard?.press?.("Escape").catch(() => {});
+                throw new Error(
+                  `Read-after-Write thất bại: Điểm lưu trên Modal LMS ('${persistedScore}') không khớp '${intScore}'.`
+                );
+              }
+            }
+
+            const readbackQuill = readbackModal
+              .locator(SELECTORS.grading.lmsTabPanel3.quillEditor)
+              .first();
+            const persistedNote = normalizePlainEditorText(
+              await readbackQuill.innerText().catch(() => "")
+            );
+            if (persistedNote !== plainNote) {
+              await page.keyboard?.press?.("Escape").catch(() => {});
+              throw new Error(
+                `Read-after-Write thất bại: Nhận xét lưu trên Modal LMS ('${persistedNote}') không khớp bản đã duyệt.`
+              );
+            }
+
+            const exitBtn = readbackModal
+              .locator(SELECTORS.grading.lmsTabPanel3.exitButton)
+              .first();
+            if ((await exitBtn.count().catch(() => 0)) > 0) {
+              await exitBtn.click({ force: true }).catch(() => {});
+            } else {
+              await page.keyboard?.press?.("Escape").catch(() => {});
+            }
+            await page.waitForTimeout?.(200);
+            await LmsHelpers.ensureCleanDialogAndToast(page, interceptor);
+
+            // Final Post-Readback Drift & Conditional Verification Check
+            const finalRecordLms = homeworkSubmissionRepo.findBySubmissionId(subId);
+            if (
+              !finalRecordLms ||
+              (finalRecordLms.status !== "APPROVED" && finalRecordLms.status !== "FAILED") ||
+              !verifyHomeworkContentIntegrity(finalRecordLms) ||
+              finalRecordLms.contentHash !== approvedHash
+            ) {
+              throw new Error(
+                `Nội dung bài chấm '${subId}' đã bị chỉnh sửa trong lúc đọc lại DOM (Read-after-Write). Giữ nguyên bản mới để duyệt lại.`
+              );
+            }
+
+            const verifyUpdateLms = homeworkSubmissionRepo.markVerified(subId, approvedHash);
+            if (!verifyUpdateLms || verifyUpdateLms.changes !== 1) {
+              throw new Error(
+                `Không thể nâng trạng thái VERIFIED cho bài nộp '${subId}' do dữ liệu đã thay đổi.`
+              );
+            }
+            verifiedCount++;
+
+            jobLogRepo.add({
+              jobId,
+              jobType: "SAVE_HOMEWORK_GRADES",
+              classId,
+              sessionId,
+              studentId: stuId,
+              submissionId: subId,
+              level: "SUCCESS",
+              message: `Đã lưu & đối chiếu VERIFIED điểm của ${fullName} (${
+                decision === "REDO" ? "Làm lại" : `${intScore}/100`
+              }, submissionId=${subId}).`,
+            });
+
+            results.push({
+              submissionId: subId,
+              studentId: stuId,
+              fullName,
+              decision,
+              effectiveScore: intScore,
+              success: true,
+              verified: true,
+            });
+            continue;
+          }
+
           const escapedStuId = stuId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
           const escapedSubId = subId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
           const exactIdRegex = new RegExp(`(^|[^a-zA-Z0-9_-])${escapedStuId}([^a-zA-Z0-9_-]|$)`, "i");
@@ -271,7 +1146,7 @@ export class HomeworkGradeWorker {
 
           const findTargetCellLocator = async () => {
             const rowItems = context.locator(
-              'div:has(> div > svg[data-testid="ExpandMoreIcon"]), table tbody tr'
+              'div:has(> div > svg[data-testid="ExpandMoreIcon"]), div:has(> div > svg[data-testid="ExpandLessIcon"]), table tbody tr'
             );
             const rowCount = await rowItems.count().catch(() => 0);
             for (let r = 0; r < rowCount; r++) {

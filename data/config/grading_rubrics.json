@@ -160,5 +160,43 @@
         "expectedSnippetOrConcept": "Rooms, rm_, instances"
       }
     ]
+  },
+  {
+    "rubricId": "CSA_SESSION_05",
+    "courseCode": "CSA",
+    "sessionNumber": 5,
+    "assignmentTitle": "Checkpoint 1: Phân tích dữ liệu bán xe cũ (car-sales-data.csv)",
+    "assignmentPrompt": "Sử dụng dữ liệu 'car-sales-data.csv' (5 cột: Make, Colour, Odometer, Doors, Price có dạng '$4,000' và một số ô khuyết NaN). Áp dụng các phương pháp làm sạch và xử lý dữ liệu hợp lý trước khi phân tích để trả lời 3 câu hỏi: 1. Chiếc xe nào được bán với giá đắt nhất? 2. Hãng xe nào có chiếc xe với giá trên mỗi kilomet đã đi được rẻ nhất? 3. Trung bình giá xe của các hãng xe là bao nhiêu? Hãng xe nào có trung bình giá bán cao nhất?",
+    "maxTotalScore": 100,
+    "criteria": [
+      {
+        "criterionId": "CRIT_01",
+        "name": "Đọc & Làm sạch dữ liệu hợp lý",
+        "maxPoints": 25,
+        "description": "Đọc file car-sales-data.csv bằng pandas; xử lý bắt buộc cột Price (xóa cả ký tự '$' và dấu phẩy ',' rồi chuyển sang kiểu số bằng pd.to_numeric/astype); xử lý giá trị khuyết NaN hợp lý (giữ nguyên mẫu hợp lệ cho từng câu là tối ưu nhất; nếu dùng fillna mode/mean hoặc dropna toàn cục làm mất bớt dòng cho câu 3 thì trừ nhẹ 3-7 điểm tùy mức ảnh hưởng; nếu quên xóa '$' hoặc ',' hoặc ép kiểu sai thứ tự làm hỏng cột Price thì trừ nặng).",
+        "expectedSnippetOrConcept": "pd.read_csv, str.replace('$',''), str.replace(',',''), pd.to_numeric"
+      },
+      {
+        "criterionId": "CRIT_02",
+        "name": "Câu 1: Tìm chiếc xe bán với giá đắt nhất",
+        "maxPoints": 25,
+        "description": "Tìm đúng chiếc xe có Price lớn nhất sau khi ép kiểu số: BMW (Black, Odometer 11179 km, 5 cửa, Price $22,000). Nếu so sánh trên chuỗi chưa ép kiểu ra '$9,700' hoặc code lỗi không chạy ra kết quả đúng thì chỉ cho điểm ý tưởng (0-8 điểm).",
+        "expectedSnippetOrConcept": "idxmax() hoặc max() -> BMW, $22,000"
+      },
+      {
+        "criterionId": "CRIT_03",
+        "name": "Câu 2: Hãng xe có chiếc xe giá/km rẻ nhất",
+        "maxPoints": 25,
+        "description": "Tính đúng tỷ lệ Price / Odometer và tìm giá trị NHỎ NHẤT (idxmin / min): chiếc xe hãng Nissan ($3,500 / 213,095 km ≈ 0.0164 $/km). Nếu tính ra đúng 0.0164 nhưng quên in tên hãng Nissan thì trừ nhẹ 3-5 điểm; nếu dùng nhầm idxmax() (đắt nhất/km) hoặc code lỗi runtime thì chỉ cho điểm ý tưởng (0-5 điểm).",
+        "expectedSnippetOrConcept": "Price / Odometer, idxmin() -> Nissan (~0.0164 $/km)"
+      },
+      {
+        "criterionId": "CRIT_04",
+        "name": "Câu 3: Trung bình giá xe từng hãng & Hãng cao nhất",
+        "maxPoints": 25,
+        "description": "Nhóm theo cột Make tính trung bình cột Price (groupby('Make')['Price'].mean()) và xác định hãng có giá trung bình cao nhất là BMW ($22,000). Bảng chuẩn giữ đủ mẫu hợp lệ: BMW 22000, Honda 6250, Toyota ~5166.67, Nissan 3500 (nếu lệch nhẹ Honda/Toyota do bước fillna/dropna trước đó nhưng công thức groupby().mean() và idxmax() hoàn toàn đúng thì đạt 20-25 điểm; nếu lỗi TypeError do chưa ép kiểu số cho Price thì chỉ cho điểm cú pháp 8-12 điểm).",
+        "expectedSnippetOrConcept": "df.groupby('Make')['Price'].mean(), idxmax() -> BMW ($22,000)"
+      }
+    ]
   }
 ]

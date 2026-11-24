@@ -21,6 +21,7 @@ import {
   Loader2,
 } from "lucide-react";
 import TeachingReportCardView from "@/components/teaching-report-card-view";
+import CheckpointGraderPanel from "@/components/checkpoint-grader-panel";
 import { ClassPicker } from "@/components/class-picker";
 import { ReportCardBatchSyncPanel } from "@/components/report-card-batch-sync-panel";
 import {
@@ -982,6 +983,15 @@ export default function HomeworkGraderPage() {
           );
           setClassCode(nextCode);
           setClassId(nextCode);
+        }}
+      />
+
+      {/* Checkpoint Assignment Auto-Grader Panel (CP1 Buổi 5 & CP2 Buổi 9 — Scale 100 LMS) */}
+      <CheckpointGraderPanel
+        classId={classId}
+        classCode={classCode}
+        onGradesSaved={() => {
+          void loadCachedScores(classId);
         }}
       />
 

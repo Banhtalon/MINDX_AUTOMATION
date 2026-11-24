@@ -400,6 +400,24 @@ export default function TeachingReportCardView({
     }
   }, [isScrapingExternal, isScrapingLms, effectiveClassId, loadReportCard]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.addEventListener !== "function") {
+      return;
+    }
+    const onRefreshEvent = (ev: Event) => {
+      const targetCls = String((ev as CustomEvent)?.detail?.classId || "").trim().toUpperCase();
+      if (effectiveClassId && (!targetCls || targetCls === effectiveClassId)) {
+        void loadReportCard(effectiveClassId);
+      }
+    };
+    window.addEventListener("mindx:report-card-refresh", onRefreshEvent);
+    return () => {
+      if (typeof window.removeEventListener === "function") {
+        window.removeEventListener("mindx:report-card-refresh", onRefreshEvent);
+      }
+    };
+  }, [effectiveClassId, loadReportCard]);
+
   // Instant client-side recalculation when teacher filters BTVN sessions.
   // Explicitly distinguishes omitted filter (`null` -> all sessions) from empty array (`[]` -> 0 sessions).
   const computedReportCard = useMemo<ComputedClassReportCard | null>(() => {
