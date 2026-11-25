@@ -1,5 +1,19 @@
 # CHANGELOG — LỊCH SỬ PHIÊN BẢN DỰ ÁN MINDX AUTOMATION BOT
 
+## [v3.8.9+] - 2026-11-25
+> **Bản vá Sửa Lỗi Báo Chưa Xong `Phiếu điểm Checkpoint` Ở Buổi Checkpoint 1 (`VT-ROB-ARMI13` Buổi 4 & `VT-CSA04-HB` Buổi 5) — Đạt `Gemini 4 Neon (XHigh)` Round 2 `VERDICT: GO` (`2/2` phát hiện `F01` P2 & `F02` P3 CLOSED, `0` lỗi mở).**
+
+### 🐛 Đã sửa & Cải tiến (`v3.8.9+`)
+- **Kiểm tra thiếu điểm Checkpoint theo đúng tiến độ buổi học thực tế (`src/lib/report-card/report-card-staleness.ts`):**
+  - Bổ sung `ComputeReportCardStalenessOptions` (`currentSessionNumber`, `syllabusList`, `nowMs`), hợp nhất nguồn buổi Checkpoint (`cp1Sess`, `cp2Sess`) qua `resolveCheckpointSessionsForClass` cho cả `hasNewerManualCheckpoint` và điều kiện đến hạn `isCp1Due`/`isCp2Due` khi tính `missingCp1`/`missingCp2`.
+  - Lớp mới ở buổi 1–3 hoặc buổi Checkpoint 1 (`Buổi 4` Robotics, `Buổi 5` Lập trình) sau khi đã quét & đồng bộ đủ điểm CP1 lên Teaching sẽ không còn bị báo nhầm là thiếu điểm CP2 (`missingCp2 = false`, `isStale = false`); ngay khi lớp bước sang buổi Checkpoint 2 (`Buổi 8` Robotics, `Buổi 9` Lập trình), cảnh báo quét & đồng bộ CP2 tự động kích hoạt lại chính xác.
+  - Bổ sung `resolveSnapshotFloorSession` + `resolveEffectiveSessionForStaleness` (`F01` CLOSED): khi không truyền `currentSessionNumber` và lớp `Running` chưa có lịch `classes_sessions` có ngày, vẫn suy ra sàn buổi tối thiểu từ điểm CP1/CP2/Final đã có trong `parsedSnapshot` (tránh âm tính giả khi đã có điểm CP2/Final nhưng thiếu điểm giai đoạn trước), và dọn sạch import thừa `isRoboticsClassCode` (`F02` CLOSED).
+- **Đồng bộ trạng thái Dashboard Trang chủ (`src/lib/dashboard/today-tasks.ts`):**
+  - Truyền `{ currentSessionNumber: sessionNum, syllabusList }` từ `getDashboardTodayTodoCards` vào `computeReportCardStaleness` và kiểm tra thêm `teachingSyncStatus === "OUT_OF_SYNC"` khi xác định `reportCardStale`.
+- **Kiểm thử & Nghiệm thu Độc lập (`scripts/test-streamline-v340-s4.ts`, `docs/audits/v389/NEON_XHIGH_V389_CP1_STALENESS_FIX_REVIEW.md`):**
+  - Bổ sung `Case E` kiểm tra toàn bộ vòng đời buổi học (Buổi 3 $\rightarrow$ CP1 thiếu điểm $\rightarrow$ CP1 `VERIFIED` $\rightarrow$ `OUT_OF_SYNC` $\rightarrow$ CP2 thiếu điểm $\rightarrow$ CP2 hoàn chỉnh) cho cả Coding (`VT-CSA04-S4CP`) & Robotics (`VT-ROB-ARMS4`), kèm các ca hồi quy `F01` (`PROBE 3b`, `PROBE 3b2/3c`).
+  - **Toàn bộ `6/6` cổng kiểm thử sau bản sửa cuối PASS (`exit 0`):** `tsc --noEmit --incremental false`, `test-streamline-v340-s4.ts`, `test-report-card-v330.ts`, `test-report-card-batch-sync.ts`, `test-checkpoint-csa04-v386.ts`, `test-admin-center-v389.ts`; bản sao cô lập dữ liệu thật đạt `8/8` lớp `allDone: true` (`VT-ROB-ARMI13` & `VT-CSA04-HB` chuyển sang **Đã xong**), bảo toàn `100%` SHA-256 dữ liệu thật `data/`.
+
 ## [v3.8.9] - 2026-11-25
 > **Hoàn Thiện Phần 1 (Sửa `/admin-center` Theo Phương Án B), Phần 2 (Upload SPCK Robotics 3 Buổi `1A` + Ghi Nhanh LMS API Thuần Node `2A` Cho Cả Robotics & Coding), Đóng Gói Fallback Chụp Ảnh Web Thuần Node & Bước 0 (10 Mẫu Demo + 10 Thư Mục Drive `ROBOTICS - SPCK`) — Đạt `Gemini 4 Neon (XHigh)` Round 3 `VERDICT: GO` (`13/13` phát hiện Phần 1 & 2 `F01`–`F11`, `R2-F01`–`R2-F02` CLOSED; `0` lỗi mở).**
 

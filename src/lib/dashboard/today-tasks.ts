@@ -809,7 +809,11 @@ export function getDashboardTodayTodoCards(options?: {
         classId,
         (baselineScrapedAt
           ? { ...(parsedSnapshot || {}), scrapedAt: baselineScrapedAt }
-          : parsedSnapshot) as any
+          : parsedSnapshot) as any,
+        {
+          currentSessionNumber: sessionNum,
+          syllabusList,
+        }
       );
       const wasReportCardVerified =
         reportCardRow?.status === "VERIFIED" ||
@@ -817,6 +821,7 @@ export function getDashboardTodayTodoCards(options?: {
       const reportCardStale = Boolean(
         reportCardRow &&
           (reportCardRow.teachingSyncStatus === "OUTDATED" ||
+            reportCardRow.teachingSyncStatus === "OUT_OF_SYNC" ||
             ((wasReportCardVerified ||
               Boolean(reportCardRow.teachingSyncedAt) ||
               Boolean(parsedSnapshot?.scrapedAt)) &&

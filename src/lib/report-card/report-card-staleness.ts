@@ -1,6 +1,11 @@
+import { queryClassDirectory } from "@/lib/classes/class-directory";
+import {
+  getCoursesSyllabus,
+  getRunningClasses,
+  type CourseSyllabus,
+} from "@/lib/db/json-config";
 import {
   classSessionRepo,
-  isRoboticsClassCode,
   session14EvalRepo,
   sessionFeedbackRepo,
   studentRepo,
@@ -8,11 +13,18 @@ import {
 } from "@/lib/db/sqlite";
 import { taskQueue } from "@/lib/queue/task-queue";
 import { ScoreScraper } from "@/lib/playwright/scrape-scores";
+import { resolveCheckpointSessionsForClass } from "@/lib/quick-tags";
 import {
   round2,
   type ClassReportCardLmsSnapshot,
 } from "@/lib/report-card/report-card-calculator";
 import { stripVietnameseDiacritics } from "@/lib/utils/vietnamese-match";
+
+export interface ComputeReportCardStalenessOptions {
+  currentSessionNumber?: number | null;
+  syllabusList?: Array<Pick<CourseSyllabus, "courseCode" | "checkpointSessions">>;
+  nowMs?: number;
+}
 
 export interface ReportCardStalenessInfo {
   isStale: boolean;
@@ -65,11 +77,120 @@ function hasEvaluatedSession14Record(r: SpckSession14EvaluationRecord): boolean 
   );
 }
 
+function resolveSnapshotFloorSession(
+  activeStudents: ClassReportCardLmsSnapshot["students"],
+  cp1Sess: number | null,
+  cp2Sess: number | null
+): number | null {
+  if (!Array.isArray(activeStudents) || activeStudents.length === 0) {
+    return null;
+  }
+  const hasAnyFinal = activeStudents.some(
+    (s) =>
+      s.stageScores?.finalProduct != null ||
+      s.stageScores?.finalCompetency != null
+  );
+  if (hasAnyFinal) {
+    return 14;
+  }
+  if (cp2Sess !== null) {
+    const hasAnyCp2 = activeStudents.some(
+      (s) =>
+        s.stageScores?.cp2Theory != null ||
+        s.stageScores?.cp2Practice != null ||
+        s.stageScores?.cp2Competency != null
+    );
+    if (hasAnyCp2) {
+      return cp2Sess;
+    }
+  }
+  if (cp1Sess !== null) {
+    const hasAnyCp1 = activeStudents.some(
+      (s) =>
+        s.stageScores?.cp1Theory != null ||
+        s.stageScores?.cp1Practice != null ||
+        s.stageScores?.cp1Competency != null
+    );
+    if (hasAnyCp1) {
+      return cp1Sess;
+    }
+  }
+  return null;
+}
+
+function resolveEffectiveSessionForStaleness(
+  cleanClassId: string,
+  hasEvaluatedS14: boolean,
+  snapshotFloor: number | null,
+  options?: ComputeReportCardStalenessOptions
+): number | null {
+  if (
+    typeof options?.currentSessionNumber === "number" &&
+    Number.isFinite(options.currentSessionNumber) &&
+    options.currentSessionNumber > 0
+  ) {
+    return Math.min(14, Math.max(1, Math.floor(options.currentSessionNumber)));
+  }
+  if (hasEvaluatedS14) {
+    return 14;
+  }
+  try {
+    const { allClassesMap } = queryClassDirectory({
+      scope: "all",
+      includeSynthetic: true,
+      nowMs: options?.nowMs,
+    });
+    const dirItem = allClassesMap.get(cleanClassId);
+    let inferred: number | null = null;
+    if (dirItem && dirItem.currentSessionNumber > 0) {
+      inferred = Math.min(14, Math.max(1, Math.floor(dirItem.currentSessionNumber)));
+    } else {
+      const runningList =
+        typeof getRunningClasses === "function" ? getRunningClasses() : [];
+      const matchedRunning = Array.isArray(runningList)
+        ? runningList.find(
+            (r) => String(r?.classCode || "").trim().toUpperCase() === cleanClassId
+          )
+        : undefined;
+      const runningSess = Number((matchedRunning as any)?.currentSessionNumber);
+      if (Number.isFinite(runningSess) && runningSess > 0) {
+        inferred = Math.min(14, Math.max(1, Math.floor(runningSess)));
+      } else if (dirItem?.status === "Running") {
+        inferred = 1;
+      }
+    }
+    if (inferred !== null) {
+      return snapshotFloor !== null ? Math.max(inferred, snapshotFloor) : inferred;
+    }
+  } catch {
+    // Fallback to null when directory/config is unavailable in stripped test harnesses
+  }
+  return null;
+}
+
 export function computeReportCardStaleness(
   classId: string,
-  parsedSnapshot: ClassReportCardLmsSnapshot | null
+  parsedSnapshot: ClassReportCardLmsSnapshot | null,
+  options?: ComputeReportCardStalenessOptions
 ): ReportCardStalenessInfo {
   const cleanClassId = String(classId || "").trim().toUpperCase();
+  let resolvedSyllabusList = Array.isArray(options?.syllabusList)
+    ? options.syllabusList
+    : undefined;
+  if (!resolvedSyllabusList) {
+    try {
+      resolvedSyllabusList =
+        typeof getCoursesSyllabus === "function" ? getCoursesSyllabus() : undefined;
+    } catch {
+      resolvedSyllabusList = undefined;
+    }
+  }
+  const cpSessions = resolveCheckpointSessionsForClass(
+    cleanClassId,
+    resolvedSyllabusList
+  );
+  const cp1Sess: number | null = cpSessions.length >= 1 ? cpSessions[0] : null;
+  const cp2Sess: number | null = cpSessions.length >= 2 ? cpSessions[1] : null;
   const s14Rows = session14EvalRepo.findByClass(cleanClassId);
   const scrapedAt = parsedSnapshot?.scrapedAt || null;
   const scrapedAtMs = parseDbOrIsoTimestampMs(scrapedAt);
@@ -235,13 +356,6 @@ export function computeReportCardStaleness(
         sessNumById.set(s.sessionId, s.sessionNumber);
       }
     }
-    const isRobotics =
-      typeof isRoboticsClassCode === "function"
-        ? Boolean(parsedSnapshot?.isRobotics ?? isRoboticsClassCode(cleanClassId))
-        : Boolean(parsedSnapshot?.isRobotics);
-    const cp1Sess = isRobotics ? 4 : 5;
-    const cp2Sess = isRobotics ? 8 : 9;
-
     const snapStudents = parsedSnapshot?.students || [];
     const findSnapStudentForFb = (fbStudentId: string) => {
       for (const s of snapStudents) {
@@ -317,7 +431,26 @@ export function computeReportCardStaleness(
   const activeStudents = (parsedSnapshot?.students || []).filter(
     (s) => s.isActive !== false
   );
+  const snapshotFloor = resolveSnapshotFloorSession(
+    activeStudents,
+    cp1Sess,
+    cp2Sess
+  );
+  const effectiveSession = resolveEffectiveSessionForStaleness(
+    cleanClassId,
+    evaluatedRows.length > 0,
+    snapshotFloor,
+    options
+  );
+  const isCp1Due =
+    cp1Sess !== null &&
+    (effectiveSession === null || effectiveSession >= cp1Sess);
+  const isCp2Due =
+    cp2Sess !== null &&
+    (effectiveSession === null || effectiveSession >= cp2Sess);
+
   const missingCp1 =
+    isCp1Due &&
     activeStudents.length > 0 &&
     activeStudents.every(
       (s) =>
@@ -326,6 +459,7 @@ export function computeReportCardStaleness(
         s.stageScores?.cp1Competency == null
     );
   const missingCp2 =
+    isCp2Due &&
     activeStudents.length > 0 &&
     activeStudents.every(
       (s) =>

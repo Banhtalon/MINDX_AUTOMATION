@@ -602,6 +602,306 @@ async function main() {
       false,
       "Staleness banner must disappear once report card is fresh"
     );
+
+    // Case E (v3.8.9+): Session-aware CP1/CP2 staleness & Dashboard Todo Cards
+    const { getDashboardTodayTodoCards } = await import("../src/lib/dashboard/today-tasks");
+    const runSessionAwareScenario = async (params: {
+      cid: string;
+      className: string;
+      isRobotics: boolean;
+      cp1Session: number;
+      cp2Session: number;
+    }) => {
+      const { cid, className, isRobotics, cp1Session, cp2Session } = params;
+      const stuId = `${cid}_STU_01`;
+      studentRepo.upsert({
+        studentId: stuId,
+        classId: cid,
+        fullName: "Học Viên Kiểm Thử",
+        isActive: 1,
+      });
+
+      const db = getDb();
+      const upsertSess = db.prepare(
+        `INSERT INTO classes_sessions (classId, className, sessionId, sessionNumber, date)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(classId, sessionId) DO UPDATE SET date = excluded.date`
+      );
+      for (let n = 1; n <= 14; n++) {
+        const sid = `${cid}_SESS_${String(n).padStart(2, "0")}`;
+        // Sessions <= 3 in past, future sessions initially in 2099
+        const dateStr = n <= 3 ? `0${n}/10/2026` : `01/01/2099`;
+        upsertSess.run(cid, className, sid, n, dateStr);
+      }
+      const markFeedbackVerified = (sessNum: number) => {
+        const sid = `${cid}_SESS_${String(sessNum).padStart(2, "0")}`;
+        db.prepare(
+          `INSERT INTO session_feedbacks (classId, sessionId, studentId, status, attendanceStatus, finalText)
+           VALUES (?, ?, ?, 'VERIFIED', 'PRESENT', 'Nhận xét kiểm thử')
+           ON CONFLICT(classId, sessionId, studentId) DO UPDATE SET status = 'VERIFIED', attendanceStatus = 'PRESENT'`
+        ).run(cid, sid, stuId);
+      };
+      const baseSnapshot = (optsSnap: {
+        hasCp1: boolean;
+        hasCp2: boolean;
+      }) => ({
+        classId: cid,
+        classCode: cid,
+        isRobotics,
+        scrapedAt: "2026-11-25T05:00:00.000Z",
+        btvnSessions: [],
+        students: [
+          {
+            studentId: stuId,
+            lmsStudentUid: `${stuId}_UID`,
+            fullName: "Học Viên Kiểm Thử",
+            isActive: true,
+            btvnSessions: [],
+            stageScores: {
+              cp1Theory: optsSnap.hasCp1 ? 4.0 : null,
+              cp1Practice: optsSnap.hasCp1 ? 3.5 : null,
+              cp1Competency: optsSnap.hasCp1 ? 4.0 : null,
+              cp2Theory: optsSnap.hasCp2 ? 4.5 : null,
+              cp2Practice: optsSnap.hasCp2 ? 4.0 : null,
+              cp2Competency: optsSnap.hasCp2 ? 4.2 : null,
+              finalProduct: null,
+              finalCompetency: null,
+            },
+          },
+        ],
+      });
+
+      // 1) Session 3 (before CP1): neither CP1 nor CP2 is due -> not stale
+      const snapEmpty = baseSnapshot({ hasCp1: false, hasCp2: false });
+      reportCardRepo.saveLmsSnapshot(cid, snapEmpty as any);
+      const resS3 = await reportCardGET(makeLocalReq(`/api/report-card?classId=${cid}`));
+      const jsonS3 = await resS3.json();
+      assert.equal(jsonS3.staleness.missingCp1, false, `${cid} Session 3 must not require CP1`);
+      assert.equal(jsonS3.staleness.missingCp2, false, `${cid} Session 3 must not require CP2`);
+      assert.equal(jsonS3.staleness.isStale, false, `${cid} Session 3 must not be stale`);
+
+      // 2) Advance to CP1 session without CP1 scores -> missingCp1 = true, missingCp2 = false, allDone = false
+      for (let n = 4; n <= cp1Session; n++) {
+        upsertSess.run(
+          cid,
+          className,
+          `${cid}_SESS_${String(n).padStart(2, "0")}`,
+          n,
+          `${String(n + 5).padStart(2, "0")}/10/2026`
+        );
+      }
+      markFeedbackVerified(cp1Session);
+      fs.writeFileSync(
+        process.env.MINDX_RUNNING_CLASSES_PATH!,
+        JSON.stringify([{ classCode: cid, courseName: className, status: "Running" }], null, 2),
+        "utf8"
+      );
+
+      // Even if report card was marked VERIFIED earlier with no CP1 scores, CP1 must still require re-sync
+      db.prepare(
+        `UPDATE class_report_cards
+         SET status = 'VERIFIED', teachingSyncStatus = 'VERIFIED', teachingSyncedAt = '2026-11-25 10:00:00'
+         WHERE classId = ?`
+      ).run(cid);
+      const resCp1Missing = await reportCardGET(makeLocalReq(`/api/report-card?classId=${cid}`));
+      const jsonCp1Missing = await resCp1Missing.json();
+      assert.equal(jsonCp1Missing.staleness.missingCp1, true, `${cid} at CP1 without CP1 scores must set missingCp1=true`);
+      assert.equal(jsonCp1Missing.staleness.missingCp2, false, `${cid} at CP1 must NOT set missingCp2=true`);
+      assert.equal(jsonCp1Missing.staleness.isStale, true, `${cid} at CP1 without CP1 scores must be stale`);
+      const cardCp1Missing = getDashboardTodayTodoCards({ limit: 24, includeSynthetic: true }).find(
+        (c) => c.classId === cid
+      )!;
+      assert.equal(cardCp1Missing.allDone, false, `${cid} at CP1 without CP1 scores must stay pending on Dashboard`);
+      assert.equal(cardCp1Missing.steps[1].isDone, false);
+
+      // 3) Save CP1 scores (CP2 still null) and mark Teaching VERIFIED -> NOT stale, Dashboard Done!
+      reportCardRepo.saveLmsSnapshot(cid, baseSnapshot({ hasCp1: true, hasCp2: false }) as any);
+      db.prepare(
+        `UPDATE class_report_cards
+         SET status = 'VERIFIED', teachingSyncStatus = 'VERIFIED', teachingSyncedAt = '2026-11-25 12:26:58'
+         WHERE classId = ?`
+      ).run(cid);
+      const resCp1Done = await reportCardGET(makeLocalReq(`/api/report-card?classId=${cid}`));
+      const jsonCp1Done = await resCp1Done.json();
+      assert.equal(jsonCp1Done.staleness.missingCp1, false, `${cid} with CP1 scores must set missingCp1=false`);
+      assert.equal(jsonCp1Done.staleness.missingCp2, false, `${cid} at CP1 must NOT require CP2`);
+      assert.equal(jsonCp1Done.staleness.isStale, false, `${cid} at CP1 with CP1 scores must not be stale`);
+      const cardCp1Done = getDashboardTodayTodoCards({ limit: 24, includeSynthetic: true }).find(
+        (c) => c.classId === cid
+      )!;
+      assert.equal(cardCp1Done.isCheckpoint, true);
+      assert.equal(cardCp1Done.steps[0].isDone, true);
+      assert.equal(cardCp1Done.steps[1].isDone, true, `${cid} at CP1 with VERIFIED CP1 must mark step 2 done`);
+      assert.equal(cardCp1Done.allDone, true, `${cid} at CP1 with VERIFIED CP1 must be allDone=true`);
+
+      // Also verify OUT_OF_SYNC still marks step 2 as pending on Dashboard
+      db.prepare(
+        `UPDATE class_report_cards SET teachingSyncStatus = 'OUT_OF_SYNC' WHERE classId = ?`
+      ).run(cid);
+      const cardOutOfSync = getDashboardTodayTodoCards({ limit: 24, includeSynthetic: true }).find(
+        (c) => c.classId === cid
+      )!;
+      assert.equal(cardOutOfSync.steps[1].isDone, false, `${cid} OUT_OF_SYNC must block Dashboard step 2`);
+      assert.equal(cardOutOfSync.allDone, false);
+
+      // Restore VERIFIED, then advance to CP2 session -> missingCp2 must flip to true and re-open step 2
+      db.prepare(
+        `UPDATE class_report_cards SET teachingSyncStatus = 'VERIFIED' WHERE classId = ?`
+      ).run(cid);
+      for (let n = cp1Session + 1; n <= cp2Session; n++) {
+        upsertSess.run(
+          cid,
+          className,
+          `${cid}_SESS_${String(n).padStart(2, "0")}`,
+          n,
+          `${String(n).padStart(2, "0")}/11/2026`
+        );
+      }
+      markFeedbackVerified(cp2Session);
+      const resCp2Missing = await reportCardGET(makeLocalReq(`/api/report-card?classId=${cid}`));
+      const jsonCp2Missing = await resCp2Missing.json();
+      assert.equal(jsonCp2Missing.staleness.missingCp1, false);
+      assert.equal(jsonCp2Missing.staleness.missingCp2, true, `${cid} at CP2 without CP2 scores must set missingCp2=true`);
+      assert.equal(jsonCp2Missing.staleness.isStale, true);
+      const cardCp2Missing = getDashboardTodayTodoCards({ limit: 24, includeSynthetic: true }).find(
+        (c) => c.classId === cid
+      )!;
+      assert.equal(cardCp2Missing.steps[1].isDone, false, `${cid} at CP2 without CP2 scores must flip Dashboard step 2 back to pending`);
+      assert.equal(cardCp2Missing.allDone, false);
+
+      // Finally save CP2 scores and mark VERIFIED -> allDone = true again
+      reportCardRepo.saveLmsSnapshot(cid, baseSnapshot({ hasCp1: true, hasCp2: true }) as any);
+      db.prepare(
+        `UPDATE class_report_cards
+         SET status = 'VERIFIED', teachingSyncStatus = 'VERIFIED', teachingSyncedAt = '2026-11-25 13:00:00'
+         WHERE classId = ?`
+      ).run(cid);
+      const cardCp2Done = getDashboardTodayTodoCards({ limit: 24, includeSynthetic: true }).find(
+        (c) => c.classId === cid
+      )!;
+      assert.equal(cardCp2Done.allDone, true, `${cid} at CP2 with full CP1+CP2 VERIFIED must be allDone=true`);
+    };
+
+    const prevRunningExists = fs.existsSync(process.env.MINDX_RUNNING_CLASSES_PATH!);
+    const prevRunningContent = prevRunningExists
+      ? fs.readFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!, "utf8")
+      : null;
+    try {
+      await runSessionAwareScenario({
+        cid: "VT-CSA04-S4CP",
+        className: "Computer Scientist Advance",
+        isRobotics: false,
+        cp1Session: 5,
+        cp2Session: 9,
+      });
+      await runSessionAwareScenario({
+        cid: "VT-ROB-ARMS4",
+        className: "Robotics Arm Intensive",
+        isRobotics: true,
+        cp1Session: 4,
+        cp2Session: 8,
+      });
+
+      // F01 regressions (Neon XHigh Round 1): Running class without dated classes_sessions
+      // must still infer snapshotFloor from CP2 / Final scores in parsedSnapshot
+      const f01Cid = "VT-C4K-S4F01";
+      const f01StuId = `${f01Cid}_STU_01`;
+      studentRepo.upsert({
+        studentId: f01StuId,
+        classId: f01Cid,
+        fullName: "Học Viên F01",
+        isActive: 1,
+      });
+      fs.writeFileSync(
+        process.env.MINDX_RUNNING_CLASSES_PATH!,
+        JSON.stringify(
+          [{ classCode: f01Cid, courseName: "Coding F01", status: "Running" }],
+          null,
+          2
+        ),
+        "utf8"
+      );
+
+      // PROBE 3b: Running class without classes_sessions, snapshot has CP2 scores but misses CP1 -> missingCp1 = true
+      reportCardRepo.saveLmsSnapshot(f01Cid, {
+        classId: f01Cid,
+        classCode: f01Cid,
+        isRobotics: false,
+        scrapedAt: "2026-11-25T05:00:00.000Z",
+        btvnSessions: [],
+        students: [
+          {
+            studentId: f01StuId,
+            fullName: "Học Viên F01",
+            isActive: true,
+            btvnSessions: [],
+            stageScores: {
+              cp1Theory: null,
+              cp1Practice: null,
+              cp1Competency: null,
+              cp2Theory: 4.5,
+              cp2Practice: 4.0,
+              cp2Competency: 4.2,
+              finalProduct: null,
+              finalCompetency: null,
+            },
+          },
+        ],
+      } as any);
+      const resF01Cp2 = await reportCardGET(makeLocalReq(`/api/report-card?classId=${f01Cid}`));
+      const jsonF01Cp2 = await resF01Cp2.json();
+      assert.equal(jsonF01Cp2.staleness.missingCp1, true, "F01 PROBE 3b: snapshot with CP2 but missing CP1 must set missingCp1=true");
+      assert.equal(jsonF01Cp2.staleness.missingCp2, false);
+      assert.equal(jsonF01Cp2.staleness.isStale, true);
+
+      // PROBE 3b2: Running class without classes_sessions (or undated rows), snapshot has Final scores but misses CP2 -> missingCp2 = true
+      const f01Db = getDb();
+      for (let n = 1; n <= 10; n++) {
+        f01Db
+          .prepare(
+            `INSERT INTO classes_sessions (classId, className, sessionId, sessionNumber, date)
+             VALUES (?, ?, ?, ?, '')
+             ON CONFLICT(classId, sessionId) DO UPDATE SET date = ''`
+          )
+          .run(f01Cid, "Coding F01", `${f01Cid}_SESS_${String(n).padStart(2, "0")}`, n);
+      }
+      reportCardRepo.saveLmsSnapshot(f01Cid, {
+        classId: f01Cid,
+        classCode: f01Cid,
+        isRobotics: false,
+        scrapedAt: "2026-11-25T05:00:00.000Z",
+        btvnSessions: [],
+        students: [
+          {
+            studentId: f01StuId,
+            fullName: "Học Viên F01",
+            isActive: true,
+            btvnSessions: [],
+            stageScores: {
+              cp1Theory: 4.0,
+              cp1Practice: 4.0,
+              cp1Competency: 4.0,
+              cp2Theory: null,
+              cp2Practice: null,
+              cp2Competency: null,
+              finalProduct: 4.5,
+              finalCompetency: 4.2,
+            },
+          },
+        ],
+      } as any);
+      const resF01Final = await reportCardGET(makeLocalReq(`/api/report-card?classId=${f01Cid}`));
+      const jsonF01Final = await resF01Final.json();
+      assert.equal(jsonF01Final.staleness.missingCp1, false);
+      assert.equal(jsonF01Final.staleness.missingCp2, true, "F01 PROBE 3b2/3c: undated Running class with Final scores must set missingCp2=true");
+      assert.equal(jsonF01Final.staleness.isStale, true);
+    } finally {
+      if (prevRunningExists && prevRunningContent !== null) {
+        fs.writeFileSync(process.env.MINDX_RUNNING_CLASSES_PATH!, prevRunningContent, "utf8");
+      } else if (fs.existsSync(process.env.MINDX_RUNNING_CLASSES_PATH!)) {
+        fs.unlinkSync(process.env.MINDX_RUNNING_CLASSES_PATH!);
+      }
+    }
   }
   console.log("✅ [S4-T2] PASSED!");
 
