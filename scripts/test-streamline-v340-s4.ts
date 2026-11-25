@@ -1365,6 +1365,222 @@ async function main() {
       true,
       "S4-R2-03: Newer CRM-keyed evaluation must mark snapshot stale"
     );
+
+    // S4-R3-01..03 (v3.8.9+): Weekly scan Session 14 idempotency, awardRankGrade hash parity, self-heal & saveDraft no-op
+    const { ClassSyncer } = await import("../src/lib/playwright/sync-class");
+    const s14SyncClass = "VT-ROB-S14SYNC";
+    const s14SyncStu = `STU_${s14SyncClass}_AN`;
+    studentRepo.upsert({
+      studentId: s14SyncStu,
+      classId: s14SyncClass,
+      fullName: "Nguyễn Văn An",
+      isActive: 1,
+    });
+    const robDemo40 = {
+      algorithm: 1.0,
+      creativity: 0.5,
+      communication: 1.0,
+      problemSolving: 1.0,
+      computerSkills: 0.5,
+    };
+    const robComp40 = {
+      knowledgeSelfStudy: 4,
+      knowledgeInClass: 4,
+      skillCommunication: 4,
+      skillComputerUse: 4,
+      skillProblemSolving: 4,
+      skillCreativity: 4,
+      skillComputational: 4,
+      attitudeHomework: 4,
+      attitudeInClass: 4,
+    };
+    const s14LearnedText =
+      "Điểm Demo: 4.00/5.0\nĐiểm Năng lực: 4.00/5.0\nCon nắm vững kiến thức lắp ráp & lập trình.";
+    session14EvalRepo.getOrInit(s14SyncClass, s14SyncStu);
+    session14EvalRepo.saveDraft({
+      classId: s14SyncClass,
+      studentId: s14SyncStu,
+      demoScores: robDemo40,
+      competencyScores: robComp40,
+      learnedFromMindx: s14LearnedText,
+      suggestionsFromMindx: "Tiếp tục giữ phong độ.",
+      futureDirection: "Sẵn sàng khóa tiếp theo.",
+      awardRanking: "Giải Nhất",
+      awardRankGrade: 1,
+    });
+    const draftedEval = session14EvalRepo.findOne(s14SyncClass, s14SyncStu)!;
+    const approvedEvalRes = session14EvalRepo.approveDraft(
+      s14SyncClass,
+      s14SyncStu,
+      draftedEval.draftVersion
+    );
+    assert.equal(approvedEvalRes.success, true, approvedEvalRes.error || "");
+    const verifiedEval = session14EvalRepo.markVerified(
+      s14SyncClass,
+      s14SyncStu,
+      approvedEvalRes.record.contentHash!
+    );
+    assert.equal(verifiedEval.awardRankGrade, 1);
+    assert.equal(verifiedEval.demoTotalScore, 4);
+    // Pin verifiedAt and updatedAt before scrape timestamp
+    getDb()
+      .prepare(
+        "UPDATE spck_session14_evaluations SET verifiedAt = '2026-11-22 14:54:00', updatedAt = '2026-11-22 14:54:00' WHERE classId = ? AND studentId = ?"
+      )
+      .run(s14SyncClass, s14SyncStu);
+
+    const s14SyncSnap = makeSnapshotFixture(s14SyncClass, "2026-11-22T12:00:00.000Z", {
+      finalProjectScore: 4.0,
+    });
+    s14SyncSnap.students[0].studentId = s14SyncStu;
+    (s14SyncSnap.students[0].stageScores as any).finalProduct = 4.0;
+    (s14SyncSnap.students[0].stageScores as any).finalCompetency = 4.0;
+
+    // 1) saveDraft no-op on VERIFIED record must NOT bump updatedAt
+    const noopSaveRes = session14EvalRepo.saveDraft({
+      classId: s14SyncClass,
+      studentId: s14SyncStu,
+      demoScores: robDemo40,
+      competencyScores: robComp40,
+      learnedFromMindx: s14LearnedText,
+      suggestionsFromMindx: "Tiếp tục giữ phong độ.",
+      futureDirection: "Sẵn sàng khóa tiếp theo.",
+      awardRanking: "Giải Nhất",
+      awardRankGrade: 1,
+    });
+    assert.equal(noopSaveRes.success, true);
+    const afterNoopSaveDraft = session14EvalRepo.findOne(s14SyncClass, s14SyncStu)!;
+    assert.equal(afterNoopSaveDraft.status, "VERIFIED");
+    assert.equal(
+      afterNoopSaveDraft.updatedAt,
+      "2026-11-22 14:54:00",
+      "S4-R3-01: saveDraft no-op on VERIFIED record must not bump updatedAt"
+    );
+
+    // 2) ClassSyncer.syncLmsSlotCompletionToSqlite re-sync on Session 14 VERIFIED (with awardRankGrade=1) must NOT bump updatedAt
+    const s14Slots = Array.from({ length: 14 }, (_, idx) =>
+      idx === 13
+        ? {
+            index: 13,
+            studentAttendance: [
+              {
+                student: { id: s14SyncStu, fullName: "Nguyễn Văn An" },
+                status: "ATTENDED",
+                comment: s14LearnedText,
+                commentByAreas: [
+                  {
+                    type: "CONTENT",
+                    content: `<p>Điểm Demo: 4.00/5.0</p><p>Điểm Năng lực: 4.00/5.0</p><p>Con nắm vững kiến thức lắp ráp &amp; lập trình.</p>`,
+                  },
+                ],
+              },
+            ],
+          }
+        : { index: idx, studentAttendance: [] }
+    );
+    ClassSyncer.syncLmsSlotCompletionToSqlite({
+      db: getDb(),
+      classId: s14SyncClass,
+      students: [studentRepo.findOne(s14SyncStu, s14SyncClass)!],
+      slots: s14Slots,
+      preferLmsVerified: true,
+    });
+    const afterS14Resync = session14EvalRepo.findOne(s14SyncClass, s14SyncStu)!;
+    assert.equal(afterS14Resync.status, "VERIFIED");
+    assert.equal(
+      afterS14Resync.updatedAt,
+      "2026-11-22 14:54:00",
+      "S4-R3-02: Session 14 re-sync on unchanged VERIFIED record (including awardRankGrade) must not bump updatedAt"
+    );
+    const stS14Resync = computeReportCardStaleness(s14SyncClass, s14SyncSnap as any);
+    assert.equal(
+      stS14Resync.isStale,
+      false,
+      `S4-R3-02 staleness: ${JSON.stringify(stS14Resync)} | eval=${JSON.stringify({
+        demo: afterS14Resync.demoTotalScore,
+        comp: afterS14Resync.competencyTotalScore,
+        ver: afterS14Resync.verifiedAt,
+        upd: afterS14Resync.updatedAt,
+        st: afterS14Resync.status,
+      })} | snap=${JSON.stringify(s14SyncSnap.students[0].stageScores)}`
+    );
+
+    // 3) Self-heal when historical bug left updatedAt > verifiedAt while verifiedAt <= scrapedAt & scores match
+    getDb()
+      .prepare(
+        "UPDATE spck_session14_evaluations SET updatedAt = '2026-11-25 16:22:55' WHERE classId = ? AND studentId = ?"
+      )
+      .run(s14SyncClass, s14SyncStu);
+    assert.equal(
+      computeReportCardStaleness(s14SyncClass, s14SyncSnap as any).isStale,
+      false,
+      "S4-R3-03a: VERIFIED Session 14 with verifiedAt <= scrapedAt and matching scores must NOT be falsely marked stale"
+    );
+    // Negative checks: score drift, non-VERIFIED status, or verifiedAt > scrapedAt MUST still be stale
+    getDb()
+      .prepare(
+        "UPDATE spck_session14_evaluations SET demoTotalScore = 4.8 WHERE classId = ? AND studentId = ?"
+      )
+      .run(s14SyncClass, s14SyncStu);
+    assert.equal(computeReportCardStaleness(s14SyncClass, s14SyncSnap as any).hasNewerSession14, true);
+    getDb()
+      .prepare(
+        "UPDATE spck_session14_evaluations SET demoTotalScore = 4.0, status = 'WAITING_APPROVAL' WHERE classId = ? AND studentId = ?"
+      )
+      .run(s14SyncClass, s14SyncStu);
+    assert.equal(computeReportCardStaleness(s14SyncClass, s14SyncSnap as any).hasNewerSession14, true);
+    getDb()
+      .prepare(
+        "UPDATE spck_session14_evaluations SET status = 'VERIFIED', verifiedAt = '2026-11-25 16:22:55' WHERE classId = ? AND studentId = ?"
+      )
+      .run(s14SyncClass, s14SyncStu);
+    assert.equal(computeReportCardStaleness(s14SyncClass, s14SyncSnap as any).hasNewerSession14, true);
+
+    // Restore verifiedAt <= scrapedAt and updatedAt > verifiedAt, then verify syncLmsSlotCompletionToSqlite heals updatedAt back to verifiedAt
+    getDb()
+      .prepare(
+        "UPDATE spck_session14_evaluations SET verifiedAt = '2026-11-22 14:54:00', updatedAt = '2026-11-25 16:22:55' WHERE classId = ? AND studentId = ?"
+      )
+      .run(s14SyncClass, s14SyncStu);
+    ClassSyncer.syncLmsSlotCompletionToSqlite({
+      db: getDb(),
+      classId: s14SyncClass,
+      students: [studentRepo.findOne(s14SyncStu, s14SyncClass)!],
+      slots: s14Slots,
+      preferLmsVerified: true,
+    });
+    const afterSelfHeal = session14EvalRepo.findOne(s14SyncClass, s14SyncStu)!;
+    assert.equal(
+      afterSelfHeal.updatedAt,
+      "2026-11-22 14:54:00",
+      "S4-R3-03b: ClassSyncer must self-heal updatedAt back to verifiedAt on identical VERIFIED Session 14 record"
+    );
+
+    // F03: Legacy Robotics Session 14 VERIFIED with awardRankGrade=1 and stale pre-grade contentHash + bumped updatedAt
+    // must self-heal BOTH contentHash AND updatedAt = verifiedAt in a single scan pass
+    getDb()
+      .prepare(
+        "UPDATE spck_session14_evaluations SET contentHash = 'legacy_hash_without_grade', verifiedAt = '2026-11-22 14:54:00', updatedAt = '2026-11-25 16:22:55' WHERE classId = ? AND studentId = ?"
+      )
+      .run(s14SyncClass, s14SyncStu);
+    ClassSyncer.syncLmsSlotCompletionToSqlite({
+      db: getDb(),
+      classId: s14SyncClass,
+      students: [studentRepo.findOne(s14SyncStu, s14SyncClass)!],
+      slots: s14Slots,
+      preferLmsVerified: true,
+    });
+    const afterF03SinglePass = session14EvalRepo.findOne(s14SyncClass, s14SyncStu)!;
+    assert.equal(
+      afterF03SinglePass.contentHash,
+      verifiedEval.contentHash,
+      "F03: Legacy Robotics Session 14 hash must be refreshed in 1 pass"
+    );
+    assert.equal(
+      afterF03SinglePass.updatedAt,
+      "2026-11-22 14:54:00",
+      "F03: Legacy Robotics Session 14 updatedAt must self-heal to verifiedAt in 1 pass"
+    );
   }
   console.log("✅ [S4-T5] PASSED!");
 

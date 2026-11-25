@@ -11,6 +11,7 @@ import {
   getDb,
   calculateSha256 as _calculateSha256,
   computeSession14EvalHash as _computeSession14EvalHash,
+  extractCheckpointCoreSnapshotHash as _extractCheckpointCoreSnapshotHash,
   session14EvalRepo as _session14EvalRepo,
   type ClassSessionRecord,
   type StudentRecord,
@@ -94,6 +95,10 @@ const safeUpsertCheckpointHeaderSync =
   typeof upsertCheckpointHeaderIntoFinalText === "function"
     ? upsertCheckpointHeaderIntoFinalText
     : (t: string) => t;
+const safeExtractCpCoreHash =
+  typeof _extractCheckpointCoreSnapshotHash === "function"
+    ? _extractCheckpointCoreSnapshotHash
+    : null;
 
 const toVietnameseUpperSlug =
   typeof _toVietnameseUpperSlug === "function"
@@ -1713,6 +1718,26 @@ export class ClassSyncer {
       return `sha_${text.length}_${text.slice(0, 16)}`;
     };
 
+    const parseSyncDbTimestampMs = (raw?: string | null): number | null => {
+      const s = String(raw || "").trim();
+      if (!s) return null;
+      const t = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(s)
+        ? Date.parse(s.replace(" ", "T"))
+        : Date.parse(s);
+      return Number.isFinite(t) ? t : null;
+    };
+
+    const normalizeSyncCompare = (val?: string | null): string =>
+      String(val || "")
+        .replace(/^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i, "")
+        .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+        .normalize("NFC")
+        .replace(/\s+/g, " ")
+        .replace(/\s+([.,;:!?])/g, "$1")
+        .trim()
+        .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
+        .trim();
+
     const selectFbStmt = db.prepare(
       `SELECT status, finalText, attendanceStatus, verifiedAt, versionMetaJson, checkpointDataJson
        FROM session_feedbacks
@@ -1756,7 +1781,11 @@ export class ClassSyncer {
        )
        ON CONFLICT(classId, sessionId, studentId) DO UPDATE SET
          attendanceStatus = excluded.attendanceStatus,
-         finalText = CASE WHEN TRIM(COALESCE(session_feedbacks.finalText, '')) <> '' THEN session_feedbacks.finalText ELSE excluded.finalText END,
+         finalText = CASE
+           WHEN @hasUpdatedFinalText = 1 OR TRIM(COALESCE(session_feedbacks.finalText, '')) = ''
+             THEN excluded.finalText
+           ELSE session_feedbacks.finalText
+         END,
          contentHash = excluded.contentHash,
          status = 'VERIFIED',
          verifiedAt = COALESCE(session_feedbacks.verifiedAt, datetime('now', 'localtime')),
@@ -1906,6 +1935,14 @@ export class ClassSyncer {
             existingCp?.competencyScores
               ? existingCp.competencyAverage
               : extractedCp.competencyAverage ?? null;
+          const lmsCompetencyMatchesNext =
+            !nextCompetency ||
+            Boolean(
+              extractedCp.competencyScores &&
+                safeCompetencyKeysSync.every(
+                  (k) => extractedCp.competencyScores![k] === nextCompetency![k]
+                )
+            );
 
           if (
             existingCp &&
@@ -1937,7 +1974,31 @@ export class ClassSyncer {
             }
           }
 
-          if (cpScoresChangedFromApproved || existingCp === null) {
+          const isOrphanedSaving =
+            existingFb?.status === "SAVING" &&
+            (typeof isSaveCommentsSessionRunning !== "function" ||
+              !isSaveCommentsSessionRunning(classId, sessionId));
+          const lmsCommentIsPlaceholder = safeIsPlaceholderLmsComment(lmsComment);
+          const normRefreshedPlain = normalizeSyncCompare(cpUpdatedFinalText);
+          const normLmsForCp = normalizeSyncCompare(lmsComment);
+          const lmsAlreadyMatchesRefreshedCheckpoint = Boolean(
+            cpScoresChangedFromApproved &&
+              existingFb &&
+              (existingFb.status === "VERIFIED" ||
+                existingFb.status === "APPROVED" ||
+                existingFb.status === "FAILED" ||
+                (existingFb.status === "SAVING" && isOrphanedSaving)) &&
+              lmsComment.length > 0 &&
+              !lmsCommentIsPlaceholder &&
+              normRefreshedPlain.length > 0 &&
+              normLmsForCp.length > 0 &&
+              normRefreshedPlain === normLmsForCp &&
+              lmsCompetencyMatchesNext
+          );
+          const cpNeedsDemotion =
+            cpScoresChangedFromApproved && !lmsAlreadyMatchesRefreshedCheckpoint;
+
+          if (cpNeedsDemotion || existingCp === null) {
             try {
               const prevMetaParsed = existingFb?.versionMetaJson
                 ? JSON.parse(existingFb.versionMetaJson)
@@ -1953,6 +2014,69 @@ export class ClassSyncer {
               bumpedVersionMetaJson = JSON.stringify({ rowVer: 1, fields: {} });
             }
           }
+
+          const preferLmsBlockedByCompetency = Boolean(
+            existingCp?.competencyScores && !lmsCompetencyMatchesNext
+          );
+          const hasLocalCheckpointHeader = /📊\s*(?:\*\*)?Kết quả Checkpoint/i.test(
+            cpUpdatedFinalText
+          );
+          const preferLmsBlockedByStaleHeaderText = Boolean(
+            hasLocalCheckpointHeader &&
+              normRefreshedPlain.length > 0 &&
+              normRefreshedPlain !== normLmsForCp
+          );
+
+          const normExistingPlain = normalizeSyncCompare(existingFb?.finalText);
+          const normExistingRaw = String(existingFb?.finalText || "")
+            .replace(/^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i, "")
+            .normalize("NFC")
+            .replace(/\s+/g, " ")
+            .trim();
+          const normLmsPlain = normLmsForCp;
+          const isExactMatchFailedOrApproved =
+            Boolean(existingFb) &&
+            (existingFb?.status === "FAILED" || existingFb?.status === "APPROVED" || isOrphanedSaving) &&
+            normExistingPlain.length > 0 &&
+            normLmsPlain.length > 0 &&
+            (normExistingPlain === normLmsPlain || normExistingRaw === normLmsPlain);
+
+          const canMarkVerified =
+            (!localRequiresLmsCompetency || lmsHasMatchingCompetency) &&
+            !cpNeedsDemotion &&
+            (!existingFb ||
+              existingFb.status === "VERIFIED" ||
+              lmsAlreadyMatchesRefreshedCheckpoint ||
+              (!String(existingFb.finalText || "").trim() && !preferLmsBlockedByCompetency) ||
+              isExactMatchFailedOrApproved ||
+              (preferLmsVerified &&
+                existingFb.status !== "APPROVED" &&
+                (existingFb.status !== "SAVING" || isOrphanedSaving) &&
+                !preferLmsBlockedByCompetency &&
+                !preferLmsBlockedByStaleHeaderText));
+
+          const willWriteVerified =
+            lmsComment.length > 0 && !lmsCommentIsPlaceholder && canMarkVerified;
+
+          const refreshedCoreHash =
+            safeExtractCpCoreHash && nextCompetency
+              ? safeExtractCpCoreHash(
+                  JSON.stringify({
+                    cpStage: cpStageInfo.cpStage,
+                    theoryScore: nextTheory,
+                    practiceScore: nextPractice,
+                    competencyScores: nextCompetency,
+                  })
+                )
+              : "";
+          const nextApprovedSnapshotHash = cpNeedsDemotion
+            ? null
+            : willWriteVerified &&
+                nextCompetency &&
+                extractedCp.competencyScores &&
+                lmsCompetencyMatchesNext
+              ? refreshedCoreHash || existingCp?.approvedSnapshotHash || null
+              : existingCp?.approvedSnapshotHash ?? null;
 
           if (
             nextTheory !== null ||
@@ -1984,64 +2108,21 @@ export class ClassSyncer {
               userEditedCompetency: existingCp?.userEditedCompetency || false,
               lmsSyncedAt: new Date().toISOString(),
               computedAt: existingCp?.computedAt || null,
-              approvedSnapshotHash: cpScoresChangedFromApproved
-                ? null
-                : existingCp?.approvedSnapshotHash ?? null,
+              approvedSnapshotHash: nextApprovedSnapshotHash,
             });
           }
-        }
 
-        const shouldDemoteVerifiedToApproved =
-          localRequiresLmsCompetency &&
-          !lmsHasMatchingCompetency &&
-          !cpScoresChangedFromApproved &&
-          existingFb?.status === "VERIFIED";
+          const shouldDemoteVerifiedToApproved =
+            localRequiresLmsCompetency &&
+            !lmsHasMatchingCompetency &&
+            !cpNeedsDemotion &&
+            existingFb?.status === "VERIFIED";
 
-        const isOrphanedSaving =
-          existingFb?.status === "SAVING" &&
-          (typeof isSaveCommentsSessionRunning !== "function" ||
-            !isSaveCommentsSessionRunning(classId, sessionId));
-
-        const lmsCommentIsPlaceholder =
-          cpStageInfo.isCheckpoint && safeIsPlaceholderLmsComment(lmsComment);
-
-        if (lmsComment.length > 0 && !lmsCommentIsPlaceholder) {
-          const normalizeSyncCompare = (val?: string | null): string =>
-            String(val || "")
-              .replace(/^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i, "")
-              .replace(/\*\*([^*\n]+)\*\*/g, "$1")
-              .normalize("NFC")
-              .replace(/\s+/g, " ")
-              .trim()
-              .replace(/^-\s*(?:Đánh giá chung|General assessment|Nhận xét chung)\s*:\s*/i, "")
-              .trim();
-          const normExistingPlain = normalizeSyncCompare(existingFb?.finalText);
-          const normExistingRaw = String(existingFb?.finalText || "")
-            .replace(/^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i, "")
-            .normalize("NFC")
-            .replace(/\s+/g, " ")
-            .trim();
-          const normLmsPlain = normalizeSyncCompare(lmsComment);
-          const isExactMatchFailedOrApproved =
-            Boolean(existingFb) &&
-            (existingFb?.status === "FAILED" || existingFb?.status === "APPROVED" || isOrphanedSaving) &&
-            normExistingPlain.length > 0 &&
-            normLmsPlain.length > 0 &&
-            (normExistingPlain === normLmsPlain || normExistingRaw === normLmsPlain);
-
-          const canMarkVerified =
-            (!localRequiresLmsCompetency || lmsHasMatchingCompetency) &&
-            !cpScoresChangedFromApproved &&
-            (!existingFb ||
-              existingFb.status === "VERIFIED" ||
-              !String(existingFb.finalText || "").trim() ||
-              isExactMatchFailedOrApproved ||
-              (preferLmsVerified &&
-                existingFb.status !== "APPROVED" &&
-                (existingFb.status !== "SAVING" || isOrphanedSaving)));
-
-          if (canMarkVerified) {
-            const effectiveText = String(existingFb?.finalText || "").trim() || lmsComment;
+          if (willWriteVerified) {
+            const effectiveText =
+              (hasUpdatedFinalText === 1 && cpUpdatedFinalText.trim()) ||
+              String(existingFb?.finalText || "").trim() ||
+              lmsComment;
             upsertFbVerifiedStmt.run({
               classId,
               sessionId,
@@ -2054,53 +2135,103 @@ export class ClassSyncer {
               contentHash: computeHashSafe(effectiveText),
               verifiedAt: existingFb?.verifiedAt || null,
               checkpointDataJson: mergedCheckpointDataJson,
+              hasUpdatedFinalText,
             });
             slotHasVerifiedStudent = true;
             verifiedStudentIdsInSlot.add(studentId);
-          } else if (cpStageInfo.isCheckpoint && mergedCheckpointDataJson !== "{}") {
+          } else if (mergedCheckpointDataJson !== "{}") {
             upsertFbCheckpointDraftStmt.run({
               classId,
               sessionId,
               studentId,
-              attendanceStatus: lmsAttendance !== "UNKNOWN" ? lmsAttendance : "UNKNOWN",
+              attendanceStatus:
+                lmsAttendance !== "UNKNOWN"
+                  ? lmsAttendance
+                  : existingFb?.attendanceStatus || "UNKNOWN",
               finalText: cpUpdatedFinalText,
               hasUpdatedFinalText,
               versionMetaJson: bumpedVersionMetaJson,
-              bumpRowVer: cpScoresChangedFromApproved ? 1 : 0,
+              bumpRowVer: cpNeedsDemotion ? 1 : 0,
               checkpointDataJson: mergedCheckpointDataJson,
-              demoteApproved: cpScoresChangedFromApproved ? 1 : 0,
+              demoteApproved: cpNeedsDemotion ? 1 : 0,
               demoteToApproved: shouldDemoteVerifiedToApproved ? 1 : 0,
             });
+          } else if (lmsAttendance === "ABSENT") {
+            if (
+              !existingFb ||
+              (existingFb.status !== "APPROVED" &&
+                (existingFb.status !== "SAVING" || isOrphanedSaving) &&
+                existingFb.status !== "VERIFIED")
+            ) {
+              upsertFbAbsentStmt.run({
+                classId,
+                sessionId,
+                studentId,
+              });
+            }
           }
-        } else if (cpStageInfo.isCheckpoint && mergedCheckpointDataJson !== "{}") {
-          upsertFbCheckpointDraftStmt.run({
-            classId,
-            sessionId,
-            studentId,
-            attendanceStatus:
-              lmsAttendance !== "UNKNOWN"
-                ? lmsAttendance
-                : existingFb?.attendanceStatus || "UNKNOWN",
-            finalText: cpUpdatedFinalText,
-            hasUpdatedFinalText,
-            versionMetaJson: bumpedVersionMetaJson,
-            bumpRowVer: cpScoresChangedFromApproved ? 1 : 0,
-            checkpointDataJson: mergedCheckpointDataJson,
-            demoteApproved: cpScoresChangedFromApproved ? 1 : 0,
-            demoteToApproved: shouldDemoteVerifiedToApproved ? 1 : 0,
-          });
-        } else if (lmsAttendance === "ABSENT") {
-          if (
-            !existingFb ||
-            (existingFb.status !== "APPROVED" &&
-              (existingFb.status !== "SAVING" || isOrphanedSaving) &&
-              existingFb.status !== "VERIFIED")
-          ) {
-            upsertFbAbsentStmt.run({
-              classId,
-              sessionId,
-              studentId,
-            });
+        } else {
+          const isOrphanedSaving =
+            existingFb?.status === "SAVING" &&
+            (typeof isSaveCommentsSessionRunning !== "function" ||
+              !isSaveCommentsSessionRunning(classId, sessionId));
+
+          if (lmsComment.length > 0) {
+            const normExistingPlain = normalizeSyncCompare(existingFb?.finalText);
+            const normExistingRaw = String(existingFb?.finalText || "")
+              .replace(/^\s*\*\*[^*\n]+\*\*\s*\r?\n+(?=\s*[-•*]\s*\*\*Điểm mạnh)/i, "")
+              .normalize("NFC")
+              .replace(/\s+/g, " ")
+              .trim();
+            const normLmsPlain = normalizeSyncCompare(lmsComment);
+            const isExactMatchFailedOrApproved =
+              Boolean(existingFb) &&
+              (existingFb?.status === "FAILED" || existingFb?.status === "APPROVED" || isOrphanedSaving) &&
+              normExistingPlain.length > 0 &&
+              normLmsPlain.length > 0 &&
+              (normExistingPlain === normLmsPlain || normExistingRaw === normLmsPlain);
+
+            const canMarkVerified =
+              !existingFb ||
+              existingFb.status === "VERIFIED" ||
+              !String(existingFb.finalText || "").trim() ||
+              isExactMatchFailedOrApproved ||
+              (preferLmsVerified &&
+                existingFb.status !== "APPROVED" &&
+                (existingFb.status !== "SAVING" || isOrphanedSaving));
+
+            if (canMarkVerified) {
+              const effectiveText = String(existingFb?.finalText || "").trim() || lmsComment;
+              upsertFbVerifiedStmt.run({
+                classId,
+                sessionId,
+                studentId,
+                attendanceStatus:
+                  lmsAttendance !== "UNKNOWN"
+                    ? lmsAttendance
+                    : existingFb?.attendanceStatus || "PRESENT",
+                finalText: effectiveText,
+                contentHash: computeHashSafe(effectiveText),
+                verifiedAt: existingFb?.verifiedAt || null,
+                checkpointDataJson: mergedCheckpointDataJson,
+                hasUpdatedFinalText: 0,
+              });
+              slotHasVerifiedStudent = true;
+              verifiedStudentIdsInSlot.add(studentId);
+            }
+          } else if (lmsAttendance === "ABSENT") {
+            if (
+              !existingFb ||
+              (existingFb.status !== "APPROVED" &&
+                (existingFb.status !== "SAVING" || isOrphanedSaving) &&
+                existingFb.status !== "VERIFIED")
+            ) {
+              upsertFbAbsentStmt.run({
+                classId,
+                sessionId,
+                studentId,
+              });
+            }
           }
         }
 
@@ -2145,19 +2276,47 @@ export class ClassSyncer {
                 suggestionsFromMindx: suggestions,
                 futureDirection: future,
                 awardRanking: currentEval.awardRanking,
+                awardRankGrade: currentEval.awardRankGrade,
               });
-              db.prepare(
-                `UPDATE spck_session14_evaluations
-                 SET learnedFromMindx = ?,
-                     suggestionsFromMindx = ?,
-                     futureDirection = ?,
-                     contentHash = ?,
-                     status = 'VERIFIED',
-                     verifiedAt = COALESCE(verifiedAt, datetime('now', 'localtime')),
-                     errorMessage = NULL,
-                     updatedAt = datetime('now', 'localtime')
-                 WHERE classId = ? AND studentId = ?`
-              ).run(learned, suggestions, future, evalHash, classId, studentId);
+              const isSameVerifiedContent =
+                Boolean(existingEval) &&
+                existingEval!.status === "VERIFIED" &&
+                String(existingEval!.learnedFromMindx || "").trim() === learned &&
+                String(existingEval!.suggestionsFromMindx || "").trim() === suggestions &&
+                String(existingEval!.futureDirection || "").trim() === future &&
+                Boolean(String(existingEval!.verifiedAt || "").trim()) &&
+                !existingEval!.errorMessage;
+              if (isSameVerifiedContent) {
+                const evalHashMatches =
+                  String(existingEval!.contentHash || "") === evalHash;
+                const evalUpdatedMs = parseSyncDbTimestampMs(existingEval!.updatedAt);
+                const evalVerifiedMs = parseSyncDbTimestampMs(existingEval!.verifiedAt);
+                const needsHealUpdatedAt =
+                  evalUpdatedMs !== null &&
+                  evalVerifiedMs !== null &&
+                  evalUpdatedMs > evalVerifiedMs;
+                if (!evalHashMatches || needsHealUpdatedAt) {
+                  db.prepare(
+                    `UPDATE spck_session14_evaluations
+                     SET contentHash = ?,
+                         updatedAt = CASE WHEN ? = 1 THEN verifiedAt ELSE updatedAt END
+                     WHERE classId = ? AND studentId = ? AND status = 'VERIFIED' AND verifiedAt IS NOT NULL`
+                  ).run(evalHash, needsHealUpdatedAt ? 1 : 0, classId, studentId);
+                }
+              } else {
+                db.prepare(
+                  `UPDATE spck_session14_evaluations
+                   SET learnedFromMindx = ?,
+                       suggestionsFromMindx = ?,
+                       futureDirection = ?,
+                       contentHash = ?,
+                       status = 'VERIFIED',
+                       verifiedAt = COALESCE(verifiedAt, datetime('now', 'localtime')),
+                       errorMessage = NULL,
+                       updatedAt = datetime('now', 'localtime')
+                   WHERE classId = ? AND studentId = ?`
+                ).run(learned, suggestions, future, evalHash, classId, studentId);
+              }
             }
           } catch {}
         }

@@ -1,5 +1,20 @@
 # CHANGELOG — LỊCH SỬ PHIÊN BẢN DỰ ÁN MINDX AUTOMATION BOT
 
+## [v3.8.9+ Đợt 2] - 2026-11-25
+> **Bản vá Sửa Triệt Để 2 Lỗi Đồng Bộ Khi Bấm `Quét công việc tuần này` (`VT-C4K-PTA13` & `VT-CSI02` Buổi 14, `VT-ROB-ARMI13` Checkpoint 1) — Đạt `Gemini 4 Neon (XHigh)` Round 2 `VERDICT: GO` (`4/4` phát hiện `F01` P1, `F02` P2, `F03` P3, `F04` P3 CLOSED, `0` lỗi mở).**
+
+### 🐛 Đã sửa & Cải tiến (`v3.8.9+` Đợt 2)
+- **Chống đóng mới dấu giờ giả ở Buổi 14 khi quét lại không đổi (`src/lib/playwright/sync-class.ts`, `src/lib/db/sqlite.ts`, `src/lib/report-card/report-card-staleness.ts`):**
+  - `ClassSyncer.syncLmsSlotCompletionToSqlite` (`sessionNumber === 14`): truyền đủ `awardRankGrade` vào `_computeSession14EvalHash`, dùng `isSameVerifiedContent` để bỏ qua `UPDATE` khi bản ghi Buổi 14 đã `VERIFIED` khớp 100%, và tự chữa lành đồng thời `contentHash` lẫn `updatedAt = verifiedAt` trong 1 lượt nếu từng bị bản quét cũ làm sai (`F03` CLOSED).
+  - `session14EvalRepo.saveDraft`: bỏ qua ghi thừa trên bản ghi `VERIFIED` không đổi (`{ success: true, record: current }`).
+  - `computeReportCardStaleness`: kiểm tra lệch điểm `finalProduct`/`finalCompetency` trước mốc thời gian, và miễn cảnh báo stale theo `updatedAt` khi bản ghi đã `VERIFIED` trước lúc quét điểm (`verifiedAt <= scrapedAt`) và khớp 100% điểm số.
+- **Chống hạ nháp oan ở Buổi Checkpoint khi chữ & 9 `[ĐNL]` trên LMS đã khớp sẵn, đồng thời khóa an toàn không báo xanh giả (`src/lib/playwright/sync-class.ts`):**
+  - Chuẩn hóa khoảng trắng trước dấu câu do thẻ HTML `<strong>` sinh ra trên MindX LMS trong `normalizeSyncCompare`, cập nhật `upsertFbVerifiedStmt` cho phép làm mới `finalText` khi `@hasUpdatedFinalText = 1`, và nhận diện `lmsAlreadyMatchesRefreshedCheckpoint` (kèm ràng buộc `isOrphanedSaving` cho `SAVING` — `F04` CLOSED) để giữ nguyên `VERIFIED` / `verifiedAt` và cập nhật `finalText` + `contentHash` + `approvedSnapshotHash`.
+  - Tính `canMarkVerified` & `willWriteVerified` **trước** `nextApprovedSnapshotHash` (`F02` CLOSED: phục hồi đồng thời `VERIFIED` & `approvedSnapshotHash` trong 1 lượt cho bản ghi từng bị hạ `DRAFT`, không gắn nhầm hash khi LMS chỉ có placeholder `"."`), và khóa `preferLmsVerified` bằng `preferLmsBlockedByCompetency` + `preferLmsBlockedByStaleHeaderText` (`F01` CLOSED: cấm nâng lên `VERIFIED` khi LMS còn giữ chữ cũ hoặc lệch 9 ô `[ĐNL]`, bảo toàn lịch sử `ST_SYNC_HIST` pre-v3.7.0).
+- **Kiểm thử & Nghiệm thu Độc lập (`scripts/test-streamline-v340-s4.ts`, `scripts/test-checkpoint-auto-v370.ts`, `docs/audits/v389/NEON_XHIGH_V389_WEEKLY_SCAN_SYNC_FIX_REVIEW.md`):**
+  - Bổ sung `S4-R3-01..03` + `F03` và `V370-09 (7)` + `F01`/`F02a`/`F02b`.
+  - **Toàn bộ `9/9` cổng kiểm thử sau bản sửa cuối PASS (`exit 0`):** `tsc --noEmit --incremental false`, `test-streamline-v340-s4.ts`, `test-checkpoint-auto-v370.ts`, `test-checkpoint-csa04-v386.ts`, `test-save-comments-timeout-v348.ts`, `test-stuck-saving-recovery-v369.ts`, `test-session14-v290.ts`, `test-report-card-v330.ts`, `test-report-card-batch-sync.ts`; `18/18` probe đối kháng & bản sao DB thật (`8/8` lớp `allDone: true`, tự chữa lành `VT-C4K-PTA13`/`VT-CSI02` & `Nguyễn Ngọc Minh`) PASS 100%, bảo toàn `100%` SHA-256 `data/`.
+
 ## [v3.8.10] - 2026-11-25
 > **Bản vá `/admin-center`: Bỏ Kiểm Tra Ô BTVN Cho Robotics & Phân Biệt Học Sinh Nghỉ Chờ Học Bù Ở Buổi Checkpoint (`CP1`, `CP2`, `DEMO`) — Đạt `Gemini 4 Neon (XHigh)` Round 2 `VERDICT: GO` (`4/4` phát hiện `F01`–`F04` CLOSED, `0` lỗi mở).**
 

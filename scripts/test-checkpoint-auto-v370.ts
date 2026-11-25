@@ -2606,6 +2606,289 @@ async function main() {
     assert.equal(bfPageErrors.length, 0, `V370-09 (6): 0 pageerror: ${bfPageErrors.join("; ")}`);
     await bfPage.close();
 
+    // 7) v3.8.9+ regression: When LMS CP LT/TH changes (3.5 -> 4.0) AND LMS HTML + 9 RATE already match refreshed header/competency,
+    // keep VERIFIED immediately on first sync (both preferLmsVerified: false and true); demote only when text or 9 RATE still mismatch.
+    const nnmClassId = "VT-ROB-ARMI-V389";
+    const nnmSessId = `${nnmClassId}_SESS_04`;
+    const nnmStudent = {
+      studentId: "ST_NNM_MATCH",
+      classId: nnmClassId,
+      fullName: "Nguyễn Ngọc Minh",
+      isActive: 1,
+    };
+    const nnmStaleTextStudent = {
+      studentId: "ST_NNM_TEXT_OLD",
+      classId: nnmClassId,
+      fullName: "Lê Minh Anh",
+      isActive: 1,
+    };
+    const nnmBadRateStudent = {
+      studentId: "ST_NNM_RATE_BAD",
+      classId: nnmClassId,
+      fullName: "Trần Gia Bảo",
+      isActive: 1,
+    };
+    for (const st of [nnmStudent, nnmStaleTextStudent, nnmBadRateStudent]) {
+      studentRepo.upsert(st);
+    }
+
+    const bodySuffix =
+      "\n- **Điểm mạnh của học viên:** Con lắp ráp mô hình có **cảm biến mắt**.\n\n- **Điểm cần cải thiện:** Giữ vững phong độ.\n\n- **Lời khuyên:** Ba mẹ tiếp tục động viên con.";
+    const oldText35 =
+      "📊 **Kết quả Checkpoint 1:** Lý thuyết **3.5/5.0** | Thực hành **4.0/5.0** | Điểm năng lực **4.00/5.0**" +
+      bodySuffix;
+    const newText40 =
+      "📊 **Kết quả Checkpoint 1:** Lý thuyết **4.0/5.0** | Thực hành **4.0/5.0** | Điểm năng lực **4.00/5.0**" +
+      bodySuffix;
+    const lmsHtml40 =
+      "<p>📊 <strong>Kết quả Checkpoint 1:</strong> Lý thuyết <strong>4.0/5.0</strong> | Thực hành <strong>4.0/5.0</strong> | Điểm năng lực <strong>4.00/5.0</strong></p>" +
+      "<p>- <strong>Điểm mạnh của học viên:</strong> Con lắp ráp mô hình có <strong>cảm biến mắt</strong> .</p>" +
+      "<p>- <strong>Điểm cần cải thiện:</strong> Giữ vững phong độ.</p>" +
+      "<p>- <strong>Lời khuyên:</strong> Ba mẹ tiếp tục động viên con.</p>";
+    const lmsHtml35 = lmsHtml40.replace("4.0/5.0", "3.5/5.0");
+
+    const nnmComp = {
+      knowledgeSelfStudy: 4,
+      knowledgeInClass: 4,
+      skillCommunication: 4,
+      skillComputerUse: 4,
+      skillProblemSolving: 4,
+      skillCreativity: 4,
+      skillComputational: 4,
+      attitudeHomework: 4,
+      attitudeInClass: 4,
+    };
+    const oldSnapHash = extractCheckpointCoreSnapshotHash(
+      JSON.stringify({ cpStage: 1, theoryScore: 3.5, practiceScore: 4.0, competencyScores: nnmComp })
+    );
+    const expectedNewSnapHash = extractCheckpointCoreSnapshotHash(
+      JSON.stringify({ cpStage: 1, theoryScore: 4.0, practiceScore: 4.0, competencyScores: nnmComp })
+    );
+
+    for (const st of [nnmStudent, nnmStaleTextStudent, nnmBadRateStudent]) {
+      sessionFeedbackRepo.upsert({
+        classId: nnmClassId,
+        sessionId: nnmSessId,
+        studentId: st.studentId,
+        attendanceStatus: "PRESENT",
+        finalText: oldText35,
+        contentHash: sha256(oldText35),
+        status: "VERIFIED",
+        verifiedAt: "2026-11-23T04:55:00.000Z",
+        checkpointDataJson: JSON.stringify({
+          cpStage: 1,
+          isRobotics: true,
+          theoryScore: 3.5,
+          practiceScore: 4.0,
+          slotTheoryScore: 3.5,
+          slotPracticeScore: 4.0,
+          competencyScores: nnmComp,
+          competencyAverage: 4,
+          lmsCompetencyScores: nnmComp,
+          approvedSnapshotHash: oldSnapHash,
+        }),
+      });
+    }
+
+    const matchingRates = COMPETENCY_AREA_SPECS.map((sp) => ({
+      type: "RATE",
+      commentAreaId: sp.commentAreaId,
+      grade: nnmComp[sp.key],
+    }));
+    const mismatchedRates = COMPETENCY_AREA_SPECS.map((sp, idx) => ({
+      type: "RATE",
+      commentAreaId: sp.commentAreaId,
+      grade: idx === 0 ? 3 : nnmComp[sp.key],
+    }));
+
+    const buildNnmSlots = () =>
+      [
+        null,
+        null,
+        null,
+        {
+          index: 3,
+          studentAttendance: [
+            {
+              student: { id: nnmStudent.studentId, fullName: nnmStudent.fullName },
+              status: "ATTENDED",
+              comment: lmsHtml40,
+              commentByAreas: [
+                { type: "CHECKPOINT", checkpoint: { checkpointScore: 4.0, practiceScore: 4.0 } },
+                { type: "CONTENT", content: lmsHtml40 },
+                ...matchingRates,
+              ],
+            },
+            {
+              student: { id: nnmStaleTextStudent.studentId, fullName: nnmStaleTextStudent.fullName },
+              status: "ATTENDED",
+              comment: lmsHtml35,
+              commentByAreas: [
+                { type: "CHECKPOINT", checkpoint: { checkpointScore: 4.0, practiceScore: 4.0 } },
+                { type: "CONTENT", content: lmsHtml35 },
+                ...matchingRates,
+              ],
+            },
+            {
+              student: { id: nnmBadRateStudent.studentId, fullName: nnmBadRateStudent.fullName },
+              status: "ATTENDED",
+              comment: lmsHtml40,
+              commentByAreas: [
+                { type: "CHECKPOINT", checkpoint: { checkpointScore: 4.0, practiceScore: 4.0 } },
+                { type: "CONTENT", content: lmsHtml40 },
+                ...mismatchedRates,
+              ],
+            },
+          ],
+        },
+      ].map((x, i) => x || { index: i, studentAttendance: [] });
+
+    ClassSyncer.syncLmsSlotCompletionToSqlite({
+      db: getDb(),
+      classId: nnmClassId,
+      students: [
+        studentRepo.findOne(nnmStudent.studentId, nnmClassId)!,
+        studentRepo.findOne(nnmStaleTextStudent.studentId, nnmClassId)!,
+        studentRepo.findOne(nnmBadRateStudent.studentId, nnmClassId)!,
+      ],
+      slots: buildNnmSlots(),
+      preferLmsVerified: false,
+    });
+
+    const nnmMatchRow = sessionFeedbackRepo.findOne(nnmClassId, nnmSessId, nnmStudent.studentId)!;
+    const nnmMatchCp = parseCheckpointDataJson(nnmMatchRow.checkpointDataJson)!;
+    assert.equal(nnmMatchRow.status, "VERIFIED", "V370-09 (7): LMS đã khớp sẵn 4.0/5.0 + 9 RATE phải giữ nguyên VERIFIED");
+    assert.equal(nnmMatchRow.finalText, newText40, "V370-09 (7): finalText phải cập nhật lên 4.0/5.0");
+    assert.equal(nnmMatchRow.contentHash, sha256(newText40), "V370-09 (7): contentHash phải khớp SHA-256 của finalText mới");
+    assert.equal(nnmMatchRow.verifiedAt, "2026-11-23T04:55:00.000Z", "V370-09 (7): Phải giữ nguyên verifiedAt cũ");
+    assert.equal(nnmMatchCp.approvedSnapshotHash, expectedNewSnapHash, "V370-09 (7): approvedSnapshotHash phải cập nhật theo 4.0/4.0 mới");
+
+    const nnmOldTextRow = sessionFeedbackRepo.findOne(nnmClassId, nnmSessId, nnmStaleTextStudent.studentId)!;
+    assert.equal(nnmOldTextRow.status, "DRAFT", "V370-09 (7): Chữ LMS vẫn giữ 3.5/5.0 phải hạ về DRAFT");
+    assert.equal(nnmOldTextRow.verifiedAt, null);
+    assert.equal(parseCheckpointDataJson(nnmOldTextRow.checkpointDataJson)?.approvedSnapshotHash ?? null, null);
+
+    const nnmBadRateRow = sessionFeedbackRepo.findOne(nnmClassId, nnmSessId, nnmBadRateStudent.studentId)!;
+    assert.equal(nnmBadRateRow.status, "DRAFT", "V370-09 (7): 9 RATE trên LMS chưa khớp phải hạ về DRAFT");
+    assert.equal(nnmBadRateRow.verifiedAt, null);
+
+    // Verify preferLmsVerified: true keeps nnmStudent VERIFIED AND blocks nnmStaleTextStudent / nnmBadRateStudent (F01)
+    ClassSyncer.syncLmsSlotCompletionToSqlite({
+      db: getDb(),
+      classId: nnmClassId,
+      students: [
+        studentRepo.findOne(nnmStudent.studentId, nnmClassId)!,
+        studentRepo.findOne(nnmStaleTextStudent.studentId, nnmClassId)!,
+        studentRepo.findOne(nnmBadRateStudent.studentId, nnmClassId)!,
+      ],
+      slots: buildNnmSlots(),
+      preferLmsVerified: true,
+    });
+    assert.equal(
+      sessionFeedbackRepo.findOne(nnmClassId, nnmSessId, nnmStudent.studentId)!.status,
+      "VERIFIED",
+      "V370-09 (7): preferLmsVerified: true cũng phải giữ nguyên VERIFIED"
+    );
+    assert.equal(
+      sessionFeedbackRepo.findOne(nnmClassId, nnmSessId, nnmStaleTextStudent.studentId)!.status,
+      "DRAFT",
+      "F01: preferLmsVerified: true không được nâng oan DRAFT khi LMS vẫn còn chữ điểm cũ 3.5/5.0"
+    );
+    assert.equal(
+      sessionFeedbackRepo.findOne(nnmClassId, nnmSessId, nnmBadRateStudent.studentId)!.status,
+      "DRAFT",
+      "F01: preferLmsVerified: true không được nâng oan DRAFT khi LMS vẫn lệch 9 ô [ĐNL]"
+    );
+
+    // F02a: Legacy bug left matching record as DRAFT with approvedSnapshotHash=null -> 1 weekly scan heals both VERIFIED & hash
+    getDb()
+      .prepare(
+        `UPDATE session_feedbacks
+         SET status = 'DRAFT',
+             verifiedAt = NULL,
+             checkpointDataJson = json_set(checkpointDataJson, '$.approvedSnapshotHash', NULL)
+         WHERE classId = ? AND sessionId = ? AND studentId = ?`
+      )
+      .run(nnmClassId, nnmSessId, nnmStudent.studentId);
+    ClassSyncer.syncLmsSlotCompletionToSqlite({
+      db: getDb(),
+      classId: nnmClassId,
+      students: [studentRepo.findOne(nnmStudent.studentId, nnmClassId)!],
+      slots: buildNnmSlots(),
+      preferLmsVerified: true,
+    });
+    const f02aHealedRow = sessionFeedbackRepo.findOne(nnmClassId, nnmSessId, nnmStudent.studentId)!;
+    assert.equal(f02aHealedRow.status, "VERIFIED", "F02a: Phải phục hồi VERIFIED ngay trong 1 lượt quét");
+    assert.equal(
+      parseCheckpointDataJson(f02aHealedRow.checkpointDataJson)?.approvedSnapshotHash,
+      expectedNewSnapHash,
+      "F02a: Phải phục hồi approvedSnapshotHash ngay trong 1 lượt quét"
+    );
+
+    // F02b: VERIFIED record with approvedSnapshotHash=null when LMS only has placeholder '.' must NOT attach approvedSnapshotHash
+    const phStudent = {
+      studentId: "ST_NNM_PLACEHOLDER",
+      classId: nnmClassId,
+      fullName: "Phạm Placeholder",
+      isActive: 1,
+    };
+    studentRepo.upsert(phStudent);
+    sessionFeedbackRepo.upsert({
+      classId: nnmClassId,
+      sessionId: nnmSessId,
+      studentId: phStudent.studentId,
+      attendanceStatus: "PRESENT",
+      finalText: newText40,
+      contentHash: sha256(newText40),
+      status: "VERIFIED",
+      verifiedAt: "2026-11-23T04:55:00.000Z",
+      checkpointDataJson: JSON.stringify({
+        cpStage: 1,
+        isRobotics: true,
+        theoryScore: 4.0,
+        practiceScore: 4.0,
+        slotTheoryScore: 4.0,
+        slotPracticeScore: 4.0,
+        competencyScores: nnmComp,
+        competencyAverage: 4,
+        lmsCompetencyScores: nnmComp,
+        approvedSnapshotHash: null,
+      }),
+    });
+    const phSlots = [
+      null,
+      null,
+      null,
+      {
+        index: 3,
+        studentAttendance: [
+          {
+            student: { id: phStudent.studentId, fullName: phStudent.fullName },
+            status: "ATTENDED",
+            comment: ".",
+            commentByAreas: [
+              { type: "CHECKPOINT", checkpoint: { checkpointScore: 4.0, practiceScore: 4.0 } },
+              { type: "CONTENT", content: "<p>.</p>" },
+              ...matchingRates,
+            ],
+          },
+        ],
+      },
+    ].map((x, i) => x || { index: i, studentAttendance: [] });
+    ClassSyncer.syncLmsSlotCompletionToSqlite({
+      db: getDb(),
+      classId: nnmClassId,
+      students: [studentRepo.findOne(phStudent.studentId, nnmClassId)!],
+      slots: phSlots,
+      preferLmsVerified: true,
+    });
+    const phRowAfter = sessionFeedbackRepo.findOne(nnmClassId, nnmSessId, phStudent.studentId)!;
+    assert.equal(
+      parseCheckpointDataJson(phRowAfter.checkpointDataJson)?.approvedSnapshotHash ?? null,
+      null,
+      "F02b: Placeholder '.' trên LMS không được gắn nhầm approvedSnapshotHash"
+    );
+
     console.log("  -> PASS V370-09.");
     console.log("\n✅ TẤT CẢ KIỂM THỬ CHECKPOINT v3.8.5 (V370-01 .. V370-09) ĐỀU PASS 100%!");
   } catch (err) {

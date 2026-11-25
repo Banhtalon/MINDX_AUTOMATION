@@ -5775,6 +5775,20 @@ export const session14EvalRepo = {
       ? current.draftVersion + 1
       : current.draftVersion;
 
+    if (
+      current.status === "VERIFIED" &&
+      !contentChangedFromApproved &&
+      !contentChangedFromCurrent &&
+      nextStatus === "VERIFIED" &&
+      nextHash === current.contentHash &&
+      !current.errorMessage
+    ) {
+      return {
+        success: true,
+        record: current,
+      };
+    }
+
     const db = getDb();
     db.prepare(
       `UPDATE spck_session14_evaluations

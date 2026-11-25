@@ -294,10 +294,6 @@ export function computeReportCardStaleness(
         }
 
         const evalMs = parseDbOrIsoTimestampMs(matchedEval.updatedAt);
-        if (evalMs !== null && evalMs > scrapedAtMs) {
-          hasNewerSession14 = true;
-          break;
-        }
 
         if (
           typeof matchedEval.demoTotalScore === "number" &&
@@ -325,6 +321,19 @@ export function computeReportCardStaleness(
             hasNewerSession14 = true;
             break;
           }
+        }
+
+        const verifiedMs =
+          matchedEval.status === "VERIFIED"
+            ? parseDbOrIsoTimestampMs(matchedEval.verifiedAt)
+            : null;
+        const isAlreadyVerifiedBeforeScrape =
+          matchedEval.status === "VERIFIED" &&
+          verifiedMs !== null &&
+          verifiedMs <= scrapedAtMs;
+        if (!isAlreadyVerifiedBeforeScrape && evalMs !== null && evalMs > scrapedAtMs) {
+          hasNewerSession14 = true;
+          break;
         }
       }
 
