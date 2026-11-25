@@ -1477,7 +1477,8 @@ export function resolveDefaultDemoSheetPathForClass(classId: string): string | n
         (f) =>
           f.toUpperCase().includes(normalizedClassId) ||
           normalizeVietnameseName(f).includes(normalizeVietnameseName(expectedTitle)) ||
-          normalizeVietnameseName(f).includes("bang cham diem buoi demo")
+          normalizeVietnameseName(f).includes("bang cham diem buoi demo") ||
+          normalizeVietnameseName(f).includes("bang cham diem buoi cuoi khoa")
       );
       if (exactMatch) {
         return assertPathAllowed(path.join(safeDir, exactMatch));

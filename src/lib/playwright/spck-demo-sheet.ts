@@ -32,13 +32,12 @@ import { taskQueue } from "../queue/task-queue";
 import { assertPathAllowed } from "../security/path-allowlist";
 import { BrowserManager } from "./browser-manager";
 import {
-  CODING_SPCK_COURSE_FOLDER_MAP,
-  CODING_SPCK_ROOT_FOLDER_ID,
   confirmDriveTrashDialogIfPresent,
   DEFAULT_SPCK_DRIVE_FOLDER_URL,
   detectCoursePrefixFromClassId,
   extractDriveFolderId,
   openDriveNewMenuAndGetItem,
+  resolveTargetCourseDriveFolderId,
 } from "./spck-drive-uploader";
 
 export const COURSE_DEMO_TITLE_MAP: Record<string, string> = {
@@ -1765,7 +1764,7 @@ function assertDemoSheetNotStopped(): void {
     );
   }
 }
-interface DriveFolderItemSummary {
+export interface DriveFolderItemSummary {
   id: string;
   name: string;
   isFolder: boolean;
@@ -1796,7 +1795,7 @@ function extractSheetTabNamesFromWorkbookBuffer(buf: Buffer): string[] {
 /**
  * Lists items in a Google Drive folder DOM and distinguishes native Google Sheets from Excel `.xlsx` files.
  */
-async function listDriveFilesInFolder(
+export async function listDriveFilesInFolder(
   page: Page,
   parentFolderId: string
 ): Promise<DriveFolderItemSummary[]> {
@@ -1934,7 +1933,7 @@ async function listDriveFilesInFolder(
           if (!name) continue;
 
           const knownFileExtRe =
-            /\.(?:zip|rar|7z|tar|gz|py|ipynb|ui|qss|html?|css|js|mjs|ts|tsx|jsx|json|xml|csv|txt|md|sql|png|jpe?g|webp|gif|svg|bmp|ico|avif|mp4|webm|mov|avi|mkv|mp3|wav|ogg|m4a|pdf|pptx?|docx?|xlsx?|xls|xlsm|sb3|yyz|yyp|gml|gmx|apk|rbxl|exe)$/i;
+            /\.(?:zip|rar|7z|tar|gz|py|ipynb|ui|qss|html?|css|js|mjs|ts|tsx|jsx|json|xml|csv|txt|md|sql|png|jpe?g|webp|gif|svg|bmp|ico|avif|mp4|webm|mov|avi|mkv|mp3|wav|ogg|m4a|pdf|pptx?|docx?|xlsx?|xls|xlsm|sb3|yyz|yyp|gml|gmx|apk|rbxl|exe|iqblocks|goblocks|ev3|llsp3|vexblocks|v5blocks)$/i;
           const hasExcelLabel =
             /\.xls[xm]?$/i.test(name) ||
             dataMime.includes("spreadsheetml") ||
@@ -1991,7 +1990,7 @@ async function listDriveFilesInFolder(
               htmlLower.includes("icon_11_spreadsheet") ||
               htmlLower.includes("spreadsheets/d/") ||
               htmlLower.includes("spreadsheet") ||
-              /^bảng chấm điểm buổi demo\b/i.test(name) ||
+              /(?:^|[-_\s])bảng chấm điểm buổi (?:demo|cuối kh(?:óa|oá))(?=$|[-_\s.])/i.test(name) ||
               /^bảng tính không có tiêu đề$/i.test(name) ||
               /^untitled spreadsheet$/i.test(name));
           const hasExplicitNonFolderFileSignal =
@@ -2848,6 +2847,19 @@ export async function createAndUploadClassDemoSheetToDrive(
     );
   }
 
+  const preCheckDriveFolderId = extractDriveFolderId(
+    options.driveFolderUrl || DEFAULT_SPCK_DRIVE_FOLDER_URL
+  );
+  const routedDrive = resolveTargetCourseDriveFolderId(
+    preCheckDriveFolderId,
+    normalizedClassId
+  );
+  if (routedDrive.isAutoRoutedRootOrGroup && !routedDrive.courseFolderId) {
+    throw new Error(
+      `Khóa học '${coursePrefixForGuard || normalizedClassId}' của lớp '${normalizedClassId}' chưa khớp với thư mục khóa học cấu hình sẵn trong thư mục gốc/nhóm Google Drive đã chọn. Vui lòng giữ link gốc mặc định hoặc dán trực tiếp link thư mục Google Drive riêng của lớp.`
+    );
+  }
+
   let preloadedSavedTemplateBuf: Buffer | null = null;
   if (!explicitTemplateSheetId && savedCourseTemplatePath) {
     preloadedSavedTemplateBuf = validateTemplateWorkbookBuffer(
@@ -2891,18 +2903,6 @@ export async function createAndUploadClassDemoSheetToDrive(
   }
 
   assertDemoSheetNotStopped();
-
-  const preCheckDriveFolderId = extractDriveFolderId(
-    options.driveFolderUrl || DEFAULT_SPCK_DRIVE_FOLDER_URL
-  );
-  if (
-    preCheckDriveFolderId === CODING_SPCK_ROOT_FOLDER_ID &&
-    (!coursePrefixForGuard || !CODING_SPCK_COURSE_FOLDER_MAP[coursePrefixForGuard])
-  ) {
-    throw new Error(
-      `Khóa học '${coursePrefixForGuard || normalizedClassId}' chưa có thư mục khóa học cấu hình sẵn trên Google Drive. Vui lòng dán trực tiếp link thư mục Drive của lớp.`
-    );
-  }
 
   const driveBaseUrl = (options._testHarness?.driveBaseUrl || "https://drive.google.com").replace(
     /\/+$/,
@@ -2979,10 +2979,8 @@ export async function createAndUploadClassDemoSheetToDrive(
           buffer: workbookBuf,
         };
 
-        let courseParentFolderId = preCheckDriveFolderId;
-        if (preCheckDriveFolderId === CODING_SPCK_ROOT_FOLDER_ID && coursePrefixForGuard) {
-          courseParentFolderId = CODING_SPCK_COURSE_FOLDER_MAP[coursePrefixForGuard];
-        }
+        const courseParentFolderId =
+          routedDrive.courseFolderId || preCheckDriveFolderId;
 
         const matchesClassFolder = (i: DriveFolderItemSummary) =>
           i.isFolder &&

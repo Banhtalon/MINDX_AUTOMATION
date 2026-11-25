@@ -22,6 +22,7 @@
 
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import AdmZip from "adm-zip";
@@ -132,8 +133,10 @@ async function runTests() {
     parseSession14DemoScores,
     calculateDemoTotalScore,
     session14EvalRepo,
+    spckUploadRepo,
     studentRepo,
   } = await import("../src/lib/db/sqlite");
+  const { computeStudentFolderContentDigest } = await import("../src/lib/local-files/spck-scanner");
   const { getDemoScoreItemsForClassUi } = await import("../src/lib/spck/spck-ui-helpers");
   const {
     extractDemoTemplateRubricStructure,
@@ -677,7 +680,502 @@ async function runTests() {
     assert.strictEqual(session14EvalRepo.findOne(robCls, robStuId)?.status, "VERIFIED");
     console.log("  -> PASS [ROB-TPL-04].");
 
-    console.log("\n✅ TOÀN BỘ 4/4 NHÓM KIỂM THỬ ROBOTICS DEMO TEMPLATES v3.8.9 PASS 100%!");
+    // =========================================================================
+    // [ROB-TPL-05]: 10 Thư mục Google Drive ROBOTICS - SPCK, getClassDemoSheetMeta & Mock Native Google Sheet
+    // =========================================================================
+    console.log("\n[ROB-TPL-05] Kiểm tra định tuyến 10 thư mục Google Drive Robotics & tạo Google Trang tính Demo...");
+    const {
+      CODING_SPCK_COURSE_FOLDER_MAP,
+      CODING_SPCK_ROOT_FOLDER_ID,
+      DEFAULT_SPCK_DRIVE_FOLDER_URL,
+      ROBOTICS_ARM_GROUP_FOLDER_ID,
+      ROBOTICS_PRE_GROUP_FOLDER_ID,
+      ROBOTICS_SEMI_GROUP_FOLDER_ID,
+      ROBOTICS_SPCK_COURSE_FOLDER_MAP,
+      ROBOTICS_SPCK_ROOT_FOLDER_ID,
+      UMBRELLA_SPCK_ROOT_FOLDER_ID,
+      isBotOrSystemIgnoredDriveFile,
+      isSpckRootFolderId,
+      resolveCourseSpecificFolderId,
+      resolveTargetCourseDriveFolderId,
+      SpckDriveUploader,
+    } = await import("../src/lib/playwright/spck-drive-uploader");
+    const { createAndUploadClassDemoSheetToDrive } = await import(
+      "../src/lib/playwright/spck-demo-sheet"
+    );
+    const { getClassDemoSheetMeta } = await import("../src/app/api/spck/list/route");
+
+    const expectedRoboticsClassMap: Array<[string, string, string]> = [
+      ["VT-ROB-PREB20", "PREB", "1Ao85URmrFagoP9rjCkyKzAbNzM3h3BNv"],
+      ["VT-ROB-PREA14", "PREA", "1-dctk2OMHrzkDXhMDWlvv-co8CIutGlU"],
+      ["VT-ROB-PREI12", "PREI", "15-QrDqH29e2Za_81ectjQtDb8CW6XAkV"],
+      ["VT-ROB-ARMB19", "ARMB", "1XSrXqmxnnVAUcEF3LK5LLNZsaFYdwOwO"],
+      ["VT-ROB-ARMA18", "ARMA", "1x83vLG3UmpzmE9XZHbs_J-_FqynMBJ4-"],
+      ["VT-ROB-ARMI05", "ARMI", "1UPm7QOlW4pMYoKP28fXafyx0RMXBTskC"],
+      ["VT-ROB-SEMIB08", "SEMIB", "1Vme3gGCjnewL2Oicco6DxW5iAxxVI4MN"],
+      ["VT-ROB-SEMIA05", "SEMIA", "1drLxRbR4FsNdlY_LO4RgKlZwCHVFckFQ"],
+      ["VT-ROB-SEMII03", "SEMII", "1WscY0xcX1CIDwS6YSmBB2F7SoKa4-6dy"],
+      ["VT-KIND-ROB4B04", "ROB", "1WiM0_kEQ1Lm4rf2vTysb90yQRzWhujs1"],
+    ];
+
+    assert.strictEqual(Object.keys(ROBOTICS_SPCK_COURSE_FOLDER_MAP).length, 10);
+    for (const rootId of [
+      CODING_SPCK_ROOT_FOLDER_ID,
+      UMBRELLA_SPCK_ROOT_FOLDER_ID,
+      ROBOTICS_SPCK_ROOT_FOLDER_ID,
+    ]) {
+      assert.strictEqual(isSpckRootFolderId(rootId), true, `Phải nhận diện root ${rootId}`);
+    }
+
+    for (const [cid, prefix, expectedId] of expectedRoboticsClassMap) {
+      assert.strictEqual(ROBOTICS_SPCK_COURSE_FOLDER_MAP[prefix], expectedId);
+      assert.strictEqual(CODING_SPCK_COURSE_FOLDER_MAP[prefix], expectedId);
+      assert.strictEqual(resolveCourseSpecificFolderId(cid), expectedId);
+      for (const rootId of [
+        CODING_SPCK_ROOT_FOLDER_ID,
+        UMBRELLA_SPCK_ROOT_FOLDER_ID,
+        ROBOTICS_SPCK_ROOT_FOLDER_ID,
+      ]) {
+        const routed = resolveTargetCourseDriveFolderId(rootId, cid);
+        assert.strictEqual(routed.isAutoRoutedRootOrGroup, true);
+        assert.strictEqual(routed.courseFolderId, expectedId);
+      }
+    }
+
+    assert.strictEqual(
+      resolveTargetCourseDriveFolderId(ROBOTICS_PRE_GROUP_FOLDER_ID, "VT-ROB-PREA14").courseFolderId,
+      ROBOTICS_SPCK_COURSE_FOLDER_MAP.PREA
+    );
+    assert.strictEqual(
+      resolveTargetCourseDriveFolderId(ROBOTICS_ARM_GROUP_FOLDER_ID, "VT-ROB-ARMA18").courseFolderId,
+      ROBOTICS_SPCK_COURSE_FOLDER_MAP.ARMA
+    );
+    assert.strictEqual(
+      resolveTargetCourseDriveFolderId(ROBOTICS_SEMI_GROUP_FOLDER_ID, "VT-ROB-SEMII03").courseFolderId,
+      ROBOTICS_SPCK_COURSE_FOLDER_MAP.SEMII
+    );
+    assert.strictEqual(
+      resolveTargetCourseDriveFolderId(ROBOTICS_PRE_GROUP_FOLDER_ID, "VT-ROB-ARMA18").courseFolderId,
+      null,
+      "Không định tuyến chéo lớp ARM vào nhóm PRE"
+    );
+    assert.strictEqual(
+      resolveCourseSpecificFolderId("TEST_ROBO_UNCONFIGURED_01"),
+      null,
+      "TEST_ROBO_UNCONFIGURED_01 vẫn phải trả null để bảo toàn tương thích ngược"
+    );
+
+    const armaMeta = getClassDemoSheetMeta("VT-ROB-ARMA18");
+    assert.ok(armaMeta);
+    assert.strictEqual(armaMeta.hasCourseDemoTemplate, true);
+    assert.strictEqual(armaMeta.hasCourseDriveFolder, true);
+    assert.strictEqual(armaMeta.spckExempt, false);
+
+    // PTB/CSB bị chặn ở cả 3 thư mục gốc nhưng cho phép link thư mục riêng
+    for (const rootUrl of [
+      DEFAULT_SPCK_DRIVE_FOLDER_URL,
+      `https://drive.google.com/drive/folders/${UMBRELLA_SPCK_ROOT_FOLDER_ID}`,
+      `https://drive.google.com/drive/folders/${ROBOTICS_SPCK_ROOT_FOLDER_ID}`,
+    ]) {
+      await assert.rejects(
+        () =>
+          SpckDriveUploader.uploadClassSpckToGoogleDrive({
+            classId: "VT-C4K-PTB01",
+            driveFolderUrl: rootUrl,
+          }),
+        /miễn nộp SPCK/
+      );
+    }
+    const customPtbRes = await SpckDriveUploader.uploadClassSpckToGoogleDrive({
+      classId: "VT-C4K-PTB01",
+      driveFolderUrl: "https://drive.google.com/drive/folders/CUSTOM_PTB_FOLDER_12345",
+    });
+    assert.strictEqual(customPtbRes.totalRequested, 0);
+
+    // Filter file Robotics vs file bảng điểm tạm (F03: hỗ trợ cả cuối khóa/cuối khoá & tiền tố mã lớp)
+    assert.strictEqual(
+      isBotOrSystemIgnoredDriveFile("Bảng chấm điểm buổi cuối khóa ARMA13.xlsx"),
+      true
+    );
+    assert.strictEqual(
+      isBotOrSystemIgnoredDriveFile("PREA14-Bảng chấm điểm buổi cuối khoá.xlsx"),
+      true
+    );
+    assert.strictEqual(
+      isBotOrSystemIgnoredDriveFile("Bảng chấm điểm buổi cuối khoá ARMA13.xlsx"),
+      true
+    );
+    assert.strictEqual(isBotOrSystemIgnoredDriveFile("robot_arm_final.iqblocks"), false);
+    assert.strictEqual(isBotOrSystemIgnoredDriveFile("truytim_robot.goblocks"), false);
+
+    // F01: Cross-group mismatch phải bị từ chối kể cả khi 0 bản ghi hoặc forceReupload=false
+    await assert.rejects(
+      () =>
+        SpckDriveUploader.uploadClassSpckToGoogleDrive({
+          classId: "VT-ROB-ARMA18",
+          driveFolderUrl: `https://drive.google.com/drive/folders/${ROBOTICS_PRE_GROUP_FOLDER_ID}`,
+        }),
+      /chưa khớp với thư mục khóa học/
+    );
+    await assert.rejects(
+      () =>
+        SpckDriveUploader.uploadClassSpckToGoogleDrive({
+          classId: "VT-ROB-ARMA18",
+          driveFolderUrl: `https://drive.google.com/drive/folders/${ROBOTICS_PRE_GROUP_FOLDER_ID}`,
+          forceReupload: true,
+        }),
+      /chưa khớp với thư mục khóa học/
+    );
+
+    // F02: Cross-group mismatch phải bị chặn TRƯỚC khi gọi AI pre-score
+    let aiScorerCallsOnMismatch = 0;
+    await assert.rejects(
+      () =>
+        createAndUploadClassDemoSheetToDrive({
+          classId: robCls,
+          driveFolderUrl: `https://drive.google.com/drive/folders/${ROBOTICS_PRE_GROUP_FOLDER_ID}`,
+          enableAiPreScore: true,
+          _testAiScorerOverride: async () => {
+            aiScorerCallsOnMismatch += 1;
+            return {
+              criteria: [],
+              bgkQuestions: [],
+            };
+          },
+        }),
+      /chưa khớp với thư mục khóa học/
+    );
+    assert.strictEqual(
+      aiScorerCallsOnMismatch,
+      0,
+      "F02: Không được gọi AI chấm nháp khi link nhóm/gốc Google Drive bị lệch khóa"
+    );
+
+    // Mock Google Drive & Sheets để xác nhận luồng tạo Native Google Sheet cho VT-ROB-ARMA13
+    // khi giữ nguyên DEFAULT_SPCK_DRIVE_FOLDER_URL tự động nhảy đúng vào ROBOTICS_SPCK_COURSE_FOLDER_MAP.ARMA
+    const mockDriveItems = new Map<
+      string,
+      {
+        id: string;
+        parentId: string;
+        name: string;
+        isFolder: boolean;
+        mimeType: string;
+        tabs: string[];
+        workbookBuffer?: Buffer;
+        trashed?: boolean;
+      }
+    >();
+    let mockSeq = 1;
+    const nextMockId = (p: string) => `${p}_1234567890123456_${mockSeq++}`;
+    const extractTabsFromBuf = (buf: Buffer): string[] => {
+      const wb = new AdmZip(buf).readAsText("xl/workbook.xml");
+      return Array.from(wb.matchAll(/<sheet\b[^>]*?\bname="([^"]+)"/gi)).map((m) => m[1]);
+    };
+
+    let mockBaseUrl = "";
+    const mockDriveServer = http.createServer((req, res) => {
+      const u = new URL(req.url || "/", "http://127.0.0.1");
+
+      if (req.method === "POST" && u.pathname === "/api/create-folder") {
+        let body = "";
+        req.on("data", (c) => (body += c));
+        req.on("end", () => {
+          const { parentId, name } = JSON.parse(body);
+          const id = nextMockId("FOLDER");
+          mockDriveItems.set(id, {
+            id,
+            parentId,
+            name,
+            isFolder: true,
+            mimeType: "application/vnd.google-apps.folder",
+            tabs: [],
+          });
+          res.end(JSON.stringify({ id }));
+        });
+        return;
+      }
+
+      if (req.method === "POST" && u.pathname === "/api/create-sheet") {
+        let body = "";
+        req.on("data", (c) => (body += c));
+        req.on("end", () => {
+          const { parentId } = JSON.parse(body);
+          const id = nextMockId("GSHEET");
+          mockDriveItems.set(id, {
+            id,
+            parentId,
+            name: "Bảng tính không có tiêu đề",
+            isFolder: false,
+            mimeType: "application/vnd.google-apps.spreadsheet",
+            tabs: ["Trang tính1"],
+          });
+          res.end(JSON.stringify({ id, editUrl: `${mockBaseUrl}/spreadsheets/d/${id}/edit` }));
+        });
+        return;
+      }
+
+      if (req.method === "POST" && u.pathname === "/api/import-replace") {
+        const sheetId = u.searchParams.get("sheetId") || "";
+        const chunks: Buffer[] = [];
+        req.on("data", (c) => chunks.push(c));
+        req.on("end", () => {
+          const buf = Buffer.concat(chunks);
+          const it = mockDriveItems.get(sheetId);
+          if (it) {
+            it.tabs = extractTabsFromBuf(buf);
+            it.workbookBuffer = buf;
+          }
+          res.end(JSON.stringify({ tabs: it?.tabs || [] }));
+        });
+        return;
+      }
+
+      if (req.method === "POST" && u.pathname === "/api/rename") {
+        let body = "";
+        req.on("data", (c) => (body += c));
+        req.on("end", () => {
+          const { sheetId, title } = JSON.parse(body);
+          const it = mockDriveItems.get(sheetId);
+          if (it) it.name = title;
+          res.end(JSON.stringify({ ok: true }));
+        });
+        return;
+      }
+
+      if (req.method === "POST" && u.pathname === "/api/trash") {
+        let body = "";
+        req.on("data", (c) => (body += c));
+        req.on("end", () => {
+          const { id } = JSON.parse(body);
+          const it = mockDriveItems.get(id);
+          if (it) it.trashed = true;
+          res.end(JSON.stringify({ ok: true }));
+        });
+        return;
+      }
+
+      if (req.method === "GET" && u.pathname === "/picker-frame") {
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+        res.end(`<!DOCTYPE html><html><body>
+          <div role="tab" id="tab-upload">Tải lên</div>
+          <input type="file" id="picker-file" />
+          <script>
+            document.getElementById('picker-file').addEventListener('change', async (e) => {
+              const f = e.target.files[0];
+              if (!f) return;
+              const buf = await f.arrayBuffer();
+              window.parent.postMessage({ type: 'UPLOADED', bytes: Array.from(new Uint8Array(buf)) }, '*');
+            });
+          </script>
+        </body></html>`);
+        return;
+      }
+
+      const editMatch = u.pathname.match(/^\/spreadsheets\/d\/([^/]+)\/edit$/);
+      if (req.method === "GET" && editMatch) {
+        const sheetId = editMatch[1];
+        const it = mockDriveItems.get(sheetId);
+        if (!it) {
+          res.writeHead(404).end();
+          return;
+        }
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+        res.end(`<!DOCTYPE html><html><body>
+          <div id="docs-title-widget"><input class="docs-title-input" value="${it.name}" /></div>
+          <div id="docs-titlebar-badges"></div>
+          <span id="docs-save-indicator-badge" aria-label="Đã lưu vào Drive">Đã lưu vào Drive</span>
+          <div id="docs-file-menu">Tệp</div>
+          <div id="file-menu" style="display:none;"><div class="goog-menuitem" role="menuitem" id="mi-import">Nhập</div></div>
+          <div id="picker-host"></div>
+          <div id="import-dlg" role="dialog" style="display:none;">
+            <div>Vị trí nhập</div>
+            <select><option value="new">Tạo mới</option><option value="replace">Thay thế bảng tính</option></select>
+            <button type="button" name="import-data" id="btn-import">Nhập dữ liệu</button>
+          </div>
+          <div id="tabs">${it.tabs.map((t) => `<span class="docs-sheet-tab-name">${t}</span>`).join("")}</div>
+          <script>
+            const sheetId = ${JSON.stringify(sheetId)};
+            let uploaded = null;
+            const titleEl = document.querySelector('.docs-title-input');
+            titleEl.addEventListener('keydown', async (e) => {
+              if (e.key === 'Enter') {
+                await fetch('/api/rename', { method: 'POST', body: JSON.stringify({ sheetId, title: titleEl.value }) });
+              }
+            });
+            document.getElementById('docs-file-menu').onclick = () => {
+              document.getElementById('file-menu').style.display = 'block';
+            };
+            document.getElementById('mi-import').onclick = () => {
+              document.getElementById('file-menu').style.display = 'none';
+              document.getElementById('picker-host').innerHTML = '<iframe src="/picker-frame"></iframe>';
+            };
+            window.addEventListener('message', (ev) => {
+              if (ev.data?.type === 'UPLOADED') {
+                uploaded = new Uint8Array(ev.data.bytes);
+                document.getElementById('import-dlg').style.display = 'block';
+              }
+            });
+            document.getElementById('btn-import').onclick = async () => {
+              const r = await fetch('/api/import-replace?sheetId=' + sheetId, { method: 'POST', body: uploaded });
+              const d = await r.json();
+              document.getElementById('import-dlg').style.display = 'none';
+              document.getElementById('tabs').innerHTML = d.tabs.map(t => '<span class="docs-sheet-tab-name">' + t + '</span>').join('');
+            };
+          </script>
+        </body></html>`);
+        return;
+      }
+
+      const folderMatch = u.pathname.match(/^\/drive\/folders\/([^/]+)$/);
+      if (req.method === "GET" && folderMatch) {
+        const folderId = folderMatch[1];
+        const children = Array.from(mockDriveItems.values()).filter(
+          (i) => i.parentId === folderId && !i.trashed
+        );
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+        res.end(`<!DOCTYPE html><html><body>
+          <button guidedhelpid="new_menu_button" aria-label="Mới" id="btn-new">+ Mới</button>
+          <div id="new-menu" role="menu" style="display:none;">
+            <div role="menuitem" id="mi-folder">Thư mục mới</div>
+            <div role="menuitem" id="mi-gs" style="width:200px;height:28px;">Google Trang tính</div>
+          </div>
+          <div id="dlg-new-folder" role="dialog" style="display:none;">
+            <div>Thư mục mới</div>
+            <input type="text" id="inp-folder-name" />
+            <button type="button" id="btn-create-folder">Tạo</button>
+          </div>
+          <div id="dlg-shared" role="dialog" style="display:none;"><button type="button" id="btn-shared">Tạo và chia sẻ</button></div>
+          <main role="main">
+            ${children
+              .map((c) => {
+                const t = c.isFolder
+                  ? "folder"
+                  : c.mimeType === "application/vnd.google-apps.spreadsheet"
+                  ? "spreadsheet"
+                  : "file";
+                return `<div data-target="doc" data-id="${c.id}" data-type="${t}" data-mime-type="${c.mimeType}"><div data-id="${c.id}">${c.name}</div></div>`;
+              })
+              .join("")}
+          </main>
+          <script>
+            const folderId = ${JSON.stringify(folderId)};
+            document.getElementById('btn-new').onclick = () => document.getElementById('new-menu').style.display = 'block';
+            document.getElementById('mi-folder').onclick = () => {
+              document.getElementById('new-menu').style.display = 'none';
+              document.getElementById('dlg-new-folder').style.display = 'block';
+            };
+            document.getElementById('btn-create-folder').onclick = async () => {
+              const name = document.getElementById('inp-folder-name').value;
+              await fetch('/api/create-folder', { method: 'POST', body: JSON.stringify({ parentId: folderId, name }) });
+              document.getElementById('dlg-new-folder').style.display = 'none';
+              location.reload();
+            };
+            document.getElementById('mi-gs').onclick = () => {
+              document.getElementById('new-menu').style.display = 'none';
+              document.getElementById('dlg-shared').style.display = 'block';
+            };
+            document.getElementById('btn-shared').onclick = async () => {
+              document.getElementById('dlg-shared').style.display = 'none';
+              const r = await fetch('/api/create-sheet', { method: 'POST', body: JSON.stringify({ parentId: folderId }) });
+              window.open((await r.json()).editUrl, '_blank');
+            };
+          </script>
+        </body></html>`);
+        return;
+      }
+
+      res.writeHead(404).end();
+    });
+
+    await new Promise<void>((resolve) => mockDriveServer.listen(0, "127.0.0.1", () => resolve()));
+    const mockAddr = mockDriveServer.address();
+    mockBaseUrl = `http://127.0.0.1:${typeof mockAddr === "object" && mockAddr ? mockAddr.port : 0}`;
+    const drivePage = await browser.newPage();
+    try {
+      const localRobDir = path.join(tempDir, "ROB_ARMA13_LOCAL");
+      fs.mkdirSync(localRobDir, { recursive: true });
+      const robSheetRes = await createAndUploadClassDemoSheetToDrive({
+        classId: robCls,
+        driveFolderUrl: DEFAULT_SPCK_DRIVE_FOLDER_URL,
+        localClassFolderPath: localRobDir,
+        enableAiPreScore: false,
+        _testHarness: { page: drivePage, driveBaseUrl: mockBaseUrl, sheetsBaseUrl: mockBaseUrl },
+      });
+      assert.strictEqual(robSheetRes.isNativeGoogleSheet, true);
+      assert.strictEqual(robSheetRes.mimeType, "application/vnd.google-apps.spreadsheet");
+      const createdClassFolder = Array.from(mockDriveItems.values()).find(
+        (i) =>
+          i.isFolder &&
+          i.name === robCls &&
+          i.parentId === ROBOTICS_SPCK_COURSE_FOLDER_MAP.ARMA
+      );
+      assert.ok(
+        createdClassFolder,
+        `Phải tự tạo thư mục ${robCls} trực tiếp trong 2. ARMA (${ROBOTICS_SPCK_COURSE_FOLDER_MAP.ARMA})`
+      );
+      const createdSheet = mockDriveItems.get(robSheetRes.driveFileId || "");
+      assert.ok(createdSheet && createdSheet.parentId === createdClassFolder.id);
+      assert.strictEqual(createdSheet.name, "Bảng chấm điểm buổi Demo Truy tìm bí ẩn Robot - Advanced");
+
+      // F01: fast-skip unchanged-digest must ALSO reject when driveFolderUrl mismatches course group
+      const f01StuDir = path.join(localRobDir, "F01_Student");
+      fs.mkdirSync(f01StuDir, { recursive: true });
+      fs.writeFileSync(path.join(f01StuDir, "demo.goblocks"), "goblocks", "utf8");
+      const f01Digest = computeStudentFolderContentDigest(f01StuDir).digest;
+      spckUploadRepo.upsert({
+        classId: robCls,
+        studentId: robStuId,
+        localFolderPath: f01StuDir,
+        matchScore: 1,
+        isConfirmedByTeacher: 1,
+        status: "DRAFT",
+        projectTitle: "SPCK F01",
+        thumbnailPath: "",
+        screenshotsJson: "[]",
+        attachmentsJson: "[]",
+        youtubeUrlsJson: "[]",
+        relatedLinksJson: JSON.stringify([
+          { name: "Drive", url: "https://drive.google.com/drive/folders/EXISTING_DRIVE_ID_12345" },
+        ]),
+        lastDriveUploadedDigest: f01Digest,
+        lastPreppedFolderDigest: f01Digest,
+      });
+      await assert.rejects(
+        () =>
+          SpckDriveUploader.uploadClassSpckToGoogleDrive({
+            classId: robCls,
+            studentIds: [robStuId],
+            driveFolderUrl: `https://drive.google.com/drive/folders/${ROBOTICS_PRE_GROUP_FOLDER_ID}`,
+          }),
+        /chưa khớp với thư mục khóa học/,
+        "F01: Không được fast-skip trả về thành công giả khi link Drive lệch nhóm khóa học"
+      );
+
+      // F03: Verify listDriveFilesInFolder handles Vietnamese old/new tone ("cuối khóa"/"cuối khoá") with em-dash DOM
+      const { listDriveFilesInFolder } = await import("../src/lib/playwright/spck-demo-sheet");
+      const probeFolderId = nextMockId("PROBEF03");
+      await drivePage.setContent(`
+        <html><body><main role="main">
+          <div data-target="doc" data-id="GS_OLD_1234567890123456" style="padding:8px;display:flex;gap:12px;"><span>PREA14-Bảng chấm điểm buổi cuối khoá</span><span>tôi</span><span>—</span></div>
+          <div data-target="doc" data-id="IQ_FILE_1234567890123456" style="padding:8px;display:flex;gap:12px;"><span>robot_arm.iqblocks</span><span>tôi</span><span>—</span></div>
+          <div data-target="doc" data-id="GO_FILE_1234567890123456" style="padding:8px;display:flex;gap:12px;"><span>vex_go.goblocks</span><span>tôi</span><span>—</span></div>
+        </main></body></html>
+      `);
+      const listedF03 = await listDriveFilesInFolder(drivePage, probeFolderId);
+      const sheetEntry = listedF03.find((i) => i.id === "GS_OLD_1234567890123456");
+      const iqEntry = listedF03.find((i) => i.id === "IQ_FILE_1234567890123456");
+      const goEntry = listedF03.find((i) => i.id === "GO_FILE_1234567890123456");
+      assert.ok(sheetEntry && sheetEntry.isGoogleSheet && !sheetEntry.isFolder);
+      assert.ok(iqEntry && !iqEntry.isFolder);
+      assert.ok(goEntry && !goEntry.isFolder);
+    } finally {
+      await drivePage.close().catch(() => {});
+      await new Promise<void>((resolve) => mockDriveServer.close(() => resolve()));
+    }
+    console.log("  -> PASS [ROB-TPL-05].");
+
+    console.log("\n✅ TOÀN BỘ 5/5 NHÓM KIỂM THỬ ROBOTICS DEMO TEMPLATES & DRIVE MAP v3.8.9 PASS 100%!");
   } finally {
     (LmsHelpers as any).ensureCleanDialogAndToast = origCleanToast;
     (LmsHelpers as any).ensureCommentsSlotReady = origEnsureSlot;

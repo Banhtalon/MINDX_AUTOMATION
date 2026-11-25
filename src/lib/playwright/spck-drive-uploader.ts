@@ -31,12 +31,34 @@ export const DEFAULT_SPCK_DRIVE_FOLDER_URL =
   "https://drive.google.com/drive/folders/1Xl8OZ7i1bOKf7000xbUBYLPcxVb2qvRD";
 
 export const CODING_SPCK_ROOT_FOLDER_ID = "1Xl8OZ7i1bOKf7000xbUBYLPcxVb2qvRD";
+export const UMBRELLA_SPCK_ROOT_FOLDER_ID = "1HM7clsAO31a_Dp6DLO02vVZf4yt4EMhG";
+export const ROBOTICS_SPCK_ROOT_FOLDER_ID = "1AEprw35bOnkwyzBFTbefZd55o3jhkNJz";
+export const ROBOTICS_PRE_GROUP_FOLDER_ID = "1JUNLIepSmn3CnH4H_q9x4t4C2UcYyUPD";
+export const ROBOTICS_ARM_GROUP_FOLDER_ID = "1WdyZP3dC-RFvo55RRaCkDbs7oQKpQyJQ";
+export const ROBOTICS_SEMI_GROUP_FOLDER_ID = "1v8wCz27OsrML0NVyS3Fm-Bhgk8hcAjX8";
 
 const MAX_DRIVE_TREE_DEPTH = 5;
 const MAX_DRIVE_FILE_SIZE_BYTES = 150 * 1024 * 1024;
 
 /**
+ * Known course subfolders inside ROBOTICS - SPCK (1AEprw35bOnkwyzBFTbefZd55o3jhkNJz)
+ */
+export const ROBOTICS_SPCK_COURSE_FOLDER_MAP: Record<string, string> = {
+  PREB: "1Ao85URmrFagoP9rjCkyKzAbNzM3h3BNv",
+  PREA: "1-dctk2OMHrzkDXhMDWlvv-co8CIutGlU",
+  PREI: "15-QrDqH29e2Za_81ectjQtDb8CW6XAkV",
+  ARMB: "1XSrXqmxnnVAUcEF3LK5LLNZsaFYdwOwO",
+  ARMA: "1x83vLG3UmpzmE9XZHbs_J-_FqynMBJ4-",
+  ARMI: "1UPm7QOlW4pMYoKP28fXafyx0RMXBTskC",
+  SEMIB: "1Vme3gGCjnewL2Oicco6DxW5iAxxVI4MN",
+  SEMIA: "1drLxRbR4FsNdlY_LO4RgKlZwCHVFckFQ",
+  SEMII: "1WscY0xcX1CIDwS6YSmBB2F7SoKa4-6dy",
+  ROB: "1WiM0_kEQ1Lm4rf2vTysb90yQRzWhujs1",
+};
+
+/**
  * Known course subfolders inside CODING - SPCK (1Xl8OZ7i1bOKf7000xbUBYLPcxVb2qvRD)
+ * and ROBOTICS - SPCK (1AEprw35bOnkwyzBFTbefZd55o3jhkNJz).
  */
 export const CODING_SPCK_COURSE_FOLDER_MAP: Record<string, string> = {
   SB: "1eE1jxK8zapOyPoXQrp2ohTsusl6KjnRw",
@@ -58,7 +80,10 @@ export const CODING_SPCK_COURSE_FOLDER_MAP: Record<string, string> = {
   CSB: "1pPJLd2NLjF5j3MyR8uan5F_1BooUpRUq",
   CSA: "1mpmZ_7DQMR6NcvQJ6Mtp5OIbdmhtYpuh",
   CSI: "1LxUOSsLqXlLI5IHsedt6SZKuoT24-bsH",
+  ...ROBOTICS_SPCK_COURSE_FOLDER_MAP,
 };
+
+export const SPCK_COURSE_FOLDER_MAP = CODING_SPCK_COURSE_FOLDER_MAP;
 
 const IGNORED_SUBFOLDER_NAMES = new Set([
   "__pycache__",
@@ -145,7 +170,7 @@ export function isBotOrSystemIgnoredDriveFile(fileName: string): boolean {
   }
   if (
     /^_staging_gsheet_.*\.xlsx$/i.test(lower) ||
-    /^bảng chấm điểm buổi demo.*\.xlsx$/i.test(lower)
+    /(?:^|[-_\s])bảng chấm điểm buổi (?:demo|cuối kh(?:óa|oá)).*\.xlsx$/i.test(lower)
   ) {
     return true;
   }
@@ -296,6 +321,117 @@ export function resolveCourseSpecificFolderId(classId: string): string | null {
     return CODING_SPCK_COURSE_FOLDER_MAP[prefix];
   }
   return null;
+}
+
+const SPCK_ROOT_FOLDER_IDS = new Set([
+  CODING_SPCK_ROOT_FOLDER_ID,
+  UMBRELLA_SPCK_ROOT_FOLDER_ID,
+  ROBOTICS_SPCK_ROOT_FOLDER_ID,
+]);
+
+export function isSpckRootFolderId(folderId: string): boolean {
+  const cleanId = String(folderId || "").trim();
+  return Boolean(cleanId && SPCK_ROOT_FOLDER_IDS.has(cleanId));
+}
+
+export function resolveTargetCourseDriveFolderId(
+  inputFolderId: string,
+  classId: string
+): { isAutoRoutedRootOrGroup: boolean; courseFolderId: string | null } {
+  const cleanId = String(inputFolderId || "").trim();
+  const prefix = detectCoursePrefixFromClassId(classId);
+
+  if (isSpckRootFolderId(cleanId)) {
+    return {
+      isAutoRoutedRootOrGroup: true,
+      courseFolderId: resolveCourseSpecificFolderId(classId),
+    };
+  }
+
+  if (cleanId === ROBOTICS_PRE_GROUP_FOLDER_ID) {
+    return {
+      isAutoRoutedRootOrGroup: true,
+      courseFolderId:
+        prefix && (prefix === "PREB" || prefix === "PREA" || prefix === "PREI")
+          ? ROBOTICS_SPCK_COURSE_FOLDER_MAP[prefix]
+          : null,
+    };
+  }
+  if (cleanId === ROBOTICS_ARM_GROUP_FOLDER_ID) {
+    return {
+      isAutoRoutedRootOrGroup: true,
+      courseFolderId:
+        prefix && (prefix === "ARMB" || prefix === "ARMA" || prefix === "ARMI")
+          ? ROBOTICS_SPCK_COURSE_FOLDER_MAP[prefix]
+          : null,
+    };
+  }
+  if (cleanId === ROBOTICS_SEMI_GROUP_FOLDER_ID) {
+    return {
+      isAutoRoutedRootOrGroup: true,
+      courseFolderId:
+        prefix && (prefix === "SEMIB" || prefix === "SEMIA" || prefix === "SEMII")
+          ? ROBOTICS_SPCK_COURSE_FOLDER_MAP[prefix]
+          : null,
+    };
+  }
+
+  return {
+    isAutoRoutedRootOrGroup: false,
+    courseFolderId: cleanId || null,
+  };
+}
+
+export function resolveDriveUploadParentOrThrow(
+  inputFolderId: string,
+  normalizedClassId: string
+): {
+  coursePrefix: string | null;
+  courseOrParentFolderId: string;
+  needsFallbackRoboticsFolderCreation: boolean;
+} {
+  const coursePrefix = detectCoursePrefixFromClassId(normalizedClassId);
+  if (
+    isCourseExemptFromSpck(normalizedClassId) &&
+    isSpckRootFolderId(inputFolderId)
+  ) {
+    throw new Error(
+      `Khóa ${coursePrefix || normalizedClassId} (${normalizedClassId}) không thi cuối khóa nên được miễn nộp SPCK & Google Drive.`
+    );
+  }
+
+  const isRoboticsClass = Boolean(
+    coursePrefix && ROBOTICS_COURSE_PREFIXES.has(coursePrefix)
+  );
+  const routedDrive = resolveTargetCourseDriveFolderId(
+    inputFolderId,
+    normalizedClassId
+  );
+  let courseOrParentFolderId = routedDrive.courseFolderId || inputFolderId;
+  let needsFallbackRoboticsFolderCreation = false;
+
+  if (routedDrive.isAutoRoutedRootOrGroup) {
+    if (routedDrive.courseFolderId) {
+      courseOrParentFolderId = routedDrive.courseFolderId;
+    } else if (
+      isRoboticsClass &&
+      coursePrefix &&
+      isSpckRootFolderId(inputFolderId) &&
+      !ROBOTICS_SPCK_COURSE_FOLDER_MAP[coursePrefix]
+    ) {
+      needsFallbackRoboticsFolderCreation = true;
+    } else {
+      throw new Error(
+        `Khóa học '${coursePrefix || normalizedClassId}' của lớp '${normalizedClassId}' chưa khớp với thư mục khóa học cấu hình sẵn trong thư mục gốc/nhóm Google Drive đã chọn. Vui lòng giữ link gốc mặc định hoặc dán trực tiếp link thư mục Google Drive riêng của lớp.`
+      );
+    }
+  }
+
+  return {
+    coursePrefix,
+    courseOrParentFolderId,
+    needsFallbackRoboticsFolderCreation,
+  };
 }
 
 function normalizeFolderTitle(name: string): string {
@@ -453,7 +589,7 @@ async function listDriveItemsOnPage(
           const dataType = (el.getAttribute("data-type") || "").toLowerCase();
           const ariaLabel = (el.getAttribute("aria-label") || "").toLowerCase();
           const knownFileExtRe =
-            /\.(?:zip|rar|7z|tar|gz|py|ipynb|ui|qss|html?|css|js|mjs|ts|tsx|jsx|json|xml|csv|txt|md|sql|png|jpe?g|webp|gif|svg|bmp|ico|avif|mp4|webm|mov|avi|mkv|mp3|wav|ogg|m4a|pdf|pptx?|docx?|xlsx?|sb3|yyz|yyp|gml|gmx|apk|rbxl|exe)$/i;
+            /\.(?:zip|rar|7z|tar|gz|py|ipynb|ui|qss|html?|css|js|mjs|ts|tsx|jsx|json|xml|csv|txt|md|sql|png|jpe?g|webp|gif|svg|bmp|ico|avif|mp4|webm|mov|avi|mkv|mp3|wav|ogg|m4a|pdf|pptx?|docx?|xlsx?|sb3|yyz|yyp|gml|gmx|apk|rbxl|exe|iqblocks|goblocks|ev3|llsp3|vexblocks|v5blocks)$/i;
           const isExplicitFolderLabel =
             dataType === "folder" ||
             ariaLabel.includes("google drive folder") ||
@@ -2611,15 +2747,7 @@ export class SpckDriveUploader {
 
     const rawDriveUrl = (options.driveFolderUrl || DEFAULT_SPCK_DRIVE_FOLDER_URL).trim();
     const inputFolderId = extractDriveFolderId(rawDriveUrl);
-    const coursePrefix = detectCoursePrefixFromClassId(normalizedClassId);
-    if (
-      isCourseExemptFromSpck(normalizedClassId) &&
-      inputFolderId === CODING_SPCK_ROOT_FOLDER_ID
-    ) {
-      throw new Error(
-        `Khóa ${coursePrefix || normalizedClassId} (${normalizedClassId}) không thi cuối khóa nên được miễn nộp SPCK & Google Drive.`
-      );
-    }
+    resolveDriveUploadParentOrThrow(inputFolderId, normalizedClassId);
 
     if (options.forceReupload !== true) {
       const allClassRecords = spckUploadRepo.findByClass(normalizedClassId);
@@ -2704,16 +2832,12 @@ export class SpckDriveUploader {
     const normalizedClassId = options.classId.trim().toUpperCase();
     const rawDriveUrl = (options.driveFolderUrl || DEFAULT_SPCK_DRIVE_FOLDER_URL).trim();
     const inputFolderId = extractDriveFolderId(rawDriveUrl);
-    const coursePrefix = detectCoursePrefixFromClassId(normalizedClassId);
-
-    if (
-      isCourseExemptFromSpck(normalizedClassId) &&
-      inputFolderId === CODING_SPCK_ROOT_FOLDER_ID
-    ) {
-      throw new Error(
-        `Khóa ${coursePrefix || normalizedClassId} (${normalizedClassId}) không thi cuối khóa nên được miễn nộp SPCK & Google Drive.`
-      );
-    }
+    const {
+      coursePrefix,
+      courseOrParentFolderId: resolvedCourseOrParentFolderId,
+      needsFallbackRoboticsFolderCreation,
+    } = resolveDriveUploadParentOrThrow(inputFolderId, normalizedClassId);
+    let courseOrParentFolderId = resolvedCourseOrParentFolderId;
 
     const allClassRecords = spckUploadRepo.findByClass(normalizedClassId);
     const targetRecords =
@@ -2754,29 +2878,15 @@ export class SpckDriveUploader {
       registerNameCandidate(r.studentId, s?.fullName || r.studentId);
     }
 
-    // If teacher gave the root CODING - SPCK folder (1Xl8OZ7i1bOKf7000xbUBYLPcxVb2qvRD),
-    // strictly resolve the course subfolder (e.g. 2. PTA for VT-C4K-PTA12, or find/create course folder for Robotics)
-    const isRoboticsClass = Boolean(coursePrefix && ROBOTICS_COURSE_PREFIXES.has(coursePrefix));
-    let courseOrParentFolderId = inputFolderId;
-    if (inputFolderId === CODING_SPCK_ROOT_FOLDER_ID) {
-      if (coursePrefix && CODING_SPCK_COURSE_FOLDER_MAP[coursePrefix]) {
-        courseOrParentFolderId = CODING_SPCK_COURSE_FOLDER_MAP[coursePrefix];
-      } else if (!isRoboticsClass) {
-        throw new Error(
-          `Khóa học '${coursePrefix || normalizedClassId}' của lớp '${normalizedClassId}' chưa có thư mục khóa học cấu hình sẵn trong thư mục gốc Google Drive. Vui lòng dán trực tiếp link thư mục Google Drive riêng của lớp hoặc khóa học (hệ thống không tự chọn thư mục của môn khác để thay thế).`
-        );
-      }
-    }
-
     let classDriveFolderId = courseOrParentFolderId;
     try {
       const page = await BrowserManager.getInstance().getPage();
 
-      if (inputFolderId === CODING_SPCK_ROOT_FOLDER_ID && isRoboticsClass && coursePrefix) {
-        await ensureGoogleDriveFolderReadyAndAuthenticated(page, CODING_SPCK_ROOT_FOLDER_ID);
+      if (needsFallbackRoboticsFolderCreation && coursePrefix) {
+        await ensureGoogleDriveFolderReadyAndAuthenticated(page, ROBOTICS_SPCK_ROOT_FOLDER_ID);
         courseOrParentFolderId = await findOrCreateDriveSubfolder(
           page,
-          CODING_SPCK_ROOT_FOLDER_ID,
+          ROBOTICS_SPCK_ROOT_FOLDER_ID,
           coursePrefix
         );
       }

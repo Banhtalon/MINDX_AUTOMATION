@@ -91,7 +91,8 @@ export async function POST(req: Request) {
     const isClientError =
       message.includes("được miễn") ||
       message.includes("Thiếu mã lớp") ||
-      message.includes("không hợp lệ");
+      message.includes("không hợp lệ") ||
+      message.includes("chưa khớp với thư mục khóa học");
     return NextResponse.json(
       {
         success: false,
