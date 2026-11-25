@@ -119,12 +119,12 @@ async function runTests() {
 
   try {
     // =========================================================================
-    // [CSI-01]: Verify all 14 templates + CSI.xlsx weights & XML integrity
+    // [CSI-01]: Verify all 24 templates + CSI.xlsx weights & XML integrity
     // =========================================================================
-    console.log("\n[CSI-01] Kiểm tra 14/14 file mẫu bảng điểm và cấu trúc CSI.xlsx...");
+    console.log("\n[CSI-01] Kiểm tra 24/24 file mẫu bảng điểm và cấu trúc CSI.xlsx...");
     const tplDir = path.resolve(process.cwd(), "data", "config", "demo-sheet-templates");
     const tplFiles = fs.readdirSync(tplDir).filter((f) => f.endsWith(".xlsx")).sort();
-    assert.strictEqual(tplFiles.length, 14, `Phải có đủ 14 mẫu khóa học, tìm thấy ${tplFiles.length}`);
+    assert.strictEqual(tplFiles.length, 24, `Phải có đủ 24 mẫu khóa học (14 Coding + 10 Robotics), tìm thấy ${tplFiles.length}`);
 
     for (const file of tplFiles) {
       const zip = new AdmZip(path.join(tplDir, file));

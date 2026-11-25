@@ -478,15 +478,15 @@ async function main() {
     console.log("  -> PASS [V365-01].");
 
     // =========================================================================
-    // V365-02: Tô vàng CHỈ vùng B..E các dòng GK chấm trên 14/14 mẫu khóa học
+    // V365-02: Tô vàng CHỈ vùng B..E các dòng GK chấm trên 24/24 mẫu khóa học (14 Coding + 10 Robotics)
     // =========================================================================
-    console.log("\n[V365-02] Kiểm tra tô vàng đúng vùng B..E trên toàn bộ 14/14 mẫu khóa học...");
+    console.log("\n[V365-02] Kiểm tra tô vàng đúng vùng B..E trên toàn bộ 24/24 mẫu khóa học...");
     const tplDir = path.resolve(process.cwd(), "data/config/demo-sheet-templates");
     const tplFiles = fs
       .readdirSync(tplDir)
       .filter((f) => f.endsWith(".xlsx"))
       .sort();
-    assert.strictEqual(tplFiles.length, 14, `Kỳ vọng 14 file mẫu, thấy ${tplFiles.length}`);
+    assert.strictEqual(tplFiles.length, 24, `Kỳ vọng 24 file mẫu (14 Coding + 10 Robotics), thấy ${tplFiles.length}`);
 
     for (const fileName of tplFiles) {
       const course = fileName.replace(/\.xlsx$/i, "");
@@ -616,7 +616,7 @@ async function main() {
         label: `${course}-NoAI`,
       });
     }
-    console.log(`  -> PASS [V365-02] (14/14 mẫu khóa học sạch 100%).`);
+    console.log(`  -> PASS [V365-02] (24/24 mẫu khóa học sạch 100%).`);
 
     // =========================================================================
     // V365-03: Công thức <f>, dropdown, ô thưa khuyết <c>, nhánh synthetic & đọc điểm ngược

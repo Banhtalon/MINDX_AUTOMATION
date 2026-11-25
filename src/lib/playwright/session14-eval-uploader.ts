@@ -233,7 +233,7 @@ function verifyServerEvaluationPayload(
 
   // 3. Check 5 Demo Scores
   const demoKeys = isRobotics
-    ? (["creativity", "communication", "problemSolving", "computerSkills", "algorithm"] as const)
+    ? (["algorithm", "creativity", "communication", "computerSkills", "problemSolving"] as const)
     : (["algorithm", "creativity", "communication", "problemSolving", "computerSkills"] as const);
   const classDemoLimits = getSession14DemoLimitsForClass(classId);
   const demoMaxByIndex = demoKeys.map((k) => classDemoLimits[k]);
@@ -997,11 +997,11 @@ export class Session14EvalUploader {
 
     const demoValuesInDomOrder: number[] = isRobotics
       ? [
+          demoScores.algorithm,
           demoScores.creativity,
           demoScores.communication,
-          demoScores.problemSolving,
           demoScores.computerSkills,
-          demoScores.algorithm,
+          demoScores.problemSolving,
         ]
       : [
           demoScores.algorithm,
@@ -1013,11 +1013,11 @@ export class Session14EvalUploader {
 
     const demoLabelsInDomOrder: string[] = isRobotics
       ? [
-          "Tư duy sáng tạo",
-          "Kỹ năng giao tiếp, hợp tác",
-          "Giải quyết vấn đề",
-          "Kỹ năng sử dụng máy tính",
           "Tư duy máy tính, tư duy thuật toán",
+          "Tư duy sáng tạo mô hình",
+          "Kỹ năng giao tiếp, hợp tác",
+          "Kỹ năng sử dụng máy tính",
+          "Kỹ năng giải quyết vấn đề",
         ]
       : [
           "Tư duy máy tính, tư duy thuật toán",

@@ -61,6 +61,16 @@ export const COURSE_DEMO_TITLE_MAP: Record<string, string> = {
   CSB: "Bảng chấm điểm buổi demo Computer Scientist - Basic",
   CSA: "Bảng chấm điểm buổi demo Computer Scientist - Advanced",
   CSI: "Bảng chấm điểm buổi demo Computer Scientist - Intensive",
+  PREB: "Bảng chấm điểm buổi Demo Nhập môn Robotics - Basic",
+  PREA: "Bảng chấm điểm buổi Demo Nhập môn Robotics - Advanced",
+  PREI: "Bảng chấm điểm buổi Demo Nhập môn Robotics - Intensive",
+  ARMB: "Bảng chấm điểm buổi Demo Truy tìm bí ẩn Robot - Basic",
+  ARMA: "Bảng chấm điểm buổi Demo Truy tìm bí ẩn Robot - Advanced",
+  ARMI: "Bảng chấm điểm buổi Demo Truy tìm bí ẩn Robot - Intensive",
+  SEMIB: "Bảng chấm điểm buổi Demo Sáng tạo Robot - Basic",
+  SEMIA: "Bảng chấm điểm buổi Demo Sáng tạo Robot - Advanced",
+  SEMII: "Bảng chấm điểm buổi Demo Sáng tạo Robot - Intensive",
+  ROB: "Bảng chấm điểm buổi Demo Robotics",
 };
 
 export const DEMO_EXEMPT_COURSES = new Set<string>(["PTB", "CSB"]);

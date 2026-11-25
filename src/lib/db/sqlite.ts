@@ -4934,11 +4934,11 @@ export const SESSION14_DEMO_LIMITS: Record<keyof SpckSession14DemoScores, number
 };
 
 export const SESSION14_DEMO_LIMITS_ROBOTICS: Record<keyof SpckSession14DemoScores, number> = {
-  creativity: 1.25,
-  communication: 0.75,
-  problemSolving: 1.0,
+  algorithm: 1.25,
+  creativity: 0.75,
+  communication: 1.0,
   computerSkills: 0.5,
-  algorithm: 1.0,
+  problemSolving: 1.5,
 };
 
 export function isRoboticsClassCode(classId?: string | null): boolean {
@@ -5088,8 +5088,10 @@ export function calculateCompetencyAverageScore(
 
 export function parseSession14DemoScores(
   raw?: string | Partial<SpckSession14DemoScores> | null,
-  classId?: string | null
+  classId?: string | null,
+  options?: { allowLegacyRebalance?: boolean }
 ): SpckSession14DemoScores {
+  const allowLegacyRebalance = options?.allowLegacyRebalance !== false;
   let obj: any = {};
   if (typeof raw === "string" && raw.trim()) {
     try {
@@ -5105,10 +5107,19 @@ export function parseSession14DemoScores(
 
   let algoInput: unknown = obj.algorithm;
   let creaInput: unknown = obj.creativity;
+  let commInput: unknown = obj.communication;
+  let probInput: unknown = obj.problemSolving;
+  let compInput: unknown = obj.computerSkills;
+
   const rawAlgo = Number(obj.algorithm);
   const rawCrea = Number(obj.creativity);
+  const rawComm = Number(obj.communication);
+  const rawProb = Number(obj.problemSolving);
+  const rawComp = Number(obj.computerSkills);
+
   // Rebalance legacy CSI split (1.5 algorithm / 1.0 creativity) into MindX LMS CSI caps (2.0 / 0.5)
   if (
+    allowLegacyRebalance &&
     isCsiClassCode(classId) &&
     Number.isFinite(rawCrea) &&
     rawCrea > limits.creativity + 1e-6 &&
@@ -5121,6 +5132,48 @@ export function parseSession14DemoScores(
     creaInput = limits.creativity;
   }
 
+  // Rebalance legacy 2024 Robotics Excel split (1.5 / 1.0 / 0.5 / 1.0 / 1.0) into LMS Demo2024 | ROB (1.25 / 0.75 / 1.0 / 0.5 / 1.5)
+  if (allowLegacyRebalance && isRoboticsClassCode(classId)) {
+    const safeAlgo = Number.isFinite(rawAlgo) ? rawAlgo : 0;
+    const safeCrea = Number.isFinite(rawCrea) ? rawCrea : 0;
+    const safeComm = Number.isFinite(rawComm) ? rawComm : 0;
+    const safeComp = Number.isFinite(rawComp) ? rawComp : 0;
+    const safeProb = Number.isFinite(rawProb) ? rawProb : 0;
+    const inLegacyBounds =
+      safeAlgo >= 0 &&
+      safeAlgo <= 1.5 + 1e-6 &&
+      safeCrea >= 0 &&
+      safeCrea <= 1.0 + 1e-6 &&
+      safeComm >= 0 &&
+      safeComm <= 0.5 + 1e-6 &&
+      safeComp >= 0 &&
+      safeComp <= 1.0 + 1e-6 &&
+      safeProb >= 0 &&
+      safeProb <= 1.0 + 1e-6;
+    const hasLegacyExcess =
+      safeAlgo > limits.algorithm + 1e-6 ||
+      safeCrea > limits.creativity + 1e-6 ||
+      safeComp > limits.computerSkills + 1e-6;
+    if (inLegacyBounds && hasLegacyExcess) {
+      const overflowAlgo = Math.max(0, safeAlgo - limits.algorithm);
+      const overflowCrea = Math.max(0, safeCrea - limits.creativity);
+      const overflowComp = Math.max(0, safeComp - limits.computerSkills);
+      const totalOverflow = overflowAlgo + overflowCrea + overflowComp;
+
+      const roomProb = Math.max(0, limits.problemSolving - safeProb);
+      const addProb = Math.min(roomProb, totalOverflow);
+      const remOverflow = Math.max(0, totalOverflow - addProb);
+      const roomComm = Math.max(0, limits.communication - safeComm);
+      const addComm = Math.min(roomComm, remOverflow);
+
+      algoInput = Math.min(limits.algorithm, safeAlgo);
+      creaInput = Math.min(limits.creativity, safeCrea);
+      compInput = Math.min(limits.computerSkills, safeComp);
+      probInput = Math.min(limits.problemSolving, safeProb + addProb);
+      commInput = Math.min(limits.communication, safeComm + addComm);
+    }
+  }
+
   const normalizeScore = (val: unknown, max: number): number => {
     const n = Number(val);
     if (!Number.isFinite(n) || n < 0) return 0;
@@ -5131,9 +5184,9 @@ export function parseSession14DemoScores(
   return {
     algorithm: normalizeScore(algoInput, limits.algorithm),
     creativity: normalizeScore(creaInput, limits.creativity),
-    communication: normalizeScore(obj.communication, limits.communication),
-    problemSolving: normalizeScore(obj.problemSolving, limits.problemSolving),
-    computerSkills: normalizeScore(obj.computerSkills, limits.computerSkills),
+    communication: normalizeScore(commInput, limits.communication),
+    problemSolving: normalizeScore(probInput, limits.problemSolving),
+    computerSkills: normalizeScore(compInput, limits.computerSkills),
   };
 }
 
@@ -5389,13 +5442,46 @@ export const session14EvalRepo = {
         : current.competencySourceJson || "{}";
 
     const currentDemo = parseSession14DemoScores(current.demoScoresJson, normalizedClassId);
+    let allowRebalanceOnParam = true;
+    if (params.demoScores !== undefined && typeof params.demoScores === "object" && params.demoScores !== null) {
+      const paramKeys = Object.keys(params.demoScores).filter(
+        (k) => (params.demoScores as Record<string, unknown>)[k] !== undefined
+      );
+      if (paramKeys.length < 5) {
+        allowRebalanceOnParam = false;
+      } else {
+        let rawCurObj: Record<string, unknown> = {};
+        try {
+          rawCurObj = JSON.parse(current.demoScoresJson || "{}");
+        } catch {
+          rawCurObj = {};
+        }
+        const limits = getSession14DemoLimitsForClass(normalizedClassId);
+        const curHadNoExcess =
+          Number(rawCurObj.algorithm || 0) <= limits.algorithm + 1e-6 &&
+          Number(rawCurObj.creativity || 0) <= limits.creativity + 1e-6 &&
+          Number(rawCurObj.communication || 0) <= limits.communication + 1e-6 &&
+          Number(rawCurObj.problemSolving || 0) <= limits.problemSolving + 1e-6 &&
+          Number(rawCurObj.computerSkills || 0) <= limits.computerSkills + 1e-6;
+        const curSum =
+          Number(rawCurObj.algorithm || 0) +
+          Number(rawCurObj.creativity || 0) +
+          Number(rawCurObj.communication || 0) +
+          Number(rawCurObj.problemSolving || 0) +
+          Number(rawCurObj.computerSkills || 0);
+        if (curSum > 0 && curHadNoExcess) {
+          allowRebalanceOnParam = false;
+        }
+      }
+    }
     const nextDemo =
       params.demoScores !== undefined
         ? parseSession14DemoScores(
             typeof params.demoScores === "string"
               ? params.demoScores
               : { ...currentDemo, ...params.demoScores },
-            normalizedClassId
+            normalizedClassId,
+            { allowLegacyRebalance: allowRebalanceOnParam }
           )
         : currentDemo;
     const nextDemoJson = JSON.stringify(nextDemo);

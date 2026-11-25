@@ -1061,11 +1061,11 @@ async function runTests() {
         classId: robAwardCls,
         studentId: "ROB_S1",
         demoScores: {
-          creativity: 1.2,
-          communication: 0.7,
-          problemSolving: 0.95,
-          computerSkills: 0.45,
-          algorithm: 0.95,
+          algorithm: 1.0,
+          creativity: 0.75,
+          communication: 1.0,
+          computerSkills: 0.5,
+          problemSolving: 1.0,
         },
         demoRawTotalScore: 4.25,
       });
@@ -1080,8 +1080,8 @@ async function runTests() {
       assert.strictEqual(genRobJson.success, true);
       assert.strictEqual(
         session14EvalRepo.findOne(robAwardCls, "ROB_S1")?.awardRanking,
-        "Giải Nhất (4.25/4.5 điểm)",
-        "Lớp Robotics có ô Quill thứ 4 bắt buộc điền đúng hạng giải thưởng kèm điểm ('Giải Nhất (4.25/4.5 điểm)')!"
+        "Giải Nhất (4.25/5.0 điểm)",
+        "Lớp Robotics có ô Quill thứ 4 bắt buộc điền đúng hạng giải thưởng kèm điểm ('Giải Nhất (4.25/5.0 điểm)')!"
       );
 
       // 2d) Partial Class Approval & Chromium Slot 14 Summary + Student Upload (`id="13"` unchecked + `UpdateSlotComment`)

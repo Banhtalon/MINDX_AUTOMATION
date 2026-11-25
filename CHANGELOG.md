@@ -1,5 +1,18 @@
 # CHANGELOG — LỊCH SỬ PHIÊN BẢN DỰ ÁN MINDX AUTOMATION BOT
 
+## [v3.8.9 - Bước 0] - 2026-11-25
+> **Hoàn Thiện Bộ 10 Mẫu Bảng Chấm Điểm Demo Robotics (`PREB..PREI`, `ARMB..ARMI`, `SEMIB..SEMII`, `ROB`) & Đồng Bộ Thang Điểm `Demo2024 | ROB` `5.0` Trên MindX LMS — Đạt `Gemini 4 Neon (XHigh)` Round 2 `VERDICT: GO` (`6/6` phát hiện `F01`–`F06` CLOSED, `0` lỗi mở, `100%` SHA-256 `data/` bảo toàn).**
+
+### 🚀 Đã thêm & Thay đổi (`v3.8.9` Bước 0)
+- **Sinh trọn bộ 10 mẫu `.xlsx` chuẩn OOXML cho từng khóa Robotics (`scripts/generate-robotics-demo-templates.ts`, `data/config/demo-sheet-templates/*.xlsx`):**
+  - Tổng hợp từ barem gốc `PRE` / `ARM` / `SEMI` của MindX và giáo trình chi tiết `data/config/courses_syllabus.json` để tạo 10 file mẫu riêng biệt cho `PREB`, `PREA`, `PREI` (VEX GO Nhập môn Robotics), `ARMB`, `ARMA`, `ARMI` (VEX GO Truy tìm bí ẩn Robot), `SEMIB`, `SEMIA`, `SEMII` (VEX IQ Sáng tạo Robot), và `ROB` (mẫu tổng quát dùng cho `KIND-ROB4*` và mã `ROB` chung), nâng tổng kho mẫu chính thức lên **`24/24` khóa** (`14` Coding + `10` Robotics).
+  - Khớp chuẩn `100%` thang điểm thực tế `Demo2024 | ROB` trên MindX LMS (`1.25 / 0.75 / 1.0 / 0.5 / 1.5 = 5.0`), giữ bảng phân bổ điểm ở sheet 2, phân loại dòng `R15` (*Ý tưởng được khán giả yêu thích / phụ huynh bình chọn*) thành `LIVE_JUDGE_ONLY` để tô vàng giám khảo chấm, và loại bỏ ô trùng `"BGK1"` ở `A26` (`F02`).
+- **Đồng bộ thang điểm `5.0` `Demo2024 | ROB`, thứ tự DOM LMS, AI & đọc/cân bằng bảng điểm (`sqlite.ts`, `spck-ui-helpers.ts`, `session14-eval-uploader.ts`, `spck-demo-sheet.ts`, `spck-demo-sheet-scorer.ts`, `spck-demo-score-reader.ts`):**
+  - Cập nhật `SESSION14_DEMO_LIMITS_ROBOTICS` & `DEMO_SCORE_ITEMS_ROBOTICS_UI` sang chuẩn `1.25 / 0.75 / 1.0 / 0.5 / 1.5 = 5.0` (tự động nhận diện Robotics theo `classId` trong `getDemoScoreItemsForClassUi` — `F06`), đồng bộ `demoKeys` / `demoValuesInDomOrder` / `demoLabelsInDomOrder` trong `Session14EvalUploader` và cập nhật `COURSE_DEMO_TITLE_MAP` cho 10 mã Robotics.
+  - Sửa lỗi đọc chéo nhóm 4 (`computerSkills`) & nhóm 5 (`problemSolving`) trên mẫu Robotics bằng ánh xạ ngữ nghĩa theo nhãn cột A trong `extractDemoScoresFromWorksheet`, sửa `maxCritEndRow`/`noteStartRow` đọc đủ nhận xét BGK tại `B27`/`C27` (`F01`), sửa `nhanXetRow = 25` (`F03`), bỏ qua tab placeholder `"Barem"`/`"Mẫu"` (`Nguyễn Văn A`), sửa lỗi lặp `"khóa khóa"` & phần cứng `ARM`/`SEMI` ở lời chúc Buổi 14 (`F05`), và bổ sung cân bằng không mất điểm cho bảng Robotics mẫu cũ (`1.5/1.0/0.5/1.0/1.0`) kèm khóa an toàn `allowLegacyRebalance = false` khi sửa tay từng phần / lưu form UI trên bản ghi mới (`F04`).
+- **Kiểm thử & Nghiệm thu Độc lập (`scripts/test-robotics-demo-templates-v389.ts`, `docs/audits/v389/NEON_XHIGH_V389_TEMPLATES_REVIEW.md`):**
+  - `Gemini 4 Neon (XHigh)` Round 2 đạt **`VERDICT: GO`**, đóng sạch `6/6` phát hiện `F01`–`F06`; toàn bộ `tsc --noEmit`, `test-robotics-demo-templates-v389.ts` (`ROB-TPL-01..04`), `test-demo-sheet-yellow-v365.ts` (`24/24` mẫu), `test-csi-demo-limits-v382.ts` (`24/24` mẫu), `test-demo-sheet-resilience-v364.ts`, `test-spck-v360.ts`, `test-session14-v290.ts` và `R2-PROBE-01..06` đều PASS (`exit 0`); `100%` SHA-256 dữ liệu thật `data/` được bảo toàn.
+
 ## [v3.8.8] - 2026-11-24
 > **Đợt 1 Kế Hoạch Tăng Tốc — Chuyển Toàn Bộ Luồng Đọc/Quét MindX LMS Sang Node.js HTTP/GraphQL Thuần (`LmsHttpClient`), Cơ Chế Dự Phòng 2 Lớp (`MINDX_LMS_API_READ=false` + Playwright Fallback), Tách Biệt Phiên Token `TEACHER`/`ADMIN`, Vá 2 Kẽ Hở Ẩn Danh SĐT/Email PII & Đạt `Gemini 4 Neon (XHigh)` Round 3 `VERDICT: GO` (`9/9` phát hiện `F01`–`F08` & `R2-F01` CLOSED).**
 

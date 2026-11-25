@@ -67,11 +67,11 @@ export const DEMO_SCORE_ITEMS_ROBOTICS_UI: Array<{
   label: string;
   max: number;
 }> = [
-  { key: "creativity", label: "Tư duy sáng tạo", max: 1.25 },
-  { key: "communication", label: "Kỹ năng giao tiếp, hợp tác", max: 0.75 },
-  { key: "problemSolving", label: "Giải quyết vấn đề", max: 1.0 },
+  { key: "algorithm", label: "Tư duy máy tính, tư duy thuật toán", max: 1.25 },
+  { key: "creativity", label: "Tư duy sáng tạo mô hình", max: 0.75 },
+  { key: "communication", label: "Kỹ năng giao tiếp, hợp tác", max: 1.0 },
   { key: "computerSkills", label: "Kỹ năng sử dụng máy tính", max: 0.5 },
-  { key: "algorithm", label: "Tư duy máy tính, thuật toán", max: 1.0 },
+  { key: "problemSolving", label: "Kỹ năng giải quyết vấn đề", max: 1.5 },
 ];
 
 export function extractSession14TagLabelsFromConfig(rawCategories: unknown): string[] {
@@ -714,16 +714,23 @@ export function buildRowFromDbRecord(
 
 export function getDemoScoreItemsForClassUi(
   classId?: string | null,
-  isRobotics = false
+  isRobotics?: boolean
 ): Array<{
   key: keyof Session14DemoScoresUI;
   label: string;
   max: number;
 }> {
-  if (isRobotics) {
+  const s = String(classId || "").trim().toUpperCase();
+  const detectedRobotics =
+    isRobotics === true ||
+    (isRobotics !== false &&
+      s !== "" &&
+      /(?:^|[-_\s])(ROB|ROBO|ROBOT|ROBOTICS|PREB|PREA|PREI|ARM|ARMA|ARMB|ARMI|SEM|SEMA|SEMB|SEMI|EV3|VEX|SPIKE|WEDO|ARDUINO)[A-Z0-9]*\b/i.test(
+        s
+      ));
+  if (detectedRobotics) {
     return DEMO_SCORE_ITEMS_ROBOTICS_UI;
   }
-  const s = String(classId || "").trim().toUpperCase();
   const match = s.match(
     /(?:^|[-_\s])(GMB|GMA|GMI|PTA|PTI|PSI|PTB|SB|SA|SI|GB|GA|GI|JSB|JSA|JSI|CSB|CSA|CSI)(?:\d|$|[-_\s])/i
   );

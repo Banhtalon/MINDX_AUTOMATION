@@ -162,7 +162,7 @@ export function classifyDemoCriterion(
 
   const trimmed = String(content || "").trim();
   if (
-    /thuyết\s*trình|trình\s*bày\s*(?:tự\s*tin|dự\s*án|rõ\s*ràng|mạch\s*lạc|trôi\s*chảy|tính\s*ứng\s*dụng)|trả\s*lời\s*(?:được\s*)?(?:các\s*)?(?:câu\s*hỏi|vấn\s*đề)|giám\s*khảo|BGK\s*(?:đặt\s*ra|nhận\s*xét|góp\s*ý)|nhận\s*góp\s*ý|tương\s*tác\s*với|lắng\s*nghe|tác\s*phong|ánh\s*mắt|giọng\s*nói|phản\s*biện|giao\s*tiếp\s*với/i.test(
+    /thuyết\s*trình|trình\s*bày\s*(?:tự\s*tin|dự\s*án|rõ\s*ràng|mạch\s*lạc|trôi\s*chảy|tính\s*ứng\s*dụng)|trả\s*lời\s*(?:được\s*)?(?:các\s*)?(?:câu\s*hỏi|vấn\s*đề)|giám\s*khảo|BGK\s*(?:đặt\s*ra|nhận\s*xét|góp\s*ý)|nhận\s*(?:chia\s*sẻ\s*(?:và\s*)?)?góp\s*ý|tương\s*tác\s*với|lắng\s*nghe|tác\s*phong|ánh\s*mắt|giọng\s*nói|phản\s*biện|giao\s*tiếp\s*với|khán\s*giả\s*yêu\s*thích|phụ\s*huynh\s*bình\s*chọn|bình\s*chọn\s*của\s*khán\s*giả/i.test(
       trimmed
     )
   ) {
@@ -282,7 +282,10 @@ export function extractDemoTemplateRubricStructure(
     }
   });
 
-  const maxCritRow = criteriaRows.reduce((mx, row) => Math.max(mx, row.rowNumber), 27);
+  const maxCritRow =
+    criteriaRows.length > 0
+      ? criteriaRows.reduce((mx, row) => Math.max(mx, row.rowNumber), 0)
+      : 27;
   let nhanXetRow = maxCritRow + 1;
   for (let r = maxCritRow + 1; r <= maxCritRow + 5; r++) {
     const aText = String(cells.get(`A${r}`)?.stringValue || "").trim();

@@ -472,45 +472,55 @@ function resolveNextCourseWishLabel(classId: string): string {
   const profile = detectSpckCourseProfile(classId);
   switch (profile.coursePrefix) {
     case "SB":
-      return "Scratch Advance (SA)";
+      return "khóa Scratch Advance (SA)";
     case "SA":
-      return "Scratch Intensive (SI)";
+      return "khóa Scratch Intensive (SI)";
     case "SI":
-      return "GameMaker Basic (GB)";
+      return "khóa GameMaker Basic (GB)";
     case "GB":
-      return "GameMaker Advance (GA)";
+      return "khóa GameMaker Advance (GA)";
     case "GA":
-      return "GameMaker Intensive (GI)";
+      return "khóa GameMaker Intensive (GI)";
     case "GI":
-      return "Python Basic (PTB) / Web Developer Basic (JSB)";
+      return "khóa Python Basic (PTB) / Web Developer Basic (JSB)";
     case "PTB":
-      return "Python App Advance (PTA)";
+      return "khóa Python App Advance (PTA)";
     case "PTA":
-      return "Python App Intensive (PTI)";
+      return "khóa Python App Intensive (PTI)";
     case "PTI":
-      return "Web Developer Basic (JSB) / Computer Science Basic (CSB)";
+      return "khóa Web Developer Basic (JSB) / Computer Science Basic (CSB)";
     case "JSB":
-      return "Web Developer Advance (JSA)";
+      return "khóa Web Developer Advance (JSA)";
     case "JSA":
-      return "Web Developer Intensive (JSI)";
+      return "khóa Web Developer Intensive (JSI)";
     case "JSI":
       return "các dự án Công nghệ & Khoa học máy tính chuyên sâu tiếp theo";
     case "CSB":
-      return "Computer Science Advance (CSA)";
+      return "khóa Computer Science Advance (CSA)";
     case "CSA":
-      return "Computer Science Intensive (CSI)";
+      return "khóa Computer Science Intensive (CSI)";
     case "CSI":
       return "các dự án AI & Khoa học dữ liệu chuyên sâu tiếp theo";
     case "PREB":
-      return "Robotics VEX GO Advance (PREA)";
+      return "khóa Nhập môn Robotics VEX GO Advance (PREA)";
     case "PREA":
-      return "Robotics VEX GO Intensive (PREI)";
+      return "khóa Nhập môn Robotics VEX GO Intensive (PREI)";
     case "PREI":
-      return "Robotics VEX IQ Basic (ARMB)";
+      return "khóa Truy tìm bí ẩn Robot VEX GO Basic (ARMB)";
     case "ARMB":
-      return "Robotics VEX IQ Advance (ARMA)";
+      return "khóa Truy tìm bí ẩn Robot VEX GO Advance (ARMA)";
     case "ARMA":
-      return "Robotics VEX IQ Intensive (ARMI)";
+      return "khóa Truy tìm bí ẩn Robot VEX GO Intensive (ARMI)";
+    case "ARMI":
+      return "khóa Sáng tạo Robot VEX IQ Basic (SEMIB)";
+    case "SEMIB":
+      return "khóa Sáng tạo Robot VEX IQ Advance (SEMIA)";
+    case "SEMIA":
+      return "khóa Sáng tạo Robot VEX IQ Intensive (SEMII)";
+    case "SEMII":
+      return "các dự án Robotics VEX IQ & Tự động hóa chuyên sâu tiếp theo";
+    case "ROB":
+      return "khóa Robotics nâng cao tiếp theo tại MindX";
     default:
       return "khóa học nâng cao tiếp theo tại MindX";
   }
@@ -663,7 +673,7 @@ export function buildClassSession14SummaryDraft(
   }
 
   bodyLines.push(
-    `Trường học Công nghệ MindX chúc các con tiếp tục giữ vững đam mê sáng tạo và chinh phục khóa ${resolveNextCourseWishLabel(normalizedClassId)} sắp tới!`
+    `Trường học Công nghệ MindX chúc các con tiếp tục giữ vững đam mê sáng tạo và chinh phục ${resolveNextCourseWishLabel(normalizedClassId)} sắp tới!`
   );
 
   const bodyText = bodyLines.join("\n");
@@ -932,11 +942,11 @@ function parseCategorySpansFromSheetXml(
   }
   return isRoboticsClassCode(classId)
     ? [
-        [8, 13],
-        [14, 17],
+        [8, 12],
+        [13, 15],
+        [16, 17],
         [18, 19],
-        [20, 22],
-        [23, 27],
+        [20, 23],
       ]
     : [
         [8, 13],
@@ -1021,22 +1031,68 @@ export function extractDemoScoresFromWorksheet(
   const limits = getSession14DemoLimitsForClass(classId);
   const categorySpans = parseCategorySpansFromSheetXml(sheetXml, classId);
 
-  const algoWeightSum = sumWeightColC(cells, categorySpans[0][0], categorySpans[0][1]);
-  const creaWeightSum = sumWeightColC(cells, categorySpans[1][0], categorySpans[1][1]);
+  type DemoScoreKey = keyof SpckSession14DemoScores;
+  const resolveSpanKey = (startRow: number, fallbackIdx: number): DemoScoreKey => {
+    const label = normalizeVietnameseName(cells.get(`A${startRow}`)?.stringValue || "");
+    if (label) {
+      if (label.includes("thuat toan") || label.includes("tu duy may tinh")) return "algorithm";
+      if (label.includes("sang tao")) return "creativity";
+      if (label.includes("giao tiep") || label.includes("hop tac")) return "communication";
+      if (label.includes("su dung may tinh")) return "computerSkills";
+      if (label.includes("giai quyet van de")) return "problemSolving";
+    }
+    const fallbackOrder: DemoScoreKey[] = isRoboticsClassCode(classId)
+      ? ["algorithm", "creativity", "communication", "computerSkills", "problemSolving"]
+      : ["algorithm", "creativity", "communication", "problemSolving", "computerSkills"];
+    return fallbackOrder[fallbackIdx] || "algorithm";
+  };
+
+  const spanByKey: Record<DemoScoreKey, [number, number]> = {
+    algorithm: categorySpans[0],
+    creativity: categorySpans[1],
+    communication: categorySpans[2],
+    problemSolving: categorySpans[3],
+    computerSkills: categorySpans[4],
+  };
+  categorySpans.slice(0, 5).forEach((span, idx) => {
+    spanByKey[resolveSpanKey(span[0], idx)] = span;
+  });
+
+  const algoWeightSum = sumWeightColC(cells, spanByKey.algorithm[0], spanByKey.algorithm[1]);
+  const creaWeightSum = sumWeightColC(cells, spanByKey.creativity[0], spanByKey.creativity[1]);
+  const commWeightSum = sumWeightColC(cells, spanByKey.communication[0], spanByKey.communication[1]);
+  const compWeightSum = sumWeightColC(cells, spanByKey.computerSkills[0], spanByKey.computerSkills[1]);
+  const probWeightSum = sumWeightColC(cells, spanByKey.problemSolving[0], spanByKey.problemSolving[1]);
+
   const isLegacyCsiSplitSheet =
     isCsiClassCode(classId) &&
     Math.abs(algoWeightSum - 1.5) < 0.05 &&
     Math.abs(creaWeightSum - 1.0) < 0.05;
-  const algoReadLimit = isLegacyCsiSplitSheet ? 1.5 : limits.algorithm;
-  const creaReadLimit = isLegacyCsiSplitSheet ? 1.0 : limits.creativity;
 
-  const eAlgo = sumCellRange(cells, "E", categorySpans[0][0], categorySpans[0][1]);
-  const eCreative = sumCellRange(cells, "E", categorySpans[1][0], categorySpans[1][1]);
-  const eComm = sumCellRange(cells, "E", categorySpans[2][0], categorySpans[2][1]);
-  const eProb = sumCellRange(cells, "E", categorySpans[3][0], categorySpans[3][1]);
-  const eComp = sumCellRange(cells, "E", categorySpans[4][0], categorySpans[4][1]);
+  const isLegacyRoboticsSplitSheet =
+    isRoboticsClassCode(classId) &&
+    Math.abs(algoWeightSum - 1.5) < 0.05 &&
+    Math.abs(creaWeightSum - 1.0) < 0.05 &&
+    Math.abs(commWeightSum - 0.5) < 0.05 &&
+    Math.abs(compWeightSum - 1.0) < 0.05 &&
+    Math.abs(probWeightSum - 1.0) < 0.05;
 
-  const maxCritEndRow = Math.max(...categorySpans.map((s) => s[1]), 27);
+  const algoReadLimit =
+    isLegacyCsiSplitSheet || isLegacyRoboticsSplitSheet ? 1.5 : limits.algorithm;
+  const creaReadLimit =
+    isLegacyCsiSplitSheet || isLegacyRoboticsSplitSheet ? 1.0 : limits.creativity;
+  const commReadLimit = isLegacyRoboticsSplitSheet ? 0.5 : limits.communication;
+  const compReadLimit = isLegacyRoboticsSplitSheet ? 1.0 : limits.computerSkills;
+  const probReadLimit = isLegacyRoboticsSplitSheet ? 1.0 : limits.problemSolving;
+
+  const eAlgo = sumCellRange(cells, "E", spanByKey.algorithm[0], spanByKey.algorithm[1]);
+  const eCreative = sumCellRange(cells, "E", spanByKey.creativity[0], spanByKey.creativity[1]);
+  const eComm = sumCellRange(cells, "E", spanByKey.communication[0], spanByKey.communication[1]);
+  const eProb = sumCellRange(cells, "E", spanByKey.problemSolving[0], spanByKey.problemSolving[1]);
+  const eComp = sumCellRange(cells, "E", spanByKey.computerSkills[0], spanByKey.computerSkills[1]);
+
+  const maxCritEndRow =
+    categorySpans.length > 0 ? Math.max(...categorySpans.map((s) => s[1])) : 27;
 
   // Also check LOs summary rows (rows 32..36: A32..A36 labels, B32..B36 values)
   const b32 = cells.get("B32");
@@ -1077,10 +1133,10 @@ export function extractDemoScoresFromWorksheet(
   };
 
   const resAlgo = resolveScore(b32, eAlgo, algoReadLimit);
-  const resComp = resolveScore(b33, eComp, limits.computerSkills);
+  const resComp = resolveScore(b33, eComp, compReadLimit);
   const resCreative = resolveScore(b34, eCreative, creaReadLimit);
-  const resProb = resolveScore(b35, eProb, limits.problemSolving);
-  const resComm = resolveScore(b36, eComm, limits.communication);
+  const resProb = resolveScore(b35, eProb, probReadLimit);
+  const resComm = resolveScore(b36, eComm, commReadLimit);
 
   const hasCriterionScore = {
     algorithm: resAlgo.hasScore,
@@ -1122,7 +1178,7 @@ export function extractDemoScoresFromWorksheet(
           criterionValid.algorithm = false;
         }
       } else if (label.includes("su dung may tinh")) {
-        if (isWithinMax(bCell.numericValue, limits.computerSkills)) {
+        if (isWithinMax(bCell.numericValue, compReadLimit)) {
           rawDemo.computerSkills = bCell.numericValue;
           hasCriterionScore.computerSkills = true;
           criterionValid.computerSkills = true;
@@ -1140,7 +1196,7 @@ export function extractDemoScoresFromWorksheet(
           criterionValid.creativity = false;
         }
       } else if (label.includes("giai quyet van de")) {
-        if (isWithinMax(bCell.numericValue, limits.problemSolving)) {
+        if (isWithinMax(bCell.numericValue, probReadLimit)) {
           rawDemo.problemSolving = bCell.numericValue;
           hasCriterionScore.problemSolving = true;
           criterionValid.problemSolving = true;
@@ -1149,7 +1205,7 @@ export function extractDemoScoresFromWorksheet(
           criterionValid.problemSolving = false;
         }
       } else if (label.includes("giao tiep") || label.includes("hop tac")) {
-        if (isWithinMax(bCell.numericValue, limits.communication)) {
+        if (isWithinMax(bCell.numericValue, commReadLimit)) {
           rawDemo.communication = bCell.numericValue;
           hasCriterionScore.communication = true;
           criterionValid.communication = true;
@@ -1184,6 +1240,36 @@ export function extractDemoScoresFromWorksheet(
     rawDemo.creativity = limits.creativity;
   }
 
+  if (isLegacyRoboticsSplitSheet) {
+    const safeAlgo = typeof rawDemo.algorithm === "number" ? rawDemo.algorithm : 0;
+    const safeCrea = typeof rawDemo.creativity === "number" ? rawDemo.creativity : 0;
+    const safeComp = typeof rawDemo.computerSkills === "number" ? rawDemo.computerSkills : 0;
+    const safeProb = typeof rawDemo.problemSolving === "number" ? rawDemo.problemSolving : 0;
+    const safeComm = typeof rawDemo.communication === "number" ? rawDemo.communication : 0;
+    const overflowAlgo = Math.max(0, safeAlgo - limits.algorithm);
+    const overflowCrea = Math.max(0, safeCrea - limits.creativity);
+    const overflowComp = Math.max(0, safeComp - limits.computerSkills);
+    const totalOverflow = overflowAlgo + overflowCrea + overflowComp;
+    if (totalOverflow > 1e-6) {
+      const roomProb = Math.max(0, limits.problemSolving - safeProb);
+      const addProb = Math.min(roomProb, totalOverflow);
+      const remOverflow = Math.max(0, totalOverflow - addProb);
+      const roomComm = Math.max(0, limits.communication - safeComm);
+      const addComm = Math.min(roomComm, remOverflow);
+      rawDemo.algorithm = Math.min(limits.algorithm, safeAlgo);
+      rawDemo.creativity = Math.min(limits.creativity, safeCrea);
+      rawDemo.computerSkills = Math.min(limits.computerSkills, safeComp);
+      rawDemo.problemSolving = Math.min(
+        limits.problemSolving,
+        Math.round((safeProb + addProb) * 10000) / 10000
+      );
+      rawDemo.communication = Math.min(
+        limits.communication,
+        Math.round((safeComm + addComm) * 10000) / 10000
+      );
+    }
+  }
+
   const scoredCriteriaCount = (
     Object.keys(hasCriterionScore) as Array<keyof typeof hasCriterionScore>
   ).filter((k) => hasCriterionScore[k] && criterionValid[k]).length;
@@ -1210,8 +1296,8 @@ export function extractDemoScoresFromWorksheet(
 
   // Scan judge comments in Columns B..F below criteria rows (strictly ignoring Column G AI hints!)
   const bgkNotes: string[] = [];
-  const noteStartRow = Math.max(25, maxCritEndRow + 1);
-  const noteEndRow = Math.max(33, maxCritEndRow + 5);
+  const noteStartRow = Math.max(24, maxCritEndRow + 1);
+  const noteEndRow = Math.max(33, maxCritEndRow + 6);
   for (let r = noteStartRow; r <= noteEndRow; r++) {
     const aNorm = normalizeVietnameseName(cells.get(`A${r}`)?.stringValue || "");
     if (
@@ -1665,6 +1751,13 @@ export function parseDemoWorkbookBufferForClass(
     const extracted = extractDemoScoresFromWorksheet(cells, normalizedClassId, wsXml);
 
     const normCellB2 = normalizeVietnameseName(extracted.studentNameInCellB2);
+    if (
+      (normTab === "barem" || normTab === "mau") &&
+      (normCellB2 === "" || normCellB2 === "nguyen van a") &&
+      !students.some((stu) => normalizeVietnameseName(stu.fullName) === "nguyen van a")
+    ) {
+      continue;
+    }
     const b2Candidates = findCandidatesByName(normCellB2);
     const tabCandidates = findCandidatesByName(normTab);
 
