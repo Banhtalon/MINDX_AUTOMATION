@@ -44,6 +44,9 @@ import { normalizeVietnameseName } from "../utils/vietnamese-match";
 import {
   fetchAdminTeachingOverviewPages,
   fetchTeachingClassDetailsBatch,
+  isCompletedOrCancelledMakeupStatus,
+  isMakeupCancelledStatus,
+  isMakeupCompletedStatus,
   isTeachingCheckLateOrMissing,
   type AdminTeachingHttpFetcherDeps,
   type TeachingCheckNhanXetEntry,
@@ -63,6 +66,7 @@ import type {
   AdminSpckAuditSummary,
   AdminSpckSlotAuditItem,
   AdminSpckTeachingTasksSummary,
+  AdminWeeklyCheckpointAlert,
   AdminWeeklyOpsSummary,
 } from "./admin-types";
 
@@ -882,6 +886,7 @@ export interface ComputeAdminClassAuditsInput {
   teachingCheckRows?: TeachingCheckNhanXetEntry[];
   teachingDetail?: TeachingPerClassDetail | null;
   teachingMakeupRows?: TeachingHocBuEntry[];
+  teachingAllMakeupRows?: TeachingHocBuEntry[];
   nowMs?: number;
 }
 
@@ -1162,7 +1167,7 @@ export function computeAdminClassAudits(
   const hasSummaryAndHomework =
     Boolean(evalSlot) &&
     hasSummaryText &&
-    (evaluatedSessionNumber >= 14 || hasHomeworkText);
+    (blockType === "ROBOTICS" || evaluatedSessionNumber >= 14 || hasHomeworkText);
 
   const checkRows = input.teachingCheckRows || [];
   const matchedCheckRow = findMatchingCheckNhanXetRow(
@@ -1185,56 +1190,221 @@ export function computeAdminClassAudits(
   const checkIssueNote = matchedCheckRow?.issueDescription || "";
 
   // Checkpoint Alert (Coding: Buổi 5, 9, 14; Robotics: Buổi 4, 8, 14)
+  const spckExemptCourse = isAdminSpckExemptClass(classCode, courseName);
   const cp1Session = blockType === "ROBOTICS" ? 4 : 5;
   const cp2Session = blockType === "ROBOTICS" ? 8 : 9;
   let checkpointAlert: AdminWeeklyOpsSummary["checkpointAlert"] = null;
 
-  const checkMilestoneMissingCount = (milestone: "CP1" | "CP2" | "DEMO"): number => {
-    if (!computedReportCard) return 0;
-    let missing = 0;
-    for (const s of computedReportCard.students) {
-      if (!s.isActive) continue;
-      if (milestone === "CP1") {
-        if (s.cp1.theory.value === null && s.cp1.practice.value === null) missing++;
-      } else if (milestone === "CP2") {
-        if (s.cp2.theory.value === null && s.cp2.practice.value === null) missing++;
-      } else {
-        if (s.final.product.value === null) missing++;
-      }
+  const findSlotForSessionNumber = (targetSession: number): any | null => {
+    const targetIdx = targetSession - 1;
+    const byIndex = slots.find(
+      (sl) =>
+        sl?.index !== null &&
+        sl?.index !== undefined &&
+        sl?.index !== "" &&
+        Number.isInteger(Number(sl.index)) &&
+        Number(sl.index) === targetIdx
+    );
+    if (byIndex) return byIndex;
+    if (targetIdx >= 0 && targetIdx < slots.length) {
+      const cand = slots[targetIdx];
+      const hasExplicitOtherIdx =
+        cand?.index !== null &&
+        cand?.index !== undefined &&
+        cand?.index !== "" &&
+        Number.isInteger(Number(cand.index)) &&
+        Number(cand.index) !== targetIdx;
+      if (!hasExplicitOtherIdx) return cand;
     }
-    return missing;
+    return null;
   };
 
-  if (currentSessionNumber >= 14) {
-    const m = checkMilestoneMissingCount("DEMO");
-    if (m > 0) {
-      checkpointAlert = {
-        milestone: "DEMO",
-        sessionNumber: 14,
-        missingScoreCount: m,
-        message: `Buổi 14 (DEMO): còn ${m} HV chưa có điểm sản phẩm cuối khóa`,
-      };
+  const doesMakeupEntryMatchMilestone = (
+    entry: TeachingHocBuEntry,
+    targetSession: number,
+    milestone: "CP1" | "CP2" | "DEMO"
+  ): boolean => {
+    const rawLabel = String(entry?.sessionLabel || "").trim();
+    if (!rawLabel) return false;
+    // Strip calendar dates (e.g., 04/11/2026, 2026-11-04) so day numbers never masquerade as sessions
+    const label = rawLabel
+      .replace(/\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/g, " ")
+      .replace(/\b\d{1,2}[-/]\d{1,2}(?:[-/]\d{2,4})?\b/g, " ")
+      .trim();
+    const sessionMatches = Array.from(
+      label.matchAll(
+        /(?:^|[^\p{L}\p{N}_])(?:buổi|bài|session|slot|b)\s*[:#]?\s*0*(\d{1,2})(?!\d)/giu
+      )
+    );
+    if (sessionMatches.length > 0) {
+      return sessionMatches.some((m) => Number(m[1]) === targetSession);
     }
+    const bareNum = label.match(/^0*(\d{1,2})$/);
+    if (bareNum) {
+      return Number(bareNum[1]) === targetSession;
+    }
+    if (milestone === "CP1") return /\b(?:cp\s*1|check[-\s]?point\s*1)\b/i.test(label);
+    if (milestone === "CP2") return /\b(?:cp\s*2|check[-\s]?point\s*2)\b/i.test(label);
+    return /\b(?:demo|spck|cuối\s*khóa|cuối\s*khoá)\b/i.test(label);
+  };
+
+  const formatCompactStudentNames = (names: string[], maxShow: number = 3): string =>
+    names.length <= maxShow
+      ? names.join(", ")
+      : `${names.slice(0, maxShow).join(", ")} +${names.length - maxShow} HV`;
+
+  const buildCheckpointAlertForMilestone = (
+    milestone: "CP1" | "CP2" | "DEMO",
+    targetSession: number
+  ): AdminWeeklyCheckpointAlert | null => {
+    if (!computedReportCard) return null;
+    const milestoneSlot = findSlotForSessionNumber(targetSession);
+    const attById = new Map<string, any>();
+    const attByNorm = new Map<string, any>();
+    for (const att of milestoneSlot?.studentAttendance || []) {
+      const sid = String(att?.student?.id || att?.studentId || "").trim();
+      const sName = String(att?.student?.fullName || "").trim();
+      if (sid) attById.set(sid, att);
+      if (sName) attByNorm.set(normalizeVietnameseName(sName), att);
+    }
+
+    const activeNameCounts = new Map<string, number>();
+    for (const st of computedReportCard.students) {
+      if (!st.isActive) continue;
+      const n = normalizeVietnameseName(st.fullName);
+      if (n) activeNameCounts.set(n, (activeNameCounts.get(n) || 0) + 1);
+    }
+
+    const rawSnapshotById = new Map(
+      (reportCardSnapshot?.students || []).map((st) => [st.studentId, st.stageScores])
+    );
+    const makeupRows = Array.isArray(input.teachingAllMakeupRows)
+      ? input.teachingAllMakeupRows
+      : Array.isArray(input.teachingMakeupRows)
+      ? input.teachingMakeupRows
+      : [];
+
+    const missingStudentNames: string[] = [];
+    const absentMakeupStudentNames: string[] = [];
+
+    for (const s of computedReportCard.students) {
+      if (!s.isActive) continue;
+      const normName = normalizeVietnameseName(s.fullName);
+      const isUniqueName = Boolean(normName) && (activeNameCounts.get(normName) || 0) === 1;
+      const att = attById.get(s.studentId) || (isUniqueName ? attByNorm.get(normName) : undefined);
+
+      let isMissingScore = false;
+      let stageNote = "";
+      const rawStage = rawSnapshotById.get(s.studentId);
+
+      if (milestone === "CP1") {
+        isMissingScore = s.cp1.theory.value === null && s.cp1.practice.value === null;
+        stageNote = s.cp1.competency.note || rawStage?.cp1Note || "";
+      } else if (milestone === "CP2") {
+        isMissingScore = s.cp2.theory.value === null && s.cp2.practice.value === null;
+        stageNote = s.cp2.competency.note || rawStage?.cp2Note || "";
+      } else {
+        const hasDirectSlotDemoScore =
+          Array.isArray(att?.commentByAreas) &&
+          att.commentByAreas.some(
+            (a: any) =>
+              (String(a?.type || "").toUpperCase() === "DEMO" || Boolean(a?.courseProcessDemoId)) &&
+              ((typeof a?.grade === "number" && a.grade > 0) ||
+                (Array.isArray(a?.demoQuestions) &&
+                  a.demoQuestions.some((q: any) => Number(q?.score) > 0)))
+          );
+        isMissingScore = s.final.product.value === null && !hasDirectSlotDemoScore;
+        stageNote = s.final.competency.note || rawStage?.finalNote || "";
+      }
+
+      if (!isMissingScore) continue;
+
+      const attTag = normalizeAttendanceTag(att?.status);
+      const matchingMakeup = isUniqueName
+        ? makeupRows.filter(
+            (m) =>
+              normalizeVietnameseName(m.studentName) === normName &&
+              doesMakeupEntryMatchMilestone(m, targetSession, milestone)
+          )
+        : [];
+      const hasCompletedMakeup = matchingMakeup.some((m) =>
+        isMakeupCompletedStatus(m.status, m.attendanceStatus)
+      );
+      const hasPendingMakeup = matchingMakeup.some(
+        (m) =>
+          !isMakeupCompletedStatus(m.status, m.attendanceStatus) &&
+          !isMakeupCancelledStatus(m.status)
+      );
+
+      const notePlain = stripHtmlPlain(att?.comment) || stripHtmlPlain(stageNote);
+      const hasExplicitShortAbsenceNote =
+        notePlain.length > 0 &&
+        notePlain.length <= 45 &&
+        /^(?:bạn\s*|hv\s*|học\s*viên\s*|con\s*|bé\s*)?(?:nghỉ|vắng)(?:\s+học|\s+phép|\s+có\s+phép|\s+ốm|\s+bệnh|\s+chờ\s+học\s+bù|\s*!|\s*\.|$)/i.test(
+          notePlain
+        );
+
+      if (hasCompletedMakeup) {
+        missingStudentNames.push(s.fullName);
+      } else if (
+        attTag === "ABSENT" ||
+        hasPendingMakeup ||
+        (attTag !== "PRESENT" && hasExplicitShortAbsenceNote)
+      ) {
+        absentMakeupStudentNames.push(s.fullName);
+      } else {
+        missingStudentNames.push(s.fullName);
+      }
+    }
+
+    if (missingStudentNames.length === 0 && absentMakeupStudentNames.length === 0) {
+      return null;
+    }
+
+    const prefix = `Buổi ${targetSession} (${milestone})`;
+    const missingLabel =
+      milestone === "CP1"
+        ? "thiếu điểm Check-point 1"
+        : milestone === "CP2"
+        ? "thiếu điểm Check-point 2"
+        : "chưa có điểm sản phẩm cuối khóa";
+    const missingPhrase =
+      missingStudentNames.length > 0
+        ? `còn ${missingStudentNames.length} HV ${missingLabel} (${formatCompactStudentNames(
+            missingStudentNames
+          )})`
+        : "";
+    const makeupPhrase =
+      absentMakeupStudentNames.length > 0
+        ? `${absentMakeupStudentNames.length} HV nghỉ chờ học bù (${formatCompactStudentNames(
+            absentMakeupStudentNames
+          )})`
+        : "";
+
+    const isMakeupPendingOnly = missingStudentNames.length === 0;
+    const message =
+      missingPhrase && makeupPhrase
+        ? `${prefix}: ${missingPhrase} • ${makeupPhrase}`
+        : `${prefix}: ${missingPhrase || makeupPhrase}`;
+
+    return {
+      milestone,
+      sessionNumber: targetSession,
+      missingScoreCount: missingStudentNames.length,
+      missingStudentNames,
+      absentMakeupCount: absentMakeupStudentNames.length,
+      absentMakeupStudentNames,
+      isMakeupPendingOnly,
+      message,
+    };
+  };
+
+  if (!spckExemptCourse && currentSessionNumber >= 14) {
+    checkpointAlert = buildCheckpointAlertForMilestone("DEMO", 14);
   } else if (currentSessionNumber >= cp2Session) {
-    const m = checkMilestoneMissingCount("CP2");
-    if (m > 0) {
-      checkpointAlert = {
-        milestone: "CP2",
-        sessionNumber: cp2Session,
-        missingScoreCount: m,
-        message: `Buổi ${cp2Session} (CP2): còn ${m} HV thiếu điểm Check-point 2`,
-      };
-    }
+    checkpointAlert = buildCheckpointAlertForMilestone("CP2", cp2Session);
   } else if (currentSessionNumber >= cp1Session) {
-    const m = checkMilestoneMissingCount("CP1");
-    if (m > 0) {
-      checkpointAlert = {
-        milestone: "CP1",
-        sessionNumber: cp1Session,
-        missingScoreCount: m,
-        message: `Buổi ${cp1Session} (CP1): còn ${m} HV thiếu điểm Check-point 1`,
-      };
-    }
+    checkpointAlert = buildCheckpointAlertForMilestone("CP1", cp1Session);
   }
 
   const weeklyOps: AdminWeeklyOpsSummary = {
@@ -1496,7 +1666,6 @@ export function computeAdminClassAudits(
   // TAB 3: SPCK Audit (Buổi 12, 13, 14 & Finished)
   // ========================================================
   const isFinishedClass = /finish|completed|done/i.test(status);
-  const spckExemptCourse = isAdminSpckExemptClass(classCode, courseName);
   const spckApplicable = !spckExemptCourse && (currentSessionNumber >= 12 || isFinishedClass);
   const works = Array.isArray(input.studentWorks)
     ? input.studentWorks.filter(
@@ -1931,8 +2100,11 @@ export function computeAdminClassAudits(
     }
   }
 
-  // 5e. Makeup debt (hocbu.php)
+  // 5e. Makeup debt (hocbu.php) — strictly pending/active debts only
   for (const m of input.teachingMakeupRows || []) {
+    if (isCompletedOrCancelledMakeupStatus(m.status, m.attendanceStatus)) {
+      continue;
+    }
     earlyWarnings.push({
       type: "MAKEUP_DEBT",
       severity: "MEDIUM",
@@ -2211,7 +2383,11 @@ export function buildAdminOverviewResponse(options?: {
       c.weeklyOps.missingCommentStudentNames.length > 0 ||
       c.weeklyOps.isZaloLateOrMissing ||
       c.weeklyOps.isLmsLateOrMissing ||
-      Boolean(c.weeklyOps.checkpointAlert);
+      Boolean(
+        c.weeklyOps.checkpointAlert &&
+          !c.weeklyOps.checkpointAlert.isMakeupPendingOnly &&
+          c.weeklyOps.checkpointAlert.missingScoreCount > 0
+      );
     if (hasWeeklyIssue) weeklyOpsIssuesCount++;
 
     if (c.blockType === "CODING" && c.btvnSummary.applicable) {
@@ -5913,6 +6089,10 @@ export async function scanAdminCenterClasses(options?: {
             teachingCheckRows: teachingOverview.checkRowsByClass.get(meta.classCode) || [],
             teachingDetail: tDetail,
             teachingMakeupRows: teachingOverview.makeupByClass.get(meta.classCode) || [],
+            teachingAllMakeupRows:
+              teachingOverview.allMakeupByClass?.get(meta.classCode) ||
+              teachingOverview.makeupByClass.get(meta.classCode) ||
+              [],
           });
 
           // Option B: Hide/prune unstarted or PENDING classes (0 occurred sessions) from /admin-center (including single-class scan)

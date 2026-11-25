@@ -24,7 +24,11 @@ export function hasWeeklyOpsIssue(cls: AdminClassRowDto): boolean {
     w.missingCommentStudentNames.length > 0 ||
     w.isZaloLateOrMissing ||
     w.isLmsLateOrMissing ||
-    Boolean(w.checkpointAlert)
+    Boolean(
+      w.checkpointAlert &&
+        !w.checkpointAlert.isMakeupPendingOnly &&
+        w.checkpointAlert.missingScoreCount > 0
+    )
   );
 }
 

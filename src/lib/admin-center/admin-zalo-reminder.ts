@@ -14,7 +14,11 @@ function formatMissingItemsForClass(cls: AdminClassRowDto): string[] {
   }
 
   if (cls.weeklyOps.evaluatedSessionNumber > 0 && !cls.weeklyOps.hasSummaryAndHomework) {
-    items.push(`Thiếu tổng kết/BTVN buổi ${sn}`);
+    items.push(
+      cls.blockType === "ROBOTICS"
+        ? `Thiếu tổng kết buổi ${sn}`
+        : `Thiếu tổng kết/BTVN buổi ${sn}`
+    );
   }
 
   if (cls.weeklyOps.missingCommentStudentNames.length > 0) {
@@ -30,7 +34,11 @@ function formatMissingItemsForClass(cls: AdminClassRowDto): string[] {
     items.push(`LMS NX: ${cls.weeklyOps.lmsCheckStatus || "Chưa đạt/Muộn"}`);
   }
 
-  if (cls.weeklyOps.checkpointAlert) {
+  if (
+    cls.weeklyOps.checkpointAlert &&
+    !cls.weeklyOps.checkpointAlert.isMakeupPendingOnly &&
+    cls.weeklyOps.checkpointAlert.missingScoreCount > 0
+  ) {
     items.push(cls.weeklyOps.checkpointAlert.message);
   }
 
@@ -141,7 +149,11 @@ export function buildInstructorSummariesAndCampusText(
         cls.weeklyOps.missingCommentStudentNames.length > 0 ||
         cls.weeklyOps.isZaloLateOrMissing ||
         cls.weeklyOps.isLmsLateOrMissing ||
-        Boolean(cls.weeklyOps.checkpointAlert);
+        Boolean(
+          cls.weeklyOps.checkpointAlert &&
+            !cls.weeklyOps.checkpointAlert.isMakeupPendingOnly &&
+            cls.weeklyOps.checkpointAlert.missingScoreCount > 0
+        );
 
       if (hasWeeklyIssue) missingWeeklyOpsClasses++;
       if (cls.blockType === "CODING") {

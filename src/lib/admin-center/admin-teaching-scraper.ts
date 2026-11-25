@@ -53,6 +53,7 @@ export interface TeachingHocBuEntry {
   sessionLabel: string;
   teacher: string;
   status: string;
+  attendanceStatus?: string;
 }
 
 export type TeachingEndpointKey =
@@ -81,6 +82,7 @@ export interface AdminTeachingCampusSnapshot {
   checkRowsByClass: Map<string, TeachingCheckNhanXetEntry[]>;
   makeupRows: TeachingHocBuEntry[];
   makeupByClass: Map<string, TeachingHocBuEntry[]>;
+  allMakeupByClass?: Map<string, TeachingHocBuEntry[]>;
   perClassDetails: Map<string, TeachingPerClassDetail>;
   fetchWarnings: string[];
 }
@@ -359,16 +361,27 @@ export function parseTeachingCheckNhanXetHtml(
 }
 
 /**
- * Returns true if a makeup entry is already completed, attended, or cancelled
- * (i.e. NOT pending makeup debt). Shared cleanly between HTML and DataTables JSON parsers.
+ * Returns true if a makeup entry was explicitly cancelled / declined.
  */
-export function isCompletedOrCancelledMakeupStatus(
+export function isMakeupCancelledStatus(status: string): boolean {
+  return /hủy|huỷ|cancel|từ\s*chối|không\s*học\s*bù/i.test(String(status || ""));
+}
+
+/**
+ * Returns true if a makeup entry has already been completed or attended
+ * (strictly excluding "Chưa ...", "Chờ ...", or cancelled entries).
+ */
+export function isMakeupCompletedStatus(
   status: string,
   attendanceStatus = ""
 ): boolean {
   const s = String(status || "").trim();
   const a = String(attendanceStatus || "").trim();
-  if (/đã\s*học|hoàn\s*thành|đã\s*bù|hủy|huỷ|cancel|done|completed/i.test(s)) {
+  if (isMakeupCancelledStatus(s)) return false;
+  if (
+    /(?:đã\s*học|hoàn\s*thành|đã\s*bù|đã\s*dạy\s*bù|done|completed)/i.test(s) &&
+    !/(?:chưa|chờ|đang\s*chờ)/i.test(s)
+  ) {
     return true;
   }
   if (/có\s*mặt|đã\s*điểm\s*danh|present|attended/i.test(a)) {
@@ -378,9 +391,27 @@ export function isCompletedOrCancelledMakeupStatus(
 }
 
 /**
- * Parses `hocbu.php` makeup classes table for pending / unscheduled makeup debt.
+ * Returns true if a makeup entry is already completed, attended, or cancelled
+ * (i.e. NOT pending makeup debt). Shared cleanly between HTML and DataTables JSON parsers.
  */
-export function parseTeachingHocBuHtml(html: string): TeachingHocBuEntry[] {
+export function isCompletedOrCancelledMakeupStatus(
+  status: string,
+  attendanceStatus = ""
+): boolean {
+  return (
+    isMakeupCancelledStatus(status) ||
+    isMakeupCompletedStatus(status, attendanceStatus)
+  );
+}
+
+/**
+ * Parses `hocbu.php` makeup classes table for pending / unscheduled makeup debt
+ * (or all rows including completed/cancelled when `options.includeAll` is true).
+ */
+export function parseTeachingHocBuHtml(
+  html: string,
+  options?: { includeAll?: boolean }
+): TeachingHocBuEntry[] {
   const headers = extractTableHeadersText(html);
   const rows = extractTableRowsText(html);
   if (rows.length === 0) return [];
@@ -405,7 +436,9 @@ export function parseTeachingHocBuHtml(html: string): TeachingHocBuEntry[] {
 
     const status = (cells[cStatus] || "Chờ học bù").trim();
     const attendanceStatus = cAtt >= 0 ? (cells[cAtt] || "").trim() : "";
-    if (isCompletedOrCancelledMakeupStatus(status, attendanceStatus)) continue;
+    if (!options?.includeAll && isCompletedOrCancelledMakeupStatus(status, attendanceStatus)) {
+      continue;
+    }
 
     out.push({
       classCode,
@@ -413,12 +446,16 @@ export function parseTeachingHocBuHtml(html: string): TeachingHocBuEntry[] {
       sessionLabel: (cells[cSess] || "").trim(),
       teacher: (cells[cTeacher] || "").trim(),
       status: status || "Chờ học bù",
+      ...(attendanceStatus ? { attendanceStatus } : {}),
     });
   }
   return out;
 }
 
-function parseTeachingHocBuDatatablePage(rawJson: string): {
+function parseTeachingHocBuDatatablePage(
+  rawJson: string,
+  options?: { includeAll?: boolean }
+): {
   rows: TeachingHocBuEntry[];
   recordsFiltered: number | null;
   rawCount: number;
@@ -443,7 +480,9 @@ function parseTeachingHocBuDatatablePage(rawJson: string): {
   for (const row of parsed.data) {
     const status = String(row?.status ?? "").trim();
     const attendanceStatus = String(row?.attendance_status ?? "").trim();
-    if (isCompletedOrCancelledMakeupStatus(status, attendanceStatus)) continue;
+    if (!options?.includeAll && isCompletedOrCancelledMakeupStatus(status, attendanceStatus)) {
+      continue;
+    }
 
     const classCode = String(row?.class_code ?? "").trim().toUpperCase();
     if (!classCode) continue;
@@ -461,6 +500,7 @@ function parseTeachingHocBuDatatablePage(rawJson: string): {
       sessionLabel,
       teacher,
       status: status || "Chờ học bù",
+      ...(attendanceStatus ? { attendanceStatus } : {}),
     });
   }
   return {
@@ -474,8 +514,11 @@ function parseTeachingHocBuDatatablePage(rawJson: string): {
 /**
  * Parses `hocbu.php?datatable=hocbu` DataTables JSON payload for pending makeup debt.
  */
-export function parseTeachingHocBuDatatableJson(rawJson: string): TeachingHocBuEntry[] {
-  return parseTeachingHocBuDatatablePage(rawJson).rows;
+export function parseTeachingHocBuDatatableJson(
+  rawJson: string,
+  options?: { includeAll?: boolean }
+): TeachingHocBuEntry[] {
+  return parseTeachingHocBuDatatablePage(rawJson, options).rows;
 }
 
 export function isTeachingCheckLateOrMissing(statusText: string): boolean {
@@ -501,6 +544,7 @@ export async function fetchAdminTeachingOverviewPages(
   checkRowsByClass: Map<string, TeachingCheckNhanXetEntry[]>;
   makeupRows: TeachingHocBuEntry[];
   makeupByClass: Map<string, TeachingHocBuEntry[]>;
+  allMakeupByClass: Map<string, TeachingHocBuEntry[]>;
   fetchWarnings: string[];
 }> {
   const adminCfg = getDynamicAdminConfig();
@@ -516,6 +560,7 @@ export async function fetchAdminTeachingOverviewPages(
   const checkRowsByClass = new Map<string, TeachingCheckNhanXetEntry[]>();
   const makeupRows: TeachingHocBuEntry[] = [];
   const makeupByClass = new Map<string, TeachingHocBuEntry[]>();
+  const allMakeupByClass = new Map<string, TeachingHocBuEntry[]>();
   const fetchWarnings: string[] = [];
 
   ensureQueueNotStopped();
@@ -561,17 +606,22 @@ export async function fetchAdminTeachingOverviewPages(
         )
       );
       if (pageIdx === 0 && !hocBuRaw.trim().startsWith("{")) {
-        const htmlRows = parseTeachingHocBuHtml(hocBuRaw);
-        for (const row of htmlRows) {
-          makeupRows.push(row);
-          const list = makeupByClass.get(row.classCode) || [];
-          list.push(row);
-          makeupByClass.set(row.classCode, list);
+        const allHtmlRows = parseTeachingHocBuHtml(hocBuRaw, { includeAll: true });
+        for (const row of allHtmlRows) {
+          const allList = allMakeupByClass.get(row.classCode) || [];
+          allList.push(row);
+          allMakeupByClass.set(row.classCode, allList);
+          if (!isCompletedOrCancelledMakeupStatus(row.status, row.attendanceStatus)) {
+            makeupRows.push(row);
+            const list = makeupByClass.get(row.classCode) || [];
+            list.push(row);
+            makeupByClass.set(row.classCode, list);
+          }
         }
         break;
       }
 
-      const page = parseTeachingHocBuDatatablePage(hocBuRaw);
+      const page = parseTeachingHocBuDatatablePage(hocBuRaw, { includeAll: true });
       if (!page.isJson) {
         fetchWarnings.push("Phản hồi /hocbu.php Teaching không phải JSON DataTables hợp lệ.");
         break;
@@ -580,10 +630,15 @@ export async function fetchAdminTeachingOverviewPages(
         expectedFiltered = page.recordsFiltered;
       }
       for (const row of page.rows) {
-        makeupRows.push(row);
-        const list = makeupByClass.get(row.classCode) || [];
-        list.push(row);
-        makeupByClass.set(row.classCode, list);
+        const allList = allMakeupByClass.get(row.classCode) || [];
+        allList.push(row);
+        allMakeupByClass.set(row.classCode, allList);
+        if (!isCompletedOrCancelledMakeupStatus(row.status, row.attendanceStatus)) {
+          makeupRows.push(row);
+          const list = makeupByClass.get(row.classCode) || [];
+          list.push(row);
+          makeupByClass.set(row.classCode, list);
+        }
       }
 
       if (page.rawCount === 0) {
@@ -617,6 +672,7 @@ export async function fetchAdminTeachingOverviewPages(
     checkRowsByClass,
     makeupRows,
     makeupByClass,
+    allMakeupByClass,
     fetchWarnings,
   };
 }

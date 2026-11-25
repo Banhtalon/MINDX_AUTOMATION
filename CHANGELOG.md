@@ -1,5 +1,22 @@
 # CHANGELOG — LỊCH SỬ PHIÊN BẢN DỰ ÁN MINDX AUTOMATION BOT
 
+## [v3.8.10] - 2026-11-25
+> **Bản vá `/admin-center`: Bỏ Kiểm Tra Ô BTVN Cho Robotics & Phân Biệt Học Sinh Nghỉ Chờ Học Bù Ở Buổi Checkpoint (`CP1`, `CP2`, `DEMO`) — Đạt `Gemini 4 Neon (XHigh)` Round 2 `VERDICT: GO` (`4/4` phát hiện `F01`–`F04` CLOSED, `0` lỗi mở).**
+
+### 🐛 Đã sửa & Cải tiến (`v3.8.10`)
+- **Bỏ kiểm tra ô BTVN (`homework`) trên LMS cho khối Robotics (`src/lib/admin-center/admin-lms-scanner.ts`, `src/components/admin-center/AdminTabsContent.tsx`, `src/lib/admin-center/admin-zalo-reminder.ts`):**
+  - Với `blockType === "ROBOTICS"`, `hasSummaryAndHomework` chỉ kiểm tra nội dung Tổng kết buổi (`summary`/`note`), không bắt buộc ô `homework` (các lớp Coding giữ nguyên bắt buộc đủ Tổng kết + BTVN trước Buổi 14).
+  - Giao diện Tab 1 hiển thị rõ **`✓ Đủ Tổng kết buổi`** / **`✗ Thiếu Tổng kết buổi`** và tin nhắn Zalo nhắc việc chỉ ghi **`Thiếu tổng kết buổi N`** (không nhắc chữ `BTVN`).
+- **Phân biệt học sinh nghỉ chờ học bù vs học sinh đi học chưa nhập điểm ở buổi Checkpoint (`CP1`, `CP2`, `DEMO`):**
+  - Hợp nhất bộ phân loại trạng thái học bù (`isMakeupCancelledStatus`, `isMakeupCompletedStatus`, `isCompletedOrCancelledMakeupStatus`) giữa `src/lib/admin-center/admin-teaching-scraper.ts` và `admin-lms-scanner.ts`, bổ sung `attendanceStatus` + `allMakeupByClass` từ `/hocbu.php` để giữ đủ dòng `"Đã học bù"` / `"Đã huỷ"` cho đối chiếu Checkpoint mà không sinh cảnh báo nợ học bù giả `MAKEUP_DEBT` ở mục `5e`.
+  - `buildCheckpointAlertForMilestone` tách rõ `missingStudentNames` (đi học chưa nhập điểm hoặc **đã học bù xong** mà chưa vào điểm) vs `absentMakeupStudentNames` (nghỉ buổi Checkpoint đang chờ học bù, dùng `studentId`-first tránh nhiễu HV trùng tên, `doesMakeupEntryMatchMilestone` lọc bỏ ngày tháng + siết ranh giới từ, và `stripHtmlPlain(att?.comment) || stripHtmlPlain(stageNote)` tránh HTML rỗng `<p></p>` che mất ghi chú nghỉ).
+  - Khi tất cả HV thiếu điểm đều thuộc diện nghỉ chờ học bù (`isMakeupPendingOnly: true`), thẻ cột phải hiển thị màu xanh thông báo **`🕒 Buổi X (CP...): N HV nghỉ chờ học bù (<Tên>)`**, không tính vào KPI `Vận hành tuần (Thiếu/Trễ)` và không đẩy vào tin nhắn Zalo nhắc thiếu điểm Checkpoint.
+- **Nhãn phiên bản & Tài liệu:** Nâng `package.json`, `src/app/layout.tsx`, `src/components/top-navbar.tsx` lên `MindX Bot v3.8.10` (giữ nguyên chuỗi lịch sử `MindX Bot v3.6.3`).
+
+### 🧪 Kiểm thử & Nghiệm thu Độc lập (`v3.8.10`)
+- **Kiểm thử & Hồi quy (`exit 0` sau bản sửa cuối):** `tsc --noEmit --incremental false`, `scripts/test-admin-center-robotics-cp-v3810.ts` (`6/6`), `scripts/test-admin-center-v389.ts` (`[AC389-01..06]`), `scripts/test-admin-center-v350.ts` (`[AC-01..AC-13]`).
+- **Kiểm định `Gemini 4 Neon (XHigh)` Round 2 ([NEON_XHIGH_V3810_REVIEW.md](docs/audits/v3810/NEON_XHIGH_V3810_REVIEW.md)):** **`VERDICT: GO`** (`4/4` phát hiện `F01`–`F04` CLOSED, `6/6` probe `R2-P1..R2-P6` PASS, `100%` SHA-256 dữ liệu thật `data/` giữ nguyên).
+
 ## [v3.8.9+] - 2026-11-25
 > **Bản vá Sửa Lỗi Báo Chưa Xong `Phiếu điểm Checkpoint` Ở Buổi Checkpoint 1 (`VT-ROB-ARMI13` Buổi 4 & `VT-CSA04-HB` Buổi 5) — Đạt `Gemini 4 Neon (XHigh)` Round 2 `VERDICT: GO` (`2/2` phát hiện `F01` P2 & `F02` P3 CLOSED, `0` lỗi mở).**
 

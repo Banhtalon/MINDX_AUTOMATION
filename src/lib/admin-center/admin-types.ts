@@ -20,6 +20,10 @@ export interface AdminWeeklyCheckpointAlert {
   milestone: "CP1" | "CP2" | "DEMO";
   sessionNumber: number;
   missingScoreCount: number;
+  missingStudentNames?: string[];
+  absentMakeupCount?: number;
+  absentMakeupStudentNames?: string[];
+  isMakeupPendingOnly?: boolean;
   message: string;
 }
 

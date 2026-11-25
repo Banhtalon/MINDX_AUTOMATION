@@ -265,11 +265,15 @@ export function AdminTabsContent({
                         <div>
                           {cls.weeklyOps.hasSummaryAndHomework ? (
                             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                              ✓ Đủ Tổng kết/BTVN
+                              {cls.blockType === "ROBOTICS"
+                                ? "✓ Đủ Tổng kết buổi"
+                                : "✓ Đủ Tổng kết/BTVN"}
                             </span>
                           ) : cls.weeklyOps.evaluatedSessionNumber > 0 ? (
                             <span className="text-xs font-bold text-rose-700 dark:text-rose-300">
-                              ✗ Thiếu Tổng kết/BTVN
+                              {cls.blockType === "ROBOTICS"
+                                ? "✗ Thiếu Tổng kết buổi"
+                                : "✗ Thiếu Tổng kết/BTVN"}
                             </span>
                           ) : (
                             <span className="text-xs text-[var(--text-secondary)]">
@@ -339,7 +343,14 @@ export function AdminTabsContent({
 
                       <td className="p-3 space-y-2">
                         {cls.weeklyOps.checkpointAlert && (
-                          <div className="px-2 py-1 rounded bg-amber-500/15 border border-amber-500/40 text-amber-800 dark:text-amber-200 text-xs font-semibold">
+                          <div
+                            className={`px-2 py-1 rounded text-xs font-semibold border ${
+                              cls.weeklyOps.checkpointAlert.isMakeupPendingOnly
+                                ? "bg-sky-500/15 border-sky-500/40 text-sky-800 dark:text-sky-200"
+                                : "bg-amber-500/15 border-amber-500/40 text-amber-800 dark:text-amber-200"
+                            }`}
+                          >
+                            {cls.weeklyOps.checkpointAlert.isMakeupPendingOnly ? "🕒 " : ""}
                             {cls.weeklyOps.checkpointAlert.message}
                           </div>
                         )}
