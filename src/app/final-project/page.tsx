@@ -2283,9 +2283,9 @@ export default function FinalProjectPage() {
   const confirmedReadyStudentIds = useMemo(
     () =>
       rows
-        .filter((r) => getRowReadinessSummary(r, duplicateStudentIds).ready)
+        .filter((r) => getRowReadinessSummary(r, duplicateStudentIds, selectedClassId).ready)
         .map((r) => r.assignedStudentId),
-    [rows, duplicateStudentIds]
+    [rows, duplicateStudentIds, selectedClassId]
   );
 
   const assignableStudentIds = useMemo(

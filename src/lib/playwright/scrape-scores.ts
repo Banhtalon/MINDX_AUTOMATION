@@ -13,6 +13,7 @@ import {
   session14EvalRepo,
   sessionFeedbackRepo,
   reportCardRepo,
+  isLegoRoboticsClassCode,
   isRoboticsClassCode,
   getDb,
   type StudentRecord,
@@ -1995,8 +1996,12 @@ export class ScoreScraper {
       return byIndexField || slots[zeroIdx] || null;
     };
 
-    const cp1Slot = findSlotByZeroIndex(isRobotics ? 3 : 4); // Robotics: Buổi 4 (idx 3), Coding: Buổi 5 (idx 4)
-    const cp2Slot = findSlotByZeroIndex(isRobotics ? 7 : 8); // Robotics: Buổi 8 (idx 7), Coding: Buổi 9 (idx 8)
+    const isLegoRobotics = isLegoRoboticsClassCode(
+      cleanClassCode,
+      String(classByIdGql?.course?.name || "")
+    );
+    const cp1Slot = findSlotByZeroIndex(isRobotics && !isLegoRobotics ? 3 : 4); // LEGO/Coding: Buổi 5 (idx 4), VEX Robotics: Buổi 4 (idx 3)
+    const cp2Slot = findSlotByZeroIndex(isRobotics && !isLegoRobotics ? 7 : 8); // LEGO/Coding: Buổi 9 (idx 8), VEX Robotics: Buổi 8 (idx 7)
     const finalSlot = findSlotByZeroIndex(13); // Buổi 14 (idx 13)
 
     const findAttendanceForStudent = (

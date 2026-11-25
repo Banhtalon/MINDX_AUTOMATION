@@ -20,6 +20,7 @@ import AdmZip from "adm-zip";
 import { getDynamicLmsApiWriteEnvValue } from "../config";
 import {
   COMPETENCY_AREA_SPECS,
+  LEGO_COMPETENCY_AREA_SPECS,
   matchesCompetencyAreaIdPure,
   type CompetencyScores,
 } from "../checkpoint/competency-specs";
@@ -32,6 +33,7 @@ import {
   formatRoboticsAwardRankingHtmlForLms,
   getDb,
   getSession14DemoLimitsForClass,
+  isLegoRoboticsClassCode,
   isRoboticsClassCode,
   isValidSpckSessionSlot,
   jobLogRepo,
@@ -1983,7 +1985,8 @@ function markdownToSimpleLetterHtml(rawText: string): string {
 function mapDemoDetailTitleToKey(
   title: string,
   fallbackIdx: number,
-  isRobotics: boolean = false
+  isRobotics: boolean = false,
+  isLego: boolean = false
 ): keyof SpckSession14DemoScores {
   const norm = normalizeVietnameseName(title);
   if (norm.includes("thuat toan") || norm.includes("tu duy may tinh")) return "algorithm";
@@ -1992,12 +1995,17 @@ function mapDemoDetailTitleToKey(
     return "communication";
   }
   if (norm.includes("giai quyet van de")) return "problemSolving";
-  if (norm.includes("su dung may tinh") || norm.includes("ky nang may tinh")) {
+  if (
+    norm.includes("su dung may tinh") ||
+    norm.includes("ky nang may tinh") ||
+    norm.includes("cong nghe")
+  ) {
     return "computerSkills";
   }
-  const order: Array<keyof SpckSession14DemoScores> = isRobotics
-    ? ["algorithm", "creativity", "communication", "computerSkills", "problemSolving"]
-    : ["algorithm", "creativity", "communication", "problemSolving", "computerSkills"];
+  const order: Array<keyof SpckSession14DemoScores> =
+    isRobotics && !isLego
+      ? ["algorithm", "creativity", "communication", "computerSkills", "problemSolving"]
+      : ["algorithm", "creativity", "communication", "problemSolving", "computerSkills"];
   return order[fallbackIdx % order.length];
 }
 
@@ -2005,6 +2013,13 @@ function matchCompetencyKeyForArea(
   areaId: string,
   areaName: string
 ): keyof CompetencyScores | null {
+  const cleanId = String(areaId || "").trim().toLowerCase();
+  if (cleanId) {
+    const legoMatch = LEGO_COMPETENCY_AREA_SPECS.find((s) => s.commentAreaId === cleanId);
+    if (legoMatch) {
+      return legoMatch.key;
+    }
+  }
   for (const spec of COMPETENCY_AREA_SPECS) {
     if (matchesCompetencyAreaIdPure(spec, areaId)) {
       return spec.key;
@@ -2017,8 +2032,13 @@ function matchCompetencyKeyForArea(
         return spec.key;
       }
     }
-    // Check additional Robotics phrasing
-    if (norm.includes("cong cu") || norm.includes("lap trinh robot") || norm.includes("may tinh")) {
+    // Check additional Robotics/LEGO phrasing
+    if (
+      norm.includes("cong cu") ||
+      norm.includes("cong nghe") ||
+      norm.includes("lap trinh robot") ||
+      norm.includes("may tinh")
+    ) {
       return "skillComputerUse";
     }
   }
@@ -2198,9 +2218,13 @@ export async function uploadSession14EvalViaApi(options: {
   const slot14 = findSlotBySessionNumber(classDoc, 14);
   const slot14Id = String(slot14._id);
   const classSiteId = String(classDoc?.centre?.id || "").trim() || undefined;
-  const courseProcess = Array.isArray(classDoc?.courseProcesses)
-    ? classDoc.courseProcesses[0]
-    : classDoc?.courseProcesses || classDoc?.courseProcess || null;
+  const courseProcess =
+    (Array.isArray(classDoc?.courseProcesses)
+      ? classDoc.courseProcesses[0]
+      : classDoc?.courseProcesses) ||
+    classDoc?.courseProcess ||
+    classDoc?.course?.courseProcess ||
+    null;
   const courseProcessId = String(courseProcess?.id || courseProcess?._id || "").trim() || undefined;
 
   // Step A: Upload & Verify Slot 14 Summary
@@ -2307,7 +2331,8 @@ export async function uploadSession14EvalViaApi(options: {
   const enrichedList = buildEnrichedSession14EvalList(normalizedClassId);
   const enrichedByStudent = new Map(enrichedList.map((it) => [it.studentId, it]));
 
-  const isRobotics = isRoboticsClassCode(normalizedClassId);
+  const isLego = isLegoRoboticsClassCode(normalizedClassId, String(classDoc?.course?.name || ""));
+  const isRobotics = isRoboticsClassCode(normalizedClassId) || isLego;
   const isSpckExempt = isAdminSpckExemptClass(
     normalizedClassId,
     String(classDoc?.course?.name || "")
@@ -2435,7 +2460,11 @@ export async function uploadSession14EvalViaApi(options: {
         const demoCommentAreaId = String(
           cpDemoArea?.id ||
             existingDemoArea?.commentAreaId ||
-            (isRobotics ? "66c810fc6ae1a9fab63875fd" : "665e88ae181e0e47f6c65642")
+            (isLego
+              ? "683e8936dd5f276209a4af26"
+              : isRobotics
+              ? "66c810fc6ae1a9fab63875fd"
+              : "665e88ae181e0e47f6c65642")
         );
         const courseProcessDemoId = String(
           courseProcess?.finalSession?.demoScore?.id ||
@@ -2459,14 +2488,14 @@ export async function uploadSession14EvalViaApi(options: {
               }))
             : [
                 { id: "demo_algo", title: "Tư duy máy tính, tư duy thuật toán", maxScore: limits.algorithm },
-                { id: "demo_crea", title: "Tư duy sáng tạo", maxScore: limits.creativity },
+                { id: "demo_crea", title: isLego ? "Tư duy sáng tạo mô hình" : "Tư duy sáng tạo", maxScore: limits.creativity },
                 { id: "demo_comm", title: "Kỹ năng giao tiếp, hợp tác", maxScore: limits.communication },
                 { id: "demo_prob", title: "Kỹ năng giải quyết vấn đề", maxScore: limits.problemSolving },
-                { id: "demo_comp", title: "Kỹ năng sử dụng máy tính", maxScore: limits.computerSkills },
+                { id: "demo_comp", title: isLego ? "Kỹ năng sử dụng công nghệ" : "Kỹ năng sử dụng máy tính", maxScore: limits.computerSkills },
               ];
 
         demoQuestionsPayload = rawDemoDetails.slice(0, 5).map((det, idx) => {
-          const key = mapDemoDetailTitleToKey(det.title, idx, isRobotics);
+          const key = mapDemoDetailTitleToKey(det.title, idx, isRobotics, isLego);
           const scoreVal = Number(demoScores[key] || 0);
           const cap = det.maxScore > 0 ? det.maxScore : Number(limits[key] || 5);
           if (scoreVal > cap + 1e-6) {
@@ -2493,7 +2522,7 @@ export async function uploadSession14EvalViaApi(options: {
         });
       }
 
-      // 2) 9 [ĐNL] RATE Areas
+      // 2) [ĐNL] RATE Areas (7 areas for LEGO RBT 4+/6+, 9 areas for Coding & VEX Robotics)
       const finalEvalEntries = Array.isArray(courseProcess?.finalSession?.finalEvaluations)
         ? courseProcess.finalSession.finalEvaluations
         : [];
@@ -2517,12 +2546,13 @@ export async function uploadSession14EvalViaApi(options: {
         }
       }
 
+      const minRateAreas = isLego ? 7 : 9;
       const rateAreasSource =
-        flattenedCpAreas.filter((a) => a.type === "RATE").length >= 9
+        flattenedCpAreas.filter((a) => a.type === "RATE").length >= minRateAreas
           ? flattenedCpAreas.filter((a) => a.type === "RATE")
           : Array.isArray(stuAtt?.commentByAreas) &&
             stuAtt.commentByAreas.filter((a: any) => String(a?.type || "").toUpperCase() === "RATE")
-              .length >= 9
+              .length >= minRateAreas
           ? stuAtt.commentByAreas
               .filter((a: any) => String(a?.type || "").toUpperCase() === "RATE")
               .map((a: any) => ({
@@ -2532,6 +2562,13 @@ export async function uploadSession14EvalViaApi(options: {
                 finalEvalId: a.courseProcessFinalEvaluationId,
                 finalEvalTitle: a.courseProcessFinalEvaluationTitle,
               }))
+          : isLego
+          ? LEGO_COMPETENCY_AREA_SPECS.map((s) => ({
+              id: s.commentAreaId,
+              name: s.labelVi,
+              type: "RATE",
+              finalEvalTitle: s.finalEvalTitle,
+            }))
           : COMPETENCY_AREA_SPECS.map((s) => ({
               id: s.commentAreaId,
               name: isRobotics && s.roboticsLabelVi ? s.roboticsLabelVi : s.labelVi,
@@ -2539,14 +2576,17 @@ export async function uploadSession14EvalViaApi(options: {
             }));
 
       const usedCompKeys = new Set<keyof CompetencyScores>();
+      const fallbackRateOrder: Array<keyof CompetencyScores> = isLego
+        ? LEGO_COMPETENCY_AREA_SPECS.map((s) => s.key)
+        : [...SESSION14_COMPETENCY_KEYS];
       const expectedRateChecks: Array<{ areaId: string; grade: number; key: keyof CompetencyScores }> = [];
       for (let idx = 0; idx < rateAreasSource.length; idx++) {
         const area = rateAreasSource[idx];
         let matchedKey = matchCompetencyKeyForArea(area.id, area.name);
         if (!matchedKey || usedCompKeys.has(matchedKey)) {
           const fallbackKey =
-            SESSION14_COMPETENCY_KEYS.find((k) => !usedCompKeys.has(k)) ||
-            SESSION14_COMPETENCY_KEYS[idx % SESSION14_COMPETENCY_KEYS.length];
+            fallbackRateOrder.find((k) => !usedCompKeys.has(k)) ||
+            fallbackRateOrder[idx % fallbackRateOrder.length];
           matchedKey = fallbackKey;
         }
         usedCompKeys.add(matchedKey);
@@ -2564,11 +2604,12 @@ export async function uploadSession14EvalViaApi(options: {
         });
       }
 
-      // 3) Robotics "Xếp hạng học viên trên lớp" (`665e8440181e0e47f6c654c1`, type: "CONTENT")
+      // 3) Robotics "Xếp hạng học viên trên lớp" (`665e8440181e0e47f6c654c1` or LEGO `67b54307f79c7bc326e017ff`, type: "CONTENT")
       // NEVER touch Coding CONTENT areas with Robotics criteria/maxes (e.g. 1.25 / "Robot")
       const contentAreaFromCp = flattenedCpAreas.find(
         (a) =>
           a.id === "665e8440181e0e47f6c654c1" ||
+          (isLego && (a.id === "67b54307f79c7bc326e017ff" || /đánh giá chung/i.test(a.name))) ||
           /xếp hạng/i.test(a.name) ||
           (isRobotics && a.type === "CONTENT")
       );
@@ -2576,6 +2617,7 @@ export async function uploadSession14EvalViaApi(options: {
         ? stuAtt.commentByAreas.find(
             (a: any) =>
               String(a?.commentAreaId || "") === "665e8440181e0e47f6c654c1" ||
+              (isLego && String(a?.commentAreaId || "") === "67b54307f79c7bc326e017ff") ||
               (isRobotics && String(a?.type || "").toUpperCase() === "CONTENT")
           )
         : null;
@@ -2594,7 +2636,7 @@ export async function uploadSession14EvalViaApi(options: {
         expectedAwardAreaId = String(
           contentAreaFromCp?.id ||
             existingContentArea?.commentAreaId ||
-            "665e8440181e0e47f6c654c1"
+            (isLego ? "67b54307f79c7bc326e017ff" : "665e8440181e0e47f6c654c1")
         );
         expectedAwardGrade =
           freshRow.awardRankGrade !== undefined && freshRow.awardRankGrade !== null
@@ -2607,6 +2649,7 @@ export async function uploadSession14EvalViaApi(options: {
                 awardRankingText: cleanAwardRanking || enrichedStu?.awardLabel || "",
               });
         expectedAwardHtml = formatRoboticsAwardRankingHtmlForLms({
+          classId: normalizedClassId,
           awardRanking: cleanAwardRanking,
           demoScores,
           demoTotalScore: demoTotal,

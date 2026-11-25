@@ -5,6 +5,7 @@ import {
   assertClassHasSpckSession,
   formatSpckSessionTitle,
   getDb,
+  isLegoRoboticsClassCode,
   normalizeSpckFolderKey,
   spckSessionRepo,
   spckUploadRepo,
@@ -477,6 +478,25 @@ export async function POST(req: Request) {
       const attachments = JSON.parse(sessionDraft.attachmentsJson || "[]");
       const youtubeUrls = JSON.parse(sessionDraft.youtubeUrlsJson || "[]");
       const relatedLinks = JSON.parse(sessionDraft.relatedLinksJson || "[]");
+
+      const isDefaultLogoOnly = String(sessionDraft.thumbnailPath || "")
+        .toLowerCase()
+        .includes("default-spck-thumbnail");
+      if (
+        isLegoRoboticsClassCode(classId) &&
+        isDefaultLogoOnly &&
+        screenshots.length === 0 &&
+        attachments.length === 0 &&
+        youtubeUrls.length === 0 &&
+        relatedLinks.length === 0
+      ) {
+        skipped.push({
+          studentId,
+          reason:
+            "Lớp LEGO yêu cầu ít nhất 1 ảnh chụp mô hình/học viên (không thể duyệt thư mục rỗng chỉ có logo mặc định).",
+        });
+        continue;
+      }
 
       const limitCheck = validateSpckResourceLimits({
         screenshots,

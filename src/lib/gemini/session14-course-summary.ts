@@ -499,7 +499,7 @@ export class Session14CourseSummaryGenerator {
       const compScores = parseSession14CompetencyScores(
         item.competencyScores || evalRow.competencyJson
       );
-      const compTotal = calculateCompetencyAverageScore(compScores);
+      const compTotal = calculateCompetencyAverageScore(compScores, normalizedClassId);
 
       const demoScores = parseSession14DemoScores(
         item.demoScores || evalRow.demoScoresJson,

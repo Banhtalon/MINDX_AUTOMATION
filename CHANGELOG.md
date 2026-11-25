@@ -1,5 +1,27 @@
 # CHANGELOG — LỊCH SỬ PHIÊN BẢN DỰ ÁN MINDX AUTOMATION BOT
 
+## [v3.8.11] - 2026-11-25
+> **Bản vá `/admin-center` Cách 1B (BTVN trên LMS là Optional cho mọi lớp) & Cách 2A + M1 (Bộ Quy Tắc Riêng Cho Dòng Lớp LEGO `KIND-ROB4/6`, `ROB4/6`, `LEGO`, `KIRO`, `RBT 4+/6+`) — Đạt `Gemini 4 Neon (XHigh)` Round 2 `VERDICT: GO` (`10/10` phát hiện `F01`–`F10` CLOSED, `10/10` probe đối kháng Round 2 PASS, `0` lỗi P0/P1/P2 mở).**
+
+### 🚀 Đã thêm & Thay đổi (`v3.8.11`)
+- **Cách 1B — Ô BTVN (`homework`) trên LMS là Optional cho cả Coding lẫn Robotics (`src/lib/admin-center/admin-lms-scanner.ts`, `src/components/admin-center/AdminTabsContent.tsx`, `src/lib/admin-center/admin-zalo-reminder.ts`):**
+  - `hasSummaryAndHomework` chỉ kiểm tra `summary`/`note` buổi học trên LMS cho cả 2 khối (không phạt khi ô `homework` trống).
+  - Đồng bộ nhãn Tab 1 (`✓ Đủ Tổng kết buổi` / `✗ Thiếu Tổng kết buổi`) và lời nhắc Zalo (`Thiếu tổng kết buổi N`, bỏ hoàn toàn chữ `"BTVN"`).
+- **Cách 2A + M1 — Quy tắc riêng cho dòng lớp LEGO (`KIND-ROB*`, `ROB4*`, `ROB6*`, `LEGO`, `KIRO`, `RBT 4+/6+`):**
+  - **Phân loại chuẩn xác (`isLegoRoboticsClassCode` / `isLegoRoboticsClassUi` trong `sqlite.ts` & `spck-ui-helpers.ts`):** Siết biên token `(?=$|[-_\s])` tách sạch dòng LEGO (`true`) khỏi khối VEX (`ROB40..69`, `ROB04`, `PRE`, `ARM`, `SEMI`, `ROB01` -> `false`).
+  - **Tab 1 Checkpoint M1 (`admin-lms-scanner.ts`, `scrape-scores.ts`):** Checkpoint LEGO nằm ở **Buổi 5 & Buổi 9** (không có điểm số LT/TH), kiểm tra giáo viên tích đủ **7 sao `[ĐNL]` (`RATE`)** cho học viên đi học với sàn an toàn `minLegoCpRates >= 6` (ngăn lọt xanh giả `1/7..5/7`), vẫn tôn trọng quy tắc học bù `v3.8.10`, và phân nhánh B5/B9 trong `ScoreScraper.extractReportCardSnapshotFromGql` để không rò ghi chú vắng B4 sang B5 CP1.
+  - **Tab 3 SPCK 2A (`admin-lms-scanner.ts`, `admin-zalo-reminder.ts`, `admin-types.ts`):** Miễn **Buổi 12**; gộp **Buổi 13–14 thành 1 cụm (`B13–14`)** chỉ yêu cầu `>= 1` ảnh sản phẩm (`0` file code); Zalo xuất rõ `(B13–14)`; Buổi 14 kiểm tra **7 ô `[ĐNL]`** + Demo `5×1.0` + thư 3 phần.
+  - **Tab 4 Teaching Tasks (`> B9` — `admin-lms-scanner.ts`, `admin-teaching-actions.ts`):** Miễn hoàn toàn cho lớp LEGO (`eligibleGt9: false`, `taskStatus: "NOT_ELIGIBLE"`, chặn ở `validateSpckTaskEligibility` HTTP 400 & bỏ qua trong `AUTO` batch).
+  - **`/final-project` & Ghi LMS (`competency-specs.ts`, `sqlite.ts`, `spck-ui-helpers.ts`, `types.ts`, `StudentRow.tsx`, `page.tsx`, `approve/route.ts`, `spck-demo-score-reader.ts`, `lms-write-client.ts`, `session14-eval-uploader.ts`):**
+    - Hỗ trợ 7 ID `[ĐNL]` LEGO (`LEGO_COMPETENCY_AREA_SPECS`, 35 radio trên DOM cả khi điền lẫn Read-after-Write, `7` `RATE` qua API Write với cô lập `CONTENT` lớp Coding, `calculateCompetencyAverageScore` chia `7`, UI hiển thị đúng `7` tiêu chí, `computeSession14CompetencyFromCheckpoints` tối ưu `.5` trên đúng 7 chỉ số LEGO).
+    - Hỗ trợ rubik Demo **`1.0 × 5 = 5.0`** (tiêu chí #5 `"Kỹ năng sử dụng công nghệ"`), dồn điểm lossless `4dp` từ `ROB.xlsx` qua hàm dùng chung `rebalanceRawDemoScoresForClass4dp` (giữ chính xác `4.375`), và cập nhật `formatRoboticsAwardRankingHtmlForLms({ classId })` hiển thị `(1/1)` chuẩn LEGO.
+    - Cho phép nộp ảnh-only (`>= 1` ảnh chân dung/mô hình, `0` file code) và chặn đồng bộ cả UI (`confirmedReadyStudentIds`, `StudentRow`) lẫn `POST /api/spck/approve` (HTTP 400) nếu thư mục LEGO rỗng chỉ có logo mặc định.
+- **Nhãn phiên bản:** Nâng `package.json`, `src/app/layout.tsx`, `src/components/top-navbar.tsx` lên `MindX Bot v3.8.11`.
+
+### 🧪 Kiểm thử & Nghiệm thu Độc lập (`v3.8.11`)
+- **Kiểm thử & Hồi quy (`exit 0` toàn bộ `8/8` bộ + TypeScript):** `node .\node_modules\typescript\bin\tsc --noEmit --incremental false`, `scripts/test-admin-center-lego-and-summary-v3811.ts` (`6/6`), `test-admin-center-robotics-cp-v3810.ts` (`6/6`), `test-robotics-demo-templates-v389.ts` (`5/5`), `test-spck-robotics-and-lms-write-v389.ts` (`7/7`), `test-admin-center-v389.ts` (`6/6`), `test-admin-center-v350.ts` (`AC-01..13`), `test-csi-demo-limits-v382.ts` (`CSI-01..04`), `test-drive-thumbnails-v363.ts` (`V363-01..06`).
+- **Kiểm định `Gemini 4 Neon (XHigh)` Round 2 ([NEON_XHIGH_V3811_REVIEW.md](docs/audits/v3811/NEON_XHIGH_V3811_REVIEW.md)):** **`VERDICT: GO`** (`10/10` phát hiện Round 1 `F01`–`F10` CLOSED, `10/10` probe đối kháng Round 2 PASS trong `os.tmpdir()`, bảo mật Client CLEAN, `100%` SHA-256 dữ liệu thật `data/` giữ nguyên).
+
 ## [v3.8.9+ Đợt 2] - 2026-11-25
 > **Bản vá Sửa Triệt Để 2 Lỗi Đồng Bộ Khi Bấm `Quét công việc tuần này` (`VT-C4K-PTA13` & `VT-CSI02` Buổi 14, `VT-ROB-ARMI13` Checkpoint 1) — Đạt `Gemini 4 Neon (XHigh)` Round 2 `VERDICT: GO` (`4/4` phát hiện `F01` P1, `F02` P2, `F03` P3, `F04` P3 CLOSED, `0` lỗi mở).**
 

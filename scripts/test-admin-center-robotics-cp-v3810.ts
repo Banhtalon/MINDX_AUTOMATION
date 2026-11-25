@@ -217,8 +217,8 @@ async function main() {
       assert(zaloMsg.includes("Thiếu tổng kết buổi 6"), `Zalo phải nhắc đúng Tổng kết buổi 6: ${zaloMsg}`);
       assert(!zaloMsg.includes("BTVN"), `Zalo Robotics KHÔNG được nhắc BTVN: ${zaloMsg}`);
 
-      // Coding at Session 6 missing homework STILL flags false
-      const codingMissingHw = computeAdminClassAudits({
+      // Option 1B (v3.8.11): Coding B6 with summary & empty homework NOW reports true; Coding B6 with empty summary reports false without "BTVN"
+      const codingSummaryOnly = computeAdminClassAudits({
         centerCode: "205ALHP",
         rawClassMeta: {
           classCode: "VT-C4K-JSB20",
@@ -243,9 +243,40 @@ async function main() {
         studentWorks: [],
       });
       assert.strictEqual(
-        JSON.parse(codingMissingHw.weeklyOpsJson).hasSummaryAndHomework,
+        JSON.parse(codingSummaryOnly.weeklyOpsJson).hasSummaryAndHomework,
+        true,
+        "Cách 1B: Coding Buổi 6 đã có Tổng kết buổi (dù để trống ô BTVN) phải báo Đủ!"
+      );
+
+      const codingMissingSummary = computeAdminClassAudits({
+        centerCode: "205ALHP",
+        rawClassMeta: {
+          classCode: "VT-C4K-JSB21",
+          lmsClassId: "lms_jsb21",
+          courseName: "JS Basic",
+          status: "RUNNING",
+          mainTeacher: "Thầy An",
+        },
+        classByIdData: {
+          id: "lms_jsb21",
+          name: "VT-C4K-JSB21",
+          status: "RUNNING",
+          course: { name: "JS Basic" },
+          students: robStudents.map((s) => ({ activeInClass: true, student: s })),
+          slots: buildSlots({
+            occurredCount: 6,
+            students: robStudents,
+            emptySummaryAt: [6],
+            emptyHomeworkAt: [6],
+          }),
+        },
+        submissionGqlData: null,
+        studentWorks: [],
+      });
+      assert.strictEqual(
+        JSON.parse(codingMissingSummary.weeklyOpsJson).hasSummaryAndHomework,
         false,
-        "Coding Buổi 6 thiếu ô BTVN bắt buộc vẫn phải báo Thiếu Tổng kết/BTVN!"
+        "Cách 1B: Coding Buổi 6 thiếu Tổng kết buổi bắt buộc vẫn báo Thiếu!"
       );
       clearAdminTable();
     }

@@ -192,6 +192,69 @@ export function isRoboticsClassCodePure(classId?: string | null): boolean {
   );
 }
 
+export interface LegoCompetencyAreaSpec {
+  domIndex: number;
+  key: keyof CompetencyScores;
+  commentAreaId: string;
+  finalEvalTitle: string;
+  labelVi: string;
+}
+
+/**
+ * 7 canonical `[RBT 4+ và 6+ Lego]` competency areas on MindX LMS (Sessions 5, 9, and 14).
+ */
+export const LEGO_COMPETENCY_AREA_SPECS: readonly LegoCompetencyAreaSpec[] = [
+  {
+    domIndex: 0,
+    key: "knowledgeInClass",
+    commentAreaId: "683e88a68cc94584eaee6aff",
+    finalEvalTitle: "KIẾN THỨC",
+    labelVi: "Kiến thức tại lớp",
+  },
+  {
+    domIndex: 1,
+    key: "skillComputational",
+    commentAreaId: "683e88238cc94584eaee6aa6",
+    finalEvalTitle: "KỸ NĂNG",
+    labelVi: "Tư duy máy tính & thao tác lệnh",
+  },
+  {
+    domIndex: 2,
+    key: "skillProblemSolving",
+    commentAreaId: "683e81f58cc94584eaee629f",
+    finalEvalTitle: "KỸ NĂNG",
+    labelVi: "Kỹ năng giải quyết vấn đề",
+  },
+  {
+    domIndex: 3,
+    key: "skillCreativity",
+    commentAreaId: "683e8167dd5f276209a4a580",
+    finalEvalTitle: "KỸ NĂNG",
+    labelVi: "Tư duy sáng tạo mô hình",
+  },
+  {
+    domIndex: 4,
+    key: "skillComputerUse",
+    commentAreaId: "683e80c5dd5f276209a4a37d",
+    finalEvalTitle: "KỸ NĂNG",
+    labelVi: "Kỹ năng sử dụng công nghệ",
+  },
+  {
+    domIndex: 5,
+    key: "skillCommunication",
+    commentAreaId: "683e7ee18cc94584eaee5942",
+    finalEvalTitle: "KỸ NĂNG",
+    labelVi: "Kỹ năng giao tiếp, hợp tác",
+  },
+  {
+    domIndex: 6,
+    key: "attitudeInClass",
+    commentAreaId: "683e7e028cc94584eaee56dd",
+    finalEvalTitle: "THÁI ĐỘ",
+    labelVi: "Thái độ học tập trên lớp",
+  },
+];
+
 export function matchesCompetencyAreaIdPure(
   spec: CompetencyAreaSpec,
   rawAreaId: string

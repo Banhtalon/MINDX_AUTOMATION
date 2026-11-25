@@ -365,10 +365,14 @@ export interface SnapshotModalDataUI {
 }
 
 export {
+  COMPETENCY_ITEMS_LEGO_UI,
   COMPETENCY_ITEMS_UI,
   DEFAULT_SPCK_TAGS,
+  DEMO_SCORE_ITEMS_LEGO_ROBOTICS_UI,
   DEMO_SCORE_ITEMS_ROBOTICS_UI,
   DEMO_SCORE_ITEMS_UI,
+  getCompetencyItemsForClassUi,
+  isLegoRoboticsClassUi,
   SESSION14_SPCK_TAGS,
 } from "@/lib/spck/spck-ui-helpers";
 

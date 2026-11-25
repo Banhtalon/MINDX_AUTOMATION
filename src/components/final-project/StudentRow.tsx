@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import {
   COMPETENCY_ITEMS_UI,
+  getCompetencyItemsForClassUi,
   ScannedFolderUIItem,
 } from "./types";
 import {
@@ -114,7 +115,8 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
   const isDupeStudent =
     Boolean(row.assignedStudentId) &&
     duplicateStudentIds.has(row.assignedStudentId);
-  const readiness = getRowReadinessSummary(row, duplicateStudentIds);
+  const readiness = getRowReadinessSummary(row, duplicateStudentIds, selectedClassId);
+  const activeCompetencyItems = getCompetencyItemsForClassUi(selectedClassId);
   const slot12 = getSessionSlotDisplay(row, 12);
   const slot13 = getSessionSlotDisplay(row, 13);
   const slot14 = getSessionSlotDisplay(row, 14);
@@ -1489,13 +1491,13 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                     </div>
                   </div>
 
-                  {/* 9 Tiêu chí Điểm Năng Lực [ĐNL] */}
+                  {/* Tiêu chí Điểm Năng Lực [ĐNL] */}
                   <div>
                     <div className="font-semibold text-cyan-300 mb-2">
-                      2. Điểm Năng Lực [ĐNL] (9 tiêu chí thang 1..5 — Trung bình: {studentEval14.competencyTotalScore} / 5.0)
+                      2. Điểm Năng Lực [ĐNL] ({activeCompetencyItems.length} tiêu chí thang 1..5 — Trung bình: {studentEval14.competencyTotalScore} / 5.0)
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                      {COMPETENCY_ITEMS_UI.map((item) => (
+                      {activeCompetencyItems.map((item) => (
                         <div
                           key={item.key}
                           className="p-2 rounded bg-slate-950 border border-slate-800 flex items-center justify-between gap-2"

@@ -5375,7 +5375,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           continue;
         }
 
-        const readiness = getRowReadinessSummary(row, duplicateStudentIds);
+        const readiness = getRowReadinessSummary(row, duplicateStudentIds, selectedClassId);
         if (readiness.ready) {
           readySpckIds.push(sid);
         } else {
@@ -5502,7 +5502,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
           if (slot.state === "VERIFIED_CURRENT" && !explicitSet) {
             alreadyVerifiedSpckCount += 1;
           } else {
-            const readiness = getRowReadinessSummary(row, duplicateStudentIds);
+            const readiness = getRowReadinessSummary(row, duplicateStudentIds, selectedClassId);
             if (readiness.ready) {
               readySpckIds.push(sid);
             } else {

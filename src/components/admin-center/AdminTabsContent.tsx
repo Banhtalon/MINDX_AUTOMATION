@@ -265,15 +265,11 @@ export function AdminTabsContent({
                         <div>
                           {cls.weeklyOps.hasSummaryAndHomework ? (
                             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                              {cls.blockType === "ROBOTICS"
-                                ? "✓ Đủ Tổng kết buổi"
-                                : "✓ Đủ Tổng kết/BTVN"}
+                              ✓ Đủ Tổng kết buổi
                             </span>
                           ) : cls.weeklyOps.evaluatedSessionNumber > 0 ? (
                             <span className="text-xs font-bold text-rose-700 dark:text-rose-300">
-                              {cls.blockType === "ROBOTICS"
-                                ? "✗ Thiếu Tổng kết buổi"
-                                : "✗ Thiếu Tổng kết/BTVN"}
+                              ✗ Thiếu Tổng kết buổi
                             </span>
                           ) : (
                             <span className="text-xs text-[var(--text-secondary)]">
@@ -621,12 +617,13 @@ export function AdminTabsContent({
                         {(["12", "13", "14"] as const).map((sn) => {
                           const slot = s.slots[sn];
                           if (!slot.sessionOccurred) return null;
+                          const slotLabel = slot.isLegoCluster1314 ? "B13–14" : `B${sn}`;
                           return (
                             <span
                               key={sn}
                               className="px-2 py-0.5 rounded bg-[var(--surface-subtle)] border border-[var(--border-card)]"
                             >
-                              B{sn}: Nộp{" "}
+                              {slotLabel}: Nộp{" "}
                               <strong>
                                 {slot.uploadedCount}/{slot.requiredCount}
                               </strong>{" "}
@@ -644,7 +641,7 @@ export function AdminTabsContent({
                               {s.session14FinalEval.demoScoredCount}/
                               {s.session14FinalEval.requiredCount}
                             </strong>{" "}
-                            • 9 ĐNL{" "}
+                            • {s.session14FinalEval.requiredCompetencyCount ?? 9} ĐNL{" "}
                             <strong>
                               {s.session14FinalEval.competencyCompleteCount}/
                               {s.session14FinalEval.requiredCount}
@@ -690,15 +687,25 @@ export function AdminTabsContent({
 
                   {isExpanded && (
                     <div className="border-t border-[var(--border-card)] pt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                      {(["12", "13", "14"] as const).map((sn) => {
+                      {(["12", "13", "14"] as const)
+                        .filter((sn) => {
+                          const hasCluster = (["12", "13", "14"] as const).some(
+                            (k) => Boolean(s.slots[k]?.isLegoCluster1314)
+                          );
+                          return !hasCluster || Boolean(s.slots[sn]?.sessionOccurred);
+                        })
+                        .map((sn) => {
                         const slot = s.slots[sn];
+                        const heading = slot.isLegoCluster1314
+                          ? "Cụm Buổi 13–14"
+                          : `Buổi ${sn}`;
                         return (
                           <div
                             key={sn}
                             className="p-2.5 rounded-lg bg-[var(--surface-subtle)] border border-[var(--border-card)] space-y-1.5"
                           >
                             <div className="font-bold">
-                              Buổi {sn}{" "}
+                              {heading}{" "}
                               {slot.sessionOccurred
                                 ? `(${slot.uploadedCount}/${slot.requiredCount})`
                                 : "(Chưa học)"}
@@ -748,7 +755,7 @@ export function AdminTabsContent({
                           <strong className="text-rose-700 dark:text-rose-300">
                             {s.session14FinalEval.missingEvalStudents.length > 0
                               ? s.session14FinalEval.missingEvalStudents.join(", ")
-                              : "Đã đủ 100% (Demo + 9 ĐNL + Thư 3 phần)"}
+                              : `Đã đủ 100% (Demo + ${s.session14FinalEval.requiredCompetencyCount ?? 9} ĐNL + Thư 3 phần)`}
                           </strong>
                         </div>
                       )}

@@ -50,6 +50,28 @@ export const COMPETENCY_ITEMS_UI: Array<{
   { key: "attitudeInClass", label: "9. [ĐNL] Thái độ trên lớp" },
 ];
 
+export const COMPETENCY_ITEMS_LEGO_UI: Array<{
+  key: keyof Session14CompetencyScoresUI;
+  label: string;
+}> = [
+  { key: "knowledgeInClass", label: "1. [ĐNL] Kiến thức tại lớp" },
+  { key: "skillComputational", label: "2. [ĐNL] Tư duy máy tính & thao tác lệnh" },
+  { key: "skillProblemSolving", label: "3. [ĐNL] Giải quyết vấn đề" },
+  { key: "skillCreativity", label: "4. [ĐNL] Tư duy sáng tạo mô hình" },
+  { key: "skillComputerUse", label: "5. [ĐNL] Kỹ năng sử dụng công nghệ" },
+  { key: "skillCommunication", label: "6. [ĐNL] Giao tiếp, hợp tác" },
+  { key: "attitudeInClass", label: "7. [ĐNL] Thái độ trên lớp" },
+];
+
+export function getCompetencyItemsForClassUi(classId?: string | null): Array<{
+  key: keyof Session14CompetencyScoresUI;
+  label: string;
+}> {
+  return isLegoRoboticsClassUi(classId)
+    ? COMPETENCY_ITEMS_LEGO_UI
+    : COMPETENCY_ITEMS_UI;
+}
+
 export const DEMO_SCORE_ITEMS_UI: Array<{
   key: keyof Session14DemoScoresUI;
   label: string;
@@ -73,6 +95,32 @@ export const DEMO_SCORE_ITEMS_ROBOTICS_UI: Array<{
   { key: "computerSkills", label: "Kỹ năng sử dụng máy tính", max: 0.5 },
   { key: "problemSolving", label: "Kỹ năng giải quyết vấn đề", max: 1.5 },
 ];
+
+export const DEMO_SCORE_ITEMS_LEGO_ROBOTICS_UI: Array<{
+  key: keyof Session14DemoScoresUI;
+  label: string;
+  max: number;
+}> = [
+  { key: "algorithm", label: "Tư duy máy tính, tư duy thuật toán", max: 1.0 },
+  { key: "creativity", label: "Tư duy sáng tạo mô hình", max: 1.0 },
+  { key: "communication", label: "Kỹ năng giao tiếp, hợp tác", max: 1.0 },
+  { key: "problemSolving", label: "Kỹ năng giải quyết vấn đề", max: 1.0 },
+  { key: "computerSkills", label: "Kỹ năng sử dụng công nghệ", max: 1.0 },
+];
+
+export function isLegoRoboticsClassUi(
+  classId?: string | null,
+  courseName?: string | null
+): boolean {
+  const combined = `${String(classId || "")} ${String(courseName || "")}`.trim().toUpperCase();
+  if (!combined) return false;
+  return (
+    /(?:^|[-_\s])(?:KIND[-_\s]*ROB[A-Z0-9]*|ROB[46](?:[BAI][A-Z0-9]*|\+)?|LEGO[A-Z0-9]*|KIRO[A-Z0-9]*)(?=$|[-_\s])/i.test(
+      combined
+    ) ||
+    /(?:RBT|ROBOTICS)\s*[46]\+/i.test(combined)
+  );
+}
 
 export function extractSession14TagLabelsFromConfig(rawCategories: unknown): string[] {
   if (!Array.isArray(rawCategories)) return SESSION14_SPCK_TAGS;
@@ -516,7 +564,8 @@ export function parseYoutubeUrlsFromText(text: string): string[] {
 
 export function getRowReadinessSummary(
   row: ScannedFolderUIItem,
-  duplicateStudentIds: Set<string>
+  duplicateStudentIds: Set<string>,
+  classId?: string | null
 ): SpckRowReadinessSummaryUI {
   const missingReasons: string[] = [];
   if (!row.assignedStudentId) {
@@ -545,6 +594,21 @@ export function getRowReadinessSummary(
 
   const parsedYt = parseYoutubeUrlsFromText(row.youtubeUrlsText);
   const parsedLinks = parseRelatedLinksFromText(row.relatedLinksText);
+  const effectiveClassId = classId || "";
+  const isDefaultLogoOnly =
+    !(row.thumbnailPath || "").trim() ||
+    String(row.thumbnailPath || "").toLowerCase().includes("default-spck-thumbnail");
+  if (
+    effectiveClassId &&
+    isLegoRoboticsClassUi(effectiveClassId) &&
+    isDefaultLogoOnly &&
+    (row.screenshots || []).length === 0 &&
+    (row.attachments || []).length === 0 &&
+    parsedYt.length === 0 &&
+    parsedLinks.length === 0
+  ) {
+    missingReasons.push("Cần ít nhất 1 ảnh mô hình/học viên");
+  }
   if ((row.screenshots || []).length > 10) {
     missingReasons.push(`Vượt giới hạn 10 ảnh (${row.screenshots.length}/10)`);
   }
@@ -720,6 +784,9 @@ export function getDemoScoreItemsForClassUi(
   label: string;
   max: number;
 }> {
+  if (isLegoRoboticsClassUi(classId)) {
+    return DEMO_SCORE_ITEMS_LEGO_ROBOTICS_UI;
+  }
   const s = String(classId || "").trim().toUpperCase();
   const detectedRobotics =
     isRobotics === true ||
@@ -1122,8 +1189,12 @@ const spckUiHelpersBundle = {
   DEFAULT_SPCK_TAGS,
   SESSION14_SPCK_TAGS,
   COMPETENCY_ITEMS_UI,
+  COMPETENCY_ITEMS_LEGO_UI,
   DEMO_SCORE_ITEMS_UI,
   DEMO_SCORE_ITEMS_ROBOTICS_UI,
+  DEMO_SCORE_ITEMS_LEGO_ROBOTICS_UI,
+  isLegoRoboticsClassUi,
+  getCompetencyItemsForClassUi,
   extractSession14TagLabelsFromConfig,
   getStageMeta,
   stripUiSessionSuffix,

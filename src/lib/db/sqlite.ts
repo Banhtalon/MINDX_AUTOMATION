@@ -4955,9 +4955,32 @@ export const SESSION14_DEMO_LIMITS_ROBOTICS: Record<keyof SpckSession14DemoScore
   problemSolving: 1.5,
 };
 
+export const SESSION14_DEMO_LIMITS_LEGO_ROBOTICS: Record<keyof SpckSession14DemoScores, number> = {
+  algorithm: 1.0,
+  creativity: 1.0,
+  communication: 1.0,
+  computerSkills: 1.0,
+  problemSolving: 1.0,
+};
+
+export function isLegoRoboticsClassCode(
+  classId?: string | null,
+  courseName?: string | null
+): boolean {
+  const combined = `${String(classId || "")} ${String(courseName || "")}`.trim().toUpperCase();
+  if (!combined) return false;
+  return (
+    /(?:^|[-_\s])(?:KIND[-_\s]*ROB[A-Z0-9]*|ROB[46](?:[BAI][A-Z0-9]*|\+)?|LEGO[A-Z0-9]*|KIRO[A-Z0-9]*)(?=$|[-_\s])/i.test(
+      combined
+    ) ||
+    /(?:RBT|ROBOTICS)\s*[46]\+/i.test(combined)
+  );
+}
+
 export function isRoboticsClassCode(classId?: string | null): boolean {
   const s = String(classId || "").trim().toUpperCase();
   if (!s) return false;
+  if (isLegoRoboticsClassCode(s)) return true;
   return /(?:^|[-_\s])(ROB|ROBO|ROBOT|ROBOTICS|PREB|PREA|PREI|ARM|ARMA|ARMB|ARMI|SEM|SEMA|SEMB|SEMI|EV3|VEX|SPIKE|WEDO|ARDUINO)[A-Z0-9]*\b/i.test(
     s
   );
@@ -4973,6 +4996,9 @@ export function isCsiClassCode(classId?: string | null): boolean {
 export function getSession14DemoLimitsForClass(
   classId?: string | null
 ): Record<keyof SpckSession14DemoScores, number> {
+  if (isLegoRoboticsClassCode(classId)) {
+    return SESSION14_DEMO_LIMITS_LEGO_ROBOTICS;
+  }
   if (isRoboticsClassCode(classId)) {
     return SESSION14_DEMO_LIMITS_ROBOTICS;
   }
@@ -5090,14 +5116,159 @@ export function parseSession14CompetencyScores(
   };
 }
 
+export const LEGO_COMPETENCY_KEYS: ReadonlyArray<keyof SpckSession14CompetencyScores> = [
+  "knowledgeInClass",
+  "skillComputational",
+  "skillProblemSolving",
+  "skillCreativity",
+  "skillComputerUse",
+  "skillCommunication",
+  "attitudeInClass",
+];
+
 export function calculateCompetencyAverageScore(
-  scores: SpckSession14CompetencyScores
+  scores: SpckSession14CompetencyScores,
+  classId?: string | null
 ): number {
-  const sum = SESSION14_COMPETENCY_KEYS.reduce(
-    (acc, key) => acc + (Number(scores[key]) || 0),
-    0
-  );
-  return Math.round((sum / 9) * 100) / 100;
+  const keys = isLegoRoboticsClassCode(classId)
+    ? LEGO_COMPETENCY_KEYS
+    : SESSION14_COMPETENCY_KEYS;
+  const sum = keys.reduce((acc, key) => acc + (Number(scores[key]) || 0), 0);
+  return Math.round((sum / keys.length) * 100) / 100;
+}
+
+/**
+ * Lossless 4-decimal rebalance for raw Demo criteria when importing CSI/ROB/Legacy spreadsheets
+ * into a target class's MindX LMS rubric (e.g., general ROB 5.0 -> LEGO 5x1.0 without losing 4.375 precision).
+ */
+export function rebalanceRawDemoScoresForClass4dp(
+  raw: Partial<Record<keyof SpckSession14DemoScores, number>>,
+  classId?: string | null
+): { applied: boolean; scores: SpckSession14DemoScores } {
+  const limits = getSession14DemoLimitsForClass(classId);
+  const rawAlgo = Number(raw.algorithm);
+  const rawCrea = Number(raw.creativity);
+  const rawComm = Number(raw.communication);
+  const rawProb = Number(raw.problemSolving);
+  const rawComp = Number(raw.computerSkills);
+
+  let algo = Number.isFinite(rawAlgo) ? rawAlgo : 0;
+  let crea = Number.isFinite(rawCrea) ? rawCrea : 0;
+  let comm = Number.isFinite(rawComm) ? rawComm : 0;
+  let prob = Number.isFinite(rawProb) ? rawProb : 0;
+  let comp = Number.isFinite(rawComp) ? rawComp : 0;
+  let applied = false;
+
+  if (
+    isCsiClassCode(classId) &&
+    Number.isFinite(rawCrea) &&
+    rawCrea > limits.creativity + 1e-6 &&
+    rawCrea <= 1.0 + 1e-6 &&
+    (!Number.isFinite(rawAlgo) || (rawAlgo >= 0 && rawAlgo <= 1.5 + 1e-6))
+  ) {
+    const safeAlgo = Number.isFinite(rawAlgo) && rawAlgo >= 0 ? rawAlgo : 0;
+    const overflow = rawCrea - limits.creativity;
+    algo = Math.min(limits.algorithm, safeAlgo + overflow);
+    crea = limits.creativity;
+    applied = true;
+  } else if (isLegoRoboticsClassCode(classId)) {
+    const sumRaw = algo + crea + comm + comp + prob;
+    const inSourceBounds =
+      algo >= 0 &&
+      algo <= 1.5 + 1e-6 &&
+      crea >= 0 &&
+      crea <= 1.0 + 1e-6 &&
+      comm >= 0 &&
+      comm <= 1.0 + 1e-6 &&
+      comp >= 0 &&
+      comp <= 1.0 + 1e-6 &&
+      prob >= 0 &&
+      prob <= 1.5 + 1e-6 &&
+      sumRaw <= 5.0 + 1e-6;
+    const hasLegoExcess =
+      algo > limits.algorithm + 1e-6 ||
+      crea > limits.creativity + 1e-6 ||
+      comm > limits.communication + 1e-6 ||
+      comp > limits.computerSkills + 1e-6 ||
+      prob > limits.problemSolving + 1e-6;
+    if (inSourceBounds && hasLegoExcess) {
+      const vals: Record<keyof SpckSession14DemoScores, number> = {
+        algorithm: Math.min(limits.algorithm, algo),
+        creativity: Math.min(limits.creativity, crea),
+        communication: Math.min(limits.communication, comm),
+        computerSkills: Math.min(limits.computerSkills, comp),
+        problemSolving: Math.min(limits.problemSolving, prob),
+      };
+      let overflow =
+        Math.max(0, algo - limits.algorithm) +
+        Math.max(0, crea - limits.creativity) +
+        Math.max(0, comm - limits.communication) +
+        Math.max(0, comp - limits.computerSkills) +
+        Math.max(0, prob - limits.problemSolving);
+      const fillOrder: Array<keyof SpckSession14DemoScores> = [
+        "creativity",
+        "computerSkills",
+        "communication",
+        "algorithm",
+        "problemSolving",
+      ];
+      for (const k of fillOrder) {
+        if (overflow <= 1e-6) break;
+        const room = Math.max(0, limits[k] - vals[k]);
+        const add = Math.min(room, overflow);
+        vals[k] = Math.round((vals[k] + add) * 10000) / 10000;
+        overflow -= add;
+      }
+      algo = vals.algorithm;
+      crea = vals.creativity;
+      comm = vals.communication;
+      comp = vals.computerSkills;
+      prob = vals.problemSolving;
+      applied = true;
+    }
+  } else if (isRoboticsClassCode(classId) && !isLegoRoboticsClassCode(classId)) {
+    const inLegacyBounds =
+      algo >= 0 &&
+      algo <= 1.5 + 1e-6 &&
+      crea >= 0 &&
+      crea <= 1.0 + 1e-6 &&
+      comm >= 0 &&
+      comm <= 0.5 + 1e-6 &&
+      comp >= 0 &&
+      comp <= 1.0 + 1e-6 &&
+      prob >= 0 &&
+      prob <= 1.0 + 1e-6;
+    const hasLegacyExcess =
+      algo > limits.algorithm + 1e-6 ||
+      crea > limits.creativity + 1e-6 ||
+      comp > limits.computerSkills + 1e-6;
+    if (inLegacyBounds && hasLegacyExcess) {
+      const totalOverflow =
+        Math.max(0, algo - limits.algorithm) +
+        Math.max(0, crea - limits.creativity) +
+        Math.max(0, comp - limits.computerSkills);
+      const addProb = Math.min(Math.max(0, limits.problemSolving - prob), totalOverflow);
+      const remOverflow = Math.max(0, totalOverflow - addProb);
+      const addComm = Math.min(Math.max(0, limits.communication - comm), remOverflow);
+      algo = Math.min(limits.algorithm, algo);
+      crea = Math.min(limits.creativity, crea);
+      comp = Math.min(limits.computerSkills, comp);
+      prob = Math.min(limits.problemSolving, Math.round((prob + addProb) * 10000) / 10000);
+      comm = Math.min(limits.communication, Math.round((comm + addComm) * 10000) / 10000);
+      applied = true;
+    }
+  }
+
+  return {
+    applied,
+    scores: {
+      algorithm: Math.round(Math.min(Math.max(algo, 0), limits.algorithm) * 10000) / 10000,
+      creativity: Math.round(Math.min(Math.max(crea, 0), limits.creativity) * 10000) / 10000,
+      communication: Math.round(Math.min(Math.max(comm, 0), limits.communication) * 10000) / 10000,
+      problemSolving: Math.round(Math.min(Math.max(prob, 0), limits.problemSolving) * 10000) / 10000,
+      computerSkills: Math.round(Math.min(Math.max(comp, 0), limits.computerSkills) * 10000) / 10000,
+    },
+  };
 }
 
 export function parseSession14DemoScores(
@@ -5125,66 +5296,23 @@ export function parseSession14DemoScores(
   let probInput: unknown = obj.problemSolving;
   let compInput: unknown = obj.computerSkills;
 
-  const rawAlgo = Number(obj.algorithm);
-  const rawCrea = Number(obj.creativity);
-  const rawComm = Number(obj.communication);
-  const rawProb = Number(obj.problemSolving);
-  const rawComp = Number(obj.computerSkills);
-
-  // Rebalance legacy CSI split (1.5 algorithm / 1.0 creativity) into MindX LMS CSI caps (2.0 / 0.5)
-  if (
-    allowLegacyRebalance &&
-    isCsiClassCode(classId) &&
-    Number.isFinite(rawCrea) &&
-    rawCrea > limits.creativity + 1e-6 &&
-    rawCrea <= 1.0 + 1e-6 &&
-    (!Number.isFinite(rawAlgo) || (rawAlgo >= 0 && rawAlgo <= 1.5 + 1e-6))
-  ) {
-    const safeAlgo = Number.isFinite(rawAlgo) && rawAlgo >= 0 ? rawAlgo : 0;
-    const overflow = rawCrea - limits.creativity;
-    algoInput = Math.min(limits.algorithm, safeAlgo + overflow);
-    creaInput = limits.creativity;
-  }
-
-  // Rebalance legacy 2024 Robotics Excel split (1.5 / 1.0 / 0.5 / 1.0 / 1.0) into LMS Demo2024 | ROB (1.25 / 0.75 / 1.0 / 0.5 / 1.5)
-  if (allowLegacyRebalance && isRoboticsClassCode(classId)) {
-    const safeAlgo = Number.isFinite(rawAlgo) ? rawAlgo : 0;
-    const safeCrea = Number.isFinite(rawCrea) ? rawCrea : 0;
-    const safeComm = Number.isFinite(rawComm) ? rawComm : 0;
-    const safeComp = Number.isFinite(rawComp) ? rawComp : 0;
-    const safeProb = Number.isFinite(rawProb) ? rawProb : 0;
-    const inLegacyBounds =
-      safeAlgo >= 0 &&
-      safeAlgo <= 1.5 + 1e-6 &&
-      safeCrea >= 0 &&
-      safeCrea <= 1.0 + 1e-6 &&
-      safeComm >= 0 &&
-      safeComm <= 0.5 + 1e-6 &&
-      safeComp >= 0 &&
-      safeComp <= 1.0 + 1e-6 &&
-      safeProb >= 0 &&
-      safeProb <= 1.0 + 1e-6;
-    const hasLegacyExcess =
-      safeAlgo > limits.algorithm + 1e-6 ||
-      safeCrea > limits.creativity + 1e-6 ||
-      safeComp > limits.computerSkills + 1e-6;
-    if (inLegacyBounds && hasLegacyExcess) {
-      const overflowAlgo = Math.max(0, safeAlgo - limits.algorithm);
-      const overflowCrea = Math.max(0, safeCrea - limits.creativity);
-      const overflowComp = Math.max(0, safeComp - limits.computerSkills);
-      const totalOverflow = overflowAlgo + overflowCrea + overflowComp;
-
-      const roomProb = Math.max(0, limits.problemSolving - safeProb);
-      const addProb = Math.min(roomProb, totalOverflow);
-      const remOverflow = Math.max(0, totalOverflow - addProb);
-      const roomComm = Math.max(0, limits.communication - safeComm);
-      const addComm = Math.min(roomComm, remOverflow);
-
-      algoInput = Math.min(limits.algorithm, safeAlgo);
-      creaInput = Math.min(limits.creativity, safeCrea);
-      compInput = Math.min(limits.computerSkills, safeComp);
-      probInput = Math.min(limits.problemSolving, safeProb + addProb);
-      commInput = Math.min(limits.communication, safeComm + addComm);
+  if (allowLegacyRebalance) {
+    const rebalanced = rebalanceRawDemoScoresForClass4dp(
+      {
+        algorithm: Number(obj.algorithm),
+        creativity: Number(obj.creativity),
+        communication: Number(obj.communication),
+        problemSolving: Number(obj.problemSolving),
+        computerSkills: Number(obj.computerSkills),
+      },
+      classId
+    );
+    if (rebalanced.applied) {
+      algoInput = rebalanced.scores.algorithm;
+      creaInput = rebalanced.scores.creativity;
+      commInput = rebalanced.scores.communication;
+      probInput = rebalanced.scores.problemSolving;
+      compInput = rebalanced.scores.computerSkills;
     }
   }
 
@@ -5316,7 +5444,7 @@ export function computeSession14EvalHash(record: {
   awardRankGrade?: number | null;
 }): string {
   const comp = parseSession14CompetencyScores(record.competencyJson);
-  const compTotal = calculateCompetencyAverageScore(comp);
+  const compTotal = calculateCompetencyAverageScore(comp, record.classId);
   const demo = parseSession14DemoScores(record.demoScoresJson, record.classId);
   const demoTotal = calculateDemoTotalScore(demo);
   const cleanAward = String(record.awardRanking || "").trim();
@@ -5402,6 +5530,7 @@ function formatRoboticsInlineMarkdownToHtml(raw: string): string {
  * below the concise award label without changing what is stored in `session14EvalRepo`.
  */
 export function formatRoboticsAwardRankingHtmlForLms(params: {
+  classId?: string | null;
   awardRanking?: string | null;
   demoScores?: Partial<SpckSession14DemoScores> | null;
   demoTotalScore?: number | null;
@@ -5432,33 +5561,65 @@ export function formatRoboticsAwardRankingHtmlForLms(params: {
   }
 
   const demo = params.demoScores || {};
-  const criteria = [
-    {
-      name: "Tư duy máy tính & thuật toán",
-      score: Number(demo.algorithm || 0),
-      max: 1.25,
-    },
-    {
-      name: "Tư duy sáng tạo mô hình",
-      score: Number(demo.creativity || 0),
-      max: 0.75,
-    },
-    {
-      name: "Kỹ năng thuyết trình & giao tiếp",
-      score: Number(demo.communication || 0),
-      max: 1.0,
-    },
-    {
-      name: "Kỹ năng sử dụng công cụ lập trình Robot",
-      score: Number(demo.computerSkills || 0),
-      max: 0.5,
-    },
-    {
-      name: "Kỹ năng giải quyết vấn đề",
-      score: Number(demo.problemSolving || 0),
-      max: 1.5,
-    },
-  ];
+  const isLego = isLegoRoboticsClassCode(params.classId);
+  const limits = isLego
+    ? SESSION14_DEMO_LIMITS_LEGO_ROBOTICS
+    : SESSION14_DEMO_LIMITS_ROBOTICS;
+  const criteria = isLego
+    ? [
+        {
+          name: "Tư duy máy tính, tư duy thuật toán",
+          score: Number(demo.algorithm || 0),
+          max: limits.algorithm,
+        },
+        {
+          name: "Tư duy sáng tạo mô hình",
+          score: Number(demo.creativity || 0),
+          max: limits.creativity,
+        },
+        {
+          name: "Kỹ năng giao tiếp, hợp tác",
+          score: Number(demo.communication || 0),
+          max: limits.communication,
+        },
+        {
+          name: "Kỹ năng giải quyết vấn đề",
+          score: Number(demo.problemSolving || 0),
+          max: limits.problemSolving,
+        },
+        {
+          name: "Kỹ năng sử dụng công nghệ",
+          score: Number(demo.computerSkills || 0),
+          max: limits.computerSkills,
+        },
+      ]
+    : [
+        {
+          name: "Tư duy máy tính & thuật toán",
+          score: Number(demo.algorithm || 0),
+          max: limits.algorithm,
+        },
+        {
+          name: "Tư duy sáng tạo mô hình",
+          score: Number(demo.creativity || 0),
+          max: limits.creativity,
+        },
+        {
+          name: "Kỹ năng thuyết trình & giao tiếp",
+          score: Number(demo.communication || 0),
+          max: limits.communication,
+        },
+        {
+          name: "Kỹ năng sử dụng công cụ lập trình Robot",
+          score: Number(demo.computerSkills || 0),
+          max: limits.computerSkills,
+        },
+        {
+          name: "Kỹ năng giải quyết vấn đề",
+          score: Number(demo.problemSolving || 0),
+          max: limits.problemSolving,
+        },
+      ];
 
   const strengths = criteria
     .filter((c) => c.max > 0 && c.score / c.max >= 0.8)
@@ -5537,7 +5698,7 @@ export const session14EvalRepo = {
 
     const db = getDb();
     const defaultComp = DEFAULT_SESSION14_COMPETENCY_SCORES;
-    const defaultCompTotal = calculateCompetencyAverageScore(defaultComp);
+    const defaultCompTotal = calculateCompetencyAverageScore(defaultComp, normalizedClassId);
     const defaultDemo = DEFAULT_SESSION14_DEMO_SCORES;
     const defaultDemoTotal = calculateDemoTotalScore(defaultDemo);
 
@@ -5610,7 +5771,7 @@ export const session14EvalRepo = {
           )
         : currentComp;
     const nextCompJson = JSON.stringify(nextComp);
-    const nextCompTotal = calculateCompetencyAverageScore(nextComp);
+    const nextCompTotal = calculateCompetencyAverageScore(nextComp, normalizedClassId);
     const nextCompSourceJson =
       params.competencySource !== undefined
         ? typeof params.competencySource === "string"
@@ -5896,7 +6057,7 @@ export const session14EvalRepo = {
     }
 
     const comp = parseSession14CompetencyScores(current.competencyJson);
-    const compTotal = calculateCompetencyAverageScore(comp);
+    const compTotal = calculateCompetencyAverageScore(comp, normalizedClassId);
     const demo = parseSession14DemoScores(current.demoScoresJson, normalizedClassId);
     const demoTotal = calculateDemoTotalScore(demo);
 

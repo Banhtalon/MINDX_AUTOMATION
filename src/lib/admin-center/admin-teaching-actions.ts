@@ -2,6 +2,7 @@ import { getDynamicAdminConfig } from "../config";
 import {
   adminCenterRepo,
   buildDefaultTeachingProjectName,
+  isLegoRoboticsClassCode,
   isRoboticsClassCode,
   jobLogRepo,
   normalizeAssignedStudentIds,
@@ -684,7 +685,9 @@ function validateSpckTaskEligibility(
   | { ok: true; existing: AdminCenterClassRecord }
   | { ok: false; result: AdminSpckTasksProvisionResult } {
   const existing = adminCenterRepo.findClass(classCode);
-  if (isAdminSpckExemptClass(classCode, existing?.courseName)) {
+  const isPtOrCsExempt = isAdminSpckExemptClass(classCode, existing?.courseName);
+  const isLegoExempt = isLegoRoboticsClassCode(classCode, existing?.courseName);
+  if (isPtOrCsExempt || isLegoExempt) {
     return {
       ok: false,
       result: {
@@ -699,7 +702,9 @@ function validateSpckTaskEligibility(
         assignedStudentCount: 0,
         syncedProgressTasksCount: 0,
         targetProgressPercent: 0,
-        error: `Lớp ${classCode} thuộc khóa PTB/CSB được miễn buổi Demo & SPCK cuối khóa — không tạo nhiệm vụ SPCK.`,
+        error: isLegoExempt
+          ? `Lớp LEGO ${classCode} (ROB4/ROB6) được miễn nhiệm vụ SPCK trên Teaching (> B9) — không tạo nhiệm vụ SPCK.`
+          : `Lớp ${classCode} thuộc khóa PTB/CSB được miễn buổi Demo & SPCK cuối khóa — không tạo nhiệm vụ SPCK.`,
       },
     };
   }
@@ -1123,7 +1128,9 @@ async function provisionSingleSpckTasksInsideQueue(
       avgPct = Math.round(stuTotal / activeStudentIds.length);
     }
 
-    const isExemptClass = isAdminSpckExemptClass(classCode, courseName || syllabus?.courseName);
+    const isExemptClass =
+      isAdminSpckExemptClass(classCode, courseName || syllabus?.courseName) ||
+      isLegoRoboticsClassCode(classCode, courseName || syllabus?.courseName);
     const eligibleGt9Flag =
       !isExemptClass && (existing ? existing.currentSessionNumber >= 10 : true);
 
@@ -1317,7 +1324,12 @@ export async function provisionAdminBatchSpckTasksOnTeaching(
     });
     targetCodes = allCenterRows
       .filter((row) => {
-        if (isAdminSpckExemptClass(row.classCode, row.courseName)) return false;
+        if (
+          isAdminSpckExemptClass(row.classCode, row.courseName) ||
+          isLegoRoboticsClassCode(row.classCode, row.courseName)
+        ) {
+          return false;
+        }
         if (row.currentSessionNumber < 10) return false;
         if (!isConfirmedRunningStatus(row.status)) return false;
         const parsed = safeParseJson<AdminSpckTeachingTasksSummary | null>(

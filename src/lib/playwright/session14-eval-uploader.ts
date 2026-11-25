@@ -9,11 +9,15 @@
 
 import type { Page } from "playwright";
 import {
+  LEGO_COMPETENCY_AREA_SPECS,
+} from "../checkpoint/competency-specs";
+import {
   buildEnrichedSession14EvalList,
   calculateDemoTotalScore,
   computeSession14EvalHash,
   formatRoboticsAwardRankingHtmlForLms,
   getSession14DemoLimitsForClass,
+  isLegoRoboticsClassCode,
   isRoboticsClassCode,
   jobLogRepo,
   parseSession14CompetencyScores,
@@ -210,9 +214,13 @@ function verifyServerEvaluationPayload(
     ? (payloadObj.competencies as unknown[])
     : null;
 
+  const isLego = isLegoRoboticsClassCode(classId);
+  const expectedCompKeys = isLego
+    ? LEGO_COMPETENCY_AREA_SPECS.map((s) => s.key)
+    : [...SESSION14_COMPETENCY_KEYS];
   let matchedCompetencyCount = 0;
-  for (let groupIdx = 0; groupIdx < SESSION14_COMPETENCY_KEYS.length; groupIdx++) {
-    const key = SESSION14_COMPETENCY_KEYS[groupIdx];
+  for (let groupIdx = 0; groupIdx < expectedCompKeys.length; groupIdx++) {
+    const key = expectedCompKeys[groupIdx];
     const expectedRating = Math.min(5, Math.max(1, Math.round(Number(compScores[key]) || 4)));
     const rawVal =
       compContainer[key] !== undefined
@@ -241,12 +249,13 @@ function verifyServerEvaluationPayload(
       matchedCompetencyCount++;
     }
   }
-  const hasAllNineCompetencies = matchedCompetencyCount === SESSION14_COMPETENCY_KEYS.length;
+  const hasAllNineCompetencies = matchedCompetencyCount === expectedCompKeys.length;
 
   // 3. Check 5 Demo Scores
-  const demoKeys = isRobotics
-    ? (["algorithm", "creativity", "communication", "computerSkills", "problemSolving"] as const)
-    : (["algorithm", "creativity", "communication", "problemSolving", "computerSkills"] as const);
+  const demoKeys =
+    isRobotics && !isLego
+      ? (["algorithm", "creativity", "communication", "computerSkills", "problemSolving"] as const)
+      : (["algorithm", "creativity", "communication", "problemSolving", "computerSkills"] as const);
   const classDemoLimits = getSession14DemoLimitsForClass(classId);
   const demoMaxByIndex = demoKeys.map((k) => classDemoLimits[k]);
   const demoContainer =
@@ -955,6 +964,14 @@ export class Session14EvalUploader {
     await dialog.waitFor({ state: "visible", timeout: 6000 });
     await page.waitForTimeout(400);
 
+    const isLego = isLegoRoboticsClassCode(classId);
+    const activeCompKeys = (
+      isLego
+        ? LEGO_COMPETENCY_AREA_SPECS.map((s) => s.key)
+        : [...SESSION14_COMPETENCY_KEYS]
+    ) as Array<keyof typeof compScores>;
+    const minRequiredRadios = activeCompKeys.length * 5;
+
     // Ensure card inside dialog is expanded if it was previously saved and collapsed (or in View Mode on live LMS)
     const ensureDialogExpanded = async () => {
       let radioCount = await dialog.locator('input[type="radio"]').count().catch(() => 0);
@@ -973,7 +990,7 @@ export class Session14EvalUploader {
         for (let expandAttempt = 1; expandAttempt <= 8; expandAttempt++) {
           const curRadios = await dialog.locator('input[type="radio"]').count().catch(() => 0);
           const curQuills = await dialog.locator(".ql-editor").count().catch(() => 0);
-          if (curRadios >= 45 && curQuills >= 3) {
+          if (curRadios >= minRequiredRadios && curQuills >= 3) {
             return;
           }
           const savedRow = dialog.locator("table tbody tr").first();
@@ -999,17 +1016,17 @@ export class Session14EvalUploader {
     };
     await ensureDialogExpanded();
 
-    // 1. Fill 9 [ĐNL] Competency Radio Groups (45 radios = 9 groups x 5 options 1..5)
+    // 1. Fill [ĐNL] Competency Radio Groups (35 radios = 7 groups for LEGO; 45 radios = 9 groups for Coding/VEX)
     const radios = dialog.locator('input[type="radio"]');
     const totalRadios = await radios.count().catch(() => 0);
-    if (totalRadios < 45) {
+    if (totalRadios < minRequiredRadios) {
       throw new Error(
-        `Modal "Nhận xét học sinh" Buổi 14 của "${fullName}" không đủ 45 nút chọn Điểm Năng lực [ĐNL] (tìm thấy ${totalRadios}).`
+        `Modal "Nhận xét học sinh" Buổi 14 của "${fullName}" không đủ ${minRequiredRadios} nút chọn Điểm Năng lực [ĐNL] (tìm thấy ${totalRadios}).`
       );
     }
 
-    for (let groupIdx = 0; groupIdx < SESSION14_COMPETENCY_KEYS.length; groupIdx++) {
-      const key = SESSION14_COMPETENCY_KEYS[groupIdx];
+    for (let groupIdx = 0; groupIdx < activeCompKeys.length; groupIdx++) {
+      const key = activeCompKeys[groupIdx];
       const rating = Math.min(5, Math.max(1, Math.round(Number(compScores[key]) || 4)));
       const radioIdx = groupIdx * 5 + (rating - 1);
       const targetRadio = radios.nth(radioIdx);
@@ -1033,23 +1050,32 @@ export class Session14EvalUploader {
       .catch(() => totalNumInputs >= 6);
     const offset = firstDisabled && totalNumInputs >= 6 ? 1 : 0;
 
-    const demoValuesInDomOrder: number[] = isRobotics
-      ? [
-          demoScores.algorithm,
-          demoScores.creativity,
-          demoScores.communication,
-          demoScores.computerSkills,
-          demoScores.problemSolving,
-        ]
-      : [
-          demoScores.algorithm,
-          demoScores.creativity,
-          demoScores.communication,
-          demoScores.problemSolving,
-          demoScores.computerSkills,
-        ];
+    const demoValuesInDomOrder: number[] =
+      isRobotics && !isLego
+        ? [
+            demoScores.algorithm,
+            demoScores.creativity,
+            demoScores.communication,
+            demoScores.computerSkills,
+            demoScores.problemSolving,
+          ]
+        : [
+            demoScores.algorithm,
+            demoScores.creativity,
+            demoScores.communication,
+            demoScores.problemSolving,
+            demoScores.computerSkills,
+          ];
 
-    const demoLabelsInDomOrder: string[] = isRobotics
+    const demoLabelsInDomOrder: string[] = isLego
+      ? [
+          "Tư duy máy tính, tư duy thuật toán",
+          "Tư duy sáng tạo mô hình",
+          "Kỹ năng giao tiếp, hợp tác",
+          "Kỹ năng giải quyết vấn đề",
+          "Kỹ năng sử dụng công nghệ",
+        ]
+      : isRobotics
       ? [
           "Tư duy máy tính, tư duy thuật toán",
           "Tư duy sáng tạo mô hình",
@@ -1157,6 +1183,7 @@ export class Session14EvalUploader {
       isRobotics && (isLiveLms || !cleanAwardRanking)
         ? stripHtmlTagsToPlainText(
             formatRoboticsAwardRankingHtmlForLms({
+              classId,
               awardRanking: cleanAwardRanking,
               demoScores,
               demoTotalScore: calculateDemoTotalScore(demoScores),
@@ -1754,9 +1781,9 @@ export class Session14EvalUploader {
       }
     }
 
-    // Verify 9 [ĐNL] Competency radio selections
-    for (let groupIdx = 0; groupIdx < SESSION14_COMPETENCY_KEYS.length; groupIdx++) {
-      const key = SESSION14_COMPETENCY_KEYS[groupIdx];
+    // Verify [ĐNL] Competency radio selections (7 groups for LEGO RBT 4+/6+, 9 groups for Coding/VEX)
+    for (let groupIdx = 0; groupIdx < activeCompKeys.length; groupIdx++) {
+      const key = activeCompKeys[groupIdx];
       const expectedRating = Math.min(5, Math.max(1, Math.round(Number(compScores[key]) || 4)));
       const radioIdx = groupIdx * 5 + (expectedRating - 1);
       const isChecked = await radios
@@ -1765,7 +1792,7 @@ export class Session14EvalUploader {
         .catch(() => false);
       if (!isChecked) {
         throw new Error(
-          `Đối chiếu Read-after-Write thất bại: Điểm Năng lực [ĐNL] mục #${groupIdx + 1} (${key}=${expectedRating}) chưa được chọn trên DOM.`
+          `Đối chiếu Read-after-Write thất bại: Điểm Năng lực [ĐNL] mục #${groupIdx + 1} (${String(key)}=${expectedRating}) chưa được chọn trên DOM.`
         );
       }
     }

@@ -4,6 +4,7 @@ import { config, getDynamicAdminConfig } from "../config";
 import {
   adminCenterRepo,
   getDb,
+  isLegoRoboticsClassCode,
   isRoboticsClassCode,
   jobLogRepo,
   normalizeDateToIsoYmd,
@@ -511,7 +512,10 @@ export function evaluateTeachingSpckTasksCompliance(params: {
 
   const projectId = Number(params.project?.id);
   const hasProject = Number.isInteger(projectId) && projectId > 0;
-  if (!params.eligibleGt9 && !hasProject) {
+  const isExemptCourse =
+    isAdminSpckExemptClass(params.classCode, params.courseName) ||
+    isLegoRoboticsClassCode(params.classCode, params.courseName);
+  if (!params.eligibleGt9 && (isExemptCourse || !hasProject)) {
     return {
       taskStatus: "NOT_ELIGIBLE",
       totalWeightPercent,
@@ -1163,11 +1167,8 @@ export function computeAdminClassAudits(
   }
 
   const hasSummaryText = stripHtmlPlain(evalSlot?.summary || evalSlot?.note).length > 0;
-  const hasHomeworkText = stripHtmlPlain(evalSlot?.homework).length > 0;
-  const hasSummaryAndHomework =
-    Boolean(evalSlot) &&
-    hasSummaryText &&
-    (blockType === "ROBOTICS" || evaluatedSessionNumber >= 14 || hasHomeworkText);
+  // Cách 1B: Ô BTVN trên LMS là optional cho cả Coding lẫn Robotics — chỉ cần có Tổng kết buổi học là đạt
+  const hasSummaryAndHomework = Boolean(evalSlot) && hasSummaryText;
 
   const checkRows = input.teachingCheckRows || [];
   const matchedCheckRow = findMatchingCheckNhanXetRow(
@@ -1189,10 +1190,11 @@ export function computeAdminClassAudits(
   const isLmsLateOrMissing = isTeachingCheckLateOrMissing(lmsCheckStatus);
   const checkIssueNote = matchedCheckRow?.issueDescription || "";
 
-  // Checkpoint Alert (Coding: Buổi 5, 9, 14; Robotics: Buổi 4, 8, 14)
+  // Checkpoint Alert (Coding: Buổi 5, 9, 14; VEX Robotics: Buổi 4, 8, 14; LEGO ROB4/6: Buổi 5 & 9 check 7 sao năng lực, Buổi 14 Demo)
   const spckExemptCourse = isAdminSpckExemptClass(classCode, courseName);
-  const cp1Session = blockType === "ROBOTICS" ? 4 : 5;
-  const cp2Session = blockType === "ROBOTICS" ? 8 : 9;
+  const isLegoClass = isLegoRoboticsClassCode(classCode, courseName);
+  const cp1Session = isLegoClass ? 5 : blockType === "ROBOTICS" ? 4 : 5;
+  const cp2Session = isLegoClass ? 9 : blockType === "ROBOTICS" ? 8 : 9;
   let checkpointAlert: AdminWeeklyOpsSummary["checkpointAlert"] = null;
 
   const findSlotForSessionNumber = (targetSession: number): any | null => {
@@ -1284,6 +1286,20 @@ export function computeAdminClassAudits(
       ? input.teachingMakeupRows
       : [];
 
+    const maxSlotRateCount = (milestoneSlot?.studentAttendance || []).reduce(
+      (maxCnt: number, item: any) => {
+        const cnt = Array.isArray(item?.commentByAreas)
+          ? item.commentByAreas.filter(
+              (a: any) => String(a?.type || "").toUpperCase() === "RATE"
+            ).length
+          : 0;
+        return Math.max(maxCnt, cnt);
+      },
+      0
+    );
+    const minLegoCpRates =
+      maxSlotRateCount >= 6 ? Math.min(7, maxSlotRateCount) : 7;
+
     const missingStudentNames: string[] = [];
     const absentMakeupStudentNames: string[] = [];
 
@@ -1297,7 +1313,19 @@ export function computeAdminClassAudits(
       let stageNote = "";
       const rawStage = rawSnapshotById.get(s.studentId);
 
-      if (milestone === "CP1") {
+      if (isLegoClass && (milestone === "CP1" || milestone === "CP2")) {
+        // LEGO ROB4/ROB6 has no numeric LT/TH test at B5/B9 — M1 checks 7 competency RATE areas instead
+        const tickedRateCount = Array.isArray(att?.commentByAreas)
+          ? att.commentByAreas.filter(
+              (a: any) =>
+                String(a?.type || "").toUpperCase() === "RATE" &&
+                Number.isFinite(Number(a?.grade)) &&
+                Number(a?.grade) > 0
+            ).length
+          : 0;
+        isMissingScore = tickedRateCount < minLegoCpRates;
+        stageNote = milestone === "CP1" ? rawStage?.cp1Note || "" : rawStage?.cp2Note || "";
+      } else if (milestone === "CP1") {
         isMissingScore = s.cp1.theory.value === null && s.cp1.practice.value === null;
         stageNote = s.cp1.competency.note || rawStage?.cp1Note || "";
       } else if (milestone === "CP2") {
@@ -1363,7 +1391,11 @@ export function computeAdminClassAudits(
 
     const prefix = `Buổi ${targetSession} (${milestone})`;
     const missingLabel =
-      milestone === "CP1"
+      isLegoClass && milestone === "CP1"
+        ? "chưa tích sao năng lực Check-point 1"
+        : isLegoClass && milestone === "CP2"
+        ? "chưa tích sao năng lực Check-point 2"
+        : milestone === "CP1"
         ? "thiếu điểm Check-point 1"
         : milestone === "CP2"
         ? "thiếu điểm Check-point 2"
@@ -1663,10 +1695,14 @@ export function computeAdminClassAudits(
   }
 
   // ========================================================
-  // TAB 3: SPCK Audit (Buổi 12, 13, 14 & Finished)
+  // TAB 3: SPCK Audit (Buổi 12, 13, 14 & Finished; LEGO B12 exempt + B13-14 cluster)
   // ========================================================
   const isFinishedClass = /finish|completed|done/i.test(status);
-  const spckApplicable = !spckExemptCourse && (currentSessionNumber >= 12 || isFinishedClass);
+  const spckApplicable =
+    !spckExemptCourse &&
+    (isLegoClass
+      ? currentSessionNumber >= 13 || isFinishedClass
+      : currentSessionNumber >= 12 || isFinishedClass);
   const works = Array.isArray(input.studentWorks)
     ? input.studentWorks.filter(
         (w) => w?.isDeleted !== true && String(w?.isDeleted || "").toLowerCase() !== "true"
@@ -1704,106 +1740,197 @@ export function computeAdminClassAudits(
   const session14FinalEval: AdminSpckAuditSummary["session14FinalEval"] = {
     applicable: false,
     requiredCount: 0,
+    requiredCompetencyCount: isLegoClass ? 7 : 9,
     demoScoredCount: 0,
     competencyCompleteCount: 0,
     mindx3PartCommentCount: 0,
     missingEvalStudents: [],
   };
 
+  const doesWorkHaveImageOrLink = (stuWork: any): boolean => {
+    const latest = stuWork?.latestData || {};
+    const hasThumbnailObjOrStr = Boolean(
+      (typeof latest?.thumbnail === "string" && latest.thumbnail.trim()) ||
+        (latest?.thumbnail &&
+          typeof latest.thumbnail === "object" &&
+          Boolean(latest.thumbnail.url || latest.thumbnail.path || latest.thumbnail.name))
+    );
+    return Boolean(
+      hasThumbnailObjOrStr ||
+        (typeof latest?.thumbnailUrl === "string" && latest.thumbnailUrl.trim()) ||
+        (typeof latest?.imageUrl === "string" && latest.imageUrl.trim()) ||
+        (Array.isArray(latest?.imageUrl) && latest.imageUrl.length > 0) ||
+        (Array.isArray(latest?.screenshots) && latest.screenshots.length > 0) ||
+        (Array.isArray(latest?.images) && latest.images.length > 0) ||
+        (Array.isArray(latest?.attachments) && latest.attachments.length > 0) ||
+        (Array.isArray(latest?.attachmentUrls) && latest.attachmentUrls.length > 0) ||
+        (Array.isArray(latest?.videoUrls) && latest.videoUrls.length > 0) ||
+        (Array.isArray(latest?.relatedUrls) && latest.relatedUrls.length > 0) ||
+        (Array.isArray(latest?.links) && latest.links.length > 0) ||
+        (Array.isArray(latest?.youtubeUrls) && latest.youtubeUrls.length > 0) ||
+        (Array.isArray(latest?.referenceUrls) && latest.referenceUrls.length > 0) ||
+        (typeof latest?.productUrl === "string" && latest.productUrl.trim()) ||
+        (typeof latest?.youtubeUrl === "string" && latest.youtubeUrl.trim()) ||
+        (typeof stuWork?.url === "string" && stuWork.url.trim())
+    );
+  };
+
   if (spckApplicable) {
-    for (const sn of [12, 13, 14] as const) {
-      const slotIdx = sn - 1;
-      const slotObj = slots[slotIdx];
-      const slotWorks = works.filter((w) => {
+    if (isLegoClass) {
+      // LEGO ROB4/ROB6 (2A): Session 12 is a normal class (exempt), and Sessions 13-14 share 1 photo-only SPCK requirement
+      const clusterTargetSn: 13 | 14 =
+        currentSessionNumber >= 14 || isFinishedClass ? 14 : 13;
+      const clusterSlot = buildEmptySpckSlot(clusterTargetSn);
+      clusterSlot.sessionOccurred = true;
+      clusterSlot.isLegoCluster1314 = true;
+
+      const clusterWorks = works.filter((w) => {
         const wSid = String(w?.classSessionId || "").trim();
         const mappedSn = slotIdToSession.get(wSid);
-        if (mappedSn === sn) return true;
-        if (Number(w?.classSessionNumber) === sn) return true;
-        return false;
+        if (mappedSn === 13 || mappedSn === 14) return true;
+        const explicitSn = Number(w?.classSessionNumber);
+        return explicitSn === 13 || explicitSn === 14;
       });
 
-      const occurred =
-        currentSessionNumber >= sn || isFinishedClass || slotWorks.length > 0;
-      const slotAudit = buildEmptySpckSlot(sn);
-      slotAudit.sessionOccurred = occurred;
-
-      if (occurred) {
-        const attById = new Map<string, string>();
-        const attByNorm = new Map<string, string>();
-        for (const att of slotObj?.studentAttendance || []) {
+      const buildAttMapForSn = (sn: 13 | 14) => {
+        const byId = new Map<string, string>();
+        const byNorm = new Map<string, string>();
+        for (const att of slots[sn - 1]?.studentAttendance || []) {
           const sid = String(att?.student?.id || att?.studentId || "").trim();
           const sName = String(att?.student?.fullName || "").trim();
           const tag = normalizeAttendanceTag(att?.status);
-          if (sid) attById.set(sid, tag);
-          if (sName) attByNorm.set(normalizeVietnameseName(sName), tag);
+          if (sid) byId.set(sid, tag);
+          if (sName) byNorm.set(normalizeVietnameseName(sName), tag);
+        }
+        return { byId, byNorm };
+      };
+      const att13Map = buildAttMapForSn(13);
+      const att14Map = clusterTargetSn === 14 ? buildAttMapForSn(14) : null;
+
+      for (const stu of activeLmsStudents) {
+        const normStuName = normalizeVietnameseName(stu.fullName);
+        const tag13 = att13Map.byId.get(stu.id) || att13Map.byNorm.get(normStuName) || "UNMARKED";
+        const tag14 = att14Map
+          ? att14Map.byId.get(stu.id) || att14Map.byNorm.get(normStuName) || "UNMARKED"
+          : null;
+        const stuWorks = clusterWorks.filter(
+          (w) => String(w?.studentId || "").trim() === stu.id
+        );
+        const absentAllOccurred =
+          tag13 === "ABSENT" && (tag14 === null || tag14 === "ABSENT");
+        if (absentAllOccurred && stuWorks.length === 0) {
+          continue;
         }
 
-        for (const stu of activeLmsStudents) {
-          const attTag =
-            attById.get(stu.id) ||
-            attByNorm.get(normalizeVietnameseName(stu.fullName)) ||
-            "UNMARKED";
-          // On sessions 12 & 13, ABSENT students are exempt from SPCK upload audit; session 14 requires everyone.
-          if ((sn === 12 || sn === 13) && attTag === "ABSENT") {
-            continue;
-          }
+        clusterSlot.requiredCount++;
+        if (stuWorks.length === 0) {
+          clusterSlot.missingUploadStudents.push(stu.fullName);
+          totalMissingUploads++;
+          continue;
+        }
 
-          slotAudit.requiredCount++;
-          const stuWork = slotWorks.find(
-            (w) => String(w?.studentId || "").trim() === stu.id
-          );
+        clusterSlot.uploadedCount++;
+        const bestWork =
+          stuWorks.find(
+            (w) =>
+              doesWorkHaveImageOrLink(w) &&
+              stripHtmlPlain(
+                w?.latestData?.comment || w?.latestData?.teacherComment || w?.comment || ""
+              ).length > 0
+          ) ||
+          stuWorks.find((w) => doesWorkHaveImageOrLink(w)) ||
+          stuWorks[0];
 
-          if (!stuWork) {
-            slotAudit.missingUploadStudents.push(stu.fullName);
-            totalMissingUploads++;
-            continue;
-          }
+        if (!doesWorkHaveImageOrLink(bestWork)) {
+          clusterSlot.missingImageOrLinkStudents.push(stu.fullName);
+          totalMissingMediaOrLinks++;
+        }
 
-          slotAudit.uploadedCount++;
-          const latest = stuWork?.latestData || {};
-          const hasThumbnailObjOrStr = Boolean(
-            (typeof latest?.thumbnail === "string" && latest.thumbnail.trim()) ||
-              (latest?.thumbnail &&
-                typeof latest.thumbnail === "object" &&
-                Boolean(latest.thumbnail.url || latest.thumbnail.path || latest.thumbnail.name))
-          );
-          const hasImageOrLink = Boolean(
-            hasThumbnailObjOrStr ||
-              (typeof latest?.thumbnailUrl === "string" && latest.thumbnailUrl.trim()) ||
-              (typeof latest?.imageUrl === "string" && latest.imageUrl.trim()) ||
-              (Array.isArray(latest?.imageUrl) && latest.imageUrl.length > 0) ||
-              (Array.isArray(latest?.screenshots) && latest.screenshots.length > 0) ||
-              (Array.isArray(latest?.images) && latest.images.length > 0) ||
-              (Array.isArray(latest?.attachments) && latest.attachments.length > 0) ||
-              (Array.isArray(latest?.attachmentUrls) && latest.attachmentUrls.length > 0) ||
-              (Array.isArray(latest?.videoUrls) && latest.videoUrls.length > 0) ||
-              (Array.isArray(latest?.relatedUrls) && latest.relatedUrls.length > 0) ||
-              (Array.isArray(latest?.links) && latest.links.length > 0) ||
-              (Array.isArray(latest?.youtubeUrls) && latest.youtubeUrls.length > 0) ||
-              (Array.isArray(latest?.referenceUrls) && latest.referenceUrls.length > 0) ||
-              (typeof latest?.productUrl === "string" && latest.productUrl.trim()) ||
-              (typeof latest?.youtubeUrl === "string" && latest.youtubeUrl.trim()) ||
-              (typeof stuWork?.url === "string" && stuWork.url.trim())
-          );
-
-          if (!hasImageOrLink) {
-            slotAudit.missingImageOrLinkStudents.push(stu.fullName);
-            totalMissingMediaOrLinks++;
-          }
-
-          const spckComment = stripHtmlPlain(
-            latest?.comment || latest?.teacherComment || stuWork?.comment || ""
-          );
-          if (spckComment.length > 0) {
-            slotAudit.commentedCount++;
-          } else {
-            slotAudit.missingTeacherCommentStudents.push(stu.fullName);
-            totalMissingTeacherComments++;
-          }
+        const spckComment = stripHtmlPlain(
+          bestWork?.latestData?.comment ||
+            bestWork?.latestData?.teacherComment ||
+            bestWork?.comment ||
+            ""
+        );
+        if (spckComment.length > 0) {
+          clusterSlot.commentedCount++;
+        } else {
+          clusterSlot.missingTeacherCommentStudents.push(stu.fullName);
+          totalMissingTeacherComments++;
         }
       }
 
-      spckSlots[String(sn) as "12" | "13" | "14"] = slotAudit;
+      spckSlots[String(clusterTargetSn) as "13" | "14"] = clusterSlot;
+    } else {
+      for (const sn of [12, 13, 14] as const) {
+        const slotIdx = sn - 1;
+        const slotObj = slots[slotIdx];
+        const slotWorks = works.filter((w) => {
+          const wSid = String(w?.classSessionId || "").trim();
+          const mappedSn = slotIdToSession.get(wSid);
+          if (mappedSn === sn) return true;
+          if (Number(w?.classSessionNumber) === sn) return true;
+          return false;
+        });
+
+        const occurred =
+          currentSessionNumber >= sn || isFinishedClass || slotWorks.length > 0;
+        const slotAudit = buildEmptySpckSlot(sn);
+        slotAudit.sessionOccurred = occurred;
+
+        if (occurred) {
+          const attById = new Map<string, string>();
+          const attByNorm = new Map<string, string>();
+          for (const att of slotObj?.studentAttendance || []) {
+            const sid = String(att?.student?.id || att?.studentId || "").trim();
+            const sName = String(att?.student?.fullName || "").trim();
+            const tag = normalizeAttendanceTag(att?.status);
+            if (sid) attById.set(sid, tag);
+            if (sName) attByNorm.set(normalizeVietnameseName(sName), tag);
+          }
+
+          for (const stu of activeLmsStudents) {
+            const attTag =
+              attById.get(stu.id) ||
+              attByNorm.get(normalizeVietnameseName(stu.fullName)) ||
+              "UNMARKED";
+            // On sessions 12 & 13, ABSENT students are exempt from SPCK upload audit; session 14 requires everyone.
+            if ((sn === 12 || sn === 13) && attTag === "ABSENT") {
+              continue;
+            }
+
+            slotAudit.requiredCount++;
+            const stuWork = slotWorks.find(
+              (w) => String(w?.studentId || "").trim() === stu.id
+            );
+
+            if (!stuWork) {
+              slotAudit.missingUploadStudents.push(stu.fullName);
+              totalMissingUploads++;
+              continue;
+            }
+
+            slotAudit.uploadedCount++;
+            const latest = stuWork?.latestData || {};
+            if (!doesWorkHaveImageOrLink(stuWork)) {
+              slotAudit.missingImageOrLinkStudents.push(stu.fullName);
+              totalMissingMediaOrLinks++;
+            }
+
+            const spckComment = stripHtmlPlain(
+              latest?.comment || latest?.teacherComment || stuWork?.comment || ""
+            );
+            if (spckComment.length > 0) {
+              slotAudit.commentedCount++;
+            } else {
+              slotAudit.missingTeacherCommentStudents.push(stu.fullName);
+              totalMissingTeacherComments++;
+            }
+          }
+        }
+
+        spckSlots[String(sn) as "12" | "13" | "14"] = slotAudit;
+      }
     }
 
     // Session 14 final evaluation & 3-part MindX comment check
@@ -1811,6 +1938,8 @@ export function computeAdminClassAudits(
     if (!spckExemptCourse && (currentSessionNumber >= 14 || isFinishedClass || Boolean(slot14))) {
       session14FinalEval.applicable = currentSessionNumber >= 14 || isFinishedClass;
       if (session14FinalEval.applicable) {
+        const requiredCompetencyCount = isLegoClass ? 7 : 9;
+        session14FinalEval.requiredCompetencyCount = requiredCompetencyCount;
         session14FinalEval.requiredCount = activeLmsStudents.length;
         const att14ById = new Map<string, any>();
         for (const att of slot14?.studentAttendance || []) {
@@ -1866,12 +1995,13 @@ export function computeAdminClassAudits(
                 return Number.isFinite(v) && v > 0;
               }).length
             : 0;
-          const hasAllNineCompetency = Math.max(rateCount, evalCriteriaCount) >= 9;
+          const hasAllRequiredCompetency =
+            Math.max(rateCount, evalCriteriaCount) >= requiredCompetencyCount;
           const hasCompetency =
-            hasAllNineCompetency &&
+            hasAllRequiredCompetency &&
             ((rcStu?.final?.competency?.value !== null &&
               rcStu?.final?.competency?.value !== undefined) ||
-              rateCount >= 9);
+              rateCount >= requiredCompetencyCount);
           const contentAreas = Array.isArray(att14?.commentByAreas)
             ? att14.commentByAreas
                 .filter(
@@ -1913,10 +2043,11 @@ export function computeAdminClassAudits(
   };
 
   // ========================================================
-  // TAB 4: > Buổi 9 SPCK Tasks on Teaching
+  // TAB 4: > Buổi 9 SPCK Tasks on Teaching (Exempt PTB/CSB and LEGO ROB4/ROB6)
   // ========================================================
   const eligibleGt9 =
     !spckExemptCourse &&
+    !isLegoClass &&
     currentSessionNumber >= 10 &&
     !isFinishedClass &&
     isConfirmedRunningStatus(status);
@@ -2250,7 +2381,9 @@ export function mapAdminClassRecordToDto(
     totalMissingMediaOrLinks: 0,
     totalMissingTeacherComments: 0,
   };
-  const rowSpckExempt = isAdminSpckExemptClass(row.classCode, row.courseName);
+  const rowSpckExempt =
+    isAdminSpckExemptClass(row.classCode, row.courseName) ||
+    isLegoRoboticsClassCode(row.classCode, row.courseName);
   const defaultTasks: AdminSpckTeachingTasksSummary = {
     eligibleGt9:
       !rowSpckExempt && row.currentSessionNumber >= 10 && isConfirmedRunningStatus(row.status),

@@ -14,11 +14,7 @@ function formatMissingItemsForClass(cls: AdminClassRowDto): string[] {
   }
 
   if (cls.weeklyOps.evaluatedSessionNumber > 0 && !cls.weeklyOps.hasSummaryAndHomework) {
-    items.push(
-      cls.blockType === "ROBOTICS"
-        ? `Thiếu tổng kết buổi ${sn}`
-        : `Thiếu tổng kết/BTVN buổi ${sn}`
-    );
+    items.push(`Thiếu tổng kết buổi ${sn}`);
   }
 
   if (cls.weeklyOps.missingCommentStudentNames.length > 0) {
@@ -57,8 +53,13 @@ function formatMissingItemsForClass(cls: AdminClassRowDto): string[] {
 
   if (cls.spckAudit.applicable) {
     if (cls.spckAudit.totalMissingUploads > 0) {
+      const isLegoCluster = Boolean(
+        cls.spckAudit.slots?.["13"]?.isLegoCluster1314 ||
+          cls.spckAudit.slots?.["14"]?.isLegoCluster1314
+      );
+      const rangeLabel = isLegoCluster ? "B13–14" : "B12–14";
       items.push(
-        `SPCK còn thiếu ${cls.spckAudit.totalMissingUploads} lượt nộp (B12–14)`
+        `SPCK còn thiếu ${cls.spckAudit.totalMissingUploads} lượt nộp (${rangeLabel})`
       );
     }
     if (cls.spckAudit.totalMissingTeacherComments > 0) {

@@ -172,8 +172,15 @@ async function runTests() {
       computerSkills: 0.5,
       problemSolving: 1.5,
     };
+    const expectedLegoLimits = {
+      algorithm: 1.0,
+      creativity: 1.0,
+      communication: 1.0,
+      computerSkills: 1.0,
+      problemSolving: 1.0,
+    };
     assert.deepEqual(getSession14DemoLimitsForClass("VT-ROB-ARMA13"), expectedRobLimits);
-    assert.deepEqual(getSession14DemoLimitsForClass("VT-KIND-ROB4B04"), expectedRobLimits);
+    assert.deepEqual(getSession14DemoLimitsForClass("VT-KIND-ROB4B04"), expectedLegoLimits);
     const uiItemsAuto = getDemoScoreItemsForClassUi("VT-ROB-ARMA13");
     assert.deepEqual(
       uiItemsAuto.map((it) => [it.key, it.max]),
@@ -258,7 +265,10 @@ async function runTests() {
 
       const extracted = extractDemoScoresFromWorksheet(cells, clsCode, wsXml);
       assert.strictEqual(extracted.hasCompleteScores, true);
-      assert.deepEqual(extracted.demoScores, expectedRobLimits);
+      assert.deepEqual(
+        extracted.demoScores,
+        clsCode.includes("KIND-ROB") ? expectedLegoLimits : expectedRobLimits
+      );
       assert.strictEqual(extracted.demoTotalScore, 5.0);
     }
     assert.strictEqual(
@@ -337,26 +347,51 @@ async function runTests() {
         p1.judgeNote.includes("Con thuyết trình rõ ràng, tự tin."),
         `F01: Phải đọc được nhận xét BGK1 ở B27 cho ${clsId}, nhận="${p1.judgeNote}"`
       );
-      assert.deepEqual(p1.demoScores, {
-        algorithm: 1.25,
-        creativity: 0.75,
-        communication: 1.0,
-        computerSkills: 0.25,
-        problemSolving: 1.25,
-      });
+      assert.deepEqual(
+        p1.demoScores,
+        clsId.includes("KIND-ROB")
+          ? {
+              algorithm: 1.0,
+              creativity: 1.0,
+              communication: 1.0,
+              computerSkills: 0.5,
+              problemSolving: 1.0,
+            }
+          : {
+              algorithm: 1.25,
+              creativity: 0.75,
+              communication: 1.0,
+              computerSkills: 0.25,
+              problemSolving: 1.25,
+            }
+      );
       assert.strictEqual(p1.demoTotalScore, 4.5);
       assert.strictEqual(p1.updatedRecord.awardRanking, "Giải Nhất (4.50/5.0 điểm)");
 
       const p2 = parsed.students.find((x) => x.fullName === "Đoàn Quốc Việt")!;
-      assert.deepEqual(p2.demoScores, {
-        algorithm: 1.25,
-        creativity: 0.5,
-        communication: 0.75,
-        computerSkills: 0.5,
-        problemSolving: 1.38,
-      });
+      assert.deepEqual(
+        p2.demoScores,
+        clsId.includes("KIND-ROB")
+          ? {
+              algorithm: 1.0,
+              creativity: 1.0,
+              communication: 0.75,
+              computerSkills: 0.63,
+              problemSolving: 1.0,
+            }
+          : {
+              algorithm: 1.25,
+              creativity: 0.5,
+              communication: 0.75,
+              computerSkills: 0.5,
+              problemSolving: 1.38,
+            }
+      );
       assert.strictEqual(p2.demoRawTotalScore, 4.375);
-      assert.strictEqual(p2.updatedRecord.awardRanking, "Giải Nhì (4.375/5.0 điểm)");
+      assert.strictEqual(
+        p2.updatedRecord.awardRanking,
+        "Giải Nhì (4.375/5.0 điểm)"
+      );
     }
     console.log("  -> PASS [ROB-TPL-02].");
 

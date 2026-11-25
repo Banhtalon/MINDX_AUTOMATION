@@ -18,9 +18,11 @@ import {
   getSession14DemoLimitsForClass,
   isCsiClassCode,
   isDefaultSpckProductTitle,
+  isLegoRoboticsClassCode,
   isRoboticsClassCode,
   parseSession14CompetencyScores,
   parseSession14DemoScores,
+  rebalanceRawDemoScoresForClass4dp,
   SESSION14_COMPETENCY_KEYS,
   type Session14AwardRankItem,
   type Session14ClassSummaryRecord,
@@ -55,6 +57,7 @@ import { normalizeVietnameseName } from "../utils/vietnamese-match";
 
 import {
   COMPETENCY_AREA_SPECS,
+  LEGO_COMPETENCY_AREA_SPECS,
   matchesCompetencyAreaIdPure,
   type CompetencyAreaSpec,
 } from "../checkpoint/competency-specs";
@@ -142,6 +145,10 @@ function matchCommentAreaSpecIndex(rawAreaItem: any): number {
     };
     const byId = SESSION14_COMPETENCY_AREA_SPECS.findIndex((spec) => safeMatchesId(spec, rawId));
     if (byId >= 0) return byId;
+    const byLegoSpec = LEGO_COMPETENCY_AREA_SPECS.find((spec) => spec.commentAreaId === rawId);
+    if (byLegoSpec) {
+      return SESSION14_COMPETENCY_AREA_SPECS.findIndex((spec) => spec.key === byLegoSpec.key);
+    }
   }
 
   const rawLabel = normalizeVietnameseName(
@@ -277,9 +284,10 @@ export function computeSession14CompetencyFromCheckpoints(params: {
   cp1CommentByAreas?: any[];
   cp2CommentByAreas?: any[];
 }): StudentCheckpointCompetencyResult {
+  const isLego = isLegoRoboticsClassCode(params.classId);
   const isRobotics = isRoboticsClassCode(params.classId);
-  const cp1SlotNumber = isRobotics ? 4 : 5;
-  const cp2SlotNumber = isRobotics ? 8 : 9;
+  const cp1SlotNumber = isLego ? 5 : isRobotics ? 4 : 5;
+  const cp2SlotNumber = isLego ? 9 : isRobotics ? 8 : 9;
   const slotArray = params.slots ?? params.checkpointSlots;
 
   const resolvedCp1Slot =
@@ -335,7 +343,7 @@ export function computeSession14CompetencyFromCheckpoints(params: {
       cp2Avg: null,
       targetAvg: null,
       competencyScores: fallbackScores,
-      competencyTotalScore: calculateCompetencyAverageScore(fallbackScores),
+      competencyTotalScore: calculateCompetencyAverageScore(fallbackScores, params.classId),
       ratingsInDomOrder: SESSION14_COMPETENCY_KEYS.map((k) => fallbackScores[k]),
       perCriterion: SESSION14_COMPETENCY_AREA_SPECS.map((spec) => ({
         domIndex: spec.domIndex,
@@ -362,6 +370,11 @@ export function computeSession14CompetencyFromCheckpoints(params: {
       ? Math.round(((cp1Avg + cp2Avg) / 2) * 1000) / 1000
       : (cp1Avg ?? cp2Avg)!;
 
+  const activeDomIndices = isLego
+    ? [1, 2, 3, 4, 5, 6, 8]
+    : [0, 1, 2, 3, 4, 5, 6, 7, 8];
+  const activeDomSet = new Set(activeDomIndices);
+
   const defaultMissingGrade = Math.min(5, Math.max(1, Math.round(targetAvg)));
   const rawAvgs: number[] = Array(9).fill(defaultMissingGrade);
   const baseRatings: number[] = Array(9).fill(defaultMissingGrade);
@@ -385,8 +398,10 @@ export function computeSession14CompetencyFromCheckpoints(params: {
     const frac = raw - Math.floor(raw);
     if (Math.abs(frac - 0.5) < 1e-6) {
       baseRatings[i] = Math.min(5, Math.max(1, Math.floor(raw)));
-      const delta = v1 !== null && v2 !== null ? v2 - v1 : 0;
-      halfCandidates.push({ domIndex: i, delta });
+      if (activeDomSet.has(i)) {
+        const delta = v1 !== null && v2 !== null ? v2 - v1 : 0;
+        halfCandidates.push({ domIndex: i, delta });
+      }
     } else {
       baseRatings[i] = Math.min(5, Math.max(1, Math.round(raw)));
     }
@@ -398,13 +413,14 @@ export function computeSession14CompetencyFromCheckpoints(params: {
     return a.domIndex - b.domIndex;
   });
 
-  const baseSum = baseRatings.reduce((acc, v) => acc + v, 0);
+  const baseSum = activeDomIndices.reduce((acc, idx) => acc + baseRatings[idx], 0);
+  const denom = activeDomIndices.length;
   const halfUpMidpoint = Math.ceil(halfCandidates.length / 2);
   let bestK = 0;
   let bestDiff = Number.POSITIVE_INFINITY;
 
   for (let k = 0; k <= halfCandidates.length; k++) {
-    const candidateAvg = (baseSum + k) / 9;
+    const candidateAvg = (baseSum + k) / denom;
     const diff = Math.abs(candidateAvg - targetAvg);
     if (diff < bestDiff - 1e-9) {
       bestDiff = diff;
@@ -428,7 +444,10 @@ export function computeSession14CompetencyFromCheckpoints(params: {
     scoreObj[spec.key] = finalRatings[i];
   }
   const competencyScores = parseSession14CompetencyScores(scoreObj);
-  const competencyTotalScore = calculateCompetencyAverageScore(competencyScores);
+  const competencyTotalScore = calculateCompetencyAverageScore(
+    competencyScores,
+    params.classId
+  );
 
   const sourceType: StudentCheckpointCompetencyResult["sourceType"] =
     valid1.length > 0 && valid2.length > 0
@@ -1038,12 +1057,13 @@ export function extractDemoScoresFromWorksheet(
       if (label.includes("thuat toan") || label.includes("tu duy may tinh")) return "algorithm";
       if (label.includes("sang tao")) return "creativity";
       if (label.includes("giao tiep") || label.includes("hop tac")) return "communication";
-      if (label.includes("su dung may tinh")) return "computerSkills";
+      if (label.includes("su dung may tinh") || label.includes("cong nghe")) return "computerSkills";
       if (label.includes("giai quyet van de")) return "problemSolving";
     }
-    const fallbackOrder: DemoScoreKey[] = isRoboticsClassCode(classId)
-      ? ["algorithm", "creativity", "communication", "computerSkills", "problemSolving"]
-      : ["algorithm", "creativity", "communication", "problemSolving", "computerSkills"];
+    const fallbackOrder: DemoScoreKey[] =
+      isRoboticsClassCode(classId) && !isLegoRoboticsClassCode(classId)
+        ? ["algorithm", "creativity", "communication", "computerSkills", "problemSolving"]
+        : ["algorithm", "creativity", "communication", "problemSolving", "computerSkills"];
     return fallbackOrder[fallbackIdx] || "algorithm";
   };
 
@@ -1077,13 +1097,41 @@ export function extractDemoScoresFromWorksheet(
     Math.abs(compWeightSum - 1.0) < 0.05 &&
     Math.abs(probWeightSum - 1.0) < 0.05;
 
+  const isVexRobSheetOnLegoClass =
+    isLegoRoboticsClassCode(classId) &&
+    Math.abs(algoWeightSum - 1.25) < 0.05 &&
+    Math.abs(creaWeightSum - 0.75) < 0.05 &&
+    Math.abs(commWeightSum - 1.0) < 0.05 &&
+    Math.abs(compWeightSum - 0.5) < 0.05 &&
+    Math.abs(probWeightSum - 1.5) < 0.05;
+
   const algoReadLimit =
-    isLegacyCsiSplitSheet || isLegacyRoboticsSplitSheet ? 1.5 : limits.algorithm;
+    isLegacyCsiSplitSheet || isLegacyRoboticsSplitSheet
+      ? 1.5
+      : isVexRobSheetOnLegoClass
+      ? 1.25
+      : limits.algorithm;
   const creaReadLimit =
-    isLegacyCsiSplitSheet || isLegacyRoboticsSplitSheet ? 1.0 : limits.creativity;
-  const commReadLimit = isLegacyRoboticsSplitSheet ? 0.5 : limits.communication;
-  const compReadLimit = isLegacyRoboticsSplitSheet ? 1.0 : limits.computerSkills;
-  const probReadLimit = isLegacyRoboticsSplitSheet ? 1.0 : limits.problemSolving;
+    isLegacyCsiSplitSheet || isLegacyRoboticsSplitSheet
+      ? 1.0
+      : isVexRobSheetOnLegoClass
+      ? 0.75
+      : limits.creativity;
+  const commReadLimit = isLegacyRoboticsSplitSheet
+    ? 0.5
+    : isVexRobSheetOnLegoClass
+    ? 1.0
+    : limits.communication;
+  const compReadLimit = isLegacyRoboticsSplitSheet
+    ? 1.0
+    : isVexRobSheetOnLegoClass
+    ? 0.5
+    : limits.computerSkills;
+  const probReadLimit = isLegacyRoboticsSplitSheet
+    ? 1.0
+    : isVexRobSheetOnLegoClass
+    ? 1.5
+    : limits.problemSolving;
 
   const eAlgo = sumCellRange(cells, "E", spanByKey.algorithm[0], spanByKey.algorithm[1]);
   const eCreative = sumCellRange(cells, "E", spanByKey.creativity[0], spanByKey.creativity[1]);
@@ -1177,7 +1225,7 @@ export function extractDemoScoresFromWorksheet(
           hasCriterionScore.algorithm = false;
           criterionValid.algorithm = false;
         }
-      } else if (label.includes("su dung may tinh")) {
+      } else if (label.includes("su dung may tinh") || label.includes("cong nghe")) {
         if (isWithinMax(bCell.numericValue, compReadLimit)) {
           rawDemo.computerSkills = bCell.numericValue;
           hasCriterionScore.computerSkills = true;
@@ -1240,7 +1288,23 @@ export function extractDemoScoresFromWorksheet(
     rawDemo.creativity = limits.creativity;
   }
 
-  if (isLegacyRoboticsSplitSheet) {
+  if (isVexRobSheetOnLegoClass || (isLegacyRoboticsSplitSheet && isLegoRoboticsClassCode(classId))) {
+    const rebalanced = rebalanceRawDemoScoresForClass4dp(
+      {
+        algorithm: typeof rawDemo.algorithm === "number" ? rawDemo.algorithm : 0,
+        creativity: typeof rawDemo.creativity === "number" ? rawDemo.creativity : 0,
+        communication: typeof rawDemo.communication === "number" ? rawDemo.communication : 0,
+        computerSkills: typeof rawDemo.computerSkills === "number" ? rawDemo.computerSkills : 0,
+        problemSolving: typeof rawDemo.problemSolving === "number" ? rawDemo.problemSolving : 0,
+      },
+      classId
+    );
+    rawDemo.algorithm = rebalanced.scores.algorithm;
+    rawDemo.creativity = rebalanced.scores.creativity;
+    rawDemo.communication = rebalanced.scores.communication;
+    rawDemo.computerSkills = rebalanced.scores.computerSkills;
+    rawDemo.problemSolving = rebalanced.scores.problemSolving;
+  } else if (isLegacyRoboticsSplitSheet) {
     const safeAlgo = typeof rawDemo.algorithm === "number" ? rawDemo.algorithm : 0;
     const safeCrea = typeof rawDemo.creativity === "number" ? rawDemo.creativity : 0;
     const safeComp = typeof rawDemo.computerSkills === "number" ? rawDemo.computerSkills : 0;
@@ -1438,7 +1502,7 @@ export function suggestCompetencyScoresForStudent(params: {
 
   return {
     competencyScores,
-    competencyTotalScore: calculateCompetencyAverageScore(competencyScores),
+    competencyTotalScore: calculateCompetencyAverageScore(competencyScores, classId),
   };
 }
 
@@ -1867,7 +1931,7 @@ export function parseDemoWorkbookBufferForClass(
     ) {
       usedCachedCheckpointsCount++;
       finalCompScores = parseSession14CompetencyScores(existingEval.competencyJson);
-      finalCompTotal = calculateCompetencyAverageScore(finalCompScores);
+      finalCompTotal = calculateCompetencyAverageScore(finalCompScores, normalizedClassId);
       competencySourceMeta = existingCompSrcObj;
     } else {
       const suggestedComp = suggestCompetencyScoresForStudent({

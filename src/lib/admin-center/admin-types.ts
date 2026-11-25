@@ -67,6 +67,7 @@ export interface AdminBtvnCodingSummary {
 export interface AdminSpckSlotAuditItem {
   sessionNumber: 12 | 13 | 14;
   sessionOccurred: boolean;
+  isLegoCluster1314?: boolean;
   requiredCount: number;
   uploadedCount: number;
   commentedCount: number;
@@ -78,6 +79,7 @@ export interface AdminSpckSlotAuditItem {
 export interface AdminSpckSession14EvalAudit {
   applicable: boolean;
   requiredCount: number;
+  requiredCompetencyCount?: number;
   demoScoredCount: number;
   competencyCompleteCount: number;
   mindx3PartCommentCount: number;
