@@ -15,6 +15,7 @@
  * `Browser` or `BrowserContext`, strictly honoring the single-BrowserContext rule.
  */
 
+import crypto from "node:crypto";
 import { spawn, spawnSync } from "node:child_process";
 import zlib from "node:zlib";
 import { taskQueue } from "@/lib/queue/task-queue";
@@ -546,4 +547,187 @@ export async function normalizeImagesToLms16x9(
   }
 
   return results;
+}
+
+function computeScaledRgbColorRichness(rgb: Uint8Array, width: number, height: number): number {
+  if (width <= 0 || height <= 0 || rgb.length < width * height * 3) return 18;
+  const buckets = new Set<string>();
+  const sx = Math.max(1, Math.floor(width / 40));
+  const sy = Math.max(1, Math.floor(height / 40));
+  for (let y = 0; y < height; y += sy) {
+    for (let x = 0; x < width; x += sx) {
+      const idx = (y * width + x) * 3;
+      buckets.add(`${rgb[idx] >> 4},${rgb[idx + 1] >> 4},${rgb[idx + 2] >> 4}`);
+    }
+  }
+  return Math.max(18, Math.min(140, buckets.size * 2));
+}
+
+/**
+ * Pure-Node fallback to slice and downscale a raw headless Chromium/Edge PNG screenshot
+ * into LMS-safe 960x540 (16:9) PNG buffers when PyQt6 is blocked or unavailable.
+ */
+export function sliceBrowserTallPngToLms16x9Frames(params: {
+  rawPngBuffer: Buffer;
+  layoutWidth: number;
+  layoutHeight: number;
+  maxExtraSections: number;
+}): { frames: Buffer[]; richness: number[] } | null {
+  const decoded = decodeStandardPngToRgb(params.rawPngBuffer);
+  const LW = params.layoutWidth;
+  const LH = params.layoutHeight;
+  if (!decoded || decoded.width < LW || decoded.height < LH) {
+    return null;
+  }
+
+  const fh = decoded.height;
+  const fw = decoded.width;
+  const rgb = decoded.rgb;
+  const sampleXs: number[] = [];
+  for (let x = 20; x < LW - 20; x += 40) {
+    sampleXs.push(x);
+  }
+  if (sampleXs.length === 0) {
+    sampleXs.push(Math.min(LW - 1, 0));
+  }
+
+  const getPixel = (x: number, y: number): [number, number, number] => {
+    const idx = (y * fw + x) * 3;
+    return [rgb[idx], rgb[idx + 1], rgb[idx + 2]];
+  };
+
+  const botY = fh - 1;
+  const botRow = sampleXs.map((x) => getPixel(x, botY));
+  let botSpread = 0;
+  for (const c of botRow) {
+    const d =
+      Math.abs(c[0] - botRow[0][0]) +
+      Math.abs(c[1] - botRow[0][1]) +
+      Math.abs(c[2] - botRow[0][2]);
+    if (d > botSpread) botSpread = d;
+  }
+
+  let docH = fh;
+  if (botSpread <= 24) {
+    docH = LH;
+    for (let y = fh - 2; y >= LH; y -= 4) {
+      let diff = false;
+      for (let i = 0; i < sampleXs.length; i++) {
+        const c = getPixel(sampleXs[i], y);
+        const br = botRow[i];
+        if (
+          Math.abs(c[0] - br[0]) +
+            Math.abs(c[1] - br[1]) +
+            Math.abs(c[2] - br[2]) >
+          15
+        ) {
+          diff = true;
+          break;
+        }
+      }
+      if (diff) {
+        docH = Math.min(fh, y + 64);
+        break;
+      }
+    }
+  }
+
+  let totalSlices = 1;
+  const maxExtra = Math.max(0, Math.floor(params.maxExtraSections));
+  if (maxExtra > 0 && docH >= Math.floor(LH * 1.25)) {
+    totalSlices = Math.min(
+      1 + maxExtra,
+      Math.max(1, Math.floor((docH + Math.floor(LH * 0.7) - 1) / LH))
+    );
+  }
+
+  const W = LMS_IMAGE_WIDTH;
+  const H = LMS_IMAGE_HEIGHT;
+  const frames: Buffer[] = [];
+  const richness: number[] = [];
+  let lastYOff = -9999;
+
+  for (let sIdx = 0; sIdx < totalSlices; sIdx++) {
+    const yOff = sIdx === 0 ? 0 : Math.min(sIdx * LH, Math.max(0, docH - LH));
+    if (sIdx > 0 && yOff - lastYOff < Math.floor(LH * 0.35)) {
+      break;
+    }
+    lastYOff = yOff;
+
+    const outRgb = new Uint8Array(W * H * 3);
+    for (let dy = 0; dy < H; dy++) {
+      const sy = Math.min(
+        fh - 1,
+        Math.max(0, yOff + Math.floor((dy * LH) / H))
+      );
+      for (let dx = 0; dx < W; dx++) {
+        const sx = Math.min(fw - 1, Math.max(0, Math.floor((dx * LW) / W)));
+        const sIdxPx = (sy * fw + sx) * 3;
+        const dIdxPx = (dy * W + dx) * 3;
+        outRgb[dIdxPx] = rgb[sIdxPx];
+        outRgb[dIdxPx + 1] = rgb[sIdxPx + 1];
+        outRgb[dIdxPx + 2] = rgb[sIdxPx + 2];
+      }
+    }
+
+    frames.push(encodeRgbToPng(W, H, outRgb));
+    richness.push(computeScaledRgbColorRichness(outRgb, W, H));
+  }
+
+  return { frames, richness };
+}
+
+/**
+ * Pure-Node deterministic 960x540 fallback card when offline audit mode runs on hosts
+ * where PyQt6 is blocked or unavailable, ensuring zero external network/browser dependencies
+ * while preserving unique MD5 hashes per distinct HTML content.
+ */
+export function renderSyntheticOfflineHtmlCardPng(seedText: string): {
+  frame: Buffer;
+  richness: number;
+} {
+  const W = LMS_IMAGE_WIDTH;
+  const H = LMS_IMAGE_HEIGHT;
+  const rgb = new Uint8Array(W * H * 3);
+  const digest = crypto.createHash("sha256").update(String(seedText || "")).digest();
+
+  const accentR = 40 + (digest[0] % 160);
+  const accentG = 60 + (digest[1] % 160);
+  const accentB = 90 + (digest[2] % 160);
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const idx = (y * W + x) * 3;
+      if (y < 64) {
+        // Accent header bar
+        rgb[idx] = accentR;
+        rgb[idx + 1] = accentG;
+        rgb[idx + 2] = accentB;
+      } else if (x >= 48 && x <= W - 48 && y >= 104 && y <= H - 48) {
+        // Inner content card with deterministic color tiles
+        const tileX = Math.floor((x - 48) / 144);
+        const tileY = Math.floor((y - 104) / 96);
+        const byteVal = digest[(tileX * 5 + tileY) % digest.length];
+        if ((x - 48) % 144 > 12 && (y - 104) % 96 > 12) {
+          rgb[idx] = 24 + (byteVal % 55);
+          rgb[idx + 1] = 36 + (digest[(byteVal + 3) % digest.length] % 65);
+          rgb[idx + 2] = 58 + (digest[(byteVal + 7) % digest.length] % 85);
+        } else {
+          rgb[idx] = 17;
+          rgb[idx + 1] = 24;
+          rgb[idx + 2] = 39;
+        }
+      } else {
+        // Background #0f172a
+        rgb[idx] = 15;
+        rgb[idx + 1] = 23;
+        rgb[idx + 2] = 42;
+      }
+    }
+  }
+
+  return {
+    frame: encodeRgbToPng(W, H, rgb),
+    richness: computeScaledRgbColorRichness(rgb, W, H),
+  };
 }

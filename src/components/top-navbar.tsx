@@ -61,8 +61,8 @@ export function TopNavbar() {
         <Link href="/" className="flex items-center space-x-1.5 group shrink-0">
           <span className="text-[15px] 2xl:text-lg font-bold tracking-tight flex items-center gap-1.5 text-white whitespace-nowrap">
             <span className="text-amber-400">⚡</span>
-            {/* Version history: upgraded from MindX Bot v3.5.5 -> MindX Bot v3.6.0 -> MindX Bot v3.6.1 -> MindX Bot v3.6.2 -> MindX Bot v3.6.3 -> MindX Bot v3.6.4 -> MindX Bot v3.6.5 -> MindX Bot v3.6.6 -> MindX Bot v3.6.7 -> MindX Bot v3.6.8 -> MindX Bot v3.6.9 -> MindX Bot v3.7.0 -> MindX Bot v3.8.0 -> MindX Bot v3.8.1 -> MindX Bot v3.8.2 -> MindX Bot v3.8.3 -> MindX Bot v3.8.4 -> MindX Bot v3.8.5 -> MindX Bot v3.8.6 -> MindX Bot v3.8.7 -> MindX Bot v3.8.8 */}
-            <span className="mindx-brand-text whitespace-nowrap">MindX Bot v3.8.8</span>
+            {/* Version history: upgraded from MindX Bot v3.5.5 -> MindX Bot v3.6.0 -> MindX Bot v3.6.1 -> MindX Bot v3.6.2 -> MindX Bot v3.6.3 -> MindX Bot v3.6.4 -> MindX Bot v3.6.5 -> MindX Bot v3.6.6 -> MindX Bot v3.6.7 -> MindX Bot v3.6.8 -> MindX Bot v3.6.9 -> MindX Bot v3.7.0 -> MindX Bot v3.8.0 -> MindX Bot v3.8.1 -> MindX Bot v3.8.2 -> MindX Bot v3.8.3 -> MindX Bot v3.8.4 -> MindX Bot v3.8.5 -> MindX Bot v3.8.6 -> MindX Bot v3.8.7 -> MindX Bot v3.8.8 -> MindX Bot v3.8.9 */}
+            <span className="mindx-brand-text whitespace-nowrap">MindX Bot v3.8.9</span>
           </span>
         </Link>
 

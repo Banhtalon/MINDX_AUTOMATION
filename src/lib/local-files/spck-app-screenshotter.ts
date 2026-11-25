@@ -36,6 +36,8 @@ import {
   LMS_IMAGE_WIDTH,
   normalizeImagesToLms16x9,
   normalizeImagesToLms16x9Sync,
+  renderSyntheticOfflineHtmlCardPng,
+  sliceBrowserTallPngToLms16x9Frames,
 } from "./spck-image-normalizer";
 import {
   findProjectGameFiles,
@@ -1554,11 +1556,15 @@ async function captureHtmlWebScreenshots(params: {
       }
     );
 
-    // Force fade-in / hidden animation styles to visible so hero/section content renders clearly
+    // Force fade-in / hidden animation styles to visible and strip executable script/event/iframe payloads
     processedHtml = processedHtml
       .replace(/opacity\s*:\s*0\b/gi, "opacity: 1")
       .replace(/visibility\s*:\s*hidden\b/gi, "visibility: visible")
-      .replace(/<script\b[\s\S]*?<\/script>/gi, "");
+      .replace(/<script\b[\s\S]*?<\/script>/gi, "")
+      .replace(/<iframe\b[\s\S]*?<\/iframe>|<iframe\b[^>]*\/?>/gi, "")
+      .replace(/<(?:object|embed)\b[\s\S]*?<\/(?:object|embed)>|<(?:object|embed)\b[^>]*\/?>/gi, "")
+      .replace(/<meta\b[^>]*http-equiv\s*=\s*(?:"refresh"|'refresh'|refresh)[^>]*>/gi, "")
+      .replace(/\s+\bon[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
 
     const widgetMatches =
       processedHtml.match(
@@ -1586,9 +1592,15 @@ async function captureHtmlWebScreenshots(params: {
 import sys, os, re, json, base64, tempfile, shutil, subprocess
 os.environ.setdefault("QT_QPA_FONTDIR", r"C:\\Windows\\Fonts")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QImage, QPainter, QColor, QTextDocument, QFont
-from PyQt6.QtCore import Qt, QSizeF, QRectF, QBuffer, QIODevice, QByteArray
+
+HAS_PYQT6 = False
+try:
+    from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtGui import QImage, QPainter, QColor, QTextDocument, QFont
+    from PyQt6.QtCore import Qt, QSizeF, QRectF, QBuffer, QIODevice, QByteArray
+    HAS_PYQT6 = True
+except Exception:
+    HAS_PYQT6 = False
 
 raw_stdin = sys.stdin.buffer.read().decode("utf-8", errors="replace")
 payload = json.loads(raw_stdin)
@@ -1601,20 +1613,21 @@ vbudget = int(payload.get("virtualTimeBudget", 2200))
 W, H = ${LMS_IMAGE_WIDTH}, ${LMS_IMAGE_HEIGHT}
 LW, LH = ${WEB_LAYOUT_WIDTH}, ${WEB_LAYOUT_HEIGHT}
 
-app = QApplication.instance() or QApplication([])
-
+app = None
 approved_images = {}
-if isinstance(raw_resources, dict):
-    for key, b64_val in raw_resources.items():
-        if not isinstance(key, str) or not key.startswith("mem://asset_"):
-            continue
-        try:
-            raw_bytes = base64.b64decode(str(b64_val))
-            qimg = QImage.fromData(raw_bytes)
-            if not qimg.isNull():
-                approved_images[key] = qimg
-        except Exception:
-            pass
+if HAS_PYQT6:
+    app = QApplication.instance() or QApplication([])
+    if isinstance(raw_resources, dict):
+        for key, b64_val in raw_resources.items():
+            if not isinstance(key, str) or not key.startswith("mem://asset_"):
+                continue
+            try:
+                raw_bytes = base64.b64decode(str(b64_val))
+                qimg = QImage.fromData(raw_bytes)
+                if not qimg.isNull():
+                    approved_images[key] = qimg
+            except Exception:
+                pass
 
 def compute_richness(qimg):
     if qimg.isNull() or qimg.width() <= 0 or qimg.height() <= 0:
@@ -1637,6 +1650,7 @@ def encode_png_b64(qimg):
 
 frames = []
 frame_richness = []
+raw_png_b64 = ""
 
 if not offline_audit:
     browser_bin = None
@@ -1668,7 +1682,7 @@ if not offline_audit:
                 html,
                 flags=re.IGNORECASE,
             )
-            inject_head = '<meta charset="UTF-8"><style>html,body{margin:0;scroll-behavior:auto!important;}*,*::before,*::after{animation-duration:0.001s!important;animation-delay:0s!important;transition-duration:0s!important;}</style>'
+            inject_head = '''<meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="script-src 'none'; object-src 'none';"><style>html,body{margin:0;scroll-behavior:auto!important;}*,*::before,*::after{animation-duration:0.001s!important;animation-delay:0s!important;transition-duration:0s!important;}</style>'''
             if "<head>" in browser_html:
                 browser_html = browser_html.replace("<head>", "<head>" + inject_head, 1)
             elif "</head>" in browser_html:
@@ -1703,68 +1717,80 @@ if not offline_audit:
                 f"--screenshot={raw_png}",
                 tmp_html_path,
             ]
-            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=22)
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=14)
+            if not os.path.isfile(raw_png):
+                subprocess.run(
+                    [cmd[0], "--no-sandbox", *cmd[1:]],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=14,
+                )
 
             if os.path.isfile(raw_png):
-                full_img = QImage(raw_png)
-                if not full_img.isNull() and full_img.width() >= LW and full_img.height() >= LH:
-                    fh = full_img.height()
-                    sample_xs = list(range(20, LW - 20, 40))
-                    bot_y = fh - 1
-                    bot_row = [full_img.pixelColor(x, bot_y) for x in sample_xs]
-                    bot_spread = max(
-                        abs(c.red() - bot_row[0].red()) + abs(c.green() - bot_row[0].green()) + abs(c.blue() - bot_row[0].blue())
-                        for c in bot_row
-                    )
-                    if bot_spread > 24:
-                        doc_h = fh
-                    else:
-                        doc_h = LH
-                        for y in range(fh - 2, LH - 1, -4):
-                            diff = False
-                            for i, x in enumerate(sample_xs):
-                                c = full_img.pixelColor(x, y)
-                                br = bot_row[i]
-                                if abs(c.red() - br.red()) + abs(c.green() - br.green()) + abs(c.blue() - br.blue()) > 15:
-                                    diff = True
-                                    break
-                            if diff:
-                                doc_h = min(fh, y + 64)
-                                break
-
-                    total_slices = 1
-                    if max_extra > 0 and doc_h >= int(LH * 1.25):
-                        total_slices = min(1 + max_extra, max(1, (doc_h + int(LH * 0.7) - 1) // LH))
-
-                    last_y_off = -9999
-                    for s_idx in range(total_slices):
-                        if s_idx == 0:
-                            y_off = 0
+                if HAS_PYQT6:
+                    full_img = QImage(raw_png)
+                    if not full_img.isNull() and full_img.width() >= LW and full_img.height() >= LH:
+                        fh = full_img.height()
+                        sample_xs = list(range(20, LW - 20, 40))
+                        bot_y = fh - 1
+                        bot_row = [full_img.pixelColor(x, bot_y) for x in sample_xs]
+                        bot_spread = max(
+                            abs(c.red() - bot_row[0].red()) + abs(c.green() - bot_row[0].green()) + abs(c.blue() - bot_row[0].blue())
+                            for c in bot_row
+                        )
+                        if bot_spread > 24:
+                            doc_h = fh
                         else:
-                            y_off = min(s_idx * LH, max(0, doc_h - LH))
-                            if y_off - last_y_off < int(LH * 0.35):
-                                break
-                        last_y_off = y_off
-                        sub_img = full_img.copy(0, y_off, LW, LH)
-                        out_img = sub_img.scaled(W, H, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                        frames.append(encode_png_b64(out_img))
-                        frame_richness.append(compute_richness(out_img))
+                            doc_h = LH
+                            for y in range(fh - 2, LH - 1, -4):
+                                diff = False
+                                for i, x in enumerate(sample_xs):
+                                    c = full_img.pixelColor(x, y)
+                                    br = bot_row[i]
+                                    if abs(c.red() - br.red()) + abs(c.green() - br.green()) + abs(c.blue() - br.blue()) > 15:
+                                        diff = True
+                                        break
+                                if diff:
+                                    doc_h = min(fh, y + 64)
+                                    break
+
+                        total_slices = 1
+                        if max_extra > 0 and doc_h >= int(LH * 1.25):
+                            total_slices = min(1 + max_extra, max(1, (doc_h + int(LH * 0.7) - 1) // LH))
+
+                        last_y_off = -9999
+                        for s_idx in range(total_slices):
+                            if s_idx == 0:
+                                y_off = 0
+                            else:
+                                y_off = min(s_idx * LH, max(0, doc_h - LH))
+                                if y_off - last_y_off < int(LH * 0.35):
+                                    break
+                            last_y_off = y_off
+                            sub_img = full_img.copy(0, y_off, LW, LH)
+                            out_img = sub_img.scaled(W, H, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                            frames.append(encode_png_b64(out_img))
+                            frame_richness.append(compute_richness(out_img))
+                else:
+                    with open(raw_png, "rb") as rf:
+                        raw_png_b64 = base64.b64encode(rf.read()).decode("ascii")
         except Exception:
             frames = []
             frame_richness = []
+            raw_png_b64 = ""
         finally:
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
-class SafeTextDocument(QTextDocument):
-    def loadResource(self, res_type, url):
-        # Strictly serve ONLY pre-validated in-memory assets; never call super().loadResource()
-        # so QTextDocument can never read file://, UNC, relative, or network URLs on its own.
-        key = url.toString()
-        if key in approved_images:
-            return approved_images[key]
-        return None
+if HAS_PYQT6 and not frames:
+    class SafeTextDocument(QTextDocument):
+        def loadResource(self, res_type, url):
+            # Strictly serve ONLY pre-validated in-memory assets; never call super().loadResource()
+            # so QTextDocument can never read file://, UNC, relative, or network URLs on its own.
+            key = url.toString()
+            if key in approved_images:
+                return approved_images[key]
+            return None
 
-if not frames:
     doc = SafeTextDocument()
     doc.setDefaultFont(QFont("Segoe UI", 12))
     doc.setPageSize(QSizeF(LW, LH))
@@ -1794,7 +1820,7 @@ if not frames:
         frames.append(encode_png_b64(out_img))
         frame_richness.append(compute_richness(out_img))
 
-sys.stdout.write(json.dumps({"frames": frames, "richness": frame_richness}))
+sys.stdout.write(json.dumps({"frames": frames, "richness": frame_richness, "rawPng": raw_png_b64}))
 `;
       const pyRes = await runPythonProcessAsync({
         code: pyScript,
@@ -1814,12 +1840,35 @@ sys.stdout.write(json.dumps({"frames": frames, "richness": frame_richness}))
         const parsed = JSON.parse(pyRes.stdout.trim()) as {
           frames?: string[];
           richness?: number[];
+          rawPng?: string;
         };
-        const frameList = Array.isArray(parsed.frames) ? parsed.frames : [];
-        const richList = Array.isArray(parsed.richness) ? parsed.richness : [];
-        for (let fIdx = 0; fIdx < frameList.length; fIdx++) {
+        let frameBuffers: Buffer[] = (Array.isArray(parsed.frames) ? parsed.frames : [])
+          .map((b64) => Buffer.from(b64, "base64") as Buffer)
+          .filter((b) => b.length >= 32);
+        let richList = Array.isArray(parsed.richness) ? parsed.richness : [];
+
+        if (frameBuffers.length === 0 && parsed.rawPng) {
+          const sliced = sliceBrowserTallPngToLms16x9Frames({
+            rawPngBuffer: Buffer.from(parsed.rawPng, "base64"),
+            layoutWidth: WEB_LAYOUT_WIDTH,
+            layoutHeight: WEB_LAYOUT_HEIGHT,
+            maxExtraSections,
+          });
+          if (sliced && sliced.frames.length > 0) {
+            frameBuffers = sliced.frames;
+            richList = sliced.richness;
+          }
+        }
+
+        if (frameBuffers.length === 0 && isOfflineAuditMode) {
+          const synth = renderSyntheticOfflineHtmlCardPng(processedHtml);
+          frameBuffers = [synth.frame];
+          richList = [synth.richness];
+        }
+
+        for (let fIdx = 0; fIdx < frameBuffers.length; fIdx++) {
           if (results.length >= maxShots) break;
-          const pngBuf = Buffer.from(frameList[fIdx], "base64");
+          const pngBuf = frameBuffers[fIdx];
           if (pngBuf.length < 32) continue;
           const hash6 = crypto.createHash("md5").update(pngBuf).digest("hex").slice(0, 6);
           if (seenHashes.has(hash6)) continue;
@@ -2334,6 +2383,15 @@ async function selectBestScreenshotWithAi(
   // Sort candidates by heuristicScore descending (main screens & colorful layouts first)
   const sorted = [...pool].sort((a, b) => b.heuristicScore - a.heuristicScore);
   const topCandidates = sorted.slice(0, 6);
+
+  const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+  if (!apiKey || /dummy|neverlive|your_gemini_api_key_here/i.test(apiKey)) {
+    return {
+      bestItem: sorted[0],
+      reason:
+        "Tự động chọn màn hình chính có độ phong phú màu sắc và bố cục giao diện cao nhất.",
+    };
+  }
 
   try {
     const mediaParts: Array<{ inlineData: { data: string; mimeType: string } }> = [];

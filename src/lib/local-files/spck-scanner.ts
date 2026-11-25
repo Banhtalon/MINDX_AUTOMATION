@@ -11,7 +11,7 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import AdmZip from "adm-zip";
-import { normalizeSpckFolderKey, spckUploadRepo } from "../db/sqlite";
+import { isRoboticsClassCode, normalizeSpckFolderKey, spckUploadRepo } from "../db/sqlite";
 import {
   ZIP_MAX_FILE_COUNT,
   ZIP_MAX_SINGLE_FILE_BYTES,
@@ -600,6 +600,15 @@ export const ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
   ".xml",
   ".sql",
   ".json",
+  ".iqblocks",
+  ".goblocks",
+  ".vexblocks",
+  ".v5blocks",
+  ".v5python",
+  ".ino",
+  ".c",
+  ".cpp",
+  ".h",
 ]);
 
 const TEXT_ATTACHMENT_EXTENSIONS = new Set([
@@ -621,6 +630,18 @@ const TEXT_ATTACHMENT_EXTENSIONS = new Set([
   ".xml",
   ".sql",
   ".json",
+  ".v5python",
+  ".ino",
+  ".c",
+  ".cpp",
+  ".h",
+]);
+
+const ROBOTICS_NATIVE_BLOCK_EXTENSIONS = new Set([
+  ".iqblocks",
+  ".goblocks",
+  ".vexblocks",
+  ".v5blocks",
 ]);
 
 export const ROBOTICS_RAW_EXTENSIONS = new Set([
@@ -636,15 +657,10 @@ export const ROBOTICS_RAW_EXTENSIONS = new Set([
   ".mpd",
   ".stl",
   ".obj",
-  ".ino",
   ".hex",
   ".uf2",
   ".mblock",
   ".vex",
-  ".vexblocks",
-  ".iqblocks",
-  ".v5python",
-  ".v5blocks",
 ]);
 
 const DETERMINISTIC_ZIP_TIMESTAMP = new Date("2026-01-01T00:00:00.000Z");
@@ -1179,7 +1195,28 @@ export function validateSpckAttachmentFile(fullEntryPath: string): {
       };
     }
   }
-  if (ext === ".pdf") {
+  if (ROBOTICS_NATIVE_BLOCK_EXTENSIONS.has(ext)) {
+    const hasZipMagic =
+      buf.length >= 4 &&
+      buf[0] === 0x50 &&
+      buf[1] === 0x4b &&
+      buf[2] === 0x03 &&
+      buf[3] === 0x04;
+    if (hasZipMagic) {
+      const zipCheck = parseZipArchiveBuffer(buf, fileName);
+      if (!zipCheck.success) {
+        return {
+          valid: false,
+          reason: `File Robotics '${fileName}' bị hỏng cấu trúc nén: ${zipCheck.errorReason || "PARSE_ERROR"}`,
+        };
+      }
+    } else if (buf.includes(0x00) || buf.toString("utf8").trim().length === 0) {
+      return {
+        valid: false,
+        reason: `File Robotics '${fileName}' rỗng hoặc không đúng định dạng.`,
+      };
+    }
+  } else if (ext === ".pdf") {
     const pdfCheck = parseMediaBuffer(buf, fileName, ext);
     if (!pdfCheck.success) {
       return {
@@ -2603,9 +2640,17 @@ export function inspectStudentProjectCodeSignals(
   let hasGmlScripts = false;
   let hasScratchProject = false;
 
-  const hasRoboticsCode = (attachments || []).some((p) =>
-    String(p || "").toLowerCase().endsWith("_robotics_package.zip")
-  );
+  const hasRoboticsCode =
+    (attachments || []).some((p) => {
+      const lowerP = String(p || "").toLowerCase();
+      return (
+        lowerP.endsWith("_robotics_package.zip") ||
+        /\.(?:iqblocks|goblocks|vexblocks|v5blocks|v5python|ino|ev3|llsp3?)$/i.test(lowerP)
+      );
+    }) ||
+    inspectedSourcePaths.some((p) =>
+      /\.(?:iqblocks|goblocks|vexblocks|v5blocks|v5python|ino|ev3|llsp3?)$/i.test(String(p || ""))
+    );
 
   const stripCssCommentsAndStrings = (cssCode: string) =>
     cssCode.replace(
@@ -2926,6 +2971,8 @@ export function scanStudentSpckFolder(
   studentFolderPath: string,
   preferredStudentName?: string,
   options?: {
+    classId?: string;
+    isRobotics?: boolean;
     skipSyncAutoRender?: boolean;
     skipSyncImageNormalize?: boolean;
     preferDefaultLogoWhenNoOwnerPhoto?: boolean;
@@ -3904,9 +3951,19 @@ export function scanStudentSpckFolder(
     } catch {}
   }
 
+  const isRoboticsTrack =
+    Boolean(options?.isRobotics) ||
+    (Boolean(options?.classId) && isRoboticsClassCode(options!.classId!)) ||
+    validRoboticsRawFiles.length > 0 ||
+    validAttachments.some((p) =>
+      /\.(?:iqblocks|goblocks|vexblocks|v5blocks|v5python|ev3|llsp3?)$/i.test(String(p || "")) ||
+      String(p || "").toLowerCase().endsWith("_robotics_package.zip")
+    );
+
   // Auto-render PyQt6 (.ui) app windows, GameMaker (.yyz/.yyp) / Scratch (.sb3) room/stage screenshots,
   // or pure-Python GUI/Streamlit app preview into _spck_app_shots when the student folder has no existing product images yet.
-  if (!options?.skipSyncAutoRender && validImages.length === 0) {
+  // Skip app/game screenshot auto-render for Robotics classes.
+  if (!isRoboticsTrack && !options?.skipSyncAutoRender && validImages.length === 0) {
     const uiRelList = findProjectUiFiles(safeFolderPath);
     if (uiRelList.length > 0) {
       try {
@@ -3933,7 +3990,7 @@ export function scanStudentSpckFolder(
       }
     }
   }
-  if (!options?.skipSyncAutoRender && validImages.length === 0) {
+  if (!isRoboticsTrack && !options?.skipSyncAutoRender && validImages.length === 0) {
     const allGameFiles = findProjectGameFiles(safeFolderPath);
     const validAttKeySet = new Set(validAttachments.map((p) => path.resolve(p).toLowerCase()));
     const isSafeValidatedGameSource = (rel: string): boolean => {
@@ -4056,8 +4113,82 @@ export function scanStudentSpckFolder(
     effectiveImages.filter((img) => img.isThumbCandidate)
   );
   const explicitThumb = explicitThumbCandidates[0];
+  const studentDisplayTarget = (preferredStudentName || folderName || "").trim();
+  const isStudentPortraitFilename = (fileName: string): boolean => {
+    const stem = path.parse(fileName).name;
+    const normStem = stripVietnameseDiacritics(stem).toLowerCase().trim();
+    if (!normStem) return false;
+    if (
+      /^(?:avatar|chan[\s_-]*dung|anh[\s_-]*(?:hv|hoc[\s_-]*vien)|portrait)(?:$|[\s_-])/i.test(
+        normStem
+      )
+    ) {
+      return true;
+    }
+    if (studentDisplayTarget) {
+      const sim = calculateNameSimilarity(stem, studentDisplayTarget);
+      if (sim >= 0.8) return true;
+    }
+    return false;
+  };
+  function isOwnerThumbPortrait(fn: string): boolean {
+    return Boolean(
+      activeGdriveThumbName && fn.toLowerCase() === activeGdriveThumbName.toLowerCase()
+    );
+  }
+  const isOwnerThumbFile = (fn: string): boolean =>
+    isOwnerThumbPortrait(fn) ||
+    /^thumb_/i.test(fn) ||
+    isStudentPortraitFilename(fn) ||
+    !/^owner_/i.test(fn);
 
-  if (chosenOwnerThumb) {
+  const roboticsPortraitImg = isRoboticsTrack
+    ? ownerUploadImages.find((img) => isOwnerThumbPortrait(img.fileName)) ||
+      activeGdriveThumbImg ||
+      explicitOwnerUploadThumb ||
+      ownerUploadImages.find((img) => isOwnerThumbFile(img.fileName)) ||
+      thumbPoolImages.find((img) => isStudentPortraitFilename(img.fileName)) ||
+      explicitThumb
+    : undefined;
+
+  if (isRoboticsTrack) {
+    // Robotics rule (1A): Student portrait/owner thumb goes strictly to Thumbnail * (fallback: MindX logo),
+    // remaining photos (including teacher-uploaded `_spck_owner_uploads/owner_*` robot photos) go to gallery
+    // (0 robot photos is 100% valid, NEVER duplicate portrait into gallery).
+    const defaultMindxLogoPath = path.resolve(
+      process.cwd(),
+      "data",
+      "config",
+      "default-spck-thumbnail.png"
+    );
+    if (roboticsPortraitImg) {
+      thumbnailPath = roboticsPortraitImg.fullPath;
+      thumbnailSource = ownerUploadImages.includes(roboticsPortraitImg)
+        ? "OWNER_UPLOAD"
+        : "OWNER_ROOT_PHOTO";
+    } else {
+      if (fs.existsSync(defaultMindxLogoPath)) {
+        thumbnailPath = defaultMindxLogoPath;
+      }
+      thumbnailSource = "DEFAULT_LOGO";
+    }
+    const ownerGalleryRobotUploads = ownerUploadImages.filter(
+      (img) => !isOwnerThumbFile(img.fileName)
+    );
+    const orderedRobotShots: string[] = [];
+    for (const img of [...ownerGalleryRobotUploads, ...ownerRootImages, ...thumbPoolImages]) {
+      if (roboticsPortraitImg && samePath(img.fullPath, roboticsPortraitImg.fullPath)) continue;
+      if (
+        isOwnerThumbFile(img.fileName) &&
+        /[\\/]_spck_owner_uploads[\\/]/i.test(img.fullPath)
+      ) {
+        continue;
+      }
+      if (orderedRobotShots.some((p) => samePath(p, img.fullPath))) continue;
+      orderedRobotShots.push(img.fullPath);
+    }
+    screenshotCandidates = orderedRobotShots;
+  } else if (chosenOwnerThumb) {
     thumbnailPath = chosenOwnerThumb.fullPath;
     thumbnailSource = ownerUploadImages.includes(chosenOwnerThumb)
       ? "OWNER_UPLOAD"
@@ -4650,6 +4781,7 @@ export function scanClassSpckDirectory(
         })
       : afterCodeHintResults;
 
+  const isClassRobotics = isRoboticsClassCode(normalizedClassId);
   const items: ScannedClassSpckItem[] = matchResults.map((match) => {
     const matchedStudent = match.suggestedStudentId
       ? studentMap.get(match.suggestedStudentId)
@@ -4657,7 +4789,11 @@ export function scanClassSpckDirectory(
     const packageData = scanStudentSpckFolder(
       match.folderPath,
       matchedStudent?.fullName || match.folderName,
-      options
+      {
+        ...options,
+        classId: normalizedClassId,
+        isRobotics: isClassRobotics,
+      }
     );
     return {
       folderName: match.folderName,
@@ -4783,6 +4919,8 @@ export async function scanStudentSpckFolderAsync(
   studentFolderPath: string,
   preferredStudentName?: string,
   options?: {
+    classId?: string;
+    isRobotics?: boolean;
     preferDefaultLogoWhenNoOwnerPhoto?: boolean;
     /** Explicit opt-in for executing Streamlit `app.py` during teacher scans (kept false on Student Portal uploads). */
     allowStreamlitAutoRender?: boolean;
@@ -4793,12 +4931,19 @@ export async function scanStudentSpckFolderAsync(
   await ensureWebpOwnerPhotosTranscodedAsync(safeFolderPath);
 
   const initial = scanStudentSpckFolder(safeFolderPath, preferredStudentName, {
+    classId: options?.classId,
+    isRobotics: options?.isRobotics,
     skipSyncAutoRender: true,
     skipSyncImageNormalize: true,
     preferDefaultLogoWhenNoOwnerPhoto: options?.preferDefaultLogoWhenNoOwnerPhoto,
   });
 
+  const isRoboticsTrack =
+    Boolean(options?.isRobotics) ||
+    (Boolean(options?.classId) && isRoboticsClassCode(options!.classId!));
+
   const hasExistingRealOrRenderedShots =
+    isRoboticsTrack ||
     (initial.allScreenshots?.length ?? initial.screenshots.length) > 0 ||
     (Boolean(initial.thumbnailPath) &&
       path.resolve(initial.thumbnailPath) !== path.resolve(DEFAULT_SPCK_THUMBNAIL_PATH));
@@ -5002,6 +5147,8 @@ export async function scanClassSpckDirectoryAsync(
         item.folderPath,
         matchedStudent?.fullName || item.folderName,
         {
+          classId,
+          isRobotics: isRoboticsClassCode(classId),
           preferDefaultLogoWhenNoOwnerPhoto: options?.preferDefaultLogoWhenNoOwnerPhoto,
           allowStreamlitAutoRender: true,
         }

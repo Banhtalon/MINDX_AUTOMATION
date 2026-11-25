@@ -9,12 +9,16 @@
 
 import type { Page } from "playwright";
 import {
+  buildEnrichedSession14EvalList,
+  calculateDemoTotalScore,
   computeSession14EvalHash,
+  formatRoboticsAwardRankingHtmlForLms,
   getSession14DemoLimitsForClass,
   isRoboticsClassCode,
   jobLogRepo,
   parseSession14CompetencyScores,
   parseSession14DemoScores,
+  resolveRoboticsAwardRankGrade,
   SESSION14_COMPETENCY_KEYS,
   session14ClassSummaryRepo,
   session14EvalRepo,
@@ -23,7 +27,13 @@ import {
   verifySession14EvalIntegrity,
 } from "../db/sqlite";
 import { getEffectiveClassSession14Summary } from "../local-files/spck-demo-score-reader";
+import {
+  isLmsApiWriteEnabled,
+  isRecoverableLmsApiWriteError,
+  uploadSession14EvalViaApi,
+} from "../lms/lms-write-client";
 import { taskQueue } from "../queue/task-queue";
+import { redactSecrets } from "../security/secret-redactor";
 import { authService } from "./auth";
 import { browserManager } from "./browser-manager";
 import { LmsHelpers } from "./lms-helpers";
@@ -38,6 +48,8 @@ export interface UploadSession14EvalOptions {
   classSummaryHtml?: string;
   uploadClassSummary?: boolean;
   skipUnapproved?: boolean;
+  forcePlaywright?: boolean;
+  preferApiWrite?: boolean;
 }
 
 export interface Session14EvalStudentUploadResult {
@@ -310,6 +322,32 @@ export class Session14EvalUploader {
     const normalizedClassId = String(options.classId || "").trim().toUpperCase();
     if (!normalizedClassId) {
       throw new Error("Thiếu mã lớp (classId) khi đẩy đánh giá Buổi 14.");
+    }
+
+    if (isLmsApiWriteEnabled(options)) {
+      try {
+        return await uploadSession14EvalViaApi({
+          classId: normalizedClassId,
+          studentIds: options.studentIds,
+          classSummaryHtml: options.classSummaryHtml,
+          uploadClassSummary: options.uploadClassSummary,
+          skipUnapproved: options.skipUnapproved,
+        });
+      } catch (apiErr) {
+        if (!isRecoverableLmsApiWriteError(apiErr)) {
+          throw apiErr;
+        }
+        jobLogRepo.add({
+          jobId: `job_s14_eval_${Date.now()}`,
+          jobType: "UPLOAD_SESSION14_EVAL",
+          classId: normalizedClassId,
+          sessionId: `${normalizedClassId}_SESS_14_EVAL`,
+          level: "WARN",
+          message: `[LMS API Write -> Fallback Playwright] ${redactSecrets(
+            apiErr instanceof Error ? apiErr.message : String(apiErr)
+          )}`,
+        });
+      }
     }
 
     const jobId = `job_s14_eval_${Date.now()}`;
@@ -1109,9 +1147,24 @@ export class Session14EvalUploader {
     }
 
     // 3. Fill 3 Quill Editors ("Learned From Mindx", "Suggestions From Mindx", "Future Direction") + 4th ("Xếp hạng giải") for Robotics
+    const enrichedStu = isRobotics
+      ? buildEnrichedSession14EvalList(classId).find((item) => item.studentId === studentId)
+      : undefined;
     const quills = dialog.locator(".ql-editor");
     const quillCount = await quills.count().catch(() => 0);
     const cleanAwardRanking = String(record.awardRanking || "").trim();
+    const resolvedQuill4Text =
+      isRobotics && (isLiveLms || !cleanAwardRanking)
+        ? stripHtmlTagsToPlainText(
+            formatRoboticsAwardRankingHtmlForLms({
+              awardRanking: cleanAwardRanking,
+              demoScores,
+              demoTotalScore: calculateDemoTotalScore(demoScores),
+              demoJudgeNote: record.demoJudgeNote || "",
+              awardLabel: enrichedStu?.awardLabel || "",
+            })
+          ).trim()
+        : cleanAwardRanking;
     const requiresFourthQuill = isRobotics || cleanAwardRanking.length > 0;
     if (quillCount < 3) {
       throw new Error(
@@ -1128,7 +1181,42 @@ export class Session14EvalUploader {
     await this.fillQuillEditor(quills.nth(1), record.suggestionsFromMindx, page, isLiveLms);
     await this.fillQuillEditor(quills.nth(2), record.futureDirection, page, isLiveLms);
     if (quillCount >= 4) {
-      await this.fillQuillEditor(quills.nth(3), cleanAwardRanking, page, isLiveLms);
+      await this.fillQuillEditor(quills.nth(3), resolvedQuill4Text, page, isLiveLms);
+    }
+
+    // 3b. Fill 6th numeric <input type="number"> ("Xếp hạng học viên trên lớp", 0..5) for Robotics if present
+    let expectedRoboticsRankGrade: number | null = null;
+    if (isRobotics && totalNumInputs >= offset + 6) {
+      const rankInput = numberInputs.nth(offset + 5);
+      const isRankDisabled = await rankInput.isDisabled().catch(() => false);
+      if (!isRankDisabled) {
+        const resolvedRank =
+          enrichedStu?.effectiveAwardRankGrade ??
+          resolveRoboticsAwardRankGrade({
+            manualGrade: record.awardRankGrade ?? null,
+            isAbsent: Boolean(enrichedStu?.isAbsent),
+            awardRank: enrichedStu?.awardRank ?? null,
+            demoTotalScore: calculateDemoTotalScore(demoScores),
+            awardRankingText: cleanAwardRanking || enrichedStu?.awardLabel || "",
+          });
+        expectedRoboticsRankGrade = resolvedRank;
+        await rankInput.scrollIntoViewIfNeeded().catch(() => {});
+        await rankInput.fill(String(resolvedRank));
+        await rankInput
+          .evaluate((el: HTMLInputElement, v: string) => {
+            const setter = Object.getOwnPropertyDescriptor(
+              window.HTMLInputElement.prototype,
+              "value"
+            )?.set;
+            if (setter) setter.call(el, v);
+            else el.value = v;
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+            el.dispatchEvent(new Event("change", { bubbles: true }));
+            if (typeof el.blur === "function") el.blur();
+            el.dispatchEvent(new Event("blur", { bubbles: true }));
+          }, String(resolvedRank))
+          .catch(() => {});
+      }
     }
 
     // Re-check CAS hash and Session 14 active slot immediately before clicking Save (F03)
@@ -1658,7 +1746,7 @@ export class Session14EvalUploader {
         );
       }
       const readQuill3 = await readQuillText(3);
-      const expQuill3 = normalizePlainText(cleanAwardRanking);
+      const expQuill3 = normalizePlainText(resolvedQuill4Text);
       if (readQuill3 !== expQuill3) {
         throw new Error(
           `Đối chiếu Read-after-Write thất bại: Nội dung ô "Xếp hạng giải của học viên" trên DOM ("${readQuill3}") không khớp với bản đã duyệt ("${expQuill3}") của "${fullName}".`
@@ -1694,6 +1782,22 @@ export class Session14EvalUploader {
       if (!Number.isFinite(actualVal) || Math.abs(actualVal - expectedVal) > 1e-6) {
         throw new Error(
           `Đối chiếu Read-after-Write thất bại: Điểm Demo ô #${idx + 1} (${demoLabelsInDomOrder[idx]}) trên DOM (${actualVal}) không khớp với điểm đã duyệt (${expectedVal}).`
+        );
+      }
+    }
+    if (expectedRoboticsRankGrade !== null) {
+      const actualRankVal = Number(
+        await numberInputs
+          .nth(offset + 5)
+          .inputValue()
+          .catch(() => "NaN")
+      );
+      if (
+        !Number.isFinite(actualRankVal) ||
+        Math.round(actualRankVal) !== expectedRoboticsRankGrade
+      ) {
+        throw new Error(
+          `Đối chiếu Read-after-Write thất bại: Số thứ hạng Robotics trên DOM (${actualRankVal}) không khớp giá trị đã duyệt (${expectedRoboticsRankGrade}).`
         );
       }
     }

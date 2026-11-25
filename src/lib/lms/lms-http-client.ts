@@ -23,6 +23,7 @@ import {
   LMS_CLASS_FIELD_BY_ID_QUERY,
   LMS_FIND_ALL_STUDENT_WORKS_MINIMAL_QUERY,
   LMS_FIND_ALL_STUDENT_WORKS_QUERY,
+  LMS_FIND_STUDENT_LETTERS_BY_CLASS_QUERY,
   LMS_FIND_STUDENT_SUBMISSION_BY_CLASS_LEGACY_QUERY,
   LMS_FIND_STUDENT_SUBMISSION_BY_CLASS_QUERY,
   LMS_GET_CLASS_BY_ID_MINIMAL_QUERY,
@@ -1685,6 +1686,39 @@ export class LmsHttpClient {
       return null;
     }
     return res.data?.teacherByUserId || null;
+  }
+
+  /**
+   * Fetches all Session 14 student letters (`findStudentLettersPagination`) for a class.
+   * Silently returns `{ letters: [] }` if schema/permission rejects so legacy flows never break.
+   */
+  public async findStudentLettersByClass(
+    role: LmsAuthRole,
+    lmsClassId: string,
+    options?: { timeoutMs?: number }
+  ): Promise<{ letters: any[]; error?: string }> {
+    const cleanId = String(lmsClassId || "").trim();
+    if (!cleanId) return { letters: [] };
+    try {
+      const res = await this.gql<any>({
+        role,
+        query: LMS_FIND_STUDENT_LETTERS_BY_CLASS_QUERY,
+        variables: { classId: cleanId },
+        operationName: "FindStudentLettersByClass",
+        timeoutMs: options?.timeoutMs,
+      });
+      if (Array.isArray(res.errors) && res.errors.length > 0) {
+        return {
+          letters: [],
+          error: String(res.errors[0]?.message || "GraphQL findStudentLettersPagination error"),
+        };
+      }
+      const list = res.data?.findStudentLettersPagination?.data;
+      return { letters: Array.isArray(list) ? list : [] };
+    } catch (err) {
+      if (isQueueStoppedError(err)) throw err;
+      return { letters: [] };
+    }
   }
 }
 

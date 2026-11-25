@@ -3,6 +3,7 @@ import type { Page } from "playwright";
 import { config, getDynamicAdminConfig } from "../config";
 import {
   adminCenterRepo,
+  getDb,
   isRoboticsClassCode,
   jobLogRepo,
   normalizeDateToIsoYmd,
@@ -10,6 +11,7 @@ import {
   type StudentRecord,
 } from "../db/sqlite";
 import { buildLmsClassCommentsUrl, isValidLmsClassCode } from "../lms/lms-class-url";
+import { LMS_FIND_STUDENT_LETTERS_BY_CLASS_QUERY } from "../lms/lms-graphql-queries";
 import {
   isLmsApiReadEnabled,
   isQueueStoppedError,
@@ -238,6 +240,130 @@ function parseSlotTimeMs(rawDate: unknown): number | null {
   const parsed = Date.parse(text);
   if (Number.isFinite(parsed)) return parsed;
   return parseClassDateToEndOfDayMs(text);
+}
+
+function parseTimestampAssumeVnIfNaive(rawText: string): number | null {
+  const s = String(rawText || "").trim();
+  if (!s) return null;
+  const hasExplicitTz = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(s);
+  const normalized = hasExplicitTz
+    ? s.replace(/([+-]\d{2})(\d{2})$/, "$1:$2")
+    : /^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/.test(s)
+    ? `${s.replace(" ", "T")}+07:00`
+    : s;
+  const ms = Date.parse(normalized);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function isVnWallClockMidnight(ms: number): boolean {
+  const vn = new Date(ms + 7 * 60 * 60 * 1000);
+  return (
+    vn.getUTCHours() === 0 &&
+    vn.getUTCMinutes() === 0 &&
+    vn.getUTCSeconds() === 0
+  );
+}
+
+/**
+ * Determines whether a scheduled LMS slot has actually started/passed by `nowMs` (Asia/Ho_Chi_Minh UTC+7),
+ * WITHOUT any artificial +6h ahead-of-time inflation so same-day evening slots (e.g. 18:00-20:00) do not
+ * appear as occurred earlier in the day.
+ */
+export function hasLmsSlotTimePassed(
+  slot: any,
+  nowMs: number = Date.now(),
+  fallbackTimeSlot?: string | null
+): boolean {
+  const rawStart = String(slot?.startTime || "").trim();
+  const rawEnd = String(slot?.endTime || "").trim();
+
+  // Check explicit start timestamp only when it carries a real non-midnight VN time
+  if (rawStart && /T\d{2}:\d{2}/i.test(rawStart)) {
+    const startMs = parseTimestampAssumeVnIfNaive(rawStart);
+    if (startMs !== null && !isVnWallClockMidnight(startMs)) {
+      return startMs <= nowMs;
+    }
+  }
+
+  const ymd = normalizeAdminDateToIsoYmd(slot?.date || rawStart || rawEnd);
+  if (!ymd) return false;
+
+  const isBareTime = (v: string) => /^\d{1,2}:\d{2}(?:\s*[-–]\s*\d{1,2}:\d{2})?$/.test(v);
+  const timeSource = String(
+    slot?.timeRange ||
+      slot?.timeSlot ||
+      (isBareTime(rawStart) ? rawStart : "") ||
+      fallbackTimeSlot ||
+      (isBareTime(rawEnd) ? rawEnd : "") ||
+      ""
+  ).trim();
+  const timeMatch = timeSource.match(/\b(\d{1,2}):(\d{2})\b/);
+  if (timeMatch) {
+    const hh = String(Math.min(23, Math.max(0, Number(timeMatch[1])))).padStart(2, "0");
+    const mm = String(Math.min(59, Math.max(0, Number(timeMatch[2])))).padStart(2, "0");
+    const slotStartMs = Date.parse(`${ymd}T${hh}:${mm}:00+07:00`);
+    if (Number.isFinite(slotStartMs)) {
+      return slotStartMs <= nowMs;
+    }
+  }
+
+  if (rawEnd && /T\d{2}:\d{2}/i.test(rawEnd)) {
+    const endMs = parseTimestampAssumeVnIfNaive(rawEnd);
+    if (endMs !== null && !isVnWallClockMidnight(endMs)) {
+      return endMs <= nowMs;
+    }
+  }
+
+  const endOfDayMs = Date.parse(`${ymd}T23:59:59.999+07:00`);
+  if (Number.isFinite(endOfDayMs)) {
+    return endOfDayMs <= nowMs;
+  }
+  const parsed = parseSlotTimeMs(slot?.date || rawStart || rawEnd);
+  return parsed !== null && parsed <= nowMs;
+}
+
+/**
+ * Option B: Detects unstarted / `PENDING` / opening classes that have not conducted Session 1 yet,
+ * so they remain hidden on `/admin-center` until the first session actually begins.
+ */
+export function isAdminUnstartedOrPendingClass(params: {
+  status?: string | null;
+  currentSessionNumber?: number | null;
+  hasSlots?: boolean;
+}): boolean {
+  const statusStr = String(params.status || "").trim();
+  if (/\b(?:PENDING|UPCOMING|NOT_STARTED|OPENING|WAITING|PREPARING|NEW|DRAFT)\b/i.test(statusStr)) {
+    return true;
+  }
+  const isFinished = /FINISH|CLOSED|END|COMPLETED|DONE/i.test(statusStr);
+  if (!isFinished && params.hasSlots !== false && Number(params.currentSessionNumber ?? 0) <= 0) {
+    return true;
+  }
+  return false;
+}
+
+function hasValidStudentLetterRecord(letter: any): boolean {
+  if (!letter || typeof letter !== "object") return false;
+  const macros: Array<{ key?: string; value?: string }> = Array.isArray(letter.macros)
+    ? letter.macros
+    : [];
+  const getMacro = (...keys: string[]) => {
+    for (const k of keys) {
+      const val = stripHtmlPlain(
+        macros.find((m) => String(m?.key || "").trim() === k)?.value || ""
+      );
+      if (val) return val;
+    }
+    return "";
+  };
+  const p1 = getMacro("@learnedFromMindx", "learned_from_mindx");
+  const p2 = getMacro("@suggestionsFromMindx", "suggestions_from_mindx");
+  const p3 = getMacro("@futureDirection", "future_direction");
+  if (p1.length >= 5 && p2.length >= 5 && p3.length >= 5) {
+    return true;
+  }
+  const plainContent = stripHtmlPlain(letter.approvedContent || letter.content || "");
+  return plainContent.length >= 60 && hasThreePartMindxComment(plainContent);
 }
 
 function hasThreePartMindxComment(text: string): boolean {
@@ -751,6 +877,7 @@ export interface ComputeAdminClassAuditsInput {
   classByIdData: any | null;
   submissionGqlData: any | null;
   studentWorks: any[];
+  studentLetters?: any[];
   teachingScheduleEntry?: TeachingScheduleClassEntry | null;
   teachingCheckRows?: TeachingCheckNhanXetEntry[];
   teachingDetail?: TeachingPerClassDetail | null;
@@ -805,22 +932,61 @@ export function computeAdminClassAudits(
       ? "ROBOTICS"
       : "CODING";
 
-  // Extract main & assistant teachers from LMS teachers list or fallback to Teaching schedule/check
+  // Extract main & assistant teachers from LMS teachers list, falling back to slot-level teachers (FINISHED classes) then Teaching schedule
   let mainTeacher = String(input.rawClassMeta.mainTeacher || "").trim();
   let assistantTeacher = String(input.rawClassMeta.assistantTeacher || "").trim();
-  const lmsTeachers: any[] = Array.isArray(clsData?.teachers)
-    ? clsData.teachers
-    : [];
-  for (const t of lmsTeachers) {
-    const tName = String(
-      t?.teacher?.fullName || t?.fullName || t?.teacher?.username || ""
-    ).trim();
-    const roleName = String(t?.role?.name || t?.role || "").toLowerCase();
-    if (!tName) continue;
-    if (roleName.includes("ta") || roleName.includes("assistant") || roleName.includes("trợ")) {
-      if (!assistantTeacher) assistantTeacher = tName;
-    } else if (!mainTeacher) {
-      mainTeacher = tName;
+  const extractTeachersFromList = (list: any[]) => {
+    const ordered = [...list].sort((a, b) => {
+      const aAct = a?.isActive !== false ? 0 : 1;
+      const bAct = b?.isActive !== false ? 0 : 1;
+      return aAct - bAct;
+    });
+    for (const t of ordered) {
+      const tName = String(
+        t?.teacher?.fullName || t?.fullName || t?.teacher?.username || ""
+      ).trim();
+      const roleName = String(
+        t?.role?.name || t?.role?.shortName || t?.role || ""
+      ).toLowerCase();
+      if (!tName) continue;
+      if (
+        roleName === "ta" ||
+        /\bta\b/.test(roleName) ||
+        roleName.includes("assistant") ||
+        roleName.includes("trợ") ||
+        roleName.includes("mentor") ||
+        roleName.includes("tutor")
+      ) {
+        if (!assistantTeacher) assistantTeacher = tName;
+      } else if (!mainTeacher) {
+        mainTeacher = tName;
+      }
+    }
+  };
+  extractTeachersFromList(Array.isArray(clsData?.teachers) ? clsData.teachers : []);
+  const slotsForTeachers: any[] = Array.isArray(clsData?.slots) ? clsData.slots : [];
+  if (!mainTeacher || !assistantTeacher) {
+    for (let si = slotsForTeachers.length - 1; si >= 0; si--) {
+      const s = slotsForTeachers[si];
+      if (Array.isArray(s?.teachers) && s.teachers.length > 0) {
+        extractTeachersFromList(s.teachers);
+      }
+      if (!mainTeacher && Array.isArray(s?.teacherAttendance) && s.teacherAttendance.length > 0) {
+        const assistantNorm = assistantTeacher
+          ? normalizeVietnameseName(assistantTeacher)
+          : "";
+        for (const ta of s.teacherAttendance) {
+          const taName = String(ta?.teacher?.fullName || ta?.teacher?.username || "").trim();
+          if (
+            taName &&
+            (!assistantNorm || normalizeVietnameseName(taName) !== assistantNorm)
+          ) {
+            mainTeacher = taName;
+            break;
+          }
+        }
+      }
+      if (mainTeacher && assistantTeacher) break;
     }
   }
   if (!mainTeacher && input.teachingScheduleEntry?.instructor) {
@@ -859,18 +1025,27 @@ export function computeAdminClassAudits(
         normalizeAttendanceTag(a?.status) !== "UNMARKED" ||
         stripHtmlPlain(a?.comment).length > 0
     );
-    const slotMs = parseSlotTimeMs(s?.date || s?.startTime);
-    const slotDatePassed = slotMs !== null && slotMs <= nowMs + ONE_DAY_MS * 0.25;
+    const slotDatePassed = hasLmsSlotTimePassed(
+      s,
+      nowMs,
+      input.teachingScheduleEntry?.timeSlot
+    );
     if (hasAttendanceActivity || slotDatePassed || stripHtmlPlain(s?.summary).length > 0) {
       latestOccurredIdx = i;
     }
   }
 
   const teachingSessNum = Number(input.teachingScheduleEntry?.sessionNumber || 0);
-  const currentSessionNumber = Math.max(
-    latestOccurredIdx >= 0 ? latestOccurredIdx + 1 : 0,
-    teachingSessNum
-  );
+  const isFinishedStatusInitial = /finish|completed|done/i.test(status);
+  const occurredSessionNumber =
+    latestOccurredIdx >= 0
+      ? latestOccurredIdx + 1
+      : isFinishedStatusInitial
+      ? slots.length
+      : 0;
+  // Separate actual occurred LMS session from upcoming Teaching schedule so future CP1/CP2/DEMO schedule does NOT inflate alerts!
+  const currentSessionNumber =
+    slots.length > 0 ? occurredSessionNumber : teachingSessNum;
   const evalSlotIdx =
     latestOccurredIdx >= 0
       ? latestOccurredIdx
@@ -1168,6 +1343,8 @@ export function computeAdminClassAudits(
 
     for (const lesson of occurredLessons) {
       let lessonSubmittedOrGraded = 0;
+      const isLessonNotYetDue =
+        currentSessionNumber > 0 && lesson.sessionNumber >= currentSessionNumber;
       for (const stu of activeLmsStudents) {
         const subs = subsByStudentLesson.get(`${stu.id}::${lesson.id}`) || [];
         const hasAnySubmitted = subs.some((s) => {
@@ -1186,7 +1363,9 @@ export function computeAdminClassAudits(
         );
         const targetList = practiceSubs.length > 0 ? practiceSubs : subs;
         if (targetList.length === 0) {
-          notSubmittedCellsCount++;
+          if (!isLessonNotYetDue) {
+            notSubmittedCellsCount++;
+          }
           continue;
         }
         const statuses = targetList.map((s) => String(s?.status || "").toUpperCase());
@@ -1206,21 +1385,20 @@ export function computeAdminClassAudits(
         } else if (hasRedo && ungradedSubsInCell.length === 0 && !hasMarked) {
           redoCellsCount++;
         } else if (!hasMarked && !hasRedo && ungradedSubsInCell.length === 0) {
-          notSubmittedCellsCount++;
+          if (!isLessonNotYetDue) {
+            notSubmittedCellsCount++;
+          }
         }
       }
 
-      if (
-        lesson.sessionNumber < currentSessionNumber ||
-        lessonSubmittedOrGraded > 0 ||
-        latestHomeworkSessionNumber === 0
-      ) {
+      // Only track due lessons (sessionNumber <= currentSessionNumber - 1); Session 1 or current-session BTVN is not due yet
+      if (currentSessionNumber === 0 || lesson.sessionNumber < currentSessionNumber) {
         latestHomeworkSessionNumber = lesson.sessionNumber;
         latestSubmittedCount = lessonSubmittedOrGraded;
       }
     }
 
-    const expectedCount = activeCount;
+    const expectedCount = latestHomeworkSessionNumber > 0 ? activeCount : 0;
     const submissionRatePercent =
       expectedCount > 0 ? Math.round((latestSubmittedCount / expectedCount) * 100) : 0;
 
@@ -1475,12 +1653,36 @@ export function computeAdminClassAudits(
           (computedReportCard?.students || []).map((s) => [s.studentId, s])
         );
 
+        const letterByStudentId = new Map<string, any>();
+        for (const lt of input.studentLetters || []) {
+          const lSid = String(lt?.studentId || "").trim();
+          if (!lSid) continue;
+          const prevLt = letterByStudentId.get(lSid);
+          if (
+            !prevLt ||
+            (!hasValidStudentLetterRecord(prevLt) && hasValidStudentLetterRecord(lt))
+          ) {
+            letterByStudentId.set(lSid, lt);
+          }
+        }
+
         for (const stu of activeLmsStudents) {
           const rcStu = rcById.get(stu.id);
-          const hasDemoScore =
-            rcStu?.final?.product?.value !== null &&
-            rcStu?.final?.product?.value !== undefined;
           const att14 = att14ById.get(stu.id);
+          const hasDirectDemoScore =
+            Array.isArray(att14?.commentByAreas) &&
+            att14.commentByAreas.some(
+              (a: any) =>
+                (String(a?.type || "").toUpperCase() === "DEMO" ||
+                  Boolean(a?.courseProcessDemoId)) &&
+                ((typeof a?.grade === "number" && a.grade > 0) ||
+                  (Array.isArray(a?.demoQuestions) &&
+                    a.demoQuestions.some((q: any) => Number(q?.score) > 0)))
+            );
+          const hasDemoScore =
+            (rcStu?.final?.product?.value !== null &&
+              rcStu?.final?.product?.value !== undefined) ||
+            hasDirectDemoScore;
           const rateCount = Array.isArray(att14?.commentByAreas)
             ? att14.commentByAreas.filter(
                 (a: any) =>
@@ -1498,8 +1700,9 @@ export function computeAdminClassAudits(
           const hasAllNineCompetency = Math.max(rateCount, evalCriteriaCount) >= 9;
           const hasCompetency =
             hasAllNineCompetency &&
-            rcStu?.final?.competency?.value !== null &&
-            rcStu?.final?.competency?.value !== undefined;
+            ((rcStu?.final?.competency?.value !== null &&
+              rcStu?.final?.competency?.value !== undefined) ||
+              rateCount >= 9);
           const contentAreas = Array.isArray(att14?.commentByAreas)
             ? att14.commentByAreas
                 .filter(
@@ -1515,7 +1718,9 @@ export function computeAdminClassAudits(
           ]
             .filter(Boolean)
             .join("\n");
-          const has3Part = hasThreePartMindxComment(combinedS14Comment);
+          const has3Part =
+            hasValidStudentLetterRecord(letterByStudentId.get(stu.id)) ||
+            hasThreePartMindxComment(combinedS14Comment);
 
           if (hasDemoScore) session14FinalEval.demoScoredCount++;
           if (hasCompetency) session14FinalEval.competencyCompleteCount++;
@@ -1632,7 +1837,7 @@ export function computeAdminClassAudits(
   if (blockType === "CODING" && input.submissionGqlData) {
     const rawSubs = getRawSubmissionItems(input.submissionGqlData);
     const btvnLessons = extractBtvnLessonsFromGql(input.submissionGqlData).filter(
-      (l) => currentSessionNumber <= 1 || l.sessionNumber <= currentSessionNumber - 1
+      (l) => currentSessionNumber > 1 && l.sessionNumber <= currentSessionNumber - 1
     );
 
     if (btvnLessons.length >= 3) {
@@ -1771,7 +1976,10 @@ export function computeAdminClassAudits(
     timeSlot: input.teachingScheduleEntry?.timeSlot || "",
     mainTeacher,
     assistantTeacher,
-    specialEvent: input.teachingScheduleEntry?.specialEvent || "",
+    specialEvent:
+      !teachingSessNum || currentSessionNumber <= 0 || teachingSessNum === currentSessionNumber
+        ? input.teachingScheduleEntry?.specialEvent || ""
+        : "",
     activeStudentCount: activeLmsStudents.length,
     teachingStudentCount: activeTeachingStudents.length,
     weeklyOpsJson: JSON.stringify(weeklyOps),
@@ -1962,7 +2170,16 @@ export function buildAdminOverviewResponse(options?: {
     .toUpperCase();
   const includeMakeup = Boolean(options?.includeMakeup);
 
-  const rawRows = adminCenterRepo.listClasses({ centerCode, includeMakeup });
+  const rawRows = adminCenterRepo
+    .listClasses({ centerCode, includeMakeup })
+    .filter(
+      (r) =>
+        !isAdminUnstartedOrPendingClass({
+          status: r.status,
+          currentSessionNumber: r.currentSessionNumber,
+          hasSlots: true,
+        })
+    );
   const classes = rawRows.map((r) => mapAdminClassRecordToDto(r, "https://teachingmindx.top"));
   const { instructors, campusZaloSummaryText } = buildInstructorSummariesAndCampusText(
     classes,
@@ -2291,7 +2508,28 @@ const FALLBACK_GET_CLASS_BY_ID_QUERY = `
         date
         startTime
         endTime
+        teachers {
+          isActive
+          role {
+            name
+            shortName
+          }
+          teacher {
+            id
+            fullName
+            username
+          }
+        }
+        teacherAttendance {
+          status
+          teacher {
+            id
+            fullName
+            username
+          }
+        }
         studentAttendance {
+          _id
           status
           comment
           sendCommentStatus
@@ -2409,7 +2647,28 @@ const FALLBACK_CLASS_FIELD_BY_ID_QUERY = `
         date
         startTime
         endTime
+        teachers {
+          isActive
+          role {
+            name
+            shortName
+          }
+          teacher {
+            id
+            fullName
+            username
+          }
+        }
+        teacherAttendance {
+          status
+          teacher {
+            id
+            fullName
+            username
+          }
+        }
         studentAttendance {
+          _id
           status
           comment
           sendCommentStatus
@@ -2837,6 +3096,7 @@ export interface AdminLmsFetchedBundle {
       classByIdData: any | null;
       submissionGqlData: any | null;
       studentWorks: any[];
+      studentLetters?: any[];
       error?: string;
       subError?: string;
       worksError?: string;
@@ -3794,7 +4054,7 @@ async function fetchAdminLmsBundleViaNodeApi(params: {
       if (!c.classCode || !c.lmsClassId) return false;
       if (singleClassCode) return c.classCode === singleClassCode;
       const statusUp = String(c.status || "").trim().toUpperCase();
-      if (/CANCEL|CLOSE|DROP/.test(statusUp)) return false;
+      if (/CANCEL|CLOSE|DROP|PENDING|UPCOMING|OPENING|WAITING|PREPARING/.test(statusUp)) return false;
       const isRunning = isConfirmedRunningStatus(c.status);
       const isRecentFinished =
         statusUp.includes("FINISH") &&
@@ -3823,6 +4083,7 @@ async function fetchAdminLmsBundleViaNodeApi(params: {
       classByIdData: any | null;
       submissionGqlData: any | null;
       studentWorks: any[];
+      studentLetters?: any[];
       error?: string;
       subError?: string;
       worksError?: string;
@@ -3857,9 +4118,16 @@ async function fetchAdminLmsBundleViaNodeApi(params: {
       const clsPayload = clsRes.clsPayload;
       assertMatchingLmsClassPayload(clsPayload, item.classCode, item.lmsClassId);
 
+      if (!singleClassCode) {
+        const stUpCheck = String(clsPayload?.status || "").trim().toUpperCase();
+        if (/PENDING|UPCOMING|OPENING|WAITING|PREPARING/.test(stUpCheck)) {
+          skippedHistoricalClasses.add(item.classCode);
+          continue;
+        }
+      }
       if (checkActiveAfterDetail) {
         const stUp = String(clsPayload?.status || "").trim().toUpperCase();
-        const isCancelled = /CANCEL|CLOSE|DROP/.test(stUp);
+        const isCancelled = /CANCEL|CLOSE|DROP|PENDING|UPCOMING|OPENING|WAITING|PREPARING/.test(stUp);
         const isRunningSt = stUp === "RUNNING" || stUp === "ACTIVE";
         if (isCancelled) {
           skippedHistoricalClasses.add(item.classCode);
@@ -3917,6 +4185,7 @@ async function fetchAdminLmsBundleViaNodeApi(params: {
       const needsWorks = stUp.includes("FINISH") || slotsArr.length >= 12;
 
       let studentWorks: any[] = [];
+      let studentLetters: any[] = [];
       let worksError = "";
       if (needsWorks) {
         const worksRes = await lmsHttpClient.findAllStudentWorks("ADMIN", item.lmsClassId);
@@ -3926,12 +4195,15 @@ async function fetchAdminLmsBundleViaNodeApi(params: {
         } else {
           studentWorks = worksRes.works;
         }
+        const lettersRes = await lmsHttpClient.findStudentLettersByClass("ADMIN", item.lmsClassId);
+        studentLetters = lettersRes.letters || [];
       }
 
       perClass.set(item.classCode, {
         classByIdData: clsPayload,
         submissionGqlData,
         studentWorks,
+        studentLetters,
         ...(subError ? { subError: sanitizeErrorMessage(subError) } : {}),
         ...(worksError ? { worksError: sanitizeErrorMessage(worksError) } : {}),
       });
@@ -4948,7 +5220,7 @@ export async function scanAdminCenterClasses(options?: {
                   if (!c.classCode || !c.lmsClassId) return false;
                   if (singleClassCode) return c.classCode === singleClassCode;
                   const statusUp = String(c.status || "").trim().toUpperCase();
-                  if (/CANCEL|CLOSE|DROP/.test(statusUp)) return false;
+                  if (/CANCEL|CLOSE|DROP|PENDING|UPCOMING|OPENING|WAITING|PREPARING/.test(statusUp)) return false;
                   const isRunning = isConfirmedRunningStatus(c.status);
                   const isRecentFinished =
                     statusUp.includes("FINISH") &&
@@ -5035,6 +5307,7 @@ export async function scanAdminCenterClasses(options?: {
                   classByIdData: any | null;
                   submissionGqlData: any | null;
                   studentWorks: any[];
+                  studentLetters?: any[];
                   error?: string;
                   subError?: string;
                   worksError?: string;
@@ -5070,6 +5343,7 @@ export async function scanAdminCenterClasses(options?: {
                       subVarsTemplate,
                       worksQ,
                       worksMinQ,
+                      lettersQ,
                       includeSubmissions,
                       checkActiveAfterDetail,
                       recentGraceCutoffMs,
@@ -5298,6 +5572,7 @@ export async function scanAdminCenterClasses(options?: {
                         stUp.includes("FINISH") || slotsArr.length >= 12;
 
                       let studentWorks: any[] = [];
+                      let studentLetters: any[] = [];
                       let worksError = "";
                       if (needsWorks) {
                         let wRes = await gql(worksQ, { classId: lmsId });
@@ -5319,12 +5594,30 @@ export async function scanAdminCenterClasses(options?: {
                         } else {
                           studentWorks = rawWorksData;
                         }
+                        if (lettersQ) {
+                          try {
+                            const lRes = await gql(
+                              lettersQ,
+                              { classId: lmsId },
+                              "FindStudentLettersByClass"
+                            );
+                            const rawLetters =
+                              lRes?.data?.studentLetters?.data ||
+                              lRes?.data?.findStudentLettersPagination?.data ||
+                              lRes?.data?.findStudentLettersByClass?.data ||
+                              lRes?.data?.findAllStudentLetters?.data;
+                            if (Array.isArray(rawLetters)) {
+                              studentLetters = rawLetters;
+                            }
+                          } catch {}
+                        }
                       }
 
                       return {
                         classByIdData: clsPayload,
                         submissionGqlData,
                         studentWorks,
+                        studentLetters,
                         err: "",
                         subError,
                         worksError,
@@ -5344,6 +5637,7 @@ export async function scanAdminCenterClasses(options?: {
                       subVarsTemplate: captureState.capturedSubmissionVars,
                       worksQ: FIND_ALL_STUDENT_WORKS_QUERY,
                       worksMinQ: FIND_ALL_STUDENT_WORKS_MINIMAL_QUERY,
+                      lettersQ: LMS_FIND_STUDENT_LETTERS_BY_CLASS_QUERY,
                       includeSubmissions: !isRob,
                       checkActiveAfterDetail: !singleClassCode && !onTeachingSchedule,
                       recentGraceCutoffMs: nowMs - 14 * ONE_DAY_MS,
@@ -5368,6 +5662,10 @@ export async function scanAdminCenterClasses(options?: {
                   }
                   if (fetched.classByIdData) {
                     const clsDetail = fetched.classByIdData;
+                    if (!singleClassCode && /PENDING|UPCOMING|OPENING|WAITING|PREPARING/i.test(String(clsDetail?.status || ""))) {
+                      skippedHistoricalClasses.add(item.classCode);
+                      continue;
+                    }
                     if (!singleClassCode && !onTeachingSchedule) {
                       const detailStatus = String(clsDetail?.status || "").trim();
                       const detailStatusUp = detailStatus.toUpperCase();
@@ -5380,7 +5678,7 @@ export async function scanAdminCenterClasses(options?: {
                           nowMs
                         );
                       if (
-                        /CANCEL|CLOSE|DROP/.test(detailStatusUp) ||
+                        /CANCEL|CLOSE|DROP|PENDING|UPCOMING|OPENING|WAITING|PREPARING/.test(detailStatusUp) ||
                         (!detailRunning && !detailRecentFin && detailStatusUp !== "")
                       ) {
                         skippedHistoricalClasses.add(item.classCode);
@@ -5393,13 +5691,16 @@ export async function scanAdminCenterClasses(options?: {
                     if (clsDetail?.startDate) item.startDate = String(clsDetail.startDate).trim();
                     if (clsDetail?.endDate) item.endDate = String(clsDetail.endDate).trim();
                     if (clsDetail?.course?.name) item.courseName = String(clsDetail.course.name).trim();
-                    for (const t of clsDetail?.teachers || []) {
+                    for (const t of [...(clsDetail?.teachers || [])].sort(
+                      (a: any, b: any) =>
+                        (a?.isActive !== false ? 0 : 1) - (b?.isActive !== false ? 0 : 1)
+                    )) {
                       const tn = String(
                         t?.teacher?.fullName || t?.teacher?.username || ""
                       ).trim();
                       const rn = String(t?.role?.name || "").toLowerCase();
                       if (!tn) continue;
-                      if (rn.includes("ta") || rn.includes("assistant")) {
+                      if (/\bta\b/.test(rn) || rn.includes("assistant") || rn.includes("trợ")) {
                         if (!item.assistantTeacher) item.assistantTeacher = tn;
                       } else if (!item.mainTeacher) {
                         item.mainTeacher = tn;
@@ -5413,6 +5714,7 @@ export async function scanAdminCenterClasses(options?: {
                     classByIdData: fetched.classByIdData,
                     submissionGqlData: fetched.submissionGqlData,
                     studentWorks: fetched.studentWorks || [],
+                    studentLetters: fetched.studentLetters || [],
                     ...(fetched.subError ? { subError: sanitizeErrorMessage(fetched.subError) } : {}),
                     ...(fetched.worksError ? { worksError: sanitizeErrorMessage(fetched.worksError) } : {}),
                   });
@@ -5520,21 +5822,26 @@ export async function scanAdminCenterClasses(options?: {
             isRoboticsClassCode(c.classCode)
               ? "ROBOTICS"
               : "CODING";
-          const slotCount = Array.isArray(per?.classByIdData?.slots)
-            ? per!.classByIdData.slots.filter((s: any) => {
-                const slotMs = parseSlotTimeMs(s?.date || s?.startTime);
-                return (
-                  (slotMs !== null && slotMs <= Date.now() + ONE_DAY_MS * 0.25) ||
-                  (Array.isArray(s?.studentAttendance) &&
-                    s.studentAttendance.some(
-                      (a: any) => normalizeAttendanceTag(a?.status) !== "UNMARKED"
-                    ))
-                );
-              }).length
-            : 0;
-          const schedSess =
-            teachingOverview.scheduleByClass.get(c.classCode)?.sessionNumber || 0;
-          const estSession = Math.max(slotCount, schedSess);
+          const schedEntry = teachingOverview.scheduleByClass.get(c.classCode);
+          const rawSlotsArr = Array.isArray(per?.classByIdData?.slots)
+            ? per!.classByIdData.slots
+            : [];
+          const slotCount = rawSlotsArr.filter((s: any) => {
+            const hasAttOrSummary =
+              stripHtmlPlain(s?.summary).length > 0 ||
+              (Array.isArray(s?.studentAttendance) &&
+                s.studentAttendance.some(
+                  (a: any) =>
+                    normalizeAttendanceTag(a?.status) !== "UNMARKED" ||
+                    stripHtmlPlain(a?.comment).length > 0
+                ));
+            return (
+              hasAttOrSummary ||
+              hasLmsSlotTimePassed(s, Date.now(), schedEntry?.timeSlot)
+            );
+          }).length;
+          const schedSess = schedEntry?.sessionNumber || 0;
+          const estSession = rawSlotsArr.length > 0 ? slotCount : schedSess;
           return {
             classCode: c.classCode,
             blockType,
@@ -5601,11 +5908,34 @@ export async function scanAdminCenterClasses(options?: {
             classByIdData: per.classByIdData,
             submissionGqlData: per.submissionGqlData || null,
             studentWorks: per.studentWorks || [],
+            studentLetters: per.studentLetters || [],
             teachingScheduleEntry: teachingOverview.scheduleByClass.get(meta.classCode) || null,
             teachingCheckRows: teachingOverview.checkRowsByClass.get(meta.classCode) || [],
             teachingDetail: tDetail,
             teachingMakeupRows: teachingOverview.makeupByClass.get(meta.classCode) || [],
           });
+
+          // Option B: Hide/prune unstarted or PENDING classes (0 occurred sessions) from /admin-center (including single-class scan)
+          if (
+            isAdminUnstartedOrPendingClass({
+              status: auditRecord.status,
+              currentSessionNumber: auditRecord.currentSessionNumber,
+              hasSlots:
+                Array.isArray(per.classByIdData?.slots) &&
+                per.classByIdData.slots.length > 0,
+            })
+          ) {
+            try {
+              getDb()
+                .prepare(`DELETE FROM admin_center_classes WHERE centerCode = ? AND classCode = ?`)
+                .run(centerCode, meta.classCode);
+            } catch {}
+            progressState.totalClasses = Math.max(
+              scannedCount,
+              progressState.totalClasses - 1
+            );
+            continue;
+          }
 
           const failedEps = new Set(tDetail?.failedEndpoints || []);
           if (prevRecord && failedEps.size > 0) {

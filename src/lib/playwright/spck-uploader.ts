@@ -53,7 +53,14 @@ import {
 } from "../local-files/spck-scanner";
 import { taskQueue } from "../queue/task-queue";
 import { resolveKnownLmsClassId } from "../lms/lms-class-id-store";
+import {
+  clearSessionSpckViaApi,
+  isLmsApiWriteEnabled,
+  isRecoverableLmsApiWriteError,
+  upsertClassSpckViaApi,
+} from "../lms/lms-write-client";
 import { assertPathAllowed } from "../security/path-allowlist";
+import { redactSecrets } from "../security/secret-redactor";
 import { authService } from "./auth";
 import { browserManager } from "./browser-manager";
 import { LmsHelpers } from "./lms-helpers";
@@ -89,6 +96,8 @@ export interface SpckUploadOptions {
   studentIds?: string[];
   customPage?: Page;
   skipNavigation?: boolean;
+  forcePlaywright?: boolean;
+  preferApiWrite?: boolean;
 }
 
 function parseJsonArraySafe<T>(raw?: string | null): T[] {
@@ -597,6 +606,8 @@ export class SpckUploader {
     sessionNumber: number;
     studentIds?: string[];
     customPage?: Page;
+    forcePlaywright?: boolean;
+    preferApiWrite?: boolean;
   }): Promise<any> {
     const normalizedClassId = (options.classId || "").trim().toUpperCase();
     if (!normalizedClassId) {
@@ -615,6 +626,29 @@ export class SpckUploader {
       sessionId: `SESSION_${targetSessionNumber}`,
       studentId: requestedStudentIds.length === 1 ? requestedStudentIds[0] : undefined,
       execute: async () => {
+        if (isLmsApiWriteEnabled({ ...options, skipNavigation: false })) {
+          try {
+            return await clearSessionSpckViaApi({
+              classId: normalizedClassId,
+              sessionNumber: targetSessionNumber,
+              studentIds: requestedStudentIds,
+            });
+          } catch (apiErr) {
+            if (!isRecoverableLmsApiWriteError(apiErr)) {
+              throw apiErr;
+            }
+            jobLogRepo.add({
+              jobId: `CLEAR_SPCK_${normalizedClassId}_S${targetSessionNumber}`,
+              jobType: "CLEAR_SPCK",
+              classId: normalizedClassId,
+              sessionId: `SESSION_${targetSessionNumber}`,
+              level: "WARN",
+              message: `[LMS API Clear -> Fallback Playwright] ${redactSecrets(
+                apiErr instanceof Error ? apiErr.message : String(apiErr)
+              )}`,
+            });
+          }
+        }
         const page = options.customPage || (await browserManager.getPage());
         const interceptor = createNetworkInterceptor(page);
         if (!options.customPage) {
@@ -1529,6 +1563,31 @@ export class SpckUploader {
       options.sessionNumber,
       Boolean(options.skipNavigation)
     );
+
+    if (isLmsApiWriteEnabled(options)) {
+      try {
+        return await upsertClassSpckViaApi({
+          classId: normalizedClassId,
+          sessionNumber: resolvedSessionNumber,
+          studentIds: options.studentIds,
+        });
+      } catch (apiErr) {
+        if (!isRecoverableLmsApiWriteError(apiErr)) {
+          throw apiErr;
+        }
+        jobLogRepo.add({
+          jobId: `SPCK_${normalizedClassId}`,
+          jobType: "UPLOAD_SPCK",
+          classId: normalizedClassId,
+          sessionId: resolvedSessionNumber ? `SESSION_${resolvedSessionNumber}` : undefined,
+          level: "WARN",
+          message: `[LMS API Write -> Fallback Playwright] ${redactSecrets(
+            apiErr instanceof Error ? apiErr.message : String(apiErr)
+          )}`,
+        });
+      }
+    }
+
     const allClassRecords = spckUploadRepo.findByClass(normalizedClassId);
     const effectiveClassRecords = allClassRecords.map((rec) =>
       SpckUploader.resolveSessionRecordForUpload(

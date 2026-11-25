@@ -251,6 +251,8 @@ export interface Session14EvalItemUI {
   suggestionsFromMindx: string;
   futureDirection: string;
   awardRanking?: string;
+  awardRankGrade?: number | null;
+  effectiveAwardRankGrade?: number;
   awardRank?: string | number | null;
   awardLabel?: string;
   awardBadge?: string;

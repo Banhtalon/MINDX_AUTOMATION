@@ -249,6 +249,7 @@ function initSchema(db: Database.Database) {
       suggestionsFromMindx TEXT DEFAULT '',
       futureDirection TEXT DEFAULT '',
       awardRanking TEXT DEFAULT '',
+      awardRankGrade INTEGER DEFAULT NULL,
       quickTagsJson TEXT DEFAULT '[]',
       teacherNote TEXT DEFAULT '',
       draftVersion INTEGER NOT NULL DEFAULT 1,
@@ -274,6 +275,15 @@ function initSchema(db: Database.Database) {
       contentHash TEXT NOT NULL DEFAULT '',
       verifiedAt TEXT DEFAULT NULL,
       errorMessage TEXT DEFAULT NULL,
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+
+    -- 5e. lms_resource_upload_cache (v3.8.9 SHA-256 -> MindX resource CDN URL cache)
+    CREATE TABLE IF NOT EXISTS lms_resource_upload_cache (
+      sha256 TEXT PRIMARY KEY,
+      fileSize INTEGER NOT NULL,
+      ext TEXT NOT NULL DEFAULT '',
+      remoteUrl TEXT NOT NULL,
       updatedAt TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     );
 
@@ -509,6 +519,9 @@ function initSchema(db: Database.Database) {
     }
     if (s14Cols.length > 0 && !s14Cols.some((c) => c.name === "competencySourceJson")) {
       db.exec(`ALTER TABLE spck_session14_evaluations ADD COLUMN competencySourceJson TEXT DEFAULT '{}'`);
+    }
+    if (s14Cols.length > 0 && !s14Cols.some((c) => c.name === "awardRankGrade")) {
+      db.exec(`ALTER TABLE spck_session14_evaluations ADD COLUMN awardRankGrade INTEGER DEFAULT NULL`);
     }
   } catch {}
 }
@@ -4870,6 +4883,7 @@ export interface SpckSession14EvaluationRecord {
   suggestionsFromMindx: string;
   futureDirection: string;
   awardRanking?: string;
+  awardRankGrade?: number | null;
   quickTagsJson: string;
   teacherNote: string;
   draftVersion: number;
@@ -5299,12 +5313,17 @@ export function computeSession14EvalHash(record: {
   suggestionsFromMindx?: string;
   futureDirection?: string;
   awardRanking?: string;
+  awardRankGrade?: number | null;
 }): string {
   const comp = parseSession14CompetencyScores(record.competencyJson);
   const compTotal = calculateCompetencyAverageScore(comp);
   const demo = parseSession14DemoScores(record.demoScoresJson, record.classId);
   const demoTotal = calculateDemoTotalScore(demo);
   const cleanAward = String(record.awardRanking || "").trim();
+  const hasExplicitGrade =
+    record.awardRankGrade !== undefined &&
+    record.awardRankGrade !== null &&
+    Number.isFinite(Number(record.awardRankGrade));
   const payload = JSON.stringify({
     v: "SESSION14_EVAL_V290",
     classId: String(record.classId || "").trim().toUpperCase(),
@@ -5317,8 +5336,167 @@ export function computeSession14EvalHash(record: {
     suggestionsFromMindx: String(record.suggestionsFromMindx || "").trim(),
     futureDirection: String(record.futureDirection || "").trim(),
     ...(cleanAward ? { awardRanking: cleanAward } : {}),
+    ...(hasExplicitGrade
+      ? {
+          awardRankGrade: Math.min(
+            5,
+            Math.max(0, Math.round(Number(record.awardRankGrade)))
+          ),
+        }
+      : {}),
   });
   return calculateSha256(payload);
+}
+
+/**
+ * Resolves the LMS numeric rank grade (`0..5`) for Robotics Session 14 Column 2 ("Xếp hạng học viên trên lớp"):
+ * `1` = Giải Nhất, `2` = Giải Nhì, `3` = Giải Ba, `5` = Hoàn thành / Khuyến khích, `0` = Vắng mặt.
+ */
+export function resolveRoboticsAwardRankGrade(params: {
+  manualGrade?: number | null;
+  isAbsent?: boolean;
+  awardRank?: number | null;
+  demoTotalScore?: number | null;
+  awardRankingText?: string | null;
+}): number {
+  if (
+    params.manualGrade !== undefined &&
+    params.manualGrade !== null &&
+    Number.isFinite(Number(params.manualGrade))
+  ) {
+    return Math.min(5, Math.max(0, Math.round(Number(params.manualGrade))));
+  }
+  const demoTotal = Number(params.demoTotalScore || 0);
+  if (params.isAbsent && demoTotal <= 0) {
+    return 0;
+  }
+  if (params.awardRank === 1) return 1;
+  if (params.awardRank === 2) return 2;
+  if (params.awardRank === 3) return 3;
+  const text = String(params.awardRankingText || "").trim();
+  if (text) {
+    if (/(?:^|\b)(?:đồng\s*)?giải\s*nhất\b/i.test(text)) return 1;
+    if (/(?:^|\b)(?:đồng\s*)?giải\s*nhì\b/i.test(text)) return 2;
+    if (/(?:^|\b)(?:đồng\s*)?giải\s*ba\b/i.test(text)) return 3;
+    if (/\bvắng\b/i.test(text) && demoTotal <= 0) return 0;
+  }
+  return 5;
+}
+
+function escapeRoboticsHtml(raw: string): string {
+  return String(raw || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function formatRoboticsInlineMarkdownToHtml(raw: string): string {
+  const escaped = escapeRoboticsHtml(raw.trim());
+  return escaped.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+}
+
+/**
+ * Formats the Robotics Session 14 "Xếp hạng học viên trên lớp" rich-text HTML for MindX LMS Area `665e8440181e0e47f6c654c1`.
+ * Preserves teacher's 3-bullet comment if already written; otherwise appends 3 grounded Demo bullets
+ * below the concise award label without changing what is stored in `session14EvalRepo`.
+ */
+export function formatRoboticsAwardRankingHtmlForLms(params: {
+  awardRanking?: string | null;
+  demoScores?: Partial<SpckSession14DemoScores> | null;
+  demoTotalScore?: number | null;
+  demoJudgeNote?: string | null;
+  awardLabel?: string | null;
+}): string {
+  const cleanAward = String(params.awardRanking || "").trim();
+  const cleanLabel = String(params.awardLabel || "").trim();
+  const demoTotal = Number(params.demoTotalScore || 0);
+  const judgeNote = String(params.demoJudgeNote || "").trim();
+
+  if (!cleanAward && demoTotal <= 0 && !judgeNote) {
+    return "";
+  }
+
+  const lines = cleanAward
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const bulletLines = lines.filter((line) => /^[-•+]/.test(line));
+  const hasExplicitThreeBullets =
+    /điểm\s*mạnh/i.test(cleanAward) &&
+    (/điểm\s*cần\s*cải\s*thiện/i.test(cleanAward) || /cần\s*cải\s*thiện/i.test(cleanAward)) &&
+    (/lời\s*khuyên/i.test(cleanAward) || bulletLines.length >= 3);
+
+  if (hasExplicitThreeBullets || bulletLines.length >= 3) {
+    return lines.map((line) => `<p>${formatRoboticsInlineMarkdownToHtml(line)}</p>`).join("");
+  }
+
+  const demo = params.demoScores || {};
+  const criteria = [
+    {
+      name: "Tư duy máy tính & thuật toán",
+      score: Number(demo.algorithm || 0),
+      max: 1.25,
+    },
+    {
+      name: "Tư duy sáng tạo mô hình",
+      score: Number(demo.creativity || 0),
+      max: 0.75,
+    },
+    {
+      name: "Kỹ năng thuyết trình & giao tiếp",
+      score: Number(demo.communication || 0),
+      max: 1.0,
+    },
+    {
+      name: "Kỹ năng sử dụng công cụ lập trình Robot",
+      score: Number(demo.computerSkills || 0),
+      max: 0.5,
+    },
+    {
+      name: "Kỹ năng giải quyết vấn đề",
+      score: Number(demo.problemSolving || 0),
+      max: 1.5,
+    },
+  ];
+
+  const strengths = criteria
+    .filter((c) => c.max > 0 && c.score / c.max >= 0.8)
+    .map((c) => `${c.name} (${c.score}/${c.max})`);
+  const improvements = criteria
+    .filter((c) => c.max > 0 && c.score / c.max < 0.8)
+    .map((c) => `${c.name} (${c.score}/${c.max})`);
+
+  const headingText = cleanAward || (cleanLabel ? `${cleanLabel} (${demoTotal.toFixed(2)}/5.0 điểm)` : "");
+  const strengthText =
+    strengths.length > 0
+      ? `Học viên đạt kết quả nổi bật ở các tiêu chí ${strengths.join(", ")}${
+          judgeNote ? `; nhận xét tại buổi Demo: ${judgeNote}` : ""
+        }.`
+      : judgeNote
+      ? `Học viên đã hoàn thành phần trình bày Demo cuối khóa; ghi nhận từ BGK: ${judgeNote}.`
+      : `Học viên đã tham gia báo cáo sản phẩm cuối khóa với tổng điểm Demo ${demoTotal.toFixed(2)}/5.0.`;
+
+  const improvementText =
+    improvements.length > 0
+      ? `Cần tiếp tục rèn luyện thêm ở các tiêu chí chưa đạt tối đa gồm ${improvements.join(", ")}.`
+      : `Cần duy trì sự bình tĩnh và tối ưu thời gian khi thuyết trình sản phẩm trước hội đồng giám khảo.`;
+
+  const adviceText =
+    improvements.length > 0
+      ? `Con hãy ôn tập kỹ cơ cấu lắp ráp, khối lệnh điều khiển Robot và tập thuyết trình trôi chảy hơn cho các khóa Robotics tiếp theo.`
+      : `Con hãy tiếp tục phát huy tinh thần sáng tạo, thử thách bản thân với các dự án và cuộc thi Robotics nâng cao.`;
+
+  const parts: string[] = [];
+  if (headingText) {
+    parts.push(
+      `<p><strong>Danh hiệu đạt được:</strong> ${formatRoboticsInlineMarkdownToHtml(headingText)}</p>`
+    );
+  }
+  parts.push(`<p>- <strong>Điểm mạnh của học viên:</strong> ${escapeRoboticsHtml(strengthText)}</p>`);
+  parts.push(`<p>- <strong>Điểm cần cải thiện:</strong> ${escapeRoboticsHtml(improvementText)}</p>`);
+  parts.push(`<p>- <strong>Lời khuyên:</strong> ${escapeRoboticsHtml(adviceText)}</p>`);
+  return parts.join("");
 }
 
 export function verifySession14EvalIntegrity(
@@ -5396,6 +5574,7 @@ export const session14EvalRepo = {
     suggestionsFromMindx?: string;
     futureDirection?: string;
     awardRanking?: string;
+    awardRankGrade?: number | null;
     quickTags?: string[] | string;
     teacherNote?: string;
   }): {
@@ -5519,6 +5698,16 @@ export const session14EvalRepo = {
       params.futureDirection !== undefined ? params.futureDirection : current.futureDirection;
     const nextAwardRanking =
       params.awardRanking !== undefined ? params.awardRanking : current.awardRanking || "";
+    const curAwardRankGrade =
+      current.awardRankGrade !== undefined && current.awardRankGrade !== null
+        ? Number(current.awardRankGrade)
+        : null;
+    const nextAwardRankGrade =
+      params.awardRankGrade === undefined
+        ? curAwardRankGrade
+        : params.awardRankGrade === null || !Number.isFinite(Number(params.awardRankGrade))
+        ? null
+        : Math.min(5, Math.max(0, Math.round(Number(params.awardRankGrade))));
     const nextTagsJson =
       params.quickTags !== undefined
         ? typeof params.quickTags === "string"
@@ -5539,6 +5728,7 @@ export const session14EvalRepo = {
       suggestionsFromMindx: nextSuggestions,
       futureDirection: nextFuture,
       awardRanking: nextAwardRanking,
+      awardRankGrade: nextAwardRankGrade,
     });
 
     const contentChangedFromApproved =
@@ -5554,6 +5744,7 @@ export const session14EvalRepo = {
       nextSuggestions !== current.suggestionsFromMindx ||
       nextFuture !== current.futureDirection ||
       nextAwardRanking !== (current.awardRanking || "") ||
+      nextAwardRankGrade !== curAwardRankGrade ||
       nextTagsJson !== current.quickTagsJson ||
       nextNote !== current.teacherNote;
 
@@ -5567,6 +5758,7 @@ export const session14EvalRepo = {
           nextSuggestions.trim() ||
           nextFuture.trim() ||
           nextAwardRanking.trim() ||
+          nextAwardRankGrade !== null ||
           nextDemoTotal > 0
       );
       if (current.status === "APPROVED" || current.status === "VERIFIED") {
@@ -5598,6 +5790,7 @@ export const session14EvalRepo = {
            suggestionsFromMindx = ?,
            futureDirection = ?,
            awardRanking = ?,
+           awardRankGrade = ?,
            quickTagsJson = ?,
            teacherNote = ?,
            draftVersion = ?,
@@ -5620,6 +5813,7 @@ export const session14EvalRepo = {
       nextSuggestions,
       nextFuture,
       nextAwardRanking,
+      nextAwardRankGrade,
       nextTagsJson,
       nextNote,
       nextVersion,
@@ -5716,6 +5910,7 @@ export const session14EvalRepo = {
       suggestionsFromMindx: current.suggestionsFromMindx,
       futureDirection: current.futureDirection,
       awardRanking: current.awardRanking,
+      awardRankGrade: current.awardRankGrade ?? null,
     });
 
     const db = getDb();
@@ -6106,6 +6301,67 @@ export const session14ClassSummaryRepo = {
        WHERE classId = ?`
     ).run(errorMessage, normalized);
     return this.findOne(normalized);
+  },
+};
+
+export const lmsResourceCacheRepo = {
+  get(
+    sha256: string,
+    fileSize?: number,
+    ext?: string,
+    allowedPrefix?: string
+  ): string | null {
+    const cleanHash = String(sha256 || "").trim().toLowerCase();
+    if (!cleanHash) return null;
+    const db = getDb();
+    const row = db
+      .prepare(
+        `SELECT sha256, fileSize, ext, remoteUrl FROM lms_resource_upload_cache WHERE sha256 = ?`
+      )
+      .get(cleanHash) as
+      | { sha256: string; fileSize: number; ext: string; remoteUrl: string }
+      | undefined;
+    if (!row || !row.remoteUrl) return null;
+    if (
+      typeof fileSize === "number" &&
+      Number.isFinite(fileSize) &&
+      Number(row.fileSize) !== fileSize
+    ) {
+      return null;
+    }
+    if (
+      ext !== undefined &&
+      String(ext || "").trim().toLowerCase() !== String(row.ext || "").trim().toLowerCase()
+    ) {
+      return null;
+    }
+    const url = String(row.remoteUrl).trim();
+    if (allowedPrefix) {
+      if (!url.startsWith(allowedPrefix)) return null;
+    } else if (
+      !url.startsWith("https://resources.mindx.edu.vn/") &&
+      !url.startsWith("http://127.0.0.1:")
+    ) {
+      return null;
+    }
+    return url;
+  },
+
+  set(sha256: string, fileSize: number, ext: string, remoteUrl: string): void {
+    const cleanHash = String(sha256 || "").trim().toLowerCase();
+    const cleanUrl = String(remoteUrl || "").trim();
+    if (!cleanHash || !cleanUrl) return;
+    const cleanExt = String(ext || "").trim().toLowerCase();
+    const db = getDb();
+    db.prepare(
+      `INSERT INTO lms_resource_upload_cache (sha256, fileSize, ext, remoteUrl, updatedAt)
+       VALUES (?, ?, ?, ?, datetime('now', 'localtime'))
+       ON CONFLICT(sha256) DO UPDATE SET
+         fileSize = excluded.fileSize,
+         ext = excluded.ext,
+         remoteUrl = excluded.remoteUrl,
+         updatedAt = datetime('now', 'localtime')`
+    ).run(cleanHash, Math.max(0, Math.round(Number(fileSize) || 0)), cleanExt, cleanUrl);
   },
 };
 
@@ -8557,9 +8813,38 @@ export function buildEnrichedSession14EvalList(classId: string) {
       demoRawTotalScore: rawDemoScore,
       projectTitle,
       awardRanking: rec.awardRanking || "",
+      awardRankGrade:
+        rec.awardRankGrade !== undefined && rec.awardRankGrade !== null
+          ? Number(rec.awardRankGrade)
+          : null,
       quickTags,
     };
   });
+
+  const isRob = isRoboticsClassCode(normalizedClassId);
+  const s14SessionIds = classSessionRepo
+    .findByClass(normalizedClassId)
+    .filter((cs) => Number(cs.sessionNumber) === 14)
+    .map((cs) => cs.sessionId);
+  const absentStudentIdsS14 = new Set<string>();
+  if (s14SessionIds.length > 0) {
+    try {
+      const placeholders = s14SessionIds.map(() => "?").join(",");
+      const fbRows = getDb()
+        .prepare(
+          `SELECT studentId, attendanceStatus FROM session_feedbacks WHERE classId = ? AND sessionId IN (${placeholders})`
+        )
+        .all(normalizedClassId, ...s14SessionIds) as Array<{
+        studentId: string;
+        attendanceStatus?: string | null;
+      }>;
+      for (const r of fbRows) {
+        if (/ABSENT|OFF|VANG/i.test(String(r.attendanceStatus || "").trim())) {
+          absentStudentIdsS14.add(r.studentId);
+        }
+      }
+    } catch {}
+  }
 
   const rankItems = computeSession14AwardRankingsPure(
     baseItems.map((it) => ({
@@ -8574,8 +8859,20 @@ export function buildEnrichedSession14EvalList(classId: string) {
 
   return baseItems.map((item) => {
     const rankInfo = rankMap.get(item.studentId);
+    const isAbsent = absentStudentIdsS14.has(item.studentId);
+    const effectiveAwardRankGrade = isRob
+      ? resolveRoboticsAwardRankGrade({
+          manualGrade: item.awardRankGrade,
+          isAbsent,
+          awardRank: rankInfo?.awardRank ?? null,
+          demoTotalScore: item.demoTotalScore,
+          awardRankingText: item.awardRanking || rankInfo?.awardLabel || "",
+        })
+      : undefined;
     return {
       ...item,
+      isAbsent,
+      effectiveAwardRankGrade,
       rawScoreText: rankInfo?.rawScoreText || formatRawDemoScore3dp(item.demoRawTotalScore),
       awardRank: rankInfo?.awardRank ?? null,
       awardTier: rankInfo?.awardTier || "UNSCORED",

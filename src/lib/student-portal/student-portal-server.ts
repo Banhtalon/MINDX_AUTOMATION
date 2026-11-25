@@ -22,6 +22,7 @@ import {
   canonicalizeSpckFolderPath,
   classSessionRepo,
   getDb,
+  isRoboticsClassCode,
   jobLogRepo,
   normalizeSpckFolderKey,
   spckSessionRepo,
@@ -2302,7 +2303,10 @@ class StudentPortalManager {
       let packageData: StudentSpckPackage;
       try {
         canonicalStudentFolder = canonicalizeSpckFolderPath(safeStudentFolder);
-        packageData = await scanStudentSpckFolderAsync(canonicalStudentFolder, student.fullName);
+        packageData = await scanStudentSpckFolderAsync(canonicalStudentFolder, student.fullName, {
+          classId: activeClassId,
+          isRobotics: isRoboticsClassCode(activeClassId),
+        });
 
         const parseSafeArray = <T>(raw?: string | null): T[] => {
           if (!raw) return [];
@@ -2760,7 +2764,10 @@ class StudentPortalManager {
       const stu = studentRepo.findOne(normalizedClassId, normalizedStudentId);
       const fullName = stu?.fullName || normalizedStudentId;
       const canonicalFolder = canonicalizeSpckFolderPath(safeStudentFolder);
-      const scanned = await scanStudentSpckFolderAsync(canonicalFolder, fullName);
+      const scanned = await scanStudentSpckFolderAsync(canonicalFolder, fullName, {
+        classId: normalizedClassId,
+        isRobotics: isRoboticsClassCode(normalizedClassId),
+      });
 
       spckUploadRepo.upsert({
         ...existing,

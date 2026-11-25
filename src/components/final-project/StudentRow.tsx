@@ -1647,12 +1647,63 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                     </div>
 
                     {isRoboticsClass && (
-                      <div>
-                        <label className="block font-semibold text-rose-300 mb-1">
-                          Phần 4: Xếp hạng giải của học viên (Riêng lớp Robotics — Cột 2 LMS Buổi 14, Tùy chọn)
-                        </label>
-                        <input
-                          type="text"
+                      <div className="space-y-2 rounded-lg border border-rose-500/30 bg-rose-950/20 p-2.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <label className="font-semibold text-rose-300">
+                            Phần 4: Xếp hạng học viên trên lớp (Robotics Buổi 14 — Số 0..5 & Nhận xét Demo)
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-slate-300">Số thứ hạng LMS (0..5):</span>
+                            <select
+                              data-testid="s14-robotics-rank-grade"
+                              value={
+                                studentEval14.awardRankGrade !== undefined &&
+                                studentEval14.awardRankGrade !== null
+                                  ? String(studentEval14.awardRankGrade)
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                const raw = e.target.value;
+                                const nextGrade = raw === "" ? null : Number(raw);
+                                setSession14Evals((prev) =>
+                                  prev.map((it) =>
+                                    it.studentId === studentEval14.studentId
+                                      ? {
+                                          ...it,
+                                          awardRankGrade: nextGrade,
+                                          status:
+                                            it.status === "VERIFIED" ||
+                                            it.status === "APPROVED"
+                                              ? "WAITING_APPROVAL"
+                                              : it.status,
+                                          contentHash: "",
+                                        }
+                                      : it
+                                  )
+                                );
+                                handleSaveSession14EvalDraft(
+                                  studentEval14.studentId,
+                                  {
+                                    awardRankGrade: nextGrade,
+                                  }
+                                );
+                              }}
+                              className="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-white text-xs"
+                            >
+                              <option value="">
+                                Tự động ({studentEval14.effectiveAwardRankGrade ?? 5})
+                              </option>
+                              <option value="1">1 — Giải Nhất</option>
+                              <option value="2">2 — Giải Nhì</option>
+                              <option value="3">3 — Giải Ba</option>
+                              <option value="5">5 — Hoàn thành / Khuyến khích</option>
+                              <option value="0">0 — Vắng mặt</option>
+                            </select>
+                          </div>
+                        </div>
+                        <textarea
+                          rows={3}
+                          data-testid="s14-robotics-award-text"
                           value={studentEval14.awardRanking || ""}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -1681,8 +1732,8 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                               }
                             )
                           }
-                          placeholder="VD: Giải Nhất / Giải Sáng Tạo / Giải Thuyết Trình Ấn Tượng (Để trống nếu không điền)"
-                          className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-white text-xs"
+                          placeholder="VD: Giải Nhất (4.25/5.0 điểm) hoặc nhập đầy đủ 3 gạch đầu dòng Điểm mạnh / Điểm cần cải thiện / Lời khuyên..."
+                          className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-700 text-white text-xs leading-relaxed"
                         />
                       </div>
                     )}

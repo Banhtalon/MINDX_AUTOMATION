@@ -290,6 +290,12 @@ export async function POST(req: Request) {
       suggestionsFromMindx: body?.suggestionsFromMindx,
       futureDirection: body?.futureDirection,
       awardRanking: body?.awardRanking,
+      awardRankGrade:
+        body?.awardRankGrade !== undefined
+          ? body.awardRankGrade === null || body.awardRankGrade === ""
+            ? null
+            : Math.min(5, Math.max(0, Math.round(Number(body.awardRankGrade))))
+          : undefined,
       quickTags: body?.quickTags,
       teacherNote: body?.teacherNote,
     });

@@ -3101,6 +3101,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       "suggestionsFromMindx",
       "futureDirection",
       "awardRanking",
+      "awardRankGrade",
       "teacherNote",
       "demoScores",
       "competencyScores",
@@ -3256,6 +3257,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       "suggestionsFromMindx",
       "futureDirection",
       "awardRanking",
+      "awardRankGrade",
       "teacherNote",
       "demoScores",
       "competencyScores",
@@ -3461,6 +3463,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
       "suggestionsFromMindx",
       "futureDirection",
       "awardRanking",
+      "awardRankGrade",
       "teacherNote",
       "demoScores",
       "competencyScores",
@@ -4580,31 +4583,12 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     return hasAppClassCode || hasAppFiles || !isWebClassOrProduct;
   }, [selectedClassId, selectedClassMeta, rows, isWebClassOrProduct]);
 
-  // Auto-open Ngăn 1 ("Công cụ trong lớp học") when Portal is running or Robotics class needs YouTube playlist
+  // Do not auto-open YouTube playlist panel for Robotics by default (teacher can open Ngăn 1 manually if recording videos)
   useEffect(() => {
     if (studentPortalRunning) {
       setShowOptionalTools(true);
     }
   }, [studentPortalRunning, setShowOptionalTools]);
-
-  useEffect(() => {
-    if (isRoboticsClass && !youtubeImportInput.trim()) {
-      const hasAnyYoutubeInRows = rows.some(
-        (r) => Boolean(r.youtubeUrlsText && r.youtubeUrlsText.trim())
-      );
-      if (!hasAnyYoutubeInRows) {
-        setShowOptionalTools(true);
-        setShowYoutubeImport(true);
-      }
-    }
-  }, [
-    selectedClassId,
-    isRoboticsClass,
-    youtubeImportInput,
-    rows,
-    setShowOptionalTools,
-    setShowYoutubeImport,
-  ]);
 
   // Auto-open Ngăn 2 ("Tùy chọn nâng cao") only when partial errors require manual retry
   useEffect(() => {

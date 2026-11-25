@@ -28,7 +28,10 @@ const HOT_RELOAD_ADMIN_ENV_KEYS = [
   "ADMIN_LMS_CENTRE_IDS",
 ] as const;
 
-const HOT_RELOAD_RUNTIME_FLAG_KEYS = ["MINDX_LMS_API_READ"] as const;
+const HOT_RELOAD_RUNTIME_FLAG_KEYS = [
+  "MINDX_LMS_API_READ",
+  "MINDX_LMS_API_WRITE",
+] as const;
 
 const ALL_HOT_RELOAD_ENV_KEYS = [
   ...HOT_RELOAD_ADMIN_ENV_KEYS,
@@ -225,6 +228,14 @@ function hotReloadEnvIfNeeded(): void {
 export function getDynamicLmsApiReadEnvValue(): string | undefined {
   hotReloadEnvIfNeeded();
   return process.env.MINDX_LMS_API_READ;
+}
+
+/**
+ * Returns the live value of `MINDX_LMS_API_WRITE` (supporting hot-reload from `.env.local`).
+ */
+export function getDynamicLmsApiWriteEnvValue(): string | undefined {
+  hotReloadEnvIfNeeded();
+  return process.env.MINDX_LMS_API_WRITE;
 }
 
 export function getDynamicAdminConfig() {

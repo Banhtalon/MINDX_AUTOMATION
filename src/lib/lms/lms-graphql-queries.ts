@@ -165,6 +165,26 @@ export const LMS_GET_CLASS_BY_ID_QUERY = `
         endTime
         summary
         homework
+        teachers {
+          isActive
+          role {
+            name
+            shortName
+          }
+          teacher {
+            id
+            fullName
+            username
+          }
+        }
+        teacherAttendance {
+          status
+          teacher {
+            id
+            fullName
+            username
+          }
+        }
         studentAttendance {
           _id
           status
@@ -244,7 +264,28 @@ export const LMS_GET_CLASS_BY_ID_SAFE_QUERY = `
         date
         startTime
         endTime
+        teachers {
+          isActive
+          role {
+            name
+            shortName
+          }
+          teacher {
+            id
+            fullName
+            username
+          }
+        }
+        teacherAttendance {
+          status
+          teacher {
+            id
+            fullName
+            username
+          }
+        }
         studentAttendance {
+          _id
           status
           comment
           sendCommentStatus
@@ -364,7 +405,28 @@ export const LMS_CLASS_FIELD_BY_ID_QUERY = `
         date
         startTime
         endTime
+        teachers {
+          isActive
+          role {
+            name
+            shortName
+          }
+          teacher {
+            id
+            fullName
+            username
+          }
+        }
+        teacherAttendance {
+          status
+          teacher {
+            id
+            fullName
+            username
+          }
+        }
         studentAttendance {
+          _id
           status
           comment
           sendCommentStatus
@@ -570,6 +632,313 @@ export const LMS_TEACHER_BY_USER_ID_QUERY = `
       mainCentre {
         id
         name
+      }
+    }
+  }
+`;
+
+export const LMS_FIND_STUDENT_LETTERS_BY_CLASS_QUERY = `
+  query FindStudentLettersByClass($classId: String!) {
+    findStudentLettersPagination(
+      payload: { classId_equals: $classId, pageIndex: 0, itemsPerPage: 100 }
+    ) {
+      data {
+        id
+        studentId
+        status
+        content
+        approvedContent
+        macros {
+          key
+          value
+        }
+      }
+    }
+  }
+`;
+
+export const LMS_FIND_ALL_STUDENT_WORKS_FULL_QUERY = `
+  query FindAllStudentWorks($classId: String) {
+    findAllStudentWorks(payload: { classId_equals: $classId }) {
+      data {
+        id
+        status
+        studentId
+        classSessionId
+        classSessionNumber
+        classId
+        version
+        displayOrder
+        isDeleted
+        latestData {
+          title
+          thumbnail
+          videoUrls
+          imageUrl
+          attachmentUrls
+          comment
+          rejectReason
+          relatedUrls {
+            name
+            url
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const LMS_CREATE_STUDENT_WORK_MUTATION = `
+  mutation CreateStudentWork($payload: CreateStudentWorkCommand!) {
+    studentWorks {
+      create(payload: $payload) {
+        id
+        status
+        studentId
+        classSessionId
+        classId
+        version
+        displayOrder
+        latestData {
+          title
+          thumbnail
+          videoUrls
+          imageUrl
+          attachmentUrls
+          comment
+          rejectReason
+          relatedUrls {
+            name
+            url
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const LMS_UPDATE_STUDENT_WORK_MUTATION = `
+  mutation UpdateStudentWork($payload: UpdateStudentWorkCommand!) {
+    studentWorks {
+      update(payload: $payload) {
+        id
+        status
+        studentId
+        classSessionId
+        classId
+        version
+        displayOrder
+        latestData {
+          title
+          thumbnail
+          videoUrls
+          imageUrl
+          attachmentUrls
+          comment
+          rejectReason
+          relatedUrls {
+            name
+            url
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const LMS_DELETE_STUDENT_WORK_MUTATION = `
+  mutation DeleteStudentWork($payload: DeleteStudentWorkCommand!) {
+    studentWorks {
+      del(payload: $payload) {
+        id
+      }
+    }
+  }
+`;
+
+export const LMS_GET_CLASS_WRITE_CONTEXT_QUERY = `
+  query GetClassWriteContext($id: ID!) {
+    classesById(id: $id) {
+      id
+      name
+      status
+      course {
+        id
+        name
+        shortName
+      }
+      centre {
+        id
+      }
+      courseProcesses {
+        id
+        name
+        finalSession {
+          demoScore {
+            id
+            commentAreas {
+              id
+              name
+              demoDetails {
+                id
+                title
+                score
+              }
+            }
+          }
+          finalEvaluations {
+            id
+            title
+            commentAreas {
+              id
+              name
+              type
+            }
+          }
+        }
+      }
+      students {
+        activeInClass
+        student {
+          id
+          fullName
+        }
+      }
+      slots {
+        _id
+        index
+        summary
+        homework
+        studentAttendance {
+          _id
+          status
+          comment
+          student {
+            id
+            fullName
+          }
+          commentByAreas {
+            type
+            grade
+            content
+            commentAreaId
+            courseProcessDemoId
+            courseProcessFinalEvaluationId
+            courseProcessFinalEvaluationTitle
+            demoQuestions {
+              courseProcessDemoDetailId
+              title
+              result
+              score
+              maxScore
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const LMS_UPDATE_SLOT_COMMENT_MUTATION = `
+  mutation UpdateSlotComment($payload: UpdateSlotCommentCommand!) {
+    classes {
+      updateSlotComment(payload: $payload) {
+        id
+        slots {
+          _id
+          summary
+          homework
+          studentAttendance {
+            _id
+            comment
+            student {
+              id
+              fullName
+            }
+            commentByAreas {
+              commentAreaId
+              type
+              grade
+              content
+              courseProcessDemoId
+              demoQuestions {
+                courseProcessDemoDetailId
+                title
+                score
+                maxScore
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const LMS_FIND_ONE_STUDENT_LETTER_QUERY = `
+  query FindOneByCriteria($payload: FindOneByConditionPayload) {
+    findOneByCriteria(payload: $payload) {
+      id
+      studentId
+      classId
+      status
+      content
+      approvedContent
+      emailTemplateId
+      sourceContent
+      macros {
+        key
+        value
+      }
+    }
+  }
+`;
+
+export const LMS_EMAIL_TEMPLATES_QUERY = `
+  query GetEmailTemplates($payload: EmailTemplateQuery) {
+    emailTemplates(payload: $payload) {
+      data {
+        id
+        systemCode
+        name
+        content
+        isActive
+      }
+    }
+  }
+`;
+
+export const LMS_CREATE_STUDENT_LETTERS_MUTATION = `
+  mutation CreateStudentLetters($payload: CreateStudentLettersCommand!) {
+    studentLetters {
+      create(payload: $payload) {
+        id
+        studentId
+        classId
+        status
+        content
+        macros {
+          key
+          value
+        }
+      }
+    }
+  }
+`;
+
+export const LMS_UPDATE_STUDENT_LETTERS_MUTATION = `
+  mutation UpdateStudentLetters($payload: UpdateStudentLettersCommand!) {
+    studentLetters {
+      update(payload: $payload) {
+        id
+        studentId
+        classId
+        status
+        content
+        macros {
+          key
+          value
+        }
       }
     }
   }
