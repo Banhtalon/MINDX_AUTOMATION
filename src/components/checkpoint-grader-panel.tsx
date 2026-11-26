@@ -869,14 +869,14 @@ export default function CheckpointGraderPanel({
         type="button"
         data-testid="toggle-checkpoint-grader-btn"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="w-full px-5 py-4 flex flex-wrap items-center justify-between gap-3 text-left hover:bg-slate-500/10 transition cursor-pointer"
+        className="w-full px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 text-left hover:bg-slate-500/10 transition cursor-pointer"
       >
         <div className="flex flex-wrap items-center gap-2.5">
-          <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold mindx-badge-purple">
+          <span className="neo-ws-badge-purple px-2.5 py-1 rounded-lg text-xs font-black mindx-dark-keep">
             🎯 CHẤM CHECKPOINT AI
           </span>
-          <span className="text-sm font-extrabold">
-            Chấm Bài Thực Hành Checkpoint Bằng Bot (Thang 100 LMS • CP1 Buổi 5 &amp; CP2 Buổi 9)
+          <span className="neo-title-text text-sm font-black">
+            Chấm Thực hành Checkpoint (Thang 100 • CP1 B5 &amp; CP2 B9)
           </span>
           {!isRobotics && rubric && (
             <span className="px-2 py-0.5 rounded-full text-[11px] mindx-badge-emerald">
@@ -885,7 +885,7 @@ export default function CheckpointGraderPanel({
           )}
         </div>
         <div className="flex items-center gap-1.5 text-xs font-bold opacity-80">
-          <span>{isOpen ? "Thu gọn" : "Mở khung chấm Checkpoint"}</span>
+          <span>{isOpen ? "Thu gọn" : "Mở khung chấm"}</span>
           {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </div>
       </button>
@@ -922,10 +922,10 @@ export default function CheckpointGraderPanel({
                     data-testid="cp-stage-1-btn"
                     disabled={anyBusy}
                     onClick={() => setStage(1)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+                    className={`px-3.5 py-2 rounded-xl text-xs cursor-pointer ${
                       stage === 1
-                        ? "bg-purple-600 text-white shadow-md mindx-dark-keep"
-                        : "bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 hover:opacity-90"
+                        ? "neo-tab-active"
+                        : "neo-tab-idle"
                     }`}
                   >
                     Checkpoint 1 (Buổi 5)
@@ -935,10 +935,10 @@ export default function CheckpointGraderPanel({
                     data-testid="cp-stage-2-btn"
                     disabled={anyBusy}
                     onClick={() => setStage(2)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+                    className={`px-3.5 py-2 rounded-xl text-xs cursor-pointer ${
                       stage === 2
-                        ? "bg-purple-600 text-white shadow-md mindx-dark-keep"
-                        : "bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 hover:opacity-90"
+                        ? "neo-tab-active"
+                        : "neo-tab-idle"
                     }`}
                   >
                     Checkpoint 2 (Buổi 9)
@@ -1105,14 +1105,14 @@ export default function CheckpointGraderPanel({
 
                   <div>
                     <label className="block text-[11px] font-bold mb-1">
-                      Nội dung đề bài &amp; hướng dẫn chấm (hoặc để AI tự trích xuất từ ảnh chụp đề)
+                      Đề bài &amp; hướng dẫn chấm
                     </label>
                     <textarea
                       rows={3}
                       value={rubricPrompt}
                       onChange={(e) => setRubricPrompt(e.target.value)}
-                      placeholder="Dán câu hỏi đề bài Checkpoint, tên file dữ liệu (nếu có) và lưu ý chấm điểm..."
-                      className="w-full px-3 py-2 rounded-lg text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+                      placeholder="Dán câu hỏi đề bài Checkpoint, tên file dữ liệu hoặc bấm AI Tạo Barem từ ảnh chụp đề..."
+                      className="w-full px-3 py-2 rounded-lg text-xs border-2 border-[#0f172a] dark:border-slate-600 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
                     />
                   </div>
 

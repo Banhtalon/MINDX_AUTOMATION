@@ -1874,22 +1874,21 @@ export default function TeachingReportCardView({
 
   return (
     <div className="space-y-5">
-      {/* Header Card: Chuẩn Teaching MindX */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+      {/* Header Card: Chuẩn Teaching MindX (Neo-Brutalism) */}
+      <div className="neo-section-card rounded-2xl p-4 sm:p-5 space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b-2 border-[#0f172a]/15 dark:border-slate-700 pb-3.5">
           <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <span
-                className={`px-2.5 py-1 rounded-md text-xs font-bold border ${statusBadge.className}`}
+                className={`px-2.5 py-1 rounded-lg text-xs font-extrabold border-2 ${statusBadge.className}`}
+                title={
+                  isClassMatched && record
+                    ? `v${record.draftVersion}${record.contentHash ? ` • #${record.contentHash.slice(0, 8)}` : ""}`
+                    : undefined
+                }
               >
                 {statusBadge.label}
               </span>
-              {isClassMatched && record && (
-                <span className="text-xs text-slate-400 font-mono">
-                  v{record.draftVersion}
-                  {record.contentHash ? ` • #${record.contentHash.slice(0, 8)}` : ""}
-                </span>
-              )}
               {effectiveClassId && (
                 <a
                   href={`https://teachingmindx.top/diem-tong-ket.php?from=hocsinh&class_code=${encodeURIComponent(
@@ -1898,16 +1897,16 @@ export default function TeachingReportCardView({
                   target="_blank"
                   rel="noopener noreferrer"
                   title={`Mở bảng điểm tổng kết lớp ${effectiveClassId} trên teachingmindx.top/diem-tong-ket.php`}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-sky-700 hover:bg-sky-600 text-white border border-sky-600 transition mindx-dark-keep"
+                  className="neo-btn-blue inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black mindx-dark-keep"
                 >
                   <span>🌐 Mở Teaching ({effectiveClassId}) ↗</span>
                 </a>
               )}
             </div>
 
-            <h2 className="text-xl font-extrabold text-white tracking-tight">
-              PHIẾU ĐIỂM TỔNG KẾT KHÓA HỌC — LỚP{" "}
-              <span className="text-indigo-400">{effectiveClassId || "..."}</span>
+            <h2 className="neo-title-text text-lg sm:text-xl font-black tracking-tight">
+              PHIẾU ĐIỂM TỔNG KẾT —{" "}
+              <span className="text-blue-600 dark:text-sky-400">{effectiveClassId || "..."}</span>
             </h2>
           </div>
 
@@ -1917,11 +1916,11 @@ export default function TeachingReportCardView({
               type="button"
               onClick={handleScrapeFromLms}
               disabled={isScrapingLms || isScrapingExternal || !effectiveClassId}
-              className="px-3.5 py-2 rounded-lg text-xs font-bold bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white border border-indigo-500 transition cursor-pointer mindx-dark-keep"
+              className="neo-btn-blue px-3.5 py-2 rounded-xl text-xs font-black disabled:opacity-50 cursor-pointer mindx-dark-keep"
             >
               {isScrapingLms || isScrapingExternal
                 ? "⏳ Đang quét LMS..."
-                : "🔄 Quét Điểm BTVN & Checkpoint từ LMS"}
+                : "🔄 Quét điểm LMS"}
             </button>
 
             <button
@@ -1935,14 +1934,14 @@ export default function TeachingReportCardView({
                 !computedReportCard ||
                 computedReportCard.students.length === 0
               }
-              title="Duyệt khóa SHA-256 (expectedVersion) và đồng bộ ngay toàn bộ điểm lên teachingmindx.top/hocsinh.php"
-              className="px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white border border-emerald-500 transition cursor-pointer mindx-dark-keep"
+              title="Duyệt và đồng bộ ngay toàn bộ điểm lên teachingmindx.top/hocsinh.php"
+              className="neo-btn-emerald px-3.5 py-2 rounded-xl text-xs font-black disabled:opacity-50 cursor-pointer mindx-dark-keep"
             >
               {isApproving
                 ? "⏳ Đang duyệt..."
                 : isSyncingTeaching
-                ? "⏳ Đang đồng bộ Teaching..."
-                : "✅ Duyệt & 🚀 Đồng bộ Teaching"}
+                ? "⏳ Đang đẩy Teaching..."
+                : "✅ Duyệt & Đẩy Teaching"}
             </button>
 
             <button
@@ -1956,8 +1955,8 @@ export default function TeachingReportCardView({
                 !computedReportCard ||
                 computedReportCard.students.length === 0
               }
-              title="Chỉ duyệt khóa SHA-256 tại máy (chưa đẩy lên Teaching)"
-              className="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-amber-300 border border-amber-500/40 transition cursor-pointer"
+              title="Chỉ duyệt lưu tại máy (chưa đẩy lên Teaching)"
+              className="neo-btn-neutral px-3 py-2 rounded-xl text-xs font-extrabold disabled:opacity-50 cursor-pointer"
             >
               Chỉ duyệt
             </button>
@@ -1977,11 +1976,11 @@ export default function TeachingReportCardView({
                       !(record.status === "FAILED" && Boolean(record.contentHash)))
                   }
                   title="Đồng bộ bản đã duyệt lên teachingmindx.top/hocsinh.php"
-                  className="px-3 py-2 rounded-lg text-xs font-bold bg-amber-700 hover:bg-amber-800 disabled:opacity-50 text-white border border-amber-500 transition cursor-pointer mindx-dark-keep"
+                  className="neo-btn-yellow px-3 py-2 rounded-xl text-xs font-black disabled:opacity-50 cursor-pointer"
                 >
                   {record.status === "FAILED"
-                    ? "🔄 Thử lại Đồng bộ điểm lên Teaching"
-                    : "🚀 Đồng bộ bản đã duyệt"}
+                    ? "🔄 Thử lại đẩy Teaching"
+                    : "🚀 Đẩy bản đã duyệt"}
                 </button>
               )}
           </div>
@@ -2123,7 +2122,7 @@ export default function TeachingReportCardView({
             <button
               type="button"
               onClick={() => setShowFormulaModal(true)}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+              className="neo-btn-neutral px-2.5 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer"
             >
               📐 Công thức
             </button>
@@ -2131,25 +2130,25 @@ export default function TeachingReportCardView({
               type="button"
               onClick={() => setActiveChartModal("cp1")}
               disabled={!isClassMatched || isLoading}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 border border-slate-700 transition cursor-pointer"
+              className="neo-btn-neutral px-2.5 py-1.5 rounded-lg text-xs font-extrabold disabled:opacity-50 cursor-pointer"
             >
-              📊 Biểu đồ CP1
+              📊 CP1
             </button>
             <button
               type="button"
               onClick={() => setActiveChartModal("cp2")}
               disabled={!isClassMatched || isLoading}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 border border-slate-700 transition cursor-pointer"
+              className="neo-btn-neutral px-2.5 py-1.5 rounded-lg text-xs font-extrabold disabled:opacity-50 cursor-pointer"
             >
-              📊 Biểu đồ CP2
+              📊 CP2
             </button>
             <button
               type="button"
               onClick={() => setActiveChartModal("final")}
               disabled={!isClassMatched || isLoading}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 border border-slate-700 transition cursor-pointer"
+              className="neo-btn-neutral px-2.5 py-1.5 rounded-lg text-xs font-extrabold disabled:opacity-50 cursor-pointer"
             >
-              📊 Biểu đồ DEMO
+              📊 DEMO
             </button>
 
             {computedReportCard?.showBtvnBlock && (
@@ -2157,9 +2156,9 @@ export default function TeachingReportCardView({
                 type="button"
                 onClick={() => handleCopyBlockImageToZalo("btvn")}
                 disabled={!isClassMatched || isLoading}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-sky-700 hover:bg-sky-800 disabled:opacity-50 text-white border border-sky-500 transition cursor-pointer mindx-dark-keep"
+                className="neo-btn-blue px-2.5 py-1.5 rounded-lg text-xs font-black disabled:opacity-50 cursor-pointer mindx-dark-keep"
               >
-                📸 Copy ảnh BTVN
+                📸 Ảnh BTVN
               </button>
             )}
 
@@ -2167,18 +2166,18 @@ export default function TeachingReportCardView({
               type="button"
               onClick={() => handleCopyBlockImageToZalo("summary")}
               disabled={!isClassMatched || isLoading}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white border border-teal-500 transition cursor-pointer mindx-dark-keep"
+              className="neo-btn-yellow px-2.5 py-1.5 rounded-lg text-xs font-black disabled:opacity-50 cursor-pointer"
             >
-              📸 Copy ảnh Tổng kết
+              📸 Ảnh Tổng kết
             </button>
 
             <button
               type="button"
               onClick={handleCopyTsvToSheets}
               disabled={!isClassMatched || isLoading}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white border border-emerald-500 transition cursor-pointer mindx-dark-keep"
+              className="neo-btn-emerald px-2.5 py-1.5 rounded-lg text-xs font-black disabled:opacity-50 cursor-pointer mindx-dark-keep"
             >
-              📋 Copy Google Sheets
+              📋 Copy Sheets
             </button>
           </div>
         </div>

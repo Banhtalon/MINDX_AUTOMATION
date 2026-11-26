@@ -44,8 +44,8 @@ export default function DashboardPage() {
           <span className="neo-ws-badge-indigo px-2.5 py-1 rounded-lg text-xs font-black shrink-0 mindx-dark-keep">
             ⭐ Trong giờ học
           </span>
-          <span className="text-xs sm:text-sm font-extrabold text-[#0f172a]">
-            Quản lý Giờ học Trực tiếp: Cộng sao/Huy hiệu, Đếm riêng lỗi ⚠️, Chiếu bảng thi đua hàng ngang &amp; Đẩy thẳng sang Nhận xét
+          <span className="neo-title-text text-xs sm:text-sm font-extrabold">
+            Quản lý Giờ học: Điểm danh, cộng Sao/Huy hiệu, chiếu bảng thi đua &amp; đẩy sang Nhận xét
           </span>
         </div>
         <span className="neo-btn-yellow px-3.5 py-1 rounded-lg text-xs font-black inline-flex items-center gap-1 shrink-0">
@@ -61,24 +61,24 @@ export default function DashboardPage() {
           href="/session-comments"
           className="neo-ws-card neo-ws-amber rounded-xl p-3.5 flex flex-col justify-between gap-2.5"
         >
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <span className="neo-ws-num-amber w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black shrink-0">
                   1
                 </span>
-                <h3 className="text-sm sm:text-base font-black text-[#0f172a] leading-snug">
-                  1. Nhận xét Buổi học &amp; Thông báo Zalo
+                <h3 className="neo-title-text text-sm sm:text-base font-black leading-snug">
+                  1. Nhận xét Buổi học &amp; Zalo
                 </h3>
               </div>
               <span className="neo-ws-badge-amber px-2.5 py-0.5 rounded-full text-[11px] font-extrabold shrink-0 mindx-dark-keep">
                 {pendingCommentClasses > 0
                   ? `Cần làm: ${pendingCommentClasses} lớp`
-                  : "Buổi 1 – 13 & Checkpoint"}
+                  : "Buổi 1–13 & CP"}
               </span>
             </div>
-            <p className="text-xs font-medium text-slate-700 leading-relaxed pl-9">
-              Đồng bộ lớp đang dạy, tích nhanh thẻ Lập trình / Robotics trên 1 hàng gọn, AI soạn nhận xét 3 mục chuẩn và tin nhắn tổng kết Zalo.
+            <p className="neo-subtitle-text text-xs font-medium pl-9">
+              Tích thẻ nhanh, AI soạn nhận xét 3 mục &amp; thông báo Zalo.
             </p>
           </div>
           <div className="flex items-center justify-end">
@@ -94,24 +94,24 @@ export default function DashboardPage() {
           href="/homework-grader"
           className="neo-ws-card neo-ws-blue rounded-xl p-3.5 flex flex-col justify-between gap-2.5"
         >
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <span className="neo-ws-num-blue w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black shrink-0">
                   2
                 </span>
-                <h3 className="text-sm sm:text-base font-black text-[#0f172a] leading-snug">
-                  2. Phiếu Điểm Tổng Kết (Chuẩn Teaching) &amp; Bảng Điểm BTVN
+                <h3 className="neo-title-text text-sm sm:text-base font-black leading-snug">
+                  2. Phiếu Điểm &amp; BTVN
                 </h3>
               </div>
               <span className="neo-ws-badge-blue px-2.5 py-0.5 rounded-full text-[11px] font-extrabold shrink-0 mindx-dark-keep">
                 {pendingReportCardClasses > 0
                   ? `Cần đồng bộ: ${pendingReportCardClasses} lớp`
-                  : "Phiếu điểm Teaching & BTVN"}
+                  : "Phiếu điểm Teaching"}
               </span>
             </div>
-            <p className="text-xs font-medium text-slate-700 leading-relaxed pl-9">
-              Tự động tổng hợp điểm BTVN (Lập trình), Check-point 1 &amp; 2, Điểm Năng lực [ĐNL] và Cuối khóa DEMO từ LMS; xuất ảnh gửi Zalo và đồng bộ lên Teaching.
+            <p className="neo-subtitle-text text-xs font-medium pl-9">
+              Tổng hợp BTVN, Checkpoint, [ĐNL], xuất ảnh &amp; đẩy Teaching.
             </p>
           </div>
           <div className="flex items-center justify-end">
@@ -127,14 +127,14 @@ export default function DashboardPage() {
           href="/final-project"
           className="neo-ws-card neo-ws-emerald rounded-xl p-3.5 flex flex-col justify-between gap-2.5"
         >
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <span className="neo-ws-num-emerald w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black shrink-0">
                   3
                 </span>
-                <h3 className="text-sm sm:text-base font-black text-[#0f172a] leading-snug">
-                  3. Nộp Sản phẩm Cuối khóa (SPCK) &amp; Tổng kết Buổi 14
+                <h3 className="neo-title-text text-sm sm:text-base font-black leading-snug">
+                  3. Sản phẩm Cuối khóa (SPCK)
                 </h3>
               </div>
               <span className="neo-ws-badge-emerald px-2.5 py-0.5 rounded-full text-[11px] font-extrabold shrink-0 mindx-dark-keep">
@@ -143,8 +143,8 @@ export default function DashboardPage() {
                   : "Buổi 12, 13 & 14"}
               </span>
             </div>
-            <p className="text-xs font-medium text-slate-700 leading-relaxed pl-9">
-              Quét thư mục dự án hoặc Playlist YouTube (Robotics), chuẩn bị ảnh bìa &amp; đường dẫn sản phẩm, nộp SPCK các buổi 12–14 và đẩy Thư tổng kết cuối khóa Buổi 14.
+            <p className="neo-subtitle-text text-xs font-medium pl-9">
+              Quét dự án, ảnh bìa, nộp SPCK B12–14 &amp; Thư tổng kết.
             </p>
           </div>
           <div className="flex items-center justify-end">
@@ -160,22 +160,22 @@ export default function DashboardPage() {
           href="/syllabus-config"
           className="neo-ws-card neo-ws-purple rounded-xl p-3.5 flex flex-col justify-between gap-2.5"
         >
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <span className="neo-ws-num-purple w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black shrink-0">
                   4
                 </span>
-                <h3 className="text-sm sm:text-base font-black text-[#0f172a] leading-snug">
-                  4. Quản lý Giáo trình &amp; Bộ Thẻ Nhận xét Nhanh
+                <h3 className="neo-title-text text-sm sm:text-base font-black leading-snug">
+                  4. Giáo trình &amp; Thẻ Nhận xét
                 </h3>
               </div>
               <span className="neo-ws-badge-purple px-2.5 py-0.5 rounded-full text-[11px] font-extrabold shrink-0 mindx-dark-keep">
                 Cấu hình
               </span>
             </div>
-            <p className="text-xs font-medium text-slate-700 leading-relaxed pl-9">
-              Tùy chỉnh nội dung từng buổi học, đánh dấu buổi Kiểm tra (Checkpoint) và quản lý 3 bộ thẻ nhận xét nhanh (Lập trình, Robotics, Buổi 14).
+            <p className="neo-subtitle-text text-xs font-medium pl-9">
+              Chỉnh bài học từng buổi, mốc Checkpoint &amp; 3 bộ thẻ nhanh.
             </p>
           </div>
           <div className="flex items-center justify-end">

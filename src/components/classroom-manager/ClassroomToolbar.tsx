@@ -140,7 +140,7 @@ export function ClassroomToolbar({
           data-testid="cm-random-picker-btn"
           onClick={onOpenRandomPicker}
           disabled={presentAndLateCount === 0}
-          className="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-blue-50 hover:bg-blue-100 border border-blue-300 text-blue-800 dark:bg-blue-900/30 dark:border-blue-500/50 dark:text-blue-200 disabled:opacity-45 inline-flex items-center gap-1.5 cursor-pointer transition whitespace-nowrap"
+          className="neo-btn-neutral px-3 py-1.5 rounded-lg text-xs sm:text-sm font-extrabold disabled:opacity-45 inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
         >
           <Dices className="w-4 h-4" />
           <span>Gọi tên</span>
@@ -150,7 +150,7 @@ export function ClassroomToolbar({
           type="button"
           data-testid="cm-projector-toggle-btn"
           onClick={onToggleProjector}
-          className="mindx-dark-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm inline-flex items-center gap-1.5 cursor-pointer transition whitespace-nowrap"
+          className="neo-btn-blue px-3 py-1.5 rounded-lg text-xs sm:text-sm font-black inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap mindx-dark-keep"
         >
           <Monitor className="w-4 h-4" />
           <span>{isProjectorMode ? "Thoát chiếu" : "Chiếu lớp học"}</span>
@@ -160,7 +160,7 @@ export function ClassroomToolbar({
           type="button"
           data-testid="cm-open-summary-btn"
           onClick={onOpenSummary}
-          className="mindx-dark-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-orange-700 hover:bg-orange-600 text-white shadow-sm inline-flex items-center gap-1.5 cursor-pointer transition whitespace-nowrap"
+          className="neo-btn-yellow px-3 py-1.5 rounded-lg text-xs sm:text-sm font-black inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
         >
           <BarChart3 className="w-4 h-4" />
           <span>Tổng hợp buổi</span>

@@ -173,21 +173,16 @@ export default function SyllabusConfigPage() {
   const activeCourse = courses[selectedCourseIdx] || null;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="p-6 rounded-2xl mindx-hero flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 shadow-md">
-        <div className="flex items-start space-x-3">
-          <div className="p-3 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 shrink-0">
-            <BookOpen className="w-6 h-6" />
+    <div className="space-y-4">
+      {/* Header (Neo-Brutalism) */}
+      <div className="p-4 sm:p-5 rounded-2xl mindx-hero flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div className="flex items-center space-x-3">
+          <div className="neo-title-icon w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
+            <BookOpen className="w-5 h-5" />
           </div>
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">
-              Cài đặt Giáo trình &amp; Bộ Thẻ Nhận Xét Nhanh
-            </h1>
-            <p className="text-sm text-blue-100 mt-1">
-              Quản lý nội dung từng buổi học, cấu hình Buổi Kiểm tra (Checkpoint) và Bộ thẻ nhận xét nhanh 1 chạm theo từng hướng học (Lập trình, Robotics, Buổi 14).
-            </p>
-          </div>
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+            Cài đặt Giáo trình &amp; Quick Tags
+          </h1>
         </div>
 
         {/* Navigation Tabs */}
@@ -195,10 +190,8 @@ export default function SyllabusConfigPage() {
           <button
             type="button"
             onClick={() => setActiveTab("courses")}
-            className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm ${
-              activeTab === "courses"
-                ? "bg-amber-600 text-white mindx-dark-btn mindx-dark-keep"
-                : "bg-white/95 text-slate-900 hover:bg-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 border border-slate-300/60 dark:border-slate-700"
+            className={`flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs cursor-pointer ${
+              activeTab === "courses" ? "neo-tab-active" : "neo-tab-idle"
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -208,10 +201,8 @@ export default function SyllabusConfigPage() {
           <button
             type="button"
             onClick={() => setActiveTab("quickTags")}
-            className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm ${
-              activeTab === "quickTags"
-                ? "bg-amber-600 text-white mindx-dark-btn mindx-dark-keep"
-                : "bg-white/95 text-slate-900 hover:bg-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 border border-slate-300/60 dark:border-slate-700"
+            className={`flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs cursor-pointer ${
+              activeTab === "quickTags" ? "neo-tab-active" : "neo-tab-idle"
             }`}
           >
             <Tags className="w-4 h-4" />
@@ -423,16 +414,10 @@ export default function SyllabusConfigPage() {
                     </div>
 
                     {/* Checkpoint Sessions Selector */}
-                    <div className="p-4 rounded-xl mindx-warm-box space-y-2.5">
+                    <div className="p-3.5 rounded-xl mindx-warm-box space-y-2.5">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <div className="text-xs font-extrabold text-amber-300">
-                            🎯 Cấu hình Buổi Kiểm tra / Checkpoint (từ Buổi 1 đến Buổi 13)
-                          </div>
-                          <div className="text-[11px] text-slate-400 mt-0.5">
-                            Ở các buổi này, Bot chỉ điền ô &ldquo;Đánh giá chung *&rdquo;, việc tích
-                            Điểm Năng lực [ĐNL] &amp; Điểm kiểm tra do giáo viên tự thực hiện trên LMS.
-                          </div>
+                        <div className="text-xs font-extrabold">
+                          🎯 Buổi Kiểm tra / Checkpoint (B1–B13)
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5">
                           <button
@@ -710,16 +695,11 @@ export default function SyllabusConfigPage() {
           {/* TAB 2: QUẢN LÝ BỘ THẺ NHẬN XÉT NHANH (QUICK TAGS)          */}
           {/* ========================================================= */}
           {activeTab === "quickTags" && (
-            <div className="p-6 rounded-2xl mindx-card space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
-                <div>
-                  <h2 className="text-base font-bold text-white">
-                    Bộ Thẻ Đánh Giá Nhanh 1 Chạm (Quick Tags)
-                  </h2>
-                  <p className="text-xs text-slate-400">
-                    Giáo viên bấm chọn nhanh sau mỗi buổi học để AI tổng hợp nhận xét đúng thực tế.
-                  </p>
-                </div>
+            <div className="neo-section-card p-5 rounded-2xl space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-[#0f172a]/15 dark:border-slate-800 pb-3.5">
+                <h2 className="neo-title-text text-base font-black">
+                  Bộ Thẻ Đánh Giá Nhanh (Quick Tags)
+                </h2>
 
                 <div className="flex items-center space-x-2">
                   <button
@@ -763,18 +743,6 @@ export default function SyllabusConfigPage() {
                     <span>Lưu Bộ Thẻ Quick Tags</span>
                   </button>
                 </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 text-[11px]">
-                <span className="px-2.5 py-1 rounded-full bg-cyan-950/60 border border-cyan-700/60 text-cyan-200 font-semibold">
-                  💻 Hướng Lập trình (Buổi 1–13): Chỉ hiện ở Màn hình 1 cho lớp Lập trình
-                </span>
-                <span className="px-2.5 py-1 rounded-full bg-orange-950/60 border border-orange-700/60 text-orange-200 font-semibold">
-                  🤖 Hướng Robotics (Buổi 1–13): Chỉ hiện ở Màn hình 1 cho lớp Robotics
-                </span>
-                <span className="px-2.5 py-1 rounded-full bg-purple-950/60 border border-purple-700/60 text-purple-200 font-semibold">
-                  🎓 Buổi 14 — Sản phẩm cuối khóa (SPCK): Chỉ hiện ở Màn hình 3 (Buổi 14)
-                </span>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

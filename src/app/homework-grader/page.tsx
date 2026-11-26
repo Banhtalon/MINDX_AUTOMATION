@@ -869,21 +869,16 @@ export default function HomeworkGraderPage() {
 
   return (
     <div className="space-y-6">
-      {/* 1. Header & Class Selector */}
-      <div className="p-6 rounded-2xl mindx-hero shadow-xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 1. Header & Class Selector (Neo-Brutalism) */}
+      <div className="p-4 sm:p-5 rounded-2xl mindx-hero">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="p-2.5 rounded-xl bg-sky-500/20 border border-sky-400/30 text-sky-300 text-2xl">
+            <span className="neo-title-icon w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0">
               📊
             </span>
-            <div>
-              <h1 className="text-xl font-extrabold tracking-wide">
-                Phiếu Điểm Tổng Kết (Chuẩn Teaching) &amp; Bảng Điểm BTVN
-              </h1>
-              <p className="text-xs text-blue-100 mt-0.5">
-                Tự động lấy điểm BTVN, Check-point 1 &amp; 2, Năng lực `[ĐNL]` và Cuối khóa DEMO từ LMS • Đồng bộ 1 chạm lên Teaching
-              </p>
-            </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+              Phiếu Điểm Tổng Kết &amp; BTVN
+            </h1>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -911,7 +906,7 @@ export default function HomeworkGraderPage() {
               data-testid="batch-sync-running-classes-btn"
               onClick={() => setBatchTriggerSeq((prev) => prev + 1)}
               disabled={isScraping || isFetchingClasses || isBatchSyncRunning}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:bg-slate-600 disabled:text-slate-300 text-slate-950 text-xs sm:text-sm font-bold transition shadow-md cursor-pointer disabled:cursor-not-allowed"
+              className="neo-btn-yellow flex items-center gap-1.5 px-3.5 py-2 rounded-xl disabled:opacity-50 text-xs sm:text-sm font-black cursor-pointer disabled:cursor-not-allowed"
               title="Tự động quét danh sách các lớp đang dạy trên LMS, lấy điểm mới nhất và đẩy thẳng lên Teaching"
             >
               {isBatchSyncRunning ? (
@@ -921,8 +916,8 @@ export default function HomeworkGraderPage() {
               )}
               <span>
                 {isBatchSyncRunning
-                  ? batchProgressLabel || "Đang đồng bộ các lớp..."
-                  : "Quét & Đồng bộ tất cả lớp đang dạy"}
+                  ? batchProgressLabel || "Đang đồng bộ..."
+                  : "Đồng bộ tất cả lớp"}
               </span>
             </button>
           </div>
@@ -1009,7 +1004,7 @@ export default function HomeworkGraderPage() {
       />
 
       {/* Collapsible Secondary View: Chi tiết bài nộp BTVN trên LMS (Xuất Excel / Xem Nhận Xét) */}
-      <div className="mindx-card rounded-2xl overflow-hidden shadow-xl">
+      <div className="neo-section-card rounded-2xl overflow-hidden">
         <button
           type="button"
           onClick={() => setShowSubmissionDetails((prev) => !prev)}

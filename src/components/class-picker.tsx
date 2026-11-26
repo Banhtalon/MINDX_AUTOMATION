@@ -341,12 +341,12 @@ export function ClassPicker({
       <div
         className={
           variant === "hero"
-            ? "flex items-center bg-white/95 dark:bg-slate-900/90 rounded-xl px-3 py-1.5 border border-white/40 dark:border-slate-700 shadow-sm gap-2"
-            : "flex items-center w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 gap-2"
+            ? "flex items-center bg-white dark:bg-slate-900 rounded-xl px-3 py-1.5 border-2 border-[#0f172a] dark:border-slate-500 shadow-[2px_2px_0_#0f172a] dark:shadow-[2px_2px_0_#020617] gap-2"
+            : "flex items-center w-full rounded-xl bg-white dark:bg-slate-900 border-2 border-[#0f172a] dark:border-slate-500 shadow-[2px_2px_0_#0f172a] dark:shadow-[2px_2px_0_#020617] px-3 py-2 gap-2"
         }
       >
         {variant === "hero" && (
-          <span className="text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0">
+          <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300 shrink-0">
             Lớp:
           </span>
         )}
@@ -357,18 +357,18 @@ export function ClassPicker({
             onChange={(e) => handleSelectChange(e.target.value)}
             className={
               variant === "hero"
-                ? "bg-transparent text-sm font-extrabold text-slate-900 dark:text-white focus:outline-none min-w-[180px] max-w-[320px] cursor-pointer disabled:opacity-60"
-                : "w-full bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer disabled:opacity-60"
+                ? "bg-transparent text-sm font-black text-slate-900 dark:text-white focus:outline-none min-w-[180px] max-w-[320px] cursor-pointer disabled:opacity-60"
+                : "w-full bg-transparent text-sm font-bold text-slate-900 dark:text-white focus:outline-none cursor-pointer disabled:opacity-60"
             }
           >
             {placeholderOption && (
-              <option value="" className="bg-slate-900 text-slate-300">
+              <option value="" className="bg-white text-slate-700 dark:bg-slate-900 dark:text-slate-300">
                 {placeholderOption}
               </option>
             )}
             {currentCode &&
               !normalizedOptions.some((c) => c.code === currentCode) && (
-                <option value={currentCode} className="bg-slate-900 text-white">
+                <option value={currentCode} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">
                   🟢 {currentCode}
                 </option>
               )}
@@ -376,21 +376,21 @@ export function ClassPicker({
               <option
                 key={opt.code}
                 value={opt.code}
-                className="bg-slate-900 text-white"
+                className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white"
               >
                 {formatOptionLabel(opt)}
               </option>
             ))}
             <option
               value="__REFRESH_LMS__"
-              className="bg-slate-950 text-cyan-300"
+              className="bg-white text-sky-700 dark:bg-slate-950 dark:text-cyan-300"
             >
               📥 Quét lại danh sách lớp từ LMS...
             </option>
             {canManual && (
               <option
                 value="__MANUAL_INPUT__"
-                className="bg-slate-950 text-amber-300"
+                className="bg-white text-amber-700 dark:bg-slate-950 dark:text-amber-300"
               >
                 ✏️ Nhập mã lớp khác...
               </option>
@@ -415,7 +415,7 @@ export function ClassPicker({
               type="button"
               disabled={effectiveBusy}
               onClick={handleCommitManual}
-              className="px-2 py-0.5 rounded bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white text-xs font-bold cursor-pointer"
+              className="neo-btn-blue px-2.5 py-0.5 rounded-lg disabled:opacity-60 text-xs font-black cursor-pointer"
             >
               Chọn
             </button>
@@ -438,7 +438,7 @@ export function ClassPicker({
                 ? "Chuyển sang chọn từ danh sách lớp"
                 : "Gõ mã lớp thủ công"
             }
-            className="text-xs text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition cursor-pointer"
+            className="text-xs text-slate-700 dark:text-slate-200 px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 border border-[#0f172a]/40 dark:border-slate-600 hover:bg-slate-300 dark:hover:bg-slate-700 transition cursor-pointer"
           >
             {isManualMode ? "📋" : "✏️"}
           </button>
@@ -451,7 +451,7 @@ export function ClassPicker({
           onClick={() => void handleTriggerRefresh()}
           disabled={effectiveBusy}
           title="Quét lại danh sách lớp đang dạy và đồng bộ lớp đang chọn từ LMS"
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 disabled:bg-slate-700 disabled:opacity-60 text-white text-xs sm:text-sm font-bold transition shadow-md cursor-pointer"
+          className="neo-btn-blue flex items-center gap-1.5 px-3.5 py-2 rounded-xl disabled:opacity-60 text-xs sm:text-sm font-black cursor-pointer mindx-dark-keep"
         >
           <RefreshCw
             className={`w-4 h-4 ${
@@ -465,7 +465,7 @@ export function ClassPicker({
       )}
 
       {lastSyncedAt && (
-        <span className="text-[11px] font-medium text-blue-100/90 dark:text-slate-400">
+        <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
           Đồng bộ: {lastSyncedAt}
         </span>
       )}

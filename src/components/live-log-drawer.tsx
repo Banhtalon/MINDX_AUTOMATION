@@ -149,9 +149,9 @@ export function LiveLogDrawer() {
           <button
             type="button"
             onClick={() => handleQueueControl("resume")}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow transition-colors cursor-pointer"
+            className="neo-btn-emerald text-xs font-extrabold px-3 py-1.5 rounded-lg cursor-pointer"
           >
-            ▶️ Tiếp tục chạy
+            ▶️ Tiếp tục
           </button>
         ) : (
           (isRunning || (status?.pendingCount ?? 0) > 0) && (
@@ -159,7 +159,7 @@ export function LiveLogDrawer() {
               type="button"
               onClick={() => handleQueueControl("stop")}
               disabled={isStopping}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white shadow transition-colors disabled:opacity-50 cursor-pointer"
+              className="neo-btn-danger text-xs font-extrabold px-3 py-1.5 rounded-lg disabled:opacity-50 cursor-pointer"
             >
               🛑 Dừng khẩn cấp (Stop Bot)
             </button>
@@ -169,7 +169,7 @@ export function LiveLogDrawer() {
 
       {/* Slide-up Live Log Drawer */}
       {isOpen && (
-        <div className="fixed bottom-12 left-3 right-3 max-w-5xl z-40 bg-slate-950/95 border border-slate-700 rounded-xl p-4 max-h-80 flex flex-col shadow-2xl backdrop-blur text-slate-100">
+        <div className="fixed bottom-12 left-3 right-3 max-w-5xl z-40 bg-slate-950 border-2 border-[#0f172a] dark:border-slate-500 shadow-[4px_4px_0_#0f172a] dark:shadow-[4px_4px_0_#020617] rounded-xl p-4 max-h-80 flex flex-col text-slate-100">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800 mb-2">
             <div className="flex items-center space-x-3">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-200">

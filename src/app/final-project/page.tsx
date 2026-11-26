@@ -2507,14 +2507,9 @@ export default function FinalProjectPage() {
     <div className="space-y-6">
       {/* Active Processing Lock Banner */}
       {isAnyOperationBusy && workflow.activeBusyDescription && (
-        <div className="p-3.5 rounded-xl bg-amber-950/70 border border-amber-500/60 text-amber-200 text-xs flex items-center justify-between gap-3">
-          <div className="flex items-center space-x-2.5">
-            <Loader2 className="w-4 h-4 animate-spin text-amber-400 shrink-0" />
-            <span className="font-semibold">{workflow.activeBusyDescription}</span>
-          </div>
-          <span className="text-[11px] text-amber-300/90 shrink-0">
-            Các nút thao tác xung đột đang tạm khóa cho đến khi hoàn tất
-          </span>
+        <div className="neo-details-bar p-3 rounded-xl text-xs flex items-center gap-2.5 font-bold">
+          <Loader2 className="w-4 h-4 animate-spin text-amber-600 dark:text-amber-400 shrink-0" />
+          <span>{workflow.activeBusyDescription}</span>
         </div>
       )}
 

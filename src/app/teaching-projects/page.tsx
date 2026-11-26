@@ -1135,40 +1135,34 @@ export default function TeachingProjectsPage() {
   }, [loadedClassCode, selectedClassCode, customClassInput, students, classes]);
 
   return (
-    <div className="space-y-5 pb-10">
-      {/* Hero Header */}
-      <div className="mindx-hero px-5 py-4 rounded-2xl transition-all">
+    <div className="space-y-4 pb-10">
+      {/* Hero Header (Neo-Brutalism) */}
+      <div className="mindx-hero px-4 sm:px-5 py-4 rounded-2xl transition-all">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                🎯 Dự Án Cuối Khóa &amp; Báo Cáo Tiến Độ Teaching
-              </h1>
-              {status === "VERIFIED" && !hasUnsavedLocalEdits ? (
-                <span className="mindx-dark-keep px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-700 text-white border border-emerald-400/50">
-                  ✓ ĐÃ ĐỒNG BỘ TEACHING (VERIFIED)
-                </span>
-              ) : status === "APPROVED" && !hasUnsavedLocalEdits ? (
-                <span className="mindx-dark-keep px-3 py-0.5 rounded-full text-xs font-bold bg-indigo-700 text-white border border-indigo-400/50">
-                  ✓ ĐÃ DUYỆT (CHỜ ĐẨY TEACHING)
-                </span>
-              ) : status === "FAILED" ? (
-                <span className="mindx-dark-keep px-3 py-0.5 rounded-full text-xs font-bold bg-rose-700 text-white border border-rose-400/50">
-                  ⚠ LỖI ĐỒNG BỘ TEACHING
-                </span>
-              ) : (
-                <span className="mindx-dark-keep px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-white border border-slate-500/60">
-                  📝 BẢN NHÁP / CHỜ DUYỆT
-                </span>
-              )}
-            </div>
-            <p className="mindx-hero-sub mt-1 text-xs sm:text-sm">
-              Tự động lấy ngày bắt đầu &amp; kết thúc khóa học từ LMS, dùng AI soạn đủ 5 phần công việc (20% &times; 5 = 100%, Deadline = Ngày kết khóa) và cập nhật tiến độ học sinh lên{" "}
-              <code className="px-1.5 py-0.5 rounded bg-black/25 text-white font-mono text-xs">
-                teachingmindx.top/hocsinh.php
-              </code>
-              .
-            </p>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="neo-title-icon w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0">
+              🎯
+            </span>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+              Dự Án Cuối Khóa &amp; Teaching
+            </h1>
+            {status === "VERIFIED" && !hasUnsavedLocalEdits ? (
+              <span className="mindx-dark-keep px-3 py-0.5 rounded-full text-xs font-extrabold bg-emerald-700 text-white border border-[#0f172a]">
+                ✓ ĐÃ ĐỒNG BỘ TEACHING
+              </span>
+            ) : status === "APPROVED" && !hasUnsavedLocalEdits ? (
+              <span className="mindx-dark-keep px-3 py-0.5 rounded-full text-xs font-extrabold bg-indigo-700 text-white border border-[#0f172a]">
+                ✓ CHỜ ĐẨY TEACHING
+              </span>
+            ) : status === "FAILED" ? (
+              <span className="mindx-dark-keep px-3 py-0.5 rounded-full text-xs font-extrabold bg-rose-700 text-white border border-[#0f172a]">
+                ⚠ LỖI ĐỒNG BỘ
+              </span>
+            ) : (
+              <span className="neo-pill-substatus px-3 py-0.5 rounded-full text-xs font-extrabold">
+                📝 BẢN NHÁP
+              </span>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -1179,10 +1173,10 @@ export default function TeachingProjectsPage() {
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mindx-dark-keep px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white border border-blue-400/50 flex items-center gap-1.5 transition"
+                className="neo-btn-blue px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 mindx-dark-keep"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                <span>Xem trang Báo cáo Phụ huynh ({reportClassCode})</span>
+                <span>Báo cáo Phụ huynh ({reportClassCode})</span>
               </a>
             )}
           </div>
@@ -1222,24 +1216,19 @@ export default function TeachingProjectsPage() {
 
       {/* KHUNG 1: Chọn lớp & Thông tin Dự án Cuối khóa */}
       <section className="mindx-card mindx-card-blue p-4 sm:p-5 rounded-2xl space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-700/50 pb-3">
-          <div>
-            <h2 className="text-base sm:text-lg font-bold flex items-center gap-2">
-              <span>1. Chọn Lớp &amp; Thông Tin Dự Án Cuối Khóa</span>
-              {remoteProjectId ? (
-                <span className="mindx-dark-keep bg-emerald-700 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
-                  Đã có trên Teaching (#{remoteProjectId})
-                </span>
-              ) : (
-                <span className="mindx-dark-keep bg-amber-800 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
-                  Chưa tạo trên Teaching
-                </span>
-              )}
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Tên dự án tự tạo theo mã lớp; ngày bắt đầu &amp; kết thúc tự động lấy từ lịch học 14 buổi hoặc bảng Classes bên LMS.
-            </p>
-          </div>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b-2 border-[#0f172a]/15 dark:border-slate-700/70 pb-3">
+          <h2 className="text-base sm:text-lg font-black flex flex-wrap items-center gap-2">
+            <span>1. Chọn Lớp &amp; Dự Án</span>
+            {remoteProjectId ? (
+              <span className="mindx-dark-keep bg-emerald-700 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+                Đã có (#{remoteProjectId})
+              </span>
+            ) : (
+              <span className="mindx-dark-keep bg-amber-800 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+                Chưa tạo trên Teaching
+              </span>
+            )}
+          </h2>
 
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -1711,7 +1700,7 @@ export default function TeachingProjectsPage() {
               type="button"
               onClick={handleSaveDraft}
               disabled={!isClassReady || isAnyMutationBusy}
-              className="mindx-dark-keep px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-700 hover:bg-slate-800 mindx-dark-btn disabled:opacity-60 text-white flex items-center gap-1.5 cursor-pointer transition"
+              className="neo-btn-neutral px-3.5 py-2 rounded-xl text-xs font-extrabold disabled:opacity-60 flex items-center gap-1.5 cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>Lưu nháp</span>
@@ -1721,14 +1710,14 @@ export default function TeachingProjectsPage() {
               type="button"
               onClick={handleApproveAndSyncToTeaching}
               disabled={!isClassReady || isAnyMutationBusy}
-              className="mindx-dark-keep px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white flex items-center gap-2 cursor-pointer shadow-lg transition"
+              className="neo-btn-emerald px-4 py-2 rounded-xl text-xs sm:text-sm font-black disabled:opacity-60 flex items-center gap-2 cursor-pointer mindx-dark-keep"
             >
               {isSyncingTeaching ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Rocket className="w-4 h-4" />
               )}
-              <span>✅ Duyệt &amp; Đẩy Dự án + 5 Công việc lên Teaching</span>
+              <span>✅ Duyệt &amp; Đẩy Teaching</span>
             </button>
           </div>
         </div>

@@ -509,9 +509,9 @@ async function main() {
       path.join(repoRoot, "src", "components", "top-navbar.tsx"),
       "utf8"
     );
-    assert.match(String(pkgJson.version || ""), /^3\.6\.(?:[6-9]|\d{2,})$/);
-    assert.ok(/\(v3\.6\.(?:[6-9]|\d{2,})\)/.test(layoutSrc));
-    assert.ok(/MindX Bot v3\.6\.(?:[6-9]|\d{2,})/.test(navbarSrc));
+    assert.match(String(pkgJson.version || ""), /^3\.(?:6\.(?:[6-9]|\d{2,})|[7-9]\.\d+|\d{2,}\.\d+)$/);
+    assert.ok(/\(v3\.(?:6\.(?:[6-9]|\d{2,})|[7-9]\.\d+|\d{2,}\.\d+)\)/.test(layoutSrc));
+    assert.ok(/MindX Bot v3\.(?:6\.(?:[6-9]|\d{2,})|[7-9]\.\d+|\d{2,}\.\d+)/.test(navbarSrc));
 
     assert.strictEqual(
       normalizeTeacherSelfReferenceToGiaoVien(

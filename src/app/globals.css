@@ -32,117 +32,136 @@ body.mindx-body {
 }
 
 html[data-theme="light"] body.mindx-body {
-  background: linear-gradient(180deg, #dce6f2 0%, #e8eff8 50%, #dce6f2 100%);
+  background-color: #e4ebf5;
   color: #0f172a;
 }
 
 html[data-theme="dark"] body.mindx-body {
-  background: radial-gradient(ellipse at top, #15254d 0%, #0b1224 58%, #070c18 100%);
+  background-color: #0b1224;
   color: #f8fafc;
 }
 
 /* ==========================================================================
-   TOP NAVBAR & FOOTER
+   TOP NAVBAR & FOOTER (NEO-BRUTALISM v3.9.0)
    ========================================================================== */
 html[data-theme="light"] .mindx-navbar {
-  background: linear-gradient(90deg, #132f7c 0%, #1c3d94 50%, #143282 100%);
-  border-bottom: 1px solid #1e40af;
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18);
+  background-color: #ffffff;
+  border-bottom: 2px solid #0f172a;
+  box-shadow: 0 3px 0px #0f172a;
 }
 
 html[data-theme="dark"] .mindx-navbar {
-  background: rgba(10, 17, 34, 0.94);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid #1e2d4d;
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
+  background-color: #0f172a;
+  border-bottom: 2px solid #334155;
+  box-shadow: 0 3px 0px #020617;
 }
 
 html[data-theme="light"] .mindx-brand-text {
-  color: #ffffff;
+  color: #0f172a;
 }
 
 html[data-theme="dark"] .mindx-brand-text {
-  background: linear-gradient(90deg, #fb923c 0%, #f87171 55%, #fcd34d 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #f8fafc;
 }
 
-.mindx-nav-link {
-  color: rgba(255, 255, 255, 0.85);
-  border-bottom: 2.5px solid transparent;
+html[data-theme="light"] .mindx-nav-link {
+  color: #1e293b;
+  border: 1.5px solid transparent;
+}
+html[data-theme="light"] .mindx-nav-link:hover {
+  color: #0f172a;
+  background-color: #f1f5f9;
+  border-color: #0f172a;
 }
 
-.mindx-nav-link:hover {
-  color: #ffffff;
+html[data-theme="dark"] .mindx-nav-link {
+  color: #cbd5e1;
+  border: 1.5px solid transparent;
+}
+html[data-theme="dark"] .mindx-nav-link:hover {
+  color: #f8fafc;
+  background-color: #1e293b;
+  border-color: #475569;
 }
 
-html[data-theme="light"] .mindx-nav-link-active {
-  color: #ffffff;
-  font-weight: 600;
-  border-bottom-color: #ffffff;
+html[data-theme="light"] .mindx-nav-link-active,
+html[data-theme="light"] .mindx-nav-link-active:hover {
+  background-color: #facc15 !important;
+  color: #0f172a !important;
+  font-weight: 800;
+  border: 1.5px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a;
 }
 
-html[data-theme="dark"] .mindx-nav-link-active {
-  color: #ffffff;
-  font-weight: 600;
-  border-bottom-color: #38bdf8;
-  text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+html[data-theme="dark"] .mindx-nav-link-active,
+html[data-theme="dark"] .mindx-nav-link-active:hover {
+  background-color: #facc15 !important;
+  color: #0f172a !important;
+  font-weight: 800;
+  border: 1.5px solid #020617 !important;
+  box-shadow: 2px 2px 0px #020617;
 }
 
 html[data-theme="light"] .mindx-theme-toggle {
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  color: #ffffff;
+  background-color: #f1f5f9;
+  border: 1.5px solid #0f172a;
+  box-shadow: 2px 2px 0px #0f172a;
+  color: #0f172a;
 }
 html[data-theme="light"] .mindx-theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.26);
+  background-color: #e2e8f0;
+  transform: translate(-0.5px, -0.5px);
 }
 
 html[data-theme="dark"] .mindx-theme-toggle {
-  background: rgba(30, 41, 59, 0.75);
-  border: 1px solid rgba(56, 189, 248, 0.45);
-  color: #e2e8f0;
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.18);
+  background-color: #1e293b;
+  border: 1.5px solid #475569;
+  box-shadow: 2px 2px 0px #020617;
+  color: #f8fafc;
 }
 html[data-theme="dark"] .mindx-theme-toggle:hover {
-  background: rgba(30, 58, 138, 0.55);
+  background-color: #283548;
+  border-color: #60a5fa;
 }
 
 html[data-theme="light"] .mindx-footer {
-  border-top: 1px solid #cbd5e1;
-  color: #475569;
+  border-top: 2px solid #0f172a;
+  background-color: #ffffff;
+  color: #334155;
 }
 
 html[data-theme="dark"] .mindx-footer {
-  border-top: 1px solid #1e2d4d;
-  color: #64748b;
+  border-top: 2px solid #1e2d4d;
+  background-color: #0b1224;
+  color: #94a3b8;
 }
 
 /* ==========================================================================
-   HERO BANNER (ALL SCREENS)
+   HERO BANNER (NEO-BRUTALISM HEADER BAR - ALL SCREENS)
    ========================================================================== */
 html[data-theme="light"] .mindx-hero {
-  background: linear-gradient(135deg, #1d3a8a 0%, #2563eb 100%) !important;
-  border: 1px solid #1d4ed8 !important;
-  box-shadow: 0 8px 22px -4px rgba(29, 58, 138, 0.32) !important;
-  color: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 2px solid #0f172a !important;
+  border-left: 7px solid #2563eb !important;
+  box-shadow: 4px 4px 0px #0f172a !important;
+  color: #0f172a !important;
 }
 
 html[data-theme="dark"] .mindx-hero {
-  background: linear-gradient(135deg, #16223b 0%, #1b2947 100%) !important;
-  border: 1px solid #2a3c63 !important;
-  box-shadow: 0 10px 28px -6px rgba(0, 0, 0, 0.6) !important;
+  background-color: #141f38 !important;
+  border: 2px solid #475569 !important;
+  border-left: 7px solid #38bdf8 !important;
+  box-shadow: 4px 4px 0px #020617 !important;
   color: #f8fafc !important;
 }
 
 html[data-theme="light"] .mindx-hero h1,
 html[data-theme="light"] .mindx-hero h2 {
-  color: #ffffff !important;
+  color: #0f172a !important;
 }
 html[data-theme="light"] .mindx-hero p,
 html[data-theme="light"] .mindx-hero .mindx-hero-sub {
-  color: #dbeafe !important;
+  color: #334155 !important;
 }
 
 html[data-theme="dark"] .mindx-hero h1,
@@ -151,7 +170,7 @@ html[data-theme="dark"] .mindx-hero h2 {
 }
 html[data-theme="dark"] .mindx-hero p,
 html[data-theme="dark"] .mindx-hero .mindx-hero-sub {
-  color: #94a3b8 !important;
+  color: #cbd5e1 !important;
 }
 
 html[data-theme="light"] .mindx-status-pill-ok {
@@ -170,7 +189,7 @@ html[data-theme="dark"] .mindx-status-pill-ok {
 }
 
 /* ==========================================================================
-   FEATURE CARDS & SECTION CARDS (LIGHT: LEFT ACCENT BAR / DARK: NEON GLOW)
+   FEATURE CARDS & SECTION CARDS (NEO-BRUTALISM LIGHT & DARK)
    ========================================================================== */
 html[data-theme="light"] .mindx-card,
 html[data-theme="light"] .mindx-card-amber,
@@ -178,63 +197,68 @@ html[data-theme="light"] .mindx-card-blue,
 html[data-theme="light"] .mindx-card-emerald,
 html[data-theme="light"] .mindx-card-purple,
 html[data-theme="light"] .mindx-card-red {
-  background: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
+  background-color: #ffffff !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 3px 3px 0px #0f172a !important;
   color: #0f172a !important;
 }
 
 html[data-theme="light"] .mindx-card-amber {
-  border-left: 5px solid #d97706 !important;
+  border-left: 6px solid #d97706 !important;
 }
 html[data-theme="light"] .mindx-card-blue {
-  border-left: 5px solid #0284c7 !important;
+  border-left: 6px solid #2563eb !important;
 }
 html[data-theme="light"] .mindx-card-emerald {
-  border-left: 5px solid #059669 !important;
+  border-left: 6px solid #16a34a !important;
 }
 html[data-theme="light"] .mindx-card-purple {
-  border-left: 5px solid #7c3aed !important;
+  border-left: 6px solid #7c3aed !important;
 }
 html[data-theme="light"] .mindx-card-red {
-  border-left: 5px solid #dc2626 !important;
+  border-left: 6px solid #dc2626 !important;
 }
 
 html[data-theme="dark"] .mindx-card {
-  background: linear-gradient(145deg, #152039 0%, #10192e 100%) !important;
-  border: 1px solid #263859 !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+  background-color: #141f38 !important;
+  border: 2px solid #475569 !important;
+  box-shadow: 3px 3px 0px #020617 !important;
   color: #f8fafc !important;
 }
 
 html[data-theme="dark"] .mindx-card-amber {
-  background: linear-gradient(145deg, #16213a 0%, #10192e 100%) !important;
-  border: 1.5px solid rgba(245, 158, 11, 0.55) !important;
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.14), inset 0 0 12px rgba(245, 158, 11, 0.04) !important;
+  background-color: #141f38 !important;
+  border: 2px solid #475569 !important;
+  border-left: 6px solid #f59e0b !important;
+  box-shadow: 3px 3px 0px #020617 !important;
   color: #f8fafc !important;
 }
 html[data-theme="dark"] .mindx-card-blue {
-  background: linear-gradient(145deg, #16213a 0%, #10192e 100%) !important;
-  border: 1.5px solid rgba(56, 189, 248, 0.55) !important;
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.14), inset 0 0 12px rgba(56, 189, 248, 0.04) !important;
+  background-color: #141f38 !important;
+  border: 2px solid #475569 !important;
+  border-left: 6px solid #38bdf8 !important;
+  box-shadow: 3px 3px 0px #020617 !important;
   color: #f8fafc !important;
 }
 html[data-theme="dark"] .mindx-card-emerald {
-  background: linear-gradient(145deg, #16213a 0%, #10192e 100%) !important;
-  border: 1.5px solid rgba(16, 185, 129, 0.55) !important;
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.14), inset 0 0 12px rgba(16, 185, 129, 0.04) !important;
+  background-color: #141f38 !important;
+  border: 2px solid #475569 !important;
+  border-left: 6px solid #10b981 !important;
+  box-shadow: 3px 3px 0px #020617 !important;
   color: #f8fafc !important;
 }
 html[data-theme="dark"] .mindx-card-purple {
-  background: linear-gradient(145deg, #16213a 0%, #10192e 100%) !important;
-  border: 1.5px solid rgba(168, 85, 247, 0.55) !important;
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.14), inset 0 0 12px rgba(168, 85, 247, 0.04) !important;
+  background-color: #141f38 !important;
+  border: 2px solid #475569 !important;
+  border-left: 6px solid #a855f7 !important;
+  box-shadow: 3px 3px 0px #020617 !important;
   color: #f8fafc !important;
 }
 html[data-theme="dark"] .mindx-card-red {
-  background: linear-gradient(145deg, #16213a 0%, #10192e 100%) !important;
-  border: 1.5px solid rgba(239, 68, 68, 0.55) !important;
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.14), inset 0 0 12px rgba(239, 68, 68, 0.04) !important;
+  background-color: #141f38 !important;
+  border: 2px solid #475569 !important;
+  border-left: 6px solid #ef4444 !important;
+  box-shadow: 3px 3px 0px #020617 !important;
   color: #f8fafc !important;
 }
 
@@ -295,79 +319,89 @@ html[data-theme="dark"] .mindx-badge-purple {
    WARM KNOWLEDGE / CHECKPOINT BOX & TABLE HEADERS
    ========================================================================== */
 html[data-theme="light"] .mindx-warm-box {
-  background: #fef3c7 !important;
-  border: 1px solid #fcd34d !important;
-  color: #78350f !important;
+  background-color: #fef3c7 !important;
+  border: 2px solid #0f172a !important;
+  border-left: 6px solid #d97706 !important;
+  box-shadow: 3px 3px 0px #0f172a !important;
+  color: #0f172a !important;
 }
 html[data-theme="light"] .mindx-warm-box span,
 html[data-theme="light"] .mindx-warm-box p,
 html[data-theme="light"] .mindx-warm-box li {
-  color: #78350f !important;
+  color: #451a03 !important;
 }
 
 html[data-theme="dark"] .mindx-warm-box {
-  background: rgba(120, 53, 15, 0.22) !important;
-  border: 1px solid rgba(245, 158, 11, 0.45) !important;
+  background-color: #291c0a !important;
+  border: 2px solid #d97706 !important;
+  box-shadow: 3px 3px 0px #020617 !important;
   color: #fde68a !important;
 }
 
 html[data-theme="light"] .mindx-thead {
-  background: #172554 !important;
+  background-color: #0f172a !important;
   color: #ffffff !important;
 }
 html[data-theme="light"] .mindx-thead th {
   color: #ffffff !important;
-  border-color: #1e3a8a !important;
+  border-color: #334155 !important;
 }
 
 html[data-theme="dark"] .mindx-thead {
-  background: #0d162b !important;
-  color: #e2e8f0 !important;
+  background-color: #0d162b !important;
+  color: #f8fafc !important;
 }
 html[data-theme="dark"] .mindx-thead th {
-  color: #e2e8f0 !important;
-  border-color: #243556 !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
 }
 
 /* ==========================================================================
    LIVE LOG FLOATING PILL (BOTTOM LEFT)
    ========================================================================== */
 html[data-theme="light"] .mindx-log-pill {
-  background: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  border: 2px solid #0f172a !important;
   color: #0f172a !important;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12) !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
 }
 
 html[data-theme="dark"] .mindx-log-pill {
-  background: rgba(6, 78, 59, 0.45) !important;
-  border: 1px solid rgba(52, 211, 153, 0.5) !important;
-  color: #e2e8f0 !important;
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.22) !important;
+  background-color: #0f1e36 !important;
+  border: 2px solid #34d399 !important;
+  color: #f8fafc !important;
+  box-shadow: 2px 2px 0px #020617 !important;
 }
 
 /* ==========================================================================
    AUTOMATIC LIGHT MODE ADAPTATION FOR INNER PANELS, TABLES, INPUTS & BADGES
    ========================================================================== */
-html[data-theme="light"] .mindx-main [class*="bg-slate-900"]:not(.mindx-hero):not(.mindx-thead):not(.mindx-dark-keep):not(.mindx-dark-keep *):not(.cm-projector-shell):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main [class*="bg-slate-950"]:not(.mindx-hero):not(.mindx-thead):not(.mindx-dark-keep):not(.mindx-dark-keep *):not(.cm-projector-shell):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main [class*="bg-slate-900"]:not(.bg-white):not([class*="border-[#0f172a]"]):not([class*="neo-"]):not(.mindx-hero):not(.mindx-thead):not(.mindx-dark-keep):not(.mindx-dark-keep *):not(.cm-projector-shell):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main [class*="bg-slate-950"]:not(.bg-white):not([class*="border-[#0f172a]"]):not([class*="neo-"]):not(.mindx-hero):not(.mindx-thead):not(.mindx-dark-keep):not(.mindx-dark-keep *):not(.cm-projector-shell):not(.cm-projector-shell *) {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
 }
 
-html[data-theme="light"] .mindx-main [class*="bg-slate-800"]:not(button):not(.mindx-hero):not(.mindx-thead):not(.mindx-dark-keep):not(.mindx-dark-keep *):not(.cm-projector-shell):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main [class*="bg-slate-800"]:not(button):not(.bg-white):not([class*="border-[#0f172a]"]):not([class*="neo-"]):not(.mindx-hero):not(.mindx-thead):not(.mindx-dark-keep):not(.mindx-dark-keep *):not(.cm-projector-shell):not(.cm-projector-shell *) {
   background-color: #f1f5f9 !important;
   border-color: #cbd5e1 !important;
   color: #1e293b !important;
 }
 
-html[data-theme="light"] .mindx-main input:not([type="checkbox"]):not([type="radio"]),
-html[data-theme="light"] .mindx-main select,
-html[data-theme="light"] .mindx-main textarea {
+html[data-theme="light"] .mindx-main input:not([type="checkbox"]):not([type="radio"]):not([class*="border-[#0f172a]"]),
+html[data-theme="light"] .mindx-main select:not(.cm-select):not([class*="border-[#0f172a]"]),
+html[data-theme="light"] .mindx-main textarea:not([class*="border-[#0f172a]"]) {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+html[data-theme="light"] .mindx-main input[class*="border-[#0f172a]"]:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="light"] .mindx-main select[class*="border-[#0f172a]"],
+html[data-theme="light"] .mindx-main textarea[class*="border-[#0f172a]"] {
+  background-color: #ffffff !important;
+  border-color: #0f172a !important;
   color: #0f172a !important;
 }
 
@@ -383,31 +417,27 @@ html[data-theme="light"] .mindx-main textarea:focus {
   outline: none;
 }
 
-/* Text contrast adaptation in Light Mode (preserving white text inside hero, thead, and colored buttons/badges) */
-html[data-theme="light"] .mindx-main .text-white:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-hero):not(.mindx-hero *):not(.mindx-thead):not(.mindx-thead *):not(.mindx-dark-keep):not(.mindx-dark-keep *):not(.cm-projector-shell):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main .text-slate-100:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main .text-slate-200:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+/* Text contrast adaptation in Light Mode (preserving white text inside thead, and colored buttons/badges) */
+html[data-theme="light"] .mindx-main .text-white:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-thead):not(.mindx-thead *):not(.mindx-dark-keep):not(.mindx-dark-keep *):not(.cm-projector-shell):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main .text-slate-100:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main .text-slate-200:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #0f172a !important;
 }
 
 html[data-theme="light"] body .mindx-main.mindx-main .mindx-dark-keep,
 html[data-theme="light"] body .mindx-main.mindx-main .mindx-dark-keep.text-white,
-html[data-theme="light"] body .mindx-main.mindx-main .mindx-hero h1,
-html[data-theme="light"] body .mindx-main.mindx-main .mindx-hero h2,
-html[data-theme="light"] body .mindx-main.mindx-main .mindx-hero h1.text-white,
-html[data-theme="light"] body .mindx-main.mindx-main .mindx-hero h2.text-white,
 html[data-theme="light"] body .mindx-main.mindx-main table thead.mindx-thead th .text-white,
 html[data-theme="light"] body .mindx-main.mindx-main table thead th .text-white,
 html[data-theme="light"] body .mindx-main.mindx-main .mindx-thead .text-white:not(button) {
   color: #ffffff !important;
 }
 
-html[data-theme="light"] .mindx-main .text-slate-300:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main .text-slate-300:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #1e293b !important;
 }
 
-html[data-theme="light"] .mindx-main .text-slate-400:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main .text-slate-500:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main .text-slate-400:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main .text-slate-500:not(button):not(button *):not(a[class*="bg-"] *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #475569 !important;
 }
 
@@ -474,64 +504,64 @@ html[data-theme="light"] .mindx-main [class*="bg-blue-950"]:not(button):not(.min
 }
 
 /* Accessible dark-shade text counterparts for pastel utility classes in Light Mode */
-html[data-theme="light"] .mindx-main :is(.text-emerald-200, .text-emerald-300, .text-emerald-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main :is(.text-emerald-200, .text-emerald-300, .text-emerald-400):not(button):not(button *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #047857 !important;
 }
-html[data-theme="light"] .mindx-main :is(.text-amber-200, .text-amber-300, .text-amber-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main :is(.text-amber-200, .text-amber-300, .text-amber-400):not(button):not(button *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #b45309 !important;
 }
-html[data-theme="light"] .mindx-main :is(.text-orange-200, .text-orange-300, .text-orange-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main :is(.text-orange-200, .text-orange-300, .text-orange-400):not(button):not(button *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #c2410c !important;
 }
-html[data-theme="light"] .mindx-main :is(.text-sky-200, .text-sky-300, .text-sky-400, .text-cyan-200, .text-cyan-300, .text-cyan-400, .text-blue-200, .text-blue-300, .text-blue-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main :is(.text-sky-200, .text-sky-300, .text-sky-400, .text-cyan-200, .text-cyan-300, .text-cyan-400, .text-blue-200, .text-blue-300, .text-blue-400):not(button):not(button *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #0369a1 !important;
 }
-html[data-theme="light"] .mindx-main :is(.text-indigo-200, .text-indigo-300, .text-indigo-400, .text-violet-200, .text-violet-300, .text-purple-300, .text-fuchsia-300):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main :is(.text-indigo-200, .text-indigo-300, .text-indigo-400, .text-violet-200, .text-violet-300, .text-purple-300, .text-fuchsia-300):not(button):not(button *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #4338ca !important;
 }
-html[data-theme="light"] .mindx-main :is(.text-rose-200, .text-rose-300, .text-rose-400, .text-red-200, .text-red-300, .text-red-400):not(button):not(button *):not(.mindx-hero *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main :is(.text-rose-200, .text-rose-300, .text-rose-400, .text-red-200, .text-red-300, .text-red-400):not(button):not(button *):not(.mindx-thead *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   color: #be123c !important;
 }
 
 /* Pastel & Solid Badges readability in Light Mode */
-html[data-theme="light"] .mindx-main span[class*="text-emerald-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main span[class*="text-emerald-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main span[class*="text-teal-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main span[class*="text-teal-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main span[class*="text-emerald-300"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-emerald-200"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-teal-300"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-teal-200"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   background-color: #d1fae5 !important;
   border-color: #6ee7b7 !important;
   color: #065f46 !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-amber-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main span[class*="text-amber-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main span[class*="text-amber-300"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-amber-200"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   background-color: #fef3c7 !important;
   border-color: #fcd34d !important;
   color: #92400e !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-orange-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main span[class*="text-orange-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main span[class*="text-orange-300"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-orange-200"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   background-color: #ffedd5 !important;
   border-color: #fdba74 !important;
   color: #9a3412 !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-indigo-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main span[class*="text-indigo-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main span[class*="text-violet-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main span[class*="text-fuchsia-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main span[class*="text-indigo-300"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-indigo-200"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-violet-200"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-fuchsia-300"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   background-color: #ede9fe !important;
   border-color: #c4b5fd !important;
   color: #5b21b6 !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-cyan-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main span[class*="text-sky-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main span[class*="text-blue-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main span[class*="text-cyan-300"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-sky-300"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-blue-300"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   background-color: #e0f2fe !important;
   border-color: #7dd3fc !important;
   color: #075985 !important;
 }
-html[data-theme="light"] .mindx-main span[class*="text-rose-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main span[class*="text-rose-200"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
-html[data-theme="light"] .mindx-main span[class*="text-red-300"]:not(button *):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
+html[data-theme="light"] .mindx-main span[class*="text-rose-300"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-rose-200"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *),
+html[data-theme="light"] .mindx-main span[class*="text-red-300"]:not(button *):not(.mindx-dark-keep *):not(.cm-projector-shell *) {
   background-color: #fee2e2 !important;
   border-color: #fca5a5 !important;
   color: #991b1b !important;
@@ -557,12 +587,12 @@ html[data-theme="light"] .mindx-main button[class*="bg-slate-950"]:hover:not(.mi
 }
 
 /* Backgroundless buttons (e.g., FolderBrowserModal row buttons, inline Copy buttons) */
-html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *):is(.text-white, .text-slate-100, .text-slate-200),
-html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) :is(.text-white, .text-slate-100, .text-slate-200) {
+html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-dark-keep *):not(.cm-projector-shell *):is(.text-white, .text-slate-100, .text-slate-200),
+html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-dark-keep *):not(.cm-projector-shell *) :is(.text-white, .text-slate-100, .text-slate-200) {
   color: #0f172a !important;
 }
-html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *):is(.text-slate-300, .text-slate-400, .text-slate-500),
-html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-hero *):not(.mindx-dark-keep *):not(.cm-projector-shell *) :is(.text-slate-300, .text-slate-400, .text-slate-500) {
+html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-dark-keep *):not(.cm-projector-shell *):is(.text-slate-300, .text-slate-400, .text-slate-500),
+html[data-theme="light"] .mindx-main button:not([class*="bg-"]):not([class*="spck-"]):not([class*="neo-"]):not(.mindx-dark-btn):not(.mindx-dark-keep *):not(.cm-projector-shell *) :is(.text-slate-300, .text-slate-400, .text-slate-500) {
   color: #475569 !important;
 }
 
@@ -885,6 +915,268 @@ html[data-theme="dark"] .neo-subtitle-text {
   color: #ffffff !important;
 }
 
+/* Neo-Brutalism Full Dark Mode Counterparts & Unified Shared Components (v3.9.0) */
+html[data-theme="dark"] .neo-title-icon {
+  background-color: #1e3a8a !important;
+  border-color: #60a5fa !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+  color: #dbeafe !important;
+}
+
+html[data-theme="dark"] .neo-kpi-total {
+  background-color: #141f38 !important;
+  border-color: #475569 !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] .neo-kpi-total .leading-tight > div {
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] .neo-kpi-pending {
+  background-color: #431407 !important;
+  border-color: #fb923c !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+  color: #ffedd5 !important;
+}
+html[data-theme="dark"] .neo-kpi-pending .leading-tight > div {
+  color: #fed7aa !important;
+}
+html[data-theme="dark"] .neo-kpi-done {
+  background-color: #052e16 !important;
+  border-color: #4ade80 !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+  color: #dcfce7 !important;
+}
+html[data-theme="dark"] .neo-kpi-done .leading-tight > div {
+  color: #bbf7d0 !important;
+}
+
+html[data-theme="dark"] .neo-btn-blue {
+  background-color: #2563eb !important;
+  border-color: #60a5fa !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+  color: #ffffff !important;
+}
+html[data-theme="dark"] .neo-btn-yellow {
+  background-color: #facc15 !important;
+  border-color: #020617 !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .neo-btn-neutral {
+  background-color: #1e293b !important;
+  border: 1.5px solid #475569 !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] .neo-btn-neutral:hover {
+  background-color: #334155 !important;
+}
+
+.neo-btn-emerald {
+  background-color: #15803d !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #ffffff !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+}
+.neo-btn-emerald:hover:not(:disabled) {
+  background-color: #166534 !important;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #0f172a !important;
+}
+html[data-theme="dark"] .neo-btn-emerald {
+  border-color: #4ade80 !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+}
+
+.neo-btn-purple {
+  background-color: #7e22ce !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #ffffff !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+}
+.neo-btn-purple:hover:not(:disabled) {
+  background-color: #6b21a8 !important;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #0f172a !important;
+}
+html[data-theme="dark"] .neo-btn-purple {
+  border-color: #c084fc !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+}
+
+.neo-btn-danger {
+  background-color: #dc2626 !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #ffffff !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+}
+.neo-btn-danger:hover:not(:disabled) {
+  background-color: #b91c1c !important;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #0f172a !important;
+}
+html[data-theme="dark"] .neo-btn-danger {
+  border-color: #f87171 !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+}
+
+.neo-section-card {
+  background-color: #ffffff !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 3px 3px 0px #0f172a !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .neo-section-card {
+  background-color: #141f38 !important;
+  border: 2px solid #475569 !important;
+  box-shadow: 3px 3px 0px #020617 !important;
+  color: #f8fafc !important;
+}
+
+.neo-tab-active {
+  background-color: #facc15 !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+html[data-theme="dark"] .neo-tab-active {
+  background-color: #facc15 !important;
+  border: 2px solid #020617 !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+  color: #0f172a !important;
+}
+
+.neo-tab-idle {
+  background-color: #f1f5f9 !important;
+  border: 2px solid #0f172a !important;
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+.neo-tab-idle:hover {
+  background-color: #e2e8f0 !important;
+}
+html[data-theme="dark"] .neo-tab-idle {
+  background-color: #1e293b !important;
+  border: 2px solid #475569 !important;
+  color: #cbd5e1 !important;
+}
+html[data-theme="dark"] .neo-tab-idle:hover {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+.neo-details-bar {
+  background-color: #fffbeb !important;
+  border: 2px solid #0f172a !important;
+  border-left: 6px solid #d97706 !important;
+  box-shadow: 2px 2px 0px #0f172a !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .neo-details-bar {
+  background-color: #1c1917 !important;
+  border: 2px solid #d97706 !important;
+  border-left: 6px solid #f59e0b !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+  color: #fef3c7 !important;
+}
+
+html[data-theme="dark"] .neo-search-box,
+html[data-theme="dark"] .neo-group-box {
+  background-color: #141f38 !important;
+  border-color: #475569 !important;
+  box-shadow: 3px 3px 0px #020617 !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] .neo-filter-active {
+  background-color: #facc15 !important;
+  border-color: #020617 !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .neo-filter-inactive {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  box-shadow: 2px 2px 0px #020617 !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] .neo-group-header-pending {
+  background: #422006 !important;
+  color: #fef3c7 !important;
+}
+html[data-theme="dark"] .neo-group-header-pending span {
+  color: #fef3c7 !important;
+}
+html[data-theme="dark"] .neo-group-header-done {
+  background: #052e16 !important;
+  color: #dcfce7 !important;
+}
+html[data-theme="dark"] .neo-group-header-done span {
+  color: #dcfce7 !important;
+}
+html[data-theme="dark"] .neo-row {
+  background-color: #141f38 !important;
+  border-top: 2px solid #2b3f66 !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] .neo-row:hover {
+  background-color: #192847 !important;
+}
+html[data-theme="dark"] .neo-row a.text-\[\#0f172a\],
+html[data-theme="dark"] .neo-row span.text-slate-600,
+html[data-theme="dark"] .neo-row span.text-slate-700 {
+  color: #e2e8f0 !important;
+}
+html[data-theme="dark"] .neo-ws-card {
+  border-color: #475569 !important;
+  box-shadow: 4px 4px 0px #020617 !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] .neo-ws-card h3,
+html[data-theme="dark"] .neo-ws-card p,
+html[data-theme="dark"] .neo-ws-card span.text-\[\#0f172a\] {
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] .neo-ws-amber {
+  background-color: #1c1917 !important;
+  border-left: 7px solid #f59e0b !important;
+}
+html[data-theme="dark"] .neo-ws-blue {
+  background-color: #111c34 !important;
+  border-left: 7px solid #38bdf8 !important;
+}
+html[data-theme="dark"] .neo-ws-emerald {
+  background-color: #0d261d !important;
+  border-left: 7px solid #10b981 !important;
+}
+html[data-theme="dark"] .neo-ws-purple {
+  background-color: #1d1533 !important;
+  border-left: 7px solid #a855f7 !important;
+}
+html[data-theme="dark"] .neo-ws-indigo {
+  background-color: #151b38 !important;
+  border-left: 7px solid #818cf8 !important;
+}
+html[data-theme="dark"] .neo-pill-pending {
+  background-color: #431407 !important;
+  border-color: #fb923c !important;
+  color: #fed7aa !important;
+}
+html[data-theme="dark"] .neo-pill-done {
+  background-color: #052e16 !important;
+  border-color: #4ade80 !important;
+  color: #bbf7d0 !important;
+}
+html[data-theme="dark"] .neo-pill-substatus {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #e2e8f0 !important;
+}
+
 /* ==========================================================================
    STREAMLINED SPCK WORKSPACE (/final-project) — 4-COLOR SEMANTIC SYSTEM
    1. Primary Blue (#2563eb): Main workflow CTA buttons (Scan, AI, Submit)
@@ -900,9 +1192,9 @@ html[data-theme="dark"] .neo-subtitle-text {
   color: #0f172a !important;
 }
 html[data-theme="dark"] .spck-clean-card {
-  background-color: #111827 !important;
-  border: 1.5px solid #334155 !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+  background-color: #141f38 !important;
+  border: 2px solid #475569 !important;
+  box-shadow: 3px 3px 0px #020617 !important;
   color: #f8fafc !important;
 }
 
@@ -986,9 +1278,9 @@ html[data-theme="dark"] .spck-clean-comment-preview {
   color: #0f172a !important;
 }
 html[data-theme="dark"] .spck-clean-sticky-submit {
-  background-color: #111827 !important;
-  border: 1.5px solid #334155 !important;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5) !important;
+  background-color: #141f38 !important;
+  border: 2px solid #475569 !important;
+  box-shadow: 4px 4px 0px #020617 !important;
   color: #f8fafc !important;
 }
 
@@ -1102,63 +1394,76 @@ body {
 }
 
 /* ==========================================================================
-   3-CLICK SPCK ACTION CARDS, HONOR SUMMARY & AWARD BADGES (v3.6.2)
+   3-CLICK SPCK ACTION CARDS, HONOR SUMMARY & AWARD BADGES (v3.9.0 NEO-BRUTALISM)
+   Keep 2-stop linear-gradient so test-ui-v362.ts reads exact background luminance!
    ========================================================================== */
 .spck-step-card-blue {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
-  border: 2px solid #2563eb !important;
-  box-shadow: 2px 2px 0px #1e3a8a !important;
+  background-color: #dbeafe !important;
+  background-image: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%) !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 3px 3px 0px #0f172a !important;
   color: #1e3a8a !important;
 }
 .spck-step-card-blue:hover:not(:disabled) {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+  background-image: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%) !important;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #0f172a !important;
 }
 html[data-theme="dark"] .spck-step-card-blue {
-  background: linear-gradient(135deg, rgba(23, 37, 84, 0.78) 0%, #0f172a 100%) !important;
-  border: 1.5px solid rgba(59, 130, 246, 0.55) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+  background-color: #172554 !important;
+  background-image: linear-gradient(180deg, #172554 0%, #0f172a 100%) !important;
+  border: 2px solid #60a5fa !important;
+  box-shadow: 3px 3px 0px #020617 !important;
   color: #f8fafc !important;
 }
 html[data-theme="dark"] .spck-step-card-blue:hover:not(:disabled) {
-  border-color: #60a5fa !important;
+  border-color: #93c5fd !important;
 }
 
 .spck-step-card-indigo {
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%) !important;
-  border: 2px solid #4f46e5 !important;
-  box-shadow: 2px 2px 0px #312e81 !important;
+  background-color: #e0e7ff !important;
+  background-image: linear-gradient(180deg, #eef2ff 0%, #e0e7ff 100%) !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 3px 3px 0px #0f172a !important;
   color: #312e81 !important;
 }
 .spck-step-card-indigo:hover:not(:disabled) {
-  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%) !important;
+  background-image: linear-gradient(180deg, #e0e7ff 0%, #c7d2fe 100%) !important;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #0f172a !important;
 }
 html[data-theme="dark"] .spck-step-card-indigo {
-  background: linear-gradient(135deg, rgba(30, 27, 75, 0.8) 0%, #0f172a 100%) !important;
-  border: 1.5px solid rgba(99, 102, 241, 0.55) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+  background-color: #1e1b4b !important;
+  background-image: linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%) !important;
+  border: 2px solid #818cf8 !important;
+  box-shadow: 3px 3px 0px #020617 !important;
   color: #f8fafc !important;
 }
 html[data-theme="dark"] .spck-step-card-indigo:hover:not(:disabled) {
-  border-color: #818cf8 !important;
+  border-color: #a5b4fc !important;
 }
 
 .spck-step-card-emerald {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
-  border: 2px solid #059669 !important;
-  box-shadow: 2px 2px 0px #064e3b !important;
+  background-color: #d1fae5 !important;
+  background-image: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%) !important;
+  border: 2px solid #0f172a !important;
+  box-shadow: 3px 3px 0px #0f172a !important;
   color: #064e3b !important;
 }
 .spck-step-card-emerald:hover:not(:disabled) {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%) !important;
+  background-image: linear-gradient(180deg, #d1fae5 0%, #a7f3d0 100%) !important;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #0f172a !important;
 }
 html[data-theme="dark"] .spck-step-card-emerald {
-  background: linear-gradient(135deg, rgba(6, 78, 59, 0.78) 0%, #0f172a 100%) !important;
-  border: 1.5px solid rgba(16, 185, 129, 0.58) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+  background-color: #064e3b !important;
+  background-image: linear-gradient(180deg, #064e3b 0%, #0f172a 100%) !important;
+  border: 2px solid #34d399 !important;
+  box-shadow: 3px 3px 0px #020617 !important;
   color: #f8fafc !important;
 }
 html[data-theme="dark"] .spck-step-card-emerald:hover:not(:disabled) {
-  border-color: #34d399 !important;
+  border-color: #6ee7b7 !important;
 }
 
 .spck-step-card-blue .spck-step-title { color: #1e3a8a !important; }
@@ -1249,29 +1554,31 @@ html[data-theme="dark"] .spck-award-indigo {
    CLASSROOM MANAGER (/classroom-manager - v3.6.7)
    ========================================================================== */
 .cm-shell-card {
-  border-radius: 14px;
-  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  border: 2px solid #0f172a;
   background-color: #ffffff;
   color: #0f172a;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  box-shadow: 3px 3px 0px #0f172a;
 }
 html[data-theme="dark"] .cm-shell-card {
-  background-color: #111c34;
-  border-color: #263859;
+  background-color: #141f38;
+  border-color: #475569;
   color: #f8fafc;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: 3px 3px 0px #020617;
 }
 
 .cm-select {
-  background-color: #f8fafc;
-  border: 1.5px solid #cbd5e1;
+  background-color: #ffffff;
+  border: 2px solid #0f172a;
   color: #0f172a;
   border-radius: 8px;
+  box-shadow: 2px 2px 0px #0f172a;
 }
 html[data-theme="dark"] .cm-select {
   background-color: #0b1324;
-  border-color: #334a73;
+  border-color: #475569;
   color: #f8fafc;
+  box-shadow: 2px 2px 0px #020617;
 }
 
 .cm-stat-pill {
@@ -1665,29 +1972,29 @@ html[data-theme="dark"] .cm-corner-badge {
 }
 
 /* ==========================================================================
-   DEMO DAY STAGE & PREPARATION VIEW (/demo-day) — WCAG AA LIGHT & DARK
+   DEMO DAY STAGE & PREPARATION VIEW (/demo-day) — NEO-BRUTALISM LIGHT & DARK
    ========================================================================== */
 .dd-shell-card {
   background-color: #ffffff;
-  border: 1px solid #cbd5e1;
+  border: 2px solid #0f172a;
   color: #0f172a;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: 3px 3px 0px #0f172a;
 }
 html[data-theme="dark"] .dd-shell-card {
   background-color: #141f38;
-  border-color: #26395c;
+  border-color: #475569;
   color: #f8fafc;
-  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.38);
+  box-shadow: 3px 3px 0px #020617;
 }
 
 .dd-subtle-box {
   background-color: #f1f5f9;
-  border: 1px solid #cbd5e1;
+  border: 1.5px solid #0f172a;
   color: #0f172a;
 }
 html[data-theme="dark"] .dd-subtle-box {
   background-color: #0e172c;
-  border-color: #2b3f66;
+  border-color: #475569;
   color: #f8fafc;
 }
 
@@ -1706,23 +2013,27 @@ html[data-theme="dark"] .dd-muted {
 }
 
 .dd-divider {
-  border-color: #cbd5e1;
+  border-color: #0f172a;
 }
 html[data-theme="dark"] .dd-divider {
-  border-color: #26395c;
+  border-color: #334155;
 }
 
 .dd-tab-active {
-  background-color: #1d4ed8;
-  color: #ffffff;
+  background-color: #facc15;
+  border: 2px solid #0f172a;
+  box-shadow: 2px 2px 0px #0f172a;
+  color: #0f172a;
 }
 html[data-theme="dark"] .dd-tab-active {
-  background-color: #2563eb;
-  color: #ffffff;
+  background-color: #facc15;
+  border: 2px solid #020617;
+  box-shadow: 2px 2px 0px #020617;
+  color: #0f172a;
 }
 
 .dd-tab-idle {
-  color: #334155;
+  color: #1e293b;
 }
 .dd-tab-idle:hover {
   color: #0f172a;
@@ -1736,34 +2047,41 @@ html[data-theme="dark"] .dd-tab-idle:hover {
 
 .dd-btn-slide {
   background-color: #f8fafc;
-  border: 1.5px solid #94a3b8;
+  border: 2px solid #0f172a;
+  box-shadow: 2px 2px 0px #0f172a;
   color: #0f172a;
 }
 .dd-btn-slide:hover:not(:disabled) {
-  background-color: #eff6ff;
-  border-color: #2563eb;
+  background-color: #e2e8f0;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #0f172a;
 }
 html[data-theme="dark"] .dd-btn-slide {
-  background-color: #16233f;
-  border-color: #38507d;
+  background-color: #1e293b;
+  border-color: #475569;
+  box-shadow: 2px 2px 0px #020617;
   color: #f8fafc;
 }
 html[data-theme="dark"] .dd-btn-slide:hover:not(:disabled) {
-  background-color: #1e2f54;
+  background-color: #334155;
   border-color: #60a5fa;
 }
 
 .dd-btn-product {
-  background-color: #1d4ed8;
-  border: 1.5px solid #1e40af;
+  background-color: #2563eb;
+  border: 2px solid #0f172a;
+  box-shadow: 2px 2px 0px #0f172a;
   color: #ffffff;
 }
 .dd-btn-product:hover:not(:disabled) {
-  background-color: #1e40af;
+  background-color: #1d4ed8;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #0f172a;
 }
 html[data-theme="dark"] .dd-btn-product {
   background-color: #2563eb;
   border-color: #60a5fa;
+  box-shadow: 2px 2px 0px #020617;
   color: #ffffff;
 }
 html[data-theme="dark"] .dd-btn-product:hover:not(:disabled) {

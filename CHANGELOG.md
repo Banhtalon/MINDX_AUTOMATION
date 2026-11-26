@@ -1,5 +1,27 @@
 # CHANGELOG — LỊCH SỬ PHIÊN BẢN DỰ ÁN MINDX AUTOMATION BOT
 
+## [v3.9.0] - 2026-11-26
+> **Đại tu Toàn bộ Giao diện `9/9` Trang Sang Phong cách Neo-Brutalism (chuẩn Trang 1) & Tối giản Chữ Giải thích (`Anti-Slop Copy` + WCAG AA Sáng/Tối) — Đạt `Gemini 4 Neon (XHigh)` Round 3 `VERDICT: GO` (`5/5` phát hiện `F01`–`F05` CLOSED, `0` lỗi P0–P3 mở).**
+
+### 🎨 Đã thêm & Thiết kế lại (`v3.9.0`)
+- **Đóng gói kỹ năng Thiết kế `.agents/skills/mindx-neo-brutalism-ui/SKILL.md`:**
+  - Tổng hợp chuẩn Neo-Brutalism MindX Trang 1 kết hợp nguyên tắc từ `Leonxlnx/taste-skill` (xóa chữ giải thích thừa dưới tiêu đề/KPI/nút bấm, tối đa 2 tầng lồng khung, nhãn nút Động từ + Đối tượng 2–4 chữ) & `nextlevelbuilder/ui-ux-pro-max-skill` (Neubrutalism `#38`, viền `2px solid #0f172a`, bóng cứng `0px blur`, Progressive Disclosure & tương phản WCAG AA `>= 4.5:1` Sáng/Tối) kèm `## MindX Workspace Note` tôn trọng tuyệt đối `AGENTS.md`.
+- **Nâng cấp Khung Giao diện & Dark Mode (`globals.css`, `top-navbar.tsx`, `class-picker.tsx`, `live-log-drawer.tsx`, `layout.tsx`, `package.json`):**
+  - `TopNavbar`: chuyển sang nền Sáng `#ffffff` (Dark `#0f172a`) + viền dưới `2px` + tab đang chọn tô **Vàng tươi `#facc15`** viền mực đen & bóng cứng `2px 2px 0`, bảo toàn 1 hàng ngang `<= 60px` (`1280/1366/1440px`) và giữ lịch sử phiên bản -> `MindX Bot v3.9.0`.
+  - Bổ sung đối ứng Dark Mode đầy đủ cho họ `.neo-*`, nâng cấp `.mindx-hero` (luôn có `background-color` đặc cho Light `#ffffff` & Dark `#141f38`), `.mindx-card*`, `.neo-section-card`, `.neo-details-bar`, `.neo-tab-active`/`.neo-tab-idle`, `.cm-shell-card`/`.cm-select`, `.spck-clean-card`/`.spck-step-card-*`, và `.dd-shell-card`/`.dd-tab-active`.
+  - Sửa bộ quy tắc Light Mode trong `globals.css` để không đè viền đen `#0f172a` do khớp chuỗi con `dark:bg-slate-900` và bảo đảm tương phản toast trong `.mindx-hero` đạt `>= 4.5:1`.
+- **Tối giản chữ & đồng bộ Neo-Brutalism trọn `9/9` trang (`0` thay đổi logic nghiệp vụ):**
+  - **Trang 1 (`/`):** Xóa dòng mô tả phụ dưới `"Việc cần làm hôm nay"`, rút gọn dải phím tắt Quản lý Giờ học & 4 thẻ công cụ, sửa màu biểu tượng & huy hiệu ngày học `session-date-*` ở Dark Mode.
+  - **Trang 2 (`/classroom-manager`):** Làm sắc nét thanh công cụ `ClassroomToolbar` & `.cm-select`.
+  - **Trang 3 (`/session-comments`):** Thu gọn khối Nội dung buổi học & BTVN vào `<details>` 1 dòng mặc định đóng (đẩy bảng học sinh lên màn hình đầu tiên), làm gọn thanh Checkpoint & khu vực Zalo.
+  - **Trang 4 (`/homework-grader`):** Xóa câu giải thích phụ dưới tiêu đề, ẩn mã hash kỹ thuật thừa, nút Neo-Brutalism gọn nét ở `TeachingReportCardView` & `CheckpointGraderPanel`.
+  - **Trang 5 (`/final-project`), Trang 6 (`/demo-day`), Trang 7 (`/teaching-projects`), Trang 8 (`/admin-center`), Trang 9 (`/syllabus-config`):** Xóa các đoạn giải thích 2–4 dòng thừa trên đầu trang, trong `ToolsDrawer` & bảng cấu hình Quick Tags/Checkpoint; bỏ dòng caption thứ 3 trên 6 thẻ KPI `/admin-center` và dùng tab Vàng Neo đồng bộ.
+
+### 🧪 Kiểm thử & Nghiệm thu Độc lập (`v3.9.0`)
+- **Bộ kiểm thử mới `scripts/test-neo-brutalism-ui-v390.ts`:** Chạy cô lập `os.tmpdir()` bằng Chromium thật trên cả `9/9` trang × Light & Dark × `1280×800` & `1440×900` (kiểm tra `0` tràn ngang, `TopNavbar` 1 dòng, tab `#facc15`, viền `#0f172a` Light Mode, WCAG AA `>= 4.5:1`, `0` console/pageerror) + lưu ảnh minh chứng trực quan.
+- **Toàn bộ `12/12` cổng kiểm thử PASS (`exit 0`):** `tsc --noEmit --incremental false`, `test-neo-brutalism-ui-v390.ts`, `test-streamline-v340-s5a.ts` (`9/9`), `test-streamline-v340-s3.ts`, `test-session-comments-open-lms.ts`, `test-classroom-manager-v367.ts`, `test-demo-day-v380.ts`, `test-teaching-project-v320.ts`, `test-ui-v362.ts`, `test-spck-structured-comments-v366.ts` (nới regex semver `>= 3.6.6`), `test-drive-thumbnails-v363.ts`, `test-admin-center-lego-and-summary-v3811.ts`.
+- **Kiểm định `Gemini 4 Neon (XHigh)` Round 3 ([NEON_XHIGH_V390_UI_REVIEW.md](docs/audits/v390/NEON_XHIGH_V390_UI_REVIEW.md)):** **`VERDICT: GO`** (`5/5` phát hiện `F01`–`F05` CLOSED, bảo mật `'use client'` CLEAN, `100%` SHA-256 `data/` giữ nguyên suốt quá trình kiểm định).
+
 ## [v3.8.11] - 2026-11-25
 > **Bản vá `/admin-center` Cách 1B (BTVN trên LMS là Optional cho mọi lớp) & Cách 2A + M1 (Bộ Quy Tắc Riêng Cho Dòng Lớp LEGO `KIND-ROB4/6`, `ROB4/6`, `LEGO`, `KIRO`, `RBT 4+/6+`) — Đạt `Gemini 4 Neon (XHigh)` Round 2 `VERDICT: GO` (`10/10` phát hiện `F01`–`F10` CLOSED, `10/10` probe đối kháng Round 2 PASS, `0` lỗi P0/P1/P2 mở).**
 

@@ -613,22 +613,24 @@ export function AdminCenterWorkspace() {
 
   return (
     <div className="space-y-4 py-1">
-      {/* Header Control Banner */}
-      <div className="mindx-card rounded-xl p-4 space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      {/* Header Control Banner (Neo-Brutalism) */}
+      <div className="mindx-hero rounded-2xl p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-black flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-amber-500" />
-                Khu vực Quản lý Cơ sở Admin — {overview?.centerCode || "205ALHP"}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="neo-title-icon w-9 h-9 rounded-xl flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </span>
+              <h1 className="text-lg sm:text-xl font-black">
+                Quản lý Cơ sở Admin — {overview?.centerCode || "205ALHP"}
               </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/40">
-                205A Lê Hồng Phong, Vũng Tàu
+              <span className="neo-pill-substatus px-2.5 py-0.5 rounded-full text-xs font-extrabold">
+                205A Lê Hồng Phong
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)]">
+            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold pl-11">
               <span>
-                LMS Admin:{" "}
+                Admin LMS:{" "}
                 <strong
                   className={
                     overview?.hasAdminLmsAuth
@@ -638,7 +640,7 @@ export function AdminCenterWorkspace() {
                 >
                   {overview?.hasAdminLmsAuth
                     ? overview.adminLmsUsernameMasked || "Đã cấu hình"
-                    : "Chưa cấu hình ADMIN_LMS_*"}
+                    : "Chưa cấu hình"}
                 </strong>
               </span>
               <span>
@@ -649,7 +651,7 @@ export function AdminCenterWorkspace() {
               </span>
               {overview?.latestScanRun && (
                 <span>
-                  Lần quét gần nhất:{" "}
+                  Quét:{" "}
                   <strong>
                     {overview.latestScanRun.finishedAt
                       ? overview.latestScanRun.finishedAt
@@ -669,7 +671,7 @@ export function AdminCenterWorkspace() {
               type="button"
               disabled={isScanning || isBatchActionRunning}
               onClick={() => handleTriggerScan("ALL")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black bg-amber-500 hover:bg-amber-600 text-slate-950 shadow disabled:opacity-50"
+              className="neo-btn-yellow inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black disabled:opacity-50 cursor-pointer"
             >
               {isScanning ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -682,18 +684,17 @@ export function AdminCenterWorkspace() {
               type="button"
               disabled={isScanning || isBatchActionRunning}
               onClick={() => handleTriggerScan("CODING_ONLY")}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-[var(--border-card)] bg-[var(--surface-subtle)] hover:opacity-85 disabled:opacity-50"
+              className="neo-btn-neutral inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold disabled:opacity-50 cursor-pointer"
             >
-              💻 Quét riêng Coding
+              💻 Quét Coding
             </button>
             <button
               type="button"
               disabled={isScanning || isBatchActionRunning}
               onClick={() => handleTriggerScan("TEACHING_ONLY")}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-[var(--border-card)] bg-[var(--surface-card)] hover:bg-[var(--surface-subtle)] disabled:opacity-50"
+              className="neo-btn-neutral inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold disabled:opacity-50 cursor-pointer"
             >
-              <Zap className="w-3.5 h-3.5 text-sky-500" />⚡ Làm mới Teaching
-              nhanh
+              <Zap className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />⚡ Làm mới Teaching
             </button>
           </div>
         </div>
@@ -760,7 +761,7 @@ export function AdminCenterWorkspace() {
         )}
       </div>
 
-      {/* 6 Clickable KPI Cards */}
+      {/* 6 Clickable KPI Cards (Neo-Brutalism — Zero 3rd line clutter) */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
         <button
           type="button"
@@ -769,16 +770,14 @@ export function AdminCenterWorkspace() {
             setOnlyIssues(false);
             setMilestoneFilter("ALL");
           }}
-          className="mindx-card mindx-card-blue rounded-xl p-3 text-left transition-transform hover:-translate-y-0.5"
+          title={`${kpis?.codingClasses ?? 0} Coding • ${kpis?.roboticsClasses ?? 0} Robotics`}
+          className="neo-ws-card neo-ws-blue rounded-xl p-3 text-left cursor-pointer"
         >
-          <div className="text-[11px] font-bold text-[var(--text-secondary)]">
+          <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
             Tổng lớp cơ sở
           </div>
-          <div className="text-xl font-black mt-0.5">
+          <div className="text-2xl font-black mt-0.5">
             {kpis?.totalClasses ?? 0}
-          </div>
-          <div className="text-[11px] text-[var(--text-secondary)]">
-            {kpis?.codingClasses ?? 0} Coding • {kpis?.roboticsClasses ?? 0} Rob
           </div>
         </button>
 
@@ -789,16 +788,14 @@ export function AdminCenterWorkspace() {
             setOnlyIssues(true);
             setMilestoneFilter("ALL");
           }}
-          className="mindx-card mindx-card-amber rounded-xl p-3 text-left transition-transform hover:-translate-y-0.5"
+          title="Điểm danh, Nhận xét, 48h, Checkpoint"
+          className="neo-ws-card neo-ws-amber rounded-xl p-3 text-left cursor-pointer"
         >
-          <div className="text-[11px] font-bold text-[var(--text-secondary)]">
-            Vận hành tuần (Thiếu/Trễ)
+          <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            Vận hành tuần
           </div>
-          <div className="text-xl font-black mt-0.5 text-amber-600 dark:text-amber-300">
+          <div className="text-2xl font-black mt-0.5 text-amber-700 dark:text-amber-300">
             {kpis?.weeklyOpsIssuesCount ?? 0}
-          </div>
-          <div className="text-[11px] text-[var(--text-secondary)]">
-            Điểm danh, NX, 48h, CP
           </div>
         </button>
 
@@ -810,16 +807,14 @@ export function AdminCenterWorkspace() {
             setOnlyIssues(true);
             setMilestoneFilter("ALL");
           }}
-          className="mindx-card mindx-card-red rounded-xl p-3 text-left transition-transform hover:-translate-y-0.5"
+          title={`${kpis?.codingUngradedSubmissionsTotal ?? 0} bài chờ chấm`}
+          className="neo-ws-card neo-ws-amber rounded-xl p-3 text-left cursor-pointer"
         >
-          <div className="text-[11px] font-bold text-[var(--text-secondary)]">
-            BTVN Coding chờ chấm / Lệch
+          <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            BTVN Coding
           </div>
-          <div className="text-xl font-black mt-0.5 text-rose-600 dark:text-rose-300">
+          <div className="text-2xl font-black mt-0.5 text-rose-700 dark:text-rose-300">
             {kpis?.codingBtvnIssuesCount ?? 0}
-          </div>
-          <div className="text-[11px] text-[var(--text-secondary)]">
-            {kpis?.codingUngradedSubmissionsTotal ?? 0} bài chờ chấm
           </div>
         </button>
 
@@ -830,16 +825,14 @@ export function AdminCenterWorkspace() {
             setOnlyIssues(true);
             setMilestoneFilter("ALL");
           }}
-          className="mindx-card mindx-card-amber rounded-xl p-3 text-left transition-transform hover:-translate-y-0.5"
+          title="Thiếu SPCK / Nhận xét (Buổi 12–14)"
+          className="neo-ws-card neo-ws-amber rounded-xl p-3 text-left cursor-pointer"
         >
-          <div className="text-[11px] font-bold text-[var(--text-secondary)]">
-            Thiếu SPCK / NX (B12–14)
+          <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            Thiếu SPCK (B12–14)
           </div>
-          <div className="text-xl font-black mt-0.5 text-amber-600 dark:text-amber-300">
+          <div className="text-2xl font-black mt-0.5 text-amber-700 dark:text-amber-300">
             {kpis?.spckAuditIssuesCount ?? 0}
-          </div>
-          <div className="text-[11px] text-[var(--text-secondary)]">
-            Bấm xem lớp thiếu HV
           </div>
         </button>
 
@@ -850,16 +843,14 @@ export function AdminCenterWorkspace() {
             setOnlyIssues(true);
             setMilestoneFilter("ALL");
           }}
-          className="mindx-card mindx-card-purple rounded-xl p-3 text-left transition-transform hover:-translate-y-0.5"
+          title="Lớp > Buổi 9 thiếu 5 nhiệm vụ SPCK trên Teaching"
+          className="neo-ws-card neo-ws-purple rounded-xl p-3 text-left cursor-pointer"
         >
-          <div className="text-[11px] font-bold text-[var(--text-secondary)]">
-            &gt; B9 thiếu 5 NV SPCK
+          <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            &gt; B9 thiếu 5 NV
           </div>
-          <div className="text-xl font-black mt-0.5 text-purple-600 dark:text-purple-300">
+          <div className="text-2xl font-black mt-0.5 text-purple-700 dark:text-purple-300">
             {kpis?.gt9MissingTasksCount ?? 0} / {kpis?.gt9ClassesTotal ?? 0}
-          </div>
-          <div className="text-[11px] text-[var(--text-secondary)]">
-            Tạo tự động trên Teaching
           </div>
         </button>
 
@@ -870,23 +861,20 @@ export function AdminCenterWorkspace() {
             setOnlyIssues(false);
             setMilestoneFilter("ALL");
           }}
-          className="mindx-card mindx-card-emerald rounded-xl p-3 text-left transition-transform hover:-translate-y-0.5"
+          title={`${kpis?.rosterMismatchClassesCount ?? 0} lệch HV • ${kpis?.makeupDebtClassesCount ?? 0} học bù`}
+          className="neo-ws-card neo-ws-emerald rounded-xl p-3 text-left cursor-pointer"
         >
-          <div className="text-[11px] font-bold text-[var(--text-secondary)]">
-            Cảnh báo sớm &amp; Nợ bù
+          <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            Cảnh báo &amp; Nợ bù
           </div>
-          <div className="text-xl font-black mt-0.5">
+          <div className="text-2xl font-black mt-0.5">
             {kpis?.earlyWarningsTotal ?? 0}
-          </div>
-          <div className="text-[11px] text-[var(--text-secondary)]">
-            {kpis?.rosterMismatchClassesCount ?? 0} lệch HV •{" "}
-            {kpis?.makeupDebtClassesCount ?? 0} học bù
           </div>
         </button>
       </div>
 
       {/* Filter Bar */}
-      <div className="mindx-card rounded-xl p-3 flex flex-wrap items-center gap-2.5 text-xs">
+      <div className="neo-section-card rounded-xl p-3 flex flex-wrap items-center gap-2.5 text-xs">
         <div className="inline-flex items-center gap-1 font-bold text-[var(--text-secondary)]">
           <Filter className="w-3.5 h-3.5" /> Bộ lọc:
         </div>
@@ -960,7 +948,7 @@ export function AdminCenterWorkspace() {
       </div>
 
       {/* 5 Tabs Navigation */}
-      <div className="flex flex-wrap gap-1.5 border-b border-[var(--border-card)] pb-2">
+      <div className="flex flex-wrap gap-2 pb-1">
         {TAB_ITEMS.map((tab) => {
           const isActive = activeTab === tab.key;
           return (
@@ -968,10 +956,8 @@ export function AdminCenterWorkspace() {
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border ${
-                isActive
-                  ? "bg-amber-500 text-slate-950 border-amber-600 shadow-sm"
-                  : "bg-[var(--surface-card)] text-[var(--text-primary)] border-[var(--border-card)] hover:bg-[var(--surface-subtle)]"
+              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm cursor-pointer ${
+                isActive ? "neo-tab-active" : "neo-tab-idle"
               }`}
             >
               {tab.label}

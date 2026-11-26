@@ -4433,18 +4433,16 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
 
   return (
     <div className="space-y-6">
-      {/* 1. Hero Header & Class Selector */}
-      <div className="mindx-hero p-5 sm:p-6 rounded-2xl transition-all">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <span className="p-2.5 rounded-xl bg-white/15 text-white text-2xl shadow-sm">📝</span>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                  Nhận xét Buổi học &amp; Thông báo Zalo
-                </h1>
-              </div>
-            </div>
+      {/* 1. Hero Header & Class Selector (Neo-Brutalism) */}
+      <div className="mindx-hero p-4 sm:p-5 rounded-2xl transition-all">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="neo-title-icon w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0">
+              📝
+            </span>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+              Nhận xét Buổi học &amp; Zalo
+            </h1>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -4469,7 +4467,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
               type="button"
               onClick={() => handleSyncFromLms(classCode)}
               disabled={isSyncing || isFetchingClasses}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:bg-slate-700 text-white text-xs sm:text-sm font-semibold transition shadow-md cursor-pointer"
+              className="neo-btn-blue flex items-center gap-1.5 px-3.5 py-2 rounded-xl disabled:opacity-60 text-xs sm:text-sm font-black cursor-pointer mindx-dark-keep"
               title="Đồng bộ danh sách buổi học & học viên của lớp đang chọn từ LMS"
             >
               <RefreshCw
@@ -4479,14 +4477,14 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                 ? "Đang quét lớp..."
                 : isSyncing
                 ? "Đang đồng bộ..."
-                : "🔄 Đồng bộ buổi học"}
+                : "🔄 Đồng bộ"}
             </button>
           </div>
         </div>
       </div>
 
       {/* 2. Session & Syllabus Selection Card */}
-      <div className="mindx-card p-5 rounded-2xl">
+      <div className="neo-section-card p-4 sm:p-5 rounded-2xl">
         {/* Status notification toast */}
         {statusMessage && (
           <div
@@ -4545,13 +4543,13 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
               Chọn Buổi học
             </label>
             <select
               value={selectedSessionId}
               onChange={(e) => setSelectedSessionId(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-white dark:bg-slate-900 border-2 border-[#0f172a] dark:border-slate-600 rounded-xl px-3 py-2 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-600"
             >
               {sessions.length > 0 ? (
                 sessions
@@ -4582,30 +4580,37 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-              Chủ đề &amp; Kiến thức trọng tâm (Từ Giáo trình)
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+              Chủ đề buổi học
             </label>
             <input
               type="text"
               value={currentTopic}
               onChange={(e) => setCurrentTopic(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-white dark:bg-slate-900 border-2 border-[#0f172a] dark:border-slate-600 rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-600"
               placeholder="Chủ đề buổi học hôm nay..."
             />
             {currentKeyKnowledge.length > 0 && (
-              <div className="mindx-warm-box mt-2.5 p-3 rounded-lg text-xs space-y-1">
-                <div className="font-bold">Nội dung buổi học:</div>
-                <ul className="list-disc list-inside space-y-0.5">
-                  {currentKeyKnowledge.map((item, idx) => (
-                    <li key={idx}>{item}</li>
-                  ))}
-                </ul>
-                {currentHomeworkBrief && (
-                  <div className="pt-1">
-                    <span className="font-bold">Tóm tắt BTVN:</span> {currentHomeworkBrief}
-                  </div>
-                )}
-              </div>
+              <details className="neo-details-bar mt-2.5 px-3 py-2 rounded-xl text-xs">
+                <summary className="font-extrabold cursor-pointer select-none flex items-center justify-between gap-2">
+                  <span>
+                    📚 Nội dung buổi {activeSessionNumber} &amp; BTVN ({currentKeyKnowledge.length} ý)
+                  </span>
+                  <span className="text-[11px] font-bold opacity-80">Xem chi tiết ▾</span>
+                </summary>
+                <div className="mt-2 pt-2 border-t border-amber-500/30 space-y-1">
+                  <ul className="list-disc list-inside space-y-0.5">
+                    {currentKeyKnowledge.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                  {currentHomeworkBrief && (
+                    <div className="pt-1">
+                      <span className="font-bold">BTVN:</span> {currentHomeworkBrief}
+                    </div>
+                  )}
+                </div>
+              </details>
             )}
           </div>
         </div>
@@ -4625,14 +4630,11 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             .map((s) => s.fullName);
 
           return (
-            <div className="mt-4">
-              <div className="mindx-warm-box p-3 rounded-xl text-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <div className="flex items-start md:items-center gap-2">
+            <div className="mt-3">
+              <div className="mindx-warm-box px-3.5 py-2.5 rounded-xl text-xs flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2 font-black">
                   <span className="text-base">📌</span>
-                  <span>
-                    <strong>Buổi Kiểm tra Định kỳ (Checkpoint — Buổi {activeSessionNumber}):</strong> Thầy chấm điểm Lý thuyết &amp; Thực hành trên LMS, rồi bấm nút bên cạnh để{" "}
-                    <strong>Bot tự đọc điểm KT, tính &amp; tích sẵn 9 ô [ĐNL] theo quá trình</strong> và viết nhận xét kèm dòng điểm riêng.
-                  </span>
+                  <span>Checkpoint — Buổi {activeSessionNumber}</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <button
@@ -4642,8 +4644,8 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                       void handleCheckpointSync(true);
                     }}
                     disabled={isSyncingCheckpoint || isSyncing}
-                    className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
-                    title="Kết nối LMS lấy điểm Lý thuyết/Thực hành mới nhất thầy vừa chấm (cả mục Nhận xét lẫn Chấm bài) và tự động tính 9 ô [ĐNL] từ lịch sử các buổi trước"
+                    className="neo-btn-yellow px-3 py-1.5 rounded-lg disabled:opacity-50 font-black text-xs flex items-center gap-1.5 cursor-pointer"
+                    title="Kết nối LMS lấy điểm Lý thuyết/Thực hành mới nhất và tự động tính 9 ô [ĐNL]"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCheckpoint ? "animate-spin" : ""}`} />
                     {isSyncingCheckpoint ? "Đang đọc KT & Tính [ĐNL]..." : "📥 Đọc điểm KT & Tính [ĐNL]"}
@@ -4655,7 +4657,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                       void handleCheckpointSync(false);
                     }}
                     disabled={isSyncingCheckpoint || isSyncing}
-                    className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-amber-200 border border-amber-500/40 font-semibold text-[11px] transition cursor-pointer"
+                    className="neo-btn-neutral px-2.5 py-1.5 rounded-lg disabled:opacity-50 font-bold text-[11px] cursor-pointer"
                     title="Tính lại nhanh 9 ô [ĐNL] từ lịch sử trên máy (không mở lại LMS)"
                   >
                     ↻ Tính lại [ĐNL]
@@ -4680,8 +4682,8 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
       </div>
 
       {/* 3. Action Toolbar */}
-      <div className="mindx-card flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 font-medium">
+      <div className="neo-section-card flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
           <span>
             Có mặt{" "}
             <strong className="text-emerald-600 dark:text-emerald-400">
@@ -4717,7 +4719,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                 : ""
             }`}
             data-testid="open-classroom-manager-link"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition shadow-sm"
+            className="neo-btn-neutral flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold"
             title="Mở trang Quản lý Giờ học để chấm sao, đếm lỗi hoặc chiếu bảng thi đua trên lớp"
           >
             ⭐ Quản lý Giờ học
@@ -4732,7 +4734,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             disabled={
               (!classCode.trim() && !classId.trim()) || Boolean(openingLmsClass)
             }
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold transition shadow-sm cursor-pointer"
+            className="neo-btn-blue flex items-center gap-1.5 px-3 py-1.5 rounded-lg disabled:opacity-50 text-xs font-black cursor-pointer mindx-dark-keep"
             title={
               (classCode || classId).trim()
                 ? `Mở trực tiếp lớp ${(classCode || classId).trim().toUpperCase()} (tab Comments) trên MindX LMS trong tab mới`
@@ -4753,17 +4755,17 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             type="button"
             onClick={() => handleConfirmAllPresent(true)}
             disabled={students.length === 0}
-            className="mindx-dark-btn flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition shadow-sm cursor-pointer"
+            className="neo-btn-neutral flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer"
             title="Điểm danh cả lớp Có mặt (giữ nguyên thẻ đã nhớ từ buổi trước, hoặc gắn thẻ Tiếp thu tốt cho bạn chưa có thẻ)"
           >
-            <UserCheck className="w-4 h-4 text-emerald-400" />
+            <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             ⚡ Điểm danh cả lớp Có mặt
           </button>
 
           <button
             onClick={() => handleGenerateAi()}
             disabled={isGeneratingAi || students.length === 0}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm font-semibold shadow-md transition cursor-pointer"
+            className="neo-btn-purple flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg disabled:opacity-50 text-xs sm:text-sm font-black cursor-pointer mindx-dark-keep"
           >
             <Sparkles className={`w-4 h-4 ${isGeneratingAi ? "animate-spin" : ""}`} />
             {isGeneratingAi ? "AI Đang Soạn..." : "AI Soạn Nhận Xét"}
@@ -4782,18 +4784,18 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                     needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, s))
               ).length === 0
             }
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold shadow-md transition cursor-pointer"
+            className="neo-btn-emerald flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg disabled:opacity-50 text-xs sm:text-sm font-black cursor-pointer mindx-dark-keep"
           >
             <Send className={`w-4 h-4 ${isSavingLms ? "animate-spin" : ""}`} />
             {isSavingLms
-              ? `Đang Duyệt & Ghi LMS (Buổi ${activeSessionNumber})...`
-              : `✅ Duyệt & Đẩy LMS (Buổi ${activeSessionNumber})`}
+              ? `Đang Ghi LMS (B${activeSessionNumber})...`
+              : `✅ Duyệt & Đẩy LMS (B${activeSessionNumber})`}
           </button>
         </div>
       </div>
 
       {/* 4. Student Comments Table */}
-      <div className="mindx-card rounded-2xl overflow-hidden">
+      <div className="neo-section-card rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-300">
             <thead className="mindx-thead text-xs uppercase font-bold border-b border-slate-800">
@@ -5188,17 +5190,16 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
         </div>
       </div>
 
-      {/* 5. Zalo Broadcast Preview Box (3.8: compact overflow menu for secondary actions) */}
-      <div className="mindx-card p-6 rounded-2xl space-y-4">
+      {/* 5. Zalo Broadcast Preview Box */}
+      <div className="neo-section-card p-5 rounded-2xl space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 text-xl">📱</span>
-            <div>
-              <h2 className="text-base font-bold text-white">Thông báo chung gửi Nhóm Zalo</h2>
-              <p className="text-xs text-slate-400">
-                Chuẩn bố cục 3 đoạn mới (Điểm danh → Bài học → Dặn dò BTVN → Lịch buổi kế tiếp +7 ngày)
-              </p>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <span className="neo-title-icon w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0">
+              📱
+            </span>
+            <h2 className="neo-title-text text-base font-black">
+              Thông báo gửi Nhóm Zalo
+            </h2>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -5319,7 +5320,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
               type="button"
               onClick={() => btvnImageInputRef.current?.click()}
               disabled={isAnalyzingBtvnImage}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-semibold shadow-sm transition cursor-pointer"
+              className="neo-btn-yellow flex items-center gap-1.5 px-3.5 py-2 rounded-lg disabled:opacity-50 text-xs font-black cursor-pointer"
               title="Tải ảnh chụp danh sách nộp BTVN (Denise/LMS) để AI lọc các bạn 'Not submitted' (Tên đệm + Tên) và tự động nối mục 2b Tình trạng BTVN vào tin nhắn Zalo"
             >
               {isAnalyzingBtvnImage ? (
@@ -5335,12 +5336,12 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             {(zaloBtvnPart2Text || isZaloManuallyEdited) && (
               <details className="relative">
                 <summary
-                  className="list-none px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold cursor-pointer select-none"
+                  className="neo-btn-neutral list-none px-2.5 py-2 rounded-lg text-xs font-bold cursor-pointer select-none"
                   title="Tùy chọn khôi phục mẫu Zalo"
                 >
                   ⋯
                 </summary>
-                <div className="absolute right-0 mt-1.5 w-48 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl p-1.5 z-20 space-y-1">
+                <div className="absolute right-0 mt-1.5 w-48 rounded-xl bg-white dark:bg-slate-900 border-2 border-[#0f172a] dark:border-slate-600 shadow-[3px_3px_0_#0f172a] p-1.5 z-20 space-y-1">
                   {zaloBtvnPart2Text && (
                     <button
                       type="button"
@@ -5349,7 +5350,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                         setIsZaloManuallyEdited(false);
                         setZaloBroadcastText(buildAutoZaloBroadcastText(""));
                       }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-rose-500/15 text-rose-300 text-xs font-medium transition cursor-pointer"
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-rose-500/15 text-rose-700 dark:text-rose-300 text-xs font-semibold transition cursor-pointer"
                     >
                       ✕ Bỏ Phần 2 BTVN
                     </button>
@@ -5361,7 +5362,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                         setIsZaloManuallyEdited(false);
                         setZaloBroadcastText(buildAutoZaloBroadcastText());
                       }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-slate-200 text-xs font-medium transition cursor-pointer"
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-200 text-xs font-semibold transition cursor-pointer"
                     >
                       ↺ Khôi phục mẫu tự động
                     </button>
@@ -5372,10 +5373,10 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
 
             <button
               onClick={() => copyToClipboard(zaloBroadcastText)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition shadow-md cursor-pointer"
+              className="neo-btn-emerald flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black cursor-pointer mindx-dark-keep"
             >
               {copiedZalo ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              {copiedZalo ? "Đã sao chép tin nhắn Zalo!" : "Copy Thông báo Zalo"}
+              {copiedZalo ? "Đã sao chép!" : "Copy Zalo"}
             </button>
           </div>
         </div>

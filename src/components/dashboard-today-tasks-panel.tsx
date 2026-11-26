@@ -190,16 +190,13 @@ export function DashboardTodayTasksPanel({
             <h1 className="neo-title-text text-xl sm:text-2xl font-black tracking-tight leading-none">
               Việc cần làm hôm nay
             </h1>
-            <p className="neo-subtitle-text text-xs font-medium mt-1">
-              Tổng hợp công việc cho các lớp hiện tại, dựa trên buổi học và trạng thái đã lưu từ LMS &amp; Teaching.
-            </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* KPI 1: Tổng số lớp */}
           <div className="neo-kpi-total px-3 py-1.5 rounded-xl flex items-center gap-2.5 min-w-[116px]">
-            <div className="w-7 h-7 rounded-lg bg-[#dbeafe] border border-[#1e40af] text-[#1e40af] flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-[#dbeafe] border border-[#1e40af] text-[#1e40af] dark:bg-blue-950 dark:border-blue-400 dark:text-blue-200 flex items-center justify-center shrink-0">
               <svg
                 className="w-4 h-4"
                 fill="none"
@@ -222,7 +219,7 @@ export function DashboardTodayTasksPanel({
           {/* KPI 2: Cần làm (chỉ hiện màu cảnh báo khi có lớp chưa xong) */}
           {totalPendingCount > 0 ? (
             <div className="neo-kpi-pending px-3 py-1.5 rounded-xl flex items-center gap-2.5 min-w-[104px]">
-              <div className="w-7 h-7 rounded-full bg-[#ea580c] text-white flex items-center justify-center font-black text-sm shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#c2410c] text-white mindx-dark-keep flex items-center justify-center font-black text-sm shrink-0">
                 !
               </div>
               <div className="leading-tight">
@@ -234,7 +231,7 @@ export function DashboardTodayTasksPanel({
             </div>
           ) : (
             <div className="neo-kpi-done px-3 py-1.5 rounded-xl flex items-center gap-2.5 min-w-[104px]">
-              <div className="w-7 h-7 rounded-full bg-[#15803d] text-white flex items-center justify-center font-black text-sm shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#15803d] text-white mindx-dark-keep flex items-center justify-center font-black text-sm shrink-0">
                 ✓
               </div>
               <div className="leading-tight">
@@ -248,7 +245,7 @@ export function DashboardTodayTasksPanel({
 
           {/* KPI 3: Đã xong */}
           <div className="neo-kpi-done px-3 py-1.5 rounded-xl flex items-center gap-2.5 min-w-[104px]">
-            <div className="w-7 h-7 rounded-full bg-[#15803d] text-white flex items-center justify-center font-black text-sm shrink-0">
+            <div className="w-7 h-7 rounded-full bg-[#15803d] text-white mindx-dark-keep flex items-center justify-center font-black text-sm shrink-0">
               ✓
             </div>
             <div className="leading-tight">
@@ -450,8 +447,8 @@ export function DashboardTodayTasksPanel({
                                 data-testid={`session-date-${card.classId}`}
                                 className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold border ${
                                   card.isTodaySession
-                                    ? "bg-[#dcfce7] text-[#15803d] border-[#16a34a]"
-                                    : "bg-slate-100 text-slate-700 border-slate-300"
+                                    ? "bg-[#dcfce7] text-[#15803d] border-[#16a34a] dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-500"
+                                    : "bg-slate-100 text-slate-800 border-slate-400 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-500"
                                 }`}
                                 title={`Ngày học Buổi ${card.currentSessionNumber}: ${card.sessionDate}`}
                               >
@@ -599,8 +596,8 @@ export function DashboardTodayTasksPanel({
                                 data-testid={`session-date-${card.classId}`}
                                 className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold border ${
                                   card.isTodaySession
-                                    ? "bg-[#dcfce7] text-[#15803d] border-[#16a34a]"
-                                    : "bg-slate-100 text-slate-700 border-slate-300"
+                                    ? "bg-[#dcfce7] text-[#15803d] border-[#16a34a] dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-500"
+                                    : "bg-slate-100 text-slate-800 border-slate-400 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-500"
                                 }`}
                                 title={`Ngày học Buổi ${card.currentSessionNumber}: ${card.sessionDate}`}
                               >

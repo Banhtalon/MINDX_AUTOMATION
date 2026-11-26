@@ -246,14 +246,8 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
       </div>
 
       {isSpckExemptClass && (
-        <div className="rounded-xl border border-amber-500/40 bg-amber-950/35 px-3.5 py-2.5 text-xs text-amber-200">
-          ℹ️ Lớp <strong>{selectedClassId}</strong> thuộc khóa{" "}
-          <strong>PTB / CSB</strong> không thi sản phẩm cuối khóa nên được{" "}
-          <strong>miễn nộp SPCK &amp; miễn tạo bảng chấm Demo tự động</strong>. Ở
-          Buổi 14, thầy chỉ cần bấm <strong>1. Đồng bộ bài làm</strong> &rarr;{" "}
-          <strong>2. AI Soạn nhận xét</strong> &rarr;{" "}
-          <strong>3. Duyệt &amp; Nộp tất cả</strong> để hoàn tất Điểm Năng lực,
-          Thư 3 phần, Tiến độ 100% &amp; Phiếu điểm Teaching.
+        <div className="neo-details-bar rounded-xl px-3.5 py-2 text-xs font-bold">
+          ℹ️ Lớp <strong>{selectedClassId}</strong> (<strong>PTB / CSB</strong>) miễn nộp SPCK &amp; Demo BGK — Buổi 14 chạy 3 bước để đẩy [ĐNL], Thư 3 phần &amp; Teaching 100%.
         </div>
       )}
 
@@ -269,29 +263,19 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
           {/* 1A. Cổng thu bài trực tuyến cho học sinh */}
           <div className="p-3 rounded-xl bg-slate-950/75 border border-slate-700 space-y-3">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="spck-pill-primary px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                    Cổng Thu Bài Học Sinh
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="spck-pill-primary px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                  Cổng Thu Bài Học Sinh
+                </span>
+                <span className="text-xs font-bold text-white">
+                  Mở Link / QR cho học sinh nộp bài trực tiếp
+                </span>
+                {studentPortalRunning && (
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-[11px] font-semibold">
+                    ● Đang mở {selectedClassId} ({studentPortalSubmissions.length}/
+                    {activeRosterCount || rows.length} HV)
                   </span>
-                  <span className="text-xs font-bold text-white">
-                    Mở Link / Mã QR cho học sinh tự nộp bài trực tiếp trong giờ học
-                  </span>
-                  {studentPortalRunning && (
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-[11px] font-semibold">
-                      ● Đang mở cho lớp {selectedClassId} (Đã nộp:{" "}
-                      {studentPortalSubmissions.length}/
-                      {activeRosterCount || rows.length} HV)
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Khi cả lớp nộp xong, bấm{" "}
-                  <strong className="text-slate-200">
-                    &ldquo;🛑 Đóng cổng &amp; Đồng bộ bài làm&rdquo;
-                  </strong>{" "}
-                  để tự đóng cổng và chạy trọn gói Bước 1.
-                </p>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -515,14 +499,9 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
           {/* 1B. Tạo Link Bảng chấm điểm gửi Giám khảo */}
           <div className="p-3 rounded-xl bg-slate-950/75 border border-slate-700 space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="space-y-0.5">
-                <span className="text-xs font-bold text-white">
-                  📋 Tạo Link Bảng chấm điểm gửi Ban Giám Khảo (Google Trang Tính)
-                </span>
-                <p className="text-[11px] text-slate-400">
-                  Tự động tạo bảng chấm điểm theo barem chuẩn từng khóa cho toàn bộ học viên đang học.
-                </p>
-              </div>
+              <span className="text-xs font-bold text-white">
+                📋 Tạo Bảng chấm điểm Giám khảo (Google Sheets)
+              </span>
               {generatedDemoSheetUrl && (
                 <div className="flex items-center gap-2">
                   <a

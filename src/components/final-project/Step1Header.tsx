@@ -89,24 +89,24 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
       : rows.length > 0;
 
   const step1SubLabel = studentPortalRunning
-    ? "Tự ngắt link HS → Quét bài • Ảnh bìa Drive • Ảnh 16:9 • Web • Drive"
+    ? "Đóng Cổng HS → Quét bài & Drive"
     : selectedSessionNumber === 14
     ? isSpckExemptClass
-      ? "Nạp Điểm Năng lực [ĐNL] trung bình Buổi 5+9"
-      : "Quét bài • Ảnh bìa Drive • Ảnh 16:9 • Drive • Điểm BGK & [ĐNL] B5+9"
-    : "Quét thư mục • Ảnh bìa Drive • Chụp 16:9 • GitHub Web • Up Drive";
+      ? "Nạp [ĐNL] trung bình B5+9"
+      : "Quét bài, Drive, BGK & [ĐNL]"
+    : "Quét bài, ảnh bìa & Up Drive";
 
   const step2SubLabel =
     selectedSessionNumber === 14
-      ? "Nhận xét SPCK + Thư MindX 3 phần + Summary Nhất/Nhì/Ba"
-      : "Đặt tên đề tài cụ thể • Chọn thẻ & viết nhận xét cả lớp";
+      ? "Nhận xét + Thư 3 phần + Summary"
+      : "Đề tài & nhận xét cả lớp";
 
   const step3SubLabel =
     selectedSessionNumber === 12
-      ? "Đẩy LMS Buổi 12 → Cập nhật Tiến độ Teaching 60%"
+      ? "Đẩy LMS B12 & Teaching 60%"
       : selectedSessionNumber === 13
-      ? "Đẩy LMS Buổi 13 → Cập nhật Tiến độ Teaching 80%"
-      : "LMS (SPCK + Đánh giá + Summary) → Teaching 100% + Phiếu điểm";
+      ? "Đẩy LMS B13 & Teaching 80%"
+      : "Đẩy LMS B14, Teaching 100% & Điểm";
 
   return (
     <div className="spck-clean-card rounded-2xl overflow-hidden">

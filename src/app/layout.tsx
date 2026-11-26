@@ -5,7 +5,7 @@ import { TopNavbar } from "@/components/top-navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MindX Automation Bot (v3.8.11)",
+  title: "MindX Automation Bot (v3.9.0)",
   description: "Hệ thống trợ lý tự động hóa toàn diện dành cho Giáo viên tại MindX",
 };
 
@@ -35,8 +35,8 @@ export default function RootLayout({
         <LiveLogDrawer />
 
         {/* Footer */}
-        <footer className="mindx-footer py-2 text-center text-xs">
-          MindX Automation Bot • Local-Only Application • SQLite & Playwright Engine
+        <footer className="mindx-footer py-2 text-center text-xs font-semibold">
+          MindX Automation Bot v3.9.0 • Local Workspace (127.0.0.1)
         </footer>
       </body>
     </html>

@@ -59,15 +59,17 @@ export function TopNavbar() {
     <header className="mindx-navbar sticky top-0 z-50 transition-colors">
       <div className="max-w-[1440px] mx-auto px-3 sm:px-4 2xl:px-6 h-14 flex items-center justify-between gap-2">
         <Link href="/" className="flex items-center space-x-1.5 group shrink-0">
-          <span className="text-[15px] 2xl:text-lg font-bold tracking-tight flex items-center gap-1.5 text-white whitespace-nowrap">
-            <span className="text-amber-400">⚡</span>
-            {/* Version history: upgraded from MindX Bot v3.5.5 -> MindX Bot v3.6.0 -> MindX Bot v3.6.1 -> MindX Bot v3.6.2 -> MindX Bot v3.6.3 -> MindX Bot v3.6.4 -> MindX Bot v3.6.5 -> MindX Bot v3.6.6 -> MindX Bot v3.6.7 -> MindX Bot v3.6.8 -> MindX Bot v3.6.9 -> MindX Bot v3.7.0 -> MindX Bot v3.8.0 -> MindX Bot v3.8.1 -> MindX Bot v3.8.2 -> MindX Bot v3.8.3 -> MindX Bot v3.8.4 -> MindX Bot v3.8.5 -> MindX Bot v3.8.6 -> MindX Bot v3.8.7 -> MindX Bot v3.8.8 -> MindX Bot v3.8.9 -> MindX Bot v3.8.10 -> MindX Bot v3.8.11 */}
-            <span className="mindx-brand-text whitespace-nowrap">MindX Bot v3.8.11</span>
+          <span className="text-[14px] 2xl:text-[16px] font-black tracking-tight flex items-center gap-1.5 whitespace-nowrap">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-[#facc15] border-2 border-[#0f172a] shadow-[1.5px_1.5px_0_#0f172a] text-[#0f172a] text-xs">
+              ⚡
+            </span>
+            {/* Version history: upgraded from MindX Bot v3.5.5 -> MindX Bot v3.6.0 -> MindX Bot v3.6.1 -> MindX Bot v3.6.2 -> MindX Bot v3.6.3 -> MindX Bot v3.6.4 -> MindX Bot v3.6.5 -> MindX Bot v3.6.6 -> MindX Bot v3.6.7 -> MindX Bot v3.6.8 -> MindX Bot v3.6.9 -> MindX Bot v3.7.0 -> MindX Bot v3.8.0 -> MindX Bot v3.8.1 -> MindX Bot v3.8.2 -> MindX Bot v3.8.3 -> MindX Bot v3.8.4 -> MindX Bot v3.8.5 -> MindX Bot v3.8.6 -> MindX Bot v3.8.7 -> MindX Bot v3.8.8 -> MindX Bot v3.8.9 -> MindX Bot v3.8.10 -> MindX Bot v3.8.11 -> MindX Bot v3.9.0 */}
+            <span className="mindx-brand-text whitespace-nowrap">MindX Bot v3.9.0</span>
           </span>
         </Link>
 
-        <div className="flex items-center space-x-1 2xl:space-x-3 shrink-0">
-          <nav className="flex items-center space-x-0.5 xl:space-x-1 2xl:space-x-2 text-xs 2xl:text-[13px] font-medium">
+        <div className="flex items-center space-x-1 2xl:space-x-2 shrink-0">
+          <nav className="flex items-center space-x-0.5 xl:space-x-1 2xl:space-x-1.5 text-[11.5px] xl:text-xs 2xl:text-[13px] font-bold">
             {NAV_ITEMS.map((item) => {
               const isActive =
                 item.href === "/"
@@ -77,7 +79,7 @@ export function TopNavbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`mindx-nav-link px-1.5 2xl:px-2.5 py-4 whitespace-nowrap transition-all ${
+                  className={`mindx-nav-link px-1.5 xl:px-2 2xl:px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-all ${
                     isActive ? "mindx-nav-link-active" : ""
                   }`}
                 >
@@ -91,8 +93,8 @@ export function TopNavbar() {
             <Link
               href="/syllabus-config"
               title="Cài đặt Giáo trình & Bộ Thẻ Nhận Xét Nhanh"
-              className={`mindx-theme-toggle px-2 2xl:px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
-                isSettingsActive ? "ring-2 ring-amber-400 text-amber-200" : ""
+              className={`mindx-theme-toggle px-2 2xl:px-2.5 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1 whitespace-nowrap transition-all cursor-pointer ${
+                isSettingsActive ? "mindx-nav-link-active" : ""
               }`}
             >
               <span>⚙</span>
@@ -107,7 +109,7 @@ export function TopNavbar() {
                   ? "Chuyển sang giao diện Tối (Dark Mode)"
                   : "Chuyển sang giao diện Sáng (Light Mode)"
               }
-              className="mindx-theme-toggle px-2 2xl:px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer"
+              className="mindx-theme-toggle px-2 2xl:px-2.5 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1 whitespace-nowrap transition-all cursor-pointer"
             >
               {theme === "light" ? (
                 <>
