@@ -1,5 +1,18 @@
 # CHANGELOG — LỊCH SỬ PHIÊN BẢN DỰ ÁN MINDX AUTOMATION BOT
 
+## [v3.9.1+] - 2026-11-27
+> **Bản vá Nóng Sửa lỗi nút `Ẩn Summary Vinh danh` Buổi 14 trên `/final-project` (`2` tệp `+9 / -5`) — Đạt `Gemini 4 Neon (XHigh)` độc lập `VERDICT: GO` (`0` lỗi mở, `0%` thay đổi backend/DB/API).**
+
+### 🐛 Đã sửa (`v3.9.1+`)
+- **Khắc phục nút `🏆 Ẩn Summary Vinh danh ▴` không ẩn được khung tổng kết Buổi 14 (`src/components/final-project/useSpckWorkflow.ts`, `src/components/final-project/ToolsDrawer.tsx`):**
+  - **Nguyên nhân:** `ToolsDrawer.tsx` trước đó tính `shouldRenderSummaryBox` bằng phép `||` với `Boolean(session14ClassSummaryText.trim()) || awardPillsSummary.length > 0`, khiến khung `[data-testid="s14-class-summary-box"]` luôn bị ép `true` mỗi khi lớp đã có nội dung Summary hoặc huy hiệu giải thưởng.
+  - **Bản sửa (`useSpckWorkflow.ts` `L515–516`, `L617`, `L1012`):** Chuyển `showSession14SummaryBox` sang kiểu 3 trạng thái `boolean | null` mặc định `null` (tự hiện khi có nội dung/giải thưởng; `false` = người dùng chủ động ẩn; `true` = chủ động hiện), đặt lại về `null` khi đổi lớp (`selectedClassId`), giữ nguyên `setShowSession14SummaryBox(true)` cho Bước 2 AI (`handleGenerateSession14AllAi`) & `autoShowBox`, và đặt `true` trong `handleUpdateSession14ClassSummaryText` để xóa trắng chữ khi đang sửa không làm đóng khung.
+  - **Bản sửa (`ToolsDrawer.tsx` `L154–159`, `L194–198`):** Tách `hasSummaryContent`, đổi điều kiện hiển thị sang `showSession14SummaryBox ?? hasSummaryContent`, bổ sung `data-testid="s14-class-summary-toggle"`, `aria-expanded={shouldRenderSummaryBox}` và `onClick={() => setShowSession14SummaryBox((prev) => !(prev ?? hasSummaryContent))}`.
+
+### 🧪 Kiểm thử & Nghiệm thu Độc lập (`v3.9.1+`)
+- **Kiểm thử tự động (`5/5` PASS `exit 0`):** `node .\node_modules\typescript\bin\tsc --noEmit --incremental false`, `scripts/test-streamline-v340-s5a.ts` (`9/9` kịch bản), `scripts/test-ui-v362.ts`, `scripts/test-neo-brutalism-ui-v390.ts` (`9/9` trang Light/Dark × `1280/1440`), `scripts/test-spck-v360.ts` (`V360-01..05` gồm Bước 2 AI tự mở `s14-class-summary-box`), kèm làm mới `graphify update .` offline (`2922` nodes / `10719` edges / `110` communities).
+- **Kiểm định Độc lập `Gemini 4 Neon (XHigh)`:** **`VERDICT: GO`** — xác minh Playwright thực tế chỉ đọc (`1280×800` Light Mode) trên `VT-C4K-GA38` Buổi 14 (lần bấm 1 ẩn khung & đổi nhãn `🏆 Hiện Summary Vinh danh ▾`, lần bấm 2 hiện lại, lần bấm 3 ẩn lại) cùng các ca biên (lớp trống, xóa trắng ô đang nhập, đổi lớp SPA, lớp chỉ có giải thưởng); bảo toàn `100%` SHA-256 dữ liệu thật `data/` (`mindx_bot.db` `72C642FC...`, `running_classes.json` `61836CB1...`, `lms_class_ids.json` `16D635C5...`, `courses_syllabus.json` `E4112B43...`, `quick_tags.json` `5E4D7D9E...`).
+
 ## [v3.9.1] - 2026-11-27
 > **Tinh gọn Toàn diện Giao diện `9/9` Trang (`/ponytail` UI Streamline & Neo-Brutalism Polish — `20` tệp `+223 / -268`) — Đạt `Gemini 4 Neon (XHigh)` Round 2 `VERDICT: GO` (`2/2` phát hiện Round 1 `F01`–`F02` CLOSED, `0` lỗi P0–P3 mở, `0%` thay đổi logic nghiệp vụ).**
 

@@ -151,12 +151,12 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
     return items;
   }, [selectedSessionNumber, session14Evals, session14AwardMap, activeStudentIdSet]);
 
+  const hasSummaryContent =
+    Boolean(session14ClassSummaryText.trim()) || awardPillsSummary.length > 0;
   const shouldRenderSummaryBox =
     selectedSessionNumber === 14 &&
     Boolean(selectedClassId) &&
-    (showSession14SummaryBox ||
-      Boolean(session14ClassSummaryText.trim()) ||
-      awardPillsSummary.length > 0);
+    (showSession14SummaryBox ?? hasSummaryContent);
 
   const handleOpenAllTab2 = () => {
     const nextExpanded: Record<string, boolean> = {};
@@ -191,7 +191,11 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
           {selectedSessionNumber === 14 && selectedClassId && (
             <button
               type="button"
-              onClick={() => setShowSession14SummaryBox((v) => !v)}
+              data-testid="s14-class-summary-toggle"
+              aria-expanded={shouldRenderSummaryBox}
+              onClick={() =>
+                setShowSession14SummaryBox((prev) => !(prev ?? hasSummaryContent))
+              }
               className="spck-pill-neutral px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer"
             >
               {shouldRenderSummaryBox

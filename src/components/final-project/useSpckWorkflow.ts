@@ -513,7 +513,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
   const [session14ClassSummaryDirty, setSession14ClassSummaryDirty] =
     useState<boolean>(false);
   const [showSession14SummaryBox, setShowSession14SummaryBox] =
-    useState<boolean>(false);
+    useState<boolean | null>(null);
   const [mainSyncRunning, setMainSyncRunning] = useState<boolean>(false);
   const [mainStep3Running, setMainStep3Running] = useState<boolean>(false);
   const [mainStep3PhaseLabel, setMainStep3PhaseLabel] = useState<string | null>(
@@ -614,7 +614,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     setSession14ClassSummaryText("");
     setSession14ClassSummaryRawHtml("");
     setSession14ClassSummaryDirty(false);
-    setShowSession14SummaryBox(false);
+    setShowSession14SummaryBox(null);
     setShowFolderEditor(false);
     setSkippedUnreadyByStudent({});
   }, [selectedClassId]);
@@ -1009,6 +1009,7 @@ export function useSpckWorkflow(params: SpckWorkflowHookParams) {
     setSession14ClassSummaryText(nextText);
     setSession14ClassSummaryRawHtml(plainTextSummaryToHtml(nextText));
     setSession14ClassSummaryDirty(true);
+    setShowSession14SummaryBox(true);
   }, []);
 
   const handlePersistSession14ClassSummary = useCallback(
