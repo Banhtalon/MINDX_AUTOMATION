@@ -48,7 +48,7 @@ export function Session14Panel({ workflow }: Session14PanelProps) {
         <div className="flex flex-wrap items-center gap-2">
           <Wrench className="w-3.5 h-3.5 text-slate-400" />
           <h2 className="text-xs font-bold text-slate-300">
-            Tùy chọn nâng cao Buổi 14: Sửa hoặc thử lại từng phần (Đánh giá &amp; Thư 3 phần)
+            Thao tác lẻ Buổi 14 (Đánh giá &amp; Thư 3 phần)
           </h2>
         </div>
 
@@ -74,10 +74,6 @@ export function Session14Panel({ workflow }: Session14PanelProps) {
 
       {isManualPanelOpen && (
         <div className="pt-2.5 border-t border-slate-800 space-y-2.5">
-          <p className="text-xs text-slate-400">
-            Nút nộp chính ở <strong>Bước 3</strong> đã gộp cả Sản phẩm SPCK (Cột 3) và Đánh giá tổng kết &amp; Điểm Demo (Cột 2). Chỉ dùng các nút dưới đây khi cần soạn lại hoặc đẩy riêng phần Đánh giá Buổi 14.
-          </p>
-
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"

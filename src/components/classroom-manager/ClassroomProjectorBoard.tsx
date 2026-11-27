@@ -78,7 +78,7 @@ export function ClassroomProjectorBoard({
           <div className="grid grid-cols-[84px_1.15fr_2.2fr_0.9fr_0.85fr_1fr] items-center px-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-300">
             <div className="text-center">Hạng</div>
             <div className="px-2">Học viên</div>
-            <div className="px-2">Sao hôm nay (Xếp hàng ngang)</div>
+            <div className="px-2">Sao hôm nay</div>
             <div className="text-center">Huy hiệu</div>
             <div className="text-center">Tích lũy khóa</div>
             <div className="text-center">Khen nhanh</div>

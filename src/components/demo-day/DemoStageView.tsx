@@ -157,7 +157,7 @@ export function DemoStageView({
             type="button"
             data-testid="dd-next-btn"
             onClick={onNext}
-            className="dd-pill-success px-5 py-2 rounded-xl text-sm font-extrabold hover:opacity-90 cursor-pointer"
+            className="neo-btn-emerald mindx-dark-keep px-5 py-2 rounded-xl text-sm font-black cursor-pointer"
           >
             Tiếp theo ➡️
           </button>

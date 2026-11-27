@@ -357,11 +357,12 @@ export default function SyllabusConfigPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-slate-400 mb-1">
-                          Mã khóa (VD: PTA, PTB, JSB, ROB...)
+                          Mã khóa
                         </label>
                         <input
                           type="text"
                           value={activeCourse.courseCode}
+                          placeholder="VD: PTA, PTB, JSB, ROB..."
                           onChange={(e) => {
                             const val = e.target.value.toUpperCase();
                             setCourses((prev) =>
@@ -398,8 +399,8 @@ export default function SyllabusConfigPage() {
                       <label className="block text-xs font-semibold text-slate-400 mb-1">
                         Mô tả khóa học
                       </label>
-                      <input
-                        type="text"
+                      <textarea
+                        rows={2}
                         value={activeCourse.description}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -409,7 +410,7 @@ export default function SyllabusConfigPage() {
                             )
                           );
                         }}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"
+                        className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs leading-relaxed resize-y"
                       />
                     </div>
 
@@ -498,7 +499,7 @@ export default function SyllabusConfigPage() {
                     <div className="space-y-3 pt-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold uppercase tracking-wider text-slate-300">
-                          Danh sách Buổi học ({activeCourse.sessions.length} buổi linh hoạt)
+                          Danh sách Buổi học ({activeCourse.sessions.length} buổi)
                         </span>
                         <button
                           type="button"
@@ -611,10 +612,11 @@ export default function SyllabusConfigPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
                                 <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                                  Kiến thức trọng tâm (phân cách bằng dấu phẩy)
+                                  Kiến thức trọng tâm
                                 </label>
-                                <input
-                                  type="text"
+                                <textarea
+                                  rows={2}
+                                  placeholder="Phân cách bằng dấu phẩy..."
                                   value={sess.keyKnowledge.join(", ")}
                                   onChange={(e) => {
                                     const items = e.target.value
@@ -634,7 +636,7 @@ export default function SyllabusConfigPage() {
                                       )
                                     );
                                   }}
-                                  className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                                  className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs leading-relaxed resize-y"
                                 />
                               </div>
 
@@ -642,8 +644,8 @@ export default function SyllabusConfigPage() {
                                 <label className="block text-[11px] font-semibold text-slate-400 mb-1">
                                   Tóm tắt bài tập về nhà
                                 </label>
-                                <input
-                                  type="text"
+                                <textarea
+                                  rows={2}
                                   value={sess.homeworkBrief}
                                   onChange={(e) => {
                                     const val = e.target.value;
@@ -660,7 +662,7 @@ export default function SyllabusConfigPage() {
                                       )
                                     );
                                   }}
-                                  className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                                  className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs leading-relaxed resize-y"
                                 />
                               </div>
                             </div>

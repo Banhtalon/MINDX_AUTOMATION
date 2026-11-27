@@ -1941,7 +1941,12 @@ export default function TeachingReportCardView({
                 ? "⏳ Đang duyệt..."
                 : isSyncingTeaching
                 ? "⏳ Đang đẩy Teaching..."
-                : "✅ Duyệt & Đẩy Teaching"}
+                : (
+                  <>
+                    ✅ Duyệt &amp; Đẩy Teaching
+                    <span className="sr-only"> Đồng bộ Teaching</span>
+                  </>
+                )}
             </button>
 
             <button
@@ -2000,7 +2005,7 @@ export default function TeachingReportCardView({
                     : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                 }`}
               >
-                Thang 5.0 (Chuẩn Teaching)
+                Thang 5.0
               </button>
               <button
                 type="button"
@@ -2011,7 +2016,7 @@ export default function TeachingReportCardView({
                     : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                 }`}
               >
-                Điểm gốc LMS (Thang 100)
+                Thang 100 (LMS)
               </button>
             </div>
 
@@ -2099,7 +2104,7 @@ export default function TeachingReportCardView({
               onChange={(e) => setStageFilter(e.target.value as StageFilterMode)}
               className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-200 focus:outline-none"
             >
-              <option value="all">Giai đoạn: Tất cả (CP1 + CP2 + DEMO)</option>
+              <option value="all">Giai đoạn: Tất cả</option>
               <option value="cp1">Giai đoạn: Chỉ Check-point 1</option>
               <option value="cp2">Giai đoạn: Chỉ Check-point 2</option>
               <option value="cp1_cp2">Giai đoạn: CP1 &amp; CP2</option>
@@ -2282,21 +2287,9 @@ export default function TeachingReportCardView({
           {computedReportCard.showBtvnBlock ? (
             <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
               <div className="px-4 py-3 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h3 className="text-sm font-extrabold uppercase tracking-wider text-white">
-                    1. BẢNG ĐIỂM BÀI TẬP VỀ NHÀ (BTVN — {activeSessions.length} BUỔI)
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    Click vào bất kỳ ô điểm nào để sửa tay hoặc ghi chú. Các ô điểm quy đổi{" "}
-                    <span className="text-rose-400 font-semibold">&lt; 2.50</span> được tô đỏ cảnh báo.
-                  </p>
-                </div>
-                <span className="text-xs text-slate-400">
-                  Chế độ hiển thị:{" "}
-                  <strong className="text-indigo-400">
-                    {scaleMode === "raw" ? "Điểm gốc (Thang 100)" : "Quy đổi Thang 5.0"}
-                  </strong>
-                </span>
+                <h3 className="text-sm font-extrabold uppercase tracking-wider text-white">
+                  1. BẢNG ĐIỂM BÀI TẬP VỀ NHÀ (BTVN — {activeSessions.length} BUỔI)
+                </h3>
               </div>
 
               <div className="overflow-x-auto">
@@ -2478,13 +2471,13 @@ export default function TeachingReportCardView({
               </div>
               <div className="flex items-center gap-2 text-[11px]">
                 <span className="px-2 py-0.5 rounded bg-emerald-700 text-white mindx-dark-keep font-bold">
-                  Hạng A ≥ 4.50 (Đủ điểm)
+                  Hạng A ≥ 4.50
                 </span>
                 <span className="px-2 py-0.5 rounded bg-sky-700 text-white mindx-dark-keep font-bold">
-                  Hạng B ≥ 4.00 (Đủ điểm)
+                  Hạng B ≥ 4.00
                 </span>
                 <span className="px-2 py-0.5 rounded bg-amber-700 text-white mindx-dark-keep font-bold">
-                  Hạng C ≥ 2.50 (Hoặc khuyết/0đ)
+                  Hạng C ≥ 2.50
                 </span>
                 <span className="px-2 py-0.5 rounded bg-rose-700 text-white mindx-dark-keep font-bold">
                   Hạng D &lt; 2.50

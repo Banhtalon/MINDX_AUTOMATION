@@ -350,11 +350,8 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
     <div className="spck-clean-sticky-submit sticky bottom-3 z-20 px-4 py-2.5 rounded-xl space-y-2">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="spck-pill-primary px-2.5 py-0.5 rounded-full text-xs font-bold">
-            Bước 3 / 3
-          </span>
           <h2 className="text-sm font-extrabold text-white">
-            Duyệt &amp; Nộp Trọn Gói (MindX LMS + Teaching)
+            Nộp Trọn Gói Buổi {selectedSessionNumber}
           </h2>
           {assignedRows.length > 0 && (
             <span className="spck-pill-success px-2 py-0.5 rounded-full text-[11px] font-semibold">
@@ -459,6 +456,13 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
           <button
             type="button"
             data-testid="spck-submitbar-step3-submit"
+            title={
+              selectedSessionNumber === 12
+                ? `${effectiveSelectedStudentIds.length} HV → LMS + Teaching 60%`
+                : selectedSessionNumber === 13
+                ? `${effectiveSelectedStudentIds.length} HV → LMS + Teaching 80%`
+                : "Buổi 14 → LMS + Teaching 100% + Phiếu điểm"
+            }
             onClick={() => void handleMainStep3SubmitAll()}
             disabled={
               isAnyOperationBusy ||
@@ -478,11 +482,9 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
             )}
             <span>
               3. Duyệt &amp; Nộp tất cả
-              {selectedSessionNumber === 12
-                ? ` (${effectiveSelectedStudentIds.length} HV → LMS + Teaching 60%)`
-                : selectedSessionNumber === 13
-                ? ` (${effectiveSelectedStudentIds.length} HV → LMS + Teaching 80%)`
-                : " (Buổi 14 → LMS + Teaching 100% + Phiếu điểm)"}
+              {selectedSessionNumber === 14
+                ? " (Buổi 14)"
+                : ` (${effectiveSelectedStudentIds.length} HV)`}
             </span>
           </button>
         </div>
@@ -712,7 +714,7 @@ export function SubmitBar({ workflow }: SubmitBarProps) {
               <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                 <TrendingUp className="w-3.5 h-3.5 shrink-0" />
                 <span className="font-bold">
-                  Đã xác minh LMS đủ bài — Tiện ích đồng bộ lẻ:
+                  Đồng bộ tiếp:
                 </span>
               </div>
 

@@ -180,7 +180,7 @@ export function ClassPicker({
   isRefreshing = false,
   disabled = false,
   allowManualInput,
-  refreshLabel = "🔄 Quét lại từ LMS",
+  refreshLabel = "Quét lại từ LMS",
   refreshingLabel = "Đang quét LMS...",
   placeholderOption,
   lastSyncedAt,

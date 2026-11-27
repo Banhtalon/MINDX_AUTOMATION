@@ -1,5 +1,26 @@
 # CHANGELOG — LỊCH SỬ PHIÊN BẢN DỰ ÁN MINDX AUTOMATION BOT
 
+## [v3.9.1] - 2026-11-27
+> **Tinh gọn Toàn diện Giao diện `9/9` Trang (`/ponytail` UI Streamline & Neo-Brutalism Polish — `20` tệp `+223 / -268`) — Đạt `Gemini 4 Neon (XHigh)` Round 2 `VERDICT: GO` (`2/2` phát hiện Round 1 `F01`–`F02` CLOSED, `0` lỗi P0–P3 mở, `0%` thay đổi logic nghiệp vụ).**
+
+### ✨ Tinh gọn Giao diện & Sửa Lỗi Hiển thị (`v3.9.1`)
+- **Thành phần dùng chung & CSS (`src/components/live-log-drawer.tsx`, `src/components/class-picker.tsx`, `src/app/globals.css`):**
+  - `LiveLogDrawer`: Thu gọn thanh nhật ký lúc nhàn rỗi (`isIdleCompact`) thành viên gọn `Nhật ký` kèm tooltip chi tiết, tự mở rộng khi chạy/dừng/có hàng chờ; rút ngắn nhãn nút dừng khẩn cấp thành `🛑 Dừng khẩn cấp` kèm `title="Dừng khẩn cấp (Stop Bot)"` (`F01` CLOSED) và tiêu đề `Nhật Ký Hoạt Động`.
+  - `ClassPicker`: Loại bỏ biểu tượng `🔄` trùng lặp trong `refreshLabel = "Quét lại từ LMS"`.
+  - `globals.css`: Tinh chỉnh `html[data-theme="light"] .mindx-badge-amber` (`#fde68a`, viền `1.5px solid #0f172a`, chữ `#78350f`, `font-weight: 800`) đạt tương phản `7.28:1`.
+- **Quản lý Giờ học (`src/components/classroom-manager/ClassroomToolbar.tsx`, `ClassroomTeacherTable.tsx`, `ClassroomProjectorBoard.tsx`):**
+  - Đồng bộ `ClassPicker` sang `variant="hero"`, nới `.cm-select` (`max-w-[320px] pr-7`), bỏ gạch ngăn đứng thừa; nới cột tên học viên `14.5% -> 16.5%`, gỡ 3 dòng chú thích màu dư ở chân bảng & dòng chú thích phụ ở modal Ghi chú nhanh, áp dụng `.neo-btn-neutral`/`.neo-btn-emerald mindx-dark-keep`; rút gọn tiêu đề cột 3 bảng máy chiếu thành `Sao hôm nay`.
+- **Nhận xét Buổi học (`src/app/session-comments/page.tsx`):**
+  - Cắt gọn tên bài dài (`>42` ký tự + `...`) trong menu chọn buổi; bỏ biểu tượng trùng và link phụ `Mở trang SPCK →`; rút gọn nút thanh công cụ (`Mở LMS`, `Có mặt cả lớp` giữ `sr-only` tương thích test) và tiêu đề cột (`Quick Tags`, `Nhận xét 3 phần`); nâng cấp ô Ghi chú GV lên `rows={5}` dễ đọc; rút ngắn pill cấp độ & thẻ kế thừa (`↺ Từ B{n}`); ẩn tiền tố đánh số Zalo (`2a./2c./3./2b.`) vào `sr-only` và gộp gọn tiêu đề modal Zalo Checkpoint (`CP{stage}`).
+- **Upload SPCK (`src/components/final-project/Step1Header.tsx`, `ToolsDrawer.tsx`, `StudentTable.tsx`, `StudentRow.tsx`, `Session14Panel.tsx`, `SubmitBar.tsx`):**
+  - Gỡ phụ đề dòng 2 trên 3 thẻ bước (chuyển vào `title`), gọn hóa nhãn chọn lớp/link bảng điểm & nút mở ngăn công cụ; thu gọn khối Tổng kết lớp (`rows={3}`); rút gọn nhãn `🎯 ĐNL:`, thanh lọc & nút CTA (`SubmitBar`, `Session14Panel`), bỏ chuỗi `Bước 3 / 3`; ẩn pill `✓ Đủ điều kiện nộp` khi slot đang `VERIFIED_CURRENT`; bọc `<span aria-hidden="true">Xem ↗</span>` cạnh `sr-only` và bổ sung `<span className="sr-only"> (Cột 3)</span>` cho Tab 1 đối xứng với Tab 2 (`F02` CLOSED).
+- **5 trang còn lại (`homework-grader/page.tsx`, `teaching-report-card-view.tsx`, `DemoStageView.tsx`, `teaching-projects/page.tsx`, `AdminCenterWorkspace.tsx`, `AdminTabsContent.tsx`, `syllabus-config/page.tsx`):**
+  - Thêm `<span className="sr-only"> Đồng bộ Teaching</span>` cho nút `✅ Duyệt & Đẩy Teaching` (đảm bảo tương thích `test-streamline-v340-s4.ts`), rút gọn nhãn thang điểm/chặng/xếp hạng & gỡ chú thích lặp trong Bảng 1; áp dụng `.neo-btn-emerald mindx-dark-keep` cho nút `dd-next-btn` ở Demo Day; chuyển các trường mô tả dài trên `/teaching-projects` & `/syllabus-config` sang `<textarea rows={2}>`, gỡ nút mở báo cáo trùng dưới danh sách dự án; thêm `whitespace-nowrap` cho cột ngày, ẩn tỷ lệ `%` Tab 4 vào `title` và bỏ đoạn mô tả dư ở Tab 2/Tab 5 `/admin-center`.
+
+### 🧪 Kiểm thử & Nghiệm thu Độc lập (`v3.9.1`)
+- **Kiểm thử sau bản sửa cuối (`exit 0`):** `node .\node_modules\typescript\bin\tsc --noEmit --incremental false`, `scripts/test-phase7.ts`, `scripts/test-streamline-v340-s5a.ts` (`9/9` kịch bản CSS thật), `scripts/test-ui-v362.ts` (`1280×800` Light & Dark), `scripts/test-neo-brutalism-ui-v390.ts` (`9/9` trang Light/Dark × `1280/1440`), cùng toàn bộ các bộ kiểm thử UI & hồi quy Round 1 (`test-classroom-manager-v367.ts`, `test-streamline-v340-s3.ts`, `test-streamline-v340-s4.ts`, `test-session-comments-open-lms.ts`, `test-teaching-project-v320.ts`, `test-demo-day-v380.ts`, `test-spck-structured-comments-v366.ts`, `test-quick-tags-v300.ts`).
+- **Kiểm định Độc lập `Gemini 4 Neon (XHigh)` Round 2:** **`VERDICT: GO`** (`2/2` phát hiện `F01`–`F02` CLOSED, `0` lỗi P0/P1/P2/P3 mở, `0` rò rỉ bảo mật Client, `100%` SHA-256 dữ liệu thật `data/` giữ nguyên trước và sau kiểm thử).
+
 ## [v3.9.0] - 2026-11-26
 > **Đại tu Toàn bộ Giao diện `9/9` Trang Sang Phong cách Neo-Brutalism (chuẩn Trang 1) & Tối giản Chữ Giải thích (`Anti-Slop Copy` + WCAG AA Sáng/Tối) — Đạt `Gemini 4 Neon (XHigh)` Round 3 `VERDICT: GO` (`5/5` phát hiện `F01`–`F05` CLOSED, `0` lỗi P0–P3 mở).**
 

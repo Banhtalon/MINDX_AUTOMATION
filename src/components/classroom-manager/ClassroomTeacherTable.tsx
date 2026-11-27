@@ -54,9 +54,9 @@ export function ClassroomTeacherTable({
         <div className="overflow-x-auto">
           <table className="cm-table w-full border-collapse table-fixed min-w-[1140px]">
             <colgroup>
-              <col style={{ width: "14.5%" }} />
-              <col style={{ width: "8.5%" }} />
-              <col style={{ width: "17%" }} />
+              <col style={{ width: "16.5%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "15.5%" }} />
               <col style={{ width: "23.5%" }} />
               <col style={{ width: "31.5%" }} />
               <col style={{ width: "5%" }} />
@@ -336,19 +336,14 @@ export function ClassroomTeacherTable({
         </div>
       </div>
 
-      {/* Bottom Legend & CTA Strip */}
-      <div className="cm-shell-card px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
-          <span>🟨 Khu Điểm: Giữ nguyên Sao khi ghi lỗi</span>
-          <span>🟩 Khu Khen: Cộng Sao &amp; 🏅 Top 3 xuất sắc nhất lớp (tối đa 3 bạn)</span>
-          <span>🟥 Khu Lỗi: Chỉ đếm số lần ⚠️ (Chuột phải để -1)</span>
-        </div>
+      {/* Bottom CTA Strip */}
+      <div className="cm-shell-card px-4 py-2.5 flex flex-wrap items-center justify-end gap-3">
         <div className="flex items-center gap-2.5">
           <button
             type="button"
             data-testid="cm-open-accumulation-btn"
             onClick={onOpenAccumulation}
-            className="cm-act-idle px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-1.5 cursor-pointer"
+            className="neo-btn-neutral px-3.5 py-2 rounded-lg text-xs sm:text-sm font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
           >
             <span>📈 Tích lũy 14 buổi</span>
           </button>
@@ -357,7 +352,7 @@ export function ClassroomTeacherTable({
             data-testid="cm-direct-apply-btn"
             disabled={isApplying || students.length === 0}
             onClick={onApplyToComments}
-            className="mindx-dark-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold bg-emerald-700 hover:bg-emerald-600 text-white shadow-sm disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer"
+            className="neo-btn-emerald mindx-dark-keep px-4 py-2 rounded-lg text-xs sm:text-sm font-black disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer"
           >
             <span>{isApplying ? "Đang chuyển..." : "➡️ Chuyển sang Nhận xét từng bạn"}</span>
           </button>
@@ -380,9 +375,6 @@ export function ClassroomTeacherTable({
                 ✕
               </button>
             </div>
-            <p className="text-xs opacity-80">
-              Nội dung này sẽ được gộp thẳng vào ô &ldquo;Ghi chú của GV&rdquo; khi chuyển sang trang Nhận xét buổi học.
-            </p>
             <textarea
               rows={3}
               data-testid="cm-note-modal-textarea"

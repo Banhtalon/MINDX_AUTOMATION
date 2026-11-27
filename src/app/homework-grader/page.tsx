@@ -1013,7 +1013,7 @@ export default function HomeworkGraderPage() {
           <div className="flex items-center gap-2.5">
             <Table2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span className="text-xs font-bold text-slate-200">
-              📂 Chi tiết bài nộp BTVN trên LMS (Xuất Excel / Xem Nhận Xét)
+              Chi tiết bài nộp BTVN trên LMS
             </span>
             {matrix && matrix.rows.length > 0 && (
               <span className="px-2 py-0.5 rounded-full text-[11px] bg-slate-800 border border-slate-700 text-slate-300 font-medium">
@@ -1055,7 +1055,7 @@ export default function HomeworkGraderPage() {
                       : "bg-slate-800 text-slate-400 hover:text-white"
                   }`}
                 >
-                  Chỉ Thực hành (File nộp)
+                  Chỉ Thực hành
                 </button>
                 <button
                   onClick={() => setViewMode("quiz")}
@@ -1103,7 +1103,7 @@ export default function HomeworkGraderPage() {
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer"
                 >
                   {copiedSheets ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  {copiedSheets ? "Đã copy chuẩn Google Sheets!" : "Copy Bảng điểm (Chuẩn Google Sheets)"}
+                  {copiedSheets ? "Đã copy chuẩn Google Sheets!" : "Copy Google Sheets"}
                 </button>
 
                 <div className="inline-flex items-center rounded-lg overflow-hidden border border-emerald-500/40 bg-slate-950">

@@ -89,6 +89,8 @@ export function LiveLogDrawer() {
 
   const isRunning = status?.isRunning ?? false;
   const isStopped = status?.isStopped ?? false;
+  const isIdleCompact =
+    !isRunning && !isStopped && (status?.pendingCount ?? 0) === 0 && !isOpen;
 
   const filteredLogs = useMemo(() => {
     if (levelFilter === "ALL") return logs;
@@ -102,8 +104,14 @@ export function LiveLogDrawer() {
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          title="Bấm để mở hoặc ẩn Nhật ký hoạt động"
-          className="mindx-log-pill flex items-center space-x-2 text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-all cursor-pointer"
+          title={
+            isIdleCompact
+              ? `Sẵn sàng (${status?.pendingCount ?? 0} chờ • ${status?.completedCount ?? 0} xong • ${logs.length} dòng) — Bấm để mở Nhật ký`
+              : "Bấm để mở hoặc ẩn Nhật ký hoạt động"
+          }
+          className={`mindx-log-pill flex items-center text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+            isIdleCompact ? "gap-1.5 px-2.5 py-1.5" : "space-x-2 px-3.5 py-1.5"
+          }`}
         >
           <span
             className={`w-2 h-2 rounded-full ${
@@ -114,19 +122,25 @@ export function LiveLogDrawer() {
                 : "bg-emerald-500"
             }`}
           />
-          <span>
-            {isRunning
-              ? "Bot đang chạy tác vụ..."
-              : isStopped
-              ? "Đã tạm dừng khẩn cấp"
-              : "Sẵn sàng"}
-          </span>
-          <span className="opacity-75 font-mono text-[11px]">
-            ({status?.pendingCount ?? 0} chờ • {status?.completedCount ?? 0} xong • {logs.length} dòng)
-          </span>
-          <span className="text-indigo-500 dark:text-sky-400 text-[10px] ml-1 font-bold">
-            {isOpen ? "▼ Thu gọn" : "▲ Nhật ký"}
-          </span>
+          {isIdleCompact ? (
+            <span>Nhật ký</span>
+          ) : (
+            <>
+              <span>
+                {isRunning
+                  ? "Bot đang chạy tác vụ..."
+                  : isStopped
+                  ? "Đã tạm dừng khẩn cấp"
+                  : "Sẵn sàng"}
+              </span>
+              <span className="opacity-75 font-mono text-[11px]">
+                ({status?.pendingCount ?? 0} chờ • {status?.completedCount ?? 0} xong • {logs.length} dòng)
+              </span>
+              <span className="text-indigo-500 dark:text-sky-400 text-[10px] ml-1 font-bold">
+                {isOpen ? "▼ Thu gọn" : "▲ Nhật ký"}
+              </span>
+            </>
+          )}
         </button>
 
         {status?.currentTask && (
@@ -159,9 +173,10 @@ export function LiveLogDrawer() {
               type="button"
               onClick={() => handleQueueControl("stop")}
               disabled={isStopping}
+              title="Dừng khẩn cấp (Stop Bot)"
               className="neo-btn-danger text-xs font-extrabold px-3 py-1.5 rounded-lg disabled:opacity-50 cursor-pointer"
             >
-              🛑 Dừng khẩn cấp (Stop Bot)
+              🛑 Dừng khẩn cấp
             </button>
           )
         )}
@@ -173,7 +188,7 @@ export function LiveLogDrawer() {
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800 mb-2">
             <div className="flex items-center space-x-3">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                Nhật Ký Tự Động Hóa Thời Gian Thực (SSE Live Stream)
+                Nhật Ký Hoạt Động
               </span>
               <div className="flex items-center space-x-1 text-[11px]">
                 {(["ALL", "SUCCESS", "WARN", "ERROR"] as const).map((lv) => (

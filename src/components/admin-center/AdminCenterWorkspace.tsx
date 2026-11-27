@@ -678,7 +678,7 @@ export function AdminCenterWorkspace() {
               ) : (
                 <RefreshCw className="w-4 h-4" />
               )}
-              🔄 Quét toàn cơ sở
+              Quét toàn cơ sở
             </button>
             <button
               type="button"
@@ -694,7 +694,8 @@ export function AdminCenterWorkspace() {
               onClick={() => handleTriggerScan("TEACHING_ONLY")}
               className="neo-btn-neutral inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold disabled:opacity-50 cursor-pointer"
             >
-              <Zap className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />⚡ Làm mới Teaching
+              <Zap className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+              Làm mới Teaching
             </button>
           </div>
         </div>

@@ -1254,7 +1254,7 @@ export default function TeachingProjectsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
           <div className="lg:col-span-6">
             <label className="block text-xs font-bold mb-1">
-              Chọn lớp học (hoặc bấm ✏️ để nhập mã lớp trực tiếp):
+              Chọn lớp học:
             </label>
             <ClassPicker
               scope="running"
@@ -1335,7 +1335,7 @@ export default function TeachingProjectsPage() {
 
           <div className="md:col-span-3">
             <label className="block text-xs font-bold mb-1">
-              Ngày bắt đầu * (Buổi 1 LMS):
+              Ngày bắt đầu *:
             </label>
             <input
               type="date"
@@ -1352,7 +1352,7 @@ export default function TeachingProjectsPage() {
           <div className="md:col-span-4">
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-bold">
-                Ngày kết thúc * (Buổi 14 LMS):
+                Ngày kết thúc *:
               </label>
               <button
                 type="button"
@@ -1386,10 +1386,10 @@ export default function TeachingProjectsPage() {
 
           <div className="md:col-span-12">
             <label className="block text-xs font-bold mb-1">
-              Mô tả dự án (tùy chọn):
+              Mô tả dự án:
             </label>
-            <input
-              type="text"
+            <textarea
+              rows={2}
               value={description}
               disabled={!isClassReady}
               onChange={(e) => {
@@ -1397,7 +1397,7 @@ export default function TeachingProjectsPage() {
                 setDescription(e.target.value);
               }}
               placeholder="Mô tả ngắn gọn về mục tiêu sản phẩm cuối khóa của lớp..."
-              className="w-full px-3 py-2 rounded-xl border border-slate-600/80 bg-slate-900/90 text-white text-sm disabled:opacity-60"
+              className="w-full px-3 py-2 rounded-xl border border-slate-600/80 bg-slate-900/90 text-white text-sm leading-relaxed disabled:opacity-60"
             />
           </div>
         </div>
@@ -1408,7 +1408,7 @@ export default function TeachingProjectsPage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base sm:text-lg font-bold">
-              2. Bộ 5 Phần Công Việc Chuẩn (Timeline Làm Sản Phẩm Cuối Khóa)
+              2. Bộ 5 Phần Công Việc (20% × 5)
             </h2>
             {courseName && (
               <span className="mindx-dark-keep bg-indigo-700 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
@@ -1481,7 +1481,7 @@ export default function TeachingProjectsPage() {
                 <div className="flex items-center gap-2 text-xs font-bold">
                   <Users className="w-4 h-4 text-emerald-400" />
                   <span>
-                    Giao cho học sinh ({assignedStudentIds.length}/{students.length} học sinh đang chọn):
+                    Giao cho học sinh ({assignedStudentIds.length}/{students.length}):
                   </span>
                 </div>
                 {students.length > 0 && (
@@ -1611,7 +1611,7 @@ export default function TeachingProjectsPage() {
 
                       <div className="md:col-span-3">
                         <label className="block text-[11px] font-bold mb-1">
-                          Deadline (Ngày kết khóa):
+                          Deadline:
                         </label>
                         <input
                           type="date"
@@ -1717,7 +1717,7 @@ export default function TeachingProjectsPage() {
               ) : (
                 <Rocket className="w-4 h-4" />
               )}
-              <span>✅ Duyệt &amp; Đẩy Teaching</span>
+              <span>Duyệt &amp; Đẩy Teaching</span>
             </button>
           </div>
         </div>
@@ -1735,21 +1735,8 @@ export default function TeachingProjectsPage() {
           <div className="flex flex-wrap items-center gap-2">
             {!allTasksHaveRemoteIds && (
               <span className="mindx-dark-keep px-3 py-1 rounded-full text-xs font-bold bg-amber-800 text-white">
-                ⚠ Hãy bấm &ldquo;Duyệt &amp; Đẩy Dự án + 5 Công việc lên Teaching&rdquo; ở mục 2 trước khi cập nhật % tiến độ
+                ⚠ Cần Duyệt &amp; Đẩy ở mục 2 trước
               </span>
-            )}
-            {reportClassCode && (
-              <a
-                href={`https://teachingmindx.top/duan_tiendo_hocsinh.php?class_code=${encodeURIComponent(
-                  reportClassCode
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mindx-dark-keep px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white border border-blue-400/50 flex items-center gap-1.5 shadow-sm transition"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Mở trang Báo cáo Tiến độ ({reportClassCode})</span>
-              </a>
             )}
           </div>
         </div>
@@ -1809,7 +1796,7 @@ export default function TeachingProjectsPage() {
                 ) : (
                   <>
                     <ChevronDown className="w-3.5 h-3.5" />
-                    <span>⚙️ Nâng cao</span>
+                    <span>Nâng cao</span>
                   </>
                 )}
               </button>

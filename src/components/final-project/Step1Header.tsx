@@ -126,7 +126,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
             }
           >
             <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wide mb-1.5">
-              Lớp học (Buổi ≥ 12)
+              Lớp học
             </label>
             <ClassPicker
               scope="spck"
@@ -142,7 +142,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
               disabled={isAnyOperationBusy}
               allowManualInput={false}
               showRefreshButton={false}
-              placeholderOption="-- Chọn lớp đủ điều kiện (Buổi ≥ 12) --"
+              placeholderOption="-- Chọn lớp --"
             />
           </div>
 
@@ -182,7 +182,7 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
             <div className="lg:col-span-5">
               <div className="flex items-center justify-between gap-2 mb-1.5">
                 <label className="block text-[11px] font-bold text-amber-300 uppercase tracking-wide">
-                  📊 Link Bảng chấm điểm Giám khảo (Buổi 14)
+                  📊 Link Bảng điểm Giám khảo
                 </label>
                 {generatedDemoSheetUrl &&
                   demoScoreSourceInput.trim() ===
@@ -298,9 +298,10 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
             <button
               type="button"
               data-testid="spck-main-step1-sync"
+              title={step1SubLabel}
               onClick={() => void handleMainStep1Sync()}
               disabled={isAnyOperationBusy || !selectedClassId}
-              className="spck-step-card-blue group relative flex flex-col items-start justify-between p-3.5 rounded-xl transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="spck-step-card-blue group relative flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between w-full gap-2">
                 <span className="spck-step-title inline-flex items-center gap-2 text-sm font-extrabold">
@@ -317,20 +318,18 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
                   </span>
                 )}
               </div>
-              <span className="spck-step-sub mt-1.5 text-[11px] leading-snug font-medium">
-                {step1SubLabel}
-              </span>
             </button>
 
             {/* NÚT 2: 2. AI Soạn nhận xét */}
             <button
               type="button"
               data-testid="spck-main-step2-ai"
+              title={step2SubLabel}
               onClick={() => void handleMainStep2Ai()}
               disabled={
                 isAnyOperationBusy || !selectedClassId || !hasDataForStep2
               }
-              className="spck-step-card-indigo group relative flex flex-col items-start justify-between p-3.5 rounded-xl transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="spck-step-card-indigo group relative flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between w-full gap-2">
                 <span className="spck-step-title inline-flex items-center gap-2 text-sm font-extrabold">
@@ -345,20 +344,18 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
                   Buổi {selectedSessionNumber}
                 </span>
               </div>
-              <span className="spck-step-sub mt-1.5 text-[11px] leading-snug font-medium">
-                {step2SubLabel}
-              </span>
             </button>
 
             {/* NÚT 3: 3. Duyệt & Nộp tất cả */}
             <button
               type="button"
               data-testid="spck-main-step3-submit"
+              title={step3SubLabel}
               onClick={() => void handleMainStep3SubmitAll()}
               disabled={
                 isAnyOperationBusy || !selectedClassId || !hasDataForStep3
               }
-              className="spck-step-card-emerald group relative flex flex-col items-start justify-between p-3.5 rounded-xl transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="spck-step-card-emerald group relative flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between w-full gap-2">
                 <span className="spck-step-title inline-flex items-center gap-2 text-sm font-extrabold">
@@ -376,9 +373,6 @@ export function Step1Header({ workflow }: Step1HeaderProps) {
                   </span>
                 )}
               </div>
-              <span className="spck-step-sub mt-1.5 text-[11px] leading-snug font-medium">
-                {step3SubLabel}
-              </span>
             </button>
           </div>
 

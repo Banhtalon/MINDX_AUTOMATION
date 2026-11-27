@@ -245,7 +245,7 @@ export function AdminTabsContent({
                         <div className="font-bold">
                           Buổi {sn > 0 ? sn : "?"}
                         </div>
-                        <div className="text-xs text-[var(--text-secondary)]">
+                        <div className="text-xs text-[var(--text-secondary)] whitespace-nowrap">
                           {cls.weeklyOps.evaluatedSessionDate ||
                             cls.currentSessionDate ||
                             "-"}
@@ -399,15 +399,8 @@ export function AdminTabsContent({
     return (
       <div className="space-y-3">
         <div className="mindx-card mindx-card-blue rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3">
-          <div className="space-y-0.5">
-            <div className="font-bold text-sm">
-              Đồng bộ BTVN khối Coding sang Teaching (Thang 5 tự động)
-            </div>
-            <div className="text-xs text-[var(--text-secondary)]">
-              Chỉ quét và đẩy các lớp Coding đang hiển thị ({codingClasses.length}{" "}
-              lớp). Hệ thống tự kiểm tra lại Teaching sau khi lưu để xác nhận đã
-              vào điểm thật.
-            </div>
+          <div className="font-bold text-sm">
+            Đồng bộ BTVN khối Coding sang Teaching ({codingClasses.length} lớp)
           </div>
           <button
             type="button"
@@ -420,7 +413,7 @@ export function AdminTabsContent({
             ) : (
               <Rocket className="w-4 h-4" />
             )}
-            ⚡ Quét điểm BTVN &amp; Đẩy sang Teaching ({batchTargets.length} lớp)
+            Quét điểm BTVN &amp; Đẩy sang Teaching ({batchTargets.length} lớp)
           </button>
         </div>
 
@@ -535,7 +528,7 @@ export function AdminTabsContent({
                             ) : (
                               <Rocket className="w-3.5 h-3.5" />
                             )}
-                            ⚡ Đẩy điểm Teaching
+                            Đẩy điểm Teaching
                           </button>
                           <a
                             href={cls.teachingScoreBoardUrl}
@@ -785,7 +778,10 @@ export function AdminTabsContent({
             <div className="font-bold text-sm">
               Lớp &gt; Buổi 9 (Buổi 10–14) &amp; Tự động Tạo 5 Nhiệm vụ SPCK (20% × 5)
             </div>
-            <label className="inline-flex items-center gap-2 text-xs cursor-pointer select-none">
+            <label
+              title="B10: 0% • B11: 20% • B12: 60% • B13: 80% • B14: 100%, không hạ % đã có"
+              className="inline-flex items-center gap-2 text-xs cursor-pointer select-none"
+            >
               <input
                 type="checkbox"
                 checked={syncProgressBySession}
@@ -793,8 +789,7 @@ export function AdminTabsContent({
                 className="rounded border-slate-400"
               />
               <span>
-                📈 Cập nhật luôn % tiến độ theo buổi hiện tại (B10: 0% • B11:
-                20% • B12: 60% • B13: 80% • B14: 100%, không bao giờ hạ % đã có)
+                📈 Tự cập nhật % tiến độ theo buổi hiện tại
               </span>
             </label>
           </div>
@@ -809,7 +804,7 @@ export function AdminTabsContent({
             ) : (
               <Sparkles className="w-4 h-4" />
             )}
-            ✨ Tạo 5 nhiệm vụ SPCK cho tất cả lớp còn thiếu ({missingGt9Codes.length})
+            Tạo 5 nhiệm vụ SPCK cho tất cả lớp còn thiếu ({missingGt9Codes.length})
           </button>
         </div>
 
@@ -844,7 +839,7 @@ export function AdminTabsContent({
                           Buổi {cls.currentSessionNumber || "?"} • GV:{" "}
                           <strong>{cls.mainTeacher || "Chưa gán"}</strong>
                         </div>
-                        <div className="text-[11px] text-[var(--text-secondary)]">
+                        <div className="text-[11px] text-[var(--text-secondary)] whitespace-nowrap">
                           {t.startDate || cls.startDate || "?"} &rarr;{" "}
                           {t.endDate || cls.endDate || "?"}
                         </div>
@@ -905,7 +900,7 @@ export function AdminTabsContent({
                             ) : (
                               <Sparkles className="w-3.5 h-3.5" />
                             )}
-                            ✨ Tạo / Bổ sung 5 nhiệm vụ
+                            Tạo / Bổ sung 5 nhiệm vụ
                           </button>
                           <a
                             href={cls.teachingProgressUrl}
@@ -934,14 +929,8 @@ export function AdminTabsContent({
   return (
     <div className="space-y-4">
       <div className="mindx-card mindx-card-emerald rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="space-y-1">
-          <div className="font-bold text-sm">
-            Tin nhắn tổng hợp nhắc việc toàn cơ sở (Zalo Group Giảng viên)
-          </div>
-          <div className="text-xs text-[var(--text-secondary)]">
-            Soạn sẵn đầy đủ đầu việc còn thiếu của tất cả giảng viên để dán vào
-            nhóm Zalo cơ sở chỉ bằng 1 chạm.
-          </div>
+        <div className="font-bold text-sm">
+          Tin nhắn tổng hợp nhắc việc toàn cơ sở (Zalo Group Giảng viên)
         </div>
         <button
           type="button"
@@ -954,7 +943,7 @@ export function AdminTabsContent({
             </>
           ) : (
             <>
-              <Copy className="w-4 h-4" /> 📋 Copy tổng hợp toàn cơ sở
+              <Copy className="w-4 h-4" /> Copy tổng hợp toàn cơ sở
             </>
           )}
         </button>
@@ -1055,7 +1044,7 @@ export function AdminTabsContent({
                           </>
                         ) : (
                           <>
-                            <Copy className="w-3.5 h-3.5" /> 📋 Copy nhắc việc Zalo
+                            <Copy className="w-3.5 h-3.5" /> Copy nhắc việc Zalo
                           </>
                         )}
                       </button>

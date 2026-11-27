@@ -266,10 +266,10 @@ html[data-theme="dark"] .mindx-card-red {
    PILL BADGES ON CARDS (SOLID IN LIGHT MODE, GLOWING TINT IN DARK MODE)
    ========================================================================== */
 html[data-theme="light"] .mindx-badge-amber {
-  background: #d97706 !important;
-  border: 1px solid #b45309 !important;
-  color: #ffffff !important;
-  font-weight: 600;
+  background: #fde68a !important;
+  border: 1.5px solid #0f172a !important;
+  color: #78350f !important;
+  font-weight: 800;
 }
 html[data-theme="light"] .mindx-badge-blue {
   background: #0284c7 !important;

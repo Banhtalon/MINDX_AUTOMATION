@@ -254,7 +254,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
             }
             className="mt-0.5 block text-left text-[10px] underline hover:opacity-80 cursor-pointer whitespace-nowrap truncate w-full"
           >
-            Xem bản đã nộp
+            <span aria-hidden="true">Xem ↗</span><span className="sr-only"> Xem bản đã nộp</span>
           </button>
         )}
       </div>
@@ -514,11 +514,11 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                     ? `Thiếu: ${readiness.missingItems.join(", ")}`
                     : "Thiếu Điểm Demo BGK")}
               </span>
-            ) : (
+            ) : activeSlot.state !== "VERIFIED_CURRENT" ? (
               <span className="spck-pill-success px-2 py-0.5 rounded font-semibold text-[11px]">
                 ✓ Đủ điều kiện nộp
               </span>
-            )}
+            ) : null}
 
             {/* Ở Buổi 14: Hiện Danh hiệu Giải Nhất/Nhì/Ba (🥇/🥈/🥉) + Điểm BGK + Điểm ĐNL TB B5+9 */}
             {selectedSessionNumber === 14 && studentEval14 && (
@@ -579,7 +579,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   className="spck-pill-neutral px-2 py-0.5 rounded font-semibold text-[10px] cursor-pointer"
                   title="Điểm Năng lực [ĐNL] trung bình cộng từ Buổi 5 + Buổi 9"
                 >
-                  🎯 ĐNL TB B5+9: {studentEval14.competencyTotalScore}/5.0
+                  🎯 ĐNL: {studentEval14.competencyTotalScore}/5.0
                 </button>
 
                 <span
@@ -627,7 +627,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                 <span>💬 {commentPreviewText}</span>
               ) : (
                 <span className="italic text-slate-400">
-                  Chưa có nhận xét Buổi {selectedSessionNumber} — bấm &ldquo;2. AI Soạn nhận xét&rdquo; hoặc mở &ldquo;Chi tiết ▾&rdquo;
+                  Chưa có nhận xét Buổi {selectedSessionNumber} — bấm &ldquo;2. AI Soạn nhận xét&rdquo;
                 </span>
               )}
             </div>
@@ -722,8 +722,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800 text-xs">
             <div className="flex flex-wrap items-center gap-2 text-slate-200">
               <span className="font-bold">
-                Chỉnh sửa chi tiết Buổi {selectedSessionNumber} (
-                {getStageMeta(selectedSessionNumber).stageTitle})
+                Chỉnh sửa chi tiết Buổi {selectedSessionNumber}
               </span>
               {selectedSessionNumber === 14 && (
                 <div className="spck-clean-subbar inline-flex items-center rounded-lg p-1 gap-1">
@@ -739,7 +738,8 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                         : "spck-pill-neutral hover:opacity-90"
                     }`}
                   >
-                    📦 Tab 1: Sản phẩm SPCK (Cột 3)
+                    📦 Tab 1: Sản phẩm SPCK
+                    <span className="sr-only"> (Cột 3)</span>
                   </button>
                   <button
                     type="button"
@@ -753,7 +753,8 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                         : "spck-pill-neutral hover:opacity-90"
                     }`}
                   >
-                    🏅 Tab 2: Điểm Demo, ĐNL &amp; Thư 3 phần (Cột 2)
+                    🏅 Tab 2: Điểm Demo, ĐNL &amp; Thư 3 phần
+                    <span className="sr-only"> (Cột 2)</span>
                   </button>
                 </div>
               )}
@@ -881,7 +882,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
               <div>
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                   <span className="font-semibold text-white">
-                    1. Tiêu đề dự án * (Tối đa 100 ký tự)
+                    1. Tiêu đề dự án *
                   </span>
                   <span
                     className={
@@ -954,7 +955,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
               <div className="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 space-y-2 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-semibold text-white">
-                    2. Ảnh bìa (Thumbnail *) &amp; Tài liệu
+                    2. Ảnh bìa * &amp; Tài liệu
                   </span>
                   <div className="flex flex-wrap items-center gap-1.5">
                     {Boolean(rowToolErrors.screenshot) && (
@@ -1065,7 +1066,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
               <div>
                 <label className="flex items-center space-x-1 text-xs text-slate-300 font-semibold mb-1">
                   <Video className="w-3.5 h-3.5 text-slate-400" />
-                  <span>3. YouTube Video URLs (Tùy chọn, tối đa 5 link)</span>
+                  <span>3. YouTube Video URLs</span>
                 </label>
                 <textarea
                   rows={2}
@@ -1099,9 +1100,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
               <div>
                 <label className="flex items-center space-x-1 text-xs text-slate-300 font-semibold mb-1">
                   <Link2 className="w-3.5 h-3.5 text-slate-400" />
-                  <span>
-                    4. Đường dẫn liên quan (Tối đa 5: <code>Tên | https://...</code>)
-                  </span>
+                  <span>4. Đường dẫn liên quan</span>
                 </label>
                 <textarea
                   rows={2}
@@ -1200,7 +1199,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 mb-2">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="font-semibold text-white">
-                            5. Thẻ đánh giá nhanh (Quick Tags)
+                            5. Quick Tags
                           </span>
                           <span className="spck-pill-neutral px-2 py-0.5 rounded-full text-[10px] font-semibold">
                             🏷️ {tagBundle.profile.trackBadgeLabel} • Buổi {selectedSessionNumber}
@@ -1306,7 +1305,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
 
               <div>
                 <label className="block text-xs text-slate-300 font-semibold mb-1">
-                  Ghi chú riêng cho AI — Buổi {selectedSessionNumber} (Tùy chọn)
+                  Ghi chú riêng cho AI
                 </label>
                 <input
                   type="text"
@@ -1333,8 +1332,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
               <div>
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                   <span className="font-semibold text-white">
-                    6. Bình luận của giáo viên * — Buổi {selectedSessionNumber} (
-                    {getStageMeta(selectedSessionNumber).stageTitle})
+                    6. Bình luận của giáo viên *
                   </span>
                   {row.verifiedAt && (
                     <span className="text-emerald-400 flex items-center space-x-1">
@@ -1451,7 +1449,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   {/* 5 Tiêu chí Điểm Demo */}
                   <div>
                     <div className="font-semibold text-indigo-300 mb-2">
-                      1. Điểm Demo ({isRoboticsClass ? "Thang Robotics" : "Thang Lập trình"} — Tổng: {studentEval14.demoTotalScore} / 5.0 điểm)
+                      1. Điểm Demo (Tổng: {studentEval14.demoTotalScore}/5.0)
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
                       {activeDemoScoreItems.map((item) => (
@@ -1494,7 +1492,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   {/* Tiêu chí Điểm Năng Lực [ĐNL] */}
                   <div>
                     <div className="font-semibold text-cyan-300 mb-2">
-                      2. Điểm Năng Lực [ĐNL] ({activeCompetencyItems.length} tiêu chí thang 1..5 — Trung bình: {studentEval14.competencyTotalScore} / 5.0)
+                      2. Điểm Năng Lực [ĐNL] (TB: {studentEval14.competencyTotalScore}/5.0)
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                       {activeCompetencyItems.map((item) => (
@@ -1536,7 +1534,8 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                   <div className="space-y-3">
                     <div>
                       <label className="block font-semibold text-emerald-300 mb-1">
-                        Phần 1: Learned From Mindx (Thư tổng kết khóa học &amp; Kết quả đánh giá)
+                        <span aria-hidden="true">Phần 1: Thư tổng kết khóa học</span>
+                        <span className="sr-only">Phần 1: Learned From Mindx</span>
                       </label>
                       <textarea
                         rows={8}
@@ -1572,7 +1571,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <label className="block font-semibold text-amber-300 mb-1">
-                          Phần 2: Suggestions From Mindx (Lời khuyên cải thiện)
+                          Phần 2: Lời khuyên cải thiện
                         </label>
                         <textarea
                           rows={4}
@@ -1611,7 +1610,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
 
                       <div>
                         <label className="block font-semibold text-sky-300 mb-1">
-                          Phần 3: Future Direction (Định hướng khóa học tiếp theo)
+                          Phần 3: Định hướng tiếp theo
                         </label>
                         <textarea
                           rows={4}
@@ -1652,7 +1651,7 @@ export function StudentRow({ row, idx, workflow }: StudentRowProps) {
                       <div className="space-y-2 rounded-lg border border-rose-500/30 bg-rose-950/20 p-2.5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <label className="font-semibold text-rose-300">
-                            Phần 4: Xếp hạng học viên trên lớp (Robotics Buổi 14 — Số 0..5 & Nhận xét Demo)
+                            Phần 4: Xếp hạng &amp; Nhận xét Demo (Robotics)
                           </label>
                           <div className="flex items-center gap-2">
                             <span className="text-[11px] text-slate-300">Số thứ hạng LMS (0..5):</span>

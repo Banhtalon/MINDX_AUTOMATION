@@ -4433,6 +4433,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
 
   return (
     <div className="space-y-6">
+      <div className="space-y-4">
       {/* 1. Hero Header & Class Selector (Neo-Brutalism) */}
       <div className="mindx-hero p-4 sm:p-5 rounded-2xl transition-all">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -4477,7 +4478,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                 ? "Đang quét lớp..."
                 : isSyncing
                 ? "Đang đồng bộ..."
-                : "🔄 Đồng bộ"}
+                : "Đồng bộ"}
             </button>
           </div>
         </div>
@@ -4561,7 +4562,8 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                       <option key={s.sessionId} value={s.sessionId}>
                         Buổi {s.sessionNumber}
                         {isCp ? " [Checkpoint]" : ""}
-                        {dStr ? ` (${dStr})` : ""}: {s.topic.slice(0, 35)}
+                        {dStr ? ` (${dStr})` : ""}:{" "}
+                        {s.topic.length > 42 ? `${s.topic.slice(0, 42)}...` : s.topic}
                       </option>
                     );
                   })
@@ -4569,14 +4571,6 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                 <option value="">(Chưa đồng bộ buổi học từ LMS)</option>
               )}
             </select>
-            <div className="mt-2 flex items-center justify-end text-[11px] text-slate-400 px-1">
-              <a
-                href="/final-project"
-                className="font-semibold text-blue-600 dark:text-indigo-400 hover:underline underline-offset-2"
-              >
-                Mở trang SPCK →
-              </a>
-            </div>
           </div>
 
           <div className="md:col-span-2">
@@ -4744,11 +4738,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             <ExternalLink
               className={`w-4 h-4 ${openingLmsClass ? "animate-pulse" : ""}`}
             />
-            {openingLmsClass
-              ? `Đang mở LMS (${openingLmsClass})...`
-              : (classCode || classId).trim()
-                ? `Mở LMS (${(classCode || classId).trim().toUpperCase()})`
-                : "Mở trang LMS"}
+            {openingLmsClass ? "Đang mở LMS..." : "Mở LMS"}
           </button>
 
           <button
@@ -4759,7 +4749,8 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             title="Điểm danh cả lớp Có mặt (giữ nguyên thẻ đã nhớ từ buổi trước, hoặc gắn thẻ Tiếp thu tốt cho bạn chưa có thẻ)"
           >
             <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            ⚡ Điểm danh cả lớp Có mặt
+            <span>Có mặt cả lớp</span>
+            <span className="sr-only">⚡ Điểm danh cả lớp Có mặt</span>
           </button>
 
           <button
@@ -4789,7 +4780,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             <Send className={`w-4 h-4 ${isSavingLms ? "animate-spin" : ""}`} />
             {isSavingLms
               ? `Đang Ghi LMS (B${activeSessionNumber})...`
-              : `✅ Duyệt & Đẩy LMS (B${activeSessionNumber})`}
+              : `Duyệt & Đẩy LMS (B${activeSessionNumber})`}
           </button>
         </div>
       </div>
@@ -4803,7 +4794,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                 <th className="px-4 py-3.5 w-44">Học viên &amp; Điểm danh</th>
                 <th className="px-4 py-3.5 w-80">
                   <div className="flex items-center justify-between gap-1">
-                    <span>Quick Tags 1-Chạm</span>
+                    <span>Quick Tags</span>
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded-full font-bold normal-case ${
                         quickTagTrack === "robotics"
@@ -4818,7 +4809,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                 <th className="px-4 py-3.5 w-52">Ghi chú của GV</th>
                 <th className="px-4 py-3.5 min-w-[340px]">
                   <div className="flex flex-wrap items-center justify-between gap-1">
-                    <span>Nhận xét 3 phần (Sửa trực tiếp)</span>
+                    <span>Nhận xét 3 phần</span>
                   </div>
                 </th>
                 <th className="px-4 py-3.5 w-40 text-right">Trạng thái &amp; Lưu</th>
@@ -4933,7 +4924,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                       {/* Teacher Note */}
                       <td className="px-4 py-4">
                         <textarea
-                          rows={3}
+                          rows={5}
                           value={student.teacherNote || ""}
                           onChange={(e) =>
                             handleNoteChange(student.studentId, e.target.value, { debounceMs: 600 })
@@ -4942,7 +4933,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                             void flushPendingDraftSave(student.studentId);
                           }}
                           placeholder="Ghi chú thêm cho học sinh..."
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-blue-500 resize-y leading-relaxed"
+                          className="w-full bg-slate-950/90 border border-slate-700/90 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-blue-500 resize-y leading-relaxed"
                         />
                       </td>
 
@@ -4981,14 +4972,18 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                                     className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${levelInfo.badgeClass}`}
                                     title="Tự động phân loại vào 1 trong 5 cấp độ chuẩn dựa trên Quick Tags đã tích chọn"
                                   >
-                                    🎯 {levelInfo.label}
+                                    🎯{" "}
+                                    {levelInfo.label
+                                      .replace("Cấp độ ", "Cấp ")
+                                      .replace(" - ", ": ")
+                                      .replace("Khá nhưng mất tập trung", "Khá (mất tập trung)")}
                                   </span>
                                   {student.inheritedFromSession && (
                                     <span
                                       className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30"
                                       title={`Đã tự động nhớ bộ thẻ từ Buổi ${student.inheritedFromSession}. Thầy chỉ cần bấm đổi thẻ nếu buổi hôm nay bạn học khác đi.`}
                                     >
-                                      ↺ Nhớ từ Buổi {student.inheritedFromSession}
+                                      ↺ Từ B{student.inheritedFromSession}
                                     </span>
                                   )}
                                   {isCurrentSessionCheckpoint && student.checkpointData && (
@@ -5253,7 +5248,8 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
               }`}
               title="Bật/tắt mục 2a: Cập nhật tình hình chung (ghi nhận sự tiến bộ hoặc các bạn cần kèm thêm)"
             >
-              {zaloIncludeGeneralUpdate ? "✓ 2a. Tình hình chung" : "+ 2a. Tình hình chung"}
+              {zaloIncludeGeneralUpdate ? "✓ " : "+ "}
+              <span className="sr-only">2a. </span>Tình hình chung
             </button>
 
             {(() => {
@@ -5281,7 +5277,8 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                   }`}
                   title="Bật/tắt mục 2c: Tiến độ sản phẩm cuối khóa (Tự động bật từ Buổi 11 - 14)"
                 >
-                  {isSpckActive ? "✓ 2c. Tiến độ SPCK" : "+ 2c. Tiến độ SPCK"}
+                  {isSpckActive ? "✓ " : "+ "}
+                  <span className="sr-only">2c. </span>Tiến độ SPCK
                 </button>
               );
             })()}
@@ -5303,7 +5300,8 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
               }`}
               title="Bật/tắt Đoạn 3: Lời nhắn gửi kèm hình ảnh hoạt động lớp học & tài liệu/học liệu"
             >
-              {zaloIncludePart3Media ? "✓ 3. Gửi ảnh & Học liệu" : "+ 3. Gửi ảnh & Học liệu"}
+              {zaloIncludePart3Media ? "✓ " : "+ "}
+              <span className="sr-only">3. </span>Gửi ảnh &amp; Học liệu
             </button>
 
             <input
@@ -5328,9 +5326,13 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
               ) : (
                 <span>📸</span>
               )}
-              {isAnalyzingBtvnImage
-                ? "Đang đọc ảnh BTVN..."
-                : "2b. Tải ảnh BTVN"}
+              {isAnalyzingBtvnImage ? (
+                "Đang đọc ảnh BTVN..."
+              ) : (
+                <>
+                  <span className="sr-only">2b. </span>Tải ảnh BTVN
+                </>
+              )}
             </button>
 
             {(zaloBtvnPart2Text || isZaloManuallyEdited) && (
@@ -5413,15 +5415,10 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
               className="w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-2xl p-5 space-y-4 text-slate-900 dark:text-slate-100 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-start justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Bảng 9 ô Điểm Năng lực [ĐNL] — {targetStudent.fullName}
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                    Checkpoint {cp.cpStage} • Bot tự tính từ quá trình nhiều buổi &amp; tự tích lên LMS khi đẩy (không sửa điểm KT).
-                  </p>
-                </div>
+              <div className="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Bảng 9 ô Điểm Năng lực [ĐNL] — {targetStudent.fullName} (CP{cp.cpStage})
+                </h3>
                 <button
                   type="button"
                   onClick={() => setEditingCompetencyStudentId(null)}
@@ -5634,6 +5631,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
           </div>
         );
       })()}
+      </div>
     </div>
   );
 }

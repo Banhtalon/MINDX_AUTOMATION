@@ -216,8 +216,8 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
             <Wrench className="w-3.5 h-3.5" />
             <span>
               {showOptionalTools
-                ? "🧰 Công cụ trong lớp học ▴"
-                : "🧰 Công cụ trong lớp học ▾"}
+                ? "Công cụ trong lớp học ▴"
+                : "Công cụ trong lớp học ▾"}
             </span>
             <span className="sr-only"> (Công cụ Drive &amp; Cổng thu bài)</span>
             {studentPortalRunning && (
@@ -238,8 +238,8 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
             <Settings2 className="w-3.5 h-3.5" />
             <span>
               {showAdvancedTools
-                ? "⚙️ Tùy chọn nâng cao ▴"
-                : "⚙️ Tùy chọn nâng cao ▾"}
+                ? "Tùy chọn nâng cao ▴"
+                : "Tùy chọn nâng cao ▾"}
             </span>
           </button>
         </div>
@@ -532,7 +532,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
               <div className="md:col-span-5">
                 <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                  Link Google Sheet mẫu (Để trống dùng mẫu chuẩn MindX)
+                  Link Google Sheet mẫu
                 </label>
                 <input
                   type="text"
@@ -545,7 +545,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
               </div>
               <div className="md:col-span-3">
                 <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                  Ngày Demo (Tùy chọn)
+                  Ngày Demo
                 </label>
                 <input
                   type="text"
@@ -594,7 +594,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
                   className="rounded border-slate-600 bg-slate-950 text-blue-500"
                 />
                 <span>
-                  ✨ Nhờ AI chấm nháp tiêu chí sản phẩm &amp; gợi ý câu hỏi BGK (Cột G)
+                  ✨ AI chấm nháp &amp; gợi ý câu hỏi BGK
                 </span>
               </label>
               {generatedDemoSheetUrl && (
@@ -611,8 +611,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
               <span className="flex items-center gap-1.5">
                 <Video className="w-4 h-4 text-sky-400" />
                 <span>
-                  🎬 Nhập Playlist YouTube Robotics / Video thuyết trình
-                  {isRoboticsClass ? " (Khuyến nghị cho lớp Robotics)" : ""}
+                  Nhập Playlist YouTube / Video thuyết trình
                 </span>
               </span>
             </div>
@@ -626,13 +625,10 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
               }
               className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-blue-500 disabled:opacity-60"
             />
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[11px] text-slate-400">
-                Tự khớp tên học viên trong tiêu đề video, gắn link YouTube và trích{" "}
-                <strong>2 ảnh thuyết trình</strong>.
-              </p>
+            <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
+                title="Tự khớp tên học viên trong tiêu đề video, gắn link YouTube và trích 2 ảnh thuyết trình"
                 onClick={() => handleImportYoutubeProducts()}
                 disabled={
                   isAnyOperationBusy ||
@@ -690,7 +686,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
         >
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
             <span className="text-xs font-bold text-slate-200 uppercase">
-              ⚙️ Tùy chọn nâng cao &amp; Thử lại thủ công từng công cụ lẻ
+              Công cụ chạy lẻ
             </span>
             <label className="inline-flex items-center space-x-1.5 text-xs text-slate-300 cursor-pointer select-none">
               <input
@@ -761,7 +757,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
             <div className="md:col-span-8">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <label className="block text-[11px] font-semibold text-slate-400 uppercase">
-                  Link Google Drive Ảnh Học Viên (Tự ghép Thumbnail • Thiếu dùng Logo MindX)
+                  Link Drive Ảnh Học Viên
                 </label>
                 <a
                   href={
@@ -816,7 +812,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             <div className="md:col-span-8">
               <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">
-                Link Google Drive Gốc (Đóng gói .zip từng học viên)
+                Link Drive Gốc (.zip)
               </label>
               <input
                 type="text"
@@ -940,20 +936,13 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
       {shouldRenderSummaryBox && (
         <div
           data-testid="s14-class-summary-box"
-          className="spck-summary-honor-card rounded-xl p-3.5 space-y-2.5"
+          className="spck-summary-honor-card rounded-xl p-3 space-y-2"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="spck-award-gold inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-extrabold">
-                <Award className="w-3.5 h-3.5" />
-                <span>
-                  Bài Tổng kết &amp; Vinh danh Nhất – Nhì – Ba (Ô Summary đầu trang Buổi 14)
-                </span>
-              </span>
-              <span className="spck-pill-success px-2 py-0.5 rounded-full text-[11px] font-semibold">
-                ✓ Tự động điền lên LMS khi bấm &ldquo;3. Duyệt &amp; Nộp tất cả&rdquo;
-              </span>
-            </div>
+            <span className="spck-award-gold inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-extrabold">
+              <Award className="w-3.5 h-3.5" />
+              <span>Summary Vinh danh Buổi 14</span>
+            </span>
 
             <button
               type="button"
@@ -961,7 +950,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
               onClick={() => void handleResetSession14ClassSummary()}
               className="spck-pill-neutral px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer disabled:opacity-50"
             >
-              🔄 Tạo lại mẫu vinh danh từ điểm BGK
+              ↺ Tạo lại mẫu
             </button>
           </div>
 
@@ -1000,7 +989,7 @@ export function ToolsDrawer({ workflow }: ToolsDrawerProps) {
             }
             onBlur={() => void handlePersistSession14ClassSummary()}
             disabled={isAnyOperationBusy}
-            rows={4}
+            rows={3}
             placeholder="Nội dung tổng kết buổi bảo vệ cuối khóa & vinh danh Giải Nhất / Nhì / Ba (tự động tạo từ bảng điểm BGK, thầy có thể sửa nhanh tại đây)..."
             className="w-full px-3 py-2 rounded-lg bg-slate-950/90 border border-slate-700 text-slate-100 text-xs leading-relaxed focus:outline-none focus:border-amber-500 disabled:opacity-60"
           />

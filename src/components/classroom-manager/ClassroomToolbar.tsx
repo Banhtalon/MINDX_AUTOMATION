@@ -57,7 +57,7 @@ export function ClassroomToolbar({
       <div className="flex flex-wrap items-center gap-2.5">
         <ClassPicker
           scope="running"
-          variant="card"
+          variant="hero"
           autoRestore={false}
           value={classId}
           classes={classes}
@@ -72,7 +72,7 @@ export function ClassroomToolbar({
           data-testid="cm-session-select"
           value={sessionNumber}
           onChange={(e) => onSessionChange(Number(e.target.value))}
-          className="cm-select px-2.5 py-1.5 text-xs sm:text-sm font-bold max-w-[270px] truncate cursor-pointer focus:outline-none"
+          className="cm-select px-2.5 py-1.5 pr-7 text-xs sm:text-sm font-bold max-w-[320px] truncate cursor-pointer focus:outline-none"
         >
           {(sessions.length > 0
             ? sessions
@@ -87,8 +87,6 @@ export function ClassroomToolbar({
             </option>
           ))}
         </select>
-
-        <div className="hidden md:block w-[2px] h-7 bg-slate-300 dark:bg-slate-700 mx-0.5" />
 
         <div className="flex flex-wrap items-center gap-1.5">
           <span
@@ -118,7 +116,7 @@ export function ClassroomToolbar({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 md:pl-3 md:border-l-2 md:border-slate-200 dark:md:border-slate-700">
+      <div className="flex flex-wrap items-center gap-2">
         {saveIndicator === "saving" && (
           <span className="text-[11px] font-semibold text-sky-700 dark:text-sky-300">
             Đang lưu...

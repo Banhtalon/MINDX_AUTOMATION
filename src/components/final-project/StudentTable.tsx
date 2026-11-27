@@ -101,7 +101,7 @@ export function StudentTable({ workflow }: StudentTableProps) {
                   </span>
                 )}
                 <span className="spck-pill-neutral px-2 py-0.5 rounded font-semibold text-[11px]">
-                  🎯 ĐNL TB B5+9: {ev.competencyTotalScore}/5.0
+                  🎯 ĐNL: {ev.competencyTotalScore}/5.0
                 </span>
                 {skippedMsg && (
                   <span className="spck-pill-error px-2 py-0.5 rounded font-bold text-[11px]">
@@ -168,11 +168,11 @@ export function StudentTable({ workflow }: StudentTableProps) {
             <strong className="text-emerald-500">
               {effectiveSelectedStudentIds.length}
             </strong>
-            /{assignableStudentIds.length} học viên có thư mục
+            /{assignableStudentIds.length}
           </span>
           {missingFolderRosterStudents.length > 0 && (
             <span className="px-2 py-0.5 rounded bg-rose-950/80 border border-rose-500/60 text-rose-200 font-bold text-[11px]">
-              🚨 {missingFolderRosterStudents.length} HV chưa có thư mục bài làm (không chặn nộp cả lớp)
+              🚨 {missingFolderRosterStudents.length} HV thiếu thư mục
             </span>
           )}
         </div>
@@ -185,7 +185,7 @@ export function StudentTable({ workflow }: StudentTableProps) {
             }
             className="spck-pill-neutral px-2.5 py-1 rounded-md font-medium cursor-pointer disabled:opacity-50"
           >
-            Chọn bài chưa nộp Buổi {selectedSessionNumber} (
+            Chưa nộp B.{selectedSessionNumber} (
             {unsubmittedForActiveSessionStudentIds.length})
           </button>
           <button
@@ -194,7 +194,7 @@ export function StudentTable({ workflow }: StudentTableProps) {
             onClick={() => setSelectedStudentIds(confirmedReadyStudentIds)}
             className="spck-pill-neutral px-2.5 py-1 rounded-md font-medium cursor-pointer disabled:opacity-50"
           >
-            Chọn bài đủ điều kiện ({confirmedReadyStudentIds.length})
+            Đủ điều kiện ({confirmedReadyStudentIds.length})
           </button>
           <button
             type="button"
@@ -202,7 +202,7 @@ export function StudentTable({ workflow }: StudentTableProps) {
             onClick={() => setSelectedStudentIds(assignableStudentIds)}
             className="spck-pill-neutral px-2.5 py-1 rounded-md font-medium cursor-pointer disabled:opacity-50"
           >
-            Chọn tất cả ({assignableStudentIds.length})
+            Tất cả ({assignableStudentIds.length})
           </button>
           <button
             type="button"
@@ -237,7 +237,7 @@ export function StudentTable({ workflow }: StudentTableProps) {
           className="rounded-xl border border-rose-500/60 bg-rose-950/30 p-3 space-y-2"
         >
           <div className="text-xs font-bold text-rose-200">
-            🚨 Học viên chưa có thư mục bài làm SPCK ({missingFolderRosterStudents.length} bạn — hệ thống vẫn cho nộp trước các bạn đủ điều kiện, các bạn dưới đây chờ nộp bù sau):
+            🚨 Chưa có thư mục SPCK ({missingFolderRosterStudents.length} HV — chờ nộp bù):
           </div>
           <div className="flex flex-wrap gap-2">
             {missingFolderRosterStudents.map((stu) => {
