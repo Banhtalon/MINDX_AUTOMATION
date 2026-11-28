@@ -19,8 +19,10 @@ import {
   type SessionFeedbackRecord,
 } from "../db/sqlite";
 import {
+  calculateCompetencyAverageForClassPure,
   computeStudentProcessCompetency,
   formatCheckpointScoreHeaderLine,
+  hasMatchingCheckpointLmsCompetency,
   parseCheckpointDataJson,
   reconcileCheckpointTestScores,
   resolveCheckpointColumnStagePure,
@@ -32,6 +34,8 @@ import {
   type PriorClassroomLogInput,
   type PriorSessionFeedbackInput,
 } from "./checkpoint-competency";
+
+export { hasMatchingCheckpointLmsCompetency };
 
 function parseSessionNumberSafe(sessionId: string, dbNum?: number | null): number {
   if (typeof dbNum === "number" && Number.isInteger(dbNum) && dbNum > 0) return dbNum;
@@ -461,8 +465,11 @@ export function computeCheckpointDataForSession(
       ? {
           ...computed,
           ...extraCheckpointMeta,
+          ...(stage.isLego ? { isLego: true } : {}),
           competencyScores: existingCp!.competencyScores,
-          competencyAverage: existingCp!.competencyAverage,
+          competencyAverage: existingCp!.competencyScores
+            ? calculateCompetencyAverageForClassPure(existingCp!.competencyScores, classId)
+            : existingCp!.competencyAverage,
           source: "MANUAL_UI",
           userEditedCompetency: true,
           lmsSyncedAt: existingCp?.lmsSyncedAt ?? null,
@@ -471,6 +478,7 @@ export function computeCheckpointDataForSession(
       : {
           ...computed,
           ...extraCheckpointMeta,
+          ...(stage.isLego ? { isLego: true } : {}),
           lmsSyncedAt: existingCp?.lmsSyncedAt ?? null,
           approvedSnapshotHash: existingCp?.approvedSnapshotHash ?? null,
         };
@@ -499,6 +507,7 @@ export function computeCheckpointDataForSession(
             theoryScore: finalCp.theoryScore,
             practiceScore: finalCp.practiceScore,
             competencyAverage: finalCp.competencyAverage,
+            isLego: Boolean(stage.isLego || finalCp.isLego),
           });
           refreshedFinalText = upsertCheckpointHeaderIntoFinalText(curText, headerLine);
         }

@@ -1,5 +1,7 @@
 import {
   buildCheckpointZaloSummaryBlock,
+  isLegoRoboticsClassCodePure,
+  isRoboticsClassCodePure,
   resolveCheckpointStageForSession,
   type CheckpointStudentData,
 } from "../checkpoint/checkpoint-competency";
@@ -10,6 +12,14 @@ const safeResolveCheckpointStageZalo =
     : () => ({ isCheckpoint: false, isRobotics: false, cpStage: null });
 const safeBuildCheckpointZaloBlock =
   typeof buildCheckpointZaloSummaryBlock === "function" ? buildCheckpointZaloSummaryBlock : null;
+const safeIsRoboticsZalo =
+  typeof isRoboticsClassCodePure === "function"
+    ? isRoboticsClassCodePure
+    : (c: string) =>
+        /\b(ROB|ROBOTICS|PREB|PREA|PREI|ARMB|ARMA|ARMI|SEMIB|SEMIA|SEMII|VEX|KIRO|LEGO)\w*/i.test(c) ||
+        /(?:-|_)ROB|[A-Z]*ROB\d/i.test(c);
+const safeIsLegoZalo =
+  typeof isLegoRoboticsClassCodePure === "function" ? isLegoRoboticsClassCodePure : () => false;
 
 export interface ZaloSessionItemInput {
   sessionId: string;
@@ -359,7 +369,10 @@ export function isRoboticsClassForZalo(classCode: string): boolean {
   const upper = String(classCode || "").trim().toUpperCase();
   if (!upper) return false;
   return (
-    /\b(ROB|ROBOTICS|PREB|PREA|PREI|ARMB|ARMA|ARMI|SEMIB|SEMIA|SEMII|VEX)\w*/i.test(upper) ||
+    safeIsRoboticsZalo(upper) ||
+    /\b(ROB|ROBOTICS|PREB|PREA|PREI|ARMB|ARMA|ARMI|SEMIB|SEMIA|SEMII|VEX|KIRO|LEGO)\w*/i.test(
+      upper
+    ) ||
     /(?:-|_)ROB|[A-Z]*ROB\d/i.test(upper)
   );
 }
@@ -474,6 +487,7 @@ export function buildAutoZaloBroadcastText(params: BuildAutoZaloBroadcastParams)
         safeBuildCheckpointZaloBlock({
           cpStage: cpStageInfo.cpStage,
           isRobotics,
+          isLego: Boolean(cpStageInfo.isLego ?? safeIsLegoZalo(upperCode)),
           students,
         })
     );

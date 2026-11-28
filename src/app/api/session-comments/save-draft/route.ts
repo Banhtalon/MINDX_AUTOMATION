@@ -7,8 +7,11 @@ import {
   syncCheckpointScoresIntoExistingReportCard,
 } from "@/lib/db/sqlite";
 import {
+  calculateCompetencyAverageForClassPure,
   calculateCompetencyAveragePure,
   hasCompleteCompetencyScores,
+  hasCompleteCompetencyScoresForClassPure,
+  isLegoRoboticsClassCodePure,
   normalizeScoreToScale5,
   parseCheckpointDataJson,
   parseCompetencyScoresPure,
@@ -16,13 +19,23 @@ import {
 } from "@/lib/checkpoint/checkpoint-competency";
 
 const safeHasCompleteCompSd =
-  typeof hasCompleteCompetencyScores === "function" ? hasCompleteCompetencyScores : () => true;
+  typeof hasCompleteCompetencyScoresForClassPure === "function"
+    ? hasCompleteCompetencyScoresForClassPure
+    : typeof hasCompleteCompetencyScores === "function"
+      ? (raw: unknown) => hasCompleteCompetencyScores(raw)
+      : () => true;
 const safeParseCpDataSd =
   typeof parseCheckpointDataJson === "function" ? parseCheckpointDataJson : () => null;
 const safeParseCompScoresSd =
   typeof parseCompetencyScoresPure === "function" ? parseCompetencyScoresPure : (x: any) => x;
 const safeCalcCompAvgSd =
-  typeof calculateCompetencyAveragePure === "function" ? calculateCompetencyAveragePure : () => 4;
+  typeof calculateCompetencyAverageForClassPure === "function"
+    ? calculateCompetencyAverageForClassPure
+    : typeof calculateCompetencyAveragePure === "function"
+      ? (scores: any) => calculateCompetencyAveragePure(scores)
+      : () => 4;
+const safeIsLegoSd =
+  typeof isLegoRoboticsClassCodePure === "function" ? isLegoRoboticsClassCodePure : () => false;
 const safeNormalizeScoreSd =
   typeof normalizeScoreToScale5 === "function"
     ? normalizeScoreToScale5
@@ -260,7 +273,10 @@ function saveSingleDraftItem(params: {
     if (
       checkpointData.competencyScores !== undefined &&
       checkpointData.competencyScores !== null &&
-      !safeHasCompleteCompSd(checkpointData.competencyScores)
+      !safeHasCompleteCompSd(
+        checkpointData.competencyScores,
+        checkpointData.isLego ? "LEGO" : classId
+      )
     ) {
       return {
         statusHttp: 400,
@@ -268,7 +284,7 @@ function saveSingleDraftItem(params: {
         body: {
           success: false,
           studentId,
-          error: `Bảng điểm [ĐNL] của học viên '${studentId}' phải đủ 9 tiêu chí với giá trị nguyên từ 1 đến 5.`,
+          error: `Bảng điểm [ĐNL] của học viên '${studentId}' phải đủ ${checkpointData.isLego || safeIsLegoSd(classId) ? 7 : 9} tiêu chí với giá trị nguyên từ 1 đến 5.`,
         },
       };
     }
@@ -500,15 +516,19 @@ function saveSingleDraftItem(params: {
       checkpointData.cpStage === 1 || checkpointData.cpStage === 2
         ? checkpointData.cpStage
         : existingCp?.cpStage ?? inferredStage ?? 1;
+    const isLegoRow = Boolean(
+      checkpointData.isLego ?? existingCp?.isLego ?? safeIsLegoSd(classId)
+    );
     const nextCompScores = checkpointData.competencyScores
       ? safeParseCompScoresSd(checkpointData.competencyScores)
       : existingCp?.competencyScores ?? null;
     const nextCompAvg = nextCompScores
-      ? safeCalcCompAvgSd(nextCompScores)
+      ? safeCalcCompAvgSd(nextCompScores, isLegoRow ? "LEGO" : classId)
       : existingCp?.competencyAverage ?? null;
     const mergedDraftCp = {
       ...(existingCp || {}),
       ...checkpointData,
+      ...(isLegoRow ? { isLego: true } : {}),
       cpStage: resolvedStage,
       theoryScore:
         checkpointData.theoryScore === null

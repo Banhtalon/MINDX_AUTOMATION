@@ -7,9 +7,12 @@ import {
   extractCheckpointCoreSnapshotHash,
 } from "@/lib/db/sqlite";
 import {
+  calculateCompetencyAverageForClassPure,
   calculateCompetencyAveragePure,
   formatCheckpointScoreHeaderLine,
   hasCompleteCompetencyScores,
+  hasCompleteCompetencyScoresForClassPure,
+  isLegoRoboticsClassCodePure,
   mergeCheckpointStudentData,
   normalizeScoreToScale5,
   parseCheckpointDataJson,
@@ -20,7 +23,11 @@ import {
 import { computeCheckpointDataForSession } from "@/lib/checkpoint/checkpoint-history-loader";
 
 const safeHasCompleteCompAp =
-  typeof hasCompleteCompetencyScores === "function" ? hasCompleteCompetencyScores : () => true;
+  typeof hasCompleteCompetencyScoresForClassPure === "function"
+    ? hasCompleteCompetencyScoresForClassPure
+    : typeof hasCompleteCompetencyScores === "function"
+      ? (raw: unknown) => hasCompleteCompetencyScores(raw)
+      : () => true;
 const safeParseCpDataAp =
   typeof parseCheckpointDataJson === "function" ? parseCheckpointDataJson : () => null;
 const safeMergeCpDataAp =
@@ -30,7 +37,13 @@ const safeMergeCpDataAp =
 const safeParseCompScoresAp =
   typeof parseCompetencyScoresPure === "function" ? parseCompetencyScoresPure : (x: any) => x;
 const safeCalcCompAvgAp =
-  typeof calculateCompetencyAveragePure === "function" ? calculateCompetencyAveragePure : () => 4;
+  typeof calculateCompetencyAverageForClassPure === "function"
+    ? calculateCompetencyAverageForClassPure
+    : typeof calculateCompetencyAveragePure === "function"
+      ? (scores: any) => calculateCompetencyAveragePure(scores)
+      : () => 4;
+const safeIsLegoAp =
+  typeof isLegoRoboticsClassCodePure === "function" ? isLegoRoboticsClassCodePure : () => false;
 const safeFormatCpHeaderAp =
   typeof formatCheckpointScoreHeaderLine === "function"
     ? formatCheckpointScoreHeaderLine
@@ -217,7 +230,10 @@ function approveSingleItem(params: {
     if (
       rawCheckpointData.competencyScores !== undefined &&
       rawCheckpointData.competencyScores !== null &&
-      !safeHasCompleteCompAp(rawCheckpointData.competencyScores)
+      !safeHasCompleteCompAp(
+        rawCheckpointData.competencyScores,
+        rawCheckpointData.isLego ? "LEGO" : classId
+      )
     ) {
       return {
         statusHttp: 400,
@@ -225,7 +241,7 @@ function approveSingleItem(params: {
         body: {
           success: false,
           studentId,
-          error: `Bảng điểm [ĐNL] của học viên '${studentId}' phải đủ 9 tiêu chí từ 1 đến 5.`,
+          error: `Bảng điểm [ĐNL] của học viên '${studentId}' phải đủ ${rawCheckpointData.isLego || safeIsLegoAp(classId) ? 7 : 9} tiêu chí từ 1 đến 5.`,
         },
       };
     }
@@ -297,11 +313,14 @@ function approveSingleItem(params: {
       };
     }
 
+    const isLegoRow = Boolean(
+      rawCheckpointData.isLego ?? existingCp?.isLego ?? safeIsLegoAp(classId)
+    );
     const nextCompScores = rawCheckpointData.competencyScores
       ? safeParseCompScoresAp(rawCheckpointData.competencyScores)
       : existingCp?.competencyScores ?? null;
     const nextCompAvg = nextCompScores
-      ? safeCalcCompAvgAp(nextCompScores)
+      ? safeCalcCompAvgAp(nextCompScores, isLegoRow ? "LEGO" : classId)
       : existingCp?.competencyAverage ?? null;
     const nextTheoryScore =
       rawCheckpointData.theoryScore === null
@@ -318,6 +337,7 @@ function approveSingleItem(params: {
     const mergedRaw = {
       ...(existingCp || {}),
       ...rawCheckpointData,
+      ...(isLegoRow ? { isLego: true } : {}),
       cpStage: resolvedStage,
       theoryScore: nextTheoryScore,
       practiceScore: nextPracticeScore,
@@ -449,6 +469,7 @@ function approveSingleItem(params: {
                 theoryScore: matchedCp.theoryScore,
                 practiceScore: matchedCp.practiceScore,
                 competencyAverage: matchedCp.competencyAverage ?? null,
+                isLego: Boolean(matchedCp.isLego ?? safeIsLegoAp(classId)),
               });
               if (freshHeader) {
                 refreshedHeaderFinalText = safeUpsertCpHeaderAp(String(existing.finalText || ""), freshHeader);

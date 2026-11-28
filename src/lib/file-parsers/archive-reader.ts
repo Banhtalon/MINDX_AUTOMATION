@@ -411,6 +411,29 @@ export function parseZipArchiveBuffer(
       if (codeRes.subjectType === "PYTHON" || codeRes.subjectType === "JUPYTER") {
         hasPythonFiles = true;
       }
+    } else if (entry.extension === ".docx") {
+      const docxRes = parseDocxBufferSafely(dataBuf, entry.normalizedPath);
+      if (!docxRes.success) {
+        if (/Security|Zip Bomb|hỏng|Corrupted|giải nén/i.test(docxRes.errorReason || "")) {
+          return {
+            success: false,
+            subjectType: "ARCHIVE",
+            extractedText: "",
+            summary: {
+              archiveName,
+              totalFiles: inspection.entries.length,
+              parsedCodeFiles,
+              skippedIgnoredCount: inspection.skippedIgnoredCount,
+              totalUncompressedBytes: actualUncompressedBytes,
+              fileTree,
+            },
+            errorReason: docxRes.errorReason,
+          };
+        }
+      } else {
+        parsedCodeFiles++;
+        codeSections.push(docxRes.extractedText);
+      }
     } else if (ROBOTICS_BINARY_ARTIFACT_EXTENSIONS.has(entry.extension) && dataBuf.length > 0) {
       parsedCodeFiles++;
       codeSections.push(
@@ -463,5 +486,267 @@ export function parseZipArchiveBuffer(
       totalUncompressedBytes: actualUncompressedBytes,
       fileTree,
     },
+  };
+}
+
+export interface DocxParseResult {
+  success: boolean;
+  subjectType: "DOCUMENT";
+  extractedText: string;
+  summary: {
+    fileName: string;
+    totalEntries: number;
+    xmlPartsRead: string[];
+    totalUncompressedBytes: number;
+    characterCount: number;
+  };
+  errorReason?: string;
+}
+
+function decodeXmlEntities(raw: string): string {
+  return String(raw || "").replace(
+    /&(#x[0-9a-fA-F]+|#\d+|lt|gt|amp|quot|apos);/g,
+    (full, entity: string) => {
+      switch (entity) {
+        case "lt":
+          return "<";
+        case "gt":
+          return ">";
+        case "amp":
+          return "&";
+        case "quot":
+          return '"';
+        case "apos":
+          return "'";
+        default: {
+          if (entity.startsWith("#x") || entity.startsWith("#X")) {
+            const cp = parseInt(entity.slice(2), 16);
+            if (Number.isInteger(cp) && cp >= 0x09 && cp <= 0x10ffff) {
+              try {
+                return String.fromCodePoint(cp);
+              } catch {
+                return full;
+              }
+            }
+            return "";
+          }
+          if (entity.startsWith("#")) {
+            const cp = parseInt(entity.slice(1), 10);
+            if (Number.isInteger(cp) && cp >= 0x09 && cp <= 0x10ffff) {
+              try {
+                return String.fromCodePoint(cp);
+              } catch {
+                return full;
+              }
+            }
+            return "";
+          }
+          return full;
+        }
+      }
+    }
+  );
+}
+
+function extractTextFromWordXml(xmlText: string): string {
+  const tokenRegex =
+    /<w:t(?:\s+(?:[^>"']|"[^"]*"|'[^']*')*)?\/>|<w:t(?:\s+(?:[^>"']|"[^"]*"|'[^']*')*)?>([\s\S]*?)<\/w:t>|<w:(?:br|cr)(?:\s+(?:[^>"']|"[^"]*"|'[^']*')*)?\s*\/?>|<w:tab(?:\s+(?:[^>"']|"[^"]*"|'[^']*')*)?\s*\/?>|<\/w:p>/gi;
+  const chunks: string[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = tokenRegex.exec(xmlText)) !== null) {
+    const token = match[0];
+    if (match[1] !== undefined) {
+      chunks.push(decodeXmlEntities(match[1]));
+    } else if (/^<w:tab\b/i.test(token)) {
+      chunks.push("\t");
+    } else if (/^<(?:w:(?:br|cr)\b|\/w:p>)/i.test(token)) {
+      chunks.push("\n");
+    }
+  }
+  return chunks
+    .join("")
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ ]+$/g, ""))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/**
+ * Safely parses an OOXML `.docx` buffer in memory using `inspectZipArchiveSafely`
+ * (enforcing zip-slip, compression ratio, depth, count, and size limits),
+ * extracting clean text from `word/document.xml` (and optional headers/footers).
+ */
+export function parseDocxBufferSafely(
+  buffer: Buffer,
+  fileName: string
+): DocxParseResult {
+  const emptySummary = (
+    totalEntries = 0,
+    xmlPartsRead: string[] = [],
+    totalUncompressedBytes = 0,
+    characterCount = 0
+  ) => ({
+    fileName,
+    totalEntries,
+    xmlPartsRead,
+    totalUncompressedBytes,
+    characterCount,
+  });
+
+  const inspection = inspectZipArchiveSafely(buffer, fileName);
+  if (!inspection.valid) {
+    return {
+      success: false,
+      subjectType: "DOCUMENT",
+      extractedText: "",
+      summary: emptySummary(0, [], inspection.totalUncompressedBytes, 0),
+      errorReason: inspection.errorReason,
+    };
+  }
+
+  const byLowerPath = new Map<string, SafeZipEntry>();
+  const headerEntries: SafeZipEntry[] = [];
+  const footerEntries: SafeZipEntry[] = [];
+
+  for (const entry of inspection.entries) {
+    const lower = entry.normalizedPath.toLowerCase();
+    byLowerPath.set(lower, entry);
+    if (/^word\/header\d*\.xml$/i.test(lower)) {
+      headerEntries.push(entry);
+    } else if (/^word\/footer\d*\.xml$/i.test(lower)) {
+      footerEntries.push(entry);
+    }
+  }
+
+  const documentEntry = byLowerPath.get("word/document.xml");
+  if (!documentEntry) {
+    return {
+      success: false,
+      subjectType: "DOCUMENT",
+      extractedText: "",
+      summary: emptySummary(
+        inspection.entries.length,
+        [],
+        inspection.totalUncompressedBytes,
+        0
+      ),
+      errorReason: `File Word '${fileName}' thiếu phần nội dung 'word/document.xml' hợp lệ.`,
+    };
+  }
+
+  headerEntries.sort((a, b) => a.normalizedPath.localeCompare(b.normalizedPath));
+  footerEntries.sort((a, b) => a.normalizedPath.localeCompare(b.normalizedPath));
+
+  const targetEntries = [...headerEntries, documentEntry, ...footerEntries];
+  const xmlPartsRead: string[] = [];
+  const extractedSections: string[] = [];
+  let actualUncompressedBytes = 0;
+
+  for (const entry of targetEntries) {
+    let xmlBuf: Buffer;
+    try {
+      xmlBuf = entry.getData();
+    } catch (err: any) {
+      return {
+        success: false,
+        subjectType: "DOCUMENT",
+        extractedText: "",
+        summary: emptySummary(
+          inspection.entries.length,
+          xmlPartsRead,
+          actualUncompressedBytes,
+          0
+        ),
+        errorReason: `Không thể giải nén '${entry.normalizedPath}' trong '${fileName}': ${
+          err?.message || "Decompression error"
+        }`,
+      };
+    }
+
+    actualUncompressedBytes += xmlBuf.length;
+    if (actualUncompressedBytes > ZIP_MAX_TOTAL_UNCOMPRESSED_BYTES) {
+      return {
+        success: false,
+        subjectType: "DOCUMENT",
+        extractedText: "",
+        summary: emptySummary(
+          inspection.entries.length,
+          xmlPartsRead,
+          actualUncompressedBytes,
+          0
+        ),
+        errorReason: `[Zip Bomb Protection] Tổng dung lượng giải nén thực tế của '${fileName}' vượt quá giới hạn 50MB.`,
+      };
+    }
+
+    if (xmlBuf.includes(0x00)) {
+      return {
+        success: false,
+        subjectType: "DOCUMENT",
+        extractedText: "",
+        summary: emptySummary(
+          inspection.entries.length,
+          xmlPartsRead,
+          actualUncompressedBytes,
+          0
+        ),
+        errorReason: `File Word '${fileName}' chứa dữ liệu nhị phân hỏng trong '${entry.normalizedPath}'.`,
+      };
+    }
+
+    const xmlText = xmlBuf.toString("utf8").replace(/^\uFEFF/, "");
+    if (!xmlText.trim() || !xmlText.includes("<")) {
+      if (entry === documentEntry) {
+        return {
+          success: false,
+          subjectType: "DOCUMENT",
+          extractedText: "",
+          summary: emptySummary(
+            inspection.entries.length,
+            xmlPartsRead,
+            actualUncompressedBytes,
+            0
+          ),
+          errorReason: `Nội dung 'word/document.xml' trong '${fileName}' bị hỏng hoặc rỗng.`,
+        };
+      }
+      continue;
+    }
+
+    xmlPartsRead.push(entry.normalizedPath);
+    const partText = extractTextFromWordXml(xmlText);
+    if (partText) {
+      extractedSections.push(partText);
+    }
+  }
+
+  const combinedText = extractedSections.join("\n\n").trim();
+  if (!combinedText) {
+    return {
+      success: false,
+      subjectType: "DOCUMENT",
+      extractedText: "",
+      summary: emptySummary(
+        inspection.entries.length,
+        xmlPartsRead,
+        actualUncompressedBytes,
+        0
+      ),
+      errorReason: `File Word '${fileName}' không chứa nội dung văn bản (rỗng chữ).`,
+    };
+  }
+
+  return {
+    success: true,
+    subjectType: "DOCUMENT",
+    extractedText: `=== WORD DOCUMENT (.DOCX): ${fileName} ===\n\n${combinedText}`,
+    summary: emptySummary(
+      inspection.entries.length,
+      xmlPartsRead,
+      actualUncompressedBytes,
+      combinedText.length
+    ),
   };
 }

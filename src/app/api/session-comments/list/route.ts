@@ -8,7 +8,11 @@ import {
   getRunningClasses,
   type RunningClassItem,
 } from "@/lib/db/json-config";
-import { detectTrackByClassCode, normalizeQuickTagsForTrack } from "@/lib/quick-tags";
+import {
+  detectTrackByClassCode,
+  normalizeQuickTagsForTrack,
+  filterInheritableQuickTags,
+} from "@/lib/quick-tags";
 import { listClasses, listStudents } from "@/lib/classes/class-directory";
 import { config } from "@/lib/config";
 import { normalizeLmsBaseOrigin } from "@/lib/lms/lms-class-url";
@@ -16,6 +20,49 @@ import { resolveKnownLmsClassIdsMap } from "@/lib/lms/lms-class-id-store";
 import { isSaveCommentsSessionRunning } from "@/lib/queue/task-queue";
 import { resolveCheckpointStageForSession } from "@/lib/checkpoint/checkpoint-competency";
 import { computeCheckpointDataForSession } from "@/lib/checkpoint/checkpoint-history-loader";
+
+const safeFilterInheritableQuickTags =
+  typeof filterInheritableQuickTags === "function"
+    ? filterInheritableQuickTags
+    : (tags: string[]) => tags;
+
+function parseVerifiedSessionNumber(sid: unknown, dbSessionNum?: unknown): number {
+  const n = Number(dbSessionNum);
+  if (Number.isInteger(n) && n > 0) return n;
+  const match = String(sid || "")
+    .trim()
+    .match(/(?:^|[_-])SESS(?:ION)?[_-]?0*(\d+)$/i);
+  if (!match) return 0;
+  const parsed = Number(match[1]);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function hasNonZeroCountsJson(rawJson: unknown): boolean {
+  if (!rawJson) return false;
+  let parsed: unknown = rawJson;
+  if (typeof rawJson === "string") {
+    const trimmed = rawJson.trim();
+    if (!trimmed || trimmed === "{}") return false;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch {
+      return false;
+    }
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
+  return Object.values(parsed as Record<string, unknown>).some((v) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n !== 0;
+  });
+}
+
+function parseClassroomTimestampMs(raw?: string | null): number | null {
+  const s = String(raw || "").trim();
+  if (!s) return null;
+  const isoLike = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(s) ? s.replace(" ", "T") : s;
+  const ms = Date.parse(isoLike);
+  return Number.isFinite(ms) ? ms : null;
+}
 
 const safeResolveCheckpointStageList =
   typeof resolveCheckpointStageForSession === "function"
@@ -134,6 +181,13 @@ export async function GET(req: Request) {
       }
     }
 
+    const rawCategories = typeof getQuickTags === "function" ? getQuickTags() || [] : [];
+
+    const curSessRow = sessionId ? allSessions.find((s) => s.sessionId === sessionId) : undefined;
+    const curSessNum = sessionId
+      ? parseVerifiedSessionNumber(sessionId, curSessRow?.sessionNumber)
+      : 0;
+
     const previousQuickTagsByStudent: Record<
       string,
       { tags: string[]; fromSessionNumber?: number }
@@ -143,18 +197,6 @@ export async function GET(req: Request) {
         const db = typeof getDb === "function" ? getDb() : null;
         if (typeof (db as any)?.prepare === "function") {
           const track = detectTrackByClassCode(classId);
-          const parseVerifiedSessionNumber = (sid: unknown, dbSessionNum?: unknown): number => {
-            const n = Number(dbSessionNum);
-            if (Number.isInteger(n) && n > 0) return n;
-            const match = String(sid || "")
-              .trim()
-              .match(/(?:^|[_-])SESS(?:ION)?[_-]?0*(\d+)$/i);
-            if (!match) return 0;
-            const parsed = Number(match[1]);
-            return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
-          };
-          const curSessRow = allSessions.find((s) => s.sessionId === sessionId);
-          const curSessNum = parseVerifiedSessionNumber(sessionId, curSessRow?.sessionNumber);
           const prevRows =
             curSessNum > 0
               ? ((db as any)
@@ -200,12 +242,15 @@ export async function GET(req: Request) {
               const parsed = row.quickTagsJson ? JSON.parse(row.quickTagsJson) : [];
               if (Array.isArray(parsed) && parsed.length > 0) {
                 const normalized = normalizeQuickTagsForTrack(parsed, track);
+                const inheritable = safeFilterInheritableQuickTags(normalized, rawCategories);
                 const inferredNum = inferSessNum(row);
-                if (normalized.length > 0 && inferredNum > 0) {
+                if (inheritable.length > 0 && inferredNum > 0) {
                   previousQuickTagsByStudent[row.studentId] = {
-                    tags: normalized,
+                    tags: inheritable,
                     fromSessionNumber: inferredNum,
                   };
+                }
+                if (normalized.length > 0) {
                   resolvedStudents.add(row.studentId);
                 }
                 continue;
@@ -222,7 +267,78 @@ export async function GET(req: Request) {
       } catch {}
     }
 
-    const rawCategories = typeof getQuickTags === "function" ? getQuickTags() || [] : [];
+    let pendingClassroomLogsCount = 0;
+    const activeStudentIds = new Set(
+      allStudents
+        .filter((st: any) => st?.isActive !== false && st?.isActive !== 0 && st?.studentId)
+        .map((st: any) => String(st.studentId).trim())
+    );
+    const lockedCommentStudentIds = new Set(
+      (feedbacks || [])
+        .filter(
+          (fb) =>
+            fb?.studentId && (fb.status === "VERIFIED" || fb.status === "SAVING")
+        )
+        .map((fb) => String(fb.studentId).trim())
+    );
+    if (classId && curSessNum > 0 && activeStudentIds.size > 0) {
+      try {
+        const db = typeof getDb === "function" ? getDb() : null;
+        if (typeof (db as any)?.prepare === "function") {
+          const logRows = (db as any)
+            .prepare(
+              `SELECT studentId, attendanceStatus, stars, medals, praiseCountsJson, issueCountsJson, teacherQuickNote, appliedToCommentAt, updatedAt
+               FROM classroom_session_logs
+               WHERE classId = ? AND sessionNumber = ?`
+            )
+            .all(classId, curSessNum) as Array<{
+            studentId?: string;
+            attendanceStatus?: string;
+            stars?: number;
+            medals?: number;
+            praiseCountsJson?: string;
+            issueCountsJson?: string;
+            teacherQuickNote?: string;
+            appliedToCommentAt?: string | null;
+            updatedAt?: string | null;
+          }>;
+          const pendingIds = new Set<string>();
+          for (const log of logRows || []) {
+            const sid = String(log?.studentId || "").trim();
+            if (!sid || !activeStudentIds.has(sid) || lockedCommentStudentIds.has(sid)) continue;
+            const att = String(log?.attendanceStatus || "").trim().toUpperCase();
+            const hasMeaningfulData =
+              Number(log?.stars || 0) > 0 ||
+              Number(log?.medals || 0) > 0 ||
+              hasNonZeroCountsJson(log?.praiseCountsJson) ||
+              hasNonZeroCountsJson(log?.issueCountsJson) ||
+              String(log?.teacherQuickNote || "").trim() !== "" ||
+              (att !== "" && att !== "PRESENT" && att !== "UNKNOWN");
+            if (!hasMeaningfulData) continue;
+
+            const appliedRaw = String(log?.appliedToCommentAt || "").trim();
+            if (!appliedRaw) {
+              pendingIds.add(sid);
+              continue;
+            }
+            const updatedRaw = String(log?.updatedAt || "").trim();
+            const appliedMs = parseClassroomTimestampMs(appliedRaw);
+            const updatedMs = parseClassroomTimestampMs(updatedRaw);
+            const isUpdatedAfterApply =
+              appliedMs === null
+                ? true
+                : updatedMs !== null
+                  ? updatedMs > appliedMs
+                  : updatedRaw > appliedRaw;
+            if (isUpdatedAfterApply) {
+              pendingIds.add(sid);
+            }
+          }
+          pendingClassroomLogsCount = pendingIds.size;
+        }
+      } catch {}
+    }
+
     const quickCategories = rawCategories.filter((c) => !isSession14Category(c));
     const quickTags = quickCategories.flatMap((c) =>
       (c.tags || [])
@@ -248,21 +364,13 @@ export async function GET(req: Request) {
     let checkpointStageInfo = safeResolveCheckpointStageList(classId, 0);
     let checkpointByStudent: Record<string, any> = {};
     if (classId && sessionId) {
-      const selectedSess = allSessions.find((s) => s.sessionId === sessionId);
-      const sessMatch = String(sessionId).match(/(?:^|[_-])SESS(?:ION)?[_-]?0*(\d+)$/i);
-      const sessNum =
-        typeof selectedSess?.sessionNumber === "number" && selectedSess.sessionNumber > 0
-          ? selectedSess.sessionNumber
-          : sessMatch
-          ? Number(sessMatch[1])
-          : 0;
-      checkpointStageInfo = safeResolveCheckpointStageList(classId, sessNum);
+      checkpointStageInfo = safeResolveCheckpointStageList(classId, curSessNum);
       if (checkpointStageInfo.isCheckpoint && safeComputeCheckpointList) {
         try {
           const cpResult = safeComputeCheckpointList({
             classId,
             sessionId,
-            sessionNumber: sessNum,
+            sessionNumber: curSessNum,
             forceRecalculate: false,
             persist: false,
           });
@@ -284,6 +392,7 @@ export async function GET(req: Request) {
         students: allStudents,
         feedbacks,
         previousQuickTagsByStudent,
+        pendingClassroomLogsCount,
         quickTags,
         syllabusList,
         zaloTemplates,

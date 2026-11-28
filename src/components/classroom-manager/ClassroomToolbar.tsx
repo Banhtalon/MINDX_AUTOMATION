@@ -3,6 +3,7 @@
 import React from "react";
 import { Monitor, BarChart3, Dices } from "lucide-react";
 import { ClassPicker, type ClassPickerOption } from "@/components/class-picker";
+import { isRoboticsClassCodePure } from "@/lib/checkpoint/competency-specs";
 
 export interface ClassroomSessionOption {
   sessionNumber: number;
@@ -29,6 +30,8 @@ interface ClassroomToolbarProps {
   onToggleProjector: () => void;
   onOpenRandomPicker: () => void;
   onOpenSummary: () => void;
+  onSyncBtvn?: (forceLiveScrape?: boolean) => void;
+  isSyncingBtvn?: boolean;
   saveIndicator: "idle" | "saving" | "saved" | "error";
 }
 
@@ -50,8 +53,15 @@ export function ClassroomToolbar({
   onToggleProjector,
   onOpenRandomPicker,
   onOpenSummary,
+  onSyncBtvn,
+  isSyncingBtvn = false,
   saveIndicator,
 }: ClassroomToolbarProps) {
+  const showSyncBtvnBtn =
+    Boolean(onSyncBtvn) &&
+    Boolean(classId) &&
+    !isRoboticsClassCodePure(classId) &&
+    sessionNumber >= 2;
   return (
     <div className="cm-shell-card px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-3">
       <div className="flex flex-wrap items-center gap-2.5">
@@ -143,6 +153,19 @@ export function ClassroomToolbar({
           <Dices className="w-4 h-4" />
           <span>Gọi tên</span>
         </button>
+
+        {showSyncBtvnBtn && (
+          <button
+            type="button"
+            data-testid="cm-sync-btvn-btn"
+            onClick={(e) => onSyncBtvn?.(e.shiftKey)}
+            disabled={isSyncingBtvn}
+            title="Quét danh sách học viên chưa nộp BTVN buổi trước từ LMS (Giữ Shift + Bấm để quét mới trực tiếp từ LMS)"
+            className="neo-btn-purple px-3 py-1.5 rounded-lg text-xs sm:text-sm font-black disabled:opacity-45 inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap mindx-dark-keep"
+          >
+            <span>{isSyncingBtvn ? "⏳ Đang quét..." : "📥 Quét Chưa BTVN"}</span>
+          </button>
+        )}
 
         <button
           type="button"

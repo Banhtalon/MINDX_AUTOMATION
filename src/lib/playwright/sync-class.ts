@@ -47,6 +47,7 @@ import {
   COMPETENCY_KEYS,
   extractLmsCheckpointFromCommentByAreas,
   formatCheckpointScoreHeaderLine,
+  getCompetencyKeysForClassPure,
   isPlaceholderLmsComment,
   parseCheckpointDataJson,
   resolveCheckpointStageForSession,
@@ -67,6 +68,11 @@ const safeCompetencyKeysSync =
         "attitudeHomework",
         "attitudeInClass",
       ] as const);
+
+const safeGetCompetencyKeysSync =
+  typeof getCompetencyKeysForClassPure === "function"
+    ? getCompetencyKeysForClassPure
+    : () => [...safeCompetencyKeysSync];
 
 const safeResolveCheckpointStage =
   typeof resolveCheckpointStageForSession === "function"
@@ -1793,20 +1799,41 @@ export class ClassSyncer {
          checkpointDataJson = CASE WHEN TRIM(COALESCE(excluded.checkpointDataJson, '')) NOT IN ('', '{}') THEN excluded.checkpointDataJson ELSE session_feedbacks.checkpointDataJson END,
          updatedAt = datetime('now', 'localtime')`
     );
-    const upsertFbAbsentStmt = db.prepare(
+    const upsertFbAttendanceOnlyStmt = db.prepare(
       `INSERT INTO session_feedbacks (
          classId, sessionId, studentId, attendanceStatus,
          quickTagsJson, teacherNote, strengths, improvements, actionPlan,
          finalText, contentHash, status, updatedAt
        ) VALUES (
-         @classId, @sessionId, @studentId, 'ABSENT',
+         @classId, @sessionId, @studentId, @attendanceStatus,
          '[]', '', '', '', '',
          '', '', 'DRAFT', datetime('now', 'localtime')
        )
        ON CONFLICT(classId, sessionId, studentId) DO UPDATE SET
-         attendanceStatus = 'ABSENT',
+         attendanceStatus = @attendanceStatus,
          updatedAt = datetime('now', 'localtime')`
     );
+
+    const isAttendanceManuallyLocked = (versionMetaJson?: string | null): boolean => {
+      if (!versionMetaJson || typeof versionMetaJson !== "string") return false;
+      try {
+        const parsed = JSON.parse(versionMetaJson);
+        const attField = parsed?.fields?.attendanceStatus;
+        if (!attField) return false;
+        if (typeof attField === "boolean") return attField;
+        if (typeof attField === "object") {
+          return Boolean(
+            attField.cid ||
+              Number(attField.ver || 0) > 0 ||
+              Number(attField.rev || 0) > 0 ||
+              attField.locked === true
+          );
+        }
+        return Boolean(attField);
+      } catch {
+        return false;
+      }
+    };
 
     const clearOrphanedSavingStmt = db.prepare(
       `UPDATE session_feedbacks
@@ -1885,7 +1912,8 @@ export class ClassSyncer {
         let lmsHasMatchingCompetency = true;
 
         if (cpStageInfo.isCheckpoint && cpStageInfo.cpStage) {
-          const extractedCp = safeExtractLmsCheckpoint(areas, att.comment);
+          const classCompKeys = safeGetCompetencyKeysSync(classId);
+          const extractedCp = safeExtractLmsCheckpoint(areas, att.comment, { classCode: classId });
           const existingCp = safeParseCheckpointData(existingFb?.checkpointDataJson);
           localRequiresLmsCompetency = Boolean(
             cpStageInfo.isCheckpoint && existingCp?.competencyScores && existingCp?.approvedSnapshotHash
@@ -1893,7 +1921,7 @@ export class ClassSyncer {
           lmsHasMatchingCompetency = Boolean(
             !localRequiresLmsCompetency ||
               (extractedCp.competencyScores &&
-                safeCompetencyKeysSync.every(
+                classCompKeys.every(
                   (k) => extractedCp.competencyScores![k] === existingCp!.competencyScores![k]
                 ))
           );
@@ -1939,7 +1967,7 @@ export class ClassSyncer {
             !nextCompetency ||
             Boolean(
               extractedCp.competencyScores &&
-                safeCompetencyKeysSync.every(
+                classCompKeys.every(
                   (k) => extractedCp.competencyScores![k] === nextCompetency![k]
                 )
             );
@@ -1966,6 +1994,7 @@ export class ClassSyncer {
               theoryScore: nextTheory,
               practiceScore: nextPractice,
               competencyAverage: nextCompAvg,
+              isLego: Boolean(cpStageInfo.isLego),
             });
             const refreshed = safeUpsertCheckpointHeaderSync(cpUpdatedFinalText, freshHeader);
             if (refreshed && refreshed !== cpUpdatedFinalText) {
@@ -2088,6 +2117,7 @@ export class ClassSyncer {
             mergedCheckpointDataJson = JSON.stringify({
               cpStage: cpStageInfo.cpStage,
               isRobotics: cpStageInfo.isRobotics,
+              ...(cpStageInfo.isLego ? { isLego: true } : {}),
               theoryScore: nextTheory,
               practiceScore: nextPractice,
               slotTheoryScore: extractedCp.theoryScore,
@@ -2140,14 +2170,23 @@ export class ClassSyncer {
             slotHasVerifiedStudent = true;
             verifiedStudentIdsInSlot.add(studentId);
           } else if (mergedCheckpointDataJson !== "{}") {
+            const hasProtectedLocalAttendance = Boolean(
+              existingFb &&
+                (existingFb.status === "APPROVED" ||
+                  existingFb.status === "VERIFIED" ||
+                  (existingFb.status === "SAVING" && !isOrphanedSaving) ||
+                  isAttendanceManuallyLocked(existingFb.versionMetaJson))
+            );
+            const draftAttendanceStatus = hasProtectedLocalAttendance
+              ? existingFb?.attendanceStatus || "UNKNOWN"
+              : lmsAttendance !== "UNKNOWN"
+                ? lmsAttendance
+                : existingFb?.attendanceStatus || "UNKNOWN";
             upsertFbCheckpointDraftStmt.run({
               classId,
               sessionId,
               studentId,
-              attendanceStatus:
-                lmsAttendance !== "UNKNOWN"
-                  ? lmsAttendance
-                  : existingFb?.attendanceStatus || "UNKNOWN",
+              attendanceStatus: draftAttendanceStatus,
               finalText: cpUpdatedFinalText,
               hasUpdatedFinalText,
               versionMetaJson: bumpedVersionMetaJson,
@@ -2156,17 +2195,19 @@ export class ClassSyncer {
               demoteApproved: cpNeedsDemotion ? 1 : 0,
               demoteToApproved: shouldDemoteVerifiedToApproved ? 1 : 0,
             });
-          } else if (lmsAttendance === "ABSENT") {
+          } else if (lmsAttendance !== "UNKNOWN" && lmsComment.length === 0) {
             if (
               !existingFb ||
               (existingFb.status !== "APPROVED" &&
                 (existingFb.status !== "SAVING" || isOrphanedSaving) &&
-                existingFb.status !== "VERIFIED")
+                existingFb.status !== "VERIFIED" &&
+                !isAttendanceManuallyLocked(existingFb.versionMetaJson))
             ) {
-              upsertFbAbsentStmt.run({
+              upsertFbAttendanceOnlyStmt.run({
                 classId,
                 sessionId,
                 studentId,
+                attendanceStatus: lmsAttendance,
               });
             }
           }
@@ -2219,17 +2260,19 @@ export class ClassSyncer {
               slotHasVerifiedStudent = true;
               verifiedStudentIdsInSlot.add(studentId);
             }
-          } else if (lmsAttendance === "ABSENT") {
+          } else if (lmsAttendance !== "UNKNOWN" && lmsComment.length === 0) {
             if (
               !existingFb ||
               (existingFb.status !== "APPROVED" &&
                 (existingFb.status !== "SAVING" || isOrphanedSaving) &&
-                existingFb.status !== "VERIFIED")
+                existingFb.status !== "VERIFIED" &&
+                !isAttendanceManuallyLocked(existingFb.versionMetaJson))
             ) {
-              upsertFbAbsentStmt.run({
+              upsertFbAttendanceOnlyStmt.run({
                 classId,
                 sessionId,
                 studentId,
+                attendanceStatus: lmsAttendance,
               });
             }
           }
@@ -2337,17 +2380,20 @@ export class ClassSyncer {
               | {
                   status?: string;
                   finalText?: string;
+                  versionMetaJson?: string;
                 }
               | undefined;
             if (
-              !existingFb ||
-              (existingFb.status === "DRAFT" &&
-                !String(existingFb.finalText || "").trim())
+              (!existingFb ||
+                (existingFb.status === "DRAFT" &&
+                  !String(existingFb.finalText || "").trim())) &&
+              !isAttendanceManuallyLocked(existingFb?.versionMetaJson)
             ) {
-              upsertFbAbsentStmt.run({
+              upsertFbAttendanceOnlyStmt.run({
                 classId,
                 sessionId,
                 studentId: st.studentId,
+                attendanceStatus: "ABSENT",
               });
             }
           }

@@ -1,4 +1,8 @@
 import type { CourseSyllabus, QuickTag, QuickTagCategory } from "../db/json-config";
+import {
+  isLegoRoboticsClassCodePure,
+  isRoboticsClassCodePure,
+} from "../checkpoint/competency-specs";
 
 export type QuickTagTrack = "coding" | "robotics" | "session14" | "common";
 export type QuickTagRole =
@@ -16,15 +20,24 @@ export interface SkillLevelClassification {
   badgeClass: string;
 }
 
-const ROBOTICS_CLASS_REGEX = /(?:rob|pre[bai]|arm[bai]|semi[bai]|vex)/i;
+const ROBOTICS_CLASS_REGEX = /(?:rob|pre[bai]|arm[bai]|semi[bai]|vex|kiro|lego)/i;
 
 export function detectTrackByClassCode(classCode: string): "coding" | "robotics" {
-  return ROBOTICS_CLASS_REGEX.test(String(classCode || "").trim()) ? "robotics" : "coding";
+  const raw = String(classCode || "").trim();
+  return isRoboticsClassCodePure(raw) || ROBOTICS_CLASS_REGEX.test(raw) ? "robotics" : "coding";
 }
 
 export function getDefaultCheckpointSessions(classCodeOrTrack: string): number[] {
-  const normalized = String(classCodeOrTrack || "").trim().toLowerCase();
-  if (normalized === "robotics" || ROBOTICS_CLASS_REGEX.test(normalized)) {
+  const raw = String(classCodeOrTrack || "").trim();
+  const normalized = raw.toLowerCase();
+  if (isLegoRoboticsClassCodePure(raw)) {
+    return [5, 9];
+  }
+  if (
+    normalized === "robotics" ||
+    isRoboticsClassCodePure(raw) ||
+    ROBOTICS_CLASS_REGEX.test(normalized)
+  ) {
     return [4, 8];
   }
   return [5, 9];
@@ -35,13 +48,17 @@ export function resolveCheckpointSessionsForClass(
   syllabusList?: Array<Pick<CourseSyllabus, "courseCode" | "checkpointSessions">>
 ): number[] {
   const upperCode = String(classCode || "").trim().toUpperCase();
+  const isLegoClass = isLegoRoboticsClassCodePure(upperCode);
   if (Array.isArray(syllabusList) && syllabusList.length > 0 && upperCode) {
     const sorted = [...syllabusList].sort(
       (a, b) => String(b.courseCode || "").length - String(a.courseCode || "").length
     );
     const matched = sorted.find((c) => {
       const code = String(c.courseCode || "").trim().toUpperCase();
-      return Boolean(code && upperCode.includes(code));
+      if (!code || !upperCode.includes(code)) return false;
+      // Generic `ROB` in courses_syllabus.json uses [4, 8] (VEX/IoT); do not override LEGO [5, 9]
+      if (isLegoClass && !isLegoRoboticsClassCodePure(code)) return false;
+      return true;
     });
     if (matched && Array.isArray(matched.checkpointSessions)) {
       const validNums = matched.checkpointSessions
@@ -176,6 +193,75 @@ export function filterRegularQuickTagValues(
   return rawTags
     .map((t) => String(t || "").trim())
     .filter((t) => Boolean(t) && !isSession14QuickTagValue(t, configuredCategories));
+}
+
+const INHERITABLE_ROLES = new Set<string>(["excellent", "good", "positive", "slow"]);
+const NON_INHERITABLE_ROLES = new Set<string>(["distracted", "improve"]);
+
+/**
+ * Lọc bộ Quick Tags kế thừa từ buổi trước sang buổi hiện tại:
+ * - CHỈ giữ các thẻ phản ánh mức độ tiếp thu/tích cực (`excellent` | `good` | `positive` | `slow`).
+ * - LOẠI BỎ 100% các thẻ lỗi hành vi/nhắc nhở tuần trước (`distracted` | `improve`).
+ */
+export function filterInheritableQuickTags(
+  tags: string[],
+  configuredCategories?: QuickTagCategory[]
+): string[] {
+  if (!Array.isArray(tags) || tags.length === 0) return [];
+
+  const tagLookup = new Map<string, QuickTag>();
+  if (Array.isArray(configuredCategories)) {
+    for (const cat of configuredCategories) {
+      if (isSession14QuickTagCategory(cat)) continue;
+      for (const t of cat?.tags || []) {
+        if (t?.label) tagLookup.set(t.label.trim().toLowerCase(), t);
+        if (t?.id) tagLookup.set(t.id.trim().toLowerCase(), t);
+      }
+    }
+  }
+
+  const result: string[] = [];
+  for (const raw of tags) {
+    const clean = String(raw || "").trim();
+    if (!clean) continue;
+    if (isSession14QuickTagValue(clean, configuredCategories)) continue;
+
+    const lower = clean.toLowerCase();
+    const matched = tagLookup.get(lower);
+    const role = String(matched?.role || "").trim().toLowerCase();
+
+    let keep = false;
+    if (role) {
+      keep = INHERITABLE_ROLES.has(role) && !NON_INHERITABLE_ROLES.has(role);
+    } else {
+      const isDistractedOrImprove =
+        /mất tập trung|cần nhắc tập trung|xao nhãng|nói chuyện riêng|làm việc riêng|cần tập trung hơn|nghịch|chơi game|ngủ gật|dùng điện thoại|👀|tier_3/i.test(
+          lower
+        ) ||
+        /thao tác.*chậm|cú pháp còn chậm|lập trình cần hỗ trợ|đấu mạch|lúng túng|hay nhầm lệnh|chưa làm btvn|quên btvn|thiếu btvn|chưa nộp|chưa hoàn thành|đi muộn|⌨️|🔌|🧩|🐛/i.test(
+          lower
+        );
+      if (!isDistractedOrImprove) {
+        const isInheritableFallback =
+          /xuất sắc|giỏi|vận dụng.*sáng tạo|sáng tạo|chủ động thử.*sửa lỗi|🌟|💡|🧠|lvl_.*xuat_sac|tier_1/i.test(
+            lower
+          ) ||
+          /tiếp thu chậm|lắp ráp còn chậm|lắp ráp cần hỗ trợ|nhầm chốt|cần kèm|trung bình|chưa kịp|🐢|🔩|🛠️|lvl_.*can_kem|tier_4|tier_5/i.test(
+            lower
+          ) ||
+          /tiếp thu tốt|làm bài tập đầy đủ|lắp ráp đúng mẫu|lập trình chạy đúng|lắp ráp.*lập trình tốt|hăng hái|phối hợp nhóm|hợp tác nhóm|giữ kit tốt|đạt yêu cầu|khá|tốt|tích cực|hiểu bài nhanh|👍|✅|📝|🙋|🤖|🔧|💻|🤝|lvl_.*dat|tier_2/i.test(
+            lower
+          );
+        keep = isInheritableFallback;
+      }
+    }
+
+    if (keep && !result.includes(clean)) {
+      result.push(clean);
+    }
+  }
+
+  return result;
 }
 
 export function classifyStudentSkillLevel(

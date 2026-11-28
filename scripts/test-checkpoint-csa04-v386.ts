@@ -1557,7 +1557,7 @@ async function main() {
 
     const brandTitle = await page.textContent("header .mindx-brand-text");
     assert.ok(
-      /MindX Bot v3\.8\.(?:[6-9]|\d{2,})/.test(String(brandTitle || "")),
+      /MindX Bot v3\.(?:8\.(?:[6-9]|\d{2,})|[9]\.\d+|\d{2,}\.\d+)/.test(String(brandTitle || "")),
       `TopNavbar phải hiển thị MindX Bot >= v3.8.6 (actual=${brandTitle})`
     );
 

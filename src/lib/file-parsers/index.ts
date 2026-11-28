@@ -3,11 +3,12 @@ import path from "node:path";
 import { assertPathAllowed } from "../security/path-allowlist";
 import { calculateSha256 } from "../db/sqlite";
 import { parseCodeBuffer } from "./code-reader";
-import { parseZipArchiveBuffer } from "./archive-reader";
+import { parseZipArchiveBuffer, parseDocxBufferSafely } from "./archive-reader";
 import { parseScratchSb3Buffer, parseGameMakerBuffer } from "./game-reader";
 import { parseMediaBuffer, type InlineDataPart } from "./media-reader";
 
 export type { InlineDataPart } from "./media-reader";
+export { parseDocxBufferSafely } from "./archive-reader";
 
 export type FileSubjectType =
   | "PYTHON"
@@ -184,7 +185,39 @@ export function parseSubmissionBuffer(
       };
     }
 
-    // 4. Multimodal Images & PDF (.png, .jpg, .jpeg, .webp, .pdf)
+    // 4. Word Document (.docx) via safe OOXML ZIP inspection
+    if (ext === ".docx") {
+      const res = parseDocxBufferSafely(buffer, fileName);
+      if (!res.success) {
+        return {
+          parseStatus: "PARSE_ERROR",
+          subjectType: "DOCUMENT",
+          fileName,
+          extension: ext,
+          fileHash,
+          byteSize,
+          extractedText: "",
+          inlineDataParts: [],
+          metadata: res.summary,
+          parseErrorReason:
+            res.errorReason || `File Word '${fileName}' bị hỏng hoặc rỗng chữ.`,
+        };
+      }
+      return {
+        parseStatus: "PARSED",
+        subjectType: "DOCUMENT",
+        fileName,
+        extension: ext,
+        fileHash,
+        byteSize,
+        extractedText: res.extractedText,
+        inlineDataParts: [],
+        metadata: res.summary,
+        parseErrorReason: null,
+      };
+    }
+
+    // 5. Multimodal Images & PDF (.png, .jpg, .jpeg, .webp, .pdf)
     if (MEDIA_EXTENSIONS.has(ext)) {
       const res = parseMediaBuffer(buffer, fileName, ext);
       if (!res.success) {
@@ -216,7 +249,7 @@ export function parseSubmissionBuffer(
       };
     }
 
-    // 5. Source Code & Plain Text (.py, .ipynb, .ui, .qss, .html, .css, .js, .sql, .txt)
+    // 6. Source Code & Plain Text (.py, .ipynb, .ui, .qss, .html, .css, .js, .sql, .txt)
     if (CODE_EXTENSIONS.has(ext)) {
       const res = parseCodeBuffer(buffer, fileName, ext);
       if (!res.success) {
@@ -248,7 +281,7 @@ export function parseSubmissionBuffer(
       };
     }
 
-    // 6. Unsupported file extension (e.g., .rar, .7z, .exe, .docx)
+    // 7. Unsupported file extension (e.g., .rar, .7z, .exe, .doc)
     return {
       parseStatus: "PARSE_ERROR",
       subjectType: "UNKNOWN",
@@ -259,7 +292,7 @@ export function parseSubmissionBuffer(
       extractedText: "",
       inlineDataParts: [],
       metadata: {},
-      parseErrorReason: `Định dạng file '${ext || "không rõ"}' của '${fileName}' không được hỗ trợ chấm tự động (Hệ thống hỗ trợ: .py, .ipynb, .ui, .qss, .html, .css, .js, .sql, .txt, .zip, .sb3, .yyz, .gml, .yy, .png, .jpg, .pdf). Giáo viên vui lòng kiểm tra thủ công.`,
+      parseErrorReason: `Định dạng file '${ext || "không rõ"}' của '${fileName}' không được hỗ trợ chấm tự động (Hệ thống hỗ trợ: .py, .ipynb, .ui, .qss, .html, .css, .js, .sql, .txt, .zip, .sb3, .yyz, .gml, .yy, .png, .jpg, .pdf, .docx). Giáo viên vui lòng kiểm tra thủ công.`,
     };
   } catch (err: any) {
     return {

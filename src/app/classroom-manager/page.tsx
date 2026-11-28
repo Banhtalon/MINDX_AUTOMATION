@@ -30,6 +30,7 @@ import {
   type ClassroomPraiseKey,
   type ClassroomStudentState,
 } from "@/lib/classroom/classroom-manager-helpers";
+import { isRoboticsClassCodePure } from "@/lib/checkpoint/competency-specs";
 
 export default function ClassroomManagerPage() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function ClassroomManagerPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshingClasses, setIsRefreshingClasses] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
+  const [isSyncingBtvn, setIsSyncingBtvn] = useState(false);
   const [saveIndicator, setSaveIndicator] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
 
@@ -484,6 +486,82 @@ export default function ClassroomManagerPage() {
     }
   };
 
+  const handleSyncBtvn = async (forceLiveScrape = false) => {
+    const reqClassId = classId;
+    const reqSessionNumber = sessionNumber;
+    if (!reqClassId || isRoboticsClassCodePure(reqClassId) || reqSessionNumber < 2 || isSyncingBtvn) {
+      return;
+    }
+
+    setIsSyncingBtvn(true);
+    setErrorBanner(null);
+    try {
+      const flushedOk = await flushPendingSaves();
+      if (!flushedOk) {
+        return;
+      }
+
+      const res = await fetch("/api/classroom-manager/sync-btvn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: reqClassId,
+          sessionNumber: reqSessionNumber,
+          ...(forceLiveScrape ? { forceLiveScrape: true } : {}),
+        }),
+      });
+      const json = await res.json().catch(() => null);
+
+      if (
+        activeScopeRef.current.classId !== reqClassId ||
+        activeScopeRef.current.sessionNumber !== reqSessionNumber
+      ) {
+        return;
+      }
+
+      if (!res.ok || !json?.success) {
+        setErrorBanner(json?.error || "Không thể quét danh sách chưa nộp BTVN từ LMS.");
+        return;
+      }
+
+      const unsubmittedIds: string[] = Array.isArray(json?.data?.unsubmittedStudentIds)
+        ? json.data.unsubmittedStudentIds.map((id: unknown) => String(id || "").trim()).filter(Boolean)
+        : [];
+      const unsubmittedSet = new Set(unsubmittedIds);
+
+      const affectedIds: string[] = [];
+      const draftedList = studentsRef.current.map((stu) => {
+        if (!unsubmittedSet.has(stu.studentId) || stu.attendanceStatus === "ABSENT") {
+          return stu;
+        }
+        const prevCount = Math.max(0, Math.floor(Number(stu.issueCounts?.chua_btvn ?? 0)));
+        const nextCount = Math.max(1, prevCount);
+        if (nextCount === prevCount && stu.issueCounts?.chua_btvn === nextCount) {
+          return stu;
+        }
+        affectedIds.push(stu.studentId);
+        return {
+          ...stu,
+          issueCounts: {
+            ...(stu.issueCounts || {}),
+            chua_btvn: nextCount,
+          },
+        };
+      });
+
+      if (affectedIds.length > 0) {
+        commitRosterMutation(draftedList, affectedIds);
+        await flushPendingSaves();
+      } else {
+        setSaveIndicator("saved");
+      }
+    } catch (err: unknown) {
+      setErrorBanner(err instanceof Error ? err.message : "Lỗi kết nối khi quét BTVN từ LMS.");
+    } finally {
+      setIsSyncingBtvn(false);
+    }
+  };
+
   const spinRandomStudent = () => {
     const eligible = studentsRef.current.filter((s) => s.attendanceStatus !== "ABSENT");
     if (eligible.length === 0) {
@@ -526,6 +604,8 @@ export default function ClassroomManagerPage() {
           onToggleProjector={() => setIsProjectorMode(true)}
           onOpenRandomPicker={spinRandomStudent}
           onOpenSummary={() => setIsSummaryOpen(true)}
+          onSyncBtvn={(forceLive) => void handleSyncBtvn(forceLive)}
+          isSyncingBtvn={isSyncingBtvn}
           saveIndicator={saveIndicator}
         />
       )}

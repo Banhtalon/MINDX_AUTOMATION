@@ -4,6 +4,8 @@ import { getCoursesSyllabus, getQuickTags } from "../db/json-config";
 import { createRosterNameScrubber as _createRosterNameScrubber } from "../ai/pii-anonymizer";
 import {
   formatCheckpointScoreHeaderLine,
+  isLegoRoboticsClassCodePure,
+  isRoboticsClassCodePure,
   mergeCheckpointStudentData,
   parseCheckpointDataJson,
   resolveCheckpointStageForSession,
@@ -12,10 +14,21 @@ import {
   type CheckpointStudentData,
 } from "../checkpoint/checkpoint-competency";
 import { computeCheckpointDataForSession } from "../checkpoint/checkpoint-history-loader";
+import { resolveCheckpointSessionsForClass } from "../quick-tags";
 const safeResolveCheckpointStageCg =
   typeof resolveCheckpointStageForSession === "function"
     ? resolveCheckpointStageForSession
     : () => ({ isCheckpoint: false, isRobotics: false, cpStage: null });
+const safeIsRoboticsCg =
+  typeof isRoboticsClassCodePure === "function"
+    ? isRoboticsClassCodePure
+    : (c: string) => /(?:rob|pre[bai]|arm[bai]|semi[bai]|vex|kiro|lego)/i.test(c);
+const safeIsLegoCg =
+  typeof isLegoRoboticsClassCodePure === "function" ? isLegoRoboticsClassCodePure : () => false;
+const safeResolveCpSessionsCg =
+  typeof resolveCheckpointSessionsForClass === "function"
+    ? resolveCheckpointSessionsForClass
+    : null;
 const safeParseCheckpointDataCg =
   typeof parseCheckpointDataJson === "function" ? parseCheckpointDataJson : () => null;
 const safeMergeCheckpointDataCg =
@@ -823,7 +836,7 @@ export class CommentGenerator {
       peerToken: "STUDENT_PEER",
     });
 
-    const isRoboticsClass = /(?:rob|pre[bai]|arm[bai]|semi[bai]|vex)/i.test(normalizedClassCode);
+    const isRoboticsClass = safeIsRoboticsCg(normalizedClassCode);
 
     const legacyAliasMap: Record<string, string> = {
       "🤖 lắp ráp & lập trình tốt": "🔧 lắp ráp đúng mẫu",
@@ -998,23 +1011,31 @@ export class CommentGenerator {
 
     const syllabusList =
       typeof getCoursesSyllabus === "function" ? getCoursesSyllabus() || [] : [];
-    const matchedCourse = [...syllabusList]
-      .sort((a, b) => String(b.courseCode || "").length - String(a.courseCode || "").length)
-      .find((c) => {
-        const code = String(c?.courseCode || "").trim().toUpperCase();
-        return Boolean(code && normalizedClassCode.includes(code));
-      });
-    const validCourseCheckpoints = Array.isArray(matchedCourse?.checkpointSessions)
-      ? matchedCourse.checkpointSessions
-          .map((n) => Number(n))
-          .filter((n) => Number.isInteger(n) && n >= 1 && n <= 13)
-      : [];
-    const checkpointNums =
-      validCourseCheckpoints.length > 0
-        ? Array.from(new Set(validCourseCheckpoints)).sort((a, b) => a - b)
-        : isRoboticsClass
-        ? [4, 8]
-        : [5, 9];
+    const checkpointNums = safeResolveCpSessionsCg
+      ? safeResolveCpSessionsCg(normalizedClassCode, syllabusList)
+      : (() => {
+          const isLegoClass = safeIsLegoCg(normalizedClassCode);
+          const matchedCourse = [...syllabusList]
+            .sort((a, b) => String(b.courseCode || "").length - String(a.courseCode || "").length)
+            .find((c) => {
+              const code = String(c?.courseCode || "").trim().toUpperCase();
+              if (!code || !normalizedClassCode.includes(code)) return false;
+              if (isLegoClass && !safeIsLegoCg(code)) return false;
+              return true;
+            });
+          const validCourseCheckpoints = Array.isArray(matchedCourse?.checkpointSessions)
+            ? matchedCourse.checkpointSessions
+                .map((n) => Number(n))
+                .filter((n) => Number.isInteger(n) && n >= 1 && n <= 13)
+            : [];
+          return validCourseCheckpoints.length > 0
+            ? Array.from(new Set(validCourseCheckpoints)).sort((a, b) => a - b)
+            : isLegoClass
+              ? [5, 9]
+              : isRoboticsClass
+                ? [4, 8]
+                : [5, 9];
+        })();
     const isCheckpoint =
       typeof session.isCheckpointSession === "boolean"
         ? session.isCheckpointSession
@@ -1451,6 +1472,7 @@ ${JSON.stringify(targetsToRewrite, null, 2)}
             theoryScore: item.checkpointData.theoryScore,
             practiceScore: item.checkpointData.practiceScore,
             competencyAverage: item.checkpointData.competencyAverage,
+            isLego: Boolean(item.checkpointData.isLego ?? safeIsLegoCg(normalizedClassCode)),
           });
           fullComment = safeUpsertCheckpointHeaderCg(fullComment, scoreHeaderLine);
         }

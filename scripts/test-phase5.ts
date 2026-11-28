@@ -1,31 +1,9 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import AdmZip from "adm-zip";
 import sharp from "sharp";
-import {
-  parseSubmissionBuffer,
-  parseSubmissionFile,
-} from "../src/lib/file-parsers";
-import {
-  auditCriterionGrades,
-  calculateTotalScoreFromCriteria,
-} from "../src/lib/gemini/score-auditor";
-import {
-  HomeworkAiGrader,
-  wrapInPromptInjectionSandbox,
-  sanitizeFeedbackHtml,
-} from "../src/lib/gemini/homework-grader";
-import {
-  buildSubmissionFilePath,
-  sanitizePathSegment,
-} from "../src/lib/playwright/download-submissions";
-import {
-  homeworkSubmissionRepo,
-  studentRepo,
-  computeHomeworkContentHash,
-  verifyHomeworkContentIntegrity,
-} from "../src/lib/db/sqlite";
 import type { GradingRubric } from "../src/lib/db/json-config";
 
 const sampleRubric: GradingRubric = {
@@ -54,7 +32,45 @@ const sampleRubric: GradingRubric = {
 };
 
 async function runPhase5Tests() {
+  let ownTempRoot: string | null = null;
+  if (!process.env.MINDX_DB_PATH) {
+    ownTempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "mindx-phase5-"));
+    const tempConfigDir = path.join(ownTempRoot, "config");
+    fs.mkdirSync(tempConfigDir, { recursive: true });
+    const realConfigDir = path.resolve(process.cwd(), "data", "config");
+    for (const cfg of ["courses_syllabus.json", "quick_tags.json", "grading_rubrics.json", "lms_class_ids.json"]) {
+      const src = path.join(realConfigDir, cfg);
+      if (fs.existsSync(src)) {
+        fs.copyFileSync(src, path.join(tempConfigDir, cfg));
+      }
+    }
+    process.env.MINDX_DB_PATH = path.join(ownTempRoot, "phase5_test.db");
+    process.env.MINDX_CONFIG_DIR = process.env.MINDX_CONFIG_DIR || tempConfigDir;
+    process.env.MINDX_RUNNING_CLASSES_PATH =
+      process.env.MINDX_RUNNING_CLASSES_PATH || path.join(ownTempRoot, "running_classes.json");
+    process.env.MINDX_LMS_CLASS_IDS_PATH =
+      process.env.MINDX_LMS_CLASS_IDS_PATH || path.join(tempConfigDir, "lms_class_ids.json");
+    process.env.ALLOWED_LOCAL_DIRS = process.env.ALLOWED_LOCAL_DIRS || ownTempRoot;
+  }
+
+  const { parseSubmissionBuffer } = await import("../src/lib/file-parsers");
+  const { auditCriterionGrades, calculateTotalScoreFromCriteria } = await import(
+    "../src/lib/gemini/score-auditor"
+  );
+  const { HomeworkAiGrader, wrapInPromptInjectionSandbox, sanitizeFeedbackHtml } = await import(
+    "../src/lib/gemini/homework-grader"
+  );
+  const { buildSubmissionFilePath } = await import("../src/lib/playwright/download-submissions");
+  const {
+    closeDb,
+    homeworkSubmissionRepo,
+    computeHomeworkContentHash,
+    verifyHomeworkContentIntegrity,
+  } = await import("../src/lib/db/sqlite");
+
   console.log("🚀 Bắt đầu chạy bộ kiểm thử toàn diện Giai đoạn 5 (Phase 5)...\n");
+
+  try {
 
   // 1. Test Code Reader (.py, .ipynb, .ui, .html) & Binary Corruption Detection
   {
@@ -860,6 +876,14 @@ async function runPhase5Tests() {
   }
 
   console.log("\n🎉 TẤT CẢ CÁC BÀI KIỂM THỬ GIAI ĐOẠN 5 ĐÃ VƯỢT QUA 100%!");
+  } finally {
+    closeDb();
+    if (ownTempRoot) {
+      try {
+        fs.rmSync(ownTempRoot, { recursive: true, force: true });
+      } catch {}
+    }
+  }
 }
 
 runPhase5Tests().catch((err) => {

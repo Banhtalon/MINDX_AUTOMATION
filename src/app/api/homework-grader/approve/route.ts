@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
-import { validateLocalRequest } from "@/lib/security/local-guard";
+import {
+  parseJsonPlainObjectBody,
+  validateLocalRequest,
+} from "@/lib/security/local-guard";
 import {
   homeworkSubmissionRepo,
+  scoreMatrixRepo,
   computeHomeworkContentHash,
   type HomeworkSubmissionRecord,
 } from "@/lib/db/sqlite";
@@ -10,7 +14,25 @@ import {
   calculateTotalScoreFromCriteria,
 } from "@/lib/gemini/score-auditor";
 import { sanitizeFeedbackHtml } from "@/lib/gemini/homework-grader";
-import { getCheckpointStageFromSessionNumber } from "@/lib/checkpoint/checkpoint-column-resolver";
+import {
+  getCheckpointStageFromSessionNumber,
+  resolveTargetMatrixColumn,
+} from "@/lib/checkpoint/checkpoint-column-resolver";
+
+function stripHtmlToPlainText(raw: string): string {
+  return String(raw || "")
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\/\s*(p|div|li|tr|h[1-6])\s*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 function buildLockedRubric(existingCriteria: any[], fallbackRubric?: any) {
   const sourceCriteria =
@@ -41,7 +63,9 @@ export async function POST(req: Request) {
   if (guard) return guard;
 
   try {
-    const body = await req.json();
+    const bodyRes = await parseJsonPlainObjectBody(req);
+    if (!bodyRes.ok) return bodyRes.response;
+    const body = bodyRes.body as Record<string, any>;
     const classId = String(body.classId || "").trim().toUpperCase();
     const sessionId = String(body.sessionId || "").trim();
     const submissionId = body.submissionId ? String(body.submissionId).trim() : "";
@@ -261,6 +285,16 @@ export async function POST(req: Request) {
     }
 
     // Mode 2: Approve a single submission
+    if (approveAllInSession) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Không thể kết hợp approveAll: true với duyệt đơn lẻ submissionId.",
+        },
+        { status: 400 }
+      );
+    }
+
     if (!submissionId) {
       return NextResponse.json(
         { success: false, error: "Thiếu submissionId cần duyệt." },
@@ -303,14 +337,182 @@ export async function POST(req: Request) {
     }
 
     if (existing.parseStatus === "PARSE_ERROR") {
-      return NextResponse.json(
+      if (body.manualTeacherGradeOnParseError !== true) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Bài nộp đang bị lỗi đọc file (PARSE_ERROR). Cấm tự động duyệt chấm điểm 0 hoặc yêu cầu làm lại khi chưa đọc được file.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const reqStudentId =
+        typeof body.studentId === "string" ? body.studentId.trim() : "";
+      if (!reqStudentId || reqStudentId !== existing.studentId) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Thiếu hoặc sai studentId khi duyệt chấm tay cho bài nộp lỗi đọc (PARSE_ERROR).",
+          },
+          { status: 400 }
+        );
+      }
+
+      if (body.decision !== "GRADE") {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Chấm tay bài nộp PARSE_ERROR bắt buộc chọn decision === 'GRADE' (không hỗ trợ REDO).",
+          },
+          { status: 400 }
+        );
+      }
+
+      let effectiveMaxScore = 100;
+      if (!isCheckpointSession) {
+        try {
+          const cachedMatrix = scoreMatrixRepo.findByClass(classId)?.matrix;
+          if (cachedMatrix?.columns && parsedSessionNumber > 0) {
+            const colRes = resolveTargetMatrixColumn(
+              cachedMatrix.columns,
+              classId,
+              parsedSessionNumber
+            );
+            if (colRes.column && Array.isArray(cachedMatrix.rows)) {
+              for (const row of cachedMatrix.rows) {
+                const cell = row?.cells?.[colRes.column.columnId];
+                if (
+                  cell &&
+                  typeof cell.maxScore === "number" &&
+                  Number.isFinite(cell.maxScore) &&
+                  cell.maxScore > 0 &&
+                  cell.maxScore <= 100
+                ) {
+                  effectiveMaxScore = Math.round(cell.maxScore);
+                  break;
+                }
+              }
+            }
+          }
+        } catch {}
+        if (
+          typeof body.rubric?.maxTotalScore === "number" &&
+          Number.isFinite(body.rubric.maxTotalScore) &&
+          body.rubric.maxTotalScore > 0 &&
+          body.rubric.maxTotalScore <= 100
+        ) {
+          effectiveMaxScore = Math.round(body.rubric.maxTotalScore);
+        }
+      }
+
+      const manualScore = body.teacherOverrideScore;
+      if (
+        typeof manualScore !== "number" ||
+        !Number.isFinite(manualScore) ||
+        !Number.isInteger(manualScore) ||
+        manualScore < 0 ||
+        manualScore > effectiveMaxScore
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Điểm chấm tay bài PARSE_ERROR phải là số nguyên từ 0 đến ${effectiveMaxScore}.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      if (typeof body.feedbackHtml !== "string") {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Thiếu nội dung nhận xét (feedbackHtml) khi duyệt chấm tay bài PARSE_ERROR.",
+          },
+          { status: 400 }
+        );
+      }
+      const cleanManualFeedback = sanitizeFeedbackHtml(body.feedbackHtml);
+      const plainManualFeedback = stripHtmlToPlainText(cleanManualFeedback);
+      if (plainManualFeedback.length < 10) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Nhận xét chấm tay cho bài PARSE_ERROR bắt buộc có tối thiểu 10 ký tự văn bản thực tế.",
+          },
+          { status: 400 }
+        );
+      }
+
+      if (
+        typeof body.fileHash === "string" &&
+        body.fileHash.trim() &&
+        String(existing.fileHash || "").trim() &&
+        body.fileHash.trim() !== String(existing.fileHash || "").trim()
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "[Stale Conflict] Phiên bản file bài nộp (fileHash) đã thay đổi so với DB.",
+          },
+          { status: 409 }
+        );
+      }
+
+      const auditReason =
+        typeof body.manualReason === "string" && body.manualReason.trim()
+          ? body.manualReason.trim().slice(0, 300)
+          : `Giáo viên kiểm tra file gốc và chấm tay bài lỗi đọc tự động (${
+              existing.parseErrorReason || "PARSE_ERROR"
+            }).`;
+
+      const manualCriteria = [
         {
-          success: false,
-          error:
-            "Bài nộp đang bị lỗi đọc file (PARSE_ERROR). Cấm tự động duyệt chấm điểm 0 hoặc yêu cầu làm lại khi chưa đọc được file.",
+          criterionId: "MANUAL_PARSE_ERROR_GRADE",
+          criterionName: "Chấm tay bởi giáo viên (tệp lỗi đọc tự động)",
+          title: "Chấm tay bởi giáo viên (tệp lỗi đọc tự động)",
+          maxPoints: effectiveMaxScore,
+          earnedPoints: manualScore,
+          evidenceSnippet:
+            existing.originalFileName ||
+            existing.localFilePath ||
+            existing.submissionId,
+          deductionReason: auditReason,
+          reason: auditReason,
+          manualTeacherGradeOnParseError: true,
+          approvedAt: new Date().toISOString(),
         },
-        { status: 400 }
-      );
+      ];
+
+      const manualRecord: HomeworkSubmissionRecord = {
+        ...existing,
+        criteriaGradesJson: JSON.stringify(manualCriteria),
+        calculatedScore: manualScore,
+        teacherOverrideScore: manualScore,
+        decision: "GRADE",
+        feedbackHtml: cleanManualFeedback,
+        status: "APPROVED",
+        verifiedAt: null,
+        errorMessage: null,
+      };
+      manualRecord.contentHash = computeHomeworkContentHash(manualRecord);
+
+      homeworkSubmissionRepo.upsert({
+        ...manualRecord,
+        _freshlyReviewed: true,
+      } as any);
+      const savedManual = homeworkSubmissionRepo.findBySubmissionId(submissionId);
+
+      return NextResponse.json({
+        success: true,
+        data: savedManual,
+      });
     }
 
     if (existing.parseStatus !== "PARSED" || !String(existing.fileHash || "").trim()) {

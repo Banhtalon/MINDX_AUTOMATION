@@ -13,14 +13,23 @@
 import {
   COMPETENCY_AREA_SPECS,
   COMPETENCY_KEYS,
+  LEGO_COMPETENCY_AREA_SPECS,
+  LEGO_COMPETENCY_KEYS,
+  calculateCompetencyAverageForClassPure,
   calculateCompetencyAveragePure,
   clampCompetencyRating,
+  getCompetencyKeysForClassPure,
+  getCompetencySpecsForClassPure,
   hasCompleteCompetencyScores,
+  hasCompleteCompetencyScoresForClassPure,
+  isLegoRoboticsClassCodePure,
   isRoboticsClassCodePure,
   matchesCompetencyAreaIdPure,
   parseCompetencyScoresPure,
+  type AnyCompetencyAreaSpec,
   type CompetencyAreaSpec,
   type CompetencyScores,
+  type LegoCompetencyAreaSpec,
 } from "./competency-specs";
 
 function formatShortZaloName(fullName: string): string {
@@ -34,19 +43,29 @@ function formatShortZaloName(fullName: string): string {
 export {
   COMPETENCY_AREA_SPECS,
   COMPETENCY_KEYS,
+  LEGO_COMPETENCY_AREA_SPECS,
+  LEGO_COMPETENCY_KEYS,
+  calculateCompetencyAverageForClassPure,
   calculateCompetencyAveragePure,
   clampCompetencyRating,
+  getCompetencyKeysForClassPure,
+  getCompetencySpecsForClassPure,
   hasCompleteCompetencyScores,
+  hasCompleteCompetencyScoresForClassPure,
+  isLegoRoboticsClassCodePure,
   isRoboticsClassCodePure,
   matchesCompetencyAreaIdPure,
   parseCompetencyScoresPure,
+  type AnyCompetencyAreaSpec,
   type CompetencyAreaSpec,
   type CompetencyScores,
+  type LegoCompetencyAreaSpec,
 };
 
 export interface CheckpointStageInfo {
   isCheckpoint: boolean;
   isRobotics: boolean;
+  isLego?: boolean;
   cpStage: 1 | 2 | null;
   stageStartSession: number;
   stageEndSession: number;
@@ -84,6 +103,7 @@ export interface CheckpointProcessSummary {
 export interface CheckpointStudentData {
   cpStage: 1 | 2;
   isRobotics: boolean;
+  isLego?: boolean;
   /** Lý thuyết trên LMS (thang 5.0) — hợp nhất giữa #tab-10 và #tab-3 */
   theoryScore: number | null;
   /** Thực hành trên LMS (thang 5.0) — hợp nhất giữa #tab-10 và #tab-3 */
@@ -152,19 +172,26 @@ export interface ComputeStudentProcessCompetencyInput {
 
 export const CODING_CHECKPOINT_SESSIONS = [5, 9] as const;
 export const ROBOTICS_CHECKPOINT_SESSIONS = [4, 8] as const;
+export const LEGO_CHECKPOINT_SESSIONS = [5, 9] as const;
 
 export function resolveCheckpointStageForSession(
   classCode?: string | null,
   sessionNumber?: number | null
 ): CheckpointStageInfo {
-  const isRobotics = isRoboticsClassCodePure(classCode);
+  const isLego = isLegoRoboticsClassCodePure(classCode);
+  const isRobotics = isLego || isRoboticsClassCodePure(classCode);
   const num = Number(sessionNumber || 0);
-  const checkpoints = isRobotics ? ROBOTICS_CHECKPOINT_SESSIONS : CODING_CHECKPOINT_SESSIONS;
+  const checkpoints = isLego
+    ? LEGO_CHECKPOINT_SESSIONS
+    : isRobotics
+      ? ROBOTICS_CHECKPOINT_SESSIONS
+      : CODING_CHECKPOINT_SESSIONS;
 
   if (num === checkpoints[0]) {
     return {
       isCheckpoint: true,
       isRobotics,
+      ...(isLego ? { isLego: true } : {}),
       cpStage: 1,
       stageStartSession: 1,
       stageEndSession: checkpoints[0],
@@ -175,6 +202,7 @@ export function resolveCheckpointStageForSession(
     return {
       isCheckpoint: true,
       isRobotics,
+      ...(isLego ? { isLego: true } : {}),
       cpStage: 2,
       stageStartSession: checkpoints[0] + 1,
       stageEndSession: checkpoints[1],
@@ -184,6 +212,7 @@ export function resolveCheckpointStageForSession(
   return {
     isCheckpoint: false,
     isRobotics,
+    ...(isLego ? { isLego: true } : {}),
     cpStage: null,
     stageStartSession: 1,
     stageEndSession: num || 1,
@@ -396,7 +425,9 @@ function normalizeAsciiVi(raw: string): string {
     .trim();
 }
 
-function matchAreaSpecFromLmsItem(area: any): CompetencyAreaSpec | null {
+function matchAreaSpecFromLmsItem(
+  area: any
+): { key: keyof CompetencyScores; isLegoSpec: boolean } | null {
   if (!area || typeof area !== "object") return null;
   const rawType = String(area.type ?? area.commentArea?.type ?? "").trim().toUpperCase();
   if (rawType && rawType !== "RATE") return null;
@@ -407,8 +438,12 @@ function matchAreaSpecFromLmsItem(area: any): CompetencyAreaSpec | null {
     .trim()
     .toLowerCase();
   if (areaId) {
+    const byLegoId = LEGO_COMPETENCY_AREA_SPECS.find(
+      (s) => s.commentAreaId.toLowerCase() === areaId
+    );
+    if (byLegoId) return { key: byLegoId.key, isLegoSpec: true };
     const byId = COMPETENCY_AREA_SPECS.find((s) => matchesCompetencyAreaIdPure(s, areaId));
-    if (byId) return byId;
+    if (byId) return { key: byId.key, isLegoSpec: false };
   }
 
   const labelNorm = normalizeAsciiVi(
@@ -422,16 +457,25 @@ function matchAreaSpecFromLmsItem(area: any): CompetencyAreaSpec | null {
     )
   );
   if (labelNorm) {
+    const byExactLegoLabel = LEGO_COMPETENCY_AREA_SPECS.find(
+      (s) => normalizeAsciiVi(s.labelVi) === labelNorm
+    );
+    if (byExactLegoLabel) return { key: byExactLegoLabel.key, isLegoSpec: true };
+
     const byExactLabel = COMPETENCY_AREA_SPECS.find(
       (s) =>
         normalizeAsciiVi(s.labelVi) === labelNorm ||
         (s.roboticsLabelVi ? normalizeAsciiVi(s.roboticsLabelVi) === labelNorm : false)
     );
-    if (byExactLabel) return byExactLabel;
+    if (byExactLabel) return { key: byExactLabel.key, isLegoSpec: false };
+
+    if (labelNorm.includes("su dung cong nghe") || labelNorm.includes("su dung cong cu")) {
+      return { key: "skillComputerUse", isLegoSpec: false };
+    }
     const byLabel = COMPETENCY_AREA_SPECS.find((s) =>
       s.keywordsNorm.some((kw) => labelNorm.includes(kw))
     );
-    if (byLabel) return byLabel;
+    if (byLabel) return { key: byLabel.key, isLegoSpec: false };
   }
 
   return null;
@@ -447,30 +491,44 @@ export interface ExtractedLmsCheckpointAreas {
 }
 
 /**
- * Trích xuất điểm Lý thuyết, Thực hành và 9 ô [ĐNL] từ mảng `att.commentByAreas` của MindX LMS.
+ * Trích xuất điểm Lý thuyết, Thực hành và 9 ô [ĐNL] (hoặc 7 ô LEGO) từ mảng `att.commentByAreas` của MindX LMS.
  */
 export function extractLmsCheckpointFromCommentByAreas(
   commentByAreas: unknown,
-  fallbackComment?: string | null
+  fallbackComment?: string | null,
+  options?: { classCode?: string }
 ): ExtractedLmsCheckpointAreas {
   const areas = Array.isArray(commentByAreas) ? commentByAreas : [];
   const ratePartial: Partial<CompetencyScores> = {};
+  let matchedLegoIdOrLabelCount = 0;
 
   for (const area of areas) {
     const spec = matchAreaSpecFromLmsItem(area);
     const grade = Number(area?.grade);
     if (spec && Number.isFinite(grade) && grade >= 1 && grade <= 5) {
       ratePartial[spec.key] = clampCompetencyRating(grade);
+      if (spec.isLegoSpec) {
+        matchedLegoIdOrLabelCount++;
+      }
     }
   }
 
-  const distinctRateKeys = Object.keys(ratePartial) as Array<keyof CompetencyScores>;
+  const explicitClassCode = String(options?.classCode || "").trim();
+  const explicitIsLego = explicitClassCode ? isLegoRoboticsClassCodePure(explicitClassCode) : false;
+  const explicitNonLego = explicitClassCode ? !explicitIsLego : false;
+  const effectiveIsLego = explicitIsLego || (!explicitNonLego && matchedLegoIdOrLabelCount >= 5);
+  const classHint = effectiveIsLego ? "LEGO" : explicitClassCode || undefined;
+
+  const activeKeySet = effectiveIsLego ? new Set<keyof CompetencyScores>(LEGO_COMPETENCY_KEYS) : null;
+  const distinctRateKeys = (Object.keys(ratePartial) as Array<keyof CompetencyScores>).filter(
+    (k) => !activeKeySet || activeKeySet.has(k)
+  );
   const distinctRateCount = distinctRateKeys.length;
-  const competencyScores = hasCompleteCompetencyScores(ratePartial)
+  const competencyScores = hasCompleteCompetencyScoresForClassPure(ratePartial, classHint)
     ? parseCompetencyScoresPure(ratePartial)
     : null;
   const competencyAverage = competencyScores
-    ? calculateCompetencyAveragePure(competencyScores)
+    ? calculateCompetencyAverageForClassPure(competencyScores, classHint)
     : distinctRateCount > 0
       ? Number(
           (
@@ -630,16 +688,18 @@ export function parseCheckpointDataJson(raw?: string | null): CheckpointStudentD
     const cpStage = parsed.cpStage === 2 ? 2 : parsed.cpStage === 1 ? 1 : null;
     if (!cpStage) return null;
 
-    const compScores = hasCompleteCompetencyScores(parsed.competencyScores)
+    const isLego = Boolean(parsed.isLego);
+    const classHint = isLego ? "LEGO" : undefined;
+    const compScores = hasCompleteCompetencyScoresForClassPure(parsed.competencyScores, classHint)
       ? parseCompetencyScoresPure(parsed.competencyScores)
       : null;
     const compAvg = compScores
-      ? calculateCompetencyAveragePure(compScores)
+      ? calculateCompetencyAverageForClassPure(compScores, classHint)
       : typeof parsed.competencyAverage === "number" && Number.isFinite(parsed.competencyAverage)
         ? Number(parsed.competencyAverage.toFixed(2))
         : null;
 
-    const lmsComp = hasCompleteCompetencyScores(parsed.lmsCompetencyScores)
+    const lmsComp = hasCompleteCompetencyScoresForClassPure(parsed.lmsCompetencyScores, classHint)
       ? parseCompetencyScoresPure(parsed.lmsCompetencyScores)
       : null;
 
@@ -651,6 +711,7 @@ export function parseCheckpointDataJson(raw?: string | null): CheckpointStudentD
     return {
       cpStage,
       isRobotics: Boolean(parsed.isRobotics),
+      ...(isLego ? { isLego: true } : {}),
       theoryScore: normTheory,
       practiceScore: normPractice,
       ...(parsed.slotTheoryScore !== undefined
@@ -700,9 +761,10 @@ export function mergeCheckpointStudentData(
   if (!primary) return fallbackComputed || null;
   if (!fallbackComputed) return primary;
 
+  const isLego = Boolean(primary.isLego ?? fallbackComputed.isLego);
   const mergedCompScores = primary.competencyScores || fallbackComputed.competencyScores || null;
   const mergedCompAvg = mergedCompScores
-    ? calculateCompetencyAveragePure(mergedCompScores)
+    ? calculateCompetencyAverageForClassPure(mergedCompScores, isLego ? "LEGO" : undefined)
     : primary.competencyAverage ?? fallbackComputed.competencyAverage ?? null;
 
   const primaryEditedTheory = Boolean(primary.userEditedTheory);
@@ -754,6 +816,7 @@ export function mergeCheckpointStudentData(
   return {
     ...fallbackComputed,
     ...primary,
+    ...(isLego ? { isLego: true } : {}),
     theoryScore: mergedTheory,
     practiceScore: mergedPractice,
     slotTheoryScore:
@@ -854,6 +917,7 @@ export function computeStudentProcessCompetency(
   const stage = resolveCheckpointStageForSession(input.classCode, input.sessionNumber);
   const cpStage: 1 | 2 = stage.cpStage || 1;
   const isRobotics = stage.isRobotics;
+  const isLego = Boolean(stage.isLego);
 
   const theoryScore = normalizeScoreToScale5(input.theoryScore);
   const practiceScore = normalizeScoreToScale5(input.practiceScore);
@@ -1083,7 +1147,7 @@ export function computeStudentProcessCompetency(
     attitudeInClass: Math.round(processScore.attitudeInClass),
   });
 
-  const competencyAverage = calculateCompetencyAveragePure(finalScores);
+  const competencyAverage = calculateCompetencyAverageForClassPure(finalScores, input.classCode);
 
   const topStrengthTags = [...strengthTagFreq.entries()]
     .sort((a, b) => b[1] - a[1])
@@ -1097,6 +1161,7 @@ export function computeStudentProcessCompetency(
   return {
     cpStage,
     isRobotics,
+    ...(isLego ? { isLego: true } : {}),
     theoryScore,
     practiceScore,
     competencyScores: finalScores,
@@ -1126,6 +1191,21 @@ export function computeStudentProcessCompetency(
   };
 }
 
+export function hasMatchingCheckpointLmsCompetency(
+  cp: CheckpointStudentData | null | undefined,
+  classCode?: string | null
+): boolean {
+  if (!cp?.lmsCompetencyScores) return false;
+  if (!cp?.competencyScores) return true;
+  const keys =
+    cp.isLego || isLegoRoboticsClassCodePure(classCode)
+      ? LEGO_COMPETENCY_KEYS
+      : COMPETENCY_KEYS;
+  return keys.every(
+    (k) => cp.competencyScores![k] === cp.lmsCompetencyScores![k]
+  );
+}
+
 /**
  * Gắn dòng điểm chuẩn cố định (do TypeScript format, AI không được tự bịa số) ở đầu nhận xét Checkpoint.
  */
@@ -1134,6 +1214,7 @@ export function formatCheckpointScoreHeaderLine(params: {
   theoryScore: number | null;
   practiceScore: number | null;
   competencyAverage: number | null;
+  isLego?: boolean;
 }): string {
   const ltText =
     typeof params.theoryScore === "number" && Number.isFinite(params.theoryScore)
@@ -1147,6 +1228,10 @@ export function formatCheckpointScoreHeaderLine(params: {
     typeof params.competencyAverage === "number" && Number.isFinite(params.competencyAverage)
       ? `**${params.competencyAverage.toFixed(2)}/5.0**`
       : "**Chưa tính**";
+
+  if (params.isLego) {
+    return `📊 **Kết quả Checkpoint ${params.cpStage}:** Điểm năng lực ${dnlText}`;
+  }
 
   return `📊 **Kết quả Checkpoint ${params.cpStage}:** Lý thuyết ${ltText} | Thực hành ${thText} | Điểm năng lực ${dnlText}`;
 }
@@ -1183,12 +1268,17 @@ export interface CheckpointZaloStudentInput {
 export function buildCheckpointZaloSummaryBlock(params: {
   cpStage: 1 | 2;
   isRobotics: boolean;
+  isLego?: boolean;
   students: CheckpointZaloStudentInput[];
 }): string {
+  const isLegoClass = Boolean(
+    params.isLego || (params.students || []).some((s) => Boolean(s.checkpointData?.isLego))
+  );
   const stageLabel = params.cpStage === 1 ? "Chặng 1 (nửa đầu khóa)" : "Chặng 2 (nửa sau khóa)";
-  const domainPractice = params.isRobotics
-    ? "lắp ráp mô hình và lập trình điều khiển robot"
-    : "vận dụng tư duy thuật toán và thực hành viết code";
+  const domainPractice =
+    params.isRobotics || isLegoClass
+      ? "lắp ráp mô hình và lập trình điều khiển robot"
+      : "vận dụng tư duy thuật toán và thực hành viết code";
 
   const activeStudents = (params.students || []).filter((s) => s.isActive !== false);
   const shortNameFreq = new Map<string, number>();
@@ -1227,14 +1317,17 @@ export function buildCheckpointZaloSummaryBlock(params: {
     const dnl = cp?.competencyAverage ?? null;
     const medals = cp?.processSummary?.totalMedals || 0;
     const stars = cp?.processSummary?.totalStars || 0;
+    const isLegoStudent = Boolean(params.isLego || cp?.isLego || isLegoClass);
 
     const examParts: number[] = [];
     if (lt !== null) examParts.push(lt);
     if (th !== null) examParts.push(th);
     const hasExamScores = examParts.length > 0;
-    if (!hasExamScores) continue;
+    if (!hasExamScores && !(isLegoStudent && dnl !== null)) continue;
 
-    const examAvg = examParts.reduce((sum, x) => sum + x, 0) / examParts.length;
+    const examAvg = hasExamScores
+      ? examParts.reduce((sum, x) => sum + x, 0) / examParts.length
+      : null;
     const allParts = [...examParts];
     if (dnl !== null) allParts.push(dnl);
     const combined = allParts.reduce((sum, x) => sum + x, 0) / allParts.length;
@@ -1249,10 +1342,19 @@ export function buildCheckpointZaloSummaryBlock(params: {
       if (prevCp.practiceScore !== null && prevCp.practiceScore !== undefined) {
         prevExamParts.push(prevCp.practiceScore);
       }
-      if (prevExamParts.length > 0) {
+      if (examAvg !== null && prevExamParts.length > 0) {
         const prevExamAvg =
           prevExamParts.reduce((sum, x) => sum + x, 0) / prevExamParts.length;
         if (examAvg >= 3.2 && examAvg - prevExamAvg >= 0.4) {
+          improvedFromCp1 = true;
+        }
+      } else if (
+        isLegoStudent &&
+        dnl !== null &&
+        typeof prevCp.competencyAverage === "number" &&
+        Number.isFinite(prevCp.competencyAverage)
+      ) {
+        if (dnl >= 3.5 && dnl - prevCp.competencyAverage >= 0.3) {
           improvedFromCp1 = true;
         }
       }
@@ -1272,7 +1374,7 @@ export function buildCheckpointZaloSummaryBlock(params: {
   }
 
   // Xếp hạng nội bộ để chọn bạn tuyên dương (KHÔNG in điểm số ra ngoài!)
-  // Bắt buộc có điểm kiểm tra Checkpoint thực tế đạt ngưỡng tốt (không tuyên dương học sinh vắng hoặc điểm thấp)
+  // Bắt buộc có điểm kiểm tra Checkpoint (hoặc điểm năng lực 7 sao với LEGO) đạt ngưỡng tốt
   const standoutCandidates = [...scoredStudents]
     .filter((s) => {
       if (s.lt !== null && s.th !== null) {
@@ -1282,11 +1384,17 @@ export function buildCheckpointZaloSummaryBlock(params: {
           (s.examAvg! >= 4.0 || (s.combined >= 4.0 && s.medals > 0))
         );
       }
+      if (s.examAvg === null) {
+        return (
+          s.dnl !== null &&
+          (s.dnl >= 4.0 || (s.dnl >= 3.8 && (s.stars > 0 || s.medals > 0)))
+        );
+      }
       return (s.examAvg ?? 0) >= 4.0 && s.combined >= 4.0;
     })
     .sort(
       (a, b) =>
-        (b.examAvg ?? 0) - (a.examAvg ?? 0) ||
+        (b.examAvg ?? b.dnl ?? 0) - (a.examAvg ?? a.dnl ?? 0) ||
         b.combined - a.combined ||
         b.medals - a.medals ||
         b.stars - a.stars
@@ -1303,8 +1411,8 @@ export function buildCheckpointZaloSummaryBlock(params: {
     )
   );
 
-  const needSupportCount = scoredStudents.filter(
-    (s) => s.examAvg !== null && s.examAvg < 3.2
+  const needSupportCount = scoredStudents.filter((s) =>
+    s.examAvg !== null ? s.examAvg < 3.2 : s.dnl !== null && s.dnl < 3.2
   ).length;
 
   const avgClassScore =
@@ -1314,12 +1422,20 @@ export function buildCheckpointZaloSummaryBlock(params: {
 
   const overviewSentence =
     avgClassScore === null
-      ? `- Lớp đã hoàn thành bài kiểm tra định kỳ Checkpoint ${params.cpStage} nhằm đánh giá kiến thức lý thuyết và khả năng ${domainPractice} sau ${stageLabel}.`
+      ? isLegoClass
+        ? `- Lớp đã hoàn thành chặng đánh giá định kỳ Checkpoint ${params.cpStage} nhằm đánh giá năng lực học tập quá trình và khả năng ${domainPractice} sau ${stageLabel}.`
+        : `- Lớp đã hoàn thành bài kiểm tra định kỳ Checkpoint ${params.cpStage} nhằm đánh giá kiến thức lý thuyết và khả năng ${domainPractice} sau ${stageLabel}.`
       : avgClassScore >= 4.0
-        ? `- Qua quá trình học tập ${stageLabel} và kết quả Checkpoint ${params.cpStage}, tập thể lớp nhìn chung nắm vững kiến thức trọng tâm, có tinh thần tự giác và thể hiện tốt phần ${domainPractice}.`
+        ? isLegoClass
+          ? `- Qua quá trình học tập ${stageLabel} và kết quả đánh giá năng lực Checkpoint ${params.cpStage}, tập thể lớp nhìn chung nắm vững kỹ năng trọng tâm, có tinh thần tự giác và thể hiện tốt phần ${domainPractice}.`
+          : `- Qua quá trình học tập ${stageLabel} và kết quả Checkpoint ${params.cpStage}, tập thể lớp nhìn chung nắm vững kiến thức trọng tâm, có tinh thần tự giác và thể hiện tốt phần ${domainPractice}.`
         : avgClassScore >= 3.4
-          ? `- Qua quá trình học tập ${stageLabel} và bài đánh giá Checkpoint ${params.cpStage}, đa số các con đã tiếp cận được kiến thức cốt lõi và hoàn thành các yêu cầu ${domainPractice} ở mức khá.`
-          : `- Qua quá trình theo dõi ${stageLabel} và bài đánh giá Checkpoint ${params.cpStage}, các con đã nỗ lực hoàn thành bài kiểm tra; một số nội dung kiến thức nền và kỹ năng ${domainPractice} sẽ tiếp tục được giáo viên ôn tập, củng cố thêm ở chặng tới.`;
+          ? isLegoClass
+            ? `- Qua quá trình học tập ${stageLabel} và chặng đánh giá năng lực Checkpoint ${params.cpStage}, đa số các con đã làm quen chắc chắn kỹ năng cốt lõi và hoàn thành các yêu cầu ${domainPractice} ở mức khá.`
+            : `- Qua quá trình học tập ${stageLabel} và bài đánh giá Checkpoint ${params.cpStage}, đa số các con đã tiếp cận được kiến thức cốt lõi và hoàn thành các yêu cầu ${domainPractice} ở mức khá.`
+          : isLegoClass
+            ? `- Qua quá trình theo dõi ${stageLabel} và chặng đánh giá Checkpoint ${params.cpStage}, các con đã nỗ lực tham gia thực hành; một số kỹ năng nền tảng và thao tác ${domainPractice} sẽ tiếp tục được giáo viên ôn tập, củng cố thêm ở chặng tới.`
+            : `- Qua quá trình theo dõi ${stageLabel} và bài đánh giá Checkpoint ${params.cpStage}, các con đã nỗ lực hoàn thành bài kiểm tra; một số nội dung kiến thức nền và kỹ năng ${domainPractice} sẽ tiếp tục được giáo viên ôn tập, củng cố thêm ở chặng tới.`;
 
   const lines: string[] = [
     `🎯 ĐÁNH GIÁ QUÁ TRÌNH & TỔNG KẾT CHECKPOINT ${params.cpStage}:`,
@@ -1328,7 +1444,9 @@ export function buildCheckpointZaloSummaryBlock(params: {
 
   if (standoutNames.length > 0) {
     lines.push(
-      `- Tuyên dương các bạn duy trì phong độ học tập tích cực, nền tảng kiến thức vững và hoàn thành nổi bật bài đánh giá Checkpoint ${params.cpStage}: *${standoutNames.join(", ")}*.`
+      isLegoClass
+        ? `- Tuyên dương các bạn duy trì phong độ học tập tích cực, kỹ năng thực hành vững và hoàn thành nổi bật chặng đánh giá Checkpoint ${params.cpStage}: *${standoutNames.join(", ")}*.`
+        : `- Tuyên dương các bạn duy trì phong độ học tập tích cực, nền tảng kiến thức vững và hoàn thành nổi bật bài đánh giá Checkpoint ${params.cpStage}: *${standoutNames.join(", ")}*.`
     );
   }
   if (improvedNames.length > 0) {

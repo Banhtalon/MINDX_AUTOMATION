@@ -7465,6 +7465,43 @@ function buildNormalizedStudentSlugKey(classId: string, fullName?: string | null
   return clean ? `STU_${classId}_${clean.toUpperCase()}` : "";
 }
 
+function hasCompleteCheckpointCompetencyObj(obj: unknown, isLego: boolean): boolean {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false;
+  const keys = isLego ? LEGO_COMPETENCY_KEYS : SESSION14_COMPETENCY_KEYS;
+  const rec = obj as Record<string, unknown>;
+  return keys.every((k) => {
+    const val = Number(rec[k]);
+    return Number.isInteger(val) && val >= 1 && val <= 5;
+  });
+}
+
+function extractValidCheckpointCompetencyAverage(
+  parsed: Record<string, unknown>,
+  classId: string,
+  isLego: boolean
+): number | null {
+  const rawAvg = parsed.competencyAverage;
+  if (rawAvg !== null && rawAvg !== undefined && typeof rawAvg !== "boolean" && rawAvg !== "") {
+    const num = typeof rawAvg === "string" ? Number(rawAvg.trim().replace(",", ".")) : Number(rawAvg);
+    if (Number.isFinite(num) && num > 0 && num <= 5) {
+      return round2(num);
+    }
+  }
+  if (hasCompleteCheckpointCompetencyObj(parsed.lmsCompetencyScores, isLego)) {
+    return calculateCompetencyAverageScore(
+      parseSession14CompetencyScores(parsed.lmsCompetencyScores as Partial<SpckSession14CompetencyScores>),
+      classId
+    );
+  }
+  if (hasCompleteCheckpointCompetencyObj(parsed.competencyScores, isLego)) {
+    return calculateCompetencyAverageScore(
+      parseSession14CompetencyScores(parsed.competencyScores as Partial<SpckSession14CompetencyScores>),
+      classId
+    );
+  }
+  return null;
+}
+
 function collectManualCheckpointEditsByStage(
   classId: string,
   isRobotics: boolean
@@ -7475,6 +7512,9 @@ function collectManualCheckpointEditsByStage(
     userEditedPractice: boolean;
     theoryScore: number | null;
     practiceScore: number | null;
+    competencyAverage: number | null;
+    hasVerifiedCompetency: boolean;
+    hasUserEditedCompetency: boolean;
   }
 > {
   const out = new Map<
@@ -7484,21 +7524,26 @@ function collectManualCheckpointEditsByStage(
       userEditedPractice: boolean;
       theoryScore: number | null;
       practiceScore: number | null;
+      competencyAverage: number | null;
+      hasVerifiedCompetency: boolean;
+      hasUserEditedCompetency: boolean;
     }
   >();
   if (!dbInstance || !classId) return out;
   try {
-    const cp1Sess = isRobotics ? 4 : 5;
-    const cp2Sess = isRobotics ? 8 : 9;
+    const isLego = isLegoRoboticsClassCode(classId);
+    const cp1Sess = isLego ? 5 : isRobotics ? 4 : 5;
+    const cp2Sess = isLego ? 9 : isRobotics ? 8 : 9;
     const fbRows = dbInstance
       .prepare(
-        `SELECT sessionId, studentId, checkpointDataJson
+        `SELECT sessionId, studentId, status, checkpointDataJson
          FROM session_feedbacks
          WHERE classId = ? AND checkpointDataJson IS NOT NULL AND checkpointDataJson != '' AND checkpointDataJson != '{}'`
       )
       .all(classId) as Array<{
       sessionId: string;
       studentId: string;
+      status: string;
       checkpointDataJson: string;
     }>;
 
@@ -7529,7 +7574,30 @@ function collectManualCheckpointEditsByStage(
         parsed = null;
       }
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) continue;
-      if (!parsed.userEditedTheory && !parsed.userEditedPractice) continue;
+
+      const hasCompleteLmsComp = hasCompleteCheckpointCompetencyObj(
+        parsed.lmsCompetencyScores,
+        isLego
+      );
+      const hasVerifiedCompetency = row.status === "VERIFIED" || hasCompleteLmsComp;
+      const hasUserEditedCompetency = Boolean(parsed.userEditedCompetency);
+      const competencyAverage =
+        row.status === "VERIFIED"
+          ? extractValidCheckpointCompetencyAverage(parsed, classId, isLego)
+          : hasCompleteLmsComp
+            ? calculateCompetencyAverageScore(
+                parseSession14CompetencyScores(
+                  parsed.lmsCompetencyScores as Partial<SpckSession14CompetencyScores>
+                ),
+                classId
+              )
+            : hasUserEditedCompetency
+              ? extractValidCheckpointCompetencyAverage(parsed, classId, isLego)
+              : null;
+
+      if (!parsed.userEditedTheory && !parsed.userEditedPractice && competencyAverage === null) {
+        continue;
+      }
       const sid = String(row.studentId || "").trim();
       if (!sid) continue;
       out.set(`${cpStage}:${sid}`, {
@@ -7537,6 +7605,9 @@ function collectManualCheckpointEditsByStage(
         userEditedPractice: Boolean(parsed.userEditedPractice),
         theoryScore: normalizeManualCheckpointScore5(parsed.theoryScore),
         practiceScore: normalizeManualCheckpointScore5(parsed.practiceScore),
+        competencyAverage,
+        hasVerifiedCompetency,
+        hasUserEditedCompetency,
       });
     }
   } catch {}
@@ -7588,6 +7659,15 @@ function overlayManualCheckpointFeedbacksOntoSnapshot(
       nextStage.cp1Practice = cp1Edit.practiceScore;
       stuChanged = true;
     }
+    if (cp1Edit?.competencyAverage !== null && cp1Edit?.competencyAverage !== undefined) {
+      const canOverlayCp1Comp =
+        cp1Edit.hasVerifiedCompetency ||
+        (cp1Edit.hasUserEditedCompetency && (nextStage.cp1Competency ?? null) === null);
+      if (canOverlayCp1Comp && (nextStage.cp1Competency ?? null) !== cp1Edit.competencyAverage) {
+        nextStage.cp1Competency = cp1Edit.competencyAverage;
+        stuChanged = true;
+      }
+    }
     if (cp2Edit?.userEditedTheory && nextStage.cp2Theory !== cp2Edit.theoryScore) {
       nextStage.cp2Theory = cp2Edit.theoryScore;
       stuChanged = true;
@@ -7595,6 +7675,15 @@ function overlayManualCheckpointFeedbacksOntoSnapshot(
     if (cp2Edit?.userEditedPractice && nextStage.cp2Practice !== cp2Edit.practiceScore) {
       nextStage.cp2Practice = cp2Edit.practiceScore;
       stuChanged = true;
+    }
+    if (cp2Edit?.competencyAverage !== null && cp2Edit?.competencyAverage !== undefined) {
+      const canOverlayCp2Comp =
+        cp2Edit.hasVerifiedCompetency ||
+        (cp2Edit.hasUserEditedCompetency && (nextStage.cp2Competency ?? null) === null);
+      if (canOverlayCp2Comp && (nextStage.cp2Competency ?? null) !== cp2Edit.competencyAverage) {
+        nextStage.cp2Competency = cp2Edit.competencyAverage;
+        stuChanged = true;
+      }
     }
     if (!stuChanged) return st;
     anyChanged = true;
@@ -8805,6 +8894,213 @@ export function syncCheckpointScoresIntoExistingReportCard(
     classCode: String(rawSnap.classCode || normalizedClassId).trim().toUpperCase(),
     ...(rawSnap.lmsClassId ? { lmsClassId: String(rawSnap.lmsClassId) } : {}),
     isRobotics: Boolean(rawSnap.isRobotics ?? isRoboticsClassCode(normalizedClassId)),
+    btvnSessions: Array.isArray(rawSnap.btvnSessions) ? rawSnap.btvnSessions : [],
+    students: nextStudents,
+    scrapedAt: String(rawSnap.scrapedAt || ""),
+  });
+  return true;
+}
+
+/**
+ * Đồng bộ dữ liệu Checkpoint (`cp1Competency`/`cp2Competency` + `cp1Theory`/`cp1Practice`/`cp2Theory`/`cp2Practice`)
+ * từ các bản ghi `session_feedbacks` đã `VERIFIED` sang `class_report_cards.lmsSnapshotJson`.
+ * Trả `false` và KHÔNG ghi DB (không hạ `APPROVED`) nếu dữ liệu thực tế trên snapshot đã khớp 100%.
+ */
+export function syncVerifiedCheckpointToReportCardSnapshot(classId: string): boolean {
+  const normalizedClassId = String(classId || "").trim().toUpperCase();
+  if (!normalizedClassId) return false;
+
+  const existingRc = reportCardRepo.findOne(normalizedClassId);
+  if (
+    !existingRc ||
+    !existingRc.lmsSnapshotJson ||
+    existingRc.lmsSnapshotJson.trim() === "{}" ||
+    existingRc.status === "SAVING" ||
+    existingRc.teachingSyncStatus === "SYNCING"
+  ) {
+    return false;
+  }
+
+  let rawSnap: any = null;
+  try {
+    rawSnap = JSON.parse(existingRc.lmsSnapshotJson);
+  } catch {
+    return false;
+  }
+  if (!rawSnap || typeof rawSnap !== "object" || !Array.isArray(rawSnap.students) || rawSnap.students.length === 0) {
+    return false;
+  }
+
+  const db = getDb();
+  const isLego = isLegoRoboticsClassCode(normalizedClassId);
+  const isRobotics = Boolean(rawSnap.isRobotics ?? isRoboticsClassCode(normalizedClassId));
+  const cp1Sess = isLego ? 5 : isRobotics ? 4 : 5;
+  const cp2Sess = isLego ? 9 : isRobotics ? 8 : 9;
+
+  const fbRows = db
+    .prepare(
+      `SELECT sessionId, studentId, status, checkpointDataJson
+       FROM session_feedbacks
+       WHERE classId = ? AND status = 'VERIFIED'
+         AND checkpointDataJson IS NOT NULL AND checkpointDataJson != '' AND checkpointDataJson != '{}'`
+    )
+    .all(normalizedClassId) as Array<{
+    sessionId: string;
+    studentId: string;
+    status: string;
+    checkpointDataJson: string;
+  }>;
+
+  if (fbRows.length === 0) return false;
+
+  const sessNumMap = new Map<string, number>();
+  try {
+    const sessRows = db
+      .prepare(`SELECT sessionId, sessionNumber FROM classes_sessions WHERE classId = ?`)
+      .all(normalizedClassId) as Array<{ sessionId: string; sessionNumber: number }>;
+    for (const s of sessRows) {
+      if (s?.sessionId && typeof s.sessionNumber === "number") {
+        sessNumMap.set(s.sessionId, s.sessionNumber);
+      }
+    }
+  } catch {}
+
+  const verifiedByStage = new Map<
+    string,
+    {
+      theoryScore: number | null;
+      practiceScore: number | null;
+      userEditedTheory: boolean;
+      userEditedPractice: boolean;
+      competencyAverage: number | null;
+    }
+  >();
+
+  for (const row of fbRows) {
+    let sNum = sessNumMap.get(row.sessionId) || 0;
+    if (!sNum) {
+      const m = String(row.sessionId || "").match(/(?:^|[_-])SESS(?:ION)?[_-]?0*(\d+)$/i);
+      if (m) sNum = Number(m[1]);
+    }
+    const cpStage = sNum === cp1Sess ? 1 : sNum === cp2Sess ? 2 : 0;
+    if (!cpStage) continue;
+
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(row.checkpointDataJson);
+    } catch {
+      parsed = null;
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) continue;
+
+    const sid = String(row.studentId || "").trim();
+    if (!sid) continue;
+
+    verifiedByStage.set(`${cpStage}:${sid}`, {
+      theoryScore: normalizeManualCheckpointScore5(parsed.theoryScore),
+      practiceScore: normalizeManualCheckpointScore5(parsed.practiceScore),
+      userEditedTheory: Boolean(parsed.userEditedTheory),
+      userEditedPractice: Boolean(parsed.userEditedPractice),
+      competencyAverage: extractValidCheckpointCompetencyAverage(parsed, normalizedClassId, isLego),
+    });
+  }
+
+  if (verifiedByStage.size === 0) return false;
+
+  let anyUpdated = false;
+  const nextStudents = rawSnap.students.map((st: any) => {
+    if (!st || typeof st !== "object") return st;
+    const candidateIds = [
+      String(st.studentId || "").trim(),
+      String(st.crmStudentId || "").trim(),
+      String(st.studentUid || "").trim(),
+      String(st.lmsStudentUid || "").trim(),
+      buildNormalizedStudentSlugKey(normalizedClassId, st.fullName),
+    ].filter(Boolean);
+
+    let cp1Ver: ReturnType<typeof verifiedByStage.get> = undefined;
+    let cp2Ver: ReturnType<typeof verifiedByStage.get> = undefined;
+    for (const cid of candidateIds) {
+      if (!cp1Ver) cp1Ver = verifiedByStage.get(`1:${cid}`);
+      if (!cp2Ver) cp2Ver = verifiedByStage.get(`2:${cid}`);
+      if (cp1Ver && cp2Ver) break;
+    }
+    if (!cp1Ver && !cp2Ver) return st;
+
+    const prevStage = st.stageScores && typeof st.stageScores === "object" ? st.stageScores : {};
+    const nextStage = { ...prevStage };
+    let stuChanged = false;
+
+    const applyStage = (
+      ver: NonNullable<ReturnType<typeof verifiedByStage.get>> | undefined,
+      tKey: "cp1Theory" | "cp2Theory",
+      pKey: "cp1Practice" | "cp2Practice",
+      cKey: "cp1Competency" | "cp2Competency"
+    ) => {
+      if (!ver) return;
+
+      if (ver.competencyAverage !== null && (nextStage[cKey] ?? null) !== ver.competencyAverage) {
+        nextStage[cKey] = ver.competencyAverage;
+        stuChanged = true;
+      }
+
+      const applyTestScore = (
+        key: "cp1Theory" | "cp2Theory" | "cp1Practice" | "cp2Practice",
+        incoming: number | null,
+        isManualEdited: boolean
+      ) => {
+        const currentVal =
+          typeof nextStage[key] === "number" && Number.isFinite(nextStage[key])
+            ? nextStage[key]
+            : null;
+        if (incoming === null) {
+          if (isManualEdited && currentVal !== null) {
+            nextStage[key] = null;
+            stuChanged = true;
+          }
+          return;
+        }
+        if (currentVal === null) {
+          nextStage[key] = incoming;
+          stuChanged = true;
+          return;
+        }
+        if (isManualEdited) {
+          if (currentVal !== incoming) {
+            nextStage[key] = incoming;
+            stuChanged = true;
+          }
+          return;
+        }
+        // Preserve higher-precision 2dp LMS score (e.g., 3.75 vs 1dp 3.8) when not manually edited
+        if (Math.round(currentVal * 10) / 10 !== Math.round(incoming * 10) / 10) {
+          nextStage[key] = incoming;
+          stuChanged = true;
+        }
+      };
+
+      applyTestScore(tKey, ver.theoryScore, ver.userEditedTheory);
+      applyTestScore(pKey, ver.practiceScore, ver.userEditedPractice);
+    };
+
+    applyStage(cp1Ver, "cp1Theory", "cp1Practice", "cp1Competency");
+    applyStage(cp2Ver, "cp2Theory", "cp2Practice", "cp2Competency");
+
+    if (!stuChanged) return st;
+    anyUpdated = true;
+    return {
+      ...st,
+      stageScores: nextStage,
+    };
+  });
+
+  if (!anyUpdated) return false;
+
+  reportCardRepo.saveLmsSnapshot(normalizedClassId, {
+    classId: normalizedClassId,
+    classCode: String(rawSnap.classCode || normalizedClassId).trim().toUpperCase(),
+    ...(rawSnap.lmsClassId ? { lmsClassId: String(rawSnap.lmsClassId) } : {}),
+    isRobotics,
     btvnSessions: Array.isArray(rawSnap.btvnSessions) ? rawSnap.btvnSessions : [],
     students: nextStudents,
     scrapedAt: String(rawSnap.scrapedAt || ""),

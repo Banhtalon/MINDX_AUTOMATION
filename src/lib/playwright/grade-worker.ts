@@ -362,11 +362,48 @@ export class HomeworkGradeWorker {
             );
           }
 
-          // Guardrail A: Reject PARSE_ERROR submissions
+          // Guardrail A: Reject PARSE_ERROR submissions unless explicitly manual-graded & approved by teacher
           if (freshRecord.parseStatus === "PARSE_ERROR") {
-            throw new Error(
-              `Bài nộp '${subId}' đang ở trạng thái PARSE_ERROR, cấm tự động ghi điểm hoặc yêu cầu làm lại lên LMS.`
+            let parsedCriteria: any[] = [];
+            try {
+              const rawParsed = JSON.parse(freshRecord.criteriaGradesJson || "[]");
+              if (Array.isArray(rawParsed)) parsedCriteria = rawParsed;
+            } catch {
+              parsedCriteria = [];
+            }
+            const manualAuditMarker = parsedCriteria.find(
+              (c: any) =>
+                c &&
+                typeof c === "object" &&
+                c.criterionId === "MANUAL_PARSE_ERROR_GRADE" &&
+                Number.isFinite(Number(c.earnedPoints))
             );
+            const hasValidManualOverride =
+              typeof freshRecord.teacherOverrideScore === "number" &&
+              Number.isFinite(freshRecord.teacherOverrideScore) &&
+              Number.isInteger(freshRecord.teacherOverrideScore) &&
+              freshRecord.teacherOverrideScore !== null &&
+              freshRecord.teacherOverrideScore >= 0 &&
+              freshRecord.teacherOverrideScore <= 100 &&
+              Boolean(manualAuditMarker) &&
+              Number(manualAuditMarker.earnedPoints) === freshRecord.teacherOverrideScore;
+            const hasValidManualFeedback =
+              normalizeComparableNoteText(freshRecord.feedbackHtml).length >= 10;
+            const isValidStatusForManualPush =
+              freshRecord.status === "APPROVED" ||
+              (freshRecord.status === "FAILED" && Boolean(freshRecord.contentHash));
+            const isAuthorizedManualParseError =
+              isValidStatusForManualPush &&
+              verifyHomeworkContentIntegrity(freshRecord) &&
+              hasValidManualOverride &&
+              hasValidManualFeedback &&
+              decision === "GRADE";
+
+            if (!isAuthorizedManualParseError) {
+              throw new Error(
+                `Bài nộp '${subId}' đang ở trạng thái PARSE_ERROR, cấm tự động ghi điểm hoặc yêu cầu làm lại lên LMS.`
+              );
+            }
           }
 
           // Guardrail B: Verify student belongs to class

@@ -184,9 +184,24 @@ export function calculateCompetencyAveragePure(scores: CompetencyScores): number
   return Number((sum / COMPETENCY_KEYS.length).toFixed(2));
 }
 
+export function isLegoRoboticsClassCodePure(
+  classId?: string | null,
+  courseName?: string | null
+): boolean {
+  const combined = `${String(classId || "")} ${String(courseName || "")}`.trim().toUpperCase();
+  if (!combined) return false;
+  return (
+    /(?:^|[-_\s])(?:KIND[-_\s]*ROB[A-Z0-9]*|ROB[46](?:[BAI][A-Z0-9]*|\+)?|LEGO[A-Z0-9]*|KIRO[A-Z0-9]*)(?=$|[-_\s])/i.test(
+      combined
+    ) ||
+    /(?:RBT|ROBOTICS)\s*[46]\+/i.test(combined)
+  );
+}
+
 export function isRoboticsClassCodePure(classId?: string | null): boolean {
   const s = String(classId || "").trim().toUpperCase();
   if (!s) return false;
+  if (isLegoRoboticsClassCodePure(s)) return true;
   return /(?:^|[-_\s])(ROB|ROBO|ROBOT|ROBOTICS|PREB|PREA|PREI|ARM|ARMA|ARMB|ARMI|SEM|SEMA|SEMB|SEMI|EV3|VEX|SPIKE|WEDO|ARDUINO)[A-Z0-9]*\b/i.test(
     s
   );
@@ -255,8 +270,58 @@ export const LEGO_COMPETENCY_AREA_SPECS: readonly LegoCompetencyAreaSpec[] = [
   },
 ];
 
+export const LEGO_COMPETENCY_KEYS: Array<keyof CompetencyScores> =
+  LEGO_COMPETENCY_AREA_SPECS.map((s) => s.key);
+
+export type AnyCompetencyAreaSpec = CompetencyAreaSpec | LegoCompetencyAreaSpec;
+
+export function getCompetencySpecsForClassPure(
+  classId?: string | null
+): readonly AnyCompetencyAreaSpec[] {
+  return isLegoRoboticsClassCodePure(classId)
+    ? LEGO_COMPETENCY_AREA_SPECS
+    : COMPETENCY_AREA_SPECS;
+}
+
+export function getCompetencyKeysForClassPure(
+  classId?: string | null
+): Array<keyof CompetencyScores> {
+  return isLegoRoboticsClassCodePure(classId)
+    ? [...LEGO_COMPETENCY_KEYS]
+    : [...COMPETENCY_KEYS];
+}
+
+export function hasCompleteCompetencyScoresForClassPure(
+  raw: unknown,
+  classId?: string | null
+): raw is CompetencyScores {
+  if (!raw || typeof raw !== "object") return false;
+  const obj = raw as Record<string, unknown>;
+  return getCompetencyKeysForClassPure(classId).every((key) => {
+    const val = Number(obj[key]);
+    return Number.isInteger(val) && val >= 1 && val <= 5;
+  });
+}
+
+export function calculateCompetencyAverageForClassPure(
+  scores: CompetencyScores | Partial<CompetencyScores>,
+  classId?: string | null
+): number {
+  const keys = getCompetencyKeysForClassPure(classId);
+  let sum = 0;
+  for (const key of keys) {
+    sum += clampCompetencyRating((scores as Record<string, unknown>)?.[key], 4);
+  }
+  return Number((sum / keys.length).toFixed(2));
+}
+
 export function matchesCompetencyAreaIdPure(
-  spec: CompetencyAreaSpec,
+  spec: {
+    commentAreaId: string;
+    commentAreaSuffix?: string;
+    aliasCommentAreaIds?: readonly string[];
+    aliasCommentAreaSuffixes?: readonly string[];
+  },
   rawAreaId: string
 ): boolean {
   const id = String(rawAreaId || "").trim().toLowerCase();
@@ -266,7 +331,7 @@ export function matchesCompetencyAreaIdPure(
     return (spec.aliasCommentAreaIds || []).some((a) => id === a.toLowerCase());
   }
   if (id.length >= 4 && id.length < 24) {
-    if (id.endsWith(spec.commentAreaSuffix.toLowerCase())) return true;
+    if (spec.commentAreaSuffix && id.endsWith(spec.commentAreaSuffix.toLowerCase())) return true;
     return (spec.aliasCommentAreaSuffixes || []).some((s) => id.endsWith(s.toLowerCase()));
   }
   return false;

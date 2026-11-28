@@ -79,6 +79,8 @@ type SortField =
 type SortDirection = "asc" | "desc";
 type ChartStageKey = "cp1" | "cp2" | "final";
 
+const HW_UI_PREFS_STORAGE_KEY = "mindx_hw_ui_prefs_v1";
+
 interface OverrideModalState {
   classId?: string;
   openedDraftVersion?: number | null;
@@ -187,6 +189,7 @@ export default function TeachingReportCardView({
   // Interactive UI controls matching teachingmindx.top/diem-tong-ket.php
   const [scaleMode, setScaleMode] = useState<ScaleDisplayMode>("scale5");
   const [stageFilter, setStageFilter] = useState<StageFilterMode>("all");
+  const [prefsHydrated, setPrefsHydrated] = useState<boolean>(false);
   const [selectedBtvnSessions, setSelectedBtvnSessions] = useState<number[] | null>(null);
   const [showBtvnFilterPopover, setShowBtvnFilterPopover] = useState<boolean>(false);
   const [sortField, setSortField] = useState<SortField>("default");
@@ -219,6 +222,56 @@ export default function TeachingReportCardView({
   const lastEffectClassIdRef = useRef<string>("");
   const selectedBtvnClassRef = useRef<string>("");
   const latestVersionByClassRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      setPrefsHydrated(true);
+      return;
+    }
+    try {
+      const raw = window.localStorage?.getItem(HW_UI_PREFS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          if (parsed.scaleMode === "scale5" || parsed.scaleMode === "raw") {
+            setScaleMode(parsed.scaleMode);
+          }
+          if (
+            parsed.stageFilter === "all" ||
+            parsed.stageFilter === "cp1" ||
+            parsed.stageFilter === "cp2" ||
+            parsed.stageFilter === "cp1_cp2"
+          ) {
+            setStageFilter(parsed.stageFilter);
+          }
+        }
+      }
+    } catch {
+      // ignore corrupted localStorage prefs
+    } finally {
+      setPrefsHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!prefsHydrated || typeof window === "undefined") return;
+    try {
+      let prev: Record<string, unknown> = {};
+      const raw = window.localStorage?.getItem(HW_UI_PREFS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          prev = parsed;
+        }
+      }
+      window.localStorage?.setItem(
+        HW_UI_PREFS_STORAGE_KEY,
+        JSON.stringify({ ...prev, scaleMode, stageFilter })
+      );
+    } catch {
+      // ignore storage errors
+    }
+  }, [scaleMode, stageFilter, prefsHydrated]);
 
   const applyApiPayload = useCallback(
     (data: any, expectedClassId: string, _isFromGet = false): boolean => {
@@ -1998,6 +2051,7 @@ export default function TeachingReportCardView({
             <div className="inline-flex rounded-lg border border-slate-700 overflow-hidden">
               <button
                 type="button"
+                data-testid="rc-scale-scale5-btn"
                 onClick={() => setScaleMode("scale5")}
                 className={`px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
                   scaleMode === "scale5"
@@ -2009,6 +2063,7 @@ export default function TeachingReportCardView({
               </button>
               <button
                 type="button"
+                data-testid="rc-scale-raw-btn"
                 onClick={() => setScaleMode("raw")}
                 className={`px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
                   scaleMode === "raw"
@@ -2100,6 +2155,7 @@ export default function TeachingReportCardView({
 
             {/* Stage Filter */}
             <select
+              data-testid="rc-stage-filter-select"
               value={stageFilter}
               onChange={(e) => setStageFilter(e.target.value as StageFilterMode)}
               className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-200 focus:outline-none"

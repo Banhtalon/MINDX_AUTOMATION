@@ -32,6 +32,7 @@ import {
   getHomeworkColumnShortLabel,
   getHomeworkCompletionItems,
 } from "@/lib/report-card/homework-completion-helpers";
+import { isRoboticsClassCodePure } from "@/lib/checkpoint/checkpoint-competency";
 
 const formatCellForExport: (
   cell?: StudentScoreCell | null,
@@ -130,6 +131,8 @@ function htmlToPlainText(rawHtml?: string): string {
     .trim();
 }
 
+const HW_UI_PREFS_STORAGE_KEY = "mindx_hw_ui_prefs_v1";
+
 export default function HomeworkGraderPage() {
   const [classCode, setClassCode] = useState("VT-C4K-PTA12");
   const [classId, setClassId] = useState("VT-C4K-PTA12");
@@ -140,6 +143,7 @@ export default function HomeworkGraderPage() {
   const [matrix, setMatrix] = useState<ClassScoreMatrixResult | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"practice" | "both" | "quiz">("both");
+  const [prefsHydrated, setPrefsHydrated] = useState(false);
   const [hideScores, setHideScores] = useState(false);
 
   const [isScraping, setIsScraping] = useState(false);
@@ -169,6 +173,52 @@ export default function HomeworkGraderPage() {
   const hasRestoredClassCodeRef = useRef(false);
   const restoredTargetClassRef = useRef<string | null>(null);
   const autoScanOnMountRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      setPrefsHydrated(true);
+      return;
+    }
+    try {
+      const raw = window.localStorage?.getItem(HW_UI_PREFS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          (parsed.viewMode === "practice" ||
+            parsed.viewMode === "both" ||
+            parsed.viewMode === "quiz")
+        ) {
+          setViewMode(parsed.viewMode);
+        }
+      }
+    } catch {
+      // ignore corrupted localStorage prefs
+    } finally {
+      setPrefsHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!prefsHydrated || typeof window === "undefined") return;
+    try {
+      let prev: Record<string, unknown> = {};
+      const raw = window.localStorage?.getItem(HW_UI_PREFS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          prev = parsed;
+        }
+      }
+      window.localStorage?.setItem(
+        HW_UI_PREFS_STORAGE_KEY,
+        JSON.stringify({ ...prev, viewMode })
+      );
+    } catch {
+      // ignore storage errors
+    }
+  }, [viewMode, prefsHydrated]);
 
   useEffect(() => {
     if (!hasRestoredClassCodeRef.current) {
@@ -424,6 +474,18 @@ export default function HomeworkGraderPage() {
       !isLoadingCache &&
       matrix.classId?.trim().toUpperCase() === classId.trim().toUpperCase() &&
       classId.trim().toUpperCase() === classCode.trim().toUpperCase()
+  );
+
+  const isCodingClass = Boolean(
+    classCode.trim() && !isRoboticsClassCodePure(classCode.trim().toUpperCase())
+  );
+  const canTopCaptureBtvn = Boolean(
+    isCodingClass &&
+      isMatrixMatchedWithSelection &&
+      matrix &&
+      matrix.columns &&
+      matrix.columns.length > 0 &&
+      matrix.rows.length > 0
   );
 
   const handleExportFile = (format: "xlsx" | "csv") => {
@@ -692,6 +754,10 @@ export default function HomeworkGraderPage() {
         if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
           await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
           setCopiedImage(true);
+          setStatusMessage({
+            type: "success",
+            text: `Đã chụp & copy ảnh bảng BTVN lớp ${matrix.classCode || classCode} vào Clipboard!`,
+          });
           setTimeout(() => setCopiedImage(false), 2500);
           return;
         }
@@ -707,6 +773,10 @@ export default function HomeworkGraderPage() {
       a.click();
       URL.revokeObjectURL(url);
       setCopiedImage(true);
+      setStatusMessage({
+        type: "success",
+        text: `Đã tải xuống ảnh bảng BTVN lớp ${matrix.classCode || classCode} (PNG).`,
+      });
       setTimeout(() => setCopiedImage(false), 2500);
     }, "image/png");
   };
@@ -901,6 +971,19 @@ export default function HomeworkGraderPage() {
               showRefreshButton={false}
             />
 
+            {canTopCaptureBtvn && (
+              <button
+                type="button"
+                data-testid="hw-top-capture-btvn-btn"
+                onClick={handleCopyHomeworkImage}
+                disabled={isScraping || isLoadingCache || isBatchSyncRunning}
+                className="neo-btn-blue flex items-center gap-1.5 px-3.5 py-2 rounded-xl disabled:opacity-50 text-xs sm:text-sm font-black cursor-pointer disabled:cursor-not-allowed mindx-dark-keep"
+                title="Chụp bảng theo dõi BTVN thành ảnh PNG và copy vào Clipboard (hoạt động cả khi bảng chi tiết bên dưới đang đóng)"
+              >
+                <span>{copiedImage ? "✓ Đã copy ảnh" : "📸 Ảnh BTVN"}</span>
+              </button>
+            )}
+
             <button
               type="button"
               data-testid="batch-sync-running-classes-btn"
@@ -1038,6 +1121,8 @@ export default function HomeworkGraderPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-slate-400 mr-1">Chế độ xem:</span>
                 <button
+                  type="button"
+                  data-testid="hw-view-mode-both-btn"
                   onClick={() => setViewMode("both")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                     viewMode === "both"
@@ -1048,6 +1133,8 @@ export default function HomeworkGraderPage() {
                   Thực hành + Quiz
                 </button>
                 <button
+                  type="button"
+                  data-testid="hw-view-mode-practice-btn"
                   onClick={() => setViewMode("practice")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                     viewMode === "practice"
@@ -1058,6 +1145,8 @@ export default function HomeworkGraderPage() {
                   Chỉ Thực hành
                 </button>
                 <button
+                  type="button"
+                  data-testid="hw-view-mode-quiz-btn"
                   onClick={() => setViewMode("quiz")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                     viewMode === "quiz"

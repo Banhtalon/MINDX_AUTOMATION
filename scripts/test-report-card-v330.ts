@@ -38,6 +38,7 @@ import {
   closeDb,
   computeReportCardContentHash,
   getDb,
+  isLegoRoboticsClassCode,
   isRoboticsClassCode,
   parseManualOverridesMap,
   parseReportCardLmsSnapshot,
@@ -47,6 +48,7 @@ import {
   studentRepo,
 } from "../src/lib/db/sqlite";
 import { ScoreScraper } from "../src/lib/playwright/scrape-scores";
+import { isRoboticsClassCodePure } from "../src/lib/checkpoint/checkpoint-competency";
 import {
   matchReportCardStudentsToTeaching,
   parseStrictFiniteScore,
@@ -1299,6 +1301,7 @@ async function runTests() {
         parseFloat,
         setTimeout,
         ...calculatorMod,
+        isLegoRoboticsClassCode,
         isRoboticsClassCode,
         getDb: opts.realDb ? getDb : undefined,
         authService: { ensureAuthenticated: async () => {} },
@@ -1888,6 +1891,7 @@ async function runTests() {
         parseFloat,
         setTimeout,
         ...calculatorMod,
+        isLegoRoboticsClassCode,
         isRoboticsClassCode,
         getDb,
         authService: { ensureAuthenticated: async () => {} },
@@ -1998,6 +2002,7 @@ async function runTests() {
           parseFloat,
           setTimeout,
           ...calculatorMod,
+          isLegoRoboticsClassCode,
           isRoboticsClassCode,
           getDb,
           authService: { ensureAuthenticated: async () => {} },
@@ -3162,7 +3167,7 @@ async function runTests() {
       "Mốc Đạt (2.50)",
       "Copy ảnh BTVN",
       "Copy ảnh Tổng kết",
-      "Đồng bộ điểm lên Teaching",
+      "Đồng bộ Teaching",
     ]) {
       assert.ok(
         rcViewSource.includes(requiredMarker),
@@ -3411,6 +3416,7 @@ async function runTests() {
         formatScore2,
         normalizeScoreToScale5,
         round2,
+        isRoboticsClassCodePure,
         ...hooks,
         setTimeout,
         clearTimeout,

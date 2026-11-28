@@ -129,6 +129,19 @@ function editableTextToSafeHtml(text: string): string {
   return lines.map((line) => `<p>${escape(line)}</p>`).join("");
 }
 
+function parseCriteriaGradesSafe(
+  rawJson?: string | null,
+  fallback: CriterionGradeDto[] = []
+): CriterionGradeDto[] {
+  if (!rawJson) return fallback;
+  try {
+    const parsed = JSON.parse(rawJson);
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -182,6 +195,9 @@ export default function CheckpointGraderPanel({
   const [isApprovingAll, setIsApprovingAll] = useState(false);
   const [isSavingLms, setIsSavingLms] = useState(false);
   const [busySubId, setBusySubId] = useState<string | null>(null);
+  const [singleGradingSubId, setSingleGradingSubId] = useState<string | null>(null);
+  const [openingFileSubId, setOpeningFileSubId] = useState<string | null>(null);
+  const [approvingManualSubId, setApprovingManualSubId] = useState<string | null>(null);
   const [banner, setBanner] = useState<{
     type: "success" | "error" | "info";
     text: string;
@@ -345,6 +361,9 @@ export default function CheckpointGraderPanel({
     setIsApprovingAll(false);
     setIsSavingLms(false);
     setBusySubId(null);
+    setSingleGradingSubId(null);
+    setOpeningFileSubId(null);
+    setApprovingManualSubId(null);
     if (isOpen && normalizedClass && !isRobotics) {
       void loadPanelData(normalizedClass, stage);
     }
@@ -694,9 +713,16 @@ export default function CheckpointGraderPanel({
         });
         return;
       }
+      const updatedData = json.data || {};
+      const parsedCriteria = parseCriteriaGradesSafe(
+        updatedData.criteriaGradesJson,
+        latest.criteriaGrades
+      );
       setSubmissions((prev) =>
         prev.map((item) =>
-          item.submissionId === latest.submissionId ? { ...item, ...json.data } : item
+          item.submissionId === latest.submissionId
+            ? { ...item, ...updatedData, criteriaGrades: parsedCriteria }
+            : item
         )
       );
       setBanner({
@@ -705,6 +731,298 @@ export default function CheckpointGraderPanel({
       });
     } finally {
       if (activeScopeRef.current === scopeAtStart) {
+        setBusySubId(null);
+      }
+    }
+  };
+
+  const handleGradeSingle = async (sub: SubmissionItemDto) => {
+    if (!rubric) {
+      setShowRubricEditor(true);
+      setBanner({
+        type: "error",
+        text: "Chưa có Barem 100 điểm cho buổi Checkpoint này. Vui lòng tạo hoặc lưu Barem trước khi chấm.",
+      });
+      return;
+    }
+    const scopeAtStart = currentScopeKey;
+    setSingleGradingSubId(sub.submissionId);
+    setBusySubId(sub.submissionId);
+    setBanner({
+      type: "info",
+      text: `Đang tải bài mới nhất và chấm nháp AI riêng cho học viên ${sub.fullName}...`,
+    });
+    try {
+      const res = await fetch("/api/homework-grader/download-and-grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: normalizedClass,
+          classCode: normalizedClass,
+          sessionId,
+          lessonId: columnInfo?.lessonId || undefined,
+          studentId: sub.studentId,
+          rubricId: rubric.rubricId,
+          rubric,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (activeScopeRef.current !== scopeAtStart) return;
+      if (!res.ok || !json?.success) {
+        setBanner({
+          type: "error",
+          text: json?.error || `Tải & chấm riêng cho '${sub.fullName}' thất bại.`,
+        });
+        return;
+      }
+
+      // Refresh ONLY this student's row from SQLite without affecting other students
+      const subRes = await fetch(
+        `/api/homework-grader/submissions?classId=${encodeURIComponent(
+          normalizedClass
+        )}&sessionId=${encodeURIComponent(sessionId)}`
+      );
+      const subJson = await subRes.json().catch(() => null);
+      if (activeScopeRef.current !== scopeAtStart) return;
+
+      if (subJson?.success && subJson.data) {
+        const rows: SubmissionItemDto[] = Array.isArray(subJson.data.submissions)
+          ? subJson.data.submissions
+          : [];
+        const refreshedRow =
+          rows.find((r) => r.submissionId === sub.submissionId) ||
+          rows.find((r) => r.studentId === sub.studentId);
+        if (refreshedRow) {
+          setSubmissions((prev) =>
+            prev.map((item) =>
+              item.submissionId === sub.submissionId || item.studentId === sub.studentId
+                ? refreshedRow
+                : item
+            )
+          );
+          setNoteEdits((prev) => ({
+            ...prev,
+            [refreshedRow.submissionId]: htmlToEditableText(refreshedRow.feedbackHtml),
+          }));
+          setOverrideEdits((prev) => ({
+            ...prev,
+            [refreshedRow.submissionId]:
+              typeof refreshedRow.teacherOverrideScore === "number" &&
+              Number.isFinite(refreshedRow.teacherOverrideScore)
+                ? String(Math.round(refreshedRow.teacherOverrideScore))
+                : "",
+          }));
+          setDirtySubIds((prev) => {
+            const next = { ...prev };
+            delete next[sub.submissionId];
+            delete next[refreshedRow.submissionId];
+            return next;
+          });
+        }
+        if (!columnInfo && subJson.data.columnInfo) {
+          setColumnInfo(subJson.data.columnInfo);
+        }
+      }
+
+      const gradedList: any[] = Array.isArray(json.data?.gradeResults)
+        ? json.data.gradeResults
+        : [];
+      const singleResult =
+        gradedList.find((g) => g.studentId === sub.studentId) || gradedList[0] || null;
+      if (singleResult?.staleIgnored) {
+        setBanner({
+          type: "info",
+          text:
+            singleResult.errorMessage ||
+            `Bài nộp của ${sub.fullName} đã được duyệt trước đó (giữ nguyên).`,
+        });
+      } else if (singleResult?.parseStatus === "PARSE_ERROR") {
+        setBanner({
+          type: "error",
+          text: `${sub.fullName}: File bài nộp chưa đọc được tự động (PARSE_ERROR). Mở chi tiết dòng để xem file gốc hoặc chấm tay.`,
+        });
+      } else if (singleResult?.status === "FAILED") {
+        setBanner({
+          type: "error",
+          text: singleResult.errorMessage || `Chấm riêng cho ${sub.fullName} thất bại.`,
+        });
+      } else if (!singleResult) {
+        setBanner({
+          type: "info",
+          text: `Đã cập nhật trạng thái bài nộp của ${sub.fullName}.`,
+        });
+      } else {
+        setBanner({
+          type: "success",
+          text: `Đã tải & chấm nháp AI cho ${sub.fullName} (${Math.round(
+            singleResult.calculatedScore || 0
+          )}/100đ). Kiểm tra và bấm Duyệt!`,
+        });
+      }
+    } catch (err: any) {
+      if (activeScopeRef.current === scopeAtStart) {
+        setBanner({
+          type: "error",
+          text: err?.message || `Lỗi kết nối khi chấm riêng cho ${sub.fullName}.`,
+        });
+      }
+    } finally {
+      if (activeScopeRef.current === scopeAtStart) {
+        setSingleGradingSubId(null);
+        setBusySubId(null);
+      }
+    }
+  };
+
+  const handleOpenRawFile = async (sub: SubmissionItemDto) => {
+    if (!sub.localFilePath) {
+      setBanner({
+        type: "error",
+        text: `Bài nộp của '${sub.fullName}' chưa có tệp trên máy. Bấm "⚡ Chấm riêng" để tải file gốc về trước.`,
+      });
+      return;
+    }
+    const scopeAtStart = currentScopeKey;
+    setOpeningFileSubId(sub.submissionId);
+    setBusySubId(sub.submissionId);
+    try {
+      const res = await fetch("/api/homework-grader/open-local-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: normalizedClass,
+          classCode: normalizedClass,
+          sessionId,
+          submissionId: sub.submissionId,
+          studentId: sub.studentId,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (activeScopeRef.current !== scopeAtStart) return;
+      if (!res.ok || !json?.success) {
+        setBanner({
+          type: "error",
+          text: json?.error || `Không thể mở file gốc của '${sub.fullName}'.`,
+        });
+        return;
+      }
+      setBanner({
+        type: "success",
+        text: `Đã mở vị trí file gốc của ${sub.fullName} (${sub.originalFileName || sub.submissionId}).`,
+      });
+    } catch (err: any) {
+      if (activeScopeRef.current === scopeAtStart) {
+        setBanner({
+          type: "error",
+          text: err?.message || `Lỗi kết nối khi mở file gốc của ${sub.fullName}.`,
+        });
+      }
+    } finally {
+      if (activeScopeRef.current === scopeAtStart) {
+        setOpeningFileSubId(null);
+        setBusySubId(null);
+      }
+    }
+  };
+
+  const handleApproveManualParseError = async (sub: SubmissionItemDto) => {
+    const rawScoreStr = (overrideEdits[sub.submissionId] ?? "").trim();
+    const parsedScore = Number(rawScoreStr);
+    if (
+      rawScoreStr === "" ||
+      !Number.isFinite(parsedScore) ||
+      !Number.isInteger(parsedScore) ||
+      parsedScore < 0 ||
+      parsedScore > 100
+    ) {
+      setBanner({
+        type: "error",
+        text: `Điểm chấm tay của '${sub.fullName}' bắt buộc là số nguyên từ 0 đến 100.`,
+      });
+      return;
+    }
+
+    const plainNote = (noteEdits[sub.submissionId] ?? "").replace(/\s+/g, " ").trim();
+    if (plainNote.length < 10) {
+      setBanner({
+        type: "error",
+        text: `Nhận xét chấm tay cho '${sub.fullName}' phải có ít nhất 10 ký tự thực tế (hiện tại ${plainNote.length} ký tự).`,
+      });
+      return;
+    }
+
+    const feedbackHtml = editableTextToSafeHtml(noteEdits[sub.submissionId] ?? "");
+    const scopeAtStart = currentScopeKey;
+    setApprovingManualSubId(sub.submissionId);
+    setBusySubId(sub.submissionId);
+    try {
+      const res = await fetch("/api/homework-grader/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: normalizedClass,
+          sessionId,
+          submissionId: sub.submissionId,
+          studentId: sub.studentId,
+          manualTeacherGradeOnParseError: true,
+          teacherOverrideScore: parsedScore,
+          feedbackHtml,
+          decision: "GRADE",
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (activeScopeRef.current !== scopeAtStart) return;
+      if (!res.ok || !json?.success) {
+        const baseErr = json?.error || `Duyệt chấm tay cho '${sub.fullName}' thất bại.`;
+        setBanner({
+          type: "error",
+          text:
+            res.status === 404
+              ? `${baseErr} Bấm "⚡ Chấm riêng" để đồng bộ bài nộp này về máy trước khi chấm tay.`
+              : baseErr,
+        });
+        return;
+      }
+
+      const updatedData = json.data || {};
+      const parsedCriteria = parseCriteriaGradesSafe(
+        updatedData.criteriaGradesJson,
+        sub.criteriaGrades
+      );
+      setSubmissions((prev) =>
+        prev.map((item) =>
+          item.submissionId === sub.submissionId
+            ? { ...item, ...updatedData, criteriaGrades: parsedCriteria }
+            : item
+        )
+      );
+      setNoteEdits((prev) => ({
+        ...prev,
+        [sub.submissionId]: htmlToEditableText(updatedData.feedbackHtml ?? feedbackHtml),
+      }));
+      setOverrideEdits((prev) => ({
+        ...prev,
+        [sub.submissionId]: String(parsedScore),
+      }));
+      setDirtySubIds((prev) => {
+        const next = { ...prev };
+        delete next[sub.submissionId];
+        return next;
+      });
+      setBanner({
+        type: "success",
+        text: `Đã duyệt chấm tay cho ${sub.fullName} (${parsedScore}/100đ). Bấm "Lưu LMS" để đẩy điểm lên MindX LMS!`,
+      });
+    } catch (err: any) {
+      if (activeScopeRef.current === scopeAtStart) {
+        setBanner({
+          type: "error",
+          text: err?.message || `Lỗi kết nối khi duyệt chấm tay cho ${sub.fullName}.`,
+        });
+      }
+    } finally {
+      if (activeScopeRef.current === scopeAtStart) {
+        setApprovingManualSubId(null);
         setBusySubId(null);
       }
     }
@@ -846,7 +1164,10 @@ export default function CheckpointGraderPanel({
     isDownloadingAndGrading ||
     isApprovingAll ||
     isSavingLms ||
-    Boolean(busySubId);
+    Boolean(busySubId) ||
+    Boolean(singleGradingSubId) ||
+    Boolean(openingFileSubId) ||
+    Boolean(approvingManualSubId);
 
   const parseErrorCount = submissions.filter((s) => s.parseStatus === "PARSE_ERROR").length;
   const approvedCount = submissions.filter((s) => s.status === "APPROVED").length;
@@ -1336,14 +1657,29 @@ export default function CheckpointGraderPanel({
                         <th className="px-2.5 py-2.5 w-36 text-center">Điểm TH (0-100)</th>
                         <th className="px-3 py-2.5 min-w-[240px]">Nhận xét lưu LMS</th>
                         <th className="px-2.5 py-2.5 w-32 text-center">Trạng thái</th>
-                        <th className="px-3 py-2.5 w-40 text-right">Thao tác</th>
+                        <th className="px-3 py-2.5 min-w-[180px] text-right">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                       {submissions.map((sub) => {
                         const isExpanded = Boolean(expandedSubIds[sub.submissionId]);
                         const isParseErr = sub.parseStatus === "PARSE_ERROR";
+                        const isManualParseErrApproved =
+                          isParseErr &&
+                          (sub.status === "APPROVED" ||
+                            sub.status === "VERIFIED" ||
+                            (sub.status === "FAILED" && Boolean(sub.contentHash)));
+                        const canPushToLms =
+                          sub.status === "APPROVED" ||
+                          (sub.status === "FAILED" && Boolean(sub.contentHash));
+                        const canGradeSingle = !(
+                          isParseErr &&
+                          (sub.status === "APPROVED" || sub.status === "VERIFIED")
+                        );
                         const isRowBusy = busySubId === sub.submissionId;
+                        const isRowSingleGrading = singleGradingSubId === sub.submissionId;
+                        const isRowOpeningFile = openingFileSubId === sub.submissionId;
+                        const isRowApprovingManual = approvingManualSubId === sub.submissionId;
                         const effectiveScore =
                           typeof sub.teacherOverrideScore === "number" &&
                           Number.isFinite(sub.teacherOverrideScore)
@@ -1366,16 +1702,17 @@ export default function CheckpointGraderPanel({
                                 <div className="font-mono text-[11px] break-all">
                                   {sub.originalFileName || "(Chưa tải tệp)"}
                                 </div>
-                                {!isParseErr && (sub.criteriaGrades.length > 0 || sub.codePreview) && (
+                                {isParseErr ? (
                                   <button
                                     type="button"
+                                    data-testid={`cp-expand-row-btn-${sub.studentId}`}
                                     onClick={() =>
                                       setExpandedSubIds((prev) => ({
                                         ...prev,
                                         [sub.submissionId]: !prev[sub.submissionId],
                                       }))
                                     }
-                                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 dark:text-purple-300 hover:underline cursor-pointer"
+                                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 dark:text-amber-300 hover:underline cursor-pointer"
                                   >
                                     {isExpanded ? (
                                       <ChevronDown className="w-3 h-3" />
@@ -1383,13 +1720,45 @@ export default function CheckpointGraderPanel({
                                       <ChevronRight className="w-3 h-3" />
                                     )}
                                     <span>
-                                      {isExpanded ? "Ẩn chi tiết tiêu chí & code" : "Xem tiêu chí & code"}
+                                      {isExpanded ? "Thu gọn xử lý" : "Mở xem & Chấm tay"}
                                     </span>
                                   </button>
+                                ) : (
+                                  (sub.criteriaGrades.length > 0 || sub.codePreview) && (
+                                    <button
+                                      type="button"
+                                      data-testid={`cp-expand-row-btn-${sub.studentId}`}
+                                      onClick={() =>
+                                        setExpandedSubIds((prev) => ({
+                                          ...prev,
+                                          [sub.submissionId]: !prev[sub.submissionId],
+                                        }))
+                                      }
+                                      className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 dark:text-purple-300 hover:underline cursor-pointer"
+                                    >
+                                      {isExpanded ? (
+                                        <ChevronDown className="w-3 h-3" />
+                                      ) : (
+                                        <ChevronRight className="w-3 h-3" />
+                                      )}
+                                      <span>
+                                        {isExpanded ? "Ẩn chi tiết tiêu chí & code" : "Xem tiêu chí & code"}
+                                      </span>
+                                    </button>
+                                  )
                                 )}
                               </td>
                               <td className="px-2.5 py-2.5 text-center">
-                                {isParseErr ? (
+                                {isManualParseErrApproved ? (
+                                  <div className="flex flex-col items-center gap-1">
+                                    <span className="text-sm font-extrabold text-emerald-700 dark:text-emerald-300">
+                                      {effectiveScore}/100
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold mindx-badge-amber">
+                                      Chấm tay
+                                    </span>
+                                  </div>
+                                ) : isParseErr ? (
                                   <span className="px-2 py-0.5 rounded text-[11px] font-bold mindx-badge-amber">
                                     Khóa an toàn
                                   </span>
@@ -1433,7 +1802,11 @@ export default function CheckpointGraderPanel({
                                 )}
                               </td>
                               <td className="px-3 py-2.5">
-                                {isParseErr ? (
+                                {isManualParseErrApproved ? (
+                                  <div className="p-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-[11px] text-slate-900 dark:text-slate-100 whitespace-pre-wrap break-words">
+                                    {htmlToEditableText(sub.feedbackHtml)}
+                                  </div>
+                                ) : isParseErr ? (
                                   <div className="p-2 rounded-lg mindx-warm-box text-[11px] flex items-start gap-1.5">
                                     <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                                     <span>
@@ -1472,38 +1845,54 @@ export default function CheckpointGraderPanel({
                                 )}
                               </td>
                               <td className="px-2.5 py-2.5 text-center">
-                                {sub.status === "VERIFIED" ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[11px] mindx-badge-emerald">
-                                    ✓ Đã lưu LMS
-                                  </span>
-                                ) : sub.status === "APPROVED" ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[11px] mindx-badge-blue">
-                                    Đã duyệt
-                                  </span>
-                                ) : isParseErr ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[11px] mindx-badge-amber">
-                                    PARSE_ERROR
-                                  </span>
-                                ) : sub.status === "WAITING_APPROVAL" ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[11px] mindx-badge-purple">
-                                    Chờ duyệt
-                                  </span>
-                                ) : sub.status === "FAILED" ? (
-                                  <span
-                                    className="px-2 py-0.5 rounded-full text-[11px] bg-rose-600 text-white font-bold mindx-dark-keep"
-                                    title={sub.errorMessage || ""}
-                                  >
-                                    Lỗi lưu
-                                  </span>
-                                ) : (
-                                  <span className="px-2 py-0.5 rounded-full text-[11px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
-                                    Chưa chấm
-                                  </span>
-                                )}
+                                <div className="flex flex-col items-center gap-1">
+                                  {sub.status === "VERIFIED" ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[11px] mindx-badge-emerald">
+                                      ✓ Đã lưu LMS
+                                    </span>
+                                  ) : sub.status === "APPROVED" ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[11px] mindx-badge-blue">
+                                      Đã duyệt
+                                    </span>
+                                  ) : sub.status === "WAITING_APPROVAL" ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[11px] mindx-badge-purple">
+                                      Chờ duyệt
+                                    </span>
+                                  ) : sub.status === "FAILED" ? (
+                                    <span
+                                      className="px-2 py-0.5 rounded-full text-[11px] bg-rose-600 text-white font-bold mindx-dark-keep"
+                                      title={sub.errorMessage || ""}
+                                    >
+                                      Lỗi lưu
+                                    </span>
+                                  ) : !isParseErr ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[11px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
+                                      Chưa chấm
+                                    </span>
+                                  ) : null}
+
+                                  {isParseErr && (
+                                    <span className="px-2 py-0.5 rounded-full text-[11px] mindx-badge-amber">
+                                      PARSE_ERROR
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-3 py-2.5 text-right">
-                                {!isParseErr && sub.parseStatus === "PARSED" && (
-                                  <div className="inline-flex items-center gap-1.5">
+                                <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
+                                  {canGradeSingle && (
+                                    <button
+                                      type="button"
+                                      data-testid={`cp-grade-single-btn-${sub.studentId}`}
+                                      disabled={anyBusy}
+                                      onClick={() => void handleGradeSingle(sub)}
+                                      className="neo-btn-blue px-2.5 py-1 rounded-lg text-[11px] font-bold disabled:opacity-40 cursor-pointer whitespace-nowrap mindx-dark-keep"
+                                      title="Tải bài mới nhất từ LMS và chấm nháp AI riêng cho học viên này"
+                                    >
+                                      {isRowSingleGrading ? "Đang chấm..." : "⚡ Chấm riêng"}
+                                    </button>
+                                  )}
+                                  {!isParseErr && sub.parseStatus === "PARSED" && (
                                     <button
                                       type="button"
                                       disabled={anyBusy}
@@ -1516,23 +1905,130 @@ export default function CheckpointGraderPanel({
                                       onClick={() => void handleApproveSingle(sub)}
                                       className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 cursor-pointer"
                                     >
-                                      {isRowBusy ? "..." : "Duyệt"}
+                                      {isRowBusy && !isRowSingleGrading ? "..." : "Duyệt"}
                                     </button>
-                                    {(sub.status === "APPROVED" ||
-                                      (sub.status === "FAILED" && Boolean(sub.contentHash))) && (
-                                      <button
-                                        type="button"
-                                        disabled={anyBusy}
-                                        onClick={() => void handleSaveToLms(sub.submissionId)}
-                                        className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white cursor-pointer mindx-dark-keep"
-                                      >
-                                        {sub.status === "FAILED" ? "Thử lại LMS" : "Lưu LMS"}
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
+                                  )}
+                                  {canPushToLms && (
+                                    <button
+                                      type="button"
+                                      data-testid={`cp-save-single-lms-btn-${sub.studentId}`}
+                                      disabled={anyBusy}
+                                      onClick={() => void handleSaveToLms(sub.submissionId)}
+                                      className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white cursor-pointer mindx-dark-keep whitespace-nowrap"
+                                    >
+                                      {sub.status === "FAILED" ? "Thử lại LMS" : "Lưu LMS"}
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
+
+                            {/* Expanded PARSE_ERROR Inspection & Manual Grading */}
+                            {isExpanded && isParseErr && (
+                              <tr className="bg-slate-100/95 dark:bg-slate-950/90">
+                                <td colSpan={7} className="p-4 space-y-3">
+                                  <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl mindx-warm-box text-xs">
+                                    <div className="flex items-start gap-2 min-w-0 flex-1">
+                                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                      <span className="font-semibold break-words">
+                                        {sub.parseErrorReason ||
+                                          "Lỗi đọc tệp bài nộp — không thể phân tích tự động."}
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      data-testid={`cp-open-raw-file-btn-${sub.studentId}`}
+                                      disabled={anyBusy || !sub.localFilePath}
+                                      onClick={() => void handleOpenRawFile(sub)}
+                                      className="neo-btn-neutral px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-45 cursor-pointer shrink-0 whitespace-nowrap"
+                                      title={
+                                        sub.localFilePath
+                                          ? "Mở thư mục chứa tệp bài nộp gốc trên máy để xem trực tiếp"
+                                          : "Chưa có tệp trên máy — bấm ⚡ Chấm riêng để tải về trước"
+                                      }
+                                    >
+                                      {isRowOpeningFile ? "Đang mở..." : "📂 Xem file gốc"}
+                                    </button>
+                                  </div>
+
+                                  <div className="neo-section-card p-3.5 rounded-xl space-y-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <span className="text-xs font-black">✍️ Chấm tay</span>
+                                      {isManualParseErrApproved && (
+                                        <span className="px-2 py-0.5 rounded-full text-[11px] mindx-badge-emerald">
+                                          ✓ Đã duyệt chấm tay ({effectiveScore}/100đ)
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                                      <div className="md:col-span-3">
+                                        <label
+                                          htmlFor={`cp-manual-score-${sub.studentId}`}
+                                          className="block text-[11px] font-bold mb-1"
+                                        >
+                                          Điểm nguyên (0–100)
+                                        </label>
+                                        <input
+                                          id={`cp-manual-score-${sub.studentId}`}
+                                          type="number"
+                                          min={0}
+                                          max={100}
+                                          step={1}
+                                          data-testid={`cp-manual-score-input-${sub.studentId}`}
+                                          value={overrideEdits[sub.submissionId] ?? ""}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setOverrideEdits((prev) => ({
+                                              ...prev,
+                                              [sub.submissionId]: val,
+                                            }));
+                                          }}
+                                          placeholder="0 - 100"
+                                          className="w-full px-2.5 py-2 rounded-lg text-xs font-bold border-2 border-[#0f172a] dark:border-slate-500 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+                                        />
+                                      </div>
+
+                                      <div className="md:col-span-7">
+                                        <label
+                                          htmlFor={`cp-manual-feedback-${sub.studentId}`}
+                                          className="block text-[11px] font-bold mb-1"
+                                        >
+                                          Nhận xét giáo viên (&ge; 10 ký tự)
+                                        </label>
+                                        <textarea
+                                          id={`cp-manual-feedback-${sub.studentId}`}
+                                          rows={2}
+                                          data-testid={`cp-manual-feedback-input-${sub.studentId}`}
+                                          value={noteEdits[sub.submissionId] ?? ""}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setNoteEdits((prev) => ({
+                                              ...prev,
+                                              [sub.submissionId]: val,
+                                            }));
+                                          }}
+                                          placeholder="Nhập nhận xét sau khi xem bài làm gốc (tối thiểu 10 ký tự)..."
+                                          className="w-full px-3 py-2 rounded-lg text-xs border-2 border-[#0f172a] dark:border-slate-500 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+                                        />
+                                      </div>
+
+                                      <div className="md:col-span-2 flex md:justify-end md:pt-5">
+                                        <button
+                                          type="button"
+                                          data-testid={`cp-approve-manual-parse-err-btn-${sub.studentId}`}
+                                          disabled={anyBusy}
+                                          onClick={() => void handleApproveManualParseError(sub)}
+                                          className="neo-btn-yellow w-full md:w-auto px-3 py-2 rounded-xl text-xs font-black disabled:opacity-45 cursor-pointer whitespace-nowrap"
+                                        >
+                                          {isRowApprovingManual ? "Đang duyệt..." : "Duyệt chấm tay"}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
 
                             {/* Expanded Criteria & Code Preview */}
                             {isExpanded && !isParseErr && (

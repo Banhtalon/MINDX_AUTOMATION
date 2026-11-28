@@ -10,6 +10,7 @@ import {
   jobLogRepo,
   verifyContentIntegrity,
   extractCheckpointCoreSnapshotHash,
+  syncVerifiedCheckpointToReportCardSnapshot,
   type SessionFeedbackRecord,
 } from "../db/sqlite";
 import { getCoursesSyllabus } from "../db/json-config";
@@ -17,13 +18,27 @@ import { config } from "../config";
 import { markSaveCommentsSessionRunning } from "../queue/task-queue";
 import {
   COMPETENCY_AREA_SPECS,
+  LEGO_COMPETENCY_AREA_SPECS,
   clampCompetencyRating,
+  hasMatchingCheckpointLmsCompetency,
+  isLegoRoboticsClassCodePure,
   parseCheckpointDataJson,
+  parseCompetencyScoresPure,
+  resolveCheckpointStageForSession,
   type CompetencyScores,
 } from "../checkpoint/checkpoint-competency";
+import {
+  isLmsApiWriteEnabled,
+  isRecoverableLmsApiWriteError,
+  uploadSessionCommentsViaApi,
+} from "../lms/lms-write-client";
 
 const safeCompetencyAreaSpecs =
   typeof COMPETENCY_AREA_SPECS !== "undefined" ? COMPETENCY_AREA_SPECS : [];
+const safeLegoCompetencyAreaSpecs =
+  typeof LEGO_COMPETENCY_AREA_SPECS !== "undefined" ? LEGO_COMPETENCY_AREA_SPECS : [];
+const safeIsLegoRoboticsClassCode =
+  typeof isLegoRoboticsClassCodePure === "function" ? isLegoRoboticsClassCodePure : () => false;
 const safeClampCompetencyRating =
   typeof clampCompetencyRating === "function"
     ? clampCompetencyRating
@@ -33,9 +48,37 @@ const safeClampCompetencyRating =
       };
 const safeParseCheckpointDataJson =
   typeof parseCheckpointDataJson === "function" ? parseCheckpointDataJson : () => null;
+const safeParseCompScoresSc =
+  typeof parseCompetencyScoresPure === "function" ? parseCompetencyScoresPure : (x: any) => x;
+const safeResolveCheckpointStageSc =
+  typeof resolveCheckpointStageForSession === "function"
+    ? resolveCheckpointStageForSession
+    : () => ({ isCheckpoint: false, isRobotics: false, isLego: false, cpStage: null });
+const safeHasMatchingCheckpointLmsCompetency =
+  typeof hasMatchingCheckpointLmsCompetency === "function"
+    ? hasMatchingCheckpointLmsCompetency
+    : (cp: any) => {
+        if (!cp?.lmsCompetencyScores) return false;
+        if (!cp?.competencyScores) return true;
+        return Object.keys(cp.competencyScores).every(
+          (k) => cp.competencyScores[k] === cp.lmsCompetencyScores[k]
+        );
+      };
 const safeExtractCheckpointHash =
   typeof extractCheckpointCoreSnapshotHash === "function"
     ? extractCheckpointCoreSnapshotHash
+    : null;
+const safeIsLmsApiWriteEnabledSc =
+  typeof isLmsApiWriteEnabled === "function" ? isLmsApiWriteEnabled : () => false;
+const safeUploadSessionCommentsViaApi =
+  typeof uploadSessionCommentsViaApi === "function" ? uploadSessionCommentsViaApi : null;
+const safeIsRecoverableLmsApiWriteErrorSc =
+  typeof isRecoverableLmsApiWriteError === "function"
+    ? isRecoverableLmsApiWriteError
+    : () => true;
+const safeSyncVerifiedCheckpointToReportCardSc =
+  typeof syncVerifiedCheckpointToReportCardSnapshot === "function"
+    ? syncVerifiedCheckpointToReportCardSnapshot
     : null;
 
 export interface SaveCommentOptions {
@@ -46,6 +89,11 @@ export interface SaveCommentOptions {
   topic?: string;
   keyKnowledge?: string[];
   homeworkBrief?: string;
+  forcePlaywright?: boolean;
+  preferApiWrite?: boolean;
+  lmsClassIdOverride?: string;
+  graphqlEndpoint?: string;
+  authTokenOverride?: string;
 }
 
 export interface SaveCommentItemResult {
@@ -63,6 +111,7 @@ export interface SaveCommentsBatchResult {
   savedCount: number;
   verifiedCount: number;
   failedCount: number;
+  skippedVerifiedCount?: number;
   results: SaveCommentItemResult[];
 }
 
@@ -74,7 +123,8 @@ interface ResolvedCompetencyRadioGroup {
 
 const RESOLVE_CP_RADIOS_BROWSER_SCRIPT = `
   var allRadios = Array.prototype.slice.call(rootEl.querySelectorAll('input[type="radio"]'));
-  if (allRadios.length < 45) return null;
+  var minRequiredRadios = specs.length * 5;
+  if (allRadios.length < minRequiredRadios) return null;
 
   function norm(str) {
     return String(str || "")
@@ -357,48 +407,85 @@ const RESOLVE_CP_RADIOS_BROWSER_SCRIPT = `
     });
   }
 
-  return results.length === 9 ? results : null;
+  return results.length === specs.length ? results : null;
 `;
 
+function buildCompetencySpecsForDom(classCode?: string): Array<{
+  key: keyof CompetencyScores;
+  labelVi: string;
+  roboticsLabelVi: string;
+  keywordsNorm: string[];
+}> {
+  const isLego = safeIsLegoRoboticsClassCode(classCode);
+  if (isLego && safeLegoCompetencyAreaSpecs.length === 7) {
+    const fallbackKeywordsByKey: Record<string, string[]> = {
+      knowledgeInClass: ["kien thuc tai lop", "da duoc hoc tai lop", "hoc tai lop"],
+      skillComputational: ["tu duy may tinh", "tu duy thuat toan", "thao tac lenh"],
+      skillProblemSolving: ["giai quyet van de"],
+      skillCreativity: ["sang tao"],
+      skillComputerUse: ["su dung cong nghe", "su dung may tinh", "cong cu lap trinh"],
+      skillCommunication: ["giao tiep"],
+      attitudeInClass: ["hoc tap tren lop", "tren lop"],
+    };
+    return safeLegoCompetencyAreaSpecs.map((s) => {
+      const baseSpec = safeCompetencyAreaSpecs.find((b) => b.key === s.key);
+      return {
+        key: s.key,
+        labelVi: s.labelVi,
+        roboticsLabelVi: baseSpec?.roboticsLabelVi || s.labelVi,
+        keywordsNorm: fallbackKeywordsByKey[s.key] || baseSpec?.keywordsNorm || [],
+      };
+    });
+  }
+  return safeCompetencyAreaSpecs.map((s) => ({
+    key: s.key,
+    labelVi: s.labelVi,
+    roboticsLabelVi: s.roboticsLabelVi || "",
+    keywordsNorm: s.keywordsNorm,
+  }));
+}
+
 /**
- * Resolves the 9 `[ĐNL]` radio button groups in a Checkpoint modal strictly by
- * Vietnamese competency section labels (`COMPETENCY_AREA_SPECS`), falling back
- * to flat 45-radio DOM indexing ONLY for pure non-DOM unit mocks without evaluate()
+ * Resolves the 9 (or 7 for LEGO) `[ĐNL]` radio button groups in a Checkpoint modal strictly by
+ * Vietnamese competency section labels (`COMPETENCY_AREA_SPECS` / `LEGO_COMPETENCY_AREA_SPECS`),
+ * falling back to flat DOM indexing ONLY for pure non-DOM unit mocks without evaluate()
  * (never touching question checkboxes or LT/TH number inputs).
  */
 async function resolveCheckpointCompetencyRadioGroups(
-  dialogLoc: any
+  dialogLoc: any,
+  classCode?: string
 ): Promise<{
   method: "LABEL_GROUPED" | "FLAT_45" | "NONE";
   totalRadios: number;
   groups: ResolvedCompetencyRadioGroup[];
   evalError?: string;
 }> {
+  const targetSpecs = buildCompetencySpecsForDom(classCode);
+  const expectedCount = targetSpecs.length;
+  const minTotalRadios = expectedCount * 5;
+  if (expectedCount === 0) {
+    return { method: "NONE", totalRadios: 0, groups: [] };
+  }
+
   const radios = dialogLoc.locator('input[type="radio"]');
   const totalRadios =
     typeof (radios as any).count === "function"
       ? await (radios as any).count().catch(() => 0)
       : 0;
 
-  if (totalRadios < 45) {
+  if (totalRadios < minTotalRadios) {
     return { method: "NONE", totalRadios, groups: [] };
   }
 
   let labelMapped: ResolvedCompetencyRadioGroup[] | null = null;
   let evalError = "";
   const hasDomEvaluate = typeof (dialogLoc as any).evaluate === "function";
-  if (hasDomEvaluate && safeCompetencyAreaSpecs.length === 9) {
+  if (hasDomEvaluate && targetSpecs.length === expectedCount) {
     try {
-      const specsPayload = safeCompetencyAreaSpecs.map((s) => ({
-        key: s.key,
-        labelVi: s.labelVi,
-        roboticsLabelVi: s.roboticsLabelVi || "",
-        keywordsNorm: s.keywordsNorm,
-      }));
       labelMapped = await (dialogLoc as any).evaluate(
-        (rootEl: HTMLElement, payload: { script: string; specs: typeof specsPayload }) =>
+        (rootEl: HTMLElement, payload: { script: string; specs: typeof targetSpecs }) =>
           new Function("rootEl", "specs", payload.script)(rootEl, payload.specs),
-        { script: RESOLVE_CP_RADIOS_BROWSER_SCRIPT, specs: specsPayload }
+        { script: RESOLVE_CP_RADIOS_BROWSER_SCRIPT, specs: targetSpecs }
       );
     } catch (err) {
       evalError = err instanceof Error ? err.message : String(err);
@@ -406,7 +493,7 @@ async function resolveCheckpointCompetencyRadioGroups(
     }
   }
 
-  if (Array.isArray(labelMapped) && labelMapped.length === 9) {
+  if (Array.isArray(labelMapped) && labelMapped.length === expectedCount) {
     return {
       method: "LABEL_GROUPED",
       totalRadios,
@@ -414,12 +501,12 @@ async function resolveCheckpointCompetencyRadioGroups(
     };
   }
 
-  // Fallback FLAT_45 ONLY for pure non-DOM unit mocks without evaluate()
-  if (!hasDomEvaluate && totalRadios === 45 && safeCompetencyAreaSpecs.length === 9) {
+  // Fallback FLAT ONLY for pure non-DOM unit mocks without evaluate()
+  if (!hasDomEvaluate && totalRadios === minTotalRadios && targetSpecs.length === expectedCount) {
     return {
       method: "FLAT_45",
       totalRadios,
-      groups: safeCompetencyAreaSpecs.map((s, idx) => ({
+      groups: targetSpecs.map((s, idx) => ({
         key: s.key,
         labelVi: s.labelVi,
         radioGlobalIndices: [idx * 5, idx * 5 + 1, idx * 5 + 2, idx * 5 + 3, idx * 5 + 4],
@@ -432,13 +519,15 @@ async function resolveCheckpointCompetencyRadioGroups(
 
 async function applyCheckpointCompetencyRadios(
   dialogLoc: any,
-  desiredScores: CompetencyScores
+  desiredScores: CompetencyScores,
+  classCode?: string
 ): Promise<{ appliedCount: number; clickedCount: number }> {
-  const resolved = await resolveCheckpointCompetencyRadioGroups(dialogLoc);
-  if (resolved.method === "NONE" || resolved.groups.length !== 9) {
+  const expectedCount = buildCompetencySpecsForDom(classCode).length || 9;
+  const resolved = await resolveCheckpointCompetencyRadioGroups(dialogLoc, classCode);
+  if (resolved.method === "NONE" || resolved.groups.length !== expectedCount) {
     const evalDetail = resolved.evalError ? ` (evalError: ${resolved.evalError})` : "";
     throw new Error(
-      `CHECKPOINT_COMPETENCY_DOM_MISMATCH: Modal Checkpoint có ${resolved.totalRadios} radio nhưng không định vị an toàn được đủ 9 nhóm [ĐNL] để tích tự động (tuyệt đối không chạm các ô điểm/câu hỏi khác).${evalDetail}`
+      `CHECKPOINT_COMPETENCY_DOM_MISMATCH: Modal Checkpoint có ${resolved.totalRadios} radio nhưng không định vị an toàn được đủ ${expectedCount} nhóm [ĐNL] để tích tự động (tuyệt đối không chạm các ô điểm/câu hỏi khác).${evalDetail}`
     );
   }
 
@@ -457,18 +546,22 @@ async function applyCheckpointCompetencyRadios(
     }
   }
 
-  return { appliedCount: 9, clickedCount };
+  return { appliedCount: expectedCount, clickedCount };
 }
 
 async function verifyCheckpointCompetencyRadios(
   dialogLoc: any,
-  desiredScores: CompetencyScores
+  desiredScores: CompetencyScores,
+  classCode?: string
 ): Promise<{ matched: boolean; mismatches: string[] }> {
-  const resolved = await resolveCheckpointCompetencyRadioGroups(dialogLoc);
-  if (resolved.method === "NONE" || resolved.groups.length !== 9) {
+  const expectedCount = buildCompetencySpecsForDom(classCode).length || 9;
+  const resolved = await resolveCheckpointCompetencyRadioGroups(dialogLoc, classCode);
+  if (resolved.method === "NONE" || resolved.groups.length !== expectedCount) {
     return {
       matched: false,
-      mismatches: ["Không đọc lại được đủ 9 nhóm radio [ĐNL] khi xác minh Read-after-Write."],
+      mismatches: [
+        `Không đọc lại được đủ ${expectedCount} nhóm radio [ĐNL] khi xác minh Read-after-Write.`,
+      ],
     };
   }
 
@@ -575,22 +668,58 @@ export class CommentSaver {
     }
 
     // Process APPROVED or VERIFIED records, or FAILED/SAVING records for retry (hash integrity will be checked next)
-    const validRecords = candidateFeedbacks.filter(
+    const rawValidRecords = candidateFeedbacks.filter(
       (r) =>
         r.status === "APPROVED" ||
         r.status === "VERIFIED" ||
         ((r.status === "FAILED" || r.status === "SAVING") && r.contentHash)
     );
 
-    if (validRecords.length === 0) {
+    const parsedSessionNum = parseInt(sessionMatch[1], 10);
+    const stageForSkipCheck = safeResolveCheckpointStageSc(classCode, parsedSessionNum);
+    let skippedVerifiedCount = 0;
+    const validRecords = rawValidRecords.filter((r) => {
+      if (studentId) return true;
+      if (r.status !== "VERIFIED") return true;
+      if (!verifyContentIntegrity(r.finalText || "", r.contentHash)) return true;
+      const cpParsed = safeParseCheckpointDataJson(r.checkpointDataJson);
+      const cpSnapshotDrift = Boolean(
+        cpParsed?.approvedSnapshotHash &&
+          safeExtractCheckpointHash &&
+          safeExtractCheckpointHash(r.checkpointDataJson) !== cpParsed.approvedSnapshotHash
+      );
+      if (cpSnapshotDrift) return true;
+      if (stageForSkipCheck.isCheckpoint || Boolean(cpParsed?.competencyScores)) {
+        if (!safeHasMatchingCheckpointLmsCompetency(cpParsed, classCode)) {
+          return true;
+        }
+      }
+      skippedVerifiedCount++;
+      return false;
+    });
+
+    if (skippedVerifiedCount > 0) {
       jobLogRepo.add({
         jobId,
         jobType: "SAVE_COMMENTS",
         classId,
         sessionId,
-        level: "WARN",
-        message: "Không tìm thấy nhận xét nào ở trạng thái ĐÃ DUYỆT (APPROVED) để lưu lên LMS.",
+        level: "INFO",
+        message: `Đã bỏ qua ${skippedVerifiedCount} học viên đã ở trạng thái VERIFIED hợp lệ (không cần đẩy lại lên LMS).`,
       });
+    }
+
+    if (validRecords.length === 0) {
+      if (skippedVerifiedCount === 0) {
+        jobLogRepo.add({
+          jobId,
+          jobType: "SAVE_COMMENTS",
+          classId,
+          sessionId,
+          level: "WARN",
+          message: "Không tìm thấy nhận xét nào ở trạng thái ĐÃ DUYỆT (APPROVED) để lưu lên LMS.",
+        });
+      }
       return {
         classCode,
         sessionId,
@@ -598,8 +727,39 @@ export class CommentSaver {
         savedCount: 0,
         verifiedCount: 0,
         failedCount: 0,
+        skippedVerifiedCount,
         results: [],
       };
+    }
+
+    // Pure-Node LMS GraphQL Write API first (Buổi 1..13) with strict CAS/Read-after-Write & safe Playwright fallback
+    if (safeIsLmsApiWriteEnabledSc(options) && safeUploadSessionCommentsViaApi) {
+      try {
+        return await safeUploadSessionCommentsViaApi(options);
+      } catch (apiErr) {
+        if (!safeIsRecoverableLmsApiWriteErrorSc(apiErr)) {
+          const strictMsg = apiErr instanceof Error ? apiErr.message : String(apiErr);
+          jobLogRepo.add({
+            jobId,
+            jobType: "SAVE_COMMENTS",
+            classId,
+            sessionId,
+            level: "ERROR",
+            message: `[LMS API Write Error] ${strictMsg}`,
+          });
+          throw apiErr;
+        }
+        jobLogRepo.add({
+          jobId,
+          jobType: "SAVE_COMMENTS",
+          classId,
+          sessionId,
+          level: "WARN",
+          message: `[LMS API Write -> Fallback Playwright] ${
+            apiErr instanceof Error ? apiErr.message : String(apiErr)
+          }`,
+        });
+      }
     }
 
     // Helper to fetch the freshest feedback record from DB (supports both findOne and findBySession mocks)
@@ -1647,7 +1807,7 @@ export class CommentSaver {
           }
 
           if (isCheckpointModal && desiredCompetencyScores) {
-            await applyCheckpointCompetencyRadios(dialog, desiredCompetencyScores);
+            await applyCheckpointCompetencyRadios(dialog, desiredCompetencyScores, classCode);
             await page.waitForTimeout(150);
           }
 
@@ -1999,11 +2159,12 @@ export class CommentSaver {
               /competency|năng\s+lực|required|bắt\s+buộc|score|điểm|validation|chưa\s+nhập|chưa\s+chọn/i.test(
                 saveWaitMsg
               );
+            const expectedMinCompCount = safeIsLegoRoboticsClassCode(classCode) ? 7 : 9;
             const isPartialCompetencyTimeout =
               checkpointCheckedRadios === 0 ||
               (!desiredCompetencyScores &&
                 checkpointCheckedRadios > 0 &&
-                checkpointCheckedRadios < 9 &&
+                checkpointCheckedRadios < expectedMinCompCount &&
                 isWaitForResponseTimeoutError(saveWaitMsg));
             if (isCheckpointModal && (isExplicitCompetencyError || isPartialCompetencyTimeout)) {
               throw new Error(
@@ -2228,19 +2389,21 @@ export class CommentSaver {
           let isCompetencyMatch = true;
           let competencyMismatches: string[] = [];
           if (isCheckpointModal && desiredCompetencyScores) {
+            const minVerifyRadios = safeIsLegoRoboticsClassCode(classCode) ? 35 : 45;
             const verifyRadiosLoc = dialog.locator('input[type="radio"]');
             const waitStart = Date.now();
             while (Date.now() - waitStart < 2500) {
               const rCount =
                 typeof (verifyRadiosLoc as any).count === "function"
                   ? await (verifyRadiosLoc as any).count().catch(() => 0)
-                  : 45;
-              if (rCount >= 45) break;
+                  : minVerifyRadios;
+              if (rCount >= minVerifyRadios) break;
               await page.waitForTimeout(200);
             }
             const compVerifyRes = await verifyCheckpointCompetencyRadios(
               dialog,
-              desiredCompetencyScores
+              desiredCompetencyScores,
+              classCode
             );
             isCompetencyMatch = compVerifyRes.matched;
             competencyMismatches = compVerifyRes.mismatches;
@@ -2306,7 +2469,7 @@ export class CommentSaver {
               classId,
               sessionId,
               record.studentId,
-              desiredCompetencyScores,
+              safeParseCompScoresSc(desiredCompetencyScores),
               verifiedAt,
               approvedHash
             );
@@ -2808,17 +2971,22 @@ export class CommentSaver {
               let compMismatchNote = "";
               let compVerifiedForRec = false;
               if (domDetectedCp && recDesiredComp) {
+                const minVerifyRadios = safeIsLegoRoboticsClassCode(classCode) ? 35 : 45;
                 const verifyRadiosLoc = dialog.locator('input[type="radio"]');
                 const waitStart = Date.now();
                 while (Date.now() - waitStart < 2500) {
                   const rCount =
                     typeof (verifyRadiosLoc as any).count === "function"
                       ? await (verifyRadiosLoc as any).count().catch(() => 0)
-                      : 45;
-                  if (rCount >= 45) break;
+                      : minVerifyRadios;
+                  if (rCount >= minVerifyRadios) break;
                   await page.waitForTimeout(200);
                 }
-                const compVerifyRes = await verifyCheckpointCompetencyRadios(dialog, recDesiredComp);
+                const compVerifyRes = await verifyCheckpointCompetencyRadios(
+                  dialog,
+                  recDesiredComp,
+                  classCode
+                );
                 isCompMatch = compVerifyRes.matched;
                 compVerifiedForRec = compVerifyRes.matched;
                 if (!isCompMatch && compVerifyRes.mismatches.length > 0) {
@@ -2975,7 +3143,7 @@ export class CommentSaver {
                 classId,
                 sessionId,
                 rec.studentId,
-                recDesiredComp,
+                safeParseCompScoresSc(recDesiredComp),
                 verifiedAt,
                 approvedHash
               );
@@ -3281,6 +3449,16 @@ export class CommentSaver {
     const verifiedCount = results.filter((r) => r.verified).length;
     const failedCount = results.filter((r) => !r.success).length;
 
+    if (
+      stageForSkipCheck.isCheckpoint &&
+      verifiedCount > 0 &&
+      safeSyncVerifiedCheckpointToReportCardSc
+    ) {
+      try {
+        safeSyncVerifiedCheckpointToReportCardSc(classId);
+      } catch {}
+    }
+
     return {
       classCode,
       sessionId,
@@ -3288,6 +3466,7 @@ export class CommentSaver {
       savedCount,
       verifiedCount,
       failedCount,
+      skippedVerifiedCount,
       results,
     };
   }

@@ -30,12 +30,19 @@ import {
 } from "@/lib/quick-tags";
 import {
   COMPETENCY_AREA_SPECS,
+  LEGO_COMPETENCY_AREA_SPECS,
+  calculateCompetencyAverageForClassPure,
   calculateCompetencyAveragePure,
   formatCheckpointScoreHeaderLine,
+  getCompetencySpecsForClassPure,
+  hasMatchingCheckpointLmsCompetency as sharedHasMatchingCheckpointLmsCompetency,
+  isLegoRoboticsClassCodePure,
+  isRoboticsClassCodePure,
   mergeCheckpointStudentData,
   parseCheckpointDataJson,
   parseCompetencyScoresPure,
   upsertCheckpointHeaderIntoFinalText,
+  type CheckpointStageInfo,
   type CheckpointStudentData,
   type CompetencyScores,
 } from "@/lib/checkpoint/checkpoint-competency";
@@ -63,7 +70,14 @@ interface StudentItem {
   actionPlan?: string;
   finalText?: string;
   contentHash?: string;
-  status?: "INSUFFICIENT_INFO" | "DRAFT" | "APPROVED" | "SAVING" | "VERIFIED" | "FAILED";
+  status?:
+    | "INSUFFICIENT_INFO"
+    | "DRAFT"
+    | "WAITING_APPROVAL"
+    | "APPROVED"
+    | "SAVING"
+    | "VERIFIED"
+    | "FAILED";
   verifiedAt?: string | null;
   errorMessage?: string | null;
   checkpointData?: CheckpointStudentData | null;
@@ -118,8 +132,34 @@ function classifyQuickTagTrack(tag: QuickTagItem): "common" | "coding" | "roboti
   return "common";
 }
 
+function isLegoRoboticsClassCodeSafe(code?: string | null): boolean {
+  if (typeof isLegoRoboticsClassCodePure === "function") {
+    return isLegoRoboticsClassCodePure(code);
+  }
+  const combined = String(code || "").trim().toUpperCase();
+  if (!combined) return false;
+  return (
+    /(?:^|[-_\s])(?:KIND[-_\s]*ROB[A-Z0-9]*|ROB[46](?:[BAI][A-Z0-9]*|\+)?|LEGO[A-Z0-9]*|KIRO[A-Z0-9]*)(?=$|[-_\s])/i.test(
+      combined
+    ) || /(?:RBT|ROBOTICS)\s*[46]\+/i.test(combined)
+  );
+}
+
+function isRoboticsClassCodeSafe(code?: string | null): boolean {
+  if (typeof isRoboticsClassCodePure === "function") {
+    return isRoboticsClassCodePure(code);
+  }
+  const s = String(code || "").trim().toUpperCase();
+  if (!s) return false;
+  if (isLegoRoboticsClassCodeSafe(s)) return true;
+  return /(?:^|[-_\s])(ROB|ROBO|ROBOT|ROBOTICS|PREB|PREA|PREI|ARM|ARMA|ARMB|ARMI|SEM|SEMA|SEMB|SEMI|EV3|VEX|SPIKE|WEDO|ARDUINO)[A-Z0-9]*\b/i.test(
+    s
+  );
+}
+
 function detectTrackByClassCode(code: string): "coding" | "robotics" {
-  return /(?:rob|pre[bai]|arm[bai]|semi[bai]|vex)/i.test(String(code || "").trim())
+  const raw = String(code || "").trim();
+  return isRoboticsClassCodeSafe(raw) || /(?:rob|pre[bai]|arm[bai]|semi[bai]|vex|kiro|lego)/i.test(raw)
     ? "robotics"
     : "coding";
 }
@@ -393,22 +433,43 @@ function findLatestActiveSessionId(sessionList: SessionItem[]): string {
   return latestByDate || candidates[0].sessionId;
 }
 
+function getFallbackCompetencyKeysUi(
+  isLego: boolean
+): ReadonlyArray<keyof CompetencyScores> {
+  return isLego
+    ? [
+        "knowledgeInClass",
+        "skillComputational",
+        "skillProblemSolving",
+        "skillCreativity",
+        "skillComputerUse",
+        "skillCommunication",
+        "attitudeInClass",
+      ]
+    : [
+        "knowledgeSelfStudy",
+        "knowledgeInClass",
+        "skillCommunication",
+        "skillComputerUse",
+        "skillProblemSolving",
+        "skillCreativity",
+        "skillComputational",
+        "attitudeHomework",
+        "attitudeInClass",
+      ];
+}
+
 function hasMatchingCheckpointLmsCompetency(
-  cp: CheckpointStudentData | null | undefined
+  cp: CheckpointStudentData | null | undefined,
+  classCode?: string | null
 ): boolean {
+  if (typeof sharedHasMatchingCheckpointLmsCompetency === "function") {
+    return sharedHasMatchingCheckpointLmsCompetency(cp, classCode);
+  }
   if (!cp?.lmsCompetencyScores) return false;
   if (!cp?.competencyScores) return true;
-  const keys: ReadonlyArray<keyof CompetencyScores> = [
-    "knowledgeSelfStudy",
-    "knowledgeInClass",
-    "skillCommunication",
-    "skillComputerUse",
-    "skillProblemSolving",
-    "skillCreativity",
-    "skillComputational",
-    "attitudeHomework",
-    "attitudeInClass",
-  ];
+  const isLego = Boolean(cp.isLego || isLegoRoboticsClassCodeSafe(classCode));
+  const keys = getFallbackCompetencyKeysUi(isLego);
   return keys.every(
     (k) => cp.competencyScores![k] === cp.lmsCompetencyScores![k]
   );
@@ -416,22 +477,96 @@ function hasMatchingCheckpointLmsCompetency(
 
 function needsStudentCheckpointLmsTick(
   isCheckpointSessionFlag: boolean,
-  student: Pick<StudentItem, "checkpointData"> | null | undefined
+  student: Pick<StudentItem, "checkpointData"> | null | undefined,
+  classCode?: string | null
 ): boolean {
   return Boolean(
     isCheckpointSessionFlag &&
       student?.checkpointData?.competencyScores &&
-      !hasMatchingCheckpointLmsCompetency(student?.checkpointData)
+      !hasMatchingCheckpointLmsCompetency(student?.checkpointData, classCode)
   );
+}
+
+function buildZaloDraftStorageKey(code: string, sessId: string): string {
+  const c = String(code || "").trim().toUpperCase();
+  const s = String(sessId || "").trim();
+  if (!c || !s) return "";
+  return `mindx_zalo_draft_v1_${c}_${s}`;
+}
+
+function readStoredZaloDraft(
+  code: string,
+  sessId: string
+): { broadcastText?: string; part2Text?: string; isManuallyEdited?: boolean } | null {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) {
+      return null;
+    }
+    const key = buildZaloDraftStorageKey(code, sessId);
+    if (!key) return null;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    return {
+      broadcastText:
+        typeof parsed.broadcastText === "string" ? parsed.broadcastText : undefined,
+      part2Text: typeof parsed.part2Text === "string" ? parsed.part2Text : undefined,
+      isManuallyEdited:
+        typeof parsed.isManuallyEdited === "boolean" ? parsed.isManuallyEdited : false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredZaloDraft(
+  code: string,
+  sessId: string,
+  draft: { broadcastText: string; part2Text: string; isManuallyEdited: boolean }
+): void {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) {
+      return;
+    }
+    const key = buildZaloDraftStorageKey(code, sessId);
+    if (!key) return;
+    window.localStorage.setItem(key, JSON.stringify(draft));
+  } catch {}
 }
 
 export default function SessionCommentsPage() {
   const safeCompetencyAreaSpecsUi =
     typeof COMPETENCY_AREA_SPECS !== "undefined" ? COMPETENCY_AREA_SPECS : [];
+  const safeLegoCompetencySpecsUi =
+    typeof LEGO_COMPETENCY_AREA_SPECS !== "undefined" ? LEGO_COMPETENCY_AREA_SPECS : [];
+  const safeGetCompSpecsForClassUi = (code?: string | null) => {
+    if (typeof getCompetencySpecsForClassPure === "function") {
+      return getCompetencySpecsForClassPure(code);
+    }
+    return isLegoRoboticsClassCodeSafe(code)
+      ? safeLegoCompetencySpecsUi
+      : safeCompetencyAreaSpecsUi;
+  };
   const safeCalcCompAvgUi =
     typeof calculateCompetencyAveragePure === "function"
       ? calculateCompetencyAveragePure
       : () => 4;
+  const safeCalcCompAvgForClassUi = (
+    scores: CompetencyScores | Partial<CompetencyScores>,
+    code?: string | null
+  ) => {
+    if (typeof calculateCompetencyAverageForClassPure === "function") {
+      return calculateCompetencyAverageForClassPure(scores, code);
+    }
+    const keys = getFallbackCompetencyKeysUi(isLegoRoboticsClassCodeSafe(code));
+    let sum = 0;
+    for (const k of keys) {
+      const val = Number((scores as Record<string, unknown>)?.[k]);
+      sum += Number.isFinite(val) ? Math.max(1, Math.min(5, Math.round(val))) : 4;
+    }
+    return Number((sum / keys.length).toFixed(2));
+  };
   const safeFormatCpHeaderUi =
     typeof formatCheckpointScoreHeaderLine === "function"
       ? formatCheckpointScoreHeaderLine
@@ -505,17 +640,24 @@ export default function SessionCommentsPage() {
   );
   const [zaloIncludePart3Media, setZaloIncludePart3Media] = useState(false);
   const [isAnalyzingBtvnImage, setIsAnalyzingBtvnImage] = useState(false);
+  const [isFetchingBtvnLms, setIsFetchingBtvnLms] = useState(false);
   const [isZaloManuallyEdited, setIsZaloManuallyEdited] = useState(false);
+  const [hydratedZaloScopeKey, setHydratedZaloScopeKey] = useState("");
   const [copiedZalo, setCopiedZalo] = useState(false);
   const [copiedStudentId, setCopiedStudentId] = useState<string | null>(null);
   const btvnImageInputRef = useRef<HTMLInputElement | null>(null);
 
   // Checkpoint [ĐNL] Modal & Sync State
+  const [checkpointStageInfo, setCheckpointStageInfo] = useState<CheckpointStageInfo | null>(null);
   const [isSyncingCheckpoint, setIsSyncingCheckpoint] = useState(false);
   const [editingCompetencyStudentId, setEditingCompetencyStudentId] = useState<string | null>(null);
   const [manualTheoryInput, setManualTheoryInput] = useState<string>("");
   const [manualPracticeInput, setManualPracticeInput] = useState<string>("");
   const [isSavingManualCpScore, setIsSavingManualCpScore] = useState(false);
+
+  // Classroom Manager Pending Logs Inline Banner State
+  const [pendingClassroomLogsCount, setPendingClassroomLogsCount] = useState(0);
+  const [isApplyingClassroomLogs, setIsApplyingClassroomLogs] = useState(false);
 
   // Status & loading states
   const [isSyncing, setIsSyncing] = useState(false);
@@ -526,6 +668,7 @@ export default function SessionCommentsPage() {
   const [lmsClassIdsByCode, setLmsClassIdsByCode] = useState<Record<string, string>>({});
   const [openingLmsClass, setOpeningLmsClass] = useState<string | null>(null);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [generatingSingleStudentId, setGeneratingSingleStudentId] = useState<string | null>(null);
   const [isSavingLms, setIsSavingLms] = useState(false);
   const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
   const [pendingUnknownConfirmCount, setPendingUnknownConfirmCount] = useState(0);
@@ -542,6 +685,7 @@ export default function SessionCommentsPage() {
   const activeClassIdRef = useRef(initialSavedClass);
   const activeSessionIdRef = useRef("");
   const loadedScopeKeyRef = useRef("");
+  const restoredManualLockRef = useRef("");
   const editSequenceRef = useRef(0);
   const clientInstanceIdRef = useRef(
     `sc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
@@ -692,7 +836,7 @@ export default function SessionCommentsPage() {
         } catch {}
       }
     }
-    setIsZaloManuallyEdited(false);
+    const scopeKey = normClass && normSess ? `${normClass}::${normSess}` : "";
     if (scopeChanged) {
       clearAllDebouncedTimers();
       unsavedDraftPatchRef.current = {};
@@ -700,13 +844,33 @@ export default function SessionCommentsPage() {
       studentFieldEditVersionRef.current = {};
       studentFieldConfirmedVersionRef.current = {};
       setPendingUnknownConfirmCount(0);
-      setZaloBtvnPart2Text("");
+      setPendingClassroomLogsCount(0);
+      setCheckpointStageInfo(null);
+      setGeneratingSingleStudentId(null);
       latestAiRequestIdRef.current++;
       setIsGeneratingAi(false);
       studentEditVersionRef.current = {};
       studentAttendanceVersionRef.current = {};
       studentServerMetaRef.current = {};
       pendingSavePromisesRef.current = {};
+      const restoredDraft = scopeKey ? readStoredZaloDraft(normClass, normSess) : null;
+      setHydratedZaloScopeKey(scopeKey);
+      if (restoredDraft) {
+        const nextPart2 = restoredDraft.part2Text || "";
+        const nextManual = Boolean(restoredDraft.isManuallyEdited);
+        setZaloBtvnPart2Text(nextPart2);
+        setIsZaloManuallyEdited(nextManual);
+        if (nextManual && typeof restoredDraft.broadcastText === "string") {
+          restoredManualLockRef.current = scopeKey;
+          setZaloBroadcastText(restoredDraft.broadcastText);
+        } else {
+          restoredManualLockRef.current = "";
+        }
+      } else {
+        restoredManualLockRef.current = "";
+        setIsZaloManuallyEdited(false);
+        setZaloBtvnPart2Text("");
+      }
       setStudents((prev) =>
         prev.filter(
           (s) =>
@@ -779,6 +943,8 @@ export default function SessionCommentsPage() {
         }
         if (json.data.quickTags) setQuickTags(json.data.quickTags);
         if (json.data.syllabusList) setSyllabusList(json.data.syllabusList);
+        setPendingClassroomLogsCount(Number(json.data.pendingClassroomLogsCount || 0));
+        setCheckpointStageInfo(json.data.checkpointStageInfo || null);
         if (typeof json.data.lmsBaseUrl === "string" && json.data.lmsBaseUrl.trim()) {
           setLmsBaseUrl(json.data.lmsBaseUrl.trim());
         }
@@ -938,7 +1104,9 @@ export default function SessionCommentsPage() {
             if (
               tags.length === 0 &&
               !hasExplicitQuickTagEdit &&
-              (!fb || (!fb.finalText && (!fb.status || fb.status === "DRAFT"))) &&
+              (!fb ||
+                (!fb.finalText &&
+                  (!fb.status || fb.status === "DRAFT" || fb.status === "WAITING_APPROVAL"))) &&
               Array.isArray(prevEntry?.tags) &&
               prevEntry.tags.length > 0
             ) {
@@ -971,10 +1139,27 @@ export default function SessionCommentsPage() {
                 }
               }
             }
-            const mergedCp = safeMergeCpDataUi(
+            const rawMergedCp = safeMergeCpDataUi(
               safeParseCpDataUi(fb?.checkpointDataJson),
               checkpointByStudent[st.studentId] || null
             );
+            const isLegoMergedCp = Boolean(
+              rawMergedCp &&
+                (rawMergedCp.isLego ||
+                  json.data.checkpointStageInfo?.isLego ||
+                  isLegoRoboticsClassCodeSafe(effectiveClassId))
+            );
+            const mergedCp = rawMergedCp
+              ? isLegoMergedCp
+                ? {
+                    ...rawMergedCp,
+                    isLego: true,
+                    competencyAverage: rawMergedCp.competencyScores
+                      ? safeCalcCompAvgForClassUi(rawMergedCp.competencyScores, effectiveClassId)
+                      : rawMergedCp.competencyAverage,
+                  }
+                : rawMergedCp
+              : null;
             let loadedFinalText = fb?.finalText || "";
             const fbStatusUpper = String(fb?.status || "DRAFT").trim().toUpperCase();
             if (
@@ -991,6 +1176,7 @@ export default function SessionCommentsPage() {
                 theoryScore: mergedCp.theoryScore,
                 practiceScore: mergedCp.practiceScore,
                 competencyAverage: mergedCp.competencyAverage ?? null,
+                isLego: isLegoMergedCp,
               });
               if (refreshedHeader) {
                 loadedFinalText = safeUpsertCpHeaderUi(loadedFinalText, refreshedHeader);
@@ -1559,7 +1745,8 @@ export default function SessionCommentsPage() {
     const rawKnowledgeItems =
       currentKeyKnowledge.length > 0 ? currentKeyKnowledge : [currentTopic];
     const isRoboticsZalo =
-      /\b(ROB|ROBOTICS|PREB|PREA|PREI|ARMB|ARMA|ARMI|SEMIB|SEMIA|SEMII|VEX)\w*/i.test(upperCode) ||
+      isRoboticsClassCodeSafe(upperCode) ||
+      /\b(ROB|ROBOTICS|PREB|PREA|PREI|ARMB|ARMA|ARMI|SEMIB|SEMIA|SEMII|VEX|KIRO|LEGO)\w*/i.test(upperCode) ||
       /(?:-|_)ROB|[A-Z]*ROB\d/i.test(upperCode);
     if (isRoboticsZalo) {
       const sessionNumPad2 = String(sessionNum).padStart(2, "0");
@@ -1730,6 +1917,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
       const json = await res.json();
       if (json.success && json.data?.part2Text) {
         const part2 = String(json.data.part2Text);
+        restoredManualLockRef.current = "";
         setZaloBtvnPart2Text(part2);
         setIsZaloManuallyEdited(false);
         setZaloBroadcastText(buildAutoZaloBroadcastText(part2));
@@ -1760,12 +1948,174 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
     }
   };
 
+  const handleFetchBtvnFromLms = async (forceLiveScrape = false) => {
+    const reqScopeClassId = classId.trim().toUpperCase();
+    const reqClassCode = (classCode || reqScopeClassId).trim().toUpperCase();
+    const reqSessionId = selectedSessionId.trim();
+    const sess = sessions.find((s) => s.sessionId === reqSessionId);
+    const reqSessNum =
+      sess?.sessionNumber || parseInt(reqSessionId.match(/(\d+)(?!.*\d)/)?.[1] || "1", 10);
+
+    if (
+      !reqClassCode ||
+      !reqSessionId ||
+      reqSessNum < 2 ||
+      isFetchingBtvnLms ||
+      isAnalyzingBtvnImage
+    ) {
+      return;
+    }
+
+    setIsFetchingBtvnLms(true);
+    setStatusMessage({
+      type: "info",
+      text: forceLiveScrape
+        ? `Đang quét mới bảng nộp BTVN Buổi ${reqSessNum - 1} trực tiếp từ MindX LMS...`
+        : `Đang lấy kết quả BTVN Buổi ${reqSessNum - 1} trực tiếp từ MindX LMS...`,
+    });
+
+    try {
+      const res = await fetch("/api/session-comments/btvn-from-lms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: reqClassCode,
+          sessionNumber: reqSessNum,
+          ...(forceLiveScrape ? { forceLiveScrape: true } : {}),
+        }),
+      });
+      const json = await res.json();
+      if (
+        (reqScopeClassId && activeClassIdRef.current !== reqScopeClassId) ||
+        activeSessionIdRef.current !== reqSessionId
+      ) {
+        return;
+      }
+
+      if (res.ok && json?.success && typeof json?.data?.part2Text === "string") {
+        const part2 = String(json.data.part2Text);
+        restoredManualLockRef.current = "";
+        setZaloBtvnPart2Text(part2);
+        setIsZaloManuallyEdited(false);
+        setZaloBroadcastText(buildAutoZaloBroadcastText(part2));
+        const unsubmittedList: string[] = Array.isArray(json.data.unsubmittedShortNames)
+          ? json.data.unsubmittedShortNames
+          : [];
+        const hwSess = json.data.targetHomeworkSession || reqSessNum - 1;
+        setStatusMessage({
+          type: "success",
+          text:
+            unsubmittedList.length > 0
+              ? `Đã lấy BTVN Buổi ${hwSess} từ LMS và gắn Phần 2 vào Zalo (${unsubmittedList.length} bạn chưa nộp: ${unsubmittedList.join(", ")}).`
+              : `Đã lấy BTVN Buổi ${hwSess} từ LMS: Cả lớp hoàn thành 100% BTVN! Đã gắn Phần 2 vào Zalo.`,
+        });
+      } else {
+        setStatusMessage({
+          type: "error",
+          text: `Không lấy được BTVN từ LMS: ${json?.error || `HTTP ${res.status}`}`,
+        });
+      }
+    } catch (err: any) {
+      if (
+        (!reqScopeClassId || activeClassIdRef.current === reqScopeClassId) &&
+        activeSessionIdRef.current === reqSessionId
+      ) {
+        setStatusMessage({
+          type: "error",
+          text: `Lỗi khi lấy BTVN từ LMS: ${err?.message || String(err)}`,
+        });
+      }
+    } finally {
+      setIsFetchingBtvnLms(false);
+    }
+  };
+
+  const handleApplyClassroomLogsInline = async () => {
+    const reqScopeClassId = classId.trim().toUpperCase();
+    const reqClassCode = (classCode || reqScopeClassId).trim().toUpperCase();
+    const reqSessionId = selectedSessionId.trim();
+    const sess = sessions.find((s) => s.sessionId === reqSessionId);
+    const reqSessNum =
+      sess?.sessionNumber || parseInt(reqSessionId.match(/(\d+)(?!.*\d)/)?.[1] || "1", 10);
+
+    if (!reqClassCode || !reqSessionId || reqSessNum <= 0 || isApplyingClassroomLogs) {
+      return;
+    }
+
+    setIsApplyingClassroomLogs(true);
+    setStatusMessage({
+      type: "info",
+      text: `Đang nạp dữ liệu Nhật ký Giờ học (Buổi ${reqSessNum}) vào nhận xét...`,
+    });
+
+    try {
+      const flushedOk = await flushAllPendingDraftSaves();
+      if (
+        !flushedOk ||
+        (reqScopeClassId && activeClassIdRef.current !== reqScopeClassId) ||
+        activeSessionIdRef.current !== reqSessionId
+      ) {
+        return;
+      }
+
+      const res = await fetch("/api/classroom-manager/apply-to-comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: reqClassCode,
+          sessionNumber: reqSessNum,
+        }),
+      });
+      const json = await res.json();
+      if (
+        (reqScopeClassId && activeClassIdRef.current !== reqScopeClassId) ||
+        activeSessionIdRef.current !== reqSessionId
+      ) {
+        return;
+      }
+
+      if (!res.ok || !json?.success) {
+        setStatusMessage({
+          type: "error",
+          text: `Không thể nạp Nhật ký Giờ học: ${json?.error || `HTTP ${res.status}`}`,
+        });
+        return;
+      }
+
+      setPendingClassroomLogsCount(0);
+      await loadClassData(reqScopeClassId || reqClassCode, reqSessionId, {
+        preserveLocalUnsavedEdits: false,
+      });
+      const appliedCount = Number(json.appliedCount || 0);
+      const skippedVerified = Number(json.skippedVerifiedCount || 0);
+      setStatusMessage({
+        type: "success",
+        text:
+          skippedVerified > 0
+            ? `Đã nạp Nhật ký Giờ học cho ${appliedCount} học viên (giữ nguyên ${skippedVerified} bạn đã lưu LMS).`
+            : `Đã nạp Nhật ký Giờ học (Buổi ${reqSessNum}) cho ${appliedCount} học viên.`,
+      });
+    } catch (err: any) {
+      setStatusMessage({
+        type: "error",
+        text: `Lỗi khi nạp Nhật ký Giờ học: ${err?.message || String(err)}`,
+      });
+    } finally {
+      setIsApplyingClassroomLogs(false);
+    }
+  };
+
   // Update Zalo broadcast template preview only when teacher has not manually edited it
   useEffect(() => {
+    const curCode = (classId || classCode || "").trim().toUpperCase();
+    const curSess = selectedSessionId.trim();
+    const curScopeKey = curCode && curSess ? `${curCode}::${curSess}` : "";
     if (isZaloManuallyEdited) return;
+    if (curScopeKey && restoredManualLockRef.current === curScopeKey) return;
     setZaloBroadcastText(buildAutoZaloBroadcastText());
   }, [
     isZaloManuallyEdited,
+    classId,
     classCode,
     selectedSessionId,
     sessions,
@@ -1779,6 +2129,34 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
     zaloIncludeGeneralUpdate,
     zaloIncludeSpckProgress,
     zaloIncludePart3Media,
+  ]);
+
+  // Persist Zalo draft (broadcastText, part2Text, isManuallyEdited) per class + session after client mount
+  useEffect(() => {
+    const persistCode = (classId || classCode || "").trim().toUpperCase();
+    const persistSess = selectedSessionId.trim();
+    const persistScopeKey = persistCode && persistSess ? `${persistCode}::${persistSess}` : "";
+    if (!persistScopeKey || hydratedZaloScopeKey !== persistScopeKey) return;
+    if (
+      !isZaloManuallyEdited &&
+      zaloBroadcastText.trim().length === 0 &&
+      zaloBtvnPart2Text.trim().length === 0
+    ) {
+      return;
+    }
+    writeStoredZaloDraft(persistCode, persistSess, {
+      broadcastText: zaloBroadcastText,
+      part2Text: zaloBtvnPart2Text,
+      isManuallyEdited: isZaloManuallyEdited,
+    });
+  }, [
+    classId,
+    classCode,
+    selectedSessionId,
+    hydratedZaloScopeKey,
+    zaloBroadcastText,
+    zaloBtvnPart2Text,
+    isZaloManuallyEdited,
   ]);
 
   // Handle Quick Tag Toggle (1-click radio swap for Level tags + multi-select for Note tags)
@@ -2345,7 +2723,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
         ? "DRAFT"
         : rawCandidateStatus;
 
-    // Ensure local React state reflects the demoted DRAFT status and patched fields
+    // Ensure local React state reflects the demoted DRAFT / WAITING_APPROVAL status and patched fields
     setStudents((prev) =>
       prev.map((s) => {
         if (s.studentId !== targetStudentId) return s;
@@ -2357,6 +2735,15 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
           (patch.finalText !== undefined &&
             (s.status === "FAILED" ||
               (s.status === "INSUFFICIENT_INFO" && Boolean(patch.finalText.trim()))));
+        const nextStatus: StudentItem["status"] =
+          patch.status === "WAITING_APPROVAL"
+            ? "WAITING_APPROVAL"
+            : wasApprovedOrVerified
+            ? "DRAFT"
+            : patch.status
+            ? safeDraftStatus
+            : s.status;
+        const shouldClearHash = wasApprovedOrVerified || patch.status === "WAITING_APPROVAL";
         return {
           ...s,
           ...(patch.attendanceStatus !== undefined
@@ -2369,8 +2756,8 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
           ...(patch.actionPlan !== undefined ? { actionPlan: patch.actionPlan } : {}),
           ...(patch.finalText !== undefined ? { finalText: patch.finalText } : {}),
           ...(patch.checkpointData !== undefined ? { checkpointData: patch.checkpointData } : {}),
-          status: wasApprovedOrVerified ? "DRAFT" : patch.status ? safeDraftStatus : s.status,
-          contentHash: wasApprovedOrVerified ? undefined : s.contentHash,
+          status: nextStatus,
+          contentHash: shouldClearHash ? undefined : s.contentHash,
         };
       })
     );
@@ -3436,6 +3823,228 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
     }
   };
 
+  // Generate AI comment for a single PRESENT/LATE student without touching any other student
+  const handleGenerateSingleAi = async (targetStudentId: string) => {
+    const reqClassId = classId.trim().toUpperCase();
+    const reqClassCode = (classCode || reqClassId).trim().toUpperCase();
+    const reqSessionId = selectedSessionId.trim();
+    if (
+      !reqClassId ||
+      !reqSessionId ||
+      activeClassIdRef.current !== reqClassId ||
+      activeSessionIdRef.current !== reqSessionId
+    ) {
+      return;
+    }
+    if (generatingSingleStudentId || isGeneratingAi) return;
+
+    setGeneratingSingleStudentId(targetStudentId);
+    try {
+      const flushedOk = await flushPendingDraftSave(targetStudentId);
+      if (
+        !flushedOk ||
+        activeClassIdRef.current !== reqClassId ||
+        activeSessionIdRef.current !== reqSessionId
+      ) {
+        return;
+      }
+
+      const targetStudent = studentsRef.current.find((s) => s.studentId === targetStudentId);
+      if (
+        !targetStudent ||
+        targetStudent.isActive === false ||
+        (targetStudent.attendanceStatus !== "PRESENT" && targetStudent.attendanceStatus !== "LATE")
+      ) {
+        setStatusMessage({
+          type: "error",
+          text: "Chỉ có thể gọi AI riêng cho học viên đang học và đã điểm danh Có mặt / Đi muộn.",
+        });
+        return;
+      }
+
+      const wasApprovedOrVerified =
+        targetStudent.status === "APPROVED" || targetStudent.status === "VERIFIED";
+      if (wasApprovedOrVerified) {
+        const demotedOk = await saveDraftToServer(targetStudentId, {
+          finalText: targetStudent.finalText || "",
+          quickTags: targetStudent.quickTags || [],
+          teacherNote: targetStudent.teacherNote || "",
+          status: "WAITING_APPROVAL",
+        });
+        if (
+          !demotedOk ||
+          activeClassIdRef.current !== reqClassId ||
+          activeSessionIdRef.current !== reqSessionId
+        ) {
+          return;
+        }
+      }
+
+      const freshStudent =
+        studentsRef.current.find((s) => s.studentId === targetStudentId) || targetStudent;
+      const initialStudentVersion = studentEditVersionRef.current[targetStudentId] || 0;
+      const sess = sessions.find((s) => s.sessionId === reqSessionId);
+      const sessionNumber = sess?.sessionNumber || 1;
+
+      setStatusMessage({
+        type: "info",
+        text: `Đang gọi AI soạn lại nhận xét riêng cho ${freshStudent.fullName}...`,
+      });
+
+      const res = await fetch("/api/session-comments/generate-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session: {
+            classId: reqClassId,
+            classCode: reqClassCode,
+            sessionId: reqSessionId,
+            sessionNumber,
+            topic: currentTopic,
+            keyKnowledge: currentKeyKnowledge,
+          },
+          students: [
+            {
+              studentId: freshStudent.studentId,
+              fullName: freshStudent.fullName,
+              isActive: freshStudent.isActive,
+              attendanceStatus: freshStudent.attendanceStatus,
+              quickTags: freshStudent.quickTags || [],
+              teacherNote: freshStudent.teacherNote || "",
+              expectedRowVer: studentServerMetaRef.current[targetStudentId]?.rowVer ?? 0,
+              ...(freshStudent.checkpointData
+                ? { checkpointData: freshStudent.checkpointData }
+                : {}),
+            },
+          ],
+        }),
+      });
+
+      const data = await res.json();
+      if (
+        activeClassIdRef.current !== reqClassId ||
+        activeSessionIdRef.current !== reqSessionId
+      ) {
+        return;
+      }
+
+      if (!data?.success || !Array.isArray(data.data)) {
+        setStatusMessage({
+          type: "error",
+          text: `Lỗi AI riêng (${freshStudent.fullName}): ${data?.error || "Không thể sinh nhận xét"}`,
+        });
+        return;
+      }
+
+      const resItem =
+        data.data.find((r: any) => r.studentId === targetStudentId) || data.data[0];
+      if (!resItem) {
+        setStatusMessage({
+          type: "error",
+          text: `Không nhận được kết quả AI cho ${freshStudent.fullName}.`,
+        });
+        return;
+      }
+
+      const wasEditedDuringAi =
+        (studentEditVersionRef.current[targetStudentId] || 0) !== initialStudentVersion;
+      if (wasEditedDuringAi || resItem.staleIgnored) {
+        if (resItem.versionMeta && !wasEditedDuringAi) {
+          studentServerMetaRef.current[targetStudentId] = resItem.versionMeta;
+        }
+        setStatusMessage({
+          type: "info",
+          text: `Đã bỏ qua kết quả AI riêng cho ${freshStudent.fullName} vì dữ liệu vừa được chỉnh sửa trong lúc chờ AI.`,
+        });
+        return;
+      }
+
+      if (resItem.versionMeta) {
+        studentServerMetaRef.current[targetStudentId] = resItem.versionMeta;
+      }
+
+      if (resItem.status === "FAILED") {
+        const hasExistingDraft = Boolean(
+          freshStudent.finalText && freshStudent.finalText.trim().length > 0
+        );
+        setStudents((prev) =>
+          prev.map((s) =>
+            s.studentId === targetStudentId
+              ? {
+                  ...s,
+                  status: hasExistingDraft ? s.status : "FAILED",
+                  errorMessage: resItem.errorMessage || "AI không trả về nhận xét hợp lệ.",
+                }
+              : s
+          )
+        );
+        setStatusMessage({
+          type: "error",
+          text: `AI riêng thất bại cho ${freshStudent.fullName}: ${resItem.errorMessage || "Lỗi sinh nhận xét"}`,
+        });
+        return;
+      }
+
+      const nextStatus: StudentItem["status"] =
+        resItem.status === "INSUFFICIENT_INFO"
+          ? "INSUFFICIENT_INFO"
+          : wasApprovedOrVerified
+          ? "WAITING_APPROVAL"
+          : "DRAFT";
+
+      setStudents((prev) =>
+        prev.map((s) => {
+          if (s.studentId !== targetStudentId) return s;
+          if (s.classId && s.classId.trim().toUpperCase() !== reqClassId) return s;
+          return {
+            ...s,
+            status: nextStatus,
+            strengths: resItem.strengths,
+            improvements: resItem.improvements,
+            actionPlan: resItem.actionPlan,
+            finalText: resItem.formattedFullComment,
+            errorMessage: resItem.errorMessage,
+            contentHash: undefined,
+            ...(resItem.checkpointData ? { checkpointData: resItem.checkpointData } : {}),
+          };
+        })
+      );
+
+      if (resItem.status !== "INSUFFICIENT_INFO") {
+        await saveDraftToServer(targetStudentId, {
+          strengths: resItem.strengths,
+          improvements: resItem.improvements,
+          actionPlan: resItem.actionPlan,
+          finalText: resItem.formattedFullComment,
+          status: nextStatus,
+          ...(resItem.checkpointData ? { checkpointData: resItem.checkpointData } : {}),
+        });
+      }
+
+      setStatusMessage({
+        type: nextStatus === "INSUFFICIENT_INFO" ? "info" : "success",
+        text:
+          nextStatus === "INSUFFICIENT_INFO"
+            ? `${freshStudent.fullName} chưa chọn Quick Tag hoặc ghi chú -> giữ Chưa đủ thông tin.`
+            : wasApprovedOrVerified
+            ? `Đã soạn lại nhận xét riêng cho ${freshStudent.fullName} (hạ về Chờ duyệt để kiểm tra trước khi đẩy LMS).`
+            : `Đã soạn & lưu nháp nhận xét riêng cho ${freshStudent.fullName}.`,
+      });
+    } catch (err: any) {
+      if (
+        activeClassIdRef.current === reqClassId &&
+        activeSessionIdRef.current === reqSessionId
+      ) {
+        setStatusMessage({
+          type: "error",
+          text: `Lỗi gọi AI riêng: ${err?.message || String(err)}`,
+        });
+      }
+    } finally {
+      setGeneratingSingleStudentId((prev) => (prev === targetStudentId ? null : prev));
+    }
+  };
+
   // Approve a single comment
   const handleApprove = async (studentId: string): Promise<boolean> => {
     const reqClassId = classId.trim().toUpperCase();
@@ -3605,8 +4214,9 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
     const eligibleDrafts = presentOrLate.filter(
       (s) =>
         (s.status === "DRAFT" ||
+          s.status === "WAITING_APPROVAL" ||
           (s.status === "VERIFIED" &&
-            needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, s))) &&
+            needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, s, reqClassId))) &&
         s.finalText &&
         s.finalText.trim().length > 0 &&
         !s.finalText.trim().startsWith("Chưa đủ thông tin")
@@ -3826,12 +4436,16 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
     typeof sharedResolveCheckpointSessionsForClass === "function"
       ? sharedResolveCheckpointSessionsForClass(upperCodeForCheckpoint, syllabusList)
       : (() => {
+          const isLegoClass = isLegoRoboticsClassCodeSafe(upperCodeForCheckpoint);
           const sortedSyllabusForCheckpoint = [...syllabusList].sort(
             (a, b) => (b.courseCode?.length || 0) - (a.courseCode?.length || 0)
           );
-          const matchedCourseForCheckpoint = sortedSyllabusForCheckpoint.find((c) =>
-            upperCodeForCheckpoint.includes(String(c.courseCode || "").toUpperCase())
-          );
+          const matchedCourseForCheckpoint = sortedSyllabusForCheckpoint.find((c) => {
+            const cc = String(c.courseCode || "").trim().toUpperCase();
+            if (!cc) return false;
+            if (isLegoClass && cc === "ROB") return false;
+            return upperCodeForCheckpoint.includes(cc);
+          });
           const validCourseCheckpointNums = Array.isArray(
             matchedCourseForCheckpoint?.checkpointSessions
           )
@@ -3841,6 +4455,8 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             : [];
           return validCourseCheckpointNums.length > 0
             ? validCourseCheckpointNums
+            : isLegoClass
+            ? [5, 9]
             : detectTrackByClassCode(upperCodeForCheckpoint) === "robotics"
             ? [4, 8]
             : [5, 9];
@@ -3851,6 +4467,11 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
       : activeSessionNumber >= 1 &&
         activeSessionNumber < 14 &&
         effectiveCheckpointSessions.includes(activeSessionNumber);
+  const isCurrentClassRobotics = isRoboticsClassCodeSafe(upperCodeForCheckpoint);
+  const isCurrentSessionLego = Boolean(
+    checkpointStageInfo?.isLego ??
+      (isCurrentSessionCheckpoint && isLegoRoboticsClassCodeSafe(upperCodeForCheckpoint))
+  );
 
   const handleCheckpointSync = async (syncFromLms = true) => {
     const reqClassId = (classCode || classId).trim().toUpperCase();
@@ -3863,7 +4484,9 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
     setIsSyncingCheckpoint(true);
     setStatusMessage({
       type: "info",
-      text: syncFromLms
+      text: isCurrentSessionLego
+        ? `Đang tự tính 7 ô [ĐNL] LEGO Robotics theo quá trình cho ${reqClassId}...`
+        : syncFromLms
         ? `Đang kết nối LMS đọc điểm Lý thuyết & Thực hành rồi tự tính 9 ô [ĐNL] cho ${reqClassId}...`
         : `Đang tính lại 9 ô [ĐNL] từ lịch sử các buổi trước cho ${reqClassId}...`,
     });
@@ -3902,7 +4525,9 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
 
       setStatusMessage({
         type: "success",
-        text: `✅ Đã cập nhật điểm Kiểm tra & tự tính 9 ô [ĐNL] theo quá trình cho ${data.updatedCount || 0} học viên (Buổi ${activeSessionNumber}).${extraWarn}`,
+        text: isCurrentSessionLego
+          ? `✅ Đã tự tính 7 ô [ĐNL] LEGO Robotics theo quá trình cho ${data.updatedCount || 0} học viên (Buổi ${activeSessionNumber}).`
+          : `✅ Đã cập nhật điểm Kiểm tra & tự tính 9 ô [ĐNL] theo quá trình cho ${data.updatedCount || 0} học viên (Buổi ${activeSessionNumber}).${extraWarn}`,
       });
     } catch (err: any) {
       setStatusMessage({
@@ -3922,16 +4547,23 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
     const stu = studentsRef.current.find((s) => s.studentId === studentId);
     if (!stu || !stu.checkpointData) return;
 
+    const rowClassCode = stu.classId || classCode || classId;
+    const isRowLego = Boolean(
+      stu.checkpointData.isLego ??
+        checkpointStageInfo?.isLego ??
+        isLegoRoboticsClassCodeSafe(rowClassCode)
+    );
     const currentScores = safeParseCompScoresUi(stu.checkpointData.competencyScores || {});
     const nextScores: CompetencyScores = {
       ...currentScores,
       [key]: Math.max(1, Math.min(5, Math.round(rating))),
     };
-    const nextAvg = safeCalcCompAvgUi(nextScores);
+    const nextAvg = safeCalcCompAvgForClassUi(nextScores, isRowLego ? "LEGO" : rowClassCode);
     const nextCp: CheckpointStudentData = {
       ...stu.checkpointData,
       competencyScores: nextScores,
       competencyAverage: nextAvg,
+      ...(isRowLego ? { isLego: true } : {}),
       source: "MANUAL_UI",
       userEditedCompetency: true,
     };
@@ -3949,6 +4581,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
         theoryScore: nextCp.theoryScore,
         practiceScore: nextCp.practiceScore,
         competencyAverage: nextAvg,
+        isLego: isRowLego,
       });
       nextPatch.finalText = safeUpsertCpHeaderUi(stu.finalText, headerLine);
     }
@@ -4042,6 +4675,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
         theoryScore: nextCp.theoryScore,
         practiceScore: nextCp.practiceScore,
         competencyAverage: nextCp.competencyAverage ?? null,
+        isLego: Boolean(nextCp.isLego ?? isLegoRoboticsClassCodeSafe(reqClassId)),
       });
       nextPatch.finalText = safeUpsertCpHeaderUi(stu.finalText, headerLine);
     }
@@ -4183,6 +4817,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
         theoryScore: nextCp.theoryScore,
         practiceScore: nextCp.practiceScore,
         competencyAverage: nextCp.competencyAverage ?? null,
+        isLego: Boolean(nextCp.isLego ?? isLegoRoboticsClassCodeSafe(reqClassId)),
       });
       nextPatch.finalText = safeUpsertCpHeaderUi(stu.finalText, headerLine);
     }
@@ -4272,17 +4907,32 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
       if (data.success && data.data) {
         const batchRes = data.data;
         const verifiedCount = Number(batchRes.verifiedCount || 0);
+        const skippedVerifiedCount = Number(batchRes.skippedVerifiedCount || 0);
         const lmsFailedCount = Number(batchRes.failedCount || 0);
         const totalErrors = lmsFailedCount + Number(summaryContext?.approveFailedCount || 0);
         const skippedCount = Number(summaryContext?.skippedInsufficientCount || 0);
+        const skippedVerifiedNote =
+          skippedVerifiedCount > 0
+            ? ` (bỏ qua ${skippedVerifiedCount} bạn đã lưu LMS trước đó)`
+            : "";
 
-        if (verifiedCount > 0 && totalErrors === 0) {
+        if (verifiedCount === 0 && skippedVerifiedCount > 0 && totalErrors === 0) {
+          setStatusMessage({
+            type: "info",
+            text:
+              summaryContext !== undefined
+                ? `Đã bỏ qua ${skippedVerifiedCount} học viên đã lưu LMS ✓${
+                    skippedCount > 0 ? ` và ${skippedCount} bạn thiếu thông tin` : ""
+                  } (Buổi ${activeSessionNumber}) — toàn bộ dữ liệu trên LMS đã khớp.`
+                : `Đã bỏ qua ${skippedVerifiedCount} học viên đã ở trạng thái Đã lưu LMS ✓ (Buổi ${activeSessionNumber}) — không cần đẩy lại.`,
+          });
+        } else if (verifiedCount > 0 && totalErrors === 0) {
           setStatusMessage({
             type: "success",
             text:
               summaryContext !== undefined
-                ? `Đã lưu ${verifiedCount} / Bỏ qua ${skippedCount} (thiếu thông tin) / Lỗi 0 (Buổi ${activeSessionNumber}): ${verifiedCount}/${batchRes.totalCandidates} học viên đã lưu LMS ✓!`
-                : `Đã lưu & đối chiếu (Buổi ${activeSessionNumber}): ${verifiedCount}/${batchRes.totalCandidates} học viên đã lưu LMS ✓!`,
+                ? `Đã lưu ${verifiedCount} / Bỏ qua ${skippedCount} (thiếu thông tin) / Lỗi 0 (Buổi ${activeSessionNumber}): ${verifiedCount}/${batchRes.totalCandidates} học viên đã lưu LMS ✓!${skippedVerifiedNote}`
+                : `Đã lưu & đối chiếu (Buổi ${activeSessionNumber}): ${verifiedCount}/${batchRes.totalCandidates} học viên đã lưu LMS ✓!${skippedVerifiedNote}`,
           });
         } else {
           const firstError =
@@ -4292,8 +4942,8 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             type: "error",
             text:
               summaryContext !== undefined
-                ? `Đã lưu ${verifiedCount} / Bỏ qua ${skippedCount} (thiếu thông tin) / Lỗi ${totalErrors} (Buổi ${activeSessionNumber}): ${firstError}`
-                : `Lưu LMS (Buổi ${activeSessionNumber}) không đạt (${verifiedCount}/${batchRes.totalCandidates} đã lưu): ${firstError}`,
+                ? `Đã lưu ${verifiedCount} / Bỏ qua ${skippedCount} (thiếu thông tin) / Lỗi ${totalErrors} (Buổi ${activeSessionNumber}): ${firstError}${skippedVerifiedNote}`
+                : `Lưu LMS (Buổi ${activeSessionNumber}) không đạt (${verifiedCount}/${batchRes.totalCandidates} đã lưu): ${firstError}${skippedVerifiedNote}`,
           });
         }
         await loadClassData(normalizedClassId, selectedSessionId, {
@@ -4374,13 +5024,33 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
           (s.status === "APPROVED" || (s.status === "FAILED" && Boolean(s.contentHash)))
       ).length;
 
+      const alreadyVerifiedCount = studentsRef.current.filter(
+        (s) =>
+          s.isActive !== false &&
+          (!s.classId || s.classId.trim().toUpperCase() === reqClassId) &&
+          (!s.sessionId || s.sessionId.trim() === reqSessionId) &&
+          (s.attendanceStatus === "PRESENT" || s.attendanceStatus === "LATE") &&
+          s.status === "VERIFIED"
+      ).length;
+
       const totalApproveErrors = batchApproval.failCount + preExistingFailedCount;
 
       if (readyForLmsCount === 0) {
-        setStatusMessage({
-          type: "error",
-          text: `Đã lưu 0 / Bỏ qua ${skippedInsufficientCount} (thiếu thông tin) / Lỗi ${totalApproveErrors}: Chưa có học viên nào đủ điều kiện duyệt & đẩy LMS.`,
-        });
+        if (alreadyVerifiedCount > 0 && totalApproveErrors === 0) {
+          setStatusMessage({
+            type: "info",
+            text: `Đã bỏ qua ${alreadyVerifiedCount} học viên đã ở trạng thái Đã lưu LMS ✓${
+              skippedInsufficientCount > 0
+                ? ` (${skippedInsufficientCount} bạn thiếu thông tin)`
+                : ""
+            } — không cần đẩy lại lên LMS.`,
+          });
+        } else {
+          setStatusMessage({
+            type: "error",
+            text: `Đã lưu 0 / Bỏ qua ${skippedInsufficientCount} (thiếu thông tin) / Lỗi ${totalApproveErrors}: Chưa có học viên nào đủ điều kiện duyệt & đẩy LMS.`,
+          });
+        }
         return;
       }
 
@@ -4626,9 +5296,14 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
           return (
             <div className="mt-3">
               <div className="mindx-warm-box px-3.5 py-2.5 rounded-xl text-xs flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-                <div className="flex items-center gap-2 font-black">
+                <div className="flex items-center gap-2 font-black flex-wrap">
                   <span className="text-base">📌</span>
                   <span>Checkpoint — Buổi {activeSessionNumber}</span>
+                  {isCurrentSessionLego && (
+                    <span className="px-2 py-0.5 rounded-md bg-amber-200 text-amber-950 border border-[#0f172a] text-[11px] font-black">
+                      🧩 LEGO 7 sao
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <button
@@ -4639,10 +5314,20 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                     }}
                     disabled={isSyncingCheckpoint || isSyncing}
                     className="neo-btn-yellow px-3 py-1.5 rounded-lg disabled:opacity-50 font-black text-xs flex items-center gap-1.5 cursor-pointer"
-                    title="Kết nối LMS lấy điểm Lý thuyết/Thực hành mới nhất và tự động tính 9 ô [ĐNL]"
+                    title={
+                      isCurrentSessionLego
+                        ? "Tính tự động 7 ô [ĐNL] LEGO Robotics theo quá trình trên lớp"
+                        : "Kết nối LMS lấy điểm Lý thuyết/Thực hành mới nhất và tự động tính 9 ô [ĐNL]"
+                    }
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCheckpoint ? "animate-spin" : ""}`} />
-                    {isSyncingCheckpoint ? "Đang đọc KT & Tính [ĐNL]..." : "📥 Đọc điểm KT & Tính [ĐNL]"}
+                    {isSyncingCheckpoint
+                      ? isCurrentSessionLego
+                        ? "Đang tính 7 ô [ĐNL]..."
+                        : "Đang đọc KT & Tính [ĐNL]..."
+                      : isCurrentSessionLego
+                      ? "📥 Tính 7 ô [ĐNL]"
+                      : "📥 Đọc điểm KT & Tính [ĐNL]"}
                   </button>
                   <button
                     type="button"
@@ -4652,7 +5337,11 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                     }}
                     disabled={isSyncingCheckpoint || isSyncing}
                     className="neo-btn-neutral px-2.5 py-1.5 rounded-lg disabled:opacity-50 font-bold text-[11px] cursor-pointer"
-                    title="Tính lại nhanh 9 ô [ĐNL] từ lịch sử trên máy (không mở lại LMS)"
+                    title={
+                      isCurrentSessionLego
+                        ? "Tính lại nhanh 7 ô [ĐNL] từ lịch sử trên máy (không mở lại LMS)"
+                        : "Tính lại nhanh 9 ô [ĐNL] từ lịch sử trên máy (không mở lại LMS)"
+                    }
                   >
                     ↻ Tính lại [ĐNL]
                   </button>
@@ -4772,7 +5461,11 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                   Boolean(s.finalText && s.finalText.trim()) &&
                   s.status !== "INSUFFICIENT_INFO" &&
                   (s.status !== "VERIFIED" ||
-                    needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, s))
+                    needsStudentCheckpointLmsTick(
+                      isCurrentSessionCheckpoint,
+                      s,
+                      classCode || classId
+                    ))
               ).length === 0
             }
             className="neo-btn-emerald flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg disabled:opacity-50 text-xs sm:text-sm font-black cursor-pointer mindx-dark-keep"
@@ -4784,6 +5477,28 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
           </button>
         </div>
       </div>
+
+      {pendingClassroomLogsCount > 0 && (
+        <div
+          data-testid="pending-classroom-logs-bar"
+          className="neo-details-bar px-3.5 py-2 rounded-xl flex items-center justify-between gap-3 text-xs font-bold"
+        >
+          <span className="truncate">
+            ⭐ Có {pendingClassroomLogsCount} học viên mới chấm trong Quản lý Giờ học (Buổi {activeSessionNumber}) chưa nạp vào nhận xét.
+          </span>
+          <button
+            type="button"
+            data-testid="apply-classroom-logs-inline-btn"
+            onClick={() => {
+              void handleApplyClassroomLogsInline();
+            }}
+            disabled={isApplyingClassroomLogs}
+            className="neo-btn-blue shrink-0 px-3 py-1 rounded-lg disabled:opacity-50 text-xs font-black cursor-pointer mindx-dark-keep"
+          >
+            {isApplyingClassroomLogs ? "Đang nạp..." : "📥 Nạp Giờ học"}
+          </button>
+        </div>
+      )}
 
       {/* 4. Student Comments Table */}
       <div className="neo-section-card rounded-2xl overflow-hidden">
@@ -4986,60 +5701,83 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                                       ↺ Từ B{student.inheritedFromSession}
                                     </span>
                                   )}
-                                  {isCurrentSessionCheckpoint && student.checkpointData && (
-                                    <div className="inline-flex flex-wrap items-center gap-1.5">
-                                      <span
-                                        data-testid={`cp-score-badge-${student.studentId}`}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-500/40"
-                                        title="Điểm Lý thuyết / Thực hành (từ LMS hoặc sửa tay) & Trung bình 9 ô [ĐNL] Bot tính theo quá trình"
-                                      >
-                                        📊 LT:{" "}
-                                        {student.checkpointData.theoryScore !== null
-                                          ? student.checkpointData.theoryScore.toFixed(1)
-                                          : "—"}{" "}
-                                        | TH:{" "}
-                                        {student.checkpointData.practiceScore !== null
-                                          ? student.checkpointData.practiceScore.toFixed(1)
-                                          : "—"}{" "}
-                                        | ĐNL:{" "}
-                                        {student.checkpointData.competencyAverage !== null
-                                          ? student.checkpointData.competencyAverage.toFixed(2)
-                                          : "—"}
-                                        {(student.checkpointData.userEditedTheory ||
-                                          student.checkpointData.userEditedPractice) && (
-                                          <span className="ml-0.5 text-amber-800 dark:text-amber-300">
-                                            ✎
+                                  {isCurrentSessionCheckpoint && student.checkpointData && (() => {
+                                    const rowCp = student.checkpointData;
+                                    const rowIsLego = Boolean(rowCp.isLego ?? isCurrentSessionLego);
+                                    const rowDnlCount = rowIsLego ? 7 : 9;
+                                    return (
+                                      <div className="inline-flex flex-wrap items-center gap-1.5">
+                                        <span
+                                          data-testid={`cp-score-badge-${student.studentId}`}
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-500/40"
+                                          title={
+                                            rowIsLego
+                                              ? `Trung bình ${rowDnlCount} ô [ĐNL] LEGO Robotics Bot tính theo quá trình`
+                                              : `Điểm Lý thuyết / Thực hành (từ LMS hoặc sửa tay) & Trung bình ${rowDnlCount} ô [ĐNL] Bot tính theo quá trình`
+                                          }
+                                        >
+                                          {rowIsLego ? (
+                                            <>
+                                              📊 ĐNL:{" "}
+                                              {rowCp.competencyAverage !== null
+                                                ? rowCp.competencyAverage.toFixed(2)
+                                                : "—"}
+                                            </>
+                                          ) : (
+                                            <>
+                                              📊 LT:{" "}
+                                              {rowCp.theoryScore !== null
+                                                ? rowCp.theoryScore.toFixed(1)
+                                                : "—"}{" "}
+                                              | TH:{" "}
+                                              {rowCp.practiceScore !== null
+                                                ? rowCp.practiceScore.toFixed(1)
+                                                : "—"}{" "}
+                                              | ĐNL:{" "}
+                                              {rowCp.competencyAverage !== null
+                                                ? rowCp.competencyAverage.toFixed(2)
+                                                : "—"}
+                                              {(rowCp.userEditedTheory ||
+                                                rowCp.userEditedPractice) && (
+                                                <span className="ml-0.5 text-amber-800 dark:text-amber-300">
+                                                  ✎
+                                                </span>
+                                              )}
+                                            </>
+                                          )}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          data-testid={`edit-dnl-btn-${student.studentId}`}
+                                          onClick={() => setEditingCompetencyStudentId(student.studentId)}
+                                          className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-900 border border-sky-300 hover:bg-sky-200 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40 dark:hover:bg-sky-500/30 transition cursor-pointer"
+                                          title={`Xem chi tiết quá trình và chỉnh tay ${rowDnlCount} tiêu chí [ĐNL] (1..5 sao) trước khi đẩy LMS`}
+                                        >
+                                          ⚙️ {rowDnlCount} ô [ĐNL]
+                                        </button>
+                                        {hasMatchingCheckpointLmsCompetency(
+                                          rowCp,
+                                          classCode || classId
+                                        ) ? (
+                                          <span
+                                            data-testid={`cp-lms-tick-status-${student.studentId}`}
+                                            className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-200 dark:border-emerald-500/40"
+                                            title={`Đã tích đủ ${rowDnlCount}/${rowDnlCount} [ĐNL] trên MindX LMS và xác minh thành công`}
+                                          >
+                                            ✓ Đã tích LMS
+                                          </span>
+                                        ) : (
+                                          <span
+                                            data-testid={`cp-lms-tick-status-${student.studentId}`}
+                                            className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-500/40"
+                                            title={`Chưa tích đủ ${rowDnlCount}/${rowDnlCount} [ĐNL] trên MindX LMS`}
+                                          >
+                                            ⏳ Chưa tích LMS
                                           </span>
                                         )}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        data-testid={`edit-dnl-btn-${student.studentId}`}
-                                        onClick={() => setEditingCompetencyStudentId(student.studentId)}
-                                        className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-900 border border-sky-300 hover:bg-sky-200 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40 dark:hover:bg-sky-500/30 transition cursor-pointer"
-                                        title="Xem chi tiết quá trình và chỉnh tay 9 tiêu chí [ĐNL] (1..5 sao) trước khi đẩy LMS"
-                                      >
-                                        ⚙️ 9 ô [ĐNL]
-                                      </button>
-                                      {hasMatchingCheckpointLmsCompetency(student.checkpointData) ? (
-                                        <span
-                                          data-testid={`cp-lms-tick-status-${student.studentId}`}
-                                          className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-200 dark:border-emerald-500/40"
-                                          title="Đã tích đủ 9/9 [ĐNL] trên MindX LMS và xác minh thành công"
-                                        >
-                                          ✓ Đã tích LMS
-                                        </span>
-                                      ) : (
-                                        <span
-                                          data-testid={`cp-lms-tick-status-${student.studentId}`}
-                                          className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-500/40"
-                                          title="Chưa tích đủ 9/9 [ĐNL] trên MindX LMS"
-                                        >
-                                          ⏳ Chưa tích LMS
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                                 {student.errorMessage && student.status !== "INSUFFICIENT_INFO" && (
                                   <span className="text-[11px] text-amber-300 font-medium">
@@ -5094,6 +5832,10 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                             <span className="mindx-dark-keep inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-700 text-white shadow-sm">
                               <Check className="w-3.5 h-3.5" /> Đã duyệt
                             </span>
+                          ) : student.status === "WAITING_APPROVAL" ? (
+                            <span className="mindx-dark-keep inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-700 text-white shadow-sm">
+                              Chờ duyệt
+                            </span>
                           ) : student.status === "SAVING" ? (
                             <span className="mindx-dark-keep inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-700 text-white animate-pulse">
                               Đang lưu...
@@ -5111,50 +5853,95 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
 
                         {isCurrentSessionCheckpoint && student.status === "APPROVED" && (
                           <p className="text-[11px] text-amber-300 font-medium leading-snug">
-                            Kiểm tra 9 ô [ĐNL] hoặc bấm Đẩy lại để Bot tự tích &amp; lưu LMS
+                            {Boolean(student.checkpointData?.isLego ?? isCurrentSessionLego)
+                              ? "Kiểm tra 7 ô [ĐNL] hoặc bấm Đẩy lại để Bot tự tích & lưu LMS"
+                              : "Kiểm tra 9 ô [ĐNL] hoặc bấm Đẩy lại để Bot tự tích & lưu LMS"}
                           </p>
                         )}
 
                         <div className="flex flex-col gap-1 items-end">
-                          {(student.status !== "VERIFIED" ||
-                            needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, student)) && (
+                          {isPresent && student.isActive !== false && (
                             <button
-                              data-testid={`save-single-btn-${student.studentId}`}
-                              onClick={() => handleApproveAndSaveSingle(student.studentId)}
+                              type="button"
+                              data-testid={`ai-single-btn-${student.studentId}`}
+                              onClick={() => {
+                                void handleGenerateSingleAi(student.studentId);
+                              }}
                               disabled={
-                                isSavingThis ||
-                                !isPresent ||
-                                !student.finalText ||
-                                student.status === "INSUFFICIENT_INFO"
+                                isGeneratingAi ||
+                                Boolean(generatingSingleStudentId) ||
+                                isSavingThis
                               }
-                              className={`px-2.5 py-1 rounded-md disabled:opacity-40 text-white text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${
-                                student.status === "VERIFIED" &&
-                                needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, student)
-                                  ? "bg-amber-600 hover:bg-amber-500"
-                                  : "bg-emerald-600 hover:bg-emerald-500"
-                              }`}
-                              title={
-                                student.status === "VERIFIED" &&
-                                needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, student)
-                                  ? "Nhận xét đã lưu LMS nhưng chưa ghi nhận đủ 9 ô [ĐNL] — bấm để Bot tích 9 ô [ĐNL] và lưu lại lên LMS"
-                                  : undefined
-                              }
+                              className="neo-btn-purple px-2.5 py-1 rounded-md disabled:opacity-40 text-xs font-bold flex items-center gap-1 cursor-pointer mindx-dark-keep"
+                              title="Chỉ gọi AI soạn lại nhận xét riêng cho học viên này (giữ nguyên các bạn khác)"
                             >
-                              {isSavingThis ? (
-                                <RefreshCw className="w-3 h-3 animate-spin" />
+                              {generatingSingleStudentId === student.studentId ? (
+                                <>
+                                  <RefreshCw className="w-3 h-3 animate-spin" />
+                                  <span>Đang soạn...</span>
+                                </>
                               ) : (
-                                <Send className="w-3 h-3" />
+                                <span>✨ AI riêng</span>
                               )}
-                              {student.status === "VERIFIED" &&
-                              needsStudentCheckpointLmsTick(isCurrentSessionCheckpoint, student)
-                                ? "Tích 9 ô [ĐNL] & Lưu"
-                                : student.status === "FAILED"
-                                ? "Thử lại"
-                                : student.status === "APPROVED"
-                                ? `Đẩy lại (Buổi ${activeSessionNumber})`
-                                : "Duyệt & Lưu riêng"}
                             </button>
                           )}
+
+                          {(student.status !== "VERIFIED" ||
+                            needsStudentCheckpointLmsTick(
+                              isCurrentSessionCheckpoint,
+                              student,
+                              classCode || classId
+                            )) && (() => {
+                            const needsTick =
+                              student.status === "VERIFIED" &&
+                              needsStudentCheckpointLmsTick(
+                                isCurrentSessionCheckpoint,
+                                student,
+                                classCode || classId
+                              );
+                            const rowDnlCount = Boolean(
+                              student.checkpointData?.isLego ?? isCurrentSessionLego
+                            )
+                              ? 7
+                              : 9;
+                            return (
+                              <button
+                                data-testid={`save-single-btn-${student.studentId}`}
+                                onClick={() => handleApproveAndSaveSingle(student.studentId)}
+                                disabled={
+                                  isSavingThis ||
+                                  !isPresent ||
+                                  !student.finalText ||
+                                  student.status === "INSUFFICIENT_INFO"
+                                }
+                                className={`px-2.5 py-1 rounded-md disabled:opacity-40 text-white text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${
+                                  needsTick
+                                    ? "bg-amber-600 hover:bg-amber-500"
+                                    : "bg-emerald-600 hover:bg-emerald-500"
+                                }`}
+                                title={
+                                  needsTick
+                                    ? `Nhận xét đã lưu LMS nhưng chưa ghi nhận đủ ${rowDnlCount} ô [ĐNL] — bấm để Bot tích ${rowDnlCount} ô [ĐNL] và lưu lại lên LMS`
+                                    : undefined
+                                }
+                              >
+                                {isSavingThis ? (
+                                  <RefreshCw className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Send className="w-3 h-3" />
+                                )}
+                                {needsTick
+                                  ? rowDnlCount === 7
+                                    ? "Tích 7 ô [ĐNL] & Lưu"
+                                    : "Tích 9 ô [ĐNL] & Lưu"
+                                  : student.status === "FAILED"
+                                  ? "Thử lại"
+                                  : student.status === "APPROVED"
+                                  ? `Đẩy lại (Buổi ${activeSessionNumber})`
+                                  : "Duyệt & Lưu riêng"}
+                              </button>
+                            );
+                          })()}
 
                           <button
                             onClick={() => copyToClipboard(student.finalText || "", student.studentId)}
@@ -5304,6 +6091,28 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
               <span className="sr-only">3. </span>Gửi ảnh &amp; Học liệu
             </button>
 
+            {!isCurrentClassRobotics && activeSessionNumber >= 2 && (
+              <button
+                type="button"
+                data-testid="fetch-btvn-lms-btn"
+                onClick={(e) => {
+                  void handleFetchBtvnFromLms(e.shiftKey);
+                }}
+                disabled={isFetchingBtvnLms || isAnalyzingBtvnImage}
+                className="neo-btn-blue flex items-center gap-1.5 px-3.5 py-2 rounded-lg disabled:opacity-50 text-xs font-black cursor-pointer mindx-dark-keep"
+                title="Đọc trực tiếp bảng nộp BTVN từ MindX LMS cho buổi trước và gắn Phần 2 vào thông báo Zalo (giữ Shift + bấm để quét mới từ LMS)"
+              >
+                {isFetchingBtvnLms ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Đang lấy BTVN...</span>
+                  </>
+                ) : (
+                  <span>📥 Lấy BTVN LMS</span>
+                )}
+              </button>
+            )}
+
             <input
               ref={btvnImageInputRef}
               type="file"
@@ -5316,62 +6125,52 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             />
             <button
               type="button"
+              data-testid="upload-btvn-image-btn"
               onClick={() => btvnImageInputRef.current?.click()}
-              disabled={isAnalyzingBtvnImage}
+              disabled={isAnalyzingBtvnImage || isFetchingBtvnLms}
               className="neo-btn-yellow flex items-center gap-1.5 px-3.5 py-2 rounded-lg disabled:opacity-50 text-xs font-black cursor-pointer"
-              title="Tải ảnh chụp danh sách nộp BTVN (Denise/LMS) để AI lọc các bạn 'Not submitted' (Tên đệm + Tên) và tự động nối mục 2b Tình trạng BTVN vào tin nhắn Zalo"
+              title="Dự phòng: tải ảnh chụp danh sách nộp BTVN (Denise/LMS) để AI lọc 'Not submitted' và nối Phần 2 vào tin nhắn Zalo"
             >
               {isAnalyzingBtvnImage ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <span>📸</span>
-              )}
-              {isAnalyzingBtvnImage ? (
-                "Đang đọc ảnh BTVN..."
-              ) : (
                 <>
-                  <span className="sr-only">2b. </span>Tải ảnh BTVN
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Đang đọc ảnh...</span>
                 </>
+              ) : (
+                <span>📷 Ảnh BTVN</span>
               )}
             </button>
 
-            {(zaloBtvnPart2Text || isZaloManuallyEdited) && (
-              <details className="relative">
-                <summary
-                  className="neo-btn-neutral list-none px-2.5 py-2 rounded-lg text-xs font-bold cursor-pointer select-none"
-                  title="Tùy chọn khôi phục mẫu Zalo"
-                >
-                  ⋯
-                </summary>
-                <div className="absolute right-0 mt-1.5 w-48 rounded-xl bg-white dark:bg-slate-900 border-2 border-[#0f172a] dark:border-slate-600 shadow-[3px_3px_0_#0f172a] p-1.5 z-20 space-y-1">
-                  {zaloBtvnPart2Text && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setZaloBtvnPart2Text("");
-                        setIsZaloManuallyEdited(false);
-                        setZaloBroadcastText(buildAutoZaloBroadcastText(""));
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-rose-500/15 text-rose-700 dark:text-rose-300 text-xs font-semibold transition cursor-pointer"
-                    >
-                      ✕ Bỏ Phần 2 BTVN
-                    </button>
-                  )}
-                  {isZaloManuallyEdited && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsZaloManuallyEdited(false);
-                        setZaloBroadcastText(buildAutoZaloBroadcastText());
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-200 text-xs font-semibold transition cursor-pointer"
-                    >
-                      ↺ Khôi phục mẫu tự động
-                    </button>
-                  )}
-                </div>
-              </details>
+            {zaloBtvnPart2Text && (
+              <button
+                type="button"
+                data-testid="clear-zalo-part2-btn"
+                onClick={() => {
+                  restoredManualLockRef.current = "";
+                  setZaloBtvnPart2Text("");
+                  setIsZaloManuallyEdited(false);
+                  setZaloBroadcastText(buildAutoZaloBroadcastText(""));
+                }}
+                className="neo-btn-neutral px-3 py-2 rounded-lg text-xs font-black cursor-pointer"
+                title="Xóa Phần 2 tình trạng BTVN khỏi thông báo Zalo"
+              >
+                ✕ Bỏ Phần 2
+              </button>
             )}
+
+            <button
+              type="button"
+              data-testid="reset-zalo-template-btn"
+              onClick={() => {
+                restoredManualLockRef.current = "";
+                setIsZaloManuallyEdited(false);
+                setZaloBroadcastText(buildAutoZaloBroadcastText());
+              }}
+              className="neo-btn-neutral px-3 py-2 rounded-lg text-xs font-black cursor-pointer"
+              title="Đặt lại nội dung thông báo Zalo theo mẫu tự động của buổi học"
+            >
+              ↺ Đặt lại mẫu
+            </button>
 
             <button
               onClick={() => copyToClipboard(zaloBroadcastText)}
@@ -5388,6 +6187,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             rows={14}
             value={zaloBroadcastText}
             onChange={(e) => {
+              restoredManualLockRef.current = "";
               setIsZaloManuallyEdited(true);
               setZaloBroadcastText(e.target.value);
             }}
@@ -5404,6 +6204,19 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
         if (!targetStudent || !cp) return null;
         const compScores = safeParseCompScoresUi(cp.competencyScores || {});
         const proc = cp.processSummary;
+        const isModalLego = Boolean(
+          cp.isLego ??
+            checkpointStageInfo?.isLego ??
+            isLegoRoboticsClassCodeSafe(classCode || classId)
+        );
+        const modalSpecs = safeGetCompSpecsForClassUi(
+          isModalLego ? "LEGO" : classCode || classId
+        );
+        const modalDnlCount = modalSpecs.length || (isModalLego ? 7 : 9);
+        const modalCompAvg = safeCalcCompAvgForClassUi(
+          compScores,
+          isModalLego ? "LEGO" : classCode || classId
+        );
 
         return (
           <div
@@ -5412,12 +6225,19 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
             onClick={() => setEditingCompetencyStudentId(null)}
           >
             <div
-              className="w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-2xl p-5 space-y-4 text-slate-900 dark:text-slate-100 max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 border-2 border-[#0f172a] dark:border-slate-600 shadow-[4px_4px_0_#0f172a] p-5 space-y-4 text-slate-900 dark:text-slate-100 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Bảng 9 ô Điểm Năng lực [ĐNL] — {targetStudent.fullName} (CP{cp.cpStage})
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
+                  <span>
+                    Bảng {modalDnlCount} ô Điểm Năng lực [ĐNL] — {targetStudent.fullName} (CP{cp.cpStage})
+                  </span>
+                  {isModalLego && (
+                    <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-[#0f172a] text-[11px] font-black">
+                      🧩 LEGO {modalDnlCount} sao
+                    </span>
+                  )}
                 </h3>
                 <button
                   type="button"
@@ -5428,139 +6248,152 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                 </button>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between gap-1 text-slate-700 dark:text-slate-300">
-                    <span>Lý thuyết</span>
-                    {cp.userEditedTheory && (
-                      <div className="flex items-center gap-1">
-                        <span
-                          data-testid="manual-lt-badge"
-                          className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 dark:bg-amber-500/30 dark:text-amber-200 text-[10px] font-semibold"
-                        >
-                          ✎ Sửa tay
-                        </span>
-                        <button
-                          type="button"
-                          data-testid="reset-manual-lt-btn"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            void handleResetManualCpScore(targetStudent.studentId, "theory");
-                          }}
-                          disabled={isSavingManualCpScore}
-                          className="px-1.5 py-0.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100 text-[10px] font-semibold cursor-pointer"
-                          title="Bỏ sửa tay và lấy lại điểm Lý thuyết từ LMS"
-                        >
-                          ↺ LMS
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-1 flex items-center gap-1.5">
-                    <input
-                      type="number"
-                      min={0}
-                      max={5}
-                      step={0.1}
-                      placeholder="Chưa chấm"
-                      data-testid="manual-lt-input"
-                      value={manualTheoryInput}
-                      onChange={(e) => setManualTheoryInput(e.target.value)}
-                      onBlur={(e) => {
-                        void handleCommitManualCpScore(
-                          targetStudent.studentId,
-                          "theory",
-                          e.currentTarget.value
-                        );
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
+              <div className={isModalLego ? "grid grid-cols-1 gap-2 text-xs" : "grid grid-cols-3 gap-2 text-xs"}>
+                {!isModalLego && (
+                  <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between gap-1 text-slate-700 dark:text-slate-300">
+                      <span>Lý thuyết</span>
+                      {cp.userEditedTheory && (
+                        <div className="flex items-center gap-1">
+                          <span
+                            data-testid="manual-lt-badge"
+                            className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 dark:bg-amber-500/30 dark:text-amber-200 text-[10px] font-semibold"
+                          >
+                            ✎ Sửa tay
+                          </span>
+                          <button
+                            type="button"
+                            data-testid="reset-manual-lt-btn"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              void handleResetManualCpScore(targetStudent.studentId, "theory");
+                            }}
+                            disabled={isSavingManualCpScore}
+                            className="px-1.5 py-0.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100 text-[10px] font-semibold cursor-pointer"
+                            title="Bỏ sửa tay và lấy lại điểm Lý thuyết từ LMS"
+                          >
+                            ↺ LMS
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={0}
+                        max={5}
+                        step={0.1}
+                        placeholder="Chưa chấm"
+                        data-testid="manual-lt-input"
+                        value={manualTheoryInput}
+                        onChange={(e) => setManualTheoryInput(e.target.value)}
+                        onBlur={(e) => {
                           void handleCommitManualCpScore(
                             targetStudent.studentId,
                             "theory",
                             e.currentTarget.value
                           );
-                        }
-                      }}
-                      disabled={isSavingManualCpScore}
-                      className="w-24 px-2 py-1 rounded-lg bg-white text-slate-900 border border-slate-300 dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                    <span className="text-slate-600 dark:text-slate-400 font-medium">/ 5.0</span>
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            void handleCommitManualCpScore(
+                              targetStudent.studentId,
+                              "theory",
+                              e.currentTarget.value
+                            );
+                          }
+                        }}
+                        disabled={isSavingManualCpScore}
+                        className="w-24 px-2 py-1 rounded-lg bg-white text-slate-900 border border-slate-300 dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      />
+                      <span className="text-slate-600 dark:text-slate-400 font-medium">/ 5.0</span>
+                    </div>
                   </div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between gap-1 text-slate-700 dark:text-slate-300">
-                    <span>Thực hành</span>
-                    {cp.userEditedPractice ? (
-                      <div className="flex items-center gap-1">
+                )}
+                {!isModalLego && (
+                  <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between gap-1 text-slate-700 dark:text-slate-300">
+                      <span>Thực hành</span>
+                      {cp.userEditedPractice ? (
+                        <div className="flex items-center gap-1">
+                          <span
+                            data-testid="manual-th-badge"
+                            className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 dark:bg-amber-500/30 dark:text-amber-200 text-[10px] font-semibold"
+                          >
+                            ✎ Sửa tay
+                          </span>
+                          <button
+                            type="button"
+                            data-testid="reset-manual-th-btn"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              void handleResetManualCpScore(targetStudent.studentId, "practice");
+                            }}
+                            disabled={isSavingManualCpScore}
+                            className="px-1.5 py-0.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100 text-[10px] font-semibold cursor-pointer"
+                            title="Bỏ sửa tay và lấy lại điểm Thực hành từ LMS"
+                          >
+                            ↺ LMS
+                          </button>
+                        </div>
+                      ) : cp.hasUngradedPractice ? (
                         <span
-                          data-testid="manual-th-badge"
-                          className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 dark:bg-amber-500/30 dark:text-amber-200 text-[10px] font-semibold"
+                          data-testid="waiting-th-badge"
+                          className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200 text-[10px] font-semibold"
                         >
-                          ✎ Sửa tay
+                          Chờ chấm (#tab-3)
                         </span>
-                        <button
-                          type="button"
-                          data-testid="reset-manual-th-btn"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            void handleResetManualCpScore(targetStudent.studentId, "practice");
-                          }}
-                          disabled={isSavingManualCpScore}
-                          className="px-1.5 py-0.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100 text-[10px] font-semibold cursor-pointer"
-                          title="Bỏ sửa tay và lấy lại điểm Thực hành từ LMS"
-                        >
-                          ↺ LMS
-                        </button>
-                      </div>
-                    ) : cp.hasUngradedPractice ? (
-                      <span
-                        data-testid="waiting-th-badge"
-                        className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200 text-[10px] font-semibold"
-                      >
-                        Chờ chấm (#tab-3)
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="mt-1 flex items-center gap-1.5">
-                    <input
-                      type="number"
-                      min={0}
-                      max={5}
-                      step={0.1}
-                      placeholder={cp.hasUngradedPractice ? "Chờ chấm" : "Chưa chấm"}
-                      data-testid="manual-th-input"
-                      value={manualPracticeInput}
-                      onChange={(e) => setManualPracticeInput(e.target.value)}
-                      onBlur={(e) => {
-                        void handleCommitManualCpScore(
-                          targetStudent.studentId,
-                          "practice",
-                          e.currentTarget.value
-                        );
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
+                      ) : null}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={0}
+                        max={5}
+                        step={0.1}
+                        placeholder={cp.hasUngradedPractice ? "Chờ chấm" : "Chưa chấm"}
+                        data-testid="manual-th-input"
+                        value={manualPracticeInput}
+                        onChange={(e) => setManualPracticeInput(e.target.value)}
+                        onBlur={(e) => {
                           void handleCommitManualCpScore(
                             targetStudent.studentId,
                             "practice",
                             e.currentTarget.value
                           );
-                        }
-                      }}
-                      disabled={isSavingManualCpScore}
-                      className="w-24 px-2 py-1 rounded-lg bg-white text-slate-900 border border-slate-300 dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                    <span className="text-slate-600 dark:text-slate-400 font-medium">/ 5.0</span>
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            void handleCommitManualCpScore(
+                              targetStudent.studentId,
+                              "practice",
+                              e.currentTarget.value
+                            );
+                          }
+                        }}
+                        disabled={isSavingManualCpScore}
+                        className="w-24 px-2 py-1 rounded-lg bg-white text-slate-900 border border-slate-300 dark:bg-slate-900 dark:text-white dark:border-slate-600 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      />
+                      <span className="text-slate-600 dark:text-slate-400 font-medium">/ 5.0</span>
+                    </div>
                   </div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/40">
-                  <div className="text-amber-800 dark:text-amber-300">TB 9 ô [ĐNL]</div>
-                  <div className="text-sm font-bold text-amber-900 dark:text-amber-200 mt-0.5">
-                    {safeCalcCompAvgUi(compScores).toFixed(2)} / 5.0
+                )}
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/40 flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-amber-900 dark:text-amber-300 font-semibold">
+                      TB {modalDnlCount} ô [ĐNL]
+                    </div>
+                    <div className="text-sm font-bold text-amber-950 dark:text-amber-200 mt-0.5">
+                      {modalCompAvg.toFixed(2)} / 5.0
+                    </div>
                   </div>
+                  {isModalLego && (
+                    <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200">
+                      Không chấm điểm số LT/TH
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -5588,7 +6421,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
               )}
 
               <div className="space-y-2">
-                {safeCompetencyAreaSpecsUi.map((spec) => {
+                {modalSpecs.map((spec, specIdx) => {
                   const curVal = compScores[spec.key];
                   return (
                     <div
@@ -5596,7 +6429,7 @@ Nội dung bài học: BUỔI ${nextSessionNum}: ${nextTopic}`;
                       className="flex items-center justify-between gap-3 p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60"
                     >
                       <span className="text-xs font-medium text-slate-800 dark:text-slate-200">
-                        {spec.domIndex + 1}. {spec.labelVi}
+                        {specIdx + 1}. {spec.labelVi}
                       </span>
                       <div className="flex items-center gap-1 shrink-0">
                         {[1, 2, 3, 4, 5].map((rating) => {
